@@ -1529,6 +1529,11 @@ func (pdf *PDF) AddPage(page *Page) {
 		pdf.fail("The page was already added to the PDF.")
 		return
 	}
+	if pdf.pagesObjNumber != 0 {
+		// The page tree of the objects that AddObjects wrote does not list it.
+		pdf.fail("A page cannot be added to a PDF that AddObjects added the objects of an existing PDF to.")
+		return
+	}
 	page.added = true
 	if page.objNumber == 0 {
 		page.objNumber = pdf.reserveObjNumber()
@@ -2245,7 +2250,7 @@ func (pdf *PDF) ReadWithPassword(buf []byte, password string) (objects []*PDFobj
 				trailer = nil // A cross-reference stream that cannot be decoded.
 			}
 		}()
-		return getObjects(buf, pdf.getStartXRef(buf), &objects1, 0, budget)
+		return getObjects(buf, pdf.getStartXRef(buf), &objects1, 0, make(map[int]bool), budget)
 	}()
 	if trailer == nil || len(objects1) == 0 {
 		// The cross-reference table is missing or wrong, like in a PDF
@@ -2256,6 +2261,13 @@ func (pdf *PDF) ReadWithPassword(buf []byte, password string) (objects []*PDFobj
 	dec, err := getDecryptor(trailer, objects1, password)
 	if err != nil {
 		return nil, err
+	}
+
+	// The object of each number, for a /Length that is an object of its own.
+	// The newest version of an object that was updated comes last and wins.
+	numbered := make(map[int]*PDFobj, len(objects1))
+	for _, obj := range objects1 {
+		numbered[obj.number] = obj
 	}
 
 	objects2 := make([]*PDFobj, 0)
@@ -2271,7 +2283,7 @@ func (pdf *PDF) ReadWithPassword(buf []byte, password string) (objects []*PDFobj
 			dec.decryptStrings(obj)
 		}
 		if contains(obj.dict, "stream") {
-			length := obj.getLength(objects1)
+			length := obj.getLength(numbered)
 			obj.setStreamAndData(buf, length, dec, budget)
 		}
 
@@ -2343,10 +2355,12 @@ func trailerRoot(trailer *PDFobj) int {
 	return toInteger(tokens[i+1])
 }
 
-// objectStreamNumber returns the number in the header of an object stream.
+// objectStreamNumber returns the number in the header of an object stream,
+// which is digits and no more than the largest int of 32 bits, as in the other
+// ports.
 func objectStreamNumber(token string) (int, error) {
-	number, err := strconv.Atoi(token)
-	if err != nil || number < 0 {
+	number := toInteger(token)
+	if number < 0 {
 		return 0, fmt.Errorf(
 			"The object stream of the PDF is malformed: %q is not a number.", token)
 	}
@@ -2538,15 +2552,23 @@ func isObject(obj *PDFobj, number int) bool {
 // cross-reference table, which can have an /XRefStm stream for the objects in
 // object streams, or a cross-reference stream. It returns the trailer of the
 // section, which is the cross-reference stream object when there is no table,
-// or nil when an offset in the section is not that of its object.
-func getObjects(buf []byte, offset int, objects *[]*PDFobj, depth int, budget *decodeBudget) *PDFobj {
+// or nil when an offset in the section is not that of its object. A section
+// that a /Prev leads back to, which visited holds the offset of, is a broken
+// PDF, and is not read again: a /Prev that points at its own section read the
+// section a thousand times.
+func getObjects(
+	buf []byte, offset int, objects *[]*PDFobj, depth int, visited map[int]bool, budget *decodeBudget) *PDFobj {
+	if visited[offset] {
+		return nil
+	}
+	visited[offset] = true
 	xref := getObjectAt(buf, offset)
 	table := len(xref.dict) > 0 && xref.dict[0] == "xref"
 	if depth > 1000 || (!table && !isObject(xref, -1)) {
 		return nil
 	}
 	prev := xref.GetValue("/Prev")
-	if prev != "" && getObjects(buf, toInteger(prev), objects, depth+1, budget) == nil {
+	if prev != "" && getObjects(buf, toInteger(prev), objects, depth+1, visited, budget) == nil {
 		return nil
 	}
 	if table {
@@ -2661,13 +2683,22 @@ func getStreamObjects(buf []byte, xref *PDFobj, objects *[]*PDFobj, budget *deco
 // newest version of an object comes last. It returns the last trailer, or the
 // last cross-reference stream object when there is no trailer, or nil when
 // there is neither.
+//
+// An object ends where the next one starts at the latest, as one with no
+// endobj was read to the end of the PDF, and the last trailer is read once
+// when the scan is done: a PDF of objects with no endobj took seconds for
+// every hundred kilobytes.
 func getObjectsByScanning(buf []byte, objects *[]*PDFobj) *PDFobj {
-	var trailer *PDFobj
 	var xrefStream *PDFobj
+	trailerOffset := -1
+	next := 0 // The start of the object after the one at i
 	i := 0
 	for i < len(buf) {
 		if isObjectStart(buf, i) {
-			obj := getObjectAt(buf, i)
+			if next <= i {
+				next = nextObjectStart(buf, i+1)
+			}
+			obj := getObject(buf, i, next)
 			if isObject(obj, -1) {
 				obj.number = toInteger(obj.dict[0])
 				*objects = append(*objects, obj)
@@ -2686,18 +2717,31 @@ func getObjectsByScanning(buf []byte, objects *[]*PDFobj) *PDFobj {
 				}
 			}
 		} else if startsWith(buf, i, "trailer") {
-			trailer = getObjectAt(buf, i)
+			trailerOffset = i
 		}
 		i++
 	}
-	if trailer != nil {
-		return trailer
+	if trailerOffset != -1 {
+		return getObjectAt(buf, trailerOffset)
 	}
 	return xrefStream
 }
 
+// nextObjectStart returns the offset of the first "number generation obj"
+// from the offset on, or the length of the PDF when there is none.
+func nextObjectStart(buf []byte, off int) int {
+	for i := off; i < len(buf); i++ {
+		if isObjectStart(buf, i) {
+			return i
+		}
+	}
+	return len(buf)
+}
+
 // isObjectStart returns true when "number generation obj" starts at the
-// offset, after white space or at the start of the PDF.
+// offset, after white space or at the start of the PDF. An offset that is not
+// at a number returns at once, as the white space after it was scanned at
+// every offset of a run of white space.
 func isObjectStart(buf []byte, off int) bool {
 	if off > 0 && !isWhiteSpace(int(buf[off-1])) {
 		return false
@@ -2705,6 +2749,9 @@ func isObjectStart(buf []byte, off int) bool {
 	i := off
 	for i < len(buf) && buf[i] >= '0' && buf[i] <= '9' {
 		i++
+	}
+	if i == off {
+		return false
 	}
 	j := i
 	for j < len(buf) && isWhiteSpace(int(buf[j])) {
@@ -2718,7 +2765,7 @@ func isObjectStart(buf []byte, off int) bool {
 	for m < len(buf) && isWhiteSpace(int(buf[m])) {
 		m++
 	}
-	return i > off && j > i && k > j && m > k && startsWith(buf, m, "obj")
+	return j > i && k > j && m > k && startsWith(buf, m, "obj")
 }
 
 func startsWith(buf []byte, off int, str string) bool {
@@ -2858,14 +2905,23 @@ func (pdf *PDF) addOutlineItem(outlines int, bm1 *Bookmark) {
 
 // AddObjects adds the specified objects to the PDF. The objects keep their
 // numbers and are written as they are, so they are added before any font,
-// image or page of this document, and an encrypted PDF cannot take them. It
-// records the mistake and returns it as an error, as it does when the objects
-// have no root /Pages object.
+// image or page of this document, and an encrypted PDF cannot take them. Their
+// page tree is the page tree of this document, so it can have no pages of its
+// own, before or after them, and it cannot be a PDF/UA or PDF/A document, as
+// the pages were not made for its compliance. It records the mistake and
+// returns it as an error, as it does when the objects have no root /Pages
+// object.
 func (pdf *PDF) AddObjects(objects []*PDFobj) error {
 	for _, page := range pdf.pages {
 		if page.mergedDict != nil {
 			return pdf.fail("Merge and AddObjects cannot be used on the same PDF.")
 		}
+	}
+	if pdf.compliance != compliance.PDF_1_7 {
+		return pdf.fail("The objects of an existing PDF cannot be added to a PDF/UA or PDF/A document.")
+	}
+	if len(pdf.pages) > 0 {
+		return pdf.fail("The objects of an existing PDF cannot be added to a PDF that has pages of its own.")
 	}
 	pagesObject := pdf.getPagesObject(objects)
 	if pagesObject == nil {
@@ -2946,26 +3002,32 @@ func (pdf *PDF) GetPageObjects(objects []*PDFobj) []*PDFobj {
 }
 
 // The nodes of the page tree that were visited are skipped, as a node of a
-// broken tree can list itself or a node above it as a kid.
+// broken tree can list itself or a node above it as a kid. The tree is walked
+// with a list of the kids still to visit, the last of them first, and not by
+// recursion, as a tree of a hundred thousand nodes, one under the other,
+// overflowed the stack of the other ports.
 func (pdf *PDF) getPageObjects(
-	pdfObj *PDFobj, objects []*PDFobj, pages *[]*PDFobj, visited map[int]bool, nodes pageTreeNodes) {
-	if visited[pdfObj.number] {
-		return
-	}
-	visited[pdfObj.number] = true
-	kids := pdfObj.getObjectNumbers("/Kids")
-	for _, number := range kids {
-		if number < 1 || number > len(objects) {
-			continue // A kid that the document does not have.
-		}
-		obj := objects[number-1]
-		if isPageObject(obj) {
+	root *PDFobj, objects []*PDFobj, pages *[]*PDFobj, visited map[int]bool, nodes pageTreeNodes) {
+	stack := []*PDFobj{root}
+	for first := true; len(stack) > 0; first = false {
+		obj := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+		if !first && isPageObject(obj) { // The root is a node, whatever it is.
 			addInheritedEntries(obj, objects, nodes)
 			resolveMediaBox(obj, objects)
 			delete(nodes, obj) // A broken tree can have a page as a node.
 			*pages = append(*pages, obj)
-		} else {
-			pdf.getPageObjects(obj, objects, pages, visited, nodes)
+			continue
+		}
+		if visited[obj.number] {
+			continue
+		}
+		visited[obj.number] = true
+		kids := obj.getObjectNumbers("/Kids")
+		for i := len(kids) - 1; i >= 0; i-- {
+			if kids[i] >= 1 && kids[i] <= len(objects) { // A kid that the document has.
+				stack = append(stack, objects[kids[i]-1])
+			}
 		}
 	}
 }
@@ -3086,6 +3148,8 @@ func (pdf *PDF) addExtGStates(resources *PDFobj, objects []*PDFobj) {
 		}
 		if !slices.Contains(pdf.importedExtGStates, entries[i]) {
 			pdf.importedExtGStates = append(pdf.importedExtGStates, entries[i:end]...)
+		} else {
+			pdf.checkImportedName(pdf.importedExtGStates, entries[i:end])
 		}
 		i = end
 	}
@@ -3109,6 +3173,8 @@ func (pdf *PDF) getFontObjects(resources *PDFobj, objects []*PDFobj) []*PDFobj {
 				if objNumber := toInteger(entries[i+1]); objNumber > 0 && objNumber <= len(objects) {
 					fonts = append(fonts, objects[objNumber-1])
 				}
+			} else {
+				pdf.checkImportedName(pdf.importedFonts, entries[i:i+4])
 			}
 			i += 4
 			continue
@@ -3117,6 +3183,20 @@ func (pdf *PDF) getFontObjects(resources *PDFobj, objects []*PDFobj) []*PDFobj {
 		i++
 	}
 	return fonts
+}
+
+// checkImportedName records the mistake when a name that an earlier page added
+// to the resources has another value on this page, the entry: the pages of this
+// document share one resources dictionary, where the name has the value of the
+// first page, and the content of this page, drawn with DrawContents, would draw
+// the resource of the first page.
+func (pdf *PDF) checkImportedName(imported []string, entry []string) {
+	i := slices.Index(imported, entry[0])
+	if i == -1 || slices.Equal(imported[i+1:min(i+len(entry), len(imported))], entry[1:]) {
+		return
+	}
+	pdf.fail("The pages of the PDF use the name " + entry[0] + " for different resources, " +
+		"and the pages of this document share one resources dictionary.")
 }
 
 // getResourceEntries returns the entries of a sub-dictionary of the resources,
@@ -3172,12 +3252,13 @@ func isInteger(token1 string) bool {
 }
 
 // getReferences returns the numbers of the objects that "number 0 R"
-// references in the tokens refer to.
+// references in the tokens refer to. A number that is too large for an int of
+// 32 bits is left out, as in the other ports.
 func (pdf *PDF) getReferences(tokens []string) []int {
 	numbers := make([]int, 0)
 	for i := 0; i+2 < len(tokens); i++ {
 		if tokens[i+2] == "R" && isInteger(tokens[i]) && isInteger(tokens[i+1]) {
-			if objNumber, err := strconv.Atoi(tokens[i]); err == nil {
+			if objNumber := toInteger(tokens[i]); objNumber >= 0 {
 				numbers = append(numbers, objNumber)
 			}
 			i += 2
@@ -3189,20 +3270,29 @@ func (pdf *PDF) getReferences(tokens []string) []int {
 // addObjectTree collects the object with the given number and every object it
 // refers to, directly or through other objects, like the color space of an
 // image or the resources of a form XObject. The page tree is not followed.
+// The objects are found with a list of the numbers still to visit, and not by
+// recursion, as a chain of a hundred thousand objects, each referring to the
+// next, overflowed the stack of the other ports.
 func (pdf *PDF) addObjectTree(
 	objNumber int, objects []*PDFobj, numbers map[int]bool, resources []*PDFobj) []*PDFobj {
-	if objNumber <= 0 || objNumber > len(objects) || numbers[objNumber] {
-		return resources
-	}
-	numbers[objNumber] = true
-	obj := objects[objNumber-1]
-	objType := obj.GetValue("/Type")
-	if len(obj.dict) == 0 || objType == "/Page" || objType == "/Pages" || objType == "/Catalog" {
-		return resources
-	}
-	resources = append(resources, obj)
-	for _, reference := range pdf.getReferences(obj.dict) {
-		resources = pdf.addObjectTree(reference, objects, numbers, resources)
+	stack := []int{objNumber}
+	for len(stack) > 0 {
+		number := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+		if number <= 0 || number > len(objects) || numbers[number] {
+			continue
+		}
+		numbers[number] = true
+		obj := objects[number-1]
+		objType := obj.GetValue("/Type")
+		if len(obj.dict) == 0 || objType == "/Page" || objType == "/Pages" || objType == "/Catalog" {
+			continue
+		}
+		resources = append(resources, obj)
+		references := pdf.getReferences(obj.dict)
+		for i := len(references) - 1; i >= 0; i-- {
+			stack = append(stack, references[i])
+		}
 	}
 	return resources
 }
@@ -3219,9 +3309,9 @@ func (pdf *PDF) addXObjects(
 			// Like the fonts, a name that an earlier page added is kept.
 			if !slices.Contains(pdf.importedXObjects, token1) {
 				pdf.importedXObjects = append(pdf.importedXObjects, entries[i:i+4]...)
-				if objNumber, err := strconv.Atoi(entries[i+1]); err == nil {
-					resources = pdf.addObjectTree(objNumber, objects, numbers, resources)
-				}
+				resources = pdf.addObjectTree(toInteger(entries[i+1]), objects, numbers, resources)
+			} else {
+				pdf.checkImportedName(pdf.importedXObjects, entries[i:i+4])
 			}
 			i += 4
 		} else {
@@ -3280,6 +3370,11 @@ func (pdf *PDF) AddResourceObjects(objects []*PDFobj) {
 
 func (pdf *PDF) addObjectsToPDF(objects []*PDFobj) {
 	for _, obj := range objects {
+		if len(obj.dict) == 0 && obj.stream == nil {
+			// A number that the PDF that was read has no object for stays a
+			// free entry of the cross-reference table.
+			continue
+		}
 		if obj.offset == 0 {
 			// Create new object.
 			pdf.setObjOffset(obj.number, pdf.byteCount)

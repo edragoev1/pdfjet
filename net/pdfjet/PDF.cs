@@ -1487,6 +1487,11 @@ public sealed class PDF {
         if (page.added) {
             Fail(new InvalidOperationException("The page was already added to the PDF."));
         }
+        if (pagesObjNumber != 0) {
+            // The page tree of the objects that AddObjects wrote does not list it.
+            Fail(new InvalidOperationException(
+                    "A page cannot be added to a PDF that AddObjects added the objects of an existing PDF to."));
+        }
         page.added = true;
         if (page.objNumber == 0) {
             page.objNumber = ReserveObjNumber();
@@ -2230,7 +2235,7 @@ public sealed class PDF {
         PDFobj.DecodeBudget budget = new PDFobj.DecodeBudget();   // For all the streams of this PDF together
         PDFobj trailer = null;
         try {
-            trailer = GetObjects(buf, GetStartXRef(buf), objects1, 0, budget);
+            trailer = GetObjects(buf, GetStartXRef(buf), objects1, 0, new HashSet<int>(), budget);
         } catch (PDFobj.DecodedTotalException) {
             throw;              // Not a reason to scan the PDF for its objects
         } catch (Exception) {
@@ -2243,6 +2248,14 @@ public sealed class PDF {
             trailer = GetObjectsByScanning(buf, objects1);
         }
         Decryptor decryptor = Decryptor.GetDecryptor(trailer, objects1, password);
+
+        // The object of each number, for a /Length that is an object of its
+        // own. The newest version of an object that was updated comes last
+        // and wins.
+        Dictionary<int, PDFobj> numbered = new Dictionary<int, PDFobj>();
+        foreach (PDFobj obj in objects1) {
+            numbered[obj.number] = obj;
+        }
 
         List<PDFobj> objects2 = new List<PDFobj>();
         foreach (PDFobj obj in objects1) {
@@ -2257,7 +2270,7 @@ public sealed class PDF {
                 decryptor.DecryptStrings(obj);
             }
             if (obj.dict.Contains("stream")) {
-                obj.SetStreamAndData(buf, obj.GetLength(objects1), decryptor, budget);
+                obj.SetStreamAndData(buf, obj.GetLength(numbered), decryptor, budget);
             }
 
             if (type.Equals("/ObjStm")) {
@@ -2272,12 +2285,16 @@ public sealed class PDF {
                     String num = o2.dict[i];
                     int number = ObjectStreamNumber(num);
                     int off = ObjectStreamNumber(o2.dict[i + 1]);
+                    // The offsets are added as longs, as their sum can be
+                    // more than an int holds; one past the end of the data
+                    // is the end.
                     int end = data.Length;
                     if (i <= o2.dict.Count - 4) {
-                        end = Math.Min(first + ObjectStreamNumber(o2.dict[i + 3]),
-                                data.Length);
+                        end = (int) Math.Min(
+                                (long) first + ObjectStreamNumber(o2.dict[i + 3]), data.Length);
                     }
-                    PDFobj o3 = GetObject(data, first + off, end);
+                    int start = (int) Math.Min((long) first + off, data.Length);
+                    PDFobj o3 = GetObject(data, start, end);
                     o3.SetNumber(number);
                     o3.dict.Insert(0, "obj");
                     o3.dict.Insert(0, "0");
@@ -2316,10 +2333,11 @@ public sealed class PDF {
         return ToInteger(tokens[i + 1]);
     }
 
-    // Returns the number in the header of an object stream.
+    // Returns the number in the header of an object stream, which is digits
+    // and no more than the largest int, as in the other ports.
     private int ObjectStreamNumber(String token) {
-        int number;
-        if (Int32.TryParse(token, out number) && number >= 0) {
+        int number = ToInteger(token);
+        if (number >= 0) {
             return number;
         }
         throw new Exception("The object stream of the PDF is malformed: \""
@@ -2505,15 +2523,22 @@ public sealed class PDF {
     // objects in object streams, or a cross-reference stream. Returns the
     // trailer of the section, which is the cross-reference stream object when
     // there is no table, or null when an offset in the section is not that
-    // of its object.
-    private PDFobj GetObjects(byte[] buf, int offset, List<PDFobj> objects, int depth, PDFobj.DecodeBudget budget) {
+    // of its object. A section that a /Prev leads back to, which visited
+    // holds the offset of, is a broken PDF, and is not read again: a /Prev
+    // that points at its own section read the section a thousand times.
+    private PDFobj GetObjects(
+            byte[] buf, int offset, List<PDFobj> objects, int depth,
+            HashSet<int> visited, PDFobj.DecodeBudget budget) {
+        if (!visited.Add(offset)) {
+            return null;
+        }
         PDFobj xref = GetObject(buf, offset);
         bool table = xref.dict.Count > 0 && xref.dict[0].Equals("xref");
         if (depth > 1000 || (!table && !IsObject(xref, -1))) {
             return null;
         }
         String prev = xref.GetValue("/Prev");
-        if (!prev.Equals("") && GetObjects(buf, ToInteger(prev), objects, depth + 1, budget) == null) {
+        if (!prev.Equals("") && GetObjects(buf, ToInteger(prev), objects, depth + 1, visited, budget) == null) {
             return null;
         }
         if (table) {
@@ -2629,13 +2654,22 @@ public sealed class PDF {
     // the newest version of an object comes last. Returns the last trailer,
     // or the last cross-reference stream object when there is no trailer, or
     // null when there is neither.
+    //
+    // An object ends where the next one starts at the latest, as one with no
+    // endobj was read to the end of the PDF, and the last trailer is read
+    // once when the scan is done: a PDF of objects with no endobj took
+    // seconds for every hundred kilobytes.
     private PDFobj GetObjectsByScanning(byte[] buf, List<PDFobj> objects) {
-        PDFobj trailer = null;
         PDFobj xrefStream = null;
+        int trailerOffset = -1;
+        int next = 0;   // The start of the object after the one at i
         int i = 0;
         while (i < buf.Length) {
             if (IsObjectStart(buf, i)) {
-                PDFobj obj = GetObject(buf, i);
+                if (next <= i) {
+                    next = NextObjectStart(buf, i + 1);
+                }
+                PDFobj obj = GetObject(buf, i, next);
                 if (IsObject(obj, -1)) {
                     obj.number = ToInteger(obj.dict[0]);
                     objects.Add(obj);
@@ -2650,15 +2684,28 @@ public sealed class PDF {
                     }
                 }
             } else if (StartsWith(buf, i, "trailer")) {
-                trailer = GetObject(buf, i);
+                trailerOffset = i;
             }
             i++;
         }
-        return (trailer != null) ? trailer : xrefStream;
+        return (trailerOffset != -1) ? GetObject(buf, trailerOffset) : xrefStream;
+    }
+
+    // Returns the offset of the first "number generation obj" from the
+    // offset on, or the length of the PDF when there is none.
+    private static int NextObjectStart(byte[] buf, int off) {
+        for (int i = off; i < buf.Length; i++) {
+            if (IsObjectStart(buf, i)) {
+                return i;
+            }
+        }
+        return buf.Length;
     }
 
     // Returns true when "number generation obj" starts at the offset, after
-    // white space or at the start of the PDF.
+    // white space or at the start of the PDF. An offset that is not at a
+    // number returns at once, as the white space after it was scanned at
+    // every offset of a run of white space.
     private static bool IsObjectStart(byte[] buf, int off) {
         if (off > 0 && !IsWhiteSpace(buf[off - 1])) {
             return false;
@@ -2666,6 +2713,9 @@ public sealed class PDF {
         int i = off;
         while (i < buf.Length && buf[i] >= '0' && buf[i] <= '9') {
             i++;
+        }
+        if (i == off) {
+            return false;
         }
         int j = i;
         while (j < buf.Length && IsWhiteSpace(buf[j])) {
@@ -2679,7 +2729,7 @@ public sealed class PDF {
         while (m < buf.Length && IsWhiteSpace(buf[m])) {
             m++;
         }
-        return i > off && j > i && k > j && m > k && StartsWith(buf, m, "obj");
+        return j > i && k > j && m > k && StartsWith(buf, m, "obj");
     }
 
     internal static bool StartsWith(byte[] buf, int off, String str) {
@@ -2813,13 +2863,24 @@ public sealed class PDF {
     /// Adds objects read from an existing PDF to this document. The objects
     /// keep their numbers and are written as they are, so they are added
     /// before any font, image or page of this document, and an encrypted PDF
-    /// cannot take them.
+    /// cannot take them. Their page tree is the page tree of this document,
+    /// so it can have no pages of its own, before or after them, and it
+    /// cannot be a PDF/UA or PDF/A document, as the pages were not made for
+    /// its compliance.
     /// </summary>
     public void AddObjects(List<PDFobj> objects) {
         foreach (Page page in pages) {
             if (page.mergedDict != null) {
                 Fail(new InvalidOperationException("Merge and AddObjects cannot be used on the same PDF."));
             }
+        }
+        if (compliance != Compliance.PDF_1_7) {
+            Fail(new InvalidOperationException(
+                    "The objects of an existing PDF cannot be added to a PDF/UA or PDF/A document."));
+        }
+        if (pages.Count > 0) {
+            Fail(new InvalidOperationException(
+                    "The objects of an existing PDF cannot be added to a PDF that has pages of its own."));
         }
         PDFobj pagesObject = GetPagesObject(objects);
         if (pagesObject == null) {
@@ -2902,29 +2963,37 @@ public sealed class PDF {
     }
 
     // The nodes of the page tree that were visited are skipped, as a node of a
-    // broken tree can list itself or a node above it as a kid.
+    // broken tree can list itself or a node above it as a kid. The tree is
+    // walked with a list of the kids still to visit, the last of them first,
+    // and not by recursion, as a tree of a hundred thousand nodes, one under
+    // the other, overflowed the stack and ended the process.
     private void GetPageObjects(
-            PDFobj pdfObj,
+            PDFobj root,
             List<PDFobj> objects,
             List<PDFobj> pages,
             HashSet<int> visited,
             PageTreeNodes nodes) {
-        if (!visited.Add(pdfObj.number)) {
-            return;
-        }
-        List<Int32> kids = pdfObj.GetObjectNumbers("/Kids");
-        foreach (Int32 number in kids) {
-            if (number < 1 || number > objects.Count) {
-                continue;       // A kid that the document does not have.
-            }
-            PDFobj obj = objects[number - 1];
-            if (IsPageObject(obj)) {
+        List<PDFobj> stack = new List<PDFobj>();
+        stack.Add(root);
+        for (bool first = true; stack.Count > 0; first = false) {
+            PDFobj obj = stack[stack.Count - 1];
+            stack.RemoveAt(stack.Count - 1);
+            if (!first && IsPageObject(obj)) {  // The root is a node, whatever it is.
                 AddInheritedEntries(obj, objects, nodes);
                 ResolveMediaBox(obj, objects);
                 nodes.Forget(obj);  // A page of a broken tree can be a node.
                 pages.Add(obj);
-            } else {
-                GetPageObjects(obj, objects, pages, visited, nodes);
+                continue;
+            }
+            if (!visited.Add(obj.number)) {
+                continue;
+            }
+            List<Int32> kids = obj.GetObjectNumbers("/Kids");
+            for (int i = kids.Count - 1; i >= 0; i--) {
+                int number = kids[i];
+                if (number >= 1 && number <= objects.Count) {   // A kid that the document has.
+                    stack.Add(objects[number - 1]);
+                }
             }
         }
     }
@@ -3043,6 +3112,8 @@ public sealed class PDF {
             }
             if (!importedExtGStates.Contains(entries[i])) {
                 importedExtGStates.AddRange(entries.GetRange(i, end - i));
+            } else {
+                CheckImportedName(importedExtGStates, entries.GetRange(i, end - i));
             }
             i = end;
         }
@@ -3067,6 +3138,8 @@ public sealed class PDF {
                     if (number > 0 && number <= objects.Count) {
                         fonts.Add(objects[number - 1]);
                     }
+                } else {
+                    CheckImportedName(importedFonts, entries.GetRange(i, 4));
                 }
                 i += 4;
                 continue;
@@ -3075,6 +3148,27 @@ public sealed class PDF {
             i += 1;
         }
         return fonts;
+    }
+
+    // Records the mistake when a name that an earlier page added to the
+    // resources has another value on this page, the entry: the pages of this
+    // document share one resources dictionary, where the name has the value
+    // of the first page, and the content of this page, drawn with
+    // DrawContents, would draw the resource of the first page.
+    private void CheckImportedName(List<String> imported, List<String> entry) {
+        int i = imported.IndexOf(entry[0]);
+        if (i == -1) {
+            return;
+        }
+        bool same = i + entry.Count <= imported.Count;
+        for (int j = 1; same && j < entry.Count; j++) {
+            same = imported[i + j].Equals(entry[j]);
+        }
+        if (same) {
+            return;
+        }
+        Fail(new ArgumentException("The pages of the PDF use the name " + entry[0]
+                + " for different resources, and the pages of this document share one resources dictionary."));
     }
 
     /// <summary>
@@ -3131,14 +3225,18 @@ public sealed class PDF {
 
     /// <summary>
     /// Returns the numbers of the objects that "number 0 R" references in the
-    /// tokens refer to.
+    /// tokens refer to. A number that is too large for an int is left out, as
+    /// in the other ports.
     /// </summary>
     private List<Int32> GetReferences(List<String> tokens) {
         List<Int32> numbers = new List<Int32>();
         for (int i = 0; i + 2 < tokens.Count; i++) {
             if (tokens[i + 2].Equals("R")
                     && IsInteger(tokens[i]) && IsInteger(tokens[i + 1])) {
-                numbers.Add(Int32.Parse(tokens[i]));
+                int number = ToInteger(tokens[i]);
+                if (number >= 0) {
+                    numbers.Add(number);
+                }
                 i += 2;
             }
         }
@@ -3148,22 +3246,32 @@ public sealed class PDF {
     /// <summary>
     /// Collects the object with the given number and every object it refers to,
     /// directly or through other objects, like the color space of an image or
-    /// the resources of a form XObject. The page tree is not followed.
+    /// the resources of a form XObject. The page tree is not followed. The
+    /// objects are found with a list of the numbers still to visit, and not by
+    /// recursion, as a chain of a hundred thousand objects, each referring to
+    /// the next, overflowed the stack and ended the process.
     /// </summary>
     private void AddObjectTree(
-            int number, List<PDFobj> objects, HashSet<Int32> numbers, List<PDFobj> resources) {
-        if (number <= 0 || number > objects.Count || !numbers.Add(number)) {
-            return;
-        }
-        PDFobj obj = objects[number - 1];
-        String type = obj.GetValue("/Type");
-        if (obj.dict.Count == 0
-                || type.Equals("/Page") || type.Equals("/Pages") || type.Equals("/Catalog")) {
-            return;
-        }
-        resources.Add(obj);
-        foreach (int reference in GetReferences(obj.dict)) {
-            AddObjectTree(reference, objects, numbers, resources);
+            int objNumber, List<PDFobj> objects, HashSet<Int32> numbers, List<PDFobj> resources) {
+        List<int> stack = new List<int>();
+        stack.Add(objNumber);
+        while (stack.Count > 0) {
+            int number = stack[stack.Count - 1];
+            stack.RemoveAt(stack.Count - 1);
+            if (number <= 0 || number > objects.Count || !numbers.Add(number)) {
+                continue;
+            }
+            PDFobj obj = objects[number - 1];
+            String type = obj.GetValue("/Type");
+            if (obj.dict.Count == 0
+                    || type.Equals("/Page") || type.Equals("/Pages") || type.Equals("/Catalog")) {
+                continue;
+            }
+            resources.Add(obj);
+            List<Int32> references = GetReferences(obj.dict);
+            for (int i = references.Count - 1; i >= 0; i--) {
+                stack.Add(references[i]);
+            }
         }
     }
 
@@ -3182,7 +3290,9 @@ public sealed class PDF {
                 // Like the fonts, a name that an earlier page added is kept.
                 if (!importedXObjects.Contains(token)) {
                     importedXObjects.AddRange(entries.GetRange(i, 4));
-                    AddObjectTree(Int32.Parse(entries[i + 1]), objects, numbers, resources);
+                    AddObjectTree(ToInteger(entries[i + 1]), objects, numbers, resources);
+                } else {
+                    CheckImportedName(importedXObjects, entries.GetRange(i, 4));
                 }
                 i += 4;
             } else {
@@ -3237,6 +3347,11 @@ public sealed class PDF {
 
     private void AddObjectsToPDF(List<PDFobj> objects) {
         foreach (PDFobj obj in objects) {
+            if (obj.dict.Count == 0 && obj.stream == null) {
+                // A number that the PDF that was read has no object for stays
+                // a free entry of the cross-reference table.
+                continue;
+            }
             if (obj.offset == 0) {
                 // Create new object.
                 SetObjOffset(obj.number, byteCount);

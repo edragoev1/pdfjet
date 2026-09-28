@@ -11,6 +11,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.zip.DataFormatException;
 
 /**
@@ -386,28 +387,33 @@ public class PDFobj {
     }
 
     /**
-     * Returns the dictionary value for the specified key.
+     * Returns the dictionary value for the specified key. The key is an entry
+     * of the dictionary of the object, and not of a dictionary inside it: the
+     * /Type of a /Group before the /Type of a page is not the type of the page.
      *
      * @param key the specified key.
-     * @return the value.
+     * @return the value, or "" when the object has no such key.
      */
     public String getValue(String key) {
-        for (int i = 0; i < dict.size(); i++) {
-            if (dict.get(i).equals(key)) {
-                if (i + 1 >= dict.size()) {
-                    return "";
-                }
-                String token = dict.get(i + 1);
-                if (token.equals("<<")) {
-                    return valueUpTo(i + 2, ">>", "<< ");
-                } else if (token.equals("[")) {
-                    return valueUpTo(i + 2, "]", "[ ");
-                } else {
-                    return token;
-                }
-            }
+        int open = dict.indexOf("<<");
+        if (open == -1) {
+            return "";
         }
-        return "";
+        int i = PDF.entryIndex(dict.subList(open, dict.size()), key);
+        if (i == -1) {
+            return "";
+        }
+        i += open;
+        if (i + 1 >= dict.size()) {
+            return "";
+        }
+        String token = dict.get(i + 1);
+        if (token.equals("<<")) {
+            return valueUpTo(i + 2, ">>", "<< ");
+        } else if (token.equals("[")) {
+            return valueUpTo(i + 2, "]", "[ ");
+        }
+        return token;
     }
 
     // Returns the tokens from the index up to the closing one, with the
@@ -547,12 +553,15 @@ public class PDFobj {
     }
 
     /**
-     * Returns the length of the stream, resolving an indirect reference.
+     * Returns the length of the stream, resolving an indirect reference. A
+     * length that is an object of its own is found by its number in numbered,
+     * which holds the newest version of each object: an object of a PDF that
+     * was updated is in it once, as the last one of its number.
      *
-     * @param objects the objects in the PDF.
+     * @param numbered the objects in the PDF by their number.
      * @return the length of the stream.
      */
-    int getLength(List<PDFobj> objects) throws Exception {
+    int getLength(Map<Integer, PDFobj> numbered) throws Exception {
         // The entry of the dictionary, and not a /Length inside another value
         // or that is the value of another entry, "/Height/Length", as pdf.js
         // tests it in issue19611.
@@ -574,7 +583,7 @@ public class PDFobj {
                 throw new Exception("The dictionary ends after the /Length.");
             }
             if (dict.get(i + 3).equals("R")) {
-                return getLength(objects, number);
+                return getLength(numbered, number);
             }
         }
         return number;
@@ -591,19 +600,19 @@ public class PDFobj {
     }
 
     /**
-     * Returns the length stored in the object with the specified number.
+     * Returns the length stored in the object with the specified number, or 0
+     * when the PDF has no such object.
      *
-     * @param objects the objects in the PDF.
+     * @param numbered the objects in the PDF by their number.
      * @param number the object number.
      * @return the length.
      */
-    int getLength(List<PDFobj> objects, int number) throws Exception {
-        for (PDFobj obj : objects) {
-            if (obj.number == number) {
-                return toLength(tokenAt(obj.dict, 3));
-            }
+    static int getLength(Map<Integer, PDFobj> numbered, int number) throws Exception {
+        PDFobj obj = numbered.get(number);
+        if (obj == null) {
+            return 0;
         }
-        return 0;
+        return toLength(tokenAt(obj.dict, 3));
     }
 
     /**
