@@ -386,15 +386,70 @@ class Decompressor {
         return (outStream.Length == length) ? outStream.ToArray() : Inflate(data, length);
     }
 
+    /// <summary>
+    /// Returns the first length bytes that a zlib stream decodes to, as
+    /// InflatePrefix does, and whether the stream is those bytes and nothing
+    /// more: it decodes to no more bytes, ends with the right checksum, and
+    /// has no bytes after its end.
+    /// </summary>
+    internal static byte[] InflateExact(byte[] data, int length, out bool exact) {
+        exact = false;
+        // The last bytes of the input are read one at a time, so that the
+        // input is read to its end only when the stream ends there.
+        var inStream = new EndOfInputStream(data, true);
+        using var outStream = new MemoryStream();
+        try {
+            using var zlib = new ZLibStream(inStream, CompressionMode.Decompress);
+            byte[] buffer = new byte[65536];
+            while (outStream.Length < length) {
+                int count = zlib.Read(buffer, 0, (int) Math.Min(buffer.Length, length - outStream.Length));
+                if (count <= 0) {
+                    break;
+                }
+                outStream.Write(buffer, 0, count);
+            }
+            if (outStream.Length == length) {
+                // A read of one more byte gets to the end of the stream, where
+                // zlib checks the checksum, and throws when it is wrong.
+                try {
+                    exact = zlib.Read(buffer, 0, 1) == 0 &&
+                            !inStream.ReadAtEnd && inStream.Position == inStream.Length;
+                } catch (InvalidDataException) {
+                    exact = false;
+                }
+            }
+        } catch (InvalidDataException) {
+            // Decoded again below, with the errors of a prefix.
+        }
+        return (outStream.Length == length) ? outStream.ToArray() : InflatePrefix(data, length);
+    }
+
     /// <summary>The input of Inflate, which remembers a read at its end.</summary>
     private sealed class EndOfInputStream : MemoryStream {
         internal bool ReadAtEnd { get; private set; }
 
-        internal EndOfInputStream(byte[] data) : base(data, false) {
+        // Whether the last bytes are read one at a time.
+        private readonly bool oneByteAtTheEnd;
+
+        internal EndOfInputStream(byte[] data) : this(data, false) {
+        }
+
+        internal EndOfInputStream(byte[] data, bool oneByteAtTheEnd) : base(data, false) {
+            this.oneByteAtTheEnd = oneByteAtTheEnd;
+        }
+
+        // The bytes a read of count bytes reads: in pieces that leave the last
+        // 64 bytes of the input, and then one byte at a time.
+        private int Limit(int count) {
+            if (!oneByteAtTheEnd) {
+                return count;
+            }
+            long left = Length - Position;
+            return (int) ((left <= 64) ? Math.Min(count, 1) : Math.Min(count, left - 64));
         }
 
         public override int Read(byte[] buffer, int offset, int count) {
-            int read = base.Read(buffer, offset, count);
+            int read = base.Read(buffer, offset, Limit(count));
             if (read == 0 && count > 0) {
                 ReadAtEnd = true;
             }
@@ -402,7 +457,7 @@ class Decompressor {
         }
 
         public override int Read(Span<byte> buffer) {
-            int read = base.Read(buffer);
+            int read = base.Read(buffer.Slice(0, Limit(buffer.Length)));
             if (read == 0 && buffer.Length > 0) {
                 ReadAtEnd = true;
             }

@@ -625,3 +625,152 @@ func TestPNGImageAnImageOfEverySizeFromOneToFortyPixelsIsDecodedWhole(t *testing
 		}
 	}
 }
+
+// testPalettePNG returns a PNG of the palette with the alpha of its colors.
+func testPalettePNG(width, height int32, bitDepth byte, palette, alpha, idat []byte) []byte {
+	png := testPNG(width, height, bitDepth, 3, palette, idat)
+	// The tRNS chunk goes after the signature, the IHDR and the PLTE chunks.
+	at := 8 + 25 + 12 + len(palette)
+	var buf bytes.Buffer
+	buf.Write(png[:at])
+	testPNGChunk(&buf, "tRNS", alpha)
+	buf.Write(png[at:])
+	return buf.Bytes()
+}
+
+// testPNGDictionaries returns the PDF of a page with the image of the PNG,
+// and the dictionary of the image added to the objects of a PDF that was read.
+func testPNGDictionaries(t *testing.T, png []byte) (string, string) {
+	t.Helper()
+	doc := testNewDoc()
+	NewImage(doc.pdf, bytes.NewReader(png))
+	NewPage(doc.pdf, letter.Portrait())
+	objects := make([]*PDFobj, 0)
+	NewImageForObjects(&objects, bytes.NewReader(png))
+	return string(doc.complete()), strings.Join(objects[len(objects)-1].dict, " ")
+}
+
+func TestPNGImageTheIDATDataOfAGrayscaleTruecolorOrPaletteImageIsEmbeddedAsItIs(t *testing.T) {
+	gray := compressor.Deflate([]byte{0, 0xA5, 0x80, 2, 0xFF, 0x00})
+	rgb := compressor.Deflate([]byte{1, 1, 2, 3, 4, 5, 6, 4, 1, 2, 3, 4, 5, 6})
+	rgb16 := compressor.Deflate(append(append([]byte{3}, bytes.Repeat([]byte{7}, 12)...),
+		append([]byte{2}, bytes.Repeat([]byte{9}, 12)...)...))
+	indexes := compressor.Deflate([]byte{0, 0x1B, 1, 0xE4})
+	for _, c := range []struct {
+		name  string
+		png   []byte
+		idat  []byte
+		dict  string // Of the image object of the PDF
+		dict2 string // Of the image added to the objects
+	}{
+		{"gray of 1 bit", testPNG(9, 2, 1, 0, nil, gray), gray,
+			"/ColorSpace /DeviceGray\n/BitsPerComponent 1\n" +
+				"/DecodeParms <</Predictor 15 /Colors 1 /BitsPerComponent 1 /Columns 9>>\n",
+			"/ColorSpace /DeviceGray /BitsPerComponent 1 " +
+				"/DecodeParms << /Predictor 15 /Colors 1 /BitsPerComponent 1 /Columns 9 >>"},
+		{"RGB of 8 bits", testPNG(2, 2, 8, 2, nil, rgb), rgb,
+			"/ColorSpace /DeviceRGB\n/BitsPerComponent 8\n" +
+				"/DecodeParms <</Predictor 15 /Colors 3 /BitsPerComponent 8 /Columns 2>>\n",
+			"/ColorSpace /DeviceRGB /BitsPerComponent 8 " +
+				"/DecodeParms << /Predictor 15 /Colors 3 /BitsPerComponent 8 /Columns 2 >>"},
+		{"RGB of 16 bits", testPNG(2, 2, 16, 2, nil, rgb16), rgb16,
+			"/ColorSpace /DeviceRGB\n/BitsPerComponent 16\n" +
+				"/DecodeParms <</Predictor 15 /Colors 3 /BitsPerComponent 16 /Columns 2>>\n",
+			"/ColorSpace /DeviceRGB /BitsPerComponent 16 " +
+				"/DecodeParms << /Predictor 15 /Colors 3 /BitsPerComponent 16 /Columns 2 >>"},
+		// Two colors, and the four indexes of 2 bits: the ones past the
+		// palette are black.
+		{"palette of 2 bits", testPNG(4, 2, 2, 3, []byte{10, 20, 30, 40, 50, 60}, indexes), indexes,
+			"/ColorSpace [/Indexed /DeviceRGB 3 <0a141e28323c000000000000>]\n/BitsPerComponent 2\n" +
+				"/DecodeParms <</Predictor 15 /Colors 1 /BitsPerComponent 2 /Columns 4>>\n",
+			"/ColorSpace [ /Indexed /DeviceRGB 3 <0a141e28323c000000000000> ] /BitsPerComponent 2 " +
+				"/DecodeParms << /Predictor 15 /Colors 1 /BitsPerComponent 2 /Columns 4 >>"},
+	} {
+		raw, dict := testPNGDictionaries(t, c.png)
+		if !strings.Contains(raw, c.dict+"/Length "+strconv.Itoa(len(c.idat))+"\n>>\nstream\n"+string(c.idat)) {
+			t.Errorf("%s: no %q and the IDAT data in %q", c.name, c.dict, raw)
+		}
+		if strings.Contains(raw, "/SMask") {
+			t.Errorf("%s: a soft mask", c.name)
+		}
+		if !strings.Contains(dict, c.dict2) {
+			t.Errorf("%s: the dictionary is %q", c.name, dict)
+		}
+	}
+}
+
+func TestPNGImageThePaletteImageWithAlphaHasTheSoftMaskOfItsIndexes(t *testing.T) {
+	// Two rows of 4 indexes of 2 bits, the second one filtered with Up, and
+	// the alpha of the first two colors.
+	idat := compressor.Deflate([]byte{0, 0x1B, 2, 0xC9})
+	png := testPalettePNG(4, 2, 2, []byte{10, 20, 30, 40, 50, 60}, []byte{0, 128}, idat)
+	raw, dict := testPNGDictionaries(t, png)
+	for _, want := range []string{
+		"/ColorSpace /DeviceGray\n/BitsPerComponent 8\n",
+		"/SMask ",
+		"/ColorSpace [/Indexed /DeviceRGB 3 <0a141e28323c000000000000>]\n/BitsPerComponent 2\n" +
+			"/DecodeParms <</Predictor 15 /Colors 1 /BitsPerComponent 2 /Columns 4>>\n" +
+			"/Length " + strconv.Itoa(len(idat)) + "\n>>\nstream\n" + string(idat),
+	} {
+		if !strings.Contains(raw, want) {
+			t.Errorf("no %q", want)
+		}
+	}
+	if !strings.Contains(dict, "/SMask") || !strings.Contains(dict, "/Indexed") {
+		t.Errorf("the dictionary is %q", dict)
+	}
+	// The indexes 0 1 2 3 and, with the row above added, 3 2 1 0.
+	image := newPNGImage(bytes.NewReader(png))
+	if got := testInflate(t, image.GetAlpha()); !bytes.Equal(got, []byte{0, 128, 255, 255, 255, 255, 128, 0}) {
+		t.Errorf("alpha %v", got)
+	}
+	want := []byte{10, 20, 30, 40, 50, 60, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 40, 50, 60, 10, 20, 30}
+	if got := testInflate(t, image.GetData()); !bytes.Equal(got, want) {
+		t.Errorf("samples %v", got)
+	}
+}
+
+func TestPNGImageIDATDataThatIsMoreThanTheRowsIsDecodedAndCompressedAgain(t *testing.T) {
+	rows := []byte{0, 1, 2, 3, 4, 5, 6}
+	palette := []byte{10, 20, 30, 40, 50, 60}
+	for _, c := range []struct {
+		name string
+		png  []byte
+		dict string
+	}{
+		{"data after the rows", testPNG(2, 1, 8, 2, nil, compressor.Deflate(append(rows, 9, 9, 9))),
+			"/ColorSpace /DeviceRGB\n/BitsPerComponent 8\n/Length "},
+		{"bytes after the stream", testPNG(2, 1, 8, 2, nil, append(compressor.Deflate(rows), 0)),
+			"/ColorSpace /DeviceRGB\n/BitsPerComponent 8\n/Length "},
+		{"no checksum", testPNG(2, 1, 8, 2, nil, testDropChecksum(compressor.Deflate(rows))),
+			"/ColorSpace /DeviceRGB\n/BitsPerComponent 8\n/Length "},
+		{"a palette image", testPNG(2, 1, 8, 3, palette, compressor.Deflate([]byte{0, 1, 0, 0})),
+			"/ColorSpace /DeviceRGB\n/BitsPerComponent 8\n/Length "},
+	} {
+		raw, dict := testPNGDictionaries(t, c.png)
+		if !strings.Contains(raw, c.dict) || strings.Contains(raw, "/DecodeParms") || strings.Contains(dict, "/DecodeParms") {
+			t.Errorf("%s: %q", c.name, raw)
+		}
+	}
+	png := newPNGImage(bytes.NewReader(testPNG(2, 1, 8, 2, nil, compressor.Deflate(append(rows, 9)))))
+	if !bytes.Equal(png.stream, png.GetData()) || png.decodeColors != 0 {
+		t.Error("the stream is not the samples")
+	}
+}
+
+// testDropChecksum returns the zlib stream without its Adler-32 checksum.
+func testDropChecksum(stream []byte) []byte {
+	return stream[:len(stream)-4]
+}
+
+func TestPNGImageAnUnknownFilterTypeOfARowOfIDATDataEmbeddedAsItIsIsRefused(t *testing.T) {
+	palette := []byte{10, 20, 30}
+	testWant(t, "Invalid PNG filter type 5.",
+		testPNGError(testPNG(8, 2, 1, 0, nil, compressor.Deflate([]byte{0, 0xFF, 5, 0x00}))))
+	testWant(t, "Invalid PNG filter type 7.",
+		testPNGError(testPNG(2, 2, 8, 2, nil, compressor.Deflate([]byte{1, 1, 2, 3, 4, 5, 6, 7, 1, 2, 3, 4, 5, 6}))))
+	testWant(t, "Invalid PNG filter type 255.",
+		testPNGError(testPNG(4, 1, 2, 3, palette, compressor.Deflate([]byte{255, 0}))))
+	testWant(t, "Invalid PNG filter type 5.",
+		testPNGError(testPalettePNG(4, 1, 2, palette, []byte{0}, compressor.Deflate([]byte{5, 0}))))
+}

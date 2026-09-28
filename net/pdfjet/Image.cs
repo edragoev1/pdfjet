@@ -38,6 +38,11 @@ public class Image : IDrawable {
     // The /Mask of the transparent color of a grayscale or truecolor PNG, or
     // null.
     private int[] colorKeyMask;
+    // The colors of a pixel of a PNG whose stream is its IDAT data, for the
+    // /DecodeParms that undo the PNG filters of its rows, or 0.
+    private int decodeColors;
+    // The colors of the /Indexed color space of a palette PNG, or null.
+    private byte[] palette;
     private String language = null;
     private String actualText = null;
     private String altDescription = null;
@@ -78,20 +83,12 @@ public class Image : IDrawable {
             SetPhysicalSize(jpg.GetPhysicalWidth(), jpg.GetPhysicalHeight());
         } else if (imageType == ImageType.PNG) {
             PNGImage png = new PNGImage(inputStream);
-            data = png.GetData();
             SetPixels(png.GetWidth(), png.GetHeight());
             colorKeyMask = png.GetColorKeyMask();
-            if (png.GetColorType() == 0) {
-                AddImage(pdf, data, null, imageType, "DeviceGray", png.GetBitDepth());
-            } else if (png.GetColorType() == 4) {
-                AddImage(pdf, data, png.GetAlpha(), imageType, "DeviceGray", 8);
-            } else {
-                if (png.GetBitDepth() == 16) {
-                    AddImage(pdf, data, null, imageType, "DeviceRGB", 16);
-                } else {
-                    AddImage(pdf, data, png.GetAlpha(), imageType, "DeviceRGB", 8);
-                }
-            }
+            decodeColors = png.decodeColors;
+            palette = png.palette;
+            String colorSpace = png.GetColorSpace(out int bitsPerComponent);
+            AddImage(pdf, png.stream, png.GetAlpha(), imageType, colorSpace, bitsPerComponent);
             SetPhysicalSize(png.GetPhysicalWidth(), png.GetPhysicalHeight());
         } else if (imageType == ImageType.BMP) {
             BMPImage bmp = new BMPImage(inputStream);
@@ -136,20 +133,12 @@ public class Image : IDrawable {
             SetPhysicalSize(jpg.GetPhysicalWidth(), jpg.GetPhysicalHeight());
         } else if (imageType == ImageType.PNG) {
             PNGImage png = new PNGImage(inputStream);
-            data = png.GetData();
             SetPixels(png.GetWidth(), png.GetHeight());
             colorKeyMask = png.GetColorKeyMask();
-            if (png.GetColorType() == 0) {
-                AddImageToObjects(objects, data, null, imageType, "DeviceGray", png.GetBitDepth());
-            } else if (png.GetColorType() == 4) {
-                AddImageToObjects(objects, data, png.GetAlpha(), imageType, "DeviceGray", 8);
-            } else {
-                if (png.GetBitDepth() == 16) {
-                    AddImageToObjects(objects, data, null, imageType, "DeviceRGB", 16);
-                } else {
-                    AddImageToObjects(objects, data, png.GetAlpha(), imageType, "DeviceRGB", 8);
-                }
-            }
+            decodeColors = png.decodeColors;
+            palette = png.palette;
+            String colorSpace = png.GetColorSpace(out int bitsPerComponent);
+            AddImageToObjects(objects, png.stream, png.GetAlpha(), imageType, colorSpace, bitsPerComponent);
             SetPhysicalSize(png.GetPhysicalWidth(), png.GetPhysicalHeight());
         } else if (imageType == ImageType.BMP) {
             BMPImage bmp = new BMPImage(inputStream);
@@ -565,7 +554,7 @@ public class Image : IDrawable {
             return;
         }
         if (alpha != null) {
-            AddSoftMask(pdf, alpha, "DeviceGray", bitsPerComponent);
+            AddSoftMask(pdf, alpha, "DeviceGray", 8);
         }
         pdf.NewObj();
         pdf.Append("<<\n");
@@ -596,15 +585,37 @@ public class Image : IDrawable {
         pdf.Append("/Height ");
         pdf.Append(pixelHeight);
         pdf.Append('\n');
-        pdf.Append("/ColorSpace /");
-        pdf.Append(colorSpace);
-        pdf.Append('\n');
+        if (palette != null) {
+            byte[] colors = palette;
+            if (pdf.encryption != null) {
+                colors = AES256.Encrypt(colors, pdf.encryption.GetKey());
+            }
+            pdf.Append("/ColorSpace [/Indexed /DeviceRGB ");
+            pdf.Append(palette.Length / 3 - 1);
+            pdf.Append(" <");
+            pdf.Append(Util.ToHexString(colors));
+            pdf.Append(">]\n");
+        } else {
+            pdf.Append("/ColorSpace /");
+            pdf.Append(colorSpace);
+            pdf.Append('\n');
+        }
         pdf.Append("/BitsPerComponent ");
         pdf.Append(bitsPerComponent);
         pdf.Append('\n');
         if (colorSpace.Equals("DeviceCMYK") && invertedInks) {
             // Adobe software, Photoshop among them, stores the inks inverted.
             pdf.Append("/Decode [1.0 0.0 1.0 0.0 1.0 0.0 1.0 0.0]\n");
+        }
+        if (decodeColors != 0) {
+            // The rows of a PNG, each with the filter type of its PNG filter.
+            pdf.Append("/DecodeParms <</Predictor 15 /Colors ");
+            pdf.Append(decodeColors);
+            pdf.Append(" /BitsPerComponent ");
+            pdf.Append(bitsPerComponent);
+            pdf.Append(" /Columns ");
+            pdf.Append(pixelWidth);
+            pdf.Append(">>\n");
         }
 
         byte[] buf = data;
@@ -691,7 +702,7 @@ public class Image : IDrawable {
             String colorSpace,
             int bitsPerComponent) {
         if (alpha != null) {
-            AddSoftMask(objects, alpha, "DeviceGray", bitsPerComponent);
+            AddSoftMask(objects, alpha, "DeviceGray", 8);
         }
         PDFobj obj = new PDFobj();
         obj.dict.Add("<<");
@@ -724,7 +735,16 @@ public class Image : IDrawable {
         obj.dict.Add("/Height");
         obj.dict.Add(pixelHeight.ToString());
         obj.dict.Add("/ColorSpace");
-        obj.dict.Add("/" + colorSpace);
+        if (palette != null) {
+            obj.dict.Add("[");
+            obj.dict.Add("/Indexed");
+            obj.dict.Add("/DeviceRGB");
+            obj.dict.Add((palette.Length / 3 - 1).ToString());
+            obj.dict.Add("<" + Util.ToHexString(palette) + ">");
+            obj.dict.Add("]");
+        } else {
+            obj.dict.Add("/" + colorSpace);
+        }
         obj.dict.Add("/BitsPerComponent");
         obj.dict.Add(bitsPerComponent.ToString());
         if (colorSpace.Equals("DeviceCMYK") && invertedInks) {
@@ -740,6 +760,20 @@ public class Image : IDrawable {
             obj.dict.Add("1.0");
             obj.dict.Add("0.0");
             obj.dict.Add("]");
+        }
+        if (decodeColors != 0) {
+            // The rows of a PNG, each with the filter type of its PNG filter.
+            obj.dict.Add("/DecodeParms");
+            obj.dict.Add("<<");
+            obj.dict.Add("/Predictor");
+            obj.dict.Add("15");
+            obj.dict.Add("/Colors");
+            obj.dict.Add(decodeColors.ToString());
+            obj.dict.Add("/BitsPerComponent");
+            obj.dict.Add(bitsPerComponent.ToString());
+            obj.dict.Add("/Columns");
+            obj.dict.Add(pixelWidth.ToString());
+            obj.dict.Add(">>");
         }
         obj.dict.Add("/Length");
         obj.dict.Add(data.Length.ToString());

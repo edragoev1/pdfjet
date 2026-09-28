@@ -483,4 +483,119 @@ import Testing
             #expect(try TestSupport.inflate(png.getData()).count == 3*size*size, "\(name)")
         }
     }
+
+    /// A PNG of the palette with the alpha of its colors.
+    private func palettePNG(
+            _ width: Int32, _ height: Int32, _ bitDepth: UInt8,
+            _ palette: [UInt8], _ alpha: [UInt8], _ idat: [UInt8]) -> [UInt8] {
+        let bytes = png(width, height, bitDepth, 3, palette, idat)
+        // The tRNS chunk goes after the signature, the IHDR and the PLTE chunks.
+        let at = 8 + 25 + 12 + palette.count
+        var result = Array(bytes[0..<at])
+        chunk(&result, "tRNS", alpha)
+        return result + bytes[at...]
+    }
+
+    /// The PDF of a page with the image of the PNG, and the dictionary of the
+    /// image added to the objects of a PDF that was read.
+    private func dictionaries(_ png: [UInt8]) throws -> (String, String) {
+        let memory = MemoryPDF()
+        _ = try Image(memory.pdf, InputStream(data: Data(png)))
+        _ = Page(memory.pdf, Letter.PORTRAIT)
+        try memory.pdf.complete()
+        var objects = [PDFobj]()
+        _ = try Image(&objects, InputStream(data: Data(png)))
+        return (TestSupport.latin1(memory.bytes), objects[objects.count - 1].dict.joined(separator: " "))
+    }
+
+    @Test func theIDATDataOfAGrayscaleTruecolorOrPaletteImageIsEmbeddedAsItIs() throws {
+        let gray = TestSupport.deflate([0, 0xA5, 0x80, 2, 0xFF, 0x00])
+        let rgb = TestSupport.deflate([1, 1, 2, 3, 4, 5, 6, 4, 1, 2, 3, 4, 5, 6])
+        let rgb16 = TestSupport.deflate([3] + [UInt8](repeating: 7, count: 12) + [2] + [UInt8](repeating: 9, count: 12))
+        let indexes = TestSupport.deflate([0, 0x1B, 1, 0xE4])
+        // name, PNG, IDAT data, the dictionary of the image object of the PDF
+        // and that of the image added to the objects
+        let cases: [(String, [UInt8], [UInt8], String, String)] = [
+            ("gray of 1 bit", png(9, 2, 1, 0, nil, gray), gray,
+                "/ColorSpace /DeviceGray\n/BitsPerComponent 1\n" +
+                    "/DecodeParms <</Predictor 15 /Colors 1 /BitsPerComponent 1 /Columns 9>>\n",
+                "/ColorSpace /DeviceGray /BitsPerComponent 1 " +
+                    "/DecodeParms << /Predictor 15 /Colors 1 /BitsPerComponent 1 /Columns 9 >>"),
+            ("RGB of 8 bits", png(2, 2, 8, 2, nil, rgb), rgb,
+                "/ColorSpace /DeviceRGB\n/BitsPerComponent 8\n" +
+                    "/DecodeParms <</Predictor 15 /Colors 3 /BitsPerComponent 8 /Columns 2>>\n",
+                "/ColorSpace /DeviceRGB /BitsPerComponent 8 " +
+                    "/DecodeParms << /Predictor 15 /Colors 3 /BitsPerComponent 8 /Columns 2 >>"),
+            ("RGB of 16 bits", png(2, 2, 16, 2, nil, rgb16), rgb16,
+                "/ColorSpace /DeviceRGB\n/BitsPerComponent 16\n" +
+                    "/DecodeParms <</Predictor 15 /Colors 3 /BitsPerComponent 16 /Columns 2>>\n",
+                "/ColorSpace /DeviceRGB /BitsPerComponent 16 " +
+                    "/DecodeParms << /Predictor 15 /Colors 3 /BitsPerComponent 16 /Columns 2 >>"),
+            // Two colors, and the four indexes of 2 bits: the ones past the
+            // palette are black.
+            ("palette of 2 bits", png(4, 2, 2, 3, [10, 20, 30, 40, 50, 60], indexes), indexes,
+                "/ColorSpace [/Indexed /DeviceRGB 3 <0a141e28323c000000000000>]\n/BitsPerComponent 2\n" +
+                    "/DecodeParms <</Predictor 15 /Colors 1 /BitsPerComponent 2 /Columns 4>>\n",
+                "/ColorSpace [ /Indexed /DeviceRGB 3 <0a141e28323c000000000000> ] /BitsPerComponent 2 " +
+                    "/DecodeParms << /Predictor 15 /Colors 1 /BitsPerComponent 2 /Columns 4 >>"),
+        ]
+        for (name, png, idat, want, want2) in cases {
+            let (raw, dict) = try dictionaries(png)
+            #expect(raw.contains(want + "/Length \(idat.count)\n>>\nstream\n" + TestSupport.latin1(idat)), "\(name)")
+            #expect(!raw.contains("/SMask"), "\(name)")
+            #expect(dict.contains(want2), "\(name): \(dict)")
+        }
+    }
+
+    @Test func thePaletteImageWithAlphaHasTheSoftMaskOfItsIndexes() throws {
+        // Two rows of 4 indexes of 2 bits, the second one filtered with Up,
+        // and the alpha of the first two colors.
+        let idat = TestSupport.deflate([0, 0x1B, 2, 0xC9])
+        let png = palettePNG(4, 2, 2, [10, 20, 30, 40, 50, 60], [0, 128], idat)
+        let (raw, dict) = try dictionaries(png)
+        for want in [
+                "/ColorSpace /DeviceGray\n/BitsPerComponent 8\n",
+                "/SMask ",
+                "/ColorSpace [/Indexed /DeviceRGB 3 <0a141e28323c000000000000>]\n/BitsPerComponent 2\n" +
+                    "/DecodeParms <</Predictor 15 /Colors 1 /BitsPerComponent 2 /Columns 4>>\n" +
+                    "/Length \(idat.count)\n>>\nstream\n" + TestSupport.latin1(idat)] {
+            #expect(raw.contains(want), "\(want)")
+        }
+        #expect(dict.contains("/SMask") && dict.contains("/Indexed"), "\(dict)")
+        // The indexes 0 1 2 3 and, with the row above added, 3 2 1 0.
+        let image = try PNGImage(InputStream(data: Data(png)))
+        #expect(try TestSupport.inflate(image.getAlpha()!) == [0, 128, 255, 255, 255, 255, 128, 0])
+        let want: [UInt8] = [10, 20, 30, 40, 50, 60, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 40, 50, 60, 10, 20, 30]
+        #expect(try TestSupport.inflate(image.getData()) == want)
+    }
+
+    @Test func idatDataThatIsMoreThanTheRowsIsDecodedAndCompressedAgain() throws {
+        let rows: [UInt8] = [0, 1, 2, 3, 4, 5, 6]
+        let palette: [UInt8] = [10, 20, 30, 40, 50, 60]
+        let cases: [(String, [UInt8])] = [
+            ("data after the rows", png(2, 1, 8, 2, nil, TestSupport.deflate(rows + [9, 9, 9]))),
+            ("bytes after the stream", png(2, 1, 8, 2, nil, TestSupport.deflate(rows) + [0])),
+            ("no checksum", png(2, 1, 8, 2, nil, Array(TestSupport.deflate(rows).dropLast(4)))),
+            ("a palette image", png(2, 1, 8, 3, palette, TestSupport.deflate([0, 1, 0, 0]))),
+        ]
+        for (name, png) in cases {
+            let (raw, dict) = try dictionaries(png)
+            #expect(raw.contains("/ColorSpace /DeviceRGB\n/BitsPerComponent 8\n/Length "), "\(name)")
+            #expect(!raw.contains("/DecodeParms") && !dict.contains("/DecodeParms"), "\(name)")
+        }
+        let image = try PNGImage(InputStream(data: Data(png(2, 1, 8, 2, nil, TestSupport.deflate(rows + [9])))))
+        #expect(try image.stream == image.getData() && image.decodeColors == 0)
+    }
+
+    @Test func anUnknownFilterTypeOfARowOfIDATDataEmbeddedAsItIsIsRefused() {
+        let palette: [UInt8] = [10, 20, 30]
+        #expect(decodeError(png(8, 2, 1, 0, nil, TestSupport.deflate([0, 0xFF, 5, 0x00])))
+                == "Invalid PNG filter type 5.")
+        #expect(decodeError(png(2, 2, 8, 2, nil, TestSupport.deflate([1, 1, 2, 3, 4, 5, 6, 7, 1, 2, 3, 4, 5, 6])))
+                == "Invalid PNG filter type 7.")
+        #expect(decodeError(png(4, 1, 2, 3, palette, TestSupport.deflate([255, 0])))
+                == "Invalid PNG filter type 255.")
+        #expect(decodeError(palettePNG(4, 1, 2, palette, [0], TestSupport.deflate([5, 0])))
+                == "Invalid PNG filter type 5.")
+    }
 }

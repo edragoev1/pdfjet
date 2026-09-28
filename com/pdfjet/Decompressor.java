@@ -356,6 +356,27 @@ class Decompressor {
      * that ends in the middle, before those bytes, throws.
      */
     static byte[] inflatePrefix(byte[] data, int length) throws Exception {
+        return inflateExact(data, length).data;
+    }
+
+    /** The bytes a zlib stream decodes to, and whether they are all of them. */
+    static final class Inflated {
+        final byte[] data;
+        final boolean exact;
+
+        Inflated(byte[] data, boolean exact) {
+            this.data = data;
+            this.exact = exact;
+        }
+    }
+
+    /**
+     * Returns the first length bytes that a zlib stream decodes to, as
+     * inflatePrefix does, and whether the stream is those bytes and nothing
+     * more: it decodes to no more bytes, ends with the right checksum, and has
+     * no bytes after its end.
+     */
+    static Inflated inflateExact(byte[] data, int length) throws Exception {
         // The zlib header is checked as the header of a whole stream is, and
         // the Deflate data after it is decoded raw, so that nothing after the
         // first length bytes is read, not even the checksum, which zlib checks
@@ -370,6 +391,7 @@ class Decompressor {
             throw new DataFormatException("Invalid zlib header");
         }
         ByteArrayOutputStream bos = new ByteArrayOutputStream(Math.min(data.length, length));
+        boolean exact = false;
         Inflater inflater = new Inflater(true);
         try {
             inflater.setInput(data, 2, data.length - 2);
@@ -381,9 +403,37 @@ class Decompressor {
                 }
                 bos.write(buf, 0, count);
             }
+            if (bos.size() == length) {
+                // An inflate of one more byte gets to the end of the Deflate
+                // data, after which the Adler-32 of the bytes is the rest of
+                // the stream.
+                exact = inflater.inflate(new byte[1]) == 0 &&
+                        inflater.finished() &&
+                        inflater.getRemaining() == 4 &&
+                        toInt(data, data.length - 4) == adler32(bos.toByteArray());
+            }
+        } catch (DataFormatException e) {
+            // An error after the first length bytes is ignored.
+            if (bos.size() != length) {
+                throw e;
+            }
         } finally {
             inflater.end();
         }
-        return (bos.size() == length) ? bos.toByteArray() : inflate(data, length);
+        if (bos.size() == length) {
+            return new Inflated(bos.toByteArray(), exact);
+        }
+        return new Inflated(inflate(data, length), false);
+    }
+
+    private static int toInt(byte[] buf, int off) {
+        return (buf[off] & 0xFF) << 24 | (buf[off + 1] & 0xFF) << 16 |
+                (buf[off + 2] & 0xFF) << 8 | (buf[off + 3] & 0xFF);
+    }
+
+    private static int adler32(byte[] data) {
+        Adler32 adler = new Adler32();
+        adler.update(data, 0, data.length);
+        return (int) adler.getValue();
     }
 }

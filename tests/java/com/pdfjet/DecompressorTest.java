@@ -166,6 +166,28 @@ class DecompressorTest {
     }
 
     @Test
+    void inflateExactIsAStreamOfTheBytesAndNothingMore() throws Exception {
+        byte[] data = "PDFjet PDFjet PDFjet".getBytes(StandardCharsets.US_ASCII);
+        byte[] deflated = Compressor.deflate(data);
+        byte[] wrongChecksum = deflated.clone();
+        wrongChecksum[wrongChecksum.length - 1] ^= 1;
+        Object[][] cases = {
+            {"the whole stream", deflated, data.length, true},
+            {"fewer bytes than it decodes to", deflated, data.length - 1, false},
+            {"a byte after its end", Arrays.copyOf(deflated, deflated.length + 1), data.length, false},
+            {"a wrong checksum", wrongChecksum, data.length, false},
+            {"no checksum", Arrays.copyOf(deflated, deflated.length - 4), data.length, false},
+            {"part of the checksum", Arrays.copyOf(deflated, deflated.length - 1), data.length, false},
+        };
+        for (Object[] c : cases) {
+            int length = (Integer) c[2];
+            Decompressor.Inflated inflated = Decompressor.inflateExact((byte[]) c[1], length);
+            assertArrayEquals(Arrays.copyOf(data, length), inflated.data, (String) c[0]);
+            assertEquals(c[3], inflated.exact, (String) c[0]);
+        }
+    }
+
+    @Test
     void inflatePrefixReadsNoSymbolPastTheBytesItNeeds() throws Exception {
         // A zlib stream of one block of fixed codes that is cut short: it
         // gives 80 bytes and then ends in the middle of the symbol after

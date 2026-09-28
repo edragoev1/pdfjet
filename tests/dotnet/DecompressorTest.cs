@@ -218,5 +218,36 @@ public class DecompressorTest {
     public void InflateAcceptsAnEmptyStream() {
         Assert.Empty(Decompressor.Inflate(Compressor.Deflate(new byte[0])));
     }
+
+    [Fact]
+    public void InflateExactIsAStreamOfTheBytesAndNothingMore() {
+        byte[] data = Ascii("PDFjet PDFjet PDFjet");
+        byte[] deflated = Compressor.Deflate(data);
+        byte[] wrongChecksum = (byte[]) deflated.Clone();
+        wrongChecksum[wrongChecksum.Length - 1] ^= 1;
+        object[][] cases = {
+            new object[] {"the whole stream", deflated, data.Length, true},
+            new object[] {"fewer bytes than it decodes to", deflated, data.Length - 1, false},
+            new object[] {"a byte after its end", Padded(deflated, 1), data.Length, false},
+            new object[] {"70 bytes after its end", Padded(deflated, 70), data.Length, false},
+            new object[] {"5000 bytes after its end", Padded(deflated, 5000), data.Length, false},
+            new object[] {"a wrong checksum", wrongChecksum, data.Length, false},
+            new object[] {"no checksum", deflated[..^4], data.Length, false},
+            new object[] {"part of the checksum", deflated[..^1], data.Length, false},
+        };
+        foreach (object[] c in cases) {
+            int length = (int) c[2];
+            byte[] prefix = Decompressor.InflateExact((byte[]) c[1], length, out bool exact);
+            Assert.True(data[..length].AsSpan().SequenceEqual(prefix), (string) c[0]);
+            Assert.True((bool) c[3] == exact, (string) c[0]);
+        }
+    }
+
+    // The stream with that many zero bytes after it.
+    private static byte[] Padded(byte[] stream, int count) {
+        byte[] padded = new byte[stream.Length + count];
+        Array.Copy(stream, padded, stream.Length);
+        return padded;
+    }
 }
 }

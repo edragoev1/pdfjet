@@ -48,6 +48,11 @@ final public class Image implements Drawable {
     // The /Mask of the transparent color of a grayscale or truecolor PNG, or
     // null.
     private int[] colorKeyMask;
+    // The colors of a pixel of a PNG whose stream is its IDAT data, for the
+    // /DecodeParms that undo the PNG filters of its rows, or 0.
+    private int decodeColors;
+    // The colors of the /Indexed color space of a palette PNG, or null.
+    private byte[] palette;
 
     private String language = null;
     private String actualText = null;
@@ -95,20 +100,12 @@ final public class Image implements Drawable {
             setPhysicalSize(jpg.getPhysicalWidth(), jpg.getPhysicalHeight());
         } else if (imageType == ImageType.PNG) {
             PNGImage png = new PNGImage(inputStream);
-            data = png.getData();
             setPixels(png.getWidth(), png.getHeight());
             colorKeyMask = png.getColorKeyMask();
-            if (png.getColorType() == 0) {
-                addImage(pdf, data, null, imageType, "DeviceGray", png.getBitDepth());
-            } else if (png.getColorType() == 4) {
-                addImage(pdf, data, png.getAlpha(), imageType, "DeviceGray", 8);
-            } else {
-                if (png.getBitDepth() == 16) {
-                    addImage(pdf, data, null, imageType, "DeviceRGB", 16);
-                } else {
-                    addImage(pdf, data, png.getAlpha(), imageType, "DeviceRGB", 8);
-                }
-            }
+            decodeColors = png.decodeColors;
+            palette = png.palette;
+            addImage(pdf, png.stream, png.getAlpha(), imageType,
+                    png.getColorSpace(), png.getBitsPerComponent());
             setPhysicalSize(png.getPhysicalWidth(), png.getPhysicalHeight());
         } else if (imageType == ImageType.BMP) {
             BMPImage bmp = new BMPImage(inputStream);
@@ -151,20 +148,12 @@ final public class Image implements Drawable {
             setPhysicalSize(jpg.getPhysicalWidth(), jpg.getPhysicalHeight());
         } else if (imageType == ImageType.PNG) {
             PNGImage png = new PNGImage(inputStream);
-            data = png.getData();
             setPixels(png.getWidth(), png.getHeight());
             colorKeyMask = png.getColorKeyMask();
-            if (png.getColorType() == 0) {
-                addImageToObjects(objects, data, null, imageType, "DeviceGray", png.getBitDepth());
-            } else if (png.getColorType() == 4) {
-                addImageToObjects(objects, data, png.getAlpha(), imageType, "DeviceGray", 8);
-            } else {
-                if (png.getBitDepth() == 16) {
-                    addImageToObjects(objects, data, null, imageType, "DeviceRGB", 16);
-                } else {
-                    addImageToObjects(objects, data, png.getAlpha(), imageType, "DeviceRGB", 8);
-                }
-            }
+            decodeColors = png.decodeColors;
+            palette = png.palette;
+            addImageToObjects(objects, png.stream, png.getAlpha(), imageType,
+                    png.getColorSpace(), png.getBitsPerComponent());
             setPhysicalSize(png.getPhysicalWidth(), png.getPhysicalHeight());
         } else if (imageType == ImageType.BMP) {
             BMPImage bmp = new BMPImage(inputStream);
@@ -578,7 +567,7 @@ final public class Image implements Drawable {
             int bitsPerComponent) throws Exception {
         checkPDFA(pdf, alpha, colorSpace, bitsPerComponent);
         if (alpha != null) {
-            addSoftMask(pdf, alpha, "DeviceGray", bitsPerComponent);
+            addSoftMask(pdf, alpha, "DeviceGray", 8);
         }
         pdf.newObj();
         pdf.append("<<\n");
@@ -607,15 +596,37 @@ final public class Image implements Drawable {
         pdf.append("/Height ");
         pdf.append(pixelHeight);
         pdf.append('\n');
-        pdf.append("/ColorSpace /");
-        pdf.append(colorSpace);
-        pdf.append('\n');
+        if (palette != null) {
+            byte[] colors = palette;
+            if (pdf.encryption != null) {
+                colors = AES256.encrypt(palette, pdf.encryption.getKey());
+            }
+            pdf.append("/ColorSpace [/Indexed /DeviceRGB ");
+            pdf.append(palette.length / 3 - 1);
+            pdf.append(" <");
+            pdf.append(Util.toHexString(colors));
+            pdf.append(">]\n");
+        } else {
+            pdf.append("/ColorSpace /");
+            pdf.append(colorSpace);
+            pdf.append('\n');
+        }
         pdf.append("/BitsPerComponent ");
         pdf.append(bitsPerComponent);
         pdf.append('\n');
         if (colorSpace.equals("DeviceCMYK") && invertedInks) {
             // Adobe software, Photoshop among them, stores the inks inverted.
             pdf.append("/Decode [1.0 0.0 1.0 0.0 1.0 0.0 1.0 0.0]\n");
+        }
+        if (decodeColors != 0) {
+            // The rows of a PNG, each with the filter type of its PNG filter.
+            pdf.append("/DecodeParms <</Predictor 15 /Colors ");
+            pdf.append(decodeColors);
+            pdf.append(" /BitsPerComponent ");
+            pdf.append(bitsPerComponent);
+            pdf.append(" /Columns ");
+            pdf.append(pixelWidth);
+            pdf.append(">>\n");
         }
 
         byte[] buf = data;
@@ -697,7 +708,7 @@ final public class Image implements Drawable {
             String colorSpace,
             int bitsPerComponent) {
         if (alpha != null) {
-            addSoftMask(objects, alpha, "DeviceGray", bitsPerComponent);
+            addSoftMask(objects, alpha, "DeviceGray", 8);
         }
         PDFobj obj = new PDFobj();
         obj.dict.add("<<");
@@ -730,7 +741,16 @@ final public class Image implements Drawable {
         obj.dict.add("/Height");
         obj.dict.add(String.valueOf(pixelHeight));
         obj.dict.add("/ColorSpace");
-        obj.dict.add("/" + colorSpace);
+        if (palette != null) {
+            obj.dict.add("[");
+            obj.dict.add("/Indexed");
+            obj.dict.add("/DeviceRGB");
+            obj.dict.add(String.valueOf(palette.length / 3 - 1));
+            obj.dict.add("<" + Util.toHexString(palette) + ">");
+            obj.dict.add("]");
+        } else {
+            obj.dict.add("/" + colorSpace);
+        }
         obj.dict.add("/BitsPerComponent");
         obj.dict.add(String.valueOf(bitsPerComponent));
         if (colorSpace.equals("DeviceCMYK") && invertedInks) {
@@ -746,6 +766,20 @@ final public class Image implements Drawable {
             obj.dict.add("1.0");
             obj.dict.add("0.0");
             obj.dict.add("]");
+        }
+        if (decodeColors != 0) {
+            // The rows of a PNG, each with the filter type of its PNG filter.
+            obj.dict.add("/DecodeParms");
+            obj.dict.add("<<");
+            obj.dict.add("/Predictor");
+            obj.dict.add("15");
+            obj.dict.add("/Colors");
+            obj.dict.add(String.valueOf(decodeColors));
+            obj.dict.add("/BitsPerComponent");
+            obj.dict.add(String.valueOf(bitsPerComponent));
+            obj.dict.add("/Columns");
+            obj.dict.add(String.valueOf(pixelWidth));
+            obj.dict.add(">>");
         }
         obj.dict.add("/Length");
         obj.dict.add(String.valueOf(data.length));

@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/edragoev1/pdfjet/v9/src/internal/decompressor"
+	"github.com/edragoev1/pdfjet/v9/src/internal/device"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
@@ -199,6 +200,11 @@ func fuzzComparePNG(data []byte) error {
 	if err != nil {
 		return err
 	}
+	if pdfjet.decodeColors != 0 {
+		if err := fuzzCompareStream(pdfjet, samples); err != nil {
+			return err
+		}
+	}
 	var alpha []byte
 	if pdfjet.GetAlpha() != nil {
 		if alpha, err = decompressor.Inflate(pdfjet.GetAlpha()); err != nil {
@@ -247,6 +253,38 @@ func fuzzComparePNG(data []byte) error {
 				}
 			}
 		}
+	}
+	return nil
+}
+
+// fuzzCompareStream returns an error when the IDAT data that the image object
+// embeds, read as a reader reads it, with the PNG predictor of its
+// /DecodeParms and the colors of its /Indexed color space, is not the samples
+// that PDFjet decodes.
+func fuzzCompareStream(pdfjet *pngImage, samples []byte) error {
+	inflated, err := decompressor.Inflate(pdfjet.stream)
+	if err != nil {
+		return err
+	}
+	colorSpace, bitsPerComponent := pdfjet.colorSpace()
+	rows := decompressor.ApplyPredictor(inflated, 15, pdfjet.decodeColors, bitsPerComponent, pdfjet.w)
+	if pdfjet.palette != nil {
+		if colorSpace != device.RGB {
+			return fmt.Errorf("a palette on %s", colorSpace)
+		}
+		rowBytes := (pdfjet.w*bitsPerComponent + 7) / 8
+		colors := make([]byte, 0, 3*pdfjet.w*pdfjet.h)
+		for y := 0; y < pdfjet.h; y++ {
+			for x := 0; x < pdfjet.w; x++ {
+				k := fuzzSample(rows[y*rowBytes:], x*bitsPerComponent, bitsPerComponent)
+				colors = append(colors, pdfjet.palette[3*k:3*k+3]...)
+			}
+		}
+		rows = colors
+	}
+	if !bytes.Equal(rows, samples) {
+		return fmt.Errorf("color type %d, bit depth %d: the stream is not the samples",
+			pdfjet.colorType, pdfjet.bitDepth)
 	}
 	return nil
 }

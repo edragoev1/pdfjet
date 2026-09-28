@@ -246,3 +246,29 @@ func TestDecompressorInflateAcceptsAnEmptyStream(t *testing.T) {
 		t.Errorf("inflated %v, error %v", inflated, err)
 	}
 }
+
+func TestDecompressorInflateExactIsAStreamOfTheBytesAndNothingMore(t *testing.T) {
+	data := []byte("PDFjet PDFjet PDFjet")
+	deflated := compressor.Deflate(data)
+	wrongChecksum := append([]byte(nil), deflated...)
+	wrongChecksum[len(wrongChecksum)-1] ^= 1
+	cases := []struct {
+		name   string
+		stream []byte
+		length int
+		exact  bool
+	}{
+		{"the whole stream", deflated, len(data), true},
+		{"fewer bytes than it decodes to", deflated, len(data) - 1, false},
+		{"a byte after its end", append(append([]byte(nil), deflated...), 0), len(data), false},
+		{"a wrong checksum", wrongChecksum, len(data), false},
+		{"no checksum", deflated[:len(deflated)-4], len(data), false},
+		{"part of the checksum", deflated[:len(deflated)-1], len(data), false},
+	}
+	for _, c := range cases {
+		prefix, exact, err := InflateExact(c.stream, c.length)
+		if err != nil || !bytes.Equal(prefix, data[:c.length]) || exact != c.exact {
+			t.Errorf("%s: prefix %q, exact %v, error %v", c.name, prefix, exact, err)
+		}
+	}
+}

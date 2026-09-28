@@ -32,6 +32,17 @@ internal class PNGImage {
     byte[] deflatedImageData;   // The deflated reconstructed image data
     byte[] deflatedAlphaData;   // The deflated alpha channel data
 
+    // The stream of the image object: the IDAT data as it is, whose PNG
+    // filters the /DecodeParms of the image undo, or the deflated image data.
+    internal byte[] stream;
+    // The colors of a pixel of the IDAT data that the stream is, for the
+    // /DecodeParms, or 0 when the stream is the deflated image data.
+    internal int decodeColors;
+    // The colors of the /Indexed color space of a palette image whose stream
+    // is its IDAT data, one for each index the bit depth has, the ones past
+    // the palette black; null for an image of RGB samples.
+    internal byte[] palette;
+
     private byte bitDepth = 8;
     private int colorType = 0;
 
@@ -115,10 +126,52 @@ internal class PNGImage {
             throw new Exception("The PNG image has no image data.");
         }
         // The rows of the image; data after the last row is ignored.
-        byte[] inflatedImageData = Decompressor.InflatePrefix(iDAT, (int) imageDataLength);
+        byte[] inflatedImageData = Decompressor.InflateExact(iDAT, (int) imageDataLength, out bool exact);
         if (inflatedImageData.Length < imageDataLength) {
             throw new Exception("The PNG image data is shorter than the image.");
         }
+
+        // The IDAT data that is the rows of the image and nothing more is
+        // embedded as it is, and the reader undoes the filters of the rows, as
+        // a PNG decoder does. The IDAT data of an image with alpha, whose alpha
+        // goes in a soft mask of its own, and any other IDAT data are decoded
+        // and compressed again.
+        if (exact && (colorType == 0 || colorType == 2 || colorType == 3)) {
+            EmbedIDAT(inflatedImageData);
+        } else {
+            Decode(inflatedImageData);
+            stream = deflatedImageData;
+        }
+    }
+
+    // Makes the IDAT data of a grayscale, truecolor or palette image the
+    // stream of the image object, which is faster than decoding the samples
+    // and compressing them again. The filter type of each row is checked, as
+    // decoding checks it; the alpha of a palette image with a tRNS chunk is
+    // decoded for its soft mask.
+    private void EmbedIDAT(byte[] buf) {
+        int colors = (colorType == 2) ? 3 : 1;
+        int bytesPerRow = (w * colors * bitDepth + 7) / 8;
+        for (int row = 0; row < h; row++) {
+            int filter = buf[row * (bytesPerRow + 1)];
+            if (filter > 4) {
+                throw new Exception("Invalid PNG filter type " + filter + ".");
+            }
+        }
+        stream = iDAT;
+        decodeColors = colors;
+        if (colorType == 3) {
+            palette = new byte[3 << bitDepth];
+            Array.Copy(pLTE, palette, palette.Length);
+            if (tRNS != null) {
+                byte[] indexes = PaletteIndexes(Unfilter(buf, h, bytesPerRow, 1));
+                deflatedAlphaData = Compressor.Deflate(PaletteAlpha(indexes));
+            }
+        }
+    }
+
+    // Decodes the samples of the rows of the image, and deflates them.
+    private void Decode(byte[] inflatedImageData) {
         byte[] imageData;
         if (colorType == 0) {
             // Grayscale Image
@@ -157,6 +210,24 @@ internal class PNGImage {
         }
 
         deflatedImageData = Compressor.Deflate(imageData);
+    }
+
+    // Returns the color space and the bits per component of the image object:
+    // RGB for a palette image, which is /Indexed on RGB when its stream is its
+    // IDAT data.
+    internal String GetColorSpace(out int bitsPerComponent) {
+        if (colorType == 0) {
+            bitsPerComponent = bitDepth;
+            return "DeviceGray";
+        } else if (colorType == 4) {
+            bitsPerComponent = 8;
+            return "DeviceGray";
+        } else if (colorType == 3) {
+            bitsPerComponent = (palette != null) ? bitDepth : 8;
+            return "DeviceRGB";
+        }
+        bitsPerComponent = (bitDepth == 16) ? 16 : 8;
+        return "DeviceRGB";
     }
 
     // Reads the size the image asks to be drawn at from the pHYs chunk: the
@@ -217,8 +288,14 @@ internal class PNGImage {
         return this.bitDepth;
     }
 
-    /// <summary>Returns the compressed image data.</summary>
+    /// <summary>
+    /// Returns the image data: the samples, deflated. For an image whose
+    /// stream is its IDAT data they are decoded on the first call.
+    /// </summary>
     public byte[] GetData() {
+        if (this.deflatedImageData == null) {
+            Decode(Decompressor.InflatePrefix(iDAT, (int) GetImageDataLength()));
+        }
         return this.deflatedImageData;
     }
 
@@ -504,38 +581,45 @@ internal class PNGImage {
     // the bit depth, before the indexes are looked up in the palette.
     private byte[] GetImageColorType3(byte[] buf) {
         int bytesPerLine = (this.w * this.bitDepth + 7) / 8;
-        byte[] indexes = Unfilter(buf, this.h, bytesPerLine, 1);
+        byte[] indexes = PaletteIndexes(Unfilter(buf, this.h, bytesPerLine, 1));
 
-        byte[] image = new byte[3 * (this.w * this.h)];
-        byte[] alpha = null;
-        if (tRNS != null) {
-            alpha = new byte[this.w * this.h];
-            for (int i = 0; i < alpha.Length; i++) {
-                alpha[i] = (byte) 0xff;
-            }
+        byte[] image = new byte[3 * indexes.Length];
+        for (int i = 0; i < indexes.Length; i++) {
+            Array.Copy(pLTE, 3 * indexes[i], image, 3 * i, 3);
         }
-        int mask = (1 << this.bitDepth) - 1;
-        int n = 0;
-        int j = 0;
-        for (int row = 0; row < this.h; row++) {
-            for (int col = 0; col < this.w; col++) {
-                int bit = col * this.bitDepth;
-                int b = indexes[row * bytesPerLine + bit / 8];
-                int k = (b >> (8 - this.bitDepth - bit % 8)) & mask;
-                if (tRNS != null && k < tRNS.Length) {
-                    alpha[n] = tRNS[k];
-                }
-                n++;
-                image[j++] = pLTE[3*k];
-                image[j++] = pLTE[3*k + 1];
-                image[j++] = pLTE[3*k + 2];
-            }
-        }
+
         if (tRNS != null) {
-            deflatedAlphaData = Compressor.Deflate(alpha);
+            deflatedAlphaData = Compressor.Deflate(PaletteAlpha(indexes));
         }
 
         return image;
+    }
+
+    // Returns the palette index of each pixel, a byte each, of the unfiltered
+    // rows of a palette image.
+    private byte[] PaletteIndexes(byte[] rows) {
+        int bytesPerLine = (this.w * this.bitDepth + 7) / 8;
+        byte[] indexes = new byte[this.w * this.h];
+        int mask = (1 << this.bitDepth) - 1;
+        int n = 0;
+        for (int row = 0; row < this.h; row++) {
+            for (int col = 0; col < this.w; col++) {
+                int bit = col * this.bitDepth;
+                int b = rows[row * bytesPerLine + bit / 8];
+                indexes[n++] = (byte) ((b >> (8 - this.bitDepth - bit % 8)) & mask);
+            }
+        }
+        return indexes;
+    }
+
+    // Returns the alpha of each pixel of a palette image with a tRNS chunk:
+    // the alpha of its index, or opaque for an index the chunk has none for.
+    private byte[] PaletteAlpha(byte[] indexes) {
+        byte[] alpha = new byte[indexes.Length];
+        for (int i = 0; i < indexes.Length; i++) {
+            alpha[i] = (indexes[i] < tRNS.Length) ? tRNS[indexes[i]] : (byte) 0xff;
+        }
+        return alpha;
     }
 
     // Grayscale Image with Bit Depth == 16

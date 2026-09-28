@@ -31,6 +31,17 @@ class PNGImage {
     var deflatedImageData = [UInt8]()   // The deflated image data
     var deflatedAlphaData = [UInt8]()   // The deflated alpha channel data
 
+    // The stream of the image object: the IDAT data as it is, whose PNG
+    // filters the /DecodeParms of the image undo, or the deflated image data.
+    var stream = [UInt8]()
+    // The colors of a pixel of the IDAT data that the stream is, for the
+    // /DecodeParms, or 0 when the stream is the deflated image data.
+    var decodeColors = 0
+    // The colors of the /Indexed color space of a palette image whose stream
+    // is its IDAT data, one for each index the bit depth has, the ones past
+    // the palette black; nil for an image of RGB samples.
+    var palette: [UInt8]?
+
     private var bitDepth = 8
     private var colorType = 0
 
@@ -105,11 +116,51 @@ class PNGImage {
             throw PDFjetError(message: "The PNG image has no image data.")
         }
         // The rows of the image; data after the last row is ignored.
-        let inflatedImageData = try inflatePrefix(iDAT, imageDataLength)
+        let (inflatedImageData, exact) = try inflateExact(iDAT, imageDataLength)
         if inflatedImageData.count < imageDataLength {
             throw PDFjetError(message: "The PNG image data is shorter than the image.")
         }
 
+        // The IDAT data that is the rows of the image and nothing more is
+        // embedded as it is, and the reader undoes the filters of the rows, as
+        // a PNG decoder does. The IDAT data of an image with alpha, whose alpha
+        // goes in a soft mask of its own, and any other IDAT data are decoded
+        // and compressed again.
+        if exact && (colorType == 0 || colorType == 2 || colorType == 3) {
+            try embedIDAT(inflatedImageData)
+        } else {
+            try decode(inflatedImageData)
+            self.stream = deflatedImageData
+        }
+    }
+
+    // Makes the IDAT data of a grayscale, truecolor or palette image the
+    // stream of the image object, which is faster than decoding the samples
+    // and compressing them again. The filter type of each row is checked, as
+    // decoding checks it; the alpha of a palette image with a tRNS chunk is
+    // decoded for its soft mask.
+    private func embedIDAT(_ buf: [UInt8]) throws {
+        let colors = (colorType == 2) ? 3 : 1
+        let bytesPerRow = (w * colors * bitDepth + 7) / 8
+        for row in 0..<h {
+            let filter = buf[row * (bytesPerRow + 1)]
+            if filter > 4 {
+                throw PDFjetError(message: "Invalid PNG filter type \(filter).")
+            }
+        }
+        stream = iDAT
+        decodeColors = colors
+        if colorType == 3 {
+            palette = Array(pLTE![0..<(3 << bitDepth)])
+            if tRNS != nil {
+                let indexes = paletteIndexes(try unfilter(buf, h, bytesPerRow, 1))
+                FlateEncode(&deflatedAlphaData, paletteAlpha(indexes))
+            }
+        }
+    }
+
+    // Decodes the samples of the rows of the image, and deflates them.
+    private func decode(_ inflatedImageData: [UInt8]) throws {
         let image: [UInt8]                  // The image data
         if colorType == 0 {
             // Grayscale Image
@@ -147,7 +198,24 @@ class PNGImage {
             image = try getImageColorType3(inflatedImageData)
         }
 
+        deflatedImageData = [UInt8]()
         FlateEncode(&deflatedImageData, image)
+    }
+
+    /// Returns the color space and the bits per component of the image
+    /// object: RGB for a palette image, which is /Indexed on RGB when its
+    /// stream is its IDAT data.
+    func getColorSpace() -> (String, Int) {
+        switch colorType {
+        case 0:
+            return ("DeviceGray", bitDepth)
+        case 4:
+            return ("DeviceGray", 8)
+        case 3:
+            return ("DeviceRGB", (palette != nil) ? bitDepth : 8)
+        default:
+            return ("DeviceRGB", (bitDepth == 16) ? 16 : 8)
+        }
     }
 
     // Reads the size the image asks to be drawn at from the pHYs chunk: the
@@ -207,8 +275,12 @@ class PNGImage {
         return self.bitDepth
     }
 
-    /// Returns the compressed image data.
-    func getData() -> [UInt8] {
+    /// Returns the image data: the samples, deflated. For an image whose
+    /// stream is its IDAT data they are decoded on the first call.
+    func getData() throws -> [UInt8] {
+        if deflatedImageData.isEmpty {
+            try decode(try inflatePrefix(iDAT, try getImageDataLength()))
+        }
         return self.deflatedImageData
     }
 
@@ -507,37 +579,53 @@ class PNGImage {
     // the bit depth, before the indexes are looked up in the palette.
     private func getImageColorType3(_ buf: [UInt8]) throws -> [UInt8] {
         let bytesPerLine = (self.w * self.bitDepth + 7) / 8
-        let indexes = try unfilter(buf, self.h, bytesPerLine, 1)
+        let indexes = paletteIndexes(try unfilter(buf, self.h, bytesPerLine, 1))
 
-        var image = [UInt8](repeating: 0x00, count: 3*self.w*self.h)
-        var alpha: [UInt8]?
-        if tRNS != nil {
-            alpha = [UInt8](repeating: 0xFF, count: self.w*self.h)
+        var image = [UInt8](repeating: 0x00, count: 3*indexes.count)
+        var j = 0
+        for index in indexes {
+            let k = Int(index)
+            image[j] = pLTE![3*k]
+            image[j + 1] = pLTE![3*k + 1]
+            image[j + 2] = pLTE![3*k + 2]
+            j += 3
         }
+        if tRNS != nil {
+            deflatedAlphaData = [UInt8]()
+            FlateEncode(&deflatedAlphaData, paletteAlpha(indexes))
+        }
+        return image
+    }
+
+    // Returns the palette index of each pixel, a byte each, of the unfiltered
+    // rows of a palette image.
+    private func paletteIndexes(_ rows: [UInt8]) -> [UInt8] {
+        let bytesPerLine = (self.w * self.bitDepth + 7) / 8
+        var indexes = [UInt8](repeating: 0, count: self.w*self.h)
         let mask = (1 << self.bitDepth) - 1
         var n = 0
-        var j = 0
         for row in 0..<self.h {
             for col in 0..<self.w {
                 let bit = col * self.bitDepth
-                let b = Int(indexes[row * bytesPerLine + bit / 8])
-                let k = (b >> (8 - self.bitDepth - bit % 8)) & mask
-                if tRNS != nil && k < tRNS!.count {
-                    alpha![n] = tRNS![k]
-                }
+                let b = Int(rows[row * bytesPerLine + bit / 8])
+                indexes[n] = UInt8((b >> (8 - self.bitDepth - bit % 8)) & mask)
                 n += 1
-                image[j] = pLTE![3*k]
-                j += 1
-                image[j] = pLTE![3*k + 1]
-                j += 1
-                image[j] = pLTE![3*k + 2]
-                j += 1
             }
         }
-        if tRNS != nil {
-            FlateEncode(&deflatedAlphaData, alpha!)
+        return indexes
+    }
+
+    // Returns the alpha of each pixel of a palette image with a tRNS chunk:
+    // the alpha of its index, or opaque for an index the chunk has none for.
+    private func paletteAlpha(_ indexes: [UInt8]) -> [UInt8] {
+        var alpha = [UInt8](repeating: 0xFF, count: indexes.count)
+        for i in 0..<indexes.count {
+            let k = Int(indexes[i])
+            if k < tRNS!.count {
+                alpha[i] = tRNS![k]
+            }
         }
-        return image
+        return alpha
     }
 
     // Grayscale Image with Bit Depth == 16

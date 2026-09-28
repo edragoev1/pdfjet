@@ -566,4 +566,151 @@ class PNGImageTest {
             assertEquals(3*size*size, Decompressor.inflate(png.getData()).length, name);
         }
     }
+
+    // A PNG of the palette with the alpha of its colors.
+    private static byte[] palettePng(int width, int height, int bitDepth,
+            byte[] palette, byte[] alpha, byte[] idat) {
+        byte[] png = png(width, height, bitDepth, 3, palette, idat);
+        // The tRNS chunk goes after the signature, the IHDR and the PLTE chunks.
+        int at = 8 + 25 + 12 + palette.length;
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        bos.write(png, 0, at);
+        chunk(bos, "tRNS", alpha);
+        bos.write(png, at, png.length - at);
+        return bos.toByteArray();
+    }
+
+    // The PDF of a page with the image of the PNG, and the dictionary of the
+    // image added to the objects of a PDF that was read.
+    private static String[] pngDictionaries(byte[] png) throws Exception {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        new Image(pdf, new ByteArrayInputStream(png));
+        new Page(pdf, Letter.PORTRAIT);
+        java.util.List<PDFobj> objects = new java.util.ArrayList<PDFobj>();
+        new Image(objects, new ByteArrayInputStream(png));
+        pdf.complete();
+        return new String[] {
+            TestSupport.latin1(bos.toByteArray()),
+            String.join(" ", objects.get(objects.size() - 1).dict)
+        };
+    }
+
+    private static byte[] concat(byte[]... parts) {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        for (byte[] part : parts) {
+            bos.write(part, 0, part.length);
+        }
+        return bos.toByteArray();
+    }
+
+    private static byte[] repeat(int value, int count) {
+        byte[] bytes = new byte[count];
+        java.util.Arrays.fill(bytes, (byte) value);
+        return bytes;
+    }
+
+    @Test
+    void theIdatDataOfAGrayscaleTruecolorOrPaletteImageIsEmbeddedAsItIs() throws Exception {
+        byte[] gray = Compressor.deflate(new byte[] {0, (byte) 0xA5, (byte) 0x80, 2, (byte) 0xFF, 0x00});
+        byte[] rgb = Compressor.deflate(new byte[] {1, 1, 2, 3, 4, 5, 6, 4, 1, 2, 3, 4, 5, 6});
+        byte[] rgb16 = Compressor.deflate(concat(
+                new byte[] {3}, repeat(7, 12), new byte[] {2}, repeat(9, 12)));
+        byte[] indexes = Compressor.deflate(new byte[] {0, 0x1B, 1, (byte) 0xE4});
+        Object[][] cases = {
+            {"gray of 1 bit", png(9, 2, 1, 0, null, gray), gray,
+                "/ColorSpace /DeviceGray\n/BitsPerComponent 1\n" +
+                    "/DecodeParms <</Predictor 15 /Colors 1 /BitsPerComponent 1 /Columns 9>>\n",
+                "/ColorSpace /DeviceGray /BitsPerComponent 1 " +
+                    "/DecodeParms << /Predictor 15 /Colors 1 /BitsPerComponent 1 /Columns 9 >>"},
+            {"RGB of 8 bits", png(2, 2, 8, 2, null, rgb), rgb,
+                "/ColorSpace /DeviceRGB\n/BitsPerComponent 8\n" +
+                    "/DecodeParms <</Predictor 15 /Colors 3 /BitsPerComponent 8 /Columns 2>>\n",
+                "/ColorSpace /DeviceRGB /BitsPerComponent 8 " +
+                    "/DecodeParms << /Predictor 15 /Colors 3 /BitsPerComponent 8 /Columns 2 >>"},
+            {"RGB of 16 bits", png(2, 2, 16, 2, null, rgb16), rgb16,
+                "/ColorSpace /DeviceRGB\n/BitsPerComponent 16\n" +
+                    "/DecodeParms <</Predictor 15 /Colors 3 /BitsPerComponent 16 /Columns 2>>\n",
+                "/ColorSpace /DeviceRGB /BitsPerComponent 16 " +
+                    "/DecodeParms << /Predictor 15 /Colors 3 /BitsPerComponent 16 /Columns 2 >>"},
+            // Two colors, and the four indexes of 2 bits: the ones past the
+            // palette are black.
+            {"palette of 2 bits", png(4, 2, 2, 3, new byte[] {10, 20, 30, 40, 50, 60}, indexes), indexes,
+                "/ColorSpace [/Indexed /DeviceRGB 3 <0a141e28323c000000000000>]\n/BitsPerComponent 2\n" +
+                    "/DecodeParms <</Predictor 15 /Colors 1 /BitsPerComponent 2 /Columns 4>>\n",
+                "/ColorSpace [ /Indexed /DeviceRGB 3 <0a141e28323c000000000000> ] /BitsPerComponent 2 " +
+                    "/DecodeParms << /Predictor 15 /Colors 1 /BitsPerComponent 2 /Columns 4 >>"},
+        };
+        for (Object[] c : cases) {
+            String name = (String) c[0];
+            byte[] idat = (byte[]) c[2];
+            String[] dicts = pngDictionaries((byte[]) c[1]);
+            assertTrue(dicts[0].contains(c[3] + "/Length " + idat.length + "\n>>\nstream\n" +
+                    TestSupport.latin1(idat)), name);
+            assertFalse(dicts[0].contains("/SMask"), name);
+            assertTrue(dicts[1].contains((String) c[4]), name + ": " + dicts[1]);
+        }
+    }
+
+    @Test
+    void thePaletteImageWithAlphaHasTheSoftMaskOfItsIndexes() throws Exception {
+        // Two rows of 4 indexes of 2 bits, the second one filtered with Up,
+        // and the alpha of the first two colors.
+        byte[] idat = Compressor.deflate(new byte[] {0, 0x1B, 2, (byte) 0xC9});
+        byte[] png = palettePng(4, 2, 2, new byte[] {10, 20, 30, 40, 50, 60}, new byte[] {0, (byte) 128}, idat);
+        String[] dicts = pngDictionaries(png);
+        for (String want : new String[] {
+                "/ColorSpace /DeviceGray\n/BitsPerComponent 8\n",
+                "/SMask ",
+                "/ColorSpace [/Indexed /DeviceRGB 3 <0a141e28323c000000000000>]\n/BitsPerComponent 2\n" +
+                    "/DecodeParms <</Predictor 15 /Colors 1 /BitsPerComponent 2 /Columns 4>>\n" +
+                    "/Length " + idat.length + "\n>>\nstream\n" + TestSupport.latin1(idat)}) {
+            assertTrue(dicts[0].contains(want), want);
+        }
+        assertTrue(dicts[1].contains("/SMask") && dicts[1].contains("/Indexed"), dicts[1]);
+        // The indexes 0 1 2 3 and, with the row above added, 3 2 1 0.
+        PNGImage image = new PNGImage(new ByteArrayInputStream(png));
+        assertArrayEquals(new byte[] {0, (byte) 128, (byte) 255, (byte) 255, (byte) 255, (byte) 255, (byte) 128, 0},
+                Decompressor.inflate(image.getAlpha()));
+        assertArrayEquals(new byte[] {10, 20, 30, 40, 50, 60, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 40, 50, 60, 10, 20, 30},
+                Decompressor.inflate(image.getData()));
+    }
+
+    @Test
+    void idatDataThatIsMoreThanTheRowsIsDecodedAndCompressedAgain() throws Exception {
+        byte[] rows = {0, 1, 2, 3, 4, 5, 6};
+        byte[] deflated = Compressor.deflate(rows);
+        byte[][] pngs = {
+            // Data after the rows, bytes after the stream, no checksum.
+            png(2, 1, 8, 2, null, Compressor.deflate(concat(rows, new byte[] {9, 9, 9}))),
+            png(2, 1, 8, 2, null, concat(deflated, new byte[] {0})),
+            png(2, 1, 8, 2, null, java.util.Arrays.copyOf(deflated, deflated.length - 4)),
+            // A palette image.
+            png(2, 1, 8, 3, new byte[] {10, 20, 30, 40, 50, 60}, Compressor.deflate(new byte[] {0, 1, 0, 0})),
+        };
+        for (byte[] png : pngs) {
+            String[] dicts = pngDictionaries(png);
+            assertTrue(dicts[0].contains("/ColorSpace /DeviceRGB\n/BitsPerComponent 8\n/Length "), dicts[0]);
+            assertFalse(dicts[0].contains("/DecodeParms"));
+            assertFalse(dicts[1].contains("/DecodeParms"));
+        }
+        PNGImage png = new PNGImage(new ByteArrayInputStream(
+                png(2, 1, 8, 2, null, Compressor.deflate(concat(rows, new byte[] {9})))));
+        assertArrayEquals(png.getData(), png.stream);
+        assertEquals(0, png.decodeColors);
+    }
+
+    @Test
+    void anUnknownFilterTypeOfARowOfIdatDataEmbeddedAsItIsIsRefused() {
+        byte[] palette = {10, 20, 30};
+        assertEquals("Invalid PNG filter type 5.",
+                decodeError(png(8, 2, 1, 0, null, Compressor.deflate(new byte[] {0, (byte) 0xFF, 5, 0x00}))));
+        assertEquals("Invalid PNG filter type 7.",
+                decodeError(png(2, 2, 8, 2, null, Compressor.deflate(
+                        new byte[] {1, 1, 2, 3, 4, 5, 6, 7, 1, 2, 3, 4, 5, 6}))));
+        assertEquals("Invalid PNG filter type 255.",
+                decodeError(png(4, 1, 2, 3, palette, Compressor.deflate(new byte[] {(byte) 255, 0}))));
+        assertEquals("Invalid PNG filter type 5.",
+                decodeError(palettePng(4, 1, 2, palette, new byte[] {0}, Compressor.deflate(new byte[] {5, 0}))));
+    }
 }

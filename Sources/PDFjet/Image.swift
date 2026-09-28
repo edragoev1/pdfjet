@@ -37,6 +37,11 @@ public class Image : Drawable {
     // The /Mask of the transparent color of a grayscale or truecolor PNG, or
     // nil.
     private var colorKeyMask: [Int]?
+    // The colors of a pixel of a PNG whose stream is its IDAT data, for the
+    // /DecodeParms that undo the PNG filters of its rows, or 0.
+    private var decodeColors = 0
+    // The colors of the /Indexed color space of a palette PNG, or nil.
+    private var palette: [UInt8]?
 
     private var language: String?
     private var altDescription: String?
@@ -96,17 +101,10 @@ public class Image : Drawable {
             let png = try PNGImage(stream)
             setPixels(png.getWidth(), png.getHeight())
             colorKeyMask = png.getColorKeyMask()
-            if png.getColorType() == 0 {
-                addImage(pdf, png.getData(), [UInt8](), imageType, "DeviceGray", png.getBitDepth())
-            } else if png.getColorType() == 4 {
-                addImage(pdf, png.getData(), png.getAlpha() ?? [UInt8](), imageType, "DeviceGray", 8)
-            } else {
-                if png.getBitDepth() == 16 {
-                    addImage(pdf, png.getData(), [UInt8](), imageType, "DeviceRGB", 16)
-                } else {
-                    addImage(pdf, png.getData(), png.getAlpha() ?? [UInt8](), imageType, "DeviceRGB", 8)
-                }
-            }
+            decodeColors = png.decodeColors
+            palette = png.palette
+            let (colorSpace, bitsPerComponent) = png.getColorSpace()
+            addImage(pdf, png.stream, png.getAlpha() ?? [UInt8](), imageType, colorSpace, bitsPerComponent)
             setPhysicalSize(png.getPhysicalWidth(), png.getPhysicalHeight())
         } else if imageType == ImageType.BMP {
             let bmp = try BMPImage(stream)
@@ -146,22 +144,14 @@ public class Image : Drawable {
             setPhysicalSize(jpg.getPhysicalWidth(), jpg.getPhysicalHeight())
         } else if imageType == ImageType.PNG {
             let png = try PNGImage(stream)
-            data = png.getData()
+            data = png.stream
             alpha = png.getAlpha() ?? [UInt8]()
-            var noAlpha = [UInt8]()
             setPixels(png.getWidth(), png.getHeight())
             colorKeyMask = png.getColorKeyMask()
-            if png.getColorType() == 0 {
-                addImageToObjects(&objects, &data, &noAlpha, imageType, "DeviceGray", png.getBitDepth())
-            } else if png.getColorType() == 4 {
-                addImageToObjects(&objects, &data, &alpha, imageType, "DeviceGray", 8)
-            } else {
-                if png.getBitDepth() == 16 {
-                    addImageToObjects(&objects, &data, &noAlpha, imageType, "DeviceRGB", 16)
-                } else {
-                    addImageToObjects(&objects, &data, &alpha, imageType, "DeviceRGB", 8)
-                }
-            }
+            decodeColors = png.decodeColors
+            palette = png.palette
+            let (colorSpace, bitsPerComponent) = png.getColorSpace()
+            addImageToObjects(&objects, &data, &alpha, imageType, colorSpace, bitsPerComponent)
             setPhysicalSize(png.getPhysicalWidth(), png.getPhysicalHeight())
         } else if imageType == ImageType.BMP {
             let bmp = try BMPImage(stream)
@@ -559,7 +549,7 @@ public class Image : Drawable {
             return
         }
         if alpha.count > 0 {
-            addSoftMask(pdf, alpha, "DeviceGray", bitsPerComponent)
+            addSoftMask(pdf, alpha, "DeviceGray", 8)
         }
 
         pdf.newObj()
@@ -584,15 +574,33 @@ public class Image : Drawable {
         pdf.append("/Height ")
         pdf.append(pixelHeight)
         pdf.append(Token.newline)
-        pdf.append("/ColorSpace /")
-        pdf.append(colorSpace)
-        pdf.append(Token.newline)
+        if let palette = palette {
+            pdf.append("/ColorSpace [/Indexed /DeviceRGB ")
+            pdf.append(palette.count/3 - 1)
+            pdf.append(" <")
+            pdf.append(pdf.toHex(pdf.encrypted(palette)))
+            pdf.append(">]\n")
+        } else {
+            pdf.append("/ColorSpace /")
+            pdf.append(colorSpace)
+            pdf.append(Token.newline)
+        }
         pdf.append("/BitsPerComponent ")
         pdf.append(bitsPerComponent)
         pdf.append(Token.newline)
         if colorSpace == "DeviceCMYK" && invertedInks {
             // Adobe software, Photoshop among them, stores the inks inverted.
             pdf.append("/Decode [1.0 0.0 1.0 0.0 1.0 0.0 1.0 0.0]\n")
+        }
+        if decodeColors != 0 {
+            // The rows of a PNG, each with the filter type of its PNG filter.
+            pdf.append("/DecodeParms <</Predictor 15 /Colors ")
+            pdf.append(decodeColors)
+            pdf.append(" /BitsPerComponent ")
+            pdf.append(bitsPerComponent)
+            pdf.append(" /Columns ")
+            pdf.append(pixelWidth)
+            pdf.append(">>\n")
         }
         let buf = pdf.encrypted(data)
         pdf.append("/Length ")
@@ -698,7 +706,7 @@ public class Image : Drawable {
             _ colorSpace: String,
             _ bitsPerComponent: Int) {
         if !alpha.isEmpty {
-            addSoftMask2(&objects, &alpha, "DeviceGray", bitsPerComponent)
+            addSoftMask2(&objects, &alpha, "DeviceGray", 8)
         }
 
         let obj = PDFobj()
@@ -731,7 +739,14 @@ public class Image : Drawable {
         obj.dict.append("/Height")
         obj.dict.append(String(pixelHeight))
         obj.dict.append("/ColorSpace")
-        obj.dict.append("/" + colorSpace)
+        if let palette = palette {
+            obj.dict.append(contentsOf: ["[", "/Indexed", "/DeviceRGB"])
+            obj.dict.append(String(palette.count/3 - 1))
+            obj.dict.append("<" + palette.map { String(format: "%02x", $0) }.joined() + ">")
+            obj.dict.append("]")
+        } else {
+            obj.dict.append("/" + colorSpace)
+        }
         obj.dict.append("/BitsPerComponent")
         obj.dict.append(String(bitsPerComponent))
         if colorSpace == "DeviceCMYK" && invertedInks {
@@ -747,6 +762,15 @@ public class Image : Drawable {
             obj.dict.append("1.0")
             obj.dict.append("0.0")
             obj.dict.append("]")
+        }
+        if decodeColors != 0 {
+            // The rows of a PNG, each with the filter type of its PNG filter.
+            obj.dict.append(contentsOf: ["/DecodeParms", "<<"])
+            obj.dict.append(contentsOf: ["/Predictor", "15"])
+            obj.dict.append(contentsOf: ["/Colors", String(decodeColors)])
+            obj.dict.append(contentsOf: ["/BitsPerComponent", String(bitsPerComponent)])
+            obj.dict.append(contentsOf: ["/Columns", String(pixelWidth)])
+            obj.dict.append(">>")
         }
         obj.dict.append("/Length")
         obj.dict.append(String(data.count))

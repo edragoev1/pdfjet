@@ -72,6 +72,22 @@ func inflatePrefix(_ data: [UInt8], _ length: Int) throws -> [UInt8] {
     return output
 }
 
+/// Returns the first length bytes that a zlib stream decodes to, as
+/// inflatePrefix does, and whether the stream is those bytes and nothing more:
+/// it decodes to no more bytes, ends with the right checksum, and has no bytes
+/// after its end.
+func inflateExact(_ data: [UInt8], _ length: Int) throws -> ([UInt8], Bool) {
+    // A whole stream of at most length bytes, whose checksum is checked; any
+    // other stream is decoded again as a prefix, which fails as it does.
+    var input = data
+    var output = [UInt8]()
+    if let puff = try? Puff(output: &output, input: &input, maxLength: length, prefix: false),
+            output.count == length && puff.incnt + 4 == data.count {
+        return (output, true)
+    }
+    return (try inflatePrefix(data, length), false)
+}
+
 /// Decompresses Deflate data. A Swift port of puff.c by Mark Adler.
 final class Puff {
     // Maximums for allocations and loops.

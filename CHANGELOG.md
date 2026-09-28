@@ -341,6 +341,20 @@ This is the first entry in this file; earlier releases were not tracked here.
 - The writer appends numbers, strings and hexadecimal without making a
   string for each, in all four ports; a tagged document of 200 pages is
   written 22% faster in Go, with a third of the allocations.
+- The IDAT data of a grayscale, truecolor or palette PNG is embedded as it
+  is, in all four ports, with the `/DecodeParms` of the PNG predictor, which
+  undo the filters of its rows in the reader, where it was decoded and
+  compressed again. A palette image is `/Indexed` on RGB, with the bits of
+  its indexes and a color for each of them, black past the colors of the
+  palette as before; with a tRNS chunk its alpha is still decoded for its
+  soft mask. The data is checked as before, the filter type of each row too,
+  and data that is more than the rows of the image, or has no checksum or
+  bytes after it, is decoded and compressed again, as the images with alpha
+  are. A truecolor PNG of 3000 by 4000 pixels is embedded 4.7 times faster
+  in Go and the PDF is 7.9 MB where it was 10.6 MB; a palette PNG of that
+  size 5 times faster, 3.2 MB where it was 5.2 MB. The images draw as before,
+  pixel for pixel in MuPDF and Poppler, and an `/Indexed` image passes
+  veraPDF in PDF/A-1b and PDF/A-2b.
 - What is drawn inside a figure of a tagged document, between
   `addBDC(StructElem.FIGURE, ...)` and its `addEMC`, is the figure, in all
   four ports: a drawable that tags itself, or marks itself as an artifact,

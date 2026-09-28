@@ -325,26 +325,38 @@ func RunLengthDecodeWithMaxLength(buf []byte, maxLength int) ([]byte, error) {
 // Inflate decodes a zlib stream, which must end and decode to at most
 // MaxDecodedLength bytes. Bytes after the end of the stream are ignored.
 func Inflate(buf []byte) ([]byte, error) {
-	return inflate(buf, MaxDecodedLength, false)
+	result, _, err := inflate(buf, MaxDecodedLength, false)
+	return result, err
 }
 
 // InflateWithMaxLength decodes a zlib stream, which must end and decode to at
 // most maxLength bytes.
 func InflateWithMaxLength(buf []byte, maxLength int) ([]byte, error) {
-	return inflate(buf, maxLength, false)
+	result, _, err := inflate(buf, maxLength, false)
+	return result, err
 }
 
 // InflatePrefix returns the first length bytes that a zlib stream decodes to,
 // or all of them when there are fewer, and ignores the rest of the stream. A
 // stream that ends in the middle, before those bytes, fails.
 func InflatePrefix(buf []byte, length int) ([]byte, error) {
+	result, _, err := inflate(buf, length, true)
+	return result, err
+}
+
+// InflateExact returns the first length bytes that a zlib stream decodes to,
+// as InflatePrefix does, and whether the stream is those bytes and nothing
+// more: it decodes to no more bytes, ends with the right checksum, and has no
+// bytes after its end.
+func InflateExact(buf []byte, length int) ([]byte, bool, error) {
 	return inflate(buf, length, true)
 }
 
-func inflate(buf []byte, maxLength int, prefix bool) (result []byte, err error) {
-	reader, err := zlib.NewReader(bytes.NewReader(buf))
+func inflate(buf []byte, maxLength int, prefix bool) (result []byte, exact bool, err error) {
+	input := bytes.NewReader(buf)
+	reader, err := zlib.NewReader(input)
 	if err != nil {
-		return nil, fmt.Errorf("invalid zlib data: %w", err)
+		return nil, false, fmt.Errorf("invalid zlib data: %w", err)
 	}
 	defer func() {
 		// A prefix that has its bytes ignores the rest of the stream, and so
@@ -371,19 +383,28 @@ func inflate(buf []byte, maxLength int, prefix bool) (result []byte, err error) 
 				break
 			}
 			if err != nil {
-				return nil, fmt.Errorf("decompression failed: %w", err)
+				return nil, false, fmt.Errorf("decompression failed: %w", err)
 			}
 		}
-		return inflated.Bytes(), nil
+		if inflated.Len() == maxLength {
+			// A read of one more byte gets to the end of the stream, where
+			// the reader checks the checksum. The Deflate decoder reads a
+			// bytes.Reader a byte at a time, so the bytes after the end of
+			// the stream are left in it.
+			var next [1]byte
+			n, err := reader.Read(next[:])
+			exact = n == 0 && err == io.EOF && input.Len() == 0
+		}
+		return inflated.Bytes(), exact, nil
 	}
 	// One byte more than the limit tells that the stream decodes to more.
 	n, err := io.Copy(&inflated, io.LimitReader(reader, int64(maxLength)+1))
 	if err != nil {
-		return nil, fmt.Errorf("decompression failed: %w", err)
+		return nil, false, fmt.Errorf("decompression failed: %w", err)
 	}
 	if n > int64(maxLength) {
-		return nil, errTooLong("Flate", maxLength)
+		return nil, false, errTooLong("Flate", maxLength)
 	}
 
-	return inflated.Bytes(), nil
+	return inflated.Bytes(), false, nil
 }

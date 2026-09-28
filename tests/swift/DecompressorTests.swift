@@ -122,6 +122,26 @@ import Testing
         #expect(throws: (any Error).self) { _ = try inflatePrefix(deflated, 100) }
     }
 
+    @Test func inflateExactIsAStreamOfTheBytesAndNothingMore() throws {
+        let data = Array("PDFjet PDFjet PDFjet".utf8)
+        let deflated = TestSupport.deflate(data)
+        var wrongChecksum = deflated
+        wrongChecksum[wrongChecksum.count - 1] ^= 1
+        let cases: [(String, [UInt8], Int, Bool)] = [
+            ("the whole stream", deflated, data.count, true),
+            ("fewer bytes than it decodes to", deflated, data.count - 1, false),
+            ("a byte after its end", deflated + [0], data.count, false),
+            ("a wrong checksum", wrongChecksum, data.count, false),
+            ("no checksum", Array(deflated.dropLast(4)), data.count, false),
+            ("part of the checksum", Array(deflated.dropLast(1)), data.count, false),
+        ]
+        for (name, stream, length, exact) in cases {
+            let (prefix, isExact) = try inflateExact(stream, length)
+            #expect(prefix == Array(data.prefix(length)), "\(name)")
+            #expect(isExact == exact, "\(name)")
+        }
+    }
+
     @Test func theDecodedLengthLimitIs256MiB() {
         #expect(MAX_DECODED_LENGTH == 256 * 1024 * 1024)
     }

@@ -547,5 +547,146 @@ public class PNGImageTest {
             Assert.Equal(3*size*size, Decompressor.Inflate(png.GetData()).Length);
         }
     }
+
+    // A PNG of the palette with the alpha of its colors.
+    private static byte[] PalettePng(int width, int height, int bitDepth, byte[] palette, byte[] alpha, byte[] idat) {
+        byte[] png = Png(width, height, bitDepth, 3, palette, idat);
+        // The tRNS chunk goes after the signature, the IHDR and the PLTE chunks.
+        int at = 8 + 25 + 12 + palette.Length;
+        MemoryStream ms = new MemoryStream();
+        ms.Write(png, 0, at);
+        WriteChunk(ms, "tRNS", alpha);
+        ms.Write(png, at, png.Length - at);
+        return ms.ToArray();
+    }
+
+    // The PDF of a page with the image of the PNG, and the dictionary of the
+    // image added to the objects of a PDF that was read.
+    private static string[] Dictionaries(byte[] png) {
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream);
+        new Image(pdf, new MemoryStream(png));
+        new Page(pdf, Letter.PORTRAIT);
+        pdf.Complete();
+        System.Collections.Generic.List<PDFobj> objects = new System.Collections.Generic.List<PDFobj>();
+        new Image(objects, new MemoryStream(png));
+        return new string[] {
+            TestSupport.Latin1(stream.ToArray()), string.Join(" ", objects[objects.Count - 1].dict)};
+    }
+
+    private static byte[] Concat(params byte[][] parts) {
+        MemoryStream ms = new MemoryStream();
+        foreach (byte[] part in parts) {
+            ms.Write(part);
+        }
+        return ms.ToArray();
+    }
+
+    private static byte[] Repeat(byte value, int count) {
+        byte[] bytes = new byte[count];
+        Array.Fill(bytes, value);
+        return bytes;
+    }
+
+    [Fact]
+    public void TheIDATDataOfAGrayscaleTruecolorOrPaletteImageIsEmbeddedAsItIs() {
+        byte[] gray = Compressor.Deflate(new byte[] {0, 0xA5, 0x80, 2, 0xFF, 0x00});
+        byte[] rgb = Compressor.Deflate(new byte[] {1, 1, 2, 3, 4, 5, 6, 4, 1, 2, 3, 4, 5, 6});
+        byte[] rgb16 = Compressor.Deflate(Concat(
+                new byte[] {3}, Repeat(7, 12), new byte[] {2}, Repeat(9, 12)));
+        byte[] indexes = Compressor.Deflate(new byte[] {0, 0x1B, 1, 0xE4});
+        object[][] cases = {
+            // name, PNG, IDAT data, the dictionary of the image object of the
+            // PDF, and of the image added to the objects
+            new object[] {"gray of 1 bit", Png(9, 2, 1, 0, null, gray), gray,
+                "/ColorSpace /DeviceGray\n/BitsPerComponent 1\n" +
+                    "/DecodeParms <</Predictor 15 /Colors 1 /BitsPerComponent 1 /Columns 9>>\n",
+                "/ColorSpace /DeviceGray /BitsPerComponent 1 " +
+                    "/DecodeParms << /Predictor 15 /Colors 1 /BitsPerComponent 1 /Columns 9 >>"},
+            new object[] {"RGB of 8 bits", Png(2, 2, 8, 2, null, rgb), rgb,
+                "/ColorSpace /DeviceRGB\n/BitsPerComponent 8\n" +
+                    "/DecodeParms <</Predictor 15 /Colors 3 /BitsPerComponent 8 /Columns 2>>\n",
+                "/ColorSpace /DeviceRGB /BitsPerComponent 8 " +
+                    "/DecodeParms << /Predictor 15 /Colors 3 /BitsPerComponent 8 /Columns 2 >>"},
+            new object[] {"RGB of 16 bits", Png(2, 2, 16, 2, null, rgb16), rgb16,
+                "/ColorSpace /DeviceRGB\n/BitsPerComponent 16\n" +
+                    "/DecodeParms <</Predictor 15 /Colors 3 /BitsPerComponent 16 /Columns 2>>\n",
+                "/ColorSpace /DeviceRGB /BitsPerComponent 16 " +
+                    "/DecodeParms << /Predictor 15 /Colors 3 /BitsPerComponent 16 /Columns 2 >>"},
+            // Two colors, and the four indexes of 2 bits: the ones past the
+            // palette are black.
+            new object[] {"palette of 2 bits", Png(4, 2, 2, 3, new byte[] {10, 20, 30, 40, 50, 60}, indexes), indexes,
+                "/ColorSpace [/Indexed /DeviceRGB 3 <0a141e28323c000000000000>]\n/BitsPerComponent 2\n" +
+                    "/DecodeParms <</Predictor 15 /Colors 1 /BitsPerComponent 2 /Columns 4>>\n",
+                "/ColorSpace [ /Indexed /DeviceRGB 3 <0a141e28323c000000000000> ] /BitsPerComponent 2 " +
+                    "/DecodeParms << /Predictor 15 /Colors 1 /BitsPerComponent 2 /Columns 4 >>"},
+        };
+        foreach (object[] c in cases) {
+            byte[] idat = (byte[]) c[2];
+            string[] dictionaries = Dictionaries((byte[]) c[1]);
+            Assert.Contains((string) c[3] + "/Length " + idat.Length + "\n>>\nstream\n" + TestSupport.Latin1(idat),
+                    dictionaries[0]);
+            Assert.DoesNotContain("/SMask", dictionaries[0]);
+            Assert.Contains((string) c[4], dictionaries[1]);
+        }
+    }
+
+    [Fact]
+    public void ThePaletteImageWithAlphaHasTheSoftMaskOfItsIndexes() {
+        // Two rows of 4 indexes of 2 bits, the second one filtered with Up,
+        // and the alpha of the first two colors.
+        byte[] idat = Compressor.Deflate(new byte[] {0, 0x1B, 2, 0xC9});
+        byte[] png = PalettePng(4, 2, 2, new byte[] {10, 20, 30, 40, 50, 60}, new byte[] {0, 128}, idat);
+        string[] dictionaries = Dictionaries(png);
+        Assert.Contains("/ColorSpace /DeviceGray\n/BitsPerComponent 8\n", dictionaries[0]);
+        Assert.Contains("/SMask ", dictionaries[0]);
+        Assert.Contains("/ColorSpace [/Indexed /DeviceRGB 3 <0a141e28323c000000000000>]\n/BitsPerComponent 2\n" +
+                "/DecodeParms <</Predictor 15 /Colors 1 /BitsPerComponent 2 /Columns 4>>\n" +
+                "/Length " + idat.Length + "\n>>\nstream\n" + TestSupport.Latin1(idat), dictionaries[0]);
+        Assert.Contains("/SMask", dictionaries[1]);
+        Assert.Contains("/Indexed", dictionaries[1]);
+        // The indexes 0 1 2 3 and, with the row above added, 3 2 1 0.
+        PNGImage image = new PNGImage(new MemoryStream(png));
+        Assert.Equal(new byte[] {0, 128, 255, 255, 255, 255, 128, 0}, Decompressor.Inflate(image.GetAlpha()));
+        Assert.Equal(new byte[] {10, 20, 30, 40, 50, 60, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 40, 50, 60, 10, 20, 30},
+                Decompressor.Inflate(image.GetData()));
+    }
+
+    [Fact]
+    public void IDATDataThatIsMoreThanTheRowsIsDecodedAndCompressedAgain() {
+        byte[] rows = {0, 1, 2, 3, 4, 5, 6};
+        byte[] palette = {10, 20, 30, 40, 50, 60};
+        byte[] deflated = Compressor.Deflate(rows);
+        byte[][] pngs = {
+            // Data after the rows, bytes after the stream, no checksum, and
+            // a palette image with data after its rows.
+            Png(2, 1, 8, 2, null, Compressor.Deflate(Concat(rows, new byte[] {9, 9, 9}))),
+            Png(2, 1, 8, 2, null, Concat(deflated, new byte[] {0})),
+            Png(2, 1, 8, 2, null, deflated[..^4]),
+            Png(2, 1, 8, 3, palette, Compressor.Deflate(new byte[] {0, 1, 0, 0})),
+        };
+        foreach (byte[] png in pngs) {
+            string[] dictionaries = Dictionaries(png);
+            Assert.Contains("/ColorSpace /DeviceRGB\n/BitsPerComponent 8\n/Length ", dictionaries[0]);
+            Assert.DoesNotContain("/DecodeParms", dictionaries[0]);
+            Assert.DoesNotContain("/DecodeParms", dictionaries[1]);
+        }
+        PNGImage image = new PNGImage(new MemoryStream(Png(2, 1, 8, 2, null, Compressor.Deflate(Concat(rows, new byte[] {9})))));
+        Assert.Equal(image.GetData(), image.stream);
+        Assert.Equal(0, image.decodeColors);
+    }
+
+    [Fact]
+    public void AnUnknownFilterTypeOfARowOfIDATDataEmbeddedAsItIsIsRefused() {
+        byte[] palette = {10, 20, 30};
+        Assert.Equal("Invalid PNG filter type 5.",
+                DecodeError(Png(8, 2, 1, 0, null, Compressor.Deflate(new byte[] {0, 0xFF, 5, 0x00}))));
+        Assert.Equal("Invalid PNG filter type 7.",
+                DecodeError(Png(2, 2, 8, 2, null, Compressor.Deflate(new byte[] {1, 1, 2, 3, 4, 5, 6, 7, 1, 2, 3, 4, 5, 6}))));
+        Assert.Equal("Invalid PNG filter type 255.",
+                DecodeError(Png(4, 1, 2, 3, palette, Compressor.Deflate(new byte[] {255, 0}))));
+        Assert.Equal("Invalid PNG filter type 5.",
+                DecodeError(PalettePng(4, 1, 2, palette, new byte[] {0}, Compressor.Deflate(new byte[] {5, 0}))));
+    }
 }
 }

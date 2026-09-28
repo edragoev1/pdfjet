@@ -14,6 +14,7 @@ import (
 
 	"github.com/edragoev1/pdfjet/v9/src/internal/compressor"
 	"github.com/edragoev1/pdfjet/v9/src/internal/decompressor"
+	"github.com/edragoev1/pdfjet/v9/src/internal/device"
 	"github.com/edragoev1/pdfjet/v9/src/internal/fastfloat"
 )
 
@@ -37,6 +38,17 @@ type pngImage struct {
 
 	deflatedImageData []byte // The deflated image data
 	deflatedAlphaData []byte // The deflated alpha channel data
+
+	// The stream of the image object: the IDAT data as it is, whose PNG
+	// filters the /DecodeParms of the image undo, or the deflated image data.
+	stream []byte
+	// The colors of a pixel of the IDAT data that the stream is, for the
+	// /DecodeParms, or 0 when the stream is the deflated image data.
+	decodeColors int
+	// The colors of the /Indexed color space of a palette image whose stream
+	// is its IDAT data, one for each index the bit depth has, the ones past
+	// the palette black; nil for an image of RGB samples.
+	palette []byte
 
 	bitDepth  int
 	colorType int
@@ -142,7 +154,7 @@ func newPNGImage(reader io.Reader) *pngImage {
 		panic("The PNG image has no image data.")
 	}
 	// The rows of the image; data after the last row is ignored.
-	inflatedIDAT, err := decompressor.InflatePrefix(image.iDAT, imageDataLength)
+	inflatedIDAT, exact, err := decompressor.InflateExact(image.iDAT, imageDataLength)
 	if err != nil {
 		panic(err)
 	}
@@ -150,6 +162,50 @@ func newPNGImage(reader io.Reader) *pngImage {
 		panic("The PNG image data is shorter than the image.")
 	}
 
+	// The IDAT data that is the rows of the image and nothing more is embedded
+	// as it is, and the reader undoes the filters of the rows, as a PNG
+	// decoder does. The IDAT data of an image with alpha, whose alpha goes in
+	// a soft mask of its own, and any other IDAT data are decoded and
+	// compressed again.
+	if exact && (image.colorType == 0 || image.colorType == 2 || image.colorType == 3) {
+		image.embedIDAT(inflatedIDAT)
+	} else {
+		image.decode(inflatedIDAT)
+		image.stream = image.deflatedImageData
+	}
+
+	return image
+}
+
+// embedIDAT makes the IDAT data of a grayscale, truecolor or palette image
+// the stream of the image object, which is faster than decoding the samples
+// and compressing them again. The filter type of each row is checked, as
+// decoding checks it; the alpha of a palette image with a tRNS chunk is
+// decoded for its soft mask.
+func (image *pngImage) embedIDAT(buf []byte) {
+	colors := 1
+	if image.colorType == 2 {
+		colors = 3
+	}
+	bytesPerRow := (image.w*colors*image.bitDepth + 7) / 8
+	for row := 0; row < image.h; row++ {
+		if filter := buf[row*(bytesPerRow+1)]; filter > 4 {
+			panic(fmt.Sprintf("Invalid PNG filter type %d.", filter))
+		}
+	}
+	image.stream = image.iDAT
+	image.decodeColors = colors
+	if image.colorType == 3 {
+		image.palette = image.pLTE[:3<<image.bitDepth]
+		if image.tRNS != nil {
+			indexes := image.paletteIndexes(unfilter(buf, image.h, bytesPerRow, 1))
+			image.deflatedAlphaData = compressor.Deflate(image.paletteAlpha(indexes))
+		}
+	}
+}
+
+// decode decodes the samples of the rows of the image, and deflates them.
+func (image *pngImage) decode(inflatedIDAT []byte) {
 	var imageData []byte
 	switch image.colorType {
 	case 0:
@@ -191,8 +247,27 @@ func newPNGImage(reader io.Reader) *pngImage {
 
 	// Compress the reconstructed image data.
 	image.deflatedImageData = compressor.Deflate(imageData)
+}
 
-	return image
+// colorSpace returns the color space and the bits per component of the image
+// object: RGB for a palette image, which is /Indexed on RGB when its stream is
+// its IDAT data.
+func (image *pngImage) colorSpace() (string, int) {
+	switch image.colorType {
+	case 0:
+		return device.Gray, image.bitDepth
+	case 4:
+		return device.Gray, 8
+	case 3:
+		if image.palette != nil {
+			return device.RGB, image.bitDepth
+		}
+		return device.RGB, 8
+	}
+	if image.bitDepth == 16 {
+		return device.RGB, 16
+	}
+	return device.RGB, 8
 }
 
 // GetWidth returns the width of the image.
@@ -215,8 +290,16 @@ func (image *pngImage) GetBitDepth() int {
 	return image.bitDepth
 }
 
-// GetData returns the image data.
+// GetData returns the image data: the samples, deflated. For an image whose
+// stream is its IDAT data they are decoded on the first call.
 func (image *pngImage) GetData() []byte {
+	if image.deflatedImageData == nil {
+		inflatedIDAT, err := decompressor.InflatePrefix(image.iDAT, image.getImageDataLength())
+		if err != nil {
+			panic(err)
+		}
+		image.decode(inflatedIDAT)
+	}
 	return image.deflatedImageData
 }
 
@@ -502,42 +585,50 @@ func (image *pngImage) getImageColorType6BitDepth8(buf []byte) []byte {
 // the bit depth, before the indexes are looked up in the palette.
 func (image *pngImage) getImageColorType3(buf []byte) []byte {
 	bytesPerLine := (image.w*image.bitDepth + 7) / 8
-	indexes := unfilter(buf, image.h, bytesPerLine, 1)
+	indexes := image.paletteIndexes(unfilter(buf, image.h, bytesPerLine, 1))
 
-	image2 := make([]byte, 3*(image.w*image.h))
-	var alpha []byte
-	if image.tRNS != nil {
-		alpha = make([]byte, image.w*image.h)
-		for i := 0; i < len(alpha); i++ {
-			alpha[i] = 0xff
-		}
-	}
-	mask := (1 << image.bitDepth) - 1
-	n := 0
-	j := 0
-	for row := 0; row < image.h; row++ {
-		for col := 0; col < image.w; col++ {
-			bit := col * image.bitDepth
-			b := int(indexes[row*bytesPerLine+bit/8])
-			k := (b >> (8 - image.bitDepth - bit%8)) & mask
-			if image.tRNS != nil && k < len(image.tRNS) {
-				alpha[n] = image.tRNS[k]
-			}
-			n++
-			image2[j] = image.pLTE[3*k]
-			j++
-			image2[j] = image.pLTE[3*k+1]
-			j++
-			image2[j] = image.pLTE[3*k+2]
-			j++
-		}
+	image2 := make([]byte, 3*len(indexes))
+	for i, k := range indexes {
+		copy(image2[3*i:3*i+3], image.pLTE[3*int(k):3*int(k)+3])
 	}
 
 	if image.tRNS != nil {
-		image.deflatedAlphaData = compressor.Deflate(alpha)
+		image.deflatedAlphaData = compressor.Deflate(image.paletteAlpha(indexes))
 	}
 
 	return image2
+}
+
+// paletteIndexes returns the palette index of each pixel, a byte each, of the
+// unfiltered rows of a palette image.
+func (image *pngImage) paletteIndexes(rows []byte) []byte {
+	bytesPerLine := (image.w*image.bitDepth + 7) / 8
+	indexes := make([]byte, image.w*image.h)
+	mask := (1 << image.bitDepth) - 1
+	n := 0
+	for row := 0; row < image.h; row++ {
+		for col := 0; col < image.w; col++ {
+			bit := col * image.bitDepth
+			b := int(rows[row*bytesPerLine+bit/8])
+			indexes[n] = byte((b >> (8 - image.bitDepth - bit%8)) & mask)
+			n++
+		}
+	}
+	return indexes
+}
+
+// paletteAlpha returns the alpha of each pixel of a palette image with a tRNS
+// chunk: the alpha of its index, or opaque for an index the chunk has none for.
+func (image *pngImage) paletteAlpha(indexes []byte) []byte {
+	alpha := make([]byte, len(indexes))
+	for i, k := range indexes {
+		if int(k) < len(image.tRNS) {
+			alpha[i] = image.tRNS[k]
+		} else {
+			alpha[i] = 0xff
+		}
+	}
+	return alpha
 }
 
 // Grayscale Image with Bit Depth == 16

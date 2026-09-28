@@ -8,6 +8,7 @@ package pdfjet
 import (
 	"bufio"
 	"bytes"
+	"encoding/hex"
 	"io"
 	"math"
 	"os"
@@ -43,6 +44,10 @@ type Image struct {
 	flipUpsideDown bool
 	invertedInks   bool  // A CMYK JPEG that Adobe software wrote, with its inks inverted
 	colorKeyMask   []int // The /Mask of the transparent color of a grayscale or truecolor PNG
+	// The colors of a pixel of a PNG whose stream is its IDAT data, for the
+	// /DecodeParms that undo the PNG filters of its rows, or 0.
+	decodeColors   int
+	palette        []byte // The colors of the /Indexed color space of a palette PNG, or nil
 	language       string
 	altDescription string
 	actualText     string
@@ -93,20 +98,12 @@ func NewImage(pdf *PDF, reader io.Reader) *Image {
 		image.setPhysicalSize(jpg.GetPhysicalWidth(), jpg.GetPhysicalHeight())
 	case imagetype.PNG:
 		png := newPNGImage(reader)
-		data := png.GetData()
 		image.setPixels(png.w, png.h)
 		image.colorKeyMask = png.GetColorKeyMask()
-		if png.GetColorType() == 0 {
-			image.addImageToPDF(pdf, data, nil, imageType, device.Gray, png.GetBitDepth())
-		} else if png.GetColorType() == 4 {
-			image.addImageToPDF(pdf, data, png.GetAlpha(), imageType, device.Gray, 8)
-		} else {
-			bitDepth := 8
-			if png.GetBitDepth() == 16 {
-				bitDepth = 16
-			}
-			image.addImageToPDF(pdf, data, png.GetAlpha(), imageType, device.RGB, bitDepth)
-		}
+		image.decodeColors = png.decodeColors
+		image.palette = png.palette
+		colorSpace, bitsPerComponent := png.colorSpace()
+		image.addImageToPDF(pdf, png.stream, png.GetAlpha(), imageType, colorSpace, bitsPerComponent)
 		image.setPhysicalSize(png.physicalWidth, png.physicalHeight)
 	case imagetype.BMP:
 		bmp := newBMPImage(reader)
@@ -147,20 +144,12 @@ func NewImageForObjects(objects *[]*PDFobj, reader io.Reader) *Image {
 		image.setPhysicalSize(jpg.GetPhysicalWidth(), jpg.GetPhysicalHeight())
 	case imagetype.PNG:
 		png := newPNGImage(reader)
-		data := png.GetData()
 		image.setPixels(png.w, png.h)
 		image.colorKeyMask = png.GetColorKeyMask()
-		if png.GetColorType() == 0 {
-			image.addImageToObjects(objects, data, nil, imageType, device.Gray, png.GetBitDepth())
-		} else if png.GetColorType() == 4 {
-			image.addImageToObjects(objects, data, png.GetAlpha(), imageType, device.Gray, 8)
-		} else {
-			bitDepth := 8
-			if png.GetBitDepth() == 16 {
-				bitDepth = 16
-			}
-			image.addImageToObjects(objects, data, png.GetAlpha(), imageType, device.RGB, bitDepth)
-		}
+		image.decodeColors = png.decodeColors
+		image.palette = png.palette
+		colorSpace, bitsPerComponent := png.colorSpace()
+		image.addImageToObjects(objects, png.stream, png.GetAlpha(), imageType, colorSpace, bitsPerComponent)
 		image.setPhysicalSize(png.physicalWidth, png.physicalHeight)
 	case imagetype.BMP:
 		bmp := newBMPImage(reader)
@@ -534,7 +523,7 @@ func (image *Image) addImageToPDF(
 		return
 	}
 	if alpha != nil {
-		image.addSoftMask(pdf, alpha, device.Gray, bitsPerComponent)
+		image.addSoftMask(pdf, alpha, device.Gray, 8)
 	}
 	pdf.newObj()
 	pdf.appendString("<<\n")
@@ -566,15 +555,37 @@ func (image *Image) addImageToPDF(
 	pdf.appendString("/Height ")
 	pdf.appendInteger(image.pixelHeight)
 	pdf.appendString("\n")
-	pdf.appendString("/ColorSpace /")
-	pdf.appendString(colorSpace)
-	pdf.appendString("\n")
+	if image.palette != nil {
+		palette := image.palette
+		if pdf.encryption != nil {
+			palette = pdf.encryption.encrypt(palette)
+		}
+		pdf.appendString("/ColorSpace [/Indexed /DeviceRGB ")
+		pdf.appendInteger(len(image.palette)/3 - 1)
+		pdf.appendString(" <")
+		pdf.appendString(hex.EncodeToString(palette))
+		pdf.appendString(">]\n")
+	} else {
+		pdf.appendString("/ColorSpace /")
+		pdf.appendString(colorSpace)
+		pdf.appendString("\n")
+	}
 	pdf.appendString("/BitsPerComponent ")
 	pdf.appendInteger(bitsPerComponent)
 	pdf.appendString("\n")
 	if colorSpace == device.CMYK && image.invertedInks {
 		// Adobe software, Photoshop among them, stores the inks inverted.
 		pdf.appendString("/Decode [1.0 0.0 1.0 0.0 1.0 0.0 1.0 0.0]\n")
+	}
+	if image.decodeColors != 0 {
+		// The rows of a PNG, each with the filter type of its PNG filter.
+		pdf.appendString("/DecodeParms <</Predictor 15 /Colors ")
+		pdf.appendInteger(image.decodeColors)
+		pdf.appendString(" /BitsPerComponent ")
+		pdf.appendInteger(bitsPerComponent)
+		pdf.appendString(" /Columns ")
+		pdf.appendInteger(image.pixelWidth)
+		pdf.appendString(">>\n")
 	}
 
 	buf := data
@@ -660,7 +671,7 @@ func (image *Image) addImageToObjects(
 	colorSpace string,
 	bitsPerComponent int) {
 	if alpha != nil {
-		image.addSoftMaskToObjects(objects, alpha, device.Gray, bitsPerComponent)
+		image.addSoftMaskToObjects(objects, alpha, device.Gray, 8)
 	}
 
 	obj := newPDFobj()
@@ -694,7 +705,13 @@ func (image *Image) addImageToObjects(
 	obj.dict = append(obj.dict, "/Height")
 	obj.dict = append(obj.dict, strconv.Itoa(image.pixelHeight))
 	obj.dict = append(obj.dict, "/ColorSpace")
-	obj.dict = append(obj.dict, "/"+colorSpace)
+	if image.palette != nil {
+		obj.dict = append(obj.dict, "[", "/Indexed", "/DeviceRGB")
+		obj.dict = append(obj.dict, strconv.Itoa(len(image.palette)/3-1))
+		obj.dict = append(obj.dict, "<"+hex.EncodeToString(image.palette)+">", "]")
+	} else {
+		obj.dict = append(obj.dict, "/"+colorSpace)
+	}
 	obj.dict = append(obj.dict, "/BitsPerComponent")
 	obj.dict = append(obj.dict, strconv.Itoa(bitsPerComponent))
 	if colorSpace == device.CMYK && image.invertedInks {
@@ -710,6 +727,15 @@ func (image *Image) addImageToObjects(
 		obj.dict = append(obj.dict, "1.0")
 		obj.dict = append(obj.dict, "0.0")
 		obj.dict = append(obj.dict, "]")
+	}
+	if image.decodeColors != 0 {
+		// The rows of a PNG, each with the filter type of its PNG filter.
+		obj.dict = append(obj.dict, "/DecodeParms", "<<")
+		obj.dict = append(obj.dict, "/Predictor", "15")
+		obj.dict = append(obj.dict, "/Colors", strconv.Itoa(image.decodeColors))
+		obj.dict = append(obj.dict, "/BitsPerComponent", strconv.Itoa(bitsPerComponent))
+		obj.dict = append(obj.dict, "/Columns", strconv.Itoa(image.pixelWidth))
+		obj.dict = append(obj.dict, ">>")
 	}
 	obj.dict = append(obj.dict, "/Length")
 	obj.dict = append(obj.dict, strconv.Itoa(len(data)))
