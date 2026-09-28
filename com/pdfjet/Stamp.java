@@ -570,12 +570,17 @@ public class Stamp implements Drawable {
      *
      * @param path the points. Control points define Bézier curves.
      * @param pathOperator the path operator, for example PathOperator.STROKE.
-     * Fewer than two points paint nothing.
-     * @throws Exception if the path ends with an unconsumed control point.
+     * Fewer than two points paint nothing. A path that ends on a control
+     * point, whose curve has no end, is refused and nothing of it is drawn.
+     * @throws Exception if an input or output exception occurred.
      */
     public void drawPath(List<Point> path, PathOperator pathOperator) throws Exception {
         if (path.size() < 2) {
             return; // A path needs two points to paint anything.
+        }
+        if (path.get(path.size() - 1).controlPoint != '\0') {
+            pdf.fail(new IllegalArgumentException(Page.PATH_ENDS_ON_CONTROL_POINT));
+            return;
         }
         Point point = path.get(0);
         moveTo(point.x, point.y);
@@ -595,12 +600,6 @@ public class Stamp implements Drawable {
                     lineTo(point.x, point.y);
                 }
             }
-        }
-        // Catch unflushed control point
-        if (controlPoint != '\0') {
-            throw new Exception(
-                "Path ends with unconsumed control point(s). " +
-                "Each 'c' requires 2 CPs + 1 endpoint, 'v'/'y' require 1 CP + 1 endpoint.");
         }
         append(pathOperator.operator);
         append('\n');
@@ -632,7 +631,8 @@ public class Stamp implements Drawable {
         if (width == 0f || height == 0f || scaleX == 0f || scaleY == 0f) {
             return new float[] { this.x + width, this.y + height };  // Nothing to paint.
         }
-        page.addBDC(StructElem.P, language, actualText, altDescription);
+        // Described, the stamp is read; otherwise it is decoration.
+        page.addShapeBDC(language, actualText, altDescription);
         page.saveGraphicsState();
 
         float drawX = this.x;
@@ -654,16 +654,7 @@ public class Stamp implements Drawable {
 
         // 3. ROTATE: rotate around origin
         double radians = rotateDegrees * (Math.PI / 180);
-        float cos = (float)Math.cos(radians);
-        float sin = (float)Math.sin(radians);
-        page.append(cos);
-        page.append(' ');
-        page.append(sin);
-        page.append(' ');
-        page.append(-sin);
-        page.append(' ');
-        page.append(cos);
-        page.append(" 0 0 cm\n");
+        page.appendRotation((float) Math.cos(radians), (float) Math.sin(radians));
 
         // SCALE: around the center, like a Container
         if (scaleX != 1f || scaleY != 1f) {

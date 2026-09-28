@@ -75,3 +75,26 @@ func TestFastFloatRefusesNumbersAPdfCannotHold(t *testing.T) {
 		testFormat(t, "0", value)
 	}
 }
+
+func testPrecise(t *testing.T, want string, value float32) {
+	t.Helper()
+	if got := string(AppendPrecise(nil, value)); got != want {
+		t.Errorf("%v: want %q, got %q", value, want, got)
+	}
+}
+
+func TestFastFloatWritesTheEntriesOfARotationWithFiveDecimals(t *testing.T) {
+	// The sine and the cosine of 1 degree, which hundredths write as those of 1.15 degrees.
+	testPrecise(t, "0.01745", float32(math.Sin(math.Pi/180)))
+	testPrecise(t, "0.99985", float32(math.Cos(math.Pi/180)))
+	testPrecise(t, "-0.70711", float32(-math.Sqrt(0.5)))
+	testPrecise(t, "1", 1)
+	testPrecise(t, "-1", -1)
+	testPrecise(t, "0.5", 0.5)
+	testPrecise(t, "0.0001", 0.0001)
+	testPrecise(t, "0", float32(math.Cos(math.Pi/2)))
+	testPrecise(t, "0", float32(math.Copysign(0, -1)))
+	testPrecise(t, "0", -0.000004)
+	testPrecise(t, "12.25", 12.25)
+	testPrecise(t, "0", float32(math.NaN()))
+}

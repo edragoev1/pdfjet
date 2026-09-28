@@ -240,7 +240,11 @@ public class Arc : Drawable {
         if page == nil {
             return [cx + rx, cy + ry]   // Measured, not drawn
         }
-        page!.addBDC(StructElem.P, language, actualText, altDescription)
+        if !page!.isArcSweep(sweepDegrees) {
+            return [cx + rx, cy + ry]   // Nothing to paint.
+        }
+        // Described, the arc is read; otherwise it is decoration.
+        page!.addShapeBDC(language, actualText, altDescription)
         page!.saveGraphicsState()
         let centerX = cx
         let centerY = page!.height - cy

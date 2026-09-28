@@ -1282,7 +1282,7 @@ public sealed class PDF {
                 AppendTextString(description);
                 Append("\n");
             }
-            if (annot.uri != null) {
+            if (!String.IsNullOrEmpty(annot.uri)) {
                 Append("/F 4\n");
                 Append("/A <<\n");
                 Append("/S /URI\n");
@@ -1294,7 +1294,7 @@ public sealed class PDF {
                 Append(Util.ToHexString(uri));
                 Append(">\n");
                 Append(">>\n");
-            } else if (annot.key != null) {
+            } else if (!String.IsNullOrEmpty(annot.key)) {
                 Destination destination;
                 if (destinations.TryGetValue(annot.key, out destination)) {
                     Append("/F 4\n");

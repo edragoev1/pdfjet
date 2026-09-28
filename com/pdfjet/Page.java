@@ -100,6 +100,13 @@ final public class Page {
     // The figure addBDC began last, whose bounding box setFigureBoundingBox
     // sets, or null.
     private StructElement figure = null;
+    // The transform of the containers that what is drawn is in, which moves,
+    // turns and scales it with its cm operators, or null outside of one: a
+    // point x, y of the drawing is at t[0]*x + t[2]*y + t[4], t[1]*x +
+    // t[3]*y + t[5] on the page, from its top left corner. The rectangles of
+    // the links and the bounding boxes of the figures drawn in a container
+    // are moved with it, as the content stream does not move them.
+    private float[] transform = null;
     // True once the page is added to its PDF.
     boolean added = false;
     // The dictionary of a page merged from a document that was read, with the
@@ -747,18 +754,28 @@ final public class Page {
     }
 
     private void drawASCIIString(Font font, String str) {
+        if (str.isEmpty()) {
+            return;
+        }
+        // The code of each character is looked up once, as the next one of the
+        // kerning pair before it is the first one of the pair after it.
+        int c1 = font.coreFontCode(str.codePointAt(0));
         for (int i = 0; i < str.length(); ) {
-            int c1 = font.coreFontCode(str.codePointAt(i));
-            i += Character.charCount(str.codePointAt(i));
             appendByteAsHex(c1);
-            if (font.kernPairs && i < str.length()) {
-                int kerning = font.kerning(c1, font.coreFontCode(str.codePointAt(i)));
+            i += Character.charCount(str.codePointAt(i));
+            if (i == str.length()) {
+                break;
+            }
+            int c2 = font.coreFontCode(str.codePointAt(i));
+            if (font.kernPairs) {
+                int kerning = font.kerning(c1, c2);
                 if (kerning != 0) {
                     append(">");
                     append(-kerning);
                     append("<");
                 }
             }
+            c1 = c2;
         }
     }
 
@@ -1354,6 +1371,9 @@ final public class Page {
         if (rgbColor == null) {
             return this; // Early exit if null
         }
+        if (rgbColor.length < 3) {
+            pdf.fail(new IllegalArgumentException(RGB_COUNT));
+        }
 
         if (rgbColor[0] < 0f || rgbColor[0] > 1f ||
             rgbColor[1] < 0f || rgbColor[1] > 1f ||
@@ -1420,6 +1440,9 @@ final public class Page {
     public Page setPenColor(float[] rgbColor) {
         if (rgbColor == null) {
             return this; // Early exit if null
+        }
+        if (rgbColor.length < 3) {
+            pdf.fail(new IllegalArgumentException(RGB_COUNT));
         }
 
         if (rgbColor[0] < 0f || rgbColor[0] > 1f ||
@@ -1557,9 +1580,22 @@ final public class Page {
         return this;
     }
 
+    // The message of a color of fewer than three components.
+    static final String RGB_COUNT = "An RGB color needs a red, a green and a blue value.";
+    // The message of a transform of fewer than six values.
+    static final String TRANSFORM_COUNT =
+            "A transform needs six values: the scale, the skew and the translation of x and y.";
+
+    // The message of a path whose last curve has no end.
+    static final String PATH_ENDS_ON_CONTROL_POINT =
+            "A path cannot end on a control point: a curve needs a point to end at after its control points.";
+
     private static final String NUMBER = "[+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)";
+    // The white space of the pattern is that of Go's \\s, which has no vertical tab.
+    private static final String SPACE = "[ \\t\\n\\f\\r]";
     private static final java.util.regex.Pattern DASH_PATTERN = java.util.regex.Pattern.compile(
-            "\\s*\\[\\s*(" + NUMBER + "(?:\\s+" + NUMBER + ")*)?\\s*\\]\\s*" + NUMBER + "\\s*");
+            SPACE + "*\\[" + SPACE + "*(" + NUMBER + "(?:" + SPACE + "+" + NUMBER + ")*)?" +
+            SPACE + "*\\]" + SPACE + "*" + NUMBER + SPACE + "*");
 
     // Returns true for a dash array of non-negative numbers, not all zero, and a
     // phase, like "[3 3] 0"; "[] 0" is a solid line.
@@ -1576,7 +1612,7 @@ final public class Page {
             return true;
         }
         boolean notAllZero = false;
-        for (String length : lengths.split("\\s+")) {
+        for (String length : lengths.split(SPACE + "+")) {
             if (length.startsWith("-")) {
                 return false;
             }
@@ -1795,6 +1831,8 @@ final public class Page {
      * The method handles both straight line segments and Bézier curves:
      * - Straight lines: consecutive points without control points
      * - Bézier curves: points with control points ('C' for cubic, 'Q' for quadratic, etc.)
+     * A path that ends on a control point, whose curve has no end, is refused
+     * and nothing of it is drawn.
      *
      * @see Point
      * @see PathOperator
@@ -1802,6 +1840,10 @@ final public class Page {
     public void drawPath(List<Point> path, PathOperator pathOperator) throws Exception {
         if (path.size() < 2) {
             return; // A path needs two points to paint anything.
+        }
+        if (path.get(path.size() - 1).controlPoint != '\0') {
+            pdf.fail(new IllegalArgumentException(PATH_ENDS_ON_CONTROL_POINT));
+            return;
         }
         Point point = path.get(0);
         moveTo(point.x, point.y);
@@ -1944,17 +1986,17 @@ final public class Page {
                 drawEllipse(p.x, p.y, p.r, p.r, p.getPathOperator());
             } else if (p.shape == Shape.DIAMOND) {
                 list = new ArrayList<Point>();
-                list.add(new Point(p.x, (float) (p.y - p.r*1.2)));
-                list.add(new Point((float) (p.x + p.r*1.2), p.y));
-                list.add(new Point(p.x, (float) (p.y + p.r*1.2)));
-                list.add(new Point((float) (p.x - p.r*1.2), p.y));
+                list.add(new Point(p.x, p.y - p.r*1.2f));
+                list.add(new Point(p.x + p.r*1.2f, p.y));
+                list.add(new Point(p.x, p.y + p.r*1.2f));
+                list.add(new Point(p.x - p.r*1.2f, p.y));
                 drawPath(list, p.getPathOperator());
             } else if (p.shape == Shape.BOX) {
                 list = new ArrayList<Point>();
-                list.add(new Point((float) (p.x - p.r*0.886), (float) (p.y - p.r*0.886)));
-                list.add(new Point((float) (p.x + p.r*0.886), (float) (p.y - p.r*0.886)));
-                list.add(new Point((float) (p.x + p.r*0.886), (float) (p.y + p.r*0.886)));
-                list.add(new Point((float) (p.x - p.r*0.886), (float) (p.y + p.r*0.886)));
+                list.add(new Point(p.x - p.r*0.886f, p.y - p.r*0.886f));
+                list.add(new Point(p.x + p.r*0.886f, p.y - p.r*0.886f));
+                list.add(new Point(p.x + p.r*0.886f, p.y + p.r*0.886f));
+                list.add(new Point(p.x - p.r*0.886f, p.y + p.r*0.886f));
                 drawPath(list, p.getPathOperator());
             } else if (p.shape == Shape.PLUS) {
                 drawLine(p.x - p.r, p.y, p.x + p.r, p.y);
@@ -2057,10 +2099,12 @@ final public class Page {
             float cosOfAngle = (float) Math.cos(degrees * (Math.PI / 180));
             tmx = new float[] {cosOfAngle, sinOfAngle, -sinOfAngle, cosOfAngle};
         }
-        tm0 = number(tmx[0]);
-        tm1 = number(tmx[1]);
-        tm2 = number(tmx[2]);
-        tm3 = number(tmx[3]);
+        // The sine and the cosine are written with five decimals: hundredths
+        // would turn the text by another angle, by 1.15 degrees for 1.
+        tm0 = FastFloat.toPreciseByteArray(tmx[0]);
+        tm1 = FastFloat.toPreciseByteArray(tmx[1]);
+        tm2 = FastFloat.toPreciseByteArray(tmx[2]);
+        tm3 = FastFloat.toPreciseByteArray(tmx[3]);
         return this;
     }
 
@@ -2130,6 +2174,10 @@ final public class Page {
         float x3 = 0f;
         float y3 = 0f;
 
+        if (!isArcSweep(sweepDegrees)) {
+            return new float[] { x1, y1, x2, y2, x3, y3 };
+        }
+        sweepDegrees = Math.max(-360f, Math.min(360f, sweepDegrees));
         int numSegments = (int)Math.ceil(Math.abs(sweepDegrees) / 90.0);
         double angleRad = startAngle * Math.PI / 180.0;
         double deltaPerSeg = (sweepDegrees / numSegments) * Math.PI / 180.0;
@@ -2167,6 +2215,18 @@ final public class Page {
         }
 
         return new float[] { x1, y1, x2, y2, x3, y3 };
+    }
+
+    // Returns false for a sweep of an arc that draws nothing: 0, or one that is
+    // not a number or is infinite, which is refused, as it would take a curve
+    // for every quarter turn of it. A sweep of more than a full turn either
+    // way is drawn as a full turn.
+    boolean isArcSweep(float sweepDegrees) {
+        if (Float.isNaN(sweepDegrees) || Float.isInfinite(sweepDegrees)) {
+            pdf.fail(new IllegalArgumentException("The sweep of an arc must be a finite number of degrees."));
+            return false;
+        }
+        return sweepDegrees != 0f;
     }
 
     /**
@@ -2462,12 +2522,18 @@ final public class Page {
         ((ContentBuffer) buf).writeFloat(f);
     }
 
-    // Returns the bytes of the number, after checking that a PDF can hold it.
-    private byte[] number(float f) {
-        if (!FastFloat.isWritable(f)) {
-            pdf.fail(new IllegalArgumentException(FastFloat.NOT_WRITABLE));
-        }
-        return FastFloat.toByteArray(f);
+    // Appends the cm operator of the rotation with the cosine and the sine,
+    // written with five decimals, as hundredths would turn it by another
+    // angle, by 1.15 degrees for 1.
+    void appendRotation(float cos, float sin) {
+        append(FastFloat.toPreciseByteArray(cos));
+        append(' ');
+        append(FastFloat.toPreciseByteArray(sin));
+        append(' ');
+        append(FastFloat.toPreciseByteArray(-sin));
+        append(' ');
+        append(FastFloat.toPreciseByteArray(cos));
+        append(" 0 0 cm\n");
     }
 
     void append(char ch) {
@@ -2515,7 +2581,7 @@ final public class Page {
             // holds it in lower case, as TextBlock.setHighlightColors does
             Integer highlight = highlightColors.get(str);
             if (highlight == null) {
-                highlight = highlightColors.get(str.toLowerCase());
+                highlight = highlightColors.get(str.toLowerCase(java.util.Locale.ROOT));
             }
             if (highlight != null) {
                 setBrushColor(highlight);
@@ -2544,9 +2610,16 @@ final public class Page {
             Map<String, Integer> highlightColors) {
         StringBuilder buf1 = new StringBuilder();
         StringBuilder buf2 = new StringBuilder();
+        boolean inWord = false;
         for (int i = 0; i < str.length(); ) {
             int cp = str.codePointAt(i);
-            if (Character.isLetterOrDigit(cp)) {
+            // A combining mark belongs to the character before it, so that a
+            // word keeps its accents, which are placed on their letters and
+            // matched with the word.
+            if (!Util.isMark(cp)) {
+                inWord = Character.isLetterOrDigit(cp);
+            }
+            if (inWord) {
                 drawWord(font, buf2, color, highlightColors);
                 buf1.appendCodePoint(cp);
             } else {
@@ -2619,7 +2692,7 @@ final public class Page {
             // A figure stands for what it draws, which only the one who draws
             // it can say, so PDF/UA asks for a description of every one.
             if (structure == StructElem.FIGURE &&
-                    (altDescription == null || altDescription.trim().isEmpty())) {
+                    (altDescription == null || Util.trimSpace(altDescription).isEmpty())) {
                 pdf.fail(new IllegalStateException(
                         "A figure of a tagged document, PDF/UA or PDF/A of level A, needs an alternative description."));
             }
@@ -2679,10 +2752,12 @@ final public class Page {
         if (figure == null) {
             return;
         }
-        float x1 = Math.min(x, x + w);
-        float x2 = Math.max(x, x + w);
-        float y1 = Math.min(y, y + h);
-        float y2 = Math.max(y, y + h);
+        // Moved and turned with the containers it is drawn in
+        float[] box = transformedBox(x, y, x + w, y + h);
+        float x1 = box[0];
+        float y1 = box[1];
+        float x2 = box[2];
+        float y2 = box[3];
         // In the coordinates of PDF, from the bottom left of the page
         figure.attributes = "<</O /Layout /BBox [" +
                 bboxNumber(x1) + " " + bboxNumber(height - y2) + " " +
@@ -2706,6 +2781,33 @@ final public class Page {
         }
     }
 
+    // Begins marked content for an artifact of the type that the properties
+    // give, like "/Type /Pagination /Subtype /Footer" for a running footer,
+    // when the document is tagged, as addArtifactBMC does.
+    void addArtifactBDC(String properties) {
+        markedContentDepth++;
+        if (artifactDepth == 0) {
+            artifactDepth = markedContentDepth;
+            if (pdf.isTagged()) {
+                append("/Artifact <<");
+                append(properties);
+                append(">> BDC\n");
+            }
+        }
+    }
+
+    // Begins the marked content of a shape, like a line or an arc: a
+    // paragraph when it is given an alternate description or an actual text,
+    // which a screen reader reads, and otherwise an artifact, the decoration
+    // it is.
+    void addShapeBDC(String language, String actualText, String altDescription) {
+        if (Util.isEmpty(altDescription) && Util.isEmpty(actualText)) {
+            addArtifactBMC();
+        } else {
+            addBDC(StructElem.P, language, actualText, altDescription);
+        }
+    }
+
     /**
      * Ends the current marked content, when the document is tagged: PDF/UA, or a PDF/A of level A.
      */
@@ -2715,6 +2817,8 @@ final public class Page {
         }
         if (artifactDepth == 0 || artifactDepth == markedContentDepth) {
             artifactDepth = 0;
+            // The figure ends here, and a bounding box set after it is not its own
+            figure = null;
             if (pdf.isTagged()) {
                 append("EMC\n");
             }
@@ -2731,7 +2835,7 @@ final public class Page {
         if (level == 0 || !pdf.isTagged() || artifactDepth != 0 || text == null) {
             return;
         }
-        String title = text.trim().replaceAll("\\s+", " ");
+        String title = Util.joinFields(text);
         if (title.isEmpty()) {
             return;
         }
@@ -2876,6 +2980,7 @@ final public class Page {
     }
 
     void addAnnotation(Annotation annotation) {
+        transformAnnotation(annotation);
         annotation.y1 = this.height - annotation.y1;
         annotation.y2 = this.height - annotation.y2;
         annots.add(annotation);
@@ -3001,7 +3106,10 @@ final public class Page {
                 (float) (offset * Math.cos(angle)),
                 (this.height - (float) (offset * Math.sin(angle))));
         watermark.setTextRotation(-(int) (angle * (180.0 / Math.PI)));
+        // A watermark is no part of the content, which a screen reader skips.
+        addArtifactBDC("/Type /Pagination /Subtype /Watermark");
         watermark.drawOn(this);
+        addEMC();
     }
 
     /**
@@ -3037,6 +3145,9 @@ final public class Page {
      *        Matrix.getValues() array.
      */
     public void transform(float[] values) {
+        if (values.length < 6) {
+            pdf.fail(new IllegalArgumentException(TRANSFORM_COUNT));
+        }
         float scalex = values[MSCALE_X];
         float scaley = values[MSCALE_Y];
         float transx = values[MTRANS_X];
@@ -3085,7 +3196,10 @@ final public class Page {
      */
     public float[] addHeader(TextLine textLine, float offset) throws Exception {
         textLine.setLocation((getWidth() - textLine.getWidth())/2, offset);
+        // A running header is no part of the content, which a screen reader skips.
+        addArtifactBDC("/Type /Pagination /Subtype /Header");
         float[] xy = textLine.drawOn(this);
+        addEMC();
         xy[1] += textLine.font.getDescent(textLine.fontSize);
         return xy;
     }
@@ -3111,7 +3225,12 @@ final public class Page {
      */
     public float[] addFooter(TextLine textLine, float offset) throws Exception {
         textLine.setLocation((getWidth() - textLine.getWidth())/2, getHeight() - offset);
-        return textLine.drawOn(this);
+        // A running footer, like a page number, is no part of the content,
+        // which a screen reader skips.
+        addArtifactBDC("/Type /Pagination /Subtype /Footer");
+        float[] xy = textLine.drawOn(this);
+        addEMC();
+        return xy;
     }
 
     /**
@@ -3177,6 +3296,92 @@ final public class Page {
         append("ET\n");
     }
 
+    // Returns where the point x, y of what is drawn is on the page, after the
+    // transform of the containers it is drawn in.
+    float[] transformed(float x, float y) {
+        float[] t = transform;
+        if (t == null) {
+            return new float[] {x, y};
+        }
+        return new float[] {t[0]*x + t[2]*y + t[4], t[1]*x + t[3]*y + t[5]};
+    }
+
+    // Returns the box, left, top, right and bottom, that holds the rectangle
+    // between the corners x1, y1 and x2, y2 after the transform of the
+    // containers it is drawn in, which can turn it.
+    float[] transformedBox(float x1, float y1, float x2, float y2) {
+        if (transform == null) {
+            return new float[] {
+                    Math.min(x1, x2), Math.min(y1, y2), Math.max(x1, x2), Math.max(y1, y2)};
+        }
+        float[] a = transformed(x1, y1);
+        float[] b = transformed(x2, y1);
+        float[] c = transformed(x2, y2);
+        float[] d = transformed(x1, y2);
+        return new float[] {
+                Math.min(Math.min(a[0], b[0]), Math.min(c[0], d[0])),
+                Math.min(Math.min(a[1], b[1]), Math.min(c[1], d[1])),
+                Math.max(Math.max(a[0], b[0]), Math.max(c[0], d[0])),
+                Math.max(Math.max(a[1], b[1]), Math.max(c[1], d[1]))};
+    }
+
+    // Concatenates the transform of a container, in the order of transformed,
+    // to that of the containers it is in, and returns the transform that
+    // popTransform puts back after the container is drawn.
+    float[] pushTransform(float[] m) {
+        float[] saved = transform;
+        float[] t = saved;
+        if (t != null) {
+            m = new float[] {
+                    t[0]*m[0] + t[2]*m[1],
+                    t[1]*m[0] + t[3]*m[1],
+                    t[0]*m[2] + t[2]*m[3],
+                    t[1]*m[2] + t[3]*m[3],
+                    t[0]*m[4] + t[2]*m[5] + t[4],
+                    t[1]*m[4] + t[3]*m[5] + t[5]};
+        }
+        transform = m;
+        return saved;
+    }
+
+    // Puts back the transform that pushTransform returned.
+    void popTransform(float[] saved) {
+        transform = saved;
+    }
+
+    // Moves the rectangle of an annotation drawn in a container, and the
+    // vertices of a polygon, with the container, as its drawing is moved. The
+    // rectangle of a turned annotation is the box that holds it.
+    private void transformAnnotation(Annotation annotation) {
+        if (transform == null) {
+            return;
+        }
+        if (Annotation.Polygon.equals(annotation.annotationType)
+                && annotation.vertices != null && annotation.vertices.length >= 2) {
+            // The vertices are relative to the first corner, and each is turned with it
+            float[] p0 = transformed(annotation.x1, annotation.y1);
+            float[] vertices = new float[annotation.vertices.length & ~1];
+            for (int i = 0; i + 1 < annotation.vertices.length; i += 2) {
+                float[] p = transformed(
+                        annotation.x1 + annotation.vertices[i], annotation.y1 + annotation.vertices[i + 1]);
+                vertices[i] = p[0] - p0[0];
+                vertices[i + 1] = p[1] - p0[1];
+            }
+            annotation.vertices = vertices;
+            float[] p2 = transformed(annotation.x2, annotation.y2);
+            annotation.x2 = p2[0];
+            annotation.y2 = p2[1];
+            annotation.x1 = p0[0];
+            annotation.y1 = p0[1];
+            return;
+        }
+        float[] box = transformedBox(annotation.x1, annotation.y1, annotation.x2, annotation.y2);
+        annotation.x1 = box[0];
+        annotation.y1 = box[1];
+        annotation.x2 = box[2];
+        annotation.y2 = box[3];
+    }
+
     void rotateAroundCenter(float centerX, float centerY, float degrees) {
         append("1 0 0 1 ");
         append(centerX);
@@ -3185,16 +3390,7 @@ final public class Page {
         append(" cm\n");
 
         double radians = degrees * Math.PI / 180;
-        float cos = (float)Math.cos(radians);
-        float sin = (float)Math.sin(radians);
-        append(cos);
-        append(" ");
-        append(sin);
-        append(" ");
-        append(-sin);
-        append(" ");
-        append(cos);
-        append(" 0 0 cm\n");
+        appendRotation((float) Math.cos(radians), (float) Math.sin(radians));
 
         append("1 0 0 1 ");
         append(-centerX);

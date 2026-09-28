@@ -426,11 +426,16 @@ public class Stamp : Drawable {
 
     ///
     /// Draws a path through the points. Control points define Bézier curves.
-    /// Fewer than two points paint nothing. Throws an error if the path ends with an unconsumed control point.
+    /// Fewer than two points paint nothing. A path that ends on a control point,
+    /// whose curve has no end, is refused and nothing of it is drawn.
     ///
     public func drawPath(_ path: [Point], _ pathOperator: PathOperator) throws {
         guard path.count >= 2 else {
             return // A path needs two points to paint anything.
+        }
+        if !path[path.count - 1].controlPoint.isEmpty {
+            pdf.fail(Page.PATH_ENDS_ON_CONTROL_POINT)
+            return
         }
 
         var point = path[0]
@@ -453,12 +458,6 @@ public class Stamp : Drawable {
                 }
             }
         }
-        // Catch unflushed control point
-        if !controlPoint.isEmpty {
-            throw PDFjetError(message: "Path ends with unconsumed control point(s). " +
-                    "Each 'c' requires 2 CPs + 1 endpoint, 'v'/'y' require 1 CP + 1 endpoint.")
-        }
-
         append(pathOperator.rawValue)
         append("\n")
     }
@@ -488,7 +487,8 @@ public class Stamp : Drawable {
             return [self.x + width, self.y + height]    // Nothing to paint.
         }
 
-        page.addBDC(StructElem.P, language, actualText, altDescription)
+        // Described, the stamp is read; otherwise it is decoration.
+        page.addShapeBDC(language, actualText, altDescription)
         page.saveGraphicsState()
 
         let drawX = self.x
@@ -509,17 +509,8 @@ public class Stamp : Drawable {
         page.append(" cm\n")
 
         // 3. ROTATE: rotate around origin
-        let radians = Double(rotateDegrees) * .pi / 180.0
-        let cosine = Float(cos(radians))
-        let sine = Float(sin(radians))
-        page.append(cosine)
-        page.append(" ")
-        page.append(sine)
-        page.append(" ")
-        page.append(-sine)
-        page.append(" ")
-        page.append(cosine)
-        page.append(" 0 0 cm\n")
+        let radians = Double(rotateDegrees) * (Double.pi / 180.0)
+        page.appendRotation(Float(cos(radians)), Float(sin(radians)))
 
         // SCALE: around the center, like a Container
         if scaleX != 1.0 || scaleY != 1.0 {

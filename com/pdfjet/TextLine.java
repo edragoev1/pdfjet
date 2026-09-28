@@ -39,7 +39,7 @@ public class TextLine implements BaselineDrawable {
     private Map<String, Integer> colorMap = null;
     private ScriptPosition scriptPosition = ScriptPosition.NORMAL;
     private float verticalOffset = 0f;
-    private boolean explicitOffset = false;     // True after setVerticalOffset
+    boolean explicitOffset = false;     // True after setVerticalOffset
 
     private String uri;
     private String key;
@@ -656,14 +656,15 @@ public class TextLine implements BaselineDrawable {
      * @throws Exception  If an input or output exception occurred
      */
     public float[] drawOn(Page page) throws Exception {
+        // The destination is where the line is, with a text or without one.
+        if (page != null && !Util.isEmpty(destination)) {
+            page.addDestination(destination, destinationY());
+        }
         if (text == null || text.equals("")) {
             return new float[] {x, y};
         }
         if (page == null) {
             return getCorner(getVerticalOffset());  // Measured, not drawn
-        }
-        if (destination != null) {
-            page.addDestination(destination, destinationY());
         }
 
         float verticalOffset = getVerticalOffset();
@@ -677,7 +678,7 @@ public class TextLine implements BaselineDrawable {
             page.noteHeading(structureType, text, destinationY());
         }
         StructElement link = null;
-        if (uri != null || key != null) {
+        if (!Util.isEmpty(uri) || !Util.isEmpty(key)) {
             link = page.addLinkBDC(structureType, language, null, alt);
         } else {
             page.addBDC(structureType, language, null, alt);
@@ -687,6 +688,10 @@ public class TextLine implements BaselineDrawable {
 
         // The trigonometry turns counterclockwise, where the rotation turns clockwise.
         double radians = Math.PI * -degrees / 180.0;
+        if (underline || strikeout) {
+            // The pen of the lines is their own, and the page is left with the one it had.
+            page.saveGraphicsState();
+        }
         if (underline) {
             page.setPenWidth(font.getUnderlineThickness(fontSize));
             page.setPenColor(decorationColor);
@@ -724,14 +729,18 @@ public class TextLine implements BaselineDrawable {
             page.strokePath();
             page.addEMC();
         }
+        if (underline || strikeout) {
+            page.restoreGraphicsState();
+        }
 
-        if (uri != null || key != null) {
+        if (!Util.isEmpty(uri) || !Util.isEmpty(key)) {
+            float[] box = getLinkBox(verticalOffset);
             Annotation linkAnnotation = new Annotation(
                     Annotation.Link,
-                    x,
-                    (y + verticalOffset) - font.getAscent(fontSize),
-                    x + font.stringWidth(fallbackFont, fontSize, text),
-                    (y + verticalOffset) + font.getDescent(fontSize),
+                    box[0],
+                    box[1],
+                    box[2],
+                    box[3],
                     null,   // Vertices
                     null,   // Fill Color
                     0f,     // Opacity
@@ -748,6 +757,41 @@ public class TextLine implements BaselineDrawable {
         page.setTextRotation(0);
 
         return getCorner(verticalOffset);
+    }
+
+    // Returns the left, top, right and bottom of the box that holds the text,
+    // from the ascent above the baseline to the descent below it, turned with
+    // the text, which the link of the text covers.
+    private float[] getLinkBox(float verticalOffset) {
+        float width = font.stringWidth(fallbackFont, fontSize, text);
+        float ascent = font.getAscent(fontSize);
+        float descent = font.getDescent(fontSize);
+        float x0 = x;
+        float y0 = y + verticalOffset;
+        if (degrees % 360 == 0) {
+            return new float[] {x0, y0 - ascent, x0 + width, y0 + descent};
+        }
+        // The corners of the box, along the baseline and across it, turned as
+        // the underline is; the trigonometry turns counterclockwise, where the
+        // rotation turns clockwise.
+        double radians = Math.PI * -degrees / 180.0;
+        double cos = Math.cos(radians);
+        double sin = Math.sin(radians);
+        double x1 = Double.POSITIVE_INFINITY;
+        double y1 = Double.POSITIVE_INFINITY;
+        double x2 = Double.NEGATIVE_INFINITY;
+        double y2 = Double.NEGATIVE_INFINITY;
+        for (double along : new double[] {0.0, width}) {
+            for (double across : new double[] {-ascent, descent}) {
+                double cornerX = x0 + along*cos + across*sin;
+                double cornerY = y0 - along*sin + across*cos;
+                x1 = Math.min(x1, cornerX);
+                y1 = Math.min(y1, cornerY);
+                x2 = Math.max(x2, cornerX);
+                y2 = Math.max(y2, cornerY);
+            }
+        }
+        return new float[] {(float) x1, (float) y1, (float) x2, (float) y2};
     }
 
     // Returns the right end of the baseline, or its lower end when the text is rotated.

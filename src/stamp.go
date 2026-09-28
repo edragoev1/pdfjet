@@ -13,7 +13,6 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/internal/fastfloat"
 	"github.com/edragoev1/pdfjet/v9/src/internal/token"
 	"github.com/edragoev1/pdfjet/v9/src/pathoperator"
-	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // Stamp is content that is drawn once with the path and text methods of this
@@ -427,11 +426,15 @@ func (s *Stamp) appendPoint(point *Point) {
 }
 
 // DrawPath draws a path through the points. Control points define Bézier curves.
-// Fewer than two points paint nothing. It panics if the path ends with an
-// unconsumed control point.
+// Fewer than two points paint nothing. A path that ends on a control point,
+// whose curve has no end, is refused and nothing of it is drawn.
 func (s *Stamp) DrawPath(path []*Point, pathOperator pathoperator.PathOperator) {
 	if len(path) < 2 {
 		return // A path needs two points to paint anything.
+	}
+	if path[len(path)-1].controlPoint != 0 {
+		s.pdf.fail(pathEndsOnControlPoint)
+		return
 	}
 	point := path[0]
 	s.MoveTo(point.x, point.y)
@@ -451,11 +454,6 @@ func (s *Stamp) DrawPath(path []*Point, pathOperator pathoperator.PathOperator) 
 				s.LineTo(point.x, point.y)
 			}
 		}
-	}
-	// Catch unflushed control point
-	if controlPoint != 0 {
-		panic("Path ends with unconsumed control point(s). " +
-			"Each 'c' requires 2 CPs + 1 endpoint, 'v'/'y' require 1 CP + 1 endpoint.")
 	}
 	s.appendString(string(pathOperator))
 	s.buf.WriteByte('\n')
@@ -488,7 +486,8 @@ func (s *Stamp) DrawOn(page *Page) [2]float32 {
 	if traceStamp != nil {
 		traceStamp(s, page)
 	}
-	page.AddBDC(structelem.P, s.language, s.actualText, s.altDescription)
+	// Described, the stamp is read; otherwise it is decoration.
+	page.addShapeBDC(s.language, s.actualText, s.altDescription)
 	page.SaveGraphicsState()
 
 	drawX := s.x
@@ -510,16 +509,7 @@ func (s *Stamp) DrawOn(page *Page) [2]float32 {
 
 	// 3. ROTATE: rotate around origin
 	radians := float64(s.rotateDegrees) * (math.Pi / 180)
-	cos := float32(math.Cos(radians))
-	sin := float32(math.Sin(radians))
-	page.appendFloat32(cos)
-	page.appendString(" ")
-	page.appendFloat32(sin)
-	page.appendString(" ")
-	page.appendFloat32(-sin)
-	page.appendString(" ")
-	page.appendFloat32(cos)
-	page.appendString(" 0 0 cm\n")
+	page.appendRotation(float32(math.Cos(radians)), float32(math.Sin(radians)))
 
 	// SCALE: around the center, like a Container
 	if s.scaleX != 1.0 || s.scaleY != 1.0 {

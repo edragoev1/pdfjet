@@ -101,9 +101,14 @@ func (radioButton *RadioButton) DrawOn(page *Page) [2]float32 {
 	var link *structElement
 	if radioButton.uri != "" || radioButton.key != "" {
 		link = page.addLinkBDC(structelem.P, radioButton.language, radioButton.actualText, radioButton.altDescription)
+	} else if radioButton.label == "" {
+		// A button with no label, nor a description, has nothing to read.
+		page.addShapeBDC(radioButton.language, radioButton.actualText, radioButton.altDescription)
 	} else {
 		page.AddBDC(structelem.P, radioButton.language, radioButton.actualText, radioButton.altDescription)
 	}
+	// The pen of the button is its own, and the page is left with the one it had.
+	page.SaveGraphicsState()
 
 	yBox := radioButton.y
 	page.SetPenWidth(1.0)
@@ -129,8 +134,7 @@ func (radioButton *RadioButton) DrawOn(page *Page) [2]float32 {
 		radioButton.font, radioButton.fontSize, radioButton.label,
 		radioButton.x+3*radioButton.r1, radioButton.y+radioButton.font.GetAscent(radioButton.fontSize),
 		textColor, nil)
-	page.SetPenWidth(0.0)
-	page.SetBrushColor(color.Black)
+	page.RestoreGraphicsState()
 
 	page.AddEMC()
 

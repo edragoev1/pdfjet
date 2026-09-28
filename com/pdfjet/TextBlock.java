@@ -473,7 +473,7 @@ public class TextBlock implements Drawable {
     public TextBlock setHighlightColors(Map<String, Integer> map) {
         this.keywordHighlightColors = new HashMap<>();
         for (String key : map.keySet()) {
-            this.keywordHighlightColors.put(key.toLowerCase(), map.get(key));
+            this.keywordHighlightColors.put(key.toLowerCase(java.util.Locale.ROOT), map.get(key));
         }
         return this;
     }
@@ -1005,7 +1005,7 @@ public class TextBlock implements Drawable {
         page.addEMC();
         page.restoreGraphicsState();
 
-        if (uri != null) {
+        if (!Util.isEmpty(uri)) {
             page.addAnnotation(new Annotation(
                     Annotation.Link,
                     this.x,

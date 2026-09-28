@@ -46,7 +46,6 @@ public class Container implements Drawable {
     float scaleY;
     private List<Drawable> elements;
     private Rect border = null;
-    Container parent = null;
 
     /**
      * Creates a new container with the specified width and height.
@@ -167,39 +166,8 @@ public class Container implements Drawable {
      * @return this Container object.
      */
     public Container add(Drawable element) {
-        if (element instanceof Container) {
-            ((Container) element).parent = this;
-        }
         this.elements.add(element);
         return this;
-    }
-
-    /**
-     * Rotates a point around a center point.
-     *
-     * @param point the x and y coordinates of the point.
-     * @param center the x and y coordinates of the center.
-     * @param degrees the rotation angle in degrees.
-     * @return the x and y coordinates of the rotated point.
-     */
-    protected static float[] rotateAroundCenter(float[] point, float[] center, double degrees) {
-        double rad = degrees * Math.PI / 180.0; // convert to radians
-
-        // translate to centre
-        double dx = (double) (point[0] - center[0]);
-        double dy = (double) (point[1] - center[1]);
-
-        // rotate
-        double cos = Math.cos(rad);
-        double sin = Math.sin(rad);
-        double dxRot =  dx * cos - dy * sin;
-        double dyRot =  dx * sin + dy * cos;
-
-        // translate back
-        double nx = center[0] + dxRot;
-        double ny = center[1] + dyRot;
-
-        return new float[] {(float) nx, (float) ny};
     }
 
     /**
@@ -233,14 +201,7 @@ public class Container implements Drawable {
         double rad = rotateDegrees * (Math.PI / 180.0);
         float cos = (float)Math.cos(rad);
         float sin = (float)Math.sin(rad);
-        page.append(cos);
-        page.append(' ');
-        page.append(sin);
-        page.append(' ');
-        page.append(-sin);
-        page.append(' ');
-        page.append(cos);
-        page.append(" 0 0 cm\n");
+        page.appendRotation(cos, sin);
 
         page.append(scaleX);
         page.append(' ');
@@ -261,37 +222,23 @@ public class Container implements Drawable {
         page.append(-(page.height - cy));
         page.append(" cm\n");
 
+        // What the page does not move with the cm operators above, the
+        // rectangles of the links and of the annotations and the bounding
+        // boxes of the figures, it moves with the same transform, from the top
+        // left corner of the page: turned and scaled around the center of the
+        // container, and moved to its location.
+        float m0 = scaleX * cos;
+        float m1 = -scaleX * sin;
+        float m2 = scaleY * sin;
+        float m3 = scaleY * cos;
+        float centerX = this.x + cx;
+        float centerY = this.y + cy;
+        float[] saved = page.pushTransform(new float[] {
+                m0, m1, m2, m3, centerX - m0*cx - m2*cy, centerY - m1*cx - m3*cy});
         for (Drawable element : elements) {
-            if (element instanceof BaseAnnotation) {
-                BaseAnnotation annot = (BaseAnnotation) element;
-                // The corners of the annotation are moved and turned for this
-                // drawing and put back after it, so that the container can be
-                // drawn again: the annotation of the second drawing was moved
-                // by the location of the container once more, and ended up
-                // that far from what the container drew.
-                float[] point1 = Util.copyOf(annot.point1);
-                float[] point2 = Util.copyOf(annot.point2);
-                float[] vertices = (annot.vertices == null) ? null : Util.copyOf(annot.vertices);
-                annot.container = this;
-                annot.point1[0] += x;
-                annot.point1[1] += y;
-                annot.point2[0] += x;
-                annot.point2[1] += y;
-                if (this.parent != null) {
-                    annot.point1[0] += parent.x;
-                    annot.point1[1] += parent.y;
-                    annot.point2[0] += parent.x;
-                    annot.point2[1] += parent.y;
-                }
-                annot.rotate(-rotateDegrees);
-                element.drawOn(page);
-                annot.point1 = point1;
-                annot.point2 = point2;
-                annot.vertices = vertices;
-                continue;
-            }
             element.drawOn(page);
         }
+        page.popTransform(saved);
 
         page.restoreGraphicsState();
 

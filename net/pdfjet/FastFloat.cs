@@ -98,6 +98,39 @@ internal static class FastFloat {
         return (value < 0f) ? -hundredths : hundredths;
     }
 
+    // Returns the text of the float rounded to 5 decimal places, halves away
+    // from zero, leaving out the trailing zeros, for the sine and the cosine of
+    // a rotation matrix: rounded to hundredths, a turn of 1 degree is written
+    // as one of 1.15. A value that is not writable is written as 0.
+    internal static byte[] ToPreciseByteArray(float value) {
+        if (!IsWritable(value)) {
+            return new byte[] {(byte) '0'};
+        }
+        // A float times 100000 is exact in a double, and below 2^31 it fits a long.
+        double scaled = Math.Abs((double) value) * 100000.0;
+        long units = (long) scaled;
+        if (scaled - units >= 0.5) {
+            units++;
+        }
+        StringBuilder text = new StringBuilder();
+        if (value < 0f && units > 0) {
+            text.Append('-');
+        }
+        text.Append((units / 100000).ToString(CultureInfo.InvariantCulture));
+        long fraction = units % 100000;
+        if (fraction != 0) {
+            int digits = 5;
+            while (fraction % 10 == 0) {
+                fraction /= 10;
+                digits--;
+            }
+            // The digits of the fraction, with the zeros that lead them
+            text.Append('.');
+            text.Append(fraction.ToString(CultureInfo.InvariantCulture).PadLeft(digits, '0'));
+        }
+        return Encoding.ASCII.GetBytes(text.ToString());
+    }
+
     private static int WriteInt(int value, Span<byte> buffer, int pos, int digits) {
         for (int i = digits - 1; i >= 0; i--) {
             buffer[pos + i] = (byte)('0' + value % 10);

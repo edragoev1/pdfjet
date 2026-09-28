@@ -117,7 +117,10 @@ public class Form : Drawable {
      */
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
-
+        if f1 == nil || f2 == nil {
+            page?.pdf.fail("A form needs a label font and a value font: setLabelFont and setValueFont.")
+            return [x, y]
+        }
         var yField: Float = 0.0
         let xOffset: Float = 3.0
         for i in 0..<fields.count {

@@ -42,6 +42,14 @@ public class Page {
     /// Index of the vertical translation in an Android Matrix value array.
     public static let MTRANS_Y = 5
 
+    // The message of a path whose last curve has no end.
+    static let PATH_ENDS_ON_CONTROL_POINT =
+            "A path cannot end on a control point: a curve needs a point to end at after its control points."
+    // The message of a color of fewer than three components.
+    static let RGB_COUNT = "An RGB color needs a red, a green and a blue value."
+    // The message of a transform of fewer than six values.
+    static let TRANSFORM_COUNT = "A transform needs six values: the scale, the skew and the translation of x and y."
+
     internal var pdf: PDF
     internal var pageObj: PDFobj?
     internal var objNumber = 0
@@ -115,6 +123,13 @@ public class Page {
     // The figure addBDC began last, whose bounding box setFigureBoundingBox
     // sets, or nil.
     private var figure: StructElement?
+    // The transform of the containers that what is drawn is in, which moves,
+    // turns and scales it with its cm operators, or nil outside of one: a
+    // point x, y of the drawing is at t[0]*x + t[2]*y + t[4], t[1]*x +
+    // t[3]*y + t[5] on the page, from its top left corner. The rectangles of
+    // the links and the bounding boxes of the figures drawn in a container
+    // are moved with it, as the content stream does not move them.
+    private var transform: [Float]?
     // True once the page is added to its PDF.
     internal var added = false
     // True once the content of the page is written to the PDF.
@@ -509,17 +524,27 @@ public class Page {
 
     private final func drawASCIIString(_ font: Font, _ text: String) {
         let scalars = Array(text.unicodeScalars)
+        if scalars.isEmpty {
+            return
+        }
+        // The code of each character is looked up once, as the next one of the
+        // kerning pair before it is the first one of the pair after it.
+        var c1 = font.coreFontCode(scalars[0].value)
         for i in 0..<scalars.count {
-            let c1 = font.coreFontCode(scalars[i].value)
             appendTwoHexDigits(c1, &self.buf)
-            if font.kernPairs && i < (scalars.count - 1) {
-                let kerning = font.kerning(c1, font.coreFontCode(scalars[i + 1].value))
+            if i == scalars.count - 1 {
+                break
+            }
+            let c2 = font.coreFontCode(scalars[i + 1].value)
+            if font.kernPairs {
+                let kerning = font.kerning(c1, c2)
                 if kerning != 0 {
                     append(">")
                     append(-kerning)
                     append("<")
                 }
             }
+            c1 = c2
         }
     }
 
@@ -1168,6 +1193,10 @@ public class Page {
         guard let rgbColor = rgbColor else {
             return self
         }
+        if rgbColor.count < 3 {
+            pdf.fail(Page.RGB_COUNT)
+            return self
+        }
         if rgbColor[0] < 0.0 || rgbColor[0] > 1.0 ||
                 rgbColor[1] < 0.0 || rgbColor[1] > 1.0 ||
                 rgbColor[2] < 0.0 || rgbColor[2] > 1.0 {
@@ -1215,6 +1244,10 @@ public class Page {
     @discardableResult
     public func setBrushColor(_ rgbColor: [Float]?) -> Page {
         guard let rgbColor = rgbColor else {
+            return self
+        }
+        if rgbColor.count < 3 {
+            pdf.fail(Page.RGB_COUNT)
             return self
         }
         if rgbColor[0] < 0.0 || rgbColor[0] > 1.0 ||
@@ -1353,7 +1386,8 @@ public class Page {
         let bytes = Array(pattern.utf8)
         var i = 0
         func isSpace(_ b: UInt8) -> Bool {
-            return b == 0x20 || b == 0x09 || b == 0x0A || b == 0x0B || b == 0x0C || b == 0x0D
+            // The white space of Go's \\s, which has no vertical tab
+            return b == 0x20 || b == 0x09 || b == 0x0A || b == 0x0C || b == 0x0D
         }
         func skipSpaces() {
             while i < bytes.count && isSpace(bytes[i]) {
@@ -1608,7 +1642,9 @@ public class Page {
     }
 
     ///
-    /// Draws or fills the specified path using the current pen or brush.
+    /// Draws or fills the specified path using the current pen or brush. A path
+    /// that ends on a control point, whose curve has no end, is refused and
+    /// nothing of it is drawn.
     ///
     /// - Parameter path: the path.
     /// - Parameter pathOperator: the path operator, for example PathOperator.STROKE or PathOperator.FILL.
@@ -1618,6 +1654,10 @@ public class Page {
             _ pathOperator: PathOperator) {
         if path.count < 2 {
             return // A path needs two points to paint anything.
+        }
+        if path[path.count - 1].controlPoint != "" {
+            pdf.fail(Page.PATH_ENDS_ON_CONTROL_POINT)
+            return
         }
         var point = path[0]
         moveTo(point.x, point.y)
@@ -1856,8 +1896,9 @@ public class Page {
     ///
     @discardableResult
     public func setTextRotation(_ angleInDegrees: Int) -> Page {
-        // The text matrix turns counterclockwise, as PDF does.
-        var degrees: Int = -angleInDegrees
+        // The text matrix turns counterclockwise, as PDF does. The angle is
+        // taken within a turn first, as Int.min has no negative.
+        var degrees: Int = -(angleInDegrees % 360)
         if degrees > 360 {
             degrees %= 360
         }
@@ -1879,10 +1920,12 @@ public class Page {
             let cosOfAngle = Float(cos(Double(degrees) * (Double.pi / 180.0)))
             self.tmx = [cosOfAngle, sinOfAngle, -sinOfAngle, cosOfAngle]
         }
-        self.tm0 = number(tmx[0])
-        self.tm1 = number(tmx[1])
-        self.tm2 = number(tmx[2])
-        self.tm3 = number(tmx[3])
+        // The sine and the cosine are written with five decimals: hundredths
+        // would turn the text by another angle, by 1.15 degrees for 1.
+        self.tm0 = FastFloat.toPreciseByteArray(tmx[0])
+        self.tm1 = FastFloat.toPreciseByteArray(tmx[1])
+        self.tm2 = FastFloat.toPreciseByteArray(tmx[2])
+        self.tm3 = FastFloat.toPreciseByteArray(tmx[3])
         return self
     }
 
@@ -1954,6 +1997,10 @@ public class Page {
         var x3: Float = 0.0
         var y3: Float = 0.0
 
+        if !isArcSweep(sweepDegrees) {
+            return [x1, y1, x2, y2, x3, y3]
+        }
+        let sweepDegrees = max(-360.0, min(360.0, sweepDegrees))
         let numSegments = Int(ceil(abs(sweepDegrees) / 90.0))
         var angleRad = Double(startAngle) * .pi / 180.0
         let deltaPerSeg = Double(sweepDegrees / Float(numSegments)) * .pi / 180.0
@@ -1992,6 +2039,18 @@ public class Page {
         }
 
         return [x1, y1, x2, y2, x3, y3]
+    }
+
+    // Returns false for a sweep of an arc that draws nothing: 0, or one that is
+    // not a number or is infinite, which is refused, as it would take a curve
+    // for every quarter turn of it. A sweep of more than a full turn either
+    // way is drawn as a full turn.
+    func isArcSweep(_ sweepDegrees: Float) -> Bool {
+        if !sweepDegrees.isFinite {
+            pdf.fail("The sweep of an arc must be a finite number of degrees.")
+            return false
+        }
+        return sweepDegrees != 0.0
     }
 
     ///
@@ -2271,12 +2330,35 @@ public class Page {
                 "draw on a page before creating the next page or completing the PDF.")
     }
 
-    // Returns the bytes of the number, after checking that a PDF can hold it.
-    private func number(_ value: Float) -> [UInt8] {
-        if !FastFloat.isWritable(value) {
-            pdf.fail(FastFloat.NOT_WRITABLE)
+    // Appends the cm operator of the rotation with the cosine and the sine,
+    // written with five decimals, as hundredths would turn it by another
+    // angle, by 1.15 degrees for 1.
+    func appendRotation(_ cosValue: Float, _ sinValue: Float) {
+        append(FastFloat.toPreciseByteArray(cosValue))
+        append(Token.space)
+        append(FastFloat.toPreciseByteArray(sinValue))
+        append(Token.space)
+        append(FastFloat.toPreciseByteArray(-sinValue))
+        append(Token.space)
+        append(FastFloat.toPreciseByteArray(cosValue))
+        append(" 0 0 cm\n")
+    }
+
+    // Returns the color of the word in the map of highlight colors, as written,
+    // or in lower case. The keys are compared by their code points, as in the
+    // other ports, and not by canonical equivalence, as Swift compares strings.
+    private func highlightColor(_ highlightColors: [String : Int32], _ word: String) -> Int32? {
+        let lower = word.lowercased()
+        var lowerColor: Int32?
+        for (key, color) in highlightColors {
+            if key.unicodeScalars.elementsEqual(word.unicodeScalars) {
+                return color
+            }
+            if lowerColor == nil && key.unicodeScalars.elementsEqual(lower.unicodeScalars) {
+                lowerColor = color
+            }
         }
-        return FastFloat.toByteArray(value)
+        return lowerColor
     }
 
     private func drawWord(
@@ -2287,7 +2369,7 @@ public class Page {
         if str != "" {
             // A keyword is matched as written, or ignoring case when the map
             // holds it in lower case, as TextBlock.setHighlightColors does
-            if let highlight = highlightColors[str] ?? highlightColors[str.lowercased()] {
+            if let highlight = highlightColor(highlightColors, str) {
                 setBrushColor(highlight)
             } else {
                 setBrushColor(textColor)
@@ -2313,8 +2395,15 @@ public class Page {
             _ highlightColors: [String : Int32]) {
         var buf1 = String()
         var buf2 = String()
+        var inWord = false
         for scalar in text.unicodeScalars {
-            if isLetterOrDigit(scalar) {
+            // A combining mark belongs to the character before it, so that a
+            // word keeps its accents, which are placed on their letters and
+            // matched with the word.
+            if !Page.isCombiningMark(scalar) {
+                inWord = isLetterOrDigit(scalar)
+            }
+            if inWord {
                 drawWord(font, &buf2, color, highlightColors)
                 buf1.append(String(scalar))
             } else {
@@ -2421,10 +2510,12 @@ public class Page {
         guard let figure = figure else {
             return
         }
-        let x1 = min(x, x + w)
-        let x2 = max(x, x + w)
-        let y1 = min(y, y + h)
-        let y2 = max(y, y + h)
+        // Moved and turned with the containers it is drawn in
+        let box = transformedBox(x, y, x + w, y + h)
+        let x1 = box[0]
+        let y1 = box[1]
+        let x2 = box[2]
+        let y2 = box[3]
         // In the coordinates of PDF, from the bottom left of the page
         figure.attributes = "<</O /Layout /BBox [" +
                 bboxNumber(x1) + " " + bboxNumber(height - y2) + " " +
@@ -2446,6 +2537,33 @@ public class Page {
         }
     }
 
+    // Begins marked content for an artifact of the type that the properties
+    // give, like "/Type /Pagination /Subtype /Footer" for a running footer,
+    // when the document is tagged, as addArtifactBMC does.
+    func addArtifactBDC(_ properties: String) {
+        markedContentDepth += 1
+        if artifactDepth == 0 {
+            artifactDepth = markedContentDepth
+            if pdf.isTagged() {
+                append("/Artifact <<")
+                append(properties)
+                append(">> BDC\n")
+            }
+        }
+    }
+
+    // Begins the marked content of a shape, like a line or an arc: a
+    // paragraph when it is given an alternate description or an actual text,
+    // which a screen reader reads, and otherwise an artifact, the decoration
+    // it is.
+    func addShapeBDC(_ language: String?, _ actualText: String?, _ altDescription: String?) {
+        if (altDescription ?? "").isEmpty && (actualText ?? "").isEmpty {
+            addArtifactBMC()
+        } else {
+            addBDC(StructElem.P, language, actualText, altDescription)
+        }
+    }
+
     /// Ends the current marked content when the document is tagged: PDF/UA, or a PDF/A of level A.
     public func addEMC() {
         if markedContentDepth == 0 {
@@ -2454,6 +2572,8 @@ public class Page {
         }
         if artifactDepth == 0 || artifactDepth == markedContentDepth {
             artifactDepth = 0
+            // The figure ends here, and a bounding box set after it is not its own
+            figure = nil
             if pdf.isTagged() {
                 append("EMC\n")
             }
@@ -2615,6 +2735,7 @@ public class Page {
     }
 
     func addAnnotation(_ annotation: Annotation) {
+        transformAnnotation(annotation)
         annotation.y1 = self.height - annotation.y1
         annotation.y2 = self.height - annotation.y2
         self.annots.append(annotation)
@@ -2707,6 +2828,16 @@ public class Page {
 
     // Returns true if the character is a letter or a decimal digit of any
     // script, as Character.isLetterOrDigit does in Java.
+    // Returns true for a combining mark, Mn, Mc or Me, as Go's unicode.IsMark.
+    static func isCombiningMark(_ scalar: UnicodeScalar) -> Bool {
+        switch scalar.properties.generalCategory {
+        case .nonspacingMark, .spacingMark, .enclosingMark:
+            return true
+        default:
+            return false
+        }
+    }
+
     private func isLetterOrDigit(_ scalar: UnicodeScalar) -> Bool {
         switch scalar.properties.generalCategory {
         case .uppercaseLetter, .lowercaseLetter, .titlecaseLetter, .modifierLetter, .otherLetter,
@@ -2765,7 +2896,10 @@ public class Page {
                 Float(Double(offset) * cos(angle)),
                 self.height - Float(Double(offset) * sin(angle)))
         watermark.setTextRotation(-Int(angle * (180.0 / Double.pi)))
+        // A watermark is no part of the content, which a screen reader skips.
+        addArtifactBDC("/Type /Pagination /Subtype /Watermark")
         watermark.drawOn(self)
+        addEMC()
     }
 
     /// Rotates this page clockwise when it is displayed, as every rotation in PDFjet turns and as /Rotate does,
@@ -2793,6 +2927,10 @@ public class Page {
     ///   translate y at the MSCALE_X to MTRANS_Y indices, the first six values of
     ///   an Android Matrix.getValues() array.
     public func transform(_ values: [Float]) {
+        if values.count < 6 {
+            pdf.fail(Page.TRANSFORM_COUNT)
+            return
+        }
         let scalex = values[Page.MSCALE_X]
         let scaley = values[Page.MSCALE_Y]
         var transx = values[Page.MTRANS_X]
@@ -2829,7 +2967,10 @@ public class Page {
     @discardableResult
     public func addHeader(_ textLine: TextLine, _ offset: Float) -> [Float] {
         textLine.setLocation((getWidth() - textLine.getWidth())/2, offset)
+        // A running header is no part of the content, which a screen reader skips.
+        addArtifactBDC("/Type /Pagination /Subtype /Header")
         var xy = textLine.drawOn(self)
+        addEMC()
         xy[1] += textLine.font!.getDescent(textLine.fontSize)
         return xy
     }
@@ -2844,7 +2985,12 @@ public class Page {
     @discardableResult
     public func addFooter(_ textLine: TextLine, _ offset: Float) -> [Float] {
         textLine.setLocation((getWidth() - textLine.getWidth())/2, getHeight() - offset)
-        return textLine.drawOn(self)
+        // A running footer, like a page number, is no part of the content,
+        // which a screen reader skips.
+        addArtifactBDC("/Type /Pagination /Subtype /Footer")
+        let xy = textLine.drawOn(self)
+        addEMC()
+        return xy
     }
 
     /**
@@ -2921,6 +3067,91 @@ public class Page {
         append(Token.endText)
     }
 
+    // Returns where the point x, y of what is drawn is on the page, after the
+    // transform of the containers it is drawn in.
+    func transformed(_ x: Float, _ y: Float) -> [Float] {
+        guard let t = transform else {
+            return [x, y]
+        }
+        return [t[0]*x + t[2]*y + t[4], t[1]*x + t[3]*y + t[5]]
+    }
+
+    // Returns the box, left, top, right and bottom, that holds the rectangle
+    // between the corners x1, y1 and x2, y2 after the transform of the
+    // containers it is drawn in, which can turn it.
+    func transformedBox(_ x1: Float, _ y1: Float, _ x2: Float, _ y2: Float) -> [Float] {
+        if transform == nil {
+            return [min(x1, x2), min(y1, y2), max(x1, x2), max(y1, y2)]
+        }
+        let a = transformed(x1, y1)
+        let b = transformed(x2, y1)
+        let c = transformed(x2, y2)
+        let d = transformed(x1, y2)
+        return [
+            min(min(a[0], b[0]), min(c[0], d[0])),
+            min(min(a[1], b[1]), min(c[1], d[1])),
+            max(max(a[0], b[0]), max(c[0], d[0])),
+            max(max(a[1], b[1]), max(c[1], d[1]))]
+    }
+
+    // Concatenates the transform of a container, in the order of transformed,
+    // to that of the containers it is in, and returns the transform that
+    // popTransform puts back after the container is drawn.
+    func pushTransform(_ matrix: [Float]) -> [Float]? {
+        let saved = transform
+        var m = matrix
+        if let t = saved {
+            let m0 = t[0]*m[0] + t[2]*m[1]
+            let m1 = t[1]*m[0] + t[3]*m[1]
+            let m2 = t[0]*m[2] + t[2]*m[3]
+            let m3 = t[1]*m[2] + t[3]*m[3]
+            let m4 = t[0]*m[4] + t[2]*m[5] + t[4]
+            let m5 = t[1]*m[4] + t[3]*m[5] + t[5]
+            m = [m0, m1, m2, m3, m4, m5]
+        }
+        transform = m
+        return saved
+    }
+
+    // Puts back the transform that pushTransform returned.
+    func popTransform(_ saved: [Float]?) {
+        transform = saved
+    }
+
+    // Moves the rectangle of an annotation drawn in a container, and the
+    // vertices of a polygon, with the container, as its drawing is moved. The
+    // rectangle of a turned annotation is the box that holds it.
+    private func transformAnnotation(_ annotation: Annotation) {
+        if transform == nil {
+            return
+        }
+        if annotation.annotationType == Annotation.Polygon,
+                let old = annotation.vertices, old.count >= 2 {
+            // The vertices are relative to the first corner, and each is turned with it
+            let p0 = transformed(annotation.x1, annotation.y1)
+            var vertices = [Float](repeating: 0.0, count: old.count & ~1)
+            var i = 0
+            while i + 1 < old.count {
+                let p = transformed(annotation.x1 + old[i], annotation.y1 + old[i + 1])
+                vertices[i] = p[0] - p0[0]
+                vertices[i + 1] = p[1] - p0[1]
+                i += 2
+            }
+            annotation.vertices = vertices
+            let p2 = transformed(annotation.x2, annotation.y2)
+            annotation.x2 = p2[0]
+            annotation.y2 = p2[1]
+            annotation.x1 = p0[0]
+            annotation.y1 = p0[1]
+            return
+        }
+        let box = transformedBox(annotation.x1, annotation.y1, annotation.x2, annotation.y2)
+        annotation.x1 = box[0]
+        annotation.y1 = box[1]
+        annotation.x2 = box[2]
+        annotation.y2 = box[3]
+    }
+
     func rotateAroundCenter(_ centerX: Float, _ centerY: Float, _ degrees: Float) {
         append("1 0 0 1 ")
         append(centerX)
@@ -2929,16 +3160,7 @@ public class Page {
         append(" cm\n")
 
         let radians = Double(degrees) * Double.pi / 180
-        let cosValue = Float(cos(radians))
-        let sinValue = Float(sin(radians))
-        append(cosValue)
-        append(Token.space)
-        append(sinValue)
-        append(Token.space)
-        append(-sinValue)
-        append(Token.space)
-        append(cosValue)
-        append(" 0 0 cm\n")
+        appendRotation(Float(cos(radians)), Float(sin(radians)))
 
         append("1 0 0 1 ")
         append(-centerX)

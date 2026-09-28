@@ -171,7 +171,11 @@ func (arc *Arc) DrawOn(page *Page) [2]float32 {
 	if page == nil {
 		return [2]float32{arc.cx + arc.rx, arc.cy + arc.ry} // Measured, not drawn
 	}
-	page.AddBDC("P", arc.language, arc.actualText, arc.altDescription)
+	if _, ok := page.arcSweep(arc.sweepDegrees); !ok {
+		return [2]float32{arc.cx + arc.rx, arc.cy + arc.ry} // Nothing to paint.
+	}
+	// Described, the arc is read; otherwise it is decoration.
+	page.addShapeBDC(arc.language, arc.actualText, arc.altDescription)
 
 	page.SaveGraphicsState()
 

@@ -121,11 +121,16 @@ public class RadioButton implements Drawable {
         }
 
         StructElement link = null;
-        if (uri != null) {
+        if (!Util.isEmpty(uri)) {
             link = page.addLinkBDC(StructElem.P, language, actualText, altDescription);
+        } else if (Util.isEmpty(label)) {
+            // A button with no label, nor a description, has nothing to read.
+            page.addShapeBDC(language, actualText, altDescription);
         } else {
             page.addBDC(StructElem.P, language, actualText, altDescription);
         }
+        // The pen of the button is its own, and the page is left with the one it had.
+        page.saveGraphicsState();
 
         float yBox = y;
         page.setPenWidth(1f);
@@ -139,14 +144,13 @@ public class RadioButton implements Drawable {
         }
 
         // A linked label is blue.
-        float[] textColor = (uri != null) ? new float[] {0f, 0f, 1f} : new float[] {0f, 0f, 0f};
+        float[] textColor = !Util.isEmpty(uri) ? new float[] {0f, 0f, 1f} : new float[] {0f, 0f, 0f};
         page.drawString(font, fontSize, label, x + 3*r1, y + font.getAscent(fontSize), textColor, null);
-        page.setPenWidth(0f);
-        page.setBrushColor(Color.black);
+        page.restoreGraphicsState();
 
         page.addEMC();
 
-        if (uri != null) {
+        if (!Util.isEmpty(uri)) {
             Annotation linkAnnotation = new Annotation(
                     Annotation.Link,
                     x + 3*r1,

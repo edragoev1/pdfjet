@@ -279,7 +279,11 @@ public class Arc implements Drawable {
         if (page == null) {
             return new float[] {cx + rx, cy + ry};  // Measured, not drawn
         }
-        page.addBDC(StructElem.P, language, actualText, altDescription);
+        if (!page.isArcSweep(sweepDegrees)) {
+            return new float[] {cx + rx, cy + ry};  // Nothing to paint.
+        }
+        // Described, the arc is read; otherwise it is decoration.
+        page.addShapeBDC(language, actualText, altDescription);
         page.saveGraphicsState();
         float centerX = cx;
         float centerY = page.height - cy;

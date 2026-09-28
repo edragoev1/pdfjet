@@ -318,6 +318,15 @@ internal class Util {
         return Char.IsSurrogatePair(str, i) ? Char.ConvertToUtf32(str, i) : str[i];
     }
 
+    // Returns true for a combining mark at the index, Mn, Mc or Me, as Go's
+    // unicode.IsMark.
+    internal static bool IsMark(String str, int i) {
+        UnicodeCategory category = CharUnicodeInfo.GetUnicodeCategory(str, i);
+        return category == UnicodeCategory.NonSpacingMark
+                || category == UnicodeCategory.SpacingCombiningMark
+                || category == UnicodeCategory.EnclosingMark;
+    }
+
     /// <summary>Returns the number of chars, 1 or 2, of the code point at the index.</summary>
     internal static int CharCount(String str, int i) {
         return Char.IsSurrogatePair(str, i) ? 2 : 1;

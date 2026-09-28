@@ -29,7 +29,7 @@ public class TextLine : IBaselineDrawable {
     private Dictionary<String, int> colorMap = null;
     private ScriptPosition scriptPosition = ScriptPosition.NORMAL;
     private float verticalOffset = 0f;
-    private bool explicitOffset = false;        // True after SetVerticalOffset
+    internal bool explicitOffset = false;       // True after SetVerticalOffset
 
     private String uri;
     private String key;
@@ -520,14 +520,15 @@ public class TextLine : IBaselineDrawable {
     /// <param name="page">the page to draw this text line on.</param>
     /// <returns>x and y coordinates of the bottom right corner of this component.</returns>
     public float[] DrawOn(Page page) {
+        // The destination is where the line is, with a text or without one.
+        if (page != null && !String.IsNullOrEmpty(destination)) {
+            page.AddDestination(destination, DestinationY());
+        }
         if (text == null || text.Equals("")) {
             return new float[] {x, y};
         }
         if (page == null) {
             return GetCorner(GetVerticalOffset());  // Measured, not drawn
-        }
-        if (destination != null) {
-            page.AddDestination(destination, DestinationY());
         }
 
         float verticalOffset = GetVerticalOffset();
@@ -541,7 +542,7 @@ public class TextLine : IBaselineDrawable {
             page.NoteHeading(structureType, text, DestinationY());
         }
         StructElement link = null;
-        if (uri != null || key != null) {
+        if (!String.IsNullOrEmpty(uri) || !String.IsNullOrEmpty(key)) {
             link = page.AddLinkBDC(structureType, language, null, alt);
         } else {
             page.AddBDC(structureType, language, null, alt);
@@ -551,6 +552,10 @@ public class TextLine : IBaselineDrawable {
 
         // The trigonometry turns counterclockwise, where the rotation turns clockwise.
         double radians = Math.PI * -degrees / 180.0;
+        if (underline || strikeout) {
+            // The pen of the lines is their own, and the page is left with the one it had.
+            page.SaveGraphicsState();
+        }
         if (underline) {
             page.SetPenWidth(font.GetUnderlineThickness(fontSize));
             page.SetPenColor(decorationColor);
@@ -588,14 +593,18 @@ public class TextLine : IBaselineDrawable {
             page.StrokePath();
             page.AddEMC();
         }
+        if (underline || strikeout) {
+            page.RestoreGraphicsState();
+        }
 
-        if (uri != null || key != null) {
+        if (!String.IsNullOrEmpty(uri) || !String.IsNullOrEmpty(key)) {
+            float[] box = GetLinkBox(verticalOffset);
             Annotation linkAnnotation = new Annotation(
                     Annotation.Link,
-                    x,
-                    (y + verticalOffset) - font.GetAscent(fontSize),
-                    x + font.StringWidth(fallbackFont, fontSize, text),
-                    (y + verticalOffset) + font.GetDescent(fontSize),
+                    box[0],
+                    box[1],
+                    box[2],
+                    box[3],
                     null,   // Vertices
                     null,   // Fill Color
                     0f,     // Opacity
@@ -612,6 +621,41 @@ public class TextLine : IBaselineDrawable {
         page.SetTextRotation(0);
 
         return GetCorner(verticalOffset);
+    }
+
+    // Returns the left, top, right and bottom of the box that holds the text,
+    // from the ascent above the baseline to the descent below it, turned with
+    // the text, which the link of the text covers.
+    private float[] GetLinkBox(float verticalOffset) {
+        float width = font.StringWidth(fallbackFont, fontSize, text);
+        float ascent = font.GetAscent(fontSize);
+        float descent = font.GetDescent(fontSize);
+        float x0 = x;
+        float y0 = y + verticalOffset;
+        if (degrees % 360 == 0) {
+            return new float[] {x0, y0 - ascent, x0 + width, y0 + descent};
+        }
+        // The corners of the box, along the baseline and across it, turned as
+        // the underline is; the trigonometry turns counterclockwise, where the
+        // rotation turns clockwise.
+        double radians = Math.PI * -degrees / 180.0;
+        double cos = Math.Cos(radians);
+        double sin = Math.Sin(radians);
+        double x1 = Double.PositiveInfinity;
+        double y1 = Double.PositiveInfinity;
+        double x2 = Double.NegativeInfinity;
+        double y2 = Double.NegativeInfinity;
+        foreach (double along in new double[] {0.0, width}) {
+            foreach (double across in new double[] {-ascent, descent}) {
+                double cornerX = x0 + along*cos + across*sin;
+                double cornerY = y0 - along*sin + across*cos;
+                x1 = Math.Min(x1, cornerX);
+                y1 = Math.Min(y1, cornerY);
+                x2 = Math.Max(x2, cornerX);
+                y2 = Math.Max(y2, cornerY);
+            }
+        }
+        return new float[] {(float) x1, (float) y1, (float) x2, (float) y2};
     }
 
     // Returns the right end of the baseline, or its lower end when the text is rotated.

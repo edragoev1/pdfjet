@@ -100,6 +100,39 @@ struct FastFloat {
         return (value < 0) ? -hundredths : hundredths
     }
 
+    // Returns the text of the float rounded to 5 decimal places, halves away
+    // from zero, leaving out the trailing zeros, for the sine and the cosine of
+    // a rotation matrix: rounded to hundredths, a turn of 1 degree is written
+    // as one of 1.15. A value that is not writable is written as 0.
+    static func toPreciseByteArray(_ value: Float) -> [UInt8] {
+        if !isWritable(value) {
+            return [UInt8(ascii: "0")]
+        }
+        // A float times 100000 is exact in a double, and below 2^31 it fits an Int64.
+        let scaled = abs(Double(value)) * 100000.0
+        var units = Int64(scaled)
+        if scaled - Double(units) >= 0.5 {
+            units += 1
+        }
+        var text = ""
+        if value < 0.0 && units > 0 {
+            text += "-"
+        }
+        text += String(units / 100000)
+        var fraction = units % 100000
+        if fraction != 0 {
+            var digits = 5
+            while fraction % 10 == 0 {
+                fraction /= 10
+                digits -= 1
+            }
+            // The digits of the fraction, with the zeros that lead them
+            let fractionDigits = String(fraction)
+            text += "." + String(repeating: "0", count: digits - fractionDigits.count) + fractionDigits
+        }
+        return Array(text.utf8)
+    }
+
     private static func writeInt(_ value: Int, into buffer: inout [UInt8], at pos: Int, digits: Int) {
         var value = value
         var position = pos + digits - 1

@@ -223,16 +223,26 @@ public class Path : Drawable {
             }
             return [xMax, yMax]
         }
+        // The points are drawn offset by the location, as copies: the path
+        // keeps its own points, which can be in it more than once.
+        var offset = [Point]()
+        offset.reserveCapacity(points.count)
+        var xMax: Float = 0.0
+        var yMax: Float = 0.0
         for point in points {
-            point.x += xBox
-            point.y += yBox
+            let copy = Point(point.x + xBox, point.y + yBox, point.controlPoint)
+            offset.append(copy)
+            xMax = max(xMax, copy.x)
+            yMax = max(yMax, copy.y)
         }
 
-        // A path carries no text, so it is decorative content.
+        // A path carries no text, so it is decorative content. Its pen is its
+        // own, and the page is left with the one it had.
         page!.addArtifactBMC()
+        page!.saveGraphicsState()
         if fillShape {
             page!.setBrushColor(self.color)
-            page!.drawPath(points, PathOperator.FILL)
+            page!.drawPath(offset, PathOperator.FILL)
         } else {
             page!.setPenWidth(self.width)
             page!.setPenColor(self.color)
@@ -240,21 +250,13 @@ public class Path : Drawable {
             page!.setLineCapStyle(self.lineCapStyle)
             page!.setLineJoinStyle(self.lineJoinStyle)
             if closed {
-                page!.drawPath(points, PathOperator.CLOSE_AND_STROKE)
+                page!.drawPath(offset, PathOperator.CLOSE_AND_STROKE)
             } else {
-                page!.drawPath(points, PathOperator.STROKE)
+                page!.drawPath(offset, PathOperator.STROKE)
             }
         }
+        page!.restoreGraphicsState()
         page!.addEMC()
-
-        var xMax: Float = 0.0
-        var yMax: Float = 0.0
-        for point in points {
-            if point.x > xMax { xMax = point.x }
-            if point.y > yMax { yMax = point.y }
-            point.x -= xBox
-            point.y -= yBox
-        }
 
         return [xMax, yMax]
     }

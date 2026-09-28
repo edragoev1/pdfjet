@@ -222,7 +222,11 @@ public class Arc : IDrawable {
         if (page == null) {
             return new float[] {cx + rx, cy + ry};  // Measured, not drawn
         }
-        page.AddBDC(StructElem.P, language, actualText, altDescription);
+        if (!page.IsArcSweep(sweepDegrees)) {
+            return new float[] {cx + rx, cy + ry};  // Nothing to paint.
+        }
+        // Described, the arc is read; otherwise it is decoration.
+        page.AddShapeBDC(language, actualText, altDescription);
 
         page.SaveGraphicsState();
 

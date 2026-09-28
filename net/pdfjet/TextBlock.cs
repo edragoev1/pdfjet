@@ -312,7 +312,7 @@ public class TextBlock : IDrawable {
     public TextBlock SetHighlightColors(Dictionary<string, int> map) {
         this.keywordHighlightColors = new Dictionary<string, int>();
         foreach (var key in map.Keys) {
-            this.keywordHighlightColors[key.ToLower()] = map[key];
+            this.keywordHighlightColors[key.ToLowerInvariant()] = map[key];
         }
         return this;
     }
@@ -797,7 +797,7 @@ public class TextBlock : IDrawable {
         page.AddEMC();
         page.RestoreGraphicsState();
 
-        if (uri != null) {
+        if (!String.IsNullOrEmpty(uri)) {
             page.AddAnnotation(new Annotation(
                     Annotation.Link,
                     this.x,

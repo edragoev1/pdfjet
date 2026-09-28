@@ -221,7 +221,9 @@ public class Line : IDrawable {
         if (page == null) {
             return new float[] {Math.Max(x1, x2), Math.Max(y1, y2)};    // Measured, not drawn
         }
-        page.AddBDC(StructElem.P, language, actualText, altDescription);
+        // Described, the line is read; otherwise it is decoration, like the
+        // rule under a heading.
+        page.AddShapeBDC(language, actualText, altDescription);
         page.SaveGraphicsState();
         page.SetPenColor(color);
         page.SetPenWidth(width);

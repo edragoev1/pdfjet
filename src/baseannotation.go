@@ -5,13 +5,10 @@
 
 package pdfjet
 
-import ()
-
 // BaseAnnotation represents a base annotation in a PDF document.
 type BaseAnnotation struct {
 	annotationType string
 	point1         [2]float32
-	point2         [2]float32
 	vertices       []float32 // Flattened array of x,y pairs
 	fillColor      [3]float32
 	opacity        float32
@@ -22,7 +19,10 @@ type BaseAnnotation struct {
 	language       string
 	actualText     string
 	altDescription string
-	container      *Container
+	// The size SetSize sets, which the second point is at from the first
+	// when the annotation is drawn, wherever SetLocation puts the first.
+	width, height float32
+	hasSize       bool
 }
 
 // newBaseAnnotation creates the BaseAnnotation that the circle, square, polygon
@@ -32,19 +32,7 @@ func newBaseAnnotation() *BaseAnnotation {
 		fillColor: [3]float32{0.5, 0.5, 0.5},
 		opacity:   1.0,
 		point1:    [2]float32{0, 0},
-		point2:    [2]float32{0, 0},
 	}
-}
-
-// annotation is implemented by BaseAnnotation and by the types that embed it,
-// so Container can offset and rotate any of them.
-type annotation interface {
-	baseAnnotation() *BaseAnnotation
-}
-
-// baseAnnotation returns this BaseAnnotation.
-func (b *BaseAnnotation) baseAnnotation() *BaseAnnotation {
-	return b
 }
 
 // SetLocation sets the first point of the annotation.
@@ -53,10 +41,23 @@ func (b *BaseAnnotation) SetLocation(x, y float32) Drawable {
 	return b
 }
 
-// SetSize sets the second point relative to the first point.
+// SetSize sets the size of the annotation: its second point is w to the right
+// of its first point and h below it, whether SetLocation is called before or
+// after.
 func (b *BaseAnnotation) SetSize(w, h float32) *BaseAnnotation {
-	b.point2 = [2]float32{b.point1[0] + w, b.point1[1] + h}
+	b.width = w
+	b.height = h
+	b.hasSize = true
 	return b
+}
+
+// corner returns the second point of the annotation, which is the origin of
+// the page until SetSize is called.
+func (b *BaseAnnotation) corner() [2]float32 {
+	if !b.hasSize {
+		return [2]float32{0, 0}
+	}
+	return [2]float32{b.point1[0] + b.width, b.point1[1] + b.height}
 }
 
 // SetFillColor sets the fill color as a 0xRRGGBB value, for example color.Blue.
@@ -88,45 +89,20 @@ func (b *BaseAnnotation) SetContents(contents string) *BaseAnnotation {
 	return b
 }
 
-// rotate rotates the annotation by the given degrees around the center of
-// the container that holds it; the vertices of a polygon rotate around the origin.
-func (b *BaseAnnotation) rotate(degrees float64) *BaseAnnotation {
-	if b.container == nil {
-		return b
-	}
-	center := b.container.GetRotationCenter()
-	if b.container.parent != nil {
-		center[0] += b.container.parent.x
-		center[1] += b.container.parent.y
-	}
-	b.point1 = rotateAroundCenter(b.point1, center, degrees)
-	b.point2 = rotateAroundCenter(b.point2, center, degrees)
-	if b.annotationType == annotationPolygon {
-		for i := 0; i < len(b.vertices); i += 2 {
-			point := rotateAroundCenter(
-				[2]float32{b.vertices[i], b.vertices[i+1]},
-				[2]float32{0, 0},
-				degrees,
-			)
-			b.vertices[i] = point[0]
-			b.vertices[i+1] = point[1]
-		}
-	}
-	return b
-}
-
 // DrawOn draws the annotation on the specified page.
 func (b *BaseAnnotation) DrawOn(page *Page) [2]float32 {
+	point2 := b.corner()
 	if page == nil {
-		return b.point2 // Measured, not drawn
+		return point2 // Measured, not drawn
 	}
 	page.addAnnotation(&annotationObject{
 		annotationType: b.annotationType,
 		x1:             b.point1[0],
 		y1:             b.point1[1],
-		x2:             b.point2[0],
-		y2:             b.point2[1],
-		vertices:       b.vertices,
+		x2:             point2[0],
+		y2:             point2[1],
+		// A copy, which the annotation keeps until the page is written
+		vertices:       append([]float32(nil), b.vertices...),
 		fillColor:      b.fillColor,
 		opacity:        b.opacity,
 		title:          b.title,
@@ -137,5 +113,5 @@ func (b *BaseAnnotation) DrawOn(page *Page) [2]float32 {
 		actualText:     b.actualText,
 		altDescription: b.altDescription,
 	})
-	return b.point2
+	return point2
 }

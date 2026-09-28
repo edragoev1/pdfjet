@@ -45,7 +45,6 @@ public class Container : IDrawable {
     internal float scaleY;
     private List<IDrawable> elements;
     private Rect border = null;
-    internal Container parent = null;
 
     /// <summary>
     /// Creates a new container with the specified width and height.
@@ -152,31 +151,8 @@ public class Container : IDrawable {
     /// <param name="element">The element to add.</param>
     /// <returns>this Container object.</returns>
     public Container Add(IDrawable element) {
-        if (element is Container) {
-            ((Container) element).parent = this;
-        }
         this.elements.Add(element);
         return this;
-    }
-
-    internal static float[] RotateAroundCenter(float[] point, float[] center, double degrees) {
-        double rad = degrees * Math.PI / 180.0; // convert to radians
-
-        // translate to centre
-        double dx = (double) (point[0] - center[0]);
-        double dy = (double) (point[1] - center[1]);
-
-        // rotate
-        double cos = Math.Cos(rad);
-        double sin = Math.Sin(rad);
-        double dxRot =  dx * cos - dy * sin;
-        double dyRot =  dx * sin + dy * cos;
-
-        // translate back
-        double nx = center[0] + dxRot;
-        double ny = center[1] + dyRot;
-
-        return new float[] {(float) nx, (float) ny};
     }
 
     /// <summary>
@@ -215,14 +191,7 @@ public class Container : IDrawable {
         double rad = rotateDegrees * (Math.PI / 180.0);
         float cos = (float)Math.Cos(rad);
         float sin = (float)Math.Sin(rad);
-        page.Append(cos);
-        page.Append(' ');
-        page.Append(sin);
-        page.Append(' ');
-        page.Append(-sin);
-        page.Append(' ');
-        page.Append(cos);
-        page.Append(" 0 0 cm\n");
+        page.AppendRotation(cos, sin);
 
         // 4) Scale around the container center
         page.Append(scaleX);
@@ -246,38 +215,24 @@ public class Container : IDrawable {
         page.Append(-(page.height - cy));
         page.Append(" cm\n");
 
-        // 6) Draw children elements
+        // 6) Draw children elements. What the page does not move with the cm
+        //    operators above, the rectangles of the links and of the
+        //    annotations and the bounding boxes of the figures, it moves with
+        //    the same transform, from the top left corner of the page: turned
+        //    and scaled around the center of the container, and moved to its
+        //    location.
+        float m0 = scaleX * cos;
+        float m1 = -scaleX * sin;
+        float m2 = scaleY * sin;
+        float m3 = scaleY * cos;
+        float centerX = this.x + cx;
+        float centerY = this.y + cy;
+        float[] saved = page.PushTransform(new float[] {
+                m0, m1, m2, m3, centerX - m0*cx - m2*cy, centerY - m1*cx - m3*cy});
         foreach (IDrawable element in elements) {
-            if (element is BaseAnnotation) {
-                BaseAnnotation annot = (BaseAnnotation) element;
-                // The corners of the annotation are moved and turned for
-                // this drawing and put back after it, so that the container
-                // can be drawn again: the annotation of the second drawing
-                // was moved by the location of the container once more, and
-                // ended up that far from what the container drew.
-                float[] point1 = Util.CopyOf(annot.point1);
-                float[] point2 = Util.CopyOf(annot.point2);
-                float[] vertices = (annot.vertices == null) ? null : Util.CopyOf(annot.vertices);
-                annot.container = this;
-                annot.point1[0] += x;
-                annot.point1[1] += y;
-                annot.point2[0] += x;
-                annot.point2[1] += y;
-                if (this.parent != null) {
-                    annot.point1[0] += parent.x;
-                    annot.point1[1] += parent.y;
-                    annot.point2[0] += parent.x;
-                    annot.point2[1] += parent.y;
-                }
-                annot.Rotate(-rotateDegrees);
-                element.DrawOn(page);
-                annot.point1 = point1;
-                annot.point2 = point2;
-                annot.vertices = vertices;
-                continue;
-            }
             element.DrawOn(page);
         }
+        page.PopTransform(saved);
 
         page.RestoreGraphicsState();
 

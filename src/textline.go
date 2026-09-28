@@ -458,14 +458,15 @@ func (textLine *TextLine) copyWithText(text string) *TextLine {
 // coordinates of its bottom right corner. It draws nothing when the page is
 // nil or the text is empty.
 func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
+	// The destination is where the line is, with a text or without one.
+	if page != nil && textLine.destination != "" {
+		page.AddDestination(textLine.destination, textLine.destinationY())
+	}
 	if textLine.text == "" {
 		return [2]float32{textLine.x, textLine.y}
 	}
 	if page == nil {
 		return textLine.corner(textLine.GetVerticalOffset()) // Measured, not drawn
-	}
-	if textLine.destination != "" {
-		page.AddDestination(textLine.destination, textLine.destinationY())
 	}
 
 	verticalOffset := textLine.GetVerticalOffset()
@@ -500,6 +501,10 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 
 	// The trigonometry turns counterclockwise, where the rotation turns clockwise.
 	radians := math.Pi * float64(-textLine.degrees) / 180.0
+	if textLine.underline || textLine.strikeout {
+		// The pen of the lines is their own, and the page is left with the one it had.
+		page.SaveGraphicsState()
+	}
 	if textLine.underline {
 		page.SetPenWidth(textLine.font.GetUnderlineThickness(textLine.fontSize))
 		page.SetPenColorRGB(textLine.decorationColor)
@@ -539,14 +544,18 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 		page.StrokePath()
 		page.AddEMC()
 	}
+	if textLine.underline || textLine.strikeout {
+		page.RestoreGraphicsState()
+	}
 
 	if textLine.uri != "" || textLine.key != "" {
+		x1, y1, x2, y2 := textLine.linkBox(verticalOffset)
 		page.addAnnotation(&annotationObject{
 			annotationType: annotationLink,
-			x1:             textLine.x,
-			y1:             (textLine.y + verticalOffset) - textLine.font.GetAscent(textLine.fontSize),
-			x2:             textLine.x + textLine.font.StringWidthUsingFallbackFont(textLine.fallbackFont, textLine.fontSize, textLine.text),
-			y2:             (textLine.y + verticalOffset) + textLine.font.GetDescent(textLine.fontSize),
+			x1:             x1,
+			y1:             y1,
+			x2:             x2,
+			y2:             y2,
 			vertices:       nil,
 			opacity:        0.0,
 			title:          "",
@@ -576,6 +585,36 @@ func (textLine *TextLine) corner(verticalOffset float32) [2]float32 {
 		float64(textLine.y+verticalOffset),
 		float64(textLine.y+verticalOffset)-float64(length)*math.Sin(radians))
 	return [2]float32{float32(xMax), float32(yMax)}
+}
+
+// linkBox returns the left, top, right and bottom of the box that holds the
+// text, from the ascent above the baseline to the descent below it, turned with
+// the text, which the link of the text covers.
+func (textLine *TextLine) linkBox(verticalOffset float32) (float32, float32, float32, float32) {
+	width := textLine.font.StringWidthUsingFallbackFont(textLine.fallbackFont, textLine.fontSize, textLine.text)
+	ascent := textLine.font.GetAscent(textLine.fontSize)
+	descent := textLine.font.GetDescent(textLine.fontSize)
+	x := textLine.x
+	y := textLine.y + verticalOffset
+	if textLine.degrees%360 == 0 {
+		return x, y - ascent, x + width, y + descent
+	}
+	// The corners of the box, along the baseline and across it, turned as the
+	// underline is; the trigonometry turns counterclockwise, where the
+	// rotation turns clockwise.
+	radians := math.Pi * float64(-textLine.degrees) / 180.0
+	cos, sin := math.Cos(radians), math.Sin(radians)
+	x1, y1 := math.Inf(1), math.Inf(1)
+	x2, y2 := math.Inf(-1), math.Inf(-1)
+	for _, along := range []float64{0, float64(width)} {
+		for _, across := range []float64{float64(-ascent), float64(descent)} {
+			cornerX := float64(x) + along*cos + across*sin
+			cornerY := float64(y) - along*sin + across*cos
+			x1, y1 = math.Min(x1, cornerX), math.Min(y1, cornerY)
+			x2, y2 = math.Max(x2, cornerX), math.Max(y2, cornerY)
+		}
+	}
+	return float32(x1), float32(y1), float32(x2), float32(y2)
 }
 
 // GetLocation returns the x coordinate of the start of the text and the y coordinate of its baseline.

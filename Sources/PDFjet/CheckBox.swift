@@ -180,7 +180,7 @@ public class CheckBox : Drawable {
     ///
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
-        self.w = self.font.getAscent()
+        self.w = self.font.getAscent(fontSize)
         self.h = self.w
         self.penWidth = self.w/15
         self.checkWidth = self.w/5
@@ -189,11 +189,16 @@ public class CheckBox : Drawable {
         }
 
         var link: StructElement?
-        if uri != nil {
+        if !(uri ?? "").isEmpty {
             link = page!.addLinkBDC(StructElem.P, language, actualText, altDescription)
+        } else if label.isEmpty {
+            // A box with no label, nor a description, has nothing to read.
+            page!.addShapeBDC(language, actualText, altDescription)
         } else {
             page!.addBDC(StructElem.P, language, actualText, altDescription)
         }
+        // The pen of the box is its own, and the page is left with the one it had.
+        page!.saveGraphicsState()
 
         let yBox: Float = y
         page!.setPenWidth(self.penWidth!)
@@ -221,14 +226,12 @@ public class CheckBox : Drawable {
         }
 
         // A linked label is blue.
-        let textColor: [Float] = (uri != nil) ? [0.0, 0.0, 1.0] : [0.0, 0.0, 0.0]
+        let textColor: [Float] = !(uri ?? "").isEmpty ? [0.0, 0.0, 1.0] : [0.0, 0.0, 0.0]
         page!.drawString(font, fontSize, label, x + 3.0*w/2.0, y + font.getAscent(fontSize), textColor, nil)
-        page!.setPenWidth(0.0)
-        page!.setPenColor(Color.black)
-        page!.setBrushColor(Color.black)
+        page!.restoreGraphicsState()
         page!.addEMC()
 
-        if uri != nil {
+        if !(uri ?? "").isEmpty {
             // The link is the P of the box and its label, see Page.addLinkBDC.
             page!.addAnnotation(Annotation(
                     Annotation.Link,

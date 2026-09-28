@@ -11,7 +11,6 @@ namespace PDFjet.NET {
 public abstract class BaseAnnotation : IDrawable {
     internal String annotationType = null;
     internal float[] point1 = new float[] {0f, 0f};
-    internal float[] point2 = new float[] {0f, 0f};
     internal float[] vertices = null;
     internal float[] fillColor = new float[] {0.5f, 0.5f, 0.5f};
     internal float opacity = 1f;
@@ -22,7 +21,11 @@ public abstract class BaseAnnotation : IDrawable {
     internal String language = null;
     internal String actualText = null;
     internal String altDescription = null;
-    internal Container container = null;
+    // The size SetSize sets, which the second point is at from the first when
+    // the annotation is drawn, wherever SetLocation puts the first.
+    internal float width = 0f;
+    internal float height = 0f;
+    internal bool hasSize = false;
 
     /// <summary>Creates an annotation. The circle, square, polygon and text annotations call it.</summary>
     protected BaseAnnotation() {
@@ -38,10 +41,23 @@ public abstract class BaseAnnotation : IDrawable {
         return SetLocation(x, y);
     }
 
-    /// <summary>Sets the size of this annotation, measured from its location.</summary>
+    /// <summary>Sets the size of this annotation, measured from its location: its
+    /// second point is w to the right of its location and h below it, whether
+    /// SetLocation is called before or after.</summary>
     public BaseAnnotation SetSize(float w, float h) {
-        this.point2 = new float[] {point1[0] + w, point1[1] + h};
+        this.width = w;
+        this.height = h;
+        this.hasSize = true;
         return this;
+    }
+
+    // Returns the second point of the annotation, which is the origin of the
+    // page until SetSize is called.
+    private float[] GetCorner() {
+        if (!hasSize) {
+            return new float[] {0f, 0f};
+        }
+        return new float[] {point1[0] + width, point1[1] + height};
     }
 
     /// <summary>Sets the fill color from an array of red, green and blue values.</summary>
@@ -77,31 +93,11 @@ public abstract class BaseAnnotation : IDrawable {
         return this;
     }
 
-    /// <summary>Rotates this annotation together with the container it is in.</summary>
-    internal BaseAnnotation Rotate(double degrees) {
-        if (container == null) { return this; }
-        float[] center = container.GetRotationCenter();
-        if (container.parent != null) {
-            center[0] += container.parent.x;
-            center[1] += container.parent.y;
-        }
-        point1 = Container.RotateAroundCenter(point1, center, degrees);
-        point2 = Container.RotateAroundCenter(point2, center, degrees);
-        if (annotationType.Equals(Annotation.Polygon) && vertices != null) {
-            for (int i = 0; i < vertices.Length; i += 2) {
-                float[] point = Container.RotateAroundCenter(
-                    new float[] {vertices[i], vertices[i + 1]}, new float[] {0f, 0f}, degrees);
-                vertices[i] = point[0];
-                vertices[i + 1] = point[1];
-            }
-        }
-        return this;
-    }
-
     /// <summary>Adds this annotation to the specified page.</summary>
     public float[] DrawOn(Page page) {
+        float[] point2 = GetCorner();
         if (page == null) {
-            return new float[] {point2[0], point2[1]};  // Measured, not drawn
+            return point2;  // Measured, not drawn
         }
         page.AddAnnotation(new Annotation(
                 annotationType,
@@ -109,7 +105,8 @@ public abstract class BaseAnnotation : IDrawable {
                 point1[1],
                 point2[0],
                 point2[1],
-                vertices,       // Vertices
+                // A copy, which the annotation keeps until the page is written
+                (vertices == null) ? null : Util.CopyOf(vertices),
                 fillColor,      // Fill Color
                 opacity,        // Opacity
                 title,          // Title
@@ -119,7 +116,7 @@ public abstract class BaseAnnotation : IDrawable {
                 language,
                 actualText,
                 altDescription));
-        return new float[] {point2[0], point2[1]};
+        return point2;
     }
 }
 }

@@ -187,16 +187,27 @@ func (path *Path) DrawOn(page *Page) [2]float32 {
 		}
 		return [2]float32{xMax, yMax}
 	}
-	for _, point := range path.points {
-		point.x += path.xBox
-		point.y += path.yBox
+	// The points are drawn offset by the location, as copies: the path keeps
+	// its own points, which can be in it more than once.
+	points := make([]*Point, len(path.points))
+	var xMax float32 = 0.0
+	var yMax float32 = 0.0
+	for i, point := range path.points {
+		offset := *point
+		offset.x += path.xBox
+		offset.y += path.yBox
+		points[i] = &offset
+		xMax = max(xMax, offset.x)
+		yMax = max(yMax, offset.y)
 	}
 
-	// A path carries no text, so it is decorative content.
+	// A path carries no text, so it is decorative content. Its pen is its
+	// own, and the page is left with the one it had.
 	page.AddArtifactBMC()
+	page.SaveGraphicsState()
 	if path.fillShape {
 		page.SetBrushColorRGB(path.color)
-		page.DrawPath(path.points, pathoperator.Fill)
+		page.DrawPath(points, pathoperator.Fill)
 	} else {
 		page.SetPenWidth(path.width)
 		page.SetPenColorRGB(path.color)
@@ -204,25 +215,13 @@ func (path *Path) DrawOn(page *Page) [2]float32 {
 		page.SetLineCapStyle(path.lineCapStyle)
 		page.SetLineJoinStyle(path.lineJoinStyle)
 		if path.closed {
-			page.DrawPath(path.points, pathoperator.CloseAndStroke)
+			page.DrawPath(points, pathoperator.CloseAndStroke)
 		} else {
-			page.DrawPath(path.points, pathoperator.Stroke)
+			page.DrawPath(points, pathoperator.Stroke)
 		}
 	}
+	page.RestoreGraphicsState()
 	page.AddEMC()
-
-	var xMax float32 = 0.0
-	var yMax float32 = 0.0
-	for _, point := range path.points {
-		if point.x > xMax {
-			xMax = point.x
-		}
-		if point.y > yMax {
-			yMax = point.y
-		}
-		point.x -= path.xBox
-		point.y -= path.yBox
-	}
 
 	return [2]float32{xMax, yMax}
 }

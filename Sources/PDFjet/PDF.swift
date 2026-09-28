@@ -1311,7 +1311,7 @@ public final class PDF {
                 append(textString(description))
                 append(">\n")
             }
-            if let uri = annot.uri {
+            if let uri = annot.uri, !uri.isEmpty {
                 append("/F 4\n")
                 append("/A <<\n")
                 append("/S /URI\n")
@@ -1319,7 +1319,7 @@ public final class PDF {
                 append(toHexString(uri))
                 append(">\n")
                 append(">>\n")
-            } else if let key = annot.key,
+            } else if let key = annot.key, !key.isEmpty,
                       let destination = destinations[key] {
                 append("/F 4\n")
                 append("/Dest [")

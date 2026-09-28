@@ -121,3 +121,40 @@ func ToHundredths(value float32) int {
 	}
 	return hundredths
 }
+
+// AppendPrecise appends the text of the float32 rounded to 5 decimal places,
+// halves away from zero, leaving out the trailing zeros, for the sine and the
+// cosine of a rotation matrix: rounded to hundredths, a turn of 1 degree is
+// written as one of 1.15. A value that is not writable is written as 0.
+func AppendPrecise(dst []byte, value float32) []byte {
+	if !IsWritable(value) {
+		return append(dst, '0')
+	}
+	// A float times 100000 is exact in a float64, and below 2^31 it fits an int64.
+	scaled := math.Abs(float64(value)) * 100000
+	units := int64(scaled)
+	if scaled-float64(units) >= 0.5 {
+		units++
+	}
+	if value < 0 && units > 0 {
+		dst = append(dst, '-')
+	}
+	dst = strconv.AppendInt(dst, units/100000, 10)
+	fraction := units % 100000
+	if fraction == 0 {
+		return dst
+	}
+	digits := 5
+	for fraction%10 == 0 {
+		fraction /= 10
+		digits--
+	}
+	// The digits of the fraction, with the zeros that lead them
+	var text [5]byte
+	for i := digits - 1; i >= 0; i-- {
+		text[i] = byte('0' + fraction%10)
+		fraction /= 10
+	}
+	dst = append(dst, '.')
+	return append(dst, text[:digits]...)
+}

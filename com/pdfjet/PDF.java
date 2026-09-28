@@ -1346,7 +1346,7 @@ final public class PDF {
                 appendTextString(description);
                 append("\n");
             }
-            if (annot.uri != null) {
+            if (!Util.isEmpty(annot.uri)) {
                 append("/F 4\n");
                 append("/A <<\n");
                 append("/S /URI\n");
@@ -1358,7 +1358,7 @@ final public class PDF {
                 append(Util.toHexString(uri));
                 append(">\n");
                 append(">>\n");
-            } else if (annot.key != null) {
+            } else if (!Util.isEmpty(annot.key)) {
                 Destination destination = destinations.get(annot.key);
                 if (destination != null) {
                     append("/F 4\n");

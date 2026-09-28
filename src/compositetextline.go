@@ -217,8 +217,14 @@ func (composite *CompositeTextLine) baseFontSize(index int) float32 {
 // place puts the component at the current position, at the size its script
 // position asks for, and moves the current position past it. The size goes on
 // the TextLine: DrawOn uses the line's own font size, so resizing the shared
-// Font here would have no effect.
+// Font here would have no effect. The baseline of a superscript or a
+// subscript is raised or lowered here, from the base font size, so the
+// component is not offset by its script position again when it is drawn,
+// unless it was given an offset of its own.
 func (composite *CompositeTextLine) place(textLine *TextLine, base float32) {
+	if !textLine.explicitOffset {
+		textLine.SetVerticalOffset(0.0)
+	}
 	if textLine.GetScriptPosition() == scriptposition.Superscript {
 		textLine.SetFontSize(base * composite.superscriptFactor)
 		textLine.SetLocation(
@@ -290,7 +296,7 @@ func (composite *CompositeTextLine) GetMinMaxY() [2]float32 {
 	// Each component is measured where it is drawn, with the font size it is
 	// drawn at, which a script position makes smaller than the base.
 	for _, component := range composite.textLines {
-		baseline := component.GetLocation()[1]
+		baseline := component.GetLocation()[1] + component.GetVerticalOffset()
 		top := baseline - component.font.GetAscent(component.GetFontSize())
 		bottom := baseline + component.font.GetDescent(component.GetFontSize())
 		if top < minValue {
