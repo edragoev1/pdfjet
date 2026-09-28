@@ -36,12 +36,19 @@ public class PDF417 : Drawable {
     private var cols = 18
     private var codewords = [Int]()
     private var str: String = ""
+    private var altDescription: String?
+
+    // The codeword that shifts from text compaction to byte compaction for the
+    // one codeword after it.
+    private static let BYTE_SHIFT = 913
 
     /**
      *  Constructor for 2D barcodes.
      *  The symbol has 18 columns and as many rows as the string needs, up to the
      *  928 codewords a PDF417 symbol can hold: 864 data codewords, or about 1,300
      *  characters of mixed text, with the error correction level 5 used here.
+     *  The string is ASCII, and a control character other than HT, LF and CR
+     *  takes a codeword of its own and one more, in byte compaction.
      *  Throws if there are unencodable characters or the string does not fit in a symbol.
      *
      *  - Parameter str: the specified string.
@@ -57,9 +64,9 @@ public class PDF417 : Drawable {
             }
         }
 
-        // The data codewords: the symbol length descriptor and one codeword for two text codewords.
-        let list = textToArrayOfIntegers()
-        let dataCodewords = 1 + (list.count + 1) / 2
+        // The data codewords, after the symbol length descriptor
+        let list = dataCodewords()
+        let dataCodewords = 1 + list.count
         rows = (dataCodewords + L5ECC.table.count + cols - 1) / cols
         if rows < 3 {
             rows = 3
@@ -103,8 +110,8 @@ public class PDF417 : Drawable {
             buffer[i] = 900     // The default pad codeword
         }
         buffer[0] = dataLen
+        buffer.replaceSubrange(1..<(1 + list.count), with: list)
 
-        addData(&buffer, list)
         addECC(&buffer)
 
         for i in 0..<rows {
@@ -148,14 +155,50 @@ public class PDF417 : Drawable {
     }
 
     /**
-     *  Draws this barcode on the specified page.
+     *  Sets what the barcode says for a screen reader: a tagged document,
+     *  PDF/UA or a PDF/A of level A, then has the barcode as a figure of that
+     *  description. Without one, its bars are decoration, which a screen
+     *  reader skips.
+     *
+     *  - Parameter altDescription: the description.
+     *  - Returns: this PDF417 object.
+     */
+    @discardableResult
+    public func setAltDescription(_ altDescription: String?) -> PDF417 {
+        self.altDescription = altDescription
+        return self
+    }
+
+    /**
+     *  Draws this barcode on the specified page. The bars are black, and the
+     *  pen of the page is as it was after it.
      *
      *  - Parameter page: the page to draw this barcode on.
      *  - Returns: x and y coordinates of the bottom right corner of this component.
      */
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
-        return drawPdf417(page)
+        let described = altDescription != nil && !altDescription!.isEmpty
+        if let page = page {
+            // Described, the barcode is a figure of a tagged document; not
+            // described, its bars, which carry no text, are decoration.
+            if described {
+                page.addBDC(StructElem.FIGURE, nil, nil, altDescription!)
+            } else {
+                page.addArtifactBMC()
+            }
+            page.saveGraphicsState()
+            page.setPenColor(Color.black)
+        }
+        let xy = drawPdf417(page)
+        if let page = page {
+            page.restoreGraphicsState()
+            if described {
+                page.setFigureBoundingBox(x1, y1, xy[0] - x1, xy[1] - y1)
+            }
+            page.addEMC()
+        }
+        return xy
     }
 
     private func textToArrayOfIntegers() -> [Int] {
@@ -165,6 +208,10 @@ public class PDF417 : Drawable {
         for scalar in str.unicodeScalars {
             if scalar == Unicode.Scalar(0x20) {
                 list.append(26)
+                continue
+            }
+            if PDF417.isByteShifted(scalar) {
+                list.append(-1 - Int(scalar.value))     // Below 0, see dataCodewords
                 continue
             }
 
@@ -212,17 +259,39 @@ public class PDF417 : Drawable {
         return list
     }
 
-    private func addData(_ buffer: inout [Int], _ list: [Int]) {
-        // buffer index = 1 to skip the Symbol Length Descriptor
-        var bi = 1
-        var i = 0
-        while i < list.count {
-            let hi = list[i]
-            let lo = (i + 1 == list.count) ? PDF417.SHIFT_TO_PUNCT : list[i + 1]    // Pad
-            buffer[bi] = 30*hi + lo
-            bi += 1
-            i += 2
+    // Tells if the character is a control character that text compaction has
+    // no value for, and that is so encoded in byte compaction.
+    private static func isByteShifted(_ scalar: Unicode.Scalar) -> Bool {
+        return scalar.value < 0x20 && scalar != "\t" && scalar != "\n" && scalar != "\r"
+    }
+
+    // Returns the data codewords of the string in text compaction, two values
+    // to a codeword; a control character other than HT, LF and CR is the byte
+    // compaction shift and its byte, which starts a codeword, so the value
+    // before it may be padded, and after which text compaction goes on in the
+    // submode it was in.
+    func dataCodewords() -> [Int] {
+        var codewords = [Int]()
+        var hi = -1     // The first value of a codeword, if any
+        for value in textToArrayOfIntegers() {
+            if value < 0 {
+                if hi != -1 {
+                    codewords.append(30*hi + PDF417.SHIFT_TO_PUNCT)     // Pad
+                    hi = -1
+                }
+                codewords.append(PDF417.BYTE_SHIFT)
+                codewords.append(-1 - value)
+            } else if hi == -1 {
+                hi = value
+            } else {
+                codewords.append(30*hi + value)
+                hi = -1
+            }
         }
+        if hi != -1 {
+            codewords.append(30*hi + PDF417.SHIFT_TO_PUNCT)     // Pad
+        }
+        return codewords
     }
 
     private func addECC(_ buf: inout [Int]) {
@@ -313,11 +382,9 @@ public class PDF417 : Drawable {
         guard let page = page else {
             return      // Measured, not drawn
         }
-        page.addArtifactBMC()
         page.setPenWidth(w)
         page.moveTo(x + w/2, y)
         page.lineTo(x + w/2, y + h)
         page.strokePath()
-        page.addEMC()
     }
 }   // End of PDF417.swift

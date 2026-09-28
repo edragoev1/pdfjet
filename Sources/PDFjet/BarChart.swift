@@ -166,7 +166,8 @@ public class BarChart : Drawable {
     }
 
     ///
-    /// Adds a series drawn in the next color of the default palette.
+    /// Adds a series drawn in the next color of the default palette. A value
+    /// that is NaN or infinite has no bar.
     ///
     /// - Parameter name: the series name, shown in the legend; empty for none.
     /// - Parameter values: one value per category.
@@ -500,7 +501,7 @@ public class BarChart : Drawable {
                     var up: Float = 0.0
                     var down: Float = 0.0
                     for s in series {
-                        if i < s.values.count {
+                        if i < s.values.count && BarChart.isValue(s.values[i]) {
                             if s.values[i] >= 0.0 { up += s.values[i] } else { down += s.values[i] }
                         }
                     }
@@ -509,19 +510,19 @@ public class BarChart : Drawable {
                 }
             } else {
                 for s in series {
-                    for v in s.values {
+                    for v in s.values where BarChart.isValue(v) {
                         lo = Swift.min(lo, v)
                         hi = Swift.max(hi, v)
                     }
                 }
             }
-            if hi == lo { hi = lo + 1.0 }
+            if hi == lo { hi = lo + Chart.flatDataSpan(lo) }
             let round = Chart.roundMaxAndMinValues(hi, lo)
             vMin = round.minValue
             vMax = round.maxValue
             lines = round.numOfGridLines
         }
-        if vMax == vMin { vMax = vMin + 1.0 }
+        if vMax == vMin { vMax = vMin + Chart.flatDataSpan(vMin) }
         let step = (vMax - vMin) / Float(lines)
         let axisDigits = Swift.max(minFractionDigits, Chart.fractionDigitsOf(step, maxFractionDigits))
         let base = Swift.min(Swift.max(0.0, vMin), vMax)
@@ -542,7 +543,7 @@ public class BarChart : Drawable {
         var widestValueLabel: Float = 0.0
         if drawValueLabels {
             for s in series {
-                for v in s.values {
+                for v in s.values where BarChart.isValue(v) {
                     widestValueLabel = Swift.max(widestValueLabel, f2.stringWidth(valueLabel(v)))
                 }
             }
@@ -633,7 +634,7 @@ public class BarChart : Drawable {
             var down: Float = 0.0    // the stacked values below 0 so far
             for j in 0..<m {
                 let s = series[j]
-                if i >= s.values.count {
+                if i >= s.values.count || !BarChart.isValue(s.values[i]) {
                     continue
                 }
                 // A bar runs from the base to its value; a segment of a stack
@@ -821,5 +822,11 @@ public class BarChart : Drawable {
             page.drawString(f2, f2.getSize(), s.name, x, baseline)
             x += f2.stringWidth(s.name) + f2.getBodyHeight()
         }
+    }
+
+    // Tells if the value is a number to draw: a value that is NaN or infinite
+    // has no bar, like a value missing at the end of a series.
+    static func isValue(_ value: Float) -> Bool {
+        return value.isFinite
     }
 }   // End of BarChart.swift

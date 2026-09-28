@@ -28,7 +28,8 @@ import com.pdfjet.*;
 final public class QRCode implements Drawable {
     private static final int PAD0 = 0xEC;
     private static final int PAD1 = 0x11;
-    private Boolean[][] modules;
+    private boolean[][] modules;    // The dark modules
+    private boolean[][] reserved;   // The modules of the function patterns and the format information
     // The version of the symbol, from 4 to 40, and its size: 4 * typeNumber + 17 modules.
     private int typeNumber;
     private int moduleCount;
@@ -36,15 +37,22 @@ final public class QRCode implements Drawable {
     private float x;
     private float y;
     private final byte[] qrData;
+    private boolean eci;            // The data is not all ASCII, and starts with the ECI of UTF-8
     private float m1 = 2.0f;        // Module length
     private int color = Color.black;
     private String altDescription;
+
+    // The bits of the ECI that says the bytes are UTF-8: the mode indicator
+    // 0111 and the ECI assignment number 26 in 8 bits.
+    private static final int ECI_BITS = 12;
 
     /**
      * Used to create 2D QR Code barcodes. The string is encoded in UTF-8, and
      * the symbol is the smallest that holds it, from version 4, 33 by 33 modules,
      * to version 40, 177 by 177 modules. At version 40 it holds up to 2,953 bytes
-     * at level L, 2,331 at M, 1,663 at Q and 1,273 at H.
+     * at level L, 2,331 at M, 1,663 at Q and 1,273 at H, a byte fewer when the
+     * string is not all ASCII: it then starts with the ECI that tells the reader
+     * the bytes are UTF-8.
      *
      * @param str the string to encode.
      * @param errorCorrectionLevel the desired error correction level.
@@ -53,27 +61,38 @@ final public class QRCode implements Drawable {
      */
     public QRCode(String str, ErrorCorrectionLevel errorCorrectionLevel) throws UnsupportedEncodingException {
         this.qrData = str.getBytes(StandardCharsets.UTF_8);
+        for (byte b : qrData) {
+            if (b < 0) {
+                eci = true;
+            }
+        }
         this.errorCorrectionLevel = errorCorrectionLevel;
-        this.typeNumber = getTypeNumber(qrData.length, errorCorrectionLevel);
+        this.typeNumber = getTypeNumber(qrData.length, eci, errorCorrectionLevel);
         this.moduleCount = 4 * typeNumber + 17;
-        this.make(false, getBestMaskPattern());
+        this.make(createData(errorCorrectionLevel));
     }
 
-    // Returns the smallest version, from 4, whose data codewords hold the data.
-    private static int getTypeNumber(int dataLength, ErrorCorrectionLevel errorCorrectionLevel) {
+    // Returns the smallest version, from 4, whose data codewords hold the
+    // data, and the ECI before it when there is one.
+    private static int getTypeNumber(int dataLength, boolean eci, ErrorCorrectionLevel errorCorrectionLevel) {
         for (int typeNumber = 4; typeNumber <= 40; typeNumber++) {
-            if (getLengthInBits(dataLength, typeNumber) <= getDataCount(typeNumber, errorCorrectionLevel) * 8) {
+            if (getLengthInBits(dataLength, eci, typeNumber) <= getDataCount(typeNumber, errorCorrectionLevel) * 8) {
                 return typeNumber;
             }
         }
-        int maxLength = (getDataCount(40, errorCorrectionLevel) * 8 - 4 - 16) / 8;
+        int maxLength = (getDataCount(40, errorCorrectionLevel) * 8 - getLengthInBits(0, eci, 40)) / 8;
         throw new IllegalArgumentException("The data is too long for a QR code at level "
                 + errorCorrectionLevel + ": " + dataLength + " bytes, at most " + maxLength + ".");
     }
 
-    // The bits of the mode indicator, the character count and the data, in byte mode.
-    private static int getLengthInBits(int dataLength, int typeNumber) {
-        return 4 + getCharacterCountBits(typeNumber) + 8 * dataLength;
+    // The bits of the ECI, if any, and of the mode indicator, the character
+    // count and the data, in byte mode.
+    private static int getLengthInBits(int dataLength, boolean eci, int typeNumber) {
+        int bits = 4 + getCharacterCountBits(typeNumber) + 8 * dataLength;
+        if (eci) {
+            bits += ECI_BITS;
+        }
+        return bits;
     }
 
     // The character count of byte mode has 8 bits up to version 9, and 16 bits after it.
@@ -140,13 +159,16 @@ final public class QRCode implements Drawable {
     }
 
     /**
-     *  Draws this barcode on the specified page.
+     *  Draws this barcode on the specified page. The dark modules next to each
+     *  other in a row are filled as one rectangle, and the pen and the brush of
+     *  the page are as they were after it.
      *
      *  @param page the specified page.
      *  @return x and y coordinates of the bottom right corner of this component.
      *  @throws Exception  If an input or output exception occurred
      */
     public float[] drawOn(Page page) throws Exception {
+        float size = m1*moduleCount;
         if (page != null) {
             // Described, the QR code is a figure of a tagged document; not
             // described, its modules, which carry no text, are decoration.
@@ -155,23 +177,29 @@ final public class QRCode implements Drawable {
             } else {
                 page.addArtifactBMC();
             }
+            page.saveGraphicsState();
             page.setBrushColor(this.color);
-            for (int row = 0; row < modules.length; row++) {
-                for (int col = 0; col < modules.length; col++) {
-                    if (isDark(row, col)) {
-                        page.fillRect(x + col*m1, y + row*m1, m1, m1);
+            for (int row = 0; row < moduleCount; row++) {
+                int col = 0;
+                while (col < moduleCount) {
+                    if (!modules[row][col]) {
+                        col++;
+                        continue;
                     }
+                    int start = col;
+                    while (col < moduleCount && modules[row][col]) {
+                        col++;
+                    }
+                    page.fillRect(x + start*m1, y + row*m1, (col - start)*m1, m1);
                 }
             }
+            page.restoreGraphicsState();
             if (altDescription != null && !altDescription.isEmpty()) {
-                float size = m1*modules.length;
                 page.setFigureBoundingBox(x, y, size, size);
             }
             page.addEMC();
         }
-        float w = m1*modules.length;
-        float h = m1*modules.length;
-        return new float[] {x + w, y + h};
+        return new float[] {x + size, y + size};
     }
 
     /**
@@ -180,73 +208,74 @@ final public class QRCode implements Drawable {
      * @return the modules.
      */
     public Boolean[][] getModules() {
-        return modules;
-    }
-
-    /**
-     *  Returns true if the module at the specified row and column is dark.
-     *
-     *  @param row the row.
-     *  @param col the column.
-     *  @return true if the module is dark.
-     */
-    protected boolean isDark(int row, int col) {
-        if (modules[row][col] != null) {
-            return modules[row][col];
-        } else {
-            return false;
-        }
-    }
-
-    /**
-     * Returns the number of modules in each row and column.
-     *
-     * @return the module count.
-     */
-    protected int getModuleCount() {
-        return moduleCount;
-    }
-
-    /**
-     * Returns the mask pattern with the lowest penalty score.
-     *
-     * @return the mask pattern.
-     */
-    protected int getBestMaskPattern() {
-        int minLostPoint = 0;
-        int pattern = 0;
-        for (int i = 0; i < 8; i++) {
-            make(true, i);
-            int lostPoint = QRUtil.getLostPoint(this);
-            if (i == 0 || minLostPoint > lostPoint) {
-                minLostPoint = lostPoint;
-                pattern = i;
+        Boolean[][] result = new Boolean[moduleCount][moduleCount];
+        for (int row = 0; row < moduleCount; row++) {
+            for (int col = 0; col < moduleCount; col++) {
+                result[row][col] = modules[row][col];
             }
         }
-        return pattern;
+        return result;
     }
 
-    /**
-     * Places the patterns and data in the modules using the specified mask pattern.
-     *
-     * @param test true when trying out a mask pattern.
-     * @param maskPattern the mask pattern.
-     */
-    protected void make(boolean test, int maskPattern) {
-        modules = new Boolean[moduleCount][moduleCount];
+    // Places the function patterns and the codewords, and masks them with the
+    // mask pattern of the lowest penalty, with its format information.
+    void make(byte[] data) {
+        modules = new boolean[moduleCount][moduleCount];
+        reserved = new boolean[moduleCount][moduleCount];
         setupPositionProbePattern(0, 0);
         setupPositionProbePattern(moduleCount - 7, 0);
         setupPositionProbePattern(0, moduleCount - 7);
         setupPositionAdjustPattern();
         setupTimingPattern();
-        setupTypeInfo(test, maskPattern);
+        setupTypeInfo(modules, 0);  // Reserves the modules of the format information
         if (typeNumber >= 7) {
-            setupTypeNumber(test);
+            setupTypeNumber();
         }
-        mapData(createData(errorCorrectionLevel), maskPattern);
+        mapData(data);
+
+        // Each mask is tried with its format information in place, as ISO/IEC
+        // 18004 asks, and the first of the lowest penalty is taken.
+        boolean[][] best = null;
+        int minLostPoint = 0;
+        for (int maskPattern = 0; maskPattern < 8; maskPattern++) {
+            boolean[][] masked = applyMask(maskPattern);
+            int lostPoint = QRUtil.getLostPoint(masked);
+            if (best == null || lostPoint < minLostPoint) {
+                minLostPoint = lostPoint;
+                best = masked;
+            }
+        }
+        modules = best;
+        reserved = null;
     }
 
-    private void mapData(byte[] data, int maskPattern) {
+    // Sets the module of a function pattern or of the format or version information.
+    private void set(int row, int col, boolean dark) {
+        modules[row][col] = dark;
+        reserved[row][col] = true;
+    }
+
+    // Returns the modules with the mask pattern applied to the codewords, and
+    // the format information of the mask pattern.
+    boolean[][] applyMask(int maskPattern) {
+        boolean[][] masked = new boolean[moduleCount][moduleCount];
+        for (int row = 0; row < moduleCount; row++) {
+            for (int col = 0; col < moduleCount; col++) {
+                boolean dark = modules[row][col];
+                if (!reserved[row][col] && QRUtil.getMask(maskPattern, row, col)) {
+                    dark = !dark;
+                }
+                masked[row][col] = dark;
+            }
+        }
+        setupTypeInfo(masked, maskPattern);
+        return masked;
+    }
+
+    // Places the bits of the codewords in the modules that are not reserved,
+    // in two module wide columns from the bottom right corner, up and down in
+    // turn; the modules left over are light.
+    void mapData(byte[] data) {
         int inc = -1;
         int row = moduleCount - 1;
         int bitIndex = 7;
@@ -255,14 +284,10 @@ final public class QRCode implements Drawable {
             if (col == 6) col--;
             while (true) {
                 for (int c = 0; c < 2; c++) {
-                    if (modules[row][col - c] == null) {
+                    if (!reserved[row][col - c]) {
                         boolean dark = false;
                         if (byteIndex < data.length) {
                             dark = (((data[byteIndex] >>> bitIndex) & 1) == 1);
-                        }
-                        boolean mask = QRUtil.getMask(maskPattern, row, col - c);
-                        if (mask) {
-                            dark = !dark;
                         }
                         modules[row][col - c] = dark;
                         bitIndex--;
@@ -282,101 +307,120 @@ final public class QRCode implements Drawable {
         }
     }
 
-    private void setupPositionAdjustPattern() {
+    void setupPositionAdjustPattern() {
         int[] pos = QRUtil.getPatternPosition(typeNumber);
         for (int row : pos) {
             for (int col : pos) {
-                if (modules[row][col] != null) {
+                if (reserved[row][col]) {
                     continue;
                 }
                 for (int r = -2; r <= 2; r++) {
                     for (int c = -2; c <= 2; c++) {
-                        modules[row + r][col + c] =
-                                r == -2 || r == 2 || c == -2 || c == 2 || (r == 0 && c == 0);
+                        set(row + r, col + c, r == -2 || r == 2 || c == -2 || c == 2 || (r == 0 && c == 0));
                     }
                 }
             }
         }
     }
 
-    private void setupPositionProbePattern(int row, int col) {
+    void setupPositionProbePattern(int row, int col) {
         for (int r = -1; r <= 7; r++) {
             for (int c = -1; c <= 7; c++) {
                 if (row + r <= -1 || moduleCount <= row + r
                         || col + c <= -1 || moduleCount <= col + c) {
                     continue;
                 }
-
-                modules[row + r][col + c] =
+                set(row + r, col + c,
                         (0 <= r && r <= 6 && (c == 0 || c == 6)) ||
                         (0 <= c && c <= 6 && (r == 0 || r == 6)) ||
-                        (2 <= r && r <= 4 && 2 <= c && c <= 4);
+                        (2 <= r && r <= 4 && 2 <= c && c <= 4));
             }
         }
     }
 
-    private void setupTimingPattern() {
+    void setupTimingPattern() {
         for (int r = 8; r < moduleCount - 8; r++) {
-            if (modules[r][6] != null) {
-                continue;
+            if (!reserved[r][6]) {
+                set(r, 6, r % 2 == 0);
             }
-            modules[r][6] = (r % 2 == 0);
         }
         for (int c = 8; c < moduleCount - 8; c++) {
-            if (modules[6][c] != null) {
-                continue;
+            if (!reserved[6][c]) {
+                set(6, c, c % 2 == 0);
             }
-            modules[6][c] = (c % 2 == 0);
         }
     }
 
     // Versions 7 and up carry their version number twice, next to two finder patterns.
-    private void setupTypeNumber(boolean test) {
+    private void setupTypeNumber() {
         int bits = QRUtil.getBCHTypeNumber(typeNumber);
         for (int i = 0; i < 18; i++) {
-            boolean mod = (!test && ((bits >> i) & 1) == 1);
-            modules[i / 3][i % 3 + moduleCount - 8 - 3] = mod;
-        }
-        for (int i = 0; i < 18; i++) {
-            boolean mod = (!test && ((bits >> i) & 1) == 1);
-            modules[i % 3 + moduleCount - 8 - 3][i / 3] = mod;
+            boolean dark = ((bits >> i) & 1) == 1;
+            set(i / 3, i % 3 + moduleCount - 8 - 3, dark);
+            set(i % 3 + moduleCount - 8 - 3, i / 3, dark);
         }
     }
 
-    private void setupTypeInfo(boolean test, int maskPattern) {
+    // Places the format information, the error correction level and the mask
+    // pattern, twice in the modules, and the dark module next to the bottom
+    // left finder pattern. The modules it takes are reserved.
+    void setupTypeInfo(boolean[][] matrix, int maskPattern) {
         int data = (errorCorrectionLevel.value << 3) | maskPattern;
         int bits = QRUtil.getBCHTypeInfo(data);
 
         for (int i = 0; i < 15; i++) {
-            Boolean mod = (!test && ((bits >> i) & 1) == 1);
+            boolean dark = ((bits >> i) & 1) == 1;
             if (i < 6) {
-                modules[i][8] = mod;
+                put(matrix, i, 8, dark);
             } else if (i < 8) {
-                modules[i + 1][8] = mod;
+                put(matrix, i + 1, 8, dark);
             } else {
-                modules[moduleCount - 15 + i][8] = mod;
+                put(matrix, moduleCount - 15 + i, 8, dark);
             }
         }
 
         for (int i = 0; i < 15; i++) {
-            boolean mod = (!test && ((bits >> i) & 1) == 1);
+            boolean dark = ((bits >> i) & 1) == 1;
             if (i < 8) {
-                modules[8][moduleCount - i - 1] = mod;
+                put(matrix, 8, moduleCount - i - 1, dark);
             } else if (i < 9) {
-                modules[8][15 - i - 1 + 1] = mod;
+                put(matrix, 8, 15 - i - 1 + 1, dark);
             } else {
-                modules[8][15 - i - 1] = mod;
+                put(matrix, 8, 15 - i - 1, dark);
             }
         }
 
-        modules[moduleCount - 8][8] = !test;
+        put(matrix, moduleCount - 8, 8, true);
     }
 
-    private byte[] createData(ErrorCorrectionLevel errorCorrectionLevel) {
+    private void put(boolean[][] matrix, int row, int col, boolean dark) {
+        matrix[row][col] = dark;
+        reserved[row][col] = true;
+    }
+
+    // For the tests: the modules, the size, and the modules as they are before the masks.
+    boolean[][] modules() {
+        return modules;
+    }
+
+    int getModuleCount() {
+        return moduleCount;
+    }
+
+    void resetForTest() {
+        modules = new boolean[moduleCount][moduleCount];
+        reserved = new boolean[moduleCount][moduleCount];
+    }
+
+    byte[] createData(ErrorCorrectionLevel errorCorrectionLevel) {
         RSBlock[] rsBlocks = RSBlock.getRSBlocks(typeNumber, errorCorrectionLevel);
 
         BitBuffer buffer = new BitBuffer();
-        buffer.put(4, 4);
+        if (eci) {
+            buffer.put(7, 4);   // ECI
+            buffer.put(26, 8);  // UTF-8
+        }
+        buffer.put(4, 4);       // Byte mode
         buffer.put(qrData.length, getCharacterCountBits(typeNumber));
         for (byte b : qrData) {
             buffer.put(b, 8);

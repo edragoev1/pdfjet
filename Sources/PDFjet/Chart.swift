@@ -701,7 +701,7 @@ public class Chart : Drawable {
             }
         }
         // Guard against flat data before rounding, so the range has grid lines
-        if xMax == xMin { xMax = xMin + 1.0 }
+        if xMax == xMin { xMax = xMin + Chart.flatDataSpan(xMin) }
         if manualXGridLines == 0 {
             let round = Chart.roundMaxAndMinValues(xMax, xMin)
             xMax = round.maxValue
@@ -732,7 +732,7 @@ public class Chart : Drawable {
             }
         }
         // Guard against flat data before rounding, so the range has grid lines
-        if yMax == yMin { yMax = yMin + 1.0 }
+        if yMax == yMin { yMax = yMin + Chart.flatDataSpan(yMin) }
         if manualYGridLines == 0 {
             let round = Chart.roundMaxAndMinValues(yMax, yMin)
             yMax = round.maxValue
@@ -882,13 +882,22 @@ public class Chart : Drawable {
     }
 
     ///
+    /// Returns the span of the range of flat data at the value: 1, or a hundred
+    /// thousandth of the value when that is more, since above 2^24 a Float has
+    /// no room for 1 more, and the range would stay flat.
+    ///
+    static func flatDataSpan(_ value: Float) -> Float {
+        return Swift.max(1.0, abs(value)*1e-5)
+    }
+
+    ///
     /// Rounds the axis range to "nice" values for clean grid lines.
     /// Uses the span (max - min) to support negative values and
     /// zero crossings. Rounds max up and min down to step multiples.
     ///
     static func roundMaxAndMinValues(_ maxValue: Float, _ minValue: Float) -> Round {
         var span = maxValue - minValue
-        if span <= 0.0 { span = 1.0 }   // guard against flat data
+        if span <= 0.0 { span = flatDataSpan(minValue) }   // guard against flat data
 
         let exponent = Int(floor(log(Double(span)) / log(10.0)))
         let normalizedSpan = span * Float(pow(10.0, Double(-exponent)))
@@ -924,6 +933,11 @@ public class Chart : Drawable {
 
         // Recount grid lines from actual rounded range
         round.numOfGridLines = Int(((round.maxValue - round.minValue) / step).rounded())
+        if round.numOfGridLines < 1 || round.maxValue <= round.minValue {
+            // Flat data on a step, which the rounding leaves flat
+            round.maxValue = round.minValue + step
+            round.numOfGridLines = 1
+        }
 
         return round
     }

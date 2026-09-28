@@ -43,12 +43,19 @@ public class PDF417 implements Drawable {
     private int cols = 18;
     private int[] codewords;
     private String str;
+    private String altDescription;
+
+    // The codeword that shifts from text compaction to byte compaction for the
+    // one codeword after it.
+    private static final int BYTE_SHIFT = 913;
 
     /**
      * Constructor for PDF417 barcodes.
      * The symbol has 18 columns and as many rows as the string needs, up to the
      * 928 codewords a PDF417 symbol can hold: 864 data codewords, or about 1,300
      * characters of mixed text, with the error correction level 5 used here.
+     * The string is ASCII, and a control character other than HT, LF and CR
+     * takes a codeword of its own and one more, in byte compaction.
      *
      * @param str the specified string.
      * @throws Exception if there are unencodable characters or the string does not fit in a symbol.
@@ -64,9 +71,9 @@ public class PDF417 implements Drawable {
             }
         }
 
-        // The data codewords: the symbol length descriptor and one codeword for two text codewords.
-        List<Integer> list = textToArrayOfIntegers();
-        int dataCodewords = 1 + (list.size() + 1) / 2;
+        // The data codewords, after the symbol length descriptor
+        List<Integer> list = dataCodewords();
+        int dataCodewords = 1 + list.size();
         rows = (dataCodewords + L5ECC.table.length + cols - 1) / cols;
         if (rows < 3) {
             rows = 3;
@@ -110,8 +117,9 @@ public class PDF417 implements Drawable {
             buffer[i] = 900; // The default pad codeword
         }
         buffer[0] = dataLen;
-
-        addData(buffer, list);
+        for (int i = 0; i < list.size(); i++) {
+            buffer[1 + i] = list.get(i);
+        }
         addECC(buffer);
 
         for (int i = 0; i < rows; i++) {
@@ -164,6 +172,10 @@ public class PDF417 implements Drawable {
                 list.add(26); // The codeword for space
                 continue;
             }
+            if (isByteShifted(ch)) {
+                list.add(-1 - ch);  // Below 0, see dataCodewords
+                continue;
+            }
 
             int value = TextCompact.TABLE[ch][1];
             int mode = TextCompact.TABLE[ch][2];
@@ -209,13 +221,40 @@ public class PDF417 implements Drawable {
         return list;
     }
 
-    private void addData(int[] buffer, List<Integer> list) {
-        int bi = 1; // buffer index = 1 to skip the Symbol Length Descriptor
-        for (int i = 0; i < list.size(); i += 2) {
-            int hi = list.get(i);
-            int lo = (i + 1 == list.size()) ? SHIFT_TO_PUNCT : list.get(i + 1);  // Pad
-            buffer[bi++] = 30 * hi + lo;
+    // Tells if the character is a control character that text compaction has
+    // no value for, and that is so encoded in byte compaction.
+    private static boolean isByteShifted(int ch) {
+        return ch < 0x20 && ch != '\t' && ch != '\n' && ch != '\r';
+    }
+
+    // Returns the data codewords of the string in text compaction, two values
+    // to a codeword; a control character other than HT, LF and CR is the byte
+    // compaction shift and its byte, which starts a codeword, so the value
+    // before it may be padded, and after which text compaction goes on in the
+    // submode it was in.
+    final List<Integer> dataCodewords() {
+        List<Integer> list = textToArrayOfIntegers();
+        List<Integer> codewords = new ArrayList<Integer>();
+        int hi = -1;    // The first value of a codeword, if any
+        for (int value : list) {
+            if (value < 0) {
+                if (hi != -1) {
+                    codewords.add(30 * hi + SHIFT_TO_PUNCT);    // Pad
+                    hi = -1;
+                }
+                codewords.add(BYTE_SHIFT);
+                codewords.add(-1 - value);
+            } else if (hi == -1) {
+                hi = value;
+            } else {
+                codewords.add(30 * hi + value);
+                hi = -1;
+            }
         }
+        if (hi != -1) {
+            codewords.add(30 * hi + SHIFT_TO_PUNCT);    // Pad
+        }
+        return codewords;
     }
 
     private void addECC(int[] buf) {
@@ -245,13 +284,54 @@ public class PDF417 implements Drawable {
     }
 
     /**
-     * Draws this barcode on the specified page.
+     * Sets what the barcode says for a screen reader: a tagged document, PDF/UA
+     * or a PDF/A of level A, then has the barcode as a figure of that
+     * description. Without one, its bars are decoration, which a screen reader
+     * skips.
+     *
+     * @param altDescription the description.
+     * @return this PDF417 object.
+     */
+    public PDF417 setAltDescription(String altDescription) {
+        this.altDescription = altDescription;
+        return this;
+    }
+
+    /**
+     * Draws this barcode on the specified page. The bars are black, and the
+     * pen of the page is as it was after it.
      *
      * @param page the page to draw this barcode on.
      * @return x and y coordinates of the bottom right corner of this component.
      * @throws Exception If an input or output exception occurred
      */
     public float[] drawOn(Page page) throws Exception {
+        boolean figure = altDescription != null && !altDescription.isEmpty();
+        if (page != null) {
+            // Described, the barcode is a figure of a tagged document; not
+            // described, its bars, which carry no text, are decoration.
+            if (figure) {
+                page.addBDC(StructElem.FIGURE, null, null, altDescription);
+            } else {
+                page.addArtifactBMC();
+            }
+            page.saveGraphicsState();
+            page.setPenColor(Color.black);
+        }
+        float[] xy = drawBars(page);
+        if (page != null) {
+            page.restoreGraphicsState();
+            if (figure) {
+                page.setFigureBoundingBox(x1, y1, xy[0] - x1, xy[1] - y1);
+            }
+            page.addEMC();
+        }
+        return xy;
+    }
+
+    // Draws the bars, or measures them with no page, and returns the bottom
+    // right corner of the barcode.
+    private float[] drawBars(Page page) throws Exception {
         float x = x1;
         float y = y1;
 
@@ -311,11 +391,9 @@ public class PDF417 implements Drawable {
         if (page == null) {
             return;     // Measured, not drawn
         }
-        page.addArtifactBMC();
         page.setPenWidth(w);
         page.moveTo(x + w / 2, y);
         page.lineTo(x + w / 2, y + h);
         page.strokePath();
-        page.addEMC();
     }
 } // End of PDF417.java

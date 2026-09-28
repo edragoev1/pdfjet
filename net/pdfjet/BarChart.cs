@@ -143,7 +143,10 @@ public class BarChart : IDrawable {
         return this;
     }
 
-    /// <summary>Adds a series drawn in the next color of the default palette.</summary>
+    /// <summary>
+    /// Adds a series drawn in the next color of the default palette. A value
+    /// that is NaN or infinite has no bar.
+    /// </summary>
     /// <param name="name">the series name, shown in the legend; empty for none.</param>
     /// <param name="values">one value per category.</param>
     /// <returns>this BarChart object.</returns>
@@ -404,7 +407,7 @@ public class BarChart : IDrawable {
                     float up = 0f;
                     float down = 0f;
                     foreach (Series s in series) {
-                        if (i < s.values.Length) {
+                        if (i < s.values.Length && IsValue(s.values[i])) {
                             if (s.values[i] >= 0f) { up += s.values[i]; } else { down += s.values[i]; }
                         }
                     }
@@ -414,18 +417,21 @@ public class BarChart : IDrawable {
             } else {
                 foreach (Series s in series) {
                     foreach (float v in s.values) {
+                        if (!IsValue(v)) {
+                            continue;
+                        }
                         lo = Math.Min(lo, v);
                         hi = Math.Max(hi, v);
                     }
                 }
             }
-            if (hi == lo) { hi = lo + 1f; }
+            if (hi == lo) { hi = lo + Chart.FlatDataSpan(lo); }
             Round round = Chart.RoundMaxAndMinValues(hi, lo);
             vMin = round.minValue;
             vMax = round.maxValue;
             lines = round.numOfGridLines;
         }
-        if (vMax == vMin) { vMax = vMin + 1f; }
+        if (vMax == vMin) { vMax = vMin + Chart.FlatDataSpan(vMin); }
         float step = (vMax - vMin) / lines;
         int axisDigits = Math.Max(minFractionDigits, Chart.FractionDigitsOf(step, maxFractionDigits));
         float baseValue = Math.Min(Math.Max(0f, vMin), vMax);
@@ -447,6 +453,9 @@ public class BarChart : IDrawable {
         if (drawValueLabels) {
             foreach (Series s in series) {
                 foreach (float v in s.values) {
+                    if (!IsValue(v)) {
+                        continue;
+                    }
                     widestValueLabel = Math.Max(widestValueLabel, f2.StringWidth(ValueLabel(v)));
                 }
             }
@@ -537,7 +546,7 @@ public class BarChart : IDrawable {
             float down = 0f;    // the stacked values below 0 so far
             for (int j = 0; j < m; j++) {
                 Series s = series[j];
-                if (i >= s.values.Length) {
+                if (i >= s.values.Length || !IsValue(s.values[i])) {
                     continue;
                 }
                 // A bar runs from the base to its value; a segment of a stack
@@ -690,6 +699,12 @@ public class BarChart : IDrawable {
             sb.Insert(i, ',');
         }
         return sb.ToString();
+    }
+
+    // Tells if the value is a number to draw: a value that is NaN or infinite
+    // has no bar, like a value missing at the end of a series.
+    private static bool IsValue(float value) {
+        return !float.IsNaN(value) && !float.IsInfinity(value);
     }
 
     /// <summary>Draws one dotted grid line.</summary>

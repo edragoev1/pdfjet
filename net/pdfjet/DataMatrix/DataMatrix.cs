@@ -90,6 +90,7 @@ public class DataMatrix : IDrawable {
     private float y;
     private float m1 = 2f;      // Module length
     private int color = Color.black;
+    private String altDescription;
 
     // The codewords being placed in the mapping matrix, and the matrix.
     private int[] codewords;
@@ -218,15 +219,35 @@ public class DataMatrix : IDrawable {
     }
 
     /// <summary>
+    /// Sets what the barcode says for a screen reader: a tagged document, PDF/UA
+    /// or a PDF/A of level A, then has the barcode as a figure of that
+    /// description. Without one, its modules are decoration, which a screen
+    /// reader skips.
+    /// </summary>
+    /// <param name="altDescription">the description.</param>
+    /// <returns>this DataMatrix object.</returns>
+    public DataMatrix SetAltDescription(String altDescription) {
+        this.altDescription = altDescription;
+        return this;
+    }
+
+    /// <summary>
     /// Draws this barcode on the specified page. With no page nothing is drawn.
     /// Returns the x and y coordinates of the bottom right corner of this barcode.
+    /// The brush of the page is as it was after it.
     /// </summary>
     public float[] DrawOn(Page page) {
         int rows = modules.Length;
         int cols = modules[0].Length;
         if (page != null) {
-            // The modules carry no text, so they are decorative content.
-            page.AddArtifactBMC();
+            // Described, the barcode is a figure of a tagged document; not
+            // described, its modules, which carry no text, are decoration.
+            if (!String.IsNullOrEmpty(altDescription)) {
+                page.AddBDC(StructElem.FIGURE, null, null, altDescription);
+            } else {
+                page.AddArtifactBMC();
+            }
+            page.SaveGraphicsState();
             page.SetBrushColor(color);
             for (int row = 0; row < rows; row++) {
                 int col = 0;
@@ -241,6 +262,10 @@ public class DataMatrix : IDrawable {
                     }
                     page.FillRect(x + start*m1, y + row*m1, (col - start)*m1, m1);
                 }
+            }
+            page.RestoreGraphicsState();
+            if (!String.IsNullOrEmpty(altDescription)) {
+                page.SetFigureBoundingBox(x, y, cols*m1, rows*m1);
             }
             page.AddEMC();
         }

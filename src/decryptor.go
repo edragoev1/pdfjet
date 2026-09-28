@@ -128,7 +128,16 @@ func newDecryptor(encrypt *PDFobj, objects []*PDFobj, id []byte, password string
 		} else if v == 4 {
 			length = 16
 		}
-		d.key, err = getRC4Key(r, max(5, min(length, 16)), latin1Password(password),
+		length = max(5, min(length, 16))
+		// AES-128 takes an object key of 16 bytes, which a key of fewer than
+		// 11 bytes does not make, and AES-256 a key of 32 bytes, which only
+		// revisions 5 and 6 have.
+		for _, method := range []int{d.streamMethod, d.stringMethod} {
+			if (method == cryptAES128 && length < 11) || method == cryptAES256 {
+				return nil, fmt.Errorf("The encryption of the PDF is not valid: /R %d with a key of %d bits for AES", r, 8*length)
+			}
+		}
+		d.key, err = getRC4Key(r, length, latin1Password(password),
 			o, u, getInt(encrypt, "/P"), id, d.encryptMetadata)
 	} else {
 		return nil, fmt.Errorf("The encryption of the PDF is not supported: /R %d", r)
@@ -364,16 +373,61 @@ func getHash(r int, password, salt, udata []byte) []byte {
 }
 
 // decryptStrings decrypts the strings in the dictionary of the object, which
-// become hexadecimal strings.
+// become hexadecimal strings. The /Contents of a signature dictionary, the
+// signature, is not encrypted, as ISO 32000-2 7.6.2 has it, and is left as
+// it is.
 func (d *decryptor) decryptStrings(obj *PDFobj) {
 	if d.stringMethod == cryptNone {
 		return
 	}
 	for i, token := range obj.dict {
 		if strings.HasPrefix(token, "(") || (strings.HasPrefix(token, "<") && token != "<<") {
+			if i > 0 && obj.dict[i-1] == "/Contents" && isSignatureDict(obj.dict, i) {
+				continue
+			}
 			obj.dict[i] = "<" + hex.EncodeToString(d.decrypt(toBytes(token), d.stringMethod, obj)) + ">"
 		}
 	}
+}
+
+// isSignatureDict tells if the dictionary the token at i is in is a
+// signature dictionary: of /Type /Sig or /DocTimeStamp, or with a
+// /ByteRange, which only a signature dictionary has.
+func isSignatureDict(dict []string, i int) bool {
+	// The start of the dictionary
+	start := i
+	for level := 0; start >= 0; start-- {
+		if dict[start] == ">>" {
+			level++
+		} else if dict[start] == "<<" {
+			if level == 0 {
+				break
+			}
+			level--
+		}
+	}
+	// Its entries, not those of the dictionaries in it
+	level := 0
+	for j := start + 1; j < len(dict); j++ {
+		switch dict[j] {
+		case "<<":
+			level++
+		case ">>":
+			if level == 0 {
+				return false
+			}
+			level--
+		case "/ByteRange":
+			if level == 0 {
+				return true
+			}
+		case "/Type":
+			if level == 0 && j+1 < len(dict) && (dict[j+1] == "/Sig" || dict[j+1] == "/DocTimeStamp") {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // decryptStream returns the decrypted stream of the object.
@@ -416,6 +470,9 @@ func (d *decryptor) decrypt(data []byte, method int, obj *PDFobj) []byte {
 		return []byte{}
 	}
 	decrypted := aesDecrypt(objectKey, data[:16], data[16:16+(len(data)-16)/16*16])
+	if len(decrypted) == 0 {
+		return []byte{}
+	}
 	padding := int(decrypted[len(decrypted)-1])
 	if padding >= 1 && padding <= 16 {
 		return decrypted[:len(decrypted)-padding]

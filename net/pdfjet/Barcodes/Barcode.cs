@@ -240,24 +240,27 @@ public class Barcode : IDrawable {
             page.SetPenColor(Color.black);
         }
         try {
-            float[] xy;
+            Extent extent;
             if (barcodeType == Barcode.EAN_13) {
-                xy = DrawCodeEAN13(page, x1, y1);
+                extent = DrawCodeEAN13(page, x1, y1);
             } else if (barcodeType == Barcode.UPC_A) {
-                xy = DrawCodeUPC(page, x1, y1);
+                extent = DrawCodeUPC(page, x1, y1);
             } else if (barcodeType == Barcode.CODE_128 || barcodeType == Barcode.GS1_128) {
-                xy = DrawCode128(page, x1, y1);
+                extent = DrawCode128(page, x1, y1);
             } else if (barcodeType == Barcode.CODE_39) {
-                xy = DrawCode39(page, x1, y1);
+                extent = DrawCode39(page, x1, y1);
             } else if (barcodeType == Barcode.ITF_14) {
-                xy = DrawITF14(page, x1, y1);
+                extent = DrawITF14(page, x1, y1);
             } else {
                 throw new Exception("Unsupported Barcode Type.");
             }
             if (figure) {
-                page.SetFigureBoundingBox(x1, y1, xy[0] - x1, xy[1] - y1);
+                // The box of the bars and the text, which can reach left of x1
+                // and, turned, above y1
+                float[] box = extent.GetBox();
+                page.SetFigureBoundingBox(box[0], box[1], box[2], box[3]);
             }
-            return xy;
+            return extent.bars.GetBottomRight(extent.left, extent.right, extent.bottom);
         } finally {
             if (page != null) {
                 page.RestoreGraphicsState();
@@ -268,7 +271,7 @@ public class Barcode : IDrawable {
         }
     }
 
-    private float[] DrawCodeUPC(Page page, float x1, float y1) {
+    private Extent DrawCodeUPC(Page page, float x1, float y1) {
         float x = x1;
         float h = m1 * barHeightFactor; // Barcode height when drawn horizontally
         // The guard bars, and the bars of the first and the last digit, which are
@@ -365,7 +368,7 @@ public class Barcode : IDrawable {
             font.SetSize(fontSize);
         }
 
-        return bars.GetBottomRight(left, right, bottom);
+        return new Extent(bars, left, right, bottom);
     }
 
     // How far the guard bars of EAN-13 and UPC-A reach below the other bars, in
@@ -432,12 +435,13 @@ public class Barcode : IDrawable {
 
     // Returns the start and the codewords of the text: runs of four digits or
     // more in code set C, two digits to a codeword, and the rest in code set B,
-    // where a character from 32 to 127 takes one codeword, and one below 32 or
-    // from 128 to 255 two, SHIFT or FNC 4 and the character. It throws for a
+    // where a character from 32 to 127 takes one codeword, one below 32 or from
+    // 160 to 255 two, SHIFT or FNC 4 and the character, and one from 128 to 159
+    // three, FNC 4, SHIFT and the character 128 below it. It throws for a
     // character above 255, which the code sets cannot hold, and for a text of
     // more than 48 codewords, the most a barcode holds, rather than draw a
     // barcode of another text.
-    private static List<Int32> Code128Codewords(String text) {
+    internal static List<Int32> Code128Codewords(String text) {
         List<Int32> items = new List<Int32>();
         foreach (char symchar in text) {
             if (symchar > 255) {
@@ -448,7 +452,7 @@ public class Barcode : IDrawable {
         List<Int32> list = Code128Encode(items);
         if (list.Count - 1 > 48) {
             throw new Exception(
-                    "Code 128 barcodes hold at most 48 codewords, and a character below 32 or from 128 to 255 takes two!");
+                    "Code 128 barcodes hold at most 48 codewords, and a character below 32 or from 160 to 255 takes two, and one from 128 to 159 three!");
         }
         return list;
     }
@@ -516,6 +520,13 @@ public class Barcode : IDrawable {
             } else if (c < 128) {
                 list.Add(c - 32);
                 i++;
+            } else if (c < 160) {
+                // FNC 4 and the control character 128 below it, which is in
+                // code set A, after SHIFT
+                list.Add(Code128Table.FNC_4);
+                list.Add(Code128Table.SHIFT);
+                list.Add(c - 128 + 64);
+                i++;
             } else {
                 list.Add(Code128Table.FNC_4);
                 list.Add(c - 160);      // 128 + 32
@@ -534,7 +545,7 @@ public class Barcode : IDrawable {
         return n;
     }
 
-    private float[] DrawCode128(Page page, float x1, float y1) {
+    private Extent DrawCode128(Page page, float x1, float y1) {
         float h = m1 * barHeightFactor; // Barcode height when drawn horizontally
 
         List<Int32> list = (barcodeType == Barcode.GS1_128) ? GS1128Codewords(text) : Code128Codewords(text);
@@ -575,17 +586,19 @@ public class Barcode : IDrawable {
             }
         }
 
+        float left = x1;
         float right = x;
         float bottom = y1 + h;
         if (font != null) {
-            float[] xy = DrawText(page, bars, text,
-                    x1 + ((x - x1) - font.StringWidth(text))/2,
-                    y1 + h + font.GetBodyHeight(font.GetSize()));
+            // The text is centered under the bars, and can be wider than them
+            float textX = x1 + ((x - x1) - font.StringWidth(text))/2;
+            float[] xy = DrawText(page, bars, text, textX, y1 + h + font.GetBodyHeight(font.GetSize()));
+            left = Math.Min(left, textX);
             right = Math.Max(right, xy[0]);
             bottom = xy[1];
         }
 
-        return bars.GetBottomRight(x1, right, bottom);
+        return new Extent(bars, left, right, bottom);
     }
 
     // The widths, narrow (n) or wide (w), of the five bars or the five spaces of
@@ -602,7 +615,7 @@ public class Barcode : IDrawable {
     // them, as GS1 asks of a barcode printed on corrugated board, so that a
     // scanner does not read a barcode cut short. The text, the 14 digits, is
     // under the frame.
-    private float[] DrawITF14(Page page, float x1, float y1) {
+    private Extent DrawITF14(Page page, float x1, float y1) {
         float m = m1;
         float wide = 2.5f * m;
         float bearer = 4f * m;
@@ -654,16 +667,17 @@ public class Barcode : IDrawable {
             page.AddEMC();
         }
 
+        float left = x1;
         float right = x1 + outerWidth;
         float bottom = y1 + outerHeight;
         if (font != null) {
-            float[] xy = DrawText(page, bars, fullText,
-                    x1 + (outerWidth - font.StringWidth(fullText))/2,
-                    y1 + outerHeight + font.GetBodyHeight(font.GetSize()));
+            float textX = x1 + (outerWidth - font.StringWidth(fullText))/2;
+            float[] xy = DrawText(page, bars, fullText, textX, y1 + outerHeight + font.GetBodyHeight(font.GetSize()));
+            left = Math.Min(left, textX);
             right = Math.Max(right, xy[0]);
             bottom = xy[1];
         }
-        return bars.GetBottomRight(x1, right, bottom);
+        return new Extent(bars, left, right, bottom);
     }
 
     // Strokes a line of width w from (xa, ya) to (xb, yb), turned to the
@@ -677,7 +691,7 @@ public class Barcode : IDrawable {
         page.StrokePath();
     }
 
-    private float[] DrawCode39(Page page, float x1, float y1) {
+    private Extent DrawCode39(Page page, float x1, float y1) {
         // Use a local variable instead of mutating the text field - DrawOn()
         // must be safe to call more than once on the same Barcode instance
         // (e.g. drawing the same barcode on several pages).
@@ -718,20 +732,21 @@ public class Barcode : IDrawable {
             x += m1;
         }
 
+        float left = x1;
         float right = x1 + length;
         float bottom = y1 + h;
         if (font != null) {
-            float[] xy = DrawText(page, bars, fullText,
-                    x1 + (length - font.StringWidth(fullText))/2,
-                    y1 + h + font.GetBodyHeight(font.GetSize()));
+            float textX = x1 + (length - font.StringWidth(fullText))/2;
+            float[] xy = DrawText(page, bars, fullText, textX, y1 + h + font.GetBodyHeight(font.GetSize()));
+            left = Math.Min(left, textX);
             right = Math.Max(right, xy[0]);
             bottom = xy[1];
         }
 
-        return bars.GetBottomRight(x1, right, bottom);
+        return new Extent(bars, left, right, bottom);
     }
 
-    private float[] DrawCodeEAN13(Page page, float x1, float y1) {
+    private Extent DrawCodeEAN13(Page page, float x1, float y1) {
         float x = x1;
         float h = m1 * barHeightFactor; // Barcode height when drawn horizontally
         // The guard bars reach 5 modules below the others.
@@ -829,7 +844,7 @@ public class Barcode : IDrawable {
             font.SetSize(fontSize);
         }
 
-        return bars.GetBottomRight(left, right, bottom);
+        return new Extent(bars, left, right, bottom);
     }
 
     // The bars of a barcode, length long and height high, drawn left to right from
@@ -871,6 +886,31 @@ public class Barcode : IDrawable {
                 return new float[] {x1 + (bottom - y1), y1 + length + (x1 - left)};
             }
             return new float[] {right, bottom};
+        }
+    }
+
+    // How far a barcode drawn left to right reaches, its bars and its text: from
+    // left to right, and from y1 to bottom.
+    private sealed class Extent {
+        internal readonly Bars bars;
+        internal readonly float left;
+        internal readonly float right;
+        internal readonly float bottom;
+
+        internal Extent(Bars bars, float left, float right, float bottom) {
+            this.bars = bars;
+            this.left = left;
+            this.right = right;
+            this.bottom = bottom;
+        }
+
+        // Returns the box of the barcode, turned to its direction: the x and y
+        // of its top left corner, its width and its height.
+        internal float[] GetBox() {
+            float[] a = bars.Turn(left, bars.y1);
+            float[] b = bars.Turn(right, bottom);
+            return new float[] {Math.Min(a[0], b[0]), Math.Min(a[1], b[1]),
+                    Math.Abs(b[0] - a[0]), Math.Abs(b[1] - a[1])};
         }
     }
 

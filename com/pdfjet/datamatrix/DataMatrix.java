@@ -93,6 +93,7 @@ public final class DataMatrix implements Drawable {
     private float y;
     private float m1 = 2f;      // Module length
     private int color = Color.black;
+    private String altDescription;
 
     // The codewords being placed in the mapping matrix, and the matrix.
     private int[] codewords;
@@ -252,7 +253,22 @@ public final class DataMatrix implements Drawable {
     }
 
     /**
+     * Sets what the barcode says for a screen reader: a tagged document, PDF/UA
+     * or a PDF/A of level A, then has the barcode as a figure of that
+     * description. Without one, its modules are decoration, which a screen
+     * reader skips.
+     *
+     * @param altDescription the description.
+     * @return this DataMatrix object.
+     */
+    public DataMatrix setAltDescription(String altDescription) {
+        this.altDescription = altDescription;
+        return this;
+    }
+
+    /**
      * Draws this barcode on the specified page. With no page nothing is drawn.
+     * The brush of the page is as it was after it.
      *
      * @param page the page to draw on.
      * @return the x and y coordinates of the bottom right corner of this barcode.
@@ -262,8 +278,15 @@ public final class DataMatrix implements Drawable {
         int rows = modules.length;
         int cols = modules[0].length;
         if (page != null) {
-            // The modules carry no text, so they are decorative content.
-            page.addArtifactBMC();
+            // Described, the barcode is a figure of a tagged document; not
+            // described, its modules, which carry no text, are decoration.
+            boolean figure = altDescription != null && !altDescription.isEmpty();
+            if (figure) {
+                page.addBDC(StructElem.FIGURE, null, null, altDescription);
+            } else {
+                page.addArtifactBMC();
+            }
+            page.saveGraphicsState();
             page.setBrushColor(color);
             for (int row = 0; row < rows; row++) {
                 int col = 0;
@@ -278,6 +301,10 @@ public final class DataMatrix implements Drawable {
                     }
                     page.fillRect(x + start*m1, y + row*m1, (col - start)*m1, m1);
                 }
+            }
+            page.restoreGraphicsState();
+            if (figure) {
+                page.setFigureBoundingBox(x, y, cols*m1, rows*m1);
             }
             page.addEMC();
         }

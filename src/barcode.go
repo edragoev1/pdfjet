@@ -214,28 +214,31 @@ func (barcode *Barcode) DrawOn(page *Page) [2]float32 {
 		page.SetPenColor(color.Black)
 		defer page.RestoreGraphicsState()
 	}
-	var xy [2]float32
+	var extent *barcodeExtent
 	switch barcode.barcodeType {
 	case EAN_13:
-		xy = barcode.drawCodeEAN13(page, barcode.x1, barcode.y1)
+		extent = barcode.drawCodeEAN13(page, barcode.x1, barcode.y1)
 	case UPC_A:
-		xy = barcode.drawCodeUPC(page, barcode.x1, barcode.y1)
+		extent = barcode.drawCodeUPC(page, barcode.x1, barcode.y1)
 	case CODE_128, GS1_128:
-		xy = barcode.drawCode128(page, barcode.x1, barcode.y1)
+		extent = barcode.drawCode128(page, barcode.x1, barcode.y1)
 	case CODE_39:
-		xy = barcode.drawCode39(page, barcode.x1, barcode.y1)
+		extent = barcode.drawCode39(page, barcode.x1, barcode.y1)
 	case ITF_14:
-		xy = barcode.drawITF14(page, barcode.x1, barcode.y1)
+		extent = barcode.drawITF14(page, barcode.x1, barcode.y1)
 	default:
 		panic("Unsupported Barcode Type.")
 	}
 	if page != nil && barcode.altDescription != "" {
-		page.SetFigureBoundingBox(barcode.x1, barcode.y1, xy[0]-barcode.x1, xy[1]-barcode.y1)
+		// The box of the bars and the text, which can reach left of x1 and,
+		// turned, above y1
+		box := extent.getBox()
+		page.SetFigureBoundingBox(box[0], box[1], box[2], box[3])
 	}
-	return xy
+	return extent.bars.getBottomRight(extent.left, extent.right, extent.bottom)
 }
 
-func (barcode *Barcode) drawCodeUPC(page *Page, x1, y1 float32) [2]float32 {
+func (barcode *Barcode) drawCodeUPC(page *Page, x1, y1 float32) *barcodeExtent {
 	x := x1
 	h := barcode.m1 * barcode.barHeightFactor // Barcode height when drawn horizontally
 	// The guard bars, and the bars of the first and the last digit, which are
@@ -343,7 +346,7 @@ func (barcode *Barcode) drawCodeUPC(page *Page, x1, y1 float32) [2]float32 {
 		barcode.font.SetSize(fontSize)
 	}
 
-	return bars.getBottomRight(left, right, bottom)
+	return &barcodeExtent{bars, left, right, bottom}
 }
 
 // guardBarExtension is how far the guard bars of EAN-13 and UPC-A reach below
@@ -412,8 +415,9 @@ func (barcode *Barcode) drawText(page *Page, bars *barcodeBars, text string, x, 
 
 // code128Codewords returns the start and the codewords of the text: runs of
 // four digits or more in code set C, two digits to a codeword, and the rest in
-// code set B, where a character from 32 to 127 takes one codeword, and one
-// below 32 or from 128 to 255 two, SHIFT or FNC 4 and the character. It panics
+// code set B, where a character from 32 to 127 takes one codeword, one below
+// 32 or from 160 to 255 two, SHIFT or FNC 4 and the character, and one from
+// 128 to 159 three, FNC 4, SHIFT and the character 128 below it. It panics
 // on a character above 255, which the code sets cannot hold, and on a text of
 // more than 48 codewords, the most a barcode holds, rather than draw a barcode
 // of another text.
@@ -427,7 +431,7 @@ func code128Codewords(text string) (rune, []rune) {
 	}
 	start, list := code128Encode(items)
 	if len(list) > 48 {
-		panic("Code 128 barcodes hold at most 48 codewords, and a character below 32 or from 128 to 255 takes two!")
+		panic("Code 128 barcodes hold at most 48 codewords, and a character below 32 or from 160 to 255 takes two, and one from 128 to 159 three!")
 	}
 	return start, list
 }
@@ -504,6 +508,11 @@ func code128Encode(items []int) (rune, []rune) {
 		case c < 128:
 			list = append(list, rune(c-32))
 			i++
+		case c < 160:
+			// FNC 4 and the control character 128 below it, which is in
+			// code set A, after SHIFT
+			list = append(list, rune(code128.FNC4), rune(code128.Shift), rune(c-128+64))
+			i++
 		default:
 			list = append(list, rune(code128.FNC4), rune(c-160)) // 128 + 32
 			i++
@@ -512,7 +521,7 @@ func code128Encode(items []int) (rune, []rune) {
 	return start, list
 }
 
-func (barcode *Barcode) drawCode128(page *Page, x1, y1 float32) [2]float32 {
+func (barcode *Barcode) drawCode128(page *Page, x1, y1 float32) *barcodeExtent {
 	h := barcode.m1 * barcode.barHeightFactor // Barcode height when drawn horizontally
 
 	var start rune
@@ -556,17 +565,19 @@ func (barcode *Barcode) drawCode128(page *Page, x1, y1 float32) [2]float32 {
 		}
 	}
 
+	left := x1
 	right := x
 	bottom := y1 + h
 	if barcode.font != nil {
-		xy := barcode.drawText(page, bars, barcode.text,
-			x1+((x-x1)-barcode.font.StringWidth(barcode.font.size, barcode.text))/2.0,
-			y1+h+barcode.font.bodyHeight)
+		// The text is centered under the bars, and can be wider than them
+		textX := x1 + ((x-x1)-barcode.font.StringWidth(barcode.font.size, barcode.text))/2.0
+		xy := barcode.drawText(page, bars, barcode.text, textX, y1+h+barcode.font.bodyHeight)
+		left = min(left, textX)
 		right = max(right, xy[0])
 		bottom = xy[1]
 	}
 
-	return bars.getBottomRight(x1, right, bottom)
+	return &barcodeExtent{bars, left, right, bottom}
 }
 
 // itfPatterns are the widths, narrow (n) or wide (w), of the five bars or the
@@ -583,7 +594,7 @@ var itfPatterns = [10]string{
 // them, as GS1 asks of a barcode printed on corrugated board, so that a scanner
 // does not read a barcode cut short. The text, the 14 digits, is under the
 // frame.
-func (barcode *Barcode) drawITF14(page *Page, x1, y1 float32) [2]float32 {
+func (barcode *Barcode) drawITF14(page *Page, x1, y1 float32) *barcodeExtent {
 	m := barcode.m1
 	wide := 2.5 * m
 	bearer := 4 * m
@@ -636,16 +647,17 @@ func (barcode *Barcode) drawITF14(page *Page, x1, y1 float32) [2]float32 {
 		page.AddEMC()
 	}
 
+	left := x1
 	right := x1 + outerWidth
 	bottom := y1 + outerHeight
 	if barcode.font != nil {
-		xy := barcode.drawText(page, bars, fullText,
-			x1+(outerWidth-barcode.font.StringWidth(barcode.font.size, fullText))/2,
-			y1+outerHeight+barcode.font.bodyHeight)
+		textX := x1 + (outerWidth-barcode.font.StringWidth(barcode.font.size, fullText))/2
+		xy := barcode.drawText(page, bars, fullText, textX, y1+outerHeight+barcode.font.bodyHeight)
+		left = min(left, textX)
 		right = max(right, xy[0])
 		bottom = xy[1]
 	}
-	return bars.getBottomRight(x1, right, bottom)
+	return &barcodeExtent{bars, left, right, bottom}
 }
 
 // strokeLine strokes a line of width w from (xa, ya) to (xb, yb), turned to
@@ -659,7 +671,7 @@ func (barcode *Barcode) strokeLine(page *Page, bars *barcodeBars, xa, ya, xb, yb
 	page.StrokePath()
 }
 
-func (barcode *Barcode) drawCode39(page *Page, x1, y1 float32) [2]float32 {
+func (barcode *Barcode) drawCode39(page *Page, x1, y1 float32) *barcodeExtent {
 	// Use a local variable instead of mutating the text field - DrawOn()
 	// must be safe to call more than once on the same Barcode instance
 	// (e.g. drawing the same barcode on several pages).
@@ -703,20 +715,21 @@ func (barcode *Barcode) drawCode39(page *Page, x1, y1 float32) [2]float32 {
 		x += barcode.m1
 	}
 
+	left := x1
 	right := x1 + length
 	bottom := y1 + h
 	if barcode.font != nil {
-		xy := barcode.drawText(page, bars, fullText,
-			x1+(length-barcode.font.StringWidth(barcode.font.size, fullText))/2,
-			y1+h+barcode.font.bodyHeight)
+		textX := x1 + (length-barcode.font.StringWidth(barcode.font.size, fullText))/2
+		xy := barcode.drawText(page, bars, fullText, textX, y1+h+barcode.font.bodyHeight)
+		left = min(left, textX)
 		right = max(right, xy[0])
 		bottom = xy[1]
 	}
 
-	return bars.getBottomRight(x1, right, bottom)
+	return &barcodeExtent{bars, left, right, bottom}
 }
 
-func (barcode *Barcode) drawCodeEAN13(page *Page, x1, y1 float32) [2]float32 {
+func (barcode *Barcode) drawCodeEAN13(page *Page, x1, y1 float32) *barcodeExtent {
 	x := x1
 	h := barcode.m1 * barcode.barHeightFactor // Barcode height when drawn horizontally
 	// The guard bars reach 5 modules below the others.
@@ -807,7 +820,7 @@ func (barcode *Barcode) drawCodeEAN13(page *Page, x1, y1 float32) [2]float32 {
 		barcode.font.SetSize(fontSize)
 	}
 
-	return bars.getBottomRight(left, right, bottom)
+	return &barcodeExtent{bars, left, right, bottom}
 }
 
 // barcodeBars are the bars of a barcode, length long and height high, drawn
@@ -828,6 +841,21 @@ func (bars *barcodeBars) turn(x, y float32) [2]float32 {
 		return [2]float32{bars.x1 + (y - bars.y1), bars.y1 + bars.length - (x - bars.x1)}
 	}
 	return [2]float32{x, y}
+}
+
+// barcodeExtent is how far a barcode drawn left to right reaches, its bars and
+// its text: from left to right, and from y1 to bottom.
+type barcodeExtent struct {
+	bars                *barcodeBars
+	left, right, bottom float32
+}
+
+// getBox returns the box of the barcode, turned to its direction: the x and y
+// of its top left corner, its width and its height.
+func (extent *barcodeExtent) getBox() [4]float32 {
+	a := extent.bars.turn(extent.left, extent.bars.y1)
+	b := extent.bars.turn(extent.right, extent.bottom)
+	return [4]float32{min(a[0], b[0]), min(a[1], b[1]), abs32(b[0] - a[0]), abs32(b[1] - a[1])}
 }
 
 // getBottomRight returns the bottom right corner, turned to the direction of

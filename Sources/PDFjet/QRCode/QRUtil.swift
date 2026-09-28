@@ -65,7 +65,7 @@ class QRUtil {
     private let G18 = (1 << 12) | (1 << 11) | (1 << 10) | (1 << 9) | (1 << 8) | (1 << 5) | (1 << 2) | (1 << 0)
 
     private var G15: Int
-    private var G15_MASK: Int
+    var G15_MASK: Int
     private static let qrmath = QRMath()
     private var qrmath: QRMath { return QRUtil.qrmath }
 
@@ -110,101 +110,83 @@ class QRUtil {
         }
     }
 
-    func getLostPoint(_ qrCode: QRCode) -> Int {
-        let moduleCount = qrCode.getModuleCount()
+    // Returns the penalty of the modules with the rules of ISO/IEC 18004
+    // 7.8.3.1: N1 = 3 for five modules of a color in a row or a column, and 1
+    // for each one more; N2 = 3 for each block of 2 by 2 modules of a color; N3
+    // = 40 for each dark-light-dark-dark-dark-light-dark pattern of a row or a
+    // column with 4 light modules before or after it, the light quiet zone
+    // counting; and N4 = 10 for each 5% that the dark modules are away from
+    // half the modules.
+    func getLostPoint(_ modules: [[Bool]]) -> Int {
+        let moduleCount = modules.count
         var lostPoint = 0
+        // The module of the row and the column, or of the column and the row
+        // across; outside the symbol is the quiet zone, which is light.
+        func dark(_ across: Bool, _ i: Int, _ j: Int) -> Bool {
+            if j < 0 || j >= moduleCount {
+                return false
+            }
+            return across ? modules[j][i] : modules[i][j]
+        }
+        // Tells if the modules from j to k, not including k, are light.
+        func isLight(_ across: Bool, _ i: Int, _ j: Int, _ k: Int) -> Bool {
+            for n in j..<k where dark(across, i, n) {
+                return false
+            }
+            return true
+        }
 
-        // LEVEL1
-        for row in 0..<moduleCount {
-            for col in 0..<moduleCount {
-                var sameCount = 0
-                let dark = qrCode.isDark(row, col)
-
-                for r in -1...1 {
-                    if row + r < 0 || moduleCount <= row + r {
+        for across in [false, true] {
+            for i in 0..<moduleCount {
+                // N1
+                var run = 1
+                for j in 1...moduleCount {
+                    if j < moduleCount && dark(across, i, j) == dark(across, i, j - 1) {
+                        run += 1
                         continue
                     }
-                    for c in -1...1 {
-                        if col + c < 0 || moduleCount <= col + c {
-                            continue
-                        }
-                        if r == 0 && c == 0 {
-                            continue
-                        }
-                        if dark == qrCode.isDark(row + r, col + c) {
-                            sameCount += 1
-                        }
+                    if run >= 5 {
+                        lostPoint += 3 + run - 5
                     }
+                    run = 1
                 }
-                if sameCount > 5 {
-                    lostPoint += (3 + sameCount - 5)
+                // N3
+                var j = 0
+                while j + 6 < moduleCount {
+                    if dark(across, i, j) &&
+                            !dark(across, i, j + 1) &&
+                            dark(across, i, j + 2) &&
+                            dark(across, i, j + 3) &&
+                            dark(across, i, j + 4) &&
+                            !dark(across, i, j + 5) &&
+                            dark(across, i, j + 6) &&
+                            (isLight(across, i, j - 4, j) || isLight(across, i, j + 7, j + 11)) {
+                        lostPoint += 40
+                    }
+                    j += 1
                 }
             }
         }
 
-        // LEVEL2
+        // N2
         for row in 0..<(moduleCount - 1) {
             for col in 0..<(moduleCount - 1) {
-                var count = 0
-                if qrCode.isDark(row, col) {
-                    count += 1
-                }
-                if qrCode.isDark(row + 1, col) {
-                    count += 1
-                }
-                if qrCode.isDark(row, col + 1) {
-                    count += 1
-                }
-                if qrCode.isDark(row + 1, col + 1) {
-                    count += 1
-                }
-                if count == 0 || count == 4 {
+                let d = modules[row][col]
+                if d == modules[row + 1][col] && d == modules[row][col + 1] && d == modules[row + 1][col + 1] {
                     lostPoint += 3
                 }
             }
         }
 
-        // LEVEL3
-        for row in 0..<moduleCount {
-            for col in 0..<(moduleCount - 6) {
-                if qrCode.isDark(row, col)
-                        && !qrCode.isDark(row, col + 1)
-                        &&  qrCode.isDark(row, col + 2)
-                        &&  qrCode.isDark(row, col + 3)
-                        &&  qrCode.isDark(row, col + 4)
-                        && !qrCode.isDark(row, col + 5)
-                        &&  qrCode.isDark(row, col + 6) {
-                    lostPoint += 40
-                }
-            }
-        }
-
-        for col in 0..<moduleCount {
-            for row in 0..<(moduleCount - 6) {
-                if qrCode.isDark(row, col)
-                        && !qrCode.isDark(row + 1, col)
-                        &&  qrCode.isDark(row + 2, col)
-                        &&  qrCode.isDark(row + 3, col)
-                        &&  qrCode.isDark(row + 4, col)
-                        && !qrCode.isDark(row + 5, col)
-                        &&  qrCode.isDark(row + 6, col) {
-                    lostPoint += 40
-                }
-            }
-        }
-
-        // LEVEL4
+        // N4
         var darkCount = 0
-        for col in 0..<moduleCount {
-            for row in 0..<moduleCount {
-                if qrCode.isDark(row, col) {
-                    darkCount += 1
-                }
+        for row in modules {
+            for module in row where module {
+                darkCount += 1
             }
         }
-
-        let ratio = abs(100 * darkCount / moduleCount / moduleCount - 50) / 5
-        lostPoint += ratio * 10
+        let total = moduleCount * moduleCount
+        lostPoint += abs(2 * darkCount - total) * 10 / total * 10
 
         return lostPoint
     }

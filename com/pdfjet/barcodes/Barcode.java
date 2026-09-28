@@ -239,24 +239,27 @@ public class Barcode implements Drawable {
             page.setPenColor(Color.black);
         }
         try {
-            float[] xy;
+            Extent extent;
             if (barcodeType == Barcode.EAN_13) {
-                xy = drawCodeEAN13(page, x1, y1);
+                extent = drawCodeEAN13(page, x1, y1);
             } else if (barcodeType == Barcode.UPC_A) {
-                xy = drawCodeUPC(page, x1, y1);
+                extent = drawCodeUPC(page, x1, y1);
             } else if (barcodeType == Barcode.CODE_128 || barcodeType == Barcode.GS1_128) {
-                xy = drawCode128(page, x1, y1);
+                extent = drawCode128(page, x1, y1);
             } else if (barcodeType == Barcode.CODE_39) {
-                xy = drawCode39(page, x1, y1);
+                extent = drawCode39(page, x1, y1);
             } else if (barcodeType == Barcode.ITF_14) {
-                xy = drawITF14(page, x1, y1);
+                extent = drawITF14(page, x1, y1);
             } else {
                 throw new Exception("Unsupported Barcode Type.");
             }
             if (figure) {
-                page.setFigureBoundingBox(x1, y1, xy[0] - x1, xy[1] - y1);
+                // The box of the bars and the text, which can reach left of
+                // x1 and, turned, above y1
+                float[] box = extent.getBox();
+                page.setFigureBoundingBox(box[0], box[1], box[2], box[3]);
             }
-            return xy;
+            return extent.bars.getBottomRight(extent.left, extent.right, extent.bottom);
         } finally {
             if (page != null) {
                 page.restoreGraphicsState();
@@ -267,7 +270,7 @@ public class Barcode implements Drawable {
         }
     }
 
-    private float[] drawCodeUPC(Page page, float x1, float y1) throws Exception {
+    private Extent drawCodeUPC(Page page, float x1, float y1) throws Exception {
         float x = x1;
         float h = m1 * barHeightFactor; // Barcode height when drawn horizontally
         // The guard bars, and the bars of the first and the last digit, which are
@@ -364,7 +367,7 @@ public class Barcode implements Drawable {
             font.setSize(fontSize);
         }
 
-        return bars.getBottomRight(left, right, bottom);
+        return new Extent(bars, left, right, bottom);
     }
 
     // How far the guard bars of EAN-13 and UPC-A reach below the other bars, in
@@ -431,12 +434,13 @@ public class Barcode implements Drawable {
 
     // Returns the start and the codewords of the text: runs of four digits or
     // more in code set C, two digits to a codeword, and the rest in code set B,
-    // where a character from 32 to 127 takes one codeword, and one below 32 or
-    // from 128 to 255 two, SHIFT or FNC 4 and the character. It throws for a
+    // where a character from 32 to 127 takes one codeword, one below 32 or from
+    // 160 to 255 two, SHIFT or FNC 4 and the character, and one from 128 to 159
+    // three, FNC 4, SHIFT and the character 128 below it. It throws for a
     // character above 255, which the code sets cannot hold, and for a text of
     // more than 48 codewords, the most a barcode holds, rather than draw a
     // barcode of another text.
-    private static List<Integer> code128Codewords(String text) throws Exception {
+    static List<Integer> code128Codewords(String text) throws Exception {
         List<Integer> items = new ArrayList<Integer>();
         for (int i = 0; i < text.length(); i++) {
             char symchar = text.charAt(i);
@@ -448,7 +452,7 @@ public class Barcode implements Drawable {
         List<Integer> list = code128Encode(items);
         if (list.size() - 1 > 48) {
             throw new Exception(
-                    "Code 128 barcodes hold at most 48 codewords, and a character below 32 or from 128 to 255 takes two!");
+                    "Code 128 barcodes hold at most 48 codewords, and a character below 32 or from 160 to 255 takes two, and one from 128 to 159 three!");
         }
         return list;
     }
@@ -516,6 +520,13 @@ public class Barcode implements Drawable {
             } else if (c < 128) {
                 list.add(c - 32);
                 i++;
+            } else if (c < 160) {
+                // FNC 4 and the control character 128 below it, which is in
+                // code set A, after SHIFT
+                list.add(Code128Table.FNC_4);
+                list.add(Code128Table.SHIFT);
+                list.add(c - 128 + 64);
+                i++;
             } else {
                 list.add(Code128Table.FNC_4);
                 list.add(c - 160);      // 128 + 32
@@ -534,7 +545,7 @@ public class Barcode implements Drawable {
         return n;
     }
 
-    private float[] drawCode128(Page page, float x1, float y1) throws Exception {
+    private Extent drawCode128(Page page, float x1, float y1) throws Exception {
         float h = m1 * barHeightFactor; // Barcode height when drawn horizontally
 
         List<Integer> list = (barcodeType == Barcode.GS1_128) ? gs1128Codewords(text) : code128Codewords(text);
@@ -574,17 +585,19 @@ public class Barcode implements Drawable {
             }
         }
 
+        float left = x1;
         float right = x;
         float bottom = y1 + h;
         if (font != null) {
-            float[] xy = drawText(page, bars, text,
-                    x1 + ((x - x1) - font.stringWidth(text))/2,
-                    y1 + h + font.getBodyHeight());
+            // The text is centered under the bars, and can be wider than them
+            float textX = x1 + ((x - x1) - font.stringWidth(text))/2;
+            float[] xy = drawText(page, bars, text, textX, y1 + h + font.getBodyHeight());
+            left = Math.min(left, textX);
             right = Math.max(right, xy[0]);
             bottom = xy[1];
         }
 
-        return bars.getBottomRight(x1, right, bottom);
+        return new Extent(bars, left, right, bottom);
     }
 
     // The widths, narrow (n) or wide (w), of the five bars or the five spaces of
@@ -601,7 +614,7 @@ public class Barcode implements Drawable {
     // them, as GS1 asks of a barcode printed on corrugated board, so that a
     // scanner does not read a barcode cut short. The text, the 14 digits, is
     // under the frame.
-    private float[] drawITF14(Page page, float x1, float y1) throws Exception {
+    private Extent drawITF14(Page page, float x1, float y1) throws Exception {
         float m = m1;
         float wide = 2.5f * m;
         float bearer = 4f * m;
@@ -653,16 +666,17 @@ public class Barcode implements Drawable {
             page.addEMC();
         }
 
+        float left = x1;
         float right = x1 + outerWidth;
         float bottom = y1 + outerHeight;
         if (font != null) {
-            float[] xy = drawText(page, bars, fullText,
-                    x1 + (outerWidth - font.stringWidth(fullText))/2,
-                    y1 + outerHeight + font.getBodyHeight());
+            float textX = x1 + (outerWidth - font.stringWidth(fullText))/2;
+            float[] xy = drawText(page, bars, fullText, textX, y1 + outerHeight + font.getBodyHeight());
+            left = Math.min(left, textX);
             right = Math.max(right, xy[0]);
             bottom = xy[1];
         }
-        return bars.getBottomRight(x1, right, bottom);
+        return new Extent(bars, left, right, bottom);
     }
 
     // Strokes a line of width w from (xa, ya) to (xb, yb), turned to the
@@ -676,7 +690,7 @@ public class Barcode implements Drawable {
         page.strokePath();
     }
 
-    private float[] drawCode39(Page page, float x1, float y1) throws Exception {
+    private Extent drawCode39(Page page, float x1, float y1) throws Exception {
         // Use a local variable instead of mutating the text field - drawOn()
         // must be safe to call more than once on the same Barcode instance
         // (e.g. drawing the same barcode on several pages).
@@ -719,20 +733,21 @@ public class Barcode implements Drawable {
             x += m1;
         }
 
+        float left = x1;
         float right = x1 + length;
         float bottom = y1 + h;
         if (font != null) {
-            float[] xy = drawText(page, bars, fullText,
-                    x1 + (length - font.stringWidth(fullText))/2,
-                    y1 + h + font.getBodyHeight());
+            float textX = x1 + (length - font.stringWidth(fullText))/2;
+            float[] xy = drawText(page, bars, fullText, textX, y1 + h + font.getBodyHeight());
+            left = Math.min(left, textX);
             right = Math.max(right, xy[0]);
             bottom = xy[1];
         }
 
-        return bars.getBottomRight(x1, right, bottom);
+        return new Extent(bars, left, right, bottom);
     }
 
-    private float[] drawCodeEAN13(Page page, float x1, float y1) throws Exception {
+    private Extent drawCodeEAN13(Page page, float x1, float y1) throws Exception {
         float x = x1;
         float h = m1 * barHeightFactor; // Barcode height when drawn horizontally
         // The guard bars reach 5 modules below the others.
@@ -830,7 +845,32 @@ public class Barcode implements Drawable {
             font.setSize(fontSize);
         }
 
-        return bars.getBottomRight(left, right, bottom);
+        return new Extent(bars, left, right, bottom);
+    }
+
+    // How far a barcode drawn left to right reaches, its bars and its text: from
+    // left to right, and from y1 to bottom.
+    private static final class Extent {
+        final Bars bars;
+        final float left;
+        final float right;
+        final float bottom;
+
+        Extent(Bars bars, float left, float right, float bottom) {
+            this.bars = bars;
+            this.left = left;
+            this.right = right;
+            this.bottom = bottom;
+        }
+
+        // Returns the box of the barcode, turned to its direction: the x and y
+        // of its top left corner, its width and its height.
+        float[] getBox() {
+            float[] a = bars.turn(left, bars.y1);
+            float[] b = bars.turn(right, bottom);
+            return new float[] {Math.min(a[0], b[0]), Math.min(a[1], b[1]),
+                    Math.abs(b[0] - a[0]), Math.abs(b[1] - a[1])};
+        }
     }
 
     // The bars of a barcode, length long and height high, drawn left to right from

@@ -11,6 +11,7 @@ import (
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 const (
@@ -93,6 +94,8 @@ type DataMatrix struct {
 	x, y    float32
 	m1      float32 // Module length
 	color   int32
+
+	altDescription string
 
 	// The codewords being placed in the mapping matrix, and the matrix.
 	codewords    []int
@@ -193,15 +196,30 @@ func (dm *DataMatrix) GetModules() [][]bool {
 	return dm.modules
 }
 
+// SetAltDescription sets what the barcode says for a screen reader: a tagged
+// document, PDF/UA or a PDF/A of level A, then has the barcode as a figure of
+// that description. Without one, its modules are decoration, which a screen
+// reader skips.
+func (dm *DataMatrix) SetAltDescription(altDescription string) *DataMatrix {
+	dm.altDescription = altDescription
+	return dm
+}
+
 // DrawOn draws this barcode on the specified page and returns the x and y
 // coordinates of the bottom right corner of the barcode. With no page nothing
-// is drawn.
+// is drawn. The brush of the page is as it was after it.
 func (dm *DataMatrix) DrawOn(page *pdfjet.Page) [2]float32 {
 	rows := len(dm.modules)
 	cols := len(dm.modules[0])
 	if page != nil {
-		// The modules carry no text, so they are decorative content.
-		page.AddArtifactBMC()
+		// Described, the barcode is a figure of a tagged document; not
+		// described, its modules, which carry no text, are decoration.
+		if dm.altDescription != "" {
+			page.AddBDC(structelem.Figure, "", "", dm.altDescription)
+		} else {
+			page.AddArtifactBMC()
+		}
+		page.SaveGraphicsState()
 		page.SetBrushColor(dm.color)
 		for row := 0; row < rows; row++ {
 			col := 0
@@ -220,6 +238,10 @@ func (dm *DataMatrix) DrawOn(page *pdfjet.Page) [2]float32 {
 					float32(col-start)*dm.m1,
 					dm.m1)
 			}
+		}
+		page.RestoreGraphicsState()
+		if dm.altDescription != "" {
+			page.SetFigureBoundingBox(dm.x, dm.y, float32(cols)*dm.m1, float32(rows)*dm.m1)
 		}
 		page.AddEMC()
 	}

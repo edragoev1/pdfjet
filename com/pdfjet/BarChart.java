@@ -159,7 +159,8 @@ public class BarChart implements Drawable {
     }
 
     /**
-     * Adds a series drawn in the next color of the default palette.
+     * Adds a series drawn in the next color of the default palette. A value
+     * that is NaN or infinite has no bar.
      *
      * @param name the series name, shown in the legend; empty for none.
      * @param values one value per category.
@@ -468,7 +469,7 @@ public class BarChart implements Drawable {
                     float up = 0f;
                     float down = 0f;
                     for (Series s : series) {
-                        if (i < s.values.length) {
+                        if (i < s.values.length && isValue(s.values[i])) {
                             if (s.values[i] >= 0f) { up += s.values[i]; } else { down += s.values[i]; }
                         }
                     }
@@ -478,18 +479,21 @@ public class BarChart implements Drawable {
             } else {
                 for (Series s : series) {
                     for (float v : s.values) {
+                        if (!isValue(v)) {
+                            continue;
+                        }
                         lo = Math.min(lo, v);
                         hi = Math.max(hi, v);
                     }
                 }
             }
-            if (hi == lo) { hi = lo + 1f; }
+            if (hi == lo) { hi = lo + Chart.flatDataSpan(lo); }
             Round round = Chart.roundMaxAndMinValues(hi, lo);
             vMin = round.minValue;
             vMax = round.maxValue;
             lines = round.numOfGridLines;
         }
-        if (vMax == vMin) { vMax = vMin + 1f; }
+        if (vMax == vMin) { vMax = vMin + Chart.flatDataSpan(vMin); }
         float step = (vMax - vMin) / lines;
         int axisDigits = Math.max(minFractionDigits, Chart.fractionDigitsOf(step, maxFractionDigits));
         float base = Math.min(Math.max(0f, vMin), vMax);
@@ -511,6 +515,9 @@ public class BarChart implements Drawable {
         if (drawValueLabels) {
             for (Series s : series) {
                 for (float v : s.values) {
+                    if (!isValue(v)) {
+                        continue;
+                    }
                     widestValueLabel = Math.max(widestValueLabel, f2.stringWidth(valueLabel(v)));
                 }
             }
@@ -601,7 +608,7 @@ public class BarChart implements Drawable {
             float down = 0f;    // the stacked values below 0 so far
             for (int j = 0; j < m; j++) {
                 Series s = series.get(j);
-                if (i >= s.values.length) {
+                if (i >= s.values.length || !isValue(s.values[i])) {
                     continue;
                 }
                 // A bar runs from the base to its value; a segment of a stack
@@ -791,4 +798,10 @@ public class BarChart implements Drawable {
             x += f2.stringWidth(s.name) + f2.getBodyHeight();
         }
     }
-}   // End of BarChart.java
+
+    // Tells if the value is a number to draw: a value that is NaN or infinite
+    // has no bar, like a value missing at the end of a series.
+    private static boolean isValue(float value) {
+        return !Float.isNaN(value) && !Float.isInfinite(value);
+    }
+}

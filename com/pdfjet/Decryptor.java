@@ -115,7 +115,17 @@ final class Decryptor {
                     toBytes(encrypt.getValue("/UE")), toBytes(encrypt.getValue("/OE")));
         } else if (r >= 2 && r <= 4) {
             int length = (v == 1 || r == 2) ? 5 : (v == 4) ? 16 : getInt(encrypt, "/Length") / 8;
-            this.key = getKey(r, Math.max(5, Math.min(length, 16)), latin1Password(password),
+            length = Math.max(5, Math.min(length, 16));
+            // AES-128 takes an object key of 16 bytes, which a key of fewer
+            // than 11 bytes does not make, and AES-256 a key of 32 bytes, which
+            // only revisions 5 and 6 have.
+            for (int method : new int[] {streamMethod, stringMethod}) {
+                if ((method == AES_128 && length < 11) || method == AES_256) {
+                    throw new Exception("The encryption of the PDF is not valid: /R " + r
+                            + " with a key of " + (8 * length) + " bits for AES");
+                }
+            }
+            this.key = getKey(r, length, latin1Password(password),
                     o, u, getInt(encrypt, "/P"), id, encryptMetadata);
         } else {
             throw new Exception("The encryption of the PDF is not supported: /R " + r);
@@ -347,7 +357,9 @@ final class Decryptor {
 
     /**
      * Decrypts the strings in the dictionary of the object, which become
-     * hexadecimal strings.
+     * hexadecimal strings. The /Contents of a signature dictionary, the
+     * signature, is not encrypted, as ISO 32000-2 7.6.2 has it, and is left as
+     * it is.
      *
      * @param obj the object.
      * @throws Exception if the strings cannot be decrypted.
@@ -359,6 +371,9 @@ final class Decryptor {
         for (int i = 0; i < obj.dict.size(); i++) {
             String token = obj.dict.get(i);
             if (token.startsWith("(") || (token.startsWith("<") && !token.equals("<<"))) {
+                if (i > 0 && obj.dict.get(i - 1).equals("/Contents") && isSignatureDict(obj.dict, i)) {
+                    continue;
+                }
                 byte[] bytes = decrypt(toBytes(token), stringMethod, obj);
                 StringBuilder buf = new StringBuilder("<");
                 for (byte b : bytes) {
@@ -368,6 +383,43 @@ final class Decryptor {
                 obj.dict.set(i, buf.append('>').toString());
             }
         }
+    }
+
+    // Tells if the dictionary the token at i is in is a signature dictionary:
+    // of /Type /Sig or /DocTimeStamp, or with a /ByteRange, which only a
+    // signature dictionary has.
+    static boolean isSignatureDict(List<String> dict, int i) {
+        // The start of the dictionary
+        int start = i;
+        for (int level = 0; start >= 0; start--) {
+            if (dict.get(start).equals(">>")) {
+                level++;
+            } else if (dict.get(start).equals("<<")) {
+                if (level == 0) {
+                    break;
+                }
+                level--;
+            }
+        }
+        // Its entries, not those of the dictionaries in it
+        int level = 0;
+        for (int j = start + 1; j < dict.size(); j++) {
+            String token = dict.get(j);
+            if (token.equals("<<")) {
+                level++;
+            } else if (token.equals(">>")) {
+                if (level == 0) {
+                    return false;
+                }
+                level--;
+            } else if (level == 0 && token.equals("/ByteRange")) {
+                return true;
+            } else if (level == 0 && token.equals("/Type") && j + 1 < dict.size()
+                    && (dict.get(j + 1).equals("/Sig") || dict.get(j + 1).equals("/DocTimeStamp"))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -421,6 +473,9 @@ final class Decryptor {
         }
         byte[] decrypted = aesDecrypt(objectKey, Arrays.copyOf(data, 16),
                 Arrays.copyOfRange(data, 16, 16 + (data.length - 16) / 16 * 16));
+        if (decrypted.length == 0) {
+            return new byte[0];
+        }
         int padding = decrypted[decrypted.length - 1] & 0xff;
         if (padding >= 1 && padding <= 16) {
             return Arrays.copyOf(decrypted, decrypted.length - padding);
@@ -429,6 +484,9 @@ final class Decryptor {
     }
 
     private static byte[] aesDecrypt(byte[] key, byte[] iv, byte[] data) throws Exception {
+        if (key.length != 16 && key.length != 24 && key.length != 32) {
+            return new byte[0];     // Not a key of AES
+        }
         Cipher cipher = Cipher.getInstance("AES/CBC/NoPadding");
         cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(key, "AES"), new IvParameterSpec(iv));
         return cipher.doFinal(data);

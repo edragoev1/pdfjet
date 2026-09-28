@@ -678,7 +678,7 @@ public class Chart : IDrawable {
             }
         }
         // Guard against flat data before rounding, so the range has grid lines
-        if (xMax == xMin) { xMax = xMin + 1f; }
+        if (xMax == xMin) { xMax = xMin + FlatDataSpan(xMin); }
         if (manualXGridLines == 0) {
             Round round = RoundMaxAndMinValues(xMax, xMin);
             xMax = round.maxValue;
@@ -711,7 +711,7 @@ public class Chart : IDrawable {
             }
         }
         // Guard against flat data before rounding, so the range has grid lines
-        if (yMax == yMin) { yMax = yMin + 1f; }
+        if (yMax == yMin) { yMax = yMin + FlatDataSpan(yMin); }
         if (manualYGridLines == 0) {
             Round round = RoundMaxAndMinValues(yMax, yMin);
             yMax = round.maxValue;
@@ -872,6 +872,13 @@ public class Chart : IDrawable {
         return linked;
     }
 
+    // Returns the span of the range of flat data at the value: 1, or a hundred
+    // thousandth of the value when that is more, since above 2^24 a float has no
+    // room for 1 more, and the range would stay flat.
+    internal static float FlatDataSpan(float value) {
+        return Math.Max(1f, Math.Abs(value) * 1e-5f);
+    }
+
     /// <summary>
     /// Rounds axis range to "nice" values for clean grid lines.
     /// Uses the span (max - min) to support negative values and
@@ -879,7 +886,7 @@ public class Chart : IDrawable {
     /// </summary>
     internal static Round RoundMaxAndMinValues(float maxValue, float minValue) {
         float span = maxValue - minValue;
-        if (span <= 0f) { span = 1f; }  // guard against flat data
+        if (span <= 0f) { span = FlatDataSpan(minValue); }    // guard against flat data
 
         int exponent = (int) Math.Floor(Math.Log(span) / Math.Log(10));
         float normalizedSpan = span * (float) Math.Pow(10, -exponent);
@@ -913,6 +920,11 @@ public class Chart : IDrawable {
         round.minValue = (float) Math.Floor(minValue / step) * step;
 
         round.numOfGridLines = (int) Math.Round((round.maxValue - round.minValue) / step);
+        if (round.numOfGridLines < 1 || round.maxValue <= round.minValue) {
+            // Flat data on a step, which the rounding leaves flat
+            round.maxValue = round.minValue + step;
+            round.numOfGridLines = 1;
+        }
 
         return round;
     }

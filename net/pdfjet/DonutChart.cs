@@ -170,7 +170,9 @@ namespace PDFjet.NET {
             return a2;
         }
 
-        private void DrawLinePointer(
+        // Draws the leader line and label for a slice, and returns the box they
+        // are in: its left, top, right and bottom.
+        private float[] DrawLinePointer(
                 Page page,
                 string text,
                 float xc, float yc,
@@ -206,15 +208,24 @@ namespace PDFjet.NET {
                 page.StrokePath();
 
                 // Draw the label text just above the horizontal line
-                page.DrawString(f1, f1.GetSize(), text,
-                        onRightSide ? x2 + 2.0f : xEnd + 2.0f, yEnd - f1.GetAscent() / 3.0f,
+                float x = onRightSide ? x2 + 2.0f : xEnd + 2.0f;
+                float baseline = yEnd - f1.GetAscent() / 3.0f;
+                page.DrawString(f1, f1.GetSize(), text, x, baseline,
                         Util.ToRGB(Color.black), null);
+                return new float[] {
+                        Math.Min(Math.Min(x1, x2), Math.Min(xEnd, x)),
+                        Math.Min(Math.Min(y1, y2), baseline - f1.GetAscent()),
+                        Math.Max(Math.Max(x1, x2), Math.Max(xEnd, x + textWidth)),
+                        Math.Max(Math.Max(y1, y2), baseline + f1.GetDescent())};
             } else {
                 // No text — short horizontal stub
                 bool onRightSide = (float)Math.Cos(midAngle * Math.PI / 180.0) >= 0;
                 float xEnd = onRightSide ? x2 + 20.0f : x2 - 20.0f;
                 page.LineTo(xEnd, y2);
                 page.StrokePath();
+                return new float[] {
+                        Math.Min(Math.Min(x1, x2), xEnd), Math.Min(y1, y2),
+                        Math.Max(Math.Max(x1, x2), xEnd), Math.Max(y1, y2)};
             }
         }
 
@@ -243,6 +254,9 @@ namespace PDFjet.NET {
             // the page with the black pen of its pointers and the color of
             // its last slice.
             page.SaveGraphicsState();
+            // The box of the figure: the outer circle, and the pointers and the
+            // labels, which can reach past it
+            float[] box = {x, y, x + 2f * r1, y + 2f * r1};
             float angle = 0.0f;
             foreach (Slice slice in slices) {
                 if (slice.value <= 0.0f) {
@@ -254,11 +268,13 @@ namespace PDFjet.NET {
                     xc, yc,
                     r1, r2,
                     angle, angle + sweep);
-                DrawLinePointer(
+                float[] pointer = DrawLinePointer(
                     page, slice.text,
                     xc, yc,
                     r1,
                     angle - sweep, angle);
+                box = new float[] {Math.Min(box[0], pointer[0]), Math.Min(box[1], pointer[1]),
+                        Math.Max(box[2], pointer[2]), Math.Max(box[3], pointer[3])};
 
                 // The percentage fits inside a slice of 15 degrees or more
                 if (f2 != null && sweep >= 15.0f) {
@@ -273,7 +289,7 @@ namespace PDFjet.NET {
                 }
             }
             page.RestoreGraphicsState();
-            page.SetFigureBoundingBox(x, y, 2f * r1, 2f * r1);  // The outer circle
+            page.SetFigureBoundingBox(box[0], box[1], box[2] - box[0], box[3] - box[1]);
             page.AddEMC();
             return new float[] {xc + r1, yc + r1};
         }

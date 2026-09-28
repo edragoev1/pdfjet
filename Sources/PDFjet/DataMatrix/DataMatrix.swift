@@ -86,6 +86,7 @@ public final class DataMatrix : Drawable {
     private var y: Float = 0.0
     private var m1: Float = 2.0     // Module length
     private var color: Int32 = Color.black
+    private var altDescription: String?
 
     // The codewords being placed in the mapping matrix, and the matrix.
     private var codewords = [Int]()
@@ -199,7 +200,22 @@ public final class DataMatrix : Drawable {
     }
 
     ///
+    /// Sets what the barcode says for a screen reader: a tagged document,
+    /// PDF/UA or a PDF/A of level A, then has the barcode as a figure of that
+    /// description. Without one, its modules are decoration, which a screen
+    /// reader skips.
+    ///
+    /// - Parameter altDescription: the description.
+    ///
+    @discardableResult
+    public func setAltDescription(_ altDescription: String?) -> DataMatrix {
+        self.altDescription = altDescription
+        return self
+    }
+
+    ///
     /// Draws this barcode on the specified page. With no page nothing is drawn.
+    /// The brush of the page is as it was after it.
     ///
     /// - Parameter page: the page to draw on.
     /// - Returns: the x and y coordinates of the bottom right corner of this barcode.
@@ -209,8 +225,14 @@ public final class DataMatrix : Drawable {
         let rows = modules.count
         let cols = modules[0].count
         if let page = page {
-            // The modules carry no text, so they are decorative content.
-            page.addArtifactBMC()
+            // Described, the barcode is a figure of a tagged document; not
+            // described, its modules, which carry no text, are decoration.
+            if let altDescription = altDescription, !altDescription.isEmpty {
+                page.addBDC(StructElem.FIGURE, nil, nil, altDescription)
+            } else {
+                page.addArtifactBMC()
+            }
+            page.saveGraphicsState()
             page.setBrushColor(color)
             for row in 0..<rows {
                 var col = 0
@@ -225,6 +247,10 @@ public final class DataMatrix : Drawable {
                     }
                     page.fillRect(x + Float(start)*m1, y + Float(row)*m1, Float(col - start)*m1, m1)
                 }
+            }
+            page.restoreGraphicsState()
+            if let altDescription = altDescription, !altDescription.isEmpty {
+                page.setFigureBoundingBox(x, y, Float(cols)*m1, Float(rows)*m1)
             }
             page.addEMC()
         }

@@ -29,6 +29,9 @@ public class PDF417 : IDrawable {
     private const int LATCH_TO_MIXED = 28;
     private const int LATCH_TO_ALPHA = 28;
     private const int SHIFT_TO_PUNCT = 29;
+    // The codeword that shifts from text compaction to byte compaction for the
+    // one codeword after it.
+    private const int BYTE_SHIFT = 913;
     private float x1 = 0f;
     private float y1 = 0f;
 
@@ -39,12 +42,15 @@ public class PDF417 : IDrawable {
     private int cols = 18;
     private int[] codewords = null;
     private String str = null;
+    private String altDescription;
 
     /// <summary>
     ///  Constructor for 2D barcodes.
     ///  The symbol has 18 columns and as many rows as the string needs, up to the
     ///  928 codewords a PDF417 symbol can hold: 864 data codewords, or about 1,300
     ///  characters of mixed text, with the error correction level 5 used here.
+    ///  The string is ASCII, and a control character other than HT, LF and CR
+    ///  takes a codeword of its own and one more, in byte compaction.
     ///  Throws an exception if there are unencodable characters or the string does not fit in a symbol.
     /// </summary>
     /// <param name="str">the specified string.</param>
@@ -58,9 +64,9 @@ public class PDF417 : IDrawable {
             }
         }
 
-        // The data codewords: the symbol length descriptor and one codeword for two text codewords.
-        List<Int32> list = textToArrayOfIntegers();
-        int dataCodewords = 1 + (list.Count + 1) / 2;
+        // The data codewords, after the symbol length descriptor
+        List<Int32> list = DataCodewords();
+        int dataCodewords = 1 + list.Count;
         rows = (dataCodewords + L5ECC.Table.Length + cols - 1) / cols;
         if (rows < 3) {
             rows = 3;
@@ -102,8 +108,8 @@ public class PDF417 : IDrawable {
             buffer[i] = 900;    // The default pad codeword
         }
         buffer[0] = dataLen;
+        list.CopyTo(buffer, 1);
 
-        addData(buffer, list);
         addECC(buffer);
 
         for (int i = 0; i < rows; i++) {
@@ -146,12 +152,45 @@ public class PDF417 : IDrawable {
     }
 
     /// <summary>
-    ///  Draws this barcode on the specified page.
+    ///  Sets what the barcode says for a screen reader: a tagged document, PDF/UA
+    ///  or a PDF/A of level A, then has the barcode as a figure of that
+    ///  description. Without one, its bars are decoration, which a screen reader
+    ///  skips.
+    /// </summary>
+    /// <param name="altDescription">the description.</param>
+    /// <returns>this PDF417 object.</returns>
+    public PDF417 SetAltDescription(String altDescription) {
+        this.altDescription = altDescription;
+        return this;
+    }
+
+    /// <summary>
+    ///  Draws this barcode on the specified page. The bars are black, and the
+    ///  pen of the page is as it was after it.
     /// </summary>
     /// <param name="page">the page to draw on.</param>
     /// <returns>x and y coordinates of the bottom right corner of this component.</returns>
     public float[] DrawOn(Page page) {
-        return DrawPdf417(page);
+        if (page != null) {
+            // Described, the barcode is a figure of a tagged document; not
+            // described, its bars, which carry no text, are decoration.
+            if (!String.IsNullOrEmpty(altDescription)) {
+                page.AddBDC(StructElem.FIGURE, null, null, altDescription);
+            } else {
+                page.AddArtifactBMC();
+            }
+            page.SaveGraphicsState();
+            page.SetPenColor(Color.black);
+        }
+        float[] xy = DrawPdf417(page);
+        if (page != null) {
+            page.RestoreGraphicsState();
+            if (!String.IsNullOrEmpty(altDescription)) {
+                page.SetFigureBoundingBox(x1, y1, xy[0] - x1, xy[1] - y1);
+            }
+            page.AddEMC();
+        }
+        return xy;
     }
 
     private List<Int32> textToArrayOfIntegers() {
@@ -161,6 +200,10 @@ public class PDF417 : IDrawable {
         foreach (int ch in str) {
             if (ch == 0x20) {
                 list.Add(26);   // The codeword for space
+                continue;
+            }
+            if (IsByteShifted(ch)) {
+                list.Add(-1 - ch);  // Below 0, see DataCodewords
                 continue;
             }
             int value = TextCompact.Table[ch,1];
@@ -207,13 +250,40 @@ public class PDF417 : IDrawable {
         return list;
     }
 
-    private void addData(int[] buffer, List<Int32> list) {
-        int bi = 1; // buffer index = 1 to skip the Symbol Length Descriptor
-        for (int i = 0; i < list.Count; i += 2) {
-            int hi = list[i];
-            int lo = (i + 1 == list.Count) ? SHIFT_TO_PUNCT : list[i + 1];  // Pad
-            buffer[bi++] = 30*hi + lo;
+    // Tells if the character is a control character that text compaction has
+    // no value for, and that is so encoded in byte compaction.
+    private static bool IsByteShifted(int ch) {
+        return ch < 0x20 && ch != '\t' && ch != '\n' && ch != '\r';
+    }
+
+    // Returns the data codewords of the string in text compaction, two values
+    // to a codeword; a control character other than HT, LF and CR is the byte
+    // compaction shift and its byte, which starts a codeword, so the value
+    // before it may be padded, and after which text compaction goes on in the
+    // submode it was in.
+    internal List<Int32> DataCodewords() {
+        List<Int32> list = textToArrayOfIntegers();
+        List<Int32> codewords = new List<Int32>();
+        int hi = -1;    // The first value of a codeword, if any
+        foreach (int value in list) {
+            if (value < 0) {
+                if (hi != -1) {
+                    codewords.Add(30*hi + SHIFT_TO_PUNCT);  // Pad
+                    hi = -1;
+                }
+                codewords.Add(BYTE_SHIFT);
+                codewords.Add(-1 - value);
+            } else if (hi == -1) {
+                hi = value;
+            } else {
+                codewords.Add(30*hi + value);
+                hi = -1;
+            }
         }
+        if (hi != -1) {
+            codewords.Add(30*hi + SHIFT_TO_PUNCT);  // Pad
+        }
+        return codewords;
     }
 
     private void addECC(int[] buf) {
@@ -298,12 +368,10 @@ public class PDF417 : IDrawable {
         if (page == null) {
             return;     // Measured, not drawn
         }
-        page.AddArtifactBMC();
         page.SetPenWidth(w);
         page.MoveTo(x + w/2, y);
         page.LineTo(x + w/2, y + h);
         page.StrokePath();
-        page.AddEMC();
     }
 }   // End of PDF417.cs
 }   // End of namespace PDFjet.NET

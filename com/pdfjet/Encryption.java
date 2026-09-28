@@ -126,19 +126,20 @@ public class Encryption {
 
         pdf.append("/EncryptMetadata true\n");
 
-        // A PDF/UA file grants the permission to extract content for
-        // accessibility, as ISO 14289-1 7.16 requires. The compliance has to
-        // be set before the encryption for this to apply.
-        if (pdf.isTagged()) {
-            permissions.grant(UserAccess.EXTRACT_CONTENTS_FOR_ACCESSIBILITY);
-        }
-
         // The flags specifying which operations shall be permitted, with the
         // reserved bits 7, 8 and 13 to 32 set as ISO 32000-2 Table 22 requires,
         // so the value is negative.
         int p = 0xFFFFF0C0;
         for (UserAccess access : permissions.getAccess()) {
             p |= access.getValue();
+        }
+
+        // A PDF/UA file grants the permission to extract content for
+        // accessibility, as ISO 14289-1 7.16 requires, without changing the
+        // permissions of the caller. The compliance has to be set before the
+        // encryption for this to apply.
+        if (pdf.isTagged()) {
+            p |= UserAccess.EXTRACT_CONTENTS_FOR_ACCESSIBILITY.getValue();
         }
         pdf.append("/P ");
         pdf.append(String.valueOf(p));

@@ -173,12 +173,13 @@ func (dc *DonutChart) drawSlice(
 	return a2
 }
 
-// drawLinePointer draws the leader line and label for a slice.
+// drawLinePointer draws the leader line and label for a slice, and returns
+// the box they are in: its left, top, right and bottom.
 func (dc *DonutChart) drawLinePointer(
 	page *Page,
 	text string,
 	xc, yc, r1, a1, a2 float32,
-) {
+) [4]float32 {
 	midAngle := (a1+a2)/2.0 - 90.0
 
 	// Point on the outer edge of the donut
@@ -218,8 +219,14 @@ func (dc *DonutChart) drawLinePointer(
 		if onRightSide {
 			x = p2[0] + 2.0
 		}
-		page.drawString(dc.f1, dc.f1.size, text, x, yEnd-dc.f1.GetAscent(dc.f1.size)/3.0,
+		baseline := yEnd - dc.f1.GetAscent(dc.f1.size)/3.0
+		page.drawString(dc.f1, dc.f1.size, text, x, baseline,
 			colorToRGB(color.Black), nil)
+		return [4]float32{
+			min(p1[0], p2[0], xEnd, x),
+			min(p1[1], p2[1], baseline-dc.f1.GetAscent(dc.f1.size)),
+			max(p1[0], p2[0], xEnd, x+textWidth),
+			max(p1[1], p2[1], baseline+dc.f1.GetDescent(dc.f1.size))}
 	} else {
 		// No text — short horizontal stub
 		onRightSide := math.Cos(float64(midAngle)*math.Pi/180.0) >= 0
@@ -231,6 +238,7 @@ func (dc *DonutChart) drawLinePointer(
 		}
 		page.LineTo(xEnd, p2[1])
 		page.StrokePath()
+		return [4]float32{min(p1[0], p2[0], xEnd), min(p1[1], p2[1]), max(p1[0], p2[0], xEnd), max(p1[1], p2[1])}
 	}
 }
 
@@ -258,6 +266,9 @@ func (dc *DonutChart) DrawOn(page *Page) [2]float32 {
 	// black pen of its pointers and the color of its last slice.
 	page.SaveGraphicsState()
 
+	// The box of the figure: the outer circle, and the pointers and the
+	// labels, which can reach past it
+	box := [4]float32{dc.x, dc.y, dc.x + 2*dc.r1, dc.y + 2*dc.r1}
 	angle := float32(0.0)
 	for _, slice := range dc.slices {
 		if slice.value <= 0.0 {
@@ -270,12 +281,14 @@ func (dc *DonutChart) DrawOn(page *Page) [2]float32 {
 			dc.r1, dc.r2,
 			angle, angle+sweep,
 		)
-		dc.drawLinePointer(
+		pointer := dc.drawLinePointer(
 			page, slice.text,
 			xc, yc,
 			dc.r1,
 			angle-sweep, angle,
 		)
+		box = [4]float32{min(box[0], pointer[0]), min(box[1], pointer[1]),
+			max(box[2], pointer[2]), max(box[3], pointer[3])}
 
 		// The percentage fits inside a slice of 15 degrees or more
 		if dc.f2 != nil && sweep >= 15.0 {
@@ -290,7 +303,7 @@ func (dc *DonutChart) DrawOn(page *Page) [2]float32 {
 		}
 	}
 	page.RestoreGraphicsState()
-	page.SetFigureBoundingBox(dc.x, dc.y, 2*dc.r1, 2*dc.r1) // The outer circle
+	page.SetFigureBoundingBox(box[0], box[1], box[2]-box[0], box[3]-box[1])
 	page.AddEMC()
 
 	return [2]float32{xc + dc.r1, yc + dc.r1}

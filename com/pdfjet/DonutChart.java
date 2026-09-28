@@ -183,7 +183,9 @@ public class DonutChart implements Drawable {
         return a2;
     }
 
-    private void drawLinePointer(
+    // Draws the leader line and label for a slice, and returns the box they
+    // are in: its left, top, right and bottom.
+    private float[] drawLinePointer(
             Page page,
             String text,
             float xc, float yc,
@@ -219,15 +221,24 @@ public class DonutChart implements Drawable {
             page.strokePath();
 
             // Draw the label text just above the horizontal line
-            page.drawString(f1, f1.getSize(), text,
-                    onRightSide ? p2[0] + 2.0f : xEnd + 2.0f, yEnd - f1.getAscent() / 3.0f,
+            float x = onRightSide ? p2[0] + 2.0f : xEnd + 2.0f;
+            float baseline = yEnd - f1.getAscent() / 3.0f;
+            page.drawString(f1, f1.getSize(), text, x, baseline,
                     Util.toRGB(Color.black), null);
+            return new float[] {
+                    Math.min(Math.min(p1[0], p2[0]), Math.min(xEnd, x)),
+                    Math.min(Math.min(p1[1], p2[1]), baseline - f1.getAscent()),
+                    Math.max(Math.max(p1[0], p2[0]), Math.max(xEnd, x + textWidth)),
+                    Math.max(Math.max(p1[1], p2[1]), baseline + f1.getDescent())};
         } else {
             // No text — short horizontal stub
             boolean onRightSide = Math.cos(midAngle * Math.PI / 180.0) >= 0;
             float xEnd = onRightSide ? p2[0] + 20.0f : p2[0] - 20.0f;
             page.lineTo(xEnd, p2[1]);
             page.strokePath();
+            return new float[] {
+                    Math.min(Math.min(p1[0], p2[0]), xEnd), Math.min(p1[1], p2[1]),
+                    Math.max(Math.max(p1[0], p2[0]), xEnd), Math.max(p1[1], p2[1])};
         }
     }
 
@@ -259,6 +270,9 @@ public class DonutChart implements Drawable {
         // a Stamp and a CalendarMonth keep them: the chart left the page with
         // the black pen of its pointers and the color of its last slice.
         page.saveGraphicsState();
+        // The box of the figure: the outer circle, and the pointers and the
+        // labels, which can reach past it
+        float[] box = {x, y, x + 2f * r1, y + 2f * r1};
         float angle = 0.0f;
         for (Slice slice : slices) {
             if (slice.value <= 0.0f) {
@@ -270,11 +284,13 @@ public class DonutChart implements Drawable {
                     xc, yc,
                     r1, r2,
                     angle, angle + sweep);
-            drawLinePointer(
+            float[] pointer = drawLinePointer(
                     page, slice.text,
                     xc, yc,
                     r1,
                     angle - sweep, angle);
+            box = new float[] {Math.min(box[0], pointer[0]), Math.min(box[1], pointer[1]),
+                    Math.max(box[2], pointer[2]), Math.max(box[3], pointer[3])};
             // The percentage fits inside a slice of 15 degrees or more
             if (f2 != null && sweep >= 15.0f) {
                 String pctStr = percentage(slice, total);
@@ -288,7 +304,7 @@ public class DonutChart implements Drawable {
             }
         }
         page.restoreGraphicsState();
-        page.setFigureBoundingBox(x, y, 2f * r1, 2f * r1);  // The outer circle
+        page.setFigureBoundingBox(box[0], box[1], box[2] - box[0], box[3] - box[1]);
         page.addEMC();
         return new float[] {xc + r1, yc + r1};
     }

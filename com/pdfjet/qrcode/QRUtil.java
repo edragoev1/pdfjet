@@ -90,94 +90,91 @@ class QRUtil {
         }
     }
 
-    protected static int getLostPoint(QRCode qrCode) {
-        int moduleCount = qrCode.getModuleCount();
+    // Returns the penalty of the modules with the rules of ISO/IEC 18004
+    // 7.8.3.1: N1 = 3 for five modules of a color in a row or a column, and 1
+    // for each one more; N2 = 3 for each block of 2 by 2 modules of a color;
+    // N3 = 40 for each dark-light-dark-dark-dark-light-dark pattern of a row or
+    // a column with 4 light modules before or after it, the light quiet zone
+    // counting; and N4 = 10 for each 5% that the dark modules are away from
+    // half the modules.
+    static int getLostPoint(boolean[][] modules) {
+        int moduleCount = modules.length;
         int lostPoint = 0;
 
-        // LEVEL1
-        for (int row = 0; row < moduleCount; row++) {
-            for (int col = 0; col < moduleCount; col++) {
-                int sameCount = 0;
-                boolean dark = qrCode.isDark(row, col);
-                for (int r = -1; r <= 1; r++) {
-                    if (row + r < 0 || moduleCount <= row + r) {
+        for (int pass = 0; pass < 2; pass++) {
+            boolean across = (pass == 1);
+            for (int i = 0; i < moduleCount; i++) {
+                // N1
+                int run = 1;
+                for (int j = 1; j <= moduleCount; j++) {
+                    if (j < moduleCount && dark(modules, across, i, j) == dark(modules, across, i, j - 1)) {
+                        run++;
                         continue;
                     }
-                    for (int c = -1; c <= 1; c++) {
-                        if (col + c < 0 || moduleCount <= col + c) {
-                            continue;
-                        }
-                        if (r == 0 && c == 0) {
-                            continue;
-                        }
-                        if (dark == qrCode.isDark(row + r, col + c)) {
-                            sameCount++;
-                        }
+                    if (run >= 5) {
+                        lostPoint += 3 + run - 5;
                     }
+                    run = 1;
                 }
-                if (sameCount > 5) {
-                    lostPoint += (3 + sameCount - 5);
+                // N3
+                for (int j = 0; j + 6 < moduleCount; j++) {
+                    if (dark(modules, across, i, j)
+                            && !dark(modules, across, i, j + 1)
+                            &&  dark(modules, across, i, j + 2)
+                            &&  dark(modules, across, i, j + 3)
+                            &&  dark(modules, across, i, j + 4)
+                            && !dark(modules, across, i, j + 5)
+                            &&  dark(modules, across, i, j + 6)
+                            && (isLight(modules, across, i, j - 4, j)
+                                    || isLight(modules, across, i, j + 7, j + 11))) {
+                        lostPoint += 40;
+                    }
                 }
             }
         }
 
-        // LEVEL2
+        // N2
         for (int row = 0; row < moduleCount - 1; row++) {
             for (int col = 0; col < moduleCount - 1; col++) {
-                int count = 0;
-                if (qrCode.isDark(row,     col    )) count++;
-                if (qrCode.isDark(row + 1, col    )) count++;
-                if (qrCode.isDark(row,     col + 1)) count++;
-                if (qrCode.isDark(row + 1, col + 1)) count++;
-                if (count == 0 || count == 4) {
+                boolean d = modules[row][col];
+                if (d == modules[row + 1][col] && d == modules[row][col + 1] && d == modules[row + 1][col + 1]) {
                     lostPoint += 3;
                 }
             }
         }
 
-        // LEVEL3
-        for (int row = 0; row < moduleCount; row++) {
-            for (int col = 0; col < moduleCount - 6; col++) {
-                if (qrCode.isDark(row, col)
-                        && !qrCode.isDark(row, col + 1)
-                        &&  qrCode.isDark(row, col + 2)
-                        &&  qrCode.isDark(row, col + 3)
-                        &&  qrCode.isDark(row, col + 4)
-                        && !qrCode.isDark(row, col + 5)
-                        &&  qrCode.isDark(row, col + 6)) {
-                    lostPoint += 40;
-                }
-            }
-        }
-
-        for (int col = 0; col < moduleCount; col++) {
-            for (int row = 0; row < moduleCount - 6; row++) {
-                if (qrCode.isDark(row, col)
-                        && !qrCode.isDark(row + 1, col)
-                        &&  qrCode.isDark(row + 2, col)
-                        &&  qrCode.isDark(row + 3, col)
-                        &&  qrCode.isDark(row + 4, col)
-                        && !qrCode.isDark(row + 5, col)
-                        &&  qrCode.isDark(row + 6, col)) {
-                    lostPoint += 40;
-                }
-            }
-        }
-
-        // LEVEL4
+        // N4
         int darkCount = 0;
-        for (int col = 0; col < moduleCount; col++) {
-            for (int row = 0; row < moduleCount; row++) {
-                if (qrCode.isDark(row, col)) {
+        for (int row = 0; row < moduleCount; row++) {
+            for (int col = 0; col < moduleCount; col++) {
+                if (modules[row][col]) {
                     darkCount++;
                 }
             }
         }
-
-        int ratio = Math.abs(100 * darkCount / moduleCount / moduleCount - 50) / 5;
-        lostPoint += ratio * 10;
+        int total = moduleCount * moduleCount;
+        lostPoint += Math.abs(2 * darkCount - total) * 10 / total * 10;
 
         return lostPoint;
+    }
+
+    // Returns the module of the row and the column, or of the column and the
+    // row across; outside the symbol is the quiet zone, which is light.
+    private static boolean dark(boolean[][] modules, boolean across, int i, int j) {
+        if (j < 0 || j >= modules.length) {
+            return false;
+        }
+        return across ? modules[j][i] : modules[i][j];
+    }
+
+    // Tells if the modules from j to k, not including k, of the row or the column are light.
+    private static boolean isLight(boolean[][] modules, boolean across, int i, int j, int k) {
+        for (; j < k; j++) {
+            if (dark(modules, across, i, j)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static final int G15 = (1 << 10) | (1 << 8) | (1 << 5) | (1 << 4) | (1 << 2) | (1 << 1) | (1 << 0);

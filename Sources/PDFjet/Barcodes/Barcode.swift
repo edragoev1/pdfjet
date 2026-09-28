@@ -282,25 +282,28 @@ public class Barcode : Drawable {
             page?.restoreGraphicsState()
         }
         // init accepted one of these types.
-        var xy: [Float]
+        var extent: Extent
         if barcodeType == Barcode.EAN_13 {
-            xy = drawCodeEAN13(page, x1, y1)
+            extent = drawCodeEAN13(page, x1, y1)
         } else if barcodeType == Barcode.UPC_A {
-            xy = drawCodeUPC(page, x1, y1)
+            extent = drawCodeUPC(page, x1, y1)
         } else if barcodeType == Barcode.CODE_128 || barcodeType == Barcode.GS1_128 {
-            xy = drawCode128(page, x1, y1)
+            extent = drawCode128(page, x1, y1)
         } else if barcodeType == Barcode.ITF_14 {
-            xy = drawITF14(page, x1, y1)
+            extent = drawITF14(page, x1, y1)
         } else {
-            xy = drawCode39(page, x1, y1)
+            extent = drawCode39(page, x1, y1)
         }
         if let page = page, let altDescription = altDescription, !altDescription.isEmpty {
-            page.setFigureBoundingBox(x1, y1, xy[0] - x1, xy[1] - y1)
+            // The box of the bars and the text, which can reach left of x1
+            // and, turned, above y1
+            let box = extent.getBox()
+            page.setFigureBoundingBox(box[0], box[1], box[2], box[3])
         }
-        return xy
+        return extent.bars.getBottomRight(extent.left, extent.right, extent.bottom)
     }
 
-    private func drawCodeUPC(_ page: Page?, _ x1: Float, _ y1: Float) -> [Float] {
+    private func drawCodeUPC(_ page: Page?, _ x1: Float, _ y1: Float) -> Extent {
         var x: Float = x1
         let h: Float = m1 * barHeightFactor     // Barcode height when drawn horizontally
         // The guard bars, and the bars of the first and the last digit, which are
@@ -424,7 +427,7 @@ public class Barcode : Drawable {
             font!.setSize(fontSize)
         }
 
-        return bars.getBottomRight(left, right, bottom)
+        return Extent(bars: bars, left: left, right: right, bottom: bottom)
     }
 
     // How far the guard bars of EAN-13 and UPC-A reach below the other bars, in
@@ -515,8 +518,9 @@ public class Barcode : Drawable {
 
     /// Returns the start and the codewords of the text: runs of four digits
     /// or more in code set C, two digits to a codeword, and the rest in code
-    /// set B, where a character from 32 to 127 takes one codeword, and one
-    /// below 32 or from 128 to 255 two, SHIFT or FNC 4 and the character. It
+    /// set B, where a character from 32 to 127 takes one codeword, one below
+    /// 32 or from 160 to 255 two, SHIFT or FNC 4 and the character, and one
+    /// from 128 to 159 three, FNC 4, SHIFT and the character 128 below it. It
     /// returns an error for a character above 255, which the code sets cannot
     /// hold, and for a text of more than 48 codewords, the most a barcode
     /// holds, rather than draw a barcode of another text.
@@ -530,7 +534,7 @@ public class Barcode : Drawable {
         }
         let list = code128Encode(items)
         if list.count - 1 > 48 {
-            return ([], "Code 128 barcodes hold at most 48 codewords, and a character below 32 or from 128 to 255 takes two!")
+            return ([], "Code 128 barcodes hold at most 48 codewords, and a character below 32 or from 160 to 255 takes two, and one from 128 to 159 three!")
         }
         return (list, nil)
     }
@@ -612,6 +616,13 @@ public class Barcode : Drawable {
             } else if c < 128 {
                 list.append(UInt16(c - 32))
                 i += 1
+            } else if c < 160 {
+                // FNC 4 and the control character 128 below it, which is in
+                // code set A, after SHIFT
+                list.append(UInt16(Code128Table.FNC_4))
+                list.append(UInt16(Code128Table.SHIFT))
+                list.append(UInt16(c - 128 + 64))
+                i += 1
             } else {
                 list.append(UInt16(Code128Table.FNC_4))
                 list.append(UInt16(c - 160))    // 128 + 32
@@ -621,7 +632,7 @@ public class Barcode : Drawable {
         return list
     }
 
-    private func drawCode128(_ page: Page?, _ x1: Float, _ y1: Float) -> [Float] {
+    private func drawCode128(_ page: Page?, _ x1: Float, _ y1: Float) -> Extent {
         let h: Float = m1 * barHeightFactor     // Barcode height when drawn horizontally
 
         // init refused a text with an error
@@ -665,17 +676,19 @@ public class Barcode : Drawable {
             }
         }
 
+        var left = x1
         var right = x
         var bottom = y1 + h
         if font != nil {
-            let xy = drawText(page, bars, text,
-                    x1 + ((x - x1) - font!.stringWidth(text))/2,
-                    y1 + h + font!.bodyHeight)
+            // The text is centered under the bars, and can be wider than them
+            let textX = x1 + ((x - x1) - font!.stringWidth(text))/2
+            let xy = drawText(page, bars, text, textX, y1 + h + font!.bodyHeight)
+            left = min(left, textX)
             right = max(right, xy[0])
             bottom = xy[1]
         }
 
-        return bars.getBottomRight(x1, right, bottom)
+        return Extent(bars: bars, left: left, right: right, bottom: bottom)
     }
 
     // The widths, narrow (n) or wide (w), of the five bars or the five spaces of
@@ -692,7 +705,7 @@ public class Barcode : Drawable {
     // them, as GS1 asks of a barcode printed on corrugated board, so that a
     // scanner does not read a barcode cut short. The text, the 14 digits, is
     // under the frame.
-    private func drawITF14(_ page: Page?, _ x1: Float, _ y1: Float) -> [Float] {
+    private func drawITF14(_ page: Page?, _ x1: Float, _ y1: Float) -> Extent {
         let m = m1
         let wide: Float = 2.5 * m
         let bearer: Float = 4.0 * m
@@ -746,16 +759,17 @@ public class Barcode : Drawable {
             page.addEMC()
         }
 
+        var left = x1
         var right = x1 + outerWidth
         var bottom = y1 + outerHeight
         if font != nil {
-            let xy = drawText(page, bars, fullText,
-                    x1 + (outerWidth - font!.stringWidth(fullText))/2,
-                    y1 + outerHeight + font!.bodyHeight)
+            let textX = x1 + (outerWidth - font!.stringWidth(fullText))/2
+            let xy = drawText(page, bars, fullText, textX, y1 + outerHeight + font!.bodyHeight)
+            left = min(left, textX)
             right = max(right, xy[0])
             bottom = xy[1]
         }
-        return bars.getBottomRight(x1, right, bottom)
+        return Extent(bars: bars, left: left, right: right, bottom: bottom)
     }
 
     // Strokes a line of width w from (xa, ya) to (xb, yb), turned to the
@@ -770,7 +784,7 @@ public class Barcode : Drawable {
         page.strokePath()
     }
 
-    private func drawCode39(_ page: Page?, _ x1: Float, _ y1: Float) -> [Float] {
+    private func drawCode39(_ page: Page?, _ x1: Float, _ y1: Float) -> Extent {
         // Use a local variable instead of mutating the text field - drawOn()
         // must be safe to call more than once on the same Barcode instance
         // (e.g. drawing the same barcode on several pages).
@@ -808,20 +822,21 @@ public class Barcode : Drawable {
             x += m1
         }
 
+        var left = x1
         var right = x1 + length
         var bottom = y1 + h
         if font != nil {
-            let xy = drawText(page, bars, fullText,
-                    x1 + (length - font!.stringWidth(fullText))/2,
-                    y1 + h + font!.bodyHeight)
+            let textX = x1 + (length - font!.stringWidth(fullText))/2
+            let xy = drawText(page, bars, fullText, textX, y1 + h + font!.bodyHeight)
+            left = min(left, textX)
             right = max(right, xy[0])
             bottom = xy[1]
         }
 
-        return bars.getBottomRight(x1, right, bottom)
+        return Extent(bars: bars, left: left, right: right, bottom: bottom)
     }
 
-    private func drawCodeEAN13(_ page: Page?, _ x1: Float, _ y1: Float) -> [Float] {
+    private func drawCodeEAN13(_ page: Page?, _ x1: Float, _ y1: Float) -> Extent {
         var x: Float = x1
         let h: Float = m1 * barHeightFactor     // Barcode height when drawn horizontally
         // The guard bars reach 5 modules below the others.
@@ -935,7 +950,7 @@ public class Barcode : Drawable {
             font!.setSize(fontSize)
         }
 
-        return bars.getBottomRight(left, right, bottom)
+        return Extent(bars: bars, left: left, right: right, bottom: bottom)
     }
 
     // The bars of a barcode, length long and height high, drawn left to right from
@@ -969,6 +984,23 @@ public class Barcode : Drawable {
                 return [x1 + (bottom - y1), y1 + length + (x1 - left)]
             }
             return [right, bottom]
+        }
+    }
+
+    // How far a barcode drawn left to right reaches, its bars and its text:
+    // from left to right, and from y1 to bottom.
+    private struct Extent {
+        let bars: Bars
+        let left: Float
+        let right: Float
+        let bottom: Float
+
+        // Returns the box of the barcode, turned to its direction: the x and y
+        // of its top left corner, its width and its height.
+        func getBox() -> [Float] {
+            let a = bars.turn(left, bars.y1)
+            let b = bars.turn(right, bottom)
+            return [min(a[0], b[0]), min(a[1], b[1]), abs(b[0] - a[0]), abs(b[1] - a[1])]
         }
     }
 
