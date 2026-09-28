@@ -67,6 +67,7 @@ let package = Package(
         .executableTarget(name: "Example_54", dependencies: ["PDFjet"]),
         .executableTarget(name: "Example_55", dependencies: ["PDFjet"]),
         .executableTarget(name: "Example_56", dependencies: ["PDFjet"]),
+        .executableTarget(name: "Example_57", dependencies: ["PDFjet"]),
         .executableTarget(name: "BookletSnippets", dependencies: ["PDFjet"], path: "booklet/snippets/swift"),
         // The harness of tests/corpus/check-corpus.py --port swift.
         .executableTarget(name: "CorpusSwift", dependencies: ["PDFjet"], path: "tests/corpus/swift"),

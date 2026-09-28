@@ -10,6 +10,12 @@ This is the first entry in this file; earlier releases were not tracked here.
 ## Unreleased
 
 ### Added
+- Example_57, in all four ports: the table of Example_43 cut to 550 rows, 12
+  pages, as a PDF/UA document, to check how a `BigTable` is tagged, a TR for
+  each row and a TH or a TD for each cell, at a size a PDF/UA checker opens.
+  Example_43's 2,000 pages crash PAC, and tagged they would be 249 MB. The
+  scripts, the workflows, the packaging and the lists of examples build,
+  check and show 57 examples.
 - The bounding box of a figure, in all four ports: `Page.setFigureBoundingBox`,
   for a figure drawn with `addBDC` and `addEMC` around other drawing, such
   as the content of another PDF. The figures of the library, images, SVG

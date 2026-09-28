@@ -40,7 +40,7 @@ from concurrent.futures import ProcessPoolExecutor
 import pymupdf
 
 PORTS = ['java', 'dotnet', 'go', 'swift']
-EXAMPLES = range(1, 57)
+EXAMPLES = range(1, 58)
 MAX_PAGES = 10
 RESOLUTION = 50
 EXAMPLES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'examples')
