@@ -234,7 +234,7 @@ class BMPImage {
         // An image whose alpha is 0 in every pixel is drawn opaque, as
         // browsers draw it: writers that do not know of the alpha leave it at
         // 0. One whose alpha is 255 in every pixel needs no soft mask.
-        if let alpha = alpha, !allBytesAre(alpha, 0), !allBytesAre(alpha, 255) {
+        if let alpha = alpha, !BMPImage.allBytesAre(alpha, 0), !BMPImage.allBytesAre(alpha, 255) {
             deflatedAlpha = [UInt8]()
             FlateEncode(&deflatedAlpha!, alpha)
         }
@@ -281,7 +281,7 @@ class BMPImage {
     }
 
     // Reports whether every byte of the array is the value.
-    private func allBytesAre(_ data: [UInt8], _ value: UInt8) -> Bool {
+    static func allBytesAre(_ data: [UInt8], _ value: UInt8) -> Bool {
         for b in data where b != value {
             return false
         }

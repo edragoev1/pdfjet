@@ -598,4 +598,51 @@ import Testing
         #expect(decodeError(palettePNG(4, 1, 2, palette, [0], TestSupport.deflate([5, 0])))
                 == "Invalid PNG filter type 5.")
     }
+
+    @Test func anImageWhoseAlphaIsOpaqueInEveryPixelHasNoSoftMask() throws {
+        // The second row of each image is filtered with Up, so that its alpha
+        // is only 255 once the filter is undone.
+        var rgba = TestSupport.deflate([0, 1, 2, 3, 255, 4, 5, 6, 255, 2, 1, 1, 1, 0, 1, 1, 1, 0])
+        var grayAlpha = TestSupport.deflate([0, 7, 255, 8, 255, 2, 1, 0, 1, 0])
+        let palette: [UInt8] = [10, 20, 30, 40, 50, 60]
+        // Three indexes 0 of 2 bits, and the index 1 in the bits after them.
+        let indexes = TestSupport.deflate([0, 0x01, 0, 0x01])
+        let sixColors: [UInt8] = [10, 20, 30, 10, 20, 30, 10, 20, 30, 10, 20, 30, 10, 20, 30, 10, 20, 30]
+        let cases: [(String, [UInt8], [UInt8])] = [
+            ("RGBA", png(2, 2, 8, 6, nil, rgba), [1, 2, 3, 4, 5, 6, 2, 3, 4, 5, 6, 7]),
+            ("gray with alpha", png(2, 2, 8, 4, nil, grayAlpha), [7, 8, 8, 9]),
+            ("a palette of opaque colors", palettePNG(3, 2, 2, palette, [255, 255], indexes), sixColors),
+            ("a transparent color that no pixel is", palettePNG(3, 2, 2, palette, [255, 0], indexes), sixColors),
+        ]
+        for (name, png, samples) in cases {
+            let (raw, dict) = try dictionaries(png)
+            #expect(!raw.contains("/SMask") && !dict.contains("/SMask"), "\(name)")
+            let image = try PNGImage(InputStream(data: Data(png)))
+            #expect(image.getAlpha() == nil, "\(name)")
+            #expect(try TestSupport.inflate(image.getData()) == samples, "\(name)")
+        }
+        // One pixel that is not quite opaque keeps the alpha of all four.
+        rgba = TestSupport.deflate([0, 1, 2, 3, 255, 4, 5, 6, 255, 2, 1, 1, 1, 0, 1, 1, 1, 255])
+        var image = try PNGImage(InputStream(data: Data(png(2, 2, 8, 6, nil, rgba))))
+        #expect(try TestSupport.inflate(image.getAlpha()!) == [255, 255, 255, 254])
+        // An image of alpha 0 in every pixel is transparent, and keeps its alpha.
+        grayAlpha = TestSupport.deflate([0, 7, 0, 8, 0])
+        image = try PNGImage(InputStream(data: Data(png(2, 1, 8, 4, nil, grayAlpha))))
+        #expect(try TestSupport.inflate(image.getAlpha()!) == [0, 0])
+    }
+
+    @Test(.enabled(if: TestSupport.exists(ReviewMediaTests.streamFont), "the fonts directory is not here"))
+    func aPDFA1DocumentHoldsAPngWithAlphaWhenEveryPixelIsOpaque() throws {
+        // PDF/A-1 has no soft masks, and an image whose pixels are all opaque
+        // needs none; one pixel that is not refuses the image.
+        let opaque = TestSupport.deflate([0, 1, 2, 3, 255, 4, 5, 6, 255])
+        #expect(try ReviewMediaTests.pdfAImageError(Compliance.PDF_A_1B,
+                InputStream(data: Data(png(2, 1, 8, 6, nil, opaque)))) == "")
+        let translucent = TestSupport.deflate([0, 1, 2, 3, 255, 4, 5, 6, 128])
+        #expect(try ReviewMediaTests.pdfAImageError(Compliance.PDF_A_1B,
+                InputStream(data: Data(png(2, 1, 8, 6, nil, translucent))))
+                == "The PDF was not completed because of an earlier error: "
+                + "A document of PDF_A_1B cannot hold an image with transparency: "
+                + "PDF/A-1 has no soft masks, so its images are opaque.")
+    }
 }

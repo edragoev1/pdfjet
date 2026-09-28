@@ -228,9 +228,11 @@ func fuzzComparePNG(data []byte) error {
 	if len(samples) != rowBytes*h {
 		return fmt.Errorf("%d bytes of samples, not %d", len(samples), rowBytes*h)
 	}
+	// An image whose pixels are all opaque has no alpha, and every pixel of
+	// one without alpha must be opaque.
 	hasAlpha := pdfjet.colorType == 4 || pdfjet.colorType == 6 ||
 		(pdfjet.colorType == 3 && pdfjet.tRNS != nil)
-	if hasAlpha != (alpha != nil) || (alpha != nil && len(alpha) != w*h) {
+	if alpha != nil && (!hasAlpha || len(alpha) != w*h) {
 		return fmt.Errorf("alpha of %d bytes for color type %d", len(alpha), pdfjet.colorType)
 	}
 	bounds := decoded.Bounds()
@@ -251,6 +253,9 @@ func fuzzComparePNG(data []byte) error {
 					return fmt.Errorf("color type %d: alpha of pixel %d, %d is %d, not %d",
 						pdfjet.colorType, x, y, got, expected)
 				}
+			} else if hasAlpha && c.A != 0xffff {
+				return fmt.Errorf("color type %d: pixel %d, %d of alpha %d has no soft mask",
+					pdfjet.colorType, x, y, c.A>>8)
 			}
 		}
 	}

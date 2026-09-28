@@ -202,13 +202,19 @@ public class ReviewMediaTest {
     // The message the image of the file fails a document of the compliance
     // with, or "" when the document holds it.
     private static string PDFAError(Compliance compliance, string path) {
+        return PDFAImageError(compliance, File.ReadAllBytes(TestSupport.RepoPath(path)));
+    }
+
+    // The message the image fails a document of the compliance with, or ""
+    // when the document holds it.
+    internal static string PDFAImageError(Compliance compliance, byte[] image) {
         PDF pdf = new PDF(new MemoryStream(), compliance);
         pdf.SetTitle("Title");
         Font font = new Font(pdf, TestSupport.RepoPath(THAI));
         Page page = new Page(pdf, Letter.PORTRAIT);
         new TextLine(font, "Text").SetLocation(50f, 50f).DrawOn(page);
         try {
-            new Image(pdf, TestSupport.RepoPath(path)).SetAltDescription("An image")
+            new Image(pdf, new MemoryStream(image)).SetAltDescription("An image")
                     .SetLocation(50f, 100f).DrawOn(page);
             pdf.Complete();
         } catch (InvalidOperationException e) {

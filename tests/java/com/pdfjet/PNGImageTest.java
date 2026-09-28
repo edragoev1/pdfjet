@@ -713,4 +713,57 @@ class PNGImageTest {
         assertEquals("Invalid PNG filter type 5.",
                 decodeError(palettePng(4, 1, 2, palette, new byte[] {0}, Compressor.deflate(new byte[] {5, 0}))));
     }
+
+    @Test
+    void anImageWhoseAlphaIsOpaqueInEveryPixelHasNoSoftMask() throws Exception {
+        // The second row of each image is filtered with Up, so that its alpha
+        // is only 255 once the filter is undone.
+        byte[] rgba = Compressor.deflate(new byte[] {
+                0, 1, 2, 3, (byte) 255, 4, 5, 6, (byte) 255, 2, 1, 1, 1, 0, 1, 1, 1, 0});
+        byte[] grayAlpha = Compressor.deflate(new byte[] {0, 7, (byte) 255, 8, (byte) 255, 2, 1, 0, 1, 0});
+        byte[] palette = {10, 20, 30, 40, 50, 60};
+        // Three indexes 0 of 2 bits, and the index 1 in the bits after them.
+        byte[] indexes = Compressor.deflate(new byte[] {0, 0x01, 0, 0x01});
+        byte[] sixColors = {10, 20, 30, 10, 20, 30, 10, 20, 30, 10, 20, 30, 10, 20, 30, 10, 20, 30};
+        Object[][] cases = {
+            {"RGBA", png(2, 2, 8, 6, null, rgba), new byte[] {1, 2, 3, 4, 5, 6, 2, 3, 4, 5, 6, 7}},
+            {"gray with alpha", png(2, 2, 8, 4, null, grayAlpha), new byte[] {7, 8, 8, 9}},
+            {"a palette of opaque colors",
+                palettePng(3, 2, 2, palette, new byte[] {(byte) 255, (byte) 255}, indexes), sixColors},
+            {"a transparent color that no pixel is",
+                palettePng(3, 2, 2, palette, new byte[] {(byte) 255, 0}, indexes), sixColors},
+        };
+        for (Object[] c : cases) {
+            String name = (String) c[0];
+            String[] dicts = pngDictionaries((byte[]) c[1]);
+            assertFalse(dicts[0].contains("/SMask") || dicts[1].contains("/SMask"), name);
+            PNGImage image = new PNGImage(new ByteArrayInputStream((byte[]) c[1]));
+            assertNull(image.getAlpha(), name);
+            assertArrayEquals((byte[]) c[2], Decompressor.inflate(image.getData()), name);
+        }
+        // One pixel that is not quite opaque keeps the alpha of all four.
+        rgba = Compressor.deflate(new byte[] {
+                0, 1, 2, 3, (byte) 255, 4, 5, 6, (byte) 255, 2, 1, 1, 1, 0, 1, 1, 1, (byte) 255});
+        PNGImage image = new PNGImage(new ByteArrayInputStream(png(2, 2, 8, 6, null, rgba)));
+        assertArrayEquals(new byte[] {(byte) 255, (byte) 255, (byte) 255, (byte) 254},
+                Decompressor.inflate(image.getAlpha()));
+        // An image of alpha 0 in every pixel is transparent, and keeps its alpha.
+        grayAlpha = Compressor.deflate(new byte[] {0, 7, 0, 8, 0});
+        image = new PNGImage(new ByteArrayInputStream(png(2, 1, 8, 4, null, grayAlpha)));
+        assertArrayEquals(new byte[] {0, 0}, Decompressor.inflate(image.getAlpha()));
+    }
+
+    @Test
+    void aPDFA1DocumentHoldsAPngWithAlphaWhenEveryPixelIsOpaque() throws Exception {
+        // PDF/A-1 has no soft masks, and an image whose pixels are all opaque
+        // needs none; one pixel that is not refuses the image.
+        byte[] opaque = Compressor.deflate(new byte[] {0, 1, 2, 3, (byte) 255, 4, 5, 6, (byte) 255});
+        assertEquals("", ReviewMediaTest.pdfaImageError(Compliance.PDF_A_1B,
+                new ByteArrayInputStream(png(2, 1, 8, 6, null, opaque))));
+        byte[] translucent = Compressor.deflate(new byte[] {0, 1, 2, 3, (byte) 255, 4, 5, 6, (byte) 128});
+        assertEquals("A document of PDF_A_1B cannot hold an image with transparency: "
+                + "PDF/A-1 has no soft masks, so its images are opaque.",
+                ReviewMediaTest.pdfaImageError(Compliance.PDF_A_1B,
+                        new ByteArrayInputStream(png(2, 1, 8, 6, null, translucent))));
+    }
 }

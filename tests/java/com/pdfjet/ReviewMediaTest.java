@@ -14,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -193,13 +194,19 @@ class ReviewMediaTest {
     // The message that a document of the compliance that holds the image of
     // the file fails with, or "" when it is completed.
     private static String pdfaError(Compliance level, String path) throws Exception {
+        return pdfaImageError(level, TestSupport.open(path));
+    }
+
+    // The message that a document of the compliance that holds the image fails
+    // with, or "" when it is completed.
+    static String pdfaImageError(Compliance level, InputStream stream) throws Exception {
         PDF pdf = new PDF(new ByteArrayOutputStream(), level);
         pdf.setTitle("Title");
         Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
         Page page = new Page(pdf, Letter.PORTRAIT);
         new TextLine(font, "Text").setLocation(50f, 50f).drawOn(page);
         try {
-            Image image = new Image(pdf, TestSupport.open(path));
+            Image image = new Image(pdf, stream);
             image.setAltDescription("An image").setLocation(50f, 100f);
             image.drawOn(page);
             pdf.complete();

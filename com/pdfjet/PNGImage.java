@@ -168,10 +168,20 @@ class PNGImage {
         decodeColors = colors;
         if (colorType == 3) {
             palette = Arrays.copyOf(pLTE, 3 << bitDepth);
-            if (tRNS != null) {
+            // A tRNS chunk of no alpha but 255 needs no decoding for its soft mask.
+            if (tRNS != null && !BMPImage.allBytesAre(tRNS, (byte) 255)) {
                 byte[] indexes = paletteIndexes(unfilter(buf, this.h, bytesPerRow, 1));
-                deflatedAlphaData = Compressor.deflate(paletteAlpha(indexes));
+                setAlpha(paletteAlpha(indexes));
             }
+        }
+    }
+
+    // Deflates the alpha of the pixels for the soft mask of the image, unless
+    // every pixel is opaque: an image with no soft mask is drawn the same, is
+    // smaller, and is one that PDF/A-1 can hold.
+    private void setAlpha(byte[] alpha) {
+        if (!BMPImage.allBytesAre(alpha, (byte) 255)) {
+            deflatedAlphaData = Compressor.deflate(alpha);
         }
     }
 
@@ -495,10 +505,13 @@ class PNGImage {
     // bytes after the filter type, and the byte of the pixel on the left is
     // bytesPerPixel bytes before, or the byte before for pixels smaller than
     // a byte. It throws on a filter type that PNG does not define, as libpng
-    // does.
+    // does. The bytes of the first pixel of a row have no byte on the left,
+    // and the first row no row above, so they are undone apart from the rest,
+    // with the bytes they do not have taken as 0.
     private static byte[] unfilter(byte[] buf, int rows, int bytesPerRow, int bytesPerPixel)
             throws Exception {
         byte[] image = new byte[rows * bytesPerRow];
+        int first = Math.min(bytesPerPixel, bytesPerRow);   // The bytes of the first pixel
         int prior = -1;     // Where the row above starts, none for the first row
         for (int row = 0; row < rows; row++) {
             int offset = row * (bytesPerRow + 1);
@@ -506,7 +519,8 @@ class PNGImage {
             int line = row * bytesPerRow;
             System.arraycopy(buf, offset + 1, image, line, bytesPerRow);
             if (filter == 0x00) {               // None
-            } else if (filter == 0x01) {        // Sub
+            } else if (filter == 0x01 || (filter == 0x04 && prior < 0)) {
+                // Sub, and Paeth of the first row, which is the byte on the left.
                 for (int i = bytesPerPixel; i < bytesPerRow; i++) {
                     image[line + i] += image[line + i - bytesPerPixel];
                 }
@@ -516,24 +530,28 @@ class PNGImage {
                         image[line + i] += image[prior + i];
                     }
                 }
+            } else if (filter == 0x03 && prior < 0) {   // Average of the first row
+                for (int i = bytesPerPixel; i < bytesPerRow; i++) {
+                    image[line + i] += (byte) ((image[line + i - bytesPerPixel] & 0xFF) / 2);
+                }
             } else if (filter == 0x03) {        // Average
-                for (int i = 0; i < bytesPerRow; i++) {
-                    int a = (i >= bytesPerPixel) ? image[line + i - bytesPerPixel] & 0xFF : 0;
-                    int b = (prior >= 0) ? image[prior + i] & 0xFF : 0;
+                for (int i = 0; i < first; i++) {
+                    image[line + i] += (byte) ((image[prior + i] & 0xFF) / 2);
+                }
+                for (int i = bytesPerPixel; i < bytesPerRow; i++) {
+                    int a = image[line + i - bytesPerPixel] & 0xFF;
+                    int b = image[prior + i] & 0xFF;
                     image[line + i] += (byte) ((a + b) / 2);
                 }
-            } else if (filter == 0x04) {        // Paeth
-                for (int i = 0; i < bytesPerRow; i++) {
+            } else if (filter == 0x04) {        // Paeth, whose first pixel is the byte above
+                for (int i = 0; i < first; i++) {
+                    image[line + i] += image[prior + i];
+                }
+                for (int i = bytesPerPixel; i < bytesPerRow; i++) {
                     // Left, above and above on the left
-                    int a = (i >= bytesPerPixel) ? image[line + i - bytesPerPixel] & 0xFF : 0;
-                    int b = 0;
-                    int c = 0;
-                    if (prior >= 0) {
-                        b = image[prior + i] & 0xFF;
-                        if (i >= bytesPerPixel) {
-                            c = image[prior + i - bytesPerPixel] & 0xFF;
-                        }
-                    }
+                    int a = image[line + i - bytesPerPixel] & 0xFF;
+                    int b = image[prior + i] & 0xFF;
+                    int c = image[prior + i - bytesPerPixel] & 0xFF;
                     image[line + i] += (byte) paeth(a, b, c);
                 }
             } else {
@@ -578,7 +596,7 @@ class PNGImage {
             gray[i] = image[2 * i];
             alpha[i] = image[2 * i + 1];
         }
-        deflatedAlphaData = Compressor.deflate(alpha);
+        setAlpha(alpha);
         return gray;
     }
 
@@ -592,7 +610,7 @@ class PNGImage {
             idata[3 * i + 2] = image[4 * i + 2];
             alpha[i] = image[4 * i + 3];
         }
-        deflatedAlphaData = Compressor.deflate(alpha);
+        setAlpha(alpha);
         return idata;
     }
 
@@ -608,7 +626,7 @@ class PNGImage {
             System.arraycopy(pLTE, 3 * (indexes[i] & 0xFF), image, 3 * i, 3);
         }
         if (tRNS != null) {
-            deflatedAlphaData = Compressor.deflate(paletteAlpha(indexes));
+            setAlpha(paletteAlpha(indexes));
         }
         return image;
     }

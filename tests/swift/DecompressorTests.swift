@@ -194,4 +194,47 @@ import Testing
     @Test func inflateAcceptsAnEmptyStream() throws {
         #expect(try TestSupport.inflate(TestSupport.deflate([])).isEmpty)
     }
+
+    @Test func inflateDecodesCodesLongerThanItsTableAndStopsAtEveryLength() throws {
+        // Bytes of which each group of 16 is half as frequent as the one
+        // before, whose codes are up to 15 bits long, bytes that do not
+        // compress, and both.
+        var x: UInt32 = 1
+        var skewed = [UInt8]()
+        var random = [UInt8]()
+        for _ in 0..<50000 {
+            x = x &* 1664525 &+ 1013904223
+            skewed.append(UInt8(truncatingIfNeeded: (x >> 16).trailingZeroBitCount * 16 + Int(x >> 28)))
+            random.append(UInt8(truncatingIfNeeded: x >> 24))
+        }
+        for data in [skewed, random, skewed + random] {
+            let deflated = TestSupport.deflate(data)
+            #expect(try inflate(deflated) == data)
+            let (exact, isExact) = try inflateExact(deflated, data.count)
+            #expect(isExact && exact == data)
+            for length in stride(from: 0, through: data.count, by: 997) {
+                #expect(try inflatePrefix(deflated, length) == Array(data.prefix(length)))
+            }
+            #expect(throws: (any Error).self) { _ = try inflate(deflated, data.count - 1) }
+        }
+    }
+
+    @Test func crc32OfEightBytesAtATimeIsTheCRC32OfTheBytes() {
+        var data = [UInt8]()
+        for i in 0..<100003 {
+            data.append(UInt8(truncatingIfNeeded: i &* 7919 &+ i >> 5))
+        }
+        let crc = CRC32()
+        crc.update(data, 0, data.count)
+        #expect(crc.getValue() == UInt32(TestSupport.crc32(data), radix: 16))
+        // In pieces that do not begin at a multiple of eight.
+        let pieces = CRC32()
+        pieces.update(data, 0, 5)
+        pieces.update(data, 5, 12)
+        pieces.update(data, 12, data.count)
+        #expect(pieces.getValue() == crc.getValue())
+        let check = CRC32()
+        check.update(ascii("123456789"), 0, 9)
+        #expect(check.getValue() == 0xCBF43926)
+    }
 }

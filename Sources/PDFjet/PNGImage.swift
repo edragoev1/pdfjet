@@ -152,10 +152,21 @@ class PNGImage {
         decodeColors = colors
         if colorType == 3 {
             palette = Array(pLTE![0..<(3 << bitDepth)])
-            if tRNS != nil {
+            // A tRNS chunk of no alpha but 255 needs no decoding for its soft mask.
+            if let tRNS = tRNS, !BMPImage.allBytesAre(tRNS, 255) {
                 let indexes = paletteIndexes(try unfilter(buf, h, bytesPerRow, 1))
-                FlateEncode(&deflatedAlphaData, paletteAlpha(indexes))
+                setAlpha(paletteAlpha(indexes))
             }
+        }
+    }
+
+    // Deflates the alpha of the pixels for the soft mask of the image, unless
+    // every pixel is opaque: an image with no soft mask is drawn the same, is
+    // smaller, and is one that PDF/A-1 can hold.
+    private func setAlpha(_ alpha: [UInt8]) {
+        if !BMPImage.allBytesAre(alpha, 255) {
+            deflatedAlphaData = [UInt8]()
+            FlateEncode(&deflatedAlphaData, alpha)
         }
     }
 
@@ -464,49 +475,68 @@ class PNGImage {
     // after the filter type, and the byte of the pixel on the left is
     // bytesPerPixel bytes before, or the byte before for pixels smaller than a
     // byte. It throws on a filter type that PNG does not define, as libpng does.
+    // The bytes of the first pixel of a row have no byte on the left, and the
+    // first row no row above, so they are undone apart from the rest, with the
+    // bytes they do not have taken as 0.
     private func unfilter(
             _ buf: [UInt8],
             _ rows: Int,
             _ bytesPerRow: Int,
             _ bytesPerPixel: Int) throws -> [UInt8] {
         var image = [UInt8](repeating: 0, count: rows * bytesPerRow)
+        let first = min(bytesPerPixel, bytesPerRow)     // The bytes of the first pixel
         var badFilter: UInt8?
         buf.withUnsafeBufferPointer { src in
             image.withUnsafeMutableBufferPointer { dst in
                 for row in 0..<rows {
                     let offset = row * (bytesPerRow + 1)
                     let filter = src[offset]
-                    let line = row * bytesPerRow        // The row
+                    let line = dst.baseAddress! + row * bytesPerRow         // The row
                     let prior = line - bytesPerRow      // The row above, none for the first row
-                    for i in 0..<bytesPerRow {
-                        dst[line + i] = src[offset + 1 + i]
-                    }
+                    line.update(from: src.baseAddress! + offset + 1, count: bytesPerRow)
                     if filter == 0x00 {                 // None
-                    } else if filter == 0x01 {          // Sub
-                        if bytesPerPixel < bytesPerRow {
-                            for i in bytesPerPixel..<bytesPerRow {
-                                dst[line + i] = dst[line + i] &+ dst[line + i - bytesPerPixel]
-                            }
+                    } else if filter == 0x01 || (filter == 0x04 && row == 0) {
+                        // Sub, and Paeth of the first row, which is the byte on the left.
+                        var i = bytesPerPixel
+                        while i < bytesPerRow {
+                            line[i] = line[i] &+ line[i - bytesPerPixel]
+                            i += 1
                         }
                     } else if filter == 0x02 {          // Up
                         if row > 0 {
                             for i in 0..<bytesPerRow {
-                                dst[line + i] = dst[line + i] &+ dst[prior + i]
+                                line[i] = line[i] &+ prior[i]
                             }
                         }
-                    } else if filter == 0x03 {          // Average
-                        for i in 0..<bytesPerRow {
-                            let a = i >= bytesPerPixel ? Int(dst[line + i - bytesPerPixel]) : 0
-                            let b = row > 0 ? Int(dst[prior + i]) : 0
-                            dst[line + i] = dst[line + i] &+ UInt8((a + b) / 2)
+                    } else if filter == 0x03 && row == 0 {  // Average of the first row
+                        var i = bytesPerPixel
+                        while i < bytesPerRow {
+                            line[i] = line[i] &+ line[i - bytesPerPixel] / 2
+                            i += 1
                         }
-                    } else if filter == 0x04 {          // Paeth
-                        for i in 0..<bytesPerRow {
+                    } else if filter == 0x03 {          // Average
+                        for i in 0..<first {
+                            line[i] = line[i] &+ prior[i] / 2
+                        }
+                        var i = bytesPerPixel
+                        while i < bytesPerRow {
+                            let a = Int(line[i - bytesPerPixel])    // The byte on the left
+                            let b = Int(prior[i])                   // The byte above
+                            line[i] = line[i] &+ UInt8((a + b) / 2)
+                            i += 1
+                        }
+                    } else if filter == 0x04 {          // Paeth, whose first pixel is the byte above
+                        for i in 0..<first {
+                            line[i] = line[i] &+ prior[i]
+                        }
+                        var i = bytesPerPixel
+                        while i < bytesPerRow {
                             // The bytes on the left, above and above on the left
-                            let a = i >= bytesPerPixel ? Int(dst[line + i - bytesPerPixel]) : 0
-                            let b = row > 0 ? Int(dst[prior + i]) : 0
-                            let c = row > 0 && i >= bytesPerPixel ? Int(dst[prior + i - bytesPerPixel]) : 0
-                            dst[line + i] = dst[line + i] &+ UInt8(PNGImage.paeth(a, b, c))
+                            let a = Int(line[i - bytesPerPixel])
+                            let b = Int(prior[i])
+                            let c = Int(prior[i - bytesPerPixel])
+                            line[i] = line[i] &+ UInt8(PNGImage.paeth(a, b, c))
+                            i += 1
                         }
                     } else {
                         badFilter = filter
@@ -555,7 +585,7 @@ class PNGImage {
             gray[i] = image[2 * i]
             alpha[i] = image[2 * i + 1]
         }
-        FlateEncode(&deflatedAlphaData, alpha)
+        setAlpha(alpha)
         return gray
     }
 
@@ -563,13 +593,19 @@ class PNGImage {
         let image = try unfilter(buf, self.h, 4 * self.w, 4)
         var idata = [UInt8](repeating: 0, count: (3 * self.w * self.h))   // Image data
         var alpha = [UInt8](repeating: 0, count: (self.w * self.h))       // Alpha values
-        for i in 0..<alpha.count {
-            idata[3 * i]     = image[4 * i]
-            idata[3 * i + 1] = image[4 * i + 1]
-            idata[3 * i + 2] = image[4 * i + 2]
-            alpha[i]         = image[4 * i + 3]
+        image.withUnsafeBufferPointer { pixels in
+            idata.withUnsafeMutableBufferPointer { colors in
+                alpha.withUnsafeMutableBufferPointer { alpha in
+                    for i in 0..<alpha.count {
+                        colors[3 * i]     = pixels[4 * i]
+                        colors[3 * i + 1] = pixels[4 * i + 1]
+                        colors[3 * i + 2] = pixels[4 * i + 2]
+                        alpha[i]          = pixels[4 * i + 3]
+                    }
+                }
+            }
         }
-        FlateEncode(&deflatedAlphaData, alpha)
+        setAlpha(alpha)
         return idata
     }
 
@@ -591,8 +627,7 @@ class PNGImage {
             j += 3
         }
         if tRNS != nil {
-            deflatedAlphaData = [UInt8]()
-            FlateEncode(&deflatedAlphaData, paletteAlpha(indexes))
+            setAlpha(paletteAlpha(indexes))
         }
         return image
     }

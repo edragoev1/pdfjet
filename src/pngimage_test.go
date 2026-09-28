@@ -16,6 +16,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/internal/compressor"
 	"github.com/edragoev1/pdfjet/v9/src/internal/decompressor"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
@@ -773,4 +774,62 @@ func TestPNGImageAnUnknownFilterTypeOfARowOfIDATDataEmbeddedAsItIsIsRefused(t *t
 		testPNGError(testPNG(4, 1, 2, 3, palette, compressor.Deflate([]byte{255, 0}))))
 	testWant(t, "Invalid PNG filter type 5.",
 		testPNGError(testPalettePNG(4, 1, 2, palette, []byte{0}, compressor.Deflate([]byte{5, 0}))))
+}
+
+func TestPNGImageAnImageWhoseAlphaIsOpaqueInEveryPixelHasNoSoftMask(t *testing.T) {
+	// The second row of each image is filtered with Up, so that its alpha is
+	// only 255 once the filter is undone.
+	rgba := compressor.Deflate([]byte{0, 1, 2, 3, 255, 4, 5, 6, 255, 2, 1, 1, 1, 0, 1, 1, 1, 0})
+	grayAlpha := compressor.Deflate([]byte{0, 7, 255, 8, 255, 2, 1, 0, 1, 0})
+	palette := []byte{10, 20, 30, 40, 50, 60}
+	// Three indexes 0 of 2 bits, and the index 1 in the bits after them.
+	indexes := compressor.Deflate([]byte{0, 0x01, 0, 0x01})
+	for _, c := range []struct {
+		name    string
+		png     []byte
+		samples []byte
+	}{
+		{"RGBA", testPNG(2, 2, 8, 6, nil, rgba), []byte{1, 2, 3, 4, 5, 6, 2, 3, 4, 5, 6, 7}},
+		{"gray with alpha", testPNG(2, 2, 8, 4, nil, grayAlpha), []byte{7, 8, 8, 9}},
+		{"a palette of opaque colors", testPalettePNG(3, 2, 2, palette, []byte{255, 255}, indexes),
+			[]byte{10, 20, 30, 10, 20, 30, 10, 20, 30, 10, 20, 30, 10, 20, 30, 10, 20, 30}},
+		{"a transparent color that no pixel is", testPalettePNG(3, 2, 2, palette, []byte{255, 0}, indexes),
+			[]byte{10, 20, 30, 10, 20, 30, 10, 20, 30, 10, 20, 30, 10, 20, 30, 10, 20, 30}},
+	} {
+		raw, dict := testPNGDictionaries(t, c.png)
+		if strings.Contains(raw, "/SMask") || strings.Contains(dict, "/SMask") {
+			t.Errorf("%s: a soft mask", c.name)
+		}
+		image := newPNGImage(bytes.NewReader(c.png))
+		if image.GetAlpha() != nil {
+			t.Errorf("%s: alpha", c.name)
+		}
+		if got := testInflate(t, image.GetData()); !bytes.Equal(got, c.samples) {
+			t.Errorf("%s: samples %v", c.name, got)
+		}
+	}
+	// One pixel that is not quite opaque keeps the alpha of all four.
+	rgba = compressor.Deflate([]byte{0, 1, 2, 3, 255, 4, 5, 6, 255, 2, 1, 1, 1, 0, 1, 1, 1, 255})
+	image := newPNGImage(bytes.NewReader(testPNG(2, 2, 8, 6, nil, rgba)))
+	if got := testInflate(t, image.GetAlpha()); !bytes.Equal(got, []byte{255, 255, 255, 254}) {
+		t.Errorf("alpha %v", got)
+	}
+	// An image of alpha 0 in every pixel is transparent, and keeps its alpha.
+	grayAlpha = compressor.Deflate([]byte{0, 7, 0, 8, 0})
+	image = newPNGImage(bytes.NewReader(testPNG(2, 1, 8, 4, nil, grayAlpha)))
+	if got := testInflate(t, image.GetAlpha()); !bytes.Equal(got, []byte{0, 0}) {
+		t.Errorf("alpha %v", got)
+	}
+}
+
+func TestPNGImageAPDFA1DocumentHoldsAPngWithAlphaWhenEveryPixelIsOpaque(t *testing.T) {
+	// PDF/A-1 has no soft masks, and an image whose pixels are all opaque
+	// needs none; one pixel that is not refuses the image.
+	opaque := compressor.Deflate([]byte{0, 1, 2, 3, 255, 4, 5, 6, 255})
+	testWant(t, "", testPDFAImageError(t, compliance.PDF_A_1B, testPNG(2, 1, 8, 6, nil, opaque)))
+	translucent := compressor.Deflate([]byte{0, 1, 2, 3, 255, 4, 5, 6, 128})
+	testWant(t, "The PDF was not completed because of an earlier error: "+
+		"A document of PDF_A_1B cannot hold an image with transparency: "+
+		"PDF/A-1 has no soft masks, so its images are opaque.",
+		testPDFAImageError(t, compliance.PDF_A_1B, testPNG(2, 1, 8, 6, nil, translucent)))
 }

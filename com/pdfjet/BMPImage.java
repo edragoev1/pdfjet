@@ -262,7 +262,7 @@ class BMPImage {
     }
 
     // Reports whether every byte of the array is the value.
-    private static boolean allBytesAre(byte[] data, byte value) {
+    static boolean allBytesAre(byte[] data, byte value) {
         for (byte b : data) {
             if (b != value) {
                 return false;

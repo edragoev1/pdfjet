@@ -360,6 +360,28 @@ This is the first entry in this file; earlier releases were not tracked here.
   size 5 times faster, 3.2 MB where it was 5.2 MB. The images draw as before,
   pixel for pixel in MuPDF and Poppler, and an `/Indexed` image passes
   veraPDF in PDF/A-1b and PDF/A-2b.
+- A PNG with alpha whose pixels are all opaque has no soft mask, in all four
+  ports: an RGBA or a gray and alpha image whose alpha is 255 in every pixel,
+  as that of most screenshots is, and a palette image whose tRNS chunk gives
+  255 to every color its pixels use. Its alpha is not compressed, the PDF is
+  smaller, and it draws the same, pixel for pixel in MuPDF and Poppler. A
+  document of PDF/A-1, which has no soft masks, now holds such an image, and
+  passes veraPDF in PDF/A-1b; it still refuses one with a pixel that is not
+  opaque. An image whose alpha is 0 in every pixel keeps its soft mask, and
+  is transparent, as browsers and libpng draw it. An RGBA screenshot of 2560
+  by 1600 pixels is embedded 10% faster in Go, and 8 KB smaller.
+- The Swift port inflates a zlib stream two to four times faster: its codes
+  of up to 12 bits are decoded with a table, a step for each code instead of
+  a step for each bit, and a stream of a known length is decoded into the
+  memory of its bytes, with no copy; the CRC-32 of a PNG chunk is taken
+  eight bytes at a time. A stream decodes to the same bytes and fails with
+  the same errors as before, at the same bit. A truecolor PNG of 3000 by 4000
+  pixels is embedded in 118 ms, where it took 329 ms, and the RGBA
+  screenshot in 122 ms, where it took 176 ms.
+- The filters of the rows of a PNG are undone with the first pixel of a row,
+  and the first row, apart from the rest, in all four ports, so that the
+  bytes of the rest need no check of whether they have a byte on the left
+  or a row above.
 - What is drawn inside a figure of a tagged document, between
   `addBDC(StructElem.FIGURE, ...)` and its `addEMC`, is the figure, in all
   four ports: a drawable that tags itself, or marks itself as an artifact,

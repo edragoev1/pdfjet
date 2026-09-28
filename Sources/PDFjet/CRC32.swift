@@ -77,14 +77,46 @@ class CRC32 {
             0xB40BBE37, 0xC30C8EA1, 0x5A05DF1B, 0x2D02EF8D,
     ]
 
+    // The table and seven more, for eight bytes at a time: the entry of a
+    // byte in the table k is its CRC followed by k zero bytes.
+    private static let tables: [UInt32] = {
+        var tables = table
+        for k in 1..<8 {
+            for n in 0..<256 {
+                let previous = tables[256 * (k - 1) + n]
+                tables.append((previous >> 8) ^ table[Int(previous & 0xff)])
+            }
+        }
+        return tables
+    }()
+
     private var crc: UInt32 = 0xffffffff
 
     /// Updates the checksum with the bytes of data from index off up to, but not including, index len.
     public func update(_ data: [UInt8], _ off: Int, _ len: Int) {
-        let table = CRC32.table
-        for i in off..<len {
-            crc = (crc >> 8) ^ table[Int(UInt32(data[i]) ^ crc & UInt32(0xff))]
+        precondition(off >= 0 && off <= len && len <= data.count)
+        var crc = self.crc
+        CRC32.tables.withUnsafeBufferPointer { t in
+            data.withUnsafeBufferPointer { bytes in
+                var i = off
+                while i + 8 <= len {
+                    let one = crc ^ (UInt32(bytes[i]) | UInt32(bytes[i + 1]) << 8 |
+                            UInt32(bytes[i + 2]) << 16 | UInt32(bytes[i + 3]) << 24)
+                    let two = UInt32(bytes[i + 4]) | UInt32(bytes[i + 5]) << 8 |
+                            UInt32(bytes[i + 6]) << 16 | UInt32(bytes[i + 7]) << 24
+                    crc = t[7 * 256 + Int(one & 0xff)] ^ t[6 * 256 + Int((one >> 8) & 0xff)] ^
+                            t[5 * 256 + Int((one >> 16) & 0xff)] ^ t[4 * 256 + Int(one >> 24)] ^
+                            t[3 * 256 + Int(two & 0xff)] ^ t[2 * 256 + Int((two >> 8) & 0xff)] ^
+                            t[256 + Int((two >> 16) & 0xff)] ^ t[Int(two >> 24)]
+                    i += 8
+                }
+                while i < len {
+                    crc = (crc >> 8) ^ t[Int((UInt32(bytes[i]) ^ crc) & 0xff)]
+                    i += 1
+                }
+            }
         }
+        self.crc = crc
     }
 
     /// Returns the checksum.

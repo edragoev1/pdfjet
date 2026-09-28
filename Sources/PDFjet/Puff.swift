@@ -68,7 +68,7 @@ func inflate(_ data: [UInt8], _ maxLength: Int = MAX_DECODED_LENGTH) throws -> [
 func inflatePrefix(_ data: [UInt8], _ length: Int) throws -> [UInt8] {
     var input = data
     var output = [UInt8]()
-    _ = try Puff(output: &output, input: &input, maxLength: length, prefix: true)
+    _ = try Puff(output: &output, input: &input, maxLength: length, prefix: true, sized: true)
     return output
 }
 
@@ -81,14 +81,16 @@ func inflateExact(_ data: [UInt8], _ length: Int) throws -> ([UInt8], Bool) {
     // other stream is decoded again as a prefix, which fails as it does.
     var input = data
     var output = [UInt8]()
-    if let puff = try? Puff(output: &output, input: &input, maxLength: length, prefix: false),
+    if let puff = try? Puff(output: &output, input: &input, maxLength: length, prefix: false, sized: true),
             output.count == length && puff.incnt + 4 == data.count {
         return (output, true)
     }
     return (try inflatePrefix(data, length), false)
 }
 
-/// Decompresses Deflate data. A Swift port of puff.c by Mark Adler.
+/// Decompresses Deflate data. A Swift port of puff.c by Mark Adler, which
+/// decodes the codes of up to FASTBITS bits with a table, a step for each code
+/// instead of a step for each bit.
 final class Puff {
     // Maximums for allocations and loops.
     // It is not useful to change these -- they are fixed by the deflate format.
@@ -98,6 +100,13 @@ final class Puff {
     var MAXCODES: Int = 316     // maximum codes lengths to read
     let FIXLCODES: Int = 288    // number of fixed literal/length codes
 
+    // The bits a code table decodes in one step, and the most bits a length
+    // and its distance take: two codes of 15 bits, and 5 and 13 extra bits.
+    // A symbol is decoded bit by bit, as puff.c decodes it, when fewer bits
+    // than that are left in the input.
+    private static let FASTBITS = 12
+    private static let MAXPAIRBITS = 48
+
     // output limit
     let maxLength: Int          // the most bytes the output may have
     let prefix: Bool            // stop at maxLength bytes instead of throwing
@@ -106,6 +115,26 @@ final class Puff {
     var incnt = 0               // bytes read so far from the input
     var bitbuf: UInt32 = 0      // bit buffer
     var bitcnt = 0              // number of bits in bit buffer
+    // The input, while the stream is decoded.
+    private var input = UnsafeBufferPointer<UInt8>(start: nil, count: 0)
+
+    // The output: the memory of the output array, when the output is
+    // expected to have maxLength bytes, or else memory of its own that grows
+    // as it fills, up to maxLength bytes, and is appended to the output array
+    // once the stream is decoded.
+    private var out: UnsafeMutablePointer<UInt8>?
+    private var outCount = 0
+    private var outCapacity = 0
+    private var ownsOut = false         // whether deinit frees the memory
+
+    // The tables of the codes of a block, and of the fixed codes: for each
+    // FASTBITS bits of the input, the symbol of the code that they begin
+    // with, shifted left by 4, and the length of the code; 0 for a code that
+    // is longer or is not in the table.
+    private let lenTable: UnsafeMutablePointer<UInt16>
+    private let distTable: UnsafeMutablePointer<UInt16>
+    private let fixedLenTable: UnsafeMutablePointer<UInt16>
+    private let fixedDistTable: UnsafeMutablePointer<UInt16>
 
     // Size base for length codes 257..285
     let lens = [
@@ -182,9 +211,62 @@ final class Puff {
             output: inout [UInt8],
             input: inout [UInt8],
             maxLength: Int = MAX_DECODED_LENGTH,
-            prefix: Bool = false) throws {
+            prefix: Bool = false,
+            sized: Bool = false) throws {
         self.maxLength = maxLength
         self.prefix = prefix
+        let tableSize = 1 << Puff.FASTBITS
+        self.lenTable = UnsafeMutablePointer<UInt16>.allocate(capacity: tableSize)
+        self.distTable = UnsafeMutablePointer<UInt16>.allocate(capacity: tableSize)
+        self.fixedLenTable = UnsafeMutablePointer<UInt16>.allocate(capacity: tableSize)
+        self.fixedDistTable = UnsafeMutablePointer<UInt16>.allocate(capacity: tableSize)
+        if sized && output.isEmpty && maxLength > 0 {
+            // The output is expected to have maxLength bytes, as the rows of
+            // an image do, and is decoded into the array, with no copy. The
+            // memory of the bytes that are not written is never touched.
+            output = try [UInt8](unsafeUninitializedCapacity: maxLength) { buffer, initialized in
+                self.out = buffer.baseAddress
+                self.outCapacity = buffer.count
+                defer {
+                    initialized = self.outCount
+                    self.out = nil
+                }
+                try inflate(&input)
+            }
+            return
+        }
+        // Four bytes of output for each byte of input to begin with, which
+        // grows as it fills.
+        let (fourTimes, overflow) = input.count.multipliedReportingOverflow(by: 4)
+        self.outCapacity = min(maxLength, max(65536, overflow ? Int.max : fourTimes))
+        self.out = UnsafeMutablePointer<UInt8>.allocate(capacity: max(outCapacity, 1))
+        self.ownsOut = true
+        defer {
+            output.append(contentsOf: UnsafeBufferPointer(start: out, count: outCount))
+        }
+        try inflate(&input)
+    }
+
+    deinit {
+        if ownsOut {
+            out?.deallocate()
+        }
+        lenTable.deallocate()
+        distTable.deallocate()
+        fixedLenTable.deallocate()
+        fixedDistTable.deallocate()
+    }
+
+    // Decodes the input, which is held as a pointer while it is decoded.
+    private final func inflate(_ input: inout [UInt8]) throws {
+        try input.withUnsafeBufferPointer { buffer in
+            self.input = buffer
+            defer { self.input = UnsafeBufferPointer(start: nil, count: 0) }
+            try inflate()
+        }
+    }
+
+    private final func inflate() throws {
         var last: Int?                              // block information
         var type: Int?
         var error = 0                               // return value
@@ -204,17 +286,17 @@ final class Puff {
         // process blocks until last block or error; a prefix that has its
         // bytes ignores the rest of the stream, its checksum too
         repeat {
-            if prefix && output.count >= maxLength {
+            if prefix && outCount >= maxLength {
                 return
             }
-            last = try bits(1, &input)              // one if last block
-            type = try bits(2, &input)              // block type 0..3
+            last = try bits(1)                      // one if last block
+            type = try bits(2)                      // block type 0..3
             if type == 0 {
-                error = try stored(&output, &input)
+                error = try stored()
             } else if type == 1 {
-                error = try fixed(&output, &input)
+                error = try fixed()
             } else if type == 2 {
-                error = try dynamic(&output, &input)
+                error = try dynamic()
             } else {
                 error = -1                          // type == 3, invalid
             }
@@ -225,7 +307,7 @@ final class Puff {
                 throw PuffError.read(error: error)  // return with error
             }
         } while last != 1
-        if prefix && output.count >= maxLength {
+        if prefix && outCount >= maxLength {
             return
         }
 
@@ -236,9 +318,22 @@ final class Puff {
         }
         let checksum = UInt32(input[self.incnt]) << 24 | UInt32(input[self.incnt + 1]) << 16 |
                 UInt32(input[self.incnt + 2]) << 8 | UInt32(input[self.incnt + 3])
-        if checksum != adler32(output) {
+        if checksum != adler32(UnsafeBufferPointer(start: out, count: outCount)) {
             throw PDFjetError(message: "Invalid zlib checksum")
         }
+    }
+
+    // Makes room in the output for at least count bytes, up to maxLength.
+    private final func reserve(_ count: Int) {
+        if count <= outCapacity {
+            return
+        }
+        let capacity = min(maxLength, max(count, outCapacity * 2))
+        let grown = UnsafeMutablePointer<UInt8>.allocate(capacity: capacity)
+        grown.initialize(from: out!, count: outCount)
+        out!.deallocate()
+        out = grown
+        outCapacity = capacity
     }
 
     // Called when the output has maxLength bytes and needs another one: a
@@ -274,7 +369,7 @@ final class Puff {
      *   length, this can be implemented as an incomplete code.  Then the invalid
      *   codes are detected while decoding.
      */
-    private final func fixed(_ output: inout [UInt8], _ input: inout [UInt8]) throws -> Int {
+    private final func fixed() throws -> Int {
         // build fixed huffman tables if first call
         if virgin {
             // construct lencode and distcode
@@ -299,12 +394,14 @@ final class Puff {
             // distance table
             lengths = [Int](repeating: 5, count: MAXDCODES)
             construct(&distcode!, &lengths, MAXDCODES)
+            makeTable(lencode!, fixedLenTable)
+            makeTable(distcode!, fixedDistTable)
 
             // do this just once
             virgin = false
         }
         // decode data until end-of-block code
-        return try codes(&output, &input, &lencode!, &distcode!)
+        return try codes(&lencode!, &distcode!, fixedLenTable, fixedDistTable)
     }
 
     /*
@@ -402,7 +499,7 @@ final class Puff {
         return left
     }
 
-    private final func bits(_ need: Int, _ input: inout [UInt8]) throws -> Int {
+    private final func bits(_ need: Int) throws -> Int {
         // bit accumulator (can use up to 20 bits)
         var buffer = self.bitbuf
 
@@ -425,7 +522,7 @@ final class Puff {
         return Int(buffer & ((1 << need) - 1))
     }
 
-    private final func stored(_ output: inout [UInt8], _ input: inout [UInt8]) throws -> Int {
+    private final func stored() throws -> Int {
         // discard leftover bits from current byte (assumes self.bitcnt < 8)
         self.bitbuf = 0
         self.bitcnt = 0
@@ -453,13 +550,14 @@ final class Puff {
         if (self.incnt + len) > input.count {
             return 2                                // not enough input
         }
-        while len > 0 {
-            if output.count >= maxLength {
-                return try stopAtFullOutput()
-            }
-            output.append(input[self.incnt])
-            self.incnt += 1
-            len -= 1
+        // as many as the output has room for
+        let count = min(len, maxLength - outCount)
+        reserve(outCount + count)
+        (out! + outCount).update(from: input.baseAddress! + self.incnt, count: count)
+        outCount += count
+        self.incnt += count
+        if count < len {
+            return try stopAtFullOutput()
         }
 
         // done with a valid stored block
@@ -522,72 +620,273 @@ final class Puff {
      *   defined to do the wrong thing in this case.
      */
     private final func codes(
-        _ output: inout [UInt8],
-        _ input: inout [UInt8],
         _ lencode: inout Huffman,
-        _ distcode: inout Huffman) throws -> Int {
-        var symbol: Int         // decoded symbol
-        var len: Int            // length for copy
-        var dist: Int           // distance for copy
+        _ distcode: inout Huffman,
+        _ lenTable: UnsafeMutablePointer<UInt16>,
+        _ distTable: UnsafeMutablePointer<UInt16>) throws -> Int {
+        let lens = self.lens, lext = self.lext, dists = self.dists, dext = self.dext
+        let mask = UInt64((1 << Puff.FASTBITS) - 1)
+        let base = input.baseAddress!
+        let end = input.count
+        // The bits of the input in a buffer of 64 bits: the whole bytes past
+        // the bits that puff.c would have read are given back when decoding
+        // stops, so that it stops at the same bit of the input. The output
+        // and its length are held here too, and written back when it stops.
+        var buffer = UInt64(self.bitbuf)
+        var count = self.bitcnt
+        var next = self.incnt
+        var out = self.out!
+        var written = self.outCount
 
         // decode literals and length/distance pairs
-        repeat {
+        while true {
             // A prefix that has its bytes is done, and reads no further: the
             // symbol after them may not be in a stream that is cut short.
-            if prefix && output.count >= maxLength {
+            if prefix && written >= maxLength {
+                giveBack(buffer, count, next, written)
                 return 1
             }
-            symbol = try decode(&lencode, &input)
-            if symbol < 0 {
-                return symbol               // invalid symbol
+            // Room for the longest copy, unless the output is as long as it
+            // can be, where every byte is checked against maxLength.
+            if outCapacity - written < 258 && outCapacity < maxLength {
+                self.outCount = written
+                reserve(written + 258)
+                out = self.out!
             }
-            if symbol < 256 {               // literal: symbol is the byte
+            if next + 8 <= end {
+                // Eight bytes at a time, of which the ones that fit are
+                // taken; the bits of the rest are the ones that come next.
+                let word = UInt64(littleEndian: UnsafeRawPointer(base + next).loadUnaligned(as: UInt64.self))
+                buffer |= word << UInt64(count)
+                let taken = (63 - count) >> 3
+                next += taken
+                count += taken << 3
+            } else {
+                while count <= 56 && next < end {
+                    buffer |= UInt64(base[next]) << UInt64(count)
+                    next += 1
+                    count += 8
+                }
+            }
+            if count < Puff.MAXPAIRBITS {
+                // Near the end of the input, a symbol is decoded a bit at a
+                // time, and stops where the input does.
+                giveBack(buffer, count, next, written)
+                let symbol = try slowCode(&lencode, &distcode)
+                if symbol != 0 {
+                    return symbol == 256 ? 0 : symbol
+                }
+                buffer = UInt64(self.bitbuf)
+                count = self.bitcnt
+                next = self.incnt
+                written = self.outCount
+                continue
+            }
+
+            var symbol = Puff.fastDecode(lenTable, &lencode, buffer & mask, buffer, &count)
+            buffer >>= UInt64(symbol.bits)
+            if symbol.value < 0 {
+                giveBack(buffer, count, next, written)
+                return symbol.value         // invalid symbol
+            }
+            if symbol.value < 256 {         // literal: symbol is the byte
                 // write out the literal
-                if output.count >= maxLength {
+                if written >= maxLength {
+                    giveBack(buffer, count, next, written)
                     return try stopAtFullOutput()
                 }
-                output.append(UInt8(symbol))
-            } else if symbol > 256 {        // length
+                out[written] = UInt8(truncatingIfNeeded: symbol.value)
+                written += 1
+            } else if symbol.value > 256 {  // length
                 // get and compute length
-                symbol -= 257
-                if symbol >= 29 {
+                let index = symbol.value - 257
+                if index >= 29 {
+                    giveBack(buffer, count, next, written)
                     return -10              // invalid fixed code
                 }
-                len = try bits(lext[symbol], &input) + lens[symbol]
+                let len = lens[index] + Int(buffer & ((1 << UInt64(lext[index])) - 1))
+                buffer >>= UInt64(lext[index])
+                count -= lext[index]
 
                 // get and check distance
-                symbol = try decode(&distcode, &input)
-                if symbol < 0 {
-                    return symbol           // invalid symbol
+                symbol = Puff.fastDecode(distTable, &distcode, buffer & mask, buffer, &count)
+                buffer >>= UInt64(symbol.bits)
+                if symbol.value < 0 {
+                    giveBack(buffer, count, next, written)
+                    return symbol.value     // invalid symbol
                 }
-                dist = try bits(dext[symbol], &input) + dists[symbol]
+                let dist = dists[symbol.value] + Int(buffer & ((1 << UInt64(dext[symbol.value])) - 1))
+                buffer >>= UInt64(dext[symbol.value])
+                count -= dext[symbol.value]
 
-                if dist > output.count {
+                if dist > written {
+                    giveBack(buffer, count, next, written)
                     return -11              // distance too far back
                 }
 
-                // copy length bytes from distance bytes back
-                while len > 0 {
-                    if output.count >= maxLength {
-                        return try stopAtFullOutput()
+                // copy length bytes from distance bytes back, as many as the
+                // output has room for
+                let room = min(len, maxLength - written)
+                let to = out + written
+                let from = to - dist
+                if dist >= room {
+                    to.update(from: from, count: room)
+                } else {
+                    for i in 0..<room {
+                        to[i] = from[i]
                     }
-                    output.append(output[output.count - dist])
-                    len -= 1
                 }
+                written += room
+                if room < len {
+                    giveBack(buffer, count, next, written)
+                    return try stopAtFullOutput()
+                }
+            } else {                        // end of block symbol
+                giveBack(buffer, count, next, written)
+                // done with a valid fixed or dynamic block
+                return 0
             }
-        } while symbol != 256               // end of block symbol
+        }
+    }
 
-        // done with a valid fixed or dynamic block
+    // Gives back the whole bytes of the buffer past the bits that puff.c
+    // would have read, and keeps the rest, of which there are 0 to 7; the
+    // output has the bytes written.
+    private final func giveBack(_ buffer: UInt64, _ count: Int, _ next: Int, _ written: Int) {
+        self.outCount = written
+        self.incnt = next - count >> 3
+        self.bitcnt = count & 7
+        self.bitbuf = UInt32(buffer & ((1 << UInt64(count & 7)) - 1))
+    }
+
+    // Decodes the next literal/length symbol, and the distance after a
+    // length, a bit at a time, as puff.c decodes them. It returns 0 when the
+    // symbol is decoded, 256 at the end of the block, and the return value of
+    // codes() when it stops there.
+    private final func slowCode(_ lencode: inout Huffman, _ distcode: inout Huffman) throws -> Int {
+        var symbol = try decode(&lencode)
+        if symbol < 0 {
+            return symbol                   // invalid symbol
+        }
+        if symbol < 256 {                   // literal: symbol is the byte
+            // write out the literal
+            if outCount >= maxLength {
+                return try stopAtFullOutput()
+            }
+            out![outCount] = UInt8(symbol)
+            outCount += 1
+        } else if symbol > 256 {            // length
+            // get and compute length
+            symbol -= 257
+            if symbol >= 29 {
+                return -10                  // invalid fixed code
+            }
+            var len = try bits(lext[symbol]) + lens[symbol]
+
+            // get and check distance
+            symbol = try decode(&distcode)
+            if symbol < 0 {
+                return symbol               // invalid symbol
+            }
+            let dist = try bits(dext[symbol]) + dists[symbol]
+
+            if dist > outCount {
+                return -11                  // distance too far back
+            }
+
+            // copy length bytes from distance bytes back
+            while len > 0 {
+                if outCount >= maxLength {
+                    return try stopAtFullOutput()
+                }
+                out![outCount] = out![outCount - dist]
+                outCount += 1
+                len -= 1
+            }
+        } else {
+            return 256                      // end of block symbol
+        }
         return 0
     }
 
-    private final func decode(_ huffman: inout Huffman, _ input: inout [UInt8]) throws -> Int {
+    // Decodes the symbol of the code at the start of the bits, with the table
+    // when the code has FASTBITS bits or fewer, and a bit at a time otherwise,
+    // as decode() does. It takes the bits of the code from the count, and
+    // returns the symbol, or -10 for a code that is not in the table, and the
+    // bits of the code.
+    @inline(__always)
+    private static func fastDecode(
+            _ table: UnsafeMutablePointer<UInt16>,
+            _ huffman: inout Huffman,
+            _ peek: UInt64,
+            _ buffer: UInt64,
+            _ count: inout Int) -> (value: Int, bits: Int) {
+        let entry = Int(table[Int(peek)])
+        if entry != 0 {
+            count -= entry & 15
+            return (entry >> 4, entry & 15)
+        }
+        var code = 0                        // len bits being decoded
+        var first = 0                       // first code of length len
+        var index = 0                       // index of first code of length len in symbol table
+        var len = 1                         // current number of bits in code
+        while len <= 15 {
+            code |= Int((buffer >> UInt64(len - 1)) & 1)
+            let codes = huffman.count[len]
+            if code - codes < first {       // if len, return symbol
+                count -= len
+                return (huffman.symbol[index + (code - first)], len)
+            }
+            index += codes                  // else update for next length
+            first += codes
+            first <<= 1
+            code <<= 1
+            len += 1
+        }
+        return (-10, 0)                     // ran out of codes
+    }
+
+    // Makes the table of the codes of up to FASTBITS bits of the Huffman
+    // code. The bits of a code are read first bit first, so the entries of a
+    // code of len bits are at its bits reversed, and at each of the values of
+    // the FASTBITS - len bits after them.
+    private final func makeTable(_ huffman: Huffman, _ table: UnsafeMutablePointer<UInt16>) {
+        let size = 1 << Puff.FASTBITS
+        table.initialize(repeating: 0, count: size)
+        var first = 0                       // first code of length len
+        var index = 0                       // index of first code of length len in symbol table
+        for len in 1...Puff.FASTBITS {
+            let codes = huffman.count[len]
+            for k in 0..<codes {
+                var code = first + k
+                if code >= 1 << len {
+                    return                  // an over-subscribed code, never decoded
+                }
+                var reversed = 0
+                for _ in 0..<len {
+                    reversed = reversed << 1 | code & 1
+                    code >>= 1
+                }
+                let entry = UInt16(huffman.symbol[index + k] << 4 | len)
+                var i = reversed
+                while i < size {
+                    table[i] = entry
+                    i += 1 << len
+                }
+            }
+            index += codes
+            first += codes
+            first <<= 1
+        }
+    }
+
+    private final func decode(_ huffman: inout Huffman) throws -> Int {
         var code = 0                        // len bits being decoded
         var first = 0                       // first code of length len
         var index = 0                       // index of first code of length len in symbol table
         var len = 1                         // current number of bits in code
         while len <= MAXBITS {
-            // code |= try bits(1, &input)     // get next bit
+            // code |= try bits(1)             // get next bit
             var buffer = self.bitbuf
             if self.bitcnt < 1 {
                 if self.incnt >= input.count {
@@ -705,7 +1004,7 @@ final class Puff {
      * - For reference, a "typical" size for the code description in a dynamic
      *   block is around 80 bytes.
      */
-    private final func dynamic(_ output: inout [UInt8], _ input: inout [UInt8]) throws -> Int {
+    private final func dynamic() throws -> Int {
         // descriptor code lengths
         var lengths = [Int](repeating: 0, count: MAXCODES)
         // construct lencode and distcode
@@ -720,9 +1019,9 @@ final class Puff {
         let order = [16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15]
 
         // get number of lengths in each table, check lengths
-        let nlen = try bits(5, &input) + 257                    // number of lengths in descriptor
-        let ndist = try bits(5, &input) + 1
-        let ncode =  try bits(4, &input) + 4
+        let nlen = try bits(5) + 257                    // number of lengths in descriptor
+        let ndist = try bits(5) + 1
+        let ncode =  try bits(4) + 4
         if nlen > MAXLCODES || ndist > MAXDCODES {
             return -3                                   // bad counts
         }
@@ -730,7 +1029,7 @@ final class Puff {
         // read code length code lengths (really), missing lengths are zero
         var index = 0                                   // index of lengths[]
         while index < ncode {
-            lengths[order[index]] = try bits(3, &input)
+            lengths[order[index]] = try bits(3)
             index += 1
         }
 
@@ -748,7 +1047,7 @@ final class Puff {
         // read length/literal and distance code length tables
         index = 0
         while index < (nlen + ndist) {
-            var symbol = try decode(&lencode, &input)   // decoded value
+            var symbol = try decode(&lencode)   // decoded value
             if symbol < 0 {
                 return symbol                           // invalid symbol
             }
@@ -763,11 +1062,11 @@ final class Puff {
                         return -5                       // no last length!
                     }
                     len = lengths[index - 1]            // last length
-                    symbol = try bits(2, &input) + 3
+                    symbol = try bits(2) + 3
                 } else if symbol == 17 {                // repeat zero 3..10 times
-                    symbol = try bits(3, &input) + 3
+                    symbol = try bits(3) + 3
                 } else {                                // == 18, repeat zero 11..138 times
-                    symbol = try bits(7, &input) + 11
+                    symbol = try bits(7) + 11
                 }
 
                 if index + symbol > nlen + ndist {
@@ -803,6 +1102,8 @@ final class Puff {
         }
 
         // decode data until end-of-block code
-        return try codes(&output, &input, &lencode, &distcode)
+        makeTable(lencode, lenTable)
+        makeTable(distcode, distTable)
+        return try codes(&lencode, &distcode, lenTable, distTable)
     }
 }

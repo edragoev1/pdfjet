@@ -163,10 +163,20 @@ internal class PNGImage {
         if (colorType == 3) {
             palette = new byte[3 << bitDepth];
             Array.Copy(pLTE, palette, palette.Length);
-            if (tRNS != null) {
+            // A tRNS chunk of no alpha but 255 needs no decoding for its soft mask.
+            if (tRNS != null && !BMPImage.AllBytesAre(tRNS, 255)) {
                 byte[] indexes = PaletteIndexes(Unfilter(buf, h, bytesPerRow, 1));
-                deflatedAlphaData = Compressor.Deflate(PaletteAlpha(indexes));
+                SetAlpha(PaletteAlpha(indexes));
             }
+        }
+    }
+
+    // Deflates the alpha of the pixels for the soft mask of the image, unless
+    // every pixel is opaque: an image with no soft mask is drawn the same, is
+    // smaller, and is one that PDF/A-1 can hold.
+    private void SetAlpha(byte[] alpha) {
+        if (!BMPImage.AllBytesAre(alpha, 255)) {
+            deflatedAlphaData = Compressor.Deflate(alpha);
         }
     }
 
@@ -464,8 +474,12 @@ internal class PNGImage {
     // bytes after the filter type, and the byte of the pixel on the left is
     // bytesPerPixel bytes before, or the byte before for pixels smaller than a
     // byte. It throws on a filter type that PNG does not define, as libpng does.
+    // The bytes of the first pixel of a row have no byte on the left, and the
+    // first row no row above, so they are undone apart from the rest, with the
+    // bytes they do not have taken as 0.
     private static byte[] Unfilter(byte[] buf, int rows, int bytesPerRow, int bytesPerPixel) {
         byte[] image = new byte[rows * bytesPerRow];
+        int first = Math.Min(bytesPerPixel, bytesPerRow);  // The bytes of the first pixel
         int prior = -1;     // Where the row above begins, none for the first row
         for (int row = 0; row < rows; row++) {
             int offset = row * (bytesPerRow + 1);
@@ -473,7 +487,8 @@ internal class PNGImage {
             int line = row * bytesPerRow;
             Array.Copy(buf, offset + 1, image, line, bytesPerRow);
             if (filter == 0x00) {           // None
-            } else if (filter == 0x01) {    // Sub
+            } else if (filter == 0x01 || (filter == 0x04 && prior < 0)) {
+                // Sub, and Paeth of the first row, which is the byte on the left.
                 for (int i = bytesPerPixel; i < bytesPerRow; i++) {
                     image[line + i] += image[line + i - bytesPerPixel];
                 }
@@ -483,26 +498,27 @@ internal class PNGImage {
                         image[line + i] += image[prior + i];
                     }
                 }
+            } else if (filter == 0x03 && prior < 0) {   // Average of the first row
+                for (int i = bytesPerPixel; i < bytesPerRow; i++) {
+                    image[line + i] += (byte) (image[line + i - bytesPerPixel] / 2);
+                }
             } else if (filter == 0x03) {    // Average
-                for (int i = 0; i < bytesPerRow; i++) {
-                    int a = (i >= bytesPerPixel) ? image[line + i - bytesPerPixel] : 0;    // The byte on the left
-                    int b = (prior >= 0) ? image[prior + i] : 0;                            // The byte above
+                for (int i = 0; i < first; i++) {
+                    image[line + i] += (byte) (image[prior + i] / 2);
+                }
+                for (int i = bytesPerPixel; i < bytesPerRow; i++) {
+                    int a = image[line + i - bytesPerPixel];    // The byte on the left
+                    int b = image[prior + i];                   // The byte above
                     image[line + i] += (byte) ((a + b) / 2);
                 }
-            } else if (filter == 0x04) {    // Paeth
-                for (int i = 0; i < bytesPerRow; i++) {
-                    int a = 0;  // Left, above and above on the left
-                    int b = 0;
-                    int c = 0;
-                    if (i >= bytesPerPixel) {
-                        a = image[line + i - bytesPerPixel];
-                    }
-                    if (prior >= 0) {
-                        b = image[prior + i];
-                        if (i >= bytesPerPixel) {
-                            c = image[prior + i - bytesPerPixel];
-                        }
-                    }
+            } else if (filter == 0x04) {    // Paeth, whose first pixel is the byte above
+                for (int i = 0; i < first; i++) {
+                    image[line + i] += image[prior + i];
+                }
+                for (int i = bytesPerPixel; i < bytesPerRow; i++) {
+                    int a = image[line + i - bytesPerPixel];    // Left, above and above on the left
+                    int b = image[prior + i];
+                    int c = image[prior + i - bytesPerPixel];
                     image[line + i] += (byte) Paeth(a, b, c);
                 }
             } else {
@@ -556,7 +572,7 @@ internal class PNGImage {
             gray[i] = image[2 * i];
             alpha[i] = image[2 * i + 1];
         }
-        deflatedAlphaData = Compressor.Deflate(alpha);
+        SetAlpha(alpha);
         return gray;
     }
 
@@ -570,7 +586,7 @@ internal class PNGImage {
             idata[3*i + 2] = image[4*i + 2];
             alpha[i] = image[4*i + 3];
         }
-        deflatedAlphaData = Compressor.Deflate(alpha);
+        SetAlpha(alpha);
 
         return idata;
     }
@@ -589,7 +605,7 @@ internal class PNGImage {
         }
 
         if (tRNS != null) {
-            deflatedAlphaData = Compressor.Deflate(PaletteAlpha(indexes));
+            SetAlpha(PaletteAlpha(indexes));
         }
 
         return image;

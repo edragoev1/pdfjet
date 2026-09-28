@@ -12,7 +12,7 @@ import Testing
 // review_media_test.go in the Go port.
 @Suite struct ReviewMediaTests {
     private let thai = "fonts/NotoSansThai/NotoSansThai-Regular.ttf"
-    private static let streamFont = "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"
+    static let streamFont = "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"
 
     private func font(_ path: String) -> [UInt8] {
         return [UInt8](FileManager.default.contents(atPath: TestSupport.path(path))!)
@@ -164,13 +164,19 @@ import Testing
     // The error of completing a document of the compliance that holds the
     // image of the file, or "" when it completes.
     private func pdfAError(_ level: Compliance, _ path: String) throws -> String {
+        return try ReviewMediaTests.pdfAImageError(level, InputStream(fileAtPath: TestSupport.path(path))!)
+    }
+
+    // The error of completing a document of the compliance that holds the
+    // image, or "" when it completes.
+    static func pdfAImageError(_ level: Compliance, _ stream: InputStream) throws -> String {
         let memory = MemoryPDF(level)
         let pdf = memory.pdf
         _ = pdf.setTitle("Title")
         let font = try Font(pdf, TestSupport.open(ReviewMediaTests.streamFont))
         let page = Page(pdf, Letter.PORTRAIT)
         TextLine(font, "Text").setLocation(50, 50).drawOn(page)
-        try Image(pdf, TestSupport.path(path)).setAltDescription("An image")
+        try Image(pdf, stream).setAltDescription("An image")
                 .setLocation(50, 100).drawOn(page)
         do {
             try pdf.complete()

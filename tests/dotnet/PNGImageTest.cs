@@ -688,5 +688,52 @@ public class PNGImageTest {
         Assert.Equal("Invalid PNG filter type 5.",
                 DecodeError(PalettePng(4, 1, 2, palette, new byte[] {0}, Compressor.Deflate(new byte[] {5, 0}))));
     }
+
+    [Fact]
+    public void AnImageWhoseAlphaIsOpaqueInEveryPixelHasNoSoftMask() {
+        // The second row of each image is filtered with Up, so that its alpha
+        // is only 255 once the filter is undone.
+        byte[] rgba = Compressor.Deflate(new byte[] {0, 1, 2, 3, 255, 4, 5, 6, 255, 2, 1, 1, 1, 0, 1, 1, 1, 0});
+        byte[] grayAlpha = Compressor.Deflate(new byte[] {0, 7, 255, 8, 255, 2, 1, 0, 1, 0});
+        byte[] palette = {10, 20, 30, 40, 50, 60};
+        // Three indexes 0 of 2 bits, and the index 1 in the bits after them.
+        byte[] indexes = Compressor.Deflate(new byte[] {0, 0x01, 0, 0x01});
+        byte[] sixColors = {10, 20, 30, 10, 20, 30, 10, 20, 30, 10, 20, 30, 10, 20, 30, 10, 20, 30};
+        object[][] cases = {
+            new object[] {"RGBA", Png(2, 2, 8, 6, null, rgba), new byte[] {1, 2, 3, 4, 5, 6, 2, 3, 4, 5, 6, 7}},
+            new object[] {"gray with alpha", Png(2, 2, 8, 4, null, grayAlpha), new byte[] {7, 8, 8, 9}},
+            new object[] {"a palette of opaque colors",
+                PalettePng(3, 2, 2, palette, new byte[] {255, 255}, indexes), sixColors},
+            new object[] {"a transparent color that no pixel is",
+                PalettePng(3, 2, 2, palette, new byte[] {255, 0}, indexes), sixColors},
+        };
+        foreach (object[] c in cases) {
+            string[] dictionaries = Dictionaries((byte[]) c[1]);
+            Assert.False(dictionaries[0].Contains("/SMask") || dictionaries[1].Contains("/SMask"), (string) c[0]);
+            PNGImage image = new PNGImage(new MemoryStream((byte[]) c[1]));
+            Assert.Null(image.GetAlpha());
+            Assert.Equal((byte[]) c[2], Decompressor.Inflate(image.GetData()));
+        }
+        // One pixel that is not quite opaque keeps the alpha of all four.
+        rgba = Compressor.Deflate(new byte[] {0, 1, 2, 3, 255, 4, 5, 6, 255, 2, 1, 1, 1, 0, 1, 1, 1, 255});
+        PNGImage translucent = new PNGImage(new MemoryStream(Png(2, 2, 8, 6, null, rgba)));
+        Assert.Equal(new byte[] {255, 255, 255, 254}, Decompressor.Inflate(translucent.GetAlpha()));
+        // An image of alpha 0 in every pixel is transparent, and keeps its alpha.
+        grayAlpha = Compressor.Deflate(new byte[] {0, 7, 0, 8, 0});
+        PNGImage transparent = new PNGImage(new MemoryStream(Png(2, 1, 8, 4, null, grayAlpha)));
+        Assert.Equal(new byte[] {0, 0}, Decompressor.Inflate(transparent.GetAlpha()));
+    }
+
+    [Fact]
+    public void APDFA1DocumentHoldsAPngWithAlphaWhenEveryPixelIsOpaque() {
+        // PDF/A-1 has no soft masks, and an image whose pixels are all opaque
+        // needs none; one pixel that is not refuses the image.
+        byte[] opaque = Compressor.Deflate(new byte[] {0, 1, 2, 3, 255, 4, 5, 6, 255});
+        Assert.Equal("", ReviewMediaTest.PDFAImageError(Compliance.PDF_A_1B, Png(2, 1, 8, 6, null, opaque)));
+        byte[] translucent = Compressor.Deflate(new byte[] {0, 1, 2, 3, 255, 4, 5, 6, 128});
+        Assert.Equal("A document of PDF_A_1B cannot hold an image with transparency: "
+                + "PDF/A-1 has no soft masks, so its images are opaque.",
+                ReviewMediaTest.PDFAImageError(Compliance.PDF_A_1B, Png(2, 1, 8, 6, null, translucent)));
+    }
 }
 }

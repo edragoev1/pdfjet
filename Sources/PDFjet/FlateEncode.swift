@@ -376,6 +376,11 @@ internal final class FlateEncode {
 
 /// Returns the Adler-32 checksum of the data, which ends a zlib stream.
 func adler32(_ data: [UInt8]) -> UInt32 {
+    return data.withUnsafeBufferPointer { adler32($0) }
+}
+
+/// Returns the Adler-32 checksum of the bytes.
+func adler32(_ data: UnsafeBufferPointer<UInt8>) -> UInt32 {
     let prime: UInt32 = 65521
     var s1: UInt32 = 1
     var s2: UInt32 = 0

@@ -11,6 +11,7 @@ import (
 	"encoding/binary"
 	"io"
 	"math"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -167,13 +168,24 @@ func TestReviewMediaAFontWithoutAnOS2TableHasItsCharacters(t *testing.T) {
 // that holds the image of the file.
 func testPDFAError(t *testing.T, level compliance.Compliance, path string) string {
 	t.Helper()
+	data, err := os.ReadFile(testRepoPath(t, path))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return testPDFAImageError(t, level, data)
+}
+
+// testPDFAImageError returns the error of completing a document of the
+// compliance that holds the image.
+func testPDFAImageError(t *testing.T, level compliance.Compliance, data []byte) string {
+	t.Helper()
 	pdf := NewPDF(bufio.NewWriter(io.Discard))
 	pdf.SetCompliance(level)
 	pdf.SetTitle("Title")
 	font := testStreamFont(t, pdf)
 	page := NewPage(pdf, letter.Portrait())
 	NewTextLine(font, "Text").SetLocation(50, 50).DrawOn(page)
-	NewImageFromFile(pdf, testRepoPath(t, path)).SetAltDescription("An image").
+	NewImage(pdf, bytes.NewReader(data)).SetAltDescription("An image").
 		SetLocation(50, 100).DrawOn(page)
 	if err := pdf.Complete(); err != nil {
 		return err.Error()
