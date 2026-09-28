@@ -2586,9 +2586,46 @@ func getObjects(
 	return xref
 }
 
+// xrefEntry is the number and the offset of an object that a cross-reference
+// section lists.
+type xrefEntry struct {
+	number int
+	offset int
+}
+
+// getEntryObjects adds the objects of the entries, and returns false when an
+// offset is not that of its object. An object ends where the next one of the
+// section starts at the latest, as one with no endobj was read to the end of
+// the PDF: a section of objects with no endobj took seconds for every hundred
+// kilobytes.
+func getEntryObjects(buf []byte, entries []xrefEntry, objects *[]*PDFobj) bool {
+	offsets := make([]int, len(entries))
+	for i, entry := range entries {
+		offsets[i] = entry.offset
+	}
+	sort.Ints(offsets)
+	for _, entry := range entries {
+		end := len(buf)
+		if j := sort.SearchInts(offsets, entry.offset+1); j < len(offsets) {
+			end = min(offsets[j], len(buf))
+		}
+		obj := newPDFobj()
+		if entry.offset >= 0 && entry.offset < len(buf) {
+			obj = getObject(buf, entry.offset, end)
+		}
+		if !isObject(obj, entry.number) {
+			return false
+		}
+		obj.number = entry.number
+		*objects = append(*objects, obj)
+	}
+	return true
+}
+
 // getTableObjects adds the objects in use of a cross-reference table, and
 // returns false when an offset is not that of its object.
 func getTableObjects(buf []byte, xref *PDFobj, objects *[]*PDFobj) bool {
+	entries := make([]xrefEntry, 0)
 	dict := xref.dict
 	i := 1
 	// Each subsection starts with its first object number and the number of entries.
@@ -2605,16 +2642,11 @@ func getTableObjects(buf []byte, xref *PDFobj, objects *[]*PDFobj) bool {
 			// that is marked in use, as pdf.js tests it in issue10004, is
 			// skipped, as MuPDF skips it.
 			if dict[i+2] == "n" && number != 0 {
-				obj := getObjectAt(buf, toInteger(dict[i]))
-				if !isObject(obj, number) {
-					return false
-				}
-				obj.number = number
-				*objects = append(*objects, obj)
+				entries = append(entries, xrefEntry{number, toInteger(dict[i])})
 			}
 		}
 	}
-	return i < len(dict) && dict[i] == "trailer"
+	return i < len(dict) && dict[i] == "trailer" && getEntryObjects(buf, entries, objects)
 }
 
 // getStreamObjects adds the objects of a cross-reference stream that are not
@@ -2652,6 +2684,7 @@ func getStreamObjects(buf []byte, xref *PDFobj, objects *[]*PDFobj, budget *deco
 	// setStreamAndData undoes the predictor, so each entry is a row of the data.
 	xref.setStreamAndData(buf, length, nil, budget)
 	n := n1 + n2 + n3 // Number of bytes per entry
+	entries := make([]xrefEntry, 0)
 	offset := 0
 	for s := 0; s+1 < len(index); s += 2 {
 		number := index[s]
@@ -2663,18 +2696,13 @@ func getStreamObjects(buf []byte, xref *PDFobj, objects *[]*PDFobj, budget *deco
 				entryType = toInt(xref.data, offset, n1)
 			}
 			if entryType == 1 {
-				obj := getObjectAt(buf, toInt(xref.data, offset+n1, n2))
-				if !isObject(obj, number) {
-					return false
-				}
-				obj.number = number
-				*objects = append(*objects, obj)
+				entries = append(entries, xrefEntry{number, toInt(xref.data, offset+n1, n2)})
 			}
 			number++
 			offset += n
 		}
 	}
-	return true
+	return getEntryObjects(buf, entries, objects)
 }
 
 // getObjectsByScanning adds the objects of the PDF to the list by looking for

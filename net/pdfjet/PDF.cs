@@ -2557,9 +2557,54 @@ public sealed class PDF {
         return xref;
     }
 
+    // Returns the index of the first of the sorted values that is greater
+    // than the value, or the number of values when there is none.
+    private static int FirstAfter(int[] sorted, int value) {
+        int low = 0;
+        int high = sorted.Length;
+        while (low < high) {
+            int mid = low + (high - low) / 2;
+            if (sorted[mid] <= value) {
+                low = mid + 1;
+            } else {
+                high = mid;
+            }
+        }
+        return low;
+    }
+
+    // Adds the objects of the entries, each a number and an offset, and
+    // returns false when an offset is not that of its object. An object ends
+    // where the next one of the section starts at the latest, as one with no
+    // endobj was read to the end of the PDF: a section of objects with no
+    // endobj took seconds for every hundred kilobytes.
+    private bool GetEntryObjects(byte[] buf, List<int[]> entries, List<PDFobj> objects) {
+        int[] offsets = new int[entries.Count];
+        for (int i = 0; i < offsets.Length; i++) {
+            offsets[i] = entries[i][1];
+        }
+        Array.Sort(offsets);
+        foreach (int[] entry in entries) {
+            int end = buf.Length;
+            int j = FirstAfter(offsets, entry[1]);
+            if (j < offsets.Length) {
+                end = Math.Min(offsets[j], buf.Length);
+            }
+            PDFobj obj = (entry[1] >= 0 && entry[1] < buf.Length)
+                    ? GetObject(buf, entry[1], end) : new PDFobj();
+            if (!IsObject(obj, entry[0])) {
+                return false;
+            }
+            obj.number = entry[0];
+            objects.Add(obj);
+        }
+        return true;
+    }
+
     // Adds the objects in use of a cross-reference table, and returns false
     // when an offset is not that of its object.
     private bool GetTableObjects(byte[] buf, PDFobj xref, List<PDFobj> objects) {
+        List<int[]> entries = new List<int[]>();
         List<String> dict = xref.dict;
         int i = 1;
         // Each subsection starts with its first object number and the number of entries.
@@ -2576,16 +2621,11 @@ public sealed class PDF {
                 // one that is marked in use, as pdf.js tests it in issue10004,
                 // is skipped, as MuPDF skips it.
                 if (dict[i + 2].Equals("n") && number != 0) {
-                    PDFobj obj = GetObject(buf, ToInteger(dict[i]));
-                    if (!IsObject(obj, number)) {
-                        return false;
-                    }
-                    obj.number = number;
-                    objects.Add(obj);
+                    entries.Add(new int[] {number, ToInteger(dict[i])});
                 }
             }
         }
-        return i < dict.Count && dict[i].Equals("trailer");
+        return i < dict.Count && dict[i].Equals("trailer") && GetEntryObjects(buf, entries, objects);
     }
 
     // Adds the objects of a cross-reference stream that are not in object
@@ -2626,6 +2666,7 @@ public sealed class PDF {
         // SetStreamAndData undoes the predictor, so each entry is a row of the data.
         xref.SetStreamAndData(buf, length, budget);
         int n = n1 + n2 + n3;   // Number of bytes per entry
+        List<int[]> entries = new List<int[]>();
         int offset = 0;
         for (int s = 0; s + 1 < index.Count; s += 2) {
             int number = index[s];
@@ -2634,18 +2675,13 @@ public sealed class PDF {
                 // Page 51 in PDF32000_2008.pdf
                 int type = (n1 == 0) ? 1 : ToInt(xref.data, offset, n1);
                 if (type == 1) {
-                    PDFobj obj = GetObject(buf, ToInt(xref.data, offset + n1, n2));
-                    if (!IsObject(obj, number)) {
-                        return false;
-                    }
-                    obj.number = number;
-                    objects.Add(obj);
+                    entries.Add(new int[] {number, ToInt(xref.data, offset + n1, n2)});
                 }
                 number++;
                 offset += n;
             }
         }
-        return true;
+        return GetEntryObjects(buf, entries, objects);
     }
 
     // Adds the objects of the PDF to the list by looking for "number

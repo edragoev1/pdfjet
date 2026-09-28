@@ -2243,9 +2243,53 @@ public final class PDF {
         return xref
     }
 
+    // Returns the index of the first of the sorted values that is greater than
+    // the value, or the number of values when there is none.
+    private static func firstAfter(_ sorted: [Int], _ value: Int) -> Int {
+        var low = 0
+        var high = sorted.count
+        while low < high {
+            let mid = low + (high - low) / 2
+            if sorted[mid] <= value {
+                low = mid + 1
+            } else {
+                high = mid
+            }
+        }
+        return low
+    }
+
+    // Adds the objects of the entries, and returns false when an offset is not
+    // that of its object. An object ends where the next one of the section
+    // starts at the latest, as one with no endobj was read to the end of the
+    // PDF: a section of objects with no endobj took seconds for every hundred
+    // kilobytes.
+    private func getEntryObjects(
+            _ buf: [UInt8],
+            _ entries: [(number: Int, offset: Int)],
+            _ objects: inout [PDFobj]) -> Bool {
+        let offsets = entries.map { $0.offset }.sorted()
+        for entry in entries {
+            var end = buf.count
+            let j = PDF.firstAfter(offsets, entry.offset)
+            if j < offsets.count {
+                end = min(offsets[j], buf.count)
+            }
+            let obj = (entry.offset >= 0 && entry.offset < buf.count)
+                    ? getObject(buf, entry.offset, end) : PDFobj()
+            if !isObject(obj, entry.number) {
+                return false
+            }
+            obj.number = entry.number
+            objects.append(obj)
+        }
+        return true
+    }
+
     // Adds the objects in use of a cross-reference table, and returns false
     // when an offset is not that of its object.
     private func getTableObjects(_ buf: [UInt8], _ xref: PDFobj, _ objects: inout [PDFobj]) -> Bool {
+        var entries = [(number: Int, offset: Int)]()
         let dict = xref.dict
         var i = 1
         // Each subsection starts with its first object number and the number of entries.
@@ -2263,19 +2307,14 @@ public final class PDF {
                 // that is marked in use, as pdf.js tests it in issue10004, is
                 // skipped, as MuPDF skips it.
                 if dict[i + 2] == "n" && number != 0 {
-                    let obj = getObject(buf, toInteger(dict[i]))
-                    if !isObject(obj, number) {
-                        return false
-                    }
-                    obj.number = number
-                    objects.append(obj)
+                    entries.append((number, toInteger(dict[i])))
                 }
                 j += 1
                 number += 1
                 i += 3
             }
         }
-        return i < dict.count && dict[i] == "trailer"
+        return i < dict.count && dict[i] == "trailer" && getEntryObjects(buf, entries, &objects)
     }
 
     // Adds the objects of a cross-reference stream that are not in object
@@ -2319,6 +2358,7 @@ public final class PDF {
         // setStreamAndData undoes the predictor, so each entry is a row of the data.
         try xref.setStreamAndData(&buf, length, nil, budget)
         let n = n1 + n2 + n3    // Number of bytes per entry
+        var entries = [(number: Int, offset: Int)]()
         var offset = 0
         var s = 0
         while s + 1 < index.count {
@@ -2329,12 +2369,7 @@ public final class PDF {
                 // Page 51 in PDF32000_2008.pdf
                 let type = (n1 == 0) ? 1 : toInt(xref.data, offset, n1)
                 if type == 1 {
-                    let obj = getObject(buf, toInt(xref.data, offset + n1, n2))
-                    if !isObject(obj, number) {
-                        return false
-                    }
-                    obj.number = number
-                    objects.append(obj)
+                    entries.append((number, toInt(xref.data, offset + n1, n2)))
                 }
                 number += 1
                 offset += n
@@ -2342,7 +2377,7 @@ public final class PDF {
             }
             s += 2
         }
-        return true
+        return getEntryObjects(buf, entries, &objects)
     }
 
     ///

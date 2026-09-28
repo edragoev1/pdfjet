@@ -147,6 +147,38 @@ class ReviewReaderTest {
     }
 
     @Test
+    void objectsWithNoEndobjThatTheTableListsAreReadOnce() {
+        // Every object that the cross-reference table lists was read to the
+        // end of the PDF.
+        List<String> objects = new ArrayList<String>(Arrays.asList(
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>"));
+        for (int i = 0; i < 20000; i++) {
+            objects.add("<< /A " + i + " >>");
+        }
+        StringBuilder sb = new StringBuilder("%PDF-1.7\n");
+        int[] offsets = new int[objects.size()];
+        for (int i = 0; i < objects.size(); i++) {
+            offsets[i] = sb.length();
+            sb.append(i + 1).append(" 0 obj\n").append(objects.get(i)).append("\n");
+        }
+        int xref = sb.length();
+        sb.append("xref\n0 ").append(objects.size() + 1).append("\n0000000000 65535 f \n");
+        for (int offset : offsets) {
+            sb.append(String.format("%010d 00000 n \n", offset));
+        }
+        sb.append("trailer\n<< /Size ").append(objects.size() + 1)
+                .append(" /Root 1 0 R >>\nstartxref\n").append(xref).append("\n%%EOF\n");
+        List<PDFobj> read = readQuickly(latin1(sb.toString()));
+        assertNotNull(read);
+        assertEquals(20003, read.size());
+        assertEquals("7", read.get(10).getValue("/A"));
+        // The object is "11 0 obj << /A 7 >>", without the objects after it.
+        assertEquals("11 0 obj << /A 7 >>", String.join(" ", read.get(10).dict));
+    }
+
+    @Test
     void aCrossReferenceSectionThatIsItsOwnPrevIsReadOnce() {
         // The section of a big table was read a thousand times: its /Prev is
         // itself. The PDF is then read by looking for its objects.

@@ -2700,9 +2700,54 @@ final public class PDF {
         return xref;
     }
 
+    // Adds the objects of the entries, each a number and an offset, and
+    // returns false when an offset is not that of its object. An object ends
+    // where the next one of the section starts at the latest, as one with no
+    // endobj was read to the end of the PDF: a section of objects with no
+    // endobj took seconds for every hundred kilobytes.
+    private boolean getEntryObjects(byte[] buf, List<int[]> entries, List<PDFobj> objects) {
+        int[] offsets = new int[entries.size()];
+        for (int i = 0; i < offsets.length; i++) {
+            offsets[i] = entries.get(i)[1];
+        }
+        Arrays.sort(offsets);
+        for (int[] entry : entries) {
+            int end = buf.length;
+            int j = firstAfter(offsets, entry[1]);
+            if (j < offsets.length) {
+                end = Math.min(offsets[j], buf.length);
+            }
+            PDFobj obj = (entry[1] >= 0 && entry[1] < buf.length)
+                    ? getObject(buf, entry[1], end) : new PDFobj();
+            if (!isObject(obj, entry[0])) {
+                return false;
+            }
+            obj.number = entry[0];
+            objects.add(obj);
+        }
+        return true;
+    }
+
+    // Returns the index of the first of the sorted values that is greater
+    // than the value, or the number of values when there is none.
+    private static int firstAfter(int[] sorted, int value) {
+        int low = 0;
+        int high = sorted.length;
+        while (low < high) {
+            int mid = (low + high) >>> 1;
+            if (sorted[mid] <= value) {
+                low = mid + 1;
+            } else {
+                high = mid;
+            }
+        }
+        return low;
+    }
+
     // Adds the objects in use of a cross-reference table, and returns false
     // when an offset is not that of its object.
     private boolean getTableObjects(byte[] buf, PDFobj xref, List<PDFobj> objects) {
+        List<int[]> entries = new ArrayList<int[]>();
         List<String> dict = xref.dict;
         int i = 1;
         // Each subsection starts with its first object number and the number of entries.
@@ -2719,16 +2764,11 @@ final public class PDF {
                 // one that is marked in use, as pdf.js tests it in issue10004,
                 // is skipped, as MuPDF skips it.
                 if (dict.get(i + 2).equals("n") && number != 0) {
-                    PDFobj obj = getObject(buf, toInteger(dict.get(i)));
-                    if (!isObject(obj, number)) {
-                        return false;
-                    }
-                    obj.number = number;
-                    objects.add(obj);
+                    entries.add(new int[] {number, toInteger(dict.get(i))});
                 }
             }
         }
-        return i < dict.size() && dict.get(i).equals("trailer");
+        return i < dict.size() && dict.get(i).equals("trailer") && getEntryObjects(buf, entries, objects);
     }
 
     // Adds the objects of a cross-reference stream that are not in object
@@ -2771,6 +2811,7 @@ final public class PDF {
         // setStreamAndData undoes the predictor, so each entry is a row of the data.
         xref.setStreamAndData(buf, length, budget);
         int n = n1 + n2 + n3;   // Number of bytes per entry
+        List<int[]> entries = new ArrayList<int[]>();
         int offset = 0;
         for (int s = 0; s + 1 < index.size(); s += 2) {
             int number = index.get(s);
@@ -2779,18 +2820,13 @@ final public class PDF {
                 // Page 51 in PDF32000_2008.pdf
                 int type = (n1 == 0) ? 1 : toInt(xref.data, offset, n1);
                 if (type == 1) {
-                    PDFobj obj = getObject(buf, toInt(xref.data, offset + n1, n2));
-                    if (!isObject(obj, number)) {
-                        return false;
-                    }
-                    obj.number = number;
-                    objects.add(obj);
+                    entries.add(new int[] {number, toInt(xref.data, offset + n1, n2)});
                 }
                 number++;
                 offset += n;
             }
         }
-        return true;
+        return getEntryObjects(buf, entries, objects);
     }
 
     /**

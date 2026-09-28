@@ -138,6 +138,39 @@ public class ReviewReaderTest {
     }
 
     [Fact]
+    public void ObjectsWithNoEndobjThatTheTableListsAreReadOnce() {
+        // Every object that the cross-reference table lists was read to the
+        // end of the PDF.
+        List<string> objects = new List<string> {
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>",
+        };
+        for (int i = 0; i < 20000; i++) {
+            objects.Add("<< /A " + i + " >>");
+        }
+        StringBuilder sb = new StringBuilder("%PDF-1.7\n");
+        int[] offsets = new int[objects.Count];
+        for (int i = 0; i < objects.Count; i++) {
+            offsets[i] = sb.Length;
+            sb.Append(i + 1).Append(" 0 obj\n").Append(objects[i]).Append('\n');
+        }
+        int xref = sb.Length;
+        sb.Append("xref\n0 ").Append(objects.Count + 1).Append("\n0000000000 65535 f \n");
+        foreach (int offset in offsets) {
+            sb.Append(offset.ToString("D10")).Append(" 00000 n \n");
+        }
+        sb.Append("trailer\n<< /Size ").Append(objects.Count + 1)
+                .Append(" /Root 1 0 R >>\nstartxref\n").Append(xref).Append("\n%%EOF\n");
+        List<PDFobj> read = ReadQuickly(Latin1(sb.ToString()));
+        Assert.NotNull(read);
+        Assert.Equal(20003, read.Count);
+        Assert.Equal("7", read[10].GetValue("/A"));
+        // The object is "11 0 obj << /A 7 >>", without the objects after it.
+        Assert.Equal("11 0 obj << /A 7 >>", string.Join(" ", read[10].dict));
+    }
+
+    [Fact]
     public void ACrossReferenceSectionThatIsItsOwnPrevIsReadOnce() {
         // The section of a big table was read a thousand times: its /Prev is
         // itself. The PDF is then read by looking for its objects.

@@ -81,6 +81,39 @@ func TestReviewReaderObjectsWithNoEndobjAreReadOnce(t *testing.T) {
 	}
 }
 
+func TestReviewReaderObjectsWithNoEndobjThatTheTableListsAreReadOnce(t *testing.T) {
+	// Every object that the cross-reference table lists was read to the end
+	// of the PDF.
+	var sb strings.Builder
+	sb.WriteString("%PDF-1.7\n")
+	objects := []string{
+		"<< /Type /Catalog /Pages 2 0 R >>",
+		"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+		"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>",
+	}
+	for i := 0; i < 20000; i++ {
+		objects = append(objects, fmt.Sprintf("<< /A %d >>", i))
+	}
+	offsets := make([]int, 0)
+	for i, object := range objects {
+		offsets = append(offsets, sb.Len())
+		fmt.Fprintf(&sb, "%d 0 obj\n%s\n", i+1, object)
+	}
+	xref := sb.Len()
+	fmt.Fprintf(&sb, "xref\n0 %d\n0000000000 65535 f \n", len(objects)+1)
+	for _, offset := range offsets {
+		fmt.Fprintf(&sb, "%010d 00000 n \n", offset)
+	}
+	fmt.Fprintf(&sb, "trailer\n<< /Size %d /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF\n", len(objects)+1, xref)
+	read := testReadQuickly(t, []byte(sb.String()))
+	if len(read) != 20003 {
+		t.Fatalf("objects %d", len(read))
+	}
+	testWant(t, "7", read[10].GetValue("/A"))
+	// The object is "11 0 obj << /A 7 >>", without the objects after it.
+	testWant(t, "11 0 obj << /A 7 >>", strings.Join(read[10].dict, " "))
+}
+
 func TestReviewReaderACrossReferenceSectionThatIsItsOwnPrevIsReadOnce(t *testing.T) {
 	// The section of a big table was read a thousand times: its /Prev is
 	// itself. The PDF is then read by looking for its objects.

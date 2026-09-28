@@ -124,6 +124,36 @@ import Testing
         #expect(TestSupport.pageObjects(objects).count == 1)
     }
 
+    @Test func objectsWithNoEndobjThatTheTableListsAreReadOnce() throws {
+        // Every object that the cross-reference table lists was read to the
+        // end of the PDF.
+        var objects = [
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>",
+        ]
+        for i in 0..<20000 {
+            objects.append("<< /A \(i) >>")
+        }
+        var body = "%PDF-1.7\n"
+        var offsets = [Int]()
+        for (i, object) in objects.enumerated() {
+            offsets.append(body.utf8.count)
+            body += "\(i + 1) 0 obj\n" + object + "\n"
+        }
+        let xref = body.utf8.count
+        body += "xref\n0 \(objects.count + 1)\n0000000000 65535 f \n"
+        for offset in offsets {
+            body += String(format: "%010d 00000 n \n", offset)
+        }
+        body += "trailer\n<< /Size \(objects.count + 1) /Root 1 0 R >>\nstartxref\n\(xref)\n%%EOF\n"
+        let read = try #require(readQuickly(TestSupport.bytes(body)))
+        #expect(read.count == 20003)
+        #expect(read[10].getValue("/A") == "7")
+        // The object is "11 0 obj << /A 7 >>", without the objects after it.
+        #expect(read[10].dict.joined(separator: " ") == "11 0 obj << /A 7 >>")
+    }
+
     @Test func aCrossReferenceSectionThatIsItsOwnPrevIsReadOnce() throws {
         // The section of a big table was read a thousand times: its /Prev is
         // itself. The PDF is then read by looking for its objects.
