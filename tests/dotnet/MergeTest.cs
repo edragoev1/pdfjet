@@ -86,6 +86,33 @@ public class MergeTest {
     }
 
     [Fact]
+    public void APageOfSeveralContentStreamsHasAllOfThem() {
+        string first = "BT /F1 24 Tf 20 300 Td (First) Tj ET";
+        string second = "BT /F1 24 Tf 20 200 Td (Second) Tj ET";
+        string source = "%PDF-1.4\n"
+                + "1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n"
+                + "2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 300 400] >> endobj\n"
+                + "3 0 obj << /Type /Page /Parent 2 0 R /Contents [5 0 R 6 0 R]"
+                + " /Resources << /Font << /F1 4 0 R >> >> >> endobj\n"
+                + "4 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj\n"
+                + "5 0 obj << /Length " + first.Length + " >>\nstream\n" + first + "\nendstream\nendobj\n"
+                + "6 0 obj << /Length " + second.Length + " >>\nstream\n" + second + "\nendstream\nendobj\n"
+                + "trailer << /Root 1 0 R >>\n%%EOF\n";
+        List<PDFobj> objects = TestSupport.Read(Encoding.Latin1.GetBytes(source));
+        string read = PageContents(objects)[0];
+        Assert.Contains("(First) Tj", read);
+        Assert.Contains("(Second) Tj", read);
+
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream);
+        pdf.Merge(objects);
+        pdf.Complete();
+        string merged = PageContents(TestSupport.Read(stream.ToArray()))[0];
+        Assert.Contains("(First) Tj", merged);
+        Assert.Contains("(Second) Tj", merged);
+    }
+
+    [Fact]
     public void AMergedPageInheritsFromThePageTree() {
         string content = "BT /F1 24 Tf 20 300 Td (Inherited) Tj ET";
         string source = "%PDF-1.4\n"

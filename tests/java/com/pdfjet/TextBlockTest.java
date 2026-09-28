@@ -194,4 +194,20 @@ class TextBlockTest {
         assertTrue(took < 3000L, "breaking a word of 100,000 characters took " + took + " ms");
         TestSupport.assertXY(100f, 78030f, xy);    // 5625 lines of 13.872 points
     }
+
+    @Test
+    void aLongRightToLeftWordIsBrokenInTimeThatGrowsWithTheWord() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.otf.stream"));
+        StringBuilder word = new StringBuilder();
+        for (int i = 0; i < 25000; i++) {
+            word.append("محمد");     // 100,000 letters, which took about 20 minutes
+        }
+        TextBlock block = new TextBlock(font, word.toString()).setRightToLeft(true).setWidth(100f);
+        long start = System.nanoTime();
+        float[] xy = block.setLocation(0f, 0f).drawOn(null);
+        long took = (System.nanoTime() - start) / 1000000L;
+        assertTrue(took < 3000L, "breaking a right to left word of 100,000 letters took " + took + " ms");
+        TestSupport.assertXY(100f, 120006f, xy);   // As the Go port breaks it
+    }
 }

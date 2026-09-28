@@ -151,6 +151,23 @@ namespace PDFjet.NET {
         /// <param name="to">The UTF-16 index after the last character to return.</param>
         /// <returns>The reordered part of the string.</returns>
         public static string ReorderVisually(string str, int from, int to) {
+            (int[] chars, int[] origins, int n) = ReorderVisuallyOrigins(str);
+            StringBuilder result = new StringBuilder(n);
+            for (int k = 0; k < n; k++) {
+                if (origins[k] >= from && origins[k] < to) {
+                    result.AppendCodePoint(chars[k]);
+                }
+            }
+            return result.ToString();
+        }
+
+        /// <summary>
+        /// Returns the string in visual order, shaped, as ReorderVisually
+        /// does, as code points with the UTF-16 index in the string each came
+        /// from and how many of each array are used, so that a part of the
+        /// string can be picked out of it by where it came from.
+        /// </summary>
+        internal static (int[] chars, int[] origins, int n) ReorderVisuallyOrigins(string str) {
             // Work with code points so that supplementary characters are
             // handled correctly. The explicit embedding, override and isolate
             // controls are left out, since left to right text is only nested
@@ -340,14 +357,7 @@ namespace PDFjet.NET {
 
                 i2 = d;
             }
-
-            StringBuilder result = new StringBuilder(n3);
-            for (int k = 0; k < n3; k++) {
-                if (from3[k] >= from && from3[k] < to) {
-                    result.AppendCodePoint(buf3[k]);
-                }
-            }
-            return result.ToString();
+            return (buf3, from3, n3);
         }
 
         /// <summary>

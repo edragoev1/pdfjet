@@ -650,6 +650,20 @@ func ReorderVisually(str string) string {
 //
 // Returns the reordered part of the string.
 func ReorderVisuallyPart(str string, from, to int) string {
+	chars, origins := reorderVisuallyOrigins(str)
+	var result strings.Builder
+	for k, ch := range chars {
+		if origins[k] >= from && origins[k] < to {
+			result.WriteRune(ch)
+		}
+	}
+	return result.String()
+}
+
+// reorderVisuallyOrigins returns the string in visual order, shaped, as
+// ReorderVisually does, and the byte index in str each character came from,
+// so that a part of the string can be picked out of it by where it came from.
+func reorderVisuallyOrigins(str string) ([]rune, []int) {
 	// Work with code points (runes) so that supplementary characters
 	// are handled correctly. The explicit embedding, override and isolate
 	// controls are left out, since left to right text is only nested one
@@ -823,14 +837,7 @@ func ReorderVisuallyPart(str string, from, to int) string {
 
 		i = d
 	}
-
-	var result strings.Builder
-	for k, ch := range buf3 {
-		if from3[k] >= from && from3[k] < to {
-			result.WriteRune(ch)
-		}
-	}
-	return result.String()
+	return buf3, from3
 }
 
 // ligateLamAlef replaces each lam followed by an alef with the lam-alef

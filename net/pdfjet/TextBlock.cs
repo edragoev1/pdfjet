@@ -440,23 +440,95 @@ public class TextBlock : IDrawable {
     // itself: a word of 100,000 characters took 39 seconds when the rest of
     // the word was measured before each line, and the word up to each break
     // was copied to measure it.
+    // A right to left word is reordered and shaped once, whole (see
+    // ShapedWord), so that each measurement is a subtraction: reordering the
+    // word up to each break took time that grew with the square of the word,
+    // 27 seconds for 16,000 Arabic letters.
     private int AddBrokenWordLines(List<TextLine> textLines, String word, float textAreaWidth) {
+        ShapedWord shaped = rightToLeft ? new ShapedWord(this, word) : null;
         int start = 0;
         while (start < word.Length) {
             // Each line gets at least one character, however narrow the block.
             int end = NextCharacterBreak(word, start);
             int next = end;
-            while (next < word.Length && LineWidth(word, start, next) <= textAreaWidth) {
+            while (next < word.Length && PartWidth(shaped, word, start, next) <= textAreaWidth) {
                 end = next;
                 next = NextCharacterBreak(word, end);
             }
-            if (next == word.Length && LineWidth(word, start) <= textAreaWidth) {
+            if (next == word.Length && PartWidth(shaped, word, start, word.Length) <= textAreaWidth) {
                 break;      // The rest of the word fits on a line.
             }
-            textLines.Add(NewTextLine(word.Substring(0, end), start));
+            textLines.Add(new TextLine(font, PartText(shaped, word, start, end)));
             start = end;
         }
         return start;
+    }
+
+    // Returns the width of the part of the word between two indexes: of a
+    // part of the shaped word when the word is right to left, of a substring
+    // when it is not.
+    private float PartWidth(ShapedWord shaped, String word, int from, int to) {
+        return shaped != null ? shaped.Width(from, to) : StringWidth(word.Substring(from, to - from));
+    }
+
+    // Returns the part of the word between two indexes, as it is drawn.
+    private String PartText(ShapedWord shaped, String word, int from, int to) {
+        return shaped != null ? shaped.Text(from, to) : word.Substring(from, to - from);
+    }
+
+    // A right to left word too wide for a line, reordered and shaped once,
+    // whole, so that a part of it is measured in constant time and made into
+    // a line in the time of its length. Its parts are parts of one word,
+    // shaped as one: the letter a line ends on keeps the form it has in the
+    // word. The width of a part is the sum of the widths of its characters,
+    // so it leaves out the kerning of a core font.
+    private sealed class ShapedWord {
+        private readonly int[] chars;       // The word in visual order, shaped, as code points
+        private readonly int[] order;       // The indexes of chars, in the order of the index each came from
+        private readonly int[] first;       // For each index of the word, where the chars from it start in order
+        private readonly float[] widths;    // The width of the chars before each position of order, summed
+
+        internal ShapedWord(TextBlock block, String word) {
+            (int[] chars, int[] origins, int n) = Bidi.ReorderVisuallyOrigins(word);
+            this.chars = chars;
+            // first[i] is how many chars came from before index i, so that
+            // the chars from one index to another are the positions of order
+            // between the two.
+            first = new int[word.Length + 2];
+            for (int k = 0; k < n; k++) {
+                first[origins[k] + 1]++;
+            }
+            for (int i = 1; i < first.Length; i++) {
+                first[i] += first[i - 1];
+            }
+            order = new int[n];
+            int[] next = (int[]) first.Clone();
+            for (int k = 0; k < n; k++) {
+                order[next[origins[k]]] = k;
+                next[origins[k]]++;
+            }
+            widths = new float[n + 1];
+            for (int j = 0; j < n; j++) {
+                widths[j + 1] = widths[j] + block.StringWidth(char.ConvertFromUtf32(chars[order[j]]));
+            }
+        }
+
+        // Returns the width of the part of the word from one index to another.
+        internal float Width(int from, int to) {
+            return widths[first[to]] - widths[first[from]];
+        }
+
+        // Returns the part of the word from one index to another, in visual order.
+        internal String Text(int from, int to) {
+            int[] positions = new int[first[to] - first[from]];
+            Array.Copy(order, first[from], positions, 0, positions.Length);
+            Array.Sort(positions);
+            StringBuilder result = new StringBuilder(positions.Length);
+            foreach (int k in positions) {
+                result.AppendCodePoint(chars[k]);
+            }
+            return result.ToString();
+        }
     }
 
     // Returns the part of the text from the index on, reordered and shaped in
@@ -469,15 +541,6 @@ public class TextBlock : IDrawable {
     // reordered if the text is right to left.
     private float LineWidth(String text, int from) {
         return StringWidth(Part(text, from, text.Length));
-    }
-
-    // Returns the width of the text from one index to another, measured as a
-    // line of the text up to the second index: the text up to there is
-    // reordered and shaped when it is right to left, and not copied when it is
-    // not.
-    private float LineWidth(String text, int from, int to) {
-        return StringWidth(rightToLeft ?
-                Bidi.ReorderVisually(text.Substring(0, to), from, to) : text.Substring(from, to - from));
     }
 
     // Returns a line of text, reordered if the text is right to left.

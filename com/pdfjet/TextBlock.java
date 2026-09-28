@@ -7,6 +7,7 @@
 package com.pdfjet;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -614,23 +615,96 @@ public class TextBlock implements Drawable {
     // itself: a word of 100,000 characters took 39 seconds when the rest of
     // the word was measured before each line, and the word up to each break
     // was copied to measure it.
+    // A right to left word is reordered and shaped once, whole (see
+    // ShapedWord), so that each measurement is a subtraction: reordering the
+    // word up to each break took time that grew with the square of the word,
+    // 27 seconds for 16,000 Arabic letters.
     private int addBrokenWordLines(List<TextLine> textLines, String word, float textAreaWidth) {
+        ShapedWord shaped = rightToLeft ? new ShapedWord(word) : null;
         int start = 0;
         while (start < word.length()) {
             // Each line gets at least one character, however narrow the block.
             int end = nextCharacterBreak(word, start);
             int next = end;
-            while (next < word.length() && lineWidth(word, start, next) <= textAreaWidth) {
+            while (next < word.length() && partWidth(shaped, word, start, next) <= textAreaWidth) {
                 end = next;
                 next = nextCharacterBreak(word, end);
             }
-            if (next == word.length() && lineWidth(word, start) <= textAreaWidth) {
+            if (next == word.length() && partWidth(shaped, word, start, word.length()) <= textAreaWidth) {
                 break;      // The rest of the word fits on a line.
             }
-            textLines.add(newTextLine(word.substring(0, end), start));
+            textLines.add(new TextLine(font, partText(shaped, word, start, end)));
             start = end;
         }
         return start;
+    }
+
+    // Returns the width of the part of the word between two indexes: of a
+    // part of the shaped word when the word is right to left, of a substring
+    // when it is not.
+    private float partWidth(ShapedWord shaped, String word, int from, int to) {
+        return shaped != null ? shaped.width(from, to) : stringWidth(word.substring(from, to));
+    }
+
+    // Returns the part of the word between two indexes, as it is drawn.
+    private String partText(ShapedWord shaped, String word, int from, int to) {
+        return shaped != null ? shaped.text(from, to) : word.substring(from, to);
+    }
+
+    // A right to left word too wide for a line, reordered and shaped once,
+    // whole, so that a part of it is measured in constant time and made into
+    // a line in the time of its length. Its parts are parts of one word,
+    // shaped as one: the letter a line ends on keeps the form it has in the
+    // word. The width of a part is the sum of the widths of its characters,
+    // so it leaves out the kerning of a core font.
+    private final class ShapedWord {
+        private final int[] chars;      // The word in visual order, shaped, as code points
+        private final int[] order;      // The indexes of chars, in the order of the index each came from
+        private final int[] first;      // For each index of the word, where the chars from it start in order
+        private final float[] widths;   // The width of the chars before each position of order, summed
+
+        ShapedWord(String word) {
+            Bidi.Reordered reordered = Bidi.reorderVisuallyOrigins(word);
+            int n = reordered.n;
+            int[] origins = reordered.origins;
+            chars = reordered.chars;
+            // first[i] is how many chars came from before index i, so that
+            // the chars from one index to another are the positions of order
+            // between the two.
+            first = new int[word.length() + 2];
+            for (int k = 0; k < n; k++) {
+                first[origins[k] + 1]++;
+            }
+            for (int i = 1; i < first.length; i++) {
+                first[i] += first[i - 1];
+            }
+            order = new int[n];
+            int[] next = first.clone();
+            for (int k = 0; k < n; k++) {
+                order[next[origins[k]]] = k;
+                next[origins[k]]++;
+            }
+            widths = new float[n + 1];
+            for (int j = 0; j < n; j++) {
+                widths[j + 1] = widths[j] + stringWidth(new String(Character.toChars(chars[order[j]])));
+            }
+        }
+
+        // Returns the width of the part of the word from one index to another.
+        float width(int from, int to) {
+            return widths[first[to]] - widths[first[from]];
+        }
+
+        // Returns the part of the word from one index to another, in visual order.
+        String text(int from, int to) {
+            int[] positions = Arrays.copyOfRange(order, first[from], first[to]);
+            Arrays.sort(positions);
+            StringBuilder result = new StringBuilder(positions.length);
+            for (int k : positions) {
+                result.appendCodePoint(chars[k]);
+            }
+            return result.toString();
+        }
     }
 
     // Returns the part of the text from the index on, reordered and shaped in
@@ -642,15 +716,6 @@ public class TextBlock implements Drawable {
     // Returns the width of a line of text from the index on.
     private float lineWidth(String text, int from) {
         return stringWidth(part(text, from, text.length()));
-    }
-
-    // Returns the width of the text from one index to another, measured as a
-    // line of the text up to the second index: the text up to there is
-    // reordered and shaped when it is right to left, and not copied when it is
-    // not.
-    private float lineWidth(String text, int from, int to) {
-        return stringWidth(rightToLeft ?
-                Bidi.reorderVisually(text.substring(0, to), from, to) : text.substring(from, to));
     }
 
     // Returns a line of the text from the index on, without its trailing spaces.

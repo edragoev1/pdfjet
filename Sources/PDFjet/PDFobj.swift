@@ -584,7 +584,7 @@ public final class PDFobj {
                 continue
             }
             if object.stream != nil {
-                content.data.append(contentsOf: object.data)
+                content.data.append(contentsOf: object.getData())
                 content.data.append(UInt8(ascii: "\n"))     // A stream can end in the middle of a line.
             }
         }

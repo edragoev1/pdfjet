@@ -471,6 +471,10 @@ This is the first entry in this file; earlier releases were not tracked here.
   is found by measuring from its start to each character break until one
   does not fit, and the rest of the word only when the breaks run out; the
   same word breaks in a fraction of a second, into the same lines as before.
+  A right-to-left word is reordered and shaped once, whole, and a line of it
+  is a part of the shaped word, so the letter a line ends on keeps the form
+  it has in the word; reordering the word up to each break had taken 27
+  seconds for 16,000 Arabic letters, and about 20 minutes for 100,000.
   Found by pdfjet-server.
 - Reading a PDF decoded every stream in full, with a limit for each stream
   and none for all of them, so a PDF of a few megabytes could take gigabytes
@@ -479,7 +483,9 @@ This is the first entry in this file; earlier releases were not tracked here.
   all the streams of one PDF may decode to 256 MiB together: an object
   stream or a cross-reference stream past that is an error, as the PDF
   cannot be read without its objects, and any other stream past it has no
-  data, as a stream that cannot be decoded has none. Found by pdfjet-server.
+  data, as a stream that cannot be decoded has none. A page whose content is
+  an array of streams has all of them, in Java, .NET and Swift, which read
+  them before they were decoded. Found by pdfjet-server.
 - Greek text in a font that draws the micro sign with the glyph of mu, such
   as Source Serif 4, was copied, searched and read aloud with the micro sign
   µ in place of each μ, in all four ports: the ToUnicode map of a glyph two

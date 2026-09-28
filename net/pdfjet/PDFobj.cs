@@ -538,7 +538,7 @@ public class PDFobj {
             if (page == null) {
                 continue;
             }
-            byte[] bytes = page.data;
+            byte[] bytes = page.GetData();
             if (bytes != null) {
                 buf.Write(bytes, 0, bytes.Length);
                 buf.WriteByte((byte) '\n');     // A stream can end in the middle of a line.

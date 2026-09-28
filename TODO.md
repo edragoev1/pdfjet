@@ -489,12 +489,15 @@ to check and fix in the four, with a test.
   the word from the line's start to each character break until one does not
   fit, and the rest of the word is measured only when the breaks run out, so
   a word is measured about once a line's worth of characters a line; the word
-  of 100,000 characters breaks in 0.02 s. Right-to-left text is still shaped
-  in the context of the word up to the break, as it was, which costs the
-  length of that prefix a measure. The lines are the same as before, checked
-  in Go against the old code on Latin, combining marks, Thai and Arabic, and
-  in the four ports by the height of the block. pdfjet-server keeps its limit
-  of 1000 characters a word (`checkText`, layout.go).
+  of 100,000 characters breaks in 0.02 s. The lines are the same as before,
+  checked in Go against the old code on Latin, combining marks, Thai and
+  Arabic, and in the four ports by the height of the block. A right-to-left
+  word was still reordered and shaped up to each break, 27 s for 16,000
+  Arabic letters and about 20 minutes for 100,000; it is reordered and shaped
+  once, whole, and each line is a part of it, measured as the sum of the
+  widths of its characters, so the letter a line ends on keeps the form it
+  has in the word. pdfjet-server keeps its limit of 1000 characters a word
+  (`checkText`, layout.go).
 
 - ✅ **Reading a PDF decodes every stream in full, with no total.** `Read` in
   pdf.go inflated every Flate stream as it read, capped at 256 MB each by

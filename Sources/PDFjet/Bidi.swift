@@ -216,6 +216,18 @@ public class Bidi {
     /// - Returns: the reordered part of the string.
     ///
     public static func reorderVisually(_ str: String, _ from: Int, _ to: Int) -> String {
+        let (chars, origins) = reorderVisuallyOrigins(str)
+        var result = String.UnicodeScalarView()
+        for k in 0..<chars.count where origins[k] >= from && origins[k] < to {
+            append(&result, chars[k])
+        }
+        return String(result)
+    }
+
+    /// Returns the string in visual order, shaped, as reorderVisually does,
+    /// as scalar values with the offset in the string each came from, so that
+    /// a part of the string can be picked out of it by where it came from.
+    static func reorderVisuallyOrigins(_ str: String) -> ([UInt32], [Int]) {
         // Work with Unicode scalars, as the Java, C# and Go ports work with
         // code points. A Character would hold a letter and its diacritics.
         // The explicit embedding, override and isolate controls are left out,
@@ -376,12 +388,7 @@ public class Bidi {
 
             i = d
         }
-
-        var result = String.UnicodeScalarView()
-        for k in 0..<buf3.count where from3[k] >= from && from3[k] < to {
-            append(&result, buf3[k])
-        }
-        return String(result)
+        return (buf3, from3)
     }
 
     /// Replaces each lam followed by an alef with the lam-alef ligature. The

@@ -177,5 +177,20 @@ public class TextBlockTest {
         Assert.True(watch.ElapsedMilliseconds < 3000, "breaking a word of 100,000 characters took " + watch.ElapsedMilliseconds + " ms");
         TestSupport.AssertXY(100f, 78030f, xy);     // 5625 lines of 13.872 points
     }
+
+    [Fact]
+    public void ALongRightToLeftWordIsBrokenInTimeThatGrowsWithTheWord() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.otf.stream"));
+        var word = new System.Text.StringBuilder();
+        for (int i = 0; i < 25000; i++) {
+            word.Append("محمد");      // 100,000 letters, which took about 20 minutes
+        }
+        TextBlock block = new TextBlock(font, word.ToString()).SetRightToLeft(true).SetWidth(100f);
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        float[] xy = block.SetLocation(0f, 0f).DrawOn(null);
+        Assert.True(watch.ElapsedMilliseconds < 3000, "breaking a right to left word of 100,000 letters took " + watch.ElapsedMilliseconds + " ms");
+        TestSupport.AssertXY(100f, 120006f, xy);    // As the Go port breaks it
+    }
 }
 }

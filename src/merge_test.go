@@ -133,6 +133,34 @@ func TestMergeAMergedPageInheritsFromThePageTree(t *testing.T) {
 	testReferencesResolve(t, objects)
 }
 
+func TestMergeAPageOfSeveralContentStreamsHasAllOfThem(t *testing.T) {
+	first := "BT /F1 24 Tf 20 300 Td (First) Tj ET"
+	second := "BT /F1 24 Tf 20 200 Td (Second) Tj ET"
+	source := "%PDF-1.4\n" +
+		"1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n" +
+		"2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 300 400] >> endobj\n" +
+		"3 0 obj << /Type /Page /Parent 2 0 R /Contents [5 0 R 6 0 R]" +
+		" /Resources << /Font << /F1 4 0 R >> >> >> endobj\n" +
+		"4 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj\n" +
+		"5 0 obj << /Length " + strconv.Itoa(len(first)) + " >>\nstream\n" + first + "\nendstream\nendobj\n" +
+		"6 0 obj << /Length " + strconv.Itoa(len(second)) + " >>\nstream\n" + second + "\nendstream\nendobj\n" +
+		"trailer << /Root 1 0 R >>\n%%EOF\n"
+	objects := testRead(t, []byte(source))
+	hasBoth := func(what string, contents []string) {
+		t.Helper()
+		if len(contents) != 1 || !strings.Contains(contents[0], "(First) Tj") ||
+			!strings.Contains(contents[0], "(Second) Tj") {
+			t.Errorf("%s: the page has not both streams: %q", what, contents)
+		}
+	}
+	hasBoth("read", testPageContents(objects))
+	doc := testNewDoc()
+	if err := doc.pdf.Merge(objects); err != nil {
+		t.Fatal(err)
+	}
+	hasBoth("merged", testPageContents(testRead(t, doc.complete())))
+}
+
 func TestMergeAReferenceWhoseNumberHasLeadingZerosIsMerged(t *testing.T) {
 	// "0000000003 0 R", as pdf.js tests it in issue10491: a number of ten
 	// digits was not a reference, so the /Parent of the page left "0 R"

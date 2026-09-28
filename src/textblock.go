@@ -6,6 +6,7 @@
 package pdfjet
 
 import (
+	"sort"
 	"strings"
 	"unicode"
 
@@ -474,6 +475,10 @@ func (textBlock *TextBlock) getTextLines() []*TextLine {
 // measured about n times a line's worth of characters, not n times itself:
 // a word of 100,000 characters took 39 seconds when the rest of the word was
 // measured before each line, and the prefix of the word copied to measure it.
+// A right to left word is reordered and shaped once, whole (see shapedWord),
+// so that each measurement is a subtraction: reordering the word up to each
+// break took time that grew with the square of the word, 27 seconds for
+// 16,000 Arabic letters.
 func (textBlock *TextBlock) appendBrokenWordLines(
 	textLines []*TextLine, word string, textAreaWidth float32) ([]*TextLine, int) {
 	runes := []rune(word)
@@ -484,23 +489,98 @@ func (textBlock *TextBlock) appendBrokenWordLines(
 		offsets = append(offsets, i)
 	}
 	offsets = append(offsets, len(word))
+	var shaped *shapedWord
+	if textBlock.rightToLeft {
+		shaped = textBlock.shapeWord(word)
+	}
+	// The width of the part of the word between two byte indexes, and a line
+	// of it: a slice of a left to right word, a part of the shaped word of a
+	// right to left one.
+	width := func(from, to int) float32 {
+		if shaped != nil {
+			return shaped.width(from, to)
+		}
+		return textBlock.stringWidth(word[from:to])
+	}
+	line := func(from, to int) *TextLine {
+		if shaped != nil {
+			return NewTextLine(textBlock.font, shaped.text(from, to))
+		}
+		return NewTextLine(textBlock.font, word[from:to])
+	}
 	start := 0 // The rune index where the rest of the word starts
 	for start < len(runes) {
 		// Each line gets at least one character, however narrow the block.
 		end := nextCharacterBreak(runes, start)
 		next := end
-		for next < len(runes) &&
-			textBlock.lineWidth(word[:offsets[next]], offsets[start]) <= textAreaWidth {
+		for next < len(runes) && width(offsets[start], offsets[next]) <= textAreaWidth {
 			end = next
 			next = nextCharacterBreak(runes, end)
 		}
-		if next == len(runes) && textBlock.lineWidth(word, offsets[start]) <= textAreaWidth {
+		if next == len(runes) && width(offsets[start], len(word)) <= textAreaWidth {
 			break // The rest of the word fits on a line.
 		}
-		textLines = append(textLines, textBlock.newTextLine(word[:offsets[end]], offsets[start]))
+		textLines = append(textLines, line(offsets[start], offsets[end]))
 		start = end
 	}
 	return textLines, offsets[start]
+}
+
+// shapedWord is a right to left word too wide for a line, reordered and
+// shaped once, whole, so that a part of it is measured in constant time and
+// made into a line in the time of its length. Its parts are parts of one
+// word, shaped as one: the letter a line ends on keeps the form it has in the
+// word. The width of a part is the sum of the widths of its characters, so it
+// leaves out the kerning of a core font.
+type shapedWord struct {
+	chars  []rune    // The word in visual order, shaped
+	order  []int     // The indexes of chars, in the order of the byte index each came from
+	first  []int     // For each byte index of the word, where the chars from it start in order
+	widths []float32 // The width of the chars before each position of order, summed
+}
+
+// shapeWord returns the word reordered and shaped once, whole.
+func (textBlock *TextBlock) shapeWord(word string) *shapedWord {
+	chars, origins := reorderVisuallyOrigins(word)
+	// first[i] is how many chars came from before byte index i, so that the
+	// chars from the bytes from one index to another are the positions of
+	// order between the two.
+	first := make([]int, len(word)+2)
+	for _, origin := range origins {
+		first[origin+1]++
+	}
+	for i := 1; i < len(first); i++ {
+		first[i] += first[i-1]
+	}
+	order := make([]int, len(chars))
+	next := append([]int(nil), first...)
+	for k, origin := range origins {
+		order[next[origin]] = k
+		next[origin]++
+	}
+	widths := make([]float32, len(order)+1)
+	for j, k := range order {
+		widths[j+1] = widths[j] + textBlock.stringWidth(string(chars[k]))
+	}
+	return &shapedWord{chars: chars, order: order, first: first[:len(word)+1], widths: widths}
+}
+
+// width returns the width of the part of the word from one byte index to
+// another.
+func (shaped *shapedWord) width(from, to int) float32 {
+	return shaped.widths[shaped.first[to]] - shaped.widths[shaped.first[from]]
+}
+
+// text returns the part of the word from one byte index to another, in
+// visual order.
+func (shaped *shapedWord) text(from, to int) string {
+	positions := append([]int(nil), shaped.order[shaped.first[from]:shaped.first[to]]...)
+	sort.Ints(positions)
+	var result strings.Builder
+	for _, k := range positions {
+		result.WriteRune(shaped.chars[k])
+	}
+	return result.String()
 }
 
 // part returns the part of the text from the byte index on, reordered and

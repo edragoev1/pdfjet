@@ -158,6 +158,38 @@ public class Bidi {
      * @return the reordered part of the string.
      */
     public static String reorderVisually(String str, int from, int to) {
+        Reordered reordered = reorderVisuallyOrigins(str);
+        StringBuilder result = new StringBuilder(reordered.n);
+        for (int k = 0; k < reordered.n; k++) {
+            if (reordered.origins[k] >= from && reordered.origins[k] < to) {
+                result.appendCodePoint(reordered.chars[k]);
+            }
+        }
+        return result.toString();
+    }
+
+    /**
+     * A string in visual order, shaped, and the UTF-16 index in the string
+     * each of its code points came from.
+     */
+    static final class Reordered {
+        final int[] chars;      // The code points, in visual order, shaped
+        final int[] origins;    // The index in the string each came from
+        final int n;            // How many of each array are used
+
+        Reordered(int[] chars, int[] origins, int n) {
+            this.chars = chars;
+            this.origins = origins;
+            this.n = n;
+        }
+    }
+
+    /**
+     * Returns the string in visual order, shaped, as reorderVisually does,
+     * and the index in the string each code point came from, so that a part
+     * of the string can be picked out of it by where it came from.
+     */
+    static Reordered reorderVisuallyOrigins(String str) {
         // Work with code points so that supplementary characters are
         // handled correctly. The explicit embedding, override and isolate
         // controls are left out, since left to right text is only nested one
@@ -343,14 +375,7 @@ public class Bidi {
 
             i = d;
         }
-
-        StringBuilder result = new StringBuilder(n3);
-        for (int k = 0; k < n3; k++) {
-            if (from3[k] >= from && from3[k] < to) {
-                result.appendCodePoint(buf3[k]);
-            }
-        }
-        return result.toString();
+        return new Reordered(buf3, from3, n3);
     }
 
     /**

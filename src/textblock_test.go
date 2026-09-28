@@ -197,19 +197,23 @@ func testAppendBrokenWordLinesSlow(textBlock *TextBlock, word string, textAreaWi
 	byteIndex := func(runes []rune, runeIndex int) int { return len(string(runes[:runeIndex])) }
 	var lines []string
 	runes := []rune(word)
+	// Each part is measured and made as a part of the whole word, slowly.
+	partWidth := func(from, to int) float32 {
+		return textBlock.stringWidth(textBlock.part(word, from, to))
+	}
 	start := 0
-	for textBlock.lineWidth(string(runes), byteIndex(runes, start)) > textAreaWidth {
+	for partWidth(byteIndex(runes, start), len(word)) > textAreaWidth {
 		end := nextCharacterBreak(runes, start)
 		next := end
 		if end < len(runes) {
 			next = nextCharacterBreak(runes, end)
 		}
 		for next < len(runes) &&
-			textBlock.lineWidth(string(runes[:next]), byteIndex(runes, start)) <= textAreaWidth {
+			partWidth(byteIndex(runes, start), byteIndex(runes, next)) <= textAreaWidth {
 			end = next
 			next = nextCharacterBreak(runes, end)
 		}
-		lines = append(lines, textBlock.newTextLine(string(runes[:end]), byteIndex(runes, start)).text)
+		lines = append(lines, textBlock.part(word, byteIndex(runes, start), byteIndex(runes, end)))
 		start = end
 	}
 	return lines, byteIndex(runes, start)
@@ -265,4 +269,29 @@ func TestTextBlockALongWordIsBrokenInTimeThatGrowsWithTheWord(t *testing.T) {
 	if joined.String() != word {
 		t.Errorf("the lines do not join back to the word: %d characters of %d", joined.Len(), len(word))
 	}
+}
+
+func TestTextBlockALongRightToLeftWordIsBrokenInTimeThatGrowsWithTheWord(t *testing.T) {
+	pdf := testNewPDF()
+	font := NewFontFromFile(pdf, testRepoPath(t, "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.otf.stream"))
+	word := strings.Repeat("محمد", 25000) // 100,000 letters, which took about 20 minutes
+	block := NewTextBlock(font, word).SetRightToLeft(true).SetWidth(100)
+	block.SetLocation(0, 0)
+	start := time.Now()
+	lines := block.getTextLines()
+	if took := time.Since(start); took > 3*time.Second {
+		t.Errorf("breaking a right to left word of 100,000 letters took %v", took)
+	}
+	letters := 0
+	for _, line := range lines {
+		if w := font.StringWidth(block.fontSize, line.text); w > 100 {
+			t.Fatalf("a line is %v wide: %q", w, line.text)
+		}
+		letters += len([]rune(line.text))
+	}
+	if letters != 100000 {
+		t.Errorf("the lines have %d letters, not 100,000", letters)
+	}
+	// The other ports check the same height
+	testNear(t, "height", 120006, block.DrawOn(nil)[1], 0.5)
 }

@@ -644,7 +644,7 @@ public class PDFobj {
             if (page == null) {
                 continue;
             }
-            byte[] data = page.data;
+            byte[] data = page.getData();
             if (data != null) {
                 buf.write(data, 0, data.length);
                 buf.write('\n');    // A stream can end in the middle of a line.

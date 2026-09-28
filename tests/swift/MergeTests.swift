@@ -92,6 +92,29 @@ import Testing
         expectReferencesResolve(objects)
     }
 
+    @Test func aPageOfSeveralContentStreamsHasAllOfThem() throws {
+        let first = "BT /F1 24 Tf 20 300 Td (First) Tj ET"
+        let second = "BT /F1 24 Tf 20 200 Td (Second) Tj ET"
+        let source = "%PDF-1.4\n"
+                + "1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n"
+                + "2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 300 400] >> endobj\n"
+                + "3 0 obj << /Type /Page /Parent 2 0 R /Contents [5 0 R 6 0 R]"
+                + " /Resources << /Font << /F1 4 0 R >> >> >> endobj\n"
+                + "4 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj\n"
+                + "5 0 obj << /Length \(first.utf8.count) >>\nstream\n" + first + "\nendstream\nendobj\n"
+                + "6 0 obj << /Length \(second.utf8.count) >>\nstream\n" + second + "\nendstream\nendobj\n"
+                + "trailer << /Root 1 0 R >>\n%%EOF\n"
+        let objects = try TestSupport.read(Array(source.utf8))
+        let read = try #require(pageContents(objects).first)
+        #expect(read.contains("(First) Tj") && read.contains("(Second) Tj"), "\(read)")
+
+        let memory = MemoryPDF()
+        try memory.pdf.merge(objects)
+        try memory.pdf.complete()
+        let merged = try #require(pageContents(try TestSupport.read(memory.bytes)).first)
+        #expect(merged.contains("(First) Tj") && merged.contains("(Second) Tj"), "\(merged)")
+    }
+
     @Test func aMergedPageInheritsFromThePageTree() throws {
         let content = "BT /F1 24 Tf 20 300 Td (Inherited) Tj ET"
         let source = "%PDF-1.4\n"

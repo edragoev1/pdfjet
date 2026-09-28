@@ -435,51 +435,101 @@ public class TextBlock : Drawable {
     // itself: a word of 100,000 characters took 39 seconds when the rest of
     // the word was measured before each line, and the word up to each break
     // was copied to measure it.
+    // A right to left word is reordered and shaped once, whole (see
+    // ShapedWord), so that each measurement is a subtraction: reordering the
+    // word up to each break took time that grew with the square of the word,
+    // 27 seconds for 16,000 Arabic letters.
     private func addBrokenWordLines(
             _ textLines: inout [TextLine], _ word: String, _ textAreaWidth: Float) -> Int {
         let scalars = Array(word.unicodeScalars)
+        let shaped = rightToLeft ? ShapedWord(self, word) : nil
+        // The width of the part of the word between two scalar offsets, and
+        // the part as it is drawn: a slice of a left to right word, a part of
+        // the shaped word of a right to left one.
+        func partWidth(_ from: Int, _ to: Int) -> Float {
+            if let shaped = shaped {
+                return shaped.width(from, to)
+            }
+            return stringWidth(TextBlock.string(scalars[from..<to]))
+        }
+        func partText(_ from: Int, _ to: Int) -> String {
+            if let shaped = shaped {
+                return shaped.text(from, to)
+            }
+            return TextBlock.string(scalars[from..<to])
+        }
         var start = 0
         while start < scalars.count {
             // Each line gets at least one character, however narrow the block.
             var end = TextBlock.nextCharacterBreak(scalars, start)
             var next = end
-            while next < scalars.count && lineWidth(scalars, start, next) <= textAreaWidth {
+            while next < scalars.count && partWidth(start, next) <= textAreaWidth {
                 end = next
                 next = TextBlock.nextCharacterBreak(scalars, end)
             }
-            if next == scalars.count && lineWidth(scalars, start, scalars.count) <= textAreaWidth {
+            if next == scalars.count && partWidth(start, scalars.count) <= textAreaWidth {
                 break       // The rest of the word fits on a line.
             }
-            textLines.append(newTextLine(scalars, start, end))
+            textLines.append(TextLine(font, partText(start, end)))
             start = end
         }
         return start
     }
 
-    // Returns a line of the text from one scalar offset to another, without
-    // its trailing spaces: reordered and shaped in the context of the text up
-    // to the second offset when it is right to left, and not copied when it
-    // is not.
-    private func newTextLine(_ scalars: [Unicode.Scalar], _ from: Int, _ end: Int) -> TextLine {
-        var to = end
-        while to > from && String.isJavaWhitespace(scalars[to - 1]) {
-            to -= 1
-        }
-        if rightToLeft {
-            return TextLine(font, Bidi.reorderVisually(TextBlock.string(scalars[..<end]), from, to))
-        }
-        return TextLine(font, TextBlock.string(scalars[from..<to]))
-    }
+    // A right to left word too wide for a line, reordered and shaped once,
+    // whole, so that a part of it is measured in constant time and made into
+    // a line in the time of its length. Its parts are parts of one word,
+    // shaped as one: the letter a line ends on keeps the form it has in the
+    // word. The width of a part is the sum of the widths of its characters,
+    // so it leaves out the kerning of a core font.
+    private struct ShapedWord {
+        let chars: [UInt32]     // The word in visual order, shaped, as scalar values
+        let order: [Int]        // The indexes of chars, in the order of the offset each came from
+        let first: [Int]        // For each scalar offset of the word, where the chars from it start in order
+        let widths: [Float]     // The width of the chars before each position of order, summed
 
-    // Returns the width of the text from one scalar offset to another,
-    // measured as a line of the text up to the second: the text up to there is
-    // reordered and shaped when it is right to left, and not copied when it is
-    // not.
-    private func lineWidth(_ scalars: [Unicode.Scalar], _ from: Int, _ to: Int) -> Float {
-        if rightToLeft {
-            return stringWidth(Bidi.reorderVisually(TextBlock.string(scalars[..<to]), from, to))
+        init(_ block: TextBlock, _ word: String) {
+            let (chars, origins) = Bidi.reorderVisuallyOrigins(word)
+            self.chars = chars
+            // first[i] is how many chars came from before offset i, so that
+            // the chars from one offset to another are the positions of order
+            // between the two.
+            var first = [Int](repeating: 0, count: word.unicodeScalars.count + 2)
+            for origin in origins {
+                first[origin + 1] += 1
+            }
+            for i in 1..<first.count {
+                first[i] += first[i - 1]
+            }
+            var order = [Int](repeating: 0, count: chars.count)
+            var next = first
+            for (k, origin) in origins.enumerated() {
+                order[next[origin]] = k
+                next[origin] += 1
+            }
+            var widths = [Float](repeating: 0, count: chars.count + 1)
+            for (j, k) in order.enumerated() {
+                widths[j + 1] = widths[j] + block.stringWidth(String(Unicode.Scalar(chars[k])!))
+            }
+            self.order = order
+            self.first = first
+            self.widths = widths
         }
-        return stringWidth(TextBlock.string(scalars[from..<to]))
+
+        // Returns the width of the part of the word from one offset to another.
+        func width(_ from: Int, _ to: Int) -> Float {
+            return widths[first[to]] - widths[first[from]]
+        }
+
+        // Returns the part of the word from one offset to another, in visual order.
+        func text(_ from: Int, _ to: Int) -> String {
+            let positions = order[first[from]..<first[to]].sorted()
+            var result = String.UnicodeScalarView()
+            for k in positions {
+                result.append(Unicode.Scalar(chars[k])!)
+            }
+            return String(result)
+        }
     }
 
     // Returns the part of the text from the scalar offset on, reordered and
