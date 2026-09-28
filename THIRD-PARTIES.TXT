@@ -72,6 +72,34 @@ covered by the following license:
       http://www.denso-wave.com/qrcode/faqpatent-e.html
 
 
+This software embeds, in every PDF/A document it writes, the ICC color profile
+"sRGB IEC61966-2-1 black scaled" of the International Color Consortium,
+unchanged, with its copyright notice tag:
+
+    ============================================================================
+    sRGB IEC61966-2-1 black scaled
+    Copyright International Color Consortium, 2009
+    https://www.color.org
+
+The ICC grants permission to use, copy and distribute its profiles for any
+purpose without fee, provided that the profile is not changed, including its
+copyright notice tag, and that the name of the ICC is not used in advertising
+or publicity without its written permission. The profiles are provided "AS
+IS", with no express or implied warranty.
+
+
+The icons of the examples, the SVG files in images/svg and those named
+*_FILL0_* in images/svg-test, are Material Symbols of Google, licensed under
+the Apache License, Version 2.0. A copy of the license is in
+images/svg/LICENSE-2.0.txt.
+
+    ============================================================================
+    Material Symbols
+    Copyright Google LLC
+    https://github.com/google/material-design-icons
+    Licensed under the Apache License, Version 2.0
+
+
 All the fonts included in the project are licensed under the SIL Open Font License, Version 1.1.
 You can obtain a copy of the license at:
 http://scripts.sil.org/OFL

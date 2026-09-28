@@ -3,6 +3,12 @@
  *
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
+ *
+ * The bytes of the profile are not PDFjet's: they are the ICC profile
+ * "sRGB IEC61966-2-1 black scaled", Copyright International Color
+ * Consortium, 2009 (https://www.color.org), unchanged but compressed with
+ * zlib, which PDFjet embeds in every PDF/A document it writes. They are used
+ * under the ICC's terms for its profiles, which THIRD-PARTIES.TXT gives.
  */
 package com.pdfjet;
 
