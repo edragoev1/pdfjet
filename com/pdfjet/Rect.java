@@ -246,22 +246,22 @@ public class Rect implements Drawable {
         page.saveGraphicsState();
         if (r == 0.0f) {
             if (this.fillColor != null) {
+                page.setBrushColor(this.fillColor);
                 page.moveTo(this.x, this.y);
                 page.lineTo(this.x + this.w, this.y);
                 page.lineTo(this.x + this.w, this.y + this.h);
                 page.lineTo(this.x, this.y + this.h);
                 page.lineTo(this.x, this.y);
-                page.setBrushColor(this.fillColor);
                 page.fillPath();
             }
             if (borderColor != null) {
+                page.setPenColor(this.borderColor);
+                page.setPenWidth(this.borderWidth);
+                page.setStrokeDashPattern(this.borderPattern);
                 page.moveTo(this.x, this.y);
                 page.lineTo(this.x + this.w, this.y);
                 page.lineTo(this.x + this.w, this.y + this.h);
                 page.lineTo(this.x, this.y + this.h);
-                page.setPenColor(this.borderColor);
-                page.setPenWidth(this.borderWidth);
-                page.setStrokeDashPattern(this.borderPattern);
                 page.closePath();
             }
         } else {

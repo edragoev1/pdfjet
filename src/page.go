@@ -2270,15 +2270,6 @@ func (page *Page) beginTransform(x, y, xScale, yScale float32) {
 	page.appendString(" ")
 	page.appendFloat32(y)
 	page.appendString(" cm\n")
-
-	page.appendFloat32(xScale)
-	page.appendString(" 0 0 ")
-	page.appendFloat32(yScale)
-	page.appendString(" ")
-	page.appendFloat32(x)
-	page.appendString(" ")
-	page.appendFloat32(y)
-	page.appendString(" Tm\n")
 }
 
 func (page *Page) endTransform() {

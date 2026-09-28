@@ -2623,15 +2623,6 @@ public class Page {
         Append(' ');
         Append(y);
         Append(" cm\n");
-
-        Append(xScale);
-        Append(" 0 0 ");
-        Append(yScale);
-        Append(' ');
-        Append(x);
-        Append(' ');
-        Append(y);
-        Append(" Tm\n");
     }
 
     internal void EndTransform() {

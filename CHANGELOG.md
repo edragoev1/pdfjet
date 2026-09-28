@@ -466,6 +466,13 @@ This is the first entry in this file; earlier releases were not tracked here.
   the values of the other three ports.
 
 ### Fixed
+- A rectangle, an arc and an ellipse set their colors, line width and dash
+  after they had begun their paths, and `Page.drawContents` wrote a text
+  matrix, Tm, outside a text object, in all four ports: operators ISO 32000-1 does not allow there, in its Figure 9, which
+  PAC reports as errors of PDF syntax and veraPDF does not check. PAC failed
+  14 examples on them. The colors, the width and the dash are set before the
+  path, and the Tm, which BT resets, is left out. check-example-pdfs.py
+  checks the operators of every content stream of the examples. Found by PAC.
 - A word too wide for a line, broken between its characters, took time that
   grew with the square of the word, in all four ports: the rest of the word
   was measured before each line, and the word up to each break was copied

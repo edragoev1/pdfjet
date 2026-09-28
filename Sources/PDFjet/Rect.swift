@@ -236,22 +236,22 @@ public class Rect : Drawable {
 
         if r == 0.0 {
             if fillColor != nil {
+                page.setBrushColor(self.fillColor)
                 page.moveTo(self.x, self.y)
                 page.lineTo(self.x + self.width, self.y)
                 page.lineTo(self.x + self.width, self.y + self.height)
                 page.lineTo(self.x, self.y + self.height)
                 page.lineTo(self.x, self.y)
-                page.setBrushColor(self.fillColor)
                 page.fillPath()
             }
             if borderColor != nil {
+                page.setPenColor(self.borderColor)
+                page.setPenWidth(self.borderWidth)
+                page.setStrokeDashPattern(self.borderPattern)
                 page.moveTo(self.x, self.y)
                 page.lineTo(self.x + self.width, self.y)
                 page.lineTo(self.x + self.width, self.y + self.height)
                 page.lineTo(self.x, self.y + self.height)
-                page.setPenColor(self.borderColor)
-                page.setPenWidth(self.borderWidth)
-                page.setStrokeDashPattern(self.borderPattern)
                 page.closePath()
             }
         } else {

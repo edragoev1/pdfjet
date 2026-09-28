@@ -229,6 +229,27 @@ public class Arc : IDrawable {
         float centerX = cx;
         float centerY = page.height - cy;
         page.RotateAroundCenter(centerX, centerY, rotateDegrees);
+        // The dash, the colors and the width are set before the path is begun,
+        // as ISO 32000 has them: none of them is allowed inside a path.
+        if (strokeColor != null && strokeDashPattern != null) {
+            page.SetStrokeDashPattern(strokeDashPattern);
+        }
+        string paint = "S\n";
+        if (fillColor != null && strokeColor != null) {
+            page.SetBrushColor(fillColor);
+            page.SetPenWidth(strokeWidth);
+            page.SetPenColor(strokeColor);
+            paint = "B\n";
+        } else if (fillColor != null && strokeColor == null) {
+            page.SetBrushColor(fillColor);
+            paint = "f\n";
+        } else if (fillColor == null && strokeColor != null) {
+            page.SetPenWidth(strokeWidth);
+            page.SetPenColor(strokeColor);
+        } else {    // Both brushColor == null and penColor == null
+            page.SetPenWidth(0f);
+            page.SetPenColor(Color.black);
+        }
         page.AddArcToPath(
                 cx,
                 cy,
@@ -236,26 +257,7 @@ public class Arc : IDrawable {
                 ry,
                 startAngle,
                 sweepDegrees);
-        if (strokeColor != null && strokeDashPattern != null) {
-            page.SetStrokeDashPattern(strokeDashPattern);
-        }
-        if (fillColor != null && strokeColor != null) {
-            page.SetBrushColor(fillColor);
-            page.SetPenWidth(strokeWidth);
-            page.SetPenColor(strokeColor);
-            page.Append("B\n");
-        } else if (fillColor != null && strokeColor == null) {
-            page.SetBrushColor(fillColor);
-            page.Append("f\n");
-        } else if (fillColor == null && strokeColor != null) {
-            page.SetPenWidth(strokeWidth);
-            page.SetPenColor(strokeColor);
-            page.Append("S\n");
-        } else {    // Both brushColor == null and penColor == null
-            page.SetPenWidth(0f);
-            page.SetPenColor(Color.black);
-            page.Append("S\n");
-        }
+        page.Append(paint);
 
         page.RestoreGraphicsState();
 

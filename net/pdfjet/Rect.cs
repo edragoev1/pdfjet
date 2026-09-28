@@ -165,22 +165,22 @@ public class Rect  : IDrawable {
         float r = Math.Max(0f, Math.Min(this.r, Math.Min(Math.Abs(w), Math.Abs(h)) / 2f));
         if (r == 0.0f) {
             if (fillColor != null) {
+                page.SetBrushColor(this.fillColor);
                 page.MoveTo(this.x, this.y);
                 page.LineTo(this.x + this.w, this.y);
                 page.LineTo(this.x + this.w, this.y + this.h);
                 page.LineTo(this.x, this.y + this.h);
                 page.LineTo(this.x, this.y);
-                page.SetBrushColor(this.fillColor);
                 page.FillPath();
             }
             if (borderColor != null) {
+                page.SetPenColor(this.borderColor);
+                page.SetPenWidth(this.borderWidth);
+                page.SetStrokeDashPattern(this.borderPattern);
                 page.MoveTo(this.x, this.y);
                 page.LineTo(this.x + this.w, this.y);
                 page.LineTo(this.x + this.w, this.y + this.h);
                 page.LineTo(this.x, this.y + this.h);
-                page.SetPenColor(this.borderColor);
-                page.SetPenWidth(this.borderWidth);
-                page.SetStrokeDashPattern(this.borderPattern);
                 page.ClosePath();
             }
         } else {

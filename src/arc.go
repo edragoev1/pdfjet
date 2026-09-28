@@ -179,6 +179,27 @@ func (arc *Arc) DrawOn(page *Page) [2]float32 {
 	centerY := page.height - arc.cy
 
 	page.rotateAroundCenter(centerX, centerY, arc.rotateDegrees)
+	// The dash, the colors and the width are set before the path is begun,
+	// as ISO 32000 has them: none of them is allowed inside a path.
+	if arc.hasStrokeColor == true && arc.strokeDashPattern != "" {
+		page.SetStrokeDashPattern(arc.strokeDashPattern)
+	}
+	paint := "S\n"
+	if arc.hasFillColor == true && arc.hasStrokeColor == true {
+		page.SetBrushColorRGB(arc.fillColor)
+		page.SetPenWidth(arc.strokeWidth)
+		page.SetPenColorRGB(arc.strokeColor)
+		paint = "B\n"
+	} else if arc.hasFillColor == true && arc.hasStrokeColor == false {
+		page.SetBrushColorRGB(arc.fillColor)
+		paint = "f\n"
+	} else if arc.hasFillColor == false && arc.hasStrokeColor == true {
+		page.SetPenWidth(arc.strokeWidth)
+		page.SetPenColorRGB(arc.strokeColor)
+	} else { // Both arc.brushColor == false and arc.strokeColor == false
+		page.SetPenWidth(0.0)
+		page.SetPenColor(color.Black)
+	}
 	page.AddArcToPath(
 		arc.cx,
 		arc.cy,
@@ -186,28 +207,7 @@ func (arc *Arc) DrawOn(page *Page) [2]float32 {
 		arc.ry,
 		arc.startAngle,
 		arc.sweepDegrees)
-
-	if arc.hasStrokeColor == true && arc.strokeDashPattern != "" {
-		page.SetStrokeDashPattern(arc.strokeDashPattern)
-	}
-
-	if arc.hasFillColor == true && arc.hasStrokeColor == true {
-		page.SetBrushColorRGB(arc.fillColor)
-		page.SetPenWidth(arc.strokeWidth)
-		page.SetPenColorRGB(arc.strokeColor)
-		page.appendString("B\n")
-	} else if arc.hasFillColor == true && arc.hasStrokeColor == false {
-		page.SetBrushColorRGB(arc.fillColor)
-		page.appendString("f\n")
-	} else if arc.hasFillColor == false && arc.hasStrokeColor == true {
-		page.SetPenWidth(arc.strokeWidth)
-		page.SetPenColorRGB(arc.strokeColor)
-		page.appendString("S\n")
-	} else { // Both arc.brushColor == false and arc.strokeColor == false
-		page.SetPenWidth(0.0)
-		page.SetPenColor(color.Black)
-		page.appendString("S\n")
-	}
+	page.appendString(paint)
 
 	page.RestoreGraphicsState()
 	page.AddEMC()

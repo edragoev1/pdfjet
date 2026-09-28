@@ -2777,15 +2777,6 @@ final public class Page {
         append(' ');
         append(y);
         append(" cm\n");
-
-        append(xScale);
-        append(" 0 0 ");
-        append(yScale);
-        append(' ');
-        append(x);
-        append(' ');
-        append(y);
-        append(" Tm\n");
     }
 
     private void endTransform() {

@@ -18,6 +18,11 @@ standing for java, dotnet, go or swift. The check fails when:
 - an example that declares PDF/A or PDF/UA compliance fails veraPDF, in any of
   the four ports. The standard comes from the setCompliance call in the Java
   example.
+- a content stream of a Java example, of a page or of a form XObject, uses an
+  operator where ISO 32000-1 does not allow it, in Figure 9: a color, a line
+  width or a dash set between the start of a path and its painting, or a text
+  operator outside BT and ET. veraPDF does not check this; PAC does, as "PDF
+  syntax". The other ports have the same content streams, as checked above.
 
 veraPDF is run as "verapdf", or as the command in the VERAPDF environment
 variable.
@@ -171,6 +176,113 @@ def compare_example(template, n):
     return problems
 
 
+# The operators of a content stream by the states ISO 32000-1 allows them in,
+# in Figure 9: at the page level (G), in a text object (T), in a path (P), and
+# after a clipping operator, before the painting that ends the path (C).
+GENERAL_OPERATORS = {b'w', b'J', b'j', b'M', b'd', b'ri', b'i', b'gs',
+                     b'CS', b'cs', b'SC', b'SCN', b'sc', b'scn', b'G', b'g', b'RG', b'rg', b'K', b'k',
+                     b'Tc', b'Tw', b'Tz', b'TL', b'Tf', b'Tr', b'Ts', b'BMC', b'BDC', b'EMC', b'MP', b'DP'}
+PAGE_OPERATORS = {b'q', b'Q', b'cm', b'sh', b'Do', b'BI', b'd0', b'd1'}
+TEXT_OPERATORS = {b'Td', b'TD', b'Tm', b'T*', b'Tj', b'TJ', b"'", b'"'}
+PAINTING_OPERATORS = {b'S', b's', b'f', b'F', b'f*', b'B', b'B*', b'b', b'b*', b'n'}
+DELIMITERS = b'()<>[]{}/%'
+WHITESPACE = b' \t\r\n\f\0'
+
+
+def operators(data):
+    """Yields the operators of a content stream, in order, skipping their
+    operands: numbers, names, strings, arrays, dictionaries and the data of
+    inline images."""
+    i, n = 0, len(data)
+    while i < n:
+        c = data[i:i + 1]
+        if c in WHITESPACE and c:
+            i += 1
+        elif c == b'%':
+            while i < n and data[i:i + 1] not in b'\r\n':
+                i += 1
+        elif c == b'(':
+            depth, i = 1, i + 1
+            while i < n and depth:
+                if data[i:i + 1] == b'\\':
+                    i += 1
+                elif data[i:i + 1] == b'(':
+                    depth += 1
+                elif data[i:i + 1] == b')':
+                    depth -= 1
+                i += 1
+        elif data[i:i + 2] in (b'<<', b'>>'):
+            i += 2
+        elif c == b'<':
+            i = data.index(b'>', i) + 1
+        elif c in b'[]{}>':
+            i += 1
+        elif c == b'/':
+            i += 1
+            while i < n and data[i:i + 1] not in WHITESPACE + DELIMITERS:
+                i += 1
+        else:
+            start = i
+            while i < n and data[i:i + 1] not in WHITESPACE + DELIMITERS:
+                i += 1
+            token = data[start:i]
+            if not re.fullmatch(rb'[+-]?(\d+\.?\d*|\.\d+)', token) and token not in (b'true', b'false', b'null'):
+                yield token
+                if token == b'ID':  # The data of an inline image, up to EI
+                    end = re.compile(rb'[\s]EI(?=[\s]|$)').search(data, i + 1)
+                    i = end.end() if end else n
+                    yield b'EI'
+
+
+def operator_state_problems(data):
+    """Returns the operators of a content stream used where ISO 32000-1 does not
+    allow them, each once, with the operators before it."""
+    problems, seen, state, recent = [], set(), 'G', []
+    for op in operators(data):
+        allowed = True
+        if op in GENERAL_OPERATORS:
+            allowed = state in 'GT'
+        elif op in PAGE_OPERATORS or op == b'EI':
+            allowed = state == 'G'
+        elif op == b'BT':
+            allowed, state = state == 'G', 'T'
+        elif op == b'ET':
+            allowed, state = state == 'T', 'G'
+        elif op in TEXT_OPERATORS:
+            allowed = state == 'T'
+        elif op in (b'm', b're'):
+            allowed, state = state in 'GP', 'P'
+        elif op in (b'l', b'c', b'v', b'y', b'h'):
+            allowed = state == 'P'
+        elif op in (b'W', b'W*'):
+            allowed, state = state == 'P', 'C'
+        elif op in PAINTING_OPERATORS:
+            allowed, state = state in 'PC', 'G'
+        if not allowed and (op, state) not in seen:
+            seen.add((op, state))
+            where = {'G': 'at the page level', 'T': 'in a text object', 'P': 'in a path', 'C': 'after a clip'}[state]
+            problems.append(f'{op.decode("latin-1")} {where}, after "{b" ".join(recent[-5:]).decode("latin-1")}"')
+        recent.append(op)
+    return problems
+
+
+def operator_states(template, n):
+    """Checks the content streams of the pages and form XObjects of Java example n."""
+    name = f'Example_{n:02d}'
+    path = os.path.join(template.format(port='java'), f'{name}.pdf')
+    problems = []
+    with pymupdf.open(path) as doc:
+        if doc.needs_pass:
+            doc.authenticate(user_password(java_source(n)) or '')
+        for i, page in enumerate(doc, 1):
+            problems += [f'java {name}: page {i}: {p}' for p in operator_state_problems(page.read_contents())]
+        for xref in range(1, doc.xref_length()):
+            if doc.xref_get_key(xref, 'Subtype') == ('name', '/Form'):
+                problems += [f'java {name}: form XObject {xref}: {p}'
+                             for p in operator_state_problems(doc.xref_stream(xref) or b'')]
+    return problems
+
+
 def verapdf(profile, paths):
     """Runs veraPDF and returns (path, failures) for every file that fails."""
     command = os.environ.get('VERAPDF', 'verapdf')
@@ -203,6 +315,11 @@ def main():
             problems += example_problems
     print(f'Rendered up to {MAX_PAGES} pages of each example in every port and compared them, and the '
           f'content streams of all pages, with Java.')
+
+    with ProcessPoolExecutor() as executor:
+        for example_problems in executor.map(functools.partial(operator_states, template), EXAMPLES):
+            problems += example_problems
+    print('Checked the operators of the content streams of the Java examples against ISO 32000-1 Figure 9.')
 
     by_profile = {}
     for n in EXAMPLES:

@@ -284,6 +284,27 @@ public class Arc implements Drawable {
         float centerX = cx;
         float centerY = page.height - cy;
         page.rotateAroundCenter(centerX, centerY, rotateDegrees);
+        // The dash, the colors and the width are set before the path is begun,
+        // as ISO 32000 has them: none of them is allowed inside a path.
+        if (strokeColor != null && strokeDashPattern != null) {
+            page.setStrokeDashPattern(strokeDashPattern);
+        }
+        String paint = "S\n";
+        if (fillColor != null && strokeColor != null) {
+            page.setBrushColor(fillColor);
+            page.setPenWidth(strokeWidth);
+            page.setPenColor(strokeColor);
+            paint = "B\n";
+        } else if (fillColor != null && strokeColor == null) {
+            page.setBrushColor(fillColor);
+            paint = "f\n";
+        } else if (fillColor == null && strokeColor != null) {
+            page.setPenWidth(strokeWidth);
+            page.setPenColor(strokeColor);
+        } else {    // Both brushColor == null and penColor == null
+            page.setPenWidth(0f);
+            page.setPenColor(Color.black);
+        }
         page.addArcToPath(
                 cx,
                 cy,
@@ -291,26 +312,7 @@ public class Arc implements Drawable {
                 ry,
                 startAngle,
                 sweepDegrees);
-        if (strokeColor != null && strokeDashPattern != null) {
-            page.setStrokeDashPattern(strokeDashPattern);
-        }
-        if (fillColor != null && strokeColor != null) {
-            page.setBrushColor(fillColor);
-            page.setPenWidth(strokeWidth);
-            page.setPenColor(strokeColor);
-            page.append("B\n");
-        } else if (fillColor != null && strokeColor == null) {
-            page.setBrushColor(fillColor);
-            page.append("f\n");
-        } else if (fillColor == null && strokeColor != null) {
-            page.setPenWidth(strokeWidth);
-            page.setPenColor(strokeColor);
-            page.append("S\n");
-        } else {    // Both brushColor == null and penColor == null
-            page.setPenWidth(0f);
-            page.setPenColor(Color.black);
-            page.append("S\n");
-        }
+        page.append(paint);
         page.restoreGraphicsState();
         page.addEMC();
         return new float[] {cx + rx, cy + ry};

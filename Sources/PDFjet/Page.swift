@@ -2524,15 +2524,6 @@ public class Page {
         append(Token.space)
         append(y)
         append(" cm\n")
-
-        append(xScale)
-        append(" 0 0 ")
-        append(yScale)
-        append(Token.space)
-        append(x)
-        append(Token.space)
-        append(y)
-        append(" Tm\n")
     }
 
     func endTransform() {

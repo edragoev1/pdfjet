@@ -245,27 +245,29 @@ public class Arc : Drawable {
         let centerX = cx
         let centerY = page!.height - cy
         page!.rotateAroundCenter(centerX, centerY, rotateDegrees)
-        _ = page!.addArcToPath(cx, cy, rx, ry, startAngle, sweepDegrees)
+        // The dash, the colors and the width are set before the path is begun,
+        // as ISO 32000 has them: none of them is allowed inside a path.
         if strokeColor != nil && strokeDashPattern != nil {
             page!.setStrokeDashPattern(strokeDashPattern!)
         }
+        var paint = "S\n"
         if fillColor != nil && strokeColor != nil {
             page!.setBrushColor(fillColor!)
             page!.setPenWidth(strokeWidth)
             page!.setPenColor(strokeColor!)
-            page!.append("B\n")
+            paint = "B\n"
         } else if fillColor != nil && strokeColor == nil {
             page!.setBrushColor(fillColor!)
-            page!.append("f\n")
+            paint = "f\n"
         } else if fillColor == nil && strokeColor != nil {
             page!.setPenWidth(strokeWidth)
             page!.setPenColor(strokeColor!)
-            page!.append("S\n")
         } else {    // Both brushColor == nil and penColor == nil
             page!.setPenWidth(0.0)
             page!.setPenColor(Color.black)
-            page!.append("S\n")
         }
+        _ = page!.addArcToPath(cx, cy, rx, ry, startAngle, sweepDegrees)
+        page!.append(paint)
         page!.restoreGraphicsState()
         page!.addEMC()
         return [cx + rx, cy + ry]

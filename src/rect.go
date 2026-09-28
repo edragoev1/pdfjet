@@ -188,22 +188,22 @@ func (rect *Rect) DrawOn(page *Page) [2]float32 {
 	page.SaveGraphicsState()
 	if r == 0.0 {
 		if rect.hasFillColor {
+			page.SetBrushColorRGB(rect.fillColor)
 			page.MoveTo(rect.x, rect.y)
 			page.LineTo(rect.x+rect.width, rect.y)
 			page.LineTo(rect.x+rect.width, rect.y+rect.height)
 			page.LineTo(rect.x, rect.y+rect.height)
 			page.LineTo(rect.x, rect.y)
-			page.SetBrushColorRGB(rect.fillColor)
 			page.FillPath()
 		}
 		if rect.hasBorderColor {
+			page.SetPenColorRGB(rect.borderColor)
+			page.SetPenWidth(rect.borderWidth)
+			page.SetStrokeDashPattern(rect.borderPattern)
 			page.MoveTo(rect.x, rect.y)
 			page.LineTo(rect.x+rect.width, rect.y)
 			page.LineTo(rect.x+rect.width, rect.y+rect.height)
 			page.LineTo(rect.x, rect.y+rect.height)
-			page.SetPenColorRGB(rect.borderColor)
-			page.SetPenWidth(rect.borderWidth)
-			page.SetStrokeDashPattern(rect.borderPattern)
 			page.ClosePath()
 		}
 	} else {
