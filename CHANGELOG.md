@@ -485,7 +485,9 @@ This is the first entry in this file; earlier releases were not tracked here.
   cannot be read without its objects, and any other stream past it has no
   data, as a stream that cannot be decoded has none. A page whose content is
   an array of streams has all of them, in Java, .NET and Swift, which read
-  them before they were decoded. Found by pdfjet-server.
+  them before they were decoded. In Go, `GetData` returns nil for a stream
+  whose decoder fails with a runtime error, where it panicked in the caller,
+  as the other ports return no data. Found by pdfjet-server.
 - Greek text in a font that draws the micro sign with the glyph of mu, such
   as Source Serif 4, was copied, searched and read aloud with the micro sign
   µ in place of each μ, in all four ports: the ToUnicode map of a glyph two

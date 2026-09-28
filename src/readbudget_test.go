@@ -103,3 +103,33 @@ func TestReadTheStreamsOfAPDFDecodeToNoMoreThanTheBudgetTogether(t *testing.T) {
 		t.Errorf("an object stream past the budget: %v", err)
 	}
 }
+
+func TestReadAStreamWhoseDecoderFailsHasNoDataAndDoesNotPanic(t *testing.T) {
+	// No PDF is known to make a decoder fail with a runtime error, which
+	// 1,218 corrupted files did not, so one is made to here: a RunLength
+	// stream, with a budget below zero that no PDF can have, makes a slice
+	// of a negative capacity. GetData is called after Read, which recovers
+	// nothing then, and it has no data, as the other ports have.
+	objects, err := testNewPDF().Read(testPDFOfStreams(100, 4000))
+	if err != nil {
+		t.Fatal(err)
+	}
+	content := testObjectOfNumber(objects, 4)
+	for i, token := range content.dict {
+		if token == "/FlateDecode" {
+			content.dict[i] = "/RunLengthDecode"
+		}
+	}
+	content.budget = &decodeBudget{left: -1}
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("GetData panics: %v", r)
+		}
+	}()
+	if data := content.GetData(); data != nil {
+		t.Errorf("the stream has %d bytes of data, not none", len(data))
+	}
+	if content.GetData() != nil {
+		t.Error("the stream has data the second time it is asked for")
+	}
+}

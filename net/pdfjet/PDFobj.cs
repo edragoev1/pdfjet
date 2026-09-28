@@ -44,7 +44,16 @@ public class PDFobj {
         return this.dict;
     }
 
-    /// <summary>Returns the decompressed stream data.</summary>
+    /// <summary>
+    /// Returns the decompressed stream data, or null when there is none. A
+    /// stream that is not a cross-reference or an object stream is decoded
+    /// the first time its data is asked for, and the data is kept in the
+    /// object: the first call changes the object, so two threads do not call
+    /// it at once on the same object. The streams of one PDF that Read
+    /// returns share a budget of 256 MiB of decoded data, MAX_DECODED_TOTAL:
+    /// a stream past what is left of it, or one that cannot be decoded, has
+    /// no data.
+    /// </summary>
     public byte[] GetData() {
         if (undecoded) {
             // A stream that is not a cross-reference or an object stream is

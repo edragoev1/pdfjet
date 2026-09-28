@@ -65,9 +65,15 @@ public class PDFobj {
     }
 
     /**
-     * Returns the uncompressed stream data.
+     * Returns the uncompressed stream data. A stream that is not a
+     * cross-reference or an object stream is decoded the first time its data
+     * is asked for, and the data is kept in the object: the first call
+     * changes the object, so two threads do not call it at once on the same
+     * object. The streams of one PDF that {@code read} returns share a budget
+     * of 256 MiB of decoded data, {@code MAX_DECODED_TOTAL}: a stream past
+     * what is left of it, or one that cannot be decoded, has no data.
      *
-     * @return the uncompressed stream data.
+     * @return the uncompressed stream data, or null when there is none.
      */
     public byte[] getData() {
         if (undecoded) {

@@ -83,14 +83,29 @@ func (obj *PDFobj) GetDict() []string {
 	return obj.dict
 }
 
-// GetData returns the uncompressed stream data.
-func (obj *PDFobj) GetData() []byte {
+// GetData returns the uncompressed stream data. A stream that is not a
+// cross-reference or an object stream is decoded the first time its data is
+// asked for, and the data is kept in the object: the first call changes the
+// object, so two goroutines do not call it at once on the same object. The
+// streams of one PDF that Read returns share a budget of 256 MiB of decoded
+// data, maxDecodedTotal: a stream past what is left of it, or one that
+// cannot be decoded, has no data, nil, as in the other ports.
+func (obj *PDFobj) GetData() (data []byte) {
 	if obj.undecoded {
 		// A stream that is not a cross-reference or an object stream is
 		// decoded when its data is first asked for, not when the PDF is
 		// read, so that reading a PDF of large images takes the memory of
 		// none of them.
 		obj.undecoded = false
+		// Read recovers what decodeStream panics with, and GetData is
+		// called after it, so a runtime error in a decoder is no data
+		// here, as the other ports catch every exception.
+		defer func() {
+			if r := recover(); r != nil {
+				obj.data = nil
+				data = nil
+			}
+		}()
 		obj.data = obj.decodeStream()
 	}
 	return obj.data

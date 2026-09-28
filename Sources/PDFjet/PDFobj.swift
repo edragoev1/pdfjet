@@ -49,9 +49,15 @@ public final class PDFobj {
     }
 
     ///
-    /// Returns the uncompressed stream data.
+    /// Returns the uncompressed stream data. A stream that is not a
+    /// cross-reference or an object stream is decoded the first time its data
+    /// is asked for, and the data is kept in the object: the first call
+    /// changes the object, so two threads do not call it at once on the same
+    /// object. The streams of one PDF that `read` returns share a budget of
+    /// 256 MiB of decoded data, `maxDecodedTotal`: a stream past what is left
+    /// of it, or one that cannot be decoded, has no data.
     ///
-    /// - Returns: the uncompressed stream data.
+    /// - Returns: the uncompressed stream data, empty when there is none.
     ///
     public final func getData() -> [UInt8] {
         if undecoded {

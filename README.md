@@ -519,6 +519,17 @@ The objects that the pages use are written when `merge` is called, so the list
 that `read` returned is not needed afterwards. The method is `Merge` in C# and
 Go, where it returns an `error`, and `merge` in Swift, where it throws.
 
+`read` decodes the cross-reference and object streams of a PDF as it reads, and
+leaves every other stream, such as an image or the content of a page, to be
+decoded the first time `getData` asks for it, so that reading a PDF of large
+images takes the memory of none of them. `getData` keeps what it decoded in the
+object, so its first call changes the object: call it from one thread at a time
+for the same object. All the streams of one PDF may decode to 256 MiB together,
+a budget the objects that one `read` returns share. A cross-reference or an
+object stream past it is an error of `read`, as the PDF cannot be read without
+its objects; any other stream past it, or one that cannot be decoded, has no
+data: `getData` returns null, nil in Go, and an empty array in Swift.
+
 ## Splitting documents
 
 `merge` with page numbers adds the listed pages of a document that was read,
