@@ -1212,10 +1212,10 @@ This is the first entry in this file; earlier releases were not tracked here.
   Gutenberg header and license. It is in the public domain;
   `data/the-idiot-source.txt` says where it is from. The scripts, the
   workflows and the packaging build and check 52 examples.
-- Example_10 draws the CIA's map of the administrative divisions of
-  Switzerland, `images/swiss-admin.jpg`, of the series of the maps of Italy,
-  Spain and Greece the other examples draw, in place of the small World
-  Factbook map `images/sz-map.png`, which is removed. The map is 310 points
+- Example_10 draws a map of the administrative divisions of Switzerland,
+  `images/swiss-admin.jpg`, of the series of the maps of Italy, Spain and
+  Greece the other examples draw, in place of the small map
+  `images/sz-map.png`, which is removed. The map is 310 points
   tall and centered over the text, which moves down under it, and the example
   is one page, as before, in all four ports. `images/swiss-admin.txt` says
   where the map is from: it is in the public domain. The title "Switzerland"
