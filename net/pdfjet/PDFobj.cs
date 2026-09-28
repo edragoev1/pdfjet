@@ -341,27 +341,33 @@ public class PDFobj {
     }
 
     /// <summary>
-    /// Returns the parameter value given the specified key.
+    /// Returns the parameter value given the specified key. The key is an
+    /// entry of the dictionary of the object, and not of a dictionary inside
+    /// it: the /Type of a /Group before the /Type of a page is not the type of
+    /// the page.
     /// </summary>
     /// <param name="key">the specified key.</param>
-    /// <returns>the value.</returns>
+    /// <returns>the value, or "" when the object has no such key.</returns>
     public String GetValue(String key) {
-        for (int i = 0; i < dict.Count; i++) {
-            if (dict[i].Equals(key)) {
-                if (i + 1 >= dict.Count) {
-                    return "";
-                }
-                String token = dict[i + 1];
-                if (token.Equals("<<")) {
-                    return ValueUpTo(i + 2, ">>", "<< ");
-                } else if (token.Equals("[")) {
-                    return ValueUpTo(i + 2, "]", "[ ");
-                } else {
-                    return token;
-                }
-            }
+        int open = dict.IndexOf("<<");
+        if (open == -1) {
+            return "";
         }
-        return "";
+        int i = PDF.EntryIndex(dict.GetRange(open, dict.Count - open), key);
+        if (i == -1) {
+            return "";
+        }
+        i += open;
+        if (i + 1 >= dict.Count) {
+            return "";
+        }
+        String token = dict[i + 1];
+        if (token.Equals("<<")) {
+            return ValueUpTo(i + 2, ">>", "<< ");
+        } else if (token.Equals("[")) {
+            return ValueUpTo(i + 2, "]", "[ ");
+        }
+        return token;
     }
 
     // Returns the tokens from the index up to the closing one, with the
@@ -459,7 +465,11 @@ public class PDFobj {
         return Letter.PORTRAIT;
     }
 
-    internal int GetLength(List<PDFobj> objects) {
+    // Returns the length of the stream. A length that is an object of its own
+    // is found by its number in numbered, which holds the newest version of
+    // each object: an object of a PDF that was updated is in it once, as the
+    // last one of its number.
+    internal int GetLength(Dictionary<int, PDFobj> numbered) {
         // The entry of the dictionary, and not a /Length inside another value
         // or that is the value of another entry, "/Height/Length", as pdf.js
         // tests it in issue19611.
@@ -481,19 +491,20 @@ public class PDFobj {
                 throw new Exception("The dictionary ends after the /Length.");
             }
             if (dict[i + 3].Equals("R")) {
-                return GetLength(objects, number);
+                return GetLength(numbered, number);
             }
         }
         return number;
     }
 
-    internal int GetLength(List<PDFobj> objects, int number) {
-        foreach (PDFobj obj in objects) {
-            if (obj.number == number) {
-                return ToLength(TokenAt(obj.dict, 3));
-            }
+    // Returns the length stored in the object with the number, or 0 when the
+    // PDF has no such object.
+    internal static int GetLength(Dictionary<int, PDFobj> numbered, int number) {
+        PDFobj obj;
+        if (!numbered.TryGetValue(number, out obj)) {
+            return 0;
         }
-        return 0;
+        return ToLength(TokenAt(obj.dict, 3));
     }
 
     // Returns the length the token holds, which a PDF that was read can write

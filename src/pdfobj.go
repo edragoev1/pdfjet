@@ -374,25 +374,31 @@ func (obj *PDFobj) setNumber(number int) *PDFobj {
 }
 
 // GetValue returns the dictionary value for the specified key, or "" when the
-// object has no such key. A dictionary or an array that the PDF ends in the
-// middle of is closed where it ends, since a PDF that was read can hold
-// anything.
+// object has no such key. The key is an entry of the dictionary of the object,
+// and not of a dictionary inside it: the /Type of a /Group before the /Type of
+// a page is not the type of the page. A dictionary or an array that the PDF
+// ends in the middle of is closed where it ends, since a PDF that was read can
+// hold anything.
 func (obj *PDFobj) GetValue(key string) string {
-	for i := 0; i < len(obj.dict); i++ {
-		if obj.dict[i] == key {
-			if i+1 >= len(obj.dict) {
-				return ""
-			}
-			token := obj.dict[i+1]
-			if token == "<<" {
-				return obj.valueUpTo(i+2, ">>", "<< ")
-			} else if token == "[" {
-				return obj.valueUpTo(i+2, "]", "[ ")
-			}
-			return token
-		}
+	open := slices.Index(obj.dict, "<<")
+	if open == -1 {
+		return ""
 	}
-	return ""
+	i := dictEntryIndex(obj.dict[open:], key)
+	if i == -1 {
+		return ""
+	}
+	i += open
+	if i+1 >= len(obj.dict) {
+		return ""
+	}
+	token := obj.dict[i+1]
+	if token == "<<" {
+		return obj.valueUpTo(i+2, ">>", "<< ")
+	} else if token == "[" {
+		return obj.valueUpTo(i+2, "]", "[ ")
+	}
+	return token
 }
 
 // valueUpTo returns the tokens from the index up to the closing one, with the
@@ -481,8 +487,11 @@ func (obj *PDFobj) GetPageSize() pagesize.PageSize {
 	return letter.Portrait()
 }
 
-// getLength return the length value.
-func (obj *PDFobj) getLength(objects []*PDFobj) int {
+// getLength returns the /Length of the stream. A /Length that is an object of
+// its own is found by its number in numbered, which holds the newest version of
+// each object: an object of a PDF that was updated is in it once, as the last
+// one of its number.
+func (obj *PDFobj) getLength(numbered map[int]*PDFobj) int {
 	// The entry of the dictionary, and not a /Length inside another value or
 	// that is the value of another entry, "/Height/Length", as pdf.js tests
 	// it in issue19611.
@@ -507,24 +516,24 @@ func (obj *PDFobj) getLength(objects []*PDFobj) int {
 			panic(errors.New("The dictionary ends after the /Length."))
 		}
 		if obj.dict[i+3] == "R" {
-			return obj.getLengthFromObject(objects, number)
+			return getLengthFromObject(numbered, number)
 		}
 	}
 	return number
 }
 
-// getLengthFromObject returns the /Length stored in the object with the number.
-func (obj *PDFobj) getLengthFromObject(objects []*PDFobj, number int) int {
-	for _, obj := range objects {
-		if obj.number == number {
-			length, err := strconv.Atoi(tokenAt(obj.dict, 3))
-			if err != nil {
-				panic(errors.New("The /Length of a stream is not a number."))
-			}
-			return length
-		}
+// getLengthFromObject returns the /Length stored in the object with the number,
+// or 0 when the PDF has no such object.
+func getLengthFromObject(numbered map[int]*PDFobj, number int) int {
+	obj, ok := numbered[number]
+	if !ok {
+		return 0
 	}
-	return 0
+	length, err := strconv.Atoi(tokenAt(obj.dict, 3))
+	if err != nil {
+		panic(errors.New("The /Length of a stream is not a number."))
+	}
+	return length
 }
 
 // GetContentObject returns the content object of the page, or nil if it has

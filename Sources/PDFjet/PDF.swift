@@ -1686,6 +1686,11 @@ public final class PDF {
             fail("The page was already added to the PDF.")
             return
         }
+        if pagesObjNumber != 0 {
+            // The page tree of the objects that addObjects wrote does not list it.
+            fail("A page cannot be added to a PDF that addObjects added the objects of an existing PDF to.")
+            return
+        }
         page.added = true
         if page.objNumber == 0 {
             page.objNumber = reserveObjNumber()
@@ -2120,7 +2125,8 @@ public final class PDF {
         let startXRef = getStartXRef(buffer1)
         var trailer: PDFobj?
         do {
-            trailer = try getObjects(&buffer1, startXRef, &objects1, 0, budget)
+            var visited = Set<Int>()
+            trailer = try getObjects(&buffer1, startXRef, &objects1, 0, &visited, budget)
         } catch let error as PDFobj.DecodedTotalError {
             throw error         // Not a reason to scan the PDF for its objects
         } catch {
@@ -2133,6 +2139,13 @@ public final class PDF {
             trailer = getObjectsByScanning(buffer1, &objects1)
         }
         let decryptor = try Decryptor.getDecryptor(trailer, objects1, password)
+
+        // The object of each number, for a /Length that is an object of its own.
+        // The newest version of an object that was updated comes last and wins.
+        var numbered = [Int: PDFobj]()
+        for obj in objects1 {
+            numbered[obj.number] = obj
+        }
 
         var objects2 = [PDFobj]()
         for obj in objects1 {
@@ -2147,7 +2160,7 @@ public final class PDF {
                 decryptor.decryptStrings(obj)
             }
             if obj.dict.contains("stream") {
-                try obj.setStreamAndData(&buffer1, try obj.getLength(objects1), decryptor, budget)
+                try obj.setStreamAndData(&buffer1, try obj.getLength(numbered), decryptor, budget)
             }
             if type == "/ObjStm" {
                 // A malformed object stream is an error, as in the other
@@ -2157,13 +2170,14 @@ public final class PDF {
                 var i = 0
                 while i + 1 < o2.dict.count {
                     let num = o2.dict[i]
+                    let number = try objectStreamNumber(num)
                     let off = try objectStreamNumber(o2.dict[i + 1])
                     var end = obj.data.count
                     if i <= o2.dict.count - 4 {
                         end = min(first + (try objectStreamNumber(o2.dict[i + 3])), obj.data.count)
                     }
                     let o3 = getObject(obj.data, first + off, end)
-                    o3.number = try objectStreamNumber(num)
+                    o3.number = number
                     o3.dict.insert(contentsOf: [num, "0", "obj"], at: 0)
                     objects2.append(o3)
                     i += 2
@@ -2194,7 +2208,8 @@ public final class PDF {
         return toInteger(tokens[i + 1])
     }
 
-    // Returns the number in the header of an object stream.
+    // Returns the number in the header of an object stream, which is digits and
+    // no more than the largest int of 32 bits, as in the other ports.
     private func objectStreamNumber(_ token: String) throws -> Int {
         let number = toInteger(token)
         if number < 0 {
@@ -2404,6 +2419,10 @@ public final class PDF {
     /// cross-reference table, which can have an /XRefStm stream for the
     /// objects in object streams, or a cross-reference stream.
     ///
+    /// A section that a /Prev leads back to, which visited holds the offset
+    /// of, is a broken PDF, and is not read again: a /Prev that points at its
+    /// own section read the section a thousand times.
+    ///
     /// - Returns: the trailer of the section, which is the cross-reference
     ///   stream object when there is no table, or nil when an offset in the
     ///   section is not that of its object.
@@ -2413,7 +2432,11 @@ public final class PDF {
             _ offset: Int,
             _ objects: inout [PDFobj],
             _ depth: Int,
+            _ visited: inout Set<Int>,
             _ budget: PDFobj.DecodeBudget) throws -> PDFobj? {
+        if !visited.insert(offset).inserted {
+            return nil
+        }
         let xref = getObject(buf, offset)
         let table = !xref.dict.isEmpty && xref.dict[0] == "xref"
         if depth > 1000 || (!table && !isObject(xref, -1)) {
@@ -2421,7 +2444,7 @@ public final class PDF {
         }
         let prev = xref.getValue("/Prev")
         if !prev.isEmpty {
-            if try getObjects(&buf, toInteger(prev), &objects, depth + 1, budget) == nil {
+            if try getObjects(&buf, toInteger(prev), &objects, depth + 1, &visited, budget) == nil {
                 return nil
             }
         }
@@ -2443,9 +2466,53 @@ public final class PDF {
         return xref
     }
 
+    // Returns the index of the first of the sorted values that is greater than
+    // the value, or the number of values when there is none.
+    private static func firstAfter(_ sorted: [Int], _ value: Int) -> Int {
+        var low = 0
+        var high = sorted.count
+        while low < high {
+            let mid = low + (high - low) / 2
+            if sorted[mid] <= value {
+                low = mid + 1
+            } else {
+                high = mid
+            }
+        }
+        return low
+    }
+
+    // Adds the objects of the entries, and returns false when an offset is not
+    // that of its object. An object ends where the next one of the section
+    // starts at the latest, as one with no endobj was read to the end of the
+    // PDF: a section of objects with no endobj took seconds for every hundred
+    // kilobytes.
+    private func getEntryObjects(
+            _ buf: [UInt8],
+            _ entries: [(number: Int, offset: Int)],
+            _ objects: inout [PDFobj]) -> Bool {
+        let offsets = entries.map { $0.offset }.sorted()
+        for entry in entries {
+            var end = buf.count
+            let j = PDF.firstAfter(offsets, entry.offset)
+            if j < offsets.count {
+                end = min(offsets[j], buf.count)
+            }
+            let obj = (entry.offset >= 0 && entry.offset < buf.count)
+                    ? getObject(buf, entry.offset, end) : PDFobj()
+            if !isObject(obj, entry.number) {
+                return false
+            }
+            obj.number = entry.number
+            objects.append(obj)
+        }
+        return true
+    }
+
     // Adds the objects in use of a cross-reference table, and returns false
     // when an offset is not that of its object.
     private func getTableObjects(_ buf: [UInt8], _ xref: PDFobj, _ objects: inout [PDFobj]) -> Bool {
+        var entries = [(number: Int, offset: Int)]()
         let dict = xref.dict
         var i = 1
         // Each subsection starts with its first object number and the number of entries.
@@ -2463,19 +2530,14 @@ public final class PDF {
                 // that is marked in use, as pdf.js tests it in issue10004, is
                 // skipped, as MuPDF skips it.
                 if dict[i + 2] == "n" && number != 0 {
-                    let obj = getObject(buf, toInteger(dict[i]))
-                    if !isObject(obj, number) {
-                        return false
-                    }
-                    obj.number = number
-                    objects.append(obj)
+                    entries.append((number, toInteger(dict[i])))
                 }
                 j += 1
                 number += 1
                 i += 3
             }
         }
-        return i < dict.count && dict[i] == "trailer"
+        return i < dict.count && dict[i] == "trailer" && getEntryObjects(buf, entries, &objects)
     }
 
     // Adds the objects of a cross-reference stream that are not in object
@@ -2519,6 +2581,7 @@ public final class PDF {
         // setStreamAndData undoes the predictor, so each entry is a row of the data.
         try xref.setStreamAndData(&buf, length, nil, budget)
         let n = n1 + n2 + n3    // Number of bytes per entry
+        var entries = [(number: Int, offset: Int)]()
         var offset = 0
         var s = 0
         while s + 1 < index.count {
@@ -2529,12 +2592,7 @@ public final class PDF {
                 // Page 51 in PDF32000_2008.pdf
                 let type = (n1 == 0) ? 1 : toInt(xref.data, offset, n1)
                 if type == 1 {
-                    let obj = getObject(buf, toInt(xref.data, offset + n1, n2))
-                    if !isObject(obj, number) {
-                        return false
-                    }
-                    obj.number = number
-                    objects.append(obj)
+                    entries.append((number, toInt(xref.data, offset + n1, n2)))
                 }
                 number += 1
                 offset += n
@@ -2542,7 +2600,7 @@ public final class PDF {
             }
             s += 2
         }
-        return true
+        return getEntryObjects(buf, entries, &objects)
     }
 
     ///
@@ -2551,18 +2609,27 @@ public final class PDF {
     /// wrong. The objects of incremental updates are later in the PDF, so the
     /// newest version of an object comes last.
     ///
+    /// An object ends where the next one starts at the latest, as one with no
+    /// endobj was read to the end of the PDF, and the last trailer is read once
+    /// when the scan is done: a PDF of objects with no endobj took seconds for
+    /// every hundred kilobytes.
+    ///
     /// - Returns: the last trailer, or the last cross-reference stream object
     ///   when there is no trailer, or nil when there is neither.
     ///
     private func getObjectsByScanning(_ buf: [UInt8], _ objects: inout [PDFobj]) -> PDFobj? {
         let trailerKeyword = Array("trailer".utf8)
         let endStreamKeyword = Array("endstream".utf8)
-        var trailer: PDFobj?
         var xrefStream: PDFobj?
+        var trailerOffset = -1
+        var next = 0    // The start of the object after the one at i
         var i = 0
         while i < buf.count {
             if isObjectStart(buf, i) {
-                let obj = getObject(buf, i)
+                if next <= i {
+                    next = nextObjectStart(buf, i + 1)
+                }
+                let obj = getObject(buf, i, next)
                 if isObject(obj, -1) {
                     obj.number = toInteger(obj.dict[0])
                     objects.append(obj)
@@ -2577,15 +2644,30 @@ public final class PDF {
                     }
                 }
             } else if startsWith(buf, i, trailerKeyword) {
-                trailer = getObject(buf, i)
+                trailerOffset = i
             }
             i += 1
         }
-        return trailer ?? xrefStream
+        return (trailerOffset != -1) ? getObject(buf, trailerOffset) : xrefStream
+    }
+
+    // Returns the offset of the first "number generation obj" from the offset
+    // on, or the length of the PDF when there is none.
+    private func nextObjectStart(_ buf: [UInt8], _ off: Int) -> Int {
+        var i = off
+        while i < buf.count {
+            if isObjectStart(buf, i) {
+                return i
+            }
+            i += 1
+        }
+        return buf.count
     }
 
     // Returns true when "number generation obj" starts at the offset, after
-    // white space or at the start of the PDF.
+    // white space or at the start of the PDF. An offset that is not at a number
+    // returns at once, as the white space after it was scanned at every offset
+    // of a run of white space.
     private func isObjectStart(_ buf: [UInt8], _ off: Int) -> Bool {
         if off > 0 && !isWhiteSpace(buf[off - 1]) {
             return false
@@ -3135,13 +3217,22 @@ public final class PDF {
     /// Adds objects read from an existing PDF to this document. The objects
     /// keep their numbers and are written as they are, so they are added
     /// before any font, image or page of this document, and an encrypted PDF
-    /// cannot take them.
+    /// cannot take them. Their page tree is the page tree of this document, so
+    /// it can have no pages of its own, before or after them, and it cannot be
+    /// a PDF/UA or PDF/A document, as the pages were not made for its
+    /// compliance.
     ///
     /// - Throws: PDFjetError when the objects cannot be added to this document.
     ///
     public func addObjects(_ objects: [PDFobj]) throws {
         for page in pages where page.mergedDict != nil {
             try refuse("merge and addObjects cannot be used on the same PDF.")
+        }
+        if compliance != Compliance.PDF_1_7 {
+            try refuse("The objects of an existing PDF cannot be added to a PDF/UA or PDF/A document.")
+        }
+        if !pages.isEmpty {
+            try refuse("The objects of an existing PDF cannot be added to a PDF that has pages of its own.")
         }
         guard let pagesObject = getPagesObject(objects),
                 let number = Int(pagesObject.dict.first ?? "") else {
@@ -3220,28 +3311,33 @@ public final class PDF {
     }
 
     // The nodes of the page tree that were visited are skipped, as a node of a
-    // broken tree can list itself or a node above it as a kid.
+    // broken tree can list itself or a node above it as a kid. The tree is
+    // walked with a list of the kids still to visit, the last of them first,
+    // and not by recursion, as a tree of a hundred thousand nodes, one under
+    // the other, overflowed the stack.
     private func getPageObjects(
-            _ pdfObj: PDFobj,
+            _ root: PDFobj,
             _ pages: inout [PDFobj],
             _ objects: [PDFobj],
             _ visited: inout Set<Int>,
             _ inherited: InheritedEntries) {
-        if !visited.insert(pdfObj.number).inserted {
-            return
-        }
-        let kids = pdfObj.getObjectNumbers("/Kids")
-        for number in kids {
-            if number < 1 || number > objects.count {
-                continue        // A kid that the document does not have.
-            }
-            let object = objects[number - 1]
-            if isPageObject(object) {
+        var stack = [root]
+        var first = true
+        while let object = stack.popLast() {
+            let isRoot = first
+            first = false
+            if !isRoot && isPageObject(object) {    // The root is a node, whatever it is.
                 PDF.addInheritedEntries(object, objects, inherited)
                 PDF.resolveMediaBox(object, objects)
                 pages.append(object)
-            } else {
-                getPageObjects(object, &pages, objects, &visited, inherited)
+                continue
+            }
+            if !visited.insert(object.number).inserted {
+                continue
+            }
+            for number in object.getObjectNumbers("/Kids").reversed()
+                    where number >= 1 && number <= objects.count {  // A kid that the document has.
+                stack.append(objects[number - 1])
             }
         }
     }
@@ -3364,6 +3460,8 @@ public final class PDF {
             }
             if !importedExtGStates.contains(entries[i]) {
                 importedExtGStates.append(contentsOf: entries[i..<end])
+            } else {
+                checkImportedName(importedExtGStates, Array(entries[i..<end]))
             }
             i = end
         }
@@ -3390,6 +3488,8 @@ public final class PDF {
                     if number > 0 && number <= objects.count {
                         fonts.append(objects[number - 1])
                     }
+                } else {
+                    checkImportedName(importedFonts, Array(entries[i..<i + 4]))
                 }
                 i += 4
                 continue
@@ -3398,6 +3498,22 @@ public final class PDF {
             i += 1
         }
         return fonts
+    }
+
+    // Records the mistake when a name that an earlier page added to the
+    // resources has another value on this page, the entry: the pages of this
+    // document share one resources dictionary, where the name has the value of
+    // the first page, and the content of this page, drawn with drawContents,
+    // would draw the resource of the first page.
+    private func checkImportedName(_ imported: [String], _ entry: [String]) {
+        guard let i = imported.firstIndex(of: entry[0]) else {
+            return
+        }
+        if imported[(i + 1)..<min(i + entry.count, imported.count)] == entry[1...] {
+            return
+        }
+        fail("The pages of the PDF use the name \(entry[0]) for different resources, "
+                + "and the pages of this document share one resources dictionary.")
     }
 
     ///
@@ -3455,15 +3571,18 @@ public final class PDF {
 
     ///
     /// Returns the numbers of the objects that "number 0 R" references in the
-    /// tokens refer to.
+    /// tokens refer to. A number that is too large for an int of 32 bits is
+    /// left out, as in the other ports.
     ///
     private func getReferences(_ tokens: [String]) -> [Int] {
         var numbers = [Int]()
         var i = 0
         while i + 2 < tokens.count {
-            if tokens[i + 2] == "R" && isInteger(tokens[i]) && isInteger(tokens[i + 1]),
-                    let number = Int(tokens[i]) {
-                numbers.append(number)
+            if tokens[i + 2] == "R" && isInteger(tokens[i]) && isInteger(tokens[i + 1]) {
+                let number = toInteger(tokens[i])
+                if number >= 0 {
+                    numbers.append(number)
+                }
                 i += 3
             } else {
                 i += 1
@@ -3475,24 +3594,28 @@ public final class PDF {
     ///
     /// Collects the object with the given number and every object it refers to,
     /// directly or through other objects, like the color space of an image or
-    /// the resources of a form XObject. The page tree is not followed.
+    /// the resources of a form XObject. The page tree is not followed. The
+    /// objects are found with a list of the numbers still to visit, and not by
+    /// recursion, as a chain of a hundred thousand objects, each referring to
+    /// the next, overflowed the stack.
     ///
     private func addObjectTree(
-            _ number: Int,
+            _ objNumber: Int,
             _ objects: [PDFobj],
             _ numbers: inout Set<Int>,
             _ resources: inout [PDFobj]) {
-        if number <= 0 || number > objects.count || !numbers.insert(number).inserted {
-            return
-        }
-        let object = objects[number - 1]
-        let type = object.getValue("/Type")
-        if object.dict.isEmpty || type == "/Page" || type == "/Pages" || type == "/Catalog" {
-            return
-        }
-        resources.append(object)
-        for reference in getReferences(object.dict) {
-            addObjectTree(reference, objects, &numbers, &resources)
+        var stack = [objNumber]
+        while let number = stack.popLast() {
+            if number <= 0 || number > objects.count || !numbers.insert(number).inserted {
+                continue
+            }
+            let object = objects[number - 1]
+            let type = object.getValue("/Type")
+            if object.dict.isEmpty || type == "/Page" || type == "/Pages" || type == "/Catalog" {
+                continue
+            }
+            resources.append(object)
+            stack.append(contentsOf: getReferences(object.dict).reversed())
         }
     }
 
@@ -3513,9 +3636,9 @@ public final class PDF {
                 // Like the fonts, a name that an earlier page added is kept.
                 if !importedXObjects.contains(token) {
                     importedXObjects.append(contentsOf: entries[i..<i + 4])
-                    if let number = Int(entries[i + 1]) {
-                        addObjectTree(number, objects, &numbers, &resources)
-                    }
+                    addObjectTree(toInteger(entries[i + 1]), objects, &numbers, &resources)
+                } else {
+                    checkImportedName(importedXObjects, Array(entries[i..<i + 4]))
                 }
                 i += 4
             } else {
@@ -3571,6 +3694,11 @@ public final class PDF {
 
     private func addObjectsToPDF(_ objects: [PDFobj]) {
         for obj in objects {
+            if obj.dict.isEmpty && obj.stream == nil {
+                // A number that the PDF that was read has no object for stays a
+                // free entry of the cross-reference table.
+                continue
+            }
             if obj.offset == 0 {
                 setObjOffset(obj.number, byteCount)
                 append(obj.number)

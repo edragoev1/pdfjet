@@ -1741,6 +1741,11 @@ final public class PDF {
         if (page.added) {
             fail(new IllegalStateException("The page was already added to the PDF."));
         }
+        if (pagesObjNumber != 0) {
+            // The page tree of the objects that addObjects wrote does not list it.
+            fail(new IllegalStateException(
+                    "A page cannot be added to a PDF that addObjects added the objects of an existing PDF to."));
+        }
         page.added = true;
         if (page.objNumber == 0) {
             page.objNumber = reserveObjNumber();
@@ -2597,7 +2602,7 @@ final public class PDF {
         PDFobj.DecodeBudget budget = new PDFobj.DecodeBudget();   // For all the streams of this PDF together
         PDFobj trailer = null;
         try {
-            trailer = getObjects(buf, getStartXRef(buf), objects1, 0, budget);
+            trailer = getObjects(buf, getStartXRef(buf), objects1, 0, new HashSet<Integer>(), budget);
         } catch (PDFobj.DecodedTotalException e) {
             throw e;            // Not a reason to scan the PDF for its objects
         } catch (Exception e) {
@@ -2610,6 +2615,14 @@ final public class PDF {
             trailer = getObjectsByScanning(buf, objects1);
         }
         Decryptor decryptor = Decryptor.getDecryptor(trailer, objects1, password);
+
+        // The object of each number, for a /Length that is an object of its
+        // own. The newest version of an object that was updated comes last
+        // and wins.
+        Map<Integer, PDFobj> numbered = new HashMap<Integer, PDFobj>();
+        for (PDFobj obj : objects1) {
+            numbered.put(obj.number, obj);
+        }
 
         List<PDFobj> objects2 = new ArrayList<PDFobj>();
         for (PDFobj obj : objects1) {
@@ -2624,7 +2637,7 @@ final public class PDF {
                 decryptor.decryptStrings(obj);
             }
             if (obj.dict.contains("stream")) {
-                obj.setStreamAndData(buf, obj.getLength(objects1), decryptor, budget);
+                obj.setStreamAndData(buf, obj.getLength(numbered), decryptor, budget);
             }
 
             if (type.equals("/ObjStm")) {
@@ -2639,12 +2652,16 @@ final public class PDF {
                     String num = o2.dict.get(i);
                     int number = objectStreamNumber(num);
                     int off = objectStreamNumber(o2.dict.get(i + 1));
+                    // The offsets are added as longs, as their sum can be
+                    // more than an int holds; one past the end of the data
+                    // is the end.
                     int end = data.length;
                     if (i <= o2.dict.size() - 4) {
-                        end = Math.min(first + objectStreamNumber(o2.dict.get(i + 3)),
-                                data.length);
+                        end = (int) Math.min(
+                                (long) first + objectStreamNumber(o2.dict.get(i + 3)), data.length);
                     }
-                    PDFobj o3 = getObject(data, first + off, end);
+                    int start = (int) Math.min((long) first + off, data.length);
+                    PDFobj o3 = getObject(data, start, end);
                     o3.setNumber(number);
                     o3.dict.add(0, "obj");
                     o3.dict.add(0, "0");
@@ -2683,15 +2700,12 @@ final public class PDF {
         return toInteger(tokens.get(i + 1));
     }
 
-    // Returns the number in the header of an object stream.
+    // Returns the number in the header of an object stream, which is digits
+    // and no more than the largest int, as in the other ports.
     private int objectStreamNumber(String token) throws Exception {
-        try {
-            int number = Integer.parseInt(token);
-            if (number >= 0) {
-                return number;
-            }
-        } catch (NumberFormatException e) {
-            // The message below says what is wrong with it.
+        int number = toInteger(token);
+        if (number >= 0) {
+            return number;
         }
         throw new Exception("The object stream of the PDF is malformed: \""
                 + token + "\" is not a number.");
@@ -2863,20 +2877,27 @@ final public class PDF {
      * cross-reference table, which can have an /XRefStm stream for the
      * objects in object streams, or a cross-reference stream.
      *
+     * A section that a /Prev leads back to, which visited holds the offset
+     * of, is a broken PDF, and is not read again: a /Prev that points at its
+     * own section read the section a thousand times.
+     *
      * @return the trailer of the section, which is the cross-reference
      *     stream object when there is no table, or null when an offset in
      *     the section is not that of its object.
      */
     private PDFobj getObjects(
             byte[] buf, int offset, List<PDFobj> objects, int depth,
-            PDFobj.DecodeBudget budget) throws Exception {
+            Set<Integer> visited, PDFobj.DecodeBudget budget) throws Exception {
+        if (!visited.add(offset)) {
+            return null;
+        }
         PDFobj xref = getObject(buf, offset);
         boolean table = !xref.dict.isEmpty() && xref.dict.get(0).equals("xref");
         if (depth > 1000 || (!table && !isObject(xref, -1))) {
             return null;
         }
         String prev = xref.getValue("/Prev");
-        if (!prev.isEmpty() && getObjects(buf, toInteger(prev), objects, depth + 1, budget) == null) {
+        if (!prev.isEmpty() && getObjects(buf, toInteger(prev), objects, depth + 1, visited, budget) == null) {
             return null;
         }
         if (table) {
@@ -2895,9 +2916,54 @@ final public class PDF {
         return xref;
     }
 
+    // Adds the objects of the entries, each a number and an offset, and
+    // returns false when an offset is not that of its object. An object ends
+    // where the next one of the section starts at the latest, as one with no
+    // endobj was read to the end of the PDF: a section of objects with no
+    // endobj took seconds for every hundred kilobytes.
+    private boolean getEntryObjects(byte[] buf, List<int[]> entries, List<PDFobj> objects) {
+        int[] offsets = new int[entries.size()];
+        for (int i = 0; i < offsets.length; i++) {
+            offsets[i] = entries.get(i)[1];
+        }
+        Arrays.sort(offsets);
+        for (int[] entry : entries) {
+            int end = buf.length;
+            int j = firstAfter(offsets, entry[1]);
+            if (j < offsets.length) {
+                end = Math.min(offsets[j], buf.length);
+            }
+            PDFobj obj = (entry[1] >= 0 && entry[1] < buf.length)
+                    ? getObject(buf, entry[1], end) : new PDFobj();
+            if (!isObject(obj, entry[0])) {
+                return false;
+            }
+            obj.number = entry[0];
+            objects.add(obj);
+        }
+        return true;
+    }
+
+    // Returns the index of the first of the sorted values that is greater
+    // than the value, or the number of values when there is none.
+    private static int firstAfter(int[] sorted, int value) {
+        int low = 0;
+        int high = sorted.length;
+        while (low < high) {
+            int mid = (low + high) >>> 1;
+            if (sorted[mid] <= value) {
+                low = mid + 1;
+            } else {
+                high = mid;
+            }
+        }
+        return low;
+    }
+
     // Adds the objects in use of a cross-reference table, and returns false
     // when an offset is not that of its object.
     private boolean getTableObjects(byte[] buf, PDFobj xref, List<PDFobj> objects) {
+        List<int[]> entries = new ArrayList<int[]>();
         List<String> dict = xref.dict;
         int i = 1;
         // Each subsection starts with its first object number and the number of entries.
@@ -2914,16 +2980,11 @@ final public class PDF {
                 // one that is marked in use, as pdf.js tests it in issue10004,
                 // is skipped, as MuPDF skips it.
                 if (dict.get(i + 2).equals("n") && number != 0) {
-                    PDFobj obj = getObject(buf, toInteger(dict.get(i)));
-                    if (!isObject(obj, number)) {
-                        return false;
-                    }
-                    obj.number = number;
-                    objects.add(obj);
+                    entries.add(new int[] {number, toInteger(dict.get(i))});
                 }
             }
         }
-        return i < dict.size() && dict.get(i).equals("trailer");
+        return i < dict.size() && dict.get(i).equals("trailer") && getEntryObjects(buf, entries, objects);
     }
 
     // Adds the objects of a cross-reference stream that are not in object
@@ -2966,6 +3027,7 @@ final public class PDF {
         // setStreamAndData undoes the predictor, so each entry is a row of the data.
         xref.setStreamAndData(buf, length, budget);
         int n = n1 + n2 + n3;   // Number of bytes per entry
+        List<int[]> entries = new ArrayList<int[]>();
         int offset = 0;
         for (int s = 0; s + 1 < index.size(); s += 2) {
             int number = index.get(s);
@@ -2974,18 +3036,13 @@ final public class PDF {
                 // Page 51 in PDF32000_2008.pdf
                 int type = (n1 == 0) ? 1 : toInt(xref.data, offset, n1);
                 if (type == 1) {
-                    PDFobj obj = getObject(buf, toInt(xref.data, offset + n1, n2));
-                    if (!isObject(obj, number)) {
-                        return false;
-                    }
-                    obj.number = number;
-                    objects.add(obj);
+                    entries.add(new int[] {number, toInt(xref.data, offset + n1, n2)});
                 }
                 number++;
                 offset += n;
             }
         }
-        return true;
+        return getEntryObjects(buf, entries, objects);
     }
 
     /**
@@ -2994,16 +3051,25 @@ final public class PDF {
      * or wrong. The objects of incremental updates are later in the PDF, so
      * the newest version of an object comes last.
      *
+     * An object ends where the next one starts at the latest, as one with no
+     * endobj was read to the end of the PDF, and the last trailer is read
+     * once when the scan is done: a PDF of objects with no endobj took
+     * seconds for every hundred kilobytes.
+     *
      * @return the last trailer, or the last cross-reference stream object
      *     when there is no trailer, or null when there is neither.
      */
     private PDFobj getObjectsByScanning(byte[] buf, List<PDFobj> objects) {
-        PDFobj trailer = null;
         PDFobj xrefStream = null;
+        int trailerOffset = -1;
+        int next = 0;   // The start of the object after the one at i
         int i = 0;
         while (i < buf.length) {
             if (isObjectStart(buf, i)) {
-                PDFobj obj = getObject(buf, i);
+                if (next <= i) {
+                    next = nextObjectStart(buf, i + 1);
+                }
+                PDFobj obj = getObject(buf, i, next);
                 if (isObject(obj, -1)) {
                     obj.number = toInteger(obj.dict.get(0));
                     objects.add(obj);
@@ -3018,15 +3084,28 @@ final public class PDF {
                     }
                 }
             } else if (startsWith(buf, i, "trailer")) {
-                trailer = getObject(buf, i);
+                trailerOffset = i;
             }
             i++;
         }
-        return (trailer != null) ? trailer : xrefStream;
+        return (trailerOffset != -1) ? getObject(buf, trailerOffset) : xrefStream;
+    }
+
+    // Returns the offset of the first "number generation obj" from the
+    // offset on, or the length of the PDF when there is none.
+    private static int nextObjectStart(byte[] buf, int off) {
+        for (int i = off; i < buf.length; i++) {
+            if (isObjectStart(buf, i)) {
+                return i;
+            }
+        }
+        return buf.length;
     }
 
     // Returns true when "number generation obj" starts at the offset, after
-    // white space or at the start of the PDF.
+    // white space or at the start of the PDF. An offset that is not at a
+    // number returns at once, as the white space after it was scanned at
+    // every offset of a run of white space.
     private static boolean isObjectStart(byte[] buf, int off) {
         if (off > 0 && !isWhiteSpace(buf[off - 1])) {
             return false;
@@ -3034,6 +3113,9 @@ final public class PDF {
         int i = off;
         while (i < buf.length && buf[i] >= '0' && buf[i] <= '9') {
             i++;
+        }
+        if (i == off) {
+            return false;
         }
         int j = i;
         while (j < buf.length && isWhiteSpace(buf[j])) {
@@ -3047,7 +3129,7 @@ final public class PDF {
         while (m < buf.length && isWhiteSpace(buf[m])) {
             m++;
         }
-        return i > off && j > i && k > j && m > k && startsWith(buf, m, "obj");
+        return j > i && k > j && m > k && startsWith(buf, m, "obj");
     }
 
     static boolean startsWith(byte[] buf, int off, String str) {
@@ -3189,7 +3271,10 @@ final public class PDF {
     /**
      * Adds the specified objects to the PDF. The objects keep their numbers and
      * are written as they are, so they are added before any font, image or
-     * page of this document, and an encrypted PDF cannot take them.
+     * page of this document, and an encrypted PDF cannot take them. Their page
+     * tree is the page tree of this document, so it can have no pages of its
+     * own, before or after them, and it cannot be a PDF/UA or PDF/A document,
+     * as the pages were not made for its compliance.
      *
      * @param objects the objects.
      * @throws Exception if there is an issue.
@@ -3199,6 +3284,14 @@ final public class PDF {
             if (page.mergedDict != null) {
                 fail(new IllegalStateException("merge and addObjects cannot be used on the same PDF."));
             }
+        }
+        if (compliance != Compliance.PDF_1_7) {
+            fail(new IllegalStateException(
+                    "The objects of an existing PDF cannot be added to a PDF/UA or PDF/A document."));
+        }
+        if (!pages.isEmpty()) {
+            fail(new IllegalStateException(
+                    "The objects of an existing PDF cannot be added to a PDF that has pages of its own."));
         }
         PDFobj pagesObject = getPagesObject(objects);
         if (pagesObject == null) {
@@ -3286,29 +3379,36 @@ final public class PDF {
     }
 
     // The nodes of the page tree that were visited are skipped, as a node of a
-    // broken tree can list itself or a node above it as a kid.
+    // broken tree can list itself or a node above it as a kid. The tree is
+    // walked with a list of the kids still to visit, the last of them first,
+    // and not by recursion, as a tree of a hundred thousand nodes, one under
+    // the other, overflowed the stack.
     private void getPageObjects(
-            PDFobj pdfObj,
+            PDFobj root,
             List<PDFobj> objects,
             List<PDFobj> pages,
             Set<Integer> visited,
             Map<PDFobj, Map<String, List<String>>> nodes) {
-        if (!visited.add(pdfObj.number)) {
-            return;
-        }
-        List<Integer> kids = pdfObj.getObjectNumbers("/Kids");
-        for (Integer number : kids) {
-            if (number < 1 || number > objects.size()) {
-                continue;       // A kid that the document does not have.
-            }
-            PDFobj obj = objects.get(number - 1);
-            if (isPageObject(obj)) {
+        List<PDFobj> stack = new ArrayList<PDFobj>();
+        stack.add(root);
+        for (boolean first = true; !stack.isEmpty(); first = false) {
+            PDFobj obj = stack.remove(stack.size() - 1);
+            if (!first && isPageObject(obj)) {  // The root is a node, whatever it is.
                 addInheritedEntries(obj, objects, nodes);
                 resolveMediaBox(obj, objects);
                 nodes.remove(obj);  // A broken tree can have a page as a node.
                 pages.add(obj);
-            } else {
-                getPageObjects(obj, objects, pages, visited, nodes);
+                continue;
+            }
+            if (!visited.add(obj.number)) {
+                continue;
+            }
+            List<Integer> kids = obj.getObjectNumbers("/Kids");
+            for (int i = kids.size() - 1; i >= 0; i--) {
+                int number = kids.get(i);
+                if (number >= 1 && number <= objects.size()) {  // A kid that the document has.
+                    stack.add(objects.get(number - 1));
+                }
             }
         }
     }
@@ -3428,6 +3528,8 @@ final public class PDF {
             }
             if (!importedExtGStates.contains(entries.get(i))) {
                 importedExtGStates.addAll(entries.subList(i, end));
+            } else {
+                checkImportedName(importedExtGStates, entries.subList(i, end));
             }
             i = end;
         }
@@ -3452,6 +3554,8 @@ final public class PDF {
                     if (number > 0 && number <= objects.size()) {
                         fonts.add(objects.get(number - 1));
                     }
+                } else {
+                    checkImportedName(importedFonts, entries.subList(i, i + 4));
                 }
                 i += 4;
                 continue;
@@ -3460,6 +3564,21 @@ final public class PDF {
             i += 1;
         }
         return fonts;
+    }
+
+    // Records the mistake when a name that an earlier page added to the
+    // resources has another value on this page, the entry: the pages of this
+    // document share one resources dictionary, where the name has the value
+    // of the first page, and the content of this page, drawn with
+    // drawContents, would draw the resource of the first page.
+    private void checkImportedName(List<String> imported, List<String> entry) {
+        int i = imported.indexOf(entry.get(0));
+        if (i == -1 || imported.subList(i + 1, Math.min(i + entry.size(), imported.size()))
+                .equals(entry.subList(1, entry.size()))) {
+            return;
+        }
+        fail(new IllegalArgumentException("The pages of the PDF use the name " + entry.get(0)
+                + " for different resources, and the pages of this document share one resources dictionary."));
     }
 
     /**
@@ -3516,14 +3635,18 @@ final public class PDF {
 
     /**
      * Returns the numbers of the objects that "number 0 R" references in the
-     * tokens refer to.
+     * tokens refer to. A number that is too large for an int is left out, as
+     * in the other ports.
      */
     private List<Integer> getReferences(List<String> tokens) {
         List<Integer> numbers = new ArrayList<Integer>();
         for (int i = 0; i + 2 < tokens.size(); i++) {
             if (tokens.get(i + 2).equals("R")
                     && isInteger(tokens.get(i)) && isInteger(tokens.get(i + 1))) {
-                numbers.add(Integer.valueOf(tokens.get(i)));
+                int number = toInteger(tokens.get(i));
+                if (number >= 0) {
+                    numbers.add(number);
+                }
                 i += 2;
             }
         }
@@ -3533,22 +3656,31 @@ final public class PDF {
     /**
      * Collects the object with the given number and every object it refers to,
      * directly or through other objects, like the color space of an image or
-     * the resources of a form XObject. The page tree is not followed.
+     * the resources of a form XObject. The page tree is not followed. The
+     * objects are found with a list of the numbers still to visit, and not by
+     * recursion, as a chain of a hundred thousand objects, each referring to
+     * the next, overflowed the stack.
      */
     private void addObjectTree(
-            int number, List<PDFobj> objects, Set<Integer> numbers, List<PDFobj> resources) {
-        if (number <= 0 || number > objects.size() || !numbers.add(number)) {
-            return;
-        }
-        PDFobj obj = objects.get(number - 1);
-        String type = obj.getValue("/Type");
-        if (obj.dict.isEmpty()
-                || type.equals("/Page") || type.equals("/Pages") || type.equals("/Catalog")) {
-            return;
-        }
-        resources.add(obj);
-        for (int reference : getReferences(obj.dict)) {
-            addObjectTree(reference, objects, numbers, resources);
+            int objNumber, List<PDFobj> objects, Set<Integer> numbers, List<PDFobj> resources) {
+        List<Integer> stack = new ArrayList<Integer>();
+        stack.add(objNumber);
+        while (!stack.isEmpty()) {
+            int number = stack.remove(stack.size() - 1);
+            if (number <= 0 || number > objects.size() || !numbers.add(number)) {
+                continue;
+            }
+            PDFobj obj = objects.get(number - 1);
+            String type = obj.getValue("/Type");
+            if (obj.dict.isEmpty()
+                    || type.equals("/Page") || type.equals("/Pages") || type.equals("/Catalog")) {
+                continue;
+            }
+            resources.add(obj);
+            List<Integer> references = getReferences(obj.dict);
+            for (int i = references.size() - 1; i >= 0; i--) {
+                stack.add(references.get(i));
+            }
         }
     }
 
@@ -3567,7 +3699,9 @@ final public class PDF {
                 // Like the fonts, a name that an earlier page added is kept.
                 if (!importedXObjects.contains(token)) {
                     importedXObjects.addAll(entries.subList(i, i + 4));
-                    addObjectTree(Integer.parseInt(entries.get(i + 1)), objects, numbers, resources);
+                    addObjectTree(toInteger(entries.get(i + 1)), objects, numbers, resources);
+                } else {
+                    checkImportedName(importedXObjects, entries.subList(i, i + 4));
                 }
                 i += 4;
             } else {
@@ -3630,6 +3764,11 @@ final public class PDF {
      */
     private void addObjectsToPDF(List<PDFobj> objects) throws Exception {
         for (PDFobj obj : objects) {
+            if (obj.dict.isEmpty() && obj.stream == null) {
+                // A number that the PDF that was read has no object for stays
+                // a free entry of the cross-reference table.
+                continue;
+            }
             if (obj.offset == 0) {
                 // Create new object.
                 setObjOffset(obj.number, byteCount);

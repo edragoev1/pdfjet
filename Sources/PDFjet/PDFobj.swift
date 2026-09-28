@@ -354,31 +354,33 @@ public final class PDFobj {
     }
 
     ///
-    /// Returns the dictionary value for the specified key.
+    /// Returns the dictionary value for the specified key. The key is an entry
+    /// of the dictionary of the object, and not of a dictionary inside it: the
+    /// /Type of a /Group before the /Type of a page is not the type of the page.
     ///
     /// - Parameter key: the specified key.
     ///
-    /// - Returns: the value.
+    /// - Returns: the value, or "" when the object has no such key.
     ///
     public final func getValue(_ key: String) -> String {
-        var i = 0
-        while i < dict.count {
-            if key == dict[i] {
-                if i + 1 >= dict.count {
-                    return ""
-                }
-                let token = dict[i + 1]
-                if token == "<<" {
-                    return valueUpTo(i + 2, ">>", "<< ")
-                } else if token == "[" {
-                    return valueUpTo(i + 2, "]", "[ ")
-                } else {
-                    return token
-                }
-            }
-            i += 1
+        guard let open = dict.firstIndex(of: "<<") else {
+            return ""
         }
-        return ""
+        let entry = PDF.entryIndex(Array(dict[open...]), key)
+        if entry == -1 {
+            return ""
+        }
+        let i = entry + open
+        if i + 1 >= dict.count {
+            return ""
+        }
+        let token = dict[i + 1]
+        if token == "<<" {
+            return valueUpTo(i + 2, ">>", "<< ")
+        } else if token == "[" {
+            return valueUpTo(i + 2, "]", "[ ")
+        }
+        return token
     }
 
     // Returns the tokens from the index up to the closing one, with the
@@ -469,8 +471,11 @@ public final class PDFobj {
     // The /Length of the stream of this object, which is a number or a
     // reference to an object that holds one. A dictionary that ends where the
     // length is read, or a length that is not a number, throws, as it fails
-    // in the other three ports.
-    final func getLength(_ objects: [PDFobj]) throws -> Int {
+    // in the other three ports. A length that is an object of its own is found
+    // by its number in numbered, which holds the newest version of each
+    // object: an object of a PDF that was updated is in it once, as the last
+    // one of its number.
+    final func getLength(_ numbered: [Int: PDFobj]) throws -> Int {
         // The entry of the dictionary, and not a /Length inside another value or
         // that is the value of another entry, "/Height/Length", as pdf.js tests
         // it in issue19611.
@@ -493,24 +498,24 @@ public final class PDFobj {
                 throw PDFjetError(message: "The dictionary ends after the /Length.")
             }
             if dict[i + 3] == "R" {
-                return try getLength(number, from: objects)
+                return try PDFobj.getLength(number, from: numbered)
             }
         }
         return number
     }
 
-    // Returns the length stored in the object with the number. The objects
-    // are in the order of the cross-reference, not of their numbers.
-    private final func getLength(
+    // Returns the length stored in the object with the number, or 0 when the
+    // PDF has no such object.
+    private static func getLength(
             _ number: Int,
-            from objects: [PDFobj]) throws -> Int {
-        for obj in objects where obj.number == number {
-            guard obj.dict.count > 3, let length = Int(obj.dict[3]) else {
-                throw PDFjetError(message: "The /Length of a stream is not a number.")
-            }
-            return length
+            from numbered: [Int: PDFobj]) throws -> Int {
+        guard let obj = numbered[number] else {
+            return 0
         }
-        return 0
+        guard obj.dict.count > 3, let length = Int(obj.dict[3]) else {
+            throw PDFjetError(message: "The /Length of a stream is not a number.")
+        }
+        return length
     }
 
     // Returns the object with the number, or nil when the PDF that was read
