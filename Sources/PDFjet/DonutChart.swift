@@ -173,7 +173,7 @@ public class DonutChart : Drawable {
             _ text: String,
             _ xc: Float, _ yc: Float,
             _ r1: Float,
-            _ a1: Float, _ a2: Float) {
+            _ a1: Float, _ a2: Float) -> [Float] {
         let midAngle = (a1 + a2) / 2.0 - 90.0
 
         // Point on the outer edge of the donut
@@ -204,15 +204,22 @@ public class DonutChart : Drawable {
             page.strokePath()
 
             // Draw the label text just above the horizontal line
-            page.drawString(f1!, f1!.getSize(), text,
-                    onRightSide ? p2[0] + 2.0 : xEnd + 2.0, yEnd - f1!.getAscent() / 3.0,
+            let x = onRightSide ? p2[0] + 2.0 : xEnd + 2.0
+            let baseline = yEnd - f1!.getAscent() / 3.0
+            page.drawString(f1!, f1!.getSize(), text, x, baseline,
                     Util.toRGB(Color.black), nil)
+            return [Swift.min(p1[0], p2[0], xEnd, x),
+                    Swift.min(p1[1], p2[1], baseline - f1!.getAscent()),
+                    Swift.max(p1[0], p2[0], xEnd, x + textWidth),
+                    Swift.max(p1[1], p2[1], baseline + f1!.getDescent(f1!.getSize()))]
         } else {
             // No text — short horizontal stub
             let onRightSide = cos(midAngle * Float.pi / 180.0) >= 0
             let xEnd: Float = onRightSide ? p2[0] + 20.0 : p2[0] - 20.0
             page.lineTo(xEnd, p2[1])
             page.strokePath()
+            return [Swift.min(p1[0], p2[0], xEnd), Swift.min(p1[1], p2[1]),
+                    Swift.max(p1[0], p2[0], xEnd), Swift.max(p1[1], p2[1])]
         }
     }
 
@@ -242,6 +249,9 @@ public class DonutChart : Drawable {
         // as a Stamp and a CalendarMonth keep them: the chart left the page
         // with the black pen of its pointers and the color of its last slice.
         page.saveGraphicsState()
+        // The box of the figure: the outer circle, and the pointers and the
+        // labels, which can reach past it
+        var box: [Float] = [x, y, x + 2 * r1, y + 2 * r1]
         var angle: Float = 0.0
         for slice in slices! {
             if slice.value <= 0.0 {
@@ -253,11 +263,13 @@ public class DonutChart : Drawable {
                     xc, yc,
                     r1, r2,
                     angle, angle + sweep)
-            drawLinePointer(
+            let pointer = drawLinePointer(
                     page, slice.text,
                     xc, yc,
                     r1,
                     angle - sweep, angle)
+            box = [Swift.min(box[0], pointer[0]), Swift.min(box[1], pointer[1]),
+                    Swift.max(box[2], pointer[2]), Swift.max(box[3], pointer[3])]
             // The percentage fits inside a slice of 15 degrees or more
             if f2 != nil && sweep >= 15.0 {
                 let pctStr = DonutChart.percentage(slice, total)
@@ -271,7 +283,7 @@ public class DonutChart : Drawable {
             }
         }
         page.restoreGraphicsState()
-        page.setFigureBoundingBox(x, y, 2 * r1, 2 * r1)    // The outer circle
+        page.setFigureBoundingBox(box[0], box[1], box[2] - box[0], box[3] - box[1])
         page.addEMC()
         return [xc + r1, yc + r1]
     }

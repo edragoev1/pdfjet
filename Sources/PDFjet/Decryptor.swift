@@ -94,7 +94,7 @@ final class Decryptor {
         return try Decryptor(encrypt, objects, id, password)
     }
 
-    private init(_ encrypt: PDFobj, _ objects: [PDFobj], _ id: [UInt8], _ password: String) throws {
+    init(_ encrypt: PDFobj, _ objects: [PDFobj], _ id: [UInt8], _ password: String) throws {
         if encrypt.getValue("/Filter") != "/Standard" {
             throw DecryptorError.notSupported(
                     "The security handler of the PDF is not supported: " + encrypt.getValue("/Filter"))
@@ -118,8 +118,18 @@ final class Decryptor {
                     Decryptor.toBytes(encrypt.getValue("/UE")),
                     Decryptor.toBytes(encrypt.getValue("/OE")))
         } else if r >= 2 && r <= 4 {
-            let length = (v == 1 || r == 2) ? 5 : (v == 4) ? 16 : Decryptor.getInt(encrypt, "/Length") / 8
-            self.key = try Decryptor.getKey(r, max(5, min(length, 16)),
+            var length = (v == 1 || r == 2) ? 5 : (v == 4) ? 16 : Decryptor.getInt(encrypt, "/Length") / 8
+            length = max(5, min(length, 16))
+            // AES-128 takes an object key of 16 bytes, which a key of fewer than
+            // 11 bytes does not make, and AES-256 a key of 32 bytes, which only
+            // revisions 5 and 6 have.
+            for method in [streamMethod, stringMethod] {
+                if (method == .aes128 && length < 11) || method == .aes256 {
+                    throw DecryptorError.notSupported(
+                            "The encryption of the PDF is not valid: /R \(r) with a key of \(8 * length) bits for AES")
+                }
+            }
+            self.key = try Decryptor.getKey(r, length,
                     Decryptor.latin1Password(password), o, u,
                     Decryptor.getInt(encrypt, "/P"), id, encryptMetadata)
         } else {
@@ -315,7 +325,9 @@ final class Decryptor {
 
     ///
     /// Decrypts the strings in the dictionary of the object, which become
-    /// hexadecimal strings.
+    /// hexadecimal strings. The /Contents of a signature dictionary, the
+    /// signature, is not encrypted, as ISO 32000-2 7.6.2 has it, and is left
+    /// as it is.
     ///
     func decryptStrings(_ obj: PDFobj) {
         if stringMethod == .identity {
@@ -325,6 +337,9 @@ final class Decryptor {
         for i in 0..<obj.dict.count {
             let token = obj.dict[i]
             if token.hasPrefix("(") || (token.hasPrefix("<") && token != "<<") {
+                if i > 0 && obj.dict[i - 1] == "/Contents" && Decryptor.isSignatureDict(obj.dict, i) {
+                    continue
+                }
                 var hex = "<"
                 for b in decrypt(Decryptor.toBytes(token), stringMethod, obj) {
                     hex.append(digits[Int(b >> 4)])
@@ -334,6 +349,52 @@ final class Decryptor {
                 obj.dict[i] = hex
             }
         }
+    }
+
+    // Tells if the dictionary the token at i is in is a signature dictionary:
+    // of /Type /Sig or /DocTimeStamp, or with a /ByteRange, which only a
+    // signature dictionary has.
+    static func isSignatureDict(_ dict: [String], _ i: Int) -> Bool {
+        // The start of the dictionary
+        var start = i
+        var level = 0
+        while start >= 0 {
+            if dict[start] == ">>" {
+                level += 1
+            } else if dict[start] == "<<" {
+                if level == 0 {
+                    break
+                }
+                level -= 1
+            }
+            start -= 1
+        }
+        // Its entries, not those of the dictionaries in it
+        level = 0
+        var j = start + 1
+        while j < dict.count {
+            switch dict[j] {
+            case "<<":
+                level += 1
+            case ">>":
+                if level == 0 {
+                    return false
+                }
+                level -= 1
+            case "/ByteRange":
+                if level == 0 {
+                    return true
+                }
+            case "/Type":
+                if level == 0 && j + 1 < dict.count && (dict[j + 1] == "/Sig" || dict[j + 1] == "/DocTimeStamp") {
+                    return true
+                }
+            default:
+                break
+            }
+            j += 1
+        }
+        return false
     }
 
     ///
@@ -374,6 +435,9 @@ final class Decryptor {
         }
         let decrypted = Cryptography.aesDecryptCBC(
                 Array(data[16..<(16 + (data.count - 16) / 16 * 16)]), objectKey, Array(data[0..<16]))
+        if decrypted.isEmpty {
+            return []
+        }
         let padding = Int(decrypted[decrypted.count - 1])
         if padding >= 1 && padding <= 16 {
             return Array(decrypted[0..<(decrypted.count - padding)])

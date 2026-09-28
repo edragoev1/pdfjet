@@ -16,7 +16,6 @@
 package qrcode
 
 import (
-	"math"
 	"strconv"
 )
 
@@ -107,102 +106,99 @@ func getMask(maskPattern, i, j int) bool {
 	}
 }
 
-func getLostPoint(qrCode *QRCode) int {
-	moduleCount := qrCode.getModuleCount()
+// getLostPoint returns the penalty of the modules with the rules of ISO/IEC
+// 18004 7.8.3.1: N1 = 3 for five modules of a color in a row or a column, and
+// 1 for each one more; N2 = 3 for each block of 2 by 2 modules of a color; N3
+// = 40 for each dark-light-dark-dark-dark-light-dark pattern of a row or a
+// column with 4 light modules before or after it, the light quiet zone
+// counting; and N4 = 10 for each 5% that the dark modules are away from half
+// the modules.
+func getLostPoint(modules [][]bool) int {
+	moduleCount := len(modules)
 	lostPoint := 0
+	// dark returns the module of the row and the column, or of the column and
+	// the row across; outside the symbol is the quiet zone, which is light.
+	dark := func(across bool, i, j int) bool {
+		if j < 0 || j >= moduleCount {
+			return false
+		}
+		if across {
+			return modules[j][i]
+		}
+		return modules[i][j]
+	}
 
-	// LEVEL1
-	for row := 0; row < moduleCount; row++ {
-		for col := 0; col < moduleCount; col++ {
-			sameCount := 0
-			dark := qrCode.isDark(row, col)
-			for r := -1; r <= 1; r++ {
-				if row+r < 0 || moduleCount <= row+r {
+	for _, across := range []bool{false, true} {
+		for i := 0; i < moduleCount; i++ {
+			// N1
+			run := 1
+			for j := 1; j <= moduleCount; j++ {
+				if j < moduleCount && dark(across, i, j) == dark(across, i, j-1) {
+					run++
 					continue
 				}
-				for c := -1; c <= 1; c++ {
-					if col+c < 0 || moduleCount <= col+c {
-						continue
-					}
-					if r == 0 && c == 0 {
-						continue
-					}
-					if dark == qrCode.isDark(row+r, col+c) {
-						sameCount++
-					}
+				if run >= 5 {
+					lostPoint += 3 + run - 5
 				}
+				run = 1
 			}
-			if sameCount > 5 {
-				lostPoint += (3 + sameCount - 5)
+			// N3
+			for j := 0; j+6 < moduleCount; j++ {
+				if dark(across, i, j) &&
+					!dark(across, i, j+1) &&
+					dark(across, i, j+2) &&
+					dark(across, i, j+3) &&
+					dark(across, i, j+4) &&
+					!dark(across, i, j+5) &&
+					dark(across, i, j+6) &&
+					(isLight(dark, across, i, j-4, j) || isLight(dark, across, i, j+7, j+11)) {
+					lostPoint += 40
+				}
 			}
 		}
 	}
 
-	// LEVEL2
+	// N2
 	for row := 0; row < moduleCount-1; row++ {
 		for col := 0; col < moduleCount-1; col++ {
-			count := 0
-			if qrCode.isDark(row, col) {
-				count++
-			}
-			if qrCode.isDark(row+1, col) {
-				count++
-			}
-			if qrCode.isDark(row, col+1) {
-				count++
-			}
-			if qrCode.isDark(row+1, col+1) {
-				count++
-			}
-			if count == 0 || count == 4 {
+			d := modules[row][col]
+			if d == modules[row+1][col] && d == modules[row][col+1] && d == modules[row+1][col+1] {
 				lostPoint += 3
 			}
 		}
 	}
 
-	// LEVEL3
-	for row := 0; row < moduleCount; row++ {
-		for col := 0; col < moduleCount-6; col++ {
-			if qrCode.isDark(row, col) &&
-				!qrCode.isDark(row, col+1) &&
-				qrCode.isDark(row, col+2) &&
-				qrCode.isDark(row, col+3) &&
-				qrCode.isDark(row, col+4) &&
-				!qrCode.isDark(row, col+5) &&
-				qrCode.isDark(row, col+6) {
-				lostPoint += 40
-			}
-		}
-	}
-
-	for col := 0; col < moduleCount; col++ {
-		for row := 0; row < moduleCount-6; row++ {
-			if qrCode.isDark(row, col) &&
-				!qrCode.isDark(row+1, col) &&
-				qrCode.isDark(row+2, col) &&
-				qrCode.isDark(row+3, col) &&
-				qrCode.isDark(row+4, col) &&
-				!qrCode.isDark(row+5, col) &&
-				qrCode.isDark(row+6, col) {
-				lostPoint += 40
-			}
-		}
-	}
-
-	// LEVEL4
+	// N4
 	darkCount := 0
-	for col := 0; col < moduleCount; col++ {
-		for row := 0; row < moduleCount; row++ {
-			if qrCode.isDark(row, col) {
+	for row := 0; row < moduleCount; row++ {
+		for col := 0; col < moduleCount; col++ {
+			if modules[row][col] {
 				darkCount++
 			}
 		}
 	}
-
-	ratio := int(math.Abs(100.0*float64(darkCount)/float64(moduleCount)/float64(moduleCount)-50.0) / 5.0)
-	lostPoint += ratio * 10.0
+	total := moduleCount * moduleCount
+	lostPoint += abs(2*darkCount-total) * 10 / total * 10
 
 	return lostPoint
+}
+
+// isLight tells if the modules from j to k, not including k, of the row or
+// the column are light.
+func isLight(dark func(across bool, i, j int) bool, across bool, i, j, k int) bool {
+	for ; j < k; j++ {
+		if dark(across, i, j) {
+			return false
+		}
+	}
+	return true
+}
+
+func abs(value int) int {
+	if value < 0 {
+		return -value
+	}
+	return value
 }
 
 // g15 returns the generator polynomial of the BCH(15, 5) code of the format

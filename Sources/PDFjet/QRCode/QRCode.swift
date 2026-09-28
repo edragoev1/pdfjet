@@ -22,27 +22,36 @@ import Foundation
 public class QRCode : Drawable {
     private let PAD0: UInt32 = 0xEC
     private let PAD1: UInt32 = 0x11
-    private var modules: [[Bool?]]?
+    // The dark modules, and the modules of the function patterns and the format information.
+    var modules = [[Bool]]()
+    var reserved = [[Bool]]()
     // The version of the symbol, from 4 to 40, and its size: 4 * typeNumber + 17 modules.
     private var typeNumber = 4
-    private var moduleCount = 33
-    private var errorCorrectionLevel = ErrorCorrectionLevel.M
+    var moduleCount = 33
+    var errorCorrectionLevel = ErrorCorrectionLevel.M
 
     private var x: Float = 0.0
     private var y: Float = 0.0
 
     private var qrData: [UInt8]?
+    private var eci = false                 // The data is not all ASCII, and starts with the ECI of UTF-8
     private var m1: Float = 2.0             // Module length
 
     private var color: Int32 = Color.black
     private var altDescription: String?
     private let qrutil = QRUtil()
 
+    // The bits of the ECI that says the bytes are UTF-8: the mode indicator
+    // 0111 and the ECI assignment number 26 in 8 bits.
+    private static let ECI_BITS = 12
+
     ///
     /// Used to create 2D QR Code barcodes. The string is encoded in UTF-8, and
     /// the symbol is the smallest that holds it, from version 4, 33 by 33 modules,
     /// to version 40, 177 by 177 modules. At version 40 it holds up to 2,953 bytes
-    /// at level L, 2,331 at M, 1,663 at Q and 1,273 at H.
+    /// at level L, 2,331 at M, 1,663 at Q and 1,273 at H, a byte fewer when the
+    /// string is not all ASCII: it then starts with the ECI that tells the reader
+    /// the bytes are UTF-8.
     ///
     /// Throws a PDFjetError when the data does not fit a version 40 symbol at
     /// that error correction level.
@@ -54,30 +63,34 @@ public class QRCode : Drawable {
             _ str: String,
             _ errorCorrectionLevel: ErrorCorrectionLevel) throws {
         self.qrData = Array(str.utf8)
+        self.eci = qrData!.contains(where: { $0 > 127 })
         self.errorCorrectionLevel = errorCorrectionLevel
-        self.typeNumber = try QRCode.getTypeNumber(qrData!.count, errorCorrectionLevel)
+        self.typeNumber = try QRCode.getTypeNumber(qrData!.count, eci, errorCorrectionLevel)
         self.moduleCount = 4 * typeNumber + 17
-        try self.make(false, try getBestMaskPattern())
+        self.make(try createData(errorCorrectionLevel))
     }
 
-    // Returns the smallest version, from 4, whose data codewords hold the data.
+    // Returns the smallest version, from 4, whose data codewords hold the
+    // data, and the ECI before it when there is one.
     private static func getTypeNumber(
             _ dataLength: Int,
+            _ eci: Bool,
             _ errorCorrectionLevel: ErrorCorrectionLevel) throws -> Int {
         for typeNumber in 4...40 {
-            if getLengthInBits(dataLength, typeNumber) <= getDataCount(typeNumber, errorCorrectionLevel) * 8 {
+            if getLengthInBits(dataLength, eci, typeNumber) <= getDataCount(typeNumber, errorCorrectionLevel) * 8 {
                 return typeNumber
             }
         }
-        let maxLength = (getDataCount(40, errorCorrectionLevel) * 8 - 4 - 16) / 8
+        let maxLength = (getDataCount(40, errorCorrectionLevel) * 8 - getLengthInBits(0, eci, 40)) / 8
         throw PDFjetError(message: "The data is too long for a QR code at level " +
                 String(describing: errorCorrectionLevel) + ": " + String(dataLength) +
                 " bytes, at most " + String(maxLength) + ".")
     }
 
-    // The bits of the mode indicator, the character count and the data, in byte mode.
-    private static func getLengthInBits(_ dataLength: Int, _ typeNumber: Int) -> Int {
-        return 4 + getCharacterCountBits(typeNumber) + 8 * dataLength
+    // The bits of the ECI, if any, and of the mode indicator, the character
+    // count and the data, in byte mode.
+    private static func getLengthInBits(_ dataLength: Int, _ eci: Bool, _ typeNumber: Int) -> Int {
+        return (eci ? ECI_BITS : 0) + 4 + getCharacterCountBits(typeNumber) + 8 * dataLength
     }
 
     // The character count of byte mode has 8 bits up to version 9, and 16 bits after it.
@@ -142,13 +155,16 @@ public class QRCode : Drawable {
     }
 
     ///
-    /// Draws this barcode on the specified page.
+    /// Draws this barcode on the specified page. The dark modules next to each
+    /// other in a row are filled as one rectangle, and the pen and the brush of
+    /// the page are as they were after it.
     ///
     /// - Parameter page: the specified page.
     /// - Returns: x and y coordinates of the bottom right corner of this component.
     ///
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
+        let size = m1*Float(moduleCount)
         if let page = page {
             // Described, the QR code is a figure of a tagged document; not
             // described, its modules, which carry no text, are decoration.
@@ -157,66 +173,41 @@ public class QRCode : Drawable {
             } else {
                 page.addArtifactBMC()
             }
+            page.saveGraphicsState()
             page.setBrushColor(self.color)
-            for row in 0..<modules!.count {
-                for col in 0..<modules!.count {
-                    if isDark(row, col) {
-                        page.fillRect(x + Float(col)*m1, y + Float(row)*m1, m1, m1)
+            for row in 0..<moduleCount {
+                var col = 0
+                while col < moduleCount {
+                    if !modules[row][col] {
+                        col += 1
+                        continue
                     }
+                    let start = col
+                    while col < moduleCount && modules[row][col] {
+                        col += 1
+                    }
+                    page.fillRect(x + Float(start)*m1, y + Float(row)*m1, Float(col - start)*m1, m1)
                 }
             }
+            page.restoreGraphicsState()
             if let altDescription = altDescription, !altDescription.isEmpty {
-                let size = m1*Float(modules!.count)
                 page.setFigureBoundingBox(x, y, size, size)
             }
             page.addEMC()
         }
-        let w = m1*Float(modules!.count)
-        let h = m1*Float(modules!.count)
-        return [self.x + w, self.y + h]
+        return [self.x + size, self.y + size]
     }
 
     /// Returns the modules of the QR code: true for dark and false for light modules.
     public func getModules() -> [[Bool?]]? {
-        return self.modules
+        return modules.map { row in row.map { Optional($0) } }
     }
 
-    ///
-    /// - Parameter row: the row.
-    /// - Parameter col: the column.
-    ///
-    func isDark(_ row: Int, _ col: Int) -> Bool {
-        if modules![row][col] != nil {
-            return modules![row][col]!
-        }
-        return false
-    }
-
-    func getModuleCount() -> Int {
-        return self.moduleCount
-    }
-
-    func getBestMaskPattern() throws -> Int {
-        var minLostPoint = 0
-        var pattern = 0
-        for i in 0..<8 {
-            try make(true, i)
-            let lostPoint = qrutil.getLostPoint(self)
-            if i == 0 || minLostPoint > lostPoint {
-                minLostPoint = lostPoint
-                pattern = i
-            }
-        }
-        return pattern
-    }
-
-    func make(
-            _ test: Bool,
-            _ maskPattern: Int) throws {
-        modules = [[Bool?]]()
-        for _ in 0..<moduleCount {
-            modules!.append([Bool?](repeating: nil, count: moduleCount))
-        }
+    // Places the function patterns and the codewords, and masks them with the
+    // mask pattern of the lowest penalty, with its format information.
+    func make(_ data: [UInt8]) {
+        modules = QRCode.newMatrix(moduleCount)
+        reserved = QRCode.newMatrix(moduleCount)
 
         setupPositionProbePattern(0, 0)
         setupPositionProbePattern(moduleCount - 7, 0)
@@ -224,16 +215,58 @@ public class QRCode : Drawable {
 
         setupPositionAdjustPattern()
         setupTimingPattern()
-        setupTypeInfo(test, maskPattern)
+        setupTypeInfo(&modules, 0)  // Reserves the modules of the format information
         if typeNumber >= 7 {
-            setupTypeNumber(test)
+            setupTypeNumber()
         }
-        mapData(try createData(errorCorrectionLevel), maskPattern)
+        mapData(data)
+
+        // Each mask is tried with its format information in place, as ISO/IEC
+        // 18004 asks, and the first of the lowest penalty is taken.
+        var best: [[Bool]]? = nil
+        var minLostPoint = 0
+        for maskPattern in 0..<8 {
+            let masked = applyMask(maskPattern)
+            let lostPoint = qrutil.getLostPoint(masked)
+            if best == nil || lostPoint < minLostPoint {
+                minLostPoint = lostPoint
+                best = masked
+            }
+        }
+        modules = best!
+        reserved = [[Bool]]()
     }
 
-    private func mapData(
-            _ data: [UInt8],
-            _ maskPattern: Int) {
+    // Returns a square matrix of light modules.
+    static func newMatrix(_ moduleCount: Int) -> [[Bool]] {
+        return [[Bool]](repeating: [Bool](repeating: false, count: moduleCount), count: moduleCount)
+    }
+
+    // Sets the module of a function pattern or of the format or version information.
+    private func set(_ row: Int, _ col: Int, _ dark: Bool) {
+        modules[row][col] = dark
+        reserved[row][col] = true
+    }
+
+    // Returns the modules with the mask pattern applied to the codewords, and
+    // the format information of the mask pattern.
+    func applyMask(_ maskPattern: Int) -> [[Bool]] {
+        var masked = modules
+        for row in 0..<moduleCount {
+            for col in 0..<moduleCount {
+                if !reserved[row][col] && qrutil.getMask(maskPattern, row, col) {
+                    masked[row][col] = !masked[row][col]
+                }
+            }
+        }
+        setupTypeInfo(&masked, maskPattern)
+        return masked
+    }
+
+    // Places the bits of the codewords in the modules that are not reserved,
+    // in two module wide columns from the bottom right corner, up and down in
+    // turn; the modules left over are light.
+    func mapData(_ data: [UInt8]) {
         var inc = -1
         var row = moduleCount - 1
         var bitIndex = 7
@@ -246,16 +279,12 @@ public class QRCode : Drawable {
             }
             while true {
                 for c in 0..<2 {
-                    if modules![row][col - c] == nil {
+                    if !reserved[row][col - c] {
                         var dark = false
                         if byteIndex < data.count {
                             dark = (((data[byteIndex] >> bitIndex) & 1) == 1)
                         }
-                        let mask = qrutil.getMask(maskPattern, row, col - c)
-                        if mask {
-                            dark = !dark
-                        }
-                        modules![row][col - c] = dark
+                        modules[row][col - c] = dark
                         bitIndex -= 1
                         if (bitIndex == -1) {
                             byteIndex += 1
@@ -275,110 +304,109 @@ public class QRCode : Drawable {
         }
     }
 
-    private func setupPositionAdjustPattern() {
+    func setupPositionAdjustPattern() {
         let pos = qrutil.getPatternPosition(typeNumber)
         for i in 0..<pos.count {
             for j in 0..<pos.count {
                 let row = pos[i]
                 let col = pos[j]
-
-                if modules![row][col] != nil {
+                if reserved[row][col] {
                     continue
                 }
-
-                var r = -2
-                while r <= 2 {
-                    var c = -2
-                    while c <= 2 {
-                        modules![row + r][col + c] =
-                                r == -2 || r == 2 ||
-                                c == -2 || c == 2 ||
-                                (r == 0 && c == 0)
-                        c += 1
+                for r in -2...2 {
+                    for c in -2...2 {
+                        set(row + r, col + c, r == -2 || r == 2 || c == -2 || c == 2 || (r == 0 && c == 0))
                     }
-                    r += 1
                 }
             }
         }
     }
 
-    private func setupPositionProbePattern(_ row: Int, _ col: Int) {
+    func setupPositionProbePattern(_ row: Int, _ col: Int) {
         for r in -1...7 {
             for c in -1...7 {
                 if (row + r <= -1 || moduleCount <= row + r ||
                         col + c <= -1 || moduleCount <= col + c) {
                     continue
                 }
-                if (0 <= r && r <= 6 && (c == 0 || c == 6)) ||
+                set(row + r, col + c,
+                        (0 <= r && r <= 6 && (c == 0 || c == 6)) ||
                         (0 <= c && c <= 6 && (r == 0 || r == 6)) ||
-                        (2 <= r && r <= 4 && 2 <= c && c <= 4) {
-                    modules![row + r][col + c] = true
-                } else {
-                    modules![row + r][col + c] = false
-                }
+                        (2 <= r && r <= 4 && 2 <= c && c <= 4))
             }
         }
     }
 
-    private func setupTimingPattern() {
+    func setupTimingPattern() {
         // The alignment patterns of versions 7 and up cross the timing patterns,
         // so the modules they already set are skipped.
-        for r in 8..<(moduleCount - 8) where modules![r][6] == nil {
-            modules![r][6] = (r % 2 == 0)
+        for r in 8..<(moduleCount - 8) where !reserved[r][6] {
+            set(r, 6, r % 2 == 0)
         }
-        for c in 8..<(moduleCount - 8) where modules![6][c] == nil {
-            modules![6][c] = (c % 2 == 0)
+        for c in 8..<(moduleCount - 8) where !reserved[6][c] {
+            set(6, c, c % 2 == 0)
         }
     }
 
     // Versions 7 and up carry their version number twice, next to two finder patterns.
-    private func setupTypeNumber(_ test: Bool) {
+    private func setupTypeNumber() {
         let bits = qrutil.getBCHTypeNumber(typeNumber)
         for i in 0..<18 {
-            let mod = (!test && ((bits >> i) & 1) == 1)
-            modules![i / 3][i % 3 + moduleCount - 8 - 3] = mod
-        }
-        for i in 0..<18 {
-            let mod = (!test && ((bits >> i) & 1) == 1)
-            modules![i % 3 + moduleCount - 8 - 3][i / 3] = mod
+            let dark = ((bits >> i) & 1) == 1
+            set(i / 3, i % 3 + moduleCount - 8 - 3, dark)
+            set(i % 3 + moduleCount - 8 - 3, i / 3, dark)
         }
     }
 
-    private func setupTypeInfo(
-            _ test: Bool,
+    // Places the format information, the error correction level and the mask
+    // pattern, twice in the modules, and the dark module next to the bottom
+    // left finder pattern. The modules it takes are reserved.
+    func setupTypeInfo(
+            _ matrix: inout [[Bool]],
             _ maskPattern: Int) {
         let data = (errorCorrectionLevel.rawValue << 3) | maskPattern
         let bits = qrutil.getBCHTypeInfo(data)
 
         for i in 0..<15 {
-            let mod = (!test && ((bits >> i) & 1) == 1)
+            let dark = ((bits >> i) & 1) == 1
             if i < 6 {
-                modules![i][8] = mod
+                matrix[i][8] = dark
+                reserved[i][8] = true
             } else if i < 8 {
-                modules![i + 1][8] = mod
+                matrix[i + 1][8] = dark
+                reserved[i + 1][8] = true
             } else {
-                modules![moduleCount - 15 + i][8] = mod
+                matrix[moduleCount - 15 + i][8] = dark
+                reserved[moduleCount - 15 + i][8] = true
             }
         }
 
         for i in 0..<15 {
-            let mod = (!test && ((bits >> i) & 1) == 1)
+            let dark = ((bits >> i) & 1) == 1
             if i < 8 {
-                modules![8][moduleCount - i - 1] = mod
+                matrix[8][moduleCount - i - 1] = dark
+                reserved[8][moduleCount - i - 1] = true
             } else if i < 9 {
-                modules![8][15 - i - 1 + 1] = mod
+                matrix[8][15 - i - 1 + 1] = dark
+                reserved[8][15 - i - 1 + 1] = true
             } else {
-                modules![8][15 - i - 1] = mod
+                matrix[8][15 - i - 1] = dark
+                reserved[8][15 - i - 1] = true
             }
         }
 
-        modules![moduleCount - 8][8] = !test
+        matrix[moduleCount - 8][8] = true
+        reserved[moduleCount - 8][8] = true
     }
 
-    private func createData(_ errorCorrectionLevel: ErrorCorrectionLevel) throws -> [UInt8] {
+    func createData(_ errorCorrectionLevel: ErrorCorrectionLevel) throws -> [UInt8] {
         let rsBlocks = RSBlock.getRSBlocks(typeNumber, errorCorrectionLevel)
         let buffer = BitBuffer()
-        buffer.put(UInt32(4), 4)
+        if eci {
+            buffer.put(UInt32(7), 4)    // ECI
+            buffer.put(UInt32(26), 8)   // UTF-8
+        }
+        buffer.put(UInt32(4), 4)        // Byte mode
         buffer.put(UInt32(qrData!.count), QRCode.getCharacterCountBits(typeNumber))
         for i in 0..<qrData!.count {
             buffer.put(UInt32(qrData![i]), 8)

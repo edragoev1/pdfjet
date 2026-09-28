@@ -303,6 +303,10 @@ enum Cryptography {
     /// Decrypts the data, whose length is a multiple of 16, with a key of 16,
     /// 24 or 32 bytes.
     static func aesDecryptCBC(_ data: [UInt8], _ key: [UInt8], _ iv: [UInt8]) -> [UInt8] {
+        // AES has keys of 16, 24 and 32 bytes; with another there is nothing
+        guard key.count == 16 || key.count == 24 || key.count == 32 else {
+            return []
+        }
         let w = expandKey(key)
         let rounds = key.count / 4 + 6
         var result = [UInt8](repeating: 0, count: data.count / 16 * 16)

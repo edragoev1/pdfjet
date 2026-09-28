@@ -28,23 +28,31 @@ import (
 type QRCode struct {
 	pad0                 int
 	pad1                 int
-	modules              [][]*bool
-	typeNumber           int // The version of the symbol, from 4 to 40
-	moduleCount          int // 4 * typeNumber + 17
+	modules              [][]bool // The dark modules
+	reserved             [][]bool // The modules of the function patterns and the format information
+	typeNumber           int      // The version of the symbol, from 4 to 40
+	moduleCount          int      // 4 * typeNumber + 17
 	errorCorrectionLevel errorcorrectionlevel.ErrorCorrectionLevel
 	x                    float32
 	y                    float32
 	qrData               []byte
+	eci                  bool    // The data is not all ASCII, and starts with the ECI of UTF-8
 	m1                   float32 // Module length
 	color                int32
 	altDescription       string
 }
 
+// eciBits are the bits of the ECI that says the bytes are UTF-8: the mode
+// indicator 0111 and the ECI assignment number 26 in 8 bits.
+const eciBits = 12
+
 // NewQRCode is used to create 2D QR Code barcodes. The string is encoded in
 // UTF-8, and the symbol is the smallest that holds it, from version 4, 33 by
 // 33 modules, to version 40, 177 by 177 modules. At version 40 it holds up to
-// 2,953 bytes at level L, 2,331 at M, 1,663 at Q and 1,273 at H. It panics if
-// the string does not fit in a version 40 symbol.
+// 2,953 bytes at level L, 2,331 at M, 1,663 at Q and 1,273 at H, a byte fewer
+// when the string is not all ASCII: it then starts with the ECI that tells
+// the reader the bytes are UTF-8. It panics if the string does not fit in a
+// version 40 symbol.
 // @param str the string to encode.
 // @param errorCorrectionLevel the desired error correction level.
 func NewQRCode(str string, errorCorrectionLevel errorcorrectionlevel.ErrorCorrectionLevel) *QRCode {
@@ -52,32 +60,41 @@ func NewQRCode(str string, errorCorrectionLevel errorcorrectionlevel.ErrorCorrec
 	qrcode.pad0 = 0xEC
 	qrcode.pad1 = 0x11
 	qrcode.qrData = []byte(str)
-	qrcode.typeNumber = getTypeNumber(len(qrcode.qrData), errorCorrectionLevel)
+	for _, b := range qrcode.qrData {
+		if b > 127 {
+			qrcode.eci = true
+		}
+	}
+	qrcode.typeNumber = getTypeNumber(len(qrcode.qrData), qrcode.eci, errorCorrectionLevel)
 	qrcode.moduleCount = 4*qrcode.typeNumber + 17
 	qrcode.m1 = 2.0
 	qrcode.errorCorrectionLevel = errorCorrectionLevel
-	qrcode.make(false, qrcode.getBestMaskPattern())
+	qrcode.make(qrcode.createData(errorCorrectionLevel))
 	return qrcode
 }
 
 // getTypeNumber returns the smallest version, from 4, whose data codewords
-// hold the data.
-func getTypeNumber(dataLength int, errorCorrectionLevel errorcorrectionlevel.ErrorCorrectionLevel) int {
+// hold the data, and the ECI before it when there is one.
+func getTypeNumber(dataLength int, eci bool, errorCorrectionLevel errorcorrectionlevel.ErrorCorrectionLevel) int {
 	for typeNumber := 4; typeNumber <= 40; typeNumber++ {
-		if getLengthInBits(dataLength, typeNumber) <= getDataCount(typeNumber, errorCorrectionLevel)*8 {
+		if getLengthInBits(dataLength, eci, typeNumber) <= getDataCount(typeNumber, errorCorrectionLevel)*8 {
 			return typeNumber
 		}
 	}
-	maxLength := (getDataCount(40, errorCorrectionLevel)*8 - 4 - 16) / 8
+	maxLength := (getDataCount(40, errorCorrectionLevel)*8 - getLengthInBits(0, eci, 40)) / 8
 	panic("The data is too long for a QR code at level " +
 		levelName(errorCorrectionLevel) + ": " + strconv.Itoa(dataLength) +
 		" bytes, at most " + strconv.Itoa(maxLength) + ".")
 }
 
-// getLengthInBits returns the bits of the mode indicator, the character count
-// and the data, in byte mode.
-func getLengthInBits(dataLength, typeNumber int) int {
-	return 4 + getCharacterCountBits(typeNumber) + 8*dataLength
+// getLengthInBits returns the bits of the ECI, if any, and of the mode
+// indicator, the character count and the data, in byte mode.
+func getLengthInBits(dataLength int, eci bool, typeNumber int) int {
+	bits := 4 + getCharacterCountBits(typeNumber) + 8*dataLength
+	if eci {
+		bits += eciBits
+	}
+	return bits
 }
 
 // getCharacterCountBits returns the bits of the character count of byte mode:
@@ -125,10 +142,13 @@ func (qrcode *QRCode) SetModuleColor(color int32) *QRCode {
 	return qrcode
 }
 
-// DrawOn draws this barcode on the specified page.
+// DrawOn draws this barcode on the specified page. The dark modules next to
+// each other in a row are filled as one rectangle, and the pen and the brush
+// of the page are as they were after it.
 // @param page the specified page.
 // @return x and y coordinates of the bottom right corner of this component.
 func (qrcode *QRCode) DrawOn(page *pdfjet.Page) [2]float32 {
+	size := qrcode.m1 * float32(qrcode.moduleCount)
 	if page != nil {
 		// Described, the QR code is a figure of a tagged document; not
 		// described, its modules, which carry no text, are decoration.
@@ -137,27 +157,33 @@ func (qrcode *QRCode) DrawOn(page *pdfjet.Page) [2]float32 {
 		} else {
 			page.AddArtifactBMC()
 		}
+		page.SaveGraphicsState()
 		page.SetBrushColor(qrcode.color)
-		for row := 0; row < len(qrcode.modules); row++ {
-			for col := 0; col < len(qrcode.modules); col++ {
-				if qrcode.isDark(row, col) {
-					page.FillRect(
-						qrcode.x+float32(col)*qrcode.m1,
-						qrcode.y+float32(row)*qrcode.m1,
-						qrcode.m1,
-						qrcode.m1)
+		for row := 0; row < qrcode.moduleCount; row++ {
+			col := 0
+			for col < qrcode.moduleCount {
+				if !qrcode.modules[row][col] {
+					col++
+					continue
 				}
+				start := col
+				for col < qrcode.moduleCount && qrcode.modules[row][col] {
+					col++
+				}
+				page.FillRect(
+					qrcode.x+float32(start)*qrcode.m1,
+					qrcode.y+float32(row)*qrcode.m1,
+					float32(col-start)*qrcode.m1,
+					qrcode.m1)
 			}
 		}
+		page.RestoreGraphicsState()
 		if qrcode.altDescription != "" {
-			size := qrcode.m1 * float32(len(qrcode.modules))
 			page.SetFigureBoundingBox(qrcode.x, qrcode.y, size, size)
 		}
 		page.AddEMC()
 	}
-	w := qrcode.m1 * float32(len(qrcode.modules))
-	h := qrcode.m1 * float32(len(qrcode.modules))
-	return [2]float32{qrcode.x + w, qrcode.y + h}
+	return [2]float32{qrcode.x + size, qrcode.y + size}
 }
 
 // SetAltDescription sets what the QR code says, such as the web address it
@@ -171,39 +197,22 @@ func (qrcode *QRCode) SetAltDescription(altDescription string) *QRCode {
 
 // GetModules returns the modules of the QR code: true for dark and false for light modules.
 func (qrcode *QRCode) GetModules() [][]*bool {
-	return qrcode.modules
-}
-
-func (qrcode *QRCode) isDark(row, col int) bool {
-	if qrcode.modules[row][col] != nil {
-		return *qrcode.modules[row][col]
-	}
-	return false
-}
-
-func (qrcode *QRCode) getModuleCount() int {
-	return qrcode.moduleCount
-}
-
-func (qrcode *QRCode) getBestMaskPattern() int {
-	minLostPoint := 0
-	pattern := 0
-	for i := 0; i < 8; i++ {
-		qrcode.make(true, i)
-		lostPoint := getLostPoint(qrcode)
-		if i == 0 || minLostPoint > lostPoint {
-			minLostPoint = lostPoint
-			pattern = i
+	modules := make([][]*bool, qrcode.moduleCount)
+	for row := range modules {
+		modules[row] = make([]*bool, qrcode.moduleCount)
+		for col := range modules[row] {
+			dark := qrcode.modules[row][col]
+			modules[row][col] = &dark
 		}
 	}
-	return pattern
+	return modules
 }
 
-func (qrcode *QRCode) make(test bool, maskPattern int) {
-	qrcode.modules = make([][]*bool, qrcode.moduleCount)
-	for i := range qrcode.modules {
-		qrcode.modules[i] = make([]*bool, qrcode.moduleCount)
-	}
+// make places the function patterns and the codewords, and masks them with
+// the mask pattern of the lowest penalty, with its format information.
+func (qrcode *QRCode) make(data []byte) {
+	qrcode.modules = newMatrix(qrcode.moduleCount)
+	qrcode.reserved = newMatrix(qrcode.moduleCount)
 
 	qrcode.setupPositionProbePattern(0, 0)
 	qrcode.setupPositionProbePattern(qrcode.moduleCount-7, 0)
@@ -211,15 +220,65 @@ func (qrcode *QRCode) make(test bool, maskPattern int) {
 
 	qrcode.setupPositionAdjustPattern()
 	qrcode.setupTimingPattern()
-	qrcode.setupTypeInfo(test, maskPattern)
+	qrcode.setupTypeInfo(qrcode.modules, 0) // Reserves the modules of the format information
 	if qrcode.typeNumber >= 7 {
-		qrcode.setupTypeNumber(test)
+		qrcode.setupTypeNumber()
 	}
+	qrcode.mapData(data)
 
-	qrcode.mapData(qrcode.createData(qrcode.errorCorrectionLevel), maskPattern)
+	// Each mask is tried with its format information in place, as ISO/IEC
+	// 18004 asks, and the first of the lowest penalty is taken.
+	var best [][]bool
+	minLostPoint := 0
+	for maskPattern := 0; maskPattern < 8; maskPattern++ {
+		modules := qrcode.applyMask(maskPattern)
+		lostPoint := getLostPoint(modules)
+		if best == nil || lostPoint < minLostPoint {
+			minLostPoint = lostPoint
+			best = modules
+		}
+	}
+	qrcode.modules = best
+	qrcode.reserved = nil
 }
 
-func (qrcode *QRCode) mapData(data []byte, maskPattern int) {
+// newMatrix returns a square matrix of light modules.
+func newMatrix(moduleCount int) [][]bool {
+	matrix := make([][]bool, moduleCount)
+	for i := range matrix {
+		matrix[i] = make([]bool, moduleCount)
+	}
+	return matrix
+}
+
+// set sets the module of a function pattern or of the format or version
+// information.
+func (qrcode *QRCode) set(row, col int, dark bool) {
+	qrcode.modules[row][col] = dark
+	qrcode.reserved[row][col] = true
+}
+
+// applyMask returns the modules with the mask pattern applied to the
+// codewords, and the format information of the mask pattern.
+func (qrcode *QRCode) applyMask(maskPattern int) [][]bool {
+	modules := newMatrix(qrcode.moduleCount)
+	for row := 0; row < qrcode.moduleCount; row++ {
+		for col := 0; col < qrcode.moduleCount; col++ {
+			dark := qrcode.modules[row][col]
+			if !qrcode.reserved[row][col] && getMask(maskPattern, row, col) {
+				dark = !dark
+			}
+			modules[row][col] = dark
+		}
+	}
+	qrcode.setupTypeInfo(modules, maskPattern)
+	return modules
+}
+
+// mapData places the bits of the codewords in the modules that are not
+// reserved, in two module wide columns from the bottom right corner, up and
+// down in turn; the modules left over are light.
+func (qrcode *QRCode) mapData(data []byte) {
 	inc := -1
 	row := qrcode.moduleCount - 1
 	bitIndex := 7
@@ -231,16 +290,12 @@ func (qrcode *QRCode) mapData(data []byte, maskPattern int) {
 		}
 		for {
 			for c := 0; c < 2; c++ {
-				if qrcode.modules[row][col-c] == nil {
+				if !qrcode.reserved[row][col-c] {
 					dark := false
 					if byteIndex < len(data) {
 						dark = (((data[byteIndex] >> bitIndex) & 1) == 1)
 					}
-					mask := getMask(maskPattern, row, col-c)
-					if mask {
-						dark = !dark
-					}
-					qrcode.modules[row][col-c] = &dark
+					qrcode.modules[row][col-c] = dark
 					bitIndex--
 					if bitIndex == -1 {
 						byteIndex++
@@ -265,13 +320,12 @@ func (qrcode *QRCode) setupPositionAdjustPattern() {
 		for j := 0; j < len(pos); j++ {
 			row := pos[i]
 			col := pos[j]
-			if qrcode.modules[row][col] != nil {
+			if qrcode.reserved[row][col] {
 				continue
 			}
 			for r := -2; r <= 2; r++ {
 				for c := -2; c <= 2; c++ {
-					value := r == -2 || r == 2 || c == -2 || c == 2 || (r == 0 && c == 0)
-					qrcode.modules[row+r][col+c] = &value
+					qrcode.set(row+r, col+c, r == -2 || r == 2 || c == -2 || c == 2 || (r == 0 && c == 0))
 				}
 			}
 		}
@@ -284,73 +338,71 @@ func (qrcode *QRCode) setupPositionProbePattern(row, col int) {
 			if row+r <= -1 || qrcode.moduleCount <= row+r || col+c <= -1 || qrcode.moduleCount <= col+c {
 				continue
 			}
-			value := (0 <= r && r <= 6 && (c == 0 || c == 6)) ||
+			qrcode.set(row+r, col+c, (0 <= r && r <= 6 && (c == 0 || c == 6)) ||
 				(0 <= c && c <= 6 && (r == 0 || r == 6)) ||
-				(2 <= r && r <= 4 && 2 <= c && c <= 4)
-			qrcode.modules[row+r][col+c] = &value
+				(2 <= r && r <= 4 && 2 <= c && c <= 4))
 		}
 	}
 }
 
 func (qrcode *QRCode) setupTimingPattern() {
 	for r := 8; r < qrcode.moduleCount-8; r++ {
-		if qrcode.modules[r][6] != nil {
-			continue
+		if !qrcode.reserved[r][6] {
+			qrcode.set(r, 6, r%2 == 0)
 		}
-		value := r%2 == 0
-		qrcode.modules[r][6] = &value
 	}
 	for c := 8; c < qrcode.moduleCount-8; c++ {
-		if qrcode.modules[6][c] != nil {
-			continue
+		if !qrcode.reserved[6][c] {
+			qrcode.set(6, c, c%2 == 0)
 		}
-		value := c%2 == 0
-		qrcode.modules[6][c] = &value
 	}
 }
 
 // setupTypeNumber places the version number of versions 7 and up twice,
 // next to two finder patterns.
-func (qrcode *QRCode) setupTypeNumber(test bool) {
+func (qrcode *QRCode) setupTypeNumber() {
 	bits := getBCHTypeNumber(qrcode.typeNumber)
 	for i := 0; i < 18; i++ {
-		mod := (!test && ((bits>>i)&1) == 1)
-		qrcode.modules[i/3][i%3+qrcode.moduleCount-8-3] = &mod
-	}
-	for i := 0; i < 18; i++ {
-		mod := (!test && ((bits>>i)&1) == 1)
-		qrcode.modules[i%3+qrcode.moduleCount-8-3][i/3] = &mod
+		dark := ((bits >> i) & 1) == 1
+		qrcode.set(i/3, i%3+qrcode.moduleCount-8-3, dark)
+		qrcode.set(i%3+qrcode.moduleCount-8-3, i/3, dark)
 	}
 }
 
-func (qrcode *QRCode) setupTypeInfo(test bool, maskPattern int) {
+// setupTypeInfo places the format information, the error correction level
+// and the mask pattern, twice in the modules, and the dark module next to the
+// bottom left finder pattern. The modules it takes are reserved.
+func (qrcode *QRCode) setupTypeInfo(modules [][]bool, maskPattern int) {
 	data := int(qrcode.errorCorrectionLevel)<<3 | maskPattern
 	bits := getBCHTypeInfo(data)
+	put := func(row, col int, dark bool) {
+		modules[row][col] = dark
+		qrcode.reserved[row][col] = true
+	}
 
 	for i := 0; i < 15; i++ {
-		mod := (!test && ((bits>>i)&1) == 1)
+		dark := ((bits >> i) & 1) == 1
 		if i < 6 {
-			qrcode.modules[i][8] = &mod
+			put(i, 8, dark)
 		} else if i < 8 {
-			qrcode.modules[i+1][8] = &mod
+			put(i+1, 8, dark)
 		} else {
-			qrcode.modules[qrcode.moduleCount-15+i][8] = &mod
+			put(qrcode.moduleCount-15+i, 8, dark)
 		}
 	}
 
 	for i := 0; i < 15; i++ {
-		mod := (!test && ((bits>>i)&1) == 1)
+		dark := ((bits >> i) & 1) == 1
 		if i < 8 {
-			qrcode.modules[8][qrcode.moduleCount-i-1] = &mod
+			put(8, qrcode.moduleCount-i-1, dark)
 		} else if i < 9 {
-			qrcode.modules[8][15-i-1+1] = &mod
+			put(8, 15-i-1+1, dark)
 		} else {
-			qrcode.modules[8][15-i-1] = &mod
+			put(8, 15-i-1, dark)
 		}
 	}
 
-	value := !test
-	qrcode.modules[qrcode.moduleCount-8][8] = &value
+	put(qrcode.moduleCount-8, 8, true)
 }
 
 func (qrcode *QRCode) createData(errorCorrectionLevel errorcorrectionlevel.ErrorCorrectionLevel) []byte {
@@ -358,7 +410,11 @@ func (qrcode *QRCode) createData(errorCorrectionLevel errorcorrectionlevel.Error
 	rsBlocks := rsblock.getRSBlocks(qrcode.typeNumber, errorCorrectionLevel)
 
 	var buffer = newBitBuffer()
-	buffer.put(4, 4)
+	if qrcode.eci {
+		buffer.put(7, 4)  // ECI
+		buffer.put(26, 8) // UTF-8
+	}
+	buffer.put(4, 4) // Byte mode
 	buffer.put(len(qrcode.qrData), getCharacterCountBits(qrcode.typeNumber))
 	for i := 0; i < len(qrcode.qrData); i++ {
 		buffer.put(int(qrcode.qrData[i]), 8)

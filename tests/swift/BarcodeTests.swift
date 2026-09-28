@@ -76,7 +76,7 @@ import Testing
     }
 
     @Test func code128RefusesATextItCannotHold() throws {
-        let tooLong = "Code 128 barcodes hold at most 48 codewords, and a character below 32 or from 128 to 255 takes two!"
+        let tooLong = "Code 128 barcodes hold at most 48 codewords, and a character below 32 or from 160 to 255 takes two, and one from 128 to 159 three!"
         for (text, message) in [(String(repeating: "A", count: 49), tooLong),
                                 (String(repeating: "\u{e9}", count: 25), tooLong),
                                 (String(repeating: "7", count: 98), tooLong),

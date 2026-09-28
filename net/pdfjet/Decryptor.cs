@@ -79,7 +79,16 @@ internal sealed class Decryptor {
         return new Decryptor(encrypt, objects, id, password);
     }
 
-    private Decryptor(PDFobj encrypt, List<PDFobj> objects, byte[] id, String password) {
+    // A decryptor of the key and the methods, for the tests.
+    internal Decryptor(byte[] key, int streamMethod, int stringMethod) {
+        this.objNumber = -1;
+        this.key = key;
+        this.streamMethod = streamMethod;
+        this.stringMethod = stringMethod;
+        this.encryptMetadata = true;
+    }
+
+    internal Decryptor(PDFobj encrypt, List<PDFobj> objects, byte[] id, String password) {
         this.objNumber = encrypt.number;
         if (!encrypt.GetValue("/Filter").Equals("/Standard")) {
             throw new Exception("The security handler of the PDF is not supported: " +
@@ -104,7 +113,17 @@ internal sealed class Decryptor {
                     ToBytes(encrypt.GetValue("/UE")), ToBytes(encrypt.GetValue("/OE")));
         } else if (r >= 2 && r <= 4) {
             int length = (v == 1 || r == 2) ? 5 : (v == 4) ? 16 : GetInt(encrypt, "/Length") / 8;
-            this.key = GetKey(r, Math.Max(5, Math.Min(length, 16)), Latin1Password(password),
+            length = Math.Max(5, Math.Min(length, 16));
+            // AES-128 takes an object key of 16 bytes, which a key of fewer than
+            // 11 bytes does not make, and AES-256 a key of 32 bytes, which only
+            // revisions 5 and 6 have.
+            foreach (int method in new int[] {streamMethod, stringMethod}) {
+                if ((method == AES_128 && length < 11) || method == AES_256) {
+                    throw new Exception("The encryption of the PDF is not valid: /R " + r +
+                            " with a key of " + (8 * length) + " bits for AES");
+                }
+            }
+            this.key = GetKey(r, length, Latin1Password(password),
                     o, u, GetInt(encrypt, "/P"), id, encryptMetadata);
         } else {
             throw new Exception("The encryption of the PDF is not supported: /R " + r);
@@ -324,7 +343,9 @@ internal sealed class Decryptor {
     }
 
     // Decrypts the strings in the dictionary of the object, which become
-    // hexadecimal strings.
+    // hexadecimal strings. The /Contents of a signature dictionary, the
+    // signature, is not encrypted, as ISO 32000-2 7.6.2 has it, and is left as
+    // it is.
     internal void DecryptStrings(PDFobj obj) {
         if (stringMethod == NONE) {
             return;
@@ -332,10 +353,50 @@ internal sealed class Decryptor {
         for (int i = 0; i < obj.dict.Count; i++) {
             String token = obj.dict[i];
             if (token.StartsWith("(") || (token.StartsWith("<") && !token.Equals("<<"))) {
+                if (i > 0 && obj.dict[i - 1].Equals("/Contents") && IsSignatureDict(obj.dict, i)) {
+                    continue;
+                }
                 byte[] bytes = Decrypt(ToBytes(token), stringMethod, obj);
                 obj.dict[i] = "<" + Convert.ToHexString(bytes).ToLowerInvariant() + ">";
             }
         }
+    }
+
+    // Tells if the dictionary the token at i is in is a signature dictionary: of
+    // /Type /Sig or /DocTimeStamp, or with a /ByteRange, which only a signature
+    // dictionary has.
+    private static bool IsSignatureDict(List<String> dict, int i) {
+        // The start of the dictionary
+        int start = i;
+        for (int level = 0; start >= 0; start--) {
+            if (dict[start].Equals(">>")) {
+                level++;
+            } else if (dict[start].Equals("<<")) {
+                if (level == 0) {
+                    break;
+                }
+                level--;
+            }
+        }
+        // Its entries, not those of the dictionaries in it
+        int depth = 0;
+        for (int j = start + 1; j < dict.Count; j++) {
+            String token = dict[j];
+            if (token.Equals("<<")) {
+                depth++;
+            } else if (token.Equals(">>")) {
+                if (depth == 0) {
+                    return false;
+                }
+                depth--;
+            } else if (token.Equals("/ByteRange") && depth == 0) {
+                return true;
+            } else if (token.Equals("/Type") && depth == 0 && j + 1 < dict.Count &&
+                    (dict[j + 1].Equals("/Sig") || dict[j + 1].Equals("/DocTimeStamp"))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // Returns the decrypted stream of the object.
@@ -348,7 +409,7 @@ internal sealed class Decryptor {
 
     // Algorithm 1 of ISO 32000-2 decrypts with a key for each object in
     // revisions 2 to 4, and revisions 5 and 6 use the file key.
-    private byte[] Decrypt(byte[] data, int method, PDFobj obj) {
+    internal byte[] Decrypt(byte[] data, int method, PDFobj obj) {
         if (method == NONE) {
             return data;
         }
@@ -371,6 +432,9 @@ internal sealed class Decryptor {
         }
         byte[] decrypted = AESDecrypt(objectKey, data.AsSpan(0, 16).ToArray(),
                 data.AsSpan(16, (data.Length - 16) / 16 * 16).ToArray());
+        if (decrypted.Length == 0) {
+            return new byte[0];
+        }
         int padding = decrypted[decrypted.Length - 1];
         if (padding >= 1 && padding <= 16) {
             return decrypted.AsSpan(0, decrypted.Length - padding).ToArray();
@@ -379,6 +443,9 @@ internal sealed class Decryptor {
     }
 
     private static byte[] AESDecrypt(byte[] key, byte[] iv, byte[] data) {
+        if (key.Length != 16 && key.Length != 24 && key.Length != 32) {
+            return new byte[0];
+        }
         using var aes = Aes.Create();
         aes.Key = key;
         return aes.DecryptCbc(data, iv, PaddingMode.None);

@@ -660,7 +660,7 @@ func (chart *Chart) setXAxisRange() {
 	}
 	// Guard against flat data before rounding, so the range has grid lines
 	if chart.xMax == chart.xMin {
-		chart.xMax = chart.xMin + 1.0
+		chart.xMax = chart.xMin + flatDataSpan(chart.xMin)
 	}
 	if chart.manualXGridLines == 0 {
 		round := roundMaxAndMinValues(chart.xMax, chart.xMin)
@@ -694,7 +694,7 @@ func (chart *Chart) setYAxisRange() {
 	}
 	// Guard against flat data before rounding, so the range has grid lines
 	if chart.yMax == chart.yMin {
-		chart.yMax = chart.yMin + 1.0
+		chart.yMax = chart.yMin + flatDataSpan(chart.yMin)
 	}
 	if chart.manualYGridLines == 0 {
 		round := roundMaxAndMinValues(chart.yMax, chart.yMin)
@@ -833,6 +833,13 @@ func (chart *Chart) drawPathsAndPoints(page *Page, plotData [][]*Point, linksApa
 	return linked
 }
 
+// flatDataSpan returns the span of the range of flat data at the value: 1,
+// or a hundred thousandth of the value when that is more, since above 2^24 a
+// float32 has no room for 1 more, and the range would stay flat.
+func flatDataSpan(value float32) float32 {
+	return max(1.0, abs32(value)*1e-5)
+}
+
 // roundMaxAndMinValues rounds the axis range to "nice" values for clean grid lines.
 // Uses the span (max - min) to support negative values and zero crossings.
 // Rounds max up and min down to step multiples, then recomputes grid lines
@@ -840,7 +847,7 @@ func (chart *Chart) drawPathsAndPoints(page *Page, plotData [][]*Point, linksApa
 func roundMaxAndMinValues(maxValue, minValue float32) *roundedRange {
 	span := maxValue - minValue
 	if span <= 0 {
-		span = 1.0 // Guard against flat data
+		span = flatDataSpan(minValue) // Guard against flat data
 	}
 
 	exponent := int(math.Floor(math.Log(float64(span)) / math.Log(10)))
@@ -908,6 +915,11 @@ func roundMaxAndMinValues(maxValue, minValue float32) *roundedRange {
 
 	// Recount grid lines from actual rounded range
 	round.numOfGridLines = int(math.Round(float64((round.maxValue - round.minValue) / step)))
+	if round.numOfGridLines < 1 || round.maxValue <= round.minValue {
+		// Flat data on a step, which the rounding leaves flat
+		round.maxValue = round.minValue + step
+		round.numOfGridLines = 1
+	}
 
 	return round
 }

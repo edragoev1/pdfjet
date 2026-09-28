@@ -761,7 +761,7 @@ public class Chart implements Drawable {
             }
         }
         // Guard against flat data before rounding, so the range has grid lines
-        if (xMax == xMin) { xMax = xMin + 1f; }
+        if (xMax == xMin) { xMax = xMin + flatDataSpan(xMin); }
         if (manualXGridLines == 0) {
             Round round = roundMaxAndMinValues(xMax, xMin);
             xMax = round.maxValue;
@@ -794,7 +794,7 @@ public class Chart implements Drawable {
             }
         }
         // Guard against flat data before rounding, so the range has grid lines
-        if (yMax == yMin) { yMax = yMin + 1f; }
+        if (yMax == yMin) { yMax = yMin + flatDataSpan(yMin); }
         if (manualYGridLines == 0) {
             Round round = roundMaxAndMinValues(yMax, yMin);
             yMax = round.maxValue;
@@ -953,7 +953,7 @@ public class Chart implements Drawable {
      */
     static Round roundMaxAndMinValues(float maxValue, float minValue) {
         float span = maxValue - minValue;
-        if (span <= 0f) { span = 1f; }  // guard against flat data
+        if (span <= 0f) { span = flatDataSpan(minValue); }  // guard against flat data
 
         int exponent = (int) Math.floor(Math.log(span) / Math.log(10));
         float normalizedSpan = span * (float) Math.pow(10, -exponent);
@@ -989,8 +989,20 @@ public class Chart implements Drawable {
 
         // Recount grid lines from actual rounded range
         round.numOfGridLines = Math.round((round.maxValue - round.minValue) / step);
+        if (round.numOfGridLines < 1 || round.maxValue <= round.minValue) {
+            // Flat data on a step, which the rounding leaves flat
+            round.maxValue = round.minValue + step;
+            round.numOfGridLines = 1;
+        }
 
         return round;
+    }
+
+    // Returns the span of the range of flat data at the value: 1, or a
+    // hundred thousandth of the value when that is more, since above 2^24 a
+    // float has no room for 1 more, and the range would stay flat.
+    static float flatDataSpan(float value) {
+        return Math.max(1f, Math.abs(value) * 1e-5f);
     }
 
     /**

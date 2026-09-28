@@ -85,7 +85,7 @@ public class BarcodeTest {
 
     [Fact]
     public void Code128RefusesATextItCannotHold() {
-        string tooLong = "Code 128 barcodes hold at most 48 codewords, and a character below 32 or from 128 to 255 takes two!";
+        string tooLong = "Code 128 barcodes hold at most 48 codewords, and a character below 32 or from 160 to 255 takes two, and one from 128 to 159 three!";
         Assert.Equal(tooLong, Assert.ThrowsAny<Exception>(() => new Barcode(Barcode.CODE_128, new string('A', 49))).Message);
         Assert.Equal(tooLong, Assert.ThrowsAny<Exception>(() => new Barcode(Barcode.CODE_128, new string('\u00e9', 25))).Message);
         Assert.Equal(tooLong, Assert.ThrowsAny<Exception>(() => new Barcode(Barcode.CODE_128, new string('7', 98))).Message);

@@ -24,7 +24,11 @@ namespace PDFjet.NET {
 public class QRCode : IDrawable {
     private const int PAD0 = 0xEC;
     private const int PAD1 = 0x11;
-    private Boolean?[][] modules;
+    // The bits of the ECI that says the bytes are UTF-8: the mode indicator
+    // 0111 and the ECI assignment number 26 in 8 bits.
+    private const int ECI_BITS = 12;
+    private bool[][] modules;           // The dark modules
+    private bool[][] reserved;          // The modules of the function patterns and the format information
     // The version of the symbol, from 4 to 40, and its size: 4 * typeNumber + 17 modules.
     private int typeNumber;
     private int moduleCount;
@@ -34,6 +38,7 @@ public class QRCode : IDrawable {
     private float y;
 
     private byte[] qrData;
+    private bool eci;                   // The data is not all ASCII, and starts with the ECI of UTF-8
     private float m1 = 2.0f;        // Module length
 
     private int color = Color.black;
@@ -43,34 +48,44 @@ public class QRCode : IDrawable {
     /// Used to create 2D QR Code barcodes. The string is encoded in UTF-8, and
     /// the symbol is the smallest that holds it, from version 4, 33 by 33 modules,
     /// to version 40, 177 by 177 modules. At version 40 it holds up to 2,953 bytes
-    /// at level L, 2,331 at M, 1,663 at Q and 1,273 at H.
+    /// at level L, 2,331 at M, 1,663 at Q and 1,273 at H, a byte fewer when the
+    /// string is not all ASCII: it then starts with the ECI that tells the reader
+    /// the bytes are UTF-8.
     /// </summary>
     /// <param name="str">the string to encode.</param>
     /// <param name="errorCorrectionLevel">the desired error correction level.</param>
     /// <exception cref="ArgumentException">If the string does not fit in a version 40 symbol.</exception>
     public QRCode(String str, ErrorCorrectionLevel errorCorrectionLevel) {
         this.qrData = Encoding.GetEncoding("utf-8").GetBytes(str);
+        foreach (byte b in qrData) {
+            if (b > 127) {
+                eci = true;
+            }
+        }
         this.errorCorrectionLevel = errorCorrectionLevel;
-        this.typeNumber = GetTypeNumber(qrData.Length, errorCorrectionLevel);
+        this.typeNumber = GetTypeNumber(qrData.Length, eci, errorCorrectionLevel);
         this.moduleCount = 4 * typeNumber + 17;
-        this.Make(false, GetBestMaskPattern());
+        this.Make(CreateData(errorCorrectionLevel));
     }
 
-    // Returns the smallest version, from 4, whose data codewords hold the data.
-    private static int GetTypeNumber(int dataLength, ErrorCorrectionLevel errorCorrectionLevel) {
+    // Returns the smallest version, from 4, whose data codewords hold the data,
+    // and the ECI before it when there is one.
+    private static int GetTypeNumber(int dataLength, bool eci, ErrorCorrectionLevel errorCorrectionLevel) {
         for (int typeNumber = 4; typeNumber <= 40; typeNumber++) {
-            if (GetLengthInBits(dataLength, typeNumber) <= GetDataCount(typeNumber, errorCorrectionLevel) * 8) {
+            if (GetLengthInBits(dataLength, eci, typeNumber) <= GetDataCount(typeNumber, errorCorrectionLevel) * 8) {
                 return typeNumber;
             }
         }
-        int maxLength = (GetDataCount(40, errorCorrectionLevel) * 8 - 4 - 16) / 8;
+        int maxLength = (GetDataCount(40, errorCorrectionLevel) * 8 - GetLengthInBits(0, eci, 40)) / 8;
         throw new ArgumentException("The data is too long for a QR code at level "
                 + errorCorrectionLevel + ": " + dataLength + " bytes, at most " + maxLength + ".");
     }
 
-    // The bits of the mode indicator, the character count and the data, in byte mode.
-    private static int GetLengthInBits(int dataLength, int typeNumber) {
-        return 4 + GetCharacterCountBits(typeNumber) + 8 * dataLength;
+    // The bits of the ECI, if any, and of the mode indicator, the character
+    // count and the data, in byte mode.
+    private static int GetLengthInBits(int dataLength, bool eci, int typeNumber) {
+        int bits = 4 + GetCharacterCountBits(typeNumber) + 8 * dataLength;
+        return eci ? bits + ECI_BITS : bits;
     }
 
     // The character count of byte mode has 8 bits up to version 9, and 16 bits after it.
@@ -133,11 +148,14 @@ public class QRCode : IDrawable {
     }
 
     /// <summary>
-    /// Draws this barcode on the specified page.
+    /// Draws this barcode on the specified page. The dark modules next to each
+    /// other in a row are filled as one rectangle, and the pen and the brush of
+    /// the page are as they were after it.
     /// </summary>
     /// <param name="page">the page to draw on.</param>
     /// <returns>x and y coordinates of the bottom right corner of this component.</returns>
     public float[] DrawOn(Page page) {
+        float size = m1*moduleCount;
         if (page != null) {
             // Described, the QR code is a figure of a tagged document; not
             // described, its modules, which carry no text, are decoration.
@@ -146,24 +164,29 @@ public class QRCode : IDrawable {
             } else {
                 page.AddArtifactBMC();
             }
+            page.SaveGraphicsState();
             page.SetBrushColor(this.color);
-            for (int row = 0; row < modules.Length; row++) {
-                for (int col = 0; col < modules.Length; col++) {
-                    if (IsDark(row, col)) {
-                        page.FillRect(x + col*m1, y + row*m1, m1, m1);
+            for (int row = 0; row < moduleCount; row++) {
+                int col = 0;
+                while (col < moduleCount) {
+                    if (!modules[row][col]) {
+                        col++;
+                        continue;
                     }
+                    int start = col;
+                    while (col < moduleCount && modules[row][col]) {
+                        col++;
+                    }
+                    page.FillRect(x + start*m1, y + row*m1, (col - start)*m1, m1);
                 }
             }
+            page.RestoreGraphicsState();
             if (!String.IsNullOrEmpty(altDescription)) {
-                float size = m1*modules.Length;
                 page.SetFigureBoundingBox(x, y, size, size);
             }
             page.AddEMC();
         }
-
-        float w = m1*modules.Length;
-        float h = m1*modules.Length;
-        return new float[] {x + w, y + h};
+        return new float[] {x + size, y + size};
     }
 
     /// <summary>
@@ -171,43 +194,21 @@ public class QRCode : IDrawable {
     /// </summary>
     /// <returns>the modules.</returns>
     public Boolean?[][] GetModules() {
-        return modules;
-    }
-
-    internal bool IsDark(int row, int col) {
-        if (modules[row][col] != null) {
-            return (bool) modules[row][col];
-        } else {
-            return false;
-        }
-    }
-
-    internal int GetModuleCount() {
-        return moduleCount;
-    }
-
-    private int GetBestMaskPattern() {
-        int minLostPoint = 0;
-        int pattern = 0;
-
-        for (int i = 0; i < 8; i++) {
-            Make(true, i);
-            int lostPoint = QRUtil.GetLostPoint(this);
-
-            if (i == 0 || minLostPoint >  lostPoint) {
-                minLostPoint = lostPoint;
-                pattern = i;
+        Boolean?[][] copy = new Boolean?[moduleCount][];
+        for (int row = 0; row < moduleCount; row++) {
+            copy[row] = new Boolean?[moduleCount];
+            for (int col = 0; col < moduleCount; col++) {
+                copy[row][col] = modules[row][col];
             }
         }
-
-        return pattern;
+        return copy;
     }
 
-    private void Make(bool test, int maskPattern) {
-        modules = new Boolean?[moduleCount][];
-        for (int i = 0; i < modules.Length; i++) {
-            modules[i] = new Boolean?[moduleCount];
-        }
+    // Places the function patterns and the codewords, and masks them with the
+    // mask pattern of the lowest penalty, with its format information.
+    private void Make(byte[] data) {
+        modules = NewMatrix(moduleCount);
+        reserved = NewMatrix(moduleCount);
 
         SetupPositionProbePattern(0, 0);
         SetupPositionProbePattern(moduleCount - 7, 0);
@@ -215,15 +216,64 @@ public class QRCode : IDrawable {
 
         SetupPositionAdjustPattern();
         SetupTimingPattern();
-        SetupTypeInfo(test, maskPattern);
+        SetupTypeInfo(modules, 0);  // Reserves the modules of the format information
         if (typeNumber >= 7) {
-            SetupTypeNumber(test);
+            SetupTypeNumber();
         }
+        MapData(data);
 
-        MapData(CreateData(errorCorrectionLevel), maskPattern);
+        // Each mask is tried with its format information in place, as ISO/IEC
+        // 18004 asks, and the first of the lowest penalty is taken.
+        bool[][] best = null;
+        int minLostPoint = 0;
+        for (int maskPattern = 0; maskPattern < 8; maskPattern++) {
+            bool[][] masked = ApplyMask(maskPattern);
+            int lostPoint = QRUtil.GetLostPoint(masked);
+            if (best == null || lostPoint < minLostPoint) {
+                minLostPoint = lostPoint;
+                best = masked;
+            }
+        }
+        modules = best;
+        reserved = null;
     }
 
-    private void MapData(byte[] data, int maskPattern) {
+    // Returns a square matrix of light modules.
+    internal static bool[][] NewMatrix(int moduleCount) {
+        bool[][] matrix = new bool[moduleCount][];
+        for (int i = 0; i < moduleCount; i++) {
+            matrix[i] = new bool[moduleCount];
+        }
+        return matrix;
+    }
+
+    // Sets the module of a function pattern or of the format or version information.
+    private void Set(int row, int col, bool dark) {
+        modules[row][col] = dark;
+        reserved[row][col] = true;
+    }
+
+    // Returns the modules with the mask pattern applied to the codewords, and
+    // the format information of the mask pattern.
+    private bool[][] ApplyMask(int maskPattern) {
+        bool[][] masked = NewMatrix(moduleCount);
+        for (int row = 0; row < moduleCount; row++) {
+            for (int col = 0; col < moduleCount; col++) {
+                bool dark = modules[row][col];
+                if (!reserved[row][col] && QRUtil.GetMask(maskPattern, row, col)) {
+                    dark = !dark;
+                }
+                masked[row][col] = dark;
+            }
+        }
+        SetupTypeInfo(masked, maskPattern);
+        return masked;
+    }
+
+    // Places the bits of the codewords in the modules that are not reserved, in
+    // two module wide columns from the bottom right corner, up and down in turn;
+    // the modules left over are light.
+    private void MapData(byte[] data) {
         int inc = -1;
         int row = moduleCount - 1;
         int bitIndex = 7;
@@ -233,16 +283,11 @@ public class QRCode : IDrawable {
             if (col == 6) col--;
             while (true) {
                 for (int c = 0; c < 2; c++) {
-                    if (modules[row][col - c] == null) {
+                    if (!reserved[row][col - c]) {
                         bool dark = false;
 
                         if (byteIndex < data.Length) {
                             dark = (((int) (((uint) data[byteIndex]) >> bitIndex) & 1) == 1);
-                        }
-
-                        bool mask = QRUtil.GetMask(maskPattern, row, col - c);
-                        if (mask) {
-                            dark = !dark;
                         }
 
                         modules[row][col - c] = dark;
@@ -269,14 +314,14 @@ public class QRCode : IDrawable {
         foreach (int row in pos) {
             foreach (int col in pos) {
 
-                if (modules[row][col] != null) {
+                if (reserved[row][col]) {
                     continue;
                 }
 
                 for (int r = -2; r <= 2; r++) {
                     for (int c = -2; c <= 2; c++) {
-                        modules[row + r][col + c] =
-                                r == -2 || r == 2 || c == -2 || c == 2 || (r == 0 && c == 0);
+                        Set(row + r, col + c,
+                                r == -2 || r == 2 || c == -2 || c == 2 || (r == 0 && c == 0));
                     }
                 }
             }
@@ -291,76 +336,83 @@ public class QRCode : IDrawable {
                     continue;
                 }
 
-                modules[row + r][col + c] =
+                Set(row + r, col + c,
                         (0 <= r && r <= 6 && (c == 0 || c == 6)) ||
                         (0 <= c && c <= 6 && (r == 0 || r == 6)) ||
-                        (2 <= r && r <= 4 && 2 <= c && c <= 4);
+                        (2 <= r && r <= 4 && 2 <= c && c <= 4));
             }
         }
     }
 
     private void SetupTimingPattern() {
         for (int r = 8; r < moduleCount - 8; r++) {
-            if (modules[r][6] != null) {
-                continue;
+            if (!reserved[r][6]) {
+                Set(r, 6, r % 2 == 0);
             }
-            modules[r][6] = (r % 2 == 0);
         }
         for (int c = 8; c < moduleCount - 8; c++) {
-            if (modules[6][c] != null) {
-                continue;
+            if (!reserved[6][c]) {
+                Set(6, c, c % 2 == 0);
             }
-            modules[6][c] = (c % 2 == 0);
         }
     }
 
     // Versions 7 and up carry their version number twice, next to two finder patterns.
-    private void SetupTypeNumber(bool test) {
+    private void SetupTypeNumber() {
         int bits = QRUtil.GetBCHTypeNumber(typeNumber);
         for (int i = 0; i < 18; i++) {
-            bool mod = (!test && ((bits >> i) & 1) == 1);
-            modules[i / 3][i % 3 + moduleCount - 8 - 3] = mod;
-        }
-        for (int i = 0; i < 18; i++) {
-            bool mod = (!test && ((bits >> i) & 1) == 1);
-            modules[i % 3 + moduleCount - 8 - 3][i / 3] = mod;
+            bool dark = ((bits >> i) & 1) == 1;
+            Set(i / 3, i % 3 + moduleCount - 8 - 3, dark);
+            Set(i % 3 + moduleCount - 8 - 3, i / 3, dark);
         }
     }
 
-    private void SetupTypeInfo(bool test, int maskPattern) {
+    // Places the format information, the error correction level and the mask
+    // pattern, twice in the modules, and the dark module next to the bottom
+    // left finder pattern. The modules it takes are reserved.
+    private void SetupTypeInfo(bool[][] matrix, int maskPattern) {
         int data = ((int) errorCorrectionLevel << 3) | maskPattern;
         int bits = QRUtil.GetBCHTypeInfo(data);
 
         for (int i = 0; i < 15; i++) {
-            bool mod = (!test && ((bits >> i) & 1) == 1);
+            bool dark = ((bits >> i) & 1) == 1;
             if (i < 6) {
-                modules[i][8] = mod;
+                Put(matrix, i, 8, dark);
             } else if (i < 8) {
-                modules[i + 1][8] = mod;
+                Put(matrix, i + 1, 8, dark);
             } else {
-                modules[moduleCount - 15 + i][8] = mod;
+                Put(matrix, moduleCount - 15 + i, 8, dark);
             }
         }
 
         for (int i = 0; i < 15; i++) {
-            bool mod = (!test && ((bits >> i) & 1) == 1);
+            bool dark = ((bits >> i) & 1) == 1;
             if (i < 8) {
-                modules[8][moduleCount - i - 1] = mod;
+                Put(matrix, 8, moduleCount - i - 1, dark);
             } else if (i < 9) {
-                modules[8][15 - i - 1 + 1] = mod;
+                Put(matrix, 8, 15 - i - 1 + 1, dark);
             } else {
-                modules[8][15 - i - 1] = mod;
+                Put(matrix, 8, 15 - i - 1, dark);
             }
         }
 
-        modules[moduleCount - 8][8] = !test;
+        Put(matrix, moduleCount - 8, 8, true);
     }
 
-    private byte[] CreateData(ErrorCorrectionLevel errorCorrectionLevel) {
+    private void Put(bool[][] matrix, int row, int col, bool dark) {
+        matrix[row][col] = dark;
+        reserved[row][col] = true;
+    }
+
+    internal byte[] CreateData(ErrorCorrectionLevel errorCorrectionLevel) {
         RSBlock[] rsBlocks = RSBlock.GetRSBlocks(typeNumber, errorCorrectionLevel);
 
         BitBuffer buffer = new BitBuffer();
-        buffer.Put(4, 4);
+        if (eci) {
+            buffer.Put(7, 4);   // ECI
+            buffer.Put(26, 8);  // UTF-8
+        }
+        buffer.Put(4, 4);       // Byte mode
         buffer.Put(qrData.Length, GetCharacterCountBits(typeNumber));
         foreach (byte b in qrData) {
             buffer.Put(b, 8);

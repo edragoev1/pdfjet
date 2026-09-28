@@ -115,14 +115,16 @@ func NewEncryption(pdf *PDF,
 	// A PDF/UA file grants the permission to extract content for
 	// accessibility, as ISO 14289-1 7.16 requires. The compliance has to
 	// be set before the encryption for this to apply.
+	// The permissions of the caller are not changed.
+	access := permissions.GetAccess()
 	if pdf.isTagged() {
-		permissions.Grant(encryption.ExtractContentsForAccessibility)
+		access |= encryption.ExtractContentsForAccessibility
 	}
 
 	// The flags specifying which operations shall be permitted, with the
 	// reserved bits 7, 8 and 13 to 32 set as ISO 32000-2 Table 22 requires,
 	// so the value is negative.
-	p := uint32(permissions.GetAccess()) | 0xFFFFF0C0
+	p := uint32(access) | 0xFFFFF0C0
 	pdf.appendString("/P ")
 	pdf.appendString(strconv.Itoa(int(int32(p))))
 	pdf.appendString("\n")

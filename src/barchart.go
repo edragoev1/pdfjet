@@ -6,6 +6,7 @@
 package pdfjet
 
 import (
+	"math"
 	"strings"
 
 	"github.com/edragoev1/pdfjet/v9/src/color"
@@ -141,6 +142,7 @@ func (chart *BarChart) SetCategories(categories ...string) *BarChart {
 }
 
 // AddSeries adds a series drawn in the next color of the default palette.
+// A value that is NaN or infinite has no bar.
 //   - name: the series name, shown in the legend; empty for none.
 //   - values: one value per category.
 func (chart *BarChart) AddSeries(name string, values []float32) *BarChart {
@@ -343,7 +345,7 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 				up := float32(0.0)
 				down := float32(0.0)
 				for _, s := range chart.series {
-					if i < len(s.values) {
+					if i < len(s.values) && isValue(s.values[i]) {
 						if s.values[i] >= 0.0 {
 							up += s.values[i]
 						} else {
@@ -357,13 +359,16 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 		} else {
 			for _, s := range chart.series {
 				for _, v := range s.values {
+					if !isValue(v) {
+						continue
+					}
 					lo = min(lo, v)
 					hi = max(hi, v)
 				}
 			}
 		}
 		if hi == lo {
-			hi = lo + 1.0
+			hi = lo + flatDataSpan(lo)
 		}
 		round := roundMaxAndMinValues(hi, lo)
 		vMin = round.minValue
@@ -371,7 +376,7 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 		lines = round.numOfGridLines
 	}
 	if vMax == vMin {
-		vMax = vMin + 1.0
+		vMax = vMin + flatDataSpan(vMin)
 	}
 	step := (vMax - vMin) / float32(lines)
 	axisDigits := max(chart.minFractionDigits, fractionDigitsOf(step, chart.maxFractionDigits))
@@ -394,6 +399,9 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 	if chart.drawValueLabels {
 		for _, s := range chart.series {
 			for _, v := range s.values {
+				if !isValue(v) {
+					continue
+				}
 				widestValueLabel = max(widestValueLabel, f2.StringWidth(f2.size, chart.valueLabel(v)))
 			}
 		}
@@ -520,7 +528,7 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 		down := float32(0.0) // the stacked values below 0 so far
 		for j := 0; j < m; j++ {
 			s := chart.series[j]
-			if i >= len(s.values) {
+			if i >= len(s.values) || !isValue(s.values[i]) {
 				continue
 			}
 			// A bar runs from the base to its value; a segment of a stack
@@ -760,6 +768,12 @@ func (chart *BarChart) drawLegendOn(page *Page, baseline float32) {
 }
 
 // abs32 returns the absolute value of a float32.
+// isValue tells if the value is a number to draw: a value that is NaN or
+// infinite has no bar, like a value missing at the end of a series.
+func isValue(value float32) bool {
+	return !math.IsNaN(float64(value)) && !math.IsInf(float64(value), 0)
+}
+
 func abs32(value float32) float32 {
 	if value < 0 {
 		return -value

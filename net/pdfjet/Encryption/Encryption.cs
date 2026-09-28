@@ -115,14 +115,16 @@ public class Encryption {
         // A PDF/UA file grants the permission to extract content for
         // accessibility, as ISO 14289-1 7.16 requires. The compliance has to
         // be set before the encryption for this to apply.
+        // The permissions of the caller are not changed.
+        UserAccess access = permissions.GetAccess();
         if (pdf.IsTagged()) {
-            permissions.Grant(UserAccess.EXTRACT_CONTENTS_FOR_ACCESSIBILITY);
+            access |= UserAccess.EXTRACT_CONTENTS_FOR_ACCESSIBILITY;
         }
 
         // The flags specifying which operations shall be permitted, with the
         // reserved bits 7, 8 and 13 to 32 set as ISO 32000-2 Table 22 requires,
         // so the value is negative.
-        uint p = (uint) permissions.GetAccess() | 0xFFFFF0C0;
+        uint p = (uint) access | 0xFFFFF0C0;
         pdf.Append("/P ");
         pdf.Append(((int) p).ToString());
         pdf.Append("\n");

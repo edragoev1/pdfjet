@@ -117,7 +117,7 @@ func TestBarcodeUpcAndEanNeedTheirNumberOfDigits(t *testing.T) {
 }
 
 func TestBarcodeCode128RefusesATextItCannotHold(t *testing.T) {
-	const tooLong = "Code 128 barcodes hold at most 48 codewords, and a character below 32 or from 128 to 255 takes two!"
+	const tooLong = "Code 128 barcodes hold at most 48 codewords, and a character below 32 or from 160 to 255 takes two, and one from 128 to 159 three!"
 	for text, want := range map[string]string{
 		strings.Repeat("A", 49): tooLong,
 		strings.Repeat("é", 25): tooLong, // Two codewords each

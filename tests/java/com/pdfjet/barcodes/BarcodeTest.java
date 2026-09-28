@@ -97,7 +97,7 @@ class BarcodeTest {
 
     @Test
     void code128RefusesATextItCannotHold() throws Exception {
-        String tooLong = "Code 128 barcodes hold at most 48 codewords, and a character below 32 or from 128 to 255 takes two!";
+        String tooLong = "Code 128 barcodes hold at most 48 codewords, and a character below 32 or from 160 to 255 takes two, and one from 128 to 159 three!";
         assertEquals(tooLong, assertThrows(Exception.class, () -> new Barcode(Barcode.CODE_128, repeat("A", 49))).getMessage());
         assertEquals(tooLong, assertThrows(Exception.class, () -> new Barcode(Barcode.CODE_128, repeat("\u00e9", 25))).getMessage());
         assertEquals(tooLong, assertThrows(Exception.class, () -> new Barcode(Barcode.CODE_128, repeat("7", 98))).getMessage());

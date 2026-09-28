@@ -10,6 +10,8 @@ import (
 	"strconv"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
+	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // PDF417 is used to generate PDF417 2D barcodes.
@@ -21,13 +23,14 @@ import (
 //
 // Please see Example_12.
 type PDF417 struct {
-	x1, y1    float32
-	w1        float32
-	h1        float32
-	rows      int
-	cols      int
-	codewords []int
-	str       string
+	x1, y1         float32
+	w1             float32
+	h1             float32
+	rows           int
+	cols           int
+	codewords      []int
+	str            string
+	altDescription string
 }
 
 // Constants
@@ -47,6 +50,8 @@ const (
 // The symbol has 18 columns and as many rows as the string needs, up to the
 // 928 codewords a PDF417 symbol can hold: 864 data codewords, or about 1,300
 // characters of mixed text, with the error correction level 5 used here.
+// The string is ASCII, and a control character other than HT, LF and CR
+// takes a codeword of its own and one more, in byte compaction.
 // It panics if there are unencodable characters or the string does not fit in a symbol.
 // @param str the specified string.
 func NewPDF417(str string) *PDF417 {
@@ -62,9 +67,9 @@ func NewPDF417(str string) *PDF417 {
 		}
 	}
 
-	// The data codewords: the symbol length descriptor and one codeword for two text codewords.
-	list := barcode.textToArrayOfIntegers()
-	dataCodewords := 1 + (len(list)+1)/2
+	// The data codewords, after the symbol length descriptor
+	list := barcode.dataCodewords()
+	dataCodewords := 1 + len(list)
 	barcode.rows = (dataCodewords + len(l5ECCInstance.Table) + barcode.cols - 1) / barcode.cols
 	if barcode.rows < 3 {
 		barcode.rows = 3
@@ -109,8 +114,8 @@ func NewPDF417(str string) *PDF417 {
 		buffer[i] = 900 // The default pad codeword
 	}
 	buffer[0] = dataLen
+	copy(buffer[1:], list)
 
-	barcode.addData(buffer, list)
 	barcode.addECC(buffer)
 
 	for i := 0; i < barcode.rows; i++ {
@@ -151,6 +156,10 @@ func (barcode *PDF417) textToArrayOfIntegers() []int {
 	for _, ch := range barcode.str {
 		if ch == 0x20 {
 			list = append(list, 26) // The codeword for space
+			continue
+		}
+		if isByteShifted(ch) {
+			list = append(list, -1-int(ch)) // Below 0, see dataCodewords
 			continue
 		}
 
@@ -198,17 +207,43 @@ func (barcode *PDF417) textToArrayOfIntegers() []int {
 	return list
 }
 
-func (barcode *PDF417) addData(buf []int, list []int) {
-	bi := 1 // buffer index = 1 to skip the Symbol Length Descriptor
-	for i := 0; i < len(list); i += 2 {
-		hi := list[i]
-		lo := shiftToPunct // Pad
-		if i+1 < len(list) {
-			lo = list[i+1]
+// byteShift is the codeword that shifts from text compaction to byte
+// compaction for the one codeword after it.
+const byteShift = 913
+
+// isByteShifted tells if the character is a control character that text
+// compaction has no value for, and that is so encoded in byte compaction.
+func isByteShifted(ch rune) bool {
+	return ch < 0x20 && ch != '\t' && ch != '\n' && ch != '\r'
+}
+
+// dataCodewords returns the data codewords of the string in text compaction,
+// two values to a codeword; a control character other than HT, LF and CR is
+// the byte compaction shift and its byte, which starts a codeword, so the
+// value before it may be padded, and after which text compaction goes on in
+// the submode it was in.
+func (barcode *PDF417) dataCodewords() []int {
+	list := barcode.textToArrayOfIntegers()
+	codewords := make([]int, 0, len(list)/2+1)
+	hi := -1 // The first value of a codeword, if any
+	for _, value := range list {
+		if value < 0 {
+			if hi != -1 {
+				codewords = append(codewords, 30*hi+shiftToPunct) // Pad
+				hi = -1
+			}
+			codewords = append(codewords, byteShift, -1-value)
+		} else if hi == -1 {
+			hi = value
+		} else {
+			codewords = append(codewords, 30*hi+value)
+			hi = -1
 		}
-		buf[bi] = 30*hi + lo
-		bi++
 	}
+	if hi != -1 {
+		codewords = append(codewords, 30*hi+shiftToPunct) // Pad
+	}
+	return codewords
 }
 
 func (barcode *PDF417) addECC(buf []int) {
@@ -234,9 +269,44 @@ func (barcode *PDF417) addECC(buf []int) {
 	}
 }
 
-// DrawOn draws this barcode on the specified page.
+// SetAltDescription sets what the barcode says for a screen reader: a tagged
+// document, PDF/UA or a PDF/A of level A, then has the barcode as a figure of
+// that description. Without one, its bars are decoration, which a screen
+// reader skips.
+func (barcode *PDF417) SetAltDescription(altDescription string) *PDF417 {
+	barcode.altDescription = altDescription
+	return barcode
+}
+
+// DrawOn draws this barcode on the specified page. The bars are black, and
+// the pen of the page is as it was after it.
 // @return x and y coordinates of the bottom right corner of this component.
 func (barcode *PDF417) DrawOn(page *pdfjet.Page) [2]float32 {
+	if page != nil {
+		// Described, the barcode is a figure of a tagged document; not
+		// described, its bars, which carry no text, are decoration.
+		if barcode.altDescription != "" {
+			page.AddBDC(structelem.Figure, "", "", barcode.altDescription)
+		} else {
+			page.AddArtifactBMC()
+		}
+		page.SaveGraphicsState()
+		page.SetPenColor(color.Black)
+	}
+	xy := barcode.drawBars(page)
+	if page != nil {
+		page.RestoreGraphicsState()
+		if barcode.altDescription != "" {
+			page.SetFigureBoundingBox(barcode.x1, barcode.y1, xy[0]-barcode.x1, xy[1]-barcode.y1)
+		}
+		page.AddEMC()
+	}
+	return xy
+}
+
+// drawBars draws the bars, or measures them with no page, and returns the
+// bottom right corner of the barcode.
+func (barcode *PDF417) drawBars(page *pdfjet.Page) [2]float32 {
 	x := barcode.x1
 	y := barcode.y1
 
@@ -292,10 +362,8 @@ func (barcode *PDF417) drawBar(page *pdfjet.Page, x, y, w, h float32) {
 	if page == nil {
 		return // Measured, not drawn
 	}
-	page.AddArtifactBMC()
 	page.SetPenWidth(w)
 	page.MoveTo(x+w/2, y)
 	page.LineTo(x+w/2, y+h)
 	page.StrokePath()
-	page.AddEMC()
 }
