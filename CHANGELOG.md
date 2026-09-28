@@ -491,6 +491,15 @@ This is the first entry in this file; earlier releases were not tracked here.
   the values of the other three ports.
 
 ### Fixed
+- The tags PAC warned of in a tagged document, in all four ports. A figure,
+  a link or an annotation that is a kid of the Document, or of another
+  element that groups, has the attribute Placement Block, as PDF asks of an
+  element of an inline type that stands as a block: PAC warned of each as a
+  possibly inappropriate use, 6 Annot elements in Example_06, 218 Link
+  elements in Example_09 and the Figure of Example_10. And the text of a
+  cell has no Alt of its own, which PAC warns of on text, 4,385 of them in
+  Example_08; a cell of a `BigTable` has one only when its text is cut
+  short to fit, as the whole of it. check-pdfua-tags.py checks both.
 - A padding of a cell that is not a number, or too large for an int, in
   Swift, Go and C#: Swift trapped on `setTopPadding(.nan)` or an infinity,
   and Go and C# kept 0 where Java keeps 63.75 for an infinity or 1e10. A

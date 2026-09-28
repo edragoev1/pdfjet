@@ -352,7 +352,11 @@ namespace PDFjet.NET {
                     // no paragraph of its own, which would be another object
                     // for every cell.
                     page.structParent = rowElement;
-                    page.AddBDC(cellStructure.Value, null, null, text,
+                    // A text cut short to fit its column is described by the
+                    // whole of it; a text drawn whole needs no description,
+                    // which PAC warns of on text
+                    String description = (drawn != text) ? text : null;
+                    page.AddBDC(cellStructure.Value, null, null, description,
                             CellAttributes(cellStructure.Value));
                 } else {
                     page.AddArtifactBMC();

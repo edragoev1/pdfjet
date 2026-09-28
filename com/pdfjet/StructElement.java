@@ -7,7 +7,10 @@
 package com.pdfjet;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * A structure element of the structure tree that PDF writes for a tagged
@@ -44,5 +47,41 @@ class StructElement {
 
     void addKidObjNumber(int objNumber) {
         this.kids.add(objNumber);
+    }
+
+    // The structure types that PDF makes inline, which stand in a paragraph;
+    // one that is a kid of an element that groups others, like the Document,
+    // stands as a block, and says so with the attribute Placement Block, or
+    // PAC warns of it as a possibly inappropriate use: a figure, a link or an
+    // annotation drawn on its own, and not inside a paragraph.
+    private static final Set<String> INLINE_LEVEL = new HashSet<String>(Arrays.asList(
+            "Figure", "Formula", "Form", "Note", "Link", "Annot"));
+
+    // The structure types that group others and hold blocks, not text.
+    private static final Set<String> GROUPING = new HashSet<String>(Arrays.asList(
+            "Document", "Part", "Art", "Sect", "Div", "BlockQuote",
+            "Caption", "TOC", "TOCI", "Index", "NonStruct", "Private"));
+
+    // Whether the element is of an inline type and stands as a block, a kid of
+    // the Document or of another element that groups others.
+    boolean placedAsBlock() {
+        if (!INLINE_LEVEL.contains(structure)) {
+            return false;
+        }
+        return parent == null || GROUPING.contains(parent.structure);
+    }
+
+    // The attributes with Placement Block among those of the owner Layout: in
+    // the Layout attributes the element has, like the BBox of a figure, or in
+    // their own dictionary beside attributes of another owner.
+    static String withPlacementBlock(String attributes) {
+        final String layout = "<</O /Layout ";
+        if (attributes == null || attributes.isEmpty()) {
+            return "<</O /Layout /Placement /Block>>";
+        }
+        if (attributes.startsWith(layout)) {
+            return layout + "/Placement /Block " + attributes.substring(layout.length());
+        }
+        return "[" + attributes + " <</O /Layout /Placement /Block>>]";
     }
 }

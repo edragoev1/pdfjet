@@ -778,9 +778,13 @@ func (pdf *PDF) addStructElementObject(element *structElement) {
 			pdf.appendString("]\n")
 		}
 
-		if element.attributes != "" {
+		attributes := element.attributes
+		if placedAsBlock(element) {
+			attributes = withPlacementBlock(attributes)
+		}
+		if attributes != "" {
 			pdf.appendString("/A ")
-			pdf.appendString(element.attributes)
+			pdf.appendString(attributes)
 			pdf.appendString("\n")
 		}
 

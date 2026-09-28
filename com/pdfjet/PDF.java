@@ -849,9 +849,13 @@ final public class PDF {
                 append("]\n");
             }
 
-            if (element.attributes != null) {
+            String attributes = element.attributes;
+            if (element.placedAsBlock()) {
+                attributes = StructElement.withPlacementBlock(attributes);
+            }
+            if (attributes != null && !attributes.isEmpty()) {
                 append("/A ");
-                append(element.attributes);
+                append(attributes);
                 append("\n");
             }
 

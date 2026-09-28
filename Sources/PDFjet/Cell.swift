@@ -923,9 +923,11 @@ public class Cell {
         var link: StructElement?
         if line == nil {
             if uri != nil {
-                link = page.addLinkBDC(StructElem.P, nil, text!, text!)
+                link = page.addLinkBDC(StructElem.P, nil, nil, nil)
             } else {
-                page.addBDC(StructElem.P, text!, text!)
+                // The text is drawn whole, so it needs no description of its
+                // own, which PAC warns of on text, as a text line has none
+                page.addBDC(StructElem.P, nil, nil)
             }
             page.drawString(font, fallbackFont, fontSize, text!, xText, yText, Util.toRGB(textColor), nil)
             page.addEMC()

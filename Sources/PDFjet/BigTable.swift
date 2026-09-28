@@ -338,7 +338,11 @@ public class BigTable {
                 // holds the marked content of the text: it needs no paragraph
                 // of its own, which would be another object for every cell.
                 page!.structParent = rowElement
-                page!.addBDC(cellStructure!, nil, nil, text,
+                // A text cut short to fit its column is described by the
+                // whole of it; a text drawn whole needs no description, which
+                // PAC warns of on text
+                let description: String? = (drawn != text) ? text : nil
+                page!.addBDC(cellStructure!, nil, nil, description,
                         BigTable.cellAttributes(cellStructure!))
             } else {
                 page!.addArtifactBMC()

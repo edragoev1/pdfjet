@@ -40,5 +40,44 @@ internal class StructElement {
     // is written when the document is completed; every other element is
     // written with its page and let go of.
     internal bool open = false;
+
+    // The structure types that PDF makes inline, which stand in a paragraph;
+    // one that is a kid of an element that groups others, like the Document,
+    // stands as a block, and says so with the attribute Placement Block, or
+    // PAC warns of it as a possibly inappropriate use: a figure, a link or an
+    // annotation drawn on its own, and not inside a paragraph.
+    private static readonly HashSet<String> inlineLevelStructures = new HashSet<String> {
+        "Figure", "Formula", "Form", "Note", "Link", "Annot"
+    };
+
+    // The structure types that group others and hold blocks, not text.
+    private static readonly HashSet<String> groupingStructures = new HashSet<String> {
+        "Document", "Part", "Art", "Sect", "Div", "BlockQuote",
+        "Caption", "TOC", "TOCI", "Index", "NonStruct", "Private"
+    };
+
+    // Whether the element is of an inline type and stands as a block, a kid
+    // of the Document or of another element that groups others.
+    internal static bool PlacedAsBlock(StructElement element) {
+        if (element.structure == null || !inlineLevelStructures.Contains(element.structure)) {
+            return false;
+        }
+        return element.parent == null || (element.parent.structure != null &&
+                groupingStructures.Contains(element.parent.structure));
+    }
+
+    // The attributes with Placement Block among those of the owner Layout: in
+    // the Layout attributes the element has, like the BBox of a figure, or in
+    // their own dictionary beside attributes of another owner.
+    internal static String WithPlacementBlock(String attributes) {
+        const String layout = "<</O /Layout ";
+        if (attributes == null || attributes == "") {
+            return "<</O /Layout /Placement /Block>>";
+        }
+        if (attributes.StartsWith(layout, StringComparison.Ordinal)) {
+            return layout + "/Placement /Block " + attributes.Substring(layout.Length);
+        }
+        return "[" + attributes + " <</O /Layout /Placement /Block>>]";
+    }
 }
 }   // End of namespace PDFjet.NET

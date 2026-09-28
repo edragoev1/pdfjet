@@ -1047,3 +1047,62 @@ func TestPDFTheALevelsOfPDFAAreTagged(t *testing.T) {
 		}
 	}
 }
+
+// testElementAttributes returns the /A of the structure element, or "".
+func testElementAttributes(raw, number string) string {
+	object := regexp.MustCompile(`(?s)\n` + number + ` 0 obj\n<<\n/Type /StructElem .*?\nendobj`).FindString(raw)
+	if m := regexp.MustCompile(`\n/A ([^\n]*)\n`).FindStringSubmatch(object); m != nil {
+		return m[1]
+	}
+	return ""
+}
+
+// A figure, a link or an annotation that is not in a paragraph, a kid of the
+// Document, stands as a block and says so, as PAC asks of an element that PDF
+// makes inline; one in a paragraph, or a figure in its link, does not.
+func TestPDFAnInlineElementStandingAsABlockSaysSo(t *testing.T) {
+	doc := testNewDoc()
+	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetTitle("Title")
+	font := testStreamFont(t, doc.pdf)
+	page := NewPage(doc.pdf, letter.Portrait())
+	file, err := os.Open(testRepoPath(t, "images/up-arrow.png"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer file.Close()
+	image := NewImage(doc.pdf, file)
+	image.SetAltDescription("Up").SetURIAction("https://pdfjet.com").SetLocation(70, 80)
+	image.DrawOn(page)
+	NewTextLine(font, "PDFjet").SetURIAction("https://pdfjet.com").SetLocation(70, 200).DrawOn(page)
+	note := NewTextAnnotation()
+	note.SetLocation(70, 300)
+	note.SetContents("A note")
+	note.DrawOn(page)
+	raw := string(doc.complete())
+	for number, element := range testElements(raw) {
+		parent := testElements(raw)[element[1]][0]
+		block := strings.Contains(testElementAttributes(raw, number), "/Placement /Block")
+		want := (element[0] == "Link" || element[0] == "Annot" || element[0] == "Figure") && parent == ""
+		if block != want {
+			t.Errorf("a %s in %q: Placement Block %v, want %v", element[0], parent, block, want)
+		}
+	}
+}
+
+// The text of a cell is drawn whole, and has no description of its own,
+// which PAC warns of on text.
+func TestPDFTheTextOfACellHasNoAlt(t *testing.T) {
+	doc := testNewDoc()
+	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetTitle("Title")
+	font := testStreamFont(t, doc.pdf)
+	page := NewPage(doc.pdf, letter.Portrait())
+	table := NewTable().SetTableData([][]*Cell{{NewCell(font, "Name"), NewCell(font, "City")}, {NewCell(font, "Jane"), NewCell(font, "Ottawa")}}, 1)
+	table.SetLocation(70, 80)
+	table.DrawOn(page)
+	raw := string(doc.complete())
+	if strings.Contains(raw, "/Alt ") {
+		t.Error("the text of a cell has an Alt")
+	}
+}

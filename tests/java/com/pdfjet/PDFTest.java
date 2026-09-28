@@ -376,6 +376,68 @@ class PDFTest {
         assertEquals(2, raw.split("/Subtype /Link").length - 1);
     }
 
+    // The /A of the structure element, or "".
+    private static String elementAttributes(String raw, String number) {
+        Matcher object = Pattern.compile(
+                "(?s)\n" + number + " 0 obj\n<<\n/Type /StructElem .*?\nendobj").matcher(raw);
+        if (!object.find()) {
+            return "";
+        }
+        Matcher m = Pattern.compile("\n/A ([^\n]*)\n").matcher(object.group());
+        return m.find() ? m.group(1) : "";
+    }
+
+    // A figure, a link or an annotation that is not in a paragraph, a kid of
+    // the Document, stands as a block and says so, as PAC asks of an element
+    // that PDF makes inline; one in a paragraph, or a figure in its link, does
+    // not.
+    @Test
+    void anInlineElementStandingAsABlockSaysSo() throws Exception {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1);
+        pdf.setTitle("Title");
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Image image = new Image(pdf, TestSupport.open("images/up-arrow.png"));
+        image.setAltDescription("Up").setURIAction("https://pdfjet.com").setLocation(70f, 80f);
+        image.drawOn(page);
+        new TextLine(font, "PDFjet").setURIAction("https://pdfjet.com").setLocation(70f, 200f).drawOn(page);
+        TextAnnotation note = new TextAnnotation();
+        note.setLocation(70f, 300f);
+        note.setContents("A note");
+        note.drawOn(page);
+        pdf.complete();
+        String raw = TestSupport.latin1(bos.toByteArray());
+        Map<String, String[]> elements = elements(raw);
+        for (Map.Entry<String, String[]> entry : elements.entrySet()) {
+            String[] element = entry.getValue();
+            String[] parentElement = elements.get(element[1]);
+            String parent = parentElement == null ? "" : parentElement[0];
+            boolean block = elementAttributes(raw, entry.getKey()).contains("/Placement /Block");
+            boolean want = (element[0].equals("Link") || element[0].equals("Annot") || element[0].equals("Figure"))
+                    && parent.isEmpty();
+            assertEquals(want, block, "a " + element[0] + " in \"" + parent + "\"");
+        }
+    }
+
+    // The text of a cell is drawn whole, and has no description of its own,
+    // which PAC warns of on text.
+    @Test
+    void theTextOfACellHasNoAlt() throws Exception {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1);
+        pdf.setTitle("Title");
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Table table = new Table().setTableData(Arrays.asList(
+                Arrays.asList(new Cell(font, "Name"), new Cell(font, "City")),
+                Arrays.asList(new Cell(font, "Jane"), new Cell(font, "Ottawa"))), 1);
+        table.setLocation(70f, 80f);
+        table.drawOn(page);
+        pdf.complete();
+        assertFalse(TestSupport.latin1(bos.toByteArray()).contains("/Alt "), "the text of a cell has an Alt");
+    }
+
     // The numbers of the page objects, in page order.
     private static String[] pageNumbers(byte[] pdf) throws Exception {
         List<PDFobj> pages = new PDF().getPageObjects(TestSupport.read(pdf));

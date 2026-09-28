@@ -384,7 +384,11 @@ public class BigTable {
                 // holds the marked content of the text: it needs no paragraph
                 // of its own, which would be another object for every cell.
                 page.structParent = rowElement;
-                page.addBDC(cellStructure, null, null, text, cellAttributes(cellStructure));
+                // A text cut short to fit its column is described by the
+                // whole of it; a text drawn whole needs no description, which
+                // PAC warns of on text
+                String description = drawn.equals(text) ? null : text;
+                page.addBDC(cellStructure, null, null, description, cellAttributes(cellStructure));
             } else {
                 page.addArtifactBMC();
             }

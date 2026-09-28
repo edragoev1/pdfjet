@@ -2609,6 +2609,7 @@ public class Page {
         element.pageObjNumber = self.objNumber
         element.parent = parent
         element.parentObjNumber = parent?.objNumber
+        element.parentStructure = parent?.structure ?? ""
         parent?.kids.append(element.objNumber ?? 0)
         self.structures.append(element)
     }

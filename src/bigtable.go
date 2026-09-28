@@ -358,7 +358,14 @@ func (bt *BigTable) drawFieldsAndLine(
 			// holds the marked content of the text: it needs no paragraph of
 			// its own, which would be another object for every cell.
 			bt.page.structParent = rowElement
-			bt.page.addBDC(cellStructure, "", "", text, bigTableCellAttributes(cellStructure))
+			// A text cut short to fit its column is described by the whole
+			// of it; a text drawn whole needs no description, which PAC
+			// warns of on text
+			description := ""
+			if drawn != text {
+				description = text
+			}
+			bt.page.addBDC(cellStructure, "", "", description, bigTableCellAttributes(cellStructure))
 		} else {
 			bt.page.AddArtifactBMC()
 		}

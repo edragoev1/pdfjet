@@ -807,9 +807,13 @@ public sealed class PDF {
                 Append("]\n");
             }
 
-            if (element.attributes != null) {
+            String attributes = element.attributes;
+            if (StructElement.PlacedAsBlock(element)) {
+                attributes = StructElement.WithPlacementBlock(attributes);
+            }
+            if (attributes != null) {
                 Append("/A ");
-                Append(element.attributes);
+                Append(attributes);
                 Append("\n");
             }
 

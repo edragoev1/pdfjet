@@ -827,9 +827,11 @@ func (cell *Cell) drawText(page *Page, x, y, cellW, cellH float32) {
 	var link *structElement
 	if !hasLine {
 		if cell.uri != "" {
-			link = page.addLinkBDC("P", "", cell.text, cell.text)
+			link = page.addLinkBDC("P", "", "", "")
 		} else {
-			page.AddBDC("P", "", cell.text, cell.text)
+			// The text is drawn whole, so it needs no description of its own,
+			// which PAC warns of on text, as a text line has none
+			page.AddBDC("P", "", "", "")
 		}
 		page.drawStringUsingHighlightColors(
 			cell.font, cell.fallbackFont, cell.fontSize, cell.text, xText, yText, colorToRGB(cell.textColor), nil)

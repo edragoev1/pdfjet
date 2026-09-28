@@ -30,6 +30,10 @@ The checks are:
     the element it gives for an annotation has the annotation. PAC reports
     an entry that does not as "Inconsistent entry found".
   * A list is built of L, LI, Lbl and LBody, in that nesting.
+  * A Figure, a Link or an Annot, of the types PDF makes inline, that is a
+    kid of the Document or another element that groups stands as a block
+    and says so with Placement Block; and an element of text, a P, a heading
+    or a Span, has no Alt of its own, which PAC warns of.
   * The cells of a table tile it: laid out as a browser lays out an HTML
     table, with ColSpan and RowSpan, they fill every square of the grid and
     none of them twice. Every header cell says what it heads with a Scope.
@@ -146,10 +150,28 @@ class Report:
         self.described = []
         self.boxes = []
         self.links = []
+        self.unplaced = Counter()
+        self.alt_on_text = Counter()
 
 
-def walk(element, report, rows=None):
+# The structure types that PDF makes inline, and those that group others: an
+# inline element that is a kid of one that groups stands as a block, and says
+# so with Placement Block, or PAC warns of it as a possibly inappropriate use.
+INLINE_LEVEL = {'Figure', 'Formula', 'Form', 'Note', 'Link', 'Annot'}
+GROUPING = {'Document', 'Part', 'Art', 'Sect', 'Div', 'BlockQuote', 'Caption', 'TOC',
+            'TOCI', 'Index', 'NonStruct', 'Private'}
+# The elements of text, whose text is read, and which PAC warns of when they
+# have an Alt of their own
+TEXT_ELEMENTS = {'P', 'H', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'Span', 'Lbl', 'LBody'}
+
+
+def walk(element, report, rows=None, parent='Document'):
     report.counts[element.tag] += 1
+    if element.tag in INLINE_LEVEL and parent in GROUPING and \
+            element.attributes.get('Placement') != '/Block':
+        report.unplaced[element.tag] += 1
+    if element.tag in TEXT_ELEMENTS and element.alt is not None:
+        report.alt_on_text[element.tag] += 1
     if element.tag in HEADINGS:
         report.headings.append(int(element.tag[1]))
     elif element.tag == 'Figure':
@@ -170,7 +192,7 @@ def walk(element, report, rows=None):
     elif element.tag == 'L':
         report.lists.append([kid.tag for kid in element.kids()])
     for kid in element.kids():
-        walk(kid, report, rows)
+        walk(kid, report, rows, element.tag)
 
 
 def table_shape(rows):
@@ -348,6 +370,10 @@ def check(path):
     # of a Link that holds only the annotation, and not the text it is on
     if any(not annotation for _, annotation in report.links):
         report.problems.append('a Link holds no annotation')
+    for tag, n in sorted(report.unplaced.items()):
+        report.problems.append(f'{n} {tag} elements stand as blocks without Placement Block')
+    for tag, n in sorted(report.alt_on_text.items()):
+        report.problems.append(f'{n} {tag} elements of text have an Alt, which PAC warns of')
     alone = sum(1 for content, _ in report.links if not content)
     if alone:
         report.notes.append(f'{alone} of {len(report.links)} links hold no content, '

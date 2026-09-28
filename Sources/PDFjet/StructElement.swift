@@ -23,6 +23,10 @@ class StructElement {
     // the document is completed, like the Link of a text and its annotation,
     // refers to after its page has let its parent go.
     var parentObjNumber: Int?
+    // The structure type of the parent, "" for the Document, which tells
+    // whether an element PDF makes inline stands as a block after the page
+    // has let its parent go.
+    var parentStructure = ""
     // The object numbers of the kids. A parent keeps the numbers and not the
     // kids, so that a page can write its elements and let go of them.
     var kids = [Int]()
@@ -40,4 +44,42 @@ class StructElement {
     var altDescription: String?
     var actualText: String?
     var annotation: Annotation?
+
+    // The structure types that PDF makes inline, which stand in a paragraph;
+    // one that is a kid of an element that groups others, like the Document,
+    // stands as a block, and says so with the attribute Placement Block, or
+    // PAC warns of it as a possibly inappropriate use: a figure, a link or an
+    // annotation drawn on its own, and not inside a paragraph.
+    private static let inlineLevelStructures: Set<String> = [
+        "Figure", "Formula", "Form", "Note", "Link", "Annot",
+    ]
+
+    // The structure types that group others and hold blocks, not text.
+    private static let groupingStructures: Set<String> = [
+        "Document", "Part", "Art", "Sect", "Div", "BlockQuote",
+        "Caption", "TOC", "TOCI", "Index", "NonStruct", "Private",
+    ]
+
+    // Whether the element is of an inline type and stands as a block, a kid
+    // of the Document or of another element that groups others.
+    func placedAsBlock() -> Bool {
+        guard let structure = structure, StructElement.inlineLevelStructures.contains(structure) else {
+            return false
+        }
+        return parentStructure == "" || StructElement.groupingStructures.contains(parentStructure)
+    }
+
+    // The attributes with Placement Block among those of the owner Layout: in
+    // the Layout attributes the element has, like the BBox of a figure, or in
+    // their own dictionary beside attributes of another owner.
+    static func withPlacementBlock(_ attributes: String?) -> String {
+        let layout = "<</O /Layout "
+        guard let attributes = attributes, !attributes.isEmpty else {
+            return "<</O /Layout /Placement /Block>>"
+        }
+        if attributes.hasPrefix(layout) {
+            return layout + "/Placement /Block " + attributes.dropFirst(layout.count)
+        }
+        return "[" + attributes + " <</O /Layout /Placement /Block>>]"
+    }
 }

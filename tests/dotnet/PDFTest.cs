@@ -362,6 +362,65 @@ public class PDFTest {
         Assert.Equal(2, raw.Split("/Subtype /Link").Length - 1);
     }
 
+    // The /A of the structure element, or "".
+    internal static string ElementAttributes(string raw, string number) {
+        Match obj = Regex.Match(raw, @"\n" + number + @" 0 obj\n<<\n/Type /StructElem .*?\nendobj", RegexOptions.Singleline);
+        Match a = Regex.Match(obj.Value, @"\n/A ([^\n]*)\n");
+        return a.Success ? a.Groups[1].Value : "";
+    }
+
+    // A figure, a link or an annotation that is not in a paragraph, a kid of
+    // the Document, stands as a block and says so, as PAC asks of an element
+    // that PDF makes inline; one in a paragraph, or a figure in its link, does
+    // not.
+    [Fact]
+    public void AnInlineElementStandingAsABlockSaysSo() {
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream, Compliance.PDF_UA_1);
+        pdf.SetTitle("Title");
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Image image = new Image(pdf, TestSupport.Open("images/up-arrow.png"));
+        image.SetAltDescription("Up").SetURIAction("https://pdfjet.com").SetLocation(70f, 80f);
+        image.DrawOn(page);
+        new TextLine(font, "PDFjet").SetURIAction("https://pdfjet.com").SetLocation(70f, 200f).DrawOn(page);
+        TextAnnotation note = new TextAnnotation();
+        note.SetLocation(70f, 300f);
+        note.SetContents("A note");
+        note.DrawOn(page);
+        pdf.Complete();
+        string raw = TestSupport.Latin1(stream.ToArray());
+        Dictionary<string, string[]> elements = Elements(raw);
+        foreach (KeyValuePair<string, string[]> element in elements) {
+            string parent = elements.ContainsKey(element.Value[1]) ? elements[element.Value[1]][0] : "";
+            bool block = ElementAttributes(raw, element.Key).Contains("/Placement /Block");
+            bool want = (element.Value[0] == "Link" || element.Value[0] == "Annot" || element.Value[0] == "Figure")
+                    && parent == "";
+            Assert.True(block == want, $"a {element.Value[0]} in \"{parent}\": Placement Block {block}, want {want}");
+        }
+    }
+
+    // The text of a cell is drawn whole, and has no description of its own,
+    // which PAC warns of on text.
+    [Fact]
+    public void TheTextOfACellHasNoAlt() {
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream, Compliance.PDF_UA_1);
+        pdf.SetTitle("Title");
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        List<List<Cell>> data = new List<List<Cell>> {
+            new List<Cell> { new Cell(font, "Name"), new Cell(font, "City") },
+            new List<Cell> { new Cell(font, "Jane"), new Cell(font, "Ottawa") },
+        };
+        Table table = new Table().SetTableData(data, 1);
+        table.SetLocation(70f, 80f);
+        table.DrawOn(page);
+        pdf.Complete();
+        string raw = TestSupport.Latin1(stream.ToArray());
+        Assert.DoesNotContain("/Alt ", raw);
+    }
+
     // The numbers of the page objects, in page order.
     private static string[] PageNumbers(byte[] pdf) {
         List<PDFobj> pages = new PDF().GetPageObjects(TestSupport.Read(pdf));

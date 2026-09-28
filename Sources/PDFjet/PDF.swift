@@ -840,7 +840,11 @@ public final class PDF {
                 append("]\n")
             }
 
-            if let attributes = element.attributes {
+            var attributes = element.attributes
+            if element.placedAsBlock() {
+                attributes = StructElement.withPlacementBlock(attributes)
+            }
+            if let attributes = attributes, !attributes.isEmpty {
                 append("/A ")
                 append(attributes)
                 append("\n")

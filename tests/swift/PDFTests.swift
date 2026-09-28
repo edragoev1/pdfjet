@@ -357,6 +357,68 @@ import Testing
         #expect(raw.components(separatedBy: "/Subtype /Link").count - 1 == 2)
     }
 
+    // The /A of the structure element, or "".
+    private func elementAttributes(_ raw: String, _ number: String) -> String {
+        guard let start = raw.range(of: "\n" + number + " 0 obj\n<<\n/Type /StructElem "),
+              let end = raw.range(of: "\nendobj", range: start.upperBound..<raw.endIndex) else {
+            return ""
+        }
+        let object = String(raw[start.upperBound..<end.lowerBound])
+        guard let a = object.range(of: "\n/A ") else {
+            return ""
+        }
+        let rest = object[a.upperBound...]
+        return String(rest[..<(rest.firstIndex(of: "\n") ?? rest.endIndex)])
+    }
+
+    // A figure, a link or an annotation that is not in a paragraph, a kid of
+    // the Document, stands as a block and says so, as PAC asks of an element
+    // that PDF makes inline; one in a paragraph, or a figure in its link, does
+    // not.
+    @Test(.enabled(if: TestSupport.exists(streamFont), "the fonts directory is not here"))
+    func anInlineElementStandingAsABlockSaysSo() throws {
+        let memory = MemoryPDF(Compliance.PDF_UA_1)
+        let pdf = memory.pdf
+        _ = pdf.setTitle("Title")
+        let font = try Font(pdf, TestSupport.open(PDFTests.streamFont))
+        let page = Page(pdf, Letter.PORTRAIT)
+        let image = try Image(pdf, TestSupport.open("images/up-arrow.png"))
+        _ = image.setAltDescription("Up").setURIAction("https://pdfjet.com").setLocation(70, 80)
+        _ = image.drawOn(page)
+        TextLine(font, "PDFjet").setURIAction("https://pdfjet.com").setLocation(70, 200).drawOn(page)
+        let note = TextAnnotation()
+        note.setLocation(70, 300)
+        note.setContents("A note")
+        _ = note.drawOn(page)
+        try pdf.complete()
+        let raw = TestSupport.latin1(memory.bytes)
+        let all = try elements(raw)
+        for (number, element) in all {
+            let parent = all[element[1]]?[0] ?? ""
+            let block = elementAttributes(raw, number).contains("/Placement /Block")
+            let want = ["Link", "Annot", "Figure"].contains(element[0]) && parent == ""
+            #expect(block == want, "a \(element[0]) in \"\(parent)\": Placement Block \(block)")
+        }
+    }
+
+    // The text of a cell is drawn whole, and has no description of its own,
+    // which PAC warns of on text.
+    @Test(.enabled(if: TestSupport.exists(streamFont), "the fonts directory is not here"))
+    func theTextOfACellHasNoAlt() throws {
+        let memory = MemoryPDF(Compliance.PDF_UA_1)
+        let pdf = memory.pdf
+        _ = pdf.setTitle("Title")
+        let font = try Font(pdf, TestSupport.open(PDFTests.streamFont))
+        let page = Page(pdf, Letter.PORTRAIT)
+        let table = Table().setTableData(
+                [[Cell(font, "Name"), Cell(font, "City")], [Cell(font, "Jane"), Cell(font, "Ottawa")]], 1)
+        _ = table.setLocation(70, 80)
+        _ = table.drawOn(page)
+        try pdf.complete()
+        let raw = TestSupport.latin1(memory.bytes)
+        #expect(!raw.contains("/Alt "))
+    }
+
     @Test(.enabled(if: TestSupport.exists(streamFont), "the fonts directory is not here"))
     func aDetachedPageThatIsNeverAddedLeavesNoTrace() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)

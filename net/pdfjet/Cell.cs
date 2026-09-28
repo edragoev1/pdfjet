@@ -865,9 +865,11 @@ public class Cell {
         StructElement link = null;
         if (line == null) {
             if (uri != null) {
-                link = page.AddLinkBDC(StructElem.P, null, text, text);
+                link = page.AddLinkBDC(StructElem.P, null, null, null);
             } else {
-                page.AddBDC(StructElem.P, text, text);
+                // The text is drawn whole, so it needs no description of its
+                // own, which PAC warns of on text, as a text line has none
+                page.AddBDC(StructElem.P, null, null);
             }
             page.DrawString(font, fallbackFont, fontSize, text, xText, yText,
                     page.PackedToRGB(textColor), null);

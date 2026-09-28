@@ -1072,9 +1072,11 @@ public class Cell {
         StructElement link = null;
         if (line == null) {
             if (uri != null) {
-                link = page.addLinkBDC(StructElem.P, null, text, text);
+                link = page.addLinkBDC(StructElem.P, null, null, null);
             } else {
-                page.addBDC(StructElem.P, text, text);
+                // The text is drawn whole, so it needs no description of its
+                // own, which PAC warns of on text, as a text line has none
+                page.addBDC(StructElem.P, null, null);
             }
             page.drawString(font, fallbackFont, fontSize, text, xText, yText,
                     page.packedToRGB(textColor), null);
