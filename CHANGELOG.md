@@ -342,6 +342,9 @@ This is the first entry in this file; earlier releases were not tracked here.
   but along the edges.
 
 ### Changed
+- Go compresses pages and images at level 5 instead of the default 6: a
+  screenshot's samples compress about 30% faster, and come out under 1%
+  larger.
 - The producer is `PDFjet v9.0.2`, in all four ports.
 - The writer appends numbers, strings and hexadecimal without making a
   string for each, in all four ports; a tagged document of 200 pages is
