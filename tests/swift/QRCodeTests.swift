@@ -63,6 +63,7 @@ import Testing
     }
     @Test func aDescribedQRCodeIsAFigure() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.setTitle("Test")
         let page = Page(memory.pdf, Letter.PORTRAIT)
         let qr = try QRCode("https://pdfjet.com", ErrorCorrectionLevel.M)
         qr.setAltDescription("https://pdfjet.com")

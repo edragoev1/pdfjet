@@ -134,17 +134,17 @@ func TestMisuseTheGraphicsStatesMustBePaired(t *testing.T) {
 func TestMisuseTheMarkedContentMustBePaired(t *testing.T) {
 	for _, level := range []compliance.Compliance{compliance.PDF_1_7, compliance.PDF_UA_1} {
 		pdf := testNewPDF()
-		pdf.SetCompliance(level)
+		pdf.SetCompliance(level).SetTitle("Test")
 		NewPage(pdf, letter.Portrait()).AddEMC()
 		testRecorded(t, pdf, "AddEMC was called without a matching AddBDC or AddArtifactBMC.")
 
 		pdf2 := testNewPDF()
-		pdf2.SetCompliance(level)
+		pdf2.SetCompliance(level).SetTitle("Test")
 		NewPage(pdf2, letter.Portrait()).AddBDC(structelem.P, "", "x", "x")
 		testCompleteFails(t, pdf2, "A page ends with an AddBDC or AddArtifactBMC that has no AddEMC.")
 
 		doc3 := testNewDoc()
-		doc3.pdf.SetCompliance(level)
+		doc3.pdf.SetCompliance(level).SetTitle("Test")
 		page3 := NewPage(doc3.pdf, letter.Portrait())
 		page3.AddArtifactBMC()
 		page3.AddEMC()
@@ -277,7 +277,7 @@ func TestMisuseEncryptionAndComplianceComeBeforeTheContent(t *testing.T) {
 	if pdfB.err != nil {
 		t.Error(pdfB.err)
 	}
-	pdfB.SetCompliance(compliance.PDF_UA_1)
+	pdfB.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	testRecorded(t, pdfB, "Set the compliance before adding fonts, images or pages to the PDF.")
 	if pdfB.GetCompliance() != compliance.PDF_1_7 {
 		t.Error("the compliance changed")
@@ -285,7 +285,7 @@ func TestMisuseEncryptionAndComplianceComeBeforeTheContent(t *testing.T) {
 
 	pdf2 := testNewPDF()
 	NewPageDetached(pdf2, letter.Portrait())
-	pdf2.SetCompliance(compliance.PDF_UA_1)
+	pdf2.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	testRecorded(t, pdf2, "Set the compliance before adding fonts, images or pages to the PDF.")
 
 	pdf3 := testNewPDF()
@@ -317,7 +317,7 @@ func TestMisuseAPageIsFromThreeTo14400PointsWideAndHigh(t *testing.T) {
 
 func TestMisuseTheXmpMetadataLeavesOutControlCharacters(t *testing.T) {
 	doc := testNewDoc()
-	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	doc.pdf.SetTitle("Report\x01 2026\uFFFF \xff")
 	NewPage(doc.pdf, letter.Portrait())
 	raw := string(doc.complete())
@@ -409,7 +409,7 @@ func TestMisuseAPdfACannotBeEncrypted(t *testing.T) {
 
 	// Nor one that is PDF/UA too
 	pdf2 := testNewPDF()
-	pdf2.SetCompliance(compliance.PDF_A_3A_UA_1)
+	pdf2.SetCompliance(compliance.PDF_A_3A_UA_1).SetTitle("Test")
 	enc2, err := NewEncryption(pdf2, encryption.NewPasswords(), encryption.NewPermissions())
 	if err != nil {
 		t.Fatal(err)
@@ -419,7 +419,7 @@ func TestMisuseAPdfACannotBeEncrypted(t *testing.T) {
 
 	// A PDF/UA document can be.
 	doc := testNewDoc()
-	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	enc, err = NewEncryption(doc.pdf, encryption.NewPasswords(), encryption.NewPermissions())
 	if err != nil {
 		t.Fatal(err)
@@ -448,6 +448,6 @@ func TestMisuseTheComplianceIsSetBeforeTheEncryption(t *testing.T) {
 		t.Fatal(err)
 	}
 	ua.SetEncryption(enc)
-	ua.SetCompliance(compliance.PDF_UA_1)
+	ua.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	testRefused(t, ua, "Set the compliance before the encryption, which is written for it.")
 }

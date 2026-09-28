@@ -167,7 +167,7 @@ func TestTextColumnAParagraphIsOneStructureElementOfTheTypeItIsGiven(t *testing.
 	// The words of a paragraph are drawn one at a time, and each was an
 	// element of its own, so a reader read every word as a paragraph.
 	doc := testNewDoc()
-	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	doc.pdf.SetTitle("Title")
 	font := testHelvetica(doc.pdf)
 	column := NewTextColumn()

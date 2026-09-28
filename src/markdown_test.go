@@ -29,7 +29,7 @@ type testMarkdownDrawn struct {
 func testDrawMarkdown(text string, imageDirectory string) *testMarkdownDrawn {
 	doc := testNewDoc()
 	pdf := doc.pdf
-	pdf.SetCompliance(compliance.PDF_UA_1)
+	pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	pdf.SetTitle("Markdown")
 	regular := NewCoreFont(pdf, corefont.Helvetica())
 	bold := NewCoreFont(pdf, corefont.HelveticaBold())

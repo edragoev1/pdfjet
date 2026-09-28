@@ -93,17 +93,17 @@ public class MisuseTest {
     [Fact]
     public void TheMarkedContentMustBePaired() {
         foreach (Compliance compliance in new Compliance[] {Compliance.PDF_1_7, Compliance.PDF_UA_1}) {
-            PDF pdf = new PDF(new MemoryStream(), compliance);
+            PDF pdf = new PDF(new MemoryStream(), compliance).SetTitle("Test");
             Page page = new Page(pdf, Letter.PORTRAIT);
             string message = Assert.Throws<InvalidOperationException>(() => page.AddEMC()).Message;
             Assert.Equal("AddEMC was called without a matching AddBDC or AddArtifactBMC.", message);
 
-            PDF pdf2 = new PDF(new MemoryStream(), compliance);
+            PDF pdf2 = new PDF(new MemoryStream(), compliance).SetTitle("Test");
             new Page(pdf2, Letter.PORTRAIT).AddBDC(StructElem.P, "x", "x");
             Assert.Equal("A page ends with an AddBDC or AddArtifactBMC that has no AddEMC.",
                     Assert.Throws<InvalidOperationException>(() => pdf2.Complete()).Message);
 
-            PDF pdf3 = new PDF(new MemoryStream(), compliance);
+            PDF pdf3 = new PDF(new MemoryStream(), compliance).SetTitle("Test");
             Page page3 = new Page(pdf3, Letter.PORTRAIT);
             page3.AddArtifactBMC();
             page3.AddEMC();
@@ -265,7 +265,7 @@ public class MisuseTest {
     [Fact]
     public void TheXmpMetadataLeavesOutControlCharacters() {
         MemoryStream stream = new MemoryStream();
-        PDF pdf = new PDF(stream, Compliance.PDF_UA_1);
+        PDF pdf = new PDF(stream, Compliance.PDF_UA_1).SetTitle("Test");
         pdf.SetTitle("Report\u0001 2026\uFFFF \uD800");
         new Page(pdf, Letter.PORTRAIT);
         pdf.Complete();
@@ -344,13 +344,13 @@ public class MisuseTest {
         AssertRefused(pdf, message);
 
         // Nor one that is PDF/UA too.
-        PDF both = new PDF(new MemoryStream(), Compliance.PDF_A_3A_UA_1);
+        PDF both = new PDF(new MemoryStream(), Compliance.PDF_A_3A_UA_1).SetTitle("Test");
         Encryption encryptionOfBoth = new Encryption(both, new Passwords(), new Permissions());
         Assert.Equal(message,
                 Assert.Throws<InvalidOperationException>(() => both.SetEncryption(encryptionOfBoth)).Message);
 
         // A PDF/UA document can be.
-        PDF ua = new PDF(new MemoryStream(), Compliance.PDF_UA_1);
+        PDF ua = new PDF(new MemoryStream(), Compliance.PDF_UA_1).SetTitle("Test");
         ua.SetEncryption(new Encryption(ua, new Passwords(), new Permissions()));
     }
 

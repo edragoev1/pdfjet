@@ -21,6 +21,8 @@ public class EmbeddedFile {
     // How the file relates to the document, for a file of a document of
     // PDF/A-3, and null for a file that is only attached to a page.
     internal Relationship? relationship;
+    // What the file holds, like "text/xml", or null.
+    internal String mediaType;
 
     /// <summary>Embeds the file with the specified name into the PDF, compressed with Flate when compress is true.</summary>
     public EmbeddedFile(PDF pdf, String fileName, bool compress) :
@@ -46,6 +48,7 @@ public class EmbeddedFile {
         this.pdf = pdf;
         this.fileName = fileName;
         this.relationship = relationship;
+        this.mediaType = mediaType;
         byte[] buf = Content.GetFromStream(stream);
         int size = buf.Length;
 
@@ -60,7 +63,7 @@ public class EmbeddedFile {
         pdf.NewObj();
         pdf.Append(Token.BeginDictionary);
         pdf.Append("/Type /EmbeddedFile\n");
-        if (mediaType != null) {
+        if (!String.IsNullOrEmpty(mediaType)) {
             // What the file holds, as a name: /text#2Fxml for "text/xml".
             pdf.Append("/Subtype ");
             pdf.Append(ToName(mediaType));
@@ -70,9 +73,9 @@ public class EmbeddedFile {
             // file is written as the document is.
             pdf.Append("/Params <</Size ");
             pdf.Append(size);
-            pdf.Append(" /ModDate (");
-            pdf.Append(pdf.GetDate());
-            pdf.Append(")>>\n");
+            pdf.Append(" /ModDate ");
+            pdf.AppendByteString(Encoding.ASCII.GetBytes(pdf.GetDate()));
+            pdf.Append(">>\n");
         }
         if (compress) {
             pdf.Append("/Filter /FlateDecode\n");

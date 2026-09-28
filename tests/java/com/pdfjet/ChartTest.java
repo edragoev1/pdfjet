@@ -190,7 +190,7 @@ class ChartTest {
 
     @Test
     void aChartIsAFigureDescribedByItsTitleOrItsAlternateDescription() throws Exception {
-        PDF pdf = new PDF(new java.io.ByteArrayOutputStream(), Compliance.PDF_UA_1);
+        PDF pdf = new PDF(new java.io.ByteArrayOutputStream(), Compliance.PDF_UA_1).setTitle("Test");
         Page page = new Page(pdf, Letter.PORTRAIT);
         Chart titled = chart(pdf).setTitle("Sales");
         titled.addSeries("").addPoint(1f, 1f).addPoint(2f, 2f);
@@ -234,7 +234,7 @@ class ChartTest {
     @Test
     void aLinkedPointIsAFigureInItsLink() throws Exception {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        PDF pdf = new PDF(bos, Compliance.PDF_UA_1);
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1).setTitle("Test");
         pdf.setTitle("Title");
         Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
         Page page = new Page(pdf, Letter.PORTRAIT);

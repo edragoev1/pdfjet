@@ -51,7 +51,7 @@ public class DonutChartTest {
 
     [Fact]
     public void AChartIsAFigureThatListsItsSlices() {
-        PDF pdf = new PDF(new System.IO.MemoryStream(), Compliance.PDF_UA_1);
+        PDF pdf = new PDF(new System.IO.MemoryStream(), Compliance.PDF_UA_1).SetTitle("Test");
         Page page = new Page(pdf, Letter.PORTRAIT);
         DonutChart donut = NewChart(pdf).AddSlice(new Slice(25f, Color.red, "Apples"))
                 .AddSlice(new Slice(75f, Color.blue, "Oranges"));

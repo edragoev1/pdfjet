@@ -124,7 +124,7 @@ func TestTextFrameParagraphsWithALabelAreAList(t *testing.T) {
 	// The label of an item is drawn where the item begins, so that it reads
 	// before the text of the item and not after all of the text.
 	doc := testNewDoc()
-	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	doc.pdf.SetTitle("Title")
 	font := testHelvetica(doc.pdf)
 	paragraphs := make([]*Paragraph, 0)

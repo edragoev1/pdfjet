@@ -50,7 +50,7 @@ class FontStream2 {
         font.objNumber = obj.number;
     }
 
-    private static int addMetadataObject(List<PDFobj> objects, Font font) throws Exception {
+    static int addMetadataObject(List<PDFobj> objects, Font font) throws Exception {
         StringBuilder sb = new StringBuilder();
         sb.append("<?xpacket id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n");
         sb.append("<x:xmpmeta xmlns:x=\"adobe:ns:meta/\">\n");
@@ -59,7 +59,7 @@ class FontStream2 {
         sb.append("<xmpRights:UsageTerms>\n");
         sb.append("<rdf:Alt>\n");
         sb.append("<rdf:li xml:lang=\"x-default\">\n");
-        sb.append(font.info);
+        sb.append(PDF.escapeXML(font.info));
         sb.append("</rdf:li>\n");
         sb.append("</rdf:Alt>\n");
         sb.append("</xmpRights:UsageTerms>\n");

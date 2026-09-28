@@ -81,7 +81,7 @@ public class PDFTest {
     [Fact]
     public void TheXmpDocumentIdIsTheTrailerId() {
         MemoryStream stream = new MemoryStream();
-        PDF pdf = new PDF(stream, Compliance.PDF_UA_1);
+        PDF pdf = new PDF(stream, Compliance.PDF_UA_1).SetTitle("Test");
         pdf.SetTitle("Title");
         new Page(pdf, Letter.PORTRAIT);
         pdf.Complete();
@@ -195,7 +195,7 @@ public class PDFTest {
     [Fact]
     public void AShapeWithoutADescriptionWritesNoAltText() {
         MemoryStream stream = new MemoryStream();
-        PDF pdf = new PDF(stream, Compliance.PDF_UA_1);
+        PDF pdf = new PDF(stream, Compliance.PDF_UA_1).SetTitle("Test");
         pdf.SetTitle("Title");
         Page page = new Page(pdf, Letter.PORTRAIT);
         new Line(10f, 10f, 100f, 10f).DrawOn(page);
@@ -208,7 +208,7 @@ public class PDFTest {
 
     [Fact]
     public void PointsAndTwoDimensionalBarcodesAreArtifacts() {
-        PDF pdf = new PDF(new MemoryStream(), Compliance.PDF_UA_1);
+        PDF pdf = new PDF(new MemoryStream(), Compliance.PDF_UA_1).SetTitle("Test");
         IDrawable[] drawables = {
                 new Point(50f, 50f),
                 new QRCode("https://pdfjet.com", ErrorCorrectionLevel.M),
@@ -225,7 +225,7 @@ public class PDFTest {
     [Fact]
     public void ALinkIsInALinkElementAndAnyOtherAnnotationInAnAnnotElement() {
         MemoryStream stream = new MemoryStream();
-        PDF pdf = new PDF(stream, Compliance.PDF_UA_1);
+        PDF pdf = new PDF(stream, Compliance.PDF_UA_1).SetTitle("Test");
         pdf.SetTitle("Title");
         Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
         Page page = new Page(pdf, Letter.PORTRAIT);
@@ -268,7 +268,7 @@ public class PDFTest {
     [Fact]
     public void ALinkedTextLineIsTheLinkOfItsParagraph() {
         MemoryStream stream = new MemoryStream();
-        PDF pdf = new PDF(stream, Compliance.PDF_UA_1);
+        PDF pdf = new PDF(stream, Compliance.PDF_UA_1).SetTitle("Test");
         pdf.SetTitle("Title");
         Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
         Page page = new Page(pdf, Letter.PORTRAIT);
@@ -293,7 +293,7 @@ public class PDFTest {
     [Fact]
     public void ALinkedWordIsALinkAmongTheWordsOfItsParagraph() {
         MemoryStream stream = new MemoryStream();
-        PDF pdf = new PDF(stream, Compliance.PDF_UA_1);
+        PDF pdf = new PDF(stream, Compliance.PDF_UA_1).SetTitle("Test");
         pdf.SetTitle("Title");
         Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
         Paragraph paragraph = new Paragraph()
@@ -322,7 +322,7 @@ public class PDFTest {
     [Fact]
     public void ALinkedImageIsTheFigureOfItsLink() {
         MemoryStream stream = new MemoryStream();
-        PDF pdf = new PDF(stream, Compliance.PDF_UA_1);
+        PDF pdf = new PDF(stream, Compliance.PDF_UA_1).SetTitle("Test");
         pdf.SetTitle("Title");
         new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
         Page page = new Page(pdf, Letter.PORTRAIT);
@@ -355,7 +355,9 @@ public class PDFTest {
         new TextLine(font, "PDFjet").SetURIAction("https://pdfjet.com").SetLocation(70f, 80f).DrawOn(page);
         page.EndStructElement();
         // No structure element is left begun
-        Assert.ThrowsAny<Exception>(() => page.EndStructElement());
+        var stack = (System.Collections.IList) typeof(Page).GetField("structElementStack",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).GetValue(page);
+        Assert.Empty(stack);
         pdf.Complete();
         string raw = TestSupport.Latin1(stream.ToArray());
         Assert.DoesNotContain("/StructElem", raw);
@@ -376,7 +378,7 @@ public class PDFTest {
     [Fact]
     public void AnInlineElementStandingAsABlockSaysSo() {
         MemoryStream stream = new MemoryStream();
-        PDF pdf = new PDF(stream, Compliance.PDF_UA_1);
+        PDF pdf = new PDF(stream, Compliance.PDF_UA_1).SetTitle("Test");
         pdf.SetTitle("Title");
         Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
         Page page = new Page(pdf, Letter.PORTRAIT);
@@ -405,7 +407,7 @@ public class PDFTest {
     [Fact]
     public void TheTextOfACellHasNoAlt() {
         MemoryStream stream = new MemoryStream();
-        PDF pdf = new PDF(stream, Compliance.PDF_UA_1);
+        PDF pdf = new PDF(stream, Compliance.PDF_UA_1).SetTitle("Test");
         pdf.SetTitle("Title");
         Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
         Page page = new Page(pdf, Letter.PORTRAIT);
@@ -444,7 +446,7 @@ public class PDFTest {
     [Fact]
     public void AnAnnotationIsDescribedByWhatItSays() {
         MemoryStream stream = new MemoryStream();
-        PDF pdf = new PDF(stream, Compliance.PDF_UA_1);
+        PDF pdf = new PDF(stream, Compliance.PDF_UA_1).SetTitle("Test");
         pdf.SetTitle("Title");
         new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
         Page page = new Page(pdf, Letter.PORTRAIT);
@@ -476,7 +478,7 @@ public class PDFTest {
     [Fact]
     public void ADetachedPageThatIsNeverAddedLeavesNoTrace() {
         MemoryStream stream = new MemoryStream();
-        PDF pdf = new PDF(stream, Compliance.PDF_UA_1);
+        PDF pdf = new PDF(stream, Compliance.PDF_UA_1).SetTitle("Test");
         pdf.SetTitle("Title");
         Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
         // A dry run, like one that measures the text, on a page that is never added.
@@ -500,7 +502,7 @@ public class PDFTest {
     [Fact]
     public void TheStructureTreeFollowsThePagesNotTheOrderTheyWereDrawnIn() {
         MemoryStream stream = new MemoryStream();
-        PDF pdf = new PDF(stream, Compliance.PDF_UA_1);
+        PDF pdf = new PDF(stream, Compliance.PDF_UA_1).SetTitle("Test");
         pdf.SetTitle("Title");
         Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
         Page second = new Page(pdf, Letter.PORTRAIT, Page.DETACHED);
@@ -523,7 +525,7 @@ public class PDFTest {
     [Fact]
     public void TextStringsAreUtf16SoThatEveryReaderDecodesThem() {
         MemoryStream stream = new MemoryStream();
-        PDF pdf = new PDF(stream, Compliance.PDF_UA_1);
+        PDF pdf = new PDF(stream, Compliance.PDF_UA_1).SetTitle("Test");
         pdf.SetTitle("Title");
         Page page = new Page(pdf, Letter.PORTRAIT);
         new Line(10f, 20f, 100f, 20f).SetAltDescription("Gr\u00fc\u00dfe \u2013 \u7dda").DrawOn(page);

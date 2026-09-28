@@ -167,7 +167,7 @@ class CompositeTextLineTest {
         // reads C6H12O6 and not six elements of "C", "6", "H", "12", "O"
         // and "6".
         java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
-        PDF pdf = new PDF(bos, Compliance.PDF_UA_1);
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1).setTitle("Test");
         pdf.setTitle("Title");
         Page page = new Page(pdf, Letter.PORTRAIT);
         CompositeTextLine composite = new CompositeTextLine(50f, 100f);

@@ -118,21 +118,21 @@ class MisuseTest {
     @Test
     void theMarkedContentMustBePaired() throws Exception {
         for (Compliance compliance : new Compliance[] {Compliance.PDF_1_7, Compliance.PDF_UA_1}) {
-            PDF pdf = new PDF(new ByteArrayOutputStream(), compliance);
+            PDF pdf = new PDF(new ByteArrayOutputStream(), compliance).setTitle("Test");
             final Page page = new Page(pdf, Letter.PORTRAIT);
             String message = fails(IllegalStateException.class, new Executable() {
                 public void execute() throws Throwable { page.addEMC(); }
             });
             assertEquals("addEMC was called without a matching addBDC or addArtifactBMC.", message);
 
-            final PDF pdf2 = new PDF(new ByteArrayOutputStream(), compliance);
+            final PDF pdf2 = new PDF(new ByteArrayOutputStream(), compliance).setTitle("Test");
             new Page(pdf2, Letter.PORTRAIT).addBDC(StructElem.P, "x", "x");
             assertEquals("A page ends with an addBDC or addArtifactBMC that has no addEMC.",
                     fails(IllegalStateException.class, new Executable() {
                 public void execute() throws Throwable { pdf2.complete(); }
             }));
 
-            PDF pdf3 = new PDF(new ByteArrayOutputStream(), compliance);
+            PDF pdf3 = new PDF(new ByteArrayOutputStream(), compliance).setTitle("Test");
             Page page3 = new Page(pdf3, Letter.PORTRAIT);
             page3.addArtifactBMC();
             page3.addEMC();
@@ -323,7 +323,7 @@ class MisuseTest {
     @Test
     void theXmpMetadataLeavesOutControlCharacters() throws Exception {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        PDF pdf = new PDF(bos, Compliance.PDF_UA_1);
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1).setTitle("Test");
         pdf.setTitle("Report\u0001 2026\uFFFF \uD800");
         new Page(pdf, Letter.PORTRAIT);
         pdf.complete();
@@ -406,14 +406,14 @@ class MisuseTest {
         assertRefused(pdf, message);
 
         // Nor one that is PDF/UA too.
-        final PDF both = new PDF(new ByteArrayOutputStream(), Compliance.PDF_A_3A_UA_1);
+        final PDF both = new PDF(new ByteArrayOutputStream(), Compliance.PDF_A_3A_UA_1).setTitle("Test");
         final Encryption encryptionOfBoth = new Encryption(both, new Passwords(), new Permissions());
         assertEquals(message, fails(IllegalStateException.class, new Executable() {
             public void execute() throws Throwable { both.setEncryption(encryptionOfBoth); }
         }));
 
         // A PDF/UA document can be.
-        PDF ua = new PDF(new ByteArrayOutputStream(), Compliance.PDF_UA_1);
+        PDF ua = new PDF(new ByteArrayOutputStream(), Compliance.PDF_UA_1).setTitle("Test");
         ua.setEncryption(new Encryption(ua, new Passwords(), new Permissions()));
     }
 

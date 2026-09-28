@@ -97,7 +97,7 @@ public class AssociatedFileTest {
                 StringComparison.Ordinal);
         string embedded = raw.Substring(file, raw.IndexOf("stream\n", file, StringComparison.Ordinal) - file);
         Assert.True(embedded.Contains("/Subtype /text#2Fxml\n"), embedded);
-        Assert.True(embedded.Contains("/Params <</Size " + XML.Length + " /ModDate (D:"), embedded);
+        Assert.True(embedded.Contains("/Params <</Size " + XML.Length + " /ModDate <443a"), embedded);
         Assert.True(embedded.Contains("/Length " + XML.Length + "\n"), embedded);
     }
 
@@ -115,7 +115,7 @@ public class AssociatedFileTest {
                 .SetLocation(50f, 50f).DrawOn(new Page(pdf, Letter.PORTRAIT));
         pdf.Complete();
         string raw = TestSupport.Latin1(stream.ToArray());
-        Assert.True(raw.Contains("/Params <</Size " + text.Length + " /ModDate (D:"), "the size");
+        Assert.True(raw.Contains("/Params <</Size " + text.Length + " /ModDate <443a"), "the size");
         Assert.True(raw.Contains("/Filter /FlateDecode\n"), "the filter");
         Match length = Regex.Match(raw.Substring(raw.IndexOf("/Type /EmbeddedFile", StringComparison.Ordinal)),
                 "/Length (\\d+)\n");
@@ -184,7 +184,7 @@ public class AssociatedFileTest {
     [Fact]
     public void TheLevelOfPdfA3aAndPdfUA1IsBoth() {
         MemoryStream stream = new MemoryStream();
-        PDF pdf = new PDF(stream, Compliance.PDF_A_3A_UA_1);
+        PDF pdf = new PDF(stream, Compliance.PDF_A_3A_UA_1).SetTitle("Test");
         Page page = new Page(pdf, Letter.PORTRAIT);
         new TextLine(TestSupport.Helvetica(pdf), "Invoice").SetLocation(50f, 50f).DrawOn(page);
         // Tagged, as PDF/UA asks, where PDF/A-3a alone is not
@@ -201,7 +201,7 @@ public class AssociatedFileTest {
         // Factur-X does, has the PDF/UA identification schema in that list.
         foreach (bool own in new bool[] {false, true}) {
             MemoryStream stream = new MemoryStream();
-            PDF pdf = new PDF(stream, Compliance.PDF_A_3A_UA_1);
+            PDF pdf = new PDF(stream, Compliance.PDF_A_3A_UA_1).SetTitle("Test");
             if (own) {
                 pdf.AddMetadata("<rdf:Description rdf:about=\"\" xmlns:pdfaExtension=\"http://www.aiim.org/pdfa/ns/extension/\">\n" +
                         "  <pdfaExtension:schemas>\n" +
@@ -234,7 +234,7 @@ public class AssociatedFileTest {
 #pragma warning restore CS0618
                 Compliance.PDF_1_7, Compliance.PDF_UA_1}) {
             MemoryStream stream = new MemoryStream();
-            PDF pdf = new PDF(stream, compliance);
+            PDF pdf = new PDF(stream, compliance).SetTitle("Test");
             Document(pdf, stream, "factur-x.xml");
             Assert.True(TestSupport.Latin1(stream.ToArray()).Contains("/AF ["), compliance.ToString());
         }

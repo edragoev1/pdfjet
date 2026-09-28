@@ -103,7 +103,7 @@ class AssociatedFileTest {
         int file = raw.indexOf(stream.group(1) + " 0 obj\n<<\n/Type /EmbeddedFile");
         String embedded = raw.substring(file, raw.indexOf("stream\n", file));
         assertTrue(embedded.contains("/Subtype /text#2Fxml\n"), embedded);
-        assertTrue(embedded.contains("/Params <</Size " + XML.length() + " /ModDate (D:"), embedded);
+        assertTrue(embedded.contains("/Params <</Size " + XML.length() + " /ModDate <443a"), embedded);
         assertTrue(embedded.contains("/Length " + XML.length() + "\n"), embedded);
     }
 
@@ -121,7 +121,7 @@ class AssociatedFileTest {
                 .setLocation(50f, 50f).drawOn(new Page(pdf, Letter.PORTRAIT));
         pdf.complete();
         String raw = TestSupport.latin1(bos.toByteArray());
-        assertTrue(raw.contains("/Params <</Size " + text.length() + " /ModDate (D:"), "the size");
+        assertTrue(raw.contains("/Params <</Size " + text.length() + " /ModDate <443a"), "the size");
         assertTrue(raw.contains("/Filter /FlateDecode\n"), "the filter");
         Matcher length = Pattern.compile("/Length (\\d+)\n").matcher(
                 raw.substring(raw.indexOf("/Type /EmbeddedFile")));
@@ -190,7 +190,7 @@ class AssociatedFileTest {
     @Test
     void theLevelOfPdfA3aAndPdfUA1IsBoth() throws Exception {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        PDF pdf = new PDF(bos, Compliance.PDF_A_3A_UA_1);
+        PDF pdf = new PDF(bos, Compliance.PDF_A_3A_UA_1).setTitle("Test");
         Page page = new Page(pdf, Letter.PORTRAIT);
         new TextLine(TestSupport.helvetica(pdf), "Invoice").setLocation(50f, 50f).drawOn(page);
         // Tagged, as PDF/UA asks, where PDF/A-3a alone is not
@@ -207,7 +207,7 @@ class AssociatedFileTest {
         // Factur-X does, has the PDF/UA identification schema in that list.
         for (boolean own : new boolean[] {false, true}) {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            PDF pdf = new PDF(bos, Compliance.PDF_A_3A_UA_1);
+            PDF pdf = new PDF(bos, Compliance.PDF_A_3A_UA_1).setTitle("Test");
             if (own) {
                 pdf.addMetadata("<rdf:Description rdf:about=\"\" xmlns:pdfaExtension=\"http://www.aiim.org/pdfa/ns/extension/\">\n" +
                         "  <pdfaExtension:schemas>\n" +
@@ -239,7 +239,7 @@ class AssociatedFileTest {
                 Compliance.PDF_A_3A, Compliance.PDF_A_3B,
                 Compliance.PDF_1_7, Compliance.PDF_UA_1}) {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            PDF pdf = new PDF(bos, compliance);
+            PDF pdf = new PDF(bos, compliance).setTitle("Test");
             document(pdf, bos, "factur-x.xml");
             assertTrue(TestSupport.latin1(bos.toByteArray()).contains("/AF ["), compliance.toString());
         }

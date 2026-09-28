@@ -29,6 +29,8 @@ public class EmbeddedFile {
     // How the file relates to the document, for a file of a document of
     // PDF/A-3, and null for a file that is only attached to a page.
     Relationship relationship;
+    // What the file holds, like "text/xml", or null.
+    String mediaType;
 
     /**
      * Embeds file with the specified name into the PDF.
@@ -76,6 +78,7 @@ public class EmbeddedFile {
         this.pdf = pdf;
         this.fileName = fileName;
         this.relationship = relationship;
+        this.mediaType = mediaType;
         byte[] buf = Content.getFromStream(stream);
         int size = buf.length;
 
@@ -96,7 +99,7 @@ public class EmbeddedFile {
         pdf.newObj();
         pdf.append(Token.BEGIN_DICTIONARY);
         pdf.append("/Type /EmbeddedFile\n");
-        if (mediaType != null) {
+        if (mediaType != null && !mediaType.isEmpty()) {
             // What the file holds, as a name: /text#2Fxml for "text/xml".
             pdf.append("/Subtype ");
             pdf.append(toName(mediaType));
@@ -106,9 +109,9 @@ public class EmbeddedFile {
             // file is written as the document is.
             pdf.append("/Params <</Size ");
             pdf.append(size);
-            pdf.append(" /ModDate (");
-            pdf.append(pdf.getDate());
-            pdf.append(")>>\n");
+            pdf.append(" /ModDate ");
+            pdf.appendByteString(pdf.getDate().getBytes(StandardCharsets.US_ASCII));
+            pdf.append(">>\n");
         }
         if (compress) {
             pdf.append("/Filter /FlateDecode\n");

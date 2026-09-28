@@ -205,7 +205,7 @@ func TestChartTheSubtitleIsGray(t *testing.T) {
 
 func TestChartAChartIsAFigureDescribedByItsTitleOrItsAlternateDescription(t *testing.T) {
 	pdf := testNewPDF()
-	pdf.SetCompliance(compliance.PDF_UA_1)
+	pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	page := NewPage(pdf, testLetterPortrait())
 	titled := testChart(pdf).SetTitle("Sales")
 	titled.AddSeries("").AddPoint(1, 1).AddPoint(2, 2)
@@ -230,7 +230,7 @@ func TestChartAChartIsAFigureDescribedByItsTitleOrItsAlternateDescription(t *tes
 // annotation, after the chart; the chart is a figure of the rest.
 func TestChartALinkedPointIsAFigureInItsLink(t *testing.T) {
 	doc := testNewDoc()
-	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	doc.pdf.SetTitle("Title")
 	font := testStreamFont(t, doc.pdf)
 	page := NewPage(doc.pdf, testLetterPortrait())

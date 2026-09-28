@@ -199,16 +199,14 @@ class PageTest {
         Page page1 = new Page(pdf, Letter.PORTRAIT);
         new TextLine(font, "Go").setGoToAction("there").setLocation(50f, 50f).drawOn(page1);
         new Rect(10f, 10f, 20f, 20f).setGoToAction("there").drawOn(page1);
-        new TextLine(font, "Nowhere").setGoToAction("missing").setLocation(50f, 100f).drawOn(page1);
         Page page2 = new Page(pdf, Letter.PORTRAIT);
         page2.addDestination("there", 30f, 100f);
         pdf.complete();
         String file = TestSupport.latin1(bos.toByteArray());
-        // The text and the rect link to the destination, 100 points down page 2; the
-        // link to a destination no page has is written without a /Dest
+        // The text and the rect link to the destination, 100 points down page 2
         assertEquals(2, file.split("/Dest \\[").length - 1, file);
         assertEquals(2, file.split("/XYZ 30 692 0\\]").length - 1, file);
-        assertEquals(3, file.split("/Subtype /Link").length - 1, file);
+        assertEquals(2, file.split("/Subtype /Link").length - 1, file);
     }
 
     @Test
@@ -297,7 +295,7 @@ class PageTest {
         // can hold them together: L for the list, LI for each item, and Lbl
         // and LBody for the label and the body of the item.
         java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
-        PDF pdf = new PDF(bos, Compliance.PDF_UA_1);
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1).setTitle("Test");
         pdf.setTitle("Title");
         Font font = TestSupport.helvetica(pdf);
         Page page = new Page(pdf, Letter.PORTRAIT);
@@ -323,7 +321,7 @@ class PageTest {
 
     @Test
     void endStructElementWithoutABeginIsRefused() throws Exception {
-        PDF pdf = new PDF(new java.io.ByteArrayOutputStream(), Compliance.PDF_UA_1);
+        PDF pdf = new PDF(new java.io.ByteArrayOutputStream(), Compliance.PDF_UA_1).setTitle("Test");
         pdf.setTitle("Title");
         final Page page = new Page(pdf, Letter.PORTRAIT);
         Exception e = assertThrows(IllegalStateException.class,

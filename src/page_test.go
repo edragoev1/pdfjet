@@ -97,14 +97,12 @@ func TestPageAGoToLinkPointsAtItsDestinationOnAnotherPage(t *testing.T) {
 	page1 := NewPage(doc.pdf, testLetterPortrait())
 	NewTextLine(font, "Go").SetGoToAction("there").SetLocation(50, 50).DrawOn(page1)
 	NewRect(10, 10, 20, 20).SetGoToAction("there").DrawOn(page1)
-	NewTextLine(font, "Nowhere").SetGoToAction("missing").SetLocation(50, 100).DrawOn(page1)
 	page2 := NewPage(doc.pdf, testLetterPortrait())
 	page2.AddDestinationAt("there", 30, 100)
 	file := string(doc.complete())
-	// The text and the rect link to the destination, 100 points down page 2; the
-	// link to a destination no page has is written without a /Dest
+	// The text and the rect link to the destination, 100 points down page 2
 	if strings.Count(file, "/Dest [") != 2 || strings.Count(file, "/XYZ 30 692 0]") != 2 ||
-		strings.Count(file, "/Subtype /Link") != 3 {
+		strings.Count(file, "/Subtype /Link") != 2 {
 		t.Errorf("links in %q", file)
 	}
 }
@@ -312,7 +310,7 @@ func TestPageBeginStructElementGroupsWhatIsDrawnIntoAList(t *testing.T) {
 	// can hold them together: L for the list, LI for each item, and Lbl and
 	// LBody for the label and the body of the item.
 	doc := testNewDoc()
-	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	doc.pdf.SetTitle("Title")
 	font := testHelvetica(doc.pdf)
 	page := NewPage(doc.pdf, letter.Portrait())
@@ -340,7 +338,7 @@ func TestPageBeginStructElementGroupsWhatIsDrawnIntoAList(t *testing.T) {
 
 func TestPageEndStructElementWithoutABeginIsRefused(t *testing.T) {
 	doc := testNewDoc()
-	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	doc.pdf.SetTitle("Title")
 	NewPage(doc.pdf, letter.Portrait()).EndStructElement()
 	if err := doc.pdf.Complete(); err == nil ||

@@ -255,7 +255,7 @@ func TestFontACompliantDocumentDrawsACharacterTheFontDoesNotHaveWithoutNotdef(t 
 	// replacement character of the font, as wide as it is, with the missing
 	// character as its actual text, and never glyph 0.
 	pdf := testNewPDF()
-	pdf.SetCompliance(compliance.PDF_UA_1)
+	pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	font := testIBMPlexSans(t, pdf)
 	replacement := font.unicodeToGID[0xFFFD]
 	if replacement == 0 {

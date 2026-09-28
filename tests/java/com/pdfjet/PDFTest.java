@@ -85,7 +85,7 @@ class PDFTest {
     @Test
     void theXmpDocumentIdIsTheTrailerId() throws Exception {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        PDF pdf = new PDF(bos, Compliance.PDF_UA_1);
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1).setTitle("Test");
         pdf.setTitle("Title");
         new Page(pdf, Letter.PORTRAIT);
         pdf.complete();
@@ -206,7 +206,7 @@ class PDFTest {
     @Test
     void aShapeWithoutADescriptionWritesNoAltText() throws Exception {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        PDF pdf = new PDF(bos, Compliance.PDF_UA_1);
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1).setTitle("Test");
         pdf.setTitle("Title");
         Page page = new Page(pdf, Letter.PORTRAIT);
         new Line(10f, 10f, 100f, 10f).drawOn(page);
@@ -219,7 +219,7 @@ class PDFTest {
 
     @Test
     void pointsAndTwoDimensionalBarcodesAreArtifacts() throws Exception {
-        PDF pdf = new PDF(new ByteArrayOutputStream(), Compliance.PDF_UA_1);
+        PDF pdf = new PDF(new ByteArrayOutputStream(), Compliance.PDF_UA_1).setTitle("Test");
         Drawable[] drawables = {
                 new Point(50f, 50f),
                 new com.pdfjet.qrcode.QRCode("https://pdfjet.com", com.pdfjet.qrcode.ErrorCorrectionLevel.M),
@@ -236,7 +236,7 @@ class PDFTest {
     @Test
     void aLinkIsInALinkElementAndAnyOtherAnnotationInAnAnnotElement() throws Exception {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        PDF pdf = new PDF(bos, Compliance.PDF_UA_1);
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1).setTitle("Test");
         pdf.setTitle("Title");
         Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
         Page page = new Page(pdf, Letter.PORTRAIT);
@@ -281,7 +281,7 @@ class PDFTest {
     @Test
     void aLinkedTextLineIsTheLinkOfItsParagraph() throws Exception {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        PDF pdf = new PDF(bos, Compliance.PDF_UA_1);
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1).setTitle("Test");
         pdf.setTitle("Title");
         Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
         Page page = new Page(pdf, Letter.PORTRAIT);
@@ -306,7 +306,7 @@ class PDFTest {
     @Test
     void aLinkedWordIsALinkAmongTheWordsOfItsParagraph() throws Exception {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        PDF pdf = new PDF(bos, Compliance.PDF_UA_1);
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1).setTitle("Test");
         pdf.setTitle("Title");
         Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
         Paragraph paragraph = new Paragraph()
@@ -334,7 +334,7 @@ class PDFTest {
     @Test
     void aLinkedImageIsTheFigureOfItsLink() throws Exception {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        PDF pdf = new PDF(bos, Compliance.PDF_UA_1);
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1).setTitle("Test");
         pdf.setTitle("Title");
         new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
         Page page = new Page(pdf, Letter.PORTRAIT);
@@ -394,7 +394,7 @@ class PDFTest {
     @Test
     void anInlineElementStandingAsABlockSaysSo() throws Exception {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        PDF pdf = new PDF(bos, Compliance.PDF_UA_1);
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1).setTitle("Test");
         pdf.setTitle("Title");
         Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
         Page page = new Page(pdf, Letter.PORTRAIT);
@@ -425,7 +425,7 @@ class PDFTest {
     @Test
     void theTextOfACellHasNoAlt() throws Exception {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        PDF pdf = new PDF(bos, Compliance.PDF_UA_1);
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1).setTitle("Test");
         pdf.setTitle("Title");
         Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
         Page page = new Page(pdf, Letter.PORTRAIT);
@@ -463,7 +463,7 @@ class PDFTest {
     @Test
     void anAnnotationIsDescribedByWhatItSays() throws Exception {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        PDF pdf = new PDF(bos, Compliance.PDF_UA_1);
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1).setTitle("Test");
         pdf.setTitle("Title");
         new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
         Page page = new Page(pdf, Letter.PORTRAIT);
@@ -505,7 +505,7 @@ class PDFTest {
     @Test
     void aDetachedPageThatIsNeverAddedLeavesNoTrace() throws Exception {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        PDF pdf = new PDF(bos, Compliance.PDF_UA_1);
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1).setTitle("Test");
         pdf.setTitle("Title");
         Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
         // A dry run, like one that measures the text, on a page that is never added.
@@ -529,7 +529,7 @@ class PDFTest {
     @Test
     void theStructureTreeFollowsThePagesNotTheOrderTheyWereDrawnIn() throws Exception {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        PDF pdf = new PDF(bos, Compliance.PDF_UA_1);
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1).setTitle("Test");
         pdf.setTitle("Title");
         Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
         Page second = new Page(pdf, Letter.PORTRAIT, Page.DETACHED);
@@ -553,7 +553,7 @@ class PDFTest {
     @Test
     void textStringsAreUtf16SoThatEveryReaderDecodesThem() throws Exception {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        PDF pdf = new PDF(bos, Compliance.PDF_UA_1);
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1).setTitle("Test");
         pdf.setTitle("Title");
         Page page = new Page(pdf, Letter.PORTRAIT);
         new Line(10f, 20f, 100f, 20f).setAltDescription("Gr\u00fc\u00dfe \u2013 \u7dda").drawOn(page);

@@ -43,11 +43,13 @@ internal class Util {
     }
 
     internal static string ToHexString(byte[] data) {
-        var sb = new StringBuilder(data.Length * 2);
-        foreach (byte b in data) {
-            sb.AppendFormat("{0:x2}", b);
+        const string digits = "0123456789abcdef";
+        char[] chars = new char[data.Length * 2];
+        for (int i = 0; i < data.Length; i++) {
+            chars[2 * i] = digits[data[i] >> 4];
+            chars[2 * i + 1] = digits[data[i] & 0xF];
         }
-        return sb.ToString();
+        return new string(chars);
     }
 
     private static readonly char[] HEX = {

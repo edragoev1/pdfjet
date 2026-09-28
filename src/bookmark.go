@@ -48,6 +48,10 @@ func NewBookmarkAt(page *Page, y float32, key, title string) *Bookmark {
 	return bookmark
 }
 
+// bookmarkWhitespace matches the runs of whitespace of a title, which a
+// bookmark shows as one space; it is compiled once, not for every bookmark.
+var bookmarkWhitespace = regexp.MustCompile(`\s+`)
+
 // AddBookmark adds bookmark to the page.
 func (bookmark *Bookmark) AddBookmark(page *Page, title *Title) *Bookmark {
 	bm := bookmark
@@ -58,12 +62,11 @@ func (bookmark *Bookmark) AddBookmark(page *Page, title *Title) *Bookmark {
 		bm.pdf.fail("The page belongs to another PDF.")
 	}
 	key := bm.nextKey()
-	whitespace := regexp.MustCompile(`\s+`)
 	bookmark2 := NewBookmarkAt(
 		page,
 		title.textLine.destinationY(),
 		key,
-		whitespace.ReplaceAllString(title.textLine.text, " "))
+		bookmarkWhitespace.ReplaceAllString(title.textLine.text, " "))
 	bookmark2.parent = bookmark
 	bookmark2.dest = page.AddDestination(key, title.textLine.destinationY())
 	if bookmark.children == nil {

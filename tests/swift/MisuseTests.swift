@@ -97,16 +97,16 @@ import Testing
 
     @Test func theMarkedContentMustBePaired() {
         for compliance in [Compliance.PDF_1_7, Compliance.PDF_UA_1] {
-            let pdf = PDF(OutputStream(toMemory: ()), compliance)
+            let pdf = PDF(OutputStream(toMemory: ()), compliance).setTitle("Test")
             let page = Page(pdf, Letter.PORTRAIT)
             page.addEMC()
             #expect(pdf.error == "addEMC was called without a matching addBDC or addArtifactBMC.")
 
-            let pdf2 = PDF(OutputStream(toMemory: ()), compliance)
+            let pdf2 = PDF(OutputStream(toMemory: ()), compliance).setTitle("Test")
             Page(pdf2, Letter.PORTRAIT).addBDC(StructElem.P, "x", "x")
             #expect(completeMessage(pdf2) == "A page ends with an addBDC or addArtifactBMC that has no addEMC.")
 
-            let pdf3 = PDF(OutputStream(toMemory: ()), compliance)
+            let pdf3 = PDF(OutputStream(toMemory: ()), compliance).setTitle("Test")
             let page3 = Page(pdf3, Letter.PORTRAIT)
             page3.addArtifactBMC()
             page3.addEMC()
@@ -281,6 +281,7 @@ import Testing
 
     @Test func theXmpMetadataLeavesOutControlCharacters() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.setTitle("Test")
         _ = memory.pdf.setTitle("Report\u{01} 2026\u{FFFF} ")
         _ = Page(memory.pdf, Letter.PORTRAIT)
         try memory.pdf.complete()

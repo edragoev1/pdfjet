@@ -24,7 +24,7 @@ public class MarkdownTest {
 
     private static Drawn Draw(String text, String imageDirectory) {
         MemoryStream bos = new MemoryStream();
-        PDF pdf = new PDF(bos, Compliance.PDF_UA_1);
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1).SetTitle("Test");
         pdf.SetTitle("Markdown");
         Font regular = new Font(pdf, CoreFont.HELVETICA);
         Font bold = new Font(pdf, CoreFont.HELVETICA_BOLD);

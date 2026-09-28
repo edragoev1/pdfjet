@@ -2611,6 +2611,12 @@ final public class Page {
             String actualText,
             String altDescription,
             String attributes) {
+        // An artifact is not an element of the structure: what is drawn as
+        // one, like a text line of the structure type Artifact, is marked as one.
+        if (structure == StructElem.ARTIFACT) {
+            addArtifactBMC();
+            return;
+        }
         markedContentDepth++;
         if (structure == StructElem.FIGURE) {
             figure = null;  // Until it is made below, if it is tagged
@@ -2751,7 +2757,7 @@ final public class Page {
             String language,
             String actualText,
             String altDescription) {
-        if (!pdf.isTagged() || artifactDepth != 0) {
+        if (!pdf.isTagged() || artifactDepth != 0 || structure == StructElem.ARTIFACT) {
             addBDC(structure, language, actualText, altDescription, null);
             return null;
         }
@@ -2865,6 +2871,12 @@ final public class Page {
     // Gives the element its object number, which its parent and its kids refer
     // to before it is written, and adds it to its parent and to the page.
     private void addStructure(StructElement element, StructElement parent) {
+        // An artifact is marked content outside the structure, which PDF/UA
+        // does not allow an element of the structure to be.
+        if (StructElem.ARTIFACT.type.equals(element.structure)) {
+            pdf.fail(new IllegalStateException("An artifact is not a structure element: "
+                    + "draw it between addArtifactBMC and addEMC."));
+        }
         pdf.reserveStructTreeNumbers();
         element.objNumber = pdf.reserveObjNumber();
         element.pageObjNumber = this.objNumber;
@@ -2876,6 +2888,12 @@ final public class Page {
     }
 
     void addAnnotation(Annotation annotation) {
+        // The element of an annotation of a tagged document is written with
+        // its page, and a page that was written has no place for it.
+        if (pdf.isTagged() && buf instanceof WrittenContent) {
+            pdf.fail(new IllegalStateException("The page was already written to the PDF: "
+                    + "draw on a page before creating the next page or completing the PDF."));
+        }
         annotation.y1 = this.height - annotation.y1;
         annotation.y2 = this.height - annotation.y2;
         annots.add(annotation);
@@ -2911,6 +2929,12 @@ final public class Page {
             }
             if (element.altDescription == null || element.altDescription.isEmpty()) {
                 element.altDescription = title;
+            }
+            // An annotation stands for what it says, which only the one who
+            // draws it can say, as a figure does.
+            if (element.altDescription == null || element.altDescription.trim().isEmpty()) {
+                pdf.fail(new IllegalStateException("An annotation of a tagged document, PDF/UA or PDF/A of level A, "
+                        + "needs contents, a title or an alternative description."));
             }
             element.annotation = annotation;
             addStructure(element, structParent);

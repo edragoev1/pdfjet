@@ -215,7 +215,7 @@ import Testing
         // replacement character of the font, as wide as it is, with the missing
         // character as its actual text, and never glyph 0.
         let memory = MemoryPDF()
-        memory.pdf.setCompliance(Compliance.PDF_UA_1)
+        memory.pdf.setCompliance(Compliance.PDF_UA_1).setTitle("Test")
         let font = try ibmPlexSans(memory.pdf)
         let replacement = font.unicodeToGID[0xFFFD]
         try #require(replacement != 0, "IBM Plex Sans has no U+FFFD")

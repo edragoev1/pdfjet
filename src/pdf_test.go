@@ -89,7 +89,7 @@ func TestPDFDocumentIdsAreRandomAndDifferent(t *testing.T) {
 
 func TestPDFTheXmpDocumentIdIsTheTrailerId(t *testing.T) {
 	doc := testNewDoc()
-	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	doc.pdf.SetTitle("Title")
 	NewPage(doc.pdf, letter.Portrait())
 	raw := doc.complete()
@@ -238,7 +238,7 @@ func TestPDFNewPDFFileReportsAFileThatCannotBeCreated(t *testing.T) {
 
 func TestPDFAShapeWithoutADescriptionWritesNoAltText(t *testing.T) {
 	doc := testNewDoc()
-	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	doc.pdf.SetTitle("Title")
 	page := NewPage(doc.pdf, letter.Portrait())
 	NewLine(10, 10, 100, 10).DrawOn(page)
@@ -274,7 +274,7 @@ func testStreamFont(t *testing.T, pdf *PDF) *Font {
 
 func TestPDFADetachedPageThatIsNeverAddedLeavesNoTrace(t *testing.T) {
 	doc := testNewDoc()
-	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	doc.pdf.SetTitle("Title")
 	font := testStreamFont(t, doc.pdf)
 	// A dry run, like one that measures the text, on a page that is never added.
@@ -303,7 +303,7 @@ func TestPDFADetachedPageThatIsNeverAddedLeavesNoTrace(t *testing.T) {
 
 func TestPDFTheStructureTreeFollowsThePagesNotTheOrderTheyWereDrawnIn(t *testing.T) {
 	doc := testNewDoc()
-	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	doc.pdf.SetTitle("Title")
 	font := testStreamFont(t, doc.pdf)
 	second := NewPageDetached(doc.pdf, letter.Portrait())
@@ -327,7 +327,7 @@ func TestPDFTheStructureTreeFollowsThePagesNotTheOrderTheyWereDrawnIn(t *testing
 
 func TestPDFTextStringsAreUtf16SoThatEveryReaderDecodesThem(t *testing.T) {
 	doc := testNewDoc()
-	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	doc.pdf.SetTitle("Title")
 	page := NewPage(doc.pdf, letter.Portrait())
 	NewLine(10, 20, 100, 20).SetAltDescription("Gr\u00fc\u00dfe \u2013 \u7dda").DrawOn(page)
@@ -424,7 +424,7 @@ func TestPDFTheNameOfAnEmbeddedFileIsATextStringInFAndUF(t *testing.T) {
 
 func TestPDFAPointIsAnArtifact(t *testing.T) {
 	doc := testNewDoc()
-	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	page := NewPage(doc.pdf, letter.Portrait())
 	NewPoint(50, 50).DrawOn(page)
 	content := testContent(page)
@@ -435,7 +435,7 @@ func TestPDFAPointIsAnArtifact(t *testing.T) {
 
 func TestPDFALinkIsInALinkElementAndAnyOtherAnnotationInAnAnnotElement(t *testing.T) {
 	doc := testNewDoc()
-	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	doc.pdf.SetTitle("Title")
 	font := testStreamFont(t, doc.pdf)
 	page := NewPage(doc.pdf, letter.Portrait())
@@ -480,7 +480,7 @@ func testLinks(raw string) map[string][3]string {
 // only the annotation is read as a link of no text.
 func TestPDFALinkedTextLineIsTheLinkOfItsParagraph(t *testing.T) {
 	doc := testNewDoc()
-	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	doc.pdf.SetTitle("Title")
 	font := testStreamFont(t, doc.pdf)
 	page := NewPage(doc.pdf, letter.Portrait())
@@ -512,7 +512,7 @@ func TestPDFALinkedTextLineIsTheLinkOfItsParagraph(t *testing.T) {
 // place, holding its text and its annotation.
 func TestPDFALinkedWordIsALinkAmongTheWordsOfItsParagraph(t *testing.T) {
 	doc := testNewDoc()
-	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	doc.pdf.SetTitle("Title")
 	font := testStreamFont(t, doc.pdf)
 	paragraph := NewParagraph().
@@ -544,7 +544,7 @@ func TestPDFALinkedWordIsALinkAmongTheWordsOfItsParagraph(t *testing.T) {
 // A linked image is the Figure of its Link, which holds its annotation too.
 func TestPDFALinkedImageIsTheFigureOfItsLink(t *testing.T) {
 	doc := testNewDoc()
-	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	doc.pdf.SetTitle("Title")
 	testStreamFont(t, doc.pdf)
 	page := NewPage(doc.pdf, letter.Portrait())
@@ -985,7 +985,7 @@ func TestPDFTheLengthOfAStreamIsTheEntryOfItsDictionary(t *testing.T) {
 
 func TestPDFTheLevelOfPDFA3aAndPDFUA1IsBoth(t *testing.T) {
 	doc := testNewDoc()
-	doc.pdf.SetCompliance(compliance.PDF_A_3A_UA_1)
+	doc.pdf.SetCompliance(compliance.PDF_A_3A_UA_1).SetTitle("Test")
 	page := NewPage(doc.pdf, letter.Portrait())
 	line := NewTextLine(testHelvetica(doc.pdf), "Invoice")
 	line.SetLocation(50, 50)
@@ -1009,7 +1009,7 @@ func TestPDFTheLevelOfPDFA3aAndPDFUA1IsBoth(t *testing.T) {
 
 	// The rules of PDF/UA: a figure has a description
 	pdf := testNewPDF()
-	pdf.SetCompliance(compliance.PDF_A_3A_UA_1)
+	pdf.SetCompliance(compliance.PDF_A_3A_UA_1).SetTitle("Test")
 	NewPage(pdf, letter.Portrait()).AddBDC(structelem.Figure, "", "", "")
 	testRecorded(t, pdf, "A figure of a tagged document, PDF/UA or PDF/A of level A, needs an alternative description.")
 }
@@ -1062,7 +1062,7 @@ func testElementAttributes(raw, number string) string {
 // makes inline; one in a paragraph, or a figure in its link, does not.
 func TestPDFAnInlineElementStandingAsABlockSaysSo(t *testing.T) {
 	doc := testNewDoc()
-	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	doc.pdf.SetTitle("Title")
 	font := testStreamFont(t, doc.pdf)
 	page := NewPage(doc.pdf, letter.Portrait())
@@ -1094,7 +1094,7 @@ func TestPDFAnInlineElementStandingAsABlockSaysSo(t *testing.T) {
 // which PAC warns of on text.
 func TestPDFTheTextOfACellHasNoAlt(t *testing.T) {
 	doc := testNewDoc()
-	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	doc.pdf.SetTitle("Title")
 	font := testStreamFont(t, doc.pdf)
 	page := NewPage(doc.pdf, letter.Portrait())
@@ -1128,7 +1128,7 @@ func TestPDFThePolygonAnnotationIsInTheBoxOfItsVertices(t *testing.T) {
 // without it; a file attached is described by its own.
 func TestPDFAnAnnotationIsDescribedByWhatItSays(t *testing.T) {
 	doc := testNewDoc()
-	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	doc.pdf.SetTitle("Title")
 	testStreamFont(t, doc.pdf)
 	page := NewPage(doc.pdf, letter.Portrait())

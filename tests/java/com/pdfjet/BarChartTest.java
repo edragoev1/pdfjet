@@ -116,7 +116,7 @@ class BarChartTest {
 
     @Test
     void aChartIsAFigureDescribedByItsTitleOrItsAlternateDescription() throws Exception {
-        PDF pdf = new PDF(new java.io.ByteArrayOutputStream(), Compliance.PDF_UA_1);
+        PDF pdf = new PDF(new java.io.ByteArrayOutputStream(), Compliance.PDF_UA_1).setTitle("Test");
         Page page = new Page(pdf, Letter.PORTRAIT);
         BarChart titled = chart(pdf).setTitle("Sales").setCategories("a", "b");
         titled.addSeries("", new float[] {1f, 2f});

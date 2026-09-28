@@ -56,6 +56,10 @@ public class Bookmark {
         this.title = title;
     }
 
+    // The runs of whitespace of a title, which a bookmark shows as one space;
+    // compiled once, not for every bookmark.
+    private static final java.util.regex.Pattern WHITESPACE = java.util.regex.Pattern.compile("\\s+");
+
     /**
      * Add bookmark with the specified title to the page.
      *
@@ -76,7 +80,7 @@ public class Bookmark {
                 page,
                 title.textLine.destinationY(),
                 key,
-                title.textLine.text.replaceAll("\\s+", " "));
+                WHITESPACE.matcher(title.textLine.text).replaceAll(" "));
         bookmark2.parent = this;
         bookmark2.dest = page.addDestination(key, title.textLine.destinationY());
         if (children == null) {

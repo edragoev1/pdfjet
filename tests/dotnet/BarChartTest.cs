@@ -113,7 +113,7 @@ public class BarChartTest {
 
     [Fact]
     public void AChartIsAFigureDescribedByItsTitleOrItsAlternateDescription() {
-        PDF pdf = new PDF(new System.IO.MemoryStream(), Compliance.PDF_UA_1);
+        PDF pdf = new PDF(new System.IO.MemoryStream(), Compliance.PDF_UA_1).SetTitle("Test");
         Page page = new Page(pdf, Letter.PORTRAIT);
         BarChart titled = NewChart(pdf).SetTitle("Sales").SetCategories("a", "b");
         titled.AddSeries("", new float[] {1f, 2f});

@@ -54,7 +54,7 @@ class DonutChartTest {
 
     @Test
     void aChartIsAFigureThatListsItsSlices() throws Exception {
-        PDF pdf = new PDF(new java.io.ByteArrayOutputStream(), Compliance.PDF_UA_1);
+        PDF pdf = new PDF(new java.io.ByteArrayOutputStream(), Compliance.PDF_UA_1).setTitle("Test");
         Page page = new Page(pdf, Letter.PORTRAIT);
         DonutChart donut = chart(pdf).addSlice(new Slice(25f, Color.red, "Apples"))
                 .addSlice(new Slice(75f, Color.blue, "Oranges"));

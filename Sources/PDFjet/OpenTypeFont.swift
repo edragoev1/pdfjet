@@ -71,12 +71,9 @@ class OpenTypeFont {
             }
         }
 
+        // The metadata is an object of its own, written before the font file,
+        // whose dictionary refers to it, as in the other ports.
         let metadataObjNumber = pdf.addMetadataObject(otf.fontInfo!, true)
-        if metadataObjNumber != -1 {
-            pdf.append("/Metadata ")
-            pdf.append(metadataObjNumber)
-            pdf.append(" 0 R\n")
-        }
 
         pdf.newObj()
         pdf.append(Token.beginDictionary)
@@ -85,16 +82,22 @@ class OpenTypeFont {
         }
         pdf.append("/Filter /FlateDecode\n")
 
-        let compressed = pdf.encrypted(otf.dos)
-        pdf.append("/Length ")
-        pdf.append(compressed.count)
-        pdf.append(Token.newline)
-
         if !otf.cff {
             pdf.append("/Length1 ")
             pdf.append(otf.buf.count)   // The uncompressed size
             pdf.append(Token.newline)
         }
+
+        if metadataObjNumber != -1 {
+            pdf.append("/Metadata ")
+            pdf.append(metadataObjNumber)
+            pdf.append(" 0 R\n")
+        }
+
+        let compressed = pdf.encrypted(otf.dos)
+        pdf.append("/Length ")
+        pdf.append(compressed.count)
+        pdf.append(Token.newline)
 
         pdf.append(Token.endDictionary)
         pdf.append(Token.stream)

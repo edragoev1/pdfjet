@@ -231,7 +231,7 @@ public sealed class BigTableTest : IDisposable {
         // row, and a TH for each header field the first time the header is
         // drawn or a TD for each field of a row, each holding its own text.
         System.IO.MemoryStream stream = new System.IO.MemoryStream();
-        PDF pdf = new PDF(stream, Compliance.PDF_UA_1);
+        PDF pdf = new PDF(stream, Compliance.PDF_UA_1).SetTitle("Test");
         pdf.SetTitle("Title");
         Font font = TestSupport.Helvetica(pdf);
         BigTable table = new BigTable(pdf, font, font, Letter.PORTRAIT);
@@ -399,7 +399,7 @@ public sealed class BigTableTest : IDisposable {
         // A field the page was too narrow for is drawn cut, but a reader is
         // read the whole of it: the cell of the structure tree keeps it.
         System.IO.MemoryStream stream = new System.IO.MemoryStream();
-        PDF pdf = new PDF(stream, Compliance.PDF_UA_1);
+        PDF pdf = new PDF(stream, Compliance.PDF_UA_1).SetTitle("Test");
         pdf.SetTitle("Title");
         Font font = new Font(pdf, CoreFont.HELVETICA).SetSize(24f);
         string text = "A string that is far too long to fit across the width of a letter page";

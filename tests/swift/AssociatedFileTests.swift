@@ -95,7 +95,7 @@ import Testing
         let begin = try #require(raw.range(of: "stream\n", range: file.lowerBound..<raw.endIndex))
         let embedded = String(raw[file.lowerBound..<begin.lowerBound])
         #expect(embedded.contains("/Subtype /text#2Fxml\n"), "\(embedded)")
-        #expect(embedded.contains("/Params <</Size \(xml.utf8.count) /ModDate (D:"), "\(embedded)")
+        #expect(embedded.contains("/Params <</Size \(xml.utf8.count) /ModDate <443a"), "\(embedded)")
         #expect(embedded.contains("/Length \(xml.utf8.count)\n"), "\(embedded)")
     }
 
@@ -111,7 +111,7 @@ import Testing
                 .setLocation(50, 50).drawOn(Page(memory.pdf, Letter.PORTRAIT))
         try memory.pdf.complete()
         let raw = TestSupport.latin1(memory.bytes)
-        #expect(raw.contains("/Params <</Size \(text.utf8.count) /ModDate (D:"), "the size")
+        #expect(raw.contains("/Params <</Size \(text.utf8.count) /ModDate <443a"), "the size")
         #expect(raw.contains("/Filter /FlateDecode\n"), "the filter")
         let embedded = try #require(raw.range(of: "/Type /EmbeddedFile"))
         let length = try #require(String(raw[embedded.lowerBound...]).firstMatch(of: /\/Length (\d+)\n/))
@@ -172,6 +172,7 @@ import Testing
 
     @Test func theLevelOfPdfA3aAndPdfUA1IsBoth() throws {
         let memory = MemoryPDF(Compliance.PDF_A_3A_UA_1)
+        memory.pdf.setTitle("Test")
         let page = Page(memory.pdf, Letter.PORTRAIT)
         TextLine(TestSupport.helvetica(memory.pdf), "Invoice").setLocation(50, 50).drawOn(page)
         // Tagged, as PDF/UA asks, where PDF/A-3a alone is not
@@ -187,6 +188,7 @@ import Testing
         // Factur-X does, has the PDF/UA identification schema in that list
         for own in [false, true] {
             let memory = MemoryPDF(Compliance.PDF_A_3A_UA_1)
+            memory.pdf.setTitle("Test")
             if own {
                 _ = memory.pdf.addMetadata("<rdf:Description rdf:about=\"\" xmlns:pdfaExtension=\"http://www.aiim.org/pdfa/ns/extension/\">\n" +
                         "  <pdfaExtension:schemas>\n" +
@@ -213,6 +215,7 @@ import Testing
         for compliance in [PDF.complianceA3A, Compliance.PDF_A_3B,
                 Compliance.PDF_1_7, Compliance.PDF_UA_1] {
             let memory = MemoryPDF(compliance)
+            memory.pdf.setTitle("Test")
             #expect(try document(memory, ["factur-x.xml"]).contains("/AF ["), "\(compliance)")
         }
     }

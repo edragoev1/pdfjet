@@ -255,7 +255,7 @@ class FontTest {
         // character as its actual text, and never glyph 0.
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         PDF pdf = new PDF(bos);
-        pdf.setCompliance(Compliance.PDF_UA_1);
+        pdf.setCompliance(Compliance.PDF_UA_1).setTitle("Test");
         pdf.setTitle("Title");
         Font font = ibmPlexSans(pdf);
         int replacement = font.unicodeToGID[0xFFFD];

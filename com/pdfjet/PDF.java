@@ -85,6 +85,11 @@ final public class PDF {
                 || compliance == Compliance.PDF_A_2A || compliance == Compliance.PDF_A_3A
                 || compliance == Compliance.PDF_A_3A_UA_1;
     }
+
+    // Whether the document is of PDF/A, of any part and level.
+    boolean isPDFA() {
+        return compliance != Compliance.PDF_1_7 && compliance != Compliance.PDF_UA_1;
+    }
     Bookmark toc = null;
     // The headings of a tagged document, in the order they are drawn, which
     // its bookmarks are made of when it has none of its own
@@ -102,7 +107,7 @@ final public class PDF {
     private final Map<String, Destination> destinations = new HashMap<String, Destination>();
     private OutputStream os = null;
     private final List<Long> objOffset = new ArrayList<Long>();
-    private final String producer = "PDFjet v9.0.1";
+    private final String producer = "PDFjet v9.0.2";
     private String title;
     private String author;
     private String subject;
@@ -362,7 +367,9 @@ final public class PDF {
             sb.append("<xmpRights:UsageTerms>\n");
             sb.append("<rdf:Alt>\n");
             sb.append("<rdf:li xml:lang=\"x-default\">\n");
-            sb.append(notice);
+            // The notice of a font is text, which may hold an ampersand, like
+            // that of the Noto fonts of Japanese, Korean and Chinese.
+            sb.append(escapeXML(notice));
             sb.append("</rdf:li>\n");
             sb.append("</rdf:Alt>\n");
             sb.append("</xmpRights:UsageTerms>\n");
@@ -506,10 +513,35 @@ final public class PDF {
     }
 
     // Returns the text with the characters that have a meaning in XML escaped,
-    // and without the characters XML does not allow: the control characters
-    // other than tab, line feed and carriage return, U+FFFE, U+FFFF and
-    // unpaired surrogates, which would make the metadata unreadable.
-    private static String escapeXML(String text) {
+    // and without what XML does not allow, which cleanText leaves out.
+    static String escapeXML(String text) {
+        String clean = cleanText(text);
+        StringBuilder sb = new StringBuilder(clean.length());
+        for (int i = 0; i < clean.length(); i++) {
+            char ch = clean.charAt(i);
+            if (ch == '&') {
+                sb.append("&amp;");
+            } else if (ch == '<') {
+                sb.append("&lt;");
+            } else if (ch == '>') {
+                sb.append("&gt;");
+            } else {
+                sb.append(ch);
+            }
+        }
+        return sb.toString();
+    }
+
+    // Returns the text without what XML does not allow: the control
+    // characters other than tab, line feed and carriage return, U+FFFE,
+    // U+FFFF and unpaired surrogates, which would make the metadata
+    // unreadable. The title and the other properties of the document are
+    // cleaned when they are set, so that the information dictionary says what
+    // the metadata says, as PDF/A asks.
+    static String cleanText(String text) {
+        if (text == null) {
+            return null;
+        }
         StringBuilder sb = new StringBuilder(text.length());
         for (int i = 0; i < text.length(); i++) {
             char ch = text.charAt(i);
@@ -517,12 +549,6 @@ final public class PDF {
                     && i + 1 < text.length() && Character.isLowSurrogate(text.charAt(i + 1))) {
                 sb.append(ch);
                 sb.append(text.charAt(++i));
-            } else if (ch == '&') {
-                sb.append("&amp;");
-            } else if (ch == '<') {
-                sb.append("&lt;");
-            } else if (ch == '>') {
-                sb.append("&gt;");
             } else if (ch == '\t' || ch == '\n' || ch == '\r'
                     || (ch >= 0x20 && ch <= 0xFFFD && !Character.isSurrogate(ch))) {
                 sb.append(ch);
@@ -715,10 +741,34 @@ final public class PDF {
         append(documentElementNumber);
         append(Token.OBJ_REF);
         append("]\n");
+        // The types of PDF 2.0 that the document uses, which PDF 1.7 does not
+        // have, are mapped to the standard types that PDF/UA-1 knows.
+        if (!roles.isEmpty()) {
+            append("/RoleMap <<");
+            for (String[] role : ROLE_MAP) {
+                if (roles.contains(role[0])) {
+                    append(" /");
+                    append(role[0]);
+                    append(" /");
+                    append(role[1]);
+                }
+            }
+            append(" >>\n");
+        }
         append(Token.END_DICTIONARY);
         endObj();
         return structTreeRootNumber;
     }
+
+    // The structure types of PDF 2.0 that PDFjet writes, mapped to the
+    // standard types of PDF 1.7, in the order the role map lists them.
+    private static final String[][] ROLE_MAP = {
+        {StructElem.TITLE.type, StructElem.P.type},
+        {StructElem.EM.type, StructElem.SPAN.type},
+        {StructElem.STRONG.type, StructElem.SPAN.type},
+    };
+    // The types of PDF 2.0 among the elements, which the role map maps.
+    private final Set<String> roles = new HashSet<String>();
 
     private int addStructDocumentObject(int parent) throws Exception {
         setObjOffset(documentElementNumber, byteCount);
@@ -746,7 +796,7 @@ final public class PDF {
     // drawing. What it keeps is the elements that are still open and the ones
     // of an annotation, whose object is written when the document is completed.
     private void addPageStructElements(Page page) throws Exception {
-        if (compliance == Compliance.PDF_1_7 || page.structures.isEmpty()) {
+        if (!isTagged() || page.structures.isEmpty()) {
             return;
         }
         List<StructElement> kept = new ArrayList<StructElement>();
@@ -792,6 +842,11 @@ final public class PDF {
             setObjOffset(element.objNumber, byteCount);
             append(element.objNumber);
             append(" 0 obj\n");
+            for (String[] role : ROLE_MAP) {
+                if (role[0].equals(element.structure)) {
+                    roles.add(role[0]);
+                }
+            }
             append("<<\n/Type /StructElem /S /");
             append(element.structure);
             append("\n/P ");
@@ -991,13 +1046,21 @@ final public class PDF {
     // Appends an entry of the information dictionary with the bytes of a
     // string, encrypted if the document is encrypted.
     private void appendInfoString(String key, byte[] bytes) throws Exception {
+        append(key);
+        append(Token.SPACE);
+        appendByteString(bytes);
+        append(Token.NEWLINE);
+    }
+
+    // Appends a string of bytes, like a date, in hexadecimal, encrypted if the
+    // document is encrypted.
+    void appendByteString(byte[] bytes) throws Exception {
         if (encryption != null) {
             bytes = AES256.encrypt(bytes, encryption.getKey());
         }
-        append(key);
-        append(" <");
+        append('<');
         append(Util.toHexString(bytes));
-        append(">\n");
+        append('>');
     }
 
     private int addRootObject(
@@ -1016,11 +1079,16 @@ final public class PDF {
             append(Util.toHexString(languageBytes));
             append(">\n");
 
-            append("/StructTreeRoot ");
-            append(structTreeRootObjNumber);
-            append(Token.OBJ_REF);
+            // Only a tagged document has a structure tree: a PDF/A of level B
+            // that said it was marked would say its content is tagged, which
+            // it is not.
+            if (isTagged()) {
+                append("/StructTreeRoot ");
+                append(structTreeRootObjNumber);
+                append(Token.OBJ_REF);
 
-            append("/MarkInfo <</Marked true>>\n");
+                append("/MarkInfo <</Marked true>>\n");
+            }
             append("/ViewerPreferences <</DisplayDocTitle true>>\n");
         }
 
@@ -1199,7 +1267,7 @@ final public class PDF {
                 append("]\n");
             }
 
-            if (compliance != Compliance.PDF_1_7) {
+            if (isTagged()) {
                 append("/Tabs /S\n");
                 append("/StructParents ");
                 append(i);
@@ -1266,15 +1334,108 @@ final public class PDF {
         addPageStructElements(page);
     }
 
-    private int addAnnotationObject(Annotation annot, int index) throws Exception {
-        newObj();
-        annot.objNumber = getObjNumber();
-        append(Token.BEGIN_DICTIONARY);
-        append("/Type /Annot\n");
-        append("/Subtype /");
-        append(annot.annotationType);
-        append("\n");
+    // Writes the appearance of an annotation that is not a link, which PDF/A
+    // asks for, and returns its object number. It draws what a viewer draws
+    // for the annotation: the square, the circle or the polygon in its fill
+    // color, and a note or a file as a white box with a black frame. Its box
+    // is the rectangle of the annotation, in the coordinates of the page.
+    private int addAppearanceObject(
+            Annotation annot, float x1, float y1, float x2, float y2) throws Exception {
+        float minX = Math.min(x1, x2);
+        float maxX = Math.max(x1, x2);
+        float minY = Math.min(y1, y2);
+        float maxY = Math.max(y1, y2);
+        float w = maxX - minX;
+        float h = maxY - minY;
+        ByteArrayOutputStream buf = new ByteArrayOutputStream();
+        String type = annot.annotationType;
+        if (type.equals(Annotation.Square)) {
+            appendFill(buf, annot);
+            appendNumbers(buf, minX, minY, w, h);
+            appendAscii(buf, "re f\n");
+        } else if (type.equals(Annotation.Circle)) {
+            // Four Bezier curves, one for each quarter of the ellipse.
+            final float kappa = 0.55228475f;
+            float rx = w / 2;
+            float ry = h / 2;
+            float cx = minX + rx;
+            float cy = minY + ry;
+            float ox = rx * kappa;
+            float oy = ry * kappa;
+            appendFill(buf, annot);
+            appendNumbers(buf, cx + rx, cy);
+            appendAscii(buf, "m\n");
+            appendNumbers(buf, cx + rx, cy + oy, cx + ox, cy + ry, cx, cy + ry);
+            appendAscii(buf, "c\n");
+            appendNumbers(buf, cx - ox, cy + ry, cx - rx, cy + oy, cx - rx, cy);
+            appendAscii(buf, "c\n");
+            appendNumbers(buf, cx - rx, cy - oy, cx - ox, cy - ry, cx, cy - ry);
+            appendAscii(buf, "c\n");
+            appendNumbers(buf, cx + ox, cy - ry, cx + rx, cy - oy, cx + rx, cy);
+            appendAscii(buf, "c\n");
+            appendAscii(buf, "f\n");
+        } else if (type.equals(Annotation.Polygon)) {
+            appendFill(buf, annot);
+            for (int i = 0; i + 1 < annot.vertices.length; i += 2) {
+                appendNumbers(buf, annot.x1 + annot.vertices[i], annot.y1 - annot.vertices[i + 1]);
+                appendAscii(buf, (i == 0) ? "m\n" : "l\n");
+            }
+            appendAscii(buf, "h f\n");
+        } else {
+            appendAscii(buf, "1 g 0 G 0.5 w\n");
+            appendNumbers(buf, minX + 0.25f, minY + 0.25f, w - 0.5f, h - 0.5f);
+            appendAscii(buf, "re B\n");
+        }
+        byte[] content = buf.toByteArray();
+        if (encryption != null) {
+            content = AES256.encrypt(content, encryption.getKey());
+        }
 
+        newObj();
+        append(Token.BEGIN_DICTIONARY);
+        append("/Type /XObject\n");
+        append("/Subtype /Form\n");
+        append("/BBox [");
+        append(minX);
+        append(' ');
+        append(minY);
+        append(' ');
+        append(maxX);
+        append(' ');
+        append(maxY);
+        append("]\n");
+        append("/Length ");
+        append(content.length);
+        append(Token.NEWLINE);
+        append(Token.END_DICTIONARY);
+        append("stream\n");
+        append(content);
+        append("\nendstream\n");
+        endObj();
+        return getObjNumber();
+    }
+
+    // Appends the fill color of the annotation to the content of its appearance.
+    private static void appendFill(ByteArrayOutputStream buf, Annotation annot) {
+        appendNumbers(buf, annot.fillColor[0], annot.fillColor[1], annot.fillColor[2]);
+        appendAscii(buf, "rg\n");
+    }
+
+    // Appends the numbers to the content of an appearance, each followed by a space.
+    private static void appendNumbers(ByteArrayOutputStream buf, float... values) {
+        for (float value : values) {
+            byte[] number = FastFloat.toByteArray(value);
+            buf.write(number, 0, number.length);
+            buf.write(' ');
+        }
+    }
+
+    private static void appendAscii(ByteArrayOutputStream buf, String text) {
+        byte[] bytes = text.getBytes(StandardCharsets.US_ASCII);
+        buf.write(bytes, 0, bytes.length);
+    }
+
+    private int addAnnotationObject(Annotation annot, int index) throws Exception {
         // The rectangle of an annotation of vertices, a polygon, is the box of its
         // vertices, which are relative to its location; its second corner is not
         // set
@@ -1298,6 +1459,21 @@ final public class PDF {
             x2 = annot.x1 + maxX;
             y2 = annot.y1 - minY;
         }
+
+        // PDF/A asks every annotation but a link for an appearance of its own,
+        // which is written before it.
+        int appearance = 0;
+        if (isPDFA() && !annot.annotationType.equals(Annotation.Link)) {
+            appearance = addAppearanceObject(annot, x1, y1, x2, y2);
+        }
+
+        newObj();
+        annot.objNumber = getObjNumber();
+        append(Token.BEGIN_DICTIONARY);
+        append("/Type /Annot\n");
+        append("/Subtype /");
+        append(annot.annotationType);
+        append("\n");
         append("/Rect [");
         append(x1);
         append(' ');
@@ -1308,6 +1484,13 @@ final public class PDF {
         append(y2);
         append("]\n");
         append("/Border [0 0 0]\n");
+        // Every annotation is printed, as PDF/A asks.
+        append("/F 4\n");
+        if (appearance > 0) {
+            append("/AP <</N ");
+            append(appearance);
+            append(" 0 R>>\n");
+        }
 
         if (annot.annotationType.equals(Annotation.FileAttachment)) {
             append("/FS ");
@@ -1347,7 +1530,6 @@ final public class PDF {
                 append("\n");
             }
             if (annot.uri != null) {
-                append("/F 4\n");
                 append("/A <<\n");
                 append("/S /URI\n");
                 byte[] uri = annot.uri.getBytes(StandardCharsets.UTF_8);
@@ -1360,8 +1542,11 @@ final public class PDF {
                 append(">>\n");
             } else if (annot.key != null) {
                 Destination destination = destinations.get(annot.key);
-                if (destination != null) {
-                    append("/F 4\n");
+                if (destination == null) {
+                    // A link to nowhere would do nothing when it is clicked.
+                    fail(new IllegalStateException("The link goes to the destination " + annot.key
+                            + ", which the document does not have."));
+                } else {
                     append("/Dest [");
                     append(destination.pageObjNumber);
                     append(" 0 R /XYZ ");
@@ -1561,7 +1746,7 @@ final public class PDF {
             page.objNumber = reserveObjNumber();
         }
         // A page that was drawn before it was added has elements of its own.
-        if (compliance != Compliance.PDF_1_7) {
+        if (isTagged()) {
             page.setStructElementsPageObjNumber(page.objNumber);
         }
         pages.add(page);
@@ -1968,6 +2153,23 @@ final public class PDF {
      * @throws Exception  If an input or output exception occurred
      */
     public void complete() throws Exception {
+        // The output stream is closed also when the document could not be
+        // completed.
+        try {
+            writeRest();
+        } catch (Exception e) {
+            try {
+                os.close();
+            } catch (IOException closeError) {
+                e.addSuppressed(closeError);
+            }
+            throw e;
+        }
+        os.close();
+    }
+
+    // Writes the rest of the PDF.
+    private void writeRest() throws Exception {
         if (completed) {
             fail(new IllegalStateException("complete() was already called."));
         }
@@ -1976,6 +2178,12 @@ final public class PDF {
         }
         if (pages.isEmpty() && pagesObjNumber == 0) {
             fail(new IllegalStateException("A PDF needs at least one page."));
+        }
+        // PDF/UA asks for the title of the document, which a reader shows in
+        // place of the name of the file.
+        if ((compliance == Compliance.PDF_UA_1 || compliance == Compliance.PDF_A_3A_UA_1)
+                && (title == null || title.trim().isEmpty())) {
+            fail(new IllegalStateException("A PDF/UA document needs a title: use setTitle."));
         }
         if (prevPage != null) {
             addPageContent(prevPage);
@@ -1992,7 +2200,7 @@ final public class PDF {
         }
 
         int structTreeRootObjNumber = 0;
-        if (compliance != Compliance.PDF_1_7) {
+        if (isTagged()) {
             // The elements of every page are written with it; the ones still
             // open and the ones of the annotations are what is left.
             for (Page page : pages) {
@@ -2071,8 +2279,6 @@ final public class PDF {
         append(Long.toString(startxref));
         append('\n');
         append("%%EOF\n");
-
-        os.close();
     }
 
     /**
@@ -2088,6 +2294,7 @@ final public class PDF {
      * @param file the embedded file.
      * @return this PDF object.
      */
+    @SuppressWarnings("deprecation") // PDF_A_3A, which carries files too
     public PDF addAssociatedFile(EmbeddedFile file) {
         // PDF/A-1 carries no files at all, and PDF/A-2 only other documents of
         // PDF/A, so a document of either that carries a file is not the
@@ -2104,6 +2311,15 @@ final public class PDF {
                     + " was embedded without a media type, a relationship and a description, "
                     + "which a file the document carries needs: use the constructor of "
                     + "EmbeddedFile that takes them."));
+            return this;
+        }
+        // PDF/A-3 asks a file it carries for what it holds, its /Subtype, and
+        // for its size and date, which are written with the media type.
+        if ((file.mediaType == null || file.mediaType.isEmpty())
+                && (compliance == Compliance.PDF_A_3A || compliance == Compliance.PDF_A_3B
+                || compliance == Compliance.PDF_A_3A_UA_1)) {
+            fail(new IllegalArgumentException("The file " + file.getFileName()
+                    + " was embedded without a media type, which a file of a document of PDF/A-3 needs."));
             return this;
         }
         associatedFiles.add(file);
@@ -2148,7 +2364,7 @@ final public class PDF {
      *  @return this PDF object.
      */
     public PDF setTitle(String title) {
-        this.title = nullIfEmpty(title);
+        this.title = nullIfEmpty(cleanText(title));
         return this;
     }
 
@@ -2158,7 +2374,7 @@ final public class PDF {
      *  @return this PDF object.
      */
     public PDF setAuthor(String author) {
-        this.author = nullIfEmpty(author);
+        this.author = nullIfEmpty(cleanText(author));
         return this;
     }
 
@@ -2168,7 +2384,7 @@ final public class PDF {
      *  @return this PDF object.
      */
     public PDF setSubject(String subject) {
-        this.subject = nullIfEmpty(subject);
+        this.subject = nullIfEmpty(cleanText(subject));
         return this;
     }
 
@@ -2179,7 +2395,7 @@ final public class PDF {
      * @return this PDF object.
      */
     public PDF setKeywords(String keywords) {
-        this.keywords = nullIfEmpty(keywords);
+        this.keywords = nullIfEmpty(cleanText(keywords));
         return this;
     }
 
@@ -2190,7 +2406,7 @@ final public class PDF {
      * @return this PDF object.
      */
     public PDF setCreator(String creator) {
-        this.creator = nullIfEmpty(creator);
+        this.creator = nullIfEmpty(cleanText(creator));
         return this;
     }
 

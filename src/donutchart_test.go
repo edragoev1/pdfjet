@@ -64,7 +64,7 @@ func TestDonutChartAPieChartHasAnInnerRadiusOfZero(t *testing.T) {
 
 func TestDonutChartAChartIsAFigureThatListsItsSlices(t *testing.T) {
 	pdf := testNewPDF()
-	pdf.SetCompliance(compliance.PDF_UA_1)
+	pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	page := NewPage(pdf, testLetterPortrait())
 	donut := testDonutChart(pdf).AddSlice(NewSlice(25, color.Red, "Apples")).
 		AddSlice(NewSlice(75, color.Blue, "Oranges"))

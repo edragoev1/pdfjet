@@ -164,6 +164,7 @@ import Testing
 
     @Test func aChartIsAFigureDescribedByItsTitleOrItsAlternateDescription() {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.setTitle("Test")
         let page = Page(memory.pdf, Letter.PORTRAIT)
         let titled = chart(memory.pdf).setTitle("Sales")
         titled.addSeries("").addPoint(1, 1).addPoint(2, 2)
@@ -212,6 +213,7 @@ import Testing
     @Test(.enabled(if: TestSupport.exists(streamFont), "the fonts directory is not here"))
     func aLinkedPointIsAFigureInItsLink() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.setTitle("Test")
         let pdf = memory.pdf
         _ = pdf.setTitle("Title")
         let font = try Font(pdf, TestSupport.open(ChartTests.streamFont))

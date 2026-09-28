@@ -81,7 +81,7 @@ class QRCodeTest {
     }
     @Test
     void aDescribedQRCodeIsAFigure() throws Exception {
-        com.pdfjet.PDF pdf = new com.pdfjet.PDF(new java.io.ByteArrayOutputStream(), com.pdfjet.Compliance.PDF_UA_1);
+        com.pdfjet.PDF pdf = new com.pdfjet.PDF(new java.io.ByteArrayOutputStream(), com.pdfjet.Compliance.PDF_UA_1).setTitle("Test");
         Page page = new Page(pdf, Letter.PORTRAIT);
         QRCode qr = new QRCode("https://pdfjet.com", ErrorCorrectionLevel.M);
         qr.setAltDescription("https://pdfjet.com");

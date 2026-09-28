@@ -277,7 +277,7 @@ class BigTableTest {
         // row, and a TH for each header field the first time the header is
         // drawn or a TD for each field of a row, each holding its own text.
         java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
-        PDF pdf = new PDF(bos, Compliance.PDF_UA_1);
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1).setTitle("Test");
         pdf.setTitle("Title");
         Font font = TestSupport.helvetica(pdf);
         BigTable table = new BigTable(pdf, font, font, Letter.PORTRAIT);
@@ -452,7 +452,7 @@ class BigTableTest {
         // A field the page was too narrow for is drawn cut, but a reader is
         // read the whole of it: the cell of the structure tree keeps it.
         java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
-        PDF pdf = new PDF(bos, Compliance.PDF_UA_1);
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1).setTitle("Test");
         pdf.setTitle("Title");
         Font font = new Font(pdf, CoreFont.HELVETICA).setSize(24f);
         String text = "A string that is far too long to fit across the width of a letter page";

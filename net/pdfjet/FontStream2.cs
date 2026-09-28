@@ -46,7 +46,7 @@ class FontStream2 {
         objects.Add(obj);
     }
 
-    private static int AddMetadataObject(List<PDFobj> objects, Font font) {
+    internal static int AddMetadataObject(List<PDFobj> objects, Font font) {
 
         StringBuilder sb = new StringBuilder();
         sb.Append("<?xpacket id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n");
@@ -56,7 +56,7 @@ class FontStream2 {
         sb.Append("<xmpRights:UsageTerms>\n");
         sb.Append("<rdf:Alt>\n");
         sb.Append("<rdf:li xml:lang=\"x-default\">\n");
-        sb.Append(font.info);
+        sb.Append(PDF.EscapeXML(font.info));
         sb.Append("</rdf:li>\n");
         sb.Append("</rdf:Alt>\n");
         sb.Append("</xmpRights:UsageTerms>\n");

@@ -2092,6 +2092,12 @@ func (page *Page) AddBDC(structure structelem.StructElem, language, actualText, 
 // needs no paragraph under it.
 func (page *Page) addBDC(
 	structure structelem.StructElem, language, actualText, altDescription, attributes string) {
+	// An artifact is not an element of the structure: what is drawn as one,
+	// like a text line of the structure type Artifact, is marked as one.
+	if structure == structelem.Artifact {
+		page.AddArtifactBMC()
+		return
+	}
 	page.markedContentDepth++
 	if structure == structelem.Figure {
 		page.figure = nil // Until it is made below, if it is tagged
@@ -2216,7 +2222,7 @@ func (page *Page) noteHeading(structure structelem.StructElem, text string, top 
 // figure, where the link stays an element of its own.
 func (page *Page) addLinkBDC(
 	structure structelem.StructElem, language, actualText, altDescription string) *structElement {
-	if !page.pdf.isTagged() || page.artifactDepth != 0 {
+	if !page.pdf.isTagged() || page.artifactDepth != 0 || structure == structelem.Artifact {
 		page.addBDC(structure, language, actualText, altDescription, "")
 		return nil
 	}
@@ -2336,6 +2342,12 @@ func (page *Page) addStructElementOpen(
 // page. A parent keeps the numbers of its kids and not the kids, so that a
 // page can write its elements and let go of them.
 func (page *Page) addStructure(element, parent *structElement) {
+	// An artifact is marked content outside the structure, which PDF/UA
+	// does not allow an element of the structure to be.
+	if element.structure == string(structelem.Artifact) {
+		page.pdf.fail("An artifact is not a structure element: " +
+			"draw it between AddArtifactBMC and AddEMC.")
+	}
 	page.pdf.reserveStructTreeNumbers()
 	element.objNumber = page.pdf.reserveObjNumber()
 	element.pageObjNumber = page.objNumber
@@ -2348,6 +2360,11 @@ func (page *Page) addStructure(element, parent *structElement) {
 
 // addAnnotation adds annotation to the page.
 func (page *Page) addAnnotation(annotation *annotationObject) {
+	// The element of an annotation of a tagged document is written with its
+	// page, and a page that was written has no place for it.
+	if page.pdf.isTagged() && !page.open() {
+		return
+	}
 	annotation.setDescriptionFallback()
 	annotation.y1 = page.height - annotation.y1
 	annotation.y2 = page.height - annotation.y2
@@ -2382,6 +2399,12 @@ func (page *Page) addAnnotation(annotation *annotationObject) {
 		}
 		if element.altDescription == "" {
 			element.altDescription = title
+		}
+		// An annotation stands for what it says, which only the one who
+		// draws it can say, as a figure does.
+		if strings.TrimSpace(element.altDescription) == "" {
+			page.pdf.fail("An annotation of a tagged document, PDF/UA or PDF/A of level A, " +
+				"needs contents, a title or an alternative description.")
 		}
 		element.annotation = annotation
 		page.addStructure(element, page.structParent)
@@ -2674,12 +2697,14 @@ func (page *Page) rotateAroundCenter(centerX, centerY, degrees float32) {
 // toUTF16Hex returns the string as a PDF text string, in UTF-16BE with a byte
 // order mark, written in hexadecimal.
 func toUTF16Hex(str string) string {
-	var sb strings.Builder
-	sb.WriteString("FEFF")
-	for _, unit := range utf16.Encode([]rune(str)) {
-		fmt.Fprintf(&sb, "%04X", unit)
+	const digits = "0123456789ABCDEF"
+	units := utf16.Encode([]rune(str))
+	buf := make([]byte, 4, 4+4*len(units))
+	copy(buf, "FEFF")
+	for _, unit := range units {
+		buf = append(buf, digits[unit>>12], digits[unit>>8&0xF], digits[unit>>4&0xF], digits[unit&0xF])
 	}
-	return sb.String()
+	return string(buf)
 }
 
 func (page *Page) drawTextBlock(

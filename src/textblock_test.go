@@ -174,7 +174,7 @@ func TestTextBlockSetFontChangesTheFallbackFontUnlessAnotherWasSet(t *testing.T)
 
 func TestTextBlockIsTaggedAsItsStructureType(t *testing.T) {
 	pdf := testNewPDF()
-	pdf.SetCompliance(compliance.PDF_UA_1)
+	pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	font := NewFontFromFile(pdf, testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"))
 	page := NewPage(pdf, letter.Portrait())
 	heading := NewTextBlock(font, "Invoice")

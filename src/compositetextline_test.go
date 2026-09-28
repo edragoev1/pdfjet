@@ -176,7 +176,7 @@ func TestCompositeTextLineAFormulaIsOneStructureElement(t *testing.T) {
 	// The components are the runs of one formula, so a screen reader reads
 	// C6H12O6 and not six elements of "C", "6", "H", "12", "O" and "6".
 	doc := testNewDoc()
-	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	doc.pdf.SetTitle("Title")
 	font := testHelvetica(doc.pdf)
 	page := NewPage(doc.pdf, letter.Portrait())

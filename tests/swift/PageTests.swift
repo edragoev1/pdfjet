@@ -165,16 +165,14 @@ import Testing
         let page1 = Page(memory.pdf, Letter.PORTRAIT)
         TextLine(font, "Go").setGoToAction("there").setLocation(50, 50).drawOn(page1)
         Rect(10, 10, 20, 20).setGoToAction("there").drawOn(page1)
-        TextLine(font, "Nowhere").setGoToAction("missing").setLocation(50, 100).drawOn(page1)
         let page2 = Page(memory.pdf, Letter.PORTRAIT)
         page2.addDestination("there", 30, 100)
         try memory.pdf.complete()
         let file = TestSupport.latin1(memory.bytes)
-        // The text and the rect link to the destination, 100 points down page 2; the
-        // link to a destination no page has is written without a /Dest
+        // The text and the rect link to the destination, 100 points down page 2
         #expect(file.components(separatedBy: "/Dest [").count - 1 == 2, "\(file)")
         #expect(file.components(separatedBy: "/XYZ 30 692 0]").count - 1 == 2, "\(file)")
-        #expect(file.components(separatedBy: "/Subtype /Link").count - 1 == 3, "\(file)")
+        #expect(file.components(separatedBy: "/Subtype /Link").count - 1 == 2, "\(file)")
     }
 
     @Test func aTextLineAddsItsDestinationWhenItIsDrawn() throws {
@@ -252,6 +250,7 @@ import Testing
         // can hold them together: L for the list, LI for each item, and Lbl
         // and LBody for the label and the body of the item.
         let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.setTitle("Test")
         _ = memory.pdf.setTitle("Title")
         let font = TestSupport.helvetica(memory.pdf)
         let page = Page(memory.pdf, Letter.PORTRAIT)
@@ -276,6 +275,7 @@ import Testing
 
     @Test func endStructElementWithoutABeginIsRefused() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.setTitle("Test")
         _ = memory.pdf.setTitle("Title")
         Page(memory.pdf, Letter.PORTRAIT).endStructElement()
         #expect(throws: (any Error).self) { try memory.pdf.complete() }

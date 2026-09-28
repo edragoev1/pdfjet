@@ -220,6 +220,7 @@ import Testing
     }
     @Test func aDescribedBarcodeIsOneFigure() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.setTitle("Test")
         let font = try Font(memory.pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"))
         let page = Page(memory.pdf, Letter.PORTRAIT)
         let barcode = try Barcode(Barcode.EAN_13, "400638133393")
