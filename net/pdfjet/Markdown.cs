@@ -35,6 +35,10 @@ public class Markdown {
     private const int RULE_COLOR = 0xC8CCD2;
     private const int QUOTE_BAR_COLOR = 0xB0B6BF;
     private const int TABLE_HEADER_BACKGROUND = 0xEEF0F3;
+    // The least width, in sizes of the text, that quotes and lists nested in
+    // each other leave their text: deeper ones are not indented further, so
+    // that the text is never narrower than nothing.
+    private const float MIN_WIDTH = 10f;
 
     private readonly Font regular;
     private readonly Font bold;
@@ -314,7 +318,12 @@ public class Markdown {
         Gap(Size() * 0.75f);
         float padding = Size() * 0.5f;
         float leading = code.GetBodyHeight(code.GetSize()) * 1.2f;
-        int columns = Math.Max(1, ToInt((width - 2f * padding) / code.StringWidth(code.GetSize(), "0")));
+        // A code font with no width, or no size, cuts no line.
+        int columns = Int32.MaxValue;
+        float advance = code.StringWidth(code.GetSize(), "0");
+        if (advance > 0f) {
+            columns = Math.Max(1, Util.SaturatingInt((width - 2f * padding) / advance));
+        }
         List<String> lines = new List<String>();
         foreach (String line in text.Split('\n')) {
             int start = 0;
@@ -334,7 +343,10 @@ public class Markdown {
         OpenContainer(StructElem.CODE);
         int i = 0;
         while (i < lines.Count) {
-            int fit = Math.Max(1, ToInt((bottom - y - 2f * padding) / leading));
+            int fit = lines.Count - i;     // Lines of no height all fit
+            if (leading > 0f) {
+                fit = Math.Max(1, Util.SaturatingInt((bottom - y - 2f * padding) / leading));
+            }
             int count = Math.Min(fit, lines.Count - i);
             new Rect(x, y, width, count * leading + 2f * padding).SetFillColor(CODE_BACKGROUND).DrawOn(page);
             float baseline = y + padding + code.GetAscent(code.GetSize()) + (leading - code.GetBodyHeight(code.GetSize())) / 2f;
@@ -354,26 +366,11 @@ public class Markdown {
         CloseContainer();
     }
 
-    // The float as an int, as Java's cast makes it: the nearest int for a
-    // value out of range, and 0 for NaN.
-    private static int ToInt(float value) {
-        if (float.IsNaN(value)) {
-            return 0;
-        }
-        if (value >= 2147483647f) {
-            return Int32.MaxValue;
-        }
-        if (value <= -2147483648f) {
-            return Int32.MinValue;
-        }
-        return (int) value;
-    }
-
     // A quote, indented, with a bar on its left.
     private void DrawQuote(MarkdownParser.Block block, float x, float width) {
         Gap(Size() * 0.75f);
         Ensure(regular.GetBodyHeight(Size()));
-        float indent = Size() * 1.2f;
+        float indent = IndentWithin(Size() * 1.2f, width);
         float[] bar = {x + 2f, y};
         quoteBars.Add(bar);
         OpenContainer(StructElem.BLOCKQUOTE);
@@ -386,11 +383,17 @@ public class Markdown {
         DrawQuoteBar(bar[0], bar[1], y);
     }
 
+    // Returns the indent, or less, so that the blocks inside a quote or a list
+    // are not narrower than MIN_WIDTH sizes of the text.
+    private float IndentWithin(float indent, float width) {
+        return Math.Max(0f, Math.Min(indent, width - MIN_WIDTH * Size()));
+    }
+
     // A list: the label of each item, a bullet or a number, to the left of
     // the blocks of the item.
     private void DrawList(MarkdownParser.Block list, float x, float width) {
         Gap(Size() * 0.75f);
-        float indent = Size() * (list.ordered ? 2f : 1.4f);
+        float indent = IndentWithin(Size() * (list.ordered ? 2f : 1.4f), width);
         OpenContainer(StructElem.L);
         int number = list.start;
         foreach (MarkdownParser.Block item in list.children) {
@@ -525,20 +528,32 @@ public class Markdown {
     }
 
     // The path of an image in the image directory, or null when there is no
-    // directory, or the source is an absolute path, a URL, has .. in it, or
-    // names no file.
-    private String ImagePath(String source) {
+    // directory, or the source is an absolute path, a URL, has .. in it, names
+    // a directory, or names no file. The source is read the same way in every
+    // port: its parts between the slashes, less the empty ones and those that
+    // are ".", are the names of the directories under the image directory and
+    // of the file, and a source that ends in a slash or in "." names a
+    // directory. An empty image directory is the working directory.
+    internal String ImagePath(String source) {
         if (imageDirectory == null || source.StartsWith("/", StringComparison.Ordinal)
                 || source.StartsWith("\\", StringComparison.Ordinal)
                 || source.IndexOf(':') != -1 || source.IndexOf('\\') != -1) {
             return null;
         }
-        foreach (String part in source.Split('/')) {
+        String[] parts = source.Split('/');
+        String last = parts[parts.Length - 1];
+        if (last.Length == 0 || String.Equals(last, ".", StringComparison.Ordinal)) {
+            return null;
+        }
+        String file = imageDirectory;
+        foreach (String part in parts) {
             if (String.Equals(part, "..", StringComparison.Ordinal)) {
                 return null;
             }
+            if (part.Length != 0 && !String.Equals(part, ".", StringComparison.Ordinal)) {
+                file = (file.Length == 0) ? part : System.IO.Path.Combine(file, part);
+            }
         }
-        String file = System.IO.Path.Combine(imageDirectory, Normalize(source));
         return (File.Exists(file) && !Directory.Exists(file)) ? file : null;
     }
 

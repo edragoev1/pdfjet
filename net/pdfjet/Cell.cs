@@ -509,11 +509,13 @@ public class Cell {
     }
 
     /// <summary>
-    /// Sets the column span private variable.
+    /// Sets the number of columns this cell spans, counted from this one. A
+    /// column span of less than 1 is 1, and one past the end of its row spans
+    /// the columns the row has left.
     /// </summary>
-    /// <param name="colspan">the specified column span value.</param>
+    /// <param name="colspan">the specified column span value, from 1.</param>
     public Cell SetColSpan(int colspan) {
-        this.colspan = colspan;
+        this.colspan = Math.Max(1, colspan);
         return this;
     }
 
@@ -784,7 +786,7 @@ public class Cell {
         return drawable.DrawOn(null);
     }
 
-    private void DrawBackground(
+    internal void DrawBackground(
             Page page,
             float x,
             float y,
@@ -796,7 +798,7 @@ public class Cell {
         page.AddEMC();
     }
 
-    private void DrawBorders(
+    internal void DrawBorders(
             Page page,
             float x,
             float y,

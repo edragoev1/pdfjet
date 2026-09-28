@@ -47,7 +47,7 @@ public class TextBlock implements Drawable {
     private String language;
     private StructElem structureType = StructElem.P;
     private String uri;
-    private Alignment textAlignment;
+    private Alignment textAlignment = Alignment.LEFT;
     private Alignment verticalAlignment = Alignment.TOP;
     private boolean underline;
     private boolean strikeout;
@@ -860,6 +860,9 @@ public class TextBlock implements Drawable {
      * no height, else the first lines, with the last of them ending in "...".
      */
     private TextLine[] linesThatFit(TextLine[] textLines, float leading) {
+        if (leading <= 0f) {
+            return textLines;   // Lines that take no height all fit
+        }
         int fit = (int) Math.floor((this.height - 2 * this.textPadding) / leading);
         if (fit < 1) {
             fit = 1;    // At least one line is drawn

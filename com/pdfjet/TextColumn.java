@@ -36,6 +36,7 @@ public class TextColumn implements Drawable {
     private float paragraphSpacing = 1.0f;
     private final List<Paragraph> paragraphs;
     private boolean lineBetweenParagraphs = false;
+    private boolean inList = false;     // A run of paragraphs that have a label is being drawn
 
     /**
      *  Create a text column object.
@@ -193,6 +194,7 @@ public class TextColumn implements Drawable {
         for (int i = 0; i < paragraphs.size(); i++) {
             xy = drawParagraphOn(page, paragraphs.get(i), i == (paragraphs.size() - 1));
         }
+        closeList(page);
         // Restore the original location
         setLocation(this.x, this.y);
         // A column with a height reaches at least that far down from its location
@@ -202,7 +204,55 @@ public class TextColumn implements Drawable {
         return new float[] {x + w, xy[1]};
     }
 
+    // Ends the list that is open, if there is one.
+    private void closeList(Page page) {
+        if (inList) {
+            page.endStructElement();    // The L
+            inList = false;
+        }
+    }
+
+    // Draws the label of a paragraph that is an item of a list, to the left of
+    // the column and on the baseline of the first line, as TextFrame draws it.
+    // In a PDF/UA document a run of such paragraphs is an L, and each an LI of
+    // the Lbl of its label and the LBody of its text. It returns true when the
+    // paragraph is an item, which endItem ends.
+    private boolean drawLabel(Page page, Paragraph paragraph) throws Exception {
+        if (paragraph.listLabel == null) {
+            closeList(page);
+            return false;
+        }
+        if (!inList) {
+            page.beginStructElement(StructElem.L);
+            inList = true;
+        }
+        page.beginStructElement(StructElem.LI);
+        float ascent = 0f;
+        for (TextLine line : paragraph.lines) {
+            ascent = Math.max(ascent, line.font.getAscent(line.fontSize));
+        }
+        TextLine label = paragraph.listLabel;
+        label.setStructureType(StructElem.LBL);
+        label.setLocation(x - paragraph.listLabelIndent, y1 + ascent);
+        label.drawOn(page);
+        page.beginStructElement(StructElem.LBODY);
+        return true;
+    }
+
     private float[] drawParagraphOn(
+            Page page, Paragraph paragraph, boolean lastParagraph) throws Exception {
+        boolean item = (page != null) && drawLabel(page, paragraph);
+        try {
+            return drawParagraphElement(page, paragraph, lastParagraph);
+        } finally {
+            if (item) {
+                page.endStructElement();    // The LBody
+                page.endStructElement();    // The LI
+            }
+        }
+    }
+
+    private float[] drawParagraphElement(
             Page page, Paragraph paragraph, boolean lastParagraph) throws Exception {
         // In a PDF/UA document the paragraph is one structure element, which
         // the words it is drawn one at a time all belong to.

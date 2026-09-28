@@ -679,13 +679,15 @@ public class Cell {
     }
 
     /**
-     * Sets the column span private variable.
+     * Sets the number of columns this cell spans, counted from this one. A
+     * column span of less than 1 is 1, and one past the end of its row spans
+     * the columns the row has left.
      *
-     * @param colspan the specified column span value.
+     * @param colspan the specified column span value, from 1.
      * @return this Cell object.
      */
     public Cell setColSpan(int colspan) {
-        this.colspan = colspan;
+        this.colspan = Math.max(1, colspan);
         return this;
     }
 
@@ -990,7 +992,7 @@ public class Cell {
         }
     }
 
-    private void drawBackground(
+    void drawBackground(
             Page page,
             float x,
             float y,
@@ -1002,7 +1004,7 @@ public class Cell {
         page.addEMC();
     }
 
-    private void drawBorders(
+    void drawBorders(
             Page page,
             float x,
             float y,

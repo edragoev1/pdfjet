@@ -569,14 +569,16 @@ public class Cell {
     }
 
     /**
-     * Sets the column span private variable.
+     * Sets the number of columns this cell spans, counted from this one. A
+     * column span of less than 1 is 1, and one past the end of its row spans
+     * the columns the row has left.
      *
-     * - Parameter colspan: the specified column span value.
+     * - Parameter colspan: the specified column span value, from 1.
      * - Returns: this Cell object.
      */
     @discardableResult
     public func setColSpan(_ colspan: Int) -> Cell {
-        self.colspan = colspan
+        self.colspan = max(1, min(colspan, Int(Int32.max)))
         return self
     }
 
@@ -842,7 +844,7 @@ public class Cell {
                 description).joining(link))
     }
 
-    private func drawBackground(
+    func drawBackground(
             _ page: Page,
             _ x: Float,
             _ y: Float,
@@ -854,7 +856,7 @@ public class Cell {
         page.addEMC()
     }
 
-    private func drawBorders(
+    func drawBorders(
             _ page: Page,
             _ x: Float,
             _ y: Float,

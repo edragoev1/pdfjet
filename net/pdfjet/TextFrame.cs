@@ -63,6 +63,9 @@ public class TextFrame : IDrawable {
     // its own there, since an element belongs to the page it is drawn on.
     private Paragraph elementParagraph;
     private StructElement element;
+    // The paragraph that an earlier frame drew the start of and this one goes
+    // on with, or null: its label and its heading are not drawn or noted again.
+    private Paragraph continuedParagraph;
     // Whether a list, and an item of it, are open: a run of paragraphs that
     // have a label is one list.
     private bool inList;
@@ -217,6 +220,13 @@ public class TextFrame : IDrawable {
     public float[] DrawOn(PDF pdf, List<Page> pages, PageSize pageSize) {
         float[] xy = new float[] {x + w, y};
         float height = h;
+        if (height <= 0f && pageSize.GetHeight() - 2f * y <= 0f) {
+            // A frame in the bottom half of the page leaves no height above the
+            // margin, and a frame with no height would draw all of the text on
+            // the first page, past its bottom edge.
+            pdf.Fail(new ArgumentException("The text frame has no height and is in the bottom half of the page: "
+                    + "set its height, or put it higher on the page."));
+        }
         try {
             while (HasMoreText()) {
                 Page page = new Page(pdf, pageSize, false);
@@ -250,6 +260,7 @@ public class TextFrame : IDrawable {
 
         elementParagraph = null;
         element = null;
+        continuedParagraph = (startLine > 0 || startTokens != null) ? paragraphs[startParagraph] : null;
         float bottom = DrawParagraphs(page);
         CloseList(page);
         if (h > 0f) {
@@ -390,11 +401,12 @@ public class TextFrame : IDrawable {
             // in the row already when that word made room for it.
             bool reserved = joinReserved && tokenIndex == 0;
             joinReserved = false;
-            float joined = joinsNext
-                    ? JoinedWidth(paragraph, lineIndex, runLength + Width(textLine, token), available) : 0f;
             // The token is measured without the space that follows it, as in
             // TextColumn: a row is as wide as the text it shows.
-            if (reserved || (runLength + Width(textLine, token) + joined) <= available) {
+            float tokenWidth = WidthWithin(textLine, token, available - runLength);
+            float joined = joinsNext
+                    ? JoinedWidth(paragraph, lineIndex, runLength + tokenWidth, available) : 0f;
+            if (reserved || (runLength + tokenWidth + joined) <= available) {
                 buf.Append(text);
                 runLength += Width(textLine, text);
                 tokenIndex++;
@@ -403,7 +415,7 @@ public class TextFrame : IDrawable {
                 continue;
             }
             if (joinsNext && buf.Length == 0 && xText == x
-                    && (runLength + Width(textLine, token)) <= available) {
+                    && (runLength + tokenWidth) <= available) {
                 // With the words joined to it the word is wider than the frame,
                 // so they go on the next row.
                 buf.Append(text);
@@ -454,6 +466,28 @@ public class TextFrame : IDrawable {
         return width;
     }
 
+    // Returns the width of the text when it is no more than the limit, and
+    // otherwise a width that is more than the limit: that of as much of the
+    // start of the text as shows that it does not fit, measured in runs that
+    // double in length. A word wider than the frame is then measured a row's
+    // worth at a time and not whole for every row it is broken into, which made
+    // the time grow with the square of the word: 75 seconds for 100,000
+    // characters.
+    private static float WidthWithin(TextLine textLine, String text, float limit) {
+        int end = 0;
+        int count = 0;
+        for (int step = 64; ; step *= 2) {
+            while (count < step && end < text.Length) {
+                end += Util.CharCount(text, end);
+                count++;
+            }
+            float width = Width(textLine, (end == text.Length) ? text : text.Substring(0, end));
+            if (end == text.Length || width > limit) {
+                return width;
+            }
+        }
+    }
+
     // Returns the longest start of the token that fits in the width of the frame,
     // and at least the first character of the token.
     private String HeadThatFits(TextLine textLine, String token) {
@@ -489,6 +523,9 @@ public class TextFrame : IDrawable {
         if (paragraph != elementParagraph) {
             elementParagraph = paragraph;
             CloseItem(page);
+            // A paragraph that an earlier frame began goes on here: its label
+            // was drawn where it began, and its heading noted there.
+            bool continued = (paragraph == continuedParagraph);
             if (paragraph.listLabel != null) {
                 // The label of the item is drawn where the item begins, so
                 // that a reader reads it before the text of the item.
@@ -497,16 +534,18 @@ public class TextFrame : IDrawable {
                     inList = true;
                 }
                 page.BeginStructElement(StructElem.LI);
-                paragraph.listLabel.SetStructureType(StructElem.LBL);
-                paragraph.listLabel.SetLocation(x - paragraph.listLabelIndent, y);
-                paragraph.listLabel.DrawOn(page);
+                if (!continued) {
+                    paragraph.listLabel.SetStructureType(StructElem.LBL);
+                    paragraph.listLabel.SetLocation(x - paragraph.listLabelIndent, y);
+                    paragraph.listLabel.DrawOn(page);
+                }
                 page.BeginStructElement(StructElem.LBODY);
                 inItem = true;
             } else {
                 CloseList(page);
             }
             element = page.AddStructElement(page.structParent, paragraph.structureType, null);
-            if (element != null && paragraph.lines.Count > 0) {
+            if (element != null && paragraph.lines.Count > 0 && !continued) {
                 page.NoteHeading(paragraph.structureType, paragraph.Text(), y - paragraph.lines[0].fontSize);
             }
         }

@@ -49,6 +49,22 @@ type Table struct {
 	// SetColumnWidthsInPercent gives the columns, or nil.
 	tableWidth     float32
 	columnPercents []float32
+	// The numbers of the columns that SetPageSum, SetRunningSum and
+	// SetBroughtForwardSum add up, read once for each DrawOn by column and
+	// decimals, or nil when the table is not being drawn: they were read
+	// again for every page, which took 33 seconds for 40,000 rows.
+	columnSums map[[2]int]*columnSums
+}
+
+// columnSums is the number of each row of a column, in units of the decimals,
+// and their sums from the first row to each row.
+type columnSums struct {
+	values []int64
+	sums   []int64 // The sum of the values before each row, and of them all
+	// Whether no sum of values can have more than 18 digits, which the sum of
+	// their magnitudes does not: the sum of the rows between two is then the
+	// difference of the sums up to them.
+	exact bool
 }
 
 // NewTable creates table objects.
@@ -82,8 +98,10 @@ func NewTableFromFile(f1, f2 *Font, fileName string) *Table {
 		}
 	}(f)
 	scanner := bufio.NewScanner(f)
-	// A line can be longer than the 64 KB that the scanner reads by default.
+	// A line can be longer than the 64 KB that the scanner reads by default,
+	// and ends at a line feed, a carriage return or the two together.
 	scanner.Buffer(make([]byte, 0, 64*1024), math.MaxInt32)
+	scanner.Split(scanDataLines)
 	nextLine := func() (string, bool) {
 		if scanner.Scan() {
 			return utf8text.Decode(scanner.Bytes()), true
@@ -364,9 +382,38 @@ const maxSum int64 = 999999999999999999
 // to end, in units of the decimals. A number that would take the sum past 18
 // digits is left out.
 func (table *Table) sumOf(column, first, end, decimals int) int64 {
+	first = max(0, first)
+	end = min(end, len(table.tableData))
+	if first >= end {
+		return 0
+	}
+	sums := table.columnSums[[2]int{column, decimals}]
+	if sums == nil {
+		sums = table.readColumn(column, decimals)
+		if table.columnSums != nil {
+			table.columnSums[[2]int{column, decimals}] = sums
+		}
+	}
+	if sums.exact {
+		return sums.sums[end] - sums.sums[first]
+	}
 	sum := int64(0)
-	for r := max(0, first); r < end && r < len(table.tableData); r++ {
-		row := table.tableData[r]
+	for _, value := range sums.values[first:end] {
+		if total := sum + value; total <= maxSum && total >= -maxSum {
+			sum = total
+		}
+	}
+	return sum
+}
+
+// readColumn reads the number of each row of the column, in units of the
+// decimals: 0 for a cell that has no number, or that a cell above it covers.
+func (table *Table) readColumn(column, decimals int) *columnSums {
+	rows := len(table.tableData)
+	sums := &columnSums{values: make([]int64, rows), sums: make([]int64, rows+1), exact: true}
+	magnitude := int64(0)
+	for r, row := range table.tableData {
+		sums.sums[r+1] = sums.sums[r]
 		if column >= len(row) {
 			continue
 		}
@@ -375,12 +422,17 @@ func (table *Table) sumOf(column, first, end, decimals int) int64 {
 			continue
 		}
 		if value, ok := numberOf(cell.text, decimals); ok {
-			if total := sum + value; total <= maxSum && total >= -maxSum {
-				sum = total
+			sums.values[r] = value
+			if sums.exact {
+				// A value is at most maxSum, so the sums cannot overflow
+				// before they are found to be past it.
+				magnitude += max(value, -value)
+				sums.exact = magnitude <= maxSum
+				sums.sums[r+1] += value
 			}
 		}
 	}
-	return sum
+	return sums
 }
 
 // numberOf returns the number the text is, in units of the decimals, rounded
@@ -398,7 +450,7 @@ func numberOf(text string, decimals int) (int64, bool) {
 		str = str[1 : len(str)-1]
 		negative = true
 	}
-	str = strings.TrimSpace(strings.NewReplacer(",", "", "'", "").Replace(str))
+	str = trimSpace(thousandsSeparators.Replace(str))
 	if str[0] == '+' || str[0] == '-' {
 		negative = negative != (str[0] == '-')
 		str = str[1:]
@@ -469,6 +521,9 @@ func numberOf(text string, decimals int) (int64, bool) {
 	}
 	return value, true
 }
+
+// thousandsSeparators takes the commas and the apostrophes out of a number.
+var thousandsSeparators = strings.NewReplacer(",", "", "'", "")
 
 // formatSum returns the sum in units of the decimals as text: the decimals
 // after a period, and commas between the thousands.
@@ -827,6 +882,8 @@ func (table *Table) DrawOn(page *Page) [2]float32 {
 	table.setBottomBorderOnLastRow()
 	table.heights = table.getRowHeights()
 	table.striped = table.getStripedRows()
+	table.columnSums = make(map[[2]int]*columnSums)
+	defer func() { table.columnSums = nil }()
 	xy := table.drawTableRows(page, table.drawHeaderRows(page, 0))
 	return [2]float32{table.x1 + table.GetWidth(), xy[1]}
 }
@@ -860,7 +917,10 @@ func (table *Table) drawOnPages(pdf *PDF, first *Page, pages *[]*Page, pageSize 
 	table.setBottomBorderOnLastRow()
 	table.heights = table.getRowHeights()
 	table.striped = table.getStripedRows()
-	var xy [2]float32
+	table.columnSums = make(map[[2]int]*columnSums)
+	defer func() { table.columnSums = nil }()
+	// A table with no rows left to draw needs no page, and ends where it starts.
+	xy := [2]float32{table.x1, table.y1}
 	pageNumber := 1
 	for table.hasMoreData() {
 		page := first
@@ -924,7 +984,7 @@ func (table *Table) drawHeaderRows(page *Page, pageNumber int) [2]float32 {
 			if first {
 				cellStructure = structelem.TH
 			}
-			table.drawRow(page, row, x, y, heights, i, cellStructure)
+			table.drawRow(page, row, x, y, heights, i, len(heights), cellStructure)
 		}
 		y += heights[i]
 	}
@@ -938,8 +998,10 @@ func (table *Table) drawHeaderRows(page *Page, pageNumber int) [2]float32 {
 // element and each cell a TH or TD element, which holds what the cell draws;
 // a row that goes on with the wrapped text of the row above adds to its
 // elements. With no cell structure the row is not tagged, as it is an artifact.
+// A cell that spans rows is drawn down to the last of them before the row at
+// pageEnd, which is on the next page.
 func (table *Table) drawRow(page *Page, row []*Cell, x, y float32, heights []float32,
-	rowIndex int, cellStructure structelem.StructElem) {
+	rowIndex, pageEnd int, cellStructure structelem.StructElem) {
 	parent := page.structParent
 	tagged := table.structElement != nil && cellStructure != ""
 	continued := (row[0].properties & cellContinued) != 0
@@ -952,15 +1014,12 @@ func (table *Table) drawRow(page *Page, row []*Cell, x, y float32, heights []flo
 	}
 	for i := 0; i < len(row); {
 		cell := row[i]
-		colspan := cell.GetColSpan()
-		if colspan < 1 {
-			colspan = 1
-		}
+		colspan := colSpanIn(row, i)
 		covered := (cell.properties & cellCovered) != 0
 		if tagged && !covered {
 			if !continued {
 				table.cellElements[i] = page.addStructElement(rowElement, cellStructure,
-					cellAttributes(cellStructure, colspan, cell.rowsSpanned))
+					cellAttributes(cellStructure, colspan, table.tableRowsSpanned(rowIndex, cell.rowsSpanned)))
 			}
 			page.structParent = nil
 			if i < len(table.cellElements) {
@@ -973,12 +1032,10 @@ func (table *Table) drawRow(page *Page, row []*Cell, x, y float32, heights []flo
 			i++
 		}
 		if !covered {
-			// A cell that spans rows is as tall as all the rows it covers.
+			// A cell that spans rows is as tall as all the rows it covers
+			// on this page.
 			cellHeight := float32(0.0)
-			end := rowIndex + cell.rowsSpanned
-			if end > len(heights) {
-				end = len(heights)
-			}
+			end := min(rowIndex+cell.rowsSpanned, len(heights), max(pageEnd, rowIndex+1))
 			for r := rowIndex; r < end; r++ {
 				cellHeight += heights[r]
 			}
@@ -998,6 +1055,23 @@ func (table *Table) drawRow(page *Page, row []*Cell, x, y float32, heights []flo
 		x += w
 	}
 	page.structParent = parent
+}
+
+// tableRowsSpanned returns the number of rows of the table, its TR elements,
+// that a cell spanning count rows of the drawing from the row covers: the
+// rows of the wrapped text of a row are not rows of the table, and neither is
+// a row every cell of which a cell above it covers.
+func (table *Table) tableRowsSpanned(r, count int) int {
+	if count < 2 {
+		return count
+	}
+	rows := 0
+	for s := r; s < r+count && s < len(table.tableData); s++ {
+		if !table.isContinuation(s) && !allCovered(table.tableData[s]) {
+			rows++
+		}
+	}
+	return rows
 }
 
 // cellAttributes returns the attributes of a table cell element: the scope of
@@ -1040,11 +1114,10 @@ func (table *Table) drawTableRows(page *Page, xy [2]float32) [2]float32 {
 	y := xy[1]
 	footer := table.footerStart()
 	done := table.rendered == -1
-	index := table.rendered
+	first := table.rendered
 	if done {
-		index = footer
+		first = footer
 	}
-	first := index
 	heights := table.heights
 	// Where the rows start on the next pages, under the header rows.
 	top := table.y1
@@ -1059,52 +1132,25 @@ func (table *Table) drawTableRows(page *Page, xy [2]float32) [2]float32 {
 	for r := footer; r < len(table.tableData); r++ {
 		bottom -= heights[r]
 	}
-	// The rows before the first of these are not kept with the next row,
-	// and the lines of the rows before the second are cut where the page
-	// ends, as rows of their own.
-	cutRowsUntil := -1
-	cutLinesUntil := -1
-	for index < footer {
-		// The rows a cell spans, the lines a row wraps into and the rows kept
-		// with the next one are drawn together, so that a page break never
-		// cuts one of them in two. The footer rows are not in them.
-		keepLines := index >= cutLinesUntil
-		keepRows := keepLines && index >= cutRowsUntil
-		end := min(table.rowGroupEnd(index, keepLines, keepRows), footer)
-		groupHeight := float32(0.0)
-		for r := index; r < end; r++ {
-			groupHeight += heights[r]
+	// The rows of the page are found before any of them is drawn, so that a
+	// cell that spans rows past the end of the page is drawn down to the last
+	// row of the page, and goes on at the top of the next.
+	end := footer
+	more := false
+	if page != nil {
+		end, more = table.rowsOnPage(first, footer, y, top, bottom)
+		table.drawSpansFromAbove(page, x, y, first, end)
+	}
+	for r := first; r < end; r++ {
+		if page != nil {
+			table.drawRow(page, table.tableData[r], x, y, heights, r, end, structelem.TD)
 		}
-		if page != nil && (y+groupHeight) > bottom {
-			if keepLines && groupHeight > bottom-top {
-				// Rows that would not fit the next page either are drawn
-				// from here: first each on its own, and then, for a row that
-				// is taller than a page, each line on its own, cut where the
-				// page ends.
-				if keepRows {
-					cutRowsUntil = end
-				} else {
-					cutLinesUntil = end
-				}
-				continue
-			}
-			// A row that does not fit goes on the next page, unless it is
-			// the first row of this one: a row taller than the page fits no
-			// page, and leaving it for the next page would ask for pages
-			// forever.
-			if index > first {
-				table.rendered = index
-				table.setFooterSums(first, index)
-				return [2]float32{x, table.drawFooterRows(page, x, y, heights, false)}
-			}
-		}
-		for r := index; r < end; r++ {
-			if page != nil {
-				table.drawRow(page, table.tableData[r], x, y, heights, r, structelem.TD)
-			}
-			y += heights[r]
-		}
-		index = end
+		y += heights[r]
+	}
+	if more {
+		table.rendered = end
+		table.setFooterSums(first, end)
+		return [2]float32{x, table.drawFooterRows(page, x, y, heights, false)}
 	}
 	if !done {
 		// The rows of the table are all drawn, and the footer rows end it.
@@ -1115,6 +1161,118 @@ func (table *Table) drawTableRows(page *Page, xy [2]float32) [2]float32 {
 		table.rendered = -1 // We are done!
 	}
 	return [2]float32{x, y}
+}
+
+// rowsOnPage returns the row after the rows from index that go on the page,
+// where they start at y and end at bottom, and true when rows before the
+// footer are left for the next page, where they start at top.
+func (table *Table) rowsOnPage(index, footer int, y, top, bottom float32) (int, bool) {
+	first := index
+	heights := table.heights
+	// The rows before the first of these are not kept with the next row, the
+	// lines of the rows before the second are cut where the page ends, as
+	// rows of their own, and so are the rows that a cell spans before the
+	// third.
+	cutRowsUntil := -1
+	cutLinesUntil := -1
+	cutSpansUntil := -1
+	for index < footer {
+		// The rows a cell spans, the lines a row wraps into and the rows kept
+		// with the next one are drawn together, so that a page break never
+		// cuts one of them in two. The footer rows are not in them.
+		keepSpans := index >= cutSpansUntil
+		keepLines := keepSpans && index >= cutLinesUntil
+		keepRows := keepLines && index >= cutRowsUntil
+		end := min(table.rowGroupEnd(index, keepSpans, keepLines, keepRows), footer)
+		groupHeight := float32(0.0)
+		for r := index; r < end; r++ {
+			groupHeight += heights[r]
+		}
+		if (y + groupHeight) > bottom {
+			if keepSpans && groupHeight > bottom-top {
+				// Rows that would not fit the next page either are drawn
+				// from here: first each on its own, then, for a row that is
+				// taller than a page, each line on its own, and then, for a
+				// cell that spans rows taller than a page, each of the rows,
+				// the cell being drawn on each page over the rows it covers
+				// there. They are cut where the page ends.
+				if keepRows {
+					cutRowsUntil = end
+				} else if keepLines {
+					cutLinesUntil = end
+				} else {
+					cutSpansUntil = end
+				}
+				continue
+			}
+			// Rows that do not fit go on the next page, where they fit, even
+			// the first rows of this one, which starts lower than the next
+			// when there is something above the table. Only a line taller than
+			// a page is drawn where it is, as it fits no page, and leaving it
+			// for the next page would ask for pages forever.
+			if index > first || groupHeight <= bottom-top {
+				return index, true
+			}
+		}
+		for r := index; r < end; r++ {
+			y += heights[r]
+		}
+		index = end
+	}
+	return index, false
+}
+
+// drawSpansFromAbove draws, over the first row of a page, the rest of each
+// cell of the page before that spans rows down into it: its background and
+// its borders, as far as the row at pageEnd, which is on the next page. The
+// text of the cell was drawn with the cell on the page before.
+func (table *Table) drawSpansFromAbove(page *Page, x, y float32, first, pageEnd int) {
+	if first >= pageEnd || first <= table.numOfHeaderRows {
+		return // The first page has no page before it.
+	}
+	row := table.tableData[first]
+	continued := table.isContinuation(first)
+	for i := 0; i < len(row); {
+		colspan := 1
+		w := row[i].GetWidth()
+		if continued || row[i].properties&cellCovered != 0 {
+			if s := table.spanAbove(first, i); s != -1 {
+				cell := table.tableData[s][i]
+				colspan = colSpanIn(table.tableData[s], i)
+				w = 0
+				for j := i; j < i+colspan; j++ {
+					w += row[j].GetWidth()
+				}
+				h := float32(0.0)
+				for r := first; r < min(s+cell.rowsSpanned, pageEnd); r++ {
+					h += table.heights[r]
+				}
+				if cell.backgroundColor != color.Transparent {
+					cell.drawBackground(page, x, y, w, h)
+				}
+				cell.drawBorders(page, x, y, w, h)
+			}
+		}
+		x += w
+		i += colspan
+	}
+}
+
+// spanAbove returns the row of the cell in the column that spans rows down
+// over the row, or -1 when there is none: the first cell above the row that
+// is neither covered nor in a row of wrapped text.
+func (table *Table) spanAbove(r, column int) int {
+	for s := r - 1; s >= 0; s-- {
+		cell := table.tableData[s][column]
+		if cell.properties&cellCovered != 0 || table.isContinuation(s) {
+			continue
+		}
+		if cell.rowsSpanned > r-s {
+			return s
+		}
+		return -1
+	}
+	return -1
 }
 
 // drawFooterRows draws the footer rows at y and returns the y under them. In
@@ -1137,7 +1295,7 @@ func (table *Table) drawFooterRows(page *Page, x, y float32, heights []float32, 
 					cell.properties |= border.Top
 				}
 			}
-			table.drawRow(page, table.tableData[r], x, y, heights, r, cellStructure)
+			table.drawRow(page, table.tableData[r], x, y, heights, r, len(heights), cellStructure)
 		}
 		y += heights[r]
 	}
@@ -1166,10 +1324,7 @@ func (table *Table) applyRowSpans() {
 		row := table.tableData[r]
 		for i := 0; i < len(row); {
 			cell := row[i]
-			colspan := cell.GetColSpan()
-			if colspan < 1 {
-				colspan = 1
-			}
+			colspan := colSpanIn(row, i)
 			if cell.GetRowSpan() > 1 && (cell.properties&cellCovered) == 0 {
 				end := table.rowAfter(r, cell.GetRowSpan())
 				ownEnd := table.rowAfter(r, 1)
@@ -1202,11 +1357,7 @@ func (table *Table) setSpanned(r, column, colspan int, covered bool) {
 				cell.properties &^= border.Bottom
 			}
 		}
-		colspan2 := cell.GetColSpan()
-		if colspan2 < 1 {
-			colspan2 = 1
-		}
-		i += colspan2
+		i += colSpanIn(row, i)
 	}
 }
 
@@ -1266,14 +1417,15 @@ func (table *Table) getRowHeights() []float32 {
 	return heights
 }
 
-// rowGroupEnd returns the row after the rows that a span holds together, with
-// keepLines the lines the last of them wraps into, and with keepRows the rows
-// that the last of them is kept with, which a page break keeps on one page.
-func (table *Table) rowGroupEnd(index int, keepLines, keepRows bool) int {
+// rowGroupEnd returns the row after the rows that a page break keeps on one
+// page: with keepSpans those that a span holds together, with keepLines the
+// lines the last of them wraps into, and with keepRows the rows that the last
+// of them is kept with.
+func (table *Table) rowGroupEnd(index int, keepSpans, keepLines, keepRows bool) int {
 	end := index + 1
 	for r := index; r < end && r < len(table.tableData); r++ {
 		for _, cell := range table.tableData[r] {
-			if r+cell.rowsSpanned > end {
+			if keepSpans && r+cell.rowsSpanned > end {
 				end = r + cell.rowsSpanned
 			}
 		}
@@ -1401,7 +1553,7 @@ func (table *Table) setRightBorderOnLastColumn() {
 		var i = 0
 		for i < len(row) {
 			cell = row[i]
-			i += cell.GetColSpan()
+			i += colSpanIn(row, i)
 		}
 		if cell != nil {
 			cell.properties |= border.Right
@@ -1471,9 +1623,15 @@ func (table *Table) AutoAdjustColumnWidths() *Table {
 	return table
 }
 
+// colSpanIn returns the number of columns the cell of the row at the index
+// spans: at least its own, and no more than the row has from it.
+func colSpanIn(row []*Cell, index int) int {
+	return max(1, min(row[index].GetColSpan(), len(row)-index))
+}
+
 func getTotalWidth(row []*Cell, index int) float32 {
 	cell := row[index]
-	colspan := cell.GetColSpan()
+	colspan := colSpanIn(row, index)
 	cellWidth := float32(0.0)
 	for i := 0; i < colspan; i++ {
 		cellWidth += row[index+i].GetWidth()

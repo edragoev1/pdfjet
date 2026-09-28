@@ -413,7 +413,9 @@ class TableTest {
         new Table().setTableData(data, 1).setLocation(50f, 50f).drawOn(new Page(pdf, Letter.PORTRAIT));
         pdf.complete();
         String raw = TestSupport.latin1(bos.toByteArray());
-        assertEquals(1, count(raw, "/A <</O /Table /Scope /Column /ColSpan 2 /RowSpan 2>>"), raw);
+        // The span covers the second row whole, which is then no row of the
+        // table, so it spans one row of the table: it has no RowSpan.
+        assertEquals(1, count(raw, "/A <</O /Table /Scope /Column /ColSpan 2>>"), raw);
         // A row that a span covers whole holds no cell of its own.
         assertEquals(2, count(raw, "/S /TR\n"), raw);
         assertEquals(1, count(raw, "/S /TH\n"), raw);

@@ -10,6 +10,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/border"
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
+	"math"
 )
 
 // Cell is used to create table cell objects.
@@ -531,10 +532,12 @@ func (cell *Cell) GetTextColor() [3]float32 {
 	return colorToRGB(cell.textColor)
 }
 
-// SetColSpan sets the number of columns this cell spans.
-//   - colspan: the specified column span value.
+// SetColSpan sets the number of columns this cell spans, counted from this
+// one. A column span of less than 1 is 1, and one past the end of its row
+// spans the columns the row has left.
+//   - colspan: the specified column span value, from 1.
 func (cell *Cell) SetColSpan(colspan int) *Cell {
-	cell.colspan = int32(colspan)
+	cell.colspan = int32(max(1, min(colspan, math.MaxInt32)))
 	return cell
 }
 

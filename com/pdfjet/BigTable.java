@@ -254,7 +254,9 @@ public class BigTable {
      * such as a heading, at y on that page. The next pages are new, and the
      * table starts on them at the y of its location. The page is one that
      * new Page(pdf, pageSize) has added to the PDF, and nothing is drawn on it
-     * after the table.
+     * after the table. When the header and the first row do not fit on the
+     * page above its bottom margin, the table starts on a new page instead,
+     * and draws nothing on it.
      *
      * @param page the page the table starts on.
      * @param y the top of the table on that page.
@@ -278,7 +280,7 @@ public class BigTable {
     // Creates the next page. It is added to the PDF right away, so the content
     // of the page before it is compressed and written, and its memory freed.
     private void newPage() throws Exception {
-        if (pageNumber == 0 && firstPage != null) {
+        if (pageNumber == 0 && startsOnFirstPage()) {
             page = firstPage;
             this.top = firstPageY;
         } else {
@@ -302,6 +304,13 @@ public class BigTable {
         drawFieldsAndLine(headerFields, f1, header);
         this.yText += f1.descent + f2.ascent;
         startNewPage = false;
+    }
+
+    // True when the table starts on the page setFirstPage set: when the header
+    // and the first row fit on it above its bottom margin.
+    private boolean startsOnFirstPage() {
+        return firstPage != null && firstPageY + f1.ascent + f1.descent + f2.ascent + f2.descent
+                <= firstPage.height - bottomMargin;
     }
 
     // Draws the footer of the page that was just finished, once. The page is
@@ -341,7 +350,9 @@ public class BigTable {
         float pageHeight = pageSize.getHeight();
         float yTop = this.y + f1.ascent + f1.descent + f2.ascent;
         float yPos = yTop;
-        if (firstPage != null) {
+        if (startsOnFirstPage()) {
+            // The first page can be of another size than the next ones.
+            pageHeight = firstPage.height;
             yPos = firstPageY + f1.ascent + f1.descent + f2.ascent;
         }
         int count = 1;
@@ -349,6 +360,7 @@ public class BigTable {
         for (int i = 0; i < this.dataRows; i++) {
             if (newPage) {
                 count++;
+                pageHeight = pageSize.getHeight();
                 yPos = yTop;
                 newPage = false;
             }
@@ -712,39 +724,49 @@ public class BigTable {
     // The text as much of it as fits the width, ending in the mark that says
     // it was cut. The mark takes the place of the last four characters of what
     // fits, rather than being added to them, so the text stays inside the
-    // column; a character built from a surrogate pair is not cut in half.
+    // column. The text is cut between code points, never inside one, and
+    // counted in them, as every port counts it.
     private static String fit(String text, Font font, float width) {
         if (font.stringWidth(text) <= width) {
             return text;
         }
-        int end = 0;                    // The most characters that fit.
-        int high = text.length();
+        // The index of each code point, and of the end of the text.
+        int count = text.codePointCount(0, text.length());
+        int[] offsets = new int[count + 1];
+        for (int i = 0, offset = 0; i < count; i++) {
+            offsets[i] = offset;
+            offset += Character.charCount(text.codePointAt(offset));
+        }
+        offsets[count] = text.length();
+        int end = 0;                    // The most code points that fit.
+        int high = count;
         while (end < high) {
             int middle = end + (high - end + 1)/2;
-            if (font.stringWidth(text.substring(0, middle)) <= width) {
+            if (font.stringWidth(text.substring(0, offsets[middle])) <= width) {
                 end = middle;
             } else {
                 high = middle - 1;
             }
         }
         end = Math.max(0, end - ELLIPSIS.length());
-        while (end > 0 && font.stringWidth(text.substring(0, end) + ELLIPSIS) > width) {
+        while (end > 0 && font.stringWidth(text.substring(0, offsets[end]) + ELLIPSIS) > width) {
             end--;
         }
-        if (end > 0 && Character.isHighSurrogate(text.charAt(end - 1))) {
-            end--;
-        }
-        return text.substring(0, end) + ELLIPSIS;
+        return text.substring(0, offsets[end]) + ELLIPSIS;
     }
 
     /**
      * Draws the rows, then the vertical lines, with the footer on every page. The pages are added to the PDF as they are drawn, so the
      * document does not hold them all. Call it after the location, the bottom
-     * margin and the table data have been set.
+     * margin and the table data have been set. A table without data draws
+     * nothing.
      *
      * @throws Exception if the data file cannot be read or drawing fails.
      */
     public void complete() throws Exception {
+        if (rows == null) {
+            return;     // A table without data draws nothing.
+        }
         this.pageCount = countPages();
         newPage();
         Iterator<String[]> iterator = rows.iterator();

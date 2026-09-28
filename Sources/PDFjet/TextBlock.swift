@@ -688,7 +688,10 @@ public class TextBlock : Drawable {
     // Returns the lines that fit in the height: all of them when the block has
     // no height, else the first lines, with the last of them ending in "...".
     private func linesThatFit(_ textLines: [TextLine], _ leading: Float) -> [TextLine] {
-        var fit = Int(((height - 2 * textPadding) / leading).rounded(.down))
+        if leading <= 0 {
+            return textLines    // Lines that take no height all fit
+        }
+        var fit = Util.saturatingInt((height - 2 * textPadding) / leading)
         if fit < 1 {
             fit = 1     // At least one line is drawn
         }
@@ -740,7 +743,7 @@ public class TextBlock : Drawable {
     /// Lays out the lines as drawOn draws them, aligned and decorated, and
     /// returns them with the top of the first line, the leading and the height
     /// of the block, as the layout method of the Go port does.
-    private func layout() -> (textLines: [TextLine], yText: Float, leading: Float, blockHeight: Float) {
+    func layout() -> (textLines: [TextLine], yText: Float, leading: Float, blockHeight: Float) {
         let ascent = font.getAscent(fontSize)
         let descent = font.getDescent(fontSize)
         let leading = (ascent + descent + font.getLineGap(fontSize)) * lineSpacing

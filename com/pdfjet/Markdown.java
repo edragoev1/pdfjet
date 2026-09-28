@@ -32,6 +32,10 @@ public class Markdown {
     private static final int RULE_COLOR = 0xC8CCD2;
     private static final int QUOTE_BAR_COLOR = 0xB0B6BF;
     private static final int TABLE_HEADER_BACKGROUND = 0xEEF0F3;
+    // The least width, in sizes of the text, that quotes and lists nested in
+    // each other leave their text: deeper ones are not indented further, so
+    // that the text is never narrower than nothing.
+    private static final float MIN_WIDTH = 10f;
 
     private final Font regular;
     private final Font bold;
@@ -313,7 +317,12 @@ public class Markdown {
         gap(size() * 0.75f);
         float padding = size() * 0.5f;
         float leading = code.getBodyHeight(code.getSize()) * 1.2f;
-        int columns = Math.max(1, (int) ((width - 2f * padding) / code.stringWidth(code.getSize(), "0")));
+        // A code font with no width, or no size, cuts no line.
+        int columns = Integer.MAX_VALUE;
+        float advance = code.stringWidth(code.getSize(), "0");
+        if (advance > 0f) {
+            columns = Math.max(1, (int) ((width - 2f * padding) / advance));
+        }
         List<String> lines = new ArrayList<String>();
         for (String line : text.split("\n", -1)) {
             int start = 0;
@@ -333,7 +342,10 @@ public class Markdown {
         openContainer(StructElem.CODE);
         int i = 0;
         while (i < lines.size()) {
-            int fit = Math.max(1, (int) ((bottom - y - 2f * padding) / leading));
+            int fit = lines.size() - i;     // Lines of no height all fit
+            if (leading > 0f) {
+                fit = Math.max(1, (int) ((bottom - y - 2f * padding) / leading));
+            }
             int count = Math.min(fit, lines.size() - i);
             new Rect(x, y, width, count * leading + 2f * padding).setFillColor(CODE_BACKGROUND).drawOn(page);
             float baseline = y + padding + code.getAscent(code.getSize()) + (leading - code.getBodyHeight(code.getSize())) / 2f;
@@ -357,7 +369,7 @@ public class Markdown {
     private void drawQuote(MarkdownParser.Block block, float x, float width) throws Exception {
         gap(size() * 0.75f);
         ensure(regular.getBodyHeight(size()));
-        float indent = size() * 1.2f;
+        float indent = indentWithin(size() * 1.2f, width);
         float[] bar = {x + 2f, y};
         quoteBars.add(bar);
         openContainer(StructElem.BLOCKQUOTE);
@@ -370,11 +382,17 @@ public class Markdown {
         drawQuoteBar(bar[0], bar[1], y);
     }
 
+    // The indent, or less, so that the blocks inside a quote or a list are not
+    // narrower than MIN_WIDTH sizes of the text.
+    private float indentWithin(float indent, float width) {
+        return Math.max(0f, Math.min(indent, width - MIN_WIDTH * size()));
+    }
+
     // A list: the label of each item, a bullet or a number, to the left of
     // the blocks of the item.
     private void drawList(MarkdownParser.Block list, float x, float width) throws Exception {
         gap(size() * 0.75f);
-        float indent = size() * (list.ordered ? 2f : 1.4f);
+        float indent = indentWithin(size() * (list.ordered ? 2f : 1.4f), width);
         openContainer(StructElem.L);
         int number = list.start;
         for (MarkdownParser.Block item : list.children) {
@@ -509,19 +527,35 @@ public class Markdown {
     }
 
     // The path of an image in the image directory, or null when there is no
-    // directory, or the source is an absolute path, a URL, has .. in it, or
-    // names no file.
-    private String imagePath(String source) {
+    // directory, or the source is an absolute path, a URL, has .. in it, names
+    // a directory, or names no file. The source is read the same way in every
+    // port: its parts between the slashes, less the empty ones and those that
+    // are ".", are the names of the directories under the image directory and
+    // of the file, and a source that ends in a slash or in "." names a
+    // directory. An empty image directory is the working directory.
+    String imagePath(String source) {
         if (imageDirectory == null || source.startsWith("/") || source.startsWith("\\")
                 || source.indexOf(':') != -1 || source.indexOf('\\') != -1) {
             return null;
         }
-        for (String part : source.split("/")) {
+        String[] parts = source.split("/", -1);
+        String last = parts[parts.length - 1];
+        if (last.isEmpty() || last.equals(".")) {
+            return null;
+        }
+        StringBuilder path = new StringBuilder(imageDirectory);
+        for (String part : parts) {
             if (part.equals("..")) {
                 return null;
             }
+            if (!part.isEmpty() && !part.equals(".")) {
+                if (path.length() > 0) {
+                    path.append(File.separatorChar);
+                }
+                path.append(part);
+            }
         }
-        File file = new File(imageDirectory, source);
+        File file = new File(path.toString());
         return file.isFile() ? file.getPath() : null;
     }
 }   // End of Markdown.java

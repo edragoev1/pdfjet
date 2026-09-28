@@ -384,7 +384,9 @@ public sealed class TableTest : IDisposable {
         new Table().SetTableData(data, 1).SetLocation(50f, 50f).DrawOn(new Page(pdf, Letter.PORTRAIT));
         pdf.Complete();
         string raw = TestSupport.Latin1(stream.ToArray());
-        Assert.Equal(1, Count(raw, "/A <</O /Table /Scope /Column /ColSpan 2 /RowSpan 2>>"));
+        // The span covers the second row whole, which is then no row of the
+        // table, so it spans one row of the table: it has no RowSpan.
+        Assert.Equal(1, Count(raw, "/A <</O /Table /Scope /Column /ColSpan 2>>"));
         // A row that a span covers whole holds no cell of its own.
         Assert.Equal(2, Count(raw, "/S /TR\n"));
         Assert.Equal(1, Count(raw, "/S /TH\n"));

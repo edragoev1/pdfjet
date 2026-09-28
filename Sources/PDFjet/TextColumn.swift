@@ -32,6 +32,7 @@ public class TextColumn : Drawable {
     private var paragraphSpacing: Float = 1.0
     private var paragraphs: [Paragraph]
     private var lineBetweenParagraphs = false
+    private var inList = false      // A run of paragraphs that have a label is being drawn
 
     ///
     /// Create a text column object.
@@ -175,6 +176,7 @@ public class TextColumn : Drawable {
         for (i, paragraph) in paragraphs.enumerated() {
             xy = drawParagraphOn(page, paragraph, i == (paragraphs.count - 1))
         }
+        closeList(page)
         // Restore the original location
         setLocation(self.x, self.y)
         // A column with a height reaches at least that far down from its location
@@ -184,8 +186,52 @@ public class TextColumn : Drawable {
         return [x + w, xy[1]]
     }
 
+    // Ends the list that is open, if there is one.
+    private func closeList(_ page: Page?) {
+        if inList, let page = page {
+            page.endStructElement()     // The L
+            inList = false
+        }
+    }
+
+    // Draws the label of a paragraph that is an item of a list, to the left of
+    // the column and on the baseline of the first line, as TextFrame draws it.
+    // In a PDF/UA document a run of such paragraphs is an L, and each an LI of
+    // the Lbl of its label and the LBody of its text. Returns true when it
+    // began an item, which the caller ends.
+    private func drawLabel(_ page: Page, _ paragraph: Paragraph) -> Bool {
+        guard let label = paragraph.listLabel else {
+            closeList(page)
+            return false
+        }
+        if !inList {
+            page.beginStructElement(StructElem.L)
+            inList = true
+        }
+        page.beginStructElement(StructElem.LI)
+        var ascent: Float = 0.0
+        for line in paragraph.lines {
+            ascent = max(ascent, line.font!.getAscent(line.fontSize))
+        }
+        label.setStructureType(StructElem.LBL)
+        label.setLocation(x - paragraph.listLabelIndent, y1 + ascent)
+        label.drawOn(page)
+        page.beginStructElement(StructElem.LBODY)
+        return true
+    }
+
     private func drawParagraphOn(
             _ page: Page?, _ paragraph: Paragraph, _ lastParagraph: Bool) -> [Float] {
+        var inItem = false
+        if let page = page {
+            inItem = drawLabel(page, paragraph)
+        }
+        defer {
+            if inItem, let page = page {
+                page.endStructElement()     // The LBody
+                page.endStructElement()     // The LI
+            }
+        }
         // In a PDF/UA document the paragraph is one structure element, which
         // the words it is drawn one at a time all belong to.
         var parent: StructElement?

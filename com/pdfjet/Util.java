@@ -130,6 +130,10 @@ class Util {
      * over the next lines of the reader, and each line break in the field is a
      * space, as a table cell is drawn on one line. Only a record of several
      * lines is looked at for them, so a line costs nothing more to read.
+     * Each line is read once, to see whether the record ends on it, and the
+     * record is split when it does: a record whose every line closes a quoted
+     * field and opens another was split again at each of its lines, which
+     * took time that grew with the square of its lines.
      *
      * @param line the first line of the record.
      * @param reader the reader of the lines after it.
@@ -155,9 +159,8 @@ class Util {
                         + MAX_LINES_IN_RECORD + " lines of the data file: " + excerpt(record.toString()));
             }
             record.append('\n').append(next);
-            // The quoted field goes on until a quote that is not doubled; only
-            // then can the record end, so only then is it split again.
-            if (closesQuotedField(next)) {
+            // The record ends on the line that leaves no quoted field open.
+            if (!endsInQuotedField(next, delimiter)) {
                 fields = split(record.toString(), delimiter, true);
                 if (fields != null) {
                     for (int i = 0; i < fields.length; i++) {
@@ -169,18 +172,43 @@ class Util {
         }
     }
 
-    // Returns true when the line, read inside a quoted field, holds the quote
-    // that closes it: a quote that is not one of a doubled pair.
-    private static boolean closesQuotedField(String line) {
-        int i = line.indexOf('"');
-        while (i != -1) {
-            if (i + 1 < line.length() && line.charAt(i + 1) == '"') {
-                i = line.indexOf('"', i + 2);
+    // Returns true when the line, which starts inside a quoted field, ends
+    // inside one: that field, or one that opens after it. A quote closes the
+    // field unless it is one of a doubled pair, and a quote opens a field when
+    // it starts one, after a delimiter.
+    private static boolean endsInQuotedField(String line, String delimiter) {
+        if (delimiter.isEmpty()) {
+            return false;
+        }
+        boolean quoted = true;
+        boolean fieldStart = false;
+        int i = 0;
+        while (i < line.length()) {
+            if (quoted) {
+                int quote = line.indexOf('"', i);
+                if (quote == -1) {
+                    return true;
+                }
+                i = quote + 1;
+                if (i < line.length() && line.charAt(i) == '"') {
+                    i++;        // Two quotes stand for one
+                } else {
+                    quoted = false;
+                    fieldStart = false;
+                }
+            } else if (fieldStart && line.charAt(i) == '"') {
+                quoted = true;
+                i++;
             } else {
-                return true;
+                int end = line.indexOf(delimiter, i);
+                if (end == -1) {
+                    return false;
+                }
+                i = end + delimiter.length();
+                fieldStart = true;
             }
         }
-        return false;
+        return quoted;
     }
 
     /**

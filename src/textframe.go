@@ -52,6 +52,9 @@ type TextFrame struct {
 	// its own there, since an element belongs to the page it is drawn on.
 	elementParagraph *Paragraph
 	element          *structElement
+	// The paragraph that an earlier frame drew the start of and this one goes
+	// on with, or nil: its label and its heading are not drawn or noted again.
+	continuedParagraph *Paragraph
 	// Whether a list, and an item of it, are open: a run of paragraphs that
 	// have a label is one list.
 	inList bool
@@ -202,6 +205,14 @@ func (tf *TextFrame) HasMoreText() bool {
 func (tf *TextFrame) DrawOnPages(pdf *PDF, pages *[]*Page, pageSize pagesize.PageSize) [2]float32 {
 	xy := [2]float32{tf.x + tf.w, tf.y}
 	height := tf.h
+	if height <= 0 && pageSize.GetHeight()-2*tf.y <= 0 {
+		// A frame in the bottom half of the page leaves no height above the
+		// margin, and a frame with no height would draw all of the text on
+		// the first page, past its bottom edge.
+		pdf.fail("The text frame has no height and is in the bottom half of the page: " +
+			"set its height, or put it higher on the page.")
+		return xy
+	}
 	defer func() { tf.h = height }()
 	for tf.HasMoreText() {
 		page := NewPageDetached(pdf, pageSize)
@@ -234,6 +245,10 @@ func (tf *TextFrame) DrawOn(page *Page) [2]float32 {
 
 	tf.elementParagraph = nil
 	tf.element = nil
+	tf.continuedParagraph = nil
+	if startLine > 0 || startTokens != nil {
+		tf.continuedParagraph = tf.paragraphs[startParagraph]
+	}
 	bottom := tf.drawParagraphs(page)
 	tf.closeList(page)
 	if tf.h > 0 {
@@ -380,13 +395,14 @@ func (tf *TextFrame) drawTokens(page *Page, paragraph *Paragraph, textLine *Text
 		// the row already when that word made room for it.
 		reserved := tf.joinReserved && tf.tokenIndex == 0
 		tf.joinReserved = false
-		var joined float32
-		if joinsNext {
-			joined = tf.joinedWidth(paragraph, tf.lineIndex, runLength+textWidth(textLine, token), available)
-		}
 		// The token is measured without the space that follows it, as in
 		// TextColumn: a row is as wide as the text it shows.
-		if reserved || (runLength+textWidth(textLine, token)+joined) <= available {
+		tokenWidth := widthWithin(textLine, token, available-runLength)
+		var joined float32
+		if joinsNext {
+			joined = tf.joinedWidth(paragraph, tf.lineIndex, runLength+tokenWidth, available)
+		}
+		if reserved || (runLength+tokenWidth+joined) <= available {
 			buf.WriteString(text)
 			runLength += textWidth(textLine, text)
 			tf.tokenIndex++
@@ -395,7 +411,7 @@ func (tf *TextFrame) drawTokens(page *Page, paragraph *Paragraph, textLine *Text
 			continue
 		}
 		if joinsNext && buf.Len() == 0 && tf.xText == tf.x &&
-			(runLength+textWidth(textLine, token)) <= available {
+			(runLength+tokenWidth) <= available {
 			// With the words joined to it the word is wider than the frame,
 			// so they go on the next row.
 			buf.WriteString(text)
@@ -444,6 +460,29 @@ func (tf *TextFrame) joinedWidth(paragraph *Paragraph, index int, before, availa
 		}
 	}
 	return width
+}
+
+// widthWithin returns the width of the text when it is no more than the
+// limit, and otherwise a width that is more than the limit: that of as much
+// of the start of the text as shows that it does not fit, measured in runs
+// that double in length. A word wider than the frame is then measured a row's
+// worth at a time and not whole for every row it is broken into, which made
+// the time grow with the square of the word: 75 seconds for 100,000
+// characters.
+func widthWithin(textLine *TextLine, text string, limit float32) float32 {
+	end := 0
+	runes := 0
+	for count := 64; ; count *= 2 {
+		for runes < count && end < len(text) {
+			_, size := utf8.DecodeRuneInString(text[end:])
+			end += size
+			runes++
+		}
+		width := textWidth(textLine, text[:end])
+		if end == len(text) || width > limit {
+			return width
+		}
+	}
 }
 
 // headThatFits returns the longest start of the token that fits in the width
@@ -523,6 +562,9 @@ func (tf *TextFrame) beginParagraphElement(page *Page, paragraph *Paragraph, x, 
 	if paragraph != tf.elementParagraph {
 		tf.elementParagraph = paragraph
 		tf.closeItem(page)
+		// A paragraph that an earlier frame began goes on here: its label
+		// was drawn where it began, and its heading noted there.
+		continued := paragraph == tf.continuedParagraph
 		if paragraph.listLabel != nil {
 			// The label of the item is drawn where the item begins, so that a
 			// reader reads it before the text of the item.
@@ -531,17 +573,19 @@ func (tf *TextFrame) beginParagraphElement(page *Page, paragraph *Paragraph, x, 
 				tf.inList = true
 			}
 			page.BeginStructElement(structelem.LI)
-			label := paragraph.listLabel
-			label.SetStructureType(structelem.Lbl)
-			label.SetLocation(x-paragraph.listLabelIndent, y)
-			label.DrawOn(page)
+			if !continued {
+				label := paragraph.listLabel
+				label.SetStructureType(structelem.Lbl)
+				label.SetLocation(x-paragraph.listLabelIndent, y)
+				label.DrawOn(page)
+			}
 			page.BeginStructElement(structelem.LBody)
 			tf.inItem = true
 		} else {
 			tf.closeList(page)
 		}
 		tf.element = page.addStructElement(page.structParent, paragraph.structureType, "")
-		if tf.element != nil && len(paragraph.lines) > 0 {
+		if tf.element != nil && len(paragraph.lines) > 0 && !continued {
 			page.noteHeading(paragraph.structureType, paragraph.text(), y-paragraph.lines[0].fontSize)
 		}
 	}

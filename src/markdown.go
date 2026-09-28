@@ -6,6 +6,7 @@
 package pdfjet
 
 import (
+	"math"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -24,6 +25,10 @@ const (
 	markdownRuleColor             = 0xC8CCD2
 	markdownQuoteBarColor         = 0xB0B6BF
 	markdownTableHeaderBackground = 0xEEF0F3
+	// The least width, in sizes of the text, that quotes and lists nested in
+	// each other leave their text: deeper ones are not indented further, so
+	// that the text is never narrower than nothing.
+	markdownMinWidth = 10
 )
 
 // Markdown draws a Markdown text on as many pages as it needs: headings of #
@@ -325,7 +330,11 @@ func (markdown *Markdown) drawCode(text string, x, width float32) {
 	markdown.gap(markdown.size() * 0.75)
 	padding := markdown.size() * 0.5
 	leading := code.GetBodyHeight(code.GetSize()) * 1.2
-	columns := max(1, int((width-2*padding)/code.StringWidth(code.GetSize(), "0")))
+	// A code font with no width, or no size, cuts no line.
+	columns := math.MaxInt32
+	if advance := code.StringWidth(code.GetSize(), "0"); advance > 0 {
+		columns = max(1, saturatingInt((width-2*padding)/advance))
+	}
 	lines := make([]string, 0)
 	for _, line := range strings.Split(text, "\n") {
 		units := utf16.Encode([]rune(line))
@@ -350,7 +359,10 @@ func (markdown *Markdown) drawCode(text string, x, width float32) {
 	markdown.openContainer(structelem.Code)
 	i := 0
 	for i < len(lines) {
-		fit := max(1, int((markdown.bottom-markdown.y-2*padding)/leading))
+		fit := len(lines) - i // Lines of no height all fit
+		if leading > 0 {
+			fit = max(1, saturatingInt((markdown.bottom-markdown.y-2*padding)/leading))
+		}
 		count := min(fit, len(lines)-i)
 		NewRect(x, markdown.y, width, float32(count)*leading+2*padding).
 			SetFillColor(markdownCodeBackground).DrawOn(markdown.page)
@@ -380,7 +392,7 @@ func markdownIsHighSurrogate(unit uint16) bool {
 func (markdown *Markdown) drawQuote(block *markdownBlock, x, width float32) {
 	markdown.gap(markdown.size() * 0.75)
 	markdown.ensure(markdown.regular.GetBodyHeight(markdown.size()))
-	indent := markdown.size() * 1.2
+	indent := markdown.indentWithin(markdown.size()*1.2, width)
 	bar := &[2]float32{x + 2, markdown.y}
 	markdown.quoteBars = append(markdown.quoteBars, bar)
 	markdown.openContainer(structelem.BlockQuote)
@@ -391,6 +403,12 @@ func (markdown *Markdown) drawQuote(block *markdownBlock, x, width float32) {
 	markdown.closeContainer()
 	markdown.removeQuoteBar(bar)
 	markdown.drawQuoteBar(bar[0], bar[1], markdown.y)
+}
+
+// indentWithin returns the indent, or less, so that the blocks inside a quote
+// or a list are not narrower than markdownMinWidth sizes of the text.
+func (markdown *Markdown) indentWithin(indent, width float32) float32 {
+	return max(0, min(indent, width-markdownMinWidth*markdown.size()))
 }
 
 func (markdown *Markdown) removeQuoteBar(bar *[2]float32) {
@@ -411,6 +429,7 @@ func (markdown *Markdown) drawList(list *markdownBlock, x, width float32) {
 	if list.ordered {
 		indent = markdown.size() * 2
 	}
+	indent = markdown.indentWithin(indent, width)
 	markdown.openContainer(structelem.L)
 	number := list.start
 	for _, item := range list.children {
@@ -568,18 +587,30 @@ func (markdown *Markdown) drawImage(block *markdownBlock, x, width float32) {
 
 // imagePath returns the path of an image in the image directory, or "" when
 // there is no directory, or the source is an absolute path, a URL, has .. in
-// it, or names no file.
+// it, names a directory, or names no file. The source is read the same way in
+// every port: its parts between the slashes, less the empty ones and those
+// that are ".", are the names of the directories under the image directory
+// and of the file, and a source that ends in a slash or in "." names a
+// directory. An empty image directory is the working directory.
 func (markdown *Markdown) imagePath(source string) string {
 	if !markdown.hasImages || strings.HasPrefix(source, "/") || strings.HasPrefix(source, "\\") ||
 		strings.IndexByte(source, ':') != -1 || strings.IndexByte(source, '\\') != -1 {
 		return ""
 	}
-	for _, part := range strings.Split(source, "/") {
+	parts := strings.Split(source, "/")
+	if last := parts[len(parts)-1]; last == "" || last == "." {
+		return ""
+	}
+	names := []string{markdown.imageDirectory}
+	for _, part := range parts {
 		if part == ".." {
 			return ""
 		}
+		if part != "" && part != "." {
+			names = append(names, part)
+		}
 	}
-	path := filepath.Join(markdown.imageDirectory, source)
+	path := filepath.Join(names...)
 	if info, err := os.Stat(path); err != nil || !info.Mode().IsRegular() {
 		return ""
 	}
