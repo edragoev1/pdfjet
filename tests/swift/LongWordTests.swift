@@ -23,7 +23,10 @@ import Testing
         let start = Date()
         let xy = block.setLocation(0, 0).drawOn(nil)
         let took = Date().timeIntervalSince(start)
-        #expect(took < 3, "breaking a word of 100,000 characters took \(took) s")
+        // 30 s, not the 3 of the other ports: the tests of Swift are built for
+        // debugging and share a runner of GitHub, where this took 3.6 s. The
+        // time that grew with the square of the word was 39 s and more.
+        #expect(took < 30, "breaking a word of 100,000 characters took \(took) s")
         TestSupport.expectXY(100, 78030, xy)   // 5625 lines of 13.872 points
     }
 
@@ -35,7 +38,9 @@ import Testing
         let start = Date()
         let xy = block.setLocation(0, 0).drawOn(nil)
         let took = Date().timeIntervalSince(start)
-        #expect(took < 3, "breaking a right to left word of 100,000 letters took \(took) s")
+        // 30 s, as above: the time that grew with the square of the word was
+        // about 20 minutes.
+        #expect(took < 30, "breaking a right to left word of 100,000 letters took \(took) s")
         TestSupport.expectXY(100, 120006, xy)  // As the Go port breaks it
     }
 }
