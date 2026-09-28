@@ -839,6 +839,14 @@ func (table *Table) DrawOnPages(pdf *PDF, pages *[]*Page, pageSize pagesize.Page
 	return table.drawOnPages(pdf, nil, pages, pageSize)
 }
 
+// DrawOnPagesFrom draws this table as DrawOnPages does, starting on first: a
+// page that has other content above the table, such as a heading, which
+// SetFirstPageTopMargin puts the table under. The next pages are new, and are
+// added to the list; first is not.
+func (table *Table) DrawOnPagesFrom(pdf *PDF, first *Page, pages *[]*Page, pageSize pagesize.PageSize) [2]float32 {
+	return table.drawOnPages(pdf, first, pages, pageSize)
+}
+
 // drawOnPages draws the table as DrawOnPages does, from the first page when it
 // is not nil: a page that has other content above the table, which
 // SetFirstPageTopMargin puts the table under. The next pages are new.

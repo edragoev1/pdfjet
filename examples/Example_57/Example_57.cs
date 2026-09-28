@@ -35,6 +35,14 @@ public class Example_57 {
         BigTable table = new BigTable(pdf, f1, f2, Letter.LANDSCAPE);
         table.SetNumberOfColumns(9);        // The order of the
         table.SetTableData(fileName, ",");  // these statements
+        // A heading on the first page only, which the table starts under
+        Page first = new Page(pdf, Letter.LANDSCAPE);
+        new TextLine(f1, "Electric Vehicle Population Data")
+                .SetStructureType(StructElem.H1)
+                .SetFontSize(14f)
+                .SetLocation(10f, 24f)
+                .DrawOn(first);
+        table.SetFirstPage(first, 34f);
         table.SetLocation(0f, 0f);          // is
         table.SetBottomMargin(20f);         // very
         table.Complete();                   // important!

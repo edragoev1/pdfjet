@@ -997,4 +997,26 @@ import Testing
         table.drawOn(page)
         #expect(!TestSupport.content(page).contains(" l\n"))
     }
+
+    @Test func drawnFromAPageStartsOnItUnderItsContent() {
+        // The table starts on the page given, under the top margin of the first
+        // page, and goes on to new pages, which are added to the list.
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let first = Page(pdf, Letter.PORTRAIT, false)
+        TextLine(font, "Heading").setLocation(20, 40).drawOn(first)
+        let table = Table().setTableData(rows(font, 60, 1), 1).setLocation(20, 20)
+        table.setFirstPageTopMargin(500)
+        var pages = [first]
+        table.drawOn(pdf, first, &pages, Letter.PORTRAIT)
+        #expect(pages.count == 3 && pages[0] === first)
+        guard pages.count == 3 else { return }
+        let content = TestSupport.content(first)
+        let heading = content.range(of: TestSupport.hex("Heading"))
+        let row0 = content.range(of: TestSupport.hex("row0"))
+        #expect(heading != nil && row0 != nil && heading!.lowerBound < row0!.lowerBound,
+                "the table is not drawn on the first page after its heading")
+        #expect(TestSupport.content(pages[2]).contains(TestSupport.hex("row59")),
+                "the last row is not on the last page")
+    }
 }

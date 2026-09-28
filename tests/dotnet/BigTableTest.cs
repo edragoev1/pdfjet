@@ -416,5 +416,31 @@ public sealed class BigTableTest : IDisposable {
         Assert.Contains("/Alt <" + alt + ">", raw);
         Assert.True(drawn[1].EndsWith(" ...") && drawn[1] != text, drawn[1]);
     }
+
+    [Fact]
+    public void CanStartOnAPageWithAHeadingAboveIt() {
+        // The first page is the one given, with the table under what is on it;
+        // the next pages are new, and the footer counts them all.
+        System.IO.MemoryStream stream = new System.IO.MemoryStream();
+        PDF pdf = new PDF(stream);
+        Font font = TestSupport.Helvetica(pdf);
+        Page first = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(font, "Heading").SetLocation(10f, 20f).DrawOn(first);
+        List<Page> pages = Draw(new BigTable(pdf, font, font, Letter.PORTRAIT)
+                .SetNumberOfColumns(3).SetTableData(Header, Rows()).SetFirstPage(first, 500f));
+        Assert.True(pages.Count >= 2, pages.Count + " pages");
+        Assert.Same(first, pages[0]);
+        string last = "Page " + pages.Count + " of " + pages.Count;
+        Assert.Contains(TestSupport.Hex(last), TestSupport.Content(pages[pages.Count - 1]));
+        // The page given is a page of the PDF once, not a new one as well.
+        pdf.Complete();
+        Assert.Contains("/Count " + pages.Count + "\n", TestSupport.Latin1(stream.ToArray()));
+        // Without a first page, the rows fit on fewer pages.
+        PDF pdf2 = TestSupport.NewPDF();
+        Font font2 = TestSupport.Helvetica(pdf2);
+        List<Page> plain = Draw(new BigTable(pdf2, font2, font2, Letter.PORTRAIT)
+                .SetNumberOfColumns(3).SetTableData(Header, Rows()));
+        Assert.True(plain.Count < pages.Count, pages.Count + " pages from a y of 500 on the first page, and " + plain.Count + " from the top");
+    }
 }
 }

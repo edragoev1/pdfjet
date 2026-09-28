@@ -1103,4 +1103,27 @@ class TableTest {
         String content = TestSupport.content(page);
         assertFalse(content.contains(" l\n"), content);
     }
+
+    @Test
+    void drawnFromAPageStartsOnItUnderItsContent() throws Exception {
+        // The table starts on the page given, under the top margin of the
+        // first page, and goes on to new pages, which are added to the list.
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        Page first = new Page(pdf, Letter.PORTRAIT, Page.DETACHED);
+        new TextLine(font, "Heading").setLocation(20f, 40f).drawOn(first);
+        Table table = new Table().setTableData(rows(font, 60, 1), 1).setLocation(20f, 20f);
+        table.setFirstPageTopMargin(500f);
+        List<Page> pages = new ArrayList<Page>();
+        pages.add(first);
+        table.drawOn(pdf, first, pages, Letter.PORTRAIT);
+        assertEquals(3, pages.size());
+        assertSame(first, pages.get(0));
+        String content = TestSupport.content(first);
+        int heading = content.indexOf(TestSupport.hex("Heading"));
+        assertTrue(heading != -1 && heading < content.indexOf(TestSupport.hex("row0")),
+                "the table is not drawn on the first page after its heading");
+        assertTrue(TestSupport.content(pages.get(2)).contains(TestSupport.hex("row59")),
+                "the last row is not on the last page");
+    }
 }

@@ -37,6 +37,9 @@ type BigTable struct {
 	x            float32
 	y            float32
 	yText        float32
+	top          float32 // The top of the table on the page being drawn
+	firstPage    *Page   // The page the table starts on, or nil for a new one
+	firstPageY   float32 // The top of the table on firstPage
 	pages        []*Page
 	page         *Page
 	widths       []float32
@@ -215,6 +218,16 @@ func (bt *BigTable) SetBottomMargin(bottomMargin float32) *BigTable {
 	return bt
 }
 
+// SetFirstPage starts the table on a page of the PDF that has other content
+// above it, such as a heading, at y on that page. The next pages are new, and
+// the table starts on them at the y of its location. The page is one that
+// NewPage has added to the PDF, and nothing is drawn on it after the table.
+func (bt *BigTable) SetFirstPage(page *Page, y float32) *BigTable {
+	bt.firstPage = page
+	bt.firstPageY = y
+	return bt
+}
+
 // GetPages returns the pages, which Complete has already added to the PDF.
 func (bt *BigTable) GetPages() []*Page {
 	return bt.pages
@@ -223,12 +236,18 @@ func (bt *BigTable) GetPages() []*Page {
 // newPage creates the next page. It is added to the PDF right away, so the
 // content of the page before it is compressed and written, and its memory freed.
 func (bt *BigTable) newPage() {
-	bt.page = NewPage(bt.pdf, bt.pageSize)
+	if bt.pageNumber == 0 && bt.firstPage != nil {
+		bt.page = bt.firstPage
+		bt.top = bt.firstPageY
+	} else {
+		bt.page = NewPage(bt.pdf, bt.pageSize)
+		bt.top = bt.y
+	}
 	bt.pages = append(bt.pages, bt.page)
 	bt.pageNumber++
 	bt.footerDrawn = false
 	bt.page.SetPenWidth(0.0)
-	bt.yText = bt.y + bt.f1.ascent
+	bt.yText = bt.top + bt.f1.ascent
 	bt.highlight = true
 	// The header fields are the TH cells of the table the first time they are
 	// drawn, and an artifact where they repeat on the next pages.
@@ -269,6 +288,9 @@ func (bt *BigTable) countPages() int {
 	pageHeight := bt.pageSize.GetHeight()
 	yTop := bt.y + bt.f1.ascent + bt.f1.descent + bt.f2.ascent
 	yPos := yTop
+	if bt.firstPage != nil {
+		yPos = bt.firstPageY + bt.f1.ascent + bt.f1.descent + bt.f2.ascent
+	}
 	count := 1
 	newPage := false
 	for i := 0; i < bt.dataRows; i++ {
@@ -404,7 +426,7 @@ func (bt *BigTable) drawTheVerticalLines() {
 	for i := 0; i <= bt.numberOfColumns; i++ {
 		bt.page.DrawLine(
 			bt.vertLines[i],
-			bt.y,
+			bt.top,
 			bt.vertLines[i],
 			bt.yText-bt.f2.ascent)
 	}

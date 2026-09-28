@@ -32,6 +32,14 @@ public class Example_57 {
         let table = BigTable(pdf, f1, f2, Letter.LANDSCAPE)
         table.setNumberOfColumns(9)             // The order of the
         try table.setTableData(fileName, ",")   // these statements
+        // A heading on the first page only, which the table starts under
+        let first = Page(pdf, Letter.LANDSCAPE)
+        TextLine(f1, "Electric Vehicle Population Data")
+                .setStructureType(StructElem.H1)
+                .setFontSize(14.0)
+                .setLocation(10.0, 24.0)
+                .drawOn(first)
+        table.setFirstPage(first, 34.0)
         table.setLocation(0.0, 0.0)             // is
         table.setBottomMargin(20.0)             // very
         try table.complete()                    // important!

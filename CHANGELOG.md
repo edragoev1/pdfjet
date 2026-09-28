@@ -10,6 +10,14 @@ This is the first entry in this file; earlier releases were not tracked here.
 ## Unreleased
 
 ### Added
+- A table that starts under a heading, in all four ports:
+  `Table.drawOn(pdf, first, pages, pageSize)` (`DrawOnPagesFrom` in Go)
+  starts the table on a page of your own, under the top margin
+  `setFirstPageTopMargin` gives it, and goes on to new pages; and
+  `BigTable.setFirstPage(page, y)` starts a big table at y on a page of the
+  PDF, with the next pages at the y of its location, and the footer
+  counting them all. Example_08 and Example_57 have a heading on their first
+  page with them, which PAC asks a document for.
 - A description of a point, in all four ports: `Point.setAltDescription`,
   what a point that is a link stands for, like the country a point of a
   chart is. In a tagged document a point of a chart, or of a cell, that is a

@@ -944,11 +944,21 @@ public class Table : Drawable {
         return drawOn(pdf, nil, &pages, pageSize)
     }
 
-    // Draws the table as drawOn(pdf, &pages, pageSize) does, from the first page
-    // when it is not nil: a page that has other content above the table,
-    // which setFirstPageTopMargin puts the table under. The next pages are new.
+    ///
+    /// Draws this table as drawOn(pdf, &pages, pageSize) does, starting on first:
+    /// a page that has other content above the table, such as a heading, which
+    /// setFirstPageTopMargin puts the table under. The next pages are new, and
+    /// are added to the list; first is not.
+    ///
+    /// - Parameter pdf: the PDF document.
+    /// - Parameter first: the page the table starts on, or nil for a new one.
+    /// - Parameter pages: the list that receives the new pages.
+    /// - Parameter pageSize: the page size, for example Letter.PORTRAIT.
+    /// - Returns: the x and y coordinates of the bottom right corner of the table on the last page,
+    ///   or nil when the table was already drawn and no page was added.
+    ///
     @discardableResult
-    func drawOn(_ pdf: PDF, _ first: Page?, _ pages: inout [Page], _ pageSize: PageSize) -> [Float]? {
+    public func drawOn(_ pdf: PDF, _ first: Page?, _ pages: inout [Page], _ pageSize: PageSize) -> [Float]? {
         if tableData.isEmpty {
             return [x1, y1]     // An empty table needs no page.
         }

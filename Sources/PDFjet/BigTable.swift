@@ -20,6 +20,9 @@ public class BigTable {
     private var x: Float = 0.0
     private var y: Float = 0.0
     private var yText: Float = 0.0
+    private var top: Float = 0.0            // The top of the table on the page being drawn
+    private var firstPage: Page?            // The page the table starts on, or nil for a new one
+    private var firstPageY: Float = 0.0     // The top of the table on firstPage
     private var pages: [Page] = []
     private var page: Page?
     private var widths: [Float] = []
@@ -201,6 +204,18 @@ public class BigTable {
         return self
     }
 
+    /// Starts the table on a page of the PDF that has other content above it,
+    /// such as a heading, at y on that page. The next pages are new, and the
+    /// table starts on them at the y of its location. The page is one that
+    /// Page(pdf, pageSize) has added to the PDF, and nothing is drawn on it
+    /// after the table.
+    @discardableResult
+    public func setFirstPage(_ page: Page, _ y: Float) -> BigTable {
+        self.firstPage = page
+        self.firstPageY = y
+        return self
+    }
+
     /// Returns the pages, which complete has already added to the PDF.
     public func getPages() -> [Page] {
         return pages
@@ -209,12 +224,18 @@ public class BigTable {
     // Creates the next page. It is added to the PDF right away, so the content
     // of the page before it is compressed and written, and its memory freed.
     private func newPage() {
-        page = Page(pdf, pageSize)
+        if pageNumber == 0, let firstPage = firstPage {
+            page = firstPage
+            top = firstPageY
+        } else {
+            page = Page(pdf, pageSize)
+            top = self.y
+        }
         pages.append(page!)
         pageNumber += 1
         footerDrawn = false
         page!.setPenWidth(0.0)
-        self.yText = self.y + f1.ascent
+        self.yText = top + f1.ascent
         self.highlightRow = true
         // The header fields are the TH cells of the table the first time they
         // are drawn, and an artifact where they repeat on the next pages.
@@ -252,6 +273,9 @@ public class BigTable {
         let pageHeight = pageSize.getHeight()
         let yTop = self.y + f1.ascent + f1.descent + f2.ascent
         var yPos = yTop
+        if firstPage != nil {
+            yPos = firstPageY + f1.ascent + f1.descent + f2.ascent
+        }
         var count = 1
         var isNewPage = false
         for _ in 0..<self.dataRows {
@@ -377,7 +401,7 @@ public class BigTable {
         for i in 0...numberOfColumns {
             page!.drawLine(
                 vertLines[i],
-                self.y,
+                top,
                 vertLines[i],
                 self.yText - f2.ascent)
         }

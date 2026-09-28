@@ -941,10 +941,20 @@ public class Table implements Drawable {
         return drawOn(pdf, null, pages, pageSize);
     }
 
-    // Draws the table as drawOn(pdf, pages, pageSize) does, from the first page
-    // when it is not null: a page that has other content above the table,
-    // which setFirstPageTopMargin puts the table under. The next pages are new.
-    float[] drawOn(PDF pdf, Page first, List<Page> pages, PageSize pageSize) throws Exception {
+    /**
+     * Draws this table as drawOn(pdf, pages, pageSize) does, starting on first:
+     * a page that has other content above the table, such as a heading, which
+     * setFirstPageTopMargin puts the table under. The next pages are new, and
+     * are added to the list; first is not.
+     *
+     * @param pdf the PDF document.
+     * @param first the page the table starts on.
+     * @param pages the list that receives the new pages.
+     * @param pageSize the page size, for example Letter.PORTRAIT.
+     * @return the x and y coordinates of the bottom right corner of the table on the last page.
+     * @throws Exception if an input or output exception occurred.
+     */
+    public float[] drawOn(PDF pdf, Page first, List<Page> pages, PageSize pageSize) throws Exception {
         if (tableData.isEmpty()) {
             return new float[] {x1, y1};    // An empty table needs no page.
         }

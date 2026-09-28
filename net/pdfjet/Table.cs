@@ -883,10 +883,18 @@ public class Table : IDrawable {
         return DrawOn(pdf, null, pages, pageSize);
     }
 
-    // Draws the table as DrawOn(pdf, pages, pageSize) does, from the first page
-    // when it is not null: a page that has other content above the table,
-    // which SetFirstPageTopMargin puts the table under. The next pages are new.
-    internal float[] DrawOn(PDF pdf, Page first, List<Page> pages, PageSize pageSize) {
+    /// <summary>
+    /// Draws this table as DrawOn(pdf, pages, pageSize) does, starting on first:
+    /// a page that has other content above the table, such as a heading, which
+    /// SetFirstPageTopMargin puts the table under. The next pages are new, and
+    /// are added to the list; first is not.
+    /// </summary>
+    /// <param name="pdf">the PDF document.</param>
+    /// <param name="first">the page the table starts on.</param>
+    /// <param name="pages">the list that receives the new pages.</param>
+    /// <param name="pageSize">the page size, for example Letter.PORTRAIT.</param>
+    /// <returns>the x and y coordinates of the bottom right corner of the table on the last page.</returns>
+    public float[] DrawOn(PDF pdf, Page first, List<Page> pages, PageSize pageSize) {
         if (tableData.Count == 0) {
             return new float[] {x1, y1};    // An empty table needs no page.
         }

@@ -14,6 +14,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // Example57 draws the table of Example43, cut to 550 rows, as a PDF/UA document.
@@ -45,6 +46,14 @@ func Example57() {
 		log.Printf("Failed to load table data: %v", err)
 		return
 	}
+	// A heading on the first page only, which the table starts under
+	first := pdfjet.NewPage(pdf, letter.Landscape())
+	pdfjet.NewTextLine(f1, "Electric Vehicle Population Data").
+		SetStructureType(structelem.H1).
+		SetFontSize(14.0).
+		SetLocation(10.0, 24.0).
+		DrawOn(first)
+	table.SetFirstPage(first, 34.0)
 	table.SetLocation(0.0, 0.0) // is
 	table.SetBottomMargin(20.0) // very
 	err = table.Complete()      // important!

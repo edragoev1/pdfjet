@@ -27,6 +27,9 @@ namespace PDFjet.NET {
         private float x;
         private float y;
         private float yText;
+        private float top;          // The top of the table on the page being drawn
+        private Page firstPage;     // The page the table starts on, or null for a new one
+        private float firstPageY;   // The top of the table on firstPage
         private List<Page> pages;
         private Page page;
         private float[] widths;
@@ -216,6 +219,22 @@ namespace PDFjet.NET {
             return this;
         }
 
+        /// <summary>
+        /// Starts the table on a page of the PDF that has other content above it,
+        /// such as a heading, at y on that page. The next pages are new, and the
+        /// table starts on them at the y of its location. The page is one that
+        /// new Page(pdf, pageSize) has added to the PDF, and nothing is drawn on it
+        /// after the table.
+        /// </summary>
+        /// <param name="page">the first page.</param>
+        /// <param name="y">the top of the table on it.</param>
+        /// <returns>this BigTable object.</returns>
+        public BigTable SetFirstPage(Page page, float y) {
+            this.firstPage = page;
+            this.firstPageY = y;
+            return this;
+        }
+
         /// <summary>Returns the pages, which Complete has already added to the PDF.</summary>
         public List<Page> GetPages() {
             return pages;
@@ -224,12 +243,18 @@ namespace PDFjet.NET {
         // Creates the next page. It is added to the PDF right away, so the content
         // of the page before it is compressed and written, and its memory freed.
         private void NewPage() {
-            page = new Page(pdf, pageSize);
+            if (pageNumber == 0 && firstPage != null) {
+                page = firstPage;
+                top = firstPageY;
+            } else {
+                page = new Page(pdf, pageSize);
+                top = this.y;
+            }
             pages.Add(page);
             pageNumber++;
             footerDrawn = false;
             page.SetPenWidth(0f);
-            this.yText = this.y + f1.ascent;
+            this.yText = top + f1.ascent;
             this.highlightRow = true;
             // The header fields are the TH cells of the table the first time
             // they are drawn, and an artifact where they repeat on the next pages.
@@ -281,6 +306,9 @@ namespace PDFjet.NET {
             float pageHeight = pageSize.GetHeight();
             float yTop = this.y + f1.ascent + f1.descent + f2.ascent;
             float yPos = yTop;
+            if (firstPage != null) {
+                yPos = firstPageY + f1.ascent + f1.descent + f2.ascent;
+            }
             int count = 1;
             bool newPage = false;
             for (int i = 0; i < this.dataRows; i++) {
@@ -391,7 +419,7 @@ namespace PDFjet.NET {
             for (int i = 0; i <= this.numberOfColumns; i++) {
                 page.DrawLine(
                     vertLines[i],
-                    this.y,
+                    top,
                     vertLines[i],
                     this.yText - f2.ascent);
             }

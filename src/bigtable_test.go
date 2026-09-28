@@ -503,3 +503,34 @@ func TestBigTableTheCellOfACutFieldKeepsTheWholeOfItsText(t *testing.T) {
 		t.Errorf("the field was not drawn cut: %q", drawn[1])
 	}
 }
+
+func TestBigTableCanStartOnAPageWithAHeadingAboveIt(t *testing.T) {
+	// The first page is the one given, with the table under what is on it;
+	// the next pages are new, and the footer counts them all.
+	doc := testNewDoc()
+	font := testHelvetica(doc.pdf)
+	first := NewPage(doc.pdf, letter.Portrait())
+	NewTextLine(font, "Heading").SetLocation(10, 20).DrawOn(first)
+	table := NewBigTable(doc.pdf, font, font, letter.Portrait()).SetNumberOfColumns(3).
+		SetTableRows(testBigTableHeader, slices.Values(testBigTableRows())).
+		SetFirstPage(first, 500)
+	pages := testDrawBigTable(t, table)
+	if len(pages) < 2 || pages[0] != first {
+		t.Fatalf("%d pages, the first of them the one given: %v", len(pages), len(pages) > 0 && pages[0] == first)
+	}
+	last := fmt.Sprintf("Page %d of %d", len(pages), len(pages))
+	if !strings.Contains(testContent(pages[len(pages)-1]), testHex(last)) {
+		t.Errorf("the last page's footer is not %q", last)
+	}
+	// The page given is a page of the PDF once, not a new one as well.
+	if raw := string(doc.complete()); !strings.Contains(raw, fmt.Sprintf("/Count %d\n", len(pages))) {
+		t.Errorf("the PDF does not have the %d pages of the table", len(pages))
+	}
+	// Without a first page, the rows fit on fewer pages.
+	pdf := testNewPDF()
+	plain := testDrawBigTable(t, NewBigTable(pdf, testHelvetica(pdf), testHelvetica(pdf), letter.Portrait()).
+		SetNumberOfColumns(3).SetTableRows(testBigTableHeader, slices.Values(testBigTableRows())))
+	if len(plain) >= len(pages) {
+		t.Errorf("%d pages from a y of 500 on the first page, and %d from the top", len(pages), len(plain))
+	}
+}

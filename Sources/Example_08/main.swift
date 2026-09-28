@@ -55,8 +55,18 @@ public class Example_08 {
         table.setTextColorInRow(13, Color.firebrick)
         table.setFontInRow(14, f3)
 
-        var pages = [Page]()
-        table.drawOn(pdf, &pages, Letter.PORTRAIT)
+        // A heading on the first page only, which the table starts under: the
+        // first page is made here, and the table goes on to new pages.
+        let first = Page(pdf, Letter.PORTRAIT, false)
+        TextLine(f1, "Electric Vehicle Population")
+                .setStructureType(StructElem.H1)
+                .setFontSize(14.0)
+                .setLocation(30.0, 44.0)
+                .drawOn(first)
+        table.setFirstPageTopMargin(56.0)
+
+        var pages = [first]
+        table.drawOn(pdf, first, &pages, Letter.PORTRAIT)
         for i in 0..<pages.count {
             let page = pages[i]
             page.addFooter(TextLine(f1, "Page \(i + 1) of \(pages.count)"))

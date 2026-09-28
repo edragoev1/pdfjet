@@ -59,8 +59,19 @@ public class Example_08 {
         table.SetTextColorInRow(13, Color.firebrick);
         table.SetFontInRow(14, f3);
 
+        // A heading on the first page only, which the table starts under: the
+        // first page is made here, and the table goes on to new pages.
+        Page first = new Page(pdf, Letter.PORTRAIT, false);
+        new TextLine(f1, "Electric Vehicle Population")
+                .SetStructureType(StructElem.H1)
+                .SetFontSize(14f)
+                .SetLocation(30f, 44f)
+                .DrawOn(first);
+        table.SetFirstPageTopMargin(56f);
+
         List<Page> pages = new List<Page>();
-        table.DrawOn(pdf, pages, Letter.PORTRAIT);
+        pages.Add(first);
+        table.DrawOn(pdf, first, pages, Letter.PORTRAIT);
         for (int i = 0; i < pages.Count; i++) {
             Page page = pages[i];
             page.AddFooter(new TextLine(f1, "Page " + (i + 1) + " of " + pages.Count));

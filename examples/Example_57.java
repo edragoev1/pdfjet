@@ -37,6 +37,14 @@ public class Example_57 {
         BigTable table = new BigTable(pdf, f1, f2, Letter.LANDSCAPE);
         table.setNumberOfColumns(9);        // The order of the
         table.setTableData(fileName, ",");  // these statements
+        // A heading on the first page only, which the table starts under
+        Page first = new Page(pdf, Letter.LANDSCAPE);
+        new TextLine(f1, "Electric Vehicle Population Data")
+                .setStructureType(StructElem.H1)
+                .setFontSize(14f)
+                .setLocation(10f, 24f)
+                .drawOn(first);
+        table.setFirstPage(first, 34f);
         table.setLocation(0f, 0f);          // is
         table.setBottomMargin(20f);         // very
         table.complete();                   // important!

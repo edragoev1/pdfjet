@@ -470,4 +470,34 @@ class BigTableTest {
                 "the cell does not keep the whole of the text");
         assertTrue(drawn.get(1).endsWith(" ...") && !drawn.get(1).equals(text), drawn.get(1));
     }
+
+    @Test
+    void canStartOnAPageWithAHeadingAboveIt() throws Exception {
+        // The first page is the one given, with the table under what is on it;
+        // the next pages are new, and the footer counts them all.
+        java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        Font font = TestSupport.helvetica(pdf);
+        Page first = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(font, "Heading").setLocation(10f, 20f).drawOn(first);
+        BigTable table = new BigTable(pdf, font, font, Letter.PORTRAIT)
+                .setNumberOfColumns(3).setTableData(HEADER, rows()).setFirstPage(first, 500f);
+        List<Page> pages = draw(table);
+        assertTrue(pages.size() >= 2 && pages.get(0) == first, pages.size() + " pages");
+        String last = "Page " + pages.size() + " of " + pages.size();
+        assertTrue(TestSupport.content(pages.get(pages.size() - 1)).contains(TestSupport.hex(last)),
+                "the last page's footer is not " + last);
+        // The page given is a page of the PDF once, not a new one as well.
+        pdf.complete();
+        String raw = TestSupport.latin1(bos.toByteArray());
+        assertTrue(raw.contains("/Count " + pages.size() + "\n"),
+                "the PDF does not have the " + pages.size() + " pages of the table");
+        // Without a first page, the rows fit on fewer pages.
+        PDF other = TestSupport.newPDF();
+        Font helvetica = TestSupport.helvetica(other);
+        List<Page> plain = draw(new BigTable(other, helvetica, helvetica, Letter.PORTRAIT)
+                .setNumberOfColumns(3).setTableData(HEADER, rows()));
+        assertTrue(plain.size() < pages.size(),
+                pages.size() + " pages from a y of 500 on the first page, and " + plain.size() + " from the top");
+    }
 }

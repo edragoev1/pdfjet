@@ -397,4 +397,32 @@ import Testing
         #expect(raw.contains("/Alt <" + alt + ">"), "the cell does not keep the whole of the text")
         #expect(drawn.count == 2 && drawn[1].hasSuffix(" ...") && drawn[1] != text)
     }
+
+    @Test func canStartOnAPageWithAHeadingAboveIt() throws {
+        // The first page is the one given, with the table under what is on it;
+        // the next pages are new, and the footer counts them all.
+        let doc = MemoryPDF()
+        let font = TestSupport.helvetica(doc.pdf)
+        let first = Page(doc.pdf, Letter.PORTRAIT)
+        TextLine(font, "Heading").setLocation(10, 20).drawOn(first)
+        let table = BigTable(doc.pdf, font, font, Letter.PORTRAIT).setNumberOfColumns(3)
+                .setTableData(header, rows())
+                .setFirstPage(first, 500)
+        let pages = try draw(table)
+        #expect(pages.count >= 2 && pages[0] === first)
+        guard pages.count >= 2 else { return }
+        let last = "Page \(pages.count) of \(pages.count)"
+        #expect(TestSupport.content(pages[pages.count - 1]).contains(TestSupport.hex(last)),
+                "the last page's footer is not \(last)")
+        // The page given is a page of the PDF once, not a new one as well.
+        try doc.pdf.complete()
+        #expect(TestSupport.latin1(doc.bytes).contains("/Count \(pages.count)\n"),
+                "the PDF does not have the \(pages.count) pages of the table")
+        // Without a first page, the rows fit on fewer pages.
+        let pdf = TestSupport.newPDF()
+        let plain = try draw(BigTable(pdf, TestSupport.helvetica(pdf), TestSupport.helvetica(pdf), Letter.PORTRAIT)
+                .setNumberOfColumns(3).setTableData(header, rows()))
+        #expect(plain.count < pages.count,
+                "\(pages.count) pages from a y of 500 on the first page, and \(plain.count) from the top")
+    }
 }

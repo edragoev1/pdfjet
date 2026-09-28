@@ -61,8 +61,19 @@ public class Example_08 {
         table.setTextColorInRow(13, Color.firebrick);
         table.setFontInRow(14, f3);
 
+        // A heading on the first page only, which the table starts under: the
+        // first page is made here, and the table goes on to new pages.
+        Page first = new Page(pdf, Letter.PORTRAIT, Page.DETACHED);
+        new TextLine(f1, "Electric Vehicle Population")
+                .setStructureType(StructElem.H1)
+                .setFontSize(14f)
+                .setLocation(30f, 44f)
+                .drawOn(first);
+        table.setFirstPageTopMargin(56f);
+
         List<Page> pages = new ArrayList<Page>();
-        table.drawOn(pdf, pages, Letter.PORTRAIT);
+        pages.add(first);
+        table.drawOn(pdf, first, pages, Letter.PORTRAIT);
         for (int i = 0; i < pages.size(); i++) {
             Page page = pages.get(i);
             page.addFooter(new TextLine(f1, "Page " + (i + 1) + " of " + pages.size()));

@@ -1079,5 +1079,25 @@ public sealed class TableTest : IDisposable {
         string content = TestSupport.Content(page);
         Assert.DoesNotContain(" l\n", content);
     }
+
+    [Fact]
+    public void DrawnFromAPageStartsOnItUnderItsContent() {
+        // The table starts on the page given, under the top margin of the first
+        // page, and goes on to new pages, which are added to the list.
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Page first = new Page(pdf, Letter.PORTRAIT, false);
+        new TextLine(font, "Heading").SetLocation(20f, 40f).DrawOn(first);
+        Table table = new Table().SetTableData(Rows(font, 60, 1), 1).SetLocation(20f, 20f);
+        table.SetFirstPageTopMargin(500f);
+        List<Page> pages = new List<Page> {first};
+        table.DrawOn(pdf, first, pages, Letter.PORTRAIT);
+        Assert.Equal(3, pages.Count);
+        Assert.Same(first, pages[0]);
+        string content = TestSupport.Content(first);
+        int heading = content.IndexOf(TestSupport.Hex("Heading"));
+        Assert.True(heading != -1 && heading < content.IndexOf(TestSupport.Hex("row0")), "the heading first");
+        Assert.Contains(TestSupport.Hex("row59"), TestSupport.Content(pages[2]));
+    }
 }
 }

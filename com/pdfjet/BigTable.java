@@ -30,6 +30,9 @@ public class BigTable {
     private float x;
     private float y;
     private float yText;
+    private float top;          // The top of the table on the page being drawn
+    private Page firstPage;     // The page the table starts on, or null for a new one
+    private float firstPageY;   // The top of the table on firstPage
     private List<Page> pages;
     private Page page;
     private float[] widths;
@@ -247,6 +250,23 @@ public class BigTable {
     }
 
     /**
+     * Starts the table on a page of the PDF that has other content above it,
+     * such as a heading, at y on that page. The next pages are new, and the
+     * table starts on them at the y of its location. The page is one that
+     * new Page(pdf, pageSize) has added to the PDF, and nothing is drawn on it
+     * after the table.
+     *
+     * @param page the page the table starts on.
+     * @param y the top of the table on that page.
+     * @return this BigTable object.
+     */
+    public BigTable setFirstPage(Page page, float y) {
+        this.firstPage = page;
+        this.firstPageY = y;
+        return this;
+    }
+
+    /**
      * Returns the pages, which complete() has already added to the PDF.
      *
      * @return the pages.
@@ -258,12 +278,18 @@ public class BigTable {
     // Creates the next page. It is added to the PDF right away, so the content
     // of the page before it is compressed and written, and its memory freed.
     private void newPage() throws Exception {
-        page = new Page(pdf, pageSize);
+        if (pageNumber == 0 && firstPage != null) {
+            page = firstPage;
+            this.top = firstPageY;
+        } else {
+            page = new Page(pdf, pageSize);
+            this.top = this.y;
+        }
         pages.add(page);
         pageNumber++;
         footerDrawn = false;
         page.setPenWidth(0f);
-        this.yText = this.y + f1.ascent;
+        this.yText = this.top + f1.ascent;
         this.highlightRow = true;
         // The header fields are the TH cells of the table the first time they
         // are drawn, and an artifact where they repeat on the next pages.
@@ -315,6 +341,9 @@ public class BigTable {
         float pageHeight = pageSize.getHeight();
         float yTop = this.y + f1.ascent + f1.descent + f2.ascent;
         float yPos = yTop;
+        if (firstPage != null) {
+            yPos = firstPageY + f1.ascent + f1.descent + f2.ascent;
+        }
         int count = 1;
         boolean newPage = false;
         for (int i = 0; i < this.dataRows; i++) {
@@ -422,7 +451,7 @@ public class BigTable {
         for (int i = 0; i <= this.numberOfColumns; i++) {
             page.drawLine(
                     vertLines[i],
-                    this.y,
+                    this.top,
                     vertLines[i],
                     this.yText - f2.ascent);
         }

@@ -1292,3 +1292,28 @@ func TestTableATableWithoutLinesHasNoneUnderItsHeader(t *testing.T) {
 		t.Errorf("a table without lines draws a line:\n%s", content)
 	}
 }
+
+func TestTableDrawnFromAPageStartsOnItUnderItsContent(t *testing.T) {
+	// The table starts on the page given, under the top margin of the first
+	// page, and goes on to new pages, which are added to the list.
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	first := NewPageDetached(pdf, letter.Portrait())
+	NewTextLine(font, "Heading").SetLocation(20, 40).DrawOn(first)
+	table := NewTable().SetTableData(testRows(font, 60, 1), 1)
+	table.SetLocation(20, 20)
+	table.SetFirstPageTopMargin(500)
+	pages := []*Page{first}
+	table.DrawOnPagesFrom(pdf, first, &pages, letter.Portrait())
+	if len(pages) != 3 || pages[0] != first {
+		t.Fatalf("%d pages", len(pages))
+	}
+	content := testContent(first)
+	heading := strings.Index(content, testHex("Heading"))
+	if heading == -1 || heading > strings.Index(content, testHex("row0")) {
+		t.Error("the table is not drawn on the first page after its heading")
+	}
+	if !strings.Contains(testContent(pages[2]), testHex("row59")) {
+		t.Error("the last row is not on the last page")
+	}
+}

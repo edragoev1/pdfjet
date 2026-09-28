@@ -16,6 +16,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // Example08 draws a table.
@@ -66,8 +67,18 @@ func Example08() {
 	table.SetTextColorInRow(13, color.Firebrick)
 	table.SetFontInRow(14, f3)
 
-	pages := make([]*pdfjet.Page, 0)
-	table.DrawOnPages(pdf, &pages, letter.Portrait())
+	// A heading on the first page only, which the table starts under: the
+	// first page is made here, and the table goes on to new pages.
+	first := pdfjet.NewPageDetached(pdf, letter.Portrait())
+	pdfjet.NewTextLine(f1, "Electric Vehicle Population").
+		SetStructureType(structelem.H1).
+		SetFontSize(14.0).
+		SetLocation(30.0, 44.0).
+		DrawOn(first)
+	table.SetFirstPageTopMargin(56.0)
+
+	pages := []*pdfjet.Page{first}
+	table.DrawOnPagesFrom(pdf, first, &pages, letter.Portrait())
 	for i := 0; i < len(pages); i++ {
 		page := pages[i]
 		page.AddFooter(pdfjet.NewTextLine(f1, "Page "+strconv.Itoa(i+1)+" of "+strconv.Itoa(len(pages))))
