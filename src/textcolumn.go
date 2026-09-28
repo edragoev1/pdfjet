@@ -195,7 +195,7 @@ func (textColumn *TextColumn) drawParagraphOn(
 	if page != nil {
 		if element := page.addStructElement(
 			page.structParent, paragraph.structureType, ""); element != nil {
-			page.noteHeading(paragraph.structureType, paragraph.text(), textColumn.y1)
+			page.noteHeading(paragraph.structureType, paragraph.text(), textColumn.x1, textColumn.y1)
 			parent, mcidParent := page.structParent, page.mcidParent
 			page.structParent, page.mcidParent = element, element
 			defer func() { page.structParent, page.mcidParent = parent, mcidParent }()

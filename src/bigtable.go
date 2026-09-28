@@ -281,10 +281,9 @@ func (bt *BigTable) drawFooter() {
 		if font == nil {
 			font = bt.f1
 		}
-		// The page number repeats on every page, which makes it an artifact.
-		bt.page.AddArtifactBMC()
+		// The page number repeats on every page, which makes it an artifact:
+		// AddFooter marks it as a pagination artifact, a footer.
 		bt.page.AddFooter(NewTextLine(font, text))
-		bt.page.AddEMC()
 	}
 	bt.footerDrawn = true
 }

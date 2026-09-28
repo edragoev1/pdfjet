@@ -495,7 +495,9 @@ final public class Page {
      *  @return the destination.
      */
     public Destination addDestination(String name, float xPosition, float yPosition) {
-        Destination dest = new Destination(name, xPosition, height - yPosition);
+        // Moved and turned with the containers it is drawn in, as a link is
+        float[] p = transformed(xPosition, yPosition);
+        Destination dest = new Destination(name, p[0], height - p[1]);
         destinations.add(dest);
         return dest;
     }
@@ -509,9 +511,7 @@ final public class Page {
      *  @return the destination.
      */
     public Destination addDestination(String name, float yPosition) {
-        Destination dest = new Destination(name, 0f, height - yPosition);
-        destinations.add(dest);
-        return dest;
+        return addDestination(name, 0f, yPosition);
     }
 
     /**
@@ -1489,6 +1489,7 @@ final public class Page {
      * @return this Page object.
      */
     public Page setBrushColorCMYK(float c, float m, float y, float k) {
+        checkCMYK();
         append(c);
         append(' ');
         append(m);
@@ -1513,6 +1514,7 @@ final public class Page {
      * @return this Page object.
      */
     public Page setPenColorCMYK(float c, float m, float y, float k) {
+        checkCMYK();
         append(c);
         append(' ');
         append(m);
@@ -1524,6 +1526,16 @@ final public class Page {
         penColor = cmykToRGB(c, m, y, k);
         penColorWritten = false;
         return this;
+    }
+
+    // Fails the document when it cannot use a CMYK color. The output intent of
+    // a PDF/A document is sRGB, an RGB profile, so its colors are gray or RGB
+    // and not CMYK, as ISO 19005 asks of a device color space, as its images are.
+    private void checkCMYK() {
+        if (pdf.isPDFA()) {
+            pdf.fail(new IllegalStateException("A document of " + pdf.getCompliance()
+                    + " cannot use a CMYK color: its output intent is sRGB, so its colors are gray or RGB."));
+        }
     }
 
     // Returns a CMYK color converted to RGB the way the PDF specification
@@ -2833,10 +2845,11 @@ final public class Page {
     }
 
     // Notes a heading of a tagged document, H1 to H6, with its text and the
-    // top of its text, for the bookmarks that the document has when it has
-    // none of its own. A heading inside an artifact, like a running header,
-    // is not noted, nor anything that is not a heading.
-    void noteHeading(StructElem structure, String text, float top) {
+    // top of its text at x, for the bookmarks that the document has when it
+    // has none of its own. The top is moved with the containers the heading is
+    // drawn in. A heading inside an artifact, like a running header, is not
+    // noted, nor anything that is not a heading.
+    void noteHeading(StructElem structure, String text, float x, float top) {
         int level = Heading.levelOf(structure);
         if (level == 0 || !pdf.isTagged() || artifactDepth != 0 || text == null) {
             return;
@@ -2845,7 +2858,7 @@ final public class Page {
         if (title.isEmpty()) {
             return;
         }
-        pdf.headings.add(new Heading(level, title, this, top));
+        pdf.headings.add(new Heading(level, title, this, transformed(x, top)[1]));
     }
 
     // Begins the marked content of a text that is a link, and returns the Link

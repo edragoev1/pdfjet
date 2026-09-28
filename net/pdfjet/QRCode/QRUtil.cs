@@ -15,6 +15,7 @@
  * Modified and adapted for use in PDFjet by PDFjet Software
  */
 using System;
+using System.Globalization;
 
 namespace PDFjet.NET {
 /// <summary>Helper methods for building QR codes.</summary>
@@ -88,7 +89,7 @@ internal class QRUtil {
         case MaskPattern.PATTERN111 : return ((i * j) % 3 + (i + j) % 2) % 2 == 0;
 
         default :
-            throw new ArgumentException("mask: " + maskPattern);
+            throw new ArgumentException("mask: " + maskPattern.ToString(CultureInfo.InvariantCulture));
         }
     }
 

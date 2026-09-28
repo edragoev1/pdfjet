@@ -675,7 +675,7 @@ public class TextLine implements BaselineDrawable {
         // order, and would be read backwards.
         String alt = text.equals(altDescription) ? null : altDescription;
         if (page.mcidParent == null) {
-            page.noteHeading(structureType, text, destinationY());
+            page.noteHeading(structureType, text, x, destinationY());
         }
         StructElement link = null;
         if (!Util.isEmpty(uri) || !Util.isEmpty(key)) {

@@ -268,10 +268,9 @@ public class BigTable {
             let text = footerText
                     .replacingOccurrences(of: "{page}", with: String(pageNumber))
                     .replacingOccurrences(of: "{pages}", with: String(pageCount))
-            // The page number repeats on every page, which makes it an artifact.
-            page!.addArtifactBMC()
+            // The page number repeats on every page, which makes it an artifact:
+            // addFooter marks it as a pagination artifact, a footer.
             page!.addFooter(TextLine(footerFont ?? f1, text))
-            page!.addEMC()
         }
         footerDrawn = true
     }

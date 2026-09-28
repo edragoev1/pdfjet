@@ -81,15 +81,37 @@ func NewTable() *Table {
 // separated values. The first line is the header row and uses f1; the other
 // lines use f2. Every row gets as many cells as the first line has fields. A
 // quoted field is read as RFC 4180 reads it, and a line break inside one goes
-// on to the next line of the file and is drawn as a space.
+// on to the next line of the file and is drawn as a space. It panics if the
+// file cannot be read, or has a quoted field that is not closed; use
+// ReadTableFromFile to have the error returned.
 func NewTableFromFile(f1, f2 *Font, fileName string) *Table {
-	table := NewTable()
+	table, err := ReadTableFromFile(f1, f2, fileName)
+	if err != nil {
+		panic(err)
+	}
+	return table
+}
+
+// ReadTableFromFile creates a table from a text file as NewTableFromFile does,
+// and returns the error, rather than panic, if the file cannot be read or has
+// a quoted field that is not closed, as the other ports throw it.
+func ReadTableFromFile(f1, f2 *Font, fileName string) (table *Table, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			if e, ok := r.(delimitedError); ok {
+				table, err = nil, e
+				return
+			}
+			panic(r)
+		}
+	}()
+	table = NewTable()
 	delimiter := ""
 	numberOfFields := 0
 	lineNumber := 0
 	f, err := os.Open(fileName)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	defer func(f *os.File) {
 		err := f.Close()
@@ -148,9 +170,9 @@ func NewTableFromFile(f1, f2 *Font, fileName string) *Table {
 		lineNumber++
 	}
 	if err := scanner.Err(); err != nil {
-		panic(err)
+		return nil, err
 	}
-	return table
+	return table, nil
 }
 
 // SetLocation sets the location (x, y) of the top left corner of table on the page.

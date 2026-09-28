@@ -847,7 +847,7 @@ func (textBlock *TextBlock) DrawOn(page *Page) [2]float32 {
 		rect.DrawOn(page)
 	}
 
-	page.noteHeading(textBlock.structureType, textBlock.textContent, textBlock.y)
+	page.noteHeading(textBlock.structureType, textBlock.textContent, textBlock.x, textBlock.y)
 	page.AddBDC(textBlock.structureType, textBlock.language, textBlock.textContent, "")
 	page.drawTextBlock(
 		textBlock.font,

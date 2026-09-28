@@ -90,7 +90,7 @@ internal class SVGState {
                 }
                 break;
             case "stroke-width":
-                if (value.EndsWith("%")) {
+                if (value.EndsWith("%", StringComparison.Ordinal)) {
                     return;
                 }
                 float width;
@@ -153,7 +153,7 @@ internal class SVGState {
     private static bool ParsePaint(String name, String value, out int paint, out bool current) {
         paint = 0;
         current = false;
-        if (value.StartsWith("url(")) {
+        if (value.StartsWith("url(", StringComparison.Ordinal)) {
             int end = value.IndexOf(')');
             if (end < 0) {
                 return false;
@@ -179,7 +179,7 @@ internal class SVGState {
     // that starts with # but is not hexadecimal.
     private static bool ParseColor(String name, String value, out int color) {
         color = 0;
-        if (value.StartsWith("#")) {
+        if (value.StartsWith("#", StringComparison.Ordinal)) {
             // The digits are counted and read in the bytes of UTF-8, one char
             // for each byte, as the Go port reads them.
             String hex = Encoding.Latin1.GetString(Encoding.UTF8.GetBytes(value.Substring(1)));
@@ -203,7 +203,7 @@ internal class SVGState {
             return true;
         }
         String lower = value.ToLowerInvariant();
-        if (lower.StartsWith("rgb(") || lower.StartsWith("rgba(")) {
+        if (lower.StartsWith("rgb(", StringComparison.Ordinal) || lower.StartsWith("rgba(", StringComparison.Ordinal)) {
             int open = lower.IndexOf('(');
             int end = lower.IndexOf(')');
             if (end < open) {
@@ -218,7 +218,7 @@ internal class SVGState {
             for (int i = 0; i < 3; i++) {
                 String part = parts[i];
                 double scale = 1.0;
-                if (part.EndsWith("%")) {
+                if (part.EndsWith("%", StringComparison.Ordinal)) {
                     part = part.Substring(0, part.Length - 1);
                     scale = 2.55;
                 }
@@ -252,7 +252,7 @@ internal class SVGState {
     private static bool ParseOpacity(String value, out float alpha) {
         alpha = 0f;
         double scale = 1.0;
-        if (value.EndsWith("%")) {
+        if (value.EndsWith("%", StringComparison.Ordinal)) {
             value = value.Substring(0, value.Length - 1);
             scale = 0.01;
         }
@@ -304,8 +304,8 @@ internal class SVGState {
         String lower = buf.ToString();
         double sign = 1.0;
         String rest = lower;
-        if (rest.StartsWith("+") || rest.StartsWith("-")) {
-            sign = rest.StartsWith("-") ? -1.0 : 1.0;
+        if (rest.StartsWith("+", StringComparison.Ordinal) || rest.StartsWith("-", StringComparison.Ordinal)) {
+            sign = rest.StartsWith("-", StringComparison.Ordinal) ? -1.0 : 1.0;
             rest = rest.Substring(1);
         }
         if (rest.Equals("inf") || rest.Equals("infinity")) {
@@ -332,7 +332,7 @@ internal class SVGState {
         String text = value.Trim();
         float scale = 1f;
         for (int i = 0; i < UNITS.Length; i++) {
-            if (text.EndsWith(UNITS[i])) {
+            if (text.EndsWith(UNITS[i], StringComparison.Ordinal)) {
                 text = text.Substring(0, text.Length - UNITS[i].Length).Trim();
                 scale = POINTS[i];
                 break;
@@ -353,7 +353,7 @@ internal class SVGState {
     // cannot read, a percentage among them.
     internal static double ParseCoordinate(String value) {
         float length;
-        if (!ParseLength(value, out length) || value.Trim().EndsWith("%")) {
+        if (!ParseLength(value, out length) || value.Trim().EndsWith("%", StringComparison.Ordinal)) {
             return 0.0;
         }
         return (double) length;
@@ -611,7 +611,7 @@ internal class SVGRule {
             }
             String name = declaration.Substring(0, colon).Trim();
             String value = declaration.Substring(colon + 1).Trim();
-            if (value.EndsWith("!important")) {
+            if (value.EndsWith("!important", StringComparison.Ordinal)) {
                 value = value.Substring(0, value.Length - "!important".Length);
             }
             value = value.Trim();

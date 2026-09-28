@@ -546,7 +546,7 @@ public class TextFrame : Drawable {
             }
             element = page.addStructElement(page.structParent, paragraph.structureType, nil)
             if element != nil, !continued, let first = paragraph.lines.first {
-                page.noteHeading(paragraph.structureType, paragraph.text(), y - first.fontSize)
+                page.noteHeading(paragraph.structureType, paragraph.text(), x, y - first.fontSize)
             }
         }
         if element == nil {

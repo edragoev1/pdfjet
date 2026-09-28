@@ -5,6 +5,7 @@
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 using System;
+using System.Globalization;
 using System.IO;
 using System.Text;
 
@@ -26,7 +27,7 @@ public class EmbeddedFile {
 
     /// <summary>Embeds the file with the specified name into the PDF, compressed with Flate when compress is true.</summary>
     public EmbeddedFile(PDF pdf, String fileName, bool compress) :
-        this(pdf, fileName.Substring(fileName.LastIndexOf("/") + 1),
+        this(pdf, fileName.Substring(fileName.LastIndexOf('/') + 1),
                 new BufferedStream(new FileStream(fileName, FileMode.Open, FileAccess.Read)), compress) {
     }
 
@@ -135,7 +136,7 @@ public class EmbeddedFile {
             if (ch > 0x20 && ch < 0x7F && "()<>[]{}/%#".IndexOf((char) ch) == -1) {
                 sb.Append((char) ch);
             } else {
-                sb.Append('#').AppendFormat("{0:X2}", ch);
+                sb.Append('#').AppendFormat(CultureInfo.InvariantCulture, "{0:X2}", ch);
             }
         }
         return sb.ToString();

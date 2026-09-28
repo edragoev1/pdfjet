@@ -199,17 +199,17 @@ public class Font {
         pdf.Append(" 0 R\n");
         pdf.Append("/CIDSystemInfo <<\n");
         pdf.Append("/Registry (Adobe)\n");
-        if (fontName.StartsWith("AdobeMingStd")) {
+        if (fontName.StartsWith("AdobeMingStd", StringComparison.Ordinal)) {
             pdf.Append("/Ordering (CNS1)\n");
             pdf.Append("/Supplement 4\n");
-        } else if (fontName.StartsWith("AdobeSongStd")
-                || fontName.StartsWith("STHeitiSC")) {
+        } else if (fontName.StartsWith("AdobeSongStd", StringComparison.Ordinal)
+                || fontName.StartsWith("STHeitiSC", StringComparison.Ordinal)) {
             pdf.Append("/Ordering (GB1)\n");
             pdf.Append("/Supplement 4\n");
-        } else if (fontName.StartsWith("KozMinPro")) {
+        } else if (fontName.StartsWith("KozMinPro", StringComparison.Ordinal)) {
             pdf.Append("/Ordering (Japan1)\n");
             pdf.Append("/Supplement 4\n");
-        } else if (fontName.StartsWith("AdobeMyungjoStd")) {
+        } else if (fontName.StartsWith("AdobeMyungjoStd", StringComparison.Ordinal)) {
             pdf.Append("/Ordering (Korea1)\n");
             pdf.Append("/Supplement 1\n");
         } else {
@@ -225,17 +225,17 @@ public class Font {
         pdf.Append("/Type /Font\n");
         pdf.Append("/Subtype /Type0\n");
         pdf.Append("/BaseFont /");
-        if (fontName.StartsWith("AdobeMingStd")) {
+        if (fontName.StartsWith("AdobeMingStd", StringComparison.Ordinal)) {
             pdf.Append(fontName + "-UniCNS-UTF16-H\n");
             pdf.Append("/Encoding /UniCNS-UTF16-H\n");
-        } else if (fontName.StartsWith("AdobeSongStd")
-                || fontName.StartsWith("STHeitiSC")) {
+        } else if (fontName.StartsWith("AdobeSongStd", StringComparison.Ordinal)
+                || fontName.StartsWith("STHeitiSC", StringComparison.Ordinal)) {
             pdf.Append(fontName + "-UniGB-UTF16-H\n");
             pdf.Append("/Encoding /UniGB-UTF16-H\n");
-        } else if (fontName.StartsWith("KozMinPro")) {
+        } else if (fontName.StartsWith("KozMinPro", StringComparison.Ordinal)) {
             pdf.Append(fontName + "-UniJIS-UCS2-H\n");
             pdf.Append("/Encoding /UniJIS-UCS2-H\n");
-        } else if (fontName.StartsWith("AdobeMyungjoStd")) {
+        } else if (fontName.StartsWith("AdobeMyungjoStd", StringComparison.Ordinal)) {
             pdf.Append(fontName + "-UniKS-UCS2-H\n");
             pdf.Append("/Encoding /UniKS-UCS2-H\n");
         } else {
@@ -299,7 +299,7 @@ public class Font {
             // Files ending in .stream are stream fonts; the format of any
             // other is told from its first bytes, as the stream constructor
             // tells it.
-            if (fontPath.EndsWith(".stream") || !IsOpenTypeFont(inputStream)) {
+            if (fontPath.EndsWith(".stream", StringComparison.Ordinal) || !IsOpenTypeFont(inputStream)) {
                 FontStream1.Register(pdf, this, inputStream);
             } else {
                 OpenTypeFont.Register(pdf, this, inputStream);

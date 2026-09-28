@@ -689,7 +689,7 @@ public class BarChart : IDrawable {
         if (!groupingUsed) {
             return label;
         }
-        int start = label.StartsWith("-") ? 1 : 0;
+        int start = label.StartsWith("-", StringComparison.Ordinal) ? 1 : 0;
         int end = label.IndexOf('.');
         if (end < 0) {
             end = label.Length;

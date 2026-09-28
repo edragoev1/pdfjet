@@ -5,6 +5,7 @@
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 using System;
+using System.Globalization;
 using System.Collections.Generic;
 
 namespace PDFjet.NET {
@@ -329,7 +330,7 @@ public class PDF417 : IDrawable {
         int k = 1;  // Cluster index
         for (int i = 0; i < codewords.Length; i++) {
             int row = codewords[i];
-            String symbol = Pattern.Table[row,k].ToString();
+            String symbol = Pattern.Table[row,k].ToString(CultureInfo.InvariantCulture);
             for (int j = 0; j < 8; j++) {
                 int n = symbol[j] - 0x30;
                 if (j%2 == 0) {

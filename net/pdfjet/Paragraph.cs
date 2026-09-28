@@ -172,7 +172,7 @@ public class Paragraph {
 
     /// <summary>Returns true if the first line of this paragraph starts with the specified token.</summary>
     public bool StartsWith(string token) {
-        return lines[0].GetText().StartsWith(token);
+        return lines[0].GetText().StartsWith(token, StringComparison.Ordinal);
     }
 
     /// <summary>Sets the text color of all lines in this paragraph as a 0xRRGGBB value.</summary>

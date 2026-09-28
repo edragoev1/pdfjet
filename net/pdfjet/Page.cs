@@ -5,6 +5,7 @@
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 using System;
+using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Collections.Generic;
@@ -257,7 +258,7 @@ public class Page {
             if (token.Equals("%")) {
                 comment = true;
             } else {
-                if (token.StartsWith("/")) {
+                if (token.StartsWith("/", StringComparison.Ordinal)) {
                     comment = false;
                     list.Add(token);
                 } else {
@@ -294,7 +295,9 @@ public class Page {
     /// <param name="yPosition">The vertical position of the destination on this page.</param>
     /// <returns>the destination.</returns>
     public Destination AddDestination(String name, float xPosition, float yPosition) {
-        Destination dest = new Destination(name, xPosition, height - yPosition);
+        // Moved and turned with the containers it is drawn in, as a link is
+        float[] p = Transformed(xPosition, yPosition);
+        Destination dest = new Destination(name, p[0], height - p[1]);
         destinations.Add(dest);
         return dest;
     }
@@ -306,9 +309,7 @@ public class Page {
     /// <param name="yPosition">The vertical position of the destination on this page.</param>
     /// <returns>the destination.</returns>
     public Destination AddDestination(String name, float yPosition) {
-        Destination dest = new Destination(name, 0f, height - yPosition);
-        destinations.Add(dest);
-        return dest;
+        return AddDestination(name, 0f, yPosition);
     }
 
     /// <summary>
@@ -1463,6 +1464,7 @@ public class Page {
     /// <param name="k">the black component is float value from 0.0f to 1.0f.</param>
     /// <returns>this Page object.</returns>
     public Page SetBrushColorCMYK(float c, float m, float y, float k) {
+        CheckCMYK();
         Append(c);
         Append(' ');
         Append(m);
@@ -1486,6 +1488,7 @@ public class Page {
     /// <param name="k">the black component is float value from 0.0f to 1.0f.</param>
     /// <returns>this Page object.</returns>
     public Page SetPenColorCMYK(float c, float m, float y, float k) {
+        CheckCMYK();
         Append(c);
         Append(' ');
         Append(m);
@@ -1497,6 +1500,16 @@ public class Page {
         penColor = CmykToRGB(c, m, y, k);
         penColorWritten = false;
         return this;
+    }
+
+    // Fails the document when it cannot use a CMYK color. The output intent of
+    // a PDF/A document is sRGB, an RGB profile, so its colors are gray or RGB
+    // and not CMYK, as ISO 19005 asks of a device color space, as its images are.
+    private void CheckCMYK() {
+        if (pdf.IsPDFA()) {
+            pdf.Fail(new InvalidOperationException("A document of " + pdf.compliance
+                    + " cannot use a CMYK color: its output intent is sRGB, so its colors are gray or RGB."));
+        }
     }
 
     // Returns a CMYK color converted to RGB the way the PDF specification
@@ -1585,7 +1598,7 @@ public class Page {
         }
         bool notAllZero = false;
         foreach (String length in System.Text.RegularExpressions.Regex.Split(lengths, WS + "+")) {
-            if (length.StartsWith("-")) {
+            if (length.StartsWith("-", StringComparison.Ordinal)) {
                 return false;
             }
             if (Double.Parse(length, System.Globalization.CultureInfo.InvariantCulture) != 0.0) {
@@ -2034,7 +2047,7 @@ public class Page {
         if (mode >= 0 && mode <= 7) {
             this.renderingMode = mode;
         } else {
-            throw new Exception("Invalid text rendering mode: " + mode);
+            throw new Exception("Invalid text rendering mode: " + mode.ToString(CultureInfo.InvariantCulture));
         }
         return this;
     }
@@ -2705,10 +2718,11 @@ public class Page {
     }
 
     // Notes a heading of a tagged document, H1 to H6, with its text and the top
-    // of its text, for the bookmarks that the document has when it has none of
-    // its own. A heading inside an artifact, like a running header, is not
+    // of its text at x, for the bookmarks that the document has when it has
+    // none of its own. The top is moved with the containers the heading is
+    // drawn in. A heading inside an artifact, like a running header, is not
     // noted, nor anything that is not a heading.
-    internal void NoteHeading(StructElem structure, String text, float top) {
+    internal void NoteHeading(StructElem structure, String text, float x, float top) {
         int level = Heading.Level(structure);
         if (level == 0 || !pdf.IsTagged() || artifactDepth != 0 || text == null) {
             return;
@@ -2717,7 +2731,7 @@ public class Page {
         if (title.Length == 0) {
             return;
         }
-        pdf.headings.Add(new Heading(level, title, this, top));
+        pdf.headings.Add(new Heading(level, title, this, Transformed(x, top)[1]));
     }
 
     // Begins the marked content of a text that is a link, and returns the Link

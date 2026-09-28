@@ -5,6 +5,7 @@
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 using System;
+using System.Globalization;
 using PDFjet.NET.CoreFonts;
 
 namespace PDFjet.NET {
@@ -207,7 +208,7 @@ public class CoreFont {
 
             default:
             throw new ArgumentException(
-                    "Invalid core font number: " + coreFont + ". Use a constant of the CoreFont class.");
+                    "Invalid core font number: " + coreFont.ToString(CultureInfo.InvariantCulture) + ". Use a constant of the CoreFont class.");
         }
     }
 }

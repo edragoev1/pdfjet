@@ -594,7 +594,7 @@ public class TextLine : BaselineDrawable {
         let alt = (altDescription ?? "").unicodeScalars.elementsEqual(text!.unicodeScalars) ?
                 "" : altDescription ?? ""
         if page!.mcidParent == nil {
-            page!.noteHeading(structureType, text, destinationY())
+            page!.noteHeading(structureType, text, x, destinationY())
         }
         var link: StructElement?
         if !(uri ?? "").isEmpty || !(key ?? "").isEmpty {

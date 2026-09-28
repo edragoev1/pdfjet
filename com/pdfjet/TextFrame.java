@@ -616,7 +616,7 @@ public class TextFrame implements Drawable {
             }
             element = page.addStructElement(page.structParent, paragraph.structureType, null);
             if (element != null && !paragraph.lines.isEmpty() && !continued) {
-                page.noteHeading(paragraph.structureType, paragraph.text(), y - paragraph.lines.get(0).fontSize);
+                page.noteHeading(paragraph.structureType, paragraph.text(), x, y - paragraph.lines.get(0).fontSize);
             }
         }
         if (element == null) {

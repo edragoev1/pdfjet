@@ -539,7 +539,7 @@ public class TextLine : IBaselineDrawable {
         // order, and would be read backwards.
         String alt = text.Equals(altDescription) ? null : altDescription;
         if (page.mcidParent == null) {
-            page.NoteHeading(structureType, text, DestinationY());
+            page.NoteHeading(structureType, text, x, DestinationY());
         }
         StructElement link = null;
         if (!String.IsNullOrEmpty(uri) || !String.IsNullOrEmpty(key)) {

@@ -5,6 +5,7 @@
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 using System;
+using System.Globalization;
 
 namespace PDFjet.NET {
 /// <summary>
@@ -116,7 +117,7 @@ public class CalendarMonth : IDrawable {
             int cell = firstColumn + dayOfMonth - 1;
             float x = x1 + (cell % 7)*dx;
             float y = y1 + (cell / 7 + 1)*dy;
-            String date = dayOfMonth.ToString();
+            String date = dayOfMonth.ToString(CultureInfo.InvariantCulture);
             float offset = (dx - f2.StringWidth(date)) / 2;
             new TextLine(f2, date).SetLocation(x + offset, y + f2.GetAscent()).DrawOn(page);
         }

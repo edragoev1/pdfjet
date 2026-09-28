@@ -799,7 +799,7 @@ public class TextBlock : Drawable {
             rect.drawOn(page)
         }
 
-        page!.noteHeading(structureType, textContent, y)
+        page!.noteHeading(structureType, textContent, x, y)
         page!.addBDC(structureType, language, textContent, "")
         page!.drawTextBlock(
             font,

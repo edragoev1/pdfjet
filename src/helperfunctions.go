@@ -196,8 +196,9 @@ func readDelimitedRecord(line, delimiter string, nextLine func() (string, bool))
 }
 
 // delimitedError is what a data file that cannot be read as RFC 4180 reads
-// it panics with: scanDataFile returns it as the error of BigTable, and
-// NewTableFromFile, which returns no error, panics with it.
+// it panics with: scanDataFile returns it as the error of BigTable,
+// ReadTableFromFile returns it, and NewTableFromFile, which returns no error,
+// panics with it.
 type delimitedError string
 
 func (err delimitedError) Error() string {

@@ -4,6 +4,7 @@
 // Licensed under the MIT License. See LICENSE file in the project root.
 
 using System;
+using System.Globalization;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -296,7 +297,7 @@ namespace PDFjet.NET {
 
         // Returns the share of the slice in the total, as a whole percentage.
         private static String Percentage(Slice slice, float total) {
-            return (int) Math.Round(slice.value * 100.0f / total, MidpointRounding.AwayFromZero) + "%";
+            return ((int) Math.Round(slice.value * 100.0f / total, MidpointRounding.AwayFromZero)).ToString(CultureInfo.InvariantCulture) + "%";
         }
 
         // Returns the alternate description, or the label and the percentage of

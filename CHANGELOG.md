@@ -10,6 +10,11 @@ This is the first entry in this file; earlier releases were not tracked here.
 ## Unreleased
 
 ### Added
+- A table read from a file that returns its error, in Go only:
+  `ReadTableFromFile(f1, f2, fileName)` returns the table, or the error of a
+  file that cannot be read or has a quoted field that is not closed, as the
+  constructors of Java, C# and Swift throw it. `NewTableFromFile`, which
+  returns no error, panics with it, as it did.
 - A description of a Data Matrix and of a PDF417 barcode, for a screen
   reader, in all four ports: `setAltDescription`, as a `QRCode` and a
   `Barcode` have it. In a tagged document a described barcode is a figure of
@@ -526,6 +531,28 @@ This is the first entry in this file; earlier releases were not tracked here.
   the values of the other three ports.
 
 ### Fixed
+- A document made or read by the C# port is the same whatever the culture
+  of the thread. In a culture such as sv-SE, which writes a minus sign of its
+  own, a font added to a PDF that was read had a font box and a descent of
+  `null`, and the access permissions of an encrypted document were not a
+  number; in tr-TR a core font added to such a PDF was named `HELVETİCA`.
+  Numbers are written and read in the invariant culture, and text is compared
+  ordinally and upper-cased with `ToUpperInvariant`. The examples are the
+  same byte for byte in sv-SE, de-DE and tr-TR as in the invariant culture.
+- A CMYK color in a PDF/A document, in all four ports: `setPenColorCMYK`
+  and `setBrushColorCMYK` wrote DeviceCMYK, which veraPDF fails (rule
+  6.2.4.3), as the output intent of PDF/A is sRGB. They fail the document,
+  as a CMYK image does, with the same words in every port, and write
+  nothing: "A document of PDF_A_2B cannot use a CMYK color: its output
+  intent is sRGB, so its colors are gray or RGB."
+- The footer of a `BigTable` is a pagination artifact, in all four ports, as
+  that of `Page.addFooter` is: the table put it in a plain artifact of its
+  own, around the one `addFooter` marks it with, which the plain one hid.
+- A destination and a heading inside a `Container`, in all four ports: they
+  were where the text would be on the page, not where the container moves
+  and turns it. A destination, and so the link to it, and the bookmark of a
+  heading now go to where the text is drawn, as the rectangle of a link and
+  the box of a figure did.
 - A chart of flat data above 2^24, in all four ports: the range of 1 that
   flat data got was lost in a float32, and the NaN it gave failed the PDF.
   The range is 1, or a hundred thousandth of the value when that is more,

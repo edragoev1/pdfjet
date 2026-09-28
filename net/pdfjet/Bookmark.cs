@@ -5,6 +5,7 @@
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 using System;
+using System.Globalization;
 using System.Text.RegularExpressions;
 using System.Collections.Generic;
 
@@ -137,10 +138,10 @@ public class Bookmark {
             } else {
                 int index = bm.prefix.LastIndexOf('.');
                 if (index == -1) {
-                    prefix = (Int32.Parse(bm.prefix) + 1).ToString();
+                    prefix = (Int32.Parse(bm.prefix, CultureInfo.InvariantCulture) + 1).ToString(CultureInfo.InvariantCulture);
                 } else {
                     prefix = bm.prefix.Substring(0, index) + ".";
-                    prefix += (Int32.Parse(bm.prefix.Substring(index + 1)) + 1).ToString();
+                    prefix += (Int32.Parse(bm.prefix.Substring(index + 1), CultureInfo.InvariantCulture) + 1).ToString(CultureInfo.InvariantCulture);
                 }
             }
         }
@@ -195,7 +196,7 @@ public class Bookmark {
 
     private String NextKey() {
         ++destNumber;
-        return "dest#" + destNumber.ToString();
+        return "dest#" + destNumber.ToString(CultureInfo.InvariantCulture);
     }
 }   // End of Bookmark.cs
 

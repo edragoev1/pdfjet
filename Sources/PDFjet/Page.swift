@@ -290,7 +290,9 @@ public class Page {
             _ name: String,
             _ xPosition: Float,
             _ yPosition: Float) -> Destination {
-        let dest = Destination(name, xPosition, height - yPosition)
+        // Moved and turned with the containers it is drawn in, as a link is
+        let p = transformed(xPosition, yPosition)
+        let dest = Destination(name, p[0], height - p[1])
         destinations.append(dest)
         return dest
     }
@@ -307,9 +309,7 @@ public class Page {
     public func addDestination(
             _ name: String,
             _ yPosition: Float) -> Destination {
-        let dest = Destination(name, height - yPosition)
-        destinations.append(dest)
-        return dest
+        return addDestination(name, 0.0, yPosition)
     }
 
     ///
@@ -1287,6 +1287,9 @@ public class Page {
     ///
     @discardableResult
     public final func setPenColorCMYK(_ c: Float, _ m: Float, _ y: Float, _ k: Float) -> Page {
+        if !canUseCMYK() {
+            return self
+        }
         append(c)
         append(Token.space)
         append(m)
@@ -1312,6 +1315,9 @@ public class Page {
     ///
     @discardableResult
     public final func setBrushColorCMYK(_ c: Float, _ m: Float, _ y: Float, _ k: Float) -> Page {
+        if !canUseCMYK() {
+            return self
+        }
         append(c)
         append(Token.space)
         append(m)
@@ -1323,6 +1329,19 @@ public class Page {
         brushColor = Page.cmykToRGB(c, m, y, k)
         brushColorWritten = false
         return self
+    }
+
+    /// Reports whether the document can use a CMYK color, and fails the
+    /// document when it cannot. The output intent of a PDF/A document is sRGB,
+    /// an RGB profile, so its colors are gray or RGB and not CMYK, as ISO 19005
+    /// asks of a device color space, as its images are.
+    private func canUseCMYK() -> Bool {
+        if pdf.isPDFA() {
+            pdf.fail("A document of \(pdf.compliance) cannot use a CMYK color: "
+                    + "its output intent is sRGB, so its colors are gray or RGB.")
+            return false
+        }
+        return true
     }
 
     /// Returns a CMYK color converted to RGB the way the PDF specification
@@ -2588,10 +2607,11 @@ public class Page {
     }
 
     // Notes a heading of a tagged document, H1 to H6, with its text and the
-    // top of its text, for the bookmarks that the document has when it has
-    // none of its own. A heading inside an artifact, like a running header,
-    // is not noted, nor anything that is not a heading.
-    func noteHeading(_ structure: StructElem, _ text: String?, _ top: Float) {
+    // top of its text at x, for the bookmarks that the document has when it
+    // has none of its own. The top is moved with the containers the heading is
+    // drawn in. A heading inside an artifact, like a running header, is not
+    // noted, nor anything that is not a heading.
+    func noteHeading(_ structure: StructElem, _ text: String?, _ x: Float, _ top: Float) {
         let level = headingLevel(structure)
         if level == 0 || !pdf.isTagged() || artifactDepth != 0 {
             return
@@ -2600,7 +2620,7 @@ public class Page {
         if title.isEmpty {
             return
         }
-        pdf.headings.append(Heading(level: level, title: title, page: self, top: top))
+        pdf.headings.append(Heading(level: level, title: title, page: self, top: transformed(x, top)[1]))
     }
 
     // Begins the marked content of a text that is a link, and returns the

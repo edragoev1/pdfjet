@@ -5,6 +5,7 @@
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 using System;
+using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Collections.Generic;
@@ -190,11 +191,11 @@ class OpenTypeFont {
     /// </summary>
     internal static String ItalicAngleOf(int angle) {
         long rounded = (200L * Math.Abs((long) angle) + 65536L) / (2L * 65536L);
-        String text = (rounded / 100).ToString();
+        String text = (rounded / 100).ToString(CultureInfo.InvariantCulture);
         if (rounded % 100 != 0) {
             // The two decimals, as 100 to 199 without the 1, and no trailing zero.
-            String decimals = (100 + rounded % 100).ToString().Substring(1);
-            text += "." + (decimals.EndsWith("0") ? decimals.Substring(0, 1) : decimals);
+            String decimals = (100 + rounded % 100).ToString(CultureInfo.InvariantCulture).Substring(1);
+            text += "." + (decimals.EndsWith("0", StringComparison.Ordinal) ? decimals.Substring(0, 1) : decimals);
         }
         return (angle < 0 && rounded != 0) ? "-" + text : text;
     }

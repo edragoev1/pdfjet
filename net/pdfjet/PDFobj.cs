@@ -189,7 +189,7 @@ public class PDFobj {
         if (i == -1) {
             int open = dict.IndexOf("<<");
             if (open != -1) {
-                dict.InsertRange(open + 1, new String[] {"/Length", length.ToString()});
+                dict.InsertRange(open + 1, new String[] {"/Length", length.ToString(CultureInfo.InvariantCulture)});
             }
             return;
         }
@@ -200,7 +200,7 @@ public class PDFobj {
             dict.RemoveAt(i + 3);
             dict.RemoveAt(i + 2);
         }
-        dict[i + 1] = length.ToString();
+        dict[i + 1] = length.ToString(CultureInfo.InvariantCulture);
     }
 
     // Decodes the stream with each filter of its /Filter entry in turn. A
@@ -327,7 +327,7 @@ public class PDFobj {
     private static int GetDecodeParm(List<String> parms, String key, int defaultValue) {
         int i = parms.IndexOf(key);
         if (i != -1 && i + 1 < parms.Count) {
-            return Int32.TryParse(parms[i + 1], out int value) ? value : defaultValue;
+            return Int32.TryParse(parms[i + 1], NumberStyles.Integer, CultureInfo.InvariantCulture, out int value) ? value : defaultValue;
         }
         return defaultValue;
     }
@@ -407,14 +407,14 @@ public class PDFobj {
                         if (str.Equals("]")) {
                             break;
                         }
-                        if (!Int32.TryParse(str, out number)) {
+                        if (!Int32.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture, out number)) {
                             break;
                         }
                         numbers.Add(number);
                         ++i;    // 0
                         ++i;    // R
                     }
-                } else if (Int32.TryParse(str, out number)) {
+                } else if (Int32.TryParse(str, NumberStyles.Integer, CultureInfo.InvariantCulture, out number)) {
                     numbers.Add(number);
                 }
                 break;
@@ -539,7 +539,7 @@ public class PDFobj {
             int i = obj.dict.IndexOf("[");
             while (i != -1 && i + 3 < obj.dict.Count && obj.dict[i + 3].Equals("R")) {
                 int number;
-                if (!Int32.TryParse(obj.dict[i + 1], out number)) {
+                if (!Int32.TryParse(obj.dict[i + 1], NumberStyles.Integer, CultureInfo.InvariantCulture, out number)) {
                     break;
                 }
                 numbers.Add(number);
@@ -604,7 +604,7 @@ public class PDFobj {
                     return this;
                 }
                 int number;
-                if (!Int32.TryParse(token, out number)) {
+                if (!Int32.TryParse(token, NumberStyles.Integer, CultureInfo.InvariantCulture, out number)) {
                     return null;
                 }
                 return ObjectNumbered(objects, number);
@@ -616,7 +616,7 @@ public class PDFobj {
     /// <summary>Adds a core font to the resources of this page and returns the font.</summary>
     public Font AddResource(int coreFont, List<PDFobj> objects) {
         Font font = new Font(coreFont);
-        font.fontID = font.name.Replace('-', '_').ToUpper();
+        font.fontID = font.name.Replace('-', '_').ToUpperInvariant();
 
         PDFobj obj = new PDFobj();
         obj.dict.Add("<<");
@@ -679,7 +679,7 @@ public class PDFobj {
                 String token = TokenAt(obj.dict, i + 1);
                 if (token.Equals("<<")) {
                     obj.dict.Insert(i + 2, "/" + fontID);
-                    obj.dict.Insert(i + 3, number.ToString());
+                    obj.dict.Insert(i + 3, number.ToString(CultureInfo.InvariantCulture));
                     obj.dict.Insert(i + 4, "0");
                     obj.dict.Insert(i + 5, "R");
                     return;
@@ -689,7 +689,7 @@ public class PDFobj {
                     for (int j = 0; j < o2.dict.Count; j++) {
                         if (o2.dict[j].Equals("<<")) {
                             o2.dict.Insert(j + 1, "/" + fontID);
-                            o2.dict.Insert(j + 2, number.ToString());
+                            o2.dict.Insert(j + 2, number.ToString(CultureInfo.InvariantCulture));
                             o2.dict.Insert(j + 3, "0");
                             o2.dict.Insert(j + 4, "R");
                             return;
@@ -720,7 +720,7 @@ public class PDFobj {
     private void AddResource(
             String type, PDFobj obj, List<PDFobj> objects, Int32 objNumber) {
         String tag = type.Equals("/Font") ? "/F" : "/Im";
-        String number = objNumber.ToString();
+        String number = objNumber.ToString(CultureInfo.InvariantCulture);
         String[] list = {tag + number, number, "0", "R"};
         for (int i = 0; i < obj.dict.Count; i++) {
             String token = obj.dict[i];
@@ -797,7 +797,7 @@ public class PDFobj {
         obj.SetStream(content);
         objects.Add(obj);
 
-        String objNumber = obj.number.ToString();
+        String objNumber = obj.number.ToString(CultureInfo.InvariantCulture);
         for (int i = 0; i < dict.Count; i++) {
             if (dict[i].Equals("/Contents")) {
                 i += 1;
@@ -855,7 +855,7 @@ public class PDFobj {
         obj.SetStream(content);
         objects.Add(obj);
 
-        String objNumber = obj.number.ToString();
+        String objNumber = obj.number.ToString(CultureInfo.InvariantCulture);
         for (int i = 0; i < dict.Count; i++) {
             if (dict[i].Equals("/Contents")) {
                 i += 1;
@@ -957,7 +957,7 @@ public class PDFobj {
             index = obj.dict.IndexOf("<<") + 1;
         }
         gsNumber = GetMaxGSNumber(obj);
-        String name = "/GS" + (gsNumber + 1).ToString();
+        String name = "/GS" + (gsNumber + 1).ToString(CultureInfo.InvariantCulture);
         obj.dict.InsertRange(index, new String[] {
                 name, "<<",
                 "/CA", Encoding.ASCII.GetString(FastFloat.ToByteArray(gs.GetAlphaStroking())),

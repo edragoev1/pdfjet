@@ -130,7 +130,7 @@ namespace PDFjet.NET {
         /// </summary>
         public BigTable SetTextAlignment(int column, Alignment alignment) {
             if (this.alignment == null || column < 0 || column >= this.alignment.Length) {
-                pdf.Fail(new ArgumentException("The table has no column " + column
+                pdf.Fail(new ArgumentException("The table has no column " + column.ToString(CultureInfo.InvariantCulture)
                         + ": set the alignment of a column after SetTableData."));
             }
             this.alignment[column] = alignment;
@@ -285,10 +285,9 @@ namespace PDFjet.NET {
                 string text = footerText
                         .Replace("{page}", pageNumber.ToString(CultureInfo.InvariantCulture))
                         .Replace("{pages}", pageCount.ToString(CultureInfo.InvariantCulture));
-                // The page number repeats on every page, which makes it an artifact.
-                page.AddArtifactBMC();
+                // The page number repeats on every page, which makes it an artifact:
+                // AddFooter marks it as a pagination artifact, a footer.
                 page.AddFooter(new TextLine(footerFont ?? f1, text));
-                page.AddEMC();
             }
             footerDrawn = true;
         }

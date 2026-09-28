@@ -333,7 +333,7 @@ public class SVGImage : IDrawable {
             return false;
         }
         float length;
-        if (!SVGState.ParseLength(value, out length) || length < 0f || value.EndsWith("%")) {
+        if (!SVGState.ParseLength(value, out length) || length < 0f || value.EndsWith("%", StringComparison.Ordinal)) {
             return false;
         }
         radius = (double) length;
@@ -394,7 +394,7 @@ public class SVGImage : IDrawable {
         String text = value.Trim();
         float scale = 1f;
         for (int i = 0; i < SVGState.UNITS.Length; i++) {
-            if (text.EndsWith(SVGState.UNITS[i])) {
+            if (text.EndsWith(SVGState.UNITS[i], StringComparison.Ordinal)) {
                 text = text.Substring(0, text.Length - SVGState.UNITS[i].Length).Trim();
                 scale = SVGState.POINTS[i];
                 break;

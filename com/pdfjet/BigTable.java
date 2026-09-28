@@ -320,10 +320,9 @@ public class BigTable {
             String text = footerText
                     .replace("{page}", String.valueOf(pageNumber))
                     .replace("{pages}", String.valueOf(pageCount));
-            // The page number repeats on every page, which makes it an artifact.
-            page.addArtifactBMC();
+            // The page number repeats on every page, which makes it an artifact:
+            // addFooter marks it as a pagination artifact, a footer.
             page.addFooter(new TextLine((footerFont != null) ? footerFont : f1, text));
-            page.addEMC();
         }
         footerDrawn = true;
     }

@@ -5,6 +5,7 @@
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 using System;
+using System.Globalization;
 using System.Text;
 using System.Collections.Generic;
 
@@ -293,7 +294,7 @@ public class Barcode : IDrawable {
         // Use a local variable instead of mutating the text field - DrawOn()
         // must be safe to call more than once on the same Barcode instance
         // (e.g. drawing the same barcode on several pages).
-        String fullText = text + checkDigit.ToString();
+        String fullText = text + checkDigit.ToString(CultureInfo.InvariantCulture);
         Bars bars = new Bars(x1, y1, 95f * m1, longBar, direction);  // 95 modules
 
         x = DrawEGuard(page, bars, x, longBar);
@@ -566,7 +567,7 @@ public class Barcode : IDrawable {
 
         float length = 0f;
         for (int i = 0; i < buf.Length; i++) {
-            String symbol = Code128Table.TABLE[buf[i]].ToString();
+            String symbol = Code128Table.TABLE[buf[i]].ToString(CultureInfo.InvariantCulture);
             for (int j = 0; j < symbol.Length; j++) {
                 length += (symbol[j] - 0x30) * m1;
             }
@@ -576,7 +577,7 @@ public class Barcode : IDrawable {
         float x = x1;
         for (int i = 0; i < buf.Length; i++) {
             int si = buf[i];
-            String symbol = Code128Table.TABLE[si].ToString();
+            String symbol = Code128Table.TABLE[si].ToString(CultureInfo.InvariantCulture);
             for (int j = 0; j < symbol.Length; j++) {
                 int n = symbol[j] - 0x30;
                 if (j%2 == 0) {
@@ -767,7 +768,7 @@ public class Barcode : IDrawable {
         // Use a local variable instead of mutating the text field - DrawOn()
         // must be safe to call more than once on the same Barcode instance
         // (e.g. drawing the same barcode on several pages).
-        String fullText = text + checkDigit.ToString();
+        String fullText = text + checkDigit.ToString(CultureInfo.InvariantCulture);
         Bars bars = new Bars(x1, y1, 95f * m1, longBar, direction);  // 95 modules
 
         x = DrawEGuard(page, bars, x, longBar);

@@ -15,6 +15,7 @@
  * Modified and adapted for use in PDFjet by PDFjet Software
  */
 using System;
+using System.Globalization;
 
 namespace PDFjet.NET {
 /// <summary>Arithmetic in GF(256), used for the QR code error correction.</summary>
@@ -42,7 +43,7 @@ internal class QRMath {
     /// <summary>Returns the logarithm of n in GF(256).</summary>
     public static int Glog(int n) {
         if (n < 1) {
-            throw new ArithmeticException("log(" + n + ")");
+            throw new ArithmeticException("log(" + n.ToString(CultureInfo.InvariantCulture) + ")");
         }
         return LOG_TABLE[n];
     }

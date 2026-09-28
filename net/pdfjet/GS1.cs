@@ -5,6 +5,7 @@
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 using System;
+using System.Globalization;
 using System.Collections.Generic;
 using System.Text;
 
@@ -92,7 +93,7 @@ public static class GS1 {
         }
         if (PREDEFINED_LENGTHS.TryGetValue(ai.Substring(0, 2), out int length) &&
                 (ai.Length + data.Length != length || !Digits(data))) {
-            throw new ArgumentException("The data of (" + ai + ") must be " + (length - ai.Length) + " digits!");
+            throw new ArgumentException("The data of (" + ai + ") must be " + (length - ai.Length).ToString(CultureInfo.InvariantCulture) + " digits!");
         }
         bool gln = ai.Length == 3 && ai.StartsWith("41", StringComparison.Ordinal) && ai[2] <= '7';
         if ((ai == "00" || ai == "01" || ai == "02" || gln) && !CheckDigitIsRight(data)) {

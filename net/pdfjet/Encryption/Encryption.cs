@@ -5,6 +5,7 @@
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 using System;
+using System.Globalization;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
@@ -126,7 +127,7 @@ public class Encryption {
         // so the value is negative.
         uint p = (uint) access | 0xFFFFF0C0;
         pdf.Append("/P ");
-        pdf.Append(((int) p).ToString());
+        pdf.Append(((int) p).ToString(CultureInfo.InvariantCulture));
         pdf.Append("\n");
 
         // Create the unencrypted block per Algorithm 10

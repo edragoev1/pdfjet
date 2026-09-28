@@ -1738,10 +1738,10 @@ public sealed class PDF {
         HashSet<int> seen = new HashSet<int>();
         foreach (int number in pageNumbers) {
             if (number < 1 || number > pageObjects.Count) {
-                Fail(new ArgumentException("The document has no page " + number + "."));
+                Fail(new ArgumentException("The document has no page " + number.ToString(CultureInfo.InvariantCulture) + "."));
             }
             if (!seen.Add(number)) {
-                Fail(new ArgumentException("Page " + number + " is listed twice."));
+                Fail(new ArgumentException("Page " + number.ToString(CultureInfo.InvariantCulture) + " is listed twice."));
             }
             listed.Add(pageObjects[number - 1]);
         }
@@ -1792,7 +1792,7 @@ public sealed class PDF {
             values[obj.number] = value;
             for (int j = 0; j < value.Count; j++) {
                 if (IsReference(value, j)) {
-                    int number = Int32.Parse(value[j]);
+                    int number = Int32.Parse(value[j], CultureInfo.InvariantCulture);
                     if (!numbers.ContainsKey(number) && IsMergedObject(number, objects, mergedPages)) {
                         numbers[number] = ReserveObjNumber();
                         queue.Add(objects[number - 1]);
@@ -1870,7 +1870,7 @@ public sealed class PDF {
             PDFobj obj, bool isPage, List<PDFobj> objects, PageTreeNodes nodes) {
         List<String> value = ValueOf(obj);
         if (obj.stream != null) {
-            SetEntry(value, "/Length", new List<String> { obj.stream.Length.ToString() });
+            SetEntry(value, "/Length", new List<String> { obj.stream.Length.ToString(CultureInfo.InvariantCulture) });
         }
         if (isPage) {
             foreach (String key in INHERITED) {
@@ -1952,7 +1952,7 @@ public sealed class PDF {
             if (!entries.TryGetValue("/Parent", out parent) || !IsReference(parent, 0)) {
                 return null;
             }
-            int number = Int32.Parse(parent[0]);
+            int number = Int32.Parse(parent[0], CultureInfo.InvariantCulture);
             if (number < 1 || number > objects.Count || objects[number - 1].dict.Count == 0) {
                 return null;
             }
@@ -2037,8 +2037,8 @@ public sealed class PDF {
             String token = tokens[i];
             if (IsReference(tokens, i)) {
                 int number;
-                if (numbers.TryGetValue(Int32.Parse(token), out number)) {
-                    result.Add(number.ToString());
+                if (numbers.TryGetValue(Int32.Parse(token, CultureInfo.InvariantCulture), out number)) {
+                    result.Add(number.ToString(CultureInfo.InvariantCulture));
                     result.Add("0");
                     result.Add("R");
                 } else {
@@ -2059,7 +2059,7 @@ public sealed class PDF {
         byte[] stream = obj.stream;
         if (stream != null && encryption != null) {
             stream = AES256.Encrypt(stream, encryption.GetKey());
-            SetEntry(value, "/Length", new List<String> { stream.Length.ToString() });
+            SetEntry(value, "/Length", new List<String> { stream.Length.ToString(CultureInfo.InvariantCulture) });
         }
         SetObjOffset(number, byteCount);
         Append(number);
@@ -2723,7 +2723,7 @@ public sealed class PDF {
 
     // Returns the value of the token, or -1 when it is not an integer.
     private static int ToInteger(String token) {
-        return (IsInteger(token) && Int32.TryParse(token, out int value)) ? value : -1;
+        return (IsInteger(token) && Int32.TryParse(token, NumberStyles.Integer, CultureInfo.InvariantCulture, out int value)) ? value : -1;
     }
 
     // Returns true when the tokens of the object start with "number
@@ -3144,7 +3144,7 @@ public sealed class PDF {
             Fail(new ArgumentException("The objects have no root /Pages object."));
         }
         CheckObjects(objects);
-        this.pagesObjNumber = Int32.Parse(pagesObject.dict[0]);
+        this.pagesObjNumber = Int32.Parse(pagesObject.dict[0], CultureInfo.InvariantCulture);
         AddObjectsToPDF(objects);
     }
 
@@ -3296,7 +3296,7 @@ public sealed class PDF {
         int end = open + ValueEnd(tokens, i + 1);
         List<String> value = page.dict.GetRange(start, end - start);
         if (IsReference(value, 0)) {
-            PDFobj obj = PDFobj.ObjectNumbered(objects, Int32.Parse(value[0]));
+            PDFobj obj = PDFobj.ObjectNumbered(objects, Int32.Parse(value[0], CultureInfo.InvariantCulture));
             if (obj == null) {
                 return;
             }
@@ -3308,7 +3308,7 @@ public sealed class PDF {
         List<String> box = new List<String>();
         for (int j = 0; j < value.Count; j++) {
             if (IsReference(value, j)) {
-                PDFobj obj = PDFobj.ObjectNumbered(objects, Int32.Parse(value[j]));
+                PDFobj obj = PDFobj.ObjectNumbered(objects, Int32.Parse(value[j], CultureInfo.InvariantCulture));
                 if (obj == null) {
                     return;
                 }

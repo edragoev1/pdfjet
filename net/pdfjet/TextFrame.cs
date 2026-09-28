@@ -546,7 +546,7 @@ public class TextFrame : IDrawable {
             }
             element = page.AddStructElement(page.structParent, paragraph.structureType, null);
             if (element != null && paragraph.lines.Count > 0 && !continued) {
-                page.NoteHeading(paragraph.structureType, paragraph.Text(), y - paragraph.lines[0].fontSize);
+                page.NoteHeading(paragraph.structureType, paragraph.Text(), x, y - paragraph.lines[0].fontSize);
             }
         }
         if (element == null) {

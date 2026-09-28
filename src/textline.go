@@ -480,7 +480,7 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 		alt = ""
 	}
 	if page.mcidParent == nil {
-		page.noteHeading(textLine.structureType, textLine.text, textLine.destinationY())
+		page.noteHeading(textLine.structureType, textLine.text, textLine.x, textLine.destinationY())
 	}
 	var link *structElement
 	if textLine.uri != "" || textLine.key != "" {

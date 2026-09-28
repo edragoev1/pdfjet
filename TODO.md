@@ -197,6 +197,12 @@ API of v9.0.1 came with the PDF/UA work and the fixes; goal 6 lists them.
      `addEMC` around other drawing; the figures of the library set it
      themselves.
 
+   And one more that day, in Go only, where the constructor of the other
+   ports that throws has no error to return:
+   - `ReadTableFromFile`, `NewTableFromFile` that returns the error of a file
+     that cannot be read, or has a quoted field that is not closed, rather
+     than panic with it.
+
    With them, two changes of behavior, which the CHANGELOG has under
    Changed: the A levels of PDF/A tag their content, as level A asks, and
    refuse a figure with no description as PDF/UA does; and what is drawn

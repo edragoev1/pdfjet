@@ -306,6 +306,8 @@ func (page *Page) AddDestination(name string, yPosition float32) *Destination {
 //   - xPosition: The horizontal position of the destination on this page.
 //   - yPosition: The vertical position of the destination on this page.
 func (page *Page) AddDestinationAt(name string, xPosition, yPosition float32) *Destination {
+	// Moved and turned with the containers it is drawn in, as a link is
+	xPosition, yPosition = page.transformed(xPosition, yPosition)
 	dest := newDestination(name, xPosition, page.height-yPosition)
 	page.destinations = append(page.destinations, dest)
 	return dest
@@ -1303,6 +1305,9 @@ func (page *Page) GetBrushColor() [3]float32 {
 //   - y: the yellow component is float value from 0.0 to 1.0.
 //   - k: the black component is float value from 0.0 to 1.0.
 func (page *Page) SetPenColorCMYK(c, m, y, k float32) *Page {
+	if !page.canUseCMYK() {
+		return page
+	}
 	page.appendFloat32(c)
 	page.appendString(" ")
 	page.appendFloat32(m)
@@ -1323,6 +1328,9 @@ func (page *Page) SetPenColorCMYK(c, m, y, k float32) *Page {
 //   - y: the yellow component is float value from 0.0 to 1.0.
 //   - k: the black component is float value from 0.0 to 1.0.
 func (page *Page) SetBrushColorCMYK(c, m, y, k float32) *Page {
+	if !page.canUseCMYK() {
+		return page
+	}
 	page.appendFloat32(c)
 	page.appendString(" ")
 	page.appendFloat32(m)
@@ -1334,6 +1342,19 @@ func (page *Page) SetBrushColorCMYK(c, m, y, k float32) *Page {
 	page.brushColor = cmykToRGB(c, m, y, k)
 	page.brushColorWritten = false
 	return page
+}
+
+// canUseCMYK reports whether the document can use a CMYK color, and fails
+// the document when it cannot. The output intent of a PDF/A document is sRGB,
+// an RGB profile, so its colors are gray or RGB and not CMYK, as ISO 19005
+// asks of a device color space, as its images are.
+func (page *Page) canUseCMYK() bool {
+	if page.pdf.isPDFA() {
+		page.pdf.fail("A document of " + page.pdf.compliance.String() + " cannot use a CMYK color: " +
+			"its output intent is sRGB, so its colors are gray or RGB.")
+		return false
+	}
+	return true
 }
 
 // cmykToRGB returns a CMYK color converted to RGB the way the PDF
@@ -2277,10 +2298,11 @@ func (page *Page) AddEMC() {
 }
 
 // noteHeading notes a heading of a tagged document, H1 to H6, with its text
-// and the top of its text, for the bookmarks that the document has when it
-// has none of its own. A heading inside an artifact, like a running header,
-// is not noted, nor anything that is not a heading.
-func (page *Page) noteHeading(structure structelem.StructElem, text string, top float32) {
+// and the top of its text at x, for the bookmarks that the document has when
+// it has none of its own. The top is moved with the containers the heading is
+// drawn in. A heading inside an artifact, like a running header, is not noted,
+// nor anything that is not a heading.
+func (page *Page) noteHeading(structure structelem.StructElem, text string, x, top float32) {
 	level := headingLevel(structure)
 	if level == 0 || !page.pdf.isTagged() || page.artifactDepth != 0 {
 		return
@@ -2289,6 +2311,7 @@ func (page *Page) noteHeading(structure structelem.StructElem, text string, top 
 	if title == "" {
 		return
 	}
+	_, top = page.transformed(x, top)
 	page.pdf.headings = append(page.pdf.headings, heading{level: level, title: title, page: page, top: top})
 }
 

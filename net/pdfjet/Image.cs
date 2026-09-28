@@ -5,6 +5,7 @@
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 using System;
+using System.Globalization;
 using System.IO;
 using System.Collections.Generic;
 using System.Text;
@@ -678,15 +679,15 @@ public class Image : IDrawable {
         obj.dict.Add("/Filter");
         obj.dict.Add("/FlateDecode");
         obj.dict.Add("/Width");
-        obj.dict.Add(pixelWidth.ToString());
+        obj.dict.Add(pixelWidth.ToString(CultureInfo.InvariantCulture));
         obj.dict.Add("/Height");
-        obj.dict.Add(pixelHeight.ToString());
+        obj.dict.Add(pixelHeight.ToString(CultureInfo.InvariantCulture));
         obj.dict.Add("/ColorSpace");
         obj.dict.Add("/" + colorSpace);
         obj.dict.Add("/BitsPerComponent");
-        obj.dict.Add(bitsPerComponent.ToString());
+        obj.dict.Add(bitsPerComponent.ToString(CultureInfo.InvariantCulture));
         obj.dict.Add("/Length");
-        obj.dict.Add(data.Length.ToString());
+        obj.dict.Add(data.Length.ToString(CultureInfo.InvariantCulture));
         obj.dict.Add(">>");
         obj.SetStream(data);
         obj.number = objects.Count + 1;
@@ -718,35 +719,35 @@ public class Image : IDrawable {
             obj.dict.Add("/FlateDecode");
             if (alpha != null) {
                 obj.dict.Add("/SMask");
-                obj.dict.Add(objNumber.ToString());
+                obj.dict.Add(objNumber.ToString(CultureInfo.InvariantCulture));
                 obj.dict.Add("0");
                 obj.dict.Add("R");
             } else if (colorKeyMask != null) {
                 obj.dict.Add("/Mask");
                 obj.dict.Add("[");
                 foreach (int value in colorKeyMask) {
-                    obj.dict.Add(value.ToString());
+                    obj.dict.Add(value.ToString(CultureInfo.InvariantCulture));
                 }
                 obj.dict.Add("]");
             }
         }
         obj.dict.Add("/Width");
-        obj.dict.Add(pixelWidth.ToString());
+        obj.dict.Add(pixelWidth.ToString(CultureInfo.InvariantCulture));
         obj.dict.Add("/Height");
-        obj.dict.Add(pixelHeight.ToString());
+        obj.dict.Add(pixelHeight.ToString(CultureInfo.InvariantCulture));
         obj.dict.Add("/ColorSpace");
         if (palette != null) {
             obj.dict.Add("[");
             obj.dict.Add("/Indexed");
             obj.dict.Add("/DeviceRGB");
-            obj.dict.Add((palette.Length / 3 - 1).ToString());
+            obj.dict.Add((palette.Length / 3 - 1).ToString(CultureInfo.InvariantCulture));
             obj.dict.Add("<" + Util.ToHexString(palette) + ">");
             obj.dict.Add("]");
         } else {
             obj.dict.Add("/" + colorSpace);
         }
         obj.dict.Add("/BitsPerComponent");
-        obj.dict.Add(bitsPerComponent.ToString());
+        obj.dict.Add(bitsPerComponent.ToString(CultureInfo.InvariantCulture));
         if (colorSpace.Equals("DeviceCMYK") && invertedInks) {
             // Adobe software, Photoshop among them, stores the inks inverted.
             obj.dict.Add("/Decode");
@@ -768,15 +769,15 @@ public class Image : IDrawable {
             obj.dict.Add("/Predictor");
             obj.dict.Add("15");
             obj.dict.Add("/Colors");
-            obj.dict.Add(decodeColors.ToString());
+            obj.dict.Add(decodeColors.ToString(CultureInfo.InvariantCulture));
             obj.dict.Add("/BitsPerComponent");
-            obj.dict.Add(bitsPerComponent.ToString());
+            obj.dict.Add(bitsPerComponent.ToString(CultureInfo.InvariantCulture));
             obj.dict.Add("/Columns");
-            obj.dict.Add(pixelWidth.ToString());
+            obj.dict.Add(pixelWidth.ToString(CultureInfo.InvariantCulture));
             obj.dict.Add(">>");
         }
         obj.dict.Add("/Length");
-        obj.dict.Add(data.Length.ToString());
+        obj.dict.Add(data.Length.ToString(CultureInfo.InvariantCulture));
         obj.dict.Add(">>");
         obj.SetStream(data);
         obj.number = objects.Count + 1;

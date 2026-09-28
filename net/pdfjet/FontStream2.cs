@@ -5,6 +5,7 @@
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 using System;
+using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Collections.Generic;
@@ -32,12 +33,12 @@ class FontStream2 {
         obj.dict.Add("/Identity-H");
         obj.dict.Add("/DescendantFonts");
         obj.dict.Add("[");
-        obj.dict.Add(font.cidFontDictObjNumber.ToString());
+        obj.dict.Add(font.cidFontDictObjNumber.ToString(CultureInfo.InvariantCulture));
         obj.dict.Add("0");
         obj.dict.Add("R");
         obj.dict.Add("]");
         obj.dict.Add("/ToUnicode");
-        obj.dict.Add(font.toUnicodeCMapObjNumber.ToString());
+        obj.dict.Add(font.toUnicodeCMapObjNumber.ToString(CultureInfo.InvariantCulture));
         obj.dict.Add("0");
         obj.dict.Add("R");
         obj.dict.Add(">>");
@@ -75,7 +76,7 @@ class FontStream2 {
         obj.dict.Add("/Subtype");
         obj.dict.Add("/XML");
         obj.dict.Add("/Length");
-        obj.dict.Add(xml.Length.ToString());
+        obj.dict.Add(xml.Length.ToString(CultureInfo.InvariantCulture));
         obj.dict.Add(">>");
         obj.SetStream(xml);
         obj.number = objects.Count + 1;
@@ -93,19 +94,19 @@ class FontStream2 {
         PDFobj obj = new PDFobj();
         obj.dict.Add("<<");
         obj.dict.Add("/Metadata");
-        obj.dict.Add(metadataObjNumber.ToString());
+        obj.dict.Add(metadataObjNumber.ToString(CultureInfo.InvariantCulture));
         obj.dict.Add("0");
         obj.dict.Add("R");
         obj.dict.Add("/Filter");
         obj.dict.Add("/FlateDecode");
         obj.dict.Add("/Length");
-        obj.dict.Add(font.compressedSize.ToString());
+        obj.dict.Add(font.compressedSize.ToString(CultureInfo.InvariantCulture));
         if (font.cff) {
             obj.dict.Add("/Subtype");
             obj.dict.Add("/CIDFontType0C");
         } else {
             obj.dict.Add("/Length1");
-            obj.dict.Add(font.uncompressedSize.ToString());
+            obj.dict.Add(font.uncompressedSize.ToString(CultureInfo.InvariantCulture));
         }
         obj.dict.Add(">>");
         byte[] compressed = FontStream1.ReadBytes(stream, font.compressedSize);
@@ -124,26 +125,26 @@ class FontStream2 {
         obj.dict.Add("/FontName");
         obj.dict.Add("/" + font.name);
         obj.dict.Add("/FontFile" + (font.cff ? "3" : "2"));
-        obj.dict.Add(font.fileObjNumber.ToString());
+        obj.dict.Add(font.fileObjNumber.ToString(CultureInfo.InvariantCulture));
         obj.dict.Add("0");
         obj.dict.Add("R");
         obj.dict.Add("/Flags");
-        obj.dict.Add(OpenTypeFont.FlagsOf(font.italicAngle).ToString());
+        obj.dict.Add(OpenTypeFont.FlagsOf(font.italicAngle).ToString(CultureInfo.InvariantCulture));
         obj.dict.Add("/FontBBox");
         obj.dict.Add("[");
-        obj.dict.Add(OpenTypeFont.ToGlyphSpace(font.bBoxLLx, font.unitsPerEm).ToString());
-        obj.dict.Add(OpenTypeFont.ToGlyphSpace(font.bBoxLLy, font.unitsPerEm).ToString());
-        obj.dict.Add(OpenTypeFont.ToGlyphSpace(font.bBoxURx, font.unitsPerEm).ToString());
-        obj.dict.Add(OpenTypeFont.ToGlyphSpace(font.bBoxURy, font.unitsPerEm).ToString());
+        obj.dict.Add(OpenTypeFont.ToGlyphSpace(font.bBoxLLx, font.unitsPerEm).ToString(CultureInfo.InvariantCulture));
+        obj.dict.Add(OpenTypeFont.ToGlyphSpace(font.bBoxLLy, font.unitsPerEm).ToString(CultureInfo.InvariantCulture));
+        obj.dict.Add(OpenTypeFont.ToGlyphSpace(font.bBoxURx, font.unitsPerEm).ToString(CultureInfo.InvariantCulture));
+        obj.dict.Add(OpenTypeFont.ToGlyphSpace(font.bBoxURy, font.unitsPerEm).ToString(CultureInfo.InvariantCulture));
         obj.dict.Add("]");
         obj.dict.Add("/Ascent");
-        obj.dict.Add(OpenTypeFont.ToGlyphSpace(font.fontAscent, font.unitsPerEm).ToString());
+        obj.dict.Add(OpenTypeFont.ToGlyphSpace(font.fontAscent, font.unitsPerEm).ToString(CultureInfo.InvariantCulture));
         obj.dict.Add("/Descent");
-        obj.dict.Add(OpenTypeFont.ToGlyphSpace(font.fontDescent, font.unitsPerEm).ToString());
+        obj.dict.Add(OpenTypeFont.ToGlyphSpace(font.fontDescent, font.unitsPerEm).ToString(CultureInfo.InvariantCulture));
         obj.dict.Add("/ItalicAngle");
         obj.dict.Add(OpenTypeFont.ItalicAngleOf(font.italicAngle));
         obj.dict.Add("/CapHeight");
-        obj.dict.Add(OpenTypeFont.ToGlyphSpace(font.capHeight, font.unitsPerEm).ToString());
+        obj.dict.Add(OpenTypeFont.ToGlyphSpace(font.capHeight, font.unitsPerEm).ToString(CultureInfo.InvariantCulture));
         obj.dict.Add("/StemV");
         obj.dict.Add("79");
         obj.dict.Add(">>");
@@ -206,7 +207,7 @@ class FontStream2 {
         PDFobj obj = new PDFobj();
         obj.dict.Add("<<");
         obj.dict.Add("/Length");
-        obj.dict.Add(sb.Length.ToString());
+        obj.dict.Add(sb.Length.ToString(CultureInfo.InvariantCulture));
         obj.dict.Add(">>");
         obj.SetStream((new System.Text.UTF8Encoding()).GetBytes(sb.ToString()));
         obj.number = objects.Count + 1;
@@ -233,7 +234,7 @@ class FontStream2 {
         obj.dict.Add("0");
         obj.dict.Add(">>");
         obj.dict.Add("/FontDescriptor");
-        obj.dict.Add(font.fontDescriptorObjNumber.ToString());
+        obj.dict.Add(font.fontDescriptorObjNumber.ToString(CultureInfo.InvariantCulture));
         obj.dict.Add("0");
         obj.dict.Add("R");
 
@@ -241,13 +242,13 @@ class FontStream2 {
         // The width of the glyphs past the /W array: those past the advance
         // widths, which have the width of the last one.
         obj.dict.Add("/DW");
-        obj.dict.Add(((int) Math.Round(k * font.advanceWidth[font.advanceWidth.Length - 1], MidpointRounding.AwayFromZero)).ToString());
+        obj.dict.Add(((int) Math.Round(k * font.advanceWidth[font.advanceWidth.Length - 1], MidpointRounding.AwayFromZero)).ToString(CultureInfo.InvariantCulture));
         obj.dict.Add("/W");
         obj.dict.Add("[");
         obj.dict.Add("0");
         obj.dict.Add("[");
         foreach (int width in font.advanceWidth) {
-            obj.dict.Add(((int) Math.Round(k * width, MidpointRounding.AwayFromZero)).ToString());
+            obj.dict.Add(((int) Math.Round(k * width, MidpointRounding.AwayFromZero)).ToString(CultureInfo.InvariantCulture));
         }
         obj.dict.Add("]");
         obj.dict.Add("]");

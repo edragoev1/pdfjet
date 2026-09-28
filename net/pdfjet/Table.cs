@@ -5,6 +5,7 @@
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 using System;
+using System.Globalization;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -1152,10 +1153,10 @@ public class Table : IDrawable {
     private static String GetAttributes(StructElem cellStructure, int colspan, int rowspan) {
         String spans = "";
         if (colspan > 1) {
-            spans += " /ColSpan " + colspan;
+            spans += " /ColSpan " + colspan.ToString(CultureInfo.InvariantCulture);
         }
         if (rowspan > 1) {
-            spans += " /RowSpan " + rowspan;
+            spans += " /RowSpan " + rowspan.ToString(CultureInfo.InvariantCulture);
         }
         if (cellStructure == StructElem.TH) {
             return "<</O /Table /Scope /Column" + spans + ">>";

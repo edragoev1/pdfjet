@@ -5,6 +5,7 @@
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 using System;
+using System.Globalization;
 using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
@@ -63,7 +64,7 @@ internal sealed class Decryptor {
             }
         } else {
             foreach (PDFobj obj in objects) {
-                if (obj.number.ToString().Equals(trailer.dict[i + 1])) {
+                if (obj.number.ToString(CultureInfo.InvariantCulture).Equals(trailer.dict[i + 1])) {
                     encrypt = obj;      // The last one is the newest.
                 }
             }
@@ -104,7 +105,7 @@ internal sealed class Decryptor {
             this.streamMethod = GetMethod(encrypt, encrypt.GetValue("/StmF"), objects);
             this.stringMethod = GetMethod(encrypt, encrypt.GetValue("/StrF"), objects);
         } else {
-            throw new Exception("The encryption of the PDF is not supported: /V " + v);
+            throw new Exception("The encryption of the PDF is not supported: /V " + v.ToString(CultureInfo.InvariantCulture));
         }
         byte[] u = ToBytes(encrypt.GetValue("/U"));
         byte[] o = ToBytes(encrypt.GetValue("/O"));
@@ -119,14 +120,14 @@ internal sealed class Decryptor {
             // revisions 5 and 6 have.
             foreach (int method in new int[] {streamMethod, stringMethod}) {
                 if ((method == AES_128 && length < 11) || method == AES_256) {
-                    throw new Exception("The encryption of the PDF is not valid: /R " + r +
-                            " with a key of " + (8 * length) + " bits for AES");
+                    throw new Exception("The encryption of the PDF is not valid: /R " + r.ToString(CultureInfo.InvariantCulture) +
+                            " with a key of " + (8 * length).ToString(CultureInfo.InvariantCulture) + " bits for AES");
                 }
             }
             this.key = GetKey(r, length, Latin1Password(password),
                     o, u, GetInt(encrypt, "/P"), id, encryptMetadata);
         } else {
-            throw new Exception("The encryption of the PDF is not supported: /R " + r);
+            throw new Exception("The encryption of the PDF is not supported: /R " + r.ToString(CultureInfo.InvariantCulture));
         }
     }
 
@@ -195,7 +196,7 @@ internal sealed class Decryptor {
         }
         PDFobj referred = null;
         foreach (PDFobj obj in objects) {
-            if (obj.number.ToString().Equals(value[0])) {
+            if (obj.number.ToString(CultureInfo.InvariantCulture).Equals(value[0])) {
                 referred = obj;
             }
         }
@@ -352,7 +353,7 @@ internal sealed class Decryptor {
         }
         for (int i = 0; i < obj.dict.Count; i++) {
             String token = obj.dict[i];
-            if (token.StartsWith("(") || (token.StartsWith("<") && !token.Equals("<<"))) {
+            if (token.StartsWith("(", StringComparison.Ordinal) || (token.StartsWith("<", StringComparison.Ordinal) && !token.Equals("<<"))) {
                 if (i > 0 && obj.dict[i - 1].Equals("/Contents") && IsSignatureDict(obj.dict, i)) {
                     continue;
                 }
@@ -416,7 +417,7 @@ internal sealed class Decryptor {
         byte[] objectKey = key;
         if (method != AES_256) {
             int number = obj.number;
-            int generation = (obj.dict.Count > 1 && Int32.TryParse(obj.dict[1], out int value)) ? value : 0;
+            int generation = (obj.dict.Count > 1 && Int32.TryParse(obj.dict[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out int value)) ? value : 0;
             byte[] salt = (method == AES_128) ? new byte[] {(byte) 's', (byte) 'A', (byte) 'l', (byte) 'T'} : new byte[0];
             byte[] hash = MD5.HashData(Concat(key, new byte[] {
                     (byte) number, (byte) (number >> 8), (byte) (number >> 16),
@@ -481,14 +482,14 @@ internal sealed class Decryptor {
     // Returns the integer value of the key, or 0. /P can be written as an
     // unsigned number.
     private static int GetInt(PDFobj obj, String key) {
-        return Int64.TryParse(obj.GetValue(key), out long value) ? (int) value : 0;
+        return Int64.TryParse(obj.GetValue(key), NumberStyles.Integer, CultureInfo.InvariantCulture, out long value) ? (int) value : 0;
     }
 
     // Returns the bytes of a literal string like (a\)b) or of a hexadecimal
     // string like &lt;612962&gt;.
     internal static byte[] ToBytes(String token) {
         using var bos = new MemoryStream(token.Length);
-        if (token.StartsWith("<")) {
+        if (token.StartsWith("<", StringComparison.Ordinal)) {
             int high = -1;
             for (int i = 1; i < token.Length; i++) {
                 int digit = Decompressor.HexValue(token[i]);
@@ -505,8 +506,8 @@ internal sealed class Decryptor {
             if (high != -1) {
                 bos.WriteByte((byte) (high << 4));
             }
-        } else if (token.StartsWith("(")) {
-            int end = token.EndsWith(")") ? token.Length - 1 : token.Length;
+        } else if (token.StartsWith("(", StringComparison.Ordinal)) {
+            int end = token.EndsWith(")", StringComparison.Ordinal) ? token.Length - 1 : token.Length;
             for (int i = 1; i < end; i++) {
                 char c = token[i];
                 if (c == '\\' && i + 1 < end) {
