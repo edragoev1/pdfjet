@@ -37,6 +37,7 @@ public class Point : IDrawable {
 
     internal char controlPoint = '\0';
     private String uri;
+    internal String altDescription;
 
     /// <summary>
     /// The default constructor.
@@ -82,6 +83,7 @@ public class Point : IDrawable {
         this.pathOperator = point.pathOperator;
         this.controlPoint = point.controlPoint;
         this.uri = point.uri;
+        this.altDescription = point.altDescription;
     }
 
     IDrawable IDrawable.SetLocation(float x, float y) {
@@ -232,6 +234,27 @@ public class Point : IDrawable {
     public Point SetURIAction(String uri) {
         this.uri = uri;
         return this;
+    }
+
+    /// <summary>
+    /// Sets what a point that is a link stands for, like the country a point of
+    /// a chart is, for a screen reader: in a tagged document, PDF/UA or a PDF/A
+    /// of level A, a point of a chart that is a link is a figure of its own in
+    /// the Link, described by it. Without one it is described by its URI.
+    /// </summary>
+    /// <param name="altDescription">what the point stands for.</param>
+    /// <returns>this Point object.</returns>
+    public Point SetAltDescription(String altDescription) {
+        this.altDescription = altDescription;
+        return this;
+    }
+
+    /// <summary>
+    /// Returns what the point stands for.
+    /// </summary>
+    /// <returns>the description, or null.</returns>
+    public String GetAltDescription() {
+        return altDescription;
     }
 
     /// <summary>

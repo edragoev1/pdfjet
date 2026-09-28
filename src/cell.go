@@ -9,6 +9,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
 	"github.com/edragoev1/pdfjet/v9/src/border"
 	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // Cell is used to create table cell objects.
@@ -681,6 +682,13 @@ func (cell *Cell) drawOn(page *Page, x, y, w, h float32) {
 		if cell.point.hasFillColor {
 			page.SetBrushColorRGB(cell.point.fillColor)
 		}
+		if cell.point.uri != "" && page.pdf.isTagged() && page.artifactDepth == 0 {
+			// A point that is a link is a figure of its own, described by what
+			// it stands for, or by its URI, in the Link that holds its
+			// annotation, as PDF/UA asks
+			cell.drawLinkedPoint(page)
+			return
+		}
 		if cell.point.uri != "" {
 			page.addAnnotation(&annotationObject{
 				annotationType: annotationLink,
@@ -696,6 +704,32 @@ func (cell *Cell) drawOn(page *Page, x, y, w, h float32) {
 		page.DrawPoint(cell.point)
 		page.AddEMC()
 	}
+}
+
+// drawLinkedPoint draws the point of the cell, which is a link, as a figure
+// in the Link that holds its annotation.
+func (cell *Cell) drawLinkedPoint(page *Page) {
+	point := cell.point
+	description := point.altDescription
+	if description == "" {
+		description = point.uri
+	}
+	link := page.beginLink()
+	page.AddBDC(structelem.Figure, "", "", description)
+	page.DrawPoint(point)
+	page.SetFigureBoundingBox(point.x-point.r, point.y-point.r, 2*point.r, 2*point.r)
+	page.AddEMC()
+	page.endLink(link)
+	page.addAnnotation(&annotationObject{
+		annotationType: annotationLink,
+		x1:             point.x - point.r,
+		y1:             point.y - point.r,
+		x2:             point.x + point.r,
+		y2:             point.y + point.r,
+		uri:            point.uri,
+		altDescription: description,
+		linkElement:    link,
+	})
 }
 
 func (cell *Cell) drawBackground(page *Page, x, y, cellW, cellH float32) {

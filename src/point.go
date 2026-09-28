@@ -27,6 +27,7 @@ type Point struct {
 	pathOperator   pathoperator.PathOperator
 	controlPoint   byte
 	uri            string
+	altDescription string
 }
 
 // NewPoint constructor for creating point objects.
@@ -198,6 +199,22 @@ func (point *Point) GetStrokeWidth() float32 {
 func (point *Point) SetURIAction(uri string) *Point {
 	point.uri = uri
 	return point
+}
+
+// SetAltDescription sets what a point that is a link stands for, like the
+// country a point of a chart is, for a screen reader: in a tagged document,
+// PDF/UA or a PDF/A of level A, a point of a chart that is a link is a
+// figure of its own in the Link, described by it. Without one it is
+// described by its URI.
+//   - altDescription: what the point stands for.
+func (point *Point) SetAltDescription(altDescription string) *Point {
+	point.altDescription = altDescription
+	return point
+}
+
+// GetAltDescription returns what the point stands for, or "".
+func (point *Point) GetAltDescription() string {
+	return point.altDescription
 }
 
 // GetURIAction returns the URI of the link opened by a click on this point.

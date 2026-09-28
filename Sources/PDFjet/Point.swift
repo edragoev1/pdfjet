@@ -34,6 +34,7 @@ public class Point : Drawable {
 
     var controlPoint: String = ""
     private var uri: String?
+    var altDescription: String?
 
     /// Creates a point.
     public init() {
@@ -82,6 +83,7 @@ public class Point : Drawable {
         self.pathOperator = point.pathOperator
         self.controlPoint = point.controlPoint
         self.uri = point.uri
+        self.altDescription = point.altDescription
     }
 
     ///
@@ -271,6 +273,28 @@ public class Point : Drawable {
     public func setURIAction(_ uri: String) -> Point {
         self.uri = uri
         return self
+    }
+
+    ///
+    /// Sets what a point that is a link stands for, like the country a point
+    /// of a chart is, for a screen reader: in a tagged document, PDF/UA or a
+    /// PDF/A of level A, a point of a chart that is a link is a figure of its
+    /// own in the Link, described by it. Without one it is described by its
+    /// URI.
+    ///
+    /// - Parameter altDescription: what the point stands for.
+    ///
+    @discardableResult
+    public func setAltDescription(_ altDescription: String) -> Point {
+        self.altDescription = altDescription
+        return self
+    }
+
+    ///
+    /// Returns what the point stands for, or nil.
+    ///
+    public func getAltDescription() -> String? {
+        return self.altDescription
     }
 
     ///

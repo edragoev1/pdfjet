@@ -139,6 +139,7 @@ public class Example_09 {
                 country_name = country_name.replacingOccurrences(of: ")", with: "_")
                 let point = Point(Float(x! / population!), Float(y! / population! * 100.0))
                 point.setURIAction("http://pdfjet.com/country/\(country_name).txt")
+                point.setAltDescription(name) // What the link of the point is, for a screen reader
                 point.setRadius(2.0)
 
                 if point.getX() > 1.25 {

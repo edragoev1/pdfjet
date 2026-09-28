@@ -36,6 +36,7 @@ public class Point implements Drawable {
 
     char controlPoint = '\0';
     private String uri;
+    private String altDescription;
 
     /**
      *  The default constructor.
@@ -60,6 +61,7 @@ public class Point implements Drawable {
         this.pathOperator = point.pathOperator;
         this.controlPoint = point.controlPoint;
         this.uri = point.uri;
+        this.altDescription = point.altDescription;
     }
 
     /**
@@ -281,6 +283,30 @@ public class Point implements Drawable {
     public Point setURIAction(String uri) {
         this.uri = uri;
         return this;
+    }
+
+    /**
+     *  Sets what a point that is a link stands for, like the country a point
+     *  of a chart is, for a screen reader: in a tagged document, PDF/UA or a
+     *  PDF/A of level A, a point of a chart that is a link is a figure of its
+     *  own in the Link, described by it. Without one it is described by its
+     *  URI.
+     *
+     *  @param altDescription what the point stands for.
+     *  @return this Point object.
+     */
+    public Point setAltDescription(String altDescription) {
+        this.altDescription = altDescription;
+        return this;
+    }
+
+    /**
+     *  Returns what the point stands for.
+     *
+     *  @return the description, or null.
+     */
+    public String getAltDescription() {
+        return altDescription;
     }
 
     /**

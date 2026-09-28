@@ -2642,6 +2642,12 @@ public class Page {
         return link;
     }
 
+    // Whether what is drawn now is tagged: in a tagged document, and not inside
+    // an artifact or a figure.
+    internal bool TagsContent() {
+        return pdf.IsTagged() && artifactDepth == 0;
+    }
+
     // Begins the Link element of content that is a link and is drawn as
     // elements of its own, like the Figure of an image, which become its kids;
     // EndLink ends it. Returns the Link, which the annotation of the link

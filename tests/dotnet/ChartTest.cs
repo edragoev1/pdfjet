@@ -4,7 +4,10 @@
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
+using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
+using System.Text;
 using Xunit;
 
 namespace PDFjet.NET {
@@ -191,6 +194,65 @@ public class ChartTest {
         described.DrawOn(page);
         Assert.Equal("Sales", page.structures[0].altDescription);
         Assert.Equal("Sales rose from 1 to 2.", page.structures[1].altDescription);
+    }
+    // A point of a chart that is a link is, in a tagged document, a figure of
+    // its own, described by what it stands for, in the Link that holds its
+    // annotation, after the chart; the chart is a figure of the rest.
+    [Fact]
+    public void ALinkedPointIsAFigureInItsLink() {
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream, Compliance.PDF_UA_1);
+        pdf.SetTitle("Title");
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Chart chart = new Chart(font, font).SetLocation(50f, 50f).SetSize(300f, 200f);
+        chart.SetTitle("Countries");
+        chart.AddSeries("")
+                .AddPoint(new Point(1f, 1f).SetURIAction("https://pdfjet.com/a").SetAltDescription("Andorra"))
+                .AddPoint(new Point(2f, 2f).SetURIAction("https://pdfjet.com/b"))
+                .AddPoint(3f, 3f);
+        chart.DrawOn(page);
+        pdf.Complete();
+        string raw = TestSupport.Latin1(stream.ToArray());
+        Dictionary<string, string[]> elements = PDFTest.Elements(raw);
+        Dictionary<string, string[]> links = PDFTest.Links(raw);
+        Assert.Equal(2, links.Count);
+        foreach (KeyValuePair<string, string[]> link in links) {
+            string figure = link.Value[2].TrimStart('[').Split(' ')[0];
+            Assert.Equal("Figure", elements[figure][0]);
+            Assert.Equal(link.Key, elements[figure][1]);
+            Assert.Contains("/Type /OBJR", link.Value[2]);
+        }
+        // Described by what it stands for, or by its URI
+        foreach (string want in new string[] {"Andorra", "https://pdfjet.com/b"}) {
+            Assert.Contains("/Alt " + TextString(want), raw);
+        }
+    }
+
+    // In a document that is not tagged, a chart draws its linked points in it,
+    // as before, and makes no elements.
+    [Fact]
+    public void ALinkedPointOfADocumentNotTaggedIsDrawnInTheChart() {
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Chart chart = NewChart(pdf);
+        chart.AddSeries("").AddPoint(new Point(1f, 1f).SetURIAction("https://pdfjet.com/a")).AddPoint(2f, 2f);
+        chart.DrawOn(page);
+        pdf.Complete();
+        string raw = TestSupport.Latin1(stream.ToArray());
+        Assert.DoesNotContain("/StructElem", raw);
+        Assert.Equal(1, raw.Split("/Subtype /Link").Length - 1);
+    }
+
+    // The text as PDF writes a text string: UTF-16 with its byte order mark,
+    // in lower case hexadecimal, as AppendTextString writes it.
+    private static string TextString(string text) {
+        StringBuilder sb = new StringBuilder("<feff");
+        foreach (char unit in text) {
+            sb.Append(((int) unit).ToString("x4"));
+        }
+        return sb.Append('>').ToString();
     }
 }
 }

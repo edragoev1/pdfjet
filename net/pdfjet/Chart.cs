@@ -319,6 +319,11 @@ public class Chart : IDrawable {
         SetYAxisRange();
 
         // The chart is one figure, described by its alternate description.
+        // In a tagged document a point that is a link is drawn after the chart,
+        // as a figure of its own in its Link, which holds its annotation, as
+        // PDF/UA asks: a link inside the chart's figure has nothing to hold
+        bool linksApart = page.TagsContent();
+
         page.AddBDC(StructElem.FIGURE, null, AltDescription());
         // The pen, the brush and the dash pattern of the caller are kept,
         // as a Stamp and a CalendarMonth keep them: the chart set them to its
@@ -405,7 +410,8 @@ public class Chart : IDrawable {
             foreach (Point point in points) {
                 point.x = x5 + (point.x - xMin) * (x6 - x5) / (xMax - xMin);
                 point.y = y8 - (point.y - yMin) * (y8 - y5) / (yMax - yMin);
-                if (point.GetURIAction() != null) {
+                if (point.GetURIAction() != null &&
+                        !(linksApart && point.shape != Shape.INVISIBLE)) {
                     page.AddAnnotation(new Annotation(
                             Annotation.Link,
                             point.x - point.r,
@@ -426,7 +432,7 @@ public class Chart : IDrawable {
             }
         }
 
-        DrawPathsAndPoints(page, plotData);
+        List<LinkedPoint> linked = DrawPathsAndPoints(page, plotData, linksApart);
 
         // Draw Y axis title (rotated 90 degrees)
         page.SetBrushColor(Color.black);
@@ -452,7 +458,69 @@ public class Chart : IDrawable {
         page.SetFigureBoundingBox(this.x1, this.y1, this.w, this.h);
         page.AddEMC();
 
+        foreach (LinkedPoint point in linked) {
+            DrawLinkedPoint(page, point);
+        }
+
         return new float[] {this.x1 + this.w, this.y1 + this.h};
+    }
+
+    // A point of a chart that is a link, which a tagged document draws after
+    // the chart, with the color of its series.
+    private class LinkedPoint {
+        internal Point point;
+        internal float[] color;
+        internal LinkedPoint(Point point, float[] color) {
+            this.point = point;
+            this.color = color;
+        }
+    }
+
+    // Draws a point of a chart that is a link as a figure of its own, described
+    // by what it stands for, or by its URI, in the Link that holds its
+    // annotation.
+    private void DrawLinkedPoint(Page page, LinkedPoint linked) {
+        Point point = linked.point;
+        String description = point.altDescription;
+        if (String.IsNullOrEmpty(description)) {
+            description = point.GetURIAction();
+        }
+        page.SaveGraphicsState();
+        StructElement link = page.BeginLink();
+        page.AddBDC(StructElem.FIGURE, null, description);
+        SetPointColors(page, point, linked.color);
+        page.DrawPoint(point);
+        page.SetFigureBoundingBox(point.x - point.r, point.y - point.r, 2*point.r, 2*point.r);
+        page.AddEMC();
+        page.EndLink(link);
+        page.RestoreGraphicsState();
+        Annotation annotation = new Annotation(
+                Annotation.Link,
+                point.x - point.r,
+                point.y - point.r,
+                point.x + point.r,
+                point.y + point.r,
+                null,   // Vertices
+                null,   // Fill Color
+                0f,     // Opacity
+                null,   // Title
+                null,   // Contents
+                point.GetURIAction(),
+                null,
+                null,
+                null,
+                description);
+        annotation.linkElement = link;
+        page.AddAnnotation(annotation);
+    }
+
+    // Sets the pen and the brush a point is drawn with: its own colors, or its
+    // series'.
+    private static void SetPointColors(Page page, Point point, float[] color) {
+        page.SetPenColor(point.strokeColor != null ? point.strokeColor : color);
+        page.SetPenWidth(point.strokeWidth);
+        page.SetDefaultStrokeDashPattern();
+        page.SetBrushColor(point.fillColor);
     }
 
     // Returns the alternate description, or the title when none is set.
@@ -770,9 +838,12 @@ public class Chart : IDrawable {
     /// <summary>
     /// Draws the line of each series that draws its path, then the markers of
     /// its points: a point without a stroke color in the color of the series.
+    /// Returns the points that are links, which it leaves to be drawn after
+    /// the chart when linksApart is true.
     /// </summary>
-    private void DrawPathsAndPoints(
-            Page page, List<List<Point>> plotData) {
+    private List<LinkedPoint> DrawPathsAndPoints(
+            Page page, List<List<Point>> plotData, bool linksApart) {
+        List<LinkedPoint> linked = new List<LinkedPoint>();
         for (int j = 0; j < series.Count; j++) {
             Series s = series[j];
             List<Point> points = plotData[j];
@@ -787,15 +858,18 @@ public class Chart : IDrawable {
                 page.DrawPath(points, PathOperator.STROKE);
             }
             foreach (Point point in points) {
-                if (point.shape != Shape.INVISIBLE) {
-                    page.SetPenColor(point.strokeColor != null ? point.strokeColor : color);
-                    page.SetPenWidth(point.strokeWidth);
-                    page.SetDefaultStrokeDashPattern();
-                    page.SetBrushColor(point.fillColor);
-                    page.DrawPoint(point);
+                if (point.shape == Shape.INVISIBLE) {
+                    continue;
                 }
+                if (linksApart && point.GetURIAction() != null) {
+                    linked.Add(new LinkedPoint(point, color));
+                    continue;
+                }
+                SetPointColors(page, point, color);
+                page.DrawPoint(point);
             }
         }
+        return linked;
     }
 
     /// <summary>

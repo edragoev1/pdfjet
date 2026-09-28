@@ -6,8 +6,10 @@
 package pdfjet
 
 import (
+	"fmt"
 	"strings"
 	"testing"
+	"unicode/utf16"
 
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
@@ -221,4 +223,70 @@ func TestChartAChartIsAFigureDescribedByItsTitleOrItsAlternateDescription(t *tes
 	if page.structures[1].altDescription != "Sales rose from 1 to 2." {
 		t.Errorf("the second chart is described as %q", page.structures[1].altDescription)
 	}
+}
+
+// A point of a chart that is a link is, in a tagged document, a figure of its
+// own, described by what it stands for, in the Link that holds its
+// annotation, after the chart; the chart is a figure of the rest.
+func TestChartALinkedPointIsAFigureInItsLink(t *testing.T) {
+	doc := testNewDoc()
+	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetTitle("Title")
+	font := testStreamFont(t, doc.pdf)
+	page := NewPage(doc.pdf, testLetterPortrait())
+	chart := NewChart(font, font).SetSize(300, 200)
+	chart.SetLocation(50, 50)
+	chart.SetTitle("Countries")
+	chart.AddSeries("").
+		AddPointWithMarker(NewPoint(1, 1).SetURIAction("https://pdfjet.com/a").SetAltDescription("Andorra")).
+		AddPointWithMarker(NewPoint(2, 2).SetURIAction("https://pdfjet.com/b")).
+		AddPoint(3, 3)
+	chart.DrawOn(page)
+	raw := string(doc.complete())
+	elements := testElements(raw)
+	links := testLinks(raw)
+	if len(links) != 2 {
+		t.Fatalf("%d Link elements: %v", len(links), links)
+	}
+	described := map[string]bool{}
+	for number, link := range links {
+		figure := strings.Fields(strings.Trim(link[2], "["))[0]
+		if elements[figure][0] != "Figure" || elements[figure][1] != number ||
+			!strings.Contains(link[2], "/Type /OBJR") {
+			t.Errorf("the Link %s holds %s, not a Figure and its annotation", number, link[2])
+		}
+		described[figure] = true
+	}
+	// Described by what it stands for, or by its URI
+	for _, want := range []string{"Andorra", "https://pdfjet.com/b"} {
+		if !strings.Contains(raw, "/Alt "+testTextString(want)) {
+			t.Errorf("no figure is described as %q", want)
+		}
+	}
+}
+
+// In a document that is not tagged, a chart draws its linked points in it, as
+// before, and makes no elements.
+func TestChartALinkedPointOfADocumentNotTaggedIsDrawnInTheChart(t *testing.T) {
+	doc := testNewDoc()
+	page := NewPage(doc.pdf, testLetterPortrait())
+	chart := testChart(doc.pdf)
+	chart.AddSeries("").AddPointWithMarker(NewPoint(1, 1).SetURIAction("https://pdfjet.com/a")).AddPoint(2, 2)
+	chart.DrawOn(page)
+	raw := string(doc.complete())
+	if strings.Contains(raw, "/StructElem") || strings.Count(raw, "/Subtype /Link") != 1 {
+		t.Error("the link of the point is not drawn as before")
+	}
+}
+
+// testTextString returns the text as PDF writes a text string: UTF-16 with its
+// byte order mark, in lower case hexadecimal, as appendTextString writes it.
+func testTextString(text string) string {
+	var b strings.Builder
+	b.WriteString("<feff")
+	for _, unit := range utf16.Encode([]rune(text)) {
+		fmt.Fprintf(&b, "%04x", unit)
+	}
+	b.WriteString(">")
+	return b.String()
 }

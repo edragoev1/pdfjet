@@ -282,6 +282,11 @@ func (chart *Chart) DrawOn(page *Page) [2]float32 {
 	chart.setXAxisRange()
 	chart.setYAxisRange()
 
+	// In a tagged document a point that is a link is drawn after the chart,
+	// as a figure of its own in its Link, which holds its annotation, as
+	// PDF/UA asks: a link inside the chart's figure has nothing to hold
+	linksApart := page.pdf.isTagged() && page.artifactDepth == 0
+
 	// The chart is one figure, described by its alternate description.
 	page.AddBDC(structelem.Figure, "", "", chart.getAltDescription())
 	// The pen, the brush and the dash pattern of the caller are kept, as a
@@ -376,7 +381,7 @@ func (chart *Chart) DrawOn(page *Page) [2]float32 {
 		for _, point := range points {
 			point.x = chart.x5 + (point.x-chart.xMin)*(chart.x6-chart.x5)/(chart.xMax-chart.xMin)
 			point.y = chart.y8 - (point.y-chart.yMin)*(chart.y8-chart.y5)/(chart.yMax-chart.yMin)
-			if point.uri != "" {
+			if point.uri != "" && !(linksApart && point.shape != shape.Invisible) {
 				// AddAnnotation flips y into PDF space; do not pre-flip here.
 				page.addAnnotation(&annotationObject{
 					annotationType: annotationLink,
@@ -398,7 +403,7 @@ func (chart *Chart) DrawOn(page *Page) [2]float32 {
 		}
 	}
 
-	chart.drawPathsAndPoints(page, plotData)
+	linked := chart.drawPathsAndPoints(page, plotData, linksApart)
 
 	// Draw the Y axis title
 	page.SetBrushColor(color.Black)
@@ -428,7 +433,63 @@ func (chart *Chart) DrawOn(page *Page) [2]float32 {
 	page.SetFigureBoundingBox(chart.x1, chart.y1, chart.w, chart.h)
 	page.AddEMC()
 
+	for _, point := range linked {
+		chart.drawLinkedPoint(page, point)
+	}
+
 	return [2]float32{chart.x1 + chart.w, chart.y1 + chart.h}
+}
+
+// linkedPoint is a point of a chart that is a link, which a tagged document
+// draws after the chart, with the color of its series.
+type linkedPoint struct {
+	point *Point
+	color [3]float32
+}
+
+// drawLinkedPoint draws a point of a chart that is a link as a figure of its
+// own, described by what it stands for, or by its URI, in the Link that
+// holds its annotation.
+func (chart *Chart) drawLinkedPoint(page *Page, linked linkedPoint) {
+	point := linked.point
+	description := point.altDescription
+	if description == "" {
+		description = point.uri
+	}
+	page.SaveGraphicsState()
+	link := page.beginLink()
+	page.AddBDC(structelem.Figure, "", "", description)
+	chart.setPointColors(page, point, linked.color)
+	page.DrawPoint(point)
+	page.SetFigureBoundingBox(point.x-point.r, point.y-point.r, 2*point.r, 2*point.r)
+	page.AddEMC()
+	page.endLink(link)
+	page.RestoreGraphicsState()
+	page.addAnnotation(&annotationObject{
+		annotationType: annotationLink,
+		x1:             point.x - point.r,
+		y1:             point.y - point.r,
+		x2:             point.x + point.r,
+		y2:             point.y + point.r,
+		uri:            point.uri,
+		altDescription: description,
+		linkElement:    link,
+	})
+}
+
+// setPointColors sets the pen and the brush a point is drawn with: its own
+// colors, or its series'.
+func (chart *Chart) setPointColors(page *Page, point *Point, rgb [3]float32) {
+	if point.hasStrokeColor {
+		page.SetPenColorRGB(point.strokeColor)
+	} else {
+		page.SetPenColorRGB(rgb)
+	}
+	page.SetPenWidth(point.strokeWidth)
+	page.SetDefaultStrokeDashPattern()
+	if point.hasFillColor {
+		page.SetBrushColorRGB(point.fillColor)
+	}
 }
 
 // getAltDescription returns the alternate description, or the title when none
@@ -740,7 +801,11 @@ func (chart *Chart) drawYAxisLabelsOn(page *Page) {
 // drawPathsAndPoints draws the line of each series that draws its path, then
 // the markers of its points: a point without a stroke color in the color of
 // the series.
-func (chart *Chart) drawPathsAndPoints(page *Page, plotData [][]*Point) {
+// drawPathsAndPoints draws the paths and the points of the series, and
+// returns the points that are links, which it leaves to be drawn after the
+// chart when linksApart is true.
+func (chart *Chart) drawPathsAndPoints(page *Page, plotData [][]*Point, linksApart bool) []linkedPoint {
+	var linked []linkedPoint
 	for j, s := range chart.series {
 		points := plotData[j]
 		if len(points) == 0 {
@@ -754,21 +819,18 @@ func (chart *Chart) drawPathsAndPoints(page *Page, plotData [][]*Point) {
 			page.DrawPath(points, pathoperator.Stroke)
 		}
 		for _, point := range points {
-			if point.shape != shape.Invisible {
-				if point.hasStrokeColor {
-					page.SetPenColorRGB(point.strokeColor)
-				} else {
-					page.SetPenColorRGB(rgb)
-				}
-				page.SetPenWidth(point.strokeWidth)
-				page.SetDefaultStrokeDashPattern()
-				if point.hasFillColor {
-					page.SetBrushColorRGB(point.fillColor)
-				}
-				page.DrawPoint(point)
+			if point.shape == shape.Invisible {
+				continue
 			}
+			if linksApart && point.uri != "" {
+				linked = append(linked, linkedPoint{point, rgb})
+				continue
+			}
+			chart.setPointColors(page, point, rgb)
+			page.DrawPoint(point)
 		}
 	}
+	return linked
 }
 
 // roundMaxAndMinValues rounds the axis range to "nice" values for clean grid lines.

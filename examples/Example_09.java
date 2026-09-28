@@ -146,6 +146,7 @@ final public class Example_09 {
                             (float) (Double.valueOf(cols[5].replace(",", "")) / population),
                             (float) (Double.valueOf(cols[7].replace(",", "")) / population * 100));
                     point.setURIAction("http://pdfjet.com/country/" + country_name + ".txt");
+                    point.setAltDescription(name); // What the link of the point is, for a screen reader
                     point.setRadius(2f);
 
                     if (point.getX() > 1.25f) {

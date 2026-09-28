@@ -367,6 +367,12 @@ public class Chart : Drawable {
         setXAxisRange()
         setYAxisRange()
 
+        // In a tagged document a point that is a link is drawn after the
+        // chart, as a figure of its own in its Link, which holds its
+        // annotation, as PDF/UA asks: a link inside the chart's figure has
+        // nothing to hold
+        let linksApart = page.isTaggedHere()
+
         // The chart is one figure, described by its alternate description.
         page.addBDC(StructElem.FIGURE, nil, getAltDescription())
         // The pen, the brush and the dash pattern of the caller are kept,
@@ -454,7 +460,7 @@ public class Chart : Drawable {
             for point in points {
                 point.x = x5 + (point.x - xMin) * (x6 - x5) / (xMax - xMin)
                 point.y = y8 - (point.y - yMin) * (y8 - y5) / (yMax - yMin)
-                if point.getURIAction() != nil {
+                if point.getURIAction() != nil && !(linksApart && point.shape != Shape.INVISIBLE) {
                     page.addAnnotation(Annotation(
                             Annotation.Link,
                             point.x - point.r,
@@ -475,7 +481,7 @@ public class Chart : Drawable {
             }
         }
 
-        drawPathsAndPoints(page, plotData)
+        let linked = drawPathsAndPoints(page, plotData, linksApart)
 
         // Draw the Y axis title
         page.setBrushColor(Color.black)
@@ -501,7 +507,52 @@ public class Chart : Drawable {
         page.setFigureBoundingBox(self.x1, self.y1, self.w, self.h)
         page.addEMC()
 
+        for (point, color) in linked {
+            drawLinkedPoint(page, point, color)
+        }
+
         return [self.x1 + self.w, self.y1 + self.h]
+    }
+
+    // Draws a point of a chart that is a link as a figure of its own,
+    // described by what it stands for, or by its URI, in the Link that holds
+    // its annotation.
+    private func drawLinkedPoint(_ page: Page, _ point: Point, _ color: [Float]) {
+        let description = point.altDescription ?? point.getURIAction()
+        page.saveGraphicsState()
+        let link = page.beginLink()
+        page.addBDC(StructElem.FIGURE, nil, nil, description)
+        setPointColors(page, point, color)
+        page.drawPoint(point)
+        page.setFigureBoundingBox(point.x - point.r, point.y - point.r, 2 * point.r, 2 * point.r)
+        page.addEMC()
+        page.endLink(link)
+        page.restoreGraphicsState()
+        page.addAnnotation(Annotation(
+                Annotation.Link,
+                point.x - point.r,
+                point.y - point.r,
+                point.x + point.r,
+                point.y + point.r,
+                nil,    // Vertices
+                nil,    // Fill Color
+                0.0,    // Opacity
+                nil,    // Title
+                nil,    // Contents
+                point.getURIAction(),
+                nil,
+                nil,
+                nil,
+                description).joining(link))
+    }
+
+    // Sets the pen and the brush a point is drawn with: its own colors, or its
+    // series'.
+    private func setPointColors(_ page: Page, _ point: Point, _ color: [Float]) {
+        page.setPenColor(point.strokeColor ?? color)
+        page.setPenWidth(point.strokeWidth)
+        page.setDefaultStrokeDashPattern()
+        page.setBrushColor(point.fillColor)
     }
 
     // Returns the alternate description, or the title when none is set.
@@ -797,7 +848,11 @@ public class Chart : Drawable {
 
     // Draws the line of each series that draws its path, then the markers of
     // its points: a point without a stroke color in the color of the series.
-    private func drawPathsAndPoints(_ page: Page, _ plotData: [[Point]]) {
+    // Returns the points that are links, with the colors of their series,
+    // which it leaves to be drawn after the chart when linksApart is true.
+    private func drawPathsAndPoints(
+            _ page: Page, _ plotData: [[Point]], _ linksApart: Bool) -> [(Point, [Float])] {
+        var linked = [(Point, [Float])]()
         for j in 0..<series.count {
             let s = series[j]
             let points = plotData[j]
@@ -812,15 +867,18 @@ public class Chart : Drawable {
                 page.drawPath(points, PathOperator.STROKE)
             }
             for point in points {
-                if point.shape != Shape.INVISIBLE {
-                    page.setPenColor(point.strokeColor ?? color)
-                    page.setPenWidth(point.strokeWidth)
-                    page.setDefaultStrokeDashPattern()
-                    page.setBrushColor(point.fillColor)
-                    page.drawPoint(point)
+                if point.shape == Shape.INVISIBLE {
+                    continue
                 }
+                if linksApart && point.getURIAction() != nil {
+                    linked.append((point, color))
+                    continue
+                }
+                setPointColors(page, point, color)
+                page.drawPoint(point)
             }
         }
+        return linked
     }
 
     ///

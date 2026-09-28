@@ -399,6 +399,12 @@ public class Chart implements Drawable {
         setXAxisRange();
         setYAxisRange();
 
+        // In a tagged document a point that is a link is drawn after the
+        // chart, as a figure of its own in its Link, which holds its
+        // annotation, as PDF/UA asks: a link inside the chart's figure has
+        // nothing to hold
+        boolean linksApart = page.tagsContent();
+
         // The chart is one figure, described by its alternate description.
         page.addBDC(StructElem.FIGURE, null, altDescription());
         // The pen, the brush and the dash pattern of the caller are kept, as
@@ -485,7 +491,8 @@ public class Chart implements Drawable {
             for (Point point : points) {
                 point.x = x5 + (point.x - xMin) * (x6 - x5) / (xMax - xMin);
                 point.y = y8 - (point.y - yMin) * (y8 - y5) / (yMax - yMin);
-                if (point.getURIAction() != null) {
+                if (point.getURIAction() != null
+                        && !(linksApart && point.shape != Shape.INVISIBLE)) {
                     page.addAnnotation(new Annotation(
                             Annotation.Link,
                             point.x - point.r,
@@ -507,7 +514,7 @@ public class Chart implements Drawable {
         }
 
         // Draw paths and point markers using the copies
-        drawPathsAndPoints(page, plotData);
+        List<LinkedPoint> linked = drawPathsAndPoints(page, plotData, linksApart);
 
         // Draw Y axis title (rotated 90 degrees)
         page.setBrushColor(Color.black);
@@ -533,7 +540,70 @@ public class Chart implements Drawable {
         page.setFigureBoundingBox(this.x1, this.y1, this.w, this.h);
         page.addEMC();
 
+        for (LinkedPoint point : linked) {
+            drawLinkedPoint(page, point);
+        }
+
         return new float[] {this.x1 + this.w, this.y1 + this.h};
+    }
+
+    // A point of a chart that is a link, which a tagged document draws after
+    // the chart, with the color of its series.
+    private static final class LinkedPoint {
+        final Point point;
+        final float[] color;
+
+        LinkedPoint(Point point, float[] color) {
+            this.point = point;
+            this.color = color;
+        }
+    }
+
+    // Draws a point of a chart that is a link as a figure of its own,
+    // described by what it stands for, or by its URI, in the Link that holds
+    // its annotation.
+    private void drawLinkedPoint(Page page, LinkedPoint linked) throws Exception {
+        Point point = linked.point;
+        String description = point.getAltDescription();
+        if (description == null || description.isEmpty()) {
+            description = point.getURIAction();
+        }
+        page.saveGraphicsState();
+        StructElement link = page.beginLink();
+        page.addBDC(StructElem.FIGURE, null, description);
+        setPointColors(page, point, linked.color);
+        page.drawPoint(point);
+        page.setFigureBoundingBox(point.x - point.r, point.y - point.r, 2*point.r, 2*point.r);
+        page.addEMC();
+        page.endLink(link);
+        page.restoreGraphicsState();
+        Annotation annotation = new Annotation(
+                Annotation.Link,
+                point.x - point.r,
+                point.y - point.r,
+                point.x + point.r,
+                point.y + point.r,
+                null,   // Vertices
+                null,   // Fill Color
+                0f,     // Opacity
+                null,   // Title
+                null,   // Contents
+                point.getURIAction(),
+                null,
+                null,
+                null,
+                description);
+        annotation.linkElement = link;
+        page.addAnnotation(annotation);
+    }
+
+    // Sets the pen and the brush a point is drawn with: its own colors, or
+    // its series'.
+    private void setPointColors(Page page, Point point, float[] color) {
+        page.setPenColor(point.strokeColor != null ? point.strokeColor : color);
+        page.setPenWidth(point.strokeWidth);
+        page.setDefaultStrokeDashPattern();
+        page.setBrushColor(point.fillColor);
     }
 
     // Returns the alternate description, or the title when none is set.
@@ -842,9 +912,12 @@ public class Chart implements Drawable {
     /**
      * Draws the line of each series that draws its path, then the markers of
      * its points: a point without a stroke color in the color of the series.
+     * Returns the points that are links, which it leaves to be drawn after the
+     * chart when linksApart is true.
      */
-    private void drawPathsAndPoints(
-            Page page, List<List<Point>> plotData) throws Exception {
+    private List<LinkedPoint> drawPathsAndPoints(
+            Page page, List<List<Point>> plotData, boolean linksApart) throws Exception {
+        List<LinkedPoint> linked = new ArrayList<LinkedPoint>();
         for (int j = 0; j < series.size(); j++) {
             Series s = series.get(j);
             List<Point> points = plotData.get(j);
@@ -859,15 +932,18 @@ public class Chart implements Drawable {
                 page.drawPath(points, PathOperator.STROKE);
             }
             for (Point point : points) {
-                if (point.shape != Shape.INVISIBLE) {
-                    page.setPenColor(point.strokeColor != null ? point.strokeColor : color);
-                    page.setPenWidth(point.strokeWidth);
-                    page.setDefaultStrokeDashPattern();
-                    page.setBrushColor(point.fillColor);
-                    page.drawPoint(point);
+                if (point.shape == Shape.INVISIBLE) {
+                    continue;
                 }
+                if (linksApart && point.getURIAction() != null) {
+                    linked.add(new LinkedPoint(point, color));
+                    continue;
+                }
+                setPointColors(page, point, color);
+                page.drawPoint(point);
             }
         }
+        return linked;
     }
 
     /**

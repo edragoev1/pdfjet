@@ -890,6 +890,13 @@ public class Cell {
             }
             point.y = y + h/2;
             page.setBrushColor(point.getFillColor());
+            if (point.getURIAction() != null && page.tagsContent()) {
+                // A point that is a link is a figure of its own, described by
+                // what it stands for, or by its URI, in the Link that holds its
+                // annotation, as PDF/UA asks
+                drawLinkedPoint(page);
+                return;
+            }
             if (point.getURIAction() != null) {
                 page.addAnnotation(new Annotation(
                         Annotation.Link,
@@ -912,6 +919,39 @@ public class Cell {
             page.drawPoint(point);
             page.addEMC();
         }
+    }
+
+    // Draws the point of the cell, which is a link, as a figure in the Link
+    // that holds its annotation.
+    private void drawLinkedPoint(Page page) throws Exception {
+        String description = point.getAltDescription();
+        if (description == null || description.isEmpty()) {
+            description = point.getURIAction();
+        }
+        StructElement link = page.beginLink();
+        page.addBDC(StructElem.FIGURE, null, description);
+        page.drawPoint(point);
+        page.setFigureBoundingBox(point.x - point.r, point.y - point.r, 2*point.r, 2*point.r);
+        page.addEMC();
+        page.endLink(link);
+        Annotation annotation = new Annotation(
+                Annotation.Link,
+                point.x - point.r,
+                point.y - point.r,
+                point.x + point.r,
+                point.y + point.r,
+                null,   // Vertices
+                null,   // Fill Color
+                0f,     // Opacity
+                null,   // Title
+                null,   // Contents
+                point.getURIAction(),
+                null,
+                null,
+                null,
+                description);
+        annotation.linkElement = link;
+        page.addAnnotation(annotation);
     }
 
     // Returns the width and the height of the drawable: its corner when it is

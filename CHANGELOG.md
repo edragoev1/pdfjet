@@ -10,6 +10,11 @@ This is the first entry in this file; earlier releases were not tracked here.
 ## Unreleased
 
 ### Added
+- A description of a point, in all four ports: `Point.setAltDescription`,
+  what a point that is a link stands for, like the country a point of a
+  chart is. In a tagged document a point of a chart, or of a cell, that is a
+  link is a figure of its own in its Link, described by it, or by its URI
+  when it has none.
 - Bookmarks of the headings, in all four ports: a tagged document, PDF/UA or
   a PDF/A of level A, that has headings, H1 to H6, and no bookmarks of its
   own has a bookmark for each heading, under the heading before it of a
@@ -493,9 +498,13 @@ This is the first entry in this file; earlier releases were not tracked here.
   of the text, as PDF/UA asks; and a linked image or SVG image is a Figure in
   a Link that holds its annotation. It was a Link of the annotation alone,
   beside the text, which a screen reader reads as a link of no text, and PAC
-  warns of as a possibly inappropriate use of a Link. A link over content
-  that is not tagged, like a point of a chart, whose figure stands for it,
-  is still a Link of its annotation and its description.
+  warns of as a possibly inappropriate use of a Link. A point of a chart or
+  of a cell that is a link is a Figure of its marker in its Link, drawn
+  after the chart in a tagged document; it was a Link of the annotation
+  alone over the chart's figure, 223 of them in Example_09, whose points are
+  now described by their countries. A link over content that is not
+  tagged, like a rectangle with no border, is still a Link of its annotation
+  and its description.
 - A compliance set after the encryption was refused with "Set the compliance
   before adding fonts, images or pages to the PDF.", in all four ports,
   which named what had not been added. A PDF/A compliance is refused with

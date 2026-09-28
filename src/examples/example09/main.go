@@ -179,6 +179,7 @@ func readCountries(fileName, delimiter string) []*country {
 
 		point := pdfjet.NewPoint(float32(cellPhones/population), float32(internet/population*100))
 		point.SetURIAction("http://pdfjet.com/country/" + urlName + ".txt")
+		point.SetAltDescription(name) // What the link of the point is, for a screen reader
 		point.SetRadius(2.0)
 
 		if point.GetX() > 1.25 {

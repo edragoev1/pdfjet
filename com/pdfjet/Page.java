@@ -2797,6 +2797,12 @@ final public class Page {
         return link;
     }
 
+    // Returns whether what is drawn now is tagged: the document is tagged, and
+    // it is not inside an artifact or a figure.
+    boolean tagsContent() {
+        return pdf.isTagged() && artifactDepth == 0;
+    }
+
     // Ends the Link that beginLink began, if it began one.
     void endLink(StructElement link) {
         if (link != null) {

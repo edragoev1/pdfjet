@@ -143,6 +143,7 @@ public class Example_09 {
                         (float) (Double.Parse(cols[7].Replace(",", "")) / population * 100));
                 point.SetURIAction(
                         "http://pdfjet.com/country/" + country_name + ".txt");
+                point.SetAltDescription(name); // What the link of the point is, for a screen reader
                 point.SetRadius(2.0f);
 
                 if (point.GetX() > 1.25f) {

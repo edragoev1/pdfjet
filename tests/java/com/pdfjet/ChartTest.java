@@ -10,7 +10,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.ByteArrayOutputStream;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 
 class ChartTest {
@@ -198,5 +203,82 @@ class ChartTest {
         described.drawOn(page);
         assertEquals("Sales", page.structures.get(0).altDescription);
         assertEquals("Sales rose from 1 to 2.", page.structures.get(1).altDescription);
+    }
+
+    // The structure elements of the raw PDF, by their object numbers: the S,
+    // the P and the K of each.
+    private static Map<String, String[]> elements(String raw) {
+        Map<String, String[]> elements = new HashMap<String, String[]>();
+        Matcher m = Pattern.compile(
+                "(\\d+) 0 obj\n<<\n/Type /StructElem /S /(\\w+)\n/P (\\d+) 0 R /Pg \\d+ 0 R\n(?:/K (\\[[^\n]*\\]|<<[^\n]*>>|\\d+)\n)?")
+                .matcher(raw);
+        while (m.find()) {
+            elements.put(m.group(1), new String[] {m.group(2), m.group(3), m.group(4)});
+        }
+        return elements;
+    }
+
+    // The text as PDF writes a text string: UTF-16 with its byte order mark,
+    // in lower case hexadecimal, as appendTextString writes it.
+    private static String textString(String text) {
+        StringBuilder sb = new StringBuilder("<feff");
+        for (char c : text.toCharArray()) {
+            sb.append(String.format("%04x", (int) c));
+        }
+        return sb.append(">").toString();
+    }
+
+    // A point of a chart that is a link is, in a tagged document, a figure of
+    // its own, described by what it stands for, in the Link that holds its
+    // annotation, after the chart; the chart is a figure of the rest.
+    @Test
+    void aLinkedPointIsAFigureInItsLink() throws Exception {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1);
+        pdf.setTitle("Title");
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Chart chart = new Chart(font, font).setLocation(50f, 50f).setSize(300f, 200f);
+        chart.setTitle("Countries");
+        chart.addSeries("")
+                .addPoint(new Point(1f, 1f).setURIAction("https://pdfjet.com/a").setAltDescription("Andorra"))
+                .addPoint(new Point(2f, 2f).setURIAction("https://pdfjet.com/b"))
+                .addPoint(3f, 3f);
+        chart.drawOn(page);
+        pdf.complete();
+        String raw = TestSupport.latin1(bos.toByteArray());
+        Map<String, String[]> elements = elements(raw);
+        int links = 0;
+        for (Map.Entry<String, String[]> entry : elements.entrySet()) {
+            String[] link = entry.getValue();
+            if (!link[0].equals("Link")) {
+                continue;
+            }
+            links++;
+            String figure = link[2].substring(1).split(" ")[0];
+            assertEquals("Figure", elements.get(figure)[0], link[2]);
+            assertEquals(entry.getKey(), elements.get(figure)[1]);
+            assertTrue(link[2].contains("/Type /OBJR"), link[2]);
+        }
+        assertEquals(2, links);
+        // Described by what it stands for, or by its URI
+        assertTrue(raw.contains("/Alt " + textString("Andorra")), "Andorra");
+        assertTrue(raw.contains("/Alt " + textString("https://pdfjet.com/b")), "https://pdfjet.com/b");
+    }
+
+    // In a document that is not tagged, a chart draws its linked points in it,
+    // as before, and makes no elements.
+    @Test
+    void aLinkedPointOfADocumentNotTaggedIsDrawnInTheChart() throws Exception {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Chart chart = chart(pdf);
+        chart.addSeries("").addPoint(new Point(1f, 1f).setURIAction("https://pdfjet.com/a")).addPoint(2f, 2f);
+        chart.drawOn(page);
+        pdf.complete();
+        String raw = TestSupport.latin1(bos.toByteArray());
+        assertFalse(raw.contains("/StructElem"));
+        assertEquals(1, raw.split("/Subtype /Link").length - 1);
     }
 }

@@ -689,6 +689,13 @@ public class Cell {
             }
             point.y = y + h/2;
             page.SetBrushColor(point.GetFillColor());
+            if (point.GetURIAction() != null && page.TagsContent()) {
+                // A point that is a link is a figure of its own, described by
+                // what it stands for, or by its URI, in the Link that holds its
+                // annotation, as PDF/UA asks
+                DrawLinkedPoint(page);
+                return;
+            }
             if (point.GetURIAction() != null) {
                 page.AddAnnotation(new Annotation(
                         Annotation.Link,
@@ -711,6 +718,39 @@ public class Cell {
             page.DrawPoint(point);
             page.AddEMC();
         }
+    }
+
+    // Draws the point of the cell, which is a link, as a figure in the Link
+    // that holds its annotation.
+    private void DrawLinkedPoint(Page page) {
+        String description = point.altDescription;
+        if (String.IsNullOrEmpty(description)) {
+            description = point.GetURIAction();
+        }
+        StructElement link = page.BeginLink();
+        page.AddBDC(StructElem.FIGURE, null, description);
+        page.DrawPoint(point);
+        page.SetFigureBoundingBox(point.x - point.r, point.y - point.r, 2*point.r, 2*point.r);
+        page.AddEMC();
+        page.EndLink(link);
+        Annotation annotation = new Annotation(
+                Annotation.Link,
+                point.x - point.r,
+                point.y - point.r,
+                point.x + point.r,
+                point.y + point.r,
+                null,   // Vertices
+                null,   // Fill Color
+                0f,     // Opacity
+                null,   // Title
+                null,   // Contents
+                point.GetURIAction(),
+                null,
+                null,
+                null,
+                description);
+        annotation.linkElement = link;
+        page.AddAnnotation(annotation);
     }
 
     // Returns the width and the height of the drawable: its corner when it is

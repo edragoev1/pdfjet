@@ -242,7 +242,7 @@ public class PDFTest {
 
     // The structure elements of the raw PDF, by their object numbers: the S,
     // the P and the K of each.
-    private static Dictionary<string, string[]> Elements(string raw) {
+    internal static Dictionary<string, string[]> Elements(string raw) {
         Dictionary<string, string[]> elements = new Dictionary<string, string[]>();
         Regex re = new Regex(@"(\d+) 0 obj\n<<\n/Type /StructElem /S /(\w+)\n/P (\d+) 0 R /Pg \d+ 0 R\n(?:/K (\[[^\n]*\]|<<[^\n]*>>|\d+)\n)?");
         foreach (Match m in re.Matches(raw)) {
@@ -252,7 +252,7 @@ public class PDFTest {
     }
 
     // The Link elements of the raw PDF.
-    private static Dictionary<string, string[]> Links(string raw) {
+    internal static Dictionary<string, string[]> Links(string raw) {
         Dictionary<string, string[]> links = new Dictionary<string, string[]>();
         foreach (KeyValuePair<string, string[]> element in Elements(raw)) {
             if (element.Value[0] == "Link") {

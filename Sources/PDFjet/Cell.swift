@@ -760,6 +760,13 @@ public class Cell {
             }
             point!.y = y + h/2
             page.setBrushColor(point!.getFillColor())
+            if point!.getURIAction() != nil && page.isTaggedHere() {
+                // A point that is a link is a figure of its own, described by
+                // what it stands for, or by its URI, in the Link that holds
+                // its annotation, as PDF/UA asks
+                drawLinkedPoint(page, point!)
+                return
+            }
             if point!.getURIAction() != nil {
                 page.addAnnotation(Annotation(
                         Annotation.Link,
@@ -782,6 +789,34 @@ public class Cell {
             page.drawPoint(point!)
             page.addEMC()
         }
+    }
+
+    // Draws the point of the cell, which is a link, as a figure in the Link
+    // that holds its annotation.
+    private func drawLinkedPoint(_ page: Page, _ point: Point) {
+        let description = point.altDescription ?? point.getURIAction()
+        let link = page.beginLink()
+        page.addBDC(StructElem.FIGURE, nil, nil, description)
+        page.drawPoint(point)
+        page.setFigureBoundingBox(point.x - point.r, point.y - point.r, 2 * point.r, 2 * point.r)
+        page.addEMC()
+        page.endLink(link)
+        page.addAnnotation(Annotation(
+                Annotation.Link,
+                point.x - point.r,
+                point.y - point.r,
+                point.x + point.r,
+                point.y + point.r,
+                nil,    // Vertices
+                nil,    // Fill Color
+                0.0,    // Opacity
+                nil,    // Title
+                nil,    // Contents
+                point.getURIAction(),
+                nil,
+                nil,
+                nil,
+                description).joining(link))
     }
 
     private func drawBackground(

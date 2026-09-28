@@ -2543,6 +2543,12 @@ public class Page {
         }
     }
 
+    // Whether what is drawn now is tagged: the document is tagged, and it is
+    // not drawn inside an artifact or a figure.
+    func isTaggedHere() -> Bool {
+        return pdf.isTagged() && artifactDepth == 0
+    }
+
     // Adds a structure element that groups the elements added after it, like
     // a table row, as a kid of the parent, or of the Document element when the
     // parent is nil. Returns nil when the document is not tagged or the
