@@ -45,6 +45,13 @@ final public class Example_09 {
 
         List<Country> countries = readCountries("data/world-communications.txt", "|");
 
+        // The heading of the document, above the chart
+        new TextLine(f1, "Cell Phones and Internet Use by Country")
+                .setStructureType(StructElem.H1)
+                .setFontSize(16f)
+                .setLocation(70f, 36f)
+                .drawOn(page);
+
         Chart chart = new Chart(f1, f2);
         chart.setLocation(70f, 50f);
         chart.setSize(500f, 300f);

@@ -28,6 +28,13 @@ public class Example_16 {
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
+        // A heading, which PAC asks a document for
+        new TextLine(f1, "Text block with highlighted keywords")
+                .setStructureType(StructElem.H1)
+                .setFontSize(18f)
+                .setLocation(100f, 36f)
+                .drawOn(page);
+
         Map<String, Integer> colors = new HashMap<String, Integer>();
         colors.put("Everyone", Color.firebrick);
         colors.put("pay", Color.green);

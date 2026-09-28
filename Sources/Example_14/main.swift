@@ -22,6 +22,13 @@ public class Example_14 {
 
         let page = Page(pdf, Letter.PORTRAIT)
 
+        // The heading of the document, above the symbols
+        TextLine(f1, "Data Matrix Barcodes")
+                .setStructureType(StructElem.H1)
+                .setFontSize(18.0)
+                .setLocation(50.0, 36.0)
+                .drawOn(page)
+
         var barcode = DataMatrix("https://github.com/edragoev1/pdfjet")
         barcode.setLocation(50.0, 50.0)
         barcode.setModuleLength(3.0)

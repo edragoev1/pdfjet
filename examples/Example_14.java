@@ -27,6 +27,13 @@ public class Example_14 {
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
+        // The heading of the document, above the symbols
+        new TextLine(f1, "Data Matrix Barcodes")
+                .setStructureType(StructElem.H1)
+                .setFontSize(18f)
+                .setLocation(50f, 36f)
+                .drawOn(page);
+
         DataMatrix barcode = new DataMatrix("https://github.com/edragoev1/pdfjet");
         barcode.setLocation(50f, 50f);
         barcode.setModuleLength(3f);

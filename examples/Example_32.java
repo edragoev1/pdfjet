@@ -22,7 +22,7 @@ public class Example_32 {
         pdf.setTitle("The Source Code of Example_02");
 
         Font font = new Font(pdf, JetBrainsMono.Regular);
-        // The longest lines of Example_02 are 143 characters: at 8 points a
+        // The longest line of Example_02 is 107 characters: at 8 points a
         // landscape page holds them.
         font.setSize(8f);
 
@@ -35,6 +35,12 @@ public class Example_32 {
         Page page = new Page(pdf, Letter.LANDSCAPE);
         float x = 50f;
         float y = 50f;
+        // A heading on the first page, which PAC asks a document for
+        new TextLine(font, "The Source Code of Example_02")
+                .setStructureType(StructElem.H1)
+                .setFontSize(14f)
+                .setLocation(x, 32f)
+                .drawOn(page);
         float leading = font.getBodyHeight();
         List<String> lines = Content.linesOfTextFile("examples/Example_02.java");
         for (String line : lines) {

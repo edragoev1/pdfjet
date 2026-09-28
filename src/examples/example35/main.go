@@ -15,6 +15,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // Example35 draws a stamp and a hierarchy of nested containers.
@@ -34,9 +35,16 @@ func Example35() {
 	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold)
 	f2.SetSize(14.0)
 
+	// The heading, above the drawings, which are 40 points lower for it
+	pdfjet.NewTextLine(f2, "Containers and Stamps").
+		SetStructureType(structelem.H1).
+		SetFontSize(18.0).
+		SetLocation(50.0, 30.0).
+		DrawOn(page)
+
 	// Base container
 	container := pdfjet.NewContainer(400.0, 400.0)
-	container.SetLocation(100.0, 100.0)
+	container.SetLocation(100.0, 140.0)
 
 	// Add a rectangle to container
 	rect := pdfjet.NewRect(0.0, 0.0, 400.0, 400.0)
@@ -81,7 +89,7 @@ func Example35() {
 
 	stamp.Complete() // The stamp is complete!
 
-	stamp.SetLocation(50.0, 50.0).DrawOn(page)
+	stamp.SetLocation(50.0, 90.0).DrawOn(page)
 
 	// Rotate the stamp counter clockwise and draw it again
 	stamp.SetRotation(-15).DrawOn(page)
@@ -90,7 +98,7 @@ func Example35() {
 	stamp.SetRotation(15).DrawOn(page)
 
 	// Draw the stamp again at a quarter of its size
-	stamp.SetRotation(0).ScaleBy(0.25).SetLocation(360.0, 480.0).DrawOn(page)
+	stamp.SetRotation(0).ScaleBy(0.25).SetLocation(360.0, 520.0).DrawOn(page)
 
 	// Add a text line to container
 	title := pdfjet.NewTextLine(f1, "Container")
@@ -146,7 +154,7 @@ func Example35() {
 	rect7.SetBorderWidth(2.0)
 	container5.Add(rect7)
 
-	container5.SetLocation(50.0, 600.0)
+	container5.SetLocation(50.0, 640.0)
 	container5.DrawOn(page)
 
 	container5.SetRotation(90)

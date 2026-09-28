@@ -35,8 +35,19 @@ public class Example_47 {
 
         Page page = null;
         TextFrame textFrame = new TextFrame(f1, paragraphs);
+        boolean first = true;
         while (textFrame.hasMoreText()) {
             page = new Page(pdf, Letter.LANDSCAPE);
+            if (first) {
+                // The heading, on the first page only, which its columns start under
+                new TextLine(f1, "The Idiot, by Fyodor Dostoevsky")
+                        .setStructureType(StructElem.H1)
+                        .setFontSize(20f)
+                        .setLocation(50f, 50f)
+                        .drawOn(page);
+                y = 80f;
+                first = false;
+            }
 
             textFrame.setLocation(x, y);
             textFrame.setWidth(w);

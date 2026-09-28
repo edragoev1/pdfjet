@@ -16,6 +16,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/content"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // Example32 draws highlighted source code using the draw string method and a color map.
@@ -28,7 +29,7 @@ func Example32() {
 	pdf.SetTitle("The Source Code of Example_02")
 
 	font := pdfjet.NewFontFromFile(pdf, JetBrainsMono.Regular)
-	// The longest lines of Example_02 are 143 characters: at 8 points a
+	// The longest line of Example_02 is 107 characters: at 8 points a
 	// landscape page holds them.
 	font.SetSize(8.0)
 
@@ -41,6 +42,12 @@ func Example32() {
 	page := pdfjet.NewPage(pdf, letter.Landscape())
 	x := float32(50.0)
 	y := float32(50.0)
+	// A heading on the first page, which PAC asks a document for
+	pdfjet.NewTextLine(font, "The Source Code of Example_02").
+		SetStructureType(structelem.H1).
+		SetFontSize(14.0).
+		SetLocation(x, 32.0).
+		DrawOn(page)
 	leading := font.GetBodyHeight(font.GetSize())
 	lines := content.LinesOfTextFile("examples/Example_02.java")
 	for _, line := range lines {

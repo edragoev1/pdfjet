@@ -17,6 +17,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/content"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // Example16 draws a text block with highlighted keywords.
@@ -34,6 +35,13 @@ func Example16() {
 	f1.SetSize(15.0)
 
 	page := pdfjet.NewPage(pdf, letter.Portrait())
+
+	// A heading, which PAC asks a document for
+	pdfjet.NewTextLine(f1, "Text block with highlighted keywords").
+		SetStructureType(structelem.H1).
+		SetFontSize(18.0).
+		SetLocation(100.0, 36.0).
+		DrawOn(page)
 
 	colors := make(map[string]int32)
 	colors["Everyone"] = color.Firebrick

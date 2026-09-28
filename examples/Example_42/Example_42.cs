@@ -26,6 +26,13 @@ public class Example_42 {
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
+        // The heading, above the form
+        new TextLine(f2, "Company Information Form")
+                .SetStructureType(StructElem.H1)
+                .SetFontSize(16f)
+                .SetLocation(50f, 60f)
+                .DrawOn(page);
+
         float w = 500f; // The width of the form
 
         List<Field> fields = new List<Field>();
@@ -50,7 +57,7 @@ public class Example_42 {
                 .SetLabelFontSize(9f)
                 .SetValueFont(f2)
                 .SetValueFontSize(10f)
-                .SetLocation(50f, 50f)
+                .SetLocation(50f, 80f)
                 .SetWidth(w)
                 .SetStrokeWidth(0.2f)
                 .DrawOn(page));

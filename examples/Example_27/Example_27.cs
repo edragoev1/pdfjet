@@ -37,9 +37,17 @@ public class Example_27 {
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
+        // A heading, which PAC asks a document for, in the Latin letters the
+        // Thai font has as well
+        new TextLine(f1, "Thai, Hebrew, Arabic and Persian text")
+                .SetStructureType(StructElem.H1)
+                .SetFontSize(18f)
+                .SetLocation(30f, 45f)
+                .DrawOn(page);
+
         TextBlock textBlock = new TextBlock(f1,
                 Content.OfTextFile("data/languages/thai.txt"));
-        textBlock.SetLocation(30f, 30f);
+        textBlock.SetLocation(30f, 65f);
         textBlock.SetWidth(430f);
         textBlock.SetBorderColor(Color.blue);
         textBlock.SetPadding(10f);

@@ -14,6 +14,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // Example39 draws a horizontal bar chart of the ten longest rivers, each bar
@@ -41,6 +42,13 @@ func Example39() {
 
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 
+	// The heading of the page, above the chart
+	pdfjet.NewTextLine(f1, "Rivers of the World").
+		SetStructureType(structelem.H1).
+		SetFontSize(18.0).
+		SetLocation(36.0, 40.0).
+		DrawOn(page)
+
 	rivers := []string{
 		"Nile", "Amazon", "Yangtze", "Mississippi-Missouri", "Yenisey-Baikal-Selenga",
 		"Huang He (Yellow)", "Ob-Irtysh", "Paraná", "Congo", "Amur"}
@@ -67,19 +75,19 @@ func Example39() {
 	chart.SetGroupingUsed(true)
 	chart.SetAltDescription(
 		"The ten longest rivers in the world, in kilometers: Nile 6,650, Amazon 6,400, Yangtze 6,300, Mississippi-Missouri 5,971, Yenisey-Baikal-Selenga 5,540, Huang He (Yellow) 5,464, Ob-Irtysh 5,410, Paraná 4,880, Congo 4,700, Amur 4,444.")
-	chart.SetLocation(36.0, 40.0)
+	chart.SetLocation(36.0, 70.0)
 	chart.DrawOn(page)
 
 	// The color key under the chart
 	gray := int32(0x444444)
 	pdfjet.NewTextLine(f3, "Color key (illustrative):").
-		SetTextColor(gray).SetLocation(171.0, 466.0).DrawOn(page)
+		SetTextColor(gray).SetLocation(171.0, 496.0).DrawOn(page)
 	keyColors := []int32{0x477aa8, 0x5f7e5f, 0x8e7155, 0x967110, 0x5c5c5c}
 	keyTexts := []string{
 		"Clear / low sediment", "Sediment-rich, relatively clean", "Polluted / industrial & agricultural",
 		"Heavy natural sediment (loess)", "Natural dark tannin stain (Congo)"}
 	keyX := []float32{171.0, 262.0, 398.0, 171.0, 313.0}
-	keyY := []float32{482.0, 482.0, 482.0, 497.0, 497.0}
+	keyY := []float32{512.0, 512.0, 512.0, 527.0, 527.0}
 	for i := range keyColors {
 		// The swatches are rectangles, drawn as artifacts next to their text.
 		pdfjet.NewRect(keyX[i], keyY[i]-8.5, 10.5, 10.5).SetFillColor(keyColors[i]).DrawOn(page)
@@ -89,7 +97,7 @@ func Example39() {
 
 	note := "Color mapping is illustrative; lengths and conditions vary by source and season."
 	pdfjet.NewTextLine(f4, note).
-		SetTextColor(0x696969).SetLocation(576.0-f4.StringWidth(f4.GetSize(), note), 520.0).DrawOn(page)
+		SetTextColor(0x696969).SetLocation(576.0-f4.StringWidth(f4.GetSize(), note), 550.0).DrawOn(page)
 
 	if err := pdf.Complete(); err != nil {
 		log.Fatal(err)

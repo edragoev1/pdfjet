@@ -18,6 +18,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/datamatrix"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // Example14 draws Data Matrix barcodes.
@@ -33,6 +34,13 @@ func Example14() {
 	f1.SetSize(10.0)
 
 	page := pdfjet.NewPage(pdf, letter.Portrait())
+
+	// The heading of the document, above the symbols
+	pdfjet.NewTextLine(f1, "Data Matrix Barcodes").
+		SetStructureType(structelem.H1).
+		SetFontSize(18.0).
+		SetLocation(50.0, 36.0).
+		DrawOn(page)
 
 	barcode := datamatrix.NewDataMatrix("https://github.com/edragoev1/pdfjet")
 	barcode.SetLocation(50.0, 50.0)

@@ -44,6 +44,13 @@ public class Example_09 {
 
         List<Country> countries = ReadCountries("data/world-communications.txt", "|");
 
+        // The heading of the document, above the chart
+        new TextLine(f1, "Cell Phones and Internet Use by Country")
+                .SetStructureType(StructElem.H1)
+                .SetFontSize(16f)
+                .SetLocation(70f, 36f)
+                .DrawOn(page);
+
         Chart chart = new Chart(f1, f2);
         chart.SetLocation(70f, 50f);
         chart.SetSize(500f, 300f);

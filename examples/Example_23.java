@@ -28,7 +28,14 @@ public class Example_23 {
         Page page = new Page(pdf, Letter.PORTRAIT);
 
         float x1 = 90f;
-        float y1 = 50f;
+        float y1 = 100f;
+
+        // A heading, which PAC asks a document for
+        new TextLine(f2, "The Ascent and Descent of a Font")
+                .setStructureType(StructElem.H1)
+                .setFontSize(18f)
+                .setLocation(x1, 45f)
+                .drawOn(page);
 
         TextLine textLine = new TextLine(f2, "(x1, y1)");
         textLine.setLocation(x1, y1 - 15f);

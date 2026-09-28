@@ -26,6 +26,13 @@ public class Example_25 {
         Font f2 = new Font(pdf, IBMPlexSans.Bold);
         f2.SetSize(10.0f);
 
+        // A heading, which PAC asks a document for
+        new TextLine(f2, "Fruit Donut Chart")
+                .SetStructureType(StructElem.H1)
+                .SetFontSize(18f)
+                .SetLocation(100f, 100f)
+                .DrawOn(page);
+
         DonutChart chart = new DonutChart(f1, f2);
         chart.SetLocation(100.0f, 200.0f);
         chart.SetRadii(200.0f, 120.0f);     // an inner radius of 0 makes a pie chart

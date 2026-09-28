@@ -14,6 +14,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // Example25 draws a donut chart.
@@ -31,6 +32,13 @@ func Example25() {
 	f1.SetSize(12.0)
 	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold)
 	f2.SetSize(10.0)
+
+	// A heading, which PAC asks a document for
+	pdfjet.NewTextLine(f2, "Fruit Donut Chart").
+		SetStructureType(structelem.H1).
+		SetFontSize(18.0).
+		SetLocation(100.0, 100.0).
+		DrawOn(page)
 
 	chart := pdfjet.NewDonutChart(f1, f2)
 	chart.SetLocation(100.0, 200.0)

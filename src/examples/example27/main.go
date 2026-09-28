@@ -18,6 +18,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/content"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // Example27 draws Thai, Hebrew, Arabic and Persian text.
@@ -47,8 +48,16 @@ func Example27() {
 
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 
+	// A heading, which PAC asks a document for, in the Latin letters the
+	// Thai font has as well
+	pdfjet.NewTextLine(f1, "Thai, Hebrew, Arabic and Persian text").
+		SetStructureType(structelem.H1).
+		SetFontSize(18.0).
+		SetLocation(30.0, 45.0).
+		DrawOn(page)
+
 	textBlock := pdfjet.NewTextBlock(f1, content.OfTextFile("data/languages/thai.txt"))
-	textBlock.SetLocation(30.0, 30.0)
+	textBlock.SetLocation(30.0, 65.0)
 	textBlock.SetWidth(430.0)
 	textBlock.SetBorderColor(color.Blue)
 	textBlock.SetPadding(10.0)

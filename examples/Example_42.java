@@ -28,6 +28,13 @@ public class Example_42 {
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
+        // The heading, above the form
+        new TextLine(f2, "Company Information Form")
+                .setStructureType(StructElem.H1)
+                .setFontSize(16f)
+                .setLocation(50f, 60f)
+                .drawOn(page);
+
         float w = 500f; // The width of the form
 
         List<Field> fields = new ArrayList<Field>();
@@ -52,7 +59,7 @@ public class Example_42 {
                 .setLabelFontSize(9f)
                 .setValueFont(f2)
                 .setValueFontSize(10f)
-                .setLocation(50f, 50f)
+                .setLocation(50f, 80f)
                 .setWidth(w)
                 .setStrokeWidth(0.2f)
                 .drawOn(page));

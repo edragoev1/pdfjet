@@ -15,6 +15,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // Example42 uses the Form and Field classes to create a form.
@@ -30,6 +31,13 @@ func Example42() {
 	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
 
 	page := pdfjet.NewPage(pdf, letter.Portrait())
+
+	// The heading, above the form
+	pdfjet.NewTextLine(f2, "Company Information Form").
+		SetStructureType(structelem.H1).
+		SetFontSize(16.0).
+		SetLocation(50.0, 60.0).
+		DrawOn(page)
 
 	var w float32 = 500.0 // The width of the form
 
@@ -57,7 +65,7 @@ func Example42() {
 		SetValueFontSize(10.0).
 		SetWidth(w).
 		SetStrokeWidth(0.2).
-		SetLocation(50.0, 50.0).
+		SetLocation(50.0, 80.0).
 		DrawOn(page)
 
 	rect := pdfjet.NewRect(xy[0], xy[1], 10.0, 10.0)

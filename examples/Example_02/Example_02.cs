@@ -38,7 +38,8 @@ public class Example_02 {
 
         // The heading is in IBM Plex Sans, and the characters it has no glyph for,
         // the name of the language, are in the fallback font.
-        new TextLine(f0, "This block is Japanese: 日本語").SetFallbackFont(f1).SetLocation(50f, 50f).DrawOn(page);
+        // The line above each block is its heading
+        new TextLine(f0, "This block is Japanese: 日本語").SetFallbackFont(f1).SetStructureType(StructElem.H1).SetLocation(50f, 50f).DrawOn(page);
 
         TextBlock textBlock = new TextBlock(
                 f1, Content.OfTextFile("data/languages/japanese.txt"));
@@ -49,7 +50,7 @@ public class Example_02 {
 
         page = new Page(pdf, Letter.PORTRAIT);
 
-        new TextLine(f0, "This block is Korean: 한국어").SetFallbackFont(f2).SetLocation(50f, 50f).DrawOn(page);
+        new TextLine(f0, "This block is Korean: 한국어").SetFallbackFont(f2).SetStructureType(StructElem.H1).SetLocation(50f, 50f).DrawOn(page);
 
         textBlock = new TextBlock(
                 f2, Content.OfTextFile("data/languages/korean.txt"));
@@ -60,7 +61,7 @@ public class Example_02 {
 
         page = new Page(pdf, Letter.PORTRAIT);
 
-        new TextLine(f0, "This block is Simplified Chinese: 简体中文").SetFallbackFont(f3).SetLocation(50f, 50f).DrawOn(page);
+        new TextLine(f0, "This block is Simplified Chinese: 简体中文").SetFallbackFont(f3).SetStructureType(StructElem.H1).SetLocation(50f, 50f).DrawOn(page);
 
         textBlock = new TextBlock(
                 f3, Content.OfTextFile("data/languages/simplified-chinese.txt"));
@@ -71,7 +72,7 @@ public class Example_02 {
 
         page = new Page(pdf, Letter.PORTRAIT);
 
-        new TextLine(f0, "This block is Traditional Chinese: 繁體中文").SetFallbackFont(f4).SetLocation(50f, 50f).DrawOn(page);
+        new TextLine(f0, "This block is Traditional Chinese: 繁體中文").SetFallbackFont(f4).SetStructureType(StructElem.H1).SetLocation(50f, 50f).DrawOn(page);
 
         textBlock = new TextBlock(
                 f4, Content.OfTextFile("data/languages/traditional-chinese.txt"));

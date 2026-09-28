@@ -104,8 +104,18 @@ public class Example_13 {
         table.setColumnWidth(8, 10.0)
         blankOutColumn(table, 8)
 
-        var pages = [Page]()
-        table.drawOn(pdf, &pages, Letter.PORTRAIT)
+        // A heading on the first page only, above the table: the first page is
+        // made here, and the table goes on to new pages.
+        let first = Page(pdf, Letter.PORTRAIT, false)
+        TextLine(f1, "Winter Reading Scores")
+                .setStructureType(StructElem.H1)
+                .setFontSize(16.0)
+                .setLocation(100.0, 38.0)
+                .drawOn(first)
+        table.setFirstPageTopMargin(50.0)
+
+        var pages = [first]
+        table.drawOn(pdf, first, &pages, Letter.PORTRAIT)
         for i in 0..<pages.count {
             let page = pages[i]
             page.addFooter(TextLine(f1, "Page \(i + 1) of \(pages.count)"))

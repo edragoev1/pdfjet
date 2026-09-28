@@ -15,6 +15,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // Example40 draws two bar charts with vertical bars from the same data: the
@@ -38,6 +39,13 @@ func Example40() {
 	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	f2.SetSize(8.0)
 
+	// The heading of the document, above the charts
+	pdfjet.NewTextLine(f1, "Sales in 2025 and 2026").
+		SetStructureType(structelem.H1).
+		SetFontSize(18.0).
+		SetLocation(70.0, 45.0).
+		DrawOn(page)
+
 	months := []string{
 		"Jan", "Feb", "Mar", "Apr", "May", "Jun",
 		"Jul", "Aug", "Sep", "Oct", "Nov", "Dec"}
@@ -55,7 +63,7 @@ func Example40() {
 	chart.SetGroupGap(0.4)
 	chart.SetBarGap(0.1)
 	chart.SetAltDescription("Units sold by month in 2025 and 2026, side by side: from 31 to 72 a month in 2025 and from 20 to 80 in 2026, the most in December in both years.")
-	chart.SetLocation(70.0, 50.0)
+	chart.SetLocation(70.0, 70.0)
 	chart.DrawOn(page)
 
 	stacked := pdfjet.NewBarChart(f1, f2)
@@ -69,11 +77,12 @@ func Example40() {
 	stacked.SetStacked(true)
 	stacked.SetDrawValueLabels(true)
 	stacked.SetAltDescription("Units sold by month in 2025 and 2026, stacked: from 85 a month, in February and May, to 152 in December.")
-	stacked.SetLocation(70.0, 400.0)
+	stacked.SetLocation(70.0, 420.0)
 	stacked.DrawOn(page)
 
 	page = pdfjet.NewPage(pdf, letter.Portrait())
 	title := pdfjet.NewTextLine(f1, "Calendar 2026").SetFontSize(14.0)
+	title.SetStructureType(structelem.H2) // Under the heading of the first page
 	title.SetLocation(50.0, 45.0)
 	title.DrawOn(page)
 	monthNames := []string{

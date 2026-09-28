@@ -38,6 +38,13 @@ final public class Example_39 {
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
+        // The heading of the page, above the chart
+        new TextLine(f1, "Rivers of the World")
+                .setStructureType(StructElem.H1)
+                .setFontSize(18f)
+                .setLocation(36f, 40f)
+                .drawOn(page);
+
         String[] rivers = {
                 "Nile", "Amazon", "Yangtze", "Mississippi-Missouri", "Yenisey-Baikal-Selenga",
                 "Huang He (Yellow)", "Ob-Irtysh", "Paraná", "Congo", "Amur"};
@@ -47,7 +54,7 @@ final public class Example_39 {
                 0x967110, 0x687b68, 0x8e7155, 0x5c5c5c, 0x897154};
 
         BarChart chart = new BarChart(f1, f2);
-        chart.setLocation(36f, 40f);
+        chart.setLocation(36f, 70f);
         chart.setSize(540f, 400f);
         chart.setTitle("10 Longest Rivers in the World");
         chart.setSubtitle("Length in kilometers · Color reflects typical sediment / pollution character");
@@ -70,13 +77,13 @@ final public class Example_39 {
         // The color key under the chart
         int gray = 0x444444;
         new TextLine(f3, "Color key (illustrative):")
-                .setTextColor(gray).setLocation(171f, 466f).drawOn(page);
+                .setTextColor(gray).setLocation(171f, 496f).drawOn(page);
         int[] keyColors = {0x477aa8, 0x5f7e5f, 0x8e7155, 0x967110, 0x5c5c5c};
         String[] keyTexts = {
                 "Clear / low sediment", "Sediment-rich, relatively clean", "Polluted / industrial & agricultural",
                 "Heavy natural sediment (loess)", "Natural dark tannin stain (Congo)"};
         float[] keyX = {171f, 262f, 398f, 171f, 313f};
-        float[] keyY = {482f, 482f, 482f, 497f, 497f};
+        float[] keyY = {512f, 512f, 512f, 527f, 527f};
         for (int i = 0; i < keyColors.length; i++) {
             // The swatches are rectangles, drawn as artifacts next to their text.
             new Rect(keyX[i], keyY[i] - 8.5f, 10.5f, 10.5f).setFillColor(keyColors[i]).drawOn(page);
@@ -86,7 +93,7 @@ final public class Example_39 {
 
         String note = "Color mapping is illustrative; lengths and conditions vary by source and season.";
         new TextLine(f4, note)
-                .setTextColor(0x696969).setLocation(576f - f4.stringWidth(note), 520f).drawOn(page);
+                .setTextColor(0x696969).setLocation(576f - f4.stringWidth(note), 550f).drawOn(page);
 
         pdf.complete();
     }

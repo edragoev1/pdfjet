@@ -26,6 +26,13 @@ public class Example_14 {
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
+        // The heading of the document, above the symbols
+        new TextLine(f1, "Data Matrix Barcodes")
+                .SetStructureType(StructElem.H1)
+                .SetFontSize(18f)
+                .SetLocation(50f, 36f)
+                .DrawOn(page);
+
         DataMatrix barcode = new DataMatrix("https://github.com/edragoev1/pdfjet");
         barcode.SetLocation(50f, 50f);
         barcode.SetModuleLength(3f);

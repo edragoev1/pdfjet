@@ -15,6 +15,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // Example23 shows the ascent, descent and baseline of the text in a TextBlock.
@@ -35,7 +36,14 @@ func Example23() {
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 
 	x1 := float32(90.0)
-	y1 := float32(50.0)
+	y1 := float32(100.0)
+
+	// A heading, which PAC asks a document for
+	pdfjet.NewTextLine(f2, "The Ascent and Descent of a Font").
+		SetStructureType(structelem.H1).
+		SetFontSize(18.0).
+		SetLocation(x1, 45.0).
+		DrawOn(page)
 
 	textLine := pdfjet.NewTextLine(f2, "(x1, y1)")
 	textLine.SetLocation(x1, y1-15.0)

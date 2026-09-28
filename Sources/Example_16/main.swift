@@ -23,6 +23,13 @@ public class Example_16 {
 
         let page = Page(pdf, Letter.PORTRAIT)
 
+        // A heading, which PAC asks a document for
+        TextLine(f1, "Text block with highlighted keywords")
+                .setStructureType(StructElem.H1)
+                .setFontSize(18.0)
+                .setLocation(100.0, 36.0)
+                .drawOn(page)
+
         var colors = [String : Int32]()
         colors["Everyone"] = Color.firebrick
         colors["pay"] = Color.green

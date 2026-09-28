@@ -16,7 +16,7 @@ public class Example_32 {
         pdf.setCompliance(Compliance.PDF_UA_1)
         pdf.setTitle("The Source Code of Example_02")
         let font = try Font(pdf, JetBrainsMono.Regular)
-        // The longest lines of Example_02 are 143 characters: at 8 points a
+        // The longest line of Example_02 is 107 characters: at 8 points a
         // landscape page holds them.
         font.setSize(8.0)
 
@@ -29,6 +29,12 @@ public class Example_32 {
         var page = Page(pdf, Letter.LANDSCAPE)
         let x: Float = 50.0
         var y: Float = 50.0
+        // A heading on the first page, which PAC asks a document for
+        TextLine(font, "The Source Code of Example_02")
+                .setStructureType(StructElem.H1)
+                .setFontSize(14.0)
+                .setLocation(x, 32.0)
+                .drawOn(page)
         let leading = font.getBodyHeight()
         let lines = try Content.linesOfTextFile("examples/Example_02.java")
         for line in lines {

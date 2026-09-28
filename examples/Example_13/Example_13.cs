@@ -117,8 +117,19 @@ public class Example_13 {
         table.SetColumnWidth(8, 10f);
         BlankOutColumn(table, 8);
 
+        // A heading on the first page only, above the table: the first page is
+        // made here, and the table goes on to new pages.
+        Page first = new Page(pdf, Letter.PORTRAIT, false);
+        new TextLine(f1, "Winter Reading Scores")
+                .SetStructureType(StructElem.H1)
+                .SetFontSize(16f)
+                .SetLocation(100f, 38f)
+                .DrawOn(first);
+        table.SetFirstPageTopMargin(50f);
+
         List<Page> pages = new List<Page>();
-        table.DrawOn(pdf, pages, Letter.PORTRAIT);
+        pages.Add(first);
+        table.DrawOn(pdf, first, pages, Letter.PORTRAIT);
         for (int i = 0; i < pages.Count; i++) {
             Page page = pages[i];
             page.AddFooter(new TextLine(f1, "Page " + (i + 1) + " of " + pages.Count));

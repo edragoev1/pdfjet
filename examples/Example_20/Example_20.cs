@@ -79,7 +79,9 @@ class Example_20 {
         page.DrawLine(60f, 115f, 552f, 115f);
         page.AddEMC();
 
+        // The heading of the page, which PAC asks a document for
         TextLine text = new TextLine(f2, "The logo on this page was read from a PDF file.");
+        text.SetStructureType(StructElem.H1);
         text.SetFontSize(16f);
         text.SetLocation(60f, 170f);
         text.DrawOn(page);

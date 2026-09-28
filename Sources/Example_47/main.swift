@@ -30,8 +30,19 @@ public class Example_47 {
 
         var page: Page? = nil
         let textFrame = TextFrame(f1, paragraphs)
+        var first = true
         while textFrame.hasMoreText() {
             page = Page(pdf, Letter.LANDSCAPE)
+            if first {
+                // The heading, on the first page only, which its columns start under
+                TextLine(f1, "The Idiot, by Fyodor Dostoevsky")
+                        .setStructureType(StructElem.H1)
+                        .setFontSize(20.0)
+                        .setLocation(50.0, 50.0)
+                        .drawOn(page!)
+                y = 80.0
+                first = false
+            }
 
             textFrame.setLocation(x, y)
             textFrame.setWidth(w)

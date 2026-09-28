@@ -74,7 +74,9 @@ public class Example_20 {
         page.drawLine(60.0, 115.0, 552.0, 115.0)
         page.addEMC()
 
+        // The heading of the page, which PAC asks a document for
         let text = TextLine(f2, "The logo on this page was read from a PDF file.")
+        text.setStructureType(StructElem.H1)
         text.setFontSize(16.0)
         text.setLocation(60.0, 170.0)
         text.drawOn(page)

@@ -16,6 +16,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/content"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // Example01 demonstrates creating a PDF with multilingual text blocks
@@ -44,6 +45,13 @@ func Example01() {
 	colorMap["Everyone"] = color.DarkRed
 	colorMap["Pay"] = color.DarkGreen
 	colorMap["Freedom"] = color.Blue
+
+	// The heading of the document, above the text blocks
+	pdfjet.NewTextLine(font1, "English, Greek and Bulgarian Text").
+		SetStructureType(structelem.H1).
+		SetFontSize(18.0).
+		SetLocation(50.0, 36.0).
+		DrawOn(page)
 
 	// English text block setup and drawing
 	textBlock := pdfjet.NewTextBlock(font1,

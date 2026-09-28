@@ -28,7 +28,14 @@ public class Example_23 {
         Page page = new Page(pdf, Letter.PORTRAIT);
 
         float x1 = 90f;
-        float y1 = 50f;
+        float y1 = 100f;
+
+        // A heading, which PAC asks a document for
+        new TextLine(f2, "The Ascent and Descent of a Font")
+                .SetStructureType(StructElem.H1)
+                .SetFontSize(18f)
+                .SetLocation(x1, 45f)
+                .DrawOn(page);
 
         TextLine textLine = new TextLine(f2, "(x1, y1)");
         textLine.SetLocation(x1, y1 - 15f);

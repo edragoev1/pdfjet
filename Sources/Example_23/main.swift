@@ -25,7 +25,14 @@ public class Example_23 {
         let page = Page(pdf, Letter.PORTRAIT)
 
         let x1: Float = 90.0
-        let y1: Float = 50.0
+        let y1: Float = 100.0
+
+        // A heading, which PAC asks a document for
+        TextLine(f2, "The Ascent and Descent of a Font")
+                .setStructureType(StructElem.H1)
+                .setFontSize(18.0)
+                .setLocation(x1, 45.0)
+                .drawOn(page)
 
         let textLine = TextLine(f2, "(x1, y1)")
         textLine.setLocation(x1, y1 - 15.0)

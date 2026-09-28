@@ -34,6 +34,13 @@ public class Example_39 {
 
         let page = Page(pdf, Letter.PORTRAIT)
 
+        // The heading of the page, above the chart
+        TextLine(f1, "Rivers of the World")
+                .setStructureType(StructElem.H1)
+                .setFontSize(18.0)
+                .setLocation(36.0, 40.0)
+                .drawOn(page)
+
         let rivers = [
                 "Nile", "Amazon", "Yangtze", "Mississippi-Missouri", "Yenisey-Baikal-Selenga",
                 "Huang He (Yellow)", "Ob-Irtysh", "Paraná", "Congo", "Amur"]
@@ -43,7 +50,7 @@ public class Example_39 {
                 0x967110, 0x687b68, 0x8e7155, 0x5c5c5c, 0x897154]
 
         let chart = BarChart(f1, f2)
-        chart.setLocation(36.0, 40.0)
+        chart.setLocation(36.0, 70.0)
         chart.setSize(540.0, 400.0)
         chart.setTitle("10 Longest Rivers in the World")
         chart.setSubtitle("Length in kilometers · Color reflects typical sediment / pollution character")
@@ -66,13 +73,13 @@ public class Example_39 {
         // The color key under the chart
         let gray: Int32 = 0x444444
         TextLine(f3, "Color key (illustrative):")
-                .setTextColor(gray).setLocation(171.0, 466.0).drawOn(page)
+                .setTextColor(gray).setLocation(171.0, 496.0).drawOn(page)
         let keyColors: [Int32] = [0x477aa8, 0x5f7e5f, 0x8e7155, 0x967110, 0x5c5c5c]
         let keyTexts = [
                 "Clear / low sediment", "Sediment-rich, relatively clean", "Polluted / industrial & agricultural",
                 "Heavy natural sediment (loess)", "Natural dark tannin stain (Congo)"]
         let keyX: [Float] = [171.0, 262.0, 398.0, 171.0, 313.0]
-        let keyY: [Float] = [482.0, 482.0, 482.0, 497.0, 497.0]
+        let keyY: [Float] = [512.0, 512.0, 512.0, 527.0, 527.0]
         for i in 0..<keyColors.count {
             // The swatches are rectangles, drawn as artifacts next to their text.
             Rect(keyX[i], keyY[i] - 8.5, 10.5, 10.5).setFillColor(keyColors[i]).drawOn(page)
@@ -82,7 +89,7 @@ public class Example_39 {
 
         let note = "Color mapping is illustrative; lengths and conditions vary by source and season."
         TextLine(f4, note)
-                .setTextColor(0x696969).setLocation(576.0 - f4.stringWidth(note), 520.0).drawOn(page)
+                .setTextColor(0x696969).setLocation(576.0 - f4.stringWidth(note), 550.0).drawOn(page)
 
         try pdf.complete()
     }

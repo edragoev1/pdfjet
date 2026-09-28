@@ -93,7 +93,9 @@ func Example20() {
 	page.DrawLine(60.0, 115.0, 552.0, 115.0)
 	page.AddEMC()
 
+	// The heading of the page, which PAC asks a document for
 	text := pdfjet.NewTextLine(f2, "The logo on this page was read from a PDF file.")
+	text.SetStructureType(structelem.H1)
 	text.SetFontSize(16.0)
 	text.SetLocation(60.0, 170.0)
 	text.DrawOn(page)

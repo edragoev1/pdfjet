@@ -27,6 +27,13 @@ public class Example_16 {
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
+        // A heading, which PAC asks a document for
+        new TextLine(f1, "Text block with highlighted keywords")
+                .SetStructureType(StructElem.H1)
+                .SetFontSize(18f)
+                .SetLocation(100f, 36f)
+                .DrawOn(page);
+
         Dictionary<String, Int32> colors = new Dictionary<String, Int32>();
         colors["Everyone"] = Color.firebrick;
         colors["pay"] = Color.green;

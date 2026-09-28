@@ -28,9 +28,16 @@ public class Example_35 {
         Font f2 = new Font(pdf, IBMPlexSans.Bold);
         f2.SetSize(14f);
 
+        // The heading, above the drawings, which are 40 points lower for it
+        new TextLine(f2, "Containers and Stamps")
+                .SetStructureType(StructElem.H1)
+                .SetFontSize(18f)
+                .SetLocation(50f, 30f)
+                .DrawOn(page);
+
         // Base container
         Container container = new Container(400f, 400f);
-        container.SetLocation(100f, 100f);
+        container.SetLocation(100f, 140f);
 
         // Add a rectangle to container
         Rect rect = new Rect(0f, 0f, 400f, 400f);
@@ -71,7 +78,7 @@ public class Example_35 {
 
         stamp.Complete();   // The stamp is complete!
 
-        stamp.SetLocation(50f, 50f).DrawOn(page);
+        stamp.SetLocation(50f, 90f).DrawOn(page);
 
         // Rotate the stamp counter clockwise and draw it again
         stamp.SetRotation(-15).DrawOn(page);
@@ -80,7 +87,7 @@ public class Example_35 {
         stamp.SetRotation(15).DrawOn(page);
 
         // Draw the stamp again at a quarter of its size
-        stamp.SetRotation(0).ScaleBy(0.25f).SetLocation(360f, 480f).DrawOn(page);
+        stamp.SetRotation(0).ScaleBy(0.25f).SetLocation(360f, 520f).DrawOn(page);
 
         // Add a text line to container
         TextLine title = new TextLine(f1, "Container");
@@ -136,7 +143,7 @@ public class Example_35 {
         rect7.SetBorderWidth(2f);
         container5.Add(rect7);
 
-        container5.SetLocation(50f, 600f);
+        container5.SetLocation(50f, 640f);
         container5.DrawOn(page);
 
         container5.SetRotation(90);

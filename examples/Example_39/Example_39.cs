@@ -37,6 +37,13 @@ public class Example_39 {
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
+        // The heading of the page, above the chart
+        new TextLine(f1, "Rivers of the World")
+                .SetStructureType(StructElem.H1)
+                .SetFontSize(18f)
+                .SetLocation(36f, 40f)
+                .DrawOn(page);
+
         String[] rivers = {
                 "Nile", "Amazon", "Yangtze", "Mississippi-Missouri", "Yenisey-Baikal-Selenga",
                 "Huang He (Yellow)", "Ob-Irtysh", "Paraná", "Congo", "Amur"};
@@ -46,7 +53,7 @@ public class Example_39 {
                 0x967110, 0x687b68, 0x8e7155, 0x5c5c5c, 0x897154};
 
         BarChart chart = new BarChart(f1, f2);
-        chart.SetLocation(36f, 40f);
+        chart.SetLocation(36f, 70f);
         chart.SetSize(540f, 400f);
         chart.SetTitle("10 Longest Rivers in the World");
         chart.SetSubtitle("Length in kilometers · Color reflects typical sediment / pollution character");
@@ -69,13 +76,13 @@ public class Example_39 {
         // The color key under the chart
         int gray = 0x444444;
         new TextLine(f3, "Color key (illustrative):")
-                .SetTextColor(gray).SetLocation(171f, 466f).DrawOn(page);
+                .SetTextColor(gray).SetLocation(171f, 496f).DrawOn(page);
         int[] keyColors = {0x477aa8, 0x5f7e5f, 0x8e7155, 0x967110, 0x5c5c5c};
         String[] keyTexts = {
                 "Clear / low sediment", "Sediment-rich, relatively clean", "Polluted / industrial & agricultural",
                 "Heavy natural sediment (loess)", "Natural dark tannin stain (Congo)"};
         float[] keyX = {171f, 262f, 398f, 171f, 313f};
-        float[] keyY = {482f, 482f, 482f, 497f, 497f};
+        float[] keyY = {512f, 512f, 512f, 527f, 527f};
         for (int i = 0; i < keyColors.Length; i++) {
             // The swatches are rectangles, drawn as artifacts next to their text.
             new Rect(keyX[i], keyY[i] - 8.5f, 10.5f, 10.5f).SetFillColor(keyColors[i]).DrawOn(page);
@@ -85,7 +92,7 @@ public class Example_39 {
 
         String note = "Color mapping is illustrative; lengths and conditions vary by source and season.";
         new TextLine(f4, note)
-                .SetTextColor(0x696969).SetLocation(576f - f4.StringWidth(note), 520f).DrawOn(page);
+                .SetTextColor(0x696969).SetLocation(576f - f4.StringWidth(note), 550f).DrawOn(page);
 
         pdf.Complete();
     }

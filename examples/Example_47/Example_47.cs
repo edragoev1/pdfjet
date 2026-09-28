@@ -37,8 +37,19 @@ public class Example_47 {
 
         Page page = null;
         TextFrame textFrame = new TextFrame(f1, paragraphs);
+        bool first = true;
         while (textFrame.HasMoreText()) {
             page = new Page(pdf, Letter.LANDSCAPE);
+            if (first) {
+                // The heading, on the first page only, which its columns start under
+                new TextLine(f1, "The Idiot, by Fyodor Dostoevsky")
+                        .SetStructureType(StructElem.H1)
+                        .SetFontSize(20f)
+                        .SetLocation(50f, 50f)
+                        .DrawOn(page);
+                y = 80f;
+                first = false;
+            }
 
             textFrame.SetLocation(x, y);
             textFrame.SetWidth(w);

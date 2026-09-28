@@ -23,6 +23,13 @@ public class Example_25 {
         let f2 = try Font(pdf, IBMPlexSans.Bold)
         f2.setSize(10.0)
 
+        // A heading, which PAC asks a document for
+        TextLine(f2, "Fruit Donut Chart")
+                .setStructureType(StructElem.H1)
+                .setFontSize(18.0)
+                .setLocation(100.0, 100.0)
+                .drawOn(page)
+
         let chart = DonutChart(f1, f2)
         chart.setLocation(100.0, 200.0)
         chart.setRadii(200.0, 120.0)     // an inner radius of 0 makes a pie chart

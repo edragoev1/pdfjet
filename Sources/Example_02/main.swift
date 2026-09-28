@@ -38,7 +38,8 @@ public class Example_02 {
 
         // The heading is in IBM Plex Sans, and the characters it has no glyph for,
         // the name of the language, are in the fallback font.
-        TextLine(f0, "This block is Japanese: 日本語").setFallbackFont(f1).setLocation(50.0, 50.0).drawOn(page)
+        // The line above each block is its heading
+        TextLine(f0, "This block is Japanese: 日本語").setFallbackFont(f1).setStructureType(StructElem.H1).setLocation(50.0, 50.0).drawOn(page)
 
         var textBlock = TextBlock(
                 f1, try Content.ofTextFile("data/languages/japanese.txt"))
@@ -49,7 +50,7 @@ public class Example_02 {
 
         page = Page(pdf, Letter.PORTRAIT)
 
-        TextLine(f0, "This block is Korean: 한국어").setFallbackFont(f2).setLocation(50.0, 50.0).drawOn(page)
+        TextLine(f0, "This block is Korean: 한국어").setFallbackFont(f2).setStructureType(StructElem.H1).setLocation(50.0, 50.0).drawOn(page)
 
         textBlock = TextBlock(
                 f2, try Content.ofTextFile("data/languages/korean.txt"))
@@ -60,7 +61,7 @@ public class Example_02 {
 
         page = Page(pdf, Letter.PORTRAIT)
 
-        TextLine(f0, "This block is Simplified Chinese: 简体中文").setFallbackFont(f3).setLocation(50.0, 50.0).drawOn(page)
+        TextLine(f0, "This block is Simplified Chinese: 简体中文").setFallbackFont(f3).setStructureType(StructElem.H1).setLocation(50.0, 50.0).drawOn(page)
 
         textBlock = TextBlock(
                 f3, try Content.ofTextFile("data/languages/simplified-chinese.txt"))
@@ -71,7 +72,7 @@ public class Example_02 {
 
         page = Page(pdf, Letter.PORTRAIT)
 
-        TextLine(f0, "This block is Traditional Chinese: 繁體中文").setFallbackFont(f4).setLocation(50.0, 50.0).drawOn(page)
+        TextLine(f0, "This block is Traditional Chinese: 繁體中文").setFallbackFont(f4).setStructureType(StructElem.H1).setLocation(50.0, 50.0).drawOn(page)
 
         textBlock = TextBlock(
                 f4, try Content.ofTextFile("data/languages/traditional-chinese.txt"))

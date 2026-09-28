@@ -20,6 +20,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/content"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // Example13 draws a table that spans multiple pages.
@@ -116,8 +117,18 @@ func Example13() {
 	table.SetColumnWidth(8, 10.0)
 	blankOutColumn(table, 8)
 
-	pages := make([]*pdfjet.Page, 0)
-	table.DrawOnPages(pdf, &pages, letter.Portrait())
+	// A heading on the first page only, above the table: the first page is
+	// made here, and the table goes on to new pages.
+	first := pdfjet.NewPageDetached(pdf, letter.Portrait())
+	pdfjet.NewTextLine(f1, "Winter Reading Scores").
+		SetStructureType(structelem.H1).
+		SetFontSize(16.0).
+		SetLocation(100.0, 38.0).
+		DrawOn(first)
+	table.SetFirstPageTopMargin(50.0)
+
+	pages := []*pdfjet.Page{first}
+	table.DrawOnPagesFrom(pdf, first, &pages, letter.Portrait())
 	for i, page := range pages {
 		page.AddFooter(pdfjet.NewTextLine(f1,
 			"Page "+strconv.Itoa(i+1)+" of "+strconv.Itoa(len(pages))))

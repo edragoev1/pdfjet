@@ -27,6 +27,13 @@ public class Example_25 {
         Font f2 = new Font(pdf, IBMPlexSans.Bold);
         f2.setSize(10.0f);
 
+        // A heading, which PAC asks a document for
+        new TextLine(f2, "Fruit Donut Chart")
+                .setStructureType(StructElem.H1)
+                .setFontSize(18f)
+                .setLocation(100f, 100f)
+                .drawOn(page);
+
         DonutChart chart = new DonutChart(f1, f2);
         chart.setLocation(100.0f, 200.0f);
         chart.setRadii(200.0f, 120.0f);     // an inner radius of 0 makes a pie chart

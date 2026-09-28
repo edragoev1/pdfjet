@@ -31,9 +31,16 @@ public class Example_35 {
         Font f2 = new Font(pdf, IBMPlexSans.Bold);
         f2.setSize(14f);
 
+        // The heading, above the drawings, which are 40 points lower for it
+        new TextLine(f2, "Containers and Stamps")
+                .setStructureType(StructElem.H1)
+                .setFontSize(18f)
+                .setLocation(50f, 30f)
+                .drawOn(page);
+
         // Base container
         Container container = new Container(400f, 400f);
-        container.setLocation(100f, 100f);
+        container.setLocation(100f, 140f);
 
         // Add a rectangle to container
         Rect rect = new Rect(0f, 0f, 400f, 400f);
@@ -74,7 +81,7 @@ public class Example_35 {
 
         stamp.complete();   // The stamp is complete!
 
-        stamp.setLocation(50f, 50f).drawOn(page);
+        stamp.setLocation(50f, 90f).drawOn(page);
 
         // Rotate the stamp counter clockwise and draw it again
         stamp.setRotation(-15).drawOn(page);
@@ -83,7 +90,7 @@ public class Example_35 {
         stamp.setRotation(15).drawOn(page);
 
         // Draw the stamp again at a quarter of its size
-        stamp.setRotation(0).scaleBy(0.25f).setLocation(360f, 480f).drawOn(page);
+        stamp.setRotation(0).scaleBy(0.25f).setLocation(360f, 520f).drawOn(page);
 
         // Add a text line to container
         TextLine title = new TextLine(f1, "Container");
@@ -139,7 +146,7 @@ public class Example_35 {
         rect7.setBorderWidth(2f);
         container5.add(rect7);
 
-        container5.setLocation(50f, 600f);
+        container5.setLocation(50f, 640f);
         container5.drawOn(page);
 
         container5.setRotation(90);

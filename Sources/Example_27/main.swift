@@ -34,8 +34,16 @@ public class Example_27 {
 
         var page = Page(pdf, Letter.PORTRAIT)
 
+        // A heading, which PAC asks a document for, in the Latin letters the
+        // Thai font has as well
+        TextLine(f1, "Thai, Hebrew, Arabic and Persian text")
+                .setStructureType(StructElem.H1)
+                .setFontSize(18.0)
+                .setLocation(30.0, 45.0)
+                .drawOn(page)
+
         var textBlock = TextBlock(f1, try Content.ofTextFile("data/languages/thai.txt"))
-        textBlock.setLocation(30.0, 30.0)
+        textBlock.setLocation(30.0, 65.0)
         textBlock.setWidth(430.0)
         textBlock.setBorderColor(Color.blue)
         textBlock.setPadding(10.0)

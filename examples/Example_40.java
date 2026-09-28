@@ -34,6 +34,13 @@ final public class Example_40 {
         Font f2 = new Font(pdf, IBMPlexSans.Regular);
         f2.setSize(8f);
 
+        // The heading of the document, above the charts
+        new TextLine(f1, "Sales in 2025 and 2026")
+                .setStructureType(StructElem.H1)
+                .setFontSize(18f)
+                .setLocation(70f, 45f)
+                .drawOn(page);
+
         String[] months = {
                 "Jan", "Feb", "Mar", "Apr", "May", "Jun",
                 "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
@@ -41,7 +48,7 @@ final public class Example_40 {
         float[] units2026 = {75f, 20f, 73f, 75f, 20f, 73f, 61f, 58f, 69f, 64f, 77f, 80f};
 
         BarChart chart = new BarChart(f1, f2);
-        chart.setLocation(70f, 50f);
+        chart.setLocation(70f, 70f);
         chart.setSize(500f, 300f);
         chart.setTitle("Units sold by month");
         chart.setXAxisTitle("Month");
@@ -55,7 +62,7 @@ final public class Example_40 {
         chart.drawOn(page);
 
         BarChart stacked = new BarChart(f1, f2);
-        stacked.setLocation(70f, 400f);
+        stacked.setLocation(70f, 420f);
         stacked.setSize(500f, 300f);
         stacked.setTitle("Units sold by month, stacked");
         stacked.setXAxisTitle("Month");
@@ -69,7 +76,9 @@ final public class Example_40 {
         stacked.drawOn(page);
 
         page = new Page(pdf, Letter.PORTRAIT);
-        new TextLine(f1, "Calendar 2026").setFontSize(14f).setLocation(50f, 45f).drawOn(page);
+        new TextLine(f1, "Calendar 2026").setFontSize(14f)
+                .setStructureType(StructElem.H2) // Under the heading of the first page
+                .setLocation(50f, 45f).drawOn(page);
         String[] monthNames = {
                 "January", "February", "March", "April", "May", "June",
                 "July", "August", "September", "October", "November", "December"};

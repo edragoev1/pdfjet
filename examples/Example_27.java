@@ -39,8 +39,16 @@ public class Example_27 {
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
+        // A heading, which PAC asks a document for, in the Latin letters the
+        // Thai font has as well
+        new TextLine(f1, "Thai, Hebrew, Arabic and Persian text")
+                .setStructureType(StructElem.H1)
+                .setFontSize(18f)
+                .setLocation(30f, 45f)
+                .drawOn(page);
+
         TextBlock textBlock = new TextBlock(f1, Content.ofTextFile("data/languages/thai.txt"));
-        textBlock.setLocation(30f, 30f);
+        textBlock.setLocation(30f, 65f);
         textBlock.setWidth(430f);
         textBlock.setBorderColor(Color.blue);
         textBlock.setPadding(10f);

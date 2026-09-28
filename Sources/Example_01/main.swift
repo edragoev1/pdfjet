@@ -35,6 +35,13 @@ public class Example_01 {
         map["Pay"] = Color.darkgreen
         map["Freedom"] = Color.blue
 
+        // The heading of the document, above the text blocks
+        TextLine(font, "English, Greek and Bulgarian Text")
+                .setStructureType(StructElem.H1)
+                .setFontSize(18.0)
+                .setLocation(50.0, 36.0)
+                .drawOn(page)
+
         // Read English text from a file
         var textBlock = TextBlock(
                 font, try Content.ofTextFile("data/languages/english.txt"))

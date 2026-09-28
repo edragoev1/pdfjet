@@ -39,6 +39,13 @@ public class Example_01 {
         map["Pay"] = Color.darkgreen;
         map["Freedom"] = Color.blue;
 
+        // The heading of the document, above the text blocks
+        new TextLine(font, "English, Greek and Bulgarian Text")
+                .SetStructureType(StructElem.H1)
+                .SetFontSize(18f)
+                .SetLocation(50f, 36f)
+                .DrawOn(page);
+
         // Add English text from a file
         TextBlock textBlock = new TextBlock(font,
                 Content.OfTextFile("data/languages/english.txt"));

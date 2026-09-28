@@ -117,8 +117,19 @@ final public class Example_13 {
         table.setColumnWidth(8, 10f);
         blankOutColumn(table, 8);
 
+        // A heading on the first page only, above the table: the first page is
+        // made here, and the table goes on to new pages.
+        Page first = new Page(pdf, Letter.PORTRAIT, Page.DETACHED);
+        new TextLine(f1, "Winter Reading Scores")
+                .setStructureType(StructElem.H1)
+                .setFontSize(16f)
+                .setLocation(100f, 38f)
+                .drawOn(first);
+        table.setFirstPageTopMargin(50f);
+
         List<Page> pages = new ArrayList<Page>();
-        table.drawOn(pdf, pages, Letter.PORTRAIT);
+        pages.add(first);
+        table.drawOn(pdf, first, pages, Letter.PORTRAIT);
         for (int i = 0; i < pages.size(); i++) {
             Page page = pages.get(i);
             page.addFooter(new TextLine(f1, "Page " + (i + 1) + " of " + pages.size()));

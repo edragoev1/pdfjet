@@ -29,6 +29,13 @@ public class Example_40 {
         let f2 = try Font(pdf, IBMPlexSans.Regular)
         f2.setSize(8.0)
 
+        // The heading of the document, above the charts
+        TextLine(f1, "Sales in 2025 and 2026")
+                .setStructureType(StructElem.H1)
+                .setFontSize(18.0)
+                .setLocation(70.0, 45.0)
+                .drawOn(page)
+
         let months = [
                 "Jan", "Feb", "Mar", "Apr", "May", "Jun",
                 "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
@@ -36,7 +43,7 @@ public class Example_40 {
         let units2026: [Float] = [75.0, 20.0, 73.0, 75.0, 20.0, 73.0, 61.0, 58.0, 69.0, 64.0, 77.0, 80.0]
 
         let chart = BarChart(f1, f2)
-        chart.setLocation(70.0, 50.0)
+        chart.setLocation(70.0, 70.0)
         chart.setSize(500.0, 300.0)
         chart.setTitle("Units sold by month")
         chart.setXAxisTitle("Month")
@@ -50,7 +57,7 @@ public class Example_40 {
         chart.drawOn(page)
 
         let stacked = BarChart(f1, f2)
-        stacked.setLocation(70.0, 400.0)
+        stacked.setLocation(70.0, 420.0)
         stacked.setSize(500.0, 300.0)
         stacked.setTitle("Units sold by month, stacked")
         stacked.setXAxisTitle("Month")
@@ -64,7 +71,9 @@ public class Example_40 {
         stacked.drawOn(page)
 
         page = Page(pdf, Letter.PORTRAIT)
-        TextLine(f1, "Calendar 2026").setFontSize(14.0).setLocation(50.0, 45.0).drawOn(page)
+        TextLine(f1, "Calendar 2026").setFontSize(14.0)
+                .setStructureType(StructElem.H2) // Under the heading of the first page
+                .setLocation(50.0, 45.0).drawOn(page)
         let monthNames = [
                 "January", "February", "March", "April", "May", "June",
                 "July", "August", "September", "October", "November", "December"]

@@ -22,6 +22,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 	"github.com/edragoev1/pdfjet/v9/src/shape"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // country is a country of the data file: its name and its point on the chart.
@@ -50,6 +51,13 @@ func Example09() {
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 
 	countries := readCountries("data/world-communications.txt", "|")
+
+	// The heading of the document, above the chart
+	pdfjet.NewTextLine(f1, "Cell Phones and Internet Use by Country").
+		SetStructureType(structelem.H1).
+		SetFontSize(16.0).
+		SetLocation(70.0, 36.0).
+		DrawOn(page)
 
 	chart := pdfjet.NewChart(f1, f2)
 	chart.SetSize(500.0, 300.0)

@@ -50,6 +50,13 @@ public class Example_01 {
         map.put("Pay", Color.darkgreen);
         map.put("Freedom", Color.blue);
 
+        // The heading of the document, above the text blocks
+        new TextLine(font, "English, Greek and Bulgarian Text")
+                .setStructureType(StructElem.H1)
+                .setFontSize(18f)
+                .setLocation(50f, 36f)
+                .drawOn(page);
+
         // Add English text from a file
         TextBlock textBlock = new TextBlock(
             font, Content.ofTextFile("data/languages/english.txt"));

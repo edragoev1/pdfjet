@@ -21,6 +21,13 @@ public class Example_42 {
 
         let page = Page(pdf, Letter.PORTRAIT)
 
+        // The heading, above the form
+        TextLine(f2, "Company Information Form")
+                .setStructureType(StructElem.H1)
+                .setFontSize(16.0)
+                .setLocation(50.0, 60.0)
+                .drawOn(page)
+
         let w: Float = 500.0 // The width of the form
 
         var fields = [Field]()
@@ -45,7 +52,7 @@ public class Example_42 {
                 .setLabelFontSize(9.0)
                 .setValueFont(f2)
                 .setValueFontSize(10.0)
-                .setLocation(50.0, 50.0)
+                .setLocation(50.0, 80.0)
                 .setWidth(w)
                 .setStrokeWidth(0.2)
                 .drawOn(page)

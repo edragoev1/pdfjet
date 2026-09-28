@@ -18,6 +18,10 @@ This is the first entry in this file; earlier releases were not tracked here.
   PDF, with the next pages at the y of its location, and the footer
   counting them all. Example_08 and Example_57 have a heading on their first
   page with them, which PAC asks a document for.
+- A heading in every PDF/UA example, in all four ports: Example_01, 02, 09,
+  13, 14, 16, 20, 23, 25, 27, 32, 35, 39, 40, 42 and 47 have an H1 on their
+  first page, a line of their own or one they already drew, so that PAC's
+  quality checks find a heading in each.
 - A description of a point, in all four ports: `Point.setAltDescription`,
   what a point that is a link stands for, like the country a point of a
   chart is. In a tagged document a point of a chart, or of a cell, that is a

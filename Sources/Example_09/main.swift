@@ -41,6 +41,13 @@ public class Example_09 {
 
         let countries = try readCountries("data/world-communications.txt", "|")
 
+        // The heading of the document, above the chart
+        TextLine(f1, "Cell Phones and Internet Use by Country")
+                .setStructureType(StructElem.H1)
+                .setFontSize(16.0)
+                .setLocation(70.0, 36.0)
+                .drawOn(page)
+
         let chart = Chart(f1, f2)
         chart.setLocation(70.0, 50.0)
         chart.setSize(500.0, 300.0)

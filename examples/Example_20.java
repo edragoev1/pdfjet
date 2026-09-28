@@ -81,7 +81,9 @@ class Example_20 {
         page.drawLine(60f, 115f, 552f, 115f);
         page.addEMC();
 
+        // The heading of the page, which PAC asks a document for
         TextLine text = new TextLine(f2, "The logo on this page was read from a PDF file.");
+        text.setStructureType(StructElem.H1);
         text.setFontSize(16f);
         text.setLocation(60f, 170f);
         text.drawOn(page);

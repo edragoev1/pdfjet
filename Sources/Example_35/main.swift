@@ -24,9 +24,16 @@ public class Example_35 {
         let f2 = try Font(pdf, IBMPlexSans.Bold)
         f2.setSize(14.0)
 
+        // The heading, above the drawings, which are 40 points lower for it
+        TextLine(f2, "Containers and Stamps")
+                .setStructureType(StructElem.H1)
+                .setFontSize(18.0)
+                .setLocation(50.0, 30.0)
+                .drawOn(page)
+
         // Base container
         let container = Container(400.0, 400.0)
-        container.setLocation(100.0, 100.0)
+        container.setLocation(100.0, 140.0)
 
         // Add a rectangle to container
         let rect = Rect(0.0, 0.0, 400.0, 400.0)
@@ -67,7 +74,7 @@ public class Example_35 {
 
         try stamp.complete()    // The stamp is complete!
 
-        stamp.setLocation(50.0, 50.0).drawOn(page)
+        stamp.setLocation(50.0, 90.0).drawOn(page)
 
         // Rotate the stamp counter clockwise and draw it again
         stamp.setRotation(-15).drawOn(page)
@@ -76,7 +83,7 @@ public class Example_35 {
         stamp.setRotation(15).drawOn(page)
 
         // Draw the stamp again at a quarter of its size
-        stamp.setRotation(0).scaleBy(0.25).setLocation(360.0, 480.0).drawOn(page)
+        stamp.setRotation(0).scaleBy(0.25).setLocation(360.0, 520.0).drawOn(page)
 
         // Add a text line to container
         let title = TextLine(f1, "Container")
@@ -132,7 +139,7 @@ public class Example_35 {
         rect7.setBorderWidth(2.0)
         container5.add(rect7)
 
-        container5.setLocation(50.0, 600.0)
+        container5.setLocation(50.0, 640.0)
         _ = container5.drawOn(page)
 
         container5.setRotation(90)
