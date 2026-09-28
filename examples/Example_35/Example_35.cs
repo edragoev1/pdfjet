@@ -55,7 +55,7 @@ public class Example_35 {
             .DrawRect(10f, 10f, 380f, 380f);
 
         // Fill Rectangle
-        stamp.SetFillColor(Color.green).FillRect(10f, 10f, 20f, 20f);
+        stamp.SetFillColor(Color.darkgreen).FillRect(10f, 10f, 20f, 20f);
 
         // Draw some text
         var parameters = new TextParameters()
@@ -99,6 +99,7 @@ public class Example_35 {
 
         TextLine innerText = new TextLine(f1, "Nested 1");
         innerText.SetLocation(50f, 100f);
+        innerText.SetTextColor(Color.white);   // On the blue of the rectangle
         nested1.Add(innerText);
 
         container.Add(nested1);

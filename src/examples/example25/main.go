@@ -39,8 +39,8 @@ func Example25() {
 	chart.AddSlice(pdfjet.NewSlice(25.0, 0xC1121F, "Apples"))  // deep red
 	chart.AddSlice(pdfjet.NewSlice(20.0, 0x1D3557, "Oranges")) // navy blue
 	chart.AddSlice(pdfjet.NewSlice(30.0, 0x1A7468, "Bananas")) // dark teal
-	chart.AddSlice(pdfjet.NewSlice(15.0, 0xD97706, "Grapes"))  // burnt orange
-	chart.AddSlice(pdfjet.NewSlice(10.0, 0xCAAA2F, "Lemons"))  // dark gold
+	chart.AddSlice(pdfjet.NewSlice(15.0, 0xB16104, "Grapes"))  // burnt orange
+	chart.AddSlice(pdfjet.NewSlice(10.0, 0x846F1E, "Lemons"))  // dark gold
 	chart.DrawOn(page)
 
 	if err := pdf.Complete(); err != nil {

@@ -91,7 +91,7 @@ func Example05() {
 	narrower := int(math.Floor(float64(difference) + 0.5))
 	note := pdfjet.NewTextLine(regular,
 		"Kerning makes these words "+strconv.Itoa(narrower)+" points narrower at 30 points.")
-	note.SetTextColor(color.Gray)
+	note.SetTextColor(color.DimGray)
 	note.SetLocation(50.0, y+30.0)
 	note.DrawOn(page)
 
@@ -104,7 +104,7 @@ func Example05() {
 // a text block with a light background, and returns the bottom of the block.
 func drawSample(page *pdfjet.Page, labelFont, font *pdfjet.Font, label string, y float32) float32 {
 	caption := pdfjet.NewTextLine(labelFont, label)
-	caption.SetTextColor(color.Gray)
+	caption.SetTextColor(color.DimGray)
 	caption.SetLocation(50.0, y)
 	caption.DrawOn(page)
 

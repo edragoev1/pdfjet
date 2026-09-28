@@ -66,9 +66,9 @@ public class Example_03 {
 
 
         Map<String, Integer> colorMap = new HashMap<String, Integer>();
-        colorMap.put("Physics", Color.red);
-        colorMap.put("physics", Color.red);
-        colorMap.put("Experimentation", Color.orange);
+        colorMap.put("Physics", Color.firebrick);
+        colorMap.put("physics", Color.firebrick);
+        colorMap.put("Experimentation", Color.sienna);
         colorMap.put("science", Color.blue);
         paragraphs = Paragraph.paragraphsFromFile(f1, "data/physics.txt");
         // The paragraphs under each heading are a numbered list.
@@ -80,7 +80,7 @@ public class Example_03 {
                 p.getTextLines().get(0).setTextColor(Color.navy);
                 paragraphNumber = 1;
             } else {
-                p.setTextColor(Color.gray);
+                p.setTextColor(Color.dimgray);
                 p.setHighlightColors(colorMap);
                 p.setListLabel(new TextLine(f2, paragraphNumber + "."), 15f);
                 paragraphNumber++;

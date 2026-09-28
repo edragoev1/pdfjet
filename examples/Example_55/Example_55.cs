@@ -134,7 +134,7 @@ public class Example_55 {
         Line(page, semiBold, "Lindenberg Paper & Print GmbH", middle, y, Color.black);
         foreach (String text in new String[] {"Hafenstraße 12", "20457 Hamburg, Germany", "VAT ID DE123456789"}) {
             y += 14f;
-            Line(page, regular, text, middle, y, Color.gray);
+            Line(page, regular, text, middle, y, Color.dimgray);
         }
 
         page.AddArtifactBMC();
@@ -154,7 +154,7 @@ public class Example_55 {
         y = 205f;
         TextLine billTo = new TextLine(regular, "BILL TO");
         billTo.SetFontSize(8f);
-        billTo.SetTextColor(Color.gray);
+        billTo.SetTextColor(Color.dimgray);
         billTo.SetLocation(left, y);
         billTo.DrawOn(page);
         Line(page, semiBold, "Kranich Design Studio", left, y + 16f, Color.black);
@@ -169,7 +169,7 @@ public class Example_55 {
         };
         for (int i = 0; i < facts.Length; i++) {
             float factY = y + 16f + i * 14f;
-            Line(page, regular, facts[i][0], middle, factY, Color.gray);
+            Line(page, regular, facts[i][0], middle, factY, Color.dimgray);
             Line(page, semiBold, facts[i][1], right - semiBold.StringWidth(facts[i][1]), factY, Color.black);
         }
 
@@ -241,7 +241,7 @@ public class Example_55 {
         float[] qrXY = qr.DrawOn(page);
         TextLine caption = new TextLine(regular, "Scan to pay");
         caption.SetFontSize(8f);
-        caption.SetTextColor(Color.gray);
+        caption.SetTextColor(Color.dimgray);
         caption.SetLocation(right - 90f, qrXY[1] + 12f);
         caption.DrawOn(page);
 
@@ -264,7 +264,7 @@ public class Example_55 {
         TextLine footer = new TextLine(regular,
                 "Lindenberg Paper & Print GmbH  ·  Hafenstraße 12, 20457 Hamburg  ·  Registered in Hamburg, HRB 000000");
         footer.SetFontSize(8f);
-        footer.SetTextColor(Color.gray);
+        footer.SetTextColor(Color.dimgray);
         footer.SetLocation((page.GetWidth() - footer.GetWidth()) / 2f, page.GetHeight() - 40f);
         footer.DrawOn(page);
 

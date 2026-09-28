@@ -70,9 +70,9 @@ func Example03() {
 	text.DrawOn(page)
 
 	colorMap := make(map[string]int32)
-	colorMap["Physics"] = color.Red
-	colorMap["physics"] = color.Red
-	colorMap["Experimentation"] = color.Orange
+	colorMap["Physics"] = color.Firebrick
+	colorMap["physics"] = color.Firebrick
+	colorMap["Experimentation"] = color.Sienna
 	colorMap["science"] = color.Blue
 	paragraphs = pdfjet.ParagraphsFromFile(f1, "data/physics.txt")
 	// The paragraphs under each heading are a numbered list. The number of a
@@ -86,7 +86,7 @@ func Example03() {
 			p.GetTextLines()[0].SetTextColor(color.Navy)
 			paragraphNumber = 1
 		} else {
-			p.SetTextColor(color.Gray)
+			p.SetTextColor(color.DimGray)
 			p.SetHighlightColors(colorMap)
 			p.SetListLabel(pdfjet.NewTextLine(f2, strconv.Itoa(paragraphNumber)+"."), 15.0)
 			paragraphNumber++

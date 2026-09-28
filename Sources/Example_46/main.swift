@@ -75,7 +75,7 @@ public class Example_46 {
                     (longitude > 0) ? "\(longitude)°E" : "0°"
             text = TextLine(f1, label)
             text.setFontSize(8.0)
-            text.setTextColor(Color.gray)
+            text.setTextColor(Color.dimgray)
             text.setLocation(mapX(Float(longitude)) - text.getWidth() / 2.0, y0 + h + 12.0)
             group.add(text)
         }
@@ -87,7 +87,7 @@ public class Example_46 {
 
             text = TextLine(f1, "\(latitude)°N")
             text.setFontSize(8.0)
-            text.setTextColor(Color.gray)
+            text.setTextColor(Color.dimgray)
             text.setLocation(x0 + w + 4.0, mapY(Float(latitude)) + 3.0)
             group.add(text)
         }
@@ -127,7 +127,7 @@ public class Example_46 {
 
         text = TextLine(f1, "Relief: Natural Earth, public domain, naturalearthdata.com")
         text.setFontSize(8.0)
-        text.setTextColor(Color.gray)
+        text.setTextColor(Color.dimgray)
         text.setURIAction("https://www.naturalearthdata.com")
         text.setLocation(x0, y0 + h + 30.0)
         text.drawOn(page)

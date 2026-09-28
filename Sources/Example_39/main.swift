@@ -39,8 +39,8 @@ public class Example_39 {
                 "Huang He (Yellow)", "Ob-Irtysh", "Paraná", "Congo", "Amur"]
         let lengths: [Float] = [6650.0, 6400.0, 6300.0, 5971.0, 5540.0, 5464.0, 5410.0, 4880.0, 4700.0, 4444.0]
         let colors: [Int32] = [
-                0x5b9bd5, 0x6b8e6b, 0x8b6f47, 0x9b7b5a, 0x6fa8dc,
-                0xd4a017, 0x8fa98f, 0xa08060, 0x5c5c5c, 0x8b7355]
+                0x477aa8, 0x5f7e5f, 0x8b6f47, 0x8e7152, 0x517aa0,
+                0x967110, 0x687b68, 0x8e7155, 0x5c5c5c, 0x897154]
 
         let chart = BarChart(f1, f2)
         chart.setLocation(36.0, 40.0)
@@ -67,7 +67,7 @@ public class Example_39 {
         let gray: Int32 = 0x444444
         TextLine(f3, "Color key (illustrative):")
                 .setTextColor(gray).setLocation(171.0, 466.0).drawOn(page)
-        let keyColors: [Int32] = [0x5b9bd5, 0x6b8e6b, 0xa08060, 0xd4a017, 0x5c5c5c]
+        let keyColors: [Int32] = [0x477aa8, 0x5f7e5f, 0x8e7155, 0x967110, 0x5c5c5c]
         let keyTexts = [
                 "Clear / low sediment", "Sediment-rich, relatively clean", "Polluted / industrial & agricultural",
                 "Heavy natural sediment (loess)", "Natural dark tannin stain (Congo)"]
@@ -82,7 +82,7 @@ public class Example_39 {
 
         let note = "Color mapping is illustrative; lengths and conditions vary by source and season."
         TextLine(f4, note)
-                .setTextColor(0x999999).setLocation(576.0 - f4.stringWidth(note), 520.0).drawOn(page)
+                .setTextColor(0x696969).setLocation(576.0 - f4.stringWidth(note), 520.0).drawOn(page)
 
         try pdf.complete()
     }

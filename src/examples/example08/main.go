@@ -63,7 +63,7 @@ func Example08() {
 	// table.SetFirstPageTopMargin(150.0)
 	table.SetBottomMargin(15.0)
 	table.SetTextColorInRow(12, color.Blue)
-	table.SetTextColorInRow(13, color.Red)
+	table.SetTextColorInRow(13, color.Firebrick)
 	table.SetFontInRow(14, f3)
 
 	pages := make([]*pdfjet.Page, 0)

@@ -142,7 +142,7 @@ public class Example_55 {
         line(page, semiBold, "Lindenberg Paper & Print GmbH", middle, y, Color.black);
         for (String text : new String[] {"Hafenstraße 12", "20457 Hamburg, Germany", "VAT ID DE123456789"}) {
             y += 14f;
-            line(page, regular, text, middle, y, Color.gray);
+            line(page, regular, text, middle, y, Color.dimgray);
         }
 
         page.addArtifactBMC();
@@ -162,7 +162,7 @@ public class Example_55 {
         y = 205f;
         TextLine billTo = new TextLine(regular, "BILL TO");
         billTo.setFontSize(8f);
-        billTo.setTextColor(Color.gray);
+        billTo.setTextColor(Color.dimgray);
         billTo.setLocation(left, y);
         billTo.drawOn(page);
         line(page, semiBold, "Kranich Design Studio", left, y + 16f, Color.black);
@@ -177,7 +177,7 @@ public class Example_55 {
         };
         for (int i = 0; i < facts.length; i++) {
             float factY = y + 16f + i * 14f;
-            line(page, regular, facts[i][0], middle, factY, Color.gray);
+            line(page, regular, facts[i][0], middle, factY, Color.dimgray);
             line(page, semiBold, facts[i][1], right - semiBold.stringWidth(facts[i][1]), factY, Color.black);
         }
 
@@ -249,7 +249,7 @@ public class Example_55 {
         float[] qrXY = qr.drawOn(page);
         TextLine caption = new TextLine(regular, "Scan to pay");
         caption.setFontSize(8f);
-        caption.setTextColor(Color.gray);
+        caption.setTextColor(Color.dimgray);
         caption.setLocation(right - 90f, qrXY[1] + 12f);
         caption.drawOn(page);
 
@@ -272,7 +272,7 @@ public class Example_55 {
         TextLine footer = new TextLine(regular,
                 "Lindenberg Paper & Print GmbH  ·  Hafenstraße 12, 20457 Hamburg  ·  Registered in Hamburg, HRB 000000");
         footer.setFontSize(8f);
-        footer.setTextColor(Color.gray);
+        footer.setTextColor(Color.dimgray);
         footer.setLocation((page.getWidth() - footer.getWidth()) / 2f, page.getHeight() - 40f);
         footer.drawOn(page);
 

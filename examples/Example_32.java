@@ -27,7 +27,7 @@ public class Example_32 {
         font.setSize(8f);
 
         Map<String, Integer> colors = new HashMap<String, Integer>();
-        colors.put("new", Color.red);
+        colors.put("new", Color.firebrick);
         colors.put("class", Color.blue);
         colors.put("void", Color.green);
         float[] grayColor = new float[] {0.2f, 0.2f, 0.2f};

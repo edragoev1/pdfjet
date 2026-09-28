@@ -63,7 +63,7 @@ public class Example_04 {
 
         text = new TextLine(f5, "In four languages, with CJK fonts that are not embedded in this PDF.");
         text.setFontSize(11f);
-        text.setTextColor(Color.gray);
+        text.setTextColor(Color.dimgray);
         text.setLocation(70f, 112f);
         text.drawOn(page);
 
@@ -96,7 +96,7 @@ public class Example_04 {
 
             text = new TextLine(f5, fontNames[i]);
             text.setFontSize(10f);
-            text.setTextColor(Color.gray);
+            text.setTextColor(Color.dimgray);
             text.setLocation(70f, y + 15f);
             text.drawOn(page);
 

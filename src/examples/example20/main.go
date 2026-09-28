@@ -160,12 +160,12 @@ func Example20() {
 	page.AddEMC()
 
 	caption := pdfjet.NewTextLine(f1, "A Path with curves")
-	caption.SetTextColor(color.Gray)
+	caption.SetTextColor(color.DimGray)
 	caption.SetLocation(60.0, xy[1]+35.0)
 	caption.DrawOn(page)
 
 	caption = pdfjet.NewTextLine(f1, "Scan to visit https://pdfjet.com")
-	caption.SetTextColor(color.Gray)
+	caption.SetTextColor(color.DimGray)
 	caption.SetLocation(290.0, xy[1]+35.0)
 	caption.DrawOn(page)
 

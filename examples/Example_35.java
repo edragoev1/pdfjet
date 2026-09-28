@@ -58,7 +58,7 @@ public class Example_35 {
             .drawRect(10f, 10f, 380f, 380f);
 
         // Fill Rectangle
-        stamp.setFillColor(Color.green).fillRect(10f, 10f, 20f, 20f);
+        stamp.setFillColor(Color.darkgreen).fillRect(10f, 10f, 20f, 20f);
 
         // Draw some text
         TextParameters parameters = new TextParameters()
@@ -102,6 +102,7 @@ public class Example_35 {
 
         TextLine innerText = new TextLine(f1, "Nested 1");
         innerText.setLocation(50f, 100f);
+        innerText.setTextColor(Color.white);   // On the blue of the rectangle
         nested1.add(innerText);
 
         container.add(nested1);

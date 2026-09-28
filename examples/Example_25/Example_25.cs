@@ -33,8 +33,8 @@ public class Example_25 {
         chart.AddSlice(new Slice(25f, 0xC1121F, "Apples"));    // deep red
         chart.AddSlice(new Slice(20f, 0x1D3557, "Oranges"));    // navy blue
         chart.AddSlice(new Slice(30f, 0x1A7468, "Bananas"));    // dark teal
-        chart.AddSlice(new Slice(15f, 0xD97706, "Grapes"));    // burnt orange
-        chart.AddSlice(new Slice(10f, 0xCAAA2F, "Lemons"));    // dark gold
+        chart.AddSlice(new Slice(15f, 0xB16104, "Grapes"));    // burnt orange
+        chart.AddSlice(new Slice(10f, 0x846F1E, "Lemons"));    // dark gold
         chart.DrawOn(page);
 
         pdf.Complete();

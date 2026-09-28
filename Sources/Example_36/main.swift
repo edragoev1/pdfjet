@@ -47,7 +47,7 @@ public class Example_36 {
 
             let footer = TextLine(f1, "Page " + String(i + 2))
             footer.setFontSize(10.0)
-            footer.setTextColor(Color.gray)
+            footer.setTextColor(Color.dimgray)
             footer.setLocation(50.0, page.getHeight() - 40.0)
             footer.drawOn(page)
 
@@ -78,7 +78,7 @@ public class Example_36 {
                 + "to the PDF in reading order with addPage.")
         textBlock.setFontSize(12.0)
         textBlock.setLineSpacing(1.5)
-        textBlock.setTextColor(Color.gray)
+        textBlock.setTextColor(Color.dimgray)
         textBlock.setLocation(50.0, y + 20.0)
         textBlock.setWidth(contents.getWidth() - 100.0)
         textBlock.drawOn(contents)

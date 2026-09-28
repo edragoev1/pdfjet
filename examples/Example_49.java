@@ -53,7 +53,7 @@ public class Example_49 {
         for (int i = 0; i < names.length; i++) {
             Paragraph paragraph = new Paragraph()
                     .add(new TextLine(f3, names[i]))
-                    .add(new TextLine(f2, notes[i]).setTextColor(Color.gray))
+                    .add(new TextLine(f2, notes[i]).setTextColor(Color.dimgray))
                     .add(new TextLine(f4, "$").setVerticalOffset(-4f))
                     .add(new TextLine(f1, prices[i]).setTextColor(Color.darkred));
             column.addParagraph(paragraph);
@@ -64,7 +64,7 @@ public class Example_49 {
                 .add(new TextLine(f2, "Freshly"))
                 .add(new TextLine(f3, "roasted").setTextColor(Color.saddlebrown))
                 .add(new TextLine(f2, "every"))
-                .add(new TextLine(f3, "morning").setTextColor(Color.darkorange))
+                .add(new TextLine(f3, "morning").setTextColor(Color.sienna))
                 .setTextAlignment(Alignment.RIGHT));
 
         column.setLocation(70f, 140f);
@@ -83,7 +83,7 @@ public class Example_49 {
                 .add(new TextLine(f1, "and we roast them in small batches."))
                 .add(new TextLine(f2, "Ask us about the beans of the week.").setTextColor(Color.darkred)));
         paragraphs.add(new Paragraph()
-                .add(new TextLine(f2, "Prices include tax.").setTextColor(Color.gray)));
+                .add(new TextLine(f2, "Prices include tax.").setTextColor(Color.dimgray)));
 
         TextFrame frame = new TextFrame(paragraphs);
         frame.setLocation(70f, xy[1] + 30f);

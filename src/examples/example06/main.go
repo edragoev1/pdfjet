@@ -47,7 +47,7 @@ func Example06() {
 
 	text = pdfjet.NewTextLine(f1,
 		"Open this page in a PDF viewer that shows annotations, and hover over the icons.")
-	text.SetTextColor(color.Gray)
+	text.SetTextColor(color.DimGray)
 	text.SetLocation(70.0, 105.0)
 	text.DrawOn(page)
 

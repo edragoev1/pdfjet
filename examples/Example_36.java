@@ -52,7 +52,7 @@ public class Example_36 {
 
             TextLine footer = new TextLine(f1, "Page " + (i + 2));
             footer.setFontSize(10f);
-            footer.setTextColor(Color.gray);
+            footer.setTextColor(Color.dimgray);
             footer.setLocation(50f, page.getHeight() - 40f);
             footer.drawOn(page);
 
@@ -83,7 +83,7 @@ public class Example_36 {
                 + "to the PDF in reading order with addPage.");
         textBlock.setFontSize(12f);
         textBlock.setLineSpacing(1.5f);
-        textBlock.setTextColor(Color.gray);
+        textBlock.setTextColor(Color.dimgray);
         textBlock.setLocation(50f, y + 20f);
         textBlock.setWidth(contents.getWidth() - 100f);
         textBlock.drawOn(contents);

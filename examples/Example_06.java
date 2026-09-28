@@ -41,7 +41,7 @@ public class Example_06 {
 
         text = new TextLine(f1,
                 "Open this page in a PDF viewer that shows annotations, and hover over the icons.");
-        text.setTextColor(Color.gray);
+        text.setTextColor(Color.dimgray);
         text.setLocation(70f, 105f);
         text.drawOn(page);
 

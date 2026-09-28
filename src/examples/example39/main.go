@@ -46,8 +46,8 @@ func Example39() {
 		"Huang He (Yellow)", "Ob-Irtysh", "Paraná", "Congo", "Amur"}
 	lengths := []float32{6650.0, 6400.0, 6300.0, 5971.0, 5540.0, 5464.0, 5410.0, 4880.0, 4700.0, 4444.0}
 	colors := []int32{
-		0x5b9bd5, 0x6b8e6b, 0x8b6f47, 0x9b7b5a, 0x6fa8dc,
-		0xd4a017, 0x8fa98f, 0xa08060, 0x5c5c5c, 0x8b7355}
+		0x477aa8, 0x5f7e5f, 0x8b6f47, 0x8e7152, 0x517aa0,
+		0x967110, 0x687b68, 0x8e7155, 0x5c5c5c, 0x897154}
 
 	chart := pdfjet.NewBarChart(f1, f2)
 	chart.SetSize(540.0, 400.0)
@@ -74,7 +74,7 @@ func Example39() {
 	gray := int32(0x444444)
 	pdfjet.NewTextLine(f3, "Color key (illustrative):").
 		SetTextColor(gray).SetLocation(171.0, 466.0).DrawOn(page)
-	keyColors := []int32{0x5b9bd5, 0x6b8e6b, 0xa08060, 0xd4a017, 0x5c5c5c}
+	keyColors := []int32{0x477aa8, 0x5f7e5f, 0x8e7155, 0x967110, 0x5c5c5c}
 	keyTexts := []string{
 		"Clear / low sediment", "Sediment-rich, relatively clean", "Polluted / industrial & agricultural",
 		"Heavy natural sediment (loess)", "Natural dark tannin stain (Congo)"}
@@ -89,7 +89,7 @@ func Example39() {
 
 	note := "Color mapping is illustrative; lengths and conditions vary by source and season."
 	pdfjet.NewTextLine(f4, note).
-		SetTextColor(0x999999).SetLocation(576.0-f4.StringWidth(f4.GetSize(), note), 520.0).DrawOn(page)
+		SetTextColor(0x696969).SetLocation(576.0-f4.StringWidth(f4.GetSize(), note), 520.0).DrawOn(page)
 
 	if err := pdf.Complete(); err != nil {
 		log.Fatal(err)

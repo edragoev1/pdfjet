@@ -89,7 +89,7 @@ func Example10() {
 	buf.WriteString("organizations but retains a strong commitment to neutrality.")
 
 	text = pdfjet.NewTextLine(f1, buf.String())
-	text.SetTextColor(color.Red)
+	text.SetTextColor(color.Firebrick)
 	p3.Add(text)
 
 	p4 := pdfjet.NewParagraph()

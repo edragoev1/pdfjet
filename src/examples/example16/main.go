@@ -36,7 +36,7 @@ func Example16() {
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 
 	colors := make(map[string]int32)
-	colors["Everyone"] = color.Red
+	colors["Everyone"] = color.Firebrick
 	colors["pay"] = color.Green
 	colors["freedom"] = color.Blue
 

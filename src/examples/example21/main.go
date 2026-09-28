@@ -89,7 +89,7 @@ func Example21() {
 
 		text = pdfjet.NewTextLine(f1, notes[i])
 		text.SetFontSize(10.0)
-		text.SetTextColor(color.Gray)
+		text.SetTextColor(color.DimGray)
 		text.SetLocation(x, xy[1]+35.0)
 		text.DrawOn(page)
 	}

@@ -81,7 +81,7 @@ public class Example_05 {
                 - kerned.stringWidth(Example_05.SAMPLE) + 0.5).rounded(.down))
         let note = TextLine(regular,
                 "Kerning makes these words \(narrower) points narrower at 30 points.")
-        note.setTextColor(Color.gray)
+        note.setTextColor(Color.dimgray)
         note.setLocation(50.0, y + 30.0)
         note.drawOn(page)
 
@@ -93,7 +93,7 @@ public class Example_05 {
     private static func drawSample(
             _ page: Page, _ labelFont: Font, _ font: Font, _ label: String, _ y: Float) -> Float {
         let caption = TextLine(labelFont, label)
-        caption.setTextColor(Color.gray)
+        caption.setTextColor(Color.dimgray)
         caption.setLocation(50.0, y)
         caption.drawOn(page)
 

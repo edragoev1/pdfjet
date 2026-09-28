@@ -78,7 +78,7 @@ public class Example_46 {
                     (longitude > 0) ? longitude + "°E" : "0°";
             text = new TextLine(f1, label);
             text.setFontSize(8f);
-            text.setTextColor(Color.gray);
+            text.setTextColor(Color.dimgray);
             text.setLocation(mapX(longitude) - text.getWidth() / 2f, y0 + h + 12f);
             group.add(text);
         }
@@ -90,7 +90,7 @@ public class Example_46 {
 
             text = new TextLine(f1, latitude + "°N");
             text.setFontSize(8f);
-            text.setTextColor(Color.gray);
+            text.setTextColor(Color.dimgray);
             text.setLocation(x0 + w + 4f, mapY(latitude) + 3f);
             group.add(text);
         }
@@ -130,7 +130,7 @@ public class Example_46 {
 
         text = new TextLine(f1, "Relief: Natural Earth, public domain, naturalearthdata.com");
         text.setFontSize(8f);
-        text.setTextColor(Color.gray);
+        text.setTextColor(Color.dimgray);
         text.setURIAction("https://www.naturalearthdata.com");
         text.setLocation(x0, y0 + h + 30f);
         text.drawOn(page);

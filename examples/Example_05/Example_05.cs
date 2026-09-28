@@ -84,7 +84,7 @@ public class Example_05 {
         int narrower = (int) Math.Floor(plain.StringWidth(SAMPLE) - kerned.StringWidth(SAMPLE) + 0.5f);
         TextLine note = new TextLine(regular,
                 "Kerning makes these words " + narrower + " points narrower at 30 points.");
-        note.SetTextColor(Color.gray);
+        note.SetTextColor(Color.dimgray);
         note.SetLocation(50f, y + 30f);
         note.DrawOn(page);
 
@@ -95,7 +95,7 @@ public class Example_05 {
     // block with a light background, and returns the bottom of the block.
     private static float DrawSample(Page page, Font labelFont, Font font, String label, float y) {
         TextLine caption = new TextLine(labelFont, label);
-        caption.SetTextColor(Color.gray);
+        caption.SetTextColor(Color.dimgray);
         caption.SetLocation(50f, y);
         caption.DrawOn(page);
 

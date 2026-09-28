@@ -151,12 +151,12 @@ class Example_20 {
         page.AddEMC();
 
         TextLine caption = new TextLine(f1, "A Path with curves");
-        caption.SetTextColor(Color.gray);
+        caption.SetTextColor(Color.dimgray);
         caption.SetLocation(60f, xy[1] + 35f);
         caption.DrawOn(page);
 
         caption = new TextLine(f1, "Scan to visit https://pdfjet.com");
-        caption.SetTextColor(Color.gray);
+        caption.SetTextColor(Color.dimgray);
         caption.SetLocation(290f, xy[1] + 35f);
         caption.DrawOn(page);
 

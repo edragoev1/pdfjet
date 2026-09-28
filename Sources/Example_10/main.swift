@@ -76,7 +76,7 @@ public class Example_10 {
         buf.append("organizations but retains a strong commitment to neutrality.")
 
         text = TextLine(f1, buf)
-        text.setTextColor(Color.red)
+        text.setTextColor(Color.firebrick)
         p3.add(text)
 
         let p4 = Paragraph()

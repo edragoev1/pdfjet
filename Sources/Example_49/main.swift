@@ -48,7 +48,7 @@ public class Example_49 {
         for i in 0..<names.count {
             let paragraph = Paragraph()
                     .add(TextLine(f3, names[i]))
-                    .add(TextLine(f2, notes[i]).setTextColor(Color.gray))
+                    .add(TextLine(f2, notes[i]).setTextColor(Color.dimgray))
                     .add(TextLine(f4, "$").setVerticalOffset(-4.0))
                     .add(TextLine(f1, prices[i]).setTextColor(Color.darkred))
             column.addParagraph(paragraph)
@@ -59,7 +59,7 @@ public class Example_49 {
                 .add(TextLine(f2, "Freshly"))
                 .add(TextLine(f3, "roasted").setTextColor(Color.saddlebrown))
                 .add(TextLine(f2, "every"))
-                .add(TextLine(f3, "morning").setTextColor(Color.darkorange))
+                .add(TextLine(f3, "morning").setTextColor(Color.sienna))
                 .setTextAlignment(Alignment.RIGHT))
 
         column.setLocation(70.0, 140.0)
@@ -78,7 +78,7 @@ public class Example_49 {
                 .add(TextLine(f1, "and we roast them in small batches."))
                 .add(TextLine(f2, "Ask us about the beans of the week.").setTextColor(Color.darkred)))
         paragraphs.append(Paragraph()
-                .add(TextLine(f2, "Prices include tax.").setTextColor(Color.gray)))
+                .add(TextLine(f2, "Prices include tax.").setTextColor(Color.dimgray)))
 
         let frame = TextFrame(paragraphs)
         frame.setLocation(70.0, xy[1] + 30.0)

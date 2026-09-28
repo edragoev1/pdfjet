@@ -64,7 +64,7 @@ func Example35() {
 		DrawRect(10.0, 10.0, 380.0, 380.0)
 
 	// Fill Rectangle
-	stamp.SetFillColor(color.Green).
+	stamp.SetFillColor(color.DarkGreen).
 		FillRect(10.0, 10.0, 20.0, 20.0)
 
 	// Draw some text
@@ -109,6 +109,7 @@ func Example35() {
 
 	innerText := pdfjet.NewTextLine(f1, "Nested 1")
 	innerText.SetLocation(50.0, 100.0)
+	innerText.SetTextColor(color.White) // On the blue of the rectangle
 	nested1.Add(innerText)
 
 	container.Add(nested1)

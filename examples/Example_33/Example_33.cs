@@ -54,7 +54,7 @@ public class Example_33 {
                 + "the svg element for most countries, an aliceblue fill for Spain and an "
                 + "olive outline for Austria.");
         textBlock.SetFontSize(10f);
-        textBlock.SetTextColor(Color.gray);
+        textBlock.SetTextColor(Color.dimgray);
         textBlock.SetLocation(50f, xy[1] + 10f);
         textBlock.SetWidth(495f);
         xy = textBlock.DrawOn(page);
@@ -103,7 +103,7 @@ public class Example_33 {
 
             text = new TextLine(f1, iconNames[i]);
             text.SetFontSize(9f);
-            text.SetTextColor(Color.gray);
+            text.SetTextColor(Color.dimgray);
             text.SetLocation(x, iconXY[1] + 15f);
             text.DrawOn(page);
         }

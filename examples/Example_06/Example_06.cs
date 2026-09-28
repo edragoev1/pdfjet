@@ -40,7 +40,7 @@ public class Example_06 {
 
         text = new TextLine(f1,
                 "Open this page in a PDF viewer that shows annotations, and hover over the icons.");
-        text.SetTextColor(Color.gray);
+        text.SetTextColor(Color.dimgray);
         text.SetLocation(70f, 105f);
         text.DrawOn(page);
 

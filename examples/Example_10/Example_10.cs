@@ -80,7 +80,7 @@ public class Example_10 {
         buf.Append("organizations but retains a strong commitment to neutrality.");
 
         text = new TextLine(f1, buf.ToString());
-        text.SetTextColor(Color.red);
+        text.SetTextColor(Color.firebrick);
         p3.Add(text);
 
         Paragraph p4 = new Paragraph();

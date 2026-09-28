@@ -205,7 +205,7 @@ public class Example_56 {
         let x: Float = Example_56.LEFT + Float(column) * Example_56.CELL_WIDTH
         let y: Float = Example_56.TOP + Float(row) * Example_56.CELL_HEIGHT
         let caption = TextBlock(label, name)
-        caption.setTextColor(Color.gray)
+        caption.setTextColor(Color.dimgray)
         caption.setLocation(x, y + 125.0)
         caption.setWidth(Example_56.CELL_WIDTH - 12.0)
         caption.drawOn(page)

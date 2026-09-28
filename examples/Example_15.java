@@ -134,7 +134,7 @@ public class Example_15 {
 
         TextLine text = new TextLine(font, name);
         text.setFontSize(10f);
-        text.setTextColor(Color.gray);
+        text.setTextColor(Color.dimgray);
         text.setLocation(x + nameOffset, y);
         text.drawOn(page);
     }

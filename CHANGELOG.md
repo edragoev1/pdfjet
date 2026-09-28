@@ -1140,6 +1140,13 @@ This is the first entry in this file; earlier releases were not tracked here.
   .NET API reference that docfx builds.
 
 ### Examples
+- The text of the examples contrasts with its background as WCAG 1.4.3 asks,
+  4.5:1, in all four ports: gray text is dim gray, red text firebrick, and
+  orange text sienna, and the colors of the charts of Example_25 and
+  Example_39 are darker shades of themselves, so that their white labels can
+  be read. PAC failed 25 examples on it. check-pdfua-tags.py checks the
+  contrast of the text of the tagged examples, but for the DRAFT watermark
+  of Example_07, which is decoration.
 - Example_05 shows kerning, and only kerning: it says what kerning is, and
   draws the same words in two text blocks, one above the other, in
   Helvetica-Bold without kerning and with it, and by how many points kerning

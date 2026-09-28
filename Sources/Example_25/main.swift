@@ -30,8 +30,8 @@ public class Example_25 {
         chart.addSlice(Slice(25.0, 0xC1121F, "Apples"))   // deep red
         chart.addSlice(Slice(20.0, 0x1D3557, "Oranges"))   // navy blue
         chart.addSlice(Slice(30.0, 0x1A7468, "Bananas"))   // dark teal
-        chart.addSlice(Slice(15.0, 0xD97706, "Grapes"))   // burnt orange
-        chart.addSlice(Slice(10.0, 0xCAAA2F, "Lemons"))   // dark gold
+        chart.addSlice(Slice(15.0, 0xB16104, "Grapes"))   // burnt orange
+        chart.addSlice(Slice(10.0, 0x846F1E, "Lemons"))   // dark gold
         chart.drawOn(page)
 
         try pdf.complete()

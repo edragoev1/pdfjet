@@ -133,7 +133,7 @@ public class Example_15 {
 
         TextLine text = new TextLine(font, name);
         text.SetFontSize(10f);
-        text.SetTextColor(Color.gray);
+        text.SetTextColor(Color.dimgray);
         text.SetLocation(x + nameOffset, y);
         text.DrawOn(page);
     }

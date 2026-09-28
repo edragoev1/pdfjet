@@ -53,7 +53,7 @@ func Example18() {
 
 		header := pdfjet.NewTextLine(f1, "How to number pages")
 		header.SetFontSize(10.0)
-		header.SetTextColor(color.Gray)
+		header.SetTextColor(color.DimGray)
 		header.SetLocation(70.0, 50.0)
 		header.DrawOn(page)
 

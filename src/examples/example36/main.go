@@ -57,7 +57,7 @@ func Example36() {
 
 		footer := pdfjet.NewTextLine(f1, "Page "+fmt.Sprint(i+2))
 		footer.SetFontSize(10.0)
-		footer.SetTextColor(color.Gray)
+		footer.SetTextColor(color.DimGray)
 		footer.SetLocation(50.0, page.GetHeight()-40.0)
 		footer.DrawOn(page)
 
@@ -88,7 +88,7 @@ func Example36() {
 			"to the PDF in reading order with addPage.")
 	textBlock.SetFontSize(12.0)
 	textBlock.SetLineSpacing(1.5)
-	textBlock.SetTextColor(color.Gray)
+	textBlock.SetTextColor(color.DimGray)
 	textBlock.SetLocation(50.0, y+20.0)
 	textBlock.SetWidth(contents.GetWidth() - 100.0)
 	textBlock.DrawOn(contents)

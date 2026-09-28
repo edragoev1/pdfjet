@@ -200,7 +200,7 @@ public class Example_56 {
         float x = LEFT + column * CELL_WIDTH;
         float y = TOP + row * CELL_HEIGHT;
         TextBlock caption = new TextBlock(label, name);
-        caption.SetTextColor(Color.gray);
+        caption.SetTextColor(Color.dimgray);
         caption.SetLocation(x, y + 125f);
         caption.SetWidth(CELL_WIDTH - 12f);
         caption.DrawOn(page);

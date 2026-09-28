@@ -52,7 +52,7 @@ public class Example_08 {
         // table.setFirstPageTopMargin(150.0)
         table.setBottomMargin(15.0)
         table.setTextColorInRow(12, Color.blue)
-        table.setTextColorInRow(13, Color.red)
+        table.setTextColorInRow(13, Color.firebrick)
         table.setFontInRow(14, f3)
 
         var pages = [Page]()

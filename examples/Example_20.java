@@ -153,12 +153,12 @@ class Example_20 {
         page.addEMC();
 
         TextLine caption = new TextLine(f1, "A Path with curves");
-        caption.setTextColor(Color.gray);
+        caption.setTextColor(Color.dimgray);
         caption.setLocation(60f, xy[1] + 35f);
         caption.drawOn(page);
 
         caption = new TextLine(f1, "Scan to visit https://pdfjet.com");
-        caption.setTextColor(Color.gray);
+        caption.setTextColor(Color.dimgray);
         caption.setLocation(290f, xy[1] + 35f);
         caption.drawOn(page);
 

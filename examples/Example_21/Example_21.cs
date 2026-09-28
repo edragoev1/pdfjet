@@ -80,7 +80,7 @@ public class Example_21 {
 
             text = new TextLine(f1, notes[i]);
             text.SetFontSize(10f);
-            text.SetTextColor(Color.gray);
+            text.SetTextColor(Color.dimgray);
             text.SetLocation(x, xy[1] + 35f);
             text.DrawOn(page);
         }

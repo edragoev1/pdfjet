@@ -86,7 +86,7 @@ func Example46() {
 		}
 		text = pdfjet.NewTextLine(f1, label)
 		text.SetFontSize(8.0)
-		text.SetTextColor(color.Gray)
+		text.SetTextColor(color.DimGray)
 		text.SetLocation(mapX(float32(longitude))-text.GetWidth()/2.0, y0+h+12.0)
 		group.Add(text)
 	}
@@ -98,7 +98,7 @@ func Example46() {
 
 		text = pdfjet.NewTextLine(f1, fmt.Sprintf("%d°N", latitude))
 		text.SetFontSize(8.0)
-		text.SetTextColor(color.Gray)
+		text.SetTextColor(color.DimGray)
 		text.SetLocation(x0+w+4.0, mapY(float32(latitude))+3.0)
 		group.Add(text)
 	}
@@ -138,7 +138,7 @@ func Example46() {
 
 	text = pdfjet.NewTextLine(f1, "Relief: Natural Earth, public domain, naturalearthdata.com")
 	text.SetFontSize(8.0)
-	text.SetTextColor(color.Gray)
+	text.SetTextColor(color.DimGray)
 	text.SetURIAction("https://www.naturalearthdata.com")
 	text.SetLocation(x0, y0+h+30.0)
 	text.DrawOn(page)

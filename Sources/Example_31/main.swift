@@ -91,7 +91,7 @@ public class Example_31 {
 
             text = TextLine(f1, "\(Int((alphas[i] * 100.0).rounded()))%")
             text.setFontSize(10.0)
-            text.setTextColor(Color.gray)
+            text.setTextColor(Color.dimgray)
             text.setLocation(x, y + 140.0)
             text.drawOn(page)
         }
@@ -124,7 +124,7 @@ public class Example_31 {
 
             text = TextLine(f1, labels[i])
             text.setFontSize(10.0)
-            text.setTextColor(Color.gray)
+            text.setTextColor(Color.dimgray)
             text.setLocation(x - text.getWidth() / 2.0, y + 130.0)
             text.drawOn(page)
         }

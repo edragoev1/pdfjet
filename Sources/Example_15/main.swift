@@ -132,7 +132,7 @@ public class Example_15 {
 
         let text = TextLine(font, name)
         text.setFontSize(10.0)
-        text.setTextColor(Color.gray)
+        text.setTextColor(Color.dimgray)
         text.setLocation(x + nameOffset, y)
         text.drawOn(page)
     }

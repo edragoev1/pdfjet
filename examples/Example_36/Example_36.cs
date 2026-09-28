@@ -50,7 +50,7 @@ public class Example_36 {
 
             TextLine footer = new TextLine(f1, "Page " + (i + 2));
             footer.SetFontSize(10f);
-            footer.SetTextColor(Color.gray);
+            footer.SetTextColor(Color.dimgray);
             footer.SetLocation(50f, page.GetHeight() - 40f);
             footer.DrawOn(page);
 
@@ -81,7 +81,7 @@ public class Example_36 {
                 + "to the PDF in reading order with addPage.");
         textBlock.SetFontSize(12f);
         textBlock.SetLineSpacing(1.5f);
-        textBlock.SetTextColor(Color.gray);
+        textBlock.SetTextColor(Color.dimgray);
         textBlock.SetLocation(50f, y + 20f);
         textBlock.SetWidth(contents.GetWidth() - 100f);
         textBlock.DrawOn(contents);

@@ -153,7 +153,7 @@ func Example55() error {
 	line(page, semiBold, "Lindenberg Paper & Print GmbH", middle, y, color.Black)
 	for _, text := range []string{"Hafenstraße 12", "20457 Hamburg, Germany", "VAT ID DE123456789"} {
 		y += 14.0
-		line(page, regular, text, middle, y, color.Gray)
+		line(page, regular, text, middle, y, color.DimGray)
 	}
 
 	page.AddArtifactBMC()
@@ -173,7 +173,7 @@ func Example55() error {
 	y = 205.0
 	billTo := pdfjet.NewTextLine(regular, "BILL TO")
 	billTo.SetFontSize(8.0)
-	billTo.SetTextColor(color.Gray)
+	billTo.SetTextColor(color.DimGray)
 	billTo.SetLocation(left, y)
 	billTo.DrawOn(page)
 	line(page, semiBold, "Kranich Design Studio", left, y+16.0, color.Black)
@@ -188,7 +188,7 @@ func Example55() error {
 	}
 	for i := 0; i < len(facts); i++ {
 		factY := y + 16.0 + float32(i)*14.0
-		line(page, regular, facts[i][0], middle, factY, color.Gray)
+		line(page, regular, facts[i][0], middle, factY, color.DimGray)
 		line(page, semiBold, facts[i][1], right-semiBold.StringWidth(semiBold.GetSize(), facts[i][1]), factY, color.Black)
 	}
 
@@ -260,7 +260,7 @@ func Example55() error {
 	qrXY := qr.DrawOn(page)
 	caption := pdfjet.NewTextLine(regular, "Scan to pay")
 	caption.SetFontSize(8.0)
-	caption.SetTextColor(color.Gray)
+	caption.SetTextColor(color.DimGray)
 	caption.SetLocation(right-90.0, qrXY[1]+12.0)
 	caption.DrawOn(page)
 
@@ -283,7 +283,7 @@ func Example55() error {
 	footer := pdfjet.NewTextLine(regular,
 		"Lindenberg Paper & Print GmbH  ·  Hafenstraße 12, 20457 Hamburg  ·  Registered in Hamburg, HRB 000000")
 	footer.SetFontSize(8.0)
-	footer.SetTextColor(color.Gray)
+	footer.SetTextColor(color.DimGray)
 	footer.SetLocation((page.GetWidth()-footer.GetWidth())/2.0, page.GetHeight()-40.0)
 	footer.DrawOn(page)
 

@@ -69,7 +69,7 @@ func Example34() {
 	// The table is about 555 points wide: at x = 30 it fits on the page.
 	table.SetLocation(30.0, 30.0)
 	table.SetTextColorInRow(6, color.Blue)
-	table.SetTextColorInRow(39, color.Red)
+	table.SetTextColorInRow(39, color.Firebrick)
 	table.SetFontInRow(26, f3)
 	table.RemoveLineBetweenRows(0, 1)
 	table.AutoAdjustColumnWidths()

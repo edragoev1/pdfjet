@@ -75,7 +75,7 @@ public class Example_45 {
         xy = new Form(fields)
                 .setLabelFont(f1)
                 .setLabelFontSize(8f)
-                .setLabelColor(Color.gray)
+                .setLabelColor(Color.dimgray)
                 .setValueFont(f2)
                 .setValueFontSize(10f)
                 .setValueColor(Color.black)
@@ -86,7 +86,7 @@ public class Example_45 {
 
         text = new TextLine(f1, "The recipient signs for the package on delivery.");
         text.setFontSize(10f);
-        text.setTextColor(Color.gray);
+        text.setTextColor(Color.dimgray);
         text.setLocation(56f, xy[1] + 20f);
         text.drawOn(page);
 

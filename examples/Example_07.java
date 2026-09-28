@@ -68,7 +68,7 @@ public class Example_07 {
 
             TextLine footer = new TextLine(f1, "Page " + (i + 1) + " of " + titles.length);
             footer.setFontSize(10f);
-            footer.setTextColor(Color.gray);
+            footer.setTextColor(Color.dimgray);
             footer.setLocation(70f, page.getHeight() - 40f);
             footer.drawOn(page);
         }

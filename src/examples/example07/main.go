@@ -72,7 +72,7 @@ func Example07() {
 
 		footer := pdfjet.NewTextLine(f1, "Page "+fmt.Sprint(i+1)+" of "+fmt.Sprint(len(titles)))
 		footer.SetFontSize(10.0)
-		footer.SetTextColor(color.Gray)
+		footer.SetTextColor(color.DimGray)
 		footer.SetLocation(70.0, page.GetHeight()-40.0)
 		footer.DrawOn(page)
 	}

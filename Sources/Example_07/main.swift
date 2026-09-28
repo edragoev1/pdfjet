@@ -62,7 +62,7 @@ public class Example_07 {
 
             let footer = TextLine(f1, "Page " + String(i + 1) + " of " + String(titles.count))
             footer.setFontSize(10.0)
-            footer.setTextColor(Color.gray)
+            footer.setTextColor(Color.dimgray)
             footer.setLocation(70.0, page.getHeight() - 40.0)
             footer.drawOn(page)
         }

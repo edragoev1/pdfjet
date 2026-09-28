@@ -102,7 +102,7 @@ func Example31() {
 
 		text = pdfjet.NewTextLine(f1, fmt.Sprintf("%d%%", int(math.Round(float64(alphas[i]*100.0)))))
 		text.SetFontSize(10.0)
-		text.SetTextColor(color.Gray)
+		text.SetTextColor(color.DimGray)
 		text.SetLocation(x, y+140.0)
 		text.DrawOn(page)
 	}
@@ -135,7 +135,7 @@ func Example31() {
 
 		text = pdfjet.NewTextLine(f1, labels[i])
 		text.SetFontSize(10.0)
-		text.SetTextColor(color.Gray)
+		text.SetTextColor(color.DimGray)
 		text.SetLocation(x-text.GetWidth()/2.0, y+130.0)
 		text.DrawOn(page)
 	}

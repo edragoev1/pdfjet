@@ -42,8 +42,8 @@ public class Example_39 {
                 "Huang He (Yellow)", "Ob-Irtysh", "Paraná", "Congo", "Amur"};
         float[] lengths = {6650f, 6400f, 6300f, 5971f, 5540f, 5464f, 5410f, 4880f, 4700f, 4444f};
         int[] colors = {
-                0x5b9bd5, 0x6b8e6b, 0x8b6f47, 0x9b7b5a, 0x6fa8dc,
-                0xd4a017, 0x8fa98f, 0xa08060, 0x5c5c5c, 0x8b7355};
+                0x477aa8, 0x5f7e5f, 0x8b6f47, 0x8e7152, 0x517aa0,
+                0x967110, 0x687b68, 0x8e7155, 0x5c5c5c, 0x897154};
 
         BarChart chart = new BarChart(f1, f2);
         chart.SetLocation(36f, 40f);
@@ -70,7 +70,7 @@ public class Example_39 {
         int gray = 0x444444;
         new TextLine(f3, "Color key (illustrative):")
                 .SetTextColor(gray).SetLocation(171f, 466f).DrawOn(page);
-        int[] keyColors = {0x5b9bd5, 0x6b8e6b, 0xa08060, 0xd4a017, 0x5c5c5c};
+        int[] keyColors = {0x477aa8, 0x5f7e5f, 0x8e7155, 0x967110, 0x5c5c5c};
         String[] keyTexts = {
                 "Clear / low sediment", "Sediment-rich, relatively clean", "Polluted / industrial & agricultural",
                 "Heavy natural sediment (loess)", "Natural dark tannin stain (Congo)"};
@@ -85,7 +85,7 @@ public class Example_39 {
 
         String note = "Color mapping is illustrative; lengths and conditions vary by source and season.";
         new TextLine(f4, note)
-                .SetTextColor(0x999999).SetLocation(576f - f4.StringWidth(note), 520f).DrawOn(page);
+                .SetTextColor(0x696969).SetLocation(576f - f4.StringWidth(note), 520f).DrawOn(page);
 
         pdf.Complete();
     }

@@ -69,7 +69,7 @@ func Example12() {
 	text = pdfjet.NewTextLine(f1, "The source code of data/Example_12.java, "+
 		fmt.Sprint(len(lines))+" lines")
 	text.SetFontSize(10.0)
-	text.SetTextColor(color.Gray)
+	text.SetTextColor(color.DimGray)
 	text.SetLocation(70.0, xy[1]+20.0)
 	text.DrawOn(page)
 

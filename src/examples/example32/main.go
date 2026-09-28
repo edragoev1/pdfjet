@@ -33,7 +33,7 @@ func Example32() {
 	font.SetSize(8.0)
 
 	colors := make(map[string]int32)
-	colors["new"] = color.Red
+	colors["new"] = color.Firebrick
 	colors["class"] = color.Blue
 	colors["void"] = color.Green
 	grayColor := [3]float32{0.2, 0.2, 0.2}

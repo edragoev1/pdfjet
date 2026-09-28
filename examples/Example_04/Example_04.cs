@@ -53,7 +53,7 @@ public class Example_04 {
 
         text = new TextLine(f5, "In four languages, with CJK fonts that are not embedded in this PDF.");
         text.SetFontSize(11f);
-        text.SetTextColor(Color.gray);
+        text.SetTextColor(Color.dimgray);
         text.SetLocation(70f, 112f);
         text.DrawOn(page);
 
@@ -86,7 +86,7 @@ public class Example_04 {
 
             text = new TextLine(f5, fontNames[i]);
             text.SetFontSize(10f);
-            text.SetTextColor(Color.gray);
+            text.SetTextColor(Color.dimgray);
             text.SetLocation(70f, y + 15f);
             text.DrawOn(page);
 

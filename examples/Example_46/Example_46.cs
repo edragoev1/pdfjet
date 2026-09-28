@@ -78,7 +78,7 @@ public class Example_46 {
                     (longitude > 0) ? longitude + "°E" : "0°";
             text = new TextLine(f1, label);
             text.SetFontSize(8f);
-            text.SetTextColor(Color.gray);
+            text.SetTextColor(Color.dimgray);
             text.SetLocation(MapX(longitude) - text.GetWidth() / 2f, y0 + h + 12f);
             group.Add(text);
         }
@@ -90,7 +90,7 @@ public class Example_46 {
 
             text = new TextLine(f1, latitude + "°N");
             text.SetFontSize(8f);
-            text.SetTextColor(Color.gray);
+            text.SetTextColor(Color.dimgray);
             text.SetLocation(x0 + w + 4f, MapY(latitude) + 3f);
             group.Add(text);
         }
@@ -130,7 +130,7 @@ public class Example_46 {
 
         text = new TextLine(f1, "Relief: Natural Earth, public domain, naturalearthdata.com");
         text.SetFontSize(8f);
-        text.SetTextColor(Color.gray);
+        text.SetTextColor(Color.dimgray);
         text.SetURIAction("https://www.naturalearthdata.com");
         text.SetLocation(x0, y0 + h + 30f);
         text.DrawOn(page);

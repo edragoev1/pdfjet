@@ -29,7 +29,7 @@ public class Example_16 {
         Page page = new Page(pdf, Letter.PORTRAIT);
 
         Map<String, Integer> colors = new HashMap<String, Integer>();
-        colors.put("Everyone", Color.red);
+        colors.put("Everyone", Color.firebrick);
         colors.put("pay", Color.green);
         colors.put("freedom", Color.blue);
 

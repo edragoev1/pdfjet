@@ -67,7 +67,7 @@ func Example04() {
 
 	text = pdfjet.NewTextLine(f5, "In four languages, with CJK fonts that are not embedded in this PDF.")
 	text.SetFontSize(11.0)
-	text.SetTextColor(color.Gray)
+	text.SetTextColor(color.DimGray)
 	text.SetLocation(70.0, 112.0)
 	text.DrawOn(page)
 
@@ -100,7 +100,7 @@ func Example04() {
 
 		text = pdfjet.NewTextLine(f5, fontNames[i])
 		text.SetFontSize(10.0)
-		text.SetTextColor(color.Gray)
+		text.SetTextColor(color.DimGray)
 		text.SetLocation(70.0, y+15.0)
 		text.DrawOn(page)
 

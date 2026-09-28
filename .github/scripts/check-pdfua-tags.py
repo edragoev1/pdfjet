@@ -17,6 +17,10 @@ The checks are:
     a file name.
   * Every figure has a bounding box, a BBox of the Layout attributes, with an
     area: PDF/UA asks for one, and veraPDF does not check it (PAC does).
+  * Text contrasts with the background under it, 4.5:1, or 3:1 for text of
+    18 points or 14 points bold, as WCAG 1.4.3 asks and PAC checks. The
+    background is the color most of the box of each run of text is
+    rendered in, on the first MAX_CONTRAST_PAGES pages.
   * The parent tree agrees with the structure tree: the element it gives for
     each marked content of a page has that marked content among its kids, and
     the element it gives for an annotation has the annotation. PAC reports
@@ -177,6 +181,55 @@ def table_shape(rows):
     return problems
 
 
+MAX_CONTRAST_PAGES = 5
+# Colors of text that may contrast less, by example, with the reason: WCAG
+# asks no contrast of text that is decoration.
+CONTRAST_EXCEPTIONS = {
+    ('Example_07.pdf', '#d4d4d4'): 'the DRAFT watermark, which is decoration',
+}
+
+
+def luminance(rgb):
+    def channel(v):
+        v /= 255
+        return v / 12.92 if v <= 0.03928 else ((v + 0.055) / 1.055) ** 2.4
+    return 0.2126 * channel(rgb[0]) + 0.7152 * channel(rgb[1]) + 0.0722 * channel(rgb[2])
+
+
+def contrast(a, b):
+    light, dark = sorted((luminance(a), luminance(b)), reverse=True)
+    return (light + 0.05) / (dark + 0.05)
+
+
+def contrast_problems(doc, name):
+    """Returns each color of text that does not contrast enough with the
+    background under it, once, with the first text drawn in it."""
+    found = {}
+    for page in list(doc)[:MAX_CONTRAST_PAGES]:
+        pix = page.get_pixmap(dpi=72, colorspace=pymupdf.csRGB)
+        for block in page.get_text('dict')['blocks']:
+            for line in block.get('lines', []):
+                for span in line['spans']:
+                    if not span['text'].strip():
+                        continue
+                    c = span['color']
+                    fg = ((c >> 16) & 255, (c >> 8) & 255, c & 255)
+                    x0, y0, x1, y1 = (int(v) for v in span['bbox'])
+                    counts = Counter(pix.pixel(x, y)
+                                     for y in range(max(0, y0), min(pix.height, y1 + 1))
+                                     for x in range(max(0, x0), min(pix.width, x1 + 1), 2))
+                    common = [color for color, _ in counts.most_common(2)]
+                    background = next((color for color in common if color != fg), (255, 255, 255))
+                    bold = 'Bold' in span['font'] or span['flags'] & 16
+                    large = span['size'] >= 18 or (bold and span['size'] >= 14)
+                    ratio = contrast(fg, background)
+                    if ratio < (3.0 if large else 4.5) and (name, '#%02x%02x%02x' % fg) not in CONTRAST_EXCEPTIONS:
+                        key = ('#%02x%02x%02x' % fg, '#%02x%02x%02x' % background)
+                        found.setdefault(key, (ratio, span['text'].strip()[:30], page.number + 1))
+    return [f'page {page}: text {fg} on {bg} contrasts {ratio:.2f}:1, less than WCAG asks, as in {text!r}'
+            for (fg, bg), (ratio, text, page) in found.items()]
+
+
 def number_tree(doc, xref):
     """Returns the entries of the number tree whose root is the object xref, as
     {key: raw value}, from its Nums and the Nums of its Kids."""
@@ -237,6 +290,7 @@ def check(path):
     for number in references(doc.xref_get_key(int(root[1].split()[0]), 'K')):
         walk(Element(doc, number), report)
     report.problems += parent_tree_problems(doc, int(root[1].split()[0]))
+    report.problems += contrast_problems(doc, report.name)
 
     if report.headings:
         if report.headings[0] != 1:

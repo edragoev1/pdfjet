@@ -73,7 +73,7 @@ func Example11() {
 		pdfjet.NewTextLine(f2, labels[i]).SetLocation(70.0, y+15.0).DrawOn(page)
 		note := pdfjet.NewTextLine(f1, notes[i])
 		note.SetFontSize(10.0)
-		note.SetTextColor(color.Gray)
+		note.SetTextColor(color.DimGray)
 		note.SetLocation(70.0, y+32.0)
 		note.DrawOn(page)
 
@@ -120,7 +120,7 @@ func Example11() {
 	pdfjet.NewTextLine(f2, "ITF-14").SetLocation(70.0, 135.0).DrawOn(page2)
 	cartonNote := pdfjet.NewTextLine(f1, "The GTIN of a carton, 13 digits and the check digit PDFjet adds, framed by bearer bars")
 	cartonNote.SetFontSize(10.0)
-	cartonNote.SetTextColor(color.Gray)
+	cartonNote.SetTextColor(color.DimGray)
 	cartonNote.SetLocation(70.0, 152.0)
 	cartonNote.DrawOn(page2)
 

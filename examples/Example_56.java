@@ -206,7 +206,7 @@ public class Example_56 {
         float x = LEFT + column * CELL_WIDTH;
         float y = TOP + row * CELL_HEIGHT;
         TextBlock caption = new TextBlock(label, name);
-        caption.setTextColor(Color.gray);
+        caption.setTextColor(Color.dimgray);
         caption.setLocation(x, y + 125f);
         caption.setWidth(CELL_WIDTH - 12f);
         caption.drawOn(page);

@@ -56,7 +56,7 @@ public class Example_12 {
         text = TextLine(f1, "The source code of data/Example_12.java, "
                 + String(lines.count) + " lines")
         text.setFontSize(10.0)
-        text.setTextColor(Color.gray)
+        text.setTextColor(Color.dimgray)
         text.setLocation(70.0, xy[1] + 20.0)
         text.drawOn(page)
 

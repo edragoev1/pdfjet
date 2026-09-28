@@ -219,7 +219,7 @@ func cell(page *pdfjet.Page, label *pdfjet.Font, column, row int, name string) [
 	x := left + float32(column)*cellWidth
 	y := top + float32(row)*cellHeight
 	caption := pdfjet.NewTextBlock(label, name)
-	caption.SetTextColor(color.Gray)
+	caption.SetTextColor(color.DimGray)
 	caption.SetLocation(x, y+125.0)
 	caption.SetWidth(cellWidth - 12.0)
 	caption.DrawOn(page)

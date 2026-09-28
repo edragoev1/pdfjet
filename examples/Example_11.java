@@ -67,7 +67,7 @@ public class Example_11 {
             new TextLine(f2, labels[i]).setLocation(70f, y + 15f).drawOn(page);
             TextLine note = new TextLine(f1, notes[i]);
             note.setFontSize(10f);
-            note.setTextColor(Color.gray);
+            note.setTextColor(Color.dimgray);
             note.setLocation(70f, y + 32f);
             note.drawOn(page);
 
@@ -116,7 +116,7 @@ public class Example_11 {
         label.drawOn(page2);
         TextLine cartonNote = new TextLine(f1, "The GTIN of a carton, 13 digits and the check digit PDFjet adds, framed by bearer bars");
         cartonNote.setFontSize(10f);
-        cartonNote.setTextColor(Color.gray);
+        cartonNote.setTextColor(Color.dimgray);
         cartonNote.setLocation(70f, 152f);
         cartonNote.drawOn(page2);
 

@@ -46,7 +46,7 @@ public class Example_18 {
 
             TextLine header = new TextLine(f1, "How to number pages");
             header.SetFontSize(10f);
-            header.SetTextColor(Color.gray);
+            header.SetTextColor(Color.dimgray);
             header.SetLocation(70f, 50f);
             header.DrawOn(page);
 

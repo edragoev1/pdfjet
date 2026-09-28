@@ -85,7 +85,7 @@ public class Example_05 {
         int narrower = Math.round(plain.stringWidth(SAMPLE) - kerned.stringWidth(SAMPLE));
         TextLine note = new TextLine(regular,
                 "Kerning makes these words " + narrower + " points narrower at 30 points.");
-        note.setTextColor(Color.gray);
+        note.setTextColor(Color.dimgray);
         note.setLocation(50f, y + 30f);
         note.drawOn(page);
 
@@ -97,7 +97,7 @@ public class Example_05 {
     private static float drawSample(Page page, Font labelFont, Font font, String label, float y)
             throws Exception {
         TextLine caption = new TextLine(labelFont, label);
-        caption.setTextColor(Color.gray);
+        caption.setTextColor(Color.dimgray);
         caption.setLocation(50f, y);
         caption.drawOn(page);
 

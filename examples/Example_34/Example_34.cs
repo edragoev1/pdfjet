@@ -57,7 +57,7 @@ public class Example_34 {
         // The table is about 555 points wide: at x = 30 it fits on the page.
         table.SetLocation(30f, 30f);
         table.SetTextColorInRow(6, Color.blue);
-        table.SetTextColorInRow(39, Color.red);
+        table.SetTextColorInRow(39, Color.firebrick);
         table.SetFontInRow(26, f3);
         table.RemoveLineBetweenRows(0, 1);
         table.AutoAdjustColumnWidths();

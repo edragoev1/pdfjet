@@ -73,7 +73,7 @@ public class Example_45 {
         xy = new Form(fields)
                 .SetLabelFont(f1)
                 .SetLabelFontSize(8f)
-                .SetLabelColor(Color.gray)
+                .SetLabelColor(Color.dimgray)
                 .SetValueFont(f2)
                 .SetValueFontSize(10f)
                 .SetValueColor(Color.black)
@@ -84,7 +84,7 @@ public class Example_45 {
 
         text = new TextLine(f1, "The recipient signs for the package on delivery.");
         text.SetFontSize(10f);
-        text.SetTextColor(Color.gray);
+        text.SetTextColor(Color.dimgray);
         text.SetLocation(56f, xy[1] + 20f);
         text.DrawOn(page);
 

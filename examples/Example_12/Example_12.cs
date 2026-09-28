@@ -61,7 +61,7 @@ public class Example_12 {
         text = new TextLine(f1, "The source code of data/Example_12.java, "
                 + lines.Count + " lines");
         text.SetFontSize(10f);
-        text.SetTextColor(Color.gray);
+        text.SetTextColor(Color.dimgray);
         text.SetLocation(70f, xy[1] + 20f);
         text.DrawOn(page);
 

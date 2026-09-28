@@ -66,7 +66,7 @@ public class Example_11 {
             new TextLine(f2, labels[i]).SetLocation(70f, y + 15f).DrawOn(page);
             TextLine note = new TextLine(f1, notes[i]);
             note.SetFontSize(10f);
-            note.SetTextColor(Color.gray);
+            note.SetTextColor(Color.dimgray);
             note.SetLocation(70f, y + 32f);
             note.DrawOn(page);
 
@@ -114,7 +114,7 @@ public class Example_11 {
         label.DrawOn(page2);
         TextLine cartonNote = new TextLine(f1, "The GTIN of a carton, 13 digits and the check digit PDFjet adds, framed by bearer bars");
         cartonNote.SetFontSize(10f);
-        cartonNote.SetTextColor(Color.gray);
+        cartonNote.SetTextColor(Color.dimgray);
         cartonNote.SetLocation(70f, 152f);
         cartonNote.DrawOn(page2);
 

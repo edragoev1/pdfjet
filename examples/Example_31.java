@@ -95,7 +95,7 @@ public class Example_31 {
 
             text = new TextLine(f1, Math.round(alphas[i] * 100f) + "%");
             text.setFontSize(10f);
-            text.setTextColor(Color.gray);
+            text.setTextColor(Color.dimgray);
             text.setLocation(x, y + 140f);
             text.drawOn(page);
         }
@@ -128,7 +128,7 @@ public class Example_31 {
 
             text = new TextLine(f1, labels[i]);
             text.setFontSize(10f);
-            text.setTextColor(Color.gray);
+            text.setTextColor(Color.dimgray);
             text.setLocation(x - text.getWidth() / 2f, y + 130f);
             text.drawOn(page);
         }

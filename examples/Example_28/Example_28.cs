@@ -72,7 +72,7 @@ public class Example_28 {
 
             text = new TextLine(f1, kinds[i]);
             text.SetFontSize(10f);
-            text.SetTextColor(Color.gray);
+            text.SetTextColor(Color.dimgray);
             text.SetLocation(50f, y + 15f);
             text.DrawOn(page);
 

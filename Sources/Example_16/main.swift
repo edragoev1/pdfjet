@@ -24,7 +24,7 @@ public class Example_16 {
         let page = Page(pdf, Letter.PORTRAIT)
 
         var colors = [String : Int32]()
-        colors["Everyone"] = Color.red
+        colors["Everyone"] = Color.firebrick
         colors["pay"] = Color.green
         colors["freedom"] = Color.blue
 

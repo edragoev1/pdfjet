@@ -64,9 +64,9 @@ public class Example_03 {
 
 
         Dictionary<String, int> colorMap = new Dictionary<String, int>();
-        colorMap["Physics"] = Color.red;
-        colorMap["physics"] = Color.red;
-        colorMap["Experimentation"] = Color.orange;
+        colorMap["Physics"] = Color.firebrick;
+        colorMap["physics"] = Color.firebrick;
+        colorMap["Experimentation"] = Color.sienna;
         colorMap["science"] = Color.blue;
         paragraphs = Paragraph.ParagraphsFromFile(f1, "data/physics.txt");
         foreach (Paragraph p in paragraphs) {
@@ -76,7 +76,7 @@ public class Example_03 {
                 p.GetTextLines()[0].SetTextColor(Color.navy);
                 paragraphNumber = 1;
             } else {
-                p.SetTextColor(Color.gray);
+                p.SetTextColor(Color.dimgray);
                 p.SetHighlightColors(colorMap);
                 p.SetListLabel(new TextLine(f2, paragraphNumber.ToString() + "."), 15f);
                 paragraphNumber++;

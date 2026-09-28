@@ -142,7 +142,7 @@ func drawFormula(
 
 	text := pdfjet.NewTextLine(font, name)
 	text.SetFontSize(10.0)
-	text.SetTextColor(color.Gray)
+	text.SetTextColor(color.DimGray)
 	text.SetLocation(x+nameOffset, y)
 	text.DrawOn(page)
 }

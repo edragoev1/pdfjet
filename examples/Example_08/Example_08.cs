@@ -56,7 +56,7 @@ public class Example_08 {
         // table.SetFirstPageTopMargin(150f);
         table.SetBottomMargin(15f);
         table.SetTextColorInRow(12, Color.blue);
-        table.SetTextColorInRow(13, Color.red);
+        table.SetTextColorInRow(13, Color.firebrick);
         table.SetFontInRow(14, f3);
 
         List<Page> pages = new List<Page>();

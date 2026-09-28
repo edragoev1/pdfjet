@@ -69,7 +69,7 @@ public class Example_28 {
 
             text = TextLine(f1, kinds[i])
             text.setFontSize(10.0)
-            text.setTextColor(Color.gray)
+            text.setTextColor(Color.dimgray)
             text.setLocation(50.0, y + 15.0)
             text.drawOn(page)
 

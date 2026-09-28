@@ -51,7 +51,7 @@ public class Example_35 {
             .drawRect(10.0, 10.0, 380.0, 380.0)
 
         // Fill Rectangle
-        stamp.setFillColor(Color.green).fillRect(10.0, 10.0, 20.0, 20.0)
+        stamp.setFillColor(Color.darkgreen).fillRect(10.0, 10.0, 20.0, 20.0)
 
         // Draw some text
         let parameters = TextParameters()
@@ -95,6 +95,7 @@ public class Example_35 {
 
         let innerText = TextLine(f1, "Nested 1")
         innerText.setLocation(50.0, 100.0)
+        innerText.setTextColor(Color.white)   // On the blue of the rectangle
         nested1.add(innerText)
 
         container.add(nested1)

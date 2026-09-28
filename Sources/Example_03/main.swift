@@ -60,9 +60,9 @@ public class Example_03 {
 
 
         var colorMap = [String: Int32]()
-        colorMap["Physics"] = Color.red
-        colorMap["physics"] = Color.red
-        colorMap["Experimentation"] =  Color.orange
+        colorMap["Physics"] = Color.firebrick
+        colorMap["physics"] = Color.firebrick
+        colorMap["Experimentation"] =  Color.sienna
         colorMap["science"] = Color.blue
         paragraphs = try Paragraph.paragraphsFromFile(f1, "data/physics.txt")
         // The paragraphs under each heading are a numbered list.
@@ -74,7 +74,7 @@ public class Example_03 {
                 p.getTextLines()[0].setTextColor(Color.navy)
                 paragraphNumber = 1
             } else {
-                p.setTextColor(Color.gray)
+                p.setTextColor(Color.dimgray)
                 p.setHighlightColors(colorMap)
                 p.setListLabel(TextLine(f2, String(paragraphNumber) + "."), 15.0)
                 paragraphNumber += 1

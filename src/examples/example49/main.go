@@ -59,7 +59,7 @@ func Example49() {
 	for i := 0; i < len(names); i++ {
 		paragraph := pdfjet.NewParagraph().
 			Add(pdfjet.NewTextLine(f3, names[i])).
-			Add(pdfjet.NewTextLine(f2, notes[i]).SetTextColor(color.Gray)).
+			Add(pdfjet.NewTextLine(f2, notes[i]).SetTextColor(color.DimGray)).
 			Add(pdfjet.NewTextLine(f4, "$").SetVerticalOffset(-4.0)).
 			Add(pdfjet.NewTextLine(f1, prices[i]).SetTextColor(color.DarkRed))
 		column.AddParagraph(paragraph)
@@ -70,7 +70,7 @@ func Example49() {
 		Add(pdfjet.NewTextLine(f2, "Freshly")).
 		Add(pdfjet.NewTextLine(f3, "roasted").SetTextColor(color.SaddleBrown)).
 		Add(pdfjet.NewTextLine(f2, "every")).
-		Add(pdfjet.NewTextLine(f3, "morning").SetTextColor(color.DarkOrange)).
+		Add(pdfjet.NewTextLine(f3, "morning").SetTextColor(color.Sienna)).
 		SetTextAlignment(alignment.Right))
 
 	column.SetLocation(70.0, 140.0)
@@ -89,7 +89,7 @@ func Example49() {
 		Add(pdfjet.NewTextLine(f1, "and we roast them in small batches.")).
 		Add(pdfjet.NewTextLine(f2, "Ask us about the beans of the week.").SetTextColor(color.DarkRed)))
 	paragraphs = append(paragraphs, pdfjet.NewParagraph().
-		Add(pdfjet.NewTextLine(f2, "Prices include tax.").SetTextColor(color.Gray)))
+		Add(pdfjet.NewTextLine(f2, "Prices include tax.").SetTextColor(color.DimGray)))
 
 	frame := pdfjet.NewTextFrameFromParagraphs(paragraphs)
 	frame.SetLocation(70.0, xy[1]+30.0)

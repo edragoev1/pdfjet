@@ -66,7 +66,7 @@ public class Example_07 {
 
             TextLine footer = new TextLine(f1, "Page " + (i + 1) + " of " + titles.Length);
             footer.SetFontSize(10f);
-            footer.SetTextColor(Color.gray);
+            footer.SetTextColor(Color.dimgray);
             footer.SetLocation(70f, page.GetHeight() - 40f);
             footer.DrawOn(page);
         }

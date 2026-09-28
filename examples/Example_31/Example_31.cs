@@ -94,7 +94,7 @@ public class Example_31 {
 
             text = new TextLine(f1, Math.Round(alphas[i] * 100f) + "%");
             text.SetFontSize(10f);
-            text.SetTextColor(Color.gray);
+            text.SetTextColor(Color.dimgray);
             text.SetLocation(x, y + 140f);
             text.DrawOn(page);
         }
@@ -127,7 +127,7 @@ public class Example_31 {
 
             text = new TextLine(f1, labels[i]);
             text.SetFontSize(10f);
-            text.SetTextColor(Color.gray);
+            text.SetTextColor(Color.dimgray);
             text.SetLocation(x - text.GetWidth() / 2f, y + 130f);
             text.DrawOn(page);
         }

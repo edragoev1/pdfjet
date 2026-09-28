@@ -62,7 +62,7 @@ public class Example_11 {
             TextLine(f2, labels[i]).setLocation(70.0, y + 15.0).drawOn(page)
             let note = TextLine(f1, notes[i])
             note.setFontSize(10.0)
-            note.setTextColor(Color.gray)
+            note.setTextColor(Color.dimgray)
             note.setLocation(70.0, y + 32.0)
             note.drawOn(page)
 
@@ -109,7 +109,7 @@ public class Example_11 {
         TextLine(f2, "ITF-14").setLocation(70.0, 135.0).drawOn(page2)
         let cartonNote = TextLine(f1, "The GTIN of a carton, 13 digits and the check digit PDFjet adds, framed by bearer bars")
         cartonNote.setFontSize(10.0)
-        cartonNote.setTextColor(Color.gray)
+        cartonNote.setTextColor(Color.dimgray)
         cartonNote.setLocation(70.0, 152.0)
         cartonNote.drawOn(page2)
 

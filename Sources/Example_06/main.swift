@@ -37,7 +37,7 @@ public class Example_06 {
 
         text = TextLine(f1,
                 "Open this page in a PDF viewer that shows annotations, and hover over the icons.")
-        text.setTextColor(Color.gray)
+        text.setTextColor(Color.dimgray)
         text.setLocation(70.0, 105.0)
         text.drawOn(page)
 

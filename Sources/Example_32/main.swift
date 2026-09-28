@@ -21,7 +21,7 @@ public class Example_32 {
         font.setSize(8.0)
 
         var colors = [String:Int32]()
-        colors["new"] = Color.red
+        colors["new"] = Color.firebrick
         colors["class"] = Color.blue
         colors["void"] = Color.green
         let grayColor: [Float] = [0.2, 0.2, 0.2]

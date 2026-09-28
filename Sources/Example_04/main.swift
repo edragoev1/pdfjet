@@ -60,7 +60,7 @@ public class Example_04 {
 
         text = TextLine(f5, "In four languages, with CJK fonts that are not embedded in this PDF.")
         text.setFontSize(11.0)
-        text.setTextColor(Color.gray)
+        text.setTextColor(Color.dimgray)
         text.setLocation(70.0, 112.0)
         text.drawOn(page)
 
@@ -93,7 +93,7 @@ public class Example_04 {
 
             text = TextLine(f5, fontNames[i])
             text.setFontSize(10.0)
-            text.setTextColor(Color.gray)
+            text.setTextColor(Color.dimgray)
             text.setLocation(70.0, y + 15.0)
             text.drawOn(page)
 

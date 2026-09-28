@@ -27,7 +27,7 @@ public class Example_32 {
         font.SetSize(8f);
 
         Dictionary<String, Int32> colors = new Dictionary<String, Int32>();
-        colors["new"] = Color.red;
+        colors["new"] = Color.firebrick;
         colors["class"] = Color.blue;
         colors["void"] = Color.green;
         float[] grayColor = new float[] {0.2f, 0.2f, 0.2f};

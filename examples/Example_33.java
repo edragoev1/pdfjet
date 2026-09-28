@@ -55,7 +55,7 @@ public class Example_33 {
                 + "the svg element for most countries, an aliceblue fill for Spain and an "
                 + "olive outline for Austria.");
         textBlock.setFontSize(10f);
-        textBlock.setTextColor(Color.gray);
+        textBlock.setTextColor(Color.dimgray);
         textBlock.setLocation(50f, xy[1] + 10f);
         textBlock.setWidth(495f);
         xy = textBlock.drawOn(page);
@@ -104,7 +104,7 @@ public class Example_33 {
 
             text = new TextLine(f1, iconNames[i]);
             text.setFontSize(9f);
-            text.setTextColor(Color.gray);
+            text.setTextColor(Color.dimgray);
             text.setLocation(x, iconXY[1] + 15f);
             text.drawOn(page);
         }

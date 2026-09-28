@@ -64,7 +64,7 @@ func Example33() error {
 			"the svg element for most countries, an aliceblue fill for Spain and an "+
 			"olive outline for Austria.")
 	textBlock.SetFontSize(10.0)
-	textBlock.SetTextColor(color.Gray)
+	textBlock.SetTextColor(color.DimGray)
 	textBlock.SetLocation(50.0, xy[1]+10.0)
 	textBlock.SetWidth(495.0)
 	xy = textBlock.DrawOn(page)
@@ -116,7 +116,7 @@ func Example33() error {
 
 		text = pdfjet.NewTextLine(f1, iconNames[i])
 		text.SetFontSize(9.0)
-		text.SetTextColor(color.Gray)
+		text.SetTextColor(color.DimGray)
 		text.SetLocation(x, iconXY[1]+15.0)
 		text.DrawOn(page)
 	}

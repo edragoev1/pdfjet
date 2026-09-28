@@ -52,7 +52,7 @@ public class Example_49 {
         for (int i = 0; i < names.Length; i++) {
             Paragraph paragraph = new Paragraph()
                     .Add(new TextLine(f3, names[i]))
-                    .Add(new TextLine(f2, notes[i]).SetTextColor(Color.gray))
+                    .Add(new TextLine(f2, notes[i]).SetTextColor(Color.dimgray))
                     .Add(new TextLine(f4, "$").SetVerticalOffset(-4f))
                     .Add(new TextLine(f1, prices[i]).SetTextColor(Color.darkred));
             column.AddParagraph(paragraph);
@@ -63,7 +63,7 @@ public class Example_49 {
                 .Add(new TextLine(f2, "Freshly"))
                 .Add(new TextLine(f3, "roasted").SetTextColor(Color.saddlebrown))
                 .Add(new TextLine(f2, "every"))
-                .Add(new TextLine(f3, "morning").SetTextColor(Color.darkorange))
+                .Add(new TextLine(f3, "morning").SetTextColor(Color.sienna))
                 .SetTextAlignment(Alignment.RIGHT));
 
         column.SetLocation(70f, 140f);
@@ -82,7 +82,7 @@ public class Example_49 {
                 .Add(new TextLine(f1, "and we roast them in small batches."))
                 .Add(new TextLine(f2, "Ask us about the beans of the week.").SetTextColor(Color.darkred)));
         paragraphs.Add(new Paragraph()
-                .Add(new TextLine(f2, "Prices include tax.").SetTextColor(Color.gray)));
+                .Add(new TextLine(f2, "Prices include tax.").SetTextColor(Color.dimgray)));
 
         TextFrame frame = new TextFrame(paragraphs);
         frame.SetLocation(70f, xy[1] + 30f);

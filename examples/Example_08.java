@@ -58,7 +58,7 @@ public class Example_08 {
         // table.setFirstPageTopMargin(150f);
         table.setBottomMargin(15f);
         table.setTextColorInRow(12, Color.blue);
-        table.setTextColorInRow(13, Color.red);
+        table.setTextColorInRow(13, Color.firebrick);
         table.setFontInRow(14, f3);
 
         List<Page> pages = new ArrayList<Page>();

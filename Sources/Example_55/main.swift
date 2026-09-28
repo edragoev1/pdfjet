@@ -142,7 +142,7 @@ public class Example_55 {
         Example_55.line(page, semiBold, "Lindenberg Paper & Print GmbH", middle, y, Color.black)
         for text in ["Hafenstraße 12", "20457 Hamburg, Germany", "VAT ID DE123456789"] {
             y += 14.0
-            Example_55.line(page, regular, text, middle, y, Color.gray)
+            Example_55.line(page, regular, text, middle, y, Color.dimgray)
         }
 
         page.addArtifactBMC()
@@ -162,7 +162,7 @@ public class Example_55 {
         y = 205.0
         let billTo = TextLine(regular, "BILL TO")
         billTo.setFontSize(8.0)
-        billTo.setTextColor(Color.gray)
+        billTo.setTextColor(Color.dimgray)
         billTo.setLocation(left, y)
         billTo.drawOn(page)
         Example_55.line(page, semiBold, "Kranich Design Studio", left, y + 16.0, Color.black)
@@ -177,7 +177,7 @@ public class Example_55 {
         ]
         for i in 0..<facts.count {
             let factY = y + 16.0 + Float(i) * 14.0
-            Example_55.line(page, regular, facts[i][0], middle, factY, Color.gray)
+            Example_55.line(page, regular, facts[i][0], middle, factY, Color.dimgray)
             Example_55.line(page, semiBold, facts[i][1], right - semiBold.stringWidth(facts[i][1]), factY, Color.black)
         }
 
@@ -251,7 +251,7 @@ public class Example_55 {
         let qrXY = qr.drawOn(page)
         let caption = TextLine(regular, "Scan to pay")
         caption.setFontSize(8.0)
-        caption.setTextColor(Color.gray)
+        caption.setTextColor(Color.dimgray)
         caption.setLocation(right - 90.0, qrXY[1] + 12.0)
         caption.drawOn(page)
 
@@ -274,7 +274,7 @@ public class Example_55 {
         let footer = TextLine(regular,
                 "Lindenberg Paper & Print GmbH  ·  Hafenstraße 12, 20457 Hamburg  ·  Registered in Hamburg, HRB 000000")
         footer.setFontSize(8.0)
-        footer.setTextColor(Color.gray)
+        footer.setTextColor(Color.dimgray)
         footer.setLocation((page.getWidth() - footer.getWidth()) / 2.0, page.getHeight() - 40.0)
         footer.drawOn(page)
 

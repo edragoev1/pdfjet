@@ -42,7 +42,7 @@ public class Example_18 {
 
             let header = TextLine(f1, "How to number pages")
             header.setFontSize(10.0)
-            header.setTextColor(Color.gray)
+            header.setTextColor(Color.dimgray)
             header.setLocation(70.0, 50.0)
             header.drawOn(page)
 

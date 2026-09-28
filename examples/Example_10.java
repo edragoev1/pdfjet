@@ -80,7 +80,7 @@ public class Example_10 {
         buf.append("organizations but retains a strong commitment to neutrality.");
 
         text = new TextLine(f1, buf.toString());
-        text.setTextColor(Color.red);
+        text.setTextColor(Color.firebrick);
         p3.add(text);
 
         Paragraph p4 = new Paragraph();

@@ -77,7 +77,7 @@ public class Example_21 {
 
             text = TextLine(f1, notes[i])
             text.setFontSize(10.0)
-            text.setTextColor(Color.gray)
+            text.setTextColor(Color.dimgray)
             text.setLocation(x, xy[1] + 35.0)
             text.drawOn(page)
         }

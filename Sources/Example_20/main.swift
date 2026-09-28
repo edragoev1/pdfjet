@@ -146,12 +146,12 @@ public class Example_20 {
         page.addEMC()
 
         var caption = TextLine(f1, "A Path with curves")
-        caption.setTextColor(Color.gray)
+        caption.setTextColor(Color.dimgray)
         caption.setLocation(60.0, xy[1] + 35.0)
         caption.drawOn(page)
 
         caption = TextLine(f1, "Scan to visit https://pdfjet.com")
-        caption.setTextColor(Color.gray)
+        caption.setTextColor(Color.dimgray)
         caption.setLocation(290.0, xy[1] + 35.0)
         caption.drawOn(page)
 

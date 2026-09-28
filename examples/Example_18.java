@@ -48,7 +48,7 @@ public class Example_18 {
 
             TextLine header = new TextLine(f1, "How to number pages");
             header.setFontSize(10f);
-            header.setTextColor(Color.gray);
+            header.setTextColor(Color.dimgray);
             header.setLocation(70f, 50f);
             header.drawOn(page);
 

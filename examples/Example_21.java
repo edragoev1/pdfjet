@@ -82,7 +82,7 @@ public class Example_21 {
 
             text = new TextLine(f1, notes[i]);
             text.setFontSize(10f);
-            text.setTextColor(Color.gray);
+            text.setTextColor(Color.dimgray);
             text.setLocation(x, xy[1] + 35f);
             text.drawOn(page);
         }

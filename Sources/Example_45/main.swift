@@ -68,7 +68,7 @@ public class Example_45 {
         xy = Form(fields)
                 .setLabelFont(f1)
                 .setLabelFontSize(8.0)
-                .setLabelColor(Color.gray)
+                .setLabelColor(Color.dimgray)
                 .setValueFont(f2)
                 .setValueFontSize(10.0)
                 .setValueColor(Color.black)
@@ -79,7 +79,7 @@ public class Example_45 {
 
         text = TextLine(f1, "The recipient signs for the package on delivery.")
         text.setFontSize(10.0)
-        text.setTextColor(Color.gray)
+        text.setTextColor(Color.dimgray)
         text.setLocation(56.0, xy[1] + 20.0)
         text.drawOn(page)
 

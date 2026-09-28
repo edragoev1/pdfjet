@@ -79,7 +79,7 @@ func Example45() {
 	xy = pdfjet.NewForm(fields).
 		SetLabelFont(f1).
 		SetLabelFontSize(8.0).
-		SetLabelColor(color.Gray).
+		SetLabelColor(color.DimGray).
 		SetValueFont(f2).
 		SetValueFontSize(10.0).
 		SetValueColor(color.Black).
@@ -90,7 +90,7 @@ func Example45() {
 
 	text = pdfjet.NewTextLine(f1, "The recipient signs for the package on delivery.")
 	text.SetFontSize(10.0)
-	text.SetTextColor(color.Gray)
+	text.SetTextColor(color.DimGray)
 	text.SetLocation(56.0, xy[1]+20.0)
 	text.DrawOn(page)
 
