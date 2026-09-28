@@ -197,6 +197,15 @@ API of v9.0.1 came with the PDF/UA work and the fixes; goal 6 lists them.
      `addEMC` around other drawing; the figures of the library set it
      themselves.
 
+   And more that day, for PAC and for the review of the four ports:
+   - `Point.setAltDescription` and `getAltDescription`, the description of
+     a linked point of a chart or a cell, a figure in its Link;
+   - `Table.drawOn(pdf, first, pages, pageSize)`, in Go `DrawOnPagesFrom`,
+     and `BigTable.setFirstPage(page, y)`, a table that starts under a
+     heading on a page of its own;
+   - `DataMatrix.setAltDescription` and `PDF417.setAltDescription`, as
+     `Barcode` and `QRCode` have it.
+
    And one more that day, in Go only, where the constructor of the other
    ports that throws has no error to return:
    - `ReadTableFromFile`, `NewTableFromFile` that returns the error of a file
@@ -294,7 +303,15 @@ day.
       and `benchmarks/table/results/2026-09-24-f583352f.log`: Example_43
       takes 1.65 s with `BigTable` (1.67 s at v9.0.1) and 3.61 s with `Table`
       (3.49 s, 3.5% slower, from 8% on Sep 22), and the text is as fast as at
-      v9.0.1. Left for the tag: these again on the tagged tree, the docs, the
+      v9.0.1. Run again on Sep 28, after the code review of the four ports:
+      `./check-api.sh` with nothing of v9.0.1 gone and the additions of that
+      day added to goal 6, and the benchmarks in
+      `benchmarks/results/2026-09-28-74f21e90.log` and
+      `benchmarks/table/results/2026-09-28-74f21e90.log`: Example_43 takes
+      1.67 s with `BigTable` and 3.62 s with `Table`, as on Sep 24, and the
+      text is as fast; the 50,000-row table is as fast in the four ports,
+      and Go's PDF is 4% larger, from its compression level 5.
+      Left for the tag: these again on the tagged tree, the docs, the
       packages, the booklet and the site rebuilt, and the CHANGELOG entry
       dated.
 - ⬜ **B** Tag v9.0.2 on Oct 1 and make the GitHub release.
@@ -574,6 +591,54 @@ to check and fix in the four, with a test.
     Order-X publishes, with tests and an example in every port.
   - A third to a half of the 6,300 lines of the invoice code of the Java
     port, in each port; 3 to 5 days, most of it the checking.
+- ⬜ Maybe: the EXIF orientation of a JPEG, in the four ports. A photo
+  taken with a phone is stored as the sensor saw it, with a tag that says
+  how to turn it, and is drawn sideways or upside down. The orientation is
+  read from the APP1 segment, and the image is drawn turned or mirrored with
+  its matrix, its width and height swapped for a quarter turn; the samples
+  are not changed. A medium feature, with test images of the eight
+  orientations; found by the code review of Sep 28.
+- ⬜ Maybe: a faster Deflate for Swift, which has its own, written in
+  Swift. After the review of Sep 28 it is Swift's main cost for a PNG that
+  is decoded and compressed again, one with transparency: about 500 ms for
+  a photo of 3000 by 3993 pixels. Its time goes to the work per byte, the
+  hash, the tokens and the Huffman codes, not to the search for matches, so
+  its one setting, the chain of 32, barely changes it; a faster one needs a
+  design of its own, as zlib's levels 1 to 3 have. A large job, worth it
+  if a customer draws such images from Swift.
+- ⬜ Maybe: PAdES baseline B-LT and B-LTA signatures, in the commercial
+  product (`.commercial`), in the four ports, where it signs B-B, and B-T
+  with the time stamp of an RFC 3161 authority. A B-B or B-T signature stops
+  validating when its certificate expires, when the authority that issued
+  it is gone, or when it is revoked after the signing, as nothing in the
+  PDF proves it was valid when it was made; Acrobat then shows it as
+  expired. B-LTA keeps it valid for as long as the PDF is kept: sign once,
+  and a contract, an invoice or a filing still validates in 20 years with
+  nothing done to it.
+  - B-LT: a Document Security Store (`/DSS`, with its `/Certs`, `/OCSPs`
+    and `/CRLs`, and `/VRI` per signature) added by incremental update
+    after the signature, holding the chain of the signing certificate and
+    of the time stamp's, and the OCSP responses or CRLs fetched for each,
+    as ETSI EN 319 142-1 says.
+  - B-LTA: then a document time stamp, a `/DocTimeStamp` signature of
+    `/SubFilter /ETSI.RFC3161`, over the whole of it, from the same kind
+    of authority as B-T's.
+  - The cost to the one who signs is what B-B costs: the same certificate,
+    renewed to go on signing new documents, while those signed stay valid;
+    a time stamp from one of the free authorities, or a few cents from a
+    paid one. What is new is the fetching of the OCSP responses and CRLs
+    over HTTP, which the time stamp client already does for its own
+    requests.
+  - The check: veraPDF has no PAdES profile, so the signatures are checked
+    with the EU's DSS validation (as a reference outside the build) and
+    Acrobat, B-LTA read as valid after the certificate's expiry by a clock
+    set later.
+  - With it, perhaps, a page of pdfjet-server that verifies a document:
+    the signed PDF carries a link to it with an id, the server keeps the
+    SHA-256 of the signed file with who signed it and when, and the page
+    shows them, and that a file given to it is unchanged. That
+    is for a reader without a signature validator, and it does not replace
+    the signature.
 - ⬜ Deliver-X, the delivery note of FeRD, in the commercial product: still
   in development on Sep 24, so written once it is published, after Order-X,
   whose model it shares most of.

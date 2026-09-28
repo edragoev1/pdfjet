@@ -1,0 +1,37 @@
+== environment
+openjdk version "21.0.12.1" 2026-08-18 LTS
+.NET SDK 8.0.424
+go version go1.27.1 linux/amd64
+Swift version 6.3.3 (swift-6.3.3-RELEASE)
+cpus 12, AMD Ryzen 5 5600G with Radeon Graphics
+2026-09-28T19:47:49-04:00
+74f21e90 Give the tables of Example_09 and Example_38 a header row, in all four ports
+== table: 9 columns of the EV CSV as cells, IBM Plex Sans 8 pt, Letter
+java 2000 rows: median 83 ms (min 69, max 94, 7 runs), 43 pages, 483715 bytes
+dotnet 2000 rows: median 80 ms (min 74, max 175, 7 runs), 43 pages, 483715 bytes
+go 2000 rows: median 34 ms (min 33, max 35, 7 runs), 43 pages, 500916 bytes
+swift 2000 rows: median 122 ms (min 120, max 123, 7 runs), 43 pages, 565928 bytes
+java 10000 rows: median 352 ms (min 329, max 382, 7 runs), 215 pages, 1913450 bytes
+dotnet 10000 rows: median 385 ms (min 376, max 390, 7 runs), 215 pages, 1913450 bytes
+go 10000 rows: median 159 ms (min 156, max 161, 7 runs), 215 pages, 1998410 bytes
+swift 10000 rows: median 574 ms (min 573, max 577, 7 runs), 215 pages, 2325170 bytes
+java 50000 rows: median 1671 ms (min 1646, max 1860, 7 runs), 1073 pages, 9066123 bytes
+dotnet 50000 rows: median 1992 ms (min 1952, max 2164, 7 runs), 1073 pages, 9066123 bytes
+go 50000 rows: median 819 ms (min 790, max 829, 7 runs), 1073 pages, 9491356 bytes
+swift 50000 rows: median 2845 ms (min 2824, max 2879, 7 runs), 1073 pages, 11125493 bytes
+== table: first document in a new process, 50000 rows
+java cold 50000 rows: 2109 ms, 1073 pages, 9066123 bytes
+dotnet cold 50000 rows: 2396 ms, 1073 pages, 9066123 bytes
+go cold 50000 rows: 827 ms, 1073 pages, 9491356 bytes
+swift cold 50000 rows: 2902 ms, 1073 pages, 11125493 bytes
+== table: peak memory, one 50000-row table, runtime defaults, median of 3
+java peak 380700 KB
+dotnet peak 231676 KB
+go peak 184204 KB
+swift peak 177156 KB
+== table: 40-row samples
+java: 133855 bytes, page 1: VIN (1-10)|County|City|State|Postal Model|Make|Model|Electric Vehicle Type||Code Year||5YJ3E1EB4L|Yakima|Yakima|WA|98908
+dotnet: 133855 bytes, page 1: VIN (1-10)|County|City|State|Postal Model|Make|Model|Electric Vehicle Type||Code Year||5YJ3E1EB4L|Yakima|Yakima|WA|98908
+go: 134212 bytes, page 1: VIN (1-10)|County|City|State|Postal Model|Make|Model|Electric Vehicle Type||Code Year||5YJ3E1EB4L|Yakima|Yakima|WA|98908
+swift: 135460 bytes, page 1: VIN (1-10)|County|City|State|Postal Model|Make|Model|Electric Vehicle Type||Code Year||5YJ3E1EB4L|Yakima|Yakima|WA|98908
+2026-09-28T19:49:49-04:00

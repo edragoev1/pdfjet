@@ -15,15 +15,15 @@ This is the first entry in this file; earlier releases were not tracked here.
   file that cannot be read or has a quoted field that is not closed, as the
   constructors of Java, C# and Swift throw it. `NewTableFromFile`, which
   returns no error, panics with it, as it did.
-- A table that starts under a heading, in all four ports:
-  `Table.drawOn(pdf, first, pages, pageSize)` (`DrawOnPagesFrom` in Go)
-  starts the table on a page of your own, under the top margin
-  `setFirstPageTopMargin` gives it, and goes on to new pages; and
-  `BigTable.setFirstPage(page, y)` starts a big table at y on a page of the
-  PDF, with the next pages at the y of its location, and the footer
-  counting them all, each at its own size, in "Page i of N"; a first page
-  with no room for the header and a row is left for a new one. Example_08 and Example_57 have a heading on their first
-  page with them, which PAC asks a document for.
+- A table that starts under a heading, in all four ports: `Table.drawOn(pdf,
+  first, pages, pageSize)` (`DrawOnPagesFrom` in Go) starts the table on a
+  page of your own, under the top margin `setFirstPageTopMargin` gives it,
+  and goes on to new pages; and `BigTable.setFirstPage(page, y)` starts a big
+  table at y on a page of the PDF, with the next pages at the y of its
+  location, and the footer counting them all, each at its own size, in "Page
+  i of N"; a first page with no room for the header and a row is left for a
+  new one. Example_08 and Example_57 have a heading on their first page with
+  them, which PAC asks a document for.
 - A description of a point, in all four ports: `Point.setAltDescription`,
   what a point that is a link stands for, like the country a point of a
   chart is. In a tagged document a point of a chart, or of a cell, that is a
@@ -92,21 +92,21 @@ This is the first entry in this file; earlier releases were not tracked here.
   has no primary key or two, both (254) and (7040) of a GLN, or a domain
   that does not start with https:// or http://. Example_21 draws one in a
   QR code.
-- GS1-128 barcodes, as the labels of pallets, cartons and shipments carry,
-  in all four ports: `Barcode.GS1_128`, with the text written as GS1 data is
-  read, such as `(00)106141412345678908` or
-  `(01)09506000134352(10)ABC123`, and drawn so under the bars. The barcode
-  starts with FNC1, which makes it GS1-128, ends a field of no set length
-  with FNC1 when another follows, and puts runs of four digits or more in
-  code set C, two digits to a codeword, so that an SSCC is 156 modules wide
-  where code set B would make it 266. It takes the data GS1 DataMatrix takes
-  and refuses it in the same words, and refuses data of more than the 48
-  characters a GS1-128 barcode holds. The GS1 parser is shared by the two,
-  and is internal in every port: in Java `com.pdfjet.internal.GS1Parser`,
-  which is public only because the barcodes are in packages of their own,
-  and is not API. ZXing reads the barcodes with the symbology identifier `]C1` of
-  GS1-128. Example_11 draws one. The internal class `GS1_128` of Java, C#
-  and Swift, which held the table of Code 128, is `Code128Table`.
+- GS1-128 barcodes, as the labels of pallets, cartons and shipments carry, in
+  all four ports: `Barcode.GS1_128`, with the text written as GS1 data is
+  read, such as `(00)106141412345678908` or `(01)09506000134352(10)ABC123`,
+  and drawn so under the bars. The barcode starts with FNC1, which makes it
+  GS1-128, ends a field of no set length with FNC1 when another follows, and
+  puts runs of four digits or more in code set C, two digits to a codeword,
+  so that an SSCC is 156 modules wide where code set B would make it 266. It
+  takes the data GS1 DataMatrix takes and refuses it in the same words, and
+  refuses data of more than the 48 characters a GS1-128 barcode holds. The
+  GS1 parser is shared by the two, and is internal in every port: in Java
+  `com.pdfjet.internal.GS1Parser`, which is public only because the barcodes
+  are in packages of their own, and is not API. ZXing reads the barcodes with
+  the symbology identifier `]C1` of GS1-128. Example_11 draws one. The
+  internal class `GS1_128` of Java, C# and Swift, which held the table of
+  Code 128, is `Code128Table`.
 - GS1 DataMatrix, as medicines, medical devices and, more and more, retail
   goods carry, in all four ports: `DataMatrix.fromGS1(data)` and
   `fromGS1(data, shape)` in Java, `DataMatrix.FromGS1` in C#,
@@ -141,24 +141,23 @@ This is the first entry in this file; earlier releases were not tracked here.
   the document, for a standard that asks for properties of its own, such as
   the invoice standards that say which of the files the document carries is
   the invoice, in all four ports (`AddMetadata` in C# and Go).
-- `Markdown` draws a Markdown text on as many pages as it needs, in all
-  four ports: headings of `#` and of underlines, paragraphs with the inline
-  markup of `Markup`, bullet and numbered lists that nest, block quotes,
-  fenced and indented code, thematic breaks, the tables of GitHub's
-  Markdown, and images alone in their paragraph. A heading keeps a line of
-  the text after it on its page, and a table, a list, a quote or code goes
-  on onto the next page. In a PDF/UA document the headings are H1 to H6
-  with no level skipped, and the lists, quotes, code, tables and images are
-  tagged as such; one that goes on over pages is one structure element.
-  Images are read only from the directory `setImageDirectory` names, never
-  from an absolute path, a URL or one with `..`, so that a text from anyone
-  reads no other file, alike in the four ports; a source that ends in `/` or
-  `/.` names a directory, and an empty image directory is the working
-  directory. HTML is drawn as the text it is, and a line break is a space.
-  The blocks nest at most 32 levels, so that the text is read in time
-  linear in its length, and quotes and lists nested deeply leave their text
-  at least ten sizes of the text wide. `StructElem.BLOCKQUOTE` and `StructElem.CODE`
-  are new.
+- `Markdown` draws a Markdown text on as many pages as it needs, in all four
+  ports: headings of `#` and of underlines, paragraphs with the inline markup
+  of `Markup`, bullet and numbered lists that nest, block quotes, fenced and
+  indented code, thematic breaks, the tables of GitHub's Markdown, and images
+  alone in their paragraph. A heading keeps a line of the text after it on
+  its page, and a table, a list, a quote or code goes on onto the next page.
+  In a PDF/UA document the headings are H1 to H6 with no level skipped, and
+  the lists, quotes, code, tables and images are tagged as such; one that
+  goes on over pages is one structure element. Images are read only from the
+  directory `setImageDirectory` names, never from an absolute path, a URL or
+  one with `..`, so that a text from anyone reads no other file, alike in the
+  four ports; a source that ends in `/` or `/.` names a directory, and an
+  empty image directory is the working directory. HTML is drawn as the text
+  it is, and a line break is a space. The blocks nest at most 32 levels, so
+  that the text is read in time linear in its length, and quotes and lists
+  nested deeply leave their text at least ten sizes of the text wide.
+  `StructElem.BLOCKQUOTE` and `StructElem.CODE` are new.
 - `Markup` makes paragraphs of text with the inline markup of Markdown,
   `**bold**`, `*italic*`, `***bold italic***`, `` `code` `` and
   `[links](url)`, in the fonts given for each, in all four ports:
@@ -208,20 +207,21 @@ This is the first entry in this file; earlier releases were not tracked here.
   shares it by the widths the columns have, after `autoAdjustColumnWidths` by
   the text each holds, and `setWidth` does the same when there are no
   percentages. In all four ports.
-- `Table.setPageSum(row, column, decimals)` and
-  `Table.setRunningSum(row, column, decimals)` make a cell of a footer row
-  show the sum of its column, in all four ports: over the rows of each page,
-  the page total, or over all the rows up to the end of each page, the total
-  carried forward, which is the total of the table on its last page. The
-  numbers are read as `rightAlignNumbers` reads them, with commas and
-  apostrophes between the thousands and a period before the decimals; a cell
-  that has no number is left out. The sums are exact, with the number of
-  decimals rounded half away from zero and commas between the thousands, and
-  the same text in every port; the numbers of a column are read once for
-  each draw, so a running sum over 40,000 rows takes a tenth of a second. `Table.setBroughtForwardSum(row, column,
-  decimals)` makes a cell of a header row show the total of the pages
-  before, which the running sum shows at the end of the page before; a
-  header row with such a cell is drawn from the second page on.
+- `Table.setPageSum(row, column, decimals)` and `Table.setRunningSum(row,
+  column, decimals)` make a cell of a footer row show the sum of its column,
+  in all four ports: over the rows of each page, the page total, or over all
+  the rows up to the end of each page, the total carried forward, which is
+  the total of the table on its last page. The numbers are read as
+  `rightAlignNumbers` reads them, with commas and apostrophes between the
+  thousands and a period before the decimals; a cell that has no number is
+  left out. The sums are exact, with the number of decimals rounded half away
+  from zero and commas between the thousands, and the same text in every
+  port; the numbers of a column are read once for each draw, so a running sum
+  over 40,000 rows takes a tenth of a second.
+  `Table.setBroughtForwardSum(row, column, decimals)` makes a cell of a
+  header row show the total of the pages before, which the running sum shows
+  at the end of the page before; a header row with such a cell is drawn from
+  the second page on.
 - `Table.setNumberOfFooterRows(n)` makes the last rows of the table data
   footer rows, in all four ports: they are drawn again at the end of the
   table on every page, under the last row the page holds, as the header rows
@@ -337,17 +337,17 @@ This is the first entry in this file; earlier releases were not tracked here.
   What is in `<defs>`, `<clipPath>`, `<mask>`, `<pattern>`, `<symbol>`,
   `<marker>` and the gradients, and what has `display="none"`, is not drawn;
   it was drawn as ordinary paths. Gradients and patterns, text, `<use>`,
-  embedded images, clipping, masks, filters and dashed strokes are still
-  left out. Values that cannot be read, such as a `stroke-width` of
-  `calc()`, a transform of a function PDFjet does not know, a skew of 90
-  degrees, which flattens the shape, or a number too large for a float, are
-  left out as SVG leaves them, the property taking what it inherits; a
-  color that starts with `#` and is not hexadecimal fails as before. A width
-  or a height of `inf` or `nan` is no size, and a path that a transform or
-  `ScaleBy` takes beyond the numbers a PDF holds, 2^31, is not drawn, where
-  Java and C# threw and Go wrote 0. The viewBox may separate its numbers
-  with commas. Four files of those programs, drawn by PDFjet and by Chrome, differ in no pixel
-  but along the edges.
+  embedded images, clipping, masks, filters and dashed strokes are still left
+  out. Values that cannot be read, such as a `stroke-width` of `calc()`, a
+  transform of a function PDFjet does not know, a skew of 90 degrees, which
+  flattens the shape, or a number too large for a float, are left out as SVG
+  leaves them, the property taking what it inherits; a color that starts with
+  `#` and is not hexadecimal fails as before. A width or a height of `inf` or
+  `nan` is no size, and a path that a transform or `ScaleBy` takes beyond the
+  numbers a PDF holds, 2^31, is not drawn, where Java and C# threw and Go
+  wrote 0. The viewBox may separate its numbers with commas. Four files of
+  those programs, drawn by PDFjet and by Chrome, differ in no pixel but along
+  the edges.
 
 ### Changed
 - Go compresses pages and images at level 5 instead of the default 6: a
@@ -404,8 +404,8 @@ This is the first entry in this file; earlier releases were not tracked here.
   255 to every color its pixels use. Its alpha is not compressed, the PDF is
   smaller, and it draws the same, pixel for pixel in MuPDF and Poppler. A
   document of PDF/A-1, which has no soft masks, holds such an image, and
-  passes veraPDF in PDF/A-1b; one with a pixel that is not opaque is
-  refused, as above. An image whose alpha is 0 in every pixel keeps its soft mask, and
+  passes veraPDF in PDF/A-1b; one with a pixel that is not opaque is refused,
+  as above. An image whose alpha is 0 in every pixel keeps its soft mask, and
   is transparent, as browsers and libpng draw it. An RGBA screenshot of 2560
   by 1600 pixels is embedded 10% faster in Go, and 8 KB smaller.
 - The Swift port inflates a zlib stream two to four times faster: its codes
@@ -452,8 +452,8 @@ This is the first entry in this file; earlier releases were not tracked here.
   of digits is narrower than before, `0123456789` 67.5 points rather
   than 108.75 at the module length of 0.75, and the 48 codewords a barcode
   holds are up to 96 digits; a barcode of text without such runs is drawn
-  as before. Characters below 32 and from 128 to 255 are in code set B as
-  before, after SHIFT and FNC 4. ZXing reads the barcodes back as their
+  as before. Characters below 32 and from 160 to 255 are in code set B as
+  before, after SHIFT or FNC 4. ZXing reads the barcodes back as their
   texts.
 - The space between two text lines of a paragraph is the narrower of their
   two spaces, in `TextFrame` and `TextColumn`, in all four ports. It was
@@ -472,7 +472,7 @@ This is the first entry in this file; earlier releases were not tracked here.
   reader sees a box where it is missing rather than a space. It was drawn as a
   space when it was outside the range of characters of the font's OS/2 table,
   and with `.notdef` only when it was inside it, where a copy of the text gave
-  U+FFFD. `StringWidth` and `GetFitChars` give it the width of `.notdef`, and
+  U+FFFD. `stringWidth` and `getFitChars` give it the width of `.notdef`, and
   it is drawn in a marked content span with the character as its actual text,
   so that a copy of the text has it and not the U+FFFD that the ToUnicode map
   gives `.notdef`; a `Stamp` draws it so too. A control character, U+0000 to
@@ -498,8 +498,9 @@ This is the first entry in this file; earlier releases were not tracked here.
   Table element over all its pages, a TR for each row, and a TH with the
   Column scope for each field of the header the first time it is drawn or a TD
   for each field of a row, each holding the text of its cell. The header where
-  it repeats on the next pages, the row shading, the lines and the page number
-  are artifacts. Example_43, which draws a table of 2000+ pages, says in a
+  it repeats on the next pages, the row shading and the lines are artifacts,
+  and the page number is a pagination artifact, as that of `Page.addFooter`
+  is. Example_43, which draws a table of 2000+ pages, says in a
   comment how to turn it on and what it costs at that size: every tagged cell
   is an object of its own, so the document goes from 5,108 objects and 11.8 MB
   to 1.25 million objects and 249 MB. It is left off there for that reason.
@@ -522,15 +523,18 @@ This is the first entry in this file; earlier releases were not tracked here.
   time and nothing could hold the items together, so `Page.beginStructElement`
   and `endStructElement` group what is drawn between them into a structure
   element of any type; they nest, and do nothing in a document that is not
-  PDF/UA. `StructElem` has `LBody`, which all four ports were missing.
-- `Paragraph.setListLabel` makes a paragraph of a `TextFrame` an item of a
-  list, labelled by a text line that the frame draws to the left of it and on
-  the baseline of its first line. A run of paragraphs that have a label is an
-  L of an LI for each, each holding the Lbl of its label and the LBody of its
-  text. The numbered paragraphs of Example_03 are two such lists: their
-  numbers were drawn in a second pass, after all of the text, so a reader
-  read every number after every paragraph rather than each before its own.
-  The example draws what it drew, to the point.
+  PDF/UA. An `endStructElement` without a `beginStructElement` is recorded
+  as misuse, and `complete` then refuses the document. `StructElem` has
+  `LBody`, which all four ports were missing.
+- `Paragraph.setListLabel` makes a paragraph of a `TextFrame` or a
+  `TextColumn` an item of a list, labelled by a text line that the frame
+  draws to the left of it and on the baseline of its first line, once, when
+  the item goes on into the next frame. A run of paragraphs that have a label
+  is an L of an LI for each, each holding the Lbl of its label and the LBody
+  of its text. The numbered paragraphs of Example_03 are two such lists:
+  their numbers were drawn in a second pass, after all of the text, so a
+  reader read every number after every paragraph rather than each before its
+  own. The example draws what it drew, to the point.
 - A paragraph of a `TextColumn` or a `TextFrame` is one structure element in
   a PDF/UA document, of the type `Paragraph.setStructureType` gives it: a
   heading with `StructElem.H1` to `H6`, and a paragraph, which it is, with
@@ -541,17 +545,20 @@ This is the first entry in this file; earlier releases were not tracked here.
   one element now, and the titles of Example_03 and the section titles of
   Example_10 are headings.
 - The heading of a page is tagged as a heading in the examples that have one,
-  where every one of them was a paragraph: 19 H1 and 2 H2 over the 39 PDF/UA
-  examples. PDF/UA-1 asks for a heading to be tagged H or Hn, which veraPDF
+  where every one of them was a paragraph. PDF/UA-1 asks for a heading to be tagged H or Hn, which veraPDF
   cannot check, since it cannot see what a paragraph stands for; the new
   `.github/scripts/check-pdfua-tags.py` reads the structure tree and reports
   what the Matterhorn Protocol leaves to a reviewer — the heading levels, the
   descriptions of the figures and the links, the nesting of the lists and the
   header cells of the tables — and runs in `check-examples.sh` and in the
   Build workflow beside veraPDF.
-- In a PDF/UA document the underline and the strikeout of a `Cell` are
-  artifacts, where each was a paragraph with the alternate description
-  "underline" or "strike out", which a screen reader read out after the text.
+- In a PDF/UA document the underline and the strikeout of a `Cell` and of a
+  `TextLine` are artifacts, in all four ports, where each was a paragraph
+  with the alternate description "underline" or "strike out" in a cell, and
+  a structure element whose alternate description was "Underlined text: "
+  or "Strikethrough text: " and the whole text in a text line, which a
+  screen reader read out after the text. The tagged examples hold eight
+  fewer paragraph elements for the text lines.
   Marked content that a drawable begins inside an artifact is no longer
   written, since tagged content inside an artifact breaks PDF/UA.
 - Text in IBM Plex Sans JP, SC or TC in a `TextBlock`, `TextColumn` or
@@ -578,32 +585,26 @@ This is the first entry in this file; earlier releases were not tracked here.
   of the flags it already had, in all four ports, instead of four floats and
   two enum references. A padding is kept to the nearest quarter of a point,
   between 0 and 63.75, as a color given as floats is kept to the nearest of
-  256 steps; every padding the examples and the tests use is exact, and the
-  pages they draw are byte for byte the same. The setters and getters are
-  unchanged. In Go a cell is 112 bytes instead of 144, and Example_43 drawn
-  with `Table`, 1,122,453 cells, takes 161 MB of heap instead of 195. In Java
-  the same document allocates 1,338 MB instead of 1,364 and finishes in a 328
-  MB heap instead of 352. The Swift `Alignment` enum is `UInt32`-backed, with
-  the values of the other three ports.
+  256 steps: one below 0, or not a number, is 0, and one above 63.75 is
+  63.75. The comment of `Cell` says how the paddings are kept; every padding
+  the examples and the tests use is exact, and the pages they draw are byte
+  for byte the same. The setters and getters are unchanged. In Go a cell is
+  112 bytes instead of 144, and Example_43 drawn with `Table`, 1,122,453
+  cells, takes 161 MB of heap instead of 195. In Java the same document
+  allocates 1,338 MB instead of 1,364 and finishes in a 328 MB heap instead
+  of 352. The Swift `Alignment` enum is `UInt32`-backed, with the values of
+  the other three ports.
 
 ### Fixed
 - A document made or read by the C# port is the same whatever the culture
   of the thread. In a culture such as sv-SE, which writes a minus sign of its
-  own, a font added to a PDF that was read had a font box and a descent of
-  `null`, and the access permissions of an encrypted document were not a
+  own, a negative number, as in a bookmark, was written with that sign, a
+  font added to a PDF that was read had a font box and a descent of `null`,
+  and the access permissions of an encrypted document were not a
   number; in tr-TR a core font added to such a PDF was named `HELVETİCA`.
   Numbers are written and read in the invariant culture, and text is compared
   ordinally and upper-cased with `ToUpperInvariant`. The examples are the
   same byte for byte in sv-SE, de-DE and tr-TR as in the invariant culture.
-- A CMYK color in a PDF/A document, in all four ports: `setPenColorCMYK`
-  and `setBrushColorCMYK` wrote DeviceCMYK, which veraPDF fails (rule
-  6.2.4.3), as the output intent of PDF/A is sRGB. They fail the document,
-  as a CMYK image does, with the same words in every port, and write
-  nothing: "A document of PDF_A_2B cannot use a CMYK color: its output
-  intent is sRGB, so its colors are gray or RGB."
-- The footer of a `BigTable` is a pagination artifact, in all four ports, as
-  that of `Page.addFooter` is: the table put it in a plain artifact of its
-  own, around the one `addFooter` marks it with, which the plain one hid.
 - A destination and a heading inside a `Container`, in all four ports: they
   were where the text would be on the page, not where the container moves
   and turns it. A destination, and so the link to it, and the bookmark of a
@@ -625,10 +626,6 @@ This is the first entry in this file; earlier releases were not tracked here.
   pen colour the page had. They are one artifact, not one each, and the
   modules of a QR code and of a Data Matrix are drawn inside q and Q, so the
   page keeps its colours.
-- The box of a barcode figure takes in its text, in all four ports: the
-  first digit of EAN-13 and UPC-A, the digits of a barcode drawn top to
-  bottom, and a text wider than the bars were outside it. The box of a donut
-  chart figure takes in its leader lines and labels.
 - A QR code of text that is not ASCII starts with the ECI of UTF-8, in all
   four ports, so a reader does not guess its character set. The ECI is
   counted in the capacity: one byte less at version 40.
@@ -641,22 +638,13 @@ This is the first entry in this file; earlier releases were not tracked here.
   ports: reading it panicked or threw. It is refused with a message. The
   `/Contents` of a signature dictionary, which is not encrypted, is no
   longer decrypted into garbage.
-- `NewEncryption` of a PDF/UA document no longer changes the caller's
+- The `Encryption` of a PDF/UA document no longer changes the caller's
   `Permissions`, in all four ports, when it grants the extraction for
   accessibility.
-- A font whose GPOS table claims more than it holds loads at once, in all
-  four ports: the room its coverage indexes make and each mark and letter
-  its lookups keep count toward the work it is read with, bounded by the
-  glyphs of the font, where 40 KB of subtables that are one another kept a
-  font from loading for a minute. The character map is read in one pass over
-  its segments, which makes a CJK font load in half the time, and a font
+- The character map of a font is read in one pass over its segments, in
+  all four ports, which makes a CJK font load in half the time, and a font
   without an OS/2 table has every character of its map, where it drew each
   as .notdef.
-- A PDF/A document refuses an image it cannot hold, in all four ports: a
-  CMYK image, as its output intent is sRGB, and in PDF/A-1 an image with
-  transparency or of 16 bits per component. The document fails with a
-  message, as it does for a file PDF/A-1 or 2 cannot carry, where it was
-  written non-compliant.
 - A JPEG that is lossless, hierarchical or arithmetic coded is refused, in
   all four ports, as the DCTDecode filter of a reader cannot decode it; a
   PNG row of a filter type PNG does not define is refused, as libpng refuses
@@ -689,60 +677,29 @@ This is the first entry in this file; earlier releases were not tracked here.
 - A page tree or a chain of objects a hundred thousand deep, in all four
   ports: they were followed by recursion, which ran out of stack in Java,
   ended the process in C# and trapped in Swift.
-- `AddObjects` refuses what it would lose, in all four ports: a PDF/UA or
-  PDF/A document, whose pages the objects were not made for, and a document
-  with pages of its own, made before or added after the objects, which the
-  page tree of the objects does not list. A number the PDF that was read has
-  no object for is a free entry, where it was an empty object marked in use.
-- `AddResourceObjects` refuses two pages that give one name to different
-  fonts, images or graphics states, in all four ports: the pages of a
-  document share one resources dictionary, and the second page drew the
-  resource of the first.
-- `PDFobj.GetValue` finds an entry of the object's own dictionary, in all
+- `PDFobj.getValue` finds an entry of the object's own dictionary, in all
   four ports, and not one of a dictionary inside it: the /Type of a /Group
   before the /Type of a page made the page not a page.
 - A reference or an object stream number that is not digits, or too large
   for an int of 32 bits, is skipped or refused alike in all four ports,
   where Java and C# threw, and the offsets of an object stream no longer
   overflow in Java and C#.
-- Text, tables and Markdown found by a review, in all four ports. A
-  `TextFrame` breaks a word wider than the frame in linear time: 100,000
-  characters of Markdown `>` took 75 seconds. A list item or a heading that
-  goes on into the next frame does not draw its label again or make a second
-  bookmark. `DrawOnPages` refuses a frame with no height in the bottom half
-  of the page, which drew all of its text on one page. `TextColumn` draws
-  the label that `Paragraph.setListLabel` sets, tagged L, LI, Lbl and LBody
-  as in `TextFrame`. Markdown keeps quotes and lists nested deeply at least
-  ten sizes of the text wide, and draws code in a font of no size.
-- The sums of a `Table`, in all four ports: the numbers of a column are read
-  once for each draw, so a running sum over 40,000 rows takes a tenth of a
-  second instead of 33. A number with a line break or a control character
-  after it is read as `rightAlignNumbers` reads it: Swift stopped, C# threw
-  and Go counted 0.
+- A `TextFrame` breaks a word wider than the frame in linear time, in all
+  four ports: 100,000 characters of Markdown `>` took 75 seconds.
 - The pages of a `Table`, in all four ports. A row that does not fit under a
   heading on the first page goes on the next page, where it was drawn past
-  the bottom of the page. A cell that spans rows taller than a page is cut
-  between its rows, and drawn on each page over the rows it covers there.
-  The `/RowSpan` of a cell counts the rows of the table and not the lines
-  its rows wrap into. A column span of less than 1 is 1, and one past the
-  end of its row stops there: either hung the drawing. With no rows left to
-  draw, a table returns where it starts, where Java and C# threw.
-- `BigTable`, in all four ports. A table whose first page, set by
-  `setFirstPage`, has no room for its header and a row starts on a new page.
-  The first page is counted at its own size in "Page i of N". A field too
-  wide for its column is cut between code points in every port. `complete()`
-  without data draws nothing in Java and C# too.
+  the bottom of the page. A column span of less than 1 is 1, and one past
+  the end of its row stops there: either hung the drawing. With no rows left
+  to draw, a table returns where it starts, where Java and C# threw.
+- `BigTable.complete()` without data draws nothing in Java and C#, as in Go
+  and Swift.
 - Delimited data files, in all four ports: a record whose lines each close a
   quoted field and open another is read in linear time. A line ends at a
   carriage return, a line feed or both, in Go and Swift as in Java and C#. A
   quoted field that is never closed is an error that Go's `BigTable` returns
   and Swift throws, where both stopped the program. Swift streams the file
   of a `Table` and of a `BigTable` without copying what it has read.
-- The source of a Markdown image is read the same way in all four ports. A
-  source ending in `/` or `/.` names a directory, and an empty image
-  directory is the working directory, which Java took as `/`. Swift no
-  longer lets `../` followed by a combining mark out of the image directory.
-  Java's `TextBlock` is aligned left by default, as in the other ports.
+- Java's `TextBlock` is aligned left by default, as in the other ports.
 - A PDF/A document of level B, `PDF_A_1B`, `PDF_A_2B` or `PDF_A_3B`, is not
   tagged, in all four ports: its catalog has no `/StructTreeRoot` and no
   `/MarkInfo`, and its pages no `/Tabs` and no `/StructParents`, which said
@@ -757,35 +714,16 @@ This is the first entry in this file; earlier releases were not tracked here.
   annotation that is not a link has an appearance of its own, in all four
   ports, as PDF/A asks: the square, the circle or the polygon in its fill
   color, and a note or a file as a white box with a black frame.
-- A link to a destination the document does not have is refused when the PDF
-  is completed, in all four ports; it was written as a link that did
-  nothing.
 - The structure tree of a tagged document has a role map for the types of
   PDF 2.0 it uses, in all four ports: Title is a P, and Em and Strong are a
   Span, as PDF/UA-1 asks. A text of the structure type Artifact is marked as
   an artifact, and a structure element of the type Artifact is refused.
-- An annotation of a tagged document is refused on a page that was already
-  written, where its element was left without a `/StructParent`, and one
-  that has no contents, no title and no alternative description is refused,
-  as a figure without a description is, in all four ports.
-- A document of PDF/UA without a title is refused when it is completed, in
-  all four ports, as PDF/UA asks for one.
 - The title, the author, the subject, the keywords and the creator are
   cleaned of what XML does not allow when they are set, in all four ports,
   so that the information dictionary says what the metadata says, as PDF/A
   asks.
-- The date of a file embedded in an encrypted document is encrypted, in all
-  four ports; it was written as it was.
 - `complete` closes the file or the stream it writes to when it fails too,
   in all four ports.
-- A file that a document of PDF/A-3 carries needs a media type, in all four
-  ports; one without is refused.
-- C#: a negative number is written with an ASCII minus sign in every
-  culture, as in the bookmarks of a document written in Swedish, and the
-  tokens of a document that is merged or added are compared by their
-  characters, whatever the culture.
-- C#: `EndStructElement` without a `BeginStructElement` is recorded like the
-  other misuses, and `Complete` then refuses the document.
 - The layers are listed in the order of their names by their UTF-16 code
   units, and those of the same name in the order they were added, in all
   four ports; Go, C# and Swift each sorted them their own way.
@@ -855,13 +793,6 @@ This is the first entry in this file; earlier releases were not tracked here.
   cell has no Alt of its own, which PAC warns of on text, 4,385 of them in
   Example_08; a cell of a `BigTable` has one only when its text is cut
   short to fit, as the whole of it. check-pdfua-tags.py checks both.
-- A padding of a cell that is not a number, or too large for an int, in
-  Swift, Go and C#: Swift trapped on `setTopPadding(.nan)` or an infinity,
-  and Go and C# kept 0 where Java keeps 63.75 for an infinity or 1e10. A
-  padding below 0, or not a number, is 0, and one above 63.75 is 63.75, in
-  all four ports, before it is made an int. The comment of `Cell` in the
-  four ports says how its paddings are kept: the four bytes of one 32-bit
-  integer, top in the lowest, in quarters of a point from 0 to 63.75.
 - The Link element of a link holds the text of the link, in all four ports:
   in a tagged document, PDF/UA or a PDF/A of level A, a text line, a word of
   a paragraph, the text of a cell, a check box or a radio button that is a
@@ -895,30 +826,32 @@ This is the first entry in this file; earlier releases were not tracked here.
   PDF/UA asks for one, the BBox of the Layout attributes of the Figure
   element, which a screen reader or a program that reflows the page uses to
   find it. PAC failed 11 examples on it, and veraPDF does not check it. An
-  image, an SVG image, a chart, a bar chart, a donut chart, a described
-  barcode and a described QR code have the box they are drawn in, an image
-  turned a quarter of the way the box it is turned into, and
+  image, an SVG image, a chart, a bar chart, a donut chart, with its leader
+  lines and labels, a described barcode, with its text, and a described QR
+  code, Data Matrix or PDF417 barcode have the box they are drawn in, an
+  image turned a quarter of the way the box it is turned into, and
   check-pdfua-tags.py checks that every figure of the examples has one.
   Found by PAC.
 - A rectangle, an arc and an ellipse set their colors, line width and dash
   after they had begun their paths, and `Page.drawContents` wrote a text
-  matrix, Tm, outside a text object, in all four ports: operators ISO 32000-1 does not allow there, in its Figure 9, which
-  PAC reports as errors of PDF syntax and veraPDF does not check. PAC failed
-  14 examples on them. The colors, the width and the dash are set before the
-  path, and the Tm, which BT resets, is left out. check-example-pdfs.py
-  checks the operators of every content stream of the examples. Found by PAC.
-- A word too wide for a line, broken between its characters, took time that
-  grew with the square of the word, in all four ports: the rest of the word
-  was measured before each line, and the word up to each break was copied
-  to measure it, so a word of 100,000 characters took 39 seconds. Each line
-  is found by measuring from its start to each character break until one
-  does not fit, and the rest of the word only when the breaks run out; the
-  same word breaks in a fraction of a second, into the same lines as before.
-  A right-to-left word is reordered and shaped once, whole, and a line of it
-  is a part of the shaped word, so the letter a line ends on keeps the form
-  it has in the word; reordering the word up to each break had taken 27
-  seconds for 16,000 Arabic letters, and about 20 minutes for 100,000.
-  Found by pdfjet-server.
+  matrix, Tm, outside a text object, in all four ports: operators ISO 32000-1
+  does not allow there, in its Figure 9, which PAC reports as errors of PDF
+  syntax and veraPDF does not check. PAC failed 14 examples on them. The
+  colors, the width and the dash are set before the path, and the Tm, which
+  BT resets, is left out. check-example-pdfs.py checks the operators of every
+  content stream of the examples. Found by PAC.
+- A word too wide for a line of a `TextBlock`, broken between its characters,
+  took time that grew with the square of the word, in all four ports: the
+  rest of the word was measured before each line, and the word up to each
+  break was copied to measure it, so a word of 100,000 characters took 39
+  seconds. Each line is found by measuring from its start to each character
+  break until one does not fit, and the rest of the word only when the breaks
+  run out; the same word breaks in a fraction of a second, into the same
+  lines as before. A right-to-left word is reordered and shaped once, whole,
+  and a line of it is a part of the shaped word, so the letter a line ends on
+  keeps the form it has in the word; reordering the word up to each break had
+  taken 27 seconds for 16,000 Arabic letters, and about 20 minutes for
+  100,000. Found by pdfjet-server.
 - Reading a PDF decoded every stream in full, with a limit for each stream
   and none for all of them, so a PDF of a few megabytes could take gigabytes
   to read, in all four ports. A stream that is not a cross-reference or an
@@ -943,8 +876,8 @@ This is the first entry in this file; earlier releases were not tracked here.
   all four ports, rather than drawn with the codewords after the 48th left
   out, so that it held another value than its text: 60 sevens were drawn
   exactly as 48. The constructor throws, or panics in Go, as it does for the
-  digits of UPC-A and EAN-13; a character below 32, or from 128 to 255, takes
-  two codewords.
+  digits of UPC-A and EAN-13; a character below 32, or from 160 to 255,
+  takes two codewords, and one from 128 to 159 three.
 - A Code 128 barcode with a character above U+00FF, which its code set B
   cannot hold, is refused by the constructor, in all four ports. Drawing one
   indexed the table of Code 128 with codeword 256: an
@@ -1027,12 +960,12 @@ This is the first entry in this file; earlier releases were not tracked here.
   starts.
 - The font descriptor of an embedded font has the italic angle of its `post`
   table, in all four ports: -11.31 for IBM Plex Sans Italic, -14.04 for IBM
-  Plex Serif Italic. It was 0 for every font. A font with an italic angle
-  has the Italic flag too, `/Flags 96` in place of 32. A `.stream` file holds the angle
-  after the line gap at the end of its metrics, where older libraries stop
-  reading, so they still read the new streams; the generator writes it for an
-  italic font, and the 64 italic streams PDFjet ships have it. Nothing draws
-  differently: the glyphs of an italic font were italic already.
+  Plex Serif Italic. It was 0 for every font. A font with an italic angle has
+  the Italic flag too, `/Flags 96` in place of 32. A `.stream` file holds the
+  angle after the line gap at the end of its metrics, where older libraries
+  stop reading, so they still read the new streams; the generator writes it
+  for an italic font, and the 64 italic streams PDFjet ships have it. Nothing
+  draws differently: the glyphs of an italic font were italic already.
   `tests/references/fonts/check-fonts.py` compares the angle with fontTools.
 - Two differences from fontTools and Adobe's AFM files that
   `tests/references/fonts/check-fonts.py` found, in all four ports:
@@ -1143,7 +1076,8 @@ This is the first entry in this file; earlier releases were not tracked here.
   right edge, where it is lost. The columns are cut from the last one on, and
   no further than the width of the mark below, so the table keeps the widths
   it asked for as far as the page allows. A field of a column that was cut is
-  drawn with as much of its text as fits, ending in " ..." in place of the
+  drawn with as much of its text as fits, cut between code points in every
+  port, ending in " ..." in place of the
   last four characters of it, so the reader can see it was cut; the cell of a
   PDF/UA structure tree keeps the whole of the text, which is what a screen
   reader reads. A column that was not cut is as wide as its widest field, so
@@ -1272,12 +1206,6 @@ This is the first entry in this file; earlier releases were not tracked here.
   size, the resources, `MergePages`, `AddObjects`, `AddResourceObjects` and
   the `PDFobj` methods that add to a page -- and fails on a runtime error in
   any of them.
-- The underline and the strikeout of a `TextLine` in a PDF/UA document are
-  artifacts, in all four ports, where each was a structure element of its own
-  whose alternate description was "Underlined text: " or "Strikethrough text: "
-  and the whole text, which a screen reader reads after the text again. A
-  `Cell` was fixed this way in v9.0.1; a text line drawn on a page was not.
-  The tagged examples hold eight fewer paragraph elements.
 - `Page.transform` divides the height of the page by the vertical scale, and
   the height is now saved and restored with the graphics state, in all four
   ports. It was left divided, so every y coordinate after the restore was
@@ -1351,17 +1279,20 @@ This is the first entry in this file; earlier releases were not tracked here.
   widths, when its CFF table is not inside the file, or when its name is not
   one a PDF name can hold, as a stream font with such a name is refused. A
   name record outside the font, and a character map segment that points
-  outside its glyph ID array, are left out rather than read. The mark lookups
-  of the GPOS table are read for as much work as a font needs: the most the
-  252 fonts PDFjet ships take is 62,954 of the 1,048,576 pairs and glyphs
-  allowed. Java also failed with a null pointer on a font with no name, and
-  Swift trapped on a font with no `OS/2` or `post` table, which the other two
-  ports read as zeros. Found by fuzzing the Go font loaders with
-  `FuzzOpenTypeFont`, which fuzzes a whole file, and `FuzzOpenTypeFontTables`,
-  which fuzzes each table PDFjet reads on its own and joins them into a font
-  whose directory is right; 21 M and 8.5 M runs clean after the fixes. Of
-  the 2,181 fonts of the replay, the four ports read the same ones and draw
-  the same page from every one they read.
+  outside its glyph ID array, are left out rather than read. The GPOS table
+  is read for as much work as a font needs, bounded by the glyphs of the
+  font: the glyphs of its coverage tables and the room their indexes make,
+  and the marks, the letters and the pairs of its mark lookups, count toward
+  it, so a font whose GPOS table claims more than it holds, such as 40 KB of
+  subtables that are one another, loads at once. The most the 252 fonts
+  PDFjet ships take is 76,168 of the 1,048,576 allowed. Java also failed with
+  a null pointer on a font with no name, and Swift trapped on a font with no
+  `OS/2` or `post` table, which Go and C# read as zeros. Found by
+  fuzzing the Go font loaders with `FuzzOpenTypeFont`, which fuzzes a whole
+  file, and `FuzzOpenTypeFontTables`, which fuzzes each table PDFjet reads on
+  its own and joins them into a font whose directory is right; 21 M and 8.5 M
+  runs clean after the fixes. Of the 2,181 fonts of the replay, the four
+  ports read the same ones and draw the same page from every one they read.
 - The four ports read the same text from bytes that are not UTF-8. Java read
   an encoded surrogate, the three bytes ED A0 80, as one U+FFFD, and Go read a
   sequence cut short at the end of a file as one U+FFFD a byte, where C# and
@@ -1377,10 +1308,10 @@ This is the first entry in this file; earlier releases were not tracked here.
   before in all four ports, and the example documents are unchanged.
 - A BMP file could allocate a gigabyte for a skip (in Go) or an image size
   (in the four ports) its data did not have: a 76-byte file 1 GB. What is
-  skipped is read as it comes, and the rows before the image is allocated. A palette index past
-  the palette is black, as browsers draw it, where it failed, and the last
-  row can end without its padding. Found by fuzzing the Go BMP decoder and
-  comparing it with Pillow.
+  skipped is read as it comes, and the rows before the image is allocated. A
+  palette index past the palette is black, as browsers draw it, where it
+  failed, and the last row can end without its padding. Found by fuzzing the
+  Go BMP decoder and comparing it with Pillow.
 - The alpha of a 16 or 32-bit BMP with `BI_BITFIELDS` and a V3, V4 or V5
   header, which has an alpha mask after the red, green and blue ones, was not
   read, and the image was drawn opaque, in all four ports. Its alpha is the
@@ -1521,10 +1452,11 @@ This is the first entry in this file; earlier releases were not tracked here.
   line with a closing mark, punctuation such as 。 and 、, or a small kana, nor
   ends one with an opening bracket (kinsoku shori): the character before such a
   mark moves to the next line with it.
-- In a PDF/UA document a `Point`, the marker of a `Cell`, a QR code and a Data
-  Matrix symbol are artifacts, where they drew content that was neither tagged
-  nor an artifact, and an annotation other than a link is in an `Annot`
-  structure element rather than a `Link` one.
+- In a PDF/UA document a `Point` and the marker of a `Cell` that are not a
+  link, and a QR code and a Data Matrix symbol that are not described, are
+  artifacts, where they drew content that was neither tagged nor an artifact,
+  and an annotation other than a link is in an `Annot` structure element
+  rather than a `Link` one.
 - A `Chart` kept the axis ranges of its first drawing, so a chart drawn again
   after new points kept its old axes; a range with 0 grid lines widened the
   range of the data; and a point's marker set after `addPoint` was ignored.
@@ -1595,18 +1527,19 @@ This is the first entry in this file; earlier releases were not tracked here.
   workflows, the packaging and the lists of examples build, check and show 56
   examples.
 - Example_55 is new: an invoice that is also data, in all four ports. It is a
-  PDF/A-3A document that carries `data/invoice/factur-x.xml`, the invoice in
-  the profile BASIC of Factur-X and ZUGFeRD, with `addAssociatedFile` and the
-  relationship Alternative, and says so in its metadata with `addMetadata`,
-  with the extension schema of the properties, as those standards ask; no
-  example carried a file for the document before. The page has a logo from
-  an SVG file written as a drawing program exports one, a table of the items
-  with a header row, striped rows and the totals in footer rows, and an EPC
-  QR code that banking apps read as a SEPA credit transfer. veraPDF finds it
-  PDF/A-3A, the `factur-x` library of Python finds the XML and reads its
-  profile from the metadata, the XML is valid against the XSD of the profile
-  BASIC, and ZXing reads the QR code. The scripts, the workflows, the
-  packaging and the lists of examples build, check and show 55 examples.
+  PDF/A-3A and PDF/UA-1 document, `PDF_A_3A_UA_1`, that carries
+  `data/invoice/factur-x.xml`, the invoice in the profile BASIC of Factur-X
+  and ZUGFeRD, with `addAssociatedFile` and the relationship Alternative, and
+  says so in its metadata with `addMetadata`, with the extension schema of
+  the properties, as those standards ask; no example carried a file for the
+  document before. The page has a logo from an SVG file written as a drawing
+  program exports one, a table of the items with a header row, striped rows
+  and the totals in footer rows, and an EPC QR code that banking apps read as
+  a SEPA credit transfer. veraPDF finds it PDF/A-3A and PDF/UA-1, the
+  `factur-x` library of Python finds the XML and reads its profile from the
+  metadata, the XML is valid against the XSD of the profile BASIC, and ZXing
+  reads the QR code. The scripts, the workflows, the packaging and the lists
+  of examples build, check and show 55 examples.
 - Example_54 is new: `data/markdown/pdfjet.md` drawn by `Markdown` as a
   PDF/UA document with a number on every page, in all four ports, and the
   scripts, the workflows and the packaging build and check 54 examples.
@@ -1710,11 +1643,11 @@ This is the first entry in this file; earlier releases were not tracked here.
   the height of the logo. The page Example_41 merges is the file itself, so
   the logo is at the top of it now.
 - 28 more examples are PDF/UA documents: 02, 03, 06, 08, 09, 10, 11, 13, 14,
-  17, 18, 19, 20, 21, 23, 24, 25, 26, 28, 29, 31, 32, 33, 35, 36, 38, 42 and 45,
-  and 39 and 40 before them. The ones that are not use core fonts or fonts that
-  are not embedded (04, 05, 44, 50), are PDF/A (07, 34), show a layer that PDF/UA
-  does not allow (46), draw on or merge existing PDFs (37, 41, 51), or are
-  Example_43.
+  17, 18, 19, 20, 21, 23, 24, 25, 26, 28, 29, 31, 32, 33, 35, 36, 38, 42 and
+  45, and 39 and 40 before them. The ones that are not use core fonts or
+  fonts that are not embedded (04, 05, 44, 50), are PDF/A (07, 34), show a
+  layer that PDF/UA does not allow (46), draw on or merge existing PDFs (37,
+  41, 51), or are Example_43.
 - Example_02 prints the official texts of the Universal Declaration of Human
   Rights, its preamble and Articles 1 and 2, in Japanese, Korean, Simplified
   and Traditional Chinese, a paragraph on each line, where the files held cut
@@ -1723,8 +1656,8 @@ This is the first entry in this file; earlier releases were not tracked here.
   Sans with the font of the page as its fallback font.
 - Example_38 says on its page what it draws, where the page held nothing but
   the table: a title, and a paragraph on the cells that span columns with
-  `setColSpan` and on the rows made by leaving out the borders between a cell
-  and the cells under it. Its cells are a pastel mint rather than light blue.
+  `setColSpan` and rows with `setRowSpan`. Its cells are a pastel mint rather
+  than light blue.
 - Example_37 draws its text left aligned with the scanned text under it.
 - Example_40 draws the calendar of 2026, with the weeks starting on Monday.
 - Example_24 draws a CMYK JPEG saved as Photoshop saves one, `images/cmyk.jpg`,
