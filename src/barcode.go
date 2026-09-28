@@ -229,6 +229,9 @@ func (barcode *Barcode) DrawOn(page *Page) [2]float32 {
 	default:
 		panic("Unsupported Barcode Type.")
 	}
+	if page != nil && barcode.altDescription != "" {
+		page.SetFigureBoundingBox(barcode.x1, barcode.y1, xy[0]-barcode.x1, xy[1]-barcode.y1)
+	}
 	return xy
 }
 

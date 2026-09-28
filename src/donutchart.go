@@ -290,6 +290,7 @@ func (dc *DonutChart) DrawOn(page *Page) [2]float32 {
 		}
 	}
 	page.RestoreGraphicsState()
+	page.SetFigureBoundingBox(dc.x, dc.y, 2*dc.r1, 2*dc.r1) // The outer circle
 	page.AddEMC()
 
 	return [2]float32{xc + dc.r1, yc + dc.r1}

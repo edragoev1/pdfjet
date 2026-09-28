@@ -149,6 +149,10 @@ func (qrcode *QRCode) DrawOn(page *pdfjet.Page) [2]float32 {
 				}
 			}
 		}
+		if qrcode.altDescription != "" {
+			size := qrcode.m1 * float32(len(qrcode.modules))
+			page.SetFigureBoundingBox(qrcode.x, qrcode.y, size, size)
+		}
 		page.AddEMC()
 	}
 	w := qrcode.m1 * float32(len(qrcode.modules))

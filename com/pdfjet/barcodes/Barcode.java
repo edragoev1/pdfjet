@@ -239,19 +239,24 @@ public class Barcode implements Drawable {
             page.setPenColor(Color.black);
         }
         try {
+            float[] xy;
             if (barcodeType == Barcode.EAN_13) {
-                return drawCodeEAN13(page, x1, y1);
+                xy = drawCodeEAN13(page, x1, y1);
             } else if (barcodeType == Barcode.UPC_A) {
-                return drawCodeUPC(page, x1, y1);
+                xy = drawCodeUPC(page, x1, y1);
             } else if (barcodeType == Barcode.CODE_128 || barcodeType == Barcode.GS1_128) {
-                return drawCode128(page, x1, y1);
+                xy = drawCode128(page, x1, y1);
             } else if (barcodeType == Barcode.CODE_39) {
-                return drawCode39(page, x1, y1);
+                xy = drawCode39(page, x1, y1);
             } else if (barcodeType == Barcode.ITF_14) {
-                return drawITF14(page, x1, y1);
+                xy = drawITF14(page, x1, y1);
             } else {
                 throw new Exception("Unsupported Barcode Type.");
             }
+            if (figure) {
+                page.setFigureBoundingBox(x1, y1, xy[0] - x1, xy[1] - y1);
+            }
+            return xy;
         } finally {
             if (page != null) {
                 page.restoreGraphicsState();

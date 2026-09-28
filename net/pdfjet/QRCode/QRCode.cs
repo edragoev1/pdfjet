@@ -154,6 +154,10 @@ public class QRCode : IDrawable {
                     }
                 }
             }
+            if (!String.IsNullOrEmpty(altDescription)) {
+                float size = m1*modules.Length;
+                page.SetFigureBoundingBox(x, y, size, size);
+            }
             page.AddEMC();
         }
 

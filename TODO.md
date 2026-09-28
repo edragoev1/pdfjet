@@ -189,6 +189,11 @@ API of v9.0.1 came with the PDF/UA work and the fixes; goal 6 lists them.
      read aloud as one figure;
    - `TextBlock.setStructureType`, as `TextLine` has it, for a heading.
 
+   And one on Sep 28, for PAC, which fails a figure with no bounding box:
+   - `Page.setFigureBoundingBox`, for a figure drawn with `addBDC` and
+     `addEMC` around other drawing; the figures of the library set it
+     themselves.
+
    With them, two changes of behavior, which the CHANGELOG has under
    Changed: the A levels of PDF/A tag their content, as level A asks, and
    refuse a figure with no description as PDF/UA does; and what is drawn

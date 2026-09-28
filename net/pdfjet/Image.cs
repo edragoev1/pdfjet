@@ -427,6 +427,12 @@ public class Image : IDrawable {
 
         page.RestoreGraphicsState();
 
+        // Turned a quarter of the way, the image is as wide as it is tall unturned
+        if (degrees == 90 || degrees == 270) {
+            page.SetFigureBoundingBox(x, y, h, w);
+        } else {
+            page.SetFigureBoundingBox(x, y, w, h);
+        }
         page.AddEMC();
 
         if (uri != null || key != null) {

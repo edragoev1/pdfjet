@@ -685,6 +685,7 @@ public class SVGImage : IDrawable {
         foreach (SVGPath path in paths) {
             drawPath(path, page);
         }
+        page.SetFigureBoundingBox(x, y, w, h);
         page.AddEMC();
         if (uri != null || key != null) {
             page.AddAnnotation(new Annotation(

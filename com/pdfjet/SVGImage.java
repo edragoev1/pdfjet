@@ -746,6 +746,7 @@ public class SVGImage implements Drawable {
         for (SVGPath path : paths) {
             drawPath(path, page);
         }
+        page.setFigureBoundingBox(x, y, w, h);
         page.addEMC();
         if (uri != null || key != null) {
             page.addAnnotation(new Annotation(

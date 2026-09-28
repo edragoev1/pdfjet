@@ -97,6 +97,9 @@ final public class Page {
     // rather than to an element of its own: a paragraph is one element,
     // however many words it is drawn one at a time.
     StructElement mcidParent = null;
+    // The figure addBDC began last, whose bounding box setFigureBoundingBox
+    // sets, or null.
+    private StructElement figure = null;
     // True once the page is added to its PDF.
     boolean added = false;
     // The dictionary of a page merged from a document that was read, with the
@@ -2609,6 +2612,9 @@ final public class Page {
             String altDescription,
             String attributes) {
         markedContentDepth++;
+        if (structure == StructElem.FIGURE) {
+            figure = null;  // Until it is made below, if it is tagged
+        }
         if (pdf.isTagged() && artifactDepth == 0) {
             // A figure stands for what it draws, which only the one who draws
             // it can say, so PDF/UA asks for a description of every one.
@@ -2650,8 +2656,41 @@ final public class Page {
             // stands for it.
             if (structure == StructElem.FIGURE) {
                 artifactDepth = markedContentDepth;
+                figure = element;
             }
         }
+    }
+
+    /**
+     * Sets the bounding box of the figure that addBDC began last: the box it is
+     * drawn in, x and y its top left corner, w wide and h tall. PDF/UA asks for
+     * the bounding box of every figure, which a screen reader or a program that
+     * reflows the page uses to find it. The figures of the library, images, SVG
+     * images, charts, barcodes and QR codes, set it themselves; a figure drawn
+     * with addBDC and addEMC around other drawing needs it set before addEMC. It
+     * does nothing in a document that is not tagged.
+     *
+     * @param x the x coordinate of the top left corner of the figure.
+     * @param y the y coordinate of the top left corner of the figure.
+     * @param w the width of the figure.
+     * @param h the height of the figure.
+     */
+    public void setFigureBoundingBox(float x, float y, float w, float h) {
+        if (figure == null) {
+            return;
+        }
+        float x1 = Math.min(x, x + w);
+        float x2 = Math.max(x, x + w);
+        float y1 = Math.min(y, y + h);
+        float y2 = Math.max(y, y + h);
+        // In the coordinates of PDF, from the bottom left of the page
+        figure.attributes = "<</O /Layout /BBox [" +
+                bboxNumber(x1) + " " + bboxNumber(height - y2) + " " +
+                bboxNumber(x2) + " " + bboxNumber(height - y1) + "]>>";
+    }
+
+    private static String bboxNumber(float value) {
+        return new String(FastFloat.toByteArray(value), StandardCharsets.US_ASCII);
     }
 
     /**

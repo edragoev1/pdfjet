@@ -720,6 +720,7 @@ public class BarChart : Drawable {
         page.drawString(f2, f2.getSize(), xAxisTitle, x5 + ((x6 - x5) - f2.stringWidth(xAxisTitle)) / 2.0, y2 - bodyHeight / 2.0)
 
         page.restoreGraphicsState()
+        page.setFigureBoundingBox(x1, y1, w, h)
         page.addEMC()
 
         return [x1 + w, y1 + h]

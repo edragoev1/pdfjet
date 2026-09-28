@@ -90,7 +90,7 @@ func (obj *PDFobj) GetDict() []string {
 // streams of one PDF that Read returns share a budget of 256 MiB of decoded
 // data, maxDecodedTotal: a stream past what is left of it, or one that
 // cannot be decoded, has no data, nil, as in the other ports.
-func (obj *PDFobj) GetData() (data []byte) {
+func (obj *PDFobj) GetData() []byte {
 	if obj.undecoded {
 		// A stream that is not a cross-reference or an object stream is
 		// decoded when its data is first asked for, not when the PDF is
@@ -99,11 +99,11 @@ func (obj *PDFobj) GetData() (data []byte) {
 		obj.undecoded = false
 		// Read recovers what decodeStream panics with, and GetData is
 		// called after it, so a runtime error in a decoder is no data
-		// here, as the other ports catch every exception.
+		// here, as the other ports catch every exception: the result is
+		// nil, as nothing was returned before the panic.
 		defer func() {
 			if r := recover(); r != nil {
 				obj.data = nil
-				data = nil
 			}
 		}()
 		obj.data = obj.decodeStream()

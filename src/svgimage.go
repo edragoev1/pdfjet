@@ -694,6 +694,7 @@ func (image *SVGImage) DrawOn(page *Page) [2]float32 {
 	for _, path := range image.paths {
 		image.drawPath(path, page)
 	}
+	page.SetFigureBoundingBox(image.x, image.y, image.w, image.h)
 	page.AddEMC()
 	if image.uri != "" || image.key != "" {
 		page.addAnnotation(&annotationObject{

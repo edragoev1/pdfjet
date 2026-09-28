@@ -62,6 +62,9 @@ class Example_20 {
                 y,
                 xScale,
                 yScale);
+        // The logo is 216 by 68 points, at the top left of its page, so half of
+        // that here: the box PDF/UA asks every figure for.
+        page.SetFigureBoundingBox(x, y, 216f * xScale, 68f * yScale);
         page.AddEMC();
 
         new TextLine(f2, "PDFjet Software").SetLocation(390f, 60f).DrawOn(page);

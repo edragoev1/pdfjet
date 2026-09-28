@@ -112,6 +112,9 @@ public class Page {
     // rather than to an element of its own: a paragraph is one element,
     // however many words it is drawn one at a time.
     internal var mcidParent: StructElement?
+    // The figure addBDC began last, whose bounding box setFigureBoundingBox
+    // sets, or nil.
+    private var figure: StructElement?
     // True once the page is added to its PDF.
     internal var added = false
     // True once the content of the page is written to the PDF.
@@ -2357,6 +2360,9 @@ public class Page {
             _ altDescription: String?,
             _ attributes: String?) {
         markedContentDepth += 1
+        if structure == StructElem.FIGURE {
+            figure = nil    // Until it is made below, if it is tagged
+        }
         if pdf.isTagged() && artifactDepth == 0 {
             // A figure stands for what it draws, which only the one who draws
             // it can say, so PDF/UA asks for a description of every one.
@@ -2399,8 +2405,34 @@ public class Page {
             // stands for it.
             if structure == StructElem.FIGURE {
                 artifactDepth = markedContentDepth
+                figure = element
             }
         }
+    }
+
+    /// Sets the bounding box of the figure that AddBDC began last: the box it is
+    /// drawn in, x and y its top left corner, w wide and h tall. PDF/UA asks for
+    /// the bounding box of every figure, which a screen reader or a program that
+    /// reflows the page uses to find it. The figures of the library, images, SVG
+    /// images, charts, barcodes and QR codes, set it themselves; a figure drawn
+    /// with AddBDC and AddEMC around other drawing needs it set before AddEMC. It
+    /// does nothing in a document that is not tagged.
+    public func setFigureBoundingBox(_ x: Float, _ y: Float, _ w: Float, _ h: Float) {
+        guard let figure = figure else {
+            return
+        }
+        let x1 = min(x, x + w)
+        let x2 = max(x, x + w)
+        let y1 = min(y, y + h)
+        let y2 = max(y, y + h)
+        // In the coordinates of PDF, from the bottom left of the page
+        figure.attributes = "<</O /Layout /BBox [" +
+                bboxNumber(x1) + " " + bboxNumber(height - y2) + " " +
+                bboxNumber(x2) + " " + bboxNumber(height - y1) + "]>>"
+    }
+
+    private func bboxNumber(_ value: Float) -> String {
+        return String(decoding: FastFloat.toByteArray(value), as: UTF8.self)
     }
 
     /// Begins marked content for an artifact when the document is tagged: PDF/UA, or a PDF/A of level A.

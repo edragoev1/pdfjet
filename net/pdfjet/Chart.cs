@@ -449,6 +449,7 @@ public class Chart : IDrawable {
                 y4 - f2.GetBodyHeight(f2.GetSize()) / 2);
 
         page.RestoreGraphicsState();
+        page.SetFigureBoundingBox(this.x1, this.y1, this.w, this.h);
         page.AddEMC();
 
         return new float[] {this.x1 + this.w, this.y1 + this.h};

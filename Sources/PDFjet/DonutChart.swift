@@ -271,6 +271,7 @@ public class DonutChart : Drawable {
             }
         }
         page.restoreGraphicsState()
+        page.setFigureBoundingBox(x, y, 2 * r1, 2 * r1)    // The outer circle
         page.addEMC()
         return [xc + r1, yc + r1]
     }

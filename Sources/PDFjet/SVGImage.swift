@@ -877,6 +877,7 @@ public class SVGImage : Drawable {
         for path in paths {
             drawPath(path, page)
         }
+        page.setFigureBoundingBox(x, y, w, h)
         page.addEMC()
         if (uri != nil || key != nil) {
             page.addAnnotation(Annotation(

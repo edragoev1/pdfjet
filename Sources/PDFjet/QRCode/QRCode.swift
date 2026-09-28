@@ -165,6 +165,10 @@ public class QRCode : Drawable {
                     }
                 }
             }
+            if let altDescription = altDescription, !altDescription.isEmpty {
+                let size = m1*Float(modules!.count)
+                page.setFigureBoundingBox(x, y, size, size)
+            }
             page.addEMC()
         }
         let w = m1*Float(modules!.count)

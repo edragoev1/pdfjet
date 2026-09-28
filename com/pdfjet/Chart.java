@@ -530,6 +530,7 @@ public class Chart implements Drawable {
                 y4 - f2.bodyHeight / 2);
 
         page.restoreGraphicsState();
+        page.setFigureBoundingBox(this.x1, this.y1, this.w, this.h);
         page.addEMC();
 
         return new float[] {this.x1 + this.w, this.y1 + this.h};

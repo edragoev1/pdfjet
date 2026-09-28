@@ -57,6 +57,9 @@ public class Example_20 {
                 y,
                 xScale,
                 yScale)
+        // The logo is 216 by 68 points, at the top left of its page, so half of
+        // that here: the box PDF/UA asks every figure for.
+        page.setFigureBoundingBox(x, y, 216.0 * xScale, 68.0 * yScale)
         page.addEMC()
 
         TextLine(f2, "PDFjet Software").setLocation(390.0, 60.0).drawOn(page)

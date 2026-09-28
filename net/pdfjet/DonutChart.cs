@@ -273,6 +273,7 @@ namespace PDFjet.NET {
                 }
             }
             page.RestoreGraphicsState();
+            page.SetFigureBoundingBox(x, y, 2f * r1, 2f * r1);  // The outer circle
             page.AddEMC();
             return new float[] {xc + r1, yc + r1};
         }

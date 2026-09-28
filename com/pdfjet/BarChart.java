@@ -688,6 +688,7 @@ public class BarChart implements Drawable {
         page.drawString(f2, f2.getSize(), xAxisTitle, x5 + ((x6 - x5) - f2.stringWidth(xAxisTitle)) / 2f, y2 - bodyHeight / 2f);
 
         page.restoreGraphicsState();
+        page.setFigureBoundingBox(x1, y1, w, h);
         page.addEMC();
 
         return new float[] {x1 + w, y1 + h};

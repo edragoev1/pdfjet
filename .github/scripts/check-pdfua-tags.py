@@ -15,6 +15,8 @@ The checks are:
   * The heading levels a reader follows start at H1 and skip none.
   * Every figure and every link has a description that is not blank and is not
     a file name.
+  * Every figure has a bounding box, a BBox of the Layout attributes, with an
+    area: PDF/UA asks for one, and veraPDF does not check it (PAC does).
   * A list is built of L, LI, Lbl and LBody, in that nesting.
   * The cells of a table tile it: laid out as a browser lays out an HTML
     table, with ColSpan and RowSpan, they fill every square of the grid and
@@ -66,7 +68,11 @@ class Element:
         self.alt = text_value(doc, xref, 'Alt')
         self.actual = text_value(doc, xref, 'ActualText')
         self.attributes = {}
+        self.bbox = None
         kind, text = doc.xref_get_key(xref, 'A')
+        box = re.search(r'/BBox\s*\[([^\]]*)\]', text) if kind == 'dict' else None
+        if box:
+            self.bbox = [float(v) for v in box.group(1).split()]
         if kind == 'dict':
             for name, value in re.findall(r'/(\w+)\s*(/?\w+)', text):
                 self.attributes[name] = value
@@ -109,6 +115,7 @@ class Report:
         self.tables = []
         self.lists = []
         self.described = []
+        self.boxes = []
 
 
 def walk(element, report, rows=None):
@@ -117,6 +124,8 @@ def walk(element, report, rows=None):
         report.headings.append(int(element.tag[1]))
     elif element.tag in ('Figure', 'Link'):
         report.described.append((element.tag, element.description))
+        if element.tag == 'Figure':
+            report.boxes.append((element.description, element.bbox))
     elif element.tag == 'Table':
         rows = []
         report.tables.append(rows)
@@ -194,6 +203,13 @@ def check(path):
         elif FILE_NAME.match(description.strip()):
             report.problems.append(f'{what} is described by the file name '
                                    f'{description.strip()!r}')
+
+    for description, box in report.boxes:
+        name = (description or '').strip()[:40]
+        if box is None:
+            report.problems.append(f'the figure {name!r} has no BBox')
+        elif len(box) != 4 or box[2] <= box[0] or box[3] <= box[1]:
+            report.problems.append(f'the figure {name!r} has the BBox {box}, which has no area')
 
     for i, rows in enumerate(report.tables, start=1):
         if not rows:

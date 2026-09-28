@@ -163,6 +163,10 @@ final public class QRCode implements Drawable {
                     }
                 }
             }
+            if (altDescription != null && !altDescription.isEmpty()) {
+                float size = m1*modules.length;
+                page.setFigureBoundingBox(x, y, size, size);
+            }
             page.addEMC();
         }
         float w = m1*modules.length;

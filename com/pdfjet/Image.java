@@ -463,6 +463,12 @@ final public class Image implements Drawable {
 
         page.restoreGraphicsState();
 
+        // Turned a quarter of the way, the image is as wide as it is tall unturned
+        if (degrees == 90 || degrees == 270) {
+            page.setFigureBoundingBox(x, y, h, w);
+        } else {
+            page.setFigureBoundingBox(x, y, w, h);
+        }
         page.addEMC();
 
         if (uri != null || key != null) {

@@ -425,6 +425,7 @@ func (chart *Chart) DrawOn(page *Page) [2]float32 {
 		nil)
 
 	page.RestoreGraphicsState()
+	page.SetFigureBoundingBox(chart.x1, chart.y1, chart.w, chart.h)
 	page.AddEMC()
 
 	return [2]float32{chart.x1 + chart.w, chart.y1 + chart.h}

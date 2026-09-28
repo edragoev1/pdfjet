@@ -106,6 +106,9 @@ type Page struct {
 	// rather than to an element of its own: a paragraph is one element,
 	// however many words it is drawn one at a time.
 	mcidParent *structElement
+	// The figure AddBDC began last, whose bounding box SetFigureBoundingBox
+	// sets, or nil.
+	figure *structElement
 
 	markedContentDepth int      // The AddBDC and AddArtifactBMC calls that AddEMC has not ended yet
 	added              bool     // True once the page is added to its PDF
@@ -2090,6 +2093,9 @@ func (page *Page) AddBDC(structure structelem.StructElem, language, actualText, 
 func (page *Page) addBDC(
 	structure structelem.StructElem, language, actualText, altDescription, attributes string) {
 	page.markedContentDepth++
+	if structure == structelem.Figure {
+		page.figure = nil // Until it is made below, if it is tagged
+	}
 	if page.pdf.isTagged() && page.artifactDepth == 0 {
 		// A figure stands for what it draws, which only the one who draws it
 		// can say, so PDF/UA asks for a description of every one.
@@ -2131,8 +2137,31 @@ func (page *Page) addBDC(
 		// stands for it.
 		if structure == structelem.Figure {
 			page.artifactDepth = page.markedContentDepth
+			page.figure = element
 		}
 	}
+}
+
+// SetFigureBoundingBox sets the bounding box of the figure that AddBDC began
+// last: the box it is drawn in, x and y its top left corner, w wide and h
+// tall. PDF/UA asks for the bounding box of every figure, which a screen
+// reader or a program that reflows the page uses to find it. The figures of
+// the library, images, SVG images, charts, barcodes and QR codes, set it
+// themselves; a figure drawn with AddBDC and AddEMC around other drawing
+// needs it set before AddEMC. It does nothing in a document that is not
+// tagged.
+func (page *Page) SetFigureBoundingBox(x, y, w, h float32) {
+	if page.figure == nil {
+		return
+	}
+	x1, x2 := min(x, x+w), max(x, x+w)
+	y1, y2 := min(y, y+h), max(y, y+h)
+	// In the coordinates of PDF, from the bottom left of the page
+	page.figure.attributes = "<</O /Layout /BBox [" +
+		string(fastfloat.ToByteArray(x1)) + " " +
+		string(fastfloat.ToByteArray(page.height-y2)) + " " +
+		string(fastfloat.ToByteArray(x2)) + " " +
+		string(fastfloat.ToByteArray(page.height-y1)) + "]>>"
 }
 
 // AddArtifactBMC begins marked content for an artifact when the document is tagged: PDF/UA, or a PDF/A of level A.

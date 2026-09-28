@@ -76,6 +76,9 @@ func Example20() {
 		y,
 		xScale,
 		yScale)
+	// The logo is 216 by 68 points, at the top left of its page, so half of
+	// that here: the box PDF/UA asks every figure for.
+	page.SetFigureBoundingBox(x, y, 216.0*xScale, 68.0*yScale)
 	page.AddEMC()
 
 	pdfjet.NewTextLine(f2, "PDFjet Software").SetLocation(390.0, 60.0).DrawOn(page)

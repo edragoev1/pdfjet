@@ -498,6 +498,7 @@ public class Chart : Drawable {
                 y4 - f2.bodyHeight / 2)
 
         page.restoreGraphicsState()
+        page.setFigureBoundingBox(self.x1, self.y1, self.w, self.h)
         page.addEMC()
 
         return [self.x1 + self.w, self.y1 + self.h]

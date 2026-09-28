@@ -624,6 +624,7 @@ public class BarChart : IDrawable {
         page.DrawString(f2, f2.GetSize(), xAxisTitle, x5 + ((x6 - x5) - f2.StringWidth(xAxisTitle)) / 2f, y2 - bodyHeight / 2f);
 
         page.RestoreGraphicsState();
+        page.SetFigureBoundingBox(x1, y1, w, h);
         page.AddEMC();
 
         return new float[] {x1 + w, y1 + h};

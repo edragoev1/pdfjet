@@ -282,17 +282,22 @@ public class Barcode : Drawable {
             page?.restoreGraphicsState()
         }
         // init accepted one of these types.
+        var xy: [Float]
         if barcodeType == Barcode.EAN_13 {
-            return drawCodeEAN13(page, x1, y1)
+            xy = drawCodeEAN13(page, x1, y1)
         } else if barcodeType == Barcode.UPC_A {
-            return drawCodeUPC(page, x1, y1)
+            xy = drawCodeUPC(page, x1, y1)
         } else if barcodeType == Barcode.CODE_128 || barcodeType == Barcode.GS1_128 {
-            return drawCode128(page, x1, y1)
+            xy = drawCode128(page, x1, y1)
         } else if barcodeType == Barcode.ITF_14 {
-            return drawITF14(page, x1, y1)
+            xy = drawITF14(page, x1, y1)
         } else {
-            return drawCode39(page, x1, y1)
+            xy = drawCode39(page, x1, y1)
         }
+        if let page = page, let altDescription = altDescription, !altDescription.isEmpty {
+            page.setFigureBoundingBox(x1, y1, xy[0] - x1, xy[1] - y1)
+        }
+        return xy
     }
 
     private func drawCodeUPC(_ page: Page?, _ x1: Float, _ y1: Float) -> [Float] {

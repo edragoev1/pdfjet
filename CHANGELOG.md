@@ -10,6 +10,10 @@ This is the first entry in this file; earlier releases were not tracked here.
 ## Unreleased
 
 ### Added
+- The bounding box of a figure, in all four ports: `Page.setFigureBoundingBox`,
+  for a figure drawn with `addBDC` and `addEMC` around other drawing, such
+  as the content of another PDF. The figures of the library, images, SVG
+  images, charts, barcodes and QR codes, set it themselves.
 - The structure type of a text block, in all four ports:
   `TextBlock.setStructureType`, as `TextLine` has it, so that a text block
   of a tagged document is a heading, `StructElem.H1` to `H6`, rather than a
@@ -466,6 +470,15 @@ This is the first entry in this file; earlier releases were not tracked here.
   the values of the other three ports.
 
 ### Fixed
+- A figure of a tagged document had no bounding box, in all four ports:
+  PDF/UA asks for one, the BBox of the Layout attributes of the Figure
+  element, which a screen reader or a program that reflows the page uses to
+  find it. PAC failed 11 examples on it, and veraPDF does not check it. An
+  image, an SVG image, a chart, a bar chart, a donut chart, a described
+  barcode and a described QR code have the box they are drawn in, an image
+  turned a quarter of the way the box it is turned into, and
+  check-pdfua-tags.py checks that every figure of the examples has one.
+  Found by PAC.
 - A rectangle, an arc and an ellipse set their colors, line width and dash
   after they had begun their paths, and `Page.drawContents` wrote a text
   matrix, Tm, outside a text object, in all four ports: operators ISO 32000-1 does not allow there, in its Figure 9, which

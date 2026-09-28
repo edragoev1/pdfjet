@@ -427,6 +427,12 @@ func (image *Image) DrawOn(page *Page) [2]float32 {
 
 	page.RestoreGraphicsState()
 
+	// Turned a quarter of the way, the image is as wide as it is tall unturned
+	if image.degrees == 90 || image.degrees == 270 {
+		page.SetFigureBoundingBox(image.x, image.y, image.h, image.w)
+	} else {
+		page.SetFigureBoundingBox(image.x, image.y, image.w, image.h)
+	}
 	page.AddEMC()
 
 	if image.uri != "" || image.key != "" {

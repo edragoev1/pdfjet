@@ -103,6 +103,9 @@ public class Page {
     // rather than to an element of its own: a paragraph is one element,
     // however many words it is drawn one at a time.
     internal StructElement mcidParent = null;
+    // The figure AddBDC began last, whose bounding box SetFigureBoundingBox
+    // sets, or null.
+    private StructElement figure = null;
     // True once the page is added to its PDF.
     internal bool added = false;
     // The dictionary of a page merged from a document that was read, with the
@@ -2478,6 +2481,9 @@ public class Page {
             String altDescription,
             String attributes) {
         markedContentDepth++;
+        if (structure == StructElem.FIGURE) {
+            figure = null;  // Until it is made below, if it is tagged
+        }
         if (pdf.IsTagged() && artifactDepth == 0) {
             // A figure stands for what it draws, which only the one who draws
             // it can say, so PDF/UA asks for a description of every one.
@@ -2519,8 +2525,36 @@ public class Page {
             // stands for it.
             if (structure == StructElem.FIGURE) {
                 artifactDepth = markedContentDepth;
+                figure = element;
             }
         }
+    }
+
+    /// <summary>
+    /// Sets the bounding box of the figure that AddBDC began last: the box it is
+    /// drawn in, x and y its top left corner, w wide and h tall. PDF/UA asks for
+    /// the bounding box of every figure, which a screen reader or a program that
+    /// reflows the page uses to find it. The figures of the library, images, SVG
+    /// images, charts, barcodes and QR codes, set it themselves; a figure drawn
+    /// with AddBDC and AddEMC around other drawing needs it set before AddEMC. It
+    /// does nothing in a document that is not tagged.
+    /// </summary>
+    public void SetFigureBoundingBox(float x, float y, float w, float h) {
+        if (figure == null) {
+            return;
+        }
+        float x1 = Math.Min(x, x + w);
+        float x2 = Math.Max(x, x + w);
+        float y1 = Math.Min(y, y + h);
+        float y2 = Math.Max(y, y + h);
+        // In the coordinates of PDF, from the bottom left of the page
+        figure.attributes = "<</O /Layout /BBox [" +
+                BBoxNumber(x1) + " " + BBoxNumber(height - y2) + " " +
+                BBoxNumber(x2) + " " + BBoxNumber(height - y1) + "]>>";
+    }
+
+    private static String BBoxNumber(float value) {
+        return Encoding.ASCII.GetString(FastFloat.ToByteArray(value));
     }
 
     /// <summary>Begins an artifact marked content sequence.</summary>
