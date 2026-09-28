@@ -56,7 +56,7 @@ func addMetadataObject2(objects *[]*PDFobj, font *Font) int {
 	sb.WriteString("<xmpRights:UsageTerms>\n")
 	sb.WriteString("<rdf:Alt>\n")
 	sb.WriteString("<rdf:li xml:lang=\"x-default\">\n")
-	sb.WriteString(font.info)
+	sb.WriteString(escapeXML(font.info))
 	sb.WriteString("</rdf:li>\n")
 	sb.WriteString("</rdf:Alt>\n")
 	sb.WriteString("</xmpRights:UsageTerms>\n")

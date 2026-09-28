@@ -136,7 +136,7 @@ func TestAssociatedFileTheFileSaysWhatItHoldsAndHowItRelatesToTheDocument(t *tes
 	embedded := raw[file : file+strings.Index(raw[file:], "stream\n")]
 	size := strconv.Itoa(len(testXML))
 	for _, entry := range []string{
-		"/Subtype /text#2Fxml\n", "/Params <</Size " + size + " /ModDate (D:", "/Length " + size + "\n"} {
+		"/Subtype /text#2Fxml\n", "/Params <</Size " + size + " /ModDate <443a", "/Length " + size + "\n"} {
 		if !strings.Contains(embedded, entry) {
 			t.Errorf("%q is missing:\n%s", entry, embedded)
 		}
@@ -153,7 +153,7 @@ func TestAssociatedFileTheSizeOfACompressedFileIsTheSizeItHadBeforeItWasCompress
 	line.SetLocation(50, 50)
 	line.DrawOn(NewPage(doc.pdf, letter.Portrait()))
 	raw := string(doc.complete())
-	if !strings.Contains(raw, "/Params <</Size "+strconv.Itoa(len(text))+" /ModDate (D:") {
+	if !strings.Contains(raw, "/Params <</Size "+strconv.Itoa(len(text))+" /ModDate <443a") {
 		t.Error("the size")
 	}
 	if !strings.Contains(raw, "/Filter /FlateDecode\n") {
@@ -234,7 +234,7 @@ func TestAssociatedFileTheDocumentsThatCannotCarryAFileSayTheyCannot(t *testing.
 		compliance.PDF_A_3A, compliance.PDF_A_3B,
 		compliance.PDF_1_7, compliance.PDF_UA_1} {
 		doc := testNewDoc()
-		doc.pdf.SetCompliance(level)
+		doc.pdf.SetCompliance(level).SetTitle("Test")
 		if !strings.Contains(testCarry(doc, "factur-x.xml"), "/AF [") {
 			t.Errorf("%v carries no file", level)
 		}
@@ -246,7 +246,7 @@ func TestAssociatedFileTheMetadataHasOneListOfExtensionSchemas(t *testing.T) {
 	// Factur-X does, has the PDF/UA identification schema in that list
 	for _, own := range []bool{false, true} {
 		doc := testNewDoc()
-		doc.pdf.SetCompliance(compliance.PDF_A_3A_UA_1)
+		doc.pdf.SetCompliance(compliance.PDF_A_3A_UA_1).SetTitle("Test")
 		if own {
 			doc.pdf.AddMetadata("<rdf:Description rdf:about=\"\" xmlns:pdfaExtension=\"http://www.aiim.org/pdfa/ns/extension/\">\n" +
 				"  <pdfaExtension:schemas>\n" +

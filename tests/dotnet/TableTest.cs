@@ -195,7 +195,7 @@ public sealed class TableTest : IDisposable {
     [Fact]
     public void ATableInAPDFUADocumentIsTaggedAsATable() {
         System.IO.MemoryStream stream = new System.IO.MemoryStream();
-        PDF pdf = new PDF(stream, Compliance.PDF_UA_1);
+        PDF pdf = new PDF(stream, Compliance.PDF_UA_1).SetTitle("Test");
         pdf.SetTitle("Title");
         Font font = TestSupport.Helvetica(pdf);
         List<List<Cell>> data = new List<List<Cell>>();
@@ -226,7 +226,7 @@ public sealed class TableTest : IDisposable {
     [Fact]
     public void TheHeaderRowsOnTheNextPagesAreArtifacts() {
         System.IO.MemoryStream stream = new System.IO.MemoryStream();
-        PDF pdf = new PDF(stream, Compliance.PDF_UA_1);
+        PDF pdf = new PDF(stream, Compliance.PDF_UA_1).SetTitle("Test");
         pdf.SetTitle("Title");
         Table table = new Table().SetTableData(Rows(TestSupport.Helvetica(pdf), 60, 2), 1).SetLocation(20f, 20f);
         List<Page> pages = new List<Page>();
@@ -261,7 +261,7 @@ public sealed class TableTest : IDisposable {
     [Fact]
     public void ATableWithAPageLeftOutOfTheDocumentStillHasAStructureTree() {
         System.IO.MemoryStream stream = new System.IO.MemoryStream();
-        PDF pdf = new PDF(stream, Compliance.PDF_UA_1);
+        PDF pdf = new PDF(stream, Compliance.PDF_UA_1).SetTitle("Test");
         pdf.SetTitle("Title");
         Table table = new Table().SetTableData(Rows(TestSupport.Helvetica(pdf), 60, 2), 1).SetLocation(20f, 20f);
         List<Page> pages = new List<Page>();
@@ -374,7 +374,7 @@ public sealed class TableTest : IDisposable {
     [Fact]
     public void ACellThatSpansRowsSaysSoInAPDFUADocument() {
         System.IO.MemoryStream stream = new System.IO.MemoryStream();
-        PDF pdf = new PDF(stream, Compliance.PDF_UA_1);
+        PDF pdf = new PDF(stream, Compliance.PDF_UA_1).SetTitle("Test");
         pdf.SetTitle("Title");
         Font font = TestSupport.Helvetica(pdf);
         List<List<Cell>> data = Spanning(font, 3, 2, 2);
@@ -736,7 +736,7 @@ public sealed class TableTest : IDisposable {
     [Fact]
     public void TheFooterRowsBeforeTheEndOfTheTableAreArtifacts() {
         System.IO.MemoryStream stream = new System.IO.MemoryStream();
-        PDF pdf = new PDF(stream, Compliance.PDF_UA_1);
+        PDF pdf = new PDF(stream, Compliance.PDF_UA_1).SetTitle("Test");
         pdf.SetTitle("Title");
         List<Page> pages = WithFooter(pdf, "total", "sum");
         Assert.Equal(2, pages.Count);

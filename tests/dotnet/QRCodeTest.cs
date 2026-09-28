@@ -70,7 +70,7 @@ public class QRCodeTest {
     }
     [Fact]
     public void ADescribedQRCodeIsAFigure() {
-        PDF pdf = new PDF(new System.IO.MemoryStream(), Compliance.PDF_UA_1);
+        PDF pdf = new PDF(new System.IO.MemoryStream(), Compliance.PDF_UA_1).SetTitle("Test");
         Page page = new Page(pdf, Letter.PORTRAIT);
         QRCode qr = new QRCode("https://pdfjet.com", ErrorCorrectionLevel.M);
         qr.SetAltDescription("https://pdfjet.com");

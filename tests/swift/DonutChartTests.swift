@@ -48,6 +48,7 @@ import Testing
 
     @Test func aChartIsAFigureThatListsItsSlices() {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.setTitle("Test")
         let page = Page(memory.pdf, Letter.PORTRAIT)
         let donut = chart(memory.pdf).addSlice(Slice(25, Color.red, "Apples"))
                 .addSlice(Slice(75, Color.blue, "Oranges"))

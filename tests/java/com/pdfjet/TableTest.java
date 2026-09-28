@@ -228,7 +228,7 @@ class TableTest {
     @Test
     void aTableInAPDFUADocumentIsTaggedAsATable() throws Exception {
         java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
-        PDF pdf = new PDF(bos, Compliance.PDF_UA_1);
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1).setTitle("Test");
         pdf.setTitle("Title");
         Font font = TestSupport.helvetica(pdf);
         List<List<Cell>> data = new ArrayList<List<Cell>>();
@@ -258,7 +258,7 @@ class TableTest {
     @Test
     void theHeaderRowsOnTheNextPagesAreArtifacts() throws Exception {
         java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
-        PDF pdf = new PDF(bos, Compliance.PDF_UA_1);
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1).setTitle("Test");
         pdf.setTitle("Title");
         Table table = new Table().setTableData(rows(TestSupport.helvetica(pdf), 60, 2), 1).setLocation(20f, 20f);
         List<Page> pages = new ArrayList<Page>();
@@ -294,7 +294,7 @@ class TableTest {
     @Test
     void aTableWithAPageLeftOutOfTheDocumentStillHasAStructureTree() throws Exception {
         java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
-        PDF pdf = new PDF(bos, Compliance.PDF_UA_1);
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1).setTitle("Test");
         pdf.setTitle("Title");
         Table table = new Table().setTableData(rows(TestSupport.helvetica(pdf), 60, 2), 1).setLocation(20f, 20f);
         List<Page> pages = new ArrayList<Page>();
@@ -403,7 +403,7 @@ class TableTest {
     @Test
     void aCellThatSpansRowsSaysSoInAPDFUADocument() throws Exception {
         java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
-        PDF pdf = new PDF(bos, Compliance.PDF_UA_1);
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1).setTitle("Test");
         pdf.setTitle("Title");
         Font font = TestSupport.helvetica(pdf);
         List<List<Cell>> data = spanning(font, 3, 2, 2);
@@ -758,7 +758,7 @@ class TableTest {
     @Test
     void theFooterRowsBeforeTheEndOfTheTableAreArtifacts() throws Exception {
         java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
-        PDF pdf = new PDF(bos, Compliance.PDF_UA_1);
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1).setTitle("Test");
         pdf.setTitle("Title");
         List<Page> pages = withFooter(pdf, "total", "sum");
         assertEquals(2, pages.size());

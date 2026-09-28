@@ -82,6 +82,11 @@ public final class PDF {
                 || compliance == Compliance.PDF_A_3A_UA_1
     }
 
+    // Whether the document is of PDF/A, of any part and level.
+    func isPDFA() -> Bool {
+        return compliance != Compliance.PDF_1_7 && compliance != Compliance.PDF_UA_1
+    }
+
     // PDF_A_3A, named by its raw value, since the case is deprecated and the
     // build fails on the warning its name gives. It is still supported.
     static var complianceA3A: Compliance { Compliance(rawValue: 6)! }
@@ -96,8 +101,10 @@ public final class PDF {
     private var metadataObjNumber = 0
     private var outputIntentObjNumber = 0
     private var os: BufferedOutputStream?
+    // The digits of the number append(Int) writes, the most an Int has and its sign.
+    private var digits = [UInt8](repeating: 0, count: 20)
     private var objOffset = [Int]()
-    private var producer = "PDFjet v9.0.1"
+    private var producer = "PDFjet v9.0.2"
     private var title: String?
     private var author: String?
     private var subject: String?
@@ -301,9 +308,8 @@ public final class PDF {
     /// is in PDFDocEncoding, so UTF-8 bytes would show as two or three wrong
     /// characters each.
     func textString(_ str: String?) -> String {
-        guard let str = str, !str.isEmpty else {
-            return ""
-        }
+        // An empty text is the byte order mark alone, as in the other ports.
+        let str = str ?? ""
         var bytes: [UInt8] = [0xFE, 0xFF]
         for unit in str.utf16 {
             bytes.append(UInt8(unit >> 8))
@@ -369,7 +375,9 @@ public final class PDF {
             sb.append("<xmpRights:UsageTerms>\n")
             sb.append("<rdf:Alt>\n")
             sb.append("<rdf:li xml:lang=\"x-default\">\n")
-            sb.append(String(notice.utf8))
+            // The notice of a font is text, which may hold an ampersand, like
+            // that of the Noto fonts of Japanese, Korean and Chinese.
+            sb.append(PDF.escapeXML(notice))
             sb.append("</rdf:li>\n")
             sb.append("</rdf:Alt>\n")
             sb.append("</xmpRights:UsageTerms>\n")
@@ -416,31 +424,31 @@ public final class PDF {
 
             if title != nil {
                 sb.append("  <dc:title><rdf:Alt><rdf:li xml:lang=\"x-default\">")
-                sb.append(escapeXML(title!))
+                sb.append(PDF.escapeXML(title!))
                 sb.append("</rdf:li></rdf:Alt></dc:title>\n")
             }
 
             if author != nil {
                 sb.append("  <dc:creator><rdf:Seq><rdf:li>")
-                sb.append(escapeXML(author!))
+                sb.append(PDF.escapeXML(author!))
                 sb.append("</rdf:li></rdf:Seq></dc:creator>\n")
             }
 
             if subject != nil {
                 sb.append("  <dc:description><rdf:Alt><rdf:li xml:lang=\"x-default\">")
-                sb.append(escapeXML(subject!))
+                sb.append(PDF.escapeXML(subject!))
                 sb.append("</rdf:li></rdf:Alt></dc:description>\n")
             }
 
             if keywords != nil {
                 sb.append("  <pdf:Keywords>")
-                sb.append(escapeXML(keywords!))
+                sb.append(PDF.escapeXML(keywords!))
                 sb.append("</pdf:Keywords>\n")
             }
 
             if creator != nil {
                 sb.append("  <xmp:CreatorTool>")
-                sb.append(escapeXML(creator!))
+                sb.append(PDF.escapeXML(creator!))
                 sb.append("</xmp:CreatorTool>\n")
             }
 
@@ -510,12 +518,10 @@ public final class PDF {
     }
 
     // Returns the text with the characters that have a meaning in XML escaped,
-    // and without the characters XML does not allow: the control characters
-    // other than tab, line feed and carriage return, U+FFFE and U+FFFF, which
-    // would make the metadata unreadable.
-    private func escapeXML(_ text: String) -> String {
+    // and without what XML does not allow, which cleanText leaves out.
+    static func escapeXML(_ text: String) -> String {
         var result = String.UnicodeScalarView()
-        for scalar in text.unicodeScalars {
+        for scalar in cleanText(text).unicodeScalars {
             switch scalar {
             case "&":
                 result.append(contentsOf: "&amp;".unicodeScalars)
@@ -523,12 +529,24 @@ public final class PDF {
                 result.append(contentsOf: "&lt;".unicodeScalars)
             case ">":
                 result.append(contentsOf: "&gt;".unicodeScalars)
-            case "\t", "\n", "\r":
-                result.append(scalar)
             default:
-                if (scalar.value >= 0x20 && scalar.value <= 0xFFFD) || scalar.value >= 0x10000 {
-                    result.append(scalar)
-                }
+                result.append(scalar)
+            }
+        }
+        return String(result)
+    }
+
+    // Returns the text without what XML does not allow: the control
+    // characters other than tab, line feed and carriage return, U+FFFE and
+    // U+FFFF, which would make the metadata unreadable. The title and the
+    // other properties of the document are cleaned when they are set, so that
+    // the information dictionary says what the metadata says, as PDF/A asks.
+    static func cleanText(_ text: String) -> String {
+        var result = String.UnicodeScalarView()
+        for scalar in text.unicodeScalars {
+            if scalar == "\t" || scalar == "\n" || scalar == "\r"
+                    || (scalar.value >= 0x20 && scalar.value <= 0xFFFD) || scalar.value >= 0x10000 {
+                result.append(scalar)
             }
         }
         return String(result)
@@ -685,6 +703,16 @@ public final class PDF {
         endObj()
     }
 
+    // The structure types of PDF 2.0 that PDFjet writes, mapped to the
+    // standard types of PDF 1.7, in the order the role map lists them.
+    private static let roleMap: [(String, String)] = [
+        (StructElem.TITLE.rawValue, StructElem.P.rawValue),
+        (StructElem.EM.rawValue, StructElem.SPAN.rawValue),
+        (StructElem.STRONG.rawValue, StructElem.SPAN.rawValue),
+    ]
+    // The types of PDF 2.0 among the elements, which the role map maps.
+    private var roles = Set<String>()
+
     private func addStructTreeRootObject() -> Int {
         setObjOffset(structTreeRootNumber, byteCount)
         append(structTreeRootNumber)
@@ -698,6 +726,18 @@ public final class PDF {
         append(documentElementNumber)
         append(Token.objRef)
         append("]\n")
+        // The types of PDF 2.0 that the document uses, which PDF 1.7 does not
+        // have, are mapped to the standard types that PDF/UA-1 knows.
+        if !roles.isEmpty {
+            append("/RoleMap <<")
+            for role in PDF.roleMap where roles.contains(role.0) {
+                append(" /")
+                append(role.0)
+                append(" /")
+                append(role.1)
+            }
+            append(" >>\n")
+        }
         append(Token.endDictionary)
         endObj()
         return structTreeRootNumber
@@ -741,7 +781,7 @@ public final class PDF {
     // drawing. What it keeps is the elements that are still open and the ones
     // of an annotation, whose object is written when the document is completed.
     private func addPageStructElements(_ page: Page) {
-        if compliance == Compliance.PDF_1_7 || page.structures.isEmpty {
+        if !isTagged() || page.structures.isEmpty {
             return
         }
         var kept = [StructElement]()
@@ -781,6 +821,9 @@ public final class PDF {
             setObjOffset(element.objNumber ?? 0, byteCount)
             append(element.objNumber ?? 0)
             append(" 0 obj\n")
+            for role in PDF.roleMap where role.0 == element.structure {
+                roles.insert(role.0)
+            }
             append("<<\n/Type /StructElem /S /")
             append(element.structure!)
             append("\n/P ")
@@ -967,9 +1010,17 @@ public final class PDF {
     /// string, encrypted if the document is encrypted.
     private func appendInfoString(_ key: String, _ bytes: [UInt8]) {
         append(key)
-        append(" <")
+        append(" ")
+        appendByteString(bytes)
+        append("\n")
+    }
+
+    /// Appends a string of bytes, like a date, in hexadecimal, encrypted if
+    /// the document is encrypted.
+    func appendByteString(_ bytes: [UInt8]) {
+        append("<")
         append(toHex(encrypted(bytes)))
-        append(">\n")
+        append(">")
     }
 
     private func addRootObject(
@@ -984,11 +1035,16 @@ public final class PDF {
             append(toHexString(language))
             append(">\n")
 
-            append("/StructTreeRoot ")
-            append(structTreeRootObjNumber)
-            append(Token.objRef)
+            // Only a tagged document has a structure tree: a PDF/A of level B
+            // that said it was marked would say its content is tagged, which
+            // it is not.
+            if isTagged() {
+                append("/StructTreeRoot ")
+                append(structTreeRootObjNumber)
+                append(Token.objRef)
 
-            append("/MarkInfo <</Marked true>>\n")
+                append("/MarkInfo <</Marked true>>\n")
+            }
             append("/ViewerPreferences <</DisplayDocTitle true>>\n")
         }
 
@@ -1171,7 +1227,7 @@ public final class PDF {
                 append("]\n")
             }
 
-            if compliance != Compliance.PDF_1_7 {
+            if isTagged() {
                 append("/Tabs /S\n")
                 append("/StructParents ")
                 append(i)
@@ -1224,18 +1280,104 @@ public final class PDF {
         addPageStructElements(page)
     }
 
+    // Writes the appearance of an annotation that is not a link, which PDF/A
+    // asks for, and returns its object number. It draws what a viewer draws
+    // for the annotation: the square, the circle or the polygon in its fill
+    // color, and a note or a file as a white box with a black frame. Its box
+    // is the rectangle of the annotation, in the coordinates of the page.
+    private func addAppearanceObject(
+            _ annot: Annotation, _ x1: Float, _ y1: Float, _ x2: Float, _ y2: Float) -> Int {
+        let minX = min(x1, x2)
+        let maxX = max(x1, x2)
+        let minY = min(y1, y2)
+        let maxY = max(y1, y2)
+        let w = maxX - minX
+        let h = maxY - minY
+        var buf = [UInt8]()
+        func numbers(_ values: Float...) {
+            for value in values {
+                buf.append(contentsOf: FastFloat.toByteArray(value))
+                buf.append(UInt8(ascii: " "))
+            }
+        }
+        func ascii(_ text: String) {
+            buf.append(contentsOf: Array(text.utf8))
+        }
+        func fill() {
+            let color = annot.fillColor ?? [0, 0, 0]
+            numbers(color[0], color[1], color[2])
+            ascii("rg\n")
+        }
+        let type = annot.annotationType
+        if type == Annotation.Square {
+            fill()
+            numbers(minX, minY, w, h)
+            ascii("re f\n")
+        } else if type == Annotation.Circle {
+            // Four Bezier curves, one for each quarter of the ellipse.
+            let kappa: Float = 0.55228475
+            let rx = w / 2
+            let ry = h / 2
+            let cx = minX + rx
+            let cy = minY + ry
+            let ox = rx * kappa
+            let oy = ry * kappa
+            fill()
+            numbers(cx + rx, cy)
+            ascii("m\n")
+            numbers(cx + rx, cy + oy, cx + ox, cy + ry, cx, cy + ry)
+            ascii("c\n")
+            numbers(cx - ox, cy + ry, cx - rx, cy + oy, cx - rx, cy)
+            ascii("c\n")
+            numbers(cx - rx, cy - oy, cx - ox, cy - ry, cx, cy - ry)
+            ascii("c\n")
+            numbers(cx + ox, cy - ry, cx + rx, cy - oy, cx + rx, cy)
+            ascii("c\n")
+            ascii("f\n")
+        } else if type == Annotation.Polygon {
+            fill()
+            let vertices = annot.vertices ?? []
+            var i = 0
+            while i + 1 < vertices.count {
+                numbers(annot.x1 + vertices[i], annot.y1 - vertices[i + 1])
+                ascii((i == 0) ? "m\n" : "l\n")
+                i += 2
+            }
+            ascii("h f\n")
+        } else {
+            ascii("1 g 0 G 0.5 w\n")
+            numbers(minX + 0.25, minY + 0.25, w - 0.5, h - 0.5)
+            ascii("re B\n")
+        }
+        let content = encrypted(buf)
+
+        newObj()
+        append(Token.beginDictionary)
+        append("/Type /XObject\n")
+        append("/Subtype /Form\n")
+        append("/BBox [")
+        append(minX)
+        append(" ")
+        append(minY)
+        append(" ")
+        append(maxX)
+        append(" ")
+        append(maxY)
+        append("]\n")
+        append("/Length ")
+        append(content.count)
+        append("\n")
+        append(Token.endDictionary)
+        append("stream\n")
+        append(content)
+        append("\nendstream\n")
+        endObj()
+        return getObjNumber()
+    }
+
     @discardableResult
     func addAnnotationObject(_ annot: Annotation, _ index: Int) -> Int {
         var index = index
-
-        newObj()
-        annot.objNumber = getObjNumber()
-
-        append(Token.beginDictionary)
-        append("/Type /Annot\n")
-        append("/Subtype /")
-        append(annot.annotationType!)
-        append("\n")
 
         // The rectangle of an annotation of vertices, a polygon, is the box of its
         // vertices, which are relative to its location; its second corner is not
@@ -1260,6 +1402,22 @@ public final class PDF {
             x2 = annot.x1 + maxX
             y2 = annot.y1 - minY
         }
+
+        // PDF/A asks every annotation but a link for an appearance of its own,
+        // which is written before it.
+        var appearance = 0
+        if isPDFA() && annot.annotationType != Annotation.Link {
+            appearance = addAppearanceObject(annot, x1, y1, x2, y2)
+        }
+
+        newObj()
+        annot.objNumber = getObjNumber()
+
+        append(Token.beginDictionary)
+        append("/Type /Annot\n")
+        append("/Subtype /")
+        append(annot.annotationType!)
+        append("\n")
         append("/Rect [")
         append(x1)
         append(" ")
@@ -1271,6 +1429,13 @@ public final class PDF {
         append("]\n")
 
         append("/Border [0 0 0]\n")
+        // Every annotation is printed, as PDF/A asks.
+        append("/F 4\n")
+        if appearance > 0 {
+            append("/AP <</N ")
+            append(appearance)
+            append(" 0 R>>\n")
+        }
 
         if annot.annotationType == Annotation.FileAttachment {
             append("/FS ")
@@ -1281,16 +1446,16 @@ public final class PDF {
             append(annot.fileAttachment!.icon)
             append("\n")
 
-            let title = textString(annot.fileAttachment!.title)
+            let title = annot.fileAttachment!.title
             if !title.isEmpty {
                 append("/T <")
-                append(title)
+                append(textString(title))
                 append(">\n")
             }
-            let contents = textString(annot.fileAttachment!.contents)
+            let contents = annot.fileAttachment!.contents
             if !contents.isEmpty {
                 append("/Contents <")
-                append(contents)
+                append(textString(contents))
                 append(">\n")
             }
         } else if annot.annotationType == Annotation.Link {
@@ -1312,23 +1477,26 @@ public final class PDF {
                 append(">\n")
             }
             if let uri = annot.uri {
-                append("/F 4\n")
                 append("/A <<\n")
                 append("/S /URI\n")
                 append("/URI <")
                 append(toHexString(uri))
                 append(">\n")
                 append(">>\n")
-            } else if let key = annot.key,
-                      let destination = destinations[key] {
-                append("/F 4\n")
-                append("/Dest [")
-                append(destination.pageObjNumber)
-                append(" 0 R /XYZ ")
-                append(destination.xPosition)
-                append(" ")
-                append(destination.yPosition)
-                append(" 0]\n")
+            } else if let key = annot.key {
+                if let destination = destinations[key] {
+                    append("/Dest [")
+                    append(destination.pageObjNumber)
+                    append(" 0 R /XYZ ")
+                    append(destination.xPosition)
+                    append(" ")
+                    append(destination.yPosition)
+                    append(" 0]\n")
+                } else {
+                    // A link to nowhere would do nothing when it is clicked.
+                    fail("The link goes to the destination " + key
+                            + ", which the document does not have.")
+                }
             }
         } else if annot.annotationType == Annotation.Polygon {
             append("/Vertices [ ")
@@ -1448,7 +1616,16 @@ public final class PDF {
             buf.append(" 0 R")
             list.append(OCG(objNumber: ocg.objNumber, name: ocg.name!))
         }
-        list.sort { $0.name < $1.name }
+        // The groups are in the order of their names, by the UTF-16 code
+        // units as in every port, and those of the same name in the order
+        // they were added, as the sort of Java keeps it and the sort of Swift
+        // does not.
+        list = list.enumerated().sorted {
+            let units1 = Array($0.element.name.utf16)
+            let units2 = Array($1.element.name.utf16)
+            return (units1 == units2) ? $0.offset < $1.offset
+                    : units1.lexicographicallyPrecedes(units2)
+        }.map { $0.element }
 
         append("/OCProperties\n")
         append(Token.beginDictionary)
@@ -1514,7 +1691,7 @@ public final class PDF {
             page.objNumber = reserveObjNumber()
         }
         // A page that was drawn before it was added has elements of its own.
-        if compliance != Compliance.PDF_1_7 {
+        if isTagged() {
             page.setStructElementsPageObjNumber(page.objNumber)
         }
         pages.append(page)
@@ -1538,6 +1715,19 @@ public final class PDF {
     /// - Throws: an error if the PDF cannot be written to the output stream.
     ///
     public func complete() throws {
+        // The output stream is closed also when the document could not be
+        // completed.
+        do {
+            try writeRest()
+        } catch {
+            try? os?.close()
+            throw error
+        }
+        try os!.close()
+    }
+
+    // Writes the rest of the PDF.
+    private func writeRest() throws {
         if completed {
             let message = "complete() was already called."
             fail(message)
@@ -1548,6 +1738,14 @@ public final class PDF {
         }
         if pages.isEmpty && pagesObjNumber == 0 {
             let message = "A PDF needs at least one page."
+            fail(message)
+            throw PDFjetError(message: message)
+        }
+        // PDF/UA asks for the title of the document, which a reader shows in
+        // place of the name of the file.
+        if (compliance == Compliance.PDF_UA_1 || compliance == Compliance.PDF_A_3A_UA_1)
+                && (title ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            let message = "A PDF/UA document needs a title: use setTitle."
             fail(message)
             throw PDFjetError(message: message)
         }
@@ -1569,7 +1767,7 @@ public final class PDF {
         }
 
         var structTreeRootObjNumber = 0
-        if compliance != Compliance.PDF_1_7 {
+        if isTagged() {
             // The elements of every page are written with it; the ones still
             // open and the ones of the annotations are what is left.
             for page in pages {
@@ -1656,7 +1854,6 @@ public final class PDF {
         if let error = error {  // Found when the rest of the document was written.
             throw PDFjetError(message: error)
         }
-        try os!.close()
     }
 
     ///
@@ -1688,6 +1885,14 @@ public final class PDF {
                     + " was embedded without a media type, a relationship and a description, "
                     + "which a file the document carries needs: use the constructor of "
                     + "EmbeddedFile that takes them.")
+            return self
+        }
+        // PDF/A-3 asks a file it carries for what it holds, its /Subtype, and
+        // for its size and date, which are written with the media type.
+        if (file.mediaType ?? "").isEmpty && (compliance == PDF.complianceA3A
+                || compliance == Compliance.PDF_A_3B || compliance == Compliance.PDF_A_3A_UA_1) {
+            fail("The file " + file.getFileName()
+                    + " was embedded without a media type, which a file of a document of PDF/A-3 needs.")
             return self
         }
         associatedFiles.append(file)
@@ -1729,6 +1934,7 @@ public final class PDF {
     // not written, as in the Go port, which cannot tell the two apart.
     @discardableResult
     public func setTitle(_ title: String) -> PDF {
+        let title = PDF.cleanText(title)
         self.title = title.isEmpty ? nil : title
         return self
     }
@@ -1739,6 +1945,7 @@ public final class PDF {
     ///
     @discardableResult
     public func setAuthor(_ author: String) -> PDF {
+        let author = PDF.cleanText(author)
         self.author = author.isEmpty ? nil : author
         return self
     }
@@ -1749,6 +1956,7 @@ public final class PDF {
     ///
     @discardableResult
     public func setSubject(_ subject: String) -> PDF {
+        let subject = PDF.cleanText(subject)
         self.subject = subject.isEmpty ? nil : subject
         return self
     }
@@ -1759,6 +1967,7 @@ public final class PDF {
     ///
     @discardableResult
     public func setKeywords(_ keywords: String) -> PDF {
+        let keywords = PDF.cleanText(keywords)
         self.keywords = keywords.isEmpty ? nil : keywords
         return self
     }
@@ -1769,6 +1978,7 @@ public final class PDF {
     ///
     @discardableResult
     public func setCreator(_ creator: String) -> PDF {
+        let creator = PDF.cleanText(creator)
         self.creator = creator.isEmpty ? nil : creator
         return self
     }
@@ -1792,19 +2002,32 @@ public final class PDF {
     }
 
     func append(_ number: UInt16) {
-        append(String(number))
+        append(Int(number))
     }
 
     func append(_ number: Int32) {
-        append(String(number))
+        append(Int(number))
     }
 
     func append(_ number: UInt32) {
-        append(String(number))
+        append(Int(number))
     }
 
     func append(_ number: Int) {
-        append(String(number))
+        // The digits are written from the last, into a buffer of the PDF, as
+        // a string of the number would be made and thrown away every time.
+        var i = digits.count
+        var magnitude = number.magnitude
+        repeat {
+            i -= 1
+            digits[i] = UInt8(ascii: "0") + UInt8(magnitude % 10)
+            magnitude /= 10
+        } while magnitude > 0
+        if number < 0 {
+            i -= 1
+            digits[i] = UInt8(ascii: "-")
+        }
+        append(digits, i, digits.count - i)
     }
 
     func append(_ val: Float) {
@@ -1815,7 +2038,7 @@ public final class PDF {
     }
 
     func append(_ str: String) {
-        if str.count == 0 {
+        if str.isEmpty {
             return
         }
         append(Array(str.utf8))

@@ -181,7 +181,7 @@ public class ChartTest {
 
     [Fact]
     public void AChartIsAFigureDescribedByItsTitleOrItsAlternateDescription() {
-        PDF pdf = new PDF(new System.IO.MemoryStream(), Compliance.PDF_UA_1);
+        PDF pdf = new PDF(new System.IO.MemoryStream(), Compliance.PDF_UA_1).SetTitle("Test");
         Page page = new Page(pdf, Letter.PORTRAIT);
         Chart titled = NewChart(pdf).SetTitle("Sales");
         titled.AddSeries("").AddPoint(1f, 1f).AddPoint(2f, 2f);
@@ -201,7 +201,7 @@ public class ChartTest {
     [Fact]
     public void ALinkedPointIsAFigureInItsLink() {
         MemoryStream stream = new MemoryStream();
-        PDF pdf = new PDF(stream, Compliance.PDF_UA_1);
+        PDF pdf = new PDF(stream, Compliance.PDF_UA_1).SetTitle("Test");
         pdf.SetTitle("Title");
         Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
         Page page = new Page(pdf, Letter.PORTRAIT);

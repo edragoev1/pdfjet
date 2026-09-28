@@ -133,7 +133,7 @@ func TestBarChartBarsHaveTheirOwnColorsAndLabelsInsideWithGroupedDigits(t *testi
 
 func TestBarChartAChartIsAFigureDescribedByItsTitleOrItsAlternateDescription(t *testing.T) {
 	pdf := testNewPDF()
-	pdf.SetCompliance(compliance.PDF_UA_1)
+	pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	page := NewPage(pdf, testLetterPortrait())
 	titled := testBarChart(pdf).SetTitle("Sales").SetCategories("a", "b")
 	titled.AddSeries("", []float32{1, 2})

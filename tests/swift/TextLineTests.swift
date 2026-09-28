@@ -24,6 +24,7 @@ import Testing
         // The line is decoration: an element of its own, described as
         // "Underlined text: " and the text, is read after the text again.
         let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.setTitle("Test")
         memory.pdf.setTitle("Title")
         let page = Page(memory.pdf, Letter.PORTRAIT)
         let line = TextLine(TestSupport.helvetica(memory.pdf), "Hello")

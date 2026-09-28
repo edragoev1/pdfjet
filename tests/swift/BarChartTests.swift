@@ -106,6 +106,7 @@ import Testing
 
     @Test func aChartIsAFigureDescribedByItsTitleOrItsAlternateDescription() {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.setTitle("Test")
         let page = Page(memory.pdf, Letter.PORTRAIT)
         let titled = chart(memory.pdf).setTitle("Sales").setCategories("a", "b")
         titled.addSeries("", [1, 2])

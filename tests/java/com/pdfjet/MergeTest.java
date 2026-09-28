@@ -326,7 +326,7 @@ class MergeTest {
     void mergeIsRefusedWhereItWouldBreakTheDocument() throws Exception {
         final List<PDFobj> objects = TestSupport.read(document("A"));
 
-        final PDF ua = new PDF(new ByteArrayOutputStream(), Compliance.PDF_UA_1);
+        final PDF ua = new PDF(new ByteArrayOutputStream(), Compliance.PDF_UA_1).setTitle("Test");
         assertEquals("Pages of an existing PDF cannot be merged into a PDF/UA or PDF/A document.",
                 assertThrows(IllegalStateException.class, () -> ua.merge(objects)).getMessage());
 

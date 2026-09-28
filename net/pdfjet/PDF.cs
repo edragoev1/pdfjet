@@ -86,6 +86,11 @@ public sealed class PDF {
                 || compliance == Compliance.PDF_A_3A_UA_1;
 #pragma warning restore CS0618
     }
+
+    // Whether the document is of PDF/A, of any part and level.
+    internal bool IsPDFA() {
+        return compliance != Compliance.PDF_1_7 && compliance != Compliance.PDF_UA_1;
+    }
     internal Bookmark toc = null;
     // The headings of a tagged document, in the order they are drawn, which
     // its bookmarks are made of when it has none of its own
@@ -102,7 +107,7 @@ public sealed class PDF {
             System.Security.Cryptography.RandomNumberGenerator.GetBytes(16)).ToLowerInvariant();
     private Stream os = null;
     private readonly List<long> objOffset = new List<long>(); // Required by the xref section
-    private String producer = "PDFjet v9.0.1";
+    private String producer = "PDFjet v9.0.2";
     private String title;
     private String author;
     private String subject;
@@ -311,7 +316,9 @@ public sealed class PDF {
             sb.Append("<xmpRights:UsageTerms>\n");
             sb.Append("<rdf:Alt>\n");
             sb.Append("<rdf:li xml:lang=\"x-default\">\n");
-            sb.Append(notice);
+            // The notice of a font is text, which may hold an ampersand, like
+            // that of the Noto fonts of Japanese, Korean and Chinese.
+            sb.Append(EscapeXML(notice));
             sb.Append("</rdf:li>\n");
             sb.Append("</rdf:Alt>\n");
             sb.Append("</xmpRights:UsageTerms>\n");
@@ -457,22 +464,40 @@ public sealed class PDF {
     }
 
     // Returns the text with the characters that have a meaning in XML escaped,
-    // and without the characters XML does not allow: the control characters
-    // other than tab, line feed and carriage return, U+FFFE, U+FFFF and
-    // unpaired surrogates, which would make the metadata unreadable.
-    private static String EscapeXML(String text) {
+    // and without what XML does not allow, which CleanText leaves out.
+    internal static String EscapeXML(String text) {
+        String clean = CleanText(text);
+        StringBuilder sb = new StringBuilder(clean.Length);
+        foreach (char ch in clean) {
+            if (ch == '&') {
+                sb.Append("&amp;");
+            } else if (ch == '<') {
+                sb.Append("&lt;");
+            } else if (ch == '>') {
+                sb.Append("&gt;");
+            } else {
+                sb.Append(ch);
+            }
+        }
+        return sb.ToString();
+    }
+
+    // Returns the text without what XML does not allow: the control
+    // characters other than tab, line feed and carriage return, U+FFFE,
+    // U+FFFF and unpaired surrogates, which would make the metadata
+    // unreadable. The title and the other properties of the document are
+    // cleaned when they are set, so that the information dictionary says what
+    // the metadata says, as PDF/A asks.
+    internal static String CleanText(String text) {
+        if (text == null) {
+            return null;
+        }
         StringBuilder sb = new StringBuilder(text.Length);
         for (int i = 0; i < text.Length; i++) {
             char ch = text[i];
             if (char.IsHighSurrogate(ch) && i + 1 < text.Length && char.IsLowSurrogate(text[i + 1])) {
                 sb.Append(ch);
                 sb.Append(text[++i]);
-            } else if (ch == '&') {
-                sb.Append("&amp;");
-            } else if (ch == '<') {
-                sb.Append("&lt;");
-            } else if (ch == '>') {
-                sb.Append("&gt;");
             } else if (ch == '\t' || ch == '\n' || ch == '\r'
                     || (ch >= 0x20 && ch <= 0xFFFD && !char.IsSurrogate(ch))) {
                 sb.Append(ch);
@@ -673,10 +698,34 @@ public sealed class PDF {
         Append(documentElementNumber);
         Append(Token.ObjRef);
         Append("]\n");
+        // The types of PDF 2.0 that the document uses, which PDF 1.7 does not
+        // have, are mapped to the standard types that PDF/UA-1 knows.
+        if (roles.Count > 0) {
+            Append("/RoleMap <<");
+            foreach (String[] role in ROLE_MAP) {
+                if (roles.Contains(role[0])) {
+                    Append(" /");
+                    Append(role[0]);
+                    Append(" /");
+                    Append(role[1]);
+                }
+            }
+            Append(" >>\n");
+        }
         Append(Token.EndDictionary);
         EndObj();
         return structTreeRootNumber;
     }
+
+    // The structure types of PDF 2.0 that PDFjet writes, mapped to the
+    // standard types of PDF 1.7, in the order the role map lists them.
+    private static readonly String[][] ROLE_MAP = {
+        new String[] {StructElem.TITLE.Type(), StructElem.P.Type()},
+        new String[] {StructElem.EM.Type(), StructElem.SPAN.Type()},
+        new String[] {StructElem.STRONG.Type(), StructElem.SPAN.Type()},
+    };
+    // The types of PDF 2.0 among the elements, which the role map maps.
+    private readonly HashSet<String> roles = new HashSet<String>();
 
     private int AddStructDocumentObject(int parent) {
         SetObjOffset(documentElementNumber, byteCount);
@@ -704,7 +753,7 @@ public sealed class PDF {
     // drawing. What it keeps is the elements that are still open and the ones
     // of an annotation, whose object is written when the document is completed.
     private void AddPageStructElements(Page page) {
-        if (compliance == Compliance.PDF_1_7 || page.structures.Count == 0) {
+        if (!IsTagged() || page.structures.Count == 0) {
             return;
         }
         List<StructElement> kept = new List<StructElement>();
@@ -750,6 +799,11 @@ public sealed class PDF {
             SetObjOffset(element.objNumber, byteCount);
             Append(element.objNumber);
             Append(Token.NewObj);
+            foreach (String[] role in ROLE_MAP) {
+                if (role[0].Equals(element.structure)) {
+                    roles.Add(role[0]);
+                }
+            }
             Append("<<\n/Type /StructElem /S /");
             Append(element.structure);
             Append("\n/P ");
@@ -944,13 +998,21 @@ public sealed class PDF {
     // Appends an entry of the information dictionary with the bytes of a
     // string, encrypted if the document is encrypted.
     private void AppendInfoString(String key, byte[] bytes) {
+        Append(key);
+        Append(Token.Space);
+        AppendByteString(bytes);
+        Append(Token.Newline);
+    }
+
+    // Appends a string of bytes, like a date, in hexadecimal, encrypted if the
+    // document is encrypted.
+    internal void AppendByteString(byte[] bytes) {
         if (encryption != null) {
             bytes = AES256.Encrypt(bytes, encryption.GetKey());
         }
-        Append(key);
-        Append(" <");
+        Append('<');
         Append(Util.ToHexString(bytes));
-        Append(">\n");
+        Append('>');
     }
 
     private int AddRootObject(int structTreeRootObjNumber, int outlineDictNum) {
@@ -968,11 +1030,16 @@ public sealed class PDF {
             Append(Util.ToHexString(languageBytes));
             Append(">\n");
 
-            Append("/StructTreeRoot ");
-            Append(structTreeRootObjNumber);
-            Append(" 0 R\n");
+            // Only a tagged document has a structure tree: a PDF/A of level B
+            // that said it was marked would say its content is tagged, which
+            // it is not.
+            if (IsTagged()) {
+                Append("/StructTreeRoot ");
+                Append(structTreeRootObjNumber);
+                Append(" 0 R\n");
 
-            Append("/MarkInfo <</Marked true>>\n");
+                Append("/MarkInfo <</Marked true>>\n");
+            }
             Append("/ViewerPreferences <</DisplayDocTitle true>>\n");
         }
 
@@ -1089,7 +1156,7 @@ public sealed class PDF {
             Page page = pages[i];
             if (page.mergedDict != null) {
                 List<String> dict = new List<String>(page.mergedDict);
-                SetEntry(dict, "/Parent", new List<String> { pagesObjNumber.ToString(), "0", "R" });
+                SetEntry(dict, "/Parent", new List<String> { pagesObjNumber.ToString(CultureInfo.InvariantCulture), "0", "R" });
                 SetObjOffset(page.objNumber, byteCount);
                 Append(page.objNumber);
                 Append(Token.NewObj);
@@ -1151,7 +1218,7 @@ public sealed class PDF {
                 Append("]\n");
             }
 
-            if (compliance != Compliance.PDF_1_7) {
+            if (IsTagged()) {
                 Append("/Tabs /S\n");
                 Append("/StructParents ");
                 Append(i);
@@ -1207,15 +1274,107 @@ public sealed class PDF {
         AddPageStructElements(page);
     }
 
-    private int AddAnnotationObject(Annotation annot, int index) {
-        NewObj();
-        annot.objNumber = GetObjNumber();
-        Append(Token.BeginDictionary);
-        Append("/Type /Annot\n");
-        Append("/Subtype /");
-        Append(annot.annotationType);
-        Append("\n");
+    // Writes the appearance of an annotation that is not a link, which PDF/A
+    // asks for, and returns its object number. It draws what a viewer draws
+    // for the annotation: the square, the circle or the polygon in its fill
+    // color, and a note or a file as a white box with a black frame. Its box
+    // is the rectangle of the annotation, in the coordinates of the page.
+    private int AddAppearanceObject(Annotation annot, float x1, float y1, float x2, float y2) {
+        float minX = Math.Min(x1, x2);
+        float maxX = Math.Max(x1, x2);
+        float minY = Math.Min(y1, y2);
+        float maxY = Math.Max(y1, y2);
+        float w = maxX - minX;
+        float h = maxY - minY;
+        MemoryStream buf = new MemoryStream();
+        String type = annot.annotationType;
+        if (type.Equals(Annotation.Square)) {
+            AppendFill(buf, annot);
+            AppendNumbers(buf, minX, minY, w, h);
+            AppendAscii(buf, "re f\n");
+        } else if (type.Equals(Annotation.Circle)) {
+            // Four Bezier curves, one for each quarter of the ellipse.
+            const float kappa = 0.55228475f;
+            float rx = w / 2;
+            float ry = h / 2;
+            float cx = minX + rx;
+            float cy = minY + ry;
+            float ox = rx * kappa;
+            float oy = ry * kappa;
+            AppendFill(buf, annot);
+            AppendNumbers(buf, cx + rx, cy);
+            AppendAscii(buf, "m\n");
+            AppendNumbers(buf, cx + rx, cy + oy, cx + ox, cy + ry, cx, cy + ry);
+            AppendAscii(buf, "c\n");
+            AppendNumbers(buf, cx - ox, cy + ry, cx - rx, cy + oy, cx - rx, cy);
+            AppendAscii(buf, "c\n");
+            AppendNumbers(buf, cx - rx, cy - oy, cx - ox, cy - ry, cx, cy - ry);
+            AppendAscii(buf, "c\n");
+            AppendNumbers(buf, cx + ox, cy - ry, cx + rx, cy - oy, cx + rx, cy);
+            AppendAscii(buf, "c\n");
+            AppendAscii(buf, "f\n");
+        } else if (type.Equals(Annotation.Polygon)) {
+            AppendFill(buf, annot);
+            for (int i = 0; i + 1 < annot.vertices.Length; i += 2) {
+                AppendNumbers(buf, annot.x1 + annot.vertices[i], annot.y1 - annot.vertices[i + 1]);
+                AppendAscii(buf, (i == 0) ? "m\n" : "l\n");
+            }
+            AppendAscii(buf, "h f\n");
+        } else {
+            AppendAscii(buf, "1 g 0 G 0.5 w\n");
+            AppendNumbers(buf, minX + 0.25f, minY + 0.25f, w - 0.5f, h - 0.5f);
+            AppendAscii(buf, "re B\n");
+        }
+        byte[] content = buf.ToArray();
+        if (encryption != null) {
+            content = AES256.Encrypt(content, encryption.GetKey());
+        }
 
+        NewObj();
+        Append(Token.BeginDictionary);
+        Append("/Type /XObject\n");
+        Append("/Subtype /Form\n");
+        Append("/BBox [");
+        Append(minX);
+        Append(' ');
+        Append(minY);
+        Append(' ');
+        Append(maxX);
+        Append(' ');
+        Append(maxY);
+        Append("]\n");
+        Append("/Length ");
+        Append(content.Length);
+        Append(Token.Newline);
+        Append(Token.EndDictionary);
+        Append("stream\n");
+        Append(content);
+        Append("\nendstream\n");
+        EndObj();
+        return GetObjNumber();
+    }
+
+    // Appends the fill color of the annotation to the content of its appearance.
+    private static void AppendFill(MemoryStream buf, Annotation annot) {
+        AppendNumbers(buf, annot.fillColor[0], annot.fillColor[1], annot.fillColor[2]);
+        AppendAscii(buf, "rg\n");
+    }
+
+    // Appends the numbers to the content of an appearance, each followed by a space.
+    private static void AppendNumbers(MemoryStream buf, params float[] values) {
+        foreach (float value in values) {
+            byte[] number = FastFloat.ToByteArray(value);
+            buf.Write(number, 0, number.Length);
+            buf.WriteByte((byte) ' ');
+        }
+    }
+
+    private static void AppendAscii(MemoryStream buf, String text) {
+        byte[] bytes = Encoding.ASCII.GetBytes(text);
+        buf.Write(bytes, 0, bytes.Length);
+    }
+
+    private int AddAnnotationObject(Annotation annot, int index) {
         // The rectangle of an annotation of vertices, a polygon, is the box of its
         // vertices, which are relative to its location; its second corner is not
         // set
@@ -1234,6 +1393,21 @@ public sealed class PDF {
             x2 = annot.x1 + maxX;
             y2 = annot.y1 - minY;
         }
+
+        // PDF/A asks every annotation but a link for an appearance of its own,
+        // which is written before it.
+        int appearance = 0;
+        if (IsPDFA() && !annot.annotationType.Equals(Annotation.Link)) {
+            appearance = AddAppearanceObject(annot, x1, y1, x2, y2);
+        }
+
+        NewObj();
+        annot.objNumber = GetObjNumber();
+        Append(Token.BeginDictionary);
+        Append("/Type /Annot\n");
+        Append("/Subtype /");
+        Append(annot.annotationType);
+        Append("\n");
         Append("/Rect [");
         Append(x1);
         Append(' ');
@@ -1244,6 +1418,13 @@ public sealed class PDF {
         Append(y2);
         Append("]\n");
         Append("/Border [0 0 0]\n");
+        // Every annotation is printed, as PDF/A asks.
+        Append("/F 4\n");
+        if (appearance > 0) {
+            Append("/AP <</N ");
+            Append(appearance);
+            Append(" 0 R>>\n");
+        }
 
         if (annot.annotationType.Equals(Annotation.FileAttachment)) {
             Append("/FS ");
@@ -1283,7 +1464,6 @@ public sealed class PDF {
                 Append("\n");
             }
             if (annot.uri != null) {
-                Append("/F 4\n");
                 Append("/A <<\n");
                 Append("/S /URI\n");
                 byte[] uri = Encoding.UTF8.GetBytes(annot.uri);
@@ -1296,8 +1476,11 @@ public sealed class PDF {
                 Append(">>\n");
             } else if (annot.key != null) {
                 Destination destination;
-                if (destinations.TryGetValue(annot.key, out destination)) {
-                    Append("/F 4\n");
+                if (!destinations.TryGetValue(annot.key, out destination)) {
+                    // A link to nowhere would do nothing when it is clicked.
+                    Fail(new InvalidOperationException("The link goes to the destination " + annot.key
+                            + ", which the document does not have."));
+                } else {
                     Append("/Dest [");
                     Append(destination.pageObjNumber);
                     Append(" 0 R /XYZ ");
@@ -1423,7 +1606,15 @@ public sealed class PDF {
                 buf.Append(" 0 R");
                 list.Add(new OCG(ocg.objNumber, ocg.name));
             }
-            list.Sort((x, y) => x.name.CompareTo(y.name));
+            // The groups are in the order of their names, by the UTF-16 code
+            // units as in every port, and those of the same name in the order
+            // they were added, as the sort of Java keeps it and the sort of
+            // C# does not.
+            List<OCG> added = new List<OCG>(list);
+            list.Sort((x, y) => {
+                int order = String.CompareOrdinal(x.name, y.name);
+                return (order != 0) ? order : added.IndexOf(x) - added.IndexOf(y);
+            });
 
             Append("/OCProperties\n");
             Append("<<\n");
@@ -1492,7 +1683,7 @@ public sealed class PDF {
             page.objNumber = ReserveObjNumber();
         }
         // A page that was drawn before it was added has elements of its own.
-        if (compliance != Compliance.PDF_1_7) {
+        if (IsTagged()) {
             page.SetStructElementsPageObjNumber(page.objNumber);
         }
         pages.Add(page);
@@ -1850,7 +2041,7 @@ public sealed class PDF {
                 }
                 i += 2;
             } else if (encryption != null
-                    && (token.StartsWith("(") || (token.StartsWith("<") && !token.Equals("<<")))) {
+                    && (token.StartsWith("(", StringComparison.Ordinal) || (token.StartsWith("<", StringComparison.Ordinal) && !token.Equals("<<")))) {
                 result.Add("<" + Util.ToHexString(AES256.Encrypt(Decryptor.ToBytes(token), encryption.GetKey())) + ">");
             } else {
                 result.Add(token);
@@ -1899,6 +2090,19 @@ public sealed class PDF {
     /// The output stream is then automatically closed.
     /// </summary>
     public void Complete() {
+        // The output stream is closed also when the document could not be
+        // completed.
+        try {
+            WriteRest();
+        } catch (Exception) {
+            os.Close();
+            throw;
+        }
+        os.Close();
+    }
+
+    // Writes the rest of the PDF.
+    private void WriteRest() {
         if (completed) {
             Fail(new InvalidOperationException("Complete() was already called."));
         }
@@ -1907,6 +2111,12 @@ public sealed class PDF {
         }
         if (pages.Count == 0 && pagesObjNumber == 0) {
             Fail(new InvalidOperationException("A PDF needs at least one page."));
+        }
+        // PDF/UA asks for the title of the document, which a reader shows in
+        // place of the name of the file.
+        if ((compliance == Compliance.PDF_UA_1 || compliance == Compliance.PDF_A_3A_UA_1)
+                && String.IsNullOrWhiteSpace(title)) {
+            Fail(new InvalidOperationException("A PDF/UA document needs a title: use SetTitle."));
         }
         if (prevPage != null) {
             AddPageContent(prevPage);
@@ -1923,7 +2133,7 @@ public sealed class PDF {
         }
 
         int structTreeRootObjNumber = 0;
-        if (compliance != Compliance.PDF_1_7) {
+        if (IsTagged()) {
             // The elements of every page are written with it; the ones still
             // open and the ones of the annotations are what is left.
             foreach (Page page in pages) {
@@ -2003,8 +2213,6 @@ public sealed class PDF {
         Append(startxref.ToString(CultureInfo.InvariantCulture));
         Append('\n');
         Append("%%EOF\n");
-
-        os.Close();
     }
 
     /// <summary>
@@ -2034,6 +2242,17 @@ public sealed class PDF {
                     + " was embedded without a media type, a relationship and a description, "
                     + "which a file the document carries needs: use the constructor of "
                     + "EmbeddedFile that takes them."));
+            return this;
+        }
+        // PDF/A-3 asks a file it carries for what it holds, its /Subtype, and
+        // for its size and date, which are written with the media type.
+#pragma warning disable CS0618 // PDF_A_3A is deprecated, and still supported
+        if (String.IsNullOrEmpty(file.mediaType)
+                && (compliance == Compliance.PDF_A_3A || compliance == Compliance.PDF_A_3B
+                || compliance == Compliance.PDF_A_3A_UA_1)) {
+#pragma warning restore CS0618
+            Fail(new ArgumentException("The file " + file.GetFileName()
+                    + " was embedded without a media type, which a file of a document of PDF/A-3 needs."));
             return this;
         }
         associatedFiles.Add(file);
@@ -2067,7 +2286,7 @@ public sealed class PDF {
     /// <param name="title">The title of this document.</param>
     /// <returns>this PDF object.</returns>
     public PDF SetTitle(String title) {
-        this.title = NullIfEmpty(title);
+        this.title = NullIfEmpty(CleanText(title));
         return this;
     }
 
@@ -2087,7 +2306,7 @@ public sealed class PDF {
     /// <param name="author">The author of this document.</param>
     /// <returns>this PDF object.</returns>
     public PDF SetAuthor(String author) {
-        this.author = NullIfEmpty(author);
+        this.author = NullIfEmpty(CleanText(author));
         return this;
     }
 
@@ -2097,19 +2316,19 @@ public sealed class PDF {
     /// <param name="subject">The subject of this document.</param>
     /// <returns>this PDF object.</returns>
     public PDF SetSubject(String subject) {
-        this.subject = NullIfEmpty(subject);
+        this.subject = NullIfEmpty(CleanText(subject));
         return this;
     }
 
     /// <summary>Sets the keywords in the document metadata.</summary>
     public PDF SetKeywords(String keywords) {
-        this.keywords = NullIfEmpty(keywords);
+        this.keywords = NullIfEmpty(CleanText(keywords));
         return this;
     }
 
     /// <summary>Sets the creator in the document metadata.</summary>
     public PDF SetCreator(String creator) {
-        this.creator = NullIfEmpty(creator);
+        this.creator = NullIfEmpty(CleanText(creator));
         return this;
     }
 
@@ -2126,7 +2345,9 @@ public sealed class PDF {
     }
 
     internal void Append(int num) {
-        Append(num.ToString());
+        // The digits and the minus sign of every culture are the ASCII ones
+        // of the invariant culture, which PDF asks for.
+        Append(num.ToString(CultureInfo.InvariantCulture));
     }
 
     internal void Append(float f) {
@@ -3057,7 +3278,7 @@ public sealed class PDF {
         int i = 0;
         while (i < entries.Count) {
             String token = entries[i];
-            if (token.StartsWith("/") && (i + 3) < entries.Count && entries[i + 3].Equals("R")) {
+            if (token.StartsWith("/", StringComparison.Ordinal) && (i + 3) < entries.Count && entries[i + 3].Equals("R")) {
                 // Pages can carry separate resource dictionaries that name the
                 // same fonts. They are merged into one /Font dictionary here,
                 // so a name that is already present must not be added twice.
@@ -3177,7 +3398,7 @@ public sealed class PDF {
         int i = 0;
         while (i < entries.Count) {
             String token = entries[i];
-            if (token.StartsWith("/") && (i + 3) < entries.Count
+            if (token.StartsWith("/", StringComparison.Ordinal) && (i + 3) < entries.Count
                     && entries[i + 3].Equals("R")) {
                 // Like the fonts, a name that an earlier page added is kept.
                 if (!importedXObjects.Contains(token)) {

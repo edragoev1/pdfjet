@@ -50,7 +50,7 @@ class FontStream2 {
         font.objNumber = obj.number
     }
 
-    private static func addMetadataObject(
+    static func addMetadataObject(
             _ objects: inout [PDFobj],
             _ font: Font) -> Int {
         var sb = String()
@@ -61,7 +61,7 @@ class FontStream2 {
         sb.append("<xmpRights:UsageTerms>\n")
         sb.append("<rdf:Alt>\n")
         sb.append("<rdf:li xml:lang=\"x-default\">\n")
-        sb.append(String(font.info.utf8))
+        sb.append(PDF.escapeXML(font.info))
         sb.append("</rdf:li>\n")
         sb.append("</rdf:Alt>\n")
         sb.append("</xmpRights:UsageTerms>\n")

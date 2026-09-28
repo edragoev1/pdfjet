@@ -117,7 +117,7 @@ func testHeadingsDoc(t *testing.T, tagged bool, headings ...[2]string) *testDoc 
 	t.Helper()
 	doc := testNewDoc()
 	if tagged {
-		doc.pdf.SetCompliance(compliance.PDF_UA_1)
+		doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 		doc.pdf.SetTitle("Title")
 	}
 	font := testStreamFont(t, doc.pdf)

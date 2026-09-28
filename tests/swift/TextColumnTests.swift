@@ -150,6 +150,7 @@ import Testing
         // The words of a paragraph are drawn one at a time, and each was an
         // element of its own, so a reader read every word as a paragraph.
         let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.setTitle("Test")
         _ = memory.pdf.setTitle("Title")
         let font = TestSupport.helvetica(memory.pdf)
         let column = TextColumn()

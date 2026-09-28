@@ -2359,6 +2359,12 @@ public class Page {
             _ actualText: String?,
             _ altDescription: String?,
             _ attributes: String?) {
+        // An artifact is not an element of the structure: what is drawn as
+        // one, like a text line of the structure type Artifact, is marked as one.
+        if structure == StructElem.ARTIFACT {
+            addArtifactBMC()
+            return
+        }
         markedContentDepth += 1
         if structure == StructElem.FIGURE {
             figure = nil    // Until it is made below, if it is tagged
@@ -2490,7 +2496,7 @@ public class Page {
             _ language: String?,
             _ actualText: String?,
             _ altDescription: String?) -> StructElement? {
-        if !pdf.isTagged() || artifactDepth != 0 {
+        if !pdf.isTagged() || artifactDepth != 0 || structure == StructElem.ARTIFACT {
             addBDC(structure, language, actualText, altDescription, nil)
             return nil
         }
@@ -2604,6 +2610,12 @@ public class Page {
     // Gives the element its object number, which its parent and its kids refer
     // to before it is written, and adds it to its parent and to the page.
     private func addStructure(_ element: StructElement, _ parent: StructElement?) {
+        // An artifact is marked content outside the structure, which PDF/UA
+        // does not allow an element of the structure to be.
+        if element.structure == StructElem.ARTIFACT.rawValue {
+            pdf.fail("An artifact is not a structure element: "
+                    + "draw it between addArtifactBMC and addEMC.")
+        }
         pdf.reserveStructTreeNumbers()
         element.objNumber = pdf.reserveObjNumber()
         element.pageObjNumber = self.objNumber
@@ -2615,6 +2627,12 @@ public class Page {
     }
 
     func addAnnotation(_ annotation: Annotation) {
+        // The element of an annotation of a tagged document is written with
+        // its page, and a page that was written has no place for it.
+        if pdf.isTagged() && written {
+            failWritten()
+            return
+        }
         annotation.y1 = self.height - annotation.y1
         annotation.y2 = self.height - annotation.y2
         self.annots.append(annotation)
@@ -2649,6 +2667,13 @@ public class Page {
             }
             if element.altDescription == nil || element.altDescription!.isEmpty {
                 element.altDescription = title
+            }
+            // An annotation stands for what it says, which only the one who
+            // draws it can say, as a figure does.
+            if element.altDescription == nil || element.altDescription!.trimmingCharacters(
+                    in: .whitespacesAndNewlines).isEmpty {
+                pdf.fail("An annotation of a tagged document, PDF/UA or PDF/A of level A, "
+                        + "needs contents, a title or an alternative description.")
             }
             element.annotation = annotation
             addStructure(element, structParent)
@@ -3093,14 +3118,17 @@ public class Page {
     /// Returns the string as a PDF text string, in UTF-16BE with a byte order
     /// mark, written in hexadecimal.
     static func toUTF16Hex(_ str: String) -> String {
-        let digits = Array("0123456789ABCDEF")
-        var hex = "FEFF"
+        var hex: [UInt8] = Array("FEFF".utf8)
+        hex.reserveCapacity(4 + 4 * str.utf16.count)
         for unit in str.utf16 {
-            hex.append(digits[Int((unit >> 12) & 0xF)])
-            hex.append(digits[Int((unit >> 8) & 0xF)])
-            hex.append(digits[Int((unit >> 4) & 0xF)])
-            hex.append(digits[Int(unit & 0xF)])
+            hex.append(upperHexDigits[Int((unit >> 12) & 0xF)])
+            hex.append(upperHexDigits[Int((unit >> 8) & 0xF)])
+            hex.append(upperHexDigits[Int((unit >> 4) & 0xF)])
+            hex.append(upperHexDigits[Int(unit & 0xF)])
         }
-        return hex
+        return String(decoding: hex, as: UTF8.self)
     }
+
+    // The hexadecimal digits of toUTF16Hex, made once.
+    private static let upperHexDigits: [UInt8] = Array("0123456789ABCDEF".utf8)
 }   // End of Page.swift

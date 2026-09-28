@@ -2480,6 +2480,12 @@ public class Page {
             String actualText,
             String altDescription,
             String attributes) {
+        // An artifact is not an element of the structure: what is drawn as
+        // one, like a text line of the structure type Artifact, is marked as one.
+        if (structure == StructElem.ARTIFACT) {
+            AddArtifactBMC();
+            return;
+        }
         markedContentDepth++;
         if (structure == StructElem.FIGURE) {
             figure = null;  // Until it is made below, if it is tagged
@@ -2611,7 +2617,7 @@ public class Page {
             String language,
             String actualText,
             String altDescription) {
-        if (!pdf.IsTagged() || artifactDepth != 0) {
+        if (!pdf.IsTagged() || artifactDepth != 0 || structure == StructElem.ARTIFACT) {
             AddBDC(structure, language, actualText, altDescription, null);
             return null;
         }
@@ -2695,8 +2701,8 @@ public class Page {
     /// <summary>Ends the structure element that BeginStructElement began.</summary>
     public void EndStructElement() {
         if (structElementStack.Count == 0) {
-            throw new Exception(
-                    "EndStructElement was called without a matching BeginStructElement.");
+            pdf.Fail(new InvalidOperationException(
+                    "EndStructElement was called without a matching BeginStructElement."));
         }
         structParent = structElementStack[structElementStack.Count - 1];
         structElementStack.RemoveAt(structElementStack.Count - 1);
@@ -2722,6 +2728,12 @@ public class Page {
     // Gives the element its object number, which its parent and its kids refer
     // to before it is written, and adds it to its parent and to the page.
     private void AddStructure(StructElement element, StructElement parent) {
+        // An artifact is marked content outside the structure, which PDF/UA
+        // does not allow an element of the structure to be.
+        if (StructElem.ARTIFACT.Type().Equals(element.structure)) {
+            pdf.Fail(new InvalidOperationException("An artifact is not a structure element: "
+                    + "draw it between AddArtifactBMC and AddEMC."));
+        }
         pdf.ReserveStructTreeNumbers();
         element.objNumber = pdf.ReserveObjNumber();
         element.pageObjNumber = this.objNumber;
@@ -2874,6 +2886,12 @@ public class Page {
     }
 
     internal void AddAnnotation(Annotation annotation) {
+        // The element of an annotation of a tagged document is written with
+        // its page, and a page that was written has no place for it.
+        if (pdf.IsTagged() && buf is WrittenContent) {
+            pdf.Fail(new InvalidOperationException("The page was already written to the PDF: "
+                    + "draw on a page before creating the next page or completing the PDF."));
+        }
         annotation.y1 = this.height - annotation.y1;
         annotation.y2 = this.height - annotation.y2;
         annots.Add(annotation);
@@ -2909,6 +2927,12 @@ public class Page {
             }
             if (String.IsNullOrEmpty(element.altDescription)) {
                 element.altDescription = title;
+            }
+            // An annotation stands for what it says, which only the one who
+            // draws it can say, as a figure does.
+            if (element.altDescription == null || element.altDescription.Trim().Length == 0) {
+                pdf.Fail(new InvalidOperationException("An annotation of a tagged document, PDF/UA or PDF/A of level A, "
+                        + "needs contents, a title or an alternative description."));
             }
             element.annotation = annotation;
             AddStructure(element, structParent);
@@ -3058,11 +3082,17 @@ public class Page {
     // Returns the string as a PDF text string, in UTF-16BE with a byte order
     // mark, written in hexadecimal.
     internal static String ToUTF16Hex(String str) {
-        StringBuilder sb = new StringBuilder("FEFF");
-        foreach (char ch in str) {
-            sb.Append(((int) ch).ToString("X4"));
+        const String digits = "0123456789ABCDEF";
+        char[] chars = new char[4 + 4 * str.Length];
+        "FEFF".CopyTo(0, chars, 0, 4);
+        for (int i = 0; i < str.Length; i++) {
+            char ch = str[i];
+            chars[4 + 4 * i] = digits[(ch >> 12) & 0xF];
+            chars[5 + 4 * i] = digits[(ch >> 8) & 0xF];
+            chars[6 + 4 * i] = digits[(ch >> 4) & 0xF];
+            chars[7 + 4 * i] = digits[ch & 0xF];
         }
-        return sb.ToString();
+        return new String(chars);
     }
 }   // End of Page.cs
 }   // End of namespace PDFjet.NET

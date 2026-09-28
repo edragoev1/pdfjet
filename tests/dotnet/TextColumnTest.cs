@@ -159,7 +159,7 @@ public class TextColumnTest {
         // The words of a paragraph are drawn one at a time, and each was an
         // element of its own, so a reader read every word as a paragraph.
         System.IO.MemoryStream stream = new System.IO.MemoryStream();
-        PDF pdf = new PDF(stream, Compliance.PDF_UA_1);
+        PDF pdf = new PDF(stream, Compliance.PDF_UA_1).SetTitle("Test");
         pdf.SetTitle("Title");
         Font font = TestSupport.Helvetica(pdf);
         TextColumn column = new TextColumn();

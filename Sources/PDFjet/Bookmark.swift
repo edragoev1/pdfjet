@@ -92,6 +92,10 @@ public class Bookmark {
     }
 
     /// Adds a bookmark with the specified title that points to the page, and returns the new bookmark.
+    // The runs of whitespace of a title, which a bookmark shows as one space;
+    // compiled once, not for every bookmark.
+    private static let whitespace = try! NSRegularExpression(pattern: "[ \\t\\n\\x0B\\f\\r]+")
+
     @discardableResult
     public func addBookmark(
             _ page: Page,
@@ -105,9 +109,10 @@ public class Bookmark {
         }
         let key = bm.nextKey()
 
+        let text = title.textLine.text!
         let bookmark = Bookmark(page, title.textLine.destinationY(), key,
-                title.textLine.text!.replacingOccurrences(
-                        of: "[ \\t\\n\\x0B\\f\\r]+", with: " ", options: .regularExpression))
+                Bookmark.whitespace.stringByReplacingMatches(
+                        in: text, range: NSRange(text.startIndex..., in: text), withTemplate: " "))
         bookmark.parent = self
         bookmark.dest = page.addDestination(key, title.textLine.destinationY())
         if children == nil {

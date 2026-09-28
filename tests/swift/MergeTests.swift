@@ -296,6 +296,7 @@ import Testing
         let objects = try TestSupport.read(document("A"))
 
         let ua = MemoryPDF(Compliance.PDF_UA_1)
+        ua.pdf.setTitle("Test")
         expectMessage("Pages of an existing PDF cannot be merged into a PDF/UA or PDF/A document.") {
             try ua.pdf.merge(objects)
         }

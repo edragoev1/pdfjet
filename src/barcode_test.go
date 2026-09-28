@@ -271,7 +271,7 @@ func TestBarcodeGS1128RefusesDataThatIsNotGS1OrTooLong(t *testing.T) {
 
 func TestBarcodeADescribedBarcodeIsOneFigure(t *testing.T) {
 	pdf := testNewPDF()
-	pdf.SetCompliance(compliance.PDF_UA_1)
+	pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	font := NewFontFromFile(pdf, testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"))
 	page := NewPage(pdf, letter.Portrait())
 	barcode := NewBarcode(EAN_13, "400638133393")
@@ -298,7 +298,7 @@ func TestBarcodeADescribedBarcodeIsOneFigure(t *testing.T) {
 
 	// Not described, its bars are decoration and its digits text, as before
 	pdf2 := testNewPDF()
-	pdf2.SetCompliance(compliance.PDF_UA_1)
+	pdf2.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	page2 := NewPage(pdf2, letter.Portrait())
 	plain := NewBarcode(EAN_13, "400638133393")
 	plain.SetFont(NewFontFromFile(pdf2, testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream")))

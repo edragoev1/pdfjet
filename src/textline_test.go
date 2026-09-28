@@ -85,7 +85,7 @@ func TestTextLineTheUnderlineAndTheStrikeoutOfTaggedTextAreArtifacts(t *testing.
 	// The line is decoration: an element of its own, described as "Underlined
 	// text: " and the text, is read after the text again.
 	doc := testNewDoc()
-	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	doc.pdf.SetTitle("Title")
 	page := NewPage(doc.pdf, letter.Portrait())
 	line := NewTextLine(testHelvetica(doc.pdf), "Hello")

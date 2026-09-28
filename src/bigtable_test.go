@@ -284,7 +284,7 @@ func TestBigTableIsTaggedAsATableInAPDFUADocument(t *testing.T) {
 	// and a TH for each header field the first time the header is drawn or a
 	// TD for each field of a row, each holding the text of its cell.
 	doc := testNewDoc()
-	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	doc.pdf.SetTitle("Title")
 	font := testHelvetica(doc.pdf)
 	table := NewBigTable(doc.pdf, font, font, letter.Portrait()).SetNumberOfColumns(3).
@@ -481,7 +481,7 @@ func TestBigTableTheCellOfACutFieldKeepsTheWholeOfItsText(t *testing.T) {
 	// A field the page was too narrow for is drawn cut, but a reader is read
 	// the whole of it: the cell of the structure tree keeps it.
 	doc := testNewDoc()
-	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	doc.pdf.SetTitle("Title")
 	font := NewCoreFont(doc.pdf, corefont.Helvetica())
 	font.SetSize(24.0)

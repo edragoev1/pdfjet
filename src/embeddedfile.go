@@ -28,6 +28,8 @@ type EmbeddedFile struct {
 	// How the file relates to the document, for a file of a document of
 	// PDF/A-3, and empty for a file that is only attached to a page.
 	relationship relationship.Relationship
+	// What the file holds, like "text/xml", or empty.
+	mediaType string
 }
 
 // NewEmbeddedFileAtPath embeds the file at the specified path into the PDF,
@@ -65,6 +67,7 @@ func NewEmbeddedFileWithRelationship(pdf *PDF, fileName string, reader io.Reader
 	file.pdf = pdf
 	file.fileName = fileName
 	file.relationship = relation
+	file.mediaType = mediaType
 
 	buf, err := io.ReadAll(reader)
 	if err != nil {
@@ -105,9 +108,9 @@ func NewEmbeddedFileWithRelationship(pdf *PDF, fileName string, reader io.Reader
 		// written as the document is.
 		pdf.appendString("/Params <</Size ")
 		pdf.appendInteger(size)
-		pdf.appendString(" /ModDate (")
-		pdf.appendString(pdf.getDate())
-		pdf.appendString(")>>\n")
+		pdf.appendString(" /ModDate ")
+		pdf.appendByteString([]byte(pdf.getDate()))
+		pdf.appendString(">>\n")
 	}
 	if compress {
 		pdf.appendString("/Filter /FlateDecode\n")

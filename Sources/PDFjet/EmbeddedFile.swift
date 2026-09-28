@@ -18,6 +18,8 @@ public class EmbeddedFile {
     // How the file relates to the document, for a file of a document of
     // PDF/A-3, and nil for a file that is only attached to a page.
     var relationship: Relationship?
+    // What the file holds, like "text/xml", or nil.
+    var mediaType: String?
 
     /// Embeds the file at the specified path into the PDF, compressed with Flate when compress is true.
     public convenience init(
@@ -73,6 +75,7 @@ public class EmbeddedFile {
         self.pdfIdentity = pdf.identity
         self.fileName = fileName
         self.relationship = relationship
+        self.mediaType = mediaType
         var buf = try Content.getFromStream(stream)
         let size = buf.count
         if compress {
@@ -85,7 +88,7 @@ public class EmbeddedFile {
         pdf.newObj()
         pdf.append(Token.beginDictionary)
         pdf.append("/Type /EmbeddedFile\n")
-        if let mediaType = mediaType {
+        if let mediaType = mediaType, !mediaType.isEmpty {
             // What the file holds, as a name: /text#2Fxml for "text/xml".
             pdf.append("/Subtype ")
             pdf.append(EmbeddedFile.toName(mediaType))
@@ -95,9 +98,9 @@ public class EmbeddedFile {
             // file is written as the document is.
             pdf.append("/Params <</Size ")
             pdf.append(size)
-            pdf.append(" /ModDate (")
-            pdf.append(pdf.getDate())
-            pdf.append(")>>\n")
+            pdf.append(" /ModDate ")
+            pdf.appendByteString(Array(pdf.getDate().utf8))
+            pdf.append(">>\n")
         }
         if compress {
             pdf.append("/Filter /FlateDecode\n")

@@ -115,7 +115,7 @@ class TextFrameTest {
         // The label of an item is drawn where the item begins, so that it
         // reads before the text of the item and not after all of the text.
         java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
-        PDF pdf = new PDF(bos, Compliance.PDF_UA_1);
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1).setTitle("Test");
         pdf.setTitle("Title");
         Font font = TestSupport.helvetica(pdf);
         List<Paragraph> paragraphs = new ArrayList<Paragraph>();

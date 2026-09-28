@@ -378,7 +378,7 @@ func TestMergeMergeIsRefusedWhereItWouldBreakTheDocument(t *testing.T) {
 	objects := testRead(t, testMergeDocument("A"))
 
 	ua := testNewDoc()
-	ua.pdf.SetCompliance(compliance.PDF_UA_1)
+	ua.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	testMergeError(t, ua.pdf.Merge(objects),
 		"Pages of an existing PDF cannot be merged into a PDF/UA or PDF/A document.")
 

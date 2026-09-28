@@ -182,6 +182,7 @@ import Testing
 
     @Test func aTableInAPDFUADocumentIsTaggedAsATable() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.setTitle("Test")
         _ = memory.pdf.setTitle("Title")
         let font = TestSupport.helvetica(memory.pdf)
         let underlined = Cell(font, "b").setUnderline(true)
@@ -209,6 +210,7 @@ import Testing
 
     @Test func theHeaderRowsOnTheNextPagesAreArtifacts() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.setTitle("Test")
         _ = memory.pdf.setTitle("Title")
         let table = Table().setTableData(rows(TestSupport.helvetica(memory.pdf), 60, 2), 1).setLocation(20, 20)
         var pages = [Page]()
@@ -241,6 +243,7 @@ import Testing
 
     @Test func aTableWithAPageLeftOutOfTheDocumentStillHasAStructureTree() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.setTitle("Test")
         _ = memory.pdf.setTitle("Title")
         let table = Table().setTableData(rows(TestSupport.helvetica(memory.pdf), 60, 2), 1).setLocation(20, 20)
         var pages = [Page]()
@@ -349,6 +352,7 @@ import Testing
 
     @Test func aCellThatSpansRowsSaysSoInAPDFUADocument() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.setTitle("Test")
         _ = memory.pdf.setTitle("Title")
         let font = TestSupport.helvetica(memory.pdf)
         let data = spanning(font, 3, 2, 2)
@@ -691,6 +695,7 @@ import Testing
 
     @Test func theFooterRowsBeforeTheEndOfTheTableAreArtifacts() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.setTitle("Test")
         _ = memory.pdf.setTitle("Title")
         let pages = withFooter(memory.pdf, ["total", "sum"])
         #expect(pages.count == 2)

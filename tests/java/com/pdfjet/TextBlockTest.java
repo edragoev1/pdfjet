@@ -158,7 +158,7 @@ class TextBlockTest {
     }
     @Test
     void isTaggedAsItsStructureType() throws Exception {
-        PDF pdf = new PDF(new java.io.ByteArrayOutputStream(), Compliance.PDF_UA_1);
+        PDF pdf = new PDF(new java.io.ByteArrayOutputStream(), Compliance.PDF_UA_1).setTitle("Test");
         Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
         Page page = new Page(pdf, Letter.PORTRAIT);
         TextBlock heading = new TextBlock(font, "Invoice").setStructureType(StructElem.H1);

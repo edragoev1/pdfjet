@@ -98,6 +98,7 @@ import Testing
         // The label of an item is drawn where the item begins, so that it
         // reads before the text of the item and not after all of the text.
         let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.setTitle("Test")
         _ = memory.pdf.setTitle("Title")
         let font = TestSupport.helvetica(memory.pdf)
         var paragraphs = [Paragraph]()

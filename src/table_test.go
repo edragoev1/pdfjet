@@ -240,7 +240,7 @@ func TestTableMoreHeaderRowsThanRowsDrawsTheRows(t *testing.T) {
 
 func TestTableInAPDFUADocumentIsTaggedAsATable(t *testing.T) {
 	doc := testNewDoc()
-	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	doc.pdf.SetTitle("Title")
 	font := testHelvetica(doc.pdf)
 	underlined := NewCell(font, "b")
@@ -279,7 +279,7 @@ func TestTableInAPDFUADocumentIsTaggedAsATable(t *testing.T) {
 
 func TestTableHeaderRowsOnTheNextPagesAreArtifacts(t *testing.T) {
 	doc := testNewDoc()
-	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	doc.pdf.SetTitle("Title")
 	table := NewTable().SetTableData(testRows(testHelvetica(doc.pdf), 60, 2), 1)
 	table.SetLocation(20, 20)
@@ -322,7 +322,7 @@ func TestTableIsNotTaggedInADocumentThatIsNotPDFUA(t *testing.T) {
 
 func TestTableWithAPageLeftOutOfTheDocumentStillHasAStructureTree(t *testing.T) {
 	doc := testNewDoc()
-	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	doc.pdf.SetTitle("Title")
 	table := NewTable().SetTableData(testRows(testHelvetica(doc.pdf), 60, 2), 1)
 	table.SetLocation(20, 20)
@@ -453,7 +453,7 @@ func TestTableAPageBreakKeepsTheRowsOfASpanTogether(t *testing.T) {
 
 func TestTableACellThatSpansRowsSaysSoInAPDFUADocument(t *testing.T) {
 	doc := testNewDoc()
-	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	doc.pdf.SetTitle("Title")
 	font := testHelvetica(doc.pdf)
 	data := testSpanningRows(font, 3, 2, 2)
@@ -893,7 +893,7 @@ func TestTableAFooterRowThatWrapsIsDrawnWholeOnEveryPage(t *testing.T) {
 
 func TestTableTheFooterRowsBeforeTheEndOfTheTableAreArtifacts(t *testing.T) {
 	doc := testNewDoc()
-	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	doc.pdf.SetTitle("Title")
 	pages := testWithFooter(t, doc, "total", "sum")
 	if len(pages) != 2 {

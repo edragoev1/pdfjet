@@ -27,6 +27,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/internal/token"
 	"github.com/edragoev1/pdfjet/v9/src/pagelayout"
 	"github.com/edragoev1/pdfjet/v9/src/pagemode"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // PDF is used to create PDF objects.
@@ -75,8 +76,10 @@ type PDF struct {
 	structTreeRootNumber      int              // Reserved with the two numbers after it,
 	parentTreeNumber          int              // the parent tree and the Document element,
 	documentElementNumber     int              // before the first element is written
+	roles                     map[string]bool  // The types of PDF 2.0 among the elements, which the role map maps
 	contentStreamsCompression bool
 	file                      *os.File
+	scratch                   []byte // The digits of the number appendInteger or appendFloat32 writes
 }
 
 // ocgObject holds an object number and a name.
@@ -122,7 +125,7 @@ func NewPDF(w *bufio.Writer) *PDF {
 	pdf := new(PDF)
 	pdf.contentStreamsCompression = true
 	pdf.writer = w
-	pdf.producer = "PDFjet v9.0.1"
+	pdf.producer = "PDFjet v9.0.2"
 	pdf.language = "en-US"
 
 	pdf.destinations = make(map[string]*Destination)
@@ -189,6 +192,11 @@ func (pdf *PDF) isTagged() bool {
 		return true
 	}
 	return false
+}
+
+// isPDFA reports whether the document is of PDF/A, of any part and level.
+func (pdf *PDF) isPDFA() bool {
+	return pdf.compliance != compliance.PDF_1_7 && pdf.compliance != compliance.PDF_UA_1
 }
 
 // SetEncryption sets the encryption applied to this document.
@@ -346,7 +354,9 @@ func (pdf *PDF) addMetadataObject(notice string, fontMetadataObject bool) int {
 		sb.WriteString("<xmpRights:UsageTerms>\n")
 		sb.WriteString("<rdf:Alt>\n")
 		sb.WriteString("<rdf:li xml:lang=\"x-default\">\n")
-		sb.WriteString(notice)
+		// The notice of a font is text, which may hold an ampersand, like
+		// that of the Noto fonts of Japanese, Korean and Chinese.
+		sb.WriteString(escapeXML(notice))
 		sb.WriteString("</rdf:li>\n")
 		sb.WriteString("</rdf:Alt>\n")
 		sb.WriteString("</xmpRights:UsageTerms>\n")
@@ -485,21 +495,35 @@ func (pdf *PDF) addMetadataObject(notice string, fontMetadataObject bool) int {
 }
 
 // escapeXML returns the text with the characters that have a meaning in XML
-// escaped, and without what XML does not allow: invalid UTF-8, the control
-// characters other than tab, line feed and carriage return, U+FFFE and
-// U+FFFF, which would make the metadata unreadable.
+// escaped, and without what XML does not allow, which cleanText leaves out.
 func escapeXML(text string) string {
+	var sb strings.Builder
+	for _, r := range cleanText(text) {
+		switch r {
+		case '&':
+			sb.WriteString("&amp;")
+		case '<':
+			sb.WriteString("&lt;")
+		case '>':
+			sb.WriteString("&gt;")
+		default:
+			sb.WriteRune(r)
+		}
+	}
+	return sb.String()
+}
+
+// cleanText returns the text without what XML does not allow: invalid UTF-8,
+// the control characters other than tab, line feed and carriage return,
+// U+FFFE and U+FFFF, which would make the metadata unreadable. The title and
+// the other properties of the document are cleaned when they are set, so
+// that the information dictionary says what the metadata says, as PDF/A asks.
+func cleanText(text string) string {
 	var sb strings.Builder
 	for i, r := range text {
 		switch {
 		case r == utf8.RuneError && strings.HasPrefix(text[i:], "\xef\xbf\xbd") == false:
 			// Invalid UTF-8
-		case r == '&':
-			sb.WriteString("&amp;")
-		case r == '<':
-			sb.WriteString("&lt;")
-		case r == '>':
-			sb.WriteString("&gt;")
 		case r == '\t' || r == '\n' || r == '\r' || (r >= 0x20 && r != 0xFFFE && r != 0xFFFF):
 			sb.WriteRune(r)
 		}
@@ -678,9 +702,31 @@ func (pdf *PDF) addStructTreeRootObject() int {
 	pdf.appendInteger(pdf.documentElementNumber)
 	pdf.appendString(" 0 R\n")
 	pdf.appendString("]\n")
+	// The types of PDF 2.0 that the document uses, which PDF 1.7 does not
+	// have, are mapped to the standard types that PDF/UA-1 knows.
+	if len(pdf.roles) > 0 {
+		pdf.appendString("/RoleMap <<")
+		for _, role := range roleMap {
+			if pdf.roles[role[0]] {
+				pdf.appendString(" /")
+				pdf.appendString(role[0])
+				pdf.appendString(" /")
+				pdf.appendString(role[1])
+			}
+		}
+		pdf.appendString(" >>\n")
+	}
 	pdf.appendByteArray(token.EndDictionary)
 	pdf.endObj()
 	return pdf.structTreeRootNumber
+}
+
+// roleMap maps the structure types of PDF 2.0 that PDFjet writes to the
+// standard types of PDF 1.7, in the order the role map lists them.
+var roleMap = [][2]string{
+	{string(structelem.Title), string(structelem.P)},
+	{string(structelem.Em), string(structelem.Span)},
+	{string(structelem.Strong), string(structelem.Span)},
 }
 
 func (pdf *PDF) addStructDocumentObject(parent int) int {
@@ -722,6 +768,14 @@ func (pdf *PDF) addStructElementObject(element *structElement) {
 		pdf.setObjOffset(element.objNumber, pdf.byteCount)
 		pdf.appendInteger(element.objNumber)
 		pdf.appendString(" 0 obj\n")
+		for _, role := range roleMap {
+			if element.structure == role[0] {
+				if pdf.roles == nil {
+					pdf.roles = make(map[string]bool)
+				}
+				pdf.roles[role[0]] = true
+			}
+		}
 		pdf.appendString("<<\n/Type /StructElem /S /")
 		pdf.appendString(element.structure)
 		pdf.appendString("\n/P ")
@@ -918,13 +972,21 @@ func (pdf *PDF) appendTextString(text string) {
 // appendInfoString appends an entry of the information dictionary with the
 // bytes of a string, encrypted if the document is encrypted.
 func (pdf *PDF) appendInfoString(key string, bytes []byte) {
+	pdf.appendString(key)
+	pdf.appendString(" ")
+	pdf.appendByteString(bytes)
+	pdf.appendString("\n")
+}
+
+// appendByteString appends a string of bytes, like a date, in hexadecimal,
+// encrypted if the document is encrypted.
+func (pdf *PDF) appendByteString(bytes []byte) {
 	if pdf.encryption != nil {
 		bytes = pdf.encryption.encrypt(bytes)
 	}
-	pdf.appendString(key)
-	pdf.appendString(" <")
+	pdf.appendString("<")
 	pdf.appendString(hex.EncodeToString(bytes))
-	pdf.appendString(">\n")
+	pdf.appendString(">")
 }
 
 func (pdf *PDF) addRootObject(structTreeRootObjNumber, outlineDictNumber int) int {
@@ -943,11 +1005,16 @@ func (pdf *PDF) addRootObject(structTreeRootObjNumber, outlineDictNumber int) in
 		pdf.appendString(hex.EncodeToString(languageBytes))
 		pdf.appendString(">\n")
 
-		pdf.appendString("/StructTreeRoot ")
-		pdf.appendInteger(structTreeRootObjNumber)
-		pdf.appendString(" 0 R\n")
+		// Only a tagged document has a structure tree: a PDF/A of level B
+		// that said it was marked would say its content is tagged, which it
+		// is not.
+		if pdf.isTagged() {
+			pdf.appendString("/StructTreeRoot ")
+			pdf.appendInteger(structTreeRootObjNumber)
+			pdf.appendString(" 0 R\n")
 
-		pdf.appendString("/MarkInfo <</Marked true>>\n")
+			pdf.appendString("/MarkInfo <</Marked true>>\n")
+		}
 		pdf.appendString("/ViewerPreferences <</DisplayDocTitle true>>\n")
 	}
 
@@ -1141,7 +1208,7 @@ func (pdf *PDF) addAllPages(resObjNumber int) {
 			pdf.appendString("]\n")
 		}
 
-		if pdf.compliance != compliance.PDF_1_7 {
+		if pdf.isTagged() {
 			pdf.appendString("/Tabs /S\n")
 			pdf.appendString("/StructParents ")
 			pdf.appendInteger(i)
@@ -1204,7 +1271,7 @@ func (pdf *PDF) addPageContent(page *Page) {
 // completed, and the number of each element of the page by its marked
 // content, which the parent tree is written from.
 func (pdf *PDF) addPageStructElements(page *Page) {
-	if pdf.compliance == compliance.PDF_1_7 || len(page.structures) == 0 {
+	if !pdf.isTagged() || len(page.structures) == 0 {
 		return
 	}
 	elements := page.structures
@@ -1246,14 +1313,6 @@ func (pdf *PDF) addPageStructElements(page *Page) {
 }
 
 func (pdf *PDF) addAnnotationObject(annot *annotationObject, index int) int {
-	pdf.newObj()
-	annot.objNumber = pdf.getObjNumber()
-	pdf.appendString("<<\n")
-	pdf.appendString("/Type /Annot\n")
-	pdf.appendString("/Subtype /")
-	pdf.appendString(annot.annotationType)
-	pdf.appendString("\n")
-
 	// The rectangle of an annotation of vertices, a polygon, is the box of its
 	// vertices, which are relative to its location; its second corner is not
 	// set
@@ -1267,6 +1326,21 @@ func (pdf *PDF) addAnnotationObject(annot *annotationObject, index int) int {
 		}
 		x1, y1, x2, y2 = annot.x1+minX, annot.y1-maxY, annot.x1+maxX, annot.y1-minY
 	}
+
+	// PDF/A asks every annotation but a link for an appearance of its own,
+	// which is written before it.
+	appearance := 0
+	if pdf.isPDFA() && annot.annotationType != annotationLink {
+		appearance = pdf.addAppearanceObject(annot, x1, y1, x2, y2)
+	}
+
+	pdf.newObj()
+	annot.objNumber = pdf.getObjNumber()
+	pdf.appendString("<<\n")
+	pdf.appendString("/Type /Annot\n")
+	pdf.appendString("/Subtype /")
+	pdf.appendString(annot.annotationType)
+	pdf.appendString("\n")
 	pdf.appendString("/Rect [")
 	pdf.appendFloat32(x1)
 	pdf.appendString(" ")
@@ -1277,6 +1351,13 @@ func (pdf *PDF) addAnnotationObject(annot *annotationObject, index int) int {
 	pdf.appendFloat32(y2)
 	pdf.appendString("]\n")
 	pdf.appendString("/Border [0 0 0]\n")
+	// Every annotation is printed, as PDF/A asks.
+	pdf.appendString("/F 4\n")
+	if appearance > 0 {
+		pdf.appendString("/AP <</N ")
+		pdf.appendInteger(appearance)
+		pdf.appendString(" 0 R>>\n")
+	}
 
 	if annot.annotationType == annotationFileAttachment {
 		pdf.appendString("/FS ")
@@ -1316,7 +1397,6 @@ func (pdf *PDF) addAnnotationObject(annot *annotationObject, index int) int {
 			pdf.appendString("\n")
 		}
 		if annot.uri != "" {
-			pdf.appendString("/F 4\n")
 			pdf.appendString("/A <<\n")
 			pdf.appendString("/S /URI\n")
 			uri := []byte(annot.uri)
@@ -1329,8 +1409,11 @@ func (pdf *PDF) addAnnotationObject(annot *annotationObject, index int) int {
 			pdf.appendString(">>\n")
 		} else if annot.key != "" {
 			destination := pdf.destinations[annot.key]
-			if destination != nil {
-				pdf.appendString("/F 4\n")
+			if destination == nil {
+				// A link to nowhere would do nothing when it is clicked.
+				pdf.fail("The link goes to the destination " + annot.key +
+					", which the document does not have.")
+			} else {
 				pdf.appendString("/Dest [")
 				pdf.appendString(strconv.Itoa(destination.pageObjNumber))
 				pdf.appendString(" 0 R /XYZ ")
@@ -1426,6 +1509,104 @@ func (pdf *PDF) addAnnotationObject(annot *annotationObject, index int) int {
 	return index
 }
 
+// addAppearanceObject writes the appearance of an annotation that is not a
+// link, which PDF/A asks for, and returns its object number. It draws what a
+// viewer draws for the annotation: the square, the circle or the polygon in
+// its fill color, and a note or a file as a white box with a black frame.
+// Its box is the rectangle of the annotation, in the coordinates of the page.
+func (pdf *PDF) addAppearanceObject(annot *annotationObject, x1, y1, x2, y2 float32) int {
+	minX, maxX := min(x1, x2), max(x1, x2)
+	minY, maxY := min(y1, y2), max(y1, y2)
+	w, h := maxX-minX, maxY-minY
+	var buf []byte
+	number := func(value float32) {
+		buf = fastfloat.Append(buf, value)
+		buf = append(buf, ' ')
+	}
+	fill := func() {
+		number(annot.fillColor[0])
+		number(annot.fillColor[1])
+		number(annot.fillColor[2])
+		buf = append(buf, "rg\n"...)
+	}
+	switch annot.annotationType {
+	case annotationSquare:
+		fill()
+		number(minX)
+		number(minY)
+		number(w)
+		number(h)
+		buf = append(buf, "re f\n"...)
+	case annotationCircle:
+		// Four Bezier curves, one for each quarter of the ellipse.
+		const kappa = float32(0.55228475)
+		rx, ry := w/2, h/2
+		cx, cy := minX+rx, minY+ry
+		ox, oy := rx*kappa, ry*kappa
+		fill()
+		number(cx + rx)
+		number(cy)
+		buf = append(buf, "m\n"...)
+		for _, curve := range [][6]float32{
+			{cx + rx, cy + oy, cx + ox, cy + ry, cx, cy + ry},
+			{cx - ox, cy + ry, cx - rx, cy + oy, cx - rx, cy},
+			{cx - rx, cy - oy, cx - ox, cy - ry, cx, cy - ry},
+			{cx + ox, cy - ry, cx + rx, cy - oy, cx + rx, cy},
+		} {
+			for _, value := range curve {
+				number(value)
+			}
+			buf = append(buf, "c\n"...)
+		}
+		buf = append(buf, "f\n"...)
+	case annotationPolygon:
+		fill()
+		for i := 0; i+1 < len(annot.vertices); i += 2 {
+			number(annot.x1 + annot.vertices[i])
+			number(annot.y1 - annot.vertices[i+1])
+			if i == 0 {
+				buf = append(buf, "m\n"...)
+			} else {
+				buf = append(buf, "l\n"...)
+			}
+		}
+		buf = append(buf, "h f\n"...)
+	default:
+		buf = append(buf, "1 g 0 G 0.5 w\n"...)
+		number(minX + 0.25)
+		number(minY + 0.25)
+		number(w - 0.5)
+		number(h - 0.5)
+		buf = append(buf, "re B\n"...)
+	}
+	if pdf.encryption != nil {
+		buf = pdf.encryption.encrypt(buf)
+	}
+
+	pdf.newObj()
+	pdf.appendString("<<\n")
+	pdf.appendString("/Type /XObject\n")
+	pdf.appendString("/Subtype /Form\n")
+	pdf.appendString("/BBox [")
+	pdf.appendFloat32(minX)
+	pdf.appendString(" ")
+	pdf.appendFloat32(minY)
+	pdf.appendString(" ")
+	pdf.appendFloat32(maxX)
+	pdf.appendString(" ")
+	pdf.appendFloat32(maxY)
+	pdf.appendString("]\n")
+	pdf.appendString("/Length ")
+	pdf.appendInteger(len(buf))
+	pdf.appendString("\n")
+	pdf.appendString(">>\n")
+	pdf.appendString("stream\n")
+	pdf.appendByteArray(buf)
+	pdf.appendString("\nendstream\n")
+	pdf.endObj()
+	return pdf.getObjNumber()
+}
+
 func (pdf *PDF) addAnnotDictionaries() {
 	index := len(pdf.pages)
 	for _, element := range pdf.annotElements {
@@ -1460,8 +1641,11 @@ func (pdf *PDF) addOCProperties() {
 				name:      ocg.name,
 			})
 		}
-		sort.Slice(list, func(i, j int) bool {
-			return list[i].name < list[j].name
+		// The groups are in the order of their names, by the UTF-16 code
+		// units as in every port, and those of the same name in the order
+		// they were added.
+		slices.SortStableFunc(list, func(ocg1, ocg2 ocgObject) int {
+			return compareUTF16(ocg1.name, ocg2.name)
 		})
 
 		pdf.appendString("/OCProperties\n")
@@ -1534,7 +1718,7 @@ func (pdf *PDF) AddPage(page *Page) {
 		page.objNumber = pdf.reserveObjNumber()
 	}
 	// A page that was drawn before it was added has elements of its own.
-	if pdf.compliance != compliance.PDF_1_7 {
+	if pdf.isTagged() {
 		page.setStructElementsPageObjNumber(page.objNumber)
 	}
 	pdf.pages = append(pdf.pages, page)
@@ -1945,6 +2129,20 @@ func (pdf *PDF) AddPages(pages []*Page) {
 // Complete writes the rest of the PDF, flushes the bufio.Writer and closes the
 // file that NewPDFFile opened. It returns the first error writing the document.
 func (pdf *PDF) Complete() error {
+	err := pdf.complete()
+	// The file that NewPDFFile created is closed, as the other ports close
+	// their output stream, also when the document could not be completed.
+	if pdf.file != nil {
+		if closeErr := pdf.file.Close(); err == nil {
+			err = closeErr
+		}
+		pdf.file = nil
+	}
+	return err
+}
+
+// complete writes the rest of the PDF and flushes the bufio.Writer.
+func (pdf *PDF) complete() error {
 	if pdf.completed {
 		return pdf.fail("Complete was already called.")
 	}
@@ -1953,6 +2151,12 @@ func (pdf *PDF) Complete() error {
 	}
 	if len(pdf.pages) == 0 && pdf.pagesObjNumber == 0 {
 		return pdf.fail("A PDF needs at least one page.")
+	}
+	// PDF/UA asks for the title of the document, which a reader shows in
+	// place of the name of the file.
+	if (pdf.compliance == compliance.PDF_UA_1 || pdf.compliance == compliance.PDF_A_3A_UA_1) &&
+		strings.TrimSpace(pdf.title) == "" {
+		return pdf.fail("A PDF/UA document needs a title: use SetTitle.")
 	}
 	if traceComplete != nil {
 		traceComplete(pdf)
@@ -1975,7 +2179,7 @@ func (pdf *PDF) Complete() error {
 	}
 
 	structTreeRootObjNumber := 0
-	if pdf.compliance != compliance.PDF_1_7 {
+	if pdf.isTagged() {
 		// The elements of every page are written with it; the ones still open
 		// and the ones of the annotations are what is left.
 		for _, page := range pdf.pages {
@@ -2062,15 +2266,7 @@ func (pdf *PDF) Complete() error {
 	if pdf.err != nil {
 		return pdf.err
 	}
-	if err := pdf.writer.Flush(); err != nil {
-		return err
-	}
-	// The file that NewPDFFile created is closed, as the other ports close
-	// their output stream.
-	if pdf.file != nil {
-		return pdf.file.Close()
-	}
-	return nil
+	return pdf.writer.Flush()
 }
 
 // AddAssociatedFile adds a file that the document carries with it: a reader
@@ -2096,6 +2292,14 @@ func (pdf *PDF) AddAssociatedFile(file *EmbeddedFile) *PDF {
 			"which a file the document carries needs: use NewEmbeddedFileWithRelationship.")
 		return pdf
 	}
+	// PDF/A-3 asks a file it carries for what it holds, its /Subtype, and for
+	// its size and date, which are written with the media type.
+	if file.mediaType == "" && (pdf.compliance == compliance.PDF_A_3A ||
+		pdf.compliance == compliance.PDF_A_3B || pdf.compliance == compliance.PDF_A_3A_UA_1) {
+		pdf.fail("The file " + file.GetFileName() +
+			" was embedded without a media type, which a file of a document of PDF/A-3 needs.")
+		return pdf
+	}
 	pdf.associatedFiles = append(pdf.associatedFiles, file)
 	return pdf
 }
@@ -2119,31 +2323,31 @@ func (pdf *PDF) SetLanguage(language string) *PDF {
 
 // SetTitle sets the "Title" document property of the PDF file.
 func (pdf *PDF) SetTitle(title string) *PDF {
-	pdf.title = title
+	pdf.title = cleanText(title)
 	return pdf
 }
 
 // SetAuthor sets the "Author" document property of the PDF file.
 func (pdf *PDF) SetAuthor(author string) *PDF {
-	pdf.author = author
+	pdf.author = cleanText(author)
 	return pdf
 }
 
 // SetSubject sets the "Subject" document property of the PDF file.
 func (pdf *PDF) SetSubject(subject string) *PDF {
-	pdf.subject = subject
+	pdf.subject = cleanText(subject)
 	return pdf
 }
 
 // SetKeywords sets the keywords.
 func (pdf *PDF) SetKeywords(keywords string) *PDF {
-	pdf.keywords = keywords
+	pdf.keywords = cleanText(keywords)
 	return pdf
 }
 
 // SetCreator sets the creator field of the PDF.
 func (pdf *PDF) SetCreator(creator string) *PDF {
-	pdf.creator = creator
+	pdf.creator = cleanText(creator)
 	return pdf
 }
 
@@ -3327,7 +3531,8 @@ func (pdf *PDF) addObjectsToPDF(objects []*PDFobj) {
 }
 
 func (pdf *PDF) appendInteger(value int) {
-	pdf.appendString(strconv.Itoa(value))
+	pdf.scratch = strconv.AppendInt(pdf.scratch[:0], int64(value), 10)
+	pdf.appendByteArray(pdf.scratch)
 }
 
 func (pdf *PDF) appendFloat32(f float32) {
@@ -3337,13 +3542,17 @@ func (pdf *PDF) appendFloat32(f float32) {
 		// the other ports.
 		pdf.fail(notWritable)
 	}
-	pdf.appendByteArray(fastfloat.ToByteArray(f))
+	pdf.scratch = fastfloat.Append(pdf.scratch[:0], f)
+	pdf.appendByteArray(pdf.scratch)
 }
 
 // The append functions keep the first error of the writer for Complete to
 // return, as the other ports let the exception of their stream propagate.
 func (pdf *PDF) appendString(s string) {
-	pdf.appendByteArray([]byte(s))
+	if _, err := pdf.writer.WriteString(s); err != nil && pdf.err == nil {
+		pdf.err = err
+	}
+	pdf.byteCount += int64(len(s))
 }
 
 func (pdf *PDF) appendByte(b byte) {

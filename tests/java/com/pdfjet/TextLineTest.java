@@ -32,7 +32,7 @@ class TextLineTest {
         // The line is decoration: an element of its own, described as
         // "Underlined text: " and the text, is read after the text again.
         java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
-        PDF pdf = new PDF(bos, Compliance.PDF_UA_1);
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1).setTitle("Test");
         pdf.setTitle("Title");
         Page page = new Page(pdf, Letter.PORTRAIT);
         TextLine line = new TextLine(TestSupport.helvetica(pdf), "Hello");

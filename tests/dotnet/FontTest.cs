@@ -256,7 +256,7 @@ public class FontTest {
         // character as its actual text, and never glyph 0.
         MemoryStream stream = new MemoryStream();
         PDF pdf = new PDF(stream);
-        pdf.SetCompliance(Compliance.PDF_UA_1);
+        pdf.SetCompliance(Compliance.PDF_UA_1).SetTitle("Test");
         Font font = IBMPlexSans(pdf);
         if (font == null) {
             return;     // The fonts directory is not here.

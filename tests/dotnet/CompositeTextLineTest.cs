@@ -106,7 +106,7 @@ public class CompositeTextLineTest {
         // reads C6H12O6 and not six elements of "C", "6", "H", "12", "O"
         // and "6".
         System.IO.MemoryStream output = new System.IO.MemoryStream();
-        PDF pdf = new PDF(output, Compliance.PDF_UA_1);
+        PDF pdf = new PDF(output, Compliance.PDF_UA_1).SetTitle("Test");
         pdf.SetTitle("Title");
         Page page = new Page(pdf, Letter.PORTRAIT);
         CompositeTextLine composite = new CompositeTextLine(50f, 100f);

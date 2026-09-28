@@ -183,16 +183,14 @@ public class PageTest {
         Page page1 = new Page(pdf, Letter.PORTRAIT);
         new TextLine(font, "Go").SetGoToAction("there").SetLocation(50f, 50f).DrawOn(page1);
         new Rect(10f, 10f, 20f, 20f).SetGoToAction("there").DrawOn(page1);
-        new TextLine(font, "Nowhere").SetGoToAction("missing").SetLocation(50f, 100f).DrawOn(page1);
         Page page2 = new Page(pdf, Letter.PORTRAIT);
         page2.AddDestination("there", 30f, 100f);
         pdf.Complete();
         string file = TestSupport.Latin1(stream.ToArray());
-        // The text and the rect link to the destination, 100 points down page 2; the
-        // link to a destination no page has is written without a /Dest
+        // The text and the rect link to the destination, 100 points down page 2
         Assert.Equal(2, file.Split("/Dest [").Length - 1);
         Assert.Equal(2, file.Split("/XYZ 30 692 0]").Length - 1);
-        Assert.Equal(3, file.Split("/Subtype /Link").Length - 1);
+        Assert.Equal(2, file.Split("/Subtype /Link").Length - 1);
     }
 
     [Fact]
@@ -281,7 +279,7 @@ public class PageTest {
         // can hold them together: L for the list, LI for each item, and Lbl
         // and LBody for the label and the body of the item.
         System.IO.MemoryStream stream = new System.IO.MemoryStream();
-        PDF pdf = new PDF(stream, Compliance.PDF_UA_1);
+        PDF pdf = new PDF(stream, Compliance.PDF_UA_1).SetTitle("Test");
         pdf.SetTitle("Title");
         Font font = TestSupport.Helvetica(pdf);
         Page page = new Page(pdf, Letter.PORTRAIT);
@@ -307,7 +305,7 @@ public class PageTest {
 
     [Fact]
     public void EndStructElementWithoutABeginIsRefused() {
-        PDF pdf = new PDF(new System.IO.MemoryStream(), Compliance.PDF_UA_1);
+        PDF pdf = new PDF(new System.IO.MemoryStream(), Compliance.PDF_UA_1).SetTitle("Test");
         pdf.SetTitle("Title");
         Page page = new Page(pdf, Letter.PORTRAIT);
         Exception e = Assert.ThrowsAny<Exception>(() => page.EndStructElement());

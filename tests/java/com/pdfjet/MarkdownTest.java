@@ -25,7 +25,7 @@ class MarkdownTest {
 
     static Drawn draw(String text, String imageDirectory) throws Exception {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        PDF pdf = new PDF(bos, Compliance.PDF_UA_1);
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1).setTitle("Test");
         pdf.setTitle("Markdown");
         Font regular = new Font(pdf, CoreFont.HELVETICA);
         Font bold = new Font(pdf, CoreFont.HELVETICA_BOLD);

@@ -92,7 +92,7 @@ public class BookmarkTest {
         MemoryStream stream = new MemoryStream();
         pdf = new PDF(stream);
         if (tagged) {
-            pdf.SetCompliance(Compliance.PDF_UA_1);
+            pdf.SetCompliance(Compliance.PDF_UA_1).SetTitle("Test");
             pdf.SetTitle("Title");
         }
         Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));

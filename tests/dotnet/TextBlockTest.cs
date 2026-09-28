@@ -142,7 +142,7 @@ public class TextBlockTest {
     }
     [Fact]
     public void IsTaggedAsItsStructureType() {
-        PDF pdf = new PDF(new System.IO.MemoryStream(), Compliance.PDF_UA_1);
+        PDF pdf = new PDF(new System.IO.MemoryStream(), Compliance.PDF_UA_1).SetTitle("Test");
         Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
         Page page = new Page(pdf, Letter.PORTRAIT);
         TextBlock heading = new TextBlock(font, "Invoice").SetStructureType(StructElem.H1);

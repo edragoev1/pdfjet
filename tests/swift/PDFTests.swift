@@ -74,6 +74,7 @@ import Testing
 
     @Test func theXmpDocumentIdIsTheTrailerId() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.setTitle("Test")
         _ = memory.pdf.setTitle("Title")
         _ = Page(memory.pdf, Letter.PORTRAIT)
         try memory.pdf.complete()
@@ -174,6 +175,7 @@ import Testing
 
     @Test func aShapeWithoutADescriptionWritesNoAltText() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.setTitle("Test")
         _ = memory.pdf.setTitle("Title")
         let page = Page(memory.pdf, Letter.PORTRAIT)
         Line(10, 10, 100, 10).drawOn(page)
@@ -186,6 +188,7 @@ import Testing
 
     @Test func pointsAndTwoDimensionalBarcodesAreArtifacts() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.setTitle("Test")
         let drawables: [Drawable] = [
                 Point(50, 50),
                 try QRCode("https://pdfjet.com", ErrorCorrectionLevel.M),
@@ -218,6 +221,7 @@ import Testing
     @Test(.enabled(if: TestSupport.exists(streamFont), "the fonts directory is not here"))
     func aLinkIsInALinkElementAndAnyOtherAnnotationInAnAnnotElement() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.setTitle("Test")
         let pdf = memory.pdf
         _ = pdf.setTitle("Title")
         let font = try Font(pdf, TestSupport.open(PDFTests.streamFont))
@@ -263,6 +267,7 @@ import Testing
     @Test(.enabled(if: TestSupport.exists(streamFont), "the fonts directory is not here"))
     func aLinkedTextLineIsTheLinkOfItsParagraph() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.setTitle("Test")
         let pdf = memory.pdf
         _ = pdf.setTitle("Title")
         let font = try Font(pdf, TestSupport.open(PDFTests.streamFont))
@@ -287,6 +292,7 @@ import Testing
     @Test(.enabled(if: TestSupport.exists(streamFont), "the fonts directory is not here"))
     func aLinkedWordIsALinkAmongTheWordsOfItsParagraph() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.setTitle("Test")
         let pdf = memory.pdf
         _ = pdf.setTitle("Title")
         let font = try Font(pdf, TestSupport.open(PDFTests.streamFont))
@@ -317,6 +323,7 @@ import Testing
     @Test(.enabled(if: TestSupport.exists(streamFont), "the fonts directory is not here"))
     func aLinkedImageIsTheFigureOfItsLink() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.setTitle("Test")
         let pdf = memory.pdf
         _ = pdf.setTitle("Title")
         _ = try Font(pdf, TestSupport.open(PDFTests.streamFont))
@@ -378,6 +385,7 @@ import Testing
     @Test(.enabled(if: TestSupport.exists(streamFont), "the fonts directory is not here"))
     func anInlineElementStandingAsABlockSaysSo() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.setTitle("Test")
         let pdf = memory.pdf
         _ = pdf.setTitle("Title")
         let font = try Font(pdf, TestSupport.open(PDFTests.streamFont))
@@ -406,6 +414,7 @@ import Testing
     @Test(.enabled(if: TestSupport.exists(streamFont), "the fonts directory is not here"))
     func theTextOfACellHasNoAlt() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.setTitle("Test")
         let pdf = memory.pdf
         _ = pdf.setTitle("Title")
         let font = try Font(pdf, TestSupport.open(PDFTests.streamFont))
@@ -442,6 +451,7 @@ import Testing
     @Test(.enabled(if: TestSupport.exists(streamFont), "the fonts directory is not here"))
     func anAnnotationIsDescribedByWhatItSays() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.setTitle("Test")
         let pdf = memory.pdf
         _ = pdf.setTitle("Title")
         _ = try Font(pdf, TestSupport.open(PDFTests.streamFont))
@@ -468,6 +478,7 @@ import Testing
     @Test(.enabled(if: TestSupport.exists(streamFont), "the fonts directory is not here"))
     func aDetachedPageThatIsNeverAddedLeavesNoTrace() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.setTitle("Test")
         let pdf = memory.pdf
         _ = pdf.setTitle("Title")
         let font = try Font(pdf, TestSupport.open(PDFTests.streamFont))
@@ -491,6 +502,7 @@ import Testing
     @Test(.enabled(if: TestSupport.exists(streamFont), "the fonts directory is not here"))
     func theStructureTreeFollowsThePagesNotTheOrderTheyWereDrawnIn() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.setTitle("Test")
         let pdf = memory.pdf
         _ = pdf.setTitle("Title")
         let font = try Font(pdf, TestSupport.open(PDFTests.streamFont))
@@ -511,6 +523,7 @@ import Testing
 
     @Test func textStringsAreUtf16SoThatEveryReaderDecodesThem() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.setTitle("Test")
         _ = memory.pdf.setTitle("Title")
         let page = Page(memory.pdf, Letter.PORTRAIT)
         Line(10, 20, 100, 20).setAltDescription("Gr\u{fc}\u{df}e \u{2013} \u{7dda}").drawOn(page)

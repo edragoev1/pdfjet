@@ -59,12 +59,15 @@ class Util {
      * @return the hexadecimal string.
      */
     static String toHexString(byte[] data) {
-        StringBuilder sb = new StringBuilder(data.length * 2);
-        for (byte b : data) {
-            // & 0xFF makes the byte unsigned before formatting
-            sb.append(String.format("%02x", b & 0xFF));
+        final String digits = "0123456789abcdef";
+        char[] chars = new char[data.length * 2];
+        for (int i = 0; i < data.length; i++) {
+            // & 0xFF makes the byte unsigned
+            int b = data[i] & 0xFF;
+            chars[2 * i] = digits.charAt(b >> 4);
+            chars[2 * i + 1] = digits.charAt(b & 0xF);
         }
-        return sb.toString();
+        return new String(chars);
     }
 
     private static final char[] HEX = {

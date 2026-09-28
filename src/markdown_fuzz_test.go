@@ -107,7 +107,7 @@ func FuzzMarkdown(f *testing.F) {
 // fuzzDrawMarkdown draws the text in a PDF/UA document and writes it.
 func fuzzDrawMarkdown(t *testing.T, text string) {
 	pdf := NewPDF(bufio.NewWriter(io.Discard))
-	pdf.SetCompliance(compliance.PDF_UA_1)
+	pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	pdf.SetTitle("Markdown")
 	markdown := NewMarkdown(NewCoreFont(pdf, corefont.Helvetica()), NewCoreFont(pdf, corefont.HelveticaBold()),
 		NewCoreFont(pdf, corefont.HelveticaOblique()), NewCoreFont(pdf, corefont.HelveticaBoldOblique()),

@@ -321,7 +321,7 @@ public class MergeTest {
     public void MergeIsRefusedWhereItWouldBreakTheDocument() {
         List<PDFobj> objects = TestSupport.Read(Document("A"));
 
-        PDF ua = new PDF(new MemoryStream(), Compliance.PDF_UA_1);
+        PDF ua = new PDF(new MemoryStream(), Compliance.PDF_UA_1).SetTitle("Test");
         Assert.Equal("Pages of an existing PDF cannot be merged into a PDF/UA or PDF/A document.",
                 Assert.Throws<InvalidOperationException>(() => ua.Merge(objects)).Message);
 

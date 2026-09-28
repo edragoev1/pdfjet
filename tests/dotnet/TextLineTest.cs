@@ -13,7 +13,7 @@ public class TextLineTest {
         // The line is decoration: an element of its own, described as
         // "Underlined text: " and the text, is read after the text again.
         System.IO.MemoryStream output = new System.IO.MemoryStream();
-        PDF pdf = new PDF(output, Compliance.PDF_UA_1);
+        PDF pdf = new PDF(output, Compliance.PDF_UA_1).SetTitle("Test");
         pdf.SetTitle("Title");
         Page page = new Page(pdf, Letter.PORTRAIT);
         TextLine line = new TextLine(TestSupport.Helvetica(pdf), "Hello");

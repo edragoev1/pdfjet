@@ -111,7 +111,7 @@ public class TextFrameTest {
         // The label of an item is drawn where the item begins, so that it
         // reads before the text of the item and not after all of the text.
         System.IO.MemoryStream stream = new System.IO.MemoryStream();
-        PDF pdf = new PDF(stream, Compliance.PDF_UA_1);
+        PDF pdf = new PDF(stream, Compliance.PDF_UA_1).SetTitle("Test");
         pdf.SetTitle("Title");
         Font font = TestSupport.Helvetica(pdf);
         List<Paragraph> paragraphs = new List<Paragraph>();
