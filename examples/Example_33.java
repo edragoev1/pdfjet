@@ -45,15 +45,15 @@ public class Example_33 {
 
         SVGImage map = new SVGImage("images/svg-test/europe.svg");
         map.setAltDescription(
-                "A map of Europe drawn from an SVG file, the countries filled in peachpuff, Spain in aliceblue and Austria outlined in olive.");
+                "A map of Europe drawn from an SVG file, the countries filled in peachpuff and outlined in blue, Spain in aliceblue and Austria outlined in olive.");
         map.scaleBy(0.5f);
         map.setLocation((page.getWidth() - map.getWidth()) / 2f, xy[1] + 20f);
         xy = map.drawOn(page);
 
         textBlock = new TextBlock(f1,
-                "The colors come from the file: the peachpuff fill of the svg element "
-                + "for most countries, an aliceblue fill for Spain and an olive "
-                + "outline for Austria.");
+                "The colors come from the file: the peachpuff fill and the blue stroke of "
+                + "the svg element for most countries, an aliceblue fill for Spain and an "
+                + "olive outline for Austria.");
         textBlock.setFontSize(10f);
         textBlock.setTextColor(Color.gray);
         textBlock.setLocation(50f, xy[1] + 10f);

@@ -320,7 +320,9 @@ This is the first entry in this file; earlier releases were not tracked here.
   width 0, the thinnest line a device draws, and a width of 0 drew that line.
   A stroke width is scaled with the viewBox and with `ScaleBy`, as the
   path is, where it kept its width in points. The map of Example_33, whose
-  file gives its countries a blue stroke of width 0, no longer outlines them.
+  file gave its countries a blue stroke of width 0, no longer outlined them,
+  so its file gives them a width of 1, half a point on the page, which
+  outlines them in blue as in v8.
 - A Code 128 barcode puts runs of four digits or more in code set C, two
   digits to a codeword, in all four ports, where it put every character in
   code set B, as GS1-128 does: it starts in code set C when the text starts
