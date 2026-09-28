@@ -116,6 +116,12 @@ func (form *Form) SetValueColorRGB(color [3]float32) *Form {
 //
 // Returns x and y coordinates of the bottom right corner of form component.
 func (form *Form) DrawOn(page *Page) [2]float32 {
+	if form.f1 == nil || form.f2 == nil {
+		if page != nil {
+			page.pdf.fail("A form needs a label font and a value font: SetLabelFont and SetValueFont.")
+		}
+		return [2]float32{form.x, form.y}
+	}
 	yField := float32(0.0)
 	xOffset := float32(3.0)
 	for i, field := range form.fields {

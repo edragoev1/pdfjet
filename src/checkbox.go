@@ -148,7 +148,7 @@ func DrawXMark(page *Page, x, y, size float32) {
 //
 //   - page: the Page where the CheckBox is to be drawn.
 func (checkBox *CheckBox) DrawOn(page *Page) [2]float32 {
-	checkBox.w = checkBox.font.ascent
+	checkBox.w = checkBox.font.GetAscent(checkBox.fontSize)
 	checkBox.h = checkBox.w
 	checkBox.penWidth = checkBox.w / 15
 	checkBox.checkWidth = checkBox.w / 5
@@ -159,9 +159,14 @@ func (checkBox *CheckBox) DrawOn(page *Page) [2]float32 {
 	var link *structElement
 	if checkBox.uri != "" || checkBox.key != "" {
 		link = page.addLinkBDC(structelem.P, checkBox.language, checkBox.actualText, checkBox.altDescription)
+	} else if checkBox.label == "" {
+		// A box with no label, nor a description, has nothing to read.
+		page.addShapeBDC(checkBox.language, checkBox.actualText, checkBox.altDescription)
 	} else {
 		page.AddBDC(structelem.P, checkBox.language, checkBox.actualText, checkBox.altDescription)
 	}
+	// The pen of the box is its own, and the page is left with the one it had.
+	page.SaveGraphicsState()
 
 	yBox := checkBox.y
 	page.SetPenWidth(checkBox.penWidth)
@@ -203,9 +208,7 @@ func (checkBox *CheckBox) DrawOn(page *Page) [2]float32 {
 		checkBox.font, checkBox.fontSize, checkBox.label,
 		checkBox.x+3.0*checkBox.w/2.0, checkBox.y+checkBox.font.GetAscent(checkBox.fontSize),
 		textColor, nil)
-	page.SetPenWidth(0.0)
-	page.SetPenColor(color.Black)
-	page.SetBrushColor(color.Black)
+	page.RestoreGraphicsState()
 
 	page.AddEMC()
 	if checkBox.uri != "" || checkBox.key != "" {

@@ -914,14 +914,14 @@ public class Cell {
             }
             point.y = y + h/2;
             page.setBrushColor(point.getFillColor());
-            if (point.getURIAction() != null && page.tagsContent()) {
+            if (!Util.isEmpty(point.getURIAction()) && page.tagsContent()) {
                 // A point that is a link is a figure of its own, described by
                 // what it stands for, or by its URI, in the Link that holds its
                 // annotation, as PDF/UA asks
                 drawLinkedPoint(page);
                 return;
             }
-            if (point.getURIAction() != null) {
+            if (!Util.isEmpty(point.getURIAction())) {
                 page.addAnnotation(new Annotation(
                         Annotation.Link,
                         point.x - point.r,
@@ -1073,7 +1073,7 @@ public class Cell {
                 ? (BaselineDrawable) drawable : null;
         StructElement link = null;
         if (line == null) {
-            if (uri != null) {
+            if (!Util.isEmpty(uri)) {
                 link = page.addLinkBDC(StructElem.P, null, null, null);
             } else {
                 // The text is drawn whole, so it needs no description of its
@@ -1092,7 +1092,7 @@ public class Cell {
         } else {
             // A text line and a composite text line mark their own text,
             // which the Link of the cell holds.
-            if (uri != null) {
+            if (!Util.isEmpty(uri)) {
                 link = page.beginLink();
             }
             line.setLocation(xText, yText);
@@ -1100,7 +1100,7 @@ public class Cell {
             page.endLink(link);
         }
 
-        if (uri != null) {
+        if (!Util.isEmpty(uri)) {
             Annotation linkAnnotation = new Annotation(
                     Annotation.Link,
                     xText,

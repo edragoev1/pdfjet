@@ -172,7 +172,7 @@ public class CheckBox : IDrawable {
     /// <param name="page">the page to draw on.</param>
     /// <returns>x and y coordinates of the bottom right corner of this component.</returns>
     public float[] DrawOn(Page page) {
-        this.w = font.GetAscent();
+        this.w = font.GetAscent(fontSize);
         this.h = this.w;
         this.penWidth = this.w/15;
         this.checkWidth = this.w/5;
@@ -181,11 +181,16 @@ public class CheckBox : IDrawable {
         }
 
         StructElement link = null;
-        if (uri != null) {
+        if (!String.IsNullOrEmpty(uri)) {
             link = page.AddLinkBDC(StructElem.P, language, actualText, altDescription);
+        } else if (String.IsNullOrEmpty(label)) {
+            // A box with no label, nor a description, has nothing to read.
+            page.AddShapeBDC(language, actualText, altDescription);
         } else {
             page.AddBDC(StructElem.P, language, actualText, altDescription);
         }
+        // The pen of the box is its own, and the page is left with the one it had.
+        page.SaveGraphicsState();
 
         float yBox = y;
         page.SetPenWidth(penWidth);
@@ -213,15 +218,13 @@ public class CheckBox : IDrawable {
         }
 
         // A linked label is blue.
-        float[] textColor = (uri != null) ? new float[] {0f, 0f, 1f} : new float[] {0f, 0f, 0f};
+        float[] textColor = !String.IsNullOrEmpty(uri) ? new float[] {0f, 0f, 1f} : new float[] {0f, 0f, 0f};
         page.DrawString(font, fontSize, label, x + 3f*w/2f, y + font.GetAscent(fontSize), textColor, null);
-        page.SetPenWidth(0f);
-        page.SetPenColor(Color.black);
-        page.SetBrushColor(Color.black);
+        page.RestoreGraphicsState();
 
         page.AddEMC();
 
-        if (uri != null) {
+        if (!String.IsNullOrEmpty(uri)) {
             // The link is a structure element of its own, see Page.AddAnnotation.
             Annotation linkAnnotation = new Annotation(
                     Annotation.Link,

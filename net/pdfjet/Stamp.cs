@@ -420,11 +420,16 @@ public class Stamp : IDrawable {
 
     /// <summary>
     /// Draws a path through the points. Control points define Bézier curves.
-    /// Fewer than two points paint nothing.
+    /// Fewer than two points paint nothing. A path that ends on a control
+    /// point, whose curve has no end, is refused and nothing of it is drawn.
     /// </summary>
     public void DrawPath(List<Point> path, PathOperator pathOperator) {
         if (path.Count < 2) {
             return; // A path needs two points to paint anything.
+        }
+        if (path[path.Count - 1].controlPoint != '\0') {
+            pdf.Fail(new ArgumentException(Page.PATH_ENDS_ON_CONTROL_POINT));
+            return;
         }
         Point point = path[0];
         MoveTo(point.x, point.y);
@@ -444,12 +449,6 @@ public class Stamp : IDrawable {
                     LineTo(point.x, point.y);
                 }
             }
-        }
-        // Catch unflushed control point
-        if (controlPoint != '\0') {
-            throw new Exception(
-                "Path ends with unconsumed control point(s). " +
-                "Each 'c' requires 2 CPs + 1 endpoint, 'v'/'y' require 1 CP + 1 endpoint.");
         }
         Append(pathOperator.ToOperator());
         Append('\n');
@@ -476,7 +475,8 @@ public class Stamp : IDrawable {
         if (width == 0f || height == 0f || scaleX == 0f || scaleY == 0f) {
             return new float[] { this.x + width, this.y + height };  // Nothing to paint.
         }
-        page.AddBDC(StructElem.P, language, actualText, altDescription);
+        // Described, the stamp is read; otherwise it is decoration.
+        page.AddShapeBDC(language, actualText, altDescription);
         page.SaveGraphicsState();
 
         float drawX = this.x;
@@ -498,16 +498,7 @@ public class Stamp : IDrawable {
 
         // 3. ROTATE: rotate around origin
         double radians = rotateDegrees * (Math.PI / 180);
-        float cos = (float)Math.Cos(radians);
-        float sin = (float)Math.Sin(radians);
-        page.Append(cos);
-        page.Append(' ');
-        page.Append(sin);
-        page.Append(' ');
-        page.Append(-sin);
-        page.Append(' ');
-        page.Append(cos);
-        page.Append(" 0 0 cm\n");
+        page.AppendRotation((float) Math.Cos(radians), (float) Math.Sin(radians));
 
         // SCALE: around the center, like a Container
         if (scaleX != 1f || scaleY != 1f) {

@@ -91,9 +91,9 @@ internal class Annotation {
         this.language = language;
         // A link created from a destination name has no uri to fall back on,
         // so use the name itself rather than leaving the link undescribed.
-        String fallback = (uri != null) ? uri : key;
-        this.actualText = (actualText == null) ? fallback : actualText;
-        this.altDescription = (altDescription == null) ? fallback : altDescription;
+        String fallback = !String.IsNullOrEmpty(uri) ? uri : key;
+        this.actualText = String.IsNullOrEmpty(actualText) ? fallback : actualText;
+        this.altDescription = String.IsNullOrEmpty(altDescription) ? fallback : altDescription;
     }
 }
 }   // End of namespace PDFjet.NET

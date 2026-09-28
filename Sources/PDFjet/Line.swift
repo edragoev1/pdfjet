@@ -242,7 +242,9 @@ public class Line : Drawable {
         if page == nil {
             return [max(x1, x2), max(y1, y2)]   // Measured, not drawn
         }
-        page!.addBDC(StructElem.P, language, actualText, altDescription)
+        // Described, the line is read; otherwise it is decoration, like the
+        // rule under a heading.
+        page!.addShapeBDC(language, actualText, altDescription)
         page!.saveGraphicsState()
         page!.setPenColor(color)
         page!.setPenWidth(width)

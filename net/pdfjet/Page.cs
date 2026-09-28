@@ -106,6 +106,13 @@ public class Page {
     // The figure AddBDC began last, whose bounding box SetFigureBoundingBox
     // sets, or null.
     private StructElement figure = null;
+    // The transform of the containers that what is drawn is in, which moves,
+    // turns and scales it with its cm operators, or null outside of one: a
+    // point x, y of the drawing is at t[0]*x + t[2]*y + t[4], t[1]*x +
+    // t[3]*y + t[5] on the page, from its top left corner. The rectangles of
+    // the links and the bounding boxes of the figures drawn in a container
+    // are moved with it, as the content stream does not move them.
+    private float[] transform = null;
     // True once the page is added to its PDF.
     internal bool added = false;
     // The dictionary of a page merged from a document that was read, with the
@@ -372,7 +379,10 @@ public class Page {
     /// <summary>Draws the text line centered at the top of the page, with its baseline at the specified offset.</summary>
     public float[] AddHeader(TextLine textLine, float offset) {
         textLine.SetLocation((GetWidth() - textLine.GetWidth())/2, offset);
+        // A running header is no part of the content, which a screen reader skips.
+        AddArtifactBDC("/Type /Pagination /Subtype /Header");
         float[] xy = textLine.DrawOn(this);
+        AddEMC();
         xy[1] += textLine.font.GetDescent(textLine.fontSize);
         return xy;
     }
@@ -385,7 +395,12 @@ public class Page {
     /// <summary>Draws the text line centered at the bottom of the page, with its baseline at the specified offset from the bottom.</summary>
     public float[] AddFooter(TextLine textLine, float offset) {
         textLine.SetLocation((GetWidth() - textLine.GetWidth())/2, GetHeight() - offset);
-        return textLine.DrawOn(this);
+        // A running footer, like a page number, is no part of the content,
+        // which a screen reader skips.
+        AddArtifactBDC("/Type /Pagination /Subtype /Footer");
+        float[] xy = textLine.DrawOn(this);
+        AddEMC();
+        return xy;
     }
 
     /// <summary>Draws the text as a watermark diagonally across the page.</summary>
@@ -402,7 +417,10 @@ public class Page {
                 (float) (offset * Math.Cos(angle)),
                 (this.height - (float) (offset * Math.Sin(angle))));
         watermark.SetTextRotation(-(int) (angle * (180.0 / Math.PI)));
+        // A watermark is no part of the content, which a screen reader skips.
+        AddArtifactBDC("/Type /Pagination /Subtype /Watermark");
         watermark.DrawOn(this);
+        AddEMC();
     }
 
     /// <summary>Rotates this page clockwise when it is displayed, as every rotation in PDFjet turns and as /Rotate does, by 0, 90, 180 or 270 degrees; other angles are ignored.</summary>
@@ -429,6 +447,9 @@ public class Page {
     /// translate y at the MSCALE_X to MTRANS_Y indices, the first six values of an
     /// Android Matrix.getValues() array.</param>
     public void Transform(float[] values) {
+        if (values.Length < 6) {
+            pdf.Fail(new ArgumentException(TRANSFORM_COUNT));
+        }
         float scalex = values[MSCALE_X];
         float scaley = values[MSCALE_Y];
         float transx = values[MTRANS_X];
@@ -669,19 +690,28 @@ public class Page {
     }
 
     private void DrawASCIIString(Font font, String str) {
+        if (str.Length == 0) {
+            return;
+        }
+        // The code of each character is looked up once, as the next one of the
+        // kerning pair before it is the first one of the pair after it.
+        int c1 = font.CoreFontCode(Util.CodePointAt(str, 0));
         for (int i = 0; i < str.Length; ) {
-            int cp = Util.CodePointAt(str, i);
-            i += (cp > 0xFFFF) ? 2 : 1;
-            int c1 = font.CoreFontCode(cp);
             AppendByteAsHex(c1);
-            if (font.kernPairs && i < str.Length) {
-                int kerning = font.Kerning(c1, font.CoreFontCode(Util.CodePointAt(str, i)));
+            i += Util.CharCount(str, i);
+            if (i == str.Length) {
+                break;
+            }
+            int c2 = font.CoreFontCode(Util.CodePointAt(str, i));
+            if (font.kernPairs) {
+                int kerning = font.Kerning(c1, c2);
                 if (kerning != 0) {
                     Append(">");
                     Append(-kerning);
                     Append("<");
                 }
             }
+            c1 = c2;
         }
     }
 
@@ -697,7 +727,7 @@ public class Page {
             // is a space.
             int i = 0;
             while (i < str.Length) {
-                int codePoint = char.ConvertToUtf32(str, i);
+                int codePoint = Util.CodePointAt(str, i);  // A lone surrogate is drawn as .notdef
                 if (codePoint != 0xFEFF) {                  // BOM
                     if (codePoint < font.firstChar || codePoint > font.lastChar) {
                         AppendCodePointAsHex(0x0020);       // Space fallback
@@ -705,16 +735,16 @@ public class Page {
                         AppendCodePointAsHex(codePoint);
                     }
                 }
-                i += char.IsHighSurrogate(str[i]) ? 2 : 1;  // Proper surrogate handling
+                i += Util.CharCount(str, i);
             }
         } else if (!NeedsShaping(font, str)) {
             int i = 0;
             while (i < str.Length) {
-                int codePoint = char.ConvertToUtf32(str, i);
+                int codePoint = Util.CodePointAt(str, i);  // A lone surrogate is drawn as .notdef
                 if (codePoint != 0xFEFF) {                  // BOM
                     AppendCodePointAsHex(GlyphOf(font, codePoint));
                 }
-                i += char.IsHighSurrogate(str[i]) ? 2 : 1;  // Proper surrogate handling
+                i += Util.CharCount(str, i);
             }
         } else {
             // The marks are moved to where the GPOS table of the font puts
@@ -734,7 +764,7 @@ public class Page {
             bool afterRLM = false;
             int i = 0;
             while (i < str.Length) {
-                int codePoint = char.ConvertToUtf32(str, i);
+                int codePoint = Util.CodePointAt(str, i);  // A lone surrogate is drawn as .notdef
                 if (codePoint == 0x200F) {                  // RLM
                     afterRLM = true;
                 } else if (codePoint == 0x200E) {           // LRM
@@ -768,7 +798,7 @@ public class Page {
                     hasNotdef |= IsMissing(font, codePoints, n);
                     n++;
                 }
-                i += char.IsHighSurrogate(str[i]) ? 2 : 1;  // Proper surrogate handling
+                i += Util.CharCount(str, i);
             }
             int[] offsets = null;
             if (hasMarks && font.markData != null) {
@@ -940,6 +970,8 @@ public class Page {
             return " ";
         } else if (letters != null) {
             return letters;
+        } else if (codePoint >= 0xD800 && codePoint <= 0xDFFF) {
+            return ((char) codePoint).ToString();  // A lone surrogate, as Java has it
         }
         return char.ConvertFromUtf32(codePoint);
     }
@@ -1315,6 +1347,9 @@ public class Page {
         if (rgbColor == null) {
             return this; // Early exit if null
         }
+        if (rgbColor.Length < 3) {
+            pdf.Fail(new ArgumentException(RGB_COUNT));
+        }
 
         if (rgbColor[0] < 0f || rgbColor[0] > 1f ||
             rgbColor[1] < 0f || rgbColor[1] > 1f ||
@@ -1379,6 +1414,9 @@ public class Page {
     public Page SetPenColor(float[] rgbColor) {
         if (rgbColor == null) {
             return this; // Early exit if null
+        }
+        if (rgbColor.Length < 3) {
+            pdf.Fail(new ArgumentException(RGB_COUNT));
         }
 
         if (rgbColor[0] < 0f || rgbColor[0] > 1f ||
@@ -1514,7 +1552,18 @@ public class Page {
         return this;
     }
 
-    private const String WS = "[ \\t\\n\\f\\r\\v]";
+    // The white space of the pattern is that of Go's \\s, which has no vertical tab.
+    private const String WS = "[ \\t\\n\\f\\r]";
+    // The message of a color of fewer than three components.
+    internal const String RGB_COUNT = "An RGB color needs a red, a green and a blue value.";
+    // The message of a transform of fewer than six values.
+    internal const String TRANSFORM_COUNT =
+            "A transform needs six values: the scale, the skew and the translation of x and y.";
+
+    // The message of a path whose last curve has no end.
+    internal const String PATH_ENDS_ON_CONTROL_POINT =
+            "A path cannot end on a control point: a curve needs a point to end at after its control points.";
+
     private const String NUMBER = "[+-]?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)";
     private static readonly System.Text.RegularExpressions.Regex DASH_PATTERN =
             new System.Text.RegularExpressions.Regex(
@@ -1530,7 +1579,7 @@ public class Page {
         if (!m.Success) {
             return false;
         }
-        String lengths = m.Groups[1].Value.Trim();
+        String lengths = m.Groups[1].Value;
         if (lengths.Length == 0) {
             return true;
         }
@@ -1746,7 +1795,8 @@ public class Page {
     /// <para>
     /// This method supports both simple polygonal paths and complex paths with Bézier curves.
     /// Control points should have their controlPoint property set to indicate curve type
-    /// (e.g., 'C' for cubic Bézier, 'Q' for quadratic Bézier).
+    /// (e.g., 'C' for cubic Bézier, 'Q' for quadratic Bézier). A path that ends on a
+    /// control point, whose curve has no end, is refused and nothing of it is drawn.
     /// </para>
     /// </remarks>
     /// <example>
@@ -1777,6 +1827,10 @@ public class Page {
     public void DrawPath(List<Point> path, PathOperator pathOperator) {
         if (path.Count < 2) {
             return; // A path needs two points to paint anything.
+        }
+        if (path[path.Count - 1].controlPoint != '\0') {
+            pdf.Fail(new ArgumentException(PATH_ENDS_ON_CONTROL_POINT));
+            return;
         }
         Point point = path[0];
         MoveTo(point.x, point.y);
@@ -1902,17 +1956,17 @@ public class Page {
                 DrawEllipse(p.x, p.y, p.r, p.r, p.GetPathOperator());
             } else if (p.shape == Shape.DIAMOND) {
                 list = new List<Point>();
-                list.Add(new Point(p.x, (float) (p.y - p.r*1.2)));
-                list.Add(new Point((float) (p.x + p.r*1.2), p.y));
-                list.Add(new Point(p.x, (float) (p.y + p.r*1.2)));
-                list.Add(new Point((float) (p.x - p.r*1.2), p.y));
+                list.Add(new Point(p.x, p.y - p.r*1.2f));
+                list.Add(new Point(p.x + p.r*1.2f, p.y));
+                list.Add(new Point(p.x, p.y + p.r*1.2f));
+                list.Add(new Point(p.x - p.r*1.2f, p.y));
                 DrawPath(list, p.GetPathOperator());
             } else if (p.shape == Shape.BOX) {
                 list = new List<Point>();
-                list.Add(new Point((float) (p.x - p.r*0.886), (float) (p.y - p.r*0.886)));
-                list.Add(new Point((float) (p.x + p.r*0.886), (float) (p.y - p.r*0.886)));
-                list.Add(new Point((float) (p.x + p.r*0.886), (float) (p.y + p.r*0.886)));
-                list.Add(new Point((float) (p.x - p.r*0.886), (float) (p.y + p.r*0.886)));
+                list.Add(new Point(p.x - p.r*0.886f, p.y - p.r*0.886f));
+                list.Add(new Point(p.x + p.r*0.886f, p.y - p.r*0.886f));
+                list.Add(new Point(p.x + p.r*0.886f, p.y + p.r*0.886f));
+                list.Add(new Point(p.x - p.r*0.886f, p.y + p.r*0.886f));
                 DrawPath(list, p.GetPathOperator());
             } else if (p.shape == Shape.PLUS) {
                 DrawLine(p.x - p.r, p.y, p.x + p.r, p.y);
@@ -2012,10 +2066,12 @@ public class Page {
             float cosOfAngle = (float) Math.Cos(degrees * (Math.PI / 180));
             tmx = new float[] {cosOfAngle, sinOfAngle, -sinOfAngle, cosOfAngle};
         }
-        tm0 = Number(tmx[0]);
-        tm1 = Number(tmx[1]);
-        tm2 = Number(tmx[2]);
-        tm3 = Number(tmx[3]);
+        // The sine and the cosine are written with five decimals: hundredths
+        // would turn the text by another angle, by 1.15 degrees for 1.
+        tm0 = FastFloat.ToPreciseByteArray(tmx[0]);
+        tm1 = FastFloat.ToPreciseByteArray(tmx[1]);
+        tm2 = FastFloat.ToPreciseByteArray(tmx[2]);
+        tm3 = FastFloat.ToPreciseByteArray(tmx[3]);
         return this;
     }
 
@@ -2082,6 +2138,10 @@ public class Page {
         float x3 = 0f;
         float y3 = 0f;
 
+        if (!IsArcSweep(sweepDegrees)) {
+            return new float[] { x1, y1, x2, y2, x3, y3 };
+        }
+        sweepDegrees = Math.Max(-360f, Math.Min(360f, sweepDegrees));
         int numSegments = (int)Math.Ceiling(Math.Abs(sweepDegrees) / 90.0);
         double angleRad = startAngle * Math.PI / 180.0;
         double deltaPerSeg = (sweepDegrees / numSegments) * Math.PI / 180.0;
@@ -2119,6 +2179,18 @@ public class Page {
         }
 
         return new float[6] { x1, y1, x2, y2, x3, y3 };
+    }
+
+    // Returns false for a sweep of an arc that draws nothing: 0, or one that is
+    // not a number or is infinite, which is refused, as it would take a curve
+    // for every quarter turn of it. A sweep of more than a full turn either
+    // way is drawn as a full turn.
+    internal bool IsArcSweep(float sweepDegrees) {
+        if (float.IsNaN(sweepDegrees) || float.IsInfinity(sweepDegrees)) {
+            pdf.Fail(new ArgumentException("The sweep of an arc must be a finite number of degrees."));
+            return false;
+        }
+        return sweepDegrees != 0f;
     }
 
     /// <summary>
@@ -2346,12 +2418,18 @@ public class Page {
         buf.Write(bytes.Slice(0, FastFloat.Write(f, bytes)));
     }
 
-    // Returns the bytes of the number, after checking that a PDF can hold it.
-    private byte[] Number(float f) {
-        if (!FastFloat.IsWritable(f)) {
-            pdf.Fail(new ArgumentException(FastFloat.NOT_WRITABLE));
-        }
-        return FastFloat.ToByteArray(f);
+    // Appends the cm operator of the rotation with the cosine and the sine,
+    // written with five decimals, as hundredths would turn it by another
+    // angle, by 1.15 degrees for 1.
+    internal void AppendRotation(float cos, float sin) {
+        Append(FastFloat.ToPreciseByteArray(cos));
+        Append(' ');
+        Append(FastFloat.ToPreciseByteArray(sin));
+        Append(' ');
+        Append(FastFloat.ToPreciseByteArray(-sin));
+        Append(' ');
+        Append(FastFloat.ToPreciseByteArray(cos));
+        Append(" 0 0 cm\n");
     }
 
     internal void Append(char ch) {
@@ -2408,7 +2486,7 @@ public class Page {
             // holds it in lower case, as TextBlock.SetHighlightColors does
             int highlight;
             if (highlightColors.TryGetValue(str, out highlight) ||
-                    highlightColors.TryGetValue(str.ToLower(), out highlight)) {
+                    highlightColors.TryGetValue(str.ToLowerInvariant(), out highlight)) {
                 SetBrushColor(highlight);
             } else {
                 SetBrushColor(color);
@@ -2433,9 +2511,16 @@ public class Page {
             Dictionary<String, Int32> highlightColors) {
         StringBuilder buf1 = new StringBuilder();
         StringBuilder buf2 = new StringBuilder();
+        bool inWord = false;
         for (int i = 0; i < str.Length; ) {
             int count = (Util.CodePointAt(str, i) > 0xFFFF) ? 2 : 1;
-            if (Char.IsLetterOrDigit(str, i)) {
+            // A combining mark belongs to the character before it, so that a
+            // word keeps its accents, which are placed on their letters and
+            // matched with the word.
+            if (!Util.IsMark(str, i)) {
+                inWord = Char.IsLetterOrDigit(str, i);
+            }
+            if (inWord) {
                 DrawWord(font, buf2, color, highlightColors);
                 buf1.Append(str, i, count);
             } else {
@@ -2549,10 +2634,12 @@ public class Page {
         if (figure == null) {
             return;
         }
-        float x1 = Math.Min(x, x + w);
-        float x2 = Math.Max(x, x + w);
-        float y1 = Math.Min(y, y + h);
-        float y2 = Math.Max(y, y + h);
+        // Moved and turned with the containers it is drawn in
+        float[] box = TransformedBox(x, y, x + w, y + h);
+        float x1 = box[0];
+        float y1 = box[1];
+        float x2 = box[2];
+        float y2 = box[3];
         // In the coordinates of PDF, from the bottom left of the page
         figure.attributes = "<</O /Layout /BBox [" +
                 BBoxNumber(x1) + " " + BBoxNumber(height - y2) + " " +
@@ -2574,6 +2661,33 @@ public class Page {
         }
     }
 
+    // Begins marked content for an artifact of the type that the properties
+    // give, like "/Type /Pagination /Subtype /Footer" for a running footer,
+    // when the document is tagged, as AddArtifactBMC does.
+    internal void AddArtifactBDC(String properties) {
+        markedContentDepth++;
+        if (artifactDepth == 0) {
+            artifactDepth = markedContentDepth;
+            if (pdf.IsTagged()) {
+                Append("/Artifact <<");
+                Append(properties);
+                Append(">> BDC\n");
+            }
+        }
+    }
+
+    // Begins the marked content of a shape, like a line or an arc: a
+    // paragraph when it is given an alternate description or an actual text,
+    // which a screen reader reads, and otherwise an artifact, the decoration
+    // it is.
+    internal void AddShapeBDC(String language, String actualText, String altDescription) {
+        if (String.IsNullOrEmpty(altDescription) && String.IsNullOrEmpty(actualText)) {
+            AddArtifactBMC();
+        } else {
+            AddBDC(StructElem.P, language, actualText, altDescription);
+        }
+    }
+
     /// <summary>Ends the current marked content sequence.</summary>
     public void AddEMC() {
         if (markedContentDepth == 0) {
@@ -2581,6 +2695,8 @@ public class Page {
         }
         if (artifactDepth == 0 || artifactDepth == markedContentDepth) {
             artifactDepth = 0;
+            // The figure ends here, and a bounding box set after it is not its own
+            figure = null;
             if (pdf.IsTagged()) {
                 Append("EMC\n");
             }
@@ -2859,6 +2975,92 @@ public class Page {
         Append("ET\n");
     }
 
+    // Returns where the point x, y of what is drawn is on the page, after the
+    // transform of the containers it is drawn in.
+    internal float[] Transformed(float x, float y) {
+        float[] t = transform;
+        if (t == null) {
+            return new float[] {x, y};
+        }
+        return new float[] {t[0]*x + t[2]*y + t[4], t[1]*x + t[3]*y + t[5]};
+    }
+
+    // Returns the box, left, top, right and bottom, that holds the rectangle
+    // between the corners x1, y1 and x2, y2 after the transform of the
+    // containers it is drawn in, which can turn it.
+    internal float[] TransformedBox(float x1, float y1, float x2, float y2) {
+        if (transform == null) {
+            return new float[] {
+                    Math.Min(x1, x2), Math.Min(y1, y2), Math.Max(x1, x2), Math.Max(y1, y2)};
+        }
+        float[] a = Transformed(x1, y1);
+        float[] b = Transformed(x2, y1);
+        float[] c = Transformed(x2, y2);
+        float[] d = Transformed(x1, y2);
+        return new float[] {
+                Math.Min(Math.Min(a[0], b[0]), Math.Min(c[0], d[0])),
+                Math.Min(Math.Min(a[1], b[1]), Math.Min(c[1], d[1])),
+                Math.Max(Math.Max(a[0], b[0]), Math.Max(c[0], d[0])),
+                Math.Max(Math.Max(a[1], b[1]), Math.Max(c[1], d[1]))};
+    }
+
+    // Concatenates the transform of a container, in the order of Transformed,
+    // to that of the containers it is in, and returns the transform that
+    // PopTransform puts back after the container is drawn.
+    internal float[] PushTransform(float[] m) {
+        float[] saved = transform;
+        float[] t = saved;
+        if (t != null) {
+            m = new float[] {
+                    t[0]*m[0] + t[2]*m[1],
+                    t[1]*m[0] + t[3]*m[1],
+                    t[0]*m[2] + t[2]*m[3],
+                    t[1]*m[2] + t[3]*m[3],
+                    t[0]*m[4] + t[2]*m[5] + t[4],
+                    t[1]*m[4] + t[3]*m[5] + t[5]};
+        }
+        transform = m;
+        return saved;
+    }
+
+    // Puts back the transform that PushTransform returned.
+    internal void PopTransform(float[] saved) {
+        transform = saved;
+    }
+
+    // Moves the rectangle of an annotation drawn in a container, and the
+    // vertices of a polygon, with the container, as its drawing is moved. The
+    // rectangle of a turned annotation is the box that holds it.
+    private void TransformAnnotation(Annotation annotation) {
+        if (transform == null) {
+            return;
+        }
+        if (annotation.annotationType == Annotation.Polygon
+                && annotation.vertices != null && annotation.vertices.Length >= 2) {
+            // The vertices are relative to the first corner, and each is turned with it
+            float[] p0 = Transformed(annotation.x1, annotation.y1);
+            float[] vertices = new float[annotation.vertices.Length & ~1];
+            for (int i = 0; i + 1 < annotation.vertices.Length; i += 2) {
+                float[] p = Transformed(
+                        annotation.x1 + annotation.vertices[i], annotation.y1 + annotation.vertices[i + 1]);
+                vertices[i] = p[0] - p0[0];
+                vertices[i + 1] = p[1] - p0[1];
+            }
+            annotation.vertices = vertices;
+            float[] p2 = Transformed(annotation.x2, annotation.y2);
+            annotation.x2 = p2[0];
+            annotation.y2 = p2[1];
+            annotation.x1 = p0[0];
+            annotation.y1 = p0[1];
+            return;
+        }
+        float[] box = TransformedBox(annotation.x1, annotation.y1, annotation.x2, annotation.y2);
+        annotation.x1 = box[0];
+        annotation.y1 = box[1];
+        annotation.x2 = box[2];
+        annotation.y2 = box[3];
+    }
+
     internal void RotateAroundCenter(float centerX, float centerY, float degrees) {
         Append("1 0 0 1 ");
         Append(centerX);
@@ -2867,16 +3069,7 @@ public class Page {
         Append(" cm\n");
 
         double radians = degrees * Math.PI / 180;
-        float cos = (float)Math.Cos(radians);
-        float sin = (float)Math.Sin(radians);
-        Append(cos);
-        Append(" ");
-        Append(sin);
-        Append(" ");
-        Append(-sin);
-        Append(" ");
-        Append(cos);
-        Append(" 0 0 cm\n");
+        AppendRotation((float) Math.Cos(radians), (float) Math.Sin(radians));
 
         Append("1 0 0 1 ");
         Append(-centerX);
@@ -2892,6 +3085,7 @@ public class Page {
             pdf.Fail(new InvalidOperationException("The page was already written to the PDF: "
                     + "draw on a page before creating the next page or completing the PDF."));
         }
+        TransformAnnotation(annotation);
         annotation.y1 = this.height - annotation.y1;
         annotation.y2 = this.height - annotation.y2;
         annots.Add(annotation);

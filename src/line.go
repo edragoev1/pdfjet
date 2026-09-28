@@ -10,7 +10,6 @@ import (
 
 	"github.com/edragoev1/pdfjet/v9/src/capstyle"
 	"github.com/edragoev1/pdfjet/v9/src/color"
-	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // Line is used to create line objects.
@@ -202,7 +201,9 @@ func (line *Line) DrawOn(page *Page) [2]float32 {
 	if page == nil {
 		return [2]float32{max(line.x1, line.x2), max(line.y1, line.y2)} // Measured, not drawn
 	}
-	page.AddBDC(structelem.P, line.language, line.actualText, line.altDescription)
+	// Described, the line is read; otherwise it is decoration, like the rule
+	// under a heading.
+	page.addShapeBDC(line.language, line.actualText, line.altDescription)
 	page.SaveGraphicsState()
 	page.SetPenColorRGB(line.color)
 	page.SetPenWidth(line.width)

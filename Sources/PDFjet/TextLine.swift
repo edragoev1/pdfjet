@@ -31,7 +31,7 @@ public class TextLine : BaselineDrawable {
 
     private var scriptPosition = ScriptPosition.NORMAL
     private var verticalOffset: Float = 0.0
-    private var explicitOffset = false      // True after setVerticalOffset
+    var explicitOffset = false      // True after setVerticalOffset
 
     private var language: String?
     private var altDescription: String?
@@ -572,14 +572,15 @@ public class TextLine : BaselineDrawable {
     ///
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
+        // The destination is where the line is, with a text or without one.
+        if let page, let destination, !destination.isEmpty {
+            _ = page.addDestination(destination, destinationY())
+        }
         if text == nil || text == "" {
             return [x, y]
         }
         if page == nil {
             return getCorner(getVerticalOffset())   // Measured, not drawn
-        }
-        if let destination {
-            _ = page!.addDestination(destination, destinationY())
         }
 
         let verticalOffset = getVerticalOffset()
@@ -588,12 +589,15 @@ public class TextLine : BaselineDrawable {
         // The text is drawn, so it is not given again as actual text, or as its
         // own alternate description: right to left text is drawn in visual
         // order, and would be read backwards.
-        let alt = altDescription == text ? "" : altDescription ?? ""
+        // The two are compared by their code points, as in the other ports, and
+        // not by canonical equivalence, as Swift compares strings.
+        let alt = (altDescription ?? "").unicodeScalars.elementsEqual(text!.unicodeScalars) ?
+                "" : altDescription ?? ""
         if page!.mcidParent == nil {
             page!.noteHeading(structureType, text, destinationY())
         }
         var link: StructElement?
-        if uri != nil || key != nil {
+        if !(uri ?? "").isEmpty || !(key ?? "").isEmpty {
             link = page!.addLinkBDC(structureType, language, "", alt)
         } else {
             page!.addBDC(structureType, language, "", alt)
@@ -604,6 +608,10 @@ public class TextLine : BaselineDrawable {
         // The trigonometry is done in double precision, as in the other ports, and
         // turns counterclockwise, where the rotation turns clockwise.
         let radians = Double.pi * Double(-degrees) / 180.0
+        if underline || strikeout {
+            // The pen of the lines is their own, and the page is left with the one it had.
+            page!.saveGraphicsState()
+        }
         if underline {
             page!.setPenWidth(font!.getUnderlineThickness(fontSize))
             page!.setPenColor(decorationColor)
@@ -641,14 +649,18 @@ public class TextLine : BaselineDrawable {
             page!.strokePath()
             page!.addEMC()
         }
+        if underline || strikeout {
+            page!.restoreGraphicsState()
+        }
 
-        if uri != nil || key != nil {
+        if !(uri ?? "").isEmpty || !(key ?? "").isEmpty {
+            let box = getLinkBox(verticalOffset)
             page!.addAnnotation(Annotation(
                     Annotation.Link,
-                    self.x,
-                    (self.y + verticalOffset) - font!.getAscent(fontSize),
-                    self.x + font!.stringWidth(fallbackFont, fontSize, text!),
-                    (self.y  + verticalOffset) + font!.getDescent(fontSize),
+                    box[0],
+                    box[1],
+                    box[2],
+                    box[3],
                     nil,    // Vertices
                     nil,    // Fill Color
                     0.0,    // Opacity
@@ -663,6 +675,41 @@ public class TextLine : BaselineDrawable {
         page!.setTextRotation(0)
 
         return getCorner(verticalOffset)
+    }
+
+    // Returns the left, top, right and bottom of the box that holds the text,
+    // from the ascent above the baseline to the descent below it, turned with
+    // the text, which the link of the text covers.
+    private func getLinkBox(_ verticalOffset: Float) -> [Float] {
+        let width = font!.stringWidth(fallbackFont, fontSize, text!)
+        let ascent = font!.getAscent(fontSize)
+        let descent = font!.getDescent(fontSize)
+        let x0 = x
+        let y0 = y + verticalOffset
+        if degrees % 360 == 0 {
+            return [x0, y0 - ascent, x0 + width, y0 + descent]
+        }
+        // The corners of the box, along the baseline and across it, turned as
+        // the underline is; the trigonometry turns counterclockwise, where the
+        // rotation turns clockwise.
+        let radians = Double.pi * Double(-degrees) / 180.0
+        let cosValue = cos(radians)
+        let sinValue = sin(radians)
+        var x1 = Double.infinity
+        var y1 = Double.infinity
+        var x2 = -Double.infinity
+        var y2 = -Double.infinity
+        for along in [0.0, Double(width)] {
+            for across in [Double(-ascent), Double(descent)] {
+                let cornerX = Double(x0) + along*cosValue + across*sinValue
+                let cornerY = Double(y0) - along*sinValue + across*cosValue
+                x1 = min(x1, cornerX)
+                y1 = min(y1, cornerY)
+                x2 = max(x2, cornerX)
+                y2 = max(y2, cornerY)
+            }
+        }
+        return [Float(x1), Float(y1), Float(x2), Float(y2)]
     }
 
     // Returns the right end of the baseline, or its lower end when the text is rotated.

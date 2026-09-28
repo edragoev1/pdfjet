@@ -12,7 +12,6 @@ package com.pdfjet;
 public abstract class BaseAnnotation implements Drawable {
     String annotationType = null;
     float[] point1 = new float[] {0f, 0f};
-    float[] point2 = new float[] {0f, 0f};
     float[] vertices = null;
     float[] fillColor = new float[] {0.5f, 0.5f, 0.5f};
     float opacity = 1f;
@@ -23,7 +22,11 @@ public abstract class BaseAnnotation implements Drawable {
     String language = null;
     String actualText = null;
     String altDescription = null;
-    Container container = null;
+    // The size setSize sets, which the second point is at from the first when
+    // the annotation is drawn, wherever setLocation puts the first.
+    float width = 0f;
+    float height = 0f;
+    boolean hasSize = false;
 
     /**
      * Creates an annotation. The circle, square, polygon and text annotations call it.
@@ -37,15 +40,28 @@ public abstract class BaseAnnotation implements Drawable {
     }
 
     /**
-     * Sets the size of this annotation, measured from its location.
+     * Sets the size of this annotation, measured from its location: its
+     * second point is w to the right of its location and h below it, whether
+     * setLocation is called before or after.
      *
      * @param w the width.
      * @param h the height.
      * @return this BaseAnnotation object.
      */
     public BaseAnnotation setSize(float w, float h) {
-        this.point2 = new float[] {point1[0] + w, point1[1] + h};
+        this.width = w;
+        this.height = h;
+        this.hasSize = true;
         return this;
+    }
+
+    // Returns the second point of the annotation, which is the origin of the
+    // page until setSize is called.
+    private float[] getCorner() {
+        if (!hasSize) {
+            return new float[] {0f, 0f};
+        }
+        return new float[] {point1[0] + width, point1[1] + height};
     }
 
     /**
@@ -106,35 +122,10 @@ public abstract class BaseAnnotation implements Drawable {
         return this;
     }
 
-    /**
-     * Rotates this annotation together with the container it is in.
-     *
-     * @param degrees the rotation angle in degrees.
-     * @return this BaseAnnotation object.
-     */
-    BaseAnnotation rotate(double degrees) {
-        if (container == null) { return this; }
-        float[] center = container.getRotationCenter();
-        if (container.parent != null) {
-            center[0] += container.parent.x;
-            center[1] += container.parent.y;
-        }
-        point1 = Container.rotateAroundCenter(point1, center, degrees);
-        point2 = Container.rotateAroundCenter(point2, center, degrees);
-        if (annotationType.equals(Annotation.Polygon) && vertices != null) {
-            for (int i = 0; i < vertices.length; i += 2) {
-                float[] point = Container.rotateAroundCenter(
-                    new float[] {vertices[i], vertices[i + 1]}, new float[] {0f, 0f}, degrees);
-                vertices[i] = point[0];
-                vertices[i + 1] = point[1];
-            }
-        }
-        return this;
-    }
-
     public float[] drawOn(Page page) {
+        float[] point2 = getCorner();
         if (page == null) {
-            return new float[] {point2[0], point2[1]};  // Measured, not drawn
+            return point2;  // Measured, not drawn
         }
         page.addAnnotation(new Annotation(
                 annotationType,
@@ -142,7 +133,8 @@ public abstract class BaseAnnotation implements Drawable {
                 point1[1],
                 point2[0],
                 point2[1],
-                vertices,       // Vertices
+                // A copy, which the annotation keeps until the page is written
+                (vertices == null) ? null : Util.copyOf(vertices),
                 fillColor,      // Fill Color
                 opacity,        // Opacity
                 title,          // Title
@@ -152,6 +144,6 @@ public abstract class BaseAnnotation implements Drawable {
                 language,
                 actualText,
                 altDescription));
-        return new float[] {point2[0], point2[1]};
+        return point2;
     }
 }

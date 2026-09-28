@@ -124,11 +124,16 @@ public class RadioButton : Drawable {
         }
 
         var link: StructElement?
-        if uri != nil {
+        if !(uri ?? "").isEmpty {
             link = page!.addLinkBDC(StructElem.P, language, actualText, altDescription)
+        } else if label.isEmpty {
+            // A button with no label, nor a description, has nothing to read.
+            page!.addShapeBDC(language, actualText, altDescription)
         } else {
             page!.addBDC(StructElem.P, language, actualText, altDescription)
         }
+        // The pen of the button is its own, and the page is left with the one it had.
+        page!.saveGraphicsState()
 
         let yBox = y
         page!.setPenWidth(1.0)
@@ -142,14 +147,13 @@ public class RadioButton : Drawable {
         }
 
         // A linked label is blue.
-        let textColor: [Float] = (uri != nil) ? [0.0, 0.0, 1.0] : [0.0, 0.0, 0.0]
+        let textColor: [Float] = !(uri ?? "").isEmpty ? [0.0, 0.0, 1.0] : [0.0, 0.0, 0.0]
         page!.drawString(font, fontSize, label, x + 3*r1, y + font.getAscent(fontSize), textColor, nil)
-        page!.setPenWidth(0.0)
-        page!.setBrushColor(Color.black)
+        page!.restoreGraphicsState()
 
         page!.addEMC()
 
-        if uri != nil {
+        if !(uri ?? "").isEmpty {
             page!.addAnnotation(Annotation(
                     Annotation.Link,
                     x + 3*r1,

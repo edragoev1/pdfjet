@@ -162,6 +162,13 @@ public class Form : IDrawable {
     /// <returns>x and y coordinates of the bottom right corner of this component.</returns>
     /// <exception cref="System.Exception">If an input or output exception occurred</exception>
     public float[] DrawOn(Page page) {
+        if (f1 == null || f2 == null) {
+            if (page != null) {
+                page.pdf.Fail(new InvalidOperationException(
+                        "A form needs a label font and a value font: SetLabelFont and SetValueFont."));
+            }
+            return new float[] {x, y};
+        }
         float yField = 0f;
         float xOffset = 3f;
         for (int i = 0; i < fields.Count; i++) {

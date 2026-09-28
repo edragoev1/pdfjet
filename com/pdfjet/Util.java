@@ -327,6 +327,69 @@ class Util {
         return ch == ' ' || (ch >= '\t' && ch <= '\r');
     }
 
+    // Returns true for a string that is null or empty, which is no value.
+    static boolean isEmpty(String str) {
+        return str == null || str.isEmpty();
+    }
+
+    // Returns true for a combining mark, Mn, Mc or Me, as Go's unicode.IsMark.
+    static boolean isMark(int cp) {
+        int type = Character.getType(cp);
+        return type == Character.NON_SPACING_MARK
+                || type == Character.COMBINING_SPACING_MARK
+                || type == Character.ENCLOSING_MARK;
+    }
+
+    // Returns true for the white space of Unicode, as Go's unicode.IsSpace:
+    // tab, line feed, vertical tab, form feed, carriage return, space, U+0085,
+    // U+00A0, and the space, line and paragraph separators above them, like
+    // the ideographic space.
+    static boolean isSpace(int cp) {
+        if (cp <= 0xFF) {
+            return cp == ' ' || (cp >= '\t' && cp <= '\r') || cp == 0x85 || cp == 0xA0;
+        }
+        int type = Character.getType(cp);
+        return type == Character.SPACE_SEPARATOR
+                || type == Character.LINE_SEPARATOR
+                || type == Character.PARAGRAPH_SEPARATOR;
+    }
+
+    // Returns the string without the white space that leads it and trails it,
+    // as Go's strings.TrimSpace.
+    static String trimSpace(String str) {
+        int start = 0;
+        int end = str.length();
+        while (start < end && isSpace(str.codePointAt(start))) {
+            start += Character.charCount(str.codePointAt(start));
+        }
+        while (end > start && isSpace(str.codePointBefore(end))) {
+            end -= Character.charCount(str.codePointBefore(end));
+        }
+        return str.substring(start, end);
+    }
+
+    // Returns the words of the string, split on white space, joined by single
+    // spaces, as strings.Join(strings.Fields(str), " ") in Go.
+    static String joinFields(String str) {
+        StringBuilder sb = new StringBuilder();
+        int i = 0;
+        while (i < str.length()) {
+            int cp = str.codePointAt(i);
+            if (isSpace(cp)) {
+                i += Character.charCount(cp);
+                continue;
+            }
+            if (sb.length() > 0) {
+                sb.append(' ');
+            }
+            while (i < str.length() && !isSpace(str.codePointAt(i))) {
+                sb.appendCodePoint(str.codePointAt(i));
+                i += Character.charCount(str.codePointAt(i));
+            }
+        }
+        return sb.toString();
+    }
+
     /**
      * Returns true if more than half of the code points of the string are CJK:
      * CJK Unified Ideographs (4E00-9FD5), Hiragana (3040-309F),

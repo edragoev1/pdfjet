@@ -110,11 +110,25 @@ type Page struct {
 	// sets, or nil.
 	figure *structElement
 
+	// The transform of the containers that what is drawn is in, which moves,
+	// turns and scales it with its cm operators, or nil outside of one: a
+	// point x, y of the drawing is at t[0]*x + t[2]*y + t[4], t[1]*x +
+	// t[3]*y + t[5] on the page, from its top left corner. The rectangles of
+	// the links and the bounding boxes of the figures drawn in a container
+	// are moved with it, as the content stream does not move them.
+	transform *[6]float32
+
 	markedContentDepth int      // The AddBDC and AddArtifactBMC calls that AddEMC has not ended yet
 	added              bool     // True once the page is added to its PDF
 	written            bool     // True once the page content is written to the PDF
 	mergedDict         []string // The dictionary of a page merged from a document that was read, or nil
 }
+
+// pathEndsOnControlPoint is the message of a path whose last curve has no end.
+const pathEndsOnControlPoint = "A path cannot end on a control point: a curve needs a point to end at after its control points."
+
+// transformCount is the message of a transform of fewer than six values.
+const transformCount = "A transform needs six values: the scale, the skew and the translation of x and y."
 
 // notWritable is the message of a number a PDF cannot hold.
 const notWritable = "A coordinate, size or width is NaN, infinite or too large for a PDF."
@@ -224,14 +238,6 @@ func (page *Page) open() bool {
 		return false
 	}
 	return true
-}
-
-// number returns the bytes of the number, after checking that a PDF can hold it.
-func (page *Page) number(value float32) []byte {
-	if !fastfloat.IsWritable(value) {
-		page.pdf.fail(notWritable)
-	}
-	return fastfloat.ToByteArray(value)
 }
 
 // newMergedPage returns a page merged from a document that was read. Its
@@ -460,17 +466,27 @@ func (page *Page) drawASCIIString(font *Font, text string) {
 		traceText(page, font, text)
 	}
 	runes := []rune(text)
-	for i, cp := range runes {
-		c1 := font.coreFontCode(cp)
+	if len(runes) == 0 {
+		return
+	}
+	// The code of each character is looked up once, as the next one of the
+	// kerning pair before it is the first one of the pair after it.
+	c1 := font.coreFontCode(runes[0])
+	for i := range runes {
 		page.appendByteAsHex(byte(c1))
-		if font.kernPairs && i < (len(runes)-1) {
-			kerning := font.kerning(c1, font.coreFontCode(runes[i+1]))
+		if i == len(runes)-1 {
+			break
+		}
+		c2 := font.coreFontCode(runes[i+1])
+		if font.kernPairs {
+			kerning := font.kerning(c1, c2)
 			if kerning != 0 {
 				page.appendString(">")
 				page.appendInteger(-kerning)
 				page.appendString("<")
 			}
 		}
+		c1 = c2
 	}
 }
 
@@ -1549,10 +1565,16 @@ func (page *Page) fillRectBetween(x1, y1, x2, y2 float32) {
 // pathOperator: The PDF path painting operator to apply, for example pathoperator.Stroke or pathoperator.Fill.
 //
 // The method starts at the first point and processes subsequent points as either
-// line segments or curve control points based on their controlPoint field.
+// line segments or curve control points based on their controlPoint field. A
+// path that ends on a control point, whose curve has no end, is refused and
+// nothing of it is drawn.
 func (page *Page) DrawPath(path []*Point, pathOperator pathoperator.PathOperator) {
 	if len(path) < 2 {
 		return // A path needs two points to paint anything.
+	}
+	if path[len(path)-1].controlPoint != 0 {
+		page.pdf.fail(pathEndsOnControlPoint)
+		return
 	}
 	point := path[0]
 	page.MoveTo(point.x, point.y)
@@ -1783,10 +1805,12 @@ func (page *Page) SetTextRotation(degrees int) *Page {
 		cosOfAngle := float32(math.Cos(float64(degrees) * (math.Pi / 180)))
 		page.tmx = [4]float32{cosOfAngle, sinOfAngle, -sinOfAngle, cosOfAngle}
 	}
-	page.tm0 = page.number(page.tmx[0])
-	page.tm1 = page.number(page.tmx[1])
-	page.tm2 = page.number(page.tmx[2])
-	page.tm3 = page.number(page.tmx[3])
+	// The sine and the cosine are written with five decimals: hundredths
+	// would turn the text by another angle, by 1.15 degrees for 1.
+	page.tm0 = fastfloat.AppendPrecise(nil, page.tmx[0])
+	page.tm1 = fastfloat.AppendPrecise(nil, page.tmx[1])
+	page.tm2 = fastfloat.AppendPrecise(nil, page.tmx[2])
+	page.tm3 = fastfloat.AppendPrecise(nil, page.tmx[3])
 	return page
 }
 
@@ -1817,10 +1841,16 @@ func (page *Page) AddCircularArcToPath(
 
 // AddArcToPath adds an elliptical arc to the current path.
 // It returns the control points and the end point of the last curve segment.
+// A sweep of 0 adds nothing, one of more than a full turn is one full turn, and
+// one that is not a number, or infinite, is refused.
 func (page *Page) AddArcToPath(
 	x, y, rx, ry, startAngle, sweepDegrees float32) []float32 {
 	var x1, y1, x2, y2, x3, y3 float32
 
+	sweepDegrees, ok := page.arcSweep(sweepDegrees)
+	if !ok {
+		return []float32{x1, y1, x2, y2, x3, y3}
+	}
 	numSegments := int(math.Ceil(math.Abs(float64(sweepDegrees)) / 90.0))
 	angleRad := float64(startAngle) * math.Pi / 180.0
 	deltaPerSeg := float64(sweepDegrees/float32(numSegments)) * math.Pi / 180.0
@@ -1859,6 +1889,21 @@ func (page *Page) AddArcToPath(
 	}
 
 	return []float32{x1, y1, x2, y2, x3, y3}
+}
+
+// arcSweep returns the sweep of an arc, at most a full turn either way, and
+// false for a sweep that draws nothing: 0, or one that is not a number or is
+// infinite, which is refused, as it would take a curve for every quarter turn
+// of it.
+func (page *Page) arcSweep(sweepDegrees float32) (float32, bool) {
+	if math.IsNaN(float64(sweepDegrees)) || math.IsInf(float64(sweepDegrees), 0) {
+		page.pdf.fail("The sweep of an arc must be a finite number of degrees.")
+		return 0, false
+	}
+	if sweepDegrees == 0 {
+		return 0, false
+	}
+	return max(-360, min(360, sweepDegrees)), true
 }
 
 // BezierCurveTo draw a Bézier curve starting from the current point.
@@ -2062,8 +2107,15 @@ func (page *Page) drawWord(font *Font, buf *strings.Builder, brush [3]float32, c
 func (page *Page) drawColoredString(font *Font, str string, brush [3]float32, colors map[string]int32) {
 	var buf1 strings.Builder
 	var buf2 strings.Builder
+	inWord := false
 	for _, ch := range str {
-		if unicode.IsLetter(ch) || unicode.IsDigit(ch) {
+		// A combining mark belongs to the character before it, so that a word
+		// keeps its accents, which are placed on their letters and matched
+		// with the word.
+		if !unicode.IsMark(ch) {
+			inWord = unicode.IsLetter(ch) || unicode.IsDigit(ch)
+		}
+		if inWord {
 			page.drawWord(font, &buf2, brush, colors)
 			buf1.WriteRune(ch)
 		} else {
@@ -2160,8 +2212,8 @@ func (page *Page) SetFigureBoundingBox(x, y, w, h float32) {
 	if page.figure == nil {
 		return
 	}
-	x1, x2 := min(x, x+w), max(x, x+w)
-	y1, y2 := min(y, y+h), max(y, y+h)
+	// Moved and turned with the containers it is drawn in
+	x1, y1, x2, y2 := page.transformedBox(x, y, x+w, y+h)
 	// In the coordinates of PDF, from the bottom left of the page
 	page.figure.attributes = "<</O /Layout /BBox [" +
 		string(fastfloat.ToByteArray(x1)) + " " +
@@ -2181,6 +2233,32 @@ func (page *Page) AddArtifactBMC() {
 	}
 }
 
+// addArtifactBDC begins marked content for an artifact of the type that the
+// properties give, like "/Type /Pagination /Subtype /Footer" for a running
+// footer, when the document is tagged, as AddArtifactBMC does.
+func (page *Page) addArtifactBDC(properties string) {
+	page.markedContentDepth++
+	if page.artifactDepth == 0 {
+		page.artifactDepth = page.markedContentDepth
+		if page.pdf.isTagged() {
+			page.appendString("/Artifact <<")
+			page.appendString(properties)
+			page.appendString(">> BDC\n")
+		}
+	}
+}
+
+// addShapeBDC begins the marked content of a shape, like a line or an arc: a
+// paragraph when it is given an alternate description or an actual text, which
+// a screen reader reads, and otherwise an artifact, the decoration it is.
+func (page *Page) addShapeBDC(language, actualText, altDescription string) {
+	if altDescription == "" && actualText == "" {
+		page.AddArtifactBMC()
+	} else {
+		page.AddBDC(structelem.P, language, actualText, altDescription)
+	}
+}
+
 // AddEMC adds EMC to the page.
 func (page *Page) AddEMC() {
 	if page.markedContentDepth == 0 {
@@ -2189,6 +2267,8 @@ func (page *Page) AddEMC() {
 	}
 	if page.artifactDepth == 0 || page.artifactDepth == page.markedContentDepth {
 		page.artifactDepth = 0
+		// The figure ends here, and a bounding box set after it is not its own
+		page.figure = nil
 		if page.pdf.isTagged() {
 			page.appendString("EMC\n")
 		}
@@ -2365,6 +2445,7 @@ func (page *Page) addAnnotation(annotation *annotationObject) {
 	if page.pdf.isTagged() && !page.open() {
 		return
 	}
+	page.transformAnnotation(annotation)
 	annotation.setDescriptionFallback()
 	annotation.y1 = page.height - annotation.y1
 	annotation.y2 = page.height - annotation.y2
@@ -2409,6 +2490,78 @@ func (page *Page) addAnnotation(annotation *annotationObject) {
 		element.annotation = annotation
 		page.addStructure(element, page.structParent)
 	}
+}
+
+// transformed returns where the point x, y of what is drawn is on the page,
+// after the transform of the containers it is drawn in.
+func (page *Page) transformed(x, y float32) (float32, float32) {
+	t := page.transform
+	if t == nil {
+		return x, y
+	}
+	return t[0]*x + t[2]*y + t[4], t[1]*x + t[3]*y + t[5]
+}
+
+// transformedBox returns the box, left, top, right and bottom, that holds the
+// rectangle between the corners x1, y1 and x2, y2 after the transform of the
+// containers it is drawn in, which can turn it.
+func (page *Page) transformedBox(x1, y1, x2, y2 float32) (float32, float32, float32, float32) {
+	if page.transform == nil {
+		return min(x1, x2), min(y1, y2), max(x1, x2), max(y1, y2)
+	}
+	ax, ay := page.transformed(x1, y1)
+	bx, by := page.transformed(x2, y1)
+	cx, cy := page.transformed(x2, y2)
+	dx, dy := page.transformed(x1, y2)
+	return min(ax, bx, cx, dx), min(ay, by, cy, dy), max(ax, bx, cx, dx), max(ay, by, cy, dy)
+}
+
+// pushTransform concatenates the transform of a container, in the order of
+// transformed, to that of the containers it is in, and returns the transform
+// that popTransform puts back after the container is drawn.
+func (page *Page) pushTransform(m [6]float32) *[6]float32 {
+	saved := page.transform
+	if t := saved; t != nil {
+		m = [6]float32{
+			t[0]*m[0] + t[2]*m[1],
+			t[1]*m[0] + t[3]*m[1],
+			t[0]*m[2] + t[2]*m[3],
+			t[1]*m[2] + t[3]*m[3],
+			t[0]*m[4] + t[2]*m[5] + t[4],
+			t[1]*m[4] + t[3]*m[5] + t[5],
+		}
+	}
+	page.transform = &m
+	return saved
+}
+
+// popTransform puts back the transform that pushTransform returned.
+func (page *Page) popTransform(saved *[6]float32) {
+	page.transform = saved
+}
+
+// transformAnnotation moves the rectangle of an annotation drawn in a
+// container, and the vertices of a polygon, with the container, as its drawing
+// is moved. The rectangle of a turned annotation is the box that holds it.
+func (page *Page) transformAnnotation(annotation *annotationObject) {
+	if page.transform == nil {
+		return
+	}
+	if annotation.annotationType == annotationPolygon && len(annotation.vertices) >= 2 {
+		// The vertices are relative to the first corner, and each is turned with it
+		x0, y0 := page.transformed(annotation.x1, annotation.y1)
+		vertices := make([]float32, len(annotation.vertices)&^1)
+		for i := 0; i+1 < len(annotation.vertices); i += 2 {
+			x, y := page.transformed(annotation.x1+annotation.vertices[i], annotation.y1+annotation.vertices[i+1])
+			vertices[i], vertices[i+1] = x-x0, y-y0
+		}
+		annotation.vertices = vertices
+		annotation.x2, annotation.y2 = page.transformed(annotation.x2, annotation.y2)
+		annotation.x1, annotation.y1 = x0, y0
+		return
+	}
+	annotation.x1, annotation.y1, annotation.x2, annotation.y2 = page.transformedBox(
+		annotation.x1, annotation.y1, annotation.x2, annotation.y2)
 }
 
 func (page *Page) beginTransform(x, y, xScale, yScale float32) {
@@ -2466,7 +2619,10 @@ func (page *Page) AddWatermark(font *Font, text string) {
 		float32(float64(offset)*math.Cos(angle)),
 		page.height-float32(float64(offset)*math.Sin(angle)))
 	watermark.SetTextRotation(-(int)(angle * (180.0 / math.Pi)))
+	// A watermark is no part of the content, which a screen reader skips.
+	page.addArtifactBDC("/Type /Pagination /Subtype /Watermark")
 	watermark.DrawOn(page)
+	page.AddEMC()
 }
 
 // GetContent returns a copy of the content stream of this page.
@@ -2497,6 +2653,10 @@ func (page *Page) InvertYAxis() {
 // indices, the first six values of an Android Matrix.getValues() array. The
 // page height is divided by the vertical scale.
 func (page *Page) Transform(values []float32) {
+	if len(values) < 6 {
+		page.pdf.fail(transformCount)
+		return
+	}
 	scalex := values[MScaleX]
 	scaley := values[MScaleY]
 	transx := values[MTransX]
@@ -2531,7 +2691,10 @@ func (page *Page) AddHeader(textLine *TextLine) [2]float32 {
 // AddHeaderOffsetBy adds header to this page offset by the specified value.
 func (page *Page) AddHeaderOffsetBy(textLine *TextLine, offset float32) [2]float32 {
 	textLine.SetLocation((page.GetWidth()-textLine.GetWidth())/2, offset)
+	// A running header is no part of the content, which a screen reader skips.
+	page.addArtifactBDC("/Type /Pagination /Subtype /Header")
 	xy := textLine.DrawOn(page)
+	page.AddEMC()
 	xy[1] += textLine.font.GetDescent(textLine.fontSize)
 	return xy
 }
@@ -2544,7 +2707,12 @@ func (page *Page) AddFooter(textLine *TextLine) [2]float32 {
 // AddFooterOffsetBy adds footer to this page offset by the specified value.
 func (page *Page) AddFooterOffsetBy(textLine *TextLine, offset float32) [2]float32 {
 	textLine.SetLocation((page.GetWidth()-textLine.GetWidth())/2, page.GetHeight()-offset)
-	return textLine.DrawOn(page)
+	// A running footer, like a page number, is no part of the content, which a
+	// screen reader skips.
+	page.addArtifactBDC("/Type /Pagination /Subtype /Footer")
+	xy := textLine.DrawOn(page)
+	page.AddEMC()
+	return xy
 }
 
 // beginText begins text block.
@@ -2676,22 +2844,30 @@ func (page *Page) rotateAroundCenter(centerX, centerY, degrees float32) {
 	page.appendString(" cm\n")
 
 	radians := float64(degrees) * math.Pi / 180
-	cos := float32(math.Cos(radians))
-	sin := float32(math.Sin(radians))
-	page.appendFloat32(cos)
-	page.appendString(" ")
-	page.appendFloat32(sin)
-	page.appendString(" ")
-	page.appendFloat32(-sin)
-	page.appendString(" ")
-	page.appendFloat32(cos)
-	page.appendString(" 0 0 cm\n")
+	page.appendRotation(float32(math.Cos(radians)), float32(math.Sin(radians)))
 
 	page.appendString("1 0 0 1 ")
 	page.appendFloat32(-centerX)
 	page.appendString(" ")
 	page.appendFloat32(-centerY)
 	page.appendString(" cm\n")
+}
+
+// appendRotation appends the cm operator of the rotation with the cosine and
+// the sine, written with five decimals, as hundredths would turn it by another
+// angle, by 1.15 degrees for 1.
+func (page *Page) appendRotation(cos, sin float32) {
+	if page.open() {
+		page.grow(4 * fastfloat.MaxLength)
+		page.buf = fastfloat.AppendPrecise(page.buf, cos)
+		page.buf = append(page.buf, ' ')
+		page.buf = fastfloat.AppendPrecise(page.buf, sin)
+		page.buf = append(page.buf, ' ')
+		page.buf = fastfloat.AppendPrecise(page.buf, -sin)
+		page.buf = append(page.buf, ' ')
+		page.buf = fastfloat.AppendPrecise(page.buf, cos)
+		page.buf = append(page.buf, " 0 0 cm\n"...)
+	}
 }
 
 // toUTF16Hex returns the string as a PDF text string, in UTF-16BE with a byte

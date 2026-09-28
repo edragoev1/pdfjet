@@ -114,11 +114,16 @@ public class RadioButton : IDrawable {
         }
 
         StructElement link = null;
-        if (uri != null) {
+        if (!String.IsNullOrEmpty(uri)) {
             link = page.AddLinkBDC(StructElem.P, language, actualText, altDescription);
+        } else if (String.IsNullOrEmpty(label)) {
+            // A button with no label, nor a description, has nothing to read.
+            page.AddShapeBDC(language, actualText, altDescription);
         } else {
             page.AddBDC(StructElem.P, language, actualText, altDescription);
         }
+        // The pen of the button is its own, and the page is left with the one it had.
+        page.SaveGraphicsState();
 
         float yBox = y;
         page.SetPenWidth(1f);
@@ -132,14 +137,13 @@ public class RadioButton : IDrawable {
         }
 
         // A linked label is blue.
-        float[] textColor = (uri != null) ? new float[] {0f, 0f, 1f} : new float[] {0f, 0f, 0f};
+        float[] textColor = !String.IsNullOrEmpty(uri) ? new float[] {0f, 0f, 1f} : new float[] {0f, 0f, 0f};
         page.DrawString(font, fontSize, label, x + 3*r1, y + font.GetAscent(fontSize), textColor, null);
-        page.SetPenWidth(0f);
-        page.SetBrushColor(Color.black);
+        page.RestoreGraphicsState();
 
         page.AddEMC();
 
-        if (uri != null) {
+        if (!String.IsNullOrEmpty(uri)) {
             Annotation linkAnnotation = new Annotation(
                     Annotation.Link,
                     x + 3*r1,

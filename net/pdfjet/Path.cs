@@ -204,16 +204,25 @@ public class Path : IDrawable {
             }
             return new float[] {xMost, yMost};
         }
+        // The points are drawn offset by the location, as copies: the path
+        // keeps its own points, which can be in it more than once.
+        List<Point> offset = new List<Point>(points.Count);
+        float xMax = 0f;
+        float yMax = 0f;
         foreach (Point point in points) {
-            point.x += xBox;
-            point.y += yBox;
+            Point copy = new Point(point.x + xBox, point.y + yBox, point.controlPoint);
+            offset.Add(copy);
+            xMax = Math.Max(xMax, copy.x);
+            yMax = Math.Max(yMax, copy.y);
         }
 
-        // A path carries no text, so it is decorative content.
+        // A path carries no text, so it is decorative content. Its pen is its
+        // own, and the page is left with the one it had.
         page.AddArtifactBMC();
+        page.SaveGraphicsState();
         if (fillShape) {
             page.SetBrushColor(color);
-            page.DrawPath(points, PathOperator.FILL);
+            page.DrawPath(offset, PathOperator.FILL);
         } else {
             page.SetPenWidth(width);
             page.SetPenColor(color);
@@ -221,21 +230,13 @@ public class Path : IDrawable {
             page.SetLineCapStyle(lineCapStyle);
             page.SetLineJoinStyle(lineJoinStyle);
             if (closed) {
-                page.DrawPath(points, PathOperator.CLOSE_AND_STROKE);
+                page.DrawPath(offset, PathOperator.CLOSE_AND_STROKE);
             } else {
-                page.DrawPath(points, PathOperator.STROKE);
+                page.DrawPath(offset, PathOperator.STROKE);
             }
         }
+        page.RestoreGraphicsState();
         page.AddEMC();
-
-        float xMax = 0f;
-        float yMax = 0f;
-        foreach (Point point in points) {
-            if (point.x > xMax) { xMax = point.x; }
-            if (point.y > yMax) { yMax = point.y; }
-            point.x -= xBox;
-            point.y -= yBox;
-        }
 
         return new float[] {xMax, yMax};
     }

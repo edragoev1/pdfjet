@@ -238,6 +238,13 @@ public class CompositeTextLine : IBaselineDrawable {
     // on the TextLine: DrawOn uses the line's own font size, so resizing the
     // shared Font here would have no effect.
     private void Place(TextLine component, float baseSize) {
+        // The baseline of a superscript or a subscript is raised or lowered
+        // here, from the base font size, so the component is not offset by
+        // its script position again when it is drawn, unless it was given an
+        // offset of its own.
+        if (!component.explicitOffset) {
+            component.SetVerticalOffset(0f);
+        }
         if (component.GetScriptPosition() == ScriptPosition.SUPERSCRIPT) {
             component.SetFontSize(baseSize * superscriptFactor);
             component.SetLocation(current[X], current[Y] - baseSize * superscriptPosition);
@@ -321,7 +328,7 @@ public class CompositeTextLine : IBaselineDrawable {
         // Each component is measured where it is drawn, with the font size it
         // is drawn at, which a script position makes smaller than the base.
         foreach (TextLine component in textLines) {
-            float baseline = component.GetLocation()[1];
+            float baseline = component.GetLocation()[1] + component.GetVerticalOffset();
             float top = baseline - component.font.GetAscent(component.GetFontSize());
             float bottom = baseline + component.font.GetDescent(component.GetFontSize());
             if (top < min) {

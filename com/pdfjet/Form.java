@@ -170,6 +170,13 @@ public class Form implements Drawable {
      *  @throws Exception  If an input or output exception occurred
      */
     public float[] drawOn(Page page) throws Exception {
+        if (f1 == null || f2 == null) {
+            if (page != null) {
+                page.pdf.fail(new IllegalStateException(
+                        "A form needs a label font and a value font: setLabelFont and setValueFont."));
+            }
+            return new float[] {x, y};
+        }
         float yField = 0f;
         float xOffset = 3f;
         for (int i = 0; i < fields.size(); i++) {

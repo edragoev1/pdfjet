@@ -785,14 +785,14 @@ public class Cell {
             }
             point!.y = y + h/2
             page.setBrushColor(point!.getFillColor())
-            if point!.getURIAction() != nil && page.isTaggedHere() {
+            if !(point!.getURIAction() ?? "").isEmpty && page.isTaggedHere() {
                 // A point that is a link is a figure of its own, described by
                 // what it stands for, or by its URI, in the Link that holds
                 // its annotation, as PDF/UA asks
                 drawLinkedPoint(page, point!)
                 return
             }
-            if point!.getURIAction() != nil {
+            if !(point!.getURIAction() ?? "").isEmpty {
                 page.addAnnotation(Annotation(
                         Annotation.Link,
                         point!.x - point!.r,
@@ -819,7 +819,8 @@ public class Cell {
     // Draws the point of the cell, which is a link, as a figure in the Link
     // that holds its annotation.
     private func drawLinkedPoint(_ page: Page, _ point: Point) {
-        let description = point.altDescription ?? point.getURIAction()
+        let description = !(point.altDescription ?? "").isEmpty ?
+                point.altDescription : point.getURIAction()
         let link = page.beginLink()
         page.addBDC(StructElem.FIGURE, nil, nil, description)
         page.drawPoint(point)
@@ -924,7 +925,7 @@ public class Cell {
         let line = drawable as? BaselineDrawable
         var link: StructElement?
         if line == nil {
-            if uri != nil {
+            if !(uri ?? "").isEmpty {
                 link = page.addLinkBDC(StructElem.P, nil, nil, nil)
             } else {
                 // The text is drawn whole, so it needs no description of its
@@ -942,7 +943,7 @@ public class Cell {
         } else {
             // A text line and a composite text line mark their own text,
             // which the Link of the cell holds
-            if uri != nil {
+            if !(uri ?? "").isEmpty {
                 link = page.beginLink()
             }
             _ = line!.setLocation(xText, yText)
@@ -951,7 +952,7 @@ public class Cell {
             page.endLink(link)
         }
 
-        if uri != nil {
+        if !(uri ?? "").isEmpty {
             page.addAnnotation(Annotation(
                     Annotation.Link,
                     xText,

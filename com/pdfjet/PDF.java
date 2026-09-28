@@ -1529,7 +1529,7 @@ final public class PDF {
                 appendTextString(description);
                 append("\n");
             }
-            if (annot.uri != null) {
+            if (!Util.isEmpty(annot.uri)) {
                 append("/A <<\n");
                 append("/S /URI\n");
                 byte[] uri = annot.uri.getBytes(StandardCharsets.UTF_8);
@@ -1540,7 +1540,7 @@ final public class PDF {
                 append(Util.toHexString(uri));
                 append(">\n");
                 append(">>\n");
-            } else if (annot.key != null) {
+            } else if (!Util.isEmpty(annot.key)) {
                 Destination destination = destinations.get(annot.key);
                 if (destination == null) {
                     // A link to nowhere would do nothing when it is clicked.

@@ -42,7 +42,6 @@ public class Container: Drawable {
     private var elements: [Drawable]
     private var border: Rect?
     /// The container that holds this container, or nil.
-    var parent: Container?
 
     /// Creates a new container with the specified width and height.
     ///
@@ -141,41 +140,8 @@ public class Container: Drawable {
     /// - Parameter element: The element to add.
     @discardableResult
     public func add(_ element: Drawable) -> Container {
-        if let container = element as? Container {
-            container.parent = self
-        }
         self.elements.append(element)
         return self
-    }
-
-    /// Rotates a point around a center by a specified number of degrees.
-    /// - Parameters:
-    ///   - point: The point to rotate as [x, y].
-    ///   - center: The center point of rotation as [x, y].
-    ///   - degrees: The angle of rotation in degrees.
-    /// - Returns: A new array [x, y] representing the rotated point.
-    static func rotateAroundCenter(_ point: [Float], _ center: [Float], _ degrees: Double) -> [Float] {
-        // Convert degrees to radians
-        let rad = degrees * .pi / 180.0
-
-        // Translate point to origin (relative to center)
-        let dx = Double(point[0]) - Double(center[0])
-        let dy = Double(point[1]) - Double(center[1])
-
-        // Calculate cosine and sine
-        let cosValue = cos(rad)
-        let sinValue = sin(rad)
-
-        // Apply rotation matrix
-        let dxRot = dx * cosValue - dy * sinValue
-        let dyRot = dx * sinValue + dy * cosValue
-
-        // Translate back to original coordinate system
-        let nx = Double(center[0]) + dxRot
-        let ny = Double(center[1]) + dyRot
-
-        // Return as Float array (matching float[] return type in Java)
-        return [Float(nx), Float(ny)]
     }
 
     /// Draws this container and its child elements onto the page.
@@ -203,17 +169,11 @@ public class Container: Drawable {
         page!.append(page!.height - cy)
         page!.append(" cm\n")
 
-        let rad = rotateDegrees * Float.pi / 180.0
-        let cosVal = cos(rad)
-        let sinVal = sin(rad)
-        page!.append(cosVal)
-        page!.append(Token.space)
-        page!.append(sinVal)
-        page!.append(Token.space)
-        page!.append(-sinVal)
-        page!.append(Token.space)
-        page!.append(cosVal)
-        page!.append(" 0 0 cm\n")
+        // The trigonometry is done in double precision, as in the other ports
+        let rad = Double(rotateDegrees) * (Double.pi / 180.0)
+        let cosVal = Float(cos(rad))
+        let sinVal = Float(sin(rad))
+        page!.appendRotation(cosVal, sinVal)
 
         page!.append(scaleX)
         page!.append(Token.space)
@@ -234,36 +194,24 @@ public class Container: Drawable {
         page!.append(-(page!.height - cy))
         page!.append(" cm\n")
 
+        // What the page does not move with the cm operators above, the
+        // rectangles of the links and of the annotations and the bounding
+        // boxes of the figures, it moves with the same transform, from the top
+        // left corner of the page: turned and scaled around the center of the
+        // container, and moved to its location.
+        let m0 = scaleX * cosVal
+        let m1 = -scaleX * sinVal
+        let m2 = scaleY * sinVal
+        let m3 = scaleY * cosVal
+        let centerX = self.x + cx
+        let centerY = self.y + cy
+        let m4 = centerX - m0*cx - m2*cy
+        let m5 = centerY - m1*cx - m3*cy
+        let saved = page!.pushTransform([m0, m1, m2, m3, m4, m5])
         for element in elements {
-            if let annot = element as? BaseAnnotation {
-                // The corners of the annotation are moved and turned for this
-                // drawing and put back after it, so that the container can be
-                // drawn again: the annotation of the second drawing was moved
-                // by the location of the container once more, and ended up
-                // that far from what the container drew.
-                let point1 = annot.point1
-                let point2 = annot.point2
-                let vertices = annot.vertices
-                annot.container = self
-                annot.point1[0] += x
-                annot.point1[1] += y
-                annot.point2[0] += x
-                annot.point2[1] += y
-                if let parent = parent {
-                    annot.point1[0] += parent.x
-                    annot.point1[1] += parent.y
-                    annot.point2[0] += parent.x
-                    annot.point2[1] += parent.y
-                }
-                annot.rotate(Double(-rotateDegrees))
-                _ = element.drawOn(page)
-                annot.point1 = point1
-                annot.point2 = point2
-                annot.vertices = vertices
-                continue
-            }
             element.drawOn(page)
         }
+        page!.popTransform(saved)
 
         page!.restoreGraphicsState()
 

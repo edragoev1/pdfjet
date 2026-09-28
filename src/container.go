@@ -45,7 +45,6 @@ type Container struct {
 	scaleY        float32    // The scaling factor along the Y-axis.
 	elements      []Drawable // The list of child drawable elements.
 	border        *Rect
-	parent        *Container
 }
 
 // NewContainer creates a new container with the specified width and height.
@@ -131,9 +130,6 @@ func (c *Container) SetBorderColorRGB(rgbColor [3]float32) *Container {
 //
 // element is the Drawable object to add.
 func (c *Container) Add(element Drawable) *Container {
-	if child, ok := element.(*Container); ok {
-		child.parent = c
-	}
 	c.elements = append(c.elements, element)
 	return c
 }
@@ -176,14 +172,7 @@ func (c *Container) DrawOn(page *Page) [2]float32 {
 	rad := float64(c.rotateDegrees) * (math.Pi / 180.0)
 	cos := float32(math.Cos(rad))
 	sin := float32(math.Sin(rad))
-	page.appendFloat32(cos)
-	page.appendByte(' ')
-	page.appendFloat32(sin)
-	page.appendByte(' ')
-	page.appendFloat32(-sin)
-	page.appendByte(' ')
-	page.appendFloat32(cos)
-	page.appendString(" 0 0 cm\n")
+	page.appendRotation(cos, sin)
 
 	// 4) Scale around container center
 	page.appendFloat32(c.scaleX)
@@ -198,58 +187,25 @@ func (c *Container) DrawOn(page *Page) [2]float32 {
 	page.appendFloat32(-(page.height - cy))
 	page.appendString(" cm\n")
 
-	// 6) Draw children elements
+	// 6) Draw children elements. What the page does not move with the cm
+	// operators above, the rectangles of the links and of the annotations and
+	// the bounding boxes of the figures, it moves with the same transform, from
+	// the top left corner of the page: turned and scaled around the center of
+	// the container, and moved to its location.
+	m0 := c.scaleX * cos
+	m1 := -c.scaleX * sin
+	m2 := c.scaleY * sin
+	m3 := c.scaleY * cos
+	centerX := c.x + cx
+	centerY := c.y + cy
+	saved := page.pushTransform([6]float32{m0, m1, m2, m3, centerX - m0*cx - m2*cy, centerY - m1*cx - m3*cy})
 	for _, element := range c.elements {
-		if a, ok := element.(annotation); ok {
-			annot := a.baseAnnotation()
-			// The corners of the annotation are moved and turned for this
-			// drawing and put back after it, so that the container can be
-			// drawn again: the annotation of the second drawing was moved by
-			// the location of the container once more, and ended up that far
-			// from what the container drew.
-			point1, point2 := annot.point1, annot.point2
-			// The vertices are a slice, which rotate turns in place.
-			vertices := append([]float32(nil), annot.vertices...)
-			annot.point1[0] += c.x
-			annot.point1[1] += c.y
-			annot.point2[0] += c.x
-			annot.point2[1] += c.y
-			annot.container = c
-			if c.parent != nil {
-				annot.point1[0] += c.parent.x
-				annot.point1[1] += c.parent.y
-				annot.point2[0] += c.parent.x
-				annot.point2[1] += c.parent.y
-			}
-			annot.rotate(float64(-c.rotateDegrees))
-			element.DrawOn(page)
-			annot.point1, annot.point2 = point1, point2
-			if annot.vertices != nil {
-				copy(annot.vertices, vertices)
-			}
-			continue
-		}
 		element.DrawOn(page)
 	}
+	page.popTransform(saved)
 
 	page.RestoreGraphicsState()
 
 	// Return bottom-right position of container
 	return [2]float32{c.x + c.width, c.y + c.height}
-}
-
-// rotateAroundCenter rotates a point around a center by the given degrees and
-// returns the rotated point.
-func rotateAroundCenter(point, center [2]float32, degrees float64) [2]float32 {
-	radians := degrees * math.Pi / 180.0
-	cos := float32(math.Cos(radians))
-	sin := float32(math.Sin(radians))
-
-	dx := point[0] - center[0]
-	dy := point[1] - center[1]
-
-	return [2]float32{
-		center[0] + (dx*cos - dy*sin),
-		center[1] + (dx*sin + dy*cos),
-	}
 }

@@ -817,7 +817,7 @@ public class TextBlock : Drawable {
 
         page!.restoreGraphicsState()
 
-        if uri != nil {
+        if !(uri ?? "").isEmpty {
             page!.addAnnotation(Annotation(
                     Annotation.Link,
                     x,

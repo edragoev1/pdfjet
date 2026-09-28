@@ -255,6 +255,13 @@ public class CompositeTextLine implements BaselineDrawable {
     // on the TextLine: drawOn uses the line's own font size, so mutating the
     // shared Font here would have no effect.
     private void place(TextLine component, float base) {
+        // The baseline of a superscript or a subscript is raised or lowered
+        // here, from the base font size, so the component is not offset by
+        // its script position again when it is drawn, unless it was given an
+        // offset of its own.
+        if (!component.explicitOffset) {
+            component.setVerticalOffset(0f);
+        }
         if (component.getScriptPosition() == ScriptPosition.SUPERSCRIPT) {
             component.setFontSize(base * superscriptFactor);
             component.setLocation(current[X], current[Y] - base * superscriptPosition);
@@ -339,7 +346,7 @@ public class CompositeTextLine implements BaselineDrawable {
         // Each component is measured where it is drawn, with the font size it
         // is drawn at, which a script position makes smaller than the base.
         for (TextLine component : textLines) {
-            float baseline = component.getLocation()[1];
+            float baseline = component.getLocation()[1] + component.getVerticalOffset();
             float top = baseline - component.font.getAscent(component.getFontSize());
             float bottom = baseline + component.font.getDescent(component.getFontSize());
             if (top < min) {

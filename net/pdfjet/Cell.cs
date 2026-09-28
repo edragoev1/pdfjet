@@ -715,14 +715,14 @@ public class Cell {
             }
             point.y = y + h/2;
             page.SetBrushColor(point.GetFillColor());
-            if (point.GetURIAction() != null && page.TagsContent()) {
+            if (!String.IsNullOrEmpty(point.GetURIAction()) && page.TagsContent()) {
                 // A point that is a link is a figure of its own, described by
                 // what it stands for, or by its URI, in the Link that holds its
                 // annotation, as PDF/UA asks
                 DrawLinkedPoint(page);
                 return;
             }
-            if (point.GetURIAction() != null) {
+            if (!String.IsNullOrEmpty(point.GetURIAction())) {
                 page.AddAnnotation(new Annotation(
                         Annotation.Link,
                         point.x - point.r,
@@ -866,7 +866,7 @@ public class Cell {
         IBaselineDrawable line = drawable as IBaselineDrawable;
         StructElement link = null;
         if (line == null) {
-            if (uri != null) {
+            if (!String.IsNullOrEmpty(uri)) {
                 link = page.AddLinkBDC(StructElem.P, null, null, null);
             } else {
                 // The text is drawn whole, so it needs no description of its
@@ -885,7 +885,7 @@ public class Cell {
         } else {
             // A text line and a composite text line mark their own text,
             // which the Link of the cell holds.
-            if (uri != null) {
+            if (!String.IsNullOrEmpty(uri)) {
                 link = page.BeginLink();
             }
             line.SetLocation(xText, yText);
@@ -894,7 +894,7 @@ public class Cell {
             page.EndLink(link);
         }
 
-        if (uri != null) {
+        if (!String.IsNullOrEmpty(uri)) {
             Annotation linkAnnotation = new Annotation(
                     Annotation.Link,
                     xText,

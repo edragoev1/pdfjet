@@ -197,7 +197,7 @@ public class CheckBox implements Drawable {
      *  @param page the Page where the CheckBox is to be drawn.
      */
     public float[] drawOn(Page page) throws Exception {
-        this.w = font.getAscent();
+        this.w = font.getAscent(fontSize);
         this.h = this.w;
         this.penWidth = this.w/15;
         this.checkWidth = this.w/5;
@@ -206,11 +206,16 @@ public class CheckBox implements Drawable {
         }
 
         StructElement link = null;
-        if (uri != null) {
+        if (!Util.isEmpty(uri)) {
             link = page.addLinkBDC(StructElem.P, language, actualText, altDescription);
+        } else if (Util.isEmpty(label)) {
+            // A box with no label, nor a description, has nothing to read.
+            page.addShapeBDC(language, actualText, altDescription);
         } else {
             page.addBDC(StructElem.P, language, actualText, altDescription);
         }
+        // The pen of the box is its own, and the page is left with the one it had.
+        page.saveGraphicsState();
 
         float yBox = y;
         page.setPenWidth(penWidth);
@@ -238,15 +243,13 @@ public class CheckBox implements Drawable {
         }
 
         // A linked label is blue.
-        float[] textColor = (uri != null) ? new float[] {0f, 0f, 1f} : new float[] {0f, 0f, 0f};
+        float[] textColor = !Util.isEmpty(uri) ? new float[] {0f, 0f, 1f} : new float[] {0f, 0f, 0f};
         page.drawString(font, fontSize, label, x + 3f*w/2f, y + font.getAscent(fontSize), textColor, null);
-        page.setPenWidth(0f);
-        page.setPenColor(Color.black);
-        page.setBrushColor(Color.black);
+        page.restoreGraphicsState();
 
         page.addEMC();
 
-        if (uri != null) {
+        if (!Util.isEmpty(uri)) {
             // The link joins its Link element, see Page.addAnnotation.
             Annotation linkAnnotation = new Annotation(
                     Annotation.Link,

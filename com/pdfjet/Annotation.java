@@ -84,8 +84,8 @@ class Annotation {
         this.language = language;
         // A link created from a destination name has no uri to fall back on,
         // so use the name itself rather than leaving the link undescribed.
-        String fallback = (uri != null) ? uri : key;
-        this.actualText = (actualText == null) ? fallback : actualText;
-        this.altDescription = (altDescription == null) ? fallback : altDescription;
+        String fallback = !Util.isEmpty(uri) ? uri : key;
+        this.actualText = Util.isEmpty(actualText) ? fallback : actualText;
+        this.altDescription = Util.isEmpty(altDescription) ? fallback : altDescription;
     }
 }

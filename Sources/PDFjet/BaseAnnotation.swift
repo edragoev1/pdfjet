@@ -10,7 +10,6 @@ import Foundation
 public class BaseAnnotation: Drawable {
     var annotationType: String?
     var point1: [Float] = [0, 0]
-    var point2: [Float] = [0, 0]
     var vertices: [Float]?
     var fillColor: [Float] = [0.5, 0.5, 0.5]
     var opacity: Float = 1.0
@@ -21,7 +20,11 @@ public class BaseAnnotation: Drawable {
     var language: String?
     var actualText: String?
     var altDescription: String?
-    weak var container: Container?
+    // The size setSize sets, which the second point is at from the first when
+    // the annotation is drawn, wherever setLocation puts the first.
+    var width: Float = 0.0
+    var height: Float = 0.0
+    var hasSize = false
 
     /// Creates an annotation. The circle, square, polygon and text annotations call it.
     init() {
@@ -34,11 +37,24 @@ public class BaseAnnotation: Drawable {
         return self
     }
 
-    /// Sets the size of this annotation, measured from its location.
+    /// Sets the size of this annotation, measured from its location: its second
+    /// point is width to the right of its location and height below it, whether
+    /// setLocation is called before or after.
     @discardableResult
     public func setSize(_ width: Float, _ height: Float) -> BaseAnnotation {
-        self.point2 = [point1[0] + width, point1[1] + height]
+        self.width = width
+        self.height = height
+        self.hasSize = true
         return self
+    }
+
+    // Returns the second point of the annotation, which is the origin of the
+    // page until setSize is called.
+    private func getCorner() -> [Float] {
+        if !hasSize {
+            return [0.0, 0.0]
+        }
+        return [point1[0] + width, point1[1] + height]
     }
 
     /// Sets the fill color from an array of red, green and blue values.
@@ -79,32 +95,9 @@ public class BaseAnnotation: Drawable {
         return self
     }
 
-    /// Rotates this annotation together with the container it is in.
-    @discardableResult
-    func rotate(_ degrees: Double) -> BaseAnnotation {
-        if container == nil { return self }
-        var center = container!.getRotationCenter()
-        if container!.parent != nil {
-            center[0] += container!.parent!.x
-            center[1] += container!.parent!.y
-        }
-        point1 = Container.rotateAroundCenter(point1, center, degrees)
-        point2 = Container.rotateAroundCenter(point2, center, degrees)
-        if annotationType == Annotation.Polygon && vertices != nil {
-            var i = 0
-            while i < vertices!.count {
-                let point = Container.rotateAroundCenter(
-                    [vertices![i], vertices![i + 1]], [0.0, 0.0], degrees)
-                vertices![i] = point[0]
-                vertices![i + 1] = point[1]
-                i += 2
-            }
-        }
-        return self
-    }
-
     /// Adds this annotation to the specified page.
     public func drawOn(_ page: Page?) -> [Float] {
+        let point2 = getCorner()
         if page == nil {
             return point2   // Measured, not drawn
         }
