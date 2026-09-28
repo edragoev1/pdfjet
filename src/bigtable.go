@@ -222,6 +222,8 @@ func (bt *BigTable) SetBottomMargin(bottomMargin float32) *BigTable {
 // above it, such as a heading, at y on that page. The next pages are new, and
 // the table starts on them at the y of its location. The page is one that
 // NewPage has added to the PDF, and nothing is drawn on it after the table.
+// When the header and the first row do not fit on the page above its bottom
+// margin, the table starts on a new page instead, and draws nothing on it.
 func (bt *BigTable) SetFirstPage(page *Page, y float32) *BigTable {
 	bt.firstPage = page
 	bt.firstPageY = y
@@ -236,7 +238,7 @@ func (bt *BigTable) GetPages() []*Page {
 // newPage creates the next page. It is added to the PDF right away, so the
 // content of the page before it is compressed and written, and its memory freed.
 func (bt *BigTable) newPage() {
-	if bt.pageNumber == 0 && bt.firstPage != nil {
+	if bt.pageNumber == 0 && bt.startsOnFirstPage() {
 		bt.page = bt.firstPage
 		bt.top = bt.firstPageY
 	} else {
@@ -260,6 +262,13 @@ func (bt *BigTable) newPage() {
 	bt.drawFieldsAndLine(bt.headerFields, bt.f1, header)
 	bt.yText += bt.f1.descent + bt.f2.ascent
 	bt.startNewPage = false
+}
+
+// startsOnFirstPage returns true when the table starts on the page SetFirstPage
+// set: when the header and the first row fit on it above its bottom margin.
+func (bt *BigTable) startsOnFirstPage() bool {
+	return bt.firstPage != nil && bt.firstPageY+bt.f1.ascent+bt.f1.descent+bt.f2.ascent+bt.f2.descent <=
+		bt.firstPage.height-bt.bottomMargin
 }
 
 // drawFooter draws the footer of the page that was just finished, once. The
@@ -288,7 +297,9 @@ func (bt *BigTable) countPages() int {
 	pageHeight := bt.pageSize.GetHeight()
 	yTop := bt.y + bt.f1.ascent + bt.f1.descent + bt.f2.ascent
 	yPos := yTop
-	if bt.firstPage != nil {
+	if bt.startsOnFirstPage() {
+		// The first page can be of another size than the next ones.
+		pageHeight = bt.firstPage.height
 		yPos = bt.firstPageY + bt.f1.ascent + bt.f1.descent + bt.f2.ascent
 	}
 	count := 1
@@ -296,6 +307,7 @@ func (bt *BigTable) countPages() int {
 	for i := 0; i < bt.dataRows; i++ {
 		if newPage {
 			count++
+			pageHeight = bt.pageSize.GetHeight()
 			yPos = yTop
 			newPage = false
 		}
@@ -445,7 +457,8 @@ func (bt *BigTable) getAlignment(str string) alignment.Alignment {
 }
 
 // newDataScanner returns a scanner of the lines of the data file, which is
-// read as UTF-8, after the byte order mark at its start, if there is one.
+// read as UTF-8, after the byte order mark at its start, if there is one. A
+// line ends at a line feed, a carriage return or the two together.
 func newDataScanner(file *os.File) *bufio.Scanner {
 	reader := bufio.NewReader(file)
 	if bom, err := reader.Peek(3); err == nil && string(bom) == "\uFEFF" {
@@ -453,14 +466,24 @@ func newDataScanner(file *os.File) *bufio.Scanner {
 	}
 	scanner := bufio.NewScanner(reader)
 	scanner.Buffer(make([]byte, 0, 64*1024), math.MaxInt32)
+	scanner.Split(scanDataLines)
 	return scanner
 }
 
 // scanDataFile calls yield with the fields of each line of the data file until
 // it returns false. A line is split at the delimiter, reading the quoted fields
 // as RFC 4180 does; with no delimiter the line is one field, as in the other
-// ports.
-func scanDataFile(fileName, delimiter string, yield func([]string) bool) error {
+// ports. A file that cannot be read that way returns the error that says why.
+func scanDataFile(fileName, delimiter string, yield func([]string) bool) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			if e, ok := r.(delimitedError); ok {
+				err = e
+				return
+			}
+			panic(r)
+		}
+	}()
 	file, err := os.Open(fileName)
 	if err != nil {
 		return err

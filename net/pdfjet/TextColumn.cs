@@ -34,6 +34,7 @@ public class TextColumn : IDrawable {
     private float paragraphSpacing = 1.0f;
     private List<Paragraph> paragraphs;
     private bool lineBetweenParagraphs = false;
+    private bool inList;    // A run of paragraphs that have a label is being drawn
 
     /// <summary>
     /// Create a text column object.
@@ -160,6 +161,7 @@ public class TextColumn : IDrawable {
         for (int i = 0; i < paragraphs.Count; i++) {
             xy = DrawParagraphOn(page, paragraphs[i], i == (paragraphs.Count - 1));
         }
+        CloseList(page);
         // Restore the original location
         SetLocation(this.x, this.y);
         // A column with a height reaches at least that far down from its location
@@ -169,7 +171,58 @@ public class TextColumn : IDrawable {
         return new float[] {x + w, xy[1]};
     }
 
+    // Ends the list that is open, if there is one.
+    private void CloseList(Page page) {
+        if (inList) {
+            page.EndStructElement();    // The L
+            inList = false;
+        }
+    }
+
+    // Draws the label of a paragraph that is an item of a list, to the left of
+    // the column and on the baseline of the first line, as TextFrame draws it.
+    // In a PDF/UA document a run of such paragraphs is an L, and each an LI of
+    // the Lbl of its label and the LBody of its text. Returns true when it
+    // began an item, which EndItem ends.
+    private bool DrawLabel(Page page, Paragraph paragraph) {
+        if (paragraph.listLabel == null) {
+            CloseList(page);
+            return false;
+        }
+        if (!inList) {
+            page.BeginStructElement(StructElem.L);
+            inList = true;
+        }
+        page.BeginStructElement(StructElem.LI);
+        float ascent = 0f;
+        foreach (TextLine line in paragraph.lines) {
+            ascent = Math.Max(ascent, line.font.GetAscent(line.fontSize));
+        }
+        TextLine label = paragraph.listLabel;
+        label.SetStructureType(StructElem.LBL);
+        label.SetLocation(x - paragraph.listLabelIndent, y1 + ascent);
+        label.DrawOn(page);
+        page.BeginStructElement(StructElem.LBODY);
+        return true;
+    }
+
+    private static void EndItem(Page page) {
+        page.EndStructElement();        // The LBody
+        page.EndStructElement();        // The LI
+    }
+
     private float[] DrawParagraphOn(Page page, Paragraph paragraph, bool lastParagraph) {
+        bool item = (page != null) && DrawLabel(page, paragraph);
+        try {
+            return DrawParagraphElement(page, paragraph, lastParagraph);
+        } finally {
+            if (item) {
+                EndItem(page);
+            }
+        }
+    }
+
+    private float[] DrawParagraphElement(Page page, Paragraph paragraph, bool lastParagraph) {
         // In a PDF/UA document the paragraph is one structure element, which
         // the words it is drawn one at a time all belong to.
         StructElement parent = null;

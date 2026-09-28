@@ -463,7 +463,9 @@ func TestTableACellThatSpansRowsSaysSoInAPDFUADocument(t *testing.T) {
 	NewTable().SetTableData(data, 1).SetLocation(50, 50).
 		DrawOn(NewPage(doc.pdf, letter.Portrait()))
 	raw := string(doc.complete())
-	if strings.Count(raw, "<</O /Table /Scope /Column /ColSpan 2 /RowSpan 2>>") != 1 {
+	// The span covers the second row whole, which is then no row of the
+	// table, so it spans one row of the table: it has no RowSpan.
+	if strings.Count(raw, "<</O /Table /Scope /Column /ColSpan 2>>") != 1 {
 		t.Error("the spanning cell does not say how many rows it spans")
 	}
 	// A row that a span covers whole holds no cell of its own.

@@ -60,6 +60,9 @@ public class TextFrame : Drawable {
     // its own there, since an element belongs to the page it is drawn on.
     private var elementParagraph: Paragraph?
     private var element: StructElement?
+    // The paragraph that an earlier frame drew the start of and this one goes
+    // on with, or nil: its label and its heading are not drawn or noted again.
+    private var continuedParagraph: Paragraph?
     // Whether a list, and an item of it, are open: a run of paragraphs that
     // have a label is one list.
     private var inList = false
@@ -204,6 +207,14 @@ public class TextFrame : Drawable {
     public func drawOn(_ pdf: PDF, _ pages: inout [Page], _ pageSize: PageSize) -> [Float] {
         var xy: [Float] = [x + w, y]
         let height = h
+        if height <= 0 && pageSize.getHeight() - 2 * y <= 0 {
+            // A frame in the bottom half of the page leaves no height above
+            // the margin, and a frame with no height would draw all of the
+            // text on the first page, past its bottom edge.
+            pdf.fail("The text frame has no height and is in the bottom half of the page: " +
+                    "set its height, or put it higher on the page.")
+            return xy
+        }
         defer { h = height }
         while hasMoreText() {
             let page = Page(pdf, pageSize, false)
@@ -237,6 +248,10 @@ public class TextFrame : Drawable {
 
         elementParagraph = nil
         element = nil
+        continuedParagraph = nil
+        if startLine > 0 || startTokens != nil {
+            continuedParagraph = paragraphs[startParagraph]
+        }
         var bottom = drawParagraphs(page)
         closeList(page)
         if h > 0.0 {
@@ -376,12 +391,12 @@ public class TextFrame : Drawable {
             // in the row already when that word made room for it.
             let reserved = joinReserved && tokenIndex == 0
             joinReserved = false
-            let joined = joinsNext
-                    ? joinedWidth(paragraph, lineIndex,
-                            runLength + TextFrame.width(textLine, token), available) : 0.0
             // The token is measured without the space that follows it, as in
             // TextColumn: a row is as wide as the text it shows.
-            if reserved || (runLength + TextFrame.width(textLine, token) + joined) <= available {
+            let tokenWidth = TextFrame.widthWithin(textLine, token, available - runLength)
+            let joined = joinsNext
+                    ? joinedWidth(paragraph, lineIndex, runLength + tokenWidth, available) : 0.0
+            if reserved || (runLength + tokenWidth + joined) <= available {
                 buf.append(text)
                 runLength += TextFrame.width(textLine, text)
                 tokenIndex += 1
@@ -390,7 +405,7 @@ public class TextFrame : Drawable {
                 continue
             }
             if joinsNext && buf.isEmpty && xText == x
-                    && (runLength + TextFrame.width(textLine, token)) <= available {
+                    && (runLength + tokenWidth) <= available {
                 // With the words joined to it the word is wider than the frame,
                 // so they go on the next row.
                 buf.append(text)
@@ -400,13 +415,12 @@ public class TextFrame : Drawable {
             }
             if buf.isEmpty && xText == x {
                 // The token does not fit in an empty row, so the row takes as much of it as fits.
-                let head = headThatFits(textLine, token)
-                buf.append(head)
-                let headCount = head.unicodeScalars.count
-                if headCount == token.unicodeScalars.count {
+                let end = headThatFits(textLine, token)
+                buf.append(String(token.unicodeScalars[..<end]))
+                if end == token.unicodeScalars.endIndex {
                     tokenIndex += 1
                 } else {
-                    tokens![tokenIndex] = String(String.UnicodeScalarView(token.unicodeScalars.dropFirst(headCount)))
+                    tokens![tokenIndex] = String(token.unicodeScalars[end...])
                 }
             }
             addToRow(paragraph, textLine, buf, false)
@@ -445,19 +459,45 @@ public class TextFrame : Drawable {
         return width
     }
 
-    // Returns the longest start of the token that fits in the width of the frame,
-    // and at least the first character of the token.
-    private func headThatFits(_ textLine: TextLine, _ token: String) -> String {
-        let scalars = Array(token.unicodeScalars)
-        var end = 1
-        while end < scalars.count {
-            let next = String(String.UnicodeScalarView(scalars[0...end]))
-            if textLine.font!.stringWidth(textLine.fallbackFont, textLine.fontSize, next) > w {
+    // Returns the width of the text when it is no more than the limit, and
+    // otherwise a width that is more than the limit: that of as much of the
+    // start of the text as shows that it does not fit, measured in runs that
+    // double in length. A word wider than the frame is then measured a row's
+    // worth at a time and not whole for every row it is broken into, which
+    // made the time grow with the square of the word: 75 seconds for 100,000
+    // characters.
+    private static func widthWithin(_ textLine: TextLine, _ text: String, _ limit: Float) -> Float {
+        let scalars = text.unicodeScalars
+        var end = scalars.startIndex
+        var runes = 0
+        var count = 64
+        while true {
+            while runes < count && end < scalars.endIndex {
+                end = scalars.index(after: end)
+                runes += 1
+            }
+            let width = end == scalars.endIndex
+                    ? TextFrame.width(textLine, text) : TextFrame.width(textLine, String(scalars[..<end]))
+            if end == scalars.endIndex || width > limit {
+                return width
+            }
+            count *= 2
+        }
+    }
+
+    // Returns the end of the longest start of the token that fits in the width
+    // of the frame, and at least the first character of the token.
+    private func headThatFits(_ textLine: TextLine, _ token: String) -> String.UnicodeScalarView.Index {
+        let scalars = token.unicodeScalars
+        var end = scalars.index(after: scalars.startIndex)
+        while end < scalars.endIndex {
+            let next = scalars.index(after: end)
+            if textLine.font!.stringWidth(textLine.fallbackFont, textLine.fontSize, String(scalars[..<next])) > w {
                 break
             }
-            end += 1
+            end = next
         }
-        return String(String.UnicodeScalarView(scalars[0..<end]))
+        return end
     }
 
     // Adds the string to the row, at the current text position.
@@ -483,6 +523,9 @@ public class TextFrame : Drawable {
         if paragraph !== elementParagraph {
             elementParagraph = paragraph
             closeItem(page)
+            // A paragraph that an earlier frame began goes on here: its label
+            // was drawn where it began, and its heading noted there.
+            let continued = paragraph === continuedParagraph
             if let label = paragraph.listLabel {
                 // The label of the item is drawn where the item begins, so
                 // that a reader reads it before the text of the item.
@@ -491,16 +534,18 @@ public class TextFrame : Drawable {
                     inList = true
                 }
                 page.beginStructElement(StructElem.LI)
-                label.setStructureType(StructElem.LBL)
-                label.setLocation(x - paragraph.listLabelIndent, y)
-                label.drawOn(page)
+                if !continued {
+                    label.setStructureType(StructElem.LBL)
+                    label.setLocation(x - paragraph.listLabelIndent, y)
+                    label.drawOn(page)
+                }
                 page.beginStructElement(StructElem.LBODY)
                 inItem = true
             } else {
                 closeList(page)
             }
             element = page.addStructElement(page.structParent, paragraph.structureType, nil)
-            if element != nil, let first = paragraph.lines.first {
+            if element != nil, !continued, let first = paragraph.lines.first {
                 page.noteHeading(paragraph.structureType, paragraph.text(), y - first.fontSize)
             }
         }

@@ -224,7 +224,9 @@ namespace PDFjet.NET {
         /// such as a heading, at y on that page. The next pages are new, and the
         /// table starts on them at the y of its location. The page is one that
         /// new Page(pdf, pageSize) has added to the PDF, and nothing is drawn on it
-        /// after the table.
+        /// after the table. When the header and the first row do not fit on the page
+        /// above its bottom margin, the table starts on a new page instead, and draws
+        /// nothing on it.
         /// </summary>
         /// <param name="page">the first page.</param>
         /// <param name="y">the top of the table on it.</param>
@@ -243,7 +245,7 @@ namespace PDFjet.NET {
         // Creates the next page. It is added to the PDF right away, so the content
         // of the page before it is compressed and written, and its memory freed.
         private void NewPage() {
-            if (pageNumber == 0 && firstPage != null) {
+            if (pageNumber == 0 && StartsOnFirstPage()) {
                 page = firstPage;
                 top = firstPageY;
             } else {
@@ -267,6 +269,13 @@ namespace PDFjet.NET {
             DrawFieldsAndLine(headerFields, f1, header);
             this.yText += f1.descent + f2.ascent;
             startNewPage = false;
+        }
+
+        // Returns true when the table starts on the page SetFirstPage set: when the
+        // header and the first row fit on it above its bottom margin.
+        private bool StartsOnFirstPage() {
+            return firstPage != null && firstPageY + f1.ascent + f1.descent + f2.ascent + f2.descent
+                    <= firstPage.GetHeight() - bottomMargin;
         }
 
         // Draws the footer of the page that was just finished, once. The page is
@@ -306,7 +315,9 @@ namespace PDFjet.NET {
             float pageHeight = pageSize.GetHeight();
             float yTop = this.y + f1.ascent + f1.descent + f2.ascent;
             float yPos = yTop;
-            if (firstPage != null) {
+            if (StartsOnFirstPage()) {
+                // The first page can be of another size than the next ones.
+                pageHeight = firstPage.GetHeight();
                 yPos = firstPageY + f1.ascent + f1.descent + f2.ascent;
             }
             int count = 1;
@@ -314,6 +325,7 @@ namespace PDFjet.NET {
             for (int i = 0; i < this.dataRows; i++) {
                 if (newPage) {
                     count++;
+                    pageHeight = pageSize.GetHeight();
                     yPos = yTop;
                     newPage = false;
                 }
@@ -572,30 +584,33 @@ namespace PDFjet.NET {
         // The text as much of it as fits the width, ending in the mark that
         // says it was cut. The mark takes the place of the last four
         // characters of what fits, rather than being added to them, so the
-        // text stays inside the column; a character built from a surrogate
-        // pair is not cut in half.
-        private static string Fit(string text, Font font, float width) {
+        // text stays inside the column. The text is cut between code points,
+        // as in the other ports, and a surrogate pair is never cut in half.
+        internal static string Fit(string text, Font font, float width) {
             if (font.StringWidth(text) <= width) {
                 return text;
             }
-            int end = 0;                    // The most characters that fit.
-            int high = text.Length;
+            // Where each code point starts, and where the text ends.
+            List<int> starts = new List<int>(text.Length + 1);
+            for (int i = 0; i < text.Length; i += Util.CharCount(text, i)) {
+                starts.Add(i);
+            }
+            starts.Add(text.Length);
+            int end = 0;                    // The most code points that fit.
+            int high = starts.Count - 1;
             while (end < high) {
                 int middle = end + (high - end + 1) / 2;
-                if (font.StringWidth(text.Substring(0, middle)) <= width) {
+                if (font.StringWidth(text.Substring(0, starts[middle])) <= width) {
                     end = middle;
                 } else {
                     high = middle - 1;
                 }
             }
             end = Math.Max(0, end - ELLIPSIS.Length);
-            while (end > 0 && font.StringWidth(text.Substring(0, end) + ELLIPSIS) > width) {
+            while (end > 0 && font.StringWidth(text.Substring(0, starts[end]) + ELLIPSIS) > width) {
                 end--;
             }
-            if (end > 0 && Char.IsHighSurrogate(text[end - 1])) {
-                end--;
-            }
-            return text.Substring(0, end) + ELLIPSIS;
+            return text.Substring(0, starts[end]) + ELLIPSIS;
         }
 
         // Yields the fields of the lines of the data file, which is read as UTF-8
@@ -626,8 +641,12 @@ namespace PDFjet.NET {
         /// Draws the rows, then the vertical lines, with the footer on every page.
         /// The pages are added to the PDF as they are drawn, so the document does not hold them
         /// all. Call it after the location, the bottom margin and the table data have been set.
+        /// A table without data draws nothing.
         /// </summary>
         public void Complete() {
+            if (rows == null) {
+                return;
+            }
             this.pageCount = CountPages();
             NewPage();
             foreach (string[] fields in rows) {

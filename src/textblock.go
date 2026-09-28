@@ -746,7 +746,10 @@ func (textBlock *TextBlock) strikeoutText(textLines []*TextLine) {
 // block has no height, else the first lines, with the last of them ending in
 // "...".
 func (textBlock *TextBlock) linesThatFit(textLines []*TextLine, leading float32) []*TextLine {
-	fit := int((textBlock.height - 2*textBlock.textPadding) / leading)
+	if leading <= 0 {
+		return textLines // Lines that take no height all fit
+	}
+	fit := saturatingInt((textBlock.height - 2*textBlock.textPadding) / leading)
 	if fit < 1 {
 		fit = 1 // At least one line is drawn
 	}

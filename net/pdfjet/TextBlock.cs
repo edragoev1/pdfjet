@@ -665,7 +665,10 @@ public class TextBlock : IDrawable {
     /// no height, else the first lines, with the last of them ending in "...".
     /// </summary>
     private TextLine[] LinesThatFit(TextLine[] textLines, float leading) {
-        int fit = (int) Math.Floor((this.height - 2 * this.textPadding) / leading);
+        if (leading <= 0f) {
+            return textLines;   // Lines that take no height all fit
+        }
+        int fit = Util.SaturatingInt((this.height - 2 * this.textPadding) / leading);
         if (fit < 1) {
             fit = 1;    // At least one line is drawn
         }
@@ -725,7 +728,7 @@ public class TextBlock : IDrawable {
     // Lays out the lines as DrawOn draws them, aligned and decorated, and
     // returns them with the top of the first line, the leading and the height
     // of the block, as the layout method of the Go port does.
-    private (TextLine[] textLines, float yText, float leading, float blockHeight) Layout() {
+    internal (TextLine[] textLines, float yText, float leading, float blockHeight) Layout() {
         float ascent = this.font.GetAscent(fontSize);
         float descent = this.font.GetDescent(fontSize);
         float leading = (ascent + descent + this.font.GetLineGap(fontSize)) * this.lineSpacing;

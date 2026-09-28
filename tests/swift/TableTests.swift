@@ -358,7 +358,9 @@ import Testing
         _ = Table().setTableData(data, 1).setLocation(50, 50).drawOn(Page(memory.pdf, Letter.PORTRAIT))
         try memory.pdf.complete()
         let raw = TestSupport.latin1(memory.bytes)
-        #expect(count(raw, "/A <</O /Table /Scope /Column /ColSpan 2 /RowSpan 2>>") == 1)
+        // The span covers the second row whole, which is then no row of the
+        // table, so it spans one row of the table: it has no RowSpan.
+        #expect(count(raw, "/A <</O /Table /Scope /Column /ColSpan 2>>") == 1)
         // A row that a span covers whole holds no cell of its own.
         #expect(count(raw, "/S /TR\n") == 2)
         #expect(count(raw, "/S /TH\n") == 1)

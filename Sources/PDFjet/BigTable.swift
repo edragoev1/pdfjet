@@ -208,7 +208,9 @@ public class BigTable {
     /// such as a heading, at y on that page. The next pages are new, and the
     /// table starts on them at the y of its location. The page is one that
     /// Page(pdf, pageSize) has added to the PDF, and nothing is drawn on it
-    /// after the table.
+    /// after the table. When the header and the first row do not fit on the
+    /// page above its bottom margin, the table starts on a new page instead,
+    /// and draws nothing on it.
     @discardableResult
     public func setFirstPage(_ page: Page, _ y: Float) -> BigTable {
         self.firstPage = page
@@ -224,7 +226,7 @@ public class BigTable {
     // Creates the next page. It is added to the PDF right away, so the content
     // of the page before it is compressed and written, and its memory freed.
     private func newPage() {
-        if pageNumber == 0, let firstPage = firstPage {
+        if pageNumber == 0, startsOnFirstPage(), let firstPage = firstPage {
             page = firstPage
             top = firstPageY
         } else {
@@ -250,6 +252,15 @@ public class BigTable {
         startNewPage = false
     }
 
+    // True when the table starts on the page setFirstPage set: when the header
+    // and the first row fit on it above its bottom margin.
+    private func startsOnFirstPage() -> Bool {
+        guard let firstPage = firstPage else {
+            return false
+        }
+        return firstPageY + f1.ascent + f1.descent + f2.ascent + f2.descent <= firstPage.height - bottomMargin
+    }
+
     // Draws the footer of the page that was just finished, once. The page is
     // finished before the next one is created, so it is written complete.
     private func drawFooter() {
@@ -270,10 +281,12 @@ public class BigTable {
     // created. The location and the bottom margin are set after setTableData,
     // so the pages are counted when the table is drawn.
     private func countPages() -> Int {
-        let pageHeight = pageSize.getHeight()
+        var pageHeight = pageSize.getHeight()
         let yTop = self.y + f1.ascent + f1.descent + f2.ascent
         var yPos = yTop
-        if firstPage != nil {
+        if startsOnFirstPage() {
+            // The first page can be of another size than the next ones.
+            pageHeight = firstPage!.height
             yPos = firstPageY + f1.ascent + f1.descent + f2.ascent
         }
         var count = 1
@@ -281,6 +294,7 @@ public class BigTable {
         for _ in 0..<self.dataRows {
             if isNewPage {
                 count += 1
+                pageHeight = pageSize.getHeight()
                 yPos = yTop
                 isNewPage = false
             }
@@ -436,18 +450,24 @@ public class BigTable {
     public func setTableData(_ fileName: String, _ delimiter: String) throws -> BigTable {
         let fieldsNeeded = self.fieldsNeeded
         var header = [String]()
+        var headerError: Error?
         let lines = try DataFileRows(fileName, delimiter)
+        lines.failed = { headerError = $0 }
         while let fields = lines.next() {
             if fields.count >= fieldsNeeded {
                 header = fields
                 break
             }
         }
+        if let error = headerError {
+            throw error
+        }
 
         readError = nil
         setTableData(header, checkLineBreaks: false) { [weak self] in
             do {
                 let rows = try DataFileRows(fileName, delimiter)
+                rows.failed = { self?.readError = $0 }
                 // The rows start after the header.
                 while let fields = rows.next(), fields.count < fieldsNeeded {
                 }
@@ -586,27 +606,34 @@ public class BigTable {
     // The text as much of it as fits the width, ending in the mark that says
     // it was cut. The mark takes the place of the last four characters of
     // what fits, rather than being added to them, so the text stays inside
-    // the column. The text is cut between characters, never inside one.
+    // the column. The text is cut between code points, as in the other ports,
+    // never inside one.
     private static func fit(_ text: String, _ font: Font, _ width: Float) -> String {
         if font.stringWidth(text) <= width {
             return text
         }
-        let characters = Array(text)
+        let characters = Array(text.unicodeScalars)
         var end = 0             // The most characters that fit.
         var high = characters.count
         while end < high {
             let middle = end + (high - end + 1) / 2
-            if font.stringWidth(String(characters[0..<middle])) <= width {
+            if font.stringWidth(BigTable.string(characters[0..<middle])) <= width {
                 end = middle
             } else {
                 high = middle - 1
             }
         }
-        end = max(0, end - ELLIPSIS.count)
-        while end > 0 && font.stringWidth(String(characters[0..<end]) + ELLIPSIS) > width {
+        end = max(0, end - ELLIPSIS.unicodeScalars.count)
+        while end > 0 && font.stringWidth(BigTable.string(characters[0..<end]) + ELLIPSIS) > width {
             end -= 1
         }
-        return String(characters[0..<end]) + ELLIPSIS
+        return BigTable.string(characters[0..<end]) + ELLIPSIS
+    }
+
+    private static func string(_ scalars: ArraySlice<Unicode.Scalar>) -> String {
+        var view = String.UnicodeScalarView()
+        view.append(contentsOf: scalars)
+        return String(view)
     }
 
     /// Draws the rows, then the vertical lines, with the footer on every page. The pages are
@@ -634,67 +661,28 @@ public class BigTable {
 }
 
 // The fields of the lines of a data file, split at the delimiter, reading the
-// quoted fields as RFC 4180 does. The file is read as UTF-8, after the byte order
-// mark at its start, if there is one, and bytes that are not valid UTF-8 are
-// replaced with U+FFFD, as the Java and C# readers do.
+// quoted fields as RFC 4180 does, from the lines DataFileLines reads. A file
+// that cannot be read that way ends the rows, and the error that says why is
+// passed to failed.
 private final class DataFileRows: IteratorProtocol {
-    private let file: FileHandle
+    private let lines: DataFileLines
     private let delimiter: String
-    private var buffer = Data()
-    private var atStart = true
-    private var atEnd = false
+    var failed: ((Error) -> Void)?
 
     init(_ fileName: String, _ delimiter: String) throws {
-        self.file = try FileHandle(forReadingFrom: URL(fileURLWithPath: fileName))
+        self.lines = try DataFileLines(fileName)
         self.delimiter = delimiter
     }
 
-    deinit {
-        file.closeFile()
-    }
-
     func next() -> [String]? {
-        guard let line = nextLine() else {
+        guard let line = lines.next() else {
             return nil
         }
-        return Util.readRecord(line, delimiter) { self.nextLine() }
-    }
-
-    private func nextLine() -> String? {
-        while true {
-            if let nl = buffer.firstIndex(of: UInt8(ascii: "\n")) {
-                var lineData = buffer.prefix(upTo: nl)
-                buffer.removeSubrange(0...nl)
-                if lineData.last == UInt8(ascii: "\r") {
-                    lineData = lineData.dropLast()
-                }
-                // Decoded as the other ports do: String(data:encoding:) would drop
-                // a byte order mark at the start of every line, and skip a line
-                // that is not valid UTF-8 where the others draw U+FFFD.
-                return String(decoding: lineData, as: UTF8.self)
-            }
-            if atEnd {
-                // The last line, without a newline
-                if buffer.isEmpty {
-                    return nil
-                }
-                let line = String(decoding: buffer, as: UTF8.self)
-                buffer.removeAll()
-                return line
-            }
-            let chunk = file.readData(ofLength: 8192)
-            if chunk.isEmpty {
-                atEnd = true
-                continue
-            }
-            buffer.append(chunk)
-            if atStart {
-                // A byte order mark at the start of the file is not part of the text.
-                if buffer.starts(with: [0xEF, 0xBB, 0xBF]) {
-                    buffer.removeSubrange(0..<3)
-                }
-                atStart = false
-            }
+        do {
+            return try Util.readRecord(line, delimiter) { self.lines.next() }
+        } catch {
+            failed?(error)
+            return nil
         }
     }
 }

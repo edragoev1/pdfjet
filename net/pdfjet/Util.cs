@@ -113,8 +113,12 @@ internal class Util {
     internal static String[] ReadRecord(String line, TextReader reader, String delimiter) {
         String[] fields = Split(line, delimiter, true);
         if (fields != null) {
-            return fields;
+            return fields;              // Nearly every line ends here
         }
+        // Each line is read once, to see whether the record ends on it, and
+        // the record is split when it does: a record whose every line closes a
+        // quoted field and opens another was split again at each of its lines,
+        // which took time that grew with the square of its lines.
         StringBuilder record = new StringBuilder(line);
         int lines = 1;
         while (true) {
@@ -128,9 +132,8 @@ internal class Util {
                         + MAX_LINES_IN_RECORD + " lines of the data file: " + Excerpt(record.ToString()));
             }
             record.Append('\n').Append(next);
-            // The quoted field goes on until a quote that is not doubled; only
-            // then can the record end, so only then is it split again.
-            if (ClosesQuotedField(next)) {
+            // The record ends on the line that leaves no quoted field open.
+            if (!EndsInQuotedField(next, delimiter)) {
                 fields = Split(record.ToString(), delimiter, true);
                 if (fields != null) {
                     for (int i = 0; i < fields.Length; i++) {
@@ -142,18 +145,43 @@ internal class Util {
         }
     }
 
-    // Returns true when the line, read inside a quoted field, holds the quote
-    // that closes it: a quote that is not one of a doubled pair.
-    private static bool ClosesQuotedField(String line) {
-        int i = line.IndexOf('"');
-        while (i != -1) {
-            if (i + 1 < line.Length && line[i + 1] == '"') {
-                i = line.IndexOf('"', i + 2);
+    // Returns true when the line, which starts inside a quoted field, ends
+    // inside one: that field, or one that opens after it. A quote closes the
+    // field unless it is one of a doubled pair, and a quote opens a field when
+    // it starts one, after a delimiter.
+    private static bool EndsInQuotedField(String line, String delimiter) {
+        if (delimiter.Length == 0) {
+            return false;
+        }
+        bool quoted = true;
+        bool fieldStart = false;
+        int i = 0;
+        while (i < line.Length) {
+            if (quoted) {
+                int quote = line.IndexOf('"', i);
+                if (quote == -1) {
+                    return true;
+                }
+                i = quote + 1;
+                if (i < line.Length && line[i] == '"') {
+                    i++;                        // Two quotes stand for one
+                } else {
+                    quoted = false;
+                    fieldStart = false;
+                }
+            } else if (fieldStart && line[i] == '"') {
+                quoted = true;
+                i++;
             } else {
-                return true;
+                int end = line.IndexOf(delimiter, i, StringComparison.Ordinal);
+                if (end == -1) {
+                    return false;
+                }
+                i = end + delimiter.Length;
+                fieldStart = true;
             }
         }
-        return false;
+        return quoted;
     }
 
     /// <summary>
@@ -252,6 +280,25 @@ internal class Util {
     // vertical tab, form feed and carriage return.
     internal static bool IsASCIIWhitespace(char ch) {
         return ch == ' ' || (ch >= '\t' && ch <= '\r');
+    }
+
+    /// <summary>
+    /// Returns the whole part of the value as Java casts a float to an int: NaN is 0, and a
+    /// value past the range of an int is the end of the range, where a cast in C# gives a
+    /// number that depends on the machine. An infinite count of lines, from a division by a
+    /// leading of 0, is then as many lines as there can be.
+    /// </summary>
+    internal static int SaturatingInt(float value) {
+        if (float.IsNaN(value)) {
+            return 0;
+        }
+        if (value >= int.MaxValue) {
+            return int.MaxValue;
+        }
+        if (value <= int.MinValue) {
+            return int.MinValue;
+        }
+        return (int) value;
     }
 
     /// <summary>

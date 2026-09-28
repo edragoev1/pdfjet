@@ -62,6 +62,9 @@ public class TextFrame implements Drawable {
     // its own there, since an element belongs to the page it is drawn on.
     private Paragraph elementParagraph;
     private StructElement element;
+    // The paragraph that an earlier frame drew the start of and this one goes
+    // on with, or null: its label and its heading are not drawn or noted again.
+    private Paragraph continuedParagraph;
     // Whether a list, and an item of it, are open: a run of paragraphs that
     // have a label is one list.
     private boolean inList;
@@ -276,6 +279,10 @@ public class TextFrame implements Drawable {
 
         elementParagraph = null;
         element = null;
+        continuedParagraph = null;
+        if (startLine > 0 || startTokens != null) {
+            continuedParagraph = paragraphs.get(startParagraph);
+        }
         float bottom = drawParagraphs(page);
         closeList(page);
         if (h > 0f) {
@@ -318,6 +325,14 @@ public class TextFrame implements Drawable {
     public float[] drawOn(PDF pdf, List<Page> pages, PageSize pageSize) throws Exception {
         float[] xy = new float[] {x + w, y};
         float height = h;
+        if (height <= 0f && pageSize.getHeight() - 2f * y <= 0f) {
+            // A frame in the bottom half of the page leaves no height above the
+            // margin, and a frame with no height would draw all of the text on
+            // the first page, past its bottom edge.
+            pdf.fail(new IllegalStateException(
+                    "The text frame has no height and is in the bottom half of the page: "
+                    + "set its height, or put it higher on the page."));
+        }
         try {
             while (hasMoreText()) {
                 Page page = new Page(pdf, pageSize, Page.DETACHED);
@@ -452,11 +467,12 @@ public class TextFrame implements Drawable {
             // in the row already when that word made room for it.
             boolean reserved = joinReserved && tokenIndex == 0;
             joinReserved = false;
-            float joined = joinsNext
-                    ? joinedWidth(paragraph, lineIndex, runLength + width(textLine, token), available) : 0f;
             // The token is measured without the space that follows it, as in
             // TextColumn: a row is as wide as the text it shows.
-            if (reserved || (runLength + width(textLine, token) + joined) <= available) {
+            float tokenWidth = widthWithin(textLine, token, available - runLength);
+            float joined = joinsNext
+                    ? joinedWidth(paragraph, lineIndex, runLength + tokenWidth, available) : 0f;
+            if (reserved || (runLength + tokenWidth + joined) <= available) {
                 buf.append(text);
                 runLength += width(textLine, text);
                 tokenIndex++;
@@ -465,7 +481,7 @@ public class TextFrame implements Drawable {
                 continue;
             }
             if (joinsNext && buf.length() == 0 && xText == x
-                    && (runLength + width(textLine, token)) <= available) {
+                    && (runLength + tokenWidth) <= available) {
                 // With the words joined to it the word is wider than the frame,
                 // so they go on the next row.
                 buf.append(text);
@@ -516,6 +532,28 @@ public class TextFrame implements Drawable {
         return width;
     }
 
+    // Returns the width of the text when it is no more than the limit, and
+    // otherwise a width that is more than the limit: that of as much of the
+    // start of the text as shows that it does not fit, measured in runs that
+    // double in length. A word wider than the frame is then measured a row's
+    // worth at a time and not whole for every row it is broken into, which
+    // made the time grow with the square of the word: 75 seconds for 100,000
+    // characters.
+    private static float widthWithin(TextLine textLine, String text, float limit) {
+        int end = 0;
+        int characters = 0;
+        for (int count = 64; ; count *= 2) {
+            while (characters < count && end < text.length()) {
+                end += Character.charCount(text.codePointAt(end));
+                characters++;
+            }
+            float width = width(textLine, text.substring(0, end));
+            if (end == text.length() || width > limit) {
+                return width;
+            }
+        }
+    }
+
     // Returns the longest start of the token that fits in the width of the frame,
     // and at least the first character of the token.
     private String headThatFits(TextLine textLine, String token) {
@@ -555,6 +593,9 @@ public class TextFrame implements Drawable {
         if (paragraph != elementParagraph) {
             elementParagraph = paragraph;
             closeItem(page);
+            // A paragraph that an earlier frame began goes on here: its label
+            // was drawn where it began, and its heading noted there.
+            boolean continued = (paragraph == continuedParagraph);
             if (paragraph.listLabel != null) {
                 // The label of the item is drawn where the item begins, so
                 // that a reader reads it before the text of the item.
@@ -563,16 +604,18 @@ public class TextFrame implements Drawable {
                     inList = true;
                 }
                 page.beginStructElement(StructElem.LI);
-                paragraph.listLabel.setStructureType(StructElem.LBL);
-                paragraph.listLabel.setLocation(x - paragraph.listLabelIndent, y);
-                paragraph.listLabel.drawOn(page);
+                if (!continued) {
+                    paragraph.listLabel.setStructureType(StructElem.LBL);
+                    paragraph.listLabel.setLocation(x - paragraph.listLabelIndent, y);
+                    paragraph.listLabel.drawOn(page);
+                }
                 page.beginStructElement(StructElem.LBODY);
                 inItem = true;
             } else {
                 closeList(page);
             }
             element = page.addStructElement(page.structParent, paragraph.structureType, null);
-            if (element != null && !paragraph.lines.isEmpty()) {
+            if (element != null && !paragraph.lines.isEmpty() && !continued) {
                 page.noteHeading(paragraph.structureType, paragraph.text(), y - paragraph.lines.get(0).fontSize);
             }
         }

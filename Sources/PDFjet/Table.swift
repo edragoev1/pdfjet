@@ -39,6 +39,27 @@ public class Table : Drawable {
     // setColumnWidthsInPercent gives the columns, or nil.
     private var tableWidth: Float = 0.0
     private var columnPercents: [Float]?
+    // The numbers of the columns that setPageSum, setRunningSum and
+    // setBroughtForwardSum add up, read once for each drawOn by column and
+    // decimals, or nil when the table is not being drawn: they were read
+    // again for every page, which took 33 seconds for 40,000 rows.
+    private var columnSums: [Int: ColumnSums]?
+
+    // The number of each row of a column, in units of the decimals, and their
+    // sums from the first row to each row.
+    private final class ColumnSums {
+        var values: [Int64]
+        var sums: [Int64]       // The sum of the values before each row, and of them all
+        // Whether no sum of values can have more than 18 digits, which the sum
+        // of their magnitudes does not: the sum of the rows between two is
+        // then the difference of the sums up to them.
+        var exact = true
+
+        init(_ rows: Int) {
+            values = [Int64](repeating: 0, count: rows)
+            sums = [Int64](repeating: 0, count: rows + 1)
+        }
+    }
 
     ///
     /// Create a table object.
@@ -63,20 +84,10 @@ public class Table : Drawable {
         var delimiter: String?
         var numberOfFields = 0
         var lineNumber = 0
-        // Swift treats "\r\n" as one character, which a "\n" separator does not
-        // match, so Windows line endings are replaced first.
-        // The bytes that are not UTF-8 are replaced with U+FFFD, as the other
-        // ports replace them, rather than failing the whole file.
-        var lines = String(decoding: try Content.ofBinaryFile(fileName), as: UTF8.self)
-                .replacingOccurrences(of: "\r\n", with: "\n")
-                .components(separatedBy: "\n")
-        if lines.last == "" {
-            lines.removeLast()          // Ignore the trailing end-of-line marker
-        }
-        var index = 0
-        while index < lines.count {
-            var line = lines[index]
-            index += 1
+        // The file is read a line at a time, as the other ports read it, and
+        // a line ends at a line feed, a carriage return or the two together.
+        let lines = try DataFileLines(fileName)
+        while var line = lines.next() {
             if lineNumber == 0 {
                 // A byte order mark at the start of the file is not part of the text.
                 if line.hasPrefix("\u{FEFF}") {
@@ -88,13 +99,7 @@ public class Table : Drawable {
             // The empty fields at the end of the line are kept, a quoted field
             // holds its delimiters instead of being cut at them, and its line
             // breaks, which go on to the next lines, are spaces.
-            let fields = Util.readRecord(line, delimiter!) {
-                guard index < lines.count else {
-                    return nil
-                }
-                index += 1
-                return lines[index - 1]
-            }
+            let fields = try Util.readRecord(line, delimiter!) { lines.next() }
             if lineNumber == 0 {
                 numberOfFields = fields.count
             }
@@ -381,11 +386,37 @@ public class Table : Drawable {
     // units of the decimals. A number that would take the sum past 18 digits
     // is left out.
     private func sumOf(_ column: Int, _ first: Int, _ end: Int, _ decimals: Int) -> Int64 {
+        let first = max(0, first)
+        let end = min(end, tableData.count)
+        if first >= end {
+            return 0
+        }
+        let key = column * 16 + decimals
+        var sums = columnSums?[key]
+        if sums == nil {
+            sums = readColumn(column, decimals)
+            if columnSums != nil {
+                columnSums![key] = sums
+            }
+        }
+        let column = sums!
+        if column.exact {
+            return column.sums[end] - column.sums[first]
+        }
         var sum: Int64 = 0
-        var r = max(0, first)
-        while r < end && r < tableData.count {
-            let row = tableData[r]
-            r += 1
+        for value in column.values[first..<end] where abs(sum + value) <= Table.MAX_SUM {
+            sum += value
+        }
+        return sum
+    }
+
+    // Reads the number of each row of the column, in units of the decimals: 0
+    // for a cell that has no number, or that a cell above it covers.
+    private func readColumn(_ column: Int, _ decimals: Int) -> ColumnSums {
+        let sums = ColumnSums(tableData.count)
+        var magnitude: Int64 = 0
+        for (r, row) in tableData.enumerated() {
+            sums.sums[r + 1] = sums.sums[r]
             if column >= row.count {
                 continue
             }
@@ -393,11 +424,18 @@ public class Table : Drawable {
             if (cell.properties & Cell.COVERED) != 0 {
                 continue
             }
-            if let text = cell.text, let value = Table.numberOf(text, decimals), abs(sum + value) <= Table.MAX_SUM {
-                sum += value
+            if let text = cell.text, let value = Table.numberOf(text, decimals) {
+                sums.values[r] = value
+                if sums.exact {
+                    // A value is at most MAX_SUM, so the sums cannot overflow
+                    // before they are found to be past it.
+                    magnitude += abs(value)
+                    sums.exact = magnitude <= Table.MAX_SUM
+                    sums.sums[r + 1] += value
+                }
             }
         }
-        return sum
+        return sums
     }
 
     ///
@@ -405,44 +443,57 @@ public class Table : Drawable {
     /// away from zero, or nil when the text is not a number, as isNumber
     /// reads it, has more than one period, or is more than 18 digits in those
     /// units. Commas and apostrophes are between the thousands, a period is
-    /// before the decimals, and parentheses make a number negative.
+    /// before the decimals, and parentheses make a number negative. The text
+    /// is read as code points, and trimmed of those up to the space, as
+    /// isNumber reads it.
     ///
     static func numberOf(_ text: String, _ decimals: Int) -> Int64? {
         if !isNumber(text) {
             return nil
         }
-        var str = Substring(text)
+        var str = [Unicode.Scalar](text.unicodeScalars)
         var negative = false
-        if str.count >= 2 && str.first == "(" && str.last == ")" {
-            str = str.dropFirst().dropLast()
+        if str.count >= 2 && str[0] == "(" && str[str.count - 1] == ")" {
+            str = [Unicode.Scalar](str[1..<(str.count - 1)])
             negative = true
         }
-        var chars = Array(String(str.filter { $0 != "," && $0 != "'" })
-                .trimmingCharacters(in: .whitespaces))
+        str = str.filter { $0 != "," && $0 != "'" }
+        var from = 0
+        var to = str.count
+        while from < to && str[from].value <= 0x20 {
+            from += 1
+        }
+        while to > from && str[to - 1].value <= 0x20 {
+            to -= 1
+        }
+        var chars = [Unicode.Scalar](str[from..<to])
+        if chars.isEmpty {
+            return nil
+        }
         if chars[0] == "+" || chars[0] == "-" {
             negative = negative != (chars[0] == "-")
             chars.removeFirst()
         }
         var exponent = 0
         if let e = chars.firstIndex(where: { $0 == "e" || $0 == "E" }) {
-            var exp = Array(chars[(e + 1)...])
+            var exp = [Unicode.Scalar](chars[(e + 1)...])
             var sign = 1
-            if exp[0] == "+" || exp[0] == "-" {
-                sign = (exp[0] == "-") ? -1 : 1
+            if let first = exp.first, first == "+" || first == "-" {
+                sign = (first == "-") ? -1 : 1
                 exp.removeFirst()
             }
             if exp.count > 4 || exp.contains(".") {
                 return nil
             }
-            exponent = sign * Int(String(exp))!
-            chars = Array(chars[..<e])
+            exponent = sign * Int(Table.digitsValue(exp[...]))
+            chars = [Unicode.Scalar](chars[..<e])
         }
         let points = chars.indices.filter { chars[$0] == "." }
         if points.count > 1 {
             return nil
         }
-        let fraction = points.isEmpty ? [] : Array(chars[(points[0] + 1)...])
-        var digits = points.isEmpty ? chars : Array(chars[..<points[0]]) + fraction
+        let fraction = points.isEmpty ? [] : [Unicode.Scalar](chars[(points[0] + 1)...])
+        var digits = points.isEmpty ? chars : [Unicode.Scalar](chars[..<points[0]]) + fraction
         while let first = digits.first, first == "0" {
             digits.removeFirst()
         }
@@ -457,7 +508,7 @@ public class Table : Drawable {
             if digits.count + shift > 18 {
                 return nil
             }
-            value = Int64(String(digits))!
+            value = Table.digitsValue(digits[...])
             for _ in 0..<shift {
                 value *= 10
             }
@@ -469,8 +520,8 @@ public class Table : Drawable {
             if keep > 18 {
                 return nil
             }
-            value = (keep == 0) ? 0 : Int64(String(digits[..<keep]))!
-            if digits[keep] >= "5" {
+            value = (keep == 0) ? 0 : Table.digitsValue(digits[..<keep])
+            if digits[keep].value >= 0x35 {
                 value += 1
             }
             if value > MAX_SUM {
@@ -478,6 +529,19 @@ public class Table : Drawable {
             }
         }
         return negative ? -value : value
+    }
+
+    // The value of at most 18 ASCII digits, or 0 when they are not all digits,
+    // as Go's strconv.ParseInt leaves it.
+    private static func digitsValue(_ digits: ArraySlice<Unicode.Scalar>) -> Int64 {
+        var value: Int64 = 0
+        for digit in digits {
+            if digit.value < 0x30 || digit.value > 0x39 {
+                return 0
+            }
+            value = value * 10 + Int64(digit.value - 0x30)
+        }
+        return value
     }
 
     ///
@@ -925,6 +989,8 @@ public class Table : Drawable {
         setBottomBorderOnLastRow()
         heights = getRowHeights()
         striped = getStripedRows()
+        columnSums = [:]
+        defer { columnSums = nil }
         let xy = drawTableRows(page, drawHeaderRows(page, 0))
         return [x1 + getWidth(), xy[1]]
     }
@@ -937,7 +1003,7 @@ public class Table : Drawable {
     /// - Parameter pages: the list that receives the new pages.
     /// - Parameter pageSize: the page size, for example Letter.PORTRAIT.
     /// - Returns: the x and y coordinates of the bottom right corner of the table on the last page,
-    ///   or nil when the table was already drawn and no page was added.
+    ///   or of its top right corner when the table was already drawn and no page was added.
     ///
     @discardableResult
     public func drawOn(_ pdf: PDF, _ pages: inout [Page], _ pageSize: PageSize) -> [Float]? {
@@ -955,7 +1021,7 @@ public class Table : Drawable {
     /// - Parameter pages: the list that receives the new pages.
     /// - Parameter pageSize: the page size, for example Letter.PORTRAIT.
     /// - Returns: the x and y coordinates of the bottom right corner of the table on the last page,
-    ///   or nil when the table was already drawn and no page was added.
+    ///   or of its top right corner when the table was already drawn and no page was added.
     ///
     @discardableResult
     public func drawOn(_ pdf: PDF, _ first: Page?, _ pages: inout [Page], _ pageSize: PageSize) -> [Float]? {
@@ -968,7 +1034,10 @@ public class Table : Drawable {
         setBottomBorderOnLastRow()
         heights = getRowHeights()
         striped = getStripedRows()
-        var xy: [Float]?
+        columnSums = [:]
+        defer { columnSums = nil }
+        // A table with no rows left to draw needs no page, and ends where it starts.
+        var xy: [Float] = [x1, y1]
         var pageNumber: Int = 1
         while (hasMoreData()) {
             var page = first
@@ -979,10 +1048,7 @@ public class Table : Drawable {
             xy = drawTableRows(page, drawHeaderRows(page, pageNumber))
             pageNumber += 1
         }
-        if let xy = xy {
-            return [x1 + getWidth(), xy[1]]
-        }
-        return nil
+        return [x1 + getWidth(), xy[1]]
     }
 
     private func drawHeaderRows(_ page: Page?, _ pageNumber: Int) -> [Float] {
@@ -1025,7 +1091,7 @@ public class Table : Drawable {
                         cell.setBorder(Border.BOTTOM, true)
                     }
                 }
-                drawRow(page, row, x, y, heights, i, first ? StructElem.TH : nil)
+                drawRow(page, row, x, y, heights, i, heights.count, first ? StructElem.TH : nil)
             }
             y += heights[i]
         }
@@ -1038,7 +1104,9 @@ public class Table : Drawable {
     // Draws the cells of the row. In a PDF/UA document the row is a TR element
     // and each cell a TH or TD element, which holds what the cell draws; a row
     // that goes on with the wrapped text of the row above adds to its elements.
-    // With no cell structure the row is not tagged, as it is an artifact.
+    // With no cell structure the row is not tagged, as it is an artifact. A
+    // cell that spans rows is drawn down to the last of them before the row at
+    // pageEnd, which is on the next page.
     private func drawRow(
             _ page: Page,
             _ row: [Cell],
@@ -1046,6 +1114,7 @@ public class Table : Drawable {
             _ y: Float,
             _ heights: [Float],
             _ rowIndex: Int,
+            _ pageEnd: Int,
             _ cellStructure: StructElem?) {
         let parent = page.structParent
         let tagged = (structElement != nil && cellStructure != nil)
@@ -1061,12 +1130,12 @@ public class Table : Drawable {
         var i = 0
         while i < row.count {
             let cell = row[i]
-            let colspan = max(1, cell.getColSpan())
+            let colspan = Table.colSpanIn(row, i)
             let covered = (cell.properties & Cell.COVERED) != 0
             if tagged && !covered {
                 if !continued {
                     cellElements[i] = page.addStructElement(rowElement, cellStructure!,
-                            getAttributes(cellStructure!, colspan, cell.rowsSpanned))
+                            getAttributes(cellStructure!, colspan, tableRowsSpanned(rowIndex, cell.rowsSpanned)))
                 }
                 page.structParent = (i < cellElements.count) ? cellElements[i] : nil
             }
@@ -1076,9 +1145,10 @@ public class Table : Drawable {
                 i += 1
             }
             if !covered {
-                // A cell that spans rows is as tall as all the rows it covers.
+                // A cell that spans rows is as tall as all the rows it covers
+                // on this page.
                 var cellHeight: Float = 0.0
-                for r in rowIndex..<min(rowIndex + cell.rowsSpanned, heights.count) {
+                for r in rowIndex..<min(rowIndex + cell.rowsSpanned, heights.count, max(pageEnd, rowIndex + 1)) {
                     cellHeight += heights[r]
                 }
                 page.setBrushColor(cell.textColor)
@@ -1108,6 +1178,25 @@ public class Table : Drawable {
         return !row.isEmpty
     }
 
+    // The number of rows of the table, its TR elements, that a cell spanning
+    // count rows of the drawing from the row covers: the rows of the wrapped
+    // text of a row are not rows of the table, and neither is a row every cell
+    // of which a cell above it covers.
+    private func tableRowsSpanned(_ r: Int, _ count: Int) -> Int {
+        if count < 2 {
+            return count
+        }
+        var rows = 0
+        var s = r
+        while s < r + count && s < tableData.count {
+            if !isContinuation(s) && !allCovered(tableData[s]) {
+                rows += 1
+            }
+            s += 1
+        }
+        return rows
+    }
+
     // The attributes of a table cell element: the scope of a header cell and
     // the number of rows and columns a cell spans, or nil when it has none.
     private func getAttributes(
@@ -1133,8 +1222,7 @@ public class Table : Drawable {
         var y = xy[1]
         let footer = footerStart()
         let done = (rendered == -1)
-        var index = done ? footer : rendered
-        let first = index
+        let first = done ? footer : rendered
         let heights = self.heights
         // Where the rows start on the next pages, under the header rows.
         var top = y1
@@ -1146,52 +1234,25 @@ public class Table : Drawable {
         for r in footer..<tableData.count {
             bottom -= heights[r]
         }
-        // The rows before the first of these are not kept with the next row,
-        // and the lines of the rows before the second are cut where the page
-        // ends, as rows of their own.
-        var cutRowsUntil = -1
-        var cutLinesUntil = -1
-        while index < footer {
-            // The rows a cell spans, the lines a row wraps into and the rows
-            // kept with the next one are drawn together, so that a page break
-            // never cuts one of them in two. The footer rows are not in them.
-            let keepLines = (index >= cutLinesUntil)
-            let keepRows = keepLines && (index >= cutRowsUntil)
-            let end = min(rowGroupEnd(index, keepLines, keepRows), footer)
-            var groupHeight: Float = 0.0
-            for r in index..<end {
-                groupHeight += heights[r]
+        // The rows of the page are found before any of them is drawn, so that
+        // a cell that spans rows past the end of the page is drawn down to the
+        // last row of the page, and goes on at the top of the next.
+        var end = footer
+        var more = false
+        if let page = page {
+            (end, more) = rowsOnPage(first, footer, y, top, bottom)
+            drawSpansFromAbove(page, x, y, first, end)
+        }
+        for r in first..<max(first, end) {
+            if let page = page {
+                drawRow(page, tableData[r], x, y, heights, r, end, StructElem.TD)
             }
-            if page != nil && (y + groupHeight) > bottom {
-                if keepLines && groupHeight > bottom - top {
-                    // Rows that would not fit the next page either are drawn
-                    // from here: first each on its own, and then, for a row
-                    // that is taller than a page, each line on its own, cut
-                    // where the page ends.
-                    if keepRows {
-                        cutRowsUntil = end
-                    } else {
-                        cutLinesUntil = end
-                    }
-                    continue
-                }
-                // A row that does not fit goes on the next page, unless it is
-                // the first row of this one: a row taller than the page fits
-                // no page, and leaving it for the next page would ask for
-                // pages forever.
-                if index > first {
-                    rendered = index
-                    setFooterSums(first, index)
-                    return [x, drawFooterRows(page, x, y, heights, false)]
-                }
-            }
-            for r in index..<end {
-                if let page = page {
-                    drawRow(page, tableData[r], x, y, heights, r, StructElem.TD)
-                }
-                y += heights[r]
-            }
-            index = end
+            y += heights[r]
+        }
+        if more {
+            rendered = end
+            setFooterSums(first, end)
+            return [x, drawFooterRows(page, x, y, heights, false)]
         }
         if !done {
             // The rows of the table are all drawn, and the footer rows end it.
@@ -1202,6 +1263,119 @@ public class Table : Drawable {
             rendered = -1   // We are done!
         }
         return [x, y]
+    }
+
+    // The row after the rows from index that go on the page, where they start
+    // at y and end at bottom, and true when rows before the footer are left
+    // for the next page, where they start at top.
+    private func rowsOnPage(
+            _ start: Int, _ footer: Int, _ y: Float, _ top: Float, _ bottom: Float) -> (Int, Bool) {
+        let first = start
+        var index = start
+        var y = y
+        // The rows before the first of these are not kept with the next row,
+        // the lines of the rows before the second are cut where the page
+        // ends, as rows of their own, and so are the rows that a cell spans
+        // before the third.
+        var cutRowsUntil = -1
+        var cutLinesUntil = -1
+        var cutSpansUntil = -1
+        while index < footer {
+            // The rows a cell spans, the lines a row wraps into and the rows
+            // kept with the next one are drawn together, so that a page break
+            // never cuts one of them in two. The footer rows are not in them.
+            let keepSpans = (index >= cutSpansUntil)
+            let keepLines = keepSpans && (index >= cutLinesUntil)
+            let keepRows = keepLines && (index >= cutRowsUntil)
+            let end = min(rowGroupEnd(index, keepSpans, keepLines, keepRows), footer)
+            var groupHeight: Float = 0.0
+            for r in index..<end {
+                groupHeight += heights[r]
+            }
+            if (y + groupHeight) > bottom {
+                if keepSpans && groupHeight > bottom - top {
+                    // Rows that would not fit the next page either are drawn
+                    // from here: first each on its own, then, for a row that
+                    // is taller than a page, each line on its own, and then,
+                    // for a cell that spans rows taller than a page, each of
+                    // the rows, the cell being drawn on each page over the
+                    // rows it covers there. They are cut where the page ends.
+                    if keepRows {
+                        cutRowsUntil = end
+                    } else if keepLines {
+                        cutLinesUntil = end
+                    } else {
+                        cutSpansUntil = end
+                    }
+                    continue
+                }
+                // Rows that do not fit go on the next page, where they fit,
+                // even the first rows of this one, which starts lower than the
+                // next when there is something above the table. Only a line
+                // taller than a page is drawn where it is, as it fits no page,
+                // and leaving it for the next page would ask for pages forever.
+                if index > first || groupHeight <= bottom - top {
+                    return (index, true)
+                }
+            }
+            for r in index..<end {
+                y += heights[r]
+            }
+            index = end
+        }
+        return (index, false)
+    }
+
+    // Draws, over the first row of a page, the rest of each cell of the page
+    // before that spans rows down into it: its background and its borders, as
+    // far as the row at pageEnd, which is on the next page. The text of the
+    // cell was drawn with the cell on the page before.
+    private func drawSpansFromAbove(_ page: Page, _ x: Float, _ y: Float, _ first: Int, _ pageEnd: Int) {
+        if first >= pageEnd || first <= numOfHeaderRows {
+            return  // The first page has no page before it.
+        }
+        let row = tableData[first]
+        let continued = isContinuation(first)
+        var x = x
+        var i = 0
+        while i < row.count {
+            var colspan = 1
+            var w = row[i].getWidth()
+            if continued || (row[i].properties & Cell.COVERED) != 0, let s = spanAbove(first, i) {
+                let cell = tableData[s][i]
+                colspan = Table.colSpanIn(tableData[s], i)
+                w = 0.0
+                for j in i..<(i + colspan) {
+                    w += row[j].getWidth()
+                }
+                var h: Float = 0.0
+                for r in first..<max(first, min(s + cell.rowsSpanned, pageEnd)) {
+                    h += heights[r]
+                }
+                if cell.backgroundColor != Cell.NO_COLOR {
+                    cell.drawBackground(page, x, y, w, h)
+                }
+                cell.drawBorders(page, x, y, w, h)
+            }
+            x += w
+            i += colspan
+        }
+    }
+
+    // The row of the cell in the column that spans rows down over the row, or
+    // nil when there is none: the first cell above the row that is neither
+    // covered nor in a row of wrapped text.
+    private func spanAbove(_ r: Int, _ column: Int) -> Int? {
+        var s = r - 1
+        while s >= 0 {
+            let cell = tableData[s][column]
+            if (cell.properties & Cell.COVERED) != 0 || isContinuation(s) {
+                s -= 1
+                continue
+            }
+            return (cell.rowsSpanned > r - s) ? s : nil
+        }
+        return nil
     }
 
     // Draws the footer rows at y and returns the y under them. In a PDF/UA
@@ -1221,7 +1395,7 @@ public class Table : Drawable {
                         cell.setBorder(Border.TOP, true)
                     }
                 }
-                drawRow(page, tableData[r], x, y, heights, r, last ? StructElem.TD : nil)
+                drawRow(page, tableData[r], x, y, heights, r, heights.count, last ? StructElem.TD : nil)
             }
             y += heights[r]
         }
@@ -1251,7 +1425,7 @@ public class Table : Drawable {
             var i = 0
             while i < row.count {
                 let cell = row[i]
-                let colspan = max(1, cell.getColSpan())
+                let colspan = Table.colSpanIn(row, i)
                 if cell.getRowSpan() > 1 && (cell.properties & Cell.COVERED) == 0 {
                     let end = rowAfter(r, cell.getRowSpan())
                     let ownEnd = rowAfter(r, 1)
@@ -1285,7 +1459,7 @@ public class Table : Drawable {
                     cell.setBorder(Border.BOTTOM, false)
                 }
             }
-            i += max(1, cell.getColSpan())
+            i += Table.colSpanIn(row, i)
         }
     }
 
@@ -1346,14 +1520,15 @@ public class Table : Drawable {
         return heights
     }
 
-    // The row after the rows that a span holds together, with keepLines the
-    // lines the last of them wraps into, and with keepRows the rows that the
-    // last of them is kept with, which a page break keeps on one page.
-    private func rowGroupEnd(_ index: Int, _ keepLines: Bool, _ keepRows: Bool) -> Int {
+    // The row after the rows that a page break keeps on one page: with
+    // keepSpans those that a span holds together, with keepLines the lines the
+    // last of them wraps into, and with keepRows the rows that the last of
+    // them is kept with.
+    private func rowGroupEnd(_ index: Int, _ keepSpans: Bool, _ keepLines: Bool, _ keepRows: Bool) -> Int {
         var end = index + 1
         var r = index
         while r < end && r < tableData.count {
-            for cell in tableData[r] where r + cell.rowsSpanned > end {
+            for cell in tableData[r] where keepSpans && r + cell.rowsSpanned > end {
                 end = r + cell.rowsSpanned
             }
             if r + 1 == end && end < tableData.count {
@@ -1492,7 +1667,7 @@ public class Table : Drawable {
             var i = 0
             while i < row.count {
                 cell = row[i]
-                i += Int(cell!.getColSpan())
+                i += Table.colSpanIn(row, i)
             }
             cell?.setBorder(Border.RIGHT, true)
         }
@@ -1562,9 +1737,15 @@ public class Table : Drawable {
         return self
     }
 
+    // The number of columns the cell of the row at the index spans: at least
+    // its own, and no more than the row has from it.
+    static func colSpanIn(_ row: [Cell], _ index: Int) -> Int {
+        return max(1, min(row[index].getColSpan(), row.count - index))
+    }
+
     func getTotalWidth(_ row: [Cell], _ index: Int) -> Float {
         let cell = row[index]
-        let colspan = Int(cell.getColSpan())
+        let colspan = Table.colSpanIn(row, index)
         var cellWidth = Float(0.0)
         for i in 0..<colspan {
             cellWidth += row[index + i].getWidth()

@@ -75,33 +75,50 @@ import Testing
         #expect(try Content.ofBinaryFile(try write("data.bin", data)) == data)
     }
 
-    @Test func splitCutsTheLineAtTheDelimiterAndKeepsTheEmptyFields() {
-        #expect(Util.split("a,b,c", ",") == ["a", "b", "c"])
-        #expect(Util.split(",a,", ",") == ["", "a", ""])
-        #expect(Util.split("", ",") == [""])
-        #expect(Util.split("a||b", "||") == ["a", "b"])
-        #expect(Util.split("a,b", "") == ["a,b"])
+    @Test func splitCutsTheLineAtTheDelimiterAndKeepsTheEmptyFields() throws {
+        #expect(try Util.split("a,b,c", ",") == ["a", "b", "c"])
+        #expect(try Util.split(",a,", ",") == ["", "a", ""])
+        #expect(try Util.split("", ",") == [""])
+        #expect(try Util.split("a||b", "||") == ["a", "b"])
+        #expect(try Util.split("a,b", "") == ["a,b"])
     }
 
-    @Test func splitReadsAQuotedFieldAsRfc4180Does() {
-        #expect(Util.split("\"Smith, John\",42", ",") == ["Smith, John", "42"])
-        #expect(Util.split("\"a\"\"b\"", ",") == ["a\"b"])
-        #expect(Util.split("\"\",x,\"\"", ",") == ["", "x", ""])
-        #expect(Util.split("\"one\ttwo\"\tthree", "\t") == ["one\ttwo", "three"])
+    @Test func splitReadsAQuotedFieldAsRfc4180Does() throws {
+        #expect(try Util.split("\"Smith, John\",42", ",") == ["Smith, John", "42"])
+        #expect(try Util.split("\"a\"\"b\"", ",") == ["a\"b"])
+        #expect(try Util.split("\"\",x,\"\"", ",") == ["", "x", ""])
+        #expect(try Util.split("\"one\ttwo\"\tthree", "\t") == ["one\ttwo", "three"])
     }
 
-    // A line that cannot be read stops the program with fatalError, as the
-    // misuse of a font or a cell does in this port, so it has no test here.
-    @Test func splitLeavesTheQuotesOfAFieldThatDoesNotStartWithOne() {
-        #expect(Util.split("5\" pipe,b", ",") == ["5\" pipe", "b"])
-        #expect(Util.split("a\"b\"c", ",") == ["a\"b\"c"])
+    @Test func splitLeavesTheQuotesOfAFieldThatDoesNotStartWithOne() throws {
+        #expect(try Util.split("5\" pipe,b", ",") == ["5\" pipe", "b"])
+        #expect(try Util.split("a\"b\"c", ",") == ["a\"b\"c"])
+    }
+
+    /// Returns the message of what the body throws, or "" when it throws nothing.
+    private func errorOf(_ body: () throws -> Any) -> String {
+        do {
+            _ = try body()
+            return ""
+        } catch {
+            return TestSupport.message(error)
+        }
+    }
+
+    // A line that cannot be read throws, where it stopped the program with
+    // fatalError.
+    @Test func splitRefusesALineItCannotRead() {
+        #expect(errorOf { try Util.split("a,\"b,c", ",") }
+                == "A quoted field is not closed on this line of the data file: a,\"b,c")
+        #expect(errorOf { try Util.split("\"a\"b,c", ",") }
+                == "A quoted field is followed by text on this line of the data file: \"a\"b,c")
     }
 
     /// Reads the first record of the text, as the data file readers do.
-    private func firstRecord(_ text: String) -> [String] {
+    private func firstRecord(_ text: String) throws -> [String] {
         let lines = text.components(separatedBy: "\n")
         var i = 1
-        return Util.readRecord(lines[0], ",") {
+        return try Util.readRecord(lines[0], ",") {
             guard i < lines.count else {
                 return nil
             }
@@ -110,14 +127,21 @@ import Testing
         }
     }
 
-    /// The other ports also check that a quoted field that is never closed is
-    /// refused; Swift stops with fatalError, which a test cannot catch.
-    @Test func aQuotedFieldGoesOnOverItsLineBreaksAsSpaces() {
-        #expect(firstRecord("a,\"12 Main St\nApt 4\",b\nnext,line") == ["a", "12 Main St Apt 4", "b"])
-        #expect(firstRecord("\"x\"\"\ny\"") == ["x\" y"])
-        #expect(firstRecord("\"a\nb\",\"c\nd\"") == ["a b", "c d"])
-        #expect(firstRecord(",\"\n\",\nnext") == ["", " ", ""])
-        #expect(firstRecord("a,b\n\"c\nd\"") == ["a", "b"])
+    @Test func aQuotedFieldGoesOnOverItsLineBreaksAsSpaces() throws {
+        #expect(try firstRecord("a,\"12 Main St\nApt 4\",b\nnext,line") == ["a", "12 Main St Apt 4", "b"])
+        #expect(try firstRecord("\"x\"\"\ny\"") == ["x\" y"])
+        #expect(try firstRecord("\"a\nb\",\"c\nd\"") == ["a b", "c d"])
+        #expect(try firstRecord(",\"\n\",\nnext") == ["", " ", ""])
+        #expect(try firstRecord("a,b\n\"c\nd\"") == ["a", "b"])
+    }
+
+    @Test func aQuotedFieldThatIsNeverClosedIsRefused() {
+        #expect(errorOf { try firstRecord("a,\"b\nc\nd") }
+                == "A quoted field is not closed by the end of the data file: a,\"b\nc\nd")
+        let text = "\"a" + String(repeating: "\nb", count: Util.maxLinesInRecord)
+        #expect(errorOf { try firstRecord(text) }
+                == "A quoted field is not closed within 10000 lines of the data file: "
+                + String(text.prefix(60)) + "...")
     }
 
     @Test func lineBreaksAreDrawnAsSpaces() {

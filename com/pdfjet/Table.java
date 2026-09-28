@@ -44,6 +44,22 @@ public class Table implements Drawable {
     // setColumnWidthsInPercent gives the columns, or null.
     private float tableWidth;
     private float[] columnPercents;
+    // The numbers of the columns that setPageSum, setRunningSum and
+    // setBroughtForwardSum add up, read once for each drawOn by column and
+    // decimals, or null when the table is not being drawn: they were read
+    // again for every page, which took 33 seconds for 40,000 rows.
+    private Map<Integer, ColumnSums> columnSums;
+
+    // The number of each row of a column, in units of the decimals, and their
+    // sums from the first row to each row.
+    private static final class ColumnSums {
+        long[] values;
+        long[] sums;        // The sum of the values before each row, and of them all
+        // Whether no sum of values can have more than 18 digits, which the sum
+        // of their magnitudes does not: the sum of the rows between two is
+        // then the difference of the sums up to them.
+        boolean exact = true;
+    }
 
     /**
      * Create a table object.
@@ -401,8 +417,42 @@ public class Table implements Drawable {
     // units of the decimals. A number that would take the sum past 18 digits
     // is left out.
     private long sumOf(int column, int first, int end, int decimals) {
+        first = Math.max(0, first);
+        end = Math.min(end, tableData.size());
+        if (first >= end) {
+            return 0L;
+        }
+        Integer key = column * 16 + decimals;
+        ColumnSums sums = (columnSums == null) ? null : columnSums.get(key);
+        if (sums == null) {
+            sums = readColumn(column, decimals);
+            if (columnSums != null) {
+                columnSums.put(key, sums);
+            }
+        }
+        if (sums.exact) {
+            return sums.sums[end] - sums.sums[first];
+        }
         long sum = 0L;
-        for (int r = Math.max(0, first); r < end && r < tableData.size(); r++) {
+        for (int r = first; r < end; r++) {
+            long value = sums.values[r];
+            if (Math.abs(sum + value) <= MAX_SUM) {
+                sum += value;
+            }
+        }
+        return sum;
+    }
+
+    // Reads the number of each row of the column, in units of the decimals: 0
+    // for a cell that has no number, or that a cell above it covers.
+    private ColumnSums readColumn(int column, int decimals) {
+        int rows = tableData.size();
+        ColumnSums sums = new ColumnSums();
+        sums.values = new long[rows];
+        sums.sums = new long[rows + 1];
+        long magnitude = 0L;
+        for (int r = 0; r < rows; r++) {
+            sums.sums[r + 1] = sums.sums[r];
             List<Cell> row = tableData.get(r);
             if (column >= row.size()) {
                 continue;
@@ -412,11 +462,18 @@ public class Table implements Drawable {
                 continue;
             }
             Long value = numberOf(cell.text, decimals);
-            if (value != null && Math.abs(sum + value) <= MAX_SUM) {
-                sum += value;
+            if (value != null) {
+                sums.values[r] = value;
+                if (sums.exact) {
+                    // A value is at most MAX_SUM, so the sums cannot overflow
+                    // before they are found to be past it.
+                    magnitude += Math.abs(value);
+                    sums.exact = magnitude <= MAX_SUM;
+                    sums.sums[r + 1] += value;
+                }
             }
         }
-        return sum;
+        return sums;
     }
 
     /**
@@ -923,8 +980,13 @@ public class Table implements Drawable {
         setBottomBorderOnLastRow();
         heights = getRowHeights();
         striped = getStripedRows();
-        float[] xy = drawTableRows(page, drawHeaderRows(page, 0));
-        return new float[] {x1 + getWidth(), xy[1]};
+        columnSums = new HashMap<Integer, ColumnSums>();
+        try {
+            float[] xy = drawTableRows(page, drawHeaderRows(page, 0));
+            return new float[] {x1 + getWidth(), xy[1]};
+        } finally {
+            columnSums = null;
+        }
     }
 
     /**
@@ -964,18 +1026,24 @@ public class Table implements Drawable {
         setBottomBorderOnLastRow();
         heights = getRowHeights();
         striped = getStripedRows();
-        float[] xy = null;
-        int pageNumber = 1;
-        while (hasMoreData()) {
-            Page page = first;
-            if (pageNumber > 1 || first == null) {
-                page = new Page(pdf, pageSize, Page.DETACHED);
-                pages.add(page);
+        columnSums = new HashMap<Integer, ColumnSums>();
+        try {
+            // A table with no rows left to draw needs no page, and ends where it starts.
+            float[] xy = new float[] {x1, y1};
+            int pageNumber = 1;
+            while (hasMoreData()) {
+                Page page = first;
+                if (pageNumber > 1 || first == null) {
+                    page = new Page(pdf, pageSize, Page.DETACHED);
+                    pages.add(page);
+                }
+                xy = drawTableRows(page, drawHeaderRows(page, pageNumber));
+                pageNumber++;
             }
-            xy = drawTableRows(page, drawHeaderRows(page, pageNumber));
-            pageNumber++;
+            return new float[] {x1 + getWidth(), xy[1]};
+        } finally {
+            columnSums = null;
         }
-        return new float[] {x1 + getWidth(), xy[1]};
     }
 
     private float[] drawHeaderRows(Page page, int pageNumber) throws Exception {
@@ -1022,7 +1090,7 @@ public class Table implements Drawable {
                         }
                     }
                 }
-                drawRow(page, row, x, y, heights, i, first ? StructElem.TH : null);
+                drawRow(page, row, x, y, heights, i, heights.length, first ? StructElem.TH : null);
             }
             y += heights[i];
         }
@@ -1035,9 +1103,11 @@ public class Table implements Drawable {
     // Draws the cells of the row. In a PDF/UA document the row is a TR element
     // and each cell a TH or TD element, which holds what the cell draws; a row
     // that goes on with the wrapped text of the row above adds to its elements.
-    // With no cell structure the row is not tagged, as it is an artifact.
+    // With no cell structure the row is not tagged, as it is an artifact. A
+    // cell that spans rows is drawn down to the last of them before the row at
+    // pageEnd, which is on the next page.
     private void drawRow(Page page, List<Cell> row, float x, float y, float[] heights,
-            int rowIndex, StructElem cellStructure) throws Exception {
+            int rowIndex, int pageEnd, StructElem cellStructure) throws Exception {
         StructElement parent = page.structParent;
         boolean tagged = (structElement != null && cellStructure != null);
         boolean continued = (row.get(0).properties & Cell.CONTINUED) != 0;
@@ -1051,12 +1121,12 @@ public class Table implements Drawable {
         int i = 0;
         while (i < row.size()) {
             Cell cell = row.get(i);
-            int colspan = Math.max(1, cell.getColSpan());
+            int colspan = colSpanIn(row, i);
             boolean covered = (cell.properties & Cell.COVERED) != 0;
             if (tagged && !covered) {
                 if (!continued) {
                     cellElements[i] = page.addStructElement(rowElement, cellStructure,
-                            getAttributes(cellStructure, colspan, cell.rowsSpanned));
+                            getAttributes(cellStructure, colspan, tableRowsSpanned(rowIndex, cell.rowsSpanned)));
                 }
                 page.structParent = (cellElements != null && i < cellElements.length) ?
                         cellElements[i] : null;
@@ -1066,9 +1136,11 @@ public class Table implements Drawable {
                 w += row.get(i++).getWidth();
             }
             if (!covered) {
-                // A cell that spans rows is as tall as all the rows it covers.
+                // A cell that spans rows is as tall as all the rows it covers
+                // on this page.
                 float cellHeight = 0f;
-                int end = Math.min(rowIndex + cell.rowsSpanned, heights.length);
+                int end = Math.min(Math.min(rowIndex + cell.rowsSpanned, heights.length),
+                        Math.max(pageEnd, rowIndex + 1));
                 for (int r = rowIndex; r < end; r++) {
                     cellHeight += heights[r];
                 }
@@ -1101,6 +1173,23 @@ public class Table implements Drawable {
         return !row.isEmpty();
     }
 
+    // The number of rows of the table, its TR elements, that a cell spanning
+    // count rows of the drawing from the row covers: the rows of the wrapped
+    // text of a row are not rows of the table, and neither is a row every cell
+    // of which a cell above it covers.
+    private int tableRowsSpanned(int r, int count) {
+        if (count < 2) {
+            return count;
+        }
+        int rows = 0;
+        for (int s = r; s < r + count && s < tableData.size(); s++) {
+            if (!isContinuation(s) && !allCovered(tableData.get(s))) {
+                rows++;
+            }
+        }
+        return rows;
+    }
+
     // The attributes of a table cell element: the scope of a header cell and
     // the number of rows and columns a cell spans, or null when it has none.
     private static String getAttributes(StructElem cellStructure, int colspan, int rowspan) {
@@ -1126,8 +1215,7 @@ public class Table implements Drawable {
         float[] heights = this.heights;
         int footer = footerStart();
         boolean done = (rendered == -1);
-        int index = done ? footer : rendered;
-        int first = index;
+        int first = done ? footer : rendered;
         // Where the rows start on the next pages, under the header rows.
         float top = y1;
         for (int r = 0; r < numOfHeaderRows && r < heights.length; r++) {
@@ -1138,52 +1226,27 @@ public class Table implements Drawable {
         for (int r = footer; r < tableData.size(); r++) {
             bottom -= heights[r];
         }
-        // The rows before the first of these are not kept with the next row,
-        // and the lines of the rows before the second are cut where the page
-        // ends, as rows of their own.
-        int cutRowsUntil = -1;
-        int cutLinesUntil = -1;
-        while (index < footer) {
-            // The rows a cell spans, the lines a row wraps into and the rows
-            // kept with the next one are drawn together, so that a page break
-            // never cuts one of them in two. The footer rows are not in them.
-            boolean keepLines = (index >= cutLinesUntil);
-            boolean keepRows = keepLines && (index >= cutRowsUntil);
-            int end = Math.min(rowGroupEnd(index, keepLines, keepRows), footer);
-            float groupHeight = 0f;
-            for (int r = index; r < end; r++) {
-                groupHeight += heights[r];
+        // The rows of the page are found before any of them is drawn, so that
+        // a cell that spans rows past the end of the page is drawn down to the
+        // last row of the page, and goes on at the top of the next.
+        int end = footer;
+        boolean more = false;
+        if (page != null) {
+            int[] rows = rowsOnPage(first, footer, y, top, bottom);
+            end = rows[0];
+            more = (rows[1] != 0);
+            drawSpansFromAbove(page, x, y, first, end);
+        }
+        for (int r = first; r < end; r++) {
+            if (page != null) {
+                drawRow(page, tableData.get(r), x, y, heights, r, end, StructElem.TD);
             }
-            if (page != null && (y + groupHeight) > bottom) {
-                if (keepLines && groupHeight > bottom - top) {
-                    // Rows that would not fit the next page either are drawn
-                    // from here: first each on its own, and then, for a row
-                    // that is taller than a page, each line on its own, cut
-                    // where the page ends.
-                    if (keepRows) {
-                        cutRowsUntil = end;
-                    } else {
-                        cutLinesUntil = end;
-                    }
-                    continue;
-                }
-                // A row that does not fit goes on the next page, unless it is
-                // the first row of this one: a row taller than the page fits
-                // no page, and leaving it for the next page would ask for
-                // pages forever.
-                if (index > first) {
-                    rendered = index;
-                    setFooterSums(first, index);
-                    return new float[] {x, drawFooterRows(page, x, y, heights, false)};
-                }
-            }
-            for (int r = index; r < end; r++) {
-                if (page != null) {
-                    drawRow(page, tableData.get(r), x, y, heights, r, StructElem.TD);
-                }
-                y += heights[r];
-            }
-            index = end;
+            y += heights[r];
+        }
+        if (more) {
+            rendered = end;
+            setFooterSums(first, end);
+            return new float[] {x, drawFooterRows(page, x, y, heights, false)};
         }
         if (!done) {
             // The rows of the table are all drawn, and the footer rows end it.
@@ -1194,6 +1257,117 @@ public class Table implements Drawable {
             rendered = -1; // We are done!
         }
         return new float[] {x, y};
+    }
+
+    // The row after the rows from index that go on the page, where they start
+    // at y and end at bottom, and 1 when rows before the footer are left for
+    // the next page, where they start at top, or 0.
+    private int[] rowsOnPage(int index, int footer, float y, float top, float bottom) {
+        int first = index;
+        float[] heights = this.heights;
+        // The rows before the first of these are not kept with the next row,
+        // the lines of the rows before the second are cut where the page ends,
+        // as rows of their own, and so are the rows that a cell spans before
+        // the third.
+        int cutRowsUntil = -1;
+        int cutLinesUntil = -1;
+        int cutSpansUntil = -1;
+        while (index < footer) {
+            // The rows a cell spans, the lines a row wraps into and the rows
+            // kept with the next one are drawn together, so that a page break
+            // never cuts one of them in two. The footer rows are not in them.
+            boolean keepSpans = (index >= cutSpansUntil);
+            boolean keepLines = keepSpans && (index >= cutLinesUntil);
+            boolean keepRows = keepLines && (index >= cutRowsUntil);
+            int end = Math.min(rowGroupEnd(index, keepSpans, keepLines, keepRows), footer);
+            float groupHeight = 0f;
+            for (int r = index; r < end; r++) {
+                groupHeight += heights[r];
+            }
+            if ((y + groupHeight) > bottom) {
+                if (keepSpans && groupHeight > bottom - top) {
+                    // Rows that would not fit the next page either are drawn
+                    // from here: first each on its own, then, for a row that
+                    // is taller than a page, each line on its own, and then,
+                    // for a cell that spans rows taller than a page, each of
+                    // the rows, the cell being drawn on each page over the
+                    // rows it covers there. They are cut where the page ends.
+                    if (keepRows) {
+                        cutRowsUntil = end;
+                    } else if (keepLines) {
+                        cutLinesUntil = end;
+                    } else {
+                        cutSpansUntil = end;
+                    }
+                    continue;
+                }
+                // Rows that do not fit go on the next page, where they fit,
+                // even the first rows of this one, which starts lower than the
+                // next when there is something above the table. Only a line
+                // taller than a page is drawn where it is, as it fits no page,
+                // and leaving it for the next page would ask for pages forever.
+                if (index > first || groupHeight <= bottom - top) {
+                    return new int[] {index, 1};
+                }
+            }
+            for (int r = index; r < end; r++) {
+                y += heights[r];
+            }
+            index = end;
+        }
+        return new int[] {index, 0};
+    }
+
+    // Draws, over the first row of a page, the rest of each cell of the page
+    // before that spans rows down into it: its background and its borders, as
+    // far as the row at pageEnd, which is on the next page. The text of the
+    // cell was drawn with the cell on the page before.
+    private void drawSpansFromAbove(Page page, float x, float y, int first, int pageEnd) {
+        if (first >= pageEnd || first <= numOfHeaderRows) {
+            return;     // The first page has no page before it.
+        }
+        List<Cell> row = tableData.get(first);
+        boolean continued = isContinuation(first);
+        int i = 0;
+        while (i < row.size()) {
+            int colspan = 1;
+            float w = row.get(i).getWidth();
+            if (continued || (row.get(i).properties & Cell.COVERED) != 0) {
+                int s = spanAbove(first, i);
+                if (s != -1) {
+                    Cell cell = tableData.get(s).get(i);
+                    colspan = colSpanIn(tableData.get(s), i);
+                    w = 0f;
+                    for (int j = i; j < i + colspan; j++) {
+                        w += row.get(j).getWidth();
+                    }
+                    float h = 0f;
+                    for (int r = first; r < Math.min(s + cell.rowsSpanned, pageEnd); r++) {
+                        h += heights[r];
+                    }
+                    if (cell.backgroundColor != Cell.NO_COLOR) {
+                        cell.drawBackground(page, x, y, w, h);
+                    }
+                    cell.drawBorders(page, x, y, w, h);
+                }
+            }
+            x += w;
+            i += colspan;
+        }
+    }
+
+    // The row of the cell in the column that spans rows down over the row, or
+    // -1 when there is none: the first cell above the row that is neither
+    // covered nor in a row of wrapped text.
+    private int spanAbove(int r, int column) {
+        for (int s = r - 1; s >= 0; s--) {
+            Cell cell = tableData.get(s).get(column);
+            if ((cell.properties & Cell.COVERED) != 0 || isContinuation(s)) {
+                continue;
+            }
+            return (cell.rowsSpanned > r - s) ? s : -1;
+        }
+        return -1;
     }
 
     // Draws the footer rows at y and returns the y under them. In a PDF/UA
@@ -1212,7 +1386,8 @@ public class Table implements Drawable {
                         cell.setBorder(Border.TOP, true);
                     }
                 }
-                drawRow(page, tableData.get(r), x, y, heights, r, last ? StructElem.TD : null);
+                drawRow(page, tableData.get(r), x, y, heights, r, heights.length,
+                        last ? StructElem.TD : null);
             }
             y += heights[r];
         }
@@ -1242,7 +1417,7 @@ public class Table implements Drawable {
             int i = 0;
             while (i < row.size()) {
                 Cell cell = row.get(i);
-                int colspan = Math.max(1, cell.getColSpan());
+                int colspan = colSpanIn(row, i);
                 if (cell.getRowSpan() > 1 && (cell.properties & Cell.COVERED) == 0) {
                     int end = rowAfter(r, cell.getRowSpan());
                     int ownEnd = rowAfter(r, 1);
@@ -1276,7 +1451,7 @@ public class Table implements Drawable {
                     cell.setBorder(Border.BOTTOM, false);
                 }
             }
-            i += Math.max(1, cell.getColSpan());
+            i += colSpanIn(row, i);
         }
     }
 
@@ -1328,14 +1503,15 @@ public class Table implements Drawable {
         return heights;
     }
 
-    // The row after the rows that a span holds together, with keepLines the
-    // lines the last of them wraps into, and with keepRows the rows that the
-    // last of them is kept with, which a page break keeps on one page.
-    private int rowGroupEnd(int index, boolean keepLines, boolean keepRows) {
+    // The row after the rows that a page break keeps on one page: with
+    // keepSpans those that a span holds together, with keepLines the lines the
+    // last of them wraps into, and with keepRows the rows that the last of
+    // them is kept with.
+    private int rowGroupEnd(int index, boolean keepSpans, boolean keepLines, boolean keepRows) {
         int end = index + 1;
         for (int r = index; r < end && r < tableData.size(); r++) {
             for (Cell cell : tableData.get(r)) {
-                if (r + cell.rowsSpanned > end) {
+                if (keepSpans && r + cell.rowsSpanned > end) {
                     end = r + cell.rowsSpanned;
                 }
             }
@@ -1488,7 +1664,7 @@ public class Table implements Drawable {
             int i = 0;
             while (i < row.size()) {
                 cell = row.get(i);
-                i += cell.getColSpan();
+                i += colSpanIn(row, i);
             }
             if (cell != null) {
                 cell.setBorder(Border.RIGHT, true);
@@ -1562,9 +1738,15 @@ public class Table implements Drawable {
         return this;
     }
 
+    // The number of columns the cell of the row at the index spans: at least
+    // its own, and no more than the row has from it.
+    private static int colSpanIn(List<Cell> row, int index) {
+        return Math.max(1, Math.min(row.get(index).getColSpan(), row.size() - index));
+    }
+
     private float getTotalWidth(List<Cell> row, int index) {
         Cell cell = row.get(index);
-        int colspan = cell.getColSpan();
+        int colspan = colSpanIn(row, index);
         float cellWidth = 0f;
         for (int i = 0; i < colspan; i++) {
             cellWidth += row.get(index + i).getWidth();

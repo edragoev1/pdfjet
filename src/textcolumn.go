@@ -10,6 +10,7 @@ import (
 
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
 	"github.com/edragoev1/pdfjet/v9/src/internal/single"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // TextColumn is a column of paragraphs, each a list of TextLine objects that
@@ -35,6 +36,7 @@ type TextColumn struct {
 	paragraphSpacing      float32
 	paragraphs            []*Paragraph
 	lineBetweenParagraphs bool
+	inList                bool // A run of paragraphs that have a label is being drawn
 }
 
 // NewTextColumn creates a text column object.
@@ -133,6 +135,7 @@ func (textColumn *TextColumn) DrawOn(page *Page) [2]float32 {
 	for i, paragraph := range textColumn.paragraphs {
 		xy = textColumn.drawParagraphOn(page, paragraph, i == (len(textColumn.paragraphs)-1))
 	}
+	textColumn.closeList(page)
 	// Restore the original location
 	textColumn.SetLocation(textColumn.x, textColumn.y)
 	// A column with a height reaches at least that far down from its location
@@ -142,8 +145,51 @@ func (textColumn *TextColumn) DrawOn(page *Page) [2]float32 {
 	return [2]float32{textColumn.x + textColumn.w, xy[1]}
 }
 
+// closeList ends the list that is open, if there is one.
+func (textColumn *TextColumn) closeList(page *Page) {
+	if textColumn.inList {
+		page.EndStructElement() // The L
+		textColumn.inList = false
+	}
+}
+
+// drawLabel draws the label of a paragraph that is an item of a list, to the
+// left of the column and on the baseline of the first line, as TextFrame
+// draws it. In a PDF/UA document a run of such paragraphs is an L, and each an
+// LI of the Lbl of its label and the LBody of its text. It returns what ends
+// the item.
+func (textColumn *TextColumn) drawLabel(page *Page, paragraph *Paragraph) func() {
+	if paragraph.listLabel == nil {
+		textColumn.closeList(page)
+		return func() {}
+	}
+	if !textColumn.inList {
+		page.BeginStructElement(structelem.L)
+		textColumn.inList = true
+	}
+	page.BeginStructElement(structelem.LI)
+	var ascent float32
+	for _, line := range paragraph.lines {
+		ascent = max(ascent, line.font.GetAscent(line.fontSize))
+	}
+	label := paragraph.listLabel
+	label.SetStructureType(structelem.Lbl)
+	label.SetLocation(textColumn.x-paragraph.listLabelIndent, textColumn.y1+ascent)
+	label.DrawOn(page)
+	page.BeginStructElement(structelem.LBody)
+	return func() {
+		page.EndStructElement() // The LBody
+		page.EndStructElement() // The LI
+	}
+}
+
 func (textColumn *TextColumn) drawParagraphOn(
 	page *Page, paragraph *Paragraph, lastParagraph bool) [2]float32 {
+	endItem := func() {}
+	if page != nil {
+		endItem = textColumn.drawLabel(page, paragraph)
+	}
+	defer endItem()
 	// In a PDF/UA document the paragraph is one structure element, which the
 	// words it is drawn one at a time all belong to.
 	if page != nil {

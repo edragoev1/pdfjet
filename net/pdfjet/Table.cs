@@ -43,6 +43,22 @@ public class Table : IDrawable {
     // SetColumnWidthsInPercent gives the columns, or null.
     private float tableWidth;
     private float[] columnPercents;
+    // The numbers of the columns that SetPageSum, SetRunningSum and
+    // SetBroughtForwardSum add up, read once for each DrawOn by column and
+    // decimals, or null when the table is not being drawn: they were read
+    // again for every page, which took 33 seconds for 40,000 rows.
+    private Dictionary<long, ColumnSums> columnSums;
+
+    // The number of each row of a column, in units of the decimals, and their
+    // sums from the first row to each row.
+    private sealed class ColumnSums {
+        internal long[] values;
+        internal long[] sums;       // The sum of the values before each row, and of them all
+        // Whether no sum of values can have more than 18 digits, which the sum
+        // of their magnitudes does not: the sum of the rows between two is
+        // then the difference of the sums up to them.
+        internal bool exact;
+    }
 
     /// <summary>
     /// Create a table object.
@@ -379,8 +395,43 @@ public class Table : IDrawable {
     // units of the decimals. A number that would take the sum past 18 digits
     // is left out.
     private long SumOf(int column, int first, int end, int decimals) {
+        first = Math.Max(0, first);
+        end = Math.Min(end, tableData.Count);
+        if (first >= end) {
+            return 0L;
+        }
+        long key = ((long) column << 4) | (uint) decimals;
+        ColumnSums sums = null;
+        if (columnSums == null || !columnSums.TryGetValue(key, out sums)) {
+            sums = ReadColumn(column, decimals);
+            if (columnSums != null) {
+                columnSums[key] = sums;
+            }
+        }
+        if (sums.exact) {
+            return sums.sums[end] - sums.sums[first];
+        }
         long sum = 0L;
-        for (int r = Math.Max(0, first); r < end && r < tableData.Count; r++) {
+        for (int r = first; r < end; r++) {
+            long total = sum + sums.values[r];
+            if (total <= MAX_SUM && total >= -MAX_SUM) {
+                sum = total;
+            }
+        }
+        return sum;
+    }
+
+    // Reads the number of each row of the column, in units of the decimals: 0
+    // for a cell that has no number, or that a cell above it covers.
+    private ColumnSums ReadColumn(int column, int decimals) {
+        int rows = tableData.Count;
+        ColumnSums sums = new ColumnSums();
+        sums.values = new long[rows];
+        sums.sums = new long[rows + 1];
+        sums.exact = true;
+        long magnitude = 0L;
+        for (int r = 0; r < rows; r++) {
+            sums.sums[r + 1] = sums.sums[r];
             List<Cell> row = tableData[r];
             if (column >= row.Count) {
                 continue;
@@ -390,11 +441,18 @@ public class Table : IDrawable {
                 continue;
             }
             long? value = NumberOf(cell.text, decimals);
-            if (value != null && Math.Abs(sum + value.Value) <= MAX_SUM) {
-                sum += value.Value;
+            if (value != null) {
+                sums.values[r] = value.Value;
+                if (sums.exact) {
+                    // A value is at most MAX_SUM, so the sums cannot overflow
+                    // before they are found to be past it.
+                    magnitude += Math.Abs(value.Value);
+                    sums.exact = magnitude <= MAX_SUM;
+                    sums.sums[r + 1] += value.Value;
+                }
             }
         }
-        return sum;
+        return sums;
     }
 
     /// <summary>
@@ -414,13 +472,13 @@ public class Table : IDrawable {
             str = str.Substring(1, str.Length - 2);
             negative = true;
         }
-        str = str.Replace(",", "").Replace("'", "").Trim();
+        str = Util.Trim(str.Replace(",", "").Replace("'", ""));
         if (str[0] == '+' || str[0] == '-') {
             negative ^= (str[0] == '-');
             str = str.Substring(1);
         }
         int exponent = 0;
-        int e = str.IndexOfAny(new char[] {'e', 'E'});
+        int e = str.IndexOfAny(EXPONENT);
         if (e != -1) {
             String exp = str.Substring(e + 1);
             int sign = 1;
@@ -431,7 +489,7 @@ public class Table : IDrawable {
             if (exp.Length > 4 || exp.Contains('.')) {
                 return null;
             }
-            exponent = sign * int.Parse(exp, System.Globalization.CultureInfo.InvariantCulture);
+            exponent = sign * (int) ParseDigits(exp);
             str = str.Substring(0, e);
         }
         int point = str.IndexOf('.');
@@ -451,7 +509,7 @@ public class Table : IDrawable {
             if (digits.Length + shift > 18) {
                 return null;
             }
-            value = long.Parse(digits, System.Globalization.CultureInfo.InvariantCulture);
+            value = ParseDigits(digits);
             for (int i = 0; i < shift; i++) {
                 value *= 10;
             }
@@ -463,7 +521,7 @@ public class Table : IDrawable {
             if (keep > 18) {
                 return null;
             }
-            value = (keep == 0) ? 0L : long.Parse(digits.Substring(0, keep), System.Globalization.CultureInfo.InvariantCulture);
+            value = (keep == 0) ? 0L : ParseDigits(digits.Substring(0, keep));
             if (digits[keep] >= '5') {
                 value++;
             }
@@ -472,6 +530,22 @@ public class Table : IDrawable {
             }
         }
         return negative ? -value : value;
+    }
+
+    private static readonly char[] EXPONENT = {'e', 'E'};
+
+    // Returns the number the ASCII digits are, or 0 when the text is not all
+    // digits, as Go's strconv reads it: long.Parse took a space, and threw for
+    // anything else.
+    private static long ParseDigits(String digits) {
+        long value = 0L;
+        foreach (char ch in digits) {
+            if (ch < '0' || ch > '9') {
+                return 0L;
+            }
+            value = value * 10 + (ch - '0');
+        }
+        return value;
     }
 
     /// <summary>
@@ -867,8 +941,13 @@ public class Table : IDrawable {
         SetBottomBorderOnLastRow();
         heights = GetRowHeights();
         striped = GetStripedRows();
-        float[] xy = DrawTableRows(page, DrawHeaderRows(page, 0));
-        return new float[] {x1 + GetWidth(), xy[1]};
+        columnSums = new Dictionary<long, ColumnSums>();
+        try {
+            float[] xy = DrawTableRows(page, DrawHeaderRows(page, 0));
+            return new float[] {x1 + GetWidth(), xy[1]};
+        } finally {
+            columnSums = null;
+        }
     }
 
     /// <summary>
@@ -904,18 +983,24 @@ public class Table : IDrawable {
         SetBottomBorderOnLastRow();
         heights = GetRowHeights();
         striped = GetStripedRows();
-        float[] xy = null;
-        int pageNumber = 1;
-        while (HasMoreData()) {
-            Page page = first;
-            if (pageNumber > 1 || first == null) {
-                page = new Page(pdf, pageSize, false);
-                pages.Add(page);
+        columnSums = new Dictionary<long, ColumnSums>();
+        try {
+            // A table with no rows left to draw needs no page, and ends where it starts.
+            float[] xy = new float[] {x1, y1};
+            int pageNumber = 1;
+            while (HasMoreData()) {
+                Page page = first;
+                if (pageNumber > 1 || first == null) {
+                    page = new Page(pdf, pageSize, false);
+                    pages.Add(page);
+                }
+                xy = DrawTableRows(page, DrawHeaderRows(page, pageNumber));
+                pageNumber++;
             }
-            xy = DrawTableRows(page, DrawHeaderRows(page, pageNumber));
-            pageNumber++;
+            return new float[] {x1 + GetWidth(), xy[1]};
+        } finally {
+            columnSums = null;
         }
-        return new float[] {x1 + GetWidth(), xy[1]};
     }
 
     private float[] DrawHeaderRows(Page page, int pageNumber) {
@@ -962,7 +1047,7 @@ public class Table : IDrawable {
                         }
                     }
                 }
-                DrawRow(page, row, x, y, heights, i, first ? StructElem.TH : (StructElem?) null);
+                DrawRow(page, row, x, y, heights, i, heights.Length, first ? StructElem.TH : (StructElem?) null);
             }
             y += heights[i];
         }
@@ -975,9 +1060,11 @@ public class Table : IDrawable {
     // Draws the cells of the row. In a PDF/UA document the row is a TR element
     // and each cell a TH or TD element, which holds what the cell draws; a row
     // that goes on with the wrapped text of the row above adds to its elements.
-    // With no cell structure the row is not tagged, as it is an artifact.
+    // With no cell structure the row is not tagged, as it is an artifact. A
+    // cell that spans rows is drawn down to the last of them before the row at
+    // pageEnd, which is on the next page.
     private void DrawRow(Page page, List<Cell> row, float x, float y, float[] heights,
-            int rowIndex, StructElem? cellStructure) {
+            int rowIndex, int pageEnd, StructElem? cellStructure) {
         StructElement parent = page.structParent;
         bool tagged = (structElement != null && cellStructure != null);
         bool continued = (row[0].properties & Cell.CONTINUED) != 0;
@@ -991,12 +1078,12 @@ public class Table : IDrawable {
         int i = 0;
         while (i < row.Count) {
             Cell cell = row[i];
-            int colspan = (cell.GetColSpan() < 1) ? 1 : cell.GetColSpan();
+            int colspan = ColSpanIn(row, i);
             bool covered = (cell.properties & Cell.COVERED) != 0;
             if (tagged && !covered) {
                 if (!continued) {
                     cellElements[i] = page.AddStructElement(rowElement, cellStructure.Value,
-                            GetAttributes(cellStructure.Value, colspan, cell.rowsSpanned));
+                            GetAttributes(cellStructure.Value, colspan, TableRowsSpanned(rowIndex, cell.rowsSpanned)));
                 }
                 page.structParent = (cellElements != null && i < cellElements.Length) ?
                         cellElements[i] : null;
@@ -1006,9 +1093,11 @@ public class Table : IDrawable {
                 w += row[i++].GetWidth();
             }
             if (!covered) {
-                // A cell that spans rows is as tall as all the rows it covers.
+                // A cell that spans rows is as tall as all the rows it covers
+                // on this page.
                 float cellHeight = 0f;
-                int end = Math.Min(rowIndex + cell.rowsSpanned, heights.Length);
+                int end = Math.Min(Math.Min(rowIndex + cell.rowsSpanned, heights.Length),
+                        Math.Max(pageEnd, rowIndex + 1));
                 for (int r = rowIndex; r < end; r++) {
                     cellHeight += heights[r];
                 }
@@ -1041,6 +1130,23 @@ public class Table : IDrawable {
         return row.Count > 0;
     }
 
+    // Returns the number of rows of the table, its TR elements, that a cell
+    // spanning count rows of the drawing from the row covers: the rows of the
+    // wrapped text of a row are not rows of the table, and neither is a row
+    // every cell of which a cell above it covers.
+    private int TableRowsSpanned(int r, int count) {
+        if (count < 2) {
+            return count;
+        }
+        int rows = 0;
+        for (int s = r; s < r + count && s < tableData.Count; s++) {
+            if (!IsContinuation(s) && !AllCovered(tableData[s])) {
+                rows++;
+            }
+        }
+        return rows;
+    }
+
     // The attributes of a table cell element: the scope of a header cell and
     // the number of rows and columns a cell spans, or null when it has none.
     private static String GetAttributes(StructElem cellStructure, int colspan, int rowspan) {
@@ -1065,8 +1171,7 @@ public class Table : IDrawable {
         float y = xy[1];
         int footer = FooterStart();
         bool done = (rendered == -1);
-        int index = done ? footer : rendered;
-        int first = index;
+        int first = done ? footer : rendered;
         float[] heights = this.heights;
         // Where the rows start on the next pages, under the header rows.
         float top = y1;
@@ -1078,52 +1183,25 @@ public class Table : IDrawable {
         for (int r = footer; r < tableData.Count; r++) {
             bottom -= heights[r];
         }
-        // The rows before the first of these are not kept with the next row,
-        // and the lines of the rows before the second are cut where the page
-        // ends, as rows of their own.
-        int cutRowsUntil = -1;
-        int cutLinesUntil = -1;
-        while (index < footer) {
-            // The rows a cell spans, the lines a row wraps into and the rows
-            // kept with the next one are drawn together, so that a page break
-            // never cuts one of them in two. The footer rows are not in them.
-            bool keepLines = (index >= cutLinesUntil);
-            bool keepRows = keepLines && (index >= cutRowsUntil);
-            int end = Math.Min(RowGroupEnd(index, keepLines, keepRows), footer);
-            float groupHeight = 0f;
-            for (int r = index; r < end; r++) {
-                groupHeight += heights[r];
+        // The rows of the page are found before any of them is drawn, so that
+        // a cell that spans rows past the end of the page is drawn down to the
+        // last row of the page, and goes on at the top of the next.
+        int end = footer;
+        bool more = false;
+        if (page != null) {
+            end = RowsOnPage(first, footer, y, top, bottom, out more);
+            DrawSpansFromAbove(page, x, y, first, end);
+        }
+        for (int r = first; r < end; r++) {
+            if (page != null) {
+                DrawRow(page, tableData[r], x, y, heights, r, end, StructElem.TD);
             }
-            if (page != null && (y + groupHeight) > bottom) {
-                if (keepLines && groupHeight > bottom - top) {
-                    // Rows that would not fit the next page either are drawn
-                    // from here: first each on its own, and then, for a row
-                    // that is taller than a page, each line on its own, cut
-                    // where the page ends.
-                    if (keepRows) {
-                        cutRowsUntil = end;
-                    } else {
-                        cutLinesUntil = end;
-                    }
-                    continue;
-                }
-                // A row that does not fit goes on the next page, unless it is
-                // the first row of this one: a row taller than the page fits
-                // no page, and leaving it for the next page would ask for
-                // pages forever.
-                if (index > first) {
-                    rendered = index;
-                    SetFooterSums(first, index);
-                    return new float[] {x, DrawFooterRows(page, x, y, heights, false)};
-                }
-            }
-            for (int r = index; r < end; r++) {
-                if (page != null) {
-                    DrawRow(page, tableData[r], x, y, heights, r, StructElem.TD);
-                }
-                y += heights[r];
-            }
-            index = end;
+            y += heights[r];
+        }
+        if (more) {
+            rendered = end;
+            SetFooterSums(first, end);
+            return new float[] {x, DrawFooterRows(page, x, y, heights, false)};
         }
         if (!done) {
             // The rows of the table are all drawn, and the footer rows end it.
@@ -1134,6 +1212,119 @@ public class Table : IDrawable {
             rendered = -1; // We are done!
         }
         return new float[] {x, y};
+    }
+
+    // Returns the row after the rows from index that go on the page, where
+    // they start at y and end at bottom, and sets more when rows before the
+    // footer are left for the next page, where they start at top.
+    private int RowsOnPage(int index, int footer, float y, float top, float bottom, out bool more) {
+        more = false;
+        int first = index;
+        float[] heights = this.heights;
+        // The rows before the first of these are not kept with the next row,
+        // the lines of the rows before the second are cut where the page ends,
+        // as rows of their own, and so are the rows that a cell spans before
+        // the third.
+        int cutRowsUntil = -1;
+        int cutLinesUntil = -1;
+        int cutSpansUntil = -1;
+        while (index < footer) {
+            // The rows a cell spans, the lines a row wraps into and the rows
+            // kept with the next one are drawn together, so that a page break
+            // never cuts one of them in two. The footer rows are not in them.
+            bool keepSpans = (index >= cutSpansUntil);
+            bool keepLines = keepSpans && (index >= cutLinesUntil);
+            bool keepRows = keepLines && (index >= cutRowsUntil);
+            int end = Math.Min(RowGroupEnd(index, keepSpans, keepLines, keepRows), footer);
+            float groupHeight = 0f;
+            for (int r = index; r < end; r++) {
+                groupHeight += heights[r];
+            }
+            if ((y + groupHeight) > bottom) {
+                if (keepSpans && groupHeight > bottom - top) {
+                    // Rows that would not fit the next page either are drawn
+                    // from here: first each on its own, then, for a row that
+                    // is taller than a page, each line on its own, and then,
+                    // for a cell that spans rows taller than a page, each of
+                    // the rows, the cell being drawn on each page over the
+                    // rows it covers there. They are cut where the page ends.
+                    if (keepRows) {
+                        cutRowsUntil = end;
+                    } else if (keepLines) {
+                        cutLinesUntil = end;
+                    } else {
+                        cutSpansUntil = end;
+                    }
+                    continue;
+                }
+                // Rows that do not fit go on the next page, where they fit,
+                // even the first rows of this one, which starts lower than the
+                // next when there is something above the table. Only a line
+                // taller than a page is drawn where it is, as it fits no page,
+                // and leaving it for the next page would ask for pages forever.
+                if (index > first || groupHeight <= bottom - top) {
+                    more = true;
+                    return index;
+                }
+            }
+            for (int r = index; r < end; r++) {
+                y += heights[r];
+            }
+            index = end;
+        }
+        return index;
+    }
+
+    // Draws, over the first row of a page, the rest of each cell of the page
+    // before that spans rows down into it: its background and its borders, as
+    // far as the row at pageEnd, which is on the next page. The text of the
+    // cell was drawn with the cell on the page before.
+    private void DrawSpansFromAbove(Page page, float x, float y, int first, int pageEnd) {
+        if (first >= pageEnd || first <= numOfHeaderRows) {
+            return;     // The first page has no page before it.
+        }
+        List<Cell> row = tableData[first];
+        bool continued = IsContinuation(first);
+        int i = 0;
+        while (i < row.Count) {
+            int colspan = 1;
+            float w = row[i].GetWidth();
+            if (continued || (row[i].properties & Cell.COVERED) != 0) {
+                int s = SpanAbove(first, i);
+                if (s != -1) {
+                    Cell cell = tableData[s][i];
+                    colspan = ColSpanIn(tableData[s], i);
+                    w = 0f;
+                    for (int j = i; j < i + colspan; j++) {
+                        w += row[j].GetWidth();
+                    }
+                    float h = 0f;
+                    for (int r = first; r < Math.Min(s + cell.rowsSpanned, pageEnd); r++) {
+                        h += heights[r];
+                    }
+                    if (cell.backgroundColor != Cell.NO_COLOR) {
+                        cell.DrawBackground(page, x, y, w, h);
+                    }
+                    cell.DrawBorders(page, x, y, w, h);
+                }
+            }
+            x += w;
+            i += colspan;
+        }
+    }
+
+    // Returns the row of the cell in the column that spans rows down over the
+    // row, or -1 when there is none: the first cell above the row that is
+    // neither covered nor in a row of wrapped text.
+    private int SpanAbove(int r, int column) {
+        for (int s = r - 1; s >= 0; s--) {
+            Cell cell = tableData[s][column];
+            if ((cell.properties & Cell.COVERED) != 0 || IsContinuation(s)) {
+                continue;
+            }
+            return (cell.rowsSpanned > r - s) ? s : -1;
+        }
+        return -1;
     }
 
     // Draws the footer rows at y and returns the y under them. In a PDF/UA
@@ -1152,7 +1343,7 @@ public class Table : IDrawable {
                         cell.SetBorder(Border.TOP, true);
                     }
                 }
-                DrawRow(page, tableData[r], x, y, heights, r, last ? StructElem.TD : (StructElem?) null);
+                DrawRow(page, tableData[r], x, y, heights, r, heights.Length, last ? StructElem.TD : (StructElem?) null);
             }
             y += heights[r];
         }
@@ -1182,7 +1373,7 @@ public class Table : IDrawable {
             int i = 0;
             while (i < row.Count) {
                 Cell cell = row[i];
-                int colspan = (cell.GetColSpan() < 1) ? 1 : cell.GetColSpan();
+                int colspan = ColSpanIn(row, i);
                 if (cell.GetRowSpan() > 1 && (cell.properties & Cell.COVERED) == 0) {
                     int end = RowAfter(r, cell.GetRowSpan());
                     int ownEnd = RowAfter(r, 1);
@@ -1216,7 +1407,7 @@ public class Table : IDrawable {
                     cell.SetBorder(Border.BOTTOM, false);
                 }
             }
-            i += (cell.GetColSpan() < 1) ? 1 : cell.GetColSpan();
+            i += ColSpanIn(row, i);
         }
     }
 
@@ -1275,14 +1466,15 @@ public class Table : IDrawable {
         return heights;
     }
 
-    // The row after the rows that a span holds together, with keepLines the
-    // lines the last of them wraps into, and with keepRows the rows that the
-    // last of them is kept with, which a page break keeps on one page.
-    private int RowGroupEnd(int index, bool keepLines, bool keepRows) {
+    // The row after the rows that a page break keeps on one page: with
+    // keepSpans those that a span holds together, with keepLines the lines the
+    // last of them wraps into, and with keepRows the rows that the last of
+    // them is kept with.
+    private int RowGroupEnd(int index, bool keepSpans, bool keepLines, bool keepRows) {
         int end = index + 1;
         for (int r = index; r < end && r < tableData.Count; r++) {
             foreach (Cell cell in tableData[r]) {
-                if (r + cell.rowsSpanned > end) {
+                if (keepSpans && r + cell.rowsSpanned > end) {
                     end = r + cell.rowsSpanned;
                 }
             }
@@ -1418,7 +1610,7 @@ public class Table : IDrawable {
             int i = 0;
             while (i < row.Count) {
                 cell = row[i];
-                i += cell.GetColSpan();
+                i += ColSpanIn(row, i);
             }
             if (cell != null) {
                 cell.SetBorder(Border.RIGHT, true);
@@ -1491,9 +1683,15 @@ public class Table : IDrawable {
         return this;
     }
 
+    // Returns the number of columns the cell of the row at the index spans: at
+    // least its own, and no more than the row has from it.
+    private static int ColSpanIn(List<Cell> row, int index) {
+        return Math.Max(1, Math.Min(row[index].GetColSpan(), row.Count - index));
+    }
+
     private float GetTotalWidth(List<Cell> row, int index) {
         Cell cell = row[index];
-        int colspan = cell.GetColSpan();
+        int colspan = ColSpanIn(row, index);
         float cellWidth = 0f;
         for (int i = 0; i < colspan; i++) {
             cellWidth += row[index + i].GetWidth();

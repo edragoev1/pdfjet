@@ -6,8 +6,10 @@
 package pdfjet
 
 import (
+	"bytes"
 	"fmt"
 	"io"
+	"math"
 	"strconv"
 	"strings"
 	"unicode"
@@ -122,6 +124,23 @@ func splitOnWhitespace(s string) []string {
 	return strings.FieldsFunc(s, isASCIIWhitespace)
 }
 
+// saturatingInt returns the whole part of the value as Java casts a float to
+// an int: NaN is 0, and a value past the range of a 32-bit int is the end of
+// the range, where a conversion in Go gives a number that depends on the
+// machine. An infinite count of lines, from a division by a leading of 0, is
+// then as many lines as there can be.
+func saturatingInt(value float32) int {
+	switch {
+	case value != value:
+		return 0
+	case value >= math.MaxInt32:
+		return math.MaxInt32
+	case value <= math.MinInt32:
+		return math.MinInt32
+	}
+	return int(value)
+}
+
 // trimSpace removes the characters up to the space at both ends of the
 // string, like String.trim in Java. strings.TrimSpace also removes Unicode
 // spaces like the no-break space, which Java's does not.
@@ -176,7 +195,20 @@ func readDelimitedRecord(line, delimiter string, nextLine func() (string, bool))
 	return readDelimitedLines(line, delimiter, nextLine)
 }
 
+// delimitedError is what a data file that cannot be read as RFC 4180 reads
+// it panics with: scanDataFile returns it as the error of BigTable, and
+// NewTableFromFile, which returns no error, panics with it.
+type delimitedError string
+
+func (err delimitedError) Error() string {
+	return string(err)
+}
+
 // readDelimitedLines reads on from a line that ends inside a quoted field.
+// Each line is read once, to see whether the record ends on it, and the
+// record is split when it does: a record whose every line closes a quoted
+// field and opens another was split again at each of its lines, which took
+// time that grew with the square of its lines.
 func readDelimitedLines(line, delimiter string, nextLine func() (string, bool)) []string {
 	var record strings.Builder
 	record.WriteString(line)
@@ -184,18 +216,18 @@ func readDelimitedLines(line, delimiter string, nextLine func() (string, bool)) 
 	for {
 		next, ok := nextLine()
 		if !ok {
-			panic("A quoted field is not closed by the end of the data file: " + excerptOfLine(record.String()))
+			panic(delimitedError("A quoted field is not closed by the end of the data file: " +
+				excerptOfLine(record.String())))
 		}
 		lines++
 		if lines > maxLinesInRecord {
-			panic(fmt.Sprintf("A quoted field is not closed within %d lines of the data file: %s",
-				maxLinesInRecord, excerptOfLine(record.String())))
+			panic(delimitedError(fmt.Sprintf("A quoted field is not closed within %d lines of the data file: %s",
+				maxLinesInRecord, excerptOfLine(record.String()))))
 		}
 		record.WriteByte('\n')
 		record.WriteString(next)
-		// The quoted field goes on until a quote that is not doubled; only then
-		// can the record end, so only then is it split again.
-		if closesQuotedField(next) {
+		// The record ends on the line that leaves no quoted field open.
+		if !endsInQuotedField(next, delimiter) {
 			if fields, closed := splitDelimitedRecord(record.String(), delimiter, true); closed {
 				for i, field := range fields {
 					fields[i] = lineBreaksToSpaces(field)
@@ -206,19 +238,42 @@ func readDelimitedLines(line, delimiter string, nextLine func() (string, bool)) 
 	}
 }
 
-// closesQuotedField returns true when the line, read inside a quoted field,
-// holds the quote that closes it: a quote that is not one of a doubled pair.
-func closesQuotedField(line string) bool {
-	for i := 0; i < len(line); i++ {
-		if line[i] == '"' {
-			if i+1 < len(line) && line[i+1] == '"' {
-				i++
-			} else {
+// endsInQuotedField returns true when the line, which starts inside a quoted
+// field, ends inside one: that field, or one that opens after it. A quote
+// closes the field unless it is one of a doubled pair, and a quote opens a
+// field when it starts one, after a delimiter.
+func endsInQuotedField(line, delimiter string) bool {
+	if delimiter == "" {
+		return false
+	}
+	quoted := true
+	fieldStart := false
+	for i := 0; i < len(line); {
+		if quoted {
+			quote := strings.IndexByte(line[i:], '"')
+			if quote == -1 {
 				return true
 			}
+			i += quote + 1
+			if i < len(line) && line[i] == '"' {
+				i++ // Two quotes stand for one
+			} else {
+				quoted = false
+				fieldStart = false
+			}
+		} else if fieldStart && line[i] == '"' {
+			quoted = true
+			i++
+		} else {
+			end := strings.Index(line[i:], delimiter)
+			if end == -1 {
+				return false
+			}
+			i += end + len(delimiter)
+			fieldStart = true
 		}
 	}
-	return false
+	return quoted
 }
 
 // lineBreaksToSpaces returns the text with each line break, "\r\n", "\r" or
@@ -265,7 +320,8 @@ func splitDelimitedRecord(line, delimiter string, open bool) ([]string, bool) {
 					if open {
 						return nil, false
 					}
-					panic("A quoted field is not closed on this line of the data file: " + excerptOfLine(line))
+					panic(delimitedError("A quoted field is not closed on this line of the data file: " +
+						excerptOfLine(line)))
 				}
 				i += quote + 1
 				if i < len(line) && line[i] == '"' {
@@ -277,7 +333,8 @@ func splitDelimitedRecord(line, delimiter string, open bool) ([]string, bool) {
 			// The text between the quotes, where every quote is doubled.
 			fields = append(fields, strings.ReplaceAll(line[start:i-1], `""`, `"`))
 			if i < len(line) && !strings.HasPrefix(line[i:], delimiter) {
-				panic("A quoted field is followed by text on this line of the data file: " + excerptOfLine(line))
+				panic(delimitedError("A quoted field is followed by text on this line of the data file: " +
+					excerptOfLine(line)))
 			}
 		} else {
 			end := strings.Index(line[i:], delimiter)
@@ -299,6 +356,38 @@ func splitDelimitedRecord(line, delimiter string, open bool) ([]string, bool) {
 		}
 	}
 	return fields, true
+}
+
+// scanDataLines splits a data file into its lines for a bufio.Scanner, at a
+// line feed, a carriage return or the two together, as Java's readLine does,
+// so that a file splits into the same lines in every port. The lines are
+// without their line breaks, and a file that ends with one has no empty line
+// after it.
+func scanDataLines(data []byte, atEOF bool) (advance int, token []byte, err error) {
+	// A line feed is looked for first, and a carriage return before it, so
+	// that a file of line feeds is read as fast as bufio.ScanLines reads it.
+	end := bytes.IndexByte(data, '\n')
+	limit := end
+	if end == -1 {
+		limit = len(data)
+	}
+	if cr := bytes.IndexByte(data[:limit], '\r'); cr != -1 {
+		switch {
+		case cr+1 == end:
+			return end + 1, data[:cr], nil
+		case cr+1 < len(data) || atEOF:
+			return cr + 1, data[:cr], nil
+		default:
+			return 0, nil, nil // A line feed may follow in the next data
+		}
+	}
+	if end != -1 {
+		return end + 1, data[:end], nil
+	}
+	if atEOF && len(data) > 0 {
+		return len(data), data, nil
+	}
+	return 0, nil, nil
 }
 
 // excerptOfLine returns the start of the line, for the message of a file that

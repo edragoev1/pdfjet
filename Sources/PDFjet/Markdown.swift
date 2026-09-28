@@ -29,6 +29,10 @@ public class Markdown {
     private static let RULE_COLOR: Int32 = 0xC8CCD2
     private static let QUOTE_BAR_COLOR: Int32 = 0xB0B6BF
     private static let TABLE_HEADER_BACKGROUND: Int32 = 0xEEF0F3
+    // The least width, in sizes of the text, that quotes and lists nested in
+    // each other leave their text: deeper ones are not indented further, so
+    // that the text is never narrower than nothing.
+    private static let MIN_WIDTH: Float = 10
 
     private let regular: Font
     private let bold: Font
@@ -323,7 +327,12 @@ public class Markdown {
         gap(size() * 0.75)
         let padding = size() * 0.5
         let leading = code.getBodyHeight(code.getSize()) * 1.2
-        let columns = max(1, Markdown.toInt((width - 2.0 * padding) / code.stringWidth(code.getSize(), "0")))
+        // A code font with no width, or no size, cuts no line.
+        var columns = Int(Int32.max)
+        let advance = code.stringWidth(code.getSize(), "0")
+        if advance > 0 {
+            columns = max(1, Util.saturatingInt((width - 2.0 * padding) / advance))
+        }
         // The lines of the text, split at each \n as in Java's
         // text.split("\n", -1), in UTF-16 code units.
         var lines = [[UInt16]]()
@@ -346,7 +355,10 @@ public class Markdown {
         openContainer(StructElem.CODE)
         var i = 0
         while i < lines.count {
-            let fit = max(1, Markdown.toInt((bottom - y - 2.0 * padding) / leading))
+            var fit = lines.count - i    // Lines of no height all fit
+            if leading > 0 {
+                fit = max(1, Util.saturatingInt((bottom - y - 2.0 * padding) / leading))
+            }
             let count = min(fit, lines.count - i)
             Rect(x, y, width, Float(count) * leading + 2.0 * padding)
                     .setFillColor(Markdown.CODE_BACKGROUND).drawOn(page)
@@ -369,11 +381,17 @@ public class Markdown {
         closeContainer()
     }
 
+    // The indent, or less, so that the blocks inside a quote or a list are not
+    // narrower than MIN_WIDTH sizes of the text.
+    private func indentWithin(_ indent: Float, _ width: Float) -> Float {
+        return max(0, min(indent, width - Markdown.MIN_WIDTH * size()))
+    }
+
     // A quote, indented, with a bar on its left.
     private func drawQuote(_ block: MarkdownParser.Block, _ x: Float, _ width: Float) throws {
         gap(size() * 0.75)
         ensure(regular.getBodyHeight(size()))
-        let indent = size() * 1.2
+        let indent = indentWithin(size() * 1.2, width)
         let bar = QuoteBar(x + 2.0, y)
         quoteBars.append(bar)
         openContainer(StructElem.BLOCKQUOTE)
@@ -390,7 +408,7 @@ public class Markdown {
     // the blocks of the item.
     private func drawList(_ list: MarkdownParser.Block, _ x: Float, _ width: Float) throws {
         gap(size() * 0.75)
-        let indent = size() * (list.ordered ? 2.0 : 1.4)
+        let indent = indentWithin(size() * (list.ordered ? 2.0 : 1.4), width)
         openContainer(StructElem.L)
         var number = list.start
         for item in list.children {
@@ -529,20 +547,42 @@ public class Markdown {
     }
 
     // The path of an image in the image directory, or nil when there is no
-    // directory, or the source is an absolute path, a URL, has .. in it, or
-    // names no file.
-    private func imagePath(_ source: String) -> String? {
+    // directory, or the source is an absolute path, a URL, has .. in it, names
+    // a directory, or names no file. The source is read the same way in every
+    // port: its parts between the slashes, less the empty ones and those that
+    // are ".", are the names of the directories under the image directory and
+    // of the file, and a source that ends in a slash or in "." names a
+    // directory. An empty image directory is the working directory. The
+    // source is looked at in its code points, not its characters, of which a
+    // slash with a combining mark after it is one.
+    func imagePath(_ source: String) -> String? {
         guard let imageDirectory else {
             return nil
         }
-        if source.hasPrefix("/") || source.hasPrefix("\\")
-                || source.contains(":") || source.contains("\\") {
+        let scalars = source.unicodeScalars
+        if scalars.first == "/" || scalars.contains(":") || scalars.contains("\\") {
             return nil
         }
-        for part in source.split(separator: "/", omittingEmptySubsequences: false) where part == ".." {
+        // The parts are compared as bytes: a String compares its characters.
+        let dot = UInt8(ascii: ".")
+        let parts = source.utf8.split(separator: UInt8(ascii: "/"), omittingEmptySubsequences: false)
+                .map { Array($0) }
+        if let last = parts.last, last.isEmpty || last == [dot] {
             return nil
         }
-        let path = (imageDirectory as NSString).appendingPathComponent(source)
+        var names = [String]()
+        for part in parts {
+            if part == [dot, dot] {
+                return nil
+            }
+            if !part.isEmpty && part != [dot] {
+                names.append(String(decoding: part, as: UTF8.self))
+            }
+        }
+        var path = names.joined(separator: "/")
+        if !imageDirectory.isEmpty {
+            path = (imageDirectory as NSString).appendingPathComponent(path)
+        }
         var isDirectory: ObjCBool = false
         if !FileManager.default.fileExists(atPath: path, isDirectory: &isDirectory) || isDirectory.boolValue {
             return nil
@@ -557,20 +597,5 @@ public class Markdown {
             return false
         }
         return true
-    }
-
-    // A float as an int, as (int) in Java: toward zero, NaN as 0, and out of
-    // range as the nearest int, where Int(_:) would trap.
-    private static func toInt(_ value: Float) -> Int {
-        if value.isNaN {
-            return 0
-        }
-        if value >= Float(Int32.max) {
-            return Int(Int32.max)
-        }
-        if value <= Float(Int32.min) {
-            return Int(Int32.min)
-        }
-        return Int(value)
     }
 }   // End of Markdown.swift
