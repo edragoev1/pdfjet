@@ -101,6 +101,33 @@ public class CellTest {
     }
 
     [Fact]
+    public void TheFourPaddingsAreKeptApart() {
+        Cell cell = new Cell(TestSupport.Helvetica(TestSupport.NewPDF()), "x");
+        cell.SetTopPadding(2f).SetBottomPadding(3.5f).SetLeftPadding(1.25f).SetRightPadding(0f);
+        Assert.Equal(2f, cell.GetTopPadding());
+        Assert.Equal(3.5f, cell.GetBottomPadding());
+        Assert.Equal(1.25f, cell.GetLeftPadding());
+        Assert.Equal(0f, cell.GetRightPadding());
+    }
+
+    [Theory]
+    [InlineData(2.1f, 2f)]
+    [InlineData(2.13f, 2.25f)]
+    [InlineData(2.125f, 2.25f)]
+    [InlineData(63.75f, 63.75f)]
+    [InlineData(100f, 63.75f)]
+    [InlineData(-5f, 0f)]
+    [InlineData(float.NaN, 0f)]
+    [InlineData(float.PositiveInfinity, 63.75f)]
+    [InlineData(float.NegativeInfinity, 0f)]
+    [InlineData(1e10f, 63.75f)]
+    public void APaddingIsKeptToTheNearestQuarterBetween0And63_75(float set, float want) {
+        Cell cell = new Cell(TestSupport.Helvetica(TestSupport.NewPDF()), "x");
+        cell.SetTopPadding(set);
+        Assert.Equal(want, cell.GetTopPadding());
+    }
+
+    [Fact]
     public void TheCellFontSizeSetsTheHeight() {
         Cell cell = new Cell(TestSupport.Helvetica(TestSupport.NewPDF()), "x");
         cell.SetFontSize(24f);

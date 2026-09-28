@@ -88,6 +88,26 @@ private final class Box: Drawable {
         TestSupport.expectNear(17.872, cell.getHeight(100))
     }
 
+    @Test func theFourPaddingsAreKeptApart() {
+        let cell = Cell(TestSupport.helvetica(TestSupport.newPDF()), "x")
+        cell.setTopPadding(2).setBottomPadding(3.5).setLeftPadding(1.25).setRightPadding(0)
+        #expect(cell.getTopPadding() == 2)
+        #expect(cell.getBottomPadding() == 3.5)
+        #expect(cell.getLeftPadding() == 1.25)
+        #expect(cell.getRightPadding() == 0)
+    }
+
+    // Not a number and the infinities do not trap, as Int(_:) of them would.
+    @Test(arguments: [
+        (2.1, 2), (2.13, 2.25), (2.125, 2.25), (63.75, 63.75), (100, 63.75), (-5, 0),
+        (Float.nan, 0), (Float.infinity, 63.75), (-Float.infinity, 0), (1e10, 63.75),
+    ] as [(Float, Float)])
+    func aPaddingIsKeptToTheNearestQuarterBetween0And63_75(set: Float, want: Float) {
+        let cell = Cell(TestSupport.helvetica(TestSupport.newPDF()), "x")
+        cell.setTopPadding(set)
+        #expect(cell.getTopPadding() == want)
+    }
+
     @Test func theCellFontSizeSetsTheHeight() {
         let cell = Cell(TestSupport.helvetica(TestSupport.newPDF()), "x")
         _ = cell.setFontSize(24)

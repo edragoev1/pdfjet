@@ -11,6 +11,25 @@ namespace PDFjet.NET {
 /// Used to create table cell objects.
 /// See the Table class for more information.
 /// </summary>
+/// <remarks>
+/// The four paddings of a cell, top, bottom, left and right, are kept in one
+/// 32-bit integer, a byte each, 4 bytes for every cell where four floats would
+/// take 16:
+///
+/// <code>
+///     bits    31-24   23-16   15-8     7-0
+///     byte    right   left    bottom   top
+/// </code>
+///
+/// A byte holds its padding in quarters of a point, 0 to 255, so a padding is
+/// 0 to 63.75 points in steps of 0.25, more than the text of a cell needs. A
+/// padding that is set is kept to the nearest quarter, a half up: 2.1 is kept
+/// as 2.0 and 2.13 as 2.25. One below 0, or not a number, is 0, and one above
+/// 63.75 is 63.75. A cell has a padding of 2 points on every side until it is
+/// set; SetPadding sets the four at once, and SetTopPadding and the others one
+/// each. A top of 2, a bottom of 3.5, a left of 1.25 and a right of 0 are the
+/// bytes 8, 14, 5 and 0, the integer 0x00050E08.
+/// </remarks>
 public class Cell {
     internal Font font;
     internal Font fallbackFont;
@@ -99,12 +118,17 @@ public class Cell {
 
     // Keeps the padding in the byte of padding, to the nearest quarter of a
     // point and between 0 and 63.75.
+    // One below 0, or not a number, is 0, and one above 63.75 is 63.75,
+    // before it is made an int, which a cast of C# makes the least int for a
+    // number too large or not a number.
     private void SetPaddingAt(int shift, float points) {
-        int quarters = (int) (points * PADDING_SCALE + 0.5f);
-        if (quarters < 0) {
+        int quarters;
+        if (!(points > 0f)) {
             quarters = 0;
-        } else if (quarters > PADDING_BITS) {
+        } else if (points >= PADDING_BITS / PADDING_SCALE) {
             quarters = (int) PADDING_BITS;
+        } else {
+            quarters = (int) (points * PADDING_SCALE + 0.5f);
         }
         padding = (padding & ~(PADDING_BITS << shift)) | ((uint) quarters << shift);
     }

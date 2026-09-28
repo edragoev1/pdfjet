@@ -491,6 +491,13 @@ This is the first entry in this file; earlier releases were not tracked here.
   the values of the other three ports.
 
 ### Fixed
+- A padding of a cell that is not a number, or too large for an int, in
+  Swift, Go and C#: Swift trapped on `setTopPadding(.nan)` or an infinity,
+  and Go and C# kept 0 where Java keeps 63.75 for an infinity or 1e10. A
+  padding below 0, or not a number, is 0, and one above 63.75 is 63.75, in
+  all four ports, before it is made an int. The comment of `Cell` in the
+  four ports says how its paddings are kept: the four bytes of one 32-bit
+  integer, top in the lowest, in quarters of a point from 0 to 63.75.
 - The Link element of a link holds the text of the link, in all four ports:
   in a tagged document, PDF/UA or a PDF/A of level A, a text line, a word of
   a paragraph, the text of a cell, a check box or a radio button that is a

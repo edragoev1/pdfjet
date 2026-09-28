@@ -6,6 +6,8 @@
 package pdfjet
 
 import (
+	"fmt"
+	"math"
 	"strings"
 	"testing"
 
@@ -217,4 +219,33 @@ func TestCellATableFitsItsColumnsToAnyDrawable(t *testing.T) {
 	data := [][]*Cell{{NewCell(font, "a")}, {NewEmptyCell(font).SetDrawable(&testBox{})}}
 	table := NewTable().SetTableData(data, 1).AutoAdjustColumnWidths()
 	testNear(t, "width", 34, table.GetColumnWidth(0), testDelta)
+}
+
+// The four paddings are the four bytes of one uint32, as the comment of Cell
+// has them, top in the lowest: a top of 2, a bottom of 3.5, a left of 1.25
+// and a right of 0 are 0x00050E08, and setting one leaves the others.
+func TestCellTheFourPaddingsAreTheBytesOfOneInteger(t *testing.T) {
+	cell := NewCell(testHelvetica(testNewPDF()), "x")
+	cell.SetTopPadding(2).SetBottomPadding(3.5).SetLeftPadding(1.25).SetRightPadding(0)
+	if cell.padding != 0x00050E08 {
+		t.Errorf("the paddings are 0x%08X", cell.padding)
+	}
+	testNear(t, "top", 2, cell.GetTopPadding(), 0)
+	testNear(t, "bottom", 3.5, cell.GetBottomPadding(), 0)
+	testNear(t, "left", 1.25, cell.GetLeftPadding(), 0)
+	testNear(t, "right", 0, cell.GetRightPadding(), 0)
+}
+
+// A padding is kept to the nearest quarter of a point, a half up, between 0
+// and 63.75; one below 0 or not a number is 0, and one above is 63.75, as in
+// the other ports, whatever the conversion of a float to an int makes of it.
+func TestCellAPaddingIsKeptToTheNearestQuarterBetween0And63_75(t *testing.T) {
+	cell := NewCell(testHelvetica(testNewPDF()), "x")
+	for _, c := range []struct{ set, want float32 }{
+		{2.1, 2}, {2.13, 2.25}, {2.125, 2.25}, {63.75, 63.75}, {100, 63.75}, {-5, 0},
+		{float32(math.NaN()), 0}, {float32(math.Inf(1)), 63.75}, {float32(math.Inf(-1)), 0}, {1e10, 63.75},
+	} {
+		cell.SetTopPadding(c.set)
+		testNear(t, fmt.Sprint(c.set), c.want, cell.GetTopPadding(), 0)
+	}
 }

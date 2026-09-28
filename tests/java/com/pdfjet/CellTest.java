@@ -112,6 +112,29 @@ class CellTest {
     }
 
     @Test
+    void theFourPaddingsAreKeptApart() throws Exception {
+        Cell cell = new Cell(TestSupport.helvetica(TestSupport.newPDF()), "x");
+        cell.setTopPadding(2f).setBottomPadding(3.5f).setLeftPadding(1.25f).setRightPadding(0f);
+        assertEquals(2f, cell.getTopPadding(), 0f);
+        assertEquals(3.5f, cell.getBottomPadding(), 0f);
+        assertEquals(1.25f, cell.getLeftPadding(), 0f);
+        assertEquals(0f, cell.getRightPadding(), 0f);
+    }
+
+    @Test
+    void aPaddingIsKeptToTheNearestQuarterBetween0And63_75() throws Exception {
+        Cell cell = new Cell(TestSupport.helvetica(TestSupport.newPDF()), "x");
+        float[][] cases = {
+            {2.1f, 2f}, {2.13f, 2.25f}, {2.125f, 2.25f}, {63.75f, 63.75f}, {100f, 63.75f}, {-5f, 0f},
+            {Float.NaN, 0f}, {Float.POSITIVE_INFINITY, 63.75f}, {Float.NEGATIVE_INFINITY, 0f}, {1e10f, 63.75f},
+        };
+        for (float[] c : cases) {
+            cell.setTopPadding(c[0]);
+            assertEquals(c[1], cell.getTopPadding(), 0f, String.valueOf(c[0]));
+        }
+    }
+
+    @Test
     void theCellFontSizeSetsTheHeight() throws Exception {
         Cell cell = new Cell(TestSupport.helvetica(TestSupport.newPDF()), "x");
         cell.setFontSize(24f);
