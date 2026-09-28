@@ -94,7 +94,7 @@ class OpenTypeFont {
             pdf.Append(" 0 R\n");
         }
 
-        byte[] buf = otf.compressed;
+        byte[] buf = otf.Compress();
         if (pdf.encryption != null) {
             buf = AES256.Encrypt(buf, pdf.encryption.GetKey());
         }

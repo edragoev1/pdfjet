@@ -77,7 +77,7 @@ func TestSVGImageEllipticalArcsBecomeCubicCurves(t *testing.T) {
 
 func TestSVGImageAStrokeOnlyPathIsStroked(t *testing.T) {
 	content := testDrawSVG(t, `<svg width="100" height="50"><path d="M10 10 L90 40 L10 40 Z" fill="none" stroke="red"/></svg>`)
-	if !strings.Contains(content, "1 0 0 RG\n") || !strings.HasSuffix(content, "s\n") {
+	if !strings.Contains(content, "1 0 0 RG\n") || !strings.HasSuffix(content, "h\nS\n") {
 		t.Errorf("content %q", content)
 	}
 }
@@ -89,9 +89,9 @@ func TestSVGImageAnOpenPathWithAStrokeIsStroked(t *testing.T) {
 	}
 }
 
-func TestSVGImageAClosedSubpathIsClosedAndAnOpenOneStrokedAtTheEnd(t *testing.T) {
+func TestSVGImageAClosedSubpathIsClosedAndThePathStrokedOnceAtTheEnd(t *testing.T) {
 	content := testDrawSVG(t, `<svg width="100" height="50"><path d="M10 10 L90 40 Z M20 20 L30 30" fill="none" stroke="red"/></svg>`)
-	if !strings.HasSuffix(content, "10 782 m\n90 752 l\ns\n20 772 m\n30 762 l\nS\n") {
+	if !strings.HasSuffix(content, "10 782 m\n90 752 l\nh\n20 772 m\n30 762 l\nS\n") {
 		t.Errorf("content %q", content)
 	}
 }
@@ -118,7 +118,7 @@ func TestSVGImageNoneOnThePathWinsOverTheColorsOfTheSvgElement(t *testing.T) {
 	if !strings.Contains(content, "1 0 0 rg\n") {
 		t.Errorf("fill color in %q", content)
 	}
-	if strings.Count(content, "\nf\n") != 1 || strings.Count(content, "\ns\n") != 1 {
+	if strings.Count(content, "\nf\n") != 1 || strings.Count(content, "\nh\nS\n") != 1 {
 		t.Errorf("paint operators in %q", content)
 	}
 }
@@ -195,15 +195,18 @@ func TestSVGImageAPathWithoutDataDrawsNothing(t *testing.T) {
 	}
 }
 
-func TestSVGImagePathDataThatNeedsTheCurrentPointStartsAtTheOrigin(t *testing.T) {
+func TestSVGImagePathDataThatDoesNotStartWithAMovetoDrawsNothing(t *testing.T) {
 	// The first command of the path data needs a current point, which the
-	// other ports left unset: they threw, or trapped in Swift.
+	// other ports left unset: they threw, or trapped in Swift. Path data
+	// starts with a moveto, and SVG 1.1 section 8.3.2 draws data in error up
+	// to where it is in error, which here is nothing; a PDF has no current
+	// point to draw a line from either.
 	for _, data := range []string{
 		"L90 40", "H90", "V40", "Q10 10 90 40", "T90 40",
-		"C1 1 2 2 90 40", "S1 1 90 40", "A5 5 0 0 1 90 40", "l90 40",
+		"C1 1 2 2 90 40", "S1 1 90 40", "A5 5 0 0 1 90 40", "l90 40", "Z L90 40",
 	} {
-		content := testDrawSVG(t, `<svg width="100" height="50"><path d="`+data+`"/></svg>`)
-		if !strings.Contains(content, " l\n") && !strings.Contains(content, " c\n") {
+		content := testDrawSVG(t, `<svg width="100" height="50"><path d="`+data+`"/><path d="M1 1 L2 2" fill="none" stroke="red"/></svg>`)
+		if content != "1 0 0 RG\n1 w\n1 791 m\n2 790 l\nS\n" {
 			t.Errorf("%q draws %q", data, content)
 		}
 	}
@@ -272,7 +275,7 @@ func TestSVGImageAnArcOfWholeQuarterTurnsIsDrawnInThatManyCurves(t *testing.T) {
 		data   string
 		curves int
 	}{
-		{"A 120 120 120 0 0 120 120", 1}, // A quarter turn, of the fuzz corpus
+		{"M0 0 A 120 120 120 0 0 120 120", 1}, // A quarter turn, of the fuzz corpus
 		{"M10 10 A 20 20 0 0 1 50 10", 2},
 		{"M0 0 A50 50 0 0 1 100 0", 2},
 	} {
@@ -347,8 +350,8 @@ func TestSVGImageAViewBoxThatIsNotFourNumbersOrHasNoSizeFails(t *testing.T) {
 func TestSVGImageAGroupGivesItsPathsItsColorsAndWidthUnlessTheyHaveTheirOwn(t *testing.T) {
 	content := testDrawSVG(t, `<svg width="100" height="100"><g fill="red" stroke="blue" stroke-width="2">`+
 		`<path d="M10 10 H90 V90 Z"/><path d="M10 10 H50 V50 Z" fill="green" stroke-width="4"/></g></svg>`)
-	want := "1 0 0 rg\n10 782 m\n90 782 l\n90 702 l\nf\n0 0 1 RG\n2 w\n10 782 m\n90 782 l\n90 702 l\ns\n" +
-		"0 0.5 0 rg\n10 782 m\n50 782 l\n50 742 l\nf\n4 w\n10 782 m\n50 782 l\n50 742 l\ns\n"
+	want := "1 0 0 rg\n10 782 m\n90 782 l\n90 702 l\nf\n0 0 1 RG\n2 w\n10 782 m\n90 782 l\n90 702 l\nh\nS\n" +
+		"0 0.5 0 rg\n10 782 m\n50 782 l\n50 742 l\nf\n4 w\n10 782 m\n50 782 l\n50 742 l\nh\nS\n"
 	if content != want {
 		t.Errorf("content %q", content)
 	}
@@ -429,7 +432,7 @@ func TestSVGImageDrawsTheBasicShapes(t *testing.T) {
 		`<polyline points="10,10 20,20 10,20" fill="none" stroke="red"/>`: "1 0 0 RG\n1 w\n" +
 			"10 782 m\n20 772 l\n10 772 l\nS\n",
 		`<polygon points="10 10 20 20 10 20 5" fill="none" stroke="red"/>`: "1 0 0 RG\n1 w\n" +
-			"10 782 m\n20 772 l\n10 772 l\ns\n",
+			"10 782 m\n20 772 l\n10 772 l\nh\nS\n",
 		// Shapes of no size draw nothing.
 		`<rect width="0" height="10"/><circle r="0"/><ellipse rx="5"/><polygon points="1 2"/><line/>`: "",
 	} {

@@ -8,11 +8,11 @@ package pdfjet
 import (
 	"bytes"
 	"fmt"
+	"hash/crc32"
 	"io"
 	"math"
 
 	"github.com/edragoev1/pdfjet/v9/src/internal/compressor"
-	"github.com/edragoev1/pdfjet/v9/src/internal/crc32util"
 	"github.com/edragoev1/pdfjet/v9/src/internal/decompressor"
 	"github.com/edragoev1/pdfjet/v9/src/internal/fastfloat"
 )
@@ -63,7 +63,10 @@ func (image *pngImage) readPhysicalSize(data []byte) {
 	}
 	pixelsPerMeterX := toUint32(data, 0)
 	pixelsPerMeterY := toUint32(data, 4)
-	if pixelsPerMeterX == 0 || pixelsPerMeterY == 0 {
+	// The PNG specification limits the pixels per unit to 2^31 - 1, as the
+	// four byte numbers of all of its chunks.
+	if pixelsPerMeterX == 0 || pixelsPerMeterY == 0 ||
+		pixelsPerMeterX > math.MaxInt32 || pixelsPerMeterY > math.MaxInt32 {
 		return
 	}
 	width := float32(float64(image.w) * pointsPerMeter / float64(pixelsPerMeterX))
@@ -156,12 +159,8 @@ func newPNGImage(reader io.Reader) *pngImage {
 			imageData = image.getImageColorType0BitDepth16(inflatedIDAT)
 		case 8:
 			imageData = image.getImageColorType0BitDepth8(inflatedIDAT)
-		case 4:
-			imageData = image.getImageColorType0BitDepth4(inflatedIDAT)
-		case 2:
-			imageData = image.getImageColorType0BitDepth2(inflatedIDAT)
-		case 1:
-			imageData = image.getImageColorType0BitDepth1(inflatedIDAT)
+		case 4, 2, 1:
+			imageData = image.getImageColorType0BitDepthBelow8(inflatedIDAT)
 		default:
 			panic("Image with unsupported bit depth == " + fmt.Sprint(image.bitDepth))
 		}
@@ -347,10 +346,10 @@ func (image *pngImage) getChunk(reader io.Reader) *pngChunk {
 	chunk.chunkData = getPNGBytes(reader, int(chunk.chunkLength)) // The chunk data.
 	chunk.chunkCRC = getPNGUint32(reader)                         // CRC of the type and data chunks.
 
-	crc32 := crc32util.NewCRC32()
-	crc32.Update(chunk.chunkType)
-	crc32.Update(chunk.chunkData)
-	if crc32.GetValue() != chunk.chunkCRC {
+	crc := crc32.NewIEEE()
+	crc.Write(chunk.chunkType)
+	crc.Write(chunk.chunkData)
+	if crc.Sum32() != chunk.chunkCRC {
 		panic("pngImage chunk has bad CRC.")
 	}
 	return chunk
@@ -374,70 +373,103 @@ func toUint32(buf []byte, off int) uint32 {
 	return uint32(buf[off])<<24 | uint32(buf[off+1])<<16 | uint32(buf[off+2])<<8 | uint32(buf[off+3])
 }
 
+// unfilter returns the rows of the image data without the filter type byte
+// each begins with, and with their filters undone. A row holds bytesPerRow
+// bytes after the filter type, and the byte of the pixel on the left is
+// bytesPerPixel bytes before, or the byte before for pixels smaller than a
+// byte. It panics on a filter type that PNG does not define, as libpng does.
+func unfilter(buf []byte, rows, bytesPerRow, bytesPerPixel int) []byte {
+	image := make([]byte, rows*bytesPerRow)
+	var prior []byte // The row above, none for the first row
+	for row := 0; row < rows; row++ {
+		offset := row * (bytesPerRow + 1)
+		filter := buf[offset]
+		line := image[row*bytesPerRow : (row+1)*bytesPerRow]
+		copy(line, buf[offset+1:offset+1+bytesPerRow])
+		switch filter {
+		case 0x00: // None
+		case 0x01: // Sub
+			for i := bytesPerPixel; i < bytesPerRow; i++ {
+				line[i] += line[i-bytesPerPixel]
+			}
+		case 0x02: // Up
+			if prior != nil {
+				for i := 0; i < bytesPerRow; i++ {
+					line[i] += prior[i]
+				}
+			}
+		case 0x03: // Average
+			for i := 0; i < bytesPerRow; i++ {
+				a := 0 // The byte on the left
+				if i >= bytesPerPixel {
+					a = int(line[i-bytesPerPixel])
+				}
+				b := 0 // The byte above
+				if prior != nil {
+					b = int(prior[i])
+				}
+				line[i] += byte((a + b) / 2)
+			}
+		case 0x04: // Paeth
+			for i := 0; i < bytesPerRow; i++ {
+				a, b, c := 0, 0, 0 // Left, above and above on the left
+				if i >= bytesPerPixel {
+					a = int(line[i-bytesPerPixel])
+				}
+				if prior != nil {
+					b = int(prior[i])
+					if i >= bytesPerPixel {
+						c = int(prior[i-bytesPerPixel])
+					}
+				}
+				line[i] += byte(paeth(a, b, c))
+			}
+		default:
+			panic(fmt.Sprintf("Invalid PNG filter type %d.", filter))
+		}
+		prior = line
+	}
+	return image
+}
+
+// paeth returns whichever of the bytes on the left, above and above on the
+// left is nearest to their sum less the one above on the left.
+func paeth(a, b, c int) int {
+	pa := b - c // p - a, where p = a + b - c
+	pb := a - c // p - b
+	pc := pa + pb
+	if pa < 0 {
+		pa = -pa
+	}
+	if pb < 0 {
+		pb = -pb
+	}
+	if pc < 0 {
+		pc = -pc
+	}
+	if pa <= pb && pa <= pc {
+		return a
+	} else if pb <= pc {
+		return b
+	}
+	return c
+}
+
 // Truecolor Image with Bit Depth == 16
 func (image *pngImage) getImageColorType2BitDepth16(buf []byte) []byte {
-	image2 := make([]byte, len(buf)-image.h)
-
-	filters := make([]byte, image.h)
-	bytesPerLine := 6*image.w + 1
-	k := 0
-	j := 0
-	for i := 0; i < len(buf); i++ {
-		if i%bytesPerLine == 0 {
-			filters[j] = buf[i]
-			j++
-		} else {
-			image2[k] = buf[i]
-			k++
-		}
-	}
-	applyFilters(filters, image2, image.w, image.h, 6)
-
-	return image2
+	return unfilter(buf, image.h, 6*image.w, 6)
 }
 
 // Truecolor Image with Bit Depth == 8
 func (image *pngImage) getImageColorType2BitDepth8(buf []byte) []byte {
-	image2 := make([]byte, len(buf)-image.h)
-
-	filters := make([]byte, image.h)
-	bytesPerLine := 3*image.w + 1
-	k := 0
-	j := 0
-	for i := 0; i < len(buf); i++ {
-		if i%bytesPerLine == 0 {
-			filters[j] = buf[i]
-			j++
-		} else {
-			image2[k] = buf[i]
-			k++
-		}
-	}
-	applyFilters(filters, image2, image.w, image.h, 3)
-
-	return image2
+	return unfilter(buf, image.h, 3*image.w, 3)
 }
 
 // Truecolor Image with Alpha Transparency
 // getImageColorType4BitDepth8 returns the gray samples; the alpha samples go
 // in the soft mask.
 func (image *pngImage) getImageColorType4BitDepth8(buf []byte) []byte {
-	image2 := make([]byte, 2*image.w*image.h)
-	filters := make([]byte, image.h)
-	bytesPerLine := 2*image.w + 1
-	k := 0
-	j := 0
-	for i := 0; i < len(buf); i++ {
-		if i%bytesPerLine == 0 {
-			filters[j] = buf[i]
-			j++
-		} else {
-			image2[k] = buf[i]
-			k++
-		}
-	}
-	applyFilters(filters, image2, image.w, image.h, 2)
-
+	image2 := unfilter(buf, image.h, 2*image.w, 2)
 	gray := make([]byte, image.w*image.h)
 	alpha := make([]byte, image.w*image.h)
 	for i := range gray {
@@ -450,42 +482,14 @@ func (image *pngImage) getImageColorType4BitDepth8(buf []byte) []byte {
 }
 
 func (image *pngImage) getImageColorType6BitDepth8(buf []byte) []byte {
-	image2 := make([]byte, 4*image.w*image.h) // Image data
-
-	filters := make([]byte, image.h)
-	bytesPerLine := 4*image.w + 1
-	k := 0
-	j := 0
-	for i := 0; i < len(buf); i++ {
-		if i%bytesPerLine == 0 {
-			filters[j] = buf[i]
-			j++
-		} else {
-			image2[k] = buf[i]
-			k++
-		}
-	}
-	applyFilters(filters, image2, image.w, image.h, 4)
-
+	image2 := unfilter(buf, image.h, 4*image.w, 4)
 	idata := make([]byte, 3*image.w*image.h) // Image data
 	alpha := make([]byte, image.w*image.h)   // Alpha values
-
-	k = 0
-	j = 0
-	i := 0
-	for i < len(image2) {
-		idata[j] = image2[i]
-		j++
-		i++
-		idata[j] = image2[i]
-		j++
-		i++
-		idata[j] = image2[i]
-		j++
-		i++
-		alpha[k] = image2[i]
-		k++
-		i++
+	for i := range alpha {
+		idata[3*i] = image2[4*i]
+		idata[3*i+1] = image2[4*i+1]
+		idata[3*i+2] = image2[4*i+2]
+		alpha[i] = image2[4*i+3]
 	}
 	image.deflatedAlphaData = compressor.Deflate(alpha)
 
@@ -498,14 +502,7 @@ func (image *pngImage) getImageColorType6BitDepth8(buf []byte) []byte {
 // the bit depth, before the indexes are looked up in the palette.
 func (image *pngImage) getImageColorType3(buf []byte) []byte {
 	bytesPerLine := (image.w*image.bitDepth + 7) / 8
-	indexes := make([]byte, bytesPerLine*image.h)
-	filters := make([]byte, image.h)
-	for row := 0; row < image.h; row++ {
-		offset := row * (bytesPerLine + 1)
-		filters[row] = buf[offset]
-		copy(indexes[row*bytesPerLine:], buf[offset+1:offset+1+bytesPerLine])
-	}
-	applyFilters(filters, indexes, bytesPerLine, image.h, 1)
+	indexes := unfilter(buf, image.h, bytesPerLine, 1)
 
 	image2 := make([]byte, 3*(image.w*image.h))
 	var alpha []byte
@@ -545,178 +542,17 @@ func (image *pngImage) getImageColorType3(buf []byte) []byte {
 
 // Grayscale Image with Bit Depth == 16
 func (image *pngImage) getImageColorType0BitDepth16(buf []byte) []byte {
-	image2 := make([]byte, len(buf)-image.h)
-
-	filters := make([]byte, image.h)
-	bytesPerLine := 2*image.w + 1
-	k := 0
-	j := 0
-	for i := 0; i < len(buf); i++ {
-		if i%bytesPerLine == 0 {
-			filters[j] = buf[i]
-			j++
-		} else {
-			image2[k] = buf[i]
-			k++
-		}
-	}
-	applyFilters(filters, image2, image.w, image.h, 2)
-
-	return image2
+	return unfilter(buf, image.h, 2*image.w, 2)
 }
 
 // Grayscale Image with Bit Depth == 8
 func (image *pngImage) getImageColorType0BitDepth8(buf []byte) []byte {
-	image2 := make([]byte, len(buf)-image.h)
-
-	filters := make([]byte, image.h)
-	bytesPerLine := image.w + 1
-	k := 0
-	j := 0
-	for i := 0; i < len(buf); i++ {
-		if i%bytesPerLine == 0 {
-			filters[j] = buf[i]
-			j++
-		} else {
-			image2[k] = buf[i]
-			k++
-		}
-	}
-	applyFilters(filters, image2, image.w, image.h, 1)
-
-	return image2
+	return unfilter(buf, image.h, image.w, 1)
 }
 
-// Grayscale Image with Bit Depth == 4
-func (image *pngImage) getImageColorType0BitDepth4(buf []byte) []byte {
-	image2 := make([]byte, len(buf)-image.h)
-
-	filters := make([]byte, image.h)
-	bytesPerLine := image.w/2 + 1
-	if image.w%2 > 0 {
-		bytesPerLine++
-	}
-
-	k := 0
-	j := 0
-	for i := 0; i < len(buf); i++ {
-		if i%bytesPerLine == 0 {
-			filters[k] = buf[i]
-			k++
-		} else {
-			image2[j] = buf[i]
-			j++
-		}
-	}
-	// The filters work on bytes, one byte per pixel whatever the bit depth.
-	applyFilters(filters, image2, bytesPerLine-1, image.h, 1)
-
-	return image2
-}
-
-// Grayscale Image with Bit Depth == 2
-func (image *pngImage) getImageColorType0BitDepth2(buf []byte) []byte {
-	image2 := make([]byte, len(buf)-image.h)
-
-	filters := make([]byte, image.h)
-	bytesPerLine := image.w/4 + 1
-	if image.w%4 > 0 {
-		bytesPerLine++
-	}
-
-	k := 0
-	j := 0
-	for i := 0; i < len(buf); i++ {
-		if i%bytesPerLine == 0 {
-			filters[k] = buf[i]
-			k++
-		} else {
-			image2[j] = buf[i]
-			j++
-		}
-	}
-	// The filters work on bytes, one byte per pixel whatever the bit depth.
-	applyFilters(filters, image2, bytesPerLine-1, image.h, 1)
-
-	return image2
-}
-
-// Grayscale Image with Bit Depth == 1
-func (image *pngImage) getImageColorType0BitDepth1(buf []byte) []byte {
-	image2 := make([]byte, len(buf)-image.h)
-
-	filters := make([]byte, image.h)
-	bytesPerLine := image.w/8 + 1
-	if image.w%8 > 0 {
-		bytesPerLine++
-	}
-
-	k := 0
-	j := 0
-	for i := 0; i < len(buf); i++ {
-		if i%bytesPerLine == 0 {
-			filters[k] = buf[i]
-			k++
-		} else {
-			image2[j] = buf[i]
-			j++
-		}
-	}
-	// The filters work on bytes, one byte per pixel whatever the bit depth.
-	applyFilters(filters, image2, bytesPerLine-1, image.h, 1)
-
-	return image2
-}
-
-func applyFilters(
-	filters []byte,
-	image []byte,
-	width, height, bytesPerPixel int) {
-	bytesPerLine := width * bytesPerPixel
-	filter := byte(0x00)
-	for row := 0; row < height; row++ {
-		for col := 0; col < bytesPerLine; col++ {
-			if col == 0 {
-				filter = filters[row]
-			}
-			if filter == 0x00 { // None
-				continue
-			}
-
-			a := 0 // The pixel on the left
-			if col >= bytesPerPixel {
-				a = int(image[(bytesPerLine*row+col)-bytesPerPixel] & 0xff)
-			}
-			b := 0 // The pixel above
-			if row > 0 {
-				b = int(image[bytesPerLine*(row-1)+col] & 0xff)
-			}
-			c := 0 // The pixel diagonally left above
-			if col >= bytesPerPixel && row > 0 {
-				c = int(image[(bytesPerLine*(row-1)+col)-bytesPerPixel] & 0xff)
-			}
-
-			index := bytesPerLine*row + col
-			switch filter {
-			case 0x01: // Sub
-				image[index] += byte(a)
-			case 0x02: // Up
-				image[index] += byte(b)
-			case 0x03: // Average
-				image[index] += byte(math.Floor(float64(a+b) / 2.0))
-			case 0x04: // Paeth
-				p := a + b - c
-				pa := math.Abs(float64(p - a))
-				pb := math.Abs(float64(p - b))
-				pc := math.Abs(float64(p - c))
-				if pa <= pb && pa <= pc {
-					image[index] += byte(a)
-				} else if pb <= pc {
-					image[index] += byte(b)
-				} else {
-					image[index] += byte(c)
-				}
-			}
-		}
-	}
+// getImageColorType0BitDepthBelow8 returns a grayscale image of 1, 2 or 4
+// bits per pixel. The filters work on bytes, one byte per pixel whatever the
+// bit depth.
+func (image *pngImage) getImageColorType0BitDepthBelow8(buf []byte) []byte {
+	return unfilter(buf, image.h, (image.w*image.bitDepth+7)/8, 1)
 }

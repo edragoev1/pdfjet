@@ -312,7 +312,14 @@ public class Font {
         if (fontPath.hasSuffix(".stream")) {
             try FontStream1.register(pdf, self, inputStream)
         } else {
-            try OpenTypeFont.register(pdf, self, inputStream)
+            // Any other file is an OpenType or a TrueType font, or a stream
+            // font by another name, told apart by its first bytes.
+            let bytes = try Content.getFromStream(inputStream)
+            if Font.isOpenTypeFont(bytes) {
+                try OpenTypeFont.register(pdf, self, InputStream(data: Data(bytes)))
+            } else {
+                try FontStream1.register(pdf, self, InputStream(data: Data(bytes)))
+            }
         }
         setSize(size)
     }
@@ -421,17 +428,20 @@ public class Font {
             return Float(str!.unicodeScalars.count) * fontSize
         }
 
-        let scalars = Array(str!.unicodeScalars)
+        // The characters are gone through as they are, with no array of them
+        // made for each string that is measured.
         if self.isCoreFont {
-            for (i, scalar) in scalars.enumerated() {
+            var previous = -1
+            for scalar in str!.unicodeScalars {
                 let c1 = coreFontCode(scalar.value)
                 width += Int(metrics![c1 - 32][1])
-                if self.kernPairs && i < (scalars.count - 1) {
-                    width += kerning(c1, coreFontCode(scalars[i + 1].value))
+                if self.kernPairs && previous != -1 {
+                    width += kerning(previous, c1)
                 }
+                previous = c1
             }
         } else {
-            for scalar in scalars {
+            for scalar in str!.unicodeScalars {
                 width += advanceWidthOf(Int(scalar.value))
             }
         }
@@ -618,6 +628,10 @@ public class Font {
     public func getFitChars(
             _ str: String,
             _ width: Float) -> Int {
+        // Text of no size has no width, and all of it fits in any width.
+        if size <= 0 {
+            return width < 0 ? 0 : str.unicodeScalars.count
+        }
         var w = width * Float(unitsPerEm) / size
         if isCJK {
             // Every glyph of a CJK font is as wide as the font size.
@@ -641,20 +655,23 @@ public class Font {
             _ str: String,
             _ width: Float) -> Int {
         var w: Float = width
-        let scalars = Array(str.unicodeScalars)
+        var scalars = str.unicodeScalars.makeIterator()
+        var scalar = scalars.next()
         var i: Int = 0
-        for scalar in scalars {
-            let c1 = coreFontCode(scalar.value)
+        while let current = scalar {
+            let next = scalars.next()
+            let c1 = coreFontCode(current.value)
             w -= Float(metrics![c1 - 32][1])
             if w < 0 {
                 return i
             }
-            if kernPairs && i < (scalars.count - 1) {
-                w -= Float(kerning(c1, coreFontCode(scalars[i + 1].value)))
+            if kernPairs, let next = next {
+                w -= Float(kerning(c1, coreFontCode(next.value)))
                 if w < 0 {
                     return i
                 }
             }
+            scalar = next
             i += 1
         }
         return i

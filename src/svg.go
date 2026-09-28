@@ -9,6 +9,7 @@ import (
 	"math"
 	"strconv"
 	"strings"
+	"unicode"
 )
 
 // svgParser converts svgParser path data to PDF path operations.
@@ -143,6 +144,14 @@ func toPDF(list []*svgPathOp) ([]*svgPathOp, error) {
 	var x0 float32 = 0.0 // Start of subpath
 	var y0 float32 = 0.0
 	for _, op := range list {
+		// A command after Z other than a moveto starts the next subpath at
+		// the start of the one it closed, as SVG 1.1 section 8.3.3 says.
+		if lastOp.cmd == 'Z' && op.cmd != 'M' && op.cmd != 'm' && op.cmd != 'Z' && op.cmd != 'z' {
+			pathOp := newSVGPathOpXY('M', x0, y0)
+			operations = append(operations, pathOp)
+			lastOp = pathOp
+		}
+		first := len(operations)
 		switch op.cmd {
 		case 'M', 'm':
 			for i := 0; i <= len(op.args)-2; i += 2 {
@@ -256,13 +265,16 @@ func toPDF(list []*svgPathOp) ([]*svgPathOp, error) {
 		case 'T', 't':
 			for i := 0; i <= len(op.args)-2; i += 2 {
 				pathOp := newSVGPathOp('C')
+				// The control point is the reflection of that of the curve
+				// before, if it is a quadratic one, and else the current point.
 				x1 := lastOp.x
 				y1 := lastOp.y
-				if lastOp.cmd == 'C' {
-					// Find the reflection control point
+				if lastOp.from == 'Q' || lastOp.from == 'T' {
 					x1 = 2*lastOp.x - lastOp.x1q
 					y1 = 2*lastOp.y - lastOp.y1q
 				}
+				pathOp.x1q = x1
+				pathOp.y1q = y1
 				x, err := strconv.ParseFloat(op.args[i], 32)
 				if err != nil {
 					return nil, err
@@ -329,10 +341,12 @@ func toPDF(list []*svgPathOp) ([]*svgPathOp, error) {
 		case 'S', 's':
 			for i := 0; i <= len(op.args)-4; i += 4 {
 				pathOp := newSVGPathOp('C')
+				// The first control point is the reflection of the second of
+				// the curve before, if it is a cubic one, and else the
+				// current point.
 				x1 := lastOp.x
 				y1 := lastOp.y
-				if lastOp.cmd == 'C' {
-					// Find the reflection control point
+				if lastOp.from == 'C' || lastOp.from == 'S' {
 					x1 = 2*lastOp.x - lastOp.x2
 					y1 = 2*lastOp.y - lastOp.y2
 				}
@@ -401,6 +415,9 @@ func toPDF(list []*svgPathOp) ([]*svgPathOp, error) {
 			pathOp.y = y0
 			operations = append(operations, pathOp)
 			lastOp = pathOp
+		}
+		for _, pathOp := range operations[first:] {
+			pathOp.from = unicode.ToUpper(op.cmd)
 		}
 	}
 	return operations, nil

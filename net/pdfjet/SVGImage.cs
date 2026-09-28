@@ -65,7 +65,7 @@ public class SVGImage : IDrawable {
     // preserveAspectRatio of the <svg> element give the size of the image.
     private void Read(Stream stream) {
         paths = new List<SVGPath>();
-        List<SVGRule> rules = new List<SVGRule>();
+        SVGStyleSheet rules = new SVGStyleSheet();
         List<SVGState> stack = new List<SVGState>();
         stack.Add(new SVGState());
         List<String> names = new List<String>();
@@ -141,9 +141,9 @@ public class SVGImage : IDrawable {
     // Ends an element: the rules of a <style> element are added to those of
     // the style sheet, and the state of the element is left.
     private static void EndElement(
-            List<SVGState> stack, List<String> names, List<SVGRule> rules, StringBuilder styleSheet) {
+            List<SVGState> stack, List<String> names, SVGStyleSheet rules, StringBuilder styleSheet) {
         if (names.Count > 0 && names[names.Count - 1].Equals("style")) {
-            rules.AddRange(SVGRule.ParseStyleSheet(styleSheet.ToString()));
+            rules.Add(SVGRule.ParseStyleSheet(styleSheet.ToString()));
             styleSheet.Length = 0;
         }
         if (stack.Count > 1) {
@@ -162,7 +162,7 @@ public class SVGImage : IDrawable {
     // presentation attributes, in their order, then the rules of the style
     // sheet for its classes, in the order of the style sheet, then its style
     // attribute, and its transform.
-    private static SVGState ElementState(SVGState parent, List<SVGRule> rules,
+    private static SVGState ElementState(SVGState parent, SVGStyleSheet rules,
             Dictionary<String, String> attributes, List<String> order) {
         SVGState state = parent.Copy();
         state.ownOpacity = 1f;
@@ -171,17 +171,9 @@ public class SVGImage : IDrawable {
         }
         String[] classes = Attribute(attributes, "class").Split(
                 default(char[]), StringSplitOptions.RemoveEmptyEntries);
-        if (classes.Length > 0) {
-            foreach (SVGRule rule in rules) {
-                foreach (String name in classes) {
-                    if (!name.Equals(rule.name)) {
-                        continue;
-                    }
-                    foreach (String[] declaration in rule.declarations) {
-                        state.SetProperty(declaration[0], declaration[1]);
-                    }
-                    break;
-                }
+        foreach (SVGRule rule in rules.ForClasses(classes)) {
+            foreach (String[] declaration in rule.declarations) {
+                state.SetProperty(declaration[0], declaration[1]);
             }
         }
         foreach (String[] declaration in SVGRule.ParseDeclarations(Attribute(attributes, "style"))) {
@@ -246,7 +238,13 @@ public class SVGImage : IDrawable {
     private static List<PathOp> ShapeOperations(String name, Dictionary<String, String> attributes) {
         Builder b = new Builder();
         if (name.Equals("path")) {
-            return SVG.ToPDF(SVG.GetOperations(Attribute(attributes, "d")));
+            List<PathOp> operations = SVG.ToPDF(SVG.GetOperations(Attribute(attributes, "d")));
+            // Path data starts with a moveto; data that does not is in error
+            // from its start, and SVG 1.1 section 8.3.2 draws it up to there.
+            if (operations.Count > 0 && operations[0].cmd != 'M') {
+                return new List<PathOp>();
+            }
+            return operations;
         } else if (name.Equals("rect")) {
             double x = Number(attributes, "x");
             double y = Number(attributes, "y");
@@ -645,30 +643,23 @@ public class SVGImage : IDrawable {
         if (stroke) {
             page.SetPenColor(path.stroke);
             page.SetPenWidth(path.strokeWidth);
-            // Z closes and strokes a subpath; a path that is still open at the
-            // end is stroked without closing it.
-            bool open = false;
+            // Z closes a subpath, and the path is stroked once, all of its
+            // subpaths together, as SVG strokes it.
             foreach (PathOp op in path.operations) {
                 if (op.cmd == 'M') {
                     page.MoveTo(op.x + x, op.y + y);
-                    open = true;
                 } else if (op.cmd == 'L') {
                     page.LineTo(op.x + x, op.y + y);
-                    open = true;
                 } else if (op.cmd == 'C') {
                     page.CurveTo(
                         op.x1 + x, op.y1 + y,
                         op.x2 + x, op.y2 + y,
                         op.x + x, op.y + y);
-                    open = true;
                 } else if (op.cmd == 'Z') {
-                    page.ClosePath();
-                    open = false;
+                    page.Append("h\n");
                 }
             }
-            if (open) {
-                page.StrokePath();
-            }
+            page.StrokePath();
         }
 
         if (state) {

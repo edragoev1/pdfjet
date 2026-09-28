@@ -495,6 +495,50 @@ internal class SVGState {
     }
 }
 
+/// <summary>
+/// The rules of the style elements of an SVG file, in their order, and where
+/// the rules of each class are among them, so that an element finds the rules
+/// of its classes without going through all of them.
+/// </summary>
+internal class SVGStyleSheet {
+    private readonly List<SVGRule> rules = new List<SVGRule>();
+    private readonly Dictionary<String, List<int>> byClass = new Dictionary<String, List<int>>();
+
+    // Adds the rules of a <style> element after those before it.
+    internal void Add(List<SVGRule> added) {
+        foreach (SVGRule rule in added) {
+            List<int> indexes;
+            if (!byClass.TryGetValue(rule.name, out indexes)) {
+                indexes = new List<int>();
+                byClass[rule.name] = indexes;
+            }
+            indexes.Add(rules.Count);
+            rules.Add(rule);
+        }
+    }
+
+    // Returns the rules for any of the classes, in the order of the style
+    // sheet, each rule once.
+    internal List<SVGRule> ForClasses(String[] classes) {
+        List<int> indexes = new List<int>();
+        for (int i = 0; i < classes.Length; i++) {
+            if (Array.IndexOf(classes, classes[i], 0, i) >= 0) {
+                continue;   // A class named twice has its rules once.
+            }
+            List<int> found;
+            if (byClass.TryGetValue(classes[i], out found)) {
+                indexes.AddRange(found);
+            }
+        }
+        indexes.Sort();
+        List<SVGRule> list = new List<SVGRule>(indexes.Count);
+        foreach (int index in indexes) {
+            list.Add(rules[index]);
+        }
+        return list;
+    }
+}
+
 /// <summary>A rule of the style sheet of an SVG file for one class: .name followed by its declarations.</summary>
 internal class SVGRule {
     internal String name;
@@ -508,19 +552,25 @@ internal class SVGRule {
     // Returns the rules of the text of a <style> element that are for a
     // class, in the order of the text. Selectors of other kinds are left out.
     internal static List<SVGRule> ParseStyleSheet(String text) {
-        // Comments are left out first; they may hold braces.
+        // Comments are left out first; they may hold braces. A comment that
+        // is not closed runs to the end of the text.
+        StringBuilder uncommented = new StringBuilder();
+        int from = 0;
         while (true) {
-            int start = text.IndexOf("/*", StringComparison.Ordinal);
+            int start = text.IndexOf("/*", from, StringComparison.Ordinal);
             if (start < 0) {
+                uncommented.Append(text, from, text.Length - from);
                 break;
             }
+            uncommented.Append(text, from, start - from);
             int end = text.IndexOf("*/", start + 2, StringComparison.Ordinal);
             if (end < 0) {
-                text = text.Substring(0, start);
                 break;
             }
-            text = text.Substring(0, start) + " " + text.Substring(end + 2);
+            uncommented.Append(' ');
+            from = end + 2;
         }
+        text = uncommented.ToString();
         List<SVGRule> rules = new List<SVGRule>();
         foreach (String block in text.Split('}')) {
             int open = block.IndexOf('{');

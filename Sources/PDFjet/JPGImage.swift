@@ -90,8 +90,14 @@ class JPGImage {
     var index = 0
 
     /// Reads a JPEG image from the stream.
-    public init(_ stream: InputStream) throws {
-        self.data = try Content.getFromStream(stream)
+    public convenience init(_ stream: InputStream) throws {
+        try self.init(try Content.getFromStream(stream))
+    }
+
+    /// Reads a JPEG image from the bytes of the file, which it keeps as they
+    /// are, to embed.
+    init(_ bytes: [UInt8]) throws {
+        self.data = bytes
         try processImage(&data)
     }
 
@@ -141,10 +147,7 @@ class JPGImage {
             // Note that marker codes 0xC4, 0xC8, 0xCC are not,
             // and must not be treated as SOFn. C4 in particular
             // is actually DHT.
-            if ch == M_SOF0 ||          // Baseline
-                    ch == M_SOF1 ||     // Extended sequential, Huffman
-                    ch == M_SOF2 ||     // Progressive, Huffman
-                    ch == M_SOF3 ||     // Lossless, Huffman
+            if ch == M_SOF3 ||          // Lossless, Huffman
                     ch == M_SOF5 ||     // Differential sequential, Huffman
                     ch == M_SOF6 ||     // Differential progressive, Huffman
                     ch == M_SOF7 ||     // Differential lossless, Huffman
@@ -154,14 +157,22 @@ class JPGImage {
                     ch == M_SOF13 ||    // Differential sequential, arithmetic
                     ch == M_SOF14 ||    // Differential progressive, arithmetic
                     ch == M_SOF15 {     // Differential lossless, arithmetic
+                // The DCTDecode filter of a PDF reader decodes the sequential
+                // and the progressive JPEG of Huffman coding, and not the
+                // lossless, the hierarchical or the arithmetic coded one.
+                throw JPGImageError.undecodableCoding(Int(ch - M_SOF0))
+            } else if ch == M_SOF0 ||   // Baseline
+                    ch == M_SOF1 ||     // Extended sequential, Huffman
+                    ch == M_SOF2 {      // Progressive, Huffman
                 // The length of the frame header, then the sample precision:
                 // a PDF image stream of DCTDecode data delivers eight bits per
                 // color component, so a JPEG of another precision, a 12-bit one
                 // among them, cannot be embedded as it is.
                 let segment = index
                 let length = try getUInt16(&buffer)
-                if try readByte(&buffer) != 8 {
-                    throw JPGImageError.unsupportedSamplePrecision
+                let precision = try readByte(&buffer)
+                if precision != 8 {
+                    throw JPGImageError.unsupportedSamplePrecision(Int(precision))
                 }
                 height = try getUInt16(&buffer)
                 width = try getUInt16(&buffer)
@@ -177,7 +188,8 @@ class JPGImage {
                 // length" of MuPDF, so the readers a PDF is drawn with refuse
                 // the image where PDFjet embedded it.
                 if Int(length) != 3*Int(colorComponents) + 8 {
-                    throw JPGImageError.bogusFrameHeaderLength
+                    throw JPGImageError.bogusFrameHeaderLength(
+                            Int(length), 3*Int(colorComponents) + 8, Int(colorComponents))
                 }
                 // The component specifications fill the rest of the frame
                 // header; they can hold any bytes, the 0xFF of a marker among
@@ -368,12 +380,42 @@ class JPGImage {
 ///
 /// Errors that can occur while parsing a JPEG image.
 ///
-enum JPGImageError: Error {
+/// Each has the message the other ports throw with.
+///
+enum JPGImageError: Error, Equatable, CustomStringConvertible, LocalizedError {
     case invalidJPEGHeader
     case unexpectedEndOfJPEGData
     case invalidDimensionsOrComponentCount
     case invalidSegmentLength
     case endsBeforeTheFrameHeader
-    case unsupportedSamplePrecision
-    case bogusFrameHeaderLength
+    case unsupportedSamplePrecision(Int)            // The bits per color component
+    case bogusFrameHeaderLength(Int, Int, Int)      // The length, the right one and the components
+    case undecodableCoding(Int)                     // The n of the SOFn marker
+
+    var description: String {
+        switch self {
+        case .invalidJPEGHeader:
+            return "Error: Invalid JPEG header."
+        case .unexpectedEndOfJPEGData:
+            return "Unexpected end of JPEG data."
+        case .invalidDimensionsOrComponentCount:
+            return "Invalid JPEG dimensions or component count."
+        case .invalidSegmentLength:
+            return "Invalid marker segment length."
+        case .endsBeforeTheFrameHeader:
+            return "Error: The JPEG ends before its frame header."
+        case .unsupportedSamplePrecision(let precision):
+            return "Error: The JPEG has \(precision) bits per color component, not 8."
+        case .bogusFrameHeaderLength(let length, let expected, let components):
+            return "Error: The JPEG frame header is \(length) bytes, not the \(expected)"
+                    + " of its \(components) color components."
+        case .undecodableCoding(let n):
+            return "Error: The JPEG is lossless, hierarchical or arithmetic coded (SOF\(n)),"
+                    + " which a PDF reader cannot decode."
+        }
+    }
+
+    var errorDescription: String? {
+        return description
+    }
 }   // End of JPGImage.swift

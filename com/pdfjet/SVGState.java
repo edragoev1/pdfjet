@@ -8,7 +8,10 @@ package com.pdfjet;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 /**
@@ -80,22 +83,72 @@ class SVGState {
         return text.split(Pattern.quote(separator), -1);
     }
 
+    /**
+     * The rules of the style elements of an SVG file, in their order, and
+     * where the rules of each class are among them, so that an element finds
+     * the rules of its classes without going through all of them.
+     */
+    static class StyleSheet {
+        private final List<Rule> rules = new ArrayList<Rule>();
+        private final Map<String, List<Integer>> byClass = new HashMap<String, List<Integer>>();
+
+        // Adds the rules of a style element after those before it.
+        void add(List<Rule> newRules) {
+            for (Rule rule : newRules) {
+                List<Integer> indexes = byClass.get(rule.className);
+                if (indexes == null) {
+                    indexes = new ArrayList<Integer>();
+                    byClass.put(rule.className, indexes);
+                }
+                indexes.add(rules.size());
+                rules.add(rule);
+            }
+        }
+
+        // Returns the rules for any of the classes, in the order of the style
+        // sheet, each rule once.
+        List<Rule> forClasses(List<String> classes) {
+            List<Integer> indexes = new ArrayList<Integer>();
+            for (int i = 0; i < classes.size(); i++) {
+                if (classes.subList(0, i).contains(classes.get(i))) {
+                    continue;   // A class named twice has its rules once.
+                }
+                List<Integer> ofClass = byClass.get(classes.get(i));
+                if (ofClass != null) {
+                    indexes.addAll(ofClass);
+                }
+            }
+            Collections.sort(indexes);
+            List<Rule> found = new ArrayList<Rule>(indexes.size());
+            for (int index : indexes) {
+                found.add(rules.get(index));
+            }
+            return found;
+        }
+    }
+
     // Returns the rules of the text of a <style> element that are for a
     // class, in the order of the text.
     static List<Rule> parseStyleSheet(String text) {
-        // Comments are left out first; they may hold braces.
+        // Comments are left out first; they may hold braces. A comment that
+        // is not closed runs to the end of the text.
+        StringBuilder uncommented = new StringBuilder();
+        int from = 0;
         while (true) {
-            int start = text.indexOf("/*");
+            int start = text.indexOf("/*", from);
             if (start < 0) {
+                uncommented.append(text, from, text.length());
                 break;
             }
+            uncommented.append(text, from, start);
             int end = text.indexOf("*/", start + 2);
             if (end < 0) {
-                text = text.substring(0, start);
                 break;
             }
-            text = text.substring(0, start) + " " + text.substring(end + 2);
+            uncommented.append(' ');
+            from = end + 2;
         }
+        text = uncommented.toString();
         List<Rule> rules = new ArrayList<Rule>();
         for (String block : split(text, "}")) {
             int open = block.indexOf('{');

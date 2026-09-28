@@ -136,6 +136,14 @@ class SVG {
         var x0: Float = 0.0 // Start of subpath
         var y0: Float = 0.0
         for op in list {
+            // A command after Z other than a moveto starts the next subpath at
+            // the start of the one it closed, as SVG 1.1 section 8.3.3 says.
+            if lastOp.cmd == "Z" && op.cmd != "M" && op.cmd != "m" && op.cmd != "Z" && op.cmd != "z" {
+                let pathOp = PathOp("M", x0, y0)
+                operations.append(pathOp)
+                lastOp = pathOp
+            }
+            let first = operations.count
             if op.cmd == "M" || op.cmd == "m" {
                 var i: Int = 0
                 while i <= (op.args.count - 2) {
@@ -226,13 +234,16 @@ class SVG {
                 var i: Int = 0
                 while i <= (op.args.count - 2) {
                     let pathOp = PathOp("C")
+                    // The control point is the reflection of that of the curve
+                    // before, if it is a quadratic one, and else the current point.
                     var x1 = lastOp.x
                     var y1 = lastOp.y
-                    if lastOp.cmd == "C" {
-                        // Find the reflection control point
+                    if lastOp.from == "Q" || lastOp.from == "T" {
                         x1 = 2*lastOp.x - lastOp.x1q
                         y1 = 2*lastOp.y - lastOp.y1q
                     }
+                    pathOp.x1q = x1
+                    pathOp.y1q = y1
                     var x = try number(op.args, i)
                     var y = try number(op.args, i + 1)
                     if op.cmd == "t" {
@@ -276,10 +287,12 @@ class SVG {
                 var i: Int = 0
                 while i <= (op.args.count - 4) {
                     let pathOp = PathOp("C")
+                    // The first control point is the reflection of the second
+                    // of the curve before, if it is a cubic one, and else the
+                    // current point.
                     var x1 = lastOp.x
                     var y1 = lastOp.y
-                    if lastOp.cmd == "C" {
-                        // Find the reflection control point
+                    if lastOp.from == "C" || lastOp.from == "S" {
                         x1 = 2*lastOp.x - lastOp.x2
                         y1 = 2*lastOp.y - lastOp.y2
                     }
@@ -321,6 +334,10 @@ class SVG {
                 pathOp.y = y0
                 operations.append(pathOp)
                 lastOp = pathOp
+            }
+            let from = Character(op.cmd.uppercased())
+            for pathOp in operations[first...] {
+                pathOp.from = from
             }
         }
         return operations

@@ -151,6 +151,14 @@ class SVG {
         float x0 = 0f;  // Start of subpath
         float y0 = 0f;
         for (PathOp op : list) {
+            // A command after Z other than a moveto starts the next subpath at
+            // the start of the one it closed, as SVG 1.1 section 8.3.3 says.
+            if (lastOp.cmd == 'Z' && op.cmd != 'M' && op.cmd != 'm' && op.cmd != 'Z' && op.cmd != 'z') {
+                pathOp = new PathOp('M', x0, y0);
+                operations.add(pathOp);
+                lastOp = pathOp;
+            }
+            int first = operations.size();
             if (op.cmd == 'M' || op.cmd == 'm') {
                 for (int i = 0; i <= op.args.size() - 2; i += 2) {
                     float x = Float.parseFloat(op.args.get(i));
@@ -229,13 +237,16 @@ class SVG {
             } else if (op.cmd == 'T' || op.cmd == 't') {
                 for (int i = 0; i <= op.args.size() - 2; i += 2) {
                     pathOp = new PathOp('C');
+                    // The control point is the reflection of that of the curve
+                    // before, if it is a quadratic one, and else the current point.
                     float x1 = lastOp.x;
                     float y1 = lastOp.y;
-                    if (lastOp.cmd == 'C') {
-                        // Find the reflection control point
+                    if (lastOp.from == 'Q' || lastOp.from == 'T') {
                         x1 = 2*lastOp.x - lastOp.x1q;
                         y1 = 2*lastOp.y - lastOp.y1q;
                     }
+                    pathOp.x1q = x1;
+                    pathOp.y1q = y1;
                     float x = Float.parseFloat(op.args.get(i));
                     float y = Float.parseFloat(op.args.get(i + 1));
                     if (op.cmd == 't') {
@@ -275,10 +286,12 @@ class SVG {
             } else if (op.cmd == 'S' || op.cmd == 's') {
                 for (int i = 0; i <= op.args.size() - 4; i += 4) {
                     pathOp = new PathOp('C');
+                    // The first control point is the reflection of the second
+                    // of the curve before, if it is a cubic one, and else the
+                    // current point.
                     float x1 = lastOp.x;
                     float y1 = lastOp.y;
-                    if (lastOp.cmd == 'C') {
-                        // Find the reflection control point
+                    if (lastOp.from == 'C' || lastOp.from == 'S') {
                         x1 = 2*lastOp.x - lastOp.x2;
                         y1 = 2*lastOp.y - lastOp.y2;
                     }
@@ -317,6 +330,9 @@ class SVG {
                 pathOp.y = y0;
                 operations.add(pathOp);
                 lastOp = pathOp;
+            }
+            for (int i = first; i < operations.size(); i++) {
+                operations.get(i).from = Character.toUpperCase(op.cmd);
             }
         }
         return operations;

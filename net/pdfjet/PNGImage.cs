@@ -51,6 +51,9 @@ internal class PNGImage {
     public PNGImage(Stream inputStream) {
         ValidatePNG(inputStream);
 
+        // The data of the IDAT chunks, joined in one stream: joined one array
+        // at a time, a file of many chunks took time in the square of its size.
+        MemoryStream idatChunks = null;
         List<Chunk> chunks = ProcessPNG(inputStream);
         foreach (Chunk chunk in chunks) {
             String chunkType = System.Text.Encoding.UTF8.GetString(chunk.type);
@@ -77,7 +80,10 @@ internal class PNGImage {
                             "Convert the image using OptiPNG:\noptipng -i0 -o7 myimage.png");
                 }
             } else if (chunkType.Equals("IDAT")) {
-                iDAT = AppendIdatChunk(iDAT, chunk.GetData());
+                if (idatChunks == null) {
+                    idatChunks = new MemoryStream();
+                }
+                idatChunks.Write(chunk.GetData(), 0, chunk.GetData().Length);
             } else if (chunkType.Equals("PLTE")) {
                 // 1 to 256 colors of 3 bytes each.
                 byte[] colors = chunk.GetData();
@@ -101,6 +107,9 @@ internal class PNGImage {
             // ports: the samples are embedded as they are.
         }
 
+        if (idatChunks != null) {
+            iDAT = idatChunks.ToArray();
+        }
         long imageDataLength = GetImageDataLength();
         if (iDAT == null) {
             throw new Exception("The PNG image has no image data.");
@@ -117,12 +126,8 @@ internal class PNGImage {
                 imageData = GetImageColorType0BitDepth16(inflatedImageData);
             } else if (bitDepth == 8) {
                 imageData = GetImageColorType0BitDepth8(inflatedImageData);
-            } else if (bitDepth == 4) {
-                imageData = GetImageColorType0BitDepth4(inflatedImageData);
-            } else if (bitDepth == 2) {
-                imageData = GetImageColorType0BitDepth2(inflatedImageData);
-            } else if (bitDepth == 1) {
-                imageData = GetImageColorType0BitDepth1(inflatedImageData);
+            } else if (bitDepth == 4 || bitDepth == 2 || bitDepth == 1) {
+                imageData = GetImageColorType0BitDepthBelow8(inflatedImageData);
             } else {
                 throw new Exception("Image with unsupported bit depth == " + bitDepth);
             }
@@ -377,60 +382,99 @@ internal class PNGImage {
                 ((UInt32) buf[off + 3]);
     }
 
+    // Returns the rows of the image data without the filter type byte each
+    // begins with, and with their filters undone. A row holds bytesPerRow
+    // bytes after the filter type, and the byte of the pixel on the left is
+    // bytesPerPixel bytes before, or the byte before for pixels smaller than a
+    // byte. It throws on a filter type that PNG does not define, as libpng does.
+    private static byte[] Unfilter(byte[] buf, int rows, int bytesPerRow, int bytesPerPixel) {
+        byte[] image = new byte[rows * bytesPerRow];
+        int prior = -1;     // Where the row above begins, none for the first row
+        for (int row = 0; row < rows; row++) {
+            int offset = row * (bytesPerRow + 1);
+            int filter = buf[offset];
+            int line = row * bytesPerRow;
+            Array.Copy(buf, offset + 1, image, line, bytesPerRow);
+            if (filter == 0x00) {           // None
+            } else if (filter == 0x01) {    // Sub
+                for (int i = bytesPerPixel; i < bytesPerRow; i++) {
+                    image[line + i] += image[line + i - bytesPerPixel];
+                }
+            } else if (filter == 0x02) {    // Up
+                if (prior >= 0) {
+                    for (int i = 0; i < bytesPerRow; i++) {
+                        image[line + i] += image[prior + i];
+                    }
+                }
+            } else if (filter == 0x03) {    // Average
+                for (int i = 0; i < bytesPerRow; i++) {
+                    int a = (i >= bytesPerPixel) ? image[line + i - bytesPerPixel] : 0;    // The byte on the left
+                    int b = (prior >= 0) ? image[prior + i] : 0;                            // The byte above
+                    image[line + i] += (byte) ((a + b) / 2);
+                }
+            } else if (filter == 0x04) {    // Paeth
+                for (int i = 0; i < bytesPerRow; i++) {
+                    int a = 0;  // Left, above and above on the left
+                    int b = 0;
+                    int c = 0;
+                    if (i >= bytesPerPixel) {
+                        a = image[line + i - bytesPerPixel];
+                    }
+                    if (prior >= 0) {
+                        b = image[prior + i];
+                        if (i >= bytesPerPixel) {
+                            c = image[prior + i - bytesPerPixel];
+                        }
+                    }
+                    image[line + i] += (byte) Paeth(a, b, c);
+                }
+            } else {
+                throw new Exception("Invalid PNG filter type " + filter + ".");
+            }
+            prior = line;
+        }
+        return image;
+    }
+
+    // Returns whichever of the bytes on the left, above and above on the left
+    // is nearest to their sum less the one above on the left.
+    private static int Paeth(int a, int b, int c) {
+        int pa = b - c;     // p - a, where p = a + b - c
+        int pb = a - c;     // p - b
+        int pc = pa + pb;
+        if (pa < 0) {
+            pa = -pa;
+        }
+        if (pb < 0) {
+            pb = -pb;
+        }
+        if (pc < 0) {
+            pc = -pc;
+        }
+        if (pa <= pb && pa <= pc) {
+            return a;
+        } else if (pb <= pc) {
+            return b;
+        }
+        return c;
+    }
+
     // Truecolor Image with Bit Depth == 16
     private byte[] GetImageColorType2BitDepth16(byte[] buf) {
-        byte[] image = new byte[buf.Length - this.h];
-        byte[] filters = new byte[this.h];
-        int bytesPerLine = 6 * this.w + 1;
-        int k = 0;
-        int j = 0;
-        for (int i = 0; i < buf.Length; i++) {
-            if (i % bytesPerLine == 0) {
-                filters[j++] = buf[i];
-            } else {
-                image[k++] = buf[i];
-            }
-        }
-        ApplyFilters(filters, image, this.w, this.h, 6);
-        return image;
+        return Unfilter(buf, this.h, 6 * this.w, 6);
     }
 
     // Truecolor Image with Bit Depth == 8
     private byte[] GetImageColorType2BitDepth8(byte[] buf) {
-        byte[] image = new byte[buf.Length - this.h];
-        byte[] filters = new byte[this.h];
-        int bytesPerLine = 3 * this.w + 1;
-        int k = 0;
-        int j = 0;
-        for (int i = 0; i < buf.Length; i++) {
-            if (i % bytesPerLine == 0) {
-                filters[j++] = buf[i];
-            } else {
-                image[k++] = buf[i];
-            }
-        }
-        ApplyFilters(filters, image, this.w, this.h, 3);
-        return image;
+        return Unfilter(buf, this.h, 3 * this.w, 3);
     }
 
     // Truecolor Image with Alpha Transparency
     // The gray samples are the image and the alpha samples its soft mask.
     private byte[] GetImageColorType4BitDepth8(byte[] buf) {
+        byte[] image = Unfilter(buf, this.h, 2 * this.w, 2);
         byte[] gray = new byte[this.w * this.h];
         byte[] alpha = new byte[this.w * this.h];
-        byte[] image = new byte[2 * this.w * this.h];
-        byte[] filters = new byte[this.h];
-        int bytesPerLine = 2 * this.w + 1;
-        int k = 0;
-        int j = 0;
-        for (int i = 0; i < buf.Length; i++) {
-            if (i % bytesPerLine == 0) {
-                filters[j++] = buf[i];
-            } else {
-                image[k++] = buf[i];
-            }
-        }
-        ApplyFilters(filters, image, this.w, this.h, 2);
         for (int i = 0; i < gray.Length; i++) {
             gray[i] = image[2 * i];
             alpha[i] = image[2 * i + 1];
@@ -440,32 +484,14 @@ internal class PNGImage {
     }
 
     private byte[] GetImageColorType6BitDepth8(byte[] buf) {
+        byte[] image = Unfilter(buf, this.h, 4 * this.w, 4);
         byte[] idata = new byte[3 * this.w * this.h];   // Image data
         byte[] alpha = new byte[this.w * this.h];       // Alpha values
-
-        byte[] image = new byte[4 * this.w * this.h];
-        byte[] filters = new byte[this.h];
-        int bytesPerLine = 4 * this.w + 1;
-        int k = 0;
-        int j = 0;
-        int i = 0;
-        for (; i < buf.Length; i++) {
-            if (i % bytesPerLine == 0) {
-                filters[j++] = buf[i];
-            } else {
-                image[k++] = buf[i];
-            }
-        }
-        ApplyFilters(filters, image, this.w, this.h, 4);
-
-        k = 0;
-        j = 0;
-        i = 0;
-        while (i < image.Length) {
-            idata[j++] = image[i++];
-            idata[j++] = image[i++];
-            idata[j++] = image[i++];
-            alpha[k++] = image[i++];
+        for (int i = 0; i < alpha.Length; i++) {
+            idata[3*i] = image[4*i];
+            idata[3*i + 1] = image[4*i + 1];
+            idata[3*i + 2] = image[4*i + 2];
+            alpha[i] = image[4*i + 3];
         }
         deflatedAlphaData = Compressor.Deflate(alpha);
 
@@ -478,14 +504,7 @@ internal class PNGImage {
     // the bit depth, before the indexes are looked up in the palette.
     private byte[] GetImageColorType3(byte[] buf) {
         int bytesPerLine = (this.w * this.bitDepth + 7) / 8;
-        byte[] indexes = new byte[bytesPerLine * this.h];
-        byte[] filters = new byte[this.h];
-        for (int row = 0; row < this.h; row++) {
-            int offset = row * (bytesPerLine + 1);
-            filters[row] = buf[offset];
-            Array.Copy(buf, offset + 1, indexes, row * bytesPerLine, bytesPerLine);
-        }
-        ApplyFilters(filters, indexes, bytesPerLine, this.h, 1);
+        byte[] indexes = Unfilter(buf, this.h, bytesPerLine, 1);
 
         byte[] image = new byte[3 * (this.w * this.h)];
         byte[] alpha = null;
@@ -521,186 +540,18 @@ internal class PNGImage {
 
     // Grayscale Image with Bit Depth == 16
     private byte[] GetImageColorType0BitDepth16(byte[] buf) {
-        byte[] image = new byte[buf.Length - this.h];
-
-        byte[] filters = new byte[this.h];
-        int bytesPerLine = 2 * this.w + 1;
-        int k = 0;
-        var j = 0;
-        for (int i  = 0; i < buf.Length; i++) {
-            if (i % bytesPerLine == 0) {
-                filters[j] = buf[i];
-                j += 1;
-            } else {
-                image[k] = buf[i];
-                k += 1;
-            }
-        }
-        ApplyFilters(filters, image, this.w, this.h, 2);
-
-        return image;
+        return Unfilter(buf, this.h, 2 * this.w, 2);
     }
 
     // Grayscale Image with Bit Depth == 8
     private byte[] GetImageColorType0BitDepth8(byte[] buf) {
-        byte[] image = new byte[buf.Length - this.h];
-
-        byte[] filters = new byte[this.h];
-        int bytesPerLine = this.w + 1;
-        int k = 0;
-        int j = 0;
-        for (int i = 0; i < buf.Length; i++) {
-            if (i % bytesPerLine == 0) {
-                filters[j++] = buf[i];
-            } else {
-                image[k++] = buf[i];
-            }
-        }
-        ApplyFilters(filters, image, this.w, this.h, 1);
-
-        return image;
+        return Unfilter(buf, this.h, this.w, 1);
     }
 
-    // Grayscale Image with Bit Depth == 4
-    private byte[] GetImageColorType0BitDepth4(byte[] buf) {
-        byte[] image = new byte[buf.Length - this.h];
-
-        byte[] filters = new byte[this.h];
-        int bytesPerLine = this.w / 2 + 1;
-        if (this.w % 2 > 0) {
-            bytesPerLine += 1;
-        }
-
-        int k = 0;
-        int j = 0;
-        for (int i = 0; i < buf.Length; i++) {
-            if (i % bytesPerLine == 0) {
-                filters[k++] = buf[i];
-            } else {
-                image[j++] = buf[i];
-            }
-        }
-        // The filters work on bytes, one byte per pixel whatever the bit depth.
-        ApplyFilters(filters, image, bytesPerLine - 1, this.h, 1);
-
-        return image;
-    }
-
-    // Grayscale Image with Bit Depth == 2
-    private byte[] GetImageColorType0BitDepth2(byte[] buf) {
-        byte[] image = new byte[buf.Length - this.h];
-
-        byte[] filters = new byte[this.h];
-        int bytesPerLine = this.w / 4 + 1;
-        if (this.w % 4 > 0) {
-            bytesPerLine += 1;
-        }
-
-        int k = 0;
-        int j = 0;
-        for (int i = 0; i < buf.Length; i++) {
-            if (i % bytesPerLine == 0) {
-                filters[k++] = buf[i];
-            } else {
-                image[j++] = buf[i];
-            }
-        }
-        // The filters work on bytes, one byte per pixel whatever the bit depth.
-        ApplyFilters(filters, image, bytesPerLine - 1, this.h, 1);
-
-        return image;
-    }
-
-    // Grayscale Image with Bit Depth == 1
-    private byte[] GetImageColorType0BitDepth1(byte[] buf) {
-        byte[] image = new byte[buf.Length - this.h];
-
-        byte[] filters = new byte[this.h];
-        int bytesPerLine = this.w / 8 + 1;
-        if (this.w % 8 > 0) {
-            bytesPerLine += 1;
-        }
-
-        int k = 0;
-        int j = 0;
-        for (int i = 0; i < buf.Length; i++) {
-            if (i % bytesPerLine == 0) {
-                filters[k++] = buf[i];
-            } else {
-                image[j++] = buf[i];
-            }
-        }
-        // The filters work on bytes, one byte per pixel whatever the bit depth.
-        ApplyFilters(filters, image, bytesPerLine - 1, this.h, 1);
-
-        return image;
-    }
-
-    private void ApplyFilters(
-            byte[] filters,
-            byte[] image,
-            int width,
-            int height,
-            int bytesPerPixel) {
-
-        int bytesPerLine = width * bytesPerPixel;
-        byte filter = 0x00;
-        for (int row = 0; row < height; row++) {
-            for (int col = 0; col < bytesPerLine; col++) {
-                if (col == 0) {
-                    filter = filters[row];
-                }
-                if (filter == 0x00) {           // None
-                    continue;
-                }
-
-                int a = 0;                      // The pixel on the left
-                if (col >= bytesPerPixel) {
-                    a = image[(bytesPerLine * row + col) - bytesPerPixel] & 0xff;
-                }
-                int b = 0;                      // The pixel above
-                if (row > 0) {
-                    b = image[bytesPerLine * (row - 1) + col] & 0xff;
-                }
-                int c = 0;                      // The pixel diagonally left above
-                if (col >= bytesPerPixel && row > 0) {
-                    c = image[(bytesPerLine * (row - 1) + col) - bytesPerPixel] & 0xff;
-                }
-
-                int index = bytesPerLine * row + col;
-                if (filter == 0x01) {           // Sub
-                    image[index] += (byte) a;
-                } else if (filter == 0x02) {    // Up
-                    image[index] += (byte) b;
-                } else if (filter == 0x03) {    // Average
-                    image[index] += (byte) Math.Floor((a + b) / 2.0);
-                } else if (filter == 0x04) {    // Paeth
-                    int p = a + b - c;
-                    int pa = Math.Abs(p - a);
-                    int pb = Math.Abs(p - b);
-                    int pc = Math.Abs(p - c);
-                    if (pa <= pb && pa <= pc) {
-                        image[index] += (byte) a;
-                    } else if (pb <= pc) {
-                        image[index] += (byte) b;
-                    } else {
-                        image[index] += (byte) c;
-                    }
-                }
-            }
-        }
-    }
-
-    private byte[] AppendIdatChunk(byte[] array1, byte[] array2) {
-        if (array1 == null) {
-            return array2;
-        } else if (array2 == null) {
-            return array1;
-        }
-        byte[] joinedArray = new byte[array1.Length + array2.Length];
-        Array.Copy(array1, 0, joinedArray, 0, array1.Length);
-        Array.Copy(array2, 0, joinedArray, array1.Length, array2.Length);
-        return joinedArray;
+    // A grayscale image of 1, 2 or 4 bits per pixel. The filters work on
+    // bytes, one byte per pixel whatever the bit depth.
+    private byte[] GetImageColorType0BitDepthBelow8(byte[] buf) {
+        return Unfilter(buf, this.h, (this.w * this.bitDepth + 7) / 8, 1);
     }
 }   // End of PNGImage.cs
 }   // End of namespace PDFjet.NET

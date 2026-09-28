@@ -74,7 +74,7 @@ public class SVGImage : Drawable {
             bytes.append(contentsOf: buffer[0..<read])
         }
 
-        var rules = [SVGRule]()
+        var rules = SVGStyleSheet()
         var stack = [SVGState()]
         var names = [String]()
         var styleSheet = String.UnicodeScalarView()
@@ -115,7 +115,7 @@ public class SVGImage : Drawable {
                 fallthrough
             case .end:
                 if names.last == "style" {
-                    rules.append(contentsOf: SVGRule.parseStyleSheet(String(styleSheet)))
+                    rules.add(SVGRule.parseStyleSheet(String(styleSheet)))
                     styleSheet.removeAll()
                 }
                 if stack.count > 1 {
@@ -135,19 +135,16 @@ public class SVGImage : Drawable {
     // presentation attributes, in their order, then the rules of the style
     // sheet for its classes, in the order of the style sheet, then its style
     // attribute, and its transform.
-    private static func elementState(_ parent: SVGState, _ rules: [SVGRule],
+    private static func elementState(_ parent: SVGState, _ rules: SVGStyleSheet,
             _ attributes: [String: String], _ order: [String]) throws -> SVGState {
         var state = parent
         state.ownOpacity = 1.0
         for name in order {
             try state.setProperty(name, attributes[name]!)
         }
-        let classes = SVGState.fields(attributes["class"] ?? "")
-        if !classes.isEmpty {
-            for rule in rules where classes.contains(where: { SVGState.equal($0, rule.name) }) {
-                for (name, value) in rule.declarations {
-                    try state.setProperty(name, value)
-                }
+        for rule in rules.forClasses(SVGState.fields(attributes["class"] ?? "")) {
+            for (name, value) in rule.declarations {
+                try state.setProperty(name, value)
             }
         }
         for (name, value) in SVGRule.parseDeclarations(attributes["style"] ?? "") {
@@ -215,7 +212,13 @@ public class SVGImage : Drawable {
         var b = Builder()
         switch name {
         case "path":
-            return try SVG.toPDF(SVG.getOperations(attributes["d"] ?? ""))
+            let operations = try SVG.toPDF(SVG.getOperations(attributes["d"] ?? ""))
+            // Path data starts with a moveto; data that does not is in error
+            // from its start, and SVG 1.1 section 8.3.2 draws it up to there.
+            if let first = operations.first, first.cmd != "M" {
+                return []
+            }
+            return operations
         case "rect":
             let x = number("x")
             let y = number("y")
@@ -815,30 +818,23 @@ public class SVGImage : Drawable {
         if stroke {
             page.setPenColor(path.stroke)
             page.setPenWidth(path.strokeWidth)
-            // Z closes and strokes a subpath; a path that is still open at the
-            // end is stroked without closing it.
-            var open = false
+            // Z closes a subpath, and the path is stroked once, all of its
+            // subpaths together, as SVG strokes it.
             for op in path.operations {
                 if op.cmd == "M" {
                     page.moveTo(op.x + x, op.y + y)
-                    open = true
                 } else if op.cmd == "L" {
                     page.lineTo(op.x + x, op.y + y)
-                    open = true
                 } else if op.cmd == "C" {
                     page.curveTo(
                         op.x1 + x, op.y1 + y,
                         op.x2 + x, op.y2 + y,
                         op.x + x, op.y + y)
-                    open = true
                 } else if op.cmd == "Z" {
-                    page.closePath()
-                    open = false
+                    page.append("h\n")
                 }
             }
-            if open {
-                page.strokePath()
-            }
+            page.strokePath()
         }
 
         if state {

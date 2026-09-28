@@ -41,20 +41,22 @@ class OTF {
     java.util.List<java.util.Map<Integer, int[]>> markAnchors;
     java.util.List<java.util.Map<Integer, int[]>> baseAnchors;
     byte[] buf;
-    byte[] compressed;
     boolean cff = false;
     int cffOff;
     int cffLen;
     int index = 0;
     int gposWork;
+    int numGlyphs;  // Of the maxp table, or 0 when the font has none
 
     // The most work the GPOS table of a font is read with, counted in the
-    // glyphs of the coverage tables it names and in the pairs its mark
-    // lookups place: each mark against each letter or mark it goes on. The
-    // lookups, the subtables and the ranges of a coverage table all say their
-    // own count, so a table that claims more than a font holds is stopped
-    // here rather than read to an end it does not have. Of the 252 fonts
-    // PDFjet ships the most this takes is 62,954, in Noto Sans.
+    // glyphs of the coverage tables it names, the glyphs their indexes make
+    // room for, the marks and the letters its mark lookups keep and the pairs
+    // they place: each mark against each letter or mark it goes on. The
+    // lookups, the subtables, the ranges of a coverage table and its indexes
+    // all say their own count, and subtables can share one another, so a
+    // table that claims more than a font holds is stopped here rather than
+    // read to an end it does not have. Of the 252 fonts PDFjet ships the most
+    // this takes is 76,168, in Noto Sans.
     private static final int MAX_GPOS_WORK = 1 << 20;
 
     private static IOException fontError(String what) {
@@ -69,6 +71,10 @@ class OTF {
      */
     OTF(InputStream stream) throws Exception {
         buf = Content.getFromStream(stream);
+        // A font without an OS/2 table does not say which characters it
+        // holds, so its character map is read for all of them.
+        firstChar = 0;
+        lastChar = 0xFFFF;
 
         // Extract OTF metadata
         long version = readUInt32();
@@ -88,6 +94,7 @@ class OTF {
         int rangeShift    = readUInt16();
 
         FontTable cmapTable = null;
+        FontTable gposTable = null;
         for (int i = 0; i < numOfTables; i++) {
             byte[] name = new byte[4];
             for (int j = 0; j < 4; j++) {
@@ -107,11 +114,18 @@ class OTF {
             else if (table.name.equals("hmtx")) { hmtx(table); }
             else if (table.name.equals("post")) { post(table); }
             else if (table.name.equals("CFF ")) { CFF_(table); }
-            else if (table.name.equals("GPOS")) { GPOS(table); }
+            else if (table.name.equals("GPOS")) { gposTable = table; }
+            else if (table.name.equals("maxp")) { numGlyphs = Math.max(tableUInt16(table, 4), 0); }
             else if (table.name.equals("cmap")) { cmapTable = table; }
             else if (table.name.equals("loca")) { loca = table; }
             else if (table.name.equals("glyf")) { glyf = table; }
             index = k;      // Restore the index
+        }
+
+        // The GPOS table is read after the maxp table, whose number of glyphs
+        // bounds the coverage indexes.
+        if (gposTable != null) {
+            GPOS(gposTable);
         }
 
         // This table must be processed last
@@ -145,7 +159,12 @@ class OTF {
         if (fontName == null || !FontStream1.isFontName(fontName.getBytes(StandardCharsets.UTF_8))) {
             throw fontError("the font name");
         }
+    }
 
+    // Returns the font program as it is embedded, compressed: the CFF table
+    // of a font with CFF outlines, or else the whole font. It is compressed
+    // only for a font the PDF does not hold yet.
+    byte[] compress() throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try (DeflaterOutputStream dos =
                  new DeflaterOutputStream(baos, new Deflater(Deflater.BEST_SPEED))) {
@@ -155,7 +174,7 @@ class OTF {
                 dos.write(buf);
             }
         }
-        compressed = baos.toByteArray();
+        return baos.toByteArray();
     }
 
     private void head(FontTable table) throws IOException {
@@ -335,9 +354,18 @@ class OTF {
             glyphIdArray[i] = readUInt16();
         }
 
+        // The segments are in the order of their end codes, so the segment of a
+        // character is the first that ends at it or after it, if it starts at
+        // it or before it. The characters go up, and so does the segment.
+        int seg = 0;
         for (int ch = firstChar; ch <= lastChar; ch++) {
-            int seg = getSegmentFor(ch, startCount, endCount, segCount);
-            if (seg != -1) {
+            while (seg < segCount && endCount[seg] < ch) {
+                seg++;
+            }
+            if (seg == segCount) {
+                break;
+            }
+            if (startCount[seg] <= ch) {
                 int gid;
                 int offset = idRangeOffset[seg];
                 if (offset == 0) {
@@ -440,16 +468,22 @@ class OTF {
         int baseArray = subTable + getUInt16(subTable + 10);
         java.util.Map<Integer, int[]> marks = new java.util.HashMap<Integer, int[]>();
         for (int m = 0; m < markGlyphs.length; m++) {
+            if (gposWork == 0) {
+                break;
+            }
+            gposWork--;
             int anchor = markArray + getUInt16(markArray + 4 + 4*m);
             marks.put(markGlyphs[m], new int[] {
                     getUInt16(markArray + 2 + 4*m), getInt16(anchor + 2), getInt16(anchor + 4)});
         }
         java.util.Map<Integer, int[]> bases = new java.util.HashMap<Integer, int[]>();
         for (int b = 0; b < baseGlyphs.length; b++) {
-            if (gposWork < classCount) {
+            // A letter is work of its own, whatever the classes of its marks.
+            int work = Math.max(classCount, 1);
+            if (gposWork < work) {
                 break;
             }
-            gposWork -= classCount;
+            gposWork -= work;
             // The anchor offsets are from the base array, or from the ligature
             // attach table of a ligature.
             int table = baseArray;
@@ -486,10 +520,11 @@ class OTF {
         int mark1Array = subTable + getUInt16(subTable + 8);
         int mark2Array = subTable + getUInt16(subTable + 10);
         for (int m1 = 0; m1 < mark1Glyphs.length; m1++) {
-            if (gposWork < mark2Glyphs.length) {
+            int work = Math.max(mark2Glyphs.length, 1);
+            if (gposWork < work) {
                 break;
             }
-            gposWork -= mark2Glyphs.length;
+            gposWork -= work;
             int markClass = getUInt16(mark1Array + 2 + 4*m1);
             int anchor1 = mark1Array + getUInt16(mark1Array + 4 + 4*m1);
             for (int m2 = 0; m2 < mark2Glyphs.length; m2++) {
@@ -533,22 +568,23 @@ class OTF {
                 size = Math.max(size, getUInt16(range + 4) + end - start + 1);
             }
         }
-        // A coverage table lists each glyph once, and a glyph ID is 16 bits.
-        if (size > 0x10000) {
-            size = 0x10000;
-        }
+        // A coverage table lists each glyph of the font once at most, and the
+        // room its indexes make is counted as work, as each glyph of it is
+        // gone through by the lookup it is of.
+        int limit = (numGlyphs > 0) ? numGlyphs : 0x10000;    // A glyph ID is 16 bits.
+        size = Math.min(Math.min(size, limit), gposWork);
+        gposWork -= size;
         int[] glyphs = new int[size];
         for (int i = 0; i < count && gposWork > 0; i++) {
             int range = offset + 4 + 6*i;
             int start = getUInt16(range);
             int end = getUInt16(range + 2);
             int coverageIndex = getUInt16(range + 4);
+            // The glyphs of the range past the room of the indexes are left out.
+            end = Math.min(end, start + size - 1 - coverageIndex);
             for (int glyph = start; glyph <= end && gposWork > 0; glyph++) {
                 gposWork--;
-                int index = coverageIndex + glyph - start;
-                if (index < size) {
-                    glyphs[index] = glyph;
-                }
+                glyphs[coverageIndex + glyph - start] = glyph;
             }
         }
         return glyphs;
@@ -595,18 +631,6 @@ class OTF {
 
     private int getUInt32(int offset) {
         return (getUInt16(offset) << 16) | getUInt16(offset + 2);
-    }
-
-    private int getSegmentFor(
-            int ch, int[] startCount, int[] endCount, int segCount) {
-        int segment = -1;
-        for (int i = 0; i < segCount; i++) {
-            if (ch <= endCount[i] && ch >= startCount[i]) {
-                segment = i;
-                break;
-            }
-        }
-        return segment;
     }
 
     // Panics unless the next count bytes of the font are there. The index runs

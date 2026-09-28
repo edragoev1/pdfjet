@@ -62,9 +62,9 @@ var svgTemplates = map[string]bool{
 // the <svg> element give the size of the image.
 func NewSVGImage(reader io.Reader) (*SVGImage, error) {
 	image := new(SVGImage)
-	colorMap := newColorMap()
+	colorMap := svgColorMap
 	image.paths = make([]*svgPath, 0)
-	rules := make([]svgRule, 0)
+	rules := newSVGStyleSheet()
 	stack := []svgState{newSVGState()}
 	names := make([]string, 0)
 	var styleSheet strings.Builder
@@ -120,7 +120,7 @@ func NewSVGImage(reader io.Reader) (*SVGImage, error) {
 
 		case xml.EndElement:
 			if len(names) > 0 && names[len(names)-1] == "style" {
-				rules = append(rules, parseSVGStyleSheet(styleSheet.String())...)
+				rules.add(parseSVGStyleSheet(styleSheet.String()))
 				styleSheet.Reset()
 			}
 			if len(stack) > 1 {
@@ -145,7 +145,7 @@ func NewSVGImage(reader io.Reader) (*SVGImage, error) {
 // one: its presentation attributes, in their order, then the rules of the
 // style sheet for its classes, in the order of the style sheet, then its
 // style attribute, and its transform.
-func elementState(parent svgState, colorMap map[string]int32, rules []svgRule,
+func elementState(parent svgState, colorMap map[string]int32, rules *svgStyleSheet,
 	attributes map[string]string, order []string) (svgState, error) {
 	state := parent
 	state.ownOpacity = 1.0
@@ -154,18 +154,10 @@ func elementState(parent svgState, colorMap map[string]int32, rules []svgRule,
 			return state, err
 		}
 	}
-	if classes := strings.Fields(attributes["class"]); len(classes) > 0 {
-		for _, rule := range rules {
-			for _, class := range classes {
-				if class != rule.class {
-					continue
-				}
-				for _, declaration := range rule.declarations {
-					if err := state.setProperty(colorMap, declaration[0], declaration[1]); err != nil {
-						return state, err
-					}
-				}
-				break
+	for _, rule := range rules.forClasses(strings.Fields(attributes["class"])) {
+		for _, declaration := range rule.declarations {
+			if err := state.setProperty(colorMap, declaration[0], declaration[1]); err != nil {
+				return state, err
 			}
 		}
 	}
@@ -239,6 +231,11 @@ func shapeOperations(name string, attributes map[string]string) ([]*svgPathOp, e
 		operations, err := toPDF(newSVGParser().getOperations(data))
 		if err != nil {
 			return nil, fmt.Errorf("invalid path data %q: %w", data, err)
+		}
+		// Path data starts with a moveto; data that does not is in error
+		// from its start, and SVG 1.1 section 8.3.2 draws it up to there.
+		if len(operations) > 0 && operations[0].cmd != 'M' {
+			return nil, nil
 		}
 		return operations, nil
 	case "rect":
@@ -634,30 +631,23 @@ func (image *SVGImage) drawPath(path *svgPath, page *Page) {
 	if stroke {
 		page.SetPenColor(path.stroke)
 		page.SetPenWidth(path.strokeWidth)
-		// Z closes and strokes a subpath; a path that is still open at the end
-		// is stroked without closing it.
-		open := false
+		// Z closes a subpath, and the path is stroked once, all of its
+		// subpaths together, as SVG strokes it.
 		for _, op := range path.operations {
 			if op.cmd == 'M' {
 				page.MoveTo(op.x+image.x, op.y+image.y)
-				open = true
 			} else if op.cmd == 'L' {
 				page.LineTo(op.x+image.x, op.y+image.y)
-				open = true
 			} else if op.cmd == 'C' {
 				page.CurveTo(
 					op.x1+image.x, op.y1+image.y,
 					op.x2+image.x, op.y2+image.y,
 					op.x+image.x, op.y+image.y)
-				open = true
 			} else if op.cmd == 'Z' {
-				page.ClosePath()
-				open = false
+				page.appendString("h\n")
 			}
 		}
-		if open {
-			page.StrokePath()
-		}
+		page.StrokePath()
 	}
 
 	if state {

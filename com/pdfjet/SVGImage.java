@@ -78,9 +78,9 @@ public class SVGImage implements Drawable {
             "marker", "linearGradient", "radialGradient"));
 
     private void read(InputStream stream) throws Exception {
-        ColorMap colorMap = new ColorMap();
+        ColorMap colorMap = ColorMap.SVG_COLORS;
         paths = new ArrayList<SVGPath>();
-        List<SVGState.Rule> rules = new ArrayList<SVGState.Rule>();
+        SVGState.StyleSheet rules = new SVGState.StyleSheet();
         List<SVGState> stack = new ArrayList<SVGState>();
         stack.add(new SVGState());
         List<String> names = new ArrayList<String>();
@@ -133,7 +133,7 @@ public class SVGImage implements Drawable {
                     addPath(state, operations);
                 } else if (event == XMLStreamConstants.END_ELEMENT) {
                     if (!names.isEmpty() && names.get(names.size() - 1).equals("style")) {
-                        rules.addAll(SVGState.parseStyleSheet(styleSheet.toString()));
+                        rules.add(SVGState.parseStyleSheet(styleSheet.toString()));
                         styleSheet.setLength(0);
                     }
                     if (stack.size() > 1) {
@@ -172,21 +172,16 @@ public class SVGImage implements Drawable {
     // presentation attributes, in their order, then the rules of the style
     // sheet for its classes, in the order of the style sheet, then its style
     // attribute, and its transform.
-    private static SVGState elementState(SVGState parent, ColorMap colorMap, List<SVGState.Rule> rules,
+    private static SVGState elementState(SVGState parent, ColorMap colorMap, SVGState.StyleSheet rules,
             Map<String, String> attributes, List<String> order) {
         SVGState state = new SVGState(parent);
         state.ownOpacity = 1f;
         for (String name : order) {
             state.setProperty(colorMap, name, attributes.get(name));
         }
-        List<String> classes = SVGState.fields(attribute(attributes, "class"));
-        if (!classes.isEmpty()) {
-            for (SVGState.Rule rule : rules) {
-                if (classes.contains(rule.className)) {
-                    for (String[] declaration : rule.declarations) {
-                        state.setProperty(colorMap, declaration[0], declaration[1]);
-                    }
-                }
+        for (SVGState.Rule rule : rules.forClasses(SVGState.fields(attribute(attributes, "class")))) {
+            for (String[] declaration : rule.declarations) {
+                state.setProperty(colorMap, declaration[0], declaration[1]);
             }
         }
         for (String[] declaration : SVGState.parseDeclarations(attribute(attributes, "style"))) {
@@ -252,7 +247,13 @@ public class SVGImage implements Drawable {
     private static List<PathOp> shapeOperations(String name, Map<String, String> attributes) {
         ShapeBuilder b = new ShapeBuilder();
         if (name.equals("path")) {
-            return SVG.toPDF(SVG.getOperations(attribute(attributes, "d")));
+            List<PathOp> operations = SVG.toPDF(SVG.getOperations(attribute(attributes, "d")));
+            // Path data starts with a moveto; data that does not is in error
+            // from its start, and SVG 1.1 section 8.3.2 draws it up to there.
+            if (!operations.isEmpty() && operations.get(0).cmd != 'M') {
+                return new ArrayList<PathOp>();
+            }
+            return operations;
         } else if (name.equals("rect")) {
             double x = number(attributes, "x");
             double y = number(attributes, "y");
@@ -701,30 +702,23 @@ public class SVGImage implements Drawable {
         if (stroke) {
             page.setPenColor(path.stroke);
             page.setPenWidth(path.strokeWidth);
-            // Z closes and strokes a subpath; a path that is still open at the
-            // end is stroked without closing it.
-            boolean open = false;
+            // Z closes a subpath, and the path is stroked once, all of its
+            // subpaths together, as SVG strokes it.
             for (PathOp op : path.operations) {
                 if (op.cmd == 'M') {
                     page.moveTo(op.x + x, op.y + y);
-                    open = true;
                 } else if (op.cmd == 'L') {
                     page.lineTo(op.x + x, op.y + y);
-                    open = true;
                 } else if (op.cmd == 'C') {
                     page.curveTo(
                         op.x1 + x, op.y1 + y,
                         op.x2 + x, op.y2 + y,
                         op.x + x, op.y + y);
-                    open = true;
                 } else if (op.cmd == 'Z') {
-                    page.closePath();
-                    open = false;
+                    page.append("h\n");
                 }
             }
-            if (open) {
-                page.strokePath();
-            }
+            page.strokePath();
         }
 
         if (state) {

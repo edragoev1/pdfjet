@@ -70,7 +70,7 @@ class SVGImageTest {
     void aStrokeOnlyPathIsStroked() throws Exception {
         String content = draw("<svg width=\"100\" height=\"50\"><path d=\"M10 10 L90 40 L10 40 Z\" fill=\"none\" stroke=\"red\"/></svg>");
         assertTrue(content.contains("1 0 0 RG\n"), content);
-        assertTrue(content.endsWith("s\n"), content);
+        assertTrue(content.endsWith("h\nS\n"), content);
     }
 
     @Test
@@ -80,9 +80,9 @@ class SVGImageTest {
     }
 
     @Test
-    void aClosedSubpathIsClosedAndAnOpenOneStrokedAtTheEnd() throws Exception {
+    void aClosedSubpathIsClosedAndThePathStrokedOnceAtTheEnd() throws Exception {
         String content = draw("<svg width=\"100\" height=\"50\"><path d=\"M10 10 L90 40 Z M20 20 L30 30\" fill=\"none\" stroke=\"red\"/></svg>");
-        assertTrue(content.endsWith("10 782 m\n90 752 l\ns\n20 772 m\n30 762 l\nS\n"), content);
+        assertTrue(content.endsWith("10 782 m\n90 752 l\nh\n20 772 m\n30 762 l\nS\n"), content);
     }
 
     @Test
@@ -101,7 +101,7 @@ class SVGImageTest {
         // The second path takes the red fill of the svg element and has no stroke.
         assertTrue(content.contains("1 0 0 rg\n"), content);
         assertEquals(1, content.split("\nf\n", -1).length - 1, content);
-        assertEquals(1, content.split("\ns\n", -1).length - 1, content);
+        assertEquals(1, content.split("\nh\nS\n", -1).length - 1, content);
     }
 
     @Test
@@ -154,16 +154,20 @@ class SVGImageTest {
     }
 
     @Test
-    void pathDataThatNeedsTheCurrentPointStartsAtTheOrigin() throws Exception {
+    void pathDataThatDoesNotStartWithAMovetoDrawsNothing() throws Exception {
         // The first command of the path data needs a current point, which this
-        // port left unset: it threw.
+        // port left unset: it threw. Path data starts with a moveto, and SVG
+        // 1.1 section 8.3.2 draws data in error up to where it is in error,
+        // which here is nothing; a PDF has no current point to draw a line
+        // from either.
         String[] paths = {
             "L90 40", "H90", "V40", "Q10 10 90 40", "T90 40",
-            "C1 1 2 2 90 40", "S1 1 90 40", "A5 5 0 0 1 90 40", "l90 40",
+            "C1 1 2 2 90 40", "S1 1 90 40", "A5 5 0 0 1 90 40", "l90 40", "Z L90 40",
         };
         for (String data : paths) {
-            String content = draw("<svg width=\"100\" height=\"50\"><path d=\"" + data + "\"/></svg>");
-            assertTrue(content.contains(" l\n") || content.contains(" c\n"), data + " draws " + content);
+            String content = draw("<svg width=\"100\" height=\"50\"><path d=\"" + data + "\"/>"
+                    + "<path d=\"M1 1 L2 2\" fill=\"none\" stroke=\"red\"/></svg>");
+            assertEquals("1 0 0 RG\n1 w\n1 791 m\n2 790 l\nS\n", content, data);
         }
     }
 
@@ -223,7 +227,7 @@ class SVGImageTest {
         // quarter, a half or a whole turn is not split once more for the last
         // bit of the sweep, which the four ports do not compute alike.
         String[] paths = {
-            "A 120 120 120 0 0 120 120",    // A quarter turn, of the fuzz corpus
+            "M0 0 A 120 120 120 0 0 120 120",   // A quarter turn, of the fuzz corpus
             "M10 10 A 20 20 0 0 1 50 10",
             "M0 0 A50 50 0 0 1 100 0",
         };
@@ -291,8 +295,8 @@ class SVGImageTest {
     void aGroupGivesItsPathsItsColorsAndWidthUnlessTheyHaveTheirOwn() throws Exception {
         String content = draw("<svg width=\"100\" height=\"100\"><g fill=\"red\" stroke=\"blue\" stroke-width=\"2\">"
                 + "<path d=\"M10 10 H90 V90 Z\"/><path d=\"M10 10 H50 V50 Z\" fill=\"green\" stroke-width=\"4\"/></g></svg>");
-        assertEquals("1 0 0 rg\n10 782 m\n90 782 l\n90 702 l\nf\n0 0 1 RG\n2 w\n10 782 m\n90 782 l\n90 702 l\ns\n"
-                + "0 0.5 0 rg\n10 782 m\n50 782 l\n50 742 l\nf\n4 w\n10 782 m\n50 782 l\n50 742 l\ns\n", content);
+        assertEquals("1 0 0 rg\n10 782 m\n90 782 l\n90 702 l\nf\n0 0 1 RG\n2 w\n10 782 m\n90 782 l\n90 702 l\nh\nS\n"
+                + "0 0.5 0 rg\n10 782 m\n50 782 l\n50 742 l\nf\n4 w\n10 782 m\n50 782 l\n50 742 l\nh\nS\n", content);
     }
 
     @Test
@@ -362,7 +366,7 @@ class SVGImageTest {
             {"<polyline points=\"10,10 20,20 10,20\" fill=\"none\" stroke=\"red\"/>", "1 0 0 RG\n1 w\n"
                     + "10 782 m\n20 772 l\n10 772 l\nS\n"},
             {"<polygon points=\"10 10 20 20 10 20 5\" fill=\"none\" stroke=\"red\"/>", "1 0 0 RG\n1 w\n"
-                    + "10 782 m\n20 772 l\n10 772 l\ns\n"},
+                    + "10 782 m\n20 772 l\n10 772 l\nh\nS\n"},
             // Shapes of no size draw nothing.
             {"<rect width=\"0\" height=\"10\"/><circle r=\"0\"/><ellipse rx=\"5\"/><polygon points=\"1 2\"/><line/>", ""},
         };

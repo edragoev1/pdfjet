@@ -441,8 +441,15 @@ func (font *Font) GetUnderlinePosition(fontSize float32) float32 {
 // GetFitChars returns the number of characters from the specified text string
 // that will fit within the specified width.
 func (font *Font) GetFitChars(text string, width float32) int {
-	w := width * float32(font.unitsPerEm) / font.size
 	runes := []rune(text)
+	// Text of no size has no width, and all of it fits in any width.
+	if font.size <= 0 {
+		if width < 0 {
+			return 0
+		}
+		return len(runes)
+	}
+	w := width * float32(font.unitsPerEm) / font.size
 	if font.isCJK {
 		// Every glyph of a CJK font is as wide as the font size.
 		return max(0, min(int(width/font.size), len(runes)))

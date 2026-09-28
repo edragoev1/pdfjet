@@ -12,6 +12,8 @@ namespace PDFjet.NET {
 internal class PathOp {
     /// <summary>The path command, for example 'M' or 'C'.</summary>
     public char cmd;
+    /// <summary>The SVG command it was made from, in upper case, as a smooth curve needs it.</summary>
+    public char from;
 
     /// <summary>The x coordinate of the original quadratic control point.</summary>
     public float x1q;   // Original quadratic control

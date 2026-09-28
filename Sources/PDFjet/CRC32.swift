@@ -9,7 +9,8 @@
  *  CRC32.swift
  */
 class CRC32 {
-    let table: [UInt32] = [
+    // The table is made once, for every checksum.
+    private static let table: [UInt32] = [
             0x00000000, 0x77073096, 0xEE0E612C, 0x990951BA,
             0x076DC419, 0x706AF48F, 0xE963A535, 0x9E6495A3,
             0x0EDB8832, 0x79DCB8A4, 0xE0D5E91E, 0x97D2D988,
@@ -80,6 +81,7 @@ class CRC32 {
 
     /// Updates the checksum with the bytes of data from index off up to, but not including, index len.
     public func update(_ data: [UInt8], _ off: Int, _ len: Int) {
+        let table = CRC32.table
         for i in off..<len {
             crc = (crc >> 8) ^ table[Int(UInt32(data[i]) ^ crc & UInt32(0xff))]
         }

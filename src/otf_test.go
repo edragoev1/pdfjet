@@ -149,9 +149,10 @@ func TestOTFAFontWithNoNameOfItsOwnIsRefused(t *testing.T) {
 }
 
 func TestOTFAFontWithoutTheTablesItNeedsNoneOfStillDraws(t *testing.T) {
-	// Without OS/2 the font says it holds no characters and maps none of
-	// them; without post it has no underline; without GPOS its marks are not
-	// placed. None of the three stops it from drawing.
+	// Without OS/2 the font does not say which characters it holds, and
+	// every character of its map is read; without post it has no underline;
+	// without GPOS its marks are not placed. None of the three stops it from
+	// drawing.
 	font := testOpenTypeFontBytes(t, "fonts/NotoSansThai/NotoSansThai-Regular.ttf")
 	for _, name := range []string{"OS/2", "post", "GPOS"} {
 		testWant(t, "(no panic)", testOpenTypeFontDraws(testOpenTypeWithout(t, font, name)))

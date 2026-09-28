@@ -31,8 +31,10 @@ class OTF {
     var descent: Int16? = 0
     var lineGap: Int16 = 0
     var advanceWidth: [UInt16] = []
+    // A font without an OS/2 table does not say which characters it holds,
+    // so its character map is read for all of them.
     var firstChar: Int? = 0
-    var lastChar: Int? = 0
+    var lastChar: Int? = 0xFFFF
     var capHeight: Int16? = 0
     var hasCapHeight = false
     var indexToLocFormat = 0
@@ -44,20 +46,22 @@ class OTF {
     var underlineThickness: Int16? = 0
 
     var buf = [UInt8]()
-    var dos = [UInt8]()
     var cff = false
     private var cffOff: Int?
     private var cffLen: Int?
     private var index = 0
     private var gposWork = maxGposWork
+    private var numGlyphs = 0   // Of the maxp table, or 0 when the font has none
 
     // The most work the GPOS table of a font is read with, counted in the
-    // glyphs of the coverage tables it names and in the pairs its mark
-    // lookups place: each mark against each letter or mark it goes on. The
-    // lookups, the subtables and the ranges of a coverage table all say their
-    // own count, so a table that claims more than a font holds is stopped
-    // here rather than read to an end it does not have. Of the 252 fonts
-    // PDFjet ships the most this takes is 62,954, in Noto Sans.
+    // glyphs of the coverage tables it names, the glyphs their indexes make
+    // room for, the marks and the letters its mark lookups keep and the pairs
+    // they place: each mark against each letter or mark it goes on. The
+    // lookups, the subtables, the ranges of a coverage table and its indexes
+    // all say their own count, and subtables can share one another, so a
+    // table that claims more than a font holds is stopped here rather than
+    // read to an end it does not have. Of the 252 fonts PDFjet ships the most
+    // this takes is 76,168, in Noto Sans.
     private static let maxGposWork = 1 << 20
 
     private static func fontError(_ what: String) -> PDFjetError {
@@ -89,6 +93,7 @@ class OTF {
         try readUInt16()                    // rangeShift
 
         var cmapTable: FontTable?
+        var gposTable: FontTable?
         for _ in 0..<numOfTables {
             var name = [UInt8](repeating: 0, count: 4)
             for i in 0..<4 {
@@ -108,11 +113,18 @@ class OTF {
             else if table.name == "hmtx" { try hmtx(table) }
             else if table.name == "post" { try post(table) }
             else if table.name == "CFF " { try CFF_(table) }
-            else if table.name == "GPOS" { GPOS(table) }
+            else if table.name == "GPOS" { gposTable = table }
+            else if table.name == "maxp" { numGlyphs = tableUInt16(table, 4) ?? 0 }
             else if table.name == "cmap" { cmapTable = table }
             else if table.name == "loca" { loca = table }
             else if table.name == "glyf" { glyf = table }
             index = k       // Restore the index
+        }
+
+        // The GPOS table is read after the maxp table, whose number of glyphs
+        // bounds the coverage indexes.
+        if let gposTable = gposTable {
+            GPOS(gposTable)
         }
 
         // This table must be processed last
@@ -145,13 +157,19 @@ class OTF {
         if fontName == nil || !FontStream1.isFontName(Array(fontName!.utf8)) {
             throw OTF.fontError("the font name")
         }
+    }
 
+    // Returns the font program as it is embedded, compressed: the CFF table of
+    // a font with CFF outlines, or else the whole font. It is compressed only
+    // for a font the PDF does not hold yet.
+    func compress() -> [UInt8] {
+        var compressed = [UInt8]()
         if cff {
-            let bufSlice = Array(buf[cffOff!..<(cffOff! + cffLen!)])
-            FlateEncode(&dos, bufSlice)
+            FlateEncode(&compressed, Array(buf[cffOff!..<(cffOff! + cffLen!)]))
         } else {
-            FlateEncode(&dos, buf)
+            FlateEncode(&compressed, buf)
         }
+        return compressed
     }
 
     private func head(_ table: FontTable) throws {
@@ -343,9 +361,18 @@ class OTF {
         if firstChar! > lastChar! {
             return      // The font says it holds no characters.
         }
+        // The segments are in the order of their end codes, so the segment of
+        // a character is the first that ends at it or after it, if it starts
+        // at it or before it. The characters go up, and so does the segment.
+        var seg = 0
         for ch in firstChar!...lastChar! {
-            let seg = getSegmentFor(ch, startCount, endCount, Int(segCount))
-            if seg != -1 {
+            while seg < segCount && endCount[seg] < ch {
+                seg += 1
+            }
+            if seg == segCount {
+                break
+            }
+            if startCount[seg] <= ch {
                 var gid = 0
                 var offset = idRangeOffset[seg]
                 if offset == 0 {
@@ -406,21 +433,6 @@ class OTF {
         self.cffLen = table.length!
     }
 
-    private func getSegmentFor(
-            _ ch: Int,
-            _ startCount: [Int],
-            _ endCount: [Int],
-            _ segCount: Int) -> Int {
-        var segment = -1
-        for i in 0..<segCount {
-            if ch <= endCount[i] && ch >= startCount[i] {
-                segment = i
-                break
-            }
-        }
-        return segment
-    }
-
     // Reads where the marks go from the GPOS table: the marks on letters and
     // ligatures, like Hebrew and Arabic vowel marks, from its MarkToBase and
     // MarkToLigature lookups, and the marks that attach to other marks, like a
@@ -473,16 +485,22 @@ class OTF {
         let baseArray = subTable + uint16(at: subTable + 10)
         var marks = [Int: [Int]]()
         for (m, glyph) in markGlyphs.enumerated() {
+            if gposWork == 0 {
+                break
+            }
+            gposWork -= 1
             let anchor = markArray + uint16(at: markArray + 4 + 4*m)
             marks[glyph] = [
                     uint16(at: markArray + 2 + 4*m), int16(at: anchor + 2), int16(at: anchor + 4)]
         }
         var bases = [Int: [Int]]()
         for (b, glyph) in baseGlyphs.enumerated() {
-            if gposWork < classCount {
+            // A letter is work of its own, whatever the classes of its marks.
+            let work = max(classCount, 1)
+            if gposWork < work {
                 break
             }
-            gposWork -= classCount
+            gposWork -= work
             // The anchor offsets are from the base array, or from the ligature
             // attach table of a ligature.
             var table = baseArray
@@ -519,10 +537,11 @@ class OTF {
         let mark1Array = subTable + uint16(at: subTable + 8)
         let mark2Array = subTable + uint16(at: subTable + 10)
         for (m1, glyph1) in mark1Glyphs.enumerated() {
-            if gposWork < mark2Glyphs.count {
+            let work = max(mark2Glyphs.count, 1)
+            if gposWork < work {
                 break
             }
-            gposWork -= mark2Glyphs.count
+            gposWork -= work
             let markClass = uint16(at: mark1Array + 2 + 4*m1)
             let anchor1 = mark1Array + uint16(at: mark1Array + 4 + 4*m1)
             for (m2, glyph2) in mark2Glyphs.enumerated() {
@@ -566,10 +585,12 @@ class OTF {
                 size = max(size, uint16(at: range + 4) + end - start + 1)
             }
         }
-        // A coverage table lists each glyph once, and a glyph ID is 16 bits.
-        if size > 0x10000 {
-            size = 0x10000
-        }
+        // A coverage table lists each glyph of the font once at most, and the
+        // room its indexes make is counted as work, as each glyph of it is
+        // gone through by the lookup it is of.
+        let limit = numGlyphs > 0 ? numGlyphs : 0x10000     // A glyph ID is 16 bits.
+        size = min(size, limit, gposWork)
+        gposWork -= size
         var glyphs = [Int](repeating: 0, count: size)
         for i in 0..<count {
             if gposWork <= 0 {
@@ -579,16 +600,15 @@ class OTF {
             let start = uint16(at: range)
             let end = uint16(at: range + 2)
             let coverageIndex = uint16(at: range + 4)
-            if end >= start {
-                for glyph in start...end {
+            // The glyphs of the range past the room of the indexes are left out.
+            let last = min(end, start + size - 1 - coverageIndex)
+            if last >= start {
+                for glyph in start...last {
                     if gposWork <= 0 {
                         break
                     }
                     gposWork -= 1
-                    let index = coverageIndex + glyph - start
-                    if index < size {
-                        glyphs[index] = glyph
-                    }
+                    glyphs[coverageIndex + glyph - start] = glyph
                 }
             }
         }

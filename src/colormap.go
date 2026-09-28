@@ -5,6 +5,10 @@
 
 package pdfjet
 
+// svgColorMap is the colors of SVG by their names, which every SVG image reads
+// its colors with.
+var svgColorMap = newColorMap()
+
 // newColorMap Please see:
 // https://www.w3.org/TR/css-color-3/#svg-color
 func newColorMap() map[string]int32 {

@@ -31,6 +31,10 @@ final public class Image implements Drawable {
     protected float w;      // Image width
     /** The height of the image. */
     protected float h;      // Image height
+    // The pixels of the image across and down, which the image object is
+    // written with: a float holds every whole number only up to 2^24.
+    private int pixelWidth;
+    private int pixelHeight;
 
     /** The URI opened when the image is clicked. */
     protected String uri;
@@ -77,10 +81,9 @@ final public class Image implements Drawable {
         InputStream inputStream = new ByteArrayInputStream(bytes);
         byte[] data;
         if (imageType == ImageType.JPG) {
-            JPGImage jpg = new JPGImage(inputStream);
+            JPGImage jpg = new JPGImage(bytes);
             data = jpg.getData();
-            w = jpg.getWidth();
-            h = jpg.getHeight();
+            setPixels(jpg.getWidth(), jpg.getHeight());
             if (jpg.getColorComponents() == 1) {
                 addImage(pdf, data, null, imageType, "DeviceGray", 8);
             } else if (jpg.getColorComponents() == 3) {
@@ -93,8 +96,7 @@ final public class Image implements Drawable {
         } else if (imageType == ImageType.PNG) {
             PNGImage png = new PNGImage(inputStream);
             data = png.getData();
-            w = png.getWidth();
-            h = png.getHeight();
+            setPixels(png.getWidth(), png.getHeight());
             colorKeyMask = png.getColorKeyMask();
             if (png.getColorType() == 0) {
                 addImage(pdf, data, null, imageType, "DeviceGray", png.getBitDepth());
@@ -111,8 +113,7 @@ final public class Image implements Drawable {
         } else if (imageType == ImageType.BMP) {
             BMPImage bmp = new BMPImage(inputStream);
             data = bmp.getData();
-            w = bmp.getWidth();
-            h = bmp.getHeight();
+            setPixels(bmp.getWidth(), bmp.getHeight());
             addImage(pdf, data, bmp.getAlpha(), imageType, "DeviceRGB", 8);
             setPhysicalSize(bmp.getPhysicalWidth(), bmp.getPhysicalHeight());
         }
@@ -136,10 +137,9 @@ final public class Image implements Drawable {
         InputStream inputStream = new ByteArrayInputStream(bytes);
         byte[] data;
         if (imageType == ImageType.JPG) {
-            JPGImage jpg = new JPGImage(inputStream);
+            JPGImage jpg = new JPGImage(bytes);
             data = jpg.getData();
-            w = jpg.getWidth();
-            h = jpg.getHeight();
+            setPixels(jpg.getWidth(), jpg.getHeight());
             if (jpg.getColorComponents() == 1) {
                 addImageToObjects(objects, data, null, imageType, "DeviceGray", 8);
             } else if (jpg.getColorComponents() == 3) {
@@ -152,8 +152,7 @@ final public class Image implements Drawable {
         } else if (imageType == ImageType.PNG) {
             PNGImage png = new PNGImage(inputStream);
             data = png.getData();
-            w = png.getWidth();
-            h = png.getHeight();
+            setPixels(png.getWidth(), png.getHeight());
             colorKeyMask = png.getColorKeyMask();
             if (png.getColorType() == 0) {
                 addImageToObjects(objects, data, null, imageType, "DeviceGray", png.getBitDepth());
@@ -170,8 +169,7 @@ final public class Image implements Drawable {
         } else if (imageType == ImageType.BMP) {
             BMPImage bmp = new BMPImage(inputStream);
             data = bmp.getData();
-            w = bmp.getWidth();
-            h = bmp.getHeight();
+            setPixels(bmp.getWidth(), bmp.getHeight());
             addImageToObjects(objects, data, bmp.getAlpha(), imageType, "DeviceRGB", 8);
             setPhysicalSize(bmp.getPhysicalWidth(), bmp.getPhysicalHeight());
         }
@@ -187,8 +185,9 @@ final public class Image implements Drawable {
      */
     public Image(PDF pdf, PDFobj obj) throws Exception {
         this.pdf = pdf;
-        w = Float.parseFloat(obj.getValue("/Width"));
-        h = Float.parseFloat(obj.getValue("/Height"));
+        setPixels(
+                (int) Double.parseDouble(obj.getValue("/Width")),
+                (int) Double.parseDouble(obj.getValue("/Height")));
         pdf.newObj();
         pdf.append("<<\n");
         pdf.append("/Type /XObject\n");
@@ -197,10 +196,10 @@ final public class Image implements Drawable {
         pdf.append(obj.getValue("/Filter"));
         pdf.append("\n");
         pdf.append("/Width ");
-        pdf.append(w);
+        pdf.append(pixelWidth);
         pdf.append('\n');
         pdf.append("/Height ");
-        pdf.append(h);
+        pdf.append(pixelHeight);
         pdf.append('\n');
         String colorSpace = obj.getValue("/ColorSpace");
         if (!colorSpace.equals("")) {
@@ -233,6 +232,15 @@ final public class Image implements Drawable {
         pdf.endObj();
         pdf.images.add(this);
         objNumber = pdf.getObjNumber();
+    }
+
+    // Sets the pixels of the image across and down, which it is drawn at, a
+    // pixel to a point, unless the file asks for another size.
+    private void setPixels(int width, int height) {
+        this.pixelWidth = width;
+        this.pixelHeight = height;
+        this.w = width;
+        this.h = height;
     }
 
     // Draws the image at the size the file asks for, when it asks for one: the
@@ -478,12 +486,14 @@ final public class Image implements Drawable {
 
         page.endLink(link);
         if (uri != null || key != null) {
+            // The link covers the image as it is drawn, turned or not.
+            boolean turned = degrees == 90 || degrees == 270;
             Annotation linkAnnotation = new Annotation(
                     Annotation.Link,
                     x,
                     y,
-                    x + w,
-                    y + h,
+                    x + (turned ? h : w),
+                    y + (turned ? w : h),
                     null,   // Vertices
                     null,   // Fill Color
                     0f,     // Opacity
@@ -532,10 +542,10 @@ final public class Image implements Drawable {
         pdf.append("/Subtype /Image\n");
         pdf.append("/Filter /FlateDecode\n");
         pdf.append("/Width ");
-        pdf.append((int) w);
+        pdf.append(pixelWidth);
         pdf.append('\n');
         pdf.append("/Height ");
-        pdf.append((int) h);
+        pdf.append(pixelHeight);
         pdf.append('\n');
         pdf.append("/ColorSpace /");
         pdf.append(colorSpace);
@@ -566,6 +576,7 @@ final public class Image implements Drawable {
             ImageType imageType,
             String colorSpace,
             int bitsPerComponent) throws Exception {
+        checkPDFA(pdf, alpha, colorSpace, bitsPerComponent);
         if (alpha != null) {
             addSoftMask(pdf, alpha, "DeviceGray", bitsPerComponent);
         }
@@ -591,10 +602,10 @@ final public class Image implements Drawable {
             }
         }
         pdf.append("/Width ");
-        pdf.append((int) w);
+        pdf.append(pixelWidth);
         pdf.append('\n');
         pdf.append("/Height ");
-        pdf.append((int) h);
+        pdf.append(pixelHeight);
         pdf.append('\n');
         pdf.append("/ColorSpace /");
         pdf.append(colorSpace);
@@ -623,6 +634,31 @@ final public class Image implements Drawable {
         objNumber = pdf.getObjNumber();
     }
 
+    // Fails the document when it is PDF/A and cannot hold the image. Its output
+    // intent is sRGB, an RGB profile, so its images are gray or RGB and not
+    // CMYK, as ISO 19005 asks of a device color space. PDF/A-1 is PDF 1.4,
+    // which has no soft masks, and 8 bits per component at most. Any other
+    // document holds any image.
+    private static void checkPDFA(PDF pdf, byte[] alpha, String colorSpace, int bitsPerComponent) {
+        Compliance level = pdf.getCompliance();
+        if (level == Compliance.PDF_1_7 || level == Compliance.PDF_UA_1) {
+            return;
+        }
+        boolean pdfA1 = level == Compliance.PDF_A_1A || level == Compliance.PDF_A_1B;
+        if (colorSpace.equals("DeviceCMYK")) {
+            pdf.fail(new IllegalStateException("A document of " + level + " cannot hold a CMYK image: "
+                    + "its output intent is sRGB, so its images are gray or RGB."));
+        }
+        if (pdfA1 && alpha != null) {
+            pdf.fail(new IllegalStateException("A document of " + level + " cannot hold an image with transparency: "
+                    + "PDF/A-1 has no soft masks, so its images are opaque."));
+        }
+        if (pdfA1 && bitsPerComponent > 8) {
+            pdf.fail(new IllegalStateException("A document of " + level + " cannot hold an image of "
+                    + bitsPerComponent + " bits per component: PDF/A-1 has 8 at most."));
+        }
+    }
+
     private void addSoftMask(
             List<PDFobj> objects,
             byte[] data,
@@ -637,9 +673,9 @@ final public class Image implements Drawable {
         obj.dict.add("/Filter");
         obj.dict.add("/FlateDecode");
         obj.dict.add("/Width");
-        obj.dict.add(String.valueOf((int) w));
+        obj.dict.add(String.valueOf(pixelWidth));
         obj.dict.add("/Height");
-        obj.dict.add(String.valueOf((int) h));
+        obj.dict.add(String.valueOf(pixelHeight));
         obj.dict.add("/ColorSpace");
         obj.dict.add("/" + colorSpace);
         obj.dict.add("/BitsPerComponent");
@@ -690,9 +726,9 @@ final public class Image implements Drawable {
             }
         }
         obj.dict.add("/Width");
-        obj.dict.add(String.valueOf((int) w));
+        obj.dict.add(String.valueOf(pixelWidth));
         obj.dict.add("/Height");
-        obj.dict.add(String.valueOf((int) h));
+        obj.dict.add(String.valueOf(pixelHeight));
         obj.dict.add("/ColorSpace");
         obj.dict.add("/" + colorSpace);
         obj.dict.add("/BitsPerComponent");

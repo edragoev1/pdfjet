@@ -13,6 +13,7 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/content"
 	"github.com/edragoev1/pdfjet/v9/src/internal/device"
 	"github.com/edragoev1/pdfjet/v9/src/internal/imagetype"
@@ -32,6 +33,10 @@ type Image struct {
 	y              float32
 	w              float32 // Image width
 	h              float32 // Image height
+	// The pixels of the image across and down, which the image object is
+	// written with: a float32 holds every whole number only up to 2^24.
+	pixelWidth     int
+	pixelHeight    int
 	uri            string
 	key            string
 	degrees        int
@@ -71,13 +76,12 @@ func NewImage(pdf *PDF, reader io.Reader) *Image {
 
 	switch imageType {
 	case imagetype.JPG:
-		jpg, err := newJPGImage(reader)
+		jpg, err := newJPGImageFromBytes(buf)
 		if err != nil {
 			panic(err)
 		}
 		data := jpg.getData()
-		image.w = jpg.getWidth()
-		image.h = jpg.getHeight()
+		image.setPixels(int(jpg.width), int(jpg.height))
 		if jpg.getColorComponents() == 1 {
 			image.addImageToPDF(pdf, data, nil, imageType, device.Gray, 8)
 		} else if jpg.getColorComponents() == 3 {
@@ -90,8 +94,7 @@ func NewImage(pdf *PDF, reader io.Reader) *Image {
 	case imagetype.PNG:
 		png := newPNGImage(reader)
 		data := png.GetData()
-		image.w = png.GetWidth()
-		image.h = png.GetHeight()
+		image.setPixels(png.w, png.h)
 		image.colorKeyMask = png.GetColorKeyMask()
 		if png.GetColorType() == 0 {
 			image.addImageToPDF(pdf, data, nil, imageType, device.Gray, png.GetBitDepth())
@@ -108,8 +111,7 @@ func NewImage(pdf *PDF, reader io.Reader) *Image {
 	case imagetype.BMP:
 		bmp := newBMPImage(reader)
 		data := bmp.getData()
-		image.w = bmp.getWidth()
-		image.h = bmp.getHeight()
+		image.setPixels(bmp.w, bmp.h)
 		image.addImageToPDF(pdf, data, bmp.getAlpha(), imageType, device.RGB, 8)
 		image.setPhysicalSize(bmp.physicalWidth, bmp.physicalHeight)
 	}
@@ -128,13 +130,12 @@ func NewImageForObjects(objects *[]*PDFobj, reader io.Reader) *Image {
 
 	switch imageType {
 	case imagetype.JPG:
-		jpg, err := newJPGImage(reader)
+		jpg, err := newJPGImageFromBytes(buf)
 		if err != nil {
 			panic(err)
 		}
 		data := jpg.getData()
-		image.w = jpg.getWidth()
-		image.h = jpg.getHeight()
+		image.setPixels(int(jpg.width), int(jpg.height))
 		if jpg.getColorComponents() == 1 {
 			image.addImageToObjects(objects, data, nil, imageType, device.Gray, 8)
 		} else if jpg.getColorComponents() == 3 {
@@ -147,8 +148,7 @@ func NewImageForObjects(objects *[]*PDFobj, reader io.Reader) *Image {
 	case imagetype.PNG:
 		png := newPNGImage(reader)
 		data := png.GetData()
-		image.w = png.GetWidth()
-		image.h = png.GetHeight()
+		image.setPixels(png.w, png.h)
 		image.colorKeyMask = png.GetColorKeyMask()
 		if png.GetColorType() == 0 {
 			image.addImageToObjects(objects, data, nil, imageType, device.Gray, png.GetBitDepth())
@@ -165,8 +165,7 @@ func NewImageForObjects(objects *[]*PDFobj, reader io.Reader) *Image {
 	case imagetype.BMP:
 		bmp := newBMPImage(reader)
 		data := bmp.getData()
-		image.w = bmp.getWidth()
-		image.h = bmp.getHeight()
+		image.setPixels(bmp.w, bmp.h)
 		image.addImageToObjects(objects, data, bmp.getAlpha(), imageType, device.RGB, 8)
 		image.setPhysicalSize(bmp.physicalWidth, bmp.physicalHeight)
 	}
@@ -179,17 +178,15 @@ func NewImageFromPDFobj(pdf *PDF, obj *PDFobj) *Image {
 	image := new(Image)
 	image.pdf = pdf
 
-	val, err := strconv.ParseFloat(obj.GetValue("/Width"), 32)
+	width, err := strconv.ParseFloat(obj.GetValue("/Width"), 64)
 	if err != nil {
 		panic(err)
 	}
-	image.w = float32(val)
-
-	val, err = strconv.ParseFloat(obj.GetValue("/Height"), 32)
+	height, err := strconv.ParseFloat(obj.GetValue("/Height"), 64)
 	if err != nil {
 		panic(err)
 	}
-	image.h = float32(val)
+	image.setPixels(int(width), int(height))
 
 	pdf.newObj()
 	pdf.appendString("<<\n")
@@ -199,10 +196,10 @@ func NewImageFromPDFobj(pdf *PDF, obj *PDFobj) *Image {
 	pdf.appendString(obj.GetValue("/Filter"))
 	pdf.appendString("\n")
 	pdf.appendString("/Width ")
-	pdf.appendFloat32(image.w)
+	pdf.appendInteger(image.pixelWidth)
 	pdf.appendString("\n")
 	pdf.appendString("/Height ")
-	pdf.appendFloat32(image.h)
+	pdf.appendInteger(image.pixelHeight)
 	pdf.appendString("\n")
 	colorSpace := obj.GetValue("/ColorSpace")
 	if colorSpace != "" {
@@ -237,6 +234,15 @@ func NewImageFromPDFobj(pdf *PDF, obj *PDFobj) *Image {
 	image.objNumber = pdf.getObjNumber()
 
 	return image
+}
+
+// setPixels sets the pixels of the image across and down, which it is drawn
+// at, a pixel to a point, unless the file asks for another size.
+func (image *Image) setPixels(width, height int) {
+	image.pixelWidth = width
+	image.pixelHeight = height
+	image.w = float32(width)
+	image.h = float32(height)
 }
 
 // setPhysicalSize draws the image at the size the file asks for, when it asks
@@ -442,12 +448,17 @@ func (image *Image) DrawOn(page *Page) [2]float32 {
 
 	page.endLink(link)
 	if image.uri != "" || image.key != "" {
+		// The link covers the image as it is drawn, turned or not.
+		w, h := image.w, image.h
+		if image.degrees == 90 || image.degrees == 270 {
+			w, h = h, w
+		}
 		page.addAnnotation(&annotationObject{
 			annotationType: annotationLink,
 			x1:             image.x,
 			y1:             image.y,
-			x2:             image.x + image.w,
-			y2:             image.y + image.h,
+			x2:             image.x + w,
+			y2:             image.y + h,
 			vertices:       nil,
 			opacity:        0.0,
 			title:          "",
@@ -485,10 +496,10 @@ func (image *Image) addSoftMask(pdf *PDF, data []byte, colorSpace string, bitsPe
 	pdf.appendString("/Subtype /Image\n")
 	pdf.appendString("/Filter /FlateDecode\n")
 	pdf.appendString("/Width ")
-	pdf.appendInteger(int(image.w))
+	pdf.appendInteger(image.pixelWidth)
 	pdf.appendString("\n")
 	pdf.appendString("/Height ")
-	pdf.appendInteger(int(image.h))
+	pdf.appendInteger(image.pixelHeight)
 	pdf.appendString("\n")
 	pdf.appendString("/ColorSpace /")
 	pdf.appendString(colorSpace)
@@ -519,6 +530,9 @@ func (image *Image) addImageToPDF(
 	imageType imagetype.ImageType,
 	colorSpace string,
 	bitsPerComponent int) {
+	if !image.isPDFA(pdf, alpha, colorSpace, bitsPerComponent) {
+		return
+	}
 	if alpha != nil {
 		image.addSoftMask(pdf, alpha, device.Gray, bitsPerComponent)
 	}
@@ -547,10 +561,10 @@ func (image *Image) addImageToPDF(
 		}
 	}
 	pdf.appendString("/Width ")
-	pdf.appendInteger(int(image.w))
+	pdf.appendInteger(image.pixelWidth)
 	pdf.appendString("\n")
 	pdf.appendString("/Height ")
-	pdf.appendInteger(int(image.h))
+	pdf.appendInteger(image.pixelHeight)
 	pdf.appendString("\n")
 	pdf.appendString("/ColorSpace /")
 	pdf.appendString(colorSpace)
@@ -579,6 +593,35 @@ func (image *Image) addImageToPDF(
 	image.objNumber = pdf.getObjNumber()
 }
 
+// isPDFA reports whether a PDF/A document can hold the image, and fails the
+// document when it cannot. Its output intent is sRGB, an RGB profile, so its
+// images are gray or RGB and not CMYK, as ISO 19005 asks of a device color
+// space. PDF/A-1 is PDF 1.4, which has no soft masks, and 8 bits per
+// component at most. Any other document holds any image.
+func (image *Image) isPDFA(pdf *PDF, alpha []byte, colorSpace string, bitsPerComponent int) bool {
+	level := pdf.compliance
+	if level == compliance.PDF_1_7 || level == compliance.PDF_UA_1 {
+		return true
+	}
+	pdfA1 := level == compliance.PDF_A_1A || level == compliance.PDF_A_1B
+	if colorSpace == device.CMYK {
+		pdf.fail("A document of " + level.String() + " cannot hold a CMYK image: " +
+			"its output intent is sRGB, so its images are gray or RGB.")
+		return false
+	}
+	if pdfA1 && alpha != nil {
+		pdf.fail("A document of " + level.String() + " cannot hold an image with transparency: " +
+			"PDF/A-1 has no soft masks, so its images are opaque.")
+		return false
+	}
+	if pdfA1 && bitsPerComponent > 8 {
+		pdf.fail("A document of " + level.String() + " cannot hold an image of " +
+			strconv.Itoa(bitsPerComponent) + " bits per component: PDF/A-1 has 8 at most.")
+		return false
+	}
+	return true
+}
+
 func (image *Image) addSoftMaskToObjects(
 	objects *[]*PDFobj,
 	data []byte,
@@ -593,9 +636,9 @@ func (image *Image) addSoftMaskToObjects(
 	obj.dict = append(obj.dict, "/Filter")
 	obj.dict = append(obj.dict, "/FlateDecode")
 	obj.dict = append(obj.dict, "/Width")
-	obj.dict = append(obj.dict, strconv.Itoa(int(image.w)))
+	obj.dict = append(obj.dict, strconv.Itoa(image.pixelWidth))
 	obj.dict = append(obj.dict, "/Height")
-	obj.dict = append(obj.dict, strconv.Itoa(int(image.h)))
+	obj.dict = append(obj.dict, strconv.Itoa(image.pixelHeight))
 	obj.dict = append(obj.dict, "/ColorSpace")
 	obj.dict = append(obj.dict, "/"+colorSpace)
 	obj.dict = append(obj.dict, "/BitsPerComponent")
@@ -647,9 +690,9 @@ func (image *Image) addImageToObjects(
 		}
 	}
 	obj.dict = append(obj.dict, "/Width")
-	obj.dict = append(obj.dict, strconv.Itoa(int(image.w)))
+	obj.dict = append(obj.dict, strconv.Itoa(image.pixelWidth))
 	obj.dict = append(obj.dict, "/Height")
-	obj.dict = append(obj.dict, strconv.Itoa(int(image.h)))
+	obj.dict = append(obj.dict, strconv.Itoa(image.pixelHeight))
 	obj.dict = append(obj.dict, "/ColorSpace")
 	obj.dict = append(obj.dict, "/"+colorSpace)
 	obj.dict = append(obj.dict, "/BitsPerComponent")

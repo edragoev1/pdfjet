@@ -88,8 +88,13 @@ class JPGImage {
     private int yDensity;
     byte[] data;
 
-    public JPGImage(Stream stream) {
-        data = Content.GetFromStream(stream);
+    public JPGImage(Stream stream) : this(Content.GetFromStream(stream)) {
+    }
+
+    // Reads the image from the bytes of the file, which it keeps as they are,
+    // to embed.
+    internal JPGImage(byte[] data) {
+        this.data = data;
         ReadJPGImage(new MemoryStream(data));
     }
 
@@ -142,9 +147,6 @@ class JPGImage {
                 // Note that marker codes 0xC4, 0xC8, 0xCC are not,
                 // and must not be treated as SOFn. C4 in particular
                 // is actually DHT.
-                case M_SOF0:    // Baseline
-                case M_SOF1:    // Extended sequential, Huffman
-                case M_SOF2:    // Progressive, Huffman
                 case M_SOF3:    // Lossless, Huffman
                 case M_SOF5:    // Differential sequential, Huffman
                 case M_SOF6:    // Differential progressive, Huffman
@@ -155,6 +157,15 @@ class JPGImage {
                 case M_SOF13:   // Differential sequential, arithmetic
                 case M_SOF14:   // Differential progressive, arithmetic
                 case M_SOF15:   // Differential lossless, arithmetic
+                // The DCTDecode filter of a PDF reader decodes the sequential
+                // and the progressive JPEG of Huffman coding, and not the
+                // lossless, the hierarchical or the arithmetic coded one.
+                throw new IOException("Error: The JPEG is lossless, hierarchical or arithmetic coded (SOF"
+                        + (ch - M_SOF0) + "), which a PDF reader cannot decode.");
+
+                case M_SOF0:    // Baseline
+                case M_SOF1:    // Extended sequential, Huffman
+                case M_SOF2:    // Progressive, Huffman
                 // The length of the frame header, then the sample precision:
                 // a PDF image stream of DCTDecode data delivers eight bits per
                 // color component, so a JPEG of another precision, a 12-bit one

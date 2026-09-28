@@ -85,7 +85,7 @@ class OpenTypeFont {
         }
         pdf.append("/Filter /FlateDecode\n")
 
-        let compressed = pdf.encrypted(otf.dos)
+        let compressed = pdf.encrypted(otf.compress())
         pdf.append("/Length ")
         pdf.append(compressed.count)
         pdf.append(Token.newline)

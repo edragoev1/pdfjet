@@ -475,6 +475,38 @@ struct SVGState {
     }
 }
 
+/// The rules of the <style> elements of an SVG file, in their order, and where
+/// the rules of each class are among them, so that an element finds the rules
+/// of its classes without going through all of them. A class is its bytes, as
+/// SVGState.equal compares names.
+struct SVGStyleSheet {
+    private var rules = [SVGRule]()
+    private var byClass = [[UInt8]: [Int]]()
+
+    /// Adds the rules of a <style> element after those before it.
+    mutating func add(_ rules: [SVGRule]) {
+        for rule in rules {
+            byClass[Array(rule.name.utf8), default: []].append(self.rules.count)
+            self.rules.append(rule)
+        }
+    }
+
+    /// Returns the rules for any of the classes, in the order of the style
+    /// sheet, each rule once.
+    func forClasses(_ classes: [String]) -> [SVGRule] {
+        var indexes = [Int]()
+        var seen = Set<[UInt8]>()
+        for name in classes {
+            let key = Array(name.utf8)
+            if !seen.insert(key).inserted {
+                continue    // A class named twice has its rules once.
+            }
+            indexes.append(contentsOf: byClass[key] ?? [])
+        }
+        return indexes.sorted().map { rules[$0] }
+    }
+}
+
 /// A rule of the style sheet of an SVG file for one class: .name followed by
 /// its declarations. Selectors of other kinds are left out.
 struct SVGRule {
@@ -484,14 +516,22 @@ struct SVGRule {
     /// Returns the rules of the text of a <style> element that are for a
     /// class, in the order of the text.
     static func parseStyleSheet(_ text: String) -> [SVGRule] {
-        // Comments are left out first; they may hold braces.
-        var text = Array(text.unicodeScalars)
-        while let start = index(text, "/*", 0) {
-            guard let end = index(text, "*/", start + 2) else {
-                text = Array(text[..<start])
+        // Comments are left out first; they may hold braces. A comment that
+        // is not closed runs to the end of the text.
+        let scalars = Array(text.unicodeScalars)
+        var text = [Unicode.Scalar]()
+        var i = 0
+        while true {
+            guard let start = index(scalars, "/*", i) else {
+                text.append(contentsOf: scalars[i...])
                 break
             }
-            text = Array(text[..<start]) + [" "] + Array(text[(end + 2)...])
+            text.append(contentsOf: scalars[i..<start])
+            guard let end = index(scalars, "*/", start + 2) else {
+                break
+            }
+            text.append(" ")
+            i = end + 2
         }
         var rules = [SVGRule]()
         for block in text.split(separator: "}", omittingEmptySubsequences: false) {

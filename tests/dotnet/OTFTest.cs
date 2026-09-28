@@ -142,9 +142,10 @@ public class OTFTest {
 
     [Fact]
     public void AFontWithoutTheTablesItNeedsNoneOfStillDraws() {
-        // Without OS/2 the font says it holds no characters and maps none of
-        // them; without post it has no underline; without GPOS its marks are
-        // not placed. None of the three stops it from drawing.
+        // Without OS/2 the font does not say which characters it holds, and
+        // every character of its character map is read; without post it has
+        // no underline; without GPOS its marks are not placed. None of the
+        // three stops it from drawing.
         byte[] font = FontBytes(THAI);
         foreach (string name in new string[] {"OS/2", "post", "GPOS"}) {
             Draws(Without(font, name));

@@ -9,6 +9,8 @@ import Foundation
 /// A single path operation: a command and its points.
 class PathOp {
     var cmd: Character
+    // The SVG command it was made from, in upper case, as a smooth curve needs it
+    var from: Character = " "
     var x1q: Float = 0.0    // Original quadratic control
     var y1q: Float = 0.0    // point coordinates
 

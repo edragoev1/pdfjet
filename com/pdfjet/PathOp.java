@@ -10,6 +10,7 @@ import java.util.*;
 
 class PathOp {
     char cmd;
+    char from;  // The SVG command it was made from, in upper case, as a smooth curve needs it
 
     float x1q;  // Original quadratic control
     float y1q;  // point coordinates

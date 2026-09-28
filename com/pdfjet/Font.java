@@ -360,6 +360,8 @@ final public class Font {
 
     /**
      * Constructor for OpenType, TrueType and .otf.stream and .ttf.stream fonts.
+     * A file ending in .stream is read as a stream font; the format of any
+     * other is told from its first bytes, as the constructor of a stream does.
      *
      * @param pdf      the pdf object.
      * @param fontPath the font path.
@@ -367,11 +369,12 @@ final public class Font {
      */
     public Font(PDF pdf, String fontPath) throws Exception {
         this.pdf = pdf;
-        InputStream inputStream = new FileInputStream(fontPath);
-        if (fontPath.endsWith(".stream")) {
-            FontStream1.register(pdf, this, inputStream);
-        } else {
-            OpenTypeFont.register(pdf, this, inputStream);
+        try (InputStream inputStream = new BufferedInputStream(new FileInputStream(fontPath))) {
+            if (fontPath.endsWith(".stream") || !isOpenTypeFont(inputStream)) {
+                FontStream1.register(pdf, this, inputStream);
+            } else {
+                OpenTypeFont.register(pdf, this, inputStream);
+            }
         }
         setSize(size);
     }
@@ -713,7 +716,9 @@ final public class Font {
 
     /**
      * Returns the number of characters from the specified string that will fit
-     * within the specified width.
+     * within the specified width. They are counted in the chars of the string,
+     * so that a character outside the Basic Multilingual Plane is two, and
+     * str.substring(0, n) is the text that fits.
      *
      * @param str   the specified string.
      * @param width the specified width.
@@ -721,6 +726,10 @@ final public class Font {
      * @return the number of characters that will fit.
      */
     public int getFitChars(String str, float width) {
+        // Text of no size has no width, and all of it fits in any width.
+        if (size <= 0f) {
+            return (width < 0f) ? 0 : str.length();
+        }
         float w = width * unitsPerEm / size;
 
         if (isCJK) {

@@ -105,7 +105,7 @@ import Testing
         for precision: UInt8 in [0, 12, 16] {
             var jpeg = jpegOf([], 3)
             jpeg[6] = precision     // After the SOI marker, the SOF0 marker and the length
-            #expect(throws: JPGImageError.unsupportedSamplePrecision) {
+            #expect(throws: JPGImageError.unsupportedSamplePrecision(Int(precision))) {
                 try JPGImage(InputStream(data: Data(jpeg)))
             }
         }
@@ -120,7 +120,7 @@ import Testing
         for wrong: UInt8 in [17 - 3, 17 + 3] {
             var jpeg = jpegOf([], 3)
             jpeg[5] = wrong     // The low byte of the length of the frame header
-            #expect(throws: JPGImageError.bogusFrameHeaderLength) {
+            #expect(throws: JPGImageError.bogusFrameHeaderLength(Int(wrong), 17, 3)) {
                 try JPGImage(InputStream(data: Data(jpeg)))
             }
         }

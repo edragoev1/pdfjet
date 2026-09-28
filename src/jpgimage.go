@@ -98,8 +98,14 @@ const (
 
 // newJPGImage is the constructor.
 func newJPGImage(reader io.Reader) (*jpgImage, error) {
+	return newJPGImageFromBytes(content.GetFromStream(reader))
+}
+
+// newJPGImageFromBytes reads the image from the bytes of the file, which it
+// keeps as they are, to embed.
+func newJPGImageFromBytes(data []byte) (*jpgImage, error) {
 	image := new(jpgImage)
-	image.data = content.GetFromStream(reader)
+	image.data = data
 	return image.readJPGImage(image.data)
 }
 
@@ -158,10 +164,7 @@ func (image *jpgImage) readJPGImage(buffer []byte) (*jpgImage, error) {
 		// and must not be treated as SOFn. C4 in particular
 		// is actually DHT.
 		switch ch {
-		case mSOF0, // Baseline
-			mSOF1,  // Extended sequential, Huffman
-			mSOF2,  // Progressive, Huffman
-			mSOF3,  // Lossless, Huffman
+		case mSOF3, // Lossless, Huffman
 			mSOF5,  // Differential sequential, Huffman
 			mSOF6,  // Differential progressive, Huffman
 			mSOF7,  // Differential lossless, Huffman
@@ -171,6 +174,16 @@ func (image *jpgImage) readJPGImage(buffer []byte) (*jpgImage, error) {
 			mSOF13, // Differential sequential, arithmetic
 			mSOF14, // Differential progressive, arithmetic
 			mSOF15: // Differential lossless, arithmetic
+			// The DCTDecode filter of a PDF reader decodes the sequential
+			// and the progressive JPEG of Huffman coding, and not the
+			// lossless, the hierarchical or the arithmetic coded one.
+			return nil, fmt.Errorf(
+				"Error: The JPEG is lossless, hierarchical or arithmetic coded (SOF%d), "+
+					"which a PDF reader cannot decode.", ch-mSOF0)
+
+		case mSOF0, // Baseline
+			mSOF1, // Extended sequential, Huffman
+			mSOF2: // Progressive, Huffman
 
 			// The length of the frame header, then the sample precision: a
 			// PDF image stream of DCTDecode data delivers eight bits per

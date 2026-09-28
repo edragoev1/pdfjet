@@ -22,6 +22,10 @@ public class Image : Drawable {
     var y: Float = 0.0
     var w: Float?           // Image width
     var h: Float?           // Image height
+    // The pixels of the image across and down, which the image object is
+    // written with: a Float holds every whole number only up to 2^24.
+    private var pixelWidth = 0
+    private var pixelHeight = 0
 
     var uri: String?
     var key: String?
@@ -77,9 +81,8 @@ public class Image : Drawable {
         let imageType = try Image.typeOf(bytes)
         let stream = InputStream(data: Data(bytes))
         if imageType == ImageType.JPG {
-            let jpg = try JPGImage(stream)
-            w = Float(jpg.getWidth())
-            h = Float(jpg.getHeight())
+            let jpg = try JPGImage(bytes)
+            setPixels(Int(jpg.getWidth()), Int(jpg.getHeight()))
             if jpg.getColorComponents() == 1 {
                 addImage(pdf, jpg.getData(), [UInt8](), imageType, "DeviceGray", 8)
             } else if jpg.getColorComponents() == 3 {
@@ -91,8 +94,7 @@ public class Image : Drawable {
             setPhysicalSize(jpg.getPhysicalWidth(), jpg.getPhysicalHeight())
         } else if imageType == ImageType.PNG {
             let png = try PNGImage(stream)
-            w = Float(png.getWidth())
-            h = Float(png.getHeight())
+            setPixels(png.getWidth(), png.getHeight())
             colorKeyMask = png.getColorKeyMask()
             if png.getColorType() == 0 {
                 addImage(pdf, png.getData(), [UInt8](), imageType, "DeviceGray", png.getBitDepth())
@@ -108,8 +110,7 @@ public class Image : Drawable {
             setPhysicalSize(png.getPhysicalWidth(), png.getPhysicalHeight())
         } else if imageType == ImageType.BMP {
             let bmp = try BMPImage(stream)
-            w = Float(bmp.getWidth())
-            h = Float(bmp.getHeight())
+            setPixels(bmp.getWidth(), bmp.getHeight())
             addImage(pdf, bmp.getData(), bmp.getAlpha() ?? [UInt8](), imageType, "DeviceRGB", 8)
             setPhysicalSize(bmp.getPhysicalWidth(), bmp.getPhysicalHeight())
         }
@@ -131,10 +132,9 @@ public class Image : Drawable {
         var data: [UInt8]
         var alpha = [UInt8]()
         if imageType == ImageType.JPG {
-            let jpg = try JPGImage(stream)
+            let jpg = try JPGImage(bytes)
             data = jpg.getData()
-            w = Float(jpg.getWidth())
-            h = Float(jpg.getHeight())
+            setPixels(Int(jpg.getWidth()), Int(jpg.getHeight()))
             if jpg.getColorComponents() == 1 {
                 addImageToObjects(&objects, &data, &alpha, imageType, "DeviceGray", 8)
             } else if jpg.getColorComponents() == 3 {
@@ -149,8 +149,7 @@ public class Image : Drawable {
             data = png.getData()
             alpha = png.getAlpha() ?? [UInt8]()
             var noAlpha = [UInt8]()
-            w = Float(png.getWidth())
-            h = Float(png.getHeight())
+            setPixels(png.getWidth(), png.getHeight())
             colorKeyMask = png.getColorKeyMask()
             if png.getColorType() == 0 {
                 addImageToObjects(&objects, &data, &noAlpha, imageType, "DeviceGray", png.getBitDepth())
@@ -168,8 +167,7 @@ public class Image : Drawable {
             let bmp = try BMPImage(stream)
             data = bmp.getData()
             alpha = bmp.getAlpha() ?? [UInt8]()
-            w = Float(bmp.getWidth())
-            h = Float(bmp.getHeight())
+            setPixels(bmp.getWidth(), bmp.getHeight())
             addImageToObjects(&objects, &data, &alpha, imageType, "DeviceRGB", 8)
             setPhysicalSize(bmp.getPhysicalWidth(), bmp.getPhysicalHeight())
         }
@@ -178,8 +176,7 @@ public class Image : Drawable {
     /// Creates an image from an image object read from an existing PDF.
     public init(_ pdf: PDF, _ obj: PDFobj) throws {
         self.pdfIdentity = pdf.identity
-        w = Float(obj.getValue("/Width"))
-        h = Float(obj.getValue("/Height"))
+        setPixels(Int(Double(obj.getValue("/Width")) ?? 0), Int(Double(obj.getValue("/Height")) ?? 0))
         pdf.newObj()
         pdf.append(Token.beginDictionary)
         pdf.append("/Type /XObject\n")
@@ -188,10 +185,10 @@ public class Image : Drawable {
         pdf.append(obj.getValue("/Filter"))
         pdf.append("\n")
         pdf.append("/Width ")
-        pdf.append(w!)
+        pdf.append(pixelWidth)
         pdf.append("\n")
         pdf.append("/Height ")
-        pdf.append(h!)
+        pdf.append(pixelHeight)
         pdf.append("\n")
         let colorSpace = obj.getValue("/ColorSpace")
         if colorSpace != "" {
@@ -224,6 +221,15 @@ public class Image : Drawable {
         pdf.endObj()
         pdf.images.append(self)
         objNumber = pdf.getObjNumber()
+    }
+
+    // Sets the pixels of the image across and down, which it is drawn at, a
+    // pixel to a point, unless the file asks for another size.
+    private func setPixels(_ width: Int, _ height: Int) {
+        pixelWidth = width
+        pixelHeight = height
+        w = Float(width)
+        h = Float(height)
     }
 
     ///
@@ -377,6 +383,9 @@ public class Image : Drawable {
         if w! == 0.0 || h! == 0.0 {
             return [x + w!, y + h!]     // A zero size image paints nothing.
         }
+        guard let objNumber = objNumber else {
+            return [x + w!, y + h!]     // The PDF refused the image, and has failed.
+        }
         // A linked image is a Figure in the Link its annotation joins
         var link: StructElement?
         if uri != nil || key != nil {
@@ -447,7 +456,7 @@ public class Image : Drawable {
         }
 
         page.append("/Im")
-        page.append(objNumber!)
+        page.append(objNumber)
         page.append(" Do\n")
 
         page.restoreGraphicsState()
@@ -462,12 +471,14 @@ public class Image : Drawable {
 
         page.endLink(link)
         if uri != nil || key != nil {
+            // The link covers the image as it is drawn, turned or not.
+            let turned = degrees == 90 || degrees == 270
             page.addAnnotation(Annotation(
                     Annotation.Link,
                     x,
                     y,
-                    x + w!,
-                    y + h!,
+                    x + (turned ? h! : w!),
+                    y + (turned ? w! : h!),
                     nil,    // Vertices
                     nil,    // Fill Color
                     0.0,    // Opacity
@@ -514,10 +525,10 @@ public class Image : Drawable {
         pdf.append("/Subtype /Image\n")
         pdf.append("/Filter /FlateDecode\n")
         pdf.append("/Width ")
-        pdf.append(Int(w!))
+        pdf.append(pixelWidth)
         pdf.append(Token.newline)
         pdf.append("/Height ")
-        pdf.append(Int(h!))
+        pdf.append(pixelHeight)
         pdf.append(Token.newline)
         pdf.append("/ColorSpace /")
         pdf.append(colorSpace)
@@ -544,6 +555,9 @@ public class Image : Drawable {
             _ imageType: ImageType,
             _ colorSpace: String,
             _ bitsPerComponent: Int)  {
+        if !isPDFA(pdf, alpha, colorSpace, bitsPerComponent) {
+            return
+        }
         if alpha.count > 0 {
             addSoftMask(pdf, alpha, "DeviceGray", bitsPerComponent)
         }
@@ -565,10 +579,10 @@ public class Image : Drawable {
             }
         }
         pdf.append("/Width ")
-        pdf.append(Int(w!))
+        pdf.append(pixelWidth)
         pdf.append(Token.newline)
         pdf.append("/Height ")
-        pdf.append(Int(h!))
+        pdf.append(pixelHeight)
         pdf.append(Token.newline)
         pdf.append("/ColorSpace /")
         pdf.append(colorSpace)
@@ -591,6 +605,39 @@ public class Image : Drawable {
         pdf.endObj()
         pdf.images.append(self)
         self.objNumber = pdf.getObjNumber()
+    }
+
+    // Returns true if a PDF/A document can hold the image, and fails the
+    // document when it cannot. Its output intent is sRGB, an RGB profile, so
+    // its images are gray or RGB and not CMYK, as ISO 19005 asks of a device
+    // color space. PDF/A-1 is PDF 1.4, which has no soft masks, and 8 bits per
+    // component at most. Any other document holds any image.
+    private func isPDFA(
+            _ pdf: PDF,
+            _ alpha: [UInt8],
+            _ colorSpace: String,
+            _ bitsPerComponent: Int) -> Bool {
+        let level = pdf.compliance
+        if level == Compliance.PDF_1_7 || level == Compliance.PDF_UA_1 {
+            return true
+        }
+        let pdfA1 = level == Compliance.PDF_A_1A || level == Compliance.PDF_A_1B
+        if colorSpace == "DeviceCMYK" {
+            pdf.fail("A document of \(level) cannot hold a CMYK image: "
+                    + "its output intent is sRGB, so its images are gray or RGB.")
+            return false
+        }
+        if pdfA1 && !alpha.isEmpty {
+            pdf.fail("A document of \(level) cannot hold an image with transparency: "
+                    + "PDF/A-1 has no soft masks, so its images are opaque.")
+            return false
+        }
+        if pdfA1 && bitsPerComponent > 8 {
+            pdf.fail("A document of \(level) cannot hold an image of "
+                    + "\(bitsPerComponent) bits per component: PDF/A-1 has 8 at most.")
+            return false
+        }
+        return true
     }
 
     private func getUInt8(_ stream: InputStream) throws -> UInt8? {
@@ -627,9 +674,9 @@ public class Image : Drawable {
         obj.dict.append("/Filter")
         obj.dict.append("/FlateDecode")
         obj.dict.append("/Width")
-        obj.dict.append(String(Int(w!)))
+        obj.dict.append(String(pixelWidth))
         obj.dict.append("/Height")
-        obj.dict.append(String(Int(h!)))
+        obj.dict.append(String(pixelHeight))
         obj.dict.append("/ColorSpace")
         obj.dict.append("/" + colorSpace)
         obj.dict.append("/BitsPerComponent")
@@ -680,9 +727,9 @@ public class Image : Drawable {
             }
         }
         obj.dict.append("/Width")
-        obj.dict.append(String(Int(w!)))
+        obj.dict.append(String(pixelWidth))
         obj.dict.append("/Height")
-        obj.dict.append(String(Int(h!)))
+        obj.dict.append(String(pixelHeight))
         obj.dict.append("/ColorSpace")
         obj.dict.append("/" + colorSpace)
         obj.dict.append("/BitsPerComponent")

@@ -8,6 +8,7 @@ package pdfjet
 import (
 	"fmt"
 	"math"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -63,22 +64,65 @@ type svgRule struct {
 	declarations [][2]string
 }
 
+// svgStyleSheet holds the rules of the <style> elements of an SVG file, in
+// their order, and where the rules of each class are among them, so that an
+// element finds the rules of its classes without going through all of them.
+type svgStyleSheet struct {
+	rules   []svgRule
+	byClass map[string][]int
+}
+
+func newSVGStyleSheet() *svgStyleSheet {
+	return &svgStyleSheet{byClass: make(map[string][]int)}
+}
+
+// add adds the rules of a <style> element after those before it.
+func (sheet *svgStyleSheet) add(rules []svgRule) {
+	for _, rule := range rules {
+		sheet.byClass[rule.class] = append(sheet.byClass[rule.class], len(sheet.rules))
+		sheet.rules = append(sheet.rules, rule)
+	}
+}
+
+// forClasses returns the rules for any of the classes, in the order of the
+// style sheet, each rule once.
+func (sheet *svgStyleSheet) forClasses(classes []string) []svgRule {
+	indexes := make([]int, 0)
+	for i, class := range classes {
+		if slices.Contains(classes[:i], class) {
+			continue // A class named twice has its rules once.
+		}
+		indexes = append(indexes, sheet.byClass[class]...)
+	}
+	slices.Sort(indexes)
+	rules := make([]svgRule, len(indexes))
+	for i, index := range indexes {
+		rules[i] = sheet.rules[index]
+	}
+	return rules
+}
+
 // parseSVGStyleSheet returns the rules of the text of a <style> element that
 // are for a class, in the order of the text.
 func parseSVGStyleSheet(text string) []svgRule {
-	// Comments are left out first; they may hold braces.
+	// Comments are left out first; they may hold braces. A comment that is
+	// not closed runs to the end of the text.
+	var uncommented strings.Builder
 	for {
 		start := strings.Index(text, "/*")
 		if start < 0 {
+			uncommented.WriteString(text)
 			break
 		}
+		uncommented.WriteString(text[:start])
 		end := strings.Index(text[start+2:], "*/")
 		if end < 0 {
-			text = text[:start]
 			break
 		}
-		text = text[:start] + " " + text[start+2+end+2:]
+		uncommented.WriteString(" ")
+		text = text[start+2+end+2:]
 	}
+	text = uncommented.String()
 	rules := make([]svgRule, 0)
 	for _, block := range strings.Split(text, "}") {
 		open := strings.Index(block, "{")

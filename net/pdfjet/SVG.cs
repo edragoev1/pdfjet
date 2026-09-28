@@ -135,6 +135,15 @@ namespace PDFjet.NET {
             float x0 = 0f;  // Start of subpath
             float y0 = 0f;
             foreach (PathOp op in list) {
+                // A command after Z other than a moveto starts the next subpath
+                // at the start of the one it closed, as SVG 1.1 section 8.3.3
+                // says.
+                if (lastOp.cmd == 'Z' && op.cmd != 'M' && op.cmd != 'm' && op.cmd != 'Z' && op.cmd != 'z') {
+                    pathOp = new PathOp('M', x0, y0);
+                    operations.Add(pathOp);
+                    lastOp = pathOp;
+                }
+                int first = operations.Count;
                 if (op.cmd == 'M' || op.cmd == 'm') {
                     for (int i = 0; i <= op.args.Count - 2; i += 2) {
                         float x = float.Parse(op.args[i], CultureInfo.InvariantCulture);
@@ -213,13 +222,17 @@ namespace PDFjet.NET {
                 } else if (op.cmd == 'T' || op.cmd == 't') {
                     for (int i = 0; i <= op.args.Count - 2; i += 2) {
                         pathOp = new PathOp('C');
+                        // The control point is the reflection of that of the
+                        // curve before, if it is a quadratic one, and else the
+                        // current point.
                         float x1 = lastOp.x;
                         float y1 = lastOp.y;
-                        if (lastOp.cmd == 'C') {
-                            // Find the reflection control point
+                        if (lastOp.from == 'Q' || lastOp.from == 'T') {
                             x1 = 2 * lastOp.x - lastOp.x1q;
                             y1 = 2 * lastOp.y - lastOp.y1q;
                         }
+                        pathOp.x1q = x1;
+                        pathOp.y1q = y1;
                         float x = float.Parse(op.args[i], CultureInfo.InvariantCulture);
                         float y = float.Parse(op.args[i + 1], CultureInfo.InvariantCulture);
                         if (op.cmd == 't') {
@@ -259,10 +272,12 @@ namespace PDFjet.NET {
                 } else if (op.cmd == 'S' || op.cmd == 's') {
                     for (int i = 0; i <= op.args.Count - 4; i += 4) {
                         pathOp = new PathOp('C');
+                        // The first control point is the reflection of the
+                        // second of the curve before, if it is a cubic one,
+                        // and else the current point.
                         float x1 = lastOp.x;
                         float y1 = lastOp.y;
-                        if (lastOp.cmd == 'C') {
-                            // Find the reflection control point
+                        if (lastOp.from == 'C' || lastOp.from == 'S') {
                             x1 = 2 * lastOp.x - lastOp.x2;
                             y1 = 2 * lastOp.y - lastOp.y2;
                         }
@@ -301,6 +316,9 @@ namespace PDFjet.NET {
                     pathOp.y = y0;
                     operations.Add(pathOp);
                     lastOp = pathOp;
+                }
+                for (int i = first; i < operations.Count; i++) {
+                    operations[i].from = Char.ToUpperInvariant(op.cmd);
                 }
             }
             return operations;

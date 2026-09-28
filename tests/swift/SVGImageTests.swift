@@ -60,7 +60,7 @@ import Testing
     @Test func aStrokeOnlyPathIsStroked() throws {
         let content = try draw("<svg width=\"100\" height=\"50\"><path d=\"M10 10 L90 40 L10 40 Z\" fill=\"none\" stroke=\"red\"/></svg>")
         #expect(content.contains("1 0 0 RG\n"), "\(content)")
-        #expect(content.hasSuffix("s\n"), "\(content)")
+        #expect(content.hasSuffix("h\nS\n"), "\(content)")
     }
 
     @Test func anOpenPathWithAStrokeIsStroked() throws {
@@ -68,9 +68,9 @@ import Testing
         #expect(content.hasSuffix("10 782 m\n90 752 l\nS\n"), "\(content)")
     }
 
-    @Test func aClosedSubpathIsClosedAndAnOpenOneStrokedAtTheEnd() throws {
+    @Test func aClosedSubpathIsClosedAndThePathStrokedOnceAtTheEnd() throws {
         let content = try draw("<svg width=\"100\" height=\"50\"><path d=\"M10 10 L90 40 Z M20 20 L30 30\" fill=\"none\" stroke=\"red\"/></svg>")
-        #expect(content.hasSuffix("10 782 m\n90 752 l\ns\n20 772 m\n30 762 l\nS\n"), "\(content)")
+        #expect(content.hasSuffix("10 782 m\n90 752 l\nh\n20 772 m\n30 762 l\nS\n"), "\(content)")
     }
 
     @Test func fillNoneWithoutAStrokeDrawsNothing() throws {
@@ -87,7 +87,7 @@ import Testing
         // The second path takes the red fill of the svg element and has no stroke.
         #expect(content.contains("1 0 0 rg\n"), "\(content)")
         #expect(content.components(separatedBy: "\nf\n").count - 1 == 1, "\(content)")
-        #expect(content.components(separatedBy: "\ns\n").count - 1 == 1, "\(content)")
+        #expect(content.components(separatedBy: "\nh\nS\n").count - 1 == 1, "\(content)")
     }
 
     @Test func aPathWithoutColorsOrWithAnUnknownFillIsFilledBlack() throws {
@@ -135,16 +135,20 @@ import Testing
         #expect(content.contains("10 782 m\n90 752 l\n"))
     }
 
-    @Test func pathDataThatNeedsTheCurrentPointStartsAtTheOrigin() throws {
+    @Test func pathDataThatDoesNotStartWithAMovetoDrawsNothing() throws {
         // The first command of the path data needs a current point, which this
-        // port left unset: it trapped.
+        // port left unset: it trapped. Path data starts with a moveto, and SVG
+        // 1.1 section 8.3.2 draws data in error up to where it is in error,
+        // which here is nothing; a PDF has no current point to draw a line
+        // from either.
         let paths = [
             "L90 40", "H90", "V40", "Q10 10 90 40", "T90 40",
-            "C1 1 2 2 90 40", "S1 1 90 40", "A5 5 0 0 1 90 40", "l90 40",
+            "C1 1 2 2 90 40", "S1 1 90 40", "A5 5 0 0 1 90 40", "l90 40", "Z L90 40",
         ]
         for data in paths {
-            let content = try draw("<svg width=\"100\" height=\"50\"><path d=\"" + data + "\"/></svg>")
-            #expect(content.contains(" l\n") || content.contains(" c\n"), "\(data) draws \(content)")
+            let content = try draw("<svg width=\"100\" height=\"50\"><path d=\"" + data + "\"/>"
+                    + "<path d=\"M1 1 L2 2\" fill=\"none\" stroke=\"red\"/></svg>")
+            #expect(content == "1 0 0 RG\n1 w\n1 791 m\n2 790 l\nS\n", "\(data) draws \(content)")
         }
     }
 
@@ -201,7 +205,7 @@ import Testing
         // quarter, a half or a whole turn is not split once more for the last
         // bit of the sweep, which the four ports do not compute alike.
         let arcs = [
-            ("A 120 120 120 0 0 120 120", 1),   // A quarter turn, of the fuzz corpus
+            ("M0 0 A 120 120 120 0 0 120 120", 1),  // A quarter turn, of the fuzz corpus
             ("M10 10 A 20 20 0 0 1 50 10", 2),
             ("M0 0 A50 50 0 0 1 100 0", 2),
         ]
@@ -265,8 +269,8 @@ import Testing
     @Test func aGroupGivesItsPathsItsColorsAndWidthUnlessTheyHaveTheirOwn() throws {
         let content = try draw("<svg width=\"100\" height=\"100\"><g fill=\"red\" stroke=\"blue\" stroke-width=\"2\">"
                 + "<path d=\"M10 10 H90 V90 Z\"/><path d=\"M10 10 H50 V50 Z\" fill=\"green\" stroke-width=\"4\"/></g></svg>")
-        let want = "1 0 0 rg\n10 782 m\n90 782 l\n90 702 l\nf\n0 0 1 RG\n2 w\n10 782 m\n90 782 l\n90 702 l\ns\n"
-                + "0 0.5 0 rg\n10 782 m\n50 782 l\n50 742 l\nf\n4 w\n10 782 m\n50 782 l\n50 742 l\ns\n"
+        let want = "1 0 0 rg\n10 782 m\n90 782 l\n90 702 l\nf\n0 0 1 RG\n2 w\n10 782 m\n90 782 l\n90 702 l\nh\nS\n"
+                + "0 0.5 0 rg\n10 782 m\n50 782 l\n50 742 l\nf\n4 w\n10 782 m\n50 782 l\n50 742 l\nh\nS\n"
         #expect(content == want, "\(content)")
     }
 
@@ -341,7 +345,7 @@ import Testing
             ("<polyline points=\"10,10 20,20 10,20\" fill=\"none\" stroke=\"red\"/>",
                 "1 0 0 RG\n1 w\n10 782 m\n20 772 l\n10 772 l\nS\n"),
             ("<polygon points=\"10 10 20 20 10 20 5\" fill=\"none\" stroke=\"red\"/>",
-                "1 0 0 RG\n1 w\n10 782 m\n20 772 l\n10 772 l\ns\n"),
+                "1 0 0 RG\n1 w\n10 782 m\n20 772 l\n10 772 l\nh\nS\n"),
             // Shapes of no size draw nothing.
             ("<rect width=\"0\" height=\"10\"/><circle r=\"0\"/><ellipse rx=\"5\"/><polygon points=\"1 2\"/><line/>", ""),
         ]

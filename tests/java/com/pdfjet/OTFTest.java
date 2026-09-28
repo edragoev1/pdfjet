@@ -139,8 +139,8 @@ class OTFTest {
 
     @Test
     void aFontWithoutTheTablesItNeedsNoneOfStillDraws() throws Exception {
-        // Without OS/2 the font says it holds no characters and maps none of
-        // them; without post it has no underline; without GPOS its marks are
+        // Without OS/2 the font does not say which characters it holds, and
+        // has every character of its character map; without post it has no underline; without GPOS its marks are
         // not placed. None of the three stops it from drawing.
         byte[] font = font(THAI);
         for (String name : new String[] {"OS/2", "post", "GPOS"}) {

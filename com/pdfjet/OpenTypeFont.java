@@ -95,7 +95,7 @@ class OpenTypeFont {
             pdf.append(" 0 R\n");
         }
 
-        byte[] buf = otf.compressed;
+        byte[] buf = otf.compress();
         if (pdf.encryption != null) {
             buf = AES256.encrypt(buf, pdf.encryption.getKey());
         }

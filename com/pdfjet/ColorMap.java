@@ -14,6 +14,10 @@ import java.util.Map;
  * @see <a href="http://www.w3.org/TR/css3-color/#svg-color">http://www.w3.org/TR/css3-color/#svg-color</a>
  */
 class ColorMap {
+    // The colors of SVG by their names, which every SVG image reads its
+    // colors with.
+    static final ColorMap SVG_COLORS = new ColorMap();
+
     Map<String, Integer> map = null;
 
     /**

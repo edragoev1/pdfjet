@@ -10,6 +10,7 @@ package pdfjet
 // Please see Example_02.
 type svgPathOp struct {
 	cmd  rune
+	from rune    // The SVG command it was made from, in upper case, as a smooth curve needs it
 	x1q  float32 // Original quadratic control
 	y1q  float32 // point coordinates
 	x1   float32 // Control point x1

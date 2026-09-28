@@ -95,7 +95,7 @@ func embedOpenTypeFontFile(pdf *PDF, font *Font, otf *openTypeFont) {
 		pdf.appendString(" 0 R\n")
 	}
 
-	buf := otf.compressed.Bytes()
+	buf := otf.compress()
 	if pdf.encryption != nil {
 		buf = pdf.encryption.encrypt(buf)
 	}

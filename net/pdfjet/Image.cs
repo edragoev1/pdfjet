@@ -24,6 +24,10 @@ public class Image : IDrawable {
     internal float y = 0f;
     internal float w;       // Image width
     internal float h;       // Image height
+    // The pixels of the image across and down, which the image object is
+    // written with: a float holds every whole number only up to 2^24.
+    private int pixelWidth;
+    private int pixelHeight;
     internal String uri;
     internal String key;
 
@@ -60,10 +64,9 @@ public class Image : IDrawable {
         Stream inputStream = new MemoryStream(bytes);
         byte[] data;
         if (imageType == ImageType.JPG) {
-            JPGImage jpg = new JPGImage(inputStream);
+            JPGImage jpg = new JPGImage(bytes);
             data = jpg.GetData();
-            w = jpg.GetWidth();
-            h = jpg.GetHeight();
+            SetPixels(jpg.GetWidth(), jpg.GetHeight());
             if (jpg.GetColorComponents() == 1) {
                 AddImage(pdf, data, null, imageType, "DeviceGray", 8);
             } else if (jpg.GetColorComponents() == 3) {
@@ -76,8 +79,7 @@ public class Image : IDrawable {
         } else if (imageType == ImageType.PNG) {
             PNGImage png = new PNGImage(inputStream);
             data = png.GetData();
-            w = png.GetWidth();
-            h = png.GetHeight();
+            SetPixels(png.GetWidth(), png.GetHeight());
             colorKeyMask = png.GetColorKeyMask();
             if (png.GetColorType() == 0) {
                 AddImage(pdf, data, null, imageType, "DeviceGray", png.GetBitDepth());
@@ -94,8 +96,7 @@ public class Image : IDrawable {
         } else if (imageType == ImageType.BMP) {
             BMPImage bmp = new BMPImage(inputStream);
             data = bmp.GetData();
-            w = bmp.GetWidth();
-            h = bmp.GetHeight();
+            SetPixels(bmp.GetWidth(), bmp.GetHeight());
             AddImage(pdf, data, bmp.GetAlpha(), imageType, "DeviceRGB", 8);
             SetPhysicalSize(bmp.GetPhysicalWidth(), bmp.GetPhysicalHeight());
         }
@@ -121,10 +122,9 @@ public class Image : IDrawable {
         Stream inputStream = new MemoryStream(bytes);
         byte[] data;
         if (imageType == ImageType.JPG) {
-            JPGImage jpg = new JPGImage(inputStream);
+            JPGImage jpg = new JPGImage(bytes);
             data = jpg.GetData();
-            w = jpg.GetWidth();
-            h = jpg.GetHeight();
+            SetPixels(jpg.GetWidth(), jpg.GetHeight());
             if (jpg.GetColorComponents() == 1) {
                 AddImageToObjects(objects, data, null, imageType, "DeviceGray", 8);
             } else if (jpg.GetColorComponents() == 3) {
@@ -137,8 +137,7 @@ public class Image : IDrawable {
         } else if (imageType == ImageType.PNG) {
             PNGImage png = new PNGImage(inputStream);
             data = png.GetData();
-            w = png.GetWidth();
-            h = png.GetHeight();
+            SetPixels(png.GetWidth(), png.GetHeight());
             colorKeyMask = png.GetColorKeyMask();
             if (png.GetColorType() == 0) {
                 AddImageToObjects(objects, data, null, imageType, "DeviceGray", png.GetBitDepth());
@@ -155,8 +154,7 @@ public class Image : IDrawable {
         } else if (imageType == ImageType.BMP) {
             BMPImage bmp = new BMPImage(inputStream);
             data = bmp.GetData();
-            w = bmp.GetWidth();
-            h = bmp.GetHeight();
+            SetPixels(bmp.GetWidth(), bmp.GetHeight());
             AddImageToObjects(objects, data, bmp.GetAlpha(), imageType, "DeviceRGB", 8);
             SetPhysicalSize(bmp.GetPhysicalWidth(), bmp.GetPhysicalHeight());
         }
@@ -167,8 +165,8 @@ public class Image : IDrawable {
     /// <summary>Creates an image from an image object read from an existing PDF.</summary>
     public Image(PDF pdf, PDFobj obj) {
         this.pdf = pdf;
-        w = float.Parse(obj.GetValue("/Width"));
-        h = float.Parse(obj.GetValue("/Height"));
+        SetPixels((int) double.Parse(obj.GetValue("/Width"), System.Globalization.CultureInfo.InvariantCulture),
+                (int) double.Parse(obj.GetValue("/Height"), System.Globalization.CultureInfo.InvariantCulture));
         pdf.NewObj();
         pdf.Append("<<\n");
         pdf.Append("/Type /XObject\n");
@@ -177,10 +175,10 @@ public class Image : IDrawable {
         pdf.Append(obj.GetValue("/Filter"));
         pdf.Append("\n");
         pdf.Append("/Width ");
-        pdf.Append(w);
+        pdf.Append(pixelWidth);
         pdf.Append('\n');
         pdf.Append("/Height ");
-        pdf.Append(h);
+        pdf.Append(pixelHeight);
         pdf.Append('\n');
         String colorSpace = obj.GetValue("/ColorSpace");
         if (!colorSpace.Equals("")) {
@@ -217,6 +215,15 @@ public class Image : IDrawable {
 
     IDrawable IDrawable.SetLocation(float x, float y) {
         return SetLocation(x, y);
+    }
+
+    // Sets the pixels of the image across and down, which it is drawn at, a
+    // pixel to a point, unless the file asks for another size.
+    private void SetPixels(int width, int height) {
+        pixelWidth = width;
+        pixelHeight = height;
+        w = width;
+        h = height;
     }
 
     // Draws the image at the size the file asks for, when it asks for one: the
@@ -442,12 +449,15 @@ public class Image : IDrawable {
 
         page.EndLink(link);
         if (uri != null || key != null) {
+            // The link covers the image as it is drawn, turned or not.
+            float linkW = (degrees == 90 || degrees == 270) ? h : w;
+            float linkH = (degrees == 90 || degrees == 270) ? w : h;
             Annotation linkAnnotation = new Annotation(
                     Annotation.Link,
                     x,
                     y,
-                    x + w,
-                    y + h,
+                    x + linkW,
+                    y + linkH,
                     null,   // Vertices
                     null,   // Fill Color
                     0f,     // Opacity
@@ -517,10 +527,10 @@ public class Image : IDrawable {
         pdf.Append("/Subtype /Image\n");
         pdf.Append("/Filter /FlateDecode\n");
         pdf.Append("/Width ");
-        pdf.Append((int) w);
+        pdf.Append(pixelWidth);
         pdf.Append('\n');
         pdf.Append("/Height ");
-        pdf.Append((int) h);
+        pdf.Append(pixelHeight);
         pdf.Append('\n');
         pdf.Append("/ColorSpace /");
         pdf.Append(colorSpace);
@@ -551,6 +561,9 @@ public class Image : IDrawable {
             ImageType imageType,
             String colorSpace,
             int bitsPerComponent) {
+        if (!IsPDFA(pdf, alpha, colorSpace, bitsPerComponent)) {
+            return;
+        }
         if (alpha != null) {
             AddSoftMask(pdf, alpha, "DeviceGray", bitsPerComponent);
         }
@@ -578,10 +591,10 @@ public class Image : IDrawable {
             }
         }
         pdf.Append("/Width ");
-        pdf.Append((int) w);
+        pdf.Append(pixelWidth);
         pdf.Append('\n');
         pdf.Append("/Height ");
-        pdf.Append((int) h);
+        pdf.Append(pixelHeight);
         pdf.Append('\n');
         pdf.Append("/ColorSpace /");
         pdf.Append(colorSpace);
@@ -610,6 +623,36 @@ public class Image : IDrawable {
         objNumber = pdf.GetObjNumber();
     }
 
+    // Returns whether a PDF/A document can hold the image, and fails the
+    // document when it cannot. Its output intent is sRGB, an RGB profile, so
+    // its images are gray or RGB and not CMYK, as ISO 19005 asks of a device
+    // color space. PDF/A-1 is PDF 1.4, which has no soft masks, and 8 bits per
+    // component at most. Any other document holds any image.
+    private static bool IsPDFA(PDF pdf, byte[] alpha, String colorSpace, int bitsPerComponent) {
+        Compliance level = pdf.compliance;
+        if (level == Compliance.PDF_1_7 || level == Compliance.PDF_UA_1) {
+            return true;
+        }
+        bool pdfA1 = level == Compliance.PDF_A_1A || level == Compliance.PDF_A_1B;
+        if (colorSpace.Equals("DeviceCMYK")) {
+            pdf.Fail(new InvalidOperationException("A document of " + level
+                    + " cannot hold a CMYK image: its output intent is sRGB, so its images are gray or RGB."));
+            return false;
+        }
+        if (pdfA1 && alpha != null) {
+            pdf.Fail(new InvalidOperationException("A document of " + level
+                    + " cannot hold an image with transparency: PDF/A-1 has no soft masks, so its images are opaque."));
+            return false;
+        }
+        if (pdfA1 && bitsPerComponent > 8) {
+            pdf.Fail(new InvalidOperationException("A document of " + level
+                    + " cannot hold an image of " + bitsPerComponent
+                    + " bits per component: PDF/A-1 has 8 at most."));
+            return false;
+        }
+        return true;
+    }
+
     private void AddSoftMask(
             List<PDFobj> objects,
             byte[] data,
@@ -624,9 +667,9 @@ public class Image : IDrawable {
         obj.dict.Add("/Filter");
         obj.dict.Add("/FlateDecode");
         obj.dict.Add("/Width");
-        obj.dict.Add(((int) w).ToString());
+        obj.dict.Add(pixelWidth.ToString());
         obj.dict.Add("/Height");
-        obj.dict.Add(((int) h).ToString());
+        obj.dict.Add(pixelHeight.ToString());
         obj.dict.Add("/ColorSpace");
         obj.dict.Add("/" + colorSpace);
         obj.dict.Add("/BitsPerComponent");
@@ -677,9 +720,9 @@ public class Image : IDrawable {
             }
         }
         obj.dict.Add("/Width");
-        obj.dict.Add(((int) w).ToString());
+        obj.dict.Add(pixelWidth.ToString());
         obj.dict.Add("/Height");
-        obj.dict.Add(((int) h).ToString());
+        obj.dict.Add(pixelHeight.ToString());
         obj.dict.Add("/ColorSpace");
         obj.dict.Add("/" + colorSpace);
         obj.dict.Add("/BitsPerComponent");

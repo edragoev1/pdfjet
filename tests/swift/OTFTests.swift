@@ -133,9 +133,10 @@ import Testing
     }
 
     @Test func aFontWithoutTheTablesItNeedsNoneOfStillDraws() throws {
-        // Without OS/2 the font says it holds no characters and maps none of
-        // them; without post it has no underline; without GPOS its marks are
-        // not placed. None of the three stops it from drawing.
+        // Without OS/2 the font does not say which characters it holds, and
+        // every character of its map is read; without post it has no
+        // underline; without GPOS its marks are not placed. None of the three
+        // stops it from drawing.
         let data = font(thai)
         for name in ["OS/2", "post", "GPOS"] {
             try draws(without(data, name))

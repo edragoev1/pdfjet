@@ -295,11 +295,15 @@ public class Font {
     /// <exception cref="System.Exception">thrown if the font file is not found.</exception>
     public Font(PDF pdf, String fontPath) {
         this.pdf = pdf;
-        FileStream inputStream = new FileStream(fontPath, FileMode.Open, FileAccess.Read);
-        if (fontPath.EndsWith(".stream")) {
-            FontStream1.Register(pdf, this, inputStream);
-        } else {
-            OpenTypeFont.Register(pdf, this, inputStream);
+        using (FileStream inputStream = new FileStream(fontPath, FileMode.Open, FileAccess.Read)) {
+            // Files ending in .stream are stream fonts; the format of any
+            // other is told from its first bytes, as the stream constructor
+            // tells it.
+            if (fontPath.EndsWith(".stream") || !IsOpenTypeFont(inputStream)) {
+                FontStream1.Register(pdf, this, inputStream);
+            } else {
+                OpenTypeFont.Register(pdf, this, inputStream);
+            }
         }
         SetSize(size);
     }
@@ -568,8 +572,13 @@ public class Font {
         return -(fontUnderlinePosition * fontSize / unitsPerEm) + GetUnderlineThickness(fontSize) / 2.0f;
     }
 
-    /// <summary>Returns how many characters of the string fit within the specified width.</summary>
+    /// <summary>Returns how many characters of the string fit within the specified width,
+    /// counted in the UTF-16 chars of the string, so that it can be passed to Substring.</summary>
     public int GetFitChars(String str, float width) {
+        // Text of no size has no width, and all of it fits in any width.
+        if (size <= 0f) {
+            return (width < 0f) ? 0 : str.Length;
+        }
         float w = width * unitsPerEm / size;
         if (isCJK) {
             // Every glyph of a CJK font is as wide as the font size.

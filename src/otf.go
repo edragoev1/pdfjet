@@ -31,7 +31,6 @@ type openTypeFont struct {
 	fontInfo           string
 	buf                []byte
 	index              int
-	compressed         bytes.Buffer
 	unitsPerEm         int
 	bBoxLLx            int16
 	bBoxLLy            int16
@@ -63,15 +62,17 @@ type openTypeFont struct {
 	count              int
 	stringOffset       int
 	gposWork           int
+	numGlyphs          int // Of the maxp table, or 0 when the font has none
 }
 
 // maxGposWork is the most work the GPOS table of a font is read with, counted
-// in the glyphs of the coverage tables it names and in the pairs its mark
-// lookups place: each mark against each letter or mark it goes on. The
-// lookups, the subtables and the ranges of a coverage table all say their own
-// count, so a table that claims more than a font holds is stopped here rather
-// than read to an end it does not have. Of the 252 fonts PDFjet ships the
-// most this takes is 62,954, in Noto Sans.
+// in the glyphs of the coverage tables it names, the glyphs their indexes make
+// room for, the marks and the letters its mark lookups keep and the pairs they
+// place: each mark against each letter or mark it goes on. The lookups, the
+// subtables, the ranges of a coverage table and its indexes all say their own
+// count, and subtables can share one another, so a table that claims more than
+// a font holds is stopped here rather than read to an end it does not have.
+// Of the 252 fonts PDFjet ships the most this takes is 76,168, in Noto Sans.
 const maxGposWork = 1 << 20
 
 // fontError panics with the message of a font file that is not valid.
@@ -84,6 +85,10 @@ func newOpenTypeFont(reader io.Reader) *openTypeFont {
 	otf := new(openTypeFont)
 	otf.buf = content.GetFromStream(reader)
 	otf.unicodeToGID = make([]int, 0x10000)
+	// A font without an OS/2 table does not say which characters it holds,
+	// so its character map is read for all of them.
+	otf.firstChar = 0
+	otf.lastChar = 0xFFFF
 
 	// Extract the OTF metadata
 	version := readUint32(otf)
@@ -102,6 +107,7 @@ func newOpenTypeFont(reader io.Reader) *openTypeFont {
 	readUint16(otf) // Skip the range shift.
 
 	var cmapTable *fontTable
+	var gposTable *fontTable
 	for i := 0; i < numOfTables; i++ {
 		table := new(fontTable)
 		table.name = string(readNBytes(otf, 4))
@@ -126,7 +132,9 @@ func newOpenTypeFont(reader io.Reader) *openTypeFont {
 		case "CFF ":
 			getCffTable(otf, table)
 		case "GPOS":
-			getGposTable(otf, table)
+			gposTable = table
+		case "maxp":
+			otf.numGlyphs, _ = otf.tableUint16(table, 4)
 		case "cmap":
 			cmapTable = table
 		case "loca":
@@ -135,6 +143,12 @@ func newOpenTypeFont(reader io.Reader) *openTypeFont {
 			otf.glyf = table
 		}
 		otf.index = k // Restore the index
+	}
+
+	// The GPOS table is read after the maxp table, whose number of glyphs
+	// bounds the coverage indexes.
+	if gposTable != nil {
+		getGposTable(otf, gposTable)
 	}
 
 	// This table must be processed last
@@ -167,23 +181,26 @@ func newOpenTypeFont(reader io.Reader) *openTypeFont {
 		fontError("the font name")
 	}
 
-	writer := zlib.NewWriter(&otf.compressed)
+	return otf
+}
+
+// compress returns the font program as it is embedded, compressed: the CFF
+// table of a font with CFF outlines, or else the whole font. It is compressed
+// only for a font the PDF does not hold yet.
+func (otf *openTypeFont) compress() []byte {
+	var compressed bytes.Buffer
+	writer := zlib.NewWriter(&compressed)
+	program := otf.buf
 	if otf.cff {
-		_, err := writer.Write(otf.buf[otf.cffOff : otf.cffOff+otf.cffLen])
-		if err != nil {
-			panic(err)
-		}
-	} else {
-		_, err := writer.Write(otf.buf)
-		if err != nil {
-			panic(err)
-		}
+		program = otf.buf[otf.cffOff : otf.cffOff+otf.cffLen]
+	}
+	if _, err := writer.Write(program); err != nil {
+		panic(err)
 	}
 	if err := writer.Close(); err != nil {
 		panic(err)
 	}
-
-	return otf
+	return compressed.Bytes()
 }
 
 func getHeadTable(otf *openTypeFont, table *fontTable) {
@@ -368,9 +385,18 @@ func getCmapTable(otf *openTypeFont, table *fontTable) {
 		glyphIDArray[i] = readUint16(otf)
 	}
 
+	// The segments are in the order of their end codes, so the segment of a
+	// character is the first that ends at it or after it, if it starts at it
+	// or before it. The characters go up, and so does the segment.
+	seg := 0
 	for ch := otf.firstChar; ch <= otf.lastChar; ch++ {
-		seg := getSegmentFor(ch, startCount, endCount, segCount)
-		if seg != -1 {
+		for seg < segCount && rune(endCount[seg]) < ch {
+			seg++
+		}
+		if seg == segCount {
+			break
+		}
+		if rune(startCount[seg]) <= ch {
 			gid := 0
 			offset := int(idRangeOffset[seg])
 			if offset == 0 {
@@ -477,16 +503,22 @@ func (otf *openTypeFont) getMarkToBaseAnchors(subTable int, ligature bool) {
 	baseArray := subTable + otf.uint16At(subTable+10)
 	marks := make(map[int][]int)
 	for m, glyph := range markGlyphs {
+		if otf.gposWork == 0 {
+			break
+		}
+		otf.gposWork--
 		anchor := markArray + otf.uint16At(markArray+4+4*m)
 		marks[glyph] = []int{
 			otf.uint16At(markArray + 2 + 4*m), otf.int16At(anchor + 2), otf.int16At(anchor + 4)}
 	}
 	bases := make(map[int][]int)
 	for b, glyph := range baseGlyphs {
-		if otf.gposWork < classCount {
+		// A letter is work of its own, whatever the classes of its marks.
+		work := max(classCount, 1)
+		if otf.gposWork < work {
 			break
 		}
-		otf.gposWork -= classCount
+		otf.gposWork -= work
 		// The anchor offsets are from the base array, or from the ligature
 		// attach table of a ligature.
 		table := baseArray
@@ -523,10 +555,11 @@ func (otf *openTypeFont) getMarkToMarkOffsets(subTable int) {
 	mark1Array := subTable + otf.uint16At(subTable+8)
 	mark2Array := subTable + otf.uint16At(subTable+10)
 	for m1, glyph1 := range mark1Glyphs {
-		if otf.gposWork < len(mark2Glyphs) {
+		work := max(len(mark2Glyphs), 1)
+		if otf.gposWork < work {
 			break
 		}
-		otf.gposWork -= len(mark2Glyphs)
+		otf.gposWork -= work
 		markClass := otf.uint16At(mark1Array + 2 + 4*m1)
 		anchor1 := mark1Array + otf.uint16At(mark1Array+4+4*m1)
 		for m2, glyph2 := range mark2Glyphs {
@@ -571,21 +604,26 @@ func (otf *openTypeFont) coverageGlyphs(offset int) []int {
 			size = otf.uint16At(rangeOffset+4) + end - start + 1
 		}
 	}
-	// A coverage table lists each glyph once, and a glyph ID is 16 bits.
-	if size > 0x10000 {
-		size = 0x10000
+	// A coverage table lists each glyph of the font once at most, and the
+	// room its indexes make is counted as work, as each glyph of it is gone
+	// through by the lookup it is of.
+	limit := 0x10000 // A glyph ID is 16 bits.
+	if otf.numGlyphs > 0 {
+		limit = otf.numGlyphs
 	}
+	size = min(size, limit, otf.gposWork)
+	otf.gposWork -= size
 	glyphs := make([]int, size)
 	for i := 0; i < count && otf.gposWork > 0; i++ {
 		rangeOffset := offset + 4 + 6*i
 		start := otf.uint16At(rangeOffset)
 		end := otf.uint16At(rangeOffset + 2)
 		coverageIndex := otf.uint16At(rangeOffset + 4)
+		// The glyphs of the range past the room of the indexes are left out.
+		end = min(end, start+size-1-coverageIndex)
 		for glyph := start; glyph <= end && otf.gposWork > 0; glyph++ {
 			otf.gposWork--
-			if index := coverageIndex + glyph - start; index < size {
-				glyphs[index] = glyph
-			}
+			glyphs[coverageIndex+glyph-start] = glyph
 		}
 	}
 	return glyphs
@@ -625,17 +663,6 @@ func (otf *openTypeFont) int16At(offset int) int {
 
 func (otf *openTypeFont) uint32At(offset int) int {
 	return otf.uint16At(offset)<<16 | otf.uint16At(offset+2)
-}
-
-func getSegmentFor(ch rune, startCount, endCount []uint16, segCount int) int {
-	segment := -1
-	for i := 0; i < segCount; i++ {
-		if uint16(ch) <= endCount[i] && uint16(ch) >= startCount[i] {
-			segment = i
-			break
-		}
-	}
-	return segment
 }
 
 // need panics unless the next count bytes of the font are there. The index

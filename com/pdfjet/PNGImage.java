@@ -58,6 +58,9 @@ class PNGImage {
     PNGImage(InputStream inputStream) throws Exception {
         validatePNG(inputStream);
 
+        // The IDAT chunks are joined in one buffer, not copied each time one
+        // more of them is added.
+        ByteArrayOutputStream idat = null;
         List<Chunk> chunks = processPNG(inputStream);
         for (Chunk chunk : chunks) {
             String chunkType = new String(chunk.type);
@@ -83,7 +86,10 @@ class PNGImage {
                             "Convert the image using OptiPNG:\noptipng -i0 -o7 myimage.png");
                 }
             } else if (chunkType.equals("IDAT")) {
-                iDAT = appendIdatChunk(iDAT, chunk.getData());
+                if (idat == null) {
+                    idat = new ByteArrayOutputStream();
+                }
+                idat.write(chunk.getData());
             } else if (chunkType.equals("PLTE")) {
                 // 1 to 256 colors of 3 bytes each.
                 byte[] colors = chunk.getData();
@@ -106,6 +112,9 @@ class PNGImage {
             // ports: the samples are embedded as they are.
         }
 
+        if (idat != null) {
+            iDAT = idat.toByteArray();
+        }
         long imageDataLength = getImageDataLength();
         if (iDAT == null) {
             throw new Exception("The PNG image has no image data.");
@@ -122,12 +131,8 @@ class PNGImage {
                 image = getImageColorType0BitDepth16(inflatedImageData);
             } else if (bitDepth == 8) {
                 image = getImageColorType0BitDepth8(inflatedImageData);
-            } else if (bitDepth == 4) {
-                image = getImageColorType0BitDepth4(inflatedImageData);
-            } else if (bitDepth == 2) {
-                image = getImageColorType0BitDepth2(inflatedImageData);
-            } else if (bitDepth == 1) {
-                image = getImageColorType0BitDepth1(inflatedImageData);
+            } else if (bitDepth == 4 || bitDepth == 2 || bitDepth == 1) {
+                image = getImageColorType0BitDepthBelow8(inflatedImageData);
             } else {
                 throw new Exception("Image with unsupported bit depth == " + bitDepth);
             }
@@ -409,60 +414,90 @@ class PNGImage {
                 (buf[off + 3] & 0xff);
     }
 
-    // Truecolor Image with Bit Depth == 16
-    private byte[] getImageColorType2BitDepth16(byte[] buf) {
-        byte[] image = new byte[buf.length - this.h];
-        byte[] filters = new byte[this.h];
-        int bytesPerLine = 6 * this.w + 1;
-        int k = 0;
-        int j = 0;
-        for (int i = 0; i < buf.length; i++) {
-            if (i % bytesPerLine == 0) {
-                filters[j++] = buf[i];
+    // Returns the rows of the image data without the filter type byte each
+    // begins with, and with their filters undone. A row holds bytesPerRow
+    // bytes after the filter type, and the byte of the pixel on the left is
+    // bytesPerPixel bytes before, or the byte before for pixels smaller than
+    // a byte. It throws on a filter type that PNG does not define, as libpng
+    // does.
+    private static byte[] unfilter(byte[] buf, int rows, int bytesPerRow, int bytesPerPixel)
+            throws Exception {
+        byte[] image = new byte[rows * bytesPerRow];
+        int prior = -1;     // Where the row above starts, none for the first row
+        for (int row = 0; row < rows; row++) {
+            int offset = row * (bytesPerRow + 1);
+            int filter = buf[offset] & 0xFF;
+            int line = row * bytesPerRow;
+            System.arraycopy(buf, offset + 1, image, line, bytesPerRow);
+            if (filter == 0x00) {               // None
+            } else if (filter == 0x01) {        // Sub
+                for (int i = bytesPerPixel; i < bytesPerRow; i++) {
+                    image[line + i] += image[line + i - bytesPerPixel];
+                }
+            } else if (filter == 0x02) {        // Up
+                if (prior >= 0) {
+                    for (int i = 0; i < bytesPerRow; i++) {
+                        image[line + i] += image[prior + i];
+                    }
+                }
+            } else if (filter == 0x03) {        // Average
+                for (int i = 0; i < bytesPerRow; i++) {
+                    int a = (i >= bytesPerPixel) ? image[line + i - bytesPerPixel] & 0xFF : 0;
+                    int b = (prior >= 0) ? image[prior + i] & 0xFF : 0;
+                    image[line + i] += (byte) ((a + b) / 2);
+                }
+            } else if (filter == 0x04) {        // Paeth
+                for (int i = 0; i < bytesPerRow; i++) {
+                    // Left, above and above on the left
+                    int a = (i >= bytesPerPixel) ? image[line + i - bytesPerPixel] & 0xFF : 0;
+                    int b = 0;
+                    int c = 0;
+                    if (prior >= 0) {
+                        b = image[prior + i] & 0xFF;
+                        if (i >= bytesPerPixel) {
+                            c = image[prior + i - bytesPerPixel] & 0xFF;
+                        }
+                    }
+                    image[line + i] += (byte) paeth(a, b, c);
+                }
             } else {
-                image[k++] = buf[i];
+                throw new Exception("Invalid PNG filter type " + filter + ".");
             }
+            prior = line;
         }
-        applyFilters(filters, image, this.w, this.h, 6);
         return image;
     }
 
-    // Truecolor Image with Bit Depth == 8
-    private byte[] getImageColorType2BitDepth8(byte[] buf) {
-        byte[] image = new byte[buf.length - this.h];
-        byte[] filters = new byte[this.h];
-        int bytesPerLine = 3 * this.w + 1;
-        int k = 0;
-        int j = 0;
-        for (int i = 0; i < buf.length; i++) {
-            if (i % bytesPerLine == 0) {
-                filters[j++] = buf[i];
-            } else {
-                image[k++] = buf[i];
-            }
+    // Returns whichever of the bytes on the left, above and above on the left
+    // is nearest to their sum less the one above on the left.
+    private static int paeth(int a, int b, int c) {
+        int pa = Math.abs(b - c);           // p - a, where p = a + b - c
+        int pb = Math.abs(a - c);           // p - b
+        int pc = Math.abs(a + b - 2*c);     // p - c
+        if (pa <= pb && pa <= pc) {
+            return a;
+        } else if (pb <= pc) {
+            return b;
         }
-        applyFilters(filters, image, this.w, this.h, 3);
-        return image;
+        return c;
+    }
+
+    // Truecolor Image with Bit Depth == 16
+    private byte[] getImageColorType2BitDepth16(byte[] buf) throws Exception {
+        return unfilter(buf, this.h, 6 * this.w, 6);
+    }
+
+    // Truecolor Image with Bit Depth == 8
+    private byte[] getImageColorType2BitDepth8(byte[] buf) throws Exception {
+        return unfilter(buf, this.h, 3 * this.w, 3);
     }
 
     // Truecolor Image with Alpha Transparency
     // The gray samples are the image and the alpha samples its soft mask.
-    private byte[] getImageColorType4BitDepth8(byte[] buf) {
+    private byte[] getImageColorType4BitDepth8(byte[] buf) throws Exception {
+        byte[] image = unfilter(buf, this.h, 2 * this.w, 2);
         byte[] gray = new byte[this.w * this.h];
         byte[] alpha = new byte[this.w * this.h];
-        byte[] image = new byte[2 * this.w * this.h];
-        byte[] filters = new byte[this.h];
-        int bytesPerLine = 2 * this.w + 1;
-        int k = 0;
-        int j = 0;
-        for (int i = 0; i < buf.length; i++) {
-            if (i % bytesPerLine == 0) {
-                filters[j++] = buf[i];
-            } else {
-                image[k++] = buf[i];
-            }
-        }
-        applyFilters(filters, image, this.w, this.h, 2);
         for (int i = 0; i < gray.length; i++) {
             gray[i] = image[2 * i];
             alpha[i] = image[2 * i + 1];
@@ -471,31 +506,15 @@ class PNGImage {
         return gray;
     }
 
-    private byte[] getImageColorType6BitDepth8(byte[] buf) {
+    private byte[] getImageColorType6BitDepth8(byte[] buf) throws Exception {
+        byte[] image = unfilter(buf, this.h, 4 * this.w, 4);
         byte[] idata = new byte[3 * this.w * this.h];   // Image data
         byte[] alpha = new byte[this.w * this.h];       // Alpha values
-        byte[] image = new byte[4 * this.w * this.h];
-        byte[] filters = new byte[this.h];
-        int bytesPerLine = 4 * this.w + 1;
-        int k = 0;
-        int j = 0;
-        int i = 0;
-        for (; i < buf.length; i++) {
-            if (i % bytesPerLine == 0) {
-                filters[j++] = buf[i];
-            } else {
-                image[k++] = buf[i];
-            }
-        }
-        applyFilters(filters, image, this.w, this.h, 4);
-        k = 0;
-        j = 0;
-        i = 0;
-        while (i < image.length) {
-            idata[j++] = image[i++];
-            idata[j++] = image[i++];
-            idata[j++] = image[i++];
-            alpha[k++] = image[i++];
+        for (int i = 0; i < alpha.length; i++) {
+            idata[3 * i] = image[4 * i];
+            idata[3 * i + 1] = image[4 * i + 1];
+            idata[3 * i + 2] = image[4 * i + 2];
+            alpha[i] = image[4 * i + 3];
         }
         deflatedAlphaData = Compressor.deflate(alpha);
         return idata;
@@ -505,16 +524,9 @@ class PNGImage {
     // Each value is a palette index; a PLTE chunk shall appear.
     // The filters are undone on the packed indexes, one byte per pixel whatever
     // the bit depth, before the indexes are looked up in the palette.
-    private byte[] getImageColorType3(byte[] buf) {
+    private byte[] getImageColorType3(byte[] buf) throws Exception {
         int bytesPerLine = (this.w * this.bitDepth + 7) / 8;
-        byte[] indexes = new byte[bytesPerLine * this.h];
-        byte[] filters = new byte[this.h];
-        for (int row = 0; row < this.h; row++) {
-            int offset = row * (bytesPerLine + 1);
-            filters[row] = buf[offset];
-            System.arraycopy(buf, offset + 1, indexes, row * bytesPerLine, bytesPerLine);
-        }
-        applyFilters(filters, indexes, bytesPerLine, this.h, 1);
+        byte[] indexes = unfilter(buf, this.h, bytesPerLine, 1);
 
         byte[] image = new byte[3 * (this.w * this.h)];
         byte[] alpha = null;
@@ -547,172 +559,18 @@ class PNGImage {
     }
 
     // Grayscale Image with Bit Depth == 16
-    private byte[] getImageColorType0BitDepth16(byte[] buf) {
-        byte[] image = new byte[buf.length - this.h];
-        byte[] filters = new byte[this.h];
-        int bytesPerLine = 2 * this.w + 1;
-        int k = 0;
-        int j = 0;
-        for (int i = 0; i < buf.length; i++) {
-            if (i % bytesPerLine == 0) {
-                filters[j] = buf[i];
-                j += 1;
-            } else {
-                image[k] = buf[i];
-                k += 1;
-            }
-        }
-        applyFilters(filters, image, this.w, this.h, 2);
-        return image;
+    private byte[] getImageColorType0BitDepth16(byte[] buf) throws Exception {
+        return unfilter(buf, this.h, 2 * this.w, 2);
     }
 
     // Grayscale Image with Bit Depth == 8
-    private byte[] getImageColorType0BitDepth8(byte[] buf) {
-        byte[] image = new byte[buf.length - this.h];
-        byte[] filters = new byte[this.h];
-        int bytesPerLine = this.w + 1;
-        int k = 0;
-        int j = 0;
-        for (int i = 0; i < buf.length; i++) {
-            if (i % bytesPerLine == 0) {
-                filters[j++] = buf[i];
-            } else {
-                image[k++] = buf[i];
-            }
-        }
-        applyFilters(filters, image, this.w, this.h, 1);
-        return image;
+    private byte[] getImageColorType0BitDepth8(byte[] buf) throws Exception {
+        return unfilter(buf, this.h, this.w, 1);
     }
 
-    // Grayscale Image with Bit Depth == 4
-    private byte[] getImageColorType0BitDepth4(byte[] buf) {
-        byte[] image = new byte[buf.length - this.h];
-        byte[] filters = new byte[this.h];
-        int bytesPerLine = this.w / 2 + 1;
-        if (this.w % 2 > 0) {
-            bytesPerLine += 1;
-        }
-        int k = 0;
-        int j = 0;
-        for (int i = 0; i < buf.length; i++) {
-            if (i % bytesPerLine == 0) {
-                filters[k++] = buf[i];
-            } else {
-                image[j++] = buf[i];
-            }
-        }
-        // The filters work on bytes, one byte per pixel whatever the bit depth.
-        applyFilters(filters, image, bytesPerLine - 1, this.h, 1);
-        return image;
-    }
-
-    // Grayscale Image with Bit Depth == 2
-    private byte[] getImageColorType0BitDepth2(byte[] buf) {
-        byte[] image = new byte[buf.length - this.h];
-        byte[] filters = new byte[this.h];
-        int bytesPerLine = this.w / 4 + 1;
-        if (this.w % 4 > 0) {
-            bytesPerLine += 1;
-        }
-        int k = 0;
-        int j = 0;
-        for (int i = 0; i < buf.length; i++) {
-            if (i % bytesPerLine == 0) {
-                filters[k++] = buf[i];
-            } else {
-                image[j++] = buf[i];
-            }
-        }
-        // The filters work on bytes, one byte per pixel whatever the bit depth.
-        applyFilters(filters, image, bytesPerLine - 1, this.h, 1);
-        return image;
-    }
-
-    // Grayscale Image with Bit Depth == 1
-    private byte[] getImageColorType0BitDepth1(byte[] buf) {
-        byte[] image = new byte[buf.length - this.h];
-        byte[] filters = new byte[this.h];
-        int bytesPerLine = this.w / 8 + 1;
-        if (this.w % 8 > 0) {
-            bytesPerLine += 1;
-        }
-        int k = 0;
-        int j = 0;
-        for (int i = 0; i < buf.length; i++) {
-            if (i % bytesPerLine == 0) {
-                filters[k++] = buf[i];
-            } else {
-                image[j++] = buf[i];
-            }
-        }
-        // The filters work on bytes, one byte per pixel whatever the bit depth.
-        applyFilters(filters, image, bytesPerLine - 1, this.h, 1);
-        return image;
-    }
-
-    private void applyFilters(
-            byte[] filters,
-            byte[] image,
-            int width,
-            int height,
-            int bytesPerPixel) {
-        int bytesPerLine = width * bytesPerPixel;
-        byte filter = 0x00;
-        for (int row = 0; row < height; row++) {
-            for (int col = 0; col < bytesPerLine; col++) {
-                if (col == 0) {
-                    filter = filters[row];
-                }
-                if (filter == 0x00) {           // None
-                    continue;
-                }
-
-                int a = 0;                      // The pixel on the left
-                if (col >= bytesPerPixel) {
-                    a = image[(bytesPerLine * row + col) - bytesPerPixel] & 0xff;
-                }
-                int b = 0;                      // The pixel above
-                if (row > 0) {
-                    b = image[bytesPerLine * (row - 1) + col] & 0xff;
-                }
-                int c = 0;                      // The pixel diagonally left above
-                if (col >= bytesPerPixel && row > 0) {
-                    c = image[(bytesPerLine * (row - 1) + col) - bytesPerPixel] & 0xff;
-                }
-
-                int index = bytesPerLine * row + col;
-                if (filter == 0x01) {           // Sub
-                    image[index] += (byte) a;
-                } else if (filter == 0x02) {      // Up
-                    image[index] += (byte) b;
-                } else if (filter == 0x03) {      // Average
-                    image[index] += (byte) Math.floor((a + b) / 2.0);
-                } else if (filter == 0x04) {      // Paeth
-                    int p = a + b - c;
-                    int pa = Math.abs(p - a);
-                    int pb = Math.abs(p - b);
-                    int pc = Math.abs(p - c);
-                    if (pa <= pb && pa <= pc) {
-                        image[index] += (byte) a;
-                    } else if (pb <= pc) {
-                        image[index] += (byte) b;
-                    } else {
-                        image[index] += (byte) c;
-                    }
-                }
-            }
-        }
-    }
-
-    private byte[] appendIdatChunk(byte[] array1, byte[] array2) {
-        if (array1 == null) {
-            return array2;
-        } else if (array2 == null) {
-            return array1;
-        }
-        byte[] joinedArray = new byte[array1.length + array2.length];
-        System.arraycopy(array1, 0, joinedArray, 0, array1.length);
-        System.arraycopy(array2, 0, joinedArray, array1.length, array2.length);
-        return joinedArray;
+    // Grayscale Image with Bit Depth == 1, 2 or 4. The filters work on bytes,
+    // one byte per pixel whatever the bit depth.
+    private byte[] getImageColorType0BitDepthBelow8(byte[] buf) throws Exception {
+        return unfilter(buf, this.h, (this.w * this.bitDepth + 7) / 8, 1);
     }
 }   // End of PNGImage.java
