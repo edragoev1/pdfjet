@@ -49,7 +49,7 @@ public class Example_38 {
                 + "keeps its shape, so every row holds a cell for every column and the cells "
                 + "a span covers are left empty. The example is also a check of the geometry "
                 + "of the cells: their backgrounds meet without gaps and their borders line "
-                + "up.");
+                + "up. The header row above them numbers the columns.");
         textBlock.SetFontSize(11f);
         textBlock.SetLineSpacing(1.3f);
         textBlock.SetLocation(50f, 65f);
@@ -57,7 +57,7 @@ public class Example_38 {
         float[] xy = textBlock.DrawOn(page);
 
         Table table = new Table();
-        table.SetTableData(CreateTableData());
+        table.SetTableData(CreateTableData(f1), 1);
         table.SetBottomMargin(10f);
         table.SetLocation(50f, xy[1] + 20f);
         table.DrawOn(page);
@@ -66,8 +66,9 @@ public class Example_38 {
     }
 
     /**
-     * Returns the cells of a 10 by 10 table whose cells span columns and
-     * rows. It is the table of this HTML, cell for cell:
+     * Returns a header row that numbers the columns, and under it the cells
+     * of a 10 by 10 table whose cells span columns and rows. They are the
+     * table of this HTML, cell for cell:
      * <pre>
      * &lt;table border="solid"&gt;
      * &lt;tr&gt;&lt;td colspan="2" rowspan="2"&gt;2x2&lt;/td&gt;&lt;td colspan="2"&gt;2x1&lt;/td&gt;
@@ -90,9 +91,10 @@ public class Example_38 {
      * &lt;/table&gt;
      * </pre>
      *
+     * @param headerFont the font of the header row, which numbers the columns.
      * @return the rows of the table.
      */
-    private List<List<Cell>> CreateTableData() {
+    private List<List<Cell>> CreateTableData(Font headerFont) {
         // The columns and the rows each cell spans, in the order a browser
         // reads the cells of the HTML above.
         int[][][] spans = {
@@ -133,6 +135,12 @@ public class Example_38 {
             }
         }
         List<List<Cell>> rows = new List<List<Cell>>();
+        // The header row, above the cells: it numbers the columns.
+        List<Cell> header = new List<Cell>();
+        for (int c = 0; c < columns; c++) {
+            header.Add(GetCell(headerFont, 1, 1, (c + 1).ToString()));
+        }
+        rows.Add(header);
         foreach (Cell[] row in grid) {
             rows.Add(new List<Cell>(row));
         }

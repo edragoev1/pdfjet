@@ -15,23 +15,15 @@ This is the first entry in this file; earlier releases were not tracked here.
   file that cannot be read or has a quoted field that is not closed, as the
   constructors of Java, C# and Swift throw it. `NewTableFromFile`, which
   returns no error, panics with it, as it did.
-- A description of a Data Matrix and of a PDF417 barcode, for a screen
-  reader, in all four ports: `setAltDescription`, as a `QRCode` and a
-  `Barcode` have it. In a tagged document a described barcode is a figure of
-  that description, with the box it is drawn in; one not described is
-  decoration, as before.
 - A table that starts under a heading, in all four ports:
   `Table.drawOn(pdf, first, pages, pageSize)` (`DrawOnPagesFrom` in Go)
   starts the table on a page of your own, under the top margin
   `setFirstPageTopMargin` gives it, and goes on to new pages; and
   `BigTable.setFirstPage(page, y)` starts a big table at y on a page of the
   PDF, with the next pages at the y of its location, and the footer
-  counting them all. Example_08 and Example_57 have a heading on their first
+  counting them all, each at its own size, in "Page i of N"; a first page
+  with no room for the header and a row is left for a new one. Example_08 and Example_57 have a heading on their first
   page with them, which PAC asks a document for.
-- A heading in every PDF/UA example, in all four ports: Example_01, 02, 09,
-  13, 14, 16, 20, 23, 25, 27, 32, 35, 39, 40, 42 and 47 have an H1 on their
-  first page, a line of their own or one they already drew, so that PAC's
-  quality checks find a heading in each.
 - A description of a point, in all four ports: `Point.setAltDescription`,
   what a point that is a link stands for, like the country a point of a
   chart is. In a tagged document a point of a chart, or of a cell, that is a
@@ -45,14 +37,9 @@ This is the first entry in this file; earlier releases were not tracked here.
   headings for them. The headings are those of a `TextLine`, a `TextBlock`
   and a paragraph of a `TextFrame` or a `TextColumn`, which Markdown draws
   its headings as; one inside an artifact, like a running header, is not
-  one. A document with bookmarks of its own keeps them, and one that is not
-  tagged has none made.
-- Example_57, in all four ports: the table of Example_43 cut to 550 rows, 12
-  pages, as a PDF/UA document, to check how a `BigTable` is tagged, a TR for
-  each row and a TH or a TD for each cell, at a size a PDF/UA checker opens.
-  Example_43's 2,000 pages crash PAC, and tagged they would be 249 MB. The
-  scripts, the workflows, the packaging and the lists of examples build,
-  check and show 57 examples.
+  one, and a heading that goes on into the next frame has one bookmark. A
+  document with bookmarks of its own keeps them, and one that is not tagged
+  has none made.
 - The bounding box of a figure, in all four ports: `Page.setFigureBoundingBox`,
   for a figure drawn with `addBDC` and `addEMC` around other drawing, such
   as the content of another PDF. The figures of the library, images, SVG
@@ -61,13 +48,15 @@ This is the first entry in this file; earlier releases were not tracked here.
   `TextBlock.setStructureType`, as `TextLine` has it, so that a text block
   of a tagged document is a heading, `StructElem.H1` to `H6`, rather than a
   paragraph, which is what it is unless it is set.
-- A description of a barcode and of a QR code, for a screen reader, in all
-  four ports: `setAltDescription` of `Barcode` and of `QRCode`, as `Image` and
-  `SVGImage` have it. In a tagged document, PDF/UA or a PDF/A of level A, a
-  described barcode is one figure of that description, its bars and its
-  digits with it, and a described QR code is a figure too. Without one, a
-  barcode is drawn as before: its bars are decoration and its digits text,
-  and a QR code is decoration, which a screen reader skips.
+- A description of a barcode, a QR code, a Data Matrix and a PDF417
+  barcode, for a screen reader, in all four ports: `setAltDescription` of
+  `Barcode`, `QRCode`, `DataMatrix` and `PDF417`, as `Image` and `SVGImage`
+  have it. In a tagged document, PDF/UA or a PDF/A of level A, a described
+  barcode is one figure of that description, its bars and its digits with
+  it, and a described QR code, Data Matrix or PDF417 barcode is a figure
+  too. Without one, a barcode is drawn as before: its bars are decoration
+  and its digits text, and a QR code, a Data Matrix and a PDF417 barcode are
+  decoration, which a screen reader skips.
 - A compliance level that is PDF/A-3a and PDF/UA-1 at once, in all four
   ports: `Compliance.PDF_A_3A_UA_1`, after `PDF_A_3B`, so that the values of
   the others do not change. The content is tagged, and follows the rules of
@@ -77,7 +66,7 @@ This is the first entry in this file; earlier releases were not tracked here.
   in the extension schemas PDF/A asks for, in the list of a description
   added with `addMetadata`, such as that of Factur-X, when it has one, as the
   metadata may have only one. Example_55, the Factur-X invoice, is of this
-  level now, and check-examples.sh checks it with veraPDF's PDF/A-3a and
+  level, and check-examples.sh checks it with veraPDF's PDF/A-3a and
   PDF/UA-1 profiles, which pass it in the four ports.
 - ITF-14 barcodes, the GTIN of a carton or a case, in all four ports:
   `Barcode.ITF_14`, with the 13 digits of the GTIN, to which the check digit
@@ -143,9 +132,11 @@ This is the first entry in this file; earlier releases were not tracked here.
   the document — `Relationship.SOURCE`, `DATA`, `ALTERNATIVE`, `SUPPLEMENT`
   or `UNSPECIFIED` — and what it is, which PDF/A-3 asks for of each of them;
   the file specification writes `/Subtype`, `/Params` with the size and the
-  date, `/AFRelationship` and `/Desc`. A document of PDF/A-1 or PDF/A-2
-  refuses the file rather than write one it may not carry. veraPDF reads a
-  document of PDF/A-3b that carries a file as valid.
+  date, `/AFRelationship` and `/Desc`, and the date is encrypted with the
+  document. A document of PDF/A-1 or PDF/A-2 refuses the file rather than
+  write one it may not carry, and a document of PDF/A-3 refuses one without
+  a media type. veraPDF reads a document of PDF/A-3b that carries a file as
+  valid.
 - `PDF.addMetadata(rdfDescription)` adds a description to the XMP metadata of
   the document, for a standard that asks for properties of its own, such as
   the invoice standards that say which of the files the document carries is
@@ -161,9 +152,12 @@ This is the first entry in this file; earlier releases were not tracked here.
   tagged as such; one that goes on over pages is one structure element.
   Images are read only from the directory `setImageDirectory` names, never
   from an absolute path, a URL or one with `..`, so that a text from anyone
-  reads no other file. HTML is drawn as the text it is, and a line break is
-  a space. The blocks nest at most 32 levels, so that the text is read in
-  time linear in its length. `StructElem.BLOCKQUOTE` and `StructElem.CODE`
+  reads no other file, alike in the four ports; a source that ends in `/` or
+  `/.` names a directory, and an empty image directory is the working
+  directory. HTML is drawn as the text it is, and a line break is a space.
+  The blocks nest at most 32 levels, so that the text is read in time
+  linear in its length, and quotes and lists nested deeply leave their text
+  at least ten sizes of the text wide. `StructElem.BLOCKQUOTE` and `StructElem.CODE`
   are new.
 - `Markup` makes paragraphs of text with the inline markup of Markdown,
   `**bold**`, `*italic*`, `***bold italic***`, `` `code` `` and
@@ -194,8 +188,10 @@ This is the first entry in this file; earlier releases were not tracked here.
   margin its location leaves at the top, so text at 72, 72 keeps 72 points
   free at the bottom too. The pages are created detached and added to the
   list, so that a footer or a page number can be drawn on each before they
-  are added to the PDF. A frame drew one page and kept the rest before, and
-  the caller had to make the next page and draw it again.
+  are added to the PDF. A frame with no height whose location is in the
+  bottom half of the page, which would leave the text no room, is refused.
+  A frame drew one page and kept the rest before, and the caller had to make
+  the next page and draw it again.
 - `Table.setAlternateRowColor(color)` colors every other row of the body of a
   table, the second, the fourth and so on, counting the rows of the data and
   not those of each page, as `BigTable.setShadingColor` shades its rows, in
@@ -221,7 +217,8 @@ This is the first entry in this file; earlier releases were not tracked here.
   apostrophes between the thousands and a period before the decimals; a cell
   that has no number is left out. The sums are exact, with the number of
   decimals rounded half away from zero and commas between the thousands, and
-  the same text in every port. `Table.setBroughtForwardSum(row, column,
+  the same text in every port; the numbers of a column are read once for
+  each draw, so a running sum over 40,000 rows takes a tenth of a second. `Table.setBroughtForwardSum(row, column,
   decimals)` makes a cell of a header row show the total of the pages
   before, which the running sum shows at the end of the page before; a
   header row with such a cell is drawn from the second page on.
@@ -261,14 +258,22 @@ This is the first entry in this file; earlier releases were not tracked here.
   decodes. `tests/references/fonts/check-fonts.py` checks the 252 fonts PDFjet
   ships, their `.stream` files, six other fonts and the 14 core fonts against
   fontTools and Adobe's AFM files, with their kerning pairs.
-- `booklet/build.sh` writes the PDFjet booklet with PDFjet: an introduction
-  and all 51 examples, grouped by topic, each with what it shows and its
-  complete source code, as a PDF/UA document with a title page, a linked
-  table of contents, bookmarks and page numbers. It writes one booklet for
-  each port and one with the code of the four, from `booklet/content.txt` and
-  the example sources, so the booklet shows the code the examples build and
-  check. `booklet/Booklet.java` lays it out with PDFjet itself, which is what
-  a document of this size asks of the library.
+- `booklet/build.sh` writes the PDFjet booklet with PDFjet, a guide to the
+  API, as a PDF/UA document with a title page, a linked table of contents,
+  bookmarks and page numbers. Its chapters go through documents and pages,
+  fonts, text, tables, graphics, images, charts, barcodes, links and
+  annotations, forms, and existing PDFs, 57 features, each with what its
+  classes and methods do and the smallest code that shows it, 5 to 15 lines.
+  It writes one booklet for each port, of 34 or 35 pages, and one with the
+  code of the four, of 71, from `booklet/content.txt` and the snippet
+  programs in `booklet/snippets`, one for each port; the Swift snippets are
+  the `BookletSnippets` target of `Package.swift`.
+  `booklet/check-snippets.sh` builds and runs them and checks that the four
+  ports write the same PDFs, page by page and text run by text run, with
+  veraPDF for the PDF/UA and PDF/A snippets. `booklet/Booklet.java` lays it
+  out with PDFjet itself, which is what a document of this size asks of the
+  library, and stops when a port lacks a snippet the text shows or has one
+  it does not show.
 - In a PDF/UA document a `Chart`, a `DonutChart` and a `BarChart` are each one
   Figure, with the description `setAltDescription` gives or one made from the
   title or the slices.
@@ -287,9 +292,12 @@ This is the first entry in this file; earlier releases were not tracked here.
   the cells it covers draw nothing. The table keeps its shape, so every row
   holds a cell for every column and the cells a span covers are there and are
   empty, as they are for a column span. A page break keeps the rows of a span
-  together: they go to the next page with it, so a span is never cut in two.
-  In a PDF/UA document the cell has a `RowSpan` attribute, and a row that a
-  span covers whole holds no cell of its own. Example_38 is drawn with it,
+  together: they go to the next page with it, so a span is cut in two only
+  when it is taller than a page, between its rows, and is drawn on each page
+  over the rows it covers there. In a PDF/UA document the cell has a
+  `RowSpan` attribute, which counts the rows of the table and not the lines
+  its rows wrap into, and a row that a span covers whole holds no cell of
+  its own. Example_38 is drawn with it,
   where it used to fake row spans by turning cell borders off and marking the
   cells under a span with a caret; it is now the table of the HTML in its
   comment, cell for cell, and all four ports draw it identically.
@@ -332,13 +340,13 @@ This is the first entry in this file; earlier releases were not tracked here.
   embedded images, clipping, masks, filters and dashed strokes are still
   left out. Values that cannot be read, such as a `stroke-width` of
   `calc()`, a transform of a function PDFjet does not know, a skew of 90
-  degrees, which flattens the shape, or a number too large for a float, are left out as SVG leaves them, the property taking
-  what it inherits; a color that starts with `#` and is not hexadecimal
-  fails as before. A width or a height of `inf` or `nan` is no size, and a
-  path that a transform or `ScaleBy` takes beyond the numbers a PDF holds,
-  2^31, is not drawn, where Java and C# threw and Go wrote 0. The viewBox
-  may separate its numbers with commas. Four
-  files of those programs, drawn by PDFjet and by Chrome, differ in no pixel
+  degrees, which flattens the shape, or a number too large for a float, are
+  left out as SVG leaves them, the property taking what it inherits; a
+  color that starts with `#` and is not hexadecimal fails as before. A width
+  or a height of `inf` or `nan` is no size, and a path that a transform or
+  `ScaleBy` takes beyond the numbers a PDF holds, 2^31, is not drawn, where
+  Java and C# threw and Go wrote 0. The viewBox may separate its numbers
+  with commas. Four files of those programs, drawn by PDFjet and by Chrome, differ in no pixel
   but along the edges.
 
 ### Changed
@@ -349,6 +357,33 @@ This is the first entry in this file; earlier releases were not tracked here.
 - The writer appends numbers, strings and hexadecimal without making a
   string for each, in all four ports; a tagged document of 200 pages is
   written 22% faster in Go, with a third of the allocations.
+- A PDF/A document refuses what it cannot hold, in all four ports, where it
+  was written as it was and failed veraPDF: a CMYK image, and a CMYK color
+  of `setPenColorCMYK` or `setBrushColorCMYK`, which wrote DeviceCMYK (rule
+  6.2.4.3), as its output intent is sRGB, and in PDF/A-1 an image with
+  transparency or of 16 bits per component. The document fails with a
+  message, the same in every port, as it does for a file PDF/A-1 or 2
+  cannot carry, and the color writes nothing: "A document of PDF_A_2B
+  cannot use a CMYK color: its output intent is sRGB, so its colors are
+  gray or RGB."
+- A document of PDF/UA without a title is refused when it is completed, in
+  all four ports, as PDF/UA asks for one.
+- An annotation of a tagged document is refused on a page that was already
+  written, where its element was left without a `/StructParent`, and one
+  that has no contents, no title and no alternative description is refused,
+  as a figure without a description is, in all four ports.
+- A link to a destination the document does not have is refused when the PDF
+  is completed, in all four ports; it was written as a link that did
+  nothing.
+- `addObjects` refuses what it would lose, in all four ports: a PDF/UA or
+  PDF/A document, whose pages the objects were not made for, and a document
+  with pages of its own, made before or added after the objects, which the
+  page tree of the objects does not list. A number the PDF that was read has
+  no object for is a free entry, where it was an empty object marked in use.
+- `addResourceObjects` refuses two pages that give one name to different
+  fonts, images or graphics states, in all four ports: the pages of a
+  document share one resources dictionary, and the second page drew the
+  resource of the first.
 - The IDAT data of a grayscale, truecolor or palette PNG is embedded as it
   is, in all four ports, with the `/DecodeParms` of the PNG predictor, which
   undo the filters of its rows in the reader, where it was decoded and
@@ -368,9 +403,9 @@ This is the first entry in this file; earlier releases were not tracked here.
   as that of most screenshots is, and a palette image whose tRNS chunk gives
   255 to every color its pixels use. Its alpha is not compressed, the PDF is
   smaller, and it draws the same, pixel for pixel in MuPDF and Poppler. A
-  document of PDF/A-1, which has no soft masks, now holds such an image, and
-  passes veraPDF in PDF/A-1b; it still refuses one with a pixel that is not
-  opaque. An image whose alpha is 0 in every pixel keeps its soft mask, and
+  document of PDF/A-1, which has no soft masks, holds such an image, and
+  passes veraPDF in PDF/A-1b; one with a pixel that is not opaque is
+  refused, as above. An image whose alpha is 0 in every pixel keeps its soft mask, and
   is transparent, as browsers and libpng draw it. An RGBA screenshot of 2560
   by 1600 pixels is embedded 10% faster in Go, and 8 KB smaller.
 - The Swift port inflates a zlib stream two to four times faster: its codes
@@ -381,10 +416,6 @@ This is the first entry in this file; earlier releases were not tracked here.
   the same errors as before, at the same bit. A truecolor PNG of 3000 by 4000
   pixels is embedded in 118 ms, where it took 329 ms, and the RGBA
   screenshot in 122 ms, where it took 176 ms.
-- The filters of the rows of a PNG are undone with the first pixel of a row,
-  and the first row, apart from the rest, in all four ports, so that the
-  bytes of the rest need no check of whether they have a byte on the left
-  or a row above.
 - What is drawn inside a figure of a tagged document, between
   `addBDC(StructElem.FIGURE, ...)` and its `addEMC`, is the figure, in all
   four ports: a drawable that tags itself, or marks itself as an artifact,
@@ -632,8 +663,11 @@ This is the first entry in this file; earlier releases were not tracked here.
   it; and a pHYs chunk of more pixels per metre than a PNG number holds is
   passed over in Go and Swift, as Java and C# did.
 - PNG images decode faster, in all four ports: the filters are undone a row
-  at a time with integers, and Java and C# join the IDAT chunks of a large
-  image in one buffer, where a 19 MB image took 6 to 7 seconds.
+  at a time with integers, the first pixel of a row and the first row apart
+  from the rest, so that the bytes of the rest need no check of whether they
+  have a byte on the left or a row above, and Java and C# join the IDAT
+  chunks of a large image in one buffer, where a 19 MB image took 6 to 7
+  seconds.
 - An image of more than 2^24 pixels across or down is written with every
   pixel, and the link of an image turned a quarter of the way covers it as
   it is drawn, in all four ports.
@@ -812,13 +846,6 @@ This is the first entry in this file; earlier releases were not tracked here.
   the annotation says, or by its title, as a viewer shows them. It had no
   text of its own, which PAC reported as tagged text of only whitespace, 6
   times in Example_06.
-- The examples PAC reported, in all four ports: the addresses Example_09's
-  table and Example_20's page show are links to them, as PAC asks of text
-  that reads as an address; Example_14's caption of the GS1 symbol is on two
-  lines, where it ran over the larger symbol beside it, black on black; and
-  Example_35's text is clear of the square of its stamp. check-pdfua-tags.py
-  checks the contrast of each letter against the page drawn without its
-  text, which found the last two.
 - The tags PAC warned of in a tagged document, in all four ports. A figure,
   a link or an annotation that is a kid of the Document, or of another
   element that groups, has the attribute Placement Block, as PDF asks of an
@@ -1526,6 +1553,27 @@ This is the first entry in this file; earlier releases were not tracked here.
   .NET API reference that docfx builds.
 
 ### Examples
+- Example_57 is new: the table of Example_43 cut to 550 rows, 12 pages, as
+  a PDF/UA document, in all four ports, to check how a `BigTable` is
+  tagged, a TR for each row and a TH or a TD for each cell, at a size a
+  PDF/UA checker opens. Example_43's 2,000 pages crash PAC, and tagged they
+  would be 249 MB. The scripts, the workflows, the packaging and the lists
+  of examples build, check and show 57 examples.
+- A heading in every PDF/UA example, in all four ports: Example_01, 02, 09,
+  13, 14, 16, 20, 23, 25, 27, 32, 35, 39, 40, 42 and 47 have an H1 on their
+  first page, a line of their own or one they already drew, so that PAC's
+  quality checks find a heading in each.
+- The examples PAC reported, in all four ports: the addresses Example_09's
+  table and Example_20's page show are links to them, as PAC asks of text
+  that reads as an address; Example_14's caption of the GS1 symbol is on two
+  lines, where it ran over the larger symbol beside it, black on black; and
+  Example_35's text is clear of the square of its stamp. check-pdfua-tags.py
+  checks the contrast of each letter against the page drawn without its
+  text, which found the last two.
+- The tables of Example_09 and Example_38 have a header row, tagged TH, in
+  all four ports: "Country" over the markers and the names, and "Page about
+  the country" over the links, in Example_09, and the numbers of the columns
+  in Example_38. check-pdfua-tags.py noted them as tables with no header.
 - The text of the examples contrasts with its background as WCAG 1.4.3 asks,
   4.5:1, in all four ports: gray text is dim gray, red text firebrick, and
   orange text sienna, and the colors of the charts of Example_25 and
@@ -1566,19 +1614,6 @@ This is the first entry in this file; earlier releases were not tracked here.
   drawn with `Markup` in a text frame, with a numbered list, as a PDF/UA
   document, in all four ports. The booklet has a snippet of `Markup`, and the
   scripts, the workflows and the packaging build and check 53 examples.
-- The booklet is a guide to the API now, not a listing of the examples. Its
-  chapters go through documents and pages, fonts, text, tables, graphics,
-  images, charts, barcodes, links and annotations, forms, and existing PDFs,
-  57 features, each with what its classes and methods do and the smallest
-  code that shows it, 5 to 15 lines, in place of the whole source of the 52
-  examples. The code is read from the snippet programs in `booklet/snippets`,
-  one for each port, and `booklet/check-snippets.sh` builds and runs them and
-  checks that the four ports write the same PDFs, page by page and text run
-  by text run, with veraPDF for the PDF/UA and PDF/A snippets.
-  `Booklet.java` stops when a port lacks a snippet the text shows or has one
-  it does not show. The booklet of one port is 34 or 35 pages, and the one
-  of the four ports 71. The Swift snippets are the `BookletSnippets` target
-  of `Package.swift`.
 - Example_52 is new: it sets the whole of Dostoyevsky's "The Idiot" as a
   book, in all four ports, with `TextFrame.drawOn(pdf, pages, pageSize)`. It
   makes a title page, then puts each chapter on new A5 pages in Source Serif

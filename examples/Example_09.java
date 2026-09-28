@@ -91,6 +91,16 @@ final public class Example_09 {
             Page page, List<Country> countries, Font f1, Font f2) throws Exception {
         Table table = new Table();
         List<List<Cell>> tableData = new ArrayList<List<Cell>>();
+
+        // The header row: the country heads its marker and its name
+        List<Cell> headerRow = new ArrayList<Cell>();
+        Cell header = new Cell(f1, "Country");
+        header.setColSpan(2);
+        headerRow.add(header);
+        headerRow.add(new Cell(f1, ""));
+        headerRow.add(new Cell(f1, "Page about the country"));
+        tableData.add(headerRow);
+
         for (Country country : countries) {
             if (country.point.getShape() != Shape.CIRCLE) {
                 List<Cell> tableRow = new ArrayList<Cell>();
@@ -114,7 +124,7 @@ final public class Example_09 {
                 tableData.add(tableRow);
             }
         }
-        table.setTableData(tableData);
+        table.setTableData(tableData, 1);
         table.autoAdjustColumnWidths();
         table.setCellBorderWidth(0.2f);
         table.setLocation(70f, 360f);

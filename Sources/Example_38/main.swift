@@ -39,7 +39,7 @@ public class Example_38 {
                 + "keeps its shape, so every row holds a cell for every column and the cells "
                 + "a span covers are left empty. The example is also a check of the geometry "
                 + "of the cells: their backgrounds meet without gaps and their borders line "
-                + "up.")
+                + "up. The header row above them numbers the columns.")
         textBlock.setFontSize(11.0)
         textBlock.setLineSpacing(1.3)
         textBlock.setLocation(50.0, 65.0)
@@ -47,7 +47,7 @@ public class Example_38 {
         let xy = textBlock.drawOn(page)
 
         let table = Table()
-        table.setTableData(createTableData(font))
+        table.setTableData(createTableData(font, f1), 1)
         table.setBottomMargin(10.0)
         table.setLocation(50.0, xy[1] + 20.0)
         table.drawOn(page)
@@ -56,8 +56,9 @@ public class Example_38 {
     }
 
     /**
-     * Returns the cells of a 10 by 10 table whose cells span columns and
-     * rows. It is the table of this HTML, cell for cell:
+     * Returns a header row that numbers the columns, in the header font, and
+     * under it the cells of a 10 by 10 table whose cells span columns and
+     * rows. They are the table of this HTML, cell for cell:
      * <pre>
      * &lt;table border="solid"&gt;
      * &lt;tr&gt;&lt;td colspan="2" rowspan="2"&gt;2x2&lt;/td&gt;&lt;td colspan="2"&gt;2x1&lt;/td&gt;
@@ -80,7 +81,7 @@ public class Example_38 {
      * &lt;/table&gt;
      * </pre>
      */
-    private func createTableData(_ font: Font) -> [[Cell]] {
+    private func createTableData(_ font: Font, _ headerFont: Font) -> [[Cell]] {
         // The columns and the rows each cell spans, in the order a browser
         // reads the cells of the HTML above.
         let spans = [
@@ -122,6 +123,12 @@ public class Example_38 {
             }
         }
         var rows = [[Cell]]()
+        // The header row, above the cells: it numbers the columns.
+        var header = [Cell]()
+        for c in 0..<columns {
+            header.append(getCell(headerFont, 1, 1, String(c + 1)))
+        }
+        rows.append(header)
         for row in grid {
             rows.append(row.map { $0! })
         }

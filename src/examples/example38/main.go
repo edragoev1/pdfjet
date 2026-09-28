@@ -51,7 +51,7 @@ func Example38() {
 			"keeps its shape, so every row holds a cell for every column and the cells "+
 			"a span covers are left empty. The example is also a check of the geometry "+
 			"of the cells: their backgrounds meet without gaps and their borders line "+
-			"up.")
+			"up. The header row above them numbers the columns.")
 	textBlock.SetFontSize(11.0)
 	textBlock.SetLineSpacing(1.3)
 	textBlock.SetLocation(50.0, 65.0)
@@ -59,7 +59,7 @@ func Example38() {
 	xy := textBlock.DrawOn(page)
 
 	table := pdfjet.NewTable()
-	table.SetTableData(createTableData(font), 0)
+	table.SetTableData(createTableData(font, f1), 1)
 	table.SetBottomMargin(10.0)
 	table.SetLocation(50.0, xy[1]+20.0)
 	table.DrawOn(page)
@@ -69,8 +69,9 @@ func Example38() {
 	}
 }
 
-// createTableData returns the cells of a 10 by 10 table whose cells span
-// columns and rows. It is the table of this HTML, cell for cell:
+// createTableData returns a header row that numbers the columns, in the
+// header font, and under it the cells of a 10 by 10 table whose cells span
+// columns and rows. They are the table of this HTML, cell for cell:
 //
 //	<table border="solid">
 //	<tr><td colspan="2" rowspan="2">2x2</td><td colspan="2">2x1</td>
@@ -91,7 +92,7 @@ func Example38() {
 //	    <td>1x1</td></tr>
 //	<tr><td>1x1</td><td>1x1</td><td>1x1</td><td>1x1</td><td>1x1</td></tr>
 //	</table>
-func createTableData(font *pdfjet.Font) [][]*pdfjet.Cell {
+func createTableData(font, headerFont *pdfjet.Font) [][]*pdfjet.Cell {
 	// The columns and the rows each cell spans, in the order a browser reads
 	// the cells of the HTML above.
 	spans := [][][2]int{
@@ -132,7 +133,12 @@ func createTableData(font *pdfjet.Font) [][]*pdfjet.Cell {
 			c += span[0]
 		}
 	}
-	return grid
+	// The header row, above the cells: it numbers the columns.
+	header := make([]*pdfjet.Cell, columns)
+	for c := range header {
+		header[c] = getCell(headerFont, 1, 1, fmt.Sprintf("%d", c+1))
+	}
+	return append([][]*pdfjet.Cell{header}, grid...)
 }
 
 func getCell(font *pdfjet.Font, colSpan, rowSpan int, text string) *pdfjet.Cell {

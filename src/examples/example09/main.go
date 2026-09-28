@@ -101,6 +101,16 @@ func addTrendLine(chart *pdfjet.Chart, countries []*country) {
 func addTableToChart(page *pdfjet.Page, countries []*country, f1, f2 *pdfjet.Font) {
 	table := pdfjet.NewTable()
 	tableData := make([][]*pdfjet.Cell, 0)
+
+	// The header row: the country heads its marker and its name
+	headerRow := make([]*pdfjet.Cell, 0)
+	header := pdfjet.NewCell(f1, "Country")
+	header.SetColSpan(2)
+	headerRow = append(headerRow, header)
+	headerRow = append(headerRow, pdfjet.NewCell(f1, ""))
+	headerRow = append(headerRow, pdfjet.NewCell(f1, "Page about the country"))
+	tableData = append(tableData, headerRow)
+
 	for _, c := range countries {
 		if c.point.GetShape() != shape.Circle {
 			tableRow := make([]*pdfjet.Cell, 0)
@@ -122,7 +132,7 @@ func addTableToChart(page *pdfjet.Page, countries []*country, f1, f2 *pdfjet.Fon
 		}
 	}
 
-	table.SetTableData(tableData, 0)
+	table.SetTableData(tableData, 1)
 	table.AutoAdjustColumnWidths()
 	table.SetCellBorderWidth(0.2)
 	table.SetLocation(70.0, 360.0)

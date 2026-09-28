@@ -90,6 +90,16 @@ public class Example_09 {
             Page page, List<Country> countries, Font f1, Font f2) {
         Table table = new Table();
         List<List<Cell>> tableData = new List<List<Cell>>();
+
+        // The header row: the country heads its marker and its name
+        List<Cell> headerRow = new List<Cell>();
+        Cell header = new Cell(f1, "Country");
+        header.SetColSpan(2);
+        headerRow.Add(header);
+        headerRow.Add(new Cell(f1, ""));
+        headerRow.Add(new Cell(f1, "Page about the country"));
+        tableData.Add(headerRow);
+
         foreach (Country country in countries) {
             if (country.point.GetShape() != Shape.CIRCLE) {
                 List<Cell> tableRow = new List<Cell>();
@@ -113,7 +123,7 @@ public class Example_09 {
                 tableData.Add(tableRow);
             }
         }
-        table.SetTableData(tableData);
+        table.SetTableData(tableData, 1);
         table.AutoAdjustColumnWidths();
         table.SetCellBorderWidth(0.2f);
         table.SetLocation(70f, 360f);

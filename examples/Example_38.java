@@ -52,7 +52,7 @@ public class Example_38 {
                 + "keeps its shape, so every row holds a cell for every column and the cells "
                 + "a span covers are left empty. The example is also a check of the geometry "
                 + "of the cells: their backgrounds meet without gaps and their borders line "
-                + "up.");
+                + "up. The header row above them numbers the columns.");
         textBlock.setFontSize(11f);
         textBlock.setLineSpacing(1.3f);
         textBlock.setLocation(50f, 65f);
@@ -60,7 +60,7 @@ public class Example_38 {
         float[] xy = textBlock.drawOn(page);
 
         Table table = new Table();
-        table.setTableData(createTableData());
+        table.setTableData(createTableData(f1), 1);
         table.setBottomMargin(10f);
         table.setLocation(50f, xy[1] + 20f);
         table.drawOn(page);
@@ -69,8 +69,9 @@ public class Example_38 {
     }
 
     /**
-     * Returns the cells of a 10 by 10 table whose cells span columns and
-     * rows. It is the table of this HTML, cell for cell:
+     * Returns a header row that numbers the columns, and under it the cells
+     * of a 10 by 10 table whose cells span columns and rows. They are the
+     * table of this HTML, cell for cell:
      * <pre>
      * &lt;table border="solid"&gt;
      * &lt;tr&gt;&lt;td colspan="2" rowspan="2"&gt;2x2&lt;/td&gt;&lt;td colspan="2"&gt;2x1&lt;/td&gt;
@@ -93,10 +94,11 @@ public class Example_38 {
      * &lt;/table&gt;
      * </pre>
      *
+     * @param headerFont the font of the header row, which numbers the columns.
      * @return the rows of the table.
      * @throws Exception if a cell cannot be made.
      */
-    private List<List<Cell>> createTableData() throws Exception {
+    private List<List<Cell>> createTableData(Font headerFont) throws Exception {
         // The columns and the rows each cell spans, in the order a browser
         // reads the cells of the HTML above.
         int[][][] spans = {
@@ -134,6 +136,12 @@ public class Example_38 {
             }
         }
         List<List<Cell>> rows = new LinkedList<List<Cell>>();
+        // The header row, above the cells: it numbers the columns.
+        List<Cell> header = new LinkedList<Cell>();
+        for (int c = 0; c < columns; c++) {
+            header.add(getCell(headerFont, 1, 1, String.valueOf(c + 1)));
+        }
+        rows.add(header);
         for (Cell[] row : grid) {
             rows.add(new LinkedList<Cell>(Arrays.asList(row)));
         }
