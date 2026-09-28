@@ -1184,9 +1184,15 @@ func (pdf *PDF) addPageStructElements(page *Page) {
 			}
 			page.mcidNumbers[mcid] = element.objNumber
 		}
-		setMcidNumber(element.mcid)
-		for _, mcid := range element.mcids {
-			setMcidNumber(mcid)
+		// The element of an annotation stands for the annotation, not for
+		// marked content: its mcid is left at 0, and taken as one it would
+		// put the annotation where marked content 0 of the page is, which
+		// PAC reports as an inconsistent entry of the parent tree.
+		if element.annotation == nil {
+			setMcidNumber(element.mcid)
+			for _, mcid := range element.mcids {
+				setMcidNumber(mcid)
+			}
 		}
 		if element.parent == nil {
 			pdf.documentKids = append(pdf.documentKids, element.objNumber)

@@ -17,6 +17,10 @@ The checks are:
     a file name.
   * Every figure has a bounding box, a BBox of the Layout attributes, with an
     area: PDF/UA asks for one, and veraPDF does not check it (PAC does).
+  * The parent tree agrees with the structure tree: the element it gives for
+    each marked content of a page has that marked content among its kids, and
+    the element it gives for an annotation has the annotation. PAC reports
+    an entry that does not as "Inconsistent entry found".
   * A list is built of L, LI, Lbl and LBody, in that nesting.
   * The cells of a table tile it: laid out as a browser lays out an HTML
     table, with ColSpan and RowSpan, they fill every square of the grid and
@@ -173,6 +177,56 @@ def table_shape(rows):
     return problems
 
 
+def number_tree(doc, xref):
+    """Returns the entries of the number tree whose root is the object xref, as
+    {key: raw value}, from its Nums and the Nums of its Kids."""
+    entries = {}
+    kind, text = doc.xref_get_key(xref, 'Nums')
+    if kind == 'array':
+        for key, value in re.findall(r'(\d+)\s*(\d+ \d+ R|\[[^\]]*\])', text):
+            entries[int(key)] = value
+    for kid in references(doc.xref_get_key(xref, 'Kids')):
+        entries.update(number_tree(doc, kid))
+    return entries
+
+
+def parent_tree_problems(doc, tree):
+    """Returns the entries of the parent tree whose element does not have the
+    marked content or the annotation they are the parent of."""
+    kind, text = doc.xref_get_key(tree, 'ParentTree')
+    if kind != 'xref':
+        return ['has no parent tree']
+    entries = number_tree(doc, int(text.split()[0]))
+    problems = []
+    for page in doc:
+        kind, text = doc.xref_get_key(page.xref, 'StructParents')
+        if kind == 'int':
+            value = entries.get(int(text))
+            if value is None:
+                problems.append(f'page {page.number + 1} has no entry in the parent tree')
+                continue
+            if value.endswith('R'):  # An array of its own
+                value = doc.xref_object(int(value.split()[0]), compressed=True)
+            for mcid, element in enumerate(int(n) for n in re.findall(r'(\d+) \d+ R', value)):
+                kids = doc.xref_get_key(element, 'K')[1]
+                marked = [int(n) for n in re.findall(r'(?<![/\d])(\d+)(?! \d+ R)(?![\d.])', re.sub(r'\d+ \d+ R', '', kids))]
+                marked += [int(doc.xref_get_key(mcr, 'MCID')[1]) for mcr in references(('array', kids))
+                           if doc.xref_get_key(mcr, 'MCID')[0] == 'int']
+                marked += [int(n) for n in re.findall(r'/MCID\s+(\d+)', kids)]
+                if mcid not in marked:
+                    problems.append(f'page {page.number + 1}: the parent tree gives marked content {mcid} '
+                                    f'to an element that does not have it')
+        for annot in page.annots() or []:
+            kind, text = doc.xref_get_key(annot.xref, 'StructParent')
+            if kind == 'int':
+                value = entries.get(int(text), '')
+                kids = doc.xref_get_key(int(value.split()[0]), 'K')[1] if value.endswith('R') else ''
+                if f'/Obj {annot.xref} 0 R' not in kids.replace('  ', ' '):
+                    problems.append(f'page {page.number + 1}: the parent tree gives an annotation '
+                                    f'to an element that does not have it')
+    return problems
+
+
 def check(path):
     report = Report(os.path.basename(path))
     doc = pymupdf.open(path)
@@ -182,6 +236,7 @@ def check(path):
         return report
     for number in references(doc.xref_get_key(int(root[1].split()[0]), 'K')):
         walk(Element(doc, number), report)
+    report.problems += parent_tree_problems(doc, int(root[1].split()[0]))
 
     if report.headings:
         if report.headings[0] != 1:

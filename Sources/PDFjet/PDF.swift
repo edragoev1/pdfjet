@@ -732,9 +732,16 @@ public final class PDF {
         }
         var kept = [StructElement]()
         for element in page.structures {
-            var mcids = element.mcids
-            if element.mcid >= 0 {
-                mcids.append(element.mcid)
+            // The element of an annotation stands for the annotation, not for
+            // marked content: its mcid is left at 0, and taken as one it would
+            // put the annotation where marked content 0 of the page is, which
+            // PAC reports as an inconsistent entry of the parent tree.
+            var mcids = [Int]()
+            if element.annotation == nil {
+                mcids = element.mcids
+                if element.mcid >= 0 {
+                    mcids.append(element.mcid)
+                }
             }
             for mcid in mcids {
                 while page.mcidNumbers.count <= mcid {

@@ -739,9 +739,16 @@ final public class PDF {
         }
         List<StructElement> kept = new ArrayList<StructElement>();
         for (StructElement element : page.structures) {
-            List<Integer> mcids = new ArrayList<Integer>(element.mcids);
-            if (element.mcid >= 0) {
-                mcids.add(element.mcid);
+            // The element of an annotation stands for the annotation, not for
+            // marked content: its mcid is left at 0, and taken as one it would
+            // put the annotation where marked content 0 of the page is, which
+            // PAC reports as an inconsistent entry of the parent tree.
+            List<Integer> mcids = new ArrayList<Integer>();
+            if (element.annotation == null) {
+                mcids.addAll(element.mcids);
+                if (element.mcid >= 0) {
+                    mcids.add(element.mcid);
+                }
             }
             for (Integer mcid : mcids) {
                 while (page.mcidNumbers.size() <= mcid.intValue()) {

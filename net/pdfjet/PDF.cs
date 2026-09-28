@@ -697,9 +697,16 @@ public sealed class PDF {
         }
         List<StructElement> kept = new List<StructElement>();
         foreach (StructElement element in page.structures) {
-            List<int> mcids = new List<int>(element.mcids);
-            if (element.mcid >= 0) {
-                mcids.Add(element.mcid);
+            // The element of an annotation stands for the annotation, not for
+            // marked content: its mcid is left at 0, and taken as one it would
+            // put the annotation where marked content 0 of the page is, which
+            // PAC reports as an inconsistent entry of the parent tree.
+            List<int> mcids = new List<int>();
+            if (element.annotation == null) {
+                mcids.AddRange(element.mcids);
+                if (element.mcid >= 0) {
+                    mcids.Add(element.mcid);
+                }
             }
             foreach (int mcid in mcids) {
                 while (page.mcidNumbers.Count <= mcid) {

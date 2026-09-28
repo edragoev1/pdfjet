@@ -470,6 +470,14 @@ This is the first entry in this file; earlier releases were not tracked here.
   the values of the other three ports.
 
 ### Fixed
+- On a page with a link or another annotation, the parent tree of a tagged
+  document gave the first marked content of the page to the element of the
+  annotation, in all four ports: the element of an annotation has no marked
+  content, but its mcid of 0 was taken as one. A screen reader that finds
+  the element of what it reads from the parent tree found the annotation.
+  PAC reports it as "Inconsistent entry found", in 3 examples, and 3 more
+  had it. check-pdfua-tags.py checks every entry of the parent tree of the
+  examples. Found by PAC.
 - A figure of a tagged document had no bounding box, in all four ports:
   PDF/UA asks for one, the BBox of the Layout attributes of the Figure
   element, which a screen reader or a program that reflows the page uses to
