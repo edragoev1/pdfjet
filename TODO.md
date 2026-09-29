@@ -146,17 +146,30 @@ API of v9.0.1 came with the PDF/UA work and the fixes; goal 6 lists them.
    `check-examples.sh` already renders with, these six engines draw the PDFs
    of nearly everyone; WPS Office and PDF-XChange have engines of their own,
    and are left out. The ranking is an estimate of use, not measured shares.
+
+   The five engines we focus on (Sep 29), with MuPDF (SumatraPDF) as the
+   reference the others are compared against:
+
+   | Viewer | Engine | Covers | How it is checked |
+   |---|---|---|---|
+   | Chrome | PDFium | Chrome, Brave, Opera, Vivaldi, Android | automatically, in CI and `check-examples.sh` |
+   | Firefox | PDF.js | Firefox | automatically (PDF.js in Node, in CI and `check-examples.sh`), and in Firefox by hand now and then |
+   | Safari | PDFKit | Preview, Safari, iPhone and iPad | automatically, in CI on macOS |
+   | Acrobat Reader | Adobe PDF Library | Acrobat, Edge, Adobe Document Cloud | by hand, on Windows |
+   | Evince / Okular | Poppler | Linux desktop viewers, CUPS printing, command-line tools | automatically, in CI and `check-examples.sh` |
+
    - ✅ Automated on Sep 29: the viewers job of the Build workflow opens the
      Java examples, Example_30 with its user and its owner password, and a
      PDF with a Cyrillic and one with a 200 byte password
-     (`.github/scripts/encrypted-pdfs`), in PDFium (pypdfium2) and pdf.js
-     (pdfjs-dist in Node) on Linux and in PDFKit on macOS, with
+     (`.github/scripts/encrypted-pdfs`), in PDFium (pypdfium2), pdf.js
+     (pdfjs-dist in Node) and Poppler (pdftoppm and pdftotext) on Linux and
+     in PDFKit on macOS, with
      `.github/scripts/check-viewers.py`: every page opens, renders and gives
      its text; none is blank or looks different from MuPDF's render, in
      blocks of 8 pixels; and it has every character MuPDF extracts. The
      renders are uploaded, a contact sheet of each PDF beside MuPDF's, to
-     look at. `check-examples.sh` runs the PDFium check. PDFium and pdf.js
-     pass; PDFKit has not run yet.
+     look at. `check-examples.sh` runs the PDFium, pdf.js and Poppler
+     checks. PDFium, pdf.js and Poppler pass; PDFKit has not run yet.
    - ✅ What they found: the annotations of Example_06 and the file
      attachment of Example_30 have no appearance stream (`/AP`), which PDF
      2.0 and PDF/A ask for, so each viewer draws them its own way. PDFium,
@@ -175,7 +188,10 @@ API of v9.0.1 came with the PDF/UA work and the fixes; goal 6 lists them.
      Also: PDFium does not cut a password at 127 bytes, as ISO 32000-2 asks
      of a viewer, so Chrome opens a PDF with a longer password only with its
      first 127 bytes; not ours to fix, worth a line in the docs of
-     `setUserPassword`.
+     `setUserPassword`. Poppler cuts a password at 127 bytes, but its
+     pdftoppm and pdftotext keep only the first 32 bytes of the one they are
+     given, so the check opens the 200 byte password file in them with its
+     owner password; the Cyrillic password works.
    - ⬜ Still manual: Acrobat Reader, and Edge with Adobe's engine; Foxit;
      Preview itself, which the PDFKit check stands in for but does not
      click through; PAC; NVDA with Acrobat Reader, and VoiceOver; and what
@@ -419,8 +435,8 @@ day.
 
 - ⬜ **B** Goal 4: the manual viewer pass, on the files built from the frozen
       master, in Acrobat Reader, Preview, Chrome, Firefox and Edge. The
-      engines of Chrome, Firefox and Preview are checked by the Build
-      workflow since Sep 29; see goal 4 for what is left.
+      engines of Chrome, Firefox, Preview and the Linux viewers are checked
+      by the Build workflow since Sep 29; see goal 4 for what is left.
 - ⬜ **B** Goal 7: benchmarks at 9.0.3 against 9.0.2 and 9.0.1, Example_43's
       printed time among them; the JDK 8 build; the packages and the docs made
       from the tag.

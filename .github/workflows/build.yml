@@ -14,8 +14,8 @@
 # Go port embeds against Pillow and the fonts it reads against fontTools. The swift-macos job
 # builds the Swift port and runs its tests on macOS, where an API a version of
 # macOS lacks fails the build that Linux lets through. The viewers job opens the
-# Java PDFs in PDFium (Chrome), pdf.js (Firefox) and Apple's PDFKit (Preview)
-# and compares their pages and text with MuPDF's.
+# Java PDFs in PDFium (Chrome), pdf.js (Firefox), Apple's PDFKit (Preview) and
+# Poppler (Evince and Okular) and compares their pages and text with MuPDF's.
 
 name: Build
 
@@ -271,10 +271,11 @@ jobs:
     # Opens the Java PDFs, which the compare job checks are those of every port,
     # and the encrypted ones of the go job, in the engines of the viewers most
     # people use, with .github/scripts/check-viewers.py: PDFium, of Chrome and
-    # Android, and pdf.js, of Firefox, on Linux, and Apple's PDFKit, of Preview
-    # and iOS, on macOS. Each page must open, render and give its text, and
-    # look like MuPDF's render of it; the renders are uploaded, a contact sheet
-    # of each PDF beside MuPDF's, to look at.
+    # Android, pdf.js, of Firefox, and Poppler, of the Linux desktop viewers, on
+    # Linux, and Apple's PDFKit, of Preview and iOS, on macOS. Each page must
+    # open, render and give its text, and look like MuPDF's render of it; the
+    # renders are uploaded, a contact sheet of each PDF beside MuPDF's, to look
+    # at.
     viewers:
         name: viewers (${{ matrix.engine }})
         needs: build
@@ -291,6 +292,8 @@ jobs:
                       os: ubuntu-24.04
                     - engine: pdfkit
                       os: macos-latest
+                    - engine: poppler
+                      os: ubuntu-24.04
         steps:
             # The script reads the Java examples for the passwords of the
             # encrypted one.
@@ -331,6 +334,14 @@ jobs:
             - if: matrix.engine == 'pdfjs'
               name: Install pdf.js
               run: npm ci --no-audit --no-fund --prefix .github/scripts/render-pdfjs
+
+            # pdftoppm and pdftotext, of the Poppler of Ubuntu 24.04, as in the
+            # compare job.
+            - if: matrix.engine == 'poppler'
+              name: Install Poppler
+              run: |
+                  sudo apt-get install -y -q poppler-utils
+                  pdftoppm -v
 
             # The PDFKit of the runner's macOS, with the newest Xcode's Swift,
             # as in the swift-macos job.

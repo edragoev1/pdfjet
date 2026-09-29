@@ -11,6 +11,9 @@ ENGINE is one of:
 - pdfkit: Apple's PDFKit, the engine of Preview, Safari and iOS, with
   render-pdfkit.swift built into the command in the PDFKIT_RENDERER
   environment variable. It runs on macOS only.
+- poppler: Poppler, the engine of Evince, Okular and the other Linux desktop
+  viewers and of CUPS printing, through its pdftoppm and pdftotext commands.
+  pdftoppm draws with Splash, as Okular and CUPS do; Evince draws with Cairo.
 
 PDF_FOLDER has the Java examples, Example_NN.pdf, which the compare job has
 checked are the examples of every port. ENCRYPTED_FOLDER has the PDFs that
@@ -20,8 +23,8 @@ password, the one encrypted PDF with the Cyrillic password and the other with
 the 200 byte one. The check fails when, in the engine:
 
 - a PDF does not open, a page does not render, or its text cannot be
-  extracted; pdf.js does not stop at a page it cannot read, so any warning it
-  prints counts too.
+  extracted; pdf.js and Poppler do not stop at a page they cannot read, so
+  any warning they print counts too.
 - a PDF has another number of pages than in MuPDF.
 - one of the first MAX_PAGES pages renders nearly blank where MuPDF's does
   not: less than MIN_INK_RATIO of the ink of MuPDF's render at the same
@@ -44,12 +47,8 @@ contact sheet of each, beside MuPDF's render, are written to OUTPUT_FOLDER
 for a person to look at. The largest difference and the smallest ink ratio
 found are printed, to see how close the examples come to the limits.
 
-check-examples.sh runs the PDFium check. The pdf.js one runs after it, on the
-PDFs it keeps in build/check-examples, with Node 22.13 or later:
-
-    (cd .github/scripts/render-pdfjs && npm ci)
-    build/check-examples/venv/bin/python .github/scripts/check-viewers.py pdfjs \\
-        build/check-examples/pdfs/java build/check-examples/encrypted build/check-examples/viewers/pdfjs
+check-examples.sh runs the PDFium, the pdf.js and the Poppler checks; the
+PDFKit one runs in the Build workflow only.
 """
 
 import functools
@@ -66,7 +65,7 @@ from concurrent.futures import ProcessPoolExecutor
 
 import pymupdf
 
-ENGINES = {'pdfium': 'PDFium', 'pdfjs': 'pdf.js', 'pdfkit': 'PDFKit'}
+ENGINES = {'pdfium': 'PDFium', 'pdfjs': 'pdf.js', 'pdfkit': 'PDFKit', 'poppler': 'Poppler'}
 EXAMPLES = range(1, 58)
 MAX_PAGES = 10
 RESOLUTION = 72
@@ -74,11 +73,13 @@ SCRIPTS_DIR = os.path.dirname(os.path.abspath(__file__))
 EXAMPLES_DIR = os.path.join(SCRIPTS_DIR, '..', '..', 'examples')
 
 # Calibrated on the examples of Sep 29, 2026, with the pinned versions, on the
-# pages RENDER_EXCEPTIONS leaves in. The smallest ink ratio was 0.61 in PDFium
-# and 0.55 in pdf.js, both on the thin table lines of Example_43; a blank page
-# has 0. The most blocks that differ were 2.9% in PDFium, on the heavier
-# lines of the tables of Example_13, and 1.3% in pdf.js; the annotations
-# PDFium left out of Example_06, before they had appearance streams, were 4.7%.
+# pages RENDER_EXCEPTIONS leaves in. The smallest ink ratio was 0.61 in PDFium,
+# 0.55 in pdf.js and 0.43 in Poppler, all on the thin table lines of
+# Example_43; a blank page has 0. The most blocks that differ were 2.9% in
+# PDFium, on the heavier lines of the tables of Example_13, 1.3% in pdf.js, and
+# 3.2% in Poppler, which draws the thin grid lines of the chart of Example_09
+# a full pixel wide; the annotations PDFium left out of Example_06, before
+# they had appearance streams, were 4.7%.
 MIN_INK_RATIO = 0.25
 SHRINK = 8
 BLOCK_TOLERANCE = 48
@@ -107,6 +108,10 @@ PASSWORD_EXCEPTIONS = {
         ('0123456789' * 20)[:127],
         'PDFium does not cut a password at 127 bytes, as ISO 32000-2 asks of a viewer, so Chrome opens '
         'the PDF only with the first 127 bytes typed'),
+    ('poppler', 'Encrypted_200_Bytes'): (
+        'world',
+        'pdftoppm and pdftotext keep only the first 32 bytes of a password, so the PDF is opened with its '
+        'owner password; Poppler itself cuts a password at 127 bytes, so Evince and Okular open it'),
 }
 
 
@@ -173,6 +178,42 @@ def render_pdfium(dpi, max_pages, out, file):
         json.dump(result, f)
 
 
+def render_poppler(dpi, max_pages, out, file):
+    """Does for Poppler what render-pdfjs.mjs does for pdf.js, with pdftotext
+    and pdftoppm. The password is given as the owner and as the user password,
+    as a viewer tries the one typed as either."""
+    result = {'pages': 0, 'text': [], 'errors': []}
+    password = ['-opw', file['password'], '-upw', file['password']] if file['password'] else []
+
+    def run(command, **kwargs):
+        done = subprocess.run(command[:1] + password + command[1:], stderr=subprocess.PIPE, **kwargs)
+        # Poppler prints what it cannot read of a page and goes on.
+        result['errors'] += [f'{command[0]}: {line}' for line in done.stderr.decode(errors='replace').splitlines()]
+        return done
+
+    # -raw, in the order of the content stream, keeps the hyphens at the ends
+    # of the lines, as check-example-text.py does. Each page ends with a form feed.
+    text = run(['pdftotext', '-raw', '-enc', 'UTF-8', file['path'], '-'], stdout=subprocess.PIPE)
+    if text.returncode == 0:
+        result['text'] = text.stdout.decode('utf-8').split('\f')[:-1]
+        result['pages'] = len(result['text'])
+    folder = os.path.join(out, file['name'])
+    os.makedirs(folder, exist_ok=True)
+    if result['pages']:
+        run(['pdftoppm', '-png', '-r', str(dpi), '-l', str(max_pages), file['path'], os.path.join(folder, 'poppler')])
+        # pdftoppm pads the page numbers to the digits of the last page.
+        for png in os.listdir(folder):
+            page = re.fullmatch(r'poppler-(\d+)\.png', png)
+            if page:
+                os.replace(os.path.join(folder, png), page_png(out, file['name'], int(page.group(1))))
+    if result['pages'] > max_pages:
+        # The other pages are rendered too, to see that they render, but not
+        # kept: without a file name pdftoppm writes them to its output, as PPM.
+        run(['pdftoppm', '-r', str(dpi), '-f', str(max_pages + 1), file['path']], stdout=subprocess.DEVNULL)
+    with open(os.path.join(out, file['name'] + '.json'), 'w', encoding='utf-8') as f:
+        json.dump(result, f)
+
+
 def run_renderer(command, chunk, out):
     """Runs render-pdfjs.mjs or render-pdfkit on some of the files."""
     with tempfile.NamedTemporaryFile('w', suffix='.json', delete=False, encoding='utf-8') as job:
@@ -188,9 +229,10 @@ def render(engine, all_files, out):
     processors, each writing the JSON and the PNG files of its files."""
     all_files = [dict(f, password=PASSWORD_EXCEPTIONS[engine, f['name']][0])
                  if (engine, f['name']) in PASSWORD_EXCEPTIONS else f for f in all_files]
-    if engine == 'pdfium':
+    if engine in ('pdfium', 'poppler'):
+        renderer = render_pdfium if engine == 'pdfium' else render_poppler
         with ProcessPoolExecutor() as executor:
-            list(executor.map(functools.partial(render_pdfium, RESOLUTION, MAX_PAGES, out), all_files))
+            list(executor.map(functools.partial(renderer, RESOLUTION, MAX_PAGES, out), all_files))
         return
     if engine == 'pdfjs':
         command = [os.environ.get('NODE', 'node'), os.path.join(SCRIPTS_DIR, 'render-pdfjs', 'render-pdfjs.mjs')]

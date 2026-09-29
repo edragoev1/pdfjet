@@ -271,7 +271,30 @@ To run the same checks locally before pushing, run `./check-examples.sh`. It
 builds the four ports and runs their unit tests one after another in the
 repository folder, builds and tests the Java port again with JDK 8, and then
 checks their PDFs, so it needs the four toolchains, a JDK 8 (in `JAVA8_HOME`,
-`/opt/jdk8*` or `/usr/lib/jvm`), Python 3 and veraPDF.
+`/opt/jdk8*` or `/usr/lib/jvm`), Python 3, veraPDF, Node 22.13 or later with
+npm, for PDF.js, and Poppler's `pdftoppm` and `pdftotext` (`poppler-utils` on
+Ubuntu). It stops, and says what to install, before it builds anything when
+one of them is missing or Node is too old.
+
+### The viewers the PDFs are checked in
+
+The examples are checked in the engines of five viewers, with MuPDF
+(SumatraPDF) as the reference the others are compared against:
+
+| Viewer | Engine | Covers | How it is checked |
+|---|---|---|---|
+| Chrome | PDFium | Chrome, Brave, Opera, Vivaldi, Android | automatically, in CI and `check-examples.sh` |
+| Firefox | PDF.js | Firefox | automatically (PDF.js in Node, in CI and `check-examples.sh`), and in Firefox by hand now and then |
+| Safari | PDFKit | Preview, Safari, iPhone and iPad | automatically, in CI on macOS |
+| Acrobat Reader | Adobe PDF Library | Acrobat, Edge, Adobe Document Cloud | by hand, on Windows |
+| Evince / Okular | Poppler | Linux desktop viewers, CUPS printing, command-line tools | automatically, in CI and `check-examples.sh` |
+
+Checked automatically means that `.github/scripts/check-viewers.py` opens every
+example, and the encrypted ones with their passwords, in the engine: each page
+must render, not be blank, and look like MuPDF's render of it within set
+limits, and the engine must extract every character of its text that MuPDF
+does. The renders are kept, a contact sheet of each PDF beside MuPDF's, to
+look at.
 
 The `Windows` workflow runs the Windows scripts, `build-java.cmd`,
 `build-dotnet.cmd`, `build-go.cmd` and `build-swift.cmd`, on a Windows runner

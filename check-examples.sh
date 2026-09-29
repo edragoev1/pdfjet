@@ -9,11 +9,10 @@
 # its java (JDK 8) job does, then checks the example PDFs with
 # .github/scripts/check-example-pdfs.py and their tags with
 # .github/scripts/check-pdfua-tags.py, as its compare job does, and opens the
-# Java PDFs in PDFium with .github/scripts/check-viewers.py, as its viewers job
-# does; the pdf.js and PDFKit checks of that job are left to the workflow, and
-# the script says how to run the pdf.js one. Last, it builds and runs the
-# snippets of the booklet in the four ports and compares their PDFs, with
-# booklet/check-snippets.sh.
+# Java PDFs in PDFium, pdf.js and Poppler with .github/scripts/check-viewers.py,
+# as its viewers job does; its PDFKit check needs macOS, so it is left to the
+# workflow. Last, it builds and runs the snippets of the booklet in the four
+# ports and compares their PDFs, with booklet/check-snippets.sh.
 #
 # The ports are built one after another in this folder. clean.sh runs before
 # each one, so no output of an earlier build, like the DLL of an example that
@@ -21,8 +20,10 @@
 # build/check-examples, with the Python environment the check runs in.
 #
 # Needs the four toolchains, python3 and veraPDF, run as "verapdf" or as the
-# command in the VERAPDF environment variable, and a JDK 8, found in the
-# JAVA8_HOME environment variable or in /opt/jdk8* or /usr/lib/jvm.
+# command in the VERAPDF environment variable, a JDK 8, found in the
+# JAVA8_HOME environment variable or in /opt/jdk8* or /usr/lib/jvm, Node 22.13
+# or later with npm, for pdf.js, and Poppler's pdftoppm and pdftotext, all on
+# the PATH. The script stops before it builds anything when one is missing.
 
 bash "$(dirname "$0")/get-fonts-and-data.sh" || exit 1
 cd "$(dirname "$0")" || exit 1
@@ -36,6 +37,24 @@ if ! command -v "$VERAPDF" > /dev/null; then
     exit 1
 fi
 export VERAPDF
+
+# pdf.js needs Node 22.13 or later; the workflow runs it with Node 24. A missing
+# or older Node fails the script, as a missing veraPDF does, rather than skip
+# the check that the workflow then fails.
+if ! node -e 'const [major, minor] = process.versions.node.split(".").map(Number);
+        process.exit(major > 22 || (major === 22 && minor >= 13) ? 0 : 1)' 2> /dev/null ||
+        ! command -v npm > /dev/null; then
+    echo "The pdf.js check needs Node 22.13 or later, with npm, as \"node\" on the PATH;"
+    echo "found $(node --version 2> /dev/null || echo "no node"). Get Node 24 from https://nodejs.org/"
+    echo "and put its bin folder first on the PATH."
+    exit 1
+fi
+
+if ! command -v pdftoppm > /dev/null || ! command -v pdftotext > /dev/null; then
+    echo "Poppler's pdftoppm and pdftotext were not found. Install them, with"
+    echo "\"sudo apt-get install poppler-utils\" on Ubuntu, or \"brew install poppler\" on macOS."
+    exit 1
+fi
 
 # JDK 8's javac has no --release option, and it rejects some code that javac 9
 # and later accept with --release 8, so only a real JDK 8 checks the Java port
@@ -132,13 +151,17 @@ fi
 # checked that the content streams of the other three are the same.
 "$WORK/venv/bin/python" .github/scripts/check-pdfua-tags.py "$WORK/pdfs/java" || exit 1
 
-# The Java PDFs, and two more encrypted like Example_30, in PDFium, whose
-# renders and contact sheets are kept in $WORK/viewers/pdfium.
-echo "Checking the example PDFs in PDFium"
+# The Java PDFs, and two more encrypted like Example_30, in PDFium, pdf.js and
+# Poppler, whose renders and contact sheets are kept in $WORK/viewers/ENGINE.
+# pdf.js is installed from package-lock.json, as in the workflow.
 rm -rf "$WORK/encrypted" "$WORK/viewers"
 go run ./.github/scripts/encrypted-pdfs "$WORK/encrypted" || exit 1
-"$WORK/venv/bin/python" .github/scripts/check-viewers.py pdfium \
-    "$WORK/pdfs/java" "$WORK/encrypted" "$WORK/viewers/pdfium" || exit 1
+npm ci --no-audit --no-fund --silent --prefix .github/scripts/render-pdfjs || exit 1
+for engine in pdfium pdfjs poppler; do
+    echo "Checking the example PDFs in $engine"
+    "$WORK/venv/bin/python" .github/scripts/check-viewers.py $engine \
+        "$WORK/pdfs/java" "$WORK/encrypted" "$WORK/viewers/$engine" || exit 1
+done
 
 # The snippets of the booklet, which it works on in build/check-snippets with
 # the Python environment above.
