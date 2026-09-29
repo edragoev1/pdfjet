@@ -22,6 +22,19 @@
 // with SWIFT_BACKTRACE=enable=yes, which leaves the signal to the backtracer.
 import Foundation
 import PDFjet
+#if canImport(Glibc)
+import Glibc
+#elseif canImport(Darwin)
+import Darwin
+#endif
+
+// write(2) of the C library, by a name of its own: this file has a write of
+// its own, which merges pages.
+#if canImport(Glibc)
+let writeBytes = Glibc.write
+#else
+let writeBytes = Darwin.write
+#endif
 
 struct Report: Encodable {
     var error: String?
@@ -59,8 +72,8 @@ func crashed(_ signal: Int32) {
     case SIGFPE: start = "{\"crash\":\"SIGFPE,"
     default: start = "{\"crash\":\"SIGABRT,"
     }
-    _ = Glibc.write(1, start.utf8Start, start.utf8CodeUnitCount)
-    _ = Glibc.write(1, crashEnd, crashEndLength)
+    _ = writeBytes(1, start.utf8Start, start.utf8CodeUnitCount)
+    _ = writeBytes(1, crashEnd, crashEndLength)
     _exit(128 + signal)
 }
 
@@ -72,7 +85,11 @@ func catchCrashes() {
     stack.ss_sp = UnsafeMutableRawPointer.allocate(byteCount: stack.ss_size, alignment: 16)
     sigaltstack(&stack, nil)
     var action = sigaction()
+    #if canImport(Glibc)
     action.__sigaction_handler.sa_handler = crashed
+    #else
+    action.__sigaction_u.__sa_handler = crashed
+    #endif
     action.sa_flags = SA_ONSTACK
     for signal in [SIGILL, SIGTRAP, SIGSEGV, SIGBUS, SIGFPE, SIGABRT] {
         sigaction(signal, &action, nil)

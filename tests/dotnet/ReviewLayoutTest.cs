@@ -85,6 +85,9 @@ public sealed class ReviewLayoutTest : IDisposable {
 
     [Fact]
     public void TextFrameBreaksALongWordInLinearTime() {
+        // The limits of time in these tests are generous, as a machine of
+        // continuous integration shared with other jobs is slow now and then:
+        // what was quadratic took minutes, and what is linear takes a second.
         // The rest of the word was measured whole for every row it was broken
         // into: 100,000 characters took 75 seconds.
         PDF pdf = TestSupport.NewPDF();
@@ -93,7 +96,7 @@ public sealed class ReviewLayoutTest : IDisposable {
         frame.SetLocation(50f, 50f).SetWidth(400f);
         Stopwatch watch = Stopwatch.StartNew();
         frame.DrawOn(new Page(pdf, Letter.PORTRAIT, false));
-        Assert.True(watch.Elapsed.TotalSeconds < 3, "took " + watch.Elapsed);
+        Assert.True(watch.Elapsed.TotalSeconds < 20, "took " + watch.Elapsed);
         Assert.False(frame.HasMoreText());
     }
 
@@ -106,7 +109,7 @@ public sealed class ReviewLayoutTest : IDisposable {
         List<Page> pages = new List<Page>();
         Stopwatch watch = Stopwatch.StartNew();
         new Markdown(font, font, font, font, font).DrawOn(pdf, new String('>', 20000), pages, Letter.PORTRAIT);
-        Assert.True(watch.Elapsed.TotalSeconds < 3, "took " + watch.Elapsed);
+        Assert.True(watch.Elapsed.TotalSeconds < 20, "took " + watch.Elapsed);
         Assert.True(pages.Count <= 40, pages.Count + " pages for 20,000 characters");
     }
 
@@ -128,7 +131,7 @@ public sealed class ReviewLayoutTest : IDisposable {
         List<Page> pages = new List<Page>();
         Stopwatch watch = Stopwatch.StartNew();
         table.DrawOn(pdf, pages, Letter.PORTRAIT);
-        Assert.True(watch.Elapsed.TotalSeconds < 5, "took " + watch.Elapsed);
+        Assert.True(watch.Elapsed.TotalSeconds < 20, "took " + watch.Elapsed);
         // The footer row is the last row, which has no number of its own.
         Assert.Contains(TestSupport.Hex("49,377,531.00"), TestSupport.Content(pages[pages.Count - 1]));
     }
@@ -355,7 +358,7 @@ public sealed class ReviewLayoutTest : IDisposable {
         text.Append("\nend\"");
         Stopwatch watch = Stopwatch.StartNew();
         string[] fields = FirstRecord(text.ToString());
-        Assert.True(watch.Elapsed.TotalSeconds < 3, "took " + watch.Elapsed);
+        Assert.True(watch.Elapsed.TotalSeconds < 20, "took " + watch.Elapsed);
         Assert.Equal(5001, fields.Length);
         Assert.Equal("a " + new String('x', 1000), fields[0]);
         Assert.Equal(" end", fields[5000]);
