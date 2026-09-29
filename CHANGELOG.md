@@ -44,6 +44,18 @@ This is the first entry in this file; earlier releases were not tracked here.
   two repositories at the pinned commits, and the workflows fetch them.
 
 ### Fixed
+- Every annotation that is not a link, a file attachment, a note
+  (`TextAnnotation`), a polygon, a square or a circle, has an appearance
+  stream (`/AP`), in all four ports, as it had in PDF/A alone: without one
+  each viewer drew it its own way, and PDFium, so Chrome, drew no file
+  attachment icon and no polygon, and drew the note icon above its place.
+  A square, a circle and a polygon are drawn in their fill color with their
+  opacity, a file attachment as its push pin or paperclip icon, and a note
+  as a speech bubble, each icon in a white box with a black frame. The
+  `/Rect` of every annotation, links too, is written from its lower left
+  corner to its upper right one: its y values were the wrong way round,
+  but for a polygon. The PDFium check of `check-examples.sh` no longer
+  makes an exception of Example_06.
 - `PDFobj.getData` of an image read from a PDF undoes the predictor of its
   `/DecodeParms`, the PNG predictors and the TIFF one, in all four ports, as
   it does for any other stream: the data of an image with the PNG predictor

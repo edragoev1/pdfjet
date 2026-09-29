@@ -437,8 +437,8 @@ import Testing
             if degrees == 90 || degrees == 270 {
                 swap(&w, &h)
             }
-            #expect(rect[0] == 10 && abs(rect[2] - rect[0] - w) <= 0.01 && abs(rect[1] - rect[3] - h) <= 0.01
-                    && rect[1] == 792 - 20, "\(degrees): /Rect \(rect)")
+            #expect(rect[0] == 10 && abs(rect[2] - rect[0] - w) <= 0.01 && abs(rect[3] - rect[1] - h) <= 0.01
+                    && rect[3] == 792 - 20, "\(degrees): /Rect \(rect)")
         }
     }
 

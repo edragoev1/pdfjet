@@ -116,7 +116,7 @@ func testAnnotations(pdf *PDF, page *Page) {
 	attachment.DrawOn(page)
 }
 
-func TestWriterEveryAnnotationIsPrintedAndHasAnAppearanceInPDFA(t *testing.T) {
+func TestWriterEveryAnnotationIsPrintedAndHasAnAppearance(t *testing.T) {
 	for _, level := range []compliance.Compliance{compliance.PDF_1_7, compliance.PDF_A_2B, compliance.PDF_A_3A} {
 		raw := testWriterDoc(t, level, testAnnotations)
 		if n := strings.Count(raw, "/Type /Annot\n"); n != 5 {
@@ -125,20 +125,69 @@ func TestWriterEveryAnnotationIsPrintedAndHasAnAppearanceInPDFA(t *testing.T) {
 		if n := strings.Count(raw, "/F 4\n"); n != 5 {
 			t.Errorf("%v: %d annotations are printed", level, n)
 		}
-		appearances := 0
-		if level != compliance.PDF_1_7 {
-			appearances = 5
-		}
-		if n := strings.Count(raw, "/AP <</N "); n != appearances {
+		if n := strings.Count(raw, "/AP <</N "); n != 5 {
 			t.Errorf("%v: %d appearances", level, n)
 		}
-		if n := strings.Count(raw, "/Subtype /Form\n"); n != appearances {
+		if n := strings.Count(raw, "/Subtype /Form\n"); n != 5 {
 			t.Errorf("%v: %d forms", level, n)
 		}
 	}
 	// The square is drawn in its fill color in its box, which is its rectangle.
-	raw := testWriterDoc(t, compliance.PDF_A_2B, testAnnotations)
+	raw := testWriterDoc(t, compliance.PDF_1_7, testAnnotations)
 	if !strings.Contains(raw, "/BBox [100 642 150 692]\n/Length 34\n>>\nstream\n0.5 0.5 0.5 rg\n100 642 50 50 re f\n") {
+		t.Error(raw)
+	}
+	// The note and the file are drawn as their icons, scaled to their boxes.
+	for _, icon := range []string{
+		"q\n20 0 0 20 100 372 cm\n" + noteIcon + "Q\n",
+		"q\n24 0 0 24 200 368 cm\n" + pushPinIcon + "Q\n",
+	} {
+		if !strings.Contains(raw, icon) {
+			t.Errorf("no %q", icon)
+		}
+	}
+}
+
+func TestWriterTheRectangleOfAnAnnotationIsFromItsLowerLeftCorner(t *testing.T) {
+	raw := testWriterDoc(t, compliance.PDF_1_7, func(pdf *PDF, page *Page) {
+		testAnnotations(pdf, page)
+		NewTextLine(testHelvetica(pdf), "Link").SetURIAction("https://pdfjet.com").
+			SetLocation(50, 100).DrawOn(page)
+	})
+	for _, rect := range []string{
+		"/Rect [100 642 150 692]", "/Rect [200 652 280 692]", "/Rect [300 452 350 492]",
+		"/Rect [100 372 120 392]", "/Rect [200 368 224 392]",
+	} {
+		if !strings.Contains(raw, rect) {
+			t.Errorf("no %s", rect)
+		}
+	}
+	rects := regexp.MustCompile(`/Rect \[(\S+) (\S+) (\S+) (\S+)\]`).FindAllStringSubmatch(raw, -1)
+	if len(rects) != 6 {
+		t.Errorf("%d rectangles", len(rects))
+	}
+	for _, rect := range rects {
+		x1, _ := strconv.ParseFloat(rect[1], 32)
+		y1, _ := strconv.ParseFloat(rect[2], 32)
+		x2, _ := strconv.ParseFloat(rect[3], 32)
+		y2, _ := strconv.ParseFloat(rect[4], 32)
+		if x1 > x2 || y1 > y2 {
+			t.Errorf("%s", rect[0])
+		}
+	}
+}
+
+func TestWriterAShapeThatIsNotOpaqueIsDrawnWithItsOpacity(t *testing.T) {
+	raw := testWriterDoc(t, compliance.PDF_1_7, func(pdf *PDF, page *Page) {
+		square := NewSquareAnnotation()
+		square.SetLocation(100, 100)
+		square.SetSize(50, 50)
+		square.SetOpacity(0.5)
+		square.SetContents("A square")
+		square.DrawOn(page)
+	})
+	if !strings.Contains(raw, "/BBox [100 642 150 692]\n/Resources <</ExtGState <</GS0 <</CA 0.5 /ca 0.5>>>>>>\n"+
+		"/Length 42\n>>\nstream\n/GS0 gs\n0.5 0.5 0.5 rg\n100 642 50 50 re f\n") {
 		t.Error(raw)
 	}
 }

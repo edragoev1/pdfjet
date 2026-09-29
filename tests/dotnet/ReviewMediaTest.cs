@@ -511,9 +511,9 @@ public class ReviewMediaTest {
                 (w, h) = (h, w);
             }
             Assert.Equal(10.0, rect[0]);
-            Assert.Equal(792.0 - 20.0, rect[1]);
+            Assert.Equal(792.0 - 20.0, rect[3]);
             Assert.True(Math.Abs(rect[2] - rect[0] - w) <= 0.01, degrees + ": /Rect " + String.Join(" ", rect));
-            Assert.True(Math.Abs(rect[1] - rect[3] - h) <= 0.01, degrees + ": /Rect " + String.Join(" ", rect));
+            Assert.True(Math.Abs(rect[3] - rect[1] - h) <= 0.01, degrees + ": /Rect " + String.Join(" ", rect));
         }
     }
 

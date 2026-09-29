@@ -1280,17 +1280,14 @@ public final class PDF {
         addPageStructElements(page)
     }
 
-    // Writes the appearance of an annotation that is not a link, which PDF/A
-    // asks for, and returns its object number. It draws what a viewer draws
-    // for the annotation: the square, the circle or the polygon in its fill
-    // color, and a note or a file as a white box with a black frame. Its box
-    // is the rectangle of the annotation, in the coordinates of the page.
+    // Writes the appearance of an annotation that is not a link and returns
+    // its object number. It draws what a viewer draws for the annotation: the
+    // square, the circle or the polygon in its fill color, and a note or a file
+    // as its icon in a white box with a black frame. Its box is the rectangle
+    // of the annotation, from its lower left corner to its upper right one, in
+    // the coordinates of the page.
     private func addAppearanceObject(
-            _ annot: Annotation, _ x1: Float, _ y1: Float, _ x2: Float, _ y2: Float) -> Int {
-        let minX = min(x1, x2)
-        let maxX = max(x1, x2)
-        let minY = min(y1, y2)
-        let maxY = max(y1, y2)
+            _ annot: Annotation, _ minX: Float, _ minY: Float, _ maxX: Float, _ maxY: Float) -> Int {
         let w = maxX - minX
         let h = maxY - minY
         var buf = [UInt8]()
@@ -1303,7 +1300,14 @@ public final class PDF {
         func ascii(_ text: String) {
             buf.append(contentsOf: Array(text.utf8))
         }
+        // A shape that is not opaque is drawn with its opacity, which a viewer
+        // does not apply to an appearance of its own.
+        var transparent = false
         func fill() {
+            if annot.opacity < 1 {
+                transparent = true
+                ascii("/GS0 gs\n")
+            }
             let color = annot.fillColor ?? [0, 0, 0]
             numbers(color[0], color[1], color[2])
             ascii("rg\n")
@@ -1348,6 +1352,18 @@ public final class PDF {
             ascii("1 g 0 G 0.5 w\n")
             numbers(minX + 0.25, minY + 0.25, w - 0.5, h - 0.5)
             ascii("re B\n")
+            // The icon, in a box of 1 by 1 scaled to the rectangle
+            var icon = Annotation.noteIcon
+            if let file = annot.fileAttachment {
+                icon = (file.icon == "Paperclip") ? Annotation.paperclipIcon : Annotation.pushPinIcon
+            }
+            ascii("q\n")
+            numbers(w)
+            ascii("0 0 ")
+            numbers(h, minX, minY)
+            ascii("cm\n")
+            ascii(icon)
+            ascii("Q\n")
         }
         let content = encrypted(buf)
 
@@ -1364,6 +1380,13 @@ public final class PDF {
         append(" ")
         append(maxY)
         append("]\n")
+        if transparent {
+            append("/Resources <</ExtGState <</GS0 <</CA ")
+            append(annot.opacity)
+            append(" /ca ")
+            append(annot.opacity)
+            append(">>>>>>\n")
+        }
         append("/Length ")
         append(content.count)
         append("\n")
@@ -1402,11 +1425,18 @@ public final class PDF {
             x2 = annot.x1 + maxX
             y2 = annot.y1 - minY
         }
+        // The rectangle is written from its lower left corner to its upper
+        // right one, as viewers expect: PDFium draws the icon of a note at its
+        // first y.
+        (x1, x2) = (min(x1, x2), max(x1, x2))
+        (y1, y2) = (min(y1, y2), max(y1, y2))
 
-        // PDF/A asks every annotation but a link for an appearance of its own,
-        // which is written before it.
+        // Every annotation but a link has an appearance of its own, which PDF/A
+        // asks for, and without which each viewer draws it its own way, or not
+        // at all: PDFium draws no polygon and no file attachment. It is written
+        // before the annotation.
         var appearance = 0
-        if isPDFA() && annot.annotationType != Annotation.Link {
+        if annot.annotationType != Annotation.Link {
             appearance = addAppearanceObject(annot, x1, y1, x2, y2)
         }
 

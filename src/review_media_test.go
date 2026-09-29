@@ -402,8 +402,8 @@ func TestReviewMediaTheLinkOfATurnedImageCoversItAsItIsDrawn(t *testing.T) {
 		if degrees == 90 || degrees == 270 {
 			w, h = h, w
 		}
-		if rect[0] != 10 || math.Abs(rect[2]-rect[0]-w) > 0.01 || math.Abs(rect[1]-rect[3]-h) > 0.01 ||
-			rect[1] != 792-20 {
+		if rect[0] != 10 || math.Abs(rect[2]-rect[0]-w) > 0.01 || math.Abs(rect[3]-rect[1]-h) > 0.01 ||
+			rect[3] != 792-20 {
 			t.Errorf("%d: /Rect %v", degrees, rect)
 		}
 	}

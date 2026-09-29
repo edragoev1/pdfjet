@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Text;
+using System.Text.RegularExpressions;
 using Xunit;
 
 namespace PDFjet.NET {
@@ -103,20 +104,59 @@ public class ReviewWriterTest {
     }
 
     [Fact]
-    public void EveryAnnotationIsPrintedAndHasAnAppearanceInPDFA() {
+    public void EveryAnnotationIsPrintedAndHasAnAppearance() {
 #pragma warning disable CS0618 // PDF_A_3A is deprecated, and still written
         foreach (Compliance compliance in new Compliance[] {Compliance.PDF_1_7, Compliance.PDF_A_2B, Compliance.PDF_A_3A}) {
 #pragma warning restore CS0618
             string raw = Document(compliance, Annotations);
             Assert.Equal(5, Count(raw, "/Type /Annot\n"));
             Assert.Equal(5, Count(raw, "/F 4\n"));
-            int appearances = (compliance == Compliance.PDF_1_7) ? 0 : 5;
-            Assert.Equal(appearances, Count(raw, "/AP <</N "));
-            Assert.Equal(appearances, Count(raw, "/Subtype /Form\n"));
+            Assert.Equal(5, Count(raw, "/AP <</N "));
+            Assert.Equal(5, Count(raw, "/Subtype /Form\n"));
         }
         // The square is drawn in its fill color in its box, which is its rectangle.
-        string pdfa = Document(Compliance.PDF_A_2B, Annotations);
-        Assert.Contains("/BBox [100 642 150 692]\n/Length 34\n>>\nstream\n0.5 0.5 0.5 rg\n100 642 50 50 re f\n", pdfa);
+        string pdf = Document(Compliance.PDF_1_7, Annotations);
+        Assert.Contains("/BBox [100 642 150 692]\n/Length 34\n>>\nstream\n0.5 0.5 0.5 rg\n100 642 50 50 re f\n", pdf);
+        // The note and the file are drawn as their icons, scaled to their boxes.
+        Assert.Contains("q\n20 0 0 20 100 372 cm\n" + Annotation.NoteIcon + "Q\n", pdf);
+        Assert.Contains("q\n24 0 0 24 200 368 cm\n" + Annotation.PushPinIcon + "Q\n", pdf);
+    }
+
+    [Fact]
+    public void TheRectangleOfAnAnnotationIsFromItsLowerLeftCorner() {
+        string raw = Document(Compliance.PDF_1_7, (pdf, page) => {
+            Annotations(pdf, page);
+            new TextLine(TestSupport.Helvetica(pdf), "Link").SetURIAction("https://pdfjet.com")
+                    .SetLocation(50f, 100f).DrawOn(page);
+        });
+        foreach (string rect in new string[] {
+                "/Rect [100 642 150 692]", "/Rect [200 652 280 692]", "/Rect [300 452 350 492]",
+                "/Rect [100 372 120 392]", "/Rect [200 368 224 392]"}) {
+            Assert.Contains(rect, raw);
+        }
+        var rects = Regex.Matches(raw, @"/Rect \[(\S+) (\S+) (\S+) (\S+)\]");
+        Assert.Equal(6, rects.Count);
+        foreach (Match m in rects) {
+            float[] v = new float[4];
+            for (int i = 0; i < 4; i++) {
+                v[i] = float.Parse(m.Groups[i + 1].Value, CultureInfo.InvariantCulture);
+            }
+            Assert.True(v[0] <= v[2] && v[1] <= v[3], m.Value);
+        }
+    }
+
+    [Fact]
+    public void AShapeThatIsNotOpaqueIsDrawnWithItsOpacity() {
+        string raw = Document(Compliance.PDF_1_7, (pdf, page) => {
+            SquareAnnotation square = new SquareAnnotation();
+            square.SetLocation(100f, 100f);
+            square.SetSize(50f, 50f);
+            square.SetOpacity(0.5f);
+            square.SetContents("A square");
+            square.DrawOn(page);
+        });
+        Assert.Contains("/BBox [100 642 150 692]\n/Resources <</ExtGState <</GS0 <</CA 0.5 /ca 0.5>>>>>>\n" +
+                "/Length 42\n>>\nstream\n/GS0 gs\n0.5 0.5 0.5 rg\n100 642 50 50 re f\n", raw);
     }
 
     [Fact]

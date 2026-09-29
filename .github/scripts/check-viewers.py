@@ -78,7 +78,7 @@ EXAMPLES_DIR = os.path.join(SCRIPTS_DIR, '..', '..', 'examples')
 # and 0.55 in pdf.js, both on the thin table lines of Example_43; a blank page
 # has 0. The most blocks that differ were 2.9% in PDFium, on the heavier
 # lines of the tables of Example_13, and 1.3% in pdf.js; the annotations
-# PDFium leaves out of Example_06 are 4.7%.
+# PDFium left out of Example_06, before they had appearance streams, were 4.7%.
 MIN_INK_RATIO = 0.25
 SHRINK = 8
 BLOCK_TOLERANCE = 48
@@ -98,8 +98,6 @@ RENDER_EXCEPTIONS = {
                           'the machine it runs on, if it finds any: on Sep 29 PDFium drew no Korean, and '
                           'pdf.js, which uses no fonts of the machine in Node, drew empty boxes',
     (None, 'Example_44'): 'its Chinese font is not embedded, as in Example_04',
-    ('pdfium', 'Example_06'): 'its annotations have no appearance streams, and PDFium does not make one '
-                              'for a file attachment or a polygon; see TODO.md',
 }
 
 # The passwords an engine is given in place of the ones in PASSWORDS, with

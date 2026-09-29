@@ -1326,11 +1326,17 @@ func (pdf *PDF) addAnnotationObject(annot *annotationObject, index int) int {
 		}
 		x1, y1, x2, y2 = annot.x1+minX, annot.y1-maxY, annot.x1+maxX, annot.y1-minY
 	}
+	// The rectangle is written from its lower left corner to its upper right
+	// one, as viewers expect: PDFium draws the icon of a note at its first y.
+	x1, x2 = min(x1, x2), max(x1, x2)
+	y1, y2 = min(y1, y2), max(y1, y2)
 
-	// PDF/A asks every annotation but a link for an appearance of its own,
-	// which is written before it.
+	// Every annotation but a link has an appearance of its own, which PDF/A
+	// asks for, and without which each viewer draws it its own way, or not at
+	// all: PDFium draws no polygon and no file attachment. It is written
+	// before the annotation.
 	appearance := 0
-	if pdf.isPDFA() && annot.annotationType != annotationLink {
+	if annot.annotationType != annotationLink {
 		appearance = pdf.addAppearanceObject(annot, x1, y1, x2, y2)
 	}
 
@@ -1510,20 +1516,26 @@ func (pdf *PDF) addAnnotationObject(annot *annotationObject, index int) int {
 }
 
 // addAppearanceObject writes the appearance of an annotation that is not a
-// link, which PDF/A asks for, and returns its object number. It draws what a
-// viewer draws for the annotation: the square, the circle or the polygon in
-// its fill color, and a note or a file as a white box with a black frame.
-// Its box is the rectangle of the annotation, in the coordinates of the page.
-func (pdf *PDF) addAppearanceObject(annot *annotationObject, x1, y1, x2, y2 float32) int {
-	minX, maxX := min(x1, x2), max(x1, x2)
-	minY, maxY := min(y1, y2), max(y1, y2)
+// link and returns its object number. It draws what a viewer draws for the
+// annotation: the square, the circle or the polygon in its fill color, and a
+// note or a file as its icon in a white box with a black frame. Its box is the
+// rectangle of the annotation, from its lower left corner to its upper right
+// one, in the coordinates of the page.
+func (pdf *PDF) addAppearanceObject(annot *annotationObject, minX, minY, maxX, maxY float32) int {
 	w, h := maxX-minX, maxY-minY
 	var buf []byte
 	number := func(value float32) {
 		buf = fastfloat.Append(buf, value)
 		buf = append(buf, ' ')
 	}
+	// A shape that is not opaque is drawn with its opacity, which a viewer
+	// does not apply to an appearance of its own.
+	transparent := false
 	fill := func() {
+		if annot.opacity < 1 {
+			transparent = true
+			buf = append(buf, "/GS0 gs\n"...)
+		}
 		number(annot.fillColor[0])
 		number(annot.fillColor[1])
 		number(annot.fillColor[2])
@@ -1578,6 +1590,23 @@ func (pdf *PDF) addAppearanceObject(annot *annotationObject, x1, y1, x2, y2 floa
 		number(w - 0.5)
 		number(h - 0.5)
 		buf = append(buf, "re B\n"...)
+		// The icon, in a box of 1 by 1 scaled to the rectangle
+		icon := noteIcon
+		if annot.fileAttachment != nil {
+			icon = pushPinIcon
+			if annot.fileAttachment.icon == "Paperclip" {
+				icon = paperclipIcon
+			}
+		}
+		buf = append(buf, "q\n"...)
+		number(w)
+		buf = append(buf, "0 0 "...)
+		number(h)
+		number(minX)
+		number(minY)
+		buf = append(buf, "cm\n"...)
+		buf = append(buf, icon...)
+		buf = append(buf, "Q\n"...)
 	}
 	if pdf.encryption != nil {
 		buf = pdf.encryption.encrypt(buf)
@@ -1596,6 +1625,13 @@ func (pdf *PDF) addAppearanceObject(annot *annotationObject, x1, y1, x2, y2 floa
 	pdf.appendString(" ")
 	pdf.appendFloat32(maxY)
 	pdf.appendString("]\n")
+	if transparent {
+		pdf.appendString("/Resources <</ExtGState <</GS0 <</CA ")
+		pdf.appendFloat32(annot.opacity)
+		pdf.appendString(" /ca ")
+		pdf.appendFloat32(annot.opacity)
+		pdf.appendString(">>>>>>\n")
+	}
 	pdf.appendString("/Length ")
 	pdf.appendInteger(len(buf))
 	pdf.appendString("\n")

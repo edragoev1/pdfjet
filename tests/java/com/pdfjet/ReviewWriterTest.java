@@ -18,6 +18,8 @@ import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 
@@ -127,18 +129,60 @@ class ReviewWriterTest {
 
     @Test
     @SuppressWarnings("deprecation")
-    void everyAnnotationIsPrintedAndHasAnAppearanceInPDFA() throws Exception {
+    void everyAnnotationIsPrintedAndHasAnAppearance() throws Exception {
         for (Compliance compliance : new Compliance[] {Compliance.PDF_1_7, Compliance.PDF_A_2B, Compliance.PDF_A_3A}) {
             String raw = document(compliance, ReviewWriterTest::annotations);
             assertEquals(5, count(raw, "/Type /Annot\n"), compliance.toString());
             assertEquals(5, count(raw, "/F 4\n"), compliance.toString());
-            int appearances = (compliance == Compliance.PDF_1_7) ? 0 : 5;
-            assertEquals(appearances, count(raw, "/AP <</N "), compliance.toString());
-            assertEquals(appearances, count(raw, "/Subtype /Form\n"), compliance.toString());
+            assertEquals(5, count(raw, "/AP <</N "), compliance.toString());
+            assertEquals(5, count(raw, "/Subtype /Form\n"), compliance.toString());
         }
         // The square is drawn in its fill color in its box, which is its rectangle.
-        String raw = document(Compliance.PDF_A_2B, ReviewWriterTest::annotations);
+        String raw = document(Compliance.PDF_1_7, ReviewWriterTest::annotations);
         assertTrue(raw.contains("/BBox [100 642 150 692]\n/Length 34\n>>\nstream\n0.5 0.5 0.5 rg\n100 642 50 50 re f\n"), raw);
+        // The note and the file are drawn as their icons, scaled to their boxes.
+        assertTrue(raw.contains("q\n20 0 0 20 100 372 cm\n" + Annotation.NOTE_ICON + "Q\n"), raw);
+        assertTrue(raw.contains("q\n24 0 0 24 200 368 cm\n" + Annotation.PUSH_PIN_ICON + "Q\n"), raw);
+    }
+
+    @Test
+    void theRectangleOfAnAnnotationIsFromItsLowerLeftCorner() throws Exception {
+        String raw = document(Compliance.PDF_1_7, new Drawing() {
+            public void draw(PDF pdf, Page page) throws Exception {
+                annotations(pdf, page);
+                new TextLine(TestSupport.helvetica(pdf), "Link").setURIAction("https://pdfjet.com")
+                        .setLocation(50f, 100f).drawOn(page);
+            }
+        });
+        for (String rect : new String[] {
+                "/Rect [100 642 150 692]", "/Rect [200 652 280 692]", "/Rect [300 452 350 492]",
+                "/Rect [100 372 120 392]", "/Rect [200 368 224 392]"}) {
+            assertTrue(raw.contains(rect), rect);
+        }
+        Matcher m = Pattern.compile("/Rect \\[(\\S+) (\\S+) (\\S+) (\\S+)\\]").matcher(raw);
+        int rects = 0;
+        while (m.find()) {
+            assertTrue(Float.parseFloat(m.group(1)) <= Float.parseFloat(m.group(3)), m.group());
+            assertTrue(Float.parseFloat(m.group(2)) <= Float.parseFloat(m.group(4)), m.group());
+            rects++;
+        }
+        assertEquals(6, rects);
+    }
+
+    @Test
+    void aShapeThatIsNotOpaqueIsDrawnWithItsOpacity() throws Exception {
+        String raw = document(Compliance.PDF_1_7, new Drawing() {
+            public void draw(PDF pdf, Page page) throws Exception {
+                SquareAnnotation square = new SquareAnnotation();
+                square.setLocation(100f, 100f);
+                square.setSize(50f, 50f);
+                square.setOpacity(0.5f);
+                square.setContents("A square");
+                square.drawOn(page);
+            }
+        });
+        assertTrue(raw.contains("/BBox [100 642 150 692]\n/Resources <</ExtGState <</GS0 <</CA 0.5 /ca 0.5>>>>>>\n" +
+                "/Length 42\n>>\nstream\n/GS0 gs\n0.5 0.5 0.5 rg\n100 642 50 50 re f\n"), raw);
     }
 
     @Test

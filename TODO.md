@@ -157,13 +157,21 @@ API of v9.0.1 came with the PDF/UA work and the fixes; goal 6 lists them.
      renders are uploaded, a contact sheet of each PDF beside MuPDF's, to
      look at. `check-examples.sh` runs the PDFium check. PDFium and pdf.js
      pass; PDFKit has not run yet.
-   - ⬜ What they found: the annotations of Example_06 and the file
+   - ✅ What they found: the annotations of Example_06 and the file
      attachment of Example_30 have no appearance stream (`/AP`), which PDF
      2.0 and PDF/A ask for, so each viewer draws them its own way. PDFium,
      so Chrome, draws neither file attachment icon nor the polygon, and
      draws the note icon above its place; the `/Rect` of the file
      attachments and the note has its y values the wrong way round
-     ([70 617 94 593]). Write the appearance streams, in the four ports.
+     ([70 617 94 593]). Fixed on Sep 29, in the four ports: every
+     annotation but a link has an appearance, in every document and not in
+     PDF/A alone, the shapes in their fill color and opacity, a file as its
+     push pin or paperclip icon and a note as a speech bubble, drawn with
+     paths in a white box with a black frame; and every `/Rect`, links too,
+     is from its lower left corner to its upper right one. PDFium draws
+     Example_06 as MuPDF does, and its exception in `check-viewers.py` is
+     gone; PDFKit, which drew 16.7% of the blocks of its first page
+     otherwise, is to be seen in the next run of the Build workflow.
      Also: PDFium does not cut a password at 127 bytes, as ISO 32000-2 asks
      of a viewer, so Chrome opens a PDF with a longer password only with its
      first 127 bytes; not ours to fix, worth a line in the docs of

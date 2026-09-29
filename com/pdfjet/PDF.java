@@ -1334,21 +1334,23 @@ final public class PDF {
         addPageStructElements(page);
     }
 
-    // Writes the appearance of an annotation that is not a link, which PDF/A
-    // asks for, and returns its object number. It draws what a viewer draws
-    // for the annotation: the square, the circle or the polygon in its fill
-    // color, and a note or a file as a white box with a black frame. Its box
-    // is the rectangle of the annotation, in the coordinates of the page.
+    // Writes the appearance of an annotation that is not a link and returns
+    // its object number. It draws what a viewer draws for the annotation: the
+    // square, the circle or the polygon in its fill color, and a note or a file
+    // as its icon in a white box with a black frame. Its box is the rectangle
+    // of the annotation, from its lower left corner to its upper right one, in
+    // the coordinates of the page.
     private int addAppearanceObject(
-            Annotation annot, float x1, float y1, float x2, float y2) throws Exception {
-        float minX = Math.min(x1, x2);
-        float maxX = Math.max(x1, x2);
-        float minY = Math.min(y1, y2);
-        float maxY = Math.max(y1, y2);
+            Annotation annot, float minX, float minY, float maxX, float maxY) throws Exception {
         float w = maxX - minX;
         float h = maxY - minY;
         ByteArrayOutputStream buf = new ByteArrayOutputStream();
         String type = annot.annotationType;
+        // A shape that is not opaque is drawn with its opacity, which a viewer
+        // does not apply to an appearance of its own.
+        boolean transparent = (type.equals(Annotation.Square) ||
+                type.equals(Annotation.Circle) || type.equals(Annotation.Polygon)) &&
+                annot.opacity < 1f;
         if (type.equals(Annotation.Square)) {
             appendFill(buf, annot);
             appendNumbers(buf, minX, minY, w, h);
@@ -1385,6 +1387,19 @@ final public class PDF {
             appendAscii(buf, "1 g 0 G 0.5 w\n");
             appendNumbers(buf, minX + 0.25f, minY + 0.25f, w - 0.5f, h - 0.5f);
             appendAscii(buf, "re B\n");
+            // The icon, in a box of 1 by 1 scaled to the rectangle
+            String icon = Annotation.NOTE_ICON;
+            if (annot.fileAttachment != null) {
+                icon = annot.fileAttachment.icon.equals("Paperclip") ?
+                        Annotation.PAPERCLIP_ICON : Annotation.PUSH_PIN_ICON;
+            }
+            appendAscii(buf, "q\n");
+            appendNumbers(buf, w);
+            appendAscii(buf, "0 0 ");
+            appendNumbers(buf, h, minX, minY);
+            appendAscii(buf, "cm\n");
+            appendAscii(buf, icon);
+            appendAscii(buf, "Q\n");
         }
         byte[] content = buf.toByteArray();
         if (encryption != null) {
@@ -1404,6 +1419,13 @@ final public class PDF {
         append(' ');
         append(maxY);
         append("]\n");
+        if (transparent) {
+            append("/Resources <</ExtGState <</GS0 <</CA ");
+            append(annot.opacity);
+            append(" /ca ");
+            append(annot.opacity);
+            append(">>>>>>\n");
+        }
         append("/Length ");
         append(content.length);
         append(Token.NEWLINE);
@@ -1417,6 +1439,9 @@ final public class PDF {
 
     // Appends the fill color of the annotation to the content of its appearance.
     private static void appendFill(ByteArrayOutputStream buf, Annotation annot) {
+        if (annot.opacity < 1f) {
+            appendAscii(buf, "/GS0 gs\n");
+        }
         appendNumbers(buf, annot.fillColor[0], annot.fillColor[1], annot.fillColor[2]);
         appendAscii(buf, "rg\n");
     }
@@ -1459,11 +1484,22 @@ final public class PDF {
             x2 = annot.x1 + maxX;
             y2 = annot.y1 - minY;
         }
+        // The rectangle is written from its lower left corner to its upper
+        // right one, as viewers expect: PDFium draws the icon of a note at its
+        // first y.
+        float left = Math.min(x1, x2);
+        float bottom = Math.min(y1, y2);
+        x2 = Math.max(x1, x2);
+        y2 = Math.max(y1, y2);
+        x1 = left;
+        y1 = bottom;
 
-        // PDF/A asks every annotation but a link for an appearance of its own,
-        // which is written before it.
+        // Every annotation but a link has an appearance of its own, which PDF/A
+        // asks for, and without which each viewer draws it its own way, or not
+        // at all: PDFium draws no polygon and no file attachment. It is written
+        // before the annotation.
         int appearance = 0;
-        if (isPDFA() && !annot.annotationType.equals(Annotation.Link)) {
+        if (!annot.annotationType.equals(Annotation.Link)) {
             appearance = addAppearanceObject(annot, x1, y1, x2, y2);
         }
 

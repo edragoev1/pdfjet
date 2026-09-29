@@ -101,19 +101,53 @@ import Testing
         attachment.drawOn(page)
     }
 
-    @Test func everyAnnotationIsPrintedAndHasAnAppearanceInPDFA() throws {
+    @Test func everyAnnotationIsPrintedAndHasAnAppearance() throws {
         for compliance in [Compliance.PDF_1_7, Compliance.PDF_A_2B, PDF.complianceA3A] {
             let raw = try document(compliance, annotations)
             #expect(count(raw, "/Type /Annot\n") == 5, "\(compliance)")
             #expect(count(raw, "/F 4\n") == 5, "\(compliance)")
-            let appearances = (compliance == Compliance.PDF_1_7) ? 0 : 5
-            #expect(count(raw, "/AP <</N ") == appearances, "\(compliance)")
-            #expect(count(raw, "/Subtype /Form\n") == appearances, "\(compliance)")
+            #expect(count(raw, "/AP <</N ") == 5, "\(compliance)")
+            #expect(count(raw, "/Subtype /Form\n") == 5, "\(compliance)")
         }
         // The square is drawn in its fill color in its box, which is its rectangle.
-        let raw = try document(Compliance.PDF_A_2B, annotations)
+        let raw = try document(Compliance.PDF_1_7, annotations)
         #expect(raw.contains("/BBox [100 642 150 692]\n/Length 34\n>>\nstream\n0.5 0.5 0.5 rg\n100 642 50 50 re f\n"),
                 "\(raw)")
+        // The note and the file are drawn as their icons, scaled to their boxes.
+        #expect(raw.contains("q\n20 0 0 20 100 372 cm\n" + Annotation.noteIcon + "Q\n"))
+        #expect(raw.contains("q\n24 0 0 24 200 368 cm\n" + Annotation.pushPinIcon + "Q\n"))
+    }
+
+    @Test func theRectangleOfAnAnnotationIsFromItsLowerLeftCorner() throws {
+        let raw = try document(Compliance.PDF_1_7) { pdf, page in
+            try annotations(pdf, page)
+            TextLine(TestSupport.helvetica(pdf), "Link").setURIAction("https://pdfjet.com")
+                    .setLocation(50, 100).drawOn(page)
+        }
+        for rect in ["/Rect [100 642 150 692]", "/Rect [200 652 280 692]", "/Rect [300 452 350 492]",
+                "/Rect [100 372 120 392]", "/Rect [200 368 224 392]"] {
+            #expect(raw.contains(rect), "\(rect)")
+        }
+        let regex = try NSRegularExpression(pattern: "/Rect \\[(\\S+) (\\S+) (\\S+) (\\S+)\\]")
+        let matches = regex.matches(in: raw, range: NSRange(raw.startIndex..., in: raw))
+        #expect(matches.count == 6)
+        for match in matches {
+            let v = (1...4).map { Float(raw[Range(match.range(at: $0), in: raw)!])! }
+            #expect(v[0] <= v[2] && v[1] <= v[3], "\(v)")
+        }
+    }
+
+    @Test func aShapeThatIsNotOpaqueIsDrawnWithItsOpacity() throws {
+        let raw = try document(Compliance.PDF_1_7) { _, page in
+            let square = SquareAnnotation()
+            square.setLocation(100, 100)
+            square.setSize(50, 50)
+            square.setOpacity(0.5)
+            square.setContents("A square")
+            _ = square.drawOn(page)
+        }
+        #expect(raw.contains("/BBox [100 642 150 692]\n/Resources <</ExtGState <</GS0 <</CA 0.5 /ca 0.5>>>>>>\n" +
+                "/Length 42\n>>\nstream\n/GS0 gs\n0.5 0.5 0.5 rg\n100 642 50 50 re f\n"), "\(raw)")
     }
 
     @Test func aLinkToADestinationTheDocumentDoesNotHaveIsRefused() {

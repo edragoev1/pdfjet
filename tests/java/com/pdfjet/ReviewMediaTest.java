@@ -506,9 +506,9 @@ class ReviewMediaTest {
                 h = t;
             }
             assertEquals(10.0, rect[0], 0.0, degrees + ": /Rect " + Arrays.toString(rect));
-            assertEquals(792.0 - 20.0, rect[1], 0.0, degrees + ": /Rect " + Arrays.toString(rect));
+            assertEquals(792.0 - 20.0, rect[3], 0.0, degrees + ": /Rect " + Arrays.toString(rect));
             assertEquals(w, rect[2] - rect[0], 0.01, degrees + ": /Rect " + Arrays.toString(rect));
-            assertEquals(h, rect[1] - rect[3], 0.01, degrees + ": /Rect " + Arrays.toString(rect));
+            assertEquals(h, rect[3] - rect[1], 0.01, degrees + ": /Rect " + Arrays.toString(rect));
         }
     }
 

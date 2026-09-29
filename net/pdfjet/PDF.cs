@@ -1274,20 +1274,22 @@ public sealed class PDF {
         AddPageStructElements(page);
     }
 
-    // Writes the appearance of an annotation that is not a link, which PDF/A
-    // asks for, and returns its object number. It draws what a viewer draws
-    // for the annotation: the square, the circle or the polygon in its fill
-    // color, and a note or a file as a white box with a black frame. Its box
-    // is the rectangle of the annotation, in the coordinates of the page.
-    private int AddAppearanceObject(Annotation annot, float x1, float y1, float x2, float y2) {
-        float minX = Math.Min(x1, x2);
-        float maxX = Math.Max(x1, x2);
-        float minY = Math.Min(y1, y2);
-        float maxY = Math.Max(y1, y2);
+    // Writes the appearance of an annotation that is not a link and returns
+    // its object number. It draws what a viewer draws for the annotation: the
+    // square, the circle or the polygon in its fill color, and a note or a file
+    // as its icon in a white box with a black frame. Its box is the rectangle
+    // of the annotation, from its lower left corner to its upper right one, in
+    // the coordinates of the page.
+    private int AddAppearanceObject(Annotation annot, float minX, float minY, float maxX, float maxY) {
         float w = maxX - minX;
         float h = maxY - minY;
         MemoryStream buf = new MemoryStream();
         String type = annot.annotationType;
+        // A shape that is not opaque is drawn with its opacity, which a viewer
+        // does not apply to an appearance of its own.
+        bool transparent = (type.Equals(Annotation.Square) ||
+                type.Equals(Annotation.Circle) || type.Equals(Annotation.Polygon)) &&
+                annot.opacity < 1f;
         if (type.Equals(Annotation.Square)) {
             AppendFill(buf, annot);
             AppendNumbers(buf, minX, minY, w, h);
@@ -1324,6 +1326,19 @@ public sealed class PDF {
             AppendAscii(buf, "1 g 0 G 0.5 w\n");
             AppendNumbers(buf, minX + 0.25f, minY + 0.25f, w - 0.5f, h - 0.5f);
             AppendAscii(buf, "re B\n");
+            // The icon, in a box of 1 by 1 scaled to the rectangle
+            String icon = Annotation.NoteIcon;
+            if (annot.fileAttachment != null) {
+                icon = annot.fileAttachment.icon.Equals("Paperclip") ?
+                        Annotation.PaperclipIcon : Annotation.PushPinIcon;
+            }
+            AppendAscii(buf, "q\n");
+            AppendNumbers(buf, w);
+            AppendAscii(buf, "0 0 ");
+            AppendNumbers(buf, h, minX, minY);
+            AppendAscii(buf, "cm\n");
+            AppendAscii(buf, icon);
+            AppendAscii(buf, "Q\n");
         }
         byte[] content = buf.ToArray();
         if (encryption != null) {
@@ -1343,6 +1358,13 @@ public sealed class PDF {
         Append(' ');
         Append(maxY);
         Append("]\n");
+        if (transparent) {
+            Append("/Resources <</ExtGState <</GS0 <</CA ");
+            Append(annot.opacity);
+            Append(" /ca ");
+            Append(annot.opacity);
+            Append(">>>>>>\n");
+        }
         Append("/Length ");
         Append(content.Length);
         Append(Token.Newline);
@@ -1356,6 +1378,9 @@ public sealed class PDF {
 
     // Appends the fill color of the annotation to the content of its appearance.
     private static void AppendFill(MemoryStream buf, Annotation annot) {
+        if (annot.opacity < 1f) {
+            AppendAscii(buf, "/GS0 gs\n");
+        }
         AppendNumbers(buf, annot.fillColor[0], annot.fillColor[1], annot.fillColor[2]);
         AppendAscii(buf, "rg\n");
     }
@@ -1393,11 +1418,21 @@ public sealed class PDF {
             x2 = annot.x1 + maxX;
             y2 = annot.y1 - minY;
         }
+        // The rectangle is written from its lower left corner to its upper
+        // right one, as viewers expect: PDFium draws the icon of a note at its
+        // first y.
+        float left = Math.Min(x1, x2), bottom = Math.Min(y1, y2);
+        x2 = Math.Max(x1, x2);
+        y2 = Math.Max(y1, y2);
+        x1 = left;
+        y1 = bottom;
 
-        // PDF/A asks every annotation but a link for an appearance of its own,
-        // which is written before it.
+        // Every annotation but a link has an appearance of its own, which PDF/A
+        // asks for, and without which each viewer draws it its own way, or not
+        // at all: PDFium draws no polygon and no file attachment. It is written
+        // before the annotation.
         int appearance = 0;
-        if (IsPDFA() && !annot.annotationType.Equals(Annotation.Link)) {
+        if (!annot.annotationType.Equals(Annotation.Link)) {
             appearance = AddAppearanceObject(annot, x1, y1, x2, y2);
         }
 
