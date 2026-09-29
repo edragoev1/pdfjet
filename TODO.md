@@ -411,35 +411,24 @@ day.
       small repository of its own, which changes its import path unless a
       vanity path is set up first. Check the proxy again after each tag:
       `curl https://proxy.golang.org/github.com/edragoev1/pdfjet/v9/@v/v9.0.3.info`.
-- ⬜ **B** The commercial product built on the tag, as the rehearsal of Sep 28
-      did against v9.0.2 (all four ports passed, and the output checks:
-      veraPDF, Mustang, pdfsig, DSS, SoftHSM). What it found to do in
-      `.commercial` before Oct 21:
-      - Go: drop the `replace ... => ../` of `go.mod` and of
-        `examples/invoice/go/go.mod`, require v9.0.3, commit a `go.sum` in
-        each, and keep an ignored `go.work` for working on both.
-      - Swift: `Package.swift` takes the library by its URL, `exact:
-        "9.0.3"`, with `Package.resolved` committed, not `.package(path:
-        "..")`; `swift-macos.yml` checks out the library at `ref: v9.0.3`.
-      - C#: `PDFjet.Sign.csproj` and the tests' csproj refer to the 9.0.3
-        `PDFjet.dll` by a HintPath, with a property for the project
-        reference while developing.
-      - Java: `test-java.sh` compiles `../com`; a `PDFJET_JAR` option builds
-        `PDFjet-Sign.jar` against the 9.0.3 jar.
-      - No script packages the commercial product: write one, or a
-        documented build per port, and tag `.commercial` v9.0.3.
-      - The tests read the font from the library's checkout
-        (`../../../fonts`, `"../" + IBMPlexSans.Regular`): copy it into
-        `tests/data`. The guards of the test scripts look for the library's
-        sources, which a build on the tag does not need.
-      - `test-java.sh` runs `rm -rf build`, which wipes `build/invoice`,
-        `build/dss`, `build/softhsm` and `build/acrobat-pass`: scope it.
-      - Swift's `readsALargeInvoiceQuickly` fails its 3 s limit under load in
-        a debug build.
-      - Before the tag of `.commercial`: no shipped file has `replace
-        github.com/edragoev1/pdfjet/v9`, `package(path` or
-        `../PDFjet.csproj`.
-
+- ✅ **B** The commercial product built on the tag, as the rehearsal of Sep 28
+      did against v9.0.2. Done in `.commercial` on Sep 28 (a1bf6e4..8c8b8c5):
+      what is committed builds against the release (go.mod requires v9.0.2
+      with no replace, go.sum committed; Package.swift by URL, exact, with
+      Package.resolved; the C# projects take PDFjet.dll by `-p:PDFjetDll`;
+      `PDFJET_JAR` for Java), and `library.sh` builds against the checkout
+      beside it by default (an ignored go.work, `PDFJET_LOCAL`, `../com`,
+      `../PDFjet.csproj`), or the release with `PDFJET=published`. The Go
+      module is `github.com/edragoev1/pdfjet-commercial/v9`, as a v9 tag needs.
+      The tests read IBM Plex Sans from `tests/data`; `swift-macos.yml` no
+      longer checks out the library; `test-java.sh` clears only its own
+      folders; `readsALargeInvoiceQuickly` compares 5000 with 20000 lines in
+      the four ports. `.packaging/package-java.sh` and `package-dotnet.sh`
+      build PDFjet Pro for Java and .NET, with evaluation packages; all four
+      ports pass against v9.0.2 with no library beside them. On Oct 21:
+      `.packaging/set-version.sh 9.0.3`, test, tag `.commercial` v9.0.3,
+      package (README.md of `.commercial`). Still open: the Pro license text
+      of the packages, and access to the private repository for Go and Swift.
 - ⬜ **B** Tag v9.0.3 and make the GitHub release.
 - ⬜ **B** Release v9.0.3 of the commercial product, built on the tag of the
       library: `.commercial/go.mod` requires `github.com/edragoev1/pdfjet/v9
