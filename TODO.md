@@ -403,8 +403,14 @@ day.
       get github.com/edragoev1/pdfjet/v9@v9.0.2` fails its checksum check
       with the default settings, for every user since v9.0.0, and so does a
       module that requires pdfjet-commercial. Found by the rehearsal of Sep 28.
-      The likely cause is the size of the repository, a 909 MB pack the proxy
-      must clone, while the module zip is 4 MB. Until it is solved, users
+      The cause, found on Sep 28: the proxy fetches only the tag, shallow
+      (about 470 MB), then `git archive`s the whole tree at it, a zip of 487
+      MiB, most of it `fonts/` (604 MiB uncompressed), before it drops the
+      nested modules; the
+      work passes the proxy's limit of about 56 s a request, and the failure
+      is cached for 30 minutes. The history is not the problem, and the raw
+      archive is 13 MiB under Go's 500 MiB cap, so `GOPROXY=direct` breaks too
+      once the tree grows. The module zip is 4 MB. Until it is solved, users
       need `GONOSUMDB=github.com/edragoev1/pdfjet` (or `GOPRIVATE`), and
       `GOPROXY=direct` clones the whole repository. To decide: ask the Go team
       (golang/go issues), shrink what the proxy clones, or give the Go module a
