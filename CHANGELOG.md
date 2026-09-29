@@ -10,6 +10,10 @@ This is the first entry in this file; earlier releases were not tracked here.
 ## Unreleased
 
 ### Changed
+- `go.mod` retracts v9.0.0 to v9.0.2, which the Go module proxy cannot
+  serve, as the fonts in their tree make it time out: `go get` of the
+  library at `@latest` takes v9.0.3 or later, and `go list -m -retracted`
+  says why.
 - `fonts/` and `data/` are git submodules, the repositories
   [pdfjet-fonts](https://github.com/edragoev1/pdfjet-fonts) and
   [pdfjet-data](https://github.com/edragoev1/pdfjet-data), with the same

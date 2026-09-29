@@ -428,9 +428,9 @@ day.
       (`submodules: true`), the README and the booklet follow; a fresh
       `git clone --recurse-submodules` passes `test-go.sh`. Left: tag v9.0.3
       and check that the proxy answers 200 for its `.info` and `.zip`, and that
-      sum.golang.org has its checksum. Optional, for the owner to decide:
-      `retract [v9.0.0, v9.0.2]` in go.mod, so `go get @latest` skips the
-      versions the proxy cannot serve.
+      sum.golang.org has its checksum. go.mod retracts v9.0.0 to v9.0.2
+      (Sep 29, the owner's decision), so `go get @latest` skips the versions
+      the proxy cannot serve once v9.0.3 is out.
 - ✅ **B** The commercial product built on the tag, as the rehearsal of Sep 28
       did against v9.0.2. Done in `.commercial` on Sep 28 (a1bf6e4..8c8b8c5):
       what is committed builds against the release (go.mod requires v9.0.2
