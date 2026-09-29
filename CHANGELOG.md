@@ -9,6 +9,24 @@ This is the first entry in this file; earlier releases were not tracked here.
 
 ## Unreleased
 
+### Changed
+- `fonts/` and `data/` are git submodules, the repositories
+  [pdfjet-fonts](https://github.com/edragoev1/pdfjet-fonts) and
+  [pdfjet-data](https://github.com/edragoev1/pdfjet-data), with the same
+  files as before but `fonts/go.mod` and `data/go.mod`. Clone the
+  repository with `git clone --recurse-submodules`, or run
+  `git submodule update --init` in a clone; the examples, the tests and the
+  scripts read them as before. The Go module proxy makes the module of a
+  version from `git archive` of its tag, which has the whole tree and was
+  487 MiB with the fonts, and it timed out, so `go get` of v9.0.0 to v9.0.2
+  fails; `git archive` leaves out what a submodule holds, and the tree is
+  now 8 MB zipped and the module 4 MB. The Go module has no fonts: the Go
+  section of the README says to clone pdfjet-fonts as `fonts` next to the
+  program. `.packaging/package-java.sh` and `package-dotnet.sh` take the
+  files of the two submodules at the commits the last commit records for
+  them, `check-api.sh` leaves them out of the checkout it lists, and the
+  workflows check them out.
+
 ### Fixed
 - `PDFobj.getData` of an image read from a PDF undoes the predictor of its
   `/DecodeParms`, the PNG predictors and the TIFF one, in all four ports, as

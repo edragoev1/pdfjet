@@ -1,0 +1,6 @@
+[submodule "fonts"]
+	path = fonts
+	url = https://github.com/edragoev1/pdfjet-fonts
+[submodule "data"]
+	path = data
+	url = https://github.com/edragoev1/pdfjet-data

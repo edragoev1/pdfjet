@@ -64,7 +64,16 @@ same output come in four languages, and none of them needs a single dependency.
 Each snippet writes `hello.pdf` with a line in English, Greek and Bulgarian.
 The bundled fonts, such as `IBMPlexSans.Regular`, are paths relative to the
 working directory, so run the program in a folder that has this repository's
-`fonts` directory.
+`fonts` directory. `fonts` and `data` are git submodules, the repositories
+[pdfjet-fonts](https://github.com/edragoev1/pdfjet-fonts) and
+[pdfjet-data](https://github.com/edragoev1/pdfjet-data), so clone this
+repository with them:
+
+```bash
+git clone --recurse-submodules https://github.com/edragoev1/pdfjet.git
+```
+
+In a clone made without them, `git submodule update --init` checks them out.
 
 <details open>
 <summary><b>Java</b></summary>
@@ -153,11 +162,17 @@ func main() {
 ```
 
 The module path carries the major version, as Go requires from v2 on. The Go
-module has the source of the library and the examples only: the fonts, the
-data files and the images would make it larger than the 500 MiB Go allows, so
-`fonts/`, `data/` and `images/` each have a `go.mod` that keeps them out. Copy
-the `fonts/` directory of this repository next to your program; the core fonts
-need no files.
+module has the source of the library and the examples only. The fonts and the
+data files are not in it: `fonts/` and `data/` are git submodules, the
+repositories [pdfjet-fonts](https://github.com/edragoev1/pdfjet-fonts) and
+[pdfjet-data](https://github.com/edragoev1/pdfjet-data), and the module is
+made without them. `images/` has a `go.mod` that keeps it out. Clone
+pdfjet-fonts as `fonts/` next to your program, or copy the fonts you use from
+it; the core fonts need no files:
+
+```sh
+git clone --depth 1 https://github.com/edragoev1/pdfjet-fonts.git fonts
+```
 </details>
 
 <details>
@@ -204,8 +219,10 @@ is that of the whole process writing the 500-page document, runtime included.
 
 ## Examples
 
-The [examples](examples) folder has 57 examples, the same in every port. Build
-a port and run all of its examples, or run one example by its number:
+The [examples](examples) folder has 57 examples, the same in every port. They
+read the fonts and data files of the `fonts` and `data` submodules, which
+`git clone --recurse-submodules` checks out. Build a port and run all of its
+examples, or run one example by its number:
 
 | Port | All examples | One example |
 |---|---|---|

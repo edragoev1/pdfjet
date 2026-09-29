@@ -21,9 +21,9 @@ on:
             - "Sources/**"
             - "Package.swift"
             - "examples/**"
-            - "fonts/**"
+            - "fonts"
             - "images/**"
-            - "data/**"
+            - "data"
             - "PngSuite/**"
             - "examples-java.html"
             - "examples-dotnet.html"
@@ -51,9 +51,11 @@ jobs:
             # booklet/snippets/swift, the paths of the test target, of the
             # corpus harness and of the booklet snippets, which SwiftPM checks
             # for every target of Package.swift, are checked out. Files
-            # in the repository root are always checked out.
+            # in the repository root are always checked out. fonts and data
+            # are the submodules pdfjet-fonts and pdfjet-data.
             - uses: actions/checkout@v7
               with:
+                  submodules: true
                   sparse-checkout: |
                       .github
                       com

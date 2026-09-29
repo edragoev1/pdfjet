@@ -417,6 +417,20 @@ day.
       small repository of its own, which changes its import path unless a
       vanity path is set up first. Check the proxy again after each tag:
       `curl https://proxy.golang.org/github.com/edragoev1/pdfjet/v9/@v/v9.0.3.info`.
+      Done on Sep 29: `fonts/` and `data/` moved to the public repositories
+      edragoev1/pdfjet-fonts and edragoev1/pdfjet-data and came back as
+      submodules at the same paths (`fonts/go.mod` and `data/go.mod` are gone;
+      `images/` keeps its `go.mod`), with no history rewritten. `git archive`
+      leaves out what a submodule holds, and a shallow fetch of a tag does not
+      fetch it, so the zip of the tree is 8 MB and the module zip, made with
+      golang.org/x/mod/zip from the tree, 4 MB (12 MB, 1520 files,
+      uncompressed). The packaging scripts, `check-api.sh`, the workflows
+      (`submodules: true`), the README and the booklet follow; a fresh
+      `git clone --recurse-submodules` passes `test-go.sh`. Left: tag v9.0.3
+      and check that the proxy answers 200 for its `.info` and `.zip`, and that
+      sum.golang.org has its checksum. Optional, for the owner to decide:
+      `retract [v9.0.0, v9.0.2]` in go.mod, so `go get @latest` skips the
+      versions the proxy cannot serve.
 - ✅ **B** The commercial product built on the tag, as the rehearsal of Sep 28
       did against v9.0.2. Done in `.commercial` on Sep 28 (a1bf6e4..8c8b8c5):
       what is committed builds against the release (go.mod requires v9.0.2

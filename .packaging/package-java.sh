@@ -41,13 +41,26 @@ mkdir -p "$STAGE" .commercial-packages
 
 git archive HEAD \
     .packaging/java .packaging/LICENSE-EVALUATION \
-    com examples data fonts images PngSuite \
+    com examples images PngSuite \
     CHANGELOG.md THIRD-PARTIES.TXT examples-java.html \
     | tar -x -C "$STAGE"
 
-# The C# example projects and the go.mod files of the Go port are not needed.
+# fonts and data are the submodules pdfjet-fonts and pdfjet-data, whose files
+# git archive leaves out: each is archived at the commit the last commit
+# records for it, and its README, about the submodule, is left out.
+for dir in fonts data; do
+    if [ ! -e "$dir/.git" ]; then
+        echo "$dir is not checked out: run git submodule update --init"
+        exit 1
+    fi
+    git -C "$dir" archive --prefix="$dir/" "$(git rev-parse "HEAD:$dir")" \
+        | tar -x -C "$STAGE"
+    rm -f "$STAGE/$dir/README.md"
+done
+
+# The C# example projects and the go.mod file of the Go port are not needed.
 find "$STAGE/examples" -mindepth 1 -maxdepth 1 -type d -exec rm -rf {} +
-rm -f "$STAGE/data/go.mod" "$STAGE/fonts/go.mod" "$STAGE/images/go.mod"
+rm -f "$STAGE/images/go.mod"
 
 # The .stream fonts are the fonts of the package. The .otf and .ttf files they
 # are made from are left out, but for the two that Example_28 reads.
