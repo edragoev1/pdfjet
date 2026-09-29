@@ -599,6 +599,31 @@ to check and fix in the four, with a test.
   0.61 s, and 1.75 s in place of 3.25 s with alpha. It still refuses an image
   of more than 40 megapixels from its header (`checkPixels`, layout.go).
 
+- ⬜ **`PDFobj.GetData` of an image leaves the PNG predictor in place, and an
+  /Indexed image in its indexes.** `applyDecodeParms` in pdfobj.go skips a
+  stream of `/Subtype /Image`, "as they are copied with their stream, and
+  their data is not used", so the data of an image with `/DecodeParms
+  <</Predictor 15 ...>>` is its rows each with the filter type and the
+  filter of its PNG row, and of an /Indexed image its packed indexes. Since
+  99486dea embeds the IDAT data of an opaque PNG as it is, and a palette PNG
+  as /Indexed on RGB, that is the data of every such image PDFjet writes:
+  pdfjet-server's fingerprint of an image, and the PNG it makes again from
+  it, read 32 bytes more for a 32 by 32 gray image, and the fingerprints of
+  forms signed before no longer matched. Found Sep 28, by five tests of
+  pdfjet-server. Worked around the same day in pdfjet-server, which undoes
+  the predictor and expands the palette to RGB of eight bits itself
+  (`imageSamples`, xobject.go), and gets the fingerprints of before for
+  every PNG of PngSuite. The fix is in two parts. Undoing the predictor in
+  `GetData` of an image is a fix, for v9.0.3: the predictor is part of the
+  Flate or LZW filter, `GetData` says it returns the decoded stream, and the
+  reason for skipping it, that the data is not used, stopped being true when
+  PDFjet began to write it; the four ports change the same way, with a test,
+  and pdfjet-server stops undoing it, which its check that the data is a
+  filter type and a row for each row of the image makes safe. The samples
+  of an /Indexed image in its colors are not what the stream is, so they
+  are not `GetData`'s to give: that is new API, a way to get the decoded
+  samples of an image, and waits for v9.1.
+
 ## v9.1 — features, after v9.0.3
 
 - ⬜ CommonMark itself, in the four ports, where v9.0.3 has the practical
