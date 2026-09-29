@@ -176,6 +176,132 @@ import Testing
         #expect(TestSupport.pageObjects(objects).count == 1)
     }
 
+    // Returns a PDF of count streams whose /Length is 1 and that have no
+    // endstream, each followed by 1,000 bytes and its endobj, which the
+    // cross-reference table lists.
+    private func streamsWithNoEndstream(_ count: Int) -> [UInt8] {
+        var body = TestSupport.bytes("%PDF-1.7\n")
+        let filler = [UInt8](repeating: 0x78, count: 1000)    // "x"
+        var offsets = [Int]()
+        for i in 1...count {
+            offsets.append(body.count)
+            body += TestSupport.bytes("\(i) 0 obj\n<< /Length 1 >>\nstream\n")
+            body += filler
+            body += TestSupport.bytes("\nendobj\n")
+        }
+        let xref = body.count
+        body += TestSupport.bytes("xref\n0 \(count + 1)\n0000000000 65535 f \n")
+        for offset in offsets {
+            body += TestSupport.bytes(String(format: "%010d 00000 n \n", offset))
+        }
+        body += TestSupport.bytes("trailer\n<< /Size \(count + 1) /Root 1 0 R >>\nstartxref\n\(xref)\n%%EOF\n")
+        return body
+    }
+
+    @Test func streamsWithAWrongLengthAndNoEndstreamAreSearchedOnce() throws {
+        // The endstream of every stream was looked for to the end of the PDF:
+        // 8,000 streams, 8.5 MB, took 25 seconds. It is looked for in the
+        // object.
+        let objects = try #require(readQuickly(streamsWithNoEndstream(8000)))
+        #expect(objects.count == 8000)
+        #expect(objects[7999].getValue("/Length") == "1")
+        #expect(objects[7999].stream == TestSupport.bytes("x"))
+    }
+
+    @Test func aStreamThatTheTableListsManyTimesIsSearchedWithinABudget() throws {
+        // Each entry of the stream is an object of its own, which ends at the
+        // end of the PDF, and its endstream was looked for there 10,000 times.
+        // What the reader may read in all is eight times the length of the
+        // PDF: the streams past it keep their /Length.
+        var body = TestSupport.bytes("%PDF-1.7\n1 0 obj\n<< /Length 1 >>\nstream\n")
+        body += [UInt8](repeating: 0x78, count: 1000000)  // "x"
+        let xref = body.count
+        body += TestSupport.bytes("\nxref\n" + String(repeating: "1 1\n0000000009 00000 n \n", count: 10000))
+        body += TestSupport.bytes("trailer\n<< /Size 2 >>\nstartxref\n\(xref + 1)\n%%EOF\n")
+        let objects = try #require(readQuickly(body))
+        #expect(objects.count == 1)
+        #expect(objects[0].getValue("/Length") == "1")
+    }
+
+    @Test func sectionsWithNoStartxrefAreReadWithinABudget() {
+        // A thousand sections chained by /Prev, with no startxref after them,
+        // were each read to the end of the PDF. The sections past the budget
+        // are not read, and the PDF is read by looking for its objects.
+        var body = TestSupport.bytes("%PDF-1.7\n")
+        var prev = -1
+        for _ in 0..<1000 {
+            let offset = body.count
+            if prev == -1 {
+                body += TestSupport.bytes("xref\n0 0\ntrailer\n<< /Size 1 >>\n")
+            } else {
+                body += TestSupport.bytes("xref\n0 0\ntrailer\n<< /Size 1 /Prev \(prev) >>\n")
+            }
+            prev = offset
+        }
+        body += TestSupport.bytes(String(repeating: "a ", count: 500000))
+        body += TestSupport.bytes("\nstartxref\n\(prev)\n%%EOF\n")
+        _ = readQuickly(body)
+    }
+
+    @Test func anObjectThatTheTableListsManyTimesIsReadWithinABudget() throws {
+        // The object with no endobj was read to the end of the PDF for each of
+        // its 1,000 entries.
+        var body = TestSupport.bytes("%PDF-1.7\n1 0 obj\n<< /A [")
+        body += TestSupport.bytes(String(repeating: "1 ", count: 500000))
+        body += TestSupport.bytes("] >>\n")
+        let xref = body.count
+        body += TestSupport.bytes("xref\n" + String(repeating: "1 1\n0000000009 00000 n \n", count: 1000))
+        body += TestSupport.bytes("trailer\n<< /Size 2 >>\nstartxref\n\(xref)\n%%EOF\n")
+        let objects = try #require(readQuickly(body))
+        #expect(objects.count == 1)
+        #expect(objects[0].dict.prefix(7).joined(separator: " ") == "1 0 obj << /A [ 1")
+    }
+
+    @Test func anObjectThatAnObjectStreamListsManyTimesIsReadWithinABudget() throws {
+        // The objects of an object stream at offsets 0 and 1,000,000 by turns
+        // were each read from 0 to 1,000,000, the next offset. Its objects are
+        // read in no more than its length in all, and those past it have no
+        // tokens.
+        var header = ""
+        for i in 0..<1000 {
+            header += "\(i + 2) \((i % 2) * 1000000) "
+        }
+        let data = header + String(repeating: "1 ", count: 500000) + "<< >>"
+        let objects = try #require(readQuickly(pdfWithObjects([
+            "<< /Type /ObjStm /N 1000 /First \(header.utf8.count) /Length \(data.utf8.count) >>\nstream\n"
+                + data + "\nendstream",
+        ])))
+        #expect(objects.count == 1001)
+        #expect(objects[1].dict.prefix(5).joined(separator: " ") == "2 0 obj 1 1")
+        #expect(objects[1000].dict.joined(separator: " ") == "1001 0 obj")
+    }
+
+    @Test func theEndstreamOfAStreamIsLookedForInItsObject() throws {
+        // A stream with a wrong /Length ends at the endstream in its object,
+        // and one with none keeps its /Length: the endstream of the next
+        // object, which the search found, made it the bytes up to there.
+        var objects = try TestSupport.read(pdfWithObjects([
+            "<< /Length 3 >>\nstream\nBT (Hello) Tj ET\nendstream",
+            "<< /Length 5 >>\nstream\nhello world",
+            "<< /Length 3 >>\nstream\nabc\nendstream",
+        ]))
+        #expect(TestSupport.latin1(objects[0].getData()) == "BT (Hello) Tj ET")
+        #expect(objects[0].getValue("/Length") == "16")
+        #expect(TestSupport.latin1(objects[1].getData()) == "hello")
+        #expect(objects[1].getValue("/Length") == "5")
+        #expect(TestSupport.latin1(objects[2].getData()) == "abc")
+
+        // A stream whose /Length is right goes on past where its object ends
+        // at the latest, which is the next "number generation obj" in a PDF
+        // with no cross-reference table, and past an endstream in it, and the
+        // object in it is not read.
+        let data = "x\n2 0 obj\nendstream y"
+        objects = try TestSupport.read(TestSupport.bytes(
+            "%PDF-1.4\n1 0 obj\n<< /Length \(data.utf8.count) >>\nstream\n\(data)\nendstream\nendobj\n"))
+        #expect(objects.count == 1)
+        #expect(TestSupport.latin1(objects[0].getData()) == data)
+    }
+
     @Test func theLengthOfAStreamIsFoundByItsNumber() throws {
         // Every stream looked for its /Length among all the objects.
         var objects = [

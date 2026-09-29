@@ -2444,7 +2444,7 @@ func (pdf *PDF) ReadWithPassword(buf []byte, password string) (objects []*PDFobj
 		}
 	}()
 	objects1 := make([]*PDFobj, 0)
-	budget := newDecodeBudget() // For all the streams of this PDF together
+	budget := newDecodeBudget(len(buf)) // For all the streams of this PDF together
 	trailer := func() (trailer *PDFobj) {
 		defer func() {
 			if r := recover(); r != nil {
@@ -2460,7 +2460,7 @@ func (pdf *PDF) ReadWithPassword(buf []byte, password string) (objects []*PDFobj
 		// The cross-reference table is missing or wrong, like in a PDF
 		// that was changed without updating it.
 		objects1 = objects1[:0]
-		trailer = getObjectsByScanning(buf, &objects1)
+		trailer = getObjectsByScanning(buf, &objects1, budget)
 	}
 	dec, err := getDecryptor(trailer, objects1, password)
 	if err != nil {
@@ -2500,6 +2500,11 @@ func (pdf *PDF) ReadWithPassword(buf []byte, password string) (objects []*PDFobj
 			}
 			data := obj.GetData()
 			o2 := getObject(data, 0, min(first, len(data)))
+			// Its objects are read in no more than its length in all, as
+			// one whose offset is listed again was read again: a stream of
+			// a few kilobytes that decodes to a megabyte, with an object
+			// listed a thousand times, took seconds.
+			streamBudget := &decodeBudget{readLeft: len(data)}
 			for i := 0; i+1 < len(o2.dict); i += 2 {
 				num := o2.dict[i]
 				number, err := objectStreamNumber(num)
@@ -2518,7 +2523,7 @@ func (pdf *PDF) ReadWithPassword(buf []byte, password string) (objects []*PDFobj
 					}
 					end = min(first+tmp, len(data))
 				}
-				o3 := getObject(data, first+off, end)
+				o3 := readObject(data, first+off, end, streamBudget)
 				o3.setNumber(number)
 				o3.dict = insertStringAt(o3.dict, "obj", 0)
 				o3.dict = insertStringAt(o3.dict, "0", 0)
@@ -2618,9 +2623,12 @@ func getObjectAt(buf []byte, off int) *PDFobj {
 	return getObject(buf, off, len(buf))
 }
 
+// getObject returns the object at the offset, which ends at length at the
+// latest.
 func getObject(buf []byte, off, length int) *PDFobj {
 	obj := newPDFobj()
 	obj.offset = off
+	obj.end = length
 
 	var token1 strings.Builder
 	p := 0 // The nesting level of the parentheses in a literal string
@@ -2702,7 +2710,30 @@ func getObject(buf []byte, off, length int) *PDFobj {
 	if !done {
 		process(obj, &token1, buf, off) // The last token, at the end of the data.
 	}
+	obj.read = off
 
+	return obj
+}
+
+// readObject returns the object at the offset that a cross-reference section
+// or an object stream names, or the section itself, which ends at end at the
+// latest, and takes the bytes it reads from the budget. An object that what
+// is left of the budget does not reach the end of has no tokens, as one that
+// is outside of the PDF, and the PDF is then read by looking for its objects:
+// a thousand sections chained by /Prev with no startxref after them, or a
+// table that lists one object thousands of times, was each read to the end of
+// the PDF or of the object.
+func readObject(buf []byte, off, end int, budget *decodeBudget) *PDFobj {
+	if off < 0 || off >= len(buf) {
+		return newPDFobj()
+	}
+	end = min(end, len(buf))
+	limit := min(end, off+max(budget.readLeft, 0))
+	obj := getObject(buf, off, limit)
+	budget.readLeft -= obj.read - off
+	if limit < end && obj.read >= limit {
+		return newPDFobj()
+	}
 	return obj
 }
 
@@ -2766,7 +2797,7 @@ func getObjects(
 		return nil
 	}
 	visited[offset] = true
-	xref := getObjectAt(buf, offset)
+	xref := readObject(buf, offset, len(buf), budget)
 	table := len(xref.dict) > 0 && xref.dict[0] == "xref"
 	if depth > 1000 || (!table && !isObject(xref, -1)) {
 		return nil
@@ -2778,10 +2809,11 @@ func getObjects(
 	if table {
 		// The objects in the table replace those in the /XRefStm stream.
 		xrefStm := xref.GetValue("/XRefStm")
-		if xrefStm != "" && !getStreamObjects(buf, getObjectAt(buf, toInteger(xrefStm)), objects, budget) {
+		if xrefStm != "" &&
+			!getStreamObjects(buf, readObject(buf, toInteger(xrefStm), len(buf), budget), objects, budget) {
 			return nil
 		}
-		if !getTableObjects(buf, xref, objects) {
+		if !getTableObjects(buf, xref, objects, budget) {
 			return nil
 		}
 	} else if !getStreamObjects(buf, xref, objects, budget) {
@@ -2802,7 +2834,7 @@ type xrefEntry struct {
 // section starts at the latest, as one with no endobj was read to the end of
 // the PDF: a section of objects with no endobj took seconds for every hundred
 // kilobytes.
-func getEntryObjects(buf []byte, entries []xrefEntry, objects *[]*PDFobj) bool {
+func getEntryObjects(buf []byte, entries []xrefEntry, objects *[]*PDFobj, budget *decodeBudget) bool {
 	offsets := make([]int, len(entries))
 	for i, entry := range entries {
 		offsets[i] = entry.offset
@@ -2813,10 +2845,7 @@ func getEntryObjects(buf []byte, entries []xrefEntry, objects *[]*PDFobj) bool {
 		if j := sort.SearchInts(offsets, entry.offset+1); j < len(offsets) {
 			end = min(offsets[j], len(buf))
 		}
-		obj := newPDFobj()
-		if entry.offset >= 0 && entry.offset < len(buf) {
-			obj = getObject(buf, entry.offset, end)
-		}
+		obj := readObject(buf, entry.offset, end, budget)
 		if !isObject(obj, entry.number) {
 			return false
 		}
@@ -2828,7 +2857,7 @@ func getEntryObjects(buf []byte, entries []xrefEntry, objects *[]*PDFobj) bool {
 
 // getTableObjects adds the objects in use of a cross-reference table, and
 // returns false when an offset is not that of its object.
-func getTableObjects(buf []byte, xref *PDFobj, objects *[]*PDFobj) bool {
+func getTableObjects(buf []byte, xref *PDFobj, objects *[]*PDFobj, budget *decodeBudget) bool {
 	entries := make([]xrefEntry, 0)
 	dict := xref.dict
 	i := 1
@@ -2850,7 +2879,7 @@ func getTableObjects(buf []byte, xref *PDFobj, objects *[]*PDFobj) bool {
 			}
 		}
 	}
-	return i < len(dict) && dict[i] == "trailer" && getEntryObjects(buf, entries, objects)
+	return i < len(dict) && dict[i] == "trailer" && getEntryObjects(buf, entries, objects, budget)
 }
 
 // getStreamObjects adds the objects of a cross-reference stream that are not
@@ -2906,7 +2935,7 @@ func getStreamObjects(buf []byte, xref *PDFobj, objects *[]*PDFobj, budget *deco
 			offset += n
 		}
 	}
-	return getEntryObjects(buf, entries, objects)
+	return getEntryObjects(buf, entries, objects, budget)
 }
 
 // getObjectsByScanning adds the objects of the PDF to the list by looking for
@@ -2920,7 +2949,7 @@ func getStreamObjects(buf []byte, xref *PDFobj, objects *[]*PDFobj, budget *deco
 // endobj was read to the end of the PDF, and the last trailer is read once
 // when the scan is done: a PDF of objects with no endobj took seconds for
 // every hundred kilobytes.
-func getObjectsByScanning(buf []byte, objects *[]*PDFobj) *PDFobj {
+func getObjectsByScanning(buf []byte, objects *[]*PDFobj, budget *decodeBudget) *PDFobj {
 	var xrefStream *PDFobj
 	trailerOffset := -1
 	next := 0 // The start of the object after the one at i
@@ -2938,11 +2967,17 @@ func getObjectsByScanning(buf []byte, objects *[]*PDFobj) *PDFobj {
 					xrefStream = obj
 				}
 				if contains(obj.dict, "stream") {
-					// Skip the stream, as its bytes can look like an object.
-					end := indexOf(buf, "endstream", obj.streamOffset)
-					if end == -1 {
-						i = len(buf)
-					} else {
+					// Skip the stream, as its bytes can look like an object:
+					// to the endstream after its /Length, or else to the
+					// first one before the next object, or to the next
+					// object. The endstream was looked for to the end of the
+					// PDF, and the objects after a stream with none were
+					// not read.
+					i = next
+					length := toInteger(obj.GetValue("/Length"))
+					if end := endstreamAfter(buf, obj.streamOffset, length, budget); end != -1 {
+						i = end
+					} else if end := indexOf(buf, "endstream", obj.streamOffset, next); end != -1 {
 						i = end
 					}
 					continue
@@ -3012,8 +3047,10 @@ func startsWith(buf []byte, off int, str string) bool {
 	return true
 }
 
-func indexOf(buf []byte, str string, from int) int {
-	for i := max(from, 0); i+len(str) <= len(buf); i++ {
+// indexOf returns the offset of the first str from the offset from on that
+// ends by the offset to, or -1.
+func indexOf(buf []byte, str string, from, to int) int {
+	for i := max(from, 0); i+len(str) <= min(to, len(buf)); i++ {
 		if startsWith(buf, i, str) {
 			return i
 		}

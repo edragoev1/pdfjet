@@ -193,6 +193,140 @@ public class ReviewReaderTest {
         Assert.Single(new PDF().GetPageObjects(objects));
     }
 
+    // Returns a PDF of count streams whose /Length is 1 and that have no
+    // endstream, each followed by 1,000 bytes and its endobj, which the
+    // cross-reference table lists.
+    private static byte[] StreamsWithNoEndstream(int count) {
+        StringBuilder sb = new StringBuilder("%PDF-1.7\n");
+        string filler = Repeat("x", 1000);
+        int[] offsets = new int[count];
+        for (int i = 0; i < count; i++) {
+            offsets[i] = sb.Length;
+            sb.Append(i + 1).Append(" 0 obj\n<< /Length 1 >>\nstream\n").Append(filler).Append("\nendobj\n");
+        }
+        int xref = sb.Length;
+        sb.Append("xref\n0 ").Append(count + 1).Append("\n0000000000 65535 f \n");
+        foreach (int offset in offsets) {
+            sb.Append(offset.ToString("D10")).Append(" 00000 n \n");
+        }
+        sb.Append("trailer\n<< /Size ").Append(count + 1)
+                .Append(" /Root 1 0 R >>\nstartxref\n").Append(xref).Append("\n%%EOF\n");
+        return Latin1(sb.ToString());
+    }
+
+    [Fact]
+    public void StreamsWithAWrongLengthAndNoEndstreamAreSearchedOnce() {
+        // The endstream of every stream was looked for to the end of the PDF:
+        // 8,000 streams, 8.5 MB, took 25 seconds. It is looked for in the
+        // object.
+        List<PDFobj> objects = ReadQuickly(StreamsWithNoEndstream(8000));
+        Assert.NotNull(objects);
+        Assert.Equal(8000, objects.Count);
+        Assert.Equal("1", objects[7999].GetValue("/Length"));
+        Assert.Equal("x", TestSupport.Latin1(objects[7999].stream));
+    }
+
+    [Fact]
+    public void AStreamThatTheTableListsManyTimesIsSearchedWithinABudget() {
+        // Each entry of the stream is an object of its own, which ends at the
+        // end of the PDF, and its endstream was looked for there 10,000 times.
+        // What the reader may read in all is eight times the length of the
+        // PDF: the streams past it keep their /Length.
+        StringBuilder sb = new StringBuilder("%PDF-1.7\n1 0 obj\n<< /Length 1 >>\nstream\n");
+        sb.Append(Repeat("x", 1000000));
+        int xref = sb.Length;
+        sb.Append("\nxref\n");
+        sb.Append(Repeat("1 1\n0000000009 00000 n \n", 10000));
+        sb.Append("trailer\n<< /Size 2 >>\nstartxref\n").Append(xref + 1).Append("\n%%EOF\n");
+        List<PDFobj> objects = ReadQuickly(Latin1(sb.ToString()));
+        Assert.NotNull(objects);
+        Assert.Single(objects);
+        Assert.Equal("1", objects[0].GetValue("/Length"));
+    }
+
+    [Fact]
+    public void SectionsWithNoStartxrefAreReadWithinABudget() {
+        // A thousand sections chained by /Prev, with no startxref after them,
+        // were each read to the end of the PDF. The sections past the budget
+        // are not read, and the PDF is read by looking for its objects.
+        StringBuilder sb = new StringBuilder("%PDF-1.7\n");
+        int prev = -1;
+        for (int i = 0; i < 1000; i++) {
+            int offset = sb.Length;
+            if (prev == -1) {
+                sb.Append("xref\n0 0\ntrailer\n<< /Size 1 >>\n");
+            } else {
+                sb.Append("xref\n0 0\ntrailer\n<< /Size 1 /Prev ").Append(prev).Append(" >>\n");
+            }
+            prev = offset;
+        }
+        sb.Append(Repeat("a ", 500000));
+        sb.Append("\nstartxref\n").Append(prev).Append("\n%%EOF\n");
+        ReadQuickly(Latin1(sb.ToString()));
+    }
+
+    [Fact]
+    public void AnObjectThatTheTableListsManyTimesIsReadWithinABudget() {
+        // The object with no endobj was read to the end of the PDF for each of
+        // its 1,000 entries.
+        StringBuilder sb = new StringBuilder("%PDF-1.7\n1 0 obj\n<< /A [");
+        sb.Append(Repeat("1 ", 500000));
+        sb.Append("] >>\n");
+        int xref = sb.Length;
+        sb.Append("xref\n");
+        sb.Append(Repeat("1 1\n0000000009 00000 n \n", 1000));
+        sb.Append("trailer\n<< /Size 2 >>\nstartxref\n").Append(xref).Append("\n%%EOF\n");
+        List<PDFobj> objects = ReadQuickly(Latin1(sb.ToString()));
+        Assert.NotNull(objects);
+        Assert.Single(objects);
+        Assert.Equal("1 0 obj << /A [ 1", string.Join(" ", objects[0].dict.GetRange(0, 7)));
+    }
+
+    [Fact]
+    public void AnObjectThatAnObjectStreamListsManyTimesIsReadWithinABudget() {
+        // The objects of an object stream at offsets 0 and 1,000,000 by turns
+        // were each read from 0 to 1,000,000, the next offset. Its objects are
+        // read in no more than its length in all, and those past it have no
+        // tokens.
+        StringBuilder header = new StringBuilder();
+        for (int i = 0; i < 1000; i++) {
+            header.Append(i + 2).Append(' ').Append((i % 2) * 1000000).Append(' ');
+        }
+        string data = header + Repeat("1 ", 500000) + "<< >>";
+        List<PDFobj> objects = ReadQuickly(PdfWithObjects("<< /Type /ObjStm /N 1000 /First " + header.Length
+                + " /Length " + data.Length + " >>\nstream\n" + data + "\nendstream"));
+        Assert.NotNull(objects);
+        Assert.Equal(1001, objects.Count);
+        Assert.Equal("2 0 obj 1 1", string.Join(" ", objects[1].dict.GetRange(0, 5)));
+        Assert.Equal("1001 0 obj", string.Join(" ", objects[1000].dict));
+    }
+
+    [Fact]
+    public void TheEndstreamOfAStreamIsLookedForInItsObject() {
+        // A stream with a wrong /Length ends at the endstream in its object,
+        // and one with none keeps its /Length: the endstream of the next
+        // object, which the search found, made it the bytes up to there.
+        List<PDFobj> objects = TestSupport.Read(PdfWithObjects(
+                "<< /Length 3 >>\nstream\nBT (Hello) Tj ET\nendstream",
+                "<< /Length 5 >>\nstream\nhello world",
+                "<< /Length 3 >>\nstream\nabc\nendstream"));
+        Assert.Equal("BT (Hello) Tj ET", TestSupport.Latin1(objects[0].GetData()));
+        Assert.Equal("16", objects[0].GetValue("/Length"));
+        Assert.Equal("hello", TestSupport.Latin1(objects[1].GetData()));
+        Assert.Equal("5", objects[1].GetValue("/Length"));
+        Assert.Equal("abc", TestSupport.Latin1(objects[2].GetData()));
+
+        // A stream whose /Length is right goes on past where its object ends
+        // at the latest, which is the next "number generation obj" in a PDF
+        // with no cross-reference table, and past an endstream in it, and the
+        // object in it is not read.
+        string data = "x\n2 0 obj\nendstream y";
+        objects = TestSupport.Read(Latin1("%PDF-1.4\n1 0 obj\n<< /Length " + data.Length
+                + " >>\nstream\n" + data + "\nendstream\nendobj\n"));
+        Assert.Single(objects);
+        Assert.Equal(data, TestSupport.Latin1(objects[0].GetData()));
+    }
+
     [Fact]
     public void TheLengthOfAStreamIsFoundByItsNumber() {
         // Every stream looked for its /Length among all the objects.

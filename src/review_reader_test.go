@@ -139,6 +139,147 @@ func TestReviewReaderACrossReferenceSectionThatIsItsOwnPrevIsReadOnce(t *testing
 	}
 }
 
+// testStreamsWithNoEndstream returns a PDF of count streams whose /Length is
+// 1 and that have no endstream, each followed by 1,000 bytes and its endobj,
+// which the cross-reference table lists.
+func testStreamsWithNoEndstream(count int) []byte {
+	var sb strings.Builder
+	sb.WriteString("%PDF-1.7\n")
+	filler := strings.Repeat("x", 1000)
+	offsets := make([]int, 0)
+	for i := 1; i <= count; i++ {
+		offsets = append(offsets, sb.Len())
+		fmt.Fprintf(&sb, "%d 0 obj\n<< /Length 1 >>\nstream\n%s\nendobj\n", i, filler)
+	}
+	xref := sb.Len()
+	fmt.Fprintf(&sb, "xref\n0 %d\n0000000000 65535 f \n", count+1)
+	for _, offset := range offsets {
+		fmt.Fprintf(&sb, "%010d 00000 n \n", offset)
+	}
+	fmt.Fprintf(&sb, "trailer\n<< /Size %d /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF\n", count+1, xref)
+	return []byte(sb.String())
+}
+
+func TestReviewReaderStreamsWithAWrongLengthAndNoEndstreamAreSearchedOnce(t *testing.T) {
+	// The endstream of every stream was looked for to the end of the PDF:
+	// 8,000 streams, 8.5 MB, took 25 seconds. It is looked for in the object.
+	objects := testReadQuickly(t, testStreamsWithNoEndstream(8000))
+	if len(objects) != 8000 {
+		t.Fatalf("objects %d", len(objects))
+	}
+	testWant(t, "1", objects[7999].GetValue("/Length"))
+	testWant(t, "x", string(objects[7999].stream))
+}
+
+func TestReviewReaderAStreamThatTheTableListsManyTimesIsSearchedWithinABudget(t *testing.T) {
+	// Each entry of the stream is an object of its own, which ends at the end
+	// of the PDF, and its endstream was looked for there 10,000 times. What
+	// the reader may read in all is eight times the length of the PDF: the
+	// streams past it keep their /Length.
+	var sb strings.Builder
+	sb.WriteString("%PDF-1.7\n1 0 obj\n<< /Length 1 >>\nstream\n")
+	sb.WriteString(strings.Repeat("x", 1000000))
+	xref := sb.Len()
+	sb.WriteString("\nxref\n")
+	for i := 0; i < 10000; i++ {
+		sb.WriteString("1 1\n0000000009 00000 n \n")
+	}
+	fmt.Fprintf(&sb, "trailer\n<< /Size 2 >>\nstartxref\n%d\n%%%%EOF\n", xref+1)
+	objects := testReadQuickly(t, []byte(sb.String()))
+	if len(objects) != 1 {
+		t.Fatalf("objects %d", len(objects))
+	}
+	testWant(t, "1", objects[0].GetValue("/Length"))
+}
+
+func TestReviewReaderSectionsWithNoStartxrefAreReadWithinABudget(t *testing.T) {
+	// A thousand sections chained by /Prev, with no startxref after them,
+	// were each read to the end of the PDF. The sections past the budget are
+	// not read, and the PDF is read by looking for its objects.
+	var sb strings.Builder
+	sb.WriteString("%PDF-1.7\n")
+	prev := -1
+	for i := 0; i < 1000; i++ {
+		offset := sb.Len()
+		if prev == -1 {
+			sb.WriteString("xref\n0 0\ntrailer\n<< /Size 1 >>\n")
+		} else {
+			fmt.Fprintf(&sb, "xref\n0 0\ntrailer\n<< /Size 1 /Prev %d >>\n", prev)
+		}
+		prev = offset
+	}
+	sb.WriteString(strings.Repeat("a ", 500000))
+	fmt.Fprintf(&sb, "\nstartxref\n%d\n%%%%EOF\n", prev)
+	testReadQuickly(t, []byte(sb.String()))
+}
+
+func TestReviewReaderAnObjectThatTheTableListsManyTimesIsReadWithinABudget(t *testing.T) {
+	// The object with no endobj was read to the end of the PDF for each of
+	// its 1,000 entries.
+	var sb strings.Builder
+	sb.WriteString("%PDF-1.7\n1 0 obj\n<< /A [")
+	sb.WriteString(strings.Repeat("1 ", 500000))
+	sb.WriteString("] >>\n")
+	xref := sb.Len()
+	sb.WriteString("xref\n")
+	for i := 0; i < 1000; i++ {
+		sb.WriteString("1 1\n0000000009 00000 n \n")
+	}
+	fmt.Fprintf(&sb, "trailer\n<< /Size 2 >>\nstartxref\n%d\n%%%%EOF\n", xref)
+	objects := testReadQuickly(t, []byte(sb.String()))
+	if len(objects) != 1 {
+		t.Fatalf("objects %d", len(objects))
+	}
+	testWant(t, "1 0 obj << /A [ 1", strings.Join(objects[0].dict[:7], " "))
+}
+
+func TestReviewReaderAnObjectThatAnObjectStreamListsManyTimesIsReadWithinABudget(t *testing.T) {
+	// The objects of an object stream at offsets 0 and 1,000,000 by turns
+	// were each read from 0 to 1,000,000, the next offset. Its objects are
+	// read in no more than its length in all, and those past it have no
+	// tokens.
+	var header strings.Builder
+	for i := 0; i < 1000; i++ {
+		fmt.Fprintf(&header, "%d %d ", i+2, (i%2)*1000000)
+	}
+	data := header.String() + strings.Repeat("1 ", 500000) + "<< >>"
+	objects := testReadQuickly(t, testPDFWithObjects(fmt.Sprintf(
+		"<< /Type /ObjStm /N 1000 /First %d /Length %d >>\nstream\n%s\nendstream",
+		header.Len(), len(data), data)))
+	if len(objects) != 1001 {
+		t.Fatalf("objects %d", len(objects))
+	}
+	testWant(t, "2 0 obj 1 1", strings.Join(objects[1].dict[:5], " "))
+	testWant(t, "1001 0 obj", strings.Join(objects[1000].dict, " "))
+}
+
+func TestReviewReaderTheEndstreamOfAStreamIsLookedForInItsObject(t *testing.T) {
+	// A stream with a wrong /Length ends at the endstream in its object, and
+	// one with none keeps its /Length: the endstream of the next object, which
+	// the search found, made it the bytes up to there.
+	objects := testRead(t, testPDFWithObjects(
+		"<< /Length 3 >>\nstream\nBT (Hello) Tj ET\nendstream",
+		"<< /Length 5 >>\nstream\nhello world",
+		"<< /Length 3 >>\nstream\nabc\nendstream"))
+	testWant(t, "BT (Hello) Tj ET", string(objects[0].GetData()))
+	testWant(t, "16", objects[0].GetValue("/Length"))
+	testWant(t, "hello", string(objects[1].GetData()))
+	testWant(t, "5", objects[1].GetValue("/Length"))
+	testWant(t, "abc", string(objects[2].GetData()))
+
+	// A stream whose /Length is right goes on past where its object ends at
+	// the latest, which is the next "number generation obj" in a PDF with no
+	// cross-reference table, and past an endstream in it, and the object in
+	// it is not read.
+	data := "x\n2 0 obj\nendstream y"
+	objects = testRead(t, []byte(fmt.Sprintf(
+		"%%PDF-1.4\n1 0 obj\n<< /Length %d >>\nstream\n%s\nendstream\nendobj\n", len(data), data)))
+	if len(objects) != 1 {
+		t.Fatalf("objects %d", len(objects))
+	}
+	testWant(t, data, string(objects[0].GetData()))
+}
+
 // testPDFWithStreams returns a PDF of count streams, each with its /Length in
 // an object of its own.
 func testPDFWithStreams(count int) []byte {

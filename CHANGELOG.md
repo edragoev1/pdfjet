@@ -43,6 +43,28 @@ This is the first entry in this file; earlier releases were not tracked here.
   `addObjects` and `addResourceObjects`, copies its stream and its
   `/DecodeParms` as before, and the PDFs it writes do not change. The data
   of an `/Indexed` image is still its indexes, as its stream is.
+- `PDF.read` reads a PDF in time and memory in proportion to its size, in
+  all four ports, where a PDF of a few megabytes made to be slow to read
+  took minutes. The endstream of a stream whose `/Length` is wrong, which
+  the stream ends at, as MuPDF and pdf.js read it, is looked for in the
+  stream's own object, up to the next object that the cross-reference
+  section lists or, in a PDF read by looking for its objects, up to the next
+  object in the PDF: it was looked for to the end of the PDF, for every such
+  stream, and 8,000 streams with no endstream, 8.5 MB, took 25 seconds. A
+  stream with no endstream in its object keeps its `/Length`, where the
+  endstream of a later object made it the bytes up to there, as in two
+  files of the pdf.js corpus, and the objects after a stream with no
+  endstream are read in a PDF read by looking for its objects. What the
+  reader may read in all to find the objects of the cross-reference
+  sections and the endstreams is eight times the length of the PDF, and a
+  search past it keeps the `/Length`: a thousand sections chained by
+  `/Prev` with no startxref after them, or a table that lists one object or
+  one stream thousands of times, each read to the end of the PDF, and a
+  PDF of a megabyte took half a minute, or ran out of memory in Java. A
+  section past it is not read, and the PDF is read by looking for its
+  objects. The objects of an object stream are read in no more than its
+  length in all, as those whose offset is listed again were read again: a
+  file of 3 kB took seconds.
 
 ## v9.0.2 — 2026-09-28
 

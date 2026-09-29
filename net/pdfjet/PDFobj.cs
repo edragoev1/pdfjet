@@ -18,6 +18,8 @@ namespace PDFjet.NET {
 public class PDFobj {
     internal int number;           // The object number
     internal int offset;           // The object offset
+    internal int end;              // Where the object ends at the latest
+    internal int read;             // The offset up to which its tokens were read
     internal List<String> dict;
     internal int streamOffset;
     internal byte[] stream;        // The compressed stream
@@ -76,9 +78,25 @@ public class PDFobj {
     // stream. Not a constant, for the tests.
     internal static int MAX_DECODED_TOTAL = Decompressor.MAX_DECODED_LENGTH;
 
+    // How many times the length of a PDF the reader may read in all to find
+    // the objects that its cross-reference sections list and the endstream of
+    // the streams whose /Length is wrong. Each of those reads ends where its
+    // object does, but a PDF can list one object many times, and the last
+    // object of a section ends at the end of the PDF.
+    internal const int READ_PER_BYTE = 8;
+
     // What the streams of one PDF may still decode to, shared by its objects.
+    // It also holds what the reader may still read of the PDF, READ_PER_BYTE
+    // times its length, so that no PDF is read in more than linear time:
+    // thousands of streams with a wrong /Length and no endstream each searched
+    // to the end of the PDF.
     internal sealed class DecodeBudget {
         internal int left = MAX_DECODED_TOTAL;
+        internal int readLeft;
+
+        internal DecodeBudget(int size) {
+            this.readLeft = (int) Math.Min((long) READ_PER_BYTE * size, int.MaxValue);
+        }
     }
 
     // The error of a PDF whose streams decode to more than the budget together.
@@ -100,7 +118,7 @@ public class PDFobj {
     internal void SetStreamAndData(byte[] buf, int length, Decryptor decryptor, DecodeBudget budget) {
         if (this.stream == null) {
             this.budget = budget;
-            int actual = StreamLength(buf, streamOffset, length);
+            int actual = StreamLength(buf, streamOffset, length, end, budget);
             if (actual != length) {
                 length = actual;
                 SetLength(length);
@@ -156,30 +174,47 @@ public class PDFobj {
     // not -- a /Length that is missing, too short or too long -- the stream
     // ends at the end of line before the next endstream, as MuPDF and pdf.js
     // read it. A stream with no endstream after it keeps its /Length.
-    private static int StreamLength(byte[] buf, int offset, int length) {
-        if (offset < 0 || offset > buf.Length) {
+    //
+    // The endstream is looked for before end, where the object ends at the
+    // latest, and within what is left of what the budget may read: a PDF of
+    // thousands of streams with a wrong /Length and no endstream was searched
+    // to its end for each of them. A search the budget does not finish keeps
+    // the /Length too.
+    private static int StreamLength(byte[] buf, int offset, int length, int end, DecodeBudget budget) {
+        if (offset < 0 || offset > buf.Length || EndstreamAfter(buf, offset, length, budget) != -1) {
             return length;
         }
-        if (length >= 0 && length <= buf.Length - offset) {
-            int i = offset + length;
-            while (i < buf.Length && PDF.IsWhiteSpace(buf[i])) {
-                i++;
-            }
-            if (PDF.StartsWith(buf, i, "endstream")) {
-                return length;
-            }
-        }
-        int end = PDF.IndexOf(buf, "endstream", offset);
-        if (end == -1) {
+        end = (int) Math.Max(Math.Min(Math.Min(end, buf.Length), (long) offset + budget.readLeft), offset);
+        int found = PDF.IndexOf(buf, "endstream", offset, end);
+        if (found == -1) {
+            budget.readLeft -= end - offset;
             return length;
         }
-        if (end > offset && buf[end - 1] == '\n') {
-            end--;
+        budget.readLeft -= found - offset;
+        if (found > offset && buf[found - 1] == '\n') {
+            found--;
         }
-        if (end > offset && buf[end - 1] == '\r') {
-            end--;
+        if (found > offset && buf[found - 1] == '\r') {
+            found--;
         }
-        return end - offset;
+        return found - offset;
+    }
+
+    // Returns the offset of the endstream keyword that follows the /Length of
+    // the stream at the offset, after white space, or -1. The white space is
+    // taken from the budget, as streams whose /Length ends in the same run of
+    // white space each read it.
+    internal static int EndstreamAfter(byte[] buf, int offset, int length, DecodeBudget budget) {
+        if (offset < 0 || length < 0 || length > buf.Length - offset) {
+            return -1;
+        }
+        int i = offset + length;
+        int end = (int) Math.Min(buf.Length, (long) i + Math.Max(budget.readLeft, 0));
+        while (i < end && PDF.IsWhiteSpace(buf[i])) {
+            i++;
+        }
+        budget.readLeft -= i - (offset + length);
+        return PDF.StartsWith(buf, i, "endstream") ? i : -1;
     }
 
     // Sets the /Length of the stream, replacing a reference to the length,

@@ -2453,7 +2453,7 @@ public sealed class PDF {
         byte[] buf = Content.GetFromStream(inputStream);
 
         List<PDFobj> objects1 = new List<PDFobj>();
-        PDFobj.DecodeBudget budget = new PDFobj.DecodeBudget();   // For all the streams of this PDF together
+        PDFobj.DecodeBudget budget = new PDFobj.DecodeBudget(buf.Length); // For all the streams of this PDF together
         PDFobj trailer = null;
         try {
             trailer = GetObjects(buf, GetStartXRef(buf), objects1, 0, new HashSet<int>(), budget);
@@ -2466,7 +2466,7 @@ public sealed class PDF {
             // The cross-reference table is missing or wrong, like in a PDF
             // that was changed without updating it.
             objects1.Clear();
-            trailer = GetObjectsByScanning(buf, objects1);
+            trailer = GetObjectsByScanning(buf, objects1, budget);
         }
         Decryptor decryptor = Decryptor.GetDecryptor(trailer, objects1, password);
 
@@ -2502,6 +2502,12 @@ public sealed class PDF {
                 // as it has in the Go and Swift ports.
                 byte[] data = obj.data ?? new byte[0];
                 PDFobj o2 = GetObject(data, 0, Math.Min(first, data.Length));
+                // Its objects are read in no more than its length in all, as
+                // one whose offset is listed again was read again: a stream
+                // of a few kilobytes that decodes to a megabyte, with an
+                // object listed a thousand times, took seconds.
+                PDFobj.DecodeBudget streamBudget = new PDFobj.DecodeBudget(0);
+                streamBudget.readLeft = data.Length;
                 for (int i = 0; i + 1 < o2.dict.Count; i += 2) {
                     String num = o2.dict[i];
                     int number = ObjectStreamNumber(num);
@@ -2515,7 +2521,7 @@ public sealed class PDF {
                                 (long) first + ObjectStreamNumber(o2.dict[i + 3]), data.Length);
                     }
                     int start = (int) Math.Min((long) first + off, data.Length);
-                    PDFobj o3 = GetObject(data, start, end);
+                    PDFobj o3 = ReadObject(data, start, end, streamBudget);
                     o3.SetNumber(number);
                     o3.dict.Insert(0, "obj");
                     o3.dict.Insert(0, "0");
@@ -2612,9 +2618,11 @@ public sealed class PDF {
         return GetObject(buf, off, buf.Length);
     }
 
+    // Returns the object at the offset, which ends at len at the latest.
     private PDFobj GetObject(byte[] buf, int off, int len) {
         PDFobj obj = new PDFobj();
         obj.offset = off;
+        obj.end = len;
         StringBuilder token = new StringBuilder();
 
         int p = 0;          // The nesting level of the parentheses in a literal string
@@ -2690,7 +2698,30 @@ public sealed class PDF {
         if (!done) {
             Process(obj, token, buf, off);  // The last token, at the end of the data.
         }
+        obj.read = off;
 
+        return obj;
+    }
+
+    // Returns the object at the offset that a cross-reference section or an
+    // object stream names, or the section itself, which ends at end at the
+    // latest, and takes the bytes it reads from the budget. An object that
+    // what is left of the budget does not reach the end of has no tokens, as
+    // one that is outside of the PDF, and the PDF is then read by looking for
+    // its objects: a thousand sections chained by /Prev with no startxref
+    // after them, or a table that lists one object thousands of times, was
+    // each read to the end of the PDF or of the object.
+    private PDFobj ReadObject(byte[] buf, int off, int end, PDFobj.DecodeBudget budget) {
+        if (off < 0 || off >= buf.Length) {
+            return new PDFobj();
+        }
+        end = Math.Min(end, buf.Length);
+        int limit = (int) Math.Min(end, (long) off + Math.Max(budget.readLeft, 0));
+        PDFobj obj = GetObject(buf, off, limit);
+        budget.readLeft -= obj.read - off;
+        if (limit < end && obj.read >= limit) {
+            return new PDFobj();
+        }
         return obj;
     }
 
@@ -2753,7 +2784,7 @@ public sealed class PDF {
         if (!visited.Add(offset)) {
             return null;
         }
-        PDFobj xref = GetObject(buf, offset);
+        PDFobj xref = ReadObject(buf, offset, buf.Length, budget);
         bool table = xref.dict.Count > 0 && xref.dict[0].Equals("xref");
         if (depth > 1000 || (!table && !IsObject(xref, -1))) {
             return null;
@@ -2766,10 +2797,10 @@ public sealed class PDF {
             // The objects in the table replace those in the /XRefStm stream.
             String xrefStm = xref.GetValue("/XRefStm");
             if (!xrefStm.Equals("") &&
-                    !GetStreamObjects(buf, GetObject(buf, ToInteger(xrefStm)), objects, budget)) {
+                    !GetStreamObjects(buf, ReadObject(buf, ToInteger(xrefStm), buf.Length, budget), objects, budget)) {
                 return null;
             }
-            if (!GetTableObjects(buf, xref, objects)) {
+            if (!GetTableObjects(buf, xref, objects, budget)) {
                 return null;
             }
         } else if (!GetStreamObjects(buf, xref, objects, budget)) {
@@ -2799,7 +2830,8 @@ public sealed class PDF {
     // where the next one of the section starts at the latest, as one with no
     // endobj was read to the end of the PDF: a section of objects with no
     // endobj took seconds for every hundred kilobytes.
-    private bool GetEntryObjects(byte[] buf, List<int[]> entries, List<PDFobj> objects) {
+    private bool GetEntryObjects(
+            byte[] buf, List<int[]> entries, List<PDFobj> objects, PDFobj.DecodeBudget budget) {
         int[] offsets = new int[entries.Count];
         for (int i = 0; i < offsets.Length; i++) {
             offsets[i] = entries[i][1];
@@ -2811,8 +2843,7 @@ public sealed class PDF {
             if (j < offsets.Length) {
                 end = Math.Min(offsets[j], buf.Length);
             }
-            PDFobj obj = (entry[1] >= 0 && entry[1] < buf.Length)
-                    ? GetObject(buf, entry[1], end) : new PDFobj();
+            PDFobj obj = ReadObject(buf, entry[1], end, budget);
             if (!IsObject(obj, entry[0])) {
                 return false;
             }
@@ -2824,7 +2855,7 @@ public sealed class PDF {
 
     // Adds the objects in use of a cross-reference table, and returns false
     // when an offset is not that of its object.
-    private bool GetTableObjects(byte[] buf, PDFobj xref, List<PDFobj> objects) {
+    private bool GetTableObjects(byte[] buf, PDFobj xref, List<PDFobj> objects, PDFobj.DecodeBudget budget) {
         List<int[]> entries = new List<int[]>();
         List<String> dict = xref.dict;
         int i = 1;
@@ -2846,7 +2877,7 @@ public sealed class PDF {
                 }
             }
         }
-        return i < dict.Count && dict[i].Equals("trailer") && GetEntryObjects(buf, entries, objects);
+        return i < dict.Count && dict[i].Equals("trailer") && GetEntryObjects(buf, entries, objects, budget);
     }
 
     // Adds the objects of a cross-reference stream that are not in object
@@ -2902,7 +2933,7 @@ public sealed class PDF {
                 offset += n;
             }
         }
-        return GetEntryObjects(buf, entries, objects);
+        return GetEntryObjects(buf, entries, objects, budget);
     }
 
     // Adds the objects of the PDF to the list by looking for "number
@@ -2916,7 +2947,7 @@ public sealed class PDF {
     // endobj was read to the end of the PDF, and the last trailer is read
     // once when the scan is done: a PDF of objects with no endobj took
     // seconds for every hundred kilobytes.
-    private PDFobj GetObjectsByScanning(byte[] buf, List<PDFobj> objects) {
+    private PDFobj GetObjectsByScanning(byte[] buf, List<PDFobj> objects, PDFobj.DecodeBudget budget) {
         PDFobj xrefStream = null;
         int trailerOffset = -1;
         int next = 0;   // The start of the object after the one at i
@@ -2934,9 +2965,18 @@ public sealed class PDF {
                         xrefStream = obj;
                     }
                     if (obj.dict.Contains("stream")) {
-                        // Skip the stream, as its bytes can look like an object.
-                        int end = IndexOf(buf, "endstream", obj.streamOffset);
-                        i = (end == -1) ? buf.Length : end;
+                        // Skip the stream, as its bytes can look like an
+                        // object: to the endstream after its /Length, or else
+                        // to the first one before the next object, or to the
+                        // next object. The endstream was looked for to the end
+                        // of the PDF, and the objects after a stream with none
+                        // were not read.
+                        int length = ToInteger(obj.GetValue("/Length"));
+                        int end = PDFobj.EndstreamAfter(buf, obj.streamOffset, length, budget);
+                        if (end == -1) {
+                            end = IndexOf(buf, "endstream", obj.streamOffset, next);
+                        }
+                        i = (end == -1) ? next : end;
                         continue;
                     }
                 }
@@ -3001,8 +3041,10 @@ public sealed class PDF {
         return true;
     }
 
-    internal static int IndexOf(byte[] buf, String str, int from) {
-        for (int i = Math.Max(from, 0); i + str.Length <= buf.Length; i++) {
+    // Returns the offset of the first str from the offset from on that ends
+    // by the offset to, or -1.
+    internal static int IndexOf(byte[] buf, String str, int from, int to) {
+        for (int i = Math.Max(from, 0); i + str.Length <= Math.Min(to, buf.Length); i++) {
             if (StartsWith(buf, i, str)) {
                 return i;
             }

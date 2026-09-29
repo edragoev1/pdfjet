@@ -13,6 +13,8 @@ import Foundation
 public final class PDFobj {
     var number = 0                  // The object number
     var offset = 0                  // The object offset
+    var end = 0                     // Where the object ends at the latest
+    var read = 0                    // The offset up to which its tokens were read
     ///
     /// The tokens of the object dictionary. Edit them in place to change an
     /// object that was read, for example the /MediaBox or /Rotate of a page:
@@ -77,9 +79,25 @@ public final class PDFobj {
     /// stream. A variable, for the tests.
     nonisolated(unsafe) static var maxDecodedTotal = MAX_DECODED_LENGTH
 
+    /// How many times the length of a PDF the reader may read in all to find
+    /// the objects that its cross-reference sections list and the endstream of
+    /// the streams whose /Length is wrong. Each of those reads ends where its
+    /// object does, but a PDF can list one object many times, and the last
+    /// object of a section ends at the end of the PDF.
+    static let readPerByte = 8
+
     /// What the streams of one PDF may still decode to, shared by its objects.
+    /// It also holds what the reader may still read of the PDF, readPerByte
+    /// times its length, so that no PDF is read in more than linear time:
+    /// thousands of streams with a wrong /Length and no endstream each searched
+    /// to the end of the PDF.
     final class DecodeBudget {
         var left = PDFobj.maxDecodedTotal
+        var readLeft: Int
+
+        init(_ size: Int) {
+            readLeft = PDFobj.readPerByte * size
+        }
     }
 
     /// The error of a PDF whose streams decode to more than the budget together.
@@ -93,12 +111,12 @@ public final class PDFobj {
     /// stream replaces the encrypted one, so that it can be copied.
     ///
     final func setStreamAndData(
-            _ buffer: inout [UInt8], _ length: Int, _ decryptor: Decryptor? = nil,
-            _ budget: DecodeBudget? = nil) throws {
+            _ buffer: inout [UInt8], _ length: Int, _ decryptor: Decryptor?,
+            _ budget: DecodeBudget) throws {
         if stream == nil {
             self.budget = budget
             var length = length
-            let actual = PDFobj.streamLength(buffer, streamOffset, length)
+            let actual = PDFobj.streamLength(buffer, streamOffset, length, end, budget)
             if actual != length {
                 length = actual
                 setLength(length)
@@ -154,34 +172,52 @@ public final class PDFobj {
     // not -- a /Length that is missing, too short or too long -- the stream
     // ends at the end of line before the next endstream, as MuPDF and pdf.js
     // read it. A stream with no endstream after it keeps its /Length.
-    private static func streamLength(_ buf: [UInt8], _ offset: Int, _ length: Int) -> Int {
-        if offset < 0 || offset > buf.count {
+    //
+    // The endstream is looked for before end, where the object ends at the
+    // latest, and within what is left of what the budget may read: a PDF of
+    // thousands of streams with a wrong /Length and no endstream was searched
+    // to its end for each of them. A search the budget does not finish keeps
+    // the /Length too.
+    private static func streamLength(
+            _ buf: [UInt8], _ offset: Int, _ length: Int, _ end: Int, _ budget: DecodeBudget) -> Int {
+        if offset < 0 || offset > buf.count || endstreamAfter(buf, offset, length, budget) != -1 {
             return length
         }
         let keyword = Array("endstream".utf8)
-        if length >= 0 && length <= buf.count - offset {
-            var i = offset + length
-            while i < buf.count && isWhiteSpace(buf[i]) {
-                i += 1
-            }
-            if startsWith(buf, i, keyword) {
-                return length
-            }
+        let end = max(min(end, buf.count, offset + budget.readLeft), offset)
+        var found = offset
+        while found + keyword.count <= end && !startsWith(buf, found, keyword) {
+            found += 1
         }
-        var end = offset
-        while !startsWith(buf, end, keyword) {
-            if end + keyword.count > buf.count {
-                return length
-            }
-            end += 1
+        if found + keyword.count > end {
+            budget.readLeft -= end - offset
+            return length
         }
-        if end > offset && buf[end - 1] == 0x0A {
-            end -= 1
+        budget.readLeft -= found - offset
+        if found > offset && buf[found - 1] == 0x0A {
+            found -= 1
         }
-        if end > offset && buf[end - 1] == 0x0D {
-            end -= 1
+        if found > offset && buf[found - 1] == 0x0D {
+            found -= 1
         }
-        return end - offset
+        return found - offset
+    }
+
+    // Returns the offset of the endstream keyword that follows the /Length of
+    // the stream at the offset, after white space, or -1. The white space is
+    // taken from the budget, as streams whose /Length ends in the same run of
+    // white space each read it.
+    static func endstreamAfter(_ buf: [UInt8], _ offset: Int, _ length: Int, _ budget: DecodeBudget) -> Int {
+        if offset < 0 || length < 0 || length > buf.count - offset {
+            return -1
+        }
+        var i = offset + length
+        let end = min(buf.count, i + max(budget.readLeft, 0))
+        while i < end && isWhiteSpace(buf[i]) {
+            i += 1
+        }
+        budget.readLeft -= i - (offset + length)
+        return startsWith(buf, i, Array("endstream".utf8)) ? i : -1
     }
 
     private static func isWhiteSpace(_ c: UInt8) -> Bool {

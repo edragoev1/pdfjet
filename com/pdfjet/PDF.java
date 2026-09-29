@@ -2599,7 +2599,7 @@ final public class PDF {
         byte[] buf = Content.getFromStream(inputStream);
 
         List<PDFobj> objects1 = new ArrayList<PDFobj>();
-        PDFobj.DecodeBudget budget = new PDFobj.DecodeBudget();   // For all the streams of this PDF together
+        PDFobj.DecodeBudget budget = new PDFobj.DecodeBudget(buf.length); // For all the streams of this PDF together
         PDFobj trailer = null;
         try {
             trailer = getObjects(buf, getStartXRef(buf), objects1, 0, new HashSet<Integer>(), budget);
@@ -2612,7 +2612,7 @@ final public class PDF {
             // The cross-reference table is missing or wrong, like in a PDF
             // that was changed without updating it.
             objects1.clear();
-            trailer = getObjectsByScanning(buf, objects1);
+            trailer = getObjectsByScanning(buf, objects1, budget);
         }
         Decryptor decryptor = Decryptor.getDecryptor(trailer, objects1, password);
 
@@ -2648,6 +2648,12 @@ final public class PDF {
                 // as it has in the Go and Swift ports.
                 byte[] data = (obj.data == null) ? new byte[0] : obj.data;
                 PDFobj o2 = getObject(data, 0, Math.min(first, data.length));
+                // Its objects are read in no more than its length in all, as
+                // one whose offset is listed again was read again: a stream
+                // of a few kilobytes that decodes to a megabyte, with an
+                // object listed a thousand times, took seconds.
+                PDFobj.DecodeBudget streamBudget = new PDFobj.DecodeBudget(0);
+                streamBudget.readLeft = data.length;
                 for (int i = 0; i + 1 < o2.dict.size(); i += 2) {
                     String num = o2.dict.get(i);
                     int number = objectStreamNumber(num);
@@ -2661,7 +2667,7 @@ final public class PDF {
                                 (long) first + objectStreamNumber(o2.dict.get(i + 3)), data.length);
                     }
                     int start = (int) Math.min((long) first + off, data.length);
-                    PDFobj o3 = getObject(data, start, end);
+                    PDFobj o3 = readObject(data, start, end, streamBudget);
                     o3.setNumber(number);
                     o3.dict.add(0, "obj");
                     o3.dict.add(0, "0");
@@ -2743,9 +2749,11 @@ final public class PDF {
         return getObject(buf, off, buf.length);
     }
 
+    // Returns the object at the offset, which ends at len at the latest.
     private PDFobj getObject(byte[] buf, int off, int len) {
         PDFobj obj = new PDFobj();
         obj.offset = off;
+        obj.end = len;
         StringBuilder token = new StringBuilder();
 
         int p = 0;          // The nesting level of the parentheses in a literal string
@@ -2821,7 +2829,30 @@ final public class PDF {
         if (!done) {
             process(obj, token, buf, off);  // The last token, at the end of the data.
         }
+        obj.read = off;
 
+        return obj;
+    }
+
+    // Returns the object at the offset that a cross-reference section or an
+    // object stream names, or the section itself, which ends at end at the
+    // latest, and takes the bytes it reads from the budget. An object that
+    // what is left of the budget does not reach the end of has no tokens, as
+    // one that is outside of the PDF, and the PDF is then read by looking for
+    // its objects: a thousand sections chained by /Prev with no startxref
+    // after them, or a table that lists one object thousands of times, was
+    // each read to the end of the PDF or of the object.
+    private PDFobj readObject(byte[] buf, int off, int end, PDFobj.DecodeBudget budget) {
+        if (off < 0 || off >= buf.length) {
+            return new PDFobj();
+        }
+        end = Math.min(end, buf.length);
+        int limit = (int) Math.min(end, (long) off + Math.max(budget.readLeft, 0));
+        PDFobj obj = getObject(buf, off, limit);
+        budget.readLeft -= obj.read - off;
+        if (limit < end && obj.read >= limit) {
+            return new PDFobj();
+        }
         return obj;
     }
 
@@ -2891,7 +2922,7 @@ final public class PDF {
         if (!visited.add(offset)) {
             return null;
         }
-        PDFobj xref = getObject(buf, offset);
+        PDFobj xref = readObject(buf, offset, buf.length, budget);
         boolean table = !xref.dict.isEmpty() && xref.dict.get(0).equals("xref");
         if (depth > 1000 || (!table && !isObject(xref, -1))) {
             return null;
@@ -2904,10 +2935,10 @@ final public class PDF {
             // The objects in the table replace those in the /XRefStm stream.
             String xrefStm = xref.getValue("/XRefStm");
             if (!xrefStm.isEmpty() &&
-                    !getStreamObjects(buf, getObject(buf, toInteger(xrefStm)), objects, budget)) {
+                    !getStreamObjects(buf, readObject(buf, toInteger(xrefStm), buf.length, budget), objects, budget)) {
                 return null;
             }
-            if (!getTableObjects(buf, xref, objects)) {
+            if (!getTableObjects(buf, xref, objects, budget)) {
                 return null;
             }
         } else if (!getStreamObjects(buf, xref, objects, budget)) {
@@ -2921,7 +2952,8 @@ final public class PDF {
     // where the next one of the section starts at the latest, as one with no
     // endobj was read to the end of the PDF: a section of objects with no
     // endobj took seconds for every hundred kilobytes.
-    private boolean getEntryObjects(byte[] buf, List<int[]> entries, List<PDFobj> objects) {
+    private boolean getEntryObjects(
+            byte[] buf, List<int[]> entries, List<PDFobj> objects, PDFobj.DecodeBudget budget) {
         int[] offsets = new int[entries.size()];
         for (int i = 0; i < offsets.length; i++) {
             offsets[i] = entries.get(i)[1];
@@ -2933,8 +2965,7 @@ final public class PDF {
             if (j < offsets.length) {
                 end = Math.min(offsets[j], buf.length);
             }
-            PDFobj obj = (entry[1] >= 0 && entry[1] < buf.length)
-                    ? getObject(buf, entry[1], end) : new PDFobj();
+            PDFobj obj = readObject(buf, entry[1], end, budget);
             if (!isObject(obj, entry[0])) {
                 return false;
             }
@@ -2962,7 +2993,8 @@ final public class PDF {
 
     // Adds the objects in use of a cross-reference table, and returns false
     // when an offset is not that of its object.
-    private boolean getTableObjects(byte[] buf, PDFobj xref, List<PDFobj> objects) {
+    private boolean getTableObjects(
+            byte[] buf, PDFobj xref, List<PDFobj> objects, PDFobj.DecodeBudget budget) {
         List<int[]> entries = new ArrayList<int[]>();
         List<String> dict = xref.dict;
         int i = 1;
@@ -2984,7 +3016,7 @@ final public class PDF {
                 }
             }
         }
-        return i < dict.size() && dict.get(i).equals("trailer") && getEntryObjects(buf, entries, objects);
+        return i < dict.size() && dict.get(i).equals("trailer") && getEntryObjects(buf, entries, objects, budget);
     }
 
     // Adds the objects of a cross-reference stream that are not in object
@@ -3042,7 +3074,7 @@ final public class PDF {
                 offset += n;
             }
         }
-        return getEntryObjects(buf, entries, objects);
+        return getEntryObjects(buf, entries, objects, budget);
     }
 
     /**
@@ -3059,7 +3091,7 @@ final public class PDF {
      * @return the last trailer, or the last cross-reference stream object
      *     when there is no trailer, or null when there is neither.
      */
-    private PDFobj getObjectsByScanning(byte[] buf, List<PDFobj> objects) {
+    private PDFobj getObjectsByScanning(byte[] buf, List<PDFobj> objects, PDFobj.DecodeBudget budget) {
         PDFobj xrefStream = null;
         int trailerOffset = -1;
         int next = 0;   // The start of the object after the one at i
@@ -3077,9 +3109,18 @@ final public class PDF {
                         xrefStream = obj;
                     }
                     if (obj.dict.contains("stream")) {
-                        // Skip the stream, as its bytes can look like an object.
-                        int end = indexOf(buf, "endstream", obj.streamOffset);
-                        i = (end == -1) ? buf.length : end;
+                        // Skip the stream, as its bytes can look like an
+                        // object: to the endstream after its /Length, or else
+                        // to the first one before the next object, or to the
+                        // next object. The endstream was looked for to the end
+                        // of the PDF, and the objects after a stream with none
+                        // were not read.
+                        int length = toInteger(obj.getValue("/Length"));
+                        int end = PDFobj.endstreamAfter(buf, obj.streamOffset, length, budget);
+                        if (end == -1) {
+                            end = indexOf(buf, "endstream", obj.streamOffset, next);
+                        }
+                        i = (end == -1) ? next : end;
                         continue;
                     }
                 }
@@ -3144,8 +3185,10 @@ final public class PDF {
         return true;
     }
 
-    static int indexOf(byte[] buf, String str, int from) {
-        for (int i = Math.max(from, 0); i + str.length() <= buf.length; i++) {
+    // Returns the offset of the first str from the offset from on that ends
+    // by the offset to, or -1.
+    static int indexOf(byte[] buf, String str, int from, int to) {
+        for (int i = Math.max(from, 0); i + str.length() <= Math.min(to, buf.length); i++) {
             if (startsWith(buf, i, str)) {
                 return i;
             }

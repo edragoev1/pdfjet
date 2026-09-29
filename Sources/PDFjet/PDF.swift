@@ -2121,7 +2121,7 @@ public final class PDF {
     public func read(from stream: InputStream, password: String) throws -> [PDFobj] {
         var buffer1 = try Content.getFromStream(stream)
         var objects1 = [PDFobj]()
-        let budget = PDFobj.DecodeBudget()  // For all the streams of this PDF together
+        let budget = PDFobj.DecodeBudget(buffer1.count)   // For all the streams of this PDF together
         let startXRef = getStartXRef(buffer1)
         var trailer: PDFobj?
         do {
@@ -2136,7 +2136,7 @@ public final class PDF {
             // The cross-reference table is missing or wrong, like in a PDF that
             // was changed without updating it.
             objects1.removeAll()
-            trailer = getObjectsByScanning(buffer1, &objects1)
+            trailer = getObjectsByScanning(buffer1, &objects1, budget)
         }
         let decryptor = try Decryptor.getDecryptor(trailer, objects1, password)
 
@@ -2167,6 +2167,12 @@ public final class PDF {
                 // ports, and not a reason to stop the program.
                 let first = try objectStreamNumber(obj.getValue("/First"))
                 let o2 = getObject(obj.data, 0, min(first, obj.data.count))
+                // Its objects are read in no more than its length in all, as
+                // one whose offset is listed again was read again: a stream
+                // of a few kilobytes that decodes to a megabyte, with an
+                // object listed a thousand times, took seconds.
+                let streamBudget = PDFobj.DecodeBudget(0)
+                streamBudget.readLeft = obj.data.count
                 var i = 0
                 while i + 1 < o2.dict.count {
                     let num = o2.dict[i]
@@ -2176,7 +2182,7 @@ public final class PDF {
                     if i <= o2.dict.count - 4 {
                         end = min(first + (try objectStreamNumber(o2.dict[i + 3])), obj.data.count)
                     }
-                    let o3 = getObject(obj.data, first + off, end)
+                    let o3 = readObject(obj.data, first + off, end, streamBudget)
                     o3.number = number
                     o3.dict.insert(contentsOf: [num, "0", "obj"], at: 0)
                     objects2.append(o3)
@@ -2267,10 +2273,12 @@ public final class PDF {
         return getObject(buf, off, buf.count)
     }
 
+    // Returns the object at the offset, which ends at len at the latest.
     private func getObject(_ buf: [UInt8], _ off: Int, _ len: Int) -> PDFobj {
         var offset = off
         let obj = PDFobj()
         obj.offset = offset
+        obj.end = len
         var token = [UInt8]()
 
         var p = 0               // The nesting level of the parentheses in a literal string
@@ -2359,7 +2367,30 @@ public final class PDF {
         if !done {
             _ = process(obj, &token, buf, offset)   // The last token, at the end of the data.
         }
+        obj.read = offset
 
+        return obj
+    }
+
+    // Returns the object at the offset that a cross-reference section or an
+    // object stream names, or the section itself, which ends at end at the
+    // latest, and takes the bytes it reads from the budget. An object that
+    // what is left of the budget does not reach the end of has no tokens, as
+    // one that is outside of the PDF, and the PDF is then read by looking for
+    // its objects: a thousand sections chained by /Prev with no startxref
+    // after them, or a table that lists one object thousands of times, was
+    // each read to the end of the PDF or of the object.
+    private func readObject(_ buf: [UInt8], _ off: Int, _ end: Int, _ budget: PDFobj.DecodeBudget) -> PDFobj {
+        if off < 0 || off >= buf.count {
+            return PDFobj()
+        }
+        let end = min(end, buf.count)
+        let limit = min(end, off + max(budget.readLeft, 0))
+        let obj = getObject(buf, off, limit)
+        budget.readLeft -= obj.read - off
+        if limit < end && obj.read >= limit {
+            return PDFobj()
+        }
         return obj
     }
 
@@ -2437,7 +2468,7 @@ public final class PDF {
         if !visited.insert(offset).inserted {
             return nil
         }
-        let xref = getObject(buf, offset)
+        let xref = readObject(buf, offset, buf.count, budget)
         let table = !xref.dict.isEmpty && xref.dict[0] == "xref"
         if depth > 1000 || (!table && !isObject(xref, -1)) {
             return nil
@@ -2452,12 +2483,12 @@ public final class PDF {
             // The objects in the table replace those in the /XRefStm stream.
             let xrefStm = xref.getValue("/XRefStm")
             if !xrefStm.isEmpty {
-                let stream = getObject(buf, toInteger(xrefStm))
+                let stream = readObject(buf, toInteger(xrefStm), buf.count, budget)
                 if try !getStreamObjects(&buf, stream, &objects, budget) {
                     return nil
                 }
             }
-            if !getTableObjects(buf, xref, &objects) {
+            if !getTableObjects(buf, xref, &objects, budget) {
                 return nil
             }
         } else if try !getStreamObjects(&buf, xref, &objects, budget) {
@@ -2490,7 +2521,8 @@ public final class PDF {
     private func getEntryObjects(
             _ buf: [UInt8],
             _ entries: [(number: Int, offset: Int)],
-            _ objects: inout [PDFobj]) -> Bool {
+            _ objects: inout [PDFobj],
+            _ budget: PDFobj.DecodeBudget) -> Bool {
         let offsets = entries.map { $0.offset }.sorted()
         for entry in entries {
             var end = buf.count
@@ -2498,8 +2530,7 @@ public final class PDF {
             if j < offsets.count {
                 end = min(offsets[j], buf.count)
             }
-            let obj = (entry.offset >= 0 && entry.offset < buf.count)
-                    ? getObject(buf, entry.offset, end) : PDFobj()
+            let obj = readObject(buf, entry.offset, end, budget)
             if !isObject(obj, entry.number) {
                 return false
             }
@@ -2511,7 +2542,8 @@ public final class PDF {
 
     // Adds the objects in use of a cross-reference table, and returns false
     // when an offset is not that of its object.
-    private func getTableObjects(_ buf: [UInt8], _ xref: PDFobj, _ objects: inout [PDFobj]) -> Bool {
+    private func getTableObjects(
+            _ buf: [UInt8], _ xref: PDFobj, _ objects: inout [PDFobj], _ budget: PDFobj.DecodeBudget) -> Bool {
         var entries = [(number: Int, offset: Int)]()
         let dict = xref.dict
         var i = 1
@@ -2537,7 +2569,7 @@ public final class PDF {
                 i += 3
             }
         }
-        return i < dict.count && dict[i] == "trailer" && getEntryObjects(buf, entries, &objects)
+        return i < dict.count && dict[i] == "trailer" && getEntryObjects(buf, entries, &objects, budget)
     }
 
     // Adds the objects of a cross-reference stream that are not in object
@@ -2600,7 +2632,7 @@ public final class PDF {
             }
             s += 2
         }
-        return getEntryObjects(buf, entries, &objects)
+        return getEntryObjects(buf, entries, &objects, budget)
     }
 
     ///
@@ -2617,7 +2649,8 @@ public final class PDF {
     /// - Returns: the last trailer, or the last cross-reference stream object
     ///   when there is no trailer, or nil when there is neither.
     ///
-    private func getObjectsByScanning(_ buf: [UInt8], _ objects: inout [PDFobj]) -> PDFobj? {
+    private func getObjectsByScanning(
+            _ buf: [UInt8], _ objects: inout [PDFobj], _ budget: PDFobj.DecodeBudget) -> PDFobj? {
         let trailerKeyword = Array("trailer".utf8)
         let endStreamKeyword = Array("endstream".utf8)
         var xrefStream: PDFobj?
@@ -2637,9 +2670,18 @@ public final class PDF {
                         xrefStream = obj
                     }
                     if obj.dict.contains("stream") {
-                        // Skip the stream, as its bytes can look like an object.
-                        let end = indexOf(buf, endStreamKeyword, obj.streamOffset)
-                        i = (end == -1) ? buf.count : end
+                        // Skip the stream, as its bytes can look like an
+                        // object: to the endstream after its /Length, or else
+                        // to the first one before the next object, or to the
+                        // next object. The endstream was looked for to the end
+                        // of the PDF, and the objects after a stream with none
+                        // were not read.
+                        let length = toInteger(obj.getValue("/Length"))
+                        var end = PDFobj.endstreamAfter(buf, obj.streamOffset, length, budget)
+                        if end == -1 {
+                            end = indexOf(buf, endStreamKeyword, obj.streamOffset, next)
+                        }
+                        i = (end == -1) ? next : end
                         continue
                     }
                 }
@@ -2705,9 +2747,11 @@ public final class PDF {
         return true
     }
 
-    private func indexOf(_ buf: [UInt8], _ str: [UInt8], _ from: Int) -> Int {
+    // Returns the offset of the first str from the offset from on that ends by
+    // the offset to, or -1.
+    private func indexOf(_ buf: [UInt8], _ str: [UInt8], _ from: Int, _ to: Int) -> Int {
         var i = max(from, 0)
-        while i + str.count <= buf.count {
+        while i + str.count <= min(to, buf.count) {
             if startsWith(buf, i, str) {
                 return i
             }

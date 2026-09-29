@@ -201,6 +201,140 @@ class ReviewReaderTest {
         assertEquals(1, new PDF().getPageObjects(objects).size());
     }
 
+    // Returns a PDF of count streams whose /Length is 1 and that have no
+    // endstream, each followed by 1,000 bytes and its endobj, which the
+    // cross-reference table lists.
+    private static byte[] streamsWithNoEndstream(int count) {
+        StringBuilder sb = new StringBuilder("%PDF-1.7\n");
+        String filler = repeat("x", 1000);
+        int[] offsets = new int[count];
+        for (int i = 0; i < count; i++) {
+            offsets[i] = sb.length();
+            sb.append(i + 1).append(" 0 obj\n<< /Length 1 >>\nstream\n").append(filler).append("\nendobj\n");
+        }
+        int xref = sb.length();
+        sb.append("xref\n0 ").append(count + 1).append("\n0000000000 65535 f \n");
+        for (int offset : offsets) {
+            sb.append(String.format("%010d 00000 n \n", offset));
+        }
+        sb.append("trailer\n<< /Size ").append(count + 1)
+                .append(" /Root 1 0 R >>\nstartxref\n").append(xref).append("\n%%EOF\n");
+        return latin1(sb.toString());
+    }
+
+    @Test
+    void streamsWithAWrongLengthAndNoEndstreamAreSearchedOnce() {
+        // The endstream of every stream was looked for to the end of the PDF:
+        // 8,000 streams, 8.5 MB, took 25 seconds. It is looked for in the
+        // object.
+        List<PDFobj> objects = readQuickly(streamsWithNoEndstream(8000));
+        assertNotNull(objects);
+        assertEquals(8000, objects.size());
+        assertEquals("1", objects.get(7999).getValue("/Length"));
+        assertEquals("x", TestSupport.latin1(objects.get(7999).stream));
+    }
+
+    @Test
+    void aStreamThatTheTableListsManyTimesIsSearchedWithinABudget() {
+        // Each entry of the stream is an object of its own, which ends at the
+        // end of the PDF, and its endstream was looked for there 10,000 times.
+        // What the reader may read in all is eight times the length of the
+        // PDF: the streams past it keep their /Length.
+        StringBuilder sb = new StringBuilder("%PDF-1.7\n1 0 obj\n<< /Length 1 >>\nstream\n");
+        sb.append(repeat("x", 1000000));
+        int xref = sb.length();
+        sb.append("\nxref\n");
+        sb.append(repeat("1 1\n0000000009 00000 n \n", 10000));
+        sb.append("trailer\n<< /Size 2 >>\nstartxref\n").append(xref + 1).append("\n%%EOF\n");
+        List<PDFobj> objects = readQuickly(latin1(sb.toString()));
+        assertNotNull(objects);
+        assertEquals(1, objects.size());
+        assertEquals("1", objects.get(0).getValue("/Length"));
+    }
+
+    @Test
+    void sectionsWithNoStartxrefAreReadWithinABudget() {
+        // A thousand sections chained by /Prev, with no startxref after them,
+        // were each read to the end of the PDF. The sections past the budget
+        // are not read, and the PDF is read by looking for its objects.
+        StringBuilder sb = new StringBuilder("%PDF-1.7\n");
+        int prev = -1;
+        for (int i = 0; i < 1000; i++) {
+            int offset = sb.length();
+            if (prev == -1) {
+                sb.append("xref\n0 0\ntrailer\n<< /Size 1 >>\n");
+            } else {
+                sb.append("xref\n0 0\ntrailer\n<< /Size 1 /Prev ").append(prev).append(" >>\n");
+            }
+            prev = offset;
+        }
+        sb.append(repeat("a ", 500000));
+        sb.append("\nstartxref\n").append(prev).append("\n%%EOF\n");
+        readQuickly(latin1(sb.toString()));
+    }
+
+    @Test
+    void anObjectThatTheTableListsManyTimesIsReadWithinABudget() {
+        // The object with no endobj was read to the end of the PDF for each of
+        // its 1,000 entries.
+        StringBuilder sb = new StringBuilder("%PDF-1.7\n1 0 obj\n<< /A [");
+        sb.append(repeat("1 ", 500000));
+        sb.append("] >>\n");
+        int xref = sb.length();
+        sb.append("xref\n");
+        sb.append(repeat("1 1\n0000000009 00000 n \n", 1000));
+        sb.append("trailer\n<< /Size 2 >>\nstartxref\n").append(xref).append("\n%%EOF\n");
+        List<PDFobj> objects = readQuickly(latin1(sb.toString()));
+        assertNotNull(objects);
+        assertEquals(1, objects.size());
+        assertEquals("1 0 obj << /A [ 1", String.join(" ", objects.get(0).dict.subList(0, 7)));
+    }
+
+    @Test
+    void anObjectThatAnObjectStreamListsManyTimesIsReadWithinABudget() {
+        // The objects of an object stream at offsets 0 and 1,000,000 by turns
+        // were each read from 0 to 1,000,000, the next offset. Its objects are
+        // read in no more than its length in all, and those past it have no
+        // tokens.
+        StringBuilder header = new StringBuilder();
+        for (int i = 0; i < 1000; i++) {
+            header.append(i + 2).append(' ').append((i % 2) * 1000000).append(' ');
+        }
+        String data = header + repeat("1 ", 500000) + "<< >>";
+        List<PDFobj> objects = readQuickly(pdfWithObjects("<< /Type /ObjStm /N 1000 /First " + header.length()
+                + " /Length " + data.length() + " >>\nstream\n" + data + "\nendstream"));
+        assertNotNull(objects);
+        assertEquals(1001, objects.size());
+        assertEquals("2 0 obj 1 1", String.join(" ", objects.get(1).dict.subList(0, 5)));
+        assertEquals("1001 0 obj", String.join(" ", objects.get(1000).dict));
+    }
+
+    @Test
+    void theEndstreamOfAStreamIsLookedForInItsObject() throws Exception {
+        // A stream with a wrong /Length ends at the endstream in its object,
+        // and one with none keeps its /Length: the endstream of the next
+        // object, which the search found, made it the bytes up to there.
+        List<PDFobj> objects = TestSupport.read(pdfWithObjects(
+                "<< /Length 3 >>\nstream\nBT (Hello) Tj ET\nendstream",
+                "<< /Length 5 >>\nstream\nhello world",
+                "<< /Length 3 >>\nstream\nabc\nendstream"));
+        assertEquals("BT (Hello) Tj ET", TestSupport.latin1(objects.get(0).getData()));
+        assertEquals("16", objects.get(0).getValue("/Length"));
+        assertEquals("hello", TestSupport.latin1(objects.get(1).getData()));
+        assertEquals("5", objects.get(1).getValue("/Length"));
+        assertEquals("abc", TestSupport.latin1(objects.get(2).getData()));
+
+        // A stream whose /Length is right goes on past where its object ends
+        // at the latest, which is the next "number generation obj" in a PDF
+        // with no cross-reference table, and past an endstream in it, and the
+        // object in it is not read.
+        String data = "x\n2 0 obj\nendstream y";
+        objects = TestSupport.read(latin1("%PDF-1.4\n1 0 obj\n<< /Length " + data.length()
+                + " >>\nstream\n" + data + "\nendstream\nendobj\n"));
+        assertEquals(1, objects.size());
+        assertEquals(data, TestSupport.latin1(objects.get(0).getData()));
+    }
+
     @Test
     void theLengthOfAStreamIsFoundByItsNumber() throws Exception {
         // Every stream looked for its /Length among all the objects.

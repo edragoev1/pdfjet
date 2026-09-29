@@ -27,6 +27,8 @@ import (
 type PDFobj struct {
 	number       int      // The object number
 	offset       int      // The object offset
+	end          int      // Where the object ends at the latest
+	read         int      // The offset up to which its tokens were read
 	dict         []string // The object dictionary
 	streamOffset int      // The stream offset
 	stream       []byte   // The compressed stream
@@ -43,14 +45,25 @@ type PDFobj struct {
 // a stream. A variable, for the tests.
 var maxDecodedTotal = decompressor.MaxDecodedLength
 
+// readPerByte is how many times the length of a PDF the reader may read in
+// all to find the objects that its cross-reference sections list and the
+// endstream of the streams whose /Length is wrong. Each of those reads ends
+// where its object does, but a PDF can list one object many times, and the
+// last object of a section ends at the end of the PDF.
+const readPerByte = 8
+
 // decodeBudget is what the streams of one PDF may still decode to, shared by
-// its objects: each stream decoded takes its length from it.
+// its objects: each stream decoded takes its length from it. It also holds
+// what the reader may still read of the PDF, readPerByte times its length,
+// so that no PDF is read in more than linear time: thousands of streams with
+// a wrong /Length and no endstream each searched to the end of the PDF.
 type decodeBudget struct {
-	left int
+	left     int
+	readLeft int
 }
 
-func newDecodeBudget() *decodeBudget {
-	return &decodeBudget{left: maxDecodedTotal}
+func newDecodeBudget(size int) *decodeBudget {
+	return &decodeBudget{left: maxDecodedTotal, readLeft: readPerByte * size}
 }
 
 // errDecodedTotal is the error of a PDF whose streams decode to more than
@@ -117,7 +130,7 @@ func (obj *PDFobj) GetData() []byte {
 func (obj *PDFobj) setStreamAndData(buf []byte, length int, dec *decryptor, budget *decodeBudget) *PDFobj {
 	if obj.stream == nil {
 		obj.budget = budget
-		if actual := streamLength(buf, obj.streamOffset, length); actual != length {
+		if actual := streamLength(buf, obj.streamOffset, length, obj.end, budget); actual != length {
 			length = actual
 			obj.setLength(length)
 		}
@@ -167,30 +180,50 @@ func (obj *PDFobj) decodeStream() (data []byte) {
 // does not -- a /Length that is missing, too short or too long -- the stream
 // ends at the end of line before the next endstream, as MuPDF and pdf.js read
 // it. A stream with no endstream after it keeps its /Length.
-func streamLength(buf []byte, offset, length int) int {
-	if offset < 0 || offset > len(buf) {
+//
+// The endstream is looked for before end, where the object ends at the
+// latest, and within what is left of what the budget may read: a PDF of
+// thousands of streams with a wrong /Length and no endstream was searched to
+// its end for each of them. A search the budget does not finish keeps the
+// /Length too.
+func streamLength(buf []byte, offset, length, end int, budget *decodeBudget) int {
+	if offset < 0 || offset > len(buf) || endstreamAfter(buf, offset, length, budget) != -1 {
 		return length
 	}
-	if length >= 0 && length <= len(buf)-offset {
-		i := offset + length
-		for i < len(buf) && isWhiteSpace(int(buf[i])) {
-			i++
-		}
-		if startsWith(buf, i, "endstream") {
-			return length
-		}
-	}
-	end := indexOf(buf, "endstream", offset)
-	if end == -1 {
+	end = max(min(end, len(buf), offset+budget.readLeft), offset)
+	found := indexOf(buf, "endstream", offset, end)
+	if found == -1 {
+		budget.readLeft -= end - offset
 		return length
 	}
-	if end > offset && buf[end-1] == '\n' {
-		end--
+	budget.readLeft -= found - offset
+	if found > offset && buf[found-1] == '\n' {
+		found--
 	}
-	if end > offset && buf[end-1] == '\r' {
-		end--
+	if found > offset && buf[found-1] == '\r' {
+		found--
 	}
-	return end - offset
+	return found - offset
+}
+
+// endstreamAfter returns the offset of the endstream keyword that follows the
+// /Length of the stream at the offset, after white space, or -1. The white
+// space is taken from the budget, as streams whose /Length ends in the same
+// run of white space each read it.
+func endstreamAfter(buf []byte, offset, length int, budget *decodeBudget) int {
+	if offset < 0 || length < 0 || length > len(buf)-offset {
+		return -1
+	}
+	i := offset + length
+	end := min(len(buf), i+max(budget.readLeft, 0))
+	for i < end && isWhiteSpace(int(buf[i])) {
+		i++
+	}
+	budget.readLeft -= i - (offset + length)
+	if startsWith(buf, i, "endstream") {
+		return i
+	}
+	return -1
 }
 
 // setLength sets the /Length of the stream, replacing a reference to the

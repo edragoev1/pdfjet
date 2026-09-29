@@ -23,6 +23,10 @@ public class PDFobj {
     int number;           // The object number
     /** The byte offset of the object. */
     int offset;           // The object offset
+    /** Where the object ends at the latest. */
+    int end;
+    /** The offset up to which its tokens were read. */
+    int read;
     /** The tokens of the object dictionary. */
     List<String> dict;
     /** The byte offset of the stream. */
@@ -100,9 +104,29 @@ public class PDFobj {
      */
     static int MAX_DECODED_TOTAL = Decompressor.MAX_DECODED_LENGTH;
 
-    /** What the streams of one PDF may still decode to, shared by its objects. */
+    /**
+     * How many times the length of a PDF the reader may read in all to find
+     * the objects that its cross-reference sections list and the endstream of
+     * the streams whose /Length is wrong. Each of those reads ends where its
+     * object does, but a PDF can list one object many times, and the last
+     * object of a section ends at the end of the PDF.
+     */
+    static final int READ_PER_BYTE = 8;
+
+    /**
+     * What the streams of one PDF may still decode to, shared by its objects.
+     * It also holds what the reader may still read of the PDF, READ_PER_BYTE
+     * times its length, so that no PDF is read in more than linear time:
+     * thousands of streams with a wrong /Length and no endstream each searched
+     * to the end of the PDF.
+     */
     static final class DecodeBudget {
         int left = MAX_DECODED_TOTAL;
+        int readLeft;
+
+        DecodeBudget(int size) {
+            this.readLeft = (int) Math.min((long) READ_PER_BYTE * size, Integer.MAX_VALUE);
+        }
     }
 
     /** The error of a PDF whose streams decode to more than the budget together. */
@@ -131,7 +155,7 @@ public class PDFobj {
     void setStreamAndData(byte[] buf, int length, Decryptor decryptor, DecodeBudget budget) throws Exception {
         if (this.stream == null) {
             this.budget = budget;
-            int actual = streamLength(buf, streamOffset, length);
+            int actual = streamLength(buf, streamOffset, length, end, budget);
             if (actual != length) {
                 length = actual;
                 setLength(length);
@@ -187,31 +211,49 @@ public class PDFobj {
     // not -- a /Length that is missing, too short or too long -- the stream
     // ends at the end of line before the next endstream, as MuPDF and pdf.js
     // read it. A stream with no endstream after it keeps its /Length.
-    static int streamLength(byte[] buf, int offset, int length) {
-        if (offset < 0 || offset > buf.length) {
+    //
+    // The endstream is looked for before end, where the object ends at the
+    // latest, and within what is left of what the budget may read: a PDF of
+    // thousands of streams with a wrong /Length and no endstream was searched
+    // to its end for each of them. A search the budget does not finish keeps
+    // the /Length too.
+    static int streamLength(byte[] buf, int offset, int length, int end, DecodeBudget budget) {
+        if (offset < 0 || offset > buf.length || endstreamAfter(buf, offset, length, budget) != -1) {
             return length;
         }
-        if (length >= 0 && length <= buf.length - offset) {
-            int i = offset + length;
-            while (i < buf.length && PDF.isWhiteSpace(buf[i])) {
-                i++;
-            }
-            if (PDF.startsWith(buf, i, "endstream")) {
-                return length;
-            }
-        }
-        int end = PDF.indexOf(buf, "endstream", offset);
-        if (end == -1) {
+        end = (int) Math.max(Math.min(Math.min(end, buf.length), (long) offset + budget.readLeft), offset);
+        int found = PDF.indexOf(buf, "endstream", offset, end);
+        if (found == -1) {
+            budget.readLeft -= end - offset;
             return length;
         }
-        if (end > offset && buf[end - 1] == '\n') {
-            end--;
+        budget.readLeft -= found - offset;
+        if (found > offset && buf[found - 1] == '\n') {
+            found--;
         }
-        if (end > offset && buf[end - 1] == '\r') {
-            end--;
+        if (found > offset && buf[found - 1] == '\r') {
+            found--;
         }
-        return end - offset;
+        return found - offset;
     }
+
+    // Returns the offset of the endstream keyword that follows the /Length of
+    // the stream at the offset, after white space, or -1. The white space is
+    // taken from the budget, as streams whose /Length ends in the same run of
+    // white space each read it.
+    static int endstreamAfter(byte[] buf, int offset, int length, DecodeBudget budget) {
+        if (offset < 0 || length < 0 || length > buf.length - offset) {
+            return -1;
+        }
+        int i = offset + length;
+        int end = (int) Math.min(buf.length, (long) i + Math.max(budget.readLeft, 0));
+        while (i < end && PDF.isWhiteSpace(buf[i])) {
+            i++;
+        }
+        budget.readLeft -= i - (offset + length);
+        return PDF.startsWith(buf, i, "endstream") ? i : -1;
+    }
+
 
     // Sets the /Length of the stream, replacing a reference to the length, and
     // adds it to a stream dictionary that has none.
