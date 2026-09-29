@@ -276,13 +276,10 @@ public final class PDFobj {
         return values
     }
 
-    // Undoes the predictor in the parameters of the filter at the index.
-    // Images keep it, as they are copied with their stream, and their data is
-    // not used.
+    // Undoes the predictor in the parameters of the filter at the index, of
+    // an image too: the data of an image is its samples, which a copy of the
+    // image does not use, as it copies the stream.
     private final func applyDecodeParms(_ decoded: [UInt8], _ index: Int) -> [UInt8] {
-        if getValue("/Subtype") == "/Image" {
-            return decoded
-        }
         let parms = getDecodeParms(index)
         return applyPredictor(
                 decoded,

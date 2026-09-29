@@ -766,4 +766,113 @@ class PNGImageTest {
                 ReviewMediaTest.pdfaImageError(Compliance.PDF_A_1B,
                         new ByteArrayInputStream(png(2, 1, 8, 6, null, translucent))));
     }
+
+    // PNG files whose IDAT data is embedded as it is, each with the samples
+    // of its rows, the filters of the rows undone.
+    private static Object[][] sampleCases() {
+        return new Object[][] {
+            // Two rows of 9 pixels of 1 bit, the second filtered with Up.
+            {"gray of 1 bit", png(9, 2, 1, 0, null, Compressor.deflate(
+                    new byte[] {0, (byte) 0xA5, (byte) 0x80, 2, (byte) 0xFF, 0x00})),
+                new byte[] {(byte) 0xA5, (byte) 0x80, (byte) 0xA4, (byte) 0x80}},
+            // Sub, then Paeth.
+            {"RGB of 8 bits", png(2, 2, 8, 2, null, Compressor.deflate(
+                    new byte[] {1, 1, 2, 3, 4, 5, 6, 4, 1, 2, 3, 4, 5, 6})),
+                new byte[] {1, 2, 3, 5, 7, 9, 2, 4, 6, 9, 12, 15}},
+            // The indexes of 2 bits, not the colors, as the stream is /Indexed; Up.
+            {"palette of 2 bits", png(4, 2, 2, 3, new byte[] {10, 20, 30, 40, 50, 60},
+                    Compressor.deflate(new byte[] {0, 0x1B, 2, (byte) 0xE4})),
+                new byte[] {0x1B, (byte) 0xFF}},
+        };
+    }
+
+    // The image objects, in the order of their numbers.
+    private static java.util.List<PDFobj> imageObjects(java.util.List<PDFobj> objects) {
+        java.util.List<PDFobj> images = new java.util.ArrayList<PDFobj>();
+        for (PDFobj obj : objects) {
+            if (obj.getValue("/Subtype").equals("/Image")) {
+                images.add(obj);
+            }
+        }
+        return images;
+    }
+
+    // A PDF with a page that draws each PNG.
+    private static byte[] pngSamplesDocument() throws Exception {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        for (Object[] c : sampleCases()) {
+            new Image(pdf, new ByteArrayInputStream((byte[]) c[1])).drawOn(page);
+        }
+        pdf.complete();
+        return bos.toByteArray();
+    }
+
+    @Test
+    void theDataOfAnImageEmbeddedAsItIsIsItsSamplesWhenRead() throws Exception {
+        java.util.List<PDFobj> images = imageObjects(TestSupport.read(pngSamplesDocument()));
+        Object[][] cases = sampleCases();
+        assertEquals(cases.length, images.size());
+        for (int i = 0; i < cases.length; i++) {
+            String name = (String) cases[i][0];
+            assertFalse(images.get(i).getValue("/DecodeParms").isEmpty(), name);
+            assertArrayEquals((byte[]) cases[i][2], images.get(i).getData(), name);
+        }
+    }
+
+    @Test
+    void anImageCopiedFromAPDFThatWasReadKeepsItsStream() throws Exception {
+        java.util.List<PDFobj> read = imageObjects(TestSupport.read(pngSamplesDocument()));
+        // An image made from the object, and the page merged whole.
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        for (PDFobj obj : read) {
+            new Image(pdf, obj).drawOn(page);
+        }
+        pdf.complete();
+        ByteArrayOutputStream merged = new ByteArrayOutputStream();
+        PDF pdf2 = new PDF(merged);
+        pdf2.merge(TestSupport.read(pngSamplesDocument()));
+        pdf2.complete();
+        Object[][] cases = sampleCases();
+        for (byte[] copy : new byte[][] {bos.toByteArray(), merged.toByteArray()}) {
+            java.util.List<PDFobj> copies = imageObjects(TestSupport.read(copy));
+            assertEquals(read.size(), copies.size());
+            for (int i = 0; i < cases.length; i++) {
+                String name = (String) cases[i][0];
+                assertArrayEquals(read.get(i).stream, copies.get(i).stream, name);
+                assertEquals(read.get(i).getValue("/DecodeParms"), copies.get(i).getValue("/DecodeParms"), name);
+                assertEquals(read.get(i).getValue("/ColorSpace"), copies.get(i).getValue("/ColorSpace"), name);
+                assertArrayEquals((byte[]) cases[i][2], copies.get(i).getData(), name);
+            }
+        }
+    }
+
+    @Test
+    void theDataOfEveryPngSuiteImageEmbeddedAsItIsHasNoFilterTypes() throws Exception {
+        int embedded = 0;
+        for (String[] row : SUITE) {
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            PDF pdf = new PDF(bos);
+            InputStream in = TestSupport.open("PngSuite/" + row[0] + ".PNG");
+            try {
+                new Image(pdf, in).drawOn(new Page(pdf, Letter.PORTRAIT));
+            } finally {
+                in.close();
+            }
+            pdf.complete();
+            for (PDFobj obj : imageObjects(TestSupport.read(bos.toByteArray()))) {
+                if (obj.getValue("/DecodeParms").isEmpty()) {
+                    continue;
+                }
+                embedded++;
+                int colors = row[3].equals("2") ? 3 : 1;
+                int rowLength = (Integer.parseInt(row[1]) * colors * Integer.parseInt(row[4]) + 7) / 8;
+                assertEquals(Integer.parseInt(row[2]) * rowLength, obj.getData().length, row[0]);
+            }
+        }
+        assertTrue(embedded > 0);
+    }
 }

@@ -286,12 +286,9 @@ func (obj *PDFobj) getValues(key string) []string {
 }
 
 // applyDecodeParms undoes the predictor in the parameters of the filter at the
-// index. Images keep it, as they are copied with their stream, and their data
-// is not used.
+// index, of an image too: the data of an image is its samples, which a copy
+// of the image does not use, as it copies the stream.
 func (obj *PDFobj) applyDecodeParms(decoded []byte, index int) []byte {
-	if obj.GetValue("/Subtype") == "/Image" {
-		return decoded
-	}
 	parms := obj.getDecodeParms(index)
 	return decompressor.ApplyPredictor(
 		decoded,

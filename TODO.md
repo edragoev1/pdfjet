@@ -605,7 +605,7 @@ to check and fix in the four, with a test.
   0.61 s, and 1.75 s in place of 3.25 s with alpha. It still refuses an image
   of more than 40 megapixels from its header (`checkPixels`, layout.go).
 
-- ⬜ **`PDFobj.GetData` of an image leaves the PNG predictor in place, and an
+- ✅ **`PDFobj.GetData` of an image leaves the PNG predictor in place, and an
   /Indexed image in its indexes.** `applyDecodeParms` in pdfobj.go skips a
   stream of `/Subtype /Image`, "as they are copied with their stream, and
   their data is not used", so the data of an image with `/DecodeParms
@@ -619,16 +619,17 @@ to check and fix in the four, with a test.
   pdfjet-server. Worked around the same day in pdfjet-server, which undoes
   the predictor and expands the palette to RGB of eight bits itself
   (`imageSamples`, xobject.go), and gets the fingerprints of before for
-  every PNG of PngSuite. The fix is in two parts. Undoing the predictor in
-  `GetData` of an image is a fix, for v9.0.3: the predictor is part of the
-  Flate or LZW filter, `GetData` says it returns the decoded stream, and the
-  reason for skipping it, that the data is not used, stopped being true when
-  PDFjet began to write it; the four ports change the same way, with a test,
-  and pdfjet-server stops undoing it, which its check that the data is a
-  filter type and a row for each row of the image makes safe. The samples
-  of an /Indexed image in its colors are not what the stream is, so they
-  are not `GetData`'s to give: that is new API, a way to get the decoded
-  samples of an image, and waits for v9.1.
+  every PNG of PngSuite. The predictor is fixed, the same day, in the four
+  ports, with a test in each: `GetData` of an image undoes it as it does for
+  any other stream, the PNG predictors and the TIFF one. It was skipped to
+  save the time of undoing it on read, when every stream was decoded as the
+  PDF was read; a stream is decoded now when its data is asked for, and
+  nothing in the library asks for the data of an image: `Image` from a
+  `PDFobj`, `merge`, `addObjects` and `addResourceObjects` copy its stream
+  and its `/DecodeParms` as they are. pdfjet-server no longer undoes the
+  predictor. The samples of an /Indexed image in its colors are not what
+  the stream is, so they are not `GetData`'s to give: that is new API, and
+  waits for v9.1, below.
 
 ## v9.1 — features, after v9.0.3
 
@@ -682,6 +683,13 @@ to check and fix in the four, with a test.
   opaque PNG could inflate them a piece at a time, not whole: in Go the
   buffer grows to about twice the rows, 250 MB for 108 MB of them, which
   the image does not need, as its IDAT data is embedded as it is.
+- ⬜ The decoded samples of an image read from a PDF, in the four ports:
+  the colors of an /Indexed image, as `GetData` gives its indexes, the
+  stream being its indexes. pdfjet-server expands the palette to RGB of
+  eight bits itself (`indexedToRGB`, xobject.go), for the fingerprint of an
+  image and the PNG it makes again from it. New API, so after the freeze of
+  9.0.2; see the item on `PDFobj.GetData` above, whose predictor part was
+  fixed on Sep 28.
 - ⬜ Maybe: a faster Deflate for Swift, which has its own, written in
   Swift. After the review of Sep 28 it is Swift's main cost for a PNG that
   is decoded and compressed again, one with transparency: about 500 ms for

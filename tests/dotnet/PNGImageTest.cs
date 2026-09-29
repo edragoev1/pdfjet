@@ -735,5 +735,110 @@ public class PNGImageTest {
                 + "PDF/A-1 has no soft masks, so its images are opaque.",
                 ReviewMediaTest.PDFAImageError(Compliance.PDF_A_1B, Png(2, 1, 8, 6, null, translucent)));
     }
+
+    // PNG files whose IDAT data is embedded as it is, each with the samples
+    // of its rows, the filters of the rows undone.
+    private static object[][] SampleCases() {
+        return new object[][] {
+            // Two rows of 9 pixels of 1 bit, the second filtered with Up.
+            new object[] {"gray of 1 bit", Png(9, 2, 1, 0, null, Compressor.Deflate(
+                    new byte[] {0, 0xA5, 0x80, 2, 0xFF, 0x00})),
+                new byte[] {0xA5, 0x80, 0xA4, 0x80}},
+            // Sub, then Paeth.
+            new object[] {"RGB of 8 bits", Png(2, 2, 8, 2, null, Compressor.Deflate(
+                    new byte[] {1, 1, 2, 3, 4, 5, 6, 4, 1, 2, 3, 4, 5, 6})),
+                new byte[] {1, 2, 3, 5, 7, 9, 2, 4, 6, 9, 12, 15}},
+            // The indexes of 2 bits, not the colors, as the stream is /Indexed; Up.
+            new object[] {"palette of 2 bits", Png(4, 2, 2, 3, new byte[] {10, 20, 30, 40, 50, 60},
+                    Compressor.Deflate(new byte[] {0, 0x1B, 2, 0xE4})),
+                new byte[] {0x1B, 0xFF}},
+        };
+    }
+
+    // The image objects, in the order of their numbers.
+    private static System.Collections.Generic.List<PDFobj> ImageObjects(
+            System.Collections.Generic.List<PDFobj> objects) {
+        System.Collections.Generic.List<PDFobj> images = new System.Collections.Generic.List<PDFobj>();
+        foreach (PDFobj obj in objects) {
+            if (obj.GetValue("/Subtype").Equals("/Image")) {
+                images.Add(obj);
+            }
+        }
+        return images;
+    }
+
+    // A PDF with a page that draws each PNG.
+    private static byte[] PngSamplesDocument() {
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        foreach (object[] c in SampleCases()) {
+            new Image(pdf, new MemoryStream((byte[]) c[1])).DrawOn(page);
+        }
+        pdf.Complete();
+        return stream.ToArray();
+    }
+
+    [Fact]
+    public void TheDataOfAnImageEmbeddedAsItIsIsItsSamplesWhenRead() {
+        System.Collections.Generic.List<PDFobj> images = ImageObjects(TestSupport.Read(PngSamplesDocument()));
+        object[][] cases = SampleCases();
+        Assert.Equal(cases.Length, images.Count);
+        for (int i = 0; i < cases.Length; i++) {
+            Assert.NotEqual("", images[i].GetValue("/DecodeParms"));
+            Assert.Equal((byte[]) cases[i][2], images[i].GetData());
+        }
+    }
+
+    [Fact]
+    public void AnImageCopiedFromAPDFThatWasReadKeepsItsStream() {
+        System.Collections.Generic.List<PDFobj> read = ImageObjects(TestSupport.Read(PngSamplesDocument()));
+        // An image made from the object, and the page merged whole.
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        foreach (PDFobj obj in read) {
+            new Image(pdf, obj).DrawOn(page);
+        }
+        pdf.Complete();
+        MemoryStream merged = new MemoryStream();
+        PDF pdf2 = new PDF(merged);
+        pdf2.Merge(TestSupport.Read(PngSamplesDocument()));
+        pdf2.Complete();
+        object[][] cases = SampleCases();
+        foreach (byte[] copy in new byte[][] {stream.ToArray(), merged.ToArray()}) {
+            System.Collections.Generic.List<PDFobj> copies = ImageObjects(TestSupport.Read(copy));
+            Assert.Equal(read.Count, copies.Count);
+            for (int i = 0; i < cases.Length; i++) {
+                Assert.Equal(read[i].stream, copies[i].stream);
+                Assert.Equal(read[i].GetValue("/DecodeParms"), copies[i].GetValue("/DecodeParms"));
+                Assert.Equal(read[i].GetValue("/ColorSpace"), copies[i].GetValue("/ColorSpace"));
+                Assert.Equal((byte[]) cases[i][2], copies[i].GetData());
+            }
+        }
+    }
+
+    [Fact]
+    public void TheDataOfEveryPngSuiteImageEmbeddedAsItIsHasNoFilterTypes() {
+        int embedded = 0;
+        foreach (string[] row in SUITE) {
+            MemoryStream stream = new MemoryStream();
+            PDF pdf = new PDF(stream);
+            using (Stream input = TestSupport.Open("PngSuite/" + row[0] + ".PNG")) {
+                new Image(pdf, input).DrawOn(new Page(pdf, Letter.PORTRAIT));
+            }
+            pdf.Complete();
+            foreach (PDFobj obj in ImageObjects(TestSupport.Read(stream.ToArray()))) {
+                if (obj.GetValue("/DecodeParms").Equals("")) {
+                    continue;
+                }
+                embedded++;
+                int colors = row[3].Equals("2") ? 3 : 1;
+                int rowLength = (int.Parse(row[1]) * colors * int.Parse(row[4]) + 7) / 8;
+                Assert.True(int.Parse(row[2]) * rowLength == obj.GetData().Length, row[0]);
+            }
+        }
+        Assert.True(embedded > 0);
+    }
 }
 }

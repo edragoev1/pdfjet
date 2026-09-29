@@ -264,13 +264,10 @@ public class PDFobj {
         return values;
     }
 
-    // Undoes the predictor in the parameters of the filter at the index.
-    // Images keep it, as they are copied with their stream, and their data
-    // is not used.
+    // Undoes the predictor in the parameters of the filter at the index, of
+    // an image too: the data of an image is its samples, which a copy of the
+    // image does not use, as it copies the stream.
     private byte[] ApplyDecodeParms(byte[] decoded, int index) {
-        if (GetValue("/Subtype").Equals("/Image")) {
-            return decoded;
-        }
         List<String> parms = GetDecodeParms(index);
         return Decompressor.ApplyPredictor(
                 decoded,

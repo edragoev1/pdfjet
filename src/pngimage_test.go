@@ -833,3 +833,117 @@ func TestPNGImageAPDFA1DocumentHoldsAPngWithAlphaWhenEveryPixelIsOpaque(t *testi
 		"PDF/A-1 has no soft masks, so its images are opaque.",
 		testPDFAImageError(t, compliance.PDF_A_1B, testPNG(2, 1, 8, 6, nil, translucent)))
 }
+
+// testPNGSampleCases are PNG files whose IDAT data is embedded as it is, each
+// with the samples of its rows, the filters of the rows undone.
+var testPNGSampleCases = []struct {
+	name    string
+	png     []byte
+	samples []byte
+}{
+	// Two rows of 9 pixels of 1 bit, the second filtered with Up.
+	{"gray of 1 bit", testPNG(9, 2, 1, 0, nil, compressor.Deflate([]byte{0, 0xA5, 0x80, 2, 0xFF, 0x00})),
+		[]byte{0xA5, 0x80, 0xA4, 0x80}},
+	// Sub, then Paeth.
+	{"RGB of 8 bits", testPNG(2, 2, 8, 2, nil, compressor.Deflate([]byte{1, 1, 2, 3, 4, 5, 6, 4, 1, 2, 3, 4, 5, 6})),
+		[]byte{1, 2, 3, 5, 7, 9, 2, 4, 6, 9, 12, 15}},
+	// The indexes of 2 bits, not the colors, as the stream is /Indexed; Up.
+	{"palette of 2 bits", testPNG(4, 2, 2, 3, []byte{10, 20, 30, 40, 50, 60},
+		compressor.Deflate([]byte{0, 0x1B, 2, 0xE4})), []byte{0x1B, 0xFF}},
+}
+
+// testImageObjects returns the image objects, in the order of their numbers.
+func testImageObjects(objects []*PDFobj) []*PDFobj {
+	images := make([]*PDFobj, 0)
+	for _, obj := range objects {
+		if obj.GetValue("/Subtype") == "/Image" {
+			images = append(images, obj)
+		}
+	}
+	return images
+}
+
+// testPNGSamplesDocument returns a PDF with a page that draws each PNG.
+func testPNGSamplesDocument() []byte {
+	doc := testNewDoc()
+	page := NewPage(doc.pdf, letter.Portrait())
+	for _, c := range testPNGSampleCases {
+		NewImage(doc.pdf, bytes.NewReader(c.png)).DrawOn(page)
+	}
+	return doc.complete()
+}
+
+func TestPNGImageTheDataOfAnImageEmbeddedAsItIsIsItsSamplesWhenRead(t *testing.T) {
+	images := testImageObjects(testRead(t, testPNGSamplesDocument()))
+	if len(images) != len(testPNGSampleCases) {
+		t.Fatalf("%d images", len(images))
+	}
+	for i, c := range testPNGSampleCases {
+		if images[i].GetValue("/DecodeParms") == "" {
+			t.Errorf("%s: no /DecodeParms", c.name)
+		}
+		if got := images[i].GetData(); !bytes.Equal(got, c.samples) {
+			t.Errorf("%s: data %v", c.name, got)
+		}
+	}
+}
+
+func TestPNGImageAnImageCopiedFromAPDFThatWasReadKeepsItsStream(t *testing.T) {
+	read := testImageObjects(testRead(t, testPNGSamplesDocument()))
+	// An image made from the object, and the page merged whole.
+	doc := testNewDoc()
+	page := NewPage(doc.pdf, letter.Portrait())
+	for _, obj := range read {
+		NewImageFromPDFobj(doc.pdf, obj).DrawOn(page)
+	}
+	merged := testNewDoc()
+	if err := merged.pdf.Merge(testRead(t, testPNGSamplesDocument())); err != nil {
+		t.Fatal(err)
+	}
+	for _, pdf := range [][]byte{doc.complete(), merged.complete()} {
+		copies := testImageObjects(testRead(t, pdf))
+		if len(copies) != len(read) {
+			t.Fatalf("%d images", len(copies))
+		}
+		for i, c := range testPNGSampleCases {
+			if !bytes.Equal(copies[i].stream, read[i].stream) ||
+				copies[i].GetValue("/DecodeParms") != read[i].GetValue("/DecodeParms") ||
+				copies[i].GetValue("/ColorSpace") != read[i].GetValue("/ColorSpace") {
+				t.Errorf("%s: the copy is %q", c.name, strings.Join(copies[i].dict, " "))
+			}
+			if got := copies[i].GetData(); !bytes.Equal(got, c.samples) {
+				t.Errorf("%s: data %v", c.name, got)
+			}
+		}
+	}
+}
+
+func TestPNGImageTheDataOfEveryPngSuiteImageEmbeddedAsItIsHasNoFilterTypes(t *testing.T) {
+	embedded := 0
+	for _, row := range testPngSuite {
+		name := row.name
+		png, err := os.ReadFile(testRepoPath(t, "PngSuite/"+name+".PNG"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		doc := testNewDoc()
+		NewImage(doc.pdf, bytes.NewReader(png)).DrawOn(NewPage(doc.pdf, letter.Portrait()))
+		for _, obj := range testImageObjects(testRead(t, doc.complete())) {
+			if obj.GetValue("/DecodeParms") == "" {
+				continue
+			}
+			embedded++
+			colors := 1
+			if row.colorType == 2 {
+				colors = 3
+			}
+			rowLength := (int(row.width)*colors*row.bitDepth + 7) / 8
+			if got, want := len(obj.GetData()), int(row.height)*rowLength; got != want {
+				t.Errorf("%s: %d bytes of data, want %d", name, got, want)
+			}
+		}
+	}
+	if embedded == 0 {
+		t.Error("no image embedded as it is")
+	}
+}

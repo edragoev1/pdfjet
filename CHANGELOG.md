@@ -7,6 +7,21 @@ languages.
 
 This is the first entry in this file; earlier releases were not tracked here.
 
+## Unreleased
+
+### Fixed
+- `PDFobj.getData` of an image read from a PDF undoes the predictor of its
+  `/DecodeParms`, the PNG predictors and the TIFF one, in all four ports, as
+  it does for any other stream: the data of an image with the PNG predictor
+  was its rows each with the filter type and the filter of its row, and that
+  is every opaque PNG PDFjet embeds since v9.0.2, whose IDAT data is
+  embedded as it is. The predictor was skipped to save the time of undoing
+  it when the PDF was read, and a stream is decoded now when its data is
+  asked for. What copies an image, `Image` from a `PDFobj`, `merge`,
+  `addObjects` and `addResourceObjects`, copies its stream and its
+  `/DecodeParms` as before, and the PDFs it writes do not change. The data
+  of an `/Indexed` image is still its indexes, as its stream is.
+
 ## v9.0.2 — 2026-09-28
 
 Released three days before the Oct 1 planned for it, cut from master: the

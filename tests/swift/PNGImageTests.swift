@@ -645,4 +645,88 @@ import Testing
                 + "A document of PDF_A_1B cannot hold an image with transparency: "
                 + "PDF/A-1 has no soft masks, so its images are opaque.")
     }
+
+    /// PNG files whose IDAT data is embedded as it is, each with the samples
+    /// of its rows, the filters of the rows undone.
+    private func sampleCases() -> [(String, [UInt8], [UInt8])] {
+        return [
+            // Two rows of 9 pixels of 1 bit, the second filtered with Up.
+            ("gray of 1 bit", png(9, 2, 1, 0, nil, TestSupport.deflate([0, 0xA5, 0x80, 2, 0xFF, 0x00])),
+                [0xA5, 0x80, 0xA4, 0x80]),
+            // Sub, then Paeth.
+            ("RGB of 8 bits", png(2, 2, 8, 2, nil, TestSupport.deflate([1, 1, 2, 3, 4, 5, 6, 4, 1, 2, 3, 4, 5, 6])),
+                [1, 2, 3, 5, 7, 9, 2, 4, 6, 9, 12, 15]),
+            // The indexes of 2 bits, not the colors, as the stream is /Indexed; Up.
+            ("palette of 2 bits", png(4, 2, 2, 3, [10, 20, 30, 40, 50, 60], TestSupport.deflate([0, 0x1B, 2, 0xE4])),
+                [0x1B, 0xFF]),
+        ]
+    }
+
+    /// The image objects, in the order of their numbers.
+    private func imageObjects(_ objects: [PDFobj]) -> [PDFobj] {
+        return objects.filter { $0.getValue("/Subtype") == "/Image" }
+    }
+
+    /// A PDF with a page that draws each PNG.
+    private func pngSamplesDocument() throws -> [UInt8] {
+        let memory = MemoryPDF()
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        for (_, png, _) in sampleCases() {
+            _ = try Image(memory.pdf, InputStream(data: Data(png))).drawOn(page)
+        }
+        try memory.pdf.complete()
+        return memory.bytes
+    }
+
+    @Test func theDataOfAnImageEmbeddedAsItIsIsItsSamplesWhenRead() throws {
+        let images = imageObjects(try TestSupport.read(try pngSamplesDocument()))
+        let cases = sampleCases()
+        try #require(images.count == cases.count)
+        for (i, (name, _, samples)) in cases.enumerated() {
+            #expect(images[i].getValue("/DecodeParms") != "", "\(name)")
+            #expect(images[i].getData() == samples, "\(name)")
+        }
+    }
+
+    @Test func anImageCopiedFromAPDFThatWasReadKeepsItsStream() throws {
+        let read = imageObjects(try TestSupport.read(try pngSamplesDocument()))
+        // An image made from the object, and the page merged whole.
+        let memory = MemoryPDF()
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        for obj in read {
+            _ = try Image(memory.pdf, obj).drawOn(page)
+        }
+        try memory.pdf.complete()
+        let merged = MemoryPDF()
+        try merged.pdf.merge(try TestSupport.read(try pngSamplesDocument()))
+        try merged.pdf.complete()
+        let cases = sampleCases()
+        for copy in [memory.bytes, merged.bytes] {
+            let copies = imageObjects(try TestSupport.read(copy))
+            try #require(copies.count == read.count)
+            for (i, (name, _, samples)) in cases.enumerated() {
+                #expect(copies[i].stream == read[i].stream, "\(name)")
+                #expect(copies[i].getValue("/DecodeParms") == read[i].getValue("/DecodeParms"), "\(name)")
+                #expect(copies[i].getValue("/ColorSpace") == read[i].getValue("/ColorSpace"), "\(name)")
+                #expect(copies[i].getData() == samples, "\(name)")
+            }
+        }
+    }
+
+    @Test func theDataOfEveryPngSuiteImageEmbeddedAsItIsHasNoFilterTypes() throws {
+        var embedded = 0
+        for (name, width, height, colorType, bitDepth, _, _, _, _) in PNGImageTests.suite {
+            let memory = MemoryPDF()
+            _ = try Image(memory.pdf, TestSupport.open("PngSuite/\(name).PNG"))
+                    .drawOn(Page(memory.pdf, Letter.PORTRAIT))
+            try memory.pdf.complete()
+            for obj in imageObjects(try TestSupport.read(memory.bytes)) where obj.getValue("/DecodeParms") != "" {
+                embedded += 1
+                let colors = colorType == 2 ? 3 : 1
+                let rowLength = (width * colors * bitDepth + 7) / 8
+                #expect(obj.getData().count == height * rowLength, "\(name)")
+            }
+        }
+        #expect(embedded > 0)
+    }
 }
