@@ -810,6 +810,37 @@ to check and fix in the four, with a test.
   its one setting, the chain of 32, barely changes it; a faster one needs a
   design of its own, as zlib's levels 1 to 3 have. A large job, worth it
   if a customer draws such images from Swift.
+- ⬜ Maybe: OEM12x20 in pdfjet-fonts. The 12 by 20 pixel font of code page
+  437, drawn from scratch in the late 90s and MIT-licensed
+  (github.com/edragoev1/OEM12x20), converted to OTF: each pixel a square, with
+  FontForge, and a map from CP437 to Unicode, so that the text of a PDF can be
+  extracted and read aloud. With one example: a report in the style of DOS,
+  with tables drawn in box-drawing characters. No new library API: it is used
+  as any bundled font is. Small value: JetBrains Mono and IBM Plex Mono cover
+  monospaced text, and 256 characters are few; it suits legacy text reports
+  and text-mode art made PDFs that look like the original.
+- ⬜ Maybe: Andika in pdfjet-fonts, its four styles, with their .stream files
+  (SIL, https://software.sil.org/andika/, SIL Open Font License, as IBM Plex
+  and Noto). A font designed for legibility: I, l and 1 clearly apart, b, d,
+  p and q not mirrors of one another, single-storey a and g, open shapes and
+  generous spacing, and Latin, Cyrillic, Greek and phonetic letters. Pleasant
+  to read for anyone, so a candidate for a default reading font, of Forms and
+  of the booklet, not only an option. Where it would add value to PDFjet:
+  1. The accessibility story. PDFjet sells PDF/UA, and a font designed for
+     legibility is the natural companion. Tagging makes a document readable
+     by a screen reader; Andika makes it readable by people who read it
+     themselves. "Accessible structure and an accessible font" is a stronger
+     pitch than PDF/UA alone.
+  2. PDFjet Forms. Forms for public services, schools and healthcare are
+     exactly where clear letters matter. It could be a font choice in the
+     editor, something like "Clear (Andika)".
+  3. Education and children's material: worksheets and reading material,
+     where the single-storey a and g matter.
+
+  With one example, a reading worksheet or a form tagged for PDF/UA, which
+  passes the viewer checks as every example does. No new library API. Its
+  size does not matter: pdfjet-fonts is fetched apart from the library, and a
+  document embeds what it uses.
 - ⬜ Maybe, to be discussed; nothing here is decided: PAdES baseline B-LT and
   B-LTA signatures, in the commercial product (`.commercial`), in the four
   ports, where it signs B-B, and B-T with the time stamp of an RFC 3161
