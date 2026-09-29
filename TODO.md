@@ -582,14 +582,22 @@ to check and fix in the four, with a test.
   it has no data. pdfjet-server keeps its checks before reading, the name of
   the layout in the PDF and 20 MB at most.
 
-- **An image is decoded whole to give its size.** `NewImage` decodes the
+- ✅ **An image is decoded whole to give its size.** `NewImage` decodes the
   pixels of a PNG or a JPEG to know its width and height, 256 MB for a PNG of
   16,000 by 16,000, which pdfjet-server did three or four times a request.
-  Found by the same review. To fix: read the size from the IHDR of a PNG or
-  the SOF of a JPEG first, as `image.DecodeConfig` does, and let a caller ask
-  for the size alone. pdfjet-server refuses an image of more than 40 megapixels
-  from its header, before anything decodes it, until then (`checkPixels`,
-  layout.go).
+  Found by the same review. Measured on Sep 28, after the IDAT of a PNG is
+  embedded as it is: a JPEG was never decoded, its header is read to the
+  frame header, 0.2 ms for 36 megapixels; an opaque PNG is inflated once, to
+  check the filter type of each row and that the data is the rows and nothing
+  more, 100 ms for 36 megapixels of RGB; a PNG with alpha is decoded, as its
+  alpha is a soft mask of its own, 670 ms. That is what embedding the image
+  takes, so the library is not changed, and a size-only reader is new API,
+  a maybe for v9.1. Fixed in pdfjet-server the same day: a request reads
+  each image once for its size and its fingerprint, and once more to draw it,
+  two reads where it made three, or four for a form (`imageReads`,
+  xobject.go); a form with a PNG of 36 megapixels takes 0.36 s in place of
+  0.61 s, and 1.75 s in place of 3.25 s with alpha. It still refuses an image
+  of more than 40 megapixels from its header (`checkPixels`, layout.go).
 
 ## v9.1 — features, after v9.0.3
 
@@ -634,6 +642,15 @@ to check and fix in the four, with a test.
   its matrix, its width and height swapped for a quarter turn; the samples
   are not changed. A medium feature, with test images of the eight
   orientations; found by the code review of Sep 28.
+- ⬜ Maybe: a size-only reader of an image, in the four ports: the width and
+  the height a PNG, a JPEG or a BMP is drawn at, read from its header, the
+  IHDR and pHYs chunks, the SOF and JFIF segments, without embedding it, for
+  a layout that places images before it draws them. New API, so after the
+  freeze of 9.0.2; pdfjet-server has no need of it, as it embeds each image
+  once for its fingerprint anyway. Apart from it, the check of the rows of an
+  opaque PNG could inflate them a piece at a time, not whole: in Go the
+  buffer grows to about twice the rows, 250 MB for 108 MB of them, which
+  the image does not need, as its IDAT data is embedded as it is.
 - ⬜ Maybe: a faster Deflate for Swift, which has its own, written in
   Swift. After the review of Sep 28 it is Swift's main cost for a PNG that
   is decoded and compressed again, one with transparency: about 500 ms for
