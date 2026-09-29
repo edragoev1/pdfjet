@@ -34,3 +34,6 @@ booklet/*.pdf
 # The fonts and the data files, which get-fonts-and-data.sh fetches
 /fonts/
 /data/
+
+# The packages of the pdf.js renderer, which npm ci installs
+.github/scripts/render-pdfjs/node_modules/

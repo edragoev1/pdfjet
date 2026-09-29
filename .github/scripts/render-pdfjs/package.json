@@ -1,0 +1,9 @@
+{
+    "private": true,
+    "description": "pdf.js in Node, for check-viewers.py",
+    "type": "module",
+    "dependencies": {
+        "@napi-rs/canvas": "1.0.9",
+        "pdfjs-dist": "6.3.289"
+    }
+}

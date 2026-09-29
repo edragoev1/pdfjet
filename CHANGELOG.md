@@ -9,6 +9,17 @@ This is the first entry in this file; earlier releases were not tracked here.
 
 ## Unreleased
 
+### Added
+- The viewers job of the Build workflow opens the example PDFs in the
+  engines of Chrome, Firefox and Preview: PDFium, through pypdfium2, and
+  pdf.js, in Node, on Linux, and Apple's PDFKit on macOS, with
+  `.github/scripts/check-viewers.py`. Every page must open, render and give
+  its text; none may render blank or look different from MuPDF's render,
+  or lack a character MuPDF extracts from it. Example_30 is opened with its
+  user and its owner password, and two more PDFs with a Cyrillic and a 200
+  byte password. The renders are uploaded, with a contact sheet of each PDF
+  beside MuPDF's. `check-examples.sh` runs the PDFium check.
+
 ### Changed
 - `go.mod` retracts v9.0.0 to v9.0.2, which the Go module proxy cannot
   serve, as the fonts in their tree make it time out: `go get` of the

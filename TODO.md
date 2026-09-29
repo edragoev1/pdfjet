@@ -146,6 +146,36 @@ API of v9.0.1 came with the PDF/UA work and the fixes; goal 6 lists them.
    `check-examples.sh` already renders with, these six engines draw the PDFs
    of nearly everyone; WPS Office and PDF-XChange have engines of their own,
    and are left out. The ranking is an estimate of use, not measured shares.
+   - ✅ Automated on Sep 29: the viewers job of the Build workflow opens the
+     Java examples, Example_30 with its user and its owner password, and a
+     PDF with a Cyrillic and one with a 200 byte password
+     (`.github/scripts/encrypted-pdfs`), in PDFium (pypdfium2) and pdf.js
+     (pdfjs-dist in Node) on Linux and in PDFKit on macOS, with
+     `.github/scripts/check-viewers.py`: every page opens, renders and gives
+     its text; none is blank or looks different from MuPDF's render, in
+     blocks of 8 pixels; and it has every character MuPDF extracts. The
+     renders are uploaded, a contact sheet of each PDF beside MuPDF's, to
+     look at. `check-examples.sh` runs the PDFium check. PDFium and pdf.js
+     pass; PDFKit has not run yet.
+   - ⬜ What they found: the annotations of Example_06 and the file
+     attachment of Example_30 have no appearance stream (`/AP`), which PDF
+     2.0 and PDF/A ask for, so each viewer draws them its own way. PDFium,
+     so Chrome, draws neither file attachment icon nor the polygon, and
+     draws the note icon above its place; the `/Rect` of the file
+     attachments and the note has its y values the wrong way round
+     ([70 617 94 593]). Write the appearance streams, in the four ports.
+     Also: PDFium does not cut a password at 127 bytes, as ISO 32000-2 asks
+     of a viewer, so Chrome opens a PDF with a longer password only with its
+     first 127 bytes; not ours to fix, worth a line in the docs of
+     `setUserPassword`.
+   - ⬜ Still manual: Acrobat Reader, and Edge with Adobe's engine; Foxit;
+     Preview itself, which the PDFKit check stands in for but does not
+     click through; PAC; NVDA with Acrobat Reader, and VoiceOver; and what
+     is interactive: typing the passwords, the permissions each viewer
+     shows (print allowed, copy denied), the attachments, the links and the
+     form fields. The CJK examples whose fonts are not embedded, Example_04
+     and 44, are drawn with the fonts of each machine, so only the manual
+     pass shows them as users see them.
    What the pass is for, besides finding faults: evidence for what we say
    when we sell PDF/A and PDF/UA (Sep 28).
    - PDF/A: every font and colour profile is in the file, and nothing
@@ -380,7 +410,9 @@ day.
 ### Oct 15–20: the checks that must hold at the tag
 
 - ⬜ **B** Goal 4: the manual viewer pass, on the files built from the frozen
-      master, in Acrobat Reader, Preview, Chrome, Firefox and Edge.
+      master, in Acrobat Reader, Preview, Chrome, Firefox and Edge. The
+      engines of Chrome, Firefox and Preview are checked by the Build
+      workflow since Sep 29; see goal 4 for what is left.
 - ⬜ **B** Goal 7: benchmarks at 9.0.3 against 9.0.2 and 9.0.1, Example_43's
       printed time among them; the JDK 8 build; the packages and the docs made
       from the tag.

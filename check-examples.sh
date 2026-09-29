@@ -8,9 +8,12 @@
 # workflow's port jobs do, builds and tests the Java port again with JDK 8, as
 # its java (JDK 8) job does, then checks the example PDFs with
 # .github/scripts/check-example-pdfs.py and their tags with
-# .github/scripts/check-pdfua-tags.py, as its compare job does. Last, it
-# builds and runs the snippets of the booklet in the four ports and compares
-# their PDFs, with booklet/check-snippets.sh.
+# .github/scripts/check-pdfua-tags.py, as its compare job does, and opens the
+# Java PDFs in PDFium with .github/scripts/check-viewers.py, as its viewers job
+# does; the pdf.js and PDFKit checks of that job are left to the workflow, and
+# the script says how to run the pdf.js one. Last, it builds and runs the
+# snippets of the booklet in the four ports and compares their PDFs, with
+# booklet/check-snippets.sh.
 #
 # The ports are built one after another in this folder. clean.sh runs before
 # each one, so no output of an earlier build, like the DLL of an example that
@@ -51,12 +54,14 @@ if [ -z "$JAVA8_HOME" ] || ! "$JAVA8_HOME/bin/javac" -version 2>&1 | grep -q ' 1
     exit 1
 fi
 
-# The check uses the PyMuPDF version that the Build workflow installs.
+# The checks use the PyMuPDF and pypdfium2 versions that the Build workflow
+# installs.
 pymupdf=$(grep -o 'pymupdf==[0-9.]*' .github/workflows/build.yml | head -n 1)
+pypdfium2=$(grep -o 'pypdfium2==[0-9.]*' .github/workflows/build.yml | head -n 1)
 if [ ! -x "$WORK/venv/bin/python" ]; then
     python3 -m venv "$WORK/venv" || exit 1
 fi
-"$WORK/venv/bin/pip" install -q "$pymupdf" || exit 1
+"$WORK/venv/bin/pip" install -q "$pymupdf" "$pypdfium2" || exit 1
 
 rm -rf "$WORK/pdfs" "$WORK/logs"
 mkdir -p "$WORK/logs"
@@ -126,6 +131,14 @@ fi
 # The Java PDFs stand for all four ports: check-example-pdfs.py has just
 # checked that the content streams of the other three are the same.
 "$WORK/venv/bin/python" .github/scripts/check-pdfua-tags.py "$WORK/pdfs/java" || exit 1
+
+# The Java PDFs, and two more encrypted like Example_30, in PDFium, whose
+# renders and contact sheets are kept in $WORK/viewers/pdfium.
+echo "Checking the example PDFs in PDFium"
+rm -rf "$WORK/encrypted" "$WORK/viewers"
+go run ./.github/scripts/encrypted-pdfs "$WORK/encrypted" || exit 1
+"$WORK/venv/bin/python" .github/scripts/check-viewers.py pdfium \
+    "$WORK/pdfs/java" "$WORK/encrypted" "$WORK/viewers/pdfium" || exit 1
 
 # The snippets of the booklet, which it works on in build/check-snippets with
 # the Python environment above.

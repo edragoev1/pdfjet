@@ -13,7 +13,9 @@
 # checks what it gets against MuPDF. The references job checks the images the
 # Go port embeds against Pillow and the fonts it reads against fontTools. The swift-macos job
 # builds the Swift port and runs its tests on macOS, where an API a version of
-# macOS lacks fails the build that Linux lets through.
+# macOS lacks fails the build that Linux lets through. The viewers job opens the
+# Java PDFs in PDFium (Chrome), pdf.js (Firefox) and Apple's PDFKit (Preview)
+# and compares their pages and text with MuPDF's.
 
 name: Build
 
@@ -111,6 +113,20 @@ jobs:
               with:
                   name: text-trace
                   path: ${{ runner.temp }}/text/text-trace.jsonl
+                  if-no-files-found: error
+                  retention-days: 3
+
+            # Two PDFs encrypted like Example_30, with a Cyrillic and with a 200
+            # byte password, which the viewers job opens.
+            - if: matrix.port == 'go'
+              name: Write the encrypted PDFs
+              run: go run ./.github/scripts/encrypted-pdfs "$RUNNER_TEMP/encrypted"
+
+            - if: matrix.port == 'go'
+              uses: actions/upload-artifact@v7
+              with:
+                  name: encrypted-pdfs
+                  path: ${{ runner.temp }}/encrypted/*.pdf
                   if-no-files-found: error
                   retention-days: 3
 
@@ -251,6 +267,95 @@ jobs:
               run: |
                   "$RUNNER_TEMP/venv/bin/python" .github/scripts/check-pdfua-tags.py \
                       "$RUNNER_TEMP/pdfs/example-pdfs-java"
+
+    # Opens the Java PDFs, which the compare job checks are those of every port,
+    # and the encrypted ones of the go job, in the engines of the viewers most
+    # people use, with .github/scripts/check-viewers.py: PDFium, of Chrome and
+    # Android, and pdf.js, of Firefox, on Linux, and Apple's PDFKit, of Preview
+    # and iOS, on macOS. Each page must open, render and give its text, and
+    # look like MuPDF's render of it; the renders are uploaded, a contact sheet
+    # of each PDF beside MuPDF's, to look at.
+    viewers:
+        name: viewers (${{ matrix.engine }})
+        needs: build
+        runs-on: ${{ matrix.os }}
+        timeout-minutes: 30
+        strategy:
+            # An engine that fails does not cancel the others.
+            fail-fast: false
+            matrix:
+                include:
+                    - engine: pdfium
+                      os: ubuntu-24.04
+                    - engine: pdfjs
+                      os: ubuntu-24.04
+                    - engine: pdfkit
+                      os: macos-latest
+        steps:
+            # The script reads the Java examples for the passwords of the
+            # encrypted one.
+            - uses: actions/checkout@v7
+              with:
+                  sparse-checkout: |
+                      .github
+                      examples
+
+            - uses: actions/download-artifact@v8
+              with:
+                  name: example-pdfs-java
+                  path: ${{ runner.temp }}/pdfs
+
+            - uses: actions/download-artifact@v8
+              with:
+                  name: encrypted-pdfs
+                  path: ${{ runner.temp }}/encrypted
+
+            # PyMuPDF renders the pages the engine's are compared with.
+            - name: Install PyMuPDF
+              run: |
+                  python3 -m venv "$RUNNER_TEMP/venv"
+                  "$RUNNER_TEMP/venv/bin/pip" install -q pymupdf==1.28.2
+
+            # pypdfium2 comes with its own build of PDFium.
+            - if: matrix.engine == 'pdfium'
+              name: Install pypdfium2
+              run: '"$RUNNER_TEMP/venv/bin/pip" install -q pypdfium2==5.13.0'
+
+            - if: matrix.engine == 'pdfjs'
+              uses: actions/setup-node@v7
+              with:
+                  node-version: "24.21.0"
+
+            # pdfjs-dist and @napi-rs/canvas, at the versions and the hashes of
+            # package-lock.json.
+            - if: matrix.engine == 'pdfjs'
+              name: Install pdf.js
+              run: npm ci --no-audit --no-fund --prefix .github/scripts/render-pdfjs
+
+            # The PDFKit of the runner's macOS, with the newest Xcode's Swift,
+            # as in the swift-macos job.
+            - if: matrix.engine == 'pdfkit'
+              name: Build the PDFKit renderer
+              run: |
+                  sudo xcode-select -s "$(printf "%s\n" /Applications/Xcode*.app | grep -iv beta | sort -V | tail -1)"
+                  sw_vers
+                  swiftc -O .github/scripts/render-pdfkit.swift -o "$RUNNER_TEMP/render-pdfkit"
+
+            - name: Check the PDFs in ${{ matrix.engine }}
+              env:
+                  PDFKIT_RENDERER: ${{ runner.temp }}/render-pdfkit
+              run: |
+                  "$RUNNER_TEMP/venv/bin/python" .github/scripts/check-viewers.py ${{ matrix.engine }} \
+                      "$RUNNER_TEMP/pdfs" "$RUNNER_TEMP/encrypted" "$RUNNER_TEMP/viewers"
+
+            # Also when the check fails, to see why.
+            - if: always()
+              uses: actions/upload-artifact@v7
+              with:
+                  name: viewer-renders-${{ matrix.engine }}
+                  path: ${{ runner.temp }}/viewers
+                  if-no-files-found: ignore
+                  retention-days: 3
 
     # Checks the reader against real PDFs with tests/corpus/check-corpus.py.
     # The corpora are fetched, not committed, and cached by the commits that
