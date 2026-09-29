@@ -1,10 +1,11 @@
 @echo off
 call "%~dp0check-submodules.cmd" || exit /b 1
 
-:: Remove the .class files from the output directories
-del /f /q out\production\com\pdfjet\*.class
-del /f /q out\production\com\pdfjet\fonts\*.class
-del /f /q out\production\examples\*.class
+:: Remove the .class files from the output directories. 2>nul keeps del quiet
+:: when there are none, as on the first build: "Could Not Find" otherwise.
+del /f /q out\production\com\pdfjet\*.class 2>nul
+del /f /q out\production\com\pdfjet\fonts\*.class 2>nul
+del /f /q out\production\examples\*.class 2>nul
 
 :: Create the output directory if it doesn't exist
 if not exist "out\production" mkdir "out\production"
