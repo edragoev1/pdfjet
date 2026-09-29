@@ -76,8 +76,10 @@ public final class PDFobj {
     /// What all the streams of one PDF may decode to together, 256 MiB: a PDF
     /// of a few megabytes can hold hundreds of streams that each decode to
     /// hundreds of megabytes, and each one alone is within the limit of a
-    /// stream. A variable, for the tests.
-    nonisolated(unsafe) static var maxDecodedTotal = MAX_DECODED_LENGTH
+    /// stream. A task-local value, which a test lowers with
+    /// `$maxDecodedTotal.withValue` for its own task alone, as the tests run
+    /// at the same time.
+    @TaskLocal static var maxDecodedTotal = MAX_DECODED_LENGTH
 
     /// How many times the length of a PDF the reader may read in all to find
     /// the objects that its cross-reference sections list and the endstream of

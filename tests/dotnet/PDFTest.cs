@@ -1001,7 +1001,7 @@ public class PDFTest {
     // A PDF, without a cross-reference table, so that it is read by scanning,
     // of a catalog, an object stream that holds one object, and a content
     // stream: each Flate, decoding to the given number of bytes.
-    private static byte[] PdfOfStreams(int objectStreamBytes, int contentBytes) {
+    internal static byte[] PdfOfStreams(int objectStreamBytes, int contentBytes) {
         var pdf = new System.IO.MemoryStream();
         var latin1 = System.Text.Encoding.Latin1;
         void Write(string text) { byte[] b = latin1.GetBytes(text); pdf.Write(b, 0, b.Length); }
@@ -1037,7 +1037,7 @@ public class PDFTest {
         return output.ToArray();
     }
 
-    private static PDFobj ObjectOfNumber(System.Collections.Generic.List<PDFobj> objects, int number) {
+    internal static PDFobj ObjectOfNumber(System.Collections.Generic.List<PDFobj> objects, int number) {
         foreach (PDFobj obj in objects) {
             if (obj.number == number) {
                 return obj;
@@ -1057,7 +1057,14 @@ public class PDFTest {
         // The object stream was read when the PDF was: its object is there.
         Assert.NotEqual("", ObjectOfNumber(objects, 5).GetValue("/Padding"));
     }
+}
 
+/// <summary>The budget of what the streams of a PDF decode to, which the test
+/// lowers. PDFobj.MAX_DECODED_TOTAL is shared, and xUnit runs the classes of
+/// the tests at the same time, so this one is in a collection that runs alone,
+/// and no other test reads a PDF with the budget lowered.</summary>
+[Collection("DecodeBudget")]
+public class DecodeBudgetTest {
     [Fact]
     public void TheStreamsOfAPDFDecodeToNoMoreThanTheBudgetTogether() {
         int was = PDFobj.MAX_DECODED_TOTAL;
@@ -1067,18 +1074,22 @@ public class PDFTest {
             // the content stream is decoded up to what is left of it: 4000
             // of 5000 is left after the object stream of 1000, so a content
             // of 4000 is decoded and one of 4004 is not.
-            var objects = TestSupport.NewPDF().Read(new System.IO.MemoryStream(PdfOfStreams(1000, 4000)));
-            Assert.Equal(4000, ObjectOfNumber(objects, 4).GetData().Length);
-            objects = TestSupport.NewPDF().Read(new System.IO.MemoryStream(PdfOfStreams(1000, 4004)));
-            Assert.Null(ObjectOfNumber(objects, 4).GetData());
+            var objects = TestSupport.NewPDF().Read(new System.IO.MemoryStream(PDFTest.PdfOfStreams(1000, 4000)));
+            Assert.Equal(4000, PDFTest.ObjectOfNumber(objects, 4).GetData().Length);
+            objects = TestSupport.NewPDF().Read(new System.IO.MemoryStream(PDFTest.PdfOfStreams(1000, 4004)));
+            Assert.Null(PDFTest.ObjectOfNumber(objects, 4).GetData());
             // An object stream past the budget is an error, as the PDF cannot
             // be read without its objects.
             var e = Assert.ThrowsAny<System.Exception>(() =>
-                    TestSupport.NewPDF().Read(new System.IO.MemoryStream(PdfOfStreams(6000, 0))));
+                    TestSupport.NewPDF().Read(new System.IO.MemoryStream(PDFTest.PdfOfStreams(6000, 0))));
             Assert.Equal("the streams of the PDF decode to more than 5000 bytes together", e.Message);
         } finally {
             PDFobj.MAX_DECODED_TOTAL = was;
         }
     }
+}
+
+[CollectionDefinition("DecodeBudget", DisableParallelization = true)]
+public class DecodeBudgetCollection {
 }
 }

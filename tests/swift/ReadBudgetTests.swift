@@ -80,9 +80,14 @@ import Testing
     }
 
     @Test func theStreamsOfAPDFDecodeToNoMoreThanTheBudgetTogether() throws {
-        let was = PDFobj.maxDecodedTotal
-        PDFobj.maxDecodedTotal = 5000
-        defer { PDFobj.maxDecodedTotal = was }
+        // Lowered for this test's task alone: the other tests, which run at the
+        // same time, read their PDFs with the budget as it is.
+        try PDFobj.$maxDecodedTotal.withValue(5000) {
+            try Self.theStreamsDecodeToNoMoreThanABudgetOf5000()
+        }
+    }
+
+    private static func theStreamsDecodeToNoMoreThanABudgetOf5000() throws {
         // The object stream, read with the PDF, is within the budget, and the
         // content stream is decoded up to what is left of it: 4000 of 5000 is
         // left after the object stream of 1000, so a content of 4000 is
