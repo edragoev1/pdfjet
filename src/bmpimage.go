@@ -251,12 +251,12 @@ func (image *bmpImage) parseData(reader io.Reader) []byte {
 			}
 		}
 	}
-	image.deflated = compressor.Deflate(bmpImage)
+	image.deflated = compressor.DeflateImage(bmpImage)
 	// An image whose alpha is 0 in every pixel is drawn opaque, as browsers
 	// draw it: writers that do not know of the alpha leave it at 0. One whose
 	// alpha is 255 in every pixel needs no soft mask.
 	if alpha != nil && !allBytesAre(alpha, 0) && !allBytesAre(alpha, 255) {
-		image.deflatedAlpha = compressor.Deflate(alpha)
+		image.deflatedAlpha = compressor.DeflateImage(alpha)
 	}
 
 	return bmpImage

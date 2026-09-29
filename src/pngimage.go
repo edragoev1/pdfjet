@@ -210,7 +210,7 @@ func (image *pngImage) embedIDAT(buf []byte) {
 // is smaller, and is one that PDF/A-1 can hold.
 func (image *pngImage) setAlpha(alpha []byte) {
 	if !allBytesAre(alpha, 255) {
-		image.deflatedAlphaData = compressor.Deflate(alpha)
+		image.deflatedAlphaData = compressor.DeflateImage(alpha)
 	}
 }
 
@@ -256,7 +256,7 @@ func (image *pngImage) decode(inflatedIDAT []byte) {
 	}
 
 	// Compress the reconstructed image data.
-	image.deflatedImageData = compressor.Deflate(imageData)
+	image.deflatedImageData = compressor.DeflateImage(imageData)
 }
 
 // colorSpace returns the color space and the bits per component of the image
