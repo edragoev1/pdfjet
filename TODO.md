@@ -133,8 +133,39 @@ API of v9.0.1 came with the PDF/UA work and the fixes; goal 6 lists them.
 4. ⬜ **B** The manual viewer pass, open since 9.0.0: Acrobat Reader on
    Windows opens Example_30 with `hello` and `world`, shows print allowed and
    copy denied, opens the Cyrillic and the 200 byte password files, and opens
-   the PDF/UA and PDF/A examples without warnings. The same files in Preview,
-   Chrome (pdf.js), Firefox and Edge — not only veraPDF and MuPDF.
+   the PDF/UA and PDF/A examples without warnings. The same files in the
+   engines of the viewers most people use, not only veraPDF and MuPDF:
+   - PDFium: Chrome, and Google Drive and Files by Google on Android;
+   - Adobe: Acrobat Reader, and Edge, which draws PDFs with Adobe's engine
+     since 2023;
+   - Apple PDFKit: Preview, and Safari, Files and Mail on an iPhone or iPad;
+   - PDF.js: Firefox, and the many web apps that embed it;
+   - Foxit: Foxit PDF Reader.
+
+   With MuPDF (SumatraPDF) and Poppler (Okular, Evince, pdftoppm), which
+   `check-examples.sh` already renders with, these six engines draw the PDFs
+   of nearly everyone; WPS Office and PDF-XChange have engines of their own,
+   and are left out. The ranking is an estimate of use, not measured shares.
+   What the pass is for, besides finding faults: evidence for what we say
+   when we sell PDF/A and PDF/UA (Sep 28).
+   - PDF/A: every font and colour profile is in the file, and nothing
+     outside it is needed, so a PDF looks the same in every viewer, in print
+     and in 20 years. The pass shows it in each engine, as screenshots to
+     keep.
+   - PDF/UA: most viewers ignore the tags. A screen reader gets the
+     structure mainly through Acrobat and Reader, partly through Edge's
+     Adobe engine and Apple's VoiceOver. So the claim is compliance, not
+     that every viewer reads a PDF aloud: the law asks for accessible
+     documents (the ADA Title II rule in the US, Section 508, the European
+     Accessibility Act in force since June 2025), most tools write PDFs that
+     fail PDF/UA, and every PDF/UA example of ours passes veraPDF, in the
+     four ports, and PAC. The pass reads one tagged example with NVDA and
+     Acrobat Reader on Windows and with VoiceOver in Preview, to say which
+     of them do what.
+   - The wording to sell with: every PDF passes PDF/A and PDF/UA
+     validation, so it looks the same in every viewer and in print, and it
+     meets the accessibility law. Not "works in every screen reader", which
+     is not ours to promise.
 
 5. ✅ **B** Test the output against independent references and real files:
    the text of every example, the images against Pillow, the fonts against
