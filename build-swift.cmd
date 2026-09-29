@@ -1,4 +1,5 @@
 @echo off
+call "%~dp0check-submodules.cmd" || exit /b 1
 REM Run this script as an admin!
 
 rmdir /s /q .build 2>nul

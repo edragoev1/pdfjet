@@ -1,3 +1,4 @@
+. "$(dirname "$0")/check-submodules.sh"
 rm -f out/production/com/pdfjet/*.class
 rm -f out/production/com/pdfjet/fonts/*.class
 rm -f out/production/examples/*.class

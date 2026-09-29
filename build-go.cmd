@@ -1,4 +1,5 @@
 @echo off
+call "%~dp0check-submodules.cmd" || exit /b 1
 
 :: Navigate to the "src" directory
 cd src

@@ -1,3 +1,4 @@
+. "$(dirname "$0")/check-submodules.sh"
 if [ $# -eq 0 ]; then
     echo "Please provide an example number:"
     echo "./run-java.sh 33"

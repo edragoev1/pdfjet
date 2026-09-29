@@ -27,6 +27,29 @@ PDFjet creates PDF documents: text in any script, tables, charts, barcodes and
 images, accessible and archival when you need it to be. The same API and the
 same output come in four languages, and none of them needs a single dependency.
 
+> [!IMPORTANT]
+> **Clone with the fonts and the data files.** The fonts and the data files the
+> examples read are two more repositories,
+> [pdfjet-fonts](https://github.com/edragoev1/pdfjet-fonts) and
+> [pdfjet-data](https://github.com/edragoev1/pdfjet-data), which this one
+> includes as the git submodules `fonts` and `data`. A plain `git clone` leaves
+> those two folders empty, so clone with `--recurse-submodules`:
+>
+> ```bash
+> git clone --recurse-submodules https://github.com/edragoev1/pdfjet.git
+> ```
+>
+> Already cloned without them? Run this once in the clone:
+>
+> ```bash
+> git submodule update --init
+> ```
+>
+> The build, run and test scripts stop and say so when the folders are empty.
+> Using PDFjet from Go with `go get`? The module has no fonts: the Go part of
+> [Quick start](#quick-start) says how to get pdfjet-fonts. The core fonts,
+> such as Helvetica, need no files at all.
+
 ## Why PDFjet
 
 - **Accessible and archival PDFs in one setting.** PDF/UA-1 and PDF/A-1a, 1b,

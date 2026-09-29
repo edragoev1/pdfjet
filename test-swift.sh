@@ -5,6 +5,7 @@
 # PDFjetTests target of Package.swift. -warnings-as-errors fails the build on
 # any warning, as in build-swift.sh.
 
+. "$(dirname "$0")/check-submodules.sh"
 cd "$(dirname "$0")" || exit 1
 
 swift test -Xswiftc -warnings-as-errors

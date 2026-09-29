@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # Very important!!
+. "$(dirname "$0")/check-submodules.sh"
 rm -rf bin
 rm -rf obj
 

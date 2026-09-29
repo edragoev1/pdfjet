@@ -1,3 +1,4 @@
+. "$(dirname "$0")/check-submodules.sh"
 rm -rf .build
 
 # Builds the library and all the examples at once, then runs the examples.

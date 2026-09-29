@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # Check if an argument is provided (example number)
+. "$(dirname "$0")/check-submodules.sh"
 if [ -z "$1" ]; then
     echo "Usage: $0 <example_number>"
     exit 1

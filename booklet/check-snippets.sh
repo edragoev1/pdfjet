@@ -8,6 +8,7 @@
 # "verapdf" or as the command in VERAPDF, checks the PDF/UA and PDF/A
 # snippets when it is there.
 
+PDFJET_ROOT="$(dirname "$0")/.." . "$(dirname "$0")/../check-submodules.sh"
 cd "$(dirname "$0")/.." || exit 1
 ROOT=$(pwd)
 WORK=$ROOT/build/check-snippets

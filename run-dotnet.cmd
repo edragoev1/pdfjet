@@ -1,4 +1,5 @@
 @echo off
+call "%~dp0check-submodules.cmd" || exit /b 1
 REM Check if an argument is provided (example number)
 if "%1"=="" (
     echo Usage: %0 ^<example_number^>

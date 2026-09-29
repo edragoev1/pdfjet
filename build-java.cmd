@@ -1,4 +1,5 @@
 @echo off
+call "%~dp0check-submodules.cmd" || exit /b 1
 
 :: Remove the .class files from the output directories
 del /f /q out\production\com\pdfjet\*.class

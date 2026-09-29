@@ -1,4 +1,5 @@
 @echo off
+call "%~dp0check-submodules.cmd" || exit /b 1
 REM Windows batch script for building and running Java examples
 
 REM Check if argument is provided

@@ -1,4 +1,5 @@
 @echo off
+call "%~dp0check-submodules.cmd" || exit /b 1
 REM Very important!!
 rmdir /s /q bin 2>nul
 rmdir /s /q obj 2>nul

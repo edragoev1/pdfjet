@@ -8,6 +8,7 @@
 # The editions are java, csharp, go, swift and all. The booklets are written to
 # booklet/PDFjet-Booklet-*.pdf.
 
+PDFJET_ROOT="$(dirname "$0")/.." . "$(dirname "$0")/../check-submodules.sh"
 cd "$(dirname "$0")/.." || exit 1
 
 # --release 8 builds Java 8 class files, as the library's own scripts do. Java

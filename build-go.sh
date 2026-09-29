@@ -1,3 +1,4 @@
+. "$(dirname "$0")/check-submodules.sh"
 cd src
 
 # The Go compiler has no warnings; go vet reports the suspicious code instead.
