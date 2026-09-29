@@ -491,6 +491,17 @@ day.
       sum.golang.org has its checksum. go.mod retracts v9.0.0 to v9.0.2
       (Sep 29, the owner's decision), so `go get @latest` skips the versions
       the proxy cannot serve once v9.0.3 is out.
+      Checked again on Sep 29, evening: the proxy still times out on v9.0.0
+      to v9.0.2, and on the untagged master too, whose pseudo-version needs
+      the whole history, about 900 MB. A tag needs only its commit: fetched
+      alone, v9.0.2 is 471 MB (15 s from here) and master 7.7 MB (1 s), so a
+      tag on master should pass. Tagging early for the Go users was weighed
+      and left for Oct 21 (the owner's decision): a tag is for good once the
+      proxy has it, and the tree still says 9.0.2. Before the tag, set 9.0.3
+      in the Producer strings (`net/pdfjet/PDF.cs`, `Sources/PDFjet/PDF.swift`),
+      the ReviewWriter tests of Java, C# and Swift that check them, the
+      DataMatrix text of Example_14 in Java, C# and Swift, and the `exact:`
+      pin of `.commercial/Package.swift`.
 - ✅ **B** The commercial product built on the tag, as the rehearsal of Sep 28
       did against v9.0.2. Done in `.commercial` on Sep 28 (a1bf6e4..8c8b8c5):
       what is committed builds against the release (go.mod requires v9.0.2
