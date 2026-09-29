@@ -386,6 +386,12 @@ day.
       from the tag.
 - ⬜ **B** `check-examples.sh` clean in the four ports, and the public API
       still that of goal 6.
+- ⬜ **B** `go test ./...` of pdfjet-server passes against the library to be
+      tagged, as its `replace` of `../pdfjet` builds it. It reads images back
+      out of the PDFs PDFjet writes, which `check-examples.sh` does not: the
+      PNG pass-through of Sep 28 (99486dea) broke five of its tests and went
+      into v9.0.2 unseen, worked around the same day in pdfjet-server
+      (dee3909).
 - ⬜ Rebuild the site, and date the `## v9.0.3` entry of CHANGELOG.md.
 - Keep Oct 19 and 20 empty: they are the buffer for what the checks find.
 
