@@ -10,8 +10,8 @@ is the working list; tick items off as they land on master.
 
 The work runs ahead of the calendar below. Goals 1 and 2 are closed: every
 class of the library is read end to end, three weeks before the Oct 9-14 week
-that was to finish it. What is left before the Oct 1 release is the release
-checks.
+that was to finish it. v9.0.2 was released on Sep 28, three days before the
+Oct 1 planned for it, after a code review of the four ports.
 
 What is done is in CHANGELOG.md and in the git history; this file lists only
 what is left.
@@ -312,7 +312,7 @@ day.
 ### Sep 27–Oct 1: release v9.0.2
 
 - ✅ **B** Goal 2: the review of `Font` and its loaders. Done on Sep 21.
-- ⬜ **B** The release checks: `check-examples.sh` clean, the public API that
+- ✅ **B** The release checks: `check-examples.sh` clean, the public API that
       of goal 6 in the four ports, the JDK 8 build, the benchmarks recorded
       against 9.0.1 with Example_43's time, the docs, the packages and the
       site rebuilt, the CHANGELOG entry dated. 9.0.2 is cut from master, so it
@@ -346,7 +346,11 @@ day.
       Left for the tag: these again on the tagged tree, the docs, the
       packages, the booklet and the site rebuilt, and the CHANGELOG entry
       dated.
-- ⬜ **B** Tag v9.0.2 on Oct 1 and make the GitHub release.
+- ✅ **B** Tag v9.0.2 on Oct 1 and make the GitHub release. Done three days
+  early, on Sep 28: the checks of Sep 28 above, `check-examples.sh` clean at
+  the tag, the API references regenerated into `docs/` for the site, and the
+  release on GitHub with a summary of the CHANGELOG entry. Left: the
+  packages of `.packaging/` and the site, rebuilt from the tag.
 
 ### Oct 2–8: the reader
 

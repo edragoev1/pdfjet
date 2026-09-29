@@ -7,7 +7,15 @@ languages.
 
 This is the first entry in this file; earlier releases were not tracked here.
 
-## Unreleased
+## v9.0.2 — 2026-09-28
+
+Released three days before the Oct 1 planned for it, cut from master: the
+PDF/UA and PDF/A work, a heading in every PDF/UA example, a code review of
+the four ports and the fixes it found, and faster PNG images. The producer
+string is `PDFjet v9.0.2` in all four ports. Nothing of the public API of
+v9.0.1 is removed and no signature changes; what is added is under Added,
+and the input now refused, which callers should know about, is under
+Changed.
 
 ### Added
 - A table read from a file that returns its error, in Go only:
