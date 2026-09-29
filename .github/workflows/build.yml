@@ -11,7 +11,9 @@
 # Java port with JDK 8 and runs its examples on Java 8. The corpus job reads,
 # merges and splits the pdf.js and veraPDF test corpora with each port and
 # checks what it gets against MuPDF. The references job checks the images the
-# Go port embeds against Pillow and the fonts it reads against fontTools.
+# Go port embeds against Pillow and the fonts it reads against fontTools. The swift-macos job
+# builds the Swift port and runs its tests on macOS, where an API a version of
+# macOS lacks fails the build that Linux lets through.
 
 name: Build
 
@@ -348,3 +350,30 @@ jobs:
             - name: Check the fonts against fontTools
               run: |
                   "$RUNNER_TEMP/venv/bin/python" tests/references/fonts/check-fonts.py .reference-fonts
+
+    # Builds the Swift port, its examples and its unit tests on macOS, and runs
+    # the tests: the swift job builds on Linux, where an API that a version of
+    # macOS lacks, such as TaskLocal before 10.15 for a package that names no
+    # platform, still builds. Free for a public repository, as every runner is.
+    swift-macos:
+        runs-on: macos-latest
+        timeout-minutes: 30
+        steps:
+            - uses: actions/checkout@v7
+
+            - name: Get the fonts and the data files
+              run: ./get-fonts-and-data.sh
+
+            # The newest release of Xcode on the runner, not a beta beside it,
+            # for Swift 6.2, which Package.swift asks for.
+            - name: Use the newest Xcode
+              run: |
+                  sudo xcode-select -s "$(printf "%s\n" /Applications/Xcode*.app | grep -iv beta | sort -V | tail -1)"
+                  sw_vers
+                  swift --version
+
+            - name: Build the library and the examples
+              run: swift build -c release -Xswiftc -warnings-as-errors
+
+            - name: Unit tests
+              run: ./test-swift.sh
