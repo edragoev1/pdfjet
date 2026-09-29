@@ -220,10 +220,25 @@ import Testing
         return TestSupport.message(error)
     }
 
-    /// An input stream that returns at most 3 bytes per read.
+    /// An input stream that returns at most 3 bytes per read. It reads from a
+    /// stream of its own: on macOS, InputStream is an abstract class, and a
+    /// subclass of it that leaves read or open to it throws.
     private final class SlowStream: InputStream {
+        private let bytes: InputStream
+
+        init(_ data: Data) {
+            bytes = InputStream(data: data)
+            super.init(data: Data())
+        }
+
+        override var hasBytesAvailable: Bool { bytes.hasBytesAvailable }
+        override var streamStatus: Stream.Status { bytes.streamStatus }
+        override var streamError: Error? { bytes.streamError }
+        override func open() { bytes.open() }
+        override func close() { bytes.close() }
+
         override func read(_ buffer: UnsafeMutablePointer<UInt8>, maxLength len: Int) -> Int {
-            return super.read(buffer, maxLength: min(len, 3))
+            return bytes.read(buffer, maxLength: min(len, 3))
         }
     }
 
@@ -312,7 +327,7 @@ import Testing
 
     @Test func readsAStreamThatReturnsFewBytesAtATime() throws {
         let data = try Data(contentsOf: URL(fileURLWithPath: TestSupport.path("PngSuite/BASN2C08.PNG")))
-        let image = try PNGImage(SlowStream(data: data))
+        let image = try PNGImage(SlowStream(data))
         #expect(TestSupport.crc32(try TestSupport.inflate(image.getData())) == "7855b9bf")
     }
 

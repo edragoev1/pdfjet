@@ -21,15 +21,6 @@ import Testing
         return memory.bytes
     }
 
-    /// An output stream that remembers whether it was closed.
-    private final class ClosingStream: OutputStream {
-        var closed = false
-        override func close() {
-            closed = true
-            super.close()
-        }
-    }
-
     @Test func startsWithTheHeaderAndEndsWithEof() throws {
         let raw = TestSupport.latin1(try document(Letter.PORTRAIT))
         #expect(raw.hasPrefix("%PDF-1.7\n%"))
@@ -119,11 +110,14 @@ import Testing
     }
 
     @Test func completeClosesTheStream() throws {
-        let stream = ClosingStream(toMemory: ())
+        // A stream in memory, not a subclass that remembers close: on macOS,
+        // OutputStream is an abstract class, which a subclass of it that
+        // leaves open and write to it cannot be.
+        let stream = OutputStream(toMemory: ())
         let pdf = PDF(stream)
         _ = Page(pdf, Letter.PORTRAIT)
         try pdf.complete()
-        #expect(stream.closed)
+        #expect(stream.streamStatus == .closed)
     }
 
     @Test func readsAPdfWithABlankPage() throws {
