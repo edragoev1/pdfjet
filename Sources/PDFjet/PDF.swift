@@ -2119,9 +2119,15 @@ public final class PDF {
     /// - Throws: DecryptorError when the password is not correct.
     ///
     public func read(from stream: InputStream, password: String) throws -> [PDFobj] {
+        return try read(from: stream, password: password, decodedTotal: PDFobj.maxDecodedTotal)
+    }
+
+    /// read(from:password:) with the budget of what the streams of the PDF may
+    /// decode to together, which a test lowers.
+    func read(from stream: InputStream, password: String, decodedTotal: Int) throws -> [PDFobj] {
         var buffer1 = try Content.getFromStream(stream)
         var objects1 = [PDFobj]()
-        let budget = PDFobj.DecodeBudget(buffer1.count)   // For all the streams of this PDF together
+        let budget = PDFobj.DecodeBudget(buffer1.count, decodedTotal)   // For all the streams of this PDF together
         let startXRef = getStartXRef(buffer1)
         var trailer: PDFobj?
         do {

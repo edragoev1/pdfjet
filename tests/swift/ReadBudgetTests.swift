@@ -80,29 +80,26 @@ import Testing
     }
 
     @Test func theStreamsOfAPDFDecodeToNoMoreThanTheBudgetTogether() throws {
-        // Lowered for this test's task alone: the other tests, which run at the
-        // same time, read their PDFs with the budget as it is.
-        try PDFobj.$maxDecodedTotal.withValue(5000) {
-            try Self.theStreamsDecodeToNoMoreThanABudgetOf5000()
+        // A budget of 5000 for these PDFs alone: the other tests, which run at
+        // the same time, read their PDFs with the budget as it is.
+        func read(_ pdf: [UInt8]) throws -> [PDFobj] {
+            return try TestSupport.newPDF().read(from: InputStream(data: Data(pdf)), password: "", decodedTotal: 5000)
         }
-    }
-
-    private static func theStreamsDecodeToNoMoreThanABudgetOf5000() throws {
         // The object stream, read with the PDF, is within the budget, and the
         // content stream is decoded up to what is left of it: 4000 of 5000 is
         // left after the object stream of 1000, so a content of 4000 is
         // decoded and one of 4004 is not.
-        var objects = try Self.read(Self.pdfOfStreams(1000, 4000))
+        var objects = try read(Self.pdfOfStreams(1000, 4000))
         #expect(Self.objectOfNumber(objects, 4)?.getData().count == 4000)
-        objects = try Self.read(Self.pdfOfStreams(1000, 4004))
+        objects = try read(Self.pdfOfStreams(1000, 4004))
         #expect(Self.objectOfNumber(objects, 4)?.getData().count == 0)
         // An object stream past the budget is an error, as the PDF cannot be
         // read without its objects.
         #expect(throws: (any Error).self) {
-            _ = try Self.read(Self.pdfOfStreams(6000, 0))
+            _ = try read(Self.pdfOfStreams(6000, 0))
         }
         do {
-            _ = try Self.read(Self.pdfOfStreams(6000, 0))
+            _ = try read(Self.pdfOfStreams(6000, 0))
         } catch {
             #expect(String(describing: error) == "the streams of the PDF decode to more than 5000 bytes together")
         }

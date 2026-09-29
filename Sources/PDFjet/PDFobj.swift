@@ -76,10 +76,10 @@ public final class PDFobj {
     /// What all the streams of one PDF may decode to together, 256 MiB: a PDF
     /// of a few megabytes can hold hundreds of streams that each decode to
     /// hundreds of megabytes, and each one alone is within the limit of a
-    /// stream. A task-local value, which a test lowers with
-    /// `$maxDecodedTotal.withValue` for its own task alone, as the tests run
-    /// at the same time.
-    @TaskLocal static var maxDecodedTotal = MAX_DECODED_LENGTH
+    /// stream. A test asks for a lower one through read(from:password:decodedTotal:)
+    /// of PDF, rather than change this one that the tests running at the same
+    /// time read with.
+    static let maxDecodedTotal = MAX_DECODED_LENGTH
 
     /// How many times the length of a PDF the reader may read in all to find
     /// the objects that its cross-reference sections list and the endstream of
@@ -94,17 +94,21 @@ public final class PDFobj {
     /// thousands of streams with a wrong /Length and no endstream each searched
     /// to the end of the PDF.
     final class DecodeBudget {
-        var left = PDFobj.maxDecodedTotal
+        let total: Int
+        var left: Int
         var readLeft: Int
 
-        init(_ size: Int) {
+        init(_ size: Int, _ total: Int = PDFobj.maxDecodedTotal) {
+            self.total = total
+            left = total
             readLeft = PDFobj.readPerByte * size
         }
     }
 
     /// The error of a PDF whose streams decode to more than the budget together.
     struct DecodedTotalError: Error, CustomStringConvertible {
-        let description = "the streams of the PDF decode to more than \(PDFobj.maxDecodedTotal) bytes together"
+        let total: Int
+        var description: String { "the streams of the PDF decode to more than \(total) bytes together" }
     }
 
     ///
@@ -157,7 +161,7 @@ public final class PDFobj {
             } catch {
                 if let budget = budget, budget.left < MAX_DECODED_LENGTH,
                         String(describing: error).contains("decodes to more than") {
-                    throw DecodedTotalError()
+                    throw DecodedTotalError(total: budget.total)
                 }
                 throw error
             }
