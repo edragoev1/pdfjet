@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Very important!!
-. "$(dirname "$0")/check-submodules.sh"
-# The folder of this script, which the check looks at, from wherever it is run.
+bash "$(dirname "$0")/get-fonts-and-data.sh" || exit 1
+# The folder of this script, which has fonts and data, from wherever it is run.
 cd "$(dirname "$0")" || exit 1
 rm -rf bin
 rm -rf obj

@@ -5,7 +5,7 @@
 # the library. The tests read the PngSuite images and the fonts from the
 # repository root; the ones that need the fonts skip when they are not there.
 
-. "$(dirname "$0")/check-submodules.sh"
+bash "$(dirname "$0")/get-fonts-and-data.sh" || exit 1
 cd "$(dirname "$0")/src" || exit 1
 
 go vet ./... || exit 1

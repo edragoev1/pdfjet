@@ -21,7 +21,7 @@
 # command in the VERAPDF environment variable, and a JDK 8, found in the
 # JAVA8_HOME environment variable or in /opt/jdk8* or /usr/lib/jvm.
 
-. "$(dirname "$0")/check-submodules.sh"
+bash "$(dirname "$0")/get-fonts-and-data.sh" || exit 1
 cd "$(dirname "$0")" || exit 1
 
 WORK=build/check-examples

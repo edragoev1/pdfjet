@@ -27,29 +27,16 @@ PDFjet creates PDF documents: text in any script, tables, charts, barcodes and
 images, accessible and archival when you need it to be. The same API and the
 same output come in four languages, and none of them needs a single dependency.
 
-> [!IMPORTANT]
-> **Clone with the fonts and the data files.** The fonts and the data files the
+> [!NOTE]
+> **The fonts and the data files are fetched.** The fonts and the data files the
 > examples read are two more repositories,
 > [pdfjet-fonts](https://github.com/edragoev1/pdfjet-fonts) and
-> [pdfjet-data](https://github.com/edragoev1/pdfjet-data), which this one
-> includes as the git submodules `fonts` and `data`. A plain `git clone` leaves
-> those two folders empty, so clone with `--recurse-submodules`:
->
-> ```bash
-> git clone --recurse-submodules https://github.com/edragoev1/pdfjet.git
-> ```
->
-> Already cloned without them? Run this once in the clone:
->
-> ```bash
-> git submodule update --init
-> ```
->
-> The build, run and test scripts stop and say so when the folders are empty.
-> A `git pull` that moves the submodules to newer commits leaves their files as
-> they were, and the scripts warn of it: `git submodule update` brings them up
-> to date, and `git config submodule.recurse true`, run once in the clone, makes
-> every `git pull` do so.
+> [pdfjet-data](https://github.com/edragoev1/pdfjet-data), at the commits that
+> `fonts-and-data.txt` pins. The build, run and test scripts fetch them into
+> the folders `fonts` and `data` the first time they run, the pinned commits
+> alone, and move them to the new commits when a `git pull` changes a pin.
+> `./get-fonts-and-data.sh`, or `get-fonts-and-data.cmd` on Windows, does it
+> without building anything. They need git.
 > Using PDFjet from Go with `go get`? The module has no fonts: the Go part of
 > [Quick start](#quick-start) says how to get pdfjet-fonts. The core fonts,
 > such as Helvetica, need no files at all.
@@ -91,16 +78,7 @@ same output come in four languages, and none of them needs a single dependency.
 Each snippet writes `hello.pdf` with a line in English, Greek and Bulgarian.
 The bundled fonts, such as `IBMPlexSans.Regular`, are paths relative to the
 working directory, so run the program in a folder that has this repository's
-`fonts` directory. `fonts` and `data` are git submodules, the repositories
-[pdfjet-fonts](https://github.com/edragoev1/pdfjet-fonts) and
-[pdfjet-data](https://github.com/edragoev1/pdfjet-data), so clone this
-repository with them:
-
-```bash
-git clone --recurse-submodules https://github.com/edragoev1/pdfjet.git
-```
-
-In a clone made without them, `git submodule update --init` checks them out.
+`fonts` directory, which the build scripts fetch, as the note at the top says.
 
 <details open>
 <summary><b>Java</b></summary>
@@ -190,10 +168,10 @@ func main() {
 
 The module path carries the major version, as Go requires from v2 on. The Go
 module has the source of the library and the examples only. The fonts and the
-data files are not in it: `fonts/` and `data/` are git submodules, the
-repositories [pdfjet-fonts](https://github.com/edragoev1/pdfjet-fonts) and
-[pdfjet-data](https://github.com/edragoev1/pdfjet-data), and the module is
-made without them. `images/` has a `go.mod` that keeps it out. Clone
+data files are not in it: `fonts/` and `data/` are the repositories
+[pdfjet-fonts](https://github.com/edragoev1/pdfjet-fonts) and
+[pdfjet-data](https://github.com/edragoev1/pdfjet-data), which the scripts of
+this repository fetch, and the module is made without them. `images/` has a `go.mod` that keeps it out. Clone
 pdfjet-fonts as `fonts/` next to your program, or copy the fonts you use from
 it; the core fonts need no files:
 
@@ -247,8 +225,8 @@ is that of the whole process writing the 500-page document, runtime included.
 ## Examples
 
 The [examples](examples) folder has 57 examples, the same in every port. They
-read the fonts and data files of the `fonts` and `data` submodules, which
-`git clone --recurse-submodules` checks out. Build a port and run all of its
+read the fonts and data files of the `fonts` and `data` folders, which these
+scripts fetch the first time they run. Build a port and run all of its
 examples, or run one example by its number:
 
 | Port | All examples | One example |

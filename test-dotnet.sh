@@ -5,7 +5,7 @@
 # reach its internal classes, and NuGet restores xUnit for the tests only; the
 # library has no dependencies. Warnings fail the build, as in build-dotnet.sh.
 
-. "$(dirname "$0")/check-submodules.sh"
+bash "$(dirname "$0")/get-fonts-and-data.sh" || exit 1
 cd "$(dirname "$0")" || exit 1
 
 dotnet test tests/dotnet/PDFjet.Tests.csproj -c release -p:TreatWarningsAsErrors=true

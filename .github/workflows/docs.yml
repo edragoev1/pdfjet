@@ -45,17 +45,15 @@ jobs:
         # Pinned to the Ubuntu release the Swift toolchain is built for.
         runs-on: ubuntu-24.04
         steps:
-            # Only the ports, the DocFX configuration, the examples, the fonts,
-            # images and data the examples read, .github (for the Install
-            # Swift action), and tests/swift, tests/corpus/swift and
-            # booklet/snippets/swift, the paths of the test target, of the
-            # corpus harness and of the booklet snippets, which SwiftPM checks
-            # for every target of Package.swift, are checked out. Files
-            # in the repository root are always checked out. fonts and data
-            # are the submodules pdfjet-fonts and pdfjet-data.
+            # Only the ports, the DocFX configuration, the examples, the images
+            # the examples read, .github (for the Install Swift action), and
+            # tests/swift, tests/corpus/swift and booklet/snippets/swift, the
+            # paths of the test target, of the corpus harness and of the
+            # booklet snippets, which SwiftPM checks for every target of
+            # Package.swift, are checked out. Files in the repository root are
+            # always checked out, get-fonts-and-data.sh among them.
             - uses: actions/checkout@v7
               with:
-                  submodules: true
                   sparse-checkout: |
                       .github
                       com
@@ -64,13 +62,15 @@ jobs:
                       src
                       Sources
                       examples
-                      fonts
                       images
-                      data
                       PngSuite
                       tests/swift
                       tests/corpus/swift
                       booklet/snippets/swift
+
+            # The fonts and the data files the examples read.
+            - name: Get the fonts and the data files
+              run: ./get-fonts-and-data.sh
 
             - uses: actions/setup-java@v6
               with:

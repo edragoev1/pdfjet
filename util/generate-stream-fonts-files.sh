@@ -6,8 +6,8 @@
 # --old-format writes .otf.stream files that every version of PDFjet reads:
 # the CFF data of the font without its other tables, and no GPOS marks.
 #
-# fonts is the submodule pdfjet-fonts: commit the .stream files there, push
-# them, and commit the new commit of the submodule in pdfjet.
+# fonts is the repository pdfjet-fonts: commit the .stream files there, push
+# them, and write the new commit in fonts-and-data.txt of pdfjet.
 #
 # The generator is in the com.pdfjet package to use the library's OTF parser,
 # so it is compiled with the library sources, into util/out and not the jar.

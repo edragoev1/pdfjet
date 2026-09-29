@@ -14,22 +14,23 @@ This is the first entry in this file; earlier releases were not tracked here.
   serve, as the fonts in their tree make it time out: `go get` of the
   library at `@latest` takes v9.0.3 or later, and `go list -m -retracted`
   says why.
-- `fonts/` and `data/` are git submodules, the repositories
-  [pdfjet-fonts](https://github.com/edragoev1/pdfjet-fonts) and
+- `fonts/` and `data/` are no longer in the repository: they are the
+  repositories [pdfjet-fonts](https://github.com/edragoev1/pdfjet-fonts) and
   [pdfjet-data](https://github.com/edragoev1/pdfjet-data), with the same
-  files as before but `fonts/go.mod` and `data/go.mod`. Clone the
-  repository with `git clone --recurse-submodules`, or run
-  `git submodule update --init` in a clone; the examples, the tests and the
+  files as before but `fonts/go.mod` and `data/go.mod`, at the commits
+  `fonts-and-data.txt` pins. The build, run and test scripts fetch them the
+  first time they run, the pinned commits alone, and move them when a pin
+  changes; `get-fonts-and-data.sh` and `get-fonts-and-data.cmd` do it alone.
+  The folders are ignored by git, and the examples, the tests and the
   scripts read them as before. The Go module proxy makes the module of a
   version from `git archive` of its tag, which has the whole tree and was
   487 MiB with the fonts, and it timed out, so `go get` of v9.0.0 to v9.0.2
-  fails; `git archive` leaves out what a submodule holds, and the tree is
-  now 8 MB zipped and the module 4 MB. The Go module has no fonts: the Go
-  section of the README says to clone pdfjet-fonts as `fonts` next to the
-  program. `.packaging/package-java.sh` and `package-dotnet.sh` take the
-  files of the two submodules at the commits the last commit records for
-  them, `check-api.sh` leaves them out of the checkout it lists, and the
-  workflows check them out.
+  fails; the tree is now 8 MB zipped and the module 4 MB. They are not
+  submodules, as SwiftPM checks out the submodules of a package it depends
+  on. The Go module has no fonts: the Go section of the README says to
+  clone pdfjet-fonts as `fonts` next to the program.
+  `.packaging/package-java.sh` and `package-dotnet.sh` take the files of the
+  two repositories at the pinned commits, and the workflows fetch them.
 
 ### Fixed
 - `PDFobj.getData` of an image read from a PDF undoes the predictor of its

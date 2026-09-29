@@ -1,6 +1,6 @@
 @echo off
-call "%~dp0check-submodules.cmd" || exit /b 1
-REM The folder of this script, which the check looks at, from wherever it is run.
+call "%~dp0get-fonts-and-data.cmd" || exit /b 1
+REM The folder of this script, which has fonts and data, from wherever it is run.
 cd /d "%~dp0"
 REM Very important!!
 rmdir /s /q bin 2>nul

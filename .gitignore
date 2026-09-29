@@ -30,3 +30,7 @@ booklet/*.pdf
 .corpora/
 .images/
 .reference-fonts/
+
+# The fonts and the data files, which get-fonts-and-data.sh fetches
+/fonts/
+/data/

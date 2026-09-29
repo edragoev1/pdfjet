@@ -47,18 +47,16 @@ git archive -o "$TAR" HEAD \
     CHANGELOG.md THIRD-PARTIES.TXT examples-java.html
 tar -x -C "$STAGE" -f "$TAR"
 
-# fonts and data are the submodules pdfjet-fonts and pdfjet-data, whose files
-# git archive leaves out: each is archived at the commit the last commit
-# records for it, which a submodule not updated since a pull may not have, and
-# its README, about the submodule, is left out.
+# fonts and data are the repositories pdfjet-fonts and pdfjet-data, which
+# get-fonts-and-data.sh fetches and git archive does not have: each is
+# archived at the commit that fonts-and-data.txt of the last commit pins,
+# whatever commit the folder is at, and its README, about the repository, is
+# left out.
+bash get-fonts-and-data.sh
 for dir in fonts data; do
-    if [ ! -e "$dir/.git" ]; then
-        echo "$dir is not checked out: run git submodule update --init"
-        exit 1
-    fi
-    commit=$(git rev-parse "HEAD:$dir")
-    if ! git -C "$dir" cat-file -e "$commit^{commit}" 2> /dev/null; then
-        echo "$dir does not have the commit $commit that the last commit records: run git submodule update --init"
+    commit=$(git show HEAD:fonts-and-data.txt | sed -n "s/^$dir [^ ]* \([0-9a-f]*\).*/\1/p")
+    if [ -z "$commit" ] || ! git -C "$dir" cat-file -e "$commit^{commit}" 2> /dev/null; then
+        echo "$dir does not have the commit ${commit:-that} fonts-and-data.txt of the last commit pins: run get-fonts-and-data.sh"
         exit 1
     fi
     git -C "$dir" archive -o "$TAR" --prefix="$dir/" "$commit"

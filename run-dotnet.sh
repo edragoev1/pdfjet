@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Check if an argument is provided (example number)
-. "$(dirname "$0")/check-submodules.sh"
-# The folder of this script, which the check looks at, from wherever it is run.
+bash "$(dirname "$0")/get-fonts-and-data.sh" || exit 1
+# The folder of this script, which has fonts and data, from wherever it is run.
 cd "$(dirname "$0")" || exit 1
 if [ -z "$1" ]; then
     echo "Usage: $0 <example_number>"

@@ -418,15 +418,19 @@ day.
       vanity path is set up first. Check the proxy again after each tag:
       `curl https://proxy.golang.org/github.com/edragoev1/pdfjet/v9/@v/v9.0.3.info`.
       Done on Sep 29: `fonts/` and `data/` moved to the public repositories
-      edragoev1/pdfjet-fonts and edragoev1/pdfjet-data and came back as
-      submodules at the same paths (`fonts/go.mod` and `data/go.mod` are gone;
-      `images/` keeps its `go.mod`), with no history rewritten. `git archive`
-      leaves out what a submodule holds, and a shallow fetch of a tag does not
-      fetch it, so the zip of the tree is 8 MB and the module zip, made with
+      edragoev1/pdfjet-fonts and edragoev1/pdfjet-data (`fonts/go.mod` and
+      `data/go.mod` are gone; `images/` keeps its `go.mod`), with no history
+      rewritten, and came back at the same paths as folders that git ignores
+      and `get-fonts-and-data.sh` (and `.cmd`) fetches at the commits
+      `fonts-and-data.txt` pins, the pinned commit alone; the build, run and
+      test scripts run it. They were submodules for a day, but SwiftPM checks
+      out the submodules of a package it depends on, so a Swift user
+      downloaded about 1.3 GB instead of 0.8 GB; a fetched folder keeps them
+      out of both. The zip of the tree is 8 MB and the module zip, made with
       golang.org/x/mod/zip from the tree, 4 MB (12 MB, 1520 files,
-      uncompressed). The packaging scripts, `check-api.sh`, the workflows
-      (`submodules: true`), the README and the booklet follow; a fresh
-      `git clone --recurse-submodules` passes `test-go.sh`. Left: tag v9.0.3
+      uncompressed). The packaging scripts, `check-api.sh`, the workflows, the
+      README and the booklet follow; a fresh `git clone` passes `test-go.sh`,
+      which fetches the folders. Left: tag v9.0.3
       and check that the proxy answers 200 for its `.info` and `.zip`, and that
       sum.golang.org has its checksum. go.mod retracts v9.0.0 to v9.0.2
       (Sep 29, the owner's decision), so `go get @latest` skips the versions
