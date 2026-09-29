@@ -1,5 +1,7 @@
 @echo off
 call "%~dp0check-submodules.cmd" || exit /b 1
+:: The folder of this script, which the check looks at, from wherever it is run.
+cd /d "%~dp0"
 
 :: Remove the .class files from the output directories. 2>nul keeps del quiet
 :: when there are none, as on the first build: "Could Not Find" otherwise.

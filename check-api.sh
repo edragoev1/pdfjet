@@ -24,8 +24,9 @@ rm -rf "$WORK"
 mkdir -p "$WORK/base" "$WORK/head"
 git archive "$BASE" | tar -x -C "$WORK/base" || exit 1
 # The checkout as it is, uncommitted changes and all, but for the submodules
-# fonts and data (mode 160000), which have no API
-git ls-files -z --stage | grep -zv '^160000' | cut -z -f2 \
+# fonts and data (mode 160000), which have no API. perl, as grep -z and cut -z
+# are GNU's alone; tar --null -T - is in the tar of macOS too.
+git ls-files -z --stage | perl -0 -ne 'print if s/^(?!160000 )\S+ \S+ \S+\t//' \
     | tar --null -T - -c | tar -x -C "$WORK/head" || exit 1
 
 # The C# lister, a console program that loads the assembly by reflection.

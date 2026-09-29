@@ -2,6 +2,8 @@
 
 # Check if an argument is provided (example number)
 . "$(dirname "$0")/check-submodules.sh"
+# The folder of this script, which the check looks at, from wherever it is run.
+cd "$(dirname "$0")" || exit 1
 if [ -z "$1" ]; then
     echo "Usage: $0 <example_number>"
     exit 1

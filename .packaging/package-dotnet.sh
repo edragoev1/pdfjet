@@ -39,24 +39,33 @@ fi
 rm -rf "$(dirname "$STAGE")" "$ZIP" "$EVAL_ZIP"
 mkdir -p "$STAGE" .commercial-packages
 
-git archive HEAD \
+# Through a file, not a pipe, so that a failing git archive stops the script.
+TAR=$PWD/$STAGE.tar
+git archive -o "$TAR" HEAD \
     .packaging/dotnet .packaging/LICENSE-EVALUATION \
     net PDFjet.csproj examples images PngSuite docfx \
-    CHANGELOG.md THIRD-PARTIES.TXT examples-dotnet.html \
-    | tar -x -C "$STAGE"
+    CHANGELOG.md THIRD-PARTIES.TXT examples-dotnet.html
+tar -x -C "$STAGE" -f "$TAR"
 
 # fonts and data are the submodules pdfjet-fonts and pdfjet-data, whose files
 # git archive leaves out: each is archived at the commit the last commit
-# records for it, and its README, about the submodule, is left out.
+# records for it, which a submodule not updated since a pull may not have, and
+# its README, about the submodule, is left out.
 for dir in fonts data; do
     if [ ! -e "$dir/.git" ]; then
         echo "$dir is not checked out: run git submodule update --init"
         exit 1
     fi
-    git -C "$dir" archive --prefix="$dir/" "$(git rev-parse "HEAD:$dir")" \
-        | tar -x -C "$STAGE"
+    commit=$(git rev-parse "HEAD:$dir")
+    if ! git -C "$dir" cat-file -e "$commit^{commit}" 2> /dev/null; then
+        echo "$dir does not have the commit $commit that the last commit records: run git submodule update --init"
+        exit 1
+    fi
+    git -C "$dir" archive -o "$TAR" --prefix="$dir/" "$commit"
+    tar -x -C "$STAGE" -f "$TAR"
     rm -f "$STAGE/$dir/README.md"
 done
+rm "$TAR"
 
 # The Java examples and the go.mod file of the Go port are not needed, but
 # Example_32 draws the source of Example_02.java.
@@ -80,7 +89,8 @@ docfx docfx/docfx.json
 rm -rf net PDFjet.csproj bin obj docfx
 
 # The example projects reference the PDFjet.dll of the package.
-sed -i 's|<HintPath>../../bin/release/net8.0/PDFjet.dll</HintPath>|<HintPath>../../PDFjet.dll</HintPath>|' \
+# perl, as sed -i is not the same in GNU sed and in the sed of macOS.
+perl -pi -e 's|<HintPath>../../bin/release/net8.0/PDFjet.dll</HintPath>|<HintPath>../../PDFjet.dll</HintPath>|' \
     examples/Example_*/Example_*.csproj
 if grep -L '<HintPath>../../PDFjet.dll</HintPath>' examples/Example_*/Example_*.csproj | grep -q .; then
     echo "An example project does not reference ../../PDFjet.dll"

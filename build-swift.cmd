@@ -1,5 +1,7 @@
 @echo off
 call "%~dp0check-submodules.cmd" || exit /b 1
+REM The folder of this script, which the check looks at, from wherever it is run.
+cd /d "%~dp0"
 REM Run this script as an admin!
 
 rmdir /s /q .build 2>nul

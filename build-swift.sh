@@ -1,4 +1,6 @@
 . "$(dirname "$0")/check-submodules.sh"
+# The folder of this script, which the check looks at, from wherever it is run.
+cd "$(dirname "$0")" || exit 1
 rm -rf .build
 
 # Builds the library and all the examples at once, then runs the examples.

@@ -14,3 +14,9 @@ for _dir in fonts data; do
         exit 1
     fi
 done
+# A git pull that moves a submodule to another commit leaves its files as they
+# were, unless submodule.recurse is set: say so, and go on with them.
+if git -C "${PDFJET_ROOT:-$(dirname "$0")}" submodule status fonts data 2> /dev/null | grep -q '^+'; then
+    echo "Warning: fonts or data is not at the commit this checkout records, as after" >&2
+    echo "a git pull that moved it. Update them with: git submodule update" >&2
+fi

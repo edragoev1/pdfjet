@@ -1,4 +1,6 @@
 . "$(dirname "$0")/check-submodules.sh"
+# The folder of this script, which the check looks at, from wherever it is run.
+cd "$(dirname "$0")" || exit 1
 rm -f out/production/com/pdfjet/*.class
 rm -f out/production/com/pdfjet/fonts/*.class
 rm -f out/production/examples/*.class

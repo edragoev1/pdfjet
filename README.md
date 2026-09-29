@@ -46,6 +46,10 @@ same output come in four languages, and none of them needs a single dependency.
 > ```
 >
 > The build, run and test scripts stop and say so when the folders are empty.
+> A `git pull` that moves the submodules to newer commits leaves their files as
+> they were, and the scripts warn of it: `git submodule update` brings them up
+> to date, and `git config submodule.recurse true`, run once in the clone, makes
+> every `git pull` do so.
 > Using PDFjet from Go with `go get`? The module has no fonts: the Go part of
 > [Quick start](#quick-start) says how to get pdfjet-fonts. The core fonts,
 > such as Helvetica, need no files at all.

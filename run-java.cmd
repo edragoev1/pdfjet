@@ -1,5 +1,7 @@
 @echo off
 call "%~dp0check-submodules.cmd" || exit /b 1
+REM The folder of this script, which the check looks at, from wherever it is run.
+cd /d "%~dp0"
 REM Windows batch script for building and running Java examples
 
 REM Check if argument is provided

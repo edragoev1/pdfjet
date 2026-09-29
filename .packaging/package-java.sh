@@ -39,24 +39,33 @@ fi
 rm -rf "$(dirname "$STAGE")" "$ZIP" "$EVAL_ZIP"
 mkdir -p "$STAGE" .commercial-packages
 
-git archive HEAD \
+# Through a file, not a pipe, so that a failing git archive stops the script.
+TAR=$PWD/$STAGE.tar
+git archive -o "$TAR" HEAD \
     .packaging/java .packaging/LICENSE-EVALUATION \
     com examples images PngSuite \
-    CHANGELOG.md THIRD-PARTIES.TXT examples-java.html \
-    | tar -x -C "$STAGE"
+    CHANGELOG.md THIRD-PARTIES.TXT examples-java.html
+tar -x -C "$STAGE" -f "$TAR"
 
 # fonts and data are the submodules pdfjet-fonts and pdfjet-data, whose files
 # git archive leaves out: each is archived at the commit the last commit
-# records for it, and its README, about the submodule, is left out.
+# records for it, which a submodule not updated since a pull may not have, and
+# its README, about the submodule, is left out.
 for dir in fonts data; do
     if [ ! -e "$dir/.git" ]; then
         echo "$dir is not checked out: run git submodule update --init"
         exit 1
     fi
-    git -C "$dir" archive --prefix="$dir/" "$(git rev-parse "HEAD:$dir")" \
-        | tar -x -C "$STAGE"
+    commit=$(git rev-parse "HEAD:$dir")
+    if ! git -C "$dir" cat-file -e "$commit^{commit}" 2> /dev/null; then
+        echo "$dir does not have the commit $commit that the last commit records: run git submodule update --init"
+        exit 1
+    fi
+    git -C "$dir" archive -o "$TAR" --prefix="$dir/" "$commit"
+    tar -x -C "$STAGE" -f "$TAR"
     rm -f "$STAGE/$dir/README.md"
 done
+rm "$TAR"
 
 # The C# example projects and the go.mod file of the Go port are not needed.
 find "$STAGE/examples" -mindepth 1 -maxdepth 1 -type d -exec rm -rf {} +

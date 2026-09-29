@@ -1,5 +1,7 @@
 @echo off
 call "%~dp0check-submodules.cmd" || exit /b 1
+:: The folder of this script, which the check looks at, from wherever it is run.
+cd /d "%~dp0"
 
 :: Navigate to the "src" directory
 cd src
