@@ -132,8 +132,8 @@ API of v9.0.1 came with the PDF/UA work and the fixes; goal 6 lists them.
      On Sep 29 PAC found five files with Quality issues: Example_21's and
      Example_54's are fixed, Example_06's, on its annotations, are left, as
      no structure of its `Annot` elements clears them (see
-     `pdf-ua-files-to-test/README.md`), and Example_42's and 45's were not
-     looked at again, as their screenshots were copies of Example_21's. The
+     `pdf-ua-files-to-test/README.md`), and Example_42's and 45's, an email
+     address in a form field that PAC takes for a link, are left too. The
      PDF/UA testing was closed that day.
 
 4. ⬜ **B** The manual viewer pass, open since 9.0.0: Acrobat Reader on
