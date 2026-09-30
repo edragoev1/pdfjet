@@ -800,13 +800,28 @@ to check and fix in the four, with a test.
   define, `&nbsp;`; and the entities of a DTD, as older files of Illustrator
   have them, `<!ENTITY ns_svg "http://www.w3.org/2000/svg">`. To do, in
   the four, with a test:
+  - **Decided on Sep 30, 2026: one parser for SVG and for the invoices.**
+    The XML parser of ZUGFeRD and Factur-X (`XMLParser` of the invoices,
+    written alike in the four ports, hardened and fuzzed: no DOCTYPE, the
+    five entities of XML and the numeric ones alone, a depth bounded without
+    recursion, 20 MB at most) moves into the MIT core, and SVGImage reads
+    with it in the four, in place of encoding/xml, StAX, XmlReader and
+    Swift's own reader; the invoices then use it from the core. Released
+    under MIT, as it is a plain XML parser: what is paid for is the
+    invoices, not it.
   - The cases of `tests/svg/cases.json` read by each port's tests, and what
-    each takes and refuses compared, as the fixtures of all four.
-  - One behavior decided and written down, the four made to match it.
-  - Worth taking, as real files have them: an encoding declared of Latin-1
-    or Windows-1252, and the internal entities of older Illustrator files,
-    text entities alone, no external ones, and their expansion bounded, so
-    that no file of nested entities runs the reader out of memory.
+    each takes and refuses compared, as the fixtures of all four; with them
+    the fuzz tests of the parser, and of SVGImage through it.
+  - Its behavior written down once, the refusals of the list above among
+    it, in words alike in the four.
+  - To weigh after, as real files have them: an encoding declared of
+    Latin-1 or Windows-1252, and the internal entities of older Illustrator
+    files, which a parser that refuses a DOCTYPE refuses; if taken, text
+    entities alone, no external ones, and their expansion bounded, so that
+    no file of nested entities runs the reader out of memory.
+  - pdfjet-server's `svg_test.go` and pdfjet-client's `SVGImage.ts`, which
+    follows Go, then follow the parser, and `check-svg.sh` says where they
+    differ.
   pdfjet-server draws with the Go port, and the editor refuses what it
   refuses, so nothing is to work around meanwhile. Found by the review of
   Sep 30, 2026.
