@@ -915,6 +915,10 @@ to check and fix in the four, with a test.
 - ⬜ Deliver-X, the delivery note of FeRD, in the commercial product: still
   in development on Sep 24, so written once it is published, after Order-X,
   whose model it shares most of.
+- ⬜ Maybe: a small invoicing tool for PDFjet Software's own direct orders,
+  written with PDFjet, PDFjet Invoice and PDFjet Sign; later perhaps a full
+  example program for the buyers of PDFjet Pro. Its plan is in the TODO.md
+  of the local invoices folder, which stays out of every public repository.
 
 ## Electronic invoices (in the commercial repository, `.commercial`)
 
