@@ -107,7 +107,7 @@ public sealed class PDF {
             System.Security.Cryptography.RandomNumberGenerator.GetBytes(16)).ToLowerInvariant();
     private Stream os = null;
     private readonly List<long> objOffset = new List<long>(); // Required by the xref section
-    private String producer = "PDFjet v9.0.2";
+    private String producer = "PDFjet v9.0.3";
     private String title;
     private String author;
     private String subject;

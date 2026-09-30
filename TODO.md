@@ -514,11 +514,10 @@ the four ports, Go's PDF 4% smaller.
       alone, v9.0.2 is 471 MB (15 s from here) and master 7.7 MB (1 s), so a
       tag on master should pass. Tagging early for the Go users was weighed
       and left for Oct 21 (the owner's decision): a tag is for good once the
-      proxy has it, and the tree still says 9.0.2. Before the tag, set 9.0.3
-      in the Producer strings (`net/pdfjet/PDF.cs`, `Sources/PDFjet/PDF.swift`),
-      the ReviewWriter tests of Java, C# and Swift that check them, the
-      DataMatrix text of Example_14 in Java, C# and Swift, and the `exact:`
-      pin of `.commercial/Package.swift`.
+      proxy has it. The tree says 9.0.3 since Sep 30: the Producer strings
+      of the four ports, the ReviewWriter tests that check them and the
+      DataMatrix text of Example_14 in the four. Left for the tag: the
+      `exact:` pin of `.commercial/Package.swift`, and its go.mod.
 - ✅ **B** The commercial product built on the tag, as the rehearsal of Sep 28
       did against v9.0.2. Done in `.commercial` on Sep 28 (a1bf6e4..8c8b8c5):
       what is committed builds against the release (go.mod requires v9.0.2

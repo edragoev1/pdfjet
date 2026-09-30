@@ -50,7 +50,7 @@ public class Example_14 {
         caption.setLocation(300f, xy[1] + 20f);
         caption.drawOn(page);
 
-        barcode = new DataMatrix("PDFjet 9.0.2", DataMatrix.RECTANGLE);
+        barcode = new DataMatrix("PDFjet 9.0.3", DataMatrix.RECTANGLE);
         barcode.setLocation(50f, 250f);
         barcode.setModuleLength(4f);
         barcode.setModuleColor(Color.blue);
