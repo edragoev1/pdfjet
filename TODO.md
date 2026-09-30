@@ -175,7 +175,8 @@ API of v9.0.1 came with the PDF/UA work and the fixes; goal 6 lists them.
      blocks of 8 pixels; and it has every character MuPDF extracts. The
      renders are uploaded, a contact sheet of each PDF beside MuPDF's, to
      look at. `check-examples.sh` runs the PDFium, pdf.js and Poppler
-     checks. PDFium, pdf.js and Poppler pass; PDFKit has not run yet.
+     checks. All four pass; PDFKit first ran on Sep 29, its largest block
+     difference 2.8%, on Example_13.
    - ✅ What they found: the annotations of Example_06 and the file
      attachment of Example_30 have no appearance stream (`/AP`), which PDF
      2.0 and PDF/A ask for, so each viewer draws them its own way. PDFium,
@@ -190,11 +191,11 @@ API of v9.0.1 came with the PDF/UA work and the fixes; goal 6 lists them.
      is from its lower left corner to its upper right one. PDFium draws
      Example_06 as MuPDF does, and its exception in `check-viewers.py` is
      gone; PDFKit, which drew 16.7% of the blocks of its first page
-     otherwise, is to be seen in the next run of the Build workflow.
+     otherwise, passes it too.
      Also: PDFium does not cut a password at 127 bytes, as ISO 32000-2 asks
      of a viewer, so Chrome opens a PDF with a longer password only with its
-     first 127 bytes; not ours to fix, worth a line in the docs of
-     `setUserPassword`. Poppler cuts a password at 127 bytes, but its
+     first 127 bytes; not ours to fix, and said in the docs of `Passwords`
+     in the four ports (Sep 29). Poppler cuts a password at 127 bytes, but its
      pdftoppm and pdftotext keep only the first 32 bytes of the one they are
      given, so the check opens the 200 byte password file in them with its
      owner password; the Cyrillic password works.
@@ -449,13 +450,18 @@ day.
 - ⬜ **B** `check-examples.sh` clean in the four ports, and the public API
       still that of goal 6.
 - ⬜ **B** `go test ./...` of pdfjet-server passes against the library to be
-      tagged, as its `replace` of `../pdfjet` builds it. It reads images back
+      tagged, as its `go.work`, which uses `../pdfjet`, builds it. It reads images back
       out of the PDFs PDFjet writes, which `check-examples.sh` does not: the
       PNG pass-through of Sep 28 (99486dea) broke five of its tests and went
       into v9.0.2 unseen, worked around the same day in pdfjet-server
       (dee3909).
 - ⬜ Rebuild the site, and date the `## v9.0.3` entry of CHANGELOG.md.
 - Keep Oct 19 and 20 empty: they are the buffer for what the checks find.
+
+A trial run of these checks on Sep 29, at 7aa67a7a: `check-examples.sh`
+clean in the four ports, the viewers and the booklet; `./check-api.sh
+v9.0.2` with nothing gone, changed or added in any port; and `go test ./...`
+of pdfjet-server passing against master.
 
 ### Oct 21: release v9.0.3
 
