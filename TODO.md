@@ -469,6 +469,11 @@ of pdfjet-server passing against master; and the benchmarks, in
 spread of the runs: Example_43 takes 1.65 s with `BigTable` and 3.69 s
 with `Table`, the text is as fast, and the 50,000-row table is as fast in
 the four ports, Go's PDF 4% smaller.
+Again on Sep 30, at 6bd05dfe, after the 9.0.3 Producer: `check-examples.sh`
+clean in the four ports, the viewers and the booklet, in 10 minutes;
+`./check-api.sh v9.0.2` with nothing gone, changed or added in any port;
+and `go test ./...` of pdfjet-server passing. The files of the viewer pass
+were built from that tree into `viewer-files-to-test`, for a dry run.
 
 ### Oct 21: release v9.0.3
 
