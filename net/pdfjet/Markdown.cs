@@ -340,6 +340,9 @@ public class Markdown {
             lines.Add(line.Substring(start));
         }
         Ensure(Math.Min(3, lines.Count) * leading + 2f * padding);
+        // Code is an inline element, so the block is a paragraph that holds
+        // its Code: PAC warns of a Code right under the document.
+        OpenContainer(StructElem.P);
         OpenContainer(StructElem.CODE);
         int i = 0;
         while (i < lines.Count) {
@@ -363,6 +366,7 @@ public class Markdown {
                 NewPage();
             }
         }
+        CloseContainer();
         CloseContainer();
     }
 

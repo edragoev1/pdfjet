@@ -352,6 +352,9 @@ public class Markdown {
             lines.append(Array(line[start...]))
         }
         ensure(Float(min(3, lines.count)) * leading + 2.0 * padding)
+        // Code is an inline element, so the block is a paragraph that holds
+        // its Code: PAC warns of a Code right under the document.
+        openContainer(StructElem.P)
         openContainer(StructElem.CODE)
         var i = 0
         while i < lines.count {
@@ -378,6 +381,7 @@ public class Markdown {
                 newPage()
             }
         }
+        closeContainer()
         closeContainer()
     }
 

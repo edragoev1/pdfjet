@@ -44,6 +44,9 @@ This is the first entry in this file; earlier releases were not tracked here.
   two repositories at the pinned commits, and the workflows fetch them.
 
 ### Fixed
+- `Markdown` tags a code block as a paragraph that holds its `Code`, not as
+  a `Code` right under the document: `Code` is an inline element, and PAC
+  warned of it as possibly inappropriate.
 - Every annotation that is not a link, a file attachment, a note
   (`TextAnnotation`), a polygon, a square or a circle, has an appearance
   stream (`/AP`), in all four ports, as it had in PDF/A alone: without one

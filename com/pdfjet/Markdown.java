@@ -339,6 +339,9 @@ public class Markdown {
             lines.add(line.substring(start));
         }
         ensure(Math.min(3, lines.size()) * leading + 2f * padding);
+        // Code is an inline element, so the block is a paragraph that holds
+        // its Code: PAC warns of a Code right under the document.
+        openContainer(StructElem.P);
         openContainer(StructElem.CODE);
         int i = 0;
         while (i < lines.size()) {
@@ -362,6 +365,7 @@ public class Markdown {
                 newPage();
             }
         }
+        closeContainer();
         closeContainer();
     }
 

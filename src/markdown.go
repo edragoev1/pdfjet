@@ -356,6 +356,9 @@ func (markdown *Markdown) drawCode(text string, x, width float32) {
 		lines = append(lines, string(utf16.Decode(units[start:])))
 	}
 	markdown.ensure(float32(min(3, len(lines)))*leading + 2*padding)
+	// Code is an inline element, so the block is a paragraph that holds
+	// its Code: PAC warns of a Code right under the document.
+	markdown.openContainer(structelem.P)
 	markdown.openContainer(structelem.Code)
 	i := 0
 	for i < len(lines) {
@@ -381,6 +384,7 @@ func (markdown *Markdown) drawCode(text string, x, width float32) {
 			markdown.newPage()
 		}
 	}
+	markdown.closeContainer()
 	markdown.closeContainer()
 }
 
