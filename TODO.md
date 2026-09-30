@@ -460,8 +460,13 @@ day.
 
 A trial run of these checks on Sep 29, at 7aa67a7a: `check-examples.sh`
 clean in the four ports, the viewers and the booklet; `./check-api.sh
-v9.0.2` with nothing gone, changed or added in any port; and `go test ./...`
-of pdfjet-server passing against master.
+v9.0.2` with nothing gone, changed or added in any port; `go test ./...`
+of pdfjet-server passing against master; and the benchmarks, in
+`benchmarks/results/2026-09-29-e784a127.log` and
+`benchmarks/table/results/2026-09-29-e784a127.log`, as on Sep 28 within the
+spread of the runs: Example_43 takes 1.65 s with `BigTable` and 3.69 s
+with `Table`, the text is as fast, and the 50,000-row table is as fast in
+the four ports, Go's PDF 4% smaller.
 
 ### Oct 21: release v9.0.3
 
