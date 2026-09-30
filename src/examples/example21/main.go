@@ -43,7 +43,7 @@ func Example21() {
 	text.DrawOn(page)
 
 	textBlock := pdfjet.NewTextBlock(f1,
-		"Each QR code below holds the same address, https://pdfjet.com. "+
+		"Each QR code below holds the same address, the home page of PDFjet. "+
 			"A higher error correction level lets a scanner read the code when "+
 			"more of it is damaged or covered, and leaves room for less data, "+
 			"so longer data at a higher level makes a larger code.")
@@ -104,16 +104,26 @@ func Example21() {
 
 	link := pdfjet.GS1DigitalLink("https://id.gs1.org", "(01)09506000134352(10)ABC123(17)261231")
 	note := pdfjet.NewTextBlock(f1, "The GS1 data (01)09506000134352(10)ABC123(17)261231, a GTIN, a batch and an expiry date, "+
-		"is this web address as a GS1 Digital Link, "+link+", which an ordinary QR code carries and any phone opens.")
+		"is this web address, a GS1 Digital Link, which an ordinary QR code carries and any phone opens:")
 	note.SetFontSize(12.0)
 	note.SetLineSpacing(1.5)
 	note.SetLocation(70.0, 95.0)
 	note.SetWidth(470.0)
 	corner := note.DrawOn(page2)
 
+	// The address as a link, not as text in the paragraph, which PDF/UA
+	// checkers take for a link without its Link element
+	text = pdfjet.NewTextLine(f1, link)
+	text.SetFontSize(12.0)
+	text.SetTextColor(color.Blue)
+	text.SetUnderline(true)
+	text.SetURIAction(link)
+	text.SetLocation(70.0, corner[1]+20.0)
+	text.DrawOn(page2)
+
 	code := qrcode.NewQRCode(link, errorcorrectionlevel.M)
 	code.SetModuleLength(4.0)
-	code.SetLocation(70.0, corner[1]+30.0)
+	code.SetLocation(70.0, corner[1]+50.0)
 	code.DrawOn(page2)
 
 	if err := pdf.Complete(); err != nil {

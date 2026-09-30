@@ -36,7 +36,7 @@ public class Example_21 {
         text.drawOn(page);
 
         TextBlock textBlock = new TextBlock(f1,
-                "Each QR code below holds the same address, https://pdfjet.com. "
+                "Each QR code below holds the same address, the home page of PDFjet. "
                 + "A higher error correction level lets a scanner read the code when "
                 + "more of it is damaged or covered, and leaves room for less data, "
                 + "so longer data at a higher level makes a larger code.");
@@ -97,16 +97,26 @@ public class Example_21 {
 
         String link = GS1.digitalLink("https://id.gs1.org", "(01)09506000134352(10)ABC123(17)261231");
         TextBlock note = new TextBlock(f1, "The GS1 data (01)09506000134352(10)ABC123(17)261231, a GTIN, a batch and an expiry date, "
-                + "is this web address as a GS1 Digital Link, " + link + ", which an ordinary QR code carries and any phone opens.");
+                + "is this web address, a GS1 Digital Link, which an ordinary QR code carries and any phone opens:");
         note.setFontSize(12f);
         note.setLineSpacing(1.5f);
         note.setLocation(70f, 95f);
         note.setWidth(470f);
         float[] corner = note.drawOn(page2);
 
+        // The address as a link, not as text in the paragraph, which PDF/UA
+        // checkers take for a link without its Link element
+        text = new TextLine(f1, link);
+        text.setFontSize(12f);
+        text.setTextColor(Color.blue);
+        text.setUnderline(true);
+        text.setURIAction(link);
+        text.setLocation(70f, corner[1] + 20f);
+        text.drawOn(page2);
+
         QRCode code = new QRCode(link, ErrorCorrectionLevel.M);
         code.setModuleLength(4f);
-        code.setLocation(70f, corner[1] + 30f);
+        code.setLocation(70f, corner[1] + 50f);
         code.drawOn(page2);
 
         pdf.complete();
