@@ -786,6 +786,31 @@ to check and fix in the four, with a test.
   stroke, which PDFjet then draws black, as the editor does. Found by the
   review of Sep 30, 2026; not a fault of v9.0.3 to fix before its tag.
 
+- ⬜ **The four ports read SVG with four XML parsers, which may take
+  different files; for v9.1, in the four.** Go reads it with encoding/xml,
+  Java with StAX, C# with XmlReader (its DTD ignored) and Swift with a
+  reader of its own, so a file one port draws another may refuse. What Go
+  refuses, proved by pdfjet-client's `check-svg.sh` (89 cases in its
+  `tests/svg/cases.json`), where the editor follows it: XML of version 1.1;
+  an encoding declared other than UTF-8, "ISO-8859-1" and the like, as the
+  decoder has no CharsetReader; a processing instruction with no target; a
+  name of an element or an attribute that starts with a digit, or has a
+  character a name may not; bytes that are not UTF-8, but in comments and
+  processing instructions, which it reads past; an entity XML does not
+  define, `&nbsp;`; and the entities of a DTD, as older files of Illustrator
+  have them, `<!ENTITY ns_svg "http://www.w3.org/2000/svg">`. To do, in
+  the four, with a test:
+  - The cases of `tests/svg/cases.json` read by each port's tests, and what
+    each takes and refuses compared, as the fixtures of all four.
+  - One behavior decided and written down, the four made to match it.
+  - Worth taking, as real files have them: an encoding declared of Latin-1
+    or Windows-1252, and the internal entities of older Illustrator files,
+    text entities alone, no external ones, and their expansion bounded, so
+    that no file of nested entities runs the reader out of memory.
+  pdfjet-server draws with the Go port, and the editor refuses what it
+  refuses, so nothing is to work around meanwhile. Found by the review of
+  Sep 30, 2026.
+
 ## v9.1 — features, after v9.0.3
 
 - ⬜ CommonMark itself, in the four ports, where v9.0.3 has the practical
