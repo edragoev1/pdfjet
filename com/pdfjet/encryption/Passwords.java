@@ -10,7 +10,9 @@ package com.pdfjet.encryption;
  * The user and owner passwords of an encrypted PDF. A password is used as
  * typed, in UTF-8, and at most 127 bytes of it are used. A password that is
  * not set is empty, so the PDF opens without a prompt when the user
- * password is not set.
+ * password is not set. Chrome does not cut a longer password to its first
+ * 127 bytes, as other viewers do, and opens the PDF only when just those
+ * are typed, so a password of 127 bytes or fewer is the one to give.
  *
  * Please see Example_30.
  */
