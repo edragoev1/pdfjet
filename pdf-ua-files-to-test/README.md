@@ -26,3 +26,29 @@ done
 On 28 September 2026 these four of the examples did not embed all their
 fonts: Example_04 (Helvetica and the CID fonts), Example_05 (Helvetica),
 Example_44 (a Chinese CID font) and Example_50 (Helvetica).
+
+## Known PAC warnings, left as they are
+
+**Example_06: six Quality warnings on its annotations.** PAC's PDF/UA and WCAG
+checks pass; its Quality check warns once for each annotation that is not a
+link: the two file attachments, the note and the three shapes. Each is an
+`Annot` structure element, directly under the document with Placement Block,
+holding its annotation, as PDF/UA asks (Matterhorn 28-011). No structure we
+tried clears the warnings (29 September 2026), so Example_06 stays as it is:
+
+| Variant | Annot elements | PAC Quality |
+|---|---|---|
+| as written | under the document, Placement Block | 6 × Tagged text consists of only whitespace |
+| no appearance streams | the same | the same |
+| a BBox, the rectangle of the annotation | the same | the same |
+| no Lang | the same | the same |
+| each holding the text of its label | the same | the same |
+| no Alt, or ActualText as well | the same | the same |
+| no Placement Block | under the document, inline | 6 × Possibly inappropriate use of an Annot element |
+| in the P of their labels | inline in a P | 6 × Possibly inappropriate use of an Annot element |
+| cut out of the tree, still in the parent tree | none reachable | green, but the tree is broken |
+| no annotations but the link | none | green |
+
+PAC's AI-assisted check also takes the two file attachment lines for a list
+(score 0.69). Tagging them as one would put their `Annot` elements in list
+items, which, by the table, trades the warning for another.

@@ -129,6 +129,11 @@ API of v9.0.1 came with the PDF/UA work and the fixes; goal 6 lists them.
      Only files that embed all their fonts go to PAC: one that does not fails
      Matterhorn 31-001 for that alone (see `pdf-ua-files-to-test/README.md`).
      On Sep 28 that left out Example_04, 05, 44 and 50.
+     On Sep 29 PAC found five files with Quality issues: Example_21's and
+     Example_54's are fixed, Example_06's, on its annotations, are left, as
+     no structure of its `Annot` elements clears them (see
+     `pdf-ua-files-to-test/README.md`), and Example_42's and 45's are not
+     known yet: their screenshots were copies of Example_21's.
 
 4. ⬜ **B** The manual viewer pass, open since 9.0.0: Acrobat Reader on
    Windows opens Example_30 with `hello` and `world`, shows print allowed and
