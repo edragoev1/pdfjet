@@ -777,6 +777,15 @@ to check and fix in the four, with a test.
   the stream is, so they are not `GetData`'s to give: that is new API, and
   waits for v9.1, below.
 
+- ⬜ **A color out of 0x000000 to 0xFFFFFF is drawn as its last 24 bits.**
+  `Line.SetStrokeColor(-1)` draws a white line: the four ports keep the low
+  24 bits of the int (`colorToRGB` in Go, `Util.toRGB` in Java and Swift, the
+  shifts of `Line.SetStrokeColor` in C#), so -1, which pdfjet-server uses
+  for transparent, is 0xFFFFFF. It should refuse such a color, or leave the
+  color as it was. pdfjet-server no longer sets the color of a line of no
+  stroke, which PDFjet then draws black, as the editor does. Found by the
+  review of Sep 30, 2026; not a fault of v9.0.3 to fix before its tag.
+
 ## v9.1 — features, after v9.0.3
 
 - ⬜ CommonMark itself, in the four ports, where v9.0.3 has the practical
