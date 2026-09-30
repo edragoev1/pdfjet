@@ -105,7 +105,7 @@ API of v9.0.1 came with the PDF/UA work and the fixes; goal 6 lists them.
    which no test names; ✅ `TextFrame`, `BigTable`, `CompositeTextLine` and
    `Bidi`; ✅ the barcodes, the charts, `Form`, `Container` and `Stamp`.
 
-3. ⬜ **B** PDF/UA as it is claimed, by the Matterhorn Protocol, not only
+3. ✅ **B** PDF/UA as it is claimed, by the Matterhorn Protocol, not only
    veraPDF, which cannot see what a paragraph stands for. PAC runs on Windows
    only, so the checks it would make by hand are in
    `.github/scripts/check-pdfua-tags.py`, which reads the structure tree of
@@ -123,7 +123,7 @@ API of v9.0.1 came with the PDF/UA work and the fixes; goal 6 lists them.
      structure element, the contents of Example_22 and the numbered
      paragraphs of Example_03 are lists, and a tagged `BigTable` writes its
      elements with each page.
-   - ⬜ PAC itself, or the Matterhorn conditions that need eyes on a page:
+   - ✅ Done (Sep 29): PAC itself, or the Matterhorn conditions that need eyes on a page:
      the reading order of each page, whether a colour alone carries meaning,
      and whether each Alt says what its figure shows.
      Only files that embed all their fonts go to PAC: one that does not fails
@@ -132,8 +132,9 @@ API of v9.0.1 came with the PDF/UA work and the fixes; goal 6 lists them.
      On Sep 29 PAC found five files with Quality issues: Example_21's and
      Example_54's are fixed, Example_06's, on its annotations, are left, as
      no structure of its `Annot` elements clears them (see
-     `pdf-ua-files-to-test/README.md`), and Example_42's and 45's are not
-     known yet: their screenshots were copies of Example_21's.
+     `pdf-ua-files-to-test/README.md`), and Example_42's and 45's were not
+     looked at again, as their screenshots were copies of Example_21's. The
+     PDF/UA testing was closed that day.
 
 4. ⬜ **B** The manual viewer pass, open since 9.0.0: Acrobat Reader on
    Windows opens Example_30 with `hello` and `world`, shows print allowed and
@@ -427,9 +428,9 @@ day.
 - ✅ **B** Goal 2: the rest of the review. Done on Sep 21.
 - ✅ **B** Goal 5: round-trip text, images against Pillow and fonts against
       fontTools, three checks the Build workflow runs (Sep 21).
-- ⬜ **B** Goal 3: PAC or Matterhorn over the 41 PDF/UA examples, and the
+- ✅ **B** Goal 3: PAC or Matterhorn over the 41 PDF/UA examples, and the
       fixes it asks for — the last day a tagging fix can land before the
-      freeze.
+      freeze. Done on Sep 29.
 
 ### Oct 15: code freeze
 
