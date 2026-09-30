@@ -410,8 +410,10 @@ day.
 - ✅ **B** Tag v9.0.2 on Oct 1 and make the GitHub release. Done three days
   early, on Sep 28: the checks of Sep 28 above, `check-examples.sh` clean at
   the tag, the API references regenerated into `docs/` for the site, and the
-  release on GitHub with a summary of the CHANGELOG entry. Left: the
-  packages of `.packaging/` and the site, rebuilt from the tag.
+  release on GitHub with a summary of the CHANGELOG entry. The packages of
+  `.packaging/` are the tag's: checked on Sep 30, their CHANGELOG, examples
+  and Producer are those of the tagged commit. Left: the site, rebuilt from
+  the tag (on the owner's go-ahead).
 
 ### Oct 2–8: the reader
 
