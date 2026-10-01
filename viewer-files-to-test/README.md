@@ -13,7 +13,8 @@ go run ./.github/scripts/viewer-checklist viewer-files-to-test/Checklist.pdf
 
 The other files are the ones the checklist names: the Java examples of
 `./build-java.sh`, Example_01, 02, 04, 06, 07, 08, 13, 22, 25, 27, 30, 34, 38,
-44, 54 and 55, and the two PDFs of `.github/scripts/encrypted-pdfs`:
+44, 46 (the layers, optional content groups, of a map of Europe), 54 and 55,
+and the two PDFs of `.github/scripts/encrypted-pdfs`:
 
 ```sh
 go run ./.github/scripts/encrypted-pdfs viewer-files-to-test

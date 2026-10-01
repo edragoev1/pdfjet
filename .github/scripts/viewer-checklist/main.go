@@ -40,6 +40,8 @@ var sections = []section{
 		"Example_01, 02, 08, 13, 27, 38 and 54 open with no warning and no offer to repair the file.",
 		"Example_04 and 44, whose Chinese, Japanese and Korean fonts are not embedded, show that text " +
 			"(Acrobat may offer its Asian font pack).",
+		"Example_46: the Layers panel lists Relief, Latitude and Longitude, and Capital Cities, " +
+			"and switching each off and on hides and shows it on the map of Europe.",
 	}},
 	{"NVDA with Acrobat Reader", "", []string{
 		"Example_01: NVDA reads the English, Greek and Bulgarian text, each in its own language.",
@@ -56,6 +58,7 @@ var sections = []section{
 	}},
 	{"Foxit PDF Reader", "", []string{
 		"Example_30 opens with hello, and prints; copying is not allowed.",
+		"Example_46: the Layers panel lists its three layers, and each hides and shows.",
 		"Encrypted_Cyrillic and Encrypted_200_Bytes open with their passwords.",
 		"Example_06: the icons and the shapes are where Acrobat draws them, and the note and the attachments open.",
 		"Example_01, 02, 08, 13, 27, 38 and 54 look as they do in Acrobat Reader.",
