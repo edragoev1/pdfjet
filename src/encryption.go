@@ -84,6 +84,9 @@ func NewEncryption(pdf *PDF,
 	pdf.appendString("/Filter /Standard\n")
 	pdf.appendString("/V 5\n") // Algorithm 2.A / 2.B
 	pdf.appendString("/R 6\n") // Security revision 6
+	// The length of the file key in bits, which PDF 2.0 leaves optional for
+	// V 5 but Adobe Acrobat asks for: without it, it cannot decrypt the file
+	pdf.appendString("/Length 256\n")
 	pdf.appendString("/CF <<\n")
 	pdf.appendString("/StdCF <<\n")
 	pdf.appendString("/CFM /AESV3\n") // AESV3 = AES-256 in CBC

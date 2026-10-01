@@ -125,6 +125,16 @@ func TestEncryptionPasswordsAreCutAt127Bytes(t *testing.T) {
 	}
 }
 
+// Adobe Acrobat opens no AES-256 file whose encryption dictionary has no
+// /Length, though PDF 2.0 leaves it optional for V 5: it says it cannot
+// decrypt it (found on 1 October 2026, with Example_30).
+func TestEncryptionTheDictionarySaysTheKeyIs256BitsForAcrobat(t *testing.T) {
+	pdf := testEncryptedWith(t, "", "world")
+	if !regexp.MustCompile(`/R 6\n/Length 256\n`).Match(pdf) {
+		t.Error("no /Length 256 in the encryption dictionary")
+	}
+}
+
 func TestEncryptionPermissionsAreANegativeNumberWithTheReservedBitsSet(t *testing.T) {
 	if got := testAccessValue(t, testEncryptedWith(t, "hello", "world")); got != -3900 {
 		t.Errorf("/P %d", got)

@@ -85,6 +85,9 @@ public class Encryption {
         pdf.Append("/Filter /Standard\n");
         pdf.Append("/V 5\n");           // Algorithm 2.A / 2.B
         pdf.Append("/R 6\n");           // Security revision 6 (strong password hashing)
+        // The length of the file key in bits, which PDF 2.0 leaves optional for
+        // V 5 but Adobe Acrobat asks for: without it, it cannot decrypt the file
+        pdf.Append("/Length 256\n");
         pdf.Append("/CF <<\n");
         pdf.Append("/StdCF <<\n");
         pdf.Append("/CFM /AESV3\n");    // AESV3 = AES-256 in CBC

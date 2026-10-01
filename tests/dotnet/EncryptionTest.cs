@@ -86,6 +86,13 @@ public class EncryptionTest {
     }
 
     [Fact]
+    public void TheDictionarySaysTheKeyIs256BitsForAcrobat() {
+        // Adobe Acrobat opens no AES-256 file without /Length, though PDF 2.0
+        // leaves it optional for V 5 (found on 1 October 2026, with Example_30)
+        Assert.Contains("/R 6\n/Length 256\n", TestSupport.Latin1(Encrypted("", "world")));
+    }
+
+    [Fact]
     public void PermissionsAreANegativeNumberWithTheReservedBitsSet() {
         Assert.Equal(-3900, AccessValue(Encrypted("hello", "world")));
     }

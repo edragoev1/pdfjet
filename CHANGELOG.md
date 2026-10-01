@@ -44,6 +44,11 @@ This is the first entry in this file; earlier releases were not tracked here.
   two repositories at the pinned commits, and the workflows fetch them.
 
 ### Fixed
+- An encrypted PDF, AES-256, opens in Adobe Acrobat and Acrobat Reader,
+  which said it could not decrypt it: the encryption dictionary has
+  `/Length 256`, which PDF 2.0 leaves optional for `/V 5` but Acrobat asks
+  for. MuPDF, PDFium, pdf.js and Preview opened it without. Found on 1
+  October 2026 with Example_30; the four ports, with a test in each.
 - `Markdown` tags a code block as a paragraph that holds its `Code`, not as
   a `Code` right under the document: `Code` is an inline element, and PAC
   warned of it as possibly inappropriate.

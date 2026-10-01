@@ -74,6 +74,12 @@ import Testing
         #expect(throws: (any Error).self) { _ = try TestSupport.read(pdf, String(password.prefix(126))) }
     }
 
+    @Test func theDictionarySaysTheKeyIs256BitsForAcrobat() throws {
+        // Adobe Acrobat opens no AES-256 file without /Length, though PDF 2.0
+        // leaves it optional for V 5 (found on 1 October 2026, with Example_30)
+        #expect(TestSupport.latin1(try encrypted("", "world")).contains("/R 6\n/Length 256\n"))
+    }
+
     @Test func permissionsAreANegativeNumberWithTheReservedBitsSet() throws {
         #expect(try accessValue(try encrypted("hello", "world")) == -3900)
     }
