@@ -31,8 +31,7 @@ Legend: ⬜ open, ✅ done, **B** blocker, S stretch.
   `TextLine` and the reader.
 - **Oct 15** — code freeze: fixes only, each with its check.
 - **Oct 21** — v9.0.3 of the MIT library and, the same day, v9.0.3 of the
-  commercial product (`.commercial`: electronic invoices and digital
-  signatures), built on the 9.0.3 library. The same number says which
+  commercial product (`.commercial`), built on the 9.0.3 library. The same number says which
   library each release of the commercial product is built on.
 
 ## Why 9.0.3 is hardening and not features
@@ -532,32 +531,9 @@ were built from that tree into `viewer-files-to-test`, for a dry run.
       of the four ports, the ReviewWriter tests that check them and the
       DataMatrix text of Example_14 in the four. Left for the tag: the
       `exact:` pin of `.commercial/Package.swift`, and its go.mod.
-- ✅ **B** The commercial product built on the tag, as the rehearsal of Sep 28
-      did against v9.0.2. Done in `.commercial` on Sep 28 (a1bf6e4..8c8b8c5):
-      what is committed builds against the release (go.mod requires v9.0.2
-      with no replace, go.sum committed; Package.swift by URL, exact, with
-      Package.resolved; the C# projects take PDFjet.dll by `-p:PDFjetDll`;
-      `PDFJET_JAR` for Java), and `library.sh` builds against the checkout
-      beside it by default (an ignored go.work, `PDFJET_LOCAL`, `../com`,
-      `../PDFjet.csproj`), or the release with `PDFJET=published`. The Go
-      module is `github.com/edragoev1/pdfjet-commercial/v9`, as a v9 tag needs.
-      The tests read IBM Plex Sans from `tests/data`; `swift-macos.yml` no
-      longer checks out the library; `test-java.sh` clears only its own
-      folders; `readsALargeInvoiceQuickly` compares 5000 with 20000 lines in
-      the four ports. `.packaging/package-java.sh` and `package-dotnet.sh`
-      build PDFjet Pro for Java and .NET, with evaluation packages; all four
-      ports pass against v9.0.2 with no library beside them. On Oct 21:
-      `.packaging/set-version.sh 9.0.3`, test, tag `.commercial` v9.0.3,
-      package (README.md of `.commercial`). Still open: the Pro license text
-      of the packages, and access to the private repository for Go and Swift.
 - ⬜ **B** Tag v9.0.3 and make the GitHub release.
 - ⬜ **B** Release v9.0.3 of the commercial product, built on the tag of the
-      library: `.commercial/go.mod` requires `github.com/edragoev1/pdfjet/v9
-      v9.0.3` rather than v9.0.0, with no `replace` of the local checkout in
-      what is shipped, and the Java, C# and Swift packages are built against
-      the 9.0.3 library. The commercial code needs 9.0.2 at least, for
-      `Compliance.PDF_A_3A_UA_1`, and uses nothing master does not have.
-
+      library, the same day: its steps are in TODO.md of its own repository.
 ## Markdown to PDF — merged
 
 - ✅ A practical subset of Markdown to PDF, in the four ports: headings,
@@ -852,23 +828,6 @@ to check and fix in the four, with a test.
     with Unicode case folding.
   - About a week for the first port to pass the spec, and a few days for
     each of the others; the renderer is done.
-- ⬜ Order-X, in the commercial product (`.commercial`), in the four ports:
-  the order of FNFE-MPE and FeRD, a PDF/A-3 that carries its XML as
-  Factur-X does, in the profiles BASIC, COMFORT and EXTENDED. No law asks
-  for electronic orders, as the laws of Germany and France ask for
-  invoices, so it is for the buyers who want the whole of their purchasing
-  electronic; worth doing first for a customer who asks.
-  - The XML is not that of an invoice: it is the Cross Industry Order of
-    UN/CEFACT's Supply Chain Reference Data Model, with a model of its own
-    (requested quantities and delivery dates, and the order, the change of
-    an order and the response to one) and no rules of EN 16931. What is
-    shared is the embedding, the XMP metadata, the XML writer and parser,
-    and the parties, addresses, amounts and tax categories.
-  - New: the model, the writer and the reader of the order, checked against
-    the XSD schemas and the rules of each profile and the sample orders
-    Order-X publishes, with tests and an example in every port.
-  - A third to a half of the 6,300 lines of the invoice code of the Java
-    port, in each port; 3 to 5 days, most of it the checking.
 - ⬜ Maybe: the EXIF orientation of a JPEG, in the four ports. A photo
   taken with a phone is stored as the sensor saw it, with a tag that says
   how to turn it, and is drawn sideways or upside down. The orientation is
@@ -931,100 +890,6 @@ to check and fix in the four, with a test.
   passes the viewer checks as every example does. No new library API. Its
   size does not matter: pdfjet-fonts is fetched apart from the library, and a
   document embeds what it uses.
-- ⬜ Maybe, to be discussed; nothing here is decided: PAdES baseline B-LT and
-  B-LTA signatures, in the commercial product (`.commercial`), in the four
-  ports, where it signs B-B, and B-T with the time stamp of an RFC 3161
-  authority. A B-B or B-T signature stops validating when its certificate
-  expires, when the authority that issued it is gone, or when it is revoked
-  after the signing, as nothing in the PDF proves it was valid when it was
-  made; Acrobat then shows it as expired. B-LTA keeps it valid for as long
-  as the PDF is kept: sign once, and a contract, an invoice or a filing
-  still validates in 20 years with nothing done to it.
-  - B-LT: a Document Security Store (`/DSS`, with its `/Certs`, `/OCSPs`
-    and `/CRLs`, and `/VRI` per signature) added by incremental update
-    after the signature, holding the chain of the signing certificate and
-    of the time stamp's, and the OCSP responses or CRLs fetched for each,
-    as ETSI EN 319 142-1 says.
-  - B-LTA: then a document time stamp, a `/DocTimeStamp` signature of
-    `/SubFilter /ETSI.RFC3161`, over the whole of it, from the same kind
-    of authority as B-T's.
-  - The cost to the one who signs is what B-B costs: the same certificate,
-    renewed to go on signing new documents, while those signed stay valid;
-    a time stamp from one of the free authorities, or a few cents from a
-    paid one. What is new is the fetching of the OCSP responses and CRLs
-    over HTTP, which the time stamp client already does for its own
-    requests.
-  - The check: veraPDF has no PAdES profile, so the signatures are checked
-    with the EU's DSS validation (as a reference outside the build) and
-    Acrobat, B-LTA read as valid after the certificate's expiry by a clock
-    set later.
-  - With it, perhaps, a page of pdfjet-server that verifies a document, as
-    a second layer over the signature: the signature is the proof, in the
-    PDF, offline and trusting no one; the page is the explanation, for a
-    reader without a validator, and online.
-    - A random UUID is drawn before the signing, and the link
-      `https://.../verify/{uuid}` goes in the PDF as a link annotation, so
-      that the signature covers it. After the signing, the SHA-256 of the
-      signed file is kept under the UUID, with who signed it and when (in
-      S3, as the rest of pdfjet-server keeps its data).
-    - The page shows who signed it and when. A click cannot send the file,
-      so the reader uploads it, or drops it on the page to be hashed in the
-      browser, and the page says whether it is the file that was signed.
-    - It is never the only proof: a website can be down or not trusted,
-      and in a dispute it is the PAdES signature that counts. A document
-      whose page is gone is still valid.
-- ⬜ Deliver-X, the delivery note of FeRD, in the commercial product: still
-  in development on Sep 24, so written once it is published, after Order-X,
-  whose model it shares most of.
-- ⬜ Maybe: a small invoicing tool for PDFjet Software's own direct orders,
-  written with PDFjet, PDFjet Invoice and PDFjet Sign; later perhaps a full
-  example program for the buyers of PDFjet Pro. Its plan is in the TODO.md
-  of the local invoices folder, which stays out of every public repository.
-
-## Electronic invoices (in the commercial repository, `.commercial`)
-
-Written and checked in the four ports: the model of EN 16931, the writer and
-the reader of the Cross Industry Invoice, the metadata, and `Facturx`, which
-makes a document of PDF/A-3 an invoice of Factur-X and ZUGFeRD and reads one
-back out of a document someone else wrote. The MIT library carries the files
-(`PDF.addAssociatedFile`) and the metadata (`PDF.addMetadata`).
-
-Checked against the 38 sample invoices the standard publishes, and against
-veraPDF and the validator of Mustangproject, which reads the XML against the
-schema and the rules of EN 16931 and of XRechnung.
-
-What is left, in the order it is worth doing:
-
-- ✅ The examples in C#, Go and Swift, beside the Java one in
-  `examples/invoice` (Sep 22). Of `PDF_A_3A_UA_1` since Sep 24: veraPDF
-  passes them as PDF/A-3a and PDF/UA-1, and `Facturx` takes that level.
-- ✅ A page on the site, as `digital-signatures.html` is, saying what an
-  electronic invoice is, what the law asks for in Germany, France and Italy,
-  and what the library does about it: `.commercial/e-invoicing.html`, written
-  Sep 24 with the dates checked against the ministries' own pages, which it
-  cites. It names PDFjet Pro, so it goes on pdfjet.com when Pro launches.
-- ✅ Discounts and charges on a line (BG-27 and BG-28), Sep 24, in the four
-  ports: `NewLineAllowance` and `NewLineCharge`, with `SetBasis` for the
-  percentage and the base, added to a line, whose amount is its price times
-  its quantity less its discounts and with its charges. Written in the
-  settlement of the line, at its tax, and read back; the schemas of BASIC,
-  EN 16931 and EXTENDED and the validator of Mustangproject pass them, and
-  the invoice examples of the four ports have one. A discount or a charge
-  with no reason and no reason code is refused, on the line (BR-42, BR-44)
-  and on the invoice (BR-33, BR-38).
-- ✅ The fields that the model had no room for, Sep 24, in the four ports:
-  the party that is paid (`SetPayee`, BG-10, BASIC WL and above), the party
-  that pays (`SetPayer`, EXTENDED), the invoices an invoice refers to
-  (`AddPrecedingInvoice`, BG-3, such as the one a credit note corrects), the
-  documents that back it up, linked or attached (`AddSupportingDocument`,
-  BG-24, EN 16931 and above), and the line of the order of a line
-  (`SetOrderReference`, BT-132), with the order too in EXTENDED, so that one
-  invoice covers several orders. Written where the schema has them, read
-  back, and checked (BT-59, BT-25, BT-122, BT-125); Mustangproject passes
-  BASIC WL, BASIC, EN 16931 and EXTENDED, and the four ports write the same
-  XML.
-- Order-X and Deliver-X: in v9.1.0 of the commercial product, decided on
-  Sep 24; see "v9.1 — features".
 
 ## Known and accepted (document, do not fix)
 
