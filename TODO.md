@@ -534,6 +534,38 @@ were built from that tree into `viewer-files-to-test`, for a dry run.
 - ⬜ **B** Tag v9.0.3 and make the GitHub release.
 - ⬜ **B** Release v9.0.3 of the commercial product, built on the tag of the
       library, the same day: its steps are in TODO.md of its own repository.
+
+### After the tag: the package registries (1 October 2026)
+
+None changes the library's code; each is packaging around the tag. Free,
+and the names are free: no `PDFjet` on NuGet, no `com.pdfjet` on Maven
+Central (checked Oct 1). GitHub counts no downloads of a repository, only
+of the files attached to a release, and its traffic shows 14 days and keeps
+no history; the registries count, and are where developers look.
+
+- ⬜ **Go**, at the tag: nothing to register. Fetch
+      `https://proxy.golang.org/github.com/edragoev1/pdfjet/v9/@v/v9.0.3.info`
+      once, as above, and pkg.go.dev lists the module within minutes, with
+      its docs, its license and who imports it; no download counts.
+- ⬜ **NuGet**, first, as C# is the largest audience of the library: an
+      account at nuget.org and an API key; `PDFjet.csproj` given its package
+      metadata (PackageId `PDFjet`, the version, the license expression
+      `MIT`, the README, an icon); `dotnet pack` and `dotnet nuget push`.
+      About an hour; its download counts are public. Ask NuGet to reserve
+      the prefix `PDFjet.*`, so that only we publish packages of that name.
+- ⬜ **Swift Package Index**: the repository's URL added by its form or a
+      pull request; it shows the docs and the platforms, no downloads.
+- ⬜ **Maven Central**, after the others: an account at central.sonatype.com;
+      the namespace `com.pdfjet` proved by a TXT record in pdfjet.com's DNS at
+      IONOS, which can take a day to be seen; a GPG key, published to a
+      keyserver and kept for good with the other secrets. Each release is a
+      bundle of the jar, a sources jar, a javadoc jar and a POM (name,
+      description, URL, license, developers, SCM), each signed and with its
+      checksums, uploaded by the Portal's API. The Java port builds with
+      scripts, not Maven or Gradle, so a script makes the bundle; javadoc
+      that fails its checks is the likeliest work. Half a day to a day the
+      first time, one script after.
+
 ## Markdown to PDF — merged
 
 - ✅ A practical subset of Markdown to PDF, in the four ports: headings,
