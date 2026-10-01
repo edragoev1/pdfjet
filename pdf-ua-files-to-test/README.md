@@ -58,3 +58,10 @@ WCAG checks pass; its Quality check reports the value of the Email field
 (jsmith12345@gmail.ca, anna.lindqvist@example.com) as "Link in text does not
 have a Link element". A `Form` field holds text and cannot be a `mailto:`
 link, and the API is frozen, so both stay as they are (29 September 2026).
+
+**PDFjet Forms: an email address typed into a field.** The same Quality
+check, "Completeness of Link elements: Link in text does not have a Link
+element", on the filled-in forms whose Email field holds an address
+(jane.muster@example.com); PDF/UA and WCAG pass, and the templates, the free
+version and the "Fill in this form online" link are clean. A value typed into
+a form is an answer, not a link, so it stays as it is (1 October 2026).
