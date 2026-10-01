@@ -442,6 +442,13 @@ day.
 
 ### Oct 15–20: the checks that must hold at the tag
 
+- ⬜ **B** Since the checks of Sep 30 (6bd05dfe), the library changed: on Oct
+      1, `/Length 256` in the encryption dictionary, in the four ports
+      (fb43c9b6), as Acrobat could not decrypt PDFjet's AES-256 PDFs without
+      it. Run the checks of the tag again on the frozen master, and build
+      the viewer files again: `viewer-files-to-test/Example_30.pdf` of Sep
+      30 has not the fix. Checked in Acrobat Reader on Oct 1: Example_30
+      with the passwords hello and world, and without an open password.
 - ⬜ **B** Goal 4: the manual viewer pass, on the files built from the frozen
       master, in Acrobat Reader, Preview, Chrome, Firefox and Edge. The
       engines of Chrome, Firefox, Preview and the Linux viewers are checked
