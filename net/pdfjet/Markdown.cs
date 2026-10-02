@@ -117,8 +117,8 @@ public class Markdown {
     }
 
     /// <summary>
-    /// Sets the directory that the images are read from: an image of
-    /// <c>![text](source)</c> is the file of that name in the directory, a
+    /// Sets the directory that the images are read from: the source of an
+    /// image in the Markdown is the file of that name in the directory, a
     /// JPEG, PNG, BMP or SVG file. A source that is an absolute path, a URL or has .. in
     /// it is not read, and neither is any image unless the directory is set:
     /// the image's text is drawn instead.
