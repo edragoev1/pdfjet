@@ -34,10 +34,15 @@ rm -rf docs/swift
 # the test modules, PDFjetPackageTests and PDFjetPackageDiscoveredTests, when
 # they are not built, as in a new checkout; so the tests are built first.
 swift build --build-tests
-swift package dump-symbol-graph --minimum-access-level public --skip-synthesized-members
+# Where the dump goes depends on the build system, .build/<triple>/symbolgraph
+# with the native one and .build/out/symbolgraph with swiftbuild, so the folder
+# is taken from the line "Files written to <folder>" that the dump prints.
+dump=$(swift package dump-symbol-graph --minimum-access-level public --skip-synthesized-members)
+echo "$dump"
+symbolgraph=$(printf '%s\n' "$dump" | sed -n 's/^Files written to //p' | tail -1)
+[ -d "$symbolgraph" ] || { echo "No symbol graph folder in the output of dump-symbol-graph" >&2; exit 1; }
 # The dump also has the modules of the test target, PDFjetPackageTests and
 # PDFjetPackageDiscoveredTests, so DocC gets a copy with the PDFjet module only.
-symbolgraph="$(dirname "$(swift build --show-bin-path)")/symbolgraph"
 rm -rf build/symbolgraph-pdfjet
 mkdir -p build/symbolgraph-pdfjet
 find "$symbolgraph" -maxdepth 1 \( -name 'PDFjet.symbols.json' -o -name 'PDFjet@*.symbols.json' \) \
