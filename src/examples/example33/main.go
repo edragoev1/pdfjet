@@ -54,13 +54,13 @@ func Example33() error {
 		return err
 	}
 	svgMap.SetAltDescription(
-		"A map of Europe drawn from an SVG file, the countries filled in peachpuff and outlined in blue, Spain in aliceblue and Austria outlined in olive.")
+		"A map of Europe drawn from an SVG file, the countries filled in peachpuff and outlined in dim gray, Spain in aliceblue and Austria outlined in olive.")
 	svgMap.ScaleBy(0.5)
 	svgMap.SetLocation((page.GetWidth()-svgMap.GetWidth())/2.0, xy[1]+20.0)
 	xy = svgMap.DrawOn(page)
 
 	textBlock = pdfjet.NewTextBlock(f1,
-		"The colors come from the file: the peachpuff fill and the blue stroke of "+
+		"The colors come from the file: the peachpuff fill and the dimgray stroke of "+
 			"the svg element for most countries, an aliceblue fill for Spain and an "+
 			"olive outline for Austria.")
 	textBlock.SetFontSize(10.0)
