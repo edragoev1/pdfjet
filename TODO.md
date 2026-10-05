@@ -792,14 +792,32 @@ to check and fix in the four, with a test.
   the stream is, so they are not `GetData`'s to give: that is new API, and
   waits for v9.1, below.
 
-- ⬜ **A color out of 0x000000 to 0xFFFFFF is drawn as its last 24 bits.**
-  `Line.SetStrokeColor(-1)` draws a white line: the four ports keep the low
-  24 bits of the int (`colorToRGB` in Go, `Util.toRGB` in Java and Swift, the
-  shifts of `Line.SetStrokeColor` in C#), so -1, which pdfjet-server uses
-  for transparent, is 0xFFFFFF. It should refuse such a color, or leave the
-  color as it was. pdfjet-server no longer sets the color of a line of no
-  stroke, which PDFjet then draws black, as the editor does. Found by the
+- ⬜ **`Color.transparent`, -1, is drawn white by most color setters; for
+  v9.1, in the four ports.** A color is an int, 0xRRGGBB, and the setters
+  keep its low 24 bits (`colorToRGB` in Go, `Util.toRGB` in Java and Swift,
+  the shifts of each setter in C#), so -1, the value of `Color.transparent`,
+  is 0xFFFFFF: `Line.SetStrokeColor(-1)` draws a white line. Found by the
   review of Sep 30, 2026; not a fault of v9.0.3 to fix before its tag.
+  - Checked on Oct 5, 2026: still open. The setters disagree: of the 36
+    int-color setters in Go, 14 leave the color as it was for
+    `color.Transparent`, as their comments say (TextLine's text and
+    decoration, TextBlock's text, border and background, Cell's text,
+    border and background, BigTable's shading and border, Table's
+    alternate row, Rect's border, TextFrame's border); the other 22 draw it
+    white: Line, Path, Arc, Point and Series strokes, Rect, Arc, Point,
+    Stamp and BaseAnnotation fills, Page's pen and brush, Paragraph's text,
+    Form's label and value, Markup's links, CheckBox, Container and Table
+    cell borders, and the grid lines of Chart and BarChart. Java, C# and
+    Swift have the same split, with `Color.transparent` = -1 in each.
+  - pdfjet-server is not hit: it never passes -1 to any of them, but tests
+    for transparent first, for lines, rectangles, ellipses, paths and the
+    header row of a table (document.go), and the editor draws the same.
+  - The fix: every int-color setter leaves the color as it was for
+    `Color.transparent`, as the 14 do, with that line in its doc comment,
+    and a test in each port of the 22. Any other value keeps its low 24
+    bits, as now and as documented: refusing it would break code that
+    passes 0xFFRRGGBB, which a Java or C# int holds as a negative number,
+    and draws right today.
 
 - ⬜ **The four ports read SVG with four XML parsers, which may take
   different files; for v9.1, in the four.** Go reads it with encoding/xml,
