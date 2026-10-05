@@ -867,6 +867,18 @@ to check and fix in the four, with a test.
   its matrix, its width and height swapped for a quarter turn; the samples
   are not changed. A medium feature, with test images of the eight
   orientations; found by the code review of Sep 28.
+- ⬜ An SVG's `viewbox` in lower case, in the four ports and pdfjet-client's
+  SVGImage.ts at once, as check-svg.sh compares them. SVGImage reads only
+  `viewBox`, as XML has attribute names case-sensitive, so a file that writes
+  `viewbox` is drawn with no viewBox at all, silently: the size of its width
+  and height, its paths neither scaled nor moved. Such files are common, as
+  an HTML page's parser takes `viewbox` for `viewBox` in an inline svg, and
+  files saved from web pages keep it. Found in Example_33's europe.svg, whose
+  `viewbox="0 0 1000 684"` was ignored and whose map stood off the middle of
+  the page; the file was fixed instead, with `viewBox` (98d13f70, 4 October
+  2026). The fix: read `viewbox` when there is no `viewBox`, as the HTML
+  parser does, and `viewBox` first when a file has both; a test of each, with
+  a viewBox that scales and moves the paths. Small.
 - ⬜ Maybe: a size-only reader of an image, in the four ports: the width and
   the height a PNG, a JPEG or a BMP is drawn at, read from its header, the
   IHDR and pHYs chunks, the SOF and JFIF segments, without embedding it, for
