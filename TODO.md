@@ -957,6 +957,18 @@ to check and fix in the four, with a test.
   image and the PNG it makes again from it. New API, so after the freeze of
   9.0.2; see the item on `PDFobj.GetData` above, whose predictor part was
   fixed on Sep 28.
+- ⬜ `Table.SetCellPadding(side, vertical float32)`, in the four ports: the
+  padding of every cell of the table, at its sides and over and under its
+  text, as `SetCellBorders`, `SetCellBorderColor` and `SetCellBorderWidth`
+  set the borders of every cell. Today it is set cell by cell, with
+  `Cell.SetPadding` or one side at a time, as pdfjet-server's newTable does
+  for PDFjet Forms, 4 points at the sides and 3 over and under, since a
+  table whose cells have borders looked cramped at the default (5 October
+  2026). Opt-in: NewCell's 2 points on every side stay the default, as
+  changing it would make every row of every customer's table taller and
+  move its page breaks. The rows added under a wrapped cell keep their own
+  padding as now: none over them, NewCell's under them. A test in each port,
+  the rows' heights compared across the ports. Small.
 - ⬜ Maybe: a faster Deflate for Swift, which has its own, written in
   Swift. After the review of Sep 28 it is Swift's main cost for a PNG that
   is decoded and compressed again, one with transparency: about 500 ms for
