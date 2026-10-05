@@ -1885,8 +1885,12 @@ public class Table implements Drawable {
         StringBuilder buf = new StringBuilder();
         for (String token : Util.splitOnWhitespace(cell.text)) {
             if (cell.font.stringWidth(cell.fallbackFont, cell.fontSize, token) > cellWidth) {
+                // A token wider than the column starts a line of its own:
+                // after the words before it, or the end of another such
+                // token, it was "listic e" (5 October 2026)
                 if (buf.length() > 0) {
-                    buf.append(" ");
+                    lines.add(buf.toString().trim());
+                    buf.setLength(0);
                 }
                 for (int k = 0; k < token.length(); ) {
                     // A character, which is two chars when it is not of the

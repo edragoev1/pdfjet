@@ -1830,8 +1830,12 @@ public class Table : IDrawable {
         StringBuilder buf = new StringBuilder();
         foreach (String token in Util.SplitOnWhitespace(cell.text)) {
             if (cell.font.StringWidth(cell.fallbackFont, cell.fontSize, token) > cellWidth) {
+                // A token wider than the column starts a line of its own:
+                // after the words before it, or the end of another such
+                // token, it was "listic e" (5 October 2026)
                 if (buf.Length > 0) {
-                    buf.Append(" ");
+                    lines.Add(Util.Trim(buf.ToString()));
+                    buf.Length = 0;
                 }
                 for (int k = 0; k < token.Length; ) {
                     // A character, which is two chars when it is not of the

@@ -1779,8 +1779,9 @@ func (table *Table) wrapAroundCellText() {
 const fitTolerance = 0.01
 
 // wrapCellText returns the lines the text of the cell needs to fit the width
-// of its column. A token wider than the column is broken between two of its
-// characters.
+// of its column. A token wider than the column starts a line of its own and is
+// broken between two of its characters: after the words before it, or the
+// end of another such token, it was "listic e" (5 October 2026).
 func wrapCellText(row []*Cell, index int) []string {
 	cell := row[index]
 	cellWidth := getTotalWidth(row, index) + fitTolerance
@@ -1789,7 +1790,8 @@ func wrapCellText(row []*Cell, index int) []string {
 	for _, token := range splitOnWhitespace(cell.text) {
 		if cell.font.StringWidthUsingFallbackFont(cell.fallbackFont, cell.fontSize, token) > cellWidth {
 			if buf.Len() > 0 {
-				buf.WriteString(" ")
+				lines = append(lines, trimSpace(buf.String()))
+				buf.Reset()
 			}
 			for _, ch := range token {
 				// A line has at least one character, even one wider than the column.

@@ -1057,6 +1057,26 @@ class TableTest {
     }
 
     @Test
+    void aWordWiderThanItsColumnStartsALineOfItsOwn() throws Exception {
+        // It is broken between its characters on lines of its own, not after
+        // the words before it, nor after the end of another such word, which
+        // made "listic e" a line (5 October 2026).
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        Cell cell = new Cell(font, "Hi Supercalifragilistic expialidocious ok");
+        cell.setWidth(cell.getLeftPadding() + cell.getRightPadding() + 50f);
+        List<List<Cell>> rows = new ArrayList<List<Cell>>();
+        rows.add(new ArrayList<Cell>(Arrays.asList(cell)));
+        Table table = new Table().setTableData(rows, 0);
+        table.wrapAroundCellText();
+        List<String> lines = new ArrayList<String>();
+        for (int i = 0; i < 5; i++) {
+            lines.add(table.getRow(i).get(0).getText());
+        }
+        assertEquals(Arrays.asList("Hi", "Supercal", "ifragilistic", "expialido", "cious ok"), lines);
+    }
+
+    @Test
     void aLineBrokenBeforeAWordWiderThanItsColumnEndsWithoutTheSpace() throws Exception {
         // The second word does not fit the column, and its first character does
         // not fit after the first word, so the first line is the first word.

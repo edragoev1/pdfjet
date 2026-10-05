@@ -1032,6 +1032,26 @@ public sealed class TableTest : IDisposable {
     }
 
     [Fact]
+    public void AWordWiderThanItsColumnStartsALineOfItsOwn() {
+        // It is broken between its characters on lines of its own, not after
+        // the words before it, nor after the end of another such word, which
+        // made "listic e" a line (5 October 2026).
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Cell cell = new Cell(font, "Hi Supercalifragilistic expialidocious ok");
+        cell.SetWidth(cell.GetLeftPadding() + cell.GetRightPadding() + 50f);
+        List<List<Cell>> rows = new List<List<Cell>>();
+        rows.Add(new List<Cell> { cell });
+        Table table = new Table().SetTableData(rows, 0);
+        table.WrapAroundCellText();
+        List<String> lines = new List<String>();
+        for (int i = 0; i < 5; i++) {
+            lines.Add(table.GetRow(i)[0].GetText());
+        }
+        Assert.Equal(new List<String> { "Hi", "Supercal", "ifragilistic", "expialido", "cious ok" }, lines);
+    }
+
+    [Fact]
     public void ALineBrokenBeforeAWordWiderThanItsColumnEndsWithoutTheSpace() {
         // The second word does not fit the column, and its first character does
         // not fit after the first word, so the first line is the first word.

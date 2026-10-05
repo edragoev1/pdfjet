@@ -961,6 +961,23 @@ import Testing
         #expect(lines == ["a", "\u{1F600}", "b"])
     }
 
+    @Test func aWordWiderThanItsColumnStartsALineOfItsOwn() {
+        // It is broken between its characters on lines of its own, not after
+        // the words before it, nor after the end of another such word, which
+        // made "listic e" a line (5 October 2026).
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let cell = Cell(font, "Hi Supercalifragilistic expialidocious ok")
+        cell.setWidth(cell.getLeftPadding() + cell.getRightPadding() + 50)
+        let table = Table().setTableData([[cell]], 0)
+        table.wrapAroundCellText()
+        var lines = [String]()
+        for i in 0..<5 {
+            lines.append(table.getRow(i)[0].getText()!)
+        }
+        #expect(lines == ["Hi", "Supercal", "ifragilistic", "expialido", "cious ok"])
+    }
+
     @Test func aLineBrokenBeforeAWordWiderThanItsColumnEndsWithoutTheSpace() throws {
         // The second word does not fit the column, and its first character does
         // not fit after the first word, so the first line is the first word.

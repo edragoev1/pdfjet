@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -1317,5 +1318,20 @@ func TestTableDrawnFromAPageStartsOnItUnderItsContent(t *testing.T) {
 	}
 	if !strings.Contains(testContent(pages[2]), testHex("row59")) {
 		t.Error("the last row is not on the last page")
+	}
+}
+
+func TestTableAWordWiderThanItsColumnStartsALineOfItsOwn(t *testing.T) {
+	// It is broken between its characters on lines of its own, not after the
+	// words before it, nor after the end of another such word, which made
+	// "listic e" a line (5 October 2026).
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	cell := NewCell(font, "Hi Supercalifragilistic expialidocious ok")
+	cell.SetWidth(cell.GetLeftPadding() + cell.GetRightPadding() + 50)
+	table := NewTable().SetTableData([][]*Cell{{cell}}, 0)
+	want := []string{"Hi", "Supercal", "ifragilistic", "expialido", "cious ok"}
+	if lines := wrapCellText(table.GetRow(0), 0); !slices.Equal(lines, want) {
+		t.Errorf("the lines: %q, want %q", lines, want)
 	}
 }

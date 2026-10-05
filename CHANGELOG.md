@@ -44,6 +44,11 @@ This is the first entry in this file; earlier releases were not tracked here.
   two repositories at the pinned commits, and the workflows fetch them.
 
 ### Fixed
+- A word wider than its table column starts a line of its own, then is
+  broken between its characters: after the words before it, or the end of
+  another such word, it shared their line, "listic e" where the cell read
+  "...listic expialidocious". The four ports, with a test in each. Found by
+  the review of PDFjet Forms, 5 October 2026.
 - A JPEG cut short, as in an upload or a copy, is refused, "Error: The
   JPEG is cut short: its image data has no end.", where it was embedded as
   it was and drawn as far as it went, or as noise: the end-of-image marker

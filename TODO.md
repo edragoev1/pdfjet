@@ -863,7 +863,8 @@ to check and fix in the four, with a test.
   count, and data after the end is left), else "Error: The JPEG is cut
   short: its image data has no end." Found by the review of PDFjet Forms.
 
-- ⬜ **A cell's wrapped lines are read as paragraphs of their own.**
+- ⬜ **A cell's wrapped lines are read as paragraphs of their own** (the
+  second part, the break, fixed for v9.0.3 on 5 October 2026, below).
   `wrapCellText` (table.go) makes each line of a cell that wraps a P of its
   own in the structure tree, so a screen reader reads one cell as several
   paragraphs; and a word wider than its column is broken where it reaches
@@ -871,10 +872,11 @@ to check and fix in the four, with a test.
   ("Superc / alifragi / listic e / xpialid / ocious"). veraPDF and PAC do
   not flag it. The cell one P, its lines the content of it, and a line
   broken at a space where there is one, in the four ports, with a test.
-  The second is seen by everyone, not only read, though only of a word
-  wider than its column, a long code or address: the first fix after the
-  tag, with pdfjet-client's SVGTable.ts, whose preview check-table.sh
-  compares. Found by the review of PDFjet Forms, 5 October 2026.
+  The second, seen by everyone, was fixed for v9.0.3 on 5 October 2026, in
+  the four ports and pdfjet-client's SVGTable.ts, before PDFjet Forms
+  launches, whose look of a form is kept after: a word wider than its
+  column starts a line of its own. Left, for v9.1: the cell one P. Found by
+  the review of PDFjet Forms, 5 October 2026.
 
 ## v9.1 — features, after v9.0.3
 
@@ -913,7 +915,10 @@ to check and fix in the four, with a test.
   the page; the file was fixed instead, with `viewBox` (98d13f70, 4 October
   2026). The fix: read `viewbox` when there is no `viewBox`, as the HTML
   parser does, and `viewBox` first when a file has both; a test of each, with
-  a viewBox that scales and moves the paths. Small.
+  a viewBox that scales and moves the paths. Small. Done in the same pass as
+  the one XML parser for SVG, above, after the switch: the parser keeps
+  `viewbox` and `viewBox` apart, as XML's names are case-sensitive, so the
+  fix is in SVGImage, and `check-svg.sh` checks both at once.
 - ⬜ Maybe: smaller tagged tables, with object streams, in the four ports. A
   cell of a table of PDF/UA costs 280 to 415 bytes in the PDF, its text and a
   structure element of its own, each an object written uncompressed: a price

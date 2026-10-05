@@ -1877,8 +1877,12 @@ public class Table : Drawable {
         var buf = String()
         for token in cell.text!.splitOnWhitespace() {
             if cell.font.stringWidth(cell.fallbackFont, cell.fontSize, token) > cellWidth {
+                // A token wider than the column starts a line of its own:
+                // after the words before it, or the end of another such
+                // token, it was "listic e" (5 October 2026)
                 if !buf.isEmpty {
-                    buf.append(" ")
+                    lines.append(buf.trim())
+                    buf = ""
                 }
                 for scalar in token.unicodeScalars {
                     // A line has at least one character, even one wider than the column.
