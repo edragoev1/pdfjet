@@ -453,8 +453,11 @@ public class ReviewMediaTest {
     }
 
     private static byte[] Jpeg(int sof) {
+        // The frame header, then a scan of its three components and the EOI
+        // marker, which a JPEG cut short has not
         return new byte[] {0xFF, 0xD8, 0xFF, (byte) sof, 0x00, 0x11, 8, 0, 8, 0, 8, 3,
-                1, 0x11, 0, 2, 0x11, 0, 3, 0x11, 0, 0xFF, 0xD9};
+                1, 0x11, 0, 2, 0x11, 0, 3, 0x11, 0,
+                0xFF, 0xDA, 0x00, 0x0C, 3, 1, 0, 2, 0, 3, 0, 0, 63, 0, 0x12, 0x34, 0xFF, 0xD9};
     }
 
     [Fact]

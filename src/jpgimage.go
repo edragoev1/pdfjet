@@ -43,6 +43,7 @@
 package pdfjet
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -238,9 +239,12 @@ func (image *jpgImage) readJPGImage(buffer []byte) (*jpgImage, error) {
 			// them, so the markers are read after the whole segment.
 			if end := segment + int(length); end > image.index && end <= len(buffer) {
 				image.index = end
-				image.readAdobeMarker(buffer)
+				if !image.readAdobeMarker(buffer) {
+					return nil, errJPEGCutShort
+				}
+				return image, image.checkScanEnds(buffer)
 			}
-			return image, nil
+			return nil, errJPEGCutShort
 
 		case mAPP0:
 			if err := image.readAPP0(buffer); err != nil {
@@ -260,30 +264,55 @@ func (image *jpgImage) readJPGImage(buffer []byte) (*jpgImage, error) {
 	}
 }
 
+// errJPEGCutShort is the error of a JPEG that ends before its image data
+// does, as a file cut short in its upload or its copy: embedded as it is, a
+// reader draws it as far as it goes, or as noise.
+var errJPEGCutShort = errors.New("Error: The JPEG is cut short: its image data has no end.")
+
 // readAdobeMarker reads the markers from the frame header to the scan, for an
 // APP14 segment: libjpeg reads a header to the scan too, so a segment that
 // follows the frame header says that Adobe software wrote the image as one
-// before it does. The frame header is all the image needs, so whatever cannot
-// be read after it leaves the image as it is.
-func (image *jpgImage) readAdobeMarker(buffer []byte) {
+// before it does. It returns whether it came to the scan, its index then
+// after the marker of it: a JPEG that ends before has no image data.
+func (image *jpgImage) readAdobeMarker(buffer []byte) bool {
 	for {
 		ch, err := image.nextMarker(buffer)
-		if err != nil || ch == mSOS || ch == mEOI {
-			return
+		if err != nil || ch == mEOI {
+			return false
+		}
+		if ch == mSOS {
+			return true
 		}
 		if ch == mTEM || ch == mSOI || (ch >= mRST0 && ch <= mRST7) {
 			continue
 		}
 		if ch == mAPP14 {
 			if image.readAPP14(buffer) != nil {
-				return
+				return false
 			}
 			continue
 		}
 		if image.skipVariable(buffer) != nil {
-			return
+			return false
 		}
 	}
+}
+
+// checkScanEnds returns errJPEGCutShort unless the end-of-image marker
+// follows the header of the scan: in the entropy-coded data a 0xFF is
+// followed by a 0x00 or a restart marker, so 0xFF 0xD9 after the header is
+// the end of the image, and not of a thumbnail before the scan, which has
+// its own. Data after the end, which cameras append, is left as it is.
+func (image *jpgImage) checkScanEnds(buffer []byte) error {
+	length, err := image.getUint16(buffer)
+	if err != nil || length < 2 {
+		return errJPEGCutShort
+	}
+	start := image.index + int(length) - 2
+	if start > len(buffer) || !bytes.Contains(buffer[start:], []byte{0xFF, mEOI}) {
+		return errJPEGCutShort
+	}
+	return nil
 }
 
 // getByte reads one byte, advancing the index.

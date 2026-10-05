@@ -195,10 +195,14 @@ class JPGImage {
                 // header; they can hold any bytes, the 0xFF of a marker among
                 // them, so the markers are read after the whole segment.
                 let end = segment + Int(length)
-                if end > index && end <= buffer.count {
-                    index = end
-                    readAdobeMarker(&buffer)
+                guard end > index && end <= buffer.count else {
+                    throw JPGImageError.cutShort
                 }
+                index = end
+                if !readAdobeMarker(&buffer) {
+                    throw JPGImageError.cutShort
+                }
+                try checkScanEnds(&buffer)
                 break
             } else if ch == M_APP0 {
                 try readAPP0(&buffer)
@@ -212,15 +216,18 @@ class JPGImage {
 
     // Reads the markers from the frame header to the scan, for an APP14 segment:
     // libjpeg reads a header to the scan too, so a segment that follows the frame
-    // header says that Adobe software wrote the image as one before it does. The
-    // frame header is all the image needs, so whatever cannot be read after it
-    // leaves the image as it is.
-    private func readAdobeMarker(_ buffer: inout [UInt8]) {
+    // header says that Adobe software wrote the image as one before it does.
+    // Returns whether it came to the scan, the index then after the marker of
+    // it: a JPEG that ends before has no image data.
+    private func readAdobeMarker(_ buffer: inout [UInt8]) -> Bool {
         do {
             while true {
                 let ch = try nextMarker(&buffer)
-                if ch == M_SOS || ch == M_EOI {
-                    return
+                if ch == M_SOS {
+                    return true
+                }
+                if ch == M_EOI {
+                    return false
                 }
                 if ch == M_TEM || ch == M_SOI || (ch >= M_RST0 && ch <= M_RST7) {
                     continue
@@ -232,8 +239,27 @@ class JPGImage {
                 }
             }
         } catch {
-            return
+            return false
         }
+    }
+
+    // Throws unless the end-of-image marker follows the header of the scan: in
+    // the entropy-coded data a 0xFF is followed by a 0x00 or a restart marker,
+    // so 0xFF 0xD9 after the header is the end of the image, and not of a
+    // thumbnail before the scan, which has its own. Data after the end, which
+    // cameras append, is left as it is.
+    private func checkScanEnds(_ buffer: inout [UInt8]) throws {
+        guard let length = try? getUInt16(&buffer), length >= 2 else {
+            throw JPGImageError.cutShort
+        }
+        var i = index + Int(length) - 2
+        while i + 1 < buffer.count {
+            if buffer[i] == 0xFF && buffer[i + 1] == M_EOI {
+                return
+            }
+            i += 1
+        }
+        throw JPGImageError.cutShort
     }
 
     /// Reads one byte, advancing the index.
@@ -391,6 +417,7 @@ enum JPGImageError: Error, Equatable, CustomStringConvertible, LocalizedError {
     case unsupportedSamplePrecision(Int)            // The bits per color component
     case bogusFrameHeaderLength(Int, Int, Int)      // The length, the right one and the components
     case undecodableCoding(Int)                     // The n of the SOFn marker
+    case cutShort                                   // Its image data has no end
 
     var description: String {
         switch self {
@@ -412,6 +439,8 @@ enum JPGImageError: Error, Equatable, CustomStringConvertible, LocalizedError {
         case .undecodableCoding(let n):
             return "Error: The JPEG is lossless, hierarchical or arithmetic coded (SOF\(n)),"
                     + " which a PDF reader cannot decode."
+        case .cutShort:
+            return "Error: The JPEG is cut short: its image data has no end."
         }
     }
 

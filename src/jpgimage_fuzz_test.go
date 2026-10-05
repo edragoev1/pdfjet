@@ -146,6 +146,20 @@ func fuzzCompareJPEG(data []byte) error {
 		return nil
 	}
 	image, err := newJPGImage(bytes.NewReader(data))
+	if errors.Is(err, errJPEGCutShort) {
+		// A header image/jpeg reads, of a JPEG that ends before its image
+		// data does: PDFjet refuses it, which image/jpeg's DecodeConfig,
+		// reading the header alone, does not see. Of a small one, decoded,
+		// image/jpeg fails too, or PDFjet took a whole JPEG for one cut
+		// short.
+		if config.Width*config.Height <= 1<<16 {
+			if _, decodeErr := jpeg.Decode(bytes.NewReader(data)); decodeErr == nil {
+				return fmt.Errorf("image/jpeg decodes %d by %d pixels, and PDFjet says the JPEG is cut short",
+					config.Width, config.Height)
+			}
+		}
+		return nil
+	}
 	if err != nil {
 		return fmt.Errorf("image/jpeg reads %d by %d pixels of %d components, and PDFjet fails: %v",
 			config.Width, config.Height, components, err)

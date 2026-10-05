@@ -71,7 +71,35 @@ public sealed class JPGImageTest {
         for (int i = 0; i < components; i++) {
             jpeg.Write(new byte[] {(byte) (i + 1), 0x11, 0});
         }
+        jpeg.Write(ScanOf(components));
         return jpeg.ToArray();
+    }
+
+    // Returns a scan of the color components, its header and two bytes of
+    // data, and the EOI marker, which a JPEG cut short has not.
+    private static byte[] ScanOf(int components) {
+        int length = 6 + 2*components;
+        byte[] scan = new byte[2 + length + 4];
+        scan[0] = 0xFF;
+        scan[1] = 0xDA;
+        scan[2] = (byte) (length >> 8);
+        scan[3] = (byte) length;
+        scan[4] = (byte) components;
+        for (int i = 0; i < components; i++) {
+            scan[5 + 2*i] = (byte) (i + 1);
+        }
+        int at = 5 + 2*components;
+        scan[at + 1] = 63;
+        scan[at + 3] = 0x12;
+        scan[at + 4] = 0x34;
+        scan[at + 5] = 0xFF;
+        scan[at + 6] = 0xD9;
+        return scan;
+    }
+
+    // Returns the JPEG without its scan: the header alone.
+    private static byte[] HeaderOf(byte[] jpeg, int components) {
+        return jpeg[..(jpeg.Length - ScanOf(components).Length)];
     }
 
     // Returns an APP14 segment of the bytes.
@@ -156,15 +184,18 @@ public sealed class JPGImageTest {
         // libjpeg reads the markers of a header to the scan, so an APP14 segment
         // between the frame header and the scan marks the image too; one after
         // the scan, which no header reads, does not.
+        byte[] header = HeaderOf(JpegOf(new byte[0], 4), 4);
         MemoryStream after = new MemoryStream();
-        after.Write(JpegOf(new byte[0], 4));
+        after.Write(header);
         after.Write(ADOBE_APP14);
+        after.Write(ScanOf(4));
         Assert.True(new JPGImage(new MemoryStream(after.ToArray())).IsAdobe());
 
         MemoryStream afterTheScan = new MemoryStream();
-        afterTheScan.Write(JpegOf(new byte[0], 4));
+        afterTheScan.Write(header);
         afterTheScan.Write(new byte[] {0xFF, 0xDA, 0x00, 0x02});
         afterTheScan.Write(ADOBE_APP14);
+        afterTheScan.Write(new byte[] {0xFF, 0xD9});
         Assert.False(new JPGImage(new MemoryStream(afterTheScan.ToArray())).IsAdobe());
     }
 
@@ -176,11 +207,37 @@ public sealed class JPGImageTest {
         byte[] jpeg = JpegOf(new byte[0], 4);
         byte[] components = {0xFF, 0xEE, 0x00, 0x0E,
                 (byte) 'A', (byte) 'd', (byte) 'o', (byte) 'b', (byte) 'e', 0x00, 0x64, 0x00};
-        Array.Copy(components, 0, jpeg, jpeg.Length - 12, 12);
-        MemoryStream whole = new MemoryStream();
-        whole.Write(jpeg);
-        whole.Write(new byte[] {0, 0, 0, 0, 0xFF, 0xD9});
-        Assert.False(new JPGImage(new MemoryStream(whole.ToArray())).IsAdobe());
+        Array.Copy(components, 0, jpeg, jpeg.Length - ScanOf(4).Length - 12, 12);
+        Assert.False(new JPGImage(new MemoryStream(jpeg)).IsAdobe());
+    }
+
+    [Fact]
+    public void AJPEGCutShortIsRefused() {
+        // As in an upload or a copy: one that ends in its image data, or
+        // before it, is refused; not one whose thumbnail, in an APP1 segment
+        // before the scan, ends with its own EOI marker, nor one with data
+        // after its end, which cameras append (5 October 2026).
+        byte[] whole = JpegOf(new byte[0], 3);
+        foreach (byte[] cut in new byte[][] {
+                whole[..(whole.Length - 2)], HeaderOf(whole, 3), whole[..10]}) {
+            Assert.ThrowsAny<Exception>(() => new JPGImage(new MemoryStream(cut)));
+        }
+        IOException e = Assert.Throws<IOException>(() => new JPGImage(
+                new MemoryStream(whole[..(whole.Length - 2)])));
+        Assert.Equal(JPGImage.CUT_SHORT, e.Message);
+
+        byte[] thumbnail = {0xFF, 0xE1, 0x00, 0x08,
+                (byte) 'E', (byte) 'x', (byte) 'i', (byte) 'f', 0xFF, 0xD9};
+        byte[] withThumbnail = JpegOf(thumbnail, 3);
+        e = Assert.Throws<IOException>(() => new JPGImage(
+                new MemoryStream(withThumbnail[..(withThumbnail.Length - 2)])));
+        Assert.Equal(JPGImage.CUT_SHORT, e.Message);
+        new JPGImage(new MemoryStream(withThumbnail));
+
+        MemoryStream trailer = new MemoryStream();
+        trailer.Write(whole);
+        trailer.Write(System.Text.Encoding.UTF8.GetBytes("trailer"));
+        new JPGImage(new MemoryStream(trailer.ToArray()));
     }
 
     [Fact]

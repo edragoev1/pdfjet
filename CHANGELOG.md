@@ -44,6 +44,13 @@ This is the first entry in this file; earlier releases were not tracked here.
   two repositories at the pinned commits, and the workflows fetch them.
 
 ### Fixed
+- A JPEG cut short, as in an upload or a copy, is refused, "Error: The
+  JPEG is cut short: its image data has no end.", where it was embedded as
+  it was and drawn as far as it went, or as noise: the end-of-image marker
+  must follow the header of its scan. A thumbnail's own marker before the
+  scan does not count, and data cameras append after the end is left as it
+  is. Found by the review of PDFjet Forms, 5 October 2026; the four ports,
+  with a test in each.
 - An encrypted PDF, AES-256, opens in Adobe Acrobat and Acrobat Reader,
   which said it could not decrypt it: the encryption dictionary has
   `/Length 256`, which PDF 2.0 leaves optional for `/V 5` but Acrobat asks

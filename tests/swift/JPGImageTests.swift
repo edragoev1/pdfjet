@@ -62,7 +62,23 @@ import Testing
         for i in 0..<components {
             jpeg.append(contentsOf: [UInt8(i + 1), 0x11, 0])
         }
-        return jpeg
+        return jpeg + scanOf(components)
+    }
+
+    // A scan of the color components, its header and two bytes of data, and
+    // the EOI marker, which a JPEG cut short has not.
+    private func scanOf(_ components: Int) -> [UInt8] {
+        let length = 6 + 2*components
+        var scan: [UInt8] = [0xFF, 0xDA, UInt8(length >> 8), UInt8(length & 0xFF), UInt8(components)]
+        for i in 0..<components {
+            scan.append(contentsOf: [UInt8(i + 1), 0])
+        }
+        return scan + [0, 63, 0, 0x12, 0x34, 0xFF, 0xD9]
+    }
+
+    // The JPEG without its scan: the header alone.
+    private func headerOf(_ jpeg: [UInt8], _ components: Int) -> [UInt8] {
+        return Array(jpeg[..<(jpeg.count - scanOf(components).count)])
     }
 
     // Returns an APP14 segment of the bytes.
@@ -139,10 +155,11 @@ import Testing
         // libjpeg reads the markers of a header to the scan, so an APP14 segment
         // between the frame header and the scan marks the image too; one after
         // the scan, which no header reads, does not.
-        let after = jpegOf([], 4) + adobeAPP14
+        let header = headerOf(jpegOf([], 4), 4)
+        let after = header + adobeAPP14 + scanOf(4)
         #expect(try JPGImage(InputStream(data: Data(after))).isAdobe())
 
-        let afterTheScan = jpegOf([], 4) + [0xFF, 0xDA, 0x00, 0x02] + adobeAPP14
+        let afterTheScan = header + [0xFF, 0xDA, 0x00, 0x02] + adobeAPP14 + [0xFF, 0xD9]
         #expect(try !JPGImage(InputStream(data: Data(afterTheScan))).isAdobe())
     }
 
@@ -152,9 +169,37 @@ import Testing
         // bytes of an Adobe APP14 segment, which is none.
         var jpeg = jpegOf([], 4)
         let components: [UInt8] = [0xFF, 0xEE, 0x00, 0x0E] + Array("Adobe".utf8) + [0x00, 0x64, 0x00]
-        jpeg.replaceSubrange((jpeg.count - 12)..., with: components)
-        jpeg += [0, 0, 0, 0, 0xFF, 0xD9]
+        let at = jpeg.count - scanOf(4).count - 12
+        jpeg.replaceSubrange(at..<(at + 12), with: components)
         #expect(try !JPGImage(InputStream(data: Data(jpeg))).isAdobe())
+    }
+
+    @Test func aJPEGCutShortIsRefused() throws {
+        // As in an upload or a copy: one that ends in its image data, or
+        // before it, is refused; not one whose thumbnail, in an APP1 segment
+        // before the scan, ends with its own EOI marker, nor one with data
+        // after its end, which cameras append (5 October 2026).
+        let whole = jpegOf([], 3)
+        for cut in [Array(whole[..<(whole.count - 2)]), headerOf(whole, 3), Array(whole[..<10])] {
+            #expect(throws: (any Error).self) {
+                _ = try JPGImage(InputStream(data: Data(cut)))
+            }
+        }
+        let cutShort = "Error: The JPEG is cut short: its image data has no end."
+        var error = #expect(throws: (any Error).self) {
+            _ = try JPGImage(InputStream(data: Data(whole[..<(whole.count - 2)])))
+        }
+        #expect(TestSupport.message(error) == cutShort)
+
+        let thumbnail: [UInt8] = [0xFF, 0xE1, 0x00, 0x08] + Array("Exif".utf8) + [0xFF, 0xD9]
+        let withThumbnail = jpegOf(thumbnail, 3)
+        error = #expect(throws: (any Error).self) {
+            _ = try JPGImage(InputStream(data: Data(withThumbnail[..<(withThumbnail.count - 2)])))
+        }
+        #expect(TestSupport.message(error) == cutShort)
+        _ = try JPGImage(InputStream(data: Data(withThumbnail)))
+
+        _ = try JPGImage(InputStream(data: Data(whole + Array("trailer".utf8))))
     }
 
     @Test func anotherAPP14SegmentDoesNotUnmarkAnAdobeImage() throws {

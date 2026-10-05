@@ -358,8 +358,8 @@ func TestReviewMediaAJPEGAReaderCannotDecodeIsRefused(t *testing.T) {
 		}
 	}
 	for _, sof := range []byte{0xC0, 0xC1, 0xC2} {
-		jpeg := []byte{0xFF, 0xD8, 0xFF, sof, 0x00, 0x11, 8, 0, 8, 0, 8, 3,
-			1, 0x11, 0, 2, 0x11, 0, 3, 0x11, 0, 0xFF, 0xD9}
+		jpeg := append([]byte{0xFF, 0xD8, 0xFF, sof, 0x00, 0x11, 8, 0, 8, 0, 8, 3,
+			1, 0x11, 0, 2, 0x11, 0, 3, 0x11, 0}, testScan(3)...)
 		if _, err := newJPGImage(bytes.NewReader(jpeg)); err != nil {
 			t.Errorf("SOF%d: %v", sof-0xC0, err)
 		}

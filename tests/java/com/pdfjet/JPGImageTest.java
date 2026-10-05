@@ -8,6 +8,7 @@ package com.pdfjet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -77,7 +78,35 @@ class JPGImageTest {
         for (int i = 0; i < components; i++) {
             jpeg.write(new byte[] {(byte) (i + 1), 0x11, 0});
         }
+        jpeg.write(scanOf(components));
         return jpeg.toByteArray();
+    }
+
+    // Returns a scan of the color components, its header and two bytes of
+    // data, and the EOI marker, which a JPEG cut short has not.
+    private static byte[] scanOf(int components) {
+        int length = 6 + 2*components;
+        byte[] scan = new byte[2 + length + 4];
+        scan[0] = (byte) 0xFF;
+        scan[1] = (byte) 0xDA;
+        scan[2] = (byte) (length >> 8);
+        scan[3] = (byte) length;
+        scan[4] = (byte) components;
+        for (int i = 0; i < components; i++) {
+            scan[5 + 2*i] = (byte) (i + 1);
+        }
+        int at = 5 + 2*components;
+        scan[at + 1] = 63;
+        scan[at + 3] = 0x12;
+        scan[at + 4] = 0x34;
+        scan[at + 5] = (byte) 0xFF;
+        scan[at + 6] = (byte) 0xD9;
+        return scan;
+    }
+
+    // Returns the JPEG without its scan: the header alone.
+    private static byte[] headerOf(byte[] jpeg, int components) {
+        return java.util.Arrays.copyOf(jpeg, jpeg.length - scanOf(components).length);
     }
 
     // Returns an APP14 segment of the bytes.
@@ -164,15 +193,18 @@ class JPGImageTest {
         // libjpeg reads the markers of a header to the scan, so an APP14 segment
         // between the frame header and the scan marks the image too; one after
         // the scan, which no header reads, does not.
+        byte[] header = headerOf(jpegOf(new byte[0], 4), 4);
         ByteArrayOutputStream after = new ByteArrayOutputStream();
-        after.write(jpegOf(new byte[0], 4));
+        after.write(header);
         after.write(ADOBE_APP14);
+        after.write(scanOf(4));
         assertTrue(new JPGImage(new ByteArrayInputStream(after.toByteArray())).isAdobe());
 
         ByteArrayOutputStream afterTheScan = new ByteArrayOutputStream();
-        afterTheScan.write(jpegOf(new byte[0], 4));
+        afterTheScan.write(header);
         afterTheScan.write(new byte[] {(byte) 0xFF, (byte) 0xDA, 0x00, 0x02});
         afterTheScan.write(ADOBE_APP14);
+        afterTheScan.write(new byte[] {(byte) 0xFF, (byte) 0xD9});
         assertFalse(new JPGImage(new ByteArrayInputStream(afterTheScan.toByteArray())).isAdobe());
     }
 
@@ -184,11 +216,38 @@ class JPGImageTest {
         byte[] jpeg = jpegOf(new byte[0], 4);
         byte[] components = {(byte) 0xFF, (byte) 0xEE, 0x00, 0x0E,
                 'A', 'd', 'o', 'b', 'e', 0x00, 0x64, 0x00};
-        System.arraycopy(components, 0, jpeg, jpeg.length - 12, 12);
-        ByteArrayOutputStream whole = new ByteArrayOutputStream();
-        whole.write(jpeg);
-        whole.write(new byte[] {0, 0, 0, 0, (byte) 0xFF, (byte) 0xD9});
-        assertFalse(new JPGImage(new ByteArrayInputStream(whole.toByteArray())).isAdobe());
+        System.arraycopy(components, 0, jpeg, jpeg.length - scanOf(4).length - 12, 12);
+        assertFalse(new JPGImage(new ByteArrayInputStream(jpeg)).isAdobe());
+    }
+
+    @Test
+    void aJPEGCutShortIsRefused() throws Exception {
+        // As in an upload or a copy: one that ends in its image data, or
+        // before it, is refused; not one whose thumbnail, in an APP1 segment
+        // before the scan, ends with its own EOI marker, nor one with data
+        // after its end, which cameras append (5 October 2026).
+        byte[] whole = jpegOf(new byte[0], 3);
+        for (byte[] cut : new byte[][] {
+                java.util.Arrays.copyOf(whole, whole.length - 2), headerOf(whole, 3),
+                java.util.Arrays.copyOf(whole, 10)}) {
+            assertThrows(Exception.class, () -> new JPGImage(new ByteArrayInputStream(cut)));
+        }
+        Exception e = assertThrows(Exception.class, () -> new JPGImage(
+                new ByteArrayInputStream(java.util.Arrays.copyOf(whole, whole.length - 2))));
+        assertEquals(JPGImage.CUT_SHORT, e.getMessage());
+
+        byte[] thumbnail = {(byte) 0xFF, (byte) 0xE1, 0x00, 0x08, 'E', 'x', 'i', 'f',
+                (byte) 0xFF, (byte) 0xD9};
+        byte[] withThumbnail = jpegOf(thumbnail, 3);
+        e = assertThrows(Exception.class, () -> new JPGImage(new ByteArrayInputStream(
+                java.util.Arrays.copyOf(withThumbnail, withThumbnail.length - 2))));
+        assertEquals(JPGImage.CUT_SHORT, e.getMessage());
+        assertNotNull(new JPGImage(new ByteArrayInputStream(withThumbnail)));
+
+        ByteArrayOutputStream trailer = new ByteArrayOutputStream();
+        trailer.write(whole);
+        trailer.write("trailer".getBytes("UTF-8"));
+        assertNotNull(new JPGImage(new ByteArrayInputStream(trailer.toByteArray())));
     }
 
     @Test

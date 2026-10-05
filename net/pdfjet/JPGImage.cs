@@ -196,9 +196,10 @@ class JPGImage {
                 // The component specifications fill the rest of the frame
                 // header; they can hold any bytes, the 0xFF of a marker among
                 // them, so the markers are read after the whole segment.
-                if (length >= 8) {
-                    ReadAdobeMarker(stream, length - 8);
+                if (length < 8 || !ReadAdobeMarker(stream, length - 8)) {
+                    throw new IOException(CUT_SHORT);
                 }
+                CheckScanEnds(stream);
                 foundSOFn = true;
                 break;
 
@@ -221,20 +222,28 @@ class JPGImage {
         }
     }
 
+    // The error of a JPEG that ends before its image data does, as a file cut
+    // short in its upload or its copy: embedded as it is, a reader draws it as
+    // far as it goes, or as noise.
+    internal const string CUT_SHORT = "Error: The JPEG is cut short: its image data has no end.";
+
     // Reads the markers from the frame header to the scan, for an APP14 segment:
     // libjpeg reads a header to the scan too, so a segment that follows the frame
-    // header says that Adobe software wrote the image as one before it does. The
-    // frame header is all the image needs, so whatever cannot be read after it
-    // leaves the image as it is.
-    private void ReadAdobeMarker(Stream stream, int skip) {
+    // header says that Adobe software wrote the image as one before it does.
+    // Returns whether it came to the scan, the stream then after the marker of
+    // it: a JPEG that ends before has no image data.
+    private bool ReadAdobeMarker(Stream stream, int skip) {
         try {
             for (int i = 0; i < skip; i++) {
                 ReadByte(stream);
             }
             while (true) {
                 char ch = NextMarker(stream);
-                if (ch == M_SOS || ch == M_EOI) {
-                    return;
+                if (ch == M_SOS) {
+                    return true;
+                }
+                if (ch == M_EOI) {
+                    return false;
                 }
                 if (ch == M_TEM || ch == M_SOI || (ch >= M_RST0 && ch <= M_RST7)) {
                     continue;
@@ -246,8 +255,35 @@ class JPGImage {
                 }
             }
         } catch (IOException) {
-            return;
+            return false;
         }
+    }
+
+    // Throws unless the end-of-image marker follows the header of the scan: in
+    // the entropy-coded data a 0xFF is followed by a 0x00 or a restart marker,
+    // so 0xFF 0xD9 after the header is the end of the image, and not of a
+    // thumbnail before the scan, which has its own. Data after the end, which
+    // cameras append, is left as it is.
+    private void CheckScanEnds(Stream stream) {
+        try {
+            int length = GetUInt16(stream);
+            if (length >= 2) {
+                for (int i = 0; i < length - 2; i++) {
+                    ReadByte(stream);
+                }
+                int previous = 0;
+                int b;
+                while ((b = stream.ReadByte()) >= 0) {
+                    if (previous == 0xFF && b == M_EOI) {
+                        return;
+                    }
+                    previous = b;
+                }
+            }
+        } catch (IOException) {
+            // The header of the scan cut short
+        }
+        throw new IOException(CUT_SHORT);
     }
 
     private int ReadByte(Stream stream) {

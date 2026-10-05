@@ -7,8 +7,10 @@ package pdfjet
 
 import (
 	"bytes"
+	"errors"
 	"math"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -64,7 +66,8 @@ func TestJPGImageTheInksOfACmykJpegAreInvertedBackOnlyWhenAdobeSoftwareWroteIt(t
 // before it that is read as one more segment hides it.
 
 // testJPEG returns a JPEG of 8 by 8 pixels: the SOI marker, the bytes given,
-// and a frame header of the number of color components.
+// a frame header of the number of color components, and a scan of them and
+// the EOI marker, which a JPEG cut short has not.
 func testJPEG(before []byte, components int) []byte {
 	jpeg := append([]byte{0xFF, 0xD8}, before...)
 	length := 8 + 3*components
@@ -72,7 +75,18 @@ func testJPEG(before []byte, components int) []byte {
 	for i := 0; i < components; i++ {
 		jpeg = append(jpeg, byte(i+1), 0x11, 0)
 	}
-	return jpeg
+	return append(jpeg, testScan(components)...)
+}
+
+// testScan returns a scan of the color components, its header and two bytes
+// of data, and the EOI marker.
+func testScan(components int) []byte {
+	length := 6 + 2*components
+	scan := []byte{0xFF, 0xDA, byte(length >> 8), byte(length), byte(components)}
+	for i := 0; i < components; i++ {
+		scan = append(scan, byte(i+1), 0)
+	}
+	return append(scan, 0, 63, 0, 0x12, 0x34, 0xFF, 0xD9)
 }
 
 // testAPP14 returns an APP14 segment of the bytes.
@@ -158,13 +172,17 @@ func TestJPGImageTheAdobeAPP14SegmentIsFoundAfterTheFrameHeader(t *testing.T) {
 	// libjpeg reads the markers of a header to the scan, so an APP14 segment
 	// between the frame header and the scan marks the image too; one after
 	// the scan, which no header reads, does not.
-	image, err := newJPGImage(bytes.NewReader(append(testJPEG(nil, 4), testAdobeAPP14...)))
+	jpeg := testJPEG(nil, 4)
+	header := jpeg[:len(jpeg)-len(testScan(4))]
+	between := append(append(append([]byte(nil), header...), testAdobeAPP14...), testScan(4)...)
+	image, err := newJPGImage(bytes.NewReader(between))
 	if err != nil || !image.isAdobe() {
 		t.Errorf("the Adobe segment after the frame header does not mark the image: %v", err)
 	}
 
-	afterTheScan := append([]byte{0xFF, 0xDA, 0x00, 0x02}, testAdobeAPP14...)
-	image, err = newJPGImage(bytes.NewReader(append(testJPEG(nil, 4), afterTheScan...)))
+	afterTheScan := append(append([]byte(nil), header...), 0xFF, 0xDA, 0x00, 0x02)
+	afterTheScan = append(append(afterTheScan, testAdobeAPP14...), 0xFF, 0xD9)
+	image, err = newJPGImage(bytes.NewReader(afterTheScan))
 	if err != nil || image.isAdobe() {
 		t.Errorf("the Adobe segment after the scan marks the image: %v", err)
 	}
@@ -175,8 +193,8 @@ func TestJPGImageTheComponentsOfTheFrameHeaderAreNotReadAsMarkers(t *testing.T) 
 	// hold any bytes, the 0xFF of a marker among them; here they are the
 	// bytes of an Adobe APP14 segment, which is none.
 	jpeg := testJPEG(nil, 4)
-	copy(jpeg[len(jpeg)-12:], []byte{0xFF, 0xEE, 0x00, 0x0E, 'A', 'd', 'o', 'b', 'e', 0x00, 0x64, 0x00})
-	jpeg = append(jpeg, 0, 0, 0, 0, 0xFF, 0xD9)
+	scan := len(testScan(4))
+	copy(jpeg[len(jpeg)-scan-12:], []byte{0xFF, 0xEE, 0x00, 0x0E, 'A', 'd', 'o', 'b', 'e', 0x00, 0x64, 0x00})
 	image, err := newJPGImage(bytes.NewReader(jpeg))
 	if err != nil || image.isAdobe() {
 		t.Errorf("the components of the frame header marked the image: %v", err)
@@ -248,4 +266,58 @@ func TestJPGImageAJfifDensityThatGivesNoSizeIsPassedOver(t *testing.T) {
 				jpg.GetPhysicalWidth(), jpg.GetPhysicalHeight())
 		}
 	}
+}
+
+// A JPEG cut short, as in an upload or a copy, is refused: one that ends in
+// its image data, or before it; not one whose thumbnail, in an APP1 segment
+// before the scan, ends with its own EOI marker, nor one with data after
+// its end, which cameras append (5 October 2026).
+func TestJPGImageCutShortIsRefused(t *testing.T) {
+	whole := testJPEG(nil, 3)
+	header := whole[:len(whole)-len(testScan(3))]
+	for name, jpeg := range map[string][]byte{
+		"in its image data":   whole[:len(whole)-2],
+		"before its scan":     header,
+		"in its frame header": whole[:10],
+	} {
+		if _, err := newJPGImage(bytes.NewReader(jpeg)); err == nil {
+			t.Errorf("cut short %s: taken", name)
+		}
+	}
+	if _, err := newJPGImage(bytes.NewReader(whole[:len(whole)-2])); !errors.Is(err, errJPEGCutShort) {
+		t.Errorf("cut short in its image data: %v", err)
+	}
+	// A thumbnail's EOI before the scan does not end the image
+	thumbnail := []byte{0xFF, 0xE1, 0x00, 0x08, 'E', 'x', 'i', 'f', 0xFF, 0xD9}
+	cut := testJPEG(thumbnail, 3)
+	if _, err := newJPGImage(bytes.NewReader(cut[:len(cut)-2])); !errors.Is(err, errJPEGCutShort) {
+		t.Errorf("cut short, a thumbnail's EOI before the scan: %v", err)
+	}
+	if _, err := newJPGImage(bytes.NewReader(cut)); err != nil {
+		t.Errorf("whole, with a thumbnail's EOI before the scan: %v", err)
+	}
+	// Data after the end
+	if _, err := newJPGImage(bytes.NewReader(append(append([]byte(nil), whole...), "trailer"...))); err != nil {
+		t.Errorf("data after the end: %v", err)
+	}
+}
+
+// Every JPEG of the examples is read, none taken for one cut short.
+func TestJPGImageTheJPEGsOfTheExamplesAreWhole(t *testing.T) {
+	paths, _ := filepath.Glob("../images/*.jp*g")
+	more, _ := filepath.Glob("../images/*/*.jp*g")
+	paths = append(paths, more...)
+	if len(paths) == 0 {
+		t.Skip("no JPEGs in ../images")
+	}
+	for _, path := range paths {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := newJPGImage(bytes.NewReader(data)); err != nil {
+			t.Errorf("%s: %v", filepath.Base(path), err)
+		}
+	}
+	t.Logf("%d JPEGs read", len(paths))
 }
