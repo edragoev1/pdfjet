@@ -969,6 +969,18 @@ to check and fix in the four, with a test.
   move its page breaks. The rows added under a wrapped cell keep their own
   padding as now: none over them, NewCell's under them. A test in each port,
   the rows' heights compared across the ports. Small.
+- ⬜ The Swift port slow with a JPEG: 20 pages drawing one photo of 600 KB,
+  embedded once, took 30 ms a document in Swift, against 0.9 in Go, 1.4 in
+  C# and 3.9 in Java, the same PDF from each (measured on 5 October 2026,
+  Linux, Swift 6.4, a release build; the benchmark is kept privately). A
+  JPEG is stored as it is, with no Deflate, so the time is in reading or
+  copying its bytes: `Content.getFromStream` reads it 4 KB at a time and
+  appends, `JPGImage` parses it, `Image.init` makes it a `Data` and an
+  `InputStream` again, and `addImage` writes it; a profile says which. The
+  Swift port is the slowest of the four with text too, less so: 100 pages
+  of IBM Plex Sans in 24 ms against 10 to 20, and a plain .ttf font parsed
+  at length (one page with Noto Sans, 44 ms against 20 as a .stream). Worth
+  doing before Swift is sold in the commercial product.
 - ⬜ Maybe: a faster Deflate for Swift, which has its own, written in
   Swift. After the review of Sep 28 it is Swift's main cost for a PNG that
   is decoded and compressed again, one with transparency: about 500 ms for
