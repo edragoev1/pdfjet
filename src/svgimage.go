@@ -105,7 +105,13 @@ func NewSVGImage(reader io.Reader) (*SVGImage, error) {
 				root = false
 				image.w = parseLength(attributes["width"])
 				image.h = parseLength(attributes["height"])
-				image.viewBox = attributes["viewBox"]
+				// viewbox in lower case when there is no viewBox, as an HTML
+				// page's parser reads an inline svg, whose files keep it
+				if viewBox, ok := attributes["viewBox"]; ok {
+					image.viewBox = viewBox
+				} else {
+					image.viewBox = attributes["viewbox"]
+				}
 				image.preserveAspectRatio = attributes["preserveAspectRatio"]
 			}
 			operations, err := shapeOperations(name, attributes)

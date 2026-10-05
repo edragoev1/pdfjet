@@ -100,7 +100,9 @@ public class SVGImage : Drawable {
                     root = false
                     w = SVGImage.parseLength(values["width"] ?? "")
                     h = SVGImage.parseLength(values["height"] ?? "")
-                    viewBox = values["viewBox"] ?? ""
+                    // viewbox in lower case when there is no viewBox, as an
+                    // HTML page's parser reads an inline svg, whose files keep it
+                    viewBox = values["viewBox"] ?? values["viewbox"] ?? ""
                     preserveAspectRatio = values["preserveAspectRatio"] ?? ""
                 }
                 let operations = try SVGImage.shapeOperations(name, values)

@@ -253,6 +253,19 @@ public class SVGImageTest {
     }
 
     [Fact]
+    public void AViewBoxInLowerCaseIsRead() {
+        // A file saved from a web page may write viewbox, which an HTML page's
+        // parser reads as viewBox; viewBox wins when a file has both.
+        string[] svgs = {
+            "<svg width=\"50\" height=\"25\" viewbox=\"10 10 100 50\"><path d=\"M20 20 L110 60\"/></svg>",
+            "<svg width=\"50\" height=\"25\" viewBox=\"10 10 100 50\" viewbox=\"0 0 200 100\"><path d=\"M20 20 L110 60\"/></svg>",
+        };
+        foreach (string svg in svgs) {
+            Assert.Contains("5 787 m\n50 767 l\n", Draw(svg));
+        }
+    }
+
+    [Fact]
     public void ASizeThatCannotBeReadIsTheSizeOfTheViewBox() {
         // Scaling the paths by a width of zero would draw every one of them
         // at the origin, so a size in a unit PDFjet cannot read, a percentage

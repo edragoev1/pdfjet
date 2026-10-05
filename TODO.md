@@ -904,7 +904,10 @@ to check and fix in the four, with a test.
   its matrix, its width and height swapped for a quarter turn; the samples
   are not changed. A medium feature, with test images of the eight
   orientations; found by the code review of Sep 28.
-- ⬜ An SVG's `viewbox` in lower case, in the four ports and pdfjet-client's
+- ✅ Done on 5 October 2026, ahead of the one XML parser, on the owner's
+  word: `viewbox` read when there is no `viewBox`, in the four ports and
+  SVGImage.ts, a test in each, and two cases of check-svg.sh. As it was:
+  An SVG's `viewbox` in lower case, in the four ports and pdfjet-client's
   SVGImage.ts at once, as check-svg.sh compares them. SVGImage reads only
   `viewBox`, as XML has attribute names case-sensitive, so a file that writes
   `viewbox` is drawn with no viewBox at all, silently: the size of its width

@@ -121,7 +121,10 @@ public class SVGImage implements Drawable {
                         root = false;
                         this.w = parseLength(attribute(attributes, "width"));
                         this.h = parseLength(attribute(attributes, "height"));
-                        this.viewBox = attribute(attributes, "viewBox");
+                        // viewbox in lower case when there is no viewBox, as an
+                        // HTML page's parser reads an inline svg, whose files keep it
+                        this.viewBox = attributes.containsKey("viewBox")
+                                ? attribute(attributes, "viewBox") : attribute(attributes, "viewbox");
                         this.preserveAspectRatio = attribute(attributes, "preserveAspectRatio");
                     }
                     List<PathOp> operations = shapeOperations(name, attributes);

@@ -44,6 +44,10 @@ This is the first entry in this file; earlier releases were not tracked here.
   two repositories at the pinned commits, and the workflows fetch them.
 
 ### Fixed
+- An SVG that writes its `viewbox` in lower case, as files saved from web
+  pages do, is drawn with it: SVGImage read only `viewBox`, so such a file
+  was drawn with no viewBox at all, its paths neither scaled nor moved.
+  `viewBox` wins when a file has both. The four ports, with a test in each.
 - A word wider than its table column starts a line of its own, then is
   broken between its characters: after the words before it, or the end of
   another such word, it shared their line, "listic e" where the cell read

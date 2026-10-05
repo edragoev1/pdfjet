@@ -106,7 +106,11 @@ public class SVGImage : IDrawable {
                         root = false;
                         this.w = ParseLength(Attribute(attributes, "width"));
                         this.h = ParseLength(Attribute(attributes, "height"));
-                        attributes.TryGetValue("viewBox", out this.viewBox);
+                        // viewbox in lower case when there is no viewBox, as an
+                        // HTML page's parser reads an inline svg, whose files keep it
+                        if (!attributes.TryGetValue("viewBox", out this.viewBox)) {
+                            attributes.TryGetValue("viewbox", out this.viewBox);
+                        }
                         attributes.TryGetValue("preserveAspectRatio", out this.preserveAspectRatio);
                     }
                     List<PathOp> operations = ShapeOperations(name, attributes);

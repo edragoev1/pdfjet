@@ -305,6 +305,23 @@ func TestSVGImageASizeWithAUnitIsReadInPoints(t *testing.T) {
 	}
 }
 
+func TestSVGImageReadsAViewBoxInLowerCase(t *testing.T) {
+	// A file saved from a web page may write viewbox, which an HTML page's
+	// parser reads as viewBox; viewBox wins when a file has both.
+	for _, svg := range []string{
+		`<svg width="50" height="25" viewbox="10 10 100 50"><path d="M20 20 L110 60"/></svg>`,
+		`<svg width="50" height="25" viewBox="10 10 100 50" viewbox="0 0 200 100"><path d="M20 20 L110 60"/></svg>`,
+	} {
+		image := testNewSVG(t, svg)
+		page := testNewPage()
+		image.SetLocation(0, 0)
+		image.DrawOn(page)
+		if content := testContent(page); !strings.Contains(content, "5 787 m\n50 767 l\n") {
+			t.Errorf("%s: content %q", svg, content)
+		}
+	}
+}
+
 func TestSVGImageASizeThatCannotBeReadIsTheSizeOfTheViewBox(t *testing.T) {
 	// Scaling the paths by a width of zero would draw every one of them at
 	// the origin, so a size in a unit PDFjet cannot read, a percentage among
