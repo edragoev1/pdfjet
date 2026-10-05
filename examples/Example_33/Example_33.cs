@@ -50,9 +50,9 @@ public class Example_33 {
         xy = map.DrawOn(page);
 
         textBlock = new TextBlock(f1,
-                "The colors come from the file: the peachpuff fill and the dimgray stroke of "
-                + "the svg element for most countries, an aliceblue fill for Spain and a "
-                + "lightgray outline for Austria.");
+                "The colors are set in the SVG file itself. The svg element gives every "
+                + "country a peachpuff fill and a dimgray outline; Spain overrides the fill "
+                + "with aliceblue, and Austria the outline with lightgray.");
         textBlock.SetFontSize(10f);
         textBlock.SetTextColor(Color.dimgray);
         textBlock.SetLocation(50f, xy[1] + 10f);
