@@ -44,15 +44,15 @@ public class Example_33 {
 
         SVGImage map = new SVGImage("images/svg-test/europe.svg");
         map.SetAltDescription(
-                "A map of Europe drawn from an SVG file, the countries filled in peachpuff and outlined in dim gray, Spain in aliceblue and Austria outlined in olive.");
+                "A map of Europe drawn from an SVG file, the countries filled in peachpuff and outlined in dim gray, Spain in aliceblue and Austria outlined in light gray.");
         map.ScaleBy(0.5f);
         map.SetLocation((page.GetWidth() - map.GetWidth()) / 2f, xy[1] + 20f);
         xy = map.DrawOn(page);
 
         textBlock = new TextBlock(f1,
                 "The colors come from the file: the peachpuff fill and the dimgray stroke of "
-                + "the svg element for most countries, an aliceblue fill for Spain and an "
-                + "olive outline for Austria.");
+                + "the svg element for most countries, an aliceblue fill for Spain and a "
+                + "lightgray outline for Austria.");
         textBlock.SetFontSize(10f);
         textBlock.SetTextColor(Color.dimgray);
         textBlock.SetLocation(50f, xy[1] + 10f);
