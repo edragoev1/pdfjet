@@ -63,9 +63,9 @@ type TextBlock struct {
 // colorToRGB returns the red, green and blue components, from 0.0 to 1.0, of
 // a 0xRRGGBB color.
 func colorToRGB(c int32) [3]float32 {
-	r := float32((c>>16)&0xff) / 255.0
-	g := float32((c>>8)&0xff) / 255.0
-	b := float32((c)&0xff) / 255.0
+	r := float32(float32((c>>16)&0xff) / 255.0)
+	g := float32(float32((c>>8)&0xff) / 255.0)
+	b := float32(float32((c)&0xff) / 255.0)
 	return [3]float32{r, g, b}
 }
 
@@ -79,7 +79,7 @@ func rgbToColor(rgbColor [3]float32) int32 {
 // Half a step rounds up, as Java's Math.round does.
 func toByte(component float32) int32 {
 	value := min(max(component, 0.0), 1.0)
-	return int32(value*255.0 + 0.5)
+	return int32(float32(value*255.0) + 0.5)
 }
 
 // NewTextBlock creates a text block and sets the font and the text.
@@ -206,8 +206,8 @@ func (textBlock *TextBlock) GetHeight() float32 {
 	}
 	ascent := textBlock.font.GetAscent(textBlock.fontSize)
 	descent := textBlock.font.GetDescent(textBlock.fontSize)
-	leading := (ascent + descent + textBlock.font.GetLineGap(textBlock.fontSize)) * textBlock.lineSpacing
-	return float32(len(textBlock.getTextLines()))*leading + 2*textBlock.textPadding
+	leading := float32((ascent + descent + textBlock.font.GetLineGap(textBlock.fontSize)) * textBlock.lineSpacing)
+	return float32(float32(len(textBlock.getTextLines()))*leading) + float32(2*textBlock.textPadding)
 }
 
 // SetCornerRadius sets the border corner radius.
@@ -723,7 +723,7 @@ func (textBlock *TextBlock) GetStrikeout() bool {
 
 // textAreaWidth returns the width the text is laid out in, never narrower than nothing.
 func (textBlock *TextBlock) textAreaWidth() float32 {
-	textAreaWidth := textBlock.width - 2*textBlock.textPadding
+	textAreaWidth := textBlock.width - float32(2*textBlock.textPadding)
 	if textAreaWidth < 0.0 {
 		return 0.0
 	}
@@ -749,7 +749,7 @@ func (textBlock *TextBlock) linesThatFit(textLines []*TextLine, leading float32)
 	if leading <= 0 {
 		return textLines // Lines that take no height all fit
 	}
-	fit := saturatingInt((textBlock.height - 2*textBlock.textPadding) / leading)
+	fit := saturatingInt((textBlock.height - float32(2*textBlock.textPadding)) / leading)
 	if fit < 1 {
 		fit = 1 // At least one line is drawn
 	}
@@ -781,8 +781,8 @@ func (textBlock *TextBlock) rightAlignText(textLines []*TextLine) {
 func (textBlock *TextBlock) centerText(textLines []*TextLine) {
 	textAreaWidth := textBlock.textAreaWidth()
 	for _, textLine := range textLines {
-		textLine.xOffset = (textAreaWidth -
-			textBlock.stringWidth(textLine.text)) / 2.0
+		textLine.xOffset = float32((textAreaWidth -
+			textBlock.stringWidth(textLine.text)) / 2.0)
 	}
 }
 
@@ -793,17 +793,17 @@ func (textBlock *TextBlock) centerText(textLines []*TextLine) {
 func (textBlock *TextBlock) layout() (textLines []*TextLine, yText, leading, blockHeight float32) {
 	ascent := textBlock.font.GetAscent(textBlock.fontSize)
 	descent := textBlock.font.GetDescent(textBlock.fontSize)
-	leading = (ascent + descent + textBlock.font.GetLineGap(textBlock.fontSize)) * textBlock.lineSpacing
+	leading = float32((ascent + descent + textBlock.font.GetLineGap(textBlock.fontSize)) * textBlock.lineSpacing)
 	textLines = textBlock.getTextLines()
-	blockHeight = float32(len(textLines))*leading + 2*textBlock.textPadding
+	blockHeight = float32(float32(len(textLines))*leading) + float32(2*textBlock.textPadding)
 	yText = textBlock.y + textBlock.textPadding
 	if textBlock.height > 0.0 {
 		// The block is as tall as set; the lines that do not fit are cut
 		textLines = textBlock.linesThatFit(textLines, leading)
 		blockHeight = textBlock.height
-		textHeight := float32(len(textLines)) * leading
+		textHeight := float32(float32(len(textLines)) * leading)
 		if textBlock.verticalAlignment == alignment.Center {
-			yText = textBlock.y + (textBlock.height-textHeight)/2.0
+			yText = textBlock.y + float32((textBlock.height-textHeight)/2.0)
 		} else if textBlock.verticalAlignment == alignment.Bottom {
 			yText = textBlock.y + textBlock.height - textBlock.textPadding - textHeight
 		}

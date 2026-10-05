@@ -722,7 +722,7 @@ func (page *Page) appendGlyphWithActualText(
 		page.appendString("[<")
 		page.appendCodePointAsHex(space)
 		page.appendString("> ")
-		page.appendFloat32(1000.0 * float32(font.glyphAdvance(space)) / float32(font.unitsPerEm))
+		page.appendFloat32(float32(1000.0*float32(font.glyphAdvance(space))) / float32(font.unitsPerEm))
 		page.appendString("] TJ\n")
 	}
 	page.appendString("EMC\n<")
@@ -1008,7 +1008,7 @@ func (page *Page) appendWordWithMovedMarks(font *Font, codePoints []rune, gids, 
 	if leadingSpace {
 		space := font.unicodeToGID[0x0020]
 		page.appendString("[")
-		page.appendFloat32(1000 * float32(font.glyphAdvance(space)) / float32(font.unitsPerEm))
+		page.appendFloat32(float32(1000*float32(font.glyphAdvance(space))) / float32(font.unitsPerEm))
 		page.appendString(" <")
 		page.appendCodePointAsHex(space)
 		page.appendString(">] TJ\n")
@@ -1032,14 +1032,14 @@ func (page *Page) appendMovedGlyph(font *Font, gid, dx, dy int) {
 		fontSize = page.textFontSize
 	}
 	page.appendString("> Tj\n")
-	page.appendFloat32(page.textRise + float32(dy)*fontSize/float32(font.unitsPerEm))
+	page.appendFloat32(page.textRise + float32(float32(dy)*fontSize)/float32(font.unitsPerEm))
 	page.appendString(" Ts\n")
 	if dx == 0 {
 		page.appendString("<")
 		page.appendCodePointAsHex(gid)
 		page.appendString("> Tj\n")
 	} else {
-		adjustment := 1000 * float32(dx) / float32(font.unitsPerEm)
+		adjustment := float32(1000*float32(dx)) / float32(font.unitsPerEm)
 		page.appendString("[")
 		page.appendFloat32(-adjustment)
 		page.appendString(" <")
@@ -1167,9 +1167,9 @@ func (page *Page) SetPenColor(c int32) *Page {
 	if c == color.Transparent {
 		return page
 	}
-	r := float32((c>>16)&0xff) / 255.0
-	g := float32((c>>8)&0xff) / 255.0
-	b := float32((c)&0xff) / 255.0
+	r := float32(float32((c>>16)&0xff) / 255.0)
+	g := float32(float32((c>>8)&0xff) / 255.0)
+	b := float32(float32((c)&0xff) / 255.0)
 	page.SetPenColorRGB([3]float32{r, g, b})
 	return page
 }
@@ -1248,9 +1248,9 @@ func (page *Page) SetBrushColor(c int32) *Page {
 	if c == color.Transparent {
 		return page
 	}
-	r := float32((c>>16)&0xff) / 255.0
-	g := float32((c>>8)&0xff) / 255.0
-	b := float32((c)&0xff) / 255.0
+	r := float32(float32((c>>16)&0xff) / 255.0)
+	g := float32(float32((c>>8)&0xff) / 255.0)
+	b := float32(float32((c)&0xff) / 255.0)
 	page.SetBrushColorRGB([3]float32{r, g, b})
 	return page
 }
@@ -1571,13 +1571,13 @@ func (page *Page) fillRectBetween(x1, y1, x2, y2 float32) {
 		// written back as the same hundredths.
 		xLeft := fastfloat.ToHundredths(left)
 		yBottom := fastfloat.ToHundredths(bottom)
-		page.appendFloat32(float32(xLeft) / 100)
+		page.appendFloat32(float32(float32(xLeft) / 100))
 		page.appendByte(' ')
-		page.appendFloat32(float32(yBottom) / 100)
+		page.appendFloat32(float32(float32(yBottom) / 100))
 		page.appendByte(' ')
-		page.appendFloat32(float32(fastfloat.ToHundredths(right)-xLeft) / 100)
+		page.appendFloat32(float32(float32(fastfloat.ToHundredths(right)-xLeft) / 100))
 		page.appendByte(' ')
-		page.appendFloat32(float32(fastfloat.ToHundredths(top)-yBottom) / 100)
+		page.appendFloat32(float32(float32(fastfloat.ToHundredths(top)-yBottom) / 100))
 		page.appendString(" re\nf\n")
 		return
 	}
@@ -1681,23 +1681,23 @@ func (page *Page) drawEllipse(x, y, r1, r2 float32, pathOperator pathoperator.Pa
 	// Starting point
 	page.MoveTo(x, y-r2)
 
-	page.appendPointXY(x+m4*r1, y-r2)
-	page.appendPointXY(x+r1, y-m4*r2)
+	page.appendPointXY(x+float32(m4*r1), y-r2)
+	page.appendPointXY(x+r1, y-float32(m4*r2))
 	page.appendPointXY(x+r1, y)
 	page.appendString("c\n")
 
-	page.appendPointXY(x+r1, y+m4*r2)
-	page.appendPointXY(x+m4*r1, y+r2)
+	page.appendPointXY(x+r1, y+float32(m4*r2))
+	page.appendPointXY(x+float32(m4*r1), y+r2)
 	page.appendPointXY(x, y+r2)
 	page.appendString("c\n")
 
-	page.appendPointXY(x-m4*r1, y+r2)
-	page.appendPointXY(x-r1, y+m4*r2)
+	page.appendPointXY(x-float32(m4*r1), y+r2)
+	page.appendPointXY(x-r1, y+float32(m4*r2))
 	page.appendPointXY(x-r1, y)
 	page.appendString("c\n")
 
-	page.appendPointXY(x-r1, y-m4*r2)
-	page.appendPointXY(x-m4*r1, y-r2)
+	page.appendPointXY(x-r1, y-float32(m4*r2))
+	page.appendPointXY(x-float32(m4*r1), y-r2)
 	page.appendPointXY(x, y-r2)
 	page.appendString("c\n")
 
@@ -1714,16 +1714,16 @@ func (page *Page) DrawPoint(p *Point) {
 		case shape.Circle:
 			page.drawEllipse(p.x, p.y, p.r, p.r, p.pathOperator)
 		case shape.Diamond:
-			list = append(list, NewPoint(p.x, p.y-p.r*1.2))
-			list = append(list, NewPoint(p.x+p.r*1.2, p.y))
-			list = append(list, NewPoint(p.x, p.y+p.r*1.2))
-			list = append(list, NewPoint(p.x-p.r*1.2, p.y))
+			list = append(list, NewPoint(p.x, p.y-float32(p.r*1.2)))
+			list = append(list, NewPoint(p.x+float32(p.r*1.2), p.y))
+			list = append(list, NewPoint(p.x, p.y+float32(p.r*1.2)))
+			list = append(list, NewPoint(p.x-float32(p.r*1.2), p.y))
 			page.DrawPath(list, p.pathOperator)
 		case shape.Box:
-			list = append(list, NewPoint(p.x-p.r*0.886, p.y-p.r*0.886))
-			list = append(list, NewPoint(p.x+p.r*0.886, p.y-p.r*0.886))
-			list = append(list, NewPoint(p.x+p.r*0.886, p.y+p.r*0.886))
-			list = append(list, NewPoint(p.x-p.r*0.886, p.y+p.r*0.886))
+			list = append(list, NewPoint(p.x-float32(p.r*0.886), p.y-float32(p.r*0.886)))
+			list = append(list, NewPoint(p.x+float32(p.r*0.886), p.y-float32(p.r*0.886)))
+			list = append(list, NewPoint(p.x+float32(p.r*0.886), p.y+float32(p.r*0.886)))
+			list = append(list, NewPoint(p.x-float32(p.r*0.886), p.y+float32(p.r*0.886)))
 			page.DrawPath(list, p.pathOperator)
 		case shape.Plus:
 			page.DrawLine(p.x-p.r, p.y, p.x+p.r, p.y)
@@ -1766,13 +1766,13 @@ func (page *Page) DrawPoint(p *Point) {
 			page.DrawLine(p.x, p.y-p.r, p.x, p.y+p.r)
 		case shape.Star:
 			for i := 0; i < 10; i++ {
-				theta := float64(i) * 36.0 * (math.Pi / 180.0)
-				radius := float64(p.r) * 1.147
+				theta := float64(float64(float64(i)*36.0) * (math.Pi / 180.0))
+				radius := float64(float64(p.r) * 1.147)
 				if i%2 != 0 {
-					radius = float64(p.r) * 0.38196 * 1.147
+					radius = float64(float64(float64(p.r)*0.38196) * 1.147)
 				}
-				x := float64(p.x) + radius*math.Sin(theta)
-				y := float64(p.y) - radius*math.Cos(theta) // minus because y grows down
+				x := float64(p.x) + float64(radius*math.Sin(theta))
+				y := float64(p.y) - float64(radius*math.Cos(theta)) // minus because y grows down
 				list = append(list, NewPoint(float32(x), float32(y)))
 			}
 			page.DrawPath(list, p.pathOperator)
@@ -1832,8 +1832,8 @@ func (page *Page) SetTextRotation(degrees int) *Page {
 	case 360:
 		page.tmx = [4]float32{1.0, 0.0, 0.0, 1.0}
 	default:
-		sinOfAngle := float32(math.Sin(float64(degrees) * (math.Pi / 180)))
-		cosOfAngle := float32(math.Cos(float64(degrees) * (math.Pi / 180)))
+		sinOfAngle := float32(math.Sin(float64(float64(degrees) * (math.Pi / 180))))
+		cosOfAngle := float32(math.Cos(float64(float64(degrees) * (math.Pi / 180))))
 		page.tmx = [4]float32{cosOfAngle, sinOfAngle, -sinOfAngle, cosOfAngle}
 	}
 	// The sine and the cosine are written with five decimals: hundredths
@@ -1882,9 +1882,9 @@ func (page *Page) AddArcToPath(
 	if !ok {
 		return []float32{x1, y1, x2, y2, x3, y3}
 	}
-	numSegments := int(math.Ceil(math.Abs(float64(sweepDegrees)) / 90.0))
-	angleRad := float64(startAngle) * math.Pi / 180.0
-	deltaPerSeg := float64(sweepDegrees/float32(numSegments)) * math.Pi / 180.0
+	numSegments := int(math.Ceil(float64(math.Abs(float64(sweepDegrees)) / 90.0)))
+	angleRad := float64(float64(float64(startAngle)*math.Pi) / 180.0)
+	deltaPerSeg := float64(float64(float64(sweepDegrees/float32(numSegments))*math.Pi) / 180.0)
 
 	for i := 0; i < numSegments; i++ {
 		segStart := angleRad
@@ -1892,7 +1892,7 @@ func (page *Page) AddArcToPath(
 		deltaRad := segEnd - segStart // guaranteed ≤ ±π/2
 
 		// Calculate safe κ
-		k := float32(4.0 / 3.0 * math.Tan(deltaRad/4.0))
+		k := float32(float64(4.0 / 3.0 * math.Tan(float64(deltaRad/4.0))))
 
 		cosStart := float32(math.Cos(segStart))
 		sinStart := float32(math.Sin(segStart))
@@ -1900,16 +1900,16 @@ func (page *Page) AddArcToPath(
 		sinEnd := float32(math.Sin(segEnd))
 
 		// End points
-		x0 := x + rx*cosStart
-		y0 := y + ry*sinStart
-		x3 = x + rx*cosEnd
-		y3 = y + ry*sinEnd
+		x0 := x + float32(rx*cosStart)
+		y0 := y + float32(ry*sinStart)
+		x3 = x + float32(rx*cosEnd)
+		y3 = y + float32(ry*sinEnd)
 
 		// Control points
-		x1 = x0 - (k * rx * sinStart)
-		y1 = y0 + (k * ry * cosStart)
-		x2 = x3 + (k * rx * sinEnd)
-		y2 = y3 - (k * ry * cosEnd)
+		x1 = x0 - (float32(float32(k*rx) * sinStart))
+		y1 = y0 + (float32(float32(k*ry) * cosStart))
+		x2 = x3 + (float32(float32(k*rx) * sinEnd))
+		y2 = y3 - (float32(float32(k*ry) * cosEnd))
 
 		if i == 0 {
 			page.MoveTo(x0, y0)
@@ -2011,23 +2011,23 @@ func (page *Page) drawRoundedRect(x, y, w, h, r1, r2 float32, pathOperator patho
 
 	// Starting point
 	list = append(list, NewPoint(x+w-r1, y))
-	list = append(list, NewControlPointC(x+w-r1+m4*r1, y))
-	list = append(list, NewControlPointC(x+w, y+r2-m4*r2))
+	list = append(list, NewControlPointC(x+w-r1+float32(m4*r1), y))
+	list = append(list, NewControlPointC(x+w, y+r2-float32(m4*r2)))
 	list = append(list, NewPoint(x+w, y+r2))
 
 	list = append(list, NewPoint(x+w, y+h-r2))
-	list = append(list, NewControlPointC(x+w, y+h-r2+m4*r2))
-	list = append(list, NewControlPointC(x+w-m4*r1, y+h))
+	list = append(list, NewControlPointC(x+w, y+h-r2+float32(m4*r2)))
+	list = append(list, NewControlPointC(x+w-float32(m4*r1), y+h))
 	list = append(list, NewPoint(x+w-r1, y+h))
 
 	list = append(list, NewPoint(x+r1, y+h))
-	list = append(list, NewControlPointC(x+r1-m4*r1, y+h))
-	list = append(list, NewControlPointC(x, y+h-m4*r2))
+	list = append(list, NewControlPointC(x+r1-float32(m4*r1), y+h))
+	list = append(list, NewControlPointC(x, y+h-float32(m4*r2)))
 	list = append(list, NewPoint(x, y+h-r2))
 
 	list = append(list, NewPoint(x, y+r2))
-	list = append(list, NewControlPointC(x, y+r2-m4*r2))
-	list = append(list, NewControlPointC(x+m4*r1, y))
+	list = append(list, NewControlPointC(x, y+r2-float32(m4*r2)))
+	list = append(list, NewControlPointC(x+float32(m4*r1), y))
 	list = append(list, NewPoint(x+r1, y))
 	list = append(list, NewPoint(x+w-r1, y))
 
@@ -2532,7 +2532,7 @@ func (page *Page) transformed(x, y float32) (float32, float32) {
 	if t == nil {
 		return x, y
 	}
-	return t[0]*x + t[2]*y + t[4], t[1]*x + t[3]*y + t[5]
+	return float32(t[0]*x) + float32(t[2]*y) + t[4], float32(t[1]*x) + float32(t[3]*y) + t[5]
 }
 
 // transformedBox returns the box, left, top, right and bottom, that holds the
@@ -2556,12 +2556,12 @@ func (page *Page) pushTransform(m [6]float32) *[6]float32 {
 	saved := page.transform
 	if t := saved; t != nil {
 		m = [6]float32{
-			t[0]*m[0] + t[2]*m[1],
-			t[1]*m[0] + t[3]*m[1],
-			t[0]*m[2] + t[2]*m[3],
-			t[1]*m[2] + t[3]*m[3],
-			t[0]*m[4] + t[2]*m[5] + t[4],
-			t[1]*m[4] + t[3]*m[5] + t[5],
+			float32(t[0]*m[0]) + float32(t[2]*m[1]),
+			float32(t[1]*m[0]) + float32(t[3]*m[1]),
+			float32(t[0]*m[2]) + float32(t[2]*m[3]),
+			float32(t[1]*m[2]) + float32(t[3]*m[3]),
+			float32(t[0]*m[4]) + float32(t[2]*m[5]) + t[4],
+			float32(t[1]*m[4]) + float32(t[3]*m[5]) + t[5],
 		}
 	}
 	page.transform = &m
@@ -2622,7 +2622,7 @@ func (page *Page) DrawContents(
 	y float32,
 	xScale float32,
 	yScale float32) {
-	page.beginTransform(x, (page.height-yScale*h)-y, xScale, yScale)
+	page.beginTransform(x, (page.height-float32(yScale*h))-y, xScale, yScale)
 	page.appendByteArray(content)
 	page.appendString("\n") // The content can end with an operator, like ET.
 	page.endTransform()
@@ -2641,17 +2641,17 @@ func (page *Page) DrawStringUsingSpacing(font *Font, fontSize float32, text stri
 // AddWatermark add watermark to the page.
 func (page *Page) AddWatermark(font *Font, text string) {
 	hypotenuse := float32(math.Sqrt(
-		float64(page.height*page.height + page.width*page.width)))
+		float64(float32(page.height*page.height) + float32(page.width*page.width))))
 	stringWidth := font.StringWidth(font.size, text)
-	offset := (hypotenuse - stringWidth) / 2.0
+	offset := float32((hypotenuse - stringWidth) / 2.0)
 	angle := math.Atan(float64(page.height / page.width))
 	watermark := NewTextLine(font, "")
 	watermark.SetTextColor(color.LightGray)
 	watermark.SetText(text)
 	watermark.SetLocation(
-		float32(float64(offset)*math.Cos(angle)),
-		page.height-float32(float64(offset)*math.Sin(angle)))
-	watermark.SetTextRotation(-(int)(angle * (180.0 / math.Pi)))
+		float32(float64(float64(offset)*math.Cos(angle))),
+		page.height-float32(float64(float64(offset)*math.Sin(angle))))
+	watermark.SetTextRotation(-(int)(float64(angle * (180.0 / math.Pi))))
 	// A watermark is no part of the content, which a screen reader skips.
 	page.addArtifactBDC("/Type /Pagination /Subtype /Watermark")
 	watermark.DrawOn(page)
@@ -2705,7 +2705,7 @@ func (page *Page) Transform(values []float32) {
 	page.appendString(" ")
 
 	if math.Asin(float64(values[MSkewY])) != 0.0 {
-		transx -= values[MSkewY] * page.height / scaley
+		transx -= float32(values[MSkewY]*page.height) / scaley
 	}
 
 	page.appendFloat32(transx)
@@ -2718,12 +2718,12 @@ func (page *Page) Transform(values []float32) {
 
 // AddHeader adds header to this page.
 func (page *Page) AddHeader(textLine *TextLine) [2]float32 {
-	return page.AddHeaderOffsetBy(textLine, 1.5*textLine.font.GetAscent(textLine.fontSize))
+	return page.AddHeaderOffsetBy(textLine, float32(1.5*textLine.font.GetAscent(textLine.fontSize)))
 }
 
 // AddHeaderOffsetBy adds header to this page offset by the specified value.
 func (page *Page) AddHeaderOffsetBy(textLine *TextLine, offset float32) [2]float32 {
-	textLine.SetLocation((page.GetWidth()-textLine.GetWidth())/2, offset)
+	textLine.SetLocation(float32((page.GetWidth()-textLine.GetWidth())/2), offset)
 	// A running header is no part of the content, which a screen reader skips.
 	page.addArtifactBDC("/Type /Pagination /Subtype /Header")
 	xy := textLine.DrawOn(page)
@@ -2739,7 +2739,7 @@ func (page *Page) AddFooter(textLine *TextLine) [2]float32 {
 
 // AddFooterOffsetBy adds footer to this page offset by the specified value.
 func (page *Page) AddFooterOffsetBy(textLine *TextLine, offset float32) [2]float32 {
-	textLine.SetLocation((page.GetWidth()-textLine.GetWidth())/2, page.GetHeight()-offset)
+	textLine.SetLocation(float32((page.GetWidth()-textLine.GetWidth())/2), page.GetHeight()-offset)
 	// A running footer, like a page number, is no part of the content, which a
 	// screen reader skips.
 	page.addArtifactBDC("/Type /Pagination /Subtype /Footer")
@@ -2876,7 +2876,7 @@ func (page *Page) rotateAroundCenter(centerX, centerY, degrees float32) {
 	page.appendFloat32(centerY)
 	page.appendString(" cm\n")
 
-	radians := float64(degrees) * math.Pi / 180
+	radians := float64(float64(float64(degrees)*math.Pi) / 180)
 	page.appendRotation(float32(math.Cos(radians)), float32(math.Sin(radians)))
 
 	page.appendString("1 0 0 1 ")
@@ -2976,7 +2976,7 @@ func (page *Page) drawTextBlock(
 	}
 
 	yLine := y + font.GetBodyHeight(fontSize)
-	yStrike := y + font.GetAscent(fontSize) - font.GetBodyHeight(fontSize)/4.0
+	yStrike := y + font.GetAscent(fontSize) - float32(font.GetBodyHeight(fontSize)/4.0)
 	decorated := false
 	for _, textLine := range textLines {
 		if textLine.underline || textLine.strikeout {

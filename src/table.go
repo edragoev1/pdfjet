@@ -793,7 +793,7 @@ func (table *Table) applyColumnPercents() {
 	if rest > 0 {
 		each = max(0, 100-given) / float32(rest)
 	}
-	total := given + each*float32(rest)
+	total := given + float32(each*float32(rest))
 	if total <= 0 {
 		// Percentages that are all 0 share the width equally, as columns
 		// with none do.
@@ -807,7 +807,7 @@ func (table *Table) applyColumnPercents() {
 		if i < len(table.columnPercents) {
 			share = shares[i]
 		}
-		table.SetColumnWidth(i, table.tableWidth*share/total)
+		table.SetColumnWidth(i, float32(table.tableWidth*share)/total)
 	}
 }
 
@@ -828,7 +828,7 @@ func (table *Table) FitToWidth(width float32) *Table {
 	}
 	widths := make([]float32, columns)
 	for i := 0; i < columns; i++ {
-		widths[i] = table.GetColumnWidth(i) * width / total
+		widths[i] = float32(table.GetColumnWidth(i)*width) / total
 	}
 	for i, w := range widths {
 		table.SetColumnWidth(i, w)

@@ -205,7 +205,7 @@ func (tf *TextFrame) HasMoreText() bool {
 func (tf *TextFrame) DrawOnPages(pdf *PDF, pages *[]*Page, pageSize pagesize.PageSize) [2]float32 {
 	xy := [2]float32{tf.x + tf.w, tf.y}
 	height := tf.h
-	if height <= 0 && pageSize.GetHeight()-2*tf.y <= 0 {
+	if height <= 0 && pageSize.GetHeight()-float32(2*tf.y) <= 0 {
 		// A frame in the bottom half of the page leaves no height above the
 		// margin, and a frame with no height would draw all of the text on
 		// the first page, past its bottom edge.
@@ -218,7 +218,7 @@ func (tf *TextFrame) DrawOnPages(pdf *PDF, pages *[]*Page, pageSize pagesize.Pag
 		page := NewPageDetached(pdf, pageSize)
 		*pages = append(*pages, page)
 		if height <= 0 {
-			tf.h = page.height - 2*tf.y
+			tf.h = page.height - float32(2*tf.y)
 		}
 		// Each frame draws at least a line, so the text always flows.
 		xy = tf.DrawOn(page)
@@ -336,7 +336,7 @@ func (tf *TextFrame) openRow(textLine *TextLine) bool {
 		baseline = tf.nextBaseline
 		if tf.startsParagraph {
 			// The gap, one empty line of this text by default, then its ascent.
-			gap := textLine.GetHeight() + 2*textLine.font.GetLineGap(textLine.fontSize)
+			gap := textLine.GetHeight() + float32(2*textLine.font.GetLineGap(textLine.fontSize))
 			if tf.hasParagraphGap {
 				gap = tf.paragraphGap
 			}
@@ -532,7 +532,7 @@ func (tf *TextFrame) drawRow(page *Page, lastRowOfParagraph bool) {
 		if textAlignment == alignment.Right {
 			shift = tf.w - rowWidth
 		} else if textAlignment == alignment.Center {
-			shift = (tf.w - rowWidth) / 2
+			shift = float32((tf.w - rowWidth) / 2)
 		}
 		for _, part := range tf.row {
 			line := part.textLine.copyWithText(part.text)

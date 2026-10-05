@@ -75,9 +75,9 @@ func (series *Series) SetStrokeColor(c int32) *Series {
 	if c == color.Transparent {
 		return series
 	}
-	r := float32((c>>16)&0xff) / 255.0
-	g := float32((c>>8)&0xff) / 255.0
-	b := float32((c)&0xff) / 255.0
+	r := float32(float32((c>>16)&0xff) / 255.0)
+	g := float32(float32((c>>8)&0xff) / 255.0)
+	b := float32(float32((c)&0xff) / 255.0)
 	series.strokeColor = [3]float32{r, g, b}
 	series.hasStrokeColor = true
 	return series

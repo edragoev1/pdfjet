@@ -28,12 +28,12 @@ import (
 //
 // Please see Example_03 and Example_24.
 type Image struct {
-	objNumber      int
-	pdf            *PDF    // The PDF the image was added to, or nil for an image of an existing PDF
-	x              float32 // Position of the image on the page
-	y              float32
-	w              float32 // Image width
-	h              float32 // Image height
+	objNumber int
+	pdf       *PDF    // The PDF the image was added to, or nil for an image of an existing PDF
+	x         float32 // Position of the image on the page
+	y         float32
+	w         float32 // Image width
+	h         float32 // Image height
 	// The pixels of the image across and down, which the image object is
 	// written with: a float32 holds every whole number only up to 2^24.
 	pixelWidth     int
@@ -259,8 +259,8 @@ func (image *Image) SetLocation(x, y float32) Drawable {
 // ScaleBy scales this image by the specified factor.
 //   - factor: the factor used to scale the image.
 func (image *Image) ScaleBy(factor float32) *Image {
-	image.w *= factor
-	image.h *= factor
+	image.w = float32(image.w * factor)
+	image.h = float32(image.h * factor)
 	return image
 }
 
@@ -271,8 +271,8 @@ func (image *Image) ScaleBy(factor float32) *Image {
 //   - widthFactor: the factor used to scale the width of the image
 //   - heightFactor: the factor used to scale the height of the image
 func (image *Image) ScaleByWidthAndHeight(widthFactor, heightFactor float32) *Image {
-	image.w *= widthFactor
-	image.h *= heightFactor
+	image.w = float32(image.w * widthFactor)
+	image.h = float32(image.h * heightFactor)
 	return image
 }
 

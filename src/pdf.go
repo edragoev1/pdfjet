@@ -1552,9 +1552,9 @@ func (pdf *PDF) addAppearanceObject(annot *annotationObject, minX, minY, maxX, m
 	case annotationCircle:
 		// Four Bezier curves, one for each quarter of the ellipse.
 		const kappa = float32(0.55228475)
-		rx, ry := w/2, h/2
+		rx, ry := float32(w/2), float32(h/2)
 		cx, cy := minX+rx, minY+ry
-		ox, oy := rx*kappa, ry*kappa
+		ox, oy := float32(rx*kappa), float32(ry*kappa)
 		fill()
 		number(cx + rx)
 		number(cy)

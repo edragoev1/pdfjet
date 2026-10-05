@@ -240,10 +240,10 @@ func (barcode *Barcode) DrawOn(page *Page) [2]float32 {
 
 func (barcode *Barcode) drawCodeUPC(page *Page, x1, y1 float32) *barcodeExtent {
 	x := x1
-	h := barcode.m1 * barcode.barHeightFactor // Barcode height when drawn horizontally
+	h := float32(barcode.m1 * barcode.barHeightFactor) // Barcode height when drawn horizontally
 	// The guard bars, and the bars of the first and the last digit, which are
 	// printed outside the bars, reach 5 modules below the others.
-	long := h + guardBarExtension*barcode.m1
+	long := h + float32(guardBarExtension*barcode.m1)
 
 	// Calculate the check digit:
 	// 1. Add the digits in the odd-numbered positions (first, third, fifth, etc.)
@@ -266,7 +266,7 @@ func (barcode *Barcode) drawCodeUPC(page *Page, x1, y1 float32) *barcodeExtent {
 	// must be safe to call more than once on the same Barcode instance
 	// (e.g. drawing the same barcode on several pages).
 	fullText := barcode.text + strconv.Itoa(checkDigit)
-	bars := &barcodeBars{x1: x1, y1: y1, length: 95 * barcode.m1, height: long, direction: barcode.direction} // 95 modules
+	bars := &barcodeBars{x1: x1, y1: y1, length: float32(95 * barcode.m1), height: long, direction: barcode.direction} // 95 modules
 
 	x = barcode.drawEGuard(page, bars, x, long)
 	xGroup1Start := x
@@ -280,9 +280,9 @@ func (barcode *Barcode) drawCodeUPC(page *Page, x1, y1 float32) *barcodeExtent {
 		for j := 0; j < len(str); j++ {
 			n := str[j] - 0x30
 			if j%2 != 0 {
-				barcode.drawBar(page, bars, x, float32(n)*barcode.m1, barHeight)
+				barcode.drawBar(page, bars, x, float32(float32(n)*barcode.m1), barHeight)
 			}
-			x += float32(n) * barcode.m1
+			x += float32(float32(n) * barcode.m1)
 		}
 		if i == 0 {
 			xGroup1Start = x // Start of the 2nd-6th digit bars (digit 0 is drawn outside)
@@ -305,9 +305,9 @@ func (barcode *Barcode) drawCodeUPC(page *Page, x1, y1 float32) *barcodeExtent {
 		for j := 0; j < len(str); j++ {
 			n := str[j] - 0x30
 			if j%2 == 0 {
-				barcode.drawBar(page, bars, x, float32(n)*barcode.m1, barHeight)
+				barcode.drawBar(page, bars, x, float32(float32(n)*barcode.m1), barHeight)
 			}
-			x += float32(n) * barcode.m1
+			x += float32(float32(n) * barcode.m1)
 		}
 	}
 	x = barcode.drawEGuard(page, bars, x, long)
@@ -334,10 +334,10 @@ func (barcode *Barcode) drawCodeUPC(page *Page, x1, y1 float32) *barcodeExtent {
 		left = x1 - gap - barcode.font.StringWidth(barcode.font.size, firstDigit)
 		barcode.drawText(page, bars, firstDigit, left, yText)
 		barcode.drawText(page, bars, group1,
-			xGroup1Start+((xLeftGroupEnd-xGroup1Start)-barcode.font.StringWidth(barcode.font.size, group1))/2,
+			xGroup1Start+float32(((xLeftGroupEnd-xGroup1Start)-barcode.font.StringWidth(barcode.font.size, group1))/2),
 			yText)
 		barcode.drawText(page, bars, group2,
-			xRightGroupStart+((xGroup2End-xRightGroupStart)-barcode.font.StringWidth(barcode.font.size, group2))/2,
+			xRightGroupStart+float32(((xGroup2End-xRightGroupStart)-barcode.font.StringWidth(barcode.font.size, group2))/2),
 			yText)
 		xy := barcode.drawText(page, bars, lastDigit, x+gap, yText)
 		right = xy[0]
@@ -358,11 +358,11 @@ func (barcode *Barcode) drawEGuard(page *Page, bars *barcodeBars, x, h float32) 
 	if page != nil {
 		// 101
 		page.AddArtifactBMC()
-		barcode.strokeBar(page, bars, x+(0.5*m1), m1, h)
-		barcode.strokeBar(page, bars, x+(2.5*m1), m1, h)
+		barcode.strokeBar(page, bars, x+(float32(0.5*m1)), m1, h)
+		barcode.strokeBar(page, bars, x+(float32(2.5*m1)), m1, h)
 		page.AddEMC()
 	}
-	return x + (3.0 * m1)
+	return x + (float32(3.0 * m1))
 }
 
 func (barcode *Barcode) drawMGuard(page *Page, bars *barcodeBars, x, h float32) float32 {
@@ -370,18 +370,18 @@ func (barcode *Barcode) drawMGuard(page *Page, bars *barcodeBars, x, h float32) 
 	if page != nil {
 		// 01010
 		page.AddArtifactBMC()
-		barcode.strokeBar(page, bars, x+(1.5*m1), m1, h)
-		barcode.strokeBar(page, bars, x+(3.5*m1), m1, h)
+		barcode.strokeBar(page, bars, x+(float32(1.5*m1)), m1, h)
+		barcode.strokeBar(page, bars, x+(float32(3.5*m1)), m1, h)
 		page.AddEMC()
 	}
-	return x + (5.0 * m1)
+	return x + (float32(5.0 * m1))
 }
 
 // drawBar draws the bar of width w and height h that starts at x.
 func (barcode *Barcode) drawBar(page *Page, bars *barcodeBars, x, w, h float32) {
 	if page != nil {
 		page.AddArtifactBMC()
-		barcode.strokeBar(page, bars, x+w/2, w, h)
+		barcode.strokeBar(page, bars, x+float32(w/2), w, h)
 		page.AddEMC()
 	}
 }
@@ -522,7 +522,7 @@ func code128Encode(items []int) (rune, []rune) {
 }
 
 func (barcode *Barcode) drawCode128(page *Page, x1, y1 float32) *barcodeExtent {
-	h := barcode.m1 * barcode.barHeightFactor // Barcode height when drawn horizontally
+	h := float32(barcode.m1 * barcode.barHeightFactor) // Barcode height when drawn horizontally
 
 	var start rune
 	var list []rune
@@ -548,7 +548,7 @@ func (barcode *Barcode) drawCode128(page *Page, x1, y1 float32) *barcodeExtent {
 	for _, si := range buf.String() {
 		symbol := strconv.Itoa(code128.TABLE[si])
 		for i := 0; i < len(symbol); i++ {
-			length += float32(symbol[i]-0x30) * barcode.m1
+			length += float32(float32(symbol[i]-0x30) * barcode.m1)
 		}
 	}
 
@@ -559,9 +559,9 @@ func (barcode *Barcode) drawCode128(page *Page, x1, y1 float32) *barcodeExtent {
 		for i := 0; i < len(symbol); i++ {
 			n := float32(symbol[i] - 0x30)
 			if i%2 == 0 {
-				barcode.drawBar(page, bars, x, n*barcode.m1, h)
+				barcode.drawBar(page, bars, x, float32(n*barcode.m1), h)
 			}
-			x += n * barcode.m1
+			x += float32(n * barcode.m1)
 		}
 	}
 
@@ -570,7 +570,7 @@ func (barcode *Barcode) drawCode128(page *Page, x1, y1 float32) *barcodeExtent {
 	bottom := y1 + h
 	if barcode.font != nil {
 		// The text is centered under the bars, and can be wider than them
-		textX := x1 + ((x-x1)-barcode.font.StringWidth(barcode.font.size, barcode.text))/2.0
+		textX := x1 + float32(((x-x1)-barcode.font.StringWidth(barcode.font.size, barcode.text))/2.0)
 		xy := barcode.drawText(page, bars, barcode.text, textX, y1+h+barcode.font.bodyHeight)
 		left = min(left, textX)
 		right = max(right, xy[0])
@@ -596,10 +596,10 @@ var itfPatterns = [10]string{
 // frame.
 func (barcode *Barcode) drawITF14(page *Page, x1, y1 float32) *barcodeExtent {
 	m := barcode.m1
-	wide := 2.5 * m
-	bearer := 4 * m
-	quiet := 10 * m
-	h := m * barcode.barHeightFactor // The height of the bars when drawn horizontally
+	wide := float32(2.5 * m)
+	bearer := float32(4 * m)
+	quiet := float32(10 * m)
+	h := float32(m * barcode.barHeightFactor) // The height of the bars when drawn horizontally
 
 	sum := 0
 	for i := 0; i < 13; i++ {
@@ -624,8 +624,8 @@ func (barcode *Barcode) drawITF14(page *Page, x1, y1 float32) *barcodeExtent {
 	for i := 0; i < len(widths); i++ {
 		length += map[byte]float32{'n': m, 'w': wide}[widths[i]]
 	}
-	outerWidth := 2*bearer + 2*quiet + length
-	outerHeight := 2*bearer + h
+	outerWidth := float32(2*bearer) + float32(2*quiet) + length
+	outerHeight := float32(2*bearer) + h
 	bars := &barcodeBars{x1: x1, y1: y1, length: outerWidth, height: outerHeight, direction: barcode.direction}
 
 	if page != nil {
@@ -635,15 +635,15 @@ func (barcode *Barcode) drawITF14(page *Page, x1, y1 float32) *barcodeExtent {
 		for i := 0; i < len(widths); i++ {
 			w := map[byte]float32{'n': m, 'w': wide}[widths[i]]
 			if i%2 == 0 {
-				barcode.strokeLine(page, bars, x+w/2, y1+bearer, x+w/2, y1+bearer+h, w)
+				barcode.strokeLine(page, bars, x+float32(w/2), y1+bearer, x+float32(w/2), y1+bearer+h, w)
 			}
 			x += w
 		}
 		right, bottom := x1+outerWidth, y1+outerHeight
-		barcode.strokeLine(page, bars, x1, y1+bearer/2, right, y1+bearer/2, bearer)
-		barcode.strokeLine(page, bars, x1, bottom-bearer/2, right, bottom-bearer/2, bearer)
-		barcode.strokeLine(page, bars, x1+bearer/2, y1, x1+bearer/2, bottom, bearer)
-		barcode.strokeLine(page, bars, right-bearer/2, y1, right-bearer/2, bottom, bearer)
+		barcode.strokeLine(page, bars, x1, y1+float32(bearer/2), right, y1+float32(bearer/2), bearer)
+		barcode.strokeLine(page, bars, x1, bottom-float32(bearer/2), right, bottom-float32(bearer/2), bearer)
+		barcode.strokeLine(page, bars, x1+float32(bearer/2), y1, x1+float32(bearer/2), bottom, bearer)
+		barcode.strokeLine(page, bars, right-float32(bearer/2), y1, right-float32(bearer/2), bottom, bearer)
 		page.AddEMC()
 	}
 
@@ -651,7 +651,7 @@ func (barcode *Barcode) drawITF14(page *Page, x1, y1 float32) *barcodeExtent {
 	right := x1 + outerWidth
 	bottom := y1 + outerHeight
 	if barcode.font != nil {
-		textX := x1 + (outerWidth-barcode.font.StringWidth(barcode.font.size, fullText))/2
+		textX := x1 + float32((outerWidth-barcode.font.StringWidth(barcode.font.size, fullText))/2)
 		xy := barcode.drawText(page, bars, fullText, textX, y1+outerHeight+barcode.font.bodyHeight)
 		left = min(left, textX)
 		right = max(right, xy[0])
@@ -676,7 +676,7 @@ func (barcode *Barcode) drawCode39(page *Page, x1, y1 float32) *barcodeExtent {
 	// must be safe to call more than once on the same Barcode instance
 	// (e.g. drawing the same barcode on several pages).
 	fullText := "*" + barcode.text + "*"
-	h := barcode.m1 * barcode.barHeightFactor // Barcode height when drawn horizontally
+	h := float32(barcode.m1 * barcode.barHeightFactor) // Barcode height when drawn horizontally
 
 	var length float32
 	for i := 0; i < len(fullText); i++ {
@@ -687,7 +687,7 @@ func (barcode *Barcode) drawCode39(page *Page, x1, y1 float32) *barcodeExtent {
 		}
 		for _, ch := range code {
 			if ch == 'W' || ch == 'B' {
-				length += 3 * barcode.m1
+				length += float32(3 * barcode.m1)
 			} else {
 				length += barcode.m1
 			}
@@ -703,13 +703,13 @@ func (barcode *Barcode) drawCode39(page *Page, x1, y1 float32) *barcodeExtent {
 			if ch == 'w' {
 				x += barcode.m1
 			} else if ch == 'W' {
-				x += 3 * barcode.m1
+				x += float32(3 * barcode.m1)
 			} else if ch == 'b' {
 				barcode.drawBar(page, bars, x, barcode.m1, h)
 				x += barcode.m1
 			} else if ch == 'B' {
-				barcode.drawBar(page, bars, x, 3*barcode.m1, h)
-				x += 3 * barcode.m1
+				barcode.drawBar(page, bars, x, float32(3*barcode.m1), h)
+				x += float32(3 * barcode.m1)
 			}
 		}
 		x += barcode.m1
@@ -719,7 +719,7 @@ func (barcode *Barcode) drawCode39(page *Page, x1, y1 float32) *barcodeExtent {
 	right := x1 + length
 	bottom := y1 + h
 	if barcode.font != nil {
-		textX := x1 + (length-barcode.font.StringWidth(barcode.font.size, fullText))/2
+		textX := x1 + float32((length-barcode.font.StringWidth(barcode.font.size, fullText))/2)
 		xy := barcode.drawText(page, bars, fullText, textX, y1+h+barcode.font.bodyHeight)
 		left = min(left, textX)
 		right = max(right, xy[0])
@@ -731,9 +731,9 @@ func (barcode *Barcode) drawCode39(page *Page, x1, y1 float32) *barcodeExtent {
 
 func (barcode *Barcode) drawCodeEAN13(page *Page, x1, y1 float32) *barcodeExtent {
 	x := x1
-	h := barcode.m1 * barcode.barHeightFactor // Barcode height when drawn horizontally
+	h := float32(barcode.m1 * barcode.barHeightFactor) // Barcode height when drawn horizontally
 	// The guard bars reach 5 modules below the others.
-	long := h + guardBarExtension*barcode.m1
+	long := h + float32(guardBarExtension*barcode.m1)
 
 	sum := 0
 	for i := 0; i < 12; i += 2 {
@@ -751,7 +751,7 @@ func (barcode *Barcode) drawCodeEAN13(page *Page, x1, y1 float32) *barcodeExtent
 	// must be safe to call more than once on the same Barcode instance
 	// (e.g. drawing the same barcode on several pages).
 	fullText := barcode.text + strconv.Itoa(checkDigit)
-	bars := &barcodeBars{x1: x1, y1: y1, length: 95 * barcode.m1, height: long, direction: barcode.direction} // 95 modules
+	bars := &barcodeBars{x1: x1, y1: y1, length: float32(95 * barcode.m1), height: long, direction: barcode.direction} // 95 modules
 
 	x = barcode.drawEGuard(page, bars, x, long)
 	xLeftGroupStart := x
@@ -765,9 +765,9 @@ func (barcode *Barcode) drawCodeEAN13(page *Page, x1, y1 float32) *barcodeExtent
 		for j := 0; j < len(str); j++ {
 			n := str[j] - '0'
 			if j%2 != 0 {
-				barcode.drawBar(page, bars, x, float32(n)*barcode.m1, h)
+				barcode.drawBar(page, bars, x, float32(float32(n)*barcode.m1), h)
 			}
-			x += float32(n) * barcode.m1
+			x += float32(float32(n) * barcode.m1)
 		}
 	}
 	xLeftGroupEnd := x
@@ -779,9 +779,9 @@ func (barcode *Barcode) drawCodeEAN13(page *Page, x1, y1 float32) *barcodeExtent
 		for j := 0; j < len(str); j++ {
 			n := str[j] - '0'
 			if j%2 == 0 {
-				barcode.drawBar(page, bars, x, float32(n)*barcode.m1, h)
+				barcode.drawBar(page, bars, x, float32(float32(n)*barcode.m1), h)
 			}
-			x += float32(n) * barcode.m1
+			x += float32(float32(n) * barcode.m1)
 		}
 	}
 	xRightGroupEnd := x
@@ -809,10 +809,10 @@ func (barcode *Barcode) drawCodeEAN13(page *Page, x1, y1 float32) *barcodeExtent
 		left = x1 - gap - barcode.font.StringWidth(barcode.font.size, firstDigit)
 		barcode.drawText(page, bars, firstDigit, left, yText)
 		barcode.drawText(page, bars, leftGroup,
-			xLeftGroupStart+((xLeftGroupEnd-xLeftGroupStart)-barcode.font.StringWidth(barcode.font.size, leftGroup))/2,
+			xLeftGroupStart+float32(((xLeftGroupEnd-xLeftGroupStart)-barcode.font.StringWidth(barcode.font.size, leftGroup))/2),
 			yText)
 		xy := barcode.drawText(page, bars, rightGroup,
-			xRightGroupStart+((xRightGroupEnd-xRightGroupStart)-barcode.font.StringWidth(barcode.font.size, rightGroup))/2,
+			xRightGroupStart+float32(((xRightGroupEnd-xRightGroupStart)-barcode.font.StringWidth(barcode.font.size, rightGroup))/2),
 			yText)
 		right = max(right, xy[0])
 		bottom = max(bottom, xy[1])

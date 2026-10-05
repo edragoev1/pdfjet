@@ -233,19 +233,19 @@ func (dm *DataMatrix) DrawOn(page *pdfjet.Page) [2]float32 {
 					col++
 				}
 				page.FillRect(
-					dm.x+float32(start)*dm.m1,
-					dm.y+float32(row)*dm.m1,
-					float32(col-start)*dm.m1,
+					dm.x+float32(float32(start)*dm.m1),
+					dm.y+float32(float32(row)*dm.m1),
+					float32(float32(col-start)*dm.m1),
 					dm.m1)
 			}
 		}
 		page.RestoreGraphicsState()
 		if dm.altDescription != "" {
-			page.SetFigureBoundingBox(dm.x, dm.y, float32(cols)*dm.m1, float32(rows)*dm.m1)
+			page.SetFigureBoundingBox(dm.x, dm.y, float32(float32(cols)*dm.m1), float32(float32(rows)*dm.m1))
 		}
 		page.AddEMC()
 	}
-	return [2]float32{dm.x + float32(cols)*dm.m1, dm.y + float32(rows)*dm.m1}
+	return [2]float32{dm.x + float32(float32(cols)*dm.m1), dm.y + float32(float32(rows)*dm.m1)}
 }
 
 // encode encodes the bytes in ASCII encodation, or in Base 256 encodation when

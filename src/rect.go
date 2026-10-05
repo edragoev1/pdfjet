@@ -71,9 +71,9 @@ func (rect *Rect) SetBorderColor(borderColor int32) *Rect {
 		rect.hasBorderColor = false
 		return rect
 	}
-	r := float32((borderColor>>16)&0xff) / 255.0
-	g := float32((borderColor>>8)&0xff) / 255.0
-	b := float32((borderColor)&0xff) / 255.0
+	r := float32(float32((borderColor>>16)&0xff) / 255.0)
+	g := float32(float32((borderColor>>8)&0xff) / 255.0)
+	b := float32(float32((borderColor)&0xff) / 255.0)
 	rect.SetBorderColorRGB([3]float32{r, g, b})
 	return rect
 }
@@ -91,9 +91,9 @@ func (rect *Rect) SetFillColor(fillColor int32) *Rect {
 	if fillColor == color.Transparent {
 		return rect
 	}
-	r := float32((fillColor>>16)&0xff) / 255.0
-	g := float32((fillColor>>8)&0xff) / 255.0
-	b := float32((fillColor)&0xff) / 255.0
+	r := float32(float32((fillColor>>16)&0xff) / 255.0)
+	g := float32(float32((fillColor>>8)&0xff) / 255.0)
+	b := float32(float32((fillColor)&0xff) / 255.0)
 	rect.SetFillColorRGB([3]float32{r, g, b})
 	return rect
 }
@@ -167,9 +167,9 @@ func (rect *Rect) SetActualText(actualText string) *Rect {
 // specified factor. The location does not change.
 //   - factor: the factor used to scale the rect.
 func (rect *Rect) ScaleBy(factor float32) *Rect {
-	rect.width *= factor
-	rect.height *= factor
-	rect.cornerRadius *= factor
+	rect.width = float32(rect.width * factor)
+	rect.height = float32(rect.height * factor)
+	rect.cornerRadius = float32(rect.cornerRadius * factor)
 	return rect
 }
 
@@ -185,7 +185,7 @@ func (rect *Rect) DrawOn(page *Page) [2]float32 {
 	const k float32 = 0.55228
 	// The radius is at most half the shorter side, as SVG has it: a larger one
 	// would turn the sides back on themselves and cross the curves.
-	r := max(0, min(rect.cornerRadius, abs32(rect.width)/2, abs32(rect.height)/2))
+	r := max(0, min(rect.cornerRadius, float32(abs32(rect.width)/2), float32(abs32(rect.height)/2)))
 
 	// A rectangle carries no text, so it is decorative content.
 	page.AddArtifactBMC()
@@ -228,20 +228,20 @@ func (rect *Rect) DrawOn(page *Page) [2]float32 {
 		points := make([]*Point, 0)
 		points = append(points, NewPoint(rect.x+r, rect.y))
 		points = append(points, NewPoint((rect.x+rect.width)-r, rect.y))
-		points = append(points, NewControlPointC((rect.x+rect.width-r)+r*k, rect.y))
-		points = append(points, NewControlPointC(rect.x+rect.width, (rect.y+r)-r*k))
+		points = append(points, NewControlPointC((rect.x+rect.width-r)+float32(r*k), rect.y))
+		points = append(points, NewControlPointC(rect.x+rect.width, (rect.y+r)-float32(r*k)))
 		points = append(points, NewPoint(rect.x+rect.width, rect.y+r))
 		points = append(points, NewPoint(rect.x+rect.width, (rect.y+rect.height)-r))
-		points = append(points, NewControlPointC(rect.x+rect.width, ((rect.y+rect.height)-r)+r*k))
-		points = append(points, NewControlPointC(((rect.x+rect.width)-r)+r*k, rect.y+rect.height))
+		points = append(points, NewControlPointC(rect.x+rect.width, ((rect.y+rect.height)-r)+float32(r*k)))
+		points = append(points, NewControlPointC(((rect.x+rect.width)-r)+float32(r*k), rect.y+rect.height))
 		points = append(points, NewPoint((rect.x+rect.width)-r, rect.y+rect.height))
 		points = append(points, NewPoint(rect.x+r, rect.y+rect.height))
-		points = append(points, NewControlPointC((rect.x+r)-r*k, rect.y+rect.height))
-		points = append(points, NewControlPointC(rect.x, ((rect.y+rect.height)-r)+r*k))
+		points = append(points, NewControlPointC((rect.x+r)-float32(r*k), rect.y+rect.height))
+		points = append(points, NewControlPointC(rect.x, ((rect.y+rect.height)-r)+float32(r*k)))
 		points = append(points, NewPoint(rect.x, (rect.y+rect.height)-r))
 		points = append(points, NewPoint(rect.x, rect.y+r))
-		points = append(points, NewControlPointC(rect.x, (rect.y+r)-r*k))
-		points = append(points, NewControlPointC((rect.x+r)-r*k, rect.y))
+		points = append(points, NewControlPointC(rect.x, (rect.y+r)-float32(r*k)))
+		points = append(points, NewControlPointC((rect.x+r)-float32(r*k), rect.y))
 		points = append(points, NewPoint(rect.x+r, rect.y))
 
 		if rect.hasFillColor && !rect.hasBorderColor {

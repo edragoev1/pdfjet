@@ -210,7 +210,7 @@ func (textColumn *TextColumn) drawParagraphOn(
 	var maxAscent = float32(0.0)
 	var maxDescent = float32(0.0)
 	for _, line := range paragraph.lines {
-		height := (line.GetHeight() + line.font.GetLineGap(line.fontSize)) * textColumn.lineSpacing
+		height := float32((line.GetHeight() + line.font.GetLineGap(line.fontSize)) * textColumn.lineSpacing)
 		if height > lineHeight {
 			lineHeight = height
 		}
@@ -318,7 +318,7 @@ func (textColumn *TextColumn) drawParagraphOn(
 		textColumn.moveToNextLine(lineHeight)
 	}
 
-	return textColumn.moveToNextParagraph(lineHeight * textColumn.paragraphSpacing)
+	return textColumn.moveToNextParagraph(float32(lineHeight * textColumn.paragraphSpacing))
 }
 
 // markLastToken marks the last token of a line drawn on the page as the one
@@ -403,7 +403,7 @@ func (textColumn *TextColumn) drawNonJustifiedLine(page *Page, textLines []*Text
 	runLength := visibleWidth(textLines)
 
 	if textAlignment == alignment.Center {
-		textColumn.x1 = textColumn.x + ((textColumn.w - runLength) / 2)
+		textColumn.x1 = textColumn.x + (float32((textColumn.w - runLength) / 2))
 	} else if textAlignment == alignment.Right {
 		textColumn.x1 = textColumn.x + (textColumn.w - runLength)
 	}

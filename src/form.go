@@ -81,9 +81,9 @@ func (form *Form) SetValueFontSize(valueFontSize float32) *Form {
 
 // parseColor converts an int32 color value (0xRRGGBB) to RGB floats in range 0.0-1.0.
 func parseColor(color int32) [3]float32 {
-	r := float32((color>>16)&0xff) / 255.0
-	g := float32((color>>8)&0xff) / 255.0
-	b := float32(color&0xff) / 255.0
+	r := float32(float32((color>>16)&0xff) / 255.0)
+	g := float32(float32((color>>8)&0xff) / 255.0)
+	b := float32(float32(color&0xff) / 255.0)
 	return [3]float32{r, g, b}
 }
 
@@ -143,13 +143,13 @@ func (form *Form) DrawOn(page *Page) [2]float32 {
 						form.y+yField)
 					hLine.SetStrokeWidth(form.strokeWidth).DrawOn(page)
 				}
-				yField += form.f1.GetAscent(form.labelFontSize) + 3.0*form.f1.GetDescent(form.labelFontSize)
+				yField += form.f1.GetAscent(form.labelFontSize) + float32(3.0*form.f1.GetDescent(form.labelFontSize))
 			}
 			yField += form.f2.GetAscent(form.valueFontSize) + form.f2.GetDescent(form.valueFontSize)
 		}
 
 		if field.label != "" {
-			yOffset := 2*form.f1.GetDescent(form.labelFontSize) +
+			yOffset := float32(2*form.f1.GetDescent(form.labelFontSize)) +
 				form.f2.GetAscent(form.valueFontSize) + form.f2.GetDescent(form.valueFontSize)
 			textLine := NewTextLine(form.f1, field.label)
 			textLine.SetFontSize(form.labelFontSize)
@@ -164,7 +164,7 @@ func (form *Form) DrawOn(page *Page) [2]float32 {
 		textLine.DrawOn(page)
 
 		if field.x != 0.0 {
-			rowHeight := form.f1.GetAscent(form.labelFontSize) + 3.0*form.f1.GetDescent(form.labelFontSize)
+			rowHeight := form.f1.GetAscent(form.labelFontSize) + float32(3.0*form.f1.GetDescent(form.labelFontSize))
 			rowHeight += form.f2.GetAscent(form.valueFontSize) + form.f2.GetDescent(form.valueFontSize)
 			vLine := NewLine(
 				form.x+field.x,

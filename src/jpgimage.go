@@ -429,7 +429,7 @@ func (image *jpgImage) physicalSize(pixels, density uint16) float32 {
 	if points == 0.0 || density == 0 || image.xDensity == 0 || image.yDensity == 0 {
 		return 0.0
 	}
-	size := float32(float64(pixels) * points / float64(density))
+	size := float32(float64(float64(pixels)*points) / float64(density))
 	if !fastfloat.IsWritable(size) {
 		return 0.0
 	}

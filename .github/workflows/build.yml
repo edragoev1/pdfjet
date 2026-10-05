@@ -136,6 +136,13 @@ jobs:
             - name: Run the unit tests
               run: bash -e test-${{ matrix.port }}.sh
 
+            # No fused multiply-add in the Go port's code for arm64, which
+            # could round otherwise than amd64 and the other ports; the
+            # compiler prints the arm64 code, so no ARM runner is needed.
+            - name: No fused multiply-add on arm64
+              if: matrix.port == 'go'
+              run: bash -e check-no-fma.sh
+
     # The java job builds with JDK 21 and javac --release 8. This job builds with
     # JDK 8, whose javac has no --release option, and runs the examples and the
     # unit tests on the Java 8 runtime, so the library, the examples, the tests,

@@ -323,7 +323,7 @@ func parseSVGColor(colorMap map[string]int32, value string) (int32, bool, error)
 			if err != nil || math.IsNaN(number) || math.IsInf(number, 0) {
 				return 0, false, nil
 			}
-			channel := math.Round(number * scale)
+			channel := math.Round(float64(number * scale))
 			rgb = rgb<<8 | int32(math.Max(0.0, math.Min(255.0, channel)))
 		}
 		return rgb, true, nil
@@ -346,7 +346,7 @@ func parseSVGOpacity(value string) (float32, bool) {
 	if err != nil || math.IsNaN(number) {
 		return 0.0, false
 	}
-	return float32(math.Max(0.0, math.Min(1.0, number*scale))), true
+	return float32(math.Max(0.0, math.Min(1.0, float64(number*scale)))), true
 }
 
 // parseSVGLength reads a length in user units, which PDFjet draws as points,
@@ -365,7 +365,7 @@ func parseSVGLength(value string) (float32, error) {
 	if err == nil && (math.IsInf(float64(number), 0) || math.IsNaN(float64(number))) {
 		return 0.0, fmt.Errorf("%q is not a number", value)
 	}
-	return number * scale, err
+	return float32(number * scale), err
 }
 
 // parseSVGCoordinate reads a coordinate or a size of a shape, and returns 0
@@ -427,12 +427,12 @@ var svgIdentity = [6]float64{1, 0, 0, 1, 0, 0}
 // svgMultiply returns the transform that is n, then m.
 func svgMultiply(m, n [6]float64) [6]float64 {
 	return [6]float64{
-		m[0]*n[0] + m[2]*n[1],
-		m[1]*n[0] + m[3]*n[1],
-		m[0]*n[2] + m[2]*n[3],
-		m[1]*n[2] + m[3]*n[3],
-		m[0]*n[4] + m[2]*n[5] + m[4],
-		m[1]*n[4] + m[3]*n[5] + m[5],
+		float64(m[0]*n[0]) + float64(m[2]*n[1]),
+		float64(m[1]*n[0]) + float64(m[3]*n[1]),
+		float64(m[0]*n[2]) + float64(m[2]*n[3]),
+		float64(m[1]*n[2]) + float64(m[3]*n[3]),
+		float64(m[0]*n[4]) + float64(m[2]*n[5]) + m[4],
+		float64(m[1]*n[4]) + float64(m[3]*n[5]) + m[5],
 	}
 }
 
@@ -468,7 +468,7 @@ func parseSVGTransform(text string) (matrix [6]float64, ok bool) {
 		case name == "scale" && len(args) == 2:
 			m = [6]float64{args[0], 0, 0, args[1], 0, 0}
 		case name == "rotate" && (len(args) == 1 || len(args) == 3):
-			angle := args[0] * math.Pi / 180.0
+			angle := float64(float64(args[0]*math.Pi) / 180.0)
 			cos := math.Cos(angle)
 			sin := math.Sin(angle)
 			m = [6]float64{cos, sin, -sin, cos, 0, 0}
@@ -479,9 +479,9 @@ func parseSVGTransform(text string) (matrix [6]float64, ok bool) {
 		case (name == "skewX" || name == "skewY") && len(args) == 1 && math.Mod(math.Abs(args[0]), 180) == 90:
 			return svgIdentity, false // A skew of 90 degrees flattens everything: not a transform
 		case name == "skewX" && len(args) == 1:
-			m = [6]float64{1, 0, math.Tan(args[0] * math.Pi / 180.0), 1, 0, 0}
+			m = [6]float64{1, 0, math.Tan(float64(float64(args[0]*math.Pi) / 180.0)), 1, 0, 0}
 		case name == "skewY" && len(args) == 1:
-			m = [6]float64{1, math.Tan(args[0] * math.Pi / 180.0), 0, 1, 0, 0}
+			m = [6]float64{1, math.Tan(float64(float64(args[0]*math.Pi) / 180.0)), 0, 1, 0, 0}
 		default:
 			return svgIdentity, false
 		}

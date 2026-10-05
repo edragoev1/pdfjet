@@ -148,7 +148,7 @@ func (qrcode *QRCode) SetModuleColor(color int32) *QRCode {
 // @param page the specified page.
 // @return x and y coordinates of the bottom right corner of this component.
 func (qrcode *QRCode) DrawOn(page *pdfjet.Page) [2]float32 {
-	size := qrcode.m1 * float32(qrcode.moduleCount)
+	size := float32(qrcode.m1 * float32(qrcode.moduleCount))
 	if page != nil {
 		// Described, the QR code is a figure of a tagged document; not
 		// described, its modules, which carry no text, are decoration.
@@ -171,9 +171,9 @@ func (qrcode *QRCode) DrawOn(page *pdfjet.Page) [2]float32 {
 					col++
 				}
 				page.FillRect(
-					qrcode.x+float32(start)*qrcode.m1,
-					qrcode.y+float32(row)*qrcode.m1,
-					float32(col-start)*qrcode.m1,
+					qrcode.x+float32(float32(start)*qrcode.m1),
+					qrcode.y+float32(float32(row)*qrcode.m1),
+					float32(float32(col-start)*qrcode.m1),
 					qrcode.m1)
 			}
 		}

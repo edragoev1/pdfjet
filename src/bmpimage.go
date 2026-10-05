@@ -50,8 +50,8 @@ func (image *bmpImage) setPhysicalSize(pixelsPerMeterX, pixelsPerMeterY int) {
 	if pixelsPerMeterX <= 0 || pixelsPerMeterY <= 0 {
 		return
 	}
-	width := float32(float64(image.w) * bmpPointsPerMeter / float64(pixelsPerMeterX))
-	height := float32(float64(image.h) * bmpPointsPerMeter / float64(pixelsPerMeterY))
+	width := float32(float64(float64(image.w)*bmpPointsPerMeter) / float64(pixelsPerMeterX))
+	height := float32(float64(float64(image.h)*bmpPointsPerMeter) / float64(pixelsPerMeterY))
 	if fastfloat.IsWritable(width) && fastfloat.IsWritable(height) {
 		image.physicalWidth = width
 		image.physicalHeight = height

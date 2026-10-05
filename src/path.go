@@ -169,8 +169,8 @@ func (path *Path) SetLocation(x, y float32) Drawable {
 // Returns this Path object.
 func (path *Path) ScaleBy(factor float32) *Path {
 	for _, point := range path.points {
-		point.x *= factor
-		point.y *= factor
+		point.x = float32(point.x * factor)
+		point.y = float32(point.y * factor)
 	}
 	return path
 }

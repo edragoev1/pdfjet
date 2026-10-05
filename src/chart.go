@@ -246,9 +246,9 @@ func (chart *Chart) SetGridLineColor(c int32) *Chart {
 
 // toFloatArray converts an RGB color to the float array used internally.
 func (chart *Chart) toFloatArray(color int32) [3]float32 {
-	r := float32((color>>16)&0xff) / 255.0
-	g := float32((color>>8)&0xff) / 255.0
-	b := float32(color&0xff) / 255.0
+	r := float32(float32((color>>16)&0xff) / 255.0)
+	g := float32(float32((color>>8)&0xff) / 255.0)
+	b := float32(float32(color&0xff) / 255.0)
 	return [3]float32{r, g, b}
 }
 
@@ -299,7 +299,7 @@ func (chart *Chart) DrawOn(page *Page) [2]float32 {
 	page.SaveGraphicsState()
 
 	// Draw chart title, the subtitle and then the legend under it
-	titleBaseline := chart.y1 + 1.5*chart.f1.bodyHeight
+	titleBaseline := chart.y1 + float32(1.5*chart.f1.bodyHeight)
 	subtitleHeight := float32(0.0)
 	if chart.subtitle != "" {
 		subtitleHeight = chart.f2.bodyHeight
@@ -309,7 +309,7 @@ func (chart *Chart) DrawOn(page *Page) [2]float32 {
 		chart.f1,
 		chart.f1.GetSize(),
 		chart.title,
-		chart.x1+((chart.w-chart.f1.StringWidth(chart.f1.GetSize(), chart.title))/2),
+		chart.x1+(float32((chart.w-chart.f1.StringWidth(chart.f1.GetSize(), chart.title))/2)),
 		titleBaseline,
 		[3]float32{0.0, 0.0, 0.0},
 		nil)
@@ -318,20 +318,20 @@ func (chart *Chart) DrawOn(page *Page) [2]float32 {
 			chart.f2,
 			chart.f2.GetSize(),
 			chart.subtitle,
-			chart.x1+((chart.w-chart.f2.StringWidth(chart.f2.GetSize(), chart.subtitle))/2),
+			chart.x1+(float32((chart.w-chart.f2.StringWidth(chart.f2.GetSize(), chart.subtitle))/2)),
 			titleBaseline+subtitleHeight,
 			colorToRGB(color.DimGray),
 			nil)
 	}
 	legend := chart.drawLegend && chart.hasSeriesNames()
-	topMargin := 2.5*chart.f1.bodyHeight + subtitleHeight
+	topMargin := float32(2.5*chart.f1.bodyHeight) + subtitleHeight
 	if legend {
-		chart.drawLegendOn(page, titleBaseline+subtitleHeight+1.5*chart.f2.bodyHeight)
-		topMargin += 1.5 * chart.f2.bodyHeight
+		chart.drawLegendOn(page, titleBaseline+subtitleHeight+float32(1.5*chart.f2.bodyHeight))
+		topMargin += float32(1.5 * chart.f2.bodyHeight)
 	}
-	leftMargin := chart.getLongestAxisYLabelWidth() + 2.0*chart.f2.bodyHeight
-	rightMargin := 2.0 * chart.f2.bodyHeight
-	bottomMargin := 2.5 * chart.f2.bodyHeight
+	leftMargin := chart.getLongestAxisYLabelWidth() + float32(2.0*chart.f2.bodyHeight)
+	rightMargin := float32(2.0 * chart.f2.bodyHeight)
+	bottomMargin := float32(2.5 * chart.f2.bodyHeight)
 
 	chart.x5 = chart.x1 + leftMargin
 	chart.y5 = chart.y1 + topMargin
@@ -383,8 +383,8 @@ func (chart *Chart) DrawOn(page *Page) [2]float32 {
 	// Translate the point coordinates (on the copies)
 	for _, points := range plotData {
 		for _, point := range points {
-			point.x = chart.x5 + (point.x-chart.xMin)*(chart.x6-chart.x5)/(chart.xMax-chart.xMin)
-			point.y = chart.y8 - (point.y-chart.yMin)*(chart.y8-chart.y5)/(chart.yMax-chart.yMin)
+			point.x = chart.x5 + float32((point.x-chart.xMin)*(chart.x6-chart.x5))/(chart.xMax-chart.xMin)
+			point.y = chart.y8 - float32((point.y-chart.yMin)*(chart.y8-chart.y5))/(chart.yMax-chart.yMin)
 			if point.uri != "" && !(linksApart && point.shape != shape.Invisible) {
 				// AddAnnotation flips y into PDF space; do not pre-flip here.
 				page.addAnnotation(&annotationObject{
@@ -417,7 +417,7 @@ func (chart *Chart) DrawOn(page *Page) [2]float32 {
 		chart.f2.GetSize(),
 		chart.yAxisTitle,
 		chart.x1+chart.f2.bodyHeight,
-		chart.y8-((chart.y8-chart.y5)-chart.f2.StringWidth(chart.f2.GetSize(), chart.yAxisTitle))/2,
+		chart.y8-float32(((chart.y8-chart.y5)-chart.f2.StringWidth(chart.f2.GetSize(), chart.yAxisTitle))/2),
 		[3]float32{0.0, 0.0, 0.0},
 		nil)
 
@@ -428,8 +428,8 @@ func (chart *Chart) DrawOn(page *Page) [2]float32 {
 		chart.f2,
 		chart.f2.GetSize(),
 		chart.xAxisTitle,
-		chart.x5+((chart.x6-chart.x5)-chart.f2.StringWidth(chart.f2.GetSize(), chart.xAxisTitle))/2,
-		chart.y4-chart.f2.bodyHeight/2,
+		chart.x5+float32(((chart.x6-chart.x5)-chart.f2.StringWidth(chart.f2.GetSize(), chart.xAxisTitle))/2),
+		chart.y4-float32(chart.f2.bodyHeight/2),
 		[3]float32{0.0, 0.0, 0.0},
 		nil)
 
@@ -465,7 +465,7 @@ func (chart *Chart) drawLinkedPoint(page *Page, linked linkedPoint) {
 	page.AddBDC(structelem.Figure, "", "", description)
 	chart.setPointColors(page, point, linked.color)
 	page.DrawPoint(point)
-	page.SetFigureBoundingBox(point.x-point.r, point.y-point.r, 2*point.r, 2*point.r)
+	page.SetFigureBoundingBox(point.x-point.r, point.y-point.r, float32(2*point.r), float32(2*point.r))
 	page.AddEMC()
 	page.endLink(link)
 	page.RestoreGraphicsState()
@@ -541,8 +541,8 @@ func (chart *Chart) seriesColor(s *Series, index int) [3]float32 {
 func (chart *Chart) drawLegendOn(page *Page, baseline float32) {
 	f2 := chart.f2
 	ascent := f2.ascent
-	sample := 2.0 * ascent // the width of the line or the marker
-	gap := ascent / 2.0
+	sample := float32(2.0 * ascent) // the width of the line or the marker
+	gap := float32(ascent / 2.0)
 	width := float32(0.0)
 	entries := 0
 	for _, s := range chart.series {
@@ -551,14 +551,14 @@ func (chart *Chart) drawLegendOn(page *Page, baseline float32) {
 			entries++
 		}
 	}
-	width += float32(entries-1) * f2.bodyHeight
-	x := chart.x1 + (chart.w-width)/2.0
+	width += float32(float32(entries-1) * f2.bodyHeight)
+	x := chart.x1 + float32((chart.w-width)/2.0)
 	for j, s := range chart.series {
 		if s.name == "" {
 			continue
 		}
 		rgb := chart.seriesColor(s, j)
-		yMid := baseline - ascent/2.0
+		yMid := baseline - float32(ascent/2.0)
 		page.SetPenColorRGB(rgb)
 		if s.drawPath {
 			page.SetPenWidth(s.strokeWidth)
@@ -568,7 +568,7 @@ func (chart *Chart) drawLegendOn(page *Page, baseline float32) {
 		if s.shape != shape.Invisible {
 			page.SetPenWidth(1.0)
 			page.SetDefaultStrokeDashPattern()
-			page.DrawPoint(NewPoint(x+sample/2.0, yMid).SetShape(s.shape).SetRadius(s.radius))
+			page.DrawPoint(NewPoint(x+float32(sample/2.0), yMid).SetShape(s.shape).SetRadius(s.radius))
 		}
 		x += sample + gap
 		page.SetBrushColor(color.Black)
@@ -616,7 +616,7 @@ func format(value float32, minDigits, maxDigits int) string {
 // that write the axis step exactly: 0 for 10, 1 for 2.5, 2 for 0.25.
 func fractionDigitsOf(step float32, maxDigits int) int {
 	for digits := 0; digits < maxDigits; digits++ {
-		scaled := float64(step) * math.Pow(10, float64(digits))
+		scaled := float64(float64(step) * math.Pow(10, float64(digits)))
 		if math.Abs(scaled-math.Round(scaled)) < 1e-4 {
 			return digits
 		}
@@ -781,9 +781,9 @@ func (chart *Chart) drawXAxisLabelsOn(page *Page) {
 	valueStep := (chart.xMax - chart.xMin) / float32(chart.xAxisGridLines)
 	page.SetBrushColor(color.Black)
 	for i := 0; i < (chart.xAxisGridLines + 1); i++ {
-		label := chart.formatAxis(chart.xMin+valueStep*float32(i), valueStep)
+		label := chart.formatAxis(chart.xMin+float32(valueStep*float32(i)), valueStep)
 		page.drawString(
-			chart.f2, chart.f2.GetSize(), label, x-(chart.f2.StringWidth(chart.f2.GetSize(), label)/2), y, [3]float32{0.0, 0.0, 0.0}, nil)
+			chart.f2, chart.f2.GetSize(), label, x-(float32(chart.f2.StringWidth(chart.f2.GetSize(), label)/2)), y, [3]float32{0.0, 0.0, 0.0}, nil)
 		x += step
 	}
 }
@@ -791,12 +791,12 @@ func (chart *Chart) drawXAxisLabelsOn(page *Page) {
 // drawYAxisLabelsOn draws the Y axis labels.
 func (chart *Chart) drawYAxisLabelsOn(page *Page) {
 	x := chart.x5 - chart.getLongestAxisYLabelWidth()
-	y := chart.y8 + chart.f2.ascent/3
+	y := chart.y8 + float32(chart.f2.ascent/3)
 	step := (chart.y8 - chart.y5) / float32(chart.yAxisGridLines)
 	valueStep := (chart.yMax - chart.yMin) / float32(chart.yAxisGridLines)
 	page.SetBrushColor(color.Black)
 	for i := 0; i < (chart.yAxisGridLines + 1); i++ {
-		label := chart.formatAxis(chart.yMin+valueStep*float32(i), valueStep)
+		label := chart.formatAxis(chart.yMin+float32(valueStep*float32(i)), valueStep)
 		page.drawString(chart.f2, chart.f2.GetSize(), label, x, y, [3]float32{0.0, 0.0, 0.0}, nil)
 		y -= step
 	}
@@ -841,7 +841,7 @@ func (chart *Chart) drawPathsAndPoints(page *Page, plotData [][]*Point, linksApa
 // or a hundred thousandth of the value when that is more, since above 2^24 a
 // float32 has no room for 1 more, and the range would stay flat.
 func flatDataSpan(value float32) float32 {
-	return max(1.0, abs32(value)*1e-5)
+	return max(1.0, float32(abs32(value)*1e-5))
 }
 
 // roundMaxAndMinValues rounds the axis range to "nice" values for clean grid lines.
@@ -855,7 +855,7 @@ func roundMaxAndMinValues(maxValue, minValue float32) *roundedRange {
 	}
 
 	exponent := int(math.Floor(math.Log(float64(span)) / math.Log(10)))
-	normalizedSpan := span * float32(math.Pow(10, float64(-exponent)))
+	normalizedSpan := float32(span * float32(math.Pow(10, float64(-exponent))))
 
 	// Snap span up to a "nice" value with paired grid line count
 	var niceSpan float32
@@ -909,13 +909,13 @@ func roundMaxAndMinValues(maxValue, minValue float32) *roundedRange {
 	}
 
 	// Scale back to original magnitude and compute step
-	step := niceSpan * float32(math.Pow(10, float64(exponent))) / float32(numOfGridLines)
+	step := float32(niceSpan*float32(math.Pow(10, float64(exponent)))) / float32(numOfGridLines)
 
 	round := newRoundedRange()
 
 	// Round max up, min down to nearest step multiple
-	round.maxValue = float32(math.Ceil(float64(maxValue/step))) * step
-	round.minValue = float32(math.Floor(float64(minValue/step))) * step
+	round.maxValue = float32(float32(math.Ceil(float64(maxValue/step))) * step)
+	round.minValue = float32(float32(math.Floor(float64(minValue/step))) * step)
 
 	// Recount grid lines from actual rounded range
 	round.numOfGridLines = int(math.Round(float64((round.maxValue - round.minValue) / step)))

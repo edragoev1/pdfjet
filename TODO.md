@@ -583,28 +583,26 @@ no history; the registries count, and are where developers look.
 
 ## Found by pdfjet-server, to fix later
 
-- ⬜ The Go port's results on arm64 may differ in the last bit from amd64's,
-  and from the other three ports: the Go spec lets the compiler fuse
-  x*y + z into one fused multiply-add with a single rounding, and Go's
-  arm64 compiler does (373 such instructions in pdfjet-server's arm64
-  build, 10 in its amd64 build; in TextBlock.layout, where lines break,
-  Cell.GetHeight, Cell.drawOn, Cell.drawText and TextLine.DrawOn among 53
-  functions; found 5 October 2026 with go tool objdump). Java does not fuse
-  of itself, nor do C# and Swift by default, so Go on ARM is the one port
-  that may break a line otherwise. First measured: pdfjet-server's look
-  test and check-layout.sh on GitHub's arm64 runner (its TODO.md, 6 October
-  2026). If any differs, the rounding forced before the add where layout
-  is decided, float32(a*b) + c, as Go has no switch to stop fusing; a test
-  of each such spot on arm64 in CI, and the PDFs of the examples compared
-  across arm64 and amd64. A fix that changes no output on amd64, so not
-  held to the freeze if it is small.
-
-The SaaS (pdfjet-server, pdfjet-client) builds on the MIT core without
-changing it, to keep the four ports in sync; what its testing finds wrong in
-the core is listed here, and pdfjet-server works around it until it is fixed.
-Each was proved in the Go port; the other three have the same code, so each is
-to check and fix in the four, with a test.
-
+- ✅ Done on 5 October 2026, before the tag, on the owner's word ("correct
+  is more important than fast"): the Go port's results on arm64 the same as
+  amd64's and the other ports'. The Go spec lets the compiler fuse x*y + z
+  into one fused multiply-add, rounding once, and Go's arm64 compiler did,
+  in 333 places of the library (TextBlock.layout, where lines break, and
+  Cell, where rows are measured, among them). Every float multiplication of
+  the Go port, and every division by a constant, which the compiler makes a
+  multiplication, is written in a conversion to its own type,
+  float32(a*b), by a small tool that read the types of the source; the
+  examples, read by people, left as they were. Checked: no fused
+  multiply-add left in the arm64 code of the 57 packages; on amd64 the
+  PDFs of the 57 examples the same byte for byte, the dates and the ids
+  aside, and Example_30, encrypted with a random salt, the same text; all
+  the Go tests; and, through pdfjet-server, its 151 forms of the look test,
+  check-layout.sh's 385 layouts and the other checks of the client.
+  check-no-fma.sh, in the Build workflow, fails if one comes back; it reads
+  the arm64 code the compiler prints, so needs no ARM runner. Left: Go's
+  own math package (math.Sin, math.Cos and the like) is fused on arm64 too,
+  in Go's code; PDFjet uses it for arcs, ellipses and SVG alone, where a
+  last bit changes no line or page.
 - ✅ **A glyph two characters share is copied as one of them.** Source Serif 4
   draws the Greek small letter mu (U+03BC) and the micro sign (U+00B5) with the
   same glyph, and the ToUnicode map of the embedded font gives that glyph one of

@@ -85,7 +85,7 @@ func (c *Container) SetRotation(degrees float64) *Container {
 
 // GetRotationCenter returns the center of this container, which it rotates around.
 func (c *Container) GetRotationCenter() [2]float32 {
-	return [2]float32{c.x + c.width/2.0, c.y + c.height/2.0}
+	return [2]float32{c.x + float32(c.width/2.0), c.y + float32(c.height/2.0)}
 }
 
 // ScaleBy sets a uniform scaling factor for both X and Y axes.
@@ -163,8 +163,8 @@ func (c *Container) DrawOn(page *Page) [2]float32 {
 	page.appendFloat32(-c.y)
 	page.appendString(" cm\n")
 
-	cx := c.width / 2
-	cy := c.height / 2
+	cx := float32(c.width / 2)
+	cy := float32(c.height / 2)
 
 	// 2) Move origin to container center
 	page.appendString("1 0 0 1 ")
@@ -174,7 +174,7 @@ func (c *Container) DrawOn(page *Page) [2]float32 {
 	page.appendString(" cm\n")
 
 	// 3) Rotate around container center
-	rad := float64(c.rotateDegrees) * (math.Pi / 180.0)
+	rad := float64(float64(c.rotateDegrees) * (math.Pi / 180.0))
 	cos := float32(math.Cos(rad))
 	sin := float32(math.Sin(rad))
 	page.appendRotation(cos, sin)
@@ -197,13 +197,13 @@ func (c *Container) DrawOn(page *Page) [2]float32 {
 	// the bounding boxes of the figures, it moves with the same transform, from
 	// the top left corner of the page: turned and scaled around the center of
 	// the container, and moved to its location.
-	m0 := c.scaleX * cos
-	m1 := -c.scaleX * sin
-	m2 := c.scaleY * sin
-	m3 := c.scaleY * cos
+	m0 := float32(c.scaleX * cos)
+	m1 := float32(-c.scaleX * sin)
+	m2 := float32(c.scaleY * sin)
+	m3 := float32(c.scaleY * cos)
 	centerX := c.x + cx
 	centerY := c.y + cy
-	saved := page.pushTransform([6]float32{m0, m1, m2, m3, centerX - m0*cx - m2*cy, centerY - m1*cx - m3*cy})
+	saved := page.pushTransform([6]float32{m0, m1, m2, m3, centerX - float32(m0*cx) - float32(m2*cy), centerY - float32(m1*cx) - float32(m3*cy)})
 	for _, element := range c.elements {
 		element.DrawOn(page)
 	}

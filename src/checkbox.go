@@ -144,7 +144,7 @@ func (checkBox *CheckBox) SetActualText(actualText string) *CheckBox {
 // DrawXMark draws a blue X mark of the specified size at x, y.
 func DrawXMark(page *Page, x, y, size float32) {
 	page.SetPenColor(color.Blue)
-	page.SetPenWidth(size / 5)
+	page.SetPenWidth(float32(size / 5))
 	page.MoveTo(x, y)
 	page.LineTo(x+size, y+size)
 	page.MoveTo(x, y+size)
@@ -158,8 +158,8 @@ func DrawXMark(page *Page, x, y, size float32) {
 func (checkBox *CheckBox) DrawOn(page *Page) [2]float32 {
 	checkBox.w = checkBox.font.GetAscent(checkBox.fontSize)
 	checkBox.h = checkBox.w
-	checkBox.penWidth = checkBox.w / 15
-	checkBox.checkWidth = checkBox.w / 5
+	checkBox.penWidth = float32(checkBox.w / 15)
+	checkBox.checkWidth = float32(checkBox.w / 5)
 	if page == nil {
 		return checkBox.corner() // Measured, not drawn
 	}
@@ -188,9 +188,9 @@ func (checkBox *CheckBox) DrawOn(page *Page) [2]float32 {
 		switch checkBox.mark {
 		case mark.Check:
 			// Draw check mark
-			page.MoveTo(checkBox.x+checkBox.checkWidth+checkBox.penWidth, yBox+checkBox.h/2+checkBox.penWidth)
-			page.LineTo((checkBox.x+checkBox.w/6+checkBox.checkWidth)+checkBox.penWidth,
-				((yBox+checkBox.h)-4.0*checkBox.checkWidth/3.0)+checkBox.penWidth)
+			page.MoveTo(checkBox.x+checkBox.checkWidth+checkBox.penWidth, yBox+float32(checkBox.h/2)+checkBox.penWidth)
+			page.LineTo((checkBox.x+float32(checkBox.w/6)+checkBox.checkWidth)+checkBox.penWidth,
+				((yBox+checkBox.h)-float32(float32(4.0*checkBox.checkWidth)/3.0))+checkBox.penWidth)
 			page.LineTo((checkBox.x+checkBox.w)-checkBox.checkWidth+checkBox.penWidth,
 				yBox+checkBox.checkWidth+checkBox.penWidth)
 			page.StrokePath()
@@ -214,7 +214,7 @@ func (checkBox *CheckBox) DrawOn(page *Page) [2]float32 {
 	}
 	page.drawString(
 		checkBox.font, checkBox.fontSize, checkBox.label,
-		checkBox.x+3.0*checkBox.w/2.0, checkBox.y+checkBox.font.GetAscent(checkBox.fontSize),
+		checkBox.x+float32(float32(3.0*checkBox.w)/2.0), checkBox.y+checkBox.font.GetAscent(checkBox.fontSize),
 		textColor, nil)
 	page.RestoreGraphicsState()
 
@@ -223,9 +223,9 @@ func (checkBox *CheckBox) DrawOn(page *Page) [2]float32 {
 		// The link is a structure element of its own, see Page.AddAnnotation.
 		page.addAnnotation(&annotationObject{
 			annotationType: annotationLink,
-			x1:             checkBox.x + 3.0*checkBox.w/2.0,
+			x1:             checkBox.x + float32(float32(3.0*checkBox.w)/2.0),
 			y1:             checkBox.y,
-			x2:             checkBox.x + 3.0*checkBox.w/2.0 + checkBox.font.StringWidth(checkBox.fontSize, checkBox.label),
+			x2:             checkBox.x + float32(float32(3.0*checkBox.w)/2.0) + checkBox.font.StringWidth(checkBox.fontSize, checkBox.label),
 			y2:             checkBox.y + checkBox.font.GetBodyHeight(checkBox.fontSize),
 			vertices:       nil,
 			opacity:        0.0,
@@ -246,7 +246,7 @@ func (checkBox *CheckBox) DrawOn(page *Page) [2]float32 {
 // corner returns the bottom right corner of the check box and its label.
 func (checkBox *CheckBox) corner() [2]float32 {
 	return [2]float32{
-		checkBox.x + 3.0*checkBox.w + checkBox.font.StringWidth(checkBox.fontSize, checkBox.label),
+		checkBox.x + float32(3.0*checkBox.w) + checkBox.font.StringWidth(checkBox.fontSize, checkBox.label),
 		checkBox.y + checkBox.font.GetBodyHeight(checkBox.fontSize),
 	}
 }

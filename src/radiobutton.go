@@ -91,9 +91,9 @@ func (radioButton *RadioButton) SetActualText(actualText string) *RadioButton {
 //
 // Returns x and y coordinates of the bottom right corner of this component.
 func (radioButton *RadioButton) DrawOn(page *Page) [2]float32 {
-	radioButton.r1 = radioButton.font.GetAscent(radioButton.fontSize) / 2
-	radioButton.r2 = radioButton.r1 / 2
-	radioButton.penWidth = radioButton.r1 / 10
+	radioButton.r1 = float32(radioButton.font.GetAscent(radioButton.fontSize) / 2)
+	radioButton.r2 = float32(radioButton.r1 / 2)
+	radioButton.penWidth = float32(radioButton.r1 / 10)
 	if page == nil {
 		return radioButton.corner() // Measured, not drawn
 	}
@@ -132,7 +132,7 @@ func (radioButton *RadioButton) DrawOn(page *Page) [2]float32 {
 	}
 	page.drawString(
 		radioButton.font, radioButton.fontSize, radioButton.label,
-		radioButton.x+3*radioButton.r1, radioButton.y+radioButton.font.GetAscent(radioButton.fontSize),
+		radioButton.x+float32(3*radioButton.r1), radioButton.y+radioButton.font.GetAscent(radioButton.fontSize),
 		textColor, nil)
 	page.RestoreGraphicsState()
 
@@ -141,9 +141,9 @@ func (radioButton *RadioButton) DrawOn(page *Page) [2]float32 {
 	if radioButton.uri != "" || radioButton.key != "" {
 		page.addAnnotation(&annotationObject{
 			annotationType: annotationLink,
-			x1:             radioButton.x + 3*radioButton.r1,
+			x1:             radioButton.x + float32(3*radioButton.r1),
 			y1:             radioButton.y,
-			x2:             radioButton.x + 3*radioButton.r1 + radioButton.font.StringWidth(radioButton.fontSize, radioButton.label),
+			x2:             radioButton.x + float32(3*radioButton.r1) + radioButton.font.StringWidth(radioButton.fontSize, radioButton.label),
 			y2:             radioButton.y + radioButton.font.GetBodyHeight(radioButton.fontSize),
 			vertices:       nil,
 			opacity:        0.0,
@@ -164,6 +164,6 @@ func (radioButton *RadioButton) DrawOn(page *Page) [2]float32 {
 // corner returns the bottom right corner of the radio button and its label.
 func (radioButton *RadioButton) corner() [2]float32 {
 	return [2]float32{
-		radioButton.x + 6*radioButton.r1 + radioButton.font.StringWidth(radioButton.fontSize, radioButton.label),
+		radioButton.x + float32(6*radioButton.r1) + radioButton.font.StringWidth(radioButton.fontSize, radioButton.label),
 		radioButton.y + radioButton.font.GetBodyHeight(radioButton.fontSize)}
 }

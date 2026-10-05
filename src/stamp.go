@@ -511,13 +511,13 @@ func (s *Stamp) DrawOn(page *Page) [2]float32 {
 
 	// 4. MOVE BACK: after rotation
 	page.appendString("1 0 0 1 ")
-	page.appendFloat32(s.width / 2)
+	page.appendFloat32(float32(s.width / 2))
 	page.appendString(" ")
-	page.appendFloat32(s.height / 2)
+	page.appendFloat32(float32(s.height / 2))
 	page.appendString(" cm\n")
 
 	// 3. ROTATE: rotate around origin
-	radians := float64(s.rotateDegrees) * (math.Pi / 180)
+	radians := float64(float64(s.rotateDegrees) * (math.Pi / 180))
 	page.appendRotation(float32(math.Cos(radians)), float32(math.Sin(radians)))
 
 	// SCALE: around the center, like a Container
@@ -530,9 +530,9 @@ func (s *Stamp) DrawOn(page *Page) [2]float32 {
 
 	// 2. MOVE: move the center of the object to origin
 	page.appendString("1 0 0 1 ")
-	page.appendFloat32(-s.width / 2)
+	page.appendFloat32(float32(-s.width / 2))
 	page.appendString(" ")
-	page.appendFloat32(-s.height / 2)
+	page.appendFloat32(float32(-s.height / 2))
 	page.appendString(" cm\n")
 
 	// 1. DRAW: draw the object

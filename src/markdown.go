@@ -241,9 +241,9 @@ func (markdown *Markdown) drawBlocks(blocks []*markdownBlock, x, width float32, 
 			markdown.drawHeading(block, x, width)
 		case markdownParagraph:
 			if tight {
-				markdown.gap(markdown.size() * 0.25)
+				markdown.gap(float32(markdown.size() * 0.25))
 			} else {
-				markdown.gap(markdown.size() * 0.75)
+				markdown.gap(float32(markdown.size() * 0.75))
 			}
 			markdown.drawParagraph(markdown.markup.Paragraph(block.text), x, width)
 		case markdownCode:
@@ -296,11 +296,11 @@ func markdownFirstLineHeight(paragraph *Paragraph) float32 {
 // the text after it on its page. Its level as it is tagged is at most one
 // more than that of the heading before it, so that no level is skipped.
 func (markdown *Markdown) drawHeading(block *markdownBlock, x, width float32) {
-	fontSize := markdown.size() * markdownHeadingSizes[block.level-1]
+	fontSize := float32(markdown.size() * markdownHeadingSizes[block.level-1])
 	if block.level <= 2 {
-		markdown.gap(markdown.size() * 1.4)
+		markdown.gap(float32(markdown.size() * 1.4))
 	} else {
-		markdown.gap(markdown.size() * 1.1)
+		markdown.gap(float32(markdown.size() * 1.1))
 	}
 	paragraph := markdown.markup.Paragraph(block.text)
 	for _, line := range paragraph.lines {
@@ -315,9 +315,9 @@ func (markdown *Markdown) drawHeading(block *markdownBlock, x, width float32) {
 	levels := [6]structelem.StructElem{structelem.H1, structelem.H2, structelem.H3,
 		structelem.H4, structelem.H5, structelem.H6}
 	paragraph.SetStructureType(levels[markdown.headingLevel-1])
-	markdown.ensure(markdown.headingFont.GetBodyHeight(fontSize) + 2*markdown.regular.GetBodyHeight(markdown.size()))
+	markdown.ensure(markdown.headingFont.GetBodyHeight(fontSize) + float32(2*markdown.regular.GetBodyHeight(markdown.size())))
 	markdown.drawParagraph(paragraph, x, width)
-	markdown.y += markdown.size() * 0.25
+	markdown.y += float32(markdown.size() * 0.25)
 }
 
 // drawCode draws code in the code font on a light background, a line of the
@@ -327,13 +327,13 @@ func (markdown *Markdown) drawHeading(block *markdownBlock, x, width float32) {
 // a character.
 func (markdown *Markdown) drawCode(text string, x, width float32) {
 	code := markdown.code
-	markdown.gap(markdown.size() * 0.75)
-	padding := markdown.size() * 0.5
-	leading := code.GetBodyHeight(code.GetSize()) * 1.2
+	markdown.gap(float32(markdown.size() * 0.75))
+	padding := float32(markdown.size() * 0.5)
+	leading := float32(code.GetBodyHeight(code.GetSize()) * 1.2)
 	// A code font with no width, or no size, cuts no line.
 	columns := math.MaxInt32
 	if advance := code.StringWidth(code.GetSize(), "0"); advance > 0 {
-		columns = max(1, saturatingInt((width-2*padding)/advance))
+		columns = max(1, saturatingInt((width-float32(2*padding))/advance))
 	}
 	lines := make([]string, 0)
 	for _, line := range strings.Split(text, "\n") {
@@ -355,7 +355,7 @@ func (markdown *Markdown) drawCode(text string, x, width float32) {
 		}
 		lines = append(lines, string(utf16.Decode(units[start:])))
 	}
-	markdown.ensure(float32(min(3, len(lines)))*leading + 2*padding)
+	markdown.ensure(float32(float32(min(3, len(lines)))*leading) + float32(2*padding))
 	// Code is an inline element, so the block is a paragraph that holds
 	// its Code: PAC warns of a Code right under the document.
 	markdown.openContainer(structelem.P)
@@ -364,13 +364,13 @@ func (markdown *Markdown) drawCode(text string, x, width float32) {
 	for i < len(lines) {
 		fit := len(lines) - i // Lines of no height all fit
 		if leading > 0 {
-			fit = max(1, saturatingInt((markdown.bottom-markdown.y-2*padding)/leading))
+			fit = max(1, saturatingInt((markdown.bottom-markdown.y-float32(2*padding))/leading))
 		}
 		count := min(fit, len(lines)-i)
-		NewRect(x, markdown.y, width, float32(count)*leading+2*padding).
+		NewRect(x, markdown.y, width, float32(float32(count)*leading)+float32(2*padding)).
 			SetFillColor(markdownCodeBackground).DrawOn(markdown.page)
 		baseline := markdown.y + padding + code.GetAscent(code.GetSize()) +
-			(leading-code.GetBodyHeight(code.GetSize()))/2
+			float32((leading-code.GetBodyHeight(code.GetSize()))/2)
 		for j := 0; j < count; j, i = j+1, i+1 {
 			if trimSpace(lines[i]) != "" {
 				NewTextLine(code, lines[i]).SetStructureType(structelem.Span).
@@ -378,7 +378,7 @@ func (markdown *Markdown) drawCode(text string, x, width float32) {
 			}
 			baseline += leading
 		}
-		markdown.y += float32(count)*leading + 2*padding
+		markdown.y += float32(float32(count)*leading) + float32(2*padding)
 		markdown.atTop = false
 		if i < len(lines) {
 			markdown.newPage()
@@ -394,9 +394,9 @@ func markdownIsHighSurrogate(unit uint16) bool {
 
 // drawQuote draws a quote, indented, with a bar on its left.
 func (markdown *Markdown) drawQuote(block *markdownBlock, x, width float32) {
-	markdown.gap(markdown.size() * 0.75)
+	markdown.gap(float32(markdown.size() * 0.75))
 	markdown.ensure(markdown.regular.GetBodyHeight(markdown.size()))
-	indent := markdown.indentWithin(markdown.size()*1.2, width)
+	indent := markdown.indentWithin(float32(markdown.size()*1.2), width)
 	bar := &[2]float32{x + 2, markdown.y}
 	markdown.quoteBars = append(markdown.quoteBars, bar)
 	markdown.openContainer(structelem.BlockQuote)
@@ -412,7 +412,7 @@ func (markdown *Markdown) drawQuote(block *markdownBlock, x, width float32) {
 // indentWithin returns the indent, or less, so that the blocks inside a quote
 // or a list are not narrower than markdownMinWidth sizes of the text.
 func (markdown *Markdown) indentWithin(indent, width float32) float32 {
-	return max(0, min(indent, width-markdownMinWidth*markdown.size()))
+	return max(0, min(indent, width-float32(markdownMinWidth*markdown.size())))
 }
 
 func (markdown *Markdown) removeQuoteBar(bar *[2]float32) {
@@ -428,10 +428,10 @@ func (markdown *Markdown) removeQuoteBar(bar *[2]float32) {
 // left of the blocks of the item.
 func (markdown *Markdown) drawList(list *markdownBlock, x, width float32) {
 	regular := markdown.regular
-	markdown.gap(markdown.size() * 0.75)
-	indent := markdown.size() * 1.4
+	markdown.gap(float32(markdown.size() * 0.75))
+	indent := float32(markdown.size() * 1.4)
 	if list.ordered {
-		indent = markdown.size() * 2
+		indent = float32(markdown.size() * 2)
 	}
 	indent = markdown.indentWithin(indent, width)
 	markdown.openContainer(structelem.L)
@@ -439,9 +439,9 @@ func (markdown *Markdown) drawList(list *markdownBlock, x, width float32) {
 	for _, item := range list.children {
 		if item != list.children[0] {
 			if list.loose {
-				markdown.gap(markdown.size() * 0.5)
+				markdown.gap(float32(markdown.size() * 0.5))
 			} else {
-				markdown.gap(markdown.size() * 0.2)
+				markdown.gap(float32(markdown.size() * 0.2))
 			}
 		}
 		markdown.ensure(regular.GetBodyHeight(markdown.size()))
@@ -451,9 +451,9 @@ func (markdown *Markdown) drawList(list *markdownBlock, x, width float32) {
 			label = strconv.Itoa(number) + "."
 		}
 		text := NewTextLine(regular, label).SetStructureType(structelem.Lbl)
-		labelX := x + markdown.size()*0.3
+		labelX := x + float32(markdown.size()*0.3)
 		if list.ordered {
-			labelX = x + indent - markdown.size()*0.4 - text.GetWidth()
+			labelX = x + indent - float32(markdown.size()*0.4) - text.GetWidth()
 		}
 		text.SetLocation(labelX, markdown.y+regular.GetAscent(markdown.size())).DrawOn(markdown.page)
 		markdown.openContainer(structelem.LBody)
@@ -472,9 +472,9 @@ func (markdown *Markdown) drawList(list *markdownBlock, x, width float32) {
 }
 
 func (markdown *Markdown) drawRule(x, width float32) {
-	markdown.gap(markdown.size() * 0.75)
+	markdown.gap(float32(markdown.size() * 0.75))
 	markdown.ensure(markdown.size())
-	middle := markdown.y + markdown.size()*0.5
+	middle := markdown.y + float32(markdown.size()*0.5)
 	NewLine(x, middle, x+width, middle).SetStrokeColor(markdownRuleColor).SetStrokeWidth(1).DrawOn(markdown.page)
 	markdown.y += markdown.size()
 	markdown.atTop = false
@@ -484,7 +484,7 @@ func (markdown *Markdown) drawRule(x, width float32) {
 // bold on a light background, as wide as its text or as the width when it
 // would be wider, and on the next pages for the rows that do not fit.
 func (markdown *Markdown) drawTable(block *markdownBlock, x, width float32) {
-	markdown.gap(markdown.size() * 0.75)
+	markdown.gap(float32(markdown.size() * 0.75))
 	rows := make([][]*Cell, 0, len(block.rows))
 	for r := range block.rows {
 		row := make([]*Cell, 0, len(block.rows[r]))
@@ -507,8 +507,8 @@ func (markdown *Markdown) drawTable(block *markdownBlock, x, width float32) {
 	if table.GetWidth() > width {
 		table.FitToWidth(width)
 	}
-	rowHeight := 2 * markdown.regular.GetBodyHeight(markdown.size())
-	markdown.ensure(2 * rowHeight)
+	rowHeight := float32(2 * markdown.regular.GetBodyHeight(markdown.size()))
+	markdown.ensure(float32(2 * rowHeight))
 	table.SetLocation(x, markdown.marginTop)
 	table.SetFirstPageTopMargin(markdown.y)
 	table.SetBottomMargin(markdown.marginBottom)
@@ -545,7 +545,7 @@ func (markdown *Markdown) plainText(text string) string {
 // when it is not read. An image file that cannot be read panics, as the Image
 // of a file does.
 func (markdown *Markdown) drawImage(block *markdownBlock, x, width float32) {
-	markdown.gap(markdown.size() * 0.75)
+	markdown.gap(float32(markdown.size() * 0.75))
 	path := markdown.imagePath(block.source)
 	if path == "" {
 		text := block.text
@@ -582,10 +582,10 @@ func (markdown *Markdown) drawImage(block *markdownBlock, x, width float32) {
 		image.ScaleBy(scale)
 		drawable = image
 	}
-	markdown.ensure(imageHeight * scale)
+	markdown.ensure(float32(imageHeight * scale))
 	drawable.SetLocation(x, markdown.y)
 	drawable.DrawOn(markdown.page)
-	markdown.y += imageHeight * scale
+	markdown.y += float32(imageHeight * scale)
 	markdown.atTop = false
 }
 

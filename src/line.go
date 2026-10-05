@@ -189,10 +189,10 @@ func (line *Line) SetActualText(actualText string) *Line {
 //
 // Returns this Line object.
 func (line *Line) ScaleBy(factor float32) *Line {
-	line.x1 *= factor
-	line.x2 *= factor
-	line.y1 *= factor
-	line.y2 *= factor
+	line.x1 = float32(line.x1 * factor)
+	line.x2 = float32(line.x2 * factor)
+	line.y1 = float32(line.y1 * factor)
+	line.y2 = float32(line.y2 * factor)
 	return line
 }
 

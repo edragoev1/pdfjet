@@ -104,7 +104,7 @@ func writeInt(value int, buffer []byte, pos int, digits int) int {
 // float times 100 is exact in a float64, so the exact value of the float is
 // rounded.
 func roundedHundredths(magnitude float64) int {
-	scaled := magnitude * 100
+	scaled := float64(magnitude * 100)
 	hundredths := int(scaled)
 	if scaled-float64(hundredths) >= 0.5 {
 		hundredths++
@@ -131,7 +131,7 @@ func AppendPrecise(dst []byte, value float32) []byte {
 		return append(dst, '0')
 	}
 	// A float times 100000 is exact in a float64, and below 2^31 it fits an int64.
-	scaled := math.Abs(float64(value)) * 100000
+	scaled := float64(math.Abs(float64(value)) * 100000)
 	units := int64(scaled)
 	if scaled-float64(units) >= 0.5 {
 		units++

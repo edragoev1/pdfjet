@@ -81,8 +81,8 @@ func (image *pngImage) readPhysicalSize(data []byte) {
 		pixelsPerMeterX > math.MaxInt32 || pixelsPerMeterY > math.MaxInt32 {
 		return
 	}
-	width := float32(float64(image.w) * pointsPerMeter / float64(pixelsPerMeterX))
-	height := float32(float64(image.h) * pointsPerMeter / float64(pixelsPerMeterY))
+	width := float32(float64(float64(image.w)*pointsPerMeter) / float64(pixelsPerMeterX))
+	height := float32(float64(float64(image.h)*pointsPerMeter) / float64(pixelsPerMeterY))
 	if fastfloat.IsWritable(width) && fastfloat.IsWritable(height) {
 		image.physicalWidth = width
 		image.physicalHeight = height

@@ -58,7 +58,7 @@ func NewPDF417(str string) *PDF417 {
 	barcode := new(PDF417)
 	barcode.str = str
 	barcode.w1 = 0.75
-	barcode.h1 = 3.0 * barcode.w1
+	barcode.h1 = float32(3.0 * barcode.w1)
 	barcode.cols = 18
 
 	for _, ch := range str {
@@ -145,7 +145,7 @@ func (barcode *PDF417) SetLocation(x, y float32) pdfjet.Drawable {
 // If the value is too small some scanners may have difficulty reading the barcode.
 func (barcode *PDF417) SetModuleLength(moduleLength float32) *PDF417 {
 	barcode.w1 = moduleLength
-	barcode.h1 = 3 * barcode.w1
+	barcode.h1 = float32(3 * barcode.w1)
 	return barcode
 }
 
@@ -314,9 +314,9 @@ func (barcode *PDF417) drawBars(page *pdfjet.Page) [2]float32 {
 	for i := 0; i < len(startSymbol); i++ {
 		n := float32(startSymbol[i])
 		if i%2 == 0 {
-			barcode.drawBar(page, x, y, n*barcode.w1, float32(barcode.rows)*barcode.h1)
+			barcode.drawBar(page, x, y, float32(n*barcode.w1), float32(float32(barcode.rows)*barcode.h1))
 		}
-		x += n * barcode.w1
+		x += float32(n * barcode.w1)
 	}
 	x0 := x // Where the codewords of each row start
 
@@ -328,9 +328,9 @@ func (barcode *PDF417) drawBars(page *pdfjet.Page) [2]float32 {
 		for j := 0; j < 8; j++ {
 			n := float32(runes[j] - 0x30)
 			if j%2 == 0 {
-				barcode.drawBar(page, x, y, n*barcode.w1, barcode.h1)
+				barcode.drawBar(page, x, y, float32(n*barcode.w1), barcode.h1)
 			}
-			x += n * barcode.w1
+			x += float32(n * barcode.w1)
 		}
 		if i == (len(barcode.codewords) - 1) {
 			break
@@ -350,12 +350,12 @@ func (barcode *PDF417) drawBars(page *pdfjet.Page) [2]float32 {
 	for i := 0; i < len(endSymbol); i++ {
 		n := float32(endSymbol[i])
 		if i%2 == 0 {
-			barcode.drawBar(page, x, y, n*barcode.w1, float32(barcode.rows)*barcode.h1)
+			barcode.drawBar(page, x, y, float32(n*barcode.w1), float32(float32(barcode.rows)*barcode.h1))
 		}
-		x += n * barcode.w1
+		x += float32(n * barcode.w1)
 	}
 
-	return [2]float32{x, y + barcode.h1*float32(barcode.rows)}
+	return [2]float32{x, y + float32(barcode.h1*float32(barcode.rows))}
 }
 
 func (barcode *PDF417) drawBar(page *pdfjet.Page, x, y, w, h float32) {
@@ -363,7 +363,7 @@ func (barcode *PDF417) drawBar(page *pdfjet.Page, x, y, w, h float32) {
 		return // Measured, not drawn
 	}
 	page.SetPenWidth(w)
-	page.MoveTo(x+w/2, y)
-	page.LineTo(x+w/2, y+h)
+	page.MoveTo(x+float32(w/2), y)
+	page.LineTo(x+float32(w/2), y+h)
 	page.StrokePath()
 }

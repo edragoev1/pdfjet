@@ -391,13 +391,13 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 	y2 := chart.y1 + chart.h
 	bodyHeight := f2.bodyHeight
 	ascent := f2.ascent
-	pad := bodyHeight / 2.0
+	pad := float32(bodyHeight / 2.0)
 	legend := chart.drawLegend && chart.hasSeriesNames()
 
 	// Widest labels on the value axis and next to the bars
 	widestAxisLabel := float32(0.0)
 	for i := 0; i <= lines; i++ {
-		label := chart.axisLabel(vMin+step*float32(i), axisDigits)
+		label := chart.axisLabel(vMin+float32(step*float32(i)), axisDigits)
 		widestAxisLabel = max(widestAxisLabel, f2.StringWidth(f2.size, label))
 	}
 	widestValueLabel := float32(0.0)
@@ -417,28 +417,28 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 	}
 
 	// Margins and the plot area
-	titleBaseline := chart.y1 + 1.5*f1.bodyHeight
+	titleBaseline := chart.y1 + float32(1.5*f1.bodyHeight)
 	subtitleHeight := float32(0.0)
 	if chart.subtitle != "" {
 		subtitleHeight = bodyHeight
 	}
-	topMargin := 2.5*f1.bodyHeight + subtitleHeight
+	topMargin := float32(2.5*f1.bodyHeight) + subtitleHeight
 	if legend {
-		topMargin += 1.5 * bodyHeight
+		topMargin += float32(1.5 * bodyHeight)
 	}
 	var leftMargin float32
 	if chart.horizontal {
-		leftMargin = 1.5*bodyHeight + pad + widestCategory
+		leftMargin = float32(1.5*bodyHeight) + pad + widestCategory
 	} else {
-		leftMargin = 1.5*bodyHeight + pad + widestAxisLabel
+		leftMargin = float32(1.5*bodyHeight) + pad + widestAxisLabel
 	}
 	rightMargin := pad
-	bottomMargin := 2.5 * bodyHeight
+	bottomMargin := float32(2.5 * bodyHeight)
 	if chart.horizontal {
 		if chart.valueLabelsInside {
-			rightMargin += widestAxisLabel / 2.0
+			rightMargin += float32(widestAxisLabel / 2.0)
 		} else {
-			rightMargin += max(widestAxisLabel/2.0, widestValueLabel+pad)
+			rightMargin += max(float32(widestAxisLabel/2.0), widestValueLabel+pad)
 		}
 	} else if chart.drawValueLabels && !chart.stacked && !chart.valueLabelsInside {
 		topMargin += bodyHeight
@@ -457,15 +457,15 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 	// Title, the subtitle and then the legend under it
 	page.SetBrushColor(color.Black)
 	page.drawString(f1, f1.size, chart.title,
-		chart.x1+(chart.w-f1.StringWidth(f1.size, chart.title))/2.0, titleBaseline,
+		chart.x1+float32((chart.w-f1.StringWidth(f1.size, chart.title))/2.0), titleBaseline,
 		[3]float32{0.0, 0.0, 0.0}, nil)
 	if chart.subtitle != "" {
 		page.drawString(f2, f2.size, chart.subtitle,
-			chart.x1+(chart.w-f2.StringWidth(f2.size, chart.subtitle))/2.0, titleBaseline+subtitleHeight,
+			chart.x1+float32((chart.w-f2.StringWidth(f2.size, chart.subtitle))/2.0), titleBaseline+subtitleHeight,
 			colorToRGB(color.DimGray), nil)
 	}
 	if legend {
-		chart.drawLegendOn(page, titleBaseline+subtitleHeight+1.5*bodyHeight)
+		chart.drawLegendOn(page, titleBaseline+subtitleHeight+float32(1.5*bodyHeight))
 	}
 
 	if chart.chartBorderWidth > 0.0 {
@@ -477,21 +477,21 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 
 	// Grid lines and value axis labels
 	for i := 0; i <= lines; i++ {
-		v := vMin + step*float32(i)
+		v := vMin + float32(step*float32(i))
 		label := chart.axisLabel(v, axisDigits)
 		if chart.horizontal {
-			x := x5 + (v-vMin)*(x6-x5)/(vMax-vMin)
+			x := x5 + float32((v-vMin)*(x6-x5))/(vMax-vMin)
 			if chart.drawGridLines {
 				chart.gridLine(page, x, y5, x, y8)
 			}
-			page.drawString(f2, f2.size, label, x-f2.StringWidth(f2.size, label)/2.0, y8+bodyHeight,
+			page.drawString(f2, f2.size, label, x-float32(f2.StringWidth(f2.size, label)/2.0), y8+bodyHeight,
 				[3]float32{0.0, 0.0, 0.0}, nil)
 		} else {
-			y := y8 - (v-vMin)*(y8-y5)/(vMax-vMin)
+			y := y8 - float32((v-vMin)*(y8-y5))/(vMax-vMin)
 			if chart.drawGridLines {
 				chart.gridLine(page, x5, y, x6, y)
 			}
-			page.drawString(f2, f2.size, label, x5-pad-f2.StringWidth(f2.size, label), y+ascent/2.0,
+			page.drawString(f2, f2.size, label, x5-pad-f2.StringWidth(f2.size, label), y+float32(ascent/2.0),
 				[3]float32{0.0, 0.0, 0.0}, nil)
 		}
 	}
@@ -504,19 +504,19 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 	} else {
 		slot = (x6 - x5) / float32(n)
 	}
-	groupWidth := slot * (1.0 - chart.groupGap)
+	groupWidth := float32(slot * (1.0 - chart.groupGap))
 	barWidth := groupWidth
 	if m != 0 && !chart.stacked {
-		barWidth = groupWidth / (float32(m) + float32(m-1)*chart.barGap)
+		barWidth = groupWidth / (float32(m) + float32(float32(m-1)*chart.barGap))
 	}
 	for i := 0; i < n; i++ {
 		var slotStart float32
 		if chart.horizontal {
-			slotStart = y5 + float32(i)*slot
+			slotStart = y5 + float32(float32(i)*slot)
 		} else {
-			slotStart = x5 + float32(i)*slot
+			slotStart = x5 + float32(float32(i)*slot)
 		}
-		groupStart := slotStart + slot*chart.groupGap/2.0
+		groupStart := slotStart + float32(float32(slot*chart.groupGap)/2.0)
 		category := ""
 		if i < len(chart.categories) {
 			category = chart.categories[i]
@@ -524,9 +524,9 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 		page.SetBrushColor(color.Black)
 		if chart.horizontal {
 			page.drawString(f2, f2.size, category, x5-pad-f2.StringWidth(f2.size, category),
-				slotStart+slot/2.0+ascent/2.0, [3]float32{0.0, 0.0, 0.0}, nil)
+				slotStart+float32(slot/2.0)+float32(ascent/2.0), [3]float32{0.0, 0.0, 0.0}, nil)
 		} else {
-			page.drawString(f2, f2.size, category, slotStart+(slot-f2.StringWidth(f2.size, category))/2.0,
+			page.drawString(f2, f2.size, category, slotStart+float32((slot-f2.StringWidth(f2.size, category))/2.0),
 				y8+bodyHeight, [3]float32{0.0, 0.0, 0.0}, nil)
 		}
 		up := float32(0.0)   // the stacked values above 0 so far
@@ -554,7 +554,7 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 			to = min(max(to, vMin), vMax)
 			barStart := groupStart
 			if !chart.stacked {
-				barStart = groupStart + float32(j)*barWidth*(1.0+chart.barGap)
+				barStart = groupStart + float32(float32(float32(j)*barWidth)*(1.0+chart.barGap))
 			}
 			page.SetBrushColor(chart.barColor(s, j, i))
 			label := ""
@@ -562,65 +562,65 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 				label = chart.valueLabel(s.values[i])
 			}
 			if chart.horizontal {
-				x0 := x5 + (from-vMin)*(x6-x5)/(vMax-vMin)
-				x := x5 + (to-vMin)*(x6-x5)/(vMax-vMin)
+				x0 := x5 + float32((from-vMin)*(x6-x5))/(vMax-vMin)
+				x := x5 + float32((to-vMin)*(x6-x5))/(vMax-vMin)
 				page.FillRect(min(x0, x), barStart, abs32(x-x0), barWidth)
 				if chart.drawValueLabels && chart.stacked {
 					if abs32(x-x0) >= f2.StringWidth(f2.size, label)+pad {
 						page.SetBrushColor(color.Black)
 						page.drawString(f2, f2.size, label,
-							min(x0, x)+(abs32(x-x0)-f2.StringWidth(f2.size, label))/2.0,
-							barStart+barWidth/2.0+ascent/2.0, [3]float32{0.0, 0.0, 0.0}, nil)
+							min(x0, x)+float32((abs32(x-x0)-f2.StringWidth(f2.size, label))/2.0),
+							barStart+float32(barWidth/2.0)+float32(ascent/2.0), [3]float32{0.0, 0.0, 0.0}, nil)
 					}
 				} else if chart.drawValueLabels && chart.valueLabelsInside &&
 					abs32(x-x0) >= f2.StringWidth(f2.size, label)+pad {
 					var lx float32
 					if to >= base {
-						lx = x - pad/2.0 - f2.StringWidth(f2.size, label)
+						lx = x - float32(pad/2.0) - f2.StringWidth(f2.size, label)
 					} else {
-						lx = x + pad/2.0
+						lx = x + float32(pad/2.0)
 					}
-					page.drawString(f2, f2.size, label, lx, barStart+barWidth/2.0+ascent/2.0,
+					page.drawString(f2, f2.size, label, lx, barStart+float32(barWidth/2.0)+float32(ascent/2.0),
 						colorToRGB(color.White), nil)
 				} else if chart.drawValueLabels {
 					page.SetBrushColor(color.Black)
 					var lx float32
 					if to >= base {
-						lx = x + pad/2.0
+						lx = x + float32(pad/2.0)
 					} else {
-						lx = x - pad/2.0 - f2.StringWidth(f2.size, label)
+						lx = x - float32(pad/2.0) - f2.StringWidth(f2.size, label)
 					}
-					page.drawString(f2, f2.size, label, lx, barStart+barWidth/2.0+ascent/2.0,
+					page.drawString(f2, f2.size, label, lx, barStart+float32(barWidth/2.0)+float32(ascent/2.0),
 						[3]float32{0.0, 0.0, 0.0}, nil)
 				}
 			} else {
-				y0 := y8 - (from-vMin)*(y8-y5)/(vMax-vMin)
-				y := y8 - (to-vMin)*(y8-y5)/(vMax-vMin)
+				y0 := y8 - float32((from-vMin)*(y8-y5))/(vMax-vMin)
+				y := y8 - float32((to-vMin)*(y8-y5))/(vMax-vMin)
 				page.FillRect(barStart, min(y0, y), barWidth, abs32(y-y0))
 				if chart.drawValueLabels && chart.stacked {
 					if abs32(y-y0) >= bodyHeight {
 						page.SetBrushColor(color.Black)
-						page.drawString(f2, f2.size, label, barStart+(barWidth-f2.StringWidth(f2.size, label))/2.0,
-							(y+y0)/2.0+ascent/2.0, [3]float32{0.0, 0.0, 0.0}, nil)
+						page.drawString(f2, f2.size, label, barStart+float32((barWidth-f2.StringWidth(f2.size, label))/2.0),
+							float32((y+y0)/2.0)+float32(ascent/2.0), [3]float32{0.0, 0.0, 0.0}, nil)
 					}
 				} else if chart.drawValueLabels && chart.valueLabelsInside && abs32(y-y0) >= bodyHeight+pad {
 					var ly float32
 					if to >= base {
-						ly = y + ascent + pad/2.0
+						ly = y + ascent + float32(pad/2.0)
 					} else {
-						ly = y - pad/2.0
+						ly = y - float32(pad/2.0)
 					}
-					page.drawString(f2, f2.size, label, barStart+(barWidth-f2.StringWidth(f2.size, label))/2.0, ly,
+					page.drawString(f2, f2.size, label, barStart+float32((barWidth-f2.StringWidth(f2.size, label))/2.0), ly,
 						colorToRGB(color.White), nil)
 				} else if chart.drawValueLabels {
 					page.SetBrushColor(color.Black)
 					var ly float32
 					if to >= base {
-						ly = y - pad/2.0
+						ly = y - float32(pad/2.0)
 					} else {
-						ly = y + ascent + pad/2.0
+						ly = y + ascent + float32(pad/2.0)
 					}
-					page.drawString(f2, f2.size, label, barStart+(barWidth-f2.StringWidth(f2.size, label))/2.0, ly,
+					page.drawString(f2, f2.size, label, barStart+float32((barWidth-f2.StringWidth(f2.size, label))/2.0), ly,
 						[3]float32{0.0, 0.0, 0.0}, nil)
 				}
 			}
@@ -633,11 +633,11 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 	if chart.axisLineWidth > 0.0 {
 		page.SetPenWidth(chart.axisLineWidth)
 		if chart.horizontal {
-			x0 := x5 + (base-vMin)*(x6-x5)/(vMax-vMin)
+			x0 := x5 + float32((base-vMin)*(x6-x5))/(vMax-vMin)
 			page.DrawLine(x5, y8, x6, y8)
 			page.DrawLine(x0, y5, x0, y8)
 		} else {
-			y0 := y8 - (base-vMin)*(y8-y5)/(vMax-vMin)
+			y0 := y8 - float32((base-vMin)*(y8-y5))/(vMax-vMin)
 			page.DrawLine(x5, y5, x5, y8)
 			page.DrawLine(x5, y0, x6, y0)
 		}
@@ -651,10 +651,10 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 	page.SetBrushColor(color.Black)
 	page.SetTextRotation(-90)
 	page.drawString(f2, f2.size, chart.yAxisTitle, chart.x1+bodyHeight,
-		y8-((y8-y5)-f2.StringWidth(f2.size, chart.yAxisTitle))/2.0, [3]float32{0.0, 0.0, 0.0}, nil)
+		y8-float32(((y8-y5)-f2.StringWidth(f2.size, chart.yAxisTitle))/2.0), [3]float32{0.0, 0.0, 0.0}, nil)
 	page.SetTextRotation(0)
-	page.drawString(f2, f2.size, chart.xAxisTitle, x5+((x6-x5)-f2.StringWidth(f2.size, chart.xAxisTitle))/2.0,
-		y2-bodyHeight/2.0, [3]float32{0.0, 0.0, 0.0}, nil)
+	page.drawString(f2, f2.size, chart.xAxisTitle, x5+float32(((x6-x5)-f2.StringWidth(f2.size, chart.xAxisTitle))/2.0),
+		y2-float32(bodyHeight/2.0), [3]float32{0.0, 0.0, 0.0}, nil)
 
 	page.RestoreGraphicsState()
 	page.SetFigureBoundingBox(chart.x1, chart.y1, chart.w, chart.h)
@@ -748,7 +748,7 @@ func (chart *BarChart) gridLine(page *Page, xa, ya, xb, yb float32) {
 func (chart *BarChart) drawLegendOn(page *Page, baseline float32) {
 	f2 := chart.f2
 	swatch := f2.ascent
-	gap := swatch / 2.0
+	gap := float32(swatch / 2.0)
 	width := float32(0.0)
 	entries := 0
 	for _, s := range chart.series {
@@ -757,8 +757,8 @@ func (chart *BarChart) drawLegendOn(page *Page, baseline float32) {
 			entries++
 		}
 	}
-	width += float32(entries-1) * f2.bodyHeight
-	x := chart.x1 + (chart.w-width)/2.0
+	width += float32(float32(entries-1) * f2.bodyHeight)
+	x := chart.x1 + float32((chart.w-width)/2.0)
 	for j, s := range chart.series {
 		if s.name == "" {
 			continue

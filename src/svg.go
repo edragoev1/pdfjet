@@ -254,10 +254,10 @@ func toPDF(list []*svgPathOp) ([]*svgPathOp, error) {
 				pathOp.x1q = float32(x1)
 				pathOp.y1q = float32(y1)
 				// Calculate the coordinates of the cubic control points
-				x1c := lastOp.x + (2.0/3.0)*(float32(x1)-lastOp.x)
-				y1c := lastOp.y + (2.0/3.0)*(float32(y1)-lastOp.y)
-				x2c := float32(x) + (2.0/3.0)*(float32(x1)-float32(x))
-				y2c := float32(y) + (2.0/3.0)*(float32(y1)-float32(y))
+				x1c := lastOp.x + float32((2.0/3.0)*(float32(x1)-lastOp.x))
+				y1c := lastOp.y + float32((2.0/3.0)*(float32(y1)-lastOp.y))
+				x2c := float32(x) + float32((2.0/3.0)*(float32(x1)-float32(x)))
+				y2c := float32(y) + float32((2.0/3.0)*(float32(y1)-float32(y)))
 				pathOp.setCubicPoints(x1c, y1c, x2c, y2c, float32(x), float32(y))
 				operations = append(operations, pathOp)
 				lastOp = pathOp
@@ -270,8 +270,8 @@ func toPDF(list []*svgPathOp) ([]*svgPathOp, error) {
 				x1 := lastOp.x
 				y1 := lastOp.y
 				if lastOp.from == 'Q' || lastOp.from == 'T' {
-					x1 = 2*lastOp.x - lastOp.x1q
-					y1 = 2*lastOp.y - lastOp.y1q
+					x1 = float32(2*lastOp.x) - lastOp.x1q
+					y1 = float32(2*lastOp.y) - lastOp.y1q
 				}
 				pathOp.x1q = x1
 				pathOp.y1q = y1
@@ -288,10 +288,10 @@ func toPDF(list []*svgPathOp) ([]*svgPathOp, error) {
 					y += float64(lastOp.y)
 				}
 				// Calculate the coordinates of the cubic control points
-				x1c := lastOp.x + (2.0/3.0)*(x1-lastOp.x)
-				y1c := lastOp.y + (2.0/3.0)*(y1-lastOp.y)
-				x2c := float32(x) + (2.0/3.0)*(x1-float32(x))
-				y2c := float32(y) + (2.0/3.0)*(y1-float32(y))
+				x1c := lastOp.x + float32((2.0/3.0)*(x1-lastOp.x))
+				y1c := lastOp.y + float32((2.0/3.0)*(y1-lastOp.y))
+				x2c := float32(x) + float32((2.0/3.0)*(x1-float32(x)))
+				y2c := float32(y) + float32((2.0/3.0)*(y1-float32(y)))
 				pathOp.setCubicPoints(x1c, y1c, x2c, y2c, float32(x), float32(y))
 				operations = append(operations, pathOp)
 				lastOp = pathOp
@@ -347,8 +347,8 @@ func toPDF(list []*svgPathOp) ([]*svgPathOp, error) {
 				x1 := lastOp.x
 				y1 := lastOp.y
 				if lastOp.from == 'C' || lastOp.from == 'S' {
-					x1 = 2*lastOp.x - lastOp.x2
-					y1 = 2*lastOp.y - lastOp.y2
+					x1 = float32(2*lastOp.x) - lastOp.x2
+					y1 = float32(2*lastOp.y) - lastOp.y2
 				}
 				x2, err := strconv.ParseFloat(op.args[i], 32)
 				if err != nil {
@@ -446,17 +446,17 @@ func addArc(operations *[]*svgPathOp, lastOp *svgPathOp,
 		*operations = append(*operations, line)
 		return line
 	}
-	phi := float64(rotation) * math.Pi / 180.0
+	phi := float64(float64(float64(rotation)*math.Pi) / 180.0)
 	cosPhi := math.Cos(phi)
 	sinPhi := math.Sin(phi)
-	dx := float64(x1-x) / 2.0
-	dy := float64(y1-y) / 2.0
-	x1p := cosPhi*dx + sinPhi*dy
-	y1p := -sinPhi*dx + cosPhi*dy
-	lambda := (x1p*x1p)/(float64(rx)*float64(rx)) + (y1p*y1p)/(float64(ry)*float64(ry))
+	dx := float64(float64(x1-x) / 2.0)
+	dy := float64(float64(y1-y) / 2.0)
+	x1p := float64(cosPhi*dx) + float64(sinPhi*dy)
+	y1p := float64(-sinPhi*dx) + float64(cosPhi*dy)
+	lambda := (float64(x1p*x1p))/(float64(float64(rx)*float64(rx))) + (float64(y1p*y1p))/(float64(float64(ry)*float64(ry)))
 	if lambda > 1.0 {
-		rx *= float32(math.Sqrt(lambda))
-		ry *= float32(math.Sqrt(lambda))
+		rx = float32(rx * (float32(math.Sqrt(lambda))))
+		ry = float32(ry * (float32(math.Sqrt(lambda))))
 	}
 	// The center is on the line through the middle of the chord, this far
 	// from it. Radii that were scaled to fit put it on the chord itself: the
@@ -465,25 +465,25 @@ func addArc(operations *[]*svgPathOp, lastOp *svgPathOp,
 	// which the ports do not round alike.
 	coef := 0.0
 	if lambda <= 1.0 {
-		rx2 := float64(rx) * float64(rx)
-		ry2 := float64(ry) * float64(ry)
-		num := rx2*ry2 - rx2*y1p*y1p - ry2*x1p*x1p
-		den := rx2*y1p*y1p + ry2*x1p*x1p
+		rx2 := float64(float64(rx) * float64(rx))
+		ry2 := float64(float64(ry) * float64(ry))
+		num := float64(rx2*ry2) - float64(float64(rx2*y1p)*y1p) - float64(float64(ry2*x1p)*x1p)
+		den := float64(float64(rx2*y1p)*y1p) + float64(float64(ry2*x1p)*x1p)
 		coef = math.Sqrt(math.Max(0.0, num/den))
 		if largeArc == sweep {
 			coef = -coef
 		}
 	}
-	cxp := coef * float64(rx) * y1p / float64(ry)
-	cyp := -coef * float64(ry) * x1p / float64(rx)
-	cx := cosPhi*cxp - sinPhi*cyp + float64(x1+x)/2.0
-	cy := sinPhi*cxp + cosPhi*cyp + float64(y1+y)/2.0
+	cxp := float64(float64(coef*float64(rx))*y1p) / float64(ry)
+	cyp := float64(float64(-coef*float64(ry))*x1p) / float64(rx)
+	cx := float64(cosPhi*cxp) - float64(sinPhi*cyp) + float64(float64(x1+x)/2.0)
+	cy := float64(sinPhi*cxp) + float64(cosPhi*cyp) + float64(float64(y1+y)/2.0)
 	ux := (x1p - cxp) / float64(rx)
 	uy := (y1p - cyp) / float64(ry)
 	vx := (-x1p - cxp) / float64(rx)
 	vy := (-y1p - cyp) / float64(ry)
 	theta := math.Atan2(uy, ux)
-	delta := math.Atan2(ux*vy-uy*vx, ux*vx+uy*vy)
+	delta := math.Atan2(float64(ux*vy)-float64(uy*vx), float64(ux*vx)+float64(uy*vy))
 	if !sweep && delta > 0.0 {
 		delta -= 2.0 * math.Pi
 	} else if sweep && delta < 0.0 {
@@ -494,7 +494,7 @@ func addArc(operations *[]*svgPathOp, lastOp *svgPathOp,
 	// error: it is computed with atan2, whose last bit differs between the
 	// ports, so that the same arc would be drawn with another number of
 	// curves in each.
-	quarters := math.Abs(delta) / (math.Pi / 2.0)
+	quarters := float64(math.Abs(delta) / (math.Pi / 2.0))
 	segments := int(math.Ceil(quarters - 1e-9))
 	if segments < 1 && quarters > 0.0 {
 		segments = 1 // A sweep smaller than the tolerance is still one piece.
@@ -503,17 +503,17 @@ func addArc(operations *[]*svgPathOp, lastOp *svgPathOp,
 		return lastOp
 	}
 	step := delta / float64(segments)
-	t := 4.0 / 3.0 * math.Tan(step/4.0)
+	t := float64(4.0 / 3.0 * math.Tan(float64(step/4.0)))
 	pathOp := lastOp
 	for i := 0; i < segments; i++ {
-		a1 := theta + float64(i)*step
+		a1 := theta + float64(float64(i)*step)
 		a2 := a1 + step
 		p1x := math.Cos(a1)
 		p1y := math.Sin(a1)
 		p2x := math.Cos(a2)
 		p2y := math.Sin(a2)
-		c1 := onEllipse(cx, cy, float64(rx), float64(ry), cosPhi, sinPhi, p1x-t*p1y, p1y+t*p1x)
-		c2 := onEllipse(cx, cy, float64(rx), float64(ry), cosPhi, sinPhi, p2x+t*p2y, p2y-t*p2x)
+		c1 := onEllipse(cx, cy, float64(rx), float64(ry), cosPhi, sinPhi, p1x-float64(t*p1y), p1y+float64(t*p1x))
+		c2 := onEllipse(cx, cy, float64(rx), float64(ry), cosPhi, sinPhi, p2x+float64(t*p2y), p2y-float64(t*p2x))
 		p2 := [2]float32{x, y}
 		if i < segments-1 {
 			p2 = onEllipse(cx, cy, float64(rx), float64(ry), cosPhi, sinPhi, p2x, p2y)
@@ -529,6 +529,6 @@ func addArc(operations *[]*svgPathOp, lastOp *svgPathOp,
 // (cx, cy), the radii rx and ry and the rotation with the given cosine and sine.
 func onEllipse(cx, cy, rx, ry, cosPhi, sinPhi, u, v float64) [2]float32 {
 	return [2]float32{
-		float32(cx + rx*u*cosPhi - ry*v*sinPhi),
-		float32(cy + rx*u*sinPhi + ry*v*cosPhi)}
+		float32(cx + float64(float64(rx*u)*cosPhi) - float64(float64(ry*v)*sinPhi)),
+		float32(cy + float64(float64(rx*u)*sinPhi) + float64(float64(ry*v)*cosPhi))}
 }

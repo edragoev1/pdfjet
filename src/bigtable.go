@@ -631,7 +631,7 @@ func (bt *BigTable) setVertLines() {
 	copy(widths, bt.widths)
 	// The table is drawn between the margin it starts at and the same margin
 	// on the right of the page.
-	room := bt.pageSize.GetWidth() - 2*bt.x - float32(len(widths))*2*bt.padding
+	room := bt.pageSize.GetWidth() - float32(2*bt.x) - float32(float32(float32(len(widths))*2)*bt.padding)
 	least := bt.f1.StringWidth(bt.f1.size, bigTableEllipsis)
 	if width := bt.f2.StringWidth(bt.f2.size, bigTableEllipsis); width > least {
 		least = width
@@ -659,7 +659,7 @@ func (bt *BigTable) setVertLines() {
 	vertLineX := bt.x
 	bt.vertLines[0] = vertLineX
 	for i := 0; i < len(widths); i++ {
-		vertLineX += widths[i] + 2*bt.padding
+		vertLineX += widths[i] + float32(2*bt.padding)
 		bt.vertLines[i+1] = vertLineX
 	}
 }

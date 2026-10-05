@@ -150,8 +150,8 @@ func (arc *Arc) SetActualText(actualText string) *Arc {
 
 // ScaleBy scales both radii of this arc by the specified factor.
 func (arc *Arc) ScaleBy(factor float32) *Arc {
-	arc.rx *= factor
-	arc.ry *= factor
+	arc.rx = float32(arc.rx * factor)
+	arc.ry = float32(arc.ry * factor)
 	return arc
 }
 
@@ -162,18 +162,18 @@ func (arc *Arc) DrawOn(page *Page) [2]float32 {
 		dx := arc.line.x2 - arc.line.x1
 		dy := arc.line.y2 - arc.line.y1
 		// Normalize and rotate 90° (clockwise perpendicular)
-		invLength := float32(1.0 / math.Sqrt(float64(dx*dx+dy*dy)))
-		nx := -dy * invLength
-		ny := dx * invLength
+		invLength := float32(1.0 / math.Sqrt(float64(float32(dx*dx)+float32(dy*dy))))
+		nx := float32(-dy * invLength)
+		ny := float32(dx * invLength)
 		// Adjust direction based on sweep
 		sign := float32(-1.0)
 		if arc.sweepDegrees > 0.0 {
 			sign = float32(1.0)
 		}
-		arc.cx = arc.line.x2 + nx*arc.rx*sign
-		arc.cy = arc.line.y2 + ny*arc.ry*sign
-		arc.startAngle = float32(math.Atan2(
-			float64(arc.line.y2-arc.cy), float64(arc.line.x2-arc.cx)) * (180.0 / math.Pi))
+		arc.cx = arc.line.x2 + float32(float32(nx*arc.rx)*sign)
+		arc.cy = arc.line.y2 + float32(float32(ny*arc.ry)*sign)
+		arc.startAngle = float32(float64(math.Atan2(
+			float64(arc.line.y2-arc.cy), float64(arc.line.x2-arc.cx)) * (180.0 / math.Pi)))
 	}
 
 	if page == nil {

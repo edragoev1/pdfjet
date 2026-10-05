@@ -183,7 +183,7 @@ func NewCJKFont(pdf *PDF, cjkFont cjkfont.Font) *Font {
 	font.firstChar = 0x0020
 	font.lastChar = 0xFFEE
 	font.ascent = font.size
-	font.descent = font.size / 4
+	font.descent = float32(font.size / 4)
 	font.bodyHeight = font.ascent + font.descent
 
 	// Font Descriptor
@@ -362,17 +362,17 @@ func (font *Font) SetSize(fontSize float32) *Font {
 	font.size = fontSize
 	if font.isCJK {
 		font.ascent = font.size
-		font.descent = font.size / 4
+		font.descent = float32(font.size / 4)
 		font.bodyHeight = font.ascent + font.descent
 		return font
 	}
-	font.ascent = float32(font.fontAscent) * font.size / float32(font.unitsPerEm)
-	font.descent = -(float32(font.fontDescent) * font.size / float32(font.unitsPerEm))
+	font.ascent = float32(float32(font.fontAscent)*font.size) / float32(font.unitsPerEm)
+	font.descent = -(float32(float32(font.fontDescent)*font.size) / float32(font.unitsPerEm))
 	font.bodyHeight = font.ascent + font.descent
-	font.underlineThickness = float32(font.fontUnderlineThickness) *
-		font.size / float32(font.unitsPerEm)
-	font.underlinePosition = -float32(font.fontUnderlinePosition)*
-		font.size/float32(font.unitsPerEm) + font.underlineThickness/2.0
+	font.underlineThickness = float32(float32(font.fontUnderlineThickness)*
+		font.size) / float32(font.unitsPerEm)
+	font.underlinePosition = float32(-float32(font.fontUnderlinePosition)*
+		font.size)/float32(font.unitsPerEm) + float32(font.underlineThickness/2.0)
 	return font
 }
 
@@ -399,15 +399,15 @@ func (font *Font) GetAscent(fontSize float32) float32 {
 	if font.isCJK {
 		return fontSize
 	}
-	return float32(font.fontAscent) * fontSize / float32(font.unitsPerEm)
+	return float32(float32(font.fontAscent)*fontSize) / float32(font.unitsPerEm)
 }
 
 // GetDescent returns the descent of this font at the font size.
 func (font *Font) GetDescent(fontSize float32) float32 {
 	if font.isCJK {
-		return fontSize / 4
+		return float32(fontSize / 4)
 	}
-	return -float32(font.fontDescent) * fontSize / float32(font.unitsPerEm)
+	return float32(-float32(font.fontDescent)*fontSize) / float32(font.unitsPerEm)
 }
 
 // GetLineGap returns the line gap at the font size: the space the font puts
@@ -419,7 +419,7 @@ func (font *Font) GetLineGap(fontSize float32) float32 {
 	if font.isCJK {
 		return 0
 	}
-	return float32(font.fontLineGap) * fontSize / float32(font.unitsPerEm)
+	return float32(float32(font.fontLineGap)*fontSize) / float32(font.unitsPerEm)
 }
 
 // GetBodyHeight returns the height of the body of the font at the font size.
@@ -429,13 +429,13 @@ func (font *Font) GetBodyHeight(fontSize float32) float32 {
 
 // GetUnderlineThickness returns the underline thickness at the font size.
 func (font *Font) GetUnderlineThickness(fontSize float32) float32 {
-	return float32(font.fontUnderlineThickness) * fontSize / float32(font.unitsPerEm)
+	return float32(float32(font.fontUnderlineThickness)*fontSize) / float32(font.unitsPerEm)
 }
 
 // GetUnderlinePosition returns the underline position at the font size.
 func (font *Font) GetUnderlinePosition(fontSize float32) float32 {
-	return -(float32(font.fontUnderlinePosition) * fontSize / float32(font.unitsPerEm)) +
-		font.GetUnderlineThickness(fontSize)/2.0
+	return -(float32(float32(font.fontUnderlinePosition)*fontSize) / float32(font.unitsPerEm)) +
+		float32(font.GetUnderlineThickness(fontSize)/2.0)
 }
 
 // GetFitChars returns the number of characters from the specified text string
@@ -449,7 +449,7 @@ func (font *Font) GetFitChars(text string, width float32) int {
 		}
 		return len(runes)
 	}
-	w := width * float32(font.unitsPerEm) / font.size
+	w := float32(width*float32(font.unitsPerEm)) / font.size
 	if font.isCJK {
 		// Every glyph of a CJK font is as wide as the font size.
 		return max(0, min(int(width/font.size), len(runes)))
@@ -612,7 +612,7 @@ func (font *Font) StringWidth(fontSize float32, str string) float32 {
 	runes := []rune(str)
 	if font.isCJK {
 		// Every glyph of a CJK font is as wide as the font size.
-		return float32(len(runes)) * fontSize
+		return float32(float32(len(runes)) * fontSize)
 	}
 
 	if font.isCoreFont {
@@ -629,7 +629,7 @@ func (font *Font) StringWidth(fontSize float32, str string) float32 {
 		}
 	}
 
-	return width * fontSize / float32(font.unitsPerEm)
+	return float32(width*fontSize) / float32(font.unitsPerEm)
 }
 
 // advanceWidthOf returns the advance width, in font units, of the glyph that

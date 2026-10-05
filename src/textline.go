@@ -142,9 +142,9 @@ func (textLine *TextLine) SetTextColor(c int32) *TextLine {
 	if c == color.Transparent {
 		return textLine
 	}
-	r := float32((c>>16)&0xff) / 255.0
-	g := float32((c>>8)&0xff) / 255.0
-	b := float32((c)&0xff) / 255.0
+	r := float32(float32((c>>16)&0xff) / 255.0)
+	g := float32(float32((c>>8)&0xff) / 255.0)
+	b := float32(float32((c)&0xff) / 255.0)
 	textLine.textColor = [3]float32{r, g, b}
 	return textLine
 }
@@ -161,9 +161,9 @@ func (textLine *TextLine) SetDecorationColor(c int32) *TextLine {
 	if c == color.Transparent {
 		return textLine
 	}
-	r := float32((c>>16)&0xff) / 255.0
-	g := float32((c>>8)&0xff) / 255.0
-	b := float32((c)&0xff) / 255.0
+	r := float32(float32((c>>16)&0xff) / 255.0)
+	g := float32(float32((c>>8)&0xff) / 255.0)
+	b := float32(float32((c)&0xff) / 255.0)
 	textLine.decorationColor = [3]float32{r, g, b}
 	return textLine
 }
@@ -342,9 +342,9 @@ func (textLine *TextLine) GetVerticalOffset() float32 {
 		return textLine.verticalOffset
 	}
 	if textLine.scriptPosition == scriptposition.Superscript {
-		return -textLine.font.GetBodyHeight(textLine.fontSize) / 2.0
+		return float32(-textLine.font.GetBodyHeight(textLine.fontSize) / 2.0)
 	} else if textLine.scriptPosition == scriptposition.Subscript {
-		return textLine.font.GetBodyHeight(textLine.fontSize) / 3.0
+		return float32(textLine.font.GetBodyHeight(textLine.fontSize) / 3.0)
 	}
 	return 0.0
 }
@@ -500,7 +500,7 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 	page.AddEMC()
 
 	// The trigonometry turns counterclockwise, where the rotation turns clockwise.
-	radians := math.Pi * float64(-textLine.degrees) / 180.0
+	radians := float64(float64(math.Pi*float64(-textLine.degrees)) / 180.0)
 	if textLine.underline || textLine.strikeout {
 		// The pen of the lines is their own, and the page is left with the one it had.
 		page.SaveGraphicsState()
@@ -513,10 +513,10 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 			lineLength -= textLine.font.StringWidthUsingFallbackFont(textLine.fallbackFont, textLine.fontSize, single.Space)
 		}
 		underlinePosition := float64(textLine.font.GetUnderlinePosition(textLine.fontSize))
-		xAdjust := underlinePosition * math.Sin(radians)
-		yAdjust := underlinePosition*math.Cos(radians) + float64(verticalOffset)
-		x2 := float64(textLine.x) + float64(lineLength)*math.Cos(radians)
-		y2 := float64(textLine.y) - float64(lineLength)*math.Sin(radians)
+		xAdjust := float64(underlinePosition * math.Sin(radians))
+		yAdjust := float64(underlinePosition*math.Cos(radians)) + float64(verticalOffset)
+		x2 := float64(textLine.x) + float64(float64(lineLength)*math.Cos(radians))
+		y2 := float64(textLine.y) - float64(float64(lineLength)*math.Sin(radians))
 		// The line is decoration, and the text says what it is drawn under;
 		// a description of its own is read after the text again.
 		page.AddArtifactBMC()
@@ -534,10 +534,10 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 			lineLength -= textLine.font.StringWidthUsingFallbackFont(textLine.fallbackFont, textLine.fontSize, single.Space)
 		}
 		bodyHeight := float64(textLine.font.GetBodyHeight(textLine.fontSize))
-		xAdjust := (bodyHeight / 4.0) * math.Sin(radians)
-		yAdjust := (bodyHeight/4.0)*math.Cos(radians) + float64(verticalOffset)
-		x2 := float64(textLine.x) + float64(lineLength)*math.Cos(radians)
-		y2 := float64(textLine.y) - float64(lineLength)*math.Sin(radians)
+		xAdjust := float64((float64(bodyHeight / 4.0)) * math.Sin(radians))
+		yAdjust := float64((float64(bodyHeight/4.0))*math.Cos(radians)) + float64(verticalOffset)
+		x2 := float64(textLine.x) + float64(float64(lineLength)*math.Cos(radians))
+		y2 := float64(textLine.y) - float64(float64(lineLength)*math.Sin(radians))
 		page.AddArtifactBMC()
 		page.MoveTo(float32(float64(textLine.x)-xAdjust), float32(float64(textLine.y)-yAdjust))
 		page.LineTo(float32(x2-xAdjust), float32(y2-yAdjust))
@@ -578,12 +578,12 @@ func (textLine *TextLine) DrawOn(page *Page) [2]float32 {
 // is rotated.
 func (textLine *TextLine) corner(verticalOffset float32) [2]float32 {
 	// The trigonometry turns counterclockwise, where the rotation turns clockwise.
-	radians := math.Pi * float64(-textLine.degrees) / 180.0
+	radians := float64(float64(math.Pi*float64(-textLine.degrees)) / 180.0)
 	length := textLine.font.StringWidthUsingFallbackFont(textLine.fallbackFont, textLine.fontSize, textLine.text)
-	xMax := math.Max(float64(textLine.x), float64(textLine.x)+float64(length)*math.Cos(radians))
+	xMax := math.Max(float64(textLine.x), float64(textLine.x)+float64(float64(length)*math.Cos(radians)))
 	yMax := math.Max(
 		float64(textLine.y+verticalOffset),
-		float64(textLine.y+verticalOffset)-float64(length)*math.Sin(radians))
+		float64(textLine.y+verticalOffset)-float64(float64(length)*math.Sin(radians)))
 	return [2]float32{float32(xMax), float32(yMax)}
 }
 
@@ -602,14 +602,14 @@ func (textLine *TextLine) linkBox(verticalOffset float32) (float32, float32, flo
 	// The corners of the box, along the baseline and across it, turned as the
 	// underline is; the trigonometry turns counterclockwise, where the
 	// rotation turns clockwise.
-	radians := math.Pi * float64(-textLine.degrees) / 180.0
+	radians := float64(float64(math.Pi*float64(-textLine.degrees)) / 180.0)
 	cos, sin := math.Cos(radians), math.Sin(radians)
 	x1, y1 := math.Inf(1), math.Inf(1)
 	x2, y2 := math.Inf(-1), math.Inf(-1)
 	for _, along := range []float64{0, float64(width)} {
 		for _, across := range []float64{float64(-ascent), float64(descent)} {
-			cornerX := float64(x) + along*cos + across*sin
-			cornerY := float64(y) - along*sin + across*cos
+			cornerX := float64(x) + float64(along*cos) + float64(across*sin)
+			cornerY := float64(y) - float64(along*sin) + float64(across*cos)
 			x1, y1 = math.Min(x1, cornerX), math.Min(y1, cornerY)
 			x2, y2 = math.Max(x2, cornerX), math.Max(y2, cornerY)
 		}

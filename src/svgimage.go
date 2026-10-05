@@ -172,7 +172,7 @@ func elementState(parent svgState, colorMap map[string]int32, rules *svgStyleShe
 			return state, err
 		}
 	}
-	state.opacity *= state.ownOpacity
+	state.opacity = float32(state.opacity * state.ownOpacity)
 	if transform, ok := attributes["transform"]; ok {
 		if matrix, ok := parseSVGTransform(transform); ok {
 			state.matrix = svgMultiply(parent.matrix, matrix)
@@ -213,8 +213,8 @@ func (b *svgBuilder) closePath() {
 
 // ellipse adds the ellipse as four cubic curves, from its right end.
 func (b *svgBuilder) ellipse(cx, cy, rx, ry float64) {
-	kx := svgKappa * rx
-	ky := svgKappa * ry
+	kx := float64(svgKappa * rx)
+	ky := float64(svgKappa * ry)
 	b.moveTo(cx+rx, cy)
 	b.curveTo(cx+rx, cy+ky, cx+kx, cy+ry, cx, cy+ry)
 	b.curveTo(cx-kx, cy+ry, cx-rx, cy+ky, cx-rx, cy)
@@ -259,8 +259,8 @@ func shapeOperations(name string, attributes map[string]string) ([]*svgPathOp, e
 		if !rySet {
 			ry = rx
 		}
-		rx = math.Min(rx, w/2.0)
-		ry = math.Min(ry, h/2.0)
+		rx = math.Min(rx, float64(w/2.0))
+		ry = math.Min(ry, float64(h/2.0))
 		if rx <= 0.0 || ry <= 0.0 {
 			b.moveTo(x, y)
 			b.lineTo(x+w, y)
@@ -269,8 +269,8 @@ func shapeOperations(name string, attributes map[string]string) ([]*svgPathOp, e
 			b.closePath()
 			return b.operations, nil
 		}
-		kx := svgKappa * rx
-		ky := svgKappa * ry
+		kx := float64(svgKappa * rx)
+		ky := float64(svgKappa * ry)
 		b.moveTo(x+rx, y)
 		b.lineTo(x+w-rx, y)
 		b.curveTo(x+w-rx+kx, y, x+w, y+ry-ky, x+w, y+ry)
@@ -331,7 +331,7 @@ func radius(value string) (float64, bool) {
 // nothing: a shape in <defs> or of no size, or with neither a fill nor a stroke.
 func (image *SVGImage) addPath(state *svgState, operations []*svgPathOp) {
 	m := state.matrix
-	det := m[0]*m[3] - m[1]*m[2]
+	det := float64(m[0]*m[3]) - float64(m[1]*m[2])
 	if state.hidden || len(operations) == 0 || det == 0.0 {
 		return
 	}
@@ -345,8 +345,8 @@ func (image *SVGImage) addPath(state *svgState, operations []*svgPathOp) {
 	if state.strokeCurrent {
 		path.stroke = state.color
 	}
-	path.fillAlpha = state.fillOpacity * state.opacity
-	path.strokeAlpha = state.strokeOpacity * state.opacity
+	path.fillAlpha = float32(state.fillOpacity * state.opacity)
+	path.strokeAlpha = float32(state.strokeOpacity * state.opacity)
 	if path.fillAlpha == 0.0 {
 		path.fill = color.Transparent
 	}
@@ -356,7 +356,7 @@ func (image *SVGImage) addPath(state *svgState, operations []*svgPathOp) {
 	if path.fill == color.Transparent && path.stroke == color.Transparent {
 		return
 	}
-	path.strokeWidth = float32(float64(state.strokeWidth) * math.Sqrt(math.Abs(det)))
+	path.strokeWidth = float32(float64(float64(state.strokeWidth) * math.Sqrt(math.Abs(det))))
 	path.evenOdd = state.evenOdd
 	path.lineCap = state.lineCap
 	path.lineJoin = state.lineJoin
@@ -374,8 +374,8 @@ func (image *SVGImage) addPath(state *svgState, operations []*svgPathOp) {
 
 // svgTransform returns the point that the matrix takes the point to.
 func svgTransform(m [6]float64, x, y float32) (float32, float32) {
-	return float32(m[0]*float64(x) + m[2]*float64(y) + m[4]),
-		float32(m[1]*float64(x) + m[3]*float64(y) + m[5])
+	return float32(float64(m[0]*float64(x)) + float64(m[2]*float64(y)) + m[4]),
+		float32(float64(m[1]*float64(x)) + float64(m[3]*float64(y)) + m[5])
 }
 
 // svgUnits are the units of a length of an SVG file, in points. A number
@@ -410,7 +410,7 @@ func parseLength(value string) float32 {
 	if err != nil || math.IsInf(number, 0) || math.IsNaN(number) {
 		return 0.0
 	}
-	return float32(number) * scale
+	return float32(float32(number) * scale)
 }
 
 // parseFloatLenient parses a numeric attribute value, treating an empty
@@ -450,9 +450,9 @@ func (image *SVGImage) processPaths(paths []*svgPath) error {
 		image.w = box[2]
 		image.h = box[3]
 	} else if image.w == 0.0 {
-		image.w = image.h * box[2] / box[3]
+		image.w = float32(image.h*box[2]) / box[3]
 	} else if image.h == 0.0 {
-		image.h = image.w * box[3] / box[2]
+		image.h = float32(image.w*box[3]) / box[2]
 	}
 
 	// The viewBox is scaled to the size, and, unless preserveAspectRatio is
@@ -481,27 +481,27 @@ func (image *SVGImage) processPaths(paths []*svgPath) error {
 		if len(align) != 8 {
 			align = "xMidYMid"
 		}
-		tx = alignOffset(align[1:4], image.w-box[2]*scale)
-		ty = alignOffset(align[5:8], image.h-box[3]*scale)
+		tx = alignOffset(align[1:4], image.w-float32(box[2]*scale))
+		ty = alignOffset(align[5:8], image.h-float32(box[3]*scale))
 	}
-	strokeScale := float32(math.Sqrt(float64(sx) * float64(sy)))
+	strokeScale := float32(math.Sqrt(float64(float64(sx) * float64(sy))))
 	for _, path := range paths {
-		path.strokeWidth *= strokeScale
+		path.strokeWidth = float32(path.strokeWidth * strokeScale)
 		for _, op := range path.operations {
 			if uniform {
-				op.x = (op.x-box[0])*sx + tx
-				op.y = (op.y-box[1])*sy + ty
-				op.x1 = (op.x1-box[0])*sx + tx
-				op.y1 = (op.y1-box[1])*sy + ty
-				op.x2 = (op.x2-box[0])*sx + tx
-				op.y2 = (op.y2-box[1])*sy + ty
+				op.x = float32((op.x-box[0])*sx) + tx
+				op.y = float32((op.y-box[1])*sy) + ty
+				op.x1 = float32((op.x1-box[0])*sx) + tx
+				op.y1 = float32((op.y1-box[1])*sy) + ty
+				op.x2 = float32((op.x2-box[0])*sx) + tx
+				op.y2 = float32((op.y2-box[1])*sy) + ty
 			} else {
-				op.x = (op.x - box[0]) * image.w / box[2]
-				op.y = (op.y - box[1]) * image.h / box[3]
-				op.x1 = (op.x1 - box[0]) * image.w / box[2]
-				op.y1 = (op.y1 - box[1]) * image.h / box[3]
-				op.x2 = (op.x2 - box[0]) * image.w / box[2]
-				op.y2 = (op.y2 - box[1]) * image.h / box[3]
+				op.x = float32((op.x-box[0])*image.w) / box[2]
+				op.y = float32((op.y-box[1])*image.h) / box[3]
+				op.x1 = float32((op.x1-box[0])*image.w) / box[2]
+				op.y1 = float32((op.y1-box[1])*image.h) / box[3]
+				op.x2 = float32((op.x2-box[0])*image.w) / box[2]
+				op.y2 = float32((op.y2-box[1])*image.h) / box[3]
 			}
 		}
 	}
@@ -517,24 +517,24 @@ func alignOffset(align string, space float32) float32 {
 	case "Max":
 		return space
 	}
-	return space / 2.0
+	return float32(space / 2.0)
 }
 
 // ScaleBy scales this svgParser image by the specified factor.
 func (image *SVGImage) ScaleBy(factor float32) *SVGImage {
 	for _, path := range image.paths {
-		path.strokeWidth *= factor
+		path.strokeWidth = float32(path.strokeWidth * factor)
 		for _, op := range path.operations {
-			op.x1 *= factor
-			op.y1 *= factor
-			op.x2 *= factor
-			op.y2 *= factor
-			op.x *= factor
-			op.y *= factor
+			op.x1 = float32(op.x1 * factor)
+			op.y1 = float32(op.y1 * factor)
+			op.x2 = float32(op.x2 * factor)
+			op.y2 = float32(op.y2 * factor)
+			op.x = float32(op.x * factor)
+			op.y = float32(op.y * factor)
 		}
 	}
-	image.w *= factor
-	image.h *= factor
+	image.w = float32(image.w * factor)
+	image.h = float32(image.h * factor)
 	return image
 }
 

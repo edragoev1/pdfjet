@@ -226,15 +226,15 @@ func (composite *CompositeTextLine) place(textLine *TextLine, base float32) {
 		textLine.SetVerticalOffset(0.0)
 	}
 	if textLine.GetScriptPosition() == scriptposition.Superscript {
-		textLine.SetFontSize(base * composite.superscriptFactor)
+		textLine.SetFontSize(float32(base * composite.superscriptFactor))
 		textLine.SetLocation(
 			composite.current[composite.x],
-			composite.current[composite.y]-base*composite.superscriptPosition)
+			composite.current[composite.y]-float32(base*composite.superscriptPosition))
 	} else if textLine.GetScriptPosition() == scriptposition.Subscript {
-		textLine.SetFontSize(base * composite.subscriptFactor)
+		textLine.SetFontSize(float32(base * composite.subscriptFactor))
 		textLine.SetLocation(
 			composite.current[composite.x],
-			composite.current[composite.y]+base*composite.subscriptPosition)
+			composite.current[composite.y]+float32(base*composite.subscriptPosition))
 	} else {
 		textLine.SetFontSize(base)
 		textLine.SetLocation(composite.current[composite.x], composite.current[composite.y])

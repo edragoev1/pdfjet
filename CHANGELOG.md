@@ -44,6 +44,19 @@ This is the first entry in this file; earlier releases were not tracked here.
   two repositories at the pinned commits, and the workflows fetch them.
 
 ### Fixed
+- The Go port computes the same on arm64 as on amd64 and as the Java, C#
+  and Swift ports. The Go spec lets the compiler fuse `x*y + z` into one
+  fused multiply-add, rounding once, and Go's arm64 compiler did so in 333
+  places of the library, among them `TextBlock` where it breaks lines and
+  `Cell` where it measures rows, so a result could differ in its last bit
+  and, at a boundary, break a line otherwise on ARM servers such as AWS
+  Graviton. Every float multiplication of the Go port, and every division
+  by a constant, which the compiler makes a multiplication, is now written
+  in a conversion to its own type, `float32(a*b)`, which rounds it, as the
+  spec provides. On amd64 nothing changes: the PDFs of the 57 examples are
+  the same byte for byte. `check-no-fma.sh`, run by the Build workflow,
+  fails if a fused multiply-add appears in the Go port's arm64 code again;
+  it needs no ARM computer.
 - `Color.transparent` leaves the color as it was in every int-color setter:
   23 of the 36 kept the low 24 bits of -1 and drew white, a white line for
   `Line.SetStrokeColor(Color.transparent)`, where the other 13 already left

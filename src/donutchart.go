@@ -83,21 +83,21 @@ func getControlPoints(xc, yc, x0, y0, x3, y3 float32) [][2]float32 {
 	ay := y0 - yc
 	bx := x3 - xc
 	by := y3 - yc
-	q1 := ax*ax + ay*ay
-	q2 := q1 + ax*bx + ay*by
+	q1 := float32(ax*ax) + float32(ay*ay)
+	q2 := q1 + float32(ax*bx) + float32(ay*by)
 	// An arc of radius zero, the center of a pie chart, or of no angle has
 	// its control points at its ends; the formula would divide 0 by 0.
-	cross := ax*by - ay*bx
+	cross := float32(ax*by) - float32(ay*bx)
 	var k2 float32
 	if cross != 0 {
-		k2 = float32(4.0/3.0) * (float32(math.Sqrt(float64(2*q1*q2))) - q2) / cross
+		k2 = float32(float32(4.0/3.0)*(float32(math.Sqrt(float64(float32(float32(2*q1)*q2))))-q2)) / cross
 	}
 
 	// Control points coordinates
-	x1 := xc + ax - k2*ay
-	y1 := yc + ay + k2*ax
-	x2 := xc + bx + k2*by
-	y2 := yc + by - k2*bx
+	x1 := xc + ax - float32(k2*ay)
+	y1 := yc + ay + float32(k2*ax)
+	x2 := xc + bx + float32(k2*by)
+	y2 := yc + by - float32(k2*bx)
 
 	points = append(points, [2]float32{x0, y0})
 	points = append(points, [2]float32{x1, y1})
@@ -108,8 +108,8 @@ func getControlPoints(xc, yc, x0, y0, x3, y3 float32) [][2]float32 {
 }
 
 func getPoint(xc, yc, radius, angle float32) [2]float32 {
-	x := xc + radius*float32(math.Cos(float64(angle)*math.Pi/180.0))
-	y := yc + radius*float32(math.Sin(float64(angle)*math.Pi/180.0))
+	x := xc + float32(radius*float32(math.Cos(float64(float64(float64(angle)*math.Pi)/180.0))))
+	y := yc + float32(radius*float32(math.Sin(float64(float64(float64(angle)*math.Pi)/180.0))))
 	return [2]float32{x, y}
 }
 
@@ -180,7 +180,7 @@ func (dc *DonutChart) drawLinePointer(
 	text string,
 	xc, yc, r1, a1, a2 float32,
 ) [4]float32 {
-	midAngle := (a1+a2)/2.0 - 90.0
+	midAngle := float32((a1+a2)/2.0) - 90.0
 
 	// Point on the outer edge of the donut
 	p1 := getPoint(xc, yc, r1, midAngle)
@@ -197,7 +197,7 @@ func (dc *DonutChart) drawLinePointer(
 
 	if dc.f1 != nil && text != "" {
 		textWidth := dc.f1.StringWidth(dc.f1.size, text)
-		onRightSide := math.Cos(float64(midAngle)*math.Pi/180.0) >= 0
+		onRightSide := math.Cos(float64(float64(float64(midAngle)*math.Pi)/180.0)) >= 0
 
 		padding := float32(4.0)
 		lineLength := textWidth + padding
@@ -219,7 +219,7 @@ func (dc *DonutChart) drawLinePointer(
 		if onRightSide {
 			x = p2[0] + 2.0
 		}
-		baseline := yEnd - dc.f1.GetAscent(dc.f1.size)/3.0
+		baseline := yEnd - float32(dc.f1.GetAscent(dc.f1.size)/3.0)
 		page.drawString(dc.f1, dc.f1.size, text, x, baseline,
 			colorToRGB(color.Black), nil)
 		return [4]float32{
@@ -229,7 +229,7 @@ func (dc *DonutChart) drawLinePointer(
 			max(p1[1], p2[1], baseline+dc.f1.GetDescent(dc.f1.size))}
 	} else {
 		// No text — short horizontal stub
-		onRightSide := math.Cos(float64(midAngle)*math.Pi/180.0) >= 0
+		onRightSide := math.Cos(float64(float64(float64(midAngle)*math.Pi)/180.0)) >= 0
 		var xEnd float32
 		if onRightSide {
 			xEnd = p2[0] + 20.0
@@ -268,13 +268,13 @@ func (dc *DonutChart) DrawOn(page *Page) [2]float32 {
 
 	// The box of the figure: the outer circle, and the pointers and the
 	// labels, which can reach past it
-	box := [4]float32{dc.x, dc.y, dc.x + 2*dc.r1, dc.y + 2*dc.r1}
+	box := [4]float32{dc.x, dc.y, dc.x + float32(2*dc.r1), dc.y + float32(2*dc.r1)}
 	angle := float32(0.0)
 	for _, slice := range dc.slices {
 		if slice.value <= 0.0 {
 			continue
 		}
-		sweep := slice.value * 360.0 / total
+		sweep := float32(slice.value*360.0) / total
 		angle = dc.drawSlice(
 			page, slice.color,
 			xc, yc,
@@ -293,12 +293,12 @@ func (dc *DonutChart) DrawOn(page *Page) [2]float32 {
 		// The percentage fits inside a slice of 15 degrees or more
 		if dc.f2 != nil && sweep >= 15.0 {
 			pctStr := slicePercentage(slice, total)
-			midAngle := angle - sweep/2.0 - 90.0
-			midR := (dc.r1 + dc.r2) / 2.0
+			midAngle := angle - float32(sweep/2.0) - 90.0
+			midR := float32((dc.r1 + dc.r2) / 2.0)
 			pos := getPoint(xc, yc, midR, midAngle)
 			page.drawString(dc.f2, dc.f2.size, pctStr,
-				pos[0]-dc.f2.StringWidth(dc.f2.size, pctStr)/2.0,
-				pos[1]+dc.f2.GetAscent(dc.f2.size)/3.0,
+				pos[0]-float32(dc.f2.StringWidth(dc.f2.size, pctStr)/2.0),
+				pos[1]+float32(dc.f2.GetAscent(dc.f2.size)/3.0),
 				colorToRGB(color.White), nil)
 		}
 	}
@@ -312,7 +312,7 @@ func (dc *DonutChart) DrawOn(page *Page) [2]float32 {
 // slicePercentage returns the share of the slice in the total, as a whole
 // percentage.
 func slicePercentage(slice *Slice, total float32) string {
-	return fmt.Sprintf("%d%%", int(math.Floor(float64(slice.value*100.0/total)+0.5)))
+	return fmt.Sprintf("%d%%", int(math.Floor(float64(float32(slice.value*100.0)/total)+0.5)))
 }
 
 // getAltDescription returns the alternate description, or the label and the

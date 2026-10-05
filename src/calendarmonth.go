@@ -46,7 +46,7 @@ func NewCalendarMonth(f1, f2 *Font, year, month int) *CalendarMonth {
 	calendarMonth.daysInMonth = time.Date(year, time.Month(month)+1, 0, 0, 0, 0, 0, time.UTC).Day()
 	calendarMonth.firstDayOfMonth = int(first.Weekday())
 	for _, day := range calendarDays {
-		w := 2 * f1.StringWidth(f1.size, day)
+		w := float32(2 * f1.StringWidth(f1.size, day))
 		if w > calendarMonth.dx {
 			calendarMonth.dx = w
 		}
@@ -101,23 +101,23 @@ func (calendarMonth *CalendarMonth) DrawOn(page *Page) [2]float32 {
 	dx, dy := calendarMonth.dx, calendarMonth.dy
 	f1, f2 := calendarMonth.f1, calendarMonth.f2
 	if page == nil {
-		return [2]float32{x1 + 7*dx, y1 + 7*dy} // Measured, not drawn
+		return [2]float32{x1 + float32(7*dx), y1 + float32(7*dy)} // Measured, not drawn
 	}
 	// The first day of the month is in this column of the first week.
 	firstColumn := (calendarMonth.firstDayOfMonth - calendarMonth.firstDayOfWeek + 7) % 7
 	for col := 0; col < 7; col++ {
 		day := calendarDays[(calendarMonth.firstDayOfWeek+col)%7]
-		offset := (dx - f1.StringWidth(f1.size, day)) / 2
+		offset := float32((dx - f1.StringWidth(f1.size, day)) / 2)
 		text := NewTextLine(f1, day)
-		text.SetLocation(x1+float32(col)*dx+offset, y1+dy/2-f1.descent)
+		text.SetLocation(x1+float32(float32(col)*dx)+offset, y1+float32(dy/2)-f1.descent)
 		text.DrawOn(page)
 	}
 	for dayOfMonth := 1; dayOfMonth <= calendarMonth.daysInMonth; dayOfMonth++ {
 		cell := firstColumn + dayOfMonth - 1
-		x := x1 + float32(cell%7)*dx
-		y := y1 + float32(cell/7+1)*dy
+		x := x1 + float32(float32(cell%7)*dx)
+		y := y1 + float32(float32(cell/7+1)*dy)
 		date := strconv.Itoa(dayOfMonth)
-		offset := (dx - f2.StringWidth(f2.size, date)) / 2
+		offset := float32((dx - f2.StringWidth(f2.size, date)) / 2)
 		text := NewTextLine(f2, date)
 		text.SetLocation(x+offset, y+f2.ascent)
 		text.DrawOn(page)
@@ -130,18 +130,18 @@ func (calendarMonth *CalendarMonth) DrawOn(page *Page) [2]float32 {
 	// The line separating the names of the days from the dates
 	page.SetPenColor(color.Black)
 	page.SetPenWidth(0)
-	page.DrawLine(x1, y1+dy/2+f1.descent, x1+7*dx, y1+dy/2+f1.descent)
+	page.DrawLine(x1, y1+float32(dy/2)+f1.descent, x1+float32(7*dx), y1+float32(dy/2)+f1.descent)
 	page.SetPenColor(color.Blue)
 	page.SetPenWidth(1.25)
 	for dayOfMonth := 1; dayOfMonth <= calendarMonth.daysInMonth; dayOfMonth++ {
 		cell := firstColumn + dayOfMonth - 1
 		page.DrawEllipse(
-			x1+float32(cell%7)*dx+dx/2,
-			y1+float32(cell/7+1)*dy+f2.GetBodyHeight(f2.size)/2,
-			dx/2.5,
-			dy/2.5)
+			x1+float32(float32(cell%7)*dx)+float32(dx/2),
+			y1+float32(float32(cell/7+1)*dy)+float32(f2.GetBodyHeight(f2.size)/2),
+			float32(dx/2.5),
+			float32(dy/2.5))
 	}
 	page.RestoreGraphicsState()
 	page.AddEMC()
-	return [2]float32{x1 + 7*dx, y1 + 7*dy}
+	return [2]float32{x1 + float32(7*dx), y1 + float32(7*dy)}
 }

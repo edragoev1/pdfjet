@@ -272,12 +272,12 @@ func addCIDFontDictionaryObject(pdf *PDF, font *Font) {
 	// The width of the glyphs past the /W array: those past the advance
 	// widths, which have the width of the last one.
 	pdf.appendString("/DW ")
-	pdf.appendInteger(int(math.Round(float64(k * float32(font.advanceWidth[len(font.advanceWidth)-1])))))
+	pdf.appendInteger(int(math.Round(float64(float32(k * float32(font.advanceWidth[len(font.advanceWidth)-1]))))))
 	pdf.appendString("\n")
 
 	pdf.appendString("/W [0[\n")
 	for _, width := range font.advanceWidth {
-		pdf.appendInteger(int(math.Round(float64(k * float32(width)))))
+		pdf.appendInteger(int(math.Round(float64(float32(k * float32(width))))))
 		pdf.appendString(" ")
 	}
 	pdf.appendString("]]\n")

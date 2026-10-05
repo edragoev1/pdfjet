@@ -130,7 +130,7 @@ func (cell *Cell) setAlignmentAt(shift uint32, align alignment.Alignment) {
 
 // paddingAt returns the padding at the byte of padding, in points.
 func (cell *Cell) paddingAt(shift uint32) float32 {
-	return float32((cell.padding>>shift)&cellPaddingBits) / cellPaddingScale
+	return float32(float32((cell.padding>>shift)&cellPaddingBits) / cellPaddingScale)
 }
 
 // setPaddingAt keeps the padding in the byte of padding, to the nearest
@@ -146,7 +146,7 @@ func (cell *Cell) setPaddingAt(shift uint32, points float32) {
 	case points >= cellPaddingBits/cellPaddingScale:
 		quarters = cellPaddingBits
 	default:
-		quarters = int(points*cellPaddingScale + 0.5)
+		quarters = int(float32(points*cellPaddingScale) + 0.5)
 	}
 	cell.padding = (cell.padding &^ (cellPaddingBits << shift)) | uint32(quarters)<<shift
 }
@@ -689,7 +689,7 @@ func (cell *Cell) drawOn(page *Page, x, y, w, h float32) {
 			cell.drawable.SetLocation((x+w)-(drawableWidth+cell.paddingAt(cellRightPadding)), y+cell.paddingAt(cellTopPadding))
 		} else if cell.alignmentAt(cellTextAlignment) == alignment.Center {
 			drawableWidth := measureDrawable(cell.drawable)[0]
-			cell.drawable.SetLocation((x+w/2.0)-drawableWidth/2.0, y+cell.paddingAt(cellTopPadding))
+			cell.drawable.SetLocation((x+float32(w/2.0))-float32(drawableWidth/2.0), y+cell.paddingAt(cellTopPadding))
 		} else {
 			cell.drawable.SetLocation(x+cell.paddingAt(cellLeftPadding), y+cell.paddingAt(cellTopPadding))
 		}
@@ -700,11 +700,11 @@ func (cell *Cell) drawOn(page *Page, x, y, w, h float32) {
 	if cell.point != nil {
 		switch cell.alignmentAt(cellMarkerAlignment) {
 		case alignment.Left:
-			cell.point.x = x + 2*cell.point.r
+			cell.point.x = x + float32(2*cell.point.r)
 		case alignment.Right:
-			cell.point.x = (x + w) - cell.paddingAt(cellRightPadding)/2
+			cell.point.x = (x + w) - float32(cell.paddingAt(cellRightPadding)/2)
 		}
-		cell.point.y = y + h/2
+		cell.point.y = y + float32(h/2)
 		if cell.point.hasFillColor {
 			page.SetBrushColorRGB(cell.point.fillColor)
 		}
@@ -743,7 +743,7 @@ func (cell *Cell) drawLinkedPoint(page *Page) {
 	link := page.beginLink()
 	page.AddBDC(structelem.Figure, "", "", description)
 	page.DrawPoint(point)
-	page.SetFigureBoundingBox(point.x-point.r, point.y-point.r, 2*point.r, 2*point.r)
+	page.SetFigureBoundingBox(point.x-point.r, point.y-point.r, float32(2*point.r), float32(2*point.r))
 	page.AddEMC()
 	page.endLink(link)
 	page.addAnnotation(&annotationObject{
@@ -761,7 +761,7 @@ func (cell *Cell) drawLinkedPoint(page *Page) {
 func (cell *Cell) drawBackground(page *Page, x, y, cellW, cellH float32) {
 	page.AddArtifactBMC()
 	page.SetBrushColor(cell.backgroundColor)
-	page.FillRect(x, y+cell.borderWidth/2, cellW, cellH)
+	page.FillRect(x, y+float32(cell.borderWidth/2), cellW, cellH)
 	page.AddEMC()
 }
 
@@ -779,7 +779,7 @@ func (cell *Cell) drawBorders(page *Page, x, y, cellW, cellH float32) {
 	}
 	page.SetPenWidth(cell.borderWidth)
 	// Half the pen width, so that the corners of the borders close.
-	hWidth := cell.borderWidth / 2.0
+	hWidth := float32(cell.borderWidth / 2.0)
 	// The borders of a cell are the subpaths of one path, stroked once.
 	if cell.properties&border.Top != 0 {
 		page.MoveTo(x-hWidth, y)
@@ -809,7 +809,7 @@ func (cell *Cell) drawText(page *Page, x, y, cellW, cellH float32) {
 	case alignment.Top:
 		yText = y + ascent + cell.paddingAt(cellTopPadding)
 	case alignment.Center:
-		yText = y + cellH/2.0 + ascent/2.0
+		yText = y + float32(cellH/2.0) + float32(ascent/2.0)
 	case alignment.Bottom:
 		yText = (y + cellH) - cell.paddingAt(cellBottomPadding)
 	default:
@@ -821,7 +821,7 @@ func (cell *Cell) drawText(page *Page, x, y, cellW, cellH float32) {
 		xText = (x + cellW) - (cell.getTextWidth() + cell.paddingAt(cellRightPadding))
 	} else if cell.alignmentAt(cellTextAlignment) == alignment.Center {
 		xText = x + cell.paddingAt(cellLeftPadding) +
-			(((cellW - (cell.paddingAt(cellLeftPadding) + cell.paddingAt(cellRightPadding))) - cell.getTextWidth()) / 2)
+			(float32(((cellW - (cell.paddingAt(cellLeftPadding) + cell.paddingAt(cellRightPadding))) - cell.getTextWidth()) / 2))
 	} else {
 		// alignment.Left, and alignment.Justify, which a single line of text cannot use.
 		xText = x + cell.paddingAt(cellLeftPadding)
@@ -898,8 +898,8 @@ func (cell *Cell) strikeoutText(page *Page, x, y float32) {
 	page.AddArtifactBMC()
 	page.SetPenColor(cell.textColor)
 	page.SetPenWidth(cell.font.GetUnderlineThickness(cell.fontSize))
-	page.MoveTo(x, y-ascent/3.0)
-	page.LineTo(x+cell.getTextWidth(), y-ascent/3.0)
+	page.MoveTo(x, y-float32(ascent/3.0))
+	page.LineTo(x+cell.getTextWidth(), y-float32(ascent/3.0))
 	page.StrokePath()
 	page.AddEMC()
 }
