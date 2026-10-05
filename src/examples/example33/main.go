@@ -56,7 +56,9 @@ func Example33() error {
 	svgMap.SetAltDescription(
 		"A map of Europe drawn from an SVG file, the countries filled in peachpuff and outlined in dim gray, Spain in aliceblue and Austria outlined in light gray.")
 	svgMap.ScaleBy(0.5)
-	svgMap.SetLocation((page.GetWidth()-svgMap.GetWidth())/2.0, xy[1]+20.0)
+	// In the middle of the page, and the text under it as wide as it
+	mapX := (page.GetWidth() - svgMap.GetWidth()) / 2.0
+	svgMap.SetLocation(mapX, xy[1]+20.0)
 	xy = svgMap.DrawOn(page)
 
 	textBlock = pdfjet.NewTextBlock(f1,
@@ -65,8 +67,8 @@ func Example33() error {
 			"with aliceblue, and Austria the outline with lightgray.")
 	textBlock.SetFontSize(10.0)
 	textBlock.SetTextColor(color.DimGray)
-	textBlock.SetLocation(50.0, xy[1]+10.0)
-	textBlock.SetWidth(495.0)
+	textBlock.SetLocation(mapX, xy[1]+10.0)
+	textBlock.SetWidth(svgMap.GetWidth())
 	xy = textBlock.DrawOn(page)
 
 	iconFiles := []string{

@@ -46,7 +46,9 @@ public class Example_33 {
         map.SetAltDescription(
                 "A map of Europe drawn from an SVG file, the countries filled in peachpuff and outlined in dim gray, Spain in aliceblue and Austria outlined in light gray.");
         map.ScaleBy(0.5f);
-        map.SetLocation((page.GetWidth() - map.GetWidth()) / 2f, xy[1] + 20f);
+        // In the middle of the page, and the text under it as wide as it
+        float mapX = (page.GetWidth() - map.GetWidth()) / 2f;
+        map.SetLocation(mapX, xy[1] + 20f);
         xy = map.DrawOn(page);
 
         textBlock = new TextBlock(f1,
@@ -55,8 +57,8 @@ public class Example_33 {
                 + "with aliceblue, and Austria the outline with lightgray.");
         textBlock.SetFontSize(10f);
         textBlock.SetTextColor(Color.dimgray);
-        textBlock.SetLocation(50f, xy[1] + 10f);
-        textBlock.SetWidth(495f);
+        textBlock.SetLocation(mapX, xy[1] + 10f);
+        textBlock.SetWidth(map.GetWidth());
         xy = textBlock.DrawOn(page);
 
         String[] iconFiles = {

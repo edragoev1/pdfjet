@@ -47,7 +47,9 @@ public class Example_33 {
         map.setAltDescription(
                 "A map of Europe drawn from an SVG file, the countries filled in peachpuff and outlined in dim gray, Spain in aliceblue and Austria outlined in light gray.");
         map.scaleBy(0.5f);
-        map.setLocation((page.getWidth() - map.getWidth()) / 2f, xy[1] + 20f);
+        // In the middle of the page, and the text under it as wide as it
+        float mapX = (page.getWidth() - map.getWidth()) / 2f;
+        map.setLocation(mapX, xy[1] + 20f);
         xy = map.drawOn(page);
 
         textBlock = new TextBlock(f1,
@@ -56,8 +58,8 @@ public class Example_33 {
                 + "with aliceblue, and Austria the outline with lightgray.");
         textBlock.setFontSize(10f);
         textBlock.setTextColor(Color.dimgray);
-        textBlock.setLocation(50f, xy[1] + 10f);
-        textBlock.setWidth(495f);
+        textBlock.setLocation(mapX, xy[1] + 10f);
+        textBlock.setWidth(map.getWidth());
         xy = textBlock.drawOn(page);
 
         String[] iconFiles = {

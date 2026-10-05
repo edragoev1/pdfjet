@@ -51,7 +51,9 @@ public class Example_33 {
         map.setAltDescription(
                 "A map of Europe drawn from an SVG file, the countries filled in peachpuff and outlined in dim gray, Spain in aliceblue and Austria outlined in light gray.")
         map.scaleBy(0.5)
-        map.setLocation((page.getWidth() - map.getWidth()) / 2.0, xy[1] + 20.0)
+        // In the middle of the page, and the text under it as wide as it
+        let mapX = (page.getWidth() - map.getWidth()) / 2.0
+        map.setLocation(mapX, xy[1] + 20.0)
         xy = map.drawOn(page)
 
         textBlock = TextBlock(f1,
@@ -60,8 +62,8 @@ public class Example_33 {
                 + "with aliceblue, and Austria the outline with lightgray.")
         textBlock.setFontSize(10.0)
         textBlock.setTextColor(Color.dimgray)
-        textBlock.setLocation(50.0, xy[1] + 10.0)
-        textBlock.setWidth(495.0)
+        textBlock.setLocation(mapX, xy[1] + 10.0)
+        textBlock.setWidth(map.getWidth())
         xy = textBlock.drawOn(page)
 
         let iconFiles = [
