@@ -841,6 +841,37 @@ to check and fix in the four, with a test.
   refuses, so nothing is to work around meanwhile. Found by the review of
   Sep 30, 2026.
 
+- ⬜ **Positions may differ in their last bit on arm64.** Go's compiler fuses
+  a float32 multiply and add into one instruction on arm64 (FMADDS, FMSUBS),
+  rounding once where amd64 rounds twice, so a position can differ in its
+  last bit from amd64, where the tests and pdfjet-client's check scripts
+  run, and a comparison at a boundary, as of a line that just fits, can
+  come out the other way. Seen in the arm64 assembly of
+  `TextBlock.layout` and `Cell.GetHeight`; no difference seen on a page
+  yet. pdfjet-server runs on Lambda's arm64. The fix: an explicit
+  `float32(...)` round each product, which the Go spec says keeps it from
+  being fused, and a test run on arm64 too. pdfjet-server has the same in
+  its own layout code (its TODO.md). Found by the review of PDFjet Forms, 5
+  October 2026.
+
+- ⬜ **A JPEG cut short is taken.** `NewImage` reads a JPEG's header for its
+  size and embeds its bytes as they are, so a file cut short in its upload
+  is drawn as far as it goes, or as noise, and veraPDF, which does not
+  decode the image, passes the PDF. It should refuse a JPEG with no
+  end-of-image marker, or whose scan data ends before it, as it refuses a
+  PNG cut short, in the four ports, with a test. Found by the review of
+  PDFjet Forms, 5 October 2026.
+
+- ⬜ **A cell's wrapped lines are read as paragraphs of their own.**
+  `wrapCellText` (table.go) makes each line of a cell that wraps a P of its
+  own in the structure tree, so a screen reader reads one cell as several
+  paragraphs; and a word wider than its column is broken where it reaches
+  the edge, even where a space follows soon after
+  ("Superc / alifragi / listic e / xpialid / ocious"). veraPDF and PAC do
+  not flag it. The cell one P, its lines the content of it, and a line
+  broken at a space where there is one, in the four ports, with a test.
+  Found by the review of PDFjet Forms, 5 October 2026.
+
 ## v9.1 — features, after v9.0.3
 
 - ⬜ CommonMark itself, in the four ports, where v9.0.3 has the practical
