@@ -879,6 +879,15 @@ to check and fix in the four, with a test.
   2026). The fix: read `viewbox` when there is no `viewBox`, as the HTML
   parser does, and `viewBox` first when a file has both; a test of each, with
   a viewBox that scales and moves the paths. Small.
+- ⬜ Maybe: smaller tagged tables, with object streams, in the four ports. A
+  cell of a table of PDF/UA costs 280 to 415 bytes in the PDF, its text and a
+  structure element of its own, each an object written uncompressed: a price
+  list of 3,000 rows of 6 columns is 4.7 MB, past the 4 MB PDFjet Forms can
+  send, with no image in it (measured by pdfjet-server on 5 October 2026).
+  PDF 1.5's object streams, the structure elements compressed together, and
+  a cross-reference stream would shrink them several times. Found by the
+  review of PDFjet Forms; pdfjet-server meanwhile
+  refuses such a table before it is drawn, and says to make it shorter.
 - ⬜ Maybe: a size-only reader of an image, in the four ports: the width and
   the height a PNG, a JPEG or a BMP is drawn at, read from its header, the
   IHDR and pHYs chunks, the SOF and JFIF segments, without embedding it, for
