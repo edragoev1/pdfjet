@@ -41,7 +41,7 @@ func Example33() error {
 
 	textBlock := pdfjet.NewTextBlock(f1,
 		"SVGImage reads the paths of an SVG file and draws them as vector "+
-			"graphics, which stay sharp at any zoom. The map is 1,000 points wide "+
+			"graphics, which stay sharp at any zoom. The map is 865 points wide "+
 			"in its file and is scaled by 0.5 to fit the page.")
 	textBlock.SetFontSize(12.0)
 	textBlock.SetLineSpacing(1.5)
