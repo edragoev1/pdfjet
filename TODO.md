@@ -583,6 +583,22 @@ no history; the registries count, and are where developers look.
 
 ## Found by pdfjet-server, to fix later
 
+- ⬜ The Go port's results on arm64 may differ in the last bit from amd64's,
+  and from the other three ports: the Go spec lets the compiler fuse
+  x*y + z into one fused multiply-add with a single rounding, and Go's
+  arm64 compiler does (373 such instructions in pdfjet-server's arm64
+  build, 10 in its amd64 build; in TextBlock.layout, where lines break,
+  Cell.GetHeight, Cell.drawOn, Cell.drawText and TextLine.DrawOn among 53
+  functions; found 5 October 2026 with go tool objdump). Java does not fuse
+  of itself, nor do C# and Swift by default, so Go on ARM is the one port
+  that may break a line otherwise. First measured: pdfjet-server's look
+  test and check-layout.sh on GitHub's arm64 runner (its TODO.md, 6 October
+  2026). If any differs, the rounding forced before the add where layout
+  is decided, float32(a*b) + c, as Go has no switch to stop fusing; a test
+  of each such spot on arm64 in CI, and the PDFs of the examples compared
+  across arm64 and amd64. A fix that changes no output on amd64, so not
+  held to the freeze if it is small.
+
 The SaaS (pdfjet-server, pdfjet-client) builds on the MIT core without
 changing it, to keep the four ports in sync; what its testing finds wrong in
 the core is listed here, and pdfjet-server works around it until it is fixed.
