@@ -189,11 +189,15 @@ public class Stamp implements Drawable {
 
     /**
      * Sets the fill color for the content drawn after it.
+     * Color.transparent leaves it unchanged.
      *
      * @param color the color as a 0xRRGGBB value, for example Color.blue.
      * @return this Stamp object.
      */
     public Stamp setFillColor(int color) {
+        if (color == Color.transparent) {
+            return this;
+        }
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
@@ -226,11 +230,15 @@ public class Stamp implements Drawable {
 
     /**
      * Sets the stroke color for the content drawn after it.
+     * Color.transparent leaves it unchanged.
      *
      * @param color the color as a 0xRRGGBB value, for example Color.blue.
      * @return this Stamp object.
      */
     public Stamp setStrokeColor(int color) {
+        if (color == Color.transparent) {
+            return this;
+        }
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;

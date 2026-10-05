@@ -1560,10 +1560,14 @@ public class Table : IDrawable {
 
     /// <summary>
     /// Sets the color of the cell border lines.
+    /// Color.transparent leaves it unchanged.
     /// </summary>
     /// <param name="color">the color of the cell border lines.</param>
     /// <returns>this Table object.</returns>
     public Table SetCellBorderColor(int color) {
+        if (color == Color.transparent) {
+            return this;
+        }
         foreach (List<Cell> row in tableData) {
             foreach (Cell cell in row) {
                 cell.SetBorderColor(color);

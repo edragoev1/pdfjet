@@ -175,8 +175,11 @@ public class Paragraph {
         return lines[0].GetText().StartsWith(token, StringComparison.Ordinal);
     }
 
-    /// <summary>Sets the text color of all lines in this paragraph as a 0xRRGGBB value.</summary>
+    /// <summary>Sets the text color of all lines in this paragraph as a 0xRRGGBB value. Color.transparent leaves it unchanged.</summary>
     public Paragraph SetTextColor(int color) {
+        if (color == Color.transparent) {
+            return this;
+        }
         foreach (TextLine line in lines) {
             line.SetTextColor(color);
         }

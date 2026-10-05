@@ -153,12 +153,16 @@ public class Line : Drawable {
 
     ///
     /// Sets the stroke color of this line.
+    /// Color.transparent leaves it unchanged.
     ///
     /// - Parameter color: the color specified as an integer.
     /// - Returns: this Line object.
     ///
     @discardableResult
     public func setStrokeColor(_ color: Int32) -> Line {
+        if color == Color.transparent {
+            return self
+        }
         self.color = Util.toRGB(color)
         return self
     }

@@ -130,8 +130,12 @@ public class Stamp : Drawable {
     }
 
     /// Sets the fill color for the content drawn after it, as a 0xRRGGBB value.
+    /// Color.transparent leaves it unchanged.
     @discardableResult
     public func setFillColor(_ color: Int32) -> Stamp {
+        if color == Color.transparent {
+            return self
+        }
         let r = Float((color >> 16) & 0xff) / 255.0
         let g = Float((color >> 8) & 0xff) / 255.0
         let b = Float(color & 0xff) / 255.0
@@ -161,8 +165,12 @@ public class Stamp : Drawable {
     }
 
     /// Sets the stroke color for the content drawn after it, as a 0xRRGGBB value.
+    /// Color.transparent leaves it unchanged.
     @discardableResult
     public func setStrokeColor(_ color: Int32) -> Stamp {
+        if color == Color.transparent {
+            return self
+        }
         let r = Float((color >> 16) & 0xff) / 255.0
         let g = Float((color >> 8) & 0xff) / 255.0
         let b = Float(color & 0xff) / 255.0

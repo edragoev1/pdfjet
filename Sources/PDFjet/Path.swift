@@ -91,12 +91,16 @@ public class Path : Drawable {
 
     ///
     /// Sets the stroke color that will be used to draw this path.
+    /// Color.transparent leaves it unchanged.
     ///
     /// - Parameter color: the color specified as an integer.
     /// - Returns: this Path object.
     ///
     @discardableResult
     public func setStrokeColor(_ color: Int32) -> Path {
+        if color == Color.transparent {
+            return self
+        }
         self.color = Util.toRGB(color)
         return self
     }

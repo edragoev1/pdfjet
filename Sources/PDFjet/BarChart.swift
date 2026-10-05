@@ -368,12 +368,16 @@ public class BarChart : Drawable {
 
     ///
     /// Sets the color of the grid lines. The default is black.
+    /// Color.transparent leaves it unchanged.
     ///
     /// - Parameter color: the color as a 0xRRGGBB value, for example Color.lightgray.
     /// - Returns: this BarChart object.
     ///
     @discardableResult
     public func setGridLineColor(_ color: Int32) -> BarChart {
+        if color == Color.transparent {
+            return self
+        }
         self.gridLineColor = color
         return self
     }

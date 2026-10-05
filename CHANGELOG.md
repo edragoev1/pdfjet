@@ -44,6 +44,11 @@ This is the first entry in this file; earlier releases were not tracked here.
   two repositories at the pinned commits, and the workflows fetch them.
 
 ### Fixed
+- `Color.transparent` leaves the color as it was in every int-color setter:
+  23 of the 36 kept the low 24 bits of -1 and drew white, a white line for
+  `Line.SetStrokeColor(Color.transparent)`, where the other 13 already left
+  the color unchanged. Any other value is read as before. The four ports,
+  with a test in each of all 23 setters.
 - An SVG that writes its `viewbox` in lower case, as files saved from web
   pages do, is drawn with it: SVGImage read only `viewBox`, so such a file
   was drawn with no viewBox at all, its paths neither scaled nor moved.

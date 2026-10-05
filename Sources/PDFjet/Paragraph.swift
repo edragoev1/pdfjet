@@ -177,8 +177,12 @@ public class Paragraph {
     }
 
     /// Sets the text color of all lines in this paragraph as a 0xRRGGBB value.
+    /// Color.transparent leaves it unchanged.
     @discardableResult
     public func setTextColor(_ color: Int32) -> Paragraph {
+        if color == Color.transparent {
+            return self
+        }
         for line in lines {
             line.setTextColor(color)
         }

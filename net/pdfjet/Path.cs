@@ -85,10 +85,14 @@ public class Path : IDrawable {
 
     /// <summary>
     /// Sets the stroke color that will be used to draw this path.
+    /// Color.transparent leaves it unchanged.
     /// </summary>
     /// <param name="color">the color specified as an integer.</param>
     /// <returns>this Path object.</returns>
     public Path SetStrokeColor(int color) {
+        if (color == Color.transparent) {
+            return this;
+        }
         this.color = Util.ToRGB(color);
         return this;
     }

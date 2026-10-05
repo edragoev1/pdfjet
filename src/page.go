@@ -1161,10 +1161,15 @@ func (page *Page) RestoreGraphicsState() {
 //     to separate the red, green, and blue channels. Each component is then scaled
 //     to a float value between 0.0 and 1.0 (by dividing by 255).
 //   - The method calls SetPenColorRGB internally to apply the color using float32 values.
-func (page *Page) SetPenColor(color int32) *Page {
-	r := float32((color>>16)&0xff) / 255.0
-	g := float32((color>>8)&0xff) / 255.0
-	b := float32((color)&0xff) / 255.0
+//
+// color.Transparent leaves it unchanged.
+func (page *Page) SetPenColor(c int32) *Page {
+	if c == color.Transparent {
+		return page
+	}
+	r := float32((c>>16)&0xff) / 255.0
+	g := float32((c>>8)&0xff) / 255.0
+	b := float32((c)&0xff) / 255.0
 	page.SetPenColorRGB([3]float32{r, g, b})
 	return page
 }
@@ -1237,10 +1242,15 @@ func (page *Page) GetPenColor() [3]float32 {
 //     to separate the red, green, and blue channels. Each component is then scaled
 //     to a float value between 0.0 and 1.0 (by dividing by 255).
 //   - The method calls SetBrushColorRGB internally to apply the color using float32 values.
-func (page *Page) SetBrushColor(color int32) *Page {
-	r := float32((color>>16)&0xff) / 255.0
-	g := float32((color>>8)&0xff) / 255.0
-	b := float32((color)&0xff) / 255.0
+//
+// color.Transparent leaves it unchanged.
+func (page *Page) SetBrushColor(c int32) *Page {
+	if c == color.Transparent {
+		return page
+	}
+	r := float32((c>>16)&0xff) / 255.0
+	g := float32((c>>8)&0xff) / 255.0
+	b := float32((c)&0xff) / 255.0
 	page.SetBrushColorRGB([3]float32{r, g, b})
 	return page
 }

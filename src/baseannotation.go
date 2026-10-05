@@ -5,6 +5,8 @@
 
 package pdfjet
 
+import "github.com/edragoev1/pdfjet/v9/src/color"
+
 // BaseAnnotation represents a base annotation in a PDF document.
 type BaseAnnotation struct {
 	annotationType string
@@ -61,8 +63,12 @@ func (b *BaseAnnotation) corner() [2]float32 {
 }
 
 // SetFillColor sets the fill color as a 0xRRGGBB value, for example color.Blue.
-func (b *BaseAnnotation) SetFillColor(color int32) *BaseAnnotation {
-	return b.SetFillColorRGB(colorToRGB(color))
+// color.Transparent leaves it unchanged.
+func (b *BaseAnnotation) SetFillColor(c int32) *BaseAnnotation {
+	if c == color.Transparent {
+		return b
+	}
+	return b.SetFillColorRGB(colorToRGB(c))
 }
 
 // SetFillColorRGB sets the fill color from the red, green and blue components, from 0.0 to 1.0.

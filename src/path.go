@@ -89,8 +89,12 @@ func (path *Path) SetStrokeWidth(width float32) *Path {
 //   - color: the color specified as an integer.
 //
 // Returns this Path object.
-func (path *Path) SetStrokeColor(color int32) *Path {
-	path.color = colorToRGB(color)
+// color.Transparent leaves it unchanged.
+func (path *Path) SetStrokeColor(c int32) *Path {
+	if c == color.Transparent {
+		return path
+	}
+	path.color = colorToRGB(c)
 	return path
 }
 

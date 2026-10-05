@@ -1615,11 +1615,15 @@ public class Table : Drawable {
 
     ///
     /// Sets the color of the cell border lines.
+    /// Color.transparent leaves it unchanged.
     ///
     /// - Parameter color: the color of the cell border lines.
     ///
     @discardableResult
     public func setCellBorderColor(_ color: Int32) -> Table {
+        if color == Color.transparent {
+            return self
+        }
         for row in tableData {
             for cell in row {
                 cell.setBorderColor(color)

@@ -97,8 +97,12 @@ func (arc *Arc) SetStrokeWidth(width float32) *Arc {
 }
 
 // SetStrokeColor sets the stroke color as a 0xRRGGBB value, for example color.Blue.
-func (arc *Arc) SetStrokeColor(color int32) *Arc {
-	return arc.SetStrokeColorRGB(colorToRGB(color))
+// color.Transparent leaves it unchanged.
+func (arc *Arc) SetStrokeColor(c int32) *Arc {
+	if c == color.Transparent {
+		return arc
+	}
+	return arc.SetStrokeColorRGB(colorToRGB(c))
 }
 
 // SetStrokeColorRGB sets the stroke color from the red, green and blue components, from 0.0 to 1.0.
@@ -109,8 +113,12 @@ func (arc *Arc) SetStrokeColorRGB(rgbColor [3]float32) *Arc {
 }
 
 // SetFillColor sets the fill color as a 0xRRGGBB value, for example color.Blue.
-func (arc *Arc) SetFillColor(color int32) *Arc {
-	return arc.SetFillColorRGB(colorToRGB(color))
+// color.Transparent leaves it unchanged.
+func (arc *Arc) SetFillColor(c int32) *Arc {
+	if c == color.Transparent {
+		return arc
+	}
+	return arc.SetFillColorRGB(colorToRGB(c))
 }
 
 // SetFillColorRGB sets the fill color from the red, green and blue components, from 0.0 to 1.0.

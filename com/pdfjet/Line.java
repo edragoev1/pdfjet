@@ -152,11 +152,15 @@ public class Line implements Drawable {
 
     /**
      *  Sets the stroke color of this line.
+     *  Color.transparent leaves it unchanged.
      *
      *  @param color the color specified as an integer.
      *  @return this Line object.
      */
     public Line setStrokeColor(int color) {
+        if (color == Color.transparent) {
+            return this;
+        }
         this.color = Util.toRGB(color);
         return this;
     }

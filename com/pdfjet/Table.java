@@ -1608,11 +1608,15 @@ public class Table implements Drawable {
 
     /**
      * Sets the color of the cell border lines.
+     * Color.transparent leaves it unchanged.
      *
      * @param color the color of the cell border lines.
      * @return this Table object.
      */
     public Table setCellBorderColor(int color) {
+        if (color == Color.transparent) {
+            return this;
+        }
         for (List<Cell> row : tableData) {
             for (Cell cell : row) {
                 cell.setBorderColor(color);

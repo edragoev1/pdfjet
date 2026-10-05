@@ -159,11 +159,15 @@ public class Arc implements Drawable {
 
     /**
      * Sets the color for this line.
+     * Color.transparent leaves it unchanged.
      *
      * @param color the color specified as an integer.
      * @return this Arc object.
      */
     public Arc setStrokeColor(int color) {
+        if (color == Color.transparent) {
+            return this;
+        }
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
@@ -184,11 +188,15 @@ public class Arc implements Drawable {
 
     /**
      * Sets the fill color of this arc.
+     * Color.transparent leaves it unchanged.
      *
      * @param color the color as a 0xRRGGBB value, for example Color.blue.
      * @return this Arc object.
      */
     public Arc setFillColor(int color) {
+        if (color == Color.transparent) {
+            return this;
+        }
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;

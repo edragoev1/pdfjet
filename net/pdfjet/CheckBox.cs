@@ -52,10 +52,14 @@ public class CheckBox : IDrawable {
 
     /// <summary>
     /// Sets the color of the check box.
+    /// Color.transparent leaves it unchanged.
     /// </summary>
     /// <param name="borderColor">the border color specified as an 0xRRGGBB integer.</param>
     /// <returns>this CheckBox.</returns>
     public CheckBox SetBorderColor(int borderColor) {
+        if (borderColor == Color.transparent) {
+            return this;
+        }
         this.borderColor = Util.ToRGB(borderColor);
         return this;
     }
@@ -70,10 +74,14 @@ public class CheckBox : IDrawable {
 
     /// <summary>
     /// Sets the color of the check mark.
+    /// Color.transparent leaves it unchanged.
     /// </summary>
     /// <param name="checkmarkColor">the check mark color specified as an 0xRRGGBB integer.</param>
     /// <returns>this CheckBox.</returns>
     public CheckBox SetCheckmarkColor(int checkmarkColor) {
+        if (checkmarkColor == Color.transparent) {
+            return this;
+        }
         this.checkmarkColor = Util.ToRGB(checkmarkColor);
         return this;
     }

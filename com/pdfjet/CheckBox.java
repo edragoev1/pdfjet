@@ -55,11 +55,15 @@ public class CheckBox implements Drawable {
 
     /**
      *  Sets the color of the check box.
+     *  Color.transparent leaves it unchanged.
      *
      *  @param borderColor the border color specified as an 0xRRGGBB integer.
      *  @return this CheckBox.
      */
     public CheckBox setBorderColor(int borderColor) {
+        if (borderColor == Color.transparent) {
+            return this;
+        }
         this.borderColor = Util.toRGB(borderColor);
         return this;
     }
@@ -77,11 +81,15 @@ public class CheckBox implements Drawable {
 
     /**
      *  Sets the color of the check mark.
+     *  Color.transparent leaves it unchanged.
      *
      *  @param checkmarkColor the check mark color specified as an 0xRRGGBB integer.
      *  @return this CheckBox.
      */
     public CheckBox setCheckmarkColor(int checkmarkColor) {
+        if (checkmarkColor == Color.transparent) {
+            return this;
+        }
         this.checkmarkColor = Util.toRGB(checkmarkColor);
         return this;
     }

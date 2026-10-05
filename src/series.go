@@ -6,6 +6,7 @@
 package pdfjet
 
 import (
+	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/shape"
 )
 
@@ -68,10 +69,15 @@ func (series *Series) SetDrawPath(drawPath bool) *Series {
 // SetStrokeColor sets the color of the line and of the markers that have no
 // color of their own. Without it the series has the next color of the palette.
 //   - color: the color as a 0xRRGGBB value, for example color.Blue.
-func (series *Series) SetStrokeColor(color int32) *Series {
-	r := float32((color>>16)&0xff) / 255.0
-	g := float32((color>>8)&0xff) / 255.0
-	b := float32((color)&0xff) / 255.0
+//
+// color.Transparent leaves it unchanged.
+func (series *Series) SetStrokeColor(c int32) *Series {
+	if c == color.Transparent {
+		return series
+	}
+	r := float32((c>>16)&0xff) / 255.0
+	g := float32((c>>8)&0xff) / 255.0
+	b := float32((c)&0xff) / 255.0
 	series.strokeColor = [3]float32{r, g, b}
 	series.hasStrokeColor = true
 	return series

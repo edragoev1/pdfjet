@@ -77,11 +77,15 @@ public abstract class BaseAnnotation implements Drawable {
 
     /**
      * Sets the fill color of this annotation.
+     * Color.transparent leaves it unchanged.
      *
      * @param color the color as a 0xRRGGBB value, for example Color.blue.
      * @return this BaseAnnotation object.
      */
     public BaseAnnotation setFillColor(int color) {
+        if (color == Color.transparent) {
+            return this;
+        }
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;

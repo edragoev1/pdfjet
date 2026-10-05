@@ -130,12 +130,16 @@ public class Arc : Drawable {
 
     ///
     /// Sets the color for this line.
+    /// Color.transparent leaves it unchanged.
     ///
     /// - Parameter color: the color specified as an integer.
     /// - Returns: this Arc object.
     ///
     @discardableResult
     public func setStrokeColor(_ color: Int32) -> Arc {
+        if color == Color.transparent {
+            return self
+        }
         let r = Float((color >> 16) & 0xff)/255.0
         let g = Float((color >>  8) & 0xff)/255.0
         let b = Float((color)       & 0xff)/255.0
@@ -151,8 +155,12 @@ public class Arc : Drawable {
     }
 
     /// Sets the fill color as a 0xRRGGBB value, for example Color.blue.
+    /// Color.transparent leaves it unchanged.
     @discardableResult
     public func setFillColor(_ color: Int32) -> Arc {
+        if color == Color.transparent {
+            return self
+        }
         let r = Float((color >> 16) & 0xff)/255.0
         let g = Float((color >>  8) & 0xff)/255.0
         let b = Float((color)       & 0xff)/255.0

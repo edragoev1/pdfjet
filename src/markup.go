@@ -65,7 +65,11 @@ func NewMarkup(regular, bold, italic, boldItalic, code *Font) *Markup {
 
 // SetLinkColor sets the color of the text of links, as a 0xRRGGBB value. The
 // default is color.Blue.
+// color.Transparent leaves it unchanged.
 func (markup *Markup) SetLinkColor(linkColor int32) *Markup {
+	if linkColor == color.Transparent {
+		return markup
+	}
 	markup.linkColor = linkColor
 	return markup
 }

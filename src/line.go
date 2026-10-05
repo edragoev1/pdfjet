@@ -134,8 +134,12 @@ func (line *Line) SetStrokeWidth(width float32) *Line {
 //   - color: the color specified as an integer.
 //
 // Returns this Line object.
-func (line *Line) SetStrokeColor(color int32) *Line {
-	line.color = colorToRGB(color)
+// color.Transparent leaves it unchanged.
+func (line *Line) SetStrokeColor(c int32) *Line {
+	if c == color.Transparent {
+		return line
+	}
+	line.color = colorToRGB(c)
 	return line
 }
 

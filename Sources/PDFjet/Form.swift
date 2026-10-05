@@ -85,8 +85,12 @@ public class Form : Drawable {
     }
 
     /// Sets the color of the labels as a 0xRRGGBB value, for example Color.black.
+    /// Color.transparent leaves it unchanged.
     @discardableResult
     public func setLabelColor(_ labelColor: Int32) -> Form {
+        if labelColor == Color.transparent {
+            return self
+        }
         let r = Float((labelColor >> 16) & 0xff)/255.0
         let g = Float((labelColor >>  8) & 0xff)/255.0
         let b = Float((labelColor)       & 0xff)/255.0
@@ -101,8 +105,12 @@ public class Form : Drawable {
     }
 
     /// Sets the color of the values as a 0xRRGGBB value, for example Color.blue.
+    /// Color.transparent leaves it unchanged.
     @discardableResult
     public func setValueColor(_ valueColor: Int32) -> Form {
+        if valueColor == Color.transparent {
+            return self
+        }
         let r = Float((valueColor >> 16) & 0xff)/255.0
         let g = Float((valueColor >>  8) & 0xff)/255.0
         let b = Float((valueColor)       & 0xff)/255.0

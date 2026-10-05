@@ -88,11 +88,15 @@ public class Path implements Drawable {
 
     /**
      * Sets the stroke color that will be used to draw this path.
+     * Color.transparent leaves it unchanged.
      *
      * @param color the color specified as an integer.
      * @return this Path object.
      */
     public Path setStrokeColor(int color) {
+        if (color == Color.transparent) {
+            return this;
+        }
         this.color = Util.toRGB(color);
         return this;
     }

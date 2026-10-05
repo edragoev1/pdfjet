@@ -54,11 +54,15 @@ public class Markup {
 
     /**
      * Sets the color of the text of links. The default is Color.blue.
+     * Color.transparent leaves it unchanged.
      *
      * @param color the color as a 0xRRGGBB value.
      * @return this Markup.
      */
     public Markup setLinkColor(int color) {
+        if (color == Color.transparent) {
+            return this;
+        }
         this.linkColor = color;
         return this;
     }

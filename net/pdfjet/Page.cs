@@ -1318,10 +1318,14 @@ public class Page {
 
     /// <summary>
     /// Sets the brush color.
+    /// Color.transparent leaves it unchanged.
     /// </summary>
     /// <param name="color">the color. See the Color class for predefined values or define your own using 0x00RRGGBB packed integers.</param>
     /// <returns>this Page object.</returns>
     public Page SetBrushColor(int color) {
+        if (color == Color.transparent) {
+            return this;
+        }
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
@@ -1388,12 +1392,16 @@ public class Page {
 
     /// <summary>
     /// Sets the pen color using a packed 0x00RRGGBB integer value.
+    /// Color.transparent leaves it unchanged.
     /// </summary>
     /// <param name="color">
     /// The color value, where each component (red, green, blue) is packed into a 24-bit integer.
     /// You can use predefined colors from the <see cref="Color"/> class or define your own.
     /// </param>
     public Page SetPenColor(int color) {
+        if (color == Color.transparent) {
+            return this;
+        }
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;

@@ -52,12 +52,16 @@ public class Markup {
 
     ///
     /// Sets the color of the text of links. The default is Color.blue.
+    /// Color.transparent leaves it unchanged.
     ///
     /// - Parameter color: the color as a 0xRRGGBB value.
     /// - Returns: this Markup.
     ///
     @discardableResult
     public func setLinkColor(_ color: Int32) -> Markup {
+        if color == Color.transparent {
+            return self
+        }
         self.linkColor = color
         return self
     }

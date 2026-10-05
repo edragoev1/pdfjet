@@ -51,12 +51,16 @@ public class CheckBox : Drawable {
 
     ///
     /// Sets the color of the check box.
+    /// Color.transparent leaves it unchanged.
     ///
     /// - Parameter borderColor: the border color specified as an 0xRRGGBB integer.
     /// - Returns: this CheckBox.
     ///
     @discardableResult
     public func setBorderColor(_ borderColor: Int32) -> CheckBox {
+        if borderColor == Color.transparent {
+            return self
+        }
         self.borderColor = Util.toRGB(borderColor)
         return self
     }
@@ -70,12 +74,16 @@ public class CheckBox : Drawable {
 
     ///
     /// Sets the color of the check mark.
+    /// Color.transparent leaves it unchanged.
     ///
     /// - Parameter checkmarkColor: the check mark color specified as an 0xRRGGBB integer.
     /// - Returns: this CheckBox.
     ///
     @discardableResult
     public func setCheckmarkColor(_ checkmarkColor: Int32) -> CheckBox {
+        if checkmarkColor == Color.transparent {
+            return self
+        }
         self.checkmarkColor = Util.toRGB(checkmarkColor)
         return self
     }

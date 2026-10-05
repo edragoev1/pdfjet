@@ -263,8 +263,13 @@ func (chart *BarChart) SetGridLineWidth(width float32) *BarChart {
 
 // SetGridLineColor sets the color of the grid lines. The default is black.
 //   - color: the color as a 0xRRGGBB value, for example color.LightGray.
-func (chart *BarChart) SetGridLineColor(color int32) *BarChart {
-	chart.gridLineColor = color
+//
+// color.Transparent leaves it unchanged.
+func (chart *BarChart) SetGridLineColor(c int32) *BarChart {
+	if c == color.Transparent {
+		return chart
+	}
+	chart.gridLineColor = c
 	return chart
 }
 

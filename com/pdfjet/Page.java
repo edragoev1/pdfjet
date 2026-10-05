@@ -1344,11 +1344,15 @@ final public class Page {
 
     /**
      * Sets the brush color.
+     * Color.transparent leaves it unchanged.
      *
      * @param color the color. See the Color class for predefined values or define your own using 0x00RRGGBB packed integers.
      * @return this Page object.
      */
     public Page setBrushColor(int color) {
+        if (color == Color.transparent) {
+            return this;
+        }
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
@@ -1411,6 +1415,7 @@ final public class Page {
     /**
      * Sets the pen color using a packed RGB integer.
      * The integer should be in the format 0xRRGGBB.
+     * Color.transparent leaves it unchanged.
      *
      * @param color A packed RGB integer where:
      *              - The 16 most significant bits represent the red component,
@@ -1419,6 +1424,9 @@ final public class Page {
      * @return this Page object.
      */
     public Page setPenColor(int color) {
+        if (color == Color.transparent) {
+            return this;
+        }
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;

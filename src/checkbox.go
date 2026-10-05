@@ -53,7 +53,11 @@ func (checkBox *CheckBox) SetFontSize(fontSize float32) *CheckBox {
 //   - borderColor: the checkbox color specified as an 0xRRGGBB integer.
 //
 // Returns the CheckBox.
+// color.Transparent leaves it unchanged.
 func (checkBox *CheckBox) SetBorderColor(borderColor int32) *CheckBox {
+	if borderColor == color.Transparent {
+		return checkBox
+	}
 	checkBox.borderColor = colorToRGB(borderColor)
 	return checkBox
 }
@@ -68,7 +72,11 @@ func (checkBox *CheckBox) SetBorderColorRGB(rgbColor [3]float32) *CheckBox {
 //   - checkmarkColor: the check mark color specified as an 0xRRGGBB integer.
 //
 // Returns the CheckBox.
+// color.Transparent leaves it unchanged.
 func (checkBox *CheckBox) SetCheckmarkColor(checkmarkColor int32) *CheckBox {
+	if checkmarkColor == color.Transparent {
+		return checkBox
+	}
 	checkBox.checkmarkColor = colorToRGB(checkmarkColor)
 	return checkBox
 }

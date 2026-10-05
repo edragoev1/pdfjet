@@ -118,8 +118,11 @@ public class Container : IDrawable {
         return this;
     }
 
-    /// <summary>Sets the 0xRRGGBB color of the border around this container.</summary>
+    /// <summary>Sets the 0xRRGGBB color of the border around this container. Color.transparent leaves it unchanged.</summary>
     public Container SetBorderColor(int borderColor) {
+        if (borderColor == Color.transparent) {
+            return this;
+        }
         if (border == null) {
             border = new Rect(0f, 0f, width, height);
             this.Add(border);

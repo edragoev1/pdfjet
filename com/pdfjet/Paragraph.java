@@ -208,11 +208,15 @@ public class Paragraph {
 
     /**
      * Sets the text color of all lines in this paragraph as a 0xRRGGBB value.
+     * Color.transparent leaves it unchanged.
      *
      * @param color the color as a 0xRRGGBB value, for example Color.blue.
      * @return this Paragraph object.
      */
     public Paragraph setTextColor(int color) {
+        if (color == Color.transparent) {
+            return this;
+        }
         for (TextLine line : lines) {
             line.setTextColor(color);
         }

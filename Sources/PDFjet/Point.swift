@@ -179,11 +179,15 @@ public class Point : Drawable {
 
     ///
     /// Sets the fill color for this point.
+    /// Color.transparent leaves it unchanged.
     ///
     /// - Parameter fillColor: the color specified as Int32.
     ///
     @discardableResult
     public func setFillColor(_ fillColor: Int32) -> Point {
+        if fillColor == Color.transparent {
+            return self
+        }
         let r = Float((fillColor >> 16) & 0xff)/255.0
         let g = Float((fillColor >>  8) & 0xff)/255.0
         let b = Float((fillColor)       & 0xff)/255.0
@@ -211,8 +215,12 @@ public class Point : Drawable {
     }
 
     /// Sets the stroke color as a 0xRRGGBB value.
+    /// Color.transparent leaves it unchanged.
     @discardableResult
     public func setStrokeColor(_ strokeColor: Int32) -> Point {
+        if strokeColor == Color.transparent {
+            return self
+        }
         let r = Float((strokeColor >> 16) & 0xff)/255.0
         let g = Float((strokeColor >>  8) & 0xff)/255.0
         let b = Float((strokeColor)       & 0xff)/255.0

@@ -128,10 +128,14 @@ public class Arc : IDrawable {
 
     /// <summary>
     /// Sets the color for this line.
+    /// Color.transparent leaves it unchanged.
     /// </summary>
     /// <param name="color">the color specified as an integer.</param>
     /// <returns>this Arc object.</returns>
     public Arc SetStrokeColor(int color) {
+        if (color == Color.transparent) {
+            return this;
+        }
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
@@ -145,8 +149,11 @@ public class Arc : IDrawable {
         return this;
     }
 
-    /// <summary>Sets the fill color as a 0xRRGGBB value, for example Color.blue.</summary>
+    /// <summary>Sets the fill color as a 0xRRGGBB value, for example Color.blue. Color.transparent leaves it unchanged.</summary>
     public Arc SetFillColor(int color) {
+        if (color == Color.transparent) {
+            return this;
+        }
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;

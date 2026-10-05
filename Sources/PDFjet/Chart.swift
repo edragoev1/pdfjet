@@ -313,8 +313,12 @@ public class Chart : Drawable {
     }
 
     /// Sets the color of the grid lines as a 0xRRGGBB value. The default is black.
+    /// Color.transparent leaves it unchanged.
     @discardableResult
     public func setGridLineColor(_ color: Int32) -> Chart {
+        if color == Color.transparent {
+            return self
+        }
         self.gridLineColor = color
         return self
     }

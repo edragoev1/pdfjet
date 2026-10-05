@@ -235,7 +235,11 @@ func (chart *Chart) SetVerticalGridLineDashPattern(pattern string) *Chart {
 }
 
 // SetGridLineColor sets the color of the grid lines as a 0xRRGGBB value. The default is black.
+// color.Transparent leaves it unchanged.
 func (chart *Chart) SetGridLineColor(c int32) *Chart {
+	if c == color.Transparent {
+		return chart
+	}
 	chart.gridLineColor = c
 	return chart
 }

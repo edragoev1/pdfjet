@@ -1531,10 +1531,15 @@ func (table *Table) SetCellBorders(borders bool) *Table {
 
 // SetCellBorderColor sets the color of the cell border lines.
 //   - color: the color of the cell border lines.
-func (table *Table) SetCellBorderColor(color int32) *Table {
+//
+// color.Transparent leaves it unchanged.
+func (table *Table) SetCellBorderColor(c int32) *Table {
+	if c == color.Transparent {
+		return table
+	}
 	for _, row := range table.tableData {
 		for _, cell := range row {
-			cell.SetBorderColor(color)
+			cell.SetBorderColor(c)
 		}
 	}
 	return table

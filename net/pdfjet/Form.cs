@@ -121,10 +121,14 @@ public class Form : IDrawable {
 
     /// <summary>
     /// Sets the label color
+    /// Color.transparent leaves it unchanged.
     /// </summary>
     /// <param name="labelColor">the label color as a 0xRRGGBB value, for example Color.black.</param>
     /// <returns>the form</returns>
     public Form SetLabelColor(int labelColor) {
+        if (labelColor == Color.transparent) {
+            return this;
+        }
         float r = ((labelColor >> 16) & 0xff)/255f;
         float g = ((labelColor >>  8) & 0xff)/255f;
         float b = ((labelColor)       & 0xff)/255f;
@@ -144,10 +148,14 @@ public class Form : IDrawable {
 
     /// <summary>
     /// Sets the color for the value
+    /// Color.transparent leaves it unchanged.
     /// </summary>
     /// <param name="valueColor">the value color as a 0xRRGGBB value, for example Color.blue.</param>
     /// <returns>the form</returns>
     public Form SetValueColor(int valueColor) {
+        if (valueColor == Color.transparent) {
+            return this;
+        }
         float r = ((valueColor >> 16) & 0xff)/255f;
         float g = ((valueColor >>  8) & 0xff)/255f;
         float b = ((valueColor)       & 0xff)/255f;

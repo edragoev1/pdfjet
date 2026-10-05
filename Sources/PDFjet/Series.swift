@@ -73,12 +73,16 @@ public class Series {
     ///
     /// Sets the color of the line and of the markers that have no color of
     /// their own. Without it the series has the next color of the palette.
+    /// Color.transparent leaves it unchanged.
     ///
     /// - Parameter color: the color as a 0xRRGGBB value, for example Color.blue.
     /// - Returns: this Series object.
     ///
     @discardableResult
     public func setStrokeColor(_ color: Int32) -> Series {
+        if color == Color.transparent {
+            return self
+        }
         let r = Float((color >> 16) & 0xff)/255.0
         let g = Float((color >>  8) & 0xff)/255.0
         let b = Float((color)       & 0xff)/255.0

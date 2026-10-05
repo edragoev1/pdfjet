@@ -7,6 +7,7 @@ package pdfjet
 
 import (
 	"bytes"
+	"github.com/edragoev1/pdfjet/v9/src/color"
 	"math"
 	"strconv"
 
@@ -173,8 +174,12 @@ func (s *Stamp) SetFillColorRGB(rgbColor [3]float32) *Stamp {
 
 // SetFillColor sets the fill color for the content drawn after it,
 // as a 0xRRGGBB value, for example color.Blue.
-func (s *Stamp) SetFillColor(color int32) *Stamp {
-	return s.SetFillColorRGB(colorToRGB(color))
+// color.Transparent leaves it unchanged.
+func (s *Stamp) SetFillColor(c int32) *Stamp {
+	if c == color.Transparent {
+		return s
+	}
+	return s.SetFillColorRGB(colorToRGB(c))
 }
 
 // SetStrokeColorRGB sets the stroke color for the content drawn after it,
@@ -192,8 +197,12 @@ func (s *Stamp) SetStrokeColorRGB(rgbColor [3]float32) *Stamp {
 
 // SetStrokeColor sets the stroke color for the content drawn after it,
 // as a 0xRRGGBB value, for example color.Blue.
-func (s *Stamp) SetStrokeColor(color int32) *Stamp {
-	return s.SetStrokeColorRGB(colorToRGB(color))
+// color.Transparent leaves it unchanged.
+func (s *Stamp) SetStrokeColor(c int32) *Stamp {
+	if c == color.Transparent {
+		return s
+	}
+	return s.SetStrokeColorRGB(colorToRGB(c))
 }
 
 // SetStrokeWidth sets the stroke width for the content drawn after it.

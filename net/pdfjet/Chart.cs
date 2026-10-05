@@ -286,10 +286,13 @@ public class Chart : IDrawable {
         return this;
     }
 
-    /// <summary>Sets the color of the grid lines. The default is black.</summary>
+    /// <summary>Sets the color of the grid lines. The default is black. Color.transparent leaves it unchanged.</summary>
     /// <param name="color">the color as a 0xRRGGBB value, for example Color.lightgray.</param>
     /// <returns>this Chart object.</returns>
     public Chart SetGridLineColor(int color) {
+        if (color == Color.transparent) {
+            return this;
+        }
         this.gridLineColor = color;
         return this;
     }

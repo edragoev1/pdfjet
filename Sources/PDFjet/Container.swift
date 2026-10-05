@@ -114,8 +114,12 @@ public class Container: Drawable {
     }
 
     /// Sets the 0xRRGGBB color of the border around this container.
+    /// Color.transparent leaves it unchanged.
     @discardableResult
     public func setBorderColor(_ borderColor: Int32) -> Container {
+        if borderColor == Color.transparent {
+            return self
+        }
         if border == nil {
             border = Rect(0.0, 0.0, width, height)
             self.add(border!)

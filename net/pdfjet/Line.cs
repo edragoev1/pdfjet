@@ -143,10 +143,14 @@ public class Line : IDrawable {
 
     /// <summary>
     /// Sets the stroke color of this line.
+    /// Color.transparent leaves it unchanged.
     /// </summary>
     /// <param name="color">the color specified as an integer.</param>
     /// <returns>this Line object.</returns>
     public Line SetStrokeColor(int color) {
+        if (color == Color.transparent) {
+            return this;
+        }
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;

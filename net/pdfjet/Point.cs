@@ -156,8 +156,11 @@ public class Point : IDrawable {
         return r;
     }
 
-    /// <summary>Sets the fill color as a 0xRRGGBB value.</summary>
+    /// <summary>Sets the fill color as a 0xRRGGBB value. Color.transparent leaves it unchanged.</summary>
     public Point SetFillColor(int color) {
+        if (color == Color.transparent) {
+            return this;
+        }
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;
@@ -176,8 +179,11 @@ public class Point : IDrawable {
         return Util.CopyOf(this.fillColor);
     }
 
-    /// <summary>Sets the stroke color as a 0xRRGGBB value.</summary>
+    /// <summary>Sets the stroke color as a 0xRRGGBB value. Color.transparent leaves it unchanged.</summary>
     public Point SetStrokeColor(int color) {
+        if (color == Color.transparent) {
+            return this;
+        }
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;

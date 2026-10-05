@@ -88,13 +88,21 @@ func parseColor(color int32) [3]float32 {
 }
 
 // SetLabelColor sets the color for the label.
+// color.Transparent leaves it unchanged.
 func (form *Form) SetLabelColor(labelColor int32) *Form {
+	if labelColor == color.Transparent {
+		return form
+	}
 	form.labelColor = parseColor(labelColor)
 	return form
 }
 
 // SetValueColor sets the color for the value string.
+// color.Transparent leaves it unchanged.
 func (form *Form) SetValueColor(valueColor int32) *Form {
+	if valueColor == color.Transparent {
+		return form
+	}
 	form.valueColor = parseColor(valueColor)
 	return form
 }

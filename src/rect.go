@@ -86,7 +86,11 @@ func (rect *Rect) SetBorderColorRGB(borderColor [3]float32) *Rect {
 }
 
 // SetFillColor sets the fill color as a 0xRRGGBB value.
+// color.Transparent leaves it unchanged.
 func (rect *Rect) SetFillColor(fillColor int32) *Rect {
+	if fillColor == color.Transparent {
+		return rect
+	}
 	r := float32((fillColor>>16)&0xff) / 255.0
 	g := float32((fillColor>>8)&0xff) / 255.0
 	b := float32((fillColor)&0xff) / 255.0

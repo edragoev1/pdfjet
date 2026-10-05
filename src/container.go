@@ -6,6 +6,7 @@
 package pdfjet
 
 import (
+	"github.com/edragoev1/pdfjet/v9/src/color"
 	"math"
 )
 
@@ -106,7 +107,11 @@ func (c *Container) ScaleByWidthAndHeight(sx, sy float32) *Container {
 }
 
 // SetBorderColor sets the 0xRRGGBB color of the border around this container.
+// color.Transparent leaves it unchanged.
 func (c *Container) SetBorderColor(borderColor int32) *Container {
+	if borderColor == color.Transparent {
+		return c
+	}
 	if c.border == nil {
 		c.border = NewRect(0.0, 0.0, c.width, c.height)
 		c.Add(c.border)

@@ -125,11 +125,15 @@ public class Form implements Drawable {
 
     /**
      * Sets the label color
+     * Color.transparent leaves it unchanged.
      *
      * @param labelColor the label color as a 0xRRGGBB value, for example Color.black.
      * @return the form
      */
     public Form setLabelColor(int labelColor) {
+        if (labelColor == Color.transparent) {
+            return this;
+        }
         float r = ((labelColor >> 16) & 0xff)/255f;
         float g = ((labelColor >>  8) & 0xff)/255f;
         float b = ((labelColor)       & 0xff)/255f;
@@ -150,11 +154,15 @@ public class Form implements Drawable {
 
     /**
      * Sets the color for the value
+     * Color.transparent leaves it unchanged.
      *
      * @param valueColor the value color as a 0xRRGGBB value, for example Color.blue.
      * @return the form
      */
     public Form setValueColor(int valueColor) {
+        if (valueColor == Color.transparent) {
+            return this;
+        }
         float r = ((valueColor >> 16) & 0xff)/255f;
         float g = ((valueColor >>  8) & 0xff)/255f;
         float b = ((valueColor)       & 0xff)/255f;

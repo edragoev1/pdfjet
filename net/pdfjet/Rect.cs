@@ -59,8 +59,11 @@ public class Rect  : IDrawable {
         return this;
     }
 
-    /// <summary>Sets the fill color as a 0xRRGGBB value.</summary>
+    /// <summary>Sets the fill color as a 0xRRGGBB value. Color.transparent leaves it unchanged.</summary>
     public Rect SetFillColor(int color) {
+        if (color == Color.transparent) {
+            return this;
+        }
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;

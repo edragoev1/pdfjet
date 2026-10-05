@@ -6,6 +6,7 @@
 package pdfjet
 
 import (
+	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/pathoperator"
 	"github.com/edragoev1/pdfjet/v9/src/shape"
 )
@@ -139,7 +140,11 @@ func (point *Point) GetShape() shape.Shape {
 }
 
 // SetFillColor sets the fill color as a 0xRRGGBB value.
+// color.Transparent leaves it unchanged.
 func (point *Point) SetFillColor(fillColor int32) *Point {
+	if fillColor == color.Transparent {
+		return point
+	}
 	r := float32((fillColor>>16)&0xff) / 255.0
 	g := float32((fillColor>>8)&0xff) / 255.0
 	b := float32((fillColor)&0xff) / 255.0
@@ -161,7 +166,11 @@ func (point *Point) GetFillColor() [3]float32 {
 }
 
 // SetStrokeColor sets the stroke color as a 0xRRGGBB value.
+// color.Transparent leaves it unchanged.
 func (point *Point) SetStrokeColor(strokeColor int32) *Point {
+	if strokeColor == color.Transparent {
+		return point
+	}
 	r := float32((strokeColor>>16)&0xff) / 255.0
 	g := float32((strokeColor>>8)&0xff) / 255.0
 	b := float32((strokeColor)&0xff) / 255.0

@@ -75,11 +75,15 @@ public class Series {
     /**
      * Sets the color of the line and of the markers that have no color of
      * their own. Without it the series has the next color of the palette.
+     * Color.transparent leaves it unchanged.
      *
      * @param color the color as a 0xRRGGBB value, for example Color.blue.
      * @return this Series object.
      */
     public Series setStrokeColor(int color) {
+        if (color == Color.transparent) {
+            return this;
+        }
         float r = ((color >> 16) & 0xff)/255f;
         float g = ((color >>  8) & 0xff)/255f;
         float b = ((color)       & 0xff)/255f;

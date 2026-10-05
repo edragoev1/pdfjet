@@ -6,6 +6,7 @@
 package pdfjet
 
 import (
+	"github.com/edragoev1/pdfjet/v9/src/color"
 	"strings"
 
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
@@ -190,9 +191,13 @@ func (paragraph *Paragraph) StartsWith(token string) bool {
 }
 
 // SetTextColor sets the text color of all lines in this paragraph.
-func (paragraph *Paragraph) SetTextColor(color int32) *Paragraph {
+// color.Transparent leaves it unchanged.
+func (paragraph *Paragraph) SetTextColor(c int32) *Paragraph {
+	if c == color.Transparent {
+		return paragraph
+	}
 	for _, line := range paragraph.lines {
-		line.SetTextColor(color)
+		line.SetTextColor(c)
 	}
 	return paragraph
 }

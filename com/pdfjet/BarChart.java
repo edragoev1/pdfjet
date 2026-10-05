@@ -346,11 +346,15 @@ public class BarChart implements Drawable {
 
     /**
      * Sets the color of the grid lines. The default is black.
+     * Color.transparent leaves it unchanged.
      *
      * @param color the color as a 0xRRGGBB value, for example Color.lightgray.
      * @return this BarChart object.
      */
     public BarChart setGridLineColor(int color) {
+        if (color == Color.transparent) {
+            return this;
+        }
         this.gridLineColor = color;
         return this;
     }

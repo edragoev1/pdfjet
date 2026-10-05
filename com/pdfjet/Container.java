@@ -131,11 +131,15 @@ public class Container implements Drawable {
 
     /**
      * Sets the color of the border around this container.
+     * Color.transparent leaves it unchanged.
      *
      * @param borderColor the border color as a 0xRRGGBB value.
      * @return this Container object.
      */
     public Container setBorderColor(int borderColor) {
+        if (borderColor == Color.transparent) {
+            return this;
+        }
         if (border == null) {
             border = new Rect(0f, 0f, width, height);
             this.add(border);
