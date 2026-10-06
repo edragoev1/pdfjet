@@ -736,6 +736,35 @@ it from a stream. Java's `Encryption` is in `com.pdfjet`, next to `PDF`, so the
 two share their package-private members; `Passwords`, `Permissions` and
 `UserAccess` are in `com.pdfjet.encryption`.
 
+### Floating point on ARM
+
+The four ports compute the same results on x86-64 and on ARM, AWS Graviton
+and Apple Silicon among them, as they all use the same 32- and 64-bit IEEE
+754 arithmetic. One thing stood in the way, in Go alone: the Go
+specification lets the compiler fuse `x*y + z` into one fused multiply-add,
+which rounds once instead of twice, and Go's arm64 compiler does. A result
+could then differ from x86-64's and the other ports' in its last bit, and,
+at a boundary, a line of text break at another word. Java never fuses of
+itself, and C# and Swift do not by default.
+
+So in the Go port every float multiplication, and every division by a
+constant, which the compiler makes a multiplication, is wrapped in a
+conversion to its own type, which the specification says rounds it and
+stops the fusing:
+
+```go
+width := float32(fontSize*scale) + padding // not fontSize*scale + padding
+```
+
+The conversion looks redundant, and an IDE may offer to remove it; it must
+stay. Each file that has them says so at its top. `check-no-fma.sh`, run by
+the Build workflow, has the compiler print the arm64 code of the Go port and
+fails, naming the file and the line, if a fused multiply-add appears in it;
+it needs no ARM computer. Go's own `math` package is still fused on arm64;
+PDFjet uses it for arcs, ellipses and SVG alone, where a last bit changes no
+line or page. The rule since 5 October 2026: in the Go port, write a float
+multiplication as `float32(a*b)`, or `float64(a*b)`.
+
 ### Constants and fields in Go
 
 Java, C# and Swift keep constants in classes; Go keeps them in packages:

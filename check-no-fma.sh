@@ -15,7 +15,9 @@ packages=$(GOWORK=off go list ./src/... | grep -v '/examples/')
 asm=$(GOWORK=off GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -a -o /dev/null -gcflags=-S $packages 2>&1)
 fused=$(printf '%s\n' "$asm" | grep -E '\s(FMADD|FMSUB|FNMADD|FNMSUB)[SD]\s' | grep -oE '\([^()]*\.go:[0-9]+\)' | sort | uniq -c)
 if [ -n "$fused" ]; then
-    echo "Fused multiply-adds on arm64, where a float multiplication needs float32(...) or float64(...):"
+    echo "Fused multiply-adds on arm64, where a float multiplication needs float32(...) or float64(...)."
+    echo "Why: \"Floating point on ARM\" in PDFjet's README.md, https://github.com/edragoev1/pdfjet#floating-point-on-arm"
+    echo "The places:"
     echo "$fused"
     exit 1
 fi

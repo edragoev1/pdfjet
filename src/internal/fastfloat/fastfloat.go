@@ -6,6 +6,12 @@
 // Package fastfloat converts float32 values to their text representation.
 package fastfloat
 
+// Floating point: every float multiplication in this file is wrapped in
+// float32(...) or float64(...) on purpose, so that Go's arm64 compiler does
+// not fuse it with an addition and round otherwise than amd64 and the other
+// ports. Keep the wrapping; see "Floating point on ARM" in README.md.
+// check-no-fma.sh fails if one is removed.
+
 import (
 	"math"
 	"strconv"
