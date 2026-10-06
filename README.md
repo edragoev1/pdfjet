@@ -450,6 +450,13 @@ The streams were made whole on 17 September 2026 (commit `aa8edd30`), when
 they held the CFF alone; the fonts every example embeds stayed the same,
 byte for byte.
 
+Both formats are read by all four ports, and a stream made before that day
+needs no converting again. The block of the other tables is marked with an
+`R` after the metrics, and the reader skips it when it is there; a stream of
+the older format has no such block, and the reader goes on to the CFF data
+as before (`FontStream1` in Java, C#, Go and Swift). PDFjet Forms makes its
+PDFs from streams of the older format, read by the same Go code.
+
 ## Right to left text
 
 `Bidi.reorderVisually` prepares a line of Hebrew, Arabic, Persian or Urdu text
