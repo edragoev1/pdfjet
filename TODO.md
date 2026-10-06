@@ -995,6 +995,19 @@ no history; the registries count, and are where developers look.
   of IBM Plex Sans in 24 ms against 10 to 20, and a plain .ttf font parsed
   at length (one page with Noto Sans, 44 ms against 20 as a .stream). Worth
   doing before Swift is sold in the commercial product.
+- ⬜ The older stream format as advice, not only a switch: a developer
+  who makes PDFs on their own server, and doesn't give the fonts to
+  anyone, can convert an OpenType font with
+  `util/generate-stream-fonts-files.sh --old-format`. The .otf.stream then
+  holds the CFF alone, without the block that rebuilds the whole font, so
+  it is smaller and faster to load, and the PDFs come out the same (the
+  same CFF is embedded either way). Say so in the README's "Stream fonts,
+  and what a PDF embeds" and in the converter's help, with the licence
+  caveat: a CFF-only stream is a modified font under the OFL, fine on
+  one's own server, not to be passed on. Only .otf fonts gain; a
+  .ttf.stream (Source Serif 4, JetBrains Mono) has always held the whole
+  font. Measured on 5 October 2026: PDFjet Forms' 12 weights of IBM Plex
+  Sans are 575 KB in the older format against 979 KB, 403 KB less.
 - ⬜ Maybe: a faster Deflate for Swift, which has its own, written in
   Swift. After the review of Sep 28 it is Swift's main cost for a PNG that
   is decoded and compressed again, one with transparency: about 500 ms for
