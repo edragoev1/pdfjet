@@ -402,6 +402,36 @@ the space on each side of the text, and `setFooter("Seite {page} von {pages}",
 font)` replaces the "Page {page} of {pages}" footer, or leaves it out with a
 null text.
 
+## Stream fonts, and what a PDF embeds
+
+The bundled fonts come as `.otf.stream` and `.ttf.stream` files beside the
+`.otf` and `.ttf` files they are made from: the metrics PDFjet needs, read at
+once, and the font's outlines compressed ahead of time with Zopfli, so a
+document only copies them. That is why they are faster than the plain files,
+by three to eight times for a one-page PDF, and why a PDF made with one is a
+little smaller.
+
+What a PDF embeds is the same whichever is given:
+
+- An OpenType font of CFF outlines, as IBM Plex, embeds its CFF table, the
+  outlines alone, `/FontFile3` with `/Subtype /CIDFontType0C`; the other
+  tables of the `.otf` are left out, as a PDF does not need them. IBM Plex
+  Sans Regular embeds 60,818 bytes of CFF, the same bytes from its `.otf`,
+  from its `.otf.stream`, and from a stream of the older format, which has
+  no more than the CFF (checked on 5 October 2026).
+- A TrueType font embeds the whole `.ttf`, `/FontFile2`.
+- Each font is embedded whole, never subset: every glyph is in the PDF,
+  whatever the text uses.
+
+An `.otf.stream` of the current format also keeps, after the metrics, the
+tables of the font that are not in its CFF data, so that the original `.otf`
+can be rebuilt from it byte for byte. PDFjet skips them when it embeds the
+font. They are there for the file itself: a stream distributed with the
+library is then the font, whole, in another form, and not a modified
+version of it, which the SIL Open Font License, under which these fonts
+are, and IBM Plex's reserved font name care about. A stream of the older
+format, the CFF alone, embeds the same and reads as well.
+
 ## Right to left text
 
 `Bidi.reorderVisually` prepares a line of Hebrew, Arabic, Persian or Urdu text
