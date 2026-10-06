@@ -58,7 +58,11 @@ same output come in four languages, and none of them needs a single dependency.
   PDF417.
 - **Fonts ready to use.** 272 font files from the IBM Plex, Noto and other
   families, compressed once ahead of time, with Unicode text in Latin, Greek,
-  Cyrillic, CJK and right to left scripts.
+  Cyrillic, CJK and right to left scripts. IBM Plex Sans alone covers all 24
+  official languages of the European Union, from Czech ř and Romanian ș to
+  Greek and Bulgarian, with the euro sign and each language's quotation
+  marks, in 75 KB as a `.otf.stream` file, embedded whole: a one-page PDF in
+  it is about 63 KB.
 - **Images.** PNG, JPEG and BMP, and SVG drawn as vector graphics.
 - **Security.** AES-256 encryption with passwords and permissions, reading
   existing and encrypted PDFs, and limits that keep untrusted input from
