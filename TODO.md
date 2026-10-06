@@ -902,6 +902,28 @@ no history; the registries count, and are where developers look.
   column starts a line of its own. Left, for v9.1: the cell one P. Found by
   the review of PDFjet Forms, 5 October 2026.
 
+- **TextBlock breaks long words between letters, never after a hyphen or at a
+  soft hyphen.** Found on 6 October 2026, when the editor's line breaking was
+  checked against the Go port's in Spanish, German, French, Italian, Greek and
+  Bulgarian (pdfjet-client, tests/textblock/cases.json, the cases named
+  "languages:"). What is right: a line never breaks at a no-break space or a
+  narrow no-break space, so French `questions ?` and `1 250 €` stay whole;
+  Greek and Cyrillic break at their spaces; a soft hyphen (U+00AD) is not
+  drawn. What could be better, in all four ports and in the editor's
+  SVGTextBlock, which follows the Go:
+  - A word wider than the line is cut between two letters, with no hyphen:
+    `Datenschutzgru` / `ndverordnung` in a narrow column.
+  - A line does not break after a hyphen: `Bindestrich-Wör` / `ter.`, where
+    `Bindestrich-` / `Wörter.` reads better.
+  - A soft hyphen is not a place to break: `Rechts\u00adschutz\u00adversicherung`
+    is cut between letters, where `Rechtsschutz-` / `versicherung`, its hyphen
+    drawn at the break alone, is what the soft hyphen is for.
+  Seen only in narrow columns with long words, as German has. Not for 9.0.3:
+  it changes where lines break in every port and in the editor, and so how a
+  form already made looks (pdfjet-server's TestLookOfRules1IsKept); for v9.1,
+  the owner's call, Go first, then the other ports and SVGTextBlock, the cases
+  above to show the new breaks.
+
 ## v9.1 — features, after v9.0.3
 
 - ⬜ CommonMark itself, in the four ports, where v9.0.3 has the practical
