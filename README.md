@@ -432,6 +432,24 @@ version of it, which the SIL Open Font License, under which these fonts
 are, and IBM Plex's reserved font name care about. A stream of the older
 format, the CFF alone, embeds the same and reads as well.
 
+So the stream holds the whole font, and the PDF gets its CFF alone, which is
+as it should be, for three reasons:
+
+1. The license draws its line at distribution, not at embedding. A stream is
+   distributed as a font, with the library, so it is the whole font; one of
+   the CFF alone would be a modified IBM Plex, which may not use the name.
+   A PDF embeds the font, which the SIL Open Font License allows of a
+   document: the document is not a distribution of the font.
+2. It is how PDF carries a font of CFF outlines, `/FontFile3` with
+   `/Subtype /CIDFontType0C`, since PDF 1.3. The other tables, the names a
+   menu shows, the OS/2 data, the hints for the screen, are of no use in it.
+3. It keeps PDF/A-1 possible. A whole `.otf` would be embedded as
+   `/Subtype /OpenType`, which came with PDF 1.6, after PDF/A-1's PDF 1.4.
+
+The streams were made whole on 17 September 2026 (commit `aa8edd30`), when
+they held the CFF alone; the fonts every example embeds stayed the same,
+byte for byte.
+
 ## Right to left text
 
 `Bidi.reorderVisually` prepares a line of Hebrew, Arabic, Persian or Urdu text
