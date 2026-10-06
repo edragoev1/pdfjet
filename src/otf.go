@@ -682,13 +682,6 @@ func readInt16(otf *openTypeFont) int16 {
 	return value
 }
 
-func readUint8(otf *openTypeFont) uint8 {
-	need(otf, 1)
-	value := otf.buf[otf.index]
-	otf.index++
-	return value
-}
-
 func readUint16(otf *openTypeFont) uint16 {
 	need(otf, 2)
 	value := uint16(otf.buf[otf.index]) << 8

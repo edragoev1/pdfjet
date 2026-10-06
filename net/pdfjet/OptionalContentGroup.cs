@@ -8,7 +8,6 @@
  * Modified and adapted for use in PDFjet by Evgeni Dragoev
  */
 using System;
-using System.Text;
 using System.Collections.Generic;
 
 namespace PDFjet.NET {

@@ -50,12 +50,6 @@ func getUint8(r io.Reader) uint8 {
 	return buf[0]
 }
 
-func getUint16(r io.Reader) uint16 {
-	buf := make([]byte, 2)
-	readFully(r, buf)
-	return uint16(buf[0])<<8 | uint16(buf[1])
-}
-
 func getUint24(r io.Reader) uint32 {
 	buf := make([]byte, 3)
 	readFully(r, buf)
@@ -66,12 +60,6 @@ func getUint32(r io.Reader) uint32 {
 	buf := make([]byte, 4)
 	readFully(r, buf)
 	return uint32(buf[0])<<24 | uint32(buf[1])<<16 | uint32(buf[2])<<8 | uint32(buf[3])
-}
-
-func getInt32(r io.Reader) int32 {
-	buf := make([]byte, 4)
-	readFully(r, buf)
-	return int32(buf[0])<<24 | int32(buf[1])<<16 | int32(buf[2])<<8 | int32(buf[3])
 }
 
 // Pre-allocated lowercase hex digits. The ToUnicode CMap is written in

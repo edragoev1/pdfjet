@@ -20,8 +20,6 @@ extension String {
 ///
 public class Bookmark {
     private var destNumber = 0
-    private var page: Page?
-    private var y: Float = 0.0
     private var key: String?
     private var title: String?
     private var parent: Bookmark?
@@ -40,12 +38,8 @@ public class Bookmark {
     }
 
     private init(
-            _ page: Page,
-            _ y: Float,
             _ key: String,
             _ title: String) {
-        self.page = page
-        self.y = y
         self.key = key
         self.title = title
     }
@@ -53,12 +47,8 @@ public class Bookmark {
     // The bookmark of a heading, which goes to its destination, not to a
     // destination named on its page.
     private init(
-            _ page: Page,
-            _ top: Float,
             _ title: String,
             _ dest: Destination) {
-        self.page = page
-        self.y = top
         self.title = title
         self.dest = dest
     }
@@ -77,7 +67,7 @@ public class Bookmark {
             let parent = stack.last?.bookmark ?? root
             let dest = Destination("", 0.0, heading.page.height - heading.top)
             dest.pageObjNumber = heading.page.objNumber
-            let bookmark = Bookmark(heading.page, heading.top, heading.title, dest)
+            let bookmark = Bookmark(heading.title, dest)
             bookmark.parent = parent
             if parent.children == nil {
                 parent.children = [Bookmark]()
@@ -110,7 +100,7 @@ public class Bookmark {
         let key = bm.nextKey()
 
         let text = title.textLine.text!
-        let bookmark = Bookmark(page, title.textLine.destinationY(), key,
+        let bookmark = Bookmark(key,
                 Bookmark.whitespace.stringByReplacingMatches(
                         in: text, range: NSRange(text.startIndex..., in: text), withTemplate: " "))
         bookmark.parent = self

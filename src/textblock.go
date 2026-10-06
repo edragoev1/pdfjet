@@ -49,7 +49,6 @@ type TextBlock struct {
 	fillColor          [3]float32
 	hasFillColor       bool
 	textColor          [3]float32
-	hasTextColor       bool
 	borderColor        [3]float32
 	hasBorderColor     bool
 	borderWidth        float32

@@ -18,11 +18,5 @@ internal class Chunk {
     public byte[] GetData() {
         return this.data;
     }
-
-    /// <summary>Sets the chunk data.</summary>
-    public Chunk SetData(byte[] data) {
-        this.data = data;
-        return this;
-    }
 }   // End of Chunk.cs
 }   // End of namespace PDFjet.NET

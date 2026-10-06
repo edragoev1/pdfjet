@@ -51,9 +51,6 @@ public class Stamp : IDrawable {
     private float y;
     private float width;
     private float height;
-    private float[] fillColor;
-    private float[] strokeColor;
-    private float strokeWidth = 1f;
     private float rotateDegrees = 0f;
     private float scaleX = 1f;
     private float scaleY = 1f;
@@ -146,7 +143,6 @@ public class Stamp : IDrawable {
         Append(" ");
         Append(rgbColor[2]);
         Append(" rg\n");
-        this.fillColor = Util.CopyOf(rgbColor);
         return this;
     }
 
@@ -164,7 +160,6 @@ public class Stamp : IDrawable {
         Append(" ");
         Append(b);
         Append(" rg\n");
-        this.fillColor = new float[] {r, g, b};
         return this;
     }
 
@@ -176,7 +171,6 @@ public class Stamp : IDrawable {
         Append(" ");
         Append(rgbColor[2]);
         Append(" RG\n");
-        this.strokeColor = Util.CopyOf(rgbColor);
         return this;
     }
 
@@ -194,7 +188,6 @@ public class Stamp : IDrawable {
         Append(" ");
         Append(b);
         Append(" RG\n");
-        this.strokeColor = new float[] {r, g, b};
         return this;
     }
 
@@ -205,7 +198,6 @@ public class Stamp : IDrawable {
         }
         Append(width);
         Append(" w\n");
-        this.strokeWidth = width;
         return this;
     }
 
@@ -407,7 +399,7 @@ public class Stamp : IDrawable {
             int gid = Page.GlyphOf(font, codePoint);
             if (font.Lacks(codePoint)) {
                 Append("> Tj\n/Span <</ActualText <");
-                Append(Page.ToUTF16Hex(Page.TextOf(font, codePoint)));
+                Append(Page.ToUTF16Hex(Page.TextOf(codePoint)));
                 Append(">>> BDC\n<");
                 AppendCodePointAsHex(gid);
                 Append("> Tj\nEMC\n<");

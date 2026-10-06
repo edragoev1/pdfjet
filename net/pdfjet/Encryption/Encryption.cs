@@ -9,8 +9,6 @@ using System.Globalization;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
-using System.Numerics;
-using System.Collections.Generic;
 
 namespace PDFjet.NET {
 internal sealed class User {

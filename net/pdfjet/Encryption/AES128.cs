@@ -5,11 +5,7 @@
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 using System;
-using System.IO;
 using System.Security.Cryptography;
-using System.Text;
-using System.Numerics;
-using System.Collections.Generic;
 
 namespace PDFjet.NET {
 /// <summary>AES-128 encryption used when computing the encryption dictionary.</summary>

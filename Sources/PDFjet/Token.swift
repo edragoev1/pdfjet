@@ -42,8 +42,4 @@ class Token {
     // Essential property tokens (used everywhere)
     /// The /Length key.
     static let length = [UInt8]("/Length ".utf8)
-    /// The /Type key.
-    static let type = [UInt8]("/Type ".utf8)
-    /// The /Resources key.
-    static let resources = [UInt8]("/Resources ".utf8)
 }

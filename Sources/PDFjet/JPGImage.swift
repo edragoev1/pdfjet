@@ -109,10 +109,6 @@ class JPGImage {
         return self.height
     }
 
-    func getFileSize() -> Int64 {
-        return Int64(self.data.count)
-    }
-
     func getColorComponents() -> UInt8 {
         return self.colorComponents
     }

@@ -60,9 +60,6 @@ type Stamp struct {
 	y              float32
 	width          float32
 	height         float32
-	fillColor      [3]float32
-	strokeColor    [3]float32
-	strokeWidth    float32
 	rotateDegrees  float32
 	scaleX         float32
 	scaleY         float32
@@ -77,11 +74,10 @@ type Stamp struct {
 // NewStamp creates a stamp for the specified document.
 func NewStamp(pdf *PDF) *Stamp {
 	return &Stamp{
-		pdf:         pdf,
-		buf:         &bytes.Buffer{},
-		strokeWidth: 1.0,
-		scaleX:      1.0,
-		scaleY:      1.0,
+		pdf:    pdf,
+		buf:    &bytes.Buffer{},
+		scaleX: 1.0,
+		scaleY: 1.0,
 	}
 }
 
@@ -174,7 +170,6 @@ func (s *Stamp) SetFillColorRGB(rgbColor [3]float32) *Stamp {
 	s.appendString(" ")
 	s.appendFloat(rgbColor[2])
 	s.appendString(" rg\n")
-	s.fillColor = rgbColor
 	return s
 }
 
@@ -197,7 +192,6 @@ func (s *Stamp) SetStrokeColorRGB(rgbColor [3]float32) *Stamp {
 	s.appendString(" ")
 	s.appendFloat(rgbColor[2])
 	s.appendString(" RG\n")
-	s.strokeColor = rgbColor
 	return s
 }
 
@@ -219,7 +213,6 @@ func (s *Stamp) SetStrokeWidth(width float32) *Stamp {
 	}
 	s.appendFloat(width)
 	s.appendString(" w\n")
-	s.strokeWidth = width
 	return s
 }
 

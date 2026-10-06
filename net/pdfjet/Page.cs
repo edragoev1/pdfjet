@@ -863,7 +863,7 @@ public class Page {
     private void AppendRun(Font font, int[] codePoints, int[] gids, int[] offsets, int start, int end) {
         StringBuilder text = new StringBuilder("\u200E");
         for (int k = start; k < end; k++) {
-            text.Append(TextOf(font, codePoints[k]));
+            text.Append(TextOf(codePoints[k]));
         }
         text.Append("\u200E");
         Append("> Tj\n/Span <</ActualText <");
@@ -932,7 +932,7 @@ public class Page {
         if (mirrored != null && mirrored[k]) {
             text.Append(char.ConvertFromUtf32(Bidi.Mirrored(codePoint).Value));
         } else {
-            text.Append(TextOf(font, codePoint));
+            text.Append(TextOf(codePoint));
         }
         if (joiner != 0) {
             text.Append(char.ConvertFromUtf32(joiner));
@@ -965,7 +965,7 @@ public class Page {
     // letter. A character the font does not have is itself, though it is
     // drawn with .notdef, so that a copy of the text is the text that was
     // written.
-    internal static String TextOf(Font font, int codePoint) {
+    internal static String TextOf(int codePoint) {
         String letters = Bidi.LettersOf(codePoint);
         if (Font.IsControl(codePoint)) {
             return " ";
@@ -1267,7 +1267,7 @@ public class Page {
         bool leadingSpace = IsMoved(offsets, start, start + 1);
         StringBuilder text = new StringBuilder(leadingSpace ? " " : "");
         for (int k = start; k < end; k++) {
-            text.Append(TextOf(font, codePoints[k]));     // The text the glyphs map to
+            text.Append(TextOf(codePoints[k]));     // The text the glyphs map to
         }
         Append("> Tj\n/Span <</ActualText <");
         Append(ToUTF16Hex(text.ToString()));
@@ -2945,33 +2945,6 @@ public class Page {
         Append(Token.Space);
         Append(height - y);
         Append(" Td\n");
-    }
-
-    /// <summary>
-    /// Sets the text leading.
-    /// </summary>
-    /// <param name="leading">the leading.</param>
-    internal void SetTextLeading(float leading) {
-        Append(leading);
-        Append(" TL\n");
-    }
-
-    /// <summary>
-    /// Advance to the next line.
-    /// </summary>
-    internal void NextLine() {
-        Append("T*\n");
-    }
-
-    internal void SetTextScaling(float scaling) {
-        Append(scaling);
-        Append(" Tz\n");
-    }
-
-    internal void SetTextRise(float rise) {
-        Append(rise);
-        Append(" Ts\n");
-        this.textRise = rise;
     }
 
     /// <summary>

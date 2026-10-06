@@ -177,32 +177,4 @@ class ColorMap {
         map.put("oldgloryred", 0xb22234);
         map.put("oldgloryblue", 0x3c3b6e);
     }
-
-    /**
-     * Returns the color with the specified CSS name, or given as "#rrggbb" or "#rgb".
-     *
-     * @param colorName the color name or hexadecimal value.
-     * @return the color as a 0xRRGGBB value, or Color.transparent if the name is not known.
-     */
-    public int getColor(String colorName) {
-        if (colorName.startsWith("#")) {
-            if (colorName.length() == 7) {
-                return Integer.valueOf(colorName.substring(1), 16);
-            } else if (colorName.length() == 4) {
-                String str = new String(new char[] {
-                        colorName.charAt(1), colorName.charAt(1),
-                        colorName.charAt(2), colorName.charAt(2),
-                        colorName.charAt(3), colorName.charAt(3)
-                });
-                return Integer.valueOf(str, 16);
-            } else {
-                return Color.transparent;
-            }
-        }
-        Integer color = map.get(colorName);
-        if (color == null) {
-            return Color.transparent;
-        }
-        return color;
-    }
 }

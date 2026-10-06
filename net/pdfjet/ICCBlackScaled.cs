@@ -10,7 +10,6 @@
  * zlib, which PDFjet embeds in every PDF/A document it writes. They are used
  * under the ICC's terms for its profiles, which THIRD-PARTIES.TXT gives.
  */
-using System;
 
 namespace PDFjet.NET {
 class ICCBlackScaled {

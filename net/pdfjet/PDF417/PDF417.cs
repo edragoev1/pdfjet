@@ -289,9 +289,9 @@ public class PDF417 : IDrawable {
 
     private void addECC(int[] buf) {
         int[] ecc = new int[L5ECC.Table.Length];
-        int t1 = 0;
-        int t2 = 0;
-        int t3 = 0;
+        int t1;
+        int t2;
+        int t3;
 
         int dataLen = buf.Length - ecc.Length;
         for (int i = 0; i < dataLen; i++) {

@@ -38,17 +38,7 @@ class Token {
     /** Follows an object number to make an indirect reference. */
     static final byte[] OBJ_REF = " 0 R\n".getBytes(StandardCharsets.US_ASCII);
 
-    // Text and content tokens
-    /** Begins a text object. */
-    static final byte[] BEGIN_TEXT = "BT\n".getBytes(StandardCharsets.US_ASCII);
-    /** Ends a text object. */
-    static final byte[] END_TEXT = "ET\n".getBytes(StandardCharsets.US_ASCII);
-
     // Essential property tokens (used everywhere)
     /** The /Length key. */
     static final byte[] LENGTH = "/Length ".getBytes(StandardCharsets.US_ASCII);
-    /** The /Type key. */
-    static final byte[] TYPE = "/Type ".getBytes(StandardCharsets.US_ASCII);
-    /** The /Resources key. */
-    static final byte[] RESOURCES = "/Resources ".getBytes(StandardCharsets.US_ASCII);
 }

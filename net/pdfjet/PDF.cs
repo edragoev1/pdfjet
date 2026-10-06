@@ -2489,7 +2489,7 @@ public sealed class PDF {
 
         List<PDFobj> objects1 = new List<PDFobj>();
         PDFobj.DecodeBudget budget = new PDFobj.DecodeBudget(buf.Length); // For all the streams of this PDF together
-        PDFobj trailer = null;
+        PDFobj trailer;
         try {
             trailer = GetObjects(buf, GetStartXRef(buf), objects1, 0, new HashSet<int>(), budget);
         } catch (PDFobj.DecodedTotalException) {

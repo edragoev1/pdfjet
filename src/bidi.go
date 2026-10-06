@@ -933,11 +933,3 @@ func lamAlefLigature(ch rune) rune {
 func isExplicitFormatting(ch rune) bool {
 	return (ch >= 0x202A && ch <= 0x202E) || (ch >= 0x2066 && ch <= 0x2069)
 }
-
-// appendRunesReversed appends the runes to buf in reverse order.
-func appendRunesReversed(buf, runes []rune) []rune {
-	for i := len(runes) - 1; i >= 0; i-- {
-		buf = append(buf, runes[i])
-	}
-	return buf
-}

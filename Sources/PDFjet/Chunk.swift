@@ -15,9 +15,4 @@ class Chunk {
     func getData() -> [UInt8]? {
         return self.data
     }
-
-    func setData(_ data: [UInt8]?) {
-        self.data = data
-    }
-
 }   // End of Chunk.swift

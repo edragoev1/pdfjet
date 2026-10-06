@@ -259,9 +259,9 @@ public class PDF417 implements Drawable {
 
     private void addECC(int[] buf) {
         int[] ecc = new int[L5ECC.table.length];
-        int t1 = 0;
-        int t2 = 0;
-        int t3 = 0;
+        int t1;
+        int t2;
+        int t3;
 
         int dataLen = buf.length - ecc.length;
         for (int i = 0; i < dataLen; i++) {

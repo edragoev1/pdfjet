@@ -7,7 +7,6 @@ package pdfjet
 
 import (
 	"bytes"
-	"encoding/binary"
 	"fmt"
 	"strings"
 	"testing"
@@ -131,15 +130,4 @@ func FuzzDeflateRoundTrip(f *testing.F) {
 			}
 		})
 	})
-}
-
-// fuzzJoinDecompressorInput returns the bytes of a corpus input as the four
-// ports replay it: the four values of the predictor, then the data.
-func fuzzJoinDecompressorInput(data []byte, predictor, colors, bits, columns int) []byte {
-	var buf bytes.Buffer
-	for _, value := range []int{predictor, colors, bits, columns} {
-		_ = binary.Write(&buf, binary.BigEndian, int32(value))
-	}
-	buf.Write(data)
-	return buf.Bytes()
 }

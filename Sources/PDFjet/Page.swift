@@ -3074,33 +3074,6 @@ public class Page {
     }
 
     /**
-     * Sets the text leading.
-     * - Parameter leading: the leading.
-     */
-    func setTextLeading(_ leading: Float) {
-        append(leading)
-        append(" TL\n")
-    }
-
-    /**
-     * Advance to the next line.
-     */
-    func nextLine() {
-        append("T*\n")
-    }
-
-    func setTextScaling(_ scaling: Float) {
-        append(scaling)
-        append(" Tz\n")
-    }
-
-    func setTextRise(_ rise: Float) {
-        append(rise)
-        append(" Ts\n")
-        self.textRise = rise
-    }
-
-    /**
      * Draws a string at the correct location.
      * - Parameter str: the string.
      */

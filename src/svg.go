@@ -132,16 +132,6 @@ func (svg *svgParser) getOperations(path string) []*svgPathOp {
 	return operations
 }
 
-// ToPDF converts svgParser path operations to PDF path operations. It panics if an
-// argument of an operation is not a number.
-func (svg *svgParser) toPDFOperations(list []*svgPathOp) []*svgPathOp {
-	operations, err := toPDF(list)
-	if err != nil {
-		panic(err)
-	}
-	return operations
-}
-
 // toPDF converts svgParser path operations to PDF path operations, and returns an
 // error if an argument of an operation is not a number.
 func toPDF(list []*svgPathOp) ([]*svgPathOp, error) {

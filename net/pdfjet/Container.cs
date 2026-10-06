@@ -143,11 +143,6 @@ public class Container : IDrawable {
         return this;
     }
 
-    /// <summary>Returns the elements in this container.</summary>
-    internal List<IDrawable> GetElements() {
-        return this.elements;
-    }
-
     /// <summary>
     /// Adds a drawable element to this container.
     /// </summary>

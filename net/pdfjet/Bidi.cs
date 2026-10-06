@@ -919,48 +919,6 @@ namespace PDFjet.NET {
             }
             return RIGHT_JOINING.Contains(ch);
         }
-
-        // ---- Helpers ----------------------------------------------------------
-
-        /// <summary>
-        /// Reverses a string at the code-point level (not UTF-16 unit level).
-        /// </summary>
-        private static string ReverseCodePoints(string s) {
-            int[] cps = StringToCodePoints(s);
-            StringBuilder sb = new StringBuilder(cps.Length);
-            for (int i = cps.Length - 1; i >= 0; i--) {
-                sb.AppendCodePoint(cps[i]);
-            }
-            return sb.ToString();
-        }
-
-        // ---- Code-point utilities --------------------------------------------
-
-        /// <summary>
-        /// Converts a string to an array of Unicode code points. A lone
-        /// surrogate is kept as a code point of its own, as Java's
-        /// String.codePoints() keeps it.
-        /// </summary>
-        private static int[] StringToCodePoints(string s) {
-            if (string.IsNullOrEmpty(s)) {
-                return new int[0];
-            }
-            int[] result = new int[s.Length];
-            int idx = 0;
-            int i = 0;
-            while (i < s.Length) {
-                if (char.IsSurrogatePair(s, i)) {
-                    result[idx++] = char.ConvertToUtf32(s, i);
-                    i += 2;
-                } else {
-                    result[idx++] = s[i];
-                    i++;
-                }
-            }
-            int[] trimmed = new int[idx];
-            Array.Copy(result, trimmed, idx);
-            return trimmed;
-        }
     }
 
     /// <summary>

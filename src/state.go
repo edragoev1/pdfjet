@@ -57,38 +57,3 @@ func newSavedState(
 	state.height = height
 	return state
 }
-
-// GetPen returns the penColor.
-func (state *savedState) getPen() [3]float32 {
-	return state.pen
-}
-
-// GetBrush returns the brushColor.
-func (state *savedState) getBrush() [3]float32 {
-	return state.brush
-}
-
-// GetPenWidth returns the penColor width.
-func (state *savedState) getPenWidth() float32 {
-	return state.penWidth
-}
-
-// GetLineCapStyle returns the line cap style.
-func (state *savedState) getLineCapStyle() capstyle.CapStyle {
-	return state.lineCapStyle
-}
-
-// GetLineJoinStyle returns the line join style.
-func (state *savedState) getLineJoinStyle() joinstyle.JoinStyle {
-	return state.lineJoinStyle
-}
-
-// GetStrokeDashPattern returns the line pattern.
-func (state *savedState) getStrokeDashPattern() string {
-	return state.strokeDashPattern
-}
-
-// getHeight returns the height of the page.
-func (state *savedState) getHeight() float32 {
-	return state.height
-}

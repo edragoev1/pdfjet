@@ -4,7 +4,6 @@
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
-using System;
 using System.Text;
 
 namespace PDFjet.NET {
@@ -35,18 +34,8 @@ internal class Token {
     /// <summary>The " 0 R" that follows the number of a referenced object.</summary>
     public static readonly byte[] ObjRef = Encoding.ASCII.GetBytes(" 0 R\n");
 
-    // Text and content tokens
-    /// <summary>The BT operator, which begins a text object.</summary>
-    public static readonly byte[] BeginText = Encoding.ASCII.GetBytes("BT\n");
-    /// <summary>The ET operator, which ends a text object.</summary>
-    public static readonly byte[] EndText = Encoding.ASCII.GetBytes("ET\n");
-
     // Essential property tokens (used everywhere)
     /// <summary>The /Length key.</summary>
     public static readonly byte[] Length = Encoding.ASCII.GetBytes("/Length ");
-    /// <summary>The /Type key.</summary>
-    public static readonly byte[] Type = Encoding.ASCII.GetBytes("/Type ");
-    /// <summary>The /Resources key.</summary>
-    public static readonly byte[] Resources = Encoding.ASCII.GetBytes("/Resources ");
 }
 }

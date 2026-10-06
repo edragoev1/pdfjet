@@ -51,9 +51,6 @@ public class Stamp implements Drawable {
     private float y;
     private float width;
     private float height;
-    private float[] fillColor;
-    private float[] strokeColor;
-    private float strokeWidth = 1f;
     private float rotateDegrees = 0f;
     private float scaleX = 1f;
     private float scaleY = 1f;
@@ -183,7 +180,6 @@ public class Stamp implements Drawable {
         append(" ");
         append(rgbColor[2]);
         append(" rg\n");
-        this.fillColor = Util.copyOf(rgbColor);
         return this;
     }
 
@@ -207,7 +203,6 @@ public class Stamp implements Drawable {
         append(" ");
         append(b);
         append(" rg\n");
-        this.fillColor = new float[] {r, g, b};
         return this;
     }
 
@@ -224,7 +219,6 @@ public class Stamp implements Drawable {
         append(" ");
         append(rgbColor[2]);
         append(" RG\n");
-        this.strokeColor = Util.copyOf(rgbColor);
         return this;
     }
 
@@ -248,7 +242,6 @@ public class Stamp implements Drawable {
         append(" ");
         append(b);
         append(" RG\n");
-        this.strokeColor = new float[] {r, g, b};
         return this;
     }
 
@@ -264,7 +257,6 @@ public class Stamp implements Drawable {
         }
         append(width);
         append(" w\n");
-        this.strokeWidth = width;
         return this;
     }
 

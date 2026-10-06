@@ -42,9 +42,5 @@ public class Destination {
         this.xPosition = 0f;
         this.yPosition = yPosition;
     }
-
-    internal void SetPageObjNumber(int pageObjNumber) {
-        this.pageObjNumber = pageObjNumber;
-    }
 }
 }   // End of namespace PDFjet.NET

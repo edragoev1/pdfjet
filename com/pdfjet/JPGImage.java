@@ -107,10 +107,6 @@ class JPGImage {
         return this.height;
     }
 
-    long getFileSize() {
-        return this.data.length;
-    }
-
     int getColorComponents() {
         return this.colorComponents;
     }

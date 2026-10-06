@@ -3292,33 +3292,6 @@ final public class Page {
     }
 
     /**
-     * Sets the text leading.
-     * @param leading the leading.
-     */
-    private void setTextLeading(float leading) {
-        append(leading);
-        append(" TL\n");
-    }
-
-    /**
-     * Advance to the next line.
-     */
-    private void nextLine() {
-        append("T*\n");
-    }
-
-    private void setTextScaling(float scaling) {
-        append(scaling);
-        append(" Tz\n");
-    }
-
-    private void setTextRise(float rise) {
-        append(rise);
-        append(" Ts\n");
-        this.textRise = rise;
-    }
-
-    /**
      * Draws a string at the correct location.
      * @param font the font.
      * @param str the string.

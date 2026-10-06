@@ -82,9 +82,9 @@ internal class OTF {
         gposWork = MAX_GPOS_WORK;
 
         int numOfTables   = ReadUInt16();
-        int searchRange   = ReadUInt16();
-        int entrySelector = ReadUInt16();
-        int rangeShift    = ReadUInt16();
+        ReadUInt16();  // searchRange
+        ReadUInt16();  // entrySelector
+        ReadUInt16();  // rangeShift
 
         FontTable cmapTable = null;
         FontTable gposTable = null;
@@ -166,7 +166,7 @@ internal class OTF {
 
     private void Head(FontTable table) {
         index = table.offset + 16;
-        int flags  = (int) ReadUInt16();
+        ReadUInt16();  // flags
         unitsPerEm = (int) ReadUInt16();
         index += 16;
         bBoxLLx = (short) ReadUInt16();
@@ -231,7 +231,7 @@ internal class OTF {
 
     private void Name(FontTable table) {
         index = table.offset;
-        int format = ReadUInt16();
+        ReadUInt16();  // format
         int count  = ReadUInt16();
         int stringOffset = ReadUInt16();
         StringBuilder macFontInfo = new StringBuilder();
@@ -304,7 +304,7 @@ internal class OTF {
             throw FontError("the character map is not format 4");
         }
         int tableLen = ReadUInt16();
-        int language = ReadUInt16();
+        ReadUInt16();  // language
         int segCount = ReadUInt16() / 2;
 
         index += 6; // Skip to the endCount[]

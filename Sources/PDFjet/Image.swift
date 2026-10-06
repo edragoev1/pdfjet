@@ -47,11 +47,6 @@ public class Image : Drawable {
     private var altDescription: String?
     private var actualText: String?
 
-    enum StreamError: Error {
-        case read
-        case write
-    }
-
     enum ImageError: Error {
     case format(String)
         case rotation(String)
@@ -646,26 +641,6 @@ public class Image : Drawable {
             return false
         }
         return true
-    }
-
-    private func getUInt8(_ stream: InputStream) throws -> UInt8? {
-        var buffer = [UInt8](repeating: 0, count: 1)
-        if stream.read(&buffer, maxLength: 1) == 1 {
-            return buffer[0]
-        }
-        throw StreamError.read
-    }
-
-    private func getUInt32(_ stream: InputStream) throws -> UInt32? {
-        var buffer = [UInt8](repeating: 0, count: 4)
-        if stream.read(&buffer, maxLength: 4) == 4 {
-            var value = UInt32(buffer[0]) << 24
-            value |= UInt32(buffer[1]) << 16
-            value |= UInt32(buffer[2]) <<  8
-            value |= UInt32(buffer[3])
-            return value
-        }
-        throw StreamError.read
     }
 
     private func addSoftMask2(

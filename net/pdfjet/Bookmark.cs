@@ -15,8 +15,6 @@ namespace PDFjet.NET {
 /// </summary>
 public class Bookmark {
     private int destNumber = 0;
-    private Page page = null;
-    private float y = 0f;
     private String key = null;
     private String title = null;
     private Bookmark parent = null;
@@ -34,9 +32,7 @@ public class Bookmark {
         pdf.toc = this;
     }
 
-    private Bookmark(Page page, float y, String key, String title) {
-        this.page = page;
-        this.y = y;
+    private Bookmark(String key, String title) {
         this.key = key;
         this.title = title;
     }
@@ -58,7 +54,7 @@ public class Bookmark {
         String key = bm.NextKey();
 
         Bookmark bookmark = new Bookmark(
-                page, title.textLine.DestinationY(), key, Regex.Replace(title.textLine.text, @"\s+"," "));
+                key, Regex.Replace(title.textLine.text, @"\s+"," "));
         bookmark.parent = this;
         bookmark.dest = page.AddDestination(key, title.textLine.DestinationY());
         if (children == null) {
@@ -87,7 +83,7 @@ public class Bookmark {
             Bookmark parent = (stack.Count > 0) ? stack[stack.Count - 1] : root;
             Destination dest = new Destination("", 0f, h.page.height - h.top);
             dest.pageObjNumber = h.page.objNumber;
-            Bookmark bookmark = new Bookmark(h.page, h.top, null, h.title);
+            Bookmark bookmark = new Bookmark(null, h.title);
             bookmark.parent = parent;
             bookmark.dest = dest;
             if (parent.children == null) {

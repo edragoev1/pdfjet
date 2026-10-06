@@ -16,8 +16,6 @@ import (
 // Bookmark please see Example_48
 type Bookmark struct {
 	destNumber int
-	page       *Page
-	y          float32
 	key        string
 	title      string
 	parent     *Bookmark
@@ -41,8 +39,6 @@ func NewBookmark(pdf *PDF) *Bookmark {
 // NewBookmarkAt creates new bookmark at the specified y coordinate.
 func NewBookmarkAt(page *Page, y float32, key, title string) *Bookmark {
 	bookmark := new(Bookmark)
-	bookmark.page = page
-	bookmark.y = y
 	bookmark.key = key
 	bookmark.title = title
 	return bookmark
@@ -236,7 +232,7 @@ func (pdf *PDF) bookmarksOfHeadings() *Bookmark {
 		}
 		dest := newDestination("", 0, h.page.height-h.top)
 		dest.pageObjNumber = h.page.objNumber
-		bookmark := &Bookmark{page: h.page, y: h.top, title: h.title, parent: parent, dest: dest}
+		bookmark := &Bookmark{title: h.title, parent: parent, dest: dest}
 		if n := len(parent.children); n > 0 {
 			bookmark.prev = parent.children[n-1]
 			parent.children[n-1].next = bookmark

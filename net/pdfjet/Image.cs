@@ -8,7 +8,6 @@ using System;
 using System.Globalization;
 using System.IO;
 using System.Collections.Generic;
-using System.Text;
 
 namespace PDFjet.NET {
 /// <summary>
@@ -100,11 +99,6 @@ public class Image : IDrawable {
         }
 
         inputStream.Dispose();
-    }
-
-    // Creates an image from the bytes of a PNG, JPEG or BMP file.
-    internal static Image CreateImage(PDF pdf, byte[] imageBytes) {
-        return new Image(pdf, imageBytes);
     }
 
     /// <summary>

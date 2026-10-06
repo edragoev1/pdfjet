@@ -5,7 +5,6 @@
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 using System;
-using System.Text;
 
 namespace PDFjet.NET {
 /// <summary>The font, font size, location and text for Stamp.DrawText.</summary>

@@ -37,10 +37,6 @@ func newStructElement() *structElement {
 	return new(structElement)
 }
 
-func (element *structElement) getPageObjNumber() int {
-	return element.pageObjNumber
-}
-
 // The structure types that PDF makes inline, which stand in a paragraph; one
 // that is a kid of an element that groups others, like the Document, stands
 // as a block, and says so with the attribute Placement Block, or PAC warns of

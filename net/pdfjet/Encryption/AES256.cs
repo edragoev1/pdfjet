@@ -7,9 +7,6 @@
 using System;
 using System.IO;
 using System.Security.Cryptography;
-using System.Text;
-using System.Numerics;
-using System.Collections.Generic;
 
 namespace PDFjet.NET {
 /// <summary>AES-256 encryption of the file encryption key and of the strings and streams in an encrypted PDF.</summary>

@@ -48,9 +48,6 @@ public class Stamp : Drawable {
     private var y: Float = 0
     private var width: Float = 0
     private var height: Float = 0
-    private var fillColor: [Float]?
-    private var strokeColor: [Float]?
-    private var strokeWidth: Float = 1.0
     private var rotateDegrees: Float = 0
     private var scaleX: Float = 1.0
     private var scaleY: Float = 1.0
@@ -125,7 +122,6 @@ public class Stamp : Drawable {
         append(" ")
         append(rgbColor[2])
         append(" rg\n")
-        self.fillColor = rgbColor
         return self
     }
 
@@ -147,7 +143,6 @@ public class Stamp : Drawable {
         append(b)
         append(" rg\n")
 
-        self.fillColor = [r, g, b]
         return self
     }
 
@@ -160,7 +155,6 @@ public class Stamp : Drawable {
         append(" ")
         append(rgbColor[2])
         append(" RG\n")
-        self.strokeColor = rgbColor
         return self
     }
 
@@ -182,7 +176,6 @@ public class Stamp : Drawable {
         append(b)
         append(" RG\n")
 
-        self.strokeColor = [r, g, b]
         return self
     }
 
@@ -195,7 +188,6 @@ public class Stamp : Drawable {
         }
         append(width)
         append(" w\n")
-        self.strokeWidth = width
         return self
     }
 

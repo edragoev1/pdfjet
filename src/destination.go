@@ -25,9 +25,3 @@ func newDestination(name string, xPosition float32, yPosition float32) *Destinat
 	destination.yPosition = yPosition
 	return destination
 }
-
-// setPageObjNumber sets the page object number.
-func (destination *Destination) setPageObjNumber(pageObjNumber int) *Destination {
-	destination.pageObjNumber = pageObjNumber
-	return destination
-}

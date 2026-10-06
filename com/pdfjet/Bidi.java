@@ -951,16 +951,4 @@ public class Bidi {
         }
         return RIGHT_JOINING.contains(ch);
     }
-
-    // ---- Helpers ----------------------------------------------------------
-
-    /** Reverses a string at the code-point level (not UTF-16 unit level). */
-    private static String reverseCodePoints(String s) {
-        int[] cps = s.codePoints().toArray();
-        StringBuilder sb = new StringBuilder(cps.length);
-        for (int i = cps.length - 1; i >= 0; i--) {
-            sb.appendCodePoint(cps[i]);
-        }
-        return sb.toString();
-    }
 }

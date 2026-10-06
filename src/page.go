@@ -342,14 +342,6 @@ func (page *Page) DrawString(font, fallbackFont *Font, fontSize float32, text st
 	page.drawStringUsingHighlightColors(font, fallbackFont, fontSize, text, x, y, [3]float32{0.0, 0.0, 0.0}, nil)
 }
 
-// drawStringUsingColor draws the string in the 0xRRGGBB color at the x, y
-// location, highlighting the words in the colors map. The fallback font is used
-// for the characters the main font does not have.
-func (page *Page) drawStringUsingColor(
-	font, fallbackFont *Font, fontSize float32, text string, x, y float32, color int32, colors map[string]int32) {
-	page.drawStringUsingHighlightColors(font, fallbackFont, fontSize, text, x, y, colorToRGB(color), colors)
-}
-
 // DrawStringUsingFontSize draws a string using the specified font and font size
 // at the x, y location. The baseline of the leftmost character is at (x, y).
 func (page *Page) DrawStringUsingFontSize(
@@ -2770,33 +2762,6 @@ func (page *Page) setTextLocation(x, y float32) *Page {
 	page.appendByte(token.Space)
 	page.appendFloat32(page.height - y)
 	page.appendString(" Td\n")
-	return page
-}
-
-// setTextLeading sets the distance between lines of text.
-func (page *Page) setTextLeading(leading float32) *Page {
-	page.appendFloat32(leading)
-	page.appendString(" TL\n")
-	return page
-}
-
-// nextLine moves the text position to the start of the next line.
-func (page *Page) nextLine() {
-	page.appendString("T*\n")
-}
-
-// setTextScaling sets the horizontal scaling of the text in percent.
-func (page *Page) setTextScaling(scaling float32) *Page {
-	page.appendFloat32(scaling)
-	page.appendString(" Tz\n")
-	return page
-}
-
-// setTextRise moves the text baseline up or down by the specified amount.
-func (page *Page) setTextRise(rise float32) *Page {
-	page.appendFloat32(rise)
-	page.appendString(" Ts\n")
-	page.textRise = rise
 	return page
 }
 

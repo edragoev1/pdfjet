@@ -38,8 +38,4 @@ public class Destination {
         self.xPosition = 0.0
         self.yPosition = yPosition
     }
-
-    func setPageObjNumber(_ pageObjNumber: Int) {
-        self.pageObjNumber = pageObjNumber
-    }
 }

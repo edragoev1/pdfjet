@@ -5,7 +5,6 @@
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 using System;
-using System.Text;
 using System.Collections.Generic;
 
 namespace PDFjet.NET {

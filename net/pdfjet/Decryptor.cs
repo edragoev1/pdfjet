@@ -215,7 +215,7 @@ internal sealed class Decryptor {
             bool encryptMetadata) {
         byte[] padded = Pad(password);
         byte[] key = ComputeKey(r, length, padded, o, p, id, encryptMetadata);
-        if (IsUserKey(r, length, key, u, id)) {
+        if (IsUserKey(r, key, u, id)) {
             return key;
         }
         byte[] hash = MD5.HashData(padded);
@@ -235,7 +235,7 @@ internal sealed class Decryptor {
             }
         }
         key = ComputeKey(r, length, userPassword, o, p, id, encryptMetadata);
-        if (IsUserKey(r, length, key, u, id)) {
+        if (IsUserKey(r, key, u, id)) {
             return key;
         }
         throw PasswordException(password);
@@ -266,7 +266,7 @@ internal sealed class Decryptor {
 
     // Algorithms 4 and 5: whether the key computed from a password is the
     // user key, which /U holds encrypted.
-    private static bool IsUserKey(int r, int length, byte[] key, byte[] u, byte[] id) {
+    private static bool IsUserKey(int r, byte[] key, byte[] u, byte[] id) {
         byte[] check;
         int n;
         if (r == 2) {

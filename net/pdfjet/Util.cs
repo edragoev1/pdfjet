@@ -52,44 +52,6 @@ internal class Util {
         return new string(chars);
     }
 
-    private static readonly char[] HEX = {
-        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-        'A', 'B', 'C', 'D', 'E', 'F'
-    };
-
-    internal string ToHex(String str) {
-        if (string.IsNullOrEmpty(str)) {
-            return "";
-        }
-
-        StringBuilder buf = new StringBuilder(str.Length * 6);
-        TextElementEnumerator enumerator = StringInfo.GetTextElementEnumerator(str);
-        while (enumerator.MoveNext()) {
-            string textElement = enumerator.GetTextElement();
-            int codePoint = char.ConvertToUtf32(textElement, 0);
-
-            if (codePoint == 0xFEFF) continue; // Skip BOM
-
-            if (codePoint <= 0xFFFF) {
-                // BMP character (4 hex digits)
-                buf.Append(HEX[(codePoint >> 12) & 0xF]);
-                buf.Append(HEX[(codePoint >> 8)  & 0xF]);
-                buf.Append(HEX[(codePoint >> 4)  & 0xF]);
-                buf.Append(HEX[ codePoint        & 0xF]);
-            } else {
-                // Supplementary character (6 hex digits)
-                buf.Append(HEX[(codePoint >> 20) & 0xF]);
-                buf.Append(HEX[(codePoint >> 16) & 0xF]);
-                buf.Append(HEX[(codePoint >> 12) & 0xF]);
-                buf.Append(HEX[(codePoint >> 8)  & 0xF]);
-                buf.Append(HEX[(codePoint >> 4)  & 0xF]);
-                buf.Append(HEX[ codePoint        & 0xF]);
-            }
-        }
-
-        return buf.ToString();
-    }
-
     /// <summary>
     /// Splits one line of a delimited data file into its fields, as RFC 4180
     /// reads them: a field that starts with a quote runs to the closing quote,

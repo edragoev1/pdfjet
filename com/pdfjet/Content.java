@@ -8,7 +8,6 @@ package com.pdfjet;
 
 import java.io.*;
 import java.util.*;
-import java.nio.charset.StandardCharsets;
 
 /**
  * The Content.java class.

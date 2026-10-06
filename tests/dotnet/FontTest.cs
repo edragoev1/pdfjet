@@ -226,8 +226,8 @@ public class FontTest {
         Assert.Contains("/Span <</ActualText <FEFF0E01>>> BDC\n<0000> Tj\nEMC\n<" + space + ">", content);
         Assert.Contains("/Span <</ActualText <FEFFD83DDE00>>> BDC\n<0000> Tj\nEMC\n", content);
         // The text a glyph maps to is the character, and a space for a control.
-        Assert.Equal("ก", Page.TextOf(font, 0x0E01));
-        Assert.Equal(" ", Page.TextOf(font, 0x0085));
+        Assert.Equal("ก", Page.TextOf(0x0E01));
+        Assert.Equal(" ", Page.TextOf(0x0085));
     }
 
     [Fact]

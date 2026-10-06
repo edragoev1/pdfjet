@@ -402,7 +402,7 @@ public class Table : IDrawable {
             return 0L;
         }
         long key = ((long) column << 4) | (uint) decimals;
-        ColumnSums sums = null;
+        ColumnSums sums;
         if (columnSums == null || !columnSums.TryGetValue(key, out sums)) {
             sums = ReadColumn(column, decimals);
             if (columnSums != null) {

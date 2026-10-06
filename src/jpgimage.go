@@ -126,11 +126,6 @@ func (image *jpgImage) getHeight() float32 {
 	return float32(image.height)
 }
 
-// GetFileSize returns the file size of the image.
-func (image *jpgImage) getFileSize() uint64 {
-	return uint64(len(image.data))
-}
-
 // GetColorComponents returns the color components of the image.
 func (image *jpgImage) getColorComponents() uint8 {
 	return image.colorComponents
