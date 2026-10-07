@@ -1,4 +1,31 @@
-# PDFjet — the plan to Oct 21
+# PDFjet — the plan to v9.0.3
+
+**The new plan, decided by the owner on 6 October 2026: v9.0.3 on Oct 8,**
+not Oct 21, as every goal but the checks of the tag is closed and the freeze
+of Oct 15 has nothing left to wait for; then PDFjet Forms, with the
+library out of the way.
+
+- **Wed Oct 7: the freeze and the checks of the tag** (the list under "Oct
+  15–20" below, now on this day): `check-examples.sh` in the four ports,
+  `./check-api.sh v9.0.2`, `go test ./...` of pdfjet-server against master,
+  the benchmarks against 9.0.2 and 9.0.1, the JDK 8 build, and the viewer
+  files built again, Example_30 with the `/Length 256` of Oct 1. The owner:
+  the manual viewer pass on them, in Acrobat Reader, Preview, Chrome,
+  Firefox and Edge. The `## v9.0.3` entry of CHANGELOG.md dated.
+- **Thu Oct 8: the tag.** Tag v9.0.3 and make the GitHub release; then the
+  Go proxy's `.info` and `.zip` of it answering 200, and sum.golang.org
+  having its checksum. The commercial product released on the tag
+  (`.packaging/set-version.sh 9.0.3`, test, tag, the Java and .NET
+  packages). pdfjet.com rebuilt with the 9.0.3 packages, on the owner's
+  go-ahead for the site. pdfjet-pro made public with the release, by its
+  PUBLIC-REPO-PLAN.md, on the owner's go-ahead.
+- **Fri Oct 9: PDFjet Pro sold through Paddle**, brought forward from
+  "after the launches": its steps are in the TODO.md of the commercial
+  product. Paddle's approval of each new product, and the license shown at
+  checkout, which waits on the lawyer, may take longer; FastSpring sells on
+  until then, so nothing is lost if it slips.
+
+The calendar below is the plan as it was, kept for its lists.
 
 Target: **2026-10-21**, the date v9.0.0 was planned for. v9.0.0 was released
 early, on 2026-09-16 at e957f841, and v9.0.1 on 2026-09-18 at 72c41923, so
@@ -29,8 +56,8 @@ Legend: ⬜ open, ✅ done, **B** blocker, S stretch.
   the font stream, PNG, BMP, JPEG, SVG, OpenType, decompressor and `PDF.read`
   fixes that fuzzing found, and the reviews of the image classes, `Page`,
   `TextLine` and the reader.
-- **Oct 15** — code freeze: fixes only, each with its check.
-- **Oct 21** — v9.0.3 of the MIT library and, the same day, v9.0.3 of the
+- **Oct 15** — code freeze: fixes only, each with its check. *Now Oct 7.*
+- **Oct 21** — *now Oct 8.* v9.0.3 of the MIT library and, the same day, v9.0.3 of the
   commercial product (`.commercial`), built on the 9.0.3 library. The same number says which
   library each release of the commercial product is built on.
 
