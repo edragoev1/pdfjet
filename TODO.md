@@ -89,6 +89,22 @@ detailed in the list below:
    owner's rule). Authenticode, if asked instead: a code-signing
    certificate, about $200 to 400 a year, which a sole proprietor can get,
    and `signtool`, or `osslsigncode` on Linux, at each release.
+   **Prepared on 7 October 2026:** the key made,
+   `~/Projects/pdfjet-pro-private/signing/PDFjet.snk` (RSA 1024, the format
+   of `sn -k`, mode 600; back it up with the private files, and never lose
+   it). A strong-named PDFjet.dll built from master with the key given on the
+   command line, PDFjet.csproj unchanged: `dotnet build PDFjet.csproj -c
+   release -p:SignAssembly=true -p:AssemblyOriginatorKeyFile=<the key>`, its
+   public key token `e66c1909913f295d`; a strong-named client referencing it
+   made a PDF. Found besides: the DLL has no version, it says 0.0.0.0, as
+   neither PDFjet.csproj nor package-dotnet.sh sets one; a strong-named DLL
+   should say AssemblyVersion 9.0.0.0, kept through 9.x so that clients need
+   no binding redirects, and the release (9.0.5) as FileVersion and
+   InformationalVersion. And PDFjet targets net8.0 alone, while strong names
+   matter most to .NET Framework 4.x, which cannot load a net8.0 DLL: to ask
+   the client which .NET they use; .NET Framework would need a netstandard2.0
+   build too, a larger piece of work, as some APIs of the code may not be
+   there.
 
 **After the tag, when convenient, blocking nothing:**
 - ⬜ **First after the tag (the owner, 7 October 2026: "I really want to know
