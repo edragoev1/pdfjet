@@ -55,6 +55,19 @@ checkout, which waits on the lawyer, may take longer; FastSpring sells on
 until then, so nothing is lost if it slips.
 
 **After the tag, when convenient, blocking nothing:**
+- ⬜ **Smoother reading aloud: the space at the end of each wrapped line?**
+  (the owner's NVDA pass of 7 October 2026: after the fix of its languages,
+  Example_01 reads in English, Greek and Bulgarian, but choppy, with a pause
+  at the end of every line). Mostly not ours: Acrobat gives a screen reader
+  the text a visual line at a time and NVDA pauses at each, and the OneCore
+  voices of Windows are an older generation than the neural ones. The part
+  that may be ours: whether a TextBlock's wrapped lines keep the word space
+  at their ends, in the content stream or as /ActualText, which helps a
+  reader take a line break for the middle of a sentence. To compare:
+  Example_01's text exported from Word, read by NVDA in Acrobat beside
+  PDFjet's, and the text of both as pdftotext and Acrobat give it; if Word's
+  reads more smoothly, find what it writes at a line end and do the same in
+  the four ports.
 - ⬜ **The language of text in a TextColumn reaches the structure tree**
   (the NVDA pass of 7 October 2026: Example_01's Greek was spelled letter
   by letter and its Bulgarian skipped, as no block said its language; fixed
