@@ -16,8 +16,22 @@
 # created by its own build-dotnet.sh, so the scripts a client runs are tested.
 # Building the reference needs DocFX: dotnet tool install -g docfx
 
+# PDFjet.dll is strong-named, in both packages: the key is not in the
+# repository, but in the owner's private files, and is given by PDFJET_SNK:
+#
+#   PDFJET_SNK=~/Projects/pdfjet-pro-private/signing/PDFjet.snk .packaging/package-dotnet.sh
+#
+# Without it the script stops, so that no package is made unsigned. Its public
+# key token is e66c1909913f295d.
+
 # Stop at the first failure, so a broken build is never zipped.
 set -e
+
+if [ -z "$PDFJET_SNK" ] || [ ! -f "$PDFJET_SNK" ]; then
+    echo "PDFJET_SNK must name the strong-name key, PDFjet.snk, to sign PDFjet.dll."
+    exit 1
+fi
+PDFJET_SNK=$(cd "$(dirname "$PDFJET_SNK")" && pwd)/$(basename "$PDFJET_SNK")
 
 cd "$(dirname "$0")/.."
 
@@ -77,8 +91,11 @@ find "$STAGE/fonts" -type f \( -name '*.otf' -o -name '*.ttf' \) \
 
 cd "$STAGE"
 
-# The same build as build-dotnet.sh.
-dotnet build PDFjet.csproj -c release -p:TreatWarningsAsErrors=true
+# The same build as build-dotnet.sh, strong-named, with the release as the file
+# version: 9.0.3 of v9.0.3.
+dotnet build PDFjet.csproj -c release -p:TreatWarningsAsErrors=true \
+    -p:SignAssembly=true -p:AssemblyOriginatorKeyFile="$PDFJET_SNK" \
+    -p:FileVersion="${VERSION#v}" -p:InformationalVersion="${VERSION#v}"
 cp bin/release/net8.0/PDFjet.dll .
 
 # The same docfx command as generate-documentation.sh; it writes docs/dotnet.
