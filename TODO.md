@@ -33,16 +33,23 @@ left is checking, tagging and packaging.
 - ⬜ The owner: the manual viewer pass on them, in Acrobat Reader, Preview,
   Chrome, Firefox and Edge.
 - ✅ The `## v9.0.3` entry of CHANGELOG.md dated: 2026-10-08, the day of the tag.
-- ⬜ **The spaces of wrapped text, brought into 9.0.3 on the evening of Oct
+- ✅ **The spaces of wrapped text, brought into 9.0.3 on the evening of Oct
   7** (the owner: "it bothers me that we advertise PDF/UA but the usability
   is not the way it should be"; the tag may slip for it). TextBlock draws
   the space it wrapped a line at, and a justified TextFrame row each word
   with its space, in the four ports, with a test in each (see "First after
   the tag", below, now done). The 62 example PDFs of each port render the
-  same pixel for pixel as at 9804e50d, 3,420 pages a port. Then, on the
-  final commit, the checks above again: `check-examples.sh`,
-  `./check-api.sh v9.0.2`, pdfjet-server's `go test`, the viewer files
-  built again; the owner's viewer pass on those.
+  same pixel for pixel as at 9804e50d, 3,420 pages a port. Committed as
+  4adca138, and the checks above run again on it, 7 October:
+  `check-examples.sh` passed (the four ports and JDK 8, 196 files PDF/UA-1,
+  the PDF/A files, 50 structure trees, the three viewer engines, largest
+  block difference 3.2% as before, the 59 snippets); `./check-api.sh
+  v9.0.2` the same as on Oct 7, nothing new; pdfjet-server's `go test`
+  passes but for its look test, which hashes the content of the pages and
+  is refreshed when its go.mod moves to v9.0.3 (its 155 forms render the
+  same pixel for pixel; see its TODO.md); the viewer files built again
+  from this check, with Example_52 added, the justified TextFrame, for
+  NVDA. Left: the owner's viewer pass on them.
 
 **Thu Oct 8, or when the checks of the spaces pass: the tag**
 - ⬜ Tag v9.0.3 and make the GitHub release; then the Go proxy's `.info` and
