@@ -71,6 +71,24 @@ detailed in the list below:
    Greek is read as Greek (addCJKParagraph's language is new API: v9.1).
 4. ⬜ The ASCII and the spaces of the non-embedded CJK fonts full width (the
    Korean gaps of the old Example_04): a /W, and stringWidth to match.
+5. ⬜ **PDFjet.dll strong-named**, in every release from 9.0.5, the
+   evaluation too. Asked for on 7 October 2026 by a prospective C# client
+   ("is it possible to have PDFjet.dll signed, also for the evaluation?").
+   Checked that day: the DLL of the 9.0.2 packages has neither a strong name
+   nor an Authenticode signature, and no script signs it. Which they mean is
+   asked in the reply; a strong name is the usual reason, as in .NET
+   Framework a strong-named assembly can reference only strong-named ones.
+   It is free: a key made once (`sn -k` or `dotnet` tooling), and
+   `<SignAssembly>true</SignAssembly>` with `<AssemblyOriginatorKeyFile>` in
+   PDFjet.csproj (and PDFjet.Sign.csproj of PDFjet Pro). The key is kept for
+   ever, in the private folder and its backups, never lost: another key is
+   another identity of the assembly for every client. Whether to publish
+   the key, as Microsoft suggests for open source libraries, or keep it
+   private, to decide. If the client needs it before 9.0.5: a **9.0.4
+   custom build** for them, even numbers being the custom builds (the
+   owner's rule). Authenticode, if asked instead: a code-signing
+   certificate, about $200 to 400 a year, which a sole proprietor can get,
+   and `signtool`, or `osslsigncode` on Linux, at each release.
 
 **After the tag, when convenient, blocking nothing:**
 - ⬜ **First after the tag (the owner, 7 October 2026: "I really want to know
