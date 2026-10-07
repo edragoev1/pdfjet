@@ -32,7 +32,7 @@ left is checking, tagging and packaging.
   opening with `hello` and `world`, the two encrypted PDFs with theirs.
 - ⬜ The owner: the manual viewer pass on them, in Acrobat Reader, Preview,
   Chrome, Firefox and Edge.
-- ⬜ The `## v9.0.3` entry of CHANGELOG.md dated.
+- ✅ The `## v9.0.3` entry of CHANGELOG.md dated: 2026-10-08, the day of the tag.
 
 **Thu Oct 8: the tag**
 - ⬜ Tag v9.0.3 and make the GitHub release; then the Go proxy's `.info` and

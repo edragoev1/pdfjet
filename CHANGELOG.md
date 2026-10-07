@@ -7,7 +7,7 @@ languages.
 
 This is the first entry in this file; earlier releases were not tracked here.
 
-## Unreleased
+## v9.0.3 — 2026-10-08
 
 ### Added
 - The viewers job of the Build workflow opens the example PDFs in the
