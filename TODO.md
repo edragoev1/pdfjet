@@ -121,6 +121,33 @@ detailed in the list below:
    else a code-signing certificate of Sectigo, DigiCert or SSL.com, about
    $200 to 400 a year, its key on a hardware token or a cloud HSM since 2023.
    The strong name is free and goes in every .NET release from 9.0.5.
+   **A netstandard2.0 build, measured on 7 October 2026**, for .NET Framework
+   4.6.1 and later (and Mono, Unity), should the client be on .NET Framework
+   4.x, which cannot load a net8.0 DLL: a scratch copy built for
+   netstandard2.0, master untouched. Three layers: Span and ReadOnlySpan,
+   from Microsoft's System.Memory package; two Stream overrides of spans
+   (Decompressor.EndOfInputStream.Read, Page.WrittenContent.Write), compiled
+   for .NET 8 alone (`#if NETCOREAPP`); then about 56 errors of some 20 newer
+   APIs, mostly in Page.cs, Decryptor.cs and Bidi.cs, with plain stand-ins:
+   MD5/SHA256/SHA384/SHA512.HashData by Create().ComputeHash(); Array.Fill,
+   Convert.ToHexString, BitOperations by small helpers; Encoding.Latin1 by
+   GetEncoding(28591); MemoryStream.Write of a span and the char overloads by
+   the array and string ones; IndexOfAnyInRange (Bidi) by a loop;
+   RandomNumberGenerator.Fill and Aes.DecryptCbc by the older calls, and
+   CryptographicOperations.FixedTimeEquals by a constant-time compare of our
+   own, both tested with care; ZLibStream by DeflateStream with the zlib
+   header and Adler-32 written by hand, moderate; and MathF by Math with
+   casts, the careful one, as MathF.Sin and (float)Math.Sin may differ in
+   the last bit and so move a coordinate: the PDFs must stay the same as
+   Java's, byte for byte, in the cross-port comparison. Then a test on the
+   real thing, .NET Framework on Windows or Mono, which CI on Linux does not
+   do. About two to three days, with one target more in PDFjet.csproj
+   (`<TargetFrameworks>net8.0;netstandard2.0</TargetFrameworks>`), net8.0
+   unchanged. Not to do on speculation: if the client is on .NET Framework
+   and buys, as their 9.0.4 custom build, which then serves every C#
+   customer still on .NET Framework; on .NET 6 or 8 the strong name alone,
+   ready. Found besides: PDFjet.csproj has GenerateAssemblyInfo false and no
+   AssemblyInfo.cs, hence the version 0.0.0.0.
 
 **After the tag, when convenient, blocking nothing:**
 - ⬜ **First after the tag (the owner, 7 October 2026: "I really want to know
