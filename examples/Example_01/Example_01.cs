@@ -64,6 +64,7 @@ public class Example_01 {
         // Add Greek text from a file
         textBlock = new TextBlock(font,
                 Content.OfTextFile("data/languages/greek.txt"));
+        textBlock.SetLanguage("el");    // So that a screen reader reads it in Greek
         textBlock.SetLocation(50f, xy[1] + 30f);
         textBlock.SetWidth(473f);
         textBlock.SetPadding(10f);
@@ -71,6 +72,7 @@ public class Example_01 {
 
         // Add Bulgarian text from a file with a blue border and rounded corners
         textBlock = new TextBlock(font, Content.OfTextFile("data/languages/bulgarian.txt"));
+        textBlock.SetLanguage("bg");    // So that a screen reader reads it in Bulgarian
         textBlock.SetLocation(50f, xy[1] + 30f);
         textBlock.SetWidth(473f);
         textBlock.SetPadding(10f);

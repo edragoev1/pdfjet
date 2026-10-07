@@ -71,6 +71,7 @@ func Example01() {
 	// Greek text block, positioned below the English text
 	textBlock = pdfjet.NewTextBlock(font1,
 		content.OfTextFile("data/languages/greek.txt"))
+	textBlock.SetLanguage("el") // So that a screen reader reads it in Greek
 	textBlock.SetLocation(50.0, xy[1]+30.0)
 	textBlock.SetWidth(473.0)
 	textBlock.SetPadding(10.0)
@@ -79,6 +80,7 @@ func Example01() {
 	// Bulgarian text block with blue border and rounded corners
 	textBlock = pdfjet.NewTextBlock(font1,
 		content.OfTextFile("data/languages/bulgarian.txt"))
+	textBlock.SetLanguage("bg") // So that a screen reader reads it in Bulgarian
 	textBlock.SetLocation(50.0, xy[1]+30.0)
 	textBlock.SetWidth(473.0)
 	textBlock.SetPadding(10.0)

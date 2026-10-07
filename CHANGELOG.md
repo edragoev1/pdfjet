@@ -30,6 +30,10 @@ This is the first entry in this file; earlier releases were not tracked here.
   booklet's snippet of CJK fonts uses the IBM Plex ones now.
 
 ### Changed
+- Example_01 marks its Greek and Bulgarian text blocks with their languages,
+  el and bg, so that a screen reader reads each in its language; NVDA spelled
+  the Greek letter by letter and skipped the Bulgarian, reading both as
+  English, the language of the document.
 - The examples are tagged wherever PDFjet draws the whole page, as Acrobat
   offers to make an untagged PDF accessible when it opens it: Example_05
   draws the same words in five weights of IBM Plex Sans, as PDF/UA, in place

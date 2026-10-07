@@ -59,6 +59,7 @@ public class Example_01 {
 
         // Read Greek text from a file and draw it on the page
         textBlock = TextBlock(font, try Content.ofTextFile("data/languages/greek.txt"))
+        textBlock.setLanguage("el")             // So that a screen reader reads it in Greek
         textBlock.setLocation(50, xy[1] + 30)   // Set location below the previous text
         textBlock.setWidth(473)                 // Set width for Greek text block
         textBlock.setPadding(10)            // Set padding around the Greek text
@@ -66,6 +67,7 @@ public class Example_01 {
 
         // Read Bulgarian text from a file and draw it with a blue border and rounded corners
         textBlock = TextBlock(font, try Content.ofTextFile("data/languages/bulgarian.txt"))
+        textBlock.setLanguage("bg")             // So that a screen reader reads it in Bulgarian
         textBlock.setLocation(50, xy[1] + 30)   // Set location below Greek text
         textBlock.setWidth(473)                 // Set width for Bulgarian text block
         textBlock.setPadding(10)            // Set padding around the Bulgarian text

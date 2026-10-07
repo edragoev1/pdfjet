@@ -74,6 +74,7 @@ public class Example_01 {
 
         // Add Greek text from a file
         textBlock = new TextBlock(font, Content.ofTextFile("data/languages/greek.txt"));
+        textBlock.setLanguage("el");    // So that a screen reader reads it in Greek
         textBlock.setLocation(50f, xy[1] + 30f);
         textBlock.setWidth(473f);
         textBlock.setPadding(10f);
@@ -81,6 +82,7 @@ public class Example_01 {
 
         // Add Bulgarian text from a file with a blue border and rounded corners
         textBlock = new TextBlock(font, Content.ofTextFile("data/languages/bulgarian.txt"));
+        textBlock.setLanguage("bg");    // So that a screen reader reads it in Bulgarian
         textBlock.setLocation(50f, xy[1] + 30f);
         textBlock.setWidth(473f);
         textBlock.setPadding(10f);

@@ -55,6 +55,18 @@ checkout, which waits on the lawyer, may take longer; FastSpring sells on
 until then, so nothing is lost if it slips.
 
 **After the tag, when convenient, blocking nothing:**
+- ⬜ **The language of text in a TextColumn reaches the structure tree**
+  (the NVDA pass of 7 October 2026: Example_01's Greek was spelled letter
+  by letter and its Bulgarian skipped, as no block said its language; fixed
+  in Example_01 with TextBlock.setLanguage). Two gaps of the library remain,
+  in the four ports: a TextLine's setLanguage is dropped when the line is in
+  a Paragraph of a TextColumn, as in Example_29, whose Greek in a table cell
+  so reads in English; and TextColumn.addCJKParagraph makes its lines with no
+  language, so Example_44's Chinese reads in English, and has no parameter
+  for one. Fix: the Paragraph and the TextColumn carry each line's language
+  into the /Lang of its structure element; and addCJKParagraph(font, text,
+  language), or a setLanguage on Paragraph, an API addition, so in v9.1.
+  Then Example_29 and 44 set theirs (el; zh-Hans).
 - ⬜ Maybe, if a customer asks: **embedded look-alikes of the core fonts**
   (the owner, 7 October 2026). The 14 core fonts stay, not deprecated: they
   need no font files, make the smallest documents (Helvetica about 3 KB, a
