@@ -72,38 +72,21 @@ until then, so nothing is lost if it slips.
   `stringWidth` measuring those characters with the same widths. It changes
   Example_04's PDF in every port, so the cross-port baseline moves with it.
   Rare path (fonts not embedded, not PDF/UA), not new, so after the tag.
-- ⬜ **Example_02 split in two, with IBM Plex subsets of Chinese** (the
-  owner, 7 October 2026). Example_02 draws Japanese, Korean, Simplified and
-  Traditional Chinese at once, with four whole CJK fonts, 12.6 MB of its
-  14 MB, which no real document does and which Acrobat on Windows takes
-  seconds to open. Split: Example_02 the Chinese, Simplified and
-  Traditional, and a new Example_58 Japanese and Korean, in the four ports,
-  with the scripts, the workflow, the checks, the checklist and the lists of
-  examples that count to 57. The Chinese with IBM Plex subsets, the owner's
-  choice over Noto (Plex is smaller whole and keeps the look of the rest):
-  made on Oct 7 and kept in `~/Projects/pdfjet-pro-private/plex-subsets/`,
-  as .otf and .otf.stream, to go to pdfjet-fonts with a new pin in
-  `fonts-and-data.txt`:
-
-  | Font, .otf.stream | IBM Plex whole | IBM Plex subset | Noto whole | Noto subset |
-  |---|---|---|---|---|
-  | Simplified Chinese | 5.7 MB | 0.76 MB, 3,500 characters | 6.3 MB | 0.71 MB |
-  | Traditional Chinese | 3.75 MB | 0.95 MB, 4,808 characters | 4.2 MB | 1.07 MB |
-
-  Made with `pyftsubset <font>.otf --retain-gids
-  --unicodes="U+0000-007F,U+2000-206F,U+3000-303F,U+FF00-FFEF"
-  --unicodes-file=data/languages/SC_3500.txt` (TC_4808.txt for
-  Traditional), then `util/generate-stream-fonts-files.sh <folder>`.
-  `--retain-gids` is needed: the Plex CJK fonts are CID-keyed, and PDFjet
-  draws with the glyph IDs as CIDs, so a subset that renumbers its glyphs
-  draws the wrong ones, or none (MuPDF: FT_Load_Glyph invalid argument);
-  with it, the glyphs keep their numbers and the empty ones cost little.
-  Checked: a PDF of both drew and read back right in MuPDF, no warning. The
-  Chinese half of Example_02 would then embed about 1.7 MB of fonts, not
-  9.5 MB. The subsets hold ASCII and the punctuation besides the common
-  characters, not accented Latin, which the fallback font draws. Real
-  subsetting as the PDF is written, of any font, is planned for the
-  commercial product (its TODO.md, "Font subsetting").
+- ✅ **Example_02 split in two**, done for v9.0.3 on 7 October 2026 (the
+  owner): Example_02 the Simplified and Traditional Chinese, with the whole
+  IBM Plex Sans SC and TC, and Example_04, in place of its greeting in the
+  Adobe CJK fonts, the Japanese and Korean, with IBM Plex Sans JP and KR;
+  Example_44 with IBM Plex Sans SC; no example uses the Adobe CJK fonts.
+- ⬜ Maybe: **IBM Plex Sans SC and TC subsets**, every weight, made on 7
+  October 2026 and kept in
+  `~/Projects/pdfjet-pro-private/plex-subsets/`, not on GitHub (the owner:
+  "for later use / maybe"), with a README of how they were made: about
+  0.7 MB in place of 5.4 for SC (3,500 characters), 0.9 in place of 3.6 for
+  TC (4,808). If ever used, they go to pdfjet-fonts with a new pin, and
+  Example_02 would embed about 1.7 MB of fonts, not 9.5. `--retain-gids` is
+  needed, as the Plex CJK fonts are CID-keyed and PDFjet draws with the
+  glyph IDs as CIDs. Real subsetting as the PDF is written is planned for
+  the commercial product.
 - ⬜ The package registries, in this order (see "After the tag: the package
   registries" below): Go (one fetch of the proxy, and pkg.go.dev lists
   it), NuGet first of the others (C# is the largest audience, about an
