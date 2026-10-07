@@ -55,6 +55,23 @@ checkout, which waits on the lawyer, may take longer; FastSpring sells on
 until then, so nothing is lost if it slips.
 
 **After the tag, when convenient, blocking nothing:**
+- ⬜ **The spaces of Korean, and the ASCII of every non-embedded CJK font,
+  full width** (the viewer pass of 7 October 2026: in Acrobat, Example_04's
+  "새해 복 많이 받으세요!" has a gap of a whole em at each space). The fonts
+  of Font(pdf, "AdobeMyungjoStd-Medium") and the other three Adobe CJK
+  names, not embedded, for the Asian font packs, get no /W in their CIDFont
+  dictionary, so every CID, the space and the ASCII letters too, is 1000
+  units wide, the default /DW; and `stringWidth` counts every character as
+  the font size, so the layout agrees with the drawing: full-width spaces by
+  design, not a miscount. Chinese and Japanese write no spaces, so only
+  Korean shows it, and Latin in any of the four (Example_04's "!" too). The
+  fix, in the four ports at once, both sides together: a /W for the
+  proportional or half-width CIDs of the ASCII range of each ordering (Adobe-
+  Japan1, -GB1, -CNS1 and -Korea1 each put ASCII at CIDs 1 to 95 or so, by
+  their own tables, to be read in Adobe's specifications), and
+  `stringWidth` measuring those characters with the same widths. It changes
+  Example_04's PDF in every port, so the cross-port baseline moves with it.
+  Rare path (fonts not embedded, not PDF/UA), not new, so after the tag.
 - ⬜ **Example_02 split in two, with IBM Plex subsets of Chinese** (the
   owner, 7 October 2026). Example_02 draws Japanese, Korean, Simplified and
   Traditional Chinese at once, with four whole CJK fonts, 12.6 MB of its
