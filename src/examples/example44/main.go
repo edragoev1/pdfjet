@@ -12,7 +12,7 @@ import (
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
-	"github.com/edragoev1/pdfjet/v9/src/cjkfont"
+	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansSC"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
@@ -27,7 +27,7 @@ func Example44() {
 	f1.SetSize(12.0)
 
 	// Chinese (Simplified) font
-	f2 := pdfjet.NewCJKFont(pdf, cjkfont.STHeitiSCLight)
+	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSansSC.Regular)
 	f2.SetSize(12.0)
 
 	page := pdfjet.NewPage(pdf, letter.Portrait())

@@ -18,7 +18,7 @@ public class Example_44 {
         f1.setSize(12.0)
 
         // Chinese (Simplified) font
-        let f2 = Font(pdf, CJKFont.ST_HEITI_SC_LIGHT)
+        let f2 = try Font(pdf, IBMPlexSansSC.Regular)
         f2.setSize(12.0)
 
         let page = Page(pdf, Letter.PORTRAIT)

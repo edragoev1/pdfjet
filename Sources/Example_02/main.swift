@@ -15,56 +15,28 @@ public class Example_02 {
         let stream = OutputStream(toFileAtPath: "Example_02.pdf", append: false)
         let pdf = PDF(stream!)
         pdf.setCompliance(Compliance.PDF_UA_1)
-        pdf.setTitle("The Universal Declaration of Human Rights in Four Languages")
+        pdf.setTitle("The Universal Declaration of Human Rights in Simplified and Traditional Chinese")
 
         let f0 = try Font(pdf, IBMPlexSans.Regular)
 
         f0.setSize(12.0)
 
 
-        let f1 = try Font(pdf, IBMPlexSansJP.Regular)
+        let f1 = try Font(pdf, IBMPlexSansSC.Regular)
         f1.setSize(12.0)
 
-        let f2 = try Font(pdf, IBMPlexSansKR.Regular)
+        let f2 = try Font(pdf, IBMPlexSansTC.Regular)
         f2.setSize(12.0)
-
-        let f3 = try Font(pdf, IBMPlexSansSC.Regular)
-        f3.setSize(12.0)
-
-        let f4 = try Font(pdf, IBMPlexSansTC.Regular)
-        f4.setSize(12.0)
 
         var page = Page(pdf, Letter.PORTRAIT)
 
         // The heading is in IBM Plex Sans, and the characters it has no glyph for,
         // the name of the language, are in the fallback font.
         // The line above each block is its heading
-        TextLine(f0, "This block is Japanese: 日本語").setFallbackFont(f1).setStructureType(StructElem.H1).setLocation(50.0, 50.0).drawOn(page)
+        TextLine(f0, "This block is Simplified Chinese: 简体中文").setFallbackFont(f1).setStructureType(StructElem.H1).setLocation(50.0, 50.0).drawOn(page)
 
         var textBlock = TextBlock(
-                f1, try Content.ofTextFile("data/languages/japanese.txt"))
-        textBlock.setLanguage("ja")
-        textBlock.setLocation(50.0, 70.0)
-        textBlock.setWidth(512.0)
-        textBlock.drawOn(page)
-
-        page = Page(pdf, Letter.PORTRAIT)
-
-        TextLine(f0, "This block is Korean: 한국어").setFallbackFont(f2).setStructureType(StructElem.H1).setLocation(50.0, 50.0).drawOn(page)
-
-        textBlock = TextBlock(
-                f2, try Content.ofTextFile("data/languages/korean.txt"))
-        textBlock.setLanguage("ko")
-        textBlock.setLocation(50.0, 70.0)
-        textBlock.setWidth(512.0)
-        textBlock.drawOn(page)
-
-        page = Page(pdf, Letter.PORTRAIT)
-
-        TextLine(f0, "This block is Simplified Chinese: 简体中文").setFallbackFont(f3).setStructureType(StructElem.H1).setLocation(50.0, 50.0).drawOn(page)
-
-        textBlock = TextBlock(
-                f3, try Content.ofTextFile("data/languages/simplified-chinese.txt"))
+                f1, try Content.ofTextFile("data/languages/simplified-chinese.txt"))
         textBlock.setLanguage("zh-Hans")
         textBlock.setLocation(50.0, 70.0)
         textBlock.setWidth(512.0)
@@ -72,10 +44,10 @@ public class Example_02 {
 
         page = Page(pdf, Letter.PORTRAIT)
 
-        TextLine(f0, "This block is Traditional Chinese: 繁體中文").setFallbackFont(f4).setStructureType(StructElem.H1).setLocation(50.0, 50.0).drawOn(page)
+        TextLine(f0, "This block is Traditional Chinese: 繁體中文").setFallbackFont(f2).setStructureType(StructElem.H1).setLocation(50.0, 50.0).drawOn(page)
 
         textBlock = TextBlock(
-                f4, try Content.ofTextFile("data/languages/traditional-chinese.txt"))
+                f2, try Content.ofTextFile("data/languages/traditional-chinese.txt"))
         textBlock.setLanguage("zh-Hant")
         textBlock.setLocation(50.0, 70.0)
         textBlock.setWidth(512.0)

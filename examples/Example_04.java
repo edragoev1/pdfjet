@@ -11,106 +11,50 @@ import com.pdfjet.*;
 import com.pdfjet.fonts.*;
 
 /**
- * Draws Chinese, Japanese and Korean text with the CJK fonts, and Latin text
- * with Helvetica. None of these fonts is embedded: the PDF names them and the
- * viewer supplies them.
- * <p>
- * The advantage is size and speed. A CJK font holds tens of thousands of
- * glyphs, and this document carries none of them, so it is a few kilobytes
- * and is written in a moment. The disadvantages: the viewer must have the
- * Adobe Asian font packs, or a substitute, and the text takes the shapes and
- * widths of whatever font it finds, so the document does not look the same
- * everywhere; the core font Helvetica is limited to the WinAnsi characters; and
- * a document with a font that is not embedded cannot claim PDF/A or PDF/UA
- * compliance. To ship the glyphs with the document, use an embedded font like
- * IBM Plex Sans JP, KR, SC or TC, as Example_02 and 19 do.
- * </p>
- *
- * @see Font
- * @see CJKFont
+ * Example_04.java
  */
 public class Example_04 {
     public Example_04() throws Exception {
-        // Create a new PDF document
-        PDF pdf = new PDF(new BufferedOutputStream(new FileOutputStream("Example_04.pdf")));
+        PDF pdf = new PDF(
+                new BufferedOutputStream(new FileOutputStream("Example_04.pdf")));
+        pdf.setCompliance(Compliance.PDF_UA_1);
+        pdf.setTitle("The Universal Declaration of Human Rights in Japanese and Korean");
 
-        // Core fonts for the Latin text
-        Font f0 = new Font(pdf, CoreFont.HELVETICA_BOLD);
-        Font f5 = new Font(pdf, CoreFont.HELVETICA);
+        Font f0 = new Font(pdf, IBMPlexSans.Regular);
+        f0.setSize(12f);
 
-        // Create font for Traditional Chinese text
-        // Uses Adobe's Ming Standard Light font (明體)
-        Font f1 = new Font(pdf, CJKFont.ADOBE_MING_STD_LIGHT);
+        Font f1 = new Font(pdf, IBMPlexSansJP.Regular);
+        f1.setSize(12f);
 
-        // Create font for Simplified Chinese text
-        // Uses Adobe's Heiti SC Light font (黑体-简)
-        Font f2 = new Font(pdf, CJKFont.ST_HEITI_SC_LIGHT);
-
-        // Create font for Japanese text
-        // Uses Kozuka Mincho Pro VI Regular font (小塚明朝)
-        Font f3 = new Font(pdf, CJKFont.KOZ_MIN_PRO_VI_REGULAR);
-
-        // Create font for Korean text
-        // Uses Adobe's Myungjo Standard Medium font (명조체)
-        Font f4 = new Font(pdf, CJKFont.ADOBE_MYUNGJO_STD_MEDIUM);
+        Font f2 = new Font(pdf, IBMPlexSansKR.Regular);
+        f2.setSize(12f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        TextLine text = new TextLine(f0, "Happy New Year!");
-        text.setFontSize(26f);
-        text.setLocation(70f, 90f);
-        text.drawOn(page);
+        // The heading is in IBM Plex Sans, and the characters it has no glyph for,
+        // the name of the language, are in the fallback font.
+        // The line above each block is its heading
+        new TextLine(f0, "This block is Japanese: \u65e5\u672c\u8a9e").setFallbackFont(f1)
+                .setStructureType(StructElem.H1).setLocation(50f, 50f).drawOn(page);
 
-        text = new TextLine(f5, "In four languages, with CJK fonts that are not embedded in this PDF.");
-        text.setFontSize(11f);
-        text.setTextColor(Color.dimgray);
-        text.setLocation(70f, 112f);
-        text.drawOn(page);
+        TextBlock textBlock = new TextBlock(
+                f1, Content.ofTextFile("data/languages/japanese.txt"));
+        textBlock.setLanguage("ja");
+        textBlock.setLocation(50f, 70f);
+        textBlock.setWidth(512f);
+        textBlock.drawOn(page);
 
-        String[] languages = {
-            "Chinese (Traditional)",
-            "Chinese (Simplified)",
-            "Japanese",
-            "Korean",
-        };
-        String[] fontNames = {
-            "Adobe Ming Std Light",
-            "STHeiti SC Light",
-            "Kozuka Mincho Pro VI Regular",
-            "Adobe Myungjo Std Medium",
-        };
-        String[] greetings = {
-            "新年快樂!",
-            "新年快乐!",
-            "明けましておめでとう!",
-            "새해 복 많이 받으세요!",
-        };
-        Font[] fonts = {f1, f2, f3, f4};
+        page = new Page(pdf, Letter.PORTRAIT);
 
-        float y = 170f;
-        for (int i = 0; i < languages.length; i++) {
-            text = new TextLine(f0, languages[i]);
-            text.setFontSize(12f);
-            text.setLocation(70f, y);
-            text.drawOn(page);
+        new TextLine(f0, "This block is Korean: \ud55c\uad6d\uc5b4").setFallbackFont(f2)
+                .setStructureType(StructElem.H1).setLocation(50f, 50f).drawOn(page);
 
-            text = new TextLine(f5, fontNames[i]);
-            text.setFontSize(10f);
-            text.setTextColor(Color.dimgray);
-            text.setLocation(70f, y + 15f);
-            text.drawOn(page);
-
-            text = new TextLine(fonts[i], greetings[i]);
-            text.setFontSize(32f);
-            text.setLocation(70f, y + 60f);
-            text.drawOn(page);
-
-            Line line = new Line(70f, y + 80f, 540f, y + 80f);
-            line.setStrokeColor(Color.lightgray);
-            line.drawOn(page);
-
-            y += 115f;
-        }
+        textBlock = new TextBlock(
+                f2, Content.ofTextFile("data/languages/korean.txt"));
+        textBlock.setLanguage("ko");
+        textBlock.setLocation(50f, 70f);
+        textBlock.setWidth(512f);
+        textBlock.drawOn(page);
 
         pdf.complete();
     }

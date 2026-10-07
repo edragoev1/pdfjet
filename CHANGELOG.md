@@ -21,6 +21,17 @@ This is the first entry in this file; earlier releases were not tracked here.
   beside MuPDF's. `check-examples.sh` runs the PDFium check.
 
 ### Changed
+- No example uses the Adobe CJK fonts any more, which are not embedded:
+  Acrobat asks to download its Asian font pack for them, and offers to make
+  the file accessible. Example_02, which drew Japanese, Korean, Simplified
+  and Traditional Chinese with four whole embedded fonts, 12.6 MB, and took
+  Acrobat seconds to open, draws the two Chinese now, with IBM Plex Sans SC
+  and TC; Example_04, which drew a greeting in the Adobe CJK fonts, draws
+  the Japanese and the Korean, with IBM Plex Sans JP and KR, both PDF/UA;
+  and Example_44 draws its Chinese paragraphs with IBM Plex Sans SC in
+  place of STHeiti SC Light. The CJK font constructor is unchanged, and its
+  documentation says the font is not embedded and points to the embedded
+  ones.
 - `go.mod` retracts v9.0.0 to v9.0.2, which the Go module proxy cannot
   serve, as the fonts in their tree make it time out: `go get` of the
   library at `@latest` takes v9.0.3 or later, and `go list -m -retracted`

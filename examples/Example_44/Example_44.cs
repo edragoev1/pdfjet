@@ -21,7 +21,7 @@ public class Example_44 {
         f1.SetSize(12f);
 
         // Chinese (Simplified) font
-        Font f2 = new Font(pdf, CJKFont.ST_HEITI_SC_LIGHT);
+        Font f2 = new Font(pdf, IBMPlexSansSC.Regular);
         f2.SetSize(12f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);

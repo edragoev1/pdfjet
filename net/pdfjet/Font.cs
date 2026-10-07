@@ -151,7 +151,10 @@ public class Font {
         SetSize(size);
     }
 
-    // Constructor for CJK fonts
+    // Constructor for CJK - Chinese, Japanese and Korean fonts. The font is
+    // not embedded: the viewer needs the Adobe Asian font pack, and a PDF with
+    // it cannot be PDF/A or PDF/UA. Embedded fonts, such as IBM Plex Sans JP,
+    // KR, SC and TC, are better: see Example_02 and Example_04.
     /// <summary>Creates a Chinese, Japanese or Korean font and adds it to the PDF.</summary>
     public Font(PDF pdf, CJKFont font) {
         this.pdf = pdf;

@@ -17,54 +17,26 @@ public class Example_02 {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_02.pdf", FileMode.Create)));
         pdf.SetCompliance(Compliance.PDF_UA_1);
-        pdf.SetTitle("The Universal Declaration of Human Rights in Four Languages");
+        pdf.SetTitle("The Universal Declaration of Human Rights in Simplified and Traditional Chinese");
 
         Font f0 = new Font(pdf, IBMPlexSans.Regular);
         f0.SetSize(12f);
 
-        Font f1 = new Font(pdf, IBMPlexSansJP.Regular);
+        Font f1 = new Font(pdf, IBMPlexSansSC.Regular);
         f1.SetSize(12f);
 
-        Font f2 = new Font(pdf, IBMPlexSansKR.Regular);
+        Font f2 = new Font(pdf, IBMPlexSansTC.Regular);
         f2.SetSize(12f);
-
-        Font f3 = new Font(pdf, IBMPlexSansSC.Regular);
-        f3.SetSize(12f);
-
-        Font f4 = new Font(pdf, IBMPlexSansTC.Regular);
-        f4.SetSize(12f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
         // The heading is in IBM Plex Sans, and the characters it has no glyph for,
         // the name of the language, are in the fallback font.
         // The line above each block is its heading
-        new TextLine(f0, "This block is Japanese: 日本語").SetFallbackFont(f1).SetStructureType(StructElem.H1).SetLocation(50f, 50f).DrawOn(page);
+        new TextLine(f0, "This block is Simplified Chinese: 简体中文").SetFallbackFont(f1).SetStructureType(StructElem.H1).SetLocation(50f, 50f).DrawOn(page);
 
         TextBlock textBlock = new TextBlock(
-                f1, Content.OfTextFile("data/languages/japanese.txt"));
-        textBlock.SetLanguage("ja");
-        textBlock.SetLocation(50f, 70f);
-        textBlock.SetWidth(512f);
-        textBlock.DrawOn(page);
-
-        page = new Page(pdf, Letter.PORTRAIT);
-
-        new TextLine(f0, "This block is Korean: 한국어").SetFallbackFont(f2).SetStructureType(StructElem.H1).SetLocation(50f, 50f).DrawOn(page);
-
-        textBlock = new TextBlock(
-                f2, Content.OfTextFile("data/languages/korean.txt"));
-        textBlock.SetLanguage("ko");
-        textBlock.SetLocation(50f, 70f);
-        textBlock.SetWidth(512f);
-        textBlock.DrawOn(page);
-
-        page = new Page(pdf, Letter.PORTRAIT);
-
-        new TextLine(f0, "This block is Simplified Chinese: 简体中文").SetFallbackFont(f3).SetStructureType(StructElem.H1).SetLocation(50f, 50f).DrawOn(page);
-
-        textBlock = new TextBlock(
-                f3, Content.OfTextFile("data/languages/simplified-chinese.txt"));
+                f1, Content.OfTextFile("data/languages/simplified-chinese.txt"));
         textBlock.SetLanguage("zh-Hans");
         textBlock.SetLocation(50f, 70f);
         textBlock.SetWidth(512f);
@@ -72,10 +44,10 @@ public class Example_02 {
 
         page = new Page(pdf, Letter.PORTRAIT);
 
-        new TextLine(f0, "This block is Traditional Chinese: 繁體中文").SetFallbackFont(f4).SetStructureType(StructElem.H1).SetLocation(50f, 50f).DrawOn(page);
+        new TextLine(f0, "This block is Traditional Chinese: 繁體中文").SetFallbackFont(f2).SetStructureType(StructElem.H1).SetLocation(50f, 50f).DrawOn(page);
 
         textBlock = new TextBlock(
-                f4, Content.OfTextFile("data/languages/traditional-chinese.txt"));
+                f2, Content.OfTextFile("data/languages/traditional-chinese.txt"));
         textBlock.SetLanguage("zh-Hant");
         textBlock.SetLocation(50f, 70f);
         textBlock.SetWidth(512f);

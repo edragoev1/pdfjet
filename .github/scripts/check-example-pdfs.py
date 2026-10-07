@@ -10,7 +10,7 @@ standing for java, dotnet, go or swift. The check fails when:
   The pages are rendered with PyMuPDF at RESOLUTION dpi and compared pixel by
   pixel, so any visible difference counts. Their text is compared too, every
   run of text with its font, size, color and position, because PyMuPDF draws
-  fonts that are not embedded, like the CJK fonts of Example_04, with one
+  fonts that are not embedded, like the Helvetica of Example_05, with one
   fallback font, so text in the wrong font can render the same.
 - the content stream of any page, its drawing instructions, differs from
   Java's in any token. That catches differences too small to change a pixel,

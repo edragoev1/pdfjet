@@ -26,6 +26,9 @@ done
 On 28 September 2026 these four of the examples did not embed all their
 fonts: Example_04 (Helvetica and the CID fonts), Example_05 (Helvetica),
 Example_44 (a Chinese CID font) and Example_50 (Helvetica).
+Since 7 October 2026 Example_04 and Example_44 embed IBM Plex Sans JP, KR
+and SC, as no example uses the Adobe CJK fonts; Example_05 and Example_50
+keep Helvetica.
 
 ## Known PAC warnings, left as they are
 

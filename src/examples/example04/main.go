@@ -11,117 +11,68 @@ import (
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
-	"github.com/edragoev1/pdfjet/v9/src/cjkfont"
-	"github.com/edragoev1/pdfjet/v9/src/color"
-	"github.com/edragoev1/pdfjet/v9/src/corefont"
+	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
+	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansJP"
+	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansKR"
+	"github.com/edragoev1/pdfjet/v9/src/compliance"
+	"github.com/edragoev1/pdfjet/v9/src/content"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
-// Example04 draws Chinese, Japanese and Korean text with the CJK fonts, and
-// Latin text with Helvetica. None of these fonts is embedded: the PDF names them
-// and the viewer supplies them.
-//
-// The advantage is size and speed. A CJK font holds tens of thousands of
-// glyphs, and this document carries none of them, so it is a few kilobytes
-// and is written in a moment. The disadvantages: the viewer must have the
-// Adobe Asian font packs, or a substitute, and the text takes the shapes and
-// widths of whatever font it finds, so the document does not look the same
-// everywhere; the core font Helvetica is limited to the WinAnsi characters; and
-// a document with a font that is not embedded cannot claim PDF/A or PDF/UA
-// compliance. To ship the glyphs with the document, use an embedded font like
-// IBMPlexSansJP, KR, SC or TC, as Example_02 and 19 do.
-//
-// See: pdfjet.NewCJKFont
+// Example04 draws the Universal Declaration of Human Rights in Japanese and
+// Korean, with IBM Plex Sans JP and KR, embedded, as a PDF/UA document: each
+// block with its language and a heading in IBM Plex Sans.
 func Example04() {
+	// Initialize new PDF document that will be saved as Example_04.pdf
 	pdf, err := pdfjet.NewPDFFile("Example_04.pdf")
 	if err != nil {
 		log.Fatal(err)
 	}
+	pdf.SetCompliance(compliance.PDF_UA_1)
+	pdf.SetTitle("The Universal Declaration of Human Rights in Japanese and Korean")
 
-	// Core fonts for the Latin text
-	f0 := pdfjet.NewCoreFont(pdf, corefont.HelveticaBold())
-	f5 := pdfjet.NewCoreFont(pdf, corefont.Helvetica())
+	f0 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
+	f0.SetSize(12.0)
 
-	// Chinese (Traditional) font
-	// Uses Adobe's Ming Standard Light font (明體)
-	f1 := pdfjet.NewCJKFont(pdf, cjkfont.AdobeMingStdLight)
+	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSansJP.Regular)
+	f1.SetSize(12.0)
 
-	// Chinese (Simplified) font
-	// Uses Adobe's Heiti SC Light font (黑体-简)
-	f2 := pdfjet.NewCJKFont(pdf, cjkfont.STHeitiSCLight)
+	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSansKR.Regular)
+	f2.SetSize(12.0)
 
-	// Japanese font
-	// Uses Kozuka Mincho Pro VI Regular font (小塚明朝)
-	f3 := pdfjet.NewCJKFont(pdf, cjkfont.KozMinProVIRegular)
-
-	// Korean font
-	// Uses Adobe's Myungjo Standard Medium font (명조체)
-	f4 := pdfjet.NewCJKFont(pdf, cjkfont.AdobeMyungjoStdMedium)
-
+	// Create a new page in portrait Letter size
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 
-	text := pdfjet.NewTextLine(f0, "Happy New Year!")
-	text.SetFontSize(26.0)
-	text.SetLocation(70.0, 90.0)
-	text.DrawOn(page)
+	// The heading is in IBM Plex Sans, and the characters it has no glyph for,
+	// the name of the language, are in the fallback font.
+	// The line above each block is its heading
+	pdfjet.NewTextLine(f0, "This block is Japanese: 日本語").SetFallbackFont(f1).SetStructureType(structelem.H1).SetLocation(50.0, 50.0).DrawOn(page)
 
-	text = pdfjet.NewTextLine(f5, "In four languages, with CJK fonts that are not embedded in this PDF.")
-	text.SetFontSize(11.0)
-	text.SetTextColor(color.DimGray)
-	text.SetLocation(70.0, 112.0)
-	text.DrawOn(page)
+	textBlock := pdfjet.NewTextBlock(f1, content.OfTextFile("data/languages/japanese.txt"))
+	textBlock.SetLanguage("ja")
+	textBlock.SetLocation(50.0, 70.0)
+	textBlock.SetWidth(512.0)
+	_ = textBlock.DrawOn(page)
 
-	languages := []string{
-		"Chinese (Traditional)",
-		"Chinese (Simplified)",
-		"Japanese",
-		"Korean",
-	}
-	fontNames := []string{
-		"Adobe Ming Std Light",
-		"STHeiti SC Light",
-		"Kozuka Mincho Pro VI Regular",
-		"Adobe Myungjo Std Medium",
-	}
-	greetings := []string{
-		"新年快樂!",
-		"新年快乐!",
-		"明けましておめでとう!",
-		"새해 복 많이 받으세요!",
-	}
-	fonts := []*pdfjet.Font{f1, f2, f3, f4}
+	page = pdfjet.NewPage(pdf, letter.Portrait())
 
-	y := float32(170.0)
-	for i := 0; i < len(languages); i++ {
-		text = pdfjet.NewTextLine(f0, languages[i])
-		text.SetFontSize(12.0)
-		text.SetLocation(70.0, y)
-		text.DrawOn(page)
+	pdfjet.NewTextLine(f0, "This block is Korean: 한국어").SetFallbackFont(f2).SetStructureType(structelem.H1).SetLocation(50.0, 50.0).DrawOn(page)
 
-		text = pdfjet.NewTextLine(f5, fontNames[i])
-		text.SetFontSize(10.0)
-		text.SetTextColor(color.DimGray)
-		text.SetLocation(70.0, y+15.0)
-		text.DrawOn(page)
+	textBlock = pdfjet.NewTextBlock(f2, content.OfTextFile("data/languages/korean.txt"))
+	textBlock.SetLanguage("ko")
+	textBlock.SetLocation(50.0, 70.0)
+	textBlock.SetWidth(512.0)
+	_ = textBlock.DrawOn(page)
 
-		text = pdfjet.NewTextLine(fonts[i], greetings[i])
-		text.SetFontSize(32.0)
-		text.SetLocation(70.0, y+60.0)
-		text.DrawOn(page)
-
-		line := pdfjet.NewLine(70.0, y+80.0, 540.0, y+80.0)
-		line.SetStrokeColor(color.LightGray)
-		line.DrawOn(page)
-
-		y += 115.0
-	}
-
+	// Finalize the PDF document
 	if err := pdf.Complete(); err != nil {
 		log.Fatal(err)
 	}
 }
 
 func main() {
+	// Measure and print execution time
 	time0 := time.Now().UnixMilli()
 	Example04()
 	time1 := time.Now().UnixMilli()
