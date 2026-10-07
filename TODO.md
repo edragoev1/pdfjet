@@ -10,15 +10,26 @@ left is checking, tagging and packaging.
 
 **Wed Oct 7: the freeze and the checks of the tag** (the list under "Oct
 15–20" below, now on this day)
-- ⬜ `check-examples.sh` in the four ports: the 57 examples, the unit tests,
-  veraPDF, the PDF/UA check, the cross-port and renderer comparisons.
-- ⬜ `./check-api.sh v9.0.2`: no public API changed.
-- ⬜ `go test ./...` of pdfjet-server against master (its `go.work` builds
+- ✅ `check-examples.sh` in the four ports: the 57 examples, the unit tests,
+  veraPDF, the PDF/UA check, the cross-port and renderer comparisons. Passed
+  on Oct 7 at 2e265241: every port and JDK 8, 180 files PDF/UA-1, the PDF/A
+  files, 45 structure trees, the three viewer engines (largest block
+  difference 3.2%, the same as at the calibration of Sep 29), and the 59
+  snippets of the booklet.
+- ✅ `./check-api.sh v9.0.2`: no public API changed. Java, C# and Swift the
+  same; in Go, 13 setters of an int32 color list as gone and added, as
+  their parameter was renamed `color` to `c` (the `Color.transparent` fix),
+  which no caller can see: Go has no named arguments.
+- ✅ `go test ./...` of pdfjet-server against master (its `go.work` builds
   `../pdfjet`), which reads images back out of the PDFs as the examples do
-  not.
-- ⬜ The benchmarks against 9.0.2 and 9.0.1, and the JDK 8 build.
-- ⬜ The viewer files built again, Example_30 with the `/Length 256` of
-  Oct 1.
+  not: ok, Oct 7.
+- ✅ The benchmarks against 9.0.2 and 9.0.1, and the JDK 8 build: the same
+  within noise (Example_43 1671 ms, 1665 at 9.0.2, 1673 at 9.0.1), the
+  files the same size as at 9.0.2; `benchmarks/results/2026-10-07-2e265241.log`.
+  JDK 8 in `check-examples.sh`.
+- ✅ The viewer files built again, Example_30 with the `/Length 256` of
+  Oct 1: from the PDFs of the check of Oct 7, Example_30 of the four ports
+  opening with `hello` and `world`, the two encrypted PDFs with theirs.
 - ⬜ The owner: the manual viewer pass on them, in Acrobat Reader, Preview,
   Chrome, Firefox and Edge.
 - ⬜ The `## v9.0.3` entry of CHANGELOG.md dated.
