@@ -58,8 +58,9 @@ until then, so nothing is lost if it slips.
 have odd numbers, so 9.0.5 follows 9.0.3, never 9.0.4). Fixes found in the
 viewer pass of Oct 7, no new API, in the four ports with tests, each
 detailed in the list below:
-1. ⬜ The space at the end of each wrapped line, stripped by TextBlock and
-   TextColumn: first, to know that the PDFs read aloud and extract right.
+1. ⬜ The spaces of wrapped text: the space at the end of each wrapped line,
+   stripped by TextBlock, and every space of a justified TextFrame row,
+   none drawn: first, to know that the PDFs read aloud and extract right.
 2. ⬜ Example_46 as PDF/UA: in a tagged document, the optional content
    configuration (`/D` of `/OCProperties`) written with a `/Name` and
    without `/AS`, as PDF/UA 7.10 asks; veraPDF failed Example_46 on 7.10-1
@@ -171,6 +172,33 @@ detailed in the list below:
   by NVDA in Acrobat beside PDFjet's, and the text of both as pdftotext,
   mutool and Acrobat give it. Then in the four ports with tests, and the
   examples' baselines move with it.
+
+  Which classes, checked on 7 October 2026 in the Java PDFs with `mutool
+  trace`, which lists the glyphs drawn (pdftotext and `mutool draw -F
+  stext` add spaces of their own where they see a gap, even with `-O
+  inhibit-spaces`, so they cannot tell):
+  - TextBlock strips the space at the end of each wrapped line (Example_01).
+  - TextColumn keeps it, justified or not: each word is drawn with its
+    space (Example_10, 29, 44). Its trimTrailingSpaces is for the width
+    alone; the note above that TextColumn strips it was wrong.
+  - TextFrame keeps it in a row that is not justified (Example_47), but a
+    justified row is drawn word by word with no space at all, between the
+    words or at the end (Example_52: 289 of the 294 text runs of page 2 are
+    single words; only the last line of each paragraph, not justified, has
+    spaces). The worst of the three: a reader or an extractor has to guess
+    every word break from the gaps. The fix: draw each word with its space,
+    as TextColumn does, the space's width plus the share of the stretch.
+  - Justified text is drawn by TextColumn and TextFrame alone; TextBlock and
+    Cell do not justify (Cell draws JUSTIFY as LEFT, its text being one line).
+  The Go, C# and Swift PDFs to trace the same way before the fix.
+
+  The test that the look does not change: the spaces have no ink, so every
+  example, rendered before and after the fix (mutool draw, 150 dpi, every
+  page), must be the same pixel for pixel, in the four ports; a page that
+  differs is a line that moved, most likely a justified one whose stretch
+  took the added space into account. Then the text test: `mutool trace`
+  shows a space at the end of each wrapped line and between the words of
+  justified rows, and NVDA reads Example_01 and 52 with fewer pauses.
 - ⬜ **The language of text in a TextColumn reaches the structure tree**
   (the NVDA pass of 7 October 2026: Example_01's Greek was spelled letter
   by letter and its Bulgarian skipped, as no block said its language; fixed
