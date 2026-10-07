@@ -54,6 +54,24 @@ product. Paddle's approval of each new product, and the license shown at
 checkout, which waits on the lawyer, may take longer; FastSpring sells on
 until then, so nothing is lost if it slips.
 
+**v9.0.5, soon after v9.0.3** (the owner, 7 October 2026: public releases
+have odd numbers, so 9.0.5 follows 9.0.3, never 9.0.4). Fixes found in the
+viewer pass of Oct 7, no new API, in the four ports with tests, each
+detailed in the list below:
+1. ⬜ The space at the end of each wrapped line, stripped by TextBlock and
+   TextColumn: first, to know that the PDFs read aloud and extract right.
+2. ⬜ Example_46 as PDF/UA: in a tagged document, the optional content
+   configuration (`/D` of `/OCProperties`) written with a `/Name` and
+   without `/AS`, as PDF/UA 7.10 asks; veraPDF failed Example_46 on 7.10-1
+   and 7.10-2 when it was made PDF/UA on Oct 7, so it stayed untagged. A
+   layer set not to print cannot be said without /AS, so in PDF/UA it
+   prints: the documentation of setPrintable says so, and Example_46's text
+   too.
+3. ⬜ The language of a TextLine kept in a TextColumn, so that Example_29's
+   Greek is read as Greek (addCJKParagraph's language is new API: v9.1).
+4. ⬜ The ASCII and the spaces of the non-embedded CJK fonts full width (the
+   Korean gaps of the old Example_04): a /W, and stringWidth to match.
+
 **After the tag, when convenient, blocking nothing:**
 - ⬜ **First after the tag (the owner, 7 October 2026: "I really want to know
   if we are doing everything right"): the space at the end of each wrapped
