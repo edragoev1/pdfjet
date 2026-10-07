@@ -5,25 +5,50 @@ not Oct 21, as every goal but the checks of the tag is closed and the freeze
 of Oct 15 has nothing left to wait for; then PDFjet Forms, with the
 library out of the way.
 
-- **Wed Oct 7: the freeze and the checks of the tag** (the list under "Oct
-  15–20" below, now on this day): `check-examples.sh` in the four ports,
-  `./check-api.sh v9.0.2`, `go test ./...` of pdfjet-server against master,
-  the benchmarks against 9.0.2 and 9.0.1, the JDK 8 build, and the viewer
-  files built again, Example_30 with the `/Length 256` of Oct 1. The owner:
-  the manual viewer pass on them, in Acrobat Reader, Preview, Chrome,
-  Firefox and Edge. The `## v9.0.3` entry of CHANGELOG.md dated.
-- **Thu Oct 8: the tag.** Tag v9.0.3 and make the GitHub release; then the
-  Go proxy's `.info` and `.zip` of it answering 200, and sum.golang.org
-  having its checksum. The commercial product released on the tag
-  (`.packaging/set-version.sh 9.0.3`, test, tag, the Java and .NET
-  packages). pdfjet.com rebuilt with the 9.0.3 packages, on the owner's
-  go-ahead for the site. pdfjet-pro made public with the release, by its
-  PUBLIC-REPO-PLAN.md, on the owner's go-ahead.
-- **Fri Oct 9: PDFjet Pro sold through Paddle**, brought forward from
-  "after the launches": its steps are in the TODO.md of the commercial
-  product. Paddle's approval of each new product, and the license shown at
-  checkout, which waits on the lawyer, may take longer; FastSpring sells on
-  until then, so nothing is lost if it slips.
+No code work is left: the library is feature-complete and frozen; what is
+left is checking, tagging and packaging.
+
+**Wed Oct 7: the freeze and the checks of the tag** (the list under "Oct
+15–20" below, now on this day)
+- ⬜ `check-examples.sh` in the four ports: the 57 examples, the unit tests,
+  veraPDF, the PDF/UA check, the cross-port and renderer comparisons.
+- ⬜ `./check-api.sh v9.0.2`: no public API changed.
+- ⬜ `go test ./...` of pdfjet-server against master (its `go.work` builds
+  `../pdfjet`), which reads images back out of the PDFs as the examples do
+  not.
+- ⬜ The benchmarks against 9.0.2 and 9.0.1, and the JDK 8 build.
+- ⬜ The viewer files built again, Example_30 with the `/Length 256` of
+  Oct 1.
+- ⬜ The owner: the manual viewer pass on them, in Acrobat Reader, Preview,
+  Chrome, Firefox and Edge.
+- ⬜ The `## v9.0.3` entry of CHANGELOG.md dated.
+
+**Thu Oct 8: the tag**
+- ⬜ Tag v9.0.3 and make the GitHub release; then the Go proxy's `.info` and
+  `.zip` of it answering 200, and sum.golang.org having its checksum.
+- ⬜ PDFjet Pro released on the tag, from `~/Projects/pdfjet-pro`, beside
+  the library: `./set-version.sh 9.0.3` (go.mod, Package.swift and their
+  sums move from 9.0.2), its four ports tested against the release, tag
+  v9.0.3; the Java and .NET packages by `pdfjet-pro-private/packaging`.
+- ⬜ pdfjet.com rebuilt with the 9.0.3 packages, on the owner's go-ahead for
+  the site.
+- ⬜ pdfjet-pro made public with the release, by its PUBLIC-REPO-PLAN.md, on
+  the owner's go-ahead.
+- ⬜ The deliveries owed a new version: their links to the 9.0.3 packages
+  (the owner's private notes).
+
+**Fri Oct 9: PDFjet Pro sold through Paddle**, brought forward from
+"after the launches": its steps are in the TODO.md of the commercial
+product. Paddle's approval of each new product, and the license shown at
+checkout, which waits on the lawyer, may take longer; FastSpring sells on
+until then, so nothing is lost if it slips.
+
+**After the tag, when convenient, blocking nothing:**
+- ⬜ The package registries, in this order (see "After the tag: the package
+  registries" below): Go (one fetch of the proxy, and pkg.go.dev lists
+  it), NuGet first of the others (C# is the largest audience, about an
+  hour), the Swift Package Index (a form), Maven Central last (a TXT record
+  at IONOS, a GPG key; half a day to a day the first time).
 
 The calendar below is the plan as it was, kept for its lists.
 
