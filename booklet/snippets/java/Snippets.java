@@ -138,9 +138,9 @@ public class Snippets {
 
     // @snippet cjk-fonts
     static void cjkFonts(PDF pdf, Font font) throws Exception {
-        Font chinese = new Font(pdf, CJKFont.ST_HEITI_SC_LIGHT).setSize(24f);
-        Font japanese = new Font(pdf, CJKFont.KOZ_MIN_PRO_VI_REGULAR).setSize(24f);
-        Font korean = new Font(pdf, CJKFont.ADOBE_MYUNGJO_STD_MEDIUM).setSize(24f);
+        Font chinese = new Font(pdf, IBMPlexSansSC.Regular).setSize(24f);
+        Font japanese = new Font(pdf, IBMPlexSansJP.Regular).setSize(24f);
+        Font korean = new Font(pdf, IBMPlexSansKR.Regular).setSize(24f);
         Page page = new Page(pdf, Letter.PORTRAIT);
         new TextLine(chinese, "新年快乐!").setLocation(50f, 50f).drawOn(page);
         new TextLine(japanese, "明けましておめでとう!").setLocation(50f, 90f).drawOn(page);

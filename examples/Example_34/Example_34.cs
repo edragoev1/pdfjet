@@ -17,7 +17,8 @@ public class Example_34 {
     public Example_34() {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_34.pdf", FileMode.Create)));
-        pdf.SetCompliance(Compliance.PDF_A_1B);
+        pdf.SetCompliance(Compliance.PDF_A_1A);
+        pdf.SetTitle("World Communications");
 
         Font f1 = new Font(pdf, IBMPlexSans.Bold);
         Font f2 = new Font(pdf, IBMPlexSans.Regular);

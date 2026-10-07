@@ -25,12 +25,13 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansArabic"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansHebrew"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansJP"
+	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansKR"
+	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansSC"
 	"github.com/edragoev1/pdfjet/v9/src/JetBrainsMono"
 	"github.com/edragoev1/pdfjet/v9/src/SourceSerif4"
 	"github.com/edragoev1/pdfjet/v9/src/a4"
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
 	"github.com/edragoev1/pdfjet/v9/src/border"
-	"github.com/edragoev1/pdfjet/v9/src/cjkfont"
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/content"
@@ -167,9 +168,9 @@ func coreFonts(pdf *pdfjet.PDF, font *pdfjet.Font) {
 
 // @snippet cjk-fonts
 func cjkFonts(pdf *pdfjet.PDF, font *pdfjet.Font) {
-	chinese := pdfjet.NewCJKFont(pdf, cjkfont.STHeitiSCLight).SetSize(24)
-	japanese := pdfjet.NewCJKFont(pdf, cjkfont.KozMinProVIRegular).SetSize(24)
-	korean := pdfjet.NewCJKFont(pdf, cjkfont.AdobeMyungjoStdMedium).SetSize(24)
+	chinese := pdfjet.NewFontFromFile(pdf, IBMPlexSansSC.Regular).SetSize(24)
+	japanese := pdfjet.NewFontFromFile(pdf, IBMPlexSansJP.Regular).SetSize(24)
+	korean := pdfjet.NewFontFromFile(pdf, IBMPlexSansKR.Regular).SetSize(24)
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 	pdfjet.NewTextLine(chinese, "新年快乐!").SetLocation(50, 50).DrawOn(page)
 	pdfjet.NewTextLine(japanese, "明けましておめでとう!").SetLocation(50, 90).DrawOn(page)

@@ -200,8 +200,8 @@ Any OpenType or TrueType font file is a font for PDFjet: pass its path, or an in
 @snippet core-fonts The core fonts
 The 14 core fonts of CoreFont, Helvetica, Times, Courier with their bold and italic, Symbol and ZapfDingbats, are in every PDF viewer and are not embedded, so they make the smallest documents. They draw only the characters of Windows Latin 1, and PDF/UA and PDF/A do not allow them. setKernPairs(true) moves the letters of kerning pairs, such as A and V, closer together.
 
-@snippet cjk-fonts Chinese, Japanese and Korean fonts that are not embedded
-The CJKFont fonts are the Chinese, Japanese and Korean fonts that PDF viewers supply, so the document carries no font program at all. They are the smallest way to write CJK text, when the document does not have to be PDF/UA or PDF/A; the IBM Plex fonts of each language are the ones to embed.
+@snippet cjk-fonts Chinese, Japanese and Korean fonts
+IBM Plex Sans SC, TC, JP and KR are embedded, so the text looks the same in every viewer, and the document can be PDF/UA and PDF/A. The CJKFont fonts, which are not embedded, are deprecated: a viewer must supply them, and Acrobat asks to download its Asian font pack for them.
 
 @snippet fallback-font A fallback font
 A fallback font draws the characters that the font does not have, such as Japanese in a Latin font, so that one line of text can mix scripts. Text lines, text blocks and table cells have setFallbackFont.

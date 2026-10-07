@@ -123,9 +123,9 @@ func coreFonts(_ pdf: PDF, _ font: Font) throws {
 
 // @snippet cjk-fonts
 func cjkFonts(_ pdf: PDF, _ font: Font) throws {
-    let chinese = Font(pdf, CJKFont.ST_HEITI_SC_LIGHT).setSize(24)
-    let japanese = Font(pdf, CJKFont.KOZ_MIN_PRO_VI_REGULAR).setSize(24)
-    let korean = Font(pdf, CJKFont.ADOBE_MYUNGJO_STD_MEDIUM).setSize(24)
+    let chinese = try Font(pdf, IBMPlexSansSC.Regular).setSize(24)
+    let japanese = try Font(pdf, IBMPlexSansJP.Regular).setSize(24)
+    let korean = try Font(pdf, IBMPlexSansKR.Regular).setSize(24)
     let page = Page(pdf, Letter.PORTRAIT)
     TextLine(chinese, "新年快乐!").setLocation(50, 50).drawOn(page)
     TextLine(japanese, "明けましておめでとう!").setLocation(50, 90).drawOn(page)

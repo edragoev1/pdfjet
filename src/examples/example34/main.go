@@ -29,7 +29,8 @@ func Example34() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	pdf.SetCompliance(compliance.PDF_A_1B)
+	pdf.SetCompliance(compliance.PDF_A_1A)
+	pdf.SetTitle("World Communications")
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold)
 	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)

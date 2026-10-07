@@ -13,6 +13,8 @@ import PDFjet
 public class Example_44 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_44.pdf", append: false)!)
+        pdf.setCompliance(Compliance.PDF_UA_1)
+        pdf.setTitle("Switzerland, in English and Chinese")
 
         let f1 = try Font(pdf, IBMPlexSans.Regular)
         f1.setSize(12.0)

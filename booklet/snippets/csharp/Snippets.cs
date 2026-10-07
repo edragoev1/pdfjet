@@ -129,9 +129,9 @@ public class Snippets {
 
     // @snippet cjk-fonts
     static void CjkFonts(PDF pdf, Font font) {
-        Font chinese = new Font(pdf, CJKFont.ST_HEITI_SC_LIGHT).SetSize(24f);
-        Font japanese = new Font(pdf, CJKFont.KOZ_MIN_PRO_VI_REGULAR).SetSize(24f);
-        Font korean = new Font(pdf, CJKFont.ADOBE_MYUNGJO_STD_MEDIUM).SetSize(24f);
+        Font chinese = new Font(pdf, IBMPlexSansSC.Regular).SetSize(24f);
+        Font japanese = new Font(pdf, IBMPlexSansJP.Regular).SetSize(24f);
+        Font korean = new Font(pdf, IBMPlexSansKR.Regular).SetSize(24f);
         Page page = new Page(pdf, Letter.PORTRAIT);
         new TextLine(chinese, "新年快乐!").SetLocation(50f, 50f).DrawOn(page);
         new TextLine(japanese, "明けましておめでとう!").SetLocation(50f, 90f).DrawOn(page);

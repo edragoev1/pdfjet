@@ -8,92 +8,79 @@ package examples;
 
 import java.io.*;
 import com.pdfjet.*;
+import com.pdfjet.fonts.*;
 
 /**
- * Kerning with a core font: what it is, and the same words in two text blocks,
- * one above the other, drawn in Helvetica-Bold without kerning and with it.
+ * Embedded fonts: the same words in five weights of IBM Plex Sans, in a PDF/UA
+ * document.
  * <p>
- * The fonts are core fonts, of the fourteen fonts every PDF viewer has, so the
- * document carries no font program. It is small, it is written fast, and the
- * widths and the kerning pairs of the fonts are built into PDFjet, which is
- * what setKernPairs applies. The disadvantages: the viewer draws the text with
- * its own version of the font, so the look differs a little between viewers;
- * only the WinAnsi characters can be drawn, so no Cyrillic, Greek or CJK text;
- * and a document with a font that is not embedded cannot claim PDF/A or PDF/UA
- * compliance. For those, use an embedded font like IBM Plex Sans, as the other
- * examples do.
+ * An embedded font travels with the document, so the text looks the same in
+ * every viewer, every character of the font can be drawn, and the document can
+ * be PDF/UA and PDF/A. The fourteen core fonts, Helvetica, Times and Courier,
+ * are in every viewer and make the smallest documents, but they draw only the
+ * WinAnsi characters, and PDF/UA and PDF/A do not allow them.
  * </p>
  *
- * @see Font#setKernPairs(boolean)
+ * @see Font
  * @see TextBlock
  */
 public class Example_05 {
-    // Words with the pairs of letters kerning closes up: WA, AV, AW, AY, Yo,
-    // To, Vo, VA and the like.
-    private static final String SAMPLE = "WAVE AWAY: Your Tokyo voyage, VAT paid.";
+    private static final String SAMPLE = "Embedded fonts look the same in every viewer.";
 
     private static final int BACKGROUND = 0xf1f4f8;
 
     public Example_05() throws Exception {
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_05.pdf")));
-        pdf.setTitle("Kerning");
+        pdf.setCompliance(Compliance.PDF_UA_1);
+        pdf.setTitle("Embedded Fonts");
 
-        Font regular = new Font(pdf, CoreFont.HELVETICA);
+        Font regular = new Font(pdf, IBMPlexSans.Regular);
         regular.setSize(11f);
-        Font bold = new Font(pdf, CoreFont.HELVETICA_BOLD);
+        Font bold = new Font(pdf, IBMPlexSans.Bold);
         bold.setSize(24f);
-
-        // The same font twice: the one without kerning, which is the default,
-        // and the one with it.
-        Font plain = new Font(pdf, CoreFont.HELVETICA_BOLD);
-        plain.setSize(30f);
-        Font kerned = new Font(pdf, CoreFont.HELVETICA_BOLD);
-        kerned.setSize(30f);
-        kerned.setKernPairs(true);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        TextLine title = new TextLine(bold, "Kerning");
+        TextLine title = new TextLine(bold, "Embedded Fonts");
+        title.setStructureType(StructElem.H1);
         title.setLocation(50f, 70f);
         title.drawOn(page);
 
         TextBlock about = new TextBlock(regular,
-                "Kerning moves particular pairs of letters closer together, so that the space "
-                + "between the letters of a word looks even. Every letter of a font has a width, "
-                + "the box it is drawn in, and some pairs of letters leave a gap between their "
-                + "boxes that the eye reads as a space: a capital A beside a V or a W, a capital T, "
-                + "V or Y over a small o, an L before a T. A font lists these pairs and how far to "
-                + "move each of them.\n\n"
-                + "The fourteen core fonts every PDF viewer has come with their lists, which are "
-                + "built into PDFjet. font.setKernPairs(true) turns kerning on for a font: PDFjet "
-                + "moves the letters of each pair as it draws them, with the TJ operator, and "
-                + "measures the text the same way, so that a TextBlock breaks its lines where the "
-                + "kerned words end. The two blocks below are the same words in the same font, "
-                + "without kerning and with it.");
+                "An embedded font travels with the document: the PDF carries the font program, "
+                + "so the text looks the same in every viewer, every character of the font can be "
+                + "drawn, and the document can be PDF/UA and PDF/A. PDFjet comes with the IBM Plex "
+                + "fonts, Sans, Serif and Mono, with Arabic, Hebrew, Thai, Japanese, Korean and "
+                + "Chinese, in their weights.\n\n"
+                + "The fourteen core fonts, Helvetica, Times and Courier with their bold and italic, "
+                + "Symbol and ZapfDingbats, are in every viewer, so the document carries no font "
+                + "program and is the smallest it can be. But they draw only the characters of "
+                + "Windows Latin 1, the viewer draws them with its own version of the font, and "
+                + "PDF/UA and PDF/A do not allow them. The boxes below are the same words in five "
+                + "weights of IBM Plex Sans.");
         about.setLineSpacing(1.4f);
         about.setLocation(50f, 90f);
         about.setWidth(512f);
-        float[] xy = about.drawOn(page);
+        float y = about.drawOn(page)[1] + 30f;
 
-        float y = xy[1] + 30f;
-        y = drawSample(page, regular, plain, "Without kerning: font.setKernPairs(false), the default", y);
-        y = drawSample(page, regular, kerned, "With kerning: font.setKernPairs(true)", y + 25f);
-
-        // How much kerning takes off the width of the words, as PDFjet
-        // measures them, to the nearest point.
-        int narrower = Math.round(plain.stringWidth(SAMPLE) - kerned.stringWidth(SAMPLE));
-        TextLine note = new TextLine(regular,
-                "Kerning makes these words " + narrower + " points narrower at 30 points.");
-        note.setTextColor(Color.dimgray);
-        note.setLocation(50f, y + 30f);
-        note.drawOn(page);
+        String[] names = {"Light", "Regular", "Medium", "SemiBold", "Bold"};
+        String[] weights = {
+            IBMPlexSans.Light,
+            IBMPlexSans.Regular,
+            IBMPlexSans.Medium,
+            IBMPlexSans.SemiBold,
+            IBMPlexSans.Bold,
+        };
+        for (int i = 0; i < weights.length; i++) {
+            Font font = new Font(pdf, weights[i]);
+            font.setSize(20f);
+            y = drawSample(page, regular, font, "IBM Plex Sans " + names[i], y) + 22f;
+        }
 
         pdf.complete();
     }
 
-    // Draws the label, and under it the sample words in the font, in a text
-    // block with a light background, and returns the bottom of the block.
     private static float drawSample(Page page, Font labelFont, Font font, String label, float y)
             throws Exception {
         TextLine caption = new TextLine(labelFont, label);

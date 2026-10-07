@@ -15,18 +15,19 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/a4"
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
-// Example07 adds a "DRAFT" watermark to every page of a two-page
-// PDF/A-3B document. The watermark is drawn first, so the text of the page
-// is drawn over it.
+// Example07 adds a "DRAFT" watermark to every page of a two-page document
+// that is PDF/A-3a and PDF/UA-1. The watermark is drawn first, so the text of
+// the page is drawn over it.
 func Example07() {
 	pdf, err := pdfjet.NewPDFFile("Example_07.pdf")
 	if err != nil {
 		log.Fatal(err)
 	}
-	pdf.SetCompliance(compliance.PDF_A_3B)
-	pdf.SetTitle("PDF/A-3B compliant PDF")
+	pdf.SetCompliance(compliance.PDF_A_3A_UA_1)
+	pdf.SetTitle("A Draft, Archived as PDF/A-3a and PDF/UA-1")
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
@@ -39,7 +40,7 @@ func Example07() {
 	texts := []string{
 		"This proposal describes a new reporting service that creates invoices, " +
 			"statements and delivery notes as PDF documents. The documents are " +
-			"archived as PDF/A-3B, so they can be opened and printed exactly " +
+			"archived as PDF/A-3a, so they can be opened and printed exactly " +
 			"the same way for many years.\n\n" +
 			"The watermark tells every reader that this is a draft. It is drawn " +
 			"in light gray behind the text, at an angle from the bottom left " +
@@ -59,6 +60,7 @@ func Example07() {
 		page.AddWatermark(f3, "DRAFT")
 
 		title := pdfjet.NewTextLine(f2, titles[i])
+		title.SetStructureType(structelem.H1)
 		title.SetFontSize(28.0)
 		title.SetLocation(70.0, 100.0)
 		title.DrawOn(page)

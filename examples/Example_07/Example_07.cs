@@ -12,15 +12,15 @@ using PDFjet.NET;
 /**
  * Example_07.cs
  * This example adds a "DRAFT" watermark to every page of a two-page
- * PDF/A-3B document. The watermark is drawn first, so the text of the page
- * is drawn over it.
+ * document that is PDF/A-3a and PDF/UA-1. The watermark is drawn first, so the
+ * text of the page is drawn over it.
  */
 public class Example_07 {
     public Example_07() {
         PDF pdf = new PDF(
                 new BufferedStream(new FileStream("Example_07.pdf", FileMode.Create)),
-                Compliance.PDF_A_3B);
-        pdf.SetTitle("PDF/A-3B compliant PDF");
+                Compliance.PDF_A_3A_UA_1);
+        pdf.SetTitle("A Draft, Archived as PDF/A-3a and PDF/UA-1");
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
         Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
@@ -33,7 +33,7 @@ public class Example_07 {
         String[] texts = {
             "This proposal describes a new reporting service that creates invoices, "
                 + "statements and delivery notes as PDF documents. The documents are "
-                + "archived as PDF/A-3B, so they can be opened and printed exactly "
+                + "archived as PDF/A-3a, so they can be opened and printed exactly "
                 + "the same way for many years.\n\n"
                 + "The watermark tells every reader that this is a draft. It is drawn "
                 + "in light gray behind the text, at an angle from the bottom left "
@@ -53,6 +53,7 @@ public class Example_07 {
             page.AddWatermark(f3, "DRAFT");
 
             TextLine title = new TextLine(f2, titles[i]);
+            title.SetStructureType(StructElem.H1);
             title.SetFontSize(28f);
             title.SetLocation(70f, 100f);
             title.DrawOn(page);

@@ -218,7 +218,11 @@ final public class Font {
      * @param pdf  the PDF to add this font to.
      * @param font the CJK font.
      * @throws Exception If an input or output exception occurred
+     * @deprecated The font is not embedded: the viewer needs the Adobe Asian
+     *     font pack, and the PDF cannot be PDF/A or PDF/UA. Use an embedded
+     *     font, such as IBM Plex Sans JP, KR, SC or TC. To be removed in v10.
      */
+    @Deprecated
     public Font(PDF pdf, CJKFont font) throws Exception {
         this.pdf = pdf;
         String fontName = null;

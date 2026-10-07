@@ -55,6 +55,30 @@ checkout, which waits on the lawyer, may take longer; FastSpring sells on
 until then, so nothing is lost if it slips.
 
 **After the tag, when convenient, blocking nothing:**
+- ⬜ Maybe, if a customer asks: **embedded look-alikes of the core fonts**
+  (the owner, 7 October 2026). The 14 core fonts stay, not deprecated: they
+  need no font files, make the smallest documents (Helvetica about 3 KB, a
+  page in embedded Plex about 100 KB), and are the most used line of PDFjet's
+  history; and some customers must use Helvetica or Times: US courts ask for
+  Times New Roman 12 point, brand guides name Helvetica or Arial, old forms
+  are laid out to Helvetica's widths. But a PDF/UA or PDF/A document cannot
+  use them. Fonts drawn to the same widths, free, embedded as .otf.stream,
+  would give those customers PDF/UA with the look and the line breaks they
+  must keep, with no font to buy:
+  - **Liberation** Sans, Serif and Mono (SIL OFL 1.1): the widths of Arial,
+    and so of Helvetica, of Times New Roman and of Courier New.
+  - **URW Nimbus**, the core 35 fonts of Ghostscript (AGPL with a font
+    exception, which allows embedding): Nimbus Sans for Helvetica, Nimbus
+    Roman for Times, Nimbus Mono PS for Courier, and Standard Symbols PS and
+    D050000L for Symbol and ZapfDingbats, the only set that matches all 14.
+  - **TeX Gyre** Heros, Termes and Cursor (GUST Font License), from the URW
+    fonts: Helvetica, Times and Courier.
+  - **Arimo, Tinos and Cousine** (Google, Apache 2.0), the same designs as
+    Liberation 2.x.
+  Which, if any, to choose by its license and its coverage (Latin, Greek,
+  Cyrillic); a font class of each, as IBMPlexSans has. Meanwhile the core
+  fonts' documentation says: small and needing no files, but not PDF/UA or
+  PDF/A; for those, IBM Plex.
 - ⬜ **The spaces of Korean, and the ASCII of every non-embedded CJK font,
   full width** (the viewer pass of 7 October 2026: in Acrobat, Example_04's
   "새해 복 많이 받으세요!" has a gap of a whole em at each space). The fonts

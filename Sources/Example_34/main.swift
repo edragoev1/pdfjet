@@ -13,7 +13,8 @@ import PDFjet
 public class Example_34 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_34.pdf", append: false)!)
-        pdf.setCompliance(Compliance.PDF_A_1B)
+        pdf.setCompliance(Compliance.PDF_A_1A)
+        pdf.setTitle("World Communications")
 
         let f1 = try Font(pdf, IBMPlexSans.Bold)
         let f2 = try Font(pdf, IBMPlexSans.Regular)

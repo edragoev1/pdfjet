@@ -52,7 +52,9 @@ public class FontTest {
 
     [Fact]
     public void EveryCjkCharacterIsOneEmWideAndSurrogatePairsCountOnce() {
+#pragma warning disable CS0618 // The CJK fonts are deprecated, and still tested
         Font font = new Font(TestSupport.NewPDF(), CJKFont.ADOBE_MING_STD_LIGHT);
+#pragma warning restore CS0618
         Assert.Equal(20f, font.StringWidth(10f, "日本"));
         Assert.Equal(10f, font.StringWidth(10f, "𠀋"));
     }

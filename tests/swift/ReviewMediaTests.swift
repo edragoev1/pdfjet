@@ -450,7 +450,7 @@ import Testing
         // trapped here in a CJK font as it made an Int of infinity.
         let pdf = TestSupport.newPDF()
         let fonts = [TestSupport.helvetica(pdf), try Font(pdf, TestSupport.path(thai)),
-                Font(pdf, CJKFont.ADOBE_MING_STD_LIGHT)]
+                TestSupport.cjkFont(pdf, CJKFont.ADOBE_MING_STD_LIGHT)]
         for f in fonts {
             f.setSize(0)
             #expect(f.getFitChars("Hello", 10) == 5)

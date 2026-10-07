@@ -17,6 +17,8 @@ public class Example_44 {
     public Example_44() throws Exception {
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_44.pdf")));
+        pdf.setCompliance(Compliance.PDF_UA_1);
+        pdf.setTitle("Switzerland, in English and Chinese");
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
         f1.setSize(12f);

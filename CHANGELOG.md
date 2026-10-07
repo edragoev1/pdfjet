@@ -20,7 +20,25 @@ This is the first entry in this file; earlier releases were not tracked here.
   byte password. The renders are uploaded, with a contact sheet of each PDF
   beside MuPDF's. `check-examples.sh` runs the PDFium check.
 
+### Deprecated
+- The constructor of the Chinese, Japanese and Korean fonts that are not
+  embedded: `Font(PDF, CJKFont)` in Java, C# and Swift, `NewCJKFont` in Go.
+  The viewer must supply these fonts, Acrobat asks to download its Asian
+  font pack for them and offers to make the file accessible, and a PDF with
+  them cannot be PDF/A or PDF/UA. Use an embedded font, such as IBM Plex Sans
+  JP, KR, SC or TC. It works as before, and is to be removed in v10. The
+  booklet's snippet of CJK fonts uses the IBM Plex ones now.
+
 ### Changed
+- The examples are tagged wherever PDFjet draws the whole page, as Acrobat
+  offers to make an untagged PDF accessible when it opens it: Example_05
+  draws the same words in five weights of IBM Plex Sans, as PDF/UA, in place
+  of its kerning in Helvetica, which a PDF/UA document cannot use; Example_07
+  is PDF/A-3a and PDF/UA-1 in place of PDF/A-3b, Example_34 PDF/A-1a in
+  place of PDF/A-1b, and Example_44 PDF/UA. Left untagged: Example_37, 41,
+  50 and 51, which stamp, merge, fill and split PDFs that are not tagged;
+  Example_43, whose 2,546 pages are too many to tag; and Example_46, whose
+  layer that is shown but not printed needs the /AS entry PDF/UA forbids.
 - No example uses the Adobe CJK fonts any more, which are not embedded:
   Acrobat asks to download its Asian font pack for them, and offers to make
   the file accessible. Example_02, which drew Japanese, Korean, Simplified
@@ -29,9 +47,7 @@ This is the first entry in this file; earlier releases were not tracked here.
   and TC; Example_04, which drew a greeting in the Adobe CJK fonts, draws
   the Japanese and the Korean, with IBM Plex Sans JP and KR, both PDF/UA;
   and Example_44 draws its Chinese paragraphs with IBM Plex Sans SC in
-  place of STHeiti SC Light. The CJK font constructor is unchanged, and its
-  documentation says the font is not embedded and points to the embedded
-  ones.
+  place of STHeiti SC Light.
 - `go.mod` retracts v9.0.0 to v9.0.2, which the Go module proxy cannot
   serve, as the fonts in their tree make it time out: `go get` of the
   library at `@latest` takes v9.0.3 or later, and `go list -m -retracted`

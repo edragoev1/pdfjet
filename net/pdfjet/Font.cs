@@ -156,6 +156,7 @@ public class Font {
     // it cannot be PDF/A or PDF/UA. Embedded fonts, such as IBM Plex Sans JP,
     // KR, SC and TC, are better: see Example_02 and Example_04.
     /// <summary>Creates a Chinese, Japanese or Korean font and adds it to the PDF.</summary>
+    [Obsolete("Not embedded: the viewer needs the Adobe Asian font pack, and the PDF cannot be PDF/A or PDF/UA. Use an embedded font, such as IBM Plex Sans JP, KR, SC or TC. To be removed in v10.")]
     public Font(PDF pdf, CJKFont font) {
         this.pdf = pdf;
         String fontName = null;

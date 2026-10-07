@@ -16,6 +16,8 @@ public class Example_44 {
     public Example_44() {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_44.pdf", FileMode.Create)));
+        pdf.SetCompliance(Compliance.PDF_UA_1);
+        pdf.SetTitle("Switzerland, in English and Chinese");
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
         f1.SetSize(12f);

@@ -230,3 +230,25 @@ final class MemoryPDF {
         return data.map { [UInt8]($0) } ?? []
     }
 }
+
+// The CJK fonts are deprecated and still tested: a deprecated witness of a
+// requirement that is not, called through the protocol, warns nowhere, as
+// Swift has no way to silence one warning and the tests build with
+// -warnings-as-errors.
+private protocol CJKFontMaker {
+    static func make(_ pdf: PDF, _ font: CJKFont) -> Font
+}
+
+private enum DeprecatedCJKFont: CJKFontMaker {
+    @available(*, deprecated)
+    static func make(_ pdf: PDF, _ font: CJKFont) -> Font {
+        Font(pdf, font)
+    }
+}
+
+extension TestSupport {
+    /// A font of the deprecated CJK constructor, for the tests of it.
+    static func cjkFont(_ pdf: PDF, _ font: CJKFont) -> Font {
+        (DeprecatedCJKFont.self as CJKFontMaker.Type).make(pdf, font)
+    }
+}

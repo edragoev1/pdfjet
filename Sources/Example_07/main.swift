@@ -10,13 +10,13 @@ import PDFjet
 /**
  * Example_07.swift
  * This example adds a "DRAFT" watermark to every page of a two-page
- * PDF/A-3B document. The watermark is drawn first, so the text of the page
- * is drawn over it.
+ * document that is PDF/A-3a and PDF/UA-1. The watermark is drawn first, so the
+ * text of the page is drawn over it.
  */
 public class Example_07 {
     public init() throws {
-        let pdf = PDF(OutputStream(toFileAtPath: "Example_07.pdf", append: false)!, Compliance.PDF_A_3B)
-        pdf.setTitle("PDF/A-3B compliant PDF")
+        let pdf = PDF(OutputStream(toFileAtPath: "Example_07.pdf", append: false)!, Compliance.PDF_A_3A_UA_1)
+        pdf.setTitle("A Draft, Archived as PDF/A-3a and PDF/UA-1")
 
         let f1 = try Font(pdf, IBMPlexSans.Regular)
         let f2 = try Font(pdf, IBMPlexSans.SemiBold)
@@ -29,7 +29,7 @@ public class Example_07 {
         let texts = [
             "This proposal describes a new reporting service that creates invoices, "
                 + "statements and delivery notes as PDF documents. The documents are "
-                + "archived as PDF/A-3B, so they can be opened and printed exactly "
+                + "archived as PDF/A-3a, so they can be opened and printed exactly "
                 + "the same way for many years.\n\n"
                 + "The watermark tells every reader that this is a draft. It is drawn "
                 + "in light gray behind the text, at an angle from the bottom left "
@@ -49,6 +49,7 @@ public class Example_07 {
             page.addWatermark(f3, "DRAFT")
 
             let title = TextLine(f2, titles[i])
+            title.setStructureType(StructElem.H1)
             title.setFontSize(28.0)
             title.setLocation(70.0, 100.0)
             title.drawOn(page)

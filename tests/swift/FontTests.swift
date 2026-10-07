@@ -44,7 +44,7 @@ import Testing
     }
 
     @Test func everyCjkCharacterIsOneEmWideAndSurrogatePairsCountOnce() {
-        let font = Font(TestSupport.newPDF(), CJKFont.ADOBE_MING_STD_LIGHT)
+        let font = TestSupport.cjkFont(TestSupport.newPDF(), CJKFont.ADOBE_MING_STD_LIGHT)
         #expect(font.stringWidth(10, "日本") == 20)
         #expect(font.stringWidth(10, "\u{2000B}") == 10)
     }
