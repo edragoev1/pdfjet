@@ -37,6 +37,7 @@ var sections = []section{
 			"and the triangle, square and circle are half transparent.",
 		"Example_22: each of the 8 entries of the contents jumps to its page.",
 		"Example_07, 34 and 55, the PDF/A examples, open with the PDF/A bar and no error. Keep a screenshot of each.",
+		"Example_05, 07, 34 and 44, tagged since Oct 7, open with no offer to make the document accessible.",
 		"Example_01, 02, 04, 08, 13, 27, 38 and 54 open with no warning and no offer to repair the file. " +
 			"Example_02, the Chinese, embeds two whole fonts, 9.5 MB, and Example_04, Japanese and Korean, " +
 			"two more, 4 MB, as PDFjet does not subset fonts: they may take a moment to open.",
