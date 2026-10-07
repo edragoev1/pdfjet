@@ -105,6 +105,22 @@ detailed in the list below:
    the client which .NET they use; .NET Framework would need a netstandard2.0
    build too, a larger piece of work, as some APIs of the code may not be
    there.
+   **Authenticode, decided with the owner on 7 October 2026:** PDFjet
+   Software buys it, if ever, as it proves who published the file, and in
+   our name; one certificate signs everything we publish for Windows:
+   PDFjet.dll and PDFjet.Sign.dll, Arcana's Windows build (which SmartScreen
+   warns about unsigned, see arcana-secrets' TODO.md), any tool or installer
+   later. Bought only when a paying customer needs it or Arcana ships for
+   Windows, whichever is first; for a large client it can be said to come
+   with their license, but its cost alone is no reason for a new price
+   level: the four ports in one package at a higher price stands on its own,
+   signing one more reason for it. The cheaper way to check first:
+   Microsoft's Trusted Signing (Azure), about US$10 a month, the keys kept
+   by Microsoft, whose eligibility has been limited at times (businesses of
+   some years; individuals in some countries, Canada among them lately);
+   else a code-signing certificate of Sectigo, DigiCert or SSL.com, about
+   $200 to 400 a year, its key on a hardware token or a cloud HSM since 2023.
+   The strong name is free and goes in every .NET release from 9.0.5.
 
 **After the tag, when convenient, blocking nothing:**
 - ⬜ **First after the tag (the owner, 7 October 2026: "I really want to know
