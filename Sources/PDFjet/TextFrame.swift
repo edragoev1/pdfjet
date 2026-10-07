@@ -54,6 +54,10 @@ public class TextFrame : Drawable {
     // True when the next text line starts with the space after the last word
     // of this one: see Paragraph.spaceMovesToNext.
     private var leadingSpace = false
+    // True when the row ends where a space moved to the next text line, and
+    // the word that has it goes on the next row: the space is drawn after the
+    // last word of the row, so that the word break is in the text.
+    private var rowEndSpace = false
     // The paragraph whose structure element the text of the rows belongs to,
     // and the element. A paragraph is one element however many rows it takes;
     // one that the frame draws the rest of on another page gets an element of
@@ -283,6 +287,7 @@ public class TextFrame : Drawable {
         startsParagraph = false
         joinReserved = false
         leadingSpace = false
+        rowEndSpace = false
         row.removeAll()
         var bottom = y
         while paragraphIndex < paragraphs.count {
@@ -422,6 +427,11 @@ public class TextFrame : Drawable {
                 } else {
                     tokens![tokenIndex] = String(token.unicodeScalars[end...])
                 }
+            }
+            if leading && buf.isEmpty {
+                // The word starts the next row without the space before it,
+                // which this row then ends with.
+                rowEndSpace = true
             }
             addToRow(paragraph, textLine, buf, false)
             drawRow(page, false)
@@ -590,6 +600,8 @@ public class TextFrame : Drawable {
     private func drawRow(_ page: Page?, _ lastRowOfParagraph: Bool) {
         joinReserved = false
         leadingSpace = false
+        let endSpace = rowEndSpace
+        rowEndSpace = false
         if row.isEmpty {
             return
         }
@@ -599,7 +611,7 @@ public class TextFrame : Drawable {
         let rowWidth = last.x + TextFrame.width(last.textLine, TextFrame.trimTrailingSpaces(last.text)) - x
 
         if alignment == Alignment.JUSTIFY && !lastRowOfParagraph {
-            drawJustifiedRow(page, rowWidth)
+            drawJustifiedRow(page, rowWidth, endSpace)
         } else {
             var shift: Float = 0.0
             if alignment == Alignment.RIGHT {
@@ -607,9 +619,18 @@ public class TextFrame : Drawable {
             } else if alignment == Alignment.CENTER {
                 shift = (w - rowWidth) / 2.0
             }
-            for part in row {
+            let lastWithText = row.lastIndex(where: { !$0.text.isEmpty })
+            for (i, part) in row.enumerated() {
                 beginParagraphElement(page, part.paragraph, part.x + shift, yText)
-                part.textLine.copyWithText(part.text).setLocation(part.x + shift, yText).drawOn(page)
+                if endSpace && i == lastWithText && part.text.unicodeScalars.last != " " {
+                    // The space of the word break, drawn after the last word of
+                    // the row, and left out of its underline
+                    let withSpace = part.textLine.copyWithText(part.text + Single.space)
+                    withSpace.isLastToken = true
+                    withSpace.setLocation(part.x + shift, yText).drawOn(page)
+                } else {
+                    part.textLine.copyWithText(part.text).setLocation(part.x + shift, yText).drawOn(page)
+                }
                 endParagraphElement(page)
                 if part.startsParagraph {
                     part.paragraph.xText += shift
@@ -624,7 +645,7 @@ public class TextFrame : Drawable {
 
     // Draws the words of the row one by one, with the width left in the row shared
     // out among the spaces between them.
-    private func drawJustifiedRow(_ page: Page?, _ rowWidth: Float) {
+    private func drawJustifiedRow(_ page: Page?, _ rowWidth: Float, _ endSpace: Bool) {
         let texts = row.map { Array($0.text.unicodeScalars) }
         var spaces = 0
         for i in 0..<texts.count {
@@ -646,7 +667,18 @@ public class TextFrame : Drawable {
                 if end > start {
                     let word = String(String.UnicodeScalarView(text[start..<end]))
                     beginParagraphElement(page, part.paragraph, xWord, yText)
-                    if end < text.count {
+                    // The space after the word may be the first character of
+                    // the next part, where Paragraph.spaceMovesToNext put it,
+                    // or have gone with the word to the next row.
+                    var spaceAfter = end < text.count
+                    if !spaceAfter {
+                        if let next = texts[(i + 1)...].first(where: { !$0.isEmpty }) {
+                            spaceAfter = next[0] == " "
+                        } else {
+                            spaceAfter = endSpace
+                        }
+                    }
+                    if spaceAfter {
                         // The word with the space after it, so that a screen
                         // reader and a text extractor see the word break; the
                         // stretch of the row places the next word, so nothing

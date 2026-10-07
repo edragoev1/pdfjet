@@ -299,6 +299,36 @@ public class TextFrameTest {
         Assert.Contains("<" + TestSupport.Hex("eight nine ten eleven twelve thirteen"), content);
     }
 
+    // A paragraph whose link keeps no space after it: Paragraph.SpaceMovesToNext
+    // moves the space to the start of the text line after the link.
+    private static string DrawLinked(float width, Alignment alignment) {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Paragraph paragraph = new Paragraph();
+        paragraph.Add(new TextLine(font, "Please see"));
+        paragraph.Add(new TextLine(font, "our website").SetURIAction("https://pdfjet.com"));
+        paragraph.Add(new TextLine(font, "for more details about the library and what it does."));
+        paragraph.SetTextAlignment(alignment);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextFrame(new List<Paragraph> {paragraph}).SetLocation(10f, 10f).SetWidth(width).DrawOn(page);
+        return TestSupport.Content(page);
+    }
+
+    [Fact]
+    public void TheSpaceAfterALinkIsDrawn() {
+        Font font = TestSupport.Helvetica(TestSupport.NewPDF());
+        // In a justified row the space moved to the next text line is drawn
+        // after the link; and when the word after the link starts the next row,
+        // the row ends with it, justified or not.
+        float onOneRow = font.StringWidth("Please see our website for more details") + 5f;
+        float rowEndsAtLink = font.StringWidth("Please see our website") + 5f;
+        Assert.Contains(TestSupport.Hex("website "), DrawLinked(onOneRow, Alignment.JUSTIFY));
+        Assert.Contains(TestSupport.Hex("website "), DrawLinked(rowEndsAtLink, Alignment.JUSTIFY));
+        Assert.Contains(TestSupport.Hex("website "), DrawLinked(rowEndsAtLink, Alignment.LEFT));
+        // A row not justified draws the space at the start of the next text line
+        Assert.Contains("<" + TestSupport.Hex(" for"), DrawLinked(onOneRow, Alignment.LEFT));
+    }
+
     [Fact]
     public void AJustifiedRowDoesNotWidenAJoin() {
         Font font = TestSupport.Helvetica(TestSupport.NewPDF());

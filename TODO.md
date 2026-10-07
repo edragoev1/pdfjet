@@ -51,6 +51,36 @@ left is checking, tagging and packaging.
   from this check, with Example_52 added, the justified TextFrame, for
   NVDA. Left: the owner's viewer pass on them.
 
+- ✅ **A code review of every change since v9.0.2, on the evening of Oct 7**
+  (the owner: "one more thorough code review"): six reviewers in parallel,
+  Java, C#, Go, Swift, the Go float32 rounding of the arm64 fix, and the
+  four ports side by side; each finding checked before acting on it.
+  Fixed, in the four ports with a test in each, the 62 examples still the
+  same pixel for pixel: a justified TextFrame row drew no space where
+  Paragraph.spaceMovesToNext had moved it to the next text line (after a
+  link, an underline or a change of font, found by three reviewers), and a
+  row that ended at such a space, its word gone to the next row, ended
+  with no space either, justified or not (older); Swift's trailingSpace
+  used hasSuffix, which compares characters, and missed a space after a
+  prepended mark such as U+0600. Clean: the float32 rounding (270 hunks,
+  checked with go/types), and the ports agree. Left, not for 9.0.3:
+  - ⬜ The owner's viewer pass: in Acrobat, are Example_06's three shapes as
+    see-through as in Chrome (50%), or paler? The appearance has the
+    opacity in an ExtGState and the annotation has /CA too; ISO 32000 says
+    /CA applies to the appearance, so a strict viewer could draw them at
+    25%. MuPDF, PDFium, Poppler and pdf.js draw them at 50%, measured.
+  - ⬜ v9.1: a JPEG whose only fault is a missing end-of-image marker, its
+    scan whole, is refused since the cut-short check (c709d4c3), where
+    viewers draw it with a warning: refuse only when the scan stops short?
+  - ⬜ v9.1: the repair scan of a PDF with a broken cross-reference table
+    stops its search for endstream at the next "N G obj", which can be in a
+    stream's own bytes (an embedded PDF, unfiltered).
+  - ⬜ v9.1: in PDF/A-1, an annotation's opacity below 1 is transparency,
+    which PDF/A-1 forbids (/CA did so before 9.0.3; the appearance's
+    ExtGState now too): ignore the opacity in PDF/A-1, or refuse it.
+  - ⬜ v9.1: the link box of a word drawn with its space (a justified
+    TextFrame row, and TextColumn always) reaches one space past the word.
+
 **Thu Oct 8, or when the checks of the spaces pass: the tag**
 - ⬜ Tag v9.0.3 and make the GitHub release; then the Go proxy's `.info` and
   `.zip` of it answering 200, and sum.golang.org having its checksum.

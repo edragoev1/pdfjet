@@ -355,6 +355,49 @@ func TestTextFrameAJustifiedRowDrawsEachWordWithTheSpaceAfterIt(t *testing.T) {
 	}
 }
 
+// testDrawLinked draws a paragraph whose link keeps no space after it:
+// Paragraph.spaceMovesToNext moves the space to the start of the text line
+// after the link.
+func testDrawLinked(width float32, textAlignment alignment.Alignment) string {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	paragraph := NewParagraph()
+	paragraph.Add(NewTextLine(font, "Please see"))
+	paragraph.Add(NewTextLine(font, "our website").SetURIAction("https://pdfjet.com"))
+	paragraph.Add(NewTextLine(font, "for more details about the library and what it does."))
+	paragraph.SetTextAlignment(textAlignment)
+	page := NewPage(pdf, letter.Portrait())
+	frame := NewTextFrameFromParagraphs([]*Paragraph{paragraph}).SetWidth(width)
+	frame.SetLocation(10, 10)
+	frame.DrawOn(page)
+	return testContent(page)
+}
+
+func TestTextFrameTheSpaceAfterALinkIsDrawn(t *testing.T) {
+	font := testHelvetica(testNewPDF())
+	// In a justified row the space moved to the next text line is drawn after
+	// the link; and when the word after the link starts the next row, the row
+	// ends with it, justified or not.
+	onOneRow := font.StringWidth(font.GetSize(), "Please see our website for more details") + 5
+	rowEndsAtLink := font.StringWidth(font.GetSize(), "Please see our website") + 5
+	cases := []struct {
+		width float32
+		align alignment.Alignment
+		want  string
+	}{
+		{onOneRow, alignment.Justify, testHex("website ")},
+		{rowEndsAtLink, alignment.Justify, testHex("website ")},
+		{rowEndsAtLink, alignment.Left, testHex("website ")},
+		// A row not justified draws the space at the start of the next text line
+		{onOneRow, alignment.Left, "<" + testHex(" for")},
+	}
+	for _, c := range cases {
+		if content := testDrawLinked(c.width, c.align); !strings.Contains(content, c.want) {
+			t.Errorf("%v %v: no %s in %q", c.width, c.align, c.want, content)
+		}
+	}
+}
+
 func TestTextFrameAJustifiedRowDoesNotWidenAJoin(t *testing.T) {
 	font := testHelvetica(testNewPDF())
 	justify := alignment.Justify

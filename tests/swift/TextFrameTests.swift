@@ -276,6 +276,35 @@ import Testing
         #expect(content.contains("<" + TestSupport.hex("eight nine ten eleven twelve thirteen")), "\(content)")
     }
 
+    // A paragraph whose link keeps no space after it: Paragraph.spaceMovesToNext
+    // moves the space to the start of the text line after the link.
+    private func drawLinked(_ width: Float, _ alignment: Alignment) -> String {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let paragraph = Paragraph()
+        paragraph.add(TextLine(font, "Please see"))
+        paragraph.add(TextLine(font, "our website").setURIAction("https://pdfjet.com"))
+        paragraph.add(TextLine(font, "for more details about the library and what it does."))
+        paragraph.setTextAlignment(alignment)
+        let page = Page(pdf, Letter.PORTRAIT)
+        TextFrame([paragraph]).setLocation(10, 10).setWidth(width).drawOn(page)
+        return TestSupport.content(page)
+    }
+
+    @Test func theSpaceAfterALinkIsDrawn() {
+        let font = TestSupport.helvetica(TestSupport.newPDF())
+        // In a justified row the space moved to the next text line is drawn
+        // after the link; and when the word after the link starts the next row,
+        // the row ends with it, justified or not.
+        let onOneRow = font.stringWidth("Please see our website for more details") + 5
+        let rowEndsAtLink = font.stringWidth("Please see our website") + 5
+        #expect(drawLinked(onOneRow, Alignment.JUSTIFY).contains(TestSupport.hex("website ")))
+        #expect(drawLinked(rowEndsAtLink, Alignment.JUSTIFY).contains(TestSupport.hex("website ")))
+        #expect(drawLinked(rowEndsAtLink, Alignment.LEFT).contains(TestSupport.hex("website ")))
+        // A row not justified draws the space at the start of the next text line
+        #expect(drawLinked(onOneRow, Alignment.LEFT).contains("<" + TestSupport.hex(" for")))
+    }
+
     @Test func aJustifiedRowDoesNotWidenAJoin() {
         let font = TestSupport.helvetica(TestSupport.newPDF())
         let content = drawJoined(200, Alignment.JUSTIFY,

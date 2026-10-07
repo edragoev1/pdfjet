@@ -305,6 +305,40 @@ class TextFrameTest {
         assertTrue(content.contains("<" + TestSupport.hex("eight nine ten eleven twelve thirteen")), content);
     }
 
+    // A paragraph whose link keeps no space after it: Paragraph.spaceMovesToNext
+    // moves the space to the start of the text line after the link.
+    private static String drawLinked(float width, Alignment alignment) throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        Paragraph paragraph = new Paragraph();
+        paragraph.add(new TextLine(font, "Please see"));
+        paragraph.add(new TextLine(font, "our website").setURIAction("https://pdfjet.com"));
+        paragraph.add(new TextLine(font, "for more details about the library and what it does."));
+        paragraph.setTextAlignment(alignment);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextFrame(Arrays.asList(paragraph)).setLocation(10f, 10f).setWidth(width).drawOn(page);
+        return TestSupport.content(page);
+    }
+
+    @Test
+    void theSpaceAfterALinkIsDrawn() throws Exception {
+        Font font = TestSupport.helvetica(TestSupport.newPDF());
+        // In a justified row the space moved to the next text line is drawn
+        // after the link; and when the word after the link starts the next row,
+        // the row ends with it, justified or not.
+        float onOneRow = font.stringWidth("Please see our website for more details") + 5f;
+        float rowEndsAtLink = font.stringWidth("Please see our website") + 5f;
+        String content = drawLinked(onOneRow, Alignment.JUSTIFY);
+        assertTrue(content.contains(TestSupport.hex("website ")), content);
+        content = drawLinked(rowEndsAtLink, Alignment.JUSTIFY);
+        assertTrue(content.contains(TestSupport.hex("website ")), content);
+        content = drawLinked(rowEndsAtLink, Alignment.LEFT);
+        assertTrue(content.contains(TestSupport.hex("website ")), content);
+        // A row not justified draws the space at the start of the next text line
+        content = drawLinked(onOneRow, Alignment.LEFT);
+        assertTrue(content.contains("<" + TestSupport.hex(" for")), content);
+    }
+
     @Test
     void aJustifiedRowDoesNotWidenAJoin() throws Exception {
         Font font = TestSupport.helvetica(TestSupport.newPDF());

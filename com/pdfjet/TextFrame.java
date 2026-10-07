@@ -56,6 +56,10 @@ public class TextFrame implements Drawable {
     // True when the next text line starts with the space after the last word
     // of this one: see Paragraph.spaceMovesToNext.
     private boolean leadingSpace;
+    // True when the row ends where a space moved to the next text line, and
+    // the word that has it goes on the next row: the space is drawn after the
+    // last word of the row, so that the word break is in the text.
+    private boolean rowEndSpace;
     // The paragraph whose structure element the text of the rows belongs to,
     // and the element. A paragraph is one element however many rows it takes;
     // one that the frame draws the rest of on another page gets an element of
@@ -358,6 +362,7 @@ public class TextFrame implements Drawable {
         startsParagraph = false;
         joinReserved = false;
         leadingSpace = false;
+        rowEndSpace = false;
         row.clear();
         float bottom = y;
         while (paragraphIndex < paragraphs.size()) {
@@ -498,6 +503,11 @@ public class TextFrame implements Drawable {
                 } else {
                     tokens.set(tokenIndex, token.substring(head.length()));
                 }
+            }
+            if (leading && buf.length() == 0) {
+                // The word starts the next row without the space before it,
+                // which this row then ends with.
+                rowEndSpace = true;
             }
             addToRow(paragraph, textLine, buf.toString(), false);
             drawRow(page, false);
@@ -660,6 +670,8 @@ public class TextFrame implements Drawable {
     private void drawRow(Page page, boolean lastRowOfParagraph) throws Exception {
         joinReserved = false;
         leadingSpace = false;
+        boolean endSpace = rowEndSpace;
+        rowEndSpace = false;
         if (row.isEmpty()) {
             return;
         }
@@ -669,7 +681,7 @@ public class TextFrame implements Drawable {
         float rowWidth = last.x + width(last.textLine, trimTrailingSpaces(last.text)) - x;
 
         if (alignment == Alignment.JUSTIFY && !lastRowOfParagraph) {
-            drawJustifiedRow(page, rowWidth);
+            drawJustifiedRow(page, rowWidth, endSpace);
         } else {
             float shift = 0f;
             if (alignment == Alignment.RIGHT) {
@@ -679,7 +691,15 @@ public class TextFrame implements Drawable {
             }
             for (RowPart part : row) {
                 beginParagraphElement(page, part.paragraph, part.x + shift, yText);
-                part.textLine.copyWithText(part.text).setLocation(part.x + shift, yText).drawOn(page);
+                if (endSpace && part == lastWithText() && !part.text.endsWith(Single.space)) {
+                    // The space of the word break, drawn after the last word of
+                    // the row, and left out of its underline
+                    TextLine withSpace = part.textLine.copyWithText(part.text + Single.space);
+                    withSpace.isLastToken = true;
+                    withSpace.setLocation(part.x + shift, yText).drawOn(page);
+                } else {
+                    part.textLine.copyWithText(part.text).setLocation(part.x + shift, yText).drawOn(page);
+                }
                 endParagraphElement(page);
                 if (part.startsParagraph) {
                     part.paragraph.xText += shift;
@@ -694,7 +714,7 @@ public class TextFrame implements Drawable {
 
     // Draws the words of the row one by one, with the width left in the row shared
     // out among the spaces between them.
-    private void drawJustifiedRow(Page page, float rowWidth) throws Exception {
+    private void drawJustifiedRow(Page page, float rowWidth, boolean endSpace) throws Exception {
         int spaces = 0;
         for (int i = 0; i < row.size(); i++) {
             String text = row.get(i).text;
@@ -718,7 +738,13 @@ public class TextFrame implements Drawable {
                 if (end > start) {
                     String word = text.substring(start, end);
                     beginParagraphElement(page, part.paragraph, xWord, yText);
-                    if (end < text.length()) {
+                    // The space after the word may be the first character of
+                    // the next part, where Paragraph.spaceMovesToNext put it,
+                    // or have gone with the word to the next row.
+                    String next = (end < text.length()) ? null : textAfter(i);
+                    boolean spaceAfter = end < text.length()
+                            || (next != null ? next.startsWith(Single.space) : endSpace);
+                    if (spaceAfter) {
                         // The word with the space after it, so that a screen
                         // reader and a text extractor see the word break; the
                         // stretch of the row places the next word, so nothing
@@ -745,6 +771,28 @@ public class TextFrame implements Drawable {
                 part.paragraph.x2 = xWord;
             }
         }
+    }
+
+    // Returns the last part of the row that has text: a text line whose first
+    // word goes on the next row leaves an empty part at the end of the row.
+    private RowPart lastWithText() {
+        for (int i = row.size() - 1; i >= 0; i--) {
+            if (!row.get(i).text.isEmpty()) {
+                return row.get(i);
+            }
+        }
+        return null;
+    }
+
+    // Returns the text of the first part after this one in the row that has
+    // text, or null when there is none.
+    private String textAfter(int partIndex) {
+        for (int i = partIndex + 1; i < row.size(); i++) {
+            if (!row.get(i).text.isEmpty()) {
+                return row.get(i).text;
+            }
+        }
+        return null;
     }
 
     // Returns true when a word follows this position of the row.

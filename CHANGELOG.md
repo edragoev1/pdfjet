@@ -86,7 +86,11 @@ This is the first entry in this file; earlier releases were not tracked here.
   so the last word of one line and the first of the next ran together for a
   reader that does not guess the break from the gap, and NVDA paused at
   every line end; and a justified row of `TextFrame`, drawn word by word,
-  draws each word with the space after it, where it drew no space at all.
+  draws each word with the space after it, where it drew no space at all,
+  also where the space moved to the next text line, as it does after a link,
+  an underline or a change of font. A row of `TextFrame`, justified or not,
+  that ends where such a space moved and its word goes on the next row ends
+  with the space, where the two words ran together.
   The space is drawn but not measured: the alignment, the stretch of a
   justified row, the underline and the strikeout are as before, and the
   pages of the 62 example PDFs render the same pixel for pixel, in the four

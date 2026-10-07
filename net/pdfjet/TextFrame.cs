@@ -57,6 +57,10 @@ public class TextFrame : IDrawable {
     // True when the next text line starts with the space after the last word
     // of this one: see Paragraph.SpaceMovesToNext.
     private bool leadingSpace;
+    // True when the row ends where a space moved to the next text line, and
+    // the word that has it goes on the next row: the space is drawn after the
+    // last word of the row, so that the word break is in the text.
+    private bool rowEndSpace;
     // The paragraph whose structure element the text of the rows belongs to,
     // and the element. A paragraph is one element however many rows it takes;
     // one that the frame draws the rest of on another page gets an element of
@@ -292,6 +296,7 @@ public class TextFrame : IDrawable {
         startsParagraph = false;
         joinReserved = false;
         leadingSpace = false;
+        rowEndSpace = false;
         row.Clear();
         float bottom = y;
         while (paragraphIndex < paragraphs.Count) {
@@ -432,6 +437,11 @@ public class TextFrame : IDrawable {
                 } else {
                     tokens[tokenIndex] = token.Substring(head.Length);
                 }
+            }
+            if (leading && buf.Length == 0) {
+                // The word starts the next row without the space before it,
+                // which this row then ends with.
+                rowEndSpace = true;
             }
             AddToRow(paragraph, textLine, buf.ToString(), false);
             DrawRow(page, false);
@@ -590,6 +600,8 @@ public class TextFrame : IDrawable {
     private void DrawRow(Page page, bool lastRowOfParagraph) {
         joinReserved = false;
         leadingSpace = false;
+        bool endSpace = rowEndSpace;
+        rowEndSpace = false;
         if (row.Count == 0) {
             return;
         }
@@ -599,7 +611,7 @@ public class TextFrame : IDrawable {
         float rowWidth = last.x + Width(last.textLine, TrimTrailingSpaces(last.text)) - x;
 
         if (alignment == Alignment.JUSTIFY && !lastRowOfParagraph) {
-            DrawJustifiedRow(page, rowWidth);
+            DrawJustifiedRow(page, rowWidth, endSpace);
         } else {
             float shift = 0f;
             if (alignment == Alignment.RIGHT) {
@@ -609,7 +621,15 @@ public class TextFrame : IDrawable {
             }
             foreach (RowPart part in row) {
                 BeginParagraphElement(page, part.paragraph, part.x + shift, yText);
-                part.textLine.CopyWithText(part.text).SetLocation(part.x + shift, yText).DrawOn(page);
+                if (endSpace && part == LastWithText() && part.text[part.text.Length - 1] != ' ') {
+                    // The space of the word break, drawn after the last word of
+                    // the row, and left out of its underline
+                    TextLine withSpace = part.textLine.CopyWithText(part.text + Single.space);
+                    withSpace.isLastToken = true;
+                    withSpace.SetLocation(part.x + shift, yText).DrawOn(page);
+                } else {
+                    part.textLine.CopyWithText(part.text).SetLocation(part.x + shift, yText).DrawOn(page);
+                }
                 EndParagraphElement(page);
                 if (part.startsParagraph) {
                     part.paragraph.xText += shift;
@@ -624,7 +644,7 @@ public class TextFrame : IDrawable {
 
     // Draws the words of the row one by one, with the width left in the row shared
     // out among the spaces between them.
-    private void DrawJustifiedRow(Page page, float rowWidth) {
+    private void DrawJustifiedRow(Page page, float rowWidth, bool endSpace) {
         int spaces = 0;
         for (int i = 0; i < row.Count; i++) {
             String text = row[i].text;
@@ -648,7 +668,13 @@ public class TextFrame : IDrawable {
                 if (end > start) {
                     String word = text.Substring(start, end - start);
                     BeginParagraphElement(page, part.paragraph, xWord, yText);
-                    if (end < text.Length) {
+                    // The space after the word may be the first character of
+                    // the next part, where Paragraph.SpaceMovesToNext put it,
+                    // or have gone with the word to the next row.
+                    String next = (end < text.Length) ? null : TextAfter(i);
+                    bool spaceAfter = end < text.Length
+                            || (next != null ? next[0] == ' ' : endSpace);
+                    if (spaceAfter) {
                         // The word with the space after it, so that a screen
                         // reader and a text extractor see the word break; the
                         // stretch of the row places the next word, so nothing
@@ -675,6 +701,28 @@ public class TextFrame : IDrawable {
                 part.paragraph.x2 = xWord;
             }
         }
+    }
+
+    // Returns the last part of the row that has text: a text line whose first
+    // word goes on the next row leaves an empty part at the end of the row.
+    private RowPart LastWithText() {
+        for (int i = row.Count - 1; i >= 0; i--) {
+            if (row[i].text.Length > 0) {
+                return row[i];
+            }
+        }
+        return null;
+    }
+
+    // Returns the text of the first part after this one in the row that has
+    // text, or null when there is none.
+    private String TextAfter(int partIndex) {
+        for (int i = partIndex + 1; i < row.Count; i++) {
+            if (row[i].text.Length > 0) {
+                return row[i].text;
+            }
+        }
+        return null;
     }
 
     // Returns true when a word follows this position of the row.

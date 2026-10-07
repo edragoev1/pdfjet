@@ -407,7 +407,10 @@ public class TextBlock : Drawable {
                                     // but not measured; at a zero width space it
                                     // has none to keep.
                                     let textLine = TextLine(font, sb.trim())
-                                    textLine.trailingSpace = sb.hasSuffix(" ")
+                                    // The last scalar: hasSuffix compares characters,
+                                    // and a prepended mark, such as U+0600, joins
+                                    // the space after it into one.
+                                    textLine.trailingSpace = sb.unicodeScalars.last == " "
                                     textLines.append(textLine)
                                     sb = ""
                                 }

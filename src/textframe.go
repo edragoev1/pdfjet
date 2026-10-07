@@ -80,6 +80,10 @@ type TextFrame struct {
 	// True when the next text line starts with the space after the last word
 	// of this one: see Paragraph.spaceMovesToNext.
 	leadingSpace bool
+	// True when the row ends where a space moved to the next text line, and
+	// the word that has it goes on the next row: the space is drawn after the
+	// last word of the row, so that the word break is in the text.
+	rowEndSpace bool
 
 	// The text of the row being drawn, drawn when the row is complete, so that
 	// it can be aligned: each part is a text line with some of its text.
@@ -286,6 +290,7 @@ func (tf *TextFrame) drawParagraphs(page *Page) float32 {
 	tf.startsParagraph = false
 	tf.joinReserved = false
 	tf.leadingSpace = false
+	tf.rowEndSpace = false
 	tf.row = tf.row[:0]
 	bottom := tf.y
 	for tf.paragraphIndex < len(tf.paragraphs) {
@@ -435,6 +440,11 @@ func (tf *TextFrame) drawTokens(page *Page, paragraph *Paragraph, textLine *Text
 				tf.tokens[tf.tokenIndex] = token[len(head):]
 			}
 		}
+		if leading && buf.Len() == 0 {
+			// The word starts the next row without the space before it,
+			// which this row then ends with.
+			tf.rowEndSpace = true
+		}
 		tf.addToRow(paragraph, textLine, buf.String(), false)
 		tf.drawRow(page, false)
 		buf.Reset()
@@ -520,6 +530,8 @@ func (tf *TextFrame) addToRow(paragraph *Paragraph, textLine *TextLine, str stri
 func (tf *TextFrame) drawRow(page *Page, lastRowOfParagraph bool) {
 	tf.joinReserved = false
 	tf.leadingSpace = false
+	endSpace := tf.rowEndSpace
+	tf.rowEndSpace = false
 	if len(tf.row) == 0 {
 		return
 	}
@@ -532,7 +544,7 @@ func (tf *TextFrame) drawRow(page *Page, lastRowOfParagraph bool) {
 	rowWidth := last.x + textWidth(last.textLine, trimTrailingSpaces(last.text)) - tf.x
 
 	if textAlignment == alignment.Justify && !lastRowOfParagraph {
-		tf.drawJustifiedRow(page, rowWidth)
+		tf.drawJustifiedRow(page, rowWidth, endSpace)
 	} else {
 		var shift float32
 		if textAlignment == alignment.Right {
@@ -540,8 +552,15 @@ func (tf *TextFrame) drawRow(page *Page, lastRowOfParagraph bool) {
 		} else if textAlignment == alignment.Center {
 			shift = float32((tf.w - rowWidth) / 2)
 		}
-		for _, part := range tf.row {
+		lastWithText := tf.lastWithText()
+		for i, part := range tf.row {
 			line := part.textLine.copyWithText(part.text)
+			if endSpace && i == lastWithText && !strings.HasSuffix(part.text, single.Space) {
+				// The space of the word break, drawn after the last word of
+				// the row, and left out of its underline
+				line = part.textLine.copyWithText(part.text + single.Space)
+				line.isLastToken = true
+			}
 			line.SetLocation(part.x+shift, tf.yText)
 			restore := tf.beginParagraphElement(page, part.paragraph, part.x+shift, tf.yText)
 			line.DrawOn(page)
@@ -626,7 +645,7 @@ func (tf *TextFrame) closeList(page *Page) {
 
 // drawJustifiedRow draws the words of the row one by one, with the width left
 // in the row shared out among the spaces between them.
-func (tf *TextFrame) drawJustifiedRow(page *Page, rowWidth float32) {
+func (tf *TextFrame) drawJustifiedRow(page *Page, rowWidth float32, endSpace bool) {
 	spaces := 0
 	for i, part := range tf.row {
 		for j := 0; j < len(part.text); j++ {
@@ -653,7 +672,18 @@ func (tf *TextFrame) drawJustifiedRow(page *Page, rowWidth float32) {
 			if end > start {
 				word := text[start:end]
 				line := part.textLine.copyWithText(word)
-				if end < len(text) {
+				// The space after the word may be the first character of the
+				// next part, where Paragraph.spaceMovesToNext put it, or have
+				// gone with the word to the next row.
+				spaceAfter := end < len(text)
+				if !spaceAfter {
+					if next, ok := tf.textAfter(i); ok {
+						spaceAfter = strings.HasPrefix(next, single.Space)
+					} else {
+						spaceAfter = endSpace
+					}
+				}
+				if spaceAfter {
 					// The word with the space after it, so that a screen
 					// reader and a text extractor see the word break; the
 					// stretch of the row places the next word, so nothing
@@ -683,6 +713,29 @@ func (tf *TextFrame) drawJustifiedRow(page *Page, rowWidth float32) {
 }
 
 // hasWordAfter returns true when a word follows this position of the row.
+// lastWithText returns the index of the last part of the row that has text,
+// or -1: a text line whose first word goes on the next row leaves an empty
+// part at the end of the row.
+func (tf *TextFrame) lastWithText() int {
+	for i := len(tf.row) - 1; i >= 0; i-- {
+		if tf.row[i].text != "" {
+			return i
+		}
+	}
+	return -1
+}
+
+// textAfter returns the text of the first part after this one in the row
+// that has text, and false when there is none.
+func (tf *TextFrame) textAfter(partIndex int) (string, bool) {
+	for i := partIndex + 1; i < len(tf.row); i++ {
+		if tf.row[i].text != "" {
+			return tf.row[i].text, true
+		}
+	}
+	return "", false
+}
+
 func (tf *TextFrame) hasWordAfter(partIndex, byteIndex int) bool {
 	for i := partIndex; i < len(tf.row); i++ {
 		text := tf.row[i].text
