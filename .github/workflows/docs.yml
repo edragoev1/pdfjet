@@ -10,7 +10,7 @@ name: Documentation
 
 on:
     push:
-        branches: [ master ]
+        branches: [ main ]
         paths:
             - "com/**"
             - "net/**"
@@ -142,8 +142,8 @@ jobs:
                   <li><a href="examples-java.html">Java examples</a></li>
                   <li><a href="examples-dotnet.html">C# examples</a></li>
                   </ul>
-                  <p><a href="https://github.com/edragoev1/pdfjet/blob/master/CHANGELOG.md">Changelog</a>
-                  · <a href="https://github.com/edragoev1/pdfjet/blob/master/SECURITY.md">Security policy</a></p>
+                  <p><a href="https://github.com/edragoev1/pdfjet/blob/main/CHANGELOG.md">Changelog</a>
+                  · <a href="https://github.com/edragoev1/pdfjet/blob/main/SECURITY.md">Security policy</a></p>
                   </body>
                   </html>
                   EOF

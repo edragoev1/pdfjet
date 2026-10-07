@@ -22,5 +22,5 @@ go run ./.github/scripts/encrypted-pdfs viewer-files-to-test
 
 Example_30 opens with the user password `hello` and the owner password
 `world`; `Encrypted_Cyrillic.pdf` with `пароль`; `Encrypted_200_Bytes.pdf`
-with `0123456789` typed 20 times. Build them again from the frozen master
+with `0123456789` typed 20 times. Build them again from the frozen main
 before the pass of Oct 15-20.

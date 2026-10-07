@@ -259,7 +259,7 @@ snippets in the four ports and checks that they write the same PDFs.
 ## Builds
 
 The `Build` GitHub Actions workflow runs `build-java.sh`, `build-dotnet.sh`,
-`build-go.sh` and `build-swift.sh` on every push to `master` and on pull
+`build-go.sh` and `build-swift.sh` on every push to `main` and on pull
 requests, one job per port. A job fails if the library or an example does not
 compile or compiles with a warning, `go vet` reports a problem in the Go port,
 an example exits with an error, an example does not create its PDF file, or a
@@ -338,7 +338,7 @@ examples.
 
 The API references and the example pages are published at
 <https://edragoev1.github.io/pdfjet/>. The `Documentation` GitHub Actions
-workflow rebuilds and publishes the site on every push to `master`, so the
+workflow rebuilds and publishes the site on every push to `main`, so the
 generated HTML is not kept in git. The workflow also runs the Java examples and
 publishes the PDF files they create, which the example pages link to. This
 needs the repository's Pages source

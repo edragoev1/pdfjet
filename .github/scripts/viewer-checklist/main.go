@@ -178,7 +178,7 @@ func main() {
 	y += 30
 
 	intro := textBlock(regular, 10, "Goal 4 of TODO.md. The files are in viewer-files-to-test: the Java "+
-		"examples built from master, Example_30 with the user password hello and the owner password world, "+
+		"examples built from main, Example_30 with the user password hello and the owner password world, "+
 		"and Encrypted_Cyrillic and Encrypted_200_Bytes. Tick each box when it holds; when it does not, "+
 		"write what you see on the lines below the viewer.", marginX, 612-2*marginX, soft)
 	y = intro.DrawOn(page)[1] + 8
