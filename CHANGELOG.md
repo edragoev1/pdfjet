@@ -19,6 +19,11 @@ This is the first entry in this file; earlier releases were not tracked here.
   user and its owner password, and two more PDFs with a Cyrillic and a 200
   byte password. The renders are uploaded, with a contact sheet of each PDF
   beside MuPDF's. `check-examples.sh` runs the PDFium check.
+- `PDFjet.dll` is strong-named, in the licensed and in the evaluation
+  package alike: public key token `e66c1909913f295d`, so that strong-named
+  applications can reference it. Its assembly version is 9.0.0.0, the same
+  through 9.x, so that no binding redirects are needed, and its file and
+  product versions are those of the release, 9.0.3; it said 0.0.0.0.
 
 ### Deprecated
 - The constructor of the Chinese, Japanese and Korean fonts that are not

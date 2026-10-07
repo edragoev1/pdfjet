@@ -9,6 +9,7 @@
          package-dotnet.sh also signs it with the strong-name key, which is
          not in the repository: PDFJET_SNK. -->
     <AssemblyVersion>9.0.0.0</AssemblyVersion>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <Company>PDFjet Software</Company>
     <Product>PDFjet</Product>
     <Copyright>Copyright (c) 2026 PDFjet Software</Copyright>
