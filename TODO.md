@@ -33,8 +33,18 @@ left is checking, tagging and packaging.
 - ⬜ The owner: the manual viewer pass on them, in Acrobat Reader, Preview,
   Chrome, Firefox and Edge.
 - ✅ The `## v9.0.3` entry of CHANGELOG.md dated: 2026-10-08, the day of the tag.
+- ⬜ **The spaces of wrapped text, brought into 9.0.3 on the evening of Oct
+  7** (the owner: "it bothers me that we advertise PDF/UA but the usability
+  is not the way it should be"; the tag may slip for it). TextBlock draws
+  the space it wrapped a line at, and a justified TextFrame row each word
+  with its space, in the four ports, with a test in each (see "First after
+  the tag", below, now done). The 62 example PDFs of each port render the
+  same pixel for pixel as at 9804e50d, 3,420 pages a port. Then, on the
+  final commit, the checks above again: `check-examples.sh`,
+  `./check-api.sh v9.0.2`, pdfjet-server's `go test`, the viewer files
+  built again; the owner's viewer pass on those.
 
-**Thu Oct 8: the tag**
+**Thu Oct 8, or when the checks of the spaces pass: the tag**
 - ⬜ Tag v9.0.3 and make the GitHub release; then the Go proxy's `.info` and
   `.zip` of it answering 200, and sum.golang.org having its checksum.
 - ⬜ PDFjet Pro released on the tag, from `~/Projects/pdfjet-pro`, beside
@@ -58,9 +68,7 @@ until then, so nothing is lost if it slips.
 have odd numbers, so 9.0.5 follows 9.0.3, never 9.0.4). Fixes found in the
 viewer pass of Oct 7, no new API, in the four ports with tests, each
 detailed in the list below:
-1. ⬜ The spaces of wrapped text: the space at the end of each wrapped line,
-   stripped by TextBlock, and every space of a justified TextFrame row,
-   none drawn: first, to know that the PDFs read aloud and extract right.
+1. ✅ The spaces of wrapped text: moved into 9.0.3 (above), on 7 October.
 2. ⬜ Example_46 as PDF/UA: in a tagged document, the optional content
    configuration (`/D` of `/OCProperties`) written with a `/Name` and
    without `/AS`, as PDF/UA 7.10 asks; veraPDF failed Example_46 on 7.10-1
@@ -151,9 +159,16 @@ detailed in the list below:
    AssemblyInfo.cs, hence the version 0.0.0.0.
 
 **After the tag, when convenient, blocking nothing:**
-- ⬜ **First after the tag (the owner, 7 October 2026: "I really want to know
-  if we are doing everything right"): the space at the end of each wrapped
-  line is stripped, in the four ports.** Found by the owner's NVDA pass:
+- ✅ **Done in 9.0.3, on 7 October 2026 (it was "first after the tag"; the
+  owner: "I really want to know if we are doing everything right"): the
+  space at the end of each wrapped line is stripped, in the four ports.**
+  TextBlock's lines keep a flag, trailingSpace, set when the line was
+  wrapped at a space, and Page.drawTextBlock draws the space after the line;
+  a justified TextFrame row draws "word " with isLastToken, so its underline
+  stops at the word. Pixel test passed in the four ports (13,680 pages);
+  `mutool trace` shows the spaces; Word's PDF beside ours, the comparison
+  planned below, was not needed, since tagged PDF asks for the spaces anyway.
+  The note as it was: Found by the owner's NVDA pass:
   Example_01, once its languages were fixed, reads in English, Greek and
   Bulgarian but choppy, with a pause at every line end. Checked on Oct 7:
   TextBlock builds a wrapped line word by word, each with its space, then

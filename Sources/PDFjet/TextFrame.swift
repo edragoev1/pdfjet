@@ -646,7 +646,18 @@ public class TextFrame : Drawable {
                 if end > start {
                     let word = String(String.UnicodeScalarView(text[start..<end]))
                     beginParagraphElement(page, part.paragraph, xWord, yText)
-                    part.textLine.copyWithText(word).setLocation(xWord, yText).drawOn(page)
+                    if end < text.count {
+                        // The word with the space after it, so that a screen
+                        // reader and a text extractor see the word break; the
+                        // stretch of the row places the next word, so nothing
+                        // moves, and the underline stops at the word, as the
+                        // last token of a line in a TextColumn does.
+                        let withSpace = part.textLine.copyWithText(word + Single.space)
+                        withSpace.isLastToken = true
+                        withSpace.setLocation(xWord, yText).drawOn(page)
+                    } else {
+                        part.textLine.copyWithText(word).setLocation(xWord, yText).drawOn(page)
+                    }
                     endParagraphElement(page)
                     xWord += TextFrame.width(part.textLine, word)
                 }

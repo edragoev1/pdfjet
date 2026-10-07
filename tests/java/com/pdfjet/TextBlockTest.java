@@ -62,6 +62,23 @@ class TextBlockTest {
     }
 
     @Test
+    void aWrappedLineIsDrawnWithTheSpaceItWasWrappedAt() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextBlock(font, TEN_WORDS).setLocation(0f, 0f).setWidth(60f).drawOn(page);
+        String content = TestSupport.content(page);
+        // Six lines: after each of the first five, the space it was wrapped at,
+        // so that a screen reader and a text extractor see the word break; the
+        // last line has none.
+        String space = "[<" + TestSupport.hex(" ") + ">] TJ\n";
+        assertEquals(5, (content.length() - content.replace(space, "").length()) / space.length(), content);
+        assertTrue(content.contains("[<" + TestSupport.hex("ten") + ">] TJ\nET"), content);
+        // Drawn after the line, not in its text: the line is measured without it
+        assertTrue(content.contains("[<" + TestSupport.hex("one two") + ">] TJ\n"), content);
+    }
+
+    @Test
     void paddingWiderThanTheBlockDrawsOneCharacterALine() throws Exception {
         PDF pdf = TestSupport.newPDF();
         Font font = TestSupport.helvetica(pdf);

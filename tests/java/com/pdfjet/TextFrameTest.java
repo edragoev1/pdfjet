@@ -294,6 +294,18 @@ class TextFrameTest {
     }
 
     @Test
+    void aJustifiedRowDrawsEachWordWithTheSpaceAfterIt() throws Exception {
+        String content = drawJoined(200f, Alignment.JUSTIFY,
+                "one two three four five six seven eight nine ten eleven twelve thirteen");
+        // So that a screen reader and a text extractor see the word breaks;
+        // the stretch of the row still places each word.
+        assertTrue(content.contains("<" + TestSupport.hex("one ") + ">"), content);
+        assertTrue(content.contains("<" + TestSupport.hex("two ") + ">"), content);
+        // The last row is not justified, and is drawn whole, as before
+        assertTrue(content.contains("<" + TestSupport.hex("eight nine ten eleven twelve thirteen")), content);
+    }
+
+    @Test
     void aJustifiedRowDoesNotWidenAJoin() throws Exception {
         Font font = TestSupport.helvetica(TestSupport.newPDF());
         String content = drawJoined(200f, Alignment.JUSTIFY,

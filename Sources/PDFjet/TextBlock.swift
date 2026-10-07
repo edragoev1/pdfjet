@@ -403,7 +403,12 @@ public class TextBlock : Drawable {
                                 sb.append(separator)
                             } else {
                                 if !sb.isEmpty {
-                                    textLines.append(TextLine(font, sb.trim()))
+                                    // Wrapped at a space, the line keeps it, drawn
+                                    // but not measured; at a zero width space it
+                                    // has none to keep.
+                                    let textLine = TextLine(font, sb.trim())
+                                    textLine.trailingSpace = sb.hasSuffix(" ")
+                                    textLines.append(textLine)
                                     sb = ""
                                 }
                                 // A word too wide for a line by itself is broken.

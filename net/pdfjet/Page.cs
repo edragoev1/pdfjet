@@ -3179,6 +3179,19 @@ public class Page {
             } else {
                 DrawColoredString(font, textLine.text, color, highlightColors);
             }
+            if (textLine.trailingSpace) {
+                // The space the line was wrapped at, drawn after it: no ink, and
+                // the next line is placed with its own matrix, so nothing moves.
+                if (font.isCoreFont) {
+                    Append("[<");
+                    DrawASCIIString(font, Single.space);
+                    Append(">] TJ\n");
+                } else {
+                    Append("<");
+                    DrawUnicodeString(font, Single.space);
+                    Append("> Tj\n");
+                }
+            }
             yText += leading;
         }
         Append("ET\n");

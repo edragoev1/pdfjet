@@ -26,6 +26,11 @@ public class TextLine : BaselineDrawable {
     var xOffset: Float = 0.0
     var underline = false
     var strikeout = false
+    // True when a TextBlock wrapped its text at a space after this line: the
+    // space is drawn after the line, so that a screen reader and a text
+    // extractor see the word break, but is not part of its text, so that
+    // the alignment and the underline measure the line without it.
+    var trailingSpace = false
 
     private var degrees = 0
 

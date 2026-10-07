@@ -57,6 +57,23 @@ public class TextBlockTest {
     }
 
     [Fact]
+    public void AWrappedLineIsDrawnWithTheSpaceItWasWrappedAt() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextBlock(font, TEN_WORDS).SetLocation(0f, 0f).SetWidth(60f).DrawOn(page);
+        string content = TestSupport.Content(page);
+        // Six lines: after each of the first five, the space it was wrapped at,
+        // so that a screen reader and a text extractor see the word break; the
+        // last line has none.
+        string space = "[<" + TestSupport.Hex(" ") + ">] TJ\n";
+        Assert.Equal(5, (content.Length - content.Replace(space, "").Length) / space.Length);
+        Assert.Contains("[<" + TestSupport.Hex("ten") + ">] TJ\nET", content);
+        // Drawn after the line, not in its text: the line is measured without it
+        Assert.Contains("[<" + TestSupport.Hex("one two") + ">] TJ\n", content);
+    }
+
+    [Fact]
     public void PaddingWiderThanTheBlockDrawsOneCharacterALine() {
         PDF pdf = TestSupport.NewPDF();
         Font font = TestSupport.Helvetica(pdf);

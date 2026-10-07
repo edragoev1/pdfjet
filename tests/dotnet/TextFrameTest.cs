@@ -288,6 +288,18 @@ public class TextFrameTest {
     }
 
     [Fact]
+    public void AJustifiedRowDrawsEachWordWithTheSpaceAfterIt() {
+        string content = DrawJoined(200f, Alignment.JUSTIFY,
+                "one two three four five six seven eight nine ten eleven twelve thirteen");
+        // So that a screen reader and a text extractor see the word breaks;
+        // the stretch of the row still places each word.
+        Assert.Contains("<" + TestSupport.Hex("one ") + ">", content);
+        Assert.Contains("<" + TestSupport.Hex("two ") + ">", content);
+        // The last row is not justified, and is drawn whole, as before
+        Assert.Contains("<" + TestSupport.Hex("eight nine ten eleven twelve thirteen"), content);
+    }
+
+    [Fact]
     public void AJustifiedRowDoesNotWidenAJoin() {
         Font font = TestSupport.Helvetica(TestSupport.NewPDF());
         string content = DrawJoined(200f, Alignment.JUSTIFY,

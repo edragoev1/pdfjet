@@ -579,7 +579,12 @@ public class TextBlock implements Drawable {
                                 sb.append(separator);
                             } else {
                                 if (sb.length() > 0) {
-                                    textLines.add(new TextLine(font, sb.toString().trim()));
+                                    // Wrapped at a space, the line keeps it, drawn
+                                    // but not measured; at a zero width space it
+                                    // has none to keep.
+                                    TextLine textLine = new TextLine(font, sb.toString().trim());
+                                    textLine.trailingSpace = sb.charAt(sb.length() - 1) == ' ';
+                                    textLines.add(textLine);
                                     sb.setLength(0);
                                 }
                                 // A word too wide for a line by itself is broken.

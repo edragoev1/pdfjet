@@ -22,6 +22,11 @@ public class TextLine : IBaselineDrawable {
     internal float xOffset = 0f;        // The horizontal offset (from the X coordinate)
     internal bool underline = false;
     internal bool strikeout = false;
+    // True when a TextBlock wrapped its text at a space after this line: the
+    // space is drawn after the line, so that a screen reader and a text
+    // extractor see the word break, but is not part of its text, so that
+    // the alignment and the underline measure the line without it.
+    internal bool trailingSpace = false;
 
     private int degrees = 0;
     private float[] textColor = new float[] {0f, 0f, 0f};

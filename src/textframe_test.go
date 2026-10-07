@@ -338,6 +338,23 @@ func TestTextFrameASpaceWhereTheyMeetKeepsJoinedTextLinesApart(t *testing.T) {
 	}
 }
 
+func TestTextFrameAJustifiedRowDrawsEachWordWithTheSpaceAfterIt(t *testing.T) {
+	justify := alignment.Justify
+	content := testDrawJoined(200, &justify,
+		"one two three four five six seven eight nine ten eleven twelve thirteen")
+	// So that a screen reader and a text extractor see the word breaks;
+	// the stretch of the row still places each word.
+	for _, word := range []string{"one ", "two "} {
+		if !strings.Contains(content, "<"+testHex(word)+">") {
+			t.Errorf("%q is not drawn with its space in %q", word, content)
+		}
+	}
+	// The last row is not justified, and is drawn whole, as before
+	if !strings.Contains(content, "<"+testHex("eight nine ten eleven twelve thirteen")) {
+		t.Errorf("the last row is not drawn whole in %q", content)
+	}
+}
+
 func TestTextFrameAJustifiedRowDoesNotWidenAJoin(t *testing.T) {
 	font := testHelvetica(testNewPDF())
 	justify := alignment.Justify

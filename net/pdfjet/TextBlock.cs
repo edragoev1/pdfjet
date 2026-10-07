@@ -405,7 +405,12 @@ public class TextBlock : IDrawable {
                                 sb.Append(word).Append(separator);
                             } else {
                                 if (sb.Length > 0) {
-                                    textLines.Add(new TextLine(font, Util.Trim(sb.ToString())));
+                                    // Wrapped at a space, the line keeps it, drawn
+                                    // but not measured; at a zero width space it
+                                    // has none to keep.
+                                    TextLine textLine = new TextLine(font, Util.Trim(sb.ToString()));
+                                    textLine.trailingSpace = sb[sb.Length - 1] == ' ';
+                                    textLines.Add(textLine);
                                     sb.Clear();
                                 }
                                 // A word too wide for a line by itself is broken.

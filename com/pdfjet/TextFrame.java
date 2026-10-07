@@ -718,7 +718,18 @@ public class TextFrame implements Drawable {
                 if (end > start) {
                     String word = text.substring(start, end);
                     beginParagraphElement(page, part.paragraph, xWord, yText);
-                    part.textLine.copyWithText(word).setLocation(xWord, yText).drawOn(page);
+                    if (end < text.length()) {
+                        // The word with the space after it, so that a screen
+                        // reader and a text extractor see the word break; the
+                        // stretch of the row places the next word, so nothing
+                        // moves, and the underline stops at the word, as the
+                        // last token of a line in a TextColumn does.
+                        TextLine withSpace = part.textLine.copyWithText(word + Single.space);
+                        withSpace.isLastToken = true;
+                        withSpace.setLocation(xWord, yText).drawOn(page);
+                    } else {
+                        part.textLine.copyWithText(word).setLocation(xWord, yText).drawOn(page);
+                    }
                     endParagraphElement(page);
                     xWord += width(part.textLine, word);
                 }

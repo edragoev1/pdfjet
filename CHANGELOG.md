@@ -80,6 +80,20 @@ This is the first entry in this file; earlier releases were not tracked here.
   two repositories at the pinned commits, and the workflows fetch them.
 
 ### Fixed
+- The spaces of wrapped text are in the PDF, so that a screen reader and a
+  text extractor see every word break, as tagged PDF asks. `TextBlock`
+  draws the space it wrapped a line at after the line, where it dropped it,
+  so the last word of one line and the first of the next ran together for a
+  reader that does not guess the break from the gap, and NVDA paused at
+  every line end; and a justified row of `TextFrame`, drawn word by word,
+  draws each word with the space after it, where it drew no space at all.
+  The space is drawn but not measured: the alignment, the stretch of a
+  justified row, the underline and the strikeout are as before, and the
+  pages of the 62 example PDFs render the same pixel for pixel, in the four
+  ports. `TextColumn`, and the rows of `TextFrame` that are not justified,
+  had their spaces already. A line broken inside a word, at a zero width
+  space, or in Chinese, Japanese or Korean text has no space to draw, nor
+  does right to left text, as before.
 - The Go port computes the same on arm64 as on amd64 and as the Java, C#
   and Swift ports. The Go spec lets the compiler fuse `x*y + z` into one
   fused multiply-add, rounding once, and Go's arm64 compiler did so in 333

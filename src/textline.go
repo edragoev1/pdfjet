@@ -47,6 +47,12 @@ type TextLine struct {
 	uriActualText      string
 	uriAltDescription  string
 	structureType      structelem.StructElem
+
+	// True when a TextBlock wrapped its text at a space after this line: the
+	// space is drawn after the line, so that a screen reader and a text
+	// extractor see the word break, but is not part of its text, so that
+	// the alignment and the underline measure the line without it.
+	trailingSpace bool
 }
 
 // NewTextLine is constructor for creating text line objects.

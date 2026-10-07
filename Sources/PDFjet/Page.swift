@@ -3246,6 +3246,19 @@ public class Page {
             } else {
                 drawColoredString(font, textLine.text!, color, highlightColors!)
             }
+            if textLine.trailingSpace {
+                // The space the line was wrapped at, drawn after it: no ink, and
+                // the next line is placed with its own matrix, so nothing moves.
+                if font.isCoreFont {
+                    append("[<")
+                    drawASCIIString(font, Single.space)
+                    append(">] TJ\n")
+                } else {
+                    append("<")
+                    drawUnicodeString(font, Single.space)
+                    append("> Tj\n")
+                }
+            }
             yText += leading
         }
         append("ET\n")

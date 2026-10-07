@@ -76,6 +76,31 @@ func TestTextBlockAHeightCutsTheTextThatDoesNotFitAndAlignsTheRest(t *testing.T)
 	}
 }
 
+func TestTextBlockAWrappedLineIsDrawnWithTheSpaceItWasWrappedAt(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	page := NewPage(pdf, testLetterPortrait())
+	block := NewTextBlock(font, testTenWords)
+	block.SetLocation(0, 0)
+	block.SetWidth(60)
+	block.DrawOn(page)
+	content := testContent(page)
+	// Six lines: after each of the first five, the space it was wrapped at,
+	// so that a screen reader and a text extractor see the word break; the
+	// last line has none.
+	space := "[<" + testHex(" ") + ">] TJ\n"
+	if n := strings.Count(content, space); n != 5 {
+		t.Errorf("%d spaces after the lines, not 5, in %q", n, content)
+	}
+	if !strings.Contains(content, "[<"+testHex("ten")+">] TJ\nET") {
+		t.Errorf("the last line has a space after it in %q", content)
+	}
+	// Drawn after the line, not in its text: the line is measured without it
+	if !strings.Contains(content, "[<"+testHex("one two")+">] TJ\n") {
+		t.Errorf("the space is in the text of the line in %q", content)
+	}
+}
+
 func TestTextBlockPaddingWiderThanTheBlockDrawsOneCharacterALine(t *testing.T) {
 	pdf := testNewPDF()
 	font := testHelvetica(pdf)

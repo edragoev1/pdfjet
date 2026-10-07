@@ -27,6 +27,22 @@ import Testing
         #expect(block.getWidth() == 60)
     }
 
+    @Test func aWrappedLineIsDrawnWithTheSpaceItWasWrappedAt() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let page = Page(pdf, Letter.PORTRAIT)
+        TextBlock(font, tenWords).setLocation(0, 0).setWidth(60).drawOn(page)
+        let content = TestSupport.content(page)
+        // Six lines: after each of the first five, the space it was wrapped at,
+        // so that a screen reader and a text extractor see the word break; the
+        // last line has none.
+        let space = "[<" + TestSupport.hex(" ") + ">] TJ\n"
+        #expect(content.components(separatedBy: space).count - 1 == 5, "\(content)")
+        #expect(content.contains("[<" + TestSupport.hex("ten") + ">] TJ\nET"), "\(content)")
+        // Drawn after the line, not in its text: the line is measured without it
+        #expect(content.contains("[<" + TestSupport.hex("one two") + ">] TJ\n"), "\(content)")
+    }
+
     @Test func aHeightCutsTheTextThatDoesNotFitAndAlignsTheRest() {
         let pdf = TestSupport.newPDF()
         let font = TestSupport.helvetica(pdf)

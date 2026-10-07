@@ -29,6 +29,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/corefont"
 	"github.com/edragoev1/pdfjet/v9/src/internal/fastfloat"
+	"github.com/edragoev1/pdfjet/v9/src/internal/single"
 	"github.com/edragoev1/pdfjet/v9/src/internal/token"
 	"github.com/edragoev1/pdfjet/v9/src/joinstyle"
 	"github.com/edragoev1/pdfjet/v9/src/pagesize"
@@ -2938,6 +2939,19 @@ func (page *Page) drawTextBlock(
 			}
 		} else {
 			page.drawColoredString(font, textLine.text, textColor, highlightColors)
+		}
+		if textLine.trailingSpace {
+			// The space the line was wrapped at, drawn after it: no ink, and
+			// the next line is placed with its own matrix, so nothing moves.
+			if font.isCoreFont {
+				page.appendString("[<")
+				page.drawASCIIString(font, single.Space)
+				page.appendString(">] TJ\n")
+			} else {
+				page.appendString("<")
+				page.drawUnicodeString(font, single.Space)
+				page.appendString("> Tj\n")
+			}
 		}
 		yText += leading
 	}

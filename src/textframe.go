@@ -653,6 +653,15 @@ func (tf *TextFrame) drawJustifiedRow(page *Page, rowWidth float32) {
 			if end > start {
 				word := text[start:end]
 				line := part.textLine.copyWithText(word)
+				if end < len(text) {
+					// The word with the space after it, so that a screen
+					// reader and a text extractor see the word break; the
+					// stretch of the row places the next word, so nothing
+					// moves, and the underline stops at the word, as the
+					// last token of a line in a TextColumn does.
+					line = part.textLine.copyWithText(word + single.Space)
+					line.isLastToken = true
+				}
 				line.SetLocation(xWord, tf.yText)
 				restore := tf.beginParagraphElement(page, part.paragraph, xWord, tf.yText)
 				line.DrawOn(page)

@@ -648,7 +648,18 @@ public class TextFrame : IDrawable {
                 if (end > start) {
                     String word = text.Substring(start, end - start);
                     BeginParagraphElement(page, part.paragraph, xWord, yText);
-                    part.textLine.CopyWithText(word).SetLocation(xWord, yText).DrawOn(page);
+                    if (end < text.Length) {
+                        // The word with the space after it, so that a screen
+                        // reader and a text extractor see the word break; the
+                        // stretch of the row places the next word, so nothing
+                        // moves, and the underline stops at the word, as the
+                        // last token of a line in a TextColumn does.
+                        TextLine withSpace = part.textLine.CopyWithText(word + Single.space);
+                        withSpace.isLastToken = true;
+                        withSpace.SetLocation(xWord, yText).DrawOn(page);
+                    } else {
+                        part.textLine.CopyWithText(word).SetLocation(xWord, yText).DrawOn(page);
+                    }
                     EndParagraphElement(page);
                     xWord += Width(part.textLine, word);
                 }

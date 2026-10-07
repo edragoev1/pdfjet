@@ -445,9 +445,12 @@ func (textBlock *TextBlock) getTextLines() []*TextLine {
 							sb.WriteString(word + separator)
 						} else {
 							if sb.Len() > 0 {
-								textLines = append(
-									textLines,
-									NewTextLine(textBlock.font, trimSpace(sb.String())))
+								// Wrapped at a space, the line keeps it, drawn
+								// but not measured; at a zero width space it
+								// has none to keep.
+								textLine := NewTextLine(textBlock.font, trimSpace(sb.String()))
+								textLine.trailingSpace = strings.HasSuffix(sb.String(), " ")
+								textLines = append(textLines, textLine)
 								sb.Reset()
 							}
 							// A word too wide for a line by itself is broken.
