@@ -55,19 +55,27 @@ checkout, which waits on the lawyer, may take longer; FastSpring sells on
 until then, so nothing is lost if it slips.
 
 **After the tag, when convenient, blocking nothing:**
-- ⬜ **Smoother reading aloud: the space at the end of each wrapped line?**
-  (the owner's NVDA pass of 7 October 2026: after the fix of its languages,
-  Example_01 reads in English, Greek and Bulgarian, but choppy, with a pause
-  at the end of every line). Mostly not ours: Acrobat gives a screen reader
-  the text a visual line at a time and NVDA pauses at each, and the OneCore
-  voices of Windows are an older generation than the neural ones. The part
-  that may be ours: whether a TextBlock's wrapped lines keep the word space
-  at their ends, in the content stream or as /ActualText, which helps a
-  reader take a line break for the middle of a sentence. To compare:
-  Example_01's text exported from Word, read by NVDA in Acrobat beside
-  PDFjet's, and the text of both as pdftotext and Acrobat give it; if Word's
-  reads more smoothly, find what it writes at a line end and do the same in
-  the four ports.
+- ⬜ **First after the tag (the owner, 7 October 2026: "I really want to know
+  if we are doing everything right"): the space at the end of each wrapped
+  line is stripped, in the four ports.** Found by the owner's NVDA pass:
+  Example_01, once its languages were fixed, reads in English, Greek and
+  Bulgarian but choppy, with a pause at every line end. Checked on Oct 7:
+  TextBlock builds a wrapped line word by word, each with its space, then
+  trims it (Java `sb.toString().trim()`, C# `Util.Trim`, Go
+  `strings.TrimRightFunc`, Swift `sb.trim()`), and TextColumn does the same
+  at its breaks (`trimTrailingSpaces`); in Example_01 every wrapped line
+  ends with no space ("…this right" then "includes…"), so a reader that
+  joins the lines has no space between them and must guess the word break
+  from the geometry, and a speech engine may take the line end for a stop.
+  Part of the choppiness is Acrobat's, which gives a screen reader a line
+  at a time, and the OneCore voices'. The likely fix: draw the space at the
+  end of each wrapped line, as Word's PDFs are believed to, since it is
+  invisible, but leave it out of the width, so that right aligned, centered
+  and justified lines stay where they are; or an /ActualText of the line
+  with its space. First confirm: Example_01's text exported from Word, read
+  by NVDA in Acrobat beside PDFjet's, and the text of both as pdftotext,
+  mutool and Acrobat give it. Then in the four ports with tests, and the
+  examples' baselines move with it.
 - ⬜ **The language of text in a TextColumn reaches the structure tree**
   (the NVDA pass of 7 October 2026: Example_01's Greek was spelled letter
   by letter and its Bulgarian skipped, as no block said its language; fixed
