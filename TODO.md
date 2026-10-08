@@ -396,6 +396,15 @@ detailed in the list below:
    CHANGELOG entry of 9.0.5 says so. The flag is of a tool in util, not of
    the library, so nothing else changes.
 
+9. ⬜ **The license files of the packages say what Solo and Team cover**
+   (8 October 2026): `.packaging/java/LICENSE` and `.packaging/dotnet/LICENSE`,
+   section 1, the sentence the buy pages of pdfjet.com have had since that
+   day, "A Solo License covers one developer; a Team License covers two to
+   five developers.", so that the license in the download is the one on the
+   site. The licenses were renamed that day, Named Developer to Solo ($295)
+   and Transferable to Team, 2 to 5 developers ($695); the lawyer reviews the
+   wording with PDFjet Pro's license.
+
 **After the tag, when convenient, blocking nothing:**
 - ✅ **Done in 9.0.3, on 7 October 2026 (it was "first after the tag"; the
   owner: "I really want to know if we are doing everything right"): the
