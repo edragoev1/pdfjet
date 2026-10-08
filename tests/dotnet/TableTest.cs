@@ -107,6 +107,38 @@ public sealed class TableTest : IDisposable {
     }
 
     [Fact]
+    public void AHeaderTallerThanHalfThePageIsDrawnOnTheFirstPageAlone() {
+        // Repeated, a header that fills most of a page leaves a line or two of
+        // the body to each page: a Markdown table of 20 rows ran to 553 pages
+        // (found by fuzzing, 8 October 2026). It is drawn once, as TH cells,
+        // and the body has the whole of the next pages.
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        StringBuilder text = new StringBuilder();
+        for (int i = 0; i < 30; i++) {
+            text.Append("word").Append(i).Append(' ');
+        }
+        Cell header = new Cell(font);
+        header.SetTextBlock(new TextBlock(font, text.ToString())).SetWidth(70f);
+        List<List<Cell>> data = new List<List<Cell>>();
+        data.Add(new List<Cell> { header });
+        data.AddRange(Rows(font, 60, 1));
+        Table table = new Table().SetTableData(data, 1).SetLocation(50f, 50f).SetBottomMargin(20f);
+        float h = header.GetHeight(66f);
+        Assert.True(h > (792f - 20f - 50f) / 2f && h < 792f - 20f - 50f, "header height " + h);
+        List<Page> pages = new List<Page>();
+        table.DrawOn(pdf, pages, Letter.PORTRAIT);
+        Assert.Equal(-1, table.GetRowsRendered());
+        // About 17 rows under the header, 42 on the next page and the last one
+        // on the third; repeated, the header left 17 to every page, 4 pages.
+        Assert.Equal(3, pages.Count);
+        for (int i = 0; i < pages.Count; i++) {
+            Assert.Equal(i == 0, TestSupport.Content(pages[i]).Contains(TestSupport.Hex("word0")));
+        }
+        Assert.Contains(TestSupport.Hex("row59"), TestSupport.Content(pages[pages.Count - 1]));
+    }
+
+    [Fact]
     public void TheFileConstructorDropsAByteOrderMarkAndPadsShortRows() {
         string file = tempDir.Write("table.txt", Encoding.UTF8.GetBytes("﻿a|b|c\n1||\n2\n"));
         Font font = TestSupport.Helvetica(TestSupport.NewPDF());

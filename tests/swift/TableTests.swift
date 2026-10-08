@@ -112,6 +112,36 @@ import Testing
         #expect(TestSupport.content(pages[0]).contains(TestSupport.hex("word0")))
     }
 
+    @Test func aHeaderTallerThanHalfThePageIsDrawnOnTheFirstPageAlone() {
+        // Repeated, a header that fills most of a page leaves a line or two of
+        // the body to each page: a Markdown table of 20 rows ran to 553 pages
+        // (found by fuzzing, 8 October 2026). It is drawn once, as TH cells,
+        // and the body has the whole of the next pages.
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        var text = ""
+        for i in 0..<30 {
+            text += "word\(i) "
+        }
+        let header = Cell(font)
+        header.setTextBlock(TextBlock(font, text)).setWidth(70.0)
+        let table = Table().setTableData([[header]] + rows(font, 60, 1), 1)
+        table.setLocation(50.0, 50.0)
+        table.setBottomMargin(20.0)
+        let h = header.getHeight(66.0)
+        #expect(h > (792.0 - 20.0 - 50.0) / 2.0 && h < 792.0 - 20.0 - 50.0, "header height \(h)")
+        var pages = [Page]()
+        _ = table.drawOn(pdf, &pages, Letter.PORTRAIT)
+        #expect(table.getRowsRendered() == -1)
+        // About 17 rows under the header, 42 on the next page and the last one
+        // on the third; repeated, the header left 17 to every page, 4 pages.
+        #expect(pages.count == 3)
+        for (i, page) in pages.enumerated() {
+            #expect(TestSupport.content(page).contains(TestSupport.hex("word0")) == (i == 0), "page \(i + 1)")
+        }
+        #expect(TestSupport.content(pages[pages.count - 1]).contains(TestSupport.hex("row59")))
+    }
+
     @Test func theFileConstructorDropsAByteOrderMarkAndPadsShortRows() throws {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("table-\(UUID().uuidString).txt")
         try Data("\u{FEFF}a|b|c\n1||\n2\n".utf8).write(to: url)

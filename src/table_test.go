@@ -1335,3 +1335,44 @@ func TestTableAWordWiderThanItsColumnStartsALineOfItsOwn(t *testing.T) {
 		t.Errorf("the lines: %q, want %q", lines, want)
 	}
 }
+
+func TestTableAHeaderTallerThanHalfThePageIsDrawnOnTheFirstPageAlone(t *testing.T) {
+	// Repeated, a header that fills most of a page leaves a line or two of
+	// the body to each page: a Markdown table of 20 rows ran to 553 pages
+	// (found by fuzzing, 8 October 2026). It is drawn once, as TH cells, and
+	// the body has the whole of the next pages.
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	var text strings.Builder
+	for i := 0; i < 30; i++ {
+		fmt.Fprintf(&text, "word%d ", i)
+	}
+	header := NewEmptyCell(font)
+	header.SetTextBlock(NewTextBlock(font, text.String())).SetWidth(70)
+	data := append([][]*Cell{{header}}, testRows(font, 60, 1)...)
+	table := NewTable().SetTableData(data, 1)
+	table.SetLocation(50, 50)
+	table.SetBottomMargin(20)
+	if h := header.GetHeight(66); h <= (792-20-50)/2 || h >= 792-20-50 {
+		t.Fatalf("header height %f", h)
+	}
+	pages := make([]*Page, 0)
+	table.DrawOnPages(pdf, &pages, letter.Portrait())
+	if table.GetRowsRendered() != -1 {
+		t.Fatalf("rows rendered %d", table.GetRowsRendered())
+	}
+	// About 17 rows under the header, 42 on the next page and the last one
+	// on the third; repeated, the header left 17 to every page, 4 pages.
+	if len(pages) != 3 {
+		t.Errorf("pages %d, not 3", len(pages))
+	}
+	for i, page := range pages {
+		if got := strings.Contains(testContent(page), testHex("word0")); got != (i == 0) {
+			t.Errorf("page %d: the header drawn %v", i+1, got)
+		}
+	}
+	last := testContent(pages[len(pages)-1])
+	if !strings.Contains(last, testHex("row59")) {
+		t.Error("the last row is not drawn")
+	}
+}

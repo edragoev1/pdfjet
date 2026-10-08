@@ -20,6 +20,14 @@ This is the first entry in this file; earlier releases were not tracked here.
   refused in words, "Invalid path data", in Java and C# as in Go and Swift,
   where Java failed with a NumberFormatException and C# with a
   FormatException. Found by replaying the Go fuzz corpus.
+- A table whose header rows take more than half of the page under its top
+  draws them on the first page alone, in the four ports, instead of again on
+  every page, where they left a line or two of the body to each page: a
+  Markdown table of 20 rows, its header tall in 60 narrow columns, ran to 553
+  pages and 2 GB (found by Jazzer, fuzzing the Java port). Headers of the
+  usual height repeat as before. In a PDF/UA document, a header drawn on a
+  page where no row of the body fitted under it is no longer tagged as TH
+  cells a second time on the next page.
 
 ## v9.0.3 — 2026-10-08
 

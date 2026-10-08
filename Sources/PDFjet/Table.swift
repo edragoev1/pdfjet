@@ -17,6 +17,9 @@ public class Table : Drawable {
     private var numOfFooterRows = 0
     // The index of the next row to draw, or -1 when all rows are drawn.
     private var rendered = 1
+    // True once the header rows are drawn: they are TH cells the first time,
+    // even when no row of the body fits under them on that page.
+    private var headerDrawn = false
     private var x1: Float = 0.0
     private var y1: Float = 0.0
     private var firstPageTopMargin: Float = 0.0
@@ -179,6 +182,7 @@ public class Table : Drawable {
         self.tableData = tableData
         self.numOfHeaderRows = numOfHeaderRows
         self.rendered = numOfHeaderRows
+        self.headerDrawn = false
         addCellsToCompleteTheGrid()
         return self
     }
@@ -1051,6 +1055,27 @@ public class Table : Drawable {
         return [x1 + getWidth(), xy[1]]
     }
 
+    // Returns the height of the header rows.
+    private func headerHeight() -> Float {
+        var height: Float = 0.0
+        for r in 0..<min(numOfHeaderRows, heights.count) {
+            height += heights[r]
+        }
+        return height
+    }
+
+    // Returns true when the header rows are drawn again at the top of the next
+    // pages: unless they take more than half of the page under the top of the
+    // table, where they would leave a line or two of the body to each page and
+    // the table would run to hundreds of them (found by fuzzing, 8 October
+    // 2026). Such a header is drawn on the first page alone.
+    private func repeatsHeaderOn(_ page: Page?) -> Bool {
+        guard let page = page else {
+            return true
+        }
+        return headerHeight() <= (page.height - bottomMargin - y1) / 2.0
+    }
+
     private func drawHeaderRows(_ page: Page?, _ pageNumber: Int) -> [Float] {
         let x = x1
         var y = y1
@@ -1060,10 +1085,13 @@ public class Table : Drawable {
         // In a PDF/UA document the table is a Table element, which the rows
         // drawn on the next pages go on adding to. The header rows are TH
         // cells the first time they are drawn, and artifacts on the next pages.
-        let first = (rendered == numOfHeaderRows)
+        let first = (rendered == numOfHeaderRows) && !headerDrawn
         if let page = page, first || structElement == nil {
             structElement = page.addStructElement(
                     page.structParent, StructElem.TABLE, nil, true)
+        }
+        if let page = page, !first && !repeatsHeaderOn(page) {
+            return [x, y]
         }
         if let page = page, !first && numOfHeaderRows > 0 {
             page.addArtifactBMC()
@@ -1097,6 +1125,9 @@ public class Table : Drawable {
         }
         if let page = page, !first && numOfHeaderRows > 0 {
             page.addEMC()
+        }
+        if page != nil {
+            headerDrawn = true
         }
         return [x, y]
     }
@@ -1226,8 +1257,8 @@ public class Table : Drawable {
         let heights = self.heights
         // Where the rows start on the next pages, under the header rows.
         var top = y1
-        for r in 0..<min(numOfHeaderRows, heights.count) {
-            top += heights[r]
+        if repeatsHeaderOn(page) {
+            top += headerHeight()
         }
         // Where the rows end on a page, over the footer rows.
         var bottom: Float = (page == nil) ? 0.0 : page!.height - bottomMargin

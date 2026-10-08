@@ -102,6 +102,41 @@ class TableTest {
     }
 
     @Test
+    void aHeaderTallerThanHalfThePageIsDrawnOnTheFirstPageAlone() throws Exception {
+        // Repeated, a header that fills most of a page leaves a line or two of
+        // the body to each page: a Markdown table of 20 rows ran to 553 pages
+        // (found by fuzzing, 8 October 2026). It is drawn once, as TH cells,
+        // and the body has the whole of the next pages.
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        StringBuilder text = new StringBuilder();
+        for (int i = 0; i < 30; i++) {
+            text.append("word").append(i).append(' ');
+        }
+        Cell header = new Cell(font);
+        header.setTextBlock(new TextBlock(font, text.toString())).setWidth(70f);
+        List<List<Cell>> data = new ArrayList<List<Cell>>();
+        List<Cell> headerRow = new ArrayList<Cell>();
+        headerRow.add(header);
+        data.add(headerRow);
+        data.addAll(rows(font, 60, 1));
+        Table table = new Table().setTableData(data, 1).setLocation(50f, 50f).setBottomMargin(20f);
+        float h = header.getHeight(66f);
+        assertTrue(h > (792f - 20f - 50f) / 2f && h < 792f - 20f - 50f, "header height " + h);
+        List<Page> pages = new ArrayList<Page>();
+        table.drawOn(pdf, pages, Letter.PORTRAIT);
+        assertEquals(-1, table.getRowsRendered());
+        // About 17 rows under the header, 42 on the next page and the last one
+        // on the third; repeated, the header left 17 to every page, 4 pages.
+        assertEquals(3, pages.size());
+        for (int i = 0; i < pages.size(); i++) {
+            assertEquals(i == 0, TestSupport.content(pages.get(i)).contains(TestSupport.hex("word0")),
+                    "page " + (i + 1));
+        }
+        assertTrue(TestSupport.content(pages.get(pages.size() - 1)).contains(TestSupport.hex("row59")));
+    }
+
+    @Test
     void theFileConstructorDropsAByteOrderMarkAndPadsShortRows() throws Exception {
         File file = new File(tempDir, "table.txt");
         OutputStream out = new FileOutputStream(file);

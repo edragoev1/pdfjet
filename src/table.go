@@ -33,7 +33,10 @@ type Table struct {
 	numOfHeaderRows int
 	numOfFooterRows int
 	// The index of the next row to draw, or -1 when all rows are drawn.
-	rendered           int
+	rendered int
+	// True once the header rows are drawn: they are TH cells the first time,
+	// even when no row of the body fits under them on that page.
+	headerDrawn        bool
 	x1, y1             float32
 	firstPageTopMargin float32
 	bottomMargin       float32
@@ -203,6 +206,7 @@ func (table *Table) SetTableData(tableData [][]*Cell, numOfHeaderRows int) *Tabl
 	table.tableData = tableData
 	table.numOfHeaderRows = numOfHeaderRows
 	table.rendered = numOfHeaderRows
+	table.headerDrawn = false
 	table.addCellsToCompleteTheGrid()
 	return table
 }
@@ -962,6 +966,27 @@ func (table *Table) drawOnPages(pdf *PDF, first *Page, pages *[]*Page, pageSize 
 	return [2]float32{table.x1 + table.GetWidth(), xy[1]}
 }
 
+// headerHeight returns the height of the header rows.
+func (table *Table) headerHeight() float32 {
+	height := float32(0.0)
+	for r := 0; r < table.numOfHeaderRows && r < len(table.heights); r++ {
+		height += table.heights[r]
+	}
+	return height
+}
+
+// repeatsHeaderOn returns true when the header rows are drawn again at the
+// top of the next pages: unless they take more than half of the page under
+// the top of the table, where they would leave a line or two of the body to
+// each page and the table would run to hundreds of them (found by fuzzing,
+// 8 October 2026). Such a header is drawn on the first page alone.
+func (table *Table) repeatsHeaderOn(page *Page) bool {
+	if page == nil {
+		return true
+	}
+	return table.headerHeight() <= (page.height-table.bottomMargin-table.y1)/2
+}
+
 // drawHeaderRows draws the header rows at the top of the page and returns
 // the point below them.
 func (table *Table) drawHeaderRows(page *Page, pageNumber int) [2]float32 {
@@ -973,10 +998,13 @@ func (table *Table) drawHeaderRows(page *Page, pageNumber int) [2]float32 {
 	// In a PDF/UA document the table is a Table element, which the rows drawn
 	// on the next pages go on adding to. The header rows are TH cells the
 	// first time they are drawn, and artifacts on the next pages.
-	first := (table.rendered == table.numOfHeaderRows)
+	first := (table.rendered == table.numOfHeaderRows) && !table.headerDrawn
 	if page != nil && (first || table.structElement == nil) {
 		table.structElement = page.addStructElementOpen(
 			page.structParent, structelem.Table, "", true)
+	}
+	if page != nil && !first && !table.repeatsHeaderOn(page) {
+		return [2]float32{x, y}
 	}
 	if page != nil && !first && table.numOfHeaderRows > 0 {
 		page.AddArtifactBMC()
@@ -1018,6 +1046,9 @@ func (table *Table) drawHeaderRows(page *Page, pageNumber int) [2]float32 {
 	}
 	if page != nil && !first && table.numOfHeaderRows > 0 {
 		page.AddEMC()
+	}
+	if page != nil {
+		table.headerDrawn = true
 	}
 	return [2]float32{x, y}
 }
@@ -1149,8 +1180,8 @@ func (table *Table) drawTableRows(page *Page, xy [2]float32) [2]float32 {
 	heights := table.heights
 	// Where the rows start on the next pages, under the header rows.
 	top := table.y1
-	for r := 0; r < table.numOfHeaderRows && r < len(heights); r++ {
-		top += heights[r]
+	if table.repeatsHeaderOn(page) {
+		top += table.headerHeight()
 	}
 	// Where the rows end on a page, over the footer rows.
 	bottom := float32(0.0)
