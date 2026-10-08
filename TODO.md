@@ -584,6 +584,21 @@ detailed in the list below:
   needed, as the Plex CJK fonts are CID-keyed and PDFjet draws with the
   glyph IDs as CIDs. Real subsetting as the PDF is written is planned for
   the commercial product.
+  **How, when it is done (talked over with the owner, 8 October 2026):**
+  only the large fonts, over about 1 MB or of thousands of glyphs, in
+  practice the CJK ones; every other font keeps the fast path, the
+  precompressed `.stream` copied as it is (a whole IBM Plex Sans is about
+  60 KB, not worth the time). The simple and safe way: no new font, the
+  glyph IDs kept, the outlines of the glyphs the document does not use
+  emptied (CFF: the CharStrings rewritten with empty entries, the
+  subroutines kept whole; TrueType: the unused glyf entries emptied and
+  loca made again), so the cmap, the widths and the ToUnicode for screen
+  readers do not change. The `.stream` still serves as the source:
+  inflated in memory, emptied at complete(), deflated again, much smaller.
+  Expected faster overall for CJK documents (writing 15 MB costs more than
+  one pass over the glyphs); the cost is the inflated font in memory while
+  the document is open, cached across documents on a server. Measured
+  first, a CJK document before and after.
 - ⬜ The package registries, in this order (see "After the tag: the package
   registries" below): Go (one fetch of the proxy, and pkg.go.dev lists
   it), NuGet first of the others (C# is the largest audience, about an
@@ -1572,6 +1587,16 @@ no history; the registries count, and are where developers look.
   a cross-reference stream would shrink them several times. Found by the
   review of PDFjet Forms; pdfjet-server meanwhile
   refuses such a table before it is drawn, and says to make it shorter.
+  **The plan, v9.1 (talked over with the owner, 8 October 2026):** an
+  option, on by default, off for PDF/A-1, which forbids object streams
+  (PDF/A-2 and 3 allow them). The small objects (pages, annotations, the
+  structure elements) written to an object stream a batch of 100 to 200 at
+  a time, so that memory stays flat as PDFjet writes as it goes; the
+  cross-reference table becomes a cross-reference stream. Speed expected
+  about the same (deflating small text is fast, fewer bytes are written);
+  the gain is the size of tagged documents, a third or more. Measured
+  first, with benchmarks/: a long PDF/UA table, before and after, the time
+  and the size; PDFjet's name is speed, so the numbers decide.
 - ⬜ Maybe: a size-only reader of an image, in the four ports: the width and
   the height a PNG, a JPEG or a BMP is drawn at, read from its header, the
   IHDR and pHYs chunks, the SOF and JFIF segments, without embedding it, for
