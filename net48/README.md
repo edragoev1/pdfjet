@@ -5,8 +5,9 @@ load the net8.0 one. It is built from the sources of `net/pdfjet` **as they
 are**: nothing there changes for it, and the .NET code goes on using what .NET 8
 has. This folder fills the gaps around it.
 
-    net48/build.sh        bin/release/net48/PDFjet.dll, with the System.Memory DLLs
-    net48/check-zlib.sh   the ZLibStream of this build against .NET 8's own
+    net48/build.sh                      bin/release/net48/PDFjet.dll, with the System.Memory DLLs
+    net48/check-zlib.sh                 the ZLibStream of this build against .NET 8's own
+    net48/make-examples-folder.sh <dir> the 57 examples to run on Windows, RunExamples.exe
 
 It needs the .NET 10 SDK or later, for C# 14, beside the .NET 8 SDK of the rest:
 `build.sh` takes the `dotnet` of `DOTNET`, else `~/.dotnet10/dotnet`, else the
@@ -53,6 +54,11 @@ and the gap is filled in `Compat`, never in the source. After a change of
 `Decompressor.cs`, run `check-zlib.sh`.
 
 What it cannot show on Linux: the examples run on .NET Framework, on Windows.
+`make-examples-folder.sh` makes a folder for that, with nothing to install:
+`run-examples/RunExamples.exe`, the 57 examples compiled as they are for .NET
+Framework 4.8 against this PDFjet.dll, and what they read; run in it, it
+makes the PDFs there and writes net48-results.txt.
+
 Floating point of `MathF` in double precision, and the compression of .NET
 Framework's own zlib, can make the bytes of a PDF differ from those of the
 net8.0 build; the pages are to be the same.
