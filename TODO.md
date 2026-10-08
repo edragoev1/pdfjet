@@ -120,7 +120,10 @@ left is checking, tagging and packaging.
   -fuzztime 120m`, one after the other.
 
 **Thu Oct 8, or when the checks of the spaces pass: the tag**
-- ⬜ Tag v9.0.3 and make the GitHub release; then the Go proxy's `.info` and
+- ⬜ Tag v9.0.3 and make the GitHub release, with the two evaluation zips
+  without the version attached (`gh release upload v9.0.3
+  .commercial-packages/PDFjet-ForJava-Eval.zip
+  .commercial-packages/PDFjet-For.NET-Eval.zip`); then the Go proxy's `.info` and
   `.zip` of it answering 200, and sum.golang.org having its checksum.
 - ⬜ PDFjet Pro released on the tag, from `~/Projects/pdfjet-pro`, beside
   the library: `./set-version.sh 9.0.3` (go.mod, Package.swift and their
@@ -133,8 +136,16 @@ left is checking, tagging and packaging.
 - ⬜ The deliveries owed a new version: their links to the 9.0.3 packages
   (the owner's private notes).
 - ⬜ **Where the packages live, decided by the owner on 8 October 2026:**
-  - The free packages, the evaluation ones (`PDFjet-ForJava-Eval-…`,
-    `PDFjet-For.NET-Eval-…`), as assets of the GitHub release of the tag.
+  - The free packages, the evaluation ones, as assets of the GitHub release
+    of the tag, under names without the version, which the package scripts
+    write beside the others: `PDFjet-ForJava-Eval.zip` and
+    `PDFjet-For.NET-Eval.zip` (the version is in the folder inside). The
+    website's evaluation links, on the owner's go-ahead for the site, are
+    then for ever
+    `https://github.com/edragoev1/pdfjet/releases/latest/download/PDFjet-ForJava-Eval.zip`
+    and `.../PDFjet-For.NET-Eval.zip`, which GitHub sends to the latest
+    release (the owner's choice, 8 October 2026). GitHub counts the
+    downloads of each file of each release.
   - The paid packages on pdfjet.com, each release in a hidden folder of its
     own, `v9.0.3-JV-` or `v9.0.3-DN-` and 32 random hex characters, linked
     from Paddle's thank-you page and the delivery email, with the license

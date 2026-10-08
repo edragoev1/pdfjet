@@ -153,5 +153,13 @@ zip -q -r -9 "$EVAL_ZIP" "$EVAL_NAME"
 cd ../..
 rm -rf build/package-dotnet
 
+# The evaluation package again, without the version in its name, for the
+# GitHub release: the website links to releases/latest/download/PDFjet-For.NET-Eval.zip,
+# which GitHub sends to the latest release's file of that name, so that the
+# link never changes. The version is in the name of the folder inside.
+LATEST_ZIP="$(dirname "$EVAL_ZIP")/PDFjet-For.NET-Eval.zip"
+cp "$EVAL_ZIP" "$LATEST_ZIP"
+
 echo "Created $ZIP"
 echo "Created $EVAL_ZIP"
+echo "Created $LATEST_ZIP, the same, for the GitHub release"
