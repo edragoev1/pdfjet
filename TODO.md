@@ -120,6 +120,12 @@ left is checking, tagging and packaging.
   -fuzztime 120m`, one after the other.
 
 **Thu Oct 8, or when the checks of the spaces pass: the tag**
+- ✅ The packages rebuilt on 04a3c6ac, 8 October 2026, both PDFjet.dll
+  (net8.0 and net48) strong-named, public key token e66c1909913f295d. The
+  owner, the same day: v9.0.3 out as soon as possible, v9.0.5 right after;
+  only a major issue holds the tag. The net48 build is not run on Windows
+  before the tag: the .NET client who asked for it tests it, and what they
+  find goes into 9.0.5.
 - ⬜ Tag v9.0.3 and make the GitHub release, with the two evaluation zips
   without the version attached (`gh release upload v9.0.3
   .commercial-packages/PDFjet-ForJava-Eval.zip
