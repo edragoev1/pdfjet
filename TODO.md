@@ -50,8 +50,10 @@ what users would hit goes in; the rest waits for v9.1.
    SVGImage parses XML (Go's encoding/xml, Java's StAX, C#'s XmlReader,
    Swift's own tokenizer), so the four will then read SVG alike by
    construction, strict, with the same errors. The deflate part (Go to
-   refuse a block without its end code, as the other three do) is dropped:
-   "I would rather not do deflate now". As first written: **One rule of
+   refuse a block without its end code, as the other three do) was dropped,
+   then done the same evening on the owner's word, with a Go puff.c as the
+   check, about 3 ms a megabyte of pixels (the owner chose the simple check
+   over porting Swift's fast decoder). As first written: **One rule of
    strictness for the four** (item 7): an SVG that is not
    well-formed XML refused in PDFjet's words; a deflate block without its
    end code refused, Go to follow the other three.

@@ -7,6 +7,8 @@ package decompressor
 
 import (
 	"bytes"
+	"compress/zlib"
+	"encoding/hex"
 	"math/rand"
 	"testing"
 
@@ -269,6 +271,41 @@ func TestDecompressorInflateExactIsAStreamOfTheBytesAndNothingMore(t *testing.T)
 		prefix, exact, err := InflateExact(c.stream, c.length)
 		if err != nil || !bytes.Equal(prefix, data[:c.length]) || exact != c.exact {
 			t.Errorf("%s: prefix %q, exact %v, error %v", c.name, prefix, exact, err)
+		}
+	}
+}
+
+func TestInflatePrefixRefusesDeflateDataZlibRefusesBeforeTheBytes(t *testing.T) {
+	// The image data of two PNGs of the fuzz corpus, which Go drew and the
+	// JDK, .NET and Swift refused (8 October 2026): a dynamic block whose
+	// code has no end of block, and a stored block whose length is not the
+	// complement of its check. compress/flate reads the bytes of the image
+	// before it needs the end of the block; puff, as zlib, refuses the block.
+	for _, c := range []struct {
+		data   string
+		length int
+	}{
+		{"789cedd0310ac0300c43512a3021f7bfa06fa221ced42e4b41cb1f3478307ae87924423231303130373030303030303030303030303030303030303030303030303030303030303030303030303030303030303030", 3 * (1 + 144*4)},
+		{"789c62306130002030303030", 2 * 2},
+	} {
+		data, _ := hex.DecodeString(c.data)
+		if _, err := InflatePrefix(data, c.length); err == nil {
+			t.Errorf("%s...: no error", c.data[:16])
+		}
+		if _, _, err := InflateExact(data, c.length); err == nil {
+			t.Errorf("%s...: no error from InflateExact", c.data[:16])
+		}
+	}
+	// Valid data, of every kind of block, still gives its bytes.
+	for _, level := range []int{0, 1, 9} {
+		want := bytes.Repeat([]byte("PDFjet makes PDFs. "), 400)
+		var b bytes.Buffer
+		w, _ := zlib.NewWriterLevel(&b, level)
+		w.Write(want)
+		w.Close()
+		got, err := InflatePrefix(b.Bytes(), 1000)
+		if err != nil || !bytes.Equal(got, want[:1000]) {
+			t.Errorf("level %d: %v", level, err)
 		}
 	}
 }

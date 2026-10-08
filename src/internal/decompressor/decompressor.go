@@ -371,6 +371,11 @@ func inflate(buf []byte, maxLength int, prefix bool) (result []byte, exact bool,
 	var inflated bytes.Buffer
 	inflated.Grow(min(len(buf), maxLength))
 	if prefix {
+		// The Deflate data up to the bytes asked for is checked as zlib
+		// checks it, which compress/flate does not do in full (puff.go).
+		if err := puffCheck(buf[2:], maxLength); err != nil {
+			return nil, false, fmt.Errorf("decompression failed: %w", err)
+		}
 		// A prefix reads no further than its length, and ignores the rest of
 		// the stream, its checksum too: the reader returns an error found at
 		// the end of the stream with the last bytes before it, which are the

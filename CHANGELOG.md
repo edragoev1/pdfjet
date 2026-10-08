@@ -22,6 +22,15 @@ This is the first entry in this file; earlier releases were not tracked here.
   the root, no root element. The 246 SVG files of the repository draw the
   same as before, and the 1,170 SVG files of the Go fuzz corpus are accepted
   or refused alike in the four ports (560 and 610).
+- Go refuses the image data of a PNG whose Deflate data is invalid before the
+  bytes of the image, as the JDK, .NET and Swift do: a dynamic block whose
+  code has no end of block, or a stored block whose length is not the
+  complement of its check, which Go's compress/flate does not refuse when it
+  has the bytes of the image before it needs the end of the block. A Go
+  translation of puff.c, as Swift and net48 have, checks the data up to those
+  bytes (src/internal/decompressor/puff.go); it adds about 3 ms to each
+  megabyte of the pixels of a PNG. The 2,698 PNG files of the Go fuzz corpus
+  are now accepted or refused alike in Go and Java.
 - A number of SVG path data is finite: one past the range of a float, such as
   `1e40`, is refused as invalid path data in the four ports, where Java, C#
   and Swift read it as an infinity.
