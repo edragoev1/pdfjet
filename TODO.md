@@ -81,6 +81,19 @@ left is checking, tagging and packaging.
   - ⬜ v9.1: the link box of a word drawn with its space (a justified
     TextFrame row, and TextColumn always) reaches one space past the word.
 
+- ✅ **More automated checks, the night of Oct 7**, on ecd403c0, all clean:
+  the C#, Java and Swift examples built under a German locale (decimal
+  comma) render the same pixel for pixel, with no number written with a
+  comma in their pages; qpdf (through pikepdf) and Ghostscript, two more
+  parsers, find nothing wrong in the 228 example PDFs; a scan of every
+  example with `mutool trace` for two words with a gap and no space between
+  them finds none in PDFjet's own text (what it finds are table cells,
+  list labels, subscripts, barcode digits and imported pages); and the 15
+  Go fuzz targets fuzzed for 3 minutes each, the reader 8, about 23
+  million inputs, with no crash or hang. Could become part of
+  `check-examples.sh` and the workflow: the locale build and the two
+  parsers (v9.1).
+
 **Thu Oct 8, or when the checks of the spaces pass: the tag**
 - ⬜ Tag v9.0.3 and make the GitHub release; then the Go proxy's `.info` and
   `.zip` of it answering 200, and sum.golang.org having its checksum.
