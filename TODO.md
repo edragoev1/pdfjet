@@ -258,6 +258,20 @@ detailed in the list below:
    on the owner's Windows machine (Linux has no .NET Framework, and Mono is
    not installed). Before 9.0.5, the client can have the net48 build of
    that work as their 9.0.4, the custom build of the owner's rule.
+   **Changed the same day, the owner's wish: nothing of net/pdfjet changes
+   for net48, and the main branch never goes backward.** So `net48/`, a
+   folder of its own (see net48/README.md): `PDFjet.Net48.csproj` compiles
+   `net/pdfjet` as it is, with the .NET 10 SDK for C# 14; the two overrides
+   of spans cut from copies by a task of the project file, found by their
+   first lines or the build stops; `Compat/Polyfills.cs` the gaps, C# 14
+   static extension members and classes of the missing names;
+   `Compat/ZLibStream.cs` on `Compat/Puff.cs` (puff.c, as the Swift port has
+   it) for the zlib streams, and `check-zlib.sh`, which holds it to .NET 8's
+   ZLibStream: Inflate, InflatePrefix and InflateExact the same on 1,032
+   streams, whole, cut short, with wrong checksums, bytes after them, or
+   corrupted. Built, 0 warnings; still to do: package-dotnet.sh building and
+   signing both, the examples run on .NET Framework on Windows, and the
+   client's 9.0.4.
 
 **After the tag, when convenient, blocking nothing:**
 - ✅ **Done in 9.0.3, on 7 October 2026 (it was "first after the tag"; the

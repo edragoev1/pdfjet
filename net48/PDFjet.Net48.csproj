@@ -1,0 +1,92 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- PDFjet for .NET Framework 4.8: the sources of net/pdfjet compiled as they
+       are, for the clients whose applications are on .NET Framework, which
+       cannot load the net8.0 PDFjet.dll. Nothing of net/pdfjet changes for it:
+       what .NET Framework lacks is in Compat, and the two methods it cannot
+       compile, the overrides of Stream of spans, are cut from copies of their
+       files in obj/cut, by the task CutMethods below. See README.md.
+
+       Built with the .NET 10 SDK, for C# 14 (the static extension members of
+       Compat), into a DLL that needs .NET Framework 4.8 alone, and System.Memory
+       beside it. -->
+  <PropertyGroup>
+    <OutputType>library</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <LangVersion>14</LangVersion>
+    <AssemblyName>PDFjet</AssemblyName>
+    <!-- The same identity as the net8.0 PDFjet.dll: its version, through 9.x,
+         and its strong name, with the key that package-dotnet.sh gives. -->
+    <AssemblyVersion>9.0.0.0</AssemblyVersion>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <Company>PDFjet Software</Company>
+    <Product>PDFjet</Product>
+    <Copyright>Copyright (c) 2026 PDFjet Software</Copyright>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+  </PropertyGroup>
+
+  <!-- The methods cut, by the line that begins each, which must be found once:
+       a change of one stops the build, so that it is looked at, not guessed. -->
+  <ItemGroup>
+    <Cut Include="../net/pdfjet/Decompressor.cs" Signature="public override int Read(Span&lt;byte&gt; buffer) {" />
+    <Cut Include="../net/pdfjet/Page.cs" Signature="public override void Write(ReadOnlySpan&lt;byte&gt; buffer) {" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="../net/pdfjet/**/*.cs" Exclude="@(Cut)" />
+    <Compile Include="Compat/*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+    <PackageReference Include="System.Memory" Version="4.5.5" />
+  </ItemGroup>
+
+  <UsingTask TaskName="CutMethods" TaskFactory="RoslynCodeTaskFactory"
+      AssemblyFile="$(MSBuildToolsPath)/Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <Files ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true" />
+      <Folder ParameterType="System.String" Required="true" />
+      <Written ParameterType="Microsoft.Build.Framework.ITaskItem[]" Output="true" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System.IO" />
+      <Code Type="Fragment" Language="cs"><![CDATA[
+        Directory.CreateDirectory(Folder);
+        var written = new System.Collections.Generic.List<Microsoft.Build.Framework.ITaskItem>();
+        foreach (var file in Files) {
+            string signature = file.GetMetadata("Signature");
+            string text = File.ReadAllText(file.ItemSpec);
+            int start = text.IndexOf(signature);
+            if (start < 0 || text.IndexOf(signature, start + 1) >= 0) {
+                Log.LogError(file.ItemSpec + ": \"" + signature + "\" is not there once: the net48 build needs a look");
+                return false;
+            }
+            int line = text.LastIndexOf('\n', start) + 1;
+            string indent = text.Substring(line, start - line);
+            string close = "\n" + indent + "}\n";
+            int end = text.IndexOf(close, start);
+            if (end < 0) {
+                Log.LogError(file.ItemSpec + ": the end of \"" + signature + "\" is not there");
+                return false;
+            }
+            text = text.Substring(0, line) + text.Substring(end + close.Length);
+            string path = Path.Combine(Folder, Path.GetFileName(file.ItemSpec));
+            File.WriteAllText(path, text);
+            written.Add(new Microsoft.Build.Utilities.TaskItem(path));
+        }
+        Written = written.ToArray();
+      ]]></Code>
+    </Task>
+  </UsingTask>
+
+  <Target Name="CutMethodsOfSpans" BeforeTargets="CoreCompile">
+    <CutMethods Files="@(Cut)" Folder="$(IntermediateOutputPath)cut">
+      <Output TaskParameter="Written" ItemName="CutFile" />
+    </CutMethods>
+    <ItemGroup>
+      <Compile Include="@(CutFile)" />
+    </ItemGroup>
+  </Target>
+</Project>
