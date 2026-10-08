@@ -138,8 +138,12 @@ left is checking, tagging and packaging.
   the library: `./set-version.sh 9.0.3` (go.mod, Package.swift and their
   sums move from 9.0.2), its four ports tested against the release, tag
   v9.0.3; the Java and .NET packages by `pdfjet-pro-private/packaging`.
-- ⬜ pdfjet.com rebuilt with the 9.0.3 packages, on the owner's go-ahead for
-  the site.
+- ✅ pdfjet.com rebuilt with the 9.0.3 packages, on the owner's go-ahead for
+  the site: uploaded on 8 October 2026 (pdfjet-website b27802a), the
+  evaluation's Accept buttons to the GitHub release, .NET Framework 4.8 on
+  the .NET pages, a 9.0.3 entry in the news; the paid 9.0.3 packages on the
+  four FastSpring products, which sell on (Paddle for Java and .NET later,
+  pdfjet-server TODO.md).
 - ⬜ pdfjet-pro made public with the release, by its PUBLIC-REPO-PLAN.md, on
   the owner's go-ahead.
 - ⬜ The deliveries owed a new version: their links to the 9.0.3 packages
