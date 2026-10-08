@@ -40,8 +40,8 @@ System.Numerics.Vectors and System.Runtime.CompilerServices.Unsafe.
   of the names .NET Framework lacks, `MathF`, `BitOperations` and
   `CryptographicOperations`, in their namespaces.
 - `Compat/ZLibStream.cs` is the zlib stream .NET Framework lacks: compressing
-  with its `DeflateStream`, and decoding with `Compat/Puff.cs`, a conversion of
-  Mark Adler's puff.c, the decoder PDFjet's Swift port has too. It reads its
+  with its `DeflateStream`, and decoding with `Compat/Puff.cs`, a C#
+  translation of puff.c, Mark Adler's reference decoder of Deflate. It reads its
   input exactly to the end of the zlib stream and checks the checksum there,
   as the Decompressor needs to know a stream cut short or corrupted; and
   `check-zlib.sh` holds it to .NET 8's own on more than a thousand streams.

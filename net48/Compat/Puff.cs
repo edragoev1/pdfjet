@@ -29,9 +29,8 @@
   Mark Adler    madler@alumni.caltech.edu
  */
 
-// A conversion of puff.c, Mark Adler's reference decoder of Deflate, as
-// PDFjet's Swift port has one, for the .NET Framework 4.8 build alone, which
-// has no ZLibStream: it decodes raw Deflate data and tells how many bytes of
+// A C# translation of puff.c, Mark Adler's reference decoder of Deflate,
+// for the .NET Framework 4.8 build alone, which has no ZLibStream: it decodes raw Deflate data and tells how many bytes of
 // the input it took, so that what follows, the checksum of zlib, is found
 // exactly. Altered from the original: the output grows as it is written, up
 // to a limit, and the errors are kept as Puff.Result.

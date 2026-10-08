@@ -265,8 +265,8 @@ detailed in the list below:
    of spans cut from copies by a task of the project file, found by their
    first lines or the build stops; `Compat/Polyfills.cs` the gaps, C# 14
    static extension members and classes of the missing names;
-   `Compat/ZLibStream.cs` on `Compat/Puff.cs` (puff.c, as the Swift port has
-   it) for the zlib streams, and `check-zlib.sh`, which holds it to .NET 8's
+   `Compat/ZLibStream.cs` on `Compat/Puff.cs` (a C# translation of puff.c)
+   for the zlib streams, and `check-zlib.sh`, which holds it to .NET 8's
    ZLibStream: Inflate, InflatePrefix and InflateExact the same on 1,032
    streams, whole, cut short, with wrong checksums, bytes after them, or
    corrupted. Built, 0 warnings; still to do: package-dotnet.sh building and
