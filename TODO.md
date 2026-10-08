@@ -599,6 +599,48 @@ detailed in the list below:
   one pass over the glyphs); the cost is the inflated font in memory while
   the document is open, cached across documents on a server. Measured
   first, a CJK document before and after.
+  **Exactly how (8 October 2026, worked out on the Java port):**
+  1. *The used glyphs, as pages are drawn.* Every glyph of an embedded font
+     reaches a page through one private method of Page.java,
+     `appendCodePointAsHex` (ten call sites: TextLine, TextBlock, cells,
+     shaping, marks); its other callers, lines 808-810, write code points
+     for the non-embedded CJK fonts, which have nothing to subset. A field
+     in Font, `java.util.BitSet used`, and the funnel made
+     `appendGlyph(Font font, int gid) { font.used.set(gid);
+     appendCodePointAsHex(gid); }`. One set per font for the whole document,
+     a bit a glyph (2.5 KB for 20,000 glyphs); pages are written and dropped
+     as now. Two Font objects of one file, embedded once (name and
+     checksum), have their sets joined at complete().
+  2. *The font program written last.* new Font(...) writes the font
+     dictionary, the descriptor, /W and ToUnicode at once, as now, but only
+     reserves the object number of the font program (FontFile3/FontFile2);
+     it is written at complete(), after every page. A PDF's objects may come
+     in any order, the cross-reference table says where each is. The one
+     change to PDFjet's core: the writer accepts an object number reserved
+     early and written late, in the xref code of each port, with its tests.
+     So the streaming stays: pages go out as they are drawn; held meanwhile
+     are the bits and the font.
+  3. *CFF, at complete().* The CharStrings INDEX (count, offSize, count+1
+     offsets, the charstrings) rebuilt with the same count: glyph 0 and the
+     used glyphs copied byte for byte, every other one `0x0E`, endchar, a
+     glyph that draws nothing (not a box: the box of a missing character is
+     .notdef, glyph 0, kept). The blocks after it move, so the CFF is written
+     again in a fixed order with every offset of the Top DICT, and of the
+     FDArray's Private entries of a CID font, in the 5-byte integer form, so
+     that a changed offset never changes a DICT's size. The subroutines kept
+     whole (a second step, maybe: emptying those no used glyph calls).
+  4. *TrueType.* The used set completed with the parts of the composite
+     glyphs used; unused glyphs of zero length in glyf (their loca offsets
+     repeat); the other tables copied.
+  5. *Embedded:* deflated, written to the reserved object; the font's name
+     prefixed with a tag of six capitals and a plus, as the spec asks of a
+     subset; for PDF/A-1, a CIDSet of the glyphs present, the bits.
+     Nothing else changes: glyph numbers, /W, ToUnicode, the pages.
+  6. *Not subset:* a font of a fill-in field, whose typed glyphs are unknown,
+     and a font set to stay whole (a setting, e.g. setSubset(false)).
+  7. *The test:* the CJK examples made with the whole font and with the
+     subset, rendered and compared pixel for pixel, and their text extracted
+     and compared; in the four ports, whose pages have the same funnel.
 - ⬜ The package registries, in this order (see "After the tag: the package
   registries" below): Go (one fetch of the proxy, and pkg.go.dev lists
   it), NuGet first of the others (C# is the largest audience, about an
