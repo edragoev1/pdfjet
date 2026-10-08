@@ -646,3 +646,16 @@ func TestSVGImageASkewOfNinetyDegreesIsNotRead(t *testing.T) {
 		}
 	}
 }
+
+func TestSVGImageRefusesPathDataWithANumberThatIsNotOne(t *testing.T) {
+	// The numbers the fuzzers made of path data: refused in words, in the
+	// four ports, where Java and C# failed with a NumberFormatException and
+	// a FormatException (found by the fuzz replay, 8 October 2026).
+	for _, number := range []string{"-.", ".", "2.@5", "1d775"} {
+		_, err := NewSVGImage(strings.NewReader(
+			`<svg width="100" height="100"><path d="M 0 0 L ` + number + ` 5"/></svg>`))
+		if err == nil || !strings.Contains(strings.ToLower(err.Error()), "invalid path data") {
+			t.Errorf("%q: %v", number, err)
+		}
+	}
+}

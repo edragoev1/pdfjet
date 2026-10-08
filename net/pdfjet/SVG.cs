@@ -125,6 +125,17 @@ namespace PDFjet.NET {
             return operations;
         }
 
+        // Returns the argument as a number, and refuses path data with one that is
+        // not, such as "-." or "2.@5", in words, as the other ports do, rather
+        // than with a FormatException.
+        private static float Number(string arg) {
+            if (float.TryParse(arg, NumberStyles.Float | NumberStyles.AllowThousands,
+                    CultureInfo.InvariantCulture, out float value)) {
+                return value;
+            }
+            throw new Exception("Invalid path data: " + arg);
+        }
+
         /// <summary>Converts SVG path operations to PDF path operations.</summary>
         internal static List<PathOp> ToPDF(List<PathOp> list) {
             List<PathOp> operations = new List<PathOp>();
@@ -146,8 +157,8 @@ namespace PDFjet.NET {
                 int first = operations.Count;
                 if (op.cmd == 'M' || op.cmd == 'm') {
                     for (int i = 0; i <= op.args.Count - 2; i += 2) {
-                        float x = float.Parse(op.args[i], CultureInfo.InvariantCulture);
-                        float y = float.Parse(op.args[i + 1], CultureInfo.InvariantCulture);
+                        float x = Number(op.args[i]);
+                        float y = Number(op.args[i + 1]);
                         if (op.cmd == 'm' ) {
                             x += lastOp.x;
                             y += lastOp.y;
@@ -164,8 +175,8 @@ namespace PDFjet.NET {
                     }
                 } else if (op.cmd == 'L' || op.cmd == 'l') {
                     for (int i = 0; i <= op.args.Count - 2; i += 2) {
-                        float x = float.Parse(op.args[i], CultureInfo.InvariantCulture);
-                        float y = float.Parse(op.args[i + 1], CultureInfo.InvariantCulture);
+                        float x = Number(op.args[i]);
+                        float y = Number(op.args[i + 1]);
                         if (op.cmd == 'l' ) {
                             x += lastOp.x;
                             y += lastOp.y;
@@ -176,7 +187,7 @@ namespace PDFjet.NET {
                     }
                 } else if (op.cmd == 'H' || op.cmd == 'h') {
                     foreach (String arg in op.args) {
-                        float x = float.Parse(arg, CultureInfo.InvariantCulture);
+                        float x = Number(arg);
                         if (op.cmd == 'h' ) {
                             x += lastOp.x;
                         }
@@ -186,7 +197,7 @@ namespace PDFjet.NET {
                     }
                 } else if (op.cmd == 'V' || op.cmd == 'v') {
                     foreach (String arg in op.args) {
-                        float y = float.Parse(arg, CultureInfo.InvariantCulture);
+                        float y = Number(arg);
                         if (op.cmd == 'v' ) {
                             y += lastOp.y;
                         }
@@ -197,10 +208,10 @@ namespace PDFjet.NET {
                 } else if (op.cmd == 'Q' || op.cmd == 'q') {
                     for (int i = 0; i <= op.args.Count - 4; i += 4) {
                         pathOp = new PathOp('C');
-                        float x1 = float.Parse(op.args[i], CultureInfo.InvariantCulture);
-                        float y1 = float.Parse(op.args[i + 1], CultureInfo.InvariantCulture);
-                        float x = float.Parse(op.args[i + 2], CultureInfo.InvariantCulture);
-                        float y = float.Parse(op.args[i + 3], CultureInfo.InvariantCulture);
+                        float x1 = Number(op.args[i]);
+                        float y1 = Number(op.args[i + 1]);
+                        float x = Number(op.args[i + 2]);
+                        float y = Number(op.args[i + 3]);
                         if (op.cmd == 'q') {
                             x1 += lastOp.x;
                             y1 += lastOp.y;
@@ -233,8 +244,8 @@ namespace PDFjet.NET {
                         }
                         pathOp.x1q = x1;
                         pathOp.y1q = y1;
-                        float x = float.Parse(op.args[i], CultureInfo.InvariantCulture);
-                        float y = float.Parse(op.args[i + 1], CultureInfo.InvariantCulture);
+                        float x = Number(op.args[i]);
+                        float y = Number(op.args[i + 1]);
                         if (op.cmd == 't') {
                             x += lastOp.x;
                             y += lastOp.y;
@@ -251,12 +262,12 @@ namespace PDFjet.NET {
                 } else if (op.cmd == 'C' || op.cmd == 'c') {
                     for (int i = 0; i <= op.args.Count - 6; i += 6) {
                         pathOp = new PathOp('C');
-                        float x1 = float.Parse(op.args[i], CultureInfo.InvariantCulture);
-                        float y1 = float.Parse(op.args[i + 1], CultureInfo.InvariantCulture);
-                        float x2 = float.Parse(op.args[i + 2], CultureInfo.InvariantCulture);
-                        float y2 = float.Parse(op.args[i + 3], CultureInfo.InvariantCulture);
-                        float x = float.Parse(op.args[i + 4], CultureInfo.InvariantCulture);
-                        float y = float.Parse(op.args[i + 5], CultureInfo.InvariantCulture);
+                        float x1 = Number(op.args[i]);
+                        float y1 = Number(op.args[i + 1]);
+                        float x2 = Number(op.args[i + 2]);
+                        float y2 = Number(op.args[i + 3]);
+                        float x = Number(op.args[i + 4]);
+                        float y = Number(op.args[i + 5]);
                         if (op.cmd == 'c') {
                             x1 += lastOp.x;
                             y1 += lastOp.y;
@@ -281,10 +292,10 @@ namespace PDFjet.NET {
                             x1 = 2 * lastOp.x - lastOp.x2;
                             y1 = 2 * lastOp.y - lastOp.y2;
                         }
-                        float x2 = float.Parse(op.args[i], CultureInfo.InvariantCulture);
-                        float y2 = float.Parse(op.args[i + 1], CultureInfo.InvariantCulture);
-                        float x = float.Parse(op.args[i + 2], CultureInfo.InvariantCulture);
-                        float y = float.Parse(op.args[i + 3], CultureInfo.InvariantCulture);
+                        float x2 = Number(op.args[i]);
+                        float y2 = Number(op.args[i + 1]);
+                        float x = Number(op.args[i + 2]);
+                        float y = Number(op.args[i + 3]);
                         if (op.cmd == 's') {
                             x2 += lastOp.x;
                             y2 += lastOp.y;
@@ -297,13 +308,13 @@ namespace PDFjet.NET {
                     }
                 } else if (op.cmd == 'A' || op.cmd == 'a') {
                     for (int i = 0; i <= op.args.Count - 7; i += 7) {
-                        float rx = float.Parse(op.args[i], CultureInfo.InvariantCulture);
-                        float ry = float.Parse(op.args[i + 1], CultureInfo.InvariantCulture);
-                        float rotation = float.Parse(op.args[i + 2], CultureInfo.InvariantCulture);
+                        float rx = Number(op.args[i]);
+                        float ry = Number(op.args[i + 1]);
+                        float rotation = Number(op.args[i + 2]);
                         bool largeArc = op.args[i + 3] != "0";
                         bool sweep = op.args[i + 4] != "0";
-                        float x = float.Parse(op.args[i + 5], CultureInfo.InvariantCulture);
-                        float y = float.Parse(op.args[i + 6], CultureInfo.InvariantCulture);
+                        float x = Number(op.args[i + 5]);
+                        float y = Number(op.args[i + 6]);
                         if (op.cmd == 'a') {
                             x += lastOp.x;
                             y += lastOp.y;

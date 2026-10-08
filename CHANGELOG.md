@@ -16,6 +16,10 @@ This is the first entry in this file; earlier releases were not tracked here.
   failed on such a font, and Go and Swift drew every glyph 0 wide. A font
   without `hhea` is refused, "no advance widths". Real fonts list their
   tables in order; found by replaying the Go fuzz corpus in the other ports.
+- SVG path data with a number that is not one, such as `-.` or `2.@5`, is
+  refused in words, "Invalid path data", in Java and C# as in Go and Swift,
+  where Java failed with a NumberFormatException and C# with a
+  FormatException. Found by replaying the Go fuzz corpus.
 
 ## v9.0.3 — 2026-10-08
 

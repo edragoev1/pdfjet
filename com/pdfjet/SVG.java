@@ -136,6 +136,17 @@ class SVG {
         return operations;
     }
 
+    // Returns the argument as a number, and refuses path data with one that is
+    // not, such as "-." or "2.@5", in words, as the other ports do, rather
+    // than with a NumberFormatException.
+    private static float number(String arg) {
+        try {
+            return Float.parseFloat(arg);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Invalid path data: " + arg);
+        }
+    }
+
     /**
      * Returns list of PDF path operations.
      *
@@ -161,8 +172,8 @@ class SVG {
             int first = operations.size();
             if (op.cmd == 'M' || op.cmd == 'm') {
                 for (int i = 0; i <= op.args.size() - 2; i += 2) {
-                    float x = Float.parseFloat(op.args.get(i));
-                    float y = Float.parseFloat(op.args.get(i + 1));
+                    float x = number(op.args.get(i));
+                    float y = number(op.args.get(i + 1));
                     if (op.cmd == 'm' ) {
                         x += lastOp.x;
                         y += lastOp.y;
@@ -179,8 +190,8 @@ class SVG {
                 }
             } else if (op.cmd == 'L' || op.cmd == 'l') {
                 for (int i = 0; i <= op.args.size() - 2; i += 2) {
-                    float x = Float.parseFloat(op.args.get(i));
-                    float y = Float.parseFloat(op.args.get(i + 1));
+                    float x = number(op.args.get(i));
+                    float y = number(op.args.get(i + 1));
                     if (op.cmd == 'l' ) {
                         x += lastOp.x;
                         y += lastOp.y;
@@ -191,7 +202,7 @@ class SVG {
                 }
             } else if (op.cmd == 'H' || op.cmd == 'h') {
                 for (String arg : op.args) {
-                    float x = Float.parseFloat(arg);
+                    float x = number(arg);
                     if (op.cmd == 'h' ) {
                         x += lastOp.x;
                     }
@@ -201,7 +212,7 @@ class SVG {
                 }
             } else if (op.cmd == 'V' || op.cmd == 'v') {
                 for (String arg : op.args) {
-                    float y = Float.parseFloat(arg);
+                    float y = number(arg);
                     if (op.cmd == 'v' ) {
                         y += lastOp.y;
                     }
@@ -212,10 +223,10 @@ class SVG {
             } else if (op.cmd == 'Q' || op.cmd == 'q') {
                 for (int i = 0; i <= op.args.size() - 4; i += 4) {
                     pathOp = new PathOp('C');
-                    float x1 = Float.parseFloat(op.args.get(i));
-                    float y1 = Float.parseFloat(op.args.get(i + 1));
-                    float x = Float.parseFloat(op.args.get(i + 2));
-                    float y = Float.parseFloat(op.args.get(i + 3));
+                    float x1 = number(op.args.get(i));
+                    float y1 = number(op.args.get(i + 1));
+                    float x = number(op.args.get(i + 2));
+                    float y = number(op.args.get(i + 3));
                     if (op.cmd == 'q') {
                         x1 += lastOp.x;
                         y1 += lastOp.y;
@@ -247,8 +258,8 @@ class SVG {
                     }
                     pathOp.x1q = x1;
                     pathOp.y1q = y1;
-                    float x = Float.parseFloat(op.args.get(i));
-                    float y = Float.parseFloat(op.args.get(i + 1));
+                    float x = number(op.args.get(i));
+                    float y = number(op.args.get(i + 1));
                     if (op.cmd == 't') {
                         x += lastOp.x;
                         y += lastOp.y;
@@ -265,12 +276,12 @@ class SVG {
             } else if (op.cmd == 'C' || op.cmd == 'c') {
                 for (int i = 0; i <= op.args.size() - 6; i += 6) {
                     pathOp = new PathOp('C');
-                    float x1 = Float.parseFloat(op.args.get(i));
-                    float y1 = Float.parseFloat(op.args.get(i + 1));
-                    float x2 = Float.parseFloat(op.args.get(i + 2));
-                    float y2 = Float.parseFloat(op.args.get(i + 3));
-                    float x = Float.parseFloat(op.args.get(i + 4));
-                    float y = Float.parseFloat(op.args.get(i + 5));
+                    float x1 = number(op.args.get(i));
+                    float y1 = number(op.args.get(i + 1));
+                    float x2 = number(op.args.get(i + 2));
+                    float y2 = number(op.args.get(i + 3));
+                    float x = number(op.args.get(i + 4));
+                    float y = number(op.args.get(i + 5));
                     if (op.cmd == 'c') {
                         x1 += lastOp.x;
                         y1 += lastOp.y;
@@ -295,10 +306,10 @@ class SVG {
                         x1 = 2*lastOp.x - lastOp.x2;
                         y1 = 2*lastOp.y - lastOp.y2;
                     }
-                    float x2 = Float.parseFloat(op.args.get(i));
-                    float y2 = Float.parseFloat(op.args.get(i + 1));
-                    float x = Float.parseFloat(op.args.get(i + 2));
-                    float y = Float.parseFloat(op.args.get(i + 3));
+                    float x2 = number(op.args.get(i));
+                    float y2 = number(op.args.get(i + 1));
+                    float x = number(op.args.get(i + 2));
+                    float y = number(op.args.get(i + 3));
                     if (op.cmd == 's') {
                         x2 += lastOp.x;
                         y2 += lastOp.y;
@@ -311,13 +322,13 @@ class SVG {
                 }
             } else if (op.cmd == 'A' || op.cmd == 'a') {
                 for (int i = 0; i <= op.args.size() - 7; i += 7) {
-                    float rx = Float.parseFloat(op.args.get(i));
-                    float ry = Float.parseFloat(op.args.get(i + 1));
-                    float rotation = Float.parseFloat(op.args.get(i + 2));
+                    float rx = number(op.args.get(i));
+                    float ry = number(op.args.get(i + 1));
+                    float rotation = number(op.args.get(i + 2));
                     boolean largeArc = !op.args.get(i + 3).equals("0");
                     boolean sweep = !op.args.get(i + 4).equals("0");
-                    float x = Float.parseFloat(op.args.get(i + 5));
-                    float y = Float.parseFloat(op.args.get(i + 6));
+                    float x = number(op.args.get(i + 5));
+                    float y = number(op.args.get(i + 6));
                     if (op.cmd == 'a') {
                         x += lastOp.x;
                         y += lastOp.y;

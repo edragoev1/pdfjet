@@ -586,4 +586,17 @@ class SVGImageTest {
         }
         return count;
     }
+
+    @Test
+    void refusesPathDataWithANumberThatIsNotOne() throws Exception {
+        // The numbers the fuzzers made of path data: refused in words, in the
+        // four ports, where Java failed with a NumberFormatException (found by
+        // the fuzz replay, 8 October 2026).
+        for (String number : new String[] {"-.", ".", "2.@5", "1d775"}) {
+            String svg = "<svg width=\"100\" height=\"100\"><path d=\"M 0 0 L " + number + " 5\"/></svg>";
+            Exception e = assertThrows(Exception.class,
+                    () -> new SVGImage(new ByteArrayInputStream(svg.getBytes(StandardCharsets.UTF_8))));
+            assertTrue(e.getMessage().toLowerCase().contains("invalid path data"), number + ": " + e);
+        }
+    }
 }

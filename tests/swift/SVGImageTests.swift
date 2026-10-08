@@ -548,4 +548,19 @@ import Testing
     private func curves(_ content: String) -> Int {
         return content.components(separatedBy: " c\n").count - 1
     }
+
+    @Test func refusesPathDataWithANumberThatIsNotOne() {
+        // The numbers the fuzzers made of path data: refused in words, in the
+        // four ports, as Swift already did (found by the fuzz replay, 8
+        // October 2026).
+        for number in ["-.", ".", "2.@5", "1d775"] {
+            let svg = "<svg width=\"100\" height=\"100\"><path d=\"M 0 0 L \(number) 5\"/></svg>"
+            do {
+                _ = try image(svg)
+                Issue.record("\(number): no error")
+            } catch {
+                #expect("\(error)".lowercased().contains("invalid path data"), "\(number): \(error)")
+            }
+        }
+    }
 }

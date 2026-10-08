@@ -580,5 +580,17 @@ public class SVGImageTest {
         }
         return count;
     }
+
+    [Fact]
+    public void RefusesPathDataWithANumberThatIsNotOne() {
+        // The numbers the fuzzers made of path data: refused in words, in the
+        // four ports, where C# failed with a FormatException (found by the
+        // fuzz replay, 8 October 2026).
+        foreach (string number in new string[] {"-.", ".", "2.@5", "1d775"}) {
+            string svg = "<svg width=\"100\" height=\"100\"><path d=\"M 0 0 L " + number + " 5\"/></svg>";
+            Exception e = Assert.ThrowsAny<Exception>(() => Parse(svg));
+            Assert.Contains("invalid path data", e.Message.ToLowerInvariant());
+        }
+    }
 }
 }
