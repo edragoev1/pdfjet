@@ -9,7 +9,14 @@ PDFjet Forms and comes back to the library now and then; this list is what
 to do, in order, so that each visit can just pick up the next item. Only
 what users would hit goes in; the rest waits for v9.1.
 
-1. ⬜ **The two faults of the fuzz replay**, in the four ports with a test in
+1. ✅ **Done on 8 October 2026, evening, in the four ports with a test in
+   each:** the OTF hmtx before hhea (ae905866; Go and Swift had drawn every
+   glyph 0 wide, unseen), the malformed SVG number (5d3d6f73), and Jazzer's
+   Markdown fault, whose cause was not the quotes but a table header taller
+   than half the page, repeated on every page: drawn on the first page alone
+   now (5444ebb6), 553 pages and 2 GB down to 17-24 pages in 0.1 s. Jazzer's
+   run goes on until 9 October, 07:00: what else it finds comes here. As
+   first written: **The two faults of the fuzz replay**, in the four ports with a test in
    each (item 7 below): an OTF whose hmtx comes before hhea, and a malformed
    SVG number. Then the findings of Jazzer's overnight run of 8-9 October
    (~/Projects/pdfjet-fuzz-replay/jazzer, status.sh), each checked first.
