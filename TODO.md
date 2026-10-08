@@ -13,6 +13,18 @@ what users would hit goes in; the rest waits for v9.1.
    each (item 7 below): an OTF whose hmtx comes before hhea, and a malformed
    SVG number. Then the findings of Jazzer's overnight run of 8-9 October
    (~/Projects/pdfjet-fuzz-replay/jazzer, status.sh), each checked first.
+   Found by Jazzer on 8 October 2026, after four hours, checked the same
+   day: **Markdown, deeply nested block quotes.** A text of 22 KB, about 40
+   levels of `>` and a long run of `*`
+   (jazzer/findings/Markdown/crash-3fdf839a...), takes 21 s and 1.7 GB in
+   Java uninstrumented, and 9.5 s, 553 pages and 2.3 GB allocated in Go: the
+   Markdown code of all the ports, not Java's alone. Likely cause, to
+   confirm: each level indents the column, which at about 40 levels is
+   narrower than a letter, so the text breaks after nearly every character.
+   Probable fix, in the four: a cap on the nesting of quotes past which the
+   indent stops growing, or a least width of the column; the input as a
+   test, in time and pages. The OTF target's two slow-unit inputs, and
+   Markdown's four, to be run uninstrumented with Repro before they count.
 2. ⬜ **One rule of strictness for the four** (item 7): an SVG that is not
    well-formed XML refused in PDFjet's words; a deflate block without its
    end code refused, Go to follow the other three.
