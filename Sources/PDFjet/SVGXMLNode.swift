@@ -244,13 +244,18 @@ final class SVGXMLNode {
         for unit in units where unit >= 0x80 {
             return String(decoding: units, as: UTF16.self)
         }
-        return String(unsafeUninitializedCapacity: units.count) { buffer in
-            var i = 0
-            for unit in units {
-                buffer[i] = UInt8(truncatingIfNeeded: unit)
-                i += 1
+        // String(unsafeUninitializedCapacity:) is of macOS 11 and the systems
+        // of its year; on older ones the ASCII bytes are decoded as UTF-8.
+        if #available(macOS 11.0, iOS 14.0, tvOS 14.0, watchOS 7.0, *) {
+            return String(unsafeUninitializedCapacity: units.count) { buffer in
+                var i = 0
+                for unit in units {
+                    buffer[i] = UInt8(truncatingIfNeeded: unit)
+                    i += 1
+                }
+                return i
             }
-            return i
         }
+        return String(decoding: units.map { UInt8(truncatingIfNeeded: $0) }, as: UTF8.self)
     }
 }   // End of SVGXMLNode.swift
