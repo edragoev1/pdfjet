@@ -321,6 +321,60 @@ detailed in the list below:
      overnight as the Go ones were, which reach the paths of Java alone.
      SharpFuzz for .NET after it, if Jazzer finds what the replay does not.
 
+   ✅ **The replay, done on 8 October 2026; findings recorded, fixed in
+   9.0.5, nothing changed before the tag.** A Go test, kept out of the
+   repository, wrote each input of the 15 targets as the target builds it
+   (the PNG, the font, the SVG path from their parts), with Go's outcome and,
+   for PDF.read and the decompressor, Go's report of digests; Java, C# and
+   Swift each replayed the 17,476 inputs and compared. The scripts are in
+   ~/Projects/pdfjet-fuzz-replay (README.md), to move into tests/ after the
+   tag. No hang and no input over 256 MB in any port; Swift, no trap at all.
+   The decompressor's 428 reports the same in the four; PDF.read's 2,865
+   the same in all but 8 to 12 each (below); the BMP, JPEG, PNG pixels,
+   Markup, Markdown, SVG path and deflate targets the same throughout.
+
+   Faults, both of malformed files only, to fix in the four:
+   - **OTF: `hmtx` before `hhea`** (3 inputs, e.g. FuzzOpenTypeFont 00747):
+     advanceWidth is made when hhea is read, so a font whose table directory
+     lists hmtx first, or that has no hhea, fails with a
+     NullPointerException in Java (OTF.java:402) and a
+     NullReferenceException in C# (OTF.cs:389). Go loops over its nil slice
+     and refuses the font later, "no advance widths"; Swift likewise. Fix:
+     read hhea before hmtx whatever the directory's order, and refuse a font
+     without it, in words.
+   - **SVG: a malformed number** (157 inputs, e.g. FuzzSVGImage 00001):
+     `-.`, `.`, `1d775`, `2.@5` get past the tokenizer to Float.parseFloat
+     (Java, SVG.java, 26 calls, lines 164-320) or float.Parse (C#, SVG.cs,
+     about 25, lines 149-306), whose NumberFormatException or
+     FormatException escapes new SVGImage. Go refuses the same input with
+     its own error. Fix: one parse function that refuses in PDFjet's words.
+
+   Differences of strictness, to decide once for the four:
+   - **SVG that is not well-formed XML.** Each port reads it with its own
+     XML parser: Go's encoding/xml is lenient about some faults
+     (`width="1"height="1"`, junk at the root, no root) and strict about
+     others; Java and C# (XmlException escaping SVGImage.Read, C#
+     SVGImage.cs:82, 448 inputs) refuse 112 that Go draws; Swift draws 336
+     that Go refuses. Proposal: strict in the four, an SVG that is not
+     well-formed refused in PDFjet's words, as the SVG files of PDFjet's
+     users come from editors that write well-formed XML. C# also reads a
+     number past float32's range as Infinity where Go refuses it (5).
+   - **A PNG whose deflate block has no end-of-block code** (10 or 11):
+     Go draws it, its decompressor stopping when it has the image's bytes;
+     Java's Inflater, .NET's zlib and Swift's Puff refuse it (.NET with the
+     misleading "unsupported compression method"). The stream is invalid;
+     strict is right, Go to follow. The same in 11 font stream metrics
+     inputs in C#, and Java refuses 78 "The marks of the font cannot be
+     read." that Go reads: to look at.
+   - **PDF.read, the stamp step** (12 inputs, Java and C#): a resource named
+     `/` or `>` in a malformed dictionary; checkImportedName throws at once
+     in Java and C#, where Go keeps the error for Complete(). Both refuse;
+     no fix needed.
+   - **PDF.read, Swift** (8 inputs): a page's joined content one newline
+     longer, as Swift skips a part of /Contents whose stream is nil and Go
+     one whose data is nil (pdfobj.go:609, PDFobj.swift:636). Draws the
+     same; align when convenient.
+
 **After the tag, when convenient, blocking nothing:**
 - ✅ **Done in 9.0.3, on 7 October 2026 (it was "first after the tag"; the
   owner: "I really want to know if we are doing everything right"): the
