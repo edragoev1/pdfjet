@@ -132,6 +132,16 @@ left is checking, tagging and packaging.
   the owner's go-ahead.
 - ⬜ The deliveries owed a new version: their links to the 9.0.3 packages
   (the owner's private notes).
+- ⬜ **Where the packages live, decided by the owner on 8 October 2026:**
+  - The free packages, the evaluation ones (`PDFjet-ForJava-Eval-…`,
+    `PDFjet-For.NET-Eval-…`), as assets of the GitHub release of the tag.
+  - The paid packages on pdfjet.com, each release in a hidden folder of its
+    own, `v9.0.3-JV-` or `v9.0.3-DN-` and 32 random hex characters, linked
+    from Paddle's thank-you page and the delivery email, with the license
+    certificate. Paddle hosts no files, as FastSpring did. Bandwidth is not
+    expected to matter; the folder answers 403, not a listing.
+  - Later, when sales grow, maybe per-order expiring links from S3 and
+    CloudFront, once pdfjet-server's webhook and email exist for Forms.
 
 **Fri Oct 9: PDFjet Pro sold through Paddle**, brought forward from
 "after the launches": its steps are in the TODO.md of the commercial
