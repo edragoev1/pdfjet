@@ -262,6 +262,9 @@ jobs:
             # pdftotext, of Poppler, extracts the text beside MuPDF.
             - name: Check the text of the example PDFs
               run: |
+                  # The package list of the runner's image can be older than the
+                  # mirror, whose files it names are then gone (404, 8 October 2026).
+                  sudo apt-get update -q
                   sudo apt-get install -y -q poppler-utils
                   "$RUNNER_TEMP/venv/bin/python" .github/scripts/check-example-text.py \
                       "$RUNNER_TEMP/text/text-trace.jsonl" "$RUNNER_TEMP/pdfs/example-pdfs-{port}"
@@ -347,6 +350,9 @@ jobs:
             - if: matrix.engine == 'poppler'
               name: Install Poppler
               run: |
+                  # The package list of the runner's image can be older than the
+                  # mirror, whose files it names are then gone (404, 8 October 2026).
+                  sudo apt-get update -q
                   sudo apt-get install -y -q poppler-utils
                   pdftoppm -v
 
