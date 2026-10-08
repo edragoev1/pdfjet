@@ -1,4 +1,49 @@
-# PDFjet — the plan to v9.0.3
+# PDFjet — the plan to v9.0.5
+
+**v9.0.3 was released on 8 October 2026.** The plan to it is kept below, as
+it was written.
+
+**v9.0.5, aimed at Tuesday 27 October 2026** (the owner, 8 October 2026: "No
+pressure if we can't get it on that specific date"). The owner works on
+PDFjet Forms and comes back to the library now and then; this list is what
+to do, in order, so that each visit can just pick up the next item. Only
+what users would hit goes in; the rest waits for v9.1.
+
+1. ⬜ **The two faults of the fuzz replay**, in the four ports with a test in
+   each (item 7 below): an OTF whose hmtx comes before hhea, and a malformed
+   SVG number. Then the findings of Jazzer's overnight run of 8-9 October
+   (~/Projects/pdfjet-fuzz-replay/jazzer, status.sh), each checked first.
+2. ⬜ **One rule of strictness for the four** (item 7): an SVG that is not
+   well-formed XML refused in PDFjet's words; a deflate block without its
+   end code refused, Go to follow the other three.
+3. ⬜ **Example_46 as PDF/UA, the language of a TextLine in a TextColumn, the
+   non-embedded CJK fonts full width** (items 2 to 4).
+4. ⬜ **Small things:** the font tool's `--pdfjet-forms-format` (item 8); the
+   packages' license says what Solo and Team cover (item 9).
+5. ⬜ **NuGet** (the owner, 8 October 2026: "We can probably get NuGet thing
+   setup before then"): a package of PDFjet.dll, lib/net8.0 and lib/net48,
+   strong-named, with System.Memory 4.5.5 as net48's dependency, as the
+   .NET client asked. To decide first: public on nuget.org, which needs
+   its license expression and the package's own README, or a private feed
+   for buyers; and whether it is the evaluation or the licensed build.
+6. ⬜ **Anything the .NET client finds in net48**, which ships untested on
+   Windows in 9.0.3 (they test it).
+7. ⬜ **The release:** the checks of the tag as for 9.0.3 (check-examples.sh,
+   check-api.sh v9.0.3, the viewer pass kept to what can find a major
+   issue), the packages, the GitHub release with the eval zips, FastSpring's
+   four files, pdfjet.com by update-from-pdfjet.py and
+   pdfjet-website-update.zip, the hidden links of v9.0.5 for direct buyers.
+
+**Sales:** PDFjet for Java and .NET stay on FastSpring, at least until 2027
+(the owner, 8 October 2026); Forms is on Paddle alone. Paddle for the
+library is ready in its sandbox for whenever (pdfjet-server TODO.md).
+
+**A Hacker News post around 27 October**, with v9.0.5 (the owner, 8 October
+2026): before it, Forms on AWS (CloudFront, WAF) and pdfjet.com behind
+Cloudflare (pdfjet-server TODO.md, "Ready for a Hacker News day").
+
+---
+
 
 **The new plan, decided by the owner on 6 October 2026: v9.0.3 on Oct 8,**
 not Oct 21, as every goal but the checks of the tag is closed and the freeze
