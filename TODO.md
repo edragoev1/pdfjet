@@ -233,6 +233,32 @@ detailed in the list below:
    ready. Found besides: PDFjet.csproj has GenerateAssemblyInfo false and no
    AssemblyInfo.cs, hence the version 0.0.0.0.
 
+6. ⬜ **.NET Framework 4.8 and .NET 8 in one package, from 9.0.5** (decided
+   by the owner on 8 October 2026). The client of item 5 answered that day:
+   their internal NuGet package is multi-target, net48 and net10, and the
+   net8.0 PDFjet.dll fails on net48 ("uses System.Runtime 8.0.0.0, which has
+   a higher version than referenced System.Runtime 4.1.2.0"). net10 needs
+   nothing: a net8.0 assembly runs on .NET 10. So `<TargetFrameworks>net8.0;
+   net48</TargetFrameworks>`, both strong-named with the same key, token
+   e66c1909913f295d, AssemblyVersion 9.0.0.0; the packages with
+   `lib/net48/` and `lib/net8.0/`, as NuGet chooses between them, .NET 9 and
+   10 taking net8.0. Not net48 alone, which runs on Windows only and on .NET
+   8 through a compatibility shim with a warning, and is slower; not
+   netstandard2.0 alone, the older code everywhere and facade DLLs on 4.8.
+   net48 rather than netstandard2.0 beside net8.0, as the client asks for
+   it, and .NET Framework 4.8 is where the .NET Framework applications are.
+   The work is the one measured on 7 October (item 5): System.Memory for
+   net48 alone (with System.Buffers and Unsafe, three DLLs beside its
+   PDFjet.dll), the two Stream overrides of spans `#if !NETFRAMEWORK`, the
+   about 56 errors behind `#if NETFRAMEWORK` in one helper file, net8.0
+   unchanged; ZLibStream and MathF the careful ones, the PDFs of net48 the
+   same as net8.0's byte for byte. Measured again on 8 October for net48,
+   with Microsoft.NETFramework.ReferenceAssemblies to build on Linux: the
+   same list. About two to three days, the examples run on .NET Framework
+   on the owner's Windows machine (Linux has no .NET Framework, and Mono is
+   not installed). Before 9.0.5, the client can have the net48 build of
+   that work as their 9.0.4, the custom build of the owner's rule.
+
 **After the tag, when convenient, blocking nothing:**
 - ✅ **Done in 9.0.3, on 7 October 2026 (it was "first after the tag"; the
   owner: "I really want to know if we are doing everything right"): the
