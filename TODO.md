@@ -94,6 +94,31 @@ left is checking, tagging and packaging.
   `check-examples.sh` and the workflow: the locale build and the two
   parsers (v9.1).
 
+- ✅ **Overnight fuzzing, Oct 7-8**, 20:07 to 04:43 on 56d9a659, all clean: every
+  Go fuzz target for 20 to 120 minutes, about 547 million inputs, with no
+  crash, hang or failing input written. For a future run to set against:
+
+  | Target | Minutes | Inputs |
+  |---|---:|---:|
+  | FuzzPDFRead | 120 | 137,741,293 |
+  | FuzzJPGImage | 45 | 117,818,854 |
+  | FuzzPNGImage | 45 | 46,724,959 |
+  | FuzzSVGImage | 45 | 102,204,197 |
+  | FuzzPNGImagePixels | 30 | 5,811,807 |
+  | FuzzBMPImage | 30 | 26,948,673 |
+  | FuzzOpenTypeFont | 30 | 4,110,821 |
+  | FuzzOpenTypeFontTables | 30 | 1,061,298 |
+  | FuzzSVGPath | 20 | 7,803,523 |
+  | FuzzMarkdown | 20 | 1,669,055 |
+  | FuzzMarkup | 20 | 808,915 |
+  | FuzzFontStream | 20 | 44,697,717 |
+  | FuzzFontStreamMetrics | 20 | 1,116,969 |
+  | FuzzDecompressor | 20 | 40,669,122 |
+  | FuzzDeflateRoundTrip | 20 | 7,624,830 |
+
+  Each run as `GOWORK=off nice -n 15 go test ./src/ -run '^$' -fuzz '^Target$'
+  -fuzztime 120m`, one after the other.
+
 **Thu Oct 8, or when the checks of the spaces pass: the tag**
 - ⬜ Tag v9.0.3 and make the GitHub release; then the Go proxy's `.info` and
   `.zip` of it answering 200, and sum.golang.org having its checksum.
