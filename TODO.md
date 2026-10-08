@@ -1697,6 +1697,22 @@ no history; the registries count, and are where developers look.
   default. Not a con: the streaming, as the cross-reference stream is
   written at the end from the offsets PDFjet keeps now; PDFjet's reader
   already reads them.
+  **PDF/A-1, and the owner's view (8 October 2026).** PDF/A-1 (ISO 19005-1,
+  2005) is built on PDF 1.4: no object streams, no cross-reference streams.
+  Replaced by PDF/A-2 (2011, PDF 1.7, which allows both), PDF/A-3 (2012,
+  embedded files: ZUGFeRD, Factur-X, PDFjet Forms) and PDF/A-4 (2020, PDF
+  2.0). Still asked for by some archive and filing systems set up around
+  2005-2012; most requirements now accept PDF/A-2 or later. PDFjet offers
+  PDF_A_1A and PDF_A_1B (Example_01, Example_34), so customers may use it,
+  and it must keep working. Object streams would then mean two layouts of a
+  file, and not one `if`: every writer of objects (encryption, merge, split,
+  stamp, forms, PDFjet Pro's signer) tested in both, in four ports, for
+  good. The owner: "If it was me - one or the other". So the one layout
+  stays the plain cross-reference table, as now, for every document; object
+  streams only if a real need is shown (a customer, or Forms' large tables
+  beyond what pdfjet-server can limit), and then with that cost accepted on
+  purpose. The large CJK fonts, subset, are the bigger and simpler win, and
+  come first.
 - ⬜ Maybe: a size-only reader of an image, in the four ports: the width and
   the height a PNG, a JPEG or a BMP is drawn at, read from its header, the
   IHDR and pHYs chunks, the SOF and JFIF segments, without embedding it, for
