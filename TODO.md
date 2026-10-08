@@ -273,6 +273,26 @@ detailed in the list below:
    signing both, the examples run on .NET Framework on Windows, and the
    client's 9.0.4.
 
+7. ⬜ **Maybe: fuzzing beyond Go** (the owner, 8 October 2026). Only the Go
+   port is fuzzed; what it finds is fixed in the four, which share the
+   logic, and the corpora were replayed in the four in September (CHANGELOG:
+   1,257 PDFs, 1,066 streams, the four the same). It is reasonable to expect
+   the hardening to hold in Java, C# and Swift; but the same logic fails
+   differently in each: an integer overflow wraps in Go, Java and C# and
+   traps in Swift; deep recursion is an error caught in Java, a
+   StackOverflowException that ends the process in .NET, a crash in Swift;
+   each port has its own zlib and memory. So, to know rather than expect:
+   - First, cheap: replay in Java, C# and Swift the corpus of the overnight
+     run of Oct 7-8, in Go's cache (`go env GOCACHE`/fuzz), some 16,000
+     inputs of PDFjet's targets (2,862 PDFs, 1,809 fonts, 1,513 PNGs...),
+     each reaching code the earlier ones did not; a crash, a hang, or a
+     file Go reads and another port fails, fixed in the four. This time as
+     a script, to run after each long fuzz. About a day.
+   - Then, maybe: Jazzer (Code Intelligence, on libFuzzer) for Java, the
+     port that sells most: fuzz targets of the same parsers in Java, run
+     overnight as the Go ones were, which reach the paths of Java alone.
+     SharpFuzz for .NET after it, if Jazzer finds what the replay does not.
+
 **After the tag, when convenient, blocking nothing:**
 - ✅ **Done in 9.0.3, on 7 October 2026 (it was "first after the tag"; the
   owner: "I really want to know if we are doing everything right"): the
