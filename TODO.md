@@ -1642,6 +1642,23 @@ no history; the registries count, and are where developers look.
   the gain is the size of tagged documents, a third or more. Measured
   first, with benchmarks/: a long PDF/UA table, before and after, the time
   and the size; PDFjet's name is speed, so the numbers decide.
+  **Maybe, with it: the cross-reference stream** (talked over with the
+  owner, 8 October 2026). The two go together: only a cross-reference
+  stream can point into an object stream, the text table cannot; alone it
+  saves little, 20 bytes an object in the table against 2 or 3 compressed
+  (10,000 objects: about 200 KB to 25 KB). One option for both, on by
+  default, off for PDF/A-1 (PDF 1.4 based, no cross-reference streams;
+  PDF/A-2, 3 and PDF/UA allow them), and a switch for the old layout. The
+  cons, each to handle: Acrobat before 6 (2003) and homemade scripts that
+  look for `xref` cannot read it (the switch is for them); the table is no
+  longer readable by eye (mutool show or qpdf --qdf for debugging); the
+  cross-reference stream is never encrypted, as the spec says, so the writer
+  leaves it out when it encrypts, with a test of an AES-256 file; PDFjet
+  Pro's signer appends an update, which should use a cross-reference stream
+  when the original does: check it before the library writes them by
+  default. Not a con: the streaming, as the cross-reference stream is
+  written at the end from the offsets PDFjet keeps now; PDFjet's reader
+  already reads them.
 - ⬜ Maybe: a size-only reader of an image, in the four ports: the width and
   the height a PNG, a JPEG or a BMP is drawn at, read from its header, the
   IHDR and pHYs chunks, the SOF and JFIF segments, without embedding it, for
