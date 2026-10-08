@@ -126,7 +126,10 @@ left is checking, tagging and packaging.
   only a major issue holds the tag. The net48 build is not run on Windows
   before the tag: the .NET client who asked for it tests it, and what they
   find goes into 9.0.5.
-- ⬜ Tag v9.0.3 and make the GitHub release, with the two evaluation zips
+- ✅ **Tagged and released on 8 October 2026**, v9.0.3 at 174f6fcf, the GitHub
+  release with the two evaluation zips; their releases/latest/download links
+  answer, the Go proxy has v9.0.3 (.info and .zip 200) and sum.golang.org its
+  checksum. The step as planned: tag v9.0.3 and make the GitHub release, with the two evaluation zips
   without the version attached (`gh release upload v9.0.3
   .commercial-packages/PDFjet-ForJava-Eval.zip
   .commercial-packages/PDFjet-For.NET-Eval.zip`); then the Go proxy's `.info` and
@@ -380,6 +383,14 @@ detailed in the list below:
      longer, as Swift skips a part of /Contents whose stream is nil and Go
      one whose data is nil (pdfobj.go:609, PDFobj.swift:636). Draws the
      same; align when convenient.
+
+8. ⬜ **The font tool's `--old-format` renamed `--pdfjet-forms-format`**
+   (the owner, 8 October 2026): util/GenerateStreamFontsFiles.java and
+   util/generate-stream-fonts-files.sh, their usage text and comments; the
+   format is the one pdfjet-server's fonts are written in (its DESIGN.md,
+   "Which font files", names --old-format: change it there too), and the
+   CHANGELOG entry of 9.0.5 says so. The flag is of a tool in util, not of
+   the library, so nothing else changes.
 
 **After the tag, when convenient, blocking nothing:**
 - ✅ **Done in 9.0.3, on 7 October 2026 (it was "first after the tag"; the
