@@ -605,12 +605,15 @@ detailed in the list below:
      `appendCodePointAsHex` (ten call sites: TextLine, TextBlock, cells,
      shaping, marks); its other callers, lines 808-810, write code points
      for the non-embedded CJK fonts, which have nothing to subset. A field
-     in Font, `java.util.BitSet used`, and the funnel made
-     `appendGlyph(Font font, int gid) { font.used.set(gid);
-     appendCodePointAsHex(gid); }`. One set per font for the whole document,
-     a bit a glyph (2.5 KB for 20,000 glyphs); pages are written and dropped
-     as now. Two Font objects of one file, embedded once (name and
-     checksum), have their sets joined at complete().
+     in Font, a plain array of booleans, one per glyph, the same in the four
+     ports (`boolean[]`, `bool[]`, `[]bool`, `[Bool]`, sized by the font's
+     glyph count; not BitSet, BitArray or IndexSet, which differ from port
+     to port), and the funnel made `appendGlyph(Font font, int gid) {
+     font.used[gid] = true; appendCodePointAsHex(gid); }`. One array per
+     font for the whole document, a byte a glyph (20 KB for 20,000 glyphs,
+     nothing next to the font); pages are written and dropped as now. Two
+     Font objects of one file, embedded once (name and checksum), have their
+     arrays joined at complete().
   2. *The font program written last.* new Font(...) writes the font
      dictionary, the descriptor, /W and ToUnicode at once, as now, but only
      reserves the object number of the font program (FontFile3/FontFile2);
@@ -619,7 +622,7 @@ detailed in the list below:
      change to PDFjet's core: the writer accepts an object number reserved
      early and written late, in the xref code of each port, with its tests.
      So the streaming stays: pages go out as they are drawn; held meanwhile
-     are the bits and the font.
+     are the array and the font.
   3. *CFF, at complete().* The CharStrings INDEX (count, offSize, count+1
      offsets, the charstrings) rebuilt with the same count: glyph 0 and the
      used glyphs copied byte for byte, every other one `0x0E`, endchar, a
@@ -634,7 +637,7 @@ detailed in the list below:
      repeat); the other tables copied.
   5. *Embedded:* deflated, written to the reserved object; the font's name
      prefixed with a tag of six capitals and a plus, as the spec asks of a
-     subset; for PDF/A-1, a CIDSet of the glyphs present, the bits.
+     subset; for PDF/A-1, a CIDSet of the glyphs present, from the array.
      Nothing else changes: glyph numbers, /W, ToUnicode, the pages.
   6. *Not subset:* a font of a fill-in field, whose typed glyphs are unknown,
      and a font set to stay whole (a setting, e.g. setSubset(false)).
