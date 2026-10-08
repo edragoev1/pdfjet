@@ -2,13 +2,15 @@
 
 PDFjet creates PDF documents: text in any script, tables, charts, barcodes and
 images, accessible and archival when you need it to be, with no dependencies.
-This package has the library ready to use, built for .NET 8 and later.
+This package has the library ready to use, built for .NET 8 and later, and
+for .NET Framework 4.8.
 
 ## What is in this package
 
 | Path | What it is |
 |---|---|
-| `PDFjet.dll` | The library. Reference it from your project. |
+| `PDFjet.dll` | The library, for .NET 8 and later. Reference it from your project. |
+| `net48/` | The library for .NET Framework 4.8, `PDFjet.dll`, with the four DLLs of Microsoft it needs beside it. |
 | `docs/dotnet/index.html` | The API reference. |
 | `examples/` | 57 example projects. |
 | `examples-dotnet.html` | What each example shows, with links to its source and its PDF. |
@@ -52,6 +54,25 @@ public class Hello {
 
 Run it with `dotnet run` in a folder that has the `fonts` directory of this
 package, as described below.
+
+## .NET Framework 4.8
+
+For an application on .NET Framework 4.8, reference `net48/PDFjet.dll`
+instead, and keep the four DLLs of Microsoft beside it, as your build copies
+them to its output: `System.Memory.dll`, `System.Buffers.dll`,
+`System.Numerics.Vectors.dll` and `System.Runtime.CompilerServices.Unsafe.dll`.
+Or reference the NuGet package `System.Memory` 4.5.5, which brings the same.
+
+Both are the same library, from the same sources, and both are strong-named
+with the same identity:
+
+    PDFjet, Version=9.0.0.0, Culture=neutral, PublicKeyToken=e66c1909913f295d
+
+The assembly version stays 9.0.0.0 through 9.x, so that strong-named
+assemblies that reference PDFjet.dll need no binding redirects for an update;
+the file version is the release. In a multi-target NuGet package of your own,
+put `net48/PDFjet.dll` (with its four DLLs) in `lib/net48/` and `PDFjet.dll` in
+`lib/net8.0/`, which .NET 9 and .NET 10 use as well.
 
 ## Fonts
 

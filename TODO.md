@@ -233,7 +233,14 @@ detailed in the list below:
    ready. Found besides: PDFjet.csproj has GenerateAssemblyInfo false and no
    AssemblyInfo.cs, hence the version 0.0.0.0.
 
-6. ⬜ **.NET Framework 4.8 and .NET 8 in one package, from 9.0.5** (decided
+6. ✅ **Moved into 9.0.3** (the owner, 8 October 2026, as the tag may slip a
+   couple of days): `package-dotnet.sh` builds `net48/PDFjet.dll`, signed
+   with the same key and the release's file version, into the packages'
+   `net48/` folder with its four DLLs; the package's README and CHANGELOG say
+   so. The client's 9.0.4 is needed only if they cannot wait for the tag.
+   Still to do before the tag: the examples run on .NET Framework on
+   Windows (`net48/make-examples-folder.sh`).
+   **The plan as it was: .NET Framework 4.8 and .NET 8 in one package, from 9.0.5** (decided
    by the owner on 8 October 2026). The client of item 5 answered that day:
    their internal NuGet package is multi-target, net48 and net10, and the
    net8.0 PDFjet.dll fails on net48 ("uses System.Runtime 8.0.0.0, which has

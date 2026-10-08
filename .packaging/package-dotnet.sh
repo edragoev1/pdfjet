@@ -57,7 +57,7 @@ mkdir -p "$STAGE" .commercial-packages
 TAR=$PWD/$STAGE.tar
 git archive -o "$TAR" HEAD \
     .packaging/dotnet .packaging/LICENSE-EVALUATION \
-    net PDFjet.csproj examples images PngSuite docfx \
+    net net48 PDFjet.csproj examples images PngSuite docfx \
     CHANGELOG.md THIRD-PARTIES.TXT examples-dotnet.html
 tar -x -C "$STAGE" -f "$TAR"
 
@@ -97,6 +97,17 @@ dotnet build PDFjet.csproj -c release -p:TreatWarningsAsErrors=true \
     -p:SignAssembly=true -p:AssemblyOriginatorKeyFile="$PDFJET_SNK" \
     -p:FileVersion="${VERSION#v}" -p:InformationalVersion="${VERSION#v}"
 cp bin/release/net8.0/PDFjet.dll .
+
+# The same library for .NET Framework 4.8, from the same sources, strong-named
+# with the same key and version: net48/PDFjet.dll and the System.Memory DLLs
+# beside it (see net48/README.md of the repository). It needs the .NET 10 SDK,
+# which net48/build.sh finds.
+net48/build.sh -p:SignAssembly=true -p:AssemblyOriginatorKeyFile="$PDFJET_SNK" \
+    -p:FileVersion="${VERSION#v}" -p:InformationalVersion="${VERSION#v}"
+mkdir -p net48-dll
+cp net48/bin/release/net48/*.dll net48-dll/
+rm -rf net48
+mv net48-dll net48
 
 # The same docfx command as generate-documentation.sh; it writes docs/dotnet.
 docfx docfx/docfx.json

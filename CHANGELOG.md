@@ -24,6 +24,15 @@ This is the first entry in this file; earlier releases were not tracked here.
   applications can reference it. Its assembly version is 9.0.0.0, the same
   through 9.x, so that no binding redirects are needed, and its file and
   product versions are those of the release, 9.0.3; it said 0.0.0.0.
+- PDFjet for .NET Framework 4.8, `net48/PDFjet.dll` in the .NET packages,
+  beside the `PDFjet.dll` for .NET 8 and later, for applications that are
+  still on .NET Framework, which cannot load a .NET 8 assembly. It is built
+  from the same sources, unchanged, by `net48/` of the repository, and is
+  strong-named with the same identity, `PDFjet, Version=9.0.0.0,
+  PublicKeyToken=e66c1909913f295d`. It needs four small DLLs of Microsoft
+  beside it, System.Memory and what it uses, which the package has. Its zlib
+  streams are decoded by a C# translation of Mark Adler's puff.c, as .NET
+  Framework has no ZLibStream, held to .NET 8's own by `net48/check-zlib.sh`.
 
 ### Deprecated
 - The constructor of the Chinese, Japanese and Korean fonts that are not
