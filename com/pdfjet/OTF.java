@@ -95,6 +95,7 @@ class OTF {
 
         FontTable cmapTable = null;
         FontTable gposTable = null;
+        FontTable hmtxTable = null;
         for (int i = 0; i < numOfTables; i++) {
             byte[] name = new byte[4];
             for (int j = 0; j < 4; j++) {
@@ -111,7 +112,7 @@ class OTF {
             else if (table.name.equals("hhea")) { hhea(table); }
             else if (table.name.equals("OS/2")) { OS_2(table); }
             else if (table.name.equals("name")) { name(table); }
-            else if (table.name.equals("hmtx")) { hmtx(table); }
+            else if (table.name.equals("hmtx")) { hmtxTable = table; }
             else if (table.name.equals("post")) { post(table); }
             else if (table.name.equals("CFF ")) { CFF_(table); }
             else if (table.name.equals("GPOS")) { gposTable = table; }
@@ -120,6 +121,13 @@ class OTF {
             else if (table.name.equals("loca")) { loca = table; }
             else if (table.name.equals("glyf")) { glyf = table; }
             index = k;      // Restore the index
+        }
+
+        // The hmtx table is read after the hhea table, which says how many
+        // advance widths it has, whatever their order in the directory: listed
+        // first, its widths had no array to go into.
+        if (hmtxTable != null && advanceWidth != null) {
+            hmtx(hmtxTable);
         }
 
         // The GPOS table is read after the maxp table, whose number of glyphs

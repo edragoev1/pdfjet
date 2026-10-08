@@ -7,6 +7,16 @@ languages.
 
 This is the first entry in this file; earlier releases were not tracked here.
 
+## v9.0.5 — unreleased
+
+### Fixed
+- An OpenType or TrueType font whose table directory lists `hmtx` before
+  `hhea` is read as any other, in the four ports. The number of advance
+  widths is in `hhea`, so `hmtx` is now read after the directory: Java and C#
+  failed on such a font, and Go and Swift drew every glyph 0 wide. A font
+  without `hhea` is refused, "no advance widths". Real fonts list their
+  tables in order; found by replaying the Go fuzz corpus in the other ports.
+
 ## v9.0.3 — 2026-10-08
 
 ### Added

@@ -227,5 +227,34 @@ public class OTFTest {
         Assert.Equal(1061, CapHeight(Length(ttf, "loca", 4)));
         Assert.Equal(1061, CapHeight(Length(ttf, "glyf", 4)));
     }
+
+    // The font with the entries of two tables swapped in its directory, the
+    // tables where they were.
+    private static byte[] SwapEntries(byte[] font, string a, string b) {
+        byte[] patched = (byte[]) font.Clone();
+        int i = Entry(font, a);
+        int j = Entry(font, b);
+        Array.Copy(font, j, patched, i, 16);
+        Array.Copy(font, i, patched, j, 16);
+        return patched;
+    }
+
+    [Fact]
+    public void AnHmtxTableListedBeforeTheHheaTableIsReadTheSame() {
+        // The hhea table says how many advance widths the hmtx table has, so a
+        // font listing hmtx first failed with a NullReferenceException (found
+        // by the fuzz replay, 8 October 2026). A font without hhea has no
+        // widths, and is refused.
+        foreach (string path in new string[] {THAI, PLEX}) {
+            byte[] font = FontBytes(path);
+            PDF pdf = TestSupport.NewPDF();
+            float want = new Font(pdf, new MemoryStream(font)).StringWidth(12f, "Ab1 x");
+            byte[] swapped = SwapEntries(font, "hhea", "hmtx");
+            float got = new Font(pdf, new MemoryStream(swapped)).StringWidth(12f, "Ab1 x");
+            Assert.Equal(want, got);
+            Draws(swapped);
+            Assert.Equal("Invalid font file: no advance widths.", Error(Without(font, "hhea")));
+        }
+    }
 }
 }   // End of namespace PDFjet.NET

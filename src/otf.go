@@ -108,6 +108,7 @@ func newOpenTypeFont(reader io.Reader) *openTypeFont {
 
 	var cmapTable *fontTable
 	var gposTable *fontTable
+	var hmtxTable *fontTable
 	for i := 0; i < numOfTables; i++ {
 		table := new(fontTable)
 		table.name = string(readNBytes(otf, 4))
@@ -126,7 +127,7 @@ func newOpenTypeFont(reader io.Reader) *openTypeFont {
 		case "name":
 			getNameTable(otf, table)
 		case "hmtx":
-			getHmtxTable(otf, table)
+			hmtxTable = table
 		case "post":
 			getPostTable(otf, table)
 		case "CFF ":
@@ -143,6 +144,13 @@ func newOpenTypeFont(reader io.Reader) *openTypeFont {
 			otf.glyf = table
 		}
 		otf.index = k // Restore the index
+	}
+
+	// The hmtx table is read after the hhea table, which says how many
+	// advance widths it has, whatever their order in the directory: listed
+	// first, its widths were left unread, every glyph 0 wide.
+	if hmtxTable != nil {
+		getHmtxTable(otf, hmtxTable)
 	}
 
 	// The GPOS table is read after the maxp table, whose number of glyphs

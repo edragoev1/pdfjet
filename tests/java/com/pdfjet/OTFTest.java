@@ -223,4 +223,33 @@ class OTFTest {
         assertEquals(1061, capHeight(length(ttf, "loca", 4)), "a loca table of 4 bytes");
         assertEquals(1061, capHeight(length(ttf, "glyf", 4)), "a glyf table of 4 bytes");
     }
+
+    // The font with the entries of two tables swapped in its directory, the
+    // tables where they were.
+    private static byte[] swapEntries(byte[] font, String a, String b) {
+        byte[] patched = Arrays.copyOf(font, font.length);
+        int i = entry(font, a);
+        int j = entry(font, b);
+        System.arraycopy(font, j, patched, i, 16);
+        System.arraycopy(font, i, patched, j, 16);
+        return patched;
+    }
+
+    @Test
+    void anHmtxTableListedBeforeTheHheaTableIsReadTheSame() throws Exception {
+        // The hhea table says how many advance widths the hmtx table has, so a
+        // font listing hmtx first failed with a NullPointerException (found by
+        // the fuzz replay, 8 October 2026). A font without hhea has no widths,
+        // and is refused.
+        for (String path : new String[] {THAI, PLEX}) {
+            byte[] font = font(path);
+            PDF pdf = TestSupport.newPDF();
+            float want = new Font(pdf, new ByteArrayInputStream(font)).stringWidth(12f, "Ab1 x");
+            byte[] swapped = swapEntries(font, "hhea", "hmtx");
+            float got = new Font(pdf, new ByteArrayInputStream(swapped)).stringWidth(12f, "Ab1 x");
+            assertEquals(want, got, path);
+            draws(swapped);
+            assertEquals("Invalid font file: no advance widths.", error(without(font, "hhea")), path);
+        }
+    }
 }

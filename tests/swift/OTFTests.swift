@@ -213,4 +213,32 @@ import Testing
         #expect(try capHeight(length(ttf, "loca", 4)) == 1061, "a loca table of 4 bytes")
         #expect(try capHeight(length(ttf, "glyf", 4)) == 1061, "a glyf table of 4 bytes")
     }
+
+    // The font with the entries of two tables swapped in its directory, the
+    // tables where they were.
+    private func swapEntries(_ font: [UInt8], _ a: String, _ b: String) -> [UInt8] {
+        var patched = font
+        let i = entry(font, a)
+        let j = entry(font, b)
+        patched[i..<i + 16] = font[j..<j + 16]
+        patched[j..<j + 16] = font[i..<i + 16]
+        return patched
+    }
+
+    @Test func anHmtxTableListedBeforeTheHheaTableIsReadTheSame() throws {
+        // The hhea table says how many advance widths the hmtx table has, so a
+        // font listing hmtx first had its widths left unread, every glyph 0
+        // wide, as in Go (found by the fuzz replay, 8 October 2026). A font
+        // without hhea has no widths, and is refused.
+        for path in [thai, plex] {
+            let font = font(path)
+            let pdf = TestSupport.newPDF()
+            let want = try Font(pdf, InputStream(data: Data(font))).stringWidth(12.0, "Ab1 x")
+            let swapped = swapEntries(font, "hhea", "hmtx")
+            let got = try Font(pdf, InputStream(data: Data(swapped))).stringWidth(12.0, "Ab1 x")
+            #expect(got == want && want > 0, "\(path)")
+            try draws(swapped)
+            #expect(error(without(font, "hhea")) == "Invalid font file: no advance widths.", "\(path)")
+        }
+    }
 }

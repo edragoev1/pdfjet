@@ -94,6 +94,7 @@ class OTF {
 
         var cmapTable: FontTable?
         var gposTable: FontTable?
+        var hmtxTable: FontTable?
         for _ in 0..<numOfTables {
             var name = [UInt8](repeating: 0, count: 4)
             for i in 0..<4 {
@@ -110,7 +111,7 @@ class OTF {
             else if table.name == "hhea" { try hhea(table) }
             else if table.name == "OS/2" { try OS_2(table) }
             else if table.name == "name" { try n4me(table) }
-            else if table.name == "hmtx" { try hmtx(table) }
+            else if table.name == "hmtx" { hmtxTable = table }
             else if table.name == "post" { try post(table) }
             else if table.name == "CFF " { try CFF_(table) }
             else if table.name == "GPOS" { gposTable = table }
@@ -119,6 +120,13 @@ class OTF {
             else if table.name == "loca" { loca = table }
             else if table.name == "glyf" { glyf = table }
             index = k       // Restore the index
+        }
+
+        // The hmtx table is read after the hhea table, which says how many
+        // advance widths it has, whatever their order in the directory: listed
+        // first, its widths were left unread, every glyph 0 wide.
+        if let hmtxTable = hmtxTable {
+            try hmtx(hmtxTable)
         }
 
         // The GPOS table is read after the maxp table, whose number of glyphs

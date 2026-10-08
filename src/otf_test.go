@@ -251,3 +251,36 @@ func TestOTFAFontWithoutTheCapHeightOrTheOutlineOfAnHHasItsAscent(t *testing.T) 
 		t.Errorf("a glyf table of 4 bytes: %d", got)
 	}
 }
+
+// testOpenTypeSwapEntries returns the font with the entries of two tables
+// swapped in its directory, the tables where they were.
+func testOpenTypeSwapEntries(t *testing.T, font []byte, a, b string) []byte {
+	t.Helper()
+	patched := append([]byte(nil), font...)
+	i, j := testOpenTypeEntry(t, font, a), testOpenTypeEntry(t, font, b)
+	copy(patched[i:i+16], font[j:j+16])
+	copy(patched[j:j+16], font[i:i+16])
+	return patched
+}
+
+func TestOTFAnHmtxTableListedBeforeTheHheaTableIsReadTheSame(t *testing.T) {
+	// The hhea table says how many advance widths the hmtx table has, so a
+	// font listing hmtx first had its widths left unread, every glyph 0
+	// wide, in Go, and failed in Java and C# (found by the fuzz replay, 8
+	// October 2026). A font without hhea has no widths, and is refused.
+	for _, path := range []string{
+		"fonts/NotoSansThai/NotoSansThai-Regular.ttf",
+		"fonts/IBMPlexSans/IBMPlexSans-Regular.otf",
+	} {
+		font := testOpenTypeFontBytes(t, path)
+		pdf := NewPDF(bufio.NewWriter(io.Discard))
+		want := NewFont(pdf, bytes.NewReader(font)).StringWidth(12, "Ab1 x")
+		swapped := testOpenTypeSwapEntries(t, font, "hhea", "hmtx")
+		if got := NewFont(pdf, bytes.NewReader(swapped)).StringWidth(12, "Ab1 x"); got != want || want == 0 {
+			t.Errorf("%s: %g wide, not %g", path, got, want)
+		}
+		testWant(t, "(no panic)", testOpenTypeFontDraws(swapped))
+		testWant(t, "Invalid font file: no advance widths.",
+			testOpenTypeFontError(testOpenTypeWithout(t, font, "hhea")))
+	}
+}
