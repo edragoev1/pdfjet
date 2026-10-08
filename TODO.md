@@ -23,8 +23,12 @@ what users would hit goes in; the rest waits for v9.1.
    narrower than a letter, so the text breaks after nearly every character.
    Probable fix, in the four: a cap on the nesting of quotes past which the
    indent stops growing, or a least width of the column; the input as a
-   test, in time and pages. The OTF target's two slow-unit inputs, and
-   Markdown's four, to be run uninstrumented with Repro before they count.
+   test, in time and pages. By 18:00 Jazzer had found two more inputs of
+   the same shape (crash-295741b7..., crash-adf902fa...: 21 s and 1.7 GB;
+   the second runs out of a 2 GB heap): the one fault, which the fix must
+   cover for all three. The OTF target's timeout and two slow units run in
+   0.5 to 0.6 s uninstrumented, about 170 MB: Jazzer's slowdown, not a
+   fault. Markdown's four slow units to be run with Repro too.
 2. ⬜ **One rule of strictness for the four** (item 7): an SVG that is not
    well-formed XML refused in PDFjet's words; a deflate block without its
    end code refused, Go to follow the other three.
