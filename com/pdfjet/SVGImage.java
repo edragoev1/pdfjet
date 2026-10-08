@@ -16,11 +16,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.xml.stream.XMLInputFactory;
-import javax.xml.stream.XMLStreamConstants;
-import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.XMLStreamReader;
-
 /**
  * Used to embed SVG images in the PDF document.
  *
@@ -78,90 +73,66 @@ public class SVGImage implements Drawable {
             "marker", "linearGradient", "radialGradient"));
 
     private void read(InputStream stream) throws Exception {
-        ColorMap colorMap = ColorMap.SVG_COLORS;
         paths = new ArrayList<SVGPath>();
-        SVGState.StyleSheet rules = new SVGState.StyleSheet();
+        XMLNode document;
+        try {
+            document = XMLParser.parse(stream);
+        } catch (XMLException e) {
+            throw new Exception("parsing SVG: " + e.getMessage(), e);
+        }
         List<SVGState> stack = new ArrayList<SVGState>();
         stack.add(new SVGState());
-        List<String> names = new ArrayList<String>();
-        StringBuilder styleSheet = new StringBuilder();
-        boolean root = true;
+        boolean[] root = {true};
+        draw(document, ColorMap.SVG_COLORS, new SVGState.StyleSheet(), stack, root);
+        processPaths(paths);
+    }
 
-        XMLInputFactory factory = XMLInputFactory.newFactory();
-        // Disable DTD and external entity processing to prevent XXE attacks.
-        factory.setProperty(XMLInputFactory.SUPPORT_DTD, false);
-        factory.setProperty(
-                "javax.xml.stream.isSupportingExternalEntities", Boolean.FALSE);
-
-        XMLStreamReader reader = factory.createXMLStreamReader(stream, "UTF-8");
-        try {
-            while (reader.hasNext()) {
-                int event = reader.next();
-                if (event == XMLStreamConstants.START_ELEMENT) {
-                    String name = reader.getLocalName();
-                    // Only the attributes of no namespace are SVG's.
-                    Map<String, String> attributes = new HashMap<String, String>();
-                    List<String> order = new ArrayList<String>();
-                    for (int i = 0; i < reader.getAttributeCount(); i++) {
-                        String namespace = reader.getAttributeNamespace(i);
-                        if (namespace == null || namespace.isEmpty()) {
-                            attributes.put(reader.getAttributeLocalName(i), reader.getAttributeValue(i));
-                            order.add(reader.getAttributeLocalName(i));
-                        }
-                    }
-                    SVGState state = elementState(
-                            stack.get(stack.size() - 1), colorMap, rules, attributes, order);
-                    if (TEMPLATES.contains(name)) {
-                        state.hidden = true;
-                    }
-                    stack.add(state);
-                    names.add(name);
-
-                    if (name.equals("svg") && root) {
-                        root = false;
-                        this.w = parseLength(attribute(attributes, "width"));
-                        this.h = parseLength(attribute(attributes, "height"));
-                        // viewbox in lower case when there is no viewBox, as an
-                        // HTML page's parser reads an inline svg, whose files keep it
-                        this.viewBox = attributes.containsKey("viewBox")
-                                ? attribute(attributes, "viewBox") : attribute(attributes, "viewbox");
-                        this.preserveAspectRatio = attribute(attributes, "preserveAspectRatio");
-                    }
-                    List<PathOp> operations = shapeOperations(name, attributes);
-                    if (name.equals("line")) {
-                        state = new SVGState(state);
-                        state.fill = Color.transparent;     // A line has no inside to fill
-                        state.fillCurrent = false;
-                    }
-                    addPath(state, operations);
-                } else if (event == XMLStreamConstants.END_ELEMENT) {
-                    if (!names.isEmpty() && names.get(names.size() - 1).equals("style")) {
-                        rules.add(SVGState.parseStyleSheet(styleSheet.toString()));
-                        styleSheet.setLength(0);
-                    }
-                    if (stack.size() > 1) {
-                        stack.remove(stack.size() - 1);
-                        names.remove(names.size() - 1);
-                    }
-                } else if (event == XMLStreamConstants.CHARACTERS ||
-                        event == XMLStreamConstants.CDATA ||
-                        event == XMLStreamConstants.SPACE) {
-                    if (!names.isEmpty() && names.get(names.size() - 1).equals("style")) {
-                        styleSheet.append(reader.getText());
-                    }
-                }
-            }
-        } catch (XMLStreamException e) {
-            throw new Exception("Failed to parse SVG: " + e.getMessage(), e);
-        } finally {
-            try {
-                reader.close();
-            } catch (XMLStreamException e) {
-                // Nothing actionable here.
+    // Draws the element, then the ones in it, in the order of the document;
+    // the rules of a <style> element apply from its end.
+    private void draw(XMLNode node, ColorMap colorMap, SVGState.StyleSheet rules,
+            List<SVGState> stack, boolean[] root) throws Exception {
+        String name = node.getLocalName();
+        Map<String, String> attributes = new HashMap<String, String>();
+        List<String> order = new ArrayList<String>();
+        for (Map.Entry<String, String> attribute : node.getAttributes().entrySet()) {
+            // The attributes of no namespace: xlink:href, xml:space and the
+            // namespaces' own declarations, xmlns:..., are not read.
+            if (attribute.getKey().indexOf(':') == -1) {
+                attributes.put(attribute.getKey(), attribute.getValue());
+                order.add(attribute.getKey());
             }
         }
+        SVGState state = elementState(stack.get(stack.size() - 1), colorMap, rules, attributes, order);
+        if (TEMPLATES.contains(name)) {
+            state.hidden = true;
+        }
+        stack.add(state);
 
-        processPaths(paths);
+        if (name.equals("svg") && root[0]) {
+            root[0] = false;
+            this.w = parseLength(attribute(attributes, "width"));
+            this.h = parseLength(attribute(attributes, "height"));
+            // viewbox in lower case when there is no viewBox, as an HTML
+            // page's parser reads an inline svg, whose files keep it
+            this.viewBox = attributes.containsKey("viewBox")
+                    ? attribute(attributes, "viewBox") : attribute(attributes, "viewbox");
+            this.preserveAspectRatio = attribute(attributes, "preserveAspectRatio");
+        }
+        List<PathOp> operations = shapeOperations(name, attributes);
+        if (name.equals("line")) {
+            state = new SVGState(state);
+            state.fill = Color.transparent;     // A line has no inside to fill
+            state.fillCurrent = false;
+        }
+        addPath(state, operations);
+
+        for (XMLNode child : node.getChildren()) {
+            draw(child, colorMap, rules, stack, root);
+        }
+        if (name.equals("style")) {
+            rules.add(SVGState.parseStyleSheet(node.getText()));
+        }
+        stack.remove(stack.size() - 1);
     }
 
     // Returns the value of the attribute, or an empty one for an attribute

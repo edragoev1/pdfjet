@@ -140,11 +140,21 @@ class SVG {
     // not, such as "-." or "2.@5", in words, as the other ports do, rather
     // than with a NumberFormatException.
     private static float number(String arg) {
+        float value;
         try {
-            return Float.parseFloat(arg);
+            value = Float.parseFloat(arg);
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("Invalid path data: " + arg);
         }
+        // Java reads 1f and 1d as numbers, which the other ports do not; and a
+        // number is finite: an infinity or NaN, written as such or past the
+        // range of a float, is refused, in the four ports alike.
+        char last = arg.charAt(arg.length() - 1);
+        if (last == 'f' || last == 'F' || last == 'd' || last == 'D'
+                || Float.isInfinite(value) || Float.isNaN(value)) {
+            throw new IllegalArgumentException("Invalid path data: " + arg);
+        }
+        return value;
     }
 
     /**

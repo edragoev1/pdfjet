@@ -9,6 +9,23 @@ This is the first entry in this file; earlier releases were not tracked here.
 
 ## v9.0.5 — unreleased
 
+### Changed
+- SVG is read with one XML parser, the same in the four ports, in place of
+  Go's encoding/xml, Java's StAX, C#'s XmlReader and Swift's own tokenizer,
+  so that the four read an SVG alike. It came from the parser of PDFjet Pro's
+  electronic invoices: strict, not recursive (256 levels of elements at
+  most), 20 MB at most, nothing fetched, and only XML's five entities and
+  the numeric ones. A DOCTYPE, which drawing programs write, is skipped, and
+  the entities it declares are not read. What is not well-formed XML is
+  refused, "parsing SVG: ...", where Go and Swift drew some of it before:
+  attributes without a space between them, text or a second element after
+  the root, no root element. The 246 SVG files of the repository draw the
+  same as before, and the 1,170 SVG files of the Go fuzz corpus are accepted
+  or refused alike in the four ports (560 and 610).
+- A number of SVG path data is finite: one past the range of a float, such as
+  `1e40`, is refused as invalid path data in the four ports, where Java, C#
+  and Swift read it as an infinity.
+
 ### Fixed
 - An OpenType or TrueType font whose table directory lists `hmtx` before
   `hhea` is read as any other, in the four ports. The number of advance

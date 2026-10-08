@@ -119,10 +119,18 @@ class SVG {
 
     /// Returns the argument as a number, and throws when it is not one, as the
     /// other ports fail on such path data rather than stopping the program.
+    /// A number past the range of a Float, such as 1e40, which Float(_:) makes
+    /// an infinity, is refused too, as Go's ParseFloat refuses it; "inf"
+    /// written as such is read, as Go reads it.
     private static func number(_ args: [String], _ i: Int) throws -> Float {
         guard i < args.count, let value = Float(args[i]) else {
             throw PDFjetError(message: "Invalid path data: " +
                     (i < args.count ? args[i] : "missing argument"))
+        }
+        // A number is finite: an infinity or NaN, written as such or past the
+        // range of a Float, is refused, in the four ports alike.
+        if !value.isFinite {
+            throw PDFjetError(message: "Invalid path data: " + args[i])
         }
         return value
     }

@@ -74,62 +74,61 @@ public class SVGImage : Drawable {
             bytes.append(contentsOf: buffer[0..<read])
         }
 
+        let document: SVGXMLNode
+        do {
+            document = try SVGXMLParser.parse(bytes)
+        } catch let error as SVGXMLError {
+            throw PDFjetError(message: "parsing SVG: " + error.message)
+        }
         var rules = SVGStyleSheet()
         var stack = [SVGState()]
-        var names = [String]()
-        var styleSheet = String.UnicodeScalarView()
         var root = true
-        let xml = Array(String(decoding: bytes, as: UTF8.self).unicodeScalars)
-        for token in SVGImage.getTokens(xml) {
-            switch token {
-            case .start(let name, let attributes, let empty):
-                var values = [String: String]()
-                var order = [String]()
-                for (attributeName, value) in attributes {
+        // The elements are drawn in the order of the document: an element,
+        // then the ones in it, and the rules of a <style> element apply from
+        // its end.
+        func draw(_ node: SVGXMLNode) throws {
+            let name = node.getLocalName()
+            var values = [String: String]()
+            var order = [String]()
+            for (attributeName, value) in node.getAttributes() {
+                // The attributes of no namespace: xlink:href, xml:space and
+                // the namespaces' own declarations, xmlns:..., are not read.
+                if !attributeName.contains(":") {
                     values[attributeName] = value
                     order.append(attributeName)
                 }
-                var state = try SVGImage.elementState(stack[stack.count - 1], rules, values, order)
-                if SVGImage.templates.contains(name) {
-                    state.hidden = true
-                }
-                stack.append(state)
-                names.append(name)
-
-                if name == "svg" && root {
-                    root = false
-                    w = SVGImage.parseLength(values["width"] ?? "")
-                    h = SVGImage.parseLength(values["height"] ?? "")
-                    // viewbox in lower case when there is no viewBox, as an
-                    // HTML page's parser reads an inline svg, whose files keep it
-                    viewBox = values["viewBox"] ?? values["viewbox"] ?? ""
-                    preserveAspectRatio = values["preserveAspectRatio"] ?? ""
-                }
-                let operations = try SVGImage.shapeOperations(name, values)
-                if name == "line" {
-                    state.fill = Color.transparent  // A line has no inside to fill
-                    state.fillCurrent = false
-                }
-                addPath(state, operations)
-                if !empty {
-                    break
-                }
-                fallthrough
-            case .end:
-                if names.last == "style" {
-                    rules.add(SVGRule.parseStyleSheet(String(styleSheet)))
-                    styleSheet.removeAll()
-                }
-                if stack.count > 1 {
-                    stack.removeLast()
-                    names.removeLast()
-                }
-            case .text(let text):
-                if names.last == "style" {
-                    styleSheet.append(contentsOf: text.unicodeScalars)
-                }
             }
+            var state = try SVGImage.elementState(stack[stack.count - 1], rules, values, order)
+            if SVGImage.templates.contains(name) {
+                state.hidden = true
+            }
+            stack.append(state)
+
+            if name == "svg" && root {
+                root = false
+                w = SVGImage.parseLength(values["width"] ?? "")
+                h = SVGImage.parseLength(values["height"] ?? "")
+                // viewbox in lower case when there is no viewBox, as an
+                // HTML page's parser reads an inline svg, whose files keep it
+                viewBox = values["viewBox"] ?? values["viewbox"] ?? ""
+                preserveAspectRatio = values["preserveAspectRatio"] ?? ""
+            }
+            let operations = try SVGImage.shapeOperations(name, values)
+            if name == "line" {
+                state.fill = Color.transparent  // A line has no inside to fill
+                state.fillCurrent = false
+            }
+            addPath(state, operations)
+
+            for child in node.getChildren() {
+                try draw(child)
+            }
+            if name == "style" {
+                rules.add(SVGRule.parseStyleSheet(node.getText()))
+            }
+            stack.removeLast()
         }
+        try draw(document)
         try processPaths(paths)
     }
 
@@ -391,216 +390,6 @@ public class SVGImage : Drawable {
             return 0.0
         }
         return SVGState.parseFloat(text)
-    }
-
-    // The parts of an XML document that SVGImage reads, in document order.
-    private enum Token {
-        // The local name of an element, its attributes without a namespace,
-        // in their order, and whether it is empty, written <name/>.
-        case start(String, [(String, String)], Bool)
-        case end
-        case text(String)   // Character data, and the content of a CDATA section
-    }
-
-    // Returns the start tags, the end tags and the text of the document, as
-    // an XML parser reports them: the attribute values may be in single or
-    // double quotes and span lines, and comments, processing instructions and
-    // the document type declaration are skipped.
-    private static func getTokens(_ xml: [Unicode.Scalar]) -> [Token] {
-        var tokens = [Token]()
-        var i = 0
-        while i < xml.count {
-            if xml[i] != "<" {
-                let start = i
-                while i < xml.count && xml[i] != "<" {
-                    i += 1
-                }
-                tokens.append(.text(getText(xml[start..<i], false)))
-            } else if startsWith(xml, i, "<!--") {
-                i = indexAfter(xml, i + 4, "-->")
-            } else if startsWith(xml, i, "<![CDATA[") {
-                let start = i + 9
-                i = indexAfter(xml, start, "]]>")
-                let end = (i >= start + 3 && startsWith(xml, i - 3, "]]>")) ? i - 3 : i
-                tokens.append(.text(getLines(xml[start..<end])))
-            } else if startsWith(xml, i, "<?") {
-                i = indexAfter(xml, i + 2, "?>")
-            } else if startsWith(xml, i, "<!") {
-                // The document type declaration may have an internal subset in brackets.
-                var depth = 0
-                i += 2
-                while i < xml.count && (xml[i] != ">" || depth > 0) {
-                    if xml[i] == "[" {
-                        depth += 1
-                    } else if xml[i] == "]" {
-                        depth -= 1
-                    }
-                    i += 1
-                }
-                i += 1
-            } else if startsWith(xml, i, "</") {
-                i = indexAfter(xml, i + 2, ">")
-                tokens.append(.end)
-            } else {
-                i += 1
-                let name = localName(getName(xml, &i))
-                var attributes = [(String, String)]()
-                while true {
-                    skipSpaces(xml, &i)
-                    if i >= xml.count || xml[i] == ">" || xml[i] == "/" {
-                        break
-                    }
-                    let attributeName = getName(xml, &i)
-                    skipSpaces(xml, &i)
-                    if i >= xml.count || xml[i] != "=" {
-                        break
-                    }
-                    i += 1
-                    skipSpaces(xml, &i)
-                    if i >= xml.count || (xml[i] != "\"" && xml[i] != "'") {
-                        break
-                    }
-                    let quote = xml[i]
-                    i += 1
-                    let start = i
-                    while i < xml.count && xml[i] != quote {
-                        i += 1
-                    }
-                    // An attribute with a prefix, xmlns:x or inkscape:label,
-                    // is of another namespace.
-                    if !attributeName.unicodeScalars.contains(":") {
-                        attributes.append((attributeName, getText(xml[start..<i], true)))
-                    }
-                    i += 1
-                }
-                let empty = i < xml.count && xml[i] == "/"
-                tokens.append(.start(name, attributes, empty))
-                i = indexAfter(xml, i, ">")
-            }
-        }
-        return tokens
-    }
-
-    private static func startsWith(
-            _ xml: [Unicode.Scalar], _ i: Int, _ prefix: String) -> Bool {
-        var j = i
-        for scalar in prefix.unicodeScalars {
-            if j >= xml.count || xml[j] != scalar {
-                return false
-            }
-            j += 1
-        }
-        return true
-    }
-
-    // Returns the index after the first occurrence of the text at or after i.
-    private static func indexAfter(
-            _ xml: [Unicode.Scalar], _ i: Int, _ text: String) -> Int {
-        var j = i
-        while j < xml.count {
-            if startsWith(xml, j, text) {
-                return j + text.unicodeScalars.count
-            }
-            j += 1
-        }
-        return xml.count
-    }
-
-    private static func skipSpaces(_ xml: [Unicode.Scalar], _ i: inout Int) {
-        while i < xml.count &&
-                (xml[i] == " " || xml[i] == "\t" || xml[i] == "\n" || xml[i] == "\r") {
-            i += 1
-        }
-    }
-
-    // Reads a name, with its prefix, if any.
-    private static func getName(_ xml: [Unicode.Scalar], _ i: inout Int) -> String {
-        var name = String.UnicodeScalarView()
-        while i < xml.count {
-            let ch = xml[i]
-            if ch == " " || ch == "\t" || ch == "\n" || ch == "\r" ||
-                    ch == "=" || ch == ">" || ch == "/" {
-                break
-            }
-            name.append(ch)
-            i += 1
-        }
-        return String(name)
-    }
-
-    // Returns the local name of an element: the part after the colon of a
-    // name with a prefix, and a name that has no prefix or no local part as
-    // it is.
-    private static func localName(_ name: String) -> String {
-        let parts = name.unicodeScalars.split(separator: ":", omittingEmptySubsequences: false)
-        if parts.count == 2 && (parts[0].isEmpty || parts[1].isEmpty) {
-            return name
-        }
-        return SVGState.string(parts[parts.count - 1])
-    }
-
-    // Normalizes the text or the attribute value as an XML parser does: a
-    // line end is a newline in text, and every line end, tab and newline is a
-    // space in an attribute value; the references are replaced.
-    private static func getText(_ value: ArraySlice<Unicode.Scalar>, _ attribute: Bool) -> String {
-        var buf = String.UnicodeScalarView()
-        var i = value.startIndex
-        while i < value.endIndex {
-            let ch = value[i]
-            if ch == "\r" {
-                buf.append(attribute ? " " : "\n")
-                if i + 1 < value.endIndex && value[i + 1] == "\n" {
-                    i += 1
-                }
-            } else if attribute && (ch == "\n" || ch == "\t") {
-                buf.append(" ")
-            } else if ch == "&",
-                    let end = value[i...].firstIndex(of: ";"),
-                    let scalar = getReference(String(String.UnicodeScalarView(value[(i + 1)..<end]))) {
-                buf.append(scalar)
-                i = end
-            } else {
-                buf.append(ch)
-            }
-            i += 1
-        }
-        return String(buf)
-    }
-
-    // Returns the content of a CDATA section, where a line end is a newline.
-    private static func getLines(_ value: ArraySlice<Unicode.Scalar>) -> String {
-        var buf = String.UnicodeScalarView()
-        var i = value.startIndex
-        while i < value.endIndex {
-            if value[i] == "\r" {
-                buf.append("\n")
-                if i + 1 < value.endIndex && value[i + 1] == "\n" {
-                    i += 1
-                }
-            } else {
-                buf.append(value[i])
-            }
-            i += 1
-        }
-        return String(buf)
-    }
-
-    private static func getReference(_ name: String) -> Unicode.Scalar? {
-        switch name {
-        case "amp": return "&"
-        case "lt": return "<"
-        case "gt": return ">"
-        case "quot": return "\""
-        case "apos": return "'"
-        default:
-            var code: UInt32?
-            if name.hasPrefix("#x") {
-                code = UInt32(name.dropFirst(2), radix: 16)
-            } else if name.hasPrefix("#") {
-                code = UInt32(name.dropFirst())
-            }
-            return code.flatMap { Unicode.Scalar($0) }
-        }
     }
 
     func processPaths(_ paths: [SVGPath]) throws {

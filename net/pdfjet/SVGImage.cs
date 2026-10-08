@@ -8,7 +8,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using System.Xml;
 
 namespace PDFjet.NET {
 /// <summary>
@@ -68,92 +67,63 @@ public class SVGImage : IDrawable {
         SVGStyleSheet rules = new SVGStyleSheet();
         List<SVGState> stack = new List<SVGState>();
         stack.Add(new SVGState());
-        List<String> names = new List<String>();
-        StringBuilder styleSheet = new StringBuilder();
-        bool root = true;
-
-        XmlReaderSettings settings = new XmlReaderSettings();
-        // Disable DTD and external entity processing to prevent XXE attacks.
-        settings.DtdProcessing = DtdProcessing.Ignore;
-        settings.XmlResolver = null;
-
-        XmlReader reader = XmlReader.Create(stream, settings);
+        XMLNode document;
         try {
-            while (reader.Read()) {
-                if (reader.NodeType == XmlNodeType.Element) {
-                    String name = reader.LocalName;
-                    bool empty = reader.IsEmptyElement;
-                    // Only the attributes of no namespace are presentation
-                    // attributes, in the order of the element.
-                    Dictionary<String, String> attributes = new Dictionary<String, String>();
-                    List<String> order = new List<String>();
-                    while (reader.MoveToNextAttribute()) {
-                        if (reader.NamespaceURI.Equals("")) {
-                            attributes[reader.LocalName] = reader.Value;
-                            order.Add(reader.LocalName);
-                        }
-                    }
-                    reader.MoveToElement();
-
-                    SVGState state = ElementState(stack[stack.Count - 1], rules, attributes, order);
-                    if (TEMPLATES.Contains(name)) {
-                        state.hidden = true;
-                    }
-                    stack.Add(state);
-                    names.Add(name);
-
-                    if (name.Equals("svg") && root) {
-                        root = false;
-                        this.w = ParseLength(Attribute(attributes, "width"));
-                        this.h = ParseLength(Attribute(attributes, "height"));
-                        // viewbox in lower case when there is no viewBox, as an
-                        // HTML page's parser reads an inline svg, whose files keep it
-                        if (!attributes.TryGetValue("viewBox", out this.viewBox)) {
-                            attributes.TryGetValue("viewbox", out this.viewBox);
-                        }
-                        attributes.TryGetValue("preserveAspectRatio", out this.preserveAspectRatio);
-                    }
-                    List<PathOp> operations = ShapeOperations(name, attributes);
-                    if (name.Equals("line")) {
-                        state.fill = Color.transparent;     // A line has no inside to fill
-                        state.fillCurrent = false;
-                    }
-                    AddPath(state, operations);
-                    if (empty) {
-                        EndElement(stack, names, rules, styleSheet);
-                    }
-                } else if (reader.NodeType == XmlNodeType.EndElement) {
-                    EndElement(stack, names, rules, styleSheet);
-                } else if (reader.NodeType == XmlNodeType.Text ||
-                        reader.NodeType == XmlNodeType.CDATA ||
-                        reader.NodeType == XmlNodeType.Whitespace ||
-                        reader.NodeType == XmlNodeType.SignificantWhitespace) {
-                    if (names.Count > 0 && names[names.Count - 1].Equals("style")) {
-                        styleSheet.Append(reader.Value);
-                    }
-                }
-            }
-        } finally {
-            // Close only the reader we created. The caller remains
-            // responsible for the underlying stream.
-            reader.Close();
+            document = XMLParser.Parse(stream);
+        } catch (XMLException e) {
+            throw new Exception("parsing SVG: " + e.Message, e);
         }
-
+        bool root = true;
+        Draw(document, stack, rules, ref root);
         ProcessPaths(paths);
     }
 
-    // Ends an element: the rules of a <style> element are added to those of
-    // the style sheet, and the state of the element is left.
-    private static void EndElement(
-            List<SVGState> stack, List<String> names, SVGStyleSheet rules, StringBuilder styleSheet) {
-        if (names.Count > 0 && names[names.Count - 1].Equals("style")) {
-            rules.Add(SVGRule.ParseStyleSheet(styleSheet.ToString()));
-            styleSheet.Length = 0;
+    // Draws the element, then the ones in it, in the order of the document;
+    // the rules of a <style> element apply from its end.
+    private void Draw(XMLNode node, List<SVGState> stack, SVGStyleSheet rules, ref bool root) {
+        String name = node.GetLocalName();
+        // The attributes of no namespace, in the order of the element:
+        // xlink:href, xml:space and the namespaces' own declarations,
+        // xmlns:..., are not read.
+        Dictionary<String, String> attributes = new Dictionary<String, String>();
+        List<String> order = new List<String>();
+        foreach (KeyValuePair<String, String> attribute in node.GetAttributes()) {
+            if (attribute.Key.IndexOf(':') == -1) {
+                attributes[attribute.Key] = attribute.Value;
+                order.Add(attribute.Key);
+            }
         }
-        if (stack.Count > 1) {
-            stack.RemoveAt(stack.Count - 1);
-            names.RemoveAt(names.Count - 1);
+        SVGState state = ElementState(stack[stack.Count - 1], rules, attributes, order);
+        if (TEMPLATES.Contains(name)) {
+            state.hidden = true;
         }
+        stack.Add(state);
+
+        if (name.Equals("svg") && root) {
+            root = false;
+            this.w = ParseLength(Attribute(attributes, "width"));
+            this.h = ParseLength(Attribute(attributes, "height"));
+            // viewbox in lower case when there is no viewBox, as an
+            // HTML page's parser reads an inline svg, whose files keep it
+            if (!attributes.TryGetValue("viewBox", out this.viewBox)) {
+                attributes.TryGetValue("viewbox", out this.viewBox);
+            }
+            attributes.TryGetValue("preserveAspectRatio", out this.preserveAspectRatio);
+        }
+        List<PathOp> operations = ShapeOperations(name, attributes);
+        if (name.Equals("line")) {
+            state.fill = Color.transparent;     // A line has no inside to fill
+            state.fillCurrent = false;
+        }
+        AddPath(state, operations);
+
+        foreach (XMLNode child in node.GetChildren()) {
+            Draw(child, stack, rules, ref root);
+        }
+        if (name.Equals("style")) {
+            rules.Add(SVGRule.ParseStyleSheet(node.GetText()));
+        }
+        stack.RemoveAt(stack.Count - 1);
     }
 
     // Returns the value of the attribute, and "" for one the element does not have.

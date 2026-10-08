@@ -13,7 +13,6 @@ package pdfjet
 
 import (
 	"bytes"
-	"encoding/xml"
 	"fmt"
 	"io"
 	"math"
@@ -24,6 +23,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/capstyle"
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/internal/fastfloat"
+	"github.com/edragoev1/pdfjet/v9/src/internal/xmlparser"
 	"github.com/edragoev1/pdfjet/v9/src/joinstyle"
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
@@ -72,79 +72,72 @@ func NewSVGImage(reader io.Reader) (*SVGImage, error) {
 	image.paths = make([]*svgPath, 0)
 	rules := newSVGStyleSheet()
 	stack := []svgState{newSVGState()}
-	names := make([]string, 0)
-	var styleSheet strings.Builder
 	root := true
 
-	decoder := xml.NewDecoder(reader)
-	for {
-		token, err := decoder.Token()
-		if err == io.EOF {
-			break
+	document, err := xmlparser.ParseReader(reader)
+	if err != nil {
+		return nil, fmt.Errorf("parsing SVG: %w", err)
+	}
+	// The elements are drawn in the order of the document: an element, then
+	// the ones in it, and the rules of a <style> element apply from its end.
+	var draw func(node *xmlparser.XMLNode) error
+	draw = func(node *xmlparser.XMLNode) error {
+		name := node.LocalName()
+		attributes := make(map[string]string)
+		order := make([]string, 0)
+		for _, attr := range node.Attributes() {
+			// The attributes of no namespace: xlink:href, xml:space and the
+			// namespaces' own declarations, xmlns:..., are not read.
+			if !strings.Contains(attr.Name, ":") {
+				attributes[attr.Name] = attr.Value
+				order = append(order, attr.Name)
+			}
 		}
+		state, err := elementState(stack[len(stack)-1], colorMap, rules, attributes, order)
 		if err != nil {
-			return nil, fmt.Errorf("parsing SVG: %w", err)
+			return err
 		}
+		if svgTemplates[name] {
+			state.hidden = true
+		}
+		stack = append(stack, state)
 
-		switch token := token.(type) {
-		case xml.StartElement:
-			name := token.Name.Local
-			attributes := make(map[string]string)
-			order := make([]string, 0, len(token.Attr))
-			for _, attr := range token.Attr {
-				if attr.Name.Space == "" {
-					attributes[attr.Name.Local] = attr.Value
-					order = append(order, attr.Name.Local)
-				}
+		if name == "svg" && root {
+			root = false
+			image.w = parseLength(attributes["width"])
+			image.h = parseLength(attributes["height"])
+			// viewbox in lower case when there is no viewBox, as an HTML
+			// page's parser reads an inline svg, whose files keep it
+			if viewBox, ok := attributes["viewBox"]; ok {
+				image.viewBox = viewBox
+			} else {
+				image.viewBox = attributes["viewbox"]
 			}
-			state, err := elementState(stack[len(stack)-1], colorMap, rules, attributes, order)
-			if err != nil {
-				return nil, err
-			}
-			if svgTemplates[name] {
-				state.hidden = true
-			}
-			stack = append(stack, state)
-			names = append(names, name)
+			image.preserveAspectRatio = attributes["preserveAspectRatio"]
+		}
+		operations, err := shapeOperations(name, attributes)
+		if err != nil {
+			return err
+		}
+		if name == "line" {
+			state.fill = color.Transparent // A line has no inside to fill
+			state.fillCurrent = false
+		}
+		image.addPath(&state, operations)
 
-			if name == "svg" && root {
-				root = false
-				image.w = parseLength(attributes["width"])
-				image.h = parseLength(attributes["height"])
-				// viewbox in lower case when there is no viewBox, as an HTML
-				// page's parser reads an inline svg, whose files keep it
-				if viewBox, ok := attributes["viewBox"]; ok {
-					image.viewBox = viewBox
-				} else {
-					image.viewBox = attributes["viewbox"]
-				}
-				image.preserveAspectRatio = attributes["preserveAspectRatio"]
-			}
-			operations, err := shapeOperations(name, attributes)
-			if err != nil {
-				return nil, err
-			}
-			if name == "line" {
-				state.fill = color.Transparent // A line has no inside to fill
-				state.fillCurrent = false
-			}
-			image.addPath(&state, operations)
-
-		case xml.EndElement:
-			if len(names) > 0 && names[len(names)-1] == "style" {
-				rules.add(parseSVGStyleSheet(styleSheet.String()))
-				styleSheet.Reset()
-			}
-			if len(stack) > 1 {
-				stack = stack[:len(stack)-1]
-				names = names[:len(names)-1]
-			}
-
-		case xml.CharData:
-			if len(names) > 0 && names[len(names)-1] == "style" {
-				styleSheet.Write(token)
+		for _, child := range node.Children() {
+			if err := draw(child); err != nil {
+				return err
 			}
 		}
+		if name == "style" {
+			rules.add(parseSVGStyleSheet(node.Text()))
+		}
+		stack = stack[:len(stack)-1]
+		return nil
+	}
+	if err := draw(document); err != nil {
+		return nil, err
 	}
 
 	if err := image.processPaths(image.paths); err != nil {

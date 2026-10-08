@@ -126,11 +126,13 @@ namespace PDFjet.NET {
         }
 
         // Returns the argument as a number, and refuses path data with one that is
-        // not, such as "-." or "2.@5", in words, as the other ports do, rather
-        // than with a FormatException.
+        // not, such as "-." or "2.@5", or that is past the range of a float, in
+        // words, as the other ports do, rather than with a FormatException or
+        // an infinity.
         private static float Number(string arg) {
+            float value;
             if (float.TryParse(arg, NumberStyles.Float | NumberStyles.AllowThousands,
-                    CultureInfo.InvariantCulture, out float value)) {
+                    CultureInfo.InvariantCulture, out value) && !float.IsInfinity(value) && !float.IsNaN(value)) {
                 return value;
             }
             throw new Exception("Invalid path data: " + arg);

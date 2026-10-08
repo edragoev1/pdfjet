@@ -70,6 +70,18 @@ what users would hit goes in; the rest waits for v9.1.
    four files, pdfjet.com by update-from-pdfjet.py and
    pdfjet-website-update.zip, the hidden links of v9.0.5 for direct buyers.
 
+**After the one XML parser (8 October 2026): PDFjet Pro's copy.** The library
+now has its own copy of Pro's `XMLParser`, for SVG, in the four ports
+(src/internal/xmlparser, com/pdfjet/XMLParser.java, net/pdfjet/XMLParser.cs,
+Sources/PDFjet/SVGXMLParser.swift), with two changes: a DOCTYPE skipped
+instead of refused, and a space required between attributes, which XML asks
+and Pro's copy does not check (it reads `b="1"c="2"`). Two copies of one
+parser, until Pro uses the library's: then the library's made public (Go's is
+internal now), with a setting for a DOCTYPE skipped (SVG) or refused (the
+invoices). Meanwhile, the space between attributes into Pro's copy too, in its
+four ports with a test (the owner asked, 8 October 2026: "So just to be clear
+now we have the same XML parser in all 4 ports for both ZUGFeRD and SVG").
+
 **If 9.0.5 goes well, small v9.1 items come in** (the owner, 8 October
 2026), only fixes users would see, in the four ports with tests, in this
 order: a JPEG whose only fault is a missing end-of-image marker drawn, not
