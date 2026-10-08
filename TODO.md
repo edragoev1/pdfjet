@@ -36,7 +36,18 @@ what users would hit goes in; the rest waits for v9.1.
    cover for all three. The OTF target's timeout and two slow units run in
    0.5 to 0.6 s uninstrumented, about 170 MB: Jazzer's slowdown, not a
    fault. Markdown's four slow units to be run with Repro too.
-2. ⬜ **One rule of strictness for the four** (item 7): an SVG that is not
+2. ➡️ **Moved out of 9.0.5 (the owner, 8 October 2026).** The SVG part goes
+   to v9.1 as **one XML parser for SVG in the four ports**, started from
+   PDFjet Pro's `XMLParser` (the e-invoices', in Go, Java, C# and Swift,
+   strict and fuzzed), moved into the MIT library ("the AGPL should not be
+   an issue": the owner's own code), with one change for SVG: a DOCTYPE,
+   which editors write, skipped instead of refused. In the core only
+   SVGImage parses XML (Go's encoding/xml, Java's StAX, C#'s XmlReader,
+   Swift's own tokenizer), so the four will then read SVG alike by
+   construction, strict, with the same errors. The deflate part (Go to
+   refuse a block without its end code, as the other three do) is dropped:
+   "I would rather not do deflate now". As first written: **One rule of
+   strictness for the four** (item 7): an SVG that is not
    well-formed XML refused in PDFjet's words; a deflate block without its
    end code refused, Go to follow the other three.
 3. ⬜ **Example_46 as PDF/UA, the language of a TextLine in a TextColumn, the
