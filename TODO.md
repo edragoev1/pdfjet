@@ -644,6 +644,24 @@ detailed in the list below:
   7. *The test:* the CJK examples made with the whole font and with the
      subset, rendered and compared pixel for pixel, and their text extracted
      and compared; in the four ports, whose pages have the same funnel.
+  8. *TrueType first, CFF second* (8 October 2026). PDFjet's fonts/ has
+     both: IBM Plex Sans SC, TC, JP and KR are CFF (.otf, OTTO), the ones
+     the examples use; Noto Sans SC, TC, JP and KR are TrueType (.ttf, glyf),
+     as are the Windows CJK fonts. TrueType first, the easy case (glyf and
+     loca, no offsets elsewhere), which proves the shared parts: the
+     reserved object, the array, the test; then CFF, the offsets. With
+     TrueType alone a user can already use Noto. Measured that day with
+     fontTools on NotoSansSC-Regular.ttf (30,894 glyphs), the glyphs of a
+     document kept and the rest emptied, compressed: the 235 characters of
+     data/languages/simplified-chinese.txt, about 130 KB; 1,000 characters
+     about 250 KB; 3,500 about 740 KB. Against the whole fonts embedded
+     today: IBM Plex Sans SC 5.7 MB, Noto Sans SC 6.3 MB. About 100 KB of
+     the subset is the other tables (cmap, hmtx, GSUB and GPOS), kept whole;
+     trimming them is a later maybe.
+  9. *The font's license allows it:* the OS/2 table's fsType bit 0x0100,
+     "no subsetting", read first; a font that sets it is embedded whole.
+     IBM Plex and Noto allow subsetting (SIL Open Font License); a user's
+     own commercial CJK font may not.
 - ⬜ The package registries, in this order (see "After the tag: the package
   registries" below): Go (one fetch of the proxy, and pkg.go.dev lists
   it), NuGet first of the others (C# is the largest audience, about an
