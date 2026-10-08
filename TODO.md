@@ -34,6 +34,16 @@ what users would hit goes in; the rest waits for v9.1.
    four files, pdfjet.com by update-from-pdfjet.py and
    pdfjet-website-update.zip, the hidden links of v9.0.5 for direct buyers.
 
+**If 9.0.5 goes well, small v9.1 items come in** (the owner, 8 October
+2026), only fixes users would see, in the four ports with tests, in this
+order: a JPEG whose only fault is a missing end-of-image marker drawn, not
+refused (the scan whole); the link box of a word drawn with its space ending
+at the word; PDF/A-1 ignoring or refusing an annotation's opacity; the repair
+scan of a broken cross-reference table not stopping at an "N G obj" inside a
+stream. Big projects (one XML parser for SVG, object streams) stay in v9.1.
+The goal of October: 9.0.5 and Forms both live by its end; after that, the
+library in good shape, the work is Forms' teething issues.
+
 **Sales:** PDFjet for Java and .NET stay on FastSpring, at least until 2027
 (the owner, 8 October 2026); Forms is on Paddle alone. Paddle for the
 library is ready in its sandbox for whenever (pdfjet-server TODO.md).
