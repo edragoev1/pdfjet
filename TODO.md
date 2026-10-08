@@ -644,7 +644,15 @@ detailed in the list below:
   7. *The test:* the CJK examples made with the whole font and with the
      subset, rendered and compared pixel for pixel, and their text extracted
      and compared; in the four ports, whose pages have the same funnel.
-  8. *TrueType first, CFF second* (8 October 2026). PDFjet's fonts/ has
+  8. *TrueType only, decided by the owner on 8 October 2026* ("Noto subset
+     is good enough - do TrueType only"): no CFF rewrite; a CFF font is
+     embedded whole, as now. IBM Plex's CJK families come as .ttf too
+     (github.com/IBM/plex, packages/plex-sans-*/fonts/complete/ttf), 20 to
+     40% larger than their .otf whole (SC 8.44 MB against 6.97, TC 5.45
+     against 4.58, JP 5.71 against 4.05; KR 2.54 MB .ttf), which is why
+     fonts/ has the .otf; subset, the difference hardly matters, so a user
+     who wants the Plex look subsets its .ttf. What follows was written
+     before the decision: *TrueType first, CFF second* (8 October 2026). PDFjet's fonts/ has
      both: IBM Plex Sans SC, TC, JP and KR are CFF (.otf, OTTO), the ones
      the examples use; Noto Sans SC, TC, JP and KR are TrueType (.ttf, glyf),
      as are the Windows CJK fonts. TrueType first, the easy case (glyf and
