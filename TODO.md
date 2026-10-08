@@ -36,7 +36,10 @@ what users would hit goes in; the rest waits for v9.1.
    cover for all three. The OTF target's timeout and two slow units run in
    0.5 to 0.6 s uninstrumented, about 170 MB: Jazzer's slowdown, not a
    fault. Markdown's four slow units to be run with Repro too.
-2. ⬜ **Back in 9.0.5, the same evening** (the owner: "let's do the one XML
+2. ✅ **Done on 8 October 2026, evening (9917aa12): one XML parser for SVG in
+   the four ports**, the 1,170 fuzzed SVGs accepted or refused alike (560,
+   610), the 246 SVG files of the repository drawing the same content. Was:
+   **Back in 9.0.5, the same evening** (the owner: "let's do the one XML
    parser for v9.0.5"), the deflate part still dropped (Go is the lenient
    one there, not a fault). Written first as moved out: The SVG part goes
    to v9.1 as **one XML parser for SVG in the four ports**, started from
