@@ -577,7 +577,8 @@ API of v9.0.1 came with the PDF/UA work and the fixes; goal 6 lists them.
      since 2023;
    - Apple PDFKit: Preview, and Safari, Files and Mail on an iPhone or iPad;
    - PDF.js: Firefox, and the many web apps that embed it;
-   - Foxit: Foxit PDF Reader.
+   - Foxit: Foxit PDF Reader, dropped from the pass on 8 October 2026 (the
+     owner: years without a problem, where Acrobat is the strict one).
 
    With MuPDF (SumatraPDF) and Poppler (Okular, Evince, pdftoppm), which
    `check-examples.sh` already renders with, these six engines draw the PDFs
@@ -630,9 +631,11 @@ API of v9.0.1 came with the PDF/UA work and the fixes; goal 6 lists them.
      pdftoppm and pdftotext keep only the first 32 bytes of the one they are
      given, so the check opens the 200 byte password file in them with its
      owner password; the Cyrillic password works.
-   - ⬜ Still manual: Acrobat Reader, and Edge with Adobe's engine; Foxit;
+   - ⬜ Still manual: Acrobat Reader, and Edge with Adobe's engine;
      Preview itself, which the PDFKit check stands in for but does not
-     click through; PAC; NVDA with Acrobat Reader, and VoiceOver; and what
+     click through; PAC; NVDA with Acrobat Reader on Windows, and Acrobat's
+     Read Out Loud on the Mac for the reading order (Foxit and VoiceOver
+     dropped, 8 October 2026); and what
      is interactive: typing the passwords, the permissions each viewer
      shows (print allowed, copy denied), the attachments, the links and the
      form fields. The CJK examples whose fonts are not embedded, Example_04

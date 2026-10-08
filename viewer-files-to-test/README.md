@@ -1,8 +1,12 @@
 # Viewer files to test
 
 The PDFs of the manual viewer pass, goal 4 of `../TODO.md`, to open by hand in
-Acrobat Reader, NVDA, Edge, Foxit, Preview, VoiceOver and Firefox. They are
-not kept in the repository.
+Acrobat Reader, NVDA, Edge, Preview, Firefox, and Acrobat's Read Out Loud on
+the Mac. They are not kept in the repository. Foxit and VoiceOver are out of
+the pass, the owner's choice of 8 October 2026: Foxit has never had trouble
+with PDFjet's files where Acrobat, the strictest, is the one to pass;
+VoiceOver reads PDFs in Acrobat for Mac only in part, and NVDA with Acrobat
+on Windows is the screen reader of the pass.
 
 `Checklist.pdf` is the list to print and tick off with a pen. It is drawn by
 PDFjet, from `.github/scripts/viewer-checklist`:
