@@ -171,17 +171,33 @@ public class MarkdownParserTest {
         Assert.Equal(MarkdownParser.MAX_DEPTH, quotes);
     }
 
+    // Four times as long a text is read in about four times the time, not
+    // sixteen; the two times are measured in the same run, the shortest of
+    // three each, so that a busy computer slows both (a limit of 3 s failed
+    // under a fuzzer's load, 9 October 2026).
     [Fact]
     public void LongInputsAreReadQuickly() {
+        TimeSpan small = ParseTime(5000);
+        TimeSpan large = ParseTime(20000);
+        Assert.True(large.Ticks <= 8 * small.Ticks, "20000 repeats took "
+                + large.TotalMilliseconds + " ms, and 5000 " + small.TotalMilliseconds + " ms");
+    }
+
+    private static TimeSpan ParseTime(int count) {
         StringBuilder text = new StringBuilder();
-        for (int i = 0; i < 20000; i++) {
+        for (int i = 0; i < count; i++) {
             text.Append("> - a | b\n>   ---|---\n>   ```\n\n    x\n- [ ]\n");
         }
-        Stopwatch watch = Stopwatch.StartNew();
-        List<MarkdownParser.Block> blocks = MarkdownParser.Parse(text.ToString());
-        long milliseconds = watch.ElapsedMilliseconds;
-        Assert.True(blocks.Count > 0);
-        Assert.True(milliseconds < 3000, milliseconds + " ms");
+        TimeSpan shortest = TimeSpan.MaxValue;
+        for (int run = 0; run < 3; run++) {
+            Stopwatch watch = Stopwatch.StartNew();
+            List<MarkdownParser.Block> blocks = MarkdownParser.Parse(text.ToString());
+            if (watch.Elapsed < shortest) {
+                shortest = watch.Elapsed;
+            }
+            Assert.True(blocks.Count > 0);
+        }
+        return shortest;
     }
 }
 }

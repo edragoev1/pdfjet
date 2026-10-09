@@ -456,21 +456,37 @@ public class TextFrameTest {
         CheckALinkEndsBeforeTheSpaceAfterIt(false);
     }
 
+    // Every text line is one word joined to the word before it, so the width
+    // of the words joined to a word was measured over and over. Four times as
+    // many lines take about four times the time, not sixteen; the two times
+    // are measured in the same run, the shortest of three each, so that a
+    // busy computer slows both (a limit of 3 s failed under a fuzzer's load,
+    // 9 October 2026).
     [Fact]
     public void ManyJoinedTextLinesAreMeasuredInLinearTime() {
-        // Every text line is one word joined to the word before it, so the
-        // width of the words joined to a word was measured over and over.
-        PDF pdf = TestSupport.NewPDF();
-        Font font = TestSupport.Helvetica(pdf);
-        Paragraph paragraph = new Paragraph(new TextLine(font, "word"));
-        for (int i = 0; i < 20000; i++) {
-            paragraph.AddJoined(new TextLine(font, "x"));
+        TimeSpan small = JoinedLinesTime(5000);
+        TimeSpan large = JoinedLinesTime(20000);
+        Assert.True(large.Ticks <= 8 * small.Ticks, "20000 joined lines took "
+                + large.TotalMilliseconds + " ms, and 5000 " + small.TotalMilliseconds + " ms");
+    }
+
+    private static TimeSpan JoinedLinesTime(int count) {
+        TimeSpan shortest = TimeSpan.MaxValue;
+        for (int run = 0; run < 3; run++) {
+            PDF pdf = TestSupport.NewPDF();
+            Font font = TestSupport.Helvetica(pdf);
+            Paragraph paragraph = new Paragraph(new TextLine(font, "word"));
+            for (int i = 0; i < count; i++) {
+                paragraph.AddJoined(new TextLine(font, "x"));
+            }
+            Page page = new Page(pdf, Letter.PORTRAIT);
+            Stopwatch watch = Stopwatch.StartNew();
+            new TextFrame(new List<Paragraph> {paragraph}).SetLocation(10f, 10f).SetWidth(300f).DrawOn(page);
+            if (watch.Elapsed < shortest) {
+                shortest = watch.Elapsed;
+            }
         }
-        Page page = new Page(pdf, Letter.PORTRAIT);
-        Stopwatch watch = Stopwatch.StartNew();
-        new TextFrame(new List<Paragraph> {paragraph}).SetLocation(10f, 10f).SetWidth(300f).DrawOn(page);
-        long milliseconds = watch.ElapsedMilliseconds;
-        Assert.True(milliseconds < 3000, milliseconds + " ms");
+        return shortest;
     }
 }
 }
