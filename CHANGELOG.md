@@ -71,6 +71,12 @@ This is the first entry in this file; earlier releases were not tracked here.
   space after it, and its link box reached one space past it. The box of a
   TextLine's link now holds the text that shows, without the spaces at either
   end of it; a text of spaces alone keeps its whole width.
+- A square, circle or polygon annotation with an opacity below 1 in a
+  document of PDF_A_1A or PDF_A_1B is drawn opaque, in the four ports.
+  PDF/A-1 has no transparency, and the annotation had `/CA` and an
+  appearance with an ExtGState of `ca` and `CA` below 1, which veraPDF
+  refuses. The opacity is ignored there, not refused, as setOpacity says;
+  the other levels keep it.
 - An OpenType or TrueType font whose table directory lists `hmtx` before
   `hhea` is read as any other, in the four ports. The number of advance
   widths is in `hhea`, so `hmtx` is now read after the directory: Java and C#

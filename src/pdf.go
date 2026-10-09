@@ -205,6 +205,11 @@ func (pdf *PDF) isPDFA() bool {
 	return pdf.compliance != compliance.PDF_1_7 && pdf.compliance != compliance.PDF_UA_1
 }
 
+// isPDFA1 reports whether the document is of PDF/A-1, which has no transparency.
+func (pdf *PDF) isPDFA1() bool {
+	return pdf.compliance == compliance.PDF_A_1A || pdf.compliance == compliance.PDF_A_1B
+}
+
 // SetEncryption sets the encryption applied to this document.
 func (pdf *PDF) SetEncryption(encryption *Encryption) *PDF {
 	// Every object after the encryption dictionary is encrypted.
@@ -1453,9 +1458,11 @@ func (pdf *PDF) addAnnotationObject(annot *annotationObject, index int) int {
 		pdf.appendFloat32(annot.fillColor[2])
 		pdf.appendString("]\n")
 
-		pdf.appendString("/CA ")
-		pdf.appendFloat32(annot.opacity)
-		pdf.appendString("\n")
+		if !pdf.isPDFA1() {
+			pdf.appendString("/CA ")
+			pdf.appendFloat32(annot.opacity)
+			pdf.appendString("\n")
+		}
 
 		if annot.title != "" {
 			pdf.appendString("/T ")
@@ -1478,9 +1485,11 @@ func (pdf *PDF) addAnnotationObject(annot *annotationObject, index int) int {
 		pdf.appendFloat32(annot.fillColor[2])
 		pdf.appendString("]\n")
 
-		pdf.appendString("/CA ")
-		pdf.appendFloat32(annot.opacity)
-		pdf.appendString("\n")
+		if !pdf.isPDFA1() {
+			pdf.appendString("/CA ")
+			pdf.appendFloat32(annot.opacity)
+			pdf.appendString("\n")
+		}
 
 		if annot.title != "" {
 			pdf.appendString("/T ")
@@ -1537,8 +1546,13 @@ func (pdf *PDF) addAppearanceObject(annot *annotationObject, minX, minY, maxX, m
 	// A shape that is not opaque is drawn with its opacity, which a viewer
 	// does not apply to an appearance of its own.
 	transparent := false
+	// PDF/A-1 has no transparency, so there the shape is drawn opaque.
+	opacity := annot.opacity
+	if pdf.isPDFA1() {
+		opacity = 1
+	}
 	fill := func() {
-		if annot.opacity < 1 {
+		if opacity < 1 {
 			transparent = true
 			buf = append(buf, "/GS0 gs\n"...)
 		}
@@ -1633,9 +1647,9 @@ func (pdf *PDF) addAppearanceObject(annot *annotationObject, minX, minY, maxX, m
 	pdf.appendString("]\n")
 	if transparent {
 		pdf.appendString("/Resources <</ExtGState <</GS0 <</CA ")
-		pdf.appendFloat32(annot.opacity)
+		pdf.appendFloat32(opacity)
 		pdf.appendString(" /ca ")
-		pdf.appendFloat32(annot.opacity)
+		pdf.appendFloat32(opacity)
 		pdf.appendString(">>>>>>\n")
 	}
 	pdf.appendString("/Length ")

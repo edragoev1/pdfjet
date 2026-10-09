@@ -91,6 +91,11 @@ public sealed class PDF {
     internal bool IsPDFA() {
         return compliance != Compliance.PDF_1_7 && compliance != Compliance.PDF_UA_1;
     }
+
+    // Whether the document is of PDF/A-1, which has no transparency.
+    internal bool IsPDFA1() {
+        return compliance == Compliance.PDF_A_1A || compliance == Compliance.PDF_A_1B;
+    }
     internal Bookmark toc = null;
     // The headings of a tagged document, in the order they are drawn, which
     // its bookmarks are made of when it has none of its own
@@ -1286,12 +1291,14 @@ public sealed class PDF {
         MemoryStream buf = new MemoryStream();
         String type = annot.annotationType;
         // A shape that is not opaque is drawn with its opacity, which a viewer
-        // does not apply to an appearance of its own.
+        // does not apply to an appearance of its own. PDF/A-1 has no
+        // transparency, so there the shape is drawn opaque.
+        float opacity = IsPDFA1() ? 1f : annot.opacity;
         bool transparent = (type.Equals(Annotation.Square) ||
                 type.Equals(Annotation.Circle) || type.Equals(Annotation.Polygon)) &&
-                annot.opacity < 1f;
+                opacity < 1f;
         if (type.Equals(Annotation.Square)) {
-            AppendFill(buf, annot);
+            AppendFill(buf, annot, transparent);
             AppendNumbers(buf, minX, minY, w, h);
             AppendAscii(buf, "re f\n");
         } else if (type.Equals(Annotation.Circle)) {
@@ -1303,7 +1310,7 @@ public sealed class PDF {
             float cy = minY + ry;
             float ox = rx * kappa;
             float oy = ry * kappa;
-            AppendFill(buf, annot);
+            AppendFill(buf, annot, transparent);
             AppendNumbers(buf, cx + rx, cy);
             AppendAscii(buf, "m\n");
             AppendNumbers(buf, cx + rx, cy + oy, cx + ox, cy + ry, cx, cy + ry);
@@ -1316,7 +1323,7 @@ public sealed class PDF {
             AppendAscii(buf, "c\n");
             AppendAscii(buf, "f\n");
         } else if (type.Equals(Annotation.Polygon)) {
-            AppendFill(buf, annot);
+            AppendFill(buf, annot, transparent);
             for (int i = 0; i + 1 < annot.vertices.Length; i += 2) {
                 AppendNumbers(buf, annot.x1 + annot.vertices[i], annot.y1 - annot.vertices[i + 1]);
                 AppendAscii(buf, (i == 0) ? "m\n" : "l\n");
@@ -1360,9 +1367,9 @@ public sealed class PDF {
         Append("]\n");
         if (transparent) {
             Append("/Resources <</ExtGState <</GS0 <</CA ");
-            Append(annot.opacity);
+            Append(opacity);
             Append(" /ca ");
-            Append(annot.opacity);
+            Append(opacity);
             Append(">>>>>>\n");
         }
         Append("/Length ");
@@ -1377,8 +1384,8 @@ public sealed class PDF {
     }
 
     // Appends the fill color of the annotation to the content of its appearance.
-    private static void AppendFill(MemoryStream buf, Annotation annot) {
-        if (annot.opacity < 1f) {
+    private static void AppendFill(MemoryStream buf, Annotation annot, bool transparent) {
+        if (transparent) {
             AppendAscii(buf, "/GS0 gs\n");
         }
         AppendNumbers(buf, annot.fillColor[0], annot.fillColor[1], annot.fillColor[2]);
@@ -1543,9 +1550,11 @@ public sealed class PDF {
             Append(annot.fillColor[2]);
             Append("]\n");
 
-            Append("/CA ");
-            Append(annot.opacity);
-            Append("\n");
+            if (!IsPDFA1()) {
+                Append("/CA ");
+                Append(annot.opacity);
+                Append("\n");
+            }
 
             if (!String.IsNullOrEmpty(annot.title)) {
                 Append("/T ");
@@ -1568,9 +1577,11 @@ public sealed class PDF {
             Append(annot.fillColor[2]);
             Append("]\n");
 
-            Append("/CA ");
-            Append(annot.opacity);
-            Append("\n");
+            if (!IsPDFA1()) {
+                Append("/CA ");
+                Append(annot.opacity);
+                Append("\n");
+            }
 
             if (!String.IsNullOrEmpty(annot.title)) {
                 Append("/T ");

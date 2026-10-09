@@ -94,7 +94,9 @@ public abstract class BaseAnnotation implements Drawable {
     }
 
     /**
-     * Sets the opacity of this annotation.
+     * Sets the opacity of this annotation. PDF/A-1 has no transparency, so a
+     * document of PDF_A_1A or PDF_A_1B ignores the opacity and draws the
+     * annotation opaque.
      *
      * @param opacity the opacity, from 0.0 (invisible) to 1.0 (opaque, the default).
      * @return this BaseAnnotation object.

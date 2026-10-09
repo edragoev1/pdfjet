@@ -150,6 +150,28 @@ import Testing
                 "/Length 42\n>>\nstream\n/GS0 gs\n0.5 0.5 0.5 rg\n100 642 50 50 re f\n"), "\(raw)")
     }
 
+    @Test func aPDFA1DrawsAShapeThatIsNotOpaqueOpaque() throws {
+        // PDF/A-1 has no transparency: the opacity is ignored there, and kept
+        // in the other levels.
+        for level in [Compliance.PDF_A_1B, Compliance.PDF_A_1A, Compliance.PDF_A_2B, Compliance.PDF_1_7] {
+            let raw = try document(level) { _, page in
+                let square = SquareAnnotation()
+                square.setLocation(100, 100)
+                square.setSize(50, 50)
+                square.setOpacity(0.5)
+                square.setContents("A square")
+                _ = square.drawOn(page)
+            }
+            let transparent = level != Compliance.PDF_A_1B && level != Compliance.PDF_A_1A
+            for entry in ["/CA ", "/ExtGState", "/GS0 gs"] {
+                #expect(raw.contains(entry) == transparent, "\(level): \(entry)")
+            }
+            if !transparent {
+                #expect(raw.contains("/Length 34\n>>\nstream\n0.5 0.5 0.5 rg\n100 642 50 50 re f\n"), "\(raw)")
+            }
+        }
+    }
+
     @Test func aLinkToADestinationTheDocumentDoesNotHaveIsRefused() {
         let pdf = TestSupport.newPDF()
         let page = Page(pdf, Letter.PORTRAIT)

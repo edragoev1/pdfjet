@@ -186,6 +186,32 @@ class ReviewWriterTest {
     }
 
     @Test
+    void aPDFA1DrawsAShapeThatIsNotOpaqueOpaque() throws Exception {
+        // PDF/A-1 has no transparency: the opacity is ignored there, and kept
+        // in the other levels.
+        for (Compliance level : new Compliance[] {
+                Compliance.PDF_A_1B, Compliance.PDF_A_1A, Compliance.PDF_A_2B, Compliance.PDF_1_7}) {
+            String raw = document(level, new Drawing() {
+                public void draw(PDF pdf, Page page) throws Exception {
+                    SquareAnnotation square = new SquareAnnotation();
+                    square.setLocation(100f, 100f);
+                    square.setSize(50f, 50f);
+                    square.setOpacity(0.5f);
+                    square.setContents("A square");
+                    square.drawOn(page);
+                }
+            });
+            boolean transparent = level != Compliance.PDF_A_1B && level != Compliance.PDF_A_1A;
+            for (String entry : new String[] {"/CA ", "/ExtGState", "/GS0 gs"}) {
+                assertEquals(transparent, raw.contains(entry), level + ": " + entry);
+            }
+            if (!transparent) {
+                assertTrue(raw.contains("/Length 34\n>>\nstream\n0.5 0.5 0.5 rg\n100 642 50 50 re f\n"), raw);
+            }
+        }
+    }
+
+    @Test
     void aLinkToADestinationTheDocumentDoesNotHaveIsRefused() throws Exception {
         final PDF pdf = TestSupport.newPDF();
         Page page = new Page(pdf, Letter.PORTRAIT);

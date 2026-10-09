@@ -192,6 +192,31 @@ func TestWriterAShapeThatIsNotOpaqueIsDrawnWithItsOpacity(t *testing.T) {
 	}
 }
 
+func TestWriterAPDFA1DrawsAShapeThatIsNotOpaqueOpaque(t *testing.T) {
+	// PDF/A-1 has no transparency: the opacity is ignored there, and kept in
+	// the other levels.
+	for _, level := range []compliance.Compliance{
+		compliance.PDF_A_1B, compliance.PDF_A_1A, compliance.PDF_A_2B, compliance.PDF_1_7} {
+		raw := testWriterDoc(t, level, func(pdf *PDF, page *Page) {
+			square := NewSquareAnnotation()
+			square.SetLocation(100, 100)
+			square.SetSize(50, 50)
+			square.SetOpacity(0.5)
+			square.SetContents("A square")
+			square.DrawOn(page)
+		})
+		transparent := level != compliance.PDF_A_1B && level != compliance.PDF_A_1A
+		for _, entry := range []string{"/CA ", "/ExtGState", "/GS0 gs"} {
+			if strings.Contains(raw, entry) != transparent {
+				t.Errorf("%v: %s", level, entry)
+			}
+		}
+		if !transparent && !strings.Contains(raw, "/Length 34\n>>\nstream\n0.5 0.5 0.5 rg\n100 642 50 50 re f\n") {
+			t.Errorf("%v: %s", level, raw)
+		}
+	}
+}
+
 func TestWriterALinkToADestinationTheDocumentDoesNotHaveIsRefused(t *testing.T) {
 	pdf := testNewPDF()
 	page := NewPage(pdf, letter.Portrait())

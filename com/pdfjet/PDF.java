@@ -90,6 +90,11 @@ final public class PDF {
     boolean isPDFA() {
         return compliance != Compliance.PDF_1_7 && compliance != Compliance.PDF_UA_1;
     }
+
+    // Whether the document is of PDF/A-1, which has no transparency.
+    boolean isPDFA1() {
+        return compliance == Compliance.PDF_A_1A || compliance == Compliance.PDF_A_1B;
+    }
     Bookmark toc = null;
     // The headings of a tagged document, in the order they are drawn, which
     // its bookmarks are made of when it has none of its own
@@ -1347,12 +1352,14 @@ final public class PDF {
         ByteArrayOutputStream buf = new ByteArrayOutputStream();
         String type = annot.annotationType;
         // A shape that is not opaque is drawn with its opacity, which a viewer
-        // does not apply to an appearance of its own.
+        // does not apply to an appearance of its own. PDF/A-1 has no
+        // transparency, so there the shape is drawn opaque.
+        float opacity = isPDFA1() ? 1f : annot.opacity;
         boolean transparent = (type.equals(Annotation.Square) ||
                 type.equals(Annotation.Circle) || type.equals(Annotation.Polygon)) &&
-                annot.opacity < 1f;
+                opacity < 1f;
         if (type.equals(Annotation.Square)) {
-            appendFill(buf, annot);
+            appendFill(buf, annot, transparent);
             appendNumbers(buf, minX, minY, w, h);
             appendAscii(buf, "re f\n");
         } else if (type.equals(Annotation.Circle)) {
@@ -1364,7 +1371,7 @@ final public class PDF {
             float cy = minY + ry;
             float ox = rx * kappa;
             float oy = ry * kappa;
-            appendFill(buf, annot);
+            appendFill(buf, annot, transparent);
             appendNumbers(buf, cx + rx, cy);
             appendAscii(buf, "m\n");
             appendNumbers(buf, cx + rx, cy + oy, cx + ox, cy + ry, cx, cy + ry);
@@ -1377,7 +1384,7 @@ final public class PDF {
             appendAscii(buf, "c\n");
             appendAscii(buf, "f\n");
         } else if (type.equals(Annotation.Polygon)) {
-            appendFill(buf, annot);
+            appendFill(buf, annot, transparent);
             for (int i = 0; i + 1 < annot.vertices.length; i += 2) {
                 appendNumbers(buf, annot.x1 + annot.vertices[i], annot.y1 - annot.vertices[i + 1]);
                 appendAscii(buf, (i == 0) ? "m\n" : "l\n");
@@ -1421,9 +1428,9 @@ final public class PDF {
         append("]\n");
         if (transparent) {
             append("/Resources <</ExtGState <</GS0 <</CA ");
-            append(annot.opacity);
+            append(opacity);
             append(" /ca ");
-            append(annot.opacity);
+            append(opacity);
             append(">>>>>>\n");
         }
         append("/Length ");
@@ -1438,8 +1445,8 @@ final public class PDF {
     }
 
     // Appends the fill color of the annotation to the content of its appearance.
-    private static void appendFill(ByteArrayOutputStream buf, Annotation annot) {
-        if (annot.opacity < 1f) {
+    private static void appendFill(ByteArrayOutputStream buf, Annotation annot, boolean transparent) {
+        if (transparent) {
             appendAscii(buf, "/GS0 gs\n");
         }
         appendNumbers(buf, annot.fillColor[0], annot.fillColor[1], annot.fillColor[2]);
@@ -1610,9 +1617,11 @@ final public class PDF {
             append(annot.fillColor[2]);
             append("]\n");
 
-            append("/CA ");
-            append(annot.opacity);
-            append("\n");
+            if (!isPDFA1()) {
+                append("/CA ");
+                append(annot.opacity);
+                append("\n");
+            }
 
             if (annot.title != null && !annot.title.isEmpty()) {
                 append("/T ");
@@ -1635,9 +1644,11 @@ final public class PDF {
             append(annot.fillColor[2]);
             append("]\n");
 
-            append("/CA ");
-            append(annot.opacity);
-            append("\n");
+            if (!isPDFA1()) {
+                append("/CA ");
+                append(annot.opacity);
+                append("\n");
+            }
 
             if (annot.title != null && !annot.title.isEmpty()) {
                 append("/T ");

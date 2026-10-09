@@ -78,6 +78,8 @@ func (b *BaseAnnotation) SetFillColorRGB(fillColor [3]float32) *BaseAnnotation {
 }
 
 // SetOpacity sets the opacity, from 0.0 (invisible) to 1.0 (opaque, the default).
+// PDF/A-1 has no transparency, so a document of PDF_A_1A or PDF_A_1B ignores
+// the opacity and draws the annotation opaque.
 func (b *BaseAnnotation) SetOpacity(opacity float32) *BaseAnnotation {
 	b.opacity = opacity
 	return b

@@ -78,7 +78,9 @@ public abstract class BaseAnnotation : IDrawable {
         return this;
     }
 
-    /// <summary>Sets the opacity of this annotation, from 0.0 (invisible) to 1.0 (opaque, the default).</summary>
+    /// <summary>Sets the opacity of this annotation, from 0.0 (invisible) to 1.0 (opaque, the default).
+    /// PDF/A-1 has no transparency, so a document of PDF_A_1A or PDF_A_1B ignores the opacity
+    /// and draws the annotation opaque.</summary>
     public BaseAnnotation SetOpacity(float opacity) {
         this.opacity = opacity;
         return this;

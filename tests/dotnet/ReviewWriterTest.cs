@@ -160,6 +160,30 @@ public class ReviewWriterTest {
     }
 
     [Fact]
+    public void APDFA1DrawsAShapeThatIsNotOpaqueOpaque() {
+        // PDF/A-1 has no transparency: the opacity is ignored there, and kept
+        // in the other levels.
+        foreach (Compliance level in new Compliance[] {
+                Compliance.PDF_A_1B, Compliance.PDF_A_1A, Compliance.PDF_A_2B, Compliance.PDF_1_7}) {
+            string raw = Document(level, (pdf, page) => {
+                SquareAnnotation square = new SquareAnnotation();
+                square.SetLocation(100f, 100f);
+                square.SetSize(50f, 50f);
+                square.SetOpacity(0.5f);
+                square.SetContents("A square");
+                square.DrawOn(page);
+            });
+            bool transparent = level != Compliance.PDF_A_1B && level != Compliance.PDF_A_1A;
+            foreach (string entry in new string[] {"/CA ", "/ExtGState", "/GS0 gs"}) {
+                Assert.True(transparent == raw.Contains(entry), level + ": " + entry);
+            }
+            if (!transparent) {
+                Assert.Contains("/Length 34\n>>\nstream\n0.5 0.5 0.5 rg\n100 642 50 50 re f\n", raw);
+            }
+        }
+    }
+
+    [Fact]
     public void ALinkToADestinationTheDocumentDoesNotHaveIsRefused() {
         PDF pdf = TestSupport.NewPDF();
         Page page = new Page(pdf, Letter.PORTRAIT);

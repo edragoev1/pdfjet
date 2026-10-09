@@ -79,6 +79,8 @@ public class BaseAnnotation: Drawable {
     }
 
     /// Sets the opacity of this annotation, from 0.0 (invisible) to 1.0 (opaque, the default).
+    /// PDF/A-1 has no transparency, so a document of PDF_A_1A or PDF_A_1B ignores
+    /// the opacity and draws the annotation opaque.
     @discardableResult
     public func setOpacity(_ opacity: Float) -> BaseAnnotation {
         self.opacity = opacity

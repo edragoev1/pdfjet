@@ -87,6 +87,11 @@ public final class PDF {
         return compliance != Compliance.PDF_1_7 && compliance != Compliance.PDF_UA_1
     }
 
+    // Whether the document is of PDF/A-1, which has no transparency.
+    func isPDFA1() -> Bool {
+        return compliance == Compliance.PDF_A_1A || compliance == Compliance.PDF_A_1B
+    }
+
     // PDF_A_3A, named by its raw value, since the case is deprecated and the
     // build fails on the warning its name gives. It is still supported.
     static var complianceA3A: Compliance { Compliance(rawValue: 6)! }
@@ -1301,10 +1306,12 @@ public final class PDF {
             buf.append(contentsOf: Array(text.utf8))
         }
         // A shape that is not opaque is drawn with its opacity, which a viewer
-        // does not apply to an appearance of its own.
+        // does not apply to an appearance of its own. PDF/A-1 has no
+        // transparency, so there the shape is drawn opaque.
         var transparent = false
+        let opacity = isPDFA1() ? 1 : annot.opacity
         func fill() {
-            if annot.opacity < 1 {
+            if opacity < 1 {
                 transparent = true
                 ascii("/GS0 gs\n")
             }
@@ -1382,9 +1389,9 @@ public final class PDF {
         append("]\n")
         if transparent {
             append("/Resources <</ExtGState <</GS0 <</CA ")
-            append(annot.opacity)
+            append(opacity)
             append(" /ca ")
-            append(annot.opacity)
+            append(opacity)
             append(">>>>>>\n")
         }
         append("/Length ")
@@ -1548,9 +1555,11 @@ public final class PDF {
             append(annot.fillColor![2])
             append("]\n")
 
-            append("/CA ")
-            append(annot.opacity)
-            append("\n")
+            if !isPDFA1() {
+                append("/CA ")
+                append(annot.opacity)
+                append("\n")
+            }
 
             if let title = annot.title, !title.isEmpty {
                 append("/T <")
@@ -1573,9 +1582,11 @@ public final class PDF {
             append(annot.fillColor![2])
             append("]\n")
 
-            append("/CA ")
-            append(annot.opacity)
-            append("\n")
+            if !isPDFA1() {
+                append("/CA ")
+                append(annot.opacity)
+                append("\n")
+            }
 
             if let title = annot.title, !title.isEmpty {
                 append("/T <")
