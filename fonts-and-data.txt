@@ -3,5 +3,5 @@
 # commits. get-fonts-and-data.sh and get-fonts-and-data.cmd fetch them, and
 # the build, run and test scripts run those. To move a folder to a newer
 # commit, push the commit to its repository and write it here.
-fonts https://github.com/edragoev1/pdfjet-fonts 3a9d3e78b5cc33ef77db7989b60bccffda1d8afa
-data https://github.com/edragoev1/pdfjet-data 4cbefa453a5628199b78629365b9a9a32887d9d6
+fonts https://github.com/edragoev1/pdfjet-fonts c5b0c2ea2cfbc45391d776cf1e00033fc814371d
+data https://github.com/edragoev1/pdfjet-data a98d0f8ab6f026839acb704d0658b9406be54b63

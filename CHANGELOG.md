@@ -63,7 +63,9 @@ This is the first entry in this file; earlier releases were not tracked here.
   Latin letters of IBM Plex Sans TC are 1 to 5 thousandths of an em
   narrower. The italic angle of IBM Plex Sans, Serif and Mono is rounded to a
   whole degree. IBM Plex Sans is still there as `.otf`, a font of CFF
-  outlines. The fonts folder went from 606 MB to 414 MB.
+  outlines. The fonts folder went from 606 MB to 414 MB. The subsets of Noto
+  Sans SC and TC made ahead of time (`-SC3500`, `-TC4808`) are gone with the
+  lists of characters they were made of, and the tools that made them.
 - The ToUnicode map of every embedded font is compressed, a few
   hundred kilobytes less for a large CJK font embedded whole.
 - SVG is read with one XML parser, the same in the four ports, in place of

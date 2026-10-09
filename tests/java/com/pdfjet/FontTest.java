@@ -302,19 +302,38 @@ class FontTest {
     }
 
     @Test
-    void aFontAndASubsetOfItWithTheSameNameAreBothEmbedded() throws Exception {
-        // PDFjet ships subsets of the Noto CJK fonts whose name inside is the
-        // name of the whole font. A PDF embedded the font file of the first
-        // of two fonts of one name for both, so the text drawn with the
-        // second came out in the glyphs of the first: 中文字 read as Ι㈜♡.
-        assumeTrue(TestSupport.file("fonts/NotoSansSC/NotoSansSC-Regular.ttf").exists(),
-                "the fonts directory is not here");
-        assertEquals(2, embeddedFonts(documentWithFonts(
-                "fonts/NotoSansSC/NotoSansSC-Regular.ttf",
-                "fonts/NotoSansSC/NotoSansSC-Regular-SC3500.ttf")));
-        assertEquals(2, embeddedFonts(documentWithFonts(
-                "fonts/NotoSansSC/NotoSansSC-Regular.ttf",
-                "fonts/NotoSansSC/NotoSansSC-Regular-SC3500.ttf")));
+    void twoFontsOfOneNameWithOtherGlyphsAreBothEmbedded() throws Exception {
+        // A font and another of its name with other glyphs, as a font and a
+        // subset of it made by a font tool are, are two font programs. A PDF
+        // embedded the font file of the first of two fonts of one name for
+        // both, so the text drawn with the second came out in the glyphs of
+        // the first: 中文字 read as Ι㈜♡. The other is Noto Sans with a wider
+        // .notdef.
+        String path = "fonts/NotoSans/NotoSans-Regular.ttf";
+        assumeTrue(TestSupport.file(path).exists(), "the fonts directory is not here");
+        byte[] ttf = java.nio.file.Files.readAllBytes(TestSupport.file(path).toPath());
+        byte[] other = ttf.clone();
+        int tables = (ttf[4] & 0xFF) << 8 | (ttf[5] & 0xFF);
+        for (int i = 0; i < tables; i++) {
+            int entry = 12 + 16 * i;
+            if (new String(ttf, entry, 4, "ISO-8859-1").equals("hmtx")) {
+                int at = (ttf[entry + 8] & 0xFF) << 24 | (ttf[entry + 9] & 0xFF) << 16 |
+                        (ttf[entry + 10] & 0xFF) << 8 | (ttf[entry + 11] & 0xFF);
+                int width = ((ttf[at] & 0xFF) << 8 | (ttf[at + 1] & 0xFF)) + 1;
+                other[at] = (byte) (width >> 8);
+                other[at + 1] = (byte) width;
+            }
+        }
+        java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        float y = 50f;
+        for (byte[] font : new byte[][] {ttf, other}) {
+            new TextLine(new Font(pdf, new java.io.ByteArrayInputStream(font)), "A").setLocation(50f, y).drawOn(page);
+            y += 20f;
+        }
+        pdf.complete();
+        assertEquals(2, embeddedFonts(bos.toByteArray()));
     }
 
     @Test

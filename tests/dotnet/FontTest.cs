@@ -307,20 +307,38 @@ public class FontTest {
     }
 
     [Fact]
-    public void AFontAndASubsetOfItWithTheSameNameAreBothEmbedded() {
-        // PDFjet ships subsets of the Noto CJK fonts whose name inside is the
-        // name of the whole font. A PDF embedded the font file of the first
-        // of two fonts of one name for both, so the text drawn with the
-        // second came out in the glyphs of the first.
-        if (!File.Exists(TestSupport.RepoPath("fonts/NotoSansSC/NotoSansSC-Regular.ttf"))) {
+    public void TwoFontsOfOneNameWithOtherGlyphsAreBothEmbedded() {
+        // A font and another of its name with other glyphs, as a font and a
+        // subset of it made by a font tool are, are two font programs. A PDF
+        // embedded the font file of the first of two fonts of one name for
+        // both, so the text drawn with the second came out in the glyphs of
+        // the first. The other is Noto Sans with a wider .notdef.
+        string path = TestSupport.RepoPath("fonts/NotoSans/NotoSans-Regular.ttf");
+        if (!File.Exists(path)) {
             return;     // The fonts directory is not here.
         }
-        Assert.Equal(2, EmbeddedFonts(DocumentWithFonts(
-                "fonts/NotoSansSC/NotoSansSC-Regular.ttf",
-                "fonts/NotoSansSC/NotoSansSC-Regular-SC3500.ttf")));
-        Assert.Equal(2, EmbeddedFonts(DocumentWithFonts(
-                "fonts/NotoSansSC/NotoSansSC-Regular.ttf",
-                "fonts/NotoSansSC/NotoSansSC-Regular-SC3500.ttf")));
+        byte[] ttf = File.ReadAllBytes(path);
+        byte[] other = (byte[]) ttf.Clone();
+        int tables = ttf[4] << 8 | ttf[5];
+        for (int i = 0; i < tables; i++) {
+            int entry = 12 + 16 * i;
+            if (ttf[entry] == 'h' && ttf[entry + 1] == 'm' && ttf[entry + 2] == 't' && ttf[entry + 3] == 'x') {
+                int at = ttf[entry + 8] << 24 | ttf[entry + 9] << 16 | ttf[entry + 10] << 8 | ttf[entry + 11];
+                int width = (ttf[at] << 8 | ttf[at + 1]) + 1;
+                other[at] = (byte) (width >> 8);
+                other[at + 1] = (byte) width;
+            }
+        }
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        float y = 50f;
+        foreach (byte[] font in new byte[][] {ttf, other}) {
+            new TextLine(new Font(pdf, new MemoryStream(font)), "A").SetLocation(50f, y).DrawOn(page);
+            y += 20f;
+        }
+        pdf.Complete();
+        Assert.Equal(2, EmbeddedFonts(stream.ToArray()));
     }
 
     [Fact]

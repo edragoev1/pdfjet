@@ -267,19 +267,35 @@ import Testing
         return memory.bytes
     }
 
-    @Test(.enabled(if: TestSupport.exists("fonts/NotoSansSC/NotoSansSC-Regular.ttf"),
+    @Test(.enabled(if: TestSupport.exists("fonts/NotoSans/NotoSans-Regular.ttf"),
             "the fonts directory is not here"))
-    func aFontAndASubsetOfItWithTheSameNameAreBothEmbedded() throws {
-        // PDFjet ships subsets of the Noto CJK fonts whose name inside is the
-        // name of the whole font. A PDF embedded the font file of the first
-        // of two fonts of one name for both, so the text drawn with the
-        // second came out in the glyphs of the first.
-        #expect(try embeddedFonts(documentWithFonts([
-                "fonts/NotoSansSC/NotoSansSC-Regular.ttf",
-                "fonts/NotoSansSC/NotoSansSC-Regular-SC3500.ttf"])) == 2)
-        #expect(try embeddedFonts(documentWithFonts([
-                "fonts/NotoSansSC/NotoSansSC-Regular.ttf",
-                "fonts/NotoSansSC/NotoSansSC-Regular-SC3500.ttf"])) == 2)
+    func twoFontsOfOneNameWithOtherGlyphsAreBothEmbedded() throws {
+        // A font and another of its name with other glyphs, as a font and a
+        // subset of it made by a font tool are, are two font programs. A PDF
+        // embedded the font file of the first of two fonts of one name for
+        // both, so the text drawn with the second came out in the glyphs of
+        // the first. The other is Noto Sans with a wider .notdef.
+        let ttf = [UInt8](try Data(contentsOf: URL(fileURLWithPath: TestSupport.path("fonts/NotoSans/NotoSans-Regular.ttf"))))
+        var other = ttf
+        let tables = Int(ttf[4]) << 8 | Int(ttf[5])
+        for i in 0..<tables {
+            let entry = 12 + 16 * i
+            if TestSupport.latin1(Array(ttf[entry..<(entry + 4)])) == "hmtx" {
+                let at = Int(ttf[entry + 8]) << 24 | Int(ttf[entry + 9]) << 16 | Int(ttf[entry + 10]) << 8 | Int(ttf[entry + 11])
+                let width = (Int(ttf[at]) << 8 | Int(ttf[at + 1])) + 1
+                other[at] = UInt8(width >> 8)
+                other[at + 1] = UInt8(width & 0xFF)
+            }
+        }
+        let memory = MemoryPDF()
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        var y: Float = 50
+        for font in [ttf, other] {
+            TextLine(try Font(memory.pdf, InputStream(data: Data(font))), "A").setLocation(50, y).drawOn(page)
+            y += 20
+        }
+        try memory.pdf.complete()
+        #expect(embeddedFonts(memory.bytes) == 2)
     }
 
     @Test(.enabled(if: TestSupport.exists("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"),

@@ -6,6 +6,7 @@
 package pdfjet
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"os"
@@ -328,19 +329,22 @@ func testDocumentWithFonts(t *testing.T, paths ...string) []byte {
 	return doc.complete()
 }
 
-func TestFontAFontAndASubsetOfItWithTheSameNameAreBothEmbedded(t *testing.T) {
-	// PDFjet ships subsets of the Noto CJK fonts whose name inside is the
-	// name of the whole font. A PDF embedded the font file of the first of
-	// two fonts of one name for both, so the text drawn with the second came
-	// out in the glyphs of the first: 中文字 read as Ι㈜♡.
-	for _, pair := range [][]string{
-		{"fonts/NotoSansSC/NotoSansSC-Regular.ttf", "fonts/NotoSansSC/NotoSansSC-Regular-SC3500.ttf"},
-		{"fonts/NotoSansSC/NotoSansSC-Regular.ttf",
-			"fonts/NotoSansSC/NotoSansSC-Regular-SC3500.ttf"},
-	} {
-		if n := testEmbeddedFonts(testDocumentWithFonts(t, pair...)); n != 2 {
-			t.Errorf("%s: %d font programs embedded", pair[0], n)
-		}
+func TestFontTwoFontsOfOneNameWithOtherGlyphsAreBothEmbedded(t *testing.T) {
+	// A font and another of its name with other glyphs, as a font and a subset
+	// of it made by a font tool are, are two font programs. A PDF embedded the
+	// font file of the first of two fonts of one name for both, so the text
+	// drawn with the second came out in the glyphs of the first: 中文字 read
+	// as Ι㈜♡. The other is Noto Sans with a wider .notdef.
+	ttf := testOpenTypeFontBytes(t, "fonts/NotoSans/NotoSans-Regular.ttf")
+	hmtx := testOpenTypeTable(t, ttf, "hmtx")
+	other := testOpenTypeWith(ttf, hmtx, int(ttf[hmtx])<<8|int(ttf[hmtx+1])+1)
+	doc := testNewDoc()
+	page := NewPage(doc.pdf, letter.Portrait())
+	for i, font := range [][]byte{ttf, other} {
+		NewTextLine(NewFont(doc.pdf, bytes.NewReader(font)), "A").SetLocation(50, float32(50+20*i)).DrawOn(page)
+	}
+	if n := testEmbeddedFonts(doc.complete()); n != 2 {
+		t.Errorf("%d font programs embedded", n)
 	}
 }
 
