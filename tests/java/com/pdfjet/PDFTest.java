@@ -581,7 +581,7 @@ class PDFTest {
         return pdfWithObjects(objects);
     }
 
-    private static byte[] pdfWithObjects(String[] objects) {
+    static byte[] pdfWithObjects(String[] objects) {
         StringBuilder sb = new StringBuilder("%PDF-1.4\n");
         int[] offsets = new int[objects.length];
         for (int i = 0; i < objects.length; i++) {

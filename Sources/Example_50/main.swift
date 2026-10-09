@@ -34,8 +34,8 @@ public class Example_50 {
         image.setLocation(495.0, 65.0)
         image.scaleBy(0.40)
 
-        // A font added to an existing PDF is embedded whole, and the CFF outlines
-        // of the .otf are smaller than the whole .ttf.
+        // A font added to an existing PDF is embedded as a subset of the glyphs
+        // drawn, as in a new PDF; the .otf tests the CFF outlines.
         let f1 = try Font(
                 &objects,
                 InputStream(fileAtPath: "fonts/IBMPlexSans/IBMPlexSans-Regular.otf")!).setSize(12.0)

@@ -131,35 +131,9 @@ class Subset {
         }
 
         Program program = font.program;
-        font.baseFont = font.name;
-        byte[] data = program.font;
-        byte[] compressed = null;
+        byte[] data = embeddedProgram(font);
+        byte[] compressed = Compressor.deflate(data);
         int length = data.length;
-        if (!program.whole && !program.forbidden) {
-            try {
-                boolean[][] kept = new boolean[1][];
-                byte[] subset = program.cff ?
-                        CFFSubset.subset(data, program.used, kept) : subsetTrueType(data, program.used, kept);
-                compressed = Compressor.deflate(subset);
-                length = subset.length;
-                font.kept = kept[0];
-                font.baseFont = subsetTag(font.checksum, kept[0]) + "+" + font.name;
-            } catch (NotSubset e) {
-                // Embedded whole
-            }
-        }
-        if (compressed == null && program.cff) {
-            // Whole, written again for the identity charset of a CID-keyed
-            // font, or as it is when it cannot be.
-            try {
-                data = CFFSubset.subset(data, null, new boolean[1][]);
-            } catch (NotSubset e) {
-                // As it is
-            }
-        }
-        if (compressed == null) { // Whole
-            compressed = Compressor.deflate(data);
-        }
 
         int metadataObjNumber = pdf.addMetadataObject(font.info, true);
         if (pdf.encryption != null) {
@@ -191,6 +165,40 @@ class Subset {
         pdf.endObj();
         font.fileObjNumber = pdf.getObjNumber();
         return font.kept;
+    }
+
+    /**
+     * Returns the font program to embed, a subset unless it is to be whole,
+     * and sets the name of the font, with the tag of a subset, and the glyphs
+     * the subset keeps, null for a whole font.
+     */
+    static byte[] embeddedProgram(Font font) throws Exception {
+        Program program = font.program;
+        byte[] data = program.font;
+        if (!program.whole && !program.forbidden) {
+            try {
+                boolean[][] kept = new boolean[1][];
+                byte[] subset = program.cff ?
+                        CFFSubset.subset(data, program.used, kept) : subsetTrueType(data, program.used, kept);
+                font.kept = kept[0];
+                font.baseFont = subsetTag(font.checksum, kept[0]) + "+" + font.name;
+                return subset;
+            } catch (NotSubset e) {
+                // Embedded whole
+            }
+        }
+        if (program.cff) {
+            // Whole, written again for the identity charset of a CID-keyed
+            // font, or as it is when it cannot be.
+            try {
+                data = CFFSubset.subset(data, null, new boolean[1][]);
+            } catch (NotSubset e) {
+                // As it is
+            }
+        }
+        font.kept = null;
+        font.baseFont = font.name;
+        return data;
     }
 
     /**

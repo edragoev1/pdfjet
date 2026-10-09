@@ -218,5 +218,75 @@ public class SubsetTest {
         want[36 / 8] |= (byte) (0x80 >> (36 % 8));
         Assert.Equal(want, bits);
     }
+
+    // Adds the font to the objects of a PDF, draws a word with it on the page,
+    // and returns the objects of the PDF written.
+    private static List<PDFobj> SubsetInExistingPDF(string path, bool subset) {
+        List<PDFobj> objects = TestSupport.Read(PDFTest.PdfWithObjects(new string[] {
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << >> >>"}));
+        Font font = new Font(objects, TestSupport.Open(path)).SetSubset(subset);
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream);
+        Page page = new Page(pdf, pdf.GetPageObjects(objects)[0]);
+        page.AddResource(font, objects);
+        page.DrawString(font, null, 12f, "Hello", 72f, 72f);
+        page.Complete(objects);
+        pdf.AddObjects(objects);
+        pdf.Complete();
+        return TestSupport.Read(stream.ToArray());
+    }
+
+    // Returns the /BaseFont of the Type0 font.
+    private static string SubsetFontName(List<PDFobj> objects) {
+        foreach (PDFobj obj in objects) {
+            if (obj.GetValue("/Subtype") == "/Type0") {
+                return obj.GetValue("/BaseFont");
+            }
+        }
+        throw new Exception("no Type0 font");
+    }
+
+    [Fact]
+    public void SubsetOfATrueTypeFontAddedToAnExistingPDF() {
+        string path = "fonts/NotoSans/NotoSans-Regular.ttf";
+        int whole = FontBytes(path).Length;
+        List<PDFobj> objects = SubsetInExistingPDF(path, true);
+        string name = SubsetFontName(objects);
+        Assert.Matches(@"^/[A-Z]{6}\+NotoSans-Regular$", name);
+        Assert.Equal(name, TestSupport.FindObject(objects, "/FontName").GetValue("/FontName"));
+        Assert.Equal(name, TestSupport.FindObject(objects, "/CIDToGIDMap").GetValue("/BaseFont"));
+        PDFobj file = TestSupport.FindObject(objects, "/Length1");
+        int length1 = Int32.Parse(file.GetValue("/Length1"));
+        Assert.True(length1 > 0 && length1 < whole, "/Length1 " + length1);
+        Assert.Equal(length1, file.GetData().Length);
+        foreach (PDFobj obj in objects) {
+            byte[] data = obj.GetData();
+            string cmap = data == null ? "" : Encoding.Latin1.GetString(data);
+            if (cmap.StartsWith("/CIDInit", StringComparison.Ordinal)) {
+                // The codespace range, .notdef and H, e, l, o
+                Assert.Equal(6, cmap.Split("> <").Length - 1);
+                return;
+            }
+        }
+        throw new Exception("no ToUnicode map");
+    }
+
+    [Fact]
+    public void SubsetOfACFFFontAddedToAnExistingPDF() {
+        List<PDFobj> objects = SubsetInExistingPDF("fonts/IBMPlexSans/IBMPlexSans-Regular.otf", true);
+        Assert.Matches(@"^/[A-Z]{6}\+IBMPlexSans$", SubsetFontName(objects));
+        Assert.NotNull(TestSupport.FindObject(objects, "/FontFile3"));
+    }
+
+    [Fact]
+    public void SetSubsetFalseKeepsAFontAddedToAnExistingPDFWhole() {
+        string path = "fonts/NotoSans/NotoSans-Regular.ttf";
+        List<PDFobj> objects = SubsetInExistingPDF(path, false);
+        Assert.Equal("/NotoSans-Regular", SubsetFontName(objects));
+        Assert.Equal(FontBytes(path).Length,
+                Int32.Parse(TestSupport.FindObject(objects, "/Length1").GetValue("/Length1")));
+    }
 }
 }

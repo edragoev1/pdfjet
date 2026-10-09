@@ -238,4 +238,75 @@ class SubsetTest {
         assertArrayEquals(want, bits);
         assertNotNull(bits);
     }
+
+    // Adds the font to the objects of a PDF, draws a word with it on the page,
+    // and returns the objects of the PDF written.
+    private static java.util.List<PDFobj> subsetInExistingPDF(String path, boolean subset) throws Exception {
+        java.util.List<PDFobj> objects = TestSupport.read(PDFTest.pdfWithObjects(new String[] {
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << >> >>"}));
+        Font font = new Font(objects, TestSupport.open(path)).setSubset(subset);
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        Page page = new Page(pdf, pdf.getPageObjects(objects).get(0));
+        page.addResource(font, objects);
+        page.drawString(font, null, 12f, "Hello", 72f, 72f);
+        page.complete(objects);
+        pdf.addObjects(objects);
+        pdf.complete();
+        return TestSupport.read(bos.toByteArray());
+    }
+
+    // Returns the /BaseFont of the Type0 font.
+    private static String subsetFontName(java.util.List<PDFobj> objects) {
+        for (PDFobj obj : objects) {
+            if ("/Type0".equals(obj.getValue("/Subtype"))) {
+                return obj.getValue("/BaseFont");
+            }
+        }
+        throw new AssertionError("no Type0 font");
+    }
+
+    @Test
+    void subsetOfATrueTypeFontAddedToAnExistingPDF() throws Exception {
+        String path = "fonts/NotoSans/NotoSans-Regular.ttf";
+        int whole = fontBytes(path).length;
+        java.util.List<PDFobj> objects = subsetInExistingPDF(path, true);
+        String name = subsetFontName(objects);
+        assertTrue(name.matches("/[A-Z]{6}\\+NotoSans-Regular"), name);
+        assertEquals(name, TestSupport.findObject(objects, "/FontName").getValue("/FontName"));
+        assertEquals(name, TestSupport.findObject(objects, "/CIDToGIDMap").getValue("/BaseFont"));
+        PDFobj file = TestSupport.findObject(objects, "/Length1");
+        int length1 = Integer.parseInt(file.getValue("/Length1"));
+        assertTrue(length1 > 0 && length1 < whole, "/Length1 " + length1);
+        assertEquals(length1, file.getData().length);
+        for (PDFobj obj : objects) {
+            byte[] data = obj.getData();
+            String cmap = data == null ? "" : new String(data, StandardCharsets.ISO_8859_1);
+            if (cmap.startsWith("/CIDInit")) {
+                // The codespace range, .notdef and H, e, l, o
+                assertEquals(6, cmap.split("> <", -1).length - 1);
+                return;
+            }
+        }
+        throw new AssertionError("no ToUnicode map");
+    }
+
+    @Test
+    void subsetOfACFFFontAddedToAnExistingPDF() throws Exception {
+        java.util.List<PDFobj> objects = subsetInExistingPDF("fonts/IBMPlexSans/IBMPlexSans-Regular.otf", true);
+        String name = subsetFontName(objects);
+        assertTrue(name.matches("/[A-Z]{6}\\+IBMPlexSans"), name);
+        assertNotNull(TestSupport.findObject(objects, "/FontFile3"));
+    }
+
+    @Test
+    void setSubsetFalseKeepsAFontAddedToAnExistingPDFWhole() throws Exception {
+        String path = "fonts/NotoSans/NotoSans-Regular.ttf";
+        java.util.List<PDFobj> objects = subsetInExistingPDF(path, false);
+        assertEquals("/NotoSans-Regular", subsetFontName(objects));
+        assertEquals(fontBytes(path).length,
+                Integer.parseInt(TestSupport.findObject(objects, "/Length1").getValue("/Length1")));
+    }
 }

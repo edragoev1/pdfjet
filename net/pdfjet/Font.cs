@@ -30,6 +30,7 @@ public class Font {
     internal int cidSetObjNumber;           // The CIDSet of a subset in PDF/A-1
     internal String baseFont;               // The name it is embedded under, with the tag of a subset
     internal Subset.Program program;        // A TrueType font program, until Complete()
+    internal FontObjects objects;           // Of a font added to an existing PDF, until they are added
     internal bool[] kept;                   // The glyphs its subset keeps
 
     // Font attributes
@@ -63,7 +64,6 @@ public class Font {
     // no anchor, for each class of marks.
     internal List<Dictionary<int, int[]>> baseAnchors;
     internal bool cff;
-    internal int uncompressedSize;
     internal int[][] metrics;           // Only used for core fonts.
     // Tells the font program this font was read from apart from every other,
     // so that a PDF embeds each one once.
@@ -256,7 +256,9 @@ public class Font {
 
     /// <summary>
     /// Creates a font from an OpenType or TrueType font, a .otf or a .ttf, and
-    /// adds it to the objects of an existing PDF, embedded whole.
+    /// adds it to the objects of an existing PDF. It is embedded as a subset of
+    /// the glyphs drawn, when the objects are added to the PDF, unless
+    /// SetSubset(false) keeps it whole.
     /// </summary>
     public Font(List<PDFobj> objects, Stream inputStream) {
         OpenTypeFont.Register(objects, this, inputStream);
@@ -381,7 +383,9 @@ public class Font {
     /// .ttf or a .otf. A font whose license does not allow subsetting, by the
     /// fsType of its OS/2 table, is embedded whole. Fonts read from one file are
     /// one font program in the PDF: kept whole for one, the program is whole
-    /// for all of them. It must be called before Complete().
+    /// for all of them. It must be called before Complete(), and for a font
+    /// added to the objects of an existing PDF, before the objects are added to
+    /// the PDF.
     /// </summary>
     /// <param name="subset">false to embed the font whole.</param>
     /// <returns>this Font object.</returns>

@@ -167,19 +167,6 @@ class OTF {
         }
     }
 
-    // Returns the font program as it is embedded, compressed: the CFF table of
-    // a font with CFF outlines, or else the whole font. It is compressed only
-    // for a font the PDF does not hold yet.
-    func compress() -> [UInt8] {
-        var compressed = [UInt8]()
-        if cff {
-            FlateEncode(&compressed, Array(buf[cffOff!..<(cffOff! + cffLen!)]))
-        } else {
-            FlateEncode(&compressed, buf)
-        }
-        return compressed
-    }
-
     private func head(_ table: FontTable) throws {
         self.index = table.offset! + 16
         try readUInt16()                // flags

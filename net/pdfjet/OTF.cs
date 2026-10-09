@@ -161,16 +161,6 @@ internal class OTF {
         }
     }
 
-    // Returns the font program as it is embedded, compressed: the CFF table of
-    // a font with CFF outlines, or else the whole font. It is compressed only
-    // for a font the PDF does not hold yet.
-    internal byte[] Compress() {
-        if (cff) {
-            return Compressor.Deflate(buf, cffOff, cffLen);
-        }
-        return Compressor.Deflate(buf);
-    }
-
     private void Head(FontTable table) {
         index = table.offset + 16;
         ReadUInt16();  // flags

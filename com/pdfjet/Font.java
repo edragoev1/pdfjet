@@ -40,6 +40,7 @@ final public class Font {
     int cidSetObjNumber;        // The CIDSet of a subset in PDF/A-1
     String baseFont;            // The name it is embedded under, with the tag of a subset
     Subset.Program program;     // A TrueType font program, until complete()
+    FontObjects objects;        // Of a font added to an existing PDF, until they are added
     boolean[] kept;             // The glyphs its subset keeps
 
     // Font attributes
@@ -96,8 +97,6 @@ final public class Font {
     protected java.util.List<java.util.Map<Integer, int[]>> baseAnchors;
     /** True if the glyph outlines are in CFF format. */
     protected boolean cff;
-    /** The size of the uncompressed font data. */
-    protected int uncompressedSize;
     /** The character metrics of a core font. */
     protected int[][] metrics; // Only used for core fonts.
     /**
@@ -321,7 +320,9 @@ final public class Font {
 
     /**
      * Constructor for OpenType and TrueType fonts, .otf and .ttf, added to the
-     * objects of an existing PDF, embedded whole.
+     * objects of an existing PDF. The font is embedded as a subset of the
+     * glyphs drawn, when the objects are added to the PDF, unless
+     * setSubset(false) keeps it whole.
      *
      * @param objects     the list of objects
      * @param inputStream the input stream
@@ -487,7 +488,8 @@ final public class Font {
      * .ttf or a .otf. A font whose license does not allow subsetting, by the
      * fsType of its OS/2 table, is embedded whole. Fonts read from one file are
      * one font program in the PDF: kept whole for one, the program is whole for
-     * all of them. It must be called before complete().
+     * all of them. It must be called before complete(), and for a font added to
+     * the objects of an existing PDF, before the objects are added to the PDF.
      *
      * @param subset false to embed the font whole.
      * @return this Font object.

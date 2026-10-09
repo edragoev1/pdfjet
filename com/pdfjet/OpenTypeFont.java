@@ -28,14 +28,22 @@ class OpenTypeFont {
         pdf.fonts.add(font);
     }
 
-    // Adds the font to the objects of an existing PDF, with its font program
-    // whole.
+    // Adds the font to the objects of an existing PDF; its program is
+    // written when the objects are added to the PDF, a subset of the glyphs
+    // drawn.
     protected static void register(
             List<PDFobj> objects, Font font, InputStream inputStream) throws Exception {
         OTF otf = new OTF(inputStream);
         setData(font, otf);
-        font.uncompressedSize = otf.buf.length;
-        FontObjects.register(objects, font, otf.compress());
+        font.program = new Subset.Program();
+        if (otf.cff) {
+            font.program.font = Arrays.copyOfRange(otf.buf, otf.cffOff, otf.cffOff + otf.cffLen);
+            font.program.cff = true;
+            font.program.forbidden = (otf.fsType & 0x0100) != 0;
+        } else {
+            font.program.font = otf.buf;
+        }
+        FontObjects.register(objects, font);
     }
 
     // Gives the font the name, the metrics and the character map of the

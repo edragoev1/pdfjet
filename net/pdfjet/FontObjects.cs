@@ -6,33 +6,112 @@
  */
 using System;
 using System.Globalization;
-using System.IO;
 using System.Text;
 using System.Collections.Generic;
 
 namespace PDFjet.NET {
 /// <summary>
-/// The objects of a font added to an existing PDF, embedded whole.
+/// The objects of a font added to an existing PDF. They are numbered when the
+/// font is added, so that pages can refer to it, and filled in when the objects
+/// are added to the PDF, after the pages are drawn: the font program a subset
+/// of the glyphs drawn, as a font of a new PDF is at Complete().
 /// </summary>
 class FontObjects {
-    // Adds the font, whose font program is the compressed bytes, to the
-    // objects of an existing PDF.
-    internal static void Register(List<PDFobj> objects, Font font, byte[] compressed) {
+    int metadata;   // The number of the font's metadata object
+    PDFobj file;
+    PDFobj descriptor;
+    PDFobj cidFont;
+    PDFobj toUnicode;
+    PDFobj type0;
 
-        EmbedFontFile(objects, font, compressed);
-        AddFontDescriptorObject(objects, font);
-        AddCIDFontDictionaryObject(objects, font);
-        AddToUnicodeCMapObject(objects, font);
+    // Numbers the objects of the font, added to the objects of an existing
+    // PDF; the Type0 font, the one pages refer to, is the last.
+    internal static void Register(List<PDFobj> objects, Font font) {
+        FontObjects objs = new FontObjects();
+        objs.metadata = AddMetadataObject(objects, font);
+        objs.file = AppendEmptyObject(objects);
+        objs.descriptor = AppendEmptyObject(objects);
+        objs.cidFont = AppendEmptyObject(objects);
+        objs.toUnicode = AppendEmptyObject(objects);
+        objs.type0 = AppendEmptyObject(objects);
+        objs.type0.font = font;
+        font.fileObjNumber = objs.file.number;
+        font.fontDescriptorObjNumber = objs.descriptor.number;
+        font.cidFontDictObjNumber = objs.cidFont.number;
+        font.toUnicodeCMapObjNumber = objs.toUnicode.number;
+        font.objNumber = objs.type0.number;
+        font.objects = objs;
+    }
 
-        // Type0 Font Dictionary
+    private static PDFobj AppendEmptyObject(List<PDFobj> objects) {
         PDFobj obj = new PDFobj();
+        obj.number = objects.Count + 1;
+        objects.Add(obj);
+        return obj;
+    }
+
+    // Fills in the objects of the fonts added to the objects, when the pages
+    // are drawn and the glyphs they use are known.
+    internal static void Complete(List<PDFobj> objects) {
+        foreach (PDFobj obj in objects) {
+            if (obj.font != null) {
+                Complete(obj.font);
+                obj.font = null;
+            }
+        }
+    }
+
+    // Fills in the objects of the font: its program, a subset of the glyphs
+    // drawn unless it is to be whole, the descriptor and the CID font under the
+    // name of the subset, the widths and the ToUnicode map of the glyphs it
+    // keeps, and the Type0 font.
+    private static void Complete(Font font) {
+        FontObjects objs = font.objects;
+        byte[] program = Subset.EmbeddedProgram(font);
+        String baseFont = font.baseFont;
+
+        byte[] compressed = Compressor.Deflate(program);
+        PDFobj obj = objs.file;
+        obj.dict.Add("<<");
+        obj.dict.Add("/Metadata");
+        obj.dict.Add(objs.metadata.ToString(CultureInfo.InvariantCulture));
+        obj.dict.Add("0");
+        obj.dict.Add("R");
+        obj.dict.Add("/Filter");
+        obj.dict.Add("/FlateDecode");
+        obj.dict.Add("/Length");
+        obj.dict.Add(compressed.Length.ToString(CultureInfo.InvariantCulture));
+        if (font.cff) {
+            obj.dict.Add("/Subtype");
+            obj.dict.Add("/CIDFontType0C");
+        } else {
+            obj.dict.Add("/Length1");
+            obj.dict.Add(program.Length.ToString(CultureInfo.InvariantCulture));
+        }
+        obj.dict.Add(">>");
+        obj.SetStream(compressed);
+
+        CompleteFontDescriptor(objs.descriptor, font, baseFont);
+        CompleteCIDFontDictionary(objs.cidFont, font, baseFont, font.kept);
+
+        byte[] cmap = Compressor.Deflate(Encoding.UTF8.GetBytes(FontWriter.ToUnicodeCMap(font, font.kept)));
+        obj = objs.toUnicode;
+        obj.dict.Add("<<");
+        obj.dict.Add("/Filter");
+        obj.dict.Add("/FlateDecode");
+        obj.dict.Add("/Length");
+        obj.dict.Add(cmap.Length.ToString(CultureInfo.InvariantCulture));
+        obj.dict.Add(">>");
+        obj.SetStream(cmap);
+
+        obj = objs.type0;
         obj.dict.Add("<<");
         obj.dict.Add("/Type");
         obj.dict.Add("/Font");
         obj.dict.Add("/Subtype");
         obj.dict.Add("/Type0");
         obj.dict.Add("/BaseFont");
-        obj.dict.Add("/" + font.name);
+        obj.dict.Add("/" + baseFont);
         obj.dict.Add("/Encoding");
         obj.dict.Add("/Identity-H");
         obj.dict.Add("/DescendantFonts");
@@ -46,9 +125,10 @@ class FontObjects {
         obj.dict.Add("0");
         obj.dict.Add("R");
         obj.dict.Add(">>");
-        obj.number = objects.Count + 1;
-        font.objNumber = obj.number;
-        objects.Add(obj);
+
+        // The program and the objects are no longer needed.
+        font.program = null;
+        font.objects = null;
     }
 
     internal static int AddMetadataObject(List<PDFobj> objects, Font font) {
@@ -89,43 +169,12 @@ class FontObjects {
         return obj.number;
     }
 
-    private static void EmbedFontFile(
-            List<PDFobj> objects,
-            Font font,
-            byte[] compressed) {
-        int metadataObjNumber = AddMetadataObject(objects, font);
-
-        PDFobj obj = new PDFobj();
-        obj.dict.Add("<<");
-        obj.dict.Add("/Metadata");
-        obj.dict.Add(metadataObjNumber.ToString(CultureInfo.InvariantCulture));
-        obj.dict.Add("0");
-        obj.dict.Add("R");
-        obj.dict.Add("/Filter");
-        obj.dict.Add("/FlateDecode");
-        obj.dict.Add("/Length");
-        obj.dict.Add(compressed.Length.ToString(CultureInfo.InvariantCulture));
-        if (font.cff) {
-            obj.dict.Add("/Subtype");
-            obj.dict.Add("/CIDFontType0C");
-        } else {
-            obj.dict.Add("/Length1");
-            obj.dict.Add(font.uncompressedSize.ToString(CultureInfo.InvariantCulture));
-        }
-        obj.dict.Add(">>");
-        obj.SetStream(compressed);
-        obj.number = objects.Count + 1;
-        objects.Add(obj);
-        font.fileObjNumber = obj.number;
-    }
-
-    private static void AddFontDescriptorObject(List<PDFobj> objects, Font font) {
-        PDFobj obj = new PDFobj();
+    private static void CompleteFontDescriptor(PDFobj obj, Font font, String fontName) {
         obj.dict.Add("<<");
         obj.dict.Add("/Type");
         obj.dict.Add("/FontDescriptor");
         obj.dict.Add("/FontName");
-        obj.dict.Add("/" + font.name);
+        obj.dict.Add("/" + fontName);
         obj.dict.Add("/FontFile" + (font.cff ? "3" : "2"));
         obj.dict.Add(font.fileObjNumber.ToString(CultureInfo.InvariantCulture));
         obj.dict.Add("0");
@@ -150,82 +199,16 @@ class FontObjects {
         obj.dict.Add("/StemV");
         obj.dict.Add("79");
         obj.dict.Add(">>");
-        obj.number = objects.Count + 1;
-        objects.Add(obj);
-        font.fontDescriptorObjNumber = obj.number;
     }
 
-    private static void AddToUnicodeCMapObject(List<PDFobj> objects, Font font) {
-        StringBuilder sb = new StringBuilder();
-
-        sb.Append("/CIDInit /ProcSet findresource begin\n");
-        sb.Append("12 dict begin\n");
-        sb.Append("begincmap\n");
-        sb.Append("/CIDSystemInfo <</Registry (Adobe) /Ordering (Identity) /Supplement 0>> def\n");
-        sb.Append("/CMapName /Adobe-Identity def\n");
-        sb.Append("/CMapType 2 def\n");
-
-        sb.Append("1 begincodespacerange\n");
-        sb.Append("<0000> <FFFF>\n");
-        sb.Append("endcodespacerange\n");
-
-        List<String> list = new List<String>();
-        // A character the font does not contain is drawn with the .notdef
-        // glyph. PDF/UA requires every glyph to map to Unicode, so map it to
-        // the replacement character.
-        list.Add("<0000> <FFFD>\n");
-        StringBuilder buf = new StringBuilder();
-        int[] unicodeOf = FontWriter.UnicodeOfGlyphs(font.unicodeToGID);
-        for (int cid = 0; cid <= 0xffff; cid++) {
-            int gid = font.unicodeToGID[cid];
-            if (gid > 0 && unicodeOf[gid] == cid) {
-                buf.Append('<');
-                buf.Append(FontWriter.ToHexString(gid));
-                buf.Append("> <");
-                // A presentation form that the Bidi class puts in maps to the letters it stands for.
-                String letters = Bidi.LettersOf(cid);
-                if (letters == null) {
-                    buf.Append(FontWriter.ToHexString(cid));
-                } else {
-                    foreach (char ch in letters) {
-                        buf.Append(FontWriter.ToHexString(ch));
-                    }
-                }
-                buf.Append(">\n");
-                list.Add(buf.ToString());
-                buf.Length = 0;
-                if (list.Count == 100) {
-                    FontWriter.WriteListToBuffer(sb, list);
-                }
-            }
-        }
-        if (list.Count > 0) {
-            FontWriter.WriteListToBuffer(sb, list);
-        }
-        sb.Append("endcmap\n");
-        sb.Append("CMapName currentdict /CMap defineresource pop\n");
-        sb.Append("end\nend");
-
-        PDFobj obj = new PDFobj();
-        obj.dict.Add("<<");
-        obj.dict.Add("/Length");
-        obj.dict.Add(sb.Length.ToString(CultureInfo.InvariantCulture));
-        obj.dict.Add(">>");
-        obj.SetStream((new System.Text.UTF8Encoding()).GetBytes(sb.ToString()));
-        obj.number = objects.Count + 1;
-        objects.Add(obj);
-        font.toUnicodeCMapObjNumber = obj.number;
-    }
-
-    private static void AddCIDFontDictionaryObject(List<PDFobj> objects, Font font) {
-        PDFobj obj = new PDFobj();
+    private static void CompleteCIDFontDictionary(PDFobj obj, Font font, String baseFont, bool[] kept) {
         obj.dict.Add("<<");
         obj.dict.Add("/Type");
         obj.dict.Add("/Font");
         obj.dict.Add("/Subtype");
         obj.dict.Add("/CIDFontType" + (font.cff ? "0" : "2"));
         obj.dict.Add("/BaseFont");
-        obj.dict.Add("/" + font.name);
+        obj.dict.Add("/" + baseFont);
         obj.dict.Add("/CIDSystemInfo");
         obj.dict.Add("<<");
         obj.dict.Add("/Registry");
@@ -244,23 +227,12 @@ class FontObjects {
         // The width of the glyphs past the /W array: those past the advance
         // widths, which have the width of the last one.
         obj.dict.Add("/DW");
-        obj.dict.Add(((int) Math.Round(k * font.advanceWidth[font.advanceWidth.Length - 1], MidpointRounding.AwayFromZero)).ToString(CultureInfo.InvariantCulture));
+        obj.dict.Add(((int) Math.Round(k * Convert.ToSingle(font.advanceWidth[font.advanceWidth.Length - 1]), MidpointRounding.AwayFromZero)).ToString(CultureInfo.InvariantCulture));
         obj.dict.Add("/W");
-        obj.dict.Add("[");
-        obj.dict.Add("0");
-        obj.dict.Add("[");
-        foreach (int width in font.advanceWidth) {
-            obj.dict.Add(((int) Math.Round(k * width, MidpointRounding.AwayFromZero)).ToString(CultureInfo.InvariantCulture));
-        }
-        obj.dict.Add("]");
-        obj.dict.Add("]");
-
+        obj.dict.Add(FontWriter.WidthsArray(font, kept));
         obj.dict.Add("/CIDToGIDMap");
         obj.dict.Add("/Identity");
         obj.dict.Add(">>");
-        obj.number = objects.Count + 1;
-        objects.Add(obj);
-        font.cidFontDictObjNumber = obj.number;
     }
 }   // End of FontObjects.cs
 }   // End of namespace PDFjet.NET

@@ -24,14 +24,22 @@ class OpenTypeFont {
         pdf.fonts.append(font)
     }
 
-    // Adds the font to the objects of an existing PDF, with its font program
-    // whole.
+    // Adds the font to the objects of an existing PDF; its program is written
+    // when the objects are added to the PDF, a subset of the glyphs drawn.
     internal static func register(
             _ objects: inout [PDFobj], _ font: Font, _ stream: InputStream) throws {
         let otf = try OTF(stream)
         setData(font, otf)
-        font.uncompressedSize = otf.buf.count
-        FontObjects.register(&objects, font, otf.compress())
+        let program = Subset.Program()
+        if otf.cff {
+            program.font = Array(otf.buf[otf.cffOff!..<(otf.cffOff! + otf.cffLen!)])
+            program.cff = true
+            program.forbidden = otf.fsType & 0x0100 != 0
+        } else {
+            program.font = otf.buf
+        }
+        font.program = program
+        FontObjects.register(&objects, font)
     }
 
     // Gives the font the name, the metrics and the character map of the

@@ -3452,6 +3452,7 @@ final public class PDF {
         }
         checkObjects(objects);
         this.pagesObjNumber = Integer.parseInt(pagesObject.dict.get(0));
+        FontObjects.complete(objects);
         addObjectsToPDF(objects);
     }
 
@@ -3877,6 +3878,7 @@ final public class PDF {
         Set<Integer> numbers = new HashSet<Integer>();
 
         checkObjects(objects);
+        FontObjects.complete(objects);
         List<PDFobj> pages = getPageObjects(objects);
         for (PDFobj page : pages) {
             PDFobj resObj = page.getResourcesObject(objects);

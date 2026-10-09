@@ -5,6 +5,7 @@
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 using System;
+using System.Globalization;
 using System.Text;
 using System.Collections.Generic;
 
@@ -84,58 +85,7 @@ class FontWriter {
             }
         }
 
-        StringBuilder sb = new StringBuilder();
-
-        sb.Append("/CIDInit /ProcSet findresource begin\n");
-        sb.Append("12 dict begin\n");
-        sb.Append("begincmap\n");
-        sb.Append("/CIDSystemInfo <</Registry (Adobe) /Ordering (Identity) /Supplement 0>> def\n");
-        sb.Append("/CMapName /Adobe-Identity def\n");
-        sb.Append("/CMapType 2 def\n");
-
-        sb.Append("1 begincodespacerange\n");
-        sb.Append("<0000> <FFFF>\n");
-        sb.Append("endcodespacerange\n");
-
-        List<String> list = new List<String>();
-        // A character the font does not contain is drawn with the .notdef
-        // glyph. PDF/UA requires every glyph to map to Unicode, so map it to
-        // the replacement character.
-        list.Add("<0000> <FFFD>\n");
-        StringBuilder buf = new StringBuilder();
-        int[] unicodeOf = UnicodeOfGlyphs(font.unicodeToGID);
-        for (int cid = 0; cid <= 0xffff; cid++) {
-            int gid = font.unicodeToGID[cid];
-            if (gid > 0 && unicodeOf[gid] == cid && (kept == null || (gid < kept.Length && kept[gid]))) {
-                buf.Append('<');
-                buf.Append(ToHexString(gid));
-                buf.Append("> <");
-                // A presentation form that the Bidi class puts in maps to the letters it stands for.
-                String letters = Bidi.LettersOf(cid);
-                if (letters == null) {
-                    buf.Append(ToHexString(cid));
-                } else {
-                    foreach (char ch in letters) {
-                        buf.Append(ToHexString(ch));
-                    }
-                }
-                buf.Append(">\n");
-                list.Add(buf.ToString());
-                buf.Length = 0;
-                if (list.Count == 100) {
-                    WriteListToBuffer(sb, list);
-                }
-            }
-        }
-        if (list.Count > 0) {
-            WriteListToBuffer(sb, list);
-        }
-
-        sb.Append("endcmap\n");
-        sb.Append("CMapName currentdict /CMap defineresource pop\n");
-        sb.Append("end\nend");
-
-        AddCompressedStream(pdf, Encoding.UTF8.GetBytes(sb.ToString()));
+        AddCompressedStream(pdf, Encoding.UTF8.GetBytes(ToUnicodeCMap(font, kept)));
         font.toUnicodeCMapObjNumber = pdf.GetObjNumber();
     }
 
@@ -203,38 +153,106 @@ class FontWriter {
         pdf.Append((int) Math.Round(k * Convert.ToSingle(font.advanceWidth[font.advanceWidth.Length - 1]), MidpointRounding.AwayFromZero));
         pdf.Append('\n');
 
-        if (kept == null) {
-            pdf.Append("/W [0[\n");
-            foreach (int width in font.advanceWidth) {
-                pdf.Append((int) Math.Round(k * Convert.ToSingle(width), MidpointRounding.AwayFromZero));
-                pdf.Append(' ');
-            }
-            pdf.Append("]]\n");
-        } else {
-            // Each run of kept glyphs: its first glyph and its widths.
-            pdf.Append("/W [");
-            int count = Math.Min(kept.Length, font.advanceWidth.Length);
-            for (int gid = 0; gid < count; gid++) {
-                if (!kept[gid]) {
-                    continue;
-                }
-                pdf.Append('\n');
-                pdf.Append(gid);
-                pdf.Append('[');
-                for (; gid < count && kept[gid]; gid++) {
-                    pdf.Append((int) Math.Round(k * Convert.ToSingle(font.advanceWidth[gid]), MidpointRounding.AwayFromZero));
-                    pdf.Append(' ');
-                }
-                pdf.Append(']');
-            }
-            pdf.Append("]\n");
-        }
+        pdf.Append("/W ");
+        pdf.Append(WidthsArray(font, kept));
+        pdf.Append('\n');
 
         pdf.Append("/CIDToGIDMap /Identity\n");
         pdf.Append(">>\n");
         pdf.EndObj();
 
         font.cidFontDictObjNumber = pdf.GetObjNumber();
+    }
+
+    // Returns the ToUnicode map of the font: of every glyph that has a
+    // character, or only of the glyphs kept, for a subset.
+    internal static String ToUnicodeCMap(Font font, bool[] kept) {
+        StringBuilder sb = new StringBuilder();
+
+        sb.Append("/CIDInit /ProcSet findresource begin\n");
+        sb.Append("12 dict begin\n");
+        sb.Append("begincmap\n");
+        sb.Append("/CIDSystemInfo <</Registry (Adobe) /Ordering (Identity) /Supplement 0>> def\n");
+        sb.Append("/CMapName /Adobe-Identity def\n");
+        sb.Append("/CMapType 2 def\n");
+
+        sb.Append("1 begincodespacerange\n");
+        sb.Append("<0000> <FFFF>\n");
+        sb.Append("endcodespacerange\n");
+
+        List<String> list = new List<String>();
+        // A character the font does not contain is drawn with the .notdef
+        // glyph. PDF/UA requires every glyph to map to Unicode, so map it to
+        // the replacement character.
+        list.Add("<0000> <FFFD>\n");
+        StringBuilder buf = new StringBuilder();
+        int[] unicodeOf = UnicodeOfGlyphs(font.unicodeToGID);
+        for (int cid = 0; cid <= 0xffff; cid++) {
+            int gid = font.unicodeToGID[cid];
+            if (gid > 0 && unicodeOf[gid] == cid && (kept == null || (gid < kept.Length && kept[gid]))) {
+                buf.Append('<');
+                buf.Append(ToHexString(gid));
+                buf.Append("> <");
+                // A presentation form that the Bidi class puts in maps to the letters it stands for.
+                String letters = Bidi.LettersOf(cid);
+                if (letters == null) {
+                    buf.Append(ToHexString(cid));
+                } else {
+                    foreach (char ch in letters) {
+                        buf.Append(ToHexString(ch));
+                    }
+                }
+                buf.Append(">\n");
+                list.Add(buf.ToString());
+                buf.Length = 0;
+                if (list.Count == 100) {
+                    WriteListToBuffer(sb, list);
+                }
+            }
+        }
+        if (list.Count > 0) {
+            WriteListToBuffer(sb, list);
+        }
+
+        sb.Append("endcmap\n");
+        sb.Append("CMapName currentdict /CMap defineresource pop\n");
+        sb.Append("end\nend");
+
+        return sb.ToString();
+    }
+
+    // Returns the /W array of the font: the widths of all its glyphs, or of
+    // each run of the glyphs kept, for a subset, its first glyph and its
+    // widths.
+    internal static String WidthsArray(Font font, bool[] kept) {
+        float k = 1000.0f / Convert.ToSingle(font.unitsPerEm);
+        StringBuilder sb = new StringBuilder();
+        if (kept == null) {
+            sb.Append("[0[\n");
+            foreach (int width in font.advanceWidth) {
+                sb.Append(((int) Math.Round(k * Convert.ToSingle(width), MidpointRounding.AwayFromZero)).ToString(CultureInfo.InvariantCulture));
+                sb.Append(' ');
+            }
+            sb.Append("]]");
+            return sb.ToString();
+        }
+        sb.Append('[');
+        int count = Math.Min(kept.Length, font.advanceWidth.Length);
+        for (int gid = 0; gid < count; gid++) {
+            if (!kept[gid]) {
+                continue;
+            }
+            sb.Append('\n');
+            sb.Append(gid.ToString(CultureInfo.InvariantCulture));
+            sb.Append('[');
+            for (; gid < count && kept[gid]; gid++) {
+                sb.Append(((int) Math.Round(k * Convert.ToSingle(font.advanceWidth[gid]), MidpointRounding.AwayFromZero)).ToString(CultureInfo.InvariantCulture));
+                sb.Append(' ');
+            }
+            sb.Append(']');
+        }
+        sb.Append(']');
+        return sb.ToString();
     }
 
     /// <summary>

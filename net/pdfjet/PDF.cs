@@ -3293,6 +3293,7 @@ public sealed class PDF {
         }
         CheckObjects(objects);
         this.pagesObjNumber = Int32.Parse(pagesObject.dict[0], CultureInfo.InvariantCulture);
+        FontObjects.Complete(objects);
         AddObjectsToPDF(objects);
     }
 
@@ -3716,6 +3717,7 @@ public sealed class PDF {
         List<PDFobj> resources = new List<PDFobj>();
         HashSet<Int32> numbers = new HashSet<Int32>();
         CheckObjects(objects);
+        FontObjects.Complete(objects);
         List<PDFobj> pages = GetPageObjects(objects);
         foreach (PDFobj page in pages) {
             PDFobj resObj = page.GetResourcesObject(objects);

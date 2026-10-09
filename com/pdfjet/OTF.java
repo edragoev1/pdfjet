@@ -8,7 +8,6 @@ package com.pdfjet;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.zip.*;
 
 /**
  * This class parses and extracts the data from TTF and OTF font files.
@@ -166,22 +165,6 @@ class OTF {
         if (fontName == null || !FontWriter.isFontName(fontName.getBytes(StandardCharsets.UTF_8))) {
             throw fontError("the font name");
         }
-    }
-
-    // Returns the font program as it is embedded, compressed: the CFF table
-    // of a font with CFF outlines, or else the whole font. It is compressed
-    // only for a font the PDF does not hold yet.
-    byte[] compress() throws IOException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try (DeflaterOutputStream dos =
-                 new DeflaterOutputStream(baos, new Deflater(Deflater.BEST_SPEED))) {
-            if (cff) {
-                dos.write(buf, cffOff, cffLen);
-            } else {
-                dos.write(buf);
-            }
-        }
-        return baos.toByteArray();
     }
 
     private void head(FontTable table) throws IOException {

@@ -3390,6 +3390,7 @@ public final class PDF {
             try refuse(message)
         }
         self.pagesObjNumber = number
+        FontObjects.complete(objects)
         addObjectsToPDF(objects)
     }
 
@@ -3806,6 +3807,7 @@ public final class PDF {
             fail(message)
             return
         }
+        FontObjects.complete(objects)
         var resources = [PDFobj]()
         var numbers = Set<Int>()
         let pages = getPageObjects(from: objects)

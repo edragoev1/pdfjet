@@ -6,32 +6,112 @@
  */
 package com.pdfjet;
 
-import com.pdfjet.encryption.*;
-import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 /**
- * The objects of a font added to an existing PDF, embedded whole.
+ * The objects of a font added to an existing PDF. They are numbered when the
+ * font is added, so that pages can refer to it, and filled in when the objects
+ * are added to the PDF, after the pages are drawn: the font program a subset
+ * of the glyphs drawn, as a font of a new PDF is at complete().
  */
 class FontObjects {
-    // Adds the font, whose font program is the compressed bytes, to the
-    // objects of an existing PDF.
-    static void register(List<PDFobj> objects, Font font, byte[] compressed) throws Exception {
-        embedFontFile(objects, font, compressed);
-        addFontDescriptorObject(objects, font);
-        addCIDFontDictionaryObject(objects, font);
-        addToUnicodeCMapObject(objects, font);
+    int metadata;   // The number of the font's metadata object
+    PDFobj file;
+    PDFobj descriptor;
+    PDFobj cidFont;
+    PDFobj toUnicode;
+    PDFobj type0;
 
-        // Type0 Font Dictionary
+    // Numbers the objects of the font, added to the objects of an existing
+    // PDF; the Type0 font, the one pages refer to, is the last.
+    static void register(List<PDFobj> objects, Font font) throws Exception {
+        FontObjects objs = new FontObjects();
+        objs.metadata = addMetadataObject(objects, font);
+        objs.file = appendEmptyObject(objects);
+        objs.descriptor = appendEmptyObject(objects);
+        objs.cidFont = appendEmptyObject(objects);
+        objs.toUnicode = appendEmptyObject(objects);
+        objs.type0 = appendEmptyObject(objects);
+        objs.type0.font = font;
+        font.fileObjNumber = objs.file.number;
+        font.fontDescriptorObjNumber = objs.descriptor.number;
+        font.cidFontDictObjNumber = objs.cidFont.number;
+        font.toUnicodeCMapObjNumber = objs.toUnicode.number;
+        font.objNumber = objs.type0.number;
+        font.objects = objs;
+    }
+
+    private static PDFobj appendEmptyObject(List<PDFobj> objects) {
         PDFobj obj = new PDFobj();
+        obj.number = objects.size() + 1;
+        objects.add(obj);
+        return obj;
+    }
+
+    // Fills in the objects of the fonts added to the objects, when the pages
+    // are drawn and the glyphs they use are known.
+    static void complete(List<PDFobj> objects) throws Exception {
+        for (PDFobj obj : objects) {
+            if (obj.font != null) {
+                complete(obj.font);
+                obj.font = null;
+            }
+        }
+    }
+
+    // Fills in the objects of the font: its program, a subset of the glyphs
+    // drawn unless it is to be whole, the descriptor and the CID font under the
+    // name of the subset, the widths and the ToUnicode map of the glyphs it
+    // keeps, and the Type0 font.
+    private static void complete(Font font) throws Exception {
+        FontObjects objs = font.objects;
+        byte[] program = Subset.embeddedProgram(font);
+        String baseFont = font.baseFont;
+
+        byte[] compressed = Compressor.deflate(program);
+        PDFobj obj = objs.file;
+        obj.dict.add("<<");
+        obj.dict.add("/Metadata");
+        obj.dict.add(String.valueOf(objs.metadata));
+        obj.dict.add("0");
+        obj.dict.add("R");
+        obj.dict.add("/Filter");
+        obj.dict.add("/FlateDecode");
+        obj.dict.add("/Length");
+        obj.dict.add(String.valueOf(compressed.length));
+        if (font.cff) {
+            obj.dict.add("/Subtype");
+            obj.dict.add("/CIDFontType0C");
+        } else {
+            obj.dict.add("/Length1");
+            obj.dict.add(String.valueOf(program.length));
+        }
+        obj.dict.add(">>");
+        obj.setStream(compressed);
+
+        completeFontDescriptor(objs.descriptor, font, baseFont);
+        completeCIDFontDictionary(objs.cidFont, font, baseFont, font.kept);
+
+        byte[] cmap = Compressor.deflate(
+                FontWriter.toUnicodeCMap(font, font.kept).getBytes(StandardCharsets.UTF_8));
+        obj = objs.toUnicode;
+        obj.dict.add("<<");
+        obj.dict.add("/Filter");
+        obj.dict.add("/FlateDecode");
+        obj.dict.add("/Length");
+        obj.dict.add(String.valueOf(cmap.length));
+        obj.dict.add(">>");
+        obj.setStream(cmap);
+
+        obj = objs.type0;
         obj.dict.add("<<");
         obj.dict.add("/Type");
         obj.dict.add("/Font");
         obj.dict.add("/Subtype");
         obj.dict.add("/Type0");
         obj.dict.add("/BaseFont");
-        obj.dict.add("/" + font.name);
+        obj.dict.add("/" + baseFont);
         obj.dict.add("/Encoding");
         obj.dict.add("/Identity-H");
         obj.dict.add("/DescendantFonts");
@@ -45,9 +125,10 @@ class FontObjects {
         obj.dict.add("0");
         obj.dict.add("R");
         obj.dict.add(">>");
-        obj.number = objects.size() + 1;
-        objects.add(obj);
-        font.objNumber = obj.number;
+
+        // The program and the objects are no longer needed.
+        font.program = null;
+        font.objects = null;
     }
 
     static int addMetadataObject(List<PDFobj> objects, Font font) throws Exception {
@@ -87,43 +168,12 @@ class FontObjects {
         return obj.number;
     }
 
-    private static void embedFontFile(
-            List<PDFobj> objects,
-            Font font,
-            byte[] compressed) throws Exception {
-        int metadataObjNumber = addMetadataObject(objects, font);
-
-        PDFobj obj = new PDFobj();
-        obj.dict.add("<<");
-        obj.dict.add("/Metadata");
-        obj.dict.add(String.valueOf(metadataObjNumber));
-        obj.dict.add("0");
-        obj.dict.add("R");
-        obj.dict.add("/Filter");
-        obj.dict.add("/FlateDecode");
-        obj.dict.add("/Length");
-        obj.dict.add(String.valueOf(compressed.length));
-        if (font.cff) {
-            obj.dict.add("/Subtype");
-            obj.dict.add("/CIDFontType0C");
-        } else {
-            obj.dict.add("/Length1");
-            obj.dict.add(String.valueOf(font.uncompressedSize));
-        }
-        obj.dict.add(">>");
-        obj.setStream(compressed);
-        obj.number = objects.size() + 1;
-        objects.add(obj);
-        font.fileObjNumber = obj.number;
-    }
-
-    private static void addFontDescriptorObject(List<PDFobj> objects, Font font) {
-        PDFobj obj = new PDFobj();
+    private static void completeFontDescriptor(PDFobj obj, Font font, String fontName) {
         obj.dict.add("<<");
         obj.dict.add("/Type");
         obj.dict.add("/FontDescriptor");
         obj.dict.add("/FontName");
-        obj.dict.add("/" + font.name);
+        obj.dict.add("/" + fontName);
         obj.dict.add("/FontFile" + (font.cff ? "3" : "2"));
         obj.dict.add(String.valueOf(font.fileObjNumber));
         obj.dict.add("0");
@@ -148,83 +198,17 @@ class FontObjects {
         obj.dict.add("/StemV");
         obj.dict.add("79");
         obj.dict.add(">>");
-        obj.number = objects.size() + 1;
-        objects.add(obj);
-        font.fontDescriptorObjNumber = obj.number;
     }
 
-    private static void addToUnicodeCMapObject(
-            List<PDFobj> objects, Font font) throws Exception {
-        StringBuilder sb = new StringBuilder();
-
-        sb.append("/CIDInit /ProcSet findresource begin\n");
-        sb.append("12 dict begin\n");
-        sb.append("begincmap\n");
-        sb.append("/CIDSystemInfo <</Registry (Adobe) /Ordering (Identity) /Supplement 0>> def\n");
-        sb.append("/CMapName /Adobe-Identity def\n");
-        sb.append("/CMapType 2 def\n");
-
-        sb.append("1 begincodespacerange\n");
-        sb.append("<0000> <FFFF>\n");
-        sb.append("endcodespacerange\n");
-
-        List<String> list = new ArrayList<String>();
-        // A character the font does not contain is drawn with the .notdef
-        // glyph. PDF/UA requires every glyph to map to Unicode, so map it to
-        // the replacement character.
-        list.add("<0000> <FFFD>\n");
-        StringBuilder buf = new StringBuilder();
-        int[] unicodeOf = FontWriter.unicodeOfGlyphs(font.unicodeToGID);
-        for (int cid = 0; cid <= 0xffff; cid++) {
-            int gid = font.unicodeToGID[cid];
-            if (gid > 0 && unicodeOf[gid] == cid) {
-                buf.append('<');
-                buf.append(FontWriter.toHexString(gid));
-                buf.append("> <");
-                // A presentation form that the Bidi class puts in maps to the letters it stands for.
-                String letters = Bidi.lettersOf(cid);
-                if (letters == null) {
-                    buf.append(FontWriter.toHexString(cid));
-                } else {
-                    for (int i = 0; i < letters.length(); i++) {
-                        buf.append(FontWriter.toHexString(letters.charAt(i)));
-                    }
-                }
-                buf.append(">\n");
-                list.add(buf.toString());
-                buf.setLength(0);
-                if (list.size() == 100) {
-                    FontWriter.writeListToBuffer(sb, list);
-                }
-            }
-        }
-        if (list.size() > 0) {
-            FontWriter.writeListToBuffer(sb, list);
-        }
-        sb.append("endcmap\n");
-        sb.append("CMapName currentdict /CMap defineresource pop\n");
-        sb.append("end\nend");
-
-        PDFobj obj = new PDFobj();
-        obj.dict.add("<<");
-        obj.dict.add("/Length");
-        obj.dict.add(String.valueOf(sb.length()));
-        obj.dict.add(">>");
-        obj.setStream(sb.toString().getBytes(StandardCharsets.UTF_8));
-        obj.number = objects.size() + 1;
-        objects.add(obj);
-        font.toUnicodeCMapObjNumber = obj.number;
-    }
-
-    private static void addCIDFontDictionaryObject(List<PDFobj> objects, Font font) {
-        PDFobj obj = new PDFobj();
+    private static void completeCIDFontDictionary(
+            PDFobj obj, Font font, String baseFont, boolean[] kept) {
         obj.dict.add("<<");
         obj.dict.add("/Type");
         obj.dict.add("/Font");
         obj.dict.add("/Subtype");
         obj.dict.add("/CIDFontType" + (font.cff ? "0" : "2"));
         obj.dict.add("/BaseFont");
-        obj.dict.add("/" + font.name);
+        obj.dict.add("/" + baseFont);
         obj.dict.add("/CIDSystemInfo");
         obj.dict.add("<<");
         obj.dict.add("/Registry");
@@ -239,25 +223,15 @@ class FontObjects {
         obj.dict.add("0");
         obj.dict.add("R");
 
-        final float k = 1000.0f / Float.valueOf(font.unitsPerEm);
+        final float k = 1000.0f / (float) font.unitsPerEm;
         // The width of the glyphs past the /W array: those past the advance
         // widths, which have the width of the last one.
         obj.dict.add("/DW");
-        obj.dict.add(String.valueOf(Math.round(k * font.advanceWidth[font.advanceWidth.length - 1])));
+        obj.dict.add(String.valueOf(Math.round(k * (float) font.advanceWidth[font.advanceWidth.length - 1])));
         obj.dict.add("/W");
-        obj.dict.add("[");
-        obj.dict.add("0");
-        obj.dict.add("[");
-        for (int width : font.advanceWidth) {
-            obj.dict.add(String.valueOf(Math.round(k * width)));
-        }
-        obj.dict.add("]");
-        obj.dict.add("]");
+        obj.dict.add(FontWriter.widthsArray(font, kept));
         obj.dict.add("/CIDToGIDMap");
         obj.dict.add("/Identity");
         obj.dict.add(">>");
-        obj.number = objects.size() + 1;
-        objects.add(obj);
-        font.cidFontDictObjNumber = obj.number;
     }
 }   // End of FontObjects.java

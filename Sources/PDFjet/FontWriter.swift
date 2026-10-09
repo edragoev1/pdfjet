@@ -79,6 +79,14 @@ class FontWriter {
             }
         }
 
+        addCompressedStream(pdf, Array(toUnicodeCMap(font, kept).utf8))
+
+        font.toUnicodeCMapObjNumber = pdf.getObjNumber()
+    }
+
+    // Returns the ToUnicode map of the font: of every glyph that has a
+    // character, or only of the glyphs kept, for a subset.
+    static func toUnicodeCMap(_ font: Font, _ kept: [Bool]?) -> String {
         var sb = String()
         sb.append("/CIDInit /ProcSet findresource begin\n")
         sb.append("12 dict begin\n")
@@ -128,9 +136,47 @@ class FontWriter {
         sb.append("CMapName currentdict /CMap defineresource pop\n")
         sb.append("end\nend")
 
-        addCompressedStream(pdf, Array(sb.utf8))
+        return sb
+    }
 
-        font.toUnicodeCMapObjNumber = pdf.getObjNumber()
+    // Returns the /W array of the font: the widths of all its glyphs, or of
+    // each run of the glyphs kept, for a subset, its first glyph and its
+    // widths.
+    static func widthsArray(_ font: Font, _ kept: [Bool]?) -> String {
+        var k: Float = 1.0
+        if font.unitsPerEm != 1000 {
+            k = Float(1000.0) / Float(font.unitsPerEm)
+        }
+        var buffer = String()
+        guard let kept = kept else {
+            buffer.append("[0[\n")
+            for i in 0..<font.advanceWidth.count {
+                buffer.append(String(UInt16(round(k * Float(font.advanceWidth[i])))))
+                buffer.append(" ")
+            }
+            buffer.append("]]")
+            return buffer
+        }
+        buffer.append("[")
+        let count = min(kept.count, font.advanceWidth.count)
+        var gid = 0
+        while gid < count {
+            if !kept[gid] {
+                gid += 1
+                continue
+            }
+            buffer.append("\n")
+            buffer.append(String(gid))
+            buffer.append("[")
+            while gid < count && kept[gid] {
+                buffer.append(String(UInt16(round(k * Float(font.advanceWidth[gid])))))
+                buffer.append(" ")
+                gid += 1
+            }
+            buffer.append("]")
+        }
+        buffer.append("]")
+        return buffer
     }
 
     // Writes a stream object of the data, compressed.
@@ -190,38 +236,9 @@ class FontWriter {
         pdf.append("/DW ")
         pdf.append(Int32(round(k * Float(font.advanceWidth[font.advanceWidth.count - 1]))))
         pdf.append(Token.newline)
-        var buffer = String()
-        if let kept = kept {
-            // Each run of kept glyphs: its first glyph and its widths.
-            buffer.append("/W [")
-            let count = min(kept.count, font.advanceWidth.count)
-            var gid = 0
-            while gid < count {
-                if !kept[gid] {
-                    gid += 1
-                    continue
-                }
-                buffer.append("\n")
-                buffer.append(String(gid))
-                buffer.append("[")
-                while gid < count && kept[gid] {
-                    buffer.append(String(UInt16(round(k * Float(font.advanceWidth[gid])))))
-                    buffer.append(" ")
-                    gid += 1
-                }
-                buffer.append("]")
-            }
-            buffer.append("]\n")
-            pdf.append(buffer)
-        } else {
-            pdf.append("/W [0[\n")
-            for i in 0..<font.advanceWidth.count {
-                buffer.append(String(UInt16(round(k * Float(font.advanceWidth[i])))))
-                buffer.append(" ")
-            }
-            pdf.append(buffer)
-            pdf.append("]]\n")
-        }
+        pdf.append("/W ")
+        pdf.append(widthsArray(font, kept))
+        pdf.append(Token.newline)
 
         pdf.append("/CIDToGIDMap /Identity\n")
         pdf.append(Token.endDictionary)

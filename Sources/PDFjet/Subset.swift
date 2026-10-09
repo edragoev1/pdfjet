@@ -115,24 +115,10 @@ class Subset {
         }
 
         let program = font.program!
-        font.baseFont = font.name
-        var data = program.font
+        let data = embeddedProgram(font)
         var compressed = [UInt8]()
-        var length = data.count
-        let subset = (program.whole || program.forbidden) ? nil :
-                (program.cff ? try? CFFSubset.subset(data, program.used) : try? subsetTrueType(data, program.used))
-        if let (subset, kept) = subset {
-            FlateEncode(&compressed, subset)
-            length = subset.count
-            font.kept = kept
-            font.baseFont = subsetTag(font.checksum, kept) + "+" + font.name
-        } else {    // Whole
-            if program.cff, let (whole, _) = try? CFFSubset.subset(data, nil) {
-                // Written again for the identity charset of a CID-keyed font.
-                data = whole
-            }
-            FlateEncode(&compressed, data)
-        }
+        FlateEncode(&compressed, data)
+        let length = data.count
 
         let metadataObjNumber = pdf.addMetadataObject(font.info, true)
         let encrypted = pdf.encrypted(compressed)
@@ -162,6 +148,28 @@ class Subset {
         pdf.endObj()
         font.fileObjNumber = pdf.getObjNumber()
         return font.kept
+    }
+
+    /// Returns the font program to embed, a subset unless it is to be whole,
+    /// and sets the name of the font, with the tag of a subset, and the glyphs
+    /// the subset keeps, nil for a whole font.
+    static func embeddedProgram(_ font: Font) -> [UInt8] {
+        let program = font.program!
+        let data = program.font
+        let subset = (program.whole || program.forbidden) ? nil :
+                (program.cff ? try? CFFSubset.subset(data, program.used) : try? subsetTrueType(data, program.used))
+        if let (subset, kept) = subset {
+            font.kept = kept
+            font.baseFont = subsetTag(font.checksum, kept) + "+" + font.name
+            return subset
+        }
+        font.kept = nil
+        font.baseFont = font.name
+        if program.cff, let (whole, _) = try? CFFSubset.subset(data, nil) {
+            // Written again for the identity charset of a CID-keyed font.
+            return whole
+        }
+        return data
     }
 
     /// Writes, for PDF/A-1, which asks it of a subset, the CIDSet of the glyphs

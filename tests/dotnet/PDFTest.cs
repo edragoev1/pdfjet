@@ -552,7 +552,7 @@ public class PDFTest {
         });
     }
 
-    private static byte[] PdfWithObjects(string[] objects) {
+    internal static byte[] PdfWithObjects(string[] objects) {
         StringBuilder sb = new StringBuilder("%PDF-1.4\n");
         int[] offsets = new int[objects.Length];
         for (int i = 0; i < objects.Length; i++) {

@@ -28,6 +28,7 @@ public class PDFobj {
     internal DecodeBudget budget;  // What the streams of the PDF this was read from may still decode to
     internal int gsNumber = -1;
     internal bool root;            // The catalog that the trailer's /Root names
+    internal Font font;            // A font added to the objects, filled in when they are added to a PDF
 
     /// <summary>
     /// Creates an object with an empty dictionary.

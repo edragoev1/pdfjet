@@ -29,6 +29,7 @@ public class Font {
     var cidSetObjNumber = 0             // The CIDSet of a subset in PDF/A-1
     var baseFont = ""                   // The name it is embedded under, with the tag of a subset
     var program: Subset.Program?        // A TrueType font program, until complete()
+    var objects: FontObjects?           // Of a font added to an existing PDF, until they are added
     var kept: [Bool]?                   // The glyphs its subset keeps
 
     // Font attributes
@@ -62,7 +63,6 @@ public class Font {
     // no anchor, for each class of marks.
     var baseAnchors: [[Int: [Int]]]?
     var cff: Bool = false
-    var uncompressedSize: Int?
     var metrics: [[Int16]]?
     // Tells the font program this font was read from apart from every other,
     // so that a PDF embeds each one once.
@@ -262,7 +262,9 @@ public class Font {
     }
 
     /// Creates a font from an OpenType or TrueType font, a .otf or a .ttf, and
-    /// adds it to the objects of an existing PDF, embedded whole.
+    /// adds it to the objects of an existing PDF. It is embedded as a subset of
+    /// the glyphs drawn, when the objects are added to the PDF, unless
+    /// setSubset(false) keeps it whole.
     public init(_ objects: inout [PDFobj], _ stream: InputStream) throws {
         let bytes = try Content.getFromStream(stream)
         try OpenTypeFont.register(&objects, self, InputStream(data: Data(bytes)))
@@ -405,7 +407,8 @@ public class Font {
     /// .ttf or a .otf. A font whose license does not allow subsetting, by the
     /// fsType of its OS/2 table, is embedded whole. Fonts read from one file are
     /// one font program in the PDF: kept whole for one, the program is whole for
-    /// all of them. It must be called before complete().
+    /// all of them. It must be called before complete(), and for a font added to
+    /// the objects of an existing PDF, before the objects are added to the PDF.
     ///
     /// - Parameter subset: false to embed the font whole.
     ///

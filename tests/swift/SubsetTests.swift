@@ -217,4 +217,61 @@ import Testing
         want[36 / 8] |= UInt8(0x80 >> (36 % 8))
         #expect(bits == want)
     }
+
+    // Adds the font to the objects of a PDF, draws a word with it on the page,
+    // and returns the objects of the PDF written.
+    private func subsetInExistingPDF(_ path: String, _ subset: Bool) throws -> [PDFobj] {
+        var objects = try TestSupport.read(TestSupport.pdfWithObjects([
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << >> >>"]))
+        let font = try Font(&objects, TestSupport.open(path))
+        font.setSubset(subset)
+        let memory = MemoryPDF()
+        let page = Page(memory.pdf, memory.pdf.getPageObjects(from: objects)[0])
+        page.addResource(font, &objects)
+        page.drawString(font, nil, 12, "Hello", 72, 72)
+        page.complete(&objects)
+        try memory.pdf.addObjects(objects)
+        try memory.pdf.complete()
+        return try TestSupport.read(memory.bytes)
+    }
+
+    // Returns the /BaseFont of the Type0 font.
+    private func subsetFontName(_ objects: [PDFobj]) throws -> String {
+        let type0 = try #require(objects.first { $0.getValue("/Subtype") == "/Type0" })
+        return type0.getValue("/BaseFont")
+    }
+
+    @Test func subsetOfATrueTypeFontAddedToAnExistingPDF() throws {
+        let path = "fonts/NotoSans/NotoSans-Regular.ttf"
+        let whole = try fontBytes(path).count
+        let objects = try subsetInExistingPDF(path, true)
+        let name = try subsetFontName(objects)
+        #expect(name.range(of: "^/[A-Z]{6}\\+NotoSans-Regular$", options: .regularExpression) != nil, "\(name)")
+        #expect(TestSupport.findObject(objects, "/FontName")?.getValue("/FontName") == name)
+        #expect(TestSupport.findObject(objects, "/CIDToGIDMap")?.getValue("/BaseFont") == name)
+        let file = try #require(TestSupport.findObject(objects, "/Length1"))
+        let length1 = Int(file.getValue("/Length1")) ?? 0
+        #expect(length1 > 0 && length1 < whole, "/Length1 \(length1)")
+        #expect(file.getData().count == length1)
+        let cmap = try #require(objects.map { TestSupport.latin1($0.getData()) }.first { $0.hasPrefix("/CIDInit") })
+        // The codespace range, .notdef and H, e, l, o
+        #expect(cmap.components(separatedBy: "> <").count - 1 == 6)
+    }
+
+    @Test func subsetOfACFFFontAddedToAnExistingPDF() throws {
+        let objects = try subsetInExistingPDF("fonts/IBMPlexSans/IBMPlexSans-Regular.otf", true)
+        let name = try subsetFontName(objects)
+        #expect(name.range(of: "^/[A-Z]{6}\\+IBMPlexSans$", options: .regularExpression) != nil, "\(name)")
+        #expect(TestSupport.findObject(objects, "/FontFile3") != nil)
+    }
+
+    @Test func setSubsetFalseKeepsAFontAddedToAnExistingPDFWhole() throws {
+        let path = "fonts/NotoSans/NotoSans-Regular.ttf"
+        let objects = try subsetInExistingPDF(path, false)
+        #expect(try subsetFontName(objects) == "/NotoSans-Regular")
+        let length1 = Int(TestSupport.findObject(objects, "/Length1")?.getValue("/Length1") ?? "")
+        #expect(try length1 == fontBytes(path).count)
+    }
 }

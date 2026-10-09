@@ -80,11 +80,11 @@ testing fonts with CFF outlines". The JP line metrics and the TC widths of
 the `.ttf` accepted ("Go with 1, accept both"). Three stream files stay in
 `tests/data/stream-fonts` for the tests of the reader. Still to do: PDFjet
 Forms on the `.ttf` files (pdfjet-server, its own copies of the fonts, when it
-moves to 9.0.5), and a font added to an existing PDF is embedded whole, which
+moves to 9.0.5). A font added to an existing PDF was embedded whole, which
 made Examples 37 and 50 larger (124 KB to 172 KB, 170 KB to 264 KB): they
 use IBM Plex Sans's .otf instead (the owner, 9 October 2026), whose CFF is
-embedded, 127 KB and 177 KB. A subset there needs a completion of the
-objects, a maybe for v9.1.
+embedded, 127 KB and 177 KB; since the same day it is a subset there too
+(72 KB and 68 KB), see below.
 
 **CFF subsetting: done after all, on 9 October 2026** (the owner: "Source Han
 Sans JP <- aparently this font is very popular! We have add subsetting for
@@ -678,7 +678,8 @@ detailed in the list below:
   took the added space into account. Then the text test: `mutool trace`
   shows a space at the end of each wrapped line and between the words of
   justified rows, and NVDA reads Example_01 and 52 with fewer pauses.
-- ⬜ **The language of text in a TextColumn reaches the structure tree**
+- ⬜ **For 9.0.5, now (the owner, 9 October 2026: "if there is anything
+  else we do it now").** **The language of text in a TextColumn reaches the structure tree**
   (the NVDA pass of 7 October 2026: Example_01's Greek was spelled letter
   by letter and its Bulgarian skipped, as no block said its language; fixed
   in Example_01 with TextBlock.setLanguage). Two gaps of the library remain,
@@ -690,7 +691,10 @@ detailed in the list below:
   into the /Lang of its structure element; and addCJKParagraph(font, text,
   language), or a setLanguage on Paragraph, an API addition, so in v9.1.
   Then Example_29 and 44 set theirs (el; zh-Hans).
-- ⬜ Maybe, if a customer asks: **embedded look-alikes of the core fonts**
+- ✖️ Not doing (9 October 2026): no more bundled fonts, the owner's word the
+  same day; a customer who needs Helvetica's widths in PDF/UA loads
+  Liberation Sans or the like, as any .ttf, and it is subset. As it was:
+  Maybe, if a customer asks: **embedded look-alikes of the core fonts**
   (the owner, 7 October 2026). The 14 core fonts stay, not deprecated: they
   need no font files, make the smallest documents (Helvetica about 3 KB, a
   page in embedded Plex about 100 KB), and are the most used line of PDFjet's
@@ -736,7 +740,9 @@ detailed in the list below:
   IBM Plex Sans SC and TC, and Example_04, in place of its greeting in the
   Adobe CJK fonts, the Japanese and Korean, with IBM Plex Sans JP and KR;
   Example_44 with IBM Plex Sans SC; no example uses the Adobe CJK fonts.
-- ⬜ Maybe: **IBM Plex Sans SC and TC subsets**, every weight, made on 7
+- ✖️ Obsolete since 9 October 2026: 9.0.5 subsets every font as the PDF is
+  written, so Example_02 embeds subsets with no prebuilt files. As it was:
+  Maybe: **IBM Plex Sans SC and TC subsets**, every weight, made on 7
   October 2026 and kept in
   `~/Projects/pdfjet-pro-private/plex-subsets/`, not on GitHub (the owner:
   "for later use / maybe"), with a README of how they were made: about
@@ -1435,8 +1441,8 @@ no history; the registries count, and are where developers look.
   the branch `markdown` and merged into master on **Sep 22**, sixteen days
   before the Oct 8 date it was given, with its tests, its fuzz target,
   Example_54 and a booklet snippet in each port. The branch is deleted.
-  - It is called Markdown, not CommonMark: CommonMark's 652 examples are the
-    goal of v9.1 below.
+  - It is called Markdown, not CommonMark: the practical subset, and full
+    CommonMark is not planned (the owner, 9 October 2026).
   - The merge holds the checks that hold at the tag: the unit tests of the
     four ports, and `check-examples.sh` over the 54 examples and the 59
     snippet PDFs.
@@ -1786,31 +1792,19 @@ no history; the registries count, and are where developers look.
 
 ## Was v9.1: fixes for 9.0.x, features for PDFjet Pro or not at all (no v9.1, 9 October 2026)
 
-- ➡️ Moved to PDFjet Pro on 9 October 2026, as a big maybe (the owner):
-  ~/Projects/pdfjet-pro-private/TODO.md, private. **Subsets of the fonts
-  added to an existing PDF.**
+- ✅ Done 9 October 2026, for 9.0.5, in the MIT core (the owner: "build it
+  for v9.0.5"), after a few hours as a big maybe for PDFjet Pro. **Subsets of
+  the fonts added to an existing PDF.** `new Font(objects, stream)` numbers
+  the font's objects and leaves them empty; `addObjects` and
+  `addResourceObjects` fill them in, after the pages are drawn, with the
+  subsetter and the ToUnicode and widths code of a new PDF, in the four
+  ports, no API change. Examples 37 and 50 from 127 to 72 KB and from 177 to
+  68 KB, pixel for pixel the same pages.
 
-- ⬜ **Maybe, for a v9.1 if there is one, in the MIT core, not PDFjet Pro**
-  (the owner, 9 October 2026: "3000 lines is a lot. Not having it is fine.
-  This is like we deciding we need fully compliant BIDI"): the practical
-  subset of today covers what documents use, as the Bidi of today covers
-  what text needs without the whole of UAX #9. CommonMark itself, in the four ports, where v9.0.3 has the practical
-  subset above: a parser written from the spec, with the GitHub tables,
-  strikethrough and task lists. The renderer is written and tagged for
-  PDF/UA already, so what is left is the parser and the 652 examples of the
-  spec.
-  - The parser is about 2,500 to 3,000 lines a port, 1,200 to 1,500 of them
-    for the blocks and as many for the inlines; the GitHub extensions add
-    800 to 1,200, the renderer 800 to 1,500, and the table of the 2,125
-    named entities is data, generated once for the four ports.
-  - The check is the 652 examples of the CommonMark spec, from its JSON
-    file, run in every port, as the examples are compared across the ports.
-  - The hard parts: the emphasis algorithm, with its flanking rules and
-    the rule of 3; lazy continuation lines in block quotes and lists; tight
-    and loose lists; the seven kinds of HTML block; and link labels matched
-    with Unicode case folding.
-  - About a week for the first port to pass the spec, and a few days for
-    each of the others; the renderer is done.
+- ✖️ Not doing (the owner, 9 October 2026: "Remove CommonMark from v9.1 -
+  we are not doing it"): full CommonMark. The practical Markdown subset of
+  v9.0.3 is what PDFjet has, as its Bidi covers what text needs without the
+  whole of UAX #9.
 - ✅ Done for 9.0.5 (9cc3afee, 8 October 2026). Maybe: the EXIF orientation of a JPEG, in the four ports. A photo
   taken with a phone is stored as the sensor saw it, with a tag that says
   how to turn it, and is drawn sideways or upside down. The orientation is
@@ -1901,7 +1895,10 @@ no history; the registries count, and are where developers look.
   opaque PNG could inflate them a piece at a time, not whole: in Go the
   buffer grows to about twice the rows, 250 MB for 108 MB of them, which
   the image does not need, as its IDAT data is embedded as it is.
-- ⬜ The decoded samples of an image read from a PDF, in the four ports:
+- ✖️ Not doing (9 October 2026, the owner: "v9.1 should have only 1 item
+  left - the object stream"): it stays in pdfjet-server, which does it
+  already, as SaaS changes go there. As it was:
+  The decoded samples of an image read from a PDF, in the four ports:
   the colors of an /Indexed image, as `GetData` gives its indexes, the
   stream being its indexes. pdfjet-server expands the palette to RGB of
   eight bits itself (`indexedToRGB`, xobject.go), for the fingerprint of an
@@ -1969,7 +1966,10 @@ no history; the registries count, and are where developers look.
   .ttf.stream (Source Serif 4, JetBrains Mono) has always held the whole
   font. Measured on 5 October 2026: PDFjet Forms' 12 weights of IBM Plex
   Sans are 575 KB in the older format against 979 KB, 403 KB less.
-- ⬜ Maybe: a faster Deflate for Swift, which has its own, written in
+- ✖️ Closed 9 October 2026: the owner asked for a quick try only, no
+  rewrite ("the compression ratio is also fine"), done the same day (17.6 to
+  16.6 ms on the text benchmark). As it was:
+  Maybe: a faster Deflate for Swift, which has its own, written in
   Swift. After the review of Sep 28 it is Swift's main cost for a PNG that
   is decoded and compressed again, one with transparency: about 500 ms for
   a photo of 3000 by 3993 pixels. Its time goes to the work per byte, the
@@ -1977,34 +1977,9 @@ no history; the registries count, and are where developers look.
   its one setting, the chain of 32, barely changes it; a faster one needs a
   design of its own, as zlib's levels 1 to 3 have. A large job, worth it
   if a customer draws such images from Swift.
-- ⬜ Maybe: Andika in pdfjet-fonts, its four styles, as .ttf files (no .stream files since 9 October 2026).
-  **The owner, 9 October 2026: not in PDFjet Forms** (a fourth family is a good deal of work: the
-  .ttf, the .woff2 and the metrics, the 32 languages checked, and only four styles where the
-  editor offers twelve weights); in the editor it would have been "Andika", as the other families
-  are named. For the library, still a maybe, leaning no: "people that care about this can find it
-  and use it. It would be stupid to try to bundle all the fonts.google in the product." OEM12x20,
-  the item before this one, was taken out the same day.
-  (SIL, https://software.sil.org/andika/, SIL Open Font License, as IBM Plex
-  and Noto). A font designed for legibility: I, l and 1 clearly apart, b, d,
-  p and q not mirrors of one another, single-storey a and g, open shapes and
-  generous spacing, and Latin, Cyrillic, Greek and phonetic letters. Pleasant
-  to read for anyone, so a candidate for a default reading font, of Forms and
-  of the booklet, not only an option. Where it would add value to PDFjet:
-  1. The accessibility story. PDFjet sells PDF/UA, and a font designed for
-     legibility is the natural companion. Tagging makes a document readable
-     by a screen reader; Andika makes it readable by people who read it
-     themselves. "Accessible structure and an accessible font" is a stronger
-     pitch than PDF/UA alone.
-  2. PDFjet Forms. Forms for public services, schools and healthcare are
-     exactly where clear letters matter. It could be a font choice in the
-     editor, something like "Clear (Andika)".
-  3. Education and children's material: worksheets and reading material,
-     where the single-storey a and g matter.
-
-  With one example, a reading worksheet or a form tagged for PDF/UA, which
-  passes the viewer checks as every example does. No new library API. Its
-  size does not matter: pdfjet-fonts is fetched apart from the library, and a
-  document embeds what it uses.
+- ✖️ Not doing (the owner, 9 October 2026: "Remove Andika as well"): Andika
+  in pdfjet-fonts or in PDFjet Forms. No more bundled fonts; people who want
+  it can find it and load it themselves. OEM12x20 was taken out the same day.
 
 ## Known and accepted (document, do not fix)
 

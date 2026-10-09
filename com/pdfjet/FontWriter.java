@@ -84,57 +84,7 @@ class FontWriter {
             }
         }
 
-        StringBuilder sb = new StringBuilder();
-        sb.append("/CIDInit /ProcSet findresource begin\n");
-        sb.append("12 dict begin\n");
-        sb.append("begincmap\n");
-        sb.append("/CIDSystemInfo <</Registry (Adobe) /Ordering (Identity) /Supplement 0>> def\n");
-        sb.append("/CMapName /Adobe-Identity def\n");
-        sb.append("/CMapType 2 def\n");
-
-        sb.append("1 begincodespacerange\n");
-        sb.append("<0000> <FFFF>\n");
-        sb.append("endcodespacerange\n");
-
-        List<String> list = new ArrayList<String>();
-        // A character the font does not contain is drawn with the .notdef
-        // glyph. PDF/UA requires every glyph to map to Unicode, so map it to
-        // the replacement character.
-        list.add("<0000> <FFFD>\n");
-        StringBuilder buf = new StringBuilder();
-        int[] unicodeOf = unicodeOfGlyphs(font.unicodeToGID);
-        for (int cid = 0; cid <= 0xffff; cid++) {
-            int gid = font.unicodeToGID[cid];
-            if (gid > 0 && unicodeOf[gid] == cid && (kept == null || (gid < kept.length && kept[gid]))) {
-                buf.append('<');
-                buf.append(toHexString(gid));
-                buf.append("> <");
-                // A presentation form that the Bidi class puts in maps to the letters it stands for.
-                String letters = Bidi.lettersOf(cid);
-                if (letters == null) {
-                    buf.append(toHexString(cid));
-                } else {
-                    for (int i = 0; i < letters.length(); i++) {
-                        buf.append(toHexString(letters.charAt(i)));
-                    }
-                }
-                buf.append(">\n");
-                list.add(buf.toString());
-                buf.setLength(0);
-                if (list.size() == 100) {
-                    writeListToBuffer(sb, list);
-                }
-            }
-        }
-        if (list.size() > 0) {
-            writeListToBuffer(sb, list);
-        }
-
-        sb.append("endcmap\n");
-        sb.append("CMapName currentdict /CMap defineresource pop\n");
-        sb.append("end\nend");
-
-        addCompressedStream(pdf, sb.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        addCompressedStream(pdf, toUnicodeCMap(font, kept).getBytes(java.nio.charset.StandardCharsets.UTF_8));
         font.toUnicodeCMapObjNumber = pdf.getObjNumber();
     }
 
@@ -202,38 +152,105 @@ class FontWriter {
         pdf.append(Math.round(k * (float) font.advanceWidth[font.advanceWidth.length - 1]));
         pdf.append('\n');
 
-        if (kept == null) {
-            pdf.append("/W [0[\n");
-            for (int width : font.advanceWidth) {
-                pdf.append(Math.round(k * (float) width));
-                pdf.append(' ');
-            }
-            pdf.append("]]\n");
-        } else {
-            // Each run of kept glyphs: its first glyph and its widths.
-            pdf.append("/W [");
-            int count = Math.min(kept.length, font.advanceWidth.length);
-            for (int gid = 0; gid < count; gid++) {
-                if (!kept[gid]) {
-                    continue;
-                }
-                pdf.append('\n');
-                pdf.append(gid);
-                pdf.append('[');
-                for (; gid < count && kept[gid]; gid++) {
-                    pdf.append(Math.round(k * (float) font.advanceWidth[gid]));
-                    pdf.append(' ');
-                }
-                pdf.append(']');
-            }
-            pdf.append("]\n");
-        }
+        pdf.append("/W ");
+        pdf.append(widthsArray(font, kept));
+        pdf.append('\n');
 
         pdf.append("/CIDToGIDMap /Identity\n");
         pdf.append(">>\n");
         pdf.endObj();
 
         font.cidFontDictObjNumber = pdf.getObjNumber();
+    }
+
+    // Returns the ToUnicode map of the font: of every glyph that has a
+    // character, or only of the glyphs kept, for a subset.
+    static String toUnicodeCMap(Font font, boolean[] kept) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("/CIDInit /ProcSet findresource begin\n");
+        sb.append("12 dict begin\n");
+        sb.append("begincmap\n");
+        sb.append("/CIDSystemInfo <</Registry (Adobe) /Ordering (Identity) /Supplement 0>> def\n");
+        sb.append("/CMapName /Adobe-Identity def\n");
+        sb.append("/CMapType 2 def\n");
+
+        sb.append("1 begincodespacerange\n");
+        sb.append("<0000> <FFFF>\n");
+        sb.append("endcodespacerange\n");
+
+        List<String> list = new ArrayList<String>();
+        // A character the font does not contain is drawn with the .notdef
+        // glyph. PDF/UA requires every glyph to map to Unicode, so map it to
+        // the replacement character.
+        list.add("<0000> <FFFD>\n");
+        StringBuilder buf = new StringBuilder();
+        int[] unicodeOf = unicodeOfGlyphs(font.unicodeToGID);
+        for (int cid = 0; cid <= 0xffff; cid++) {
+            int gid = font.unicodeToGID[cid];
+            if (gid > 0 && unicodeOf[gid] == cid && (kept == null || (gid < kept.length && kept[gid]))) {
+                buf.append('<');
+                buf.append(toHexString(gid));
+                buf.append("> <");
+                // A presentation form that the Bidi class puts in maps to the letters it stands for.
+                String letters = Bidi.lettersOf(cid);
+                if (letters == null) {
+                    buf.append(toHexString(cid));
+                } else {
+                    for (int i = 0; i < letters.length(); i++) {
+                        buf.append(toHexString(letters.charAt(i)));
+                    }
+                }
+                buf.append(">\n");
+                list.add(buf.toString());
+                buf.setLength(0);
+                if (list.size() == 100) {
+                    writeListToBuffer(sb, list);
+                }
+            }
+        }
+        if (list.size() > 0) {
+            writeListToBuffer(sb, list);
+        }
+
+        sb.append("endcmap\n");
+        sb.append("CMapName currentdict /CMap defineresource pop\n");
+        sb.append("end\nend");
+
+        return sb.toString();
+    }
+
+    // Returns the /W array of the font: the widths of all its glyphs, or of
+    // each run of the glyphs kept, for a subset, its first glyph and its
+    // widths.
+    static String widthsArray(Font font, boolean[] kept) {
+        final float k = 1000.0f / (float) font.unitsPerEm;
+        StringBuilder sb = new StringBuilder();
+        if (kept == null) {
+            sb.append("[0[\n");
+            for (int width : font.advanceWidth) {
+                sb.append(Math.round(k * (float) width));
+                sb.append(' ');
+            }
+            sb.append("]]");
+            return sb.toString();
+        }
+        sb.append('[');
+        int count = Math.min(kept.length, font.advanceWidth.length);
+        for (int gid = 0; gid < count; gid++) {
+            if (!kept[gid]) {
+                continue;
+            }
+            sb.append('\n');
+            sb.append(gid);
+            sb.append('[');
+            for (; gid < count && kept[gid]; gid++) {
+                sb.append(Math.round(k * (float) font.advanceWidth[gid]));
+                sb.append(' ');
+            }
+            sb.append(']');
+        }
+        sb.append(']');
+        return sb.toString();
     }
 
     /**

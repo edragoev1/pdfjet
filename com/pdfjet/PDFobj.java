@@ -43,6 +43,8 @@ public class PDFobj {
     int gsNumber = -1;
     /** True for the catalog that the trailer's /Root names. */
     boolean root;
+    /** A font added to the objects, filled in when they are added to a PDF. */
+    Font font;
 
     /**
      * Creates an object with an empty dictionary.

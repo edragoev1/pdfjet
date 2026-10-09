@@ -65,7 +65,14 @@ This is the first entry in this file; earlier releases were not tracked here.
   14 KB in a page of English. The four ports embed the same subsets, byte for byte,
   under the same tags.
 - `new Font(objects, stream)`, a font added to an existing PDF, reads `.ttf`
-  and `.otf` files, embedded whole (`NewFontForObjects` in Go).
+  and `.otf` files (`NewFontForObjects` in Go), embedded as subsets too, in
+  the four ports, with no change to the API: the font's objects are
+  numbered when it is added and filled in when the objects are added to the
+  PDF (`addObjects`, or `addResourceObjects`), after the pages are drawn.
+  `setSubset(false)`, before then, keeps it whole. Example_37 goes from 127
+  KB to 72 KB, Example_50 from 177 KB to 68 KB, their pages the same; a
+  form filled in with a few words of a CJK font no longer carries the
+  whole font, 6.5 MB for Noto Sans SC. Its ToUnicode map is compressed now.
 - A path to a `.ttf.stream` or `.otf.stream` file opens the `.ttf`, or else the
   `.otf`, file of the same name beside it, so code written for the stream
   files PDFjet shipped runs as it is with the fonts of 9.0.5.

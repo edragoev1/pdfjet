@@ -6,26 +6,102 @@
  */
 import Foundation
 
-/// The objects of a font added to an existing PDF, embedded whole.
-class FontObjects {
-    // Adds the font, whose font program is the compressed bytes, to the
-    // objects of an existing PDF.
-    static func register(_ objects: inout [PDFobj], _ font: Font, _ compressed: [UInt8]) {
-        embedFontFile(&objects, font, compressed)
+/// The objects of a font added to an existing PDF. They are numbered when the
+/// font is added, so that pages can refer to it, and filled in when the objects
+/// are added to the PDF, after the pages are drawn: the font program a subset
+/// of the glyphs drawn, as a font of a new PDF is at complete().
+final class FontObjects {
+    var metadata = 0    // The number of the font's metadata object
+    let file = PDFobj()
+    let descriptor = PDFobj()
+    let cidFont = PDFobj()
+    let toUnicode = PDFobj()
+    let type0 = PDFobj()
 
-        addFontDescriptorObject(&objects, font)
-        addCIDFontDictionaryObject(&objects, font)
-        addToUnicodeCMapObject(&objects, font)
+    // Numbers the objects of the font, added to the objects of an existing
+    // PDF; the Type0 font, the one pages refer to, is the last.
+    static func register(_ objects: inout [PDFobj], _ font: Font) {
+        let objs = FontObjects()
+        objs.metadata = addMetadataObject(&objects, font)
+        for obj in [objs.file, objs.descriptor, objs.cidFont, objs.toUnicode, objs.type0] {
+            obj.number = objects.count + 1
+            objects.append(obj)
+        }
+        objs.type0.font = font
+        font.fileObjNumber = objs.file.number
+        font.fontDescriptorObjNumber = objs.descriptor.number
+        font.cidFontDictObjNumber = objs.cidFont.number
+        font.toUnicodeCMapObjNumber = objs.toUnicode.number
+        font.objNumber = objs.type0.number
+        font.objects = objs
+    }
 
-        // Type0 Font Dictionary
-        let obj = PDFobj()
+    // Fills in the objects of the fonts added to the objects, when the pages
+    // are drawn and the glyphs they use are known.
+    static func complete(_ objects: [PDFobj]) {
+        for obj in objects {
+            if let font = obj.font {
+                complete(font)
+                obj.font = nil
+            }
+        }
+    }
+
+    // Fills in the objects of the font: its program, a subset of the glyphs
+    // drawn unless it is to be whole, the descriptor and the CID font under the
+    // name of the subset, the widths and the ToUnicode map of the glyphs it
+    // keeps, and the Type0 font.
+    private static func complete(_ font: Font) {
+        guard let objs = font.objects else {
+            return
+        }
+        let program = Subset.embeddedProgram(font)
+        let baseFont = font.baseFont
+
+        var compressed = [UInt8]()
+        FlateEncode(&compressed, program)
+        var obj = objs.file
+        obj.dict.append("<<")
+        obj.dict.append("/Metadata")
+        obj.dict.append(String(objs.metadata))
+        obj.dict.append("0")
+        obj.dict.append("R")
+        obj.dict.append("/Filter")
+        obj.dict.append("/FlateDecode")
+        obj.dict.append("/Length")
+        obj.dict.append(String(compressed.count))
+        if font.cff {
+            obj.dict.append("/Subtype")
+            obj.dict.append("/CIDFontType0C")
+        } else {
+            obj.dict.append("/Length1")
+            obj.dict.append(String(program.count))
+        }
+        obj.dict.append(">>")
+        obj.setStream(&compressed)
+
+        completeFontDescriptor(objs.descriptor, font, baseFont)
+        completeCIDFontDictionary(objs.cidFont, font, baseFont, font.kept)
+
+        var cmap = [UInt8]()
+        FlateEncode(&cmap, Array(FontWriter.toUnicodeCMap(font, font.kept).utf8))
+        obj = objs.toUnicode
+        obj.dict.append("<<")
+        obj.dict.append("/Filter")
+        obj.dict.append("/FlateDecode")
+        obj.dict.append("/Length")
+        obj.dict.append(String(cmap.count))
+        obj.dict.append(">>")
+        obj.setStream(&cmap)
+
+        obj = objs.type0
         obj.dict.append("<<")
         obj.dict.append("/Type")
         obj.dict.append("/Font")
         obj.dict.append("/Subtype")
         obj.dict.append("/Type0")
         obj.dict.append("/BaseFont")
-        obj.dict.append("/" + font.name)
+        obj.dict.append("/" + baseFont)
         obj.dict.append("/Encoding")
         obj.dict.append("/Identity-H")
         obj.dict.append("/DescendantFonts")
@@ -39,10 +115,10 @@ class FontObjects {
         obj.dict.append("0")
         obj.dict.append("R")
         obj.dict.append(">>")
-        obj.number = objects.count + 1
-        objects.append(obj)
 
-        font.objNumber = obj.number
+        // The program and the objects are no longer needed.
+        font.program = nil
+        font.objects = nil
     }
 
     static func addMetadataObject(
@@ -84,45 +160,12 @@ class FontObjects {
         return obj.number
     }
 
-    private static func embedFontFile(
-            _ objects: inout [PDFobj],
-            _ font: Font,
-            _ compressed: [UInt8]) {
-        let metadataObjNumber = addMetadataObject(&objects, font)
-
-        let obj = PDFobj()
-        obj.dict.append("<<")
-        obj.dict.append("/Metadata")
-        obj.dict.append(String(metadataObjNumber))
-        obj.dict.append("0")
-        obj.dict.append("R")
-        obj.dict.append("/Filter")
-        obj.dict.append("/FlateDecode")
-        obj.dict.append("/Length")
-        obj.dict.append(String(compressed.count))
-        if font.cff {
-            obj.dict.append("/Subtype")
-            obj.dict.append("/CIDFontType0C")
-        } else {
-            obj.dict.append("/Length1")
-            obj.dict.append(String(font.uncompressedSize!))
-        }
-        obj.dict.append(">>")
-        var compressed = compressed
-        obj.setStream(&compressed)
-        obj.number = objects.count + 1
-        objects.append(obj)
-
-        font.fileObjNumber = obj.number
-    }
-
-    private static func addFontDescriptorObject(_ objects: inout [PDFobj], _ font: Font) {
-        let obj = PDFobj()
+    private static func completeFontDescriptor(_ obj: PDFobj, _ font: Font, _ fontName: String) {
         obj.dict.append("<<")
         obj.dict.append("/Type")
         obj.dict.append("/FontDescriptor")
         obj.dict.append("/FontName")
-        obj.dict.append("/" + font.name)
+        obj.dict.append("/" + fontName)
         obj.dict.append("/FontFile" + (font.cff ? "3" : "2"))
         obj.dict.append(String(font.fileObjNumber))
         obj.dict.append("0")
@@ -147,88 +190,17 @@ class FontObjects {
         obj.dict.append("/StemV")
         obj.dict.append("79")
         obj.dict.append(">>")
-        obj.number = objects.count + 1
-        objects.append(obj)
-
-        font.fontDescriptorObjNumber = obj.number
     }
 
-    private static func addToUnicodeCMapObject(
-            _ objects: inout [PDFobj],
-            _ font: Font) {
-        var sb = String()
-        sb.append("/CIDInit /ProcSet findresource begin\n")
-        sb.append("12 dict begin\n")
-        sb.append("begincmap\n")
-        sb.append("/CIDSystemInfo <</Registry (Adobe) /Ordering (Identity) /Supplement 0>> def\n")
-        sb.append("/CMapName /Adobe-Identity def\n")
-        sb.append("/CMapType 2 def\n")
-
-        sb.append("1 begincodespacerange\n")
-        sb.append("<0000> <FFFF>\n")
-        sb.append("endcodespacerange\n")
-
-        var list = [String]()
-        // A character the font does not contain is drawn with the .notdef
-        // glyph. PDF/UA requires every glyph to map to Unicode, so map it to
-        // the replacement character.
-        list.append("<0000> <FFFD>\n")
-        var buf = String()
-        let unicodeOf = FontWriter.unicodeOfGlyphs(font.unicodeToGID)
-        for cid in 0...0xffff {
-            let gid = font.unicodeToGID[cid]
-            if gid > 0 && unicodeOf[gid] == cid {
-                buf.append("<")
-                buf.append(toHexString(gid))
-                buf.append("> <")
-                // A presentation form that the Bidi class puts in maps to the letters it stands for.
-                if let letters = Bidi.lettersOf(UInt32(cid)) {
-                    for letter in letters {
-                        buf.append(toHexString(Int(letter)))
-                    }
-                } else {
-                    buf.append(toHexString(Int(cid)))
-                }
-                buf.append(">\n")
-                list.append(buf)
-                buf = ""
-                if list.count == 100 {
-                    writeListToBuffer(&list, &sb)
-                }
-            }
-        }
-        if list.count > 0 {
-            writeListToBuffer(&list, &sb)
-        }
-        sb.append("endcmap\n")
-        sb.append("CMapName currentdict /CMap defineresource pop\n")
-        sb.append("end\nend")
-
-        var stream = Array(sb.utf8)
-
-        let obj = PDFobj()
-        obj.dict.append("<<")
-        obj.dict.append("/Length")
-        obj.dict.append(String(sb.count))
-        obj.dict.append(">>")
-        obj.setStream(&stream)
-        obj.number = objects.count + 1
-        objects.append(obj)
-
-        font.toUnicodeCMapObjNumber = obj.number
-    }
-
-    private static func addCIDFontDictionaryObject(
-            _ objects: inout [PDFobj],
-            _ font: Font) {
-        let obj = PDFobj()
+    private static func completeCIDFontDictionary(
+            _ obj: PDFobj, _ font: Font, _ baseFont: String, _ kept: [Bool]?) {
         obj.dict.append("<<")
         obj.dict.append("/Type")
         obj.dict.append("/Font")
         obj.dict.append("/Subtype")
         obj.dict.append("/CIDFontType" + (font.cff ? "0" : "2"))
         obj.dict.append("/BaseFont")
-        obj.dict.append("/" + font.name)
+        obj.dict.append("/" + baseFont)
         obj.dict.append("/CIDSystemInfo")
         obj.dict.append("<<")
         obj.dict.append("/Registry")
@@ -252,45 +224,9 @@ class FontObjects {
         obj.dict.append("/DW")
         obj.dict.append(String(Int32(round(k * Float(font.advanceWidth[font.advanceWidth.count - 1])))))
         obj.dict.append("/W")
-        obj.dict.append("[")
-        obj.dict.append("0")
-        obj.dict.append("[")
-        for i in 0..<font.advanceWidth.count {
-            obj.dict.append(String(Int32(round(k * Float(font.advanceWidth[i])))))
-        }
-        obj.dict.append("]")
-        obj.dict.append("]")
-
+        obj.dict.append(FontWriter.widthsArray(font, kept))
         obj.dict.append("/CIDToGIDMap")
         obj.dict.append("/Identity")
         obj.dict.append(">>")
-        obj.number = objects.count + 1
-        objects.append(obj)
-
-        font.cidFontDictObjNumber = obj.number
-    }
-
-    private static func toHexString(_ code: Int) -> String {
-        let str = String(code, radix: 16)
-        if str.unicodeScalars.count == 1 {
-            return "000" + str
-        } else if str.unicodeScalars.count == 2 {
-            return "00" + str
-        } else if str.unicodeScalars.count == 3 {
-            return "0" + str
-        }
-        return str
-    }
-
-    private static func writeListToBuffer(
-            _ list: inout [String],
-            _ sb: inout String) {
-        sb.append(String(list.count))
-        sb.append(" beginbfchar\n")
-        for str in list {
-            sb.append(str)
-        }
-        sb.append("endbfchar\n")
-        list.removeAll()
     }
 }   // End of FontObjects.swift

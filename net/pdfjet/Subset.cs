@@ -109,6 +109,41 @@ class Subset {
     }
 
     /// <summary>
+    /// Returns the font program to embed, a subset unless it is to be whole,
+    /// and sets the name of the font, with the tag of a subset, and the glyphs
+    /// the subset keeps, null for a whole font.
+    /// </summary>
+    internal static byte[] EmbeddedProgram(Font font) {
+        Program program = font.program;
+        byte[] data = program.font;
+        if (!program.whole && !program.forbidden) {
+            try {
+                bool[] kept;
+                byte[] subset = program.cff ?
+                        CFFSubset.subset(data, program.used, out kept) : SubsetTrueType(data, program.used, out kept);
+                font.kept = kept;
+                font.baseFont = SubsetTag(font.checksum, kept) + "+" + font.name;
+                return subset;
+            } catch (NotSubset) {
+                // Embedded whole
+            }
+        }
+        if (program.cff) {
+            // Whole, written again for the identity charset of a CID-keyed
+            // font, or as it is when it cannot be.
+            try {
+                bool[] all;
+                data = CFFSubset.subset(data, null, out all);
+            } catch (NotSubset) {
+                // As it is
+            }
+        }
+        font.kept = null;
+        font.baseFont = font.name;
+        return data;
+    }
+
+    /// <summary>
     /// Writes the font program, a subset unless it is to be whole, sets the
     /// name of the font, with the tag of a subset, and returns the glyphs the
     /// subset keeps, or null for a whole font. A font of the same program
@@ -129,36 +164,9 @@ class Subset {
         }
 
         Program program = font.program;
-        font.baseFont = font.name;
-        byte[] data = program.font;
-        byte[] compressed = null;
+        byte[] data = EmbeddedProgram(font);
+        byte[] compressed = Compressor.Deflate(data);
         int length = data.Length;
-        if (!program.whole && !program.forbidden) {
-            try {
-                bool[] kept;
-                byte[] subset = program.cff ?
-                        CFFSubset.subset(data, program.used, out kept) : SubsetTrueType(data, program.used, out kept);
-                compressed = Compressor.Deflate(subset);
-                length = subset.Length;
-                font.kept = kept;
-                font.baseFont = SubsetTag(font.checksum, kept) + "+" + font.name;
-            } catch (NotSubset) {
-                // Embedded whole
-            }
-        }
-        if (compressed == null && program.cff) {
-            // Whole, written again for the identity charset of a CID-keyed
-            // font, or as it is when it cannot be.
-            try {
-                bool[] all;
-                data = CFFSubset.subset(data, null, out all);
-            } catch (NotSubset) {
-                // As it is
-            }
-        }
-        if (compressed == null) { // Whole
-            compressed = Compressor.Deflate(data);
-        }
 
         int metadataObjNumber = pdf.AddMetadataObject(font.info, true);
         if (pdf.encryption != null) {

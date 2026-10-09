@@ -28,19 +28,7 @@ import Testing
     }
 
     private func pdfWithObjects(_ objects: [String]) -> [UInt8] {
-        var body = "%PDF-1.4\n"
-        var offsets = [Int]()
-        for (i, object) in objects.enumerated() {
-            offsets.append(body.utf8.count)
-            body += "\(i + 1) 0 obj\n" + object + "\nendobj\n"
-        }
-        let xref = body.utf8.count
-        body += "xref\n0 \(objects.count + 1)\n0000000000 65535 f \n"
-        for offset in offsets {
-            body += String(format: "%010d 00000 n \n", offset)
-        }
-        body += "trailer\n<< /Size \(objects.count + 1) /Root 1 0 R >>\nstartxref\n\(xref)\n%%EOF\n"
-        return TestSupport.bytes(body)
+        return TestSupport.pdfWithObjects(objects)
     }
 
     // The message that reading the PDF fails with, or "(no error)" when it is
