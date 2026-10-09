@@ -42,6 +42,18 @@ compiles. Swift (`Subset.swift`, `PDF.newObj(_:)`) the same too: the four
 ports' Example_28 pass veraPDF's PDF/UA check. Left: Acrobat on Windows (the
 owner), the .ttf.stream deprecation once that is done, and the benchmark of
 8c in benchmarks/ (jet-noto of TextBench).
+**Packages with one time, from 9.0.5 (the owner, 9 October 2026: "We will
+start doing it starting with 9.0.5"):** package-java.sh and package-dotnet.sh
+give every file and directory of a package, and every entry of PDFjet.jar
+(jar --date, for the manifest too), the time of the commit the package is
+made from, in UTC, and zip the entries in sorted order without the extra
+fields of each system (-X): the reproducible builds of today, after the
+software of old that shipped every file at one time. A test build of the Java
+package on 9 October gave its 944 entries 06:11:32 UTC, and was 282 MB where
+9.0.3's was 307 MB. The example PDFs still hold the time they were made, so
+two builds are not yet the same to the byte; a fixed creation date for them
+is a maybe.
+
 **The .stream format removed, decided by the owner on 9 October 2026** ("I am
 strongly leaning to removing EVERYTHING related to stream fonts right now ...
 clients do not use them"): the reader in the four ports, the generator and

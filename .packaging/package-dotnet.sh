@@ -46,6 +46,21 @@ ZIP="$PWD/.commercial-packages/$NAME.zip"
 EVAL_NAME="PDFjet-For.NET-Eval-$VERSION"
 EVAL_ZIP="$PWD/.commercial-packages/$EVAL_NAME.zip"
 
+# From 9.0.5 every file and directory of a package has one time, that of the
+# commit the package is made from, in UTC, as the zip stores it: so a file's
+# time says which release it is of, as on the CDs of old, and two builds of a
+# release differ only in what they make, not in when (reproducible builds,
+# SOURCE_DATE_EPOCH). The zip lists its entries in sorted order and without
+# the extra fields of each system (-X).
+export TZ=UTC
+RELEASE_TIME=$(git log -1 --format=%cd --date=format-local:%Y%m%d%H%M.%S HEAD)
+stamp() {
+    find "$1" -exec touch -h -t "$RELEASE_TIME" {} +
+}
+zip_sorted() {
+    find "$2" -print | LC_ALL=C sort | zip -q -9 -X "$1" -@
+}
+
 if [ -n "$(git status --porcelain)" ]; then
     echo "Warning: uncommitted changes are left out; the package is made from $(git rev-parse --short HEAD)."
 fi
@@ -143,12 +158,14 @@ for i in $(seq -w 1 57); do
 done
 
 cd ..
-zip -q -r -9 "$ZIP" "$NAME"
+stamp "$NAME"
+zip_sorted "$ZIP" "$NAME"
 
 # The evaluation package is the same package under the evaluation license.
 mv "$NAME" "$EVAL_NAME"
 mv LICENSE-EVALUATION "$EVAL_NAME/LICENSE"
-zip -q -r -9 "$EVAL_ZIP" "$EVAL_NAME"
+stamp "$EVAL_NAME"
+zip_sorted "$EVAL_ZIP" "$EVAL_NAME"
 cd ../..
 rm -rf build/package-dotnet
 
