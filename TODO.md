@@ -73,8 +73,9 @@ OTF fonts with CFF outlines"): `src/cffsubset.go`, the charstrings and the
 subroutines not used emptied, every number kept, the CFF written again in a
 fixed order with five-byte offsets; the identity charset for a CID-keyed
 font fixed its wrong glyphs. Source Han Sans JP Regular is in pdfjet-fonts as
-the CID-keyed test font. Go first; Java, C# and Swift to follow. Kept below
-as it was written:
+the CID-keyed test font. Done in the four ports the same night, which embed
+the same programs byte for byte, subset and whole. Kept below as it was
+written:
 **CFF subsetting: not needed** (8 October 2026). About 3,000 lines in the
 four ports (5,000 with the subroutines pruned) for one gain, IBM Plex as
 .otf, which its .ttf edition already gives: Example_01 in Go with IBM Plex

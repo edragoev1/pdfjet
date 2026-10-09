@@ -38,7 +38,8 @@ This is the first entry in this file; earlier releases were not tracked here.
   OS/2 table) is embedded whole, and so is a font set to with
   `setSubset(false)`. Fonts of CFF outlines, `.otf` files, are embedded as
   subsets too: the charstrings of the glyphs drawn and the subroutines they
-  call, the others emptied (`cffsubset.go` in Go); Source Han Sans JP goes
+  call, the others emptied (`CFFSubset` in the four ports, `cffsubset.go` in
+  Go); Source Han Sans JP goes
   from 4.1 MB to 115 KB in a page of Japanese, IBM Plex Sans from 58 KB to
   14 KB in a page of English. The four ports embed the same subsets, byte for byte,
   under the same tags.

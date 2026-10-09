@@ -47,8 +47,9 @@ class OTF {
 
     var buf = [UInt8]()
     var cff = false
-    private var cffOff: Int?
-    private var cffLen: Int?
+    var fsType = 0          // Of the OS/2 table: what the license allows
+    var cffOff: Int?
+    var cffLen: Int?
     private var index = 0
     private var gposWork = maxGposWork
     private var numGlyphs = 0   // Of the maxp table, or 0 when the font has none
@@ -201,6 +202,8 @@ class OTF {
     }
 
     private func OS_2(_ table: FontTable) throws {
+
+        fsType = tableUInt16(table, 8) ?? 0
         index = table.offset! + 64
         firstChar = Int(try readUInt16())
         lastChar  = Int(try readUInt16())

@@ -12,15 +12,16 @@ class OpenTypeFont {
         let otf = try OTF(stream)
         setData(font, otf)
 
-        if !otf.cff {
-            // A TrueType font is written at complete(), a subset of the glyphs
-            // drawn; its pages refer to the number reserved for it.
-            Subset.share(pdf, font, otf.buf)
-            font.objNumber = pdf.reserveObjNumber()
-            pdf.fonts.append(font)
-            return
+        // The font is written at complete(), a subset of the glyphs drawn; its
+        // pages refer to the number reserved for it.
+        if otf.cff {
+            Subset.share(pdf, font, Array(otf.buf[otf.cffOff!..<(otf.cffOff! + otf.cffLen!)]),
+                    true, otf.fsType & 0x0100 != 0)
+        } else {
+            Subset.share(pdf, font, otf.buf, false, false)
         }
-        registerCFF(pdf, font, otf)
+        font.objNumber = pdf.reserveObjNumber()
+        pdf.fonts.append(font)
     }
 
     // Adds the font to the objects of an existing PDF, with its font program
@@ -60,83 +61,6 @@ class OpenTypeFont {
         font.cff = otf.cff
         font.checksum = Font.checksumOf(font)
         font.setSize(font.size)
-    }
-
-    // Writes a font with CFF outlines, which is embedded whole, as it is added.
-    private static func registerCFF(_ pdf: PDF, _ font: Font, _ otf: OTF) {
-        embedFontFile(pdf, font, otf)
-        FontWriter.addFontDescriptorObject(pdf, font, font.name)
-        FontWriter.addCIDFontDictionaryObject(pdf, font, font.name, nil)
-        FontWriter.addToUnicodeCMapObject(pdf, font, nil)
-
-        // Type0 Font Dictionary
-        pdf.newObj()
-        pdf.append(Token.beginDictionary)
-        pdf.append("/Type /Font\n")
-        pdf.append("/Subtype /Type0\n")
-        pdf.append("/BaseFont /")
-        pdf.append(otf.fontName!)
-        pdf.append(Token.newline)
-        pdf.append("/Encoding /Identity-H\n")
-        pdf.append("/DescendantFonts [")
-        pdf.append(font.cidFontDictObjNumber)
-        pdf.append(" 0 R]\n")
-
-        pdf.append("/ToUnicode ")
-        pdf.append(font.toUnicodeCMapObjNumber)
-        pdf.append(" 0 R\n")
-
-        pdf.append(Token.endDictionary)
-        pdf.endObj()
-
-        font.objNumber = pdf.getObjNumber()
-        pdf.fonts.append(font)
-    }
-
-    private static func embedFontFile(_ pdf: PDF, _ font: Font, _ otf: OTF) {
-        // Check if the font file is already embedded
-        for f in pdf.fonts {
-            if f.fileObjNumber != 0 && f.name == otf.fontName && f.checksum == font.checksum {
-                font.fileObjNumber = f.fileObjNumber
-                return
-            }
-        }
-
-        // The metadata is an object of its own, written before the font file,
-        // whose dictionary refers to it, as in the other ports.
-        let metadataObjNumber = pdf.addMetadataObject(otf.fontInfo!, true)
-
-        pdf.newObj()
-        pdf.append(Token.beginDictionary)
-        if otf.cff {
-            pdf.append("/Subtype /CIDFontType0C\n")
-        }
-        pdf.append("/Filter /FlateDecode\n")
-
-        if !otf.cff {
-            pdf.append("/Length1 ")
-            pdf.append(otf.buf.count)   // The uncompressed size
-            pdf.append(Token.newline)
-        }
-
-        if metadataObjNumber != -1 {
-            pdf.append("/Metadata ")
-            pdf.append(metadataObjNumber)
-            pdf.append(" 0 R\n")
-        }
-
-        let compressed = pdf.encrypted(otf.compress())
-        pdf.append("/Length ")
-        pdf.append(compressed.count)
-        pdf.append(Token.newline)
-
-        pdf.append(Token.endDictionary)
-        pdf.append(Token.stream)
-        pdf.append(compressed)
-        pdf.append(Token.endStream)
-        pdf.endObj()
-
-        font.fileObjNumber = pdf.getObjNumber()
     }
 
     /// Converts a value in font units to the glyph space units of the font
