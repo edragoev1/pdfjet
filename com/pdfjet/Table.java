@@ -1728,6 +1728,31 @@ public class Table implements Drawable {
         return this;
     }
 
+    /**
+     * Sets the padding of every cell of the table, as setCellBorders sets their
+     * borders: side at the left and the right of the text, vertical over and
+     * under it, in points. A table whose cells have borders reads better with
+     * more than the 2 points of a new cell on every side, such as 4 at the sides
+     * and 3 over and under. A cell set afterwards keeps its own padding, and the
+     * rows a wrapped cell adds under it have the side padding of the cell, none
+     * over them and a new cell's under them.
+     *
+     * @param side the padding at the left and the right of each cell.
+     * @param vertical the padding over and under the text of each cell.
+     * @return this Table object.
+     */
+    public Table setCellPadding(float side, float vertical) {
+        for (List<Cell> row : tableData) {
+            for (Cell cell : row) {
+                cell.setLeftPadding(side);
+                cell.setRightPadding(side);
+                cell.setTopPadding(vertical);
+                cell.setBottomPadding(vertical);
+            }
+        }
+        return this;
+    }
+
     // Sets the right border on all cells in the last column.
     private void setRightBorderOnLastColumn() {
         for (List<Cell> row : tableData) {

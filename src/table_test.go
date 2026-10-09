@@ -1379,3 +1379,51 @@ func TestTableAHeaderTallerThanHalfThePageIsDrawnOnTheFirstPageAlone(t *testing.
 		t.Error("the last row is not drawn")
 	}
 }
+
+func TestTableSetCellPaddingIsThePaddingOfEveryCell(t *testing.T) {
+	doc := testNewDoc()
+	font := testHelvetica(doc.pdf)
+	rows := func() [][]*Cell {
+		return [][]*Cell{
+			{NewCell(font, "Name"), NewCell(font, "Notes")},
+			{NewCell(font, "a"), NewCell(font, "a note long enough to wrap to more than one line of its column")},
+		}
+	}
+	// The table's padding, and the same set cell by cell, are the same table
+	byTable := NewTable().SetTableData(rows(), 1).SetCellPadding(4, 3)
+	byCell := NewTable().SetTableData(rows(), 1)
+	for _, row := range byCell.tableData {
+		for _, cell := range row {
+			cell.SetLeftPadding(4).SetRightPadding(4).SetTopPadding(3).SetBottomPadding(3)
+		}
+	}
+	plain := NewTable().SetTableData(rows(), 1)
+	for _, table := range []*Table{byTable, byCell, plain} {
+		table.SetColumnWidth(0, 60).SetColumnWidth(1, 90)
+		table.SetLocation(20, 20)
+	}
+	a := byTable.DrawOn(NewPage(doc.pdf, letter.Portrait()))
+	b := byCell.DrawOn(NewPage(doc.pdf, letter.Portrait()))
+	c := plain.DrawOn(NewPage(doc.pdf, letter.Portrait()))
+	if a != b {
+		t.Errorf("set on the table, the table ends at %v; set on each cell, at %v", a, b)
+	}
+	// Where the four ports end it, the same in each
+	if a != [2]float32{170, 123.23201} {
+		t.Errorf("the table ends at %v, not at [170 123.23201]", a)
+	}
+	// More padding than NewCell's 2 points: a taller table
+	if !(a[1] > c[1]) {
+		t.Errorf("with the padding the table ends at %v, without at %v", a[1], c[1])
+	}
+	for _, row := range byTable.tableData {
+		for _, cell := range row {
+			if cell.properties&cellContinued != 0 {
+				continue
+			}
+			if cell.GetLeftPadding() != 4 || cell.GetRightPadding() != 4 || cell.GetTopPadding() != 3 {
+				t.Errorf("a cell of %v %v %v", cell.GetLeftPadding(), cell.GetRightPadding(), cell.GetTopPadding())
+			}
+		}
+	}
+}

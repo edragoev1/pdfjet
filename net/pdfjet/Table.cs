@@ -1675,6 +1675,30 @@ public class Table : IDrawable {
         return this;
     }
 
+    /// <summary>
+    /// Sets the padding of every cell of the table, as SetCellBorders sets their
+    /// borders: side at the left and the right of the text, vertical over and
+    /// under it, in points. A table whose cells have borders reads better with
+    /// more than the 2 points of a new cell on every side, such as 4 at the sides
+    /// and 3 over and under. A cell set afterwards keeps its own padding, and the
+    /// rows a wrapped cell adds under it have the side padding of the cell, none
+    /// over them and a new cell's under them.
+    /// </summary>
+    /// <param name="side">the padding at the left and the right of each cell.</param>
+    /// <param name="vertical">the padding over and under the text of each cell.</param>
+    /// <returns>this Table object.</returns>
+    public Table SetCellPadding(float side, float vertical) {
+        foreach (List<Cell> row in tableData) {
+            foreach (Cell cell in row) {
+                cell.SetLeftPadding(side);
+                cell.SetRightPadding(side);
+                cell.SetTopPadding(vertical);
+                cell.SetBottomPadding(vertical);
+            }
+        }
+        return this;
+    }
+
     // Sets the right border on all cells in the last column.
     private void SetRightBorderOnLastColumn() {
         foreach (List<Cell> row in tableData) {

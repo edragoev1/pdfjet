@@ -1076,4 +1076,38 @@ import Testing
         #expect(TestSupport.content(pages[2]).contains(TestSupport.hex("row59")),
                 "the last row is not on the last page")
     }
+
+    private func paddingRows(_ font: Font) -> [[Cell]] {
+        return [
+            [Cell(font, "Name"), Cell(font, "Notes")],
+            [Cell(font, "a"), Cell(font, "a note long enough to wrap to more than one line of its column")],
+        ]
+    }
+
+    @Test func setCellPaddingIsThePaddingOfEveryCell() throws {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        // The table's padding, and the same set cell by cell, are the same table
+        let cells = paddingRows(font)
+        for row in cells {
+            for cell in row {
+                cell.setLeftPadding(4).setRightPadding(4).setTopPadding(3).setBottomPadding(3)
+            }
+        }
+        let byTable = Table().setTableData(paddingRows(font), 1).setCellPadding(4, 3)
+        let byCell = Table().setTableData(cells, 1)
+        let plain = Table().setTableData(paddingRows(font), 1)
+        for table in [byTable, byCell, plain] {
+            table.setColumnWidth(0, 60).setColumnWidth(1, 90)
+            table.setLocation(20, 20)
+        }
+        let a = byTable.drawOn(try Page(pdf, Letter.PORTRAIT))
+        let b = byCell.drawOn(try Page(pdf, Letter.PORTRAIT))
+        let c = plain.drawOn(try Page(pdf, Letter.PORTRAIT))
+        #expect(a == b)
+        #expect(a[1] > c[1])
+        // Where the four ports end it, the same in each
+        #expect(a == [170, 123.23201])
+    }
 }
+

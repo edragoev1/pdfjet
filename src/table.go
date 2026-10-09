@@ -1647,6 +1647,28 @@ func (table *Table) SetCellBorderWidth(width float32) *Table {
 	return table
 }
 
+// SetCellPadding sets the padding of every cell of the table, as
+// SetCellBorders sets their borders: side at the left and the right of the
+// text, vertical over and under it, in points. A table whose cells have
+// borders reads better with more than NewCell's 2 points on every side,
+// such as 4 at the sides and 3 over and under. A cell set afterwards keeps
+// its own padding, and the rows a wrapped cell adds under it have the side
+// padding of the cell, none over them and NewCell's under them, as with
+// Cell's SetPadding.
+//   - side: the padding at the left and the right of each cell.
+//   - vertical: the padding over and under the text of each cell.
+func (table *Table) SetCellPadding(side, vertical float32) *Table {
+	for _, row := range table.tableData {
+		for _, cell := range row {
+			cell.SetLeftPadding(side)
+			cell.SetRightPadding(side)
+			cell.SetTopPadding(vertical)
+			cell.SetBottomPadding(vertical)
+		}
+	}
+	return table
+}
+
 // Sets the right border on all cells in the last column.
 func (table *Table) setRightBorderOnLastColumn() {
 	for _, row := range table.tableData {

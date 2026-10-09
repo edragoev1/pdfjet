@@ -6,6 +6,7 @@
  */
 package com.pdfjet;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -1186,4 +1187,40 @@ class TableTest {
         assertTrue(TestSupport.content(pages.get(2)).contains(TestSupport.hex("row59")),
                 "the last row is not on the last page");
     }
+
+    static List<List<Cell>> paddingRows(Font font) {
+        List<List<Cell>> rows = new ArrayList<List<Cell>>();
+        rows.add(new ArrayList<Cell>(java.util.Arrays.asList(new Cell(font, "Name"), new Cell(font, "Notes"))));
+        rows.add(new ArrayList<Cell>(java.util.Arrays.asList(new Cell(font, "a"),
+                new Cell(font, "a note long enough to wrap to more than one line of its column"))));
+        return rows;
+    }
+
+    @Test
+    void setCellPaddingIsThePaddingOfEveryCell() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        // The table's padding, and the same set cell by cell, are the same table
+        List<List<Cell>> cells = paddingRows(font);
+        for (List<Cell> row : cells) {
+            for (Cell cell : row) {
+                cell.setLeftPadding(4f).setRightPadding(4f).setTopPadding(3f).setBottomPadding(3f);
+            }
+        }
+        Table byTable = new Table().setTableData(paddingRows(font), 1).setCellPadding(4f, 3f);
+        Table byCell = new Table().setTableData(cells, 1);
+        Table plain = new Table().setTableData(paddingRows(font), 1);
+        for (Table table : new Table[] {byTable, byCell, plain}) {
+            table.setColumnWidth(0, 60f).setColumnWidth(1, 90f);
+            table.setLocation(20f, 20f);
+        }
+        float[] a = byTable.drawOn(new Page(pdf, Letter.PORTRAIT));
+        float[] b = byCell.drawOn(new Page(pdf, Letter.PORTRAIT));
+        float[] c = plain.drawOn(new Page(pdf, Letter.PORTRAIT));
+        assertArrayEquals(b, a, 0f);
+        assertTrue(a[1] > c[1], a[1] + " not over " + c[1]);
+        // Where the four ports end it, the same in each
+        assertArrayEquals(new float[] {170f, 123.23201f}, a, 0f);
+    }
 }
+

@@ -1156,5 +1156,39 @@ public sealed class TableTest : IDisposable {
         Assert.True(heading != -1 && heading < content.IndexOf(TestSupport.Hex("row0")), "the heading first");
         Assert.Contains(TestSupport.Hex("row59"), TestSupport.Content(pages[2]));
     }
+    static List<List<Cell>> PaddingRows(Font font) {
+        return new List<List<Cell>> {
+            new List<Cell> {new Cell(font, "Name"), new Cell(font, "Notes")},
+            new List<Cell> {new Cell(font, "a"),
+                    new Cell(font, "a note long enough to wrap to more than one line of its column")},
+        };
+    }
+
+    [Fact]
+    public void SetCellPaddingIsThePaddingOfEveryCell() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        // The table's padding, and the same set cell by cell, are the same table
+        List<List<Cell>> cells = PaddingRows(font);
+        foreach (List<Cell> row in cells) {
+            foreach (Cell cell in row) {
+                cell.SetLeftPadding(4f).SetRightPadding(4f).SetTopPadding(3f).SetBottomPadding(3f);
+            }
+        }
+        Table byTable = new Table().SetTableData(PaddingRows(font), 1).SetCellPadding(4f, 3f);
+        Table byCell = new Table().SetTableData(cells, 1);
+        Table plain = new Table().SetTableData(PaddingRows(font), 1);
+        foreach (Table table in new Table[] {byTable, byCell, plain}) {
+            table.SetColumnWidth(0, 60f).SetColumnWidth(1, 90f);
+            table.SetLocation(20f, 20f);
+        }
+        float[] a = byTable.DrawOn(new Page(pdf, Letter.PORTRAIT));
+        float[] b = byCell.DrawOn(new Page(pdf, Letter.PORTRAIT));
+        float[] c = plain.DrawOn(new Page(pdf, Letter.PORTRAIT));
+        Assert.Equal(b, a);
+        Assert.True(a[1] > c[1]);
+        // Where the four ports end it, the same in each
+        Assert.Equal(new float[] {170f, 123.23201f}, a);
+    }
 }
 }

@@ -10,6 +10,13 @@ This is the first entry in this file; earlier releases were not tracked here.
 ## v9.0.5 — unreleased
 
 ### Added
+- `Table.setCellPadding(side, vertical)`, in the four ports: the padding of
+  every cell of a table in one call, at the sides and over and under the
+  text, as `setCellBorders`, `setCellBorderColor` and `setCellBorderWidth`
+  set the borders of every cell. A table whose cells have borders reads
+  better with more than a new cell's 2 points, such as 4 and 3. Opt-in: a
+  new cell keeps its 2 points on every side, so no table changes unless it
+  asks.
 - `ImageSize`, in the four ports: the size an image is drawn at, and its
   pixels, read from the header of its file alone, without its image data in
   memory, so that a page can be laid out before its images are drawn, and an

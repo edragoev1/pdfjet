@@ -1904,7 +1904,7 @@ no history; the registries count, and are where developers look.
   image and the PNG it makes again from it. New API, so after the freeze of
   9.0.2; see the item on `PDFobj.GetData` above, whose predictor part was
   fixed on Sep 28.
-- ⬜ `Table.SetCellPadding(side, vertical float32)`, in the four ports: the
+- ✅ **Done for 9.0.5 on 9 October 2026, in the MIT core (the owner: "Let's do it for 9.0.5 MIT core"), with a test in each port, the same end of the table in the four.** pdfjet-server's newTable can call it once the server is on 9.0.5. `Table.SetCellPadding(side, vertical float32)`, in the four ports: the
   padding of every cell of the table, at its sides and over and under its
   text, as `SetCellBorders`, `SetCellBorderColor` and `SetCellBorderWidth`
   set the borders of every cell. Today it is set cell by cell, with
