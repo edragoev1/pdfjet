@@ -417,3 +417,20 @@ func TestWriterTheFontFileRefersToItsMetadataWhoseNoticeIsEscaped(t *testing.T) 
 		t.Error("the notice is not escaped")
 	}
 }
+
+func TestWriterAPDFA1MapsTheElementOfAnAnnotationToASpan(t *testing.T) {
+	// PDF/A-1, of PDF 1.4, does not know the type Annot, of PDF 1.5: it is
+	// role-mapped there (veraPDF, PDF/A-1 6.8.3.4), and not in PDF/A-2.
+	for _, level := range []compliance.Compliance{compliance.PDF_A_1A, compliance.PDF_A_2A} {
+		raw := testWriterDoc(t, level, func(pdf *PDF, page *Page) {
+			square := NewSquareAnnotation()
+			square.SetLocation(100, 100)
+			square.SetSize(50, 50)
+			square.SetContents("A square")
+			square.DrawOn(page)
+		})
+		if mapped := strings.Contains(raw, "/Annot /Span"); mapped != (level == compliance.PDF_A_1A) {
+			t.Errorf("%v: Annot mapped %v", level, mapped)
+		}
+	}
+}

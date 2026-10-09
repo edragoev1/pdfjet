@@ -715,6 +715,17 @@ public final class PDF {
         (StructElem.EM.rawValue, StructElem.SPAN.rawValue),
         (StructElem.STRONG.rawValue, StructElem.SPAN.rawValue),
     ]
+    // The types that PDF 1.5 brought, which PDF/A-1, of PDF 1.4, does not
+    // know: an annotation's element is mapped to a Span, which its reference
+    // to the annotation stays in (veraPDF, PDF/A-1 6.8.3.4).
+    private static let roleMapOfPDFA1: [(String, String)] =
+            roleMap + [(StructElem.ANNOT.rawValue, StructElem.SPAN.rawValue)]
+
+    // Returns the role map of the document's compliance.
+    private func roleMapOfCompliance() -> [(String, String)] {
+        return (compliance == Compliance.PDF_A_1A || compliance == Compliance.PDF_A_1B)
+                ? PDF.roleMapOfPDFA1 : PDF.roleMap
+    }
     // The types of PDF 2.0 among the elements, which the role map maps.
     private var roles = Set<String>()
 
@@ -735,7 +746,7 @@ public final class PDF {
         // have, are mapped to the standard types that PDF/UA-1 knows.
         if !roles.isEmpty {
             append("/RoleMap <<")
-            for role in PDF.roleMap where roles.contains(role.0) {
+            for role in roleMapOfCompliance() where roles.contains(role.0) {
                 append(" /")
                 append(role.0)
                 append(" /")
@@ -826,7 +837,7 @@ public final class PDF {
             setObjOffset(element.objNumber ?? 0, byteCount)
             append(element.objNumber ?? 0)
             append(" 0 obj\n")
-            for role in PDF.roleMap where role.0 == element.structure {
+            for role in roleMapOfCompliance() where role.0 == element.structure {
                 roles.insert(role.0)
             }
             append("<<\n/Type /StructElem /S /")

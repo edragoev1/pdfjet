@@ -150,6 +150,21 @@ import Testing
                 "/Length 42\n>>\nstream\n/GS0 gs\n0.5 0.5 0.5 rg\n100 642 50 50 re f\n"), "\(raw)")
     }
 
+    @Test func aPDFA1MapsTheElementOfAnAnnotationToASpan() throws {
+        // PDF/A-1, of PDF 1.4, does not know the type Annot, of PDF 1.5: it is
+        // role-mapped there (veraPDF, PDF/A-1 6.8.3.4), and not in PDF/A-2.
+        for level in [Compliance.PDF_A_1A, Compliance.PDF_A_2A] {
+            let raw = try document(level) { _, page in
+                let square = SquareAnnotation()
+                square.setLocation(100, 100)
+                square.setSize(50, 50)
+                square.setContents("A square")
+                _ = square.drawOn(page)
+            }
+            #expect(raw.contains("/Annot /Span") == (level == Compliance.PDF_A_1A), "\(level)")
+        }
+    }
+
     @Test func aPDFA1DrawsAShapeThatIsNotOpaqueOpaque() throws {
         // PDF/A-1 has no transparency: the opacity is ignored there, and kept
         // in the other levels.

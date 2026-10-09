@@ -61,6 +61,10 @@ This is the first entry in this file; earlier releases were not tracked here.
   Transferable Developer licenses).
 
 ### Fixed
+- A PDF/A-1a document with an annotation passes veraPDF, in the four ports:
+  PDF/A-1 is of PDF 1.4, which does not have the structure type Annot of PDF
+  1.5, so in PDF/A-1 the role map maps it to Span (rule 6.8.3.4); other
+  levels are as before.
 - The language of a TextLine is kept in a TextColumn, in the four ports: the
   paragraph is one structure element for its words, and dropped the language
   of the text line they came from, so a screen reader read Example_29's

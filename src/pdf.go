@@ -717,7 +717,7 @@ func (pdf *PDF) addStructTreeRootObject() int {
 	// have, are mapped to the standard types that PDF/UA-1 knows.
 	if len(pdf.roles) > 0 {
 		pdf.appendString("/RoleMap <<")
-		for _, role := range roleMap {
+		for _, role := range pdf.roleMapOfCompliance() {
 			if pdf.roles[role[0]] {
 				pdf.appendString(" /")
 				pdf.appendString(role[0])
@@ -738,6 +738,20 @@ var roleMap = [][2]string{
 	{string(structelem.Title), string(structelem.P)},
 	{string(structelem.Em), string(structelem.Span)},
 	{string(structelem.Strong), string(structelem.Span)},
+}
+
+// roleMapOfPDFA1 adds the types that PDF 1.5 brought, which PDF/A-1, of PDF
+// 1.4, does not know: an annotation's element is mapped to a Span, which its
+// reference to the annotation stays in (veraPDF, PDF/A-1 6.8.3.4).
+var roleMapOfPDFA1 = append(append([][2]string{}, roleMap...),
+	[2]string{string(structelem.Annot), string(structelem.Span)})
+
+// roleMapOfCompliance returns the role map of the document's compliance.
+func (pdf *PDF) roleMapOfCompliance() [][2]string {
+	if pdf.compliance == compliance.PDF_A_1A || pdf.compliance == compliance.PDF_A_1B {
+		return roleMapOfPDFA1
+	}
+	return roleMap
 }
 
 func (pdf *PDF) addStructDocumentObject(parent int) int {
@@ -779,7 +793,7 @@ func (pdf *PDF) addStructElementObject(element *structElement) {
 		pdf.setObjOffset(element.objNumber, pdf.byteCount)
 		pdf.appendInteger(element.objNumber)
 		pdf.appendString(" 0 obj\n")
-		for _, role := range roleMap {
+		for _, role := range pdf.roleMapOfCompliance() {
 			if element.structure == role[0] {
 				if pdf.roles == nil {
 					pdf.roles = make(map[string]bool)

@@ -199,7 +199,7 @@ left is checking, tagging and packaging.
     a9a9fd89, fda6dc6a), with the EXIF orientation of a JPEG (9cc3afee).
     Was: v9.1: the link box of a word drawn with its space (a justified
     TextFrame row, and TextColumn always) reaches one space past the word.
-  - ⬜ Found by the PDF/A-1 fix: a PDF/A-1a document with an annotation fails
+  - ✅ Done on 8 October 2026: Annot mapped to Span in PDF/A-1. Found by the PDF/A-1 fix: a PDF/A-1a document with an annotation fails
     veraPDF 6.8.3.4-1, the structure type Annot not role-mapped (PDF/A-1 is
     PDF 1.4, which has no Annot): a /RoleMap entry for it, in the four
     ports, an older fault; a PDF/A-1b one passes.

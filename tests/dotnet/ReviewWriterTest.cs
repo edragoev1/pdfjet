@@ -160,6 +160,22 @@ public class ReviewWriterTest {
     }
 
     [Fact]
+    public void APDFA1MapsTheElementOfAnAnnotationToASpan() {
+        // PDF/A-1, of PDF 1.4, does not know the type Annot, of PDF 1.5: it is
+        // role-mapped there (veraPDF, PDF/A-1 6.8.3.4), and not in PDF/A-2.
+        foreach (Compliance level in new Compliance[] {Compliance.PDF_A_1A, Compliance.PDF_A_2A}) {
+            string raw = Document(level, (pdf, page) => {
+                SquareAnnotation square = new SquareAnnotation();
+                square.SetLocation(100f, 100f);
+                square.SetSize(50f, 50f);
+                square.SetContents("A square");
+                square.DrawOn(page);
+            });
+            Assert.True((level == Compliance.PDF_A_1A) == raw.Contains("/Annot /Span"), level.ToString());
+        }
+    }
+
+    [Fact]
     public void APDFA1DrawsAShapeThatIsNotOpaqueOpaque() {
         // PDF/A-1 has no transparency: the opacity is ignored there, and kept
         // in the other levels.

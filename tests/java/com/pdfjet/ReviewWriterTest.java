@@ -212,6 +212,24 @@ class ReviewWriterTest {
     }
 
     @Test
+    void aPDFA1MapsTheElementOfAnAnnotationToASpan() throws Exception {
+        // PDF/A-1, of PDF 1.4, does not know the type Annot, of PDF 1.5: it is
+        // role-mapped there (veraPDF, PDF/A-1 6.8.3.4), and not in PDF/A-2.
+        for (Compliance level : new Compliance[] {Compliance.PDF_A_1A, Compliance.PDF_A_2A}) {
+            String raw = document(level, new Drawing() {
+                public void draw(PDF pdf, Page page) throws Exception {
+                    SquareAnnotation square = new SquareAnnotation();
+                    square.setLocation(100f, 100f);
+                    square.setSize(50f, 50f);
+                    square.setContents("A square");
+                    square.drawOn(page);
+                }
+            });
+            assertEquals(level == Compliance.PDF_A_1A, raw.contains("/Annot /Span"), level.toString());
+        }
+    }
+
+    @Test
     void aLinkToADestinationTheDocumentDoesNotHaveIsRefused() throws Exception {
         final PDF pdf = TestSupport.newPDF();
         Page page = new Page(pdf, Letter.PORTRAIT);

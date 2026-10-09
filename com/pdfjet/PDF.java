@@ -750,7 +750,7 @@ final public class PDF {
         // have, are mapped to the standard types that PDF/UA-1 knows.
         if (!roles.isEmpty()) {
             append("/RoleMap <<");
-            for (String[] role : ROLE_MAP) {
+            for (String[] role : roleMapOfCompliance()) {
                 if (roles.contains(role[0])) {
                     append(" /");
                     append(role[0]);
@@ -772,6 +772,21 @@ final public class PDF {
         {StructElem.EM.type, StructElem.SPAN.type},
         {StructElem.STRONG.type, StructElem.SPAN.type},
     };
+    // The types that PDF 1.5 brought, which PDF/A-1, of PDF 1.4, does not
+    // know: an annotation's element is mapped to a Span, which its reference
+    // to the annotation stays in (veraPDF, PDF/A-1 6.8.3.4).
+    private static final String[][] ROLE_MAP_OF_PDF_A_1 = {
+        {StructElem.TITLE.type, StructElem.P.type},
+        {StructElem.EM.type, StructElem.SPAN.type},
+        {StructElem.STRONG.type, StructElem.SPAN.type},
+        {StructElem.ANNOT.type, StructElem.SPAN.type},
+    };
+
+    // Returns the role map of the document's compliance.
+    private String[][] roleMapOfCompliance() {
+        return (compliance == Compliance.PDF_A_1A || compliance == Compliance.PDF_A_1B)
+                ? ROLE_MAP_OF_PDF_A_1 : ROLE_MAP;
+    }
     // The types of PDF 2.0 among the elements, which the role map maps.
     private final Set<String> roles = new HashSet<String>();
 
@@ -847,7 +862,7 @@ final public class PDF {
             setObjOffset(element.objNumber, byteCount);
             append(element.objNumber);
             append(" 0 obj\n");
-            for (String[] role : ROLE_MAP) {
+            for (String[] role : roleMapOfCompliance()) {
                 if (role[0].equals(element.structure)) {
                     roles.add(role[0]);
                 }
