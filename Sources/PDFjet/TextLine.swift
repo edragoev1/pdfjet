@@ -686,13 +686,17 @@ public class TextLine : BaselineDrawable {
     // from the ascent above the baseline to the descent below it, turned with
     // the text, which the link of the text covers.
     private func getLinkBox(_ verticalOffset: Float) -> [Float] {
-        let width = font!.stringWidth(fallbackFont, fontSize, text!)
+        // The box holds the text that shows, without the spaces it is drawn
+        // with at either end: a word of a TextColumn or of a justified
+        // TextFrame row is drawn with the space after it, and its link reached
+        // one space past it.
+        let (start, end) = getVisibleSpan()
         let ascent = font!.getAscent(fontSize)
         let descent = font!.getDescent(fontSize)
         let x0 = x
         let y0 = y + verticalOffset
         if degrees % 360 == 0 {
-            return [x0, y0 - ascent, x0 + width, y0 + descent]
+            return [x0 + start, y0 - ascent, x0 + end, y0 + descent]
         }
         // The corners of the box, along the baseline and across it, turned as
         // the underline is; the trigonometry turns counterclockwise, where the
@@ -704,7 +708,7 @@ public class TextLine : BaselineDrawable {
         var y1 = Double.infinity
         var x2 = -Double.infinity
         var y2 = -Double.infinity
-        for along in [0.0, Double(width)] {
+        for along in [Double(start), Double(end)] {
             for across in [Double(-ascent), Double(descent)] {
                 let cornerX = Double(x0) + along*cosValue + across*sinValue
                 let cornerY = Double(y0) - along*sinValue + across*cosValue
@@ -715,6 +719,32 @@ public class TextLine : BaselineDrawable {
             }
         }
         return [Float(x1), Float(y1), Float(x2), Float(y2)]
+    }
+
+    // Returns where the text that shows starts and ends along the baseline:
+    // past the spaces before it, and before the spaces after it. A text of
+    // spaces alone spans its whole width.
+    private func getVisibleSpan() -> (Float, Float) {
+        let scalars = Array(text!.unicodeScalars)
+        let width = font!.stringWidth(fallbackFont, fontSize, text!)
+        var first = 0
+        while first < scalars.count && scalars[first] == " " {
+            first += 1
+        }
+        var last = scalars.count
+        while last > first && scalars[last - 1] == " " {
+            last -= 1
+        }
+        if first == last || (first == 0 && last == scalars.count) {
+            return (0.0, width)
+        }
+        var before = String.UnicodeScalarView()
+        before.append(contentsOf: scalars[0..<first])
+        var through = String.UnicodeScalarView()
+        through.append(contentsOf: scalars[0..<last])
+        let start = font!.stringWidth(fallbackFont, fontSize, String(before))
+        let end = font!.stringWidth(fallbackFont, fontSize, String(through))
+        return (start, end)
     }
 
     // Returns the right end of the baseline, or its lower end when the text is rotated.

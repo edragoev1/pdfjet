@@ -66,6 +66,11 @@ This is the first entry in this file; earlier releases were not tracked here.
   Transferable Developer licenses).
 
 ### Fixed
+- The link of a word drawn with its space ends at the word, in the four ports:
+  a word of a TextColumn, or of a justified TextFrame row, is drawn with the
+  space after it, and its link box reached one space past it. The box of a
+  TextLine's link now holds the text that shows, without the spaces at either
+  end of it; a text of spaces alone keeps its whole width.
 - An OpenType or TrueType font whose table directory lists `hmtx` before
   `hhea` is read as any other, in the four ports. The number of advance
   widths is in `hhea`, so `hmtx` is now read after the directory: Java and C#

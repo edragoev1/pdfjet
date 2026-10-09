@@ -9,10 +9,61 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/edragoev1/pdfjet/v9/src/alignment"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/corefont"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
+
+func TestTextLineTheLinkOfAWordDrawnWithItsSpaceEndsAtTheWord(t *testing.T) {
+	// A word of a TextColumn, or of a justified TextFrame row, is drawn with
+	// the space after it, and its link reached one space past the word. The
+	// box now holds the text that shows.
+	words := []string{"Click", "here", "for", "the", "whole", "story", "of", "it"}
+	text := strings.Join(words, " ")
+	check := func(what string, page *Page) {
+		t.Helper()
+		if len(page.annots) != len(words) {
+			t.Fatalf("%s: %d links, not %d", what, len(page.annots), len(words))
+		}
+		font := testHelvetica(page.pdf)
+		for i, annot := range page.annots {
+			want := NewTextLine(font, words[i]).GetWidth()
+			testNear(t, what+" "+words[i], want, annot.x2-annot.x1, testDelta)
+		}
+	}
+
+	page := testNewPage()
+	font := testHelvetica(page.pdf)
+	column := NewTextColumn()
+	column.SetWidth(120)
+	column.SetLocation(50, 50)
+	column.AddParagraph(NewParagraph().Add(NewTextLine(font, text).SetURIAction("https://pdfjet.com")))
+	column.DrawOn(page)
+	check("TextColumn", page)
+
+	// Rows of two words, justified and so drawn a word at a time, and a last
+	// row of one, drawn as it is.
+	words = []string{"word", "word", "word", "word", "word"}
+	page = testNewPage()
+	font = testHelvetica(page.pdf)
+	paragraph := NewParagraph().SetTextAlignment(alignment.Justify)
+	paragraph.Add(NewTextLine(font, strings.Join(words, " ")).SetURIAction("https://pdfjet.com"))
+	frame := NewTextFrameFromParagraphs([]*Paragraph{paragraph}).
+		SetWidth(NewTextLine(font, "word word").GetWidth() + 2)
+	frame.SetLocation(50, 50)
+	frame.DrawOn(page)
+	check("justified TextFrame", page)
+
+	// A text line of its own keeps the spaces it is given out of its box too.
+	page = testNewPage()
+	font = testHelvetica(page.pdf)
+	line := NewTextLine(font, "  link  ").SetURIAction("https://pdfjet.com")
+	line.SetLocation(100, 100)
+	line.DrawOn(page)
+	testNear(t, "left", 100+NewTextLine(font, "  ").GetWidth(), page.annots[0].x1, testDelta)
+	testNear(t, "width", NewTextLine(font, "link").GetWidth(), page.annots[0].x2-page.annots[0].x1, testDelta)
+}
 
 func TestTextLineDrawOnWritesTheTextAsHexAtTheFlippedY(t *testing.T) {
 	pdf := testNewPDF()

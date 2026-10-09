@@ -768,13 +768,19 @@ public class TextLine implements BaselineDrawable {
     // from the ascent above the baseline to the descent below it, turned with
     // the text, which the link of the text covers.
     private float[] getLinkBox(float verticalOffset) {
-        float width = font.stringWidth(fallbackFont, fontSize, text);
+        // The box holds the text that shows, without the spaces it is drawn
+        // with at either end: a word of a TextColumn or of a justified
+        // TextFrame row is drawn with the space after it, and its link reached
+        // one space past it.
+        float[] span = getVisibleSpan();
+        float start = span[0];
+        float end = span[1];
         float ascent = font.getAscent(fontSize);
         float descent = font.getDescent(fontSize);
         float x0 = x;
         float y0 = y + verticalOffset;
         if (degrees % 360 == 0) {
-            return new float[] {x0, y0 - ascent, x0 + width, y0 + descent};
+            return new float[] {x0 + start, y0 - ascent, x0 + end, y0 + descent};
         }
         // The corners of the box, along the baseline and across it, turned as
         // the underline is; the trigonometry turns counterclockwise, where the
@@ -786,7 +792,7 @@ public class TextLine implements BaselineDrawable {
         double y1 = Double.POSITIVE_INFINITY;
         double x2 = Double.NEGATIVE_INFINITY;
         double y2 = Double.NEGATIVE_INFINITY;
-        for (double along : new double[] {0.0, width}) {
+        for (double along : new double[] {start, end}) {
             for (double across : new double[] {-ascent, descent}) {
                 double cornerX = x0 + along*cos + across*sin;
                 double cornerY = y0 - along*sin + across*cos;
@@ -797,6 +803,27 @@ public class TextLine implements BaselineDrawable {
             }
         }
         return new float[] {(float) x1, (float) y1, (float) x2, (float) y2};
+    }
+
+    // Returns where the text that shows starts and ends along the baseline:
+    // past the spaces before it, and before the spaces after it. A text of
+    // spaces alone spans its whole width.
+    private float[] getVisibleSpan() {
+        float width = font.stringWidth(fallbackFont, fontSize, text);
+        int first = 0;
+        while (first < text.length() && text.charAt(first) == ' ') {
+            first++;
+        }
+        int last = text.length();
+        while (last > first && text.charAt(last - 1) == ' ') {
+            last--;
+        }
+        if (first == last || (first == 0 && last == text.length())) {
+            return new float[] {0f, width};
+        }
+        float start = font.stringWidth(fallbackFont, fontSize, text.substring(0, first));
+        float end = font.stringWidth(fallbackFont, fontSize, text.substring(0, last));
+        return new float[] {start, end};
     }
 
     // Returns the right end of the baseline, or its lower end when the text is rotated.

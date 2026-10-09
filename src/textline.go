@@ -15,6 +15,7 @@ package pdfjet
 
 import (
 	"math"
+	"strings"
 
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/internal/single"
@@ -603,13 +604,16 @@ func (textLine *TextLine) corner(verticalOffset float32) [2]float32 {
 // text, from the ascent above the baseline to the descent below it, turned with
 // the text, which the link of the text covers.
 func (textLine *TextLine) linkBox(verticalOffset float32) (float32, float32, float32, float32) {
-	width := textLine.font.StringWidthUsingFallbackFont(textLine.fallbackFont, textLine.fontSize, textLine.text)
+	// The box holds the text that shows, without the spaces it is drawn with
+	// at either end: a word of a TextColumn or of a justified TextFrame row is
+	// drawn with the space after it, and its link reached one space past it.
+	start, end := textLine.visibleSpan()
 	ascent := textLine.font.GetAscent(textLine.fontSize)
 	descent := textLine.font.GetDescent(textLine.fontSize)
 	x := textLine.x
 	y := textLine.y + verticalOffset
 	if textLine.degrees%360 == 0 {
-		return x, y - ascent, x + width, y + descent
+		return x + start, y - ascent, x + end, y + descent
 	}
 	// The corners of the box, along the baseline and across it, turned as the
 	// underline is; the trigonometry turns counterclockwise, where the
@@ -618,7 +622,7 @@ func (textLine *TextLine) linkBox(verticalOffset float32) (float32, float32, flo
 	cos, sin := math.Cos(radians), math.Sin(radians)
 	x1, y1 := math.Inf(1), math.Inf(1)
 	x2, y2 := math.Inf(-1), math.Inf(-1)
-	for _, along := range []float64{0, float64(width)} {
+	for _, along := range []float64{float64(start), float64(end)} {
 		for _, across := range []float64{float64(-ascent), float64(descent)} {
 			cornerX := float64(x) + float64(along*cos) + float64(across*sin)
 			cornerY := float64(y) - float64(along*sin) + float64(across*cos)
@@ -627,6 +631,22 @@ func (textLine *TextLine) linkBox(verticalOffset float32) (float32, float32, flo
 		}
 	}
 	return float32(x1), float32(y1), float32(x2), float32(y2)
+}
+
+// visibleSpan returns where the text that shows starts and ends along the
+// baseline: past the spaces before it, and before the spaces after it. A text
+// of spaces alone spans its whole width.
+func (textLine *TextLine) visibleSpan() (float32, float32) {
+	width := textLine.font.StringWidthUsingFallbackFont(textLine.fallbackFont, textLine.fontSize, textLine.text)
+	trimmed := strings.Trim(textLine.text, single.Space)
+	if trimmed == "" || trimmed == textLine.text {
+		return 0, width
+	}
+	start := textLine.font.StringWidthUsingFallbackFont(textLine.fallbackFont, textLine.fontSize,
+		textLine.text[:len(textLine.text)-len(strings.TrimLeft(textLine.text, single.Space))])
+	end := textLine.font.StringWidthUsingFallbackFont(textLine.fallbackFont, textLine.fontSize,
+		strings.TrimRight(textLine.text, single.Space))
+	return start, end
 }
 
 // GetLocation returns the x coordinate of the start of the text and the y coordinate of its baseline.

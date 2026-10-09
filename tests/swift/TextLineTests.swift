@@ -85,4 +85,51 @@ import Testing
         line.setFallbackFont(helvetica).setFont(try Font(pdf, CoreFont.TIMES_ROMAN))
         #expect(line.getFallbackFont() === helvetica)
     }
+
+    // The links of the page, each the width of the word it holds.
+    private func checkLinks(_ what: String, _ page: Page, _ font: Font, _ words: [String]) {
+        #expect(page.annots.count == words.count, "\(what)")
+        for (i, annot) in page.annots.enumerated() where i < words.count {
+            TestSupport.expectNear(TextLine(font, words[i]).getWidth(), annot.x2 - annot.x1,
+                    TestSupport.delta, "\(what) \(words[i])")
+        }
+    }
+
+    @Test func theLinkOfAWordDrawnWithItsSpaceEndsAtTheWord() {
+        // A word of a TextColumn, or of a justified TextFrame row, is drawn with
+        // the space after it, and its link reached one space past the word. The
+        // box now holds the text that shows.
+        var words = ["Click", "here", "for", "the", "whole", "story", "of", "it"]
+        var page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        var font = TestSupport.helvetica(page.pdf)
+        let column = TextColumn()
+        column.setWidth(120.0)
+        column.setLocation(50.0, 50.0)
+        column.addParagraph(Paragraph().add(
+                TextLine(font, words.joined(separator: " ")).setURIAction("https://pdfjet.com")))
+        column.drawOn(page)
+        checkLinks("TextColumn", page, font, words)
+
+        // Rows of two words, justified and so drawn a word at a time, and a
+        // last row of one, drawn as it is.
+        words = ["word", "word", "word", "word", "word"]
+        page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        font = TestSupport.helvetica(page.pdf)
+        let paragraph = Paragraph().setTextAlignment(Alignment.JUSTIFY)
+        paragraph.add(TextLine(font, words.joined(separator: " ")).setURIAction("https://pdfjet.com"))
+        let frame = TextFrame([paragraph]).setWidth(TextLine(font, "word word").getWidth() + 2.0)
+        frame.setLocation(50.0, 50.0)
+        frame.drawOn(page)
+        checkLinks("justified TextFrame", page, font, words)
+
+        // A text line of its own keeps the spaces it is given out of its box too.
+        page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        font = TestSupport.helvetica(page.pdf)
+        let line = TextLine(font, "  link  ").setURIAction("https://pdfjet.com")
+        line.setLocation(100.0, 100.0)
+        line.drawOn(page)
+        let annot = page.annots[0]
+        TestSupport.expectNear(100.0 + TextLine(font, "  ").getWidth(), annot.x1, TestSupport.delta, "left")
+        TestSupport.expectNear(TextLine(font, "link").getWidth(), annot.x2 - annot.x1, TestSupport.delta, "width")
+    }
 }

@@ -92,5 +92,55 @@ public class TextLineTest {
         line.SetFallbackFont(helvetica).SetFont(new Font(pdf, CoreFont.TIMES_ROMAN));
         Assert.Same(helvetica, line.GetFallbackFont());
     }
+
+    // The links of the page, each the width of the word it holds.
+    private static void CheckLinks(string what, Page page, Font font, string[] words) {
+        Assert.Equal(words.Length, page.annots.Count);
+        for (int i = 0; i < words.Length; i++) {
+            Annotation annot = page.annots[i];
+            TestSupport.AssertNear(new TextLine(font, words[i]).GetWidth(), annot.x2 - annot.x1,
+                    TestSupport.DELTA, what + " " + words[i]);
+        }
+    }
+
+    [Fact]
+    public void TheLinkOfAWordDrawnWithItsSpaceEndsAtTheWord() {
+        // A word of a TextColumn, or of a justified TextFrame row, is drawn with
+        // the space after it, and its link reached one space past the word. The
+        // box now holds the text that shows.
+        string[] words = {"Click", "here", "for", "the", "whole", "story", "of", "it"};
+        Page page = new Page(TestSupport.NewPDF(), Letter.PORTRAIT);
+        Font font = TestSupport.Helvetica(page.pdf);
+        TextColumn column = new TextColumn();
+        column.SetWidth(120f);
+        column.SetLocation(50f, 50f);
+        column.AddParagraph(new Paragraph().Add(
+                new TextLine(font, string.Join(" ", words)).SetURIAction("https://pdfjet.com")));
+        column.DrawOn(page);
+        CheckLinks("TextColumn", page, font, words);
+
+        // Rows of two words, justified and so drawn a word at a time, and a
+        // last row of one, drawn as it is.
+        words = new string[] {"word", "word", "word", "word", "word"};
+        page = new Page(TestSupport.NewPDF(), Letter.PORTRAIT);
+        font = TestSupport.Helvetica(page.pdf);
+        Paragraph paragraph = new Paragraph().SetTextAlignment(Alignment.JUSTIFY);
+        paragraph.Add(new TextLine(font, string.Join(" ", words)).SetURIAction("https://pdfjet.com"));
+        TextFrame frame = new TextFrame(new System.Collections.Generic.List<Paragraph> { paragraph })
+                .SetWidth(new TextLine(font, "word word").GetWidth() + 2f);
+        frame.SetLocation(50f, 50f);
+        frame.DrawOn(page);
+        CheckLinks("justified TextFrame", page, font, words);
+
+        // A text line of its own keeps the spaces it is given out of its box too.
+        page = new Page(TestSupport.NewPDF(), Letter.PORTRAIT);
+        font = TestSupport.Helvetica(page.pdf);
+        TextLine line = new TextLine(font, "  link  ").SetURIAction("https://pdfjet.com");
+        line.SetLocation(100f, 100f);
+        line.DrawOn(page);
+        Annotation annot = page.annots[0];
+        TestSupport.AssertNear(100f + new TextLine(font, "  ").GetWidth(), annot.x1, TestSupport.DELTA, "left");
+        TestSupport.AssertNear(new TextLine(font, "link").GetWidth(), annot.x2 - annot.x1, TestSupport.DELTA, "width");
+    }
 }
 }

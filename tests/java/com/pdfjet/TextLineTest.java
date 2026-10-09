@@ -98,4 +98,55 @@ class TextLineTest {
         line.setFallbackFont(helvetica).setFont(new Font(pdf, CoreFont.TIMES_ROMAN));
         assertSame(helvetica, line.getFallbackFont());
     }
+
+    // The links of the page, each the width of the word it holds.
+    private static void checkLinks(String what, Page page, Font font, String[] words) throws Exception {
+        assertEquals(words.length, page.annots.size(), what);
+        for (int i = 0; i < words.length; i++) {
+            Annotation annot = page.annots.get(i);
+            assertEquals(new TextLine(font, words[i]).getWidth(), annot.x2 - annot.x1, TestSupport.DELTA,
+                    what + " " + words[i]);
+        }
+    }
+
+    @Test
+    void theLinkOfAWordDrawnWithItsSpaceEndsAtTheWord() throws Exception {
+        // A word of a TextColumn, or of a justified TextFrame row, is drawn with
+        // the space after it, and its link reached one space past the word. The
+        // box now holds the text that shows.
+        String[] words = {"Click", "here", "for", "the", "whole", "story", "of", "it"};
+        Page page = new Page(TestSupport.newPDF(), Letter.PORTRAIT);
+        Font font = TestSupport.helvetica(page.pdf);
+        TextColumn column = new TextColumn();
+        column.setWidth(120f);
+        column.setLocation(50f, 50f);
+        column.addParagraph(new Paragraph().add(
+                new TextLine(font, String.join(" ", words)).setURIAction("https://pdfjet.com")));
+        column.drawOn(page);
+        checkLinks("TextColumn", page, font, words);
+
+        // Rows of two words, justified and so drawn a word at a time, and a
+        // last row of one, drawn as it is.
+        words = new String[] {"word", "word", "word", "word", "word"};
+        page = new Page(TestSupport.newPDF(), Letter.PORTRAIT);
+        font = TestSupport.helvetica(page.pdf);
+        Paragraph paragraph = new Paragraph().setTextAlignment(Alignment.JUSTIFY);
+        paragraph.add(new TextLine(font, String.join(" ", words)).setURIAction("https://pdfjet.com"));
+        java.util.List<Paragraph> paragraphs = new java.util.ArrayList<Paragraph>();
+        paragraphs.add(paragraph);
+        TextFrame frame = new TextFrame(paragraphs).setWidth(new TextLine(font, "word word").getWidth() + 2f);
+        frame.setLocation(50f, 50f);
+        frame.drawOn(page);
+        checkLinks("justified TextFrame", page, font, words);
+
+        // A text line of its own keeps the spaces it is given out of its box too.
+        page = new Page(TestSupport.newPDF(), Letter.PORTRAIT);
+        font = TestSupport.helvetica(page.pdf);
+        TextLine line = new TextLine(font, "  link  ").setURIAction("https://pdfjet.com");
+        line.setLocation(100f, 100f);
+        line.drawOn(page);
+        Annotation annot = page.annots.get(0);
+        assertEquals(100f + new TextLine(font, "  ").getWidth(), annot.x1, TestSupport.DELTA);
+        assertEquals(new TextLine(font, "link").getWidth(), annot.x2 - annot.x1, TestSupport.DELTA);
+    }
 }

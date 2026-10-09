@@ -632,13 +632,19 @@ public class TextLine : IBaselineDrawable {
     // from the ascent above the baseline to the descent below it, turned with
     // the text, which the link of the text covers.
     private float[] GetLinkBox(float verticalOffset) {
-        float width = font.StringWidth(fallbackFont, fontSize, text);
+        // The box holds the text that shows, without the spaces it is drawn
+        // with at either end: a word of a TextColumn or of a justified
+        // TextFrame row is drawn with the space after it, and its link reached
+        // one space past it.
+        float[] span = GetVisibleSpan();
+        float start = span[0];
+        float end = span[1];
         float ascent = font.GetAscent(fontSize);
         float descent = font.GetDescent(fontSize);
         float x0 = x;
         float y0 = y + verticalOffset;
         if (degrees % 360 == 0) {
-            return new float[] {x0, y0 - ascent, x0 + width, y0 + descent};
+            return new float[] {x0 + start, y0 - ascent, x0 + end, y0 + descent};
         }
         // The corners of the box, along the baseline and across it, turned as
         // the underline is; the trigonometry turns counterclockwise, where the
@@ -650,7 +656,7 @@ public class TextLine : IBaselineDrawable {
         double y1 = Double.PositiveInfinity;
         double x2 = Double.NegativeInfinity;
         double y2 = Double.NegativeInfinity;
-        foreach (double along in new double[] {0.0, width}) {
+        foreach (double along in new double[] {start, end}) {
             foreach (double across in new double[] {-ascent, descent}) {
                 double cornerX = x0 + along*cos + across*sin;
                 double cornerY = y0 - along*sin + across*cos;
@@ -661,6 +667,27 @@ public class TextLine : IBaselineDrawable {
             }
         }
         return new float[] {(float) x1, (float) y1, (float) x2, (float) y2};
+    }
+
+    // Returns where the text that shows starts and ends along the baseline:
+    // past the spaces before it, and before the spaces after it. A text of
+    // spaces alone spans its whole width.
+    private float[] GetVisibleSpan() {
+        float width = font.StringWidth(fallbackFont, fontSize, text);
+        int first = 0;
+        while (first < text.Length && text[first] == ' ') {
+            first++;
+        }
+        int last = text.Length;
+        while (last > first && text[last - 1] == ' ') {
+            last--;
+        }
+        if (first == last || (first == 0 && last == text.Length)) {
+            return new float[] {0f, width};
+        }
+        float start = font.StringWidth(fallbackFont, fontSize, text.Substring(0, first));
+        float end = font.StringWidth(fallbackFont, fontSize, text.Substring(0, last));
+        return new float[] {start, end};
     }
 
     // Returns the right end of the baseline, or its lower end when the text is rotated.
