@@ -2250,7 +2250,7 @@ func (pdf *PDF) complete() error {
 		}
 	}
 	pdf.completed = true
-	pdf.addTrueTypeFonts()
+	pdf.addEmbeddedFonts()
 	if pdf.compliance != compliance.PDF_1_7 {
 		pdf.metadataObjNumber = pdf.addMetadataObject("", false)
 		pdf.outputIntentObjNumber = pdf.addOutputIntentObject()

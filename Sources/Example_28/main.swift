@@ -10,9 +10,9 @@ import PDFjet
 /**
  * Example_28.swift
  * This example reads fonts from OpenType and TrueType files. Any .otf or
- * .ttf file on the computer is a font for PDFjet. A TrueType font is
+ * .ttf file on the computer is a font for PDFjet. A font is
  * embedded as a subset of the glyphs the document draws, unless it is set
- * to stay whole; a font with CFF outlines is embedded whole.
+ * to stay whole.
  */
 public class Example_28 {
     public init() throws {
@@ -35,9 +35,9 @@ public class Example_28 {
                 "PDFjet reads OpenType and TrueType fonts as they are: pass the path "
                 + "of any .otf or .ttf file on the computer to the Font constructor. "
                 + "The IBMPlexSans and NotoSans constants are the paths of the fonts "
-                + "that come with PDFjet. A TrueType font is embedded with only the "
-                + "glyphs the document draws, which keeps the file small; a font with "
-                + "CFF outlines is embedded whole. The paragraph below is drawn four times.")
+                + "that come with PDFjet. A font is embedded with only the "
+                + "glyphs the document draws, which keeps the file small, whatever its "
+                + "outlines. The paragraph below is drawn four times.")
         textBlock.setFontSize(12.0)
         textBlock.setLineSpacing(1.5)
         textBlock.setLocation(50.0, 95.0)
@@ -51,7 +51,7 @@ public class Example_28 {
             NotoSans.Regular,
         ]
         let kinds = [
-            "OpenType with CFF outlines, from the .otf file, embedded whole",
+            "OpenType with CFF outlines, from the .otf file, embedded as a subset",
             "TrueType, from the .ttf file, embedded as a subset",
             "Another TrueType font, embedded as a subset",
             "A TrueType font kept whole: subsetting turned off",

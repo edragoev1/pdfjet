@@ -14,19 +14,23 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 )
 
-// trueTypeProgram is the font program of a TrueType font, kept until Complete, when it is embedded with the outlines of
-// the glyphs the document did not draw emptied. The glyph numbers stay, so the
-// widths, the character map and the ToUnicode map are those of the whole font.
-// Fonts read from one file share one program, and the glyphs any of them drew.
-type trueTypeProgram struct {
-	font  []byte // The font
-	used  []bool // The glyphs drawn, by glyph number
-	whole bool   // Set by SetSubset(false): the font is embedded whole
+// fontProgram is the font program of a TrueType font, or the CFF table of an
+// OpenType font with CFF outlines, kept until Complete, when it is embedded
+// with the outlines of the glyphs the document did not draw emptied. The glyph
+// numbers stay, so the widths, the character map and the ToUnicode map are
+// those of the whole font. Fonts read from one file share one program, and the
+// glyphs any of them drew.
+type fontProgram struct {
+	font      []byte // The TrueType font, or the CFF table
+	cff       bool
+	forbidden bool   // The fsType of a CFF font's OS/2 table forbids subsetting
+	used      []bool // The glyphs drawn, by glyph number
+	whole     bool   // Set by SetSubset(false): the font is embedded whole
 }
 
-func newTrueTypeProgram() *trueTypeProgram {
+func newFontProgram() *fontProgram {
 	// A glyph number is written in four hexadecimal digits.
-	program := &trueTypeProgram{used: make([]bool, 0x10000)}
+	program := &fontProgram{used: make([]bool, 0x10000)}
 	program.used[0] = true // .notdef, drawn for a character the font lacks
 	return program
 }
@@ -40,11 +44,10 @@ func (font *Font) useGlyph(gid int) {
 
 // SetSubset sets whether this font is embedded as a subset, the outlines of
 // the glyphs the document does not draw left out, which is the default for a
-// TrueType font, a .ttf. A font with CFF outlines, a .otf, is always embedded
-// whole. A font whose license does not allow
-// subsetting, by the fsType of its OS/2 table, is embedded whole too. Fonts
-// read from one file are one font program in the PDF: kept whole for one, the
-// program is whole for all of them. It must be called before Complete.
+// .ttf or a .otf. A font whose license does not allow subsetting, by the
+// fsType of its OS/2 table, is embedded whole. Fonts read from one file are
+// one font program in the PDF: kept whole for one, the program is whole for
+// all of them. It must be called before Complete.
 func (font *Font) SetSubset(subset bool) *Font {
 	if font.program != nil {
 		font.program.whole = !subset
@@ -52,31 +55,33 @@ func (font *Font) SetSubset(subset bool) *Font {
 	return font
 }
 
-// shareTrueTypeProgram gives the font the program of a font the PDF already
-// has from the same file, if any, or else a new one of the font given.
-func shareTrueTypeProgram(pdf *PDF, font *Font, ttf []byte) {
+// shareFontProgram gives the font the program of a font the PDF already has
+// from the same file, if any, or else a new one of the program given.
+func shareFontProgram(pdf *PDF, font *Font, program []byte, cff, forbidden bool) {
 	for _, f := range pdf.fonts {
 		if f.program != nil && f.name == font.name && f.checksum == font.checksum {
 			font.program = f.program
 			return
 		}
 	}
-	font.program = newTrueTypeProgram()
-	font.program.font = ttf
+	font.program = newFontProgram()
+	font.program.font = program
+	font.program.cff = cff
+	font.program.forbidden = forbidden
 }
 
-// addTrueTypeFonts writes the TrueType fonts at Complete, when every glyph
+// addEmbeddedFonts writes the embedded fonts at Complete, when every glyph
 // they draw is known: each font program, its descriptor, its CID font and its
 // ToUnicode map once, and the Type0 font of each Font under the number its
 // pages refer to.
-func (pdf *PDF) addTrueTypeFonts() {
+func (pdf *PDF) addEmbeddedFonts() {
 	for _, font := range pdf.fonts {
 		if font.program == nil {
 			continue
 		}
 		baseFont := font.name
 		var kept []bool
-		embedTrueTypeProgram(pdf, font, &baseFont, &kept)
+		embedFontProgram(pdf, font, &baseFont, &kept)
 		addCIDSetObject(pdf, font, kept)
 		addFontDescriptorObject(pdf, font, baseFont)
 		addCIDFontDictionaryObject(pdf, font, baseFont, kept)
@@ -107,11 +112,11 @@ func (pdf *PDF) addTrueTypeFonts() {
 	}
 }
 
-// embedTrueTypeProgram writes the font program, a subset unless it is to be
+// embedFontProgram writes the font program, a subset unless it is to be
 // whole, and gives the name of the font, with the tag of a subset, and the
 // glyphs the subset keeps. A font of the same program embedded before is not
 // written again: its name and object numbers are used.
-func embedTrueTypeProgram(pdf *PDF, font *Font, baseFont *string, kept *[]bool) {
+func embedFontProgram(pdf *PDF, font *Font, baseFont *string, kept *[]bool) {
 	for _, f := range pdf.fonts {
 		if f == font {
 			break
@@ -126,19 +131,34 @@ func embedTrueTypeProgram(pdf *PDF, font *Font, baseFont *string, kept *[]bool) 
 	}
 
 	program := font.program
-	ttf := program.font
+	data := program.font
 	var compressed []byte
-	length := len(ttf)
-	if !program.whole {
-		if subset, glyphs, err := subsetTrueType(ttf, program.used); err == nil {
+	length := len(data)
+	if !program.whole && !program.forbidden {
+		var subset []byte
+		var glyphs []bool
+		var err error
+		if program.cff {
+			subset, glyphs, err = subsetCFF(data, program.used)
+		} else {
+			subset, glyphs, err = subsetTrueType(data, program.used)
+		}
+		if err == nil {
 			compressed = deflateFontProgram(subset)
 			length = len(subset)
 			*kept = glyphs
 			*baseFont = subsetTag(font.checksum, glyphs) + "+" + font.name
 		}
 	}
+	if compressed == nil && program.cff {
+		// Whole, written again for the identity charset of a CID-keyed font,
+		// or as it is when it cannot be.
+		if whole, _, err := subsetCFF(data, nil); err == nil {
+			data = whole
+		}
+	}
 	if compressed == nil { // Whole
-		compressed = deflateFontProgram(ttf)
+		compressed = deflateFontProgram(data)
 	}
 	font.baseFont = *baseFont
 
@@ -148,10 +168,15 @@ func embedTrueTypeProgram(pdf *PDF, font *Font, baseFont *string, kept *[]bool) 
 	}
 	pdf.newObj()
 	pdf.appendString("<<\n")
+	if program.cff {
+		pdf.appendString("/Subtype /CIDFontType0C\n")
+	}
 	pdf.appendString("/Filter /FlateDecode\n")
-	pdf.appendString("/Length1 ")
-	pdf.appendInteger(length)
-	pdf.appendString("\n")
+	if !program.cff {
+		pdf.appendString("/Length1 ")
+		pdf.appendInteger(length)
+		pdf.appendString("\n")
+	}
 	if metadataObjNumber != 0 {
 		pdf.appendString("/Metadata ")
 		pdf.appendInteger(metadataObjNumber)

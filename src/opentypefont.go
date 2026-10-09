@@ -21,15 +21,15 @@ func registerOpenTypeFont(pdf *PDF, font *Font, reader io.Reader) {
 	otf := newOpenTypeFont(reader)
 	setOpenTypeFontData(font, otf)
 
-	if !otf.cff {
-		// A TrueType font is written at Complete, a subset of the glyphs
-		// drawn; its pages refer to the number reserved for it.
-		shareTrueTypeProgram(pdf, font, otf.buf)
-		font.objNumber = pdf.reserveObjNumber()
-		pdf.fonts = append(pdf.fonts, font)
-		return
+	// The font is written at Complete, a subset of the glyphs drawn; its
+	// pages refer to the number reserved for it.
+	if otf.cff {
+		shareFontProgram(pdf, font, otf.buf[otf.cffOff:otf.cffOff+otf.cffLen], true, otf.fsType&0x0100 != 0)
+	} else {
+		shareFontProgram(pdf, font, otf.buf, false, false)
 	}
-	registerCFFFont(pdf, font, otf)
+	font.objNumber = pdf.reserveObjNumber()
+	pdf.fonts = append(pdf.fonts, font)
 }
 
 // addOpenTypeFontToObjects adds the font to the objects of an existing PDF,
@@ -69,84 +69,6 @@ func setOpenTypeFontData(font *Font, otf *openTypeFont) {
 	font.cff = otf.cff
 	font.checksum = checksumOf(font)
 	font.SetSize(font.size)
-}
-
-// registerCFFFont writes a font with CFF outlines, which is embedded whole, as
-// it is added.
-func registerCFFFont(pdf *PDF, font *Font, otf *openTypeFont) {
-	embedOpenTypeFontFile(pdf, font, otf)
-	addFontDescriptorObject(pdf, font, font.name)
-	addCIDFontDictionaryObject(pdf, font, font.name, nil)
-	addToUnicodeCMapObject(pdf, font, nil)
-
-	// Type0 Font Dictionary
-	pdf.newObj()
-	pdf.appendString("<<\n")
-	pdf.appendString("/Type /Font\n")
-	pdf.appendString("/Subtype /Type0\n")
-	pdf.appendString("/BaseFont /")
-	pdf.appendString(otf.fontName)
-	pdf.appendString("\n")
-	pdf.appendString("/Encoding /Identity-H\n")
-	pdf.appendString("/DescendantFonts [")
-	pdf.appendInteger(font.cidFontDictObjNumber)
-	pdf.appendString(" 0 R]\n")
-	pdf.appendString("/ToUnicode ")
-	pdf.appendInteger(font.toUnicodeCMapObjNumber)
-	pdf.appendString(" 0 R\n")
-	pdf.appendString(">>\n")
-	pdf.endObj()
-
-	font.objNumber = pdf.getObjNumber()
-	pdf.fonts = append(pdf.fonts, font)
-}
-
-func embedOpenTypeFontFile(pdf *PDF, font *Font, otf *openTypeFont) {
-	// Check if the font file is already embedded
-	for _, f := range pdf.fonts {
-		if f.fileObjNumber != 0 && f.name == otf.fontName && f.checksum == font.checksum {
-			font.fileObjNumber = f.fileObjNumber
-			return
-		}
-	}
-
-	metadataObjNumber := pdf.addMetadataObject(otf.fontInfo, true)
-
-	pdf.newObj()
-	pdf.appendString("<<\n")
-	if otf.cff {
-		pdf.appendString("/Subtype /CIDFontType0C\n")
-	}
-	pdf.appendString("/Filter /FlateDecode\n")
-
-	if !otf.cff {
-		pdf.appendString("/Length1 ")
-		pdf.appendInteger(len(otf.buf)) // The uncompressed size
-		pdf.appendString("\n")
-	}
-
-	if metadataObjNumber != 0 {
-		pdf.appendString("/Metadata ")
-		pdf.appendInteger(metadataObjNumber)
-		pdf.appendString(" 0 R\n")
-	}
-
-	buf := otf.compress()
-	if pdf.encryption != nil {
-		buf = pdf.encryption.encrypt(buf)
-	}
-
-	pdf.appendString("/Length ")
-	pdf.appendInteger(len(buf))
-	pdf.appendString("\n")
-
-	pdf.appendString(">>\n")
-	pdf.appendString("stream\n")
-	pdf.appendByteArray(buf)
-	pdf.appendString("\nendstream\n")
-	pdf.endObj()
-
-	font.fileObjNumber = pdf.getObjNumber()
 }
 
 // toGlyphSpace converts a value in font units to the glyph space units of the

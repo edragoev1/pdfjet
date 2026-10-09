@@ -62,6 +62,7 @@ type openTypeFont struct {
 	stringOffset       int
 	gposWork           int
 	numGlyphs          int // Of the maxp table, or 0 when the font has none
+	fsType             int // Of the OS/2 table: what the license allows
 }
 
 // maxGposWork is the most work the GPOS table of a font is read with, counted
@@ -231,6 +232,7 @@ func getHheaTable(otf *openTypeFont, table *fontTable) {
 }
 
 func getOs2Table(otf *openTypeFont, table *fontTable) {
+	otf.fsType, _ = otf.tableUint16(table, 8)
 	otf.index = table.offset + 64
 	otf.firstChar = rune(readUint16(otf))
 	otf.lastChar = rune(readUint16(otf))

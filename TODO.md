@@ -67,6 +67,14 @@ use IBM Plex Sans's .otf instead (the owner, 9 October 2026), whose CFF is
 embedded, 127 KB and 177 KB. A subset there needs a completion of the
 objects, a maybe for v9.1.
 
+**CFF subsetting: done after all, on 9 October 2026** (the owner: "Source Han
+Sans JP <- aparently this font is very popular! We have add subsetting for
+OTF fonts with CFF outlines"): `src/cffsubset.go`, the charstrings and the
+subroutines not used emptied, every number kept, the CFF written again in a
+fixed order with five-byte offsets; the identity charset for a CID-keyed
+font fixed its wrong glyphs. Source Han Sans JP Regular is in pdfjet-fonts as
+the CID-keyed test font. Go first; Java, C# and Swift to follow. Kept below
+as it was written:
 **CFF subsetting: not needed** (8 October 2026). About 3,000 lines in the
 four ports (5,000 with the subroutines pruned) for one gain, IBM Plex as
 .otf, which its .ttf edition already gives: Example_01 in Go with IBM Plex

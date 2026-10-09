@@ -37,9 +37,9 @@ type Font struct {
 	fontDescriptorObjNumber int
 	cidFontDictObjNumber    int
 	toUnicodeCMapObjNumber  int
-	cidSetObjNumber         int              // The CIDSet of a subset in PDF/A-1
-	baseFont                string           // The name it is embedded under, with the tag of a subset
-	program                 *trueTypeProgram // A TrueType font program, until Complete
+	cidSetObjNumber         int          // The CIDSet of a subset in PDF/A-1
+	baseFont                string       // The name it is embedded under, with the tag of a subset
+	program                 *fontProgram // The font program, until Complete
 
 	unitsPerEm             int
 	bBoxLLx                int16 // Font bounding box

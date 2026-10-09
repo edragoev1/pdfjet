@@ -13,9 +13,9 @@ import com.pdfjet.fonts.*;
 /**
  * Example_28.java
  * This example reads fonts from OpenType and TrueType files. Any .otf or
- * .ttf file on the computer is a font for PDFjet. A TrueType font is
+ * .ttf file on the computer is a font for PDFjet. A font is
  * embedded as a subset of the glyphs the document draws, unless it is set
- * to stay whole; a font with CFF outlines is embedded whole.
+ * to stay whole.
  */
 public class Example_28 {
     public Example_28() throws Exception {
@@ -39,9 +39,9 @@ public class Example_28 {
                 "PDFjet reads OpenType and TrueType fonts as they are: pass the path "
                 + "of any .otf or .ttf file on the computer to the Font constructor. "
                 + "The IBMPlexSans and NotoSans constants are the paths of the fonts "
-                + "that come with PDFjet. A TrueType font is embedded with only the "
-                + "glyphs the document draws, which keeps the file small; a font with "
-                + "CFF outlines is embedded whole. The paragraph below is drawn four times.");
+                + "that come with PDFjet. A font is embedded with only the "
+                + "glyphs the document draws, which keeps the file small, whatever its "
+                + "outlines. The paragraph below is drawn four times.");
         textBlock.setFontSize(12f);
         textBlock.setLineSpacing(1.5f);
         textBlock.setLocation(50f, 95f);
@@ -55,7 +55,7 @@ public class Example_28 {
             NotoSans.Regular,
         };
         String[] kinds = {
-            "OpenType with CFF outlines, from the .otf file, embedded whole",
+            "OpenType with CFF outlines, from the .otf file, embedded as a subset",
             "TrueType, from the .ttf file, embedded as a subset",
             "Another TrueType font, embedded as a subset",
             "A TrueType font kept whole: subsetting turned off",

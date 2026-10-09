@@ -405,28 +405,32 @@ null text.
 
 ## Fonts, and what a PDF embeds
 
-The bundled fonts are TrueType `.ttf` files, and IBM Plex Sans is also there as
-`.otf`, a font of CFF outlines. Any `.ttf` or `.otf` file on the computer is a
-font for PDFjet as well. What a PDF embeds:
+The bundled fonts are TrueType `.ttf` files, and IBM Plex Sans and Source Han
+Sans JP are also there as `.otf`, fonts of CFF outlines. Any `.ttf` or `.otf`
+file on the computer is a font for PDFjet as well. Every font is embedded as a
+subset when the document is completed, the outlines of the glyphs it does not
+draw left out. What a PDF embeds:
 
-- A TrueType font is embedded as a subset when the document is completed: the
-  outlines of the glyphs it does not draw are left out, and so are the tables
-  a reader does not need. It keeps `head`, `hhea`, `hmtx`, `maxp`, `loca`,
+- A TrueType font, `/FontFile2`, keeps its glyphs drawn and the tables a
+  reader needs: `head`, `hhea`, `hmtx`, `maxp`, `loca`,
   `glyf`, `cvt `, `fpgm`, `prep`, `gasp`, `cmap`, `OS/2`, `name` and `post`
-  (without the names of the glyphs), `/FontFile2`. Every glyph keeps its
-  number, so the pages, the widths and the text a reader copies are those of
+  (without the names of the glyphs).
+- A font of CFF outlines, `/FontFile3` with `/Subtype /CIDFontType0C`, the way
+  PDF carries such a font since PDF 1.3, embeds its CFF table alone: the
+  charstrings of the glyphs drawn, and the subroutines they call, the others
+  emptied, every glyph and subroutine keeping its number. A CID-keyed font, as
+  Source Han Sans and Noto Sans CJK are, gets the identity charset, CID = glyph
+  number, which is how PDFjet writes its text. A page of Japanese in Source Han
+  Sans JP embeds about 115 KB of its 4.2 MB.
+- Every glyph keeps its number, so the pages, the widths and the text a reader copies are those of
   the whole font; the font's name has the six capitals and a plus of a
   subset, its widths and its ToUnicode map list the glyphs kept, and a
   PDF/A-1 document has the CIDSet PDF/A-1 asks of a subset. The four ports
   embed the same subset, byte for byte.
-- `setSubset(false)` keeps a TrueType font whole, and so does a font whose
-  license forbids subsetting, by the fsType of its `OS/2` table. Fonts read
+- `setSubset(false)` keeps a font whole, and so does a font whose license
+  forbids subsetting, by the fsType of its `OS/2` table. Fonts read
   from one file are one font program in a PDF, and the glyphs any of them
   draws are in it.
-- A font of CFF outlines embeds its CFF table whole, the outlines alone,
-  `/FontFile3` with `/Subtype /CIDFontType0C`, the way PDF carries such a
-  font since PDF 1.3, which keeps PDF/A-1 possible. The other tables of the
-  `.otf` are of no use in a PDF.
 - A font added to the objects of an existing PDF, `new Font(objects,
   stream)`, is embedded whole: the document has no completion at which to
   subset it.

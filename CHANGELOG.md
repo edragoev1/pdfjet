@@ -36,7 +36,11 @@ This is the first entry in this file; earlier releases were not tracked here.
   the glyphs kept, and a PDF/A-1 file has the CIDSet PDF/A-1 asks of a
   subset. A font whose license forbids subsetting (fsType 0x0100 in its
   OS/2 table) is embedded whole, and so is a font set to with
-  `setSubset(false)`. CFF fonts, `.otf` files, are embedded whole as before. The four ports embed the same subsets, byte for byte,
+  `setSubset(false)`. Fonts of CFF outlines, `.otf` files, are embedded as
+  subsets too: the charstrings of the glyphs drawn and the subroutines they
+  call, the others emptied (`cffsubset.go` in Go); Source Han Sans JP goes
+  from 4.1 MB to 115 KB in a page of Japanese, IBM Plex Sans from 58 KB to
+  14 KB in a page of English. The four ports embed the same subsets, byte for byte,
   under the same tags.
 - `new Font(objects, stream)`, a font added to an existing PDF, reads `.ttf`
   and `.otf` files, embedded whole (`NewFontForObjects` in Go).
@@ -103,6 +107,10 @@ This is the first entry in this file; earlier releases were not tracked here.
   a font of CFF outlines is written by them too, byte for byte as before.
 
 ### Fixed
+- A CID-keyed font of CFF outlines, as Source Han Sans and Noto Sans CJK are,
+  drew the wrong glyphs or none, as a PDF looks its glyphs up by CID and
+  PDFjet wrote glyph numbers: its CFF is written with the identity charset,
+  whole or subset, and passes veraPDF's PDF/A and PDF/UA checks.
 - A font whose format 4 character map is empty and whose characters are in
   its format 12 map alone, as IBM Plex Sans TC's `.ttf`, drew every
   character as the .notdef box, in the four ports: the format 12 map is read
