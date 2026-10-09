@@ -9,6 +9,13 @@ PDFjet Forms and comes back to the library now and then; this list is what
 to do, in order, so that each visit can just pick up the next item. Only
 what users would hit goes in; the rest waits for v9.1.
 
+**No v9.1 (the owner, 9 October 2026: "fold the fixes into 9.0.x, no v9.1").**
+The fixes of the list below go into the 9.0.x releases as they are made, the
+next odd number each time: a cell's wrapped lines read as paragraphs of their
+own, and the Swift port slow with a JPEG. The rest of that list is features,
+for PDFjet Pro or not at all (the MIT core is complete after 9.0.3), or
+maybes; "v9.1" in the older notes of this file means that list.
+
 **v9.0.4, internal, tagged on 8 October 2026** (the owner: "let's do
 internal release and call it v9.0.4 then we go all in with font subsets for
 v9.0.5"): items 1 to 4 below and the Annot role map of PDF/A-1. The tag is
@@ -1740,7 +1747,7 @@ no history; the registries count, and are where developers look.
   count, and data after the end is left), else "Error: The JPEG is cut
   short: its image data has no end." Found by the review of PDFjet Forms.
 
-- ⬜ **A cell's wrapped lines are read as paragraphs of their own** (the
+- ⬜ **9.0.x fix.** **A cell's wrapped lines are read as paragraphs of their own** (the
   second part, the break, fixed for v9.0.3 on 5 October 2026, below).
   `wrapCellText` (table.go) makes each line of a cell that wraps a P of its
   own in the structure tree, so a screen reader reads one cell as several
@@ -1777,7 +1784,7 @@ no history; the registries count, and are where developers look.
   the owner's call, Go first, then the other ports and SVGTextBlock, the cases
   above to show the new breaks.
 
-## v9.1 — features, after v9.0.3
+## Was v9.1: fixes for 9.0.x, features for PDFjet Pro or not at all (no v9.1, 9 October 2026)
 
 - ⬜ Maybe: **subsets of the fonts added to an existing PDF** (the owner, 9
   October 2026). `new Font(objects, stream)` embeds a font whole, as its
@@ -1919,7 +1926,7 @@ no history; the registries count, and are where developers look.
   move its page breaks. The rows added under a wrapped cell keep their own
   padding as now: none over them, NewCell's under them. A test in each port,
   the rows' heights compared across the ports. Small.
-- ⬜ The Swift port slow with a JPEG: 20 pages drawing one photo of 600 KB,
+- ⬜ **9.0.x fix.** The Swift port slow with a JPEG: 20 pages drawing one photo of 600 KB,
   embedded once, took 30 ms a document in Swift, against 0.9 in Go, 1.4 in
   C# and 3.9 in Java, the same PDF from each (measured on 5 October 2026,
   Linux, Swift 6.4, a release build; the benchmark is kept privately). A
