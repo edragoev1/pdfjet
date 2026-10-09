@@ -57,7 +57,8 @@ file gives it a density: the pHYs chunk of a PNG in pixels per metre, the
 JFIF density of a JPEG in dots per inch or per centimetre, and the pixels
 per metre of a BMP. It is compared with the density Pillow reads from those
 fields, and not with the resolution of the Exif data, which Pillow falls back
-to for a JPEG and PDFjet does not read.
+to for a JPEG and PDFjet does not read. A JPEG whose Exif orientation turns
+it a quarter is drawn with its width and height swapped, as it is seen.
 
 A JPEG whose header Pillow reads and whose scans it cannot decode, truncated
 or corrupt, is counted as lenient rather than failed: PDFjet reads only the
@@ -385,6 +386,11 @@ def check_file(name, path, command, out):
         rects = page.get_image_rects(xref)
         dpi = density(pillow)
         expected = (width, height) if not dpi else (width * 72 / dpi[0], height * 72 / dpi[1])
+        # A JPEG whose Exif orientation turns it a quarter, 5 to 8, is drawn
+        # as it is meant to be seen, its width and height swapped (PDFjet
+        # 9.0.5); Pillow gives the size as stored.
+        if pillow['format'] in ('JPEG', 'MPO') and image.getexif().get(0x0112) in (5, 6, 7, 8):
+            expected = (expected[1], expected[0])
         if len(rects) != 1:
             problems.append(f'drawn {len(rects)} times')
         elif not (same_size(rects[0].width, expected[0]) and same_size(rects[0].height, expected[1])):
