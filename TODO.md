@@ -183,7 +183,7 @@ invoices). Meanwhile, the space between attributes into Pro's copy too, in its
 four ports with a test (the owner asked, 8 October 2026: "So just to be clear
 now we have the same XML parser in all 4 ports for both ZUGFeRD and SVG").
 
-**If 9.0.5 goes well, small v9.1 items come in** (the owner, 8 October
+**Done for 9.0.5 on 8 October 2026, in the four ports with tests (f1027b4e, bcf3a76e, a9a9fd89, fda6dc6a, and the EXIF orientation, 9cc3afee), all in the v9.0.4 tag; checked again on 9 October.** As first written: **If 9.0.5 goes well, small v9.1 items come in** (the owner, 8 October
 2026), only fixes users would see, in the four ports with tests, in this
 order: a JPEG whose only fault is a missing end-of-image marker drawn, not
 refused (the scan whole); the link box of a word drawn with its space ending
@@ -388,16 +388,16 @@ have odd numbers, so 9.0.5 follows 9.0.3, never 9.0.4). Fixes found in the
 viewer pass of Oct 7, no new API, in the four ports with tests, each
 detailed in the list below:
 1. ✅ The spaces of wrapped text: moved into 9.0.3 (above), on 7 October.
-2. ⬜ Example_46 as PDF/UA: in a tagged document, the optional content
+2. ✅ Done on 8 October 2026 (7dba0ff5). Example_46 as PDF/UA: in a tagged document, the optional content
    configuration (`/D` of `/OCProperties`) written with a `/Name` and
    without `/AS`, as PDF/UA 7.10 asks; veraPDF failed Example_46 on 7.10-1
    and 7.10-2 when it was made PDF/UA on Oct 7, so it stayed untagged. A
    layer set not to print cannot be said without /AS, so in PDF/UA it
    prints: the documentation of setPrintable says so, and Example_46's text
    too.
-3. ⬜ The language of a TextLine kept in a TextColumn, so that Example_29's
+3. ✅ Done on 8 October 2026 (9a453539). The language of a TextLine kept in a TextColumn, so that Example_29's
    Greek is read as Greek (addCJKParagraph's language is new API: v9.1).
-4. ⬜ The ASCII and the spaces of the non-embedded CJK fonts full width (the
+4. ✖️ Not fixed, decided on 8 October 2026: NewCJKFont is deprecated, goes in v10, and no example uses it since 7 October (8608ac64). The ASCII and the spaces of the non-embedded CJK fonts full width (the
    Korean gaps of the old Example_04): a /W, and stringWidth to match.
 5. ✅ **PDFjet.dll strong-named**, done in 9.0.3 (both DLLs, net8.0 and net48, token e66c1909913f295d); as first planned, in every release from 9.0.5, the
    evaluation too. Asked for on 7 October 2026 by a prospective C# client
@@ -598,7 +598,7 @@ detailed in the list below:
      one whose data is nil (pdfobj.go:609, PDFobj.swift:636). Draws the
      same; align when convenient.
 
-8. ⬜ **The font tool's `--old-format` renamed `--pdfjet-forms-format`**
+8. ✖️ Obsolete since 9 October 2026, the font tool removed with the .stream format. **The font tool's `--old-format` renamed `--pdfjet-forms-format`**
    (the owner, 8 October 2026): util/GenerateStreamFontsFiles.java and
    util/generate-stream-fonts-files.sh, their usage text and comments; the
    format is the one pdfjet-server's fonts are written in (its DESIGN.md,
@@ -1810,7 +1810,7 @@ no history; the registries count, and are where developers look.
     with Unicode case folding.
   - About a week for the first port to pass the spec, and a few days for
     each of the others; the renderer is done.
-- ⬜ Maybe: the EXIF orientation of a JPEG, in the four ports. A photo
+- ✅ Done for 9.0.5 (9cc3afee, 8 October 2026). Maybe: the EXIF orientation of a JPEG, in the four ports. A photo
   taken with a phone is stored as the sensor saw it, with a tag that says
   how to turn it, and is drawn sideways or upside down. The orientation is
   read from the APP1 segment, and the image is drawn turned or mirrored with
@@ -1931,7 +1931,7 @@ no history; the registries count, and are where developers look.
   of IBM Plex Sans in 24 ms against 10 to 20, and a plain .ttf font parsed
   at length (one page with Noto Sans, 44 ms against 20 as a .stream). Worth
   doing before Swift is sold in the commercial product.
-- ⬜ The older stream format as advice, not only a switch: a developer
+- ✖️ Obsolete since 9 October 2026: the .stream format is removed from PDFjet, its converter too. The older stream format as advice, not only a switch: a developer
   who makes PDFs on their own server, and doesn't give the fonts to
   anyone, can convert an OpenType font with
   `util/generate-stream-fonts-files.sh --old-format`. The .otf.stream then
@@ -1961,7 +1961,7 @@ no history; the registries count, and are where developers look.
   as any bundled font is. Small value: JetBrains Mono and IBM Plex Mono cover
   monospaced text, and 256 characters are few; it suits legacy text reports
   and text-mode art made PDFs that look like the original.
-- ⬜ Maybe: Andika in pdfjet-fonts, its four styles, with their .stream files
+- ⬜ Maybe: Andika in pdfjet-fonts, its four styles, as .ttf files (no .stream files since 9 October 2026)
   (SIL, https://software.sil.org/andika/, SIL Open Font License, as IBM Plex
   and Noto). A font designed for legibility: I, l and 1 clearly apart, b, d,
   p and q not mirrors of one another, single-storey a and g, open shapes and
