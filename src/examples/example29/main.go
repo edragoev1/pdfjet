@@ -59,7 +59,11 @@ func Example29() {
 		column.SetWidth(400.0)
 		for j := 2; j < len(lines); j++ {
 			paragraph := pdfjet.NewParagraph()
-			paragraph.Add(pdfjet.NewTextLine(f1, lines[j]))
+			line := pdfjet.NewTextLine(f1, lines[j])
+			if languages[i] == "Greek" {
+				line.SetLanguage("el") // Read by a screen reader as Greek
+			}
+			paragraph.Add(line)
 			column.AddParagraph(paragraph)
 		}
 

@@ -54,7 +54,11 @@ public class Example_29 {
             column.setWidth(400f);
             for (int j = 2; j < lines.size(); j++) {
                 Paragraph paragraph = new Paragraph();
-                paragraph.add(new TextLine(f1, lines.get(j)));
+                TextLine line = new TextLine(f1, lines.get(j));
+                if (languages[i].equals("Greek")) {
+                    line.setLanguage("el");     // Read by a screen reader as Greek
+                }
+                paragraph.add(line);
                 column.addParagraph(paragraph);
             }
 

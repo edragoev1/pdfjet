@@ -172,6 +172,26 @@ import Testing
         #expect(raw.contains("/K [0 1 2 3 4 5 6 7]"))
     }
 
+    @Test func theLanguageOfATextLineIsKeptInItsWords() {
+        // The paragraph is one element for its words, which dropped the
+        // language of the text line they came from, so Example_29's Greek was
+        // read as English (the viewer pass, 7 October 2026). Each word keeps
+        // it in its marked content; a text line of no language adds none.
+        let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.setTitle("Test")
+        let font = TestSupport.helvetica(memory.pdf)
+        let column = TextColumn()
+        column.setWidth(200.0)
+        column.setLocation(100.0, 100.0)
+        column.addParagraph(Paragraph().add(TextLine(font, eightWords).setLanguage("el")))
+        column.addParagraph(Paragraph().add(TextLine(font, eightWords)))
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        column.drawOn(page)
+        let content = TestSupport.content(page)
+        #expect(count(content.lowercased(), "/lang <656c>") == 8)
+        #expect(count(content, "/Lang") == 8)
+    }
+
     private func drawJoinedColumn(_ width: Float, _ alignment: Alignment, _ texts: String...) -> String {
         let pdf = TestSupport.newPDF()
         let font = TestSupport.helvetica(pdf)

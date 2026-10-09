@@ -49,7 +49,11 @@ public class Example_29 {
             column.setWidth(400.0)
             for j in 2..<lines.count {
                 let paragraph = Paragraph()
-                paragraph.add(TextLine(f1, lines[j]))
+                let line = TextLine(f1, lines[j])
+                if languages[i] == "Greek" {
+                    line.setLanguage("el")      // Read by a screen reader as Greek
+                }
+                paragraph.add(line)
                 column.addParagraph(paragraph)
             }
 

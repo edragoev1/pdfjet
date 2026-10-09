@@ -181,6 +181,26 @@ public class TextColumnTest {
         Assert.Contains("/K [0 1 2 3 4 5 6 7]", raw);
     }
 
+    [Fact]
+    public void TheLanguageOfATextLineIsKeptInItsWords() {
+        // The paragraph is one element for its words, which dropped the
+        // language of the text line they came from, so Example_29's Greek was
+        // read as English (the viewer pass, 7 October 2026). Each word keeps
+        // it in its marked content; a text line of no language adds none.
+        PDF pdf = new PDF(new System.IO.MemoryStream(), Compliance.PDF_UA_1).SetTitle("Test");
+        Font font = TestSupport.Helvetica(pdf);
+        TextColumn column = new TextColumn();
+        column.SetWidth(200f);
+        column.SetLocation(100f, 100f);
+        column.AddParagraph(new Paragraph().Add(new TextLine(font, EIGHT_WORDS).SetLanguage("el")));
+        column.AddParagraph(new Paragraph().Add(new TextLine(font, EIGHT_WORDS)));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        column.DrawOn(page);
+        string content = TestSupport.Latin1(page.GetContent());
+        Assert.Equal(8, Count(content.ToLowerInvariant(), "/lang <656c>"));
+        Assert.Equal(8, Count(content, "/Lang"));
+    }
+
     private static string DrawJoinedColumn(float width, Alignment alignment, params string[] texts) {
         PDF pdf = TestSupport.NewPDF();
         Font font = TestSupport.Helvetica(pdf);

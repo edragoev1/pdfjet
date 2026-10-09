@@ -2612,6 +2612,13 @@ public class Page {
                 Append(mcidParent.structure);
                 Append(" <</MCID ");
                 Append(mcid++);
+                // A word of another language than its paragraph says so in its
+                // marked content, as the paragraph is one element for all of them.
+                if (!string.IsNullOrEmpty(language)) {
+                    Append(" /Lang <");
+                    Append(Util.ToHexString(System.Text.Encoding.UTF8.GetBytes(language)));
+                    Append(">");
+                }
                 Append(">>\n");
                 Append("BDC\n");
                 return;

@@ -195,6 +195,26 @@ class TextColumnTest {
         assertTrue(raw.contains("/K [0 1 2 3 4 5 6 7]"), raw);
     }
 
+    @Test
+    void theLanguageOfATextLineIsKeptInItsWords() throws Exception {
+        // The paragraph is one element for its words, which dropped the
+        // language of the text line they came from, so Example_29's Greek was
+        // read as English (the viewer pass, 7 October 2026). Each word keeps
+        // it in its marked content; a text line of no language adds none.
+        PDF pdf = new PDF(new java.io.ByteArrayOutputStream(), Compliance.PDF_UA_1).setTitle("Test");
+        Font font = TestSupport.helvetica(pdf);
+        TextColumn column = new TextColumn();
+        column.setWidth(200f);
+        column.setLocation(100f, 100f);
+        column.addParagraph(new Paragraph().add(new TextLine(font, EIGHT_WORDS).setLanguage("el")));
+        column.addParagraph(new Paragraph().add(new TextLine(font, EIGHT_WORDS)));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        column.drawOn(page);
+        String content = TestSupport.latin1(page.getContent());
+        assertEquals(8, count(content.toLowerCase(), "/lang <656c>"), content);
+        assertEquals(8, count(content, "/Lang"), content);
+    }
+
     private static String drawJoinedColumn(float width, Alignment alignment, String... texts)
             throws Exception {
         PDF pdf = TestSupport.newPDF();

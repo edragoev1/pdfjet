@@ -53,7 +53,11 @@ public class Example_29 {
             column.SetWidth(400f);
             for (int j = 2; j < lines.Count; j++) {
                 Paragraph paragraph = new Paragraph();
-                paragraph.Add(new TextLine(f1, lines[j]));
+                TextLine line = new TextLine(f1, lines[j]);
+                if (languages[i] == "Greek") {
+                    line.SetLanguage("el");     // Read by a screen reader as Greek
+                }
+                paragraph.Add(line);
                 column.AddParagraph(paragraph);
             }
 

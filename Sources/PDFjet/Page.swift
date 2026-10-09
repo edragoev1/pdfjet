@@ -2501,6 +2501,13 @@ public class Page {
                 append(parent.structure!)
                 append(" <</MCID ")
                 append(mcid)
+                // A word of another language than its paragraph says so in its
+                // marked content, as the paragraph is one element for all of them.
+                if let language = language, !language.isEmpty {
+                    append(" /Lang <")
+                    append(pdf.toHexString(language))
+                    append(">")
+                }
                 append(Token.endDictionary)
                 append("BDC\n")
                 mcid += 1

@@ -14,6 +14,7 @@ package pdfjet
 // check-no-fma.sh fails if one is removed.
 
 import (
+	"encoding/hex"
 	"fmt"
 	"log"
 	"math"
@@ -2199,6 +2200,13 @@ func (page *Page) addBDC(
 			page.appendString(" <</MCID ")
 			page.appendInteger(page.mcid)
 			page.mcid++
+			// A word of another language than its paragraph says so in its
+			// marked content, as the paragraph is one element for all of them.
+			if language != "" {
+				page.appendString(" /Lang <")
+				page.appendString(hex.EncodeToString([]byte(language)))
+				page.appendString(">")
+			}
 			page.appendString(">>\n")
 			page.appendString("BDC\n")
 			return

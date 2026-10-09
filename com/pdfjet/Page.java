@@ -2730,6 +2730,13 @@ final public class Page {
                 append(mcidParent.structure);
                 append(" <</MCID ");
                 append(mcid++);
+                // A word of another language than its paragraph says so in its
+                // marked content, as the paragraph is one element for all of them.
+                if (language != null && !language.isEmpty()) {
+                    append(" /Lang <");
+                    append(Util.toHexString(language.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+                    append(">");
+                }
                 append(">>\n");
                 append("BDC\n");
                 return;

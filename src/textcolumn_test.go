@@ -288,3 +288,27 @@ func TestTextColumnAJustifiedLineWidensAMovedSpace(t *testing.T) {
 func TestTextColumnALinkEndsBeforeTheSpaceAfterIt(t *testing.T) {
 	testCheckALinkEndsBeforeTheSpaceAfterIt(t, true)
 }
+
+func TestTextColumnTheLanguageOfATextLineIsKeptInItsWords(t *testing.T) {
+	// The paragraph is one element for its words, which dropped the language
+	// of the text line they came from, so Example_29's Greek was read as
+	// English (the viewer pass, 7 October 2026). Each word keeps it in its
+	// marked content; a text line of no language adds none.
+	doc := testNewDoc()
+	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
+	font := testHelvetica(doc.pdf)
+	column := NewTextColumn()
+	column.SetWidth(200)
+	column.SetLocation(100, 100)
+	column.AddParagraph(NewParagraph().Add(NewTextLine(font, testEightWords).SetLanguage("el")))
+	column.AddParagraph(NewParagraph().Add(NewTextLine(font, testEightWords)))
+	page := NewPage(doc.pdf, letter.Portrait())
+	column.DrawOn(page)
+	content := testContent(page)
+	if got := strings.Count(strings.ToLower(content), "/lang <656c>"); got != 8 {
+		t.Errorf("%d words marked Greek, not the 8 of the first paragraph", got)
+	}
+	if got := strings.Count(content, "/Lang"); got != 8 {
+		t.Errorf("%d words with a language, not 8", got)
+	}
+}

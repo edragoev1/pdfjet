@@ -22,6 +22,12 @@ This is the first entry in this file; earlier releases were not tracked here.
   the root, no root element. The 246 SVG files of the repository draw the
   same as before, and the 1,170 SVG files of the Go fuzz corpus are accepted
   or refused alike in the four ports (560 and 610).
+- The language of a TextLine is kept in a TextColumn, in the four ports: the
+  paragraph is one structure element for its words, and dropped the language
+  of the text line they came from, so a screen reader read Example_29's
+  Greek as English. Each word of another language says so in its marked
+  content, `/Lang`, which PDF/UA and the readers honor; a paragraph of mixed
+  languages keeps each. Example_29 marks its Greek as Greek.
 - In a PDF/UA or PDF/A document, the configuration of the optional content
   groups, the layers, has a `/Name` and no `/AS`, as PDF/UA (7.10) and
   PDF/A ask, in the four ports: veraPDF refused a tagged document with
