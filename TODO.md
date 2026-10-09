@@ -184,17 +184,23 @@ left is checking, tagging and packaging.
     opacity in an ExtGState and the annotation has /CA too; ISO 32000 says
     /CA applies to the appearance, so a strict viewer could draw them at
     25%. MuPDF, PDFium, Poppler and pdf.js draw them at 50%, measured.
-  - ⬜ v9.1: a JPEG whose only fault is a missing end-of-image marker, its
+  - ✅ v9.1: a JPEG whose only fault is a missing end-of-image marker, its
     scan whole, is refused since the cut-short check (c709d4c3), where
     viewers draw it with a warning: refuse only when the scan stops short?
-  - ⬜ v9.1: the repair scan of a PDF with a broken cross-reference table
+  - ✅ v9.1: the repair scan of a PDF with a broken cross-reference table
     stops its search for endstream at the next "N G obj", which can be in a
     stream's own bytes (an embedded PDF, unfiltered).
-  - ⬜ v9.1: in PDF/A-1, an annotation's opacity below 1 is transparency,
+  - ✅ v9.1: in PDF/A-1, an annotation's opacity below 1 is transparency,
     which PDF/A-1 forbids (/CA did so before 9.0.3; the appearance's
     ExtGState now too): ignore the opacity in PDF/A-1, or refuse it.
-  - ⬜ v9.1: the link box of a word drawn with its space (a justified
+  - ✅ The four above, done for 9.0.5 on 8 October 2026 (f1027b4e, bcf3a76e,
+    a9a9fd89, fda6dc6a), with the EXIF orientation of a JPEG (9cc3afee).
+    Was: v9.1: the link box of a word drawn with its space (a justified
     TextFrame row, and TextColumn always) reaches one space past the word.
+  - ⬜ Found by the PDF/A-1 fix: a PDF/A-1a document with an annotation fails
+    veraPDF 6.8.3.4-1, the structure type Annot not role-mapped (PDF/A-1 is
+    PDF 1.4, which has no Annot): a /RoleMap entry for it, in the four
+    ports, an older fault; a PDF/A-1b one passes.
 
 - ✅ **More automated checks, the night of Oct 7**, on ecd403c0, all clean:
   the C#, Java and Swift examples built under a German locale (decimal
