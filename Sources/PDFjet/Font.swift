@@ -162,7 +162,7 @@ public class Font {
     /// - Parameter pdf: the PDF to add this font to.
     /// - Parameter font: the Chinese, Japanese or Korean font.
     ///
-    @available(*, deprecated, message: "Not embedded: the viewer needs the Adobe Asian font pack, and the PDF cannot be PDF/A or PDF/UA. Use an embedded font, such as IBM Plex Sans JP, KR, SC or TC. To be removed in v10.")
+    @available(*, deprecated, message: "Not embedded: the viewer needs the Adobe Asian font pack, and the PDF cannot be PDF/A or PDF/UA. Latin letters and spaces are drawn full width in it. Use an embedded font, such as IBM Plex Sans JP, KR, SC or TC. To be removed in v10.")
     public init(_ pdf: PDF, _ font: CJKFont) {
         self.pdfIdentity = pdf.identity
         self.compliance = pdf.compliance

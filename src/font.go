@@ -170,7 +170,7 @@ func newCoreFontForPDFobj(coreFont *corefont.CoreFont) *Font {
 //   - pdf: the PDF to add this font to.
 //   - cjkFont: the font.
 //
-// Deprecated: Not embedded: the viewer needs the Adobe Asian font pack, and the PDF cannot be PDF/A or PDF/UA. Use an embedded font, such as IBM Plex Sans JP, KR, SC or TC. To be removed in v10.
+// Deprecated: Not embedded: the viewer needs the Adobe Asian font pack, and the PDF cannot be PDF/A or PDF/UA. Latin letters and spaces are drawn full width in it. Use an embedded font, such as IBM Plex Sans JP, KR, SC or TC. To be removed in v10.
 func NewCJKFont(pdf *PDF, cjkFont cjkfont.Font) *Font {
 	var fontName string
 	switch cjkFont {

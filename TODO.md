@@ -62,8 +62,10 @@ what users would hit goes in; the rest waits for v9.1.
    non-embedded CJK fonts full width, needs the width of each Latin
    character in each of the four Adobe CJK fonts, from Adobe's metrics: a
    half width for all would make W and M overlap their neighbours, worse
-   than the gaps of today. Proposed for v9.1 (no example uses those fonts
-   since Example_04 took IBM Plex); the owner to say. As first written:
+   than the gaps of today. Decided by the owner on 8 October 2026: not
+   fixed, as NewCJKFont is deprecated and goes in v10; its deprecation note
+   says now, in the four ports, that Latin letters and spaces are drawn full
+   width in it. As first written:
    **Example_46 as PDF/UA, the language of a TextLine in a TextColumn, the
    non-embedded CJK fonts full width** (items 2 to 4).
 4. ✅ **Done on 8 October 2026:** the font tool's `--pdfjet-forms-format`
@@ -618,7 +620,7 @@ detailed in the list below:
   Cyrillic); a font class of each, as IBMPlexSans has. Meanwhile the core
   fonts' documentation says: small and needing no files, but not PDF/UA or
   PDF/A; for those, IBM Plex.
-- ⬜ **The spaces of Korean, and the ASCII of every non-embedded CJK font,
+- ✅ Not fixed, a note instead (the owner, 8 October 2026: NewCJKFont is deprecated, gone in v10). **The spaces of Korean, and the ASCII of every non-embedded CJK font,
   full width** (the viewer pass of 7 October 2026: in Acrobat, Example_04's
   "새해 복 많이 받으세요!" has a gap of a whole em at each space). The fonts
   of Font(pdf, "AdobeMyungjoStd-Medium") and the other three Adobe CJK
