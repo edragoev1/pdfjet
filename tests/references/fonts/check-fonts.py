@@ -26,7 +26,10 @@ of it. The check fails on a font when the port:
   different width for any of them (hmtx);
 - maps any character to a different glyph than the Windows Unicode BMP
   subtable, (3, 1), maps it, among the characters from the first to the last
-  that OS/2 gives, which are the ones PDFjet looks up;
+  that OS/2 gives, which are the ones PDFjet looks up; or, for a character of
+  the BMP in that range the (3, 1) subtable leaves unmapped, than the full
+  Unicode subtable, (3, 10), maps it, which PDFjet reads too since 9.0.5, as
+  IBM Plex Sans TC, as a .ttf, has an empty (3, 1) subtable;
 - leaves out a character of the BMP that fontTools' best character map has,
   because it is outside that range or only in another subtable;
 - gives StringWidth, for any character of the BMP, another width than the
@@ -141,8 +144,13 @@ def ps_name(font):
 
 def windows_bmp_cmap(font):
     """The first (3, 1) subtable, the one PDFjet reads, or None."""
+    return windows_cmap(font, 1)
+
+
+def windows_cmap(font, encoding):
+    """The first Windows subtable of the encoding, (3, 1) or (3, 10), or None."""
     for table in font['cmap'].tables:
-        if (table.platformID, table.platEncID) == (3, 1):
+        if (table.platformID, table.platEncID) == (3, encoding):
             return table
     return None
 
@@ -254,6 +262,14 @@ def reference_of(path):
         for c, glyph in subtable.cmap.items():
             g = font.getGlyphID(glyph)
             if first <= c <= last and c <= 0xFFFF and g != 0:
+                cmap[c] = g
+    # What the (3, 1) subtable leaves unmapped, from the (3, 10) subtable, as
+    # getCmapFormat12 in src/otf.go fills it in
+    full = windows_cmap(font, 10)
+    if full is not None and full.format == 12:
+        for c, glyph in full.cmap.items():
+            g = font.getGlyphID(glyph)
+            if first <= c <= last and c <= 0xFFFF and c not in cmap and 0 < g < 0x10000:
                 cmap[c] = g
     ref['cmap'] = cmap
     best = font.getBestCmap() or {}
