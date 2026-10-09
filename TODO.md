@@ -304,7 +304,7 @@ detailed in the list below:
    Greek is read as Greek (addCJKParagraph's language is new API: v9.1).
 4. ⬜ The ASCII and the spaces of the non-embedded CJK fonts full width (the
    Korean gaps of the old Example_04): a /W, and stringWidth to match.
-5. ⬜ **PDFjet.dll strong-named**, in every release from 9.0.5, the
+5. ✅ **PDFjet.dll strong-named**, done in 9.0.3 (both DLLs, net8.0 and net48, token e66c1909913f295d); as first planned, in every release from 9.0.5, the
    evaluation too. Asked for on 7 October 2026 by a prospective C# client
    ("is it possible to have PDFjet.dll signed, also for the evaluation?").
    Checked that day: the DLL of the 9.0.2 packages has neither a strong name
@@ -429,7 +429,7 @@ detailed in the list below:
    signing both, the examples run on .NET Framework on Windows, and the
    client's 9.0.4.
 
-7. ⬜ **Maybe: fuzzing beyond Go** (the owner, 8 October 2026). Only the Go
+7. ✅ **Fuzzing beyond Go, done on 8 October 2026:** the Go corpus replayed in Java, C# and Swift, and Jazzer overnight on Java (findings below and in item 1 of the plan). As first written: **Maybe: fuzzing beyond Go** (the owner, 8 October 2026). Only the Go
    port is fuzzed; what it finds is fixed in the four, which share the
    logic, and the corpora were replayed in the four in September (CHANGELOG:
    1,257 PDFs, 1,066 streams, the four the same). It is reasonable to expect
