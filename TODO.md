@@ -1790,7 +1790,11 @@ no history; the registries count, and are where developers look.
   ~/Projects/pdfjet-pro-private/TODO.md, private. **Subsets of the fonts
   added to an existing PDF.**
 
-- ⬜ CommonMark itself, in the four ports, where v9.0.3 has the practical
+- ⬜ **Maybe, for a v9.1 if there is one, in the MIT core, not PDFjet Pro**
+  (the owner, 9 October 2026: "3000 lines is a lot. Not having it is fine.
+  This is like we deciding we need fully compliant BIDI"): the practical
+  subset of today covers what documents use, as the Bidi of today covers
+  what text needs without the whole of UAX #9. CommonMark itself, in the four ports, where v9.0.3 has the practical
   subset above: a parser written from the spec, with the GitHub tables,
   strikethrough and task lists. The renderer is written and tagged for
   PDF/UA already, so what is left is the parser and the 652 examples of the
