@@ -52,7 +52,7 @@ On Windows, separate the class path entries with `;` instead of `:`.
 ## Fonts
 
 The bundled fonts, such as `IBMPlexSans.Regular`, are paths relative to the
-working directory, like `fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream`. Run
+working directory, like `fonts/IBMPlexSans/IBMPlexSans-Regular.ttf`. Run
 your program in a folder that has the `fonts` directory, or copy the fonts you
 use next to it and keep their paths. A font can also be read from any `.otf` or
 `.ttf` file by its path. The 14 core PDF fonts, such as `CoreFont.HELVETICA`,

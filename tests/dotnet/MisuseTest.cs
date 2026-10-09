@@ -216,7 +216,7 @@ public class MisuseTest {
     public void StampTextAddsItsFont() {
         MemoryStream stream = new MemoryStream();
         PDF pdf = new PDF(stream);
-        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
         Font core = TestSupport.Helvetica(pdf);
         Stamp stamp = new Stamp(pdf).SetSize(100f, 50f);
         Assert.Equal("A stamp draws text with an embedded font, not a core or CJK font.",

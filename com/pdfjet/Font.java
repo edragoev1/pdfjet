@@ -7,6 +7,7 @@
 package com.pdfjet;
 
 import java.io.BufferedInputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -326,15 +327,21 @@ final public class Font {
     }
 
     /**
-     * Constructor for .otf.stream and .ttf.stream fonts added to the objects of an
-     * existing PDF.
+     * Constructor for OpenType, TrueType, .otf.stream and .ttf.stream fonts
+     * added to the objects of an existing PDF, embedded whole. The format is
+     * told from the first bytes of the stream.
      *
      * @param objects     the list of objects
      * @param inputStream the input stream
      * @throws Exception is the font is not found
      */
     public Font(List<PDFobj> objects, InputStream inputStream) throws Exception {
-        FontStream2.register(objects, this, inputStream);
+        InputStream stream = new BufferedInputStream(inputStream);
+        if (isOpenTypeFont(stream)) {
+            OpenTypeFont.register(objects, this, stream);
+        } else {
+            FontStream2.register(objects, this, stream);
+        }
         setSize(size);
     }
 
@@ -380,6 +387,7 @@ final public class Font {
      */
     public Font(PDF pdf, String fontPath) throws Exception {
         this.pdf = pdf;
+        fontPath = fontFileOf(fontPath);
         try (InputStream inputStream = new BufferedInputStream(new FileInputStream(fontPath))) {
             if (fontPath.endsWith(".stream") || !isOpenTypeFont(inputStream)) {
                 FontStream1.register(pdf, this, inputStream);
@@ -388,6 +396,28 @@ final public class Font {
             }
         }
         setSize(size);
+    }
+
+    // Returns the path of the font file: the path given, or, for a .ttf.stream
+    // or .otf.stream file that is not there, the .ttf or else the .otf file of
+    // the same name beside it. PDFjet ships no .stream files from 9.0.5, and
+    // its fonts are subset from their .ttf files: a path written before is the
+    // same font.
+    static String fontFileOf(String fontPath) {
+        if (new File(fontPath).exists()) {
+            return fontPath;
+        }
+        for (String stream : new String[] {".ttf.stream", ".otf.stream"}) {
+            if (fontPath.endsWith(stream)) {
+                String base = fontPath.substring(0, fontPath.length() - stream.length());
+                for (String ext : new String[] {".ttf", ".otf"}) {
+                    if (new File(base + ext).exists()) {
+                        return base + ext;
+                    }
+                }
+            }
+        }
+        return fontPath;
     }
 
     // Returns a number that identifies the font program: the units it is

@@ -31,9 +31,9 @@ import (
 // fuzzFontStreamSeeds are shipped fonts: with marks that go on letters (Thai),
 // with the CFF tables of an OpenType font (IBM Plex Sans), and TrueType (JetBrains Mono).
 var fuzzFontStreamSeeds = []string{
-	"../fonts/NotoSansThai/NotoSansThai-Regular.ttf.stream",
-	"../fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream",
-	"../fonts/JetBrainsMono/JetBrainsMono-Regular.ttf.stream",
+	"../tests/data/stream-fonts/NotoSansThai-Regular.ttf.stream",
+	"../tests/data/stream-fonts/IBMPlexSans-Regular.otf.stream",
+	"../tests/data/stream-fonts/JetBrainsMono-Regular.ttf.stream",
 }
 
 // fuzzFontText has letters, marks that go on letters and on other marks,

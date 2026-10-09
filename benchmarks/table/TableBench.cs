@@ -21,8 +21,8 @@ using PDFjet.NET;
 /// </summary>
 public class TableBench {
     const String CSV = "data/Electric_Vehicle_Population_10_Pages.csv";
-    const String SEMIBOLD = "fonts/IBMPlexSans/IBMPlexSans-SemiBold.otf.stream";
-    const String REGULAR = "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream";
+    const String SEMIBOLD = "fonts/IBMPlexSans/IBMPlexSans-SemiBold.ttf";
+    const String REGULAR = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf";
     const int COLUMNS = 9;
     static readonly float[] WIDTHS = {68f, 58f, 58f, 26f, 44f, 34f, 52f, 60f, 152f};
 

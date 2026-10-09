@@ -28,8 +28,8 @@ import (
 )
 
 const csvFile = "data/Electric_Vehicle_Population_10_Pages.csv"
-const semibold = "fonts/IBMPlexSans/IBMPlexSans-SemiBold.otf.stream"
-const regular = "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"
+const semibold = "fonts/IBMPlexSans/IBMPlexSans-SemiBold.ttf"
+const regular = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"
 const columns = 9
 
 var widths = [columns]float32{68.0, 58.0, 58.0, 26.0, 44.0, 34.0, 52.0, 60.0, 152.0}

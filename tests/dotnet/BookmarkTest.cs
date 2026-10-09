@@ -95,7 +95,7 @@ public class BookmarkTest {
             pdf.SetCompliance(Compliance.PDF_UA_1).SetTitle("Test");
             pdf.SetTitle("Title");
         }
-        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
         Page page = null;
         for (int i = 0; i < headings.Count; i++) {
             if (page == null || (headings[i][0] == "H1" && i > 0)) {
@@ -155,7 +155,7 @@ public class BookmarkTest {
 
         MemoryStream own = HeadingsDoc(true, new List<string[]> {new[] {"H1", "Intro"}}, out PDF pdf2);
         Page page = new Page(pdf2, Letter.PORTRAIT);
-        Font font = new Font(pdf2, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        Font font = new Font(pdf2, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
         new Bookmark(pdf2).AddBookmark(page, new Title(font, "Mine", 10f, 10f));
         pdf2.Complete();
         List<PDFobj> objects = TestSupport.Read(own.ToArray());

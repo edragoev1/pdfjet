@@ -14,8 +14,16 @@ namespace PDFjet.NET {
 class FontStream2 {
     internal static void Register(List<PDFobj> objects, Font font, Stream inputStream) {
         FontStream1.GetFontData(font, inputStream);
+        byte[] compressed = FontStream1.ReadBytes(inputStream, font.compressedSize);
+        inputStream.Close();
+        Register(objects, font, compressed);
+    }
 
-        EmbedFontFile(objects, font, inputStream);
+    // Adds the font, whose font program is the compressed bytes, to the
+    // objects of an existing PDF.
+    internal static void Register(List<PDFobj> objects, Font font, byte[] compressed) {
+
+        EmbedFontFile(objects, font, compressed);
         AddFontDescriptorObject(objects, font);
         AddCIDFontDictionaryObject(objects, font);
         AddToUnicodeCMapObject(objects, font);
@@ -88,7 +96,7 @@ class FontStream2 {
     private static void EmbedFontFile(
             List<PDFobj> objects,
             Font font,
-            Stream stream) {
+            byte[] compressed) {
         int metadataObjNumber = AddMetadataObject(objects, font);
 
         PDFobj obj = new PDFobj();
@@ -100,7 +108,7 @@ class FontStream2 {
         obj.dict.Add("/Filter");
         obj.dict.Add("/FlateDecode");
         obj.dict.Add("/Length");
-        obj.dict.Add(font.compressedSize.ToString(CultureInfo.InvariantCulture));
+        obj.dict.Add(compressed.Length.ToString(CultureInfo.InvariantCulture));
         if (font.cff) {
             obj.dict.Add("/Subtype");
             obj.dict.Add("/CIDFontType0C");
@@ -109,8 +117,6 @@ class FontStream2 {
             obj.dict.Add(font.uncompressedSize.ToString(CultureInfo.InvariantCulture));
         }
         obj.dict.Add(">>");
-        byte[] compressed = FontStream1.ReadBytes(stream, font.compressedSize);
-        stream.Close();
         obj.SetStream(compressed);
         obj.number = objects.Count + 1;
         objects.Add(obj);

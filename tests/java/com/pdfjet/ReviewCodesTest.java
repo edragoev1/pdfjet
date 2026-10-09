@@ -89,7 +89,7 @@ class ReviewCodesTest {
     @Test
     void barcodeTheFigureHasTheBoxOfTheBarsAndTheDigits() throws Exception {
         PDF pdf = new PDF(new ByteArrayOutputStream(), Compliance.PDF_UA_1);
-        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
         Page page = new Page(pdf, Letter.PORTRAIT);
         float height = page.height;
         Object[][] cases = {

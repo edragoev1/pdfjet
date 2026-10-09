@@ -302,23 +302,75 @@ class OTF {
         index += 2;
         int numRecords = readUInt16();
 
-        // Process the encoding records
+        // Process the encoding records: the format 4 subtable of the Windows
+        // platform, and its format 12 subtable, which maps the characters past
+        // the Basic Multilingual Plane too.
         boolean format4subtable = false;
         int subtableOffset = 0;
+        int format12Offset = -1;
         for (int i = 0; i < numRecords; i++) {
             int platformID = readUInt16();
             int encodingID = readUInt16();
-            subtableOffset = (int) readUInt32();
-            if (platformID == 3 && encodingID == 1) {
+            int offset = (int) readUInt32();
+            if (platformID == 3 && encodingID == 1 && !format4subtable) {
                 format4subtable = true;
-                break;
+                subtableOffset = offset;
+            } else if (platformID == 3 && encodingID == 10 && format12Offset == -1) {
+                format12Offset = offset;
             }
         }
-        if (!format4subtable) {
+        if (!format4subtable && format12Offset == -1) {
             throw new Exception("Format 4 subtable not found in this font.");
         }
+        if (format4subtable) {
+            cmapFormat4(tableOffset + subtableOffset);
+        }
+        if (format12Offset != -1) {
+            cmapFormat12(table, format12Offset);
+        }
+    }
 
-        index = tableOffset + subtableOffset;
+    // Maps the characters of the Basic Multilingual Plane that the format 4
+    // subtable left without a glyph, from the format 12 subtable at the offset
+    // in the table. IBM Plex Sans TC, as a .ttf, has an empty format 4
+    // subtable and maps every character in its format 12 subtable. The groups
+    // go up and do not overlap, and a group that goes back is passed over, so
+    // that the map is read once at most.
+    private void cmapFormat12(FontTable table, int offset) {
+        if (tableUInt16(table, offset) != 12) {
+            return;
+        }
+        long numGroups = tableUInt32(table, offset + 12);
+        if (numGroups < 0 || numGroups > (table.length - offset - 16) / 12) {
+            return;
+        }
+        long next = firstChar;
+        for (int i = 0; i < numGroups; i++) {
+            int group = offset + 16 + 12 * i;
+            long start = tableUInt32(table, group);
+            long end = tableUInt32(table, group + 4);
+            long startGlyph = tableUInt32(table, group + 8);
+            if (start < next) {
+                start = next;
+            }
+            if (end > lastChar) {
+                end = lastChar;
+            }
+            for (long ch = start; ch <= end; ch++) {
+                long gid = startGlyph + (ch - start);
+                if (gid < 0x10000 && unicodeToGID[(int) ch] == 0) {
+                    unicodeToGID[(int) ch] = (int) gid;
+                }
+            }
+            if (end + 1 > next) {
+                next = end + 1;
+            }
+        }
+    }
+
+    // Reads the format 4 subtable that begins at subtable.
+    private void cmapFormat4(int subtable) throws Exception {
+        index = subtable;
 
         int format   = readUInt16();
         if (format != 4) {

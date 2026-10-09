@@ -441,7 +441,7 @@ class ReviewPageTest {
     @Test
     void aLoneSurrogateIsDrawnAsNotdef() throws Exception {
         PDF pdf = TestSupport.newPDF();
-        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"));
         Page page = new Page(pdf, Letter.PORTRAIT);
         TextLine line = new TextLine(font, "a\uD800b");
         line.setLocation(10f, 50f);

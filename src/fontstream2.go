@@ -21,7 +21,13 @@ import (
 // fontStream2 constructs font object and adds it to the PDF objects slice.
 func fontStream2(objects *[]*PDFobj, font *Font, reader io.Reader) {
 	getFontData(font, reader)
-	embedFontFile2(objects, font, reader)
+	fontStream2Of(objects, font, readBytes(reader, font.compressedSize))
+}
+
+// fontStream2Of adds the font, whose font program is the compressed bytes, to
+// the objects of an existing PDF.
+func fontStream2Of(objects *[]*PDFobj, font *Font, compressed []byte) {
+	embedFontFile2(objects, font, compressed)
 	addFontDescriptorObject2(objects, font)
 	addCIDFontDictionaryObject2(objects, font)
 	addToUnicodeCMapObject2(objects, font)
@@ -90,7 +96,7 @@ func addMetadataObject2(objects *[]*PDFobj, font *Font) int {
 	return obj.number
 }
 
-func embedFontFile2(objects *[]*PDFobj, font *Font, reader io.Reader) {
+func embedFontFile2(objects *[]*PDFobj, font *Font, compressed []byte) {
 	metadataObjNumber := addMetadataObject2(objects, font)
 
 	obj := newPDFobj()
@@ -102,7 +108,7 @@ func embedFontFile2(objects *[]*PDFobj, font *Font, reader io.Reader) {
 	obj.add("/Filter")
 	obj.add("/FlateDecode")
 	obj.add("/Length")
-	obj.add(strconv.Itoa(font.compressedSize))
+	obj.add(strconv.Itoa(len(compressed)))
 	if font.cff {
 		obj.add("/Subtype")
 		obj.add("/CIDFontType0C")
@@ -112,7 +118,7 @@ func embedFontFile2(objects *[]*PDFobj, font *Font, reader io.Reader) {
 	}
 	obj.add(">>")
 
-	obj.setStream(readBytes(reader, font.compressedSize))
+	obj.setStream(compressed)
 	obj.number = len(*objects) + 1
 	*objects = append(*objects, obj)
 	font.fileObjNumber = obj.number

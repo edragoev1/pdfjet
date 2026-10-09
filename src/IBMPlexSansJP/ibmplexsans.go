@@ -8,12 +8,12 @@ package IBMPlexSansJP
 
 // IBMPlexSansJP provides the paths to the IBM Plex Sans JP fonts.
 const (
-	Bold       = "fonts/IBMPlexSansJP/IBMPlexSansJP-Bold.otf.stream"
-	ExtraLight = "fonts/IBMPlexSansJP/IBMPlexSansJP-ExtraLight.otf.stream"
-	Light      = "fonts/IBMPlexSansJP/IBMPlexSansJP-Light.otf.stream"
-	Medium     = "fonts/IBMPlexSansJP/IBMPlexSansJP-Medium.otf.stream"
-	Regular    = "fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf.stream"
-	SemiBold   = "fonts/IBMPlexSansJP/IBMPlexSansJP-SemiBold.otf.stream"
-	Text       = "fonts/IBMPlexSansJP/IBMPlexSansJP-Text.otf.stream"
-	Thin       = "fonts/IBMPlexSansJP/IBMPlexSansJP-Thin.otf.stream"
+	Bold       = "fonts/IBMPlexSansJP/IBMPlexSansJP-Bold.ttf"
+	ExtraLight = "fonts/IBMPlexSansJP/IBMPlexSansJP-ExtraLight.ttf"
+	Light      = "fonts/IBMPlexSansJP/IBMPlexSansJP-Light.ttf"
+	Medium     = "fonts/IBMPlexSansJP/IBMPlexSansJP-Medium.ttf"
+	Regular    = "fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.ttf"
+	SemiBold   = "fonts/IBMPlexSansJP/IBMPlexSansJP-SemiBold.ttf"
+	Text       = "fonts/IBMPlexSansJP/IBMPlexSansJP-Text.ttf"
+	Thin       = "fonts/IBMPlexSansJP/IBMPlexSansJP-Thin.ttf"
 )

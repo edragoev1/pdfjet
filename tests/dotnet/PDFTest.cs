@@ -227,7 +227,7 @@ public class PDFTest {
         MemoryStream stream = new MemoryStream();
         PDF pdf = new PDF(stream, Compliance.PDF_UA_1).SetTitle("Test");
         pdf.SetTitle("Title");
-        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
         Page page = new Page(pdf, Letter.PORTRAIT);
         new TextLine(font, "PDFjet").SetURIAction("https://pdfjet.com").SetLocation(70f, 80f).DrawOn(page);
         TextAnnotation note = new TextAnnotation();
@@ -270,7 +270,7 @@ public class PDFTest {
         MemoryStream stream = new MemoryStream();
         PDF pdf = new PDF(stream, Compliance.PDF_UA_1).SetTitle("Test");
         pdf.SetTitle("Title");
-        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
         Page page = new Page(pdf, Letter.PORTRAIT);
         new TextLine(font, "PDFjet").SetURIAction("https://pdfjet.com").SetLocation(70f, 80f).DrawOn(page);
         string content = TestSupport.Latin1(page.GetContent());
@@ -295,7 +295,7 @@ public class PDFTest {
         MemoryStream stream = new MemoryStream();
         PDF pdf = new PDF(stream, Compliance.PDF_UA_1).SetTitle("Test");
         pdf.SetTitle("Title");
-        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
         Paragraph paragraph = new Paragraph()
                 .Add(new TextLine(font, "Read").SetStructureType(StructElem.SPAN))
                 .Add(new TextLine(font, "the site").SetURIAction("https://pdfjet.com"))
@@ -324,7 +324,7 @@ public class PDFTest {
         MemoryStream stream = new MemoryStream();
         PDF pdf = new PDF(stream, Compliance.PDF_UA_1).SetTitle("Test");
         pdf.SetTitle("Title");
-        new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
         Page page = new Page(pdf, Letter.PORTRAIT);
         Image image = new Image(pdf, TestSupport.Open("images/up-arrow.png"));
         image.SetAltDescription("Up").SetURIAction("https://pdfjet.com").SetLocation(70f, 80f);
@@ -348,7 +348,7 @@ public class PDFTest {
     public void ALinkOfADocumentNotTaggedIsNoElement() {
         MemoryStream stream = new MemoryStream();
         PDF pdf = new PDF(stream);
-        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
         Page page = new Page(pdf, Letter.PORTRAIT);
         page.BeginStructElement(StructElem.L);
         new Image(pdf, TestSupport.Open("images/up-arrow.png")).SetURIAction("https://pdfjet.com").DrawOn(page);
@@ -380,7 +380,7 @@ public class PDFTest {
         MemoryStream stream = new MemoryStream();
         PDF pdf = new PDF(stream, Compliance.PDF_UA_1).SetTitle("Test");
         pdf.SetTitle("Title");
-        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
         Page page = new Page(pdf, Letter.PORTRAIT);
         Image image = new Image(pdf, TestSupport.Open("images/up-arrow.png"));
         image.SetAltDescription("Up").SetURIAction("https://pdfjet.com").SetLocation(70f, 80f);
@@ -409,7 +409,7 @@ public class PDFTest {
         MemoryStream stream = new MemoryStream();
         PDF pdf = new PDF(stream, Compliance.PDF_UA_1).SetTitle("Test");
         pdf.SetTitle("Title");
-        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
         Page page = new Page(pdf, Letter.PORTRAIT);
         List<List<Cell>> data = new List<List<Cell>> {
             new List<Cell> { new Cell(font, "Name"), new Cell(font, "City") },
@@ -448,7 +448,7 @@ public class PDFTest {
         MemoryStream stream = new MemoryStream();
         PDF pdf = new PDF(stream, Compliance.PDF_UA_1).SetTitle("Test");
         pdf.SetTitle("Title");
-        new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
         Page page = new Page(pdf, Letter.PORTRAIT);
         TextAnnotation note = new TextAnnotation();
         note.SetLocation(70f, 100f);
@@ -480,7 +480,7 @@ public class PDFTest {
         MemoryStream stream = new MemoryStream();
         PDF pdf = new PDF(stream, Compliance.PDF_UA_1).SetTitle("Test");
         pdf.SetTitle("Title");
-        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
         // A dry run, like one that measures the text, on a page that is never added.
         Page dry = new Page(pdf, Letter.PORTRAIT, Page.DETACHED);
         new TextLine(font, "PDFjet").SetURIAction("https://pdfjet.com").SetLocation(70f, 80f).DrawOn(dry);
@@ -504,7 +504,7 @@ public class PDFTest {
         MemoryStream stream = new MemoryStream();
         PDF pdf = new PDF(stream, Compliance.PDF_UA_1).SetTitle("Test");
         pdf.SetTitle("Title");
-        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
         Page second = new Page(pdf, Letter.PORTRAIT, Page.DETACHED);
         new TextLine(font, "Second").SetLocation(70f, 80f).DrawOn(second);
         Page first = new Page(pdf, Letter.PORTRAIT, Page.DETACHED);

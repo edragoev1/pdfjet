@@ -10,7 +10,33 @@ class OpenTypeFont {
     internal static func register(
             _ pdf: PDF, _ font: Font, _ stream: InputStream) throws {
         let otf = try OTF(stream)
+        setData(font, otf)
 
+        if !otf.cff {
+            // A TrueType font is written at complete(), a subset of the glyphs
+            // drawn; its pages refer to the number reserved for it.
+            Subset.share(pdf, font, otf.buf, nil, otf.buf.count)
+            font.objNumber = pdf.reserveObjNumber()
+            pdf.fonts.append(font)
+            return
+        }
+        registerCFF(pdf, font, otf)
+    }
+
+    // Adds the font to the objects of an existing PDF, with its font program
+    // whole, as a stream font is added.
+    internal static func register(
+            _ objects: inout [PDFobj], _ font: Font, _ stream: InputStream) throws {
+        let otf = try OTF(stream)
+        setData(font, otf)
+        font.cff = otf.cff
+        font.uncompressedSize = otf.buf.count
+        FontStream2.register(&objects, font, otf.compress())
+    }
+
+    // Gives the font the name, the metrics and the character map of the
+    // OpenType or TrueType font.
+    private static func setData(_ font: Font, _ otf: OTF) {
         font.name = otf.fontName!
         font.firstChar = otf.firstChar!
         font.lastChar = otf.lastChar!
@@ -30,20 +56,14 @@ class OpenTypeFont {
         font.italicAngle = Int32(bitPattern: otf.italicAngle!)
         font.fontUnderlinePosition = otf.underlinePosition!
         font.fontUnderlineThickness = otf.underlineThickness!
+        font.info = otf.fontInfo!
+        font.capHeight = otf.capHeight!
         font.checksum = Font.checksumOf(font)
         font.setSize(font.size)
+    }
 
-        if !otf.cff {
-            // A TrueType font is written at complete(), a subset of the glyphs
-            // drawn; its pages refer to the number reserved for it.
-            font.info = otf.fontInfo!
-            font.capHeight = otf.capHeight!
-            Subset.share(pdf, font, otf.buf, nil, otf.buf.count)
-            font.objNumber = pdf.reserveObjNumber()
-            pdf.fonts.append(font)
-            return
-        }
-
+    // Writes a font with CFF outlines, which is embedded whole, as it is added.
+    private static func registerCFF(_ pdf: PDF, _ font: Font, _ otf: OTF) {
         embedFontFile(pdf, font, otf)
         addFontDescriptorObject(pdf, font, otf)
         addCIDFontDictionaryObject(pdf, font, otf)

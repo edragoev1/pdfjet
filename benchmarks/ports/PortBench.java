@@ -18,7 +18,7 @@ import com.pdfjet.Page;
  * Run from the root of the repository, as the font path is relative to it.
  */
 public class PortBench {
-    static final String FONT = "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream";
+    static final String FONT = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf";
     static final int LINES = 60;
     static final String[] SAMPLES = {
         "The quick brown fox jumps over the lazy dog",

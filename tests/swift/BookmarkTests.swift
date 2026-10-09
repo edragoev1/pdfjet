@@ -78,7 +78,7 @@ import Testing
         #expect(try value("B2a", "/Count") == "")
     }
 
-    private static let streamFont = "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"
+    private static let streamFont = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"
 
     // A document with the headings, as text lines of their structure types,
     // H1 on the first page and the others on the second.

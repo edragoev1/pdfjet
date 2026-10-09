@@ -13,30 +13,31 @@ import (
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/v9/src/NotoSans"
+	"github.com/edragoev1/pdfjet/v9/src/SourceSerif4"
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
-// Example28 reads fonts from OpenType and TrueType files and from the .stream
-// files of the same fonts. Any .otf or .ttf file on the computer is a font for
-// PDFjet; a .stream file is the same font, compressed once, so that it loads
-// and embeds faster.
+// Example28 reads fonts from OpenType and TrueType files. Any .otf or .ttf
+// file on the computer is a font for PDFjet. A TrueType font is embedded as a
+// subset of the glyphs the document draws, unless it is set to stay whole; a
+// font with CFF outlines is embedded whole.
 func Example28() {
 	pdf, err := pdfjet.NewPDFFile("Example_28.pdf")
 	if err != nil {
 		log.Fatal(err)
 	}
 	pdf.SetCompliance(compliance.PDF_UA_1)
-	pdf.SetTitle("Fonts from .otf, .ttf and .stream Files")
+	pdf.SetTitle("Fonts from .otf and .ttf Files")
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
 
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 
-	text := pdfjet.NewTextLine(f2, "Fonts from .otf, .ttf and .stream Files")
+	text := pdfjet.NewTextLine(f2, "Fonts from .otf and .ttf Files")
 	text.SetStructureType(structelem.H1)
 	text.SetFontSize(22.0)
 	text.SetLocation(50.0, 80.0)
@@ -45,10 +46,10 @@ func Example28() {
 	textBlock := pdfjet.NewTextBlock(f1,
 		"PDFjet reads OpenType and TrueType fonts as they are: pass the path "+
 			"of any .otf or .ttf file on the computer to the Font constructor. "+
-			"The .stream files that come with PDFjet hold the same fonts, "+
-			"compressed once, so that a font loads and embeds faster; the "+
-			"IBMPlexSans and NotoSans constants are their paths. "+
-			"The paragraph below is drawn four times, from the two kinds of file.")
+			"The IBMPlexSans and NotoSans constants are the paths of the fonts "+
+			"that come with PDFjet. A TrueType font is embedded with only the "+
+			"glyphs the document draws, which keeps the file small; a font with "+
+			"CFF outlines is embedded whole. The paragraph below is drawn four times.")
 	textBlock.SetFontSize(12.0)
 	textBlock.SetLineSpacing(1.5)
 	textBlock.SetLocation(50.0, 95.0)
@@ -57,15 +58,15 @@ func Example28() {
 
 	files := []string{
 		"fonts/IBMPlexSans/IBMPlexSans-Regular.otf",
-		"fonts/NotoSans/NotoSans-Regular.ttf",
 		IBMPlexSans.Regular,
+		SourceSerif4.Regular,
 		NotoSans.Regular,
 	}
 	kinds := []string{
-		"OpenType, with CFF outlines, read from the .otf file",
-		"TrueType, read from the .ttf file",
-		"The same OpenType font from its .stream file",
-		"The same TrueType font from its .stream file",
+		"OpenType with CFF outlines, from the .otf file, embedded whole",
+		"TrueType, from the .ttf file, embedded as a subset",
+		"Another TrueType font, embedded as a subset",
+		"A TrueType font kept whole: subsetting turned off",
 	}
 	sample := "The quick brown fox jumps over the lazy dog. " +
 		"Ξεσκεπάζω την ψυχοφθόρα βδελυγμία. " +
@@ -85,6 +86,7 @@ func Example28() {
 		text.DrawOn(page)
 
 		font := pdfjet.NewFontFromFile(pdf, files[i])
+		font.SetSubset(i != 3)
 		textBlock = pdfjet.NewTextBlock(font, sample)
 		textBlock.SetFontSize(13.0)
 		textBlock.SetLineSpacing(1.4)

@@ -8,6 +8,7 @@ package com.pdfjet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayInputStream;
 import java.util.Arrays;
@@ -252,4 +253,15 @@ class OTFTest {
             assertEquals("Invalid font file: no advance widths.", error(without(font, "hhea")), path);
         }
     }
+
+    @Test
+    void aFontWithAnEmptyFormat4MapIsReadFromItsFormat12Map() throws Exception {
+        // IBM Plex Sans TC, as a .ttf, maps its characters in its format 12
+        // subtable alone.
+        Font font = new Font(TestSupport.newPDF(), TestSupport.file("fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.ttf").getPath());
+        for (char ch : "繁體中文A".toCharArray()) {
+            assertTrue(font.unicodeToGID[ch] != 0, ch + " has no glyph");
+        }
+    }
+
 }

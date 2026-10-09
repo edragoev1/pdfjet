@@ -61,7 +61,7 @@ import Testing
         // IBM Plex Sans JP maps ↺ and 14 other arrows to glyphs past the end
         // of its advance widths, which the offsets of the marks looked up.
         let memory = MemoryPDF()
-        let font = try Font(memory.pdf, TestSupport.open("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf.stream"))
+        let font = try Font(memory.pdf, TestSupport.open("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.ttf"))
         TextLine(font, "\u{21BA}\u{0301} x").setLocation(50, 50).drawOn(Page(memory.pdf, Letter.PORTRAIT))
         try memory.pdf.complete()
     }

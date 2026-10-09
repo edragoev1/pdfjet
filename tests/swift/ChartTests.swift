@@ -179,7 +179,7 @@ import Testing
         #expect(page.structures[1].altDescription == "Sales rose from 1 to 2.")
     }
 
-    private static let streamFont = "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"
+    private static let streamFont = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"
 
     // The structure elements of the raw PDF, by their object numbers: the S,
     // the P and the K of each.

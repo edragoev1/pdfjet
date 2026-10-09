@@ -202,7 +202,7 @@ class ReviewMediaTest {
     static String pdfaImageError(Compliance level, InputStream stream) throws Exception {
         PDF pdf = new PDF(new ByteArrayOutputStream(), level);
         pdf.setTitle("Title");
-        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
         Page page = new Page(pdf, Letter.PORTRAIT);
         new TextLine(font, "Text").setLocation(50f, 50f).drawOn(page);
         try {
@@ -547,11 +547,11 @@ class ReviewMediaTest {
         // constructor of a stream reads it.
         java.io.File copy = java.io.File.createTempFile("pdfjet", ".font");
         try {
-            java.nio.file.Files.copy(TestSupport.file("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream").toPath(),
+            java.nio.file.Files.copy(TestSupport.file("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf").toPath(),
                     copy.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
             Font font = new Font(TestSupport.newPDF(), copy.getPath());
             assertEquals(new Font(TestSupport.newPDF(), TestSupport.open(
-                    "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream")).name, font.name);
+                    "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")).name, font.name);
         } finally {
             copy.delete();
         }

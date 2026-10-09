@@ -30,19 +30,19 @@ func Example27() {
 	pdf.SetCompliance(compliance.PDF_UA_1)
 	pdf.SetTitle("Thai, Hebrew, Arabic and Persian text")
 
-	// Thai font, whose stream keeps the marks of its GPOS table, which places
-	// the tone marks above the upper vowels.
-	// f1 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansThai/NotoSansThai-Regular.ttf.stream")
+	// Thai font, whose GPOS table places the tone marks above the upper
+	// vowels.
+	// f1 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansThai/NotoSansThai-Regular.ttf")
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSansThai.Regular)
 	f1.SetSize(12.0)
 
 	// Hebrew font
-	// f2 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansHebrew/NotoSansHebrew-Regular.ttf.stream")
+	// f2 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansHebrew/NotoSansHebrew-Regular.ttf")
 	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSansHebrew.Regular)
 	f2.SetSize(12.0)
 
 	// Arabic font
-	// f3 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansArabic/NotoSansArabic-Regular.ttf.stream")
+	// f3 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansArabic/NotoSansArabic-Regular.ttf")
 	f3 := pdfjet.NewFontFromFile(pdf, IBMPlexSansArabic.Regular)
 	f3.SetSize(12.0)
 

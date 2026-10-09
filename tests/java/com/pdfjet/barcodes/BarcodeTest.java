@@ -249,7 +249,7 @@ class BarcodeTest {
     @Test
     void aDescribedBarcodeIsOneFigure() throws Exception {
         PDF pdf = new PDF(new java.io.ByteArrayOutputStream(), com.pdfjet.Compliance.PDF_UA_1).setTitle("Test");
-        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
         Page page = new Page(pdf, Letter.PORTRAIT);
         Barcode barcode = new Barcode(Barcode.EAN_13, "400638133393");
         barcode.setFont(font);

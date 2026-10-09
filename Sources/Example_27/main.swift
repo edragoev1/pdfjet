@@ -16,19 +16,19 @@ public class Example_27 {
         pdf.setCompliance(Compliance.PDF_UA_1)
         pdf.setTitle("Thai, Hebrew, Arabic and Persian text")
 
-        // Thai font, whose stream keeps the marks of its GPOS table, which
-        // places the tone marks above the upper vowels.
-        // let f1 = try Font(pdf, "fonts/NotoSansThai/NotoSansThai-Regular.ttf.stream")
+        // Thai font, whose GPOS table places the tone marks above the upper
+        // vowels.
+        // let f1 = try Font(pdf, "fonts/NotoSansThai/NotoSansThai-Regular.ttf")
         let f1 = try Font(pdf, IBMPlexSansThai.Regular)
         f1.setSize(12.0)
 
         // Hebrew font
-        // let f2 = try Font(pdf, "fonts/NotoSansHebrew/NotoSansHebrew-Regular.ttf.stream")
+        // let f2 = try Font(pdf, "fonts/NotoSansHebrew/NotoSansHebrew-Regular.ttf")
         let f2 = try Font(pdf, IBMPlexSansHebrew.Regular)
         f2.setSize(12.0)
 
         // Arabic font
-        // let f3 = try Font(pdf, "fonts/NotoSansArabic/NotoSansArabic-Regular.ttf.stream")
+        // let f3 = try Font(pdf, "fonts/NotoSansArabic/NotoSansArabic-Regular.ttf")
         let f3 = try Font(pdf, IBMPlexSansArabic.Regular)
         f3.setSize(12.0)
 

@@ -8,6 +8,7 @@ package com.pdfjet;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -68,7 +69,7 @@ class FontTest {
 
     @Test
     void readsAStreamFont() throws Exception {
-        String path = "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream";
+        String path = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf";
         assumeTrue(TestSupport.file(path).exists(), "the fonts directory is not here");
         InputStream in = TestSupport.open(path);
         try {
@@ -97,7 +98,7 @@ class FontTest {
 
     @Test
     void anOpenTypeStreamFontKeepsItsOtherTablesAndEmbedsOnlyItsCFFData() throws Exception {
-        String path = "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream";
+        String path = "tests/data/stream-fonts/IBMPlexSans-Regular.otf.stream";
         assumeTrue(TestSupport.file(path).exists(), "the fonts directory is not here");
         InputStream in = TestSupport.open(path);
         byte[] whole;
@@ -142,8 +143,8 @@ class FontTest {
 
     @Test
     void aStreamFontPlacesTheMarksAsTheOpenTypeFontDoes() throws Exception {
-        assumeTrue(TestSupport.file("fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.otf").exists(), "the fonts directory is not here");
-        assertEquals(thaiContent("fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.otf"), thaiContent("fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.otf.stream"));
+        assumeTrue(TestSupport.file("fonts/NotoSansThai/NotoSansThai-Regular.ttf").exists(), "the fonts directory is not here");
+        assertEquals(thaiContent("fonts/NotoSansThai/NotoSansThai-Regular.ttf"), thaiContent("tests/data/stream-fonts/NotoSansThai-Regular.ttf.stream"));
     }
 
     @Test
@@ -155,17 +156,32 @@ class FontTest {
 
     @Test
     void theLineGapOfAFontSpacesTheLinesOfATextBlock() throws Exception {
-        String path = "fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf.stream";
+        // IBM Plex Sans SC has a line gap of one em.
+        String path = "fonts/IBMPlexSansSC/IBMPlexSansSC-Regular.ttf";
         assumeTrue(TestSupport.file(path).exists(), "the fonts directory is not here");
         PDF pdf = TestSupport.newPDF();
-        Font jp = new Font(pdf, TestSupport.open(path));
-        assertEquals(10f, jp.getLineGap(10f), 0.001f);
-        assertEquals(10f, new Font(pdf, TestSupport.open("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf")).getLineGap(10f), 0.001f);
-        assertEquals(0f, new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"))
+        Font sc = new Font(pdf, TestSupport.open(path));
+        assertEquals(10f, sc.getLineGap(10f), 0.001f);
+        assertEquals(0f, new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
                 .getLineGap(10f), 0f);
         // The ascent, 8.8, the descent, 1.2, and the line gap, 10, for each line.
-        jp.setSize(10f);
-        TestSupport.assertXY(500f, 40f, new TextBlock(jp, "日本\n日本").setLocation(0f, 0f).drawOn(null));
+        sc.setSize(10f);
+        TestSupport.assertXY(500f, 40f, new TextBlock(sc, "日本\n日本").setLocation(0f, 0f).drawOn(null));
+    }
+
+    @Test
+    void aStreamFontPathThatIsGoneOpensTheTrueTypeFont() throws Exception {
+        // PDFjet ships no .stream files from 9.0.5: a path to one opens the
+        // .ttf file of the same name, which a path to a file that is there
+        // does not.
+        for (String path : new String[] {
+                "fonts/NotoSans/NotoSans-Regular.ttf.stream", "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"}) {
+            String want = path.substring(0, path.indexOf('.')) + ".ttf";
+            assertEquals(TestSupport.file(want).getPath(), Font.fontFileOf(TestSupport.file(path).getPath()), path);
+            assertFalse(new Font(TestSupport.newPDF(), TestSupport.file(path).getPath()).getName().isEmpty(), path);
+        }
+        String stream = TestSupport.file("tests/data/stream-fonts/NotoSansThai-Regular.ttf.stream").getPath();
+        assertEquals(stream, Font.fontFileOf(stream));
     }
 
     @Test
@@ -197,8 +213,8 @@ class FontTest {
     // and its .notdef 472, of 1000 units to the em; it has the characters
     // from U+0020 to U+FFFD, and no Thai.
     private static Font ibmPlexSans(PDF pdf) throws Exception {
-        assumeTrue(TestSupport.file("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream").exists(), "the fonts directory is not here");
-        return new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        assumeTrue(TestSupport.file("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf").exists(), "the fonts directory is not here");
+        return new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
     }
 
     @Test
@@ -312,10 +328,10 @@ class FontTest {
 
     @Test
     void aFallbackFontDrawsOnlyTheCharactersTheFontHasNoGlyphFor() throws Exception {
-        assumeTrue(TestSupport.file("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf.stream").exists(), "the fonts directory is not here");
+        assumeTrue(TestSupport.file("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.ttf").exists(), "the fonts directory is not here");
         PDF pdf = TestSupport.newPDF();
-        Font latin = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
-        Font jp = new Font(pdf, TestSupport.open("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf.stream"));
+        Font latin = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        Font jp = new Font(pdf, TestSupport.open("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.ttf"));
         Font helvetica = TestSupport.helvetica(pdf);
         // The Latin letters after the Japanese ones are in the font again.
         assertEquals(latin.stringWidth(10f, "abc") + jp.stringWidth(10f, "\u65e5\u672c") + latin.stringWidth(10f, "def"),
@@ -362,8 +378,8 @@ class FontTest {
                 "fonts/NotoSansSC/NotoSansSC-Regular.ttf",
                 "fonts/NotoSansSC/NotoSansSC-Regular-SC3500.ttf")));
         assertEquals(2, embeddedFonts(documentWithFonts(
-                "fonts/NotoSansSC/NotoSansSC-Regular.ttf.stream",
-                "fonts/NotoSansSC/NotoSansSC-Regular-SC3500.ttf.stream")));
+                "fonts/NotoSansSC/NotoSansSC-Regular.ttf",
+                "fonts/NotoSansSC/NotoSansSC-Regular-SC3500.ttf")));
     }
 
     @Test
@@ -378,22 +394,22 @@ class FontTest {
                 "fonts/IBMPlexSans/IBMPlexSans-Regular.otf")));
         assertEquals(1, embeddedFonts(documentWithFonts(
                 "fonts/IBMPlexSans/IBMPlexSans-Regular.otf",
-                "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream")));
+                "tests/data/stream-fonts/IBMPlexSans-Regular.otf.stream")));
     }
 
     @Test
     void theFontDescriptorHasTheItalicAngleAndFlagOfThePostTable() throws Exception {
-        // A .stream file holds the angle after the line gap, so the .otf and
-        // the .stream of it write one descriptor.
+        // IBM's .ttf files of IBM Plex round the angle of their .otf files to a
+        // whole degree.
         assumeTrue(TestSupport.file("fonts/IBMPlexSans/IBMPlexSans-Italic.otf").exists(),
                 "the fonts directory is not here");
         String[][] fonts = {
             {"fonts/IBMPlexSans/IBMPlexSans-Italic.otf", "-11.31"},
-            {"fonts/IBMPlexSans/IBMPlexSans-Italic.otf.stream", "-11.31"},
-            {"fonts/IBMPlexSerif/IBMPlexSerif-Italic.otf.stream", "-14.04"},
-            {"fonts/IBMPlexMono/IBMPlexMono-Italic.otf.stream", "-9.5"},
-            {"fonts/JetBrainsMono/JetBrainsMono-Italic.ttf.stream", "-9"},
-            {"fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream", "0"},
+            {"fonts/IBMPlexSans/IBMPlexSans-Italic.ttf", "-11"},
+            {"fonts/IBMPlexSerif/IBMPlexSerif-Italic.ttf", "-14"},
+            {"fonts/IBMPlexMono/IBMPlexMono-Italic.ttf", "-9"},
+            {"fonts/JetBrainsMono/JetBrainsMono-Italic.ttf", "-9"},
+            {"fonts/IBMPlexSans/IBMPlexSans-Regular.ttf", "0"},
         };
         for (String[] font : fonts) {
             String pdf = TestSupport.latin1(documentWithFonts(font[0]));

@@ -3,7 +3,8 @@
 The same document written by PDFjet for Java, C#, Go and Swift, with each
 port's own build. It is the text document of `../TextBench.java`: pages of 60
 lines of 10 point Latin, Greek and Cyrillic text in IBM Plex Sans
-(`IBMPlexSans-Regular.otf.stream`), one `drawString` call per line, on Letter
+(`IBMPlexSans-Regular.ttf`, embedded as a subset from 9.0.5; the runs before
+used `IBMPlexSans-Regular.otf.stream`), one `drawString` call per line, on Letter
 portrait pages. Section 5 of `pdfjet-benchmarks.html` quotes these numbers;
 the Java benchmarks are in `../README.md`.
 

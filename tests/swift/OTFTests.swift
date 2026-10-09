@@ -241,4 +241,14 @@ import Testing
             #expect(error(without(font, "hhea")) == "Invalid font file: no advance widths.", "\(path)")
         }
     }
+
+    @Test func aFontWithAnEmptyFormat4MapIsReadFromItsFormat12Map() throws {
+        // IBM Plex Sans TC, as a .ttf, maps its characters in its format 12
+        // subtable alone.
+        let font = try Font(TestSupport.newPDF(), TestSupport.path("fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.ttf"))
+        for ch in "繁體中文A".unicodeScalars {
+            #expect(font.unicodeToGID[Int(ch.value)] != 0, "\(ch) has no glyph")
+        }
+    }
+
 }

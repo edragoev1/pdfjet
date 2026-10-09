@@ -8,12 +8,12 @@ package IBMPlexSansArabic
 
 // IBMPlexSansArabic provides the paths to the IBM Plex Sans Arabic fonts.
 const (
-	Bold       = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Bold.otf.stream"
-	ExtraLight = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-ExtraLight.otf.stream"
-	Light      = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Light.otf.stream"
-	Medium     = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Medium.otf.stream"
-	Regular    = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.otf.stream"
-	SemiBold   = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-SemiBold.otf.stream"
-	Text       = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Text.otf.stream"
-	Thin       = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Thin.otf.stream"
+	Bold       = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Bold.ttf"
+	ExtraLight = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-ExtraLight.ttf"
+	Light      = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Light.ttf"
+	Medium     = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Medium.ttf"
+	Regular    = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf"
+	SemiBold   = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-SemiBold.ttf"
+	Text       = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Text.ttf"
+	Thin       = "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Thin.ttf"
 )

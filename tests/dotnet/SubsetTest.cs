@@ -166,7 +166,7 @@ public class SubsetTest {
 
     [Fact]
     public void ATrueTypeFontIsEmbeddedAsASubsetUnderATaggedName() {
-        foreach (string path in new string[] {"fonts/NotoSans/NotoSans-Regular.ttf", "fonts/NotoSans/NotoSans-Regular.ttf.stream"}) {
+        foreach (string path in new string[] {"fonts/NotoSans/NotoSans-Regular.ttf"}) {
             string raw = Doc(Compliance.PDF_1_7, path, true, "Ä");
             Match m = Regex.Match(raw, Tagged);
             Assert.True(m.Success, path);
@@ -184,11 +184,22 @@ public class SubsetTest {
     [Fact]
     public void AFontSetToStayWholeIsEmbeddedWhole() {
         byte[] ttf = FontBytes("fonts/NotoSans/NotoSans-Regular.ttf");
-        foreach (string path in new string[] {"fonts/NotoSans/NotoSans-Regular.ttf", "fonts/NotoSans/NotoSans-Regular.ttf.stream"}) {
+        foreach (string path in new string[] {"fonts/NotoSans/NotoSans-Regular.ttf"}) {
             string raw = Doc(Compliance.PDF_1_7, path, false, "Ä");
             Assert.Contains("/BaseFont /NotoSans-Regular\n", raw);
             Assert.DoesNotContain("+NotoSans", raw);
             Assert.Equal(ttf, Program(raw));
+        }
+    }
+
+    [Fact]
+    public void AStreamFontIsSubsetAsItsTrueTypeFontIs() {
+        // The .ttf.stream of JetBrains Mono is its .ttf, compressed: subset or
+        // whole, the two embed the same font program.
+        foreach (bool subset in new bool[] {true, false}) {
+            Assert.Equal(
+                    Program(Doc(Compliance.PDF_1_7, "fonts/JetBrainsMono/JetBrainsMono-Regular.ttf", subset, "Hello")),
+                    Program(Doc(Compliance.PDF_1_7, "tests/data/stream-fonts/JetBrainsMono-Regular.ttf.stream", subset, "Hello")));
         }
     }
 

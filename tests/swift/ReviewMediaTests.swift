@@ -12,7 +12,7 @@ import Testing
 // review_media_test.go in the Go port.
 @Suite struct ReviewMediaTests {
     private let thai = "fonts/NotoSansThai/NotoSansThai-Regular.ttf"
-    static let streamFont = "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"
+    static let streamFont = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"
 
     private func font(_ path: String) -> [UInt8] {
         return [UInt8](FileManager.default.contents(atPath: TestSupport.path(path))!)

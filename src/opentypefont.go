@@ -21,6 +21,32 @@ import (
 
 func registerOpenTypeFont(pdf *PDF, font *Font, reader io.Reader) {
 	otf := newOpenTypeFont(reader)
+	setOpenTypeFontData(font, otf)
+
+	if !otf.cff {
+		// A TrueType font is written at Complete, a subset of the glyphs
+		// drawn; its pages refer to the number reserved for it.
+		shareTrueTypeProgram(pdf, font, otf.buf, nil, len(otf.buf))
+		font.objNumber = pdf.reserveObjNumber()
+		pdf.fonts = append(pdf.fonts, font)
+		return
+	}
+	registerCFFFont(pdf, font, otf)
+}
+
+// openTypeFontStream2 adds the font to the objects of an existing PDF, with
+// its font program whole, as a stream font is added.
+func openTypeFontStream2(objects *[]*PDFobj, font *Font, reader io.Reader) {
+	otf := newOpenTypeFont(reader)
+	setOpenTypeFontData(font, otf)
+	font.cff = otf.cff
+	font.uncompressedSize = len(otf.buf)
+	fontStream2Of(objects, font, otf.compress())
+}
+
+// setOpenTypeFontData gives the font the name, the metrics and the character
+// map of the OpenType or TrueType font.
+func setOpenTypeFontData(font *Font, otf *openTypeFont) {
 
 	font.name = otf.fontName
 	font.firstChar = otf.firstChar
@@ -41,20 +67,15 @@ func registerOpenTypeFont(pdf *PDF, font *Font, reader io.Reader) {
 	font.fontUnderlinePosition = otf.underlinePosition
 	font.fontUnderlineThickness = otf.underlineThickness
 	font.advanceWidth = otf.advanceWidth
+	font.info = otf.fontInfo
+	font.capHeight = otf.capHeight
 	font.checksum = checksumOf(font)
 	font.SetSize(font.size)
+}
 
-	if !otf.cff {
-		// A TrueType font is written at Complete, a subset of the glyphs
-		// drawn; its pages refer to the number reserved for it.
-		font.info = otf.fontInfo
-		font.capHeight = otf.capHeight
-		shareTrueTypeProgram(pdf, font, otf.buf, nil, len(otf.buf))
-		font.objNumber = pdf.reserveObjNumber()
-		pdf.fonts = append(pdf.fonts, font)
-		return
-	}
-
+// registerCFFFont writes a font with CFF outlines, which is embedded whole, as
+// it is added.
+func registerCFFFont(pdf *PDF, font *Font, otf *openTypeFont) {
 	embedOpenTypeFontFile(pdf, font, otf)
 	addOpenTypeFontDescriptorObject(pdf, font, otf)
 	addOpenTypeFontCIDFontDictionaryObject(pdf, font, otf)

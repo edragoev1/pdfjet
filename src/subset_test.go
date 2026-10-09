@@ -163,7 +163,7 @@ func testSubsetProgram(t *testing.T, raw string) []byte {
 }
 
 func TestSubsetATrueTypeFontIsEmbeddedAsASubsetUnderATaggedName(t *testing.T) {
-	for _, path := range []string{"fonts/NotoSans/NotoSans-Regular.ttf", "fonts/NotoSans/NotoSans-Regular.ttf.stream"} {
+	for _, path := range []string{"fonts/NotoSans/NotoSans-Regular.ttf"} {
 		raw := testSubsetDoc(t, compliance.PDF_1_7, path, true, "Ä")
 		tagged := regexp.MustCompile(`/BaseFont /[A-Z]{6}\+NotoSans-Regular\n`).FindAllString(raw, -1)
 		if len(tagged) != 2 || !strings.Contains(raw, "/FontName /"+tagged[0][len("/BaseFont /"):]) {
@@ -186,13 +186,27 @@ func TestSubsetATrueTypeFontIsEmbeddedAsASubsetUnderATaggedName(t *testing.T) {
 
 func TestSubsetAFontSetToStayWholeIsEmbeddedWhole(t *testing.T) {
 	ttf := testOpenTypeFontBytes(t, "fonts/NotoSans/NotoSans-Regular.ttf")
-	for _, path := range []string{"fonts/NotoSans/NotoSans-Regular.ttf", "fonts/NotoSans/NotoSans-Regular.ttf.stream"} {
+	for _, path := range []string{"fonts/NotoSans/NotoSans-Regular.ttf"} {
 		raw := testSubsetDoc(t, compliance.PDF_1_7, path, false, "Ä")
 		if !strings.Contains(raw, "/BaseFont /NotoSans-Regular\n") || strings.Contains(raw, "+NotoSans") {
 			t.Errorf("%s: the name", path)
 		}
 		if !bytes.Equal(testSubsetProgram(t, raw), ttf) {
 			t.Errorf("%s: the font is not whole", path)
+		}
+	}
+}
+
+func TestSubsetAStreamFontIsSubsetAsItsTrueTypeFontIs(t *testing.T) {
+	// The .ttf.stream of JetBrains Mono is its .ttf, compressed: subset or
+	// whole, the two embed the same font program.
+	for _, subset := range []bool{true, false} {
+		stream := testSubsetProgram(t, testSubsetDoc(t, compliance.PDF_1_7,
+			"tests/data/stream-fonts/JetBrainsMono-Regular.ttf.stream", subset, "Hello"))
+		ttf := testSubsetProgram(t, testSubsetDoc(t, compliance.PDF_1_7,
+			"fonts/JetBrainsMono/JetBrainsMono-Regular.ttf", subset, "Hello"))
+		if !bytes.Equal(stream, ttf) {
+			t.Errorf("subset %v: the font programs differ", subset)
 		}
 	}
 }

@@ -66,7 +66,7 @@ public class FontStreamTest {
         // IBM Plex Sans JP maps ↺ and 14 other arrows to glyphs past the end
         // of its advance widths, which the offsets of the marks looked up.
         PDF pdf = TestSupport.NewPDF();
-        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf.stream"));
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.ttf"));
         new TextLine(font, "↺́ x").SetLocation(50f, 50f).DrawOn(new Page(pdf, Letter.PORTRAIT));
         pdf.Complete();
     }

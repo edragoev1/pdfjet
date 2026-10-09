@@ -171,7 +171,7 @@ import Testing
     private let tagged = "/BaseFont /([A-Z]{6}\\+NotoSans-Regular)\n"
 
     @Test func aTrueTypeFontIsEmbeddedAsASubsetUnderATaggedName() throws {
-        for path in ["fonts/NotoSans/NotoSans-Regular.ttf", "fonts/NotoSans/NotoSans-Regular.ttf.stream"] {
+        for path in ["fonts/NotoSans/NotoSans-Regular.ttf"] {
             let raw = try document(Compliance.PDF_1_7, path, true, "Ä")
             let (groups, _) = try #require(try match(tagged, raw), "\(path)")
             #expect(raw.contains("/FontName /\(groups[1])\n"), "\(path)")
@@ -188,10 +188,20 @@ import Testing
 
     @Test func aFontSetToStayWholeIsEmbeddedWhole() throws {
         let ttf = try fontBytes("fonts/NotoSans/NotoSans-Regular.ttf")
-        for path in ["fonts/NotoSans/NotoSans-Regular.ttf", "fonts/NotoSans/NotoSans-Regular.ttf.stream"] {
+        for path in ["fonts/NotoSans/NotoSans-Regular.ttf"] {
             let raw = try document(Compliance.PDF_1_7, path, false, "Ä")
             #expect(raw.contains("/BaseFont /NotoSans-Regular\n") && !raw.contains("+NotoSans"), "\(path)")
             #expect(try program(raw) == ttf, "\(path)")
+        }
+    }
+
+    @Test func aStreamFontIsSubsetAsItsTrueTypeFontIs() throws {
+        // The .ttf.stream of JetBrains Mono is its .ttf, compressed: subset or
+        // whole, the two embed the same font program.
+        for subset in [true, false] {
+            #expect(try program(document(Compliance.PDF_1_7, "fonts/JetBrainsMono/JetBrainsMono-Regular.ttf", subset, "Hello")) ==
+                    (try program(document(Compliance.PDF_1_7, "tests/data/stream-fonts/JetBrainsMono-Regular.ttf.stream", subset, "Hello"))),
+                    "subset \(subset)")
         }
     }
 

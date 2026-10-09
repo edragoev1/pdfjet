@@ -284,10 +284,17 @@ func NewFontStream1(pdf *PDF, reader io.Reader) *Font {
 	return font
 }
 
-// NewFontStream2 constructs font object from .ttf.stream and add it to the array of PDFobj
+// NewFontStream2 constructs a font from an OpenType, TrueType or .stream font
+// and adds it to the objects of an existing PDF, embedded whole. The format is
+// told from the first bytes the reader returns.
 func NewFontStream2(objects *[]*PDFobj, reader io.Reader) *Font {
 	font := new(Font)
-	fontStream2(objects, font, reader)
+	buffered := bufio.NewReader(reader)
+	if isOpenTypeFont(buffered) {
+		openTypeFontStream2(objects, font, buffered)
+	} else {
+		fontStream2(objects, font, buffered)
+	}
 	font.SetSize(defaultFontSize)
 	return font
 }
@@ -323,6 +330,7 @@ func isOpenTypeFont(reader *bufio.Reader) bool {
 // Files ending in .stream are read as stream fonts. It panics if the file cannot be opened.
 func NewFontFromFile(pdf *PDF, filePath string) *Font {
 	var font *Font
+	filePath = fontFileOf(filePath)
 	f, err := os.Open(filePath)
 	if err != nil {
 		panic(err)
@@ -340,6 +348,28 @@ func NewFontFromFile(pdf *PDF, filePath string) *Font {
 		font = NewFont(pdf, reader)
 	}
 	return font
+}
+
+// fontFileOf returns the path of the font file: the path given, or, for a
+// .ttf.stream or .otf.stream file that is not there, the .ttf or else the .otf
+// file of the same name beside it. PDFjet ships no .stream files from 9.0.5,
+// and its fonts are subset from their .ttf files: a path written before is
+// the same font.
+func fontFileOf(filePath string) string {
+	if _, err := os.Stat(filePath); err == nil {
+		return filePath
+	}
+	for _, stream := range []string{".ttf.stream", ".otf.stream"} {
+		if strings.HasSuffix(filePath, stream) {
+			base := strings.TrimSuffix(filePath, stream)
+			for _, ext := range []string{".ttf", ".otf"} {
+				if _, err := os.Stat(base + ext); err == nil {
+					return base + ext
+				}
+			}
+		}
+	}
+	return filePath
 }
 
 // checksumOf returns a number that identifies the font program: the units it

@@ -14,7 +14,33 @@ class OpenTypeFont {
     protected static void register(
             PDF pdf, Font font, InputStream inputStream) throws Exception {
         OTF otf = new OTF(inputStream);
+        setData(font, otf);
 
+        if (!otf.cff) {
+            // A TrueType font is written at complete(), a subset of the glyphs
+            // drawn; its pages refer to the number reserved for it.
+            Subset.share(pdf, font, otf.buf, null, otf.buf.length);
+            font.objNumber = pdf.reserveObjNumber();
+            pdf.fonts.add(font);
+            return;
+        }
+        registerCFF(pdf, font, otf);
+    }
+
+    // Adds the font to the objects of an existing PDF, with its font program
+    // whole, as a stream font is added.
+    protected static void register(
+            List<PDFobj> objects, Font font, InputStream inputStream) throws Exception {
+        OTF otf = new OTF(inputStream);
+        setData(font, otf);
+        font.cff = otf.cff;
+        font.uncompressedSize = otf.buf.length;
+        FontStream2.register(objects, font, otf.compress());
+    }
+
+    // Gives the font the name, the metrics and the character map of the
+    // OpenType or TrueType font.
+    private static void setData(Font font, OTF otf) {
         font.name = otf.fontName;
         font.firstChar = otf.firstChar;
         font.lastChar = otf.lastChar;
@@ -34,20 +60,14 @@ class OpenTypeFont {
         font.markToMarkOffsets = otf.markToMarkOffsets;
         font.markAnchors = otf.markAnchors;
         font.baseAnchors = otf.baseAnchors;
+        font.info = otf.fontInfo;
+        font.capHeight = otf.capHeight;
         font.checksum = Font.checksumOf(font);
         font.setSize(font.size);
+    }
 
-        if (!otf.cff) {
-            // A TrueType font is written at complete(), a subset of the glyphs
-            // drawn; its pages refer to the number reserved for it.
-            font.info = otf.fontInfo;
-            font.capHeight = otf.capHeight;
-            Subset.share(pdf, font, otf.buf, null, otf.buf.length);
-            font.objNumber = pdf.reserveObjNumber();
-            pdf.fonts.add(font);
-            return;
-        }
-
+    // Writes a font with CFF outlines, which is embedded whole, as it is added.
+    private static void registerCFF(PDF pdf, Font font, OTF otf) throws Exception {
         embedFontFile(pdf, font, otf);
         addFontDescriptorObject(pdf, font, otf);
         addCIDFontDictionaryObject(pdf, font, otf);

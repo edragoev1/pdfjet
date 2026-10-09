@@ -185,7 +185,7 @@ class SubsetTest {
 
     @Test
     void aTrueTypeFontIsEmbeddedAsASubsetUnderATaggedName() throws Exception {
-        for (String path : new String[] {"fonts/NotoSans/NotoSans-Regular.ttf", "fonts/NotoSans/NotoSans-Regular.ttf.stream"}) {
+        for (String path : new String[] {"fonts/NotoSans/NotoSans-Regular.ttf"}) {
             String raw = doc(Compliance.PDF_1_7, path, true, "Ä");
             Matcher m = TAGGED.matcher(raw);
             assertTrue(m.find(), path);
@@ -204,10 +204,22 @@ class SubsetTest {
     @Test
     void aFontSetToStayWholeIsEmbeddedWhole() throws Exception {
         byte[] ttf = fontBytes("fonts/NotoSans/NotoSans-Regular.ttf");
-        for (String path : new String[] {"fonts/NotoSans/NotoSans-Regular.ttf", "fonts/NotoSans/NotoSans-Regular.ttf.stream"}) {
+        for (String path : new String[] {"fonts/NotoSans/NotoSans-Regular.ttf"}) {
             String raw = doc(Compliance.PDF_1_7, path, false, "Ä");
             assertTrue(raw.contains("/BaseFont /NotoSans-Regular\n") && !raw.contains("+NotoSans"), path);
             assertArrayEquals(ttf, program(raw), path);
+        }
+    }
+
+    @Test
+    void aStreamFontIsSubsetAsItsTrueTypeFontIs() throws Exception {
+        // The .ttf.stream of JetBrains Mono is its .ttf, compressed: subset or
+        // whole, the two embed the same font program.
+        for (boolean subset : new boolean[] {true, false}) {
+            assertArrayEquals(
+                    program(doc(Compliance.PDF_1_7, "fonts/JetBrainsMono/JetBrainsMono-Regular.ttf", subset, "Hello")),
+                    program(doc(Compliance.PDF_1_7, "tests/data/stream-fonts/JetBrainsMono-Regular.ttf.stream", subset, "Hello")),
+                    "subset " + subset);
         }
     }
 

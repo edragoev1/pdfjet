@@ -265,9 +265,16 @@ public class Font {
         pdf.fonts.append(self)
     }
 
-    /// Creates a font from a .ttf.stream or .otf.stream font and adds it to the objects of an existing PDF.
+    /// Creates a font from an OpenType, TrueType, .otf.stream or .ttf.stream
+    /// font and adds it to the objects of an existing PDF, embedded whole. The
+    /// format is told from the first bytes of the stream.
     public init(_ objects: inout [PDFobj], _ stream: InputStream) throws {
-        try FontStream2.register(&objects, self, stream)
+        let bytes = try Content.getFromStream(stream)
+        if Font.isOpenTypeFont(bytes) {
+            try OpenTypeFont.register(&objects, self, InputStream(data: Data(bytes)))
+        } else {
+            try FontStream2.register(&objects, self, InputStream(data: Data(bytes)))
+        }
         setSize(size)
     }
 
@@ -312,6 +319,7 @@ public class Font {
     public init(_ pdf: PDF, _ fontPath: String) throws {
         self.pdfIdentity = pdf.identity
         self.compliance = pdf.compliance
+        let fontPath = Font.fontFileOf(fontPath)
         guard FileManager.default.fileExists(atPath: fontPath),
                 let inputStream = InputStream(fileAtPath: fontPath) else {
             throw PDFjetError(message: "Font file not found: " + fontPath)
@@ -329,6 +337,24 @@ public class Font {
             }
         }
         setSize(size)
+    }
+
+    // Returns the path of the font file: the path given, or, for a .ttf.stream
+    // or .otf.stream file that is not there, the .ttf or else the .otf file of
+    // the same name beside it. PDFjet ships no .stream files from 9.0.5, and
+    // its fonts are subset from their .ttf files: a path written before is the
+    // same font.
+    static func fontFileOf(_ fontPath: String) -> String {
+        if FileManager.default.fileExists(atPath: fontPath) {
+            return fontPath
+        }
+        for stream in [".ttf.stream", ".otf.stream"] where fontPath.hasSuffix(stream) {
+            let base = String(fontPath.dropLast(stream.count))
+            for ext in [".ttf", ".otf"] where FileManager.default.fileExists(atPath: base + ext) {
+                return base + ext
+            }
+        }
+        return fontPath
     }
 
     // Returns a number that identifies the font program: the units it is drawn

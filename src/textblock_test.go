@@ -200,7 +200,7 @@ func TestTextBlockSetFontChangesTheFallbackFontUnlessAnotherWasSet(t *testing.T)
 func TestTextBlockIsTaggedAsItsStructureType(t *testing.T) {
 	pdf := testNewPDF()
 	pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
-	font := NewFontFromFile(pdf, testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"))
+	font := NewFontFromFile(pdf, testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
 	page := NewPage(pdf, letter.Portrait())
 	heading := NewTextBlock(font, "Invoice")
 	heading.SetStructureType(structelem.H1)
@@ -298,7 +298,7 @@ func TestTextBlockALongWordIsBrokenInTimeThatGrowsWithTheWord(t *testing.T) {
 
 func TestTextBlockALongRightToLeftWordIsBrokenInTimeThatGrowsWithTheWord(t *testing.T) {
 	pdf := testNewPDF()
-	font := NewFontFromFile(pdf, testRepoPath(t, "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.otf.stream"))
+	font := NewFontFromFile(pdf, testRepoPath(t, "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf"))
 	word := strings.Repeat("محمد", 25000) // 100,000 letters, which took about 20 minutes
 	block := NewTextBlock(font, word).SetRightToLeft(true).SetWidth(100)
 	block.SetLocation(0, 0)

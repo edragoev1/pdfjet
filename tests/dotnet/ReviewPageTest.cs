@@ -477,7 +477,7 @@ public class ReviewPageTest {
     [Fact]
     public void ALoneSurrogateIsDrawnAsNotdef() {
         PDF pdf = TestSupport.NewPDF();
-        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"));
         Page page = new Page(pdf, Letter.PORTRAIT);
         new TextLine(font, "a\uD800b").SetLocation(10f, 50f).DrawOn(page);
         // As Java draws it: the glyph of the font's .notdef, with the

@@ -272,7 +272,7 @@ func TestBarcodeGS1128RefusesDataThatIsNotGS1OrTooLong(t *testing.T) {
 func TestBarcodeADescribedBarcodeIsOneFigure(t *testing.T) {
 	pdf := testNewPDF()
 	pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
-	font := NewFontFromFile(pdf, testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"))
+	font := NewFontFromFile(pdf, testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
 	page := NewPage(pdf, letter.Portrait())
 	barcode := NewBarcode(EAN_13, "400638133393")
 	barcode.SetFont(font)
@@ -301,7 +301,7 @@ func TestBarcodeADescribedBarcodeIsOneFigure(t *testing.T) {
 	pdf2.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	page2 := NewPage(pdf2, letter.Portrait())
 	plain := NewBarcode(EAN_13, "400638133393")
-	plain.SetFont(NewFontFromFile(pdf2, testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream")))
+	plain.SetFont(NewFontFromFile(pdf2, testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")))
 	plain.SetLocation(50, 50)
 	plain.DrawOn(page2)
 	if content := testContent(page2); !strings.Contains(content, "/Artifact") || !strings.Contains(content, "/P <<") {

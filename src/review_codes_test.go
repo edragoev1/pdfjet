@@ -99,7 +99,7 @@ func TestBarcodeCode128TakesACharacterFrom128To159AsFNC4ShiftAndTheControlCharac
 func TestBarcodeTheFigureHasTheBoxOfTheBarsAndTheDigits(t *testing.T) {
 	pdf := testNewPDF()
 	pdf.SetCompliance(compliance.PDF_UA_1)
-	font := NewFontFromFile(pdf, testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"))
+	font := NewFontFromFile(pdf, testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
 	page := NewPage(pdf, letter.Portrait())
 	height := page.height
 	cases := []struct {

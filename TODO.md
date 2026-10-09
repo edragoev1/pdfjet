@@ -42,6 +42,19 @@ compiles. Swift (`Subset.swift`, `PDF.newObj(_:)`) the same too: the four
 ports' Example_28 pass veraPDF's PDF/UA check. Left: Acrobat on Windows (the
 owner), the .ttf.stream deprecation once that is done, and the benchmark of
 8c in benchmarks/ (jet-noto of TextBench).
+**TrueType only, decided by the owner on 8 October 2026** ("YES we should use
+only .ttf fonts in both PDFjet and PDFjet Forms"): the constants point to the
+`.ttf` files, IBM Plex as IBM's `.ttf` editions (the Forms editor's `.woff2`
+are the same quadratic outlines), every `.stream` file gone from
+pdfjet-fonts, IBM Plex Sans kept as `.otf` "just to have something for
+testing fonts with CFF outlines". The JP line metrics and the TC widths of
+the `.ttf` accepted ("Go with 1, accept both"). Three stream files stay in
+`tests/data/stream-fonts` for the tests of the reader. Still to do: PDFjet
+Forms on the `.ttf` files (pdfjet-server, its own copies of the fonts, when it
+moves to 9.0.5), and a font added to an existing PDF is embedded whole, which
+made Examples 37 and 50 larger (124 KB to 172 KB, 170 KB to 264 KB): a subset
+there needs a completion of the objects, a maybe for v9.1.
+
 **CFF subsetting: not needed** (8 October 2026). About 3,000 lines in the
 four ports (5,000 with the subroutines pruned) for one gain, IBM Plex as
 .otf, which its .ttf edition already gives: Example_01 in Go with IBM Plex

@@ -196,7 +196,7 @@ import Testing
         }
     }
 
-    private static let streamFont = "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"
+    private static let streamFont = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"
 
     // The numbers of the page objects, in page order.
     private func pageNumbers(_ pdf: [UInt8]) throws -> [String] {

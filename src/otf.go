@@ -334,23 +334,74 @@ func getCmapTable(otf *openTypeFont, table *fontTable) {
 	otf.index += 2
 	numRecords := int(readUint16(otf))
 
-	// Process the encoding records
+	// Process the encoding records: the format 4 subtable of the Windows
+	// platform, and its format 12 subtable, which maps the characters past the
+	// Basic Multilingual Plane too.
 	format4subtable := false
 	subtableOffset := 0
+	format12Offset := -1
 	for i := 0; i < numRecords; i++ {
 		platformID := readUint16(otf)
 		encodingID := readUint16(otf)
-		subtableOffset = int(readUint32(otf))
-		if platformID == 3 && encodingID == 1 {
+		offset := int(readUint32(otf))
+		if platformID == 3 && encodingID == 1 && !format4subtable {
 			format4subtable = true
-			break
+			subtableOffset = offset
+		} else if platformID == 3 && encodingID == 10 && format12Offset == -1 {
+			format12Offset = offset
 		}
 	}
-	if !format4subtable {
+	if !format4subtable && format12Offset == -1 {
 		panic("Format 4 subtable not found in this font.")
 	}
+	if format4subtable {
+		getCmapFormat4(otf, tableOffset+subtableOffset)
+	}
+	if format12Offset != -1 {
+		getCmapFormat12(otf, table, format12Offset)
+	}
+}
 
-	otf.index = tableOffset + subtableOffset
+// getCmapFormat12 maps the characters of the Basic Multilingual Plane that the
+// format 4 subtable left without a glyph, from the format 12 subtable at the
+// offset in the table. IBM Plex Sans TC, as a .ttf, has an empty format 4
+// subtable and maps every character in its format 12 subtable. The groups go
+// up and do not overlap, and a group that goes back is passed over, so that
+// the map is read once at most.
+func getCmapFormat12(otf *openTypeFont, table *fontTable, offset int) {
+	if format, ok := otf.tableUint16(table, offset); !ok || format != 12 {
+		return
+	}
+	numGroups, ok := otf.tableUint32(table, offset+12)
+	if !ok || numGroups > (table.length-offset-16)/12 {
+		return
+	}
+	next := int(otf.firstChar)
+	for i := 0; i < numGroups; i++ {
+		group := offset + 16 + 12*i
+		start, _ := otf.tableUint32(table, group)
+		end, _ := otf.tableUint32(table, group+4)
+		startGlyph, _ := otf.tableUint32(table, group+8)
+		if start < next {
+			start = next
+		}
+		if end > int(otf.lastChar) {
+			end = int(otf.lastChar)
+		}
+		for ch := start; ch <= end; ch++ {
+			if gid := startGlyph + (ch - start); gid < 0x10000 && otf.unicodeToGID[ch] == 0 {
+				otf.unicodeToGID[ch] = gid
+			}
+		}
+		if end+1 > next {
+			next = end + 1
+		}
+	}
+}
+
+// getCmapFormat4 reads the format 4 subtable that begins at subtable.
+func getCmapFormat4(otf *openTypeFont, subtable int) {
+	otf.index = subtable
 
 	if format := readUint16(otf); format != 4 {
 		fontError("the character map is not format 4")

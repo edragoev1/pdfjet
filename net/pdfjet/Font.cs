@@ -258,9 +258,21 @@ public class Font {
         pdf.fonts.Add(this);
     }
 
-    /// <summary>Creates a font from a .ttf.stream or .otf.stream font and adds it to the objects of an existing PDF.</summary>
+    /// <summary>
+    /// Creates a font from an OpenType, TrueType, .otf.stream or .ttf.stream
+    /// font and adds it to the objects of an existing PDF, embedded whole. The
+    /// format is told from the first bytes of the stream.
+    /// </summary>
     public Font(List<PDFobj> objects, Stream inputStream) {
-        FontStream2.Register(objects, this, inputStream);
+        MemoryStream stream = new MemoryStream();
+        inputStream.CopyTo(stream);
+        inputStream.Dispose();
+        stream.Position = 0;
+        if (IsOpenTypeFont(stream)) {
+            OpenTypeFont.Register(objects, this, stream);
+        } else {
+            FontStream2.Register(objects, this, stream);
+        }
         SetSize(size);
     }
 
@@ -302,6 +314,7 @@ public class Font {
     /// <exception cref="System.Exception">thrown if the font file is not found.</exception>
     public Font(PDF pdf, String fontPath) {
         this.pdf = pdf;
+        fontPath = FontFileOf(fontPath);
         using (FileStream inputStream = new FileStream(fontPath, FileMode.Open, FileAccess.Read)) {
             // Files ending in .stream are stream fonts; the format of any
             // other is told from its first bytes, as the stream constructor
@@ -313,6 +326,28 @@ public class Font {
             }
         }
         SetSize(size);
+    }
+
+    // Returns the path of the font file: the path given, or, for a .ttf.stream
+    // or .otf.stream file that is not there, the .ttf or else the .otf file of
+    // the same name beside it. PDFjet ships no .stream files from 9.0.5, and
+    // its fonts are subset from their .ttf files: a path written before is the
+    // same font.
+    internal static String FontFileOf(String fontPath) {
+        if (File.Exists(fontPath)) {
+            return fontPath;
+        }
+        foreach (String stream in new String[] {".ttf.stream", ".otf.stream"}) {
+            if (fontPath.EndsWith(stream, StringComparison.Ordinal)) {
+                String basePath = fontPath.Substring(0, fontPath.Length - stream.Length);
+                foreach (String ext in new String[] {".ttf", ".otf"}) {
+                    if (File.Exists(basePath + ext)) {
+                        return basePath + ext;
+                    }
+                }
+            }
+        }
+        return fontPath;
     }
 
     /// <summary>

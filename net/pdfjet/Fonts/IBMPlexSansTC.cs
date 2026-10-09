@@ -7,24 +7,25 @@
 namespace PDFjet.NET {
         /// <summary>
         /// The IBM Plex Sans TC fonts. Each constant is the path of a font file in the
-        /// .otf.stream format; pass it to the Font constructor that takes a font path.
+        /// TrueType (.ttf) format, embedded as a subset of the glyphs a document
+        /// draws; pass it to the Font constructor that takes a font path.
         /// </summary>
         public static class IBMPlexSansTC {
         /// <summary>IBM Plex Sans TC Bold</summary>
-        public const string Bold        = "fonts/IBMPlexSansTC/IBMPlexSansTC-Bold.otf.stream";
+        public const string Bold        = "fonts/IBMPlexSansTC/IBMPlexSansTC-Bold.ttf";
         /// <summary>IBM Plex Sans TC ExtraLight</summary>
-        public const string ExtraLight  = "fonts/IBMPlexSansTC/IBMPlexSansTC-ExtraLight.otf.stream";
+        public const string ExtraLight  = "fonts/IBMPlexSansTC/IBMPlexSansTC-ExtraLight.ttf";
         /// <summary>IBM Plex Sans TC Light</summary>
-        public const string Light       = "fonts/IBMPlexSansTC/IBMPlexSansTC-Light.otf.stream";
+        public const string Light       = "fonts/IBMPlexSansTC/IBMPlexSansTC-Light.ttf";
         /// <summary>IBM Plex Sans TC Medium</summary>
-        public const string Medium      = "fonts/IBMPlexSansTC/IBMPlexSansTC-Medium.otf.stream";
+        public const string Medium      = "fonts/IBMPlexSansTC/IBMPlexSansTC-Medium.ttf";
         /// <summary>IBM Plex Sans TC Regular</summary>
-        public const string Regular     = "fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.otf.stream";
+        public const string Regular     = "fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.ttf";
         /// <summary>IBM Plex Sans TC SemiBold</summary>
-        public const string SemiBold    = "fonts/IBMPlexSansTC/IBMPlexSansTC-SemiBold.otf.stream";
+        public const string SemiBold    = "fonts/IBMPlexSansTC/IBMPlexSansTC-SemiBold.ttf";
         /// <summary>IBM Plex Sans TC Text</summary>
-        public const string Text        = "fonts/IBMPlexSansTC/IBMPlexSansTC-Text.otf.stream";
+        public const string Text        = "fonts/IBMPlexSansTC/IBMPlexSansTC-Text.ttf";
         /// <summary>IBM Plex Sans TC Thin</summary>
-        public const string Thin        = "fonts/IBMPlexSansTC/IBMPlexSansTC-Thin.otf.stream";
+        public const string Thin        = "fonts/IBMPlexSansTC/IBMPlexSansTC-Thin.ttf";
     }
 }

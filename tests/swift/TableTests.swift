@@ -951,7 +951,7 @@ import Testing
         // autoAdjustColumnWidths gives the column of "a", less the padding,
         // comes out a little less than the width of "a" in floating point.
         let pdf = TestSupport.newPDF()
-        let font = try Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Bold.otf.stream")).setSize(11)
+        let font = try Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Bold.ttf")).setSize(11)
         let rows = [[Cell(font, "a"), Cell(font, "b")], [Cell(font, "1"), Cell(font, "2")]]
         let table = Table().setTableData(rows, 1)
         table.autoAdjustColumnWidths()
@@ -978,7 +978,7 @@ import Testing
         // A character outside the basic plane is more than one byte of the
         // text, and the bytes are not drawn on more than one line.
         let pdf = TestSupport.newPDF()
-        let font = try Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream")).setSize(11)
+        let font = try Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")).setSize(11)
         let cell = Cell(font, "a\u{1F600}b")
         // A column narrower than any of the characters.
         cell.setWidth(6)
@@ -1012,7 +1012,7 @@ import Testing
         // The second word does not fit the column, and its first character does
         // not fit after the first word, so the first line is the first word.
         let pdf = TestSupport.newPDF()
-        let font = try Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream")).setSize(10)
+        let font = try Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")).setSize(10)
         let cell = Cell(font, "abcd Wxyzwxyzw")
         cell.setWidth(30)
         let table = Table().setTableData([[cell]], 0)

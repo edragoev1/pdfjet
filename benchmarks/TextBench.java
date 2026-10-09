@@ -16,8 +16,8 @@ import java.util.*;
  */
 public class TextBench {
     static final String ROOT = System.getProperty("pdfjet.root", ".") + "/";
-    static final String PLEX_STREAM = ROOT + "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream";
-    static final String NOTO_STREAM = ROOT + "fonts/NotoSans/NotoSans-Regular.ttf.stream";
+    static final String PLEX = ROOT + "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf";
+    static final String NOTO = ROOT + "fonts/NotoSans/NotoSans-Regular.ttf";
     static final int LINES = 60;
     static final String[] SAMPLES = {
         "The quick brown fox jumps over the lazy dog",
@@ -45,8 +45,8 @@ public class TextBench {
 
     static byte[] run(String config, int pages) throws Exception {
         switch (config) {
-        case "jet-plex": return pdfjet(PLEX_STREAM, pages);
-        case "jet-noto": return pdfjet(NOTO_STREAM, pages);
+        case "jet-plex": return pdfjet(PLEX, pages);
+        case "jet-noto": return pdfjet(NOTO, pages);
         default: throw new IllegalArgumentException(config);
         }
     }

@@ -297,23 +297,75 @@ class OTF {
         index += 2
         let numRecords = try readUInt16()
 
-        // Process the encoding records
+        // Process the encoding records: the format 4 subtable of the Windows
+        // platform, and its format 12 subtable, which maps the characters past
+        // the Basic Multilingual Plane too.
         var format4subtable = false
         var subtableOffset = 0
+        var format12Offset = -1
         for _ in 0..<numRecords {
             let platformID = try readUInt16()
             let encodingID = try readUInt16()
-            subtableOffset = Int(try readUInt32())
-            if platformID == 3 && encodingID == 1 {
+            let offset = Int(try readUInt32())
+            if platformID == 3 && encodingID == 1 && !format4subtable {
                 format4subtable = true
-                break
+                subtableOffset = offset
+            } else if platformID == 3 && encodingID == 10 && format12Offset == -1 {
+                format12Offset = offset
             }
         }
-        if !format4subtable {
+        if !format4subtable && format12Offset == -1 {
             throw OTFError.format4SubtableNotFound
         }
+        if format4subtable {
+            try cmapFormat4(tableOffset + subtableOffset)
+        }
+        if format12Offset != -1 {
+            cmapFormat12(table, format12Offset)
+        }
+    }
 
-        self.index = tableOffset + subtableOffset
+    // Maps the characters of the Basic Multilingual Plane that the format 4
+    // subtable left without a glyph, from the format 12 subtable at the offset
+    // in the table. IBM Plex Sans TC, as a .ttf, has an empty format 4
+    // subtable and maps every character in its format 12 subtable. The groups
+    // go up and do not overlap, and a group that goes back is passed over, so
+    // that the map is read once at most.
+    private func cmapFormat12(_ table: FontTable, _ offset: Int) {
+        guard tableUInt16(table, offset) == 12, let numGroups = tableUInt32(table, offset + 12),
+                let length = table.length, numGroups <= (length - offset - 16) / 12 else {
+            return
+        }
+        var next = firstChar!
+        for i in 0..<numGroups {
+            let group = offset + 16 + 12 * i
+            guard var start = tableUInt32(table, group), var end = tableUInt32(table, group + 4),
+                    let startGlyph = tableUInt32(table, group + 8) else {
+                return
+            }
+            if start < next {
+                start = next
+            }
+            if end > lastChar! {
+                end = lastChar!
+            }
+            if start <= end {
+                for ch in start...end {
+                    let gid = startGlyph + (ch - start)
+                    if gid < 0x10000 && unicodeToGID[ch] == 0 {
+                        unicodeToGID[ch] = gid
+                    }
+                }
+            }
+            if end + 1 > next {
+                next = end + 1
+            }
+        }
+    }
+
+    // Reads the format 4 subtable that begins at subtable.
+    private func cmapFormat4(_ subtable: Int) throws {
+        self.index = subtable
 
         if try readUInt16() != 4 {
             throw OTF.fontError("the character map is not format 4")

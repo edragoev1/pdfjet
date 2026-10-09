@@ -63,7 +63,7 @@ func TestFontEveryCjkCharacterIsOneEmWideAndSurrogatePairsCountOnce(t *testing.T
 }
 
 func TestFontReadsAStreamFont(t *testing.T) {
-	path := testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream")
+	path := testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")
 	file, err := os.Open(path)
 	if err != nil {
 		t.Skip("the fonts directory is not here")
@@ -92,7 +92,7 @@ func testEmbeddedFontFile(t *testing.T, fontStream []byte) []byte {
 }
 
 func TestFontAnOpenTypeStreamFontKeepsItsOtherTablesAndEmbedsOnlyItsCFFData(t *testing.T) {
-	whole, err := os.ReadFile(testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"))
+	whole, err := os.ReadFile(testRepoPath(t, "tests/data/stream-fonts/IBMPlexSans-Regular.otf.stream"))
 	if err != nil {
 		t.Skip("the fonts directory is not here")
 	}
@@ -138,9 +138,9 @@ func testThaiContent(t *testing.T, path string) string {
 }
 
 func TestFontAStreamFontPlacesTheMarksAsTheOpenTypeFontDoes(t *testing.T) {
-	otf := testThaiContent(t, "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.otf")
-	if stream := testThaiContent(t, "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.otf.stream"); stream != otf {
-		t.Errorf("stream %q\notf %q", stream, otf)
+	ttf := testThaiContent(t, "fonts/NotoSansThai/NotoSansThai-Regular.ttf")
+	if stream := testThaiContent(t, "tests/data/stream-fonts/NotoSansThai-Regular.ttf.stream"); stream != ttf {
+		t.Errorf("stream %q\nttf %q", stream, ttf)
 	}
 }
 
@@ -154,15 +154,36 @@ func TestFontTheLineGapOfAFontSpacesTheLinesOfATextBlock(t *testing.T) {
 		defer file.Close()
 		return NewFont(pdf, file)
 	}
-	jp := open("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf.stream")
-	testNear(t, "the line gap of the stream", 10, jp.GetLineGap(10), 0.001)
-	testNear(t, "the line gap of the .otf", 10, open("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf").GetLineGap(10), 0.001)
-	testNear(t, "the line gap of IBM Plex Sans", 0, open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream").GetLineGap(10), 0)
+	// IBM Plex Sans SC has a line gap of one em.
+	sc := open("fonts/IBMPlexSansSC/IBMPlexSansSC-Regular.ttf")
+	testNear(t, "the line gap of IBM Plex Sans SC", 10, sc.GetLineGap(10), 0.001)
+	testNear(t, "the line gap of IBM Plex Sans", 0, open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf").GetLineGap(10), 0)
 	// The ascent, 8.8, the descent, 1.2, and the line gap, 10, for each line.
-	jp.SetSize(10)
-	block := NewTextBlock(jp, "日本\n日本")
+	sc.SetSize(10)
+	block := NewTextBlock(sc, "日本\n日本")
 	block.SetLocation(0, 0)
 	testAssertXY(t, 500, 40, block.DrawOn(nil))
+}
+
+func TestFontAStreamFontPathThatIsGoneOpensTheTrueTypeFont(t *testing.T) {
+	// PDFjet ships no .stream files from 9.0.5: a path to one opens the .ttf
+	// file of the same name, which a path to a file that is there does not.
+	for _, path := range []string{
+		"fonts/NotoSans/NotoSans-Regular.ttf.stream",
+		"fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream",
+	} {
+		want := path[:strings.Index(path, ".")] + ".ttf"
+		if got := fontFileOf(testRepoPath(t, path)); got != testRepoPath(t, want) {
+			t.Errorf("%s: %s", path, got)
+		}
+		if font := NewFontFromFile(testNewPDF(), testRepoPath(t, path)); font.GetName() == "" {
+			t.Errorf("%s: no font", path)
+		}
+	}
+	stream := testRepoPath(t, "tests/data/stream-fonts/NotoSansThai-Regular.ttf.stream")
+	if got := fontFileOf(stream); got != stream {
+		t.Errorf("a stream file that is there: %s", got)
+	}
 }
 
 func TestFontACoreFontDrawsTheWinAnsiCharactersFrom128To159(t *testing.T) {
@@ -195,7 +216,7 @@ func TestFontACoreFontDrawsDeleteAsASpace(t *testing.T) {
 // characters from U+0020 to U+FFFD, and no Thai.
 func testIBMPlexSans(t *testing.T, pdf *PDF) *Font {
 	t.Helper()
-	file, err := os.Open(testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"))
+	file, err := os.Open(testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
 	if err != nil {
 		t.Skip("the fonts directory is not here")
 	}
@@ -328,8 +349,8 @@ func TestFontAFallbackFontDrawsOnlyTheCharactersTheFontHasNoGlyphFor(t *testing.
 		defer file.Close()
 		return NewFont(pdf, file)
 	}
-	latin := open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream")
-	jp := open("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf.stream")
+	latin := open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")
+	jp := open("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.ttf")
 	helvetica := testHelvetica(pdf)
 	// The Latin letters after the Japanese ones are in the font again.
 	testNear(t, "Latin after Japanese", latin.StringWidth(10, "abc")+jp.StringWidth(10, "\u65e5\u672c")+latin.StringWidth(10, "def"),
@@ -381,8 +402,8 @@ func TestFontAFontAndASubsetOfItWithTheSameNameAreBothEmbedded(t *testing.T) {
 	// out in the glyphs of the first: 中文字 read as Ι㈜♡.
 	for _, pair := range [][]string{
 		{"fonts/NotoSansSC/NotoSansSC-Regular.ttf", "fonts/NotoSansSC/NotoSansSC-Regular-SC3500.ttf"},
-		{"fonts/NotoSansSC/NotoSansSC-Regular.ttf.stream",
-			"fonts/NotoSansSC/NotoSansSC-Regular-SC3500.ttf.stream"},
+		{"fonts/NotoSansSC/NotoSansSC-Regular.ttf",
+			"fonts/NotoSansSC/NotoSansSC-Regular-SC3500.ttf"},
 	} {
 		if n := testEmbeddedFonts(testDocumentWithFonts(t, pair...)); n != 2 {
 			t.Errorf("%s: %d font programs embedded", pair[0], n)
@@ -391,12 +412,12 @@ func TestFontAFontAndASubsetOfItWithTheSameNameAreBothEmbedded(t *testing.T) {
 }
 
 func TestFontOneFontProgramIsEmbeddedOnce(t *testing.T) {
-	// The same font added twice, and the same font read from a .otf and from
-	// the .stream file made of it, are one font program: Example_28 draws
-	// with both and embeds one of each font.
+	// The same font added twice, and the same font read from a .otf or a
+	// .ttf and from the .stream file made of it, are one font program.
 	for _, pair := range [][]string{
 		{"fonts/IBMPlexSans/IBMPlexSans-Regular.otf", "fonts/IBMPlexSans/IBMPlexSans-Regular.otf"},
-		{"fonts/IBMPlexSans/IBMPlexSans-Regular.otf", "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"},
+		{"fonts/IBMPlexSans/IBMPlexSans-Regular.otf", "tests/data/stream-fonts/IBMPlexSans-Regular.otf.stream"},
+		{"fonts/NotoSansThai/NotoSansThai-Regular.ttf", "tests/data/stream-fonts/NotoSansThai-Regular.ttf.stream"},
 	} {
 		if n := testEmbeddedFonts(testDocumentWithFonts(t, pair...)); n != 1 {
 			t.Errorf("%s: %d font programs embedded", pair[1], n)
@@ -405,15 +426,15 @@ func TestFontOneFontProgramIsEmbeddedOnce(t *testing.T) {
 }
 
 func TestFontTheFontDescriptorHasTheItalicAngleAndFlagOfThePostTable(t *testing.T) {
-	// A .stream file holds the angle after the line gap, so the .otf and the
-	// .stream of it write one descriptor.
+	// IBM's .ttf files of IBM Plex round the angle of their .otf files to a
+	// whole degree.
 	for _, font := range [][2]string{
 		{"fonts/IBMPlexSans/IBMPlexSans-Italic.otf", "-11.31"},
-		{"fonts/IBMPlexSans/IBMPlexSans-Italic.otf.stream", "-11.31"},
-		{"fonts/IBMPlexSerif/IBMPlexSerif-Italic.otf.stream", "-14.04"},
-		{"fonts/IBMPlexMono/IBMPlexMono-Italic.otf.stream", "-9.5"},
-		{"fonts/JetBrainsMono/JetBrainsMono-Italic.ttf.stream", "-9"},
-		{"fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream", "0"},
+		{"fonts/IBMPlexSans/IBMPlexSans-Italic.ttf", "-11"},
+		{"fonts/IBMPlexSerif/IBMPlexSerif-Italic.ttf", "-14"},
+		{"fonts/IBMPlexMono/IBMPlexMono-Italic.ttf", "-9"},
+		{"fonts/JetBrainsMono/JetBrainsMono-Italic.ttf", "-9"},
+		{"fonts/IBMPlexSans/IBMPlexSans-Regular.ttf", "0"},
 	} {
 		pdf := string(testDocumentWithFonts(t, font[0]))
 		if !strings.Contains(pdf, "/ItalicAngle "+font[1]+"\n") {

@@ -15,8 +15,8 @@ import PDFjet
 // Run from the root of the repository, as the paths are relative to it.
 
 let csvFile = "data/Electric_Vehicle_Population_10_Pages.csv"
-let semibold = "fonts/IBMPlexSans/IBMPlexSans-SemiBold.otf.stream"
-let regular = "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"
+let semibold = "fonts/IBMPlexSans/IBMPlexSans-SemiBold.ttf"
+let regular = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"
 let columns = 9
 let widths: [Float] = [68.0, 58.0, 58.0, 26.0, 44.0, 34.0, 52.0, 60.0, 152.0]
 

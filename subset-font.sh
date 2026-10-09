@@ -65,7 +65,7 @@ if [ $? -eq 0 ]; then
         INPUT_SIZE=$(du -h "$INPUT_FONT" | cut -f1)
         OUTPUT_SIZE=$(du -h "$OUTPUT_FONT" | cut -f1)
         echo "File size reduced: $INPUT_SIZE --> $OUTPUT_SIZE"
-        echo "Next step: Compress this TTF file to .ttf.stream format using PDFjet's tool"
+        echo "PDFjet embeds a .ttf font as a subset of the glyphs a document draws."
 else
         echo "Error: Font subsetting failed. Please check the output above."
         exit 1

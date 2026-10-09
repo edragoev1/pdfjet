@@ -14,7 +14,32 @@ namespace PDFjet.NET {
 class OpenTypeFont {
     internal static void Register(PDF pdf, Font font, Stream inputStream) {
         OTF otf = new OTF(inputStream);
+        SetData(font, otf);
 
+        if (!otf.cff) {
+            // A TrueType font is written at Complete(), a subset of the glyphs
+            // drawn; its pages refer to the number reserved for it.
+            Subset.Share(pdf, font, otf.buf, null, otf.buf.Length);
+            font.objNumber = pdf.ReserveObjNumber();
+            pdf.fonts.Add(font);
+            return;
+        }
+        RegisterCFF(pdf, font, otf);
+    }
+
+    // Adds the font to the objects of an existing PDF, with its font program
+    // whole, as a stream font is added.
+    internal static void Register(List<PDFobj> objects, Font font, Stream inputStream) {
+        OTF otf = new OTF(inputStream);
+        SetData(font, otf);
+        font.cff = otf.cff;
+        font.uncompressedSize = otf.buf.Length;
+        FontStream2.Register(objects, font, otf.Compress());
+    }
+
+    // Gives the font the name, the metrics and the character map of the
+    // OpenType or TrueType font.
+    private static void SetData(Font font, OTF otf) {
         font.name = otf.fontName;
         font.firstChar = otf.firstChar;
         font.lastChar = otf.lastChar;
@@ -35,20 +60,14 @@ class OpenTypeFont {
         font.italicAngle = (int) otf.italicAngle;
         font.fontUnderlinePosition = otf.underlinePosition;
         font.fontUnderlineThickness = otf.underlineThickness;
+        font.info = otf.fontInfo;
+        font.capHeight = otf.capHeight;
         font.checksum = Font.ChecksumOf(font);
         font.SetSize(font.size);
+    }
 
-        if (!otf.cff) {
-            // A TrueType font is written at Complete(), a subset of the glyphs
-            // drawn; its pages refer to the number reserved for it.
-            font.info = otf.fontInfo;
-            font.capHeight = otf.capHeight;
-            Subset.Share(pdf, font, otf.buf, null, otf.buf.Length);
-            font.objNumber = pdf.ReserveObjNumber();
-            pdf.fonts.Add(font);
-            return;
-        }
-
+    // Writes a font with CFF outlines, which is embedded whole, as it is added.
+    private static void RegisterCFF(PDF pdf, Font font, OTF otf) {
         EmbedFontFile(pdf, font, otf);
         AddFontDescriptorObject(pdf, font, otf);
         AddCIDFontDictionaryObject(pdf, font, otf);

@@ -160,7 +160,7 @@ public class TextBlockTest {
     [Fact]
     public void IsTaggedAsItsStructureType() {
         PDF pdf = new PDF(new System.IO.MemoryStream(), Compliance.PDF_UA_1).SetTitle("Test");
-        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
         Page page = new Page(pdf, Letter.PORTRAIT);
         TextBlock heading = new TextBlock(font, "Invoice").SetStructureType(StructElem.H1);
         heading.SetLocation(50f, 50f);
@@ -198,7 +198,7 @@ public class TextBlockTest {
     [Fact]
     public void ALongRightToLeftWordIsBrokenInTimeThatGrowsWithTheWord() {
         PDF pdf = TestSupport.NewPDF();
-        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.otf.stream"));
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf"));
         var word = new System.Text.StringBuilder();
         for (int i = 0; i < 25000; i++) {
             word.Append("محمد");      // 100,000 letters, which took about 20 minutes

@@ -246,7 +246,7 @@ func TestMisuseAStampIsCompletedOnceBeforeItIsDrawn(t *testing.T) {
 
 func TestMisuseStampTextAddsItsFont(t *testing.T) {
 	doc := testNewDoc()
-	font := NewFontFromFile(doc.pdf, testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"))
+	font := NewFontFromFile(doc.pdf, testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
 	core := testHelvetica(doc.pdf)
 	stamp := NewStamp(doc.pdf).SetSize(100, 50)
 	stamp.DrawText(core, 12, 5, 20, "Paid")

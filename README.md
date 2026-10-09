@@ -56,13 +56,14 @@ same output come in four languages, and none of them needs a single dependency.
   rows, text blocks, columns, charts and calendars.
 - **Barcodes built in.** EAN-13, UPC-A, Code 39, Code 128, QR, Data Matrix and
   PDF417.
-- **Fonts ready to use.** 272 font files from the IBM Plex, Noto and other
-  families, compressed once ahead of time, with Unicode text in Latin, Greek,
-  Cyrillic, CJK and right to left scripts. IBM Plex Sans alone covers all 24
-  official languages of the European Union, from Czech ř and Romanian ș to
-  Greek and Bulgarian, with the euro sign and each language's quotation
-  marks, in 75 KB as a `.otf.stream` file, embedded whole: a one-page PDF in
-  it is about 63 KB.
+- **Fonts ready to use.** 252 TrueType fonts from the IBM Plex, Noto and
+  other families, with Unicode text in Latin, Greek, Cyrillic, CJK and right
+  to left scripts, embedded as subsets of the glyphs a document draws. IBM
+  Plex Sans alone covers all 24 official languages of the European Union,
+  from Czech ř and Romanian ș to Greek and Bulgarian, with the euro sign and
+  each language's quotation marks: a one-page PDF in it is about 28 KB. A
+  page of Chinese in Noto Sans SC is about 93 KB, where the whole font is
+  6.5 MB.
 - **Images.** PNG, JPEG and BMP, and SVG drawn as vector graphics.
 - **Security.** AES-256 encryption with passwords and permissions, reading
   existing and encrypted PDFs, and limits that keep untrusted input from
@@ -402,60 +403,44 @@ the space on each side of the text, and `setFooter("Seite {page} von {pages}",
 font)` replaces the "Page {page} of {pages}" footer, or leaves it out with a
 null text.
 
-## Stream fonts, and what a PDF embeds
+## Fonts, and what a PDF embeds
 
-The bundled fonts come as `.otf.stream` and `.ttf.stream` files beside the
-`.otf` and `.ttf` files they are made from: the metrics PDFjet needs, read at
-once, and the font's outlines compressed ahead of time with Zopfli, so a
-document only copies them. That is why they are faster than the plain files,
-by three to eight times for a one-page PDF, and why a PDF made with one is a
-little smaller.
+The bundled fonts are TrueType `.ttf` files, and IBM Plex Sans is also there as
+`.otf`, a font of CFF outlines. Any `.ttf` or `.otf` file on the computer is a
+font for PDFjet as well. What a PDF embeds:
 
-What a PDF embeds is the same whichever is given:
+- A TrueType font is embedded as a subset when the document is completed: the
+  outlines of the glyphs it does not draw are left out, and so are the tables
+  a reader does not need. It keeps `head`, `hhea`, `hmtx`, `maxp`, `loca`,
+  `glyf`, `cvt `, `fpgm`, `prep`, `gasp`, `cmap`, `OS/2`, `name` and `post`
+  (without the names of the glyphs), `/FontFile2`. Every glyph keeps its
+  number, so the pages, the widths and the text a reader copies are those of
+  the whole font; the font's name has the six capitals and a plus of a
+  subset, its widths and its ToUnicode map list the glyphs kept, and a
+  PDF/A-1 document has the CIDSet PDF/A-1 asks of a subset. The four ports
+  embed the same subset, byte for byte.
+- `setSubset(false)` keeps a TrueType font whole, and so does a font whose
+  license forbids subsetting, by the fsType of its `OS/2` table. Fonts read
+  from one file are one font program in a PDF, and the glyphs any of them
+  draws are in it.
+- A font of CFF outlines embeds its CFF table whole, the outlines alone,
+  `/FontFile3` with `/Subtype /CIDFontType0C`, the way PDF carries such a
+  font since PDF 1.3, which keeps PDF/A-1 possible. The other tables of the
+  `.otf` are of no use in a PDF.
+- A font added to the objects of an existing PDF, `new Font(objects,
+  stream)`, is embedded whole: the document has no completion at which to
+  subset it.
 
-- An OpenType font of CFF outlines, as IBM Plex, embeds its CFF table, the
-  outlines alone, `/FontFile3` with `/Subtype /CIDFontType0C`; the other
-  tables of the `.otf` are left out, as a PDF does not need them. IBM Plex
-  Sans Regular embeds 60,818 bytes of CFF, the same bytes from its `.otf`,
-  from its `.otf.stream`, and from a stream of the older format, which has
-  no more than the CFF (checked on 5 October 2026).
-- A TrueType font embeds the whole `.ttf`, `/FontFile2`.
-- Each font is embedded whole, never subset: every glyph is in the PDF,
-  whatever the text uses.
+The SIL Open Font License of the bundled fonts allows a document to embed
+them, whole or subset: a document is not a distribution of the font.
 
-An `.otf.stream` of the current format also keeps, after the metrics, the
-tables of the font that are not in its CFF data, so that the original `.otf`
-can be rebuilt from it byte for byte. PDFjet skips them when it embeds the
-font. They are there for the file itself: a stream distributed with the
-library is then the font, whole, in another form, and not a modified
-version of it, which the SIL Open Font License, under which these fonts
-are, and IBM Plex's reserved font name care about. A stream of the older
-format, the CFF alone, embeds the same and reads as well.
-
-So the stream holds the whole font, and the PDF gets its CFF alone, which is
-as it should be, for three reasons:
-
-1. The license draws its line at distribution, not at embedding. A stream is
-   distributed as a font, with the library, so it is the whole font; one of
-   the CFF alone would be a modified IBM Plex, which may not use the name.
-   A PDF embeds the font, which the SIL Open Font License allows of a
-   document: the document is not a distribution of the font.
-2. It is how PDF carries a font of CFF outlines, `/FontFile3` with
-   `/Subtype /CIDFontType0C`, since PDF 1.3. The other tables, the names a
-   menu shows, the OS/2 data, the hints for the screen, are of no use in it.
-3. It keeps PDF/A-1 possible. A whole `.otf` would be embedded as
-   `/Subtype /OpenType`, which came with PDF 1.6, after PDF/A-1's PDF 1.4.
-
-The streams were made whole on 17 September 2026 (commit `aa8edd30`), when
-they held the CFF alone; the fonts every example embeds stayed the same,
-byte for byte.
-
-Both formats are read by all four ports, and a stream made before that day
-needs no converting again. The block of the other tables is marked with an
-`R` after the metrics, and the reader skips it when it is there; a stream of
-the older format has no such block, and the reader goes on to the CFF data
-as before (`FontStream1` in Java, C#, Go and Swift). PDFjet Forms makes its
-PDFs from streams of the older format, read by the same Go code.
+Up to 9.0.3 the bundled fonts came as `.otf.stream` and `.ttf.stream` files,
+their metrics and their outlines compressed ahead of time, so that a document
+only copied them. Subsetting made them unneeded: a subset of the `.ttf` is a
+fraction of the stream's size, and about as fast to make. PDFjet still reads
+stream files, those made with `util/generate-stream-fonts-files.sh` too, and a
+path to a bundled stream file that is no longer there opens the `.ttf` file of
+the same name beside it, so code written for 9.0.3 runs as it is.
 
 ## Right to left text
 
@@ -473,11 +458,8 @@ and uses only the mark positioning of its positioning table (GPOS), so:
 - Urdu is drawn in the Naskh style of the Arabic fonts, not in Nastaliq, the
   style Urdu is usually printed in. Nastaliq fonts, such as Noto Nastaliq
   Urdu, depend on the OpenType tables, so they are not expected to work.
-- Diacritics are positioned on their letters only in a font read from a `.otf`
-  or `.ttf` file, as described in [Marks](#marks). In a font read from a
-  `.otf.stream` or `.ttf.stream` file they are drawn where the font puts them
-  by default: IBM Plex Sans Arabic draws every mark above its letter, and
-  Hebrew niqqud falls between letters.
+- Diacritics are positioned on their letters by the GPOS table of the font,
+  as described in [Marks](#marks).
 - The marks on a lam-alef ligature are put on its lam.
 - A font's localized forms, such as the Urdu shapes of some digits, and its
   optional ligatures and kerning are not used.
@@ -536,11 +518,8 @@ where the GPOS table of the font puts it: on its letter or ligature, or on the
 mark it attaches to, like a Thai tone mark above an upper vowel or an Arabic
 fatha above a shadda. The marks of a letter are stacked in the order HarfBuzz
 puts them in, so the stacking does not depend on the order they were typed in.
-Only a font read from a `.otf` or `.ttf` file has the table: a `.otf.stream` or
-`.ttf.stream` file does not, so its marks are drawn where the font puts them by
-default, and a mark on another mark is drawn on top of it. Example_27 reads its
-Thai font from `fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.otf` for this
-reason.
+A font without the table draws its marks where the font puts them by default,
+and a mark on another mark on top of it.
 
 Text extraction tools take a mark that is moved up or down for text off the
 line, and break the word at it. Each word with a moved mark is drawn in a

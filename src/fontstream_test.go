@@ -53,7 +53,7 @@ func TestFontStreamAMarkAfterAGlyphPastTheAdvanceWidthsIsDrawn(t *testing.T) {
 	// IBM Plex Sans JP maps ↺ and 14 other arrows to glyphs past the end of
 	// its advance widths, which the offsets of the marks looked up.
 	pdf := NewPDF(bufio.NewWriter(io.Discard))
-	font := NewFontFromFile(pdf, testRepoPath(t, "fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf.stream"))
+	font := NewFontFromFile(pdf, testRepoPath(t, "fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.ttf"))
 	NewTextLine(font, "↺́ x").SetLocation(50, 50).DrawOn(NewPage(pdf, letter.Portrait()))
 	if err := pdf.Complete(); err != nil {
 		t.Fatal(err)

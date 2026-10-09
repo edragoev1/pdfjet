@@ -256,5 +256,16 @@ public class OTFTest {
             Assert.Equal("Invalid font file: no advance widths.", Error(Without(font, "hhea")));
         }
     }
+
+    [Fact]
+    public void AFontWithAnEmptyFormat4MapIsReadFromItsFormat12Map() {
+        // IBM Plex Sans TC, as a .ttf, maps its characters in its format 12
+        // subtable alone.
+        Font font = new Font(TestSupport.NewPDF(), TestSupport.RepoPath("fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.ttf"));
+        foreach (char ch in "繁體中文A") {
+            Assert.True(font.unicodeToGID[ch] != 0, ch + " has no glyph");
+        }
+    }
+
 }
 }   // End of namespace PDFjet.NET

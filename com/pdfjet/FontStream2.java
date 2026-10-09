@@ -17,8 +17,15 @@ class FontStream2 {
             Font font,
             InputStream inputStream) throws Exception {
         FontStream1.getFontData(font, inputStream);
+        byte[] compressed = FontStream1.readBytes(inputStream, font.compressedSize);
+        inputStream.close();
+        register(objects, font, compressed);
+    }
 
-        embedFontFile(objects, font, inputStream);
+    // Adds the font, whose font program is the compressed bytes, to the
+    // objects of an existing PDF.
+    static void register(List<PDFobj> objects, Font font, byte[] compressed) throws Exception {
+        embedFontFile(objects, font, compressed);
         addFontDescriptorObject(objects, font);
         addCIDFontDictionaryObject(objects, font);
         addToUnicodeCMapObject(objects, font);
@@ -90,7 +97,7 @@ class FontStream2 {
     private static void embedFontFile(
             List<PDFobj> objects,
             Font font,
-            InputStream inputStream) throws Exception {
+            byte[] compressed) throws Exception {
         int metadataObjNumber = addMetadataObject(objects, font);
 
         PDFobj obj = new PDFobj();
@@ -102,7 +109,7 @@ class FontStream2 {
         obj.dict.add("/Filter");
         obj.dict.add("/FlateDecode");
         obj.dict.add("/Length");
-        obj.dict.add(String.valueOf(font.compressedSize));
+        obj.dict.add(String.valueOf(compressed.length));
         if (font.cff) {
             obj.dict.add("/Subtype");
             obj.dict.add("/CIDFontType0C");
@@ -111,8 +118,6 @@ class FontStream2 {
             obj.dict.add(String.valueOf(font.uncompressedSize));
         }
         obj.dict.add(">>");
-        byte[] compressed = FontStream1.readBytes(inputStream, font.compressedSize);
-        inputStream.close();
         obj.setStream(compressed);
         obj.number = objects.size() + 1;
         objects.add(obj);

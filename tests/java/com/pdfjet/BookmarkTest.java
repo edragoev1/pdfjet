@@ -115,7 +115,7 @@ class BookmarkTest {
         if (tagged) {
             pdf.setTitle("Title");
         }
-        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
         Page page = null;
         for (int i = 0; i < headings.length; i += 2) {
             if (page == null || headings[i].equals("H1") && i > 0) {
@@ -174,7 +174,7 @@ class BookmarkTest {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         PDF own = headingsDoc(bos, true, "H1", "Intro");
         Page page = new Page(own, Letter.PORTRAIT);
-        Font font = new Font(own, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        Font font = new Font(own, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
         new Bookmark(own).addBookmark(page, new Title(font, "Mine", 10f, 10f));
         own.complete();
         List<PDFobj> objects = TestSupport.read(bos.toByteArray());

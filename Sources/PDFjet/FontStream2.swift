@@ -16,7 +16,13 @@ class FontStream2 {
             stream.close()
         }
         try FontStream1.getFontData(font, stream)
-        try embedFontFile(&objects, font, stream)
+        register(&objects, font, try FontStream1.readBytes(stream, font.compressedSize!))
+    }
+
+    // Adds the font, whose font program is the compressed bytes, to the
+    // objects of an existing PDF.
+    static func register(_ objects: inout [PDFobj], _ font: Font, _ compressed: [UInt8]) {
+        embedFontFile(&objects, font, compressed)
 
         addFontDescriptorObject(&objects, font)
         addCIDFontDictionaryObject(&objects, font)
@@ -92,7 +98,7 @@ class FontStream2 {
     private static func embedFontFile(
             _ objects: inout [PDFobj],
             _ font: Font,
-            _ stream: InputStream) throws {
+            _ compressed: [UInt8]) {
         let metadataObjNumber = addMetadataObject(&objects, font)
 
         let obj = PDFobj()
@@ -104,7 +110,7 @@ class FontStream2 {
         obj.dict.append("/Filter")
         obj.dict.append("/FlateDecode")
         obj.dict.append("/Length")
-        obj.dict.append(String(font.compressedSize!))
+        obj.dict.append(String(compressed.count))
         if font.cff {
             obj.dict.append("/Subtype")
             obj.dict.append("/CIDFontType0C")
@@ -113,7 +119,7 @@ class FontStream2 {
             obj.dict.append(String(font.uncompressedSize!))
         }
         obj.dict.append(">>")
-        var compressed = try FontStream1.readBytes(stream, font.compressedSize!)
+        var compressed = compressed
         obj.setStream(&compressed)
         obj.number = objects.count + 1
         objects.append(obj)

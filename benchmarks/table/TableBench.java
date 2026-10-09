@@ -32,8 +32,8 @@ import com.pdfjet.Table;
  */
 public class TableBench {
     static final String CSV = "data/Electric_Vehicle_Population_10_Pages.csv";
-    static final String SEMIBOLD = "fonts/IBMPlexSans/IBMPlexSans-SemiBold.otf.stream";
-    static final String REGULAR = "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream";
+    static final String SEMIBOLD = "fonts/IBMPlexSans/IBMPlexSans-SemiBold.ttf";
+    static final String REGULAR = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf";
     static final int COLUMNS = 9;
     static final float[] WIDTHS = {68f, 58f, 58f, 26f, 44f, 34f, 52f, 60f, 152f};
 

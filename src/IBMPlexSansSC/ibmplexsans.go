@@ -8,12 +8,12 @@ package IBMPlexSansSC
 
 // IBMPlexSansSC provides the paths to the IBM Plex Sans SC fonts.
 const (
-	Bold       = "fonts/IBMPlexSansSC/IBMPlexSansSC-Bold.otf.stream"
-	ExtraLight = "fonts/IBMPlexSansSC/IBMPlexSansSC-ExtraLight.otf.stream"
-	Light      = "fonts/IBMPlexSansSC/IBMPlexSansSC-Light.otf.stream"
-	Medium     = "fonts/IBMPlexSansSC/IBMPlexSansSC-Medium.otf.stream"
-	Regular    = "fonts/IBMPlexSansSC/IBMPlexSansSC-Regular.otf.stream"
-	SemiBold   = "fonts/IBMPlexSansSC/IBMPlexSansSC-SemiBold.otf.stream"
-	Text       = "fonts/IBMPlexSansSC/IBMPlexSansSC-Text.otf.stream"
-	Thin       = "fonts/IBMPlexSansSC/IBMPlexSansSC-Thin.otf.stream"
+	Bold       = "fonts/IBMPlexSansSC/IBMPlexSansSC-Bold.ttf"
+	ExtraLight = "fonts/IBMPlexSansSC/IBMPlexSansSC-ExtraLight.ttf"
+	Light      = "fonts/IBMPlexSansSC/IBMPlexSansSC-Light.ttf"
+	Medium     = "fonts/IBMPlexSansSC/IBMPlexSansSC-Medium.ttf"
+	Regular    = "fonts/IBMPlexSansSC/IBMPlexSansSC-Regular.ttf"
+	SemiBold   = "fonts/IBMPlexSansSC/IBMPlexSansSC-SemiBold.ttf"
+	Text       = "fonts/IBMPlexSansSC/IBMPlexSansSC-Text.ttf"
+	Thin       = "fonts/IBMPlexSansSC/IBMPlexSansSC-Thin.ttf"
 )

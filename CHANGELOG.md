@@ -39,8 +39,28 @@ This is the first entry in this file; earlier releases were not tracked here.
   `setSubset(false)`. CFF fonts, a `.otf` or a `.otf.stream`, are embedded
   whole as before. The four ports embed the same subsets, byte for byte,
   under the same tags.
+- `new Font(objects, stream)`, a font added to an existing PDF, reads `.ttf`
+  and `.otf` files as well as `.stream` files, embedded whole.
+- A path to a `.ttf.stream` or `.otf.stream` file that is not there opens the
+  `.ttf`, or else the `.otf`, file of the same name beside it, so code written
+  for the stream files PDFjet shipped runs as it is.
 
 ### Changed
+- **The bundled fonts are TrueType `.ttf` files, and there are no `.stream`
+  files any more.** The font constants (`IBMPlexSans.Regular`,
+  `NotoSans.Bold`, `SourceSerif4`, `JetBrainsMono` and the rest) point to the
+  `.ttf` files, embedded as subsets: the Go examples went from 52.8 MB to
+  30.4 MB together, Example_02 from 9.6 MB to 442 KB. The IBM Plex families
+  are IBM's `.ttf` editions, of the versions of the `.otf` files they replace,
+  the ones the PDFjet Forms editor shows as `.woff2`. Their glyphs are the
+  same; three things differ. IBM Plex Sans JP has the line metrics of the
+  other `.ttf` files: its text is set 1.5 em apart, not 2 (ascent 1.06 em,
+  descent 0.44 em, no line gap, where the `.otf` had 0.88, 0.12 and 1). The
+  Latin letters of IBM Plex Sans TC are 1 to 5 thousandths of an em
+  narrower. The italic angle of IBM Plex Sans, Serif and Mono is rounded to a
+  whole degree. IBM Plex Sans is still there as `.otf`, a font of CFF
+  outlines. PDFjet still reads `.stream` files, and its font tool still makes
+  them. The fonts folder went from 606 MB to 414 MB.
 - The ToUnicode map of every embedded font is compressed, a few
   hundred kilobytes less for a large CJK font embedded whole.
 - SVG is read with one XML parser, the same in the four ports, in place of
@@ -77,6 +97,11 @@ This is the first entry in this file; earlier releases were not tracked here.
   Transferable Developer licenses).
 
 ### Fixed
+- A font whose format 4 character map is empty and whose characters are in
+  its format 12 map alone, as IBM Plex Sans TC's `.ttf`, drew every
+  character as the .notdef box, in the four ports: the format 12 map is read
+  too, for the characters the format 4 map leaves without a glyph. Every
+  font read before maps as it did.
 - A PDF/A-1a document with an annotation passes veraPDF, in the four ports:
   PDF/A-1 is of PDF 1.4, which does not have the structure type Annot of PDF
   1.5, so in PDF/A-1 the role map maps it to Span (rule 6.8.3.4); other

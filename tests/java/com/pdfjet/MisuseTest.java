@@ -263,7 +263,7 @@ class MisuseTest {
     void stampTextAddsItsFont() throws Exception {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         final PDF pdf = new PDF(bos);
-        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
         final Font core = TestSupport.helvetica(pdf);
         final Stamp stamp = new Stamp(pdf).setSize(100f, 50f);
         assertEquals("A stamp draws text with an embedded font, not a core or CJK font.",

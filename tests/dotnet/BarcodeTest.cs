@@ -227,7 +227,7 @@ public class BarcodeTest {
     [Fact]
     public void ADescribedBarcodeIsOneFigure() {
         PDF pdf = new PDF(new System.IO.MemoryStream(), Compliance.PDF_UA_1).SetTitle("Test");
-        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
         Page page = new Page(pdf, Letter.PORTRAIT);
         Barcode barcode = new Barcode(Barcode.EAN_13, "400638133393");
         barcode.SetFont(font);

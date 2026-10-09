@@ -61,7 +61,7 @@ public class FontTest {
 
     [Fact]
     public void ReadsAStreamFont() {
-        string path = "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream";
+        string path = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf";
         if (!File.Exists(TestSupport.RepoPath(path))) {
             return;     // The fonts directory is not here.
         }
@@ -95,7 +95,7 @@ public class FontTest {
 
     [Fact]
     public void AnOpenTypeStreamFontKeepsItsOtherTablesAndEmbedsOnlyItsCFFData() {
-        string path = "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream";
+        string path = "tests/data/stream-fonts/IBMPlexSans-Regular.otf.stream";
         if (!File.Exists(TestSupport.RepoPath(path))) {
             return;     // The fonts directory is not here.
         }
@@ -135,10 +135,10 @@ public class FontTest {
 
     [Fact]
     public void AStreamFontPlacesTheMarksAsTheOpenTypeFontDoes() {
-        if (!File.Exists(TestSupport.RepoPath("fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.otf"))) {
+        if (!File.Exists(TestSupport.RepoPath("fonts/NotoSansThai/NotoSansThai-Regular.ttf"))) {
             return;     // The fonts directory is not here.
         }
-        Assert.Equal(ThaiContent("fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.otf"), ThaiContent("fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.otf.stream"));
+        Assert.Equal(ThaiContent("fonts/NotoSansThai/NotoSansThai-Regular.ttf"), ThaiContent("tests/data/stream-fonts/NotoSansThai-Regular.ttf.stream"));
     }
 
     [Fact]
@@ -150,19 +150,34 @@ public class FontTest {
 
     [Fact]
     public void TheLineGapOfAFontSpacesTheLinesOfATextBlock() {
-        string path = "fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf.stream";
+        // IBM Plex Sans SC has a line gap of one em.
+        string path = "fonts/IBMPlexSansSC/IBMPlexSansSC-Regular.ttf";
         if (!File.Exists(TestSupport.RepoPath(path))) {
             return;     // The fonts directory is not here.
         }
         PDF pdf = TestSupport.NewPDF();
-        Font jp = new Font(pdf, TestSupport.Open(path));
-        TestSupport.AssertNear(10f, jp.GetLineGap(10f), 0.001f);
-        TestSupport.AssertNear(10f, new Font(pdf, TestSupport.Open("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf")).GetLineGap(10f), 0.001f);
-        Assert.Equal(0f, new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"))
+        Font sc = new Font(pdf, TestSupport.Open(path));
+        TestSupport.AssertNear(10f, sc.GetLineGap(10f), 0.001f);
+        Assert.Equal(0f, new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
                 .GetLineGap(10f));
         // The ascent, 8.8, the descent, 1.2, and the line gap, 10, for each line.
-        jp.SetSize(10f);
-        TestSupport.AssertXY(500f, 40f, new TextBlock(jp, "日本\n日本").SetLocation(0f, 0f).DrawOn(null));
+        sc.SetSize(10f);
+        TestSupport.AssertXY(500f, 40f, new TextBlock(sc, "日本\n日本").SetLocation(0f, 0f).DrawOn(null));
+    }
+
+    [Fact]
+    public void AStreamFontPathThatIsGoneOpensTheTrueTypeFont() {
+        // PDFjet ships no .stream files from 9.0.5: a path to one opens the
+        // .ttf file of the same name, which a path to a file that is there
+        // does not.
+        foreach (string path in new string[] {
+                "fonts/NotoSans/NotoSans-Regular.ttf.stream", "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"}) {
+            string want = path.Substring(0, path.IndexOf('.')) + ".ttf";
+            Assert.Equal(TestSupport.RepoPath(want), Font.FontFileOf(TestSupport.RepoPath(path)));
+            Assert.NotEmpty(new Font(TestSupport.NewPDF(), TestSupport.RepoPath(path)).GetName());
+        }
+        string stream = TestSupport.RepoPath("tests/data/stream-fonts/NotoSansThai-Regular.ttf.stream");
+        Assert.Equal(stream, Font.FontFileOf(stream));
     }
 
     [Fact]
@@ -194,10 +209,10 @@ public class FontTest {
     // of 1000 units to the em; it has the characters from U+0020 to U+FFFD,
     // and no Thai.
     private static Font IBMPlexSans(PDF pdf) {
-        if (!File.Exists(TestSupport.RepoPath("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"))) {
+        if (!File.Exists(TestSupport.RepoPath("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))) {
             return null;
         }
-        return new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
+        return new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
     }
 
     [Fact]
@@ -315,12 +330,12 @@ public class FontTest {
 
     [Fact]
     public void AFallbackFontDrawsOnlyTheCharactersTheFontHasNoGlyphFor() {
-        if (!File.Exists(TestSupport.RepoPath("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf.stream"))) {
+        if (!File.Exists(TestSupport.RepoPath("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.ttf"))) {
             return;     // The fonts directory is not here.
         }
         PDF pdf = TestSupport.NewPDF();
-        Font latin = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"));
-        Font jp = new Font(pdf, TestSupport.Open("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf.stream"));
+        Font latin = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        Font jp = new Font(pdf, TestSupport.Open("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.ttf"));
         Font helvetica = TestSupport.Helvetica(pdf);
         // The Latin letters after the Japanese ones are in the font again.
         TestSupport.AssertNear(latin.StringWidth(10f, "abc") + jp.StringWidth(10f, "\u65e5\u672c") + latin.StringWidth(10f, "def"),
@@ -368,8 +383,8 @@ public class FontTest {
                 "fonts/NotoSansSC/NotoSansSC-Regular.ttf",
                 "fonts/NotoSansSC/NotoSansSC-Regular-SC3500.ttf")));
         Assert.Equal(2, EmbeddedFonts(DocumentWithFonts(
-                "fonts/NotoSansSC/NotoSansSC-Regular.ttf.stream",
-                "fonts/NotoSansSC/NotoSansSC-Regular-SC3500.ttf.stream")));
+                "fonts/NotoSansSC/NotoSansSC-Regular.ttf",
+                "fonts/NotoSansSC/NotoSansSC-Regular-SC3500.ttf")));
     }
 
     [Fact]
@@ -385,23 +400,23 @@ public class FontTest {
                 "fonts/IBMPlexSans/IBMPlexSans-Regular.otf")));
         Assert.Equal(1, EmbeddedFonts(DocumentWithFonts(
                 "fonts/IBMPlexSans/IBMPlexSans-Regular.otf",
-                "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream")));
+                "tests/data/stream-fonts/IBMPlexSans-Regular.otf.stream")));
     }
 
     [Fact]
     public void TheFontDescriptorHasTheItalicAngleAndFlagOfThePostTable() {
-        // A .stream file holds the angle after the line gap, so the .otf and
-        // the .stream of it write one descriptor.
+        // IBM's .ttf files of IBM Plex round the angle of their .otf files to a
+        // whole degree.
         if (!File.Exists(TestSupport.RepoPath("fonts/IBMPlexSans/IBMPlexSans-Italic.otf"))) {
             return;     // The fonts directory is not here.
         }
         string[][] fonts = {
             new[] {"fonts/IBMPlexSans/IBMPlexSans-Italic.otf", "-11.31"},
-            new[] {"fonts/IBMPlexSans/IBMPlexSans-Italic.otf.stream", "-11.31"},
-            new[] {"fonts/IBMPlexSerif/IBMPlexSerif-Italic.otf.stream", "-14.04"},
-            new[] {"fonts/IBMPlexMono/IBMPlexMono-Italic.otf.stream", "-9.5"},
-            new[] {"fonts/JetBrainsMono/JetBrainsMono-Italic.ttf.stream", "-9"},
-            new[] {"fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream", "0"},
+            new[] {"fonts/IBMPlexSans/IBMPlexSans-Italic.ttf", "-11"},
+            new[] {"fonts/IBMPlexSerif/IBMPlexSerif-Italic.ttf", "-14"},
+            new[] {"fonts/IBMPlexMono/IBMPlexMono-Italic.ttf", "-9"},
+            new[] {"fonts/JetBrainsMono/JetBrainsMono-Italic.ttf", "-9"},
+            new[] {"fonts/IBMPlexSans/IBMPlexSans-Regular.ttf", "0"},
         };
         foreach (string[] font in fonts) {
             string pdf = Encoding.Latin1.GetString(DocumentWithFonts(font[0]));

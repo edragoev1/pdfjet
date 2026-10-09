@@ -284,3 +284,14 @@ func TestOTFAnHmtxTableListedBeforeTheHheaTableIsReadTheSame(t *testing.T) {
 			testOpenTypeFontError(testOpenTypeWithout(t, font, "hhea")))
 	}
 }
+
+func TestOTFAFontWithAnEmptyFormat4MapIsReadFromItsFormat12Map(t *testing.T) {
+	// IBM Plex Sans TC, as a .ttf, maps its characters in its format 12
+	// subtable alone.
+	font := NewFontFromFile(testNewPDF(), testRepoPath(t, "fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.ttf"))
+	for _, ch := range "繁體中文A" {
+		if font.unicodeToGID[ch] == 0 {
+			t.Errorf("%c has no glyph", ch)
+		}
+	}
+}

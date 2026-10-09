@@ -228,7 +228,7 @@ import Testing
         #expect(pdf.error == "A stamp draws text with an embedded font, not a core or CJK font.")
 
         let memory = MemoryPDF()
-        let font = try Font(memory.pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"))
+        let font = try Font(memory.pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
         let stamp = Stamp(memory.pdf).setSize(100, 50)
         stamp.drawText(font, 12, 5, 20, "Paid")
         try stamp.complete()
