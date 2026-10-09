@@ -606,7 +606,7 @@ detailed in the list below:
    CHANGELOG entry of 9.0.5 says so. The flag is of a tool in util, not of
    the library, so nothing else changes.
 
-9. ⬜ **The license files of the packages say what Solo and Team cover**
+9. ✅ Done on 9 October 2026 (575ded00), in both LICENSE files. **The license files of the packages say what Solo and Team cover**
    (8 October 2026): `.packaging/java/LICENSE` and `.packaging/dotnet/LICENSE`,
    section 1, the sentence the buy pages of pdfjet.com have had since that
    day, "A Solo License covers one developer; a Team License covers two to
