@@ -726,6 +726,16 @@ detailed in the list below:
      today: IBM Plex Sans SC 5.7 MB, Noto Sans SC 6.3 MB. About 100 KB of
      the subset is the other tables (cmap, hmtx, GSUB and GPOS), kept whole;
      trimming them is a later maybe.
+  8b. *Which fonts, decided by the owner on 8 October 2026:* every TrueType
+     font is subset, whatever its size, and every CFF font (.otf) is
+     embedded whole from its precompressed .otf.stream, as now: a rule by
+     the format, not by a size, so that a user can tell what happens to a
+     font. It matches the TrueType-only subsetting, it gains on the Latin
+     TrueType fonts too (Noto Sans, about half a megabyte a weight, to a few
+     tens of KB in a document), and it keeps the fast path for the IBM Plex,
+     Source Serif and other .otf fonts it was made for. Not subset still: a
+     font of a fill-in field, a font whose license forbids it, and a font set
+     to stay whole.
   9. *The font's license allows it:* the OS/2 table's fsType bit 0x0100,
      "no subsetting", read first; a font that sets it is embedded whole.
      IBM Plex and Noto allow subsetting (SIL Open Font License); a user's
