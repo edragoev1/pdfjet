@@ -48,6 +48,7 @@ type Image struct {
 	key            string
 	degrees        int
 	flipUpsideDown bool
+	orientation    int   // The Exif orientation of a JPEG, 2 to 8, or 0; w and h are its size as seen
 	invertedInks   bool  // A CMYK JPEG that Adobe software wrote, with its inks inverted
 	colorKeyMask   []int // The /Mask of the transparent color of a grayscale or truecolor PNG
 	// The colors of a pixel of a PNG whose stream is its IDAT data, for the
@@ -102,6 +103,7 @@ func NewImage(pdf *PDF, reader io.Reader) *Image {
 			image.addImageToPDF(pdf, data, nil, imageType, device.CMYK, 8)
 		}
 		image.setPhysicalSize(jpg.GetPhysicalWidth(), jpg.GetPhysicalHeight())
+		image.setOrientation(int(jpg.orientation))
 	case imagetype.PNG:
 		png := newPNGImage(reader)
 		image.setPixels(png.w, png.h)
@@ -148,6 +150,7 @@ func NewImageForObjects(objects *[]*PDFobj, reader io.Reader) *Image {
 			image.addImageToObjects(objects, data, nil, imageType, device.CMYK, 8)
 		}
 		image.setPhysicalSize(jpg.GetPhysicalWidth(), jpg.GetPhysicalHeight())
+		image.setOrientation(int(jpg.orientation))
 	case imagetype.PNG:
 		png := newPNGImage(reader)
 		image.setPixels(png.w, png.h)
@@ -250,6 +253,31 @@ func (image *Image) setPhysicalSize(width, height float32) {
 		image.w = width
 		image.h = height
 	}
+}
+
+// setOrientation keeps the Exif orientation of a JPEG, which is drawn as it is
+// meant to be seen: turned a quarter of the way (5 to 8), its size as seen is
+// its height by its width. 1, upright as stored, is drawn as without one.
+func (image *Image) setOrientation(orientation int) {
+	if orientation < 2 || orientation > 8 {
+		return
+	}
+	image.orientation = orientation
+	if orientation >= 5 {
+		image.w, image.h = image.h, image.w
+	}
+}
+
+// orientationMatrices turn or flip the unit square of an image as stored into
+// the image as seen, for the Exif orientations 2 to 8.
+var orientationMatrices = [9]string{
+	2: "-1 0 0 1 1 0 cm\n",
+	3: "-1 0 0 -1 1 1 cm\n",
+	4: "1 0 0 -1 0 1 cm\n",
+	5: "0 -1 -1 0 1 1 cm\n",
+	6: "0 -1 1 0 0 1 cm\n",
+	7: "0 1 1 0 0 0 cm\n",
+	8: "0 1 -1 0 1 0 cm\n",
 }
 
 // SetLocation sets the location of this image on the page to (x, y).
@@ -425,6 +453,9 @@ func (image *Image) DrawOn(page *Page) [2]float32 {
 
 	if image.flipUpsideDown {
 		page.appendString("1 0 0 -1 0 1 cm\n")
+	}
+	if image.orientation != 0 {
+		page.appendString(orientationMatrices[image.orientation])
 	}
 
 	page.appendString("/Im")

@@ -64,6 +64,7 @@ class JPGImage {
     let M_SOF14: UInt8 = 0xCE
     let M_SOF15: UInt8 = 0xCF
     let M_APP0: UInt8 = 0xE0   // The JFIF segment, among others
+    let M_APP1: UInt8 = 0xE1   // The Exif segment, among others
     let M_APP14: UInt8 = 0xEE
     // The markers that stand alone, with no parameter segment to skip.
     let M_TEM: UInt8   = 0x01       // Temporary, for arithmetic coding
@@ -86,6 +87,9 @@ class JPGImage {
     private var densityUnit: UInt8 = 0
     private var xDensity: UInt16 = 0
     private var yDensity: UInt16 = 0
+    // The orientation of an Exif segment, 1 to 8, or 0 when there is none:
+    // how the image as stored is turned or flipped to be seen upright.
+    var orientation = 0
     var data: [UInt8]
     var index = 0
 
@@ -202,6 +206,8 @@ class JPGImage {
                 break
             } else if ch == M_APP0 {
                 try readAPP0(&buffer)
+            } else if ch == M_APP1 {
+                try readAPP1(&buffer)
             } else if ch == M_APP14 {
                 try readAPP14(&buffer)
             } else {
@@ -258,17 +264,17 @@ class JPGImage {
             }
             i += 1
         }
+        if (frame == M_SOF0 || frame == M_SOF1) && JPGScan.scansWhole(buffer) {
+            buffer.append(0xFF)
+            buffer.append(M_EOI)
+            return
+        }
         throw JPGImageError.cutShort
     }
 
     /// Reads one byte, advancing the index.
     /// Throws if the buffer is exhausted.
     private func readByte(_ buffer: inout [UInt8]) throws -> UInt8 {
-        if (frame == M_SOF0 || frame == M_SOF1) && JPGScan.scansWhole(buffer) {
-            buffer.append(0xFF)
-            buffer.append(M_EOI)
-            return
-        }
         guard index < buffer.count else {
             throw JPGImageError.unexpectedEndOfJPEGData
         }
@@ -335,6 +341,75 @@ class JPGImage {
             yDensity = UInt16(buffer[index + 10]) << 8 | UInt16(buffer[index + 11])
         }
         index = end
+    }
+
+    // Reads the orientation of an Exif segment: "Exif", two zero bytes, and a
+    // TIFF header, II or MM for the byte order, 42, and the offset of the first
+    // image file directory, whose entry of the tag 0x0112 is the orientation, a
+    // SHORT of 1 to 8. An Exif segment that is not whole or not read so is
+    // passed over, as it is a camera's and not the image's: what it says
+    // wrongly or does not say leaves the image as stored. A segment of another
+    // kind, XMP among them, is passed over. The first orientation read is the
+    // image's.
+    private func readAPP1(_ buffer: inout [UInt8]) throws {
+        let length = try getUInt16(&buffer)
+        if length < 2 {
+            throw JPGImageError.invalidSegmentLength
+        }
+        let end = index + Int(length) - 2
+        guard end <= buffer.count else {
+            throw JPGImageError.unexpectedEndOfJPEGData
+        }
+        if orientation == 0 {
+            orientation = JPGImage.exifOrientation(Array(buffer[index..<end]))
+        }
+        index = end
+    }
+
+    // The orientation of the Exif segment, or 0.
+    static func exifOrientation(_ segment: [UInt8]) -> Int {
+        if segment.count < 14 || !segment[0..<6].elementsEqual([0x45, 0x78, 0x69, 0x66, 0x00, 0x00]) {
+            return 0
+        }
+        let tiff = Array(segment[6...])
+        let little: Bool
+        if tiff[0] == 0x49 && tiff[1] == 0x49 {         // II
+            little = true
+        } else if tiff[0] == 0x4D && tiff[1] == 0x4D {  // MM
+            little = false
+        } else {
+            return 0
+        }
+        func u16(_ i: Int) -> Int {
+            return little ? Int(tiff[i]) | Int(tiff[i + 1]) << 8 : Int(tiff[i]) << 8 | Int(tiff[i + 1])
+        }
+        func u32(_ i: Int) -> Int {
+            return little ? u16(i) | u16(i + 2) << 16 : u16(i) << 16 | u16(i + 2)
+        }
+        if u16(2) != 42 {
+            return 0
+        }
+        let ifd = u32(4)
+        if ifd < 8 || ifd + 2 > tiff.count {
+            return 0
+        }
+        let count = u16(ifd)
+        for i in 0..<count {
+            let entry = ifd + 2 + 12*i
+            if entry + 12 > tiff.count {
+                return 0
+            }
+            // The tag, its type, SHORT, and a count of one, its value in the
+            // first two bytes of the value field
+            if u16(entry) == 0x0112 {
+                if u16(entry + 2) != 3 || u32(entry + 4) != 1 {
+                    return 0
+                }
+                let value = u16(entry + 8)
+                return (value >= 1 && value <= 8) ? value : 0
+            }
+        }
+        return 0
     }
 
     // The points a unit of the density is: an inch is 72 of them and a

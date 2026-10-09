@@ -73,6 +73,9 @@ type jpgImage struct {
 	densityUnit uint8
 	xDensity    uint16
 	yDensity    uint16
+	// The orientation of an Exif segment, 1 to 8, or 0 when there is none:
+	// how the image as stored is turned or flipped to be seen upright.
+	orientation uint8
 	data        []byte
 	index       int
 }
@@ -93,6 +96,7 @@ const (
 	mSOF14 = uint8(0xCE)
 	mSOF15 = uint8(0xCF)
 	mAPP0  = uint8(0xE0) // The JFIF segment, among others
+	mAPP1  = uint8(0xE1) // The Exif segment, among others
 	mAPP14 = uint8(0xEE)
 	// The markers that stand alone, with no parameter segment to skip.
 	mTEM  = uint8(0x01) // Temporary, for arithmetic coding
@@ -249,6 +253,11 @@ func (image *jpgImage) readJPGImage(buffer []byte) (*jpgImage, error) {
 
 		case mAPP0:
 			if err := image.readAPP0(buffer); err != nil {
+				return nil, err
+			}
+
+		case mAPP1:
+			if err := image.readAPP1(buffer); err != nil {
 				return nil, err
 			}
 
@@ -410,6 +419,82 @@ func (image *jpgImage) readAPP0(buffer []byte) error {
 	}
 	image.index = end
 	return nil
+}
+
+// readAPP1 reads the orientation of an Exif segment: "Exif", two zero bytes,
+// and a TIFF header, II or MM for the byte order, 42, and the offset of the
+// first image file directory, whose entry of the tag 0x0112 is the
+// orientation, a SHORT of 1 to 8. An Exif segment that is not whole or not
+// read so is passed over, as it is a camera's and not the image's: what it
+// says wrongly or does not say leaves the image as stored. A segment of
+// another kind, XMP among them, is passed over. The first orientation read
+// is the image's.
+func (image *jpgImage) readAPP1(buffer []byte) error {
+	length, err := image.getUint16(buffer)
+	if err != nil {
+		return err
+	}
+	if length < 2 {
+		return errors.New("Error: Length includes itself, so must be at least 2.")
+	}
+	end := image.index + int(length) - 2
+	if end > len(buffer) {
+		return io.ErrUnexpectedEOF
+	}
+	if image.orientation == 0 {
+		image.orientation = exifOrientation(buffer[image.index:end])
+	}
+	image.index = end
+	return nil
+}
+
+// exifOrientation returns the orientation of the Exif segment, or 0.
+func exifOrientation(segment []byte) uint8 {
+	if len(segment) < 14 || string(segment[:6]) != "Exif\x00\x00" {
+		return 0
+	}
+	tiff := segment[6:]
+	var u16 func(b []byte) int
+	switch string(tiff[:2]) {
+	case "II":
+		u16 = func(b []byte) int { return int(b[0]) | int(b[1])<<8 }
+	case "MM":
+		u16 = func(b []byte) int { return int(b[0])<<8 | int(b[1]) }
+	default:
+		return 0
+	}
+	u32 := func(b []byte) int {
+		if tiff[0] == 'I' {
+			return u16(b) | u16(b[2:])<<16
+		}
+		return u16(b)<<16 | u16(b[2:])
+	}
+	if u16(tiff[2:]) != 42 {
+		return 0
+	}
+	ifd := u32(tiff[4:])
+	if ifd < 8 || ifd+2 > len(tiff) {
+		return 0
+	}
+	count := u16(tiff[ifd:])
+	for i := 0; i < count; i++ {
+		entry := ifd + 2 + 12*i
+		if entry+12 > len(tiff) {
+			return 0
+		}
+		// The tag, its type, SHORT, and a count of one, its value in the
+		// first two bytes of the value field
+		if u16(tiff[entry:]) == 0x0112 {
+			if u16(tiff[entry+2:]) != 3 || u32(tiff[entry+4:]) != 1 {
+				return 0
+			}
+			if value := u16(tiff[entry+8:]); value >= 1 && value <= 8 {
+				return uint8(value)
+			}
+			return 0
+		}
+	}
+	return 0
 }
 
 // pointsPerUnit returns the points a unit of the density is: an inch is 72 of

@@ -32,6 +32,8 @@ public class Image : Drawable {
 
     private var degrees = 0
     private var flipUpsideDown = false
+    // The Exif orientation of a JPEG, 2 to 8, or 0; w and h are its size as seen.
+    private var orientation = 0
     // True for a CMYK JPEG that Adobe software wrote, with its inks inverted.
     private var invertedInks = false
     // The /Mask of the transparent color of a grayscale or truecolor PNG, or
@@ -92,6 +94,7 @@ public class Image : Drawable {
                 addImage(pdf, jpg.getData(), [UInt8](), imageType, "DeviceCMYK", 8)
             }
             setPhysicalSize(jpg.getPhysicalWidth(), jpg.getPhysicalHeight())
+            setOrientation(jpg.orientation)
         } else if imageType == ImageType.PNG {
             let png = try PNGImage(stream)
             setPixels(png.getWidth(), png.getHeight())
@@ -137,6 +140,7 @@ public class Image : Drawable {
                 addImageToObjects(&objects, &data, &alpha, imageType, "DeviceCMYK", 8)
             }
             setPhysicalSize(jpg.getPhysicalWidth(), jpg.getPhysicalHeight())
+            setOrientation(jpg.orientation)
         } else if imageType == ImageType.PNG {
             let png = try PNGImage(stream)
             data = png.stream
@@ -230,6 +234,33 @@ public class Image : Drawable {
             self.h = height
         }
     }
+
+    // Keeps the Exif orientation of a JPEG, which is drawn as it is meant to be
+    // seen: turned a quarter of the way (5 to 8), its size as seen is its
+    // height by its width. 1, upright as stored, is drawn as without one.
+    private func setOrientation(_ orientation: Int) {
+        if orientation < 2 || orientation > 8 {
+            return
+        }
+        self.orientation = orientation
+        if orientation >= 5 {
+            swap(&self.w, &self.h)
+        }
+    }
+
+    // Turn or flip the unit square of an image as stored into the image as
+    // seen, for the Exif orientations 2 to 8.
+    private static let orientationMatrices = [
+        "",
+        "",
+        "-1 0 0 1 1 0 cm\n",
+        "-1 0 0 -1 1 1 cm\n",
+        "1 0 0 -1 0 1 cm\n",
+        "0 -1 -1 0 1 1 cm\n",
+        "0 -1 1 0 0 1 cm\n",
+        "0 1 1 0 0 0 cm\n",
+        "0 1 -1 0 1 0 cm\n",
+    ]
 
     /// Sets the location of this image on the page to (x, y).
     ///
@@ -438,6 +469,9 @@ public class Image : Drawable {
 
         if flipUpsideDown {
             page.append("1 0 0 -1 0 1 cm\n")
+        }
+        if orientation != 0 {
+            page.append(Image.orientationMatrices[orientation])
         }
 
         page.append("/Im")

@@ -33,6 +33,8 @@ public class Image : IDrawable {
 
     private int degrees = 0;
     private bool flipUpsideDown = false;
+    // The Exif orientation of a JPEG, 2 to 8, or 0; w and h are its size as seen.
+    private int orientation = 0;
     // True for a CMYK JPEG that Adobe software wrote, with its inks inverted.
     private bool invertedInks = false;
     // The /Mask of the transparent color of a grayscale or truecolor PNG, or
@@ -81,6 +83,7 @@ public class Image : IDrawable {
                 AddImage(pdf, data, null, imageType, "DeviceCMYK", 8);
             }
             SetPhysicalSize(jpg.GetPhysicalWidth(), jpg.GetPhysicalHeight());
+            SetOrientation(jpg.orientation);
         } else if (imageType == ImageType.PNG) {
             PNGImage png = new PNGImage(inputStream);
             SetPixels(png.GetWidth(), png.GetHeight());
@@ -126,6 +129,7 @@ public class Image : IDrawable {
                 AddImageToObjects(objects, data, null, imageType, "DeviceCMYK", 8);
             }
             SetPhysicalSize(jpg.GetPhysicalWidth(), jpg.GetPhysicalHeight());
+            SetOrientation(jpg.orientation);
         } else if (imageType == ImageType.PNG) {
             PNGImage png = new PNGImage(inputStream);
             SetPixels(png.GetWidth(), png.GetHeight());
@@ -222,6 +226,35 @@ public class Image : IDrawable {
             this.h = height;
         }
     }
+
+    // Keeps the Exif orientation of a JPEG, which is drawn as it is meant to be
+    // seen: turned a quarter of the way (5 to 8), its size as seen is its
+    // height by its width. 1, upright as stored, is drawn as without one.
+    private void SetOrientation(int orientation) {
+        if (orientation < 2 || orientation > 8) {
+            return;
+        }
+        this.orientation = orientation;
+        if (orientation >= 5) {
+            float width = this.w;
+            this.w = this.h;
+            this.h = width;
+        }
+    }
+
+    // Turn or flip the unit square of an image as stored into the image as
+    // seen, for the Exif orientations 2 to 8.
+    private static readonly string[] ORIENTATION_MATRICES = {
+        null,
+        null,
+        "-1 0 0 1 1 0 cm\n",
+        "-1 0 0 -1 1 1 cm\n",
+        "1 0 0 -1 0 1 cm\n",
+        "0 -1 -1 0 1 1 cm\n",
+        "0 -1 1 0 0 1 cm\n",
+        "0 1 1 0 0 0 cm\n",
+        "0 1 -1 0 1 0 cm\n",
+    };
 
     /// <summary>
     /// Sets the location of this image on the page to (x, y).
@@ -415,6 +448,9 @@ public class Image : IDrawable {
 
         if (flipUpsideDown) {
             page.Append("1 0 0 -1 0 1 cm\n");
+        }
+        if (orientation != 0) {
+            page.Append(ORIENTATION_MATRICES[orientation]);
         }
 
         page.Append("/Im");

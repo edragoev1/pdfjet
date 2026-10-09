@@ -64,6 +64,7 @@ class JPGImage {
     const char M_SOF14 = (char) 0x00CE;
     const char M_SOF15 = (char) 0x00CF;
     const char M_APP0  = (char) 0x00E0;  // The JFIF segment, among others
+    const char M_APP1  = (char) 0x00E1;  // The Exif segment, among others
     const char M_APP14 = (char) 0x00EE;
     // The markers that stand alone, with no parameter segment to skip.
     const char M_TEM   = (char) 0x0001;  // Temporary, for arithmetic coding
@@ -86,6 +87,9 @@ class JPGImage {
     private int densityUnit;
     private int xDensity;
     private int yDensity;
+    // The orientation of an Exif segment, 1 to 8, or 0 when there is none:
+    // how the image as stored is turned or flipped to be seen upright.
+    internal int orientation;
     byte[] data;
 
     public JPGImage(Stream stream) : this(Content.GetFromStream(stream)) {
@@ -207,6 +211,10 @@ class JPGImage {
                 ReadAPP0(stream);
                 break;
 
+                case M_APP1:
+                ReadAPP1(stream);
+                break;
+
                 case M_APP14:
                 ReadAPP14(stream);
                 break;
@@ -282,14 +290,6 @@ class JPGImage {
                     }
                     previous = b;
                 }
-            }
-        } catch (IOException) {
-            // The header of the scan cut short
-        }
-        throw new IOException(CUT_SHORT);
-    }
-
-    private int ReadByte(Stream stream) {
                 if ((frame == M_SOF0 || frame == M_SOF1) && JPGScan.ScansWhole(data)) {
                     byte[] whole = new byte[data.Length + 2];
                     Array.Copy(data, 0, whole, 0, data.Length);
@@ -298,6 +298,14 @@ class JPGImage {
                     data = whole;
                     return;
                 }
+            }
+        } catch (IOException) {
+            // The header of the scan cut short
+        }
+        throw new IOException(CUT_SHORT);
+    }
+
+    private int ReadByte(Stream stream) {
         int b = stream.ReadByte();
         if (b < 0) {
             throw new IOException("Unexpected end of JPEG data.");
@@ -348,6 +356,85 @@ class JPGImage {
             xDensity = (segment[8] << 8) | segment[9];
             yDensity = (segment[10] << 8) | segment[11];
         }
+    }
+
+    // Reads the orientation of an Exif segment: "Exif", two zero bytes, and a
+    // TIFF header, II or MM for the byte order, 42, and the offset of the first
+    // image file directory, whose entry of the tag 0x0112 is the orientation, a
+    // SHORT of 1 to 8. An Exif segment that is not whole or not read so is
+    // passed over, as it is a camera's and not the image's: what it says
+    // wrongly or does not say leaves the image as stored. A segment of another
+    // kind, XMP among them, is passed over. The first orientation read is the
+    // image's.
+    private void ReadAPP1(Stream stream) {
+        int length = GetUInt16(stream);
+        if (length < 2) {
+            throw new Exception("Invalid marker segment length.");
+        }
+        byte[] segment = new byte[length - 2];
+        for (int i = 0; i < segment.Length; i++) {
+            segment[i] = (byte) ReadByte(stream);   // throws on EOF
+        }
+        if (orientation == 0) {
+            orientation = ExifOrientation(segment);
+        }
+    }
+
+    // The orientation of the Exif segment, or 0.
+    internal static int ExifOrientation(byte[] segment) {
+        if (segment.Length < 14 || segment[0] != 'E' || segment[1] != 'x' ||
+                segment[2] != 'i' || segment[3] != 'f' || segment[4] != 0 || segment[5] != 0) {
+            return 0;
+        }
+        const int tiff = 6;
+        bool little;
+        if (segment[tiff] == 'I' && segment[tiff + 1] == 'I') {
+            little = true;
+        } else if (segment[tiff] == 'M' && segment[tiff + 1] == 'M') {
+            little = false;
+        } else {
+            return 0;
+        }
+        int size = segment.Length - tiff;
+        if (U16(segment, tiff + 2, little) != 42) {
+            return 0;
+        }
+        long ifd = U32(segment, tiff + 4, little);
+        if (ifd < 8 || ifd + 2 > size) {
+            return 0;
+        }
+        int count = U16(segment, tiff + (int) ifd, little);
+        for (int i = 0; i < count; i++) {
+            int entry = (int) ifd + 2 + 12*i;
+            if (entry + 12 > size) {
+                return 0;
+            }
+            // The tag, its type, SHORT, and a count of one, its value in the
+            // first two bytes of the value field
+            if (U16(segment, tiff + entry, little) == 0x0112) {
+                if (U16(segment, tiff + entry + 2, little) != 3 ||
+                        U32(segment, tiff + entry + 4, little) != 1) {
+                    return 0;
+                }
+                int value = U16(segment, tiff + entry + 8, little);
+                return (value >= 1 && value <= 8) ? value : 0;
+            }
+        }
+        return 0;
+    }
+
+    private static int U16(byte[] b, int i, bool little) {
+        if (little) {
+            return b[i] | b[i + 1] << 8;
+        }
+        return b[i] << 8 | b[i + 1];
+    }
+
+    private static long U32(byte[] b, int i, bool little) {
+        if (little) {
+            return ((long) U16(b, i + 2, true) << 16) + U16(b, i, true);
+        }
+        return ((long) U16(b, i, false) << 16) + U16(b, i + 2, false);
     }
 
     // The points a unit of the density is: an inch is 72 of them and a
