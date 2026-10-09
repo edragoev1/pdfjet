@@ -1,7 +1,7 @@
 #!/bin/bash
 # Lists the public API of the four ports at a tag, v9.0.1 unless another is
 # given, and in this checkout, and prints what was added and what was removed
-# in each, as goal 6 of TODO.md asks before each tag: nothing removed, no
+# in each, as "The public API" of TODO.md asks before each release: nothing removed, no
 # signature changed, and nothing added but the members goal 6 lists.
 #
 #   ./check-api.sh            against v9.0.1

@@ -1,6 +1,6 @@
 # Viewer files to test
 
-The PDFs of the manual viewer pass, goal 4 of `../TODO.md`, to open by hand in
+The PDFs of the manual viewer pass of `../TODO.md`, to open by hand in
 Acrobat Reader, NVDA, Edge, Preview, Firefox, and Acrobat's Read Out Loud on
 the Mac. They are not kept in the repository. Foxit and VoiceOver are out of
 the pass, the owner's choice of 8 October 2026: Foxit has never had trouble

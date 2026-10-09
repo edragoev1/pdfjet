@@ -1,4 +1,4 @@
-// Draws the checklist of the manual viewer pass, goal 4 of TODO.md, as a PDF
+// Draws the checklist of the manual viewer pass of TODO.md, as a PDF
 // to print and tick off with a pen: a box before each item, a line for the
 // version of each viewer, and lines for notes after it. It is PDF/UA, as the
 // examples are.
@@ -177,7 +177,7 @@ func main() {
 	title.DrawOn(page)
 	y += 30
 
-	intro := textBlock(regular, 10, "Goal 4 of TODO.md. The files are in viewer-files-to-test: the Java "+
+	intro := textBlock(regular, 10, "The manual viewer pass of TODO.md. The files are in viewer-files-to-test: the Java "+
 		"examples built from main, Example_30 with the user password hello and the owner password world, "+
 		"and Encrypted_Cyrillic and Encrypted_200_Bytes. Tick each box when it holds; when it does not, "+
 		"write what you see on the lines below the viewer.", marginX, 612-2*marginX, soft)

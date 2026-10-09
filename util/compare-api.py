@@ -43,4 +43,4 @@ print()
 if gone:
     print(f"Some of the API of {base} is gone (-): goal 6 allows none.")
     sys.exit(1)
-print(f"Nothing of {base} is gone. Hold what is added (+) and changed (~) against the list of goal 6 in TODO.md.")
+print(f"Nothing of {base} is gone. Hold what is added (+) and changed (~) against what CHANGELOG.md lists (see "The public API" in TODO.md).")
