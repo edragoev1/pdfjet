@@ -88,4 +88,24 @@ class OptionalContentGroupTest {
         group.getComponents().clear();
         assertEquals(1, group.getComponents().size());
     }
+
+    @Test
+    void aPDFUADocumentNamesItsConfigurationAndHasNoUsageStates() throws Exception {
+        // PDF/UA and PDF/A ask for the configuration of the groups to have a
+        // name and no /AS (veraPDF, PDF/UA 7.10), so a group set not to print
+        // prints there; a plain PDF keeps the /AS that says when it prints.
+        String plain = layer(true);
+        assertTrue(plain.contains("/AS ["));
+        assertFalse(plain.contains("/Name (Default)"));
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        pdf.setCompliance(Compliance.PDF_UA_1);
+        pdf.setTitle("Layers");
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new OptionalContentGroup(pdf, "Layer").setVisible(true).add(new Rect(10f, 10f, 20f, 20f)).drawOn(page);
+        pdf.complete();
+        String tagged = TestSupport.latin1(bos.toByteArray());
+        assertFalse(tagged.contains("/AS ["));
+        assertTrue(tagged.contains("/Name (Default)"));
+    }
 }

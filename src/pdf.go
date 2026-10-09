@@ -1697,17 +1697,24 @@ func (pdf *PDF) addOCProperties() {
 		pdf.appendString(" ]\n")
 		pdf.appendString("/D <<\n")
 
-		pdf.appendString("/AS [\n")
-		pdf.appendString("<< /Event /View /Category [/View] /OCGs [")
-		pdf.appendString(buf.String())
-		pdf.appendString(" ] >>\n")
-		pdf.appendString("<< /Event /Print /Category [/Print] /OCGs [")
-		pdf.appendString(buf.String())
-		pdf.appendString(" ] >>\n")
-		pdf.appendString("<< /Event /Export /Category [/Export] /OCGs [")
-		pdf.appendString(buf.String())
-		pdf.appendString(" ] >>\n")
-		pdf.appendString("]\n")
+		// PDF/UA and PDF/A ask for the configuration to have a name and no
+		// usage states, /AS, which say when a group is printed: a group set
+		// not to print prints in such a document.
+		if pdf.compliance == compliance.PDF_1_7 {
+			pdf.appendString("/AS [\n")
+			pdf.appendString("<< /Event /View /Category [/View] /OCGs [")
+			pdf.appendString(buf.String())
+			pdf.appendString(" ] >>\n")
+			pdf.appendString("<< /Event /Print /Category [/Print] /OCGs [")
+			pdf.appendString(buf.String())
+			pdf.appendString(" ] >>\n")
+			pdf.appendString("<< /Event /Export /Category [/Export] /OCGs [")
+			pdf.appendString(buf.String())
+			pdf.appendString(" ] >>\n")
+			pdf.appendString("]\n")
+		} else {
+			pdf.appendString("/Name (Default)\n")
+		}
 
 		// The groups hidden by default, for the viewers that read the
 		// configuration and not the usage of each group

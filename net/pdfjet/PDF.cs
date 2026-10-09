@@ -1658,17 +1658,24 @@ public sealed class PDF {
             Append(" ]\n");
             Append("/D <<\n");
 
-            Append("/AS [\n");
-            Append("<< /Event /View /Category [/View] /OCGs [");
-            Append(buf.ToString());
-            Append(" ] >>\n");
-            Append("<< /Event /Print /Category [/Print] /OCGs [");
-            Append(buf.ToString());
-            Append(" ] >>\n");
-            Append("<< /Event /Export /Category [/Export] /OCGs [");
-            Append(buf.ToString());
-            Append(" ] >>\n");
-            Append("]\n");
+            // PDF/UA and PDF/A ask for the configuration to have a name and no
+            // usage states, /AS, which say when a group is printed: a group set
+            // not to print prints in such a document.
+            if (compliance == Compliance.PDF_1_7) {
+                Append("/AS [\n");
+                Append("<< /Event /View /Category [/View] /OCGs [");
+                Append(buf.ToString());
+                Append(" ] >>\n");
+                Append("<< /Event /Print /Category [/Print] /OCGs [");
+                Append(buf.ToString());
+                Append(" ] >>\n");
+                Append("<< /Event /Export /Category [/Export] /OCGs [");
+                Append(buf.ToString());
+                Append(" ] >>\n");
+                Append("]\n");
+            } else {
+                Append("/Name (Default)\n");
+            }
 
             // The groups hidden by default, for the viewers that read the
             // configuration and not the usage of each group

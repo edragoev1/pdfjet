@@ -95,7 +95,9 @@ public class OptionalContentGroup {
     }
 
     /**
-     * Sets the printability of this group
+     * Sets whether this group is printed. In a PDF/UA or PDF/A document every
+     * group that is shown is printed: they have no setting for a group that is
+     * not, and the viewers print what they show.
      *
      * @param printable flag
      * @return this OptionalContentGroup object.

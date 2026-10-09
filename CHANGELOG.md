@@ -22,6 +22,13 @@ This is the first entry in this file; earlier releases were not tracked here.
   the root, no root element. The 246 SVG files of the repository draw the
   same as before, and the 1,170 SVG files of the Go fuzz corpus are accepted
   or refused alike in the four ports (560 and 610).
+- In a PDF/UA or PDF/A document, the configuration of the optional content
+  groups, the layers, has a `/Name` and no `/AS`, as PDF/UA (7.10) and
+  PDF/A ask, in the four ports: veraPDF refused a tagged document with
+  layers. `/AS` is what says when a group is printed, so in such a document a
+  group set not to print prints, as `setPrintable` now says; a plain PDF is
+  as before. Example_46, the map of layers, is a PDF/UA document now, and
+  passes veraPDF's PDF/UA-1 check in the four ports.
 - Go refuses the image data of a PNG whose Deflate data is invalid before the
   bytes of the image, as the JDK, .NET and Swift do: a dynamic block whose
   code has no end of block, or a stored block whose length is not the

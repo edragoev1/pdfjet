@@ -66,7 +66,9 @@ func (ocg *OptionalContentGroup) SetVisible(visible bool) *OptionalContentGroup 
 	return ocg
 }
 
-// SetPrintable sets the printable components.
+// SetPrintable sets whether this group is printed. In a PDF/UA or PDF/A
+// document every group that is shown is printed: they have no setting for a
+// group that is not, and the viewers print what they show.
 func (ocg *OptionalContentGroup) SetPrintable(printable bool) *OptionalContentGroup {
 	ocg.printable = printable
 	return ocg

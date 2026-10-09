@@ -83,5 +83,25 @@ public class OptionalContentGroupTest {
         group.GetComponents().Clear();
         Assert.Single(group.GetComponents());
     }
+
+    [Fact]
+    public void APDFUADocumentNamesItsConfigurationAndHasNoUsageStates() {
+        // PDF/UA and PDF/A ask for the configuration of the groups to have a
+        // name and no /AS (veraPDF, PDF/UA 7.10), so a group set not to print
+        // prints there; a plain PDF keeps the /AS that says when it prints.
+        string plain = Layer(true);
+        Assert.Contains("/AS [", plain);
+        Assert.DoesNotContain("/Name (Default)", plain);
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream);
+        pdf.SetCompliance(Compliance.PDF_UA_1);
+        pdf.SetTitle("Layers");
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new OptionalContentGroup(pdf, "Layer").SetVisible(true).Add(new Rect(10f, 10f, 20f, 20f)).DrawOn(page);
+        pdf.Complete();
+        string tagged = TestSupport.Latin1(stream.ToArray());
+        Assert.DoesNotContain("/AS [", tagged);
+        Assert.Contains("/Name (Default)", tagged);
+    }
 }
 }

@@ -13,6 +13,7 @@ import (
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
@@ -37,6 +38,10 @@ func Example46() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	// A tagged document; PDF/UA has no setting for a layer that is not
+	// printed, so this one prints every layer that is shown.
+	pdf.SetCompliance(compliance.PDF_UA_1)
+	pdf.SetTitle("PDF Layers: a map of Europe in three layers")
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
@@ -52,7 +57,7 @@ func Example46() {
 		"Each part of this map is a layer, an optional content group, that "+
 			"a PDF viewer lists in its Layers panel and can show or hide: the "+
 			"relief, the lines of latitude and longitude, and the capital "+
-			"cities. The lines are shown on the screen but not printed.")
+			"cities. As a PDF/UA document, this one prints every layer it shows.")
 	textBlock.SetFontSize(12.0)
 	textBlock.SetLineSpacing(1.5)
 	textBlock.SetLocation(50.0, 95.0)
@@ -62,6 +67,7 @@ func Example46() {
 	image := pdfjet.NewImageFromFile(pdf, "images/europe-relief.png")
 	image.ResizeWidth(w)
 	image.SetLocation(x0, y0)
+	image.SetAltDescription("A relief map of Europe, from Ireland to Turkey")
 
 	// A layer is hidden and not printed unless it is set to be.
 	group := pdfjet.NewOptionalContentGroup(pdf, "Relief")

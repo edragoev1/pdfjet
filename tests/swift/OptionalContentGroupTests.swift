@@ -66,4 +66,22 @@ import Testing
         #expect(group.clear().getComponents().isEmpty)
         #expect(group.getName() == "Layer")
     }
+
+    @Test func aPDFUADocumentNamesItsConfigurationAndHasNoUsageStates() throws {
+        // PDF/UA and PDF/A ask for the configuration of the groups to have a
+        // name and no /AS (veraPDF, PDF/UA 7.10), so a group set not to print
+        // prints there; a plain PDF keeps the /AS that says when it prints.
+        let plain = try layer(true)
+        #expect(plain.contains("/AS ["))
+        #expect(!plain.contains("/Name (Default)"))
+        let memory = MemoryPDF()
+        _ = memory.pdf.setCompliance(Compliance.PDF_UA_1)
+        memory.pdf.setTitle("Layers")
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        _ = OptionalContentGroup(memory.pdf, "Layer").setVisible(true).add(Rect(10, 10, 20, 20)).drawOn(page)
+        try memory.pdf.complete()
+        let tagged = TestSupport.latin1(memory.bytes)
+        #expect(!tagged.contains("/AS ["))
+        #expect(tagged.contains("/Name (Default)"))
+    }
 }

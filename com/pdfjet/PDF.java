@@ -1717,17 +1717,24 @@ final public class PDF {
             append(" ]\n");
             append("/D <<\n");
 
-            append("/AS [\n");
-            append("<< /Event /View /Category [/View] /OCGs [");
-            append(buf.toString());
-            append(" ] >>\n");
-            append("<< /Event /Print /Category [/Print] /OCGs [");
-            append(buf.toString());
-            append(" ] >>\n");
-            append("<< /Event /Export /Category [/Export] /OCGs [");
-            append(buf.toString());
-            append(" ] >>\n");
-            append("]\n");
+            // PDF/UA and PDF/A ask for the configuration to have a name and no
+            // usage states, /AS, which say when a group is printed: a group set
+            // not to print prints in such a document.
+            if (compliance == Compliance.PDF_1_7) {
+                append("/AS [\n");
+                append("<< /Event /View /Category [/View] /OCGs [");
+                append(buf.toString());
+                append(" ] >>\n");
+                append("<< /Event /Print /Category [/Print] /OCGs [");
+                append(buf.toString());
+                append(" ] >>\n");
+                append("<< /Event /Export /Category [/Export] /OCGs [");
+                append(buf.toString());
+                append(" ] >>\n");
+                append("]\n");
+            } else {
+                append("/Name (Default)\n");
+            }
 
             // The groups hidden by default, for the viewers that read the
             // configuration and not the usage of each group

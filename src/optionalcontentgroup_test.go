@@ -8,6 +8,8 @@ package pdfjet
 import (
 	"strings"
 	"testing"
+
+	"github.com/edragoev1/pdfjet/v9/src/compliance"
 )
 
 func testLayer(t *testing.T, visible bool) string {
@@ -95,5 +97,24 @@ func TestOptionalContentGroupGetComponentsReturnsACopy(t *testing.T) {
 	components[0] = nil
 	if group.GetComponents()[0] == nil {
 		t.Error("GetComponents returned the live list")
+	}
+}
+
+func TestOptionalContentGroupAPDFUADocumentNamesItsConfigurationAndHasNoUsageStates(t *testing.T) {
+	// PDF/UA and PDF/A ask for the configuration of the groups to have a
+	// name and no /AS (veraPDF, PDF/UA 7.10), so a group set not to print
+	// prints there; a plain PDF keeps the /AS that says when it prints.
+	plain := testLayer(t, true)
+	if !strings.Contains(plain, "/AS [") || strings.Contains(plain, "/Name (Default)") {
+		t.Error("a plain PDF without its usage states")
+	}
+	doc := testNewDoc()
+	doc.pdf.SetCompliance(compliance.PDF_UA_1)
+	doc.pdf.SetTitle("Layers")
+	page := NewPage(doc.pdf, testLetterPortrait())
+	NewOptionalContentGroup(doc.pdf, "Layer").SetVisible(true).Add(NewRect(10, 10, 20, 20)).DrawOn(page)
+	tagged := string(doc.complete())
+	if strings.Contains(tagged, "/AS [") || !strings.Contains(tagged, "/Name (Default)") {
+		t.Error("a PDF/UA document with usage states, or without a name")
 	}
 }

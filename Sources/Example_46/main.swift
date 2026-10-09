@@ -30,6 +30,10 @@ public class Example_46 {
 
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_46.pdf", append: false)!)
+        // A tagged document; PDF/UA has no setting for a layer that is not
+        // printed, so this one prints every layer that is shown.
+        pdf.setCompliance(Compliance.PDF_UA_1)
+        pdf.setTitle("PDF Layers: a map of Europe in three layers")
 
         let f1 = try Font(pdf, IBMPlexSans.Regular)
         let f2 = try Font(pdf, IBMPlexSans.SemiBold)
@@ -45,7 +49,7 @@ public class Example_46 {
                 "Each part of this map is a layer, an optional content group, that "
                 + "a PDF viewer lists in its Layers panel and can show or hide: the "
                 + "relief, the lines of latitude and longitude, and the capital "
-                + "cities. The lines are shown on the screen but not printed.")
+                + "cities. As a PDF/UA document, this one prints every layer it shows.")
         textBlock.setFontSize(12.0)
         textBlock.setLineSpacing(1.5)
         textBlock.setLocation(50.0, 95.0)
@@ -55,6 +59,7 @@ public class Example_46 {
         let image = try Image(pdf, "images/europe-relief.png")
         image.resizeWidth(w)
         image.setLocation(x0, y0)
+        image.setAltDescription("A relief map of Europe, from Ireland to Turkey")
 
         // A layer is hidden and not printed unless it is set to be.
         var group = OptionalContentGroup(pdf, "Relief")

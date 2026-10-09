@@ -63,7 +63,9 @@ public class OptionalContentGroup {
         return self
     }
 
-    /// Sets whether this group is printed.
+    /// Sets whether this group is printed. In a PDF/UA or PDF/A document every
+    /// group that is shown is printed: they have no setting for a group that is
+    /// not, and the viewers print what they show.
     @discardableResult
     public func setPrintable(_ printable: Bool) -> OptionalContentGroup {
         self.printable = printable

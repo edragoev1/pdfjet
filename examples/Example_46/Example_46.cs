@@ -33,6 +33,10 @@ public class Example_46 {
     public Example_46() {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_46.pdf", FileMode.Create)));
+        // A tagged document; PDF/UA has no setting for a layer that is not
+        // printed, so this one prints every layer that is shown.
+        pdf.SetCompliance(Compliance.PDF_UA_1);
+        pdf.SetTitle("PDF Layers: a map of Europe in three layers");
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
         Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
@@ -48,7 +52,7 @@ public class Example_46 {
                 "Each part of this map is a layer, an optional content group, that "
                 + "a PDF viewer lists in its Layers panel and can show or hide: the "
                 + "relief, the lines of latitude and longitude, and the capital "
-                + "cities. The lines are shown on the screen but not printed.");
+                + "cities. As a PDF/UA document, this one prints every layer it shows.");
         textBlock.SetFontSize(12f);
         textBlock.SetLineSpacing(1.5f);
         textBlock.SetLocation(50f, 95f);
@@ -58,6 +62,7 @@ public class Example_46 {
         Image image = new Image(pdf, "images/europe-relief.png");
         image.ResizeWidth(w);
         image.SetLocation(x0, y0);
+        image.SetAltDescription("A relief map of Europe, from Ireland to Turkey");
 
         // A layer is hidden and not printed unless it is set to be.
         OptionalContentGroup group = new OptionalContentGroup(pdf, "Relief");
