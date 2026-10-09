@@ -1909,6 +1909,19 @@ public class Table implements Drawable {
                     cell.setBorder(Border.BOTTOM, false);
                 }
             }
+            // The lines of a wrapped cell are as far apart as the rows of the wrap
+            // are, the bottom padding of new Cell, and the bottom padding of the
+            // cell is under its last line, so that a table of more padding, as
+            // setCellPadding gives, has its lines evenly apart (the review of
+            // 9 October 2026: the padding was between the first two lines).
+            float[] bottomPadding = new float[row.size()];
+            if (maxNumVerCells > 1) {
+                for (int j = 0; j < row.size(); j++) {
+                    Cell cell = row.get(j);
+                    bottomPadding[j] = cell.getBottomPadding();
+                    cell.setBottomPadding(2f);  // new Cell's, which the rows of the wrap have
+                }
+            }
             for (int i = 1; i < maxNumVerCells; i++) {
                 List<Cell> row2 = new ArrayList<Cell>();
                 for (int j = 0; j < row.size(); j++) {
@@ -1928,6 +1941,9 @@ public class Table implements Drawable {
                     cell2.setTextAlignment(cell.getTextAlignment());
                     cell2.setVerticalAlignment(cell.getVerticalAlignment());
                     cell2.setTopPadding(0f);
+                    if (i == maxNumVerCells - 1) {
+                        cell2.setBottomPadding(bottomPadding[j]);
+                    }
                     cell2.setBorder(Border.TOP, false);
                     cell2.setBorder(Border.BOTTOM, bottomBorder[j] && i == maxNumVerCells - 1);
                     cell2.properties |= Cell.CONTINUED;

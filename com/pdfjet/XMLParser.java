@@ -35,7 +35,7 @@ import java.util.Set;
  * them.</li>
  * <li>The elements nest MAX_DEPTH levels at most, and the reading does not
  * recurse, so no document overflows the stack.</li>
- * <li>The document is 20 MB at most.</li>
+ * <li>The document is 20 MB at most, and has MAX_ELEMENTS elements at most.</li>
  * <li>The namespaces are looked up in the elements that declare them, from
  * the innermost out, and not copied into each element, so that no number of
  * declarations makes the reading slower than the length of the document
@@ -60,6 +60,14 @@ import java.util.Set;
 public final class XMLParser {
     /** How deep the elements of a document may nest. */
     public static final int MAX_DEPTH = 256;
+
+    /**
+     * How many elements a document may have, a million: an invoice of the 20 MB
+     * has fewer than half as many, and an SVG image has its points in the
+     * attributes of its paths, not in elements. It keeps a document of tiny
+     * elements from taking hundreds of megabytes (the review of 9 October 2026).
+     */
+    public static final int MAX_ELEMENTS = 1000000;
 
     /** How many bytes a document may be, 20 MB. */
     public static final int MAX_SIZE = 20 << 20;
@@ -87,6 +95,8 @@ public final class XMLParser {
     // The names read, each kept once, as a document repeats a few names
     // millions of times.
     private final Map<String, String> names = new HashMap<String, String>();
+    // The elements read, MAX_ELEMENTS at most
+    private int elements;
     private int index;
     private int line = 1;
     private int column = 1;
@@ -500,6 +510,10 @@ public final class XMLParser {
                 if (root != null && open.isEmpty()) {
                     throw error("There is more than the one element of the document");
                 }
+                if (elements == MAX_ELEMENTS) {
+                    throw error("The document has more than " + MAX_ELEMENTS + " elements");
+                }
+                elements++;
                 XMLNode node = openTag(open, scopes);
                 if (root == null) {
                     root = node;

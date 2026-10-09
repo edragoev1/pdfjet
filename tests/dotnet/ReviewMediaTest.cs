@@ -272,22 +272,41 @@ public class ReviewMediaTest {
 
     [Fact]
     public void TheRulesOfTheClassesOfAnElementAreFoundByClass() {
-        // 20,000 rules and 20,000 elements of three classes each: every
-        // element went through every rule for each of its classes.
-        StringBuilder sb = new StringBuilder("<svg width=\"10\" height=\"10\"><style>");
-        for (int i = 0; i < 20000; i++) {
-            sb.Append(".c").Append(i).Append("{fill:red}");
-        }
-        sb.Append("</style>").Append(Repeat("<g class=\"x y z\"/>", 20000)).Append("</svg>");
-        Stopwatch watch = Stopwatch.StartNew();
-        new SVGImage(new MemoryStream(Encoding.UTF8.GetBytes(sb.ToString())));
-        Assert.True(watch.ElapsedMilliseconds < 2000, "the image is read in " + watch.ElapsedMilliseconds + " ms");
+        // Rules and elements of three classes each: every element went
+        // through every rule for each of its classes. Four times as many of
+        // both take about four times the time, not sixteen; the two times are
+        // measured in the same run, the shortest of three each, so that a busy
+        // computer slows both (a limit of 2 s failed under load, 9 October 2026).
+        TimeSpan small = ClassRulesTime(5000);
+        TimeSpan large = ClassRulesTime(20000);
+        Assert.True(large.Ticks <= 8 * small.Ticks, "20000 rules and elements took "
+                + large.TotalMilliseconds + " ms, and 5000 " + small.TotalMilliseconds + " ms");
         // The rules are those of the style sheet, in its order, whatever the
         // order of the classes, and a class named twice has its rules once.
         string content = DrawSVG("<svg width=\"10\" height=\"10\"><style>.b{fill:red} .a{fill:blue} .b{stroke:green}"
                 + "</style><rect class=\"b a b\" width=\"5\" height=\"5\"/></svg>");
         Assert.StartsWith("0 0 1 rg\n", content);
         Assert.Contains("0 0.5 0 RG\n", content);
+    }
+
+    // The shortest of three times an image of the rules and the elements of
+    // three classes each is read.
+    private static TimeSpan ClassRulesTime(int count) {
+        StringBuilder sb = new StringBuilder("<svg width=\"10\" height=\"10\"><style>");
+        for (int i = 0; i < count; i++) {
+            sb.Append(".c").Append(i).Append("{fill:red}");
+        }
+        sb.Append("</style>").Append(Repeat("<g class=\"x y z\"/>", count)).Append("</svg>");
+        byte[] svg = Encoding.UTF8.GetBytes(sb.ToString());
+        TimeSpan shortest = TimeSpan.MaxValue;
+        for (int run = 0; run < 3; run++) {
+            Stopwatch watch = Stopwatch.StartNew();
+            new SVGImage(new MemoryStream(svg));
+            if (watch.Elapsed < shortest) {
+                shortest = watch.Elapsed;
+            }
+        }
+        return shortest;
     }
 
     // The first control points of the cubic curves of the path data, rounded

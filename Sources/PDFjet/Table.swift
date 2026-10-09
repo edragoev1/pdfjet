@@ -37,8 +37,8 @@ public class Table : Drawable {
     // The height of each row as it is drawn, measured once for each drawOn,
     // after the text is wrapped and the spans are worked out, rather than
     // for each page: a table of 2,546 pages measured its 124,716 rows on
-    // every one of them.
-    private var heights = [Float]()
+    // every one of them. Not private, as the tests read it.
+    var heights = [Float]()
     // The color of every other row of the body, as a 0xRRGGBB value, or
     // Cell.NO_COLOR; and the rows it colors, found where the heights are.
     private var alternateRowColor: Int32 = Cell.NO_COLOR
@@ -1904,6 +1904,18 @@ public class Table : Drawable {
                     cell.setBorder(Border.BOTTOM, false)
                 }
             }
+            // The lines of a wrapped cell are as far apart as the rows of the wrap
+            // are, Cell's bottom padding, and the bottom padding of the cell is
+            // under its last line, so that a table of more padding, as
+            // setCellPadding gives, has its lines evenly apart (the review of
+            // 9 October 2026: the padding was between the first two lines).
+            var bottomPadding = [Float](repeating: 0.0, count: row.count)
+            if maxNumVerCells > 1 {
+                for (j, cell) in row.enumerated() {
+                    bottomPadding[j] = cell.getBottomPadding()
+                    cell.setBottomPadding(2.0)  // Cell's, which the rows of the wrap have
+                }
+            }
             var k = 1
             while k < maxNumVerCells {
                 var row2 = [Cell]()
@@ -1923,6 +1935,9 @@ public class Table : Drawable {
                     cell2.properties = cell.properties
                     cell2.setVerticalAlignment(cell.getVerticalAlignment())
                     cell2.setTopPadding(0.0)
+                    if k == maxNumVerCells - 1 {
+                        cell2.setBottomPadding(bottomPadding[j])
+                    }
                     cell2.setBorder(Border.TOP, false)
                     cell2.setBorder(Border.BOTTOM, bottomBorder[j] && k == maxNumVerCells - 1)
                     cell2.properties |= Cell.CONTINUED

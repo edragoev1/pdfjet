@@ -150,6 +150,43 @@ This is the first entry in this file; earlier releases were not tracked here.
   a font of CFF outlines is written by them too, byte for byte as before.
 
 ### Fixed
+- Found by a code review of every change since 9.0.3, on 9 October 2026, and
+  fixed in the four ports, each with a test:
+  - A font made with `new Font(pdf, ...)` before `addObjects` or
+    `addResourceObjects` took the number of an object of the existing PDF,
+    which was lost; it is refused as before 9.0.5, and the objects come first.
+  - A font added to the objects of an existing PDF was left out when the
+    objects were merged with `merge` rather than added; its text was lost.
+  - The linked marker of a wrapped table cell in a tagged document was not a
+    Figure, and lost its description.
+  - An SVG with a prefix it does not declare, as `xlink:href` without
+    `xmlns:xlink` in SVG copied from web pages, is read again, as before
+    9.0.5. Reading the XML of an SVG or an invoice takes a half to a sixth of
+    the memory it took, and is faster; a document has a million elements at
+    most (`MAX_ELEMENTS`), so that 20 MB of tiny elements cannot take
+    hundreds of megabytes.
+  - The lines of a wrapped table cell are evenly apart with
+    `setCellPadding`: its bottom padding is under its last line, where it was
+    between the first two. Tables of the default padding are drawn as
+    before.
+  - `addCJKParagraph` makes one paragraph of its lines, not one of each: a
+    screen reader reads one paragraph, and the space between paragraphs is
+    after it only. The lines are set with the font's line gap, as those of
+    any paragraph: IBM Plex Sans SC's sets them 2 em apart. Example_44 sets
+    its Chinese at a line spacing of 1.2.
+  - Fonts made wrong are embedded whole, where they made a subset of
+    gigabytes, threw out of `complete()`, or trapped in Swift: glyphs whose
+    outlines overlap, a table twice, a loca format other than 0 or 1,
+    offsets past 2^31, a CFF accented letter drawn with seac (which drew
+    blank), and a format 12 cmap cut short. A format 12 group that starts
+    before the font's first character keeps its glyphs.
+  - `ImageSize` refuses a BMP palette of more than 256 colors and a PNG of
+    no image data, as `Image` does.
+  - SVG numbers are read by SVG's grammar alone in the four ports, so
+    `0x1p3` or `1f` is refused in all of them.
+  - Swift: the language of a word in a paragraph of an encrypted tagged
+    document was encrypted twice; a width past 65535 in a font trapped; a
+    font added to objects that were never added to a PDF was never freed.
 - Text is drawn faster, in the four ports, and much faster in Swift: a
   TextLine's fallback font is its font unless one is set, and each of its
   characters was asked which of the two fonts has it; a fallback font that

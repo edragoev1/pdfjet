@@ -30,7 +30,7 @@ namespace PDFjet.NET {
 /// them.</description></item>
 /// <item><description>The elements nest MAX_DEPTH levels at most, and the reading does not
 /// recurse, so no document overflows the stack.</description></item>
-/// <item><description>The document is 20 MB at most.</description></item>
+/// <item><description>The document is 20 MB at most, and has MAX_ELEMENTS elements at most.</description></item>
 /// <item><description>The namespaces are looked up in the elements that declare them, from
 /// the innermost out, and not copied into each element, so that no number of
 /// declarations makes the reading slower than the length of the document
@@ -54,6 +54,14 @@ namespace PDFjet.NET {
 public sealed class XMLParser {
     /// <summary>How deep the elements of a document may nest.</summary>
     public const int MAX_DEPTH = 256;
+    /// <summary>
+    /// How many elements a document may have, a million: an invoice of the
+    /// 20 MB has fewer than half as many, and an SVG image has its points in
+    /// the attributes of its paths, not in elements. It keeps a document of
+    /// tiny elements from taking hundreds of megabytes (the review of
+    /// 9 October 2026).
+    /// </summary>
+    public const int MAX_ELEMENTS = 1000000;
     /// <summary>How many bytes a document may be, 20 MB.</summary>
     public const int MAX_SIZE = 20 << 20;
     /// <summary>The message of a document of more than 20 MB.</summary>
@@ -72,6 +80,8 @@ public sealed class XMLParser {
     private readonly Dictionary<string, string> names = new Dictionary<string, string>(StringComparer.Ordinal);
     // The attributes of the tag being read, the list used again for each.
     private readonly List<KeyValuePair<string, string>> attributes = new List<KeyValuePair<string, string>>();
+    // The elements read, MAX_ELEMENTS at most
+    private int elements;
     private int index;
     private int line = 1;
     private int column = 1;
@@ -396,6 +406,11 @@ public sealed class XMLParser {
                 if (root != null && open.Count == 0) {
                     throw Error("There is more than the one element of the document");
                 }
+                if (elements == MAX_ELEMENTS) {
+                    throw Error("The document has more than "
+                            + MAX_ELEMENTS.ToString(CultureInfo.InvariantCulture) + " elements");
+                }
+                elements++;
                 XMLNode node = OpenTag(open);
                 if (root == null) {
                     root = node;

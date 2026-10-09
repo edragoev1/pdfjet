@@ -1132,5 +1132,31 @@ import Testing
         // Where the four ports end it, the same in each
         #expect(a == [170, 123.23201])
     }
-}
 
+    @Test func theLinesOfAWrappedCellAreEvenlyApartWithItsPadding() {
+        // With 8 points over and under the text, the 8 under it were between
+        // the first two lines of a wrapped cell, and its last line had Cell's
+        // 2 (the review of 9 October 2026). The lines are 2 apart, as the rows
+        // of a wrap are, and the 8 are over the first and under the last.
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let data = [
+            [Cell(font, "a"), Cell(font, "a note long enough to wrap to four lines or more of text")],
+        ]
+        let table = Table().setTableData(data, 0)
+        table.setColumnWidth(0, 50)
+        table.setColumnWidth(1, 60)
+        table.setCellPadding(4, 8)
+        table.setLocation(20, 20)
+        table.drawOn(Page(pdf, Letter.PORTRAIT))
+        let heights = table.heights
+        #expect(heights.count >= 4, "\(heights.count) rows")
+        guard heights.count >= 4 else { return }
+        let line = heights[1] - 2   // A middle line: none over it, 2 under it
+        TestSupport.expectNear(line + 8 + 2, heights[0], 0.001, "the first line")
+        for r in 1..<(heights.count - 1) {
+            TestSupport.expectNear(line + 2, heights[r], 0.001, "a middle line")
+        }
+        TestSupport.expectNear(line + 8, heights[heights.count - 1], 0.001, "the last line")
+    }
+}

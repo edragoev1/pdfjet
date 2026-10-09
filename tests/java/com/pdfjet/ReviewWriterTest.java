@@ -416,7 +416,7 @@ class ReviewWriterTest {
         PDF pdf = new PDF(bos);
         new Page(pdf, Letter.PORTRAIT);
         pdf.complete();
-        assertTrue(TestSupport.latin1(bos.toByteArray()).contains("/Producer " + textString("PDFjet v9.0.3")));
+        assertTrue(TestSupport.latin1(bos.toByteArray()).contains("/Producer " + textString("PDFjet v9.0.5")));
     }
 
     @Test

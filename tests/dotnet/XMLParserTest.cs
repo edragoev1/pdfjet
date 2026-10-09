@@ -420,5 +420,15 @@ public class XMLParserTest {
         Assert.Contains("is not read", Message("<?xml version=\"1.0\" encoding=\"latin1\"?><a/>"), StringComparison.Ordinal);
         Assert.Contains("empty prefix", Message("<a xmlns:=\"urn:x\"/>"), StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void ReadsAMillionElementsAndNoMore() {
+        // A document of 20 MB of tiny elements took hundreds of megabytes (the
+        // review of 9 October 2026).
+        Func<int, string> many = count => "<a>" + new StringBuilder().Insert(0, "<b/>", count - 1) + "</a>";
+        Parse(many(XMLParser.MAX_ELEMENTS));
+        Assert.Contains("more than 1000000 elements", Message(many(XMLParser.MAX_ELEMENTS + 1)),
+                StringComparison.Ordinal);
+    }
 }
 }   // End of namespace PDFjet.NET

@@ -226,21 +226,39 @@ import Testing
     }
 
     @Test func theRulesOfTheClassesOfAnElementAreFoundByClass() throws {
-        // 20,000 rules and 20,000 elements of three classes each: every
-        // element went through every rule for each of its classes.
-        var svg = "<svg width=\"10\" height=\"10\"><style>"
-        for i in 0..<20000 {
-            svg += ".c\(i){fill:red}"
-        }
-        svg += "</style>" + String(repeating: "<g class=\"x y z\"/>", count: 20000) + "</svg>"
-        let start = Date()
-        _ = try SVGImage(stream: InputStream(data: Data(svg.utf8)))
-        #expect(Date().timeIntervalSince(start) < 2.0)
+        // Rules and elements of three classes each: every element went
+        // through every rule for each of its classes. Four times as many of
+        // both take about four times the time, not sixteen; the two times are
+        // measured in the same run, the shortest of three each, so that a busy
+        // computer slows both (a limit of 2 s failed under load, 9 October
+        // 2026). Half as many as the other ports, as the debug build is slow.
+        let small = try classRulesTime(2500)
+        let large = try classRulesTime(10000)
+        #expect(large <= small * 8, "10000 rules and elements took \(large), and 2500 \(small)")
         // The rules are those of the style sheet, in its order, whatever the
         // order of the classes, and a class named twice has its rules once.
         let content = try draw("<svg width=\"10\" height=\"10\"><style>.b{fill:red} .a{fill:blue} .b{stroke:green}"
                 + "</style><rect class=\"b a b\" width=\"5\" height=\"5\"/></svg>")
         #expect(content.hasPrefix("0 0 1 rg\n") && content.contains("0 0.5 0 RG\n"), "\(content)")
+    }
+
+    // The shortest of three times an image of the rules and the elements of
+    // three classes each is read.
+    private func classRulesTime(_ count: Int) throws -> Duration {
+        var svg = "<svg width=\"10\" height=\"10\"><style>"
+        for i in 0..<count {
+            svg += ".c\(i){fill:red}"
+        }
+        svg += "</style>" + String(repeating: "<g class=\"x y z\"/>", count: count) + "</svg>"
+        let data = Data(svg.utf8)
+        var shortest = Duration.seconds(1_000_000)
+        for _ in 0..<3 {
+            let elapsed = try ContinuousClock().measure {
+                _ = try SVGImage(stream: InputStream(data: data))
+            }
+            shortest = min(shortest, elapsed)
+        }
+        return shortest
     }
 
     // The first control points of the cubic curves of the path data, rounded

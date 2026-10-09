@@ -378,4 +378,17 @@ import Testing
         #expect(message(#"<?xml version="1.0" encoding="latin1"?><a/>"#).contains("is not read"))
         #expect(message(#"<a xmlns:="urn:x"/>"#).contains("empty prefix"))
     }
+
+    @Test func readsAMillionElementsAndNoMore() throws {
+        // A document of 20 MB of tiny elements took hundreds of megabytes (the
+        // review of 9 October 2026).
+        func many(_ count: Int) -> [UInt8] {
+            return Array(("<a>" + String(repeating: "<b/>", count: count - 1) + "</a>").utf8)
+        }
+        _ = try PDFjetXMLParser.parse(many(PDFjetXMLParser.MAX_ELEMENTS))
+        let error = #expect(throws: PDFjetXMLError.self) {
+            try PDFjetXMLParser.parse(many(PDFjetXMLParser.MAX_ELEMENTS + 1))
+        }
+        #expect(error?.message.contains("more than 1000000 elements") == true, "\(error?.message ?? "")")
+    }
 }

@@ -228,18 +228,15 @@ func TestReviewMediaTheCommentsOfAStyleSheetAreLeftOutInOnePass(t *testing.T) {
 }
 
 func TestReviewMediaTheRulesOfTheClassesOfAnElementAreFoundByClass(t *testing.T) {
-	// 20,000 rules and 20,000 elements of three classes each: every element
-	// went through every rule for each of its classes.
-	var sb strings.Builder
-	sb.WriteString(`<svg width="10" height="10"><style>`)
-	for i := 0; i < 20000; i++ {
-		sb.WriteString(".c" + strconv.Itoa(i) + "{fill:red}")
-	}
-	sb.WriteString(`</style>` + strings.Repeat(`<g class="x y z"/>`, 20000) + `</svg>`)
-	start := time.Now()
-	testNewSVG(t, sb.String())
-	if elapsed := time.Since(start); elapsed > 2*time.Second {
-		t.Errorf("the image is read in %v", elapsed)
+	// Rules and elements of three classes each: every element went through
+	// every rule for each of its classes. Four times as many of both take
+	// about four times the time, not sixteen; the two times are measured in
+	// the same run, the shortest of three each, so that a busy computer slows
+	// both (a limit of 2 s failed under load, 9 October 2026).
+	small := testClassRulesTime(t, 5000)
+	large := testClassRulesTime(t, 20000)
+	if large > 8*small {
+		t.Errorf("20000 rules and elements took %v, and 5000 %v", large, small)
 	}
 	// The rules are those of the style sheet, in its order, whatever the
 	// order of the classes, and a class named twice has its rules once.
@@ -434,4 +431,22 @@ func TestReviewMediaAFontIsEmbeddedOnceWhenItIsAddedTwice(t *testing.T) {
 	if raw := doc.complete(); bytes.Count(raw, []byte("/Length1 ")) != 1 {
 		t.Errorf("the font is embedded %d times", bytes.Count(raw, []byte("/Length1 ")))
 	}
+}
+
+// testClassRulesTime returns the shortest of three times an image of the
+// rules and the elements of three classes each is read.
+func testClassRulesTime(t *testing.T, count int) time.Duration {
+	var sb strings.Builder
+	sb.WriteString(`<svg width="10" height="10"><style>`)
+	for i := 0; i < count; i++ {
+		sb.WriteString(".c" + strconv.Itoa(i) + "{fill:red}")
+	}
+	sb.WriteString(`</style>` + strings.Repeat(`<g class="x y z"/>`, count) + `</svg>`)
+	shortest := time.Duration(math.MaxInt64)
+	for run := 0; run < 3; run++ {
+		start := time.Now()
+		testNewSVG(t, sb.String())
+		shortest = min(shortest, time.Since(start))
+	}
+	return shortest
 }

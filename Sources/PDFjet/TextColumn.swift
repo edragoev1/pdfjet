@@ -485,18 +485,20 @@ public class TextColumn : Drawable {
     ///
     @discardableResult
     public func addCJKParagraph(_ font: Font, _ text: String, _ language: String?) -> TextColumn {
-        var paragraph: Paragraph
+        // The lines, each as wide as the column, are the text lines of one
+        // paragraph: one P for a screen reader, and the space between paragraphs
+        // after the last of them only (the review of 9 October 2026: each line
+        // was a paragraph of its own). A CJK text line is never joined to the
+        // one before it, so each starts a line of its own.
+        let paragraph = Paragraph()
         var buf = String()
         for scalar in text.unicodeScalars {
             if font.stringWidth(buf + String(scalar)) > w {
-                paragraph = Paragraph()
                 paragraph.add(TextLine(font, buf).setLanguage(language))
-                addParagraph(paragraph)
                 buf = ""
             }
             buf.append(String(scalar))
         }
-        paragraph = Paragraph()
         paragraph.add(TextLine(font, buf).setLanguage(language))
         return addParagraph(paragraph)
     }

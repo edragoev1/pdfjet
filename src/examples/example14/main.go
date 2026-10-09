@@ -58,7 +58,7 @@ func Example14() {
 	caption.SetLocation(300.0, xy[1]+20.0)
 	caption.DrawOn(page)
 
-	barcode = datamatrix.NewDataMatrixWithShape("PDFjet 9.0.3", datamatrix.Rectangle)
+	barcode = datamatrix.NewDataMatrixWithShape("PDFjet 9.0.5", datamatrix.Rectangle)
 	barcode.SetLocation(50.0, 250.0)
 	barcode.SetModuleLength(4.0)
 	barcode.SetModuleColor(color.Blue)

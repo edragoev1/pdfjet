@@ -1853,6 +1853,18 @@ public class Table : IDrawable {
                     cell.SetBorder(Border.BOTTOM, false);
                 }
             }
+            // The lines of a wrapped cell are as far apart as the rows of the wrap
+            // are, NewCell's bottom padding, and the bottom padding of the cell is
+            // under its last line, so that a table of more padding, as
+            // SetCellPadding gives, has its lines evenly apart (the review of
+            // 9 October 2026: the padding was between the first two lines).
+            float[] bottomPadding = new float[row.Count];
+            if (maxNumVerCells > 1) {
+                for (int j = 0; j < row.Count; j++) {
+                    bottomPadding[j] = row[j].GetBottomPadding();
+                    row[j].SetBottomPadding(2f);  // NewCell's, which the rows of the wrap have
+                }
+            }
             for (int i = 1; i < maxNumVerCells; i++) {
                 List<Cell> row2 = new List<Cell>();
                 for (int j = 0; j < row.Count; j++) {
@@ -1872,6 +1884,9 @@ public class Table : IDrawable {
                     cell2.SetTextAlignment(cell.GetTextAlignment());
                     cell2.SetVerticalAlignment(cell.GetVerticalAlignment());
                     cell2.SetTopPadding(0f);
+                    if (i == maxNumVerCells - 1) {
+                        cell2.SetBottomPadding(bottomPadding[j]);
+                    }
                     cell2.SetBorder(Border.TOP, false);
                     cell2.SetBorder(Border.BOTTOM, bottomBorder[j] && i == maxNumVerCells - 1);
                     cell2.properties |= Cell.CONTINUED;

@@ -1247,5 +1247,33 @@ class TableTest {
         // Where the four ports end it, the same in each
         assertArrayEquals(new float[] {170f, 123.23201f}, a, 0f);
     }
-}
 
+    @Test
+    void theLinesOfAWrappedCellAreEvenlyApartWithItsPadding() throws Exception {
+        // With 8 points over and under the text, the 8 under it were between
+        // the first two lines of a wrapped cell, and its last line had new
+        // Cell's 2 (the review of 9 October 2026). The lines are 2 apart, as
+        // the rows of a wrap are, and the 8 are over the first and under the last.
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        List<List<Cell>> data = new ArrayList<List<Cell>>();
+        data.add(new ArrayList<Cell>(Arrays.asList(new Cell(font, "a"),
+                new Cell(font, "a note long enough to wrap to four lines or more of text"))));
+        Table table = new Table().setTableData(data, 0);
+        table.setColumnWidth(0, 50f);
+        table.setColumnWidth(1, 60f);
+        table.setCellPadding(4f, 8f);
+        table.setLocation(20f, 20f);
+        table.drawOn(new Page(pdf, Letter.PORTRAIT));
+        java.lang.reflect.Field field = Table.class.getDeclaredField("heights");
+        field.setAccessible(true);
+        float[] heights = (float[]) field.get(table);
+        assertTrue(heights.length >= 4, heights.length + " rows");
+        float line = heights[1] - 2f;   // A middle line: none over it, 2 under it
+        assertEquals(line + 8f + 2f, heights[0], 0.001f, "the first line");
+        for (int r = 1; r < heights.length - 1; r++) {
+            assertEquals(line + 2f, heights[r], 0.001f, "a middle line");
+        }
+        assertEquals(line + 8f, heights[heights.length - 1], 0.001f, "the last line");
+    }
+}

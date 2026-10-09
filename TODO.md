@@ -177,7 +177,16 @@ stays the fast path for the fonts embedded whole and for PDFjet Forms.
    for buyers; and whether it is the evaluation or the licensed build.
 6. ⬜ **Sent on 9 October 2026: the 9.0.3 evaluation package, its strong-named net48 build, to the .NET client, who tests it; waiting for what they find.** **Anything the .NET client finds in net48**, which ships untested on
    Windows in 9.0.3 (they test it).
-7. ⬜ **The booklet shows what each snippet draws** (the owner, 9 October
+**9.0.5 frozen on 9 October 2026, evening** (the owner: "I want v9.0.5 out
+since it has so many fixes ... If any issue is uncovered we will follow up
+with v9.0.7 quickly"): after the code review of every change since 9.0.3,
+its fixes in the four ports, and 17 Go fuzz targets for 5 minutes each
+(95 million inputs, no failure). Only a major issue the owner's testing
+finds goes in now; the rest goes to 9.0.7. Left: the owner's short viewer
+pass in Acrobat (Examples 02, 04, 06, 28, 37, 44, 50), then item 8.
+
+7. ⬜ **After 9.0.5** (the owner, 9 October 2026: "We will work on the
+   booklet later"). **The booklet shows what each snippet draws** (the owner, 9 October
    2026: "Fix the booklet by adding screenshots or vectors that show what
    the code will draw"). Today each of its 60 `@snippet` features has a
    description and the code, but not the result. Booklet.java places,

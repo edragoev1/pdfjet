@@ -270,22 +270,37 @@ class ReviewMediaTest {
 
     @Test
     void theRulesOfTheClassesOfAnElementAreFoundByClass() throws Exception {
-        // 20,000 rules and 20,000 elements of three classes each: every
-        // element went through every rule for each of its classes.
-        StringBuilder sb = new StringBuilder("<svg width=\"10\" height=\"10\"><style>");
-        for (int i = 0; i < 20000; i++) {
-            sb.append(".c").append(i).append("{fill:red}");
-        }
-        sb.append("</style>").append(repeat("<g class=\"x y z\"/>", 20000)).append("</svg>");
-        long start = System.nanoTime();
-        svg(sb.toString());
-        long elapsed = (System.nanoTime() - start) / 1000000;
-        assertTrue(elapsed < 2000, "the image is read in " + elapsed + " ms");
+        // Rules and elements of three classes each: every element went
+        // through every rule for each of its classes. Four times as many of
+        // both take about four times the time, not sixteen; the two times are
+        // measured in the same run, the shortest of three each, so that a busy
+        // computer slows both (a limit of 2 s failed under load, 9 October 2026).
+        long small = classRulesTime(5000);
+        long large = classRulesTime(20000);
+        assertTrue(large <= 8 * small, "20000 rules and elements took " + large / 1000000
+                + " ms, and 5000 " + small / 1000000 + " ms");
         // The rules are those of the style sheet, in its order, whatever the
         // order of the classes, and a class named twice has its rules once.
         String content = draw("<svg width=\"10\" height=\"10\"><style>.b{fill:red} .a{fill:blue} .b{stroke:green}"
                 + "</style><rect class=\"b a b\" width=\"5\" height=\"5\"/></svg>");
         assertTrue(content.startsWith("0 0 1 rg\n") && content.contains("0 0.5 0 RG\n"), content);
+    }
+
+    // The shortest of three times an image of the rules and the elements of
+    // three classes each is read, in nanoseconds.
+    private static long classRulesTime(int count) throws Exception {
+        StringBuilder sb = new StringBuilder("<svg width=\"10\" height=\"10\"><style>");
+        for (int i = 0; i < count; i++) {
+            sb.append(".c").append(i).append("{fill:red}");
+        }
+        sb.append("</style>").append(repeat("<g class=\"x y z\"/>", count)).append("</svg>");
+        long shortest = Long.MAX_VALUE;
+        for (int run = 0; run < 3; run++) {
+            long start = System.nanoTime();
+            svg(sb.toString());
+            shortest = Math.min(shortest, System.nanoTime() - start);
+        }
+        return shortest;
     }
 
     // The first control points of the cubic curves of the path data, rounded

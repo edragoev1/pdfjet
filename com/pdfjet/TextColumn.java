@@ -515,7 +515,12 @@ public class TextColumn implements Drawable {
      * @return this TextColumn object.
      */
     public TextColumn addCJKParagraph(Font font, String text, String language) {
-        Paragraph paragraph;
+        // The lines, each as wide as the column, are the text lines of one
+        // paragraph: one P for a screen reader, and the space between paragraphs
+        // after the last of them only (the review of 9 October 2026: each line
+        // was a paragraph of its own). A CJK text line is never joined to the
+        // one before it, so each starts a line of its own.
+        Paragraph paragraph = new Paragraph();
         StringBuilder buf = new StringBuilder();
         int i = 0;
         while (i < text.length()) {
@@ -523,14 +528,11 @@ public class TextColumn implements Drawable {
             i += Character.charCount(ch);
             String str = new String(Character.toChars(ch));
             if (font.stringWidth(buf.toString() + str) > w) {
-                paragraph = new Paragraph();
                 paragraph.add(new TextLine(font, buf.toString()).setLanguage(language));
-                addParagraph(paragraph);
                 buf.setLength(0);
             }
             buf.appendCodePoint(ch);
         }
-        paragraph = new Paragraph();
         paragraph.add(new TextLine(font, buf.toString()).setLanguage(language));
         return addParagraph(paragraph);
     }

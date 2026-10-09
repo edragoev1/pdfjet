@@ -1215,5 +1215,34 @@ public sealed class TableTest : IDisposable {
         // Where the four ports end it, the same in each
         Assert.Equal(new float[] {170f, 123.23201f}, a);
     }
+
+    [Fact]
+    public void TheLinesOfAWrappedCellAreEvenlyApartWithItsPadding() {
+        // With 8 points over and under the text, the 8 under it were between
+        // the first two lines of a wrapped cell, and its last line had NewCell's
+        // 2 (the review of 9 October 2026). The lines are 2 apart, as the rows
+        // of a wrap are, and the 8 are over the first and under the last.
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        List<List<Cell>> data = new List<List<Cell>> {
+            new List<Cell> {new Cell(font, "a"),
+                    new Cell(font, "a note long enough to wrap to four lines or more of text")},
+        };
+        Table table = new Table().SetTableData(data, 0);
+        table.SetColumnWidth(0, 50f);
+        table.SetColumnWidth(1, 60f);
+        table.SetCellPadding(4f, 8f);
+        table.SetLocation(20f, 20f);
+        table.DrawOn(new Page(pdf, Letter.PORTRAIT));
+        float[] heights = (float[]) typeof(Table).GetField("heights",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).GetValue(table);
+        Assert.True(heights.Length >= 4, heights.Length + " rows");
+        float line = heights[1] - 2f;   // A middle line: none over it, 2 under it
+        TestSupport.AssertNear(line + 8f + 2f, heights[0], 0.001f, "the first line");
+        for (int r = 1; r < heights.Length - 1; r++) {
+            TestSupport.AssertNear(line + 2f, heights[r], 0.001f, "a middle line");
+        }
+        TestSupport.AssertNear(line + 8f, heights[heights.Length - 1], 0.001f, "the last line");
+    }
 }
 }

@@ -408,4 +408,21 @@ class XMLParserTest {
         }
         return shortest;
     }
+
+    private static String many(int count) {
+        StringBuilder xml = new StringBuilder("<a>");
+        for (int i = 1; i < count; i++) {
+            xml.append("<b/>");
+        }
+        return xml.append("</a>").toString();
+    }
+
+    @Test
+    void readsAMillionElementsAndNoMore() throws Exception {
+        // A document of 20 MB of tiny elements took hundreds of megabytes (the
+        // review of 9 October 2026).
+        parse(many(XMLParser.MAX_ELEMENTS));
+        String m = message(many(XMLParser.MAX_ELEMENTS + 1));
+        assertTrue(m.contains("more than 1000000 elements"), m);
+    }
 }

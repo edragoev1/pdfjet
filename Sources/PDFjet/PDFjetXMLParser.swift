@@ -31,7 +31,7 @@ import Foundation
 ///   the ones a DOCTYPE declares among them.
 /// - The elements nest MAX_DEPTH levels at most, and the reading does not
 ///   recurse, so no document overflows the stack.
-/// - The document is 20 MB at most.
+/// - The document is 20 MB at most, and has MAX_ELEMENTS elements at most.
 /// - The namespaces are looked up in the elements that declare them, from
 ///   the innermost out, and not copied into each element, so that no number
 ///   of declarations makes the reading slower than the length of the document
@@ -56,6 +56,12 @@ import Foundation
 public final class PDFjetXMLParser {
     /// How deep the elements of a document may nest.
     public static let MAX_DEPTH = 256
+    /// How many elements a document may have, a million: an invoice of the
+    /// 20 MB has fewer than half as many, and an SVG image has its points in
+    /// the attributes of its paths, not in elements. It keeps a document of
+    /// tiny elements from taking hundreds of megabytes (the review of
+    /// 9 October 2026).
+    public static let MAX_ELEMENTS = 1_000_000
     /// How many bytes a document may be, 20 MB.
     public static let MAX_SIZE = 20 << 20
     /// The error of a document of more than 20 MB.
@@ -251,6 +257,8 @@ private struct Reader {
     // The names read, each kept once, as a document repeats a few names
     // millions of times.
     private var names = [String: String]()
+    // The elements read, MAX_ELEMENTS at most
+    private var elements = 0
 
     // Makes each line break of the document a line feed, as XML reads a
     // carriage return and the line feed after it, and a carriage return on
@@ -464,6 +472,10 @@ private struct Reader {
                 if root != nil && open.isEmpty {
                     throw error("There is more than the one element of the document")
                 }
+                if elements == PDFjetXMLParser.MAX_ELEMENTS {
+                    throw error("The document has more than \(PDFjetXMLParser.MAX_ELEMENTS) elements")
+                }
+                elements += 1
                 let node = try openTag()
                 if root == nil {
                     root = node
