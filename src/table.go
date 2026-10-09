@@ -1820,6 +1820,18 @@ func (table *Table) wrapAroundCellText() {
 				cell.SetBorder(border.Bottom, false)
 			}
 		}
+		// The lines of a wrapped cell are as far apart as the rows of the wrap
+		// are, NewCell's bottom padding, and the bottom padding of the cell is
+		// under its last line, so that a table of more padding, as
+		// SetCellPadding gives, has its lines evenly apart (the review of
+		// 9 October 2026: the padding was between the first two lines).
+		bottomPadding := make([]float32, len(row))
+		if maxNumVerCells > 1 {
+			for j, cell := range row {
+				bottomPadding[j] = cell.GetBottomPadding()
+				cell.SetBottomPadding(2.0) // NewCell's, which the rows of the wrap have
+			}
+		}
 		for i := 1; i < maxNumVerCells; i++ {
 			row2 := make([]*Cell, 0)
 			for j, cell := range row {
@@ -1839,6 +1851,9 @@ func (table *Table) wrapAroundCellText() {
 				cell2.SetTextAlignment(cell.GetTextAlignment())
 				cell2.SetVerticalAlignment(cell.GetVerticalAlignment())
 				cell2.SetTopPadding(0.0)
+				if i == maxNumVerCells-1 {
+					cell2.SetBottomPadding(bottomPadding[j])
+				}
 				cell2.properties &= ^border.Top
 				cell2.SetBorder(border.Bottom, bottomBorder[j] && i == maxNumVerCells-1)
 				cell2.properties |= cellContinued

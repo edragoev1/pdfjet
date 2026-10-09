@@ -509,3 +509,17 @@ func FuzzXMLParser(f *testing.F) {
 		}
 	})
 }
+
+func TestXMLParserReadsAMillionElementsAndNoMore(t *testing.T) {
+	// A document of 20 MB of tiny elements took hundreds of megabytes (the
+	// review of 9 October 2026).
+	many := func(count int) []byte {
+		return []byte("<a>" + strings.Repeat("<b/>", count-1) + "</a>")
+	}
+	if _, err := Parse(many(MaxElements)); err != nil {
+		t.Errorf("%d elements: %v", MaxElements, err)
+	}
+	if _, err := Parse(many(MaxElements + 1)); err == nil || !strings.Contains(err.Error(), "more than 1000000 elements") {
+		t.Errorf("%d elements: %v", MaxElements+1, err)
+	}
+}

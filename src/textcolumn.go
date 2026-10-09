@@ -433,18 +433,20 @@ func (textColumn *TextColumn) AddCJKParagraph(font *Font, text string) *TextColu
 // text, as AddCJKParagraph does, in the language given, for example "zh-Hans",
 // "ja" or "ko", which a screen reader reads it in.
 func (textColumn *TextColumn) AddCJKParagraphWithLanguage(font *Font, text, language string) *TextColumn {
-	var paragraph *Paragraph
+	// The lines, each as wide as the column, are the text lines of one
+	// paragraph: one P for a screen reader, and the space between paragraphs
+	// after the last of them only (the review of 9 October 2026: each line
+	// was a paragraph of its own). A CJK text line is never joined to the
+	// one before it, so each starts a line of its own.
+	paragraph := NewParagraph()
 	var buf strings.Builder
 	for _, ch := range text {
 		if font.StringWidth(font.size, buf.String()+string(ch)) > textColumn.w {
-			paragraph = NewParagraph()
 			paragraph.Add(NewTextLine(font, buf.String()).SetLanguage(language))
-			textColumn.AddParagraph(paragraph)
 			buf.Reset()
 		}
 		buf.WriteRune(ch)
 	}
-	paragraph = NewParagraph()
 	paragraph.Add(NewTextLine(font, buf.String()).SetLanguage(language))
 	return textColumn.AddParagraph(paragraph)
 }

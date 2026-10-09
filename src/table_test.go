@@ -1454,3 +1454,31 @@ func TestTableSetCellPaddingIsThePaddingOfEveryCell(t *testing.T) {
 		}
 	}
 }
+
+func TestTableTheLinesOfAWrappedCellAreEvenlyApartWithItsPadding(t *testing.T) {
+	// With 8 points over and under the text, the 8 under it were between
+	// the first two lines of a wrapped cell, and its last line had NewCell's
+	// 2 (the review of 9 October 2026). The lines are 2 apart, as the rows
+	// of a wrap are, and the 8 are over the first and under the last.
+	doc := testNewDoc()
+	font := testHelvetica(doc.pdf)
+	data := [][]*Cell{
+		{NewCell(font, "a"), NewCell(font, "a note long enough to wrap to four lines or more of text")},
+	}
+	table := NewTable().SetTableData(data, 0)
+	table.SetColumnWidth(0, 50)
+	table.SetColumnWidth(1, 60)
+	table.SetCellPadding(4, 8)
+	table.SetLocation(20, 20)
+	table.DrawOn(NewPage(doc.pdf, letter.Portrait()))
+	heights := table.heights
+	if len(heights) < 4 {
+		t.Fatalf("%d rows", len(heights))
+	}
+	line := heights[1] - 2 // A middle line: none over it, 2 under it
+	testNear(t, "the first line", line+8+2, heights[0], 0.001)
+	for r := 1; r < len(heights)-1; r++ {
+		testNear(t, "a middle line", line+2, heights[r], 0.001)
+	}
+	testNear(t, "the last line", line+8, heights[len(heights)-1], 0.001)
+}

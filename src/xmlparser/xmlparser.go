@@ -22,7 +22,7 @@
 //     the ones a DOCTYPE declares among them.
 //   - The elements nest MaxDepth levels at most, and the reading does not
 //     recurse, so no document overflows the stack.
-//   - The document is 20 MB at most.
+//   - The document is 20 MB at most, and has MaxElements elements at most.
 //   - The namespaces are looked up in the elements that declare them, from
 //     the innermost out, and not copied into each element, so that no number
 //     of declarations makes the reading slower than the length of the
@@ -60,6 +60,12 @@ import (
 // MaxDepth is how deep the elements of a document may nest.
 const MaxDepth = 256
 
+// MaxElements is how many elements a document may have, a million: an invoice
+// of the 20 MB has fewer than half as many, and an SVG image has its points in
+// the attributes of its paths, not in elements. It keeps a document of tiny
+// elements from taking hundreds of megabytes (the review of 9 October 2026).
+const MaxElements = 1000000
+
 // MaxSize is how many bytes a document may be, 20 MB: an invoice of some
 // fifteen thousand lines, or an SVG image of millions of points.
 const MaxSize = 20 << 20
@@ -86,6 +92,8 @@ type parser struct {
 	// The names read, each kept once, as a document repeats a few names
 	// millions of times.
 	names map[string]string
+	// The elements read, MaxElements at most
+	elements int
 }
 
 // Parse reads the document and returns its root element. It returns an error
@@ -471,6 +479,10 @@ func (p *parser) element() (*XMLNode, error) {
 			if root != nil && len(p.open) == 0 {
 				return nil, p.error("There is more than the one element of the document")
 			}
+			if p.elements == MaxElements {
+				return nil, p.error("The document has more than " + strconv.Itoa(MaxElements) + " elements")
+			}
+			p.elements++
 			node, err := p.openTag()
 			if err != nil {
 				return nil, err
