@@ -71,6 +71,15 @@ class XMLParserTest {
         return assertThrows(XMLException.class, () -> parse(xml)).getMessage();
     }
 
+    // The parse of an SVG image, which skips a DOCTYPE.
+    private static XMLNode parseSkipping(String xml) throws Exception {
+        return XMLParser.parseSkippingDoctype(xml.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private static String messageSkipping(String xml) {
+        return assertThrows(XMLException.class, () -> parseSkipping(xml)).getMessage();
+    }
+
     @Test
     void readsTheValuesOfAnInvoiceByTheirPath() throws Exception {
         XMLNode invoice = parse(INVOICE);
@@ -228,23 +237,42 @@ class XMLParserTest {
 
     @Test
     void skipsADocumentTypeDeclarationAndDoesNotReadItsEntities() throws Exception {
-        // The files of the drawing programs have a DOCTYPE, which is skipped;
-        // its entities read files and URLs, and grow a short document into
-        // gigabytes, so they are not read, and a reference to one is an error.
-        XMLNode svg = parse("<?xml version=\"1.0\"?>\n"
+        // The files of the drawing programs have a DOCTYPE, which the parse of
+        // an SVG image skips; its entities read files and URLs, and grow a
+        // short document into gigabytes, so they are not read, and a reference
+        // to one is an error.
+        XMLNode svg = parseSkipping("<?xml version=\"1.0\"?>\n"
                 + "<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" "
                 + "\"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n"
                 + "<svg xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M0 0\"/></svg>");
         assertEquals("svg", svg.getName());
         assertEquals(1, svg.getChildren().size());
-        parse("<!DOCTYPE a [<!-- a ] and a > in a comment --><!ENTITY x \"]>\">"
+        parseSkipping("<!DOCTYPE a [<!-- a ] and a > in a comment --><!ENTITY x \"]>\">"
                 + "<!ATTLIST a b CDATA \"x>\">]><a/>");
-        assertTrue(message("<!DOCTYPE a [<!ENTITY x SYSTEM \"file:///etc/passwd\">]><a>&x;</a>")
+        assertTrue(messageSkipping("<!DOCTYPE a [<!ENTITY x SYSTEM \"file:///etc/passwd\">]><a>&x;</a>")
                 .startsWith("The entity &x; is not one of XML"));
-        assertTrue(message("<!DOCTYPE a [<!ENTITY a \"xx\"><!ENTITY b \"&a;&a;\">]><a>&b;</a>")
+        assertTrue(messageSkipping("<!DOCTYPE a [<!ENTITY a \"xx\"><!ENTITY b \"&a;&a;\">]><a>&b;</a>")
                 .startsWith("The entity &b; is not one of XML"));
+        assertTrue(messageSkipping("<a>&x;</a>").startsWith("The entity &x; is not one of XML"));
+        assertTrue(messageSkipping("<!DOCTYPE a [<!ENTITY x \"y\">").contains("does not end"));
+        assertEquals("svg", XMLParser.parseSkippingDoctype(new java.io.ByteArrayInputStream(
+                "<!DOCTYPE svg><svg/>".getBytes(StandardCharsets.UTF_8))).getName());
+    }
+
+    @Test
+    void refusesADocumentTypeDeclarationAndWithItTheEntitiesThatAttackAReader() throws Exception {
+        // An electronic invoice has no DOCTYPE, and parse refuses one, its
+        // entities with it, as the parser of PDFjet Pro's invoices always did.
+        assertTrue(message("<!DOCTYPE a [<!ENTITY x SYSTEM \"file:///etc/passwd\">]><a>&x;</a>")
+                .startsWith("A document type declaration is not read"));
+        assertTrue(message("<!DOCTYPE a [<!ENTITY a \"xx\"><!ENTITY b \"&a;&a;\">]><a>&b;</a>")
+                .startsWith("A document type declaration is not read"));
+        assertTrue(message("<!DOCTYPE svg><svg/>")
+                .startsWith("A document type declaration is not read, as its entities are not"));
+        assertTrue(assertThrows(XMLException.class, () -> XMLParser.parse(new java.io.ByteArrayInputStream(
+                "<!DOCTYPE svg><svg/>".getBytes(StandardCharsets.UTF_8)))).getMessage()
+                .startsWith("A document type declaration is not read"));
         assertTrue(message("<a>&x;</a>").startsWith("The entity &x; is not one of XML"));
-        assertTrue(message("<!DOCTYPE a [<!ENTITY x \"y\">").contains("does not end"));
     }
 
     @Test

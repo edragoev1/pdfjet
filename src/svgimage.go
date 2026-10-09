@@ -23,9 +23,9 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/capstyle"
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/internal/fastfloat"
-	"github.com/edragoev1/pdfjet/v9/src/internal/xmlparser"
 	"github.com/edragoev1/pdfjet/v9/src/joinstyle"
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
+	"github.com/edragoev1/pdfjet/v9/src/xmlparser"
 )
 
 // SVGImage is used to draw svgParser images on a page.
@@ -74,7 +74,7 @@ func NewSVGImage(reader io.Reader) (*SVGImage, error) {
 	stack := []svgState{newSVGState()}
 	root := true
 
-	document, err := xmlparser.ParseReader(reader)
+	document, err := xmlparser.ParseReaderSkippingDoctype(reader)
 	if err != nil {
 		return nil, fmt.Errorf("parsing SVG: %w", err)
 	}

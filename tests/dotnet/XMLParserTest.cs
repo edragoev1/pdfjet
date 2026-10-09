@@ -230,25 +230,53 @@ public class XMLParserTest {
 
     [Fact]
     public void SkipsADocumentTypeDeclarationAndDoesNotReadItsEntities() {
-        // The files of the drawing programs have a DOCTYPE, which is skipped;
-        // its entities read files and URLs, and grow a short document into
-        // gigabytes, so they are not read, and a reference to one is an error.
-        XMLNode svg = Parse("<?xml version=\"1.0\"?>\n"
+        // The files of the drawing programs have a DOCTYPE, which
+        // ParseSkippingDoctype skips, as SVGImage reads them; its entities
+        // read files and URLs, and grow a short document into gigabytes, so
+        // they are not read, and a reference to one is an error.
+        XMLNode svg = Skipping("<?xml version=\"1.0\"?>\n"
                 + "<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" "
                 + "\"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n"
                 + "<svg xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M0 0\"/></svg>");
         Assert.Equal("svg", svg.GetName());
         Assert.Single(svg.GetChildren());
-        Parse("<!DOCTYPE a [<!-- a ] and a > in a comment --><!ENTITY x \"]>\">"
+        Skipping("<!DOCTYPE a [<!-- a ] and a > in a comment --><!ENTITY x \"]>\">"
                 + "<!ATTLIST a b CDATA \"x>\">]><a/>");
         Assert.StartsWith("The entity &x; is not one of XML",
-                Message("<!DOCTYPE a [<!ENTITY x SYSTEM \"file:///etc/passwd\">]><a>&x;</a>"),
+                SkippingMessage("<!DOCTYPE a [<!ENTITY x SYSTEM \"file:///etc/passwd\">]><a>&x;</a>"),
                 StringComparison.Ordinal);
         Assert.StartsWith("The entity &b; is not one of XML",
-                Message("<!DOCTYPE a [<!ENTITY a \"xx\"><!ENTITY b \"&a;&a;\">]><a>&b;</a>"),
+                SkippingMessage("<!DOCTYPE a [<!ENTITY a \"xx\"><!ENTITY b \"&a;&a;\">]><a>&b;</a>"),
                 StringComparison.Ordinal);
-        Assert.StartsWith("The entity &x; is not one of XML", Message("<a>&x;</a>"), StringComparison.Ordinal);
-        Assert.Contains("does not end", Message("<!DOCTYPE a [<!ENTITY x \"y\">"), StringComparison.Ordinal);
+        Assert.StartsWith("The entity &x; is not one of XML", SkippingMessage("<a>&x;</a>"), StringComparison.Ordinal);
+        Assert.Contains("does not end", SkippingMessage("<!DOCTYPE a [<!ENTITY x \"y\">"), StringComparison.Ordinal);
+        using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes("<!DOCTYPE svg><svg/>"))) {
+            Assert.Equal("svg", XMLParser.ParseSkippingDoctype(stream).GetName());
+        }
+    }
+
+    [Fact]
+    public void ParseRefusesADocumentTypeDeclarationAndWithItTheEntitiesThatAttackAReader() {
+        // The electronic invoices of PDFjet Pro are read with Parse, which
+        // refuses a DOCTYPE: an invoice has none, and with it go its entities.
+        Assert.StartsWith("A document type declaration is not read",
+                Message("<!DOCTYPE a [<!ENTITY x SYSTEM \"file:///etc/passwd\">]><a>&x;</a>"),
+                StringComparison.Ordinal);
+        Assert.StartsWith("A document type declaration is not read",
+                Message("<!DOCTYPE svg><svg/>"), StringComparison.Ordinal);
+        using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes("<!DOCTYPE svg><svg/>"))) {
+            Assert.StartsWith("A document type declaration is not read",
+                    Assert.Throws<XMLException>(() => { XMLParser.Parse(stream); }).Message,
+                    StringComparison.Ordinal);
+        }
+    }
+
+    private static XMLNode Skipping(string xml) {
+        return XMLParser.ParseSkippingDoctype(Encoding.UTF8.GetBytes(xml));
+    }
+
+    private static string SkippingMessage(string xml) {
+        return Assert.Throws<XMLException>(() => { Skipping(xml); }).Message;
     }
 
     [Fact]

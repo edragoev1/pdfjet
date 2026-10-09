@@ -70,6 +70,27 @@ func testParse(t *testing.T, xml string) *XMLNode {
 	return node
 }
 
+// testParseSkipping reads the document as an SVG is read, its DOCTYPE skipped.
+func testParseSkipping(t *testing.T, xml string) *XMLNode {
+	t.Helper()
+	node, err := ParseSkippingDoctype([]byte(xml))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return node
+}
+
+// testMessageSkipping returns the message of the error the document is
+// refused with when its DOCTYPE is skipped.
+func testMessageSkipping(t *testing.T, xml string) string {
+	t.Helper()
+	node, err := ParseSkippingDoctype([]byte(xml))
+	if err == nil {
+		t.Fatalf("%q was read as the element %s, but is not the XML this reads", xml, node.Name())
+	}
+	return err.Error()
+}
+
 // testMessage returns the message of the error the document is refused with.
 func testMessage(t *testing.T, xml string) string {
 	t.Helper()
@@ -301,22 +322,31 @@ func TestXMLParserReadsUTF8AndUTF16WithTheirByteOrderMarks(t *testing.T) {
 	testEqualText(t, "€", node.Text())
 }
 
+func TestXMLParserRefusesADocumentTypeDeclarationAndWithItTheEntitiesThatAttackAReader(t *testing.T) {
+	// The entities of a DOCTYPE read files and URLs, and grow a short document
+	// into gigabytes; without it neither is possible. An invoice has none.
+	testStartsWith(t, testMessage(t, `<!DOCTYPE a [<!ENTITY x SYSTEM "file:///etc/passwd">]><a>&x;</a>`),
+		"A document type declaration is not read")
+	testStartsWith(t, testMessage(t, `<!DOCTYPE a [<!ENTITY a "xx"><!ENTITY b "&a;&a;">]><a>&b;</a>`),
+		"A document type declaration is not read")
+	testStartsWith(t, testMessage(t, "<a>&x;</a>"), "The entity &x; is not one of XML")
+}
+
 func TestXMLParserSkipsADocumentTypeDeclarationAndDoesNotReadItsEntities(t *testing.T) {
-	// The files of the drawing programs have a DOCTYPE, which is skipped; its
-	// entities read files and URLs, and grow a short document into gigabytes,
-	// so they are not read, and a reference to one is an error.
-	svg := testParse(t, `<?xml version="1.0"?>
+	// The files of the drawing programs have a DOCTYPE, which an SVG image is
+	// read past; its entities are not read, and a reference to one is an
+	// error.
+	svg := testParseSkipping(t, `<?xml version="1.0"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <svg xmlns="http://www.w3.org/2000/svg"><path d="M0 0"/></svg>`)
 	testEqualText(t, "svg", svg.Name())
 	testCount(t, 1, len(svg.Children()), "elements")
-	testParse(t, `<!DOCTYPE a [<!-- a ] and a > in a comment --><!ENTITY x "]>"><!ATTLIST a b CDATA "x>">]><a/>`)
-	testStartsWith(t, testMessage(t, `<!DOCTYPE a [<!ENTITY x SYSTEM "file:///etc/passwd">]><a>&x;</a>`),
+	testParseSkipping(t, `<!DOCTYPE a [<!-- a ] and a > in a comment --><!ENTITY x "]>"><!ATTLIST a b CDATA "x>">]><a/>`)
+	testStartsWith(t, testMessageSkipping(t, `<!DOCTYPE a [<!ENTITY x SYSTEM "file:///etc/passwd">]><a>&x;</a>`),
 		"The entity &x; is not one of XML")
-	testStartsWith(t, testMessage(t, `<!DOCTYPE a [<!ENTITY a "xx"><!ENTITY b "&a;&a;">]><a>&b;</a>`),
+	testStartsWith(t, testMessageSkipping(t, `<!DOCTYPE a [<!ENTITY a "xx"><!ENTITY b "&a;&a;">]><a>&b;</a>`),
 		"The entity &b; is not one of XML")
-	testStartsWith(t, testMessage(t, "<a>&x;</a>"), "The entity &x; is not one of XML")
-	testContains(t, testMessage(t, `<!DOCTYPE a [<!ENTITY x "y">`), "does not end")
+	testContains(t, testMessageSkipping(t, `<!DOCTYPE a [<!ENTITY x "y">`), "does not end")
 }
 
 func TestXMLParserRefusesWhatIsNotTheXMLOfAnInvoice(t *testing.T) {

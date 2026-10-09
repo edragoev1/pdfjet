@@ -76,7 +76,7 @@ public class SVGImage implements Drawable {
         paths = new ArrayList<SVGPath>();
         XMLNode document;
         try {
-            document = XMLParser.parse(stream);
+            document = XMLParser.parseSkippingDoctype(stream);
         } catch (XMLException e) {
             throw new Exception("parsing SVG: " + e.getMessage(), e);
         }

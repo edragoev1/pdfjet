@@ -1,5 +1,5 @@
 /**
- * SVGXMLNode.swift
+ * PDFjetXMLNode.swift
  *
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
@@ -7,10 +7,10 @@
 
 // This is the XMLNode of the Java, the C# and the Go ports, under another
 // name: Foundation, and FoundationXML on Linux, already has XMLNode. Please
-// see SVGXMLParser.swift.
+// see PDFjetXMLParser.swift.
 
 ///
-/// An element of an XML document that SVGXMLParser read: its name, its
+/// An element of an XML document that PDFjetXMLParser read: its name, its
 /// attributes, its text and the elements in it.
 ///
 /// The elements are found by a path of the names without their prefix, such as
@@ -18,14 +18,14 @@
 /// because the prefixes of an invoice are its own: what one writes as ram:ID
 /// another writes as a:ID. A * matches an element of any name.
 ///
-final class SVGXMLNode {
+public final class PDFjetXMLNode {
     private let name: String
     private let localName: String
     private let namespace: String
     // The names in the order the document writes them, and their values.
     private var attributeNames = [String]()
     private var attributeValues = [String: String]()
-    private var children = [SVGXMLNode]()
+    private var children = [PDFjetXMLNode]()
     private var text = [UInt16]()
 
     init(_ name: String, _ namespace: String) {
@@ -43,7 +43,7 @@ final class SVGXMLNode {
         attributeValues[attributeName] = value
     }
 
-    func addChild(_ child: SVGXMLNode) {
+    func addChild(_ child: PDFjetXMLNode) {
         children.append(child)
     }
 
@@ -57,7 +57,7 @@ final class SVGXMLNode {
     ///
     /// - Returns: the name.
     ///
-    func getName() -> String {
+    public func getName() -> String {
         return name
     }
 
@@ -66,7 +66,7 @@ final class SVGXMLNode {
     ///
     /// - Returns: the name without its prefix.
     ///
-    func getLocalName() -> String {
+    public func getLocalName() -> String {
         return localName
     }
 
@@ -76,7 +76,7 @@ final class SVGXMLNode {
     ///
     /// - Returns: the namespace.
     ///
-    func getNamespace() -> String {
+    public func getNamespace() -> String {
         return namespace
     }
 
@@ -86,8 +86,8 @@ final class SVGXMLNode {
     ///
     /// - Returns: the text.
     ///
-    func getText() -> String {
-        return SVGXMLNode.string(text[...])
+    public func getText() -> String {
+        return PDFjetXMLNode.string(text[...])
     }
 
     ///
@@ -95,7 +95,7 @@ final class SVGXMLNode {
     ///
     /// - Returns: the elements.
     ///
-    func getChildren() -> [SVGXMLNode] {
+    public func getChildren() -> [PDFjetXMLNode] {
         return children
     }
 
@@ -106,7 +106,7 @@ final class SVGXMLNode {
     /// - Parameter attributeName: the name of the attribute.
     /// - Returns: the value, or nil.
     ///
-    func getAttribute(_ attributeName: String) -> String? {
+    public func getAttribute(_ attributeName: String) -> String? {
         if let value = attributeValues[attributeName] {
             return value
         }
@@ -126,7 +126,7 @@ final class SVGXMLNode {
     ///
     /// - Returns: the attributes.
     ///
-    func getAttributes() -> [(name: String, value: String)] {
+    public func getAttributes() -> [(name: String, value: String)] {
         return attributeNames.map { (name: $0, value: attributeValues[$0]!) }
     }
 
@@ -138,13 +138,13 @@ final class SVGXMLNode {
     /// - Parameter path: the path, such as "IncludedSupplyChainTradeLineItem/SpecifiedTradeProduct/Name".
     /// - Returns: the elements.
     ///
-    func findAll(_ path: String) -> [SVGXMLNode] {
-        var found = [SVGXMLNode]()
+    public func findAll(_ path: String) -> [PDFjetXMLNode] {
+        var found = [PDFjetXMLNode]()
         found.append(self)
-        for step in SVGXMLNode.steps(path) {
-            var next = [SVGXMLNode]()
+        for step in PDFjetXMLNode.steps(path) {
+            var next = [PDFjetXMLNode]()
             for node in found {
-                for child in node.children where SVGXMLNode.matches(step, child.localName) {
+                for child in node.children where PDFjetXMLNode.matches(step, child.localName) {
                     next.append(child)
                 }
             }
@@ -184,12 +184,12 @@ final class SVGXMLNode {
     // The first element at the steps under this one, from the step at the
     // index on, or nil: the elements in the order findAll returns them, which
     // is the order of the document, without the ones after the first.
-    private func first(_ steps: [Substring], _ at: Int) -> SVGXMLNode? {
+    private func first(_ steps: [Substring], _ at: Int) -> PDFjetXMLNode? {
         if at == steps.count {
             return self
         }
         let step = steps[at]
-        for child in children where SVGXMLNode.matches(step, child.localName) {
+        for child in children where PDFjetXMLNode.matches(step, child.localName) {
             if let found = child.first(steps, at + 1) {
                 return found
             }
@@ -203,8 +203,8 @@ final class SVGXMLNode {
     /// - Parameter path: the path.
     /// - Returns: the element, or nil.
     ///
-    func find(_ path: String) -> SVGXMLNode? {
-        return first(SVGXMLNode.steps(path), 0)
+    public func find(_ path: String) -> PDFjetXMLNode? {
+        return first(PDFjetXMLNode.steps(path), 0)
     }
 
     ///
@@ -215,16 +215,16 @@ final class SVGXMLNode {
     /// - Parameter path: the path.
     /// - Returns: the text, or nil.
     ///
-    func getValue(_ path: String) -> String? {
+    public func getValue(_ path: String) -> String? {
         guard let node = find(path) else {
             return nil
         }
-        return SVGXMLNode.trimmed(node.text)
+        return PDFjetXMLNode.trimmed(node.text)
     }
 
     // The characters without those of a space or less at their ends, as
     // Java's String.trim leaves them.
-    static func trimmed(_ units: [UInt16]) -> String {
+    public static func trimmed(_ units: [UInt16]) -> String {
         var start = 0
         var end = units.count
         while start < end && units[start] <= 0x20 {
@@ -258,4 +258,4 @@ final class SVGXMLNode {
         }
         return String(decoding: units.map { UInt8(truncatingIfNeeded: $0) }, as: UTF8.self)
     }
-}   // End of SVGXMLNode.swift
+}   // End of PDFjetXMLNode.swift

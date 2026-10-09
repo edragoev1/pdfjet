@@ -74,10 +74,10 @@ public class SVGImage : Drawable {
             bytes.append(contentsOf: buffer[0..<read])
         }
 
-        let document: SVGXMLNode
+        let document: PDFjetXMLNode
         do {
-            document = try SVGXMLParser.parse(bytes)
-        } catch let error as SVGXMLError {
+            document = try PDFjetXMLParser.parseSkippingDoctype(bytes)
+        } catch let error as PDFjetXMLError {
             throw PDFjetError(message: "parsing SVG: " + error.message)
         }
         var rules = SVGStyleSheet()
@@ -86,7 +86,7 @@ public class SVGImage : Drawable {
         // The elements are drawn in the order of the document: an element,
         // then the ones in it, and the rules of a <style> element apply from
         // its end.
-        func draw(_ node: SVGXMLNode) throws {
+        func draw(_ node: PDFjetXMLNode) throws {
             let name = node.getLocalName()
             var values = [String: String]()
             var order = [String]()

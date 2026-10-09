@@ -3,16 +3,20 @@
 // Copyright (c) 2026 PDFjet Software
 // Licensed under the MIT License. See LICENSE file in the project root.
 
-// Package xmlparser reads the XML of an SVG image into elements: their names,
-// their namespaces, their attributes in the order they are written, and their
-// text. It is the one parser of the four ports, so that they read an SVG
-// alike, and it came from the parser of the electronic invoices of PDFjet Pro.
-// It reads what such a document is made of and no more, and what it leaves
-// out is what makes XML dangerous to read:
-//   - A document type declaration, a DOCTYPE, is skipped, as the files of
-//     the drawing programs have one, and its entities are not read: an
-//     entity that names a file or a URL reads what it should not, and the
-//     ones that stand for each other grow a short document into gigabytes.
+// Package xmlparser reads XML into elements: their names, their namespaces,
+// their attributes in the order they are written, and their text. It is the
+// one parser of the library and of PDFjet Pro: the library reads SVG images
+// with it, in the four ports alike, and PDFjet Pro the XML of electronic
+// invoices, the Cross Industry Invoice of ZUGFeRD and Factur-X. It reads what
+// such a document is made of and no more, and what it leaves out is what
+// makes XML dangerous to read:
+//   - A document type declaration, a DOCTYPE, is refused by Parse and
+//     ParseReader, as an invoice has none, and skipped by
+//     ParseSkippingDoctype and ParseReaderSkippingDoctype, as the SVG files
+//     of the drawing programs have one. Its entities are not read either
+//     way: an entity that names a file or a URL reads what it should not,
+//     and the ones that stand for each other grow a short document into
+//     gigabytes.
 //   - The entities are the five of XML, &lt;, &gt;, &amp;, &quot; and &apos;,
 //     and the numeric ones, such as &#160; and &#xA0;. Any other is an error,
 //     the ones a DOCTYPE declares among them.
@@ -56,8 +60,9 @@ import (
 // MaxDepth is how deep the elements of a document may nest.
 const MaxDepth = 256
 
-// maxSize is how many bytes a document may be, 20 MB.
-const maxSize = 20 << 20
+// MaxSize is how many bytes a document may be, 20 MB: an invoice of some
+// fifteen thousand lines, or an SVG image of millions of points.
+const MaxSize = 20 << 20
 
 // The namespace of the prefix xml, which every document has without
 // declaring it.
@@ -74,16 +79,30 @@ type parser struct {
 	// and not of the calls.
 	open   []*XMLNode
 	scopes []map[string]string
+	// True to skip a DOCTYPE, which is refused otherwise.
+	skipDoctype bool
 }
 
 // Parse reads the document and returns its root element. It returns an error
-// if the document is not the XML this reads, or is more than 20 MB.
+// if the document is not the XML this reads, has a DOCTYPE, or is more than
+// 20 MB.
 func Parse(bytes []byte) (*XMLNode, error) {
-	if len(bytes) > maxSize {
-		return nil, errTooLarge
+	return parse(bytes, false)
+}
+
+// ParseSkippingDoctype reads the document as Parse does, and skips a DOCTYPE,
+// which the SVG files of the drawing programs have. Its entities are not
+// read, and a reference to one is an error.
+func ParseSkippingDoctype(bytes []byte) (*XMLNode, error) {
+	return parse(bytes, true)
+}
+
+func parse(bytes []byte, skipDoctype bool) (*XMLNode, error) {
+	if len(bytes) > MaxSize {
+		return nil, ErrTooLarge
 	}
 	xml, bad := normalize(decode(bytes))
-	p := &parser{xml: xml, line: 1, column: 1}
+	p := &parser{xml: xml, line: 1, column: 1, skipDoctype: skipDoctype}
 	if bad != -1 {
 		p.skip(bad)
 		return nil, p.error(fmt.Sprintf("The character U+%04X is not a character of XML", xml[bad]))
@@ -91,18 +110,32 @@ func Parse(bytes []byte) (*XMLNode, error) {
 	return p.document()
 }
 
-// errTooLarge is the error of a document of more than 20 MB.
-var errTooLarge = errors.New("The document is more than 20 MB.")
+// ErrTooLarge is the error of a document of more than MaxSize bytes.
+var ErrTooLarge = errors.New("The document is more than 20 MB.")
 
-// ParseReader reads the document of the reader and returns its root element.
-// The reader is read to its end, or to the 20 MB a document may be, and is
-// not closed.
+// ParseReader reads the document of the reader as Parse does and returns its
+// root element. The reader is read to its end, or to the MaxSize bytes a
+// document may be, and is not closed.
 func ParseReader(in io.Reader) (*XMLNode, error) {
-	bytes, err := io.ReadAll(io.LimitReader(in, maxSize+1))
+	bytes, err := readAll(in)
 	if err != nil {
 		return nil, err
 	}
 	return Parse(bytes)
+}
+
+// ParseReaderSkippingDoctype reads the document of the reader as
+// ParseSkippingDoctype does.
+func ParseReaderSkippingDoctype(in io.Reader) (*XMLNode, error) {
+	bytes, err := readAll(in)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSkippingDoctype(bytes)
+}
+
+func readAll(in io.Reader) ([]byte, error) {
+	return io.ReadAll(io.LimitReader(in, MaxSize+1))
 }
 
 // The characters of the document: UTF-8, or the UTF-16 of a byte order mark,
@@ -112,10 +145,10 @@ func ParseReader(in io.Reader) (*XMLNode, error) {
 // after it.
 func decode(bytes []byte) []rune {
 	if len(bytes) >= 2 && bytes[0] == 0xFE && bytes[1] == 0xFF {
-		return decodeUTF16(bytes[2:], false)
+		return DecodeUTF16(bytes[2:], false)
 	}
 	if len(bytes) >= 2 && bytes[0] == 0xFF && bytes[1] == 0xFE {
-		return decodeUTF16(bytes[2:], true)
+		return DecodeUTF16(bytes[2:], true)
 	}
 	if len(bytes) >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF {
 		return decodeUTF8(bytes[3:])
@@ -212,7 +245,11 @@ func isXMLCharacter(ch rune) bool {
 		(ch >= 0x20 && ch != 0xFFFE && ch != 0xFFFF && (ch < 0xD800 || ch > 0xDFFF) && ch <= 0x10FFFF)
 }
 
-func decodeUTF16(bytes []byte, littleEndian bool) []rune {
+// DecodeUTF16 returns the characters of the bytes of UTF-16, big-endian or
+// little-endian, without a byte order mark: a code unit that is a surrogate
+// without the other one of its pair, or a byte without the one after it, is
+// U+FFFD, as the reader of the document reads them.
+func DecodeUTF16(bytes []byte, littleEndian bool) []rune {
 	units := make([]uint16, 0, len(bytes)/2)
 	for i := 0; i+1 < len(bytes); i += 2 {
 		if littleEndian {
@@ -256,8 +293,8 @@ func (p *parser) document() (*XMLNode, error) {
 	return root, nil
 }
 
-// The declaration, the comments, the processing instructions and the DOCTYPE
-// before the root element.
+// The declaration, the comments, the processing instructions and, when it is
+// skipped, the DOCTYPE before the root element.
 func (p *parser) prolog() error {
 	for p.index < len(p.xml) {
 		if isWhitespace(p.peek()) {
@@ -275,6 +312,9 @@ func (p *parser) prolog() error {
 				return err
 			}
 		} else if p.startsWith("<!DOCTYPE") {
+			if !p.skipDoctype {
+				return p.error("A document type declaration is not read, as its entities are not")
+			}
 			if err := p.doctype(); err != nil {
 				return err
 			}
@@ -613,7 +653,7 @@ func (p *parser) text() error {
 		}
 	}
 	if len(p.open) == 0 {
-		if trim(buf.String()) == "" {
+		if Trim(buf.String()) == "" {
 			return nil
 		}
 		return p.error("There is text outside the element of the document")

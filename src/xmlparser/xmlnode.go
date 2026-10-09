@@ -151,12 +151,12 @@ func (node *XMLNode) Value(path string) (string, bool) {
 	if found == nil {
 		return "", false
 	}
-	return trim(found.Text()), true
+	return Trim(found.Text()), true
 }
 
-// trim returns the text without the characters up to and including the space
+// Trim returns the text without the characters up to and including the space
 // at its ends, as Java's String.trim does: the space and the control
 // characters of a text, and not the other whitespace of Unicode.
-func trim(text string) string {
+func Trim(text string) string {
 	return strings.TrimFunc(text, func(ch rune) bool { return ch <= ' ' })
 }

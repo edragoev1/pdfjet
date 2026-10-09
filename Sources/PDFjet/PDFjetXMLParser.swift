@@ -1,5 +1,5 @@
 /**
- * SVGXMLParser.swift
+ * PDFjetXMLParser.swift
  *
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
@@ -10,21 +10,22 @@ import Foundation
 // name: Foundation, and FoundationXML on Linux, already has XMLParser,
 // XMLNode, XMLElement and XMLDocument, and a type of ours by one of those
 // names would be ambiguous, or would hide theirs, wherever a program imports
-// Foundation as well, so the Swift names are SVGXMLParser, SVGXMLNode and
-// SVGXMLError.
+// Foundation as well, so the Swift names are PDFjetXMLParser, PDFjetXMLNode and
+// PDFjetXMLError.
 
 ///
-/// Reads the XML of an SVG image into elements: their names, their
-/// namespaces, their attributes in the order they are written, and their
-/// text. It is the one parser of the four ports, so that they read an SVG
-/// alike, and it came from the parser of the electronic invoices of PDFjet
-/// Pro. It reads what such a document is made of and no more, and what it
-/// leaves out is what makes XML dangerous to read:
+/// Reads XML into elements: their names, their namespaces, their attributes
+/// in the order they are written, and their text. It is the one parser of the
+/// four ports and of PDFjet Pro, which reads SVG images with it and the
+/// electronic invoices of ZUGFeRD and Factur-X, so that they are read alike.
+/// It reads what such a document is made of and no more, and what it leaves
+/// out is what makes XML dangerous to read:
 ///
-/// - A document type declaration, a DOCTYPE, is skipped, as the files of the
-///   drawing programs have one, and its entities are not read: an entity
-///   that names a file or a URL reads what it should not, and the ones that
-///   stand for each other grow a short document into gigabytes.
+/// - A document type declaration, a DOCTYPE, is refused by parse, and with it
+///   go the entities that name a file or a URL, which read what they should
+///   not, and the ones that stand for each other, which grow a short document
+///   into gigabytes. parseSkippingDoctype skips it, as the files of the
+///   drawing programs have one, and does not read its entities either.
 /// - The entities are the five of XML, &lt;, &gt;, &amp;, &quot; and &apos;,
 ///   and the numeric ones, such as &#160; and &#xA0;. Any other is an error,
 ///   the ones a DOCTYPE declares among them.
@@ -52,13 +53,13 @@ import Foundation
 /// UTF-16 that is a surrogate without the other one of its pair is U+FFFD as
 /// well.
 ///
-final class SVGXMLParser {
+public final class PDFjetXMLParser {
     /// How deep the elements of a document may nest.
-    static let MAX_DEPTH = 256
-    // How many bytes a document may be, 20 MB.
-    static let MAX_SIZE = 20 << 20
-    // The error of a document of more than 20 MB.
-    static let TOO_LARGE = SVGXMLError(message: "The document is more than 20 MB.")
+    public static let MAX_DEPTH = 256
+    /// How many bytes a document may be, 20 MB.
+    public static let MAX_SIZE = 20 << 20
+    /// The error of a document of more than 20 MB.
+    public static let TOO_LARGE = PDFjetXMLError(message: "The document is more than 20 MB.")
 
     private init() {
     }
@@ -68,14 +69,33 @@ final class SVGXMLParser {
     ///
     /// - Parameter bytes: the document.
     /// - Returns: the root element.
-    /// - Throws: SVGXMLError if the document is not the XML this reads, or
+    /// - Throws: PDFjetXMLError if the document is not the XML this reads, or
     ///   is more than 20 MB.
     ///
-    static func parse(_ bytes: [UInt8]) throws -> SVGXMLNode {
+    public static func parse(_ bytes: [UInt8]) throws -> PDFjetXMLNode {
+        return try parse(bytes, skippingDoctype: false)
+    }
+
+    ///
+    /// Reads the document as parse does, but skips a DOCTYPE, which the files
+    /// of the drawing programs have, rather than refusing it; its entities are
+    /// not read. SVGImage reads with it.
+    ///
+    /// - Parameter bytes: the document.
+    /// - Returns: the root element.
+    /// - Throws: PDFjetXMLError if the document is not the XML this reads, or
+    ///   is more than 20 MB.
+    ///
+    public static func parseSkippingDoctype(_ bytes: [UInt8]) throws -> PDFjetXMLNode {
+        return try parse(bytes, skippingDoctype: true)
+    }
+
+    private static func parse(_ bytes: [UInt8], skippingDoctype: Bool) throws -> PDFjetXMLNode {
         if bytes.count > MAX_SIZE {
             throw TOO_LARGE
         }
         var reader = Reader(decode(bytes))
+        reader.skipDoctype = skippingDoctype
         return try reader.document()
     }
 
@@ -84,10 +104,10 @@ final class SVGXMLParser {
     ///
     /// - Parameter data: the document.
     /// - Returns: the root element.
-    /// - Throws: SVGXMLError if the document is not the XML this reads, or
+    /// - Throws: PDFjetXMLError if the document is not the XML this reads, or
     ///   is more than 20 MB.
     ///
-    static func parse(_ data: Data) throws -> SVGXMLNode {
+    public static func parse(_ data: Data) throws -> PDFjetXMLNode {
         return try parse([UInt8](data))
     }
 
@@ -98,10 +118,10 @@ final class SVGXMLParser {
     ///
     /// - Parameter stream: the stream.
     /// - Returns: the root element.
-    /// - Throws: SVGXMLError if the stream cannot be read, or if the document is
+    /// - Throws: PDFjetXMLError if the stream cannot be read, or if the document is
     ///   not the XML this reads, or is more than 20 MB.
     ///
-    static func parse(_ stream: InputStream) throws -> SVGXMLNode {
+    public static func parse(_ stream: InputStream) throws -> PDFjetXMLNode {
         var bytes = [UInt8]()
         var buffer = [UInt8](repeating: 0, count: 8192)
         if stream.streamStatus == .notOpen {
@@ -112,7 +132,7 @@ final class SVGXMLParser {
             // and none of them is its end of the stream.
             let count = stream.read(&buffer, maxLength: buffer.count)
             if count < 0 {
-                throw SVGXMLError(message: "The stream cannot be read")
+                throw PDFjetXMLError(message: "The stream cannot be read")
             }
             if count == 0 {
                 break
@@ -143,7 +163,7 @@ final class SVGXMLParser {
     // replacement character, and what follows is read as it stands. Facturx
     // reads the name of an embedded file with this, so a document is read
     // the same way wherever its UTF-16 stands.
-    static func decodeUTF16(_ bytes: [UInt8], _ from: Int, _ bigEndian: Bool) -> String {
+    public static func decodeUTF16(_ bytes: [UInt8], _ from: Int, _ bigEndian: Bool) -> String {
         var units = [UInt16]()
         units.reserveCapacity(max(bytes.count - from, 0) / 2 + 1)
         var i = from
@@ -164,7 +184,7 @@ final class SVGXMLParser {
     // characters other than the tab and the line breaks, and U+FFFE and U+FFFF.
     // The surrogates are the halves of the characters above U+FFFF, which the
     // decoder leaves in pairs, as it makes U+FFFD of a half with no other half.
-    static func isXMLCharacter(_ ch: UInt16) -> Bool {
+    public static func isXMLCharacter(_ ch: UInt16) -> Bool {
         return ch >= 0x20 ? (ch != 0xFFFE && ch != 0xFFFF)
                 : (ch == 0x09 || ch == 0x0A || ch == 0x0D)
     }
@@ -184,7 +204,7 @@ private struct Reader {
     // of them declares, nil where it declares none. They are read one after
     // another and not by recursion, so they are a stack of this reader and not
     // of the calls.
-    private var open = [SVGXMLNode]()
+    private var open = [PDFjetXMLNode]()
     private var scopes = [[String: String]?]()
     // The first character that is not one of XML, or -1
     private var bad = -1
@@ -225,6 +245,9 @@ private struct Reader {
     // Makes each line break of the document a line feed, as XML reads a
     // carriage return and the line feed after it, and a carriage return on
     // its own, and finds the first character that is not one of XML.
+    // True to skip a DOCTYPE, false to refuse it.
+    var skipDoctype = false
+
     init(_ decoded: [UInt16]) {
         var xml = decoded
         var written = 0
@@ -239,7 +262,7 @@ private struct Reader {
                     if i + 1 < count && units[i + 1] == Reader.newline {
                         i += 1
                     }
-                } else if bad == -1 && !SVGXMLParser.isXMLCharacter(ch) {
+                } else if bad == -1 && !PDFjetXMLParser.isXMLCharacter(ch) {
                     bad = written
                 }
                 units[written] = ch
@@ -254,7 +277,7 @@ private struct Reader {
 
     // --- The document -------------------------------------------------------
 
-    mutating func document() throws -> SVGXMLNode {
+    mutating func document() throws -> PDFjetXMLNode {
         if bad != -1 {
             skip(bad)
             var hex = String(xml[bad], radix: 16, uppercase: true)
@@ -279,8 +302,8 @@ private struct Reader {
         return root
     }
 
-    // The declaration, the comments, the processing instructions and the
-    // DOCTYPE before the root element.
+    // The declaration, the comments, the processing instructions and, when
+    // it is skipped, the DOCTYPE before the root element.
     private mutating func prolog() throws {
         while index < xml.count {
             if Reader.isWhitespace(peek()) {
@@ -292,6 +315,9 @@ private struct Reader {
             } else if startsWith(Reader.instructionStart) {
                 try processingInstruction()
             } else if startsWith(Reader.doctypeStart) {
+                if !skipDoctype {
+                    throw error("A document type declaration is not read, as its entities are not")
+                }
                 try doctype()
             } else if peek() == Reader.less {
                 return
@@ -389,8 +415,8 @@ private struct Reader {
     // The root element and the elements in it, which are read one after
     // another with a stack and not by recursion, so that a document of any
     // depth is read in the stack of this call alone.
-    private mutating func element() throws -> SVGXMLNode {
-        var root: SVGXMLNode? = nil
+    private mutating func element() throws -> PDFjetXMLNode {
+        var root: PDFjetXMLNode? = nil
         while true {
             if index >= xml.count {
                 throw error("The element \(open.last?.getName() ?? "") does not end")
@@ -412,8 +438,8 @@ private struct Reader {
                     return root!    // A closing tag closes an element, so there is a root.
                 }
             } else {
-                if open.count >= SVGXMLParser.MAX_DEPTH {
-                    throw error("The elements nest more than \(SVGXMLParser.MAX_DEPTH) deep")
+                if open.count >= PDFjetXMLParser.MAX_DEPTH {
+                    throw error("The elements nest more than \(PDFjetXMLParser.MAX_DEPTH) deep")
                 }
                 if root != nil && open.isEmpty {
                     throw error("There is more than the one element of the document")
@@ -431,7 +457,7 @@ private struct Reader {
 
     // <name attribute="value"> or <name/>: the element, added to the one it is
     // in, and open until its closing tag unless it closes itself.
-    private mutating func openTag() throws -> SVGXMLNode {
+    private mutating func openTag() throws -> PDFjetXMLNode {
         next()      // The <
         let name = self.name()
         if name.isEmpty {
@@ -493,7 +519,7 @@ private struct Reader {
         guard let namespace = namespaceOf(prefix, declared) else {
             throw error("The prefix \(prefix) of \(name) is not declared")
         }
-        let node = SVGXMLNode(name, namespace)
+        let node = PDFjetXMLNode(name, namespace)
         for attribute in attributes {
             let attributePrefix = Reader.prefixOf(attribute.0)
             if !attributePrefix.isEmpty && attributePrefix != "xmlns"
@@ -613,7 +639,7 @@ private struct Reader {
         }
         buf.append(contentsOf: xml[start..<index])
         if open.isEmpty {
-            if SVGXMLNode.trimmed(buf).isEmpty {
+            if PDFjetXMLNode.trimmed(buf).isEmpty {
                 return
             }
             throw error("There is text outside the element of the document")
@@ -655,7 +681,7 @@ private struct Reader {
             }
             // A character XML has, which a surrogate on its own is not
             guard code <= 0x10FFFF, !(code >= 0xD800 && code <= 0xDFFF),
-                    code > 0xFFFF || SVGXMLParser.isXMLCharacter(UInt16(code)),
+                    code > 0xFFFF || PDFjetXMLParser.isXMLCharacter(UInt16(code)),
                     let scalar = UnicodeScalar(UInt32(code)) else {
                 throw error("The character &\(name); is not a character of XML")
             }
@@ -678,7 +704,7 @@ private struct Reader {
             }
             next()
         }
-        return SVGXMLNode.string(xml[start..<index])
+        return PDFjetXMLNode.string(xml[start..<index])
     }
 
     // "value" or 'value', with its entities read.
@@ -814,7 +840,7 @@ private struct Reader {
         return -1
     }
 
-    private func error(_ message: String) -> SVGXMLError {
-        return SVGXMLError(message: message + ", at line \(line) column \(column)")
+    private func error(_ message: String) -> PDFjetXMLError {
+        return PDFjetXMLError(message: message + ", at line \(line) column \(column)")
     }
-}   // End of SVGXMLParser.swift
+}   // End of PDFjetXMLParser.swift

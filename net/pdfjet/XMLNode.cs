@@ -19,7 +19,7 @@ namespace PDFjet.NET {
 /// another writes as a:ID. A * matches an element of any name.
 /// </para>
 /// </summary>
-internal sealed class XMLNode {
+public sealed class XMLNode {
     private readonly string name;
     private readonly string localName;
     private readonly string ns;

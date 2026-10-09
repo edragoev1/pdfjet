@@ -7,10 +7,16 @@
 package com.pdfjet;
 
 /** The document is not the XML that XMLParser reads; the message says where. */
-final class XMLException extends Exception {
+public final class XMLException extends Exception {
     private static final long serialVersionUID = 1L;
 
-    XMLException(String message) {
+    /**
+     * Makes the exception of a document that is not the XML XMLParser reads,
+     * or of what a reader of the elements finds wrong in them.
+     *
+     * @param message what is wrong, and where.
+     */
+    public XMLException(String message) {
         super(message);
     }
 }   // End of XMLException.java

@@ -17,17 +17,18 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Reads the XML of an SVG image into elements: their names, their namespaces,
- * their attributes in the order they are written, and their text. It is the
- * one parser of the four ports, so that they read an SVG alike, and it came
- * from the parser of the electronic invoices of PDFjet Pro. It reads what such
- * a document is made of and no more, and what it leaves out is what makes XML
- * dangerous to read:
+ * Reads XML into elements: their names, their namespaces, their attributes in
+ * the order they are written, and their text. It is the one XML parser of
+ * PDFjet, the same in the four ports, which reads the SVG images of the library
+ * and the electronic invoices of PDFjet Pro, so that every port reads them
+ * alike. It reads what such a document is made of and no more, and what it
+ * leaves out is what makes XML dangerous to read:
  * <ul>
- * <li>A document type declaration, a DOCTYPE, is skipped, as the files of the
- * drawing programs have one, and its entities are not read: an entity that
- * names a file or a URL reads what it should not, and the ones that stand for
- * each other grow a short document into gigabytes.</li>
+ * <li>A document type declaration, a DOCTYPE, is refused by {@link #parse},
+ * and skipped by {@link #parseSkippingDoctype}, as the files of the drawing
+ * programs have one; its entities are never read: an entity that names a file
+ * or a URL reads what it should not, and the ones that stand for each other
+ * grow a short document into gigabytes.</li>
  * <li>The entities are the five of XML, &amp;lt;, &amp;gt;, &amp;amp;,
  * &amp;quot; and &amp;apos;, and the numeric ones, such as &amp;#160; and
  * &amp;#xA0;. Any other is an error, the ones a DOCTYPE declares among
@@ -56,44 +57,66 @@ import java.util.Set;
  * UTF-16 that is a surrogate without the other one of its pair is U+FFFD as
  * well.
  */
-final class XMLParser {
+public final class XMLParser {
     /** How deep the elements of a document may nest. */
     public static final int MAX_DEPTH = 256;
 
-    // How many bytes a document may be, 20 MB.
-    static final int MAX_SIZE = 20 << 20;
+    /** How many bytes a document may be, 20 MB. */
+    public static final int MAX_SIZE = 20 << 20;
 
-    // The message of a document of more than 20 MB.
-    static final String TOO_LARGE = "The document is more than 20 MB.";
+    /** The message of the XMLException of a document of more than 20 MB. */
+    public static final String TOO_LARGE = "The document is more than 20 MB.";
 
     // The namespace of the prefix xml, which every document has without
     // declaring it.
     private static final String NAMESPACE_XML = "http://www.w3.org/XML/1998/namespace";
 
     private final String xml;
+    // True to skip a DOCTYPE, as SVG images have one, and false to refuse it.
+    private final boolean skipDoctype;
     private int index;
     private int line = 1;
     private int column = 1;
 
-    private XMLParser(String xml) {
+    private XMLParser(String xml, boolean skipDoctype) {
         this.xml = xml;
+        this.skipDoctype = skipDoctype;
     }
 
     /**
-     * Reads the document and returns its root element.
+     * Reads the document and returns its root element. A document type
+     * declaration, a DOCTYPE, is refused.
+     *
+     * @param bytes the document.
+     * @return the root element.
+     * @throws XMLException if the document is not the XML this reads, has a
+     *     DOCTYPE, or is more than 20 MB.
+     */
+    public static XMLNode parse(byte[] bytes) throws XMLException {
+        return parse(bytes, false);
+    }
+
+    /**
+     * Reads the document and returns its root element, as {@link #parse} does,
+     * but skips a document type declaration, a DOCTYPE, as SVG images have one.
+     * The entities it declares are not read: a reference to one is an error.
      *
      * @param bytes the document.
      * @return the root element.
      * @throws XMLException if the document is not the XML this reads, or is
      *     more than 20 MB.
      */
-    public static XMLNode parse(byte[] bytes) throws XMLException {
+    public static XMLNode parseSkippingDoctype(byte[] bytes) throws XMLException {
+        return parse(bytes, true);
+    }
+
+    private static XMLNode parse(byte[] bytes, boolean skipDoctype) throws XMLException {
         if (bytes.length > MAX_SIZE) {
             throw new XMLException(TOO_LARGE);
         }
         StringBuilder normalized = new StringBuilder();
         int bad = normalize(decode(bytes), normalized);
-        XMLParser parser = new XMLParser(normalized.toString());
+        XMLParser parser = new XMLParser(normalized.toString(), skipDoctype);
         if (bad != -1) {
             parser.skip(bad);
             throw parser.error(String.format("The character U+%04X is not a character of XML",
@@ -105,7 +128,7 @@ final class XMLParser {
     /**
      * Reads the document of the stream and returns its root element. The
      * stream is read to its end, or to the 20 MB a document may be, and is not
-     * closed.
+     * closed. A DOCTYPE is refused.
      *
      * @param in the stream.
      * @return the root element.
@@ -113,6 +136,24 @@ final class XMLParser {
      * @throws XMLException if the document is not the XML this reads.
      */
     public static XMLNode parse(InputStream in) throws IOException, XMLException {
+        return parse(readAll(in), false);
+    }
+
+    /**
+     * Reads the document of the stream as {@link #parse(InputStream)} does, but
+     * skips a DOCTYPE, as {@link #parseSkippingDoctype(byte[])} does.
+     *
+     * @param in the stream.
+     * @return the root element.
+     * @throws IOException if the stream cannot be read.
+     * @throws XMLException if the document is not the XML this reads.
+     */
+    public static XMLNode parseSkippingDoctype(InputStream in) throws IOException, XMLException {
+        return parse(readAll(in), true);
+    }
+
+    // The bytes of the stream, to its end or past the 20 MB a document may be.
+    private static byte[] readAll(InputStream in) throws IOException, XMLException {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         byte[] buffer = new byte[8192];
         int count;
@@ -122,7 +163,7 @@ final class XMLParser {
                 throw new XMLException(TOO_LARGE);
             }
         }
-        return parse(bytes.toByteArray());
+        return bytes.toByteArray();
     }
 
     // The characters of the document: UTF-8, or the UTF-16 of a byte order
@@ -230,13 +271,20 @@ final class XMLParser {
         return ch == '\t' || ch == '\n' || ch == '\r' || (ch >= 0x20 && ch != 0xFFFE && ch != 0xFFFF);
     }
 
-    // The characters of UTF-16, after the byte order mark. A half of a
-    // character that has no other half, and a last byte with no pair, is the
-    // replacement character, and what follows is read as it stands. The
-    // decoder of Java swallows the code unit after a lone half instead, which
-    // the decoders of the other three ports do not, and a document is read the
-    // same way by all four.
-    static String decodeUTF16(byte[] bytes, int from, boolean bigEndian) {
+    /**
+     * The characters of UTF-16, after the byte order mark. A half of a
+     * character that has no other half, and a last byte with no pair, is the
+     * replacement character, and what follows is read as it stands. The
+     * decoder of Java swallows the code unit after a lone half instead, which
+     * the decoders of the other three ports do not, and a document is read the
+     * same way by all four.
+     *
+     * @param bytes the bytes of UTF-16.
+     * @param from where the characters start, after the byte order mark.
+     * @param bigEndian true for UTF-16BE, false for UTF-16LE.
+     * @return the characters.
+     */
+    public static String decodeUTF16(byte[] bytes, int from, boolean bigEndian) {
         StringBuilder sb = new StringBuilder();
         int i = from;
         while (i + 1 < bytes.length) {
@@ -284,7 +332,7 @@ final class XMLParser {
     }
 
     // The declaration, the comments, the processing instructions and the
-    // DOCTYPE before the root element.
+    // DOCTYPE before the root element; the DOCTYPE skipped or refused.
     private void prolog() throws XMLException {
         while (index < xml.length()) {
             if (isWhitespace(peek())) {
@@ -296,6 +344,9 @@ final class XMLParser {
             } else if (xml.startsWith("<?", index)) {
                 processingInstruction();
             } else if (xml.startsWith("<!DOCTYPE", index)) {
+                if (!skipDoctype) {
+                    throw error("A document type declaration is not read, as its entities are not");
+                }
                 doctype();
             } else if (peek() == '<') {
                 return;

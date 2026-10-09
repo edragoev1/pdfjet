@@ -82,7 +82,7 @@ what users would hit goes in; the rest waits for v9.1.
    four files, pdfjet.com by update-from-pdfjet.py and
    pdfjet-website-update.zip, the hidden links of v9.0.5 for direct buyers.
 
-**After the one XML parser (8 October 2026): PDFjet Pro's copy.** The library
+**Done the same evening: PDFjet Pro uses the library's parser, made public API, in the four ports; Pro's copies deleted.** Was: **After the one XML parser (8 October 2026): PDFjet Pro's copy.** The library
 now has its own copy of Pro's `XMLParser`, for SVG, in the four ports
 (src/internal/xmlparser, com/pdfjet/XMLParser.java, net/pdfjet/XMLParser.cs,
 Sources/PDFjet/SVGXMLParser.swift), with two changes: a DOCTYPE skipped

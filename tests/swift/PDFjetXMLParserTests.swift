@@ -1,5 +1,5 @@
 /**
- * SVGXMLParserTests.swift
+ * PDFjetXMLParserTests.swift
  *
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
@@ -11,7 +11,7 @@ import Testing
 /// The reader of the XML of SVG images, as the Java XMLParserTest reads it:
 /// what it reads, of an SVG and of the Cross Industry Invoice of PDFjet Pro,
 /// where it came from, and what it refuses.
-@Suite struct SVGXMLParserTests {
+@Suite struct PDFjetXMLParserTests {
     // An invoice as the Cross Industry Invoice of ZUGFeRD and Factur-X is
     // written: the prefixes of the namespaces, the codes in attributes, and a
     // line of goods.
@@ -58,19 +58,30 @@ import Testing
 
         """#
 
-    private func parse(_ xml: String) throws -> SVGXMLNode {
-        return try SVGXMLParser.parse(Array(xml.utf8))
+    private func parse(_ xml: String) throws -> PDFjetXMLNode {
+        return try PDFjetXMLParser.parse(Array(xml.utf8))
     }
 
     private func message(_ xml: String) -> String {
-        let error = #expect(throws: SVGXMLError.self, "\(xml)") {
+        let error = #expect(throws: PDFjetXMLError.self, "\(xml)") {
             try parse(xml)
         }
         return error?.message ?? ""
     }
 
+    private func parseSkipping(_ xml: String) throws -> PDFjetXMLNode {
+        return try PDFjetXMLParser.parseSkippingDoctype(Array(xml.utf8))
+    }
+
+    private func messageSkipping(_ xml: String) -> String {
+        let error = #expect(throws: PDFjetXMLError.self, "\(xml)") {
+            try parseSkipping(xml)
+        }
+        return error?.message ?? ""
+    }
+
     @Test func readsTheValuesOfAnInvoiceByTheirPath() throws {
-        let invoice = try parse(SVGXMLParserTests.INVOICE)
+        let invoice = try parse(PDFjetXMLParserTests.INVOICE)
         #expect(invoice.getName() == "rsm:CrossIndustryInvoice")
         #expect(invoice.getLocalName() == "CrossIndustryInvoice")
         #expect(invoice.getNamespace() == "urn:un:unece:uncefact:data:standard:CrossIndustryInvoice:100")
@@ -85,7 +96,7 @@ import Testing
     }
 
     @Test func readsTheLinesOfAnInvoiceAndTheirAttributes() throws {
-        let invoice = try parse(SVGXMLParserTests.INVOICE)
+        let invoice = try parse(PDFjetXMLParserTests.INVOICE)
         let lines = invoice.findAll("SupplyChainTradeTransaction/IncludedSupplyChainTradeLineItem")
         #expect(lines.count == 2)
         #expect(lines[0].getValue("SpecifiedTradeProduct/Name") == "PDFjet für Java")
@@ -102,7 +113,7 @@ import Testing
     }
 
     @Test func readsTheEntitiesOfXMLAndTheNumericOnes() throws {
-        #expect(try parse(SVGXMLParserTests.INVOICE).getValue("ExchangedDocument/IncludedNote/Content")
+        #expect(try parse(PDFjetXMLParserTests.INVOICE).getValue("ExchangedDocument/IncludedNote/Content")
                 == "Zahlbar ohne Abzug & ohne Skonto")
         #expect(try parse("<a>&lt; &gt; &amp; &quot; &apos;</a>").getText() == #"< > & " '"#)
         #expect(try parse("<a>&#160;&#x20AC;&#x1F600;</a>").getText() == "\u{00A0}€😀")
@@ -150,10 +161,10 @@ import Testing
         let xml = "<a>€</a>"
         let utf8 = Array(xml.utf8)
         let withMark: [UInt8] = [0xEF, 0xBB, 0xBF] + utf8
-        #expect(try SVGXMLParser.parse(withMark).getText() == "€")
-        #expect(try SVGXMLParser.parse(bytes("\u{FEFF}" + xml, .utf16BigEndian)).getText() == "€")
-        #expect(try SVGXMLParser.parse(bytes("\u{FEFF}" + xml, .utf16LittleEndian)).getText() == "€")
-        #expect(try SVGXMLParser.parse(InputStream(data: Data(utf8))).getText() == "€")
+        #expect(try PDFjetXMLParser.parse(withMark).getText() == "€")
+        #expect(try PDFjetXMLParser.parse(bytes("\u{FEFF}" + xml, .utf16BigEndian)).getText() == "€")
+        #expect(try PDFjetXMLParser.parse(bytes("\u{FEFF}" + xml, .utf16LittleEndian)).getText() == "€")
+        #expect(try PDFjetXMLParser.parse(InputStream(data: Data(utf8))).getText() == "€")
     }
 
     private func bytes(_ text: String, _ encoding: String.Encoding) -> [UInt8] {
@@ -183,24 +194,24 @@ import Testing
         // would swallow the < after the half and refuse the document; the
         // other three ports read the element, and so does this one.
         var units: [UInt16] = [0xFEFF, 0x3C, 0x61, 0x3E, 0xD800, 0x3C, 0x2F, 0x61, 0x3E]
-        #expect(try SVGXMLParser.parse(bigEndian(units)).getText() == "\u{FFFD}")
+        #expect(try PDFjetXMLParser.parse(bigEndian(units)).getText() == "\u{FFFD}")
         // A low half alone, and a last byte without its pair.
         units[4] = 0xDC00
-        #expect(try SVGXMLParser.parse(bigEndian(units)).getText() == "\u{FFFD}")
+        #expect(try PDFjetXMLParser.parse(bigEndian(units)).getText() == "\u{FFFD}")
         // A last byte without its pair is a replacement character too, which
         // here stands after the document and is text the document may not
         // have, so the reader refuses it rather than leave the byte out.
         let odd = bigEndian(units) + [0x78]     // x
-        let error = #expect(throws: SVGXMLError.self) {
-            try SVGXMLParser.parse(odd)
+        let error = #expect(throws: PDFjetXMLError.self) {
+            try PDFjetXMLParser.parse(odd)
         }
         let problem = error?.message ?? ""
         #expect(problem.contains("more than the one element"))
         // The halves of one character are one character, in both orders of the
         // bytes, and the text that follows is read as it stands.
-        #expect(try SVGXMLParser.parse(
+        #expect(try PDFjetXMLParser.parse(
                 bytes("\u{FEFF}<a>😀!</a>", .utf16BigEndian)).getText() == "😀!")
-        #expect(try SVGXMLParser.parse(
+        #expect(try PDFjetXMLParser.parse(
                 bytes("\u{FEFF}<a>😀!</a>", .utf16LittleEndian)).getText() == "😀!")
     }
 
@@ -213,24 +224,35 @@ import Testing
         return bytes
     }
 
+    @Test func refusesADocumentTypeDeclarationAndWithItTheEntitiesThatAttackAReader() {
+        // parse, as the invoices are read: the entities of a DOCTYPE read files
+        // and URLs, and grow a short document into gigabytes; without it
+        // neither is possible.
+        #expect(message(#"<!DOCTYPE a [<!ENTITY x SYSTEM "file:///etc/passwd">]><a>&x;</a>"#)
+                .hasPrefix("A document type declaration is not read"))
+        #expect(message(#"<!DOCTYPE a [<!ENTITY a "xx"><!ENTITY b "&a;&a;">]><a>&b;</a>"#)
+                .hasPrefix("A document type declaration is not read"))
+        #expect(message("<a>&x;</a>").hasPrefix("The entity &x; is not one of XML"))
+    }
+
     @Test func skipsADocumentTypeDeclarationAndDoesNotReadItsEntities() throws {
-        // The files of the drawing programs have a DOCTYPE, which is skipped;
-        // its entities read files and URLs, and grow a short document into
-        // gigabytes, so they are not read, and a reference to one is an error.
-        let svg = try parse("""
+        // parseSkippingDoctype, as SVG images are read: the files of the
+        // drawing programs have a DOCTYPE, which is skipped; its entities read
+        // files and URLs, and grow a short document into gigabytes, so they
+        // are not read, and a reference to one is an error.
+        let svg = try parseSkipping("""
             <?xml version="1.0"?>
             <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
             <svg xmlns="http://www.w3.org/2000/svg"><path d="M0 0"/></svg>
             """)
         #expect(svg.getName() == "svg")
         #expect(svg.getChildren().count == 1)
-        _ = try parse(#"<!DOCTYPE a [<!-- a ] and a > in a comment --><!ENTITY x "]>"><!ATTLIST a b CDATA "x>">]><a/>"#)
-        #expect(message(#"<!DOCTYPE a [<!ENTITY x SYSTEM "file:///etc/passwd">]><a>&x;</a>"#)
+        _ = try parseSkipping(#"<!DOCTYPE a [<!-- a ] and a > in a comment --><!ENTITY x "]>"><!ATTLIST a b CDATA "x>">]><a/>"#)
+        #expect(messageSkipping(#"<!DOCTYPE a [<!ENTITY x SYSTEM "file:///etc/passwd">]><a>&x;</a>"#)
                 .hasPrefix("The entity &x; is not one of XML"))
-        #expect(message(#"<!DOCTYPE a [<!ENTITY a "xx"><!ENTITY b "&a;&a;">]><a>&b;</a>"#)
+        #expect(messageSkipping(#"<!DOCTYPE a [<!ENTITY a "xx"><!ENTITY b "&a;&a;">]><a>&b;</a>"#)
                 .hasPrefix("The entity &b; is not one of XML"))
-        #expect(message("<a>&x;</a>").hasPrefix("The entity &x; is not one of XML"))
-        #expect(message(#"<!DOCTYPE a [<!ENTITY x "y">"#).contains("does not end"))
+        #expect(messageSkipping(#"<!DOCTYPE a [<!ENTITY x "y">"#).contains("does not end"))
     }
 
     @Test func refusesWhatIsNotTheXMLOfAnInvoice() {
@@ -257,19 +279,19 @@ import Testing
 
     @Test func readsElementsThatNestNoDeeperThanMaxDepth() throws {
         var deep = ""
-        for _ in 0..<SVGXMLParser.MAX_DEPTH {
+        for _ in 0..<PDFjetXMLParser.MAX_DEPTH {
             deep += "<a>"
         }
         deep += "x"
-        for _ in 0..<SVGXMLParser.MAX_DEPTH {
+        for _ in 0..<PDFjetXMLParser.MAX_DEPTH {
             deep += "</a>"
         }
         #expect(try deepestText(parse(deep)) == "x")
         let deeper = "<a>" + deep + "</a>"
-        #expect(message(deeper).contains("nest more than \(SVGXMLParser.MAX_DEPTH)"))
+        #expect(message(deeper).contains("nest more than \(PDFjetXMLParser.MAX_DEPTH)"))
     }
 
-    private func deepestText(_ node: SVGXMLNode) -> String {
+    private func deepestText(_ node: PDFjetXMLNode) -> String {
         var deepest = node
         while !deepest.getChildren().isEmpty {
             deepest = deepest.getChildren()[0]
@@ -300,7 +322,7 @@ import Testing
         xml += "</rsm:CrossIndustryInvoice>"
         var shortest: Duration?
         for _ in 0..<3 {
-            var invoice: SVGXMLNode?
+            var invoice: PDFjetXMLNode?
             let elapsed = try ContinuousClock().measure {
                 invoice = try parse(xml)
             }

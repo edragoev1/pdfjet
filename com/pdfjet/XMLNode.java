@@ -20,7 +20,7 @@ import java.util.Map;
  * because the prefixes of an invoice are its own: what one writes as ram:ID
  * another writes as a:ID. A * matches an element of any name.
  */
-final class XMLNode {
+public final class XMLNode {
     private final String name;
     private final String localName;
     private final String namespace;

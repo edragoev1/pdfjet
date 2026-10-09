@@ -12,17 +12,18 @@ using System.Text;
 
 namespace PDFjet.NET {
 /// <summary>
-/// Reads the XML of an SVG image into elements: their names, their
-/// namespaces, their attributes in the order they are written, and their
-/// text. It is the one parser of the four ports, so that they read an SVG
-/// alike, and it came from the parser of the electronic invoices of PDFjet
-/// Pro. It reads what such a document is made of and no more, and what it
-/// leaves out is what makes XML dangerous to read:
+/// Reads XML into elements: their names, their namespaces, their attributes
+/// in the order they are written, and their text. It is the one parser of
+/// the four ports and of PDFjet Pro, which reads its electronic invoices with
+/// it, and SVGImage its images, so that they read a document alike. It reads
+/// what such a document is made of and no more, and what it leaves out is
+/// what makes XML dangerous to read:
 /// <list type="bullet">
-/// <item><description>A document type declaration, a DOCTYPE, is skipped, as the files of
-/// the drawing programs have one, and its entities are not read: an entity
-/// that names a file or a URL reads what it should not, and the ones that
-/// stand for each other grow a short document into gigabytes.</description></item>
+/// <item><description>A document type declaration, a DOCTYPE, is refused by Parse, and
+/// skipped by ParseSkippingDoctype, as the files of the drawing programs have
+/// one; either way its entities are not read: an entity that names a file or
+/// a URL reads what it should not, and the ones that stand for each other
+/// grow a short document into gigabytes.</description></item>
 /// <item><description>The entities are the five of XML, &amp;lt;, &amp;gt;, &amp;amp;,
 /// &amp;quot; and &amp;apos;, and the numeric ones, such as &amp;#160; and
 /// &amp;#xA0;. Any other is an error, the ones a DOCTYPE declares among
@@ -50,18 +51,20 @@ namespace PDFjet.NET {
 /// Standard recommends and the decoder of .NET does.
 /// </para>
 /// </summary>
-internal sealed class XMLParser {
+public sealed class XMLParser {
     /// <summary>How deep the elements of a document may nest.</summary>
     public const int MAX_DEPTH = 256;
-    // How many bytes a document may be, 20 MB.
-    internal const int MAX_SIZE = 20 << 20;
-    // The message of a document of more than 20 MB.
-    internal const string TOO_LARGE = "The document is more than 20 MB.";
+    /// <summary>How many bytes a document may be, 20 MB.</summary>
+    public const int MAX_SIZE = 20 << 20;
+    /// <summary>The message of a document of more than 20 MB.</summary>
+    public const string TOO_LARGE = "The document is more than 20 MB.";
     // The namespace of the prefix xml, which every document has without
     // declaring it.
     private const string NAMESPACE_XML = "http://www.w3.org/XML/1998/namespace";
 
     private readonly string xml;
+    // True to skip a DOCTYPE, as SVGImage does, and false to refuse it.
+    private readonly bool skipDoctype;
     private int index;
     private int line = 1;
     private int column = 1;
@@ -69,21 +72,42 @@ internal sealed class XMLParser {
     // where it declares none.
     private readonly List<Dictionary<string, string>> scopes = new List<Dictionary<string, string>>();
 
-    private XMLParser(string xml) {
+    private XMLParser(string xml, bool skipDoctype) {
         this.xml = xml;
+        this.skipDoctype = skipDoctype;
     }
 
-    /// <summary>Reads the document and returns its root element.</summary>
+    /// <summary>
+    /// Reads the document and returns its root element. A document type
+    /// declaration is refused.
+    /// </summary>
     /// <param name="bytes">the document.</param>
     /// <returns>the root element.</returns>
     /// <exception cref="XMLException">The document is not the XML this reads, or is more
     ///     than 20 MB.</exception>
     public static XMLNode Parse(byte[] bytes) {
+        return Parse(bytes, false);
+    }
+
+    /// <summary>
+    /// Reads the document and returns its root element, as Parse does, but
+    /// skips a document type declaration, whose entities are not read: as the
+    /// SVG files of the drawing programs have one.
+    /// </summary>
+    /// <param name="bytes">the document.</param>
+    /// <returns>the root element.</returns>
+    /// <exception cref="XMLException">The document is not the XML this reads, or is more
+    ///     than 20 MB.</exception>
+    public static XMLNode ParseSkippingDoctype(byte[] bytes) {
+        return Parse(bytes, true);
+    }
+
+    private static XMLNode Parse(byte[] bytes, bool skipDoctype) {
         if (bytes.Length > MAX_SIZE) {
             throw new XMLException(TOO_LARGE);
         }
         int bad;
-        XMLParser parser = new XMLParser(Normalize(Decode(bytes), out bad));
+        XMLParser parser = new XMLParser(Normalize(Decode(bytes), out bad), skipDoctype);
         if (bad != -1) {
             parser.Skip(bad);
             throw parser.Error("The character U+" + ((int) parser.xml[bad]).ToString("X4",
@@ -103,6 +127,25 @@ internal sealed class XMLParser {
     /// <exception cref="XMLException">The document is not the XML this reads, or is more
     ///     than 20 MB.</exception>
     public static XMLNode Parse(Stream stream) {
+        return Parse(ReadAll(stream), false);
+    }
+
+    /// <summary>
+    /// Reads the document of the stream and returns its root element, as
+    /// Parse(Stream) does, but skips a document type declaration, whose
+    /// entities are not read.
+    /// </summary>
+    /// <param name="stream">the stream.</param>
+    /// <returns>the root element.</returns>
+    /// <exception cref="System.IO.IOException">The stream cannot be read.</exception>
+    /// <exception cref="XMLException">The document is not the XML this reads, or is more
+    ///     than 20 MB.</exception>
+    public static XMLNode ParseSkippingDoctype(Stream stream) {
+        return Parse(ReadAll(stream), true);
+    }
+
+    // The bytes of the stream, to the 20 MB a document may be.
+    private static byte[] ReadAll(Stream stream) {
         MemoryStream bytes = new MemoryStream();
         byte[] buffer = new byte[8192];
         int count;
@@ -112,7 +155,7 @@ internal sealed class XMLParser {
         if (bytes.Length > MAX_SIZE) {
             throw new XMLException(TOO_LARGE);
         }
-        return Parse(bytes.ToArray());
+        return bytes.ToArray();
     }
 
     // The characters of the document: UTF-8, or the UTF-16 of a byte order
@@ -194,7 +237,8 @@ internal sealed class XMLParser {
     }
 
     // The declaration, the comments, the processing instructions and the
-    // DOCTYPE before the root element.
+    // DOCTYPE before the root element; a DOCTYPE is refused unless it is
+    // skipped.
     private void Prolog() {
         while (index < xml.Length) {
             if (IsWhitespace(Peek())) {
@@ -206,6 +250,9 @@ internal sealed class XMLParser {
             } else if (Ahead("<?")) {
                 ProcessingInstruction();
             } else if (Ahead("<!DOCTYPE")) {
+                if (!skipDoctype) {
+                    throw Error("A document type declaration is not read, as its entities are not");
+                }
                 Doctype();
             } else if (Peek() == '<') {
                 return;
@@ -664,10 +711,14 @@ internal sealed class XMLParser {
         return ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r';
     }
 
-    // The trim of the Java, which removes the characters up to and including
-    // the space from both ends, and not the Trim of C#, which removes the
-    // characters that Unicode calls whitespace.
-    internal static string Trim(string text) {
+    /// <summary>
+    /// Returns the text without the characters up to and including the space
+    /// at its two ends, as the trim of Java does, and not the characters that
+    /// Unicode calls whitespace, as the Trim of C# does.
+    /// </summary>
+    /// <param name="text">the text.</param>
+    /// <returns>the text trimmed.</returns>
+    public static string Trim(string text) {
         int start = 0;
         int end = text.Length;
         while (start < end && text[start] <= ' ') {

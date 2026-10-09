@@ -69,7 +69,7 @@ public class SVGImage : IDrawable {
         stack.Add(new SVGState());
         XMLNode document;
         try {
-            document = XMLParser.Parse(stream);
+            document = XMLParser.ParseSkippingDoctype(stream);
         } catch (XMLException e) {
             throw new Exception("parsing SVG: " + e.Message, e);
         }

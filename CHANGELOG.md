@@ -9,6 +9,15 @@ This is the first entry in this file; earlier releases were not tracked here.
 
 ## v9.0.5 — unreleased
 
+### Added
+- The XML parser that reads SVG is public API, in the four ports, for PDFjet
+  Pro's electronic invoices too, so that the library and Pro read XML with one
+  parser: `xmlparser` in Go (`src/xmlparser`), `XMLParser`, `XMLNode` and
+  `XMLException` in Java and C#, `PDFjetXMLParser`, `PDFjetXMLNode` and
+  `PDFjetXMLError` in Swift (Foundation has an XMLParser). `parse` refuses a
+  DOCTYPE, the safe choice for documents such as invoices; `parseSkippingDoctype`
+  skips one, as the SVG reader does, and still reads none of its entities.
+
 ### Changed
 - SVG is read with one XML parser, the same in the four ports, in place of
   Go's encoding/xml, Java's StAX, C#'s XmlReader and Swift's own tokenizer,
