@@ -3042,6 +3042,12 @@ func getObjectsByScanning(buf []byte, objects *[]*PDFobj, budget *decodeBudget) 
 						i = end
 					} else if end := indexOf(buf, "endstream", obj.streamOffset, next); end != -1 {
 						i = end
+					} else if end, after := streamPastNext(buf, obj.streamOffset, budget); end != -1 {
+						// The next "number generation obj" is in the stream's
+						// own bytes, as in an embedded PDF: the stream goes on
+						// to the endstream and endobj that end it.
+						obj.end = after
+						i = end
 					}
 					continue
 				}
@@ -3055,6 +3061,26 @@ func getObjectsByScanning(buf []byte, objects *[]*PDFobj, budget *decodeBudget) 
 		return getObjectAt(buf, trailerOffset)
 	}
 	return xrefStream
+}
+
+// streamPastNext returns the offset of the endstream that ends the stream at
+// the offset, past the object start the scan found next, and the offset after
+// the endobj that must follow it; or -1 and -1. It reads within what is left
+// of the budget, so that a PDF of many streams with no endstream is not read
+// to its end for each of them.
+func streamPastNext(buf []byte, offset int, budget *decodeBudget) (int, int) {
+	end := min(len(buf), offset+max(budget.readLeft, 0))
+	found := endstreamOf(buf, offset, end)
+	if found == -1 {
+		budget.readLeft -= end - offset
+		return -1, -1
+	}
+	budget.readLeft -= found - offset
+	after := endobjAfter(buf, found)
+	if after == -1 {
+		return -1, -1
+	}
+	return found, after
 }
 
 // nextObjectStart returns the offset of the first "number generation obj"

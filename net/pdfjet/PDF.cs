@@ -3029,6 +3029,17 @@ public sealed class PDF {
                         if (end == -1) {
                             end = IndexOf(buf, "endstream", obj.streamOffset, next);
                         }
+                        if (end == -1) {
+                            // The next "number generation obj" is in the
+                            // stream's own bytes, as in an embedded PDF: the
+                            // stream goes on to the endstream and endobj that
+                            // end it.
+                            int[] past = StreamPastNext(buf, obj.streamOffset, budget);
+                            if (past[0] != -1) {
+                                obj.end = past[1];
+                                end = past[0];
+                            }
+                        }
                         i = (end == -1) ? next : end;
                         continue;
                     }
@@ -3039,6 +3050,23 @@ public sealed class PDF {
             i++;
         }
         return (trailerOffset != -1) ? GetObject(buf, trailerOffset) : xrefStream;
+    }
+
+    // Returns the offset of the endstream that ends the stream at the offset,
+    // past the object start the scan found next, and the offset after the
+    // endobj that must follow it; or -1 and -1. It reads within what is left of
+    // the budget, so that a PDF of many streams with no endstream is not read
+    // to its end for each of them.
+    private static int[] StreamPastNext(byte[] buf, int offset, PDFobj.DecodeBudget budget) {
+        int end = (int) Math.Min(buf.Length, (long) offset + Math.Max(budget.readLeft, 0));
+        int found = PDFobj.EndstreamOf(buf, offset, end);
+        if (found == -1) {
+            budget.readLeft -= end - offset;
+            return new int[] {-1, -1};
+        }
+        budget.readLeft -= found - offset;
+        int after = PDFobj.EndobjAfter(buf, found);
+        return (after == -1) ? new int[] {-1, -1} : new int[] {found, after};
     }
 
     // Returns the offset of the first "number generation obj" from the
@@ -3056,7 +3084,7 @@ public sealed class PDF {
     // white space or at the start of the PDF. An offset that is not at a
     // number returns at once, as the white space after it was scanned at
     // every offset of a run of white space.
-    private static bool IsObjectStart(byte[] buf, int off) {
+    internal static bool IsObjectStart(byte[] buf, int off) {
         if (off > 0 && !IsWhiteSpace(buf[off - 1])) {
             return false;
         }

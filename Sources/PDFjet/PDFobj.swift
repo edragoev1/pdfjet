@@ -191,9 +191,12 @@ public final class PDFobj {
         }
         let keyword = Array("endstream".utf8)
         let end = max(min(end, buf.count, offset + budget.readLeft), offset)
-        var found = offset
-        while found + keyword.count <= end && !startsWith(buf, found, keyword) {
-            found += 1
+        var found = endstreamOf(buf, offset, end)
+        if found == -1 {
+            found = offset
+            while found + keyword.count <= end && !startsWith(buf, found, keyword) {
+                found += 1
+            }
         }
         if found + keyword.count > end {
             budget.readLeft -= end - offset
@@ -207,6 +210,70 @@ public final class PDFobj {
             found -= 1
         }
         return found - offset
+    }
+
+    // Returns the offset of the endstream keyword that ends the stream at the
+    // offset from, by the offset to, or -1. The streams and objects in the
+    // stream's own bytes, as an embedded PDF has, unfiltered, are skipped: an
+    // endstream ends the stream only when no stream or object opened in its
+    // bytes is still open.
+    static func endstreamOf(_ buf: [UInt8], _ from: Int, _ to: Int) -> Int {
+        let to = min(to, buf.count)
+        let stream = Array("stream".utf8)
+        let end = Array("end".utf8)
+        let endobj = Array("endobj".utf8)
+        var streams = 0
+        var objects = 0
+        var i = max(from, 0)
+        while i < to {
+            let c = buf[i]
+            if c == 0x73 && i + 6 <= to && startsWith(buf, i, stream) {   // s
+                if i - 3 >= from && startsWith(buf, i - 3, end) {
+                    if streams == 0 {
+                        return (objects == 0) ? i - 3 : -1
+                    }
+                    streams -= 1
+                } else if opensStream(buf, i) {
+                    streams += 1
+                }
+            } else if c == 0x65 && startsWith(buf, i, endobj) {             // e
+                if objects > 0 {
+                    objects -= 1
+                }
+            } else if c >= 0x30 && c <= 0x39 && PDF.isObjectStart(buf, i) {
+                objects += 1
+                while i < to && buf[i] != 0x6A {    // Past the obj
+                    i += 1
+                }
+            }
+            i += 1
+        }
+        return -1
+    }
+
+    // Returns true when the stream keyword at the offset opens a stream: after
+    // the >> of its dictionary and white space, and before an end of line, as
+    // the syntax of a stream object has it.
+    private static func opensStream(_ buf: [UInt8], _ off: Int) -> Bool {
+        let after = off + 6
+        if after >= buf.count || (buf[after] != 0x0D && buf[after] != 0x0A) {
+            return false
+        }
+        var i = off - 1
+        while i >= 0 && isWhiteSpace(buf[i]) {
+            i -= 1
+        }
+        return i >= 1 && buf[i] == 0x3E && buf[i - 1] == 0x3E
+    }
+
+    // Returns the offset after the endobj keyword that follows the endstream at
+    // the offset, after white space, or -1.
+    static func endobjAfter(_ buf: [UInt8], _ endstream: Int) -> Int {
+        var i = endstream + 9
+        while i < buf.count && isWhiteSpace(buf[i]) {
+            i += 1
+        }
+        return startsWith(buf, i, Array("endobj".utf8)) ? i + 6 : -1
     }
 
     // Returns the offset of the endstream keyword that follows the /Length of
@@ -226,7 +293,7 @@ public final class PDFobj {
         return startsWith(buf, i, Array("endstream".utf8)) ? i : -1
     }
 
-    private static func isWhiteSpace(_ c: UInt8) -> Bool {
+    static func isWhiteSpace(_ c: UInt8) -> Bool {
         return c == 0x00 || c == 0x09 || c == 0x0A || c == 0x0C || c == 0x0D || c == 0x20
     }
 

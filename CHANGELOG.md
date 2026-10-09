@@ -95,6 +95,14 @@ This is the first entry in this file; earlier releases were not tracked here.
   usual height repeat as before. In a PDF/UA document, a header drawn on a
   page where no row of the body fitted under it is no longer tagged as TH
   cells a second time on the next page.
+- A PDF whose cross-reference table is broken, read by looking for its
+  objects, keeps a stream whole when its bytes hold an object, as an
+  unfiltered embedded PDF has, in the four ports. The search for the
+  stream's endstream stopped at the next "number generation obj", so a stream
+  with a wrong /Length was cut short there, the object in it was read as one
+  of the PDF, and its endstream was taken for the stream's own. The search
+  now skips the streams and objects in the stream's bytes, within the
+  reader's budget; the 2,865 inputs of the Go fuzz corpus read as before.
 
 ## v9.0.3 — 2026-10-08
 

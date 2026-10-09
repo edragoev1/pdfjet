@@ -2712,7 +2712,7 @@ public final class PDF {
         var next = 0    // The start of the object after the one at i
         var i = 0
         while i < buf.count {
-            if isObjectStart(buf, i) {
+            if PDF.isObjectStart(buf, i) {
                 if next <= i {
                     next = nextObjectStart(buf, i + 1)
                 }
@@ -2735,6 +2735,15 @@ public final class PDF {
                         if end == -1 {
                             end = indexOf(buf, endStreamKeyword, obj.streamOffset, next)
                         }
+                        if end == -1 {
+                            // The next "number generation obj" is in the
+                            // stream's own bytes.
+                            let past = streamPastNext(buf, obj.streamOffset, budget)
+                            if past.found != -1 {
+                                obj.end = past.after
+                                end = past.found
+                            }
+                        }
                         i = (end == -1) ? next : end
                         continue
                     }
@@ -2747,12 +2756,33 @@ public final class PDF {
         return (trailerOffset != -1) ? getObject(buf, trailerOffset) : xrefStream
     }
 
+    // Returns the offset of the endstream that ends the stream at the offset,
+    // past the object start the scan found next, and the offset after the
+    // endobj that must follow it; or -1 and -1. It reads within what is left of
+    // the budget, so that a PDF of many streams with no endstream is not read to
+    // its end for each of them.
+    private func streamPastNext(
+            _ buf: [UInt8], _ offset: Int, _ budget: PDFobj.DecodeBudget) -> (found: Int, after: Int) {
+        let end = min(buf.count, offset + max(budget.readLeft, 0))
+        let found = PDFobj.endstreamOf(buf, offset, end)
+        if found == -1 {
+            budget.readLeft -= end - offset
+            return (-1, -1)
+        }
+        budget.readLeft -= found - offset
+        let after = PDFobj.endobjAfter(buf, found)
+        if after == -1 {
+            return (-1, -1)
+        }
+        return (found, after)
+    }
+
     // Returns the offset of the first "number generation obj" from the offset
     // on, or the length of the PDF when there is none.
     private func nextObjectStart(_ buf: [UInt8], _ off: Int) -> Int {
         var i = off
         while i < buf.count {
-            if isObjectStart(buf, i) {
+            if PDF.isObjectStart(buf, i) {
                 return i
             }
             i += 1
@@ -2764,8 +2794,8 @@ public final class PDF {
     // white space or at the start of the PDF. An offset that is not at a number
     // returns at once, as the white space after it was scanned at every offset
     // of a run of white space.
-    private func isObjectStart(_ buf: [UInt8], _ off: Int) -> Bool {
-        if off > 0 && !isWhiteSpace(buf[off - 1]) {
+    static func isObjectStart(_ buf: [UInt8], _ off: Int) -> Bool {
+        if off > 0 && !PDFobj.isWhiteSpace(buf[off - 1]) {
             return false
         }
         var i = off
@@ -2776,7 +2806,7 @@ public final class PDF {
             return false
         }
         var j = i
-        while j < buf.count && isWhiteSpace(buf[j]) {
+        while j < buf.count && PDFobj.isWhiteSpace(buf[j]) {
             j += 1
         }
         var k = j
@@ -2784,7 +2814,7 @@ public final class PDF {
             k += 1
         }
         var m = k
-        while m < buf.count && isWhiteSpace(buf[m]) {
+        while m < buf.count && PDFobj.isWhiteSpace(buf[m]) {
             m += 1
         }
         return j > i && k > j && m > k && m + 3 <= buf.count &&

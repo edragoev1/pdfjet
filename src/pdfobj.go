@@ -191,7 +191,10 @@ func streamLength(buf []byte, offset, length, end int, budget *decodeBudget) int
 		return length
 	}
 	end = max(min(end, len(buf), offset+budget.readLeft), offset)
-	found := indexOf(buf, "endstream", offset, end)
+	found := endstreamOf(buf, offset, end)
+	if found == -1 {
+		found = indexOf(buf, "endstream", offset, end)
+	}
 	if found == -1 {
 		budget.readLeft -= end - offset
 		return length
@@ -204,6 +207,75 @@ func streamLength(buf []byte, offset, length, end int, budget *decodeBudget) int
 		found--
 	}
 	return found - offset
+}
+
+// endstreamOf returns the offset of the endstream keyword that ends the stream
+// that starts at from, before to, or -1: the first endstream that ends no
+// stream nested in it, as the stream of an embedded PDF, unfiltered, holds
+// objects and streams of its own, each a stream keyword after a dictionary and
+// an endstream, and the first endstream would cut it short. The endstream is
+// the stream's only when every object that started in the stream has ended:
+// one inside an object still open is that object's, whose stream keyword was
+// not found, and the search gives up, -1, for the caller to read the stream
+// as before.
+func endstreamOf(buf []byte, from, to int) int {
+	to = min(to, len(buf))
+	streams := 0
+	objects := 0
+	for i := max(from, 0); i < to; i++ {
+		switch {
+		case buf[i] == 's' && i+len("stream") <= to && startsWith(buf, i, "stream"):
+			if i-3 >= from && startsWith(buf, i-3, "end") {
+				if streams == 0 {
+					if objects == 0 {
+						return i - 3
+					}
+					return -1
+				}
+				streams--
+			} else if opensStream(buf, i) {
+				streams++
+			}
+		case buf[i] == 'e' && startsWith(buf, i, "endobj"):
+			if objects > 0 {
+				objects--
+			}
+		case buf[i] >= '0' && buf[i] <= '9' && isObjectStart(buf, i):
+			objects++
+			for i < to && buf[i] != 'j' { // Past the obj
+				i++
+			}
+		}
+	}
+	return -1
+}
+
+// opensStream returns true when the stream keyword at the offset opens a
+// stream: after the >> of its dictionary and white space, and before an end of
+// line, as the syntax of a stream object has it.
+func opensStream(buf []byte, off int) bool {
+	after := off + len("stream")
+	if after >= len(buf) || (buf[after] != '\r' && buf[after] != '\n') {
+		return false
+	}
+	i := off - 1
+	for i >= 0 && isWhiteSpace(int(buf[i])) {
+		i--
+	}
+	return i >= 1 && buf[i] == '>' && buf[i-1] == '>'
+}
+
+// endobjAfter returns the offset after the endobj keyword that follows the
+// endstream at the offset, after white space, or -1.
+func endobjAfter(buf []byte, endstream int) int {
+	i := endstream + len("endstream")
+	for i < len(buf) && isWhiteSpace(int(buf[i])) {
+		i++
+	}
+	if startsWith(buf, i, "endobj") {
+		return i + len("endobj")
+	}
+	return -1
 }
 
 // endstreamAfter returns the offset of the endstream keyword that follows the

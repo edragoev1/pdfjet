@@ -185,7 +185,10 @@ public class PDFobj {
             return length;
         }
         end = (int) Math.Max(Math.Min(Math.Min(end, buf.Length), (long) offset + budget.readLeft), offset);
-        int found = PDF.IndexOf(buf, "endstream", offset, end);
+        int found = EndstreamOf(buf, offset, end);
+        if (found == -1) {
+            found = PDF.IndexOf(buf, "endstream", offset, end);
+        }
         if (found == -1) {
             budget.readLeft -= end - offset;
             return length;
@@ -198,6 +201,68 @@ public class PDFobj {
             found--;
         }
         return found - offset;
+    }
+
+    // Returns the offset of the endstream keyword that ends the stream that
+    // starts at from, before to, or -1: the first endstream that ends no stream
+    // nested in it, as the stream of an embedded PDF, unfiltered, holds objects
+    // and streams of its own, each a stream keyword after a dictionary and an
+    // endstream, and the first endstream would cut it short. The endstream is
+    // the stream's only when every object that started in the stream has
+    // ended: one inside an object still open is that object's, whose stream
+    // keyword was not found, and the search gives up, -1, for the caller to
+    // read the stream as before.
+    internal static int EndstreamOf(byte[] buf, int from, int to) {
+        to = Math.Min(to, buf.Length);
+        int streams = 0;
+        int objects = 0;
+        for (int i = Math.Max(from, 0); i < to; i++) {
+            if (buf[i] == 's' && i + 6 <= to && PDF.StartsWith(buf, i, "stream")) {
+                if (i - 3 >= from && PDF.StartsWith(buf, i - 3, "end")) {
+                    if (streams == 0) {
+                        return (objects == 0) ? i - 3 : -1;
+                    }
+                    streams--;
+                } else if (OpensStream(buf, i)) {
+                    streams++;
+                }
+            } else if (buf[i] == 'e' && PDF.StartsWith(buf, i, "endobj")) {
+                if (objects > 0) {
+                    objects--;
+                }
+            } else if (buf[i] >= '0' && buf[i] <= '9' && PDF.IsObjectStart(buf, i)) {
+                objects++;
+                while (i < to && buf[i] != 'j') {     // Past the obj
+                    i++;
+                }
+            }
+        }
+        return -1;
+    }
+
+    // Returns true when the stream keyword at the offset opens a stream: after
+    // the >> of its dictionary and white space, and before an end of line, as
+    // the syntax of a stream object has it.
+    private static bool OpensStream(byte[] buf, int off) {
+        int after = off + 6;
+        if (after >= buf.Length || (buf[after] != '\r' && buf[after] != '\n')) {
+            return false;
+        }
+        int i = off - 1;
+        while (i >= 0 && PDF.IsWhiteSpace(buf[i])) {
+            i--;
+        }
+        return i >= 1 && buf[i] == '>' && buf[i - 1] == '>';
+    }
+
+    // Returns the offset after the endobj keyword that follows the endstream
+    // at the offset, after white space, or -1.
+    internal static int EndobjAfter(byte[] buf, int endstream) {
+        int i = endstream + 9;
+        while (i < buf.Length && PDF.IsWhiteSpace(buf[i])) {
+            i++;
+        }
+        return PDF.StartsWith(buf, i, "endobj") ? i + 6 : -1;
     }
 
     // Returns the offset of the endstream keyword that follows the /Length of
