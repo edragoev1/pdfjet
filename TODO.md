@@ -31,6 +31,13 @@ for every font. Glyphs reach a page through `Page.appendGlyph` and
 (`shareTrueTypeProgram`). A .ttf.stream subset costs its inflation, about
 0.1 s for Noto Sans SC; the .ttf, 0.04 s. Until the other ports follow, the
 compare job of the Build tells their files apart.
+**CFF subsetting: not needed** (8 October 2026). About 3,000 lines in the
+four ports (5,000 with the subroutines pruned) for one gain, IBM Plex as
+.otf, which its .ttf edition already gives: Example_01 in Go with IBM Plex
+Sans 3.005 as a .ttf subset, 28 KB in 14.2 ms, against 64 KB in 12.8 ms
+from the .otf.stream and 67 KB in 16.7 ms from the .otf. Most fonts are
+TrueType (Google Fonts, Noto, the Windows and macOS fonts); the .otf.stream
+stays the fast path for the fonts embedded whole and for PDFjet Forms.
 
 1. ✅ **Done on 8 October 2026, evening, in the four ports with a test in
    each:** the OTF hmtx before hhea (ae905866; Go and Swift had drawn every
