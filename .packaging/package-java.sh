@@ -39,8 +39,13 @@ EVAL_ZIP="$PWD/.commercial-packages/$EVAL_NAME.zip"
 # reads 17:00:00 wherever it is unpacked; and two builds of a release differ
 # only in what they make, not in when (reproducible builds,
 # SOURCE_DATE_EPOCH). The zip lists its entries in sorted order and without
-# the extra fields of each system (-X).
-RELEASE_DAY=$(TZ=America/Toronto git log -1 --format=%cd --date=format-local:%Y%m%d HEAD)
+# the extra fields of each system (-X). RELEASE_DAY=20261015, given, is the
+# day instead, for a release whose last commit is of another day.
+RELEASE_DAY=${RELEASE_DAY:-$(TZ=America/Toronto git log -1 --format=%cd --date=format-local:%Y%m%d HEAD)}
+if ! [[ "$RELEASE_DAY" =~ ^[0-9]{8}$ ]]; then
+    echo "RELEASE_DAY is a day such as 20261015, not $RELEASE_DAY."
+    exit 1
+fi
 export TZ=UTC
 RELEASE_TIME=${RELEASE_DAY}1700.00
 stamp() {
