@@ -26,6 +26,10 @@ public class Font {
     var fontDescriptorObjNumber = 0
     var cidFontDictObjNumber = 0
     var toUnicodeCMapObjNumber = 0
+    var cidSetObjNumber = 0             // The CIDSet of a subset in PDF/A-1
+    var baseFont = ""                   // The name it is embedded under, with the tag of a subset
+    var program: Subset.Program?        // A TrueType font program, until complete()
+    var kept: [Bool]?                   // The glyphs its subset keeps
 
     // Font attributes
     var unitsPerEm = 1000
@@ -350,7 +354,7 @@ public class Font {
     }
 
     // One step of the FNV-1a hash, which is the same in the four ports.
-    private static func fold(_ hash: UInt64, _ value: Int) -> UInt64 {
+    static func fold(_ hash: UInt64, _ value: Int) -> UInt64 {
         return (hash ^ UInt64(UInt32(truncatingIfNeeded: value))) &* 0x100000001b3
     }
 
@@ -405,6 +409,30 @@ public class Font {
     public func setKernPairs(_ kernPairs: Bool) -> Font {
         self.kernPairs = kernPairs
         return self
+    }
+
+    /// Sets whether this font is embedded as a subset, the outlines of the
+    /// glyphs the document does not draw left out, which is the default for a
+    /// TrueType font, a .ttf or a .ttf.stream. A font with CFF outlines, a .otf
+    /// or a .otf.stream, is always embedded whole. A font whose license does
+    /// not allow subsetting, by the fsType of its OS/2 table, is embedded whole
+    /// too. Fonts read from one file are one font program in the PDF: kept
+    /// whole for one, the program is whole for all of them. It must be called
+    /// before complete().
+    ///
+    /// - Parameter subset: false to embed the font whole.
+    ///
+    @discardableResult
+    public func setSubset(_ subset: Bool) -> Font {
+        program?.whole = !subset
+        return self
+    }
+
+    // Records that the glyph is drawn with the font.
+    func useGlyph(_ gid: Int) {
+        if let program = program, gid >= 0 && gid < program.used.count {
+            program.used[gid] = true
+        }
     }
 
     /// Returns the width of the string at the current font size.

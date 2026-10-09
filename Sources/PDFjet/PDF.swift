@@ -336,6 +336,13 @@ public final class PDF {
         append(Token.newObj)
     }
 
+    /// Starts the object of a number reserved before, with reserveObjNumber.
+    func newObj(_ number: Int) {
+        setObjOffset(number, byteCount)
+        append(number)
+        append(Token.newObj)
+    }
+
     func endObj() {
         append(Token.endObj)
     }
@@ -1820,6 +1827,7 @@ public final class PDF {
             throw PDFjetError(message: error)
         }
         completed = true
+        Subset.addTrueTypeFonts(self)
         if compliance != Compliance.PDF_1_7 {
             metadataObjNumber = addMetadataObject("", false)
             outputIntentObjNumber = addOutputIntentObject()

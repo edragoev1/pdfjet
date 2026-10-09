@@ -33,6 +33,17 @@ class OpenTypeFont {
         font.checksum = Font.checksumOf(font)
         font.setSize(font.size)
 
+        if !otf.cff {
+            // A TrueType font is written at complete(), a subset of the glyphs
+            // drawn; its pages refer to the number reserved for it.
+            font.info = otf.fontInfo!
+            font.capHeight = otf.capHeight!
+            Subset.share(pdf, font, otf.buf, nil, otf.buf.count)
+            font.objNumber = pdf.reserveObjNumber()
+            pdf.fonts.append(font)
+            return
+        }
+
         embedFontFile(pdf, font, otf)
         addFontDescriptorObject(pdf, font, otf)
         addCIDFontDictionaryObject(pdf, font, otf)
@@ -256,17 +267,7 @@ class OpenTypeFont {
         sb.append("CMapName currentdict /CMap defineresource pop\n")
         sb.append("end\nend")
 
-        let cmap = pdf.encrypted(Array(sb.utf8))
-        pdf.newObj()
-        pdf.append(Token.beginDictionary)
-        pdf.append("/Length ")
-        pdf.append(cmap.count)
-        pdf.append(Token.newline)
-        pdf.append(Token.endDictionary)
-        pdf.append(Token.stream)
-        pdf.append(cmap)
-        pdf.append(Token.endStream)
-        pdf.endObj()
+        FontStream1.addCompressedStream(pdf, Array(sb.utf8))
 
         font.toUnicodeCMapObjNumber = pdf.getObjNumber()
     }

@@ -17,7 +17,7 @@ packaged and the Producer still says v9.0.3. **v9.0.5 then adds the
 TrueType font subsetting** (the plan under v9.1 below, moved up), with
 NuGet, net48's feedback and Jazzer's last findings when they come.
 
-**Subsetting, Go, Java and C# done on 8 October 2026, Swift to follow:**
+**Subsetting, done in the four ports on 8 October 2026:**
 `src/subset.go`. The TrueType fonts are written at Complete under the number
 reserved at construction, so the name with its tag, the widths and the
 ToUnicode map list only the glyphs kept; their tables are those a reader
@@ -30,14 +30,18 @@ for every font. Glyphs reach a page through `Page.appendGlyph` and
 `Stamp.drawEncodedText`; the program is shared by the fonts of one file
 (`shareTrueTypeProgram`). A .ttf.stream subset costs its inflation, about
 0.1 s for Noto Sans SC; the .ttf, 0.04 s. Until the other ports follow, the
-compare job of the Build tells their files apart. Java (`Subset.java`,
+compare job of the Build tells their files apart (no longer: all four are
+done). Java (`Subset.java`,
 `Page.appendGlyph`, `PDF.newObj(int)`) embeds the same subsets as Go, byte
 for byte uncompressed, under the same tags (Examples 28, 32 and 49). In Java,
 warm, a page of English with Noto Sans takes 25.7 ms from the .ttf and 17.8
 from the .ttf.stream (the .ttf's tables are parsed), a page of Chinese with
 Noto Sans SC 42.5 ms from the .ttf and 97.3 from the .ttf.stream. C#
 (`Subset.cs`, `PDF.NewObj(int)`) the same as Go too, and its net48 build
-compiles.
+compiles. Swift (`Subset.swift`, `PDF.newObj(_:)`) the same too: the four
+ports' Example_28 pass veraPDF's PDF/UA check. Left: Acrobat on Windows (the
+owner), the .ttf.stream deprecation once that is done, and the benchmark of
+8c in benchmarks/ (jet-noto of TextBench).
 **CFF subsetting: not needed** (8 October 2026). About 3,000 lines in the
 four ports (5,000 with the subroutines pruned) for one gain, IBM Plex as
 .otf, which its .ttf edition already gives: Example_01 in Go with IBM Plex

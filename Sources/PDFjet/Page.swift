@@ -568,7 +568,7 @@ public class Page {
             }
         } else if !needsShaping(font, scalars) {
             for scalar in scalars where scalar.value != 0xFEFF {    // BOM
-                Page.appendCodePointAsHex(Page.glyphOf(font, Int(scalar.value)), &self.buf)
+                appendGlyph(font, Page.glyphOf(font, Int(scalar.value)))
             }
         } else {
             // The marks are moved to where the GPOS table of the font puts
@@ -638,7 +638,7 @@ public class Page {
                 offsets = markOffsets(font, codePoints, gids)
             } else if mirrored == nil && joiners == nil && runEdge == nil && !hasNotdef {
                 for gid in gids {
-                    Page.appendCodePointAsHex(gid, &self.buf)
+                    appendGlyph(font, gid)
                 }
                 return
             }
@@ -704,7 +704,7 @@ public class Page {
             if let offsets = offsets, offsets[2*k] != 0 || offsets[2*k + 1] != 0 {
                 appendMovedGlyph(font, gids[k], offsets[2*k], offsets[2*k + 1])
             } else {
-                Page.appendCodePointAsHex(gids[k], &self.buf)
+                appendGlyph(font, gids[k])
             }
         }
         append("> Tj\nEMC\n<")
@@ -742,7 +742,7 @@ public class Page {
             if inOwnSpan(font, codePoints, mirrored, k) {
                 appendGlyphWithActualText(font, codePoints, gids, nil, mirrored, nil, k)
             } else {
-                Page.appendCodePointAsHex(gids[k], &self.buf)
+                appendGlyph(font, gids[k])
             }
         }
     }
@@ -779,13 +779,13 @@ public class Page {
             append("> Tj\n")
         } else {
             append("<")
-            Page.appendCodePointAsHex(gids[k], &self.buf)
+            appendGlyph(font, gids[k])
             append("> Tj\n")
         }
         if joiner != 0 {
             let space = font.unicodeToGID[0x0020]
             append("[<")
-            Page.appendCodePointAsHex(space, &self.buf)
+            appendGlyph(font, space)
             append("> ")
             append(1000.0 * Float(font.glyphAdvance(space)) / Float(font.unitsPerEm))
             append("] TJ\n")
@@ -1073,13 +1073,13 @@ public class Page {
             append("[")
             append(1000.0 * Float(font.glyphAdvance(space)) / Float(font.unitsPerEm))
             append(" <")
-            Page.appendCodePointAsHex(space, &self.buf)
+            appendGlyph(font, space)
             append(">] TJ\n")
         }
         append("<")
         for k in start..<end {
             if offsets[2*k] == 0 && offsets[2*k + 1] == 0 {
-                Page.appendCodePointAsHex(gids[k], &self.buf)
+                appendGlyph(font, gids[k])
             } else {
                 appendMovedGlyph(font, gids[k], offsets[2*k], offsets[2*k + 1])
             }
@@ -1096,14 +1096,14 @@ public class Page {
         append(" Ts\n")
         if dx == 0 {
             append("<")
-            Page.appendCodePointAsHex(gid, &self.buf)
+            appendGlyph(font, gid)
             append("> Tj\n")
         } else {
             let adjustment = 1000.0 * Float(dx) / Float(font.unitsPerEm)
             append("[")
             append(-adjustment)
             append(" <")
-            Page.appendCodePointAsHex(gid, &self.buf)
+            appendGlyph(font, gid)
             append("> ")
             append(adjustment)
             append("] TJ\n")
@@ -2921,6 +2921,13 @@ public class Page {
         UInt8(ascii: "8"), UInt8(ascii: "9"), UInt8(ascii: "A"), UInt8(ascii: "B"),
         UInt8(ascii: "C"), UInt8(ascii: "D"), UInt8(ascii: "E"), UInt8(ascii: "F")
     ]
+
+    // Appends the glyph number as hexadecimal and records that the font draws
+    // it, so that a subset of the font keeps it.
+    private func appendGlyph(_ font: Font, _ gid: Int) {
+        font.useGlyph(gid)
+        Page.appendCodePointAsHex(gid, &self.buf)
+    }
 
     private static func appendCodePointAsHex(_ codePoint: Int, _ buf: inout [UInt8]) {
         if codePoint <= 0xFFFF {
