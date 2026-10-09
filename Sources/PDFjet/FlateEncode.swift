@@ -7,14 +7,17 @@
 import Foundation
 
 internal final class FlateEncode {
-    private var bitBuffer: UInt32 = 0
-    private var bitsInBuffer: UInt8 = 0
+    // The bits not yet written, and how many, as plain memory, as the token
+    // tables below are: they change for every code written (9 October 2026)
+    private let bitBuffer: UnsafeMutablePointer<UInt32>
+    private let bitsInBuffer: UnsafeMutablePointer<UInt32>
     private let MASK: UInt32 = 0xFFFF
     // The head of the chain of positions with the same hash, and the position
     // before each one: a match can be looked for among several earlier
     // positions instead of the last one only.
-    private var head: [Int32]
-    private var prev: [Int32]
+    // Plain memory too: both are read and written for every position.
+    private let head: UnsafeMutablePointer<Int32>
+    private let prev: UnsafeMutablePointer<Int32>
 
     private static let WINDOW = 32768       // The distance a match can reach back
     private static let WINDOW_MASK = 32767
@@ -51,8 +54,14 @@ internal final class FlateEncode {
     @discardableResult
     public init(_ output: inout [UInt8], _ input: [UInt8]) {
         let BUFSIZE = MASK + 1  // 2^16 bytes
-        head = [Int32](repeating: -1, count: Int(BUFSIZE))
-        prev = [Int32](repeating: -1, count: FlateEncode.WINDOW)
+        head = UnsafeMutablePointer<Int32>.allocate(capacity: Int(BUFSIZE))
+        head.initialize(repeating: -1, count: Int(BUFSIZE))
+        prev = UnsafeMutablePointer<Int32>.allocate(capacity: FlateEncode.WINDOW)
+        prev.initialize(repeating: -1, count: FlateEncode.WINDOW)
+        bitBuffer = UnsafeMutablePointer<UInt32>.allocate(capacity: 1)
+        bitBuffer.initialize(to: 0)
+        bitsInBuffer = UnsafeMutablePointer<UInt32>.allocate(capacity: 1)
+        bitsInBuffer.initialize(to: 0)
         tokenValue = UnsafeMutablePointer<UInt16>.allocate(
                 capacity: FlateEncode.BLOCK_TOKENS)
         tokenDistance = UnsafeMutablePointer<UInt16>.allocate(
@@ -67,37 +76,44 @@ internal final class FlateEncode {
         writeCode(&output, UInt32(0x9C78), 16)      // FLG | CMF
 
         let count = input.count
-        var i = 0
-        while i < count {
-            var length = 0
-            var distance = 0
-            if i + FlateEncode.MIN_MATCH <= count {
-                let candidate = insert(input, i)
-                if candidate >= 0 {
-                    longestMatch(input, i, candidate, &length, &distance)
+        // The input read through one pointer, with no check of each index
+        input.withUnsafeBufferPointer { bytes in
+            var i = 0
+            while i < count {
+                var length = 0
+                var distance = 0
+                if i + FlateEncode.MIN_MATCH <= count {
+                    let candidate = insert(bytes, i)
+                    if candidate >= 0 {
+                        longestMatch(bytes, i, candidate, &length, &distance)
+                    }
                 }
-            }
-            if length >= FlateEncode.MIN_MATCH {
-                addMatch(length, distance)
-                // The positions the match covers are not hashed: doing so finds
-                // a little more, and costs more time than the whole search.
-                i += length
-            } else {
-                addLiteral(input[i])
-                i += 1
-            }
-            if tokens == FlateEncode.BLOCK_TOKENS {
-                writeBlock(&output, input, i, false)
+                if length >= FlateEncode.MIN_MATCH {
+                    addMatch(length, distance)
+                    // The positions the match covers are not hashed: doing so finds
+                    // a little more, and costs more time than the whole search.
+                    i += length
+                } else {
+                    addLiteral(bytes[i])
+                    i += 1
+                }
+                if tokens == FlateEncode.BLOCK_TOKENS {
+                    writeBlock(&output, input, i, false)
+                }
             }
         }
         writeBlock(&output, input, count, true)
-        if bitsInBuffer > 0 {
-            output.append(UInt8(bitBuffer))
+        if bitsInBuffer.pointee > 0 {
+            output.append(UInt8(truncatingIfNeeded: bitBuffer.pointee))
         }
         addAdler32(&output, input)
     }
 
     deinit {
+        head.deallocate()
+        prev.deallocate()
+        bitBuffer.deallocate()
+        bitsInBuffer.deallocate()
         tokenValue.deallocate()
         tokenDistance.deallocate()
         literalFrequency.deallocate()
@@ -195,17 +211,17 @@ internal final class FlateEncode {
         var storedBits = Int.max
         let storedLength = end - blockStart
         if storedLength <= FlateEncode.MAX_STORED {
-            let padding = (8 - ((Int(bitsInBuffer) + 3) % 8)) % 8
+            let padding = (8 - ((Int(bitsInBuffer.pointee) + 3) % 8)) % 8
             storedBits = 3 + padding + 32 + 8 * storedLength
         }
 
         writeCode(&output, UInt32(last ? 1 : 0), 1)
         if storedBits <= staticBits && storedBits <= dynamicBits {
             writeCode(&output, 0, 2)                // BTYPE: stored
-            if bitsInBuffer > 0 {
-                output.append(UInt8(bitBuffer))
-                bitBuffer = 0
-                bitsInBuffer = 0
+            if bitsInBuffer.pointee > 0 {
+                output.append(UInt8(truncatingIfNeeded: bitBuffer.pointee))
+                bitBuffer.pointee = 0
+                bitsInBuffer.pointee = 0
             }
             let length = UInt16(storedLength)
             let complement = ~length
@@ -298,7 +314,7 @@ internal final class FlateEncode {
 
     // Adds the position to the chain of its hash and returns the position that
     // was at the head of that chain, which is where a match is looked for.
-    private func insert(_ input: [UInt8], _ i: Int) -> Int32 {
+    private func insert(_ input: UnsafeBufferPointer<UInt8>, _ i: Int) -> Int32 {
         // FNV-1a inline hash routines
         var hash: UInt64 = 0xcbf29ce484222325
         let prime: UInt64 = 0x100000001b3
@@ -318,7 +334,7 @@ internal final class FlateEncode {
 
     // Walks the chain from the candidate and keeps the longest match.
     private func longestMatch(
-            _ input: [UInt8],
+            _ input: UnsafeBufferPointer<UInt8>,
             _ i: Int,
             _ candidate: Int32,
             _ length: inout Int,
@@ -356,13 +372,15 @@ internal final class FlateEncode {
             _ output: inout [UInt8],
             _ code: UInt32,
             _ nBits: UInt8) {
-        bitBuffer |= UInt32(code) << bitsInBuffer
-        bitsInBuffer += nBits
-        while bitsInBuffer >= 8 {
-            output.append(UInt8(bitBuffer & 0xFF))
-            bitBuffer >>= 8
-            bitsInBuffer -= 8
+        var buffer = bitBuffer.pointee | (UInt32(code) << bitsInBuffer.pointee)
+        var count = bitsInBuffer.pointee + UInt32(nBits)
+        while count >= 8 {
+            output.append(UInt8(buffer & 0xFF))
+            buffer >>= 8
+            count -= 8
         }
+        bitBuffer.pointee = buffer
+        bitsInBuffer.pointee = count
     }
 
     private func addAdler32(_ output: inout [UInt8], _ input: [UInt8]) {
