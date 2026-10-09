@@ -736,6 +736,13 @@ detailed in the list below:
      Source Serif and other .otf fonts it was made for. Not subset still: a
      font of a fill-in field, a font whose license forbids it, and a font set
      to stay whole.
+  8c. *The benchmark that comes with it* (the owner, 8 October 2026): one
+     document made with Noto Sans (.ttf, subset) and with IBM Plex Sans
+     (.otf.stream, embedded whole), the time to make the PDF, its memory and
+     the size of the file, in benchmarks/ beside the results of 9.0.x, so
+     that later releases are set against it. Noto is the case that matters:
+     the font developers choose for its languages, and the one that makes
+     PDFs heavy today.
   9. *The font's license allows it:* the OS/2 table's fsType bit 0x0100,
      "no subsetting", read first; a font that sets it is embedded whole.
      IBM Plex and Noto allow subsetting (SIL Open Font License); a user's
