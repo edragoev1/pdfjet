@@ -37,6 +37,17 @@ class OpenTypeFont {
         font.checksum = Font.checksumOf(font);
         font.setSize(font.size);
 
+        if (!otf.cff) {
+            // A TrueType font is written at complete(), a subset of the glyphs
+            // drawn; its pages refer to the number reserved for it.
+            font.info = otf.fontInfo;
+            font.capHeight = otf.capHeight;
+            Subset.share(pdf, font, otf.buf, null, otf.buf.length);
+            font.objNumber = pdf.reserveObjNumber();
+            pdf.fonts.add(font);
+            return;
+        }
+
         embedFontFile(pdf, font, otf);
         addFontDescriptorObject(pdf, font, otf);
         addCIDFontDictionaryObject(pdf, font, otf);
@@ -262,22 +273,7 @@ class OpenTypeFont {
         sb.append("CMapName currentdict /CMap defineresource pop\n");
         sb.append("end\nend");
 
-        byte[] buf2 = sb.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
-        if (pdf.encryption != null) {
-            buf2 = AES256.encrypt(buf2, pdf.encryption.getKey());
-        }
-
-        pdf.newObj();
-        pdf.append("<<\n");
-        pdf.append("/Length ");
-        pdf.append(buf2.length);
-        pdf.append("\n");
-        pdf.append(">>\n");
-        pdf.append("stream\n");
-        pdf.append(buf2);
-        pdf.append("\nendstream\n");
-        pdf.endObj();
-
+        FontStream1.addCompressedStream(pdf, sb.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
         font.toUnicodeCMapObjNumber = pdf.getObjNumber();
     }
 

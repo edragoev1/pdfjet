@@ -18,10 +18,24 @@ class FontStream1 {
             InputStream inputStream) throws Exception {
         getFontData(font, inputStream);
         font.checksum = Font.checksumOf(font);
+        if (!font.cff) {
+            // A TrueType font is written at complete(), a subset of the glyphs
+            // drawn; its pages refer to the number reserved for it.
+            byte[] compressed;
+            try {
+                compressed = readBytes(inputStream, font.compressedSize);
+            } finally {
+                inputStream.close();
+            }
+            Subset.share(pdf, font, null, compressed, font.uncompressedSize);
+            font.objNumber = pdf.reserveObjNumber();
+            pdf.fonts.add(font);
+            return;
+        }
         embedFontFile(pdf, font, inputStream);
-        addFontDescriptorObject(pdf, font);
-        addCIDFontDictionaryObject(pdf, font);
-        addToUnicodeCMapObject(pdf, font);
+        addFontDescriptorObject(pdf, font, font.name);
+        addCIDFontDictionaryObject(pdf, font, font.name, null);
+        addToUnicodeCMapObject(pdf, font, null);
 
         // Type0 Font Dictionary
         pdf.newObj();
@@ -103,7 +117,9 @@ class FontStream1 {
         font.fileObjNumber = pdf.getObjNumber();
     }
 
-    private static void addFontDescriptorObject(PDF pdf, Font font) throws Exception {
+    // Writes the font descriptor with the name given, which is the font's own,
+    // or that of a subset.
+    static void addFontDescriptorObject(PDF pdf, Font font, String fontName) throws Exception {
         for (Font f : pdf.fonts) {
             if (f.fontDescriptorObjNumber != 0 && f.name.equals(font.name) && f.checksum == font.checksum) {
                 font.fontDescriptorObjNumber = f.fontDescriptorObjNumber;
@@ -115,7 +131,7 @@ class FontStream1 {
         pdf.append("<<\n");
         pdf.append("/Type /FontDescriptor\n");
         pdf.append("/FontName /");
-        pdf.append(font.name);
+        pdf.append(fontName);
         pdf.append('\n');
         if (font.cff) {
             pdf.append("/FontFile3 ");
@@ -149,13 +165,20 @@ class FontStream1 {
         pdf.append(OpenTypeFont.toGlyphSpace(font.capHeight, font.unitsPerEm));
         pdf.append('\n');
         pdf.append("/StemV 79\n");
+        if (font.cidSetObjNumber != 0) {
+            pdf.append("/CIDSet ");
+            pdf.append(font.cidSetObjNumber);
+            pdf.append(" 0 R\n");
+        }
         pdf.append(">>\n");
         pdf.endObj();
 
         font.fontDescriptorObjNumber = pdf.getObjNumber();
     }
 
-    private static void addToUnicodeCMapObject(PDF pdf, Font font) throws Exception {
+    // Writes the ToUnicode map of the font: of every glyph that has a
+    // character, or only of the glyphs kept, for a subset.
+    static void addToUnicodeCMapObject(PDF pdf, Font font, boolean[] kept) throws Exception {
         for (Font f : pdf.fonts) {
             if (f.toUnicodeCMapObjNumber != 0 && f.name.equals(font.name) && f.checksum == font.checksum) {
                 font.toUnicodeCMapObjNumber = f.toUnicodeCMapObjNumber;
@@ -184,7 +207,7 @@ class FontStream1 {
         int[] unicodeOf = unicodeOfGlyphs(font.unicodeToGID);
         for (int cid = 0; cid <= 0xffff; cid++) {
             int gid = font.unicodeToGID[cid];
-            if (gid > 0 && unicodeOf[gid] == cid) {
+            if (gid > 0 && unicodeOf[gid] == cid && (kept == null || (gid < kept.length && kept[gid]))) {
                 buf.append('<');
                 buf.append(toHexString(gid));
                 buf.append("> <");
@@ -213,26 +236,32 @@ class FontStream1 {
         sb.append("CMapName currentdict /CMap defineresource pop\n");
         sb.append("end\nend");
 
-        byte[] buf2 = sb.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
-        if (pdf.encryption != null) {
-            buf2 = AES256.encrypt(buf2, pdf.encryption.getKey());
-        }
-
-        pdf.newObj();
-        pdf.append("<<\n");
-        pdf.append("/Length ");
-        pdf.append(buf2.length);
-        pdf.append("\n");
-        pdf.append(">>\n");
-        pdf.append("stream\n");
-        pdf.append(buf2);
-        pdf.append("\nendstream\n");
-        pdf.endObj();
-
+        addCompressedStream(pdf, sb.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
         font.toUnicodeCMapObjNumber = pdf.getObjNumber();
     }
 
-    private static void addCIDFontDictionaryObject(PDF pdf, Font font) throws Exception {
+    // Writes a stream object of the data, compressed.
+    static void addCompressedStream(PDF pdf, byte[] data) throws Exception {
+        byte[] compressed = Compressor.deflate(data);
+        if (pdf.encryption != null) {
+            compressed = AES256.encrypt(compressed, pdf.encryption.getKey());
+        }
+        pdf.newObj();
+        pdf.append("<<\n");
+        pdf.append("/Filter /FlateDecode\n");
+        pdf.append("/Length ");
+        pdf.append(compressed.length);
+        pdf.append("\n");
+        pdf.append(">>\n");
+        pdf.append("stream\n");
+        pdf.append(compressed);
+        pdf.append("\nendstream\n");
+        pdf.endObj();
+    }
+
+    // Writes the CID font with the name given, which is the font's own, or
+    // that of a subset, whose widths are those of the glyphs it keeps.
+    static void addCIDFontDictionaryObject(PDF pdf, Font font, String baseFont, boolean[] kept) throws Exception {
         for (Font f : pdf.fonts) {
             if (f.cidFontDictObjNumber != 0 && f.name.equals(font.name) && f.checksum == font.checksum) {
                 font.cidFontDictObjNumber = f.cidFontDictObjNumber;
@@ -249,7 +278,7 @@ class FontStream1 {
             pdf.append("/Subtype /CIDFontType2\n");
         }
         pdf.append("/BaseFont /");
-        pdf.append(font.name);
+        pdf.append(baseFont);
         pdf.append('\n');
 
         byte[] registry = "Adobe".getBytes(java.nio.charset.StandardCharsets.UTF_8);
@@ -275,12 +304,32 @@ class FontStream1 {
         pdf.append(Math.round(k * (float) font.advanceWidth[font.advanceWidth.length - 1]));
         pdf.append('\n');
 
-        pdf.append("/W [0[\n");
-        for (int width : font.advanceWidth) {
-            pdf.append(Math.round(k * (float) width));
-            pdf.append(' ');
+        if (kept == null) {
+            pdf.append("/W [0[\n");
+            for (int width : font.advanceWidth) {
+                pdf.append(Math.round(k * (float) width));
+                pdf.append(' ');
+            }
+            pdf.append("]]\n");
+        } else {
+            // Each run of kept glyphs: its first glyph and its widths.
+            pdf.append("/W [");
+            int count = Math.min(kept.length, font.advanceWidth.length);
+            for (int gid = 0; gid < count; gid++) {
+                if (!kept[gid]) {
+                    continue;
+                }
+                pdf.append('\n');
+                pdf.append(gid);
+                pdf.append('[');
+                for (; gid < count && kept[gid]; gid++) {
+                    pdf.append(Math.round(k * (float) font.advanceWidth[gid]));
+                    pdf.append(' ');
+                }
+                pdf.append(']');
+            }
+            pdf.append("]\n");
         }
-        pdf.append("]]\n");
 
         pdf.append("/CIDToGIDMap /Identity\n");
         pdf.append(">>\n");

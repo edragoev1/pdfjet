@@ -36,6 +36,10 @@ final public class Font {
     protected int cidFontDictObjNumber;
     /** The object number of the ToUnicode CMap. */
     protected int toUnicodeCMapObjNumber;
+    int cidSetObjNumber;        // The CIDSet of a subset in PDF/A-1
+    String baseFont;            // The name it is embedded under, with the tag of a subset
+    Subset.Program program;     // A TrueType font program, until complete()
+    boolean[] kept;             // The glyphs its subset keeps
 
     // Font attributes
     /** The number of font units per em. */
@@ -409,7 +413,7 @@ final public class Font {
     }
 
     // One step of the FNV-1a hash, which is the same in the four ports.
-    private static long fold(long hash, int value) {
+    static long fold(long hash, int value) {
         return (hash ^ (value & 0xFFFFFFFFL)) * 0x100000001B3L;
     }
 
@@ -483,6 +487,33 @@ final public class Font {
     public Font setKernPairs(boolean kernPairs) {
         this.kernPairs = kernPairs;
         return this;
+    }
+
+    /**
+     * Sets whether this font is embedded as a subset, the outlines of the
+     * glyphs the document does not draw left out, which is the default for a
+     * TrueType font, a .ttf or a .ttf.stream. A font with CFF outlines, a .otf
+     * or a .otf.stream, is always embedded whole. A font whose license does
+     * not allow subsetting, by the fsType of its OS/2 table, is embedded whole
+     * too. Fonts read from one file are one font program in the PDF: kept
+     * whole for one, the program is whole for all of them. It must be called
+     * before complete().
+     *
+     * @param subset false to embed the font whole.
+     * @return this Font object.
+     */
+    public Font setSubset(boolean subset) {
+        if (program != null) {
+            program.whole = !subset;
+        }
+        return this;
+    }
+
+    // Records that the glyph is drawn with the font.
+    void useGlyph(int gid) {
+        if (program != null && gid >= 0 && gid < program.used.length) {
+            program.used[gid] = true;
+        }
     }
 
     /**

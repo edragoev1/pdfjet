@@ -316,6 +316,18 @@ final public class PDF {
     }
 
     /**
+     * Starts the object of a number reserved before, with reserveObjNumber.
+     *
+     * @param number the number reserved.
+     * @throws IOException if writing to the output fails.
+     */
+    void newObj(int number) throws IOException {
+        setObjOffset(number, byteCount);
+        append(number);
+        append(Token.NEW_OBJ);
+    }
+
+    /**
      * Ends the current object in the document output.
      *
      * @throws IOException if writing to the output fails.
@@ -2263,6 +2275,7 @@ final public class PDF {
             addPageContent(prevPage);
         }
         completed = true;
+        Subset.addTrueTypeFonts(this);
         if (compliance != Compliance.PDF_1_7) {
             metadataObjNumber = addMetadataObject("", false);
             outputIntentObjNumber = addOutputIntentObject();

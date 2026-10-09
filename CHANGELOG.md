@@ -37,10 +37,10 @@ This is the first entry in this file; earlier releases were not tracked here.
   subset. A font whose license forbids subsetting (fsType 0x0100 in its
   OS/2 table) is embedded whole, and so is a font set to with
   `setSubset(false)`. CFF fonts, a `.otf` or a `.otf.stream`, are embedded
-  whole as before. Go first; Java, C# and Swift follow.
+  whole as before. Go and Java so far; C# and Swift follow.
 
 ### Changed
-- The ToUnicode map of every embedded font is compressed (Go first), a few
+- The ToUnicode map of every embedded font is compressed (Go and Java so far), a few
   hundred kilobytes less for a large CJK font embedded whole.
 - SVG is read with one XML parser, the same in the four ports, in place of
   Go's encoding/xml, Java's StAX, C#'s XmlReader and Swift's own tokenizer,

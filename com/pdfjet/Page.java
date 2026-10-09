@@ -816,7 +816,7 @@ final public class Page {
                 int cp = str.codePointAt(i);
                 i += Character.charCount(cp);
                 if (cp != 0xFEFF) {     // BOM
-                    appendCodePointAsHex(glyphOf(font, cp));
+                    appendGlyph(font, glyphOf(font, cp));
                 }
             }
         } else {
@@ -880,7 +880,7 @@ final public class Page {
                 offsets = markOffsets(font, codePoints, gids, n);
             } else if (mirrored == null && joiners == null && runEdge == null && !hasNotdef) {
                 for (int i = 0; i < n; i++) {
-                    appendCodePointAsHex(gids[i]);
+                    appendGlyph(font, gids[i]);
                 }
                 return;
             }
@@ -942,7 +942,7 @@ final public class Page {
         append(">>> BDC\n<");
         for (int k = from; k < to; k++) {
             if (offsets == null || (offsets[2*k] == 0 && offsets[2*k + 1] == 0)) {
-                appendCodePointAsHex(gids[k]);
+                appendGlyph(font, gids[k]);
             } else {
                 appendMovedGlyph(font, gids[k], offsets[2*k], offsets[2*k + 1]);
             }
@@ -981,7 +981,7 @@ final public class Page {
             if (inOwnSpan(font, codePoints, mirrored, k)) {
                 appendGlyphWithActualText(font, codePoints, gids, null, mirrored, null, k);
             } else {
-                appendCodePointAsHex(gids[k]);
+                appendGlyph(font, gids[k]);
             }
         }
     }
@@ -1017,13 +1017,13 @@ final public class Page {
             append("> Tj\n");
         } else {
             append("<");
-            appendCodePointAsHex(gids[k]);
+            appendGlyph(font, gids[k]);
             append("> Tj\n");
         }
         if (joiner != 0) {
             int space = font.unicodeToGID[0x0020];
             append("[<");
-            appendCodePointAsHex(space);
+            appendGlyph(font, space);
             append("> ");
             append(1000f * font.glyphAdvance(space) / font.unitsPerEm);
             append("] TJ\n");
@@ -1079,13 +1079,13 @@ final public class Page {
             append("[");
             append(1000f * font.glyphAdvance(space) / font.unitsPerEm);
             append(" <");
-            appendCodePointAsHex(space);
+            appendGlyph(font, space);
             append(">] TJ\n");
         }
         append("<");
         for (int k = from; k < to; k++) {
             if (offsets[2*k] == 0 && offsets[2*k + 1] == 0) {
-                appendCodePointAsHex(gids[k]);
+                appendGlyph(font, gids[k]);
             } else {
                 appendMovedGlyph(font, gids[k], offsets[2*k], offsets[2*k + 1]);
             }
@@ -1318,14 +1318,14 @@ final public class Page {
         append(" Ts\n");
         if (dx == 0) {
             append("<");
-            appendCodePointAsHex(gid);
+            appendGlyph(font, gid);
             append("> Tj\n");
         } else {
             float adjustment = 1000f * dx / font.unitsPerEm;
             append("[");
             append(-adjustment);
             append(" <");
-            appendCodePointAsHex(gid);
+            appendGlyph(font, gid);
             append("> ");
             append(adjustment);
             append("] TJ\n");
@@ -2585,6 +2585,13 @@ final public class Page {
     // Multilingual Plane and six above it, where the largest code point is
     // 0x10FFFF. This is the innermost loop of every string drawn, so the
     // digits go into the page's buffer rather than through an array.
+    // Appends the glyph number as hexadecimal and records that the font draws
+    // it, so that a subset of the font keeps it.
+    private void appendGlyph(Font font, int gid) {
+        font.useGlyph(gid);
+        appendCodePointAsHex(gid);
+    }
+
     private void appendCodePointAsHex(int codePoint) {
         if (codePoint <= 0xFFFF) {
             ((ContentBuffer) buf).writeHex4(codePoint);

@@ -546,6 +546,7 @@ public class Stamp implements Drawable {
             // does not have is drawn in a marked content span with the
             // character as its actual text, as on a page.
             int gid = Page.glyphOf(font, codePoint);
+            font.useGlyph(gid);
             if (font.lacks(codePoint)) {
                 append("> Tj\n/Span <</ActualText <");
                 append(Page.toUTF16Hex(Page.textOf(font, codePoint)));
