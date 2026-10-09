@@ -426,26 +426,37 @@ import Testing
         try TextFrameTests.checkALinkEndsBeforeTheSpaceAfterIt(false)
     }
 
+    // Every text line is one word joined to the word before it, so the width
+    // of the words joined to a word was measured over and over. Four times as
+    // many lines take about four times the time, not sixteen; the two times
+    // are measured in the same run, the shortest of three each, so that a
+    // busy computer slows both (a limit of 3 s failed under a fuzzer's load,
+    // 9 October 2026). Half the lines of the other ports, as a debug build
+    // takes about 4 seconds for 20000; without the measure in linear time
+    // it took 704.
     @Test func manyJoinedTextLinesAreMeasuredInLinearTime() {
-        // Every text line is one word joined to the word before it, so the
-        // width of the words joined to a word was measured over and over.
-        let pdf = TestSupport.newPDF()
-        let font = TestSupport.helvetica(pdf)
-        let paragraph = Paragraph(TextLine(font, "word"))
-        for _ in 0..<20000 {
-            paragraph.addJoined(TextLine(font, "x"))
+        let small = joinedLinesTime(2500)
+        let large = joinedLinesTime(10000)
+        #expect(large <= small * 8, "10000 joined lines took \(large), and 2500 \(small)")
+    }
+
+    // The shortest of three times a paragraph of the joined lines is drawn.
+    private func joinedLinesTime(_ count: Int) -> Duration {
+        var shortest = Duration.seconds(1_000_000)
+        for _ in 0..<3 {
+            let pdf = TestSupport.newPDF()
+            let font = TestSupport.helvetica(pdf)
+            let paragraph = Paragraph(TextLine(font, "word"))
+            for _ in 0..<count {
+                paragraph.addJoined(TextLine(font, "x"))
+            }
+            let page = Page(pdf, Letter.PORTRAIT)
+            let frame = TextFrame([paragraph]).setLocation(10, 10).setWidth(300)
+            let elapsed = ContinuousClock().measure {
+                frame.drawOn(page)
+            }
+            shortest = min(shortest, elapsed)
         }
-        let page = Page(pdf, Letter.PORTRAIT)
-        let frame = TextFrame([paragraph]).setLocation(10, 10).setWidth(300)
-        let clock = ContinuousClock()
-        let elapsed = clock.measure {
-            frame.drawOn(page)
-        }
-        let milliseconds = elapsed.components.seconds * 1000
-                + elapsed.components.attoseconds / 1_000_000_000_000_000
-        // A debug build takes about 4 seconds, and 7 under the tests that run
-        // beside it, where a release build takes under 1; without the measure
-        // in linear time it took 704 seconds.
-        #expect(milliseconds < 15000, "\(milliseconds) ms")
+        return shortest
     }
 }

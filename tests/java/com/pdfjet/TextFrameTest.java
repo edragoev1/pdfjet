@@ -466,20 +466,35 @@ class TextFrameTest {
         checkALinkEndsBeforeTheSpaceAfterIt(false);
     }
 
+    // Every text line is one word joined to the word before it, so the width
+    // of the words joined to a word was measured over and over. Four times as
+    // many lines take about four times the time, not sixteen; the two times
+    // are measured in the same run, the shortest of three each, so that a
+    // busy computer slows both (a limit of 3 s failed under a fuzzer's load,
+    // 9 October 2026).
     @Test
     void manyJoinedTextLinesAreMeasuredInLinearTime() throws Exception {
-        // Every text line is one word joined to the word before it, so the
-        // width of the words joined to a word was measured over and over.
-        PDF pdf = TestSupport.newPDF();
-        Font font = TestSupport.helvetica(pdf);
-        Paragraph paragraph = new Paragraph(new TextLine(font, "word"));
-        for (int i = 0; i < 20000; i++) {
-            paragraph.addJoined(new TextLine(font, "x"));
+        long small = joinedLinesTime(5000);
+        long large = joinedLinesTime(20000);
+        assertTrue(large <= 8 * small, "20000 joined lines took " + large / 1000000
+                + " ms, and 5000 " + small / 1000000 + " ms");
+    }
+
+    // The shortest of three times a paragraph of the joined lines is drawn, in nanoseconds.
+    private static long joinedLinesTime(int count) throws Exception {
+        long shortest = Long.MAX_VALUE;
+        for (int run = 0; run < 3; run++) {
+            PDF pdf = TestSupport.newPDF();
+            Font font = TestSupport.helvetica(pdf);
+            Paragraph paragraph = new Paragraph(new TextLine(font, "word"));
+            for (int i = 0; i < count; i++) {
+                paragraph.addJoined(new TextLine(font, "x"));
+            }
+            Page page = new Page(pdf, Letter.PORTRAIT);
+            long time0 = System.nanoTime();
+            new TextFrame(Arrays.asList(paragraph)).setLocation(10f, 10f).setWidth(300f).drawOn(page);
+            shortest = Math.min(shortest, System.nanoTime() - time0);
         }
-        Page page = new Page(pdf, Letter.PORTRAIT);
-        long time0 = System.nanoTime();
-        new TextFrame(Arrays.asList(paragraph)).setLocation(10f, 10f).setWidth(300f).drawOn(page);
-        long milliseconds = (System.nanoTime() - time0) / 1000000;
-        assertTrue(milliseconds < 3000, milliseconds + " ms");
+        return shortest;
     }
 }

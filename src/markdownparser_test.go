@@ -8,6 +8,7 @@ package pdfjet
 import (
 	"bufio"
 	"encoding/hex"
+	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -179,17 +180,32 @@ func TestMarkdownParserContainersNestAtMostMaxDepthLevels(t *testing.T) {
 	}
 }
 
+// Four times as long a text is read in about four times the time, not
+// sixteen; the two times are measured in the same run, the shortest of three
+// each, so that a busy computer slows both (a limit of 3 s failed under a
+// fuzzer's load, 9 October 2026).
 func TestMarkdownParserLongInputsAreReadQuickly(t *testing.T) {
-	text := strings.Repeat("> - a | b\n>   ---|---\n>   ```\n\n    x\n- [ ]\n", 20000)
-	start := time.Now()
-	blocks := markdownParser{}.parse(text)
-	elapsed := time.Since(start)
-	if len(blocks) == 0 {
-		t.Error("no blocks")
+	small := testMarkdownParseTime(t, 5000)
+	large := testMarkdownParseTime(t, 20000)
+	if large > 8*small {
+		t.Errorf("20000 repeats took %v, and 5000 %v", large, small)
 	}
-	if elapsed > 3*time.Second {
-		t.Errorf("%v", elapsed)
+}
+
+// testMarkdownParseTime returns the shortest of three times the text of the
+// repeats is read.
+func testMarkdownParseTime(t *testing.T, count int) time.Duration {
+	text := strings.Repeat("> - a | b\n>   ---|---\n>   ```\n\n    x\n- [ ]\n", count)
+	shortest := time.Duration(math.MaxInt64)
+	for run := 0; run < 3; run++ {
+		start := time.Now()
+		blocks := markdownParser{}.parse(text)
+		shortest = min(shortest, time.Since(start))
+		if len(blocks) == 0 {
+			t.Error("no blocks")
+		}
 	}
+	return shortest
 }
 
 // TestMarkdownParserDescribesAFileOfInputs writes the description of each

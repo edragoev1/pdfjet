@@ -127,15 +127,26 @@ import Testing
         #expect(quotes == MarkdownParser.MAX_DEPTH)
     }
 
+    // Four times as long a text is read in about four times the time, not
+    // sixteen; the two times are measured in the same run, the shortest of
+    // three each, so that a busy computer slows both (a limit of 3 s failed
+    // under a fuzzer's load, 9 October 2026).
     @Test func longInputsAreReadQuickly() {
-        var text = ""
-        for _ in 0..<20000 {
-            text += "> - a | b\n>   ---|---\n>   ```\n\n    x\n- [ ]\n"
+        let small = parseTime(5000)
+        let large = parseTime(20000)
+        #expect(large <= 8 * small, "20000 repeats took \(large / 1_000_000) ms, and 5000 \(small / 1_000_000) ms")
+    }
+
+    // The shortest of three times the text of the repeats is read, in nanoseconds.
+    private func parseTime(_ count: Int) -> UInt64 {
+        let text = String(repeating: "> - a | b\n>   ---|---\n>   ```\n\n    x\n- [ ]\n", count: count)
+        var shortest = UInt64.max
+        for _ in 0..<3 {
+            let time0 = DispatchTime.now().uptimeNanoseconds
+            let blocks = MarkdownParser.parse(text)
+            shortest = min(shortest, DispatchTime.now().uptimeNanoseconds - time0)
+            #expect(!blocks.isEmpty)
         }
-        let time0 = DispatchTime.now().uptimeNanoseconds
-        let blocks = MarkdownParser.parse(text)
-        let milliseconds = (DispatchTime.now().uptimeNanoseconds - time0) / 1000000
-        #expect(!blocks.isEmpty)
-        #expect(milliseconds < 3000, "\(milliseconds) ms")
+        return shortest
     }
 }

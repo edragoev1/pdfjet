@@ -161,16 +161,31 @@ class MarkdownParserTest {
         assertEquals(MarkdownParser.MAX_DEPTH, quotes);
     }
 
+    // Four times as long a text is read in about four times the time, not
+    // sixteen; the two times are measured in the same run, the shortest of
+    // three each, so that a busy computer slows both (a limit of 3 s failed
+    // under a fuzzer's load, 9 October 2026).
     @Test
     void longInputsAreReadQuickly() {
+        long small = parseTime(5000);
+        long large = parseTime(20000);
+        assertTrue(large <= 8 * small, "20000 repeats took " + large / 1000000
+                + " ms, and 5000 " + small / 1000000 + " ms");
+    }
+
+    // The shortest of three times the text of the repeats is read, in nanoseconds.
+    private static long parseTime(int count) {
         StringBuilder text = new StringBuilder();
-        for (int i = 0; i < 20000; i++) {
+        for (int i = 0; i < count; i++) {
             text.append("> - a | b\n>   ---|---\n>   ```\n\n    x\n- [ ]\n");
         }
-        long time0 = System.nanoTime();
-        List<MarkdownParser.Block> blocks = MarkdownParser.parse(text.toString());
-        long milliseconds = (System.nanoTime() - time0) / 1000000;
-        assertTrue(!blocks.isEmpty());
-        assertTrue(milliseconds < 3000, milliseconds + " ms");
+        long shortest = Long.MAX_VALUE;
+        for (int run = 0; run < 3; run++) {
+            long time0 = System.nanoTime();
+            List<MarkdownParser.Block> blocks = MarkdownParser.parse(text.toString());
+            shortest = Math.min(shortest, System.nanoTime() - time0);
+            assertTrue(!blocks.isEmpty());
+        }
+        return shortest;
     }
 }

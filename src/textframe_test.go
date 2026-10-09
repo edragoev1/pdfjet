@@ -7,6 +7,7 @@ package pdfjet
 
 import (
 	"fmt"
+	"math"
 	"regexp"
 	"strconv"
 	"strings"
@@ -560,22 +561,37 @@ func TestTextFrameALinkEndsBeforeTheSpaceAfterIt(t *testing.T) {
 	testCheckALinkEndsBeforeTheSpaceAfterIt(t, false)
 }
 
+// Every text line is one word joined to the word before it, so the width of
+// the words joined to a word was measured over and over. Four times as many
+// lines take about four times the time, not sixteen; the two times are
+// measured in the same run, the shortest of three each, so that a busy
+// computer slows both (a limit of 3 s failed under a fuzzer's load,
+// 9 October 2026).
 func TestTextFrameManyJoinedTextLinesAreMeasuredInLinearTime(t *testing.T) {
-	// Every text line is one word joined to the word before it, so the width
-	// of the words joined to a word was measured over and over.
-	pdf := testNewPDF()
-	font := testHelvetica(pdf)
-	paragraph := NewParagraph().Add(NewTextLine(font, "word"))
-	for i := 0; i < 20000; i++ {
-		paragraph.AddJoined(NewTextLine(font, "x"))
+	small := testJoinedLinesTime(5000)
+	large := testJoinedLinesTime(20000)
+	if large > 8*small {
+		t.Errorf("20000 joined lines took %v, and 5000 %v", large, small)
 	}
-	page := NewPage(pdf, letter.Portrait())
-	frame := NewTextFrameFromParagraphs([]*Paragraph{paragraph}).SetWidth(300)
-	frame.SetLocation(10, 10)
-	start := time.Now()
-	frame.DrawOn(page)
-	elapsed := time.Since(start)
-	if elapsed > 3*time.Second {
-		t.Errorf("%v", elapsed)
+}
+
+// testJoinedLinesTime returns the shortest of three times a paragraph of the
+// joined lines is drawn.
+func testJoinedLinesTime(count int) time.Duration {
+	shortest := time.Duration(math.MaxInt64)
+	for run := 0; run < 3; run++ {
+		pdf := testNewPDF()
+		font := testHelvetica(pdf)
+		paragraph := NewParagraph().Add(NewTextLine(font, "word"))
+		for i := 0; i < count; i++ {
+			paragraph.AddJoined(NewTextLine(font, "x"))
+		}
+		page := NewPage(pdf, letter.Portrait())
+		frame := NewTextFrameFromParagraphs([]*Paragraph{paragraph}).SetWidth(300)
+		frame.SetLocation(10, 10)
+		start := time.Now()
+		frame.DrawOn(page)
+		shortest = min(shortest, time.Since(start))
 	}
+	return shortest
 }
