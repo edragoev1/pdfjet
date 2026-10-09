@@ -473,7 +473,7 @@ public class Snippets {
         new Ellipse().setLocation(320f, 100f).setRadiusX(50f).setRadiusY(30f)
                 .setFillColor(Color.lightgreen).drawOn(page);
         new Arc().setLocation(450f, 100f).setRadiusX(30f).setRadiusY(30f)
-                .setStartAngle(0f).setSweep(270f).setStrokeWidth(4f).drawOn(page);
+                .setStartAngle(0f).setSweep(270f).setStrokeWidth(4f).setStrokeColor(Color.black).drawOn(page);
     }
 
     // @snippet paths

@@ -15,14 +15,14 @@
 
 PDFjet is a library for creating PDF documents from programs. It draws text in any script, tables that break across pages, charts, barcodes and images, and it writes documents that are accessible to screen readers and fit for long-term archiving when you ask it to.
 
-It began in 2000, when there were few PDF libraries and none that was small, fast and written in plain Java. The name says what it has been about ever since: a jet is fast and lean. PDFjet writes a 500-page document with an embedded font in under a tenth of a second, and it writes each page out and frees it as soon as the next one starts, so a long document does not need more memory than a short one.
+PDFjet has been making PDFs since 2001. It began when there were few PDF libraries and none that was small, fast and written in plain Java. The name says what it has been about ever since: a jet is fast and lean. PDFjet writes a 500-page document with an embedded font in under a tenth of a second, and it writes each page out and frees it as soon as the next one starts, so a long document does not need more memory than a short one.
 
 PDFjet comes in four languages, Java, C#, Go and Swift, with the same API and the same output. Each port is written in its own language, with no native code and no dependencies: the Java library is one jar of less than half a megabyte. The four ports are checked against each other on every change: every example is built in the four languages, and the PDFs they write must draw the same text in the same fonts, sizes and positions, page by page.
 
 ## What is in the library
 
 - Text in Latin, Greek, Cyrillic, Chinese, Japanese, Korean, Thai, Hebrew, Arabic and Persian, with right to left text, kerning and fallback fonts.
-- 272 font files ready to use, from the IBM Plex, Noto, Source Serif and JetBrains Mono families, and any OpenType or TrueType file on the computer.
+- 260 font files ready to use, from the IBM Plex, Noto, Source Serif and JetBrains Mono families, and any OpenType or TrueType file on the computer.
 - Text lines, text blocks, columns and frames that wrap and flow text, and tables that break across pages and repeat their header rows.
 - Bar charts, donut charts, XY charts and calendars.
 - Barcodes: Code 128, Code 39, UPC-A, EAN-13, QR codes, Data Matrix and PDF417.

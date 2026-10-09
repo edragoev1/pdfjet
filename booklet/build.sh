@@ -20,6 +20,42 @@ fi
 
 rm -rf build/booklet
 mkdir -p build/booklet
+
+# What each snippet draws, shown under its code: page 1 of the PDF the Java
+# snippets write, as booklet/check-snippets.sh leaves them, made by mutool into
+# an SVG, which the booklet draws as vectors with PDFjet's SVGImage, the area
+# drawn on, and a picture of the page, for the drawings SVGImage cannot draw.
+# The four ports draw the same, as check-snippets.sh checks.
+SNIPPETS=build/check-snippets/java/out
+DRAWINGS=build/booklet/drawings
+if ! command -v mutool > /dev/null; then
+    echo "The booklet needs mutool, of MuPDF, for the drawings of the snippets."
+    exit 1
+fi
+if [ ! -d "$SNIPPETS" ]; then
+    echo "Run booklet/check-snippets.sh first: the booklet shows what the snippets draw."
+    exit 1
+fi
+mkdir -p "$DRAWINGS"
+for name in $(sed -n 's/^@snippet \([a-z0-9-]*\) .*/\1/p' booklet/content.txt); do
+    # The snippets that write a file of another name, and those whose result
+    # is a document rather than a drawing: merged, split, stamped or
+    # encrypted.
+    case $name in
+        accessible-document) file=accessible ;;
+        archival-document) file=archival ;;
+        merge | split | existing-pages | encryption) continue ;;
+        *) file=$name ;;
+    esac
+    pdf="$SNIPPETS/$file.pdf"
+    if [ ! -f "$pdf" ]; then
+        echo "$pdf is missing: run booklet/check-snippets.sh."
+        exit 1
+    fi
+    mutool draw -q -F bbox -o "$DRAWINGS/$name.bbox" "$pdf" 1 || exit 1
+    mutool draw -q -F svg -o "$DRAWINGS/$name.svg" "$pdf" 1 || exit 1
+    mutool draw -q -r 200 -o "$DRAWINGS/$name.png" "$pdf" 1 || exit 1
+done
 javac -encoding utf-8 $RELEASE -Xlint -Xlint:-options -d build/booklet \
     com/pdfjet/*.java \
     com/pdfjet/barcodes/*.java \

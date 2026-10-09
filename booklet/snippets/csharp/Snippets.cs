@@ -466,7 +466,7 @@ public class Snippets {
         new Ellipse().SetLocation(320f, 100f).SetRadiusX(50f).SetRadiusY(30f)
                 .SetFillColor(Color.lightgreen).DrawOn(page);
         new Arc().SetLocation(450f, 100f).SetRadiusX(30f).SetRadiusY(30f)
-                .SetStartAngle(0f).SetSweep(270f).SetStrokeWidth(4f).DrawOn(page);
+                .SetStartAngle(0f).SetSweep(270f).SetStrokeWidth(4f).SetStrokeColor(Color.black).DrawOn(page);
     }
 
     // @snippet paths

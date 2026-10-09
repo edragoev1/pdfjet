@@ -4,7 +4,11 @@
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
+import java.awt.image.BufferedImage;
 import java.io.BufferedOutputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -14,6 +18,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import javax.imageio.ImageIO;
 
 import com.pdfjet.*;
 import com.pdfjet.fonts.*;
@@ -599,6 +606,121 @@ public class Booklet {
             code(snippets.get(language).get(snippet.name), language,
                     edition.equals("all") ? NAMES.get(language) : null);
         }
+        drawing(snippet);
+    }
+
+    // --- What a snippet draws --------------------------------------------------
+
+    static final String DRAWINGS = "build/booklet/drawings/";
+    static final float DRAWING_MARGIN = 4f;     // Around the area drawn on, in the page of the snippet
+    static final float DRAWING_PADDING = 8f;    // Inside the frame
+    static final float DRAWING_HEIGHT = 300f;   // At most, a drawing larger is scaled down
+    static final int PICTURE_DPI = 200;         // Of the pictures build.sh makes
+
+    // Draws under the code what the snippet draws: the area drawn on of the
+    // first page of its PDF, which build.sh had mutool make into an SVG, drawn
+    // with PDFjet's SVGImage as vectors, and into a picture, placed instead
+    // where the page has what SVGImage does not draw: an image, a clipping
+    // path or a mask. It is a Figure, its description the snippet's title. A
+    // snippet whose result is a document, not a drawing, has none.
+    void drawing(Item snippet) throws Exception {
+        File bboxFile = new File(DRAWINGS + snippet.name + ".bbox");
+        if (!bboxFile.exists()) {
+            return;
+        }
+        String bbox = new String(Files.readAllBytes(bboxFile.toPath()), StandardCharsets.UTF_8);
+        Matcher m = Pattern.compile("bbox=\"([-0-9.e]+) ([-0-9.e]+) ([-0-9.e]+) ([-0-9.e]+)\"").matcher(bbox);
+        if (!m.find()) {
+            return;
+        }
+        float x0 = Float.parseFloat(m.group(1)) - DRAWING_MARGIN;
+        float y0 = Float.parseFloat(m.group(2)) - DRAWING_MARGIN;
+        float x1 = Float.parseFloat(m.group(3)) + DRAWING_MARGIN;
+        float y1 = Float.parseFloat(m.group(4)) + DRAWING_MARGIN;
+        float w = x1 - x0;
+        float h = y1 - y0;
+        if (w <= 2 * DRAWING_MARGIN || h <= 2 * DRAWING_MARGIN) {
+            return; // Nothing drawn
+        }
+        float scale = Math.min(1f, Math.min((WIDTH - 2 * DRAWING_PADDING) / w, DRAWING_HEIGHT / h));
+        float dw = w * scale;
+        float dh = h * scale;
+
+        ensure(13f + dh + 2 * DRAWING_PADDING);
+        TextLine label = new TextLine(monoBold, "What it draws");
+        label.setFontSize(7.5f).setTextColor(GRAY);
+        label.setLocation(LEFT, y + 7.5f).drawOn(page);
+        y += 13f;
+        if (!dry) {
+            // The frame is decoration, as a rectangle is.
+            new Rect(LEFT, y, dw + 2 * DRAWING_PADDING, dh + 2 * DRAWING_PADDING)
+                    .setBorderColor(0xD5D9DF).drawOn(page);
+            String description = "What the code above draws: " + snippet.text;
+            String svg = new String(Files.readAllBytes(Paths.get(DRAWINGS + snippet.name + ".svg")),
+                    StandardCharsets.UTF_8);
+            if (svg.contains("<image") || svg.contains("<clipPath") || svg.contains("<mask")) {
+                Image picture = new Image(pdf, new ByteArrayInputStream(
+                        croppedPicture(DRAWINGS + snippet.name + ".png", x0, y0, w, h)));
+                picture.setAltDescription(description);
+                picture.scaleBy(dw / picture.getWidth());
+                picture.setLocation(LEFT + DRAWING_PADDING, y + DRAWING_PADDING);
+                picture.drawOn(page);
+            } else {
+                SVGImage drawn = new SVGImage(new ByteArrayInputStream(
+                        croppedSVG(svg, x0, y0, w, h).getBytes(StandardCharsets.UTF_8)));
+                drawn.setAltDescription(description);
+                drawn.scaleBy(scale);
+                drawn.setLocation(LEFT + DRAWING_PADDING, y + DRAWING_PADDING);
+                drawn.drawOn(page);
+            }
+        }
+        y += dh + 2 * DRAWING_PADDING + 12f;
+    }
+
+    // The SVG mutool made of a page, as SVGImage draws it: cropped to the area
+    // given, its glyphs, which it defines once and uses where they are drawn,
+    // made the paths they stand for, and a stroke of no width, a hairline in
+    // the PDF, which SVG has not and draws 1 wide, made thin.
+    static String croppedSVG(String svg, float x, float y, float w, float h) {
+        Map<String, String> glyphs = new HashMap<String, String>();
+        Matcher defined = Pattern.compile("<path id=\"([^\"]+)\" d=\"([^\"]*)\"/>").matcher(svg);
+        while (defined.find()) {
+            glyphs.put(defined.group(1), defined.group(2));
+        }
+        svg = svg.replaceAll("(?s)<defs>.*?</defs>", "");
+        StringBuffer buf = new StringBuffer();
+        Matcher use = Pattern.compile("<use([^>]*?)/>").matcher(svg);
+        while (use.find()) {
+            String attributes = use.group(1);
+            Matcher href = Pattern.compile("\\s*xlink:href=\"#([^\"]+)\"").matcher(attributes);
+            String path = "";
+            if (href.find()) {
+                String d = glyphs.get(href.group(1));
+                if (d != null && !d.isEmpty()) { // A space has no outline
+                    path = "<path" + attributes.replace(href.group(0), "") + " d=\"" + d + "\"/>";
+                }
+            }
+            use.appendReplacement(buf, Matcher.quoteReplacement(path));
+        }
+        use.appendTail(buf);
+        svg = buf.toString();
+        svg = svg.replaceAll("<path((?:(?!stroke-width)[^>])*?stroke=\"#[0-9a-f]{6}\"(?:(?!stroke-width)[^>])*)>",
+                "<path stroke-width=\"0.25\"$1>");
+        return svg.replaceFirst("width=\"[0-9.]+\" height=\"[0-9.]+\" viewBox=\"[-0-9. ]+\"",
+                "width=\"" + w + "\" height=\"" + h + "\" viewBox=\"" + x + " " + y + " " + w + " " + h + "\"");
+    }
+
+    // The picture of the page build.sh made, cropped to the area given, as a PNG.
+    static byte[] croppedPicture(String path, float x, float y, float w, float h) throws Exception {
+        BufferedImage page = ImageIO.read(new File(path));
+        float k = PICTURE_DPI / 72f;
+        int px = Math.max(0, Math.round(x * k));
+        int py = Math.max(0, Math.round(y * k));
+        int pw = Math.min(page.getWidth() - px, Math.round(w * k));
+        int ph = Math.min(page.getHeight() - py, Math.round(h * k));
+        ByteArrayOutputStream png = new ByteArrayOutputStream();
+        ImageIO.write(page.getSubimage(px, py, pw, ph), "png", png);
+        return png.toByteArray();
     }
 
     // --- Code listings -------------------------------------------------------

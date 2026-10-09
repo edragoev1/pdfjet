@@ -43,14 +43,6 @@ code, then the release.
 
 ## Open
 
-- **The booklet shows what each snippet draws.** Each of its 60 features has
-  a description and the code, but not the result. Booklet.java places, under
-  the code, the part of the page the snippet drew: rendered from the PDFs that
-  check-snippets.sh makes, cropped to what is drawn, a Figure with
-  alternative text. Maybe after, the same as SVG drawn with PDFjet's own
-  SVGImage, if it draws what mutool makes of the page the same. While there,
-  two facts of the introduction to put right: PDFjet has made PDFs since 2001,
-  and the fonts folder has 257 `.ttf` and `.otf` files.
 - **Smaller tagged documents, with object streams.** Each cell of a table of
   PDF/UA costs 280 to 415 bytes, its text and a structure element of its own,
   each an object written uncompressed: a price list of 3,000 rows of 6
@@ -59,6 +51,12 @@ code, then the release.
   cross-reference stream would shrink them a third or more. An option, on by
   default, off for PDF/A-1, which forbids object streams. Measured first, the
   time and the size of a long PDF/UA table, before and after.
+- **For 9.0.7: an Arc's stroke width without a stroke color.** An Arc given
+  `setStrokeWidth(4)` and no `setStrokeColor` is drawn 0 wide, a hairline:
+  the branch of DrawOn for no colors set sets the pen width to 0, whatever the
+  width. Found by the booklet's drawings, whose shapes snippet sets a color
+  since. The fix in the four ports, with a test, and the other shapes checked
+  for the same pattern (Ellipse, Rect, Line, Point, Path).
 - **Longer fuzzing of the font subsetters.** Go's fuzzers ran 5 minutes each
   on every target before 9.0.5 with no failure; the TrueType and CFF
   subsetters, which subset a real font for each input, ran 27,000 and 15,000

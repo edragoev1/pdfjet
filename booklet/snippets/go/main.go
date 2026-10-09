@@ -522,7 +522,7 @@ func shapes(pdf *pdfjet.PDF, font *pdfjet.Font) {
 	pdfjet.NewEllipse().SetRadiusX(50).SetRadiusY(30).
 		SetFillColor(color.LightGreen).SetLocation(320, 100).DrawOn(page)
 	pdfjet.NewArc().SetRadiusX(30).SetRadiusY(30).
-		SetStartAngle(0).SetSweep(270).SetStrokeWidth(4).SetLocation(450, 100).DrawOn(page)
+		SetStartAngle(0).SetSweep(270).SetStrokeWidth(4).SetStrokeColor(color.Black).SetLocation(450, 100).DrawOn(page)
 }
 
 // @snippet paths

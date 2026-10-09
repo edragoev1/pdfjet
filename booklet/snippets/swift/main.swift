@@ -459,7 +459,7 @@ func shapes(_ pdf: PDF, _ font: Font) throws {
     Ellipse().setLocation(320, 100).setRadiusX(50).setRadiusY(30)
             .setFillColor(Color.lightgreen).drawOn(page)
     Arc().setLocation(450, 100).setRadiusX(30).setRadiusY(30)
-            .setStartAngle(0).setSweep(270).setStrokeWidth(4).drawOn(page)
+            .setStartAngle(0).setSweep(270).setStrokeWidth(4).setStrokeColor(Color.black).drawOn(page)
 }
 
 // @snippet paths
