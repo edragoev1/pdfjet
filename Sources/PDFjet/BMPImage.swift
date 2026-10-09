@@ -56,7 +56,13 @@ class BMPImage {
 
     // Tested with images created from GIMP
     /// Reads a BMP image from the stream, which it opens and closes itself.
-    public init(_ stream: InputStream) throws {
+    public convenience init(_ stream: InputStream) throws {
+        try self.init(stream, headerOnly: false)
+    }
+
+    /// Reads the header of the stream alone, to its pixels per metre, for
+    /// ImageSize, checked as the image's, when headerOnly; else the image.
+    init(_ stream: InputStream, headerOnly: Bool) throws {
         stream.open()
         defer { stream.close() }
         let bm = try getBytes(stream, 2)
@@ -111,6 +117,9 @@ class BMPImage {
             let pixelsPerMeterX = try readSignedInt(stream)
             let pixelsPerMeterY = try readSignedInt(stream)
             setPhysicalSize(pixelsPerMeterX, pixelsPerMeterY)
+            if headerOnly {
+                return
+            }
             let colorsUsed = try readSignedInt(stream)
             try skipNBytes(stream, 4)
             var read = 54       // The bytes read so far

@@ -50,7 +50,12 @@ class BMPImage {
     private static readonly int m00001111 = 0x0F;
 
     /* Tested with images created from GIMP */
-    public BMPImage(System.IO.Stream stream) {
+    public BMPImage(System.IO.Stream stream) : this(stream, false) {
+    }
+
+    // Reads the header of the stream alone, to its pixels per metre, for
+    // ImageSize, checked as the image's, when headerOnly; else the image.
+    internal BMPImage(System.IO.Stream stream, bool headerOnly) {
         palette = null;
         byte[] bm = GetBytes(stream, 2);
         // From Wikipedia
@@ -106,6 +111,9 @@ class BMPImage {
             int pixelsPerMeterX = ReadSignedInt(stream);
             int pixelsPerMeterY = ReadSignedInt(stream);
             SetPhysicalSize(pixelsPerMeterX, pixelsPerMeterY);
+            if (headerOnly) {
+                return;
+            }
             int colorsUsed = ReadSignedInt(stream);
             SkipNBytes(stream, 4);
             long read = 54;     // The bytes read so far

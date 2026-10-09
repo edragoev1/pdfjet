@@ -59,6 +59,85 @@ class PNGImage {
      * Used to embed PNG images in the PDF document.
      *
      */
+    // An image to read the size of, for readSize
+    private init() {
+    }
+
+    /// Reads the size of the PNG of the stream, which is open, for ImageSize:
+    /// its chunks read as init reads them, each with its CRC, the IHDR chunk
+    /// and a pHYs chunk kept, the image data and the others passed over, so
+    /// that a chunk of any length takes no memory; its header checked as
+    /// getImageDataLength checks it. The width and the height of the image
+    /// returned are its pixels, and its physical size the one it asks for.
+    static func readSize(_ next: (Int) throws -> [UInt8]) throws -> PNGImage {
+        let image = PNGImage()
+        let signature = try next(8)
+        if signature != [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A] {
+            throw PDFjetError(message: "Wrong PNG signature.")
+        }
+        var hasIDAT = false
+        while true {
+            let length = image.getUInt32(try next(4), 0)
+            if length > UInt32(Int32.max) {
+                throw PDFjetError(message: "Invalid PNG chunk length \(length).")
+            }
+            let type = try next(4)
+            let chunkType = String(decoding: type, as: UTF8.self)
+            let crc = CRC32()
+            crc.update(type, 0, 4)
+            if chunkType == "IHDR" && length != 13 {
+                throw PDFjetError(message: "Invalid PNG IHDR chunk.")
+            }
+            var data: [UInt8]?
+            if chunkType == "IHDR" || (chunkType == "pHYs" && length == 9) {
+                let bytes = try next(Int(length))
+                crc.update(bytes, 0, bytes.count)
+                data = bytes
+            } else {
+                var remaining = Int(length)
+                while remaining > 0 {
+                    let piece = try next(min(remaining, 65536))
+                    crc.update(piece, 0, piece.count)
+                    remaining -= piece.count
+                }
+            }
+            if image.getUInt32(try next(4), 0) != crc.getValue() {
+                throw PDFjetError(message: "Chunk has bad CRC.")
+            }
+            if chunkType == "IEND" {
+                break
+            } else if chunkType == "IHDR", let d = data {
+                image.w = Int(image.getUInt32(d, 0))
+                image.h = Int(image.getUInt32(d, 4))
+                image.bitDepth = Int(d[8])
+                image.colorType = Int(d[9])
+                if d[10] != 0 {
+                    throw PDFjetError(message: "Unknown PNG compression method.")
+                }
+                if d[11] != 0 {
+                    throw PDFjetError(message: "Unknown PNG filter method.")
+                }
+                if d[12] == 1 {
+                    throw PDFjetError(message: "Interlaced PNG images are not supported.")
+                }
+            } else if chunkType == "IDAT" {
+                hasIDAT = true
+            } else if chunkType == "PLTE" {
+                if length % 3 != 0 || length == 0 || length > 3*256 {
+                    throw PDFjetError(message: "Incorrect palette length.")
+                }
+                image.pLTE = []
+            } else if chunkType == "pHYs", let d = data {
+                image.readPhysicalSize(d)
+            }
+        }
+        _ = try image.getImageDataLength()
+        if !hasIDAT {
+            throw PDFjetError(message: "The PNG image has no image data.")
+        }
+        return image
+    }
+
     init(_ stream: InputStream) throws {
         var buffer = try readPNG(stream)
         let chunks = try processPNG(&buffer)

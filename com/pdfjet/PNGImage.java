@@ -66,6 +66,85 @@ class PNGImage {
      * @param inputStream the inputStream.
      * @throws Exception  If an input or output exception occurred.
      */
+    // An image to read the size of, for readSize
+    private PNGImage() {
+    }
+
+    // Reads the size of the PNG of the stream, for ImageSize: its chunks read
+    // as the constructor reads them, each with its CRC, the IHDR chunk and a
+    // pHYs chunk kept, the image data and the others passed over, so that a
+    // chunk of any length takes no memory; its header checked as
+    // getImageDataLength checks it. The width and the height of the image
+    // returned are its pixels, and its physical size the one it asks for.
+    static PNGImage readSize(InputStream inputStream) throws Exception {
+        PNGImage image = new PNGImage();
+        image.validatePNG(inputStream);
+        boolean hasIDAT = false;
+        byte[] buf = new byte[65536];
+        while (true) {
+            long length = image.getLong(inputStream);
+            if (length > Integer.MAX_VALUE) {
+                throw new Exception("Invalid PNG chunk length " + length + ".");
+            }
+            byte[] type = image.getNBytes(inputStream, 4);
+            String chunkType = new String(type);
+            CRC32 crc = new CRC32();
+            crc.update(type, 0, 4);
+            if (chunkType.equals("IHDR") && length != 13) {
+                throw new Exception("Invalid PNG IHDR chunk.");
+            }
+            byte[] data = null;
+            if (chunkType.equals("IHDR") || (chunkType.equals("pHYs") && length == 9)) {
+                data = image.getNBytes(inputStream, length);
+                crc.update(data, 0, data.length);
+            } else {
+                long remaining = length;
+                while (remaining > 0) {
+                    int n = inputStream.read(buf, 0, (int) Math.min(remaining, buf.length));
+                    if (n < 0) {
+                        throw new Exception("Unexpected end of the PNG stream.");
+                    }
+                    crc.update(buf, 0, n);
+                    remaining -= n;
+                }
+            }
+            if (image.getLong(inputStream) != crc.getValue()) {
+                throw new Exception("Chunk has bad CRC.");
+            }
+            if (chunkType.equals("IEND")) {
+                break;
+            } else if (chunkType.equals("IHDR")) {
+                image.w = image.toIntValue(data, 0);
+                image.h = image.toIntValue(data, 4);
+                image.bitDepth = data[8];
+                image.colorType = data[9];
+                if (data[10] != 0) {
+                    throw new Exception("Unknown PNG compression method.");
+                }
+                if (data[11] != 0) {
+                    throw new Exception("Unknown PNG filter method.");
+                }
+                if (data[12] == 1) {
+                    throw new Exception("Interlaced PNG images are not supported.");
+                }
+            } else if (chunkType.equals("IDAT")) {
+                hasIDAT = true;
+            } else if (chunkType.equals("PLTE")) {
+                if (length % 3 != 0 || length == 0 || length > 3*256) {
+                    throw new Exception("Incorrect palette length.");
+                }
+                image.pLTE = new byte[0];
+            } else if (chunkType.equals("pHYs") && data != null) {
+                image.readPhysicalSize(data);
+            }
+        }
+        image.getImageDataLength();
+        if (!hasIDAT) {
+            throw new Exception("The PNG image has no image data.");
+        }
+        return image;
+    }
+
     PNGImage(InputStream inputStream) throws Exception {
         validatePNG(inputStream);
 

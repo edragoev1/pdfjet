@@ -1891,7 +1891,7 @@ no history; the registries count, and are where developers look.
   two layouts is looked at again then. The CJK fonts are the outrageous
   case and are fixed first; for Latin, Greek and Cyrillic the small IBM Plex
   Sans .stream fonts serve, embedded whole, as now.
-- ⬜ Maybe: a size-only reader of an image, in the four ports: the width and
+- ✅ Done for 9.0.5 on 9 October 2026 (the owner: "it is useful and make PDFjet more robust rejecting malicious files early"): `ImageSize`, in the four ports, see the CHANGELOG. As first written: Maybe: a size-only reader of an image, in the four ports: the width and
   the height a PNG, a JPEG or a BMP is drawn at, read from its header, the
   IHDR and pHYs chunks, the SOF and JFIF segments, without embedding it, for
   a layout that places images before it draws them. New API, so after the

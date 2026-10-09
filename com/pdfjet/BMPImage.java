@@ -55,6 +55,12 @@ class BMPImage {
 
     /* Tested with images created from GIMP */
     public BMPImage(java.io.InputStream is) throws Exception {
+        this(is, false);
+    }
+
+    // Reads the header of the stream alone, to its pixels per metre, for
+    // ImageSize, checked as the image's, when headerOnly; else the image.
+    BMPImage(java.io.InputStream is, boolean headerOnly) throws Exception {
         palette = null;
         byte bm[] = getBytes(is, 2);
         // From Wikipedia
@@ -110,6 +116,9 @@ class BMPImage {
             int pixelsPerMeterX = readSignedInt(is);
             int pixelsPerMeterY = readSignedInt(is);
             setPhysicalSize(pixelsPerMeterX, pixelsPerMeterY);
+            if (headerOnly) {
+                return;
+            }
             int colorsUsed = readSignedInt(is);
             skipNBytes(is, 4);
             long read = 54;     // The bytes read so far

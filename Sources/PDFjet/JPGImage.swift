@@ -105,6 +105,18 @@ class JPGImage {
         try processImage(&data)
     }
 
+    /// Reads the segments of the bytes to the frame header alone, for
+    /// ImageSize: its size, its density and its orientation, checked as the
+    /// image's, without its image data.
+    init(_ bytes: [UInt8], headerOnly: Bool) throws {
+        self.data = bytes
+        self.headerOnly = headerOnly
+        try processImage(&data)
+    }
+
+    // Whether only the segments to the frame header are read, for ImageSize
+    private var headerOnly = false
+
     func getWidth() -> UInt16 {
         return self.width
     }
@@ -190,6 +202,9 @@ class JPGImage {
                 if Int(length) != 3*Int(colorComponents) + 8 {
                     throw JPGImageError.bogusFrameHeaderLength(
                             Int(length), 3*Int(colorComponents) + 8, Int(colorComponents))
+                }
+                if headerOnly {
+                    return
                 }
                 // The component specifications fill the rest of the frame
                 // header; they can hold any bytes, the 0xFF of a marker among

@@ -102,6 +102,17 @@ class JPGImage {
         ReadJPGImage(new MemoryStream(data));
     }
 
+    // Reads the segments of the stream to the frame header alone, for
+    // ImageSize: its size, its density and its orientation, checked as the
+    // image's, without its image data, which it does not keep.
+    internal JPGImage(Stream stream, bool headerOnly) {
+        this.headerOnly = headerOnly;
+        ReadJPGImage(stream);
+    }
+
+    // Whether only the segments to the frame header are read, for ImageSize
+    private bool headerOnly;
+
     internal int GetWidth() {
         return this.width;
     }
@@ -196,6 +207,10 @@ class JPGImage {
                     throw new IOException("Error: The JPEG frame header is " + length +
                             " bytes, not the " + (3*colorComponents + 8) +
                             " of its " + colorComponents + " color components.");
+                }
+                if (headerOnly) {
+                    foundSOFn = true;
+                    break;
                 }
                 // The component specifications fill the rest of the frame
                 // header; they can hold any bytes, the 0xFF of a marker among

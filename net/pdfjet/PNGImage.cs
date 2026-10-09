@@ -59,6 +59,85 @@ internal class PNGImage {
     /// <summary>
     /// Used to embed PNG images in the PDF document.
     /// </summary>
+    // An image to read the size of, for ReadSize
+    private PNGImage() {
+    }
+
+    // Reads the size of the PNG of the stream, for ImageSize: its chunks read
+    // as the constructor reads them, each with its CRC, the IHDR chunk and a
+    // pHYs chunk kept, the image data and the others passed over, so that a
+    // chunk of any length takes no memory; its header checked as
+    // GetImageDataLength checks it. The width and the height of the image
+    // returned are its pixels, and its physical size the one it asks for.
+    internal static PNGImage ReadSize(Stream inputStream) {
+        PNGImage image = new PNGImage();
+        image.ValidatePNG(inputStream);
+        bool hasIDAT = false;
+        byte[] buf = new byte[65536];
+        while (true) {
+            UInt32 length = image.GetUInt32(inputStream);
+            if (length > int.MaxValue) {
+                throw new Exception("Invalid PNG chunk length " + length + ".");
+            }
+            byte[] type = image.GetNBytes(inputStream, 4);
+            String chunkType = System.Text.Encoding.UTF8.GetString(type);
+            CRC32 crc = new CRC32();
+            crc.Update(type, 0, 4);
+            if (chunkType.Equals("IHDR") && length != 13) {
+                throw new Exception("Invalid PNG IHDR chunk.");
+            }
+            byte[] data = null;
+            if (chunkType.Equals("IHDR") || (chunkType.Equals("pHYs") && length == 9)) {
+                data = image.GetNBytes(inputStream, length);
+                crc.Update(data, 0, data.Length);
+            } else {
+                long remaining = length;
+                while (remaining > 0) {
+                    int n = inputStream.Read(buf, 0, (int) Math.Min(remaining, buf.Length));
+                    if (n <= 0) {
+                        throw new Exception("Unexpected end of the PNG stream.");
+                    }
+                    crc.Update(buf, 0, n);
+                    remaining -= n;
+                }
+            }
+            if (image.GetUInt32(inputStream) != crc.GetValue()) {
+                throw new Exception("Chunk has bad CRC.");
+            }
+            if (chunkType.Equals("IEND")) {
+                break;
+            } else if (chunkType.Equals("IHDR")) {
+                image.w = (int) image.ToUInt32(data, 0);
+                image.h = (int) image.ToUInt32(data, 4);
+                image.bitDepth = data[8];
+                image.colorType = data[9];
+                if (data[10] != 0) {
+                    throw new Exception("Unknown PNG compression method.");
+                }
+                if (data[11] != 0) {
+                    throw new Exception("Unknown PNG filter method.");
+                }
+                if (data[12] == 1) {
+                    throw new Exception("Interlaced PNG images are not supported.");
+                }
+            } else if (chunkType.Equals("IDAT")) {
+                hasIDAT = true;
+            } else if (chunkType.Equals("PLTE")) {
+                if (length % 3 != 0 || length == 0 || length > 3*256) {
+                    throw new Exception("Incorrect palette length.");
+                }
+                image.pLTE = new byte[0];
+            } else if (chunkType.Equals("pHYs") && data != null) {
+                image.ReadPhysicalSize(data);
+            }
+        }
+        image.GetImageDataLength();
+        if (!hasIDAT) {
+            throw new Exception("The PNG image has no image data.");
+        }
+        return image;
+    }
+
     public PNGImage(Stream inputStream) {
         ValidatePNG(inputStream);
 

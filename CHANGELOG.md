@@ -10,6 +10,20 @@ This is the first entry in this file; earlier releases were not tracked here.
 ## v9.0.5 — unreleased
 
 ### Added
+- `ImageSize`, in the four ports: the size an image is drawn at, and its
+  pixels, read from the header of its file alone, without its image data in
+  memory, so that a page can be laid out before its images are drawn, and an
+  image refused early, for its size or for a header that `Image` refuses,
+  before a byte of it is decoded: a PNG of 100,000 by 100,000 pixels is
+  refused from its 33 bytes of header. `ReadImageSize` and
+  `ReadImageSizeFromFile` in Go, `ImageSize.read` in Java and Swift,
+  `ImageSize.Read` in C#; `getWidth`, `getHeight`, `getPixelWidth` and
+  `getPixelHeight`. The size is the one `Image` gives: the physical size of a
+  PNG's pHYs chunk, a JPEG's JFIF density or a BMP's pixels per metre, a JPEG
+  turned by its Exif orientation height by width. A JPEG is read to its frame
+  header, a BMP to its pixels per metre, a PNG a chunk at a time to its end,
+  its image data checked by its CRC and passed over. The tests hold it to
+  `Image` on 710 images, and Go's fuzzing on any bytes.
 - The XML parser that reads SVG is public API, in the four ports, for PDFjet
   Pro's electronic invoices too, so that the library and Pro read XML with one
   parser: `xmlparser` in Go (`src/xmlparser`), `XMLParser`, `XMLNode` and
