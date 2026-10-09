@@ -192,6 +192,33 @@ import Testing
         #expect(count(content, "/Lang") == 8)
     }
 
+    @Test func aCJKParagraphHasTheLanguageGiven() {
+        // Example_44's Chinese was read as English, as addCJKParagraph took no
+        // language (the NVDA pass, 7 October 2026). Every line it makes has
+        // the language given; with none, it gives none.
+        for language in ["zh-Hans", nil] as [String?] {
+            let memory = MemoryPDF(Compliance.PDF_UA_1)
+            memory.pdf.setTitle("Test")
+            let font = TestSupport.helvetica(memory.pdf)
+            let column = TextColumn()
+            column.setWidth(100.0)
+            column.setLocation(100.0, 100.0)
+            if let language = language {
+                column.addCJKParagraph(font, "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", language)
+            } else {
+                column.addCJKParagraph(font, "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
+            }
+            let page = Page(memory.pdf, Letter.PORTRAIT)
+            column.drawOn(page)
+            let content = TestSupport.content(page)
+            let lines = count(content, "/P <</MCID")
+            let want = language == nil ? 0 : lines
+            #expect(lines >= 2)
+            #expect(count(content.lowercased(), "/lang <7a682d48616e73>") == want)
+            #expect(count(content, "/Lang") == want)
+        }
+    }
+
     private func drawJoinedColumn(_ width: Float, _ alignment: Alignment, _ texts: String...) -> String {
         let pdf = TestSupport.newPDF()
         let font = TestSupport.helvetica(pdf)

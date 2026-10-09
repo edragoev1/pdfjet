@@ -10,6 +10,11 @@ This is the first entry in this file; earlier releases were not tracked here.
 ## v9.0.5 — unreleased
 
 ### Added
+- `TextColumn.addCJKParagraph(font, text, language)`, in the four ports
+  (`AddCJKParagraphWithLanguage` in Go): a paragraph of Chinese, Japanese or
+  Korean in the language given, which every line it makes carries into its
+  marked content, so a screen reader reads it in that language; without
+  one, Example_44's Chinese was read as English. Example_44 sets `zh-Hans`.
 - `Table.setCellPadding(side, vertical)`, in the four ports: the padding of
   every cell of a table in one call, at the sides and over and under the
   text, as `setCellBorders`, `setCellBorderColor` and `setCellBorderWidth`

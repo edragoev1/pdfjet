@@ -23,6 +23,11 @@ local and never pushed, as public releases keep odd numbers; nothing is
 packaged and the Producer still says v9.0.3. **v9.0.5 then adds the
 TrueType font subsetting** (the plan under v9.1 below, moved up), with
 NuGet, net48's feedback and Jazzer's last findings when they come.
+**Jazzer's last findings, checked on 9 October 2026: none is a fault.** The
+11 "crashes" of the run started at 07:12 are its stop, every target
+"exited" at 07:18, each input running cleanly in 0.04 to 0.5 s; its 4
+slow units, 32 to 42 s instrumented, take 0.2 to 0.8 s without (the harness
+rebuilt from 5370cd9e, tools/com/pdfjet/Repro.java).
 
 **Subsetting, done in the four ports on 8 October 2026:**
 `src/subset.go`. The TrueType fonts are written at Complete under the number
@@ -172,7 +177,33 @@ stays the fast path for the fonts embedded whole and for PDFjet Forms.
    for buyers; and whether it is the evaluation or the licensed build.
 6. ⬜ **Sent on 9 October 2026: the 9.0.3 evaluation package, its strong-named net48 build, to the .NET client, who tests it; waiting for what they find.** **Anything the .NET client finds in net48**, which ships untested on
    Windows in 9.0.3 (they test it).
-7. ⬜ **The release:** the checks of the tag as for 9.0.3 (check-examples.sh,
+7. ⬜ **The booklet shows what each snippet draws** (the owner, 9 October
+   2026: "Fix the booklet by adding screenshots or vectors that show what
+   the code will draw"). Today each of its 60 `@snippet` features has a
+   description and the code, but not the result. Booklet.java places,
+   under the code, the part of the page the snippet drew:
+   - **The way to start, a picture:** check-snippets.sh already runs every
+     snippet and keeps its PDF (59 PDFs, compared across the ports).
+     Render each one's page with `mutool draw` at about 200 dpi, cropped to
+     the ink (the drawn area's bounding box plus a margin), as a PNG kept in
+     booklet/results/, made by build.sh, not by hand; drawn at its real size
+     where it fits the column, scaled down where not, with a thin frame.
+     Each a Figure with alternative text, as PDF/UA asks: the snippet's
+     title, "what the code above draws". Rendered from the Java snippets
+     for every booklet: the four ports draw the same, which the check holds.
+   - **Maybe after, vectors:** the page as SVG (`mutool draw -F svg`) drawn
+     with PDFjet's own SVGImage, sharp at any zoom and smaller; only if
+     SVGImage draws mutool's SVG (glyphs as paths, clipping) the same as
+     the picture, checked page by page. Otherwise the pictures stay.
+   - A snippet that makes a document of its own (accessible, archival,
+     encrypted) or no page (document info) shows what can be seen, or
+     nothing, said in its text.
+   - While there, two facts of the introduction are out of date: "It began
+     in 2000" (PDFjet has been making PDFs since 2001) and "272 font files"
+     (257 .ttf and .otf files in pdfjet-fonts since the .stream files went).
+   The booklets rebuilt for the release, their size checked (60 pictures at
+   about 20 to 60 KB each), and veraPDF UA passing as now.
+8. ⬜ **The release:** the checks of the tag as for 9.0.3 (check-examples.sh,
    check-api.sh v9.0.3, the viewer pass kept to what can find a major
    issue), the packages, the GitHub release with the eval zips, FastSpring's
    four files, pdfjet.com by update-from-pdfjet.py and
@@ -678,8 +709,13 @@ detailed in the list below:
   took the added space into account. Then the text test: `mutool trace`
   shows a space at the end of each wrapped line and between the words of
   justified rows, and NVDA reads Example_01 and 52 with fewer pauses.
-- ⬜ **For 9.0.5, now (the owner, 9 October 2026: "if there is anything
-  else we do it now").** **The language of text in a TextColumn reaches the structure tree**
+- ✅ **Done for 9.0.5 on 9 October 2026 (the owner: "if there is anything
+  else we do it now").** The first gap was closed already: a paragraph's
+  words keep their TextLine's language in their marked content (Example_29:
+  81 words /Lang el). The second: `addCJKParagraph(font, text, language)`
+  in the four ports, `AddCJKParagraphWithLanguage` in Go, a test in each,
+  Example_44 in zh-Hans. As it was:
+  **The language of text in a TextColumn reaches the structure tree**
   (the NVDA pass of 7 October 2026: Example_01's Greek was spelled letter
   by letter and its Bulgarian skipped, as no block said its language; fixed
   in Example_01 with TextBlock.setLanguage). Two gaps of the library remain,

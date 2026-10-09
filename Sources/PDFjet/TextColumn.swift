@@ -471,19 +471,33 @@ public class TextColumn : Drawable {
     ///
     @discardableResult
     public func addCJKParagraph(_ font: Font, _ text: String) -> TextColumn {
+        return addCJKParagraph(font, text, nil)
+    }
+
+    ///
+    /// Adds a paragraph of Chinese, Japanese or Korean text to this text column,
+    /// wrapped at any character to the width of the column, in the language
+    /// given, which a screen reader reads it in.
+    ///
+    /// - Parameter font: the font used by this paragraph.
+    /// - Parameter text: the text.
+    /// - Parameter language: the language of the text, for example "zh-Hans", "ja" or "ko".
+    ///
+    @discardableResult
+    public func addCJKParagraph(_ font: Font, _ text: String, _ language: String?) -> TextColumn {
         var paragraph: Paragraph
         var buf = String()
         for scalar in text.unicodeScalars {
             if font.stringWidth(buf + String(scalar)) > w {
                 paragraph = Paragraph()
-                paragraph.add(TextLine(font, buf))
+                paragraph.add(TextLine(font, buf).setLanguage(language))
                 addParagraph(paragraph)
                 buf = ""
             }
             buf.append(String(scalar))
         }
         paragraph = Paragraph()
-        paragraph.add(TextLine(font, buf))
+        paragraph.add(TextLine(font, buf).setLanguage(language))
         return addParagraph(paragraph)
     }
 }   // End of TextColumn.swift

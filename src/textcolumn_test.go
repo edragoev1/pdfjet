@@ -312,3 +312,39 @@ func TestTextColumnTheLanguageOfATextLineIsKeptInItsWords(t *testing.T) {
 		t.Errorf("%d words with a language, not 8", got)
 	}
 }
+
+func TestTextColumnACJKParagraphHasTheLanguageGiven(t *testing.T) {
+	// Example_44's Chinese was read as English, as AddCJKParagraph took no
+	// language (the NVDA pass, 7 October 2026). Every line it makes has the
+	// language given; AddCJKParagraph gives none.
+	for _, language := range []string{"zh-Hans", ""} {
+		doc := testNewDoc()
+		doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
+		font := testHelvetica(doc.pdf)
+		column := NewTextColumn()
+		column.SetWidth(100)
+		column.SetLocation(100, 100)
+		if language == "" {
+			column.AddCJKParagraph(font, "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
+		} else {
+			column.AddCJKParagraphWithLanguage(font, "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", language)
+		}
+		page := NewPage(doc.pdf, letter.Portrait())
+		column.DrawOn(page)
+		content := testContent(page)
+		lines := strings.Count(content, "/P <</MCID")
+		want := 0
+		if language != "" {
+			want = lines
+		}
+		if lines < 2 {
+			t.Errorf("%d lines, not 2 or more", lines)
+		}
+		if got := strings.Count(strings.ToLower(content), "/lang <7a682d48616e73>"); got != want {
+			t.Errorf("%q: %d of %d lines in Chinese", language, got, lines)
+		}
+		if got := strings.Count(content, "/Lang"); got != want {
+			t.Errorf("%q: %d lines with a language, not %d", language, got, want)
+		}
+	}
+}

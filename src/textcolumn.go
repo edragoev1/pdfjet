@@ -426,18 +426,25 @@ func (textColumn *TextColumn) drawNonJustifiedLine(page *Page, textLines []*Text
 // specified font, to this text column. The text is wrapped at any character to
 // the width of the column.
 func (textColumn *TextColumn) AddCJKParagraph(font *Font, text string) *TextColumn {
+	return textColumn.AddCJKParagraphWithLanguage(font, text, "")
+}
+
+// AddCJKParagraphWithLanguage adds a paragraph of Chinese, Japanese or Korean
+// text, as AddCJKParagraph does, in the language given, for example "zh-Hans",
+// "ja" or "ko", which a screen reader reads it in.
+func (textColumn *TextColumn) AddCJKParagraphWithLanguage(font *Font, text, language string) *TextColumn {
 	var paragraph *Paragraph
 	var buf strings.Builder
 	for _, ch := range text {
 		if font.StringWidth(font.size, buf.String()+string(ch)) > textColumn.w {
 			paragraph = NewParagraph()
-			paragraph.Add(NewTextLine(font, buf.String()))
+			paragraph.Add(NewTextLine(font, buf.String()).SetLanguage(language))
 			textColumn.AddParagraph(paragraph)
 			buf.Reset()
 		}
 		buf.WriteRune(ch)
 	}
 	paragraph = NewParagraph()
-	paragraph.Add(NewTextLine(font, buf.String()))
+	paragraph.Add(NewTextLine(font, buf.String()).SetLanguage(language))
 	return textColumn.AddParagraph(paragraph)
 }

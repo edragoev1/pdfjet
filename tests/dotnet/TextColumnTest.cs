@@ -201,6 +201,33 @@ public class TextColumnTest {
         Assert.Equal(8, Count(content, "/Lang"));
     }
 
+    [Fact]
+    public void ACJKParagraphHasTheLanguageGiven() {
+        // Example_44's Chinese was read as English, as AddCJKParagraph took no
+        // language (the NVDA pass, 7 October 2026). Every line it makes has
+        // the language given; with none, it gives none.
+        foreach (string language in new string[] {"zh-Hans", null}) {
+            PDF pdf = new PDF(new System.IO.MemoryStream(), Compliance.PDF_UA_1).SetTitle("Test");
+            Font font = TestSupport.Helvetica(pdf);
+            TextColumn column = new TextColumn();
+            column.SetWidth(100f);
+            column.SetLocation(100f, 100f);
+            if (language == null) {
+                column.AddCJKParagraph(font, "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
+            } else {
+                column.AddCJKParagraph(font, "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", language);
+            }
+            Page page = new Page(pdf, Letter.PORTRAIT);
+            column.DrawOn(page);
+            string content = TestSupport.Latin1(page.GetContent());
+            int lines = Count(content, "/P <</MCID");
+            int want = language == null ? 0 : lines;
+            Assert.True(lines >= 2, content);
+            Assert.Equal(want, Count(content.ToLowerInvariant(), "/lang <7a682d48616e73>"));
+            Assert.Equal(want, Count(content, "/Lang"));
+        }
+    }
+
     private static string DrawJoinedColumn(float width, Alignment alignment, params string[] texts) {
         PDF pdf = TestSupport.NewPDF();
         Font font = TestSupport.Helvetica(pdf);

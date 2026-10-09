@@ -466,20 +466,32 @@ public class TextColumn : IDrawable {
     /// <param name="font">the font used by this paragraph.</param>
     /// <param name="text">the text.</param>
     public TextColumn AddCJKParagraph(Font font, String text) {
+        return AddCJKParagraph(font, text, null);
+    }
+
+    /// <summary>
+    /// Adds a paragraph of Chinese, Japanese or Korean text to this text column,
+    /// wrapped at any character to the width of the column, in the language
+    /// given, which a screen reader reads it in.
+    /// </summary>
+    /// <param name="font">the font used by this paragraph.</param>
+    /// <param name="text">the text.</param>
+    /// <param name="language">the language of the text, for example "zh-Hans", "ja" or "ko".</param>
+    public TextColumn AddCJKParagraph(Font font, String text, String language) {
         Paragraph paragraph;
         StringBuilder buf = new StringBuilder();
         for (int i = 0; i < text.Length; i += Util.CharCount(text, i)) {
             String ch = text.Substring(i, Util.CharCount(text, i));
             if (font.StringWidth(buf.ToString() + ch) > w) {
                 paragraph = new Paragraph();
-                paragraph.Add(new TextLine(font, buf.ToString()));
+                paragraph.Add(new TextLine(font, buf.ToString()).SetLanguage(language));
                 AddParagraph(paragraph);
                 buf.Length = 0;
             }
             buf.Append(ch);
         }
         paragraph = new Paragraph();
-        paragraph.Add(new TextLine(font, buf.ToString()));
+        paragraph.Add(new TextLine(font, buf.ToString()).SetLanguage(language));
         return AddParagraph(paragraph);
     }
 }   // End of TextColumn.cs

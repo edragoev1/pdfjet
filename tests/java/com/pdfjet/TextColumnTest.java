@@ -215,6 +215,33 @@ class TextColumnTest {
         assertEquals(8, count(content, "/Lang"), content);
     }
 
+    @Test
+    void aCJKParagraphHasTheLanguageGiven() throws Exception {
+        // Example_44's Chinese was read as English, as addCJKParagraph took no
+        // language (the NVDA pass, 7 October 2026). Every line it makes has
+        // the language given; with none, it gives none.
+        for (String language : new String[] {"zh-Hans", null}) {
+            PDF pdf = new PDF(new java.io.ByteArrayOutputStream(), Compliance.PDF_UA_1).setTitle("Test");
+            Font font = TestSupport.helvetica(pdf);
+            TextColumn column = new TextColumn();
+            column.setWidth(100f);
+            column.setLocation(100f, 100f);
+            if (language == null) {
+                column.addCJKParagraph(font, "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
+            } else {
+                column.addCJKParagraph(font, "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", language);
+            }
+            Page page = new Page(pdf, Letter.PORTRAIT);
+            column.drawOn(page);
+            String content = TestSupport.latin1(page.getContent());
+            int lines = count(content, "/P <</MCID");
+            int want = language == null ? 0 : lines;
+            assertTrue(lines >= 2, content);
+            assertEquals(want, count(content.toLowerCase(), "/lang <7a682d48616e73>"), content);
+            assertEquals(want, count(content, "/Lang"), content);
+        }
+    }
+
     private static String drawJoinedColumn(float width, Alignment alignment, String... texts)
             throws Exception {
         PDF pdf = TestSupport.newPDF();
