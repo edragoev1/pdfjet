@@ -52,8 +52,10 @@ the `.ttf` accepted ("Go with 1, accept both"). Three stream files stay in
 `tests/data/stream-fonts` for the tests of the reader. Still to do: PDFjet
 Forms on the `.ttf` files (pdfjet-server, its own copies of the fonts, when it
 moves to 9.0.5), and a font added to an existing PDF is embedded whole, which
-made Examples 37 and 50 larger (124 KB to 172 KB, 170 KB to 264 KB): a subset
-there needs a completion of the objects, a maybe for v9.1.
+made Examples 37 and 50 larger (124 KB to 172 KB, 170 KB to 264 KB): they
+use IBM Plex Sans's .otf instead (the owner, 9 October 2026), whose CFF is
+embedded, 127 KB and 177 KB. A subset there needs a completion of the
+objects, a maybe for v9.1.
 
 **CFF subsetting: not needed** (8 October 2026). About 3,000 lines in the
 four ports (5,000 with the subroutines pruned) for one gain, IBM Plex as

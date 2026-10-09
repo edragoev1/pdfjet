@@ -40,11 +40,13 @@ class Example_50 {
         image.setLocation(495f, 65f);
         image.scaleBy(0.40f);
 
-        stream = new FileInputStream(IBMPlexSans.Regular);
+        // A font added to an existing PDF is embedded whole, and the CFF outlines
+        // of the .otf are smaller than the whole .ttf.
+        stream = new FileInputStream("fonts/IBMPlexSans/IBMPlexSans-Regular.otf");
         Font f1 = new Font(objects, stream);
         f1.setSize(12f);
 
-        stream = new FileInputStream(IBMPlexSans.Bold);
+        stream = new FileInputStream("fonts/IBMPlexSans/IBMPlexSans-Bold.otf");
         Font f2 = new Font(objects, stream);
         f2.setSize(12f);
 

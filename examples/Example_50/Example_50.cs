@@ -41,14 +41,16 @@ public class Example_50 {
         image.SetLocation(495f, 65f);
         image.ScaleBy(0.40f);
 
+        // A font added to an existing PDF is embedded whole, and the CFF outlines
+        // of the .otf are smaller than the whole .ttf.
         Font f1 = new Font(objects,
-                new FileStream(IBMPlexSans.Regular,
+                new FileStream("fonts/IBMPlexSans/IBMPlexSans-Regular.otf",
                         FileMode.Open,
                         FileAccess.Read));
         f1.SetSize(12f);
 
         Font f2 = new Font(objects,
-                new FileStream(IBMPlexSans.Bold,
+                new FileStream("fonts/IBMPlexSans/IBMPlexSans-Bold.otf",
                         FileMode.Open,
                         FileAccess.Read));
         f2.SetSize(12f);

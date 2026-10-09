@@ -14,7 +14,6 @@ import (
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
-	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/corefont"
 )
@@ -56,7 +55,9 @@ func Example50(fileName string) {
 	image1.SetLocation(495.0, 65.0)
 	image1.ScaleBy(0.40)
 
-	file2, err := os.Open(IBMPlexSans.Regular)
+	// A font added to an existing PDF is embedded whole, and the CFF outlines
+	// of the .otf are smaller than the whole .ttf.
+	file2, err := os.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -65,7 +66,7 @@ func Example50(fileName string) {
 	font1 := pdfjet.NewFontStream2(&objects, reader)
 	font1.SetSize(12.0)
 
-	file3, err := os.Open(IBMPlexSans.Bold)
+	file3, err := os.Open("fonts/IBMPlexSans/IBMPlexSans-Bold.otf")
 	if err != nil {
 		log.Fatal(err)
 	}

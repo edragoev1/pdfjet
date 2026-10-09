@@ -15,9 +15,11 @@ public class Example_37 {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_37.pdf", append: false)!)
         var objects = try pdf.read(from: InputStream(fileAtPath: fileName)!)
 
+        // A font added to an existing PDF is embedded whole, and the CFF outlines
+        // of the .otf are smaller than the whole .ttf.
         let f1 = try Font(
                 &objects,
-                InputStream(fileAtPath: IBMPlexSans.Regular)!)
+                InputStream(fileAtPath: "fonts/IBMPlexSans/IBMPlexSans-Regular.otf")!)
         f1.setSize(72.0)
 
         let text = TextLine(f1, "This is a test!")

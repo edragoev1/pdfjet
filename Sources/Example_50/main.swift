@@ -34,13 +34,15 @@ public class Example_50 {
         image.setLocation(495.0, 65.0)
         image.scaleBy(0.40)
 
+        // A font added to an existing PDF is embedded whole, and the CFF outlines
+        // of the .otf are smaller than the whole .ttf.
         let f1 = try Font(
                 &objects,
-                InputStream(fileAtPath: IBMPlexSans.Regular)!).setSize(12.0)
+                InputStream(fileAtPath: "fonts/IBMPlexSans/IBMPlexSans-Regular.otf")!).setSize(12.0)
 
         let f2 = try Font(
                 &objects,
-                InputStream(fileAtPath: IBMPlexSans.Bold)!).setSize(12.0)
+                InputStream(fileAtPath: "fonts/IBMPlexSans/IBMPlexSans-Bold.otf")!).setSize(12.0)
 
         let pages = pdf.getPageObjects(from: objects)
         let page = Page(pdf, pages[0])

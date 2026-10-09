@@ -13,7 +13,6 @@ import (
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
-	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/content"
 )
@@ -28,7 +27,9 @@ func Example37(fileName string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	file1, err := os.Open(IBMPlexSans.Regular)
+	// A font added to an existing PDF is embedded whole, and the CFF outlines
+	// of the .otf are smaller than the whole .ttf.
+	file1, err := os.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf")
 	if err != nil {
 		log.Fatal(err)
 	}
