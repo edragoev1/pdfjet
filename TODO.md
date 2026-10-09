@@ -1952,16 +1952,13 @@ no history; the registries count, and are where developers look.
   its one setting, the chain of 32, barely changes it; a faster one needs a
   design of its own, as zlib's levels 1 to 3 have. A large job, worth it
   if a customer draws such images from Swift.
-- ⬜ Maybe: OEM12x20 in pdfjet-fonts. The 12 by 20 pixel font of code page
-  437, drawn from scratch in the late 90s and MIT-licensed
-  (github.com/edragoev1/OEM12x20), converted to OTF: each pixel a square, with
-  FontForge, and a map from CP437 to Unicode, so that the text of a PDF can be
-  extracted and read aloud. With one example: a report in the style of DOS,
-  with tables drawn in box-drawing characters. No new library API: it is used
-  as any bundled font is. Small value: JetBrains Mono and IBM Plex Mono cover
-  monospaced text, and 256 characters are few; it suits legacy text reports
-  and text-mode art made PDFs that look like the original.
-- ⬜ Maybe: Andika in pdfjet-fonts, its four styles, as .ttf files (no .stream files since 9 October 2026)
+- ⬜ Maybe: Andika in pdfjet-fonts, its four styles, as .ttf files (no .stream files since 9 October 2026).
+  **The owner, 9 October 2026: not in PDFjet Forms** (a fourth family is a good deal of work: the
+  .ttf, the .woff2 and the metrics, the 32 languages checked, and only four styles where the
+  editor offers twelve weights); in the editor it would have been "Andika", as the other families
+  are named. For the library, still a maybe, leaning no: "people that care about this can find it
+  and use it. It would be stupid to try to bundle all the fonts.google in the product." OEM12x20,
+  the item before this one, was taken out the same day.
   (SIL, https://software.sil.org/andika/, SIL Open Font License, as IBM Plex
   and Noto). A font designed for legibility: I, l and 1 clearly apart, b, d,
   p and q not mirrors of one another, single-storey a and g, open shapes and
