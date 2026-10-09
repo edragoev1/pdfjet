@@ -32,14 +32,17 @@ ZIP="$PWD/.commercial-packages/$NAME.zip"
 EVAL_NAME="PDFjet-ForJava-Eval-$VERSION"
 EVAL_ZIP="$PWD/.commercial-packages/$EVAL_NAME.zip"
 
-# From 9.0.5 every file and directory of a package has one time, that of the
-# commit the package is made from, in UTC, as the zip stores it: so a file's
-# time says which release it is of, as on the CDs of old, and two builds of a
-# release differ only in what they make, not in when (reproducible builds,
+# From 9.0.5 every file and directory of a package has one time: the day of
+# the commit the package is made from, in Ontario, where it is made, at
+# 17:00:00, a round time as on the CDs of old, so that a file's time says
+# which release it is of. The zip stores it as it is, with no time zone, so it
+# reads 17:00:00 wherever it is unpacked; and two builds of a release differ
+# only in what they make, not in when (reproducible builds,
 # SOURCE_DATE_EPOCH). The zip lists its entries in sorted order and without
 # the extra fields of each system (-X).
+RELEASE_DAY=$(TZ=America/Toronto git log -1 --format=%cd --date=format-local:%Y%m%d HEAD)
 export TZ=UTC
-RELEASE_TIME=$(git log -1 --format=%cd --date=format-local:%Y%m%d%H%M.%S HEAD)
+RELEASE_TIME=${RELEASE_DAY}1700.00
 stamp() {
     find "$1" -exec touch -h -t "$RELEASE_TIME" {} +
 }
@@ -109,7 +112,7 @@ javac -O -encoding utf-8 $RELEASE -Xlint -Xlint:-options -Werror \
 # jar writes as well, with --date, which JDK 17 and later have.
 stamp out/library
 if jar --help 2>&1 | grep -q -- '--date'; then
-    jar --date="$(git log -1 --format=%cd --date=format-local:%Y-%m-%dT%H:%M:%SZ HEAD)" \
+    jar --date="${RELEASE_DAY:0:4}-${RELEASE_DAY:4:2}-${RELEASE_DAY:6:2}T17:00:00Z" \
         --create --file PDFjet.jar -C out/library .
 else
     jar cf PDFjet.jar -C out/library .
