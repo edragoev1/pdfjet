@@ -259,6 +259,31 @@ public sealed class TableTest : IDisposable {
     }
 
     [Fact]
+    public void TheLinkedMarkerOfAWrappedCellIsAFigure() {
+        // The lines of a wrapped cell are one paragraph, and a figure drawn in
+        // it, as its linked marker, was made part of the paragraph, losing its
+        // element and its description (the review of 9 October 2026).
+        foreach (string text in new string[] {"short", "a note long enough to wrap to four lines"}) {
+            System.IO.MemoryStream stream = new System.IO.MemoryStream();
+            PDF pdf = new PDF(stream, Compliance.PDF_UA_1).SetTitle("Test");
+            Font font = TestSupport.Helvetica(pdf);
+            Cell marked = new Cell(font, text);
+            marked.SetMarker(new Point(0f, 0f).SetURIAction("https://pdfjet.com").SetAltDescription("PDFjet"),
+                    Alignment.LEFT);
+            List<List<Cell>> data = new List<List<Cell>>();
+            data.Add(new List<Cell> {new Cell(font, "Name"), new Cell(font, "Notes")});
+            data.Add(new List<Cell> {new Cell(font, "a"), marked});
+            data.Add(new List<Cell> {new Cell(font, "b"),
+                    new Cell(font, "a note long enough to wrap to four lines")});
+            new Table().SetTableData(data, 1).SetLocation(20f, 20f).DrawOn(new Page(pdf, Letter.PORTRAIT));
+            pdf.Complete();
+            string raw = TestSupport.Latin1(stream.ToArray());
+            Assert.True(Count(raw, "/S /Figure\n") == 1, text + ": /S /Figure");
+            Assert.True(Count(raw, "/S /Link\n") == 1, text + ": /S /Link");
+        }
+    }
+
+    [Fact]
     public void TheHeaderRowsOnTheNextPagesAreArtifacts() {
         System.IO.MemoryStream stream = new System.IO.MemoryStream();
         PDF pdf = new PDF(stream, Compliance.PDF_UA_1).SetTitle("Test");

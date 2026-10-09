@@ -549,11 +549,24 @@ import Testing
         return content.components(separatedBy: " c\n").count - 1
     }
 
+    @Test func readsTheNumbersOfSVG() throws {
+        for number in ["5.", ".5", "-.5", "+5", "-0.5e+2", "5E-1", "007"] {
+            let svg = "<svg width=\"100\" height=\"100\"><path d=\"M 0 0 L \(number) 5\"/></svg>"
+            do {
+                _ = try image(svg)
+            } catch {
+                Issue.record("\(number): \(error)")
+            }
+        }
+    }
+
     @Test func refusesPathDataWithANumberThatIsNotOne() {
         // The numbers the fuzzers made of path data: refused in words, in the
         // four ports, as Swift already did (found by the fuzz replay, 8
-        // October 2026).
-        for number in ["-.", ".", "2.@5", "1d775", "1e40", "-1e40"] {
+        // October 2026). And the numbers one language reads and the others do
+        // not, refused by SVG's grammar in the four (the review of 9 October
+        // 2026): Float(_:) reads 0x1p3.
+        for number in ["-.", ".", "2.@5", "1d775", "1e40", "-1e40", "0x1p3", "1_0", "1f", "1e"] {
             let svg = "<svg width=\"100\" height=\"100\"><path d=\"M 0 0 L \(number) 5\"/></svg>"
             do {
                 _ = try image(svg)

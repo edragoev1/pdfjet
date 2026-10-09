@@ -295,6 +295,31 @@ class TableTest {
     }
 
     @Test
+    void theLinkedMarkerOfAWrappedCellIsAFigure() throws Exception {
+        // The lines of a wrapped cell are one paragraph, and a figure drawn in
+        // it, as its linked marker, was made part of the paragraph, losing its
+        // element and its description (the review of 9 October 2026).
+        for (String text : new String[] {"short", "a note long enough to wrap to four lines"}) {
+            java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
+            PDF pdf = new PDF(bos, Compliance.PDF_UA_1).setTitle("Test");
+            Font font = TestSupport.helvetica(pdf);
+            Cell marked = new Cell(font, text);
+            marked.setMarker(new Point(0f, 0f).setURIAction("https://pdfjet.com").setAltDescription("PDFjet"),
+                    Alignment.LEFT);
+            List<List<Cell>> data = new ArrayList<List<Cell>>();
+            data.add(new ArrayList<Cell>(Arrays.asList(new Cell(font, "Name"), new Cell(font, "Notes"))));
+            data.add(new ArrayList<Cell>(Arrays.asList(new Cell(font, "a"), marked)));
+            data.add(new ArrayList<Cell>(Arrays.asList(new Cell(font, "b"),
+                    new Cell(font, "a note long enough to wrap to four lines"))));
+            new Table().setTableData(data, 1).setLocation(20f, 20f).drawOn(new Page(pdf, Letter.PORTRAIT));
+            pdf.complete();
+            String raw = TestSupport.latin1(bos.toByteArray());
+            assertEquals(1, count(raw, "/S /Figure\n"), text);
+            assertEquals(1, count(raw, "/S /Link\n"), text);
+        }
+    }
+
+    @Test
     void theHeaderRowsOnTheNextPagesAreArtifacts() throws Exception {
         java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
         PDF pdf = new PDF(bos, Compliance.PDF_UA_1).setTitle("Test");

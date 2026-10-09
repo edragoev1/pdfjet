@@ -80,14 +80,16 @@ class CFFSubset {
     }
 
     internal static Index readIndex(byte[] cff, int at) {
-        if (at < 0 || at + 2 > cff.Length) {
+        // The bounds checked as at > length - n, as at + n overflows an int
+        // for an offset of the file near 2^31 (the review of 9 October 2026)
+        if (at < 0 || at > cff.Length - 2) {
             throw new Subset.NotSubset();
         }
         int count = (cff[at] & 0xFF) << 8 | (cff[at + 1] & 0xFF);
         if (count == 0) {
             return new Index(at, at + 2, new int[] {at + 2});
         }
-        if (at + 3 > cff.Length) {
+        if (at > cff.Length - 3) {
             throw new Subset.NotSubset();
         }
         int offSize = cff[at + 2] & 0xFF;
@@ -274,7 +276,7 @@ class CFFSubset {
             int covered = 1;    // .notdef is not in it
             int i = at + 1;
             while (covered < numGlyphs) {
-                if (i + 2 + size > cff.Length) {
+                if (i > cff.Length - 2 - size) {
                     throw new Subset.NotSubset();
                 }
                 int nLeft = cff[i + 2] & 0xFF;
@@ -290,7 +292,7 @@ class CFFSubset {
     }
 
     internal static int encodingLength(byte[] cff, int at) {
-        if (at < 0 || at + 2 > cff.Length) {
+        if (at < 0 || at > cff.Length - 2) {
             throw new Subset.NotSubset();
         }
         int length;
@@ -303,7 +305,7 @@ class CFFSubset {
             throw new Subset.NotSubset();
         }
         if ((cff[at] & 0x80) != 0) {    // Supplements
-            if (at + length >= cff.Length) {
+            if (at >= cff.Length - length) {
                 throw new Subset.NotSubset();
             }
             length += 1 + 3 * (cff[at + length] & 0xFF);
@@ -319,7 +321,7 @@ class CFFSubset {
             return 1 + numGlyphs;
         }
         if (cff[at] == 3) {
-            if (at + 3 > cff.Length) {
+            if (at > cff.Length - 3) {
                 throw new Subset.NotSubset();
             }
             int ranges = (cff[at + 1] & 0xFF) << 8 | (cff[at + 2] & 0xFF);
@@ -342,7 +344,9 @@ class CFFSubset {
         if (subrs == null) {
             return new PrivateDict(entries, null);
         }
-        if (subrs.Length != 1) {
+        // The offset from the Private DICT, past an int refused rather than
+        // wrapped round (the review of 9 October 2026)
+        if (subrs.Length != 1 || (long) at + subrs[0] > int.MaxValue) {
             throw new Subset.NotSubset();
         }
         return new PrivateDict(entries, readIndex(cff, at + subrs[0]));
@@ -373,6 +377,7 @@ class CFFSubset {
         internal int work;
         internal bool failed;
         internal bool stopped;    // By endchar
+        internal bool seac;       // An accented letter drawn from two others
 
         internal Usage(byte[] cff, Index global, bool[] usedG) {
             this.cff = cff;
@@ -463,7 +468,9 @@ class CFFSubset {
                 } else if (b0 == 14) {      // endchar
                     if (stack >= 4) {
                         // seac, an accented letter drawn from two others, which
-                        // would have to be kept too.
+                        // would have to be kept too: the font is embedded whole
+                        // (the review of 9 October 2026: the letter drew blank)
+                        seac = true;
                         failed = true;
                     }
                     stopped = true;
@@ -668,7 +675,7 @@ class CFFSubset {
             usage.run(charStrings.objects[gid], charStrings.objects[gid + 1], 0);
         }
         if (usage.failed) {
-            if (usage.work > MAX_WORK) {
+            if (usage.work > MAX_WORK || usage.seac) {
                 throw new Subset.NotSubset();
             }
             usedG = null;   // Kept whole

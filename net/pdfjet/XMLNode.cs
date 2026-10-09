@@ -23,30 +23,40 @@ public sealed class XMLNode {
     private readonly string name;
     private readonly string localName;
     private readonly string ns;
-    // The attributes in the order they are written: a Dictionary keeps the
-    // order of the keys that are added to it and never removed, as the
-    // LinkedHashMap of the Java does.
-    private readonly Dictionary<string, string> attributes =
-            new Dictionary<string, string>(StringComparer.Ordinal);
-    private readonly List<XMLNode> children = new List<XMLNode>();
-    private readonly StringBuilder text = new StringBuilder();
+    // The attributes in the order they are written, each once, as the parser
+    // refuses a name written twice; in an array and with no dictionary of
+    // them, and the children and the text made when there are some, which
+    // made an element of an SVG of millions several times larger (the review
+    // of 9 October 2026).
+    private KeyValuePair<string, string>[] attributes = NoAttributes;
+    private List<XMLNode> children;
+    private StringBuilder text;
 
-    internal XMLNode(string name, string ns) {
+    private static readonly KeyValuePair<string, string>[] NoAttributes = new KeyValuePair<string, string>[0];
+
+    // The name, the name without its prefix and the namespace, which the
+    // parser keeps once each.
+    internal XMLNode(string name, string localName, string ns) {
         this.name = name;
-        int colon = name.IndexOf(':');
-        this.localName = (colon == -1) ? name : name.Substring(colon + 1);
+        this.localName = localName;
         this.ns = ns;
     }
 
-    internal void AddAttribute(string attributeName, string value) {
-        attributes[attributeName] = value;
+    internal void SetAttributes(KeyValuePair<string, string>[] attributes) {
+        this.attributes = attributes;
     }
 
     internal void AddChild(XMLNode child) {
+        if (children == null) {
+            children = new List<XMLNode>();
+        }
         children.Add(child);
     }
 
     internal void AddText(string characters) {
+        if (text == null) {
+            text = new StringBuilder();
+        }
         text.Append(characters);
     }
 
@@ -80,13 +90,13 @@ public sealed class XMLNode {
     /// </summary>
     /// <returns>the text.</returns>
     public string GetText() {
-        return text.ToString();
+        return (text == null) ? "" : text.ToString();
     }
 
     /// <summary>Returns the elements in this one, in their order.</summary>
     /// <returns>the elements.</returns>
     public List<XMLNode> GetChildren() {
-        return new List<XMLNode>(children);
+        return (children == null) ? new List<XMLNode>() : new List<XMLNode>(children);
     }
 
     /// <summary>
@@ -96,14 +106,19 @@ public sealed class XMLNode {
     /// <param name="attributeName">the name of the attribute.</param>
     /// <returns>the value, or null.</returns>
     public string GetAttribute(string attributeName) {
-        string value;
-        if (attributes.TryGetValue(attributeName, out value)) {
-            return value;
+        foreach (KeyValuePair<string, string> attribute in attributes) {
+            if (attribute.Key == attributeName) {
+                return attribute.Value;
+            }
         }
+        // By its name without its prefix; a namespace declaration, xmlns:name,
+        // is not an attribute of that name
         foreach (KeyValuePair<string, string> attribute in attributes) {
             string key = attribute.Key;
             int colon = key.IndexOf(':');
-            if (colon != -1 && key.Substring(colon + 1) == attributeName) {
+            if (colon != -1 && !key.StartsWith("xmlns:", StringComparison.Ordinal)
+                    && key.Length - (colon + 1) == attributeName.Length
+                    && string.CompareOrdinal(key, colon + 1, attributeName, 0, attributeName.Length) == 0) {
                 return attribute.Value;
             }
         }
@@ -116,7 +131,13 @@ public sealed class XMLNode {
     /// </summary>
     /// <returns>the attributes.</returns>
     public Dictionary<string, string> GetAttributes() {
-        return new Dictionary<string, string>(attributes, StringComparer.Ordinal);
+        // A Dictionary keeps the order of the keys that are added to it and
+        // never removed, as the LinkedHashMap of the Java does.
+        Dictionary<string, string> copy = new Dictionary<string, string>(attributes.Length, StringComparer.Ordinal);
+        foreach (KeyValuePair<string, string> attribute in attributes) {
+            copy[attribute.Key] = attribute.Value;
+        }
+        return copy;
     }
 
     /// <summary>
@@ -135,6 +156,9 @@ public sealed class XMLNode {
             }
             List<XMLNode> next = new List<XMLNode>();
             foreach (XMLNode node in found) {
+                if (node.children == null) {
+                    continue;
+                }
                 foreach (XMLNode child in node.children) {
                     if (step == "*" || step == child.localName) {
                         next.Add(child);

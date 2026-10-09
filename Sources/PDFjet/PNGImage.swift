@@ -121,7 +121,9 @@ class PNGImage {
                     throw PDFjetError(message: "Interlaced PNG images are not supported.")
                 }
             } else if chunkType == "IDAT" {
-                hasIDAT = true
+                // An empty one holds none of the image data (the review of
+                // 9 October 2026)
+                hasIDAT = hasIDAT || length > 0
             } else if chunkType == "PLTE" {
                 if length % 3 != 0 || length == 0 || length > 3*256 {
                     throw PDFjetError(message: "Incorrect palette length.")

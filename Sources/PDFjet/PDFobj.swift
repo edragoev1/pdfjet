@@ -28,7 +28,9 @@ public final class PDFobj {
     final var budget: DecodeBudget? // What the streams of the PDF this was read from may still decode to
     var gsNumber = -1
     var root = false                // The catalog that the trailer's /Root names
-    var font: Font?                 // A font added to the objects, filled in when they are added to a PDF
+    // The objects of a font added to the objects, of which this is the Type0
+    // font, filled in when they are added to a PDF
+    var fontObjects: FontObjects?
 
     /// Creates an empty PDF object.
     init() {

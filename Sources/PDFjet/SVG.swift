@@ -119,11 +119,15 @@ class SVG {
 
     /// Returns the argument as a number, and throws when it is not one, as the
     /// other ports fail on such path data rather than stopping the program.
-    /// A number past the range of a Float, such as 1e40, which Float(_:) makes
-    /// an infinity, is refused too, as Go's ParseFloat refuses it; "inf"
-    /// written as such is read, as Go reads it.
+    /// A number is one of SVG's grammar alone, and not the others Float(_:)
+    /// reads, as 0x1p3, inf or nan. A number past the range of a Float, such as
+    /// 1e40, which Float(_:) makes an infinity, is refused too, as Go's
+    /// ParseFloat refuses it.
     private static func number(_ args: [String], _ i: Int) throws -> Float {
-        guard i < args.count, let value = Float(args[i]) else {
+        // A number of SVG's grammar, and no other that the parser of the language
+        // reads, so that the four ports read the same numbers (the review of
+        // 9 October 2026)
+        guard i < args.count, isSVGNumber(args[i]), let value = Float(args[i]) else {
             throw PDFjetError(message: "Invalid path data: " +
                     (i < args.count ? args[i] : "missing argument"))
         }
@@ -133,6 +137,49 @@ class SVG {
             throw PDFjetError(message: "Invalid path data: " + args[i])
         }
         return value
+    }
+
+    /// Returns whether the text is a number as SVG writes one: a sign or none,
+    /// digits with a fraction or a fraction alone, and an exponent or none.
+    static func isSVGNumber(_ text: String) -> Bool {
+        let bytes = Array(text.utf8)
+        var i = 0
+        func isDigit(_ at: Int) -> Bool {
+            return at < bytes.count && bytes[at] >= 0x30 && bytes[at] <= 0x39     // 0 to 9
+        }
+        if i < bytes.count && (bytes[i] == 0x2B || bytes[i] == 0x2D) {         // + or -
+            i += 1
+        }
+        var digits = 0
+        while isDigit(i) {
+            digits += 1
+            i += 1
+        }
+        if i < bytes.count && bytes[i] == 0x2E {                                // .
+            i += 1
+            while isDigit(i) {
+                digits += 1
+                i += 1
+            }
+        }
+        if digits == 0 {
+            return false
+        }
+        if i < bytes.count && (bytes[i] == 0x65 || bytes[i] == 0x45) {         // e or E
+            i += 1
+            if i < bytes.count && (bytes[i] == 0x2B || bytes[i] == 0x2D) {
+                i += 1
+            }
+            var exponent = 0
+            while isDigit(i) {
+                exponent += 1
+                i += 1
+            }
+            if exponent == 0 {
+                return false
+            }
+        }
+        return i == bytes.count
     }
 
     /// Converts SVG path operations to PDF path operations.

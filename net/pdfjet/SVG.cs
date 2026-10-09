@@ -131,11 +131,51 @@ namespace PDFjet.NET {
         // an infinity.
         private static float Number(string arg) {
             float value;
-            if (float.TryParse(arg, NumberStyles.Float | NumberStyles.AllowThousands,
+            // A number of SVG's grammar, and no other that the parser of a
+            // language reads, as 0x1p3 or 1_0 in Go, so that the four ports
+            // read the same numbers (the review of 9 October 2026)
+            if (IsSVGNumber(arg) && float.TryParse(arg, NumberStyles.Float | NumberStyles.AllowThousands,
                     CultureInfo.InvariantCulture, out value) && !float.IsInfinity(value) && !float.IsNaN(value)) {
                 return value;
             }
             throw new Exception("Invalid path data: " + arg);
+        }
+
+        // Returns whether the text is a number as SVG writes one: a sign or
+        // none, digits with a fraction or a fraction alone, and an exponent or
+        // none.
+        internal static bool IsSVGNumber(string text) {
+            int i = 0;
+            if (i < text.Length && (text[i] == '+' || text[i] == '-')) {
+                i++;
+            }
+            int digits = 0;
+            for (; i < text.Length && text[i] >= '0' && text[i] <= '9'; i++) {
+                digits++;
+            }
+            if (i < text.Length && text[i] == '.') {
+                i++;
+                for (; i < text.Length && text[i] >= '0' && text[i] <= '9'; i++) {
+                    digits++;
+                }
+            }
+            if (digits == 0) {
+                return false;
+            }
+            if (i < text.Length && (text[i] == 'e' || text[i] == 'E')) {
+                i++;
+                if (i < text.Length && (text[i] == '+' || text[i] == '-')) {
+                    i++;
+                }
+                int exponent = 0;
+                for (; i < text.Length && text[i] >= '0' && text[i] <= '9'; i++) {
+                    exponent++;
+                }
+                if (exponent == 0) {
+                    return false;
+                }
+            }
+            return i == text.Length;
         }
 
         /// <summary>Converts SVG path operations to PDF path operations.</summary>

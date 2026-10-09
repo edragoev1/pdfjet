@@ -8,6 +8,7 @@
  */
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 
 namespace PDFjet.NET {
@@ -111,10 +112,19 @@ class BMPImage {
             int pixelsPerMeterX = ReadSignedInt(stream);
             int pixelsPerMeterY = ReadSignedInt(stream);
             SetPhysicalSize(pixelsPerMeterX, pixelsPerMeterY);
+            int colorsUsed = ReadSignedInt(stream);
             if (headerOnly) {
+                // The size of the palette, refused below as here (the review
+                // of 9 October 2026: a palette of 1,000 colors was a size)
+                if (bpp <= 8) {
+                    int colors = (colorsUsed == 0) ? (1 << bpp) : colorsUsed;
+                    if (colors < 0 || colors > 256) {
+                        throw new Exception("Invalid BMP palette size "
+                                + colors.ToString(CultureInfo.InvariantCulture) + ".");
+                    }
+                }
                 return;
             }
-            int colorsUsed = ReadSignedInt(stream);
             SkipNBytes(stream, 4);
             long read = 54;     // The bytes read so far
 
@@ -146,7 +156,8 @@ class BMPImage {
             if (bpp <= 8) {
                 int numpalcol = (colorsUsed == 0) ? (1 << bpp) : colorsUsed;
                 if (numpalcol < 0 || numpalcol > 256) {
-                    throw new Exception("Invalid BMP palette size " + numpalcol + ".");
+                    throw new Exception("Invalid BMP palette size "
+                            + numpalcol.ToString(CultureInfo.InvariantCulture) + ".");
                 }
                 ParsePalette(stream, numpalcol);
                 read += 4L * numpalcol;

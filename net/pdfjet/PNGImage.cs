@@ -121,7 +121,9 @@ internal class PNGImage {
                     throw new Exception("Interlaced PNG images are not supported.");
                 }
             } else if (chunkType.Equals("IDAT")) {
-                hasIDAT = true;
+                // An empty one holds none of the image data (the review of
+                // 9 October 2026)
+                hasIDAT = hasIDAT || length > 0;
             } else if (chunkType.Equals("PLTE")) {
                 if (length % 3 != 0 || length == 0 || length > 3*256) {
                     throw new Exception("Incorrect palette length.");

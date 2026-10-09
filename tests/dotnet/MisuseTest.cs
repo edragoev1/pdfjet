@@ -302,7 +302,7 @@ public class MisuseTest {
     public void TheObjectsOfAnExistingPdfComeBeforeTheContent() {
         List<PDFobj> objects = ExistingObjects();
         string message = "Add the objects of an existing PDF before fonts, images or pages "
-                + "are added to the PDF: object 1 is already written.";
+                + "are added to the PDF: object 1 is already taken.";
 
         PDF pdf = TestSupport.NewPDF();
         TestSupport.Helvetica(pdf);     // Object 1, which the objects would replace.
@@ -315,12 +315,19 @@ public class MisuseTest {
         Assert.Equal(message,
                 Assert.Throws<InvalidOperationException>(() => pdf2.AddObjects(objects)).Message);
 
-        // The objects first, and the font after them.
+        // An embedded font only reserves its number, written at Complete: the
+        // objects could take it too (the review of 9 October 2026).
         PDF pdf3 = TestSupport.NewPDF();
-        pdf3.AddResourceObjects(objects);
-        TestSupport.Helvetica(pdf3);
-        new Page(pdf3, Letter.PORTRAIT);
-        pdf3.Complete();
+        new Font(pdf3, TestSupport.RepoPath("fonts/NotoSans/NotoSans-Regular.ttf"));
+        Assert.Equal(message,
+                Assert.Throws<InvalidOperationException>(() => pdf3.AddObjects(objects)).Message);
+
+        // The objects first, and the font after them.
+        PDF pdf4 = TestSupport.NewPDF();
+        pdf4.AddResourceObjects(objects);
+        TestSupport.Helvetica(pdf4);
+        new Page(pdf4, Letter.PORTRAIT);
+        pdf4.Complete();
     }
 
     [Fact]

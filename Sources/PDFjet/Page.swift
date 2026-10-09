@@ -2508,8 +2508,10 @@ public class Page {
                 pdf.fail("A figure of a tagged document, PDF/UA or PDF/A of level A, needs an alternative description.")
             }
             // The marked content of a paragraph that is drawn word by word
-            // belongs to the one element of the paragraph.
-            if let parent = mcidParent {
+            // belongs to the one element of the paragraph; a figure in it, as the
+            // linked marker of a wrapped table cell, is an element of its own,
+            // with its description (the review of 9 October 2026: it was lost).
+            if let parent = mcidParent, structure != StructElem.FIGURE {
                 parent.mcids.append(mcid)
                 append("/")
                 append(parent.structure!)
@@ -2517,9 +2519,13 @@ public class Page {
                 append(mcid)
                 // A word of another language than its paragraph says so in its
                 // marked content, as the paragraph is one element for all of them.
+                // The hexadecimal digits of its UTF-8 bytes, as in the other
+                // ports: the content stream is encrypted whole, so the string is
+                // not encrypted on its own (the review of 9 October 2026: it was
+                // encrypted twice).
                 if let language = language, !language.isEmpty {
                     append(" /Lang <")
-                    append(pdf.toHexString(language))
+                    append(pdf.toHex(language))
                     append(">")
                 }
                 append(Token.endDictionary)

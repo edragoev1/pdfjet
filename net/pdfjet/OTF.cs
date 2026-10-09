@@ -325,17 +325,21 @@ internal class OTF {
         long next = firstChar;
         for (int i = 0; i < numGroups; i++) {
             int group = offset + 16 + 12 * i;
-            long start = TableUInt32(table, group);
+            long first = TableUInt32(table, group);
             long end = TableUInt32(table, group + 4);
             long startGlyph = TableUInt32(table, group + 8);
-            if (start < next) {
-                start = next;
+            if (first < 0 || end < 0 || startGlyph < 0) {
+                continue;   // Past the end of the font (the review of 9 October 2026: a glyph of -1)
             }
+            // The glyphs are counted from the group's first character, even
+            // where the characters before next are passed over (the review of
+            // 9 October 2026: they were counted from next)
+            long start = Math.Max(first, next);
             if (end > lastChar) {
                 end = lastChar;
             }
             for (long ch = start; ch <= end; ch++) {
-                long gid = startGlyph + (ch - start);
+                long gid = startGlyph + (ch - first);
                 if (gid < 0x10000 && unicodeToGID[(int) ch] == 0) {
                     unicodeToGID[(int) ch] = (int) gid;
                 }

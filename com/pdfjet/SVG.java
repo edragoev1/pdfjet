@@ -140,21 +140,61 @@ class SVG {
     // not, such as "-." or "2.@5", in words, as the other ports do, rather
     // than with a NumberFormatException.
     private static float number(String arg) {
+        // A number of SVG's grammar, and no other that the parser of the language
+        // reads, as 0x1p3, 1f or 1d, so that the four ports read the same numbers
+        // (the review of 9 October 2026)
+        if (!isSVGNumber(arg)) {
+            throw new IllegalArgumentException("Invalid path data: " + arg);
+        }
         float value;
         try {
             value = Float.parseFloat(arg);
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("Invalid path data: " + arg);
         }
-        // Java reads 1f and 1d as numbers, which the other ports do not; and a
-        // number is finite: an infinity or NaN, written as such or past the
+        // A number is finite: an infinity or NaN, written as such or past the
         // range of a float, is refused, in the four ports alike.
-        char last = arg.charAt(arg.length() - 1);
-        if (last == 'f' || last == 'F' || last == 'd' || last == 'D'
-                || Float.isInfinite(value) || Float.isNaN(value)) {
+        if (Float.isInfinite(value) || Float.isNaN(value)) {
             throw new IllegalArgumentException("Invalid path data: " + arg);
         }
         return value;
+    }
+
+    // Returns whether the text is a number as SVG writes one: a sign or none,
+    // digits with a fraction or a fraction alone, and an exponent or none.
+    static boolean isSVGNumber(String text) {
+        int i = 0;
+        int n = text.length();
+        if (i < n && (text.charAt(i) == '+' || text.charAt(i) == '-')) {
+            i++;
+        }
+        int digits = 0;
+        for (; i < n && text.charAt(i) >= '0' && text.charAt(i) <= '9'; i++) {
+            digits++;
+        }
+        if (i < n && text.charAt(i) == '.') {
+            i++;
+            for (; i < n && text.charAt(i) >= '0' && text.charAt(i) <= '9'; i++) {
+                digits++;
+            }
+        }
+        if (digits == 0) {
+            return false;
+        }
+        if (i < n && (text.charAt(i) == 'e' || text.charAt(i) == 'E')) {
+            i++;
+            if (i < n && (text.charAt(i) == '+' || text.charAt(i) == '-')) {
+                i++;
+            }
+            int exponent = 0;
+            for (; i < n && text.charAt(i) >= '0' && text.charAt(i) <= '9'; i++) {
+                exponent++;
+            }
+            if (exponent == 0) {
+                return false;
+            }
+        }
+        return i == n;
     }
 
     /**

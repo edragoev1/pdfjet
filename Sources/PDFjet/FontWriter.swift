@@ -141,7 +141,9 @@ class FontWriter {
 
     // Returns the /W array of the font: the widths of all its glyphs, or of
     // each run of the glyphs kept, for a subset, its first glyph and its
-    // widths.
+    // widths. A width is an Int32, as /DW is: in a font of few units per em
+    // it is past the 65,535 of a UInt16 (the review of 9 October 2026: it
+    // trapped).
     static func widthsArray(_ font: Font, _ kept: [Bool]?) -> String {
         var k: Float = 1.0
         if font.unitsPerEm != 1000 {
@@ -151,7 +153,7 @@ class FontWriter {
         guard let kept = kept else {
             buffer.append("[0[\n")
             for i in 0..<font.advanceWidth.count {
-                buffer.append(String(UInt16(round(k * Float(font.advanceWidth[i])))))
+                buffer.append(String(Int32(round(k * Float(font.advanceWidth[i])))))
                 buffer.append(" ")
             }
             buffer.append("]]")
@@ -169,7 +171,7 @@ class FontWriter {
             buffer.append(String(gid))
             buffer.append("[")
             while gid < count && kept[gid] {
-                buffer.append(String(UInt16(round(k * Float(font.advanceWidth[gid])))))
+                buffer.append(String(Int32(round(k * Float(font.advanceWidth[gid])))))
                 buffer.append(" ")
                 gid += 1
             }

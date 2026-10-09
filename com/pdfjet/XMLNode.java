@@ -24,26 +24,49 @@ public final class XMLNode {
     private final String name;
     private final String localName;
     private final String namespace;
-    private final Map<String, String> attributes = new LinkedHashMap<String, String>();
-    private final List<XMLNode> children = new ArrayList<XMLNode>();
-    private final StringBuilder text = new StringBuilder();
+    // The names and the values of the attributes, one after the other, null
+    // when there are none: written once each, as the parser refuses a name
+    // written twice; with no map of them, and the children and the text made
+    // when there are some, as a map and empty lists made an element of an SVG
+    // of millions several times larger (the review of 9 October 2026).
+    private String[] attributes;
+    private List<XMLNode> children;
+    private StringBuilder text;
 
     XMLNode(String name, String namespace) {
+        this(name, localNameOf(name), namespace);
+    }
+
+    // The element of the name and of its name without its prefix, which the
+    // parser keeps once for every element of that name.
+    XMLNode(String name, String localName, String namespace) {
         this.name = name;
-        int colon = name.indexOf(':');
-        this.localName = (colon == -1) ? name : name.substring(colon + 1);
+        this.localName = localName;
         this.namespace = namespace;
     }
 
-    void addAttribute(String attributeName, String value) {
-        attributes.put(attributeName, value);
+    // The name without its prefix, the part after its colon.
+    static String localNameOf(String name) {
+        int colon = name.indexOf(':');
+        return (colon == -1) ? name : name.substring(colon + 1);
+    }
+
+    // The names and the values of the attributes, one after the other.
+    void setAttributes(String[] namesAndValues) {
+        attributes = (namesAndValues.length == 0) ? null : namesAndValues;
     }
 
     void addChild(XMLNode child) {
+        if (children == null) {
+            children = new ArrayList<XMLNode>(4);
+        }
         children.add(child);
     }
 
     void addText(String characters) {
+        if (text == null) {
+            text = new StringBuilder(characters.length());
+        }
         text.append(characters);
     }
 
@@ -83,7 +106,7 @@ public final class XMLNode {
      * @return the text.
      */
     public String getText() {
-        return text.toString();
+        return (text == null) ? "" : text.toString();
     }
 
     /**
@@ -92,7 +115,7 @@ public final class XMLNode {
      * @return the elements.
      */
     public List<XMLNode> getChildren() {
-        return new ArrayList<XMLNode>(children);
+        return (children == null) ? new ArrayList<XMLNode>() : new ArrayList<XMLNode>(children);
     }
 
     /**
@@ -103,15 +126,23 @@ public final class XMLNode {
      * @return the value, or null.
      */
     public String getAttribute(String attributeName) {
-        String value = attributes.get(attributeName);
-        if (value != null) {
-            return value;
+        if (attributes == null) {
+            return null;
         }
-        for (Map.Entry<String, String> attribute : attributes.entrySet()) {
-            String key = attribute.getKey();
+        for (int i = 0; i < attributes.length; i += 2) {
+            if (attributes[i].equals(attributeName)) {
+                return attributes[i + 1];
+            }
+        }
+        // By its name without its prefix; a namespace declaration, xmlns:name,
+        // is not an attribute of that name
+        for (int i = 0; i < attributes.length; i += 2) {
+            String key = attributes[i];
             int colon = key.indexOf(':');
-            if (colon != -1 && key.substring(colon + 1).equals(attributeName)) {
-                return attribute.getValue();
+            if (colon != -1 && !key.startsWith("xmlns:")
+                    && key.length() - colon - 1 == attributeName.length()
+                    && key.startsWith(attributeName, colon + 1)) {
+                return attributes[i + 1];
             }
         }
         return null;
@@ -124,7 +155,13 @@ public final class XMLNode {
      * @return the attributes.
      */
     public Map<String, String> getAttributes() {
-        return new LinkedHashMap<String, String>(attributes);
+        Map<String, String> map = new LinkedHashMap<String, String>();
+        if (attributes != null) {
+            for (int i = 0; i < attributes.length; i += 2) {
+                map.put(attributes[i], attributes[i + 1]);
+            }
+        }
+        return map;
     }
 
     /**
@@ -144,6 +181,9 @@ public final class XMLNode {
             }
             List<XMLNode> next = new ArrayList<XMLNode>();
             for (XMLNode node : found) {
+                if (node.children == null) {
+                    continue;
+                }
                 for (XMLNode child : node.children) {
                     if (step.equals("*") || step.equals(child.localName)) {
                         next.add(child);

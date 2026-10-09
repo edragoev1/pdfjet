@@ -2722,8 +2722,10 @@ final public class Page {
                         "A figure of a tagged document, PDF/UA or PDF/A of level A, needs an alternative description."));
             }
             // The marked content of a paragraph that is drawn word by word
-            // belongs to the one element of the paragraph.
-            if (mcidParent != null) {
+            // belongs to the one element of the paragraph; a figure in it, as the
+            // linked marker of a wrapped table cell, is an element of its own,
+            // with its description (the review of 9 October 2026: it was lost).
+            if (mcidParent != null && structure != StructElem.FIGURE) {
                 mcidParent.mcids.add(this.mcid);
                 append("/");
                 append(mcidParent.structure);

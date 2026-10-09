@@ -139,5 +139,25 @@ public class CFFSubsetTest {
         pdf.Complete();
         Assert.DoesNotMatch(TAG, TestSupport.Latin1(stream.ToArray()));
     }
+
+    [Fact]
+    public void ASubsetOfAnAccentedLetterDrawnWithSeacIsRefused() {
+        // Á's charstring made "0 0 65 194 endchar", seac: the A and the acute
+        // it is drawn from were emptied, and it drew blank (the review of
+        // 9 October 2026). The font is embedded whole.
+        OTF otf = Otf(PLEX);
+        byte[] cff = Cff(otf);
+        CFFSubset.Index names = CFFSubset.readIndex(cff, cff[2]);
+        CFFSubset.Index tops = CFFSubset.readIndex(cff, names.end);
+        List<CFFSubset.Entry> top = CFFSubset.readDict(cff, tops.objects[0], tops.objects[1]);
+        CFFSubset.Index charStrings = CFFSubset.readIndex(cff, CFFSubset.entryOf(top, CFFSubset.CHAR_STRINGS)[0]);
+        int gid = otf.unicodeToGID['Á'];
+        int at = charStrings.objects[gid];
+        Assert.True(charStrings.objects[gid + 1] - at >= 6,
+                "the charstring of Á is " + (charStrings.objects[gid + 1] - at) + " bytes");
+        new byte[] {139, 139, 204, 247, 86, 14}.CopyTo(cff, at);
+        bool[] kept;
+        Assert.Throws<Subset.NotSubset>(() => CFFSubset.subset(cff, Used(otf, "Á"), out kept));
+    }
 }
 }

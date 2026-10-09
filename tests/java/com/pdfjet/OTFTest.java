@@ -264,4 +264,18 @@ class OTFTest {
         }
     }
 
+    @Test
+    void aFormat12GroupThatStartsBeforeTheFirstCharacterKeepsItsGlyphs() throws Exception {
+        // IBM Plex Sans TC maps every character in its format 12 subtable. With
+        // its first character raised past the start of a group, the glyphs of
+        // the group were counted from the first character, not from the group's
+        // own start, and every one was off (the review of 9 October 2026).
+        byte[] font = font("fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.ttf");
+        OTF want = new OTF(new ByteArrayInputStream(font));
+        OTF got = new OTF(new ByteArrayInputStream(with(font, table(font, "OS/2") + 64, '0')));
+        for (char ch : "0AZaz~".toCharArray()) {
+            assertTrue(want.unicodeToGID[ch] != 0, ch + " has no glyph");
+            assertEquals(want.unicodeToGID[ch], got.unicodeToGID[ch], String.valueOf(ch));
+        }
+    }
 }

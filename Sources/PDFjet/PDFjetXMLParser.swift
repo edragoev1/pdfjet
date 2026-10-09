@@ -79,7 +79,9 @@ public final class PDFjetXMLParser {
     ///
     /// Reads the document as parse does, but skips a DOCTYPE, which the files
     /// of the drawing programs have, rather than refusing it; its entities are
-    /// not read. SVGImage reads with it.
+    /// not read. A prefix that no element declares is read as no namespace, as
+    /// SVG files copied from web pages have xlink:href without xmlns:xlink,
+    /// rather than an error. SVGImage reads with it.
     ///
     /// - Parameter bytes: the document.
     /// - Returns: the root element.
@@ -242,12 +244,17 @@ private struct Reader {
     // declaring it.
     private static let namespaceXML = "http://www.w3.org/XML/1998/namespace"
 
+    // True to skip a DOCTYPE, which is refused otherwise, and to read a
+    // prefix that no element declares as no namespace, as SVG files copied
+    // from web pages have xlink:href without xmlns:xlink.
+    var skipDoctype = false
+    // The names read, each kept once, as a document repeats a few names
+    // millions of times.
+    private var names = [String: String]()
+
     // Makes each line break of the document a line feed, as XML reads a
     // carriage return and the line feed after it, and a carriage return on
     // its own, and finds the first character that is not one of XML.
-    // True to skip a DOCTYPE, false to refuse it.
-    var skipDoctype = false
-
     init(_ decoded: [UInt16]) {
         var xml = decoded
         var written = 0
@@ -308,7 +315,10 @@ private struct Reader {
         while index < xml.count {
             if Reader.isWhitespace(peek()) {
                 next()
-            } else if startsWith(Reader.declarationStart) && index == 0 {
+            } else if index == 0 && startsWith(Reader.declarationStart)
+                    && index + 5 < xml.count && Reader.isWhitespace(xml[index + 5]) {
+                // The declaration, and not a processing instruction whose name
+                // starts with xml, as xml-stylesheet (the review of 9 October 2026)
                 try declaration()
             } else if startsWith(Reader.commentStart) {
                 try comment()
@@ -341,6 +351,16 @@ private struct Reader {
                     throw error("A comment of the document type declaration does not end")
                 }
                 skip(end + 3 - index)
+                continue
+            }
+            if startsWith(Reader.instructionStart) {
+                // A processing instruction, whose text can hold a quote, as
+                // <?pi don't ?> (the review of 9 October 2026)
+                let end = Reader.indexOf(xml, Reader.instructionEnd, index + 2)
+                if end == -1 {
+                    throw error("A processing instruction of the document type declaration does not end")
+                }
+                skip(end + 2 - index)
                 continue
             }
             let ch = peek()
@@ -465,7 +485,7 @@ private struct Reader {
         }
         var declared: [String: String]? = nil
         var attributes = [(String, String)]()
-        var written = Set<String>()
+        var written: Set<String>? = nil     // Past a few attributes, which are compared one by one
         var first = true
         while true {
             let spaced = index < xml.count && Reader.isWhitespace(peek())
@@ -493,7 +513,17 @@ private struct Reader {
             next()
             skipWhitespace()
             let value = try attributeValue()
-            if !written.insert(attributeName).inserted {
+            var twice = false
+            if written != nil {
+                twice = !written!.insert(attributeName).inserted
+            } else {
+                twice = attributes.contains { $0.0 == attributeName }
+                if attributes.count >= 16 {
+                    written = Set(attributes.map { $0.0 })
+                    written!.insert(attributeName)
+                }
+            }
+            if twice {
                 throw error("The attribute \(attributeName) of \(name) is written twice")
             }
             if attributeName == "xmlns" || attributeName.hasPrefix("xmlns:") {
@@ -503,6 +533,9 @@ private struct Reader {
                 var prefix = ""
                 if attributeName != "xmlns" {
                     prefix = String(attributeName.dropFirst(6))
+                    if prefix.isEmpty {
+                        throw error("A namespace of \(name) is declared for an empty prefix")
+                    }
                     // A prefix stands for a namespace, and the default
                     // namespace is the only one that may be none.
                     if value.isEmpty {
@@ -515,14 +548,17 @@ private struct Reader {
         }
         // The namespace of the element is the one its prefix stands for in the
         // element itself or in the nearest element it is in that declares it.
+        // A prefix no element declares is an error, or no namespace when a
+        // DOCTYPE is skipped, as for an SVG.
         let prefix = Reader.prefixOf(name)
-        guard let namespace = namespaceOf(prefix, declared) else {
+        let namespace = namespaceOf(prefix, declared)
+        if namespace == nil && !skipDoctype {
             throw error("The prefix \(prefix) of \(name) is not declared")
         }
-        let node = PDFjetXMLNode(name, namespace)
+        let node = PDFjetXMLNode(name, namespace ?? "")
         for attribute in attributes {
             let attributePrefix = Reader.prefixOf(attribute.0)
-            if !attributePrefix.isEmpty && attributePrefix != "xmlns"
+            if !attributePrefix.isEmpty && attributePrefix != "xmlns" && !skipDoctype
                     && namespaceOf(attributePrefix, declared) == nil {
                 throw error("The prefix \(attributePrefix) of the attribute \(attribute.0) of \(name) is not declared")
             }
@@ -704,7 +740,14 @@ private struct Reader {
             }
             next()
         }
-        return PDFjetXMLNode.string(xml[start..<index])
+        let name = PDFjetXMLNode.string(xml[start..<index])
+        if let kept = names[name] {
+            return kept
+        }
+        if names.count < 4096 {
+            names[name] = name
+        }
+        return name
     }
 
     // "value" or 'value', with its entities read.

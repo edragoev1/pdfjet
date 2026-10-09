@@ -126,4 +126,23 @@ import Testing
         try memory.pdf.complete()
         #expect(!tagged(TestSupport.latin1(memory.bytes)))
     }
+
+    @Test func anAccentedLetterDrawnWithSeacIsRefused() throws {
+        // Á's charstring made "0 0 65 194 endchar", seac: the A and the acute
+        // it is drawn from were emptied, and it drew blank (the review of
+        // 9 October 2026). The font is embedded whole.
+        let font = try otf(CFFSubsetTests.plex)
+        var table = cff(font)
+        let names = try CFFSubset.readIndex(table, Int(table[2]))
+        let tops = try CFFSubset.readIndex(table, names.end)
+        let top = try CFFSubset.readDict(table, tops.objects[0], tops.objects[1])
+        let charStrings = try CFFSubset.readIndex(table, CFFSubset.entryOf(top, CFFSubset.charStrings)![0])
+        let gid = font.unicodeToGID[Int(("Á" as Unicode.Scalar).value)]
+        let at = charStrings.objects[gid]
+        try #require(charStrings.objects[gid + 1] - at >= 6, "the charstring of Á is too short")
+        table.replaceSubrange(at..<(at + 6), with: [139, 139, 204, 247, 86, 14])
+        #expect(throws: Subset.NotSubset.self) {
+            _ = try CFFSubset.subset(table, used(font, "Á"))
+        }
+    }
 }

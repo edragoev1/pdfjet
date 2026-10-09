@@ -22,9 +22,11 @@ public final class PDFjetXMLNode {
     private let name: String
     private let localName: String
     private let namespace: String
-    // The names in the order the document writes them, and their values.
-    private var attributeNames = [String]()
-    private var attributeValues = [String: String]()
+    // The names in the order the document writes them, and their values,
+    // written once each, as the parser refuses a name written twice; with no
+    // dictionary of them, which made an element of an SVG of millions several
+    // times larger (the review of 9 October 2026)
+    private var attributes = [(name: String, value: String)]()
     private var children = [PDFjetXMLNode]()
     private var text = [UInt16]()
 
@@ -37,10 +39,7 @@ public final class PDFjetXMLNode {
     }
 
     func addAttribute(_ attributeName: String, _ value: String) {
-        if attributeValues[attributeName] == nil {
-            attributeNames.append(attributeName)
-        }
-        attributeValues[attributeName] = value
+        attributes.append((name: attributeName, value: value))
     }
 
     func addChild(_ child: PDFjetXMLNode) {
@@ -107,14 +106,17 @@ public final class PDFjetXMLNode {
     /// - Returns: the value, or nil.
     ///
     public func getAttribute(_ attributeName: String) -> String? {
-        if let value = attributeValues[attributeName] {
-            return value
+        for attribute in attributes where attribute.name == attributeName {
+            return attribute.value
         }
-        for key in attributeNames {
-            let units = key.utf16
-            if let colon = units.firstIndex(of: 0x3A),   // :
-                    String(decoding: units[units.index(after: colon)...], as: UTF16.self) == attributeName {
-                return attributeValues[key]
+        // By its name without its prefix; a namespace declaration, xmlns:name,
+        // is not an attribute of that name
+        for attribute in attributes {
+            let utf8 = attribute.name.utf8
+            if let colon = utf8.firstIndex(of: 0x3A),   // :
+                    !utf8[..<colon].elementsEqual("xmlns".utf8),
+                    attribute.name[utf8.index(after: colon)...] == attributeName {
+                return attribute.value
             }
         }
         return nil
@@ -127,7 +129,7 @@ public final class PDFjetXMLNode {
     /// - Returns: the attributes.
     ///
     public func getAttributes() -> [(name: String, value: String)] {
-        return attributeNames.map { (name: $0, value: attributeValues[$0]!) }
+        return attributes
     }
 
     ///

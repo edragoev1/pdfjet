@@ -288,5 +288,92 @@ public class SubsetTest {
         Assert.Equal(FontBytes(path).Length,
                 Int32.Parse(TestSupport.FindObject(objects, "/Length1").GetValue("/Length1")));
     }
+
+    // Checks that the font, made wrong, is not subset, and so embedded whole,
+    // rather than an exception of another kind or a subset made of it.
+    private static void AssertRefused(byte[] ttf, bool[] used) {
+        bool[] kept;
+        Assert.Throws<Subset.NotSubset>(() => Subset.SubsetTrueType(ttf, used, out kept));
+    }
+
+    private static void PutU16(byte[] buf, int at, int value) {
+        buf[at] = (byte) (value >> 8);
+        buf[at + 1] = (byte) value;
+    }
+
+    private static void PutU32(byte[] buf, int at, long value) {
+        buf[at] = (byte) (value >> 24);
+        buf[at + 1] = (byte) (value >> 16);
+        buf[at + 2] = (byte) (value >> 8);
+        buf[at + 3] = (byte) value;
+    }
+
+    [Fact]
+    public void ATableTwiceIsRefused() {
+        // The gasp table's entry made a second head table of 8 bytes, whose
+        // checksum adjustment the subset wrote past its end (the review of
+        // 9 October 2026).
+        byte[] ttf = FontBytes("fonts/NotoSans/NotoSans-Regular.ttf");
+        int gasp = Entry(ttf, "gasp");
+        Assert.True(gasp != -1);
+        Encoding.ASCII.GetBytes("head").CopyTo(ttf, gasp);
+        PutU32(ttf, gasp + 12, 8);
+        AssertRefused(ttf, Used(36));
+    }
+
+    [Fact]
+    public void ALocaFormatOtherThan0Or1IsRefused() {
+        // Format 0xFFFF made the length of the loca table an int past its
+        // range, and new byte[...] threw an OverflowException (the review of
+        // 9 October 2026).
+        byte[] ttf = FontBytes("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.ttf");
+        PutU16(ttf, Table(ttf, "head") + 50, 0xFFFF);
+        AssertRefused(ttf, Used(36));
+    }
+
+    [Fact]
+    public void OverlappingGlyphsAreRefused() {
+        // Every even glyph's outline the whole glyf table, so that a subset of
+        // them copied it again for each (the review of 9 October 2026: 112 KB
+        // made into 384 MB). A subset is never larger than the glyf table and the
+        // padding of its glyphs.
+        byte[] ttf = FontBytes("fonts/NotoSans/NotoSans-Regular.ttf");
+        int head = Table(ttf, "head");
+        int loca = Table(ttf, "loca");
+        int glyfLength = U32(ttf, Entry(ttf, "glyf") + 12);
+        int numGlyphs = U16(ttf, Table(ttf, "maxp") + 4);
+        bool longOffsets = U16(ttf, head + 50) == 1;
+        bool[] used = new bool[0x10000];
+        for (int gid = 0; gid <= numGlyphs; gid++) {
+            int offset = gid % 2 == 1 ? glyfLength & ~3 : 0;
+            if (longOffsets) {
+                PutU32(ttf, loca + 4 * gid, offset);
+            } else {
+                PutU16(ttf, loca + 2 * gid, offset / 2);
+            }
+            if (gid % 2 == 0 && gid < numGlyphs) {
+                used[gid] = true;
+            }
+        }
+        AssertRefused(ttf, used);
+    }
+
+    [Fact]
+    public void ABadLocaEntryOfAGlyphNotDrawnStillGivesASubset() {
+        // A loca entry past 2^31 - 1 refused every subset of the font, read
+        // for each glyph up front (the review of 9 October 2026); as in the
+        // other ports, only a glyph kept that cannot be read refuses it.
+        byte[] ttf = FontBytes("fonts/NotoSans/NotoSans-Regular.ttf");
+        Assert.Equal(1, U16(ttf, Table(ttf, "head") + 50));
+        int loca = Table(ttf, "loca");
+        PutU32(ttf, loca + 4 * 1000, 0x80000000L);
+        bool[] kept;
+        byte[] subset = Subset.SubsetTrueType(ttf, Used(36), out kept);
+        Assert.True(kept[36] && !kept[999] && !kept[1000]);
+        byte[] whole = Glyph(FontBytes("fonts/NotoSans/NotoSans-Regular.ttf"), 36);
+        Assert.Equal(whole, Slice(Glyph(subset, 36), 0, whole.Length));
+        // Drawn, glyph 1000 cannot be read, and the font is embedded whole.
+        AssertRefused(ttf, Used(36, 1000));
+    }
 }
 }

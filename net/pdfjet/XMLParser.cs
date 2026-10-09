@@ -63,8 +63,15 @@ public sealed class XMLParser {
     private const string NAMESPACE_XML = "http://www.w3.org/XML/1998/namespace";
 
     private readonly string xml;
-    // True to skip a DOCTYPE, as SVGImage does, and false to refuse it.
+    // True to skip a DOCTYPE, as SVGImage does, and false to refuse it; true
+    // also reads a prefix that no element declares as no namespace, as SVG
+    // files copied from web pages have xlink:href without xmlns:xlink.
     private readonly bool skipDoctype;
+    // The names read, each kept once, as a document repeats a few names
+    // millions of times; 4096 at most.
+    private readonly Dictionary<string, string> names = new Dictionary<string, string>(StringComparer.Ordinal);
+    // The attributes of the tag being read, the list used again for each.
+    private readonly List<KeyValuePair<string, string>> attributes = new List<KeyValuePair<string, string>>();
     private int index;
     private int line = 1;
     private int column = 1;
@@ -92,7 +99,9 @@ public sealed class XMLParser {
     /// <summary>
     /// Reads the document and returns its root element, as Parse does, but
     /// skips a document type declaration, whose entities are not read: as the
-    /// SVG files of the drawing programs have one.
+    /// SVG files of the drawing programs have one. A prefix that no element
+    /// declares is read as no namespace, as SVG files copied from web pages
+    /// have xlink:href without xmlns:xlink, rather than an error.
     /// </summary>
     /// <param name="bytes">the document.</param>
     /// <returns>the root element.</returns>
@@ -243,7 +252,9 @@ public sealed class XMLParser {
         while (index < xml.Length) {
             if (IsWhitespace(Peek())) {
                 Next();
-            } else if (Ahead("<?xml") && index == 0) {
+            } else if (index == 0 && Ahead("<?xml") && index + 5 < xml.Length && IsWhitespace(xml[index + 5])) {
+                // The declaration, and not a processing instruction whose name
+                // starts with xml, as xml-stylesheet (the review of 9 October 2026)
                 Declaration();
             } else if (Ahead("<!--")) {
                 Comment();
@@ -277,6 +288,15 @@ public sealed class XMLParser {
                     throw Error("A comment of the document type declaration does not end");
                 }
                 Skip(end + 3 - index);
+                continue;
+            } else if (Ahead("<?")) {
+                // A processing instruction, whose text can hold a quote, as
+                // <?pi don't ?> (the review of 9 October 2026)
+                int end = xml.IndexOf("?>", index + 2, StringComparison.Ordinal);
+                if (end == -1) {
+                    throw Error("A processing instruction of the document type declaration does not end");
+                }
+                Skip(end + 2 - index);
                 continue;
             } else if (ch == '"' || ch == '\'') {
                 char quote = Next();
@@ -398,8 +418,8 @@ public sealed class XMLParser {
             throw Error("A tag has no name");
         }
         Dictionary<string, string> declared = null;
-        List<string[]> attributes = new List<string[]>();
-        HashSet<string> written = null;
+        attributes.Clear();
+        HashSet<string> written = null;     // Past a few attributes, which are compared one by one
         for (bool first = true; ; first = false) {
             bool spaced = index < xml.Length && IsWhitespace(Peek());
             SkipWhitespace();
@@ -425,11 +445,25 @@ public sealed class XMLParser {
             Next();
             SkipWhitespace();
             string value = AttributeValue();
-            if (written == null) {
-                written = new HashSet<string>(StringComparer.Ordinal);
+            bool twice = false;
+            if (written != null) {
+                twice = written.Contains(attributeName);
+            } else {
+                foreach (KeyValuePair<string, string> attribute in attributes) {
+                    twice = twice || attribute.Key == attributeName;
+                }
+                if (attributes.Count >= 16) {
+                    written = new HashSet<string>(StringComparer.Ordinal);
+                    foreach (KeyValuePair<string, string> attribute in attributes) {
+                        written.Add(attribute.Key);
+                    }
+                }
             }
-            if (!written.Add(attributeName)) {
+            if (twice) {
                 throw Error("The attribute " + attributeName + " of " + name + " is written twice");
+            }
+            if (written != null) {
+                written.Add(attributeName);
             }
             if (attributeName == "xmlns" || attributeName.StartsWith("xmlns:", StringComparison.Ordinal)) {
                 if (declared == null) {
@@ -438,6 +472,9 @@ public sealed class XMLParser {
                 string prefix = "";
                 if (attributeName != "xmlns") {
                     prefix = attributeName.Substring(6);
+                    if (prefix.Length == 0) {
+                        throw Error("A namespace of " + name + " is declared for an empty prefix");
+                    }
                     // A prefix stands for a namespace, and the default
                     // namespace is the only one that may be none.
                     if (value.Length == 0) {
@@ -447,22 +484,30 @@ public sealed class XMLParser {
                 }
                 declared[prefix] = value;
             }
-            attributes.Add(new string[] {attributeName, value});
+            attributes.Add(new KeyValuePair<string, string>(attributeName, value));
         }
         // The namespace of the element is the one its prefix stands for in the
         // element itself or in the nearest element it is in that declares it.
         string ns = NamespaceOf(PrefixOf(name), declared);
         if (ns == null) {
-            throw Error("The prefix " + PrefixOf(name) + " of " + name + " is not declared");
-        }
-        XMLNode node = new XMLNode(name, ns);
-        foreach (string[] attribute in attributes) {
-            string prefix = PrefixOf(attribute[0]);
-            if (prefix.Length != 0 && prefix != "xmlns" && NamespaceOf(prefix, declared) == null) {
-                throw Error("The prefix " + prefix + " of the attribute " + attribute[0]
-                        + " of " + name + " is not declared");
+            if (!skipDoctype) {
+                throw Error("The prefix " + PrefixOf(name) + " of " + name + " is not declared");
             }
-            node.AddAttribute(attribute[0], attribute[1]);
+            ns = "";
+        }
+        int colon = name.IndexOf(':');
+        XMLNode node = new XMLNode(name, (colon == -1) ? name : Kept(name.Substring(colon + 1)), ns);
+        if (!skipDoctype) {
+            foreach (KeyValuePair<string, string> attribute in attributes) {
+                string prefix = PrefixOf(attribute.Key);
+                if (prefix.Length != 0 && prefix != "xmlns" && NamespaceOf(prefix, declared) == null) {
+                    throw Error("The prefix " + prefix + " of the attribute " + attribute.Key
+                            + " of " + name + " is not declared");
+                }
+            }
+        }
+        if (attributes.Count != 0) {
+            node.SetAttributes(attributes.ToArray());
         }
         if (open.Count != 0) {
             open[open.Count - 1].AddChild(node);
@@ -623,7 +668,20 @@ public sealed class XMLParser {
             }
             Next();
         }
-        return xml.Substring(start, index - start);
+        return Kept(xml.Substring(start, index - start));
+    }
+
+    // The name, the one read before when there is one, so that a name written
+    // millions of times is kept once.
+    private string Kept(string name) {
+        string kept;
+        if (names.TryGetValue(name, out kept)) {
+            return kept;
+        }
+        if (names.Count < 4096) {
+            names[name] = name;
+        }
+        return name;
     }
 
     // "value" or 'value', with its entities read.

@@ -3048,6 +3048,9 @@ public final class PDF {
 
     // Adds the pages, in their order, and every object that they use.
     private func mergePages(_ objects: [PDFobj], _ pageObjects: [PDFobj]) {
+        // A font added to the objects, drawn on their pages, is filled in first,
+        // as addObjects does (the review of 9 October 2026: merged, it was lost)
+        FontObjects.complete(objects)
         var mergedPages = Set<Int>()
         for page in pageObjects {
             mergedPages.insert(page.number)
@@ -3405,10 +3408,13 @@ public final class PDF {
         if encryption != nil {
             return "The objects of an existing PDF cannot be added to an encrypted PDF."
         }
+        // A number this document holds, written or only reserved, as that of a
+        // font written at complete(), is taken (the review of 9 October 2026: a
+        // font made before the objects were added took the number of one of them)
         for obj in objects {
-            if obj.number > 0 && obj.number <= objOffset.count && objOffset[obj.number - 1] != 0 {
+            if obj.number > 0 && obj.number <= objOffset.count {
                 return "Add the objects of an existing PDF before fonts, images or pages "
-                        + "are added to the PDF: object \(obj.number) is already written."
+                        + "are added to the PDF: object \(obj.number) is already taken."
             }
         }
         return nil

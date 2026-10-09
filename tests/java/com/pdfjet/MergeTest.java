@@ -360,4 +360,33 @@ class MergeTest {
         assertEquals("Page 1 is listed twice.",
                 assertThrows(IllegalArgumentException.class, () -> split.merge(objects, 1, 1)).getMessage());
     }
+
+    @Test
+    void aFontAddedToTheObjectsIsWritten() throws Exception {
+        // A font added to the objects of a PDF, and drawn on one of their pages,
+        // was left empty when the objects were merged rather than added (the
+        // review of 9 October 2026), and its text was lost.
+        List<PDFobj> objects = TestSupport.read(document("Existing"));
+        Font font;
+        try (java.io.InputStream in = TestSupport.open("fonts/NotoSans/NotoSans-Regular.ttf")) {
+            font = new Font(objects, in);
+        }
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        Page page = new Page(pdf, pdf.getPageObjects(objects).get(0));
+        page.addResource(font, objects);
+        new TextLine(font, "Hello").setLocation(72f, 72f).drawOn(page);
+        page.complete(objects);
+        pdf.merge(objects);
+        pdf.complete();
+        List<PDFobj> merged = TestSupport.read(bos.toByteArray());
+        assertNotNull(TestSupport.findObject(merged, "/Length1"), "no font program");
+        boolean found = false;
+        for (PDFobj obj : merged) {
+            if ("/Type0".equals(obj.getValue("/Subtype")) && obj.getValue("/BaseFont").endsWith("+NotoSans-Regular")) {
+                found = true;
+            }
+        }
+        assertTrue(found, "no Type0 font of a subset of Noto Sans");
+    }
 }

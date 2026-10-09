@@ -337,4 +337,25 @@ import Testing
             try split.pdf.merge(objects, [1, 1])
         }
     }
+
+    @Test func aFontAddedToTheObjectsIsWritten() throws {
+        // A font added to the objects of a PDF, and drawn on one of their pages,
+        // was left empty when the objects were merged rather than added (the
+        // review of 9 October 2026), and its text was lost.
+        var objects = try TestSupport.read(document("Existing"))
+        let font = try Font(&objects, TestSupport.open("fonts/NotoSans/NotoSans-Regular.ttf"))
+        let memory = MemoryPDF()
+        let page = Page(memory.pdf, memory.pdf.getPageObjects(from: objects)[0])
+        page.addResource(font, &objects)
+        page.drawString(font, nil, 12, "Hello", 72, 72)
+        page.complete(&objects)
+        try memory.pdf.merge(objects)
+        try memory.pdf.complete()
+        let merged = try TestSupport.read(memory.bytes)
+        #expect(TestSupport.findObject(merged, "/Length1") != nil, "no font program")
+        #expect(merged.contains {
+            $0.getValue("/Subtype") == "/Type0" && $0.getValue("/BaseFont").hasSuffix("+NotoSans-Regular")
+        }, "no Type0 font of a subset of Noto Sans")
+        expectReferencesResolve(merged)
+    }
 }

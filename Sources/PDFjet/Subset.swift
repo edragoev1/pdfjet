@@ -211,11 +211,17 @@ class Subset {
         return Int(ttf[at]) << 8 | Int(ttf[at + 1])
     }
 
+    // A value past 2^31 - 1 is refused, as an Int of 32 bits could not hold
+    // it (the review of 9 October 2026), in the four ports alike.
     private static func u32(_ ttf: [UInt8], _ at: Int) throws -> Int {
         if at < 0 || at + 4 > ttf.count {
             throw NotSubset()
         }
-        return Int(ttf[at]) << 24 | Int(ttf[at + 1]) << 16 | Int(ttf[at + 2]) << 8 | Int(ttf[at + 3])
+        let v = UInt32(ttf[at]) << 24 | UInt32(ttf[at + 1]) << 16 | UInt32(ttf[at + 2]) << 8 | UInt32(ttf[at + 3])
+        if v > UInt32(Int32.max) {
+            throw NotSubset()
+        }
+        return Int(v)
     }
 
     /// A table of the font: its tag, offset and length.
@@ -237,11 +243,20 @@ class Subset {
         let numTables = try u16(ttf, 4)
         var tables = [Table]()
         var head: Table?, loca: Table?, glyf: Table?, maxp: Table?, os2: Table?
+        var seen = Set<UInt32>()
         for i in 0..<numTables {
             let entry = 12 + 16 * i
             let offset = try u32(ttf, entry + 8)
             let length = try u32(ttf, entry + 12)
             if offset + length > ttf.count {
+                throw NotSubset()
+            }
+            // A tag twice, as two head tables, one of them too short to copy,
+            // is not a font to subset (the review of 9 October 2026: the
+            // checksum adjustment of the second was written past its end)
+            let raw = UInt32(ttf[entry]) << 24 | UInt32(ttf[entry + 1]) << 16 |
+                    UInt32(ttf[entry + 2]) << 8 | UInt32(ttf[entry + 3])
+            if !seen.insert(raw).inserted {
                 throw NotSubset()
             }
             let tag = String(decoding: ttf[entry..<(entry + 4)].map { $0 & 0x7F }, as: UTF8.self)
@@ -265,7 +280,7 @@ class Subset {
         }
         let numGlyphs = try u16(ttf, maxp.offset + 4)
         let longOffsets = try u16(ttf, head.offset + 50)
-        if numGlyphs == 0 || loca.length < (numGlyphs + 1) * (2 + 2 * longOffsets) {
+        if numGlyphs == 0 || longOffsets > 1 || loca.length < (numGlyphs + 1) * (2 + 2 * longOffsets) {
             throw NotSubset()
         }
         var starts = [Int](repeating: 0, count: numGlyphs)
@@ -274,8 +289,15 @@ class Subset {
             var start: Int
             var end: Int
             if longOffsets == 1 {
-                start = try u32(ttf, loca.offset + 4 * gid)
-                end = try u32(ttf, loca.offset + 4 * gid + 4)
+                // An offset that cannot be read, as one past 2^31 - 1, makes
+                // the glyph one that cannot be read, refused only if kept
+                guard let s = try? u32(ttf, loca.offset + 4 * gid),
+                        let e = try? u32(ttf, loca.offset + 4 * gid + 4) else {
+                    starts[gid] = -1
+                    continue
+                }
+                start = s
+                end = e
             } else {
                 start = try 2 * u16(ttf, loca.offset + 2 * gid)
                 end = try 2 * u16(ttf, loca.offset + 2 * gid + 2)
@@ -351,6 +373,13 @@ class Subset {
                 newGlyf.append(contentsOf: ttf[starts[gid]..<ends[gid]])
                 while newGlyf.count % 4 != 0 {
                     newGlyf.append(0)
+                }
+                // Glyphs whose outlines overlap, each copied again, could make
+                // the subset larger than the whole font many times over (the
+                // review of 9 October 2026: 112 KB into 384 MB); a subset is never
+                // larger than the glyf table and the padding of each glyph.
+                if newGlyf.count > glyf.length + 3 * numGlyphs {
+                    throw NotSubset()
                 }
             }
         }

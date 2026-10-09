@@ -267,5 +267,56 @@ public class OTFTest {
         }
     }
 
+    private const string TC = "fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.ttf";
+
+    [Fact]
+    public void AFormat12GroupThatStartsBeforeTheFirstCharacterKeepsItsGlyphs() {
+        // IBM Plex Sans TC maps every character in its format 12 subtable. With
+        // its first character raised past the start of a group, the glyphs of
+        // the group were counted from the first character, not from the group's
+        // own start, and every one was off (the review of 9 October 2026).
+        byte[] ttf = FontBytes(TC);
+        OTF want = new OTF(new MemoryStream(ttf));
+        OTF got = new OTF(new MemoryStream(With(ttf, Table(ttf, "OS/2") + 64, '0')));
+        foreach (char ch in "0AZaz~") {
+            Assert.True(got.unicodeToGID[ch] == want.unicodeToGID[ch] && want.unicodeToGID[ch] != 0,
+                    ch + ": glyph " + got.unicodeToGID[ch] + ", not " + want.unicodeToGID[ch]);
+        }
+    }
+
+    [Fact]
+    public void AFormat12GroupPastTheEndOfTheFontIsPassedOver() {
+        // The character map copied to the end of the font, and cut in the
+        // third group of its format 12 subtable, after the group's characters
+        // and before its first glyph, which was read as -1 and failed later
+        // with an IndexOutOfRangeException (the review of 9 October 2026).
+        byte[] ttf = FontBytes(TC);
+        int entry = Entry(ttf, "cmap");
+        int cmap = Table(ttf, "cmap");
+        int format12 = -1;
+        for (int i = 0; i < UInt16(ttf, cmap + 2); i++) {
+            int record = cmap + 4 + 8*i;
+            if (UInt16(ttf, record) == 3 && UInt16(ttf, record + 2) == 10) {
+                format12 = UInt32(ttf, record + 4);
+            }
+        }
+        Assert.Equal(12, UInt16(ttf, cmap + format12));
+        int third = format12 + 16 + 12*2;
+        Assert.Equal(0xA2, UInt32(ttf, cmap + third));     // ¢ and £
+        int kept = third + 8;
+        byte[] cut = new byte[ttf.Length + kept];
+        Array.Copy(ttf, cut, ttf.Length);
+        Array.Copy(ttf, cmap, cut, ttf.Length, kept);
+        cut[entry + 8] = (byte) (ttf.Length >> 24);
+        cut[entry + 9] = (byte) (ttf.Length >> 16);
+        cut[entry + 10] = (byte) (ttf.Length >> 8);
+        cut[entry + 11] = (byte) ttf.Length;
+        OTF want = new OTF(new MemoryStream(ttf));
+        OTF got = new OTF(new MemoryStream(cut));
+        Assert.True(got.unicodeToGID['A'] == want.unicodeToGID['A'] && want.unicodeToGID['A'] != 0);
+        Assert.Equal(0, got.unicodeToGID['¢']);
+        Assert.Equal(0, got.unicodeToGID['£']);
+        Draws(cut);
+    }
 }
 }   // End of namespace PDFjet.NET

@@ -71,9 +71,22 @@ public final class XMLParser {
     // declaring it.
     private static final String NAMESPACE_XML = "http://www.w3.org/XML/1998/namespace";
 
+    // How many names are kept once each, so that a document of names all
+    // different does not fill the map.
+    private static final int MAX_NAMES = 4096;
+
+    // Past how many attributes of an element they are compared by a set, and
+    // before by one another.
+    private static final int MAX_COMPARED = 16;
+
     private final String xml;
-    // True to skip a DOCTYPE, as SVG images have one, and false to refuse it.
+    // True to skip a DOCTYPE, as SVG images have one, and false to refuse it,
+    // and to read a prefix that no element declares as no namespace, as SVG
+    // files copied from web pages have xlink:href without xmlns:xlink.
     private final boolean skipDoctype;
+    // The names read, each kept once, as a document repeats a few names
+    // millions of times.
+    private final Map<String, String> names = new HashMap<String, String>();
     private int index;
     private int line = 1;
     private int column = 1;
@@ -99,7 +112,10 @@ public final class XMLParser {
     /**
      * Reads the document and returns its root element, as {@link #parse} does,
      * but skips a document type declaration, a DOCTYPE, as SVG images have one.
-     * The entities it declares are not read: a reference to one is an error.
+     * The entities it declares are not read: a reference to one is an error. A
+     * prefix that no element declares is read as no namespace, as SVG files
+     * copied from web pages have xlink:href without xmlns:xlink, rather than an
+     * error.
      *
      * @param bytes the document.
      * @return the root element.
@@ -337,7 +353,10 @@ public final class XMLParser {
         while (index < xml.length()) {
             if (isWhitespace(peek())) {
                 next();
-            } else if (xml.startsWith("<?xml", index) && index == 0) {
+            } else if (index == 0 && xml.startsWith("<?xml", index)
+                    && index + 5 < xml.length() && isWhitespace(xml.charAt(index + 5))) {
+                // The declaration, and not a processing instruction whose name
+                // starts with xml, as xml-stylesheet (the review of 9 October 2026)
                 declaration();
             } else if (xml.startsWith("<!--", index)) {
                 comment();
@@ -370,6 +389,16 @@ public final class XMLParser {
                     throw error("A comment of the document type declaration does not end");
                 }
                 skip(end + 3 - index);
+                continue;
+            }
+            if (xml.startsWith("<?", index)) {
+                // A processing instruction, whose text can hold a quote, as
+                // <?pi don't ?> (the review of 9 October 2026)
+                int end = xml.indexOf("?>", index + 2);
+                if (end == -1) {
+                    throw error("A processing instruction of the document type declaration does not end");
+                }
+                skip(end + 2 - index);
                 continue;
             }
             char ch = peek();
@@ -494,8 +523,8 @@ public final class XMLParser {
             throw error("A tag has no name");
         }
         Map<String, String> declared = null;
-        List<String[]> attributes = new ArrayList<String[]>();
-        Set<String> written = new HashSet<String>();
+        List<String> attributes = new ArrayList<String>();   // Names and values
+        Set<String> written = null;     // Past a few attributes, which are compared one by one
         for (boolean first = true; ; first = false) {
             boolean spaced = index < xml.length() && isWhitespace(peek());
             skipWhitespace();
@@ -521,8 +550,25 @@ public final class XMLParser {
             next();
             skipWhitespace();
             String value = attributeValue();
-            if (!written.add(attributeName)) {
+            boolean twice = false;
+            if (written != null) {
+                twice = written.contains(attributeName);
+            } else {
+                for (int i = 0; i < attributes.size() && !twice; i += 2) {
+                    twice = attributes.get(i).equals(attributeName);
+                }
+                if (attributes.size() / 2 >= MAX_COMPARED) {
+                    written = new HashSet<String>(2 * attributes.size());
+                    for (int i = 0; i < attributes.size(); i += 2) {
+                        written.add(attributes.get(i));
+                    }
+                }
+            }
+            if (twice) {
                 throw error("The attribute " + attributeName + " of " + name + " is written twice");
+            }
+            if (written != null) {
+                written.add(attributeName);
             }
             if (attributeName.equals("xmlns") || attributeName.startsWith("xmlns:")) {
                 if (declared == null) {
@@ -531,6 +577,9 @@ public final class XMLParser {
                 String prefix = "";
                 if (!attributeName.equals("xmlns")) {
                     prefix = attributeName.substring("xmlns:".length());
+                    if (prefix.isEmpty()) {
+                        throw error("A namespace of " + name + " is declared for an empty prefix");
+                    }
                     // A prefix stands for a namespace, and the default
                     // namespace is the only one that may be none.
                     if (value.isEmpty()) {
@@ -540,24 +589,28 @@ public final class XMLParser {
                 }
                 declared.put(prefix, value);
             }
-            attributes.add(new String[] {attributeName, value});
+            attributes.add(attributeName);
+            attributes.add(value);
         }
         // The namespace of the element is the one its prefix stands for in the
         // element itself or in the nearest element it is in that declares it.
         String namespace = namespaceOf(prefixOf(name), declared, scopes);
         if (namespace == null) {
-            throw error("The prefix " + prefixOf(name) + " of " + name + " is not declared");
+            if (!skipDoctype) {
+                throw error("The prefix " + prefixOf(name) + " of " + name + " is not declared");
+            }
+            namespace = "";
         }
-        XMLNode node = new XMLNode(name, namespace);
-        for (String[] attribute : attributes) {
-            String prefix = prefixOf(attribute[0]);
+        XMLNode node = new XMLNode(name, keep(XMLNode.localNameOf(name)), namespace);
+        for (int i = 0; i < attributes.size() && !skipDoctype; i += 2) {
+            String prefix = prefixOf(attributes.get(i));
             if (!prefix.isEmpty() && !prefix.equals("xmlns")
                     && namespaceOf(prefix, declared, scopes) == null) {
-                throw error("The prefix " + prefix + " of the attribute " + attribute[0]
+                throw error("The prefix " + prefix + " of the attribute " + attributes.get(i)
                         + " of " + name + " is not declared");
             }
-            node.addAttribute(attribute[0], attribute[1]);
         }
+        node.setAttributes(attributes.toArray(new String[attributes.size()]));
         if (!open.isEmpty()) {
             open.get(open.size() - 1).addChild(node);
         }
@@ -714,7 +767,20 @@ public final class XMLParser {
             }
             next();
         }
-        return xml.substring(start, index);
+        return keep(xml.substring(start, index));
+    }
+
+    // The name, kept once for the document while there are no more than
+    // MAX_NAMES of them.
+    private String keep(String name) {
+        String kept = names.get(name);
+        if (kept != null) {
+            return kept;
+        }
+        if (names.size() < MAX_NAMES) {
+            names.put(name, name);
+        }
+        return name;
     }
 
     // "value" or 'value', with its entities read.
@@ -731,7 +797,7 @@ public final class XMLParser {
             }
             char ch = next();
             if (ch == quote) {
-                return buf.toString();
+                return (buf.length() == 0) ? "" : buf.toString();
             } else if (ch == '<') {
                 throw error("The value of an attribute holds a <");
             } else if (ch == '&') {

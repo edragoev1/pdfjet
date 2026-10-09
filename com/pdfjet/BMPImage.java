@@ -116,10 +116,16 @@ class BMPImage {
             int pixelsPerMeterX = readSignedInt(is);
             int pixelsPerMeterY = readSignedInt(is);
             setPhysicalSize(pixelsPerMeterX, pixelsPerMeterY);
+            // The size of the palette, checked for ImageSize too (the review of
+            // 9 October 2026: a palette of 1,000 colors was a size)
+            int colorsUsed = readSignedInt(is);
+            int numpalcol = (colorsUsed == 0) ? (1 << bpp) : colorsUsed;
+            if (bpp <= 8 && (numpalcol < 0 || numpalcol > 256)) {
+                throw new Exception("Invalid BMP palette size " + numpalcol + ".");
+            }
             if (headerOnly) {
                 return;
             }
-            int colorsUsed = readSignedInt(is);
             skipNBytes(is, 4);
             long read = 54;     // The bytes read so far
 
@@ -149,10 +155,6 @@ class BMPImage {
             }
 
             if (bpp <= 8) {
-                int numpalcol = (colorsUsed == 0) ? (1 << bpp) : colorsUsed;
-                if (numpalcol < 0 || numpalcol > 256) {
-                    throw new Exception("Invalid BMP palette size " + numpalcol + ".");
-                }
                 parsePalette(is, numpalcol);
                 read += 4L * numpalcol;
             }

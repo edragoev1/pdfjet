@@ -76,6 +76,56 @@ import Testing
         }
     }
 
+    @Test func refusesWhatImageRefusesInTheHeader() throws {
+        // The review of 9 October 2026: an 8-bit BMP of 1,000 colors and a PNG
+        // whose one IDAT is empty were sizes, and Image refused them.
+        var bmp = [UInt8](repeating: 0, count: 54)
+        bmp[0] = 0x42
+        bmp[1] = 0x4D
+        func le(_ at: Int, _ value: Int, _ count: Int = 4) {
+            for i in 0..<count {
+                bmp[at + i] = UInt8(truncatingIfNeeded: value >> (8 * i))
+            }
+        }
+        le(10, 54)
+        le(14, 40)
+        le(18, 1)
+        le(22, 1)
+        le(26, 1, 2)
+        le(28, 8, 2)
+        le(46, 1000)
+        do {
+            _ = try ImageSize.read(InputStream(data: Data(bmp)))
+            Issue.record("a BMP of 1,000 colors taken")
+        } catch {
+            #expect("\(error)".contains("palette"), "\(error)")
+        }
+
+        var png: [UInt8] = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]
+        png += chunk("IHDR", [0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 0, 0, 0])
+        png += chunk("IDAT", [])
+        png += chunk("IEND", [])
+        #expect(throws: (any Error).self, "a PNG of no image data taken") {
+            _ = try ImageSize.read(InputStream(data: Data(png)))
+        }
+
+        // A JPEG that ends inside its frame header, after the size, is a size,
+        // as in the other ports: its data is Image's to refuse.
+        let jpg: [UInt8] = [0xFF, 0xD8, 0xFF, 0xC0, 0x00, 0x11, 0x08, 0x00, 0x10, 0x00, 0x20, 0x03]
+        let size = try ImageSize.read(InputStream(data: Data(jpg)))
+        #expect(size.getPixelWidth() == 32 && size.getPixelHeight() == 16)
+
+        // Fewer than four bytes are no image, as the other ports say.
+        for short: [UInt8] in [[0xFF, 0xD8], [0xFF, 0xD8, 0xFF], [0x42, 0x4D]] {
+            do {
+                _ = try ImageSize.read(InputStream(data: Data(short)))
+                Issue.record("\(short) taken")
+            } catch {
+                #expect(TestSupport.message(error) == "The image is not a PNG, JPEG or BMP file.", "\(error)")
+            }
+        }
+    }
+
     private func chunk(_ type: String, _ data: [UInt8]) -> [UInt8] {
         let n = data.count
         var out: [UInt8] = [UInt8(n >> 24 & 0xFF), UInt8(n >> 16 & 0xFF), UInt8(n >> 8 & 0xFF), UInt8(n & 0xFF)]

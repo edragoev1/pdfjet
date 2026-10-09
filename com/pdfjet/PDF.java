@@ -1914,6 +1914,9 @@ final public class PDF {
 
     // Adds the pages, in their order, and every object that they use.
     private void mergePages(List<PDFobj> objects, List<PDFobj> pageObjects) throws Exception {
+        // A font added to the objects, drawn on their pages, is filled in first,
+        // as addObjects does (the review of 9 October 2026: merged, it was lost)
+        FontObjects.complete(objects);
         Set<Integer> mergedPages = new HashSet<Integer>();
         for (PDFobj page : pageObjects) {
             mergedPages.add(page.number);
@@ -3468,11 +3471,14 @@ final public class PDF {
             fail(new IllegalStateException(
                     "The objects of an existing PDF cannot be added to an encrypted PDF."));
         }
+        // A number this document holds, written or only reserved, as that of a
+        // font written at complete, is taken (the review of 9 October 2026: a
+        // font made before the objects were added took the number of one of them)
         for (PDFobj obj : objects) {
-            if (obj.number > 0 && obj.number <= objOffset.size() && objOffset.get(obj.number - 1) != 0L) {
+            if (obj.number > 0 && obj.number <= objOffset.size()) {
                 fail(new IllegalStateException("Add the objects of an existing PDF before "
                         + "fonts, images or pages are added to the PDF: object "
-                        + obj.number + " is already written."));
+                        + obj.number + " is already taken."));
             }
         }
     }

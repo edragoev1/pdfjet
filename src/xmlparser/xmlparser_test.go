@@ -480,3 +480,32 @@ func TestXMLParserReadsAStylesheetInstructionFirstAndAQuoteInAnInstructionOfTheD
 	testContains(t, testMessage(t, `<?xml version="1.0" encoding="latin1"?><a/>`), "is not read")
 	testContains(t, testMessage(t, `<a xmlns:="urn:x"/>`), "empty prefix")
 }
+
+// FuzzXMLParser checks that any bytes are read or refused, strictly and with a
+// DOCTYPE skipped, without a panic, and that what the strict parse reads, the
+// lenient one reads the same.
+//
+//	go test -run '^$' -fuzz FuzzXMLParser -fuzztime 60s ./xmlparser
+func FuzzXMLParser(f *testing.F) {
+	for _, seed := range []string{
+		testInvoice,
+		`<?xml version="1.0" encoding="UTF-16"?><a b='1'><![CDATA[x]]><!--c--><?pi d?>&amp;&#x41;</a>`,
+		`<!DOCTYPE svg [<!ENTITY e "x"><?pi don't ?>]><svg xmlns="http://www.w3.org/2000/svg"><use xlink:href="#a"/></svg>`,
+		"\xFF\xFE<\x00a\x00/\x00>\x00",
+	} {
+		f.Add([]byte(seed))
+	}
+	f.Fuzz(func(t *testing.T, data []byte) {
+		strict, err := Parse(data)
+		lenient, err2 := ParseSkippingDoctype(data)
+		if err == nil {
+			if err2 != nil {
+				t.Fatalf("read strictly, refused with the DOCTYPE skipped: %v", err2)
+			}
+			if strict.Name() != lenient.Name() || len(strict.Children()) != len(lenient.Children()) ||
+				strict.Text() != lenient.Text() {
+				t.Fatal("read differently")
+			}
+		}
+	})
+}

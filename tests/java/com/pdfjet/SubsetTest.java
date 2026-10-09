@@ -309,4 +309,81 @@ class SubsetTest {
         assertEquals(fontBytes(path).length,
                 Integer.parseInt(TestSupport.findObject(objects, "/Length1").getValue("/Length1")));
     }
+
+    // Checks that the font, made wrong, is not subset, and so embedded whole,
+    // rather than an exception or a subset made of it.
+    private static void assertRefused(final byte[] ttf, final boolean[] used) {
+        assertThrows(Subset.NotSubset.class, () -> Subset.subsetTrueType(ttf, used, new boolean[1][]));
+    }
+
+    private static void putU16(byte[] font, int at, int value) {
+        font[at] = (byte) (value >> 8);
+        font[at + 1] = (byte) value;
+    }
+
+    private static void putU32(byte[] font, int at, long value) {
+        font[at] = (byte) (value >> 24);
+        font[at + 1] = (byte) (value >> 16);
+        font[at + 2] = (byte) (value >> 8);
+        font[at + 3] = (byte) value;
+    }
+
+    @Test
+    void aTableTwiceIsRefused() throws Exception {
+        // The gasp table's entry made a second head table of 8 bytes, whose
+        // checksum adjustment the subset wrote past its end (the review of
+        // 9 October 2026).
+        byte[] ttf = fontBytes("fonts/NotoSans/NotoSans-Regular.ttf");
+        int gasp = entry(ttf, "gasp");
+        System.arraycopy("head".getBytes(StandardCharsets.ISO_8859_1), 0, ttf, gasp, 4);
+        putU32(ttf, gasp + 12, 8);
+        assertRefused(ttf, used(36));
+    }
+
+    @Test
+    void aLocaFormatOtherThan0Or1IsRefused() throws Exception {
+        byte[] ttf = fontBytes("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.ttf");
+        putU16(ttf, table(ttf, "head") + 50, 0xFFFF);
+        assertRefused(ttf, used(36));
+    }
+
+    @Test
+    void anOffsetPast2To31OfAGlyphNotKeptIsNotRefused() throws Exception {
+        // A glyph whose loca offset is past 2^31 - 1 cannot be read, and is
+        // refused only if it is kept, as the other ports do (the review of
+        // 9 October 2026).
+        byte[] ttf = fontBytes("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.ttf");
+        assertEquals(1, u16(ttf, table(ttf, "head") + 50));
+        int numGlyphs = u16(ttf, table(ttf, "maxp") + 4);
+        putU32(ttf, table(ttf, "loca") + 4 * numGlyphs, 0xFFFFFFF0L);
+        assertNotNull(Subset.subsetTrueType(ttf, used(36), new boolean[1][]));
+        assertRefused(ttf, used(36, numGlyphs - 1));
+    }
+
+    @Test
+    void overlappingGlyphsAreRefused() throws Exception {
+        // Every even glyph's outline the whole glyf table, so that a subset of
+        // them copied it again for each (the review of 9 October 2026: 112 KB
+        // made into 384 MB). A subset is never larger than the glyf table and the
+        // padding of its glyphs.
+        byte[] ttf = fontBytes("fonts/NotoSans/NotoSans-Regular.ttf");
+        int head = table(ttf, "head");
+        int loca = table(ttf, "loca");
+        int glyfLength = u32(ttf, entry(ttf, "glyf") + 12);
+        int numGlyphs = u16(ttf, table(ttf, "maxp") + 4);
+        boolean isLong = u16(ttf, head + 50) == 1;
+        boolean[] used = new boolean[0x10000];
+        for (int gid = 0; gid <= numGlyphs; gid++) {
+            int offset = gid % 2 == 1 ? glyfLength & ~3 : 0;
+            if (isLong) {
+                putU32(ttf, loca + 4 * gid, offset);
+            } else {
+                putU16(ttf, loca + 2 * gid, offset / 2);
+            }
+            if (gid % 2 == 0 && gid < numGlyphs) {
+                used[gid] = true;
+            }
+        }
+        assertRefused(ttf, used);
+    }
 }

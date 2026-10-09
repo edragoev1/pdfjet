@@ -357,4 +357,39 @@ import Testing
             #expect(unicodeOf[i + 1] == c, "glyph \(i + 1)")
         }
     }
+
+    @Test func aWidthPastTheRangeOfAUInt16IsWritten() throws {
+        // Noto Sans made of 256 units per em, and its glyph 0 of 65,535 units,
+        // 255,996 of the thousandths of the PDF: the widths of the /W array
+        // were made UInt16s and trapped (the review of 9 October 2026).
+        var ttf = [UInt8](try Data(contentsOf: URL(fileURLWithPath:
+                TestSupport.path("fonts/NotoSans/NotoSans-Regular.ttf"))))
+        func u16(_ at: Int) -> Int { Int(ttf[at]) << 8 | Int(ttf[at + 1]) }
+        func table(_ name: String) throws -> Int {
+            for i in 0..<u16(4) {
+                let entry = 12 + 16 * i
+                if TestSupport.latin1(Array(ttf[entry..<(entry + 4)])) == name {
+                    return u16(entry + 8) << 16 | u16(entry + 10)
+                }
+            }
+            throw PDFjetError(message: "the font has no \(name) table")
+        }
+        let head = try table("head")
+        ttf[head + 18] = 0x01
+        ttf[head + 19] = 0x00
+        let hmtx = try table("hmtx")
+        ttf[hmtx] = 0xFF
+        ttf[hmtx + 1] = 0xFF
+        for subset in [true, false] {
+            let memory = MemoryPDF()
+            let font = try Font(memory.pdf, InputStream(data: Data(ttf)))
+            font.setSubset(subset)
+            TextLine(font, "Hello").setLocation(50, 50).drawOn(Page(memory.pdf, Letter.PORTRAIT))
+            try memory.pdf.complete()
+            let objects = try TestSupport.read(memory.bytes)
+            let cidFont = try #require(TestSupport.findObject(objects, "/CIDToGIDMap"))
+            let w = cidFont.dict.drop { $0 != "/W" }
+            #expect(w.dropFirst(4).first == "255996", "subset \(subset): \(Array(w.prefix(6)))")
+        }
+    }
 }

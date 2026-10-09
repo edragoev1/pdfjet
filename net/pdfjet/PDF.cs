@@ -1844,6 +1844,9 @@ public sealed class PDF {
 
     // Adds the pages, in their order, and every object that they use.
     private void MergePages(List<PDFobj> objects, List<PDFobj> pageObjects) {
+        // A font added to the objects, drawn on their pages, is filled in first,
+        // as AddObjects does (the review of 9 October 2026: merged, it was lost)
+        FontObjects.Complete(objects);
         HashSet<int> mergedPages = new HashSet<int>();
         foreach (PDFobj page in pageObjects) {
             mergedPages.Add(page.number);
@@ -3309,11 +3312,14 @@ public sealed class PDF {
             Fail(new InvalidOperationException(
                     "The objects of an existing PDF cannot be added to an encrypted PDF."));
         }
+        // A number this document holds, written or only reserved, as that of a
+        // font written at Complete, is taken (the review of 9 October 2026: a
+        // font made before the objects were added took the number of one of them)
         foreach (PDFobj obj in objects) {
-            if (obj.number > 0 && obj.number <= objOffset.Count && objOffset[obj.number - 1] != 0) {
+            if (obj.number > 0 && obj.number <= objOffset.Count) {
                 Fail(new InvalidOperationException("Add the objects of an existing PDF before "
                         + "fonts, images or pages are added to the PDF: object "
-                        + obj.number + " is already written."));
+                        + obj.number.ToString(CultureInfo.InvariantCulture) + " is already taken."));
             }
         }
     }

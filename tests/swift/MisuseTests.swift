@@ -316,7 +316,7 @@ import Testing
     @Test func theObjectsOfAnExistingPdfComeBeforeTheContent() throws {
         let objects = try existingObjects()
         let message = "Add the objects of an existing PDF before fonts, images or pages "
-                + "are added to the PDF: object 1 is already written."
+                + "are added to the PDF: object 1 is already taken."
 
         let pdf = TestSupport.newPDF()
         _ = TestSupport.helvetica(pdf)      // Object 1, which the objects would replace.
@@ -333,12 +333,23 @@ import Testing
             #expect(TestSupport.message(error) == message)
         }
 
-        // The objects first, and the font after them.
+        // An embedded font only reserves its number, written at complete():
+        // the objects could take it too (the review of 9 October 2026).
         let pdf3 = TestSupport.newPDF()
-        pdf3.addResourceObjects(from: objects)
-        _ = TestSupport.helvetica(pdf3)
-        _ = Page(pdf3, Letter.PORTRAIT)
-        try pdf3.complete()
+        _ = try Font(pdf3, TestSupport.open("fonts/NotoSans/NotoSans-Regular.ttf"))
+        do {
+            try pdf3.addObjects(objects)
+            Issue.record("addObjects after an embedded font did not throw")
+        } catch {
+            #expect(TestSupport.message(error) == message)
+        }
+
+        // The objects first, and the font after them.
+        let pdf4 = TestSupport.newPDF()
+        pdf4.addResourceObjects(from: objects)
+        _ = TestSupport.helvetica(pdf4)
+        _ = Page(pdf4, Letter.PORTRAIT)
+        try pdf4.complete()
     }
 
     @Test func theObjectsOfAnExistingPdfCannotBeAddedToAnEncryptedPdf() throws {

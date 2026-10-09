@@ -59,7 +59,12 @@ public final class ImageSize {
         let reader = StreamReader(stream)
         let head = reader.upTo(4)
         reader.unread(head)
-        if head.count >= 4 && head[0] == 0x89 && head[1] == 0x50 && head[2] == 0x4E && head[3] == 0x47 {
+        // Four bytes at least, as the other ports peek at them, before the
+        // type is decided
+        if head.count < 4 {
+            throw PDFjetError(message: "The image is not a PNG, JPEG or BMP file.")
+        }
+        if head[0] == 0x89 && head[1] == 0x50 && head[2] == 0x4E && head[3] == 0x47 {
             let png = try PNGImage.readSize({ n in
                 let bytes = reader.upTo(n)
                 if bytes.count < n {
@@ -70,16 +75,16 @@ public final class ImageSize {
             return ImageSize(png.getWidth(), png.getHeight(),
                     png.getPhysicalWidth(), png.getPhysicalHeight(), turned: false)
         }
-        if head.count >= 2 && head[0] == 0xFF && head[1] == 0xD8 {
+        if head[0] == 0xFF && head[1] == 0xD8 {
             let jpg = try JPGImage(jpgHeader(reader), headerOnly: true)
             // Turned a quarter of the way, as Image's setOrientation turns it
             return ImageSize(Int(jpg.getWidth()), Int(jpg.getHeight()),
                     jpg.getPhysicalWidth(), jpg.getPhysicalHeight(),
                     turned: jpg.orientation >= 5 && jpg.orientation <= 8)
         }
-        if head.count >= 2 && head[0] == 0x42 && head[1] == 0x4D {
-            // The header to the pixels per metre
-            let bmp = try BMPImage(InputStream(data: Data(reader.upTo(46))), headerOnly: true)
+        if head[0] == 0x42 && head[1] == 0x4D {
+            // The header to the colors used, which the palette's size checks
+            let bmp = try BMPImage(InputStream(data: Data(reader.upTo(50))), headerOnly: true)
             return ImageSize(bmp.getWidth(), bmp.getHeight(),
                     bmp.getPhysicalWidth(), bmp.getPhysicalHeight(), turned: false)
         }
@@ -108,8 +113,11 @@ public final class ImageSize {
 
     // The bytes of a JPEG for JPGImage to read to its frame header: its
     // markers, as JPGImage's nextMarker finds them, the bytes between them
-    // that are not markers left out; its JFIF and Exif segments and its frame
-    // header whole; and the other segments empty, their bytes passed over, so
+    // that are not markers left out; its JFIF and Exif segments whole; its
+    // frame header to the components, the length, the precision, the height,
+    // the width and the components, as JPGImage reads them, the components'
+    // specifications not read, as in the other ports (the review of
+    // 9 October 2026); and the other segments empty, their bytes passed over, so
     // that no segment but those is held. The stream ending, what was read is
     // given, for JPGImage to refuse as it refuses a JPEG cut short there.
     private static func jpgHeader(_ reader: StreamReader) -> [UInt8] {
@@ -138,6 +146,9 @@ public final class ImageSize {
                     (ch >= 0xCD && ch <= 0xCF) {
                 return header   // The end, or a frame JPGImage refuses
             }
+            if ch == 0xC0 || ch == 0xC1 || ch == 0xC2 {
+                return header + reader.upTo(2 + 6)     // The frame header
+            }
             let lengthBytes = reader.upTo(2)
             if lengthBytes.count < 2 {
                 return header + lengthBytes
@@ -146,11 +157,8 @@ public final class ImageSize {
             if length < 2 {
                 return header + lengthBytes
             }
-            if ch == 0xC0 || ch == 0xC1 || ch == 0xC2 || ch == 0xE0 || ch == 0xE1 {
+            if ch == 0xE0 || ch == 0xE1 {
                 header += lengthBytes + reader.upTo(length - 2)
-                if ch <= 0xC2 {
-                    return header   // The frame header
-                }
             } else {
                 header += [0x00, 0x02]      // Empty
                 if !reader.skip(length - 2) {

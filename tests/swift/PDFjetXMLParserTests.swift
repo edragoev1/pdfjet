@@ -333,4 +333,49 @@ import Testing
         }
         return try #require(shortest)
     }
+
+    @Test func readsAnUndeclaredPrefixAsNoNamespaceWhenItSkipsADoctype() throws {
+        // An SVG copied from a web page has xlink:href without xmlns:xlink, and
+        // one of a drawing program can have sodipodi: elements without their
+        // declaration; refused, they no longer drew as they did before the parser
+        // (the review of 9 October 2026). An invoice is read as strictly as ever.
+        let xml = ##"<svg xmlns="http://www.w3.org/2000/svg"><use xlink:href="#a"/><sodipodi:namedview/></svg>"##
+        #expect(message(xml).contains("is not declared"))
+        let svg = try parseSkipping(xml)
+        #expect(svg.getChildren()[0].getAttribute("xlink:href") == "#a")
+        #expect(svg.getChildren()[0].getAttribute("href") == "#a")
+        let view = svg.getChildren()[1]
+        #expect(view.getLocalName() == "namedview" && view.getNamespace() == "",
+                "\(view.getLocalName()) in \(view.getNamespace())")
+    }
+
+    @Test func aDeclarationIsNotAnAttributeOfItsPrefix() throws {
+        let node = try parse(#"<a xmlns:id="urn:x" b="1"/>"#)
+        #expect(node.getAttribute("id") == nil, "xmlns:id read as the attribute id")
+        #expect(node.getAttribute("b") == "1")
+    }
+
+    @Test func refusesAnAttributeWrittenTwiceAmongMany() throws {
+        // Past 16 attributes they are compared by a set, before by one another.
+        var xml = "<a"
+        for i in 0..<20 {
+            xml += " a\(i)='1'"
+        }
+        for twice in [" a3='2'", " a18='2'"] {
+            #expect(message(xml + twice + "/>").contains("is written twice"))
+        }
+        _ = try parse(xml + "/>")
+    }
+
+    @Test func readsAStylesheetInstructionFirstAndAQuoteInAnInstructionOfTheDoctype() throws {
+        // A processing instruction whose name starts with xml, first, was read as
+        // the declaration, and its pseudo-attribute as an encoding; a quote in an
+        // instruction of a skipped DOCTYPE as the start of a string (the review
+        // of 9 October 2026).
+        #expect(try parse(#"<?xml-stylesheet type="text/xsl" encoding="latin1" href="a.xsl"?><a b="1"/>"#)
+                .getAttribute("b") == "1")
+        #expect(try parseSkipping(#"<!DOCTYPE svg [<?pi don't ?>]><svg b="1"/>"#).getAttribute("b") == "1")
+        #expect(message(#"<?xml version="1.0" encoding="latin1"?><a/>"#).contains("is not read"))
+        #expect(message(#"<a xmlns:="urn:x"/>"#).contains("empty prefix"))
+    }
 }

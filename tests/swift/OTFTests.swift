@@ -251,4 +251,19 @@ import Testing
         }
     }
 
+    @Test func aFormat12GroupThatStartsBeforeTheFirstCharacterKeepsItsGlyphs() throws {
+        // IBM Plex Sans TC maps every character in its format 12 subtable. With
+        // its first character raised past the start of a group, the glyphs of
+        // the group were counted from the first character, not from the group's
+        // own start, and every one was off (the review of 9 October 2026).
+        let ttf = font("fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.ttf")
+        let want = try OTF(InputStream(data: Data(ttf)))
+        let raised = with(ttf, table(ttf, "OS/2") + 64, Int(("0" as Unicode.Scalar).value))
+        let got = try OTF(InputStream(data: Data(raised)))
+        for ch in "0AZaz~".unicodeScalars {
+            let c = Int(ch.value)
+            #expect(got.unicodeToGID[c] == want.unicodeToGID[c] && want.unicodeToGID[c] != 0,
+                    "\(ch): glyph \(got.unicodeToGID[c]), not \(want.unicodeToGID[c])")
+        }
+    }
 }

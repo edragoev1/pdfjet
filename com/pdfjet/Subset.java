@@ -183,8 +183,9 @@ class Subset {
                 font.kept = kept[0];
                 font.baseFont = subsetTag(font.checksum, kept[0]) + "+" + font.name;
                 return subset;
-            } catch (NotSubset e) {
-                // Embedded whole
+            } catch (NotSubset | RuntimeException e) {
+                // Embedded whole; a fault of the subsetters on a font they
+                // misread, past their checks, too (the review of 9 October 2026)
             }
         }
         if (program.cff) {
@@ -192,7 +193,7 @@ class Subset {
             // font, or as it is when it cannot be.
             try {
                 data = CFFSubset.subset(data, null, new boolean[1][]);
-            } catch (NotSubset e) {
+            } catch (NotSubset | RuntimeException e) {
                 // As it is
             }
         }
@@ -242,14 +243,14 @@ class Subset {
     }
 
     private static int u16(byte[] ttf, int at) throws NotSubset {
-        if (at < 0 || at + 2 > ttf.length) {
+        if (at < 0 || at > ttf.length - 2) {
             throw new NotSubset();
         }
         return (ttf[at] & 0xFF) << 8 | (ttf[at + 1] & 0xFF);
     }
 
     private static int u32(byte[] ttf, int at) throws NotSubset {
-        if (at < 0 || at + 4 > ttf.length) {
+        if (at < 0 || at > ttf.length - 4) {
             throw new NotSubset();
         }
         long value = (ttf[at] & 0xFFL) << 24 | (ttf[at + 1] & 0xFF) << 16 |
@@ -287,6 +288,7 @@ class Subset {
         int numTables = u16(ttf, 4);
         List<Table> tables = new ArrayList<Table>(numTables);
         Table head = null, loca = null, glyf = null, maxp = null, os2 = null;
+        Set<String> seen = new HashSet<String>();
         for (int i = 0; i < numTables; i++) {
             int entry = 12 + 16 * i;
             int offset = u32(ttf, entry + 8);
@@ -294,8 +296,13 @@ class Subset {
             if ((long) offset + length > ttf.length) {
                 throw new NotSubset();
             }
-            Table table = new Table(
-                    new String(ttf, entry, 4, java.nio.charset.StandardCharsets.ISO_8859_1), offset, length);
+            // A tag twice, as two head tables, one of them too short to copy,
+            // is not a font to subset (the review of 9 October 2026)
+            String tag = new String(ttf, entry, 4, java.nio.charset.StandardCharsets.ISO_8859_1);
+            if (!seen.add(tag)) {
+                throw new NotSubset();
+            }
+            Table table = new Table(tag, offset, length);
             tables.add(table);
             switch (table.tag) {
                 case "head": head = table; break;
@@ -315,7 +322,7 @@ class Subset {
         }
         int numGlyphs = u16(ttf, maxp.offset + 4);
         int longOffsets = u16(ttf, head.offset + 50);
-        if (numGlyphs == 0 || loca.length < (numGlyphs + 1) * (2 + 2 * longOffsets)) {
+        if (numGlyphs == 0 || longOffsets > 1 || loca.length < (numGlyphs + 1) * (2 + 2 * longOffsets)) {
             throw new NotSubset();
         }
         int[] starts = new int[numGlyphs];
@@ -323,8 +330,15 @@ class Subset {
         for (int gid = 0; gid < numGlyphs; gid++) {
             int start, end;
             if (longOffsets == 1) {
-                start = u32(ttf, loca.offset + 4 * gid);
-                end = u32(ttf, loca.offset + 4 * gid + 4);
+                // An offset past 2^31 - 1 makes the glyph unreadable, refused
+                // only if it is kept (the review of 9 October 2026)
+                try {
+                    start = u32(ttf, loca.offset + 4 * gid);
+                    end = u32(ttf, loca.offset + 4 * gid + 4);
+                } catch (NotSubset e) {
+                    starts[gid] = -1;
+                    continue;
+                }
             } else {
                 start = 2 * u16(ttf, loca.offset + 2 * gid);
                 end = 2 * u16(ttf, loca.offset + 2 * gid + 2);
@@ -387,16 +401,23 @@ class Subset {
 
         // The glyf and loca tables, the kept glyphs copied, each padded to a
         // multiple of four bytes, the others empty.
-        int glyfLength = 0;
+        long glyfLength = 0;
         for (int gid = 0; gid < numGlyphs; gid++) {
             if (keep[gid]) {
-                glyfLength += (ends[gid] - starts[gid] + 3) & ~3;
+                glyfLength += (ends[gid] - starts[gid] + 3L) & ~3L;
+                // Glyphs whose outlines overlap, each copied again, could make
+                // the subset larger than the whole font many times over (the
+                // review of 9 October 2026: 112 KB into 384 MB); a subset is never
+                // larger than the glyf table and the padding of each glyph.
+                if (glyfLength > glyf.length + 3L * numGlyphs) {
+                    throw new NotSubset();
+                }
             }
         }
-        if (longOffsets == 0 && glyfLength > 0x1FFFE) {
+        if ((longOffsets == 0 && glyfLength > 0x1FFFE) || glyfLength > Integer.MAX_VALUE - 8) {
             throw new NotSubset();
         }
-        byte[] newGlyf = new byte[glyfLength];
+        byte[] newGlyf = new byte[(int) glyfLength];
         byte[] newLoca = new byte[(numGlyphs + 1) * (2 + 2 * longOffsets)];
         int offset = 0;
         for (int gid = 0; gid <= numGlyphs; gid++) {
@@ -454,11 +475,14 @@ class Subset {
             searchRange *= 2;
             entrySelector++;
         }
-        int total = 12 + 16 * count;
+        long total = 12 + 16 * count;
         for (byte[] d : data) {
-            total += (d.length + 3) & ~3;
+            total += (d.length + 3L) & ~3L;
         }
-        byte[] out = new byte[total];
+        if (total > Integer.MAX_VALUE - 8) {
+            throw new NotSubset();
+        }
+        byte[] out = new byte[(int) total];
         System.arraycopy(ttf, 0, out, 0, 4);
         putShort(out, 4, count);
         putShort(out, 6, 16 * searchRange);

@@ -339,6 +339,7 @@ class CFFSubset {
         var work = 0
         var failed = false
         var stopped = false // By endchar
+        var seac = false    // An accented letter drawn from two others
 
         init(_ cff: [UInt8], _ global: Index, _ usedG: [Bool], _ usedL: [[Bool]?]) {
             self.cff = cff
@@ -432,7 +433,9 @@ class CFFSubset {
                 } else if b0 == 14 {    // endchar
                     if stack >= 4 {
                         // seac, an accented letter drawn from two others, which
-                        // would have to be kept too.
+                        // would have to be kept too: the font is embedded whole
+                        // (the review of 9 October 2026: the letter drew blank)
+                        seac = true
                         failed = true
                     }
                     stopped = true
@@ -625,7 +628,7 @@ class CFFSubset {
         var usedG: [Bool]? = usage.usedG
         var usedL = usage.usedL
         if usage.failed {
-            if usage.work > maxWork {
+            if usage.work > maxWork || usage.seac {
                 throw Subset.NotSubset()
             }
             usedG = nil     // Kept whole

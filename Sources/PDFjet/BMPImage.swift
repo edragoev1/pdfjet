@@ -117,10 +117,18 @@ class BMPImage {
             let pixelsPerMeterX = try readSignedInt(stream)
             let pixelsPerMeterY = try readSignedInt(stream)
             setPhysicalSize(pixelsPerMeterX, pixelsPerMeterY)
+            let colorsUsed = try readSignedInt(stream)
             if headerOnly {
+                // The size of the palette, refused as the image's below (the
+                // review of 9 October 2026: a palette of 1,000 colors was a size)
+                if bpp <= 8 {
+                    let numPalColors = (colorsUsed == 0) ? (1 << bpp) : colorsUsed
+                    if numPalColors < 0 || numPalColors > 256 {
+                        throw PDFjetError(message: "Invalid BMP palette size \(numPalColors).")
+                    }
+                }
                 return
             }
-            let colorsUsed = try readSignedInt(stream)
             try skipNBytes(stream, 4)
             var read = 54       // The bytes read so far
 

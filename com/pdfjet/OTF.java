@@ -331,17 +331,21 @@ class OTF {
         long next = firstChar;
         for (int i = 0; i < numGroups; i++) {
             int group = offset + 16 + 12 * i;
-            long start = tableUInt32(table, group);
+            long first = tableUInt32(table, group);
             long end = tableUInt32(table, group + 4);
             long startGlyph = tableUInt32(table, group + 8);
-            if (start < next) {
-                start = next;
+            if (first == -1 || end == -1 || startGlyph == -1) {
+                continue;   // Past the end of the font
             }
+            // The glyphs are counted from the group's first character, even
+            // where the characters before next are passed over (the review of
+            // 9 October 2026: they were counted from next)
+            long start = Math.max(first, next);
             if (end > lastChar) {
                 end = lastChar;
             }
             for (long ch = start; ch <= end; ch++) {
-                long gid = startGlyph + (ch - start);
+                long gid = startGlyph + (ch - first);
                 if (gid < 0x10000 && unicodeToGID[(int) ch] == 0) {
                     unicodeToGID[(int) ch] = (int) gid;
                 }

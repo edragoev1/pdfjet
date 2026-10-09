@@ -119,6 +119,54 @@ class ImageSizeTest {
         }
     }
 
+    @Test
+    void refusesWhatNewImageRefusesInTheHeader() throws Exception {
+        // The review of 9 October 2026: an 8-bit BMP of 1,000 colors and a PNG
+        // whose one IDAT is empty were sizes, and Image refused them.
+        byte[] bmp = new byte[54];
+        bmp[0] = 'B';
+        bmp[1] = 'M';
+        le32(bmp, 10, 54);
+        le32(bmp, 14, 40);
+        le32(bmp, 18, 1);
+        le32(bmp, 22, 1);
+        bmp[26] = 1;
+        bmp[28] = 8;
+        le32(bmp, 46, 1000);
+        try {
+            ImageSize.read(new ByteArrayInputStream(bmp));
+            fail("a BMP of 1,000 colors taken");
+        } catch (Exception e) {
+            assertTrue(e.getMessage().contains("palette"), e.getMessage());
+        }
+
+        ByteArrayOutputStream png = new ByteArrayOutputStream();
+        png.write(new byte[] {(byte) 0x89, 'P', 'N', 'G', 0x0D, 0x0A, 0x1A, 0x0A});
+        chunk(png, "IHDR", new byte[] {0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 0, 0, 0});
+        chunk(png, "IDAT", new byte[0]);
+        chunk(png, "IEND", new byte[0]);
+        try {
+            ImageSize.read(new ByteArrayInputStream(png.toByteArray()));
+            fail("a PNG of no image data taken");
+        } catch (Exception e) {
+            // Refused
+        }
+
+        // A JPEG that ends inside its frame header, after the size, is a size,
+        // as in the other ports: its data is Image's to refuse.
+        byte[] jpg = {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, (byte) 0xC0, 0x00, 0x11, 0x08, 0x00, 0x10, 0x00, 0x20, 0x03};
+        ImageSize size = ImageSize.read(new ByteArrayInputStream(jpg));
+        assertEquals(32, size.getPixelWidth());
+        assertEquals(16, size.getPixelHeight());
+    }
+
+    static void le32(byte[] buf, int at, int value) {
+        buf[at] = (byte) value;
+        buf[at + 1] = (byte) (value >> 8);
+        buf[at + 2] = (byte) (value >> 16);
+        buf[at + 3] = (byte) (value >> 24);
+    }
+
     static void chunk(ByteArrayOutputStream out, String type, byte[] data) throws Exception {
         int n = data.length;
         out.write(new byte[] {(byte) (n >> 24), (byte) (n >> 16), (byte) (n >> 8), (byte) n});

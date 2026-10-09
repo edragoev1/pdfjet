@@ -9,6 +9,7 @@ package com.pdfjet;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayInputStream;
@@ -149,5 +150,40 @@ class CFFSubsetTest {
         new TextLine(font, "Hello").setLocation(50f, 50f).drawOn(new Page(pdf, Letter.PORTRAIT));
         pdf.complete();
         assertFalse(TAG.matcher(TestSupport.latin1(bos.toByteArray())).find());
+    }
+
+    @Test
+    void anAccentedLetterDrawnWithSeacIsRefused() throws Exception {
+        // Á's charstring made "0 0 65 194 endchar", seac: the A and the acute
+        // it is drawn from were emptied, and it drew blank (the review of
+        // 9 October 2026). The font is embedded whole.
+        OTF otf = otf(PLEX);
+        final byte[] cff = cff(otf);
+        CFFSubset.Index names = CFFSubset.readIndex(cff, cff[2] & 0xFF);
+        CFFSubset.Index tops = CFFSubset.readIndex(cff, names.end);
+        List<CFFSubset.Entry> top = CFFSubset.readDict(cff, tops.objects[0], tops.objects[1]);
+        CFFSubset.Index charStrings = CFFSubset.readIndex(cff, CFFSubset.entryOf(top, CFFSubset.CHAR_STRINGS)[0]);
+        int gid = otf.unicodeToGID['Á'];
+        int at = charStrings.objects[gid];
+        assertTrue(charStrings.objects[gid + 1] - at >= 6, "the charstring of Á is too short");
+        System.arraycopy(new byte[] {(byte) 139, (byte) 139, (byte) 204, (byte) 247, 86, 14}, 0, cff, at, 6);
+        final boolean[] used = used(otf, "Á");
+        assertThrows(Subset.NotSubset.class, () -> CFFSubset.subset(cff, used, new boolean[1][]));
+    }
+
+    @Test
+    void anOffsetNearIntegerMaxValueIsRefused() throws Exception {
+        // A CFF whose CharStrings are at 0x7FFFFFFF: at + 2 passed
+        // Integer.MAX_VALUE, and the INDEX was read past the end of the table
+        // (the review of 9 October 2026). It is not subset, and so embedded whole.
+        final byte[] cff = {
+            1, 0, 4, 1,                                 // The header
+            0, 1, 1, 1, 2, 'A',                         // Name INDEX
+            0, 1, 1, 1, 7, 29, 0x7F, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, 17,  // Top DICT INDEX
+            0, 0,                                       // String INDEX
+            0, 0,                                       // Global Subr INDEX
+        };
+        assertThrows(Subset.NotSubset.class, () -> CFFSubset.subset(cff, new boolean[0x10000], new boolean[1][]));
+        assertThrows(Subset.NotSubset.class, () -> CFFSubset.subset(cff, null, new boolean[1][]));
     }
 }

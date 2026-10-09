@@ -237,6 +237,63 @@ import Testing
         return try TestSupport.read(memory.bytes)
     }
 
+    // The objects of a PDF of one empty page.
+    private func onePageObjects() throws -> [PDFobj] {
+        return try TestSupport.read(TestSupport.pdfWithObjects([
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << >> >>"]))
+    }
+
+    @Test func aFontWhoseObjectsAreNeverAddedIsFreed() throws {
+        // The font held its objects, and its Type0 font the font, a cycle that
+        // kept the font and its program when the objects were never added to a
+        // PDF (the review of 9 October 2026).
+        let path = "fonts/NotoSans/NotoSans-Regular.ttf"
+        weak var existing: Font?
+        weak var new: Font?
+        try {
+            var objects = try onePageObjects()
+            let font = try Font(&objects, TestSupport.open(path))
+            existing = font
+            let memory = MemoryPDF()
+            let page = Page(memory.pdf, memory.pdf.getPageObjects(from: objects)[0])
+            page.addResource(font, &objects)
+            page.drawString(font, nil, 12, "Hello", 72, 72)
+            page.complete(&objects)
+        }()
+        try {
+            let font = try Font(TestSupport.newPDF(), TestSupport.open(path))
+            new = font
+        }()
+        #expect(existing == nil, "the font of the objects is not freed")
+        #expect(new == nil, "the font of the PDF is not freed")
+    }
+
+    @Test func aFontAddedToTheObjectsIsWrittenThoughItsCallerDroppedIt() throws {
+        // The objects hold the font until they are added, as before.
+        var objects = try onePageObjects()
+        let memory = MemoryPDF()
+        weak var dropped: Font?
+        try {
+            let font = try Font(&objects, TestSupport.open("fonts/NotoSans/NotoSans-Regular.ttf"))
+            dropped = font
+            let page = Page(memory.pdf, memory.pdf.getPageObjects(from: objects)[0])
+            page.addResource(font, &objects)
+            page.drawString(font, nil, 12, "Hello", 72, 72)
+            page.complete(&objects)
+        }()
+        #expect(dropped != nil, "the font is freed before its objects are added")
+        try memory.pdf.addObjects(objects)
+        try memory.pdf.complete()
+        let written = try TestSupport.read(memory.bytes)
+        let file = try #require(TestSupport.findObject(written, "/Length1"))
+        #expect(Int(file.getValue("/Length1")) ?? 0 > 0)
+        #expect(try subsetFontName(written).hasSuffix("+NotoSans-Regular"))
+        objects = []
+        #expect(dropped == nil, "the font is not freed once its objects are written")
+    }
+
     // Returns the /BaseFont of the Type0 font.
     private func subsetFontName(_ objects: [PDFobj]) throws -> String {
         let type0 = try #require(objects.first { $0.getValue("/Subtype") == "/Type0" })
@@ -273,5 +330,67 @@ import Testing
         #expect(try subsetFontName(objects) == "/NotoSans-Regular")
         let length1 = Int(TestSupport.findObject(objects, "/Length1")?.getValue("/Length1") ?? "")
         #expect(try length1 == fontBytes(path).count)
+    }
+
+    private func put16(_ font: inout [UInt8], _ at: Int, _ value: Int) {
+        font[at] = UInt8(truncatingIfNeeded: value >> 8)
+        font[at + 1] = UInt8(truncatingIfNeeded: value)
+    }
+
+    private func put32(_ font: inout [UInt8], _ at: Int, _ value: Int) {
+        put16(&font, at, value >> 16)
+        put16(&font, at + 2, value)
+    }
+
+    // Checks that the font, made wrong, is not subset, and so embedded whole,
+    // rather than a trap or a subset made of it.
+    private func expectRefused(_ ttf: [UInt8], _ used: [Bool], sourceLocation: SourceLocation = #_sourceLocation) {
+        #expect(throws: Subset.NotSubset.self, sourceLocation: sourceLocation) {
+            _ = try Subset.subsetTrueType(ttf, used)
+        }
+    }
+
+    @Test func aTableTwiceIsRefused() throws {
+        // The gasp table's entry made a second head table of 8 bytes, whose
+        // checksum adjustment the subset wrote past its end (the review of
+        // 9 October 2026).
+        var ttf = try fontBytes("fonts/NotoSans/NotoSans-Regular.ttf")
+        let gasp = entry(ttf, "gasp")
+        try #require(gasp != -1)
+        ttf.replaceSubrange(gasp..<(gasp + 4), with: Array("head".utf8))
+        put32(&ttf, gasp + 12, 8)
+        expectRefused(ttf, used(36))
+    }
+
+    @Test func aLocaFormatOtherThan0Or1IsRefused() throws {
+        var ttf = try fontBytes("fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.ttf")
+        put16(&ttf, table(ttf, "head") + 50, 0xFFFF)
+        expectRefused(ttf, used(36))
+    }
+
+    @Test func overlappingGlyphsAreRefused() throws {
+        // Every even glyph's outline the whole glyf table, so that a subset of
+        // them copied it again for each (the review of 9 October 2026: 112 KB
+        // made into 384 MB). A subset is never larger than the glyf table and the
+        // padding of its glyphs.
+        var ttf = try fontBytes("fonts/NotoSans/NotoSans-Regular.ttf")
+        let head = table(ttf, "head")
+        let loca = table(ttf, "loca")
+        let glyfLength = u32(ttf, entry(ttf, "glyf") + 12)
+        let numGlyphs = u16(ttf, table(ttf, "maxp") + 4)
+        let long = u16(ttf, head + 50) == 1
+        var used = [Bool](repeating: false, count: 0x10000)
+        for gid in 0...numGlyphs {
+            let offset = gid % 2 == 1 ? glyfLength & ~3 : 0
+            if long {
+                put32(&ttf, loca + 4 * gid, offset)
+            } else {
+                put16(&ttf, loca + 2 * gid, offset / 2)
+            }
+            if gid % 2 == 0 && gid < numGlyphs {
+                used[gid] = true
+            }
+        }
+        expectRefused(ttf, used)
     }
 }

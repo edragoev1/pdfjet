@@ -328,19 +328,20 @@ class OTF {
         var next = firstChar!
         for i in 0..<numGroups {
             let group = offset + 16 + 12 * i
-            guard var start = tableUInt32(table, group), var end = tableUInt32(table, group + 4),
+            guard let first = tableUInt32(table, group), var end = tableUInt32(table, group + 4),
                     let startGlyph = tableUInt32(table, group + 8) else {
-                return
+                continue    // Past the end of the font
             }
-            if start < next {
-                start = next
-            }
+            // The glyphs are counted from the group's first character, even
+            // where the characters before next are passed over (the review of
+            // 9 October 2026: they were counted from next)
+            let start = max(first, next)
             if end > lastChar! {
                 end = lastChar!
             }
             if start <= end {
                 for ch in start...end {
-                    let gid = startGlyph + (ch - start)
+                    let gid = startGlyph + (ch - first)
                     if gid < 0x10000 && unicodeToGID[ch] == 0 {
                         unicodeToGID[ch] = gid
                     }

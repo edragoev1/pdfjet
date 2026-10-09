@@ -29,7 +29,6 @@ public class Font {
     var cidSetObjNumber = 0             // The CIDSet of a subset in PDF/A-1
     var baseFont = ""                   // The name it is embedded under, with the tag of a subset
     var program: Subset.Program?        // A TrueType font program, until complete()
-    var objects: FontObjects?           // Of a font added to an existing PDF, until they are added
     var kept: [Bool]?                   // The glyphs its subset keeps
 
     // Font attributes

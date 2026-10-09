@@ -241,6 +241,29 @@ import Testing
         #expect(count(raw, "/S /P\n") == 7)
     }
 
+    @Test func theLinkedMarkerOfAWrappedCellIsAFigure() throws {
+        // The lines of a wrapped cell are one paragraph, and a figure drawn in
+        // it, as its linked marker, was made part of the paragraph, losing its
+        // element and its description (the review of 9 October 2026).
+        for text in ["short", "a note long enough to wrap to four lines"] {
+            let memory = MemoryPDF(Compliance.PDF_UA_1)
+            memory.pdf.setTitle("Test")
+            let font = TestSupport.helvetica(memory.pdf)
+            let marked = Cell(font, text).setMarker(
+                    Point(0, 0).setURIAction("https://pdfjet.com").setAltDescription("PDFjet"), Alignment.LEFT)
+            let data: [[Cell]] = [
+                [Cell(font, "Name"), Cell(font, "Notes")],
+                [Cell(font, "a"), marked],
+                [Cell(font, "b"), Cell(font, "a note long enough to wrap to four lines")]]
+            _ = Table().setTableData(data, 1).setLocation(20, 20).drawOn(Page(memory.pdf, Letter.PORTRAIT))
+            try memory.pdf.complete()
+            let raw = TestSupport.latin1(memory.bytes)
+            for item in ["/S /Figure\n", "/S /Link\n"] {
+                #expect(count(raw, item) == 1, "\(text): \(item) is in the PDF \(count(raw, item)) times")
+            }
+        }
+    }
+
     @Test func theHeaderRowsOnTheNextPagesAreArtifacts() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
         memory.pdf.setTitle("Test")

@@ -10,39 +10,51 @@ import Foundation
 /// font is added, so that pages can refer to it, and filled in when the objects
 /// are added to the PDF, after the pages are drawn: the font program a subset
 /// of the glyphs drawn, as a font of a new PDF is at complete().
+///
+/// The Type0 font, the object pages refer to, holds these objects until they
+/// are filled in, and they hold the font, so that the font is written though
+/// the caller no longer holds it; neither the font nor these objects hold the
+/// Type0 font, so that objects never added to a PDF free the font and its
+/// program (the review of 9 October 2026: the font held its objects, and the
+/// Type0 font the font, a cycle that kept the font program until the objects
+/// were added, and forever when they were not).
 final class FontObjects {
+    let font: Font
     var metadata = 0    // The number of the font's metadata object
     let file = PDFobj()
     let descriptor = PDFobj()
     let cidFont = PDFobj()
     let toUnicode = PDFobj()
-    let type0 = PDFobj()
+
+    private init(_ font: Font) {
+        self.font = font
+    }
 
     // Numbers the objects of the font, added to the objects of an existing
     // PDF; the Type0 font, the one pages refer to, is the last.
     static func register(_ objects: inout [PDFobj], _ font: Font) {
-        let objs = FontObjects()
+        let objs = FontObjects(font)
         objs.metadata = addMetadataObject(&objects, font)
-        for obj in [objs.file, objs.descriptor, objs.cidFont, objs.toUnicode, objs.type0] {
+        let type0 = PDFobj()
+        for obj in [objs.file, objs.descriptor, objs.cidFont, objs.toUnicode, type0] {
             obj.number = objects.count + 1
             objects.append(obj)
         }
-        objs.type0.font = font
+        type0.fontObjects = objs
         font.fileObjNumber = objs.file.number
         font.fontDescriptorObjNumber = objs.descriptor.number
         font.cidFontDictObjNumber = objs.cidFont.number
         font.toUnicodeCMapObjNumber = objs.toUnicode.number
-        font.objNumber = objs.type0.number
-        font.objects = objs
+        font.objNumber = type0.number
     }
 
     // Fills in the objects of the fonts added to the objects, when the pages
     // are drawn and the glyphs they use are known.
     static func complete(_ objects: [PDFobj]) {
         for obj in objects {
-            if let font = obj.font {
-                complete(font)
-                obj.font = nil
+            if let objs = obj.fontObjects {
+                obj.fontObjects = nil
+                objs.complete(obj)
             }
         }
     }
@@ -51,19 +63,16 @@ final class FontObjects {
     // drawn unless it is to be whole, the descriptor and the CID font under the
     // name of the subset, the widths and the ToUnicode map of the glyphs it
     // keeps, and the Type0 font.
-    private static func complete(_ font: Font) {
-        guard let objs = font.objects else {
-            return
-        }
+    private func complete(_ type0: PDFobj) {
         let program = Subset.embeddedProgram(font)
         let baseFont = font.baseFont
 
         var compressed = [UInt8]()
         FlateEncode(&compressed, program)
-        var obj = objs.file
+        var obj = file
         obj.dict.append("<<")
         obj.dict.append("/Metadata")
-        obj.dict.append(String(objs.metadata))
+        obj.dict.append(String(metadata))
         obj.dict.append("0")
         obj.dict.append("R")
         obj.dict.append("/Filter")
@@ -80,12 +89,12 @@ final class FontObjects {
         obj.dict.append(">>")
         obj.setStream(&compressed)
 
-        completeFontDescriptor(objs.descriptor, font, baseFont)
-        completeCIDFontDictionary(objs.cidFont, font, baseFont, font.kept)
+        FontObjects.completeFontDescriptor(descriptor, font, baseFont)
+        FontObjects.completeCIDFontDictionary(cidFont, font, baseFont, font.kept)
 
         var cmap = [UInt8]()
         FlateEncode(&cmap, Array(FontWriter.toUnicodeCMap(font, font.kept).utf8))
-        obj = objs.toUnicode
+        obj = toUnicode
         obj.dict.append("<<")
         obj.dict.append("/Filter")
         obj.dict.append("/FlateDecode")
@@ -94,7 +103,7 @@ final class FontObjects {
         obj.dict.append(">>")
         obj.setStream(&cmap)
 
-        obj = objs.type0
+        obj = type0
         obj.dict.append("<<")
         obj.dict.append("/Type")
         obj.dict.append("/Font")
@@ -116,9 +125,8 @@ final class FontObjects {
         obj.dict.append("R")
         obj.dict.append(">>")
 
-        // The program and the objects are no longer needed.
+        // The program is no longer needed.
         font.program = nil
-        font.objects = nil
     }
 
     static func addMetadataObject(

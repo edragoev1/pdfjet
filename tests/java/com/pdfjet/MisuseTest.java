@@ -360,7 +360,7 @@ class MisuseTest {
     void theObjectsOfAnExistingPdfComeBeforeTheContent() throws Exception {
         final java.util.List<PDFobj> objects = existingObjects();
         String message = "Add the objects of an existing PDF before fonts, images or pages "
-                + "are added to the PDF: object 1 is already written.";
+                + "are added to the PDF: object 1 is already taken.";
 
         final PDF pdf = TestSupport.newPDF();
         TestSupport.helvetica(pdf);     // Object 1, which the objects would replace.
@@ -373,6 +373,14 @@ class MisuseTest {
         TestSupport.helvetica(pdf2);
         assertEquals(message, fails(IllegalStateException.class, new Executable() {
             public void execute() throws Throwable { pdf2.addObjects(objects); }
+        }));
+
+        // An embedded font only reserves its number, written at complete: the
+        // objects could take it too (the review of 9 October 2026).
+        final PDF pdf4 = TestSupport.newPDF();
+        new Font(pdf4, TestSupport.file("fonts/NotoSans/NotoSans-Regular.ttf").getPath());
+        assertEquals(message, fails(IllegalStateException.class, new Executable() {
+            public void execute() throws Throwable { pdf4.addObjects(objects); }
         }));
 
         // The objects first, and the font after them.

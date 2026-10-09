@@ -124,7 +124,7 @@ class Subset {
                 font.kept = kept;
                 font.baseFont = SubsetTag(font.checksum, kept) + "+" + font.name;
                 return subset;
-            } catch (NotSubset) {
+            } catch (Exception e) when (Unreadable(e)) {
                 // Embedded whole
             }
         }
@@ -134,13 +134,22 @@ class Subset {
             try {
                 bool[] all;
                 data = CFFSubset.subset(data, null, out all);
-            } catch (NotSubset) {
+            } catch (Exception e) when (Unreadable(e)) {
                 // As it is
             }
         }
         font.kept = null;
         font.baseFont = font.name;
         return data;
+    }
+
+    // Whether the subsetters found the font one they cannot read: NotSubset,
+    // or, as a backstop, an index, a length or a size out of range that a
+    // check of theirs missed, which embeds the font whole rather than failing
+    // the document (the review of 9 October 2026).
+    private static bool Unreadable(Exception e) {
+        return e is NotSubset || e is IndexOutOfRangeException ||
+                e is OverflowException || e is ArgumentException;
     }
 
     /// <summary>
@@ -258,6 +267,14 @@ class Subset {
         return (int) value;
     }
 
+    // The unsigned 32-bit value of a loca entry, which can be past 2^31 - 1.
+    private static long LocaU32(byte[] ttf, int at) {
+        if (at < 0 || at + 4 > ttf.Length) {
+            throw new NotSubset();
+        }
+        return (long) ttf[at] << 24 | (long) ttf[at + 1] << 16 | (long) ttf[at + 2] << 8 | ttf[at + 3];
+    }
+
     /// <summary>A table of the font: its tag, offset and length.</summary>
     private sealed class Table {
         internal readonly String tag;
@@ -285,6 +302,7 @@ class Subset {
         int numTables = U16(ttf, 4);
         List<Table> tables = new List<Table>(numTables);
         Table head = null, loca = null, glyf = null, maxp = null, os2 = null;
+        HashSet<String> seen = new HashSet<String>();
         for (int i = 0; i < numTables; i++) {
             int entry = 12 + 16 * i;
             int offset = U32(ttf, entry + 8);
@@ -294,6 +312,11 @@ class Subset {
             }
             Table table = new Table(new String(new char[] {
                     (char) ttf[entry], (char) ttf[entry + 1], (char) ttf[entry + 2], (char) ttf[entry + 3]}), offset, length);
+            // A tag twice, as two head tables, one of them too short to copy,
+            // is not a font to subset (the review of 9 October 2026)
+            if (!seen.Add(table.tag)) {
+                throw new NotSubset();
+            }
             tables.Add(table);
             switch (table.tag) {
                 case "head": head = table; break;
@@ -313,7 +336,10 @@ class Subset {
         }
         int numGlyphs = U16(ttf, maxp.offset + 4);
         int longOffsets = U16(ttf, head.offset + 50);
-        if (numGlyphs == 0 || loca.length < (numGlyphs + 1) * (2 + 2 * longOffsets)) {
+        // A loca format other than 0 or 1 is refused before the length of the
+        // table is worked out from it, which overflowed an int (the review of
+        // 9 October 2026)
+        if (numGlyphs == 0 || longOffsets > 1 || loca.length < (numGlyphs + 1) * (2 + 2 * longOffsets)) {
             throw new NotSubset();
         }
         int[] starts = new int[numGlyphs];
@@ -321,8 +347,17 @@ class Subset {
         for (int gid = 0; gid < numGlyphs; gid++) {
             int start, end;
             if (longOffsets == 1) {
-                start = U32(ttf, loca.offset + 4 * gid);
-                end = U32(ttf, loca.offset + 4 * gid + 4);
+                // An offset past 2^31 - 1 makes the glyph unreadable, refused
+                // only if it is kept, not the whole subset (the review of
+                // 9 October 2026)
+                long start32 = LocaU32(ttf, loca.offset + 4 * gid);
+                long end32 = LocaU32(ttf, loca.offset + 4 * gid + 4);
+                if (start32 > int.MaxValue || end32 > int.MaxValue) {
+                    starts[gid] = -1; // Read only if kept
+                    continue;
+                }
+                start = (int) start32;
+                end = (int) end32;
             } else {
                 start = 2 * U16(ttf, loca.offset + 2 * gid);
                 end = 2 * U16(ttf, loca.offset + 2 * gid + 2);
@@ -385,10 +420,17 @@ class Subset {
 
         // The glyf and loca tables, the kept glyphs copied, each padded to a
         // multiple of four bytes, the others empty.
-        int glyfLength = 0;
+        long glyfLength = 0;
         for (int gid = 0; gid < numGlyphs; gid++) {
             if (keep[gid]) {
                 glyfLength += (ends[gid] - starts[gid] + 3) & ~3;
+                // Glyphs whose outlines overlap, each copied again, could make
+                // the subset larger than the whole font many times over (the
+                // review of 9 October 2026: 112 KB into 384 MB); a subset is never
+                // larger than the glyf table and the padding of each glyph.
+                if (glyfLength > (long) glyf.length + 3L * numGlyphs) {
+                    throw new NotSubset();
+                }
             }
         }
         if (longOffsets == 0 && glyfLength > 0x1FFFE) {

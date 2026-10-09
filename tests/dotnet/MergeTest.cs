@@ -354,5 +354,32 @@ public class MergeTest {
         Assert.Equal("Page 1 is listed twice.",
                 Assert.Throws<ArgumentException>(() => split.Merge(objects, 1, 1)).Message);
     }
+
+    [Fact]
+    public void AFontAddedToTheObjectsIsWritten() {
+        // A font added to the objects of a PDF, and drawn on one of their pages,
+        // was left empty when the objects were merged rather than added (the
+        // review of 9 October 2026), and its text was lost.
+        List<PDFobj> objects = TestSupport.Read(Document("Existing"));
+        Font font = new Font(objects, TestSupport.Open("fonts/NotoSans/NotoSans-Regular.ttf"));
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream);
+        Page page = new Page(pdf, pdf.GetPageObjects(objects)[0]);
+        page.AddResource(font, objects);
+        page.DrawString(font, null, 12f, "Hello", 72f, 72f);
+        page.Complete(objects);
+        pdf.Merge(objects);
+        pdf.Complete();
+        List<PDFobj> merged = TestSupport.Read(stream.ToArray());
+        Assert.NotNull(TestSupport.FindObject(merged, "/Length1"));
+        bool found = false;
+        foreach (PDFobj obj in merged) {
+            if (obj.GetValue("/Subtype") == "/Type0"
+                    && obj.GetValue("/BaseFont").EndsWith("+NotoSans-Regular", StringComparison.Ordinal)) {
+                found = true;
+            }
+        }
+        Assert.True(found, "no Type0 font of a subset of Noto Sans");
+    }
 }
 }   // End of namespace PDFjet.NET

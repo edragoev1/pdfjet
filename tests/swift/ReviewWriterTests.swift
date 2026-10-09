@@ -361,4 +361,26 @@ import Testing
                 "the font file does not refer to its metadata")
         #expect(raw.contains("<xmpRights:UsageTerms>") && raw.contains(" &amp; "), "the notice is not escaped")
     }
+
+    @Test func theLanguageOfAWordInAParagraphIsNotEncryptedTwice() throws {
+        // The /Lang of a word in a paragraph's marked content was encrypted as
+        // a string, and the content stream encrypted again, as a whole (the
+        // review of 9 October 2026): the hexadecimal of its UTF-8 bytes, as in
+        // the other ports.
+        let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.setTitle("Test")
+        _ = memory.pdf.setEncryption(Encryption(memory.pdf, Passwords(), Permissions()))
+        let font = TestSupport.helvetica(memory.pdf)
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        CompositeTextLine(50, 50)
+                .addComponent(TextLine(font, "Hello "))
+                .addComponent(TextLine(font, "bonjour").setLanguage("fr"))
+                .drawOn(page)
+        #expect(TestSupport.content(page).contains("/Lang <6672>"), "\(TestSupport.content(page))")
+        try memory.pdf.complete()
+        let objects = try TestSupport.read(memory.bytes, "")
+        let content = TestSupport.latin1(try #require(TestSupport.pageObjects(objects).first?
+                .getContentObject(objects)).getData())
+        #expect(content.contains("/Lang <6672>"), "\(content)")
+    }
 }

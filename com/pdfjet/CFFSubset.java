@@ -80,14 +80,16 @@ class CFFSubset {
     }
 
     static Index readIndex(byte[] cff, int at) throws Subset.NotSubset {
-        if (at < 0 || at + 2 > cff.length) {
+        // The offsets of the file compared without a sum that could pass
+        // Integer.MAX_VALUE (the review of 9 October 2026)
+        if (at < 0 || at > cff.length - 2) {
             throw new Subset.NotSubset();
         }
         int count = (cff[at] & 0xFF) << 8 | (cff[at + 1] & 0xFF);
         if (count == 0) {
             return new Index(at, at + 2, new int[] {at + 2});
         }
-        if (at + 3 > cff.length) {
+        if (at > cff.length - 3) {
             throw new Subset.NotSubset();
         }
         int offSize = cff[at + 2] & 0xFF;
@@ -173,13 +175,13 @@ class CFFSubset {
                 integers.clear();
                 isInteger = true;
             } else if (b0 == 28) {
-                if (i + 3 > to) {
+                if (i > to - 3) {
                     throw new Subset.NotSubset();
                 }
                 integers.add((int) (short) ((cff[i + 1] & 0xFF) << 8 | (cff[i + 2] & 0xFF)));
                 i += 3;
             } else if (b0 == 29) {
-                if (i + 5 > to) {
+                if (i > to - 5) {
                     throw new Subset.NotSubset();
                 }
                 integers.add((cff[i + 1] & 0xFF) << 24 | (cff[i + 2] & 0xFF) << 16 |
@@ -199,13 +201,13 @@ class CFFSubset {
                 integers.add(b0 - 139);
                 i++;
             } else if (b0 >= 247 && b0 <= 250) {
-                if (i + 2 > to) {
+                if (i > to - 2) {
                     throw new Subset.NotSubset();
                 }
                 integers.add((b0 - 247) * 256 + (cff[i + 1] & 0xFF) + 108);
                 i += 2;
             } else if (b0 >= 251 && b0 <= 254) {
-                if (i + 2 > to) {
+                if (i > to - 2) {
                     throw new Subset.NotSubset();
                 }
                 integers.add(-(b0 - 251) * 256 - (cff[i + 1] & 0xFF) - 108);
@@ -274,7 +276,7 @@ class CFFSubset {
             int covered = 1;    // .notdef is not in it
             int i = at + 1;
             while (covered < numGlyphs) {
-                if (i + 2 + size > cff.length) {
+                if (i > cff.length - 2 - size) {
                     throw new Subset.NotSubset();
                 }
                 int nLeft = cff[i + 2] & 0xFF;
@@ -290,7 +292,7 @@ class CFFSubset {
     }
 
     static int encodingLength(byte[] cff, int at) throws Subset.NotSubset {
-        if (at < 0 || at + 2 > cff.length) {
+        if (at < 0 || at > cff.length - 2) {
             throw new Subset.NotSubset();
         }
         int length;
@@ -303,7 +305,7 @@ class CFFSubset {
             throw new Subset.NotSubset();
         }
         if ((cff[at] & 0x80) != 0) {    // Supplements
-            if (at + length >= cff.length) {
+            if (length >= cff.length - at) {
                 throw new Subset.NotSubset();
             }
             length += 1 + 3 * (cff[at + length] & 0xFF);
@@ -319,7 +321,7 @@ class CFFSubset {
             return 1 + numGlyphs;
         }
         if (cff[at] == 3) {
-            if (at + 3 > cff.length) {
+            if (at > cff.length - 3) {
                 throw new Subset.NotSubset();
             }
             int ranges = (cff[at + 1] & 0xFF) << 8 | (cff[at + 2] & 0xFF);
@@ -345,7 +347,11 @@ class CFFSubset {
         if (subrs.length != 1) {
             throw new Subset.NotSubset();
         }
-        return new PrivateDict(entries, readIndex(cff, at + subrs[0]));
+        long subrsAt = (long) at + subrs[0];
+        if (subrsAt < 0 || subrsAt > cff.length) {
+            throw new Subset.NotSubset();
+        }
+        return new PrivateDict(entries, readIndex(cff, (int) subrsAt));
     }
 
     static int bias(int count) {
@@ -373,6 +379,7 @@ class CFFSubset {
         int work;
         boolean failed;
         boolean stopped;    // By endchar
+        boolean seac;       // An accented letter drawn from two others
 
         Usage(byte[] cff, Index global, boolean[] usedG) {
             this.cff = cff;
@@ -394,7 +401,7 @@ class CFFSubset {
             while (i < to && !failed && !stopped) {
                 int b0 = cff[i] & 0xFF;
                 if (b0 == 28) {
-                    if (i + 3 > to) {
+                    if (i > to - 3) {
                         failed = true;
                         return;
                     }
@@ -406,7 +413,7 @@ class CFFSubset {
                     stack++;
                     i++;
                 } else if (b0 >= 247 && b0 <= 250) {
-                    if (i + 2 > to) {
+                    if (i > to - 2) {
                         failed = true;
                         return;
                     }
@@ -414,7 +421,7 @@ class CFFSubset {
                     stack++;
                     i += 2;
                 } else if (b0 >= 251 && b0 <= 254) {
-                    if (i + 2 > to) {
+                    if (i > to - 2) {
                         failed = true;
                         return;
                     }
@@ -422,7 +429,7 @@ class CFFSubset {
                     stack++;
                     i += 2;
                 } else if (b0 == 255) {     // A 16.16 fixed number
-                    if (i + 5 > to) {
+                    if (i > to - 5) {
                         failed = true;
                         return;
                     }
@@ -463,7 +470,9 @@ class CFFSubset {
                 } else if (b0 == 14) {      // endchar
                     if (stack >= 4) {
                         // seac, an accented letter drawn from two others, which
-                        // would have to be kept too.
+                        // would have to be kept too: the font is embedded whole
+                        // (the review of 9 October 2026: the letter drew blank)
+                        seac = true;
                         failed = true;
                     }
                     stopped = true;
@@ -668,7 +677,7 @@ class CFFSubset {
             usage.run(charStrings.objects[gid], charStrings.objects[gid + 1], 0);
         }
         if (usage.failed) {
-            if (usage.work > MAX_WORK) {
+            if (usage.work > MAX_WORK || usage.seac) {
                 throw new Subset.NotSubset();
             }
             usedG = null;   // Kept whole
