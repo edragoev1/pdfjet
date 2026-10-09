@@ -40,8 +40,9 @@ internal class OTF {
     internal System.Collections.Generic.List<System.Collections.Generic.Dictionary<int, int[]>> baseAnchors;
     internal bool cff = false;
 
-    private int cffOff;
-    private int cffLen;
+    internal int fsType;           // Of the OS/2 table: what the license allows
+    internal int cffOff;
+    internal int cffLen;
     private int index = 0;
     private int gposWork;
     private int numGlyphs;  // Of the maxp table, or 0 when the font has none
@@ -192,6 +193,8 @@ internal class OTF {
     }
 
     private void OS_2(FontTable table) {
+
+        fsType = Math.Max(TableUInt16(table, 8), 0);
         index = table.offset + 64;
         firstChar = ReadUInt16();
         lastChar  = ReadUInt16();

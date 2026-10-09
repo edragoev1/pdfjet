@@ -16,15 +16,17 @@ class OpenTypeFont {
         OTF otf = new OTF(inputStream);
         SetData(font, otf);
 
-        if (!otf.cff) {
-            // A TrueType font is written at Complete(), a subset of the glyphs
-            // drawn; its pages refer to the number reserved for it.
-            Subset.Share(pdf, font, otf.buf);
-            font.objNumber = pdf.ReserveObjNumber();
-            pdf.fonts.Add(font);
-            return;
+        // The font is written at Complete(), a subset of the glyphs drawn; its
+        // pages refer to the number reserved for it.
+        if (otf.cff) {
+            byte[] cff = new byte[otf.cffLen];
+            Array.Copy(otf.buf, otf.cffOff, cff, 0, otf.cffLen);
+            Subset.Share(pdf, font, cff, true, (otf.fsType & 0x0100) != 0);
+        } else {
+            Subset.Share(pdf, font, otf.buf, false, false);
         }
-        RegisterCFF(pdf, font, otf);
+        font.objNumber = pdf.ReserveObjNumber();
+        pdf.fonts.Add(font);
     }
 
     // Adds the font to the objects of an existing PDF, with its font program
@@ -64,83 +66,6 @@ class OpenTypeFont {
         font.cff = otf.cff;
         font.checksum = Font.ChecksumOf(font);
         font.SetSize(font.size);
-    }
-
-    // Writes a font with CFF outlines, which is embedded whole, as it is added.
-    private static void RegisterCFF(PDF pdf, Font font, OTF otf) {
-        EmbedFontFile(pdf, font, otf);
-        FontWriter.AddFontDescriptorObject(pdf, font, font.name);
-        FontWriter.AddCIDFontDictionaryObject(pdf, font, font.name, null);
-        FontWriter.AddToUnicodeCMapObject(pdf, font, null);
-
-        // Type0 Font Dictionary
-        pdf.NewObj();
-        pdf.Append("<<\n");
-        pdf.Append("/Type /Font\n");
-        pdf.Append("/Subtype /Type0\n");
-        pdf.Append("/BaseFont /");
-        pdf.Append(otf.fontName);
-        pdf.Append('\n');
-        pdf.Append("/Encoding /Identity-H\n");
-        pdf.Append("/DescendantFonts [");
-        pdf.Append(font.cidFontDictObjNumber);
-        pdf.Append(" 0 R]\n");
-        pdf.Append("/ToUnicode ");
-        pdf.Append(font.toUnicodeCMapObjNumber);
-        pdf.Append(" 0 R\n");
-        pdf.Append(">>\n");
-        pdf.EndObj();
-
-        font.objNumber = pdf.GetObjNumber();
-        pdf.fonts.Add(font);
-    }
-
-    private static void EmbedFontFile(PDF pdf, Font font, OTF otf) {
-        // Check if the font file is already embedded
-        foreach (Font f in pdf.fonts) {
-            if (f.fileObjNumber != 0 && f.name.Equals(otf.fontName) && f.checksum == font.checksum) {
-                font.fileObjNumber = f.fileObjNumber;
-                return;
-            }
-        }
-
-        int metadataObjNumber = pdf.AddMetadataObject(otf.fontInfo, true);
-
-        pdf.NewObj();
-        pdf.Append("<<\n");
-        if (otf.cff) {
-            pdf.Append("/Subtype /CIDFontType0C\n");
-        }
-        pdf.Append("/Filter /FlateDecode\n");
-
-        if (!otf.cff) {
-            pdf.Append("/Length1 ");
-            pdf.Append(otf.buf.Length);
-            pdf.Append('\n');
-        }
-
-        if (metadataObjNumber != -1) {
-            pdf.Append("/Metadata ");
-            pdf.Append(metadataObjNumber);
-            pdf.Append(" 0 R\n");
-        }
-
-        byte[] buf = otf.Compress();
-        if (pdf.encryption != null) {
-            buf = AES256.Encrypt(buf, pdf.encryption.GetKey());
-        }
-
-        pdf.Append("/Length ");
-        pdf.Append(buf.Length);
-        pdf.Append("\n");
-
-        pdf.Append(">>\n");
-        pdf.Append("stream\n");
-        pdf.Append(buf);
-        pdf.Append("\nendstream\n");
-        pdf.EndObj();
-
-        font.fileObjNumber = pdf.GetObjNumber();
     }
 
     /// <summary>

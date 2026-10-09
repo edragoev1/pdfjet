@@ -10,18 +10,21 @@ using System.Text;
 
 namespace PDFjet.NET {
 /// <summary>
-/// The subsets of the TrueType fonts, .ttf files, embedded at
+/// The subsets of the embedded fonts, .ttf and .otf files, embedded at
 /// Complete() with the outlines of the glyphs the document did not draw
 /// emptied. The glyph numbers stay, so the widths, the character map and the
 /// ToUnicode map are those of the whole font.
 /// </summary>
 class Subset {
     /// <summary>
-    /// The font program of a TrueType font, kept until Complete(). Fonts read
-    /// from one file share one program, and the glyphs any of them drew.
+    /// The font program of a TrueType font, or the CFF table of an OpenType
+    /// font with CFF outlines, kept until Complete(). Fonts read from one file
+    /// share one program, and the glyphs any of them drew.
     /// </summary>
     internal sealed class Program {
-        internal byte[] font;       // The font
+        internal byte[] font;       // The TrueType font, or the CFF table
+        internal bool cff;
+        internal bool forbidden;    // The fsType of a CFF font's OS/2 table forbids subsetting
         // The glyphs drawn, by glyph number, written in four hexadecimal digits.
         internal readonly bool[] used = new bool[0x10000];
         internal bool whole;        // Set by SetSubset(false): the font is embedded whole
@@ -52,7 +55,7 @@ class Subset {
     /// Gives the font the program of a font the PDF already has from the same
     /// file, if any, or else a new one of the font given.
     /// </summary>
-    internal static void Share(PDF pdf, Font font, byte[] ttf) {
+    internal static void Share(PDF pdf, Font font, byte[] program, bool cff, bool forbidden) {
         foreach (Font f in pdf.fonts) {
             if (f.program != null && f.name.Equals(font.name) && f.checksum == font.checksum) {
                 font.program = f.program;
@@ -60,7 +63,9 @@ class Subset {
             }
         }
         font.program = new Program();
-        font.program.font = ttf;
+        font.program.font = program;
+        font.program.cff = cff;
+        font.program.forbidden = forbidden;
     }
 
     /// <summary>
@@ -125,13 +130,14 @@ class Subset {
 
         Program program = font.program;
         font.baseFont = font.name;
-        byte[] ttf = program.font;
+        byte[] data = program.font;
         byte[] compressed = null;
-        int length = ttf.Length;
-        if (!program.whole) {
+        int length = data.Length;
+        if (!program.whole && !program.forbidden) {
             try {
                 bool[] kept;
-                byte[] subset = SubsetTrueType(ttf, program.used, out kept);
+                byte[] subset = program.cff ?
+                        CFFSubset.subset(data, program.used, out kept) : SubsetTrueType(data, program.used, out kept);
                 compressed = Compressor.Deflate(subset);
                 length = subset.Length;
                 font.kept = kept;
@@ -140,8 +146,18 @@ class Subset {
                 // Embedded whole
             }
         }
+        if (compressed == null && program.cff) {
+            // Whole, written again for the identity charset of a CID-keyed
+            // font, or as it is when it cannot be.
+            try {
+                bool[] all;
+                data = CFFSubset.subset(data, null, out all);
+            } catch (NotSubset) {
+                // As it is
+            }
+        }
         if (compressed == null) { // Whole
-            compressed = Compressor.Deflate(ttf);
+            compressed = Compressor.Deflate(data);
         }
 
         int metadataObjNumber = pdf.AddMetadataObject(font.info, true);
@@ -150,10 +166,15 @@ class Subset {
         }
         pdf.NewObj();
         pdf.Append("<<\n");
+        if (program.cff) {
+            pdf.Append("/Subtype /CIDFontType0C\n");
+        }
         pdf.Append("/Filter /FlateDecode\n");
-        pdf.Append("/Length1 ");
-        pdf.Append(length);
-        pdf.Append('\n');
+        if (!program.cff) {
+            pdf.Append("/Length1 ");
+            pdf.Append(length);
+            pdf.Append('\n');
+        }
         if (metadataObjNumber != -1) {
             pdf.Append("/Metadata ");
             pdf.Append(metadataObjNumber);
