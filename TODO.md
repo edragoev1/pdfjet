@@ -57,10 +57,17 @@ what users would hit goes in; the rest waits for v9.1.
    strictness for the four** (item 7): an SVG that is not
    well-formed XML refused in PDFjet's words; a deflate block without its
    end code refused, Go to follow the other three.
-3. ⬜ **Example_46 as PDF/UA, the language of a TextLine in a TextColumn, the
+3. ✅ **Example_46 as PDF/UA (7dba0ff5) and the language of a TextLine in a
+   TextColumn (9a453539), done on 8 October 2026.** The third, the
+   non-embedded CJK fonts full width, needs the width of each Latin
+   character in each of the four Adobe CJK fonts, from Adobe's metrics: a
+   half width for all would make W and M overlap their neighbours, worse
+   than the gaps of today. Proposed for v9.1 (no example uses those fonts
+   since Example_04 took IBM Plex); the owner to say. As first written:
+   **Example_46 as PDF/UA, the language of a TextLine in a TextColumn, the
    non-embedded CJK fonts full width** (items 2 to 4).
-4. ⬜ **Small things:** the font tool's `--pdfjet-forms-format` (item 8); the
-   packages' license says what Solo and Team cover (item 9).
+4. ✅ **Done on 8 October 2026:** the font tool's `--pdfjet-forms-format`
+   (item 8); the packages' license says what Solo and Team cover (item 9).
 5. ⬜ **NuGet** (the owner, 8 October 2026: "We can probably get NuGet thing
    setup before then"): a package of PDFjet.dll, lib/net8.0 and lib/net48,
    strong-named, with System.Memory 4.5.5 as net48's dependency, as the

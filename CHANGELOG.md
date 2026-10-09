@@ -48,6 +48,14 @@ This is the first entry in this file; earlier releases were not tracked here.
   `1e40`, is refused as invalid path data in the four ports, where Java, C#
   and Swift read it as an infinity.
 
+- The font tool's `--old-format`, which writes `.otf.stream` files of the CFF
+  data alone, as PDFjet Forms' server keeps its fonts, is named
+  `--pdfjet-forms-format` (util/generate-stream-fonts-files.sh).
+- The license in the Java and .NET packages says what the Solo License and the
+  Team License cover, one developer, and two to five, as pdfjet.com has said
+  since the licenses were renamed (they were the Named Developer and the
+  Transferable Developer licenses).
+
 ### Fixed
 - An OpenType or TrueType font whose table directory lists `hmtx` before
   `hhea` is read as any other, in the four ports. The number of advance

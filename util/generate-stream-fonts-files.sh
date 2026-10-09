@@ -1,10 +1,11 @@
 #!/bin/bash
 # Compresses the .otf and .ttf fonts of a folder into .stream files, with Zopfli.
 #
-#   util/generate-stream-fonts-files.sh [--old-format] fonts/IBMPlexSans
+#   util/generate-stream-fonts-files.sh [--pdfjet-forms-format] fonts/IBMPlexSans
 #
-# --old-format writes .otf.stream files that every version of PDFjet reads:
-# the CFF data of the font without its other tables, and no GPOS marks.
+# --pdfjet-forms-format writes .otf.stream files as the server of PDFjet Forms
+# keeps them, which every version of PDFjet reads: the CFF data of the font
+# without its other tables, and no GPOS marks.
 #
 # fonts is the repository pdfjet-fonts: commit the .stream files there, push
 # them, and write the new commit in fonts-and-data.txt of pdfjet.

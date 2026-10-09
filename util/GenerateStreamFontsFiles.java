@@ -25,9 +25,10 @@ public class GenerateStreamFontsFiles {
 
     private static boolean useZopfli = true;
 
-    // True to write the format that every version of the library reads: the
-    // CFF data of an OpenType font without its other tables, and no marks.
-    private static boolean oldFormat = false;
+    // True to write the format the fonts of PDFjet Forms' server are kept in,
+    // which every version of the library reads: the CFF data of an OpenType
+    // font without its other tables, and no marks.
+    private static boolean formsFormat = false;
 
     /**
      * Generates .ttf.stream or .otf.stream font files from standard TTF or OTF fonts.
@@ -79,7 +80,7 @@ public class GenerateStreamFontsFiles {
         // other marks. Every number is an int32, in the order of the glyph IDs.
         // It is compressed on its own, so that the library keeps it as it is
         // and reads it only when it draws a mark.
-        if (otf.markAnchors != null && !oldFormat) {
+        if (otf.markAnchors != null && !formsFormat) {
             ByteArrayOutputStream marksBuf = new ByteArrayOutputStream(32768);
             writeInt32(otf.markAnchors.size(), marksBuf);
             for (int i = 0; i < otf.markAnchors.size(); i++) {
@@ -119,7 +120,7 @@ public class GenerateStreamFontsFiles {
         // font, as the 16.16 fixed number of its post table. A font without
         // marks gets empty ones first: no subtables and no pairs, and an
         // italic font without a line gap a line gap of 0.
-        if ((otf.lineGap != 0 || otf.italicAngle != 0) && !oldFormat) {
+        if ((otf.lineGap != 0 || otf.italicAngle != 0) && !formsFormat) {
             if (otf.markAnchors == null) {
                 writeMarks(fileName, baos, new byte[8]);
             }
@@ -143,7 +144,7 @@ public class GenerateStreamFontsFiles {
             buf2.writeTo(fos);
         }
 
-        if (otf.cff == true && !oldFormat) {
+        if (otf.cff == true && !formsFormat) {
             // The tables that are not in the CFF data, so that the stream
             // holds the whole font: the original is these bytes with the CFF
             // table put back at the offset its table directory entry gives.
@@ -267,8 +268,8 @@ public class GenerateStreamFontsFiles {
     public static void main(String[] args) throws Exception {
         String directory = null;
         for (String arg : args) {
-            if (arg.equals("--old-format")) {
-                oldFormat = true;
+            if (arg.equals("--pdfjet-forms-format")) {
+                formsFormat = true;
             } else if (directory == null && !arg.startsWith("-")) {
                 directory = arg;
             } else {
@@ -279,11 +280,12 @@ public class GenerateStreamFontsFiles {
         File file = (directory == null) ? null : new File(directory);
         if (file == null || !file.isDirectory()) {
             System.err.println("Usage:");
-            System.err.println("    util/generate-stream-fonts-files.sh [--old-format] <directory>");
+            System.err.println("    util/generate-stream-fonts-files.sh [--pdfjet-forms-format] <directory>");
             System.err.println();
-            System.err.println("--old-format writes .otf.stream files that every version of");
-            System.err.println("PDFjet reads: the CFF data of the font without its other tables,");
-            System.err.println("and no GPOS marks. By default the whole font is kept.");
+            System.err.println("--pdfjet-forms-format writes .otf.stream files as the server of");
+            System.err.println("PDFjet Forms keeps them, which every version of PDFjet reads: the");
+            System.err.println("CFF data of the font without its other tables, and no GPOS marks.");
+            System.err.println("By default the whole font is kept.");
             System.err.println();
             System.err.println("Example:");
             System.err.println("    util/generate-stream-fonts-files.sh fonts/IBMPlexSans");
