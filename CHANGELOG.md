@@ -124,6 +124,11 @@ This is the first entry in this file; earlier releases were not tracked here.
   a font of CFF outlines is written by them too, byte for byte as before.
 
 ### Fixed
+- The text of a table cell that wraps is one paragraph in a tagged document,
+  PDF/UA or PDF/A of level A, in the four ports: each of its lines was a P of
+  its own, so a screen reader read one cell as several paragraphs. A line
+  that goes on to the next page begins a P of its own there. veraPDF and PAC
+  did not flag it; found by the review of PDFjet Forms.
 - A CID-keyed font of CFF outlines, as Source Han Sans and Noto Sans CJK are,
   drew the wrong glyphs or none, as a PDF looks its glyphs up by CID and
   PDFjet wrote glyph numbers: its CFF is written with the identity charset,

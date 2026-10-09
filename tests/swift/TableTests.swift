@@ -231,11 +231,14 @@ import Testing
         #expect(count(raw, "/S /TD\n") == 5)
         #expect(count(raw, "/A <</O /Table /Scope /Column>>") == 2)
         #expect(count(raw, "/A <</O /Table /ColSpan 2>>") == 1)
-        let fourKids = try NSRegularExpression(
-                pattern: "/S /TD\n[^\n]*\n/K \\[\\d+ 0 R \\d+ 0 R \\d+ 0 R \\d+ 0 R \\]")
-        #expect(fourKids.numberOfMatches(in: raw, range: NSRange(raw.startIndex..., in: raw)) == 1)
-        // The text of the cells, and not the underline, is in P elements.
-        #expect(count(raw, "/S /P\n") == 10)
+        // The note is one paragraph of four lines, as a screen reader reads
+        // it, not four paragraphs (the review of PDFjet Forms, 5 October 2026)
+        let fourLines = try NSRegularExpression(
+                pattern: "/S /P\n[^\n]*\n/K \\[\\d+ \\d+ \\d+ \\d+\\]")
+        #expect(fourLines.numberOfMatches(in: raw, range: NSRange(raw.startIndex..., in: raw)) == 1)
+        // The text of the cells, and not the underline, is in P elements,
+        // the four lines of the note in one.
+        #expect(count(raw, "/S /P\n") == 7)
     }
 
     @Test func theHeaderRowsOnTheNextPagesAreArtifacts() throws {

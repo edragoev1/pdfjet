@@ -1747,7 +1747,7 @@ no history; the registries count, and are where developers look.
   count, and data after the end is left), else "Error: The JPEG is cut
   short: its image data has no end." Found by the review of PDFjet Forms.
 
-- ⬜ **9.0.x fix.** **A cell's wrapped lines are read as paragraphs of their own** (the
+- ✅ **Fixed for 9.0.5 on 9 October 2026, in the four ports with tests: the cell one P, its lines the marked contents of it; a line on the next page a P of its own there.** **A cell's wrapped lines are read as paragraphs of their own** (the
   second part, the break, fixed for v9.0.3 on 5 October 2026, below).
   `wrapCellText` (table.go) makes each line of a cell that wraps a P of its
   own in the structure tree, so a screen reader reads one cell as several

@@ -34,6 +34,11 @@ public class Table : IDrawable {
     // the next lines of its wrapped text add to.
     private StructElement structElement;
     private StructElement[] cellElements;
+    // The P of the text of a cell that wraps, by column, and the page it is
+    // on, that the lines after its first on the page add to, so that the cell
+    // is one paragraph to a screen reader and not one a line
+    private StructElement[] cellParagraphs;
+    private Page[] cellParagraphPages;
     // The height of each row as it is drawn, measured once for each DrawOn,
     // after the text is wrapped and the spans are worked out, rather than
     // for each page: a table of 2,546 pages measured its 124,716 rows on
@@ -1141,7 +1146,13 @@ public class Table : IDrawable {
                 if (stripe) {
                     cell.backgroundColor = alternateRowColor;
                 }
+                StructElement mcidParent = page.mcidParent;
+                bool grouped = tagged && cell.text != null &&
+                        CellParagraph(page, rowIndex, i - colspan, continued);
                 cell.DrawOn(page, x, y, w, cellHeight);
+                if (grouped) {
+                    page.mcidParent = mcidParent;
+                }
                 if (stripe) {
                     cell.backgroundColor = Cell.NO_COLOR;
                 }
@@ -1153,6 +1164,37 @@ public class Table : IDrawable {
 
     // True when every cell of the row is one that a cell above it spans over,
     // so the row holds no cell of its own and is not a row of the table.
+    // Makes the lines of the text of a cell that wraps one paragraph, as a
+    // screen reader reads it: the P the first of them on a page begins gets
+    // the marked content of the lines after it on that page, which were each a
+    // P of their own (the review of PDFjet Forms, 5 October 2026). A line on
+    // the next page begins a P of its own there, as an element is of one page.
+    // Returns whether the page's marked content goes to such a P, false for a
+    // cell whose text does not wrap, which is a P of its own as before.
+    private bool CellParagraph(Page page, int r, int i, bool continued) {
+        int columns = tableData[r].Count;
+        if (cellParagraphs == null || cellParagraphs.Length != columns) {
+            cellParagraphs = new StructElement[columns];
+            cellParagraphPages = new Page[columns];
+        }
+        StructElement element = cellParagraphs[i];
+        if (!continued || element == null || cellParagraphPages[i] != page) {
+            element = null;
+            int next = r + 1;
+            if (next < tableData.Count && IsContinuation(next) &&
+                    i < tableData[next].Count && tableData[next][i].text != null) {
+                element = page.AddStructElement(page.structParent, StructElem.P, null);
+            }
+            cellParagraphs[i] = element;
+            cellParagraphPages[i] = page;
+        }
+        if (element == null) {
+            return false;
+        }
+        page.mcidParent = element;
+        return true;
+    }
+
     private static bool AllCovered(List<Cell> row) {
         foreach (Cell cell in row) {
             if ((cell.properties & Cell.COVERED) == 0) {

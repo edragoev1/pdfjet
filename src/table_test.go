@@ -264,17 +264,20 @@ func TestTableInAPDFUADocumentIsTaggedAsATable(t *testing.T) {
 		"/S /TD\n":                        5,
 		"/A <</O /Table /Scope /Column>>": 2,
 		"/A <</O /Table /ColSpan 2>>":     1,
-		// The text of the cells, and not the underline, is in P elements.
-		"/S /P\n": 10,
+		// The text of the cells, and not the underline, is in P elements,
+		// the four lines of the note in one.
+		"/S /P\n": 7,
 	}
 	for text, want := range counts {
 		if got := strings.Count(raw, text); got != want {
 			t.Errorf("%q is in the PDF %d times, not %d", text, got, want)
 		}
 	}
-	fourKids := regexp.MustCompile(`/S /TD\n[^\n]*\n/K \[\d+ 0 R \d+ 0 R \d+ 0 R \d+ 0 R \]`)
-	if n := len(fourKids.FindAllString(raw, -1)); n != 1 {
-		t.Errorf("%d cells with the four lines of the note", n)
+	// The note is one paragraph of four lines, as a screen reader reads it,
+	// not four paragraphs (the review of PDFjet Forms, 5 October 2026)
+	fourLines := regexp.MustCompile(`/S /P\n[^\n]*\n/K \[\d+ \d+ \d+ \d+\]`)
+	if n := len(fourLines.FindAllString(raw, -1)); n != 1 {
+		t.Errorf("%d paragraphs with the four lines of the note", n)
 	}
 }
 

@@ -285,9 +285,12 @@ class TableTest {
         assertEquals(5, count(raw, "/S /TD\n"), raw);
         assertEquals(2, count(raw, "/A <</O /Table /Scope /Column>>"), raw);
         assertEquals(1, count(raw, "/A <</O /Table /ColSpan 2>>"), raw);
-        assertEquals(1, raw.split("/S /TD\n[^\n]*\n/K \\[\\d+ 0 R \\d+ 0 R \\d+ 0 R \\d+ 0 R \\]", -1).length - 1, raw);
-        // The text of the cells, and not the underline, is in P elements.
-        assertEquals(10, count(raw, "/S /P\n"), raw);
+        // The note is one paragraph of four lines, as a screen reader reads
+        // it, not four paragraphs (the review of PDFjet Forms, 5 October 2026)
+        assertEquals(1, raw.split("/S /P\n[^\n]*\n/K \\[\\d+ \\d+ \\d+ \\d+\\]", -1).length - 1, raw);
+        // The text of the cells, and not the underline, is in P elements,
+        // the four lines of the note in one.
+        assertEquals(7, count(raw, "/S /P\n"), raw);
     }
 
     @Test

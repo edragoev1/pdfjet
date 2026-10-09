@@ -45,6 +45,11 @@ type Table struct {
 	// the next lines of its wrapped text add to.
 	structElement *structElement
 	cellElements  []*structElement
+	// The P of the text of a cell that wraps, by column, and the page it is
+	// on, that the lines after its first on the page add to, so that the
+	// cell is one paragraph to a screen reader and not one a line
+	cellParagraphs     []*structElement
+	cellParagraphPages []*Page
 	// The height of each row as it is drawn, measured once for each DrawOn,
 	// after the text is wrapped and the spans are worked out, rather than for
 	// each page: a table of 2,546 pages measured its 124,716 rows on every one
@@ -1106,7 +1111,14 @@ func (table *Table) drawRow(page *Page, row []*Cell, x, y float32, heights []flo
 			if stripe {
 				cell.backgroundColor = table.alternateRowColor
 			}
+			var restore func()
+			if tagged && cell.hasText {
+				restore = table.cellParagraph(page, rowIndex, i-colspan, continued)
+			}
 			cell.drawOn(page, x, y, w, cellHeight)
+			if restore != nil {
+				restore()
+			}
 			if stripe {
 				cell.backgroundColor = color.Transparent
 			}
@@ -1114,6 +1126,37 @@ func (table *Table) drawRow(page *Page, row []*Cell, x, y float32, heights []flo
 		x += w
 	}
 	page.structParent = parent
+}
+
+// cellParagraph makes the lines of the text of a cell that wraps one
+// paragraph, as a screen reader reads it: the P the first of them on a page
+// begins gets the marked content of the lines after it on that page, which
+// were each a P of their own (the review of PDFjet Forms, 5 October 2026). A
+// line on the next page begins a P of its own there, as an element is of one
+// page. It returns what puts the page back, or nil for a cell whose text
+// does not wrap, which is a P of its own as before.
+func (table *Table) cellParagraph(page *Page, r, i int, continued bool) func() {
+	if len(table.cellParagraphs) != len(table.tableData[r]) {
+		table.cellParagraphs = make([]*structElement, len(table.tableData[r]))
+		table.cellParagraphPages = make([]*Page, len(table.tableData[r]))
+	}
+	element := table.cellParagraphs[i]
+	if !continued || element == nil || table.cellParagraphPages[i] != page {
+		element = nil
+		next := r + 1
+		if next < len(table.tableData) && table.isContinuation(next) &&
+			i < len(table.tableData[next]) && table.tableData[next][i].hasText {
+			element = page.addStructElement(page.structParent, structelem.P, "")
+		}
+		table.cellParagraphs[i] = element
+		table.cellParagraphPages[i] = page
+	}
+	if element == nil {
+		return nil
+	}
+	mcidParent := page.mcidParent
+	page.mcidParent = element
+	return func() { page.mcidParent = mcidParent }
 }
 
 // tableRowsSpanned returns the number of rows of the table, its TR elements,

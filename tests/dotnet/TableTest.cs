@@ -249,10 +249,13 @@ public sealed class TableTest : IDisposable {
         Assert.Equal(5, Count(raw, "/S /TD\n"));
         Assert.Equal(2, Count(raw, "/A <</O /Table /Scope /Column>>"));
         Assert.Equal(1, Count(raw, "/A <</O /Table /ColSpan 2>>"));
+        // The note is one paragraph of four lines, as a screen reader reads
+        // it, not four paragraphs (the review of PDFjet Forms, 5 October 2026)
         Assert.Single(System.Text.RegularExpressions.Regex.Matches(raw,
-                "/S /TD\n[^\n]*\n/K \\[\\d+ 0 R \\d+ 0 R \\d+ 0 R \\d+ 0 R \\]"));
-        // The text of the cells, and not the underline, is in P elements.
-        Assert.Equal(10, Count(raw, "/S /P\n"));
+                "/S /P\n[^\n]*\n/K \\[\\d+ \\d+ \\d+ \\d+\\]"));
+        // The text of the cells, and not the underline, is in P elements,
+        // the four lines of the note in one.
+        Assert.Equal(7, Count(raw, "/S /P\n"));
     }
 
     [Fact]
