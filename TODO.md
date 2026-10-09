@@ -1926,7 +1926,22 @@ no history; the registries count, and are where developers look.
   move its page breaks. The rows added under a wrapped cell keep their own
   padding as now: none over them, NewCell's under them. A test in each port,
   the rows' heights compared across the ports. Small.
-- ⬜ **9.0.x fix.** The Swift port slow with a JPEG: 20 pages drawing one photo of 600 KB,
+- ✅ **Not PDFjet's, found on 9 October 2026: the time was Foundation's.**
+  Measured again, a release build on Linux, stage by stage: making the image
+  0.97 ms (the file read, JPGImage, the image object), the 20 pages 0.29,
+  pdf.complete 0.07, 1.6 ms a document, against 0.9 in Go, 1.4 in C# and 3.9
+  in Java. The other 28 ms were `OutputStream.toMemory()` handing back its
+  data, `property(forKey: .dataWrittenToMemoryStreamKey)`, which takes 28 ms
+  for 600 KB written in one piece or in pieces of any size: Foundation on
+  Linux, not the library. A program that wants its PDF in memory on Linux
+  can write it to an OutputStream of its own.
+  **Left, a real gap: text in Swift is about three times Go's.** 100 pages
+  of 50 TextLines of IBM Plex Sans (.ttf): Swift 65 ms (the font 0.7,
+  drawing 63.3, complete 1.1), Go 22 ms, so about 12.7 microseconds a
+  TextLine against 4. Without a profiler here (perf needs
+  kernel.perf_event_paranoid below 4), not looked into further; worth
+  doing before Swift is sold in the commercial product. As first written:
+  The Swift port slow with a JPEG: 20 pages drawing one photo of 600 KB,
   embedded once, took 30 ms a document in Swift, against 0.9 in Go, 1.4 in
   C# and 3.9 in Java, the same PDF from each (measured on 5 October 2026,
   Linux, Swift 6.4, a release build; the benchmark is kept privately). A
