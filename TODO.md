@@ -1786,19 +1786,9 @@ no history; the registries count, and are where developers look.
 
 ## Was v9.1: fixes for 9.0.x, features for PDFjet Pro or not at all (no v9.1, 9 October 2026)
 
-- ⬜ Maybe: **subsets of the fonts added to an existing PDF** (the owner, 9
-  October 2026). `new Font(objects, stream)` embeds a font whole, as its
-  objects are written at once, before any text is drawn with it: a whole
-  `.ttf` is 2 to 3 times its CFF, so Examples 37 and 50 add IBM Plex Sans's
-  `.otf` (127 KB and 177 KB; 172 KB and 264 KB with the `.ttf`). How: the
-  font's objects made as now, but the font file's `PDFobj` left without its
-  stream; the glyphs recorded through `Page.appendGlyph` as on a new page
-  (the page of an existing PDF draws through it already); the stream, the
-  subset, its `/W` and its ToUnicode map filled in by `pdf.addObjects(objects)`,
-  which writes the objects after every page is drawn, with the subsetter of
-  9.0.5 (`Subset.subsetTrueType`), in the four ports. A form filled in with a
-  few words in a CJK font is the case it is for: a whole Noto Sans SC is
-  6.5 MB.
+- ➡️ Moved to PDFjet Pro on 9 October 2026, as a big maybe (the owner):
+  ~/Projects/pdfjet-pro-private/TODO.md, private. **Subsets of the fonts
+  added to an existing PDF.**
 
 - ⬜ CommonMark itself, in the four ports, where v9.0.3 has the practical
   subset above: a parser written from the spec, with the GitHub tables,
