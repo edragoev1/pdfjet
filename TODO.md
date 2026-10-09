@@ -9,6 +9,14 @@ PDFjet Forms and comes back to the library now and then; this list is what
 to do, in order, so that each visit can just pick up the next item. Only
 what users would hit goes in; the rest waits for v9.1.
 
+**v9.0.4, internal, tagged on 8 October 2026** (the owner: "let's do
+internal release and call it v9.0.4 then we go all in with font subsets for
+v9.0.5"): items 1 to 4 below and the Annot role map of PDF/A-1. The tag is
+local and never pushed, as public releases keep odd numbers; nothing is
+packaged and the Producer still says v9.0.3. **v9.0.5 then adds the
+TrueType font subsetting** (the plan under v9.1 below, moved up), with
+NuGet, net48's feedback and Jazzer's last findings when they come.
+
 1. ✅ **Done on 8 October 2026, evening, in the four ports with a test in
    each:** the OTF hmtx before hhea (ae905866; Go and Swift had drawn every
    glyph 0 wide, unseen), the malformed SVG number (5d3d6f73), and Jazzer's
