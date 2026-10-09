@@ -779,7 +779,10 @@ public class Font {
     internal float StringWidth(Font fallbackFont, float fontSize, float fallbackFontSize, String str) {
         float width = 0f;
 
-        if (str == null || this.isCJK || fallbackFont == null || fallbackFont.isCJK) {
+        // A fallback font that is the font itself measures every character
+        // with the font, as with no fallback font
+        if (str == null || this.isCJK || fallbackFont == null || fallbackFont.isCJK ||
+                (fallbackFont == this && fallbackFontSize == fontSize)) {
             return StringWidth(fontSize, str);
         }
 

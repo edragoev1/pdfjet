@@ -725,7 +725,10 @@ func (font *Font) StringWidthUsingFallbackFont(fallbackFont *Font, fontSize floa
 func (font *Font) stringWidthFBSizes(fallbackFont *Font, fontSize, fallbackFontSize float32, text string) float32 {
 	var width float32 = 0.0
 
-	if font.isCJK || fallbackFont == nil || fallbackFont.isCJK {
+	// A fallback font that is the font itself measures every character with
+	// the font, as with no fallback font
+	if font.isCJK || fallbackFont == nil || fallbackFont.isCJK ||
+		(fallbackFont == font && fallbackFontSize == fontSize) {
 		return font.StringWidth(fontSize, text)
 	}
 

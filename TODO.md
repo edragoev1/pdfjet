@@ -1935,6 +1935,12 @@ no history; the registries count, and are where developers look.
   for 600 KB written in one piece or in pieces of any size: Foundation on
   Linux, not the library. A program that wants its PDF in memory on Linux
   can write it to an OutputStream of its own.
+  **Fixed the same day: text in Swift is now as fast as in the other ports.**
+  The time was a TextLine's fallback font, its font itself by default, each
+  character asked which of the two has it, and in Swift each read of the
+  font's properties checked at run time (exclusivity); 65 ms to 17.5, and
+  the fallback short-cut in the four ports (Go 21.8 to 15.4, C# 19.0 to
+  15.5, Java 14.8 to 13.9). Deflate was a tenth of it. As it was found:
   **Left, a real gap: text in Swift is about three times Go's.** 100 pages
   of 50 TextLines of IBM Plex Sans (.ttf): Swift 65 ms (the font 0.7,
   drawing 63.3, complete 1.1), Go 22 ms, so about 12.7 microseconds a

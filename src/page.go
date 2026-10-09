@@ -357,7 +357,10 @@ func (page *Page) DrawStringUsingFontSize(
 // The baseline of the leftmost character is at position (x, y) on the page.
 func (page *Page) drawStringUsingHighlightColors(
 	font, fallbackFont *Font, fontSize float32, text string, x, y float32, brush [3]float32, colors map[string]int32) {
-	if font.isCJK || fallbackFont == nil || fallbackFont.isCJK {
+	// A fallback font that is the font itself, as a TextLine has by default,
+	// draws every character with the font: one run, drawn as with no fallback
+	// font, without asking each character which font has it (9 October 2026)
+	if font.isCJK || fallbackFont == nil || fallbackFont.isCJK || fallbackFont == font {
 		page.drawString(font, fontSize, text, x, y, brush, colors)
 	} else {
 		// Each run of the characters drawn with one font is drawn after the run before it.

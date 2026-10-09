@@ -623,7 +623,11 @@ final public class Page {
             float y,
             float[] textColor,
             Map<String, Integer> highlightColors) {
-        if (str == null || font.isCJK || fallbackFont == null || fallbackFont.isCJK) {
+        // A fallback font that is the font itself, as a TextLine has by
+        // default, draws every character with the font: one run, drawn as
+        // with no fallback font, without asking each character which font
+        // has it (9 October 2026)
+        if (str == null || font.isCJK || fallbackFont == null || fallbackFont.isCJK || fallbackFont == font) {
             drawString(font, fontSize, str, x, y, textColor, highlightColors);
         } else {
             // Each run of the characters drawn with one font is drawn after the run before it.

@@ -124,6 +124,14 @@ This is the first entry in this file; earlier releases were not tracked here.
   a font of CFF outlines is written by them too, byte for byte as before.
 
 ### Fixed
+- Text is drawn faster, in the four ports, and much faster in Swift: a
+  TextLine's fallback font is its font unless one is set, and each of its
+  characters was asked which of the two fonts has it; a fallback font that
+  is the font itself is now drawn and measured as no fallback font, the same
+  PDF. In Swift the loops that look up glyphs and widths read the font's
+  tables once a string, not once a character, as each read of a class's
+  property is checked at run time. 100 pages of 50 lines of IBM Plex Sans:
+  Swift 65 to 17.5 ms, Go 21.8 to 15.4, C# 19.0 to 15.5, Java 14.8 to 13.9.
 - The text of a table cell that wraps is one paragraph in a tagged document,
   PDF/UA or PDF/A of level A, in the four ports: each of its lines was a P of
   its own, so a screen reader read one cell as several paragraphs. A line

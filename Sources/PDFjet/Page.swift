@@ -402,7 +402,11 @@ public class Page {
             _ highlightColors: [String : Int32]?) {
         var x = xOrig
         let y = yOrig
-        if str == nil || font.isCJK || fallbackFont == nil || fallbackFont!.isCJK {
+        // A fallback font that is the font itself, as a TextLine has by
+        // default, draws every character with the font: one run, drawn as
+        // with no fallback font, without asking each character which font
+        // has it (9 October 2026)
+        if str == nil || font.isCJK || fallbackFont == nil || fallbackFont!.isCJK || fallbackFont === font {
             drawString(font, fontSize, str, x, y, textColor, highlightColors)
         } else {
             // Each run of the characters drawn with one font is drawn after the run before it.
@@ -567,9 +571,21 @@ public class Page {
                 }
             }
         } else if !needsShaping(font, scalars) {
+            // The font has every character, so each is its glyph, a control
+            // character that of the space, as glyphOf gives them. Looked up in
+            // a local copy of the font's table, marked used in one pass and
+            // written in one, so that a character costs no runtime check of a
+            // class property's exclusive access, which made text in Swift
+            // three times as slow as in Go (9 October 2026).
+            let table = font.unicodeToGID
+            var gids = [Int]()
+            gids.reserveCapacity(scalars.count)
             for scalar in scalars where scalar.value != 0xFEFF {    // BOM
-                appendGlyph(font, Page.glyphOf(font, Int(scalar.value)))
+                let codePoint = Int(scalar.value)
+                gids.append(Font.isControl(codePoint) ? table[0x0020] : table[codePoint])
             }
+            font.useGlyphs(gids)
+            Page.appendGlyphsAsHex(gids, &self.buf)
         } else {
             // The marks are moved to where the GPOS table of the font puts
             // them, the characters Bidi mirrored, each after an RLM, are given
@@ -941,17 +957,24 @@ public class Page {
     // most text is looked at once, with no more than two comparisons and the
     // lookup of its glyph for each character.
     private func needsShaping(_ font: Font, _ scalars: [Unicode.Scalar]) -> Bool {
+        // The font's tables read once, not for each character; a character
+        // the font lacks is one Font's lacks says it lacks
+        let hasMarks = font.markAnchors != nil
+        let table = font.unicodeToGID
+        let first = font.firstChar
+        let last = font.lastChar
         for scalar in scalars {
             let codePoint = Int(scalar.value)
             if codePoint >= 0x0300 {
                 if Font.isJoinerOrRLM(scalar.value) {
                     return true
                 }
-                if font.markAnchors != nil && isMark(codePoint) {
+                if hasMarks && isMark(codePoint) {
                     return true
                 }
             }
-            if codePoint != 0xFEFF && font.lacks(codePoint) {
+            if codePoint != 0xFEFF && !Font.isControl(codePoint) &&
+                    (codePoint < first || codePoint > last || codePoint >= table.count || table[codePoint] == 0) {
                 return true
             }
         }
@@ -2918,6 +2941,14 @@ public class Page {
     private func appendGlyph(_ font: Font, _ gid: Int) {
         font.useGlyph(gid)
         Page.appendCodePointAsHex(gid, &self.buf)
+    }
+
+    // Writes the glyphs, four hex digits each, as appendCodePointAsHex writes
+    // each, in one access to the buffer.
+    private static func appendGlyphsAsHex(_ gids: [Int], _ buf: inout [UInt8]) {
+        for gid in gids {
+            appendCodePointAsHex(gid, &buf)
+        }
     }
 
     private static func appendCodePointAsHex(_ codePoint: Int, _ buf: inout [UInt8]) {

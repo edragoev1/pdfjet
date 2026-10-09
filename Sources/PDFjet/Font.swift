@@ -422,6 +422,19 @@ public class Font {
         }
     }
 
+    // Marks the glyphs used, as useGlyph marks each, in one access to the
+    // program's table.
+    func useGlyphs(_ gids: [Int]) {
+        guard let program = program else {
+            return
+        }
+        program.used.withUnsafeMutableBufferPointer { used in
+            for gid in gids where gid >= 0 && gid < used.count {
+                used[gid] = true
+            }
+        }
+    }
+
     /// Returns the width of the string at the current font size.
     public func stringWidth(_ str: String?) -> Float {
         return stringWidth(self.size, str)
@@ -459,8 +472,30 @@ public class Font {
                 previous = c1
             }
         } else {
+            // The font's tables read once, not for each character, the
+            // widths those advanceWidthOf gives
+            let table = unicodeToGID
+            let widths = advanceWidth
+            let first = firstChar
+            let last = lastChar
+            var missing = -1    // The glyph of a character the font lacks, looked up once
             for scalar in str!.unicodeScalars {
-                width += advanceWidthOf(Int(scalar.value))
+                let codePoint = Int(scalar.value)
+                if Font.isJoinerOrRLM(scalar.value) || codePoint == 0xFEFF {
+                    continue
+                }
+                var gid: Int
+                if Font.isControl(codePoint) {
+                    gid = table[0x0020]
+                } else if codePoint < first || codePoint > last || codePoint >= table.count || table[codePoint] == 0 {
+                    if missing < 0 {
+                        missing = missingGlyph()
+                    }
+                    gid = missing
+                } else {
+                    gid = table[codePoint]
+                }
+                width += Int(widths[min(gid, widths.count - 1)])
             }
         }
 
@@ -803,7 +838,10 @@ public class Font {
     // in the fallback font at the fallback font size.
     func stringWidth(_ fallbackFont: Font?, _ fontSize: Float, _ fallbackFontSize: Float, _ str: String?) -> Float {
         var width: Float = 0.0
-        if str == nil || self.isCJK || fallbackFont == nil || fallbackFont!.isCJK {
+        // A fallback font that is the font itself measures every character
+        // with the font, as with no fallback font
+        if str == nil || self.isCJK || fallbackFont == nil || fallbackFont!.isCJK ||
+                (fallbackFont === self && fallbackFontSize == fontSize) {
             return stringWidth(fontSize, str)
         }
         var activeFont = self
