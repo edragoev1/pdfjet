@@ -1678,7 +1678,7 @@ no history; the registries count, and are where developers look.
   them; pdfjet-server tests for transparent before each call. Found by the
   review of Sep 30, 2026.
 
-- ⬜ **The four ports read SVG with four XML parsers, which may take
+- ✅ Done on 8 October 2026 (9917aa12): one XML parser for SVG in the four ports, public API since the same evening. As first written: **The four ports read SVG with four XML parsers, which may take
   different files; for v9.1, in the four.** Go reads it with encoding/xml,
   Java with StAX, C# with XmlReader (its DTD ignored) and Swift with a
   reader of its own, so a file one port draws another may refuse. What Go
@@ -1718,7 +1718,7 @@ no history; the registries count, and are where developers look.
   refuses, so nothing is to work around meanwhile. Found by the review of
   Sep 30, 2026.
 
-- ⬜ Maybe: **check once that positions are the same on arm64.** Go's
+- ✅ Done on 5 October 2026 (939a9d17, 06c5c98a): no fused multiply-add in the Go port, the products wrapped in float32(...), and the Build's step "No fused multiply-add on arm64" fails on any in the arm64 code, so the positions are the same on every build, not checked once. As first written: Maybe: **check once that positions are the same on arm64.** Go's
   compiler fuses a float32 multiply and add into one instruction on arm64
   (FMADDS, FMSUBS), rounding once where amd64 rounds twice, so a position
   could differ in its last bit, about one part in ten million, and a
