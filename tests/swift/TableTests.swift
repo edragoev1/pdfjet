@@ -1101,9 +1101,9 @@ import Testing
             table.setColumnWidth(0, 60).setColumnWidth(1, 90)
             table.setLocation(20, 20)
         }
-        let a = byTable.drawOn(try Page(pdf, Letter.PORTRAIT))
-        let b = byCell.drawOn(try Page(pdf, Letter.PORTRAIT))
-        let c = plain.drawOn(try Page(pdf, Letter.PORTRAIT))
+        let a = byTable.drawOn(Page(pdf, Letter.PORTRAIT))
+        let b = byCell.drawOn(Page(pdf, Letter.PORTRAIT))
+        let c = plain.drawOn(Page(pdf, Letter.PORTRAIT))
         #expect(a == b)
         #expect(a[1] > c[1])
         // Where the four ports end it, the same in each
