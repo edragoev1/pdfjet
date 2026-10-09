@@ -6,12 +6,11 @@
 It needs fontTools; the version it was written with is FONTTOOLS below, and a
 run says the version it had.
 
-The fonts are every .otf and .ttf under fonts/ and the .stream file made from
-each, the six fonts fetch-fonts.sh fetches, and the 14 core fonts. The port
+The fonts are every .otf and .ttf under fonts/, the six fonts fetch-fonts.sh
+fetches, and the 14 core fonts. The port
 loads each one as a user does, and says what it read: see TestFontReference in
 src/fontreference_test.go. A font file is compared with what fontTools reads
-of it, and a .stream file with what fontTools reads of the font it was made
-from. The check fails on a font when the port:
+of it. The check fails on a font when the port:
 
 - cannot load it;
 - reads a different PostScript name (name ID 6, Windows before Macintosh),
@@ -355,7 +354,7 @@ def compare_font(port, ref):
 
 
 def check_font(args):
-    """Compares a font file and its .stream file with what fontTools reads."""
+    """Compares a font file with what fontTools reads."""
     source, keys, result, offsets = args
     try:
         ref = reference_of(source)
@@ -367,7 +366,7 @@ def check_font(args):
     for key, path in keys.items():
         port = read_port(result, offsets[path])
         # What the font has is counted once, with the font file.
-        results.append((key, compare_font(port, ref), {} if key.endswith('.stream') else info))
+        results.append((key, compare_font(port, ref), info))
     return results
 
 
@@ -490,7 +489,7 @@ def read_known(path):
 
 
 def font_files(fetched):
-    """(source, {key: path}) for each font file and its .stream file."""
+    """(source, {key: path}) for each font file."""
     fonts = []
     shipped = os.path.join(ROOT, 'fonts')
     for dirpath, dirnames, filenames in os.walk(shipped):
@@ -499,10 +498,7 @@ def font_files(fetched):
             if name.endswith(('.otf', '.ttf')):
                 path = os.path.join(dirpath, name)
                 key = os.path.relpath(path, ROOT)
-                keys = {key: path}
-                if os.path.exists(path + '.stream'):
-                    keys[key + '.stream'] = path + '.stream'
-                fonts.append((path, keys))
+                fonts.append((path, {key: path}))
     for name in FETCHED:
         path = os.path.abspath(os.path.join(fetched, name))
         if not os.path.exists(path):

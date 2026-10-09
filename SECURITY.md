@@ -44,7 +44,7 @@ because those can come from somewhere else:
 | What | Read by |
 |---|---|
 | A PDF | `PDF.read`, and the merging and splitting that follow it |
-| A font | `Font` and the `.ttf`, `.otf` and `.stream` files it reads |
+| A font | `Font` and the `.ttf` and `.otf` files it reads |
 | An image | `Image`, `PNGImage`, `JPGImage`, `BMPImage`, `SVGImage` |
 | Text with markup | `Markup` and `Markdown` |
 

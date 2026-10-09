@@ -1,4 +1,4 @@
-// fontstream2.go
+// fontobjects.go
 //
 // Copyright (c) 2026 PDFjet Software
 // Licensed under the MIT License. See LICENSE file in the project root.
@@ -11,22 +11,17 @@ package pdfjet
 // ports. Keep the wrapping; see "Floating point on ARM" in README.md.
 // check-no-fma.sh fails if one is removed.
 
+// The objects of a font added to an existing PDF, embedded whole.
+
 import (
-	"io"
 	"math"
 	"strconv"
 	"strings"
 )
 
-// fontStream2 constructs font object and adds it to the PDF objects slice.
-func fontStream2(objects *[]*PDFobj, font *Font, reader io.Reader) {
-	getFontData(font, reader)
-	fontStream2Of(objects, font, readBytes(reader, font.compressedSize))
-}
-
-// fontStream2Of adds the font, whose font program is the compressed bytes, to
-// the objects of an existing PDF.
-func fontStream2Of(objects *[]*PDFobj, font *Font, compressed []byte) {
+// addFontToObjects adds the font, whose font program is the compressed bytes,
+// to the objects of an existing PDF.
+func addFontToObjects(objects *[]*PDFobj, font *Font, compressed []byte) {
 	embedFontFile2(objects, font, compressed)
 	addFontDescriptorObject2(objects, font)
 	addCIDFontDictionaryObject2(objects, font)

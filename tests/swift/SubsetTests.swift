@@ -195,16 +195,6 @@ import Testing
         }
     }
 
-    @Test func aStreamFontIsSubsetAsItsTrueTypeFontIs() throws {
-        // The .ttf.stream of JetBrains Mono is its .ttf, compressed: subset or
-        // whole, the two embed the same font program.
-        for subset in [true, false] {
-            #expect(try program(document(Compliance.PDF_1_7, "fonts/JetBrainsMono/JetBrainsMono-Regular.ttf", subset, "Hello")) ==
-                    (try program(document(Compliance.PDF_1_7, "tests/data/stream-fonts/JetBrainsMono-Regular.ttf.stream", subset, "Hello"))),
-                    "subset \(subset)")
-        }
-    }
-
     @Test func twoFontsOfOneFileShareOneSubset() throws {
         let raw = try document(Compliance.PDF_1_7, "fonts/NotoSans/NotoSans-Regular.ttf", true, "A", "B")
         #expect(try count("/Length1 ", raw) == 1)

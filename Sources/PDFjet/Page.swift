@@ -625,15 +625,6 @@ public class Page {
                 hasNotdef = hasNotdef || isMissing(font, codePoints, gids.count - 1)
             }
             var offsets: [Int]? = nil
-            if hasMarks && font.markData != nil {
-                // Marks that cannot be read would be drawn in the wrong place,
-                // so the document fails, as it does in the other ports.
-                do {
-                    try FontStream1.readMarks(font)
-                } catch {
-                    pdf.fail("The marks of the font cannot be read: \(error)")
-                }
-            }
             if hasMarks && font.markAnchors != nil {
                 offsets = markOffsets(font, codePoints, gids)
             } else if mirrored == nil && joiners == nil && runEdge == nil && !hasNotdef {
@@ -956,7 +947,7 @@ public class Page {
                 if Font.isJoinerOrRLM(scalar.value) {
                     return true
                 }
-                if (font.markAnchors != nil || font.markData != nil) && isMark(codePoint) {
+                if font.markAnchors != nil && isMark(codePoint) {
                     return true
                 }
             }

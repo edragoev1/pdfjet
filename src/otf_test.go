@@ -142,7 +142,7 @@ func testOpenTypeWithout(t *testing.T, font []byte, name string) []byte {
 func TestOTFAFontWithNoNameOfItsOwnIsRefused(t *testing.T) {
 	// The name goes into the PDF as the name of the font, where a name that
 	// is not a PDF name would break the syntax, so a font with none is
-	// refused as a stream font with none is.
+	// refused.
 	font := testOpenTypeFontBytes(t, "fonts/NotoSansThai/NotoSansThai-Regular.ttf")
 	testWant(t, "Invalid font file: the font name.",
 		testOpenTypeFontError(testOpenTypeWithout(t, font, "name")))

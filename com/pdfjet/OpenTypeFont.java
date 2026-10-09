@@ -19,7 +19,7 @@ class OpenTypeFont {
         if (!otf.cff) {
             // A TrueType font is written at complete(), a subset of the glyphs
             // drawn; its pages refer to the number reserved for it.
-            Subset.share(pdf, font, otf.buf, null, otf.buf.length);
+            Subset.share(pdf, font, otf.buf);
             font.objNumber = pdf.reserveObjNumber();
             pdf.fonts.add(font);
             return;
@@ -28,14 +28,13 @@ class OpenTypeFont {
     }
 
     // Adds the font to the objects of an existing PDF, with its font program
-    // whole, as a stream font is added.
+    // whole.
     protected static void register(
             List<PDFobj> objects, Font font, InputStream inputStream) throws Exception {
         OTF otf = new OTF(inputStream);
         setData(font, otf);
-        font.cff = otf.cff;
         font.uncompressedSize = otf.buf.length;
-        FontStream2.register(objects, font, otf.compress());
+        FontObjects.register(objects, font, otf.compress());
     }
 
     // Gives the font the name, the metrics and the character map of the
@@ -62,6 +61,7 @@ class OpenTypeFont {
         font.baseAnchors = otf.baseAnchors;
         font.info = otf.fontInfo;
         font.capHeight = otf.capHeight;
+        font.cff = otf.cff;
         font.checksum = Font.checksumOf(font);
         font.setSize(font.size);
     }
@@ -69,9 +69,9 @@ class OpenTypeFont {
     // Writes a font with CFF outlines, which is embedded whole, as it is added.
     private static void registerCFF(PDF pdf, Font font, OTF otf) throws Exception {
         embedFontFile(pdf, font, otf);
-        addFontDescriptorObject(pdf, font, otf);
-        addCIDFontDictionaryObject(pdf, font, otf);
-        addToUnicodeCMapObject(pdf, font, otf);
+        FontWriter.addFontDescriptorObject(pdf, font, font.name);
+        FontWriter.addCIDFontDictionaryObject(pdf, font, font.name, null);
+        FontWriter.addToUnicodeCMapObject(pdf, font, null);
 
         // Type0 Font Dictionary
         pdf.newObj();
@@ -144,59 +144,6 @@ class OpenTypeFont {
         font.fileObjNumber = pdf.getObjNumber();
     }
 
-    private static void addFontDescriptorObject(
-            PDF pdf, Font font, OTF otf) throws Exception {
-        for (Font f : pdf.fonts) {
-            if (f.fontDescriptorObjNumber != 0 && f.name.equals(otf.fontName) && f.checksum == font.checksum) {
-                font.fontDescriptorObjNumber = f.fontDescriptorObjNumber;
-                return;
-            }
-        }
-
-        pdf.newObj();
-        pdf.append("<<\n");
-        pdf.append("/Type /FontDescriptor\n");
-        pdf.append("/FontName /");
-        pdf.append(otf.fontName);
-        pdf.append('\n');
-        if (otf.cff) {
-            pdf.append("/FontFile3 ");
-        } else {
-            pdf.append("/FontFile2 ");
-        }
-        pdf.append(font.fileObjNumber);
-        pdf.append(" 0 R\n");
-        pdf.append("/Flags ");
-        pdf.append(flagsOf(font.italicAngle));
-        pdf.append('\n');
-        pdf.append("/FontBBox [");
-        pdf.append(toGlyphSpace(otf.bBoxLLx, otf.unitsPerEm));
-        pdf.append(' ');
-        pdf.append(toGlyphSpace(otf.bBoxLLy, otf.unitsPerEm));
-        pdf.append(' ');
-        pdf.append(toGlyphSpace(otf.bBoxURx, otf.unitsPerEm));
-        pdf.append(' ');
-        pdf.append(toGlyphSpace(otf.bBoxURy, otf.unitsPerEm));
-        pdf.append("]\n");
-        pdf.append("/Ascent ");
-        pdf.append(toGlyphSpace(otf.ascent, otf.unitsPerEm));
-        pdf.append('\n');
-        pdf.append("/Descent ");
-        pdf.append(toGlyphSpace(otf.descent, otf.unitsPerEm));
-        pdf.append('\n');
-        pdf.append("/ItalicAngle ");
-        pdf.append(italicAngleOf(font.italicAngle));
-        pdf.append('\n');
-        pdf.append("/CapHeight ");
-        pdf.append(toGlyphSpace(otf.capHeight, otf.unitsPerEm));
-        pdf.append('\n');
-        pdf.append("/StemV 79\n");
-        pdf.append(">>\n");
-        pdf.endObj();
-
-        font.fontDescriptorObjNumber = pdf.getObjNumber();
-    }
-
     /**
      * Converts a value in font units to the glyph space units of the font
      * descriptor, 1/1000 em, rounded to the nearest integer with halves away
@@ -229,132 +176,6 @@ class OpenTypeFont {
             text += "." + String.valueOf(100 + rounded % 100).substring(1).replaceAll("0$", "");
         }
         return (angle < 0 && rounded != 0) ? "-" + text : text;
-    }
-
-    private static void addToUnicodeCMapObject(
-            PDF pdf,
-            Font font,
-            OTF otf) throws Exception {
-        for (Font f : pdf.fonts) {
-            if (f.toUnicodeCMapObjNumber != 0 && f.name.equals(otf.fontName) && f.checksum == font.checksum) {
-                font.toUnicodeCMapObjNumber = f.toUnicodeCMapObjNumber;
-                return;
-            }
-        }
-
-        StringBuilder sb = new StringBuilder();
-
-        sb.append("/CIDInit /ProcSet findresource begin\n");
-        sb.append("12 dict begin\n");
-        sb.append("begincmap\n");
-        sb.append("/CIDSystemInfo <</Registry (Adobe) /Ordering (Identity) /Supplement 0>> def\n");
-        sb.append("/CMapName /Adobe-Identity def\n");
-        sb.append("/CMapType 2 def\n");
-
-        sb.append("1 begincodespacerange\n");
-        sb.append("<0000> <FFFF>\n");
-        sb.append("endcodespacerange\n");
-
-        List<String> list = new ArrayList<String>();
-        // A character the font does not contain is drawn with the .notdef
-        // glyph. PDF/UA requires every glyph to map to Unicode, so map it to
-        // the replacement character.
-        list.add("<0000> <FFFD>\n");
-        StringBuilder buf = new StringBuilder();
-        int[] unicodeOf = FontStream1.unicodeOfGlyphs(otf.unicodeToGID);
-        for (int cid = 0; cid <= 0xffff; cid++) {
-            int gid = otf.unicodeToGID[cid];
-            if (gid > 0 && unicodeOf[gid] == cid) {
-                buf.append('<');
-                buf.append(toHexString(gid));
-                buf.append("> <");
-                // A presentation form that the Bidi class puts in maps to the letters it stands for.
-                String letters = Bidi.lettersOf(cid);
-                if (letters == null) {
-                    buf.append(toHexString(cid));
-                } else {
-                    for (int i = 0; i < letters.length(); i++) {
-                        buf.append(toHexString(letters.charAt(i)));
-                    }
-                }
-                buf.append(">\n");
-                list.add(buf.toString());
-                buf.setLength(0);
-                if (list.size() == 100) {
-                    writeListToBuffer(list, sb);
-                }
-            }
-        }
-        if (list.size() > 0) {
-            writeListToBuffer(list, sb);
-        }
-
-        sb.append("endcmap\n");
-        sb.append("CMapName currentdict /CMap defineresource pop\n");
-        sb.append("end\nend");
-
-        FontStream1.addCompressedStream(pdf, sb.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
-        font.toUnicodeCMapObjNumber = pdf.getObjNumber();
-    }
-
-    private static void addCIDFontDictionaryObject(
-            PDF pdf,
-            Font font,
-            OTF otf) throws Exception {
-        for (Font f : pdf.fonts) {
-            if (f.cidFontDictObjNumber != 0 && f.name.equals(otf.fontName) && f.checksum == font.checksum) {
-                font.cidFontDictObjNumber = f.cidFontDictObjNumber;
-                return;
-            }
-        }
-
-        pdf.newObj();
-        pdf.append("<<\n");
-        pdf.append("/Type /Font\n");
-        if (otf.cff) {
-            pdf.append("/Subtype /CIDFontType0\n");
-        } else {
-            pdf.append("/Subtype /CIDFontType2\n");
-        }
-        pdf.append("/BaseFont /");
-        pdf.append(otf.fontName);
-        pdf.append('\n');
-
-        byte[] registry = "Adobe".getBytes(java.nio.charset.StandardCharsets.UTF_8);
-        byte[] ordering = "Identity".getBytes(java.nio.charset.StandardCharsets.UTF_8);
-        if (pdf.encryption != null) {
-            registry = AES256.encrypt(registry, pdf.encryption.getKey());
-            ordering = AES256.encrypt(ordering, pdf.encryption.getKey());
-        }
-        pdf.append("/CIDSystemInfo <</Registry <");
-        pdf.append(Util.toHexString(registry));
-        pdf.append("> /Ordering <");
-        pdf.append(Util.toHexString(ordering));
-        pdf.append("> /Supplement 0>>\n");
-
-        pdf.append("/FontDescriptor ");
-        pdf.append(font.fontDescriptorObjNumber);
-        pdf.append(" 0 R\n");
-
-        final float k = 1000.0f / Float.valueOf(font.unitsPerEm);
-        // The width of the glyphs past the /W array: those past the advance
-        // widths, which have the width of the last one.
-        pdf.append("/DW ");
-        pdf.append(Math.round(k * Float.valueOf(font.advanceWidth[font.advanceWidth.length - 1])));
-        pdf.append('\n');
-
-        pdf.append("/W [0[\n");
-        for (int width : font.advanceWidth) {
-            pdf.append(Math.round(k * Float.valueOf(width)));
-            pdf.append(' ');
-        }
-        pdf.append("]]\n");
-
-        pdf.append("/CIDToGIDMap /Identity\n");
-        pdf.append(">>\n");
-        pdf.endObj();
-
-        font.cidFontDictObjNumber = pdf.getObjNumber();
     }
 
     private static String toHexString(int code) {

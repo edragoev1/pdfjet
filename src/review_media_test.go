@@ -182,7 +182,7 @@ func testPDFAImageError(t *testing.T, level compliance.Compliance, data []byte) 
 	pdf := NewPDF(bufio.NewWriter(io.Discard))
 	pdf.SetCompliance(level)
 	pdf.SetTitle("Title")
-	font := testStreamFont(t, pdf)
+	font := testTrueTypeFont(t, pdf)
 	page := NewPage(pdf, letter.Portrait())
 	NewTextLine(font, "Text").SetLocation(50, 50).DrawOn(page)
 	NewImage(pdf, bytes.NewReader(data)).SetAltDescription("An image").

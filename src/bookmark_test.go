@@ -120,7 +120,7 @@ func testHeadingsDoc(t *testing.T, tagged bool, headings ...[2]string) *testDoc 
 		doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 		doc.pdf.SetTitle("Title")
 	}
-	font := testStreamFont(t, doc.pdf)
+	font := testTrueTypeFont(t, doc.pdf)
 	var page *Page
 	for i, h := range headings {
 		if page == nil || h[0] == "H1" && i > 0 {
@@ -189,7 +189,7 @@ func TestBookmarkOfHeadingsOnlyInATaggedDocumentWithoutBookmarks(t *testing.T) {
 	}
 	own := testHeadingsDoc(t, true, [2]string{"H1", "Intro"})
 	page := NewPage(own.pdf, testLetterPortrait())
-	NewBookmark(own.pdf).AddBookmark(page, NewTitle(testStreamFont(t, own.pdf), "Mine", 10, 10))
+	NewBookmark(own.pdf).AddBookmark(page, NewTitle(testTrueTypeFont(t, own.pdf), "Mine", 10, 10))
 	objects := testRead(t, own.complete())
 	testOutlineItem(t, objects, "Mine")
 	for _, obj := range objects {

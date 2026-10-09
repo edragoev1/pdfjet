@@ -437,10 +437,10 @@ them, whole or subset: a document is not a distribution of the font.
 Up to 9.0.3 the bundled fonts came as `.otf.stream` and `.ttf.stream` files,
 their metrics and their outlines compressed ahead of time, so that a document
 only copied them. Subsetting made them unneeded: a subset of the `.ttf` is a
-fraction of the stream's size, and about as fast to make. PDFjet still reads
-stream files, those made with `util/generate-stream-fonts-files.sh` too, and a
-path to a bundled stream file that is no longer there opens the `.ttf` file of
-the same name beside it, so code written for 9.0.3 runs as it is.
+fraction of the stream's size, and as fast to make. From 9.0.5 PDFjet reads
+`.otf` and `.ttf` fonts alone, and a path to a `.ttf.stream` or `.otf.stream`
+file opens the `.ttf` file of the same name beside it, so code written for
+9.0.3 runs as it is with the fonts of 9.0.5.
 
 ## Right to left text
 
@@ -754,8 +754,8 @@ that takes a header and rows, and
 Constructors are `New<Type>` functions in Go, again with a suffix for an
 overload: `NewBookmarkAt`, `NewEmbeddedFileAtPath`, `NewImageForObjects`, `NewPageDetached` for
 `Page.DETACHED`, `NewTableFromFile`, and `NewFont`,
-`NewFontFromFile`, `NewCoreFont`, `NewCJKFont`, `NewFontStream1` and
-`NewFontStream2` for the overloads of the `Font` constructor, and
+`NewFontFromFile`, `NewCoreFont`, `NewCJKFont` and `NewFontForObjects`
+for the overloads of the `Font` constructor, and
 `NewEmptyCell(font)` and `NewEmptyTextLine(font)` for `Cell(font)` and
 `TextLine(font)`. Where the other ports have an overload with fewer
 arguments, Go has the full form only:

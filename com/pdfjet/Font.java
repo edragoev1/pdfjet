@@ -94,15 +94,8 @@ final public class Font {
      * no anchor, for each class of marks.
      */
     protected java.util.List<java.util.Map<Integer, int[]>> baseAnchors;
-    /**
-     * Where the marks go, compressed, as a stream font keeps it until a mark
-     * is drawn in the font, or null.
-     */
-    protected byte[] markData;
     /** True if the glyph outlines are in CFF format. */
     protected boolean cff;
-    /** The size of the compressed font data. */
-    protected int compressedSize;
     /** The size of the uncompressed font data. */
     protected int uncompressedSize;
     /** The character metrics of a core font. */
@@ -327,27 +320,20 @@ final public class Font {
     }
 
     /**
-     * Constructor for OpenType, TrueType, .otf.stream and .ttf.stream fonts
-     * added to the objects of an existing PDF, embedded whole. The format is
-     * told from the first bytes of the stream.
+     * Constructor for OpenType and TrueType fonts, .otf and .ttf, added to the
+     * objects of an existing PDF, embedded whole.
      *
      * @param objects     the list of objects
      * @param inputStream the input stream
      * @throws Exception is the font is not found
      */
     public Font(List<PDFobj> objects, InputStream inputStream) throws Exception {
-        InputStream stream = new BufferedInputStream(inputStream);
-        if (isOpenTypeFont(stream)) {
-            OpenTypeFont.register(objects, this, stream);
-        } else {
-            FontStream2.register(objects, this, stream);
-        }
+        OpenTypeFont.register(objects, this, inputStream);
         setSize(size);
     }
 
     /**
-     * Constructor for OpenType, TrueType, .otf.stream and .ttf.stream fonts. The
-     * format is told from the first bytes of the stream.
+     * Constructor for OpenType and TrueType fonts, .otf and .ttf.
      *
      * @param pdf         the PDF object that requires this font.
      * @param inputStream the input stream to read this font from.
@@ -355,31 +341,14 @@ final public class Font {
      */
     public Font(PDF pdf, InputStream inputStream) throws Exception {
         this.pdf = pdf;
-        InputStream stream = new BufferedInputStream(inputStream);
-        if (isOpenTypeFont(stream)) {
-            OpenTypeFont.register(pdf, this, stream);
-        } else {
-            FontStream1.register(pdf, this, stream);
-        }
+        OpenTypeFont.register(pdf, this, inputStream);
         setSize(size);
     }
 
-    // Returns true if the stream starts with the version of an OpenType or
-    // TrueType font, and moves back to the start of the stream.
-    private static boolean isOpenTypeFont(InputStream stream) throws IOException {
-        stream.mark(4);
-        int version = 0;
-        for (int i = 0; i < 4; i++) {
-            version = (version << 8) | (stream.read() & 0xFF);
-        }
-        stream.reset();
-        return version == 0x00010000 || version == 0x74727565 || version == 0x4F54544F;
-    }
-
     /**
-     * Constructor for OpenType, TrueType and .otf.stream and .ttf.stream fonts.
-     * A file ending in .stream is read as a stream font; the format of any
-     * other is told from its first bytes, as the constructor of a stream does.
+     * Constructor for OpenType and TrueType fonts, .otf and .ttf files. A path
+     * to a .ttf.stream or .otf.stream file, the fonts PDFjet shipped before
+     * 9.0.5, opens the .ttf or else the .otf file of the same name beside it.
      *
      * @param pdf      the pdf object.
      * @param fontPath the font path.
@@ -389,24 +358,17 @@ final public class Font {
         this.pdf = pdf;
         fontPath = fontFileOf(fontPath);
         try (InputStream inputStream = new BufferedInputStream(new FileInputStream(fontPath))) {
-            if (fontPath.endsWith(".stream") || !isOpenTypeFont(inputStream)) {
-                FontStream1.register(pdf, this, inputStream);
-            } else {
-                OpenTypeFont.register(pdf, this, inputStream);
-            }
+            OpenTypeFont.register(pdf, this, inputStream);
         }
         setSize(size);
     }
 
     // Returns the path of the font file: the path given, or, for a .ttf.stream
-    // or .otf.stream file that is not there, the .ttf or else the .otf file of
-    // the same name beside it. PDFjet ships no .stream files from 9.0.5, and
-    // its fonts are subset from their .ttf files: a path written before is the
-    // same font.
+    // or .otf.stream file, the .ttf or else the .otf file of the same name
+    // beside it. PDFjet reads .otf and .ttf fonts alone from 9.0.5, and its
+    // fonts are subset from their .ttf files: a path written for the .stream
+    // files PDFjet shipped before is the same font.
     static String fontFileOf(String fontPath) {
-        if (new File(fontPath).exists()) {
-            return fontPath;
-        }
         for (String stream : new String[] {".ttf.stream", ".otf.stream"}) {
             if (fontPath.endsWith(stream)) {
                 String base = fontPath.substring(0, fontPath.length() - stream.length());
@@ -424,7 +386,7 @@ final public class Font {
     // drawn in, its advance widths and its character map, which say what its
     // glyphs are and which glyph each character has. Two fonts of one name
     // that give the same number are the same program, whether it was read
-    // from a .otf, a .ttf or a .stream file, and the PDF embeds it once and
+    // from a .otf or a .ttf file, and the PDF embeds it once and
     // writes one descriptor, one CID font and one ToUnicode map for both.
     // The name is not enough on its own: PDFjet ships subsets of the Noto CJK
     // fonts under the name of the whole font, and the text of the one
@@ -522,8 +484,8 @@ final public class Font {
     /**
      * Sets whether this font is embedded as a subset, the outlines of the
      * glyphs the document does not draw left out, which is the default for a
-     * TrueType font, a .ttf or a .ttf.stream. A font with CFF outlines, a .otf
-     * or a .otf.stream, is always embedded whole. A font whose license does
+     * TrueType font, a .ttf. A font with CFF outlines, a .otf, is always
+     * embedded whole. A font whose license does
      * not allow subsetting, by the fsType of its OS/2 table, is embedded whole
      * too. Fonts read from one file are one font program in the PDF: kept
      * whole for one, the program is whole for all of them. It must be called

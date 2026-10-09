@@ -15,7 +15,7 @@ class OpenTypeFont {
         if !otf.cff {
             // A TrueType font is written at complete(), a subset of the glyphs
             // drawn; its pages refer to the number reserved for it.
-            Subset.share(pdf, font, otf.buf, nil, otf.buf.count)
+            Subset.share(pdf, font, otf.buf)
             font.objNumber = pdf.reserveObjNumber()
             pdf.fonts.append(font)
             return
@@ -24,14 +24,13 @@ class OpenTypeFont {
     }
 
     // Adds the font to the objects of an existing PDF, with its font program
-    // whole, as a stream font is added.
+    // whole.
     internal static func register(
             _ objects: inout [PDFobj], _ font: Font, _ stream: InputStream) throws {
         let otf = try OTF(stream)
         setData(font, otf)
-        font.cff = otf.cff
         font.uncompressedSize = otf.buf.count
-        FontStream2.register(&objects, font, otf.compress())
+        FontObjects.register(&objects, font, otf.compress())
     }
 
     // Gives the font the name, the metrics and the character map of the
@@ -58,6 +57,7 @@ class OpenTypeFont {
         font.fontUnderlineThickness = otf.underlineThickness!
         font.info = otf.fontInfo!
         font.capHeight = otf.capHeight!
+        font.cff = otf.cff
         font.checksum = Font.checksumOf(font)
         font.setSize(font.size)
     }
@@ -65,9 +65,9 @@ class OpenTypeFont {
     // Writes a font with CFF outlines, which is embedded whole, as it is added.
     private static func registerCFF(_ pdf: PDF, _ font: Font, _ otf: OTF) {
         embedFontFile(pdf, font, otf)
-        addFontDescriptorObject(pdf, font, otf)
-        addCIDFontDictionaryObject(pdf, font, otf)
-        addToUnicodeCMapObject(pdf, font, otf)
+        FontWriter.addFontDescriptorObject(pdf, font, font.name)
+        FontWriter.addCIDFontDictionaryObject(pdf, font, font.name, nil)
+        FontWriter.addToUnicodeCMapObject(pdf, font, nil)
 
         // Type0 Font Dictionary
         pdf.newObj()
@@ -139,62 +139,6 @@ class OpenTypeFont {
         font.fileObjNumber = pdf.getObjNumber()
     }
 
-    private static func addFontDescriptorObject(
-            _ pdf: PDF,
-            _ font: Font,
-            _ otf: OTF) {
-        for f in pdf.fonts {
-            if f.fontDescriptorObjNumber != 0 && f.name == otf.fontName && f.checksum == font.checksum {
-                font.fontDescriptorObjNumber = f.fontDescriptorObjNumber
-                return
-            }
-        }
-
-        let unitsPerEm = otf.unitsPerEm!
-        pdf.newObj()
-        pdf.append(Token.beginDictionary)
-        pdf.append("/Type /FontDescriptor\n")
-        pdf.append("/FontName /")
-        pdf.append(otf.fontName!)
-        pdf.append("\n")
-        if otf.cff {
-            pdf.append("/FontFile3 ")
-        } else {
-            pdf.append("/FontFile2 ")
-        }
-        pdf.append(font.fileObjNumber)
-        pdf.append(" 0 R\n")
-        pdf.append("/Flags ")
-        pdf.append(flagsOf(font.italicAngle))
-        pdf.append(Token.newline)
-        pdf.append("/FontBBox [")
-        pdf.append(toGlyphSpace(otf.bBoxLLx!, unitsPerEm))
-        pdf.append(Token.space)
-        pdf.append(toGlyphSpace(otf.bBoxLLy!, unitsPerEm))
-        pdf.append(Token.space)
-        pdf.append(toGlyphSpace(otf.bBoxURx!, unitsPerEm))
-        pdf.append(Token.space)
-        pdf.append(toGlyphSpace(otf.bBoxURy!, unitsPerEm))
-        pdf.append("]\n")
-        pdf.append("/Ascent ")
-        pdf.append(toGlyphSpace(otf.ascent!, unitsPerEm))
-        pdf.append(Token.newline)
-        pdf.append("/Descent ")
-        pdf.append(toGlyphSpace(otf.descent!, unitsPerEm))
-        pdf.append(Token.newline)
-        pdf.append("/ItalicAngle ")
-        pdf.append(italicAngleOf(font.italicAngle))
-        pdf.append(Token.newline)
-        pdf.append("/CapHeight ")
-        pdf.append(toGlyphSpace(otf.capHeight!, unitsPerEm))
-        pdf.append(Token.newline)
-        pdf.append("/StemV 79\n")
-        pdf.append(Token.endDictionary)
-        pdf.endObj()
-
-        font.fontDescriptorObjNumber = pdf.getObjNumber()
-    }
-
     /// Converts a value in font units to the glyph space units of the font
     /// descriptor, 1/1000 em, rounded to the nearest integer with halves away
     /// from zero. The integer arithmetic gives the same value in every port.
@@ -225,125 +169,6 @@ class OpenTypeFont {
             text += "." + decimals
         }
         return (angle < 0 && rounded != 0) ? "-" + text : text
-    }
-
-    private static func addToUnicodeCMapObject(
-            _ pdf: PDF,
-            _ font: Font,
-            _ otf: OTF) {
-        for f in pdf.fonts {
-            if f.toUnicodeCMapObjNumber != 0 && f.name == otf.fontName && f.checksum == font.checksum {
-                font.toUnicodeCMapObjNumber = f.toUnicodeCMapObjNumber
-                return
-            }
-        }
-
-        var sb = String()
-        sb.append("/CIDInit /ProcSet findresource begin\n")
-        sb.append("12 dict begin\n")
-        sb.append("begincmap\n")
-        sb.append("/CIDSystemInfo <</Registry (Adobe) /Ordering (Identity) /Supplement 0>> def\n")
-        sb.append("/CMapName /Adobe-Identity def\n")
-        sb.append("/CMapType 2 def\n")
-
-        sb.append("1 begincodespacerange\n")
-        sb.append("<0000> <FFFF>\n")
-        sb.append("endcodespacerange\n")
-
-        var list = [String]()
-        // A character the font does not contain is drawn with the .notdef
-        // glyph. PDF/UA requires every glyph to map to Unicode, so map it to
-        // the replacement character.
-        list.append("<0000> <FFFD>\n")
-        var buf = String()
-        let unicodeOf = FontStream1.unicodeOfGlyphs(otf.unicodeToGID)
-        for cid in 0...0xffff {
-            let gid = otf.unicodeToGID[cid]
-            if gid > 0 && unicodeOf[gid] == cid {
-                buf.append("<")
-                buf.append(toHexString(gid))
-                buf.append("> <")
-                // A presentation form that the Bidi class puts in maps to the letters it stands for.
-                if let letters = Bidi.lettersOf(UInt32(cid)) {
-                    for letter in letters {
-                        buf.append(toHexString(Int(letter)))
-                    }
-                } else {
-                    buf.append(toHexString(cid))
-                }
-                buf.append(">\n")
-                list.append(buf)
-                buf = ""
-                if list.count == 100 {
-                    writeListToBuffer(&list, &sb)
-                }
-            }
-        }
-        if list.count > 0 {
-            writeListToBuffer(&list, &sb)
-        }
-
-        sb.append("endcmap\n")
-        sb.append("CMapName currentdict /CMap defineresource pop\n")
-        sb.append("end\nend")
-
-        FontStream1.addCompressedStream(pdf, Array(sb.utf8))
-
-        font.toUnicodeCMapObjNumber = pdf.getObjNumber()
-    }
-
-    private static func addCIDFontDictionaryObject(
-            _ pdf: PDF,
-            _ font: Font,
-            _ otf: OTF) {
-        for f in pdf.fonts {
-            if f.cidFontDictObjNumber != 0 && f.name == otf.fontName && f.checksum == font.checksum {
-                font.cidFontDictObjNumber = f.cidFontDictObjNumber
-                return
-            }
-        }
-
-        pdf.newObj()
-        pdf.append(Token.beginDictionary)
-        pdf.append("/Type /Font\n")
-        if otf.cff {
-            pdf.append("/Subtype /CIDFontType0\n")
-        } else {
-            pdf.append("/Subtype /CIDFontType2\n")
-        }
-        pdf.append("/BaseFont /")
-        pdf.append(otf.fontName!)
-        pdf.append(Token.newline)
-        pdf.append("/CIDSystemInfo <</Registry <")
-        pdf.append(pdf.toHexString("Adobe"))
-        pdf.append("> /Ordering <")
-        pdf.append(pdf.toHexString("Identity"))
-        pdf.append("> /Supplement 0>>\n")
-        pdf.append("/FontDescriptor ")
-        pdf.append(font.fontDescriptorObjNumber)
-        pdf.append(" 0 R\n")
-
-        var k: Float = 1.0
-        if font.unitsPerEm != 1000 {
-            k = Float(1000.0) / Float(font.unitsPerEm)
-        }
-        // The width of the glyphs past the /W array: those past the advance
-        // widths, which have the width of the last one.
-        pdf.append("/DW ")
-        pdf.append(Int32(round(k * Float(font.advanceWidth[font.advanceWidth.count - 1]))))
-        pdf.append(Token.newline)
-        pdf.append("/W [0[\n")
-        for i in 0..<font.advanceWidth.count {
-            pdf.append(Int32(round(k * Float(font.advanceWidth[i]))))
-            pdf.append(Token.space)
-        }
-        pdf.append("]]\n")
-
-        pdf.append("/CIDToGIDMap /Identity\n")
-        pdf.append(Token.endDictionary)
-        pdf.endObj()
-
-        font.cidFontDictObjNumber = pdf.getObjNumber()
     }
 
     private static func toHexString(_ code: Int) -> String {

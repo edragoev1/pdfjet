@@ -93,7 +93,7 @@ class ReviewWriterTest {
         List<PDFobj> objects = new ArrayList<PDFobj>();
         Font font = TestSupport.helvetica(TestSupport.newPDF());
         font.info = "Copyright A & B";
-        int number = FontStream2.addMetadataObject(objects, font);
+        int number = FontObjects.addMetadataObject(objects, font);
         String xml = new String(objects.get(number - 1).stream, StandardCharsets.UTF_8);
         assertTrue(xml.contains("Copyright A &amp; B"), xml);
     }

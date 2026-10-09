@@ -197,20 +197,6 @@ func TestSubsetAFontSetToStayWholeIsEmbeddedWhole(t *testing.T) {
 	}
 }
 
-func TestSubsetAStreamFontIsSubsetAsItsTrueTypeFontIs(t *testing.T) {
-	// The .ttf.stream of JetBrains Mono is its .ttf, compressed: subset or
-	// whole, the two embed the same font program.
-	for _, subset := range []bool{true, false} {
-		stream := testSubsetProgram(t, testSubsetDoc(t, compliance.PDF_1_7,
-			"tests/data/stream-fonts/JetBrainsMono-Regular.ttf.stream", subset, "Hello"))
-		ttf := testSubsetProgram(t, testSubsetDoc(t, compliance.PDF_1_7,
-			"fonts/JetBrainsMono/JetBrainsMono-Regular.ttf", subset, "Hello"))
-		if !bytes.Equal(stream, ttf) {
-			t.Errorf("subset %v: the font programs differ", subset)
-		}
-	}
-}
-
 func TestSubsetTwoFontsOfOneFileShareOneSubset(t *testing.T) {
 	raw := testSubsetDoc(t, compliance.PDF_1_7, "fonts/NotoSans/NotoSans-Regular.ttf", true, "A", "B")
 	if n := strings.Count(raw, "/Length1 "); n != 1 {

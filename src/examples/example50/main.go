@@ -63,7 +63,7 @@ func Example50(fileName string) {
 	}
 	defer file2.Close()
 	reader = bufio.NewReader(file2)
-	font1 := pdfjet.NewFontStream2(&objects, reader)
+	font1 := pdfjet.NewFontForObjects(&objects, reader)
 	font1.SetSize(12.0)
 
 	file3, err := os.Open("fonts/IBMPlexSans/IBMPlexSans-Bold.otf")
@@ -72,7 +72,7 @@ func Example50(fileName string) {
 	}
 	defer file3.Close()
 	reader = bufio.NewReader(file3)
-	font2 := pdfjet.NewFontStream2(&objects, reader)
+	font2 := pdfjet.NewFontForObjects(&objects, reader)
 	font2.SetSize(12.0)
 
 	pages := pdf.GetPageObjects(objects)

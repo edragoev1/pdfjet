@@ -68,7 +68,7 @@ class FontTest {
     }
 
     @Test
-    void readsAStreamFont() throws Exception {
+    void readsATrueTypeFont() throws Exception {
         String path = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf";
         assumeTrue(TestSupport.file(path).exists(), "the fonts directory is not here");
         InputStream in = TestSupport.open(path);
@@ -79,72 +79,6 @@ class FontTest {
         } finally {
             in.close();
         }
-    }
-
-    // The embedded font file of a PDF that draws a line of text in the font.
-    private static byte[] embeddedFontFile(byte[] fontStream) throws Exception {
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        PDF pdf = new PDF(bos);
-        Font font = new Font(pdf, new ByteArrayInputStream(fontStream));
-        new TextLine(font, "Hello").setLocation(50f, 50f).drawOn(new Page(pdf, Letter.PORTRAIT));
-        pdf.complete();
-        for (PDFobj obj : TestSupport.read(bos.toByteArray())) {
-            if (obj.getValue("/Subtype").equals("/CIDFontType0C")) {
-                return obj.getData();
-            }
-        }
-        return null;
-    }
-
-    @Test
-    void anOpenTypeStreamFontKeepsItsOtherTablesAndEmbedsOnlyItsCFFData() throws Exception {
-        String path = "tests/data/stream-fonts/IBMPlexSans-Regular.otf.stream";
-        assumeTrue(TestSupport.file(path).exists(), "the fonts directory is not here");
-        InputStream in = TestSupport.open(path);
-        byte[] whole;
-        try {
-            whole = TestSupport.readAll(in);
-        } finally {
-            in.close();
-        }
-        // The name, the info and the metrics come first, then 'R' with the
-        // length of the other tables of the font, and then the CFF data.
-        int i = 1 + (whole[0] & 0xFF);
-        i += 3 + (((whole[i] & 0xFF) << 16) | ((whole[i + 1] & 0xFF) << 8) | (whole[i + 2] & 0xFF));
-        i += 4 + ByteBuffer.wrap(whole, i, 4).getInt();
-        assertEquals('R', whole[i]);
-        int length = ByteBuffer.wrap(whole, i + 1, 4).getInt();
-        // The same stream without the tables, as streams were written before.
-        byte[] cffOnly = new byte[whole.length - 5 - length];
-        System.arraycopy(whole, 0, cffOnly, 0, i);
-        System.arraycopy(whole, i + 5 + length, cffOnly, i, whole.length - i - 5 - length);
-        assertEquals('Y', cffOnly[i]);
-
-        byte[] embedded = embeddedFontFile(whole);
-        assertTrue(embedded.length > 0);
-        assertArrayEquals(embedded, embeddedFontFile(cffOnly));
-    }
-
-    // The content of a page with a line of Thai in the font: po pla, the upper
-    // vowel sara ii on it and the tone mark mai ek above the vowel.
-    private static String thaiContent(String path) throws Exception {
-        PDF pdf = TestSupport.newPDF();
-        InputStream in = TestSupport.open(path);
-        Font font;
-        try {
-            font = new Font(pdf, in);
-        } finally {
-            in.close();
-        }
-        Page page = new Page(pdf, Letter.PORTRAIT);
-        new TextLine(font, "\u0E1B\u0E35\u0E48").setLocation(50f, 50f).drawOn(page);
-        return TestSupport.content(page);
-    }
-
-    @Test
-    void aStreamFontPlacesTheMarksAsTheOpenTypeFontDoes() throws Exception {
-        assumeTrue(TestSupport.file("fonts/NotoSansThai/NotoSansThai-Regular.ttf").exists(), "the fonts directory is not here");
-        assertEquals(thaiContent("fonts/NotoSansThai/NotoSansThai-Regular.ttf"), thaiContent("tests/data/stream-fonts/NotoSansThai-Regular.ttf.stream"));
     }
 
     @Test
@@ -170,18 +104,19 @@ class FontTest {
     }
 
     @Test
-    void aStreamFontPathThatIsGoneOpensTheTrueTypeFont() throws Exception {
-        // PDFjet ships no .stream files from 9.0.5: a path to one opens the
-        // .ttf file of the same name, which a path to a file that is there
-        // does not.
+    void aStreamFontPathOpensTheTrueTypeFont() throws Exception {
+        // PDFjet reads .otf and .ttf fonts alone from 9.0.5: a path to a
+        // .stream file opens the .ttf file of the same name.
         for (String path : new String[] {
                 "fonts/NotoSans/NotoSans-Regular.ttf.stream", "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"}) {
             String want = path.substring(0, path.indexOf('.')) + ".ttf";
             assertEquals(TestSupport.file(want).getPath(), Font.fontFileOf(TestSupport.file(path).getPath()), path);
             assertFalse(new Font(TestSupport.newPDF(), TestSupport.file(path).getPath()).getName().isEmpty(), path);
         }
-        String stream = TestSupport.file("tests/data/stream-fonts/NotoSansThai-Regular.ttf.stream").getPath();
-        assertEquals(stream, Font.fontFileOf(stream));
+        // Any other font is refused in PDFjet's words.
+        Exception e = assertThrows(Exception.class, () -> new Font(TestSupport.newPDF(),
+                new java.io.ByteArrayInputStream("\u000ePlexSans-Bold\u0000\u0000\u0000".getBytes("ISO-8859-1"))));
+        assertEquals("Invalid font file: not an OpenType or TrueType font: PDFjet reads .otf and .ttf fonts.", e.getMessage());
     }
 
     @Test
@@ -209,7 +144,7 @@ class FontTest {
         assertTrue(TestSupport.content(page).contains("<6120622063>"), TestSupport.content(page));
     }
 
-    // IBM Plex Sans, read from its stream file. Its space is 236 units wide
+    // IBM Plex Sans, read from its .ttf file. Its space is 236 units wide
     // and its .notdef 472, of 1000 units to the em; it has the characters
     // from U+0020 to U+FFFD, and no Thai.
     private static Font ibmPlexSans(PDF pdf) throws Exception {
@@ -384,9 +319,7 @@ class FontTest {
 
     @Test
     void oneFontProgramIsEmbeddedOnce() throws Exception {
-        // The same font added twice, and the same font read from a .ttf and
-        // from the .stream file made of it, are one font program: Example_28
-        // draws with both and embeds one of each font.
+        // The same font added twice is one font program.
         assumeTrue(TestSupport.file("fonts/IBMPlexSans/IBMPlexSans-Regular.otf").exists(),
                 "the fonts directory is not here");
         assertEquals(1, embeddedFonts(documentWithFonts(
@@ -394,7 +327,7 @@ class FontTest {
                 "fonts/IBMPlexSans/IBMPlexSans-Regular.otf")));
         assertEquals(1, embeddedFonts(documentWithFonts(
                 "fonts/IBMPlexSans/IBMPlexSans-Regular.otf",
-                "tests/data/stream-fonts/IBMPlexSans-Regular.otf.stream")));
+                "fonts/IBMPlexSans/IBMPlexSans-Regular.otf")));
     }
 
     @Test
@@ -440,7 +373,7 @@ class FontTest {
                 unicodeToGID[c] = gid;
             }
         }
-        int[] unicodeOf = FontStream1.unicodeOfGlyphs(unicodeToGID);
+        int[] unicodeOf = FontWriter.unicodeOfGlyphs(unicodeToGID);
         int[] want = {0x03BC, 0x03A9, 0x004B, 0x00C5, 0x0020, 0x2019};
         for (int gid = 1; gid <= want.length; gid++) {
             assertEquals(want[gid - 1], unicodeOf[gid], "glyph " + gid);

@@ -6,7 +6,7 @@
  */
 import Foundation
 
-/// The subsets of the TrueType fonts, a .ttf or a .ttf.stream, embedded at
+/// The subsets of the TrueType fonts, .ttf files, embedded at
 /// complete() with the outlines of the glyphs the document did not draw
 /// emptied. The glyph numbers stay, so the widths, the character map and the
 /// ToUnicode map are those of the whole font.
@@ -14,9 +14,7 @@ class Subset {
     /// The font program of a TrueType font, kept until complete(). Fonts read
     /// from one file share one program, and the glyphs any of them drew.
     final class Program {
-        var font: [UInt8]?          // The font, or nil for a .ttf.stream until complete()
-        var compressed: [UInt8]?    // The font of a .ttf.stream, as the stream has it
-        var length = 0              // The length of the font, uncompressed
+        var font = [UInt8]()        // The font
         // The glyphs drawn, by glyph number, written in four hexadecimal digits.
         var used = [Bool](repeating: false, count: 0x10000)
         var whole = false           // Set by setSubset(false): the font is embedded whole
@@ -42,8 +40,8 @@ class Subset {
     ]
 
     /// Gives the font the program of a font the PDF already has from the same
-    /// file, if any, or else a new one with the bytes given.
-    static func share(_ pdf: PDF, _ font: Font, _ ttf: [UInt8]?, _ compressed: [UInt8]?, _ length: Int) {
+    /// file, if any, or else a new one of the font given.
+    static func share(_ pdf: PDF, _ font: Font, _ ttf: [UInt8]) {
         for f in pdf.fonts {
             if f.program != nil && f.name == font.name && f.checksum == font.checksum {
                 font.program = f.program
@@ -52,8 +50,6 @@ class Subset {
         }
         let program = Program()
         program.font = ttf
-        program.compressed = compressed
-        program.length = length
         font.program = program
     }
 
@@ -68,9 +64,9 @@ class Subset {
             }
             let kept = embedProgram(pdf, font)
             addCIDSetObject(pdf, font, kept)
-            FontStream1.addFontDescriptorObject(pdf, font, font.baseFont)
-            FontStream1.addCIDFontDictionaryObject(pdf, font, font.baseFont, kept)
-            FontStream1.addToUnicodeCMapObject(pdf, font, kept)
+            FontWriter.addFontDescriptorObject(pdf, font, font.baseFont)
+            FontWriter.addCIDFontDictionaryObject(pdf, font, font.baseFont, kept)
+            FontWriter.addToUnicodeCMapObject(pdf, font, kept)
 
             pdf.newObj(font.objNumber)
             pdf.append(Token.beginDictionary)
@@ -115,38 +111,20 @@ class Subset {
 
         let program = font.program!
         font.baseFont = font.name
-        var compressed: [UInt8]?
-        var length = program.length
-        var ttf = program.font
-        if !program.whole {
-            do {
-                if ttf == nil {
-                    ttf = try inflated(program)
-                }
-                let (subset, kept) = try subsetTrueType(ttf!, program.used)
-                var buf = [UInt8]()
-                FlateEncode(&buf, subset)
-                compressed = buf
-                length = subset.count
-                font.kept = kept
-                font.baseFont = subsetTag(font.checksum, kept) + "+" + font.name
-            } catch {
-                // Embedded whole
-            }
-        }
-        if compressed == nil {  // Whole
-            if program.compressed != nil {
-                compressed = program.compressed
-            } else {
-                var buf = [UInt8]()
-                FlateEncode(&buf, ttf!)
-                compressed = buf
-                length = ttf!.count
-            }
+        let ttf = program.font
+        var compressed = [UInt8]()
+        var length = ttf.count
+        if !program.whole, let (subset, kept) = try? subsetTrueType(ttf, program.used) {
+            FlateEncode(&compressed, subset)
+            length = subset.count
+            font.kept = kept
+            font.baseFont = subsetTag(font.checksum, kept) + "+" + font.name
+        } else {    // Whole
+            FlateEncode(&compressed, ttf)
         }
 
         let metadataObjNumber = pdf.addMetadataObject(font.info, true)
-        let encrypted = pdf.encrypted(compressed!)
+        let encrypted = pdf.encrypted(compressed)
         pdf.newObj()
         pdf.append(Token.beginDictionary)
         pdf.append("/Filter /FlateDecode\n")
@@ -170,20 +148,6 @@ class Subset {
         return font.kept
     }
 
-    // Returns the font of a .ttf.stream, inflated.
-    private static func inflated(_ program: Program) throws -> [UInt8] {
-        let ttf: [UInt8]
-        do {
-            ttf = try inflate(program.compressed!, program.length)
-        } catch {
-            throw NotSubset()
-        }
-        if ttf.count != program.length {
-            throw NotSubset()
-        }
-        return ttf
-    }
-
     /// Writes, for PDF/A-1, which asks it of a subset, the CIDSet of the glyphs
     /// the subset keeps: a bit for each glyph number, the first in the high bit
     /// of the first byte.
@@ -196,7 +160,7 @@ class Subset {
         for gid in 0..<kept.count where kept[gid] {
             bits[gid / 8] |= UInt8(0x80 >> (gid % 8))
         }
-        FontStream1.addCompressedStream(pdf, bits)
+        FontWriter.addCompressedStream(pdf, bits)
         font.cidSetObjNumber = pdf.getObjNumber()
     }
 

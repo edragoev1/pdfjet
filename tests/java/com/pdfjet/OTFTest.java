@@ -134,7 +134,7 @@ class OTFTest {
     void aFontWithNoNameOfItsOwnIsRefused() throws Exception {
         // The name goes into the PDF as the name of the font, where a name
         // that is not a PDF name would break the syntax, so a font with none
-        // is refused as a stream font with none is.
+        // is refused.
         assertEquals("Invalid font file: the font name.", error(without(font(THAI), "name")));
     }
 

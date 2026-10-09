@@ -10,7 +10,7 @@ import com.pdfjet.encryption.*;
 import java.util.*;
 
 /**
- * The subsets of the TrueType fonts, a .ttf or a .ttf.stream, embedded at
+ * The subsets of the TrueType fonts, .ttf files, embedded at
  * complete() with the outlines of the glyphs the document did not draw
  * emptied. The glyph numbers stay, so the widths, the character map and the
  * ToUnicode map are those of the whole font.
@@ -21,9 +21,7 @@ class Subset {
      * from one file share one program, and the glyphs any of them drew.
      */
     static final class Program {
-        byte[] font;        // The font, or null for a .ttf.stream until complete()
-        byte[] compressed;  // The font of a .ttf.stream, as the stream has it
-        int length;         // The length of the font, uncompressed
+        byte[] font;        // The font
         // The glyphs drawn, by glyph number, written in four hexadecimal digits.
         final boolean[] used = new boolean[0x10000];
         boolean whole;      // Set by setSubset(false): the font is embedded whole
@@ -54,9 +52,9 @@ class Subset {
 
     /**
      * Gives the font the program of a font the PDF already has from the same
-     * file, if any, or else a new one with the bytes given.
+     * file, if any, or else a new one of the font given.
      */
-    static void share(PDF pdf, Font font, byte[] ttf, byte[] compressed, int length) {
+    static void share(PDF pdf, Font font, byte[] ttf) {
         for (Font f : pdf.fonts) {
             if (f.program != null && f.name.equals(font.name) && f.checksum == font.checksum) {
                 font.program = f.program;
@@ -65,8 +63,6 @@ class Subset {
         }
         font.program = new Program();
         font.program.font = ttf;
-        font.program.compressed = compressed;
-        font.program.length = length;
     }
 
     /**
@@ -82,9 +78,9 @@ class Subset {
             }
             boolean[] kept = embedProgram(pdf, font);
             addCIDSetObject(pdf, font, kept);
-            FontStream1.addFontDescriptorObject(pdf, font, font.baseFont);
-            FontStream1.addCIDFontDictionaryObject(pdf, font, font.baseFont, kept);
-            FontStream1.addToUnicodeCMapObject(pdf, font, kept);
+            FontWriter.addFontDescriptorObject(pdf, font, font.baseFont);
+            FontWriter.addCIDFontDictionaryObject(pdf, font, font.baseFont, kept);
+            FontWriter.addToUnicodeCMapObject(pdf, font, kept);
 
             pdf.newObj(font.objNumber);
             pdf.append("<<\n");
@@ -131,14 +127,11 @@ class Subset {
 
         Program program = font.program;
         font.baseFont = font.name;
-        byte[] compressed = null;
-        int length = program.length;
         byte[] ttf = program.font;
+        byte[] compressed = null;
+        int length = ttf.length;
         if (!program.whole) {
             try {
-                if (ttf == null) {
-                    ttf = inflate(program);
-                }
                 boolean[][] kept = new boolean[1][];
                 byte[] subset = subsetTrueType(ttf, program.used, kept);
                 compressed = Compressor.deflate(subset);
@@ -150,12 +143,7 @@ class Subset {
             }
         }
         if (compressed == null) { // Whole
-            if (program.compressed != null) {
-                compressed = program.compressed;
-            } else {
-                compressed = Compressor.deflate(ttf);
-                length = ttf.length;
-            }
+            compressed = Compressor.deflate(ttf);
         }
 
         int metadataObjNumber = pdf.addMetadataObject(font.info, true);
@@ -185,20 +173,6 @@ class Subset {
         return font.kept;
     }
 
-    // Returns the font of a .ttf.stream, inflated.
-    private static byte[] inflate(Program program) throws NotSubset {
-        byte[] ttf;
-        try {
-            ttf = Decompressor.inflate(program.compressed, program.length);
-        } catch (Exception e) {
-            throw new NotSubset();
-        }
-        if (ttf.length != program.length) {
-            throw new NotSubset();
-        }
-        return ttf;
-    }
-
     /**
      * Writes, for PDF/A-1, which asks it of a subset, the CIDSet of the glyphs
      * the subset keeps: a bit for each glyph number, the first in the high bit
@@ -215,7 +189,7 @@ class Subset {
                 bits[gid / 8] |= (byte) (0x80 >> (gid % 8));
             }
         }
-        FontStream1.addCompressedStream(pdf, bits);
+        FontWriter.addCompressedStream(pdf, bits);
         font.cidSetObjNumber = pdf.getObjNumber();
     }
 

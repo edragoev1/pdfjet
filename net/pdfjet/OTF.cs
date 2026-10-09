@@ -76,8 +76,7 @@ internal class OTF {
             version == 0x4F54544FL) {   // CFF OTF
             // We should be able to read this font
         } else {
-            throw new Exception(
-                    "OTF version == " + version + " is not supported.");
+            throw FontError("not an OpenType or TrueType font: PDFjet reads .otf and .ttf fonts");
         }
         gposWork = MAX_GPOS_WORK;
 
@@ -155,9 +154,8 @@ internal class OTF {
         if (advanceWidth == null || advanceWidth.Length == 0) {
             throw FontError("no advance widths");
         }
-        // The name goes into the PDF as the name of the font, as the name of
-        // a stream font does.
-        if (fontName == null || !FontStream1.IsFontName(Encoding.UTF8.GetBytes(fontName))) {
+        // The name goes into the PDF as the name of the font.
+        if (fontName == null || !FontWriter.IsFontName(Encoding.UTF8.GetBytes(fontName))) {
             throw FontError("the font name");
         }
     }

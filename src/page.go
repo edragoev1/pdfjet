@@ -567,9 +567,6 @@ func (page *Page) drawUnicodeString(font *Font, text string) {
 			}
 		}
 		var offsets []int
-		if hasMarks && font.markData != nil {
-			readMarks(font)
-		}
 		if hasMarks && font.markAnchors != nil {
 			offsets = markOffsets(font, codePoints, gids)
 		} else if mirroredAt == nil && joiners == nil && runEdge == nil && !hasNotdef {
@@ -895,7 +892,7 @@ func needsShaping(font *Font, runes []rune) bool {
 			if c >= 0x200C && c <= 0x200F {
 				return true
 			}
-			if (font.markAnchors != nil || font.markData != nil) && isMark(c) {
+			if font.markAnchors != nil && isMark(c) {
 				return true
 			}
 		}

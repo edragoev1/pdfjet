@@ -1,5 +1,5 @@
 /*
- * FontStream2.java
+ * FontObjects.java
  *
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
@@ -11,17 +11,10 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-class FontStream2 {
-    protected static void register(
-            List<PDFobj> objects,
-            Font font,
-            InputStream inputStream) throws Exception {
-        FontStream1.getFontData(font, inputStream);
-        byte[] compressed = FontStream1.readBytes(inputStream, font.compressedSize);
-        inputStream.close();
-        register(objects, font, compressed);
-    }
-
+/**
+ * The objects of a font added to an existing PDF, embedded whole.
+ */
+class FontObjects {
     // Adds the font, whose font program is the compressed bytes, to the
     // objects of an existing PDF.
     static void register(List<PDFobj> objects, Font font, byte[] compressed) throws Exception {
@@ -181,32 +174,32 @@ class FontStream2 {
         // the replacement character.
         list.add("<0000> <FFFD>\n");
         StringBuilder buf = new StringBuilder();
-        int[] unicodeOf = FontStream1.unicodeOfGlyphs(font.unicodeToGID);
+        int[] unicodeOf = FontWriter.unicodeOfGlyphs(font.unicodeToGID);
         for (int cid = 0; cid <= 0xffff; cid++) {
             int gid = font.unicodeToGID[cid];
             if (gid > 0 && unicodeOf[gid] == cid) {
                 buf.append('<');
-                buf.append(FontStream1.toHexString(gid));
+                buf.append(FontWriter.toHexString(gid));
                 buf.append("> <");
                 // A presentation form that the Bidi class puts in maps to the letters it stands for.
                 String letters = Bidi.lettersOf(cid);
                 if (letters == null) {
-                    buf.append(FontStream1.toHexString(cid));
+                    buf.append(FontWriter.toHexString(cid));
                 } else {
                     for (int i = 0; i < letters.length(); i++) {
-                        buf.append(FontStream1.toHexString(letters.charAt(i)));
+                        buf.append(FontWriter.toHexString(letters.charAt(i)));
                     }
                 }
                 buf.append(">\n");
                 list.add(buf.toString());
                 buf.setLength(0);
                 if (list.size() == 100) {
-                    FontStream1.writeListToBuffer(sb, list);
+                    FontWriter.writeListToBuffer(sb, list);
                 }
             }
         }
         if (list.size() > 0) {
-            FontStream1.writeListToBuffer(sb, list);
+            FontWriter.writeListToBuffer(sb, list);
         }
         sb.append("endcmap\n");
         sb.append("CMapName currentdict /CMap defineresource pop\n");
@@ -267,4 +260,4 @@ class FontStream2 {
         objects.add(obj);
         font.cidFontDictObjNumber = obj.number;
     }
-}   // End of FontStream2.java
+}   // End of FontObjects.java

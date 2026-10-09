@@ -6,6 +6,8 @@
 package pdfjet
 
 import (
+	"bytes"
+	"compress/zlib"
 	"runtime"
 	"runtime/debug"
 	"strconv"
@@ -49,4 +51,17 @@ func fuzzRun(t *testing.T, size int, fn func()) {
 		}
 	}()
 	fn()
+}
+
+// fuzzFontText has letters, marks that go on letters and on other marks,
+// right to left text, ideographs, a character past the Basic Multilingual
+// Plane and ones that are not drawn.
+const fuzzFontText = "Ab1 กิ่ ñ é\u0301 שָׁלוֹם مَرْحَبًا 日本 😀 \u200D\uFEFF"
+
+func fuzzCompress(data []byte) []byte {
+	var buf bytes.Buffer
+	w := zlib.NewWriter(&buf)
+	_, _ = w.Write(data)
+	_ = w.Close()
+	return buf.Bytes()
 }

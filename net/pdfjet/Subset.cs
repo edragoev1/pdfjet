@@ -10,7 +10,7 @@ using System.Text;
 
 namespace PDFjet.NET {
 /// <summary>
-/// The subsets of the TrueType fonts, a .ttf or a .ttf.stream, embedded at
+/// The subsets of the TrueType fonts, .ttf files, embedded at
 /// Complete() with the outlines of the glyphs the document did not draw
 /// emptied. The glyph numbers stay, so the widths, the character map and the
 /// ToUnicode map are those of the whole font.
@@ -21,9 +21,7 @@ class Subset {
     /// from one file share one program, and the glyphs any of them drew.
     /// </summary>
     internal sealed class Program {
-        internal byte[] font;       // The font, or null for a .ttf.stream until Complete()
-        internal byte[] compressed; // The font of a .ttf.stream, as the stream has it
-        internal int length;        // The length of the font, uncompressed
+        internal byte[] font;       // The font
         // The glyphs drawn, by glyph number, written in four hexadecimal digits.
         internal readonly bool[] used = new bool[0x10000];
         internal bool whole;        // Set by SetSubset(false): the font is embedded whole
@@ -52,9 +50,9 @@ class Subset {
 
     /// <summary>
     /// Gives the font the program of a font the PDF already has from the same
-    /// file, if any, or else a new one with the bytes given.
+    /// file, if any, or else a new one of the font given.
     /// </summary>
-    internal static void Share(PDF pdf, Font font, byte[] ttf, byte[] compressed, int length) {
+    internal static void Share(PDF pdf, Font font, byte[] ttf) {
         foreach (Font f in pdf.fonts) {
             if (f.program != null && f.name.Equals(font.name) && f.checksum == font.checksum) {
                 font.program = f.program;
@@ -63,8 +61,6 @@ class Subset {
         }
         font.program = new Program();
         font.program.font = ttf;
-        font.program.compressed = compressed;
-        font.program.length = length;
     }
 
     /// <summary>
@@ -80,9 +76,9 @@ class Subset {
             }
             bool[] kept = EmbedProgram(pdf, font);
             AddCIDSetObject(pdf, font, kept);
-            FontStream1.AddFontDescriptorObject(pdf, font, font.baseFont);
-            FontStream1.AddCIDFontDictionaryObject(pdf, font, font.baseFont, kept);
-            FontStream1.AddToUnicodeCMapObject(pdf, font, kept);
+            FontWriter.AddFontDescriptorObject(pdf, font, font.baseFont);
+            FontWriter.AddCIDFontDictionaryObject(pdf, font, font.baseFont, kept);
+            FontWriter.AddToUnicodeCMapObject(pdf, font, kept);
 
             pdf.NewObj(font.objNumber);
             pdf.Append("<<\n");
@@ -129,14 +125,11 @@ class Subset {
 
         Program program = font.program;
         font.baseFont = font.name;
-        byte[] compressed = null;
-        int length = program.length;
         byte[] ttf = program.font;
+        byte[] compressed = null;
+        int length = ttf.Length;
         if (!program.whole) {
             try {
-                if (ttf == null) {
-                    ttf = Inflate(program);
-                }
                 bool[] kept;
                 byte[] subset = SubsetTrueType(ttf, program.used, out kept);
                 compressed = Compressor.Deflate(subset);
@@ -148,12 +141,7 @@ class Subset {
             }
         }
         if (compressed == null) { // Whole
-            if (program.compressed != null) {
-                compressed = program.compressed;
-            } else {
-                compressed = Compressor.Deflate(ttf);
-                length = ttf.Length;
-            }
+            compressed = Compressor.Deflate(ttf);
         }
 
         int metadataObjNumber = pdf.AddMetadataObject(font.info, true);
@@ -183,20 +171,6 @@ class Subset {
         return font.kept;
     }
 
-    // Returns the font of a .ttf.stream, inflated.
-    private static byte[] Inflate(Program program) {
-        byte[] ttf;
-        try {
-            ttf = Decompressor.Inflate(program.compressed, program.length);
-        } catch (Exception) {
-            throw new NotSubset();
-        }
-        if (ttf.Length != program.length) {
-            throw new NotSubset();
-        }
-        return ttf;
-    }
-
     /// <summary>
     /// Writes, for PDF/A-1, which asks it of a subset, the CIDSet of the
     /// glyphs the subset keeps: a bit for each glyph number, the first in the
@@ -213,7 +187,7 @@ class Subset {
                 bits[gid / 8] |= (byte) (0x80 >> (gid % 8));
             }
         }
-        FontStream1.AddCompressedStream(pdf, bits);
+        FontWriter.AddCompressedStream(pdf, bits);
         font.cidSetObjNumber = pdf.GetObjNumber();
     }
 

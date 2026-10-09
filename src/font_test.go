@@ -6,8 +6,6 @@
 package pdfjet
 
 import (
-	"bytes"
-	"encoding/binary"
 	"fmt"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"os"
@@ -62,7 +60,7 @@ func TestFontEveryCjkCharacterIsOneEmWideAndSurrogatePairsCountOnce(t *testing.T
 	testNear(t, "one supplementary character", 10, font.StringWidth(10, "𠀋"), 0)
 }
 
-func TestFontReadsAStreamFont(t *testing.T) {
+func TestFontReadsATrueTypeFont(t *testing.T) {
 	path := testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")
 	file, err := os.Open(path)
 	if err != nil {
@@ -74,74 +72,6 @@ func TestFontReadsAStreamFont(t *testing.T) {
 		t.Errorf("name %q", font.GetName())
 	}
 	testNear(t, "Hello at 12", 28.32, font.StringWidth(12, "Hello"), 0.001)
-}
-
-// testEmbeddedFontFile returns the embedded font file of a PDF that draws a
-// line of text in the font.
-func testEmbeddedFontFile(t *testing.T, fontStream []byte) []byte {
-	t.Helper()
-	doc := testNewDoc()
-	font := NewFont(doc.pdf, bytes.NewReader(fontStream))
-	NewTextLine(font, "Hello").SetLocation(50, 50).DrawOn(NewPage(doc.pdf, testLetterPortrait()))
-	for _, obj := range testRead(t, doc.complete()) {
-		if obj.GetValue("/Subtype") == "/CIDFontType0C" {
-			return obj.GetData()
-		}
-	}
-	return nil
-}
-
-func TestFontAnOpenTypeStreamFontKeepsItsOtherTablesAndEmbedsOnlyItsCFFData(t *testing.T) {
-	whole, err := os.ReadFile(testRepoPath(t, "tests/data/stream-fonts/IBMPlexSans-Regular.otf.stream"))
-	if err != nil {
-		t.Skip("the fonts directory is not here")
-	}
-	// The name, the info and the metrics come first, then 'R' with the
-	// length of the other tables of the font, and then the CFF data.
-	i := 1 + int(whole[0])
-	i += 3 + (int(whole[i])<<16 | int(whole[i+1])<<8 | int(whole[i+2]))
-	i += 4 + int(binary.BigEndian.Uint32(whole[i:]))
-	if whole[i] != 'R' {
-		t.Fatalf("flag %q", whole[i])
-	}
-	length := int(binary.BigEndian.Uint32(whole[i+1:]))
-	// The same stream without the tables, as streams were written before.
-	cffOnly := append(append([]byte{}, whole[:i]...), whole[i+5+length:]...)
-	if cffOnly[i] != 'Y' {
-		t.Fatalf("flag %q", cffOnly[i])
-	}
-
-	embedded := testEmbeddedFontFile(t, whole)
-	if len(embedded) == 0 {
-		t.Fatal("no embedded font file")
-	}
-	if !bytes.Equal(embedded, testEmbeddedFontFile(t, cffOnly)) {
-		t.Error("the embedded font files differ")
-	}
-}
-
-// testThaiContent returns the content of a page with a line of Thai in the
-// font: po pla, the upper vowel sara ii on it and the tone mark mai ek above
-// the vowel.
-func testThaiContent(t *testing.T, path string) string {
-	t.Helper()
-	file, err := os.Open(testRepoPath(t, path))
-	if err != nil {
-		t.Skip("the fonts directory is not here")
-	}
-	defer file.Close()
-	pdf := testNewPDF()
-	font := NewFont(pdf, file)
-	page := NewPage(pdf, testLetterPortrait())
-	NewTextLine(font, "\u0E1B\u0E35\u0E48").SetLocation(50, 50).DrawOn(page)
-	return testContent(page)
-}
-
-func TestFontAStreamFontPlacesTheMarksAsTheOpenTypeFontDoes(t *testing.T) {
-	ttf := testThaiContent(t, "fonts/NotoSansThai/NotoSansThai-Regular.ttf")
-	if stream := testThaiContent(t, "tests/data/stream-fonts/NotoSansThai-Regular.ttf.stream"); stream != ttf {
-		t.Errorf("stream %q\nttf %q", stream, ttf)
-	}
 }
 
 func TestFontTheLineGapOfAFontSpacesTheLinesOfATextBlock(t *testing.T) {
@@ -165,9 +95,9 @@ func TestFontTheLineGapOfAFontSpacesTheLinesOfATextBlock(t *testing.T) {
 	testAssertXY(t, 500, 40, block.DrawOn(nil))
 }
 
-func TestFontAStreamFontPathThatIsGoneOpensTheTrueTypeFont(t *testing.T) {
-	// PDFjet ships no .stream files from 9.0.5: a path to one opens the .ttf
-	// file of the same name, which a path to a file that is there does not.
+func TestFontAStreamFontPathOpensTheTrueTypeFont(t *testing.T) {
+	// PDFjet reads .otf and .ttf fonts alone from 9.0.5: a path to a .stream
+	// file opens the .ttf file of the same name.
 	for _, path := range []string{
 		"fonts/NotoSans/NotoSans-Regular.ttf.stream",
 		"fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream",
@@ -180,9 +110,12 @@ func TestFontAStreamFontPathThatIsGoneOpensTheTrueTypeFont(t *testing.T) {
 			t.Errorf("%s: no font", path)
 		}
 	}
-	stream := testRepoPath(t, "tests/data/stream-fonts/NotoSansThai-Regular.ttf.stream")
-	if got := fontFileOf(stream); got != stream {
-		t.Errorf("a stream file that is there: %s", got)
+	// Any other font is refused in PDFjet's words.
+	message := testPanicMessage(func() {
+		NewFont(testNewPDF(), strings.NewReader("\x0ePlexSans-Bold\x00\x00\x00"))
+	})
+	if message != "Invalid font file: not an OpenType or TrueType font: PDFjet reads .otf and .ttf fonts." {
+		t.Errorf("message %q", message)
 	}
 }
 
@@ -211,7 +144,7 @@ func TestFontACoreFontDrawsDeleteAsASpace(t *testing.T) {
 	}
 }
 
-// testIBMPlexSans returns IBM Plex Sans, read from its stream file. Its space
+// testIBMPlexSans returns IBM Plex Sans, read from its .ttf file. Its space
 // is 236 units wide and its .notdef 472, of 1000 units to the em; it has the
 // characters from U+0020 to U+FFFD, and no Thai.
 func testIBMPlexSans(t *testing.T, pdf *PDF) *Font {
@@ -412,12 +345,10 @@ func TestFontAFontAndASubsetOfItWithTheSameNameAreBothEmbedded(t *testing.T) {
 }
 
 func TestFontOneFontProgramIsEmbeddedOnce(t *testing.T) {
-	// The same font added twice, and the same font read from a .otf or a
-	// .ttf and from the .stream file made of it, are one font program.
+	// The same font added twice is one font program.
 	for _, pair := range [][]string{
 		{"fonts/IBMPlexSans/IBMPlexSans-Regular.otf", "fonts/IBMPlexSans/IBMPlexSans-Regular.otf"},
-		{"fonts/IBMPlexSans/IBMPlexSans-Regular.otf", "tests/data/stream-fonts/IBMPlexSans-Regular.otf.stream"},
-		{"fonts/NotoSansThai/NotoSansThai-Regular.ttf", "tests/data/stream-fonts/NotoSansThai-Regular.ttf.stream"},
+		{"fonts/NotoSansThai/NotoSansThai-Regular.ttf", "fonts/NotoSansThai/NotoSansThai-Regular.ttf"},
 	} {
 		if n := testEmbeddedFonts(testDocumentWithFonts(t, pair...)); n != 1 {
 			t.Errorf("%s: %d font programs embedded", pair[1], n)

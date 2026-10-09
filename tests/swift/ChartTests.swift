@@ -179,7 +179,7 @@ import Testing
         #expect(page.structures[1].altDescription == "Sales rose from 1 to 2.")
     }
 
-    private static let streamFont = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"
+    private static let trueTypeFont = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"
 
     // The structure elements of the raw PDF, by their object numbers: the S,
     // the P and the K of each.
@@ -210,13 +210,13 @@ import Testing
     // A point of a chart that is a link is, in a tagged document, a figure of
     // its own, described by what it stands for, in the Link that holds its
     // annotation, after the chart; the chart is a figure of the rest.
-    @Test(.enabled(if: TestSupport.exists(streamFont), "the fonts directory is not here"))
+    @Test(.enabled(if: TestSupport.exists(trueTypeFont), "the fonts directory is not here"))
     func aLinkedPointIsAFigureInItsLink() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
         memory.pdf.setTitle("Test")
         let pdf = memory.pdf
         _ = pdf.setTitle("Title")
-        let font = try Font(pdf, TestSupport.open(ChartTests.streamFont))
+        let font = try Font(pdf, TestSupport.open(ChartTests.trueTypeFont))
         let page = Page(pdf, Letter.PORTRAIT)
         let chart = Chart(font, font).setLocation(50, 50).setSize(300, 200)
         chart.setTitle("Countries")

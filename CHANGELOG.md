@@ -25,7 +25,7 @@ This is the first entry in this file; earlier releases were not tracked here.
   that is not whole or not read so, its byte order, its directory or the tag
   wrong, is passed over, the image drawn as stored. Orientation 1, or none,
   draws the page byte for byte as before.
-- TrueType fonts, a `.ttf` or a `.ttf.stream`, are embedded as subsets:
+- TrueType fonts, `.ttf` files, are embedded as subsets:
   the outlines of the glyphs a document does not draw are left out when the
   PDF is completed, with the tables a reader needs and no others (the
   shaping tables, which PDFjet reads, and the vertical metrics are left
@@ -36,14 +36,13 @@ This is the first entry in this file; earlier releases were not tracked here.
   the glyphs kept, and a PDF/A-1 file has the CIDSet PDF/A-1 asks of a
   subset. A font whose license forbids subsetting (fsType 0x0100 in its
   OS/2 table) is embedded whole, and so is a font set to with
-  `setSubset(false)`. CFF fonts, a `.otf` or a `.otf.stream`, are embedded
-  whole as before. The four ports embed the same subsets, byte for byte,
+  `setSubset(false)`. CFF fonts, `.otf` files, are embedded whole as before. The four ports embed the same subsets, byte for byte,
   under the same tags.
 - `new Font(objects, stream)`, a font added to an existing PDF, reads `.ttf`
-  and `.otf` files as well as `.stream` files, embedded whole.
-- A path to a `.ttf.stream` or `.otf.stream` file that is not there opens the
-  `.ttf`, or else the `.otf`, file of the same name beside it, so code written
-  for the stream files PDFjet shipped runs as it is.
+  and `.otf` files, embedded whole (`NewFontForObjects` in Go).
+- A path to a `.ttf.stream` or `.otf.stream` file opens the `.ttf`, or else the
+  `.otf`, file of the same name beside it, so code written for the stream
+  files PDFjet shipped runs as it is with the fonts of 9.0.5.
 
 ### Changed
 - **The bundled fonts are TrueType `.ttf` files, and there are no `.stream`
@@ -59,8 +58,7 @@ This is the first entry in this file; earlier releases were not tracked here.
   Latin letters of IBM Plex Sans TC are 1 to 5 thousandths of an em
   narrower. The italic angle of IBM Plex Sans, Serif and Mono is rounded to a
   whole degree. IBM Plex Sans is still there as `.otf`, a font of CFF
-  outlines. PDFjet still reads `.stream` files, and its font tool still makes
-  them. The fonts folder went from 606 MB to 414 MB.
+  outlines. The fonts folder went from 606 MB to 414 MB.
 - The ToUnicode map of every embedded font is compressed, a few
   hundred kilobytes less for a large CJK font embedded whole.
 - SVG is read with one XML parser, the same in the four ports, in place of
@@ -87,14 +85,22 @@ This is the first entry in this file; earlier releases were not tracked here.
 - A number of SVG path data is finite: one past the range of a float, such as
   `1e40`, is refused as invalid path data in the four ports, where Java, C#
   and Swift read it as an infinity.
-
-- The font tool's `--old-format`, which writes `.otf.stream` files of the CFF
-  data alone, as PDFjet Forms' server keeps its fonts, is named
-  `--pdfjet-forms-format` (util/generate-stream-fonts-files.sh).
 - The license in the Java and .NET packages says what the Solo License and the
   Team License cover, one developer, and two to five, as pdfjet.com has said
   since the licenses were renamed (they were the Named Developer and the
   Transferable Developer licenses).
+
+### Removed
+- **The `.stream` font format, in the four ports**, as no client uses it: the
+  reader of `.otf.stream` and `.ttf.stream` files, the font tool that made
+  them (`util/generate-stream-fonts-files.sh`, with the Zopfli it ran), and in
+  Go `NewFontStream1`, which `NewFont` replaces, and `NewFontStream2`, which
+  `NewFontForObjects` replaces. A stream file gives "Invalid font file: not an
+  OpenType or TrueType font: PDFjet reads .otf and .ttf fonts."; a path to a
+  bundled one opens its `.ttf`, as above. The code that writes the objects of
+  a font, shared by every font, is `FontWriter`, and that of a font added to
+  an existing PDF `FontObjects`, in place of `FontStream1` and `FontStream2`;
+  a font of CFF outlines is written by them too, byte for byte as before.
 
 ### Fixed
 - A font whose format 4 character map is empty and whose characters are in

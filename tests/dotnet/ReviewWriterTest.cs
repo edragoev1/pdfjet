@@ -70,7 +70,7 @@ public class ReviewWriterTest {
         List<PDFobj> objects = new List<PDFobj>();
         Font font = TestSupport.Helvetica(TestSupport.NewPDF());
         font.info = "Copyright A & B";
-        int number = FontStream2.AddMetadataObject(objects, font);
+        int number = FontObjects.AddMetadataObject(objects, font);
         string xml = Encoding.UTF8.GetString(objects[number - 1].stream);
         Assert.Contains("Copyright A &amp; B", xml);
     }

@@ -27,8 +27,7 @@ import (
 //
 //	PDFJET_FONT_REFERENCE=LIST PDFJET_FONT_REFERENCE_OUT=OUT go test ./src -run '^TestFontReference$'
 //
-// LIST has a font on each line: the absolute path of a .otf, .ttf or .stream
-// file, or core/NAME for one of the 14 core fonts. Each font is loaded as a
+// LIST has a font on each line: the absolute path of a .otf or .ttf file, or core/NAME for one of the 14 core fonts. Each font is loaded as a
 // user loads it, with NewFontFromFile or NewCoreFont, and what PDFjet read is
 // written to OUT as a line of JSON: the values it keeps, the glyph of each
 // character, the advance widths, where the GPOS table puts the marks, and the
@@ -162,21 +161,16 @@ func fontReferenceOf(path string) (ref *fontReference) {
 	font := NewFontFromFile(pdf, path)
 	ref.CapHeight = int(font.capHeight)
 	ref.CFF = font.cff
-	if !strings.HasSuffix(path, ".stream") {
-		// The cap height and the kind of outlines of an OpenType font go
-		// into its descriptor from what newOpenTypeFont read; the Font does
-		// not keep them.
-		data, err := os.ReadFile(path)
-		if err != nil {
-			panic(err)
-		}
-		otf := newOpenTypeFont(bytes.NewReader(data))
-		ref.CapHeight = int(otf.capHeight)
-		ref.CFF = otf.cff
+	// The cap height and the kind of outlines of an OpenType font go
+	// into its descriptor from what newOpenTypeFont read; the Font does
+	// not keep them.
+	data, err := os.ReadFile(path)
+	if err != nil {
+		panic(err)
 	}
-	if font.markData != nil {
-		readMarks(font)
-	}
+	otf := newOpenTypeFont(bytes.NewReader(data))
+	ref.CapHeight = int(otf.capHeight)
+
 	ref.Name = font.name
 	ref.UnitsPerEm = font.unitsPerEm
 	ref.BBox = [4]int{int(font.bBoxLLx), int(font.bBoxLLy), int(font.bBoxURx), int(font.bBoxURy)}

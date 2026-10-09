@@ -12,20 +12,16 @@ import (
 	"sort"
 
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
-	"github.com/edragoev1/pdfjet/v9/src/internal/decompressor"
 )
 
-// trueTypeProgram is the font program of a TrueType font, a .ttf or a
-// .ttf.stream, kept until Complete, when it is embedded with the outlines of
+// trueTypeProgram is the font program of a TrueType font, kept until Complete, when it is embedded with the outlines of
 // the glyphs the document did not draw emptied. The glyph numbers stay, so the
 // widths, the character map and the ToUnicode map are those of the whole font.
 // Fonts read from one file share one program, and the glyphs any of them drew.
 type trueTypeProgram struct {
-	font       []byte // The font, or nil for a .ttf.stream until Complete
-	compressed []byte // The font of a .ttf.stream, as the stream has it
-	length     int    // The length of the font, uncompressed
-	used       []bool // The glyphs drawn, by glyph number
-	whole      bool   // Set by SetSubset(false): the font is embedded whole
+	font  []byte // The font
+	used  []bool // The glyphs drawn, by glyph number
+	whole bool   // Set by SetSubset(false): the font is embedded whole
 }
 
 func newTrueTypeProgram() *trueTypeProgram {
@@ -44,8 +40,8 @@ func (font *Font) useGlyph(gid int) {
 
 // SetSubset sets whether this font is embedded as a subset, the outlines of
 // the glyphs the document does not draw left out, which is the default for a
-// TrueType font, a .ttf or a .ttf.stream. A font with CFF outlines, a .otf or
-// a .otf.stream, is always embedded whole. A font whose license does not allow
+// TrueType font, a .ttf. A font with CFF outlines, a .otf, is always embedded
+// whole. A font whose license does not allow
 // subsetting, by the fsType of its OS/2 table, is embedded whole too. Fonts
 // read from one file are one font program in the PDF: kept whole for one, the
 // program is whole for all of them. It must be called before Complete.
@@ -57,8 +53,8 @@ func (font *Font) SetSubset(subset bool) *Font {
 }
 
 // shareTrueTypeProgram gives the font the program of a font the PDF already
-// has from the same file, if any, or else a new one with the bytes given.
-func shareTrueTypeProgram(pdf *PDF, font *Font, ttf, compressed []byte, length int) {
+// has from the same file, if any, or else a new one of the font given.
+func shareTrueTypeProgram(pdf *PDF, font *Font, ttf []byte) {
 	for _, f := range pdf.fonts {
 		if f.program != nil && f.name == font.name && f.checksum == font.checksum {
 			font.program = f.program
@@ -67,8 +63,6 @@ func shareTrueTypeProgram(pdf *PDF, font *Font, ttf, compressed []byte, length i
 	}
 	font.program = newTrueTypeProgram()
 	font.program.font = ttf
-	font.program.compressed = compressed
-	font.program.length = length
 }
 
 // addTrueTypeFonts writes the TrueType fonts at Complete, when every glyph
@@ -84,8 +78,8 @@ func (pdf *PDF) addTrueTypeFonts() {
 		var kept []bool
 		embedTrueTypeProgram(pdf, font, &baseFont, &kept)
 		addCIDSetObject(pdf, font, kept)
-		addFontDescriptorObjectNamed(pdf, font, baseFont)
-		addCIDFontDictionaryObjectNamed(pdf, font, baseFont, kept)
+		addFontDescriptorObject(pdf, font, baseFont)
+		addCIDFontDictionaryObject(pdf, font, baseFont, kept)
 		addToUnicodeCMapObject(pdf, font, kept)
 
 		pdf.setObjOffset(font.objNumber, pdf.byteCount)
@@ -132,23 +126,11 @@ func embedTrueTypeProgram(pdf *PDF, font *Font, baseFont *string, kept *[]bool) 
 	}
 
 	program := font.program
-	var compressed []byte
-	length := program.length
 	ttf := program.font
+	var compressed []byte
+	length := len(ttf)
 	if !program.whole {
-		var err error
-		if ttf == nil {
-			ttf, err = decompressor.InflateWithMaxLength(program.compressed, program.length)
-			if err == nil && len(ttf) != program.length {
-				err = errNotSubset
-			}
-		}
-		var subset []byte
-		var glyphs []bool
-		if err == nil {
-			subset, glyphs, err = subsetTrueType(ttf, program.used)
-		}
-		if err == nil {
+		if subset, glyphs, err := subsetTrueType(ttf, program.used); err == nil {
 			compressed = deflateFontProgram(subset)
 			length = len(subset)
 			*kept = glyphs
@@ -156,12 +138,7 @@ func embedTrueTypeProgram(pdf *PDF, font *Font, baseFont *string, kept *[]bool) 
 		}
 	}
 	if compressed == nil { // Whole
-		if program.compressed != nil {
-			compressed = program.compressed
-		} else {
-			compressed = deflateFontProgram(ttf)
-			length = len(ttf)
-		}
+		compressed = deflateFontProgram(ttf)
 	}
 	font.baseFont = *baseFont
 

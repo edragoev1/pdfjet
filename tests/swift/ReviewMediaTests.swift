@@ -12,7 +12,7 @@ import Testing
 // review_media_test.go in the Go port.
 @Suite struct ReviewMediaTests {
     private let thai = "fonts/NotoSansThai/NotoSansThai-Regular.ttf"
-    static let streamFont = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"
+    static let trueTypeFont = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"
 
     private func font(_ path: String) -> [UInt8] {
         return [UInt8](FileManager.default.contents(atPath: TestSupport.path(path))!)
@@ -173,7 +173,7 @@ import Testing
         let memory = MemoryPDF(level)
         let pdf = memory.pdf
         _ = pdf.setTitle("Title")
-        let font = try Font(pdf, TestSupport.open(ReviewMediaTests.streamFont))
+        let font = try Font(pdf, TestSupport.open(ReviewMediaTests.trueTypeFont))
         let page = Page(pdf, Letter.PORTRAIT)
         TextLine(font, "Text").setLocation(50, 50).drawOn(page)
         try Image(pdf, stream).setAltDescription("An image")
@@ -186,7 +186,7 @@ import Testing
         return ""
     }
 
-    @Test(.enabled(if: TestSupport.exists(streamFont), "the fonts directory is not here"))
+    @Test(.enabled(if: TestSupport.exists(trueTypeFont), "the fonts directory is not here"))
     func aPDFADocumentHoldsNoImageItsLevelHasNot() throws {
         // The output intent of PDF/A is sRGB, so its images are not CMYK;
         // PDF/A-1 has no soft masks, and 8 bits per component at most.
@@ -469,12 +469,12 @@ import Testing
         #expect(TestSupport.latin1(memory.bytes).components(separatedBy: "/Length1 ").count - 1 == 1)
     }
 
-    @Test(.enabled(if: TestSupport.exists(streamFont), "the fonts directory is not here"))
+    @Test(.enabled(if: TestSupport.exists(trueTypeFont), "the fonts directory is not here"))
     func aFontFileIsToldByItsFirstBytesAndNotByItsName() throws {
-        // A stream font of a name that does not end in .stream is read as the
-        // stream font it is, as a font read from a stream is.
+        // A font file whose name ends in neither .otf nor .ttf is read as the
+        // font it is.
         let path = NSTemporaryDirectory() + "ReviewMediaTests-\(UUID().uuidString).font"
-        try Data(font(ReviewMediaTests.streamFont)).write(to: URL(fileURLWithPath: path))
+        try Data(font(ReviewMediaTests.trueTypeFont)).write(to: URL(fileURLWithPath: path))
         defer {
             try? FileManager.default.removeItem(atPath: path)
         }

@@ -84,10 +84,9 @@ rm "$TAR"
 find "$STAGE/examples" -maxdepth 1 -name '*.java' ! -name Example_02.java -delete
 rm -f "$STAGE/images/go.mod"
 
-# The .stream fonts are the fonts of the package. The .otf and .ttf files they
-# are made from are left out, but for the two that Example_28 reads.
-find "$STAGE/fonts" -type f \( -name '*.otf' -o -name '*.ttf' \) \
-    ! -name IBMPlexSans-Regular.otf ! -name NotoSans-Regular.ttf -delete
+# The fonts of the package are the fonts directory as it is: the .ttf files,
+# which PDFjet subsets, and IBM Plex Sans as .otf too, which Examples 28, 37
+# and 50 read.
 
 cd "$STAGE"
 

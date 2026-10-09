@@ -232,7 +232,7 @@ func TestChartALinkedPointIsAFigureInItsLink(t *testing.T) {
 	doc := testNewDoc()
 	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	doc.pdf.SetTitle("Title")
-	font := testStreamFont(t, doc.pdf)
+	font := testTrueTypeFont(t, doc.pdf)
 	page := NewPage(doc.pdf, testLetterPortrait())
 	chart := NewChart(font, font).SetSize(300, 200)
 	chart.SetLocation(50, 50)

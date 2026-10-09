@@ -72,13 +72,13 @@ func TestTextBlockLayoutReference(t *testing.T) {
 	pdf := NewPDF(bufio.NewWriter(new(bytes.Buffer)))
 	fonts := map[string]*Font{}
 	// A font is named as its file is, IBMPlexSans-Regular, and is read from
-	// the stream of its family in the fonts directory.
+	// the .ttf of its family in the fonts directory.
 	fontNamed := func(name string) *Font {
 		if font, ok := fonts[name]; ok {
 			return font
 		}
 		family := strings.SplitN(name, "-", 2)[0]
-		matches, _ := filepath.Glob(filepath.Join("..", "fonts", family, name+".*.stream"))
+		matches, _ := filepath.Glob(filepath.Join("..", "fonts", family, name+".ttf"))
 		if len(matches) != 1 {
 			t.Fatalf("there is no font %s in ../fonts/%s", name, family)
 		}

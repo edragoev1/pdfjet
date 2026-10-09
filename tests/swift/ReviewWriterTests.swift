@@ -68,7 +68,7 @@ import Testing
         var objects = [PDFobj]()
         let font = TestSupport.helvetica(TestSupport.newPDF())
         font.info = "Copyright A & B"
-        let number = FontStream2.addMetadataObject(&objects, font)
+        let number = FontObjects.addMetadataObject(&objects, font)
         let xml = String(decoding: objects[number - 1].stream ?? [], as: UTF8.self)
         #expect(xml.contains("Copyright A &amp; B"), "\(xml)")
     }

@@ -19,7 +19,7 @@ class OpenTypeFont {
         if (!otf.cff) {
             // A TrueType font is written at Complete(), a subset of the glyphs
             // drawn; its pages refer to the number reserved for it.
-            Subset.Share(pdf, font, otf.buf, null, otf.buf.Length);
+            Subset.Share(pdf, font, otf.buf);
             font.objNumber = pdf.ReserveObjNumber();
             pdf.fonts.Add(font);
             return;
@@ -28,13 +28,12 @@ class OpenTypeFont {
     }
 
     // Adds the font to the objects of an existing PDF, with its font program
-    // whole, as a stream font is added.
+    // whole.
     internal static void Register(List<PDFobj> objects, Font font, Stream inputStream) {
         OTF otf = new OTF(inputStream);
         SetData(font, otf);
-        font.cff = otf.cff;
         font.uncompressedSize = otf.buf.Length;
-        FontStream2.Register(objects, font, otf.Compress());
+        FontObjects.Register(objects, font, otf.Compress());
     }
 
     // Gives the font the name, the metrics and the character map of the
@@ -62,6 +61,7 @@ class OpenTypeFont {
         font.fontUnderlineThickness = otf.underlineThickness;
         font.info = otf.fontInfo;
         font.capHeight = otf.capHeight;
+        font.cff = otf.cff;
         font.checksum = Font.ChecksumOf(font);
         font.SetSize(font.size);
     }
@@ -69,9 +69,9 @@ class OpenTypeFont {
     // Writes a font with CFF outlines, which is embedded whole, as it is added.
     private static void RegisterCFF(PDF pdf, Font font, OTF otf) {
         EmbedFontFile(pdf, font, otf);
-        AddFontDescriptorObject(pdf, font, otf);
-        AddCIDFontDictionaryObject(pdf, font, otf);
-        AddToUnicodeCMapObject(pdf, font, otf);
+        FontWriter.AddFontDescriptorObject(pdf, font, font.name);
+        FontWriter.AddCIDFontDictionaryObject(pdf, font, font.name, null);
+        FontWriter.AddToUnicodeCMapObject(pdf, font, null);
 
         // Type0 Font Dictionary
         pdf.NewObj();
@@ -143,58 +143,6 @@ class OpenTypeFont {
         font.fileObjNumber = pdf.GetObjNumber();
     }
 
-    private static void AddFontDescriptorObject(PDF pdf, Font font, OTF otf) {
-        foreach (Font f in pdf.fonts) {
-            if (f.fontDescriptorObjNumber != 0 && f.name.Equals(otf.fontName) && f.checksum == font.checksum) {
-                font.fontDescriptorObjNumber = f.fontDescriptorObjNumber;
-                return;
-            }
-        }
-
-        pdf.NewObj();
-        pdf.Append("<<\n");
-        pdf.Append("/Type /FontDescriptor\n");
-        pdf.Append("/FontName /");
-        pdf.Append(otf.fontName);
-        pdf.Append('\n');
-        if (otf.cff) {
-            pdf.Append("/FontFile3 ");
-        } else {
-            pdf.Append("/FontFile2 ");
-        }
-        pdf.Append(font.fileObjNumber);
-        pdf.Append(" 0 R\n");
-        pdf.Append("/Flags ");
-        pdf.Append(FlagsOf(font.italicAngle));
-        pdf.Append('\n');
-        pdf.Append("/FontBBox [");
-        pdf.Append(ToGlyphSpace(otf.bBoxLLx, otf.unitsPerEm));
-        pdf.Append(' ');
-        pdf.Append(ToGlyphSpace(otf.bBoxLLy, otf.unitsPerEm));
-        pdf.Append(' ');
-        pdf.Append(ToGlyphSpace(otf.bBoxURx, otf.unitsPerEm));
-        pdf.Append(' ');
-        pdf.Append(ToGlyphSpace(otf.bBoxURy, otf.unitsPerEm));
-        pdf.Append("]\n");
-        pdf.Append("/Ascent ");
-        pdf.Append(ToGlyphSpace(otf.ascent, otf.unitsPerEm));
-        pdf.Append('\n');
-        pdf.Append("/Descent ");
-        pdf.Append(ToGlyphSpace(otf.descent, otf.unitsPerEm));
-        pdf.Append('\n');
-        pdf.Append("/ItalicAngle ");
-        pdf.Append(ItalicAngleOf(font.italicAngle));
-        pdf.Append('\n');
-        pdf.Append("/CapHeight ");
-        pdf.Append(ToGlyphSpace(otf.capHeight, otf.unitsPerEm));
-        pdf.Append('\n');
-        pdf.Append("/StemV 79\n");
-        pdf.Append(">>\n");
-        pdf.EndObj();
-
-        font.fontDescriptorObjNumber = pdf.GetObjNumber();
-    }
-
     /// <summary>
     /// Converts a value in font units to the glyph space units of the font
     /// descriptor, 1/1000 em, rounded to the nearest integer with halves away
@@ -228,133 +176,6 @@ class OpenTypeFont {
             text += "." + (decimals.EndsWith("0", StringComparison.Ordinal) ? decimals.Substring(0, 1) : decimals);
         }
         return (angle < 0 && rounded != 0) ? "-" + text : text;
-    }
-
-    private static void AddToUnicodeCMapObject(
-            PDF pdf,
-            Font font,
-            OTF otf) {
-        foreach (Font f in pdf.fonts) {
-            if (f.toUnicodeCMapObjNumber != 0 && f.name.Equals(otf.fontName) && f.checksum == font.checksum) {
-                font.toUnicodeCMapObjNumber = f.toUnicodeCMapObjNumber;
-                return;
-            }
-        }
-
-        StringBuilder sb = new StringBuilder();
-
-        sb.Append("/CIDInit /ProcSet findresource begin\n");
-        sb.Append("12 dict begin\n");
-        sb.Append("begincmap\n");
-        sb.Append("/CIDSystemInfo <</Registry (Adobe) /Ordering (Identity) /Supplement 0>> def\n");
-        sb.Append("/CMapName /Adobe-Identity def\n");
-        sb.Append("/CMapType 2 def\n");
-
-        sb.Append("1 begincodespacerange\n");
-        sb.Append("<0000> <FFFF>\n");
-        sb.Append("endcodespacerange\n");
-
-        List<String> list = new List<String>();
-        // A character the font does not contain is drawn with the .notdef
-        // glyph. PDF/UA requires every glyph to map to Unicode, so map it to
-        // the replacement character.
-        list.Add("<0000> <FFFD>\n");
-        StringBuilder buf = new StringBuilder();
-        int[] unicodeOf = FontStream1.UnicodeOfGlyphs(otf.unicodeToGID);
-        for (int cid = 0; cid <= 0xffff; cid++) {
-            int gid = otf.unicodeToGID[cid];
-            if (gid > 0 && unicodeOf[gid] == cid) {
-                buf.Append('<');
-                buf.Append(ToHexString(gid));
-                buf.Append("> <");
-                // A presentation form that the Bidi class puts in maps to the letters it stands for.
-                String letters = Bidi.LettersOf(cid);
-                if (letters == null) {
-                    buf.Append(ToHexString(cid));
-                } else {
-                    foreach (char ch in letters) {
-                        buf.Append(ToHexString(ch));
-                    }
-                }
-                buf.Append(">\n");
-                list.Add(buf.ToString());
-                buf.Length = 0;
-                if (list.Count == 100) {
-                    WriteListToBuffer(list, sb);
-                }
-            }
-        }
-        if (list.Count > 0) {
-            WriteListToBuffer(list, sb);
-        }
-
-        sb.Append("endcmap\n");
-        sb.Append("CMapName currentdict /CMap defineresource pop\n");
-        sb.Append("end\nend");
-
-        FontStream1.AddCompressedStream(pdf, Encoding.UTF8.GetBytes(sb.ToString()));
-        font.toUnicodeCMapObjNumber = pdf.GetObjNumber();
-    }
-
-    private static void AddCIDFontDictionaryObject(
-            PDF pdf,
-            Font font,
-            OTF otf) {
-        foreach (Font f in pdf.fonts) {
-            if (f.cidFontDictObjNumber != 0 && f.name.Equals(otf.fontName) && f.checksum == font.checksum) {
-                font.cidFontDictObjNumber = f.cidFontDictObjNumber;
-                return;
-            }
-        }
-
-        pdf.NewObj();
-        pdf.Append("<<\n");
-        pdf.Append("/Type /Font\n");
-        if (otf.cff) {
-            pdf.Append("/Subtype /CIDFontType0\n");
-        } else {
-            pdf.Append("/Subtype /CIDFontType2\n");
-        }
-
-        pdf.Append("/BaseFont /");
-        pdf.Append(otf.fontName);
-        pdf.Append('\n');
-
-        byte[] registry = Encoding.UTF8.GetBytes("Adobe");
-        byte[] ordering = Encoding.UTF8.GetBytes("Identity");
-        if (pdf.encryption != null) {
-            registry = AES256.Encrypt(registry, pdf.encryption.GetKey());
-            ordering = AES256.Encrypt(ordering, pdf.encryption.GetKey());
-        }
-        pdf.Append("/CIDSystemInfo <</Registry <");
-        pdf.Append(Util.ToHexString(registry));
-        pdf.Append("> /Ordering <");
-        pdf.Append(Util.ToHexString(ordering));
-        pdf.Append("> /Supplement 0>>\n");
-
-        pdf.Append("/FontDescriptor ");
-        pdf.Append(font.fontDescriptorObjNumber);
-        pdf.Append(" 0 R\n");
-
-        float k = 1000.0f / Convert.ToSingle(font.unitsPerEm);
-        // The width of the glyphs past the /W array: those past the advance
-        // widths, which have the width of the last one.
-        pdf.Append("/DW ");
-        pdf.Append((int) Math.Round(k * Convert.ToSingle(font.advanceWidth[font.advanceWidth.Length - 1]), MidpointRounding.AwayFromZero));
-        pdf.Append('\n');
-
-        pdf.Append("/W [0[\n");
-        foreach (int width in font.advanceWidth) {
-            pdf.Append((int) Math.Round(k * Convert.ToSingle(width), MidpointRounding.AwayFromZero));
-            pdf.Append(' ');
-        }
-        pdf.Append("]]\n");
-
-        pdf.Append("/CIDToGIDMap /Identity\n");
-        pdf.Append(">>\n");
-        pdf.EndObj();
-
-        font.cidFontDictObjNumber = pdf.GetObjNumber();
     }
 
     private static String ToHexString(int code) {

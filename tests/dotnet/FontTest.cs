@@ -60,7 +60,7 @@ public class FontTest {
     }
 
     [Fact]
-    public void ReadsAStreamFont() {
+    public void ReadsATrueTypeFont() {
         string path = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf";
         if (!File.Exists(TestSupport.RepoPath(path))) {
             return;     // The fonts directory is not here.
@@ -72,73 +72,8 @@ public class FontTest {
         }
     }
 
-    // The embedded font file of a PDF that draws a line of text in the font.
-    private static byte[] EmbeddedFontFile(byte[] fontStream) {
-        MemoryStream output = new MemoryStream();
-        PDF pdf = new PDF(output);
-        Font font = new Font(pdf, new MemoryStream(fontStream));
-        TextLine text = new TextLine(font, "Hello");
-        text.SetLocation(50f, 50f);
-        text.DrawOn(new Page(pdf, Letter.PORTRAIT));
-        pdf.Complete();
-        foreach (PDFobj obj in TestSupport.Read(output.ToArray())) {
-            if (obj.GetValue("/Subtype") == "/CIDFontType0C") {
-                return obj.GetData();
-            }
-        }
-        return null;
-    }
-
     private static int Int32At(byte[] buffer, int i) {
         return (buffer[i] << 24) | (buffer[i + 1] << 16) | (buffer[i + 2] << 8) | buffer[i + 3];
-    }
-
-    [Fact]
-    public void AnOpenTypeStreamFontKeepsItsOtherTablesAndEmbedsOnlyItsCFFData() {
-        string path = "tests/data/stream-fonts/IBMPlexSans-Regular.otf.stream";
-        if (!File.Exists(TestSupport.RepoPath(path))) {
-            return;     // The fonts directory is not here.
-        }
-        byte[] whole = File.ReadAllBytes(TestSupport.RepoPath(path));
-        // The name, the info and the metrics come first, then 'R' with the
-        // length of the other tables of the font, and then the CFF data.
-        int i = 1 + whole[0];
-        i += 3 + ((whole[i] << 16) | (whole[i + 1] << 8) | whole[i + 2]);
-        i += 4 + Int32At(whole, i);
-        Assert.Equal((byte) 'R', whole[i]);
-        int length = Int32At(whole, i + 1);
-        // The same stream without the tables, as streams were written before.
-        byte[] cffOnly = new byte[whole.Length - 5 - length];
-        Array.Copy(whole, 0, cffOnly, 0, i);
-        Array.Copy(whole, i + 5 + length, cffOnly, i, whole.Length - i - 5 - length);
-        Assert.Equal((byte) 'Y', cffOnly[i]);
-
-        byte[] embedded = EmbeddedFontFile(whole);
-        Assert.True(embedded.Length > 0);
-        Assert.Equal(embedded, EmbeddedFontFile(cffOnly));
-    }
-
-    // The content of a page with a line of Thai in the font: po pla, the upper
-    // vowel sara ii on it and the tone mark mai ek above the vowel.
-    private static string ThaiContent(string path) {
-        PDF pdf = TestSupport.NewPDF();
-        Font font;
-        using (Stream stream = TestSupport.Open(path)) {
-            font = new Font(pdf, stream);
-        }
-        Page page = new Page(pdf, Letter.PORTRAIT);
-        TextLine text = new TextLine(font, "\u0E1B\u0E35\u0E48");
-        text.SetLocation(50f, 50f);
-        text.DrawOn(page);
-        return TestSupport.Content(page);
-    }
-
-    [Fact]
-    public void AStreamFontPlacesTheMarksAsTheOpenTypeFontDoes() {
-        if (!File.Exists(TestSupport.RepoPath("fonts/NotoSansThai/NotoSansThai-Regular.ttf"))) {
-            return;     // The fonts directory is not here.
-        }
-        Assert.Equal(ThaiContent("fonts/NotoSansThai/NotoSansThai-Regular.ttf"), ThaiContent("tests/data/stream-fonts/NotoSansThai-Regular.ttf.stream"));
     }
 
     [Fact]
@@ -166,18 +101,19 @@ public class FontTest {
     }
 
     [Fact]
-    public void AStreamFontPathThatIsGoneOpensTheTrueTypeFont() {
-        // PDFjet ships no .stream files from 9.0.5: a path to one opens the
-        // .ttf file of the same name, which a path to a file that is there
-        // does not.
+    public void AStreamFontPathOpensTheTrueTypeFont() {
+        // PDFjet reads .otf and .ttf fonts alone from 9.0.5: a path to a
+        // .stream file opens the .ttf file of the same name.
         foreach (string path in new string[] {
                 "fonts/NotoSans/NotoSans-Regular.ttf.stream", "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"}) {
             string want = path.Substring(0, path.IndexOf('.')) + ".ttf";
             Assert.Equal(TestSupport.RepoPath(want), Font.FontFileOf(TestSupport.RepoPath(path)));
             Assert.NotEmpty(new Font(TestSupport.NewPDF(), TestSupport.RepoPath(path)).GetName());
         }
-        string stream = TestSupport.RepoPath("tests/data/stream-fonts/NotoSansThai-Regular.ttf.stream");
-        Assert.Equal(stream, Font.FontFileOf(stream));
+        // Any other font is refused in PDFjet's words.
+        Exception e = Assert.ThrowsAny<Exception>(() => new Font(TestSupport.NewPDF(),
+                new MemoryStream(System.Text.Encoding.Latin1.GetBytes("\u000ePlexSans-Bold\u0000\u0000\u0000"))));
+        Assert.Equal("Invalid font file: not an OpenType or TrueType font: PDFjet reads .otf and .ttf fonts.", e.Message);
     }
 
     [Fact]
@@ -204,7 +140,7 @@ public class FontTest {
         Assert.Contains("<6120622063>", TestSupport.Content(page));
     }
 
-    // IBM Plex Sans, read from its stream file, or null when the fonts
+    // IBM Plex Sans, read from its .ttf file, or null when the fonts
     // directory is not here. Its space is 236 units wide and its .notdef 472,
     // of 1000 units to the em; it has the characters from U+0020 to U+FFFD,
     // and no Thai.
@@ -389,9 +325,7 @@ public class FontTest {
 
     [Fact]
     public void OneFontProgramIsEmbeddedOnce() {
-        // The same font added twice, and the same font read from a .otf and
-        // from the .stream file made of it, are one font program: Example_28
-        // draws with both and embeds one of each font.
+        // The same font added twice is one font program.
         if (!File.Exists(TestSupport.RepoPath("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"))) {
             return;     // The fonts directory is not here.
         }
@@ -400,7 +334,7 @@ public class FontTest {
                 "fonts/IBMPlexSans/IBMPlexSans-Regular.otf")));
         Assert.Equal(1, EmbeddedFonts(DocumentWithFonts(
                 "fonts/IBMPlexSans/IBMPlexSans-Regular.otf",
-                "tests/data/stream-fonts/IBMPlexSans-Regular.otf.stream")));
+                "fonts/IBMPlexSans/IBMPlexSans-Regular.otf")));
     }
 
     [Fact]
@@ -447,7 +381,7 @@ public class FontTest {
                 unicodeToGID[c] = gid;
             }
         }
-        int[] unicodeOf = FontStream1.UnicodeOfGlyphs(unicodeToGID);
+        int[] unicodeOf = FontWriter.UnicodeOfGlyphs(unicodeToGID);
         int[] want = {0x03BC, 0x03A9, 0x004B, 0x00C5, 0x0020, 0x2019};
         for (int gid = 1; gid <= want.Length; gid++) {
             Assert.Equal(want[gid - 1], unicodeOf[gid]);

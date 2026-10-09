@@ -196,7 +196,7 @@ import Testing
         }
     }
 
-    private static let streamFont = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"
+    private static let trueTypeFont = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"
 
     // The numbers of the page objects, in page order.
     private func pageNumbers(_ pdf: [UInt8]) throws -> [String] {
@@ -212,13 +212,13 @@ import Testing
         }
     }
 
-    @Test(.enabled(if: TestSupport.exists(streamFont), "the fonts directory is not here"))
+    @Test(.enabled(if: TestSupport.exists(trueTypeFont), "the fonts directory is not here"))
     func aLinkIsInALinkElementAndAnyOtherAnnotationInAnAnnotElement() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
         memory.pdf.setTitle("Test")
         let pdf = memory.pdf
         _ = pdf.setTitle("Title")
-        let font = try Font(pdf, TestSupport.open(PDFTests.streamFont))
+        let font = try Font(pdf, TestSupport.open(PDFTests.trueTypeFont))
         let page = Page(pdf, Letter.PORTRAIT)
         TextLine(font, "PDFjet").setURIAction("https://pdfjet.com").setLocation(70, 80).drawOn(page)
         let note = TextAnnotation()
@@ -258,13 +258,13 @@ import Testing
     // A text line that is a link is the Link of its paragraph, holding its
     // text and its annotation both, as PDF/UA asks and PAC checks: a Link that
     // holds only the annotation is read as a link of no text.
-    @Test(.enabled(if: TestSupport.exists(streamFont), "the fonts directory is not here"))
+    @Test(.enabled(if: TestSupport.exists(trueTypeFont), "the fonts directory is not here"))
     func aLinkedTextLineIsTheLinkOfItsParagraph() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
         memory.pdf.setTitle("Test")
         let pdf = memory.pdf
         _ = pdf.setTitle("Title")
-        let font = try Font(pdf, TestSupport.open(PDFTests.streamFont))
+        let font = try Font(pdf, TestSupport.open(PDFTests.trueTypeFont))
         let page = Page(pdf, Letter.PORTRAIT)
         TextLine(font, "PDFjet").setURIAction("https://pdfjet.com").setLocation(70, 80).drawOn(page)
         #expect(TestSupport.content(page).contains("/Link <</MCID 0>>\nBDC\n"))
@@ -283,13 +283,13 @@ import Testing
 
     // A word of a paragraph that is a link is a Link among the words, in its
     // place, holding its text and its annotation.
-    @Test(.enabled(if: TestSupport.exists(streamFont), "the fonts directory is not here"))
+    @Test(.enabled(if: TestSupport.exists(trueTypeFont), "the fonts directory is not here"))
     func aLinkedWordIsALinkAmongTheWordsOfItsParagraph() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
         memory.pdf.setTitle("Test")
         let pdf = memory.pdf
         _ = pdf.setTitle("Title")
-        let font = try Font(pdf, TestSupport.open(PDFTests.streamFont))
+        let font = try Font(pdf, TestSupport.open(PDFTests.trueTypeFont))
         let paragraph = Paragraph()
         paragraph.add(TextLine(font, "Read").setStructureType(StructElem.SPAN))
         paragraph.add(TextLine(font, "the site").setURIAction("https://pdfjet.com"))
@@ -314,13 +314,13 @@ import Testing
     }
 
     // A linked image is the Figure of its Link, which holds its annotation too.
-    @Test(.enabled(if: TestSupport.exists(streamFont), "the fonts directory is not here"))
+    @Test(.enabled(if: TestSupport.exists(trueTypeFont), "the fonts directory is not here"))
     func aLinkedImageIsTheFigureOfItsLink() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
         memory.pdf.setTitle("Test")
         let pdf = memory.pdf
         _ = pdf.setTitle("Title")
-        _ = try Font(pdf, TestSupport.open(PDFTests.streamFont))
+        _ = try Font(pdf, TestSupport.open(PDFTests.trueTypeFont))
         let page = Page(pdf, Letter.PORTRAIT)
         let image = try Image(pdf, TestSupport.open("images/up-arrow.png"))
         _ = image.setAltDescription("Up").setURIAction("https://pdfjet.com").setLocation(70, 80)
@@ -341,11 +341,11 @@ import Testing
 
     // In a document that is not tagged, a link is drawn as before, and a
     // linked image leaves the structure elements begun around it as they were.
-    @Test(.enabled(if: TestSupport.exists(streamFont), "the fonts directory is not here"))
+    @Test(.enabled(if: TestSupport.exists(trueTypeFont), "the fonts directory is not here"))
     func aLinkOfADocumentNotTaggedIsNoElement() throws {
         let memory = MemoryPDF()
         let pdf = memory.pdf
-        let font = try Font(pdf, TestSupport.open(PDFTests.streamFont))
+        let font = try Font(pdf, TestSupport.open(PDFTests.trueTypeFont))
         let page = Page(pdf, Letter.PORTRAIT)
         page.beginStructElement(StructElem.L)
         _ = try Image(pdf, TestSupport.open("images/up-arrow.png")).setURIAction("https://pdfjet.com").drawOn(page)
@@ -376,13 +376,13 @@ import Testing
     // the Document, stands as a block and says so, as PAC asks of an element
     // that PDF makes inline; one in a paragraph, or a figure in its link, does
     // not.
-    @Test(.enabled(if: TestSupport.exists(streamFont), "the fonts directory is not here"))
+    @Test(.enabled(if: TestSupport.exists(trueTypeFont), "the fonts directory is not here"))
     func anInlineElementStandingAsABlockSaysSo() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
         memory.pdf.setTitle("Test")
         let pdf = memory.pdf
         _ = pdf.setTitle("Title")
-        let font = try Font(pdf, TestSupport.open(PDFTests.streamFont))
+        let font = try Font(pdf, TestSupport.open(PDFTests.trueTypeFont))
         let page = Page(pdf, Letter.PORTRAIT)
         let image = try Image(pdf, TestSupport.open("images/up-arrow.png"))
         _ = image.setAltDescription("Up").setURIAction("https://pdfjet.com").setLocation(70, 80)
@@ -405,13 +405,13 @@ import Testing
 
     // The text of a cell is drawn whole, and has no description of its own,
     // which PAC warns of on text.
-    @Test(.enabled(if: TestSupport.exists(streamFont), "the fonts directory is not here"))
+    @Test(.enabled(if: TestSupport.exists(trueTypeFont), "the fonts directory is not here"))
     func theTextOfACellHasNoAlt() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
         memory.pdf.setTitle("Test")
         let pdf = memory.pdf
         _ = pdf.setTitle("Title")
-        let font = try Font(pdf, TestSupport.open(PDFTests.streamFont))
+        let font = try Font(pdf, TestSupport.open(PDFTests.trueTypeFont))
         let page = Page(pdf, Letter.PORTRAIT)
         let table = Table().setTableData(
                 [[Cell(font, "Name"), Cell(font, "City")], [Cell(font, "Jane"), Cell(font, "Ottawa")]], 1)
@@ -442,13 +442,13 @@ import Testing
     // An annotation that is not a link has an element described by what it
     // says, or by its title, so that it has text, which PAC reads as only
     // whitespace without it; a file attached is described by its own.
-    @Test(.enabled(if: TestSupport.exists(streamFont), "the fonts directory is not here"))
+    @Test(.enabled(if: TestSupport.exists(trueTypeFont), "the fonts directory is not here"))
     func anAnnotationIsDescribedByWhatItSays() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
         memory.pdf.setTitle("Test")
         let pdf = memory.pdf
         _ = pdf.setTitle("Title")
-        _ = try Font(pdf, TestSupport.open(PDFTests.streamFont))
+        _ = try Font(pdf, TestSupport.open(PDFTests.trueTypeFont))
         let page = Page(pdf, Letter.PORTRAIT)
         let note = TextAnnotation()
         note.setLocation(70, 100)
@@ -469,13 +469,13 @@ import Testing
         }
     }
 
-    @Test(.enabled(if: TestSupport.exists(streamFont), "the fonts directory is not here"))
+    @Test(.enabled(if: TestSupport.exists(trueTypeFont), "the fonts directory is not here"))
     func aDetachedPageThatIsNeverAddedLeavesNoTrace() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
         memory.pdf.setTitle("Test")
         let pdf = memory.pdf
         _ = pdf.setTitle("Title")
-        let font = try Font(pdf, TestSupport.open(PDFTests.streamFont))
+        let font = try Font(pdf, TestSupport.open(PDFTests.trueTypeFont))
         // A dry run, like one that measures the text, on a page that is never added.
         let dry = Page(pdf, Letter.PORTRAIT, Page.DETACHED)
         TextLine(font, "PDFjet").setURIAction("https://pdfjet.com").setLocation(70, 80).drawOn(dry)
@@ -493,13 +493,13 @@ import Testing
         #expect(try dest.first == pageNumbers(memory.bytes)[1])
     }
 
-    @Test(.enabled(if: TestSupport.exists(streamFont), "the fonts directory is not here"))
+    @Test(.enabled(if: TestSupport.exists(trueTypeFont), "the fonts directory is not here"))
     func theStructureTreeFollowsThePagesNotTheOrderTheyWereDrawnIn() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
         memory.pdf.setTitle("Test")
         let pdf = memory.pdf
         _ = pdf.setTitle("Title")
-        let font = try Font(pdf, TestSupport.open(PDFTests.streamFont))
+        let font = try Font(pdf, TestSupport.open(PDFTests.trueTypeFont))
         let second = Page(pdf, Letter.PORTRAIT, Page.DETACHED)
         TextLine(font, "Second").setLocation(70, 80).drawOn(second)
         let first = Page(pdf, Letter.PORTRAIT, Page.DETACHED)

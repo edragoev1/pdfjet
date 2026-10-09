@@ -57,12 +57,10 @@ type Font struct {
 	fontUnderlineThickness int16
 	advanceWidth           []uint16
 	unicodeToGID           []int
-	markToMarkOffsets      map[int][2]int // From the GPOS table, in a .otf, .ttf or .stream file
+	markToMarkOffsets      map[int][2]int // From the GPOS table
 	markAnchors            []map[int][]int
 	baseAnchors            []map[int][]int
-	markData               []byte // Where the marks go, compressed, until a mark is drawn
 	cff                    bool
-	compressedSize         int
 	uncompressedSize       int
 	metrics                [][]int // Only used for core fonts.
 	// checksum tells the font program this font was read from apart from
@@ -275,61 +273,29 @@ func NewCJKFont(pdf *PDF, cjkFont cjkfont.Font) *Font {
 	return font
 }
 
-// NewFontStream1 constructs font object from .ttf.stream and add it to the PDF
-func NewFontStream1(pdf *PDF, reader io.Reader) *Font {
+// NewFontForObjects constructs a font from an OpenType or TrueType font, a
+// .otf or a .ttf, and adds it to the objects of an existing PDF, embedded
+// whole.
+func NewFontForObjects(objects *[]*PDFobj, reader io.Reader) *Font {
 	font := new(Font)
-	font.pdf = pdf
-	fontStream1(pdf, font, reader)
+	addOpenTypeFontToObjects(objects, font, reader)
 	font.SetSize(defaultFontSize)
 	return font
 }
 
-// NewFontStream2 constructs a font from an OpenType, TrueType or .stream font
-// and adds it to the objects of an existing PDF, embedded whole. The format is
-// told from the first bytes the reader returns.
-func NewFontStream2(objects *[]*PDFobj, reader io.Reader) *Font {
-	font := new(Font)
-	buffered := bufio.NewReader(reader)
-	if isOpenTypeFont(buffered) {
-		openTypeFontStream2(objects, font, buffered)
-	} else {
-		fontStream2(objects, font, buffered)
-	}
-	font.SetSize(defaultFontSize)
-	return font
-}
-
-// NewFont constructs a font from an OpenType, TrueType, .otf.stream or
-// .ttf.stream font and adds it to the PDF. The format is told from the first
-// bytes the reader returns.
+// NewFont constructs a font from an OpenType or TrueType font, a .otf or a
+// .ttf, and adds it to the PDF.
 func NewFont(pdf *PDF, reader io.Reader) *Font {
 	font := new(Font)
 	font.pdf = pdf
-	buffered := bufio.NewReader(reader)
-	if isOpenTypeFont(buffered) {
-		registerOpenTypeFont(pdf, font, buffered)
-	} else {
-		fontStream1(pdf, font, buffered)
-	}
+	registerOpenTypeFont(pdf, font, reader)
 	font.SetSize(defaultFontSize)
 	return font
 }
 
-// isOpenTypeFont returns true if the reader starts with the version of an
-// OpenType or TrueType font.
-func isOpenTypeFont(reader *bufio.Reader) bool {
-	b, err := reader.Peek(4)
-	if err != nil {
-		return false
-	}
-	version := uint32(b[0])<<24 | uint32(b[1])<<16 | uint32(b[2])<<8 | uint32(b[3])
-	return version == 0x00010000 || version == 0x74727565 || version == 0x4F54544F
-}
-
-// NewFontFromFile creates a font from the file at the specified path and adds it to the PDF.
-// Files ending in .stream are read as stream fonts. It panics if the file cannot be opened.
+// NewFontFromFile creates a font from the .otf or .ttf file at the path and
+// adds it to the PDF. It panics if the file cannot be opened.
 func NewFontFromFile(pdf *PDF, filePath string) *Font {
-	var font *Font
 	filePath = fontFileOf(filePath)
 	f, err := os.Open(filePath)
 	if err != nil {
@@ -341,24 +307,15 @@ func NewFontFromFile(pdf *PDF, filePath string) *Font {
 			panic("Error closing file: " + err.Error())
 		}
 	}(f)
-	reader := bufio.NewReader(f)
-	if strings.HasSuffix(filePath, ".stream") {
-		font = NewFontStream1(pdf, reader)
-	} else {
-		font = NewFont(pdf, reader)
-	}
-	return font
+	return NewFont(pdf, bufio.NewReader(f))
 }
 
 // fontFileOf returns the path of the font file: the path given, or, for a
-// .ttf.stream or .otf.stream file that is not there, the .ttf or else the .otf
-// file of the same name beside it. PDFjet ships no .stream files from 9.0.5,
-// and its fonts are subset from their .ttf files: a path written before is
-// the same font.
+// .ttf.stream or .otf.stream file, the .ttf or else the .otf file of the same
+// name beside it. PDFjet reads .otf and .ttf fonts alone from 9.0.5, and its
+// fonts are subset from their .ttf files: a path written for the .stream files
+// PDFjet shipped before is the same font.
 func fontFileOf(filePath string) string {
-	if _, err := os.Stat(filePath); err == nil {
-		return filePath
-	}
 	for _, stream := range []string{".ttf.stream", ".otf.stream"} {
 		if strings.HasSuffix(filePath, stream) {
 			base := strings.TrimSuffix(filePath, stream)
@@ -375,8 +332,8 @@ func fontFileOf(filePath string) string {
 // checksumOf returns a number that identifies the font program: the units it
 // is drawn in, its advance widths and its character map, which say what its
 // glyphs are and which glyph each character has. Two fonts of one name that
-// give the same number are the same program, whether it was read from a .otf,
-// a .ttf or a .stream file, and the PDF embeds it once and writes one
+// give the same number are the same program, whether it was read from a .otf
+// or a .ttf file, and the PDF embeds it once and writes one
 // descriptor, one CID font and one ToUnicode map for both. The name is not
 // enough on its own: PDFjet ships subsets of the Noto CJK fonts under the
 // name of the whole font, and the text of the one embedded second was drawn

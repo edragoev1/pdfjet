@@ -646,7 +646,7 @@ import Testing
         #expect(try TestSupport.inflate(image.getAlpha()!) == [0, 0])
     }
 
-    @Test(.enabled(if: TestSupport.exists(ReviewMediaTests.streamFont), "the fonts directory is not here"))
+    @Test(.enabled(if: TestSupport.exists(ReviewMediaTests.trueTypeFont), "the fonts directory is not here"))
     func aPDFA1DocumentHoldsAPngWithAlphaWhenEveryPixelIsOpaque() throws {
         // PDF/A-1 has no soft masks, and an image whose pixels are all opaque
         // needs none; one pixel that is not refuses the image.

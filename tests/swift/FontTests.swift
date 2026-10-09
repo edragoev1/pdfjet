@@ -51,68 +51,11 @@ import Testing
 
     @Test(.enabled(if: TestSupport.exists("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"),
             "the fonts directory is not here"))
-    func readsAStreamFont() throws {
+    func readsATrueTypeFont() throws {
         let stream = TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")
         let font = try Font(TestSupport.newPDF(), stream)
         #expect(font.getName() == "IBMPlexSans")
         TestSupport.expectNear(28.32, font.stringWidth(12, "Hello"), 0.001)
-    }
-
-    // The embedded font file of a PDF that draws a line of text in the font.
-    private func embeddedFontFile(_ fontStream: [UInt8]) throws -> [UInt8] {
-        let memory = MemoryPDF()
-        let font = try Font(memory.pdf, InputStream(data: Data(fontStream)))
-        let text = TextLine(font, "Hello")
-        text.setLocation(50, 50)
-        text.drawOn(Page(memory.pdf, Letter.PORTRAIT))
-        try memory.pdf.complete()
-        for obj in try TestSupport.read(memory.bytes) where obj.getValue("/Subtype") == "/CIDFontType0C" {
-            return obj.getData()
-        }
-        return []
-    }
-
-    private func int32(_ buffer: [UInt8], _ i: Int) -> Int {
-        return Int(buffer[i]) << 24 | Int(buffer[i + 1]) << 16 | Int(buffer[i + 2]) << 8 | Int(buffer[i + 3])
-    }
-
-    @Test(.enabled(if: TestSupport.exists("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"),
-            "the fonts directory is not here"))
-    func anOpenTypeStreamFontKeepsItsOtherTablesAndEmbedsOnlyItsCFFData() throws {
-        let path = TestSupport.path("tests/data/stream-fonts/IBMPlexSans-Regular.otf.stream")
-        let whole = [UInt8](try Data(contentsOf: URL(fileURLWithPath: path)))
-        // The name, the info and the metrics come first, then 'R' with the
-        // length of the other tables of the font, and then the CFF data.
-        var i = 1 + Int(whole[0])
-        i += 3 + (Int(whole[i]) << 16 | Int(whole[i + 1]) << 8 | Int(whole[i + 2]))
-        i += 4 + int32(whole, i)
-        #expect(whole[i] == UInt8(ascii: "R"))
-        let length = int32(whole, i + 1)
-        // The same stream without the tables, as streams were written before.
-        let cffOnly = Array(whole[0..<i]) + Array(whole[(i + 5 + length)...])
-        #expect(cffOnly[i] == UInt8(ascii: "Y"))
-
-        let embedded = try embeddedFontFile(whole)
-        #expect(!embedded.isEmpty)
-        #expect(embedded == (try embeddedFontFile(cffOnly)))
-    }
-
-    // The content of a page with a line of Thai in the font: po pla, the upper
-    // vowel sara ii on it and the tone mark mai ek above the vowel.
-    private func thaiContent(_ path: String) throws -> String {
-        let pdf = TestSupport.newPDF()
-        let font = try Font(pdf, TestSupport.open(path))
-        let page = Page(pdf, Letter.PORTRAIT)
-        let text = TextLine(font, "\u{0E1B}\u{0E35}\u{0E48}")
-        text.setLocation(50, 50)
-        text.drawOn(page)
-        return TestSupport.content(page)
-    }
-
-    @Test(.enabled(if: TestSupport.exists("fonts/NotoSansThai/NotoSansThai-Regular.ttf"),
-            "the fonts directory is not here"))
-    func aStreamFontPlacesTheMarksAsTheOpenTypeFontDoes() throws {
-        #expect(try thaiContent("fonts/NotoSansThai/NotoSansThai-Regular.ttf") == (try thaiContent("tests/data/stream-fonts/NotoSansThai-Regular.ttf.stream")))
     }
 
     @Test func aCoreFontNumberOutsideTheFourteenIsRejected() {
@@ -134,17 +77,21 @@ import Testing
         TestSupport.expectXY(500, 40, TextBlock(sc, "日本\n日本").setLocation(0, 0).drawOn(nil))
     }
 
-    @Test func aStreamFontPathThatIsGoneOpensTheTrueTypeFont() throws {
-        // PDFjet ships no .stream files from 9.0.5: a path to one opens the
-        // .ttf file of the same name, which a path to a file that is there
-        // does not.
+    @Test func aStreamFontPathOpensTheTrueTypeFont() throws {
+        // PDFjet reads .otf and .ttf fonts alone from 9.0.5: a path to a
+        // .stream file opens the .ttf file of the same name.
         for path in ["fonts/NotoSans/NotoSans-Regular.ttf.stream", "fonts/IBMPlexSans/IBMPlexSans-Regular.otf.stream"] {
             let want = String(path[..<path.firstIndex(of: ".")!]) + ".ttf"
             #expect(Font.fontFileOf(TestSupport.path(path)) == TestSupport.path(want), "\(path)")
             #expect(!(try Font(TestSupport.newPDF(), TestSupport.path(path))).getName().isEmpty, "\(path)")
         }
-        let stream = TestSupport.path("tests/data/stream-fonts/NotoSansThai-Regular.ttf.stream")
-        #expect(Font.fontFileOf(stream) == stream)
+        // Any other font is refused in PDFjet's words.
+        do {
+            _ = try Font(TestSupport.newPDF(), InputStream(data: Data("\u{0E}PlexSans-Bold\0\0\0".utf8)))
+            Issue.record("the font was read")
+        } catch {
+            #expect("\(error)".contains("not an OpenType or TrueType font: PDFjet reads .otf and .ttf fonts"))
+        }
     }
 
     @Test func aCoreFontDrawsTheWinAnsiCharactersFrom128To159() {
@@ -169,7 +116,7 @@ import Testing
         #expect(TestSupport.content(page).contains("<6120622063>"))
     }
 
-    // IBM Plex Sans, read from its stream file. Its space is 236 units wide
+    // IBM Plex Sans, read from its .ttf file. Its space is 236 units wide
     // and its .notdef 472, of 1000 units to the em; it has the characters
     // from U+0020 to U+FFFD, and no Thai.
     private func ibmPlexSans(_ pdf: PDF) throws -> Font {
@@ -338,15 +285,13 @@ import Testing
     @Test(.enabled(if: TestSupport.exists("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"),
             "the fonts directory is not here"))
     func oneFontProgramIsEmbeddedOnce() throws {
-        // The same font added twice, and the same font read from a .otf and
-        // from the .stream file made of it, are one font program: Example_28
-        // draws with both and embeds one of each font.
+        // The same font added twice is one font program.
         #expect(try embeddedFonts(documentWithFonts([
                 "fonts/IBMPlexSans/IBMPlexSans-Regular.otf",
                 "fonts/IBMPlexSans/IBMPlexSans-Regular.otf"])) == 1)
         #expect(try embeddedFonts(documentWithFonts([
                 "fonts/IBMPlexSans/IBMPlexSans-Regular.otf",
-                "tests/data/stream-fonts/IBMPlexSans-Regular.otf.stream"])) == 1)
+                "fonts/IBMPlexSans/IBMPlexSans-Regular.otf"])) == 1)
     }
 
     @Test(.enabled(if: TestSupport.exists("fonts/IBMPlexSans/IBMPlexSans-Italic.otf"),
@@ -390,7 +335,7 @@ import Testing
                 unicodeToGID[c] = i + 1
             }
         }
-        let unicodeOf = FontStream1.unicodeOfGlyphs(unicodeToGID)
+        let unicodeOf = FontWriter.unicodeOfGlyphs(unicodeToGID)
         let want = [0x03BC, 0x03A9, 0x004B, 0x00C5, 0x0020, 0x2019]
         for (i, c) in want.enumerated() {
             #expect(unicodeOf[i + 1] == c, "glyph \(i + 1)")

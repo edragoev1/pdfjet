@@ -193,17 +193,6 @@ public class SubsetTest {
     }
 
     [Fact]
-    public void AStreamFontIsSubsetAsItsTrueTypeFontIs() {
-        // The .ttf.stream of JetBrains Mono is its .ttf, compressed: subset or
-        // whole, the two embed the same font program.
-        foreach (bool subset in new bool[] {true, false}) {
-            Assert.Equal(
-                    Program(Doc(Compliance.PDF_1_7, "fonts/JetBrainsMono/JetBrainsMono-Regular.ttf", subset, "Hello")),
-                    Program(Doc(Compliance.PDF_1_7, "tests/data/stream-fonts/JetBrainsMono-Regular.ttf.stream", subset, "Hello")));
-        }
-    }
-
-    [Fact]
     public void TwoFontsOfOneFileShareOneSubset() {
         string raw = Doc(Compliance.PDF_1_7, "fonts/NotoSans/NotoSans-Regular.ttf", true, "A", "B");
         Assert.Single(Regex.Matches(raw, "/Length1 "));

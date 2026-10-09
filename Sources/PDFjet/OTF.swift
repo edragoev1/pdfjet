@@ -84,7 +84,7 @@ class OTF {
             version == 0x4F54544F {     // CFF OTF
             // We should be able to read this font
         } else {
-            throw PDFjetError(message: "OTF version == \(version) is not supported.")
+            throw OTF.fontError("not an OpenType or TrueType font: PDFjet reads .otf and .ttf fonts")
         }
 
         let numOfTables = try readUInt16()  // numOfTables
@@ -160,9 +160,8 @@ class OTF {
         if advanceWidth.isEmpty {
             throw OTF.fontError("no advance widths")
         }
-        // The name goes into the PDF as the name of the font, as the name of
-        // a stream font does.
-        if fontName == nil || !FontStream1.isFontName(Array(fontName!.utf8)) {
+        // The name goes into the PDF as the name of the font.
+        if fontName == nil || !FontWriter.isFontName(Array(fontName!.utf8)) {
             throw OTF.fontError("the font name")
         }
     }

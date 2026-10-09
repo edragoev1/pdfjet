@@ -157,7 +157,7 @@ For an accessible document, set the compliance to PDF/UA-1 and give the document
 PDFjet is fast by design, and a few habits keep it that way.
 
 - Create each font once and use it everywhere. A Font object embeds its font in the PDF once, however many pages use it, and a text line can draw in another size of the same font with setFontSize, without a second font.
-- Use the .stream fonts that come with PDFjet, such as IBMPlexSans.Regular. They are the same fonts, compressed once ahead of time, so they load faster than the .otf and .ttf files and are written to the PDF as they are.
+- Use TrueType fonts, such as the ones that come with PDFjet, IBMPlexSans.Regular and the rest. PDFjet embeds only the glyphs a document draws, so a page in a Chinese font is a few hundred kilobytes, not the megabytes of the whole font.
 - Add an image to the PDF once and draw it on as many pages as you like. The image data is written once.
 - Write to a buffered stream, and let PDFjet write each page out as the next one starts. A document of thousands of pages needs no more memory than one page.
 - For a table of tens of thousands of rows, use BigTable, which writes the rows as it reads them, rather than Table, which holds every cell until it is drawn. Example 43 writes 124,716 rows of a CSV file this way.
@@ -192,7 +192,7 @@ The compliance levels PDF_A_1A to PDF_A_3B make a PDF/A document, for long-term 
 A Font is created once for a PDF and used by any number of text lines, blocks and tables. Its size is set with setSize, and a text line can draw in another size of the same font with setFontSize.
 
 @snippet fonts The fonts that come with PDFjet
-The classes of the com.pdfjet.fonts package, such as IBMPlexSans, SourceSerif4, JetBrainsMono and NotoSans, name the font files that come with PDFjet: IBM Plex in its Sans, Serif, Mono and Math families and in Arabic, Hebrew, Thai, Japanese, Korean and Chinese; Source Serif 4; JetBrains Mono; and Noto Sans. They are .stream files, the fonts compressed once ahead of time, so they load fast, and PDFjet embeds only the characters a document uses.
+The classes of the com.pdfjet.fonts package, such as IBMPlexSans, SourceSerif4, JetBrainsMono and NotoSans, name the font files that come with PDFjet: IBM Plex in its Sans, Serif, Mono and Math families and in Arabic, Hebrew, Thai, Japanese, Korean and Chinese; Source Serif 4; JetBrains Mono; and Noto Sans. They are .ttf files, and PDFjet embeds only the glyphs a document uses.
 
 @snippet font-files Fonts from files
 Any OpenType or TrueType font file is a font for PDFjet: pass its path, or an input stream of it, to the Font constructor.

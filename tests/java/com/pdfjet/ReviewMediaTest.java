@@ -543,8 +543,8 @@ class ReviewMediaTest {
 
     @Test
     void aFontFileNotEndingInStreamIsToldByItsFirstBytes() throws Exception {
-        // A stream font under another name is read as a stream font, as the
-        // constructor of a stream reads it.
+        // A font file whose name ends in neither .otf nor .ttf is read as the
+        // font it is.
         java.io.File copy = java.io.File.createTempFile("pdfjet", ".font");
         try {
             java.nio.file.Files.copy(TestSupport.file("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf").toPath(),

@@ -1,24 +1,13 @@
 /**
- * FontStream2.swift
+ * FontObjects.swift
  *
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 import Foundation
 
-class FontStream2 {
-    static func register(
-            _ objects: inout [PDFobj],
-            _ font: Font,
-            _ stream: InputStream) throws {
-        stream.open()
-        defer {
-            stream.close()
-        }
-        try FontStream1.getFontData(font, stream)
-        register(&objects, font, try FontStream1.readBytes(stream, font.compressedSize!))
-    }
-
+/// The objects of a font added to an existing PDF, embedded whole.
+class FontObjects {
     // Adds the font, whose font program is the compressed bytes, to the
     // objects of an existing PDF.
     static func register(_ objects: inout [PDFobj], _ font: Font, _ compressed: [UInt8]) {
@@ -185,7 +174,7 @@ class FontStream2 {
         // the replacement character.
         list.append("<0000> <FFFD>\n")
         var buf = String()
-        let unicodeOf = FontStream1.unicodeOfGlyphs(font.unicodeToGID)
+        let unicodeOf = FontWriter.unicodeOfGlyphs(font.unicodeToGID)
         for cid in 0...0xffff {
             let gid = font.unicodeToGID[cid]
             if gid > 0 && unicodeOf[gid] == cid {
@@ -304,4 +293,4 @@ class FontStream2 {
         sb.append("endbfchar\n")
         list.removeAll()
     }
-}   // End of FontStream2.swift
+}   // End of FontObjects.swift

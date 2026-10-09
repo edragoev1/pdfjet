@@ -34,7 +34,7 @@ func Example37(fileName string) {
 		log.Fatal(err)
 	}
 	reader := bufio.NewReader(file1)
-	font1 := pdfjet.NewFontStream2(&objects, reader)
+	font1 := pdfjet.NewFontForObjects(&objects, reader)
 	font1.SetSize(72.0)
 
 	text := pdfjet.NewTextLine(font1, "This is a test!")

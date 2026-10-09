@@ -78,7 +78,7 @@ import Testing
         #expect(try value("B2a", "/Count") == "")
     }
 
-    private static let streamFont = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"
+    private static let trueTypeFont = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"
 
     // A document with the headings, as text lines of their structure types,
     // H1 on the first page and the others on the second.
@@ -87,7 +87,7 @@ import Testing
         if tagged {
             _ = memory.pdf.setTitle("Title")
         }
-        let font = try Font(memory.pdf, TestSupport.open(BookmarkTests.streamFont))
+        let font = try Font(memory.pdf, TestSupport.open(BookmarkTests.trueTypeFont))
         var page: Page?
         for (i, heading) in headings.enumerated() {
             if page == nil || heading.0 == "H1" && i > 0 {
@@ -102,7 +102,7 @@ import Testing
     // A tagged document with headings and no bookmarks of its own has the
     // bookmarks of its headings, each under the heading of a higher level
     // before it, and each at the top of its heading on its page, as PAC asks.
-    @Test(.enabled(if: TestSupport.exists(streamFont), "the fonts directory is not here"))
+    @Test(.enabled(if: TestSupport.exists(trueTypeFont), "the fonts directory is not here"))
     func aTaggedDocumentHasTheBookmarksOfItsHeadings() throws {
         let memory = try headingsPDF(true, [("H1", "Intro"), ("H2", "What  it is"), ("H3", "In short"),
                                             ("H2", "Why"), ("H1", "Use")])
@@ -135,7 +135,7 @@ import Testing
 
     // A document that is not tagged has no headings, and one with bookmarks
     // of its own keeps them.
-    @Test(.enabled(if: TestSupport.exists(streamFont), "the fonts directory is not here"))
+    @Test(.enabled(if: TestSupport.exists(trueTypeFont), "the fonts directory is not here"))
     func ofHeadingsOnlyInATaggedDocumentWithoutBookmarks() throws {
         let untagged = try headingsPDF(false, [("H1", "Intro")])
         try untagged.pdf.complete()
@@ -143,7 +143,7 @@ import Testing
 
         let own = try headingsPDF(true, [("H1", "Intro")])
         let page = Page(own.pdf, Letter.PORTRAIT)
-        let font = try Font(own.pdf, TestSupport.open(BookmarkTests.streamFont))
+        let font = try Font(own.pdf, TestSupport.open(BookmarkTests.trueTypeFont))
         _ = Bookmark(own.pdf).addBookmark(page, Title(font, "Mine", 10, 10))
         try own.pdf.complete()
         let objects = try TestSupport.read(own.bytes)

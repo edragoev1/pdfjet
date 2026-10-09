@@ -42,6 +42,16 @@ compiles. Swift (`Subset.swift`, `PDF.newObj(_:)`) the same too: the four
 ports' Example_28 pass veraPDF's PDF/UA check. Left: Acrobat on Windows (the
 owner), the .ttf.stream deprecation once that is done, and the benchmark of
 8c in benchmarks/ (jet-noto of TextBench).
+**The .stream format removed, decided by the owner on 9 October 2026** ("I am
+strongly leaning to removing EVERYTHING related to stream fonts right now ...
+clients do not use them"): the reader in the four ports, the generator and
+Zopfli in util, Go's NewFontStream1 and NewFontStream2 (NewFontForObjects in
+its place), the stream tests and fuzz targets; FontWriter and FontObjects
+hold the writers every font shares. check-api.sh lists the two Go functions as
+gone. PDFjet Forms must move its fonts to .ttf before it takes 9.0.5 (its
+server keeps .otf.stream and .ttf.stream copies), and the Jazzer FontStream
+target in pdfjet-fuzz-replay goes.
+
 **TrueType only, decided by the owner on 8 October 2026** ("YES we should use
 only .ttf fonts in both PDFjet and PDFjet Forms"): the constants point to the
 `.ttf` files, IBM Plex as IBM's `.ttf` editions (the Forms editor's `.woff2`

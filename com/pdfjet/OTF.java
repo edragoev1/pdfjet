@@ -83,8 +83,7 @@ class OTF {
             version == 0x4F54544FL) {   // CFF OTF
             // We should be able to read this font
         } else {
-            throw new Exception(
-                    "OTF version == " + version + " is not supported.");
+            throw fontError("not an OpenType or TrueType font: PDFjet reads .otf and .ttf fonts");
         }
         gposWork = MAX_GPOS_WORK;
 
@@ -162,9 +161,8 @@ class OTF {
         if (advanceWidth == null || advanceWidth.length == 0) {
             throw fontError("no advance widths");
         }
-        // The name goes into the PDF as the name of the font, as the name of
-        // a stream font does.
-        if (fontName == null || !FontStream1.isFontName(fontName.getBytes(StandardCharsets.UTF_8))) {
+        // The name goes into the PDF as the name of the font.
+        if (fontName == null || !FontWriter.isFontName(fontName.getBytes(StandardCharsets.UTF_8))) {
             throw fontError("the font name");
         }
     }

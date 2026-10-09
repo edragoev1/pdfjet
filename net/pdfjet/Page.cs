@@ -802,9 +802,6 @@ public class Page {
                 i += Util.CharCount(str, i);
             }
             int[] offsets = null;
-            if (hasMarks && font.markData != null) {
-                FontStream1.ReadMarks(font);
-            }
             if (hasMarks && font.markAnchors != null) {
                 offsets = MarkOffsets(font, codePoints, gids, n);
             } else if (mirrored == null && joiners == null && runEdge == null && !hasNotdef) {
@@ -1127,7 +1124,7 @@ public class Page {
             return true;
         }
         ReadOnlySpan<char> span = str.AsSpan();
-        if (font.markAnchors == null && font.markData == null) {
+        if (font.markAnchors == null) {
             return span.IndexOfAnyInRange('\u200C', '\u200F') >= 0;
         }
         int start = span.IndexOfAnyInRange('\u0300', '\uFFFF');

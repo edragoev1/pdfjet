@@ -1,5 +1,5 @@
 /*
- * FontStream2.cs
+ * FontObjects.cs
  *
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
@@ -11,14 +11,10 @@ using System.Text;
 using System.Collections.Generic;
 
 namespace PDFjet.NET {
-class FontStream2 {
-    internal static void Register(List<PDFobj> objects, Font font, Stream inputStream) {
-        FontStream1.GetFontData(font, inputStream);
-        byte[] compressed = FontStream1.ReadBytes(inputStream, font.compressedSize);
-        inputStream.Close();
-        Register(objects, font, compressed);
-    }
-
+/// <summary>
+/// The objects of a font added to an existing PDF, embedded whole.
+/// </summary>
+class FontObjects {
     // Adds the font, whose font program is the compressed bytes, to the
     // objects of an existing PDF.
     internal static void Register(List<PDFobj> objects, Font font, byte[] compressed) {
@@ -179,32 +175,32 @@ class FontStream2 {
         // the replacement character.
         list.Add("<0000> <FFFD>\n");
         StringBuilder buf = new StringBuilder();
-        int[] unicodeOf = FontStream1.UnicodeOfGlyphs(font.unicodeToGID);
+        int[] unicodeOf = FontWriter.UnicodeOfGlyphs(font.unicodeToGID);
         for (int cid = 0; cid <= 0xffff; cid++) {
             int gid = font.unicodeToGID[cid];
             if (gid > 0 && unicodeOf[gid] == cid) {
                 buf.Append('<');
-                buf.Append(FontStream1.ToHexString(gid));
+                buf.Append(FontWriter.ToHexString(gid));
                 buf.Append("> <");
                 // A presentation form that the Bidi class puts in maps to the letters it stands for.
                 String letters = Bidi.LettersOf(cid);
                 if (letters == null) {
-                    buf.Append(FontStream1.ToHexString(cid));
+                    buf.Append(FontWriter.ToHexString(cid));
                 } else {
                     foreach (char ch in letters) {
-                        buf.Append(FontStream1.ToHexString(ch));
+                        buf.Append(FontWriter.ToHexString(ch));
                     }
                 }
                 buf.Append(">\n");
                 list.Add(buf.ToString());
                 buf.Length = 0;
                 if (list.Count == 100) {
-                    FontStream1.WriteListToBuffer(sb, list);
+                    FontWriter.WriteListToBuffer(sb, list);
                 }
             }
         }
         if (list.Count > 0) {
-            FontStream1.WriteListToBuffer(sb, list);
+            FontWriter.WriteListToBuffer(sb, list);
         }
         sb.Append("endcmap\n");
         sb.Append("CMapName currentdict /CMap defineresource pop\n");
@@ -266,5 +262,5 @@ class FontStream2 {
         objects.Add(obj);
         font.cidFontDictObjNumber = obj.number;
     }
-}   // End of FontStream2.cs
+}   // End of FontObjects.cs
 }   // End of namespace PDFjet.NET

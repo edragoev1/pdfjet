@@ -62,11 +62,7 @@ public class Font {
     // ID, for each subtable in markAnchors, or null: 1 and an anchor, or 0 and
     // no anchor, for each class of marks.
     internal List<Dictionary<int, int[]>> baseAnchors;
-    // Where the marks go, compressed, as a stream font keeps it until a mark
-    // is drawn in the font, or null.
-    internal byte[] markData;
     internal bool cff;
-    internal int compressedSize;
     internal int uncompressedSize;
     internal int[][] metrics;           // Only used for core fonts.
     // Tells the font program this font was read from apart from every other,
@@ -259,55 +255,30 @@ public class Font {
     }
 
     /// <summary>
-    /// Creates a font from an OpenType, TrueType, .otf.stream or .ttf.stream
-    /// font and adds it to the objects of an existing PDF, embedded whole. The
-    /// format is told from the first bytes of the stream.
+    /// Creates a font from an OpenType or TrueType font, a .otf or a .ttf, and
+    /// adds it to the objects of an existing PDF, embedded whole.
     /// </summary>
     public Font(List<PDFobj> objects, Stream inputStream) {
-        MemoryStream stream = new MemoryStream();
-        inputStream.CopyTo(stream);
+        OpenTypeFont.Register(objects, this, inputStream);
         inputStream.Dispose();
-        stream.Position = 0;
-        if (IsOpenTypeFont(stream)) {
-            OpenTypeFont.Register(objects, this, stream);
-        } else {
-            FontStream2.Register(objects, this, stream);
-        }
         SetSize(size);
     }
 
     /// <summary>
-    /// Constructor for OpenType, TrueType, .otf.stream and .ttf.stream fonts. The
-    /// format is told from the first bytes of the stream.
+    /// Constructor for OpenType and TrueType fonts, .otf and .ttf.
     /// </summary>
     /// <param name="pdf">the PDF object that requires this font.</param>
     /// <param name="inputStream">the input stream to read this font from.</param>
     public Font(PDF pdf, System.IO.Stream inputStream) {
         this.pdf = pdf;
-        MemoryStream stream = new MemoryStream();
-        inputStream.CopyTo(stream);
-        stream.Position = 0;
-        if (IsOpenTypeFont(stream)) {
-            OpenTypeFont.Register(pdf, this, stream);
-        } else {
-            FontStream1.Register(pdf, this, stream);
-        }
+        OpenTypeFont.Register(pdf, this, inputStream);
         SetSize(size);
     }
 
-    // Returns true if the stream starts with the version of an OpenType or TrueType
-    // font, and moves back to the start of the stream.
-    private static bool IsOpenTypeFont(Stream stream) {
-        uint version = 0;
-        for (int i = 0; i < 4; i++) {
-            version = (version << 8) | (uint) (stream.ReadByte() & 0xFF);
-        }
-        stream.Position = 0;
-        return version == 0x00010000 || version == 0x74727565 || version == 0x4F54544F;
-    }
-
     /// <summary>
-    /// Constructor for OpenType, TrueType and .otf.stream and .ttf.stream fonts.
+    /// Constructor for OpenType and TrueType fonts, .otf and .ttf files. A path
+    /// to a .ttf.stream or .otf.stream file, the fonts PDFjet shipped before
+    /// 9.0.5, opens the .ttf or else the .otf file of the same name beside it.
     /// </summary>
     /// <param name="pdf">the pdf object.</param>
     /// <param name="fontPath">the font path.</param>
@@ -316,27 +287,17 @@ public class Font {
         this.pdf = pdf;
         fontPath = FontFileOf(fontPath);
         using (FileStream inputStream = new FileStream(fontPath, FileMode.Open, FileAccess.Read)) {
-            // Files ending in .stream are stream fonts; the format of any
-            // other is told from its first bytes, as the stream constructor
-            // tells it.
-            if (fontPath.EndsWith(".stream", StringComparison.Ordinal) || !IsOpenTypeFont(inputStream)) {
-                FontStream1.Register(pdf, this, inputStream);
-            } else {
-                OpenTypeFont.Register(pdf, this, inputStream);
-            }
+            OpenTypeFont.Register(pdf, this, inputStream);
         }
         SetSize(size);
     }
 
     // Returns the path of the font file: the path given, or, for a .ttf.stream
-    // or .otf.stream file that is not there, the .ttf or else the .otf file of
-    // the same name beside it. PDFjet ships no .stream files from 9.0.5, and
-    // its fonts are subset from their .ttf files: a path written before is the
-    // same font.
+    // or .otf.stream file, the .ttf or else the .otf file of the same name
+    // beside it. PDFjet reads .otf and .ttf fonts alone from 9.0.5, and its
+    // fonts are subset from their .ttf files: a path written for the .stream
+    // files PDFjet shipped before is the same font.
     internal static String FontFileOf(String fontPath) {
-        if (File.Exists(fontPath)) {
-            return fontPath;
-        }
         foreach (String stream in new String[] {".ttf.stream", ".otf.stream"}) {
             if (fontPath.EndsWith(stream, StringComparison.Ordinal)) {
                 String basePath = fontPath.Substring(0, fontPath.Length - stream.Length);
@@ -358,8 +319,8 @@ public class Font {
     // Returns a number that identifies the font program: the units it is drawn
     // in, its advance widths and its character map, which say what its glyphs
     // are and which glyph each character has. Two fonts of one name that give
-    // the same number are the same program, whether it was read from a .otf,
-    // a .ttf or a .stream file, and the PDF embeds it once and writes one
+    // the same number are the same program, whether it was read from a .otf
+    // or a .ttf file, and the PDF embeds it once and writes one
     // descriptor, one CID font and one ToUnicode map for both. The name is
     // not enough on its own: PDFjet ships subsets of the Noto CJK fonts under
     // the name of the whole font, and the text of the one embedded second was
@@ -417,8 +378,8 @@ public class Font {
     /// <summary>
     /// Sets whether this font is embedded as a subset, the outlines of the
     /// glyphs the document does not draw left out, which is the default for a
-    /// TrueType font, a .ttf or a .ttf.stream. A font with CFF outlines, a
-    /// .otf or a .otf.stream, is always embedded whole. A font whose license
+    /// TrueType font, a .ttf. A font with CFF outlines, a .otf, is always
+    /// embedded whole. A font whose license
     /// does not allow subsetting, by the fsType of its OS/2 table, is embedded
     /// whole too. Fonts read from one file are one font program in the PDF:
     /// kept whole for one, the program is whole for all of them. It must be

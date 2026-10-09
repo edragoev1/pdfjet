@@ -8,7 +8,6 @@ package pdfjet
 import (
 	"bytes"
 	"compress/zlib"
-	"fmt"
 	"io"
 	"strings"
 	"unicode/utf16"
@@ -97,7 +96,7 @@ func newOpenTypeFont(reader io.Reader) *openTypeFont {
 		version == 0x4F54544F { // CFF OTF
 		// We should be able to read this font.
 	} else {
-		panic("OTF version == " + fmt.Sprint(version) + " is not supported.")
+		fontError("not an OpenType or TrueType font: PDFjet reads .otf and .ttf fonts")
 	}
 	otf.gposWork = maxGposWork
 
@@ -183,8 +182,7 @@ func newOpenTypeFont(reader io.Reader) *openTypeFont {
 	if len(otf.advanceWidth) == 0 {
 		fontError("no advance widths")
 	}
-	// The name goes into the PDF as the name of the font, as the name of a
-	// stream font does.
+	// The name goes into the PDF as the name of the font.
 	if !isFontName([]byte(otf.fontName)) {
 		fontError("the font name")
 	}

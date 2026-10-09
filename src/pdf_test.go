@@ -262,7 +262,7 @@ func testPageNumbers(t *testing.T, pdf []byte) []string {
 	return numbers
 }
 
-func testStreamFont(t *testing.T, pdf *PDF) *Font {
+func testTrueTypeFont(t *testing.T, pdf *PDF) *Font {
 	t.Helper()
 	file, err := os.Open(testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
 	if err != nil {
@@ -276,7 +276,7 @@ func TestPDFADetachedPageThatIsNeverAddedLeavesNoTrace(t *testing.T) {
 	doc := testNewDoc()
 	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	doc.pdf.SetTitle("Title")
-	font := testStreamFont(t, doc.pdf)
+	font := testTrueTypeFont(t, doc.pdf)
 	// A dry run, like one that measures the text, on a page that is never added.
 	dry := NewPageDetached(doc.pdf, letter.Portrait())
 	NewTextLine(font, "PDFjet").SetURIAction("https://pdfjet.com").SetLocation(70, 80).DrawOn(dry)
@@ -305,7 +305,7 @@ func TestPDFTheStructureTreeFollowsThePagesNotTheOrderTheyWereDrawnIn(t *testing
 	doc := testNewDoc()
 	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	doc.pdf.SetTitle("Title")
-	font := testStreamFont(t, doc.pdf)
+	font := testTrueTypeFont(t, doc.pdf)
 	second := NewPageDetached(doc.pdf, letter.Portrait())
 	NewTextLine(font, "Second").SetLocation(70, 80).DrawOn(second)
 	first := NewPageDetached(doc.pdf, letter.Portrait())
@@ -437,7 +437,7 @@ func TestPDFALinkIsInALinkElementAndAnyOtherAnnotationInAnAnnotElement(t *testin
 	doc := testNewDoc()
 	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	doc.pdf.SetTitle("Title")
-	font := testStreamFont(t, doc.pdf)
+	font := testTrueTypeFont(t, doc.pdf)
 	page := NewPage(doc.pdf, letter.Portrait())
 	NewTextLine(font, "PDFjet").SetURIAction("https://pdfjet.com").SetLocation(70, 80).DrawOn(page)
 	note := NewTextAnnotation()
@@ -482,7 +482,7 @@ func TestPDFALinkedTextLineIsTheLinkOfItsParagraph(t *testing.T) {
 	doc := testNewDoc()
 	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	doc.pdf.SetTitle("Title")
-	font := testStreamFont(t, doc.pdf)
+	font := testTrueTypeFont(t, doc.pdf)
 	page := NewPage(doc.pdf, letter.Portrait())
 	NewTextLine(font, "PDFjet").SetURIAction("https://pdfjet.com").SetLocation(70, 80).DrawOn(page)
 	if content := testContent(page); !strings.Contains(content, "/Link <</MCID 0>>\nBDC\n") {
@@ -514,7 +514,7 @@ func TestPDFALinkedWordIsALinkAmongTheWordsOfItsParagraph(t *testing.T) {
 	doc := testNewDoc()
 	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	doc.pdf.SetTitle("Title")
-	font := testStreamFont(t, doc.pdf)
+	font := testTrueTypeFont(t, doc.pdf)
 	paragraph := NewParagraph().
 		Add(NewTextLine(font, "Read").SetStructureType(structelem.Span)).
 		Add(NewTextLine(font, "the site").SetURIAction("https://pdfjet.com")).
@@ -546,7 +546,7 @@ func TestPDFALinkedImageIsTheFigureOfItsLink(t *testing.T) {
 	doc := testNewDoc()
 	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	doc.pdf.SetTitle("Title")
-	testStreamFont(t, doc.pdf)
+	testTrueTypeFont(t, doc.pdf)
 	page := NewPage(doc.pdf, letter.Portrait())
 	file, err := os.Open(testRepoPath(t, "images/up-arrow.png"))
 	if err != nil {
@@ -577,7 +577,7 @@ func TestPDFALinkedImageIsTheFigureOfItsLink(t *testing.T) {
 // image leaves the structure elements begun around it as they were.
 func TestPDFALinkOfADocumentNotTaggedIsNoElement(t *testing.T) {
 	doc := testNewDoc()
-	font := testStreamFont(t, doc.pdf)
+	font := testTrueTypeFont(t, doc.pdf)
 	page := NewPage(doc.pdf, letter.Portrait())
 	file, err := os.Open(testRepoPath(t, "images/up-arrow.png"))
 	if err != nil {
@@ -1064,7 +1064,7 @@ func TestPDFAnInlineElementStandingAsABlockSaysSo(t *testing.T) {
 	doc := testNewDoc()
 	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	doc.pdf.SetTitle("Title")
-	font := testStreamFont(t, doc.pdf)
+	font := testTrueTypeFont(t, doc.pdf)
 	page := NewPage(doc.pdf, letter.Portrait())
 	file, err := os.Open(testRepoPath(t, "images/up-arrow.png"))
 	if err != nil {
@@ -1096,7 +1096,7 @@ func TestPDFTheTextOfACellHasNoAlt(t *testing.T) {
 	doc := testNewDoc()
 	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	doc.pdf.SetTitle("Title")
-	font := testStreamFont(t, doc.pdf)
+	font := testTrueTypeFont(t, doc.pdf)
 	page := NewPage(doc.pdf, letter.Portrait())
 	table := NewTable().SetTableData([][]*Cell{{NewCell(font, "Name"), NewCell(font, "City")}, {NewCell(font, "Jane"), NewCell(font, "Ottawa")}}, 1)
 	table.SetLocation(70, 80)
@@ -1130,7 +1130,7 @@ func TestPDFAnAnnotationIsDescribedByWhatItSays(t *testing.T) {
 	doc := testNewDoc()
 	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	doc.pdf.SetTitle("Title")
-	testStreamFont(t, doc.pdf)
+	testTrueTypeFont(t, doc.pdf)
 	page := NewPage(doc.pdf, letter.Portrait())
 	note := NewTextAnnotation()
 	note.SetLocation(70, 100)

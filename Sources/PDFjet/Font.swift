@@ -61,11 +61,7 @@ public class Font {
     // ID, for each subtable in markAnchors, or nil: 1 and an anchor, or 0 and
     // no anchor, for each class of marks.
     var baseAnchors: [[Int: [Int]]]?
-    // Where the marks go, compressed, as a stream font keeps it until a mark
-    // is drawn in the font, or nil.
-    var markData: [UInt8]?
     var cff: Bool = false
-    var compressedSize: Int?
     var uncompressedSize: Int?
     var metrics: [[Int16]]?
     // Tells the font program this font was read from apart from every other,
@@ -265,22 +261,16 @@ public class Font {
         pdf.fonts.append(self)
     }
 
-    /// Creates a font from an OpenType, TrueType, .otf.stream or .ttf.stream
-    /// font and adds it to the objects of an existing PDF, embedded whole. The
-    /// format is told from the first bytes of the stream.
+    /// Creates a font from an OpenType or TrueType font, a .otf or a .ttf, and
+    /// adds it to the objects of an existing PDF, embedded whole.
     public init(_ objects: inout [PDFobj], _ stream: InputStream) throws {
         let bytes = try Content.getFromStream(stream)
-        if Font.isOpenTypeFont(bytes) {
-            try OpenTypeFont.register(&objects, self, InputStream(data: Data(bytes)))
-        } else {
-            try FontStream2.register(&objects, self, InputStream(data: Data(bytes)))
-        }
+        try OpenTypeFont.register(&objects, self, InputStream(data: Data(bytes)))
         setSize(size)
     }
 
     ///
-    /// Constructor for OpenType, TrueType, .otf.stream and .ttf.stream fonts. The
-    /// format is told from the first bytes of the stream.
+    /// Constructor for OpenType and TrueType fonts, .otf and .ttf.
     ///
     /// - Parameter pdf: the PDF object that requires this font.
     /// - Parameter stream: the input stream to read this font from.
@@ -289,28 +279,14 @@ public class Font {
         self.pdfIdentity = pdf.identity
         self.compliance = pdf.compliance
         let bytes = try Content.getFromStream(stream)
-        if Font.isOpenTypeFont(bytes) {
-            try OpenTypeFont.register(pdf, self, InputStream(data: Data(bytes)))
-        } else {
-            try FontStream1.register(pdf, self, InputStream(data: Data(bytes)))
-        }
+        try OpenTypeFont.register(pdf, self, InputStream(data: Data(bytes)))
         setSize(size)
     }
 
-    // Returns true if the bytes start with the version of an OpenType or TrueType font.
-    private static func isOpenTypeFont(_ bytes: [UInt8]) -> Bool {
-        if bytes.count < 4 {
-            return false
-        }
-        var version: UInt32 = 0
-        for i in 0..<4 {
-            version = (version << 8) | UInt32(bytes[i])
-        }
-        return version == 0x00010000 || version == 0x74727565 || version == 0x4F54544F
-    }
-
     ///
-    /// Constructor for OpenType, TrueType and .otf.stream and .ttf.stream fonts.
+    /// Constructor for OpenType and TrueType fonts, .otf and .ttf files. A path
+    /// to a .ttf.stream or .otf.stream file, the fonts PDFjet shipped before
+    /// 9.0.5, opens the .ttf or else the .otf file of the same name beside it.
     ///
     /// - Parameter pdf: the pdf object.
     /// - Parameter fontPath: the font path.
@@ -324,30 +300,17 @@ public class Font {
                 let inputStream = InputStream(fileAtPath: fontPath) else {
             throw PDFjetError(message: "Font file not found: " + fontPath)
         }
-        if (fontPath.hasSuffix(".stream")) {
-            try FontStream1.register(pdf, self, inputStream)
-        } else {
-            // Any other file is an OpenType or a TrueType font, or a stream
-            // font by another name, told apart by its first bytes.
-            let bytes = try Content.getFromStream(inputStream)
-            if Font.isOpenTypeFont(bytes) {
-                try OpenTypeFont.register(pdf, self, InputStream(data: Data(bytes)))
-            } else {
-                try FontStream1.register(pdf, self, InputStream(data: Data(bytes)))
-            }
-        }
+        let bytes = try Content.getFromStream(inputStream)
+        try OpenTypeFont.register(pdf, self, InputStream(data: Data(bytes)))
         setSize(size)
     }
 
     // Returns the path of the font file: the path given, or, for a .ttf.stream
-    // or .otf.stream file that is not there, the .ttf or else the .otf file of
-    // the same name beside it. PDFjet ships no .stream files from 9.0.5, and
-    // its fonts are subset from their .ttf files: a path written before is the
-    // same font.
+    // or .otf.stream file, the .ttf or else the .otf file of the same name
+    // beside it. PDFjet reads .otf and .ttf fonts alone from 9.0.5, and its
+    // fonts are subset from their .ttf files: a path written for the .stream
+    // files PDFjet shipped before is the same font.
     static func fontFileOf(_ fontPath: String) -> String {
-        if FileManager.default.fileExists(atPath: fontPath) {
-            return fontPath
-        }
         for stream in [".ttf.stream", ".otf.stream"] where fontPath.hasSuffix(stream) {
             let base = String(fontPath.dropLast(stream.count))
             for ext in [".ttf", ".otf"] where FileManager.default.fileExists(atPath: base + ext) {
@@ -360,8 +323,8 @@ public class Font {
     // Returns a number that identifies the font program: the units it is drawn
     // in, its advance widths and its character map, which say what its glyphs
     // are and which glyph each character has. Two fonts of one name that give
-    // the same number are the same program, whether it was read from a .otf,
-    // a .ttf or a .stream file, and the PDF embeds it once and writes one
+    // the same number are the same program, whether it was read from a .otf
+    // or a .ttf file, and the PDF embeds it once and writes one
     // descriptor, one CID font and one ToUnicode map for both. The name is
     // not enough on its own: PDFjet ships subsets of the Noto CJK fonts under
     // the name of the whole font, and the text of the one embedded second was
@@ -439,8 +402,8 @@ public class Font {
 
     /// Sets whether this font is embedded as a subset, the outlines of the
     /// glyphs the document does not draw left out, which is the default for a
-    /// TrueType font, a .ttf or a .ttf.stream. A font with CFF outlines, a .otf
-    /// or a .otf.stream, is always embedded whole. A font whose license does
+    /// TrueType font, a .ttf. A font with CFF outlines, a .otf, is always
+    /// embedded whole. A font whose license does
     /// not allow subsetting, by the fsType of its OS/2 table, is embedded whole
     /// too. Fonts read from one file are one font program in the PDF: kept
     /// whole for one, the program is whole for all of them. It must be called

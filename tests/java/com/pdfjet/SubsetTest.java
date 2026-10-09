@@ -212,18 +212,6 @@ class SubsetTest {
     }
 
     @Test
-    void aStreamFontIsSubsetAsItsTrueTypeFontIs() throws Exception {
-        // The .ttf.stream of JetBrains Mono is its .ttf, compressed: subset or
-        // whole, the two embed the same font program.
-        for (boolean subset : new boolean[] {true, false}) {
-            assertArrayEquals(
-                    program(doc(Compliance.PDF_1_7, "fonts/JetBrainsMono/JetBrainsMono-Regular.ttf", subset, "Hello")),
-                    program(doc(Compliance.PDF_1_7, "tests/data/stream-fonts/JetBrainsMono-Regular.ttf.stream", subset, "Hello")),
-                    "subset " + subset);
-        }
-    }
-
-    @Test
     void twoFontsOfOneFileShareOneSubset() throws Exception {
         String raw = doc(Compliance.PDF_1_7, "fonts/NotoSans/NotoSans-Regular.ttf", true, "A", "B");
         assertEquals(1, count(Pattern.compile("/Length1 "), raw));

@@ -861,7 +861,7 @@ func existingPages() {
 		log.Fatal(err)
 	}
 	defer file.Close()
-	font := pdfjet.NewFontStream2(&objects, bufio.NewReader(file)).SetSize(24)
+	font := pdfjet.NewFontForObjects(&objects, bufio.NewReader(file)).SetSize(24)
 	for _, pageObj := range pdf.GetPageObjects(objects) {
 		page := pdfjet.NewPageFromObject(pdf, pageObj)
 		page.AddFontResource(font, &objects)
