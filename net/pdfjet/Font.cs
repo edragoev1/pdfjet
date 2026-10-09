@@ -27,6 +27,10 @@ public class Font {
     internal int fontDescriptorObjNumber;
     internal int cidFontDictObjNumber;
     internal int toUnicodeCMapObjNumber;
+    internal int cidSetObjNumber;           // The CIDSet of a subset in PDF/A-1
+    internal String baseFont;               // The name it is embedded under, with the tag of a subset
+    internal Subset.Program program;        // A TrueType font program, until Complete()
+    internal bool[] kept;                   // The glyphs its subset keeps
 
     // Font attributes
     internal int unitsPerEm = 1000;     // The default for core fonts.
@@ -339,7 +343,7 @@ public class Font {
     }
 
     // One step of the FNV-1a hash, which is the same in the four ports.
-    private static ulong Fold(ulong hash, int value) {
+    internal static ulong Fold(ulong hash, int value) {
         return (hash ^ (uint) value) * 0x100000001B3UL;
     }
 
@@ -373,6 +377,32 @@ public class Font {
     public Font SetKernPairs(bool kernPairs) {
         this.kernPairs = kernPairs;
         return this;
+    }
+
+    /// <summary>
+    /// Sets whether this font is embedded as a subset, the outlines of the
+    /// glyphs the document does not draw left out, which is the default for a
+    /// TrueType font, a .ttf or a .ttf.stream. A font with CFF outlines, a
+    /// .otf or a .otf.stream, is always embedded whole. A font whose license
+    /// does not allow subsetting, by the fsType of its OS/2 table, is embedded
+    /// whole too. Fonts read from one file are one font program in the PDF:
+    /// kept whole for one, the program is whole for all of them. It must be
+    /// called before Complete().
+    /// </summary>
+    /// <param name="subset">false to embed the font whole.</param>
+    /// <returns>this Font object.</returns>
+    public Font SetSubset(bool subset) {
+        if (program != null) {
+            program.whole = !subset;
+        }
+        return this;
+    }
+
+    // Records that the glyph is drawn with the font.
+    internal void UseGlyph(int gid) {
+        if (program != null && gid >= 0 && gid < program.used.Length) {
+            program.used[gid] = true;
+        }
     }
 
     /// <summary>Returns the width of the string at the current font size.</summary>

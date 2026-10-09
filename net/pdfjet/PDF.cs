@@ -273,6 +273,15 @@ public sealed class PDF {
         Append(Token.NewObj);
     }
 
+    /// <summary>
+    /// Starts the object of a number reserved before, with ReserveObjNumber.
+    /// </summary>
+    internal void NewObj(int number) {
+        SetObjOffset(number, byteCount);
+        Append(number);
+        Append(Token.NewObj);
+    }
+
     internal void EndObj() {
         Append(Token.EndObj);
     }
@@ -2195,6 +2204,7 @@ public sealed class PDF {
             AddPageContent(prevPage);
         }
         completed = true;
+        Subset.AddTrueTypeFonts(this);
         if (compliance != Compliance.PDF_1_7) {
             metadataObjNumber = AddMetadataObject("", false);
             outputIntentObjNumber = AddOutputIntentObject();

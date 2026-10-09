@@ -743,7 +743,7 @@ public class Page {
             while (i < str.Length) {
                 int codePoint = Util.CodePointAt(str, i);  // A lone surrogate is drawn as .notdef
                 if (codePoint != 0xFEFF) {                  // BOM
-                    AppendCodePointAsHex(GlyphOf(font, codePoint));
+                    AppendGlyph(font, GlyphOf(font, codePoint));
                 }
                 i += Util.CharCount(str, i);
             }
@@ -809,7 +809,7 @@ public class Page {
                 offsets = MarkOffsets(font, codePoints, gids, n);
             } else if (mirrored == null && joiners == null && runEdge == null && !hasNotdef) {
                 for (int k = 0; k < n; k++) {
-                    AppendCodePointAsHex(gids[k]);
+                    AppendGlyph(font, gids[k]);
                 }
                 return;
             }
@@ -871,7 +871,7 @@ public class Page {
         Append(">>> BDC\n<");
         for (int k = start; k < end; k++) {
             if (offsets == null || (offsets[2*k] == 0 && offsets[2*k + 1] == 0)) {
-                AppendCodePointAsHex(gids[k]);
+                AppendGlyph(font, gids[k]);
             } else {
                 AppendMovedGlyph(font, gids[k], offsets[2*k], offsets[2*k + 1]);
             }
@@ -910,7 +910,7 @@ public class Page {
             if (InOwnSpan(font, codePoints, mirrored, k)) {
                 AppendGlyphWithActualText(font, codePoints, gids, null, mirrored, null, k);
             } else {
-                AppendCodePointAsHex(gids[k]);
+                AppendGlyph(font, gids[k]);
             }
         }
     }
@@ -946,13 +946,13 @@ public class Page {
             Append("> Tj\n");
         } else {
             Append("<");
-            AppendCodePointAsHex(gids[k]);
+            AppendGlyph(font, gids[k]);
             Append("> Tj\n");
         }
         if (joiner != 0) {
             int space = font.unicodeToGID[0x0020];
             Append("[<");
-            AppendCodePointAsHex(space);
+            AppendGlyph(font, space);
             Append("> ");
             Append(1000f * font.GlyphAdvance(space) / font.unitsPerEm);
             Append("] TJ\n");
@@ -1277,13 +1277,13 @@ public class Page {
             Append("[");
             Append(1000f * font.GlyphAdvance(space) / font.unitsPerEm);
             Append(" <");
-            AppendCodePointAsHex(space);
+            AppendGlyph(font, space);
             Append(">] TJ\n");
         }
         Append("<");
         for (int k = start; k < end; k++) {
             if (offsets[2*k] == 0 && offsets[2*k + 1] == 0) {
-                AppendCodePointAsHex(gids[k]);
+                AppendGlyph(font, gids[k]);
             } else {
                 AppendMovedGlyph(font, gids[k], offsets[2*k], offsets[2*k + 1]);
             }
@@ -1300,14 +1300,14 @@ public class Page {
         Append(" Ts\n");
         if (dx == 0) {
             Append("<");
-            AppendCodePointAsHex(gid);
+            AppendGlyph(font, gid);
             Append("> Tj\n");
         } else {
             float adjustment = 1000f * dx / font.unitsPerEm;
             Append("[");
             Append(-adjustment);
             Append(" <");
-            AppendCodePointAsHex(gid);
+            AppendGlyph(font, gid);
             Append("> ");
             Append(adjustment);
             Append("] TJ\n");
@@ -2476,6 +2476,13 @@ public class Page {
     // Multilingual Plane and six above it, where the largest code point is
     // 0x10FFFF. This is the innermost loop of every string drawn, so the
     // digits go on the stack, as they do in Append(float) and Append(int).
+    // Appends the glyph number as hexadecimal and records that the font draws
+    // it, so that a subset of the font keeps it.
+    private void AppendGlyph(Font font, int gid) {
+        font.UseGlyph(gid);
+        AppendCodePointAsHex(gid);
+    }
+
     internal void AppendCodePointAsHex(int codePoint) {
         if (codePoint <= 0xFFFF) {
             Span<byte> digits = stackalloc byte[4];

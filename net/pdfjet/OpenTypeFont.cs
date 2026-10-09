@@ -38,6 +38,17 @@ class OpenTypeFont {
         font.checksum = Font.ChecksumOf(font);
         font.SetSize(font.size);
 
+        if (!otf.cff) {
+            // A TrueType font is written at Complete(), a subset of the glyphs
+            // drawn; its pages refer to the number reserved for it.
+            font.info = otf.fontInfo;
+            font.capHeight = otf.capHeight;
+            Subset.Share(pdf, font, otf.buf, null, otf.buf.Length);
+            font.objNumber = pdf.ReserveObjNumber();
+            pdf.fonts.Add(font);
+            return;
+        }
+
         EmbedFontFile(pdf, font, otf);
         AddFontDescriptorObject(pdf, font, otf);
         AddCIDFontDictionaryObject(pdf, font, otf);
@@ -262,22 +273,7 @@ class OpenTypeFont {
         sb.Append("CMapName currentdict /CMap defineresource pop\n");
         sb.Append("end\nend");
 
-        byte[] buf2 = Encoding.UTF8.GetBytes(sb.ToString());
-        if (pdf.encryption != null) {
-            buf2 = AES256.Encrypt(buf2, pdf.encryption.GetKey());
-        }
-
-        pdf.NewObj();
-        pdf.Append("<<\n");
-        pdf.Append("/Length ");
-        pdf.Append(buf2.Length);
-        pdf.Append("\n");
-        pdf.Append(">>\n");
-        pdf.Append("stream\n");
-        pdf.Append(buf2);
-        pdf.Append("\nendstream\n");
-        pdf.EndObj();
-
+        FontStream1.AddCompressedStream(pdf, Encoding.UTF8.GetBytes(sb.ToString()));
         font.toUnicodeCMapObjNumber = pdf.GetObjNumber();
     }
 

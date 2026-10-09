@@ -17,10 +17,20 @@ class FontStream1 {
             Stream inputStream) {
         GetFontData(font, inputStream);
         font.checksum = Font.ChecksumOf(font);
+        if (!font.cff) {
+            // A TrueType font is written at Complete(), a subset of the glyphs
+            // drawn; its pages refer to the number reserved for it.
+            byte[] compressed = ReadBytes(inputStream, font.compressedSize);
+            inputStream.Dispose();
+            Subset.Share(pdf, font, null, compressed, font.uncompressedSize);
+            font.objNumber = pdf.ReserveObjNumber();
+            pdf.fonts.Add(font);
+            return;
+        }
         EmbedFontFile(pdf, font, inputStream);
-        AddFontDescriptorObject(pdf, font);
-        AddCIDFontDictionaryObject(pdf, font);
-        AddToUnicodeCMapObject(pdf, font);
+        AddFontDescriptorObject(pdf, font, font.name);
+        AddCIDFontDictionaryObject(pdf, font, font.name, null);
+        AddToUnicodeCMapObject(pdf, font, null);
 
         // Type0 Font Dictionary
         pdf.NewObj();
@@ -97,7 +107,9 @@ class FontStream1 {
         font.fileObjNumber = pdf.GetObjNumber();
     }
 
-    private static void AddFontDescriptorObject(PDF pdf, Font font) {
+    // Writes the font descriptor with the name given, which is the font's own,
+    // or that of a subset.
+    internal static void AddFontDescriptorObject(PDF pdf, Font font, String fontName) {
         foreach (Font f in pdf.fonts) {
             if (f.fontDescriptorObjNumber != 0 && f.name.Equals(font.name) && f.checksum == font.checksum) {
                 font.fontDescriptorObjNumber = f.fontDescriptorObjNumber;
@@ -109,7 +121,7 @@ class FontStream1 {
         pdf.Append(Token.BeginDictionary);
         pdf.Append("/Type /FontDescriptor\n");
         pdf.Append("/FontName /");
-        pdf.Append(font.name);
+        pdf.Append(fontName);
         pdf.Append('\n');
         if (font.cff) {
             pdf.Append("/FontFile3 ");
@@ -143,13 +155,20 @@ class FontStream1 {
         pdf.Append(OpenTypeFont.ToGlyphSpace(font.capHeight, font.unitsPerEm));
         pdf.Append('\n');
         pdf.Append("/StemV 79\n");
+        if (font.cidSetObjNumber != 0) {
+            pdf.Append("/CIDSet ");
+            pdf.Append(font.cidSetObjNumber);
+            pdf.Append(" 0 R\n");
+        }
         pdf.Append(Token.EndDictionary);
         pdf.EndObj();
 
         font.fontDescriptorObjNumber = pdf.GetObjNumber();
     }
 
-    private static void AddToUnicodeCMapObject(PDF pdf, Font font) {
+    // Writes the ToUnicode map of the font: of every glyph that has a
+    // character, or only of the glyphs kept, for a subset.
+    internal static void AddToUnicodeCMapObject(PDF pdf, Font font, bool[] kept) {
         foreach (Font f in pdf.fonts) {
             if (f.toUnicodeCMapObjNumber != 0 && f.name.Equals(font.name) && f.checksum == font.checksum) {
                 font.toUnicodeCMapObjNumber = f.toUnicodeCMapObjNumber;
@@ -179,7 +198,7 @@ class FontStream1 {
         int[] unicodeOf = UnicodeOfGlyphs(font.unicodeToGID);
         for (int cid = 0; cid <= 0xffff; cid++) {
             int gid = font.unicodeToGID[cid];
-            if (gid > 0 && unicodeOf[gid] == cid) {
+            if (gid > 0 && unicodeOf[gid] == cid && (kept == null || (gid < kept.Length && kept[gid]))) {
                 buf.Append('<');
                 buf.Append(ToHexString(gid));
                 buf.Append("> <");
@@ -208,26 +227,32 @@ class FontStream1 {
         sb.Append("CMapName currentdict /CMap defineresource pop\n");
         sb.Append("end\nend");
 
-        byte[] buf2 = Encoding.UTF8.GetBytes(sb.ToString());
-        if (pdf.encryption != null) {
-            buf2 = AES256.Encrypt(buf2, pdf.encryption.GetKey());
-        }
-
-        pdf.NewObj();
-        pdf.Append("<<\n");
-        pdf.Append("/Length ");
-        pdf.Append(buf2.Length);
-        pdf.Append("\n");
-        pdf.Append(">>\n");
-        pdf.Append("stream\n");
-        pdf.Append(buf2);
-        pdf.Append("\nendstream\n");
-        pdf.EndObj();
-
+        AddCompressedStream(pdf, Encoding.UTF8.GetBytes(sb.ToString()));
         font.toUnicodeCMapObjNumber = pdf.GetObjNumber();
     }
 
-    private static void AddCIDFontDictionaryObject(PDF pdf, Font font) {
+    // Writes a stream object of the data, compressed.
+    internal static void AddCompressedStream(PDF pdf, byte[] data) {
+        byte[] compressed = Compressor.Deflate(data);
+        if (pdf.encryption != null) {
+            compressed = AES256.Encrypt(compressed, pdf.encryption.GetKey());
+        }
+        pdf.NewObj();
+        pdf.Append("<<\n");
+        pdf.Append("/Filter /FlateDecode\n");
+        pdf.Append("/Length ");
+        pdf.Append(compressed.Length);
+        pdf.Append("\n");
+        pdf.Append(">>\n");
+        pdf.Append("stream\n");
+        pdf.Append(compressed);
+        pdf.Append("\nendstream\n");
+        pdf.EndObj();
+    }
+
+    // Writes the CID font with the name given, which is the font's own, or
+    // that of a subset, whose widths are those of the glyphs it keeps.
+    internal static void AddCIDFontDictionaryObject(PDF pdf, Font font, String baseFont, bool[] kept) {
         foreach (Font f in pdf.fonts) {
             if (f.cidFontDictObjNumber != 0 && f.name.Equals(font.name) && f.checksum == font.checksum) {
                 font.cidFontDictObjNumber = f.cidFontDictObjNumber;
@@ -244,7 +269,7 @@ class FontStream1 {
             pdf.Append("/Subtype /CIDFontType2\n");
         }
         pdf.Append("/BaseFont /");
-        pdf.Append(font.name);
+        pdf.Append(baseFont);
         pdf.Append('\n');
 
         byte[] registry = Encoding.UTF8.GetBytes("Adobe");
@@ -270,12 +295,32 @@ class FontStream1 {
         pdf.Append((int) Math.Round(k * Convert.ToSingle(font.advanceWidth[font.advanceWidth.Length - 1]), MidpointRounding.AwayFromZero));
         pdf.Append('\n');
 
-        pdf.Append("/W [0[\n");
-        foreach (int width in font.advanceWidth) {
-            pdf.Append((int) Math.Round(k * Convert.ToSingle(width), MidpointRounding.AwayFromZero));
-            pdf.Append(' ');
+        if (kept == null) {
+            pdf.Append("/W [0[\n");
+            foreach (int width in font.advanceWidth) {
+                pdf.Append((int) Math.Round(k * Convert.ToSingle(width), MidpointRounding.AwayFromZero));
+                pdf.Append(' ');
+            }
+            pdf.Append("]]\n");
+        } else {
+            // Each run of kept glyphs: its first glyph and its widths.
+            pdf.Append("/W [");
+            int count = Math.Min(kept.Length, font.advanceWidth.Length);
+            for (int gid = 0; gid < count; gid++) {
+                if (!kept[gid]) {
+                    continue;
+                }
+                pdf.Append('\n');
+                pdf.Append(gid);
+                pdf.Append('[');
+                for (; gid < count && kept[gid]; gid++) {
+                    pdf.Append((int) Math.Round(k * Convert.ToSingle(font.advanceWidth[gid]), MidpointRounding.AwayFromZero));
+                    pdf.Append(' ');
+                }
+                pdf.Append(']');
+            }
+            pdf.Append("]\n");
         }
-        pdf.Append("]]\n");
 
         pdf.Append("/CIDToGIDMap /Identity\n");
         pdf.Append(">>\n");
