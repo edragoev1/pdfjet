@@ -18,7 +18,7 @@
 from PIL import Image, ImageDraw, ImageFont
 
 OUTPUT = "images/cmyk.jpg"
-FONT = "fonts/IBMPlexSans/IBMPlexSans-SemiBold.otf"
+FONT = "fonts/IBMPlexSans/IBMPlexSans-SemiBold.ttf"
 
 WIDTH, HEIGHT = 1200, 800       # 4 by 2.67 inches at 300 pixels per inch
 MARGIN = 60

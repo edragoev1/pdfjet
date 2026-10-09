@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Test;
 
 class CFFSubsetTest {
     static final String PLEX = "fonts/IBMPlexSans/IBMPlexSans-Regular.otf";
-    static final String HAN = "fonts/SourceHanSansJP/SourceHanSansJP-Regular.otf";
+    static final String HAN = "fonts/Test/SourceHanSansJP-Regular.otf";
 
     private static OTF otf(String path) throws Exception {
         return new OTF(new ByteArrayInputStream(Files.readAllBytes(TestSupport.file(path).toPath())));

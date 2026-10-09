@@ -405,8 +405,8 @@ null text.
 
 ## Fonts, and what a PDF embeds
 
-The bundled fonts are TrueType `.ttf` files, and IBM Plex Sans and Source Han
-Sans JP are also there as `.otf`, fonts of CFF outlines. Any `.ttf` or `.otf`
+The bundled fonts are TrueType `.ttf` files, and IBM Plex Sans is also there as
+`.otf`, a font of CFF outlines. Any `.ttf` or `.otf`
 file on the computer is a font for PDFjet as well. Every font is embedded as a
 subset when the document is completed, the outlines of the glyphs it does not
 draw left out. What a PDF embeds:

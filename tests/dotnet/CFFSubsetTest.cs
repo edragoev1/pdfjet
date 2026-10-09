@@ -13,7 +13,7 @@ using Xunit;
 namespace PDFjet.NET {
 public class CFFSubsetTest {
     private const string PLEX = "fonts/IBMPlexSans/IBMPlexSans-Regular.otf";
-    private const string HAN = "fonts/SourceHanSansJP/SourceHanSansJP-Regular.otf";
+    private const string HAN = "fonts/Test/SourceHanSansJP-Regular.otf";
 
     private static OTF Otf(string path) {
         return new OTF(new MemoryStream(File.ReadAllBytes(TestSupport.RepoPath(path))));
