@@ -361,17 +361,21 @@ func getCmapFormat12(otf *openTypeFont, table *fontTable, offset int) {
 	next := int(otf.firstChar)
 	for i := 0; i < numGroups; i++ {
 		group := offset + 16 + 12*i
-		start, _ := otf.tableUint32(table, group)
-		end, _ := otf.tableUint32(table, group+4)
-		startGlyph, _ := otf.tableUint32(table, group+8)
-		if start < next {
-			start = next
+		first, ok1 := otf.tableUint32(table, group)
+		end, ok2 := otf.tableUint32(table, group+4)
+		startGlyph, ok3 := otf.tableUint32(table, group+8)
+		if !ok1 || !ok2 || !ok3 {
+			continue // Past the end of the font
 		}
+		// The glyphs are counted from the group's first character, even
+		// where the characters before next are passed over (the review of
+		// 9 October 2026: they were counted from next)
+		start := max(first, next)
 		if end > int(otf.lastChar) {
 			end = int(otf.lastChar)
 		}
 		for ch := start; ch <= end; ch++ {
-			if gid := startGlyph + (ch - start); gid < 0x10000 && otf.unicodeToGID[ch] == 0 {
+			if gid := startGlyph + (ch - first); gid < 0x10000 && otf.unicodeToGID[ch] == 0 {
 				otf.unicodeToGID[ch] = gid
 			}
 		}

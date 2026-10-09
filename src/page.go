@@ -2199,8 +2199,10 @@ func (page *Page) addBDC(
 			page.pdf.fail("A figure of a tagged document, PDF/UA or PDF/A of level A, needs an alternative description.")
 		}
 		// The marked content of a paragraph that is drawn word by word
-		// belongs to the one element of the paragraph.
-		if parent := page.mcidParent; parent != nil {
+		// belongs to the one element of the paragraph; a figure in it, as the
+		// linked marker of a wrapped table cell, is an element of its own,
+		// with its description (the review of 9 October 2026: it was lost).
+		if parent := page.mcidParent; parent != nil && structure != structelem.Figure {
 			parent.mcids = append(parent.mcids, page.mcid)
 			page.appendString("/")
 			page.appendString(parent.structure)

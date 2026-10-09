@@ -281,6 +281,33 @@ func TestTableInAPDFUADocumentIsTaggedAsATable(t *testing.T) {
 	}
 }
 
+func TestTableTheLinkedMarkerOfAWrappedCellIsAFigure(t *testing.T) {
+	// The lines of a wrapped cell are one paragraph, and a figure drawn in
+	// it, as its linked marker, was made part of the paragraph, losing its
+	// element and its description (the review of 9 October 2026).
+	for _, text := range []string{"short", "a note long enough to wrap to four lines"} {
+		doc := testNewDoc()
+		doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
+		font := testHelvetica(doc.pdf)
+		marked := NewCell(font, text)
+		marked.SetMarker(NewPoint(0, 0).SetURIAction("https://pdfjet.com").SetAltDescription("PDFjet"), alignment.Left)
+		data := [][]*Cell{
+			{NewCell(font, "Name"), NewCell(font, "Notes")},
+			{NewCell(font, "a"), marked},
+			{NewCell(font, "b"), NewCell(font, "a note long enough to wrap to four lines")},
+		}
+		table := NewTable().SetTableData(data, 1)
+		table.SetLocation(20, 20)
+		table.DrawOn(NewPage(doc.pdf, letter.Portrait()))
+		raw := string(doc.complete())
+		for item, want := range map[string]int{"/S /Figure\n": 1, "/S /Link\n": 1} {
+			if got := strings.Count(raw, item); got != want {
+				t.Errorf("%q: %q is in the PDF %d times, not %d", text, item, got, want)
+			}
+		}
+	}
+}
+
 func TestTableHeaderRowsOnTheNextPagesAreArtifacts(t *testing.T) {
 	doc := testNewDoc()
 	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")

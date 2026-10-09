@@ -1880,6 +1880,9 @@ func (pdf *PDF) checkMerge(objects []*PDFobj) error {
 
 // mergePages adds the pages, in their order, and every object that they use.
 func (pdf *PDF) mergePages(objects []*PDFobj, pageObjects []*PDFobj) {
+	// A font added to the objects, drawn on their pages, is filled in first,
+	// as AddObjects does (the review of 9 October 2026: merged, it was lost)
+	completeFontObjects(objects)
 	mergedPages := make(map[int]bool)
 	for _, page := range pageObjects {
 		mergedPages[page.number] = true
@@ -3324,10 +3327,13 @@ func (pdf *PDF) checkObjects(objects []*PDFobj) error {
 	if pdf.encryption != nil {
 		return pdf.fail("The objects of an existing PDF cannot be added to an encrypted PDF.")
 	}
+	// A number this document holds, written or only reserved, as that of a
+	// font written at Complete, is taken (the review of 9 October 2026: a
+	// font made before the objects were added took the number of one of them)
 	for _, obj := range objects {
-		if obj.number > 0 && obj.number <= len(pdf.objOffsets) && pdf.objOffsets[obj.number-1] != 0 {
+		if obj.number > 0 && obj.number <= len(pdf.objOffsets) {
 			return pdf.fail("Add the objects of an existing PDF before fonts, images or pages " +
-				"are added to the PDF: object " + strconv.Itoa(obj.number) + " is already written.")
+				"are added to the PDF: object " + strconv.Itoa(obj.number) + " is already taken.")
 		}
 	}
 	return nil

@@ -429,11 +429,54 @@ func svgFloat(arg string) (float32, error) {
 // or NaN, written as such or past the range of a float, is refused, in the
 // four ports alike.
 func svgNumber(arg string) (float64, error) {
+	// A number of SVG's grammar, and no other that the parser of the language
+	// reads, as 0x1p3 or 1_0, so that the four ports read the same numbers
+	// (the review of 9 October 2026)
+	if !isSVGNumber(arg) {
+		return 0, fmt.Errorf("the number %s is not a number of SVG", arg)
+	}
 	value, err := strconv.ParseFloat(arg, 32)
 	if err == nil && (math.IsInf(value, 0) || math.IsNaN(value)) {
 		err = fmt.Errorf("the number %s is not finite", arg)
 	}
 	return value, err
+}
+
+// isSVGNumber returns whether the text is a number as SVG writes one: a sign
+// or none, digits with a fraction or a fraction alone, and an exponent or
+// none.
+func isSVGNumber(text string) bool {
+	i := 0
+	if i < len(text) && (text[i] == '+' || text[i] == '-') {
+		i++
+	}
+	digits := 0
+	for ; i < len(text) && text[i] >= '0' && text[i] <= '9'; i++ {
+		digits++
+	}
+	if i < len(text) && text[i] == '.' {
+		i++
+		for ; i < len(text) && text[i] >= '0' && text[i] <= '9'; i++ {
+			digits++
+		}
+	}
+	if digits == 0 {
+		return false
+	}
+	if i < len(text) && (text[i] == 'e' || text[i] == 'E') {
+		i++
+		if i < len(text) && (text[i] == '+' || text[i] == '-') {
+			i++
+		}
+		exponent := 0
+		for ; i < len(text) && text[i] >= '0' && text[i] <= '9'; i++ {
+			exponent++
+		}
+		if exponent == 0 {
+			return false
+		}
+	}
+	return i == len(text)
 }
 
 // addArc appends the cubic curves that draw the elliptical arc from the

@@ -408,3 +408,37 @@ func TestMergeMergeIsRefusedWhereItWouldBreakTheDocument(t *testing.T) {
 	testMergeError(t, split.pdf.MergePages(objects, 2), "The document has no page 2.")
 	testMergeError(t, split.pdf.MergePages(objects, 1, 1), "Page 1 is listed twice.")
 }
+
+func TestMergeAFontAddedToTheObjectsIsWritten(t *testing.T) {
+	// A font added to the objects of a PDF, and drawn on one of their pages,
+	// was left empty when the objects were merged rather than added (the
+	// review of 9 October 2026), and its text was lost.
+	objects := testRead(t, testMergeDocument("Existing"))
+	file, err := os.Open(testRepoPath(t, "fonts/NotoSans/NotoSans-Regular.ttf"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer file.Close()
+	font := NewFontForObjects(&objects, file)
+	doc := testNewDoc()
+	page := NewPageFromObject(doc.pdf, doc.pdf.GetPageObjects(objects)[0])
+	page.AddFontResource(font, &objects)
+	page.DrawString(font, nil, 12, "Hello", 72, 72)
+	page.Complete(&objects)
+	if err := doc.pdf.Merge(objects); err != nil {
+		t.Fatal(err)
+	}
+	merged := testRead(t, doc.complete())
+	if testFindObject(merged, "/Length1") == nil {
+		t.Error("no font program")
+	}
+	found := false
+	for _, obj := range merged {
+		if obj.GetValue("/Subtype") == "/Type0" && strings.HasSuffix(obj.GetValue("/BaseFont"), "+NotoSans-Regular") {
+			found = true
+		}
+	}
+	if !found {
+		t.Error("no Type0 font of a subset of Noto Sans")
+	}
+}

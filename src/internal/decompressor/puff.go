@@ -67,14 +67,18 @@ type puff struct {
 	next      int
 	bitBuffer int
 	bitCount  int
-	output    []byte
-	length    int
+	// The last 32 KB of the output, as far back as a distance reaches, and
+	// how much was decoded: the output is not kept, only checked (the review
+	// of 9 October 2026: kept whole, it took six times the image's size)
+	window [1 << 15]byte
+	total  int
+	length int
 }
 
 // puffCheck decodes the raw Deflate data to its first length bytes, and
 // returns an error when the data is invalid before them, as zlib finds it.
 func puffCheck(raw []byte, length int) (err error) {
-	p := &puff{input: raw, output: make([]byte, 0, min(length, 1<<16)), length: length}
+	p := &puff{input: raw, length: length}
 	defer func() {
 		if r := recover(); r != nil {
 			e, ok := r.(error)
@@ -103,10 +107,11 @@ func puffCheck(raw []byte, length int) (err error) {
 }
 
 func (p *puff) put(value byte) {
-	if len(p.output) == p.length {
+	if p.total == p.length {
 		panic(errPuffEnough)
 	}
-	p.output = append(p.output, value)
+	p.window[p.total&(len(p.window)-1)] = value
+	p.total++
 }
 
 func (p *puff) bits(need int) int {
@@ -228,11 +233,11 @@ func (p *puff) codes(lencode, distcode *puffHuffman) {
 				panic(errPuffInvalid)
 			}
 			dist := puffDBase[symbol] + p.bits(puffDExt[symbol])
-			if dist > len(p.output) {
+			if dist > p.total {
 				panic(errPuffInvalid)
 			}
 			for ; n > 0; n-- {
-				p.put(p.output[len(p.output)-dist])
+				p.put(p.window[(p.total-dist)&(len(p.window)-1)])
 			}
 		}
 	}

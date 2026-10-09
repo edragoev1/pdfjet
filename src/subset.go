@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"compress/zlib"
 	"errors"
+	"math"
 	"sort"
 
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
@@ -290,11 +291,17 @@ func subsetTrueType(ttf []byte, used []bool) ([]byte, []bool, error) {
 		}
 		return int(ttf[at])<<8 | int(ttf[at+1]), true
 	}
+	// A value past 2^31 - 1 is refused, as an int of 32 bits could not hold
+	// it (the review of 9 October 2026: a 32-bit build panicked on one)
 	u32 := func(at int) (int, bool) {
 		if at < 0 || at+4 > len(ttf) {
 			return 0, false
 		}
-		return int(ttf[at])<<24 | int(ttf[at+1])<<16 | int(ttf[at+2])<<8 | int(ttf[at+3]), true
+		v := uint32(ttf[at])<<24 | uint32(ttf[at+1])<<16 | uint32(ttf[at+2])<<8 | uint32(ttf[at+3])
+		if v > math.MaxInt32 {
+			return 0, false
+		}
+		return int(v), true
 	}
 
 	type table struct {
@@ -307,6 +314,7 @@ func subsetTrueType(ttf []byte, used []bool) ([]byte, []bool, error) {
 	}
 	tables := make([]table, 0, numTables)
 	var head, loca, glyf, maxp, os2 table
+	seen := make(map[string]bool, numTables)
 	for i := 0; i < numTables; i++ {
 		entry := 12 + 16*i
 		offset, ok1 := u32(entry + 8)
@@ -314,7 +322,14 @@ func subsetTrueType(ttf []byte, used []bool) ([]byte, []bool, error) {
 		if !ok1 || !ok2 || offset+length > len(ttf) {
 			return nil, nil, errNotSubset
 		}
-		tables = append(tables, table{string(ttf[entry : entry+4]), offset, length})
+		// A tag twice, as two head tables, one of them too short to copy,
+		// is not a font to subset (the review of 9 October 2026)
+		tag := string(ttf[entry : entry+4])
+		if seen[tag] {
+			return nil, nil, errNotSubset
+		}
+		seen[tag] = true
+		tables = append(tables, table{tag, offset, length})
 	}
 	for _, t := range tables {
 		switch t.tag {
@@ -341,14 +356,18 @@ func subsetTrueType(ttf []byte, used []bool) ([]byte, []bool, error) {
 	}
 	numGlyphs, _ := u16(maxp.offset + 4)
 	longOffsets, _ := u16(head.offset + 50)
-	if numGlyphs == 0 || loca.length < (numGlyphs+1)*(2+2*longOffsets) {
+	if numGlyphs == 0 || longOffsets > 1 || loca.length < (numGlyphs+1)*(2+2*longOffsets) {
 		return nil, nil, errNotSubset
 	}
 	glyphAt := func(gid int) (int, int, bool) {
 		var start, end int
 		if longOffsets == 1 {
-			start, _ = u32(loca.offset + 4*gid)
-			end, _ = u32(loca.offset + 4*gid + 4)
+			var ok1, ok2 bool
+			start, ok1 = u32(loca.offset + 4*gid)
+			end, ok2 = u32(loca.offset + 4*gid + 4)
+			if !ok1 || !ok2 {
+				return 0, 0, false
+			}
 		} else {
 			start, _ = u16(loca.offset + 2*gid)
 			end, _ = u16(loca.offset + 2*gid + 2)
@@ -431,6 +450,13 @@ func subsetTrueType(ttf []byte, used []bool) ([]byte, []bool, error) {
 			newGlyf = append(newGlyf, ttf[start:end]...)
 			for len(newGlyf)%4 != 0 {
 				newGlyf = append(newGlyf, 0)
+			}
+			// Glyphs whose outlines overlap, each copied again, could make
+			// the subset larger than the whole font many times over (the
+			// review of 9 October 2026: 112 KB into 384 MB); a subset is never
+			// larger than the glyf table and the padding of each glyph.
+			if len(newGlyf) > glyf.length+3*numGlyphs {
+				return nil, nil, errNotSubset
 			}
 		}
 	}

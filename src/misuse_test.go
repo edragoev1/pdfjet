@@ -364,7 +364,7 @@ func testExistingObjects(t *testing.T) []*PDFobj {
 func TestMisuseTheObjectsOfAnExistingPdfComeBeforeTheContent(t *testing.T) {
 	objects := testExistingObjects(t)
 	message := "Add the objects of an existing PDF before fonts, images or pages " +
-		"are added to the PDF: object 1 is already written."
+		"are added to the PDF: object 1 is already taken."
 
 	pdf := testNewPDF()
 	testHelvetica(pdf) // Object 1, which the objects would replace.
@@ -375,6 +375,14 @@ func TestMisuseTheObjectsOfAnExistingPdfComeBeforeTheContent(t *testing.T) {
 	testHelvetica(pdf2)
 	if err := pdf2.AddObjects(objects); err == nil || err.Error() != message {
 		t.Errorf("AddObjects: %v", err)
+	}
+
+	// An embedded font only reserves its number, written at Complete: the
+	// objects could take it too (the review of 9 October 2026).
+	pdf3 := testNewPDF()
+	NewFontFromFile(pdf3, testRepoPath(t, "fonts/NotoSans/NotoSans-Regular.ttf"))
+	if err := pdf3.AddObjects(objects); err == nil || err.Error() != message {
+		t.Errorf("AddObjects after an embedded font: %v", err)
 	}
 
 	// The objects first, and the font after them.

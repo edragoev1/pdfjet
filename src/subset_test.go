@@ -340,3 +340,58 @@ func TestSetSubsetFalseKeepsAFontAddedToAnExistingPDFWhole(t *testing.T) {
 		t.Errorf("/Length1 %d, the whole font %d", length1, whole)
 	}
 }
+
+// testSubsetRefused checks that the font, made wrong, is not subset, and so
+// embedded whole, rather than a panic or a subset made of it.
+func testSubsetRefused(t *testing.T, ttf []byte, used []bool) {
+	t.Helper()
+	if _, _, err := subsetTrueType(ttf, used); err != errNotSubset {
+		t.Errorf("error %v, not errNotSubset", err)
+	}
+}
+
+func TestSubsetATableTwiceIsRefused(t *testing.T) {
+	// The gasp table's entry made a second head table of 8 bytes, whose
+	// checksum adjustment the subset wrote past its end (the review of
+	// 9 October 2026).
+	ttf := testOpenTypeFontBytes(t, "fonts/NotoSans/NotoSans-Regular.ttf")
+	gasp := testOpenTypeEntry(t, ttf, "gasp")
+	copy(ttf[gasp:], "head")
+	binary.BigEndian.PutUint32(ttf[gasp+12:], 8)
+	testSubsetRefused(t, ttf, testSubsetUsed(36))
+}
+
+func TestSubsetALocaFormatOtherThan0Or1IsRefused(t *testing.T) {
+	ttf := testOpenTypeFontBytes(t, "fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.ttf")
+	binary.BigEndian.PutUint16(ttf[testOpenTypeTable(t, ttf, "head")+50:], 0xFFFF)
+	testSubsetRefused(t, ttf, testSubsetUsed(36))
+}
+
+func TestSubsetOverlappingGlyphsAreRefused(t *testing.T) {
+	// Every even glyph's outline the whole glyf table, so that a subset of
+	// them copied it again for each (the review of 9 October 2026: 112 KB
+	// made into 384 MB). A subset is never larger than the glyf table and the
+	// padding of its glyphs.
+	ttf := testOpenTypeFontBytes(t, "fonts/NotoSans/NotoSans-Regular.ttf")
+	head := testOpenTypeTable(t, ttf, "head")
+	loca := testOpenTypeTable(t, ttf, "loca")
+	glyfLength := int(binary.BigEndian.Uint32(ttf[testOpenTypeEntry(t, ttf, "glyf")+12:]))
+	numGlyphs := int(binary.BigEndian.Uint16(ttf[testOpenTypeTable(t, ttf, "maxp")+4:]))
+	long := binary.BigEndian.Uint16(ttf[head+50:]) == 1
+	used := make([]bool, 0x10000)
+	for gid := 0; gid <= numGlyphs; gid++ {
+		offset := 0
+		if gid%2 == 1 {
+			offset = glyfLength &^ 3
+		}
+		if long {
+			binary.BigEndian.PutUint32(ttf[loca+4*gid:], uint32(offset))
+		} else {
+			binary.BigEndian.PutUint16(ttf[loca+2*gid:], uint16(offset/2))
+		}
+		if gid%2 == 0 && gid < numGlyphs {
+			used[gid] = true
+		}
+	}
+	testSubsetRefused(t, ttf, used)
+}

@@ -7,6 +7,7 @@ package xmlparser
 
 import (
 	"bytes"
+	"fmt"
 	"strconv"
 	"strings"
 	"testing"
@@ -431,4 +432,51 @@ func testParseTime(t *testing.T, count int) time.Duration {
 		testEqualValue(t, lines[count-1], "SpecifiedTradeProduct/Name", "Item "+strconv.Itoa(count-1))
 	}
 	return shortest
+}
+
+func TestXMLParserReadsAnUndeclaredPrefixAsNoNamespaceWhenItSkipsADoctype(t *testing.T) {
+	// An SVG copied from a web page has xlink:href without xmlns:xlink, and
+	// one of a drawing program can have sodipodi: elements without their
+	// declaration; refused, they no longer drew as they did before the parser
+	// (the review of 9 October 2026). An invoice is read as strictly as ever.
+	xml := `<svg xmlns="http://www.w3.org/2000/svg"><use xlink:href="#a"/><sodipodi:namedview/></svg>`
+	testContains(t, testMessage(t, xml), "is not declared")
+	svg := testParseSkipping(t, xml)
+	testEqualAttribute(t, svg.Children()[0], "xlink:href", "#a")
+	testEqualAttribute(t, svg.Children()[0], "href", "#a")
+	if view := svg.Children()[1]; view.LocalName() != "namedview" || view.Namespace() != "" {
+		t.Errorf("%s in %q", view.LocalName(), view.Namespace())
+	}
+}
+
+func TestXMLParserADeclarationIsNotAnAttributeOfItsPrefix(t *testing.T) {
+	node := testParse(t, `<a xmlns:id="urn:x" b="1"/>`)
+	if value, ok := node.Attribute("id"); ok {
+		t.Errorf("xmlns:id read as the attribute id: %q", value)
+	}
+	testEqualAttribute(t, node, "b", "1")
+}
+
+func TestXMLParserRefusesAnAttributeWrittenTwiceAmongMany(t *testing.T) {
+	// Past 16 attributes they are compared by a map, before by one another.
+	var b strings.Builder
+	b.WriteString("<a")
+	for i := 0; i < 20; i++ {
+		fmt.Fprintf(&b, " a%d='1'", i)
+	}
+	for _, twice := range []string{" a3='2'", " a18='2'"} {
+		testContains(t, testMessage(t, b.String()+twice+"/>"), "is written twice")
+	}
+	testParse(t, b.String()+"/>")
+}
+
+func TestXMLParserReadsAStylesheetInstructionFirstAndAQuoteInAnInstructionOfTheDoctype(t *testing.T) {
+	// A processing instruction whose name starts with xml, first, was read as
+	// the declaration, and its pseudo-attribute as an encoding; a quote in an
+	// instruction of a skipped DOCTYPE as the start of a string (the review
+	// of 9 October 2026).
+	testEqualAttribute(t, testParse(t, `<?xml-stylesheet type="text/xsl" encoding="latin1" href="a.xsl"?><a b="1"/>`), "b", "1")
+	testEqualAttribute(t, testParseSkipping(t, `<!DOCTYPE svg [<?pi don't ?>]><svg b="1"/>`), "b", "1")
+	testContains(t, testMessage(t, `<?xml version="1.0" encoding="latin1"?><a/>`), "is not read")
+	testContains(t, testMessage(t, `<a xmlns:="urn:x"/>`), "empty prefix")
 }

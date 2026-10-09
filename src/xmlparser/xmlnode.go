@@ -22,15 +22,15 @@ type XMLAttribute struct {
 // because the prefixes of an invoice are its own: what one writes as ram:ID
 // another writes as a:ID. A * matches an element of any name.
 type XMLNode struct {
-	name       string
-	localName  string
-	namespace  string
+	name      string
+	localName string
+	namespace string
+	// Written once each, as the parser refuses a name written twice; with no
+	// map of them, which made an element of an SVG of millions several
+	// times larger (the review of 9 October 2026)
 	attributes []XMLAttribute
-	// Where each attribute name is in attributes, which the parser writes
-	// once each, as it refuses a name written twice.
-	attributeAt map[string]int
-	children    []*XMLNode
-	text        strings.Builder
+	children   []*XMLNode
+	text       strings.Builder
 }
 
 func newXMLNode(name, namespace string) *XMLNode {
@@ -42,14 +42,6 @@ func newXMLNode(name, namespace string) *XMLNode {
 }
 
 func (node *XMLNode) addAttribute(attributeName, value string) {
-	if at, ok := node.attributeAt[attributeName]; ok {
-		node.attributes[at].Value = value
-		return
-	}
-	if node.attributeAt == nil {
-		node.attributeAt = make(map[string]int)
-	}
-	node.attributeAt[attributeName] = len(node.attributes)
 	node.attributes = append(node.attributes, XMLAttribute{Name: attributeName, Value: value})
 }
 
@@ -93,12 +85,16 @@ func (node *XMLNode) Children() []*XMLNode {
 // its prefix, such as unitCode or ram:unitCode, and whether the element has
 // such an attribute.
 func (node *XMLNode) Attribute(attributeName string) (string, bool) {
-	if at, ok := node.attributeAt[attributeName]; ok {
-		return node.attributes[at].Value, true
+	for _, attribute := range node.attributes {
+		if attribute.Name == attributeName {
+			return attribute.Value, true
+		}
 	}
+	// By its name without its prefix; a namespace declaration, xmlns:name,
+	// is not an attribute of that name
 	for _, attribute := range node.attributes {
 		colon := strings.IndexByte(attribute.Name, ':')
-		if colon != -1 && attribute.Name[colon+1:] == attributeName {
+		if colon != -1 && attribute.Name[:colon] != "xmlns" && attribute.Name[colon+1:] == attributeName {
 			return attribute.Value, true
 		}
 	}

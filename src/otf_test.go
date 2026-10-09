@@ -295,3 +295,20 @@ func TestOTFAFontWithAnEmptyFormat4MapIsReadFromItsFormat12Map(t *testing.T) {
 		}
 	}
 }
+
+func TestOTFAFormat12GroupThatStartsBeforeTheFirstCharacterKeepsItsGlyphs(t *testing.T) {
+	// IBM Plex Sans TC maps every character in its format 12 subtable. With
+	// its first character raised past the start of a group, the glyphs of
+	// the group were counted from the first character, not from the group's
+	// own start, and every one was off (the review of 9 October 2026).
+	ttf := testOpenTypeFontBytes(t, "fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.ttf")
+	want := newOpenTypeFont(bytes.NewReader(ttf))
+	os2 := testOpenTypeTable(t, ttf, "OS/2")
+	binary.BigEndian.PutUint16(ttf[os2+64:], '0')
+	got := newOpenTypeFont(bytes.NewReader(ttf))
+	for _, ch := range "0AZaz~" {
+		if got.unicodeToGID[ch] != want.unicodeToGID[ch] || want.unicodeToGID[ch] == 0 {
+			t.Errorf("%q: glyph %d, not %d", ch, got.unicodeToGID[ch], want.unicodeToGID[ch])
+		}
+	}
+}

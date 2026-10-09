@@ -647,11 +647,22 @@ func TestSVGImageASkewOfNinetyDegreesIsNotRead(t *testing.T) {
 	}
 }
 
+func TestSVGImageReadsTheNumbersOfSVG(t *testing.T) {
+	for _, number := range []string{"5.", ".5", "-.5", "+5", "-0.5e+2", "5E-1", "007"} {
+		if _, err := NewSVGImage(strings.NewReader(
+			`<svg width="100" height="100"><path d="M 0 0 L ` + number + ` 5"/></svg>`)); err != nil {
+			t.Errorf("%q: %v", number, err)
+		}
+	}
+}
+
 func TestSVGImageRefusesPathDataWithANumberThatIsNotOne(t *testing.T) {
 	// The numbers the fuzzers made of path data: refused in words, in the
 	// four ports, where Java and C# failed with a NumberFormatException and
 	// a FormatException (found by the fuzz replay, 8 October 2026).
-	for _, number := range []string{"-.", ".", "2.@5", "1d775", "1e40", "-1e40"} {
+	// And the numbers one language reads and the others do not, refused by
+	// SVG's grammar in the four (the review of 9 October 2026).
+	for _, number := range []string{"-.", ".", "2.@5", "1d775", "1e40", "-1e40", "0x1p3", "1_0", "1f", "1e"} {
 		_, err := NewSVGImage(strings.NewReader(
 			`<svg width="100" height="100"><path d="M 0 0 L ` + number + ` 5"/></svg>`))
 		if err == nil || !strings.Contains(strings.ToLower(err.Error()), "invalid path data") {

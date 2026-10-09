@@ -128,7 +128,13 @@ func readCFFDict(dict []byte) ([]cffEntry, error) {
 			}
 			entry := cffEntry{op: op, raw: dict[start:i]}
 			if isInteger {
+				// An operator with no operands is there, with none, as in
+				// the other ports, not absent (the review of 9 October 2026:
+				// a Subrs of no operands was dropped, and its subroutines)
 				entry.integers = integers
+				if entry.integers == nil {
+					entry.integers = []int{}
+				}
 			}
 			entries = append(entries, entry)
 			start = i
@@ -358,6 +364,7 @@ type cffUsage struct {
 	work    int
 	err     error
 	stopped bool // By endchar
+	seac    bool // An accented letter drawn from two others
 }
 
 // run reads the charstring, and the subroutines it calls.
@@ -446,7 +453,9 @@ func (u *cffUsage) run(cs []byte, depth int) {
 		case b0 == 14: // endchar
 			if u.stack >= 4 {
 				// seac, an accented letter drawn from two others, which
-				// would have to be kept too.
+				// would have to be kept too: the font is embedded whole
+				// (the review of 9 October 2026: the letter drew blank)
+				u.seac = true
 				u.err = errNotSubset
 			}
 			u.stopped = true
@@ -687,7 +696,7 @@ func subsetCFF(cff []byte, used []bool) ([]byte, []bool, error) {
 		usage.run(glyphs[gid], 0)
 	}
 	if usage.err != nil {
-		if usage.work > cffMaxWork {
+		if usage.work > cffMaxWork || usage.seac {
 			return nil, nil, errNotSubset
 		}
 		usedG = nil // Kept whole

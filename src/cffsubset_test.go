@@ -202,3 +202,26 @@ func FuzzSubsetCFF(f *testing.F) {
 		_, _, _ = subsetCFF(cff, nil)
 	})
 }
+
+func TestCFFSubsetOfAnAccentedLetterDrawnWithSeacIsRefused(t *testing.T) {
+	// Á's charstring made "0 0 65 194 endchar", seac: the A and the acute
+	// it is drawn from were emptied, and it drew blank (the review of
+	// 9 October 2026). The font is embedded whole.
+	otf, cff := testCFF(t, testPlexOTF)
+	names, _ := readCFFIndex(cff, int(cff[2]))
+	topDicts, _ := readCFFIndex(cff, names.end)
+	top, _ := readCFFDict(cff[topDicts.objects[0]:topDicts.objects[1]])
+	charStrings, err := readCFFIndex(cff, cffEntryOf(top, cffCharStrings)[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	gid := otf.unicodeToGID['Á']
+	at := charStrings.objects[gid]
+	if charStrings.objects[gid+1]-at < 6 {
+		t.Fatalf("the charstring of Á is %d bytes", charStrings.objects[gid+1]-at)
+	}
+	copy(cff[at:], []byte{139, 139, 204, 247, 86, 14})
+	if _, _, err := subsetCFF(cff, testCFFUsed(otf, "Á")); err != errNotSubset {
+		t.Errorf("error %v, not errNotSubset", err)
+	}
+}

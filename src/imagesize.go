@@ -168,7 +168,9 @@ func readPNGSize(r *bufio.Reader) (*ImageSize, error) {
 				return nil, errors.New("Interlaced PNG images are not supported.")
 			}
 		case "IDAT":
-			hasIDAT = true
+			// An empty one holds none of the image data (the review of
+			// 9 October 2026)
+			hasIDAT = hasIDAT || length > 0
 		case "PLTE":
 			if length%3 != 0 || length == 0 || length > 3*256 {
 				return nil, errors.New("Incorrect palette length.")
@@ -225,13 +227,12 @@ func readJPGSize(r *bufio.Reader) (*ImageSize, error) {
 				"Error: The JPEG is lossless, hierarchical or arithmetic coded (SOF%d), "+
 					"which a PDF reader cannot decode.", ch-mSOF0)
 		case mSOF0, mSOF1, mSOF2:
-			segment, err := readJPGSegment(r)
-			if err != nil {
-				return nil, err
-			}
 			// The length, then the precision, the height, the width and
-			// the components, as readJPGImage reads them
-			if len(segment) < 2+6 {
+			// the components, as readJPGImage reads them; the rest of the
+			// frame header, the components' specifications, is not read, as
+			// in the other ports (the review of 9 October 2026)
+			segment := make([]byte, 2+6)
+			if _, err := io.ReadFull(r, segment); err != nil {
 				return nil, io.ErrUnexpectedEOF
 			}
 			length := int(segment[0])<<8 | int(segment[1])
@@ -326,7 +327,7 @@ func readBMPSize(r *bufio.Reader) (size *ImageSize, err error) {
 			size, err = nil, fmt.Errorf("%v", e)
 		}
 	}()
-	header := make([]byte, 46)
+	header := make([]byte, 50) // To the colors used, which the palette's size checks
 	if _, err := io.ReadFull(r, header); err != nil {
 		return nil, errors.New("Unexpected end of the BMP stream.")
 	}
@@ -360,6 +361,17 @@ func readBMPSize(r *bufio.Reader) (size *ImageSize, err error) {
 		3*int64(image.w)*int64(image.h) > decompressor.MaxDecodedLength ||
 		rowSize*int64(image.h) > decompressor.MaxDecodedLength {
 		return nil, fmt.Errorf("The BMP image is larger than %d bytes.", decompressor.MaxDecodedLength)
+	}
+	// The size of the palette, refused by NewImage as here (the review of
+	// 9 October 2026: a palette of 1,000 colors was a size)
+	if image.bpp <= 8 {
+		colors := le(46)
+		if colors == 0 {
+			colors = 1 << image.bpp
+		}
+		if colors < 0 || colors > 256 {
+			return nil, fmt.Errorf("Invalid BMP palette size %d.", colors)
+		}
 	}
 	image.setPhysicalSize(le(38), le(42))
 	return newImageSize(imagetype.BMP, image.w, image.h, image.physicalWidth, image.physicalHeight), nil

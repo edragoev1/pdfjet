@@ -79,8 +79,13 @@ type parser struct {
 	// and not of the calls.
 	open   []*XMLNode
 	scopes []map[string]string
-	// True to skip a DOCTYPE, which is refused otherwise.
+	// True to skip a DOCTYPE, which is refused otherwise, and to read a
+	// prefix that no element declares as no namespace, as SVG files copied
+	// from web pages have xlink:href without xmlns:xlink.
 	skipDoctype bool
+	// The names read, each kept once, as a document repeats a few names
+	// millions of times.
+	names map[string]string
 }
 
 // Parse reads the document and returns its root element. It returns an error
@@ -92,7 +97,9 @@ func Parse(bytes []byte) (*XMLNode, error) {
 
 // ParseSkippingDoctype reads the document as Parse does, and skips a DOCTYPE,
 // which the SVG files of the drawing programs have. Its entities are not
-// read, and a reference to one is an error.
+// read, and a reference to one is an error. A prefix that no element declares
+// is read as no namespace, as SVG files copied from web pages have xlink:href
+// without xmlns:xlink, rather than an error.
 func ParseSkippingDoctype(bytes []byte) (*XMLNode, error) {
 	return parse(bytes, true)
 }
@@ -299,7 +306,9 @@ func (p *parser) prolog() error {
 	for p.index < len(p.xml) {
 		if isWhitespace(p.peek()) {
 			p.next()
-		} else if p.startsWith("<?xml") && p.index == 0 {
+		} else if p.index == 0 && p.startsWith("<?xml") && p.index+5 < len(p.xml) && isWhitespace(p.xml[p.index+5]) {
+			// The declaration, and not a processing instruction whose name
+			// starts with xml, as xml-stylesheet (the review of 9 October 2026)
 			if err := p.declaration(); err != nil {
 				return err
 			}
@@ -341,6 +350,15 @@ func (p *parser) doctype() error {
 				return p.error("A comment of the document type declaration does not end")
 			}
 			p.skip(end + 3 - p.index)
+			continue
+		case p.startsWith("<?"):
+			// A processing instruction, whose text can hold a quote, as
+			// <?pi don't ?> (the review of 9 October 2026)
+			end := indexOf(p.xml, "?>", p.index+2)
+			if end == -1 {
+				return p.error("A processing instruction of the document type declaration does not end")
+			}
+			p.skip(end + 2 - p.index)
 			continue
 		case p.peek() == '"' || p.peek() == '\'':
 			quote := p.next()
@@ -481,7 +499,7 @@ func (p *parser) openTag() (*XMLNode, error) {
 	}
 	var declared map[string]string
 	var attributes []XMLAttribute
-	var written map[string]bool
+	var written map[string]bool // Past a few attributes, which are compared one by one
 	for first := true; ; first = false {
 		spaced := p.index < len(p.xml) && isWhitespace(p.peek())
 		p.skipWhitespace()
@@ -510,13 +528,26 @@ func (p *parser) openTag() (*XMLNode, error) {
 		if err != nil {
 			return nil, err
 		}
-		if written == nil {
-			written = make(map[string]bool)
+		twice := false
+		if written != nil {
+			twice = written[attributeName]
+		} else {
+			for _, attribute := range attributes {
+				twice = twice || attribute.Name == attributeName
+			}
+			if len(attributes) >= 16 {
+				written = make(map[string]bool, 2*len(attributes))
+				for _, attribute := range attributes {
+					written[attribute.Name] = true
+				}
+			}
 		}
-		if written[attributeName] {
+		if twice {
 			return nil, p.error("The attribute " + attributeName + " of " + name + " is written twice")
 		}
-		written[attributeName] = true
+		if written != nil {
+			written[attributeName] = true
+		}
 		if attributeName == "xmlns" || strings.HasPrefix(attributeName, "xmlns:") {
 			if declared == nil {
 				declared = make(map[string]string)
@@ -524,6 +555,9 @@ func (p *parser) openTag() (*XMLNode, error) {
 			prefix := ""
 			if attributeName != "xmlns" {
 				prefix = attributeName[len("xmlns:"):]
+				if prefix == "" {
+					return nil, p.error("A namespace of " + name + " is declared for an empty prefix")
+				}
 				// A prefix stands for a namespace, and the default
 				// namespace is the only one that may be none.
 				if value == "" {
@@ -538,13 +572,13 @@ func (p *parser) openTag() (*XMLNode, error) {
 	// The namespace of the element is the one its prefix stands for in the
 	// element itself or in the nearest element it is in that declares it.
 	namespace, found := p.namespaceOf(prefixOf(name), declared)
-	if !found {
+	if !found && !p.skipDoctype {
 		return nil, p.error("The prefix " + prefixOf(name) + " of " + name + " is not declared")
 	}
 	node := newXMLNode(name, namespace)
 	for _, attribute := range attributes {
 		prefix := prefixOf(attribute.Name)
-		if prefix != "" && prefix != "xmlns" {
+		if prefix != "" && prefix != "xmlns" && !p.skipDoctype {
 			if _, found := p.namespaceOf(prefix, declared); !found {
 				return nil, p.error("The prefix " + prefix + " of the attribute " + attribute.Name +
 					" of " + name + " is not declared")
@@ -737,7 +771,17 @@ func (p *parser) name() string {
 		}
 		p.next()
 	}
-	return string(p.xml[start:p.index])
+	name := string(p.xml[start:p.index])
+	if kept, ok := p.names[name]; ok {
+		return kept
+	}
+	if p.names == nil {
+		p.names = make(map[string]string)
+	}
+	if len(p.names) < 4096 {
+		p.names[name] = name
+	}
+	return name
 }
 
 // "value" or 'value', with its entities read.

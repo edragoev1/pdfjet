@@ -8,6 +8,7 @@ package pdfjet
 import (
 	"bufio"
 	"bytes"
+	"encoding/binary"
 	"io"
 	"io/fs"
 	"os"
@@ -113,4 +114,38 @@ func FuzzReadImageSize(f *testing.F) {
 	f.Fuzz(func(t *testing.T, data []byte) {
 		testImageSizeAgrees(t, "fuzzed", data)
 	})
+}
+
+func TestImageSizeRefusesWhatNewImageRefusesInTheHeader(t *testing.T) {
+	// The review of 9 October 2026: an 8-bit BMP of 1,000 colors and a PNG
+	// whose one IDAT is empty were sizes, and NewImage refused them.
+	bmp := make([]byte, 54)
+	copy(bmp, "BM")
+	le32 := func(at, v int) { binary.LittleEndian.PutUint32(bmp[at:], uint32(v)) }
+	le32(10, 54)
+	le32(14, 40)
+	le32(18, 1)
+	le32(22, 1)
+	binary.LittleEndian.PutUint16(bmp[26:], 1)
+	binary.LittleEndian.PutUint16(bmp[28:], 8)
+	le32(46, 1000)
+	if _, err := ReadImageSize(bytes.NewReader(bmp)); err == nil || !strings.Contains(err.Error(), "palette") {
+		t.Errorf("a BMP of 1,000 colors: %v", err)
+	}
+
+	var png bytes.Buffer
+	png.WriteString("\x89PNG\r\n\x1a\n")
+	testPNGChunk(&png, "IHDR", []byte{0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 0, 0, 0})
+	testPNGChunk(&png, "IDAT", nil)
+	testPNGChunk(&png, "IEND", nil)
+	if _, err := ReadImageSize(bytes.NewReader(png.Bytes())); err == nil {
+		t.Error("a PNG of no image data taken")
+	}
+
+	// A JPEG that ends inside its frame header, after the size, is a size,
+	// as in the other ports: its data is NewImage's to refuse.
+	jpg := []byte{0xFF, 0xD8, 0xFF, 0xC0, 0x00, 0x11, 0x08, 0x00, 0x10, 0x00, 0x20, 0x03}
+	if size, err := ReadImageSize(bytes.NewReader(jpg)); err != nil || size.GetPixelWidth() != 32 || size.GetPixelHeight() != 16 {
+		t.Errorf("a JPEG cut in its frame header: %v, %v", size, err)
+	}
 }
