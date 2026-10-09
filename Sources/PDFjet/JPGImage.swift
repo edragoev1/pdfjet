@@ -198,7 +198,7 @@ class JPGImage {
                 if !readAdobeMarker(&buffer) {
                     throw JPGImageError.cutShort
                 }
-                try checkScanEnds(&buffer)
+                try checkScanEnds(&buffer, ch)
                 break
             } else if ch == M_APP0 {
                 try readAPP0(&buffer)
@@ -243,8 +243,11 @@ class JPGImage {
     // the entropy-coded data a 0xFF is followed by a 0x00 or a restart marker,
     // so 0xFF 0xD9 after the header is the end of the image, and not of a
     // thumbnail before the scan, which has its own. Data after the end, which
-    // cameras append, is left as it is.
-    private func checkScanEnds(_ buffer: inout [UInt8]) throws {
+    // cameras append, is left as it is. A sequential JPEG without the marker
+    // whose scans hold every block of the image is whole but for it, and
+    // viewers draw it: the marker is added to the data embedded (JPGScan). A
+    // progressive one without it is refused.
+    private func checkScanEnds(_ buffer: inout [UInt8], _ frame: UInt8) throws {
         guard let length = try? getUInt16(&buffer), length >= 2 else {
             throw JPGImageError.cutShort
         }
@@ -261,6 +264,11 @@ class JPGImage {
     /// Reads one byte, advancing the index.
     /// Throws if the buffer is exhausted.
     private func readByte(_ buffer: inout [UInt8]) throws -> UInt8 {
+        if (frame == M_SOF0 || frame == M_SOF1) && JPGScan.scansWhole(buffer) {
+            buffer.append(0xFF)
+            buffer.append(M_EOI)
+            return
+        }
         guard index < buffer.count else {
             throw JPGImageError.unexpectedEndOfJPEGData
         }

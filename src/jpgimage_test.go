@@ -321,3 +321,34 @@ func TestJPGImageTheJPEGsOfTheExamplesAreWhole(t *testing.T) {
 	}
 	t.Logf("%d JPEGs read", len(paths))
 }
+
+// A JPEG whose only fault is a missing end-of-image marker, its scans whole,
+// is drawn, the marker added; one that stops in its scan is still refused.
+func TestJPGImageWithoutItsEndMarkerIsDrawnWhenItsScanIsWhole(t *testing.T) {
+	for _, name := range []string{"restart.jpg", "orientation-1.jpg"} {
+		data, err := os.ReadFile(testRepoPath(t, "tests/data/jpeg/"+name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !bytes.HasSuffix(data, []byte{0xFF, 0xD9}) {
+			t.Fatalf("%s: no end marker", name)
+		}
+		without := data[:len(data)-2]
+		jpg, err := newJPGImage(bytes.NewReader(without))
+		if err != nil {
+			t.Errorf("%s without its end marker: %v", name, err)
+			continue
+		}
+		if !bytes.Equal(jpg.getData(), data) {
+			t.Errorf("%s without its end marker: the end marker is not added", name)
+		}
+		if pdf := testPDFWith(without); !strings.Contains(pdf, "/Subtype /Image") {
+			t.Errorf("%s without its end marker: not drawn", name)
+		}
+		for _, cut := range []int{len(data) / 2, len(data) - 40} {
+			if _, err := newJPGImage(bytes.NewReader(data[:cut])); !errors.Is(err, errJPEGCutShort) {
+				t.Errorf("%s cut in its scan at %d of %d: %v", name, cut, len(data), err)
+			}
+		}
+	}
+}

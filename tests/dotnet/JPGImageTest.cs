@@ -296,5 +296,24 @@ public sealed class JPGImageTest {
         Assert.Contains("/Width 1200\n", raw);
         Assert.Contains("/Height 800\n", raw);
     }
+
+    // A JPEG whose only fault is a missing end-of-image marker, its scans
+    // whole, is drawn, the marker added; one that stops in its scan is still
+    // refused.
+    [Fact]
+    public void AJPEGWithoutItsEndMarkerIsDrawnWhenItsScanIsWhole() {
+        foreach (string name in new string[] {"restart.jpg", "orientation-1.jpg"}) {
+            byte[] data = File.ReadAllBytes(TestSupport.RepoPath("tests/data/jpeg/" + name));
+            Assert.Equal(0xFF, data[data.Length - 2]);
+            Assert.Equal(0xD9, data[data.Length - 1]);
+            byte[] without = data[..(data.Length - 2)];
+            Assert.Equal(data, new JPGImage(without).GetData());
+            Assert.Contains("/Subtype /Image", PdfWith(without));
+            foreach (int cut in new int[] {data.Length/2, data.Length - 40}) {
+                IOException e = Assert.Throws<IOException>(() => new JPGImage(data[..cut]));
+                Assert.Equal(JPGImage.CUT_SHORT, e.Message);
+            }
+        }
+    }
 }
 }

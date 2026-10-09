@@ -196,7 +196,7 @@ class JPGImage {
                 if (length < 8 || !readAdobeMarker(is, length - 8)) {
                     throw new IOException(CUT_SHORT);
                 }
-                checkScanEnds(is);
+                checkScanEnds(is, ch);
                 foundSOFn = true;
                 break;
 
@@ -260,8 +260,11 @@ class JPGImage {
     // the entropy-coded data a 0xFF is followed by a 0x00 or a restart marker,
     // so 0xFF 0xD9 after the header is the end of the image, and not of a
     // thumbnail before the scan, which has its own. Data after the end, which
-    // cameras append, is left as it is.
-    private void checkScanEnds(InputStream is) throws IOException {
+    // cameras append, is left as it is. A sequential JPEG without the marker
+    // whose scans hold every block of the image is whole but for it, and
+    // viewers draw it: the marker is added to the data embedded (JPGScan). A
+    // progressive one without it is refused.
+    private void checkScanEnds(InputStream is, char frame) throws IOException {
         try {
             int length = getUInt16(is);
             if (length < 2) {
@@ -286,6 +289,14 @@ class JPGImage {
 
     private int readByte(InputStream is) throws IOException {
         int b = is.read();
+            if ((frame == M_SOF0 || frame == M_SOF1) && JPGScan.scansWhole(data)) {
+                byte[] whole = new byte[data.length + 2];
+                System.arraycopy(data, 0, whole, 0, data.length);
+                whole[data.length] = (byte) 0xFF;
+                whole[data.length + 1] = (byte) M_EOI;
+                data = whole;
+                return;
+            }
         if (b < 0) {
             throw new IOException("Unexpected end of JPEG data.");
         }

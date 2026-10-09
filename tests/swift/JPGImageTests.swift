@@ -202,6 +202,25 @@ import Testing
         _ = try JPGImage(InputStream(data: Data(whole + Array("trailer".utf8))))
     }
 
+    // A JPEG whose only fault is a missing end-of-image marker, its scans
+    // whole, is drawn, the marker added; one that stops in its scan is still
+    // refused.
+    @Test(arguments: ["restart.jpg", "orientation-1.jpg"])
+    func aJPEGWithoutItsEndMarkerIsDrawnWhenItsScanIsWhole(_ name: String) throws {
+        let data = [UInt8](try Data(contentsOf: URL(fileURLWithPath: TestSupport.path("tests/data/jpeg/" + name))))
+        #expect(data.suffix(2) == [0xFF, 0xD9])
+        let without = Array(data[..<(data.count - 2)])
+        #expect(try JPGImage(without).getData() == data)
+        #expect(try pdfWith(without).contains("/Subtype /Image"))
+        let cutShort = "Error: The JPEG is cut short: its image data has no end."
+        for cut in [data.count/2, data.count - 40] {
+            let error = #expect(throws: (any Error).self) {
+                _ = try JPGImage(Array(data[..<cut]))
+            }
+            #expect(TestSupport.message(error) == cutShort, "cut at \(cut)")
+        }
+    }
+
     @Test func anotherAPP14SegmentDoesNotUnmarkAnAdobeImage() throws {
         let before = adobeAPP14 + app14(Array("Not Adobe".utf8) + [0, 0, 0])
         #expect(try JPGImage(InputStream(data: Data(jpegOf(before, 4)))).isAdobe())

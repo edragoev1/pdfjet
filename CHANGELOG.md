@@ -111,6 +111,13 @@ This is the first entry in this file; earlier releases were not tracked here.
   engines of Chrome, Firefox and Preview: PDFium, through pypdfium2, and
   pdf.js, in Node, on Linux, and Apple's PDFKit on macOS, with
   `.github/scripts/check-viewers.py`. Every page must open, render and give
+- A JPEG whose only fault is a missing end-of-image marker (FF D9) is drawn,
+  in the four ports, as viewers draw it, where 9.0.3 refused it as cut
+  short. The entropy-coded data of each scan of a sequential JPEG is walked,
+  its Huffman codes read block by block, and when every block of the image is
+  there the marker is added to the data embedded. A JPEG that stops in its
+  scan, as an upload or a copy cut short, is refused as before, and so is a
+  progressive one without the marker.
   its text; none may render blank or look different from MuPDF's render,
   or lack a character MuPDF extracts from it. Example_30 is opened with its
   user and its owner password, and two more PDFs with a Cyrillic and a 200

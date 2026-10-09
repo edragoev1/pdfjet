@@ -243,7 +243,7 @@ func (image *jpgImage) readJPGImage(buffer []byte) (*jpgImage, error) {
 				if !image.readAdobeMarker(buffer) {
 					return nil, errJPEGCutShort
 				}
-				return image, image.checkScanEnds(buffer)
+				return image, image.checkScanEnds(buffer, ch)
 			}
 			return nil, errJPEGCutShort
 
@@ -303,14 +303,24 @@ func (image *jpgImage) readAdobeMarker(buffer []byte) bool {
 // follows the header of the scan: in the entropy-coded data a 0xFF is
 // followed by a 0x00 or a restart marker, so 0xFF 0xD9 after the header is
 // the end of the image, and not of a thumbnail before the scan, which has
-// its own. Data after the end, which cameras append, is left as it is.
-func (image *jpgImage) checkScanEnds(buffer []byte) error {
+// its own. Data after the end, which cameras append, is left as it is. A
+// sequential JPEG without the marker whose scans hold every block of the
+// image is whole but for it, and viewers draw it: the marker is added to the
+// data embedded (jpgscan.go). A progressive one without it is refused.
+func (image *jpgImage) checkScanEnds(buffer []byte, frame uint8) error {
 	length, err := image.getUint16(buffer)
 	if err != nil || length < 2 {
 		return errJPEGCutShort
 	}
 	start := image.index + int(length) - 2
-	if start > len(buffer) || !bytes.Contains(buffer[start:], []byte{0xFF, mEOI}) {
+	if start > len(buffer) {
+		return errJPEGCutShort
+	}
+	if !bytes.Contains(buffer[start:], []byte{0xFF, mEOI}) {
+		if (frame == mSOF0 || frame == mSOF1) && jpegScansWhole(buffer) {
+			image.data = append(append(make([]byte, 0, len(buffer)+2), buffer...), 0xFF, mEOI)
+			return nil
+		}
 		return errJPEGCutShort
 	}
 	return nil

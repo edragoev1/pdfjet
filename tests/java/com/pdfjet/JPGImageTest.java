@@ -250,6 +250,27 @@ class JPGImageTest {
         assertNotNull(new JPGImage(new ByteArrayInputStream(trailer.toByteArray())));
     }
 
+    // A JPEG whose only fault is a missing end-of-image marker, its scans
+    // whole, is drawn, the marker added; one that stops in its scan is still
+    // refused.
+    @Test
+    void aJPEGWithoutItsEndMarkerIsDrawnWhenItsScanIsWhole() throws Exception {
+        for (String name : new String[] {"restart.jpg", "orientation-1.jpg"}) {
+            byte[] data = Files.readAllBytes(TestSupport.file("tests/data/jpeg/" + name).toPath());
+            assertEquals(0xFF, data[data.length - 2] & 0xFF, name);
+            assertEquals(0xD9, data[data.length - 1] & 0xFF, name);
+            byte[] without = java.util.Arrays.copyOf(data, data.length - 2);
+            assertTrue(java.util.Arrays.equals(data, new JPGImage(without).getData()),
+                    name + " without its end marker: the end marker is not added");
+            assertTrue(pdfWith(without).contains("/Subtype /Image"), name);
+            for (int cut : new int[] {data.length/2, data.length - 40}) {
+                byte[] shorter = java.util.Arrays.copyOf(data, cut);
+                Exception e = assertThrows(Exception.class, () -> new JPGImage(shorter));
+                assertEquals(JPGImage.CUT_SHORT, e.getMessage(), name + " cut at " + cut);
+            }
+        }
+    }
+
     @Test
     void anotherAPP14SegmentDoesNotUnmarkAnAdobeImage() throws Exception {
         ByteArrayOutputStream before = new ByteArrayOutputStream();
