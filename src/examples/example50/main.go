@@ -55,8 +55,8 @@ func Example50(fileName string) {
 	image1.SetLocation(495.0, 65.0)
 	image1.ScaleBy(0.40)
 
-	// A font added to an existing PDF is embedded whole, and the CFF outlines
-	// of the .otf are smaller than the whole .ttf.
+	// A font added to an existing PDF is embedded as a subset of the glyphs
+	// drawn, as in a new PDF; the .otf tests the CFF outlines.
 	file2, err := os.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf")
 	if err != nil {
 		log.Fatal(err)

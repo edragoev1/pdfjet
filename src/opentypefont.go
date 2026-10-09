@@ -32,13 +32,21 @@ func registerOpenTypeFont(pdf *PDF, font *Font, reader io.Reader) {
 	pdf.fonts = append(pdf.fonts, font)
 }
 
-// addOpenTypeFontToObjects adds the font to the objects of an existing PDF,
-// with its font program whole.
+// addOpenTypeFontToObjects adds the font to the objects of an existing PDF;
+// its program is written when the objects are added to the PDF, a subset of
+// the glyphs drawn.
 func addOpenTypeFontToObjects(objects *[]*PDFobj, font *Font, reader io.Reader) {
 	otf := newOpenTypeFont(reader)
 	setOpenTypeFontData(font, otf)
-	font.uncompressedSize = len(otf.buf)
-	addFontToObjects(objects, font, otf.compress())
+	font.program = newFontProgram()
+	if otf.cff {
+		font.program.font = otf.buf[otf.cffOff : otf.cffOff+otf.cffLen]
+		font.program.cff = true
+		font.program.forbidden = otf.fsType&0x0100 != 0
+	} else {
+		font.program.font = otf.buf
+	}
+	addFontToObjects(objects, font)
 }
 
 // setOpenTypeFontData gives the font the name, the metrics and the character

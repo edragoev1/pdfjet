@@ -252,3 +252,91 @@ func FuzzSubsetTrueType(f *testing.F) {
 		}
 	})
 }
+
+// testSubsetInExistingPDF adds the font to the objects of a PDF, draws a word
+// with it on the page, and returns the objects of the PDF written.
+func testSubsetInExistingPDF(t *testing.T, path string, subset bool) []*PDFobj {
+	t.Helper()
+	objects := testRead(t, testPDFWithObjects(
+		"<< /Type /Catalog /Pages 2 0 R >>",
+		"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+		"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << >> >>"))
+	file, err := os.Open(testRepoPath(t, path))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer file.Close()
+	font := NewFontForObjects(&objects, file).SetSubset(subset)
+	doc := testNewDoc()
+	page := NewPageFromObject(doc.pdf, doc.pdf.GetPageObjects(objects)[0])
+	page.AddFontResource(font, &objects)
+	page.DrawString(font, nil, 12, "Hello", 72, 72)
+	page.Complete(&objects)
+	if err := doc.pdf.AddObjects(objects); err != nil {
+		t.Fatal(err)
+	}
+	return testRead(t, doc.complete())
+}
+
+// testSubsetFontName returns the /BaseFont of the Type0 font.
+func testSubsetFontName(t *testing.T, objects []*PDFobj) string {
+	t.Helper()
+	for _, obj := range objects {
+		if obj.GetValue("/Subtype") == "/Type0" {
+			return obj.GetValue("/BaseFont")
+		}
+	}
+	t.Fatal("no Type0 font")
+	return ""
+}
+
+func TestSubsetOfATrueTypeFontAddedToAnExistingPDF(t *testing.T) {
+	path := "fonts/NotoSans/NotoSans-Regular.ttf"
+	whole := len(testOpenTypeFontBytes(t, path))
+	objects := testSubsetInExistingPDF(t, path, true)
+	name := testSubsetFontName(t, objects)
+	if !regexp.MustCompile(`^/[A-Z]{6}\+NotoSans-Regular$`).MatchString(name) {
+		t.Errorf("BaseFont %s", name)
+	}
+	testWant(t, name, testFindObject(objects, "/FontName").GetValue("/FontName"))
+	testWant(t, name, testFindObject(objects, "/CIDToGIDMap").GetValue("/BaseFont"))
+	file := testFindObject(objects, "/Length1")
+	length1, _ := strconv.Atoi(file.GetValue("/Length1"))
+	if length1 == 0 || length1 >= whole {
+		t.Errorf("/Length1 %d, the whole font %d", length1, whole)
+	}
+	if got := len(file.GetData()); got != length1 {
+		t.Errorf("%d bytes inflated, /Length1 %d", got, length1)
+	}
+	for _, obj := range objects {
+		if cmap := string(obj.GetData()); strings.HasPrefix(cmap, "/CIDInit") {
+			// The codespace range, .notdef and H, e, l, o
+			if n := strings.Count(cmap, "> <"); n != 6 {
+				t.Errorf("the ToUnicode map has %d entries", n)
+			}
+			return
+		}
+	}
+	t.Error("no ToUnicode map")
+}
+
+func TestSubsetOfACFFFontAddedToAnExistingPDF(t *testing.T) {
+	objects := testSubsetInExistingPDF(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.otf", true)
+	name := testSubsetFontName(t, objects)
+	if !regexp.MustCompile(`^/[A-Z]{6}\+IBMPlexSans$`).MatchString(name) {
+		t.Errorf("BaseFont %s", name)
+	}
+	if testFindObject(objects, "/FontFile3") == nil {
+		t.Error("no /FontFile3")
+	}
+}
+
+func TestSetSubsetFalseKeepsAFontAddedToAnExistingPDFWhole(t *testing.T) {
+	path := "fonts/NotoSans/NotoSans-Regular.ttf"
+	objects := testSubsetInExistingPDF(t, path, false)
+	testWant(t, "/NotoSans-Regular", testSubsetFontName(t, objects))
+	length1, _ := strconv.Atoi(testFindObject(objects, "/Length1").GetValue("/Length1"))
+	if whole := len(testOpenTypeFontBytes(t, path)); length1 != whole {
+		t.Errorf("/Length1 %d, the whole font %d", length1, whole)
+	}
+}

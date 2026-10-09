@@ -40,6 +40,7 @@ type Font struct {
 	cidSetObjNumber         int          // The CIDSet of a subset in PDF/A-1
 	baseFont                string       // The name it is embedded under, with the tag of a subset
 	program                 *fontProgram // The font program, until Complete
+	objects                 *fontObjects // Of a font added to an existing PDF, until they are added
 
 	unitsPerEm             int
 	bBoxLLx                int16 // Font bounding box
@@ -61,7 +62,6 @@ type Font struct {
 	markAnchors            []map[int][]int
 	baseAnchors            []map[int][]int
 	cff                    bool
-	uncompressedSize       int
 	metrics                [][]int // Only used for core fonts.
 	// checksum tells the font program this font was read from apart from
 	// every other, so that a PDF embeds each one once.
@@ -274,8 +274,9 @@ func NewCJKFont(pdf *PDF, cjkFont cjkfont.Font) *Font {
 }
 
 // NewFontForObjects constructs a font from an OpenType or TrueType font, a
-// .otf or a .ttf, and adds it to the objects of an existing PDF, embedded
-// whole.
+// .otf or a .ttf, and adds it to the objects of an existing PDF. It is
+// embedded as a subset of the glyphs drawn, when the objects are added to the
+// PDF, unless SetSubset(false) keeps it whole.
 func NewFontForObjects(objects *[]*PDFobj, reader io.Reader) *Font {
 	font := new(Font)
 	addOpenTypeFontToObjects(objects, font, reader)

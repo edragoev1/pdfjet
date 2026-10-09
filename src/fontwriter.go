@@ -93,58 +93,7 @@ func addToUnicodeCMapObject(pdf *PDF, font *Font, kept []bool) {
 		}
 	}
 
-	var sb strings.Builder
-	sb.WriteString("/CIDInit /ProcSet findresource begin\n")
-	sb.WriteString("12 dict begin\n")
-	sb.WriteString("begincmap\n")
-	sb.WriteString("/CIDSystemInfo <</Registry (Adobe) /Ordering (Identity) /Supplement 0>> def\n")
-	sb.WriteString("/CMapName /Adobe-Identity def\n")
-	sb.WriteString("/CMapType 2 def\n")
-
-	sb.WriteString("1 begincodespacerange\n")
-	sb.WriteString("<0000> <FFFF>\n")
-	sb.WriteString("endcodespacerange\n")
-
-	list := make([]string, 0)
-	// A character the font does not contain is drawn with the .notdef glyph.
-	// PDF/UA requires every glyph to map to Unicode, so map it to the
-	// replacement character.
-	list = append(list, "<0000> <FFFD>\n")
-	var buf strings.Builder
-	unicodeOf := unicodeOfGlyphs(font.unicodeToGID)
-	for cid := 0; cid <= 0xffff; cid++ {
-		gid := font.unicodeToGID[cid]
-		if gid > 0 && unicodeOf[gid] == cid && (kept == nil || (gid < len(kept) && kept[gid])) {
-			buf.WriteString("<")
-			buf.WriteString(toHexString(gid))
-			buf.WriteString("> <")
-			// A presentation form that the Bidi class puts in maps to the letters it stands for.
-			if letters := lettersOf(rune(cid)); letters != nil {
-				for _, letter := range letters {
-					buf.WriteString(toHexString(int(letter)))
-				}
-			} else {
-				buf.WriteString(toHexString(cid))
-			}
-			buf.WriteString(">\n")
-			list = append(list, buf.String())
-			buf.Reset()
-			if len(list) == 100 {
-				writeListTo(&sb, list)
-				list = nil
-			}
-		}
-	}
-	if len(list) > 0 {
-		writeListTo(&sb, list)
-		list = nil
-	}
-
-	sb.WriteString("endcmap\n")
-	sb.WriteString("CMapName currentdict /CMap defineresource pop\n")
-	sb.WriteString("end\nend")
-
-	pdf.addCompressedStream([]byte(sb.String()))
+	pdf.addCompressedStream([]byte(toUnicodeCMap(font, kept)))
 	font.toUnicodeCMapObjNumber = pdf.getObjNumber()
 }
 
@@ -214,37 +163,105 @@ func addCIDFontDictionaryObject(pdf *PDF, font *Font, baseFont string, kept []bo
 	pdf.appendInteger(int(math.Round(float64(float32(k * float32(font.advanceWidth[len(font.advanceWidth)-1]))))))
 	pdf.appendString("\n")
 
-	if kept == nil {
-		pdf.appendString("/W [0[\n")
-		for _, width := range font.advanceWidth {
-			pdf.appendInteger(int(math.Round(float64(float32(k * float32(width))))))
-			pdf.appendString(" ")
-		}
-		pdf.appendString("]]\n")
-	} else {
-		// Each run of kept glyphs: its first glyph and its widths.
-		pdf.appendString("/W [")
-		for gid := 0; gid < len(kept) && gid < len(font.advanceWidth); gid++ {
-			if !kept[gid] {
-				continue
-			}
-			pdf.appendString("\n")
-			pdf.appendInteger(gid)
-			pdf.appendString("[")
-			for ; gid < len(kept) && gid < len(font.advanceWidth) && kept[gid]; gid++ {
-				pdf.appendInteger(int(math.Round(float64(float32(k * float32(font.advanceWidth[gid]))))))
-				pdf.appendString(" ")
-			}
-			pdf.appendString("]")
-		}
-		pdf.appendString("]\n")
-	}
+	pdf.appendString("/W ")
+	pdf.appendString(widthsArray(font, kept))
+	pdf.appendString("\n")
 
 	pdf.appendString("/CIDToGIDMap /Identity\n")
 	pdf.appendByteArray(token.EndDictionary)
 	pdf.endObj()
 
 	font.cidFontDictObjNumber = pdf.getObjNumber()
+}
+
+// toUnicodeCMap returns the ToUnicode map of the font: of every glyph that has
+// a character, or only of the glyphs kept, for a subset.
+func toUnicodeCMap(font *Font, kept []bool) string {
+	var sb strings.Builder
+	sb.WriteString("/CIDInit /ProcSet findresource begin\n")
+	sb.WriteString("12 dict begin\n")
+	sb.WriteString("begincmap\n")
+	sb.WriteString("/CIDSystemInfo <</Registry (Adobe) /Ordering (Identity) /Supplement 0>> def\n")
+	sb.WriteString("/CMapName /Adobe-Identity def\n")
+	sb.WriteString("/CMapType 2 def\n")
+
+	sb.WriteString("1 begincodespacerange\n")
+	sb.WriteString("<0000> <FFFF>\n")
+	sb.WriteString("endcodespacerange\n")
+
+	list := make([]string, 0)
+	// A character the font does not contain is drawn with the .notdef glyph.
+	// PDF/UA requires every glyph to map to Unicode, so map it to the
+	// replacement character.
+	list = append(list, "<0000> <FFFD>\n")
+	var buf strings.Builder
+	unicodeOf := unicodeOfGlyphs(font.unicodeToGID)
+	for cid := 0; cid <= 0xffff; cid++ {
+		gid := font.unicodeToGID[cid]
+		if gid > 0 && unicodeOf[gid] == cid && (kept == nil || (gid < len(kept) && kept[gid])) {
+			buf.WriteString("<")
+			buf.WriteString(toHexString(gid))
+			buf.WriteString("> <")
+			// A presentation form that the Bidi class puts in maps to the letters it stands for.
+			if letters := lettersOf(rune(cid)); letters != nil {
+				for _, letter := range letters {
+					buf.WriteString(toHexString(int(letter)))
+				}
+			} else {
+				buf.WriteString(toHexString(cid))
+			}
+			buf.WriteString(">\n")
+			list = append(list, buf.String())
+			buf.Reset()
+			if len(list) == 100 {
+				writeListTo(&sb, list)
+				list = nil
+			}
+		}
+	}
+	if len(list) > 0 {
+		writeListTo(&sb, list)
+		list = nil
+	}
+
+	sb.WriteString("endcmap\n")
+	sb.WriteString("CMapName currentdict /CMap defineresource pop\n")
+	sb.WriteString("end\nend")
+
+	return sb.String()
+}
+
+// widthsArray returns the /W array of the font: the widths of all its glyphs,
+// or of each run of the glyphs kept, for a subset, its first glyph and its
+// widths.
+func widthsArray(font *Font, kept []bool) string {
+	k := float32(1000.0) / float32(font.unitsPerEm)
+	var sb strings.Builder
+	if kept == nil {
+		sb.WriteString("[0[\n")
+		for _, width := range font.advanceWidth {
+			sb.WriteString(strconv.Itoa(int(math.Round(float64(float32(k * float32(width)))))))
+			sb.WriteString(" ")
+		}
+		sb.WriteString("]]")
+		return sb.String()
+	}
+	sb.WriteString("[")
+	for gid := 0; gid < len(kept) && gid < len(font.advanceWidth); gid++ {
+		if !kept[gid] {
+			continue
+		}
+		sb.WriteString("\n")
+		sb.WriteString(strconv.Itoa(gid))
+		sb.WriteString("[")
+		for ; gid < len(kept) && gid < len(font.advanceWidth) && kept[gid]; gid++ {
+			sb.WriteString(strconv.Itoa(int(math.Round(float64(float32(k * float32(font.advanceWidth[gid])))))))
+			sb.WriteString(" ")
+		}
+		sb.WriteString("]")
+	}
+	sb.WriteString("]")
+	return sb.String()
 }
 
 // unicodeOfGlyphs returns the character that each glyph maps to in a ToUnicode

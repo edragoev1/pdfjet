@@ -35,8 +35,9 @@ type PDFobj struct {
 	data         []byte   // The decompressed data
 	undecoded    bool     // The stream is decoded when the data is first asked for
 	budget       *decodeBudget
-	gsNumber     int  // Graphics savedState Number
-	root         bool // The catalog that the trailer's /Root names
+	gsNumber     int   // Graphics savedState Number
+	root         bool  // The catalog that the trailer's /Root names
+	font         *Font // A font added to the objects, filled in when they are added to a PDF
 }
 
 // maxDecodedTotal is what all the streams of one PDF may decode to together,

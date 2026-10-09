@@ -6,8 +6,6 @@
 package pdfjet
 
 import (
-	"bytes"
-	"compress/zlib"
 	"io"
 	"strings"
 	"unicode/utf16"
@@ -194,22 +192,6 @@ func newOpenTypeFont(reader io.Reader) *openTypeFont {
 // compress returns the font program as it is embedded, compressed: the CFF
 // table of a font with CFF outlines, or else the whole font. It is compressed
 // only for a font the PDF does not hold yet.
-func (otf *openTypeFont) compress() []byte {
-	var compressed bytes.Buffer
-	writer := zlib.NewWriter(&compressed)
-	program := otf.buf
-	if otf.cff {
-		program = otf.buf[otf.cffOff : otf.cffOff+otf.cffLen]
-	}
-	if _, err := writer.Write(program); err != nil {
-		panic(err)
-	}
-	if err := writer.Close(); err != nil {
-		panic(err)
-	}
-	return compressed.Bytes()
-}
-
 func getHeadTable(otf *openTypeFont, table *fontTable) {
 	otf.index = table.offset + 16
 	_ = readUint16(otf) // Skip the flags

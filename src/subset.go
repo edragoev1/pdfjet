@@ -47,7 +47,8 @@ func (font *Font) useGlyph(gid int) {
 // .ttf or a .otf. A font whose license does not allow subsetting, by the
 // fsType of its OS/2 table, is embedded whole. Fonts read from one file are
 // one font program in the PDF: kept whole for one, the program is whole for
-// all of them. It must be called before Complete.
+// all of them. It must be called before Complete, and for a font added to the
+// objects of an existing PDF, before the objects are added to the PDF.
 func (font *Font) SetSubset(subset bool) *Font {
 	if font.program != nil {
 		font.program.whole = !subset
@@ -131,36 +132,12 @@ func embedFontProgram(pdf *PDF, font *Font, baseFont *string, kept *[]bool) {
 	}
 
 	program := font.program
-	data := program.font
-	var compressed []byte
+	data, glyphs, name := embeddedProgram(font)
+	compressed := deflateFontProgram(data)
 	length := len(data)
-	if !program.whole && !program.forbidden {
-		var subset []byte
-		var glyphs []bool
-		var err error
-		if program.cff {
-			subset, glyphs, err = subsetCFF(data, program.used)
-		} else {
-			subset, glyphs, err = subsetTrueType(data, program.used)
-		}
-		if err == nil {
-			compressed = deflateFontProgram(subset)
-			length = len(subset)
-			*kept = glyphs
-			*baseFont = subsetTag(font.checksum, glyphs) + "+" + font.name
-		}
-	}
-	if compressed == nil && program.cff {
-		// Whole, written again for the identity charset of a CID-keyed font,
-		// or as it is when it cannot be.
-		if whole, _, err := subsetCFF(data, nil); err == nil {
-			data = whole
-		}
-	}
-	if compressed == nil { // Whole
-		compressed = deflateFontProgram(data)
-	}
-	font.baseFont = *baseFont
+	*kept = glyphs
+	*baseFont = name
+	font.baseFont = name
 
 	metadataObjNumber := pdf.addMetadataObject(font.info, true)
 	if pdf.encryption != nil {
@@ -191,6 +168,35 @@ func embedFontProgram(pdf *PDF, font *Font, baseFont *string, kept *[]bool) {
 	pdf.appendString("\nendstream\n")
 	pdf.endObj()
 	font.fileObjNumber = pdf.getObjNumber()
+}
+
+// embeddedProgram returns the font program to embed: a subset, unless it is to
+// be whole, with the glyphs it keeps and the name of the font with the tag of
+// the subset, or else the program whole, with nil and the font's name.
+func embeddedProgram(font *Font) ([]byte, []bool, string) {
+	program := font.program
+	data := program.font
+	if !program.whole && !program.forbidden {
+		var subset []byte
+		var glyphs []bool
+		var err error
+		if program.cff {
+			subset, glyphs, err = subsetCFF(data, program.used)
+		} else {
+			subset, glyphs, err = subsetTrueType(data, program.used)
+		}
+		if err == nil {
+			return subset, glyphs, subsetTag(font.checksum, glyphs) + "+" + font.name
+		}
+	}
+	if program.cff {
+		// Whole, written again for the identity charset of a CID-keyed font,
+		// or as it is when it cannot be.
+		if whole, _, err := subsetCFF(data, nil); err == nil {
+			data = whole
+		}
+	}
+	return data, nil, font.name
 }
 
 // addCIDSetObject writes, for PDF/A-1, which asks it of a subset, the CIDSet

@@ -3308,6 +3308,7 @@ func (pdf *PDF) AddObjects(objects []*PDFobj) error {
 		return err
 	}
 	pdf.pagesObjNumber = objNumber
+	completeFontObjects(objects)
 	pdf.addObjectsToPDF(objects)
 	return nil
 }
@@ -3703,6 +3704,7 @@ func (pdf *PDF) AddResourceObjects(objects []*PDFobj) {
 	if pdf.checkObjects(objects) != nil {
 		return
 	}
+	completeFontObjects(objects)
 	resources := make([]*PDFobj, 0)
 	numbers := make(map[int]bool)
 

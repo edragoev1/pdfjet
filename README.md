@@ -432,8 +432,9 @@ draw left out. What a PDF embeds:
   from one file are one font program in a PDF, and the glyphs any of them
   draws are in it.
 - A font added to the objects of an existing PDF, `new Font(objects,
-  stream)`, is embedded whole: the document has no completion at which to
-  subset it.
+  stream)`, is a subset too, from 9.0.5: its objects are numbered when it
+  is added and filled in when the objects are added to the PDF, after the
+  pages are drawn. `setSubset(false)` is called before then.
 
 The SIL Open Font License of the bundled fonts allows a document to embed
 them, whole or subset: a document is not a distribution of the font.

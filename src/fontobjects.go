@@ -11,7 +11,10 @@ package pdfjet
 // ports. Keep the wrapping; see "Floating point on ARM" in README.md.
 // check-no-fma.sh fails if one is removed.
 
-// The objects of a font added to an existing PDF, embedded whole.
+// The objects of a font added to an existing PDF. They are numbered when the
+// font is added, so that pages can refer to it, and filled in when the objects
+// are added to the PDF, after the pages are drawn: the font program a subset of
+// the glyphs drawn, as a font of a new PDF is at Complete.
 
 import (
 	"math"
@@ -19,23 +22,104 @@ import (
 	"strings"
 )
 
-// addFontToObjects adds the font, whose font program is the compressed bytes,
-// to the objects of an existing PDF.
-func addFontToObjects(objects *[]*PDFobj, font *Font, compressed []byte) {
-	embedFontFile2(objects, font, compressed)
-	addFontDescriptorObject2(objects, font)
-	addCIDFontDictionaryObject2(objects, font)
-	addToUnicodeCMapObject2(objects, font)
+// fontObjects are the objects of a font added to an existing PDF, empty until
+// the objects are added to the PDF.
+type fontObjects struct {
+	metadata   int // The number of the font's metadata object
+	file       *PDFobj
+	descriptor *PDFobj
+	cidFont    *PDFobj
+	toUnicode  *PDFobj
+	type0      *PDFobj
+}
 
-	// Type0 Font Dictionary
+// addFontToObjects numbers the objects of the font, added to the objects of an
+// existing PDF; the Type0 font, the one pages refer to, is the last.
+func addFontToObjects(objects *[]*PDFobj, font *Font) {
+	objs := &fontObjects{metadata: addMetadataObject2(objects, font)}
+	objs.file = appendEmptyObject(objects)
+	objs.descriptor = appendEmptyObject(objects)
+	objs.cidFont = appendEmptyObject(objects)
+	objs.toUnicode = appendEmptyObject(objects)
+	objs.type0 = appendEmptyObject(objects)
+	objs.type0.font = font
+	font.fileObjNumber = objs.file.number
+	font.fontDescriptorObjNumber = objs.descriptor.number
+	font.cidFontDictObjNumber = objs.cidFont.number
+	font.toUnicodeCMapObjNumber = objs.toUnicode.number
+	font.objNumber = objs.type0.number
+	font.objects = objs
+}
+
+func appendEmptyObject(objects *[]*PDFobj) *PDFobj {
 	obj := newPDFobj()
+	obj.number = len(*objects) + 1
+	*objects = append(*objects, obj)
+	return obj
+}
+
+// completeFontObjects fills in the objects of the fonts added to the objects,
+// when the pages are drawn and the glyphs they use are known.
+func completeFontObjects(objects []*PDFobj) {
+	for _, obj := range objects {
+		if obj.font != nil {
+			obj.font.completeObjects()
+			obj.font = nil
+		}
+	}
+}
+
+// completeObjects fills in the objects of the font: its program, a subset of
+// the glyphs drawn unless it is to be whole, the descriptor and the CID font
+// under the name of the subset, the widths and the ToUnicode map of the glyphs
+// it keeps, and the Type0 font.
+func (font *Font) completeObjects() {
+	objs := font.objects
+	program, kept, baseFont := embeddedProgram(font)
+	font.baseFont = baseFont
+
+	compressed := deflateFontProgram(program)
+	obj := objs.file
+	obj.add("<<")
+	obj.add("/Metadata")
+	obj.add(strconv.Itoa(objs.metadata))
+	obj.add("0")
+	obj.add("R")
+	obj.add("/Filter")
+	obj.add("/FlateDecode")
+	obj.add("/Length")
+	obj.add(strconv.Itoa(len(compressed)))
+	if font.cff {
+		obj.add("/Subtype")
+		obj.add("/CIDFontType0C")
+	} else {
+		obj.add("/Length1")
+		obj.add(strconv.Itoa(len(program)))
+	}
+	obj.add(">>")
+	obj.setStream(compressed)
+
+	completeFontDescriptor(objs.descriptor, font, baseFont)
+	completeCIDFontDictionary(objs.cidFont, font, baseFont, kept)
+
+	cmap := deflateFontProgram([]byte(toUnicodeCMap(font, kept)))
+	obj = objs.toUnicode
+	obj.add("<<")
+	obj.add("/Filter")
+	obj.add("/FlateDecode")
+	obj.add("/Length")
+	obj.add(strconv.Itoa(len(cmap)))
+	obj.add(">>")
+	obj.setStream(cmap)
+
+	obj = objs.type0
 	obj.add("<<")
 	obj.add("/Type")
 	obj.add("/Font")
 	obj.add("/Subtype")
 	obj.add("/Type0")
 	obj.add("/BaseFont")
-	obj.add("/" + font.name)
+	obj.add("/" + baseFont)
 	obj.add("/Encoding")
 	obj.add("/Identity-H")
 	obj.add("/DescendantFonts")
@@ -49,9 +133,10 @@ func addFontToObjects(objects *[]*PDFobj, font *Font, compressed []byte) {
 	obj.add("0")
 	obj.add("R")
 	obj.add(">>")
-	obj.number = len(*objects) + 1
-	*objects = append(*objects, obj)
-	font.objNumber = obj.number
+
+	// The program and the objects are no longer needed.
+	font.program = nil
+	font.objects = nil
 }
 
 func addMetadataObject2(objects *[]*PDFobj, font *Font) int {
@@ -91,41 +176,12 @@ func addMetadataObject2(objects *[]*PDFobj, font *Font) int {
 	return obj.number
 }
 
-func embedFontFile2(objects *[]*PDFobj, font *Font, compressed []byte) {
-	metadataObjNumber := addMetadataObject2(objects, font)
-
-	obj := newPDFobj()
-	obj.add("<<")
-	obj.add("/Metadata")
-	obj.add(strconv.Itoa(metadataObjNumber))
-	obj.add("0")
-	obj.add("R")
-	obj.add("/Filter")
-	obj.add("/FlateDecode")
-	obj.add("/Length")
-	obj.add(strconv.Itoa(len(compressed)))
-	if font.cff {
-		obj.add("/Subtype")
-		obj.add("/CIDFontType0C")
-	} else {
-		obj.add("/Length1")
-		obj.add(strconv.Itoa(font.uncompressedSize))
-	}
-	obj.add(">>")
-
-	obj.setStream(compressed)
-	obj.number = len(*objects) + 1
-	*objects = append(*objects, obj)
-	font.fileObjNumber = obj.number
-}
-
-func addFontDescriptorObject2(objects *[]*PDFobj, font *Font) {
-	obj := newPDFobj()
+func completeFontDescriptor(obj *PDFobj, font *Font, fontName string) {
 	obj.add("<<")
 	obj.add("/Type")
 	obj.add("/FontDescriptor")
 	obj.add("/FontName")
-	obj.add("/" + font.name)
+	obj.add("/" + fontName)
 	if font.cff {
 		obj.add("/FontFile3")
 	} else {
@@ -154,76 +210,9 @@ func addFontDescriptorObject2(objects *[]*PDFobj, font *Font) {
 	obj.add("/StemV")
 	obj.add("79")
 	obj.add(">>")
-	obj.number = len(*objects) + 1
-	*objects = append(*objects, obj)
-	font.fontDescriptorObjNumber = obj.number
 }
 
-func addToUnicodeCMapObject2(objects *[]*PDFobj, font *Font) {
-	var sb strings.Builder
-	sb.WriteString("/CIDInit /ProcSet findresource begin\n")
-	sb.WriteString("12 dict begin\n")
-	sb.WriteString("begincmap\n")
-	sb.WriteString("/CIDSystemInfo <</Registry (Adobe) /Ordering (Identity) /Supplement 0>> def\n")
-	sb.WriteString("/CMapName /Adobe-Identity def\n")
-	sb.WriteString("/CMapType 2 def\n")
-
-	sb.WriteString("1 begincodespacerange\n")
-	sb.WriteString("<0000> <FFFF>\n")
-	sb.WriteString("endcodespacerange\n")
-
-	list := make([]string, 0)
-	// A character the font does not contain is drawn with the .notdef glyph.
-	// PDF/UA requires every glyph to map to Unicode, so map it to the
-	// replacement character.
-	list = append(list, "<0000> <FFFD>\n")
-	var buf strings.Builder
-	unicodeOf := unicodeOfGlyphs(font.unicodeToGID)
-	for cid := 0; cid <= 0xffff; cid++ {
-		gid := font.unicodeToGID[cid]
-		if gid > 0 && unicodeOf[gid] == cid {
-			buf.WriteString("<")
-			buf.WriteString(toHexString(gid))
-			buf.WriteString("> <")
-			// A presentation form that the Bidi class puts in maps to the letters it stands for.
-			if letters := lettersOf(rune(cid)); letters != nil {
-				for _, letter := range letters {
-					buf.WriteString(toHexString(int(letter)))
-				}
-			} else {
-				buf.WriteString(toHexString(cid))
-			}
-			buf.WriteString(">\n")
-			list = append(list, buf.String())
-			buf.Reset()
-			if len(list) == 100 {
-				writeListTo(&sb, list)
-				list = nil
-			}
-		}
-	}
-	if len(list) > 0 {
-		writeListTo(&sb, list)
-		list = nil
-	}
-
-	sb.WriteString("endcmap\n")
-	sb.WriteString("CMapName currentdict /CMap defineresource pop\n")
-	sb.WriteString("end\nend")
-
-	obj := newPDFobj()
-	obj.add("<<")
-	obj.add("/Length")
-	obj.add(strconv.Itoa(sb.Len()))
-	obj.add(">>")
-	obj.setStream([]byte(sb.String()))
-	obj.number = len(*objects) + 1
-	*objects = append(*objects, obj)
-	font.toUnicodeCMapObjNumber = obj.number
-}
-
-func addCIDFontDictionaryObject2(objects *[]*PDFobj, font *Font) {
-	obj := newPDFobj()
+func completeCIDFontDictionary(obj *PDFobj, font *Font, baseFont string, kept []bool) {
 	obj.add("<<")
 	obj.add("/Type")
 	obj.add("/Font")
@@ -234,7 +223,7 @@ func addCIDFontDictionaryObject2(objects *[]*PDFobj, font *Font) {
 		obj.add("/CIDFontType2")
 	}
 	obj.add("/BaseFont")
-	obj.add("/" + font.name)
+	obj.add("/" + baseFont)
 	obj.add("/CIDSystemInfo")
 	obj.add("<<")
 	obj.add("/Registry")
@@ -255,19 +244,8 @@ func addCIDFontDictionaryObject2(objects *[]*PDFobj, font *Font) {
 	obj.add("/DW")
 	obj.add(strconv.Itoa(int(math.Round(float64(float32(k * float32(font.advanceWidth[len(font.advanceWidth)-1])))))))
 	obj.add("/W")
-	obj.add("[")
-	obj.add("0")
-	obj.add("[")
-	for i := 0; i < len(font.advanceWidth); i++ {
-		obj.add(strconv.Itoa(int(math.Round(float64(float32(k * float32(font.advanceWidth[i])))))))
-	}
-	obj.add("]")
-	obj.add("]")
-
+	obj.add(widthsArray(font, kept))
 	obj.add("/CIDToGIDMap")
 	obj.add("/Identity")
 	obj.add(">>")
-	obj.number = len(*objects) + 1
-	*objects = append(*objects, obj)
-	font.cidFontDictObjNumber = obj.number
 }
