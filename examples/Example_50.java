@@ -41,12 +41,12 @@ class Example_50 {
         image.scaleBy(0.40f);
 
         // A font added to an existing PDF is embedded as a subset of the glyphs
-        // drawn, as in a new PDF; the .otf tests the CFF outlines.
-        stream = new FileInputStream("fonts/IBMPlexSans/IBMPlexSans-Regular.otf");
+        // drawn, as in a new PDF.
+        stream = new FileInputStream("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf");
         Font f1 = new Font(objects, stream);
         f1.setSize(12f);
 
-        stream = new FileInputStream("fonts/IBMPlexSans/IBMPlexSans-Bold.otf");
+        stream = new FileInputStream("fonts/IBMPlexSans/IBMPlexSans-Bold.ttf");
         Font f2 = new Font(objects, stream);
         f2.setSize(12f);
 

@@ -23,10 +23,12 @@ public class Example_02 {
         Font f0 = new Font(pdf, IBMPlexSans.Regular);
         f0.setSize(12f);
 
-        Font f1 = new Font(pdf, IBMPlexSansSC.Regular);
+        // The .otf: a page of Chinese draws hundreds of glyphs, whose CFF
+        // outlines make a smaller subset than the .ttf's, about a quarter.
+        Font f1 = new Font(pdf, "fonts/IBMPlexSansSC/IBMPlexSansSC-Regular.otf");
         f1.setSize(12f);
 
-        Font f2 = new Font(pdf, IBMPlexSansTC.Regular);
+        Font f2 = new Font(pdf, "fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.otf");
         f2.setSize(12f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);

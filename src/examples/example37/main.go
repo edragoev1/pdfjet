@@ -28,8 +28,8 @@ func Example37(fileName string) {
 		log.Fatal(err)
 	}
 	// A font added to an existing PDF is embedded as a subset of the glyphs
-	// drawn, as in a new PDF; the .otf tests the CFF outlines.
-	file1, err := os.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf")
+	// drawn, as in a new PDF.
+	file1, err := os.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")
 	if err != nil {
 		log.Fatal(err)
 	}

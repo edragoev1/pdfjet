@@ -20,10 +20,10 @@ class Example_37 {
         List<PDFobj> objects = pdf.read(new FileInputStream(fileName));
 
         // A font added to an existing PDF is embedded as a subset of the glyphs
-        // drawn, as in a new PDF; the .otf tests the CFF outlines.
+        // drawn, as in a new PDF.
         Font f1 = new Font(
                 objects,
-                new FileInputStream("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"));
+                new FileInputStream("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
         f1.setSize(72f);
 
         TextLine text = new TextLine(f1, "This is a test!");

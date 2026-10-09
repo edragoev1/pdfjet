@@ -56,8 +56,8 @@ func Example50(fileName string) {
 	image1.ScaleBy(0.40)
 
 	// A font added to an existing PDF is embedded as a subset of the glyphs
-	// drawn, as in a new PDF; the .otf tests the CFF outlines.
-	file2, err := os.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf")
+	// drawn, as in a new PDF.
+	file2, err := os.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -66,7 +66,7 @@ func Example50(fileName string) {
 	font1 := pdfjet.NewFontForObjects(&objects, reader)
 	font1.SetSize(12.0)
 
-	file3, err := os.Open("fonts/IBMPlexSans/IBMPlexSans-Bold.otf")
+	file3, err := os.Open("fonts/IBMPlexSans/IBMPlexSans-Bold.ttf")
 	if err != nil {
 		log.Fatal(err)
 	}

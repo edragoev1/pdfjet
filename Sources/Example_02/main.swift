@@ -22,10 +22,12 @@ public class Example_02 {
         f0.setSize(12.0)
 
 
-        let f1 = try Font(pdf, IBMPlexSansSC.Regular)
+        // The .otf: a page of Chinese draws hundreds of glyphs, whose CFF
+        // outlines make a smaller subset than the .ttf's, about a quarter.
+        let f1 = try Font(pdf, "fonts/IBMPlexSansSC/IBMPlexSansSC-Regular.otf")
         f1.setSize(12.0)
 
-        let f2 = try Font(pdf, IBMPlexSansTC.Regular)
+        let f2 = try Font(pdf, "fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.otf")
         f2.setSize(12.0)
 
         var page = Page(pdf, Letter.PORTRAIT)

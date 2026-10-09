@@ -12,8 +12,6 @@ import (
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
-	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansSC"
-	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansTC"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/content"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
@@ -35,10 +33,12 @@ func Example02() {
 	f0 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	f0.SetSize(12.0)
 
-	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSansSC.Regular)
+	// The .otf: a page of Chinese draws hundreds of glyphs, whose CFF
+	// outlines make a smaller subset than the .ttf's, about a quarter.
+	f1 := pdfjet.NewFontFromFile(pdf, "fonts/IBMPlexSansSC/IBMPlexSansSC-Regular.otf")
 	f1.SetSize(12.0)
 
-	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSansTC.Regular)
+	f2 := pdfjet.NewFontFromFile(pdf, "fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.otf")
 	f2.SetSize(12.0)
 
 	// Create a new page in portrait Letter size

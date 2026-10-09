@@ -16,10 +16,10 @@ public class Example_37 {
         var objects = try pdf.read(from: InputStream(fileAtPath: fileName)!)
 
         // A font added to an existing PDF is embedded as a subset of the glyphs
-        // drawn, as in a new PDF; the .otf tests the CFF outlines.
+        // drawn, as in a new PDF.
         let f1 = try Font(
                 &objects,
-                InputStream(fileAtPath: "fonts/IBMPlexSans/IBMPlexSans-Regular.otf")!)
+                InputStream(fileAtPath: "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")!)
         f1.setSize(72.0)
 
         let text = TextLine(f1, "This is a test!")

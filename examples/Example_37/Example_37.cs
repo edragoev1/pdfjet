@@ -20,9 +20,9 @@ class Example_37 {
         List<PDFobj> objects = pdf.Read(new FileStream(fileName, FileMode.Open, FileAccess.Read));
 
         // A font added to an existing PDF is embedded as a subset of the glyphs
-        // drawn, as in a new PDF; the .otf tests the CFF outlines.
+        // drawn, as in a new PDF.
         Font f1 = new Font(objects,
-                new FileStream("fonts/IBMPlexSans/IBMPlexSans-Regular.otf",
+                new FileStream("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf",
                 FileMode.Open,
                 FileAccess.Read));
         f1.SetSize(72f);

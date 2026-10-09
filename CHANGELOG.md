@@ -90,15 +90,22 @@ This is the first entry in this file; earlier releases were not tracked here.
   30.4 MB together, Example_02 from 9.6 MB to 442 KB. The IBM Plex families
   are IBM's `.ttf` editions, of the versions of the `.otf` files they replace,
   the ones the PDFjet Forms editor shows as `.woff2`. Their glyphs are the
-  same; three things differ. IBM Plex Sans JP has the line metrics of the
-  other `.ttf` files: its text is set 1.5 em apart, not 2 (ascent 1.06 em,
-  descent 0.44 em, no line gap, where the `.otf` had 0.88, 0.12 and 1). The
+  same; three things differ. IBM Plex Sans JP's `.ttf` sets its text 1.5 em
+  apart, as Plex Sans KR does, where its `.otf` sets it 2 em apart, as SC
+  and TC do in both editions (ascent 1.06 em, descent 0.44 em, no line gap,
+  where the `.otf` has 0.88, 0.12 and 1): IBM's two editions disagree. The
   Latin letters of IBM Plex Sans TC are 1 to 5 thousandths of an em
   narrower. The italic angle of IBM Plex Sans, Serif and Mono is rounded to a
   whole degree. IBM Plex Sans is still there as `.otf`, a font of CFF
   outlines. The fonts folder went from 606 MB to 414 MB. The subsets of Noto
   Sans SC and TC made ahead of time (`-SC3500`, `-TC4808`) are gone with the
   lists of characters they were made of, and the tools that made them.
+- Examples 02 and 04 draw their Chinese, Japanese and Korean in the `.otf`
+  of IBM Plex Sans SC, TC, JP and KR, named by path in the code: a page of
+  them draws hundreds of glyphs, whose CFF outlines make a smaller subset,
+  Example_02 336 KB in place of 442 and Example_04 228 KB in place of 311.
+  The font constants stay the `.ttf`. Examples 37 and 50 draw a line or two
+  in IBM Plex Sans, so the `.ttf`, the smaller there.
 - The ToUnicode map of every embedded font is compressed, a few
   hundred kilobytes less for a large CJK font embedded whole.
 - SVG is read with one XML parser, the same in the four ports, in place of
