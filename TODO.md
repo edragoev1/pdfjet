@@ -170,7 +170,7 @@ stays the fast path for the fonts embedded whole and for PDFjet Forms.
    .NET client asked. To decide first: public on nuget.org, which needs
    its license expression and the package's own README, or a private feed
    for buyers; and whether it is the evaluation or the licensed build.
-6. ⬜ **Anything the .NET client finds in net48**, which ships untested on
+6. ⬜ **Sent on 9 October 2026: the 9.0.3 evaluation package, its strong-named net48 build, to the .NET client, who tests it; waiting for what they find.** **Anything the .NET client finds in net48**, which ships untested on
    Windows in 9.0.3 (they test it).
 7. ⬜ **The release:** the checks of the tag as for 9.0.3 (check-examples.sh,
    check-api.sh v9.0.3, the viewer pass kept to what can find a major
