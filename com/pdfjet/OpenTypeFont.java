@@ -16,15 +16,16 @@ class OpenTypeFont {
         OTF otf = new OTF(inputStream);
         setData(font, otf);
 
-        if (!otf.cff) {
-            // A TrueType font is written at complete(), a subset of the glyphs
-            // drawn; its pages refer to the number reserved for it.
-            Subset.share(pdf, font, otf.buf);
-            font.objNumber = pdf.reserveObjNumber();
-            pdf.fonts.add(font);
-            return;
+        // The font is written at complete(), a subset of the glyphs drawn; its
+        // pages refer to the number reserved for it.
+        if (otf.cff) {
+            Subset.share(pdf, font, Arrays.copyOfRange(otf.buf, otf.cffOff, otf.cffOff + otf.cffLen),
+                    true, (otf.fsType & 0x0100) != 0);
+        } else {
+            Subset.share(pdf, font, otf.buf, false, false);
         }
-        registerCFF(pdf, font, otf);
+        font.objNumber = pdf.reserveObjNumber();
+        pdf.fonts.add(font);
     }
 
     // Adds the font to the objects of an existing PDF, with its font program
@@ -64,84 +65,6 @@ class OpenTypeFont {
         font.cff = otf.cff;
         font.checksum = Font.checksumOf(font);
         font.setSize(font.size);
-    }
-
-    // Writes a font with CFF outlines, which is embedded whole, as it is added.
-    private static void registerCFF(PDF pdf, Font font, OTF otf) throws Exception {
-        embedFontFile(pdf, font, otf);
-        FontWriter.addFontDescriptorObject(pdf, font, font.name);
-        FontWriter.addCIDFontDictionaryObject(pdf, font, font.name, null);
-        FontWriter.addToUnicodeCMapObject(pdf, font, null);
-
-        // Type0 Font Dictionary
-        pdf.newObj();
-        pdf.append("<<\n");
-        pdf.append("/Type /Font\n");
-        pdf.append("/Subtype /Type0\n");
-        pdf.append("/BaseFont /");
-        pdf.append(otf.fontName);
-        pdf.append('\n');
-        pdf.append("/Encoding /Identity-H\n");
-        pdf.append("/DescendantFonts [");
-        pdf.append(font.cidFontDictObjNumber);
-        pdf.append(" 0 R]\n");
-
-        pdf.append("/ToUnicode ");
-        pdf.append(font.toUnicodeCMapObjNumber);
-        pdf.append(" 0 R\n");
-
-        pdf.append(">>\n");
-        pdf.endObj();
-
-        font.objNumber = pdf.getObjNumber();
-        pdf.fonts.add(font);
-    }
-
-    private static void embedFontFile(PDF pdf, Font font, OTF otf) throws Exception {
-        // Check if the font file is already embedded
-        for (Font f : pdf.fonts) {
-            if (f.fileObjNumber != 0 && f.name.equals(otf.fontName) && f.checksum == font.checksum) {
-                font.fileObjNumber = f.fileObjNumber;
-                return;
-            }
-        }
-
-        int metadataObjNumber = pdf.addMetadataObject(otf.fontInfo, true);
-        pdf.newObj();
-        pdf.append("<<\n");
-        if (otf.cff) {
-            pdf.append("/Subtype /CIDFontType0C\n");
-        }
-        pdf.append("/Filter /FlateDecode\n");
-
-        if (!otf.cff) {
-            pdf.append("/Length1 ");
-            pdf.append(otf.buf.length);
-            pdf.append('\n');
-        }
-
-        if (metadataObjNumber != -1) {
-            pdf.append("/Metadata ");
-            pdf.append(metadataObjNumber);
-            pdf.append(" 0 R\n");
-        }
-
-        byte[] buf = otf.compress();
-        if (pdf.encryption != null) {
-            buf = AES256.encrypt(buf, pdf.encryption.getKey());
-        }
-
-        pdf.append("/Length ");
-        pdf.append(buf.length);
-        pdf.append("\n");
-
-        pdf.append(">>\n");
-        pdf.append("stream\n");
-        pdf.append(buf);
-        pdf.append("\nendstream\n");
-        pdf.endObj();
-
-        font.fileObjNumber = pdf.getObjNumber();
     }
 
     /**

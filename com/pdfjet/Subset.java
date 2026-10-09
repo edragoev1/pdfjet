@@ -10,18 +10,21 @@ import com.pdfjet.encryption.*;
 import java.util.*;
 
 /**
- * The subsets of the TrueType fonts, .ttf files, embedded at
+ * The subsets of the embedded fonts, .ttf and .otf files, embedded at
  * complete() with the outlines of the glyphs the document did not draw
  * emptied. The glyph numbers stay, so the widths, the character map and the
  * ToUnicode map are those of the whole font.
  */
 class Subset {
     /**
-     * The font program of a TrueType font, kept until complete(). Fonts read
-     * from one file share one program, and the glyphs any of them drew.
+     * The font program of a TrueType font, or the CFF table of an OpenType
+     * font with CFF outlines, kept until complete(). Fonts read from one file
+     * share one program, and the glyphs any of them drew.
      */
     static final class Program {
-        byte[] font;        // The font
+        byte[] font;        // The TrueType font, or the CFF table
+        boolean cff;
+        boolean forbidden;  // The fsType of a CFF font's OS/2 table forbids subsetting
         // The glyphs drawn, by glyph number, written in four hexadecimal digits.
         final boolean[] used = new boolean[0x10000];
         boolean whole;      // Set by setSubset(false): the font is embedded whole
@@ -54,7 +57,7 @@ class Subset {
      * Gives the font the program of a font the PDF already has from the same
      * file, if any, or else a new one of the font given.
      */
-    static void share(PDF pdf, Font font, byte[] ttf) {
+    static void share(PDF pdf, Font font, byte[] program, boolean cff, boolean forbidden) {
         for (Font f : pdf.fonts) {
             if (f.program != null && f.name.equals(font.name) && f.checksum == font.checksum) {
                 font.program = f.program;
@@ -62,7 +65,9 @@ class Subset {
             }
         }
         font.program = new Program();
-        font.program.font = ttf;
+        font.program.font = program;
+        font.program.cff = cff;
+        font.program.forbidden = forbidden;
     }
 
     /**
@@ -127,13 +132,14 @@ class Subset {
 
         Program program = font.program;
         font.baseFont = font.name;
-        byte[] ttf = program.font;
+        byte[] data = program.font;
         byte[] compressed = null;
-        int length = ttf.length;
-        if (!program.whole) {
+        int length = data.length;
+        if (!program.whole && !program.forbidden) {
             try {
                 boolean[][] kept = new boolean[1][];
-                byte[] subset = subsetTrueType(ttf, program.used, kept);
+                byte[] subset = program.cff ?
+                        CFFSubset.subset(data, program.used, kept) : subsetTrueType(data, program.used, kept);
                 compressed = Compressor.deflate(subset);
                 length = subset.length;
                 font.kept = kept[0];
@@ -142,8 +148,17 @@ class Subset {
                 // Embedded whole
             }
         }
+        if (compressed == null && program.cff) {
+            // Whole, written again for the identity charset of a CID-keyed
+            // font, or as it is when it cannot be.
+            try {
+                data = CFFSubset.subset(data, null, new boolean[1][]);
+            } catch (NotSubset e) {
+                // As it is
+            }
+        }
         if (compressed == null) { // Whole
-            compressed = Compressor.deflate(ttf);
+            compressed = Compressor.deflate(data);
         }
 
         int metadataObjNumber = pdf.addMetadataObject(font.info, true);
@@ -152,10 +167,15 @@ class Subset {
         }
         pdf.newObj();
         pdf.append("<<\n");
+        if (program.cff) {
+            pdf.append("/Subtype /CIDFontType0C\n");
+        }
         pdf.append("/Filter /FlateDecode\n");
-        pdf.append("/Length1 ");
-        pdf.append(length);
-        pdf.append('\n');
+        if (!program.cff) {
+            pdf.append("/Length1 ");
+            pdf.append(length);
+            pdf.append('\n');
+        }
         if (metadataObjNumber != -1) {
             pdf.append("/Metadata ");
             pdf.append(metadataObjNumber);

@@ -42,6 +42,7 @@ class OTF {
     java.util.List<java.util.Map<Integer, int[]>> baseAnchors;
     byte[] buf;
     boolean cff = false;
+    int fsType;         // Of the OS/2 table: what the license allows
     int cffOff;
     int cffLen;
     int index = 0;
@@ -205,6 +206,8 @@ class OTF {
     }
 
     private void OS_2(FontTable table) throws IOException {
+
+        fsType = Math.max(tableUInt16(table, 8), 0);
         index = table.offset + 64;
         firstChar = readUInt16();
         lastChar  = readUInt16();

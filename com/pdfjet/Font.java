@@ -484,12 +484,10 @@ final public class Font {
     /**
      * Sets whether this font is embedded as a subset, the outlines of the
      * glyphs the document does not draw left out, which is the default for a
-     * TrueType font, a .ttf. A font with CFF outlines, a .otf, is always
-     * embedded whole. A font whose license does
-     * not allow subsetting, by the fsType of its OS/2 table, is embedded whole
-     * too. Fonts read from one file are one font program in the PDF: kept
-     * whole for one, the program is whole for all of them. It must be called
-     * before complete().
+     * .ttf or a .otf. A font whose license does not allow subsetting, by the
+     * fsType of its OS/2 table, is embedded whole. Fonts read from one file are
+     * one font program in the PDF: kept whole for one, the program is whole for
+     * all of them. It must be called before complete().
      *
      * @param subset false to embed the font whole.
      * @return this Font object.
