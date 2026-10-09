@@ -25,8 +25,23 @@ This is the first entry in this file; earlier releases were not tracked here.
   that is not whole or not read so, its byte order, its directory or the tag
   wrong, is passed over, the image drawn as stored. Orientation 1, or none,
   draws the page byte for byte as before.
+- TrueType fonts, a `.ttf` or a `.ttf.stream`, are embedded as subsets:
+  the outlines of the glyphs a document does not draw are left out when the
+  PDF is completed, with the tables a reader needs and no others (the
+  shaping tables, which PDFjet reads, and the vertical metrics are left
+  out). Glyph numbers stay, so pages, widths and text extraction are as
+  before. Noto Sans SC goes from 6.5 MB to 93 KB in a page of Chinese, and
+  Noto Sans from 344 KB to 25 KB in a page of English. The font's name
+  carries the six-letter tag of a subset, its widths and ToUnicode map list
+  the glyphs kept, and a PDF/A-1 file has the CIDSet PDF/A-1 asks of a
+  subset. A font whose license forbids subsetting (fsType 0x0100 in its
+  OS/2 table) is embedded whole, and so is a font set to with
+  `setSubset(false)`. CFF fonts, a `.otf` or a `.otf.stream`, are embedded
+  whole as before. Go first; Java, C# and Swift follow.
 
 ### Changed
+- The ToUnicode map of every embedded font is compressed (Go first), a few
+  hundred kilobytes less for a large CJK font embedded whole.
 - SVG is read with one XML parser, the same in the four ports, in place of
   Go's encoding/xml, Java's StAX, C#'s XmlReader and Swift's own tokenizer,
   so that the four read an SVG alike. It came from the parser of PDFjet Pro's

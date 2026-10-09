@@ -27,10 +27,18 @@ import (
 func fontStream1(pdf *PDF, font *Font, reader io.Reader) {
 	getFontData(font, reader)
 	font.checksum = checksumOf(font)
+	if !font.cff {
+		// A TrueType font is written at Complete, a subset of the glyphs
+		// drawn; its pages refer to the number reserved for it.
+		shareTrueTypeProgram(pdf, font, nil, readBytes(reader, font.compressedSize), font.uncompressedSize)
+		font.objNumber = pdf.reserveObjNumber()
+		pdf.fonts = append(pdf.fonts, font)
+		return
+	}
 	embedFontFile(pdf, font, reader)
 	addFontDescriptorObject(pdf, font)
 	addCIDFontDictionaryObject(pdf, font)
-	addToUnicodeCMapObject(pdf, font)
+	addToUnicodeCMapObject(pdf, font, nil)
 
 	// Type0 Font Dictionary
 	pdf.newObj()
@@ -108,6 +116,12 @@ func embedFontFile(pdf *PDF, font *Font, reader io.Reader) {
 }
 
 func addFontDescriptorObject(pdf *PDF, font *Font) {
+	addFontDescriptorObjectNamed(pdf, font, font.name)
+}
+
+// addFontDescriptorObjectNamed writes the font descriptor with the name given,
+// which is the font's own, or that of a subset.
+func addFontDescriptorObjectNamed(pdf *PDF, font *Font, fontName string) {
 	for _, f := range pdf.fonts {
 		if f.fontDescriptorObjNumber != 0 && f.name == font.name && f.checksum == font.checksum {
 			font.fontDescriptorObjNumber = f.fontDescriptorObjNumber
@@ -119,7 +133,7 @@ func addFontDescriptorObject(pdf *PDF, font *Font) {
 	pdf.appendString("<<\n")
 	pdf.appendString("/Type /FontDescriptor\n")
 	pdf.appendString("/FontName /")
-	pdf.appendString(font.name)
+	pdf.appendString(fontName)
 	pdf.appendString("\n")
 	if font.cff {
 		pdf.appendString("/FontFile3 ")
@@ -153,13 +167,20 @@ func addFontDescriptorObject(pdf *PDF, font *Font) {
 	pdf.appendInteger(toGlyphSpace(font.capHeight, font.unitsPerEm))
 	pdf.appendString("\n")
 	pdf.appendString("/StemV 79\n")
+	if font.cidSetObjNumber != 0 {
+		pdf.appendString("/CIDSet ")
+		pdf.appendInteger(font.cidSetObjNumber)
+		pdf.appendString(" 0 R\n")
+	}
 	pdf.appendString(">>\n")
 	pdf.endObj()
 
 	font.fontDescriptorObjNumber = pdf.getObjNumber()
 }
 
-func addToUnicodeCMapObject(pdf *PDF, font *Font) {
+// addToUnicodeCMapObject writes the ToUnicode map of the font: of every glyph
+// that has a character, or only of the glyphs kept, for a subset.
+func addToUnicodeCMapObject(pdf *PDF, font *Font, kept []bool) {
 	for _, f := range pdf.fonts {
 		if f.toUnicodeCMapObjNumber != 0 && f.name == font.name && f.checksum == font.checksum {
 			font.toUnicodeCMapObjNumber = f.toUnicodeCMapObjNumber
@@ -188,7 +209,7 @@ func addToUnicodeCMapObject(pdf *PDF, font *Font) {
 	unicodeOf := unicodeOfGlyphs(font.unicodeToGID)
 	for cid := 0; cid <= 0xffff; cid++ {
 		gid := font.unicodeToGID[cid]
-		if gid > 0 && unicodeOf[gid] == cid {
+		if gid > 0 && unicodeOf[gid] == cid && (kept == nil || (gid < len(kept) && kept[gid])) {
 			buf.WriteString("<")
 			buf.WriteString(toHexString(gid))
 			buf.WriteString("> <")
@@ -218,26 +239,37 @@ func addToUnicodeCMapObject(pdf *PDF, font *Font) {
 	sb.WriteString("CMapName currentdict /CMap defineresource pop\n")
 	sb.WriteString("end\nend")
 
-	buf2 := []byte(sb.String())
-	if pdf.encryption != nil {
-		buf2 = pdf.encryption.encrypt(buf2)
-	}
-
-	pdf.newObj()
-	pdf.appendString("<<\n")
-	pdf.appendString("/Length ")
-	pdf.appendInteger(len(buf2))
-	pdf.appendString("\n")
-	pdf.appendString(">>\n")
-	pdf.appendString("stream\n")
-	pdf.appendByteArray(buf2)
-	pdf.appendString("\nendstream\n")
-	pdf.endObj()
-
+	pdf.addCompressedStream([]byte(sb.String()))
 	font.toUnicodeCMapObjNumber = pdf.getObjNumber()
 }
 
+// addCompressedStream writes a stream object of the data, compressed.
+func (pdf *PDF) addCompressedStream(data []byte) {
+	compressed := deflateFontProgram(data)
+	if pdf.encryption != nil {
+		compressed = pdf.encryption.encrypt(compressed)
+	}
+	pdf.newObj()
+	pdf.appendString("<<\n")
+	pdf.appendString("/Filter /FlateDecode\n")
+	pdf.appendString("/Length ")
+	pdf.appendInteger(len(compressed))
+	pdf.appendString("\n")
+	pdf.appendString(">>\n")
+	pdf.appendString("stream\n")
+	pdf.appendByteArray(compressed)
+	pdf.appendString("\nendstream\n")
+	pdf.endObj()
+}
+
 func addCIDFontDictionaryObject(pdf *PDF, font *Font) {
+	addCIDFontDictionaryObjectNamed(pdf, font, font.name, nil)
+}
+
+// addCIDFontDictionaryObjectNamed writes the CID font with the name given,
+// which is the font's own, or that of a subset, whose widths are those of the
+// glyphs it keeps.
+func addCIDFontDictionaryObjectNamed(pdf *PDF, font *Font, baseFont string, kept []bool) {
 	for _, f := range pdf.fonts {
 		if f.cidFontDictObjNumber != 0 && f.name == font.name && f.checksum == font.checksum {
 			font.cidFontDictObjNumber = f.cidFontDictObjNumber
@@ -254,7 +286,7 @@ func addCIDFontDictionaryObject(pdf *PDF, font *Font) {
 		pdf.appendString("/Subtype /CIDFontType2\n")
 	}
 	pdf.appendString("/BaseFont /")
-	pdf.appendString(font.name)
+	pdf.appendString(baseFont)
 	pdf.appendByte(token.Newline)
 
 	registry := []byte("Adobe")
@@ -281,12 +313,31 @@ func addCIDFontDictionaryObject(pdf *PDF, font *Font) {
 	pdf.appendInteger(int(math.Round(float64(float32(k * float32(font.advanceWidth[len(font.advanceWidth)-1]))))))
 	pdf.appendString("\n")
 
-	pdf.appendString("/W [0[\n")
-	for _, width := range font.advanceWidth {
-		pdf.appendInteger(int(math.Round(float64(float32(k * float32(width))))))
-		pdf.appendString(" ")
+	if kept == nil {
+		pdf.appendString("/W [0[\n")
+		for _, width := range font.advanceWidth {
+			pdf.appendInteger(int(math.Round(float64(float32(k * float32(width))))))
+			pdf.appendString(" ")
+		}
+		pdf.appendString("]]\n")
+	} else {
+		// Each run of kept glyphs: its first glyph and its widths.
+		pdf.appendString("/W [")
+		for gid := 0; gid < len(kept) && gid < len(font.advanceWidth); gid++ {
+			if !kept[gid] {
+				continue
+			}
+			pdf.appendString("\n")
+			pdf.appendInteger(gid)
+			pdf.appendString("[")
+			for ; gid < len(kept) && gid < len(font.advanceWidth) && kept[gid]; gid++ {
+				pdf.appendInteger(int(math.Round(float64(float32(k * float32(font.advanceWidth[gid]))))))
+				pdf.appendString(" ")
+			}
+			pdf.appendString("]")
+		}
+		pdf.appendString("]\n")
 	}
-	pdf.appendString("]]\n")
 
 	pdf.appendString("/CIDToGIDMap /Identity\n")
 	pdf.appendByteArray(token.EndDictionary)

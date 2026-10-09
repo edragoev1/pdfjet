@@ -17,6 +17,21 @@ packaged and the Producer still says v9.0.3. **v9.0.5 then adds the
 TrueType font subsetting** (the plan under v9.1 below, moved up), with
 NuGet, net48's feedback and Jazzer's last findings when they come.
 
+**Subsetting, Go done on 8 October 2026, the other three to follow:**
+`src/subset.go`. The TrueType fonts are written at Complete under the number
+reserved at construction, so the name with its tag, the widths and the
+ToUnicode map list only the glyphs kept; their tables are those a reader
+needs (head, hhea, hmtx, maxp, loca, glyf, cvt, fpgm, prep, gasp, cmap, OS/2,
+name, post as version 3), GSUB, GPOS, GDEF and the vertical tables left out:
+Noto Sans 344 KB to 25 KB, Noto Sans SC 6.5 MB to 93 KB, the 3,420 pages of
+the Go examples drawn the same by Poppler, veraPDF passing 1a, 1b, 2b and UA.
+`Font.SetSubset(false)` keeps a font whole. The ToUnicode map is compressed
+for every font. Glyphs reach a page through `Page.appendGlyph` and
+`Stamp.drawEncodedText`; the program is shared by the fonts of one file
+(`shareTrueTypeProgram`). A .ttf.stream subset costs its inflation, about
+0.1 s for Noto Sans SC; the .ttf, 0.04 s. Until the other ports follow, the
+compare job of the Build tells their files apart.
+
 1. ✅ **Done on 8 October 2026, evening, in the four ports with a test in
    each:** the OTF hmtx before hhea (ae905866; Go and Swift had drawn every
    glyph 0 wide, unseen), the malformed SVG number (5d3d6f73), and Jazzer's

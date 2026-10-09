@@ -44,6 +44,17 @@ func registerOpenTypeFont(pdf *PDF, font *Font, reader io.Reader) {
 	font.checksum = checksumOf(font)
 	font.SetSize(font.size)
 
+	if !otf.cff {
+		// A TrueType font is written at Complete, a subset of the glyphs
+		// drawn; its pages refer to the number reserved for it.
+		font.info = otf.fontInfo
+		font.capHeight = otf.capHeight
+		shareTrueTypeProgram(pdf, font, otf.buf, nil, len(otf.buf))
+		font.objNumber = pdf.reserveObjNumber()
+		pdf.fonts = append(pdf.fonts, font)
+		return
+	}
+
 	embedOpenTypeFontFile(pdf, font, otf)
 	addOpenTypeFontDescriptorObject(pdf, font, otf)
 	addOpenTypeFontCIDFontDictionaryObject(pdf, font, otf)
@@ -275,22 +286,7 @@ func addOpenTypeFontToUnicodeCMapObject(pdf *PDF, font *Font, otf *openTypeFont)
 	sb.WriteString("CMapName currentdict /CMap defineresource pop\n")
 	sb.WriteString("end\nend")
 
-	buf2 := []byte(sb.String())
-	if pdf.encryption != nil {
-		buf2 = pdf.encryption.encrypt(buf2)
-	}
-
-	pdf.newObj()
-	pdf.appendString("<<\n")
-	pdf.appendString("/Length ")
-	pdf.appendInteger(len(buf2))
-	pdf.appendString("\n")
-	pdf.appendString(">>\n")
-	pdf.appendString("stream\n")
-	pdf.appendByteArray(buf2)
-	pdf.appendString("\nendstream\n")
-	pdf.endObj()
-
+	pdf.addCompressedStream([]byte(sb.String()))
 	font.toUnicodeCMapObjNumber = pdf.getObjNumber()
 }
 

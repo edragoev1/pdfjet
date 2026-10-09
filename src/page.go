@@ -514,7 +514,7 @@ func (page *Page) drawUnicodeString(font *Font, text string) {
 	} else if !needsShaping(font, runes) {
 		for _, c1 := range runes {
 			if c1 != 0xFEFF { // BOM marker
-				page.appendCodePointAsHex(glyphOf(font, c1))
+				page.appendGlyph(font, glyphOf(font, c1))
 			}
 		}
 	} else {
@@ -574,7 +574,7 @@ func (page *Page) drawUnicodeString(font *Font, text string) {
 			offsets = markOffsets(font, codePoints, gids)
 		} else if mirroredAt == nil && joiners == nil && runEdge == nil && !hasNotdef {
 			for _, gid := range gids {
-				page.appendCodePointAsHex(gid)
+				page.appendGlyph(font, gid)
 			}
 			return
 		}
@@ -637,7 +637,7 @@ func (page *Page) appendRun(font *Font, codePoints []rune, gids, offsets []int, 
 	page.appendString(">>> BDC\n<")
 	for k := start; k < end; k++ {
 		if offsets == nil || (offsets[2*k] == 0 && offsets[2*k+1] == 0) {
-			page.appendCodePointAsHex(gids[k])
+			page.appendGlyph(font, gids[k])
 		} else {
 			page.appendMovedGlyph(font, gids[k], offsets[2*k], offsets[2*k+1])
 		}
@@ -674,7 +674,7 @@ func (page *Page) appendGlyphs(font *Font, codePoints []rune, gids []int, mirror
 		if inOwnSpan(font, codePoints, mirroredAt, k) {
 			page.appendGlyphWithActualText(font, codePoints, gids, nil, mirroredAt, nil, k)
 		} else {
-			page.appendCodePointAsHex(gids[k])
+			page.appendGlyph(font, gids[k])
 		}
 	}
 }
@@ -714,13 +714,13 @@ func (page *Page) appendGlyphWithActualText(
 		page.appendString("> Tj\n")
 	} else {
 		page.appendString("<")
-		page.appendCodePointAsHex(gids[k])
+		page.appendGlyph(font, gids[k])
 		page.appendString("> Tj\n")
 	}
 	if joiner != 0 {
 		space := font.unicodeToGID[0x0020]
 		page.appendString("[<")
-		page.appendCodePointAsHex(space)
+		page.appendGlyph(font, space)
 		page.appendString("> ")
 		page.appendFloat32(float32(1000.0*float32(font.glyphAdvance(space))) / float32(font.unitsPerEm))
 		page.appendString("] TJ\n")
@@ -1010,13 +1010,13 @@ func (page *Page) appendWordWithMovedMarks(font *Font, codePoints []rune, gids, 
 		page.appendString("[")
 		page.appendFloat32(float32(1000*float32(font.glyphAdvance(space))) / float32(font.unitsPerEm))
 		page.appendString(" <")
-		page.appendCodePointAsHex(space)
+		page.appendGlyph(font, space)
 		page.appendString(">] TJ\n")
 	}
 	page.appendString("<")
 	for k := start; k < end; k++ {
 		if offsets[2*k] == 0 && offsets[2*k+1] == 0 {
-			page.appendCodePointAsHex(gids[k])
+			page.appendGlyph(font, gids[k])
 		} else {
 			page.appendMovedGlyph(font, gids[k], offsets[2*k], offsets[2*k+1])
 		}
@@ -1036,14 +1036,14 @@ func (page *Page) appendMovedGlyph(font *Font, gid, dx, dy int) {
 	page.appendString(" Ts\n")
 	if dx == 0 {
 		page.appendString("<")
-		page.appendCodePointAsHex(gid)
+		page.appendGlyph(font, gid)
 		page.appendString("> Tj\n")
 	} else {
 		adjustment := float32(1000*float32(dx)) / float32(font.unitsPerEm)
 		page.appendString("[")
 		page.appendFloat32(-adjustment)
 		page.appendString(" <")
-		page.appendCodePointAsHex(gid)
+		page.appendGlyph(font, gid)
 		page.appendString("> ")
 		page.appendFloat32(adjustment)
 		page.appendString("] TJ\n")
@@ -1064,6 +1064,13 @@ func (page *Page) appendByteAsHex(b byte) {
 	}
 	page.grow(2)
 	page.buf = append(page.buf, hexDigits[(b>>4)&0xF], hexDigits[b&0xF])
+}
+
+// appendGlyph appends the glyph number as hexadecimal and records that the
+// font draws it, so that a subset of the font keeps it.
+func (page *Page) appendGlyph(font *Font, gid int) {
+	font.useGlyph(gid)
+	page.appendCodePointAsHex(gid)
 }
 
 func (page *Page) appendCodePointAsHex(codePoint int) {
