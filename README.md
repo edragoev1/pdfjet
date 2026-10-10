@@ -443,7 +443,10 @@ them, whole or subset: a document is not a distribution of the font.
 
 A font is software with a license, and a PDF that embeds a font carries a
 copy of it, a subset at least. That a font is on a computer does not mean
-that any program may embed it in documents. In this order:
+that any program may embed it in documents. This is why PDFjet comes with a
+large set of fonts, chosen for their scripts and their licenses: so that a
+program has the fonts it needs, for most of the world's languages, that any
+document may embed. In this order:
 
 1. **The fonts that come with PDFjet** first: IBM Plex Sans, Serif and Mono,
    and Plex's Arabic, Hebrew, Thai, Japanese, Korean and Chinese families;
