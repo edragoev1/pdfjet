@@ -197,6 +197,8 @@ The classes of the com.pdfjet.fonts package, such as IBMPlexSans, SourceSerif4, 
 @snippet font-files Fonts from files
 Any OpenType or TrueType font file is a font for PDFjet: pass its path, or an input stream of it, to the Font constructor.
 
+A PDF that embeds a font carries a copy of it, so the font's license has to allow that. Use the fonts that come with PDFjet first, all under the SIL Open Font License; then the fonts of fonts.google.com, all under licenses that allow embedding; and any other font only when its license says so, the SIL Open Font License being the one to look for. The fonts of Windows and macOS, such as Georgia or Tahoma, are licensed for that computer, not for copying to a server to make PDFs there.
+
 @snippet core-fonts The core fonts
 The 14 core fonts of CoreFont, Helvetica, Times, Courier with their bold and italic, Symbol and ZapfDingbats, are in every PDF viewer and are not embedded, so they make the smallest documents. They draw only the characters of Windows Latin 1, and PDF/UA and PDF/A do not allow them. setKernPairs(true) moves the letters of kerning pairs, such as A and V, closer together.
 

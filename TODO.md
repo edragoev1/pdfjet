@@ -57,6 +57,18 @@ code, then the release.
   width. Found by the booklet's drawings, whose shapes snippet sets a color
   since. The fix in the four ports, with a test, and the other shapes checked
   for the same pattern (Ellipse, Rect, Line, Point, Path).
+- **For 9.0.7: a font whose fsType forbids embedding.** The fsType of a
+  font's `OS/2` table, bit 0x0002 ("Restricted License embedding"), says the
+  font must not be embedded without its maker's permission; PDFjet reads
+  only the bit that forbids subsetting, and embeds such a font. Refused, in
+  the four ports, with a message that names the font and points to "Choosing
+  a font you may embed" in the README; a test with a font whose fsType has
+  the bit set.
+- **For 9.0.7: a character the font lacks in a PDF/UA document.** It is
+  drawn as the font's `.notdef` glyph, mapped to U+FFFD so that its text
+  reads; PDF/UA-1 forbids any reference to `.notdef` from text. Reported:
+  an error in PDF/UA mode, naming the character and the font, the fallback
+  font the remedy.
 - **Longer fuzzing of the font subsetters.** Go's fuzzers ran 5 minutes each
   on every target before 9.0.5 with no failure; the TrueType and CFF
   subsetters, which subset a real font for each input, ran 27,000 and 15,000

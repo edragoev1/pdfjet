@@ -439,6 +439,35 @@ draw left out. What a PDF embeds:
 The SIL Open Font License of the bundled fonts allows a document to embed
 them, whole or subset: a document is not a distribution of the font.
 
+### Choosing a font you may embed
+
+A font is software with a license, and a PDF that embeds a font carries a
+copy of it, a subset at least. That a font is on a computer does not mean
+that any program may embed it in documents. In this order:
+
+1. **The fonts that come with PDFjet** first: IBM Plex Sans, Serif and Mono,
+   and Plex's Arabic, Hebrew, Thai, Japanese, Korean and Chinese families;
+   Noto Sans and its families; Source Serif 4; JetBrains Mono. All are under
+   the SIL Open Font License, which lets any document embed them, for any
+   use.
+2. **Google Fonts**, [fonts.google.com](https://fonts.google.com), next:
+   every family there is under the SIL Open Font License, the Apache License
+   2.0 or the Ubuntu Font Licence, each of which lets a document embed the
+   font.
+3. **Any other font only once its license says so.** The SIL Open Font
+   License is the one to look for. The fonts that come with Windows or
+   macOS, such as Georgia, Tahoma, Arial, Calibri or Helvetica Neue, are
+   licensed for use on that computer: copying the file to a server to make
+   PDFs there, or shipping it with an application, is usually not allowed,
+   whatever embedding the font's own fsType permits. A font bought from a
+   foundry has its own terms, often a license for embedding in documents or
+   apps apart from the one for the desktop.
+
+The fsType of a font's `OS/2` table is its maker's signal of what embedding
+allows, and PDFjet keeps a font that forbids subsetting whole; but the
+license is what the maker granted, and it is the one to read. This is not
+legal advice: when in doubt, ask the font's maker.
+
 Up to 9.0.3 the bundled fonts came as `.otf.stream` and `.ttf.stream` files,
 their metrics and their outlines compressed ahead of time, so that a document
 only copied them. Subsetting made them unneeded: a subset of the `.ttf` is a
