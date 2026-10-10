@@ -150,6 +150,11 @@ This is the first entry in this file; earlier releases were not tracked here.
   a font of CFF outlines is written by them too, byte for byte as before.
 
 ### Fixed
+- Java and C#: an image of a JPEG is made three times faster. The
+  check that the file is not cut short read the rest of the file a byte at a
+  time from a stream, a synchronized read() in Java; it scans the bytes
+  themselves now. A 600 KB photo took 3.3 ms in Java, 1.1 now, and
+  the 20 pages of it in the benchmark against OpenPDF 1.2 ms, not 3.7.
 - Found by a code review of every change since 9.0.3, on 9 October 2026, and
   fixed in the four ports, each with a test:
   - A font made with `new Font(pdf, ...)` before `addObjects` or

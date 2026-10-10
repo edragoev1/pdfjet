@@ -297,9 +297,12 @@ class JPGImage {
                 for (int i = 0; i < length - 2; i++) {
                     ReadByte(stream);
                 }
+                // The stream reads the data, so the rest of the file is
+                // scanned in the data itself, rather than a ReadByte for each
+                // byte, as in Java.
                 int previous = 0;
-                int b;
-                while ((b = stream.ReadByte()) >= 0) {
+                for (long i = stream.Position; i < data.Length; i++) {
+                    int b = data[i];
                     if (previous == 0xFF && b == M_EOI) {
                         return;
                     }
