@@ -51,6 +51,13 @@ code, then the release.
   cross-reference stream would shrink them a third or more. An option, on by
   default, off for PDF/A-1, which forbids object streams. Measured first, the
   time and the size of a long PDF/UA table, before and after.
+- **BigTable.setColumnWidthsInPercent, in the four ports.** The width of each
+  column drawn, as a percent of the table's width, as Table's
+  setColumnWidthsInPercent sets them; BigTable sizes its columns itself today.
+  For the tool that makes a CSV into a report and writes its PDFjet code, and
+  for any BigTable whose columns want widths of their own. Counted in the
+  order setColumns draws the columns; refused when the percents are not one
+  for each column. A test in each port, the widths compared across the ports.
 - **For 9.0.7: an Arc's stroke width without a stroke color.** An Arc given
   `setStrokeWidth(4)` and no `setStrokeColor` is drawn 0 wide, a hairline:
   the branch of DrawOn for no colors set sets the pen width to 0, whatever the
