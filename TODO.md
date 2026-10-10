@@ -56,9 +56,12 @@ code, then the release.
     the 65,536 characters twice for every font of every document: in Go 29%
     of the time of a page in three Plex fonts, with its compression, and 12%
     of what it allocates; in Java 24% of a page in Plex.
-  - Go: the flate writers kept in a `sync.Pool` and reset, where every
-    compressed stream makes a new one of about a megabyte: 38% of the 13 MB
-    a page in three fonts allocates, and 10% of its time.
+  - Go: the font subsets and the ToUnicode CMaps compressed through the
+    pool of internal/compressor, as page content and images are:
+    `deflateFontProgram` (subset.go), which `addCompressedStream` uses too,
+    and embeddedfile.go make a new zlib writer of about a megabyte for each
+    stream: 38% of the 13 MB a page in three fonts allocates, and 10% of its
+    time.
   - Java first, then the other ports as they need it: the GPOS mark tables
     (mark to base, mark to mark) read when a mark is first drawn, where
     every font load reads every anchor pair into a map: 83% of the 7 ms of a
