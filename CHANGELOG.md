@@ -155,6 +155,13 @@ This is the first entry in this file; earlier releases were not tracked here.
   time from a stream, a synchronized read() in Java; it scans the bytes
   themselves now. A 600 KB photo took 3.3 ms in Java, 1.1 now, and
   the 20 pages of it in the benchmark against OpenPDF 1.2 ms, not 3.7.
+- Java and C#: an image or a font read from a stream allocates its size
+  and no more. `Content.getFromStream` grew an array from 32 bytes by
+  doubling and copied it out, about three times the size of the file; it
+  reads into an array of the size a file or bytes in memory say they hold,
+  and returns it without a copy. A document of the 600 KB photo allocates
+  3.2 MB, not 5.2, and peaks at 81 MB, not 112; a page with Noto Sans 7.6
+  MB, not 9.6.
 - Found by a code review of every change since 9.0.3, on 9 October 2026, and
   fixed in the four ports, each with a test:
   - A font made with `new Font(pdf, ...)` before `addObjects` or

@@ -77,17 +77,35 @@ public class Content {
      * @throws Exception if there is an issue.
      */
     public static byte[] getFromStream(InputStream stream, int bufferSize) throws Exception {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        // Read into an array of the size the stream says it holds, which a
+        // file or bytes in memory know, and returned without a copy when it
+        // was right: growing a ByteArrayOutputStream from 32 bytes and copying
+        // it out allocated 2 MB for a 600 KB photo.
         try {
-            byte[] buffer = new byte[bufferSize];
-            int read = 0;
-            while ((read = stream.read(buffer, 0, bufferSize)) > 0) {
-                baos.write(buffer, 0, read);
+            byte[] buf = new byte[Math.max(stream.available(), bufferSize)];
+            int count = 0;
+            while (true) {
+                if (count == buf.length) {
+                    int next = stream.read();
+                    if (next < 0) {
+                        return buf;
+                    }
+                    if (buf.length > Integer.MAX_VALUE / 2 - 8) {
+                        throw new OutOfMemoryError("The stream is too large for an array.");
+                    }
+                    buf = Arrays.copyOf(buf, buf.length * 2);
+                    buf[count++] = (byte) next;
+                }
+                int read = stream.read(buf, count, buf.length - count);
+                if (read < 0) {
+                    break;
+                }
+                count += read;
             }
+            return (count == buf.length) ? buf : Arrays.copyOf(buf, count);
         } finally {
             stream.close();
         }
-        return baos.toByteArray();
     }
 
     /**

@@ -52,17 +52,42 @@ public class Content {
 
     /// <summary>Returns all the bytes read from the stream, reading bufferSize bytes at a time.</summary>
     public static byte[] GetFromStream(Stream stream, int bufferSize) {
-        MemoryStream ms = new MemoryStream();
+        // Read into an array of the size a seekable stream holds, a file or
+        // bytes in memory, and returned without a copy when it was right, as
+        // in Java: a growing MemoryStream copied out allocated about three
+        // times the size of the file.
         try {
-            byte[] buffer = new byte[bufferSize];
-            int count = 0;
-            while ((count = stream.Read(buffer, 0, bufferSize)) > 0) {
-                ms.Write(buffer, 0, count);
+            long known = stream.CanSeek ? stream.Length - stream.Position : 0;
+            if (known > int.MaxValue - 64) {
+                throw new IOException("The stream is too large for an array.");
             }
+            byte[] buf = new byte[Math.Max((int) known, bufferSize)];
+            int count = 0;
+            while (true) {
+                if (count == buf.Length) {
+                    int next = stream.ReadByte();
+                    if (next < 0) {
+                        return buf;
+                    }
+                    if (buf.Length > int.MaxValue / 2 - 8) {
+                        throw new IOException("The stream is too large for an array.");
+                    }
+                    Array.Resize(ref buf, buf.Length * 2);
+                    buf[count++] = (byte) next;
+                }
+                int read = stream.Read(buf, count, buf.Length - count);
+                if (read <= 0) {
+                    break;
+                }
+                count += read;
+            }
+            if (count != buf.Length) {
+                Array.Resize(ref buf, count);
+            }
+            return buf;
         } finally {
             stream.Close();
         }
-        return ms.ToArray();
     }
 
     /// <summary>Returns all the bytes read from the stream.</summary>
