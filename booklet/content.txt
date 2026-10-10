@@ -60,6 +60,8 @@ Add the module to your program with the go command. The module path carries the 
 The Go module has the source of the library and the examples only. The fonts are in the repository pdfjet-fonts, the fonts folder of the repository: clone it as fonts next to your program, or copy the fonts you use from it; the core fonts need no files.
 @end
 @lang swift
+PDFjet for Swift runs on Linux as well as on macOS, so it serves a Swift server too: it uses only the parts of Foundation that Linux has, and none of Apple's frameworks, its compression, encryption, fonts and images being its own.
+
 Add PDFjet to the Package.swift of your package, and the PDFjet product to the target that uses it:
 
     dependencies: [

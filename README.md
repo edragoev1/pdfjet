@@ -188,6 +188,12 @@ git clone --depth 1 https://github.com/edragoev1/pdfjet-fonts.git fonts
 <details>
 <summary><b>Swift</b></summary>
 
+PDFjet for Swift runs on Linux as well as on macOS, so it serves a Swift server
+too. It uses only the parts of Foundation that Linux has, such as `Data` and
+the streams, and none of Apple's frameworks (no CoreGraphics, PDFKit or
+CryptoKit): its compression, encryption, fonts, images and layout are its
+own. The Build workflow tests it on Linux and on macOS on every push.
+
 Add PDFjet to the `Package.swift` of your package:
 
 ```swift
