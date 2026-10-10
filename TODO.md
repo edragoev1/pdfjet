@@ -43,6 +43,29 @@ code, then the release.
 
 ## Open
 
+- **v9.0.7: fonts and writing, faster and leaner, in the four ports.** The
+  output byte for byte the same: every example and test PDF of the four
+  ports written before and after, and compared. Measured on 10 October with
+  a one-page document of 30 lines:
+  - The reverse map of the ToUnicode CMap, from a glyph to its character,
+    filled once when the cmap is read, in the same pass as `unicodeToGID`,
+    one `int32` a glyph (maxp's count, about 1,500 for IBM Plex Sans), with
+    the same choice of the usual character for a glyph that serves several
+    (`isSeldomText`). Writing the CMap then reads it for the glyphs the
+    subset kept, a few dozen, where it builds a 65,536-entry array and walks
+    the 65,536 characters twice for every font of every document: in Go 29%
+    of the time of a page in three Plex fonts, with its compression, and 12%
+    of what it allocates; in Java 24% of a page in Plex.
+  - Go: the flate writers kept in a `sync.Pool` and reset, where every
+    compressed stream makes a new one of about a megabyte: 38% of the 13 MB
+    a page in three fonts allocates, and 10% of its time.
+  - Java first, then the other ports as they need it: the GPOS mark tables
+    (mark to base, mark to mark) read when a mark is first drawn, where
+    every font load reads every anchor pair into a map: 83% of the 7 ms of a
+    page in Noto Sans, and half of what a page in Plex allocates.
+  - `Font.checksumOf` (19% of a page in Plex, in Java) and the format 4 cmap
+    (17%), looked at once the above is done.
+
 - **Smaller tagged documents, with object streams.** Each cell of a table of
   PDF/UA costs 280 to 415 bytes, its text and a structure element of its own,
   each an object written uncompressed: a price list of 3,000 rows of 6
