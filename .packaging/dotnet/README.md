@@ -83,10 +83,16 @@ use next to it and keep their paths. A font can also be read from any `.otf` or
 `.ttf` file by its path. The 14 core PDF fonts, such as `CoreFont.HELVETICA`,
 need no files.
 
-The `.stream` files are compressed ahead of time, so they are embedded fast.
-A `.stream` file has no GPOS table, so the marks of Thai, Hebrew and Arabic
-text are placed on their letters only in a font read from the `.otf` or `.ttf`
-file, as Example_27 does.
+Every font is embedded as a subset, only the glyphs a document draws: a page
+of English embeds about 25 KB of Noto Sans, a page of Chinese about 93 KB of
+Noto Sans SC's 6.5 MB.
+
+A PDF that embeds a font carries a copy of it, so its license has to allow
+that. The bundled fonts are all under the SIL Open Font License, which lets
+any document embed them; the fonts of fonts.google.com are under licenses
+that allow it too. Use another font only when its license says so: the fonts
+of Windows and macOS, such as Georgia or Tahoma, are licensed for that
+computer, not for copying to a server to make PDFs there.
 
 ## Examples
 

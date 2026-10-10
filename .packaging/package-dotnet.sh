@@ -1,8 +1,8 @@
 #!/bin/bash
 # Builds .commercial-packages/PDFjet-For.NET-vX.Y.Z.zip, a self-contained
 # package for .NET clients: PDFjet.dll, the DocFX reference, the example
-# projects with the PDFs they create, the files they read (data, the .stream
-# fonts, images, PngSuite), and scripts that build and run the examples against PDFjet.dll.
+# projects with the PDFs they create, the files they read (data, the fonts,
+# images, PngSuite), and scripts that build and run the examples against PDFjet.dll.
 # The library sources and the font tools in util are not in the package.
 #
 # The README, the commercial LICENSE and the build and run scripts of the
