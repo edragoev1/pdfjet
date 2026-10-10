@@ -92,5 +92,9 @@ code, then the release.
 - Full CommonMark is not planned: PDFjet's Markdown is the practical subset
   that documents use, as its Bidi covers what text needs without the whole of
   UAX #9.
+- No GIF and no TIFF images: a GIF or a TIFF is a PNG in one command of
+  any free converter, without loss, and a reader of either is code to write,
+  fuzz and keep in four ports for what a developer fixes in seconds. PDFjet
+  reads PNG, JPEG, BMP and SVG, and Markdown for documents; not HTML.
 - No more fonts are bundled. Any `.ttf` or `.otf` file can be loaded, and it
   is embedded as a subset.
