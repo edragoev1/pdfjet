@@ -398,8 +398,8 @@ public class Font {
 
     // Records that the glyph is drawn with the font.
     internal void UseGlyph(int gid) {
-        if (program != null && gid >= 0 && gid < program.used.Length) {
-            program.used[gid] = true;
+        if (program != null) {
+            program.used.Add(gid);
         }
     }
 

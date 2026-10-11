@@ -21,9 +21,9 @@ class OpenTypeFont {
         if (otf.cff) {
             byte[] cff = new byte[otf.cffLen];
             Array.Copy(otf.buf, otf.cffOff, cff, 0, otf.cffLen);
-            Subset.Share(pdf, font, cff, true, (otf.fsType & 0x0100) != 0);
+            Subset.Share(pdf, font, cff, true, (otf.fsType & 0x0100) != 0, otf.numGlyphs);
         } else {
-            Subset.Share(pdf, font, otf.buf, false, false);
+            Subset.Share(pdf, font, otf.buf, false, false, otf.numGlyphs);
         }
         font.objNumber = pdf.ReserveObjNumber();
         pdf.fonts.Add(font);
@@ -34,7 +34,7 @@ class OpenTypeFont {
     internal static void Register(List<PDFobj> objects, Font font, Stream inputStream) {
         OTF otf = new OTF(inputStream);
         SetData(font, otf);
-        font.program = new Subset.Program();
+        font.program = new Subset.Program(otf.numGlyphs);
         if (otf.cff) {
             byte[] cff = new byte[otf.cffLen];
             Array.Copy(otf.buf, otf.cffOff, cff, 0, otf.cffLen);

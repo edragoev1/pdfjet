@@ -19,11 +19,59 @@ class Subset {
         var cff = false
         var forbidden = false       // The fsType of a CFF font's OS/2 table forbids subsetting
         // The glyphs drawn, by glyph number, written in four hexadecimal digits.
-        var used = [Bool](repeating: false, count: 0x10000)
+        var used: GlyphSet
         var whole = false           // Set by setSubset(false): the font is embedded whole
 
-        init() {
-            used[0] = true          // .notdef, drawn for a character the font lacks
+        // The program of a font of the number of glyphs given, the count of
+        // its maxp table, or 0 when it has none.
+        init(_ glyphs: Int) {
+            used = GlyphSet(glyphs)
+            used.add(0)             // .notdef, drawn for a character the font lacks
+        }
+    }
+
+    // The set of the glyphs drawn with a font, a bit for each glyph number:
+    // 128 bytes for the 1,019 glyphs of IBM Plex Sans, where a Bool for each of
+    // the 65,536 glyph numbers was 64 KB for every font of every document (the
+    // owner's idea, 10 October 2026). It grows for a glyph past the font's
+    // count, up to the 65,536 a glyph number can be, so that it keeps what the
+    // array kept.
+    struct GlyphSet {
+        private var words: [UInt64]
+
+        init(_ glyphs: Int) {
+            // A glyph number is written in four hexadecimal digits
+            let count = (glyphs <= 0 || glyphs > 0x10000) ? 0x10000 : glyphs
+            words = [UInt64](repeating: 0, count: (count + 63) / 64)
+        }
+
+        // Adds the glyph number to the set.
+        mutating func add(_ gid: Int) {
+            if gid < 0 || gid >= 0x10000 {
+                return
+            }
+            let i = gid >> 6
+            if i >= words.count {
+                words.append(contentsOf: [UInt64](repeating: 0, count: i + 1 - words.count))
+            }
+            words[i] |= UInt64(1) << UInt64(gid & 63)
+        }
+
+        // Adds the glyph numbers to the set.
+        mutating func add(_ gids: [Int]) {
+            for gid in gids {
+                add(gid)
+            }
+        }
+
+        // The set as a Bool for each glyph number up to the end of its last
+        // word, for the subsetters, which read a glyph number's Bool.
+        func bools() -> [Bool] {
+            var used = [Bool](repeating: false, count: words.count * 64)
+            for gid in 0..<used.count {
+                used[gid] = words[gid >> 6] & (UInt64(1) << UInt64(gid & 63)) != 0
+            }
+            return used
         }
     }
 
@@ -44,14 +92,15 @@ class Subset {
 
     /// Gives the font the program of a font the PDF already has from the same
     /// file, if any, or else a new one of the font given.
-    static func share(_ pdf: PDF, _ font: Font, _ data: [UInt8], _ cff: Bool, _ forbidden: Bool) {
+    static func share(
+            _ pdf: PDF, _ font: Font, _ data: [UInt8], _ cff: Bool, _ forbidden: Bool, _ glyphs: Int) {
         for f in pdf.fonts {
             if f.program != nil && f.name == font.name && f.checksum == font.checksum {
                 font.program = f.program
                 return
             }
         }
-        let program = Program()
+        let program = Program(glyphs)
         program.font = data
         program.cff = cff
         program.forbidden = forbidden
@@ -157,7 +206,8 @@ class Subset {
         let program = font.program!
         let data = program.font
         let subset = (program.whole || program.forbidden) ? nil :
-                (program.cff ? try? CFFSubset.subset(data, program.used) : try? subsetTrueType(data, program.used))
+                (program.cff ? try? CFFSubset.subset(data, program.used.bools())
+                        : try? subsetTrueType(data, program.used.bools()))
         if let (subset, kept) = subset {
             font.kept = kept
             font.baseFont = subsetTag(font.checksum, kept) + "+" + font.name

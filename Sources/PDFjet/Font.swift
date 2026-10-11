@@ -419,22 +419,13 @@ public class Font {
 
     // Records that the glyph is drawn with the font.
     func useGlyph(_ gid: Int) {
-        if let program = program, gid >= 0 && gid < program.used.count {
-            program.used[gid] = true
-        }
+        program?.used.add(gid)
     }
 
     // Marks the glyphs used, as useGlyph marks each, in one access to the
     // program's table.
     func useGlyphs(_ gids: [Int]) {
-        guard let program = program else {
-            return
-        }
-        program.used.withUnsafeMutableBufferPointer { used in
-            for gid in gids where gid >= 0 && gid < used.count {
-                used[gid] = true
-            }
-        }
+        program?.used.add(gids)
     }
 
     /// Returns the width of the string at the current font size.

@@ -168,6 +168,12 @@ This is the first entry in this file; earlier releases were not tracked here.
   of 30 lines in three IBM Plex Sans fonts takes 3.9 ms, not 5.5, and
   allocates 7.2 MB, not 13.0; the PDFs of the 57 examples are the same, byte
   for byte.
+- The glyphs drawn with a font are a set of bits, in the four ports: 128
+  bytes for IBM Plex Sans, sized by the font's glyphs, where an array of a
+  boolean for each of the 65,536 glyph numbers was 64 KB for every font of
+  every document. It grows for a glyph past the font's count, so it keeps
+  what the array kept; the subsetters read it as an array of the font's
+  glyphs. A page in three fonts allocates 0.2 MB less, with the same PDF.
 - Swift: a font read from a file or a stream is read once, 64 KB at a time,
   and parsed from those bytes, where it was read in 4 KB pieces, copied into
   a Data and read again from a stream of it. A page of 30 lines in three IBM

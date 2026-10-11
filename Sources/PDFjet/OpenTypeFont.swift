@@ -16,9 +16,9 @@ class OpenTypeFont {
         // pages refer to the number reserved for it.
         if otf.cff {
             Subset.share(pdf, font, Array(otf.buf[otf.cffOff!..<(otf.cffOff! + otf.cffLen!)]),
-                    true, otf.fsType & 0x0100 != 0)
+                    true, otf.fsType & 0x0100 != 0, otf.numGlyphs)
         } else {
-            Subset.share(pdf, font, otf.buf, false, false)
+            Subset.share(pdf, font, otf.buf, false, false, otf.numGlyphs)
         }
         font.objNumber = pdf.reserveObjNumber()
         pdf.fonts.append(font)
@@ -30,7 +30,7 @@ class OpenTypeFont {
             _ objects: inout [PDFobj], _ font: Font, _ bytes: [UInt8]) throws {
         let otf = try OTF(bytes)
         setData(font, otf)
-        let program = Subset.Program()
+        let program = Subset.Program(otf.numGlyphs)
         if otf.cff {
             program.font = Array(otf.buf[otf.cffOff!..<(otf.cffOff! + otf.cffLen!)])
             program.cff = true

@@ -26,11 +26,53 @@ class Subset {
         boolean cff;
         boolean forbidden;  // The fsType of a CFF font's OS/2 table forbids subsetting
         // The glyphs drawn, by glyph number, written in four hexadecimal digits.
-        final boolean[] used = new boolean[0x10000];
+        final GlyphSet used;
         boolean whole;      // Set by setSubset(false): the font is embedded whole
 
-        Program() {
-            used[0] = true; // .notdef, drawn for a character the font lacks
+        // The program of a font of the number of glyphs given, the count of its
+        // maxp table, or 0 when it has none.
+        Program(int glyphs) {
+            used = new GlyphSet(glyphs);
+            used.add(0);    // .notdef, drawn for a character the font lacks
+        }
+    }
+
+    // The set of the glyphs drawn with a font, a bit for each glyph number:
+    // 128 bytes for the 1,019 glyphs of IBM Plex Sans, where a boolean for each
+    // of the 65,536 glyph numbers was 64 KB for every font of every document
+    // (the owner's idea, 10 October 2026). It grows for a glyph past the font's
+    // count, up to the 65,536 a glyph number can be, so that it keeps what the
+    // array kept.
+    static final class GlyphSet {
+        private long[] words;
+
+        GlyphSet(int glyphs) {
+            if (glyphs <= 0 || glyphs > 0x10000) {
+                glyphs = 0x10000;   // A glyph number is written in four hexadecimal digits
+            }
+            words = new long[(glyphs + 63) / 64];
+        }
+
+        // Adds the glyph number to the set.
+        void add(int gid) {
+            if (gid < 0 || gid >= 0x10000) {
+                return;
+            }
+            int i = gid >> 6;
+            if (i >= words.length) {
+                words = Arrays.copyOf(words, i + 1);
+            }
+            words[i] |= 1L << (gid & 63);
+        }
+
+        // The set as a boolean for each glyph number up to the end of its last
+        // word, for the subsetters, which read a glyph number's boolean.
+        boolean[] booleans() {
+            boolean[] used = new boolean[words.length * 64];
+            for (int gid = 0; gid < used.length; gid++) {
+                used[gid] = (words[gid >> 6] & (1L << (gid & 63))) != 0;
+            }
+            return used;
         }
     }
 
@@ -57,14 +99,15 @@ class Subset {
      * Gives the font the program of a font the PDF already has from the same
      * file, if any, or else a new one of the font given.
      */
-    static void share(PDF pdf, Font font, byte[] program, boolean cff, boolean forbidden) {
+    static void share(PDF pdf, Font font, byte[] program, boolean cff, boolean forbidden,
+            int glyphs) {
         for (Font f : pdf.fonts) {
             if (f.program != null && f.name.equals(font.name) && f.checksum == font.checksum) {
                 font.program = f.program;
                 return;
             }
         }
-        font.program = new Program();
+        font.program = new Program(glyphs);
         font.program.font = program;
         font.program.cff = cff;
         font.program.forbidden = forbidden;
@@ -179,7 +222,8 @@ class Subset {
             try {
                 boolean[][] kept = new boolean[1][];
                 byte[] subset = program.cff ?
-                        CFFSubset.subset(data, program.used, kept) : subsetTrueType(data, program.used, kept);
+                        CFFSubset.subset(data, program.used.booleans(), kept)
+                        : subsetTrueType(data, program.used.booleans(), kept);
                 font.kept = kept[0];
                 font.baseFont = subsetTag(font.checksum, kept[0]) + "+" + font.name;
                 return subset;

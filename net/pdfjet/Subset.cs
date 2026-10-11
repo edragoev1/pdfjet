@@ -26,11 +26,53 @@ class Subset {
         internal bool cff;
         internal bool forbidden;    // The fsType of a CFF font's OS/2 table forbids subsetting
         // The glyphs drawn, by glyph number, written in four hexadecimal digits.
-        internal readonly bool[] used = new bool[0x10000];
+        internal readonly GlyphSet used;
         internal bool whole;        // Set by SetSubset(false): the font is embedded whole
 
-        internal Program() {
-            used[0] = true;         // .notdef, drawn for a character the font lacks
+        // The program of a font of the number of glyphs given, the count of its
+        // maxp table, or 0 when it has none.
+        internal Program(int glyphs) {
+            used = new GlyphSet(glyphs);
+            used.Add(0);            // .notdef, drawn for a character the font lacks
+        }
+    }
+
+    // The set of the glyphs drawn with a font, a bit for each glyph number:
+    // 128 bytes for the 1,019 glyphs of IBM Plex Sans, where a bool for each of
+    // the 65,536 glyph numbers was 64 KB for every font of every document (the
+    // owner's idea, 10 October 2026). It grows for a glyph past the font's
+    // count, up to the 65,536 a glyph number can be, so that it keeps what the
+    // array kept.
+    internal sealed class GlyphSet {
+        private ulong[] words;
+
+        internal GlyphSet(int glyphs) {
+            if (glyphs <= 0 || glyphs > 0x10000) {
+                glyphs = 0x10000;   // A glyph number is written in four hexadecimal digits
+            }
+            words = new ulong[(glyphs + 63) / 64];
+        }
+
+        // Adds the glyph number to the set.
+        internal void Add(int gid) {
+            if (gid < 0 || gid >= 0x10000) {
+                return;
+            }
+            int i = gid >> 6;
+            if (i >= words.Length) {
+                Array.Resize(ref words, i + 1);
+            }
+            words[i] |= 1UL << (gid & 63);
+        }
+
+        // The set as a bool for each glyph number up to the end of its last
+        // word, for the subsetters, which read a glyph number's bool.
+        internal bool[] Bools() {
+            bool[] used = new bool[words.Length * 64];
+            for (int gid = 0; gid < used.Length; gid++) {
+                used[gid] = (words[gid >> 6] & (1UL << (gid & 63))) != 0;
+            }
+            return used;
         }
     }
 
@@ -55,14 +97,15 @@ class Subset {
     /// Gives the font the program of a font the PDF already has from the same
     /// file, if any, or else a new one of the font given.
     /// </summary>
-    internal static void Share(PDF pdf, Font font, byte[] program, bool cff, bool forbidden) {
+    internal static void Share(PDF pdf, Font font, byte[] program, bool cff, bool forbidden,
+            int glyphs) {
         foreach (Font f in pdf.fonts) {
             if (f.program != null && f.name.Equals(font.name) && f.checksum == font.checksum) {
                 font.program = f.program;
                 return;
             }
         }
-        font.program = new Program();
+        font.program = new Program(glyphs);
         font.program.font = program;
         font.program.cff = cff;
         font.program.forbidden = forbidden;
@@ -120,7 +163,8 @@ class Subset {
             try {
                 bool[] kept;
                 byte[] subset = program.cff ?
-                        CFFSubset.subset(data, program.used, out kept) : SubsetTrueType(data, program.used, out kept);
+                        CFFSubset.subset(data, program.used.Bools(), out kept)
+                        : SubsetTrueType(data, program.used.Bools(), out kept);
                 font.kept = kept;
                 font.baseFont = SubsetTag(font.checksum, kept) + "+" + font.name;
                 return subset;
