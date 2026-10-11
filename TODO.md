@@ -16,6 +16,11 @@ Only a major issue holds it now; anything else goes into the next 9.0.x.
 Left before the tag: the manual viewer pass (below) on the files of the new
 code, then the release.
 
+Right after the tag: PDFjet Pro to 9.0.5, `./set-version.sh 9.0.5` in
+pdfjet-pro, and push. Its CI builds against the release its go.mod and
+Package.swift name, still 9.0.2, which has no public XML parser, so both of
+its workflows fail from the invoices' use of it (10 October) until then.
+
 ## Checks before each release
 
 - **The four ports agree.** `./check-examples.sh` builds and runs the
