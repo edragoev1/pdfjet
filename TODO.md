@@ -116,14 +116,62 @@ code, then the release.
   reads; PDF/UA-1 forbids any reference to `.notdef` from text. Reported:
   an error in PDF/UA mode, naming the character and the font, the fallback
   font the remedy.
-- **For 9.0.7: Stamp.Complete writes its stream unencrypted.** In an
-  encrypted PDF, the stream Stamp.Complete writes is not encrypted, as every
-  other stream is. Found by the review of the writer and encryption, and
-  confirmed in the code. The fix in the four ports, each checked for it, with
-  a test that stamps an encrypted PDF and opens it again.
-- **For 9.0.7: the other four reviews.** Parsers; text and fonts; barcodes
-  and tables; and Java, C# and Swift compared with Go. Their findings, once
-  in, as items here.
+- **For 9.0.7: the code review of 11 October 2026.** Five areas: the
+  writer and encryption, text and fonts, barcodes, tables and charts, the
+  Java, C# and Swift ports against Go, and the parsers of untrusted input.
+  Its numbers are kept in the items below. Each fix in the four ports, with
+  a test.
+- **For 9.0.7: the reader's limits (review #29-#32, #34, #35, #37, #38).**
+  The reader does not crash on bad input, but files of a few KB get past the
+  256 MB decode limit and take gigabytes of memory or minutes of CPU: a
+  /Contents array that repeats one stream, charged once (#29); the header of
+  an object stream, turned into objects without limit (#30); every entry of
+  a cross-reference stream kept before any is checked (#31); the output of
+  ASCII85Decode not counted (#32); inherited page entries copied into every
+  page by GetPageObjects and Merge (#34); AddResourceObjects quadratic in the
+  fonts and repeated pages (#35); a BMP row allocated from the header's
+  width before it is read (#37); a PNG's chunks not checked for order, which
+  gives an invalid /Mask (#38). The fuzzers given inputs large enough to
+  reach the limit, and a time per page.
+- **For 9.0.7: what encryption misses (review #1, #11, #19, #20, #27).**
+  Stamp.Complete writes its stream unencrypted, so every stamp of an
+  encrypted PDF is lost (#1, confirmed in the code); an image copied from
+  another PDF by NewImageFromPDFobj likewise (#11); the CIDSystemInfo
+  strings of the deprecated CJK fonts (#19); the optional content's /Name
+  (Default) (#20). Passwords not SASLprep'd, as PDF 2.0 asks (#27).
+- **For 9.0.7: a NaN in a DonutChart (review #2).** A slice whose value is
+  NaN or infinite loops until memory runs out; skipped, as BarChart skips
+  them.
+- **For 9.0.7: Java and the locale (review #3, #23).** `toUpperCase()` in a
+  Turkish or Azeri locale breaks the names of the core fonts, and their text
+  is not drawn: `Locale.ROOT`. The platform's default charset in FastFloat
+  and PNGImage: US-ASCII. A CI job in the tr_TR locale.
+- **For 9.0.7: PDF/A and PDF/UA (review #5, #6, #28).** Embedded files and
+  file attachments are accepted in PDF/A (#5), and fonts that are not
+  embedded, core and CJK, in PDF/A and PDF/UA (#6): refused, as the README
+  says. The XMP packet's header without `begin=` (#28).
+- **For 9.0.7: text (review #7-#10, #14, #21).** A right-to-left TextBlock
+  cut to its height loses the start of its last line (#7). Characters that
+  share a glyph extract as the glyph's first character: ActualText for the
+  others (#8). Default ignorable characters, U+FE0F, U+200B, U+2060, drawn
+  as a box with a width (#9); Stamp.DrawText draws LRM, RLM, ZWJ and ZWNJ
+  as boxes, which Page skips (#10). TextFrame, so Markdown, breaks Thai
+  words anywhere (#14). The soft hyphen always drawn, never a break (#21).
+- **For 9.0.7: tables, barcodes, Merge (review #4, #12, #13, #15-#18).**
+  Drawing a table rewrites the caller's cells (#12); Java's page sum throws
+  on ". 5" (#15); Swift ends the process on a bad vertical alignment (#16);
+  AutoAdjustColumnWidths with a row longer than the first (#17) and an empty
+  first row (#18) panic. Code 39 accepts '*' and an empty string, checked
+  only in DrawOn (#13). AddObjects keeps generation numbers the xref writes
+  as 0 (#4).
+- **For 9.0.7: the ports apart (review #22, #24-#26, #36).** Swift's SVG
+  paths reject CR LF (#22), and an SVG arc that becomes NaN traps in Swift
+  (#36). ICCBlackScaled.profile a public mutable array in Java and C# (#24).
+  DonutChart and Arc computed in another float width than Go's (#25), which
+  the CI's hashes miss as they cover the examples only. GetFitChars counts
+  code points in Go and Swift, UTF-16 units in Java and C# (#26).
+- **For 9.0.7: CI.** net48 built, check-api.sh run, and the hashes compared
+  on more than the examples' inputs.
 - **Longer fuzzing of the font subsetters.** Go's fuzzers ran 5 minutes each
   on every target before 9.0.5 with no failure; the TrueType and CFF
   subsetters, which subset a real font for each input, ran 27,000 and 15,000
