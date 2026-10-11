@@ -56,6 +56,16 @@ code, then the release.
     the 65,536 characters twice for every font of every document: in Go 29%
     of the time of a page in three Plex fonts, with its compression, and 12%
     of what it allocates; in Java 24% of a page in Plex.
+  - The character-to-glyph table, `unicodeToGID`, as a table of two levels:
+    256 blocks of 256 characters, a block made only where the font has a
+    character, so a lookup is still two reads of an array,
+    `blocks[c >> 8][c & 0xFF]`. Today it is 65,536 entries of `int` for
+    every font of every document: 512 KB in Go and Swift, 256 KB in Java
+    and C#, allocated and filled with zeros each time, where IBM Plex Sans
+    has about 1,000 characters in a few blocks, 10 to 20 KB. Measured in Go
+    on 10 October: a parsed Plex font holds 845 KB, 512 KB of it this
+    table. With the reverse map above, as both are how a character finds
+    its glyph and back.
   - Java first, then the other ports as they need it: the GPOS mark tables
     (mark to base, mark to mark) read when a mark is first drawn, where
     every font load reads every anchor pair into a map: 83% of the 7 ms of a
