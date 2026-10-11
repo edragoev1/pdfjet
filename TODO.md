@@ -66,12 +66,22 @@ code, then the release.
     on 10 October: a parsed Plex font holds 845 KB, 512 KB of it this
     table. With the reverse map above, as both are how a character finds
     its glyph and back.
+  - The glyphs a document draws, `used`: 65,536 booleans, 64 KB for every
+    font of every document in the four ports, sized to the font's glyphs
+    (maxp's count, about 1,000 for IBM Plex Sans), about 1 KB, as no glyph
+    number is larger; a bitset on top, 128 bytes, only if it is a few lines
+    in each port (the owner's idea, 10 October 2026).
   - Java first, then the other ports as they need it: the GPOS mark tables
     (mark to base, mark to mark) read when a mark is first drawn, where
     every font load reads every anchor pair into a map: 83% of the 7 ms of a
     page in Noto Sans, and half of what a page in Plex allocates.
   - `Font.checksumOf` (19% of a page in Plex, in Java) and the format 4 cmap
     (17%), looked at once the above is done.
+  - Not to be done (the owner, 10 October 2026): a lower compression level
+    for the font programs, which makes the files larger and changes their
+    bytes; a Deflater for each thread in Java; a pool of FlateEncode's
+    buffers in Swift, which gained 2% and nothing on top of reading a font
+    once.
 
 - **Smaller tagged documents, with object streams.** Each cell of a table of
   PDF/UA costs 280 to 415 bytes, its text and a structure element of its own,
