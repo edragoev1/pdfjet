@@ -38,6 +38,13 @@ fixes, the reader's limits among them, until it requires v9.0.5:
 pdfjet-server, its tests, commit and push. Locally its go.work uses the
 library beside it, which has them already.
 
+PDFjet Forms takes the number too (the owner, 11 October 2026): Forms is
+9.0.5 when it is built on the library's 9.0.5, and tags pdfjet-server and
+pdfjet-client v9.0.5 with the deploy that moves it there. Deploys of Forms
+alone between the library's releases keep its number, told apart by their
+commit and date. The layout's format version (1) and the look's rules
+(rules 1) are not these numbers, and never move with them.
+
 ## Checks before each release
 
 - **PDFjet Pro, the same day, with the same number.** The library is tagged
