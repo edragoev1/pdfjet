@@ -30,6 +30,14 @@ push; then pdfjet-pro made public, on the owner's go-ahead. Its CI builds
 against the library's main branch until then, and on a tag against the
 library's tag of the same number.
 
+And pdfjet-server to the release: its go.mod requires a snapshot of the
+library of 9 October (v9.0.4-0.20261009203557-ed6b1c9bcec8), which its CI
+and the Forms that is deployed build with, so they have none of 9.0.5's
+fixes, the reader's limits among them, until it requires v9.0.5:
+`go get github.com/edragoev1/pdfjet/v9@v9.0.5 && go mod tidy` in
+pdfjet-server, its tests, commit and push. Locally its go.work uses the
+library beside it, which has them already.
+
 ## Checks before each release
 
 - **PDFjet Pro, the same day, with the same number.** The library is tagged
