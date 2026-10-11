@@ -1095,7 +1095,9 @@ class PDFTest {
     @Test
     void theStreamsOfAPDFDecodeToNoMoreThanTheBudgetTogether() throws Exception {
         int was = PDFobj.MAX_DECODED_TOTAL;
-        PDFobj.MAX_DECODED_TOTAL = 5000;
+        // 5000 for the streams, and what the one object of the object stream
+        // takes of the budget besides
+        PDFobj.MAX_DECODED_TOTAL = 5000 + PDF.OBJECT_COST;
         try {
             // The object stream, read with the PDF, is within the budget, and
             // the content stream is decoded up to what is left of it: 4000
@@ -1109,9 +1111,133 @@ class PDFTest {
             // be read without its objects.
             Exception e = assertThrows(Exception.class, () ->
                     TestSupport.newPDF().read(new java.io.ByteArrayInputStream(pdfOfStreams(6000, 0))));
-            assertEquals("the streams of the PDF decode to more than 5000 bytes together", e.getMessage());
+            assertEquals("the streams of the PDF decode to more than " + (5000 + PDF.OBJECT_COST) +
+                    " bytes together", e.getMessage());
         } finally {
             PDFobj.MAX_DECODED_TOTAL = was;
+        }
+    }
+
+    // A page whose /Contents array names stream 4 the given number of times.
+    private static PDFobj pageOfContents(int times) {
+        PDFobj obj = new PDFobj();
+        obj.dict.add("/Contents");
+        obj.dict.add("[");
+        for (int i = 0; i < times; i++) {
+            obj.dict.add("4");
+            obj.dict.add("0");
+            obj.dict.add("R");
+        }
+        obj.dict.add("]");
+        return obj;
+    }
+
+    // A /Contents array that names one stream again and again is charged to
+    // the budget for each copy, as its data is copied each time: past the
+    // budget the page has no content (review of 11 October 2026, #29).
+    @Test
+    void aContentStreamNamedAgainIsChargedAgain() throws Exception {
+        int was = PDFobj.MAX_DECODED_TOTAL;
+        PDFobj.MAX_DECODED_TOTAL = 5000;
+        try {
+            // 100 of the object stream, 1000 of the content decoded once,
+            // 1001 for each copy after the first: three copies take 3102 of
+            // 5000
+            List<PDFobj> objects = TestSupport.newPDF().read(new java.io.ByteArrayInputStream(pdfOfStreams(100, 1000)));
+            PDFobj content = pageOfContents(3).getContentObject(objects);
+            assertNotNull(content, "three copies within the budget");
+            assertEquals(3003, content.data.length);
+            // Five take 5104, past it
+            objects = TestSupport.newPDF().read(new java.io.ByteArrayInputStream(pdfOfStreams(100, 1000)));
+            assertNull(pageOfContents(5).getContentObject(objects), "five copies past the budget");
+        } finally {
+            PDFobj.MAX_DECODED_TOTAL = was;
+        }
+    }
+
+    // A PDF read by scanning of an object stream of the /N and the header,
+    // followed by two objects.
+    private static byte[] pdfOfObjectStream(int n, String header) throws Exception {
+        java.io.ByteArrayOutputStream pdf = new java.io.ByteArrayOutputStream();
+        java.nio.charset.Charset latin1 = java.nio.charset.StandardCharsets.ISO_8859_1;
+        pdf.write("%PDF-1.5\n".getBytes(latin1));
+        pdf.write("1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n".getBytes(latin1));
+        pdf.write("2 0 obj\n<< /Type /Pages /Kids [] /Count 0 >>\nendobj\n".getBytes(latin1));
+        byte[] stream = deflate((header + "<< /A 1 >> << /B 2 >>").getBytes(latin1));
+        pdf.write(("3 0 obj\n<< /Type /ObjStm /N " + n + " /First " + header.length() + " /Length " +
+                stream.length + " /Filter /FlateDecode >>\nstream\n").getBytes(latin1));
+        pdf.write(stream);
+        pdf.write("\nendstream\nendobj\n".getBytes(latin1));
+        pdf.write("trailer\n<< /Root 1 0 R /Size 7 >>\n%%EOF\n".getBytes(latin1));
+        return pdf.toByteArray();
+    }
+
+    // An object stream gives no more objects than its /N says, and each
+    // object takes from the PDF's budget: a header of millions of "1 0 " is
+    // refused, not millions of objects (review of 11 October 2026, #30).
+    @Test
+    void anObjectStreamGivesNoMoreObjectsThanItsN() throws Exception {
+        // /N 1 of a header of two: object 5 alone
+        List<PDFobj> objects = TestSupport.newPDF().read(
+                new java.io.ByteArrayInputStream(pdfOfObjectStream(1, "5 0 6 11 ")));
+        assertNotNull(objectOfNumber(objects, 5));
+        assertNull(objectOfNumber(objects, 6), "an object stream of /N 1 gives objects other than its first");
+        // A header of more objects than the budget takes is refused
+        int was = PDFobj.MAX_DECODED_TOTAL;
+        PDFobj.MAX_DECODED_TOTAL = 100 * PDF.OBJECT_COST;
+        try {
+            StringBuilder header = new StringBuilder();
+            for (int i = 0; i < 1000; i++) {
+                header.append("1 0 ");
+            }
+            final byte[] pdf = pdfOfObjectStream(1000, header.toString());
+            assertThrows(Exception.class, () -> TestSupport.newPDF().read(new java.io.ByteArrayInputStream(pdf)),
+                    "an object stream of 1000 objects past the budget is read");
+        } finally {
+            PDFobj.MAX_DECODED_TOTAL = was;
+        }
+    }
+
+    // A cross-reference stream of more objects than the PDF has room for, or
+    // of offsets past its end, is not taken: the objects are found by
+    // scanning, and the entries are not all kept first (review of 11 October
+    // 2026, #31).
+    @Test
+    void aCrossReferenceStreamOfTooManyEntriesIsNotTaken() throws Exception {
+        java.io.ByteArrayOutputStream pdf = new java.io.ByteArrayOutputStream();
+        java.nio.charset.Charset latin1 = java.nio.charset.StandardCharsets.ISO_8859_1;
+        pdf.write("%PDF-1.5\n".getBytes(latin1));
+        pdf.write("1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n".getBytes(latin1));
+        pdf.write("2 0 obj\n<< /Type /Pages /Kids [] /Count 0 >>\nendobj\n".getBytes(latin1));
+        // 200,000 entries of type 1, at offset 0, with /W [1 0 0]
+        byte[] rows = new byte[200000];
+        Arrays.fill(rows, (byte) 1);
+        byte[] stream = deflate(rows);
+        int xref = pdf.size();
+        pdf.write(("3 0 obj\n<< /Type /XRef /W [1 0 0] /Size 200000 /Root 1 0 R /Length " + stream.length +
+                " /Filter /FlateDecode >>\nstream\n").getBytes(latin1));
+        pdf.write(stream);
+        pdf.write("\nendstream\nendobj\n".getBytes(latin1));
+        pdf.write(("startxref\n" + xref + "\n%%EOF\n").getBytes(latin1));
+        List<PDFobj> objects = TestSupport.newPDF().read(new java.io.ByteArrayInputStream(pdf.toByteArray()));
+        assertNotNull(objectOfNumber(objects, 1), "the objects are not found by scanning");
+        assertNotNull(objectOfNumber(objects, 2), "the objects are not found by scanning");
+        assertTrue(objects.size() <= 10, objects.size() + " objects of a PDF of three");
+    }
+
+    // The id of a core font added to a page is in upper case in any locale:
+    // in Turkish, "i" was "\u0130", and the name was not a PDF name (review of
+    // 11 October 2026, #3).
+    @Test
+    void theIdOfAFontAddedToAPageIsTheSameInATurkishLocale() throws Exception {
+        java.util.Locale was = java.util.Locale.getDefault();
+        java.util.Locale.setDefault(java.util.Locale.forLanguageTag("tr-TR"));
+        try {
+            Font font = new PDFobj().addResource(CoreFont.TIMES_ITALIC, new java.util.ArrayList<PDFobj>());
+            assertEquals("TIMES_ITALIC", font.fontID);
+            assertFalse(font.fontID.contains("\u0130"), font.fontID);
+        } finally {
+            java.util.Locale.setDefault(was);
         }
     }
 }

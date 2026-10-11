@@ -134,5 +134,29 @@ public class EncryptionTest {
             Assert.Equal((c.cf, c.want), (c.cf, Decryptor.GetMethod(encrypt, "/StdCF", objects)));
         }
     }
+    // A stamp's stream is encrypted as every other stream of an encrypted
+    // document, and reads back as it was drawn (review of 11 October 2026, #1).
+    [Fact]
+    public void EncryptsTheStreamOfAStamp() {
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream);
+        pdf.SetEncryption(new Encryption(pdf,
+                new Passwords().SetUserPassword("hello").SetOwnerPassword("world"),
+                new Permissions().Grant(UserAccess.PRINT)));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Stamp stamp = new Stamp(pdf);
+        stamp.FillRect(0f, 0f, 20f, 10f);
+        stamp.Complete();
+        stamp.DrawOn(page);
+        pdf.Complete();
+        PDFobj form = null;
+        foreach (PDFobj obj in TestSupport.Read(stream.ToArray(), "hello")) {
+            if (obj.GetValue("/Subtype").Equals("/Form")) {
+                form = obj;
+            }
+        }
+        Assert.NotNull(form);
+        Assert.Contains("20 0 l", TestSupport.Latin1(form.GetData()));
+    }
 }
 }

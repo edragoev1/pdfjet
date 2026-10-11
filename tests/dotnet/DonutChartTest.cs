@@ -70,5 +70,24 @@ public class DonutChartTest {
         Assert.Equal("Pie chart: 100%", page.structures[1].altDescription);
         Assert.Equal("Most are oranges.", page.structures[2].altDescription);
     }
+
+    // A slice that is not a number, an infinity, or a value whose 360ths
+    // overflow is not drawn, and the others are: one made the arc's loop
+    // endless (review of 11 October 2026, #2).
+    [Fact]
+    public void ASliceThatIsNotANumberIsNotDrawn() {
+        foreach (float bad in new float[] {float.NaN, float.PositiveInfinity, 1e36f}) {
+            PDF pdf = TestSupport.NewPDF();
+            Page page = new Page(pdf, Letter.PORTRAIT);
+            DonutChart chart = NewChart(pdf);
+            chart.AddSlice(new Slice(bad, Color.red, "bad"));
+            chart.AddSlice(new Slice(1f, Color.green, "a"));
+            chart.AddSlice(new Slice(3f, Color.blue, "b"));
+            chart.DrawOn(page);
+            string content = TestSupport.Content(page);
+            Assert.Contains(TestSupport.Hex("25%"), content);
+            Assert.Contains(TestSupport.Hex("75%"), content);
+        }
+    }
 }
 }

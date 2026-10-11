@@ -119,6 +119,10 @@ public class DonutChart : Drawable {
             _ a1: Float, _ a2: Float) -> Float {    // a1 > a2
         page.setBrushColor(fillColor)
 
+        // No arc of angles that are not numbers, whose loop never ended
+        if !BarChart.isValue(a1) || !BarChart.isValue(a2) {
+            return a1
+        }
         var angle1 = a1 - 90.0
         let angle2 = a2 - 90.0
 
@@ -236,7 +240,7 @@ public class DonutChart : Drawable {
         // The slices with a value above 0 share the circle
         var total: Float = 0.0
         for slice in slices! {
-            if slice.value > 0.0 {
+            if DonutChart.sliceDrawn(slice.value) {
                 total += slice.value
             }
         }
@@ -254,7 +258,7 @@ public class DonutChart : Drawable {
         var box: [Float] = [x, y, x + 2 * r1, y + 2 * r1]
         var angle: Float = 0.0
         for slice in slices! {
-            if slice.value <= 0.0 {
+            if !DonutChart.sliceDrawn(slice.value) {
                 continue
             }
             let sweep = slice.value * 360.0 / total
@@ -288,6 +292,14 @@ public class DonutChart : Drawable {
         return [xc + r1, yc + r1]
     }
 
+    // Says whether a slice of the value is drawn: a number above 0, whose
+    // 360ths are a number too. A NaN, from 0/0 in an empty category of real
+    // data, an infinity, or a value whose 360ths overflow a Float made the
+    // arc's loop endless, until memory ran out (review of 11 October 2026, #2).
+    static func sliceDrawn(_ value: Float) -> Bool {
+        return value > 0 && BarChart.isValue(value * 360)
+    }
+
     // Returns the share of the slice in the total, as a whole percentage.
     private static func percentage(_ slice: Slice, _ total: Float) -> String {
         return "\(Int((slice.value * 100.0 / total).rounded(.toNearestOrAwayFromZero)))%"
@@ -301,7 +313,8 @@ public class DonutChart : Drawable {
         }
         var description = (r2 > 0.0) ? "Donut chart:" : "Pie chart:"
         var separator = " "
-        for slice in slices! where slice.value > 0.0 {
+        // The slices drawn, as Int of the percentage of an infinity traps
+        for slice in slices! where DonutChart.sliceDrawn(slice.value) {
             description += separator
             if !slice.text.isEmpty {
                 description += slice.text + " "

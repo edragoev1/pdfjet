@@ -150,6 +150,29 @@ This is the first entry in this file; earlier releases were not tracked here.
   a font of CFF outlines is written by them too, byte for byte as before.
 
 ### Fixed
+- Reading untrusted PDFs, in the four ports: three ways a file of a few
+  kilobytes could take gigabytes of memory, past the 256 MB that the
+  decoded streams of a PDF may take, are closed. A page's /Contents array
+  that names one stream again and again is charged for each copy, not once:
+  a 17 KB PDF made 1 GB of page content. An object stream gives no more
+  objects than its /N says, and each takes its share of the limit: a header
+  of millions of "1 0 " made 5.7 GB of objects from 65 KB. A
+  cross-reference stream that lists more objects than the file has room
+  for, or an offset past its end, is set aside as it is read, and the
+  objects are found by scanning, as for a broken table: one of 64 MB of
+  entries took 4.5 GB. Each with a test.
+- A stamp in an encrypted document, in the four ports: its stream was
+  written unencrypted, so readers decrypted plain bytes and lost the stamp
+  (pypdf: "Invalid padding"; Poppler drew a blank page). It is encrypted as
+  every other stream is.
+- A slice of a DonutChart that is NaN, from 0/0 in an empty category of
+  real data, infinite, or so large that its 360ths overflow, made the arc's
+  loop endless until memory ran out, in the four ports. Such a slice is
+  left out, and the others share the circle.
+- Java in a Turkish or Azeri locale: the names of the core fonts were
+  upper-cased by the locale's rules, "i" to "İ", so the page's font did not
+  match its resource and its text was not drawn. They are upper-cased by
+  the rules of no locale.
 - Java and C#: an image of a JPEG is made three times faster. The
   check that the file is not cut short read the rest of the file a byte at a
   time from a stream, a synchronized read() in Java; it scans the bytes

@@ -651,6 +651,12 @@ public class PDFobj {
             return ObjectNumbered(objects, numbers[0]);
         }
         MemoryStream buf = new MemoryStream();
+        // A stream named again is charged to the budget again, as its data is
+        // copied again, which decoding it once does not pay for: /Contents
+        // [4 0 R 4 0 R ...] of a stream of 16 MB made gigabytes of a PDF of a
+        // few KB (review of 11 October 2026, #29). Past the budget, the page
+        // has no content, as a stream past it has no data.
+        HashSet<int> joined = new HashSet<int>();
         foreach (int number in numbers) {
             PDFobj page = ObjectNumbered(objects, number);
             if (page == null) {
@@ -658,6 +664,14 @@ public class PDFobj {
             }
             byte[] bytes = page.GetData();
             if (bytes != null) {
+                if (joined.Contains(number) && page.budget != null) {
+                    page.budget.left -= bytes.Length + 1;
+                    if (page.budget.left < 0) {
+                        page.budget.left = 0;
+                        return null;
+                    }
+                }
+                joined.Add(number);
                 buf.Write(bytes, 0, bytes.Length);
                 buf.WriteByte((byte) '\n');     // A stream can end in the middle of a line.
             }

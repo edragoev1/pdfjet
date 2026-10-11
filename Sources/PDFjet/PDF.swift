@@ -2246,8 +2246,20 @@ public final class PDF {
                 // object listed a thousand times, took seconds.
                 let streamBudget = PDFobj.DecodeBudget(0)
                 streamBudget.readLeft = obj.data.count
+                // No more objects than its /N says, and each taken from the
+                // PDF's budget as the memory it takes: a header of 64 MB of
+                // "1 0 " made millions of objects, gigabytes, from a PDF of
+                // 65 KB (review of 11 October 2026, #30).
+                var pairs = o2.dict.count / 2
+                if let count = try? objectStreamNumber(obj.getValue("/N")) {
+                    pairs = min(pairs, count)
+                }
                 var i = 0
-                while i + 1 < o2.dict.count {
+                while i + 1 < o2.dict.count && i / 2 < pairs {
+                    budget.left -= PDF.objectCost
+                    if budget.left < 0 {
+                        throw PDFobj.DecodedTotalError(total: budget.total)
+                    }
                     let num = o2.dict[i]
                     let number = try objectStreamNumber(num)
                     let off = try objectStreamNumber(o2.dict[i + 1])
@@ -2645,6 +2657,13 @@ public final class PDF {
         return i < dict.count && dict[i] == "trailer" && getEntryObjects(buf, entries, &objects, budget)
     }
 
+    // minObjectBytes is the fewest bytes an object of a PDF takes, "1 0 obj
+    // endobj" less its spaces, and objectCost what an object read takes of the
+    // PDF's budget of decoded bytes, about the memory it takes, so that a PDF
+    // of a few KB cannot make millions of objects (review of 11 October 2026).
+    static let minObjectBytes = 12
+    static let objectCost = 256
+
     // Adds the objects of a cross-reference stream that are not in object
     // streams, and returns false when an offset is not that of its object.
     private func getStreamObjects(
@@ -2687,6 +2706,13 @@ public final class PDF {
         try xref.setStreamAndData(&buf, length, nil, budget)
         let n = n1 + n2 + n3    // Number of bytes per entry
         var entries = [(number: Int, offset: Int)]()
+        // An object in use is in the PDF, at an offset in it, and takes a few
+        // bytes of it, "1 0 obj endobj" at the least: a stream of more entries
+        // than that, or of an offset past the end, lists objects that are not
+        // there, and the objects are looked for by scanning. Checked as each
+        // entry is read, as keeping them all first, millions of a stream of a
+        // few KB, took gigabytes (review of 11 October 2026, #31).
+        let maxEntries = buf.count / PDF.minObjectBytes
         var offset = 0
         var s = 0
         while s + 1 < index.count {
@@ -2697,7 +2723,11 @@ public final class PDF {
                 // Page 51 in PDF32000_2008.pdf
                 let type = (n1 == 0) ? 1 : toInt(xref.data, offset, n1)
                 if type == 1 {
-                    entries.append((number, toInt(xref.data, offset + n1, n2)))
+                    let entry = (number: number, offset: toInt(xref.data, offset + n1, n2))
+                    if entry.offset < 0 || entry.offset >= buf.count || entries.count >= maxEntries {
+                        return false
+                    }
+                    entries.append(entry)
                 }
                 number += 1
                 offset += n

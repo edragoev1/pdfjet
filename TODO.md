@@ -13,6 +13,12 @@ XML parser; `Table.setCellPadding`; `addCJKParagraph` with a language; and
 the fixes of a code review of every change since 9.0.3, with a test of each.
 Only a major issue holds it now; anything else goes into the next 9.0.x.
 
+Taken in on 11 October 2026 as major (the owner: "merge them in 9.0.5"): the
+five first fixes of the review of that day, as PDFjet Forms reads PDFs from
+anyone with this reader: #29, #30, #31, the reader's limits; #1, a stamp in
+an encrypted PDF; #2, a NaN slice of a DonutChart; and #3, Java in a Turkish
+locale. The rest of the review stays for 9.0.7.
+
 Left before the tag: the manual viewer pass (below) on the files of the new
 code, then the release.
 
@@ -135,31 +141,23 @@ library's tag of the same number.
   Java, C# and Swift ports against Go, and the parsers of untrusted input.
   Its numbers are kept in the items below. Each fix in the four ports, with
   a test.
-- **For 9.0.7: the reader's limits (review #29-#32, #34, #35, #37, #38).**
-  The reader does not crash on bad input, but files of a few KB get past the
-  256 MB decode limit and take gigabytes of memory or minutes of CPU: a
-  /Contents array that repeats one stream, charged once (#29); the header of
-  an object stream, turned into objects without limit (#30); every entry of
-  a cross-reference stream kept before any is checked (#31); the output of
-  ASCII85Decode not counted (#32); inherited page entries copied into every
-  page by GetPageObjects and Merge (#34); AddResourceObjects quadratic in the
-  fonts and repeated pages (#35); a BMP row allocated from the header's
-  width before it is read (#37); a PNG's chunks not checked for order, which
-  gives an invalid /Mask (#38). The fuzzers given inputs large enough to
-  reach the limit, and a time per page.
-- **For 9.0.7: what encryption misses (review #1, #11, #19, #20, #27).**
-  Stamp.Complete writes its stream unencrypted, so every stamp of an
-  encrypted PDF is lost (#1, confirmed in the code); an image copied from
-  another PDF by NewImageFromPDFobj likewise (#11); the CIDSystemInfo
-  strings of the deprecated CJK fonts (#19); the optional content's /Name
-  (Default) (#20). Passwords not SASLprep'd, as PDF 2.0 asks (#27).
-- **For 9.0.7: a NaN in a DonutChart (review #2).** A slice whose value is
-  NaN or infinite loops until memory runs out; skipped, as BarChart skips
-  them.
-- **For 9.0.7: Java and the locale (review #3, #23).** `toUpperCase()` in a
-  Turkish or Azeri locale breaks the names of the core fonts, and their text
-  is not drawn: `Locale.ROOT`. The platform's default charset in FastFloat
-  and PNGImage: US-ASCII. A CI job in the tr_TR locale.
+- **For 9.0.7: the reader's limits (review #32, #34, #35, #37, #38).**
+  #29 to #31 were fixed in 9.0.5. The output of ASCII85Decode not counted
+  (#32); inherited page entries copied into every page by GetPageObjects and
+  Merge (#34); AddResourceObjects quadratic in the fonts and repeated pages
+  (#35); a BMP row allocated from the header's width before it is read
+  (#37); a PNG's chunks not checked for order, which gives an invalid /Mask
+  (#38). The fuzzers given inputs large enough to reach the limit, and a
+  time per page.
+- **For 9.0.7: what encryption misses (review #11, #19, #20, #27).** The
+  stamp's stream (#1) was fixed in 9.0.5. An image copied from another PDF
+  by NewImageFromPDFobj (#11); the CIDSystemInfo strings of the deprecated
+  CJK fonts (#19); the optional content's /Name (Default) (#20). Passwords
+  not SASLprep'd, as PDF 2.0 asks (#27).
+- **For 9.0.7: Java's default charset (review #23).** FastFloat and
+  PNGImage use the platform's charset: US-ASCII. A CI job in the tr_TR
+  locale. (#3, the core fonts' names in a Turkish locale, and #2, a NaN
+  slice of a DonutChart, were fixed in 9.0.5.)
 - **For 9.0.7: PDF/A and PDF/UA (review #5, #6, #28).** Embedded files and
   file attachments are accepted in PDF/A (#5), and fonts that are not
   embedded, core and CJK, in PDF/A and PDF/UA (#6): refused, as the README

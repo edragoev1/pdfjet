@@ -6,6 +6,7 @@
  */
 package com.pdfjet;
 
+import com.pdfjet.encryption.*;
 import java.io.*;
 import java.util.*;
 import java.nio.charset.StandardCharsets;
@@ -515,12 +516,19 @@ public class Stamp implements Drawable {
             pdf.append(">>\n");
         }
         pdf.append(">>\n");
+        // Encrypted as every other stream of an encrypted document, which the
+        // stamp's was not: a reader decrypted its plain bytes, and the stamp
+        // was lost (review of 11 October 2026, #1)
+        byte[] content = buf.toByteArray();
+        if (pdf.encryption != null) {
+            content = AES256.encrypt(content, pdf.encryption.getKey());
+        }
         pdf.append("/Length ");
-        pdf.append(buf.size());
+        pdf.append(content.length);
         pdf.append(Token.NEWLINE);
         pdf.append(Token.END_DICTIONARY);   // End of XObject dictionary
         pdf.append(Token.STREAM);
-        pdf.append(buf.toByteArray());
+        pdf.append(content);
         pdf.append(Token.END_STREAM);
         pdf.endObj();
         pdf.stamps.add(this);

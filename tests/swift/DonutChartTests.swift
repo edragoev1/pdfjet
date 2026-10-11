@@ -65,4 +65,21 @@ import Testing
         #expect(page.structures[1].altDescription == "Pie chart: 100%")
         #expect(page.structures[2].altDescription == "Most are oranges.")
     }
+    // A slice that is not a number, an infinity, or a value whose 360ths
+    // overflow is not drawn, and the others are: one made the arc's loop
+    // endless (review of 11 October 2026, #2).
+    @Test func aSliceThatIsNotANumberIsNotDrawn() {
+        for bad: Float in [Float.nan, Float.infinity, 1e36] {
+            let pdf = TestSupport.newPDF()
+            let page = Page(pdf, Letter.PORTRAIT)
+            let chart = chart(pdf)
+            chart.addSlice(Slice(bad, Color.red, "bad"))
+            chart.addSlice(Slice(1, Color.green, "a"))
+            chart.addSlice(Slice(3, Color.blue, "b"))
+            chart.drawOn(page)
+            let content = TestSupport.content(page)
+            #expect(content.contains(TestSupport.hex("25%")) && content.contains(TestSupport.hex("75%")),
+                    "\(bad): the other slices are not 25% and 75% in \(content)")
+        }
+    }
 }

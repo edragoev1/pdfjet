@@ -373,12 +373,19 @@ public class Stamp : IDrawable {
             pdf.Append(">>\n");
         }
         pdf.Append(">>\n");
+        // Encrypted as every other stream of an encrypted document, which the
+        // stamp's was not: a reader decrypted its plain bytes, and the stamp
+        // was lost (review of 11 October 2026, #1)
+        byte[] content = buf.ToArray();
+        if (pdf.encryption != null) {
+            content = AES256.Encrypt(content, pdf.encryption.GetKey());
+        }
         pdf.Append("/Length ");
-        pdf.Append(buf.Length);
+        pdf.Append(content.Length);
         pdf.Append(Token.Newline);
         pdf.Append(Token.EndDictionary);    // End of XObject dictionary
         pdf.Append(Token.Stream);
-        pdf.Append(buf.ToArray());
+        pdf.Append(content);
         pdf.Append(Token.EndStream);
         pdf.EndObj();
         pdf.stamps.Add(this);

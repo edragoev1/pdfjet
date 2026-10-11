@@ -121,6 +121,10 @@ namespace PDFjet.NET {
                 float a1, float a2) {       // a1 > a2
             page.SetBrushColor(fillColor);
 
+            // No arc of angles that are not numbers, whose loop never ended
+            if (!IsValue(a1) || !IsValue(a2)) {
+                return a1;
+            }
             float angle1 = a1 - 90.0f;
             float angle2 = a2 - 90.0f;
 
@@ -240,7 +244,7 @@ namespace PDFjet.NET {
             // The slices with a value above 0 share the circle
             float total = 0.0f;
             foreach (Slice slice in slices) {
-                if (slice.value > 0.0f) {
+                if (SliceDrawn(slice.value)) {
                     total += slice.value;
                 }
             }
@@ -259,7 +263,7 @@ namespace PDFjet.NET {
             float[] box = {x, y, x + 2f * r1, y + 2f * r1};
             float angle = 0.0f;
             foreach (Slice slice in slices) {
-                if (slice.value <= 0.0f) {
+                if (!SliceDrawn(slice.value)) {
                     continue;
                 }
                 float sweep = slice.value * 360.0f / total;
@@ -294,6 +298,20 @@ namespace PDFjet.NET {
             return new float[] {xc + r1, yc + r1};
         }
 
+        // Tells whether a slice of the value is drawn: a number above 0, whose
+        // 360ths are a number too. A NaN, from 0/0 in an empty category of
+        // real data, an infinity, or a value whose 360ths overflow a float
+        // made the arc's loop endless, until memory ran out (review of 11
+        // October 2026, #2).
+        private static bool SliceDrawn(float value) {
+            return value > 0.0f && IsValue(value * 360.0f);
+        }
+
+        // Tells if the value is a number: not NaN and not infinite.
+        private static bool IsValue(float value) {
+            return !float.IsNaN(value) && !float.IsInfinity(value);
+        }
+
         // Returns the share of the slice in the total, as a whole percentage.
         private static String Percentage(Slice slice, float total) {
             return ((int) Math.Round(slice.value * 100.0f / total, MidpointRounding.AwayFromZero)).ToString(CultureInfo.InvariantCulture) + "%";
@@ -308,7 +326,7 @@ namespace PDFjet.NET {
             System.Text.StringBuilder sb = new System.Text.StringBuilder(r2 > 0.0f ? "Donut chart:" : "Pie chart:");
             String separator = " ";
             foreach (Slice slice in slices) {
-                if (slice.value > 0.0f) {
+                if (SliceDrawn(slice.value)) {
                     sb.Append(separator);
                     if (slice.text.Length > 0) {
                         sb.Append(slice.text).Append(' ');

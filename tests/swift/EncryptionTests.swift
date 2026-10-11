@@ -120,4 +120,22 @@ import Testing
             #expect(Decryptor.getCryptMethod(encrypt, "/StdCF", objects) == want, "/CF \(cf)")
         }
     }
+    // A stamp's stream is encrypted as every other stream of an encrypted
+    // document, and reads back as it was drawn (review of 11 October 2026, #1).
+    @Test func encryptsTheStreamOfAStamp() throws {
+        let memory = MemoryPDF(Compliance.PDF_1_7)
+        _ = memory.pdf.setEncryption(Encryption(memory.pdf,
+                Passwords().setUserPassword("hello").setOwnerPassword("world"),
+                Permissions().grant(UserAccess.PRINT)))
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        let stamp = Stamp(memory.pdf)
+        stamp.fillRect(0, 0, 20, 10)
+        try stamp.complete()
+        stamp.drawOn(page)
+        try memory.pdf.complete()
+        let objects = try TestSupport.read(memory.bytes, "hello")
+        let form = try #require(objects.last { $0.getValue("/Subtype") == "/Form" }, "no form XObject")
+        let data = TestSupport.latin1(form.getData())
+        #expect(data.contains("20 0 l"), "the stamp's stream reads back as \(data)")
+    }
 }

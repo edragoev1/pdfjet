@@ -73,4 +73,23 @@ class DonutChartTest {
         assertEquals("Pie chart: 100%", page.structures.get(1).altDescription);
         assertEquals("Most are oranges.", page.structures.get(2).altDescription);
     }
+
+    // A slice that is not a number, an infinity, or a value whose 360ths
+    // overflow is not drawn, and the others are: one made the arc's loop
+    // endless (review of 11 October 2026, #2).
+    @Test
+    void aSliceThatIsNotANumberIsNotDrawn() throws Exception {
+        for (float bad : new float[] {Float.NaN, Float.POSITIVE_INFINITY, 1e36f}) {
+            PDF pdf = TestSupport.newPDF();
+            Page page = new Page(pdf, Letter.PORTRAIT);
+            DonutChart chart = chart(pdf);
+            chart.addSlice(new Slice(bad, Color.red, "bad"));
+            chart.addSlice(new Slice(1f, Color.green, "a"));
+            chart.addSlice(new Slice(3f, Color.blue, "b"));
+            chart.drawOn(page);
+            String content = TestSupport.content(page);
+            assertTrue(content.contains(TestSupport.hex("25%")) && content.contains(TestSupport.hex("75%")),
+                    bad + ": the other slices are not 25% and 75% in " + content);
+        }
+    }
 }

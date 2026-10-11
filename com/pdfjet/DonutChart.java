@@ -134,6 +134,10 @@ public class DonutChart implements Drawable {
             float a1, float a2) {                // a1 > a2
         page.setBrushColor(fillColor);
 
+        // No arc of angles that are not numbers, whose loop never ended
+        if (!isValue(a1) || !isValue(a2)) {
+            return a1;
+        }
         float angle1 = a1 - 90.0f;
         float angle2 = a2 - 90.0f;
 
@@ -257,7 +261,7 @@ public class DonutChart implements Drawable {
         // The slices with a value above 0 share the circle
         float total = 0.0f;
         for (Slice slice : slices) {
-            if (slice.value > 0.0f) {
+            if (sliceDrawn(slice.value)) {
                 total += slice.value;
             }
         }
@@ -275,7 +279,7 @@ public class DonutChart implements Drawable {
         float[] box = {x, y, x + 2f * r1, y + 2f * r1};
         float angle = 0.0f;
         for (Slice slice : slices) {
-            if (slice.value <= 0.0f) {
+            if (!sliceDrawn(slice.value)) {
                 continue;
             }
             float sweep = slice.value * 360.0f / total;
@@ -309,6 +313,19 @@ public class DonutChart implements Drawable {
         return new float[] {xc + r1, yc + r1};
     }
 
+    // Tells whether a slice of the value is drawn: a number above 0, whose
+    // 360ths are a number too. A NaN, from 0/0 in an empty category of real
+    // data, an infinity, or a value whose 360ths overflow a float made the
+    // arc's loop endless, until memory ran out (review of 11 October 2026, #2).
+    private static boolean sliceDrawn(float value) {
+        return value > 0.0f && isValue(value * 360.0f);
+    }
+
+    // Tells if the value is a number: not NaN, and not infinite.
+    private static boolean isValue(float value) {
+        return !Float.isNaN(value) && !Float.isInfinite(value);
+    }
+
     // Returns the share of the slice in the total, as a whole percentage.
     private static String percentage(Slice slice, float total) {
         return Math.round(slice.value * 100.0f / total) + "%";
@@ -323,7 +340,7 @@ public class DonutChart implements Drawable {
         StringBuilder sb = new StringBuilder(r2 > 0.0f ? "Donut chart:" : "Pie chart:");
         String separator = " ";
         for (Slice slice : slices) {
-            if (slice.value > 0.0f) {
+            if (sliceDrawn(slice.value)) {
                 sb.append(separator);
                 if (!slice.text.isEmpty()) {
                     sb.append(slice.text).append(' ');

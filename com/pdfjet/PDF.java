@@ -2739,7 +2739,20 @@ final public class PDF {
                 // object listed a thousand times, took seconds.
                 PDFobj.DecodeBudget streamBudget = new PDFobj.DecodeBudget(0);
                 streamBudget.readLeft = data.length;
-                for (int i = 0; i + 1 < o2.dict.size(); i += 2) {
+                // No more objects than its /N says, and each taken from the
+                // PDF's budget as the memory it takes: a header of 64 MB of
+                // "1 0 " made millions of objects, gigabytes, from a PDF of
+                // 65 KB (review of 11 October 2026, #30).
+                int pairs = o2.dict.size() / 2;
+                int count = toInteger(obj.getValue("/N"));
+                if (count >= 0) {
+                    pairs = Math.min(pairs, count);
+                }
+                for (int i = 0; i + 1 < o2.dict.size() && i / 2 < pairs; i += 2) {
+                    budget.left -= OBJECT_COST;
+                    if (budget.left < 0) {
+                        throw new PDFobj.DecodedTotalException();
+                    }
                     String num = o2.dict.get(i);
                     int number = objectStreamNumber(num);
                     int off = objectStreamNumber(o2.dict.get(i + 1));
@@ -3076,6 +3089,14 @@ final public class PDF {
         return low;
     }
 
+    // MIN_OBJECT_BYTES is the fewest bytes an object of a PDF takes, "1 0 obj
+    // endobj" less its spaces, and OBJECT_COST what an object read takes of
+    // the PDF's budget of decoded bytes, about the memory it takes, so that a
+    // PDF of a few KB cannot make millions of objects (review of 11 October
+    // 2026).
+    static final int MIN_OBJECT_BYTES = 12;
+    static final int OBJECT_COST = 256;
+
     // Adds the objects in use of a cross-reference table, and returns false
     // when an offset is not that of its object.
     private boolean getTableObjects(
@@ -3145,6 +3166,13 @@ final public class PDF {
         xref.setStreamAndData(buf, length, budget);
         int n = n1 + n2 + n3;   // Number of bytes per entry
         List<int[]> entries = new ArrayList<int[]>();
+        // An object in use is in the PDF, at an offset in it, and takes a few
+        // bytes of it, "1 0 obj endobj" at the least: a stream of more entries
+        // than that, or of an offset past the end, lists objects that are not
+        // there, and the objects are looked for by scanning. Checked as each
+        // entry is read, as keeping them all first, millions of a stream of a
+        // few KB, took gigabytes (review of 11 October 2026, #31).
+        int maxEntries = buf.length / MIN_OBJECT_BYTES;
         int offset = 0;
         for (int s = 0; s + 1 < index.size(); s += 2) {
             int number = index.get(s);
@@ -3153,7 +3181,11 @@ final public class PDF {
                 // Page 51 in PDF32000_2008.pdf
                 int type = (n1 == 0) ? 1 : toInt(xref.data, offset, n1);
                 if (type == 1) {
-                    entries.add(new int[] {number, toInt(xref.data, offset + n1, n2)});
+                    int[] entry = new int[] {number, toInt(xref.data, offset + n1, n2)};
+                    if (entry[1] < 0 || entry[1] >= buf.length || entries.size() >= maxEntries) {
+                        return false;
+                    }
+                    entries.add(entry);
                 }
                 number++;
                 offset += n;

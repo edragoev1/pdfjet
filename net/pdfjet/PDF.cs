@@ -2589,7 +2589,20 @@ public sealed class PDF {
                 // object listed a thousand times, took seconds.
                 PDFobj.DecodeBudget streamBudget = new PDFobj.DecodeBudget(0);
                 streamBudget.readLeft = data.Length;
-                for (int i = 0; i + 1 < o2.dict.Count; i += 2) {
+                // No more objects than its /N says, and each taken from the
+                // PDF's budget as the memory it takes: a header of 64 MB of
+                // "1 0 " made millions of objects, gigabytes, from a PDF of
+                // 65 KB (review of 11 October 2026, #30).
+                int pairs = o2.dict.Count / 2;
+                int count = ToInteger(obj.GetValue("/N"));
+                if (count >= 0) {
+                    pairs = Math.Min(pairs, count);
+                }
+                for (int i = 0; i + 1 < o2.dict.Count && i / 2 < pairs; i += 2) {
+                    budget.left -= OBJECT_COST;
+                    if (budget.left < 0) {
+                        throw new PDFobj.DecodedTotalException();
+                    }
                     String num = o2.dict[i];
                     int number = ObjectStreamNumber(num);
                     int off = ObjectStreamNumber(o2.dict[i + 1]);
@@ -2961,6 +2974,14 @@ public sealed class PDF {
         return i < dict.Count && dict[i].Equals("trailer") && GetEntryObjects(buf, entries, objects, budget);
     }
 
+    // MIN_OBJECT_BYTES is the fewest bytes an object of a PDF takes, "1 0 obj
+    // endobj" less its spaces, and OBJECT_COST what an object read takes of
+    // the PDF's budget of decoded bytes, about the memory it takes, so that a
+    // PDF of a few KB cannot make millions of objects (review of 11 October
+    // 2026).
+    internal const int MIN_OBJECT_BYTES = 12;
+    internal const int OBJECT_COST = 256;
+
     // Adds the objects of a cross-reference stream that are not in object
     // streams, and returns false when an offset is not that of its object.
     private bool GetStreamObjects(byte[] buf, PDFobj xref, List<PDFobj> objects, PDFobj.DecodeBudget budget) {
@@ -3000,6 +3021,13 @@ public sealed class PDF {
         xref.SetStreamAndData(buf, length, budget);
         int n = n1 + n2 + n3;   // Number of bytes per entry
         List<int[]> entries = new List<int[]>();
+        // An object in use is in the PDF, at an offset in it, and takes a few
+        // bytes of it, "1 0 obj endobj" at the least: a stream of more entries
+        // than that, or of an offset past the end, lists objects that are not
+        // there, and the objects are looked for by scanning. Checked as each
+        // entry is read, as keeping them all first, millions of a stream of a
+        // few KB, took gigabytes (review of 11 October 2026, #31).
+        int maxEntries = buf.Length / MIN_OBJECT_BYTES;
         int offset = 0;
         for (int s = 0; s + 1 < index.Count; s += 2) {
             int number = index[s];
@@ -3008,7 +3036,11 @@ public sealed class PDF {
                 // Page 51 in PDF32000_2008.pdf
                 int type = (n1 == 0) ? 1 : ToInt(xref.data, offset, n1);
                 if (type == 1) {
-                    entries.Add(new int[] {number, ToInt(xref.data, offset + n1, n2)});
+                    int entryOffset = ToInt(xref.data, offset + n1, n2);
+                    if (entryOffset < 0 || entryOffset >= buf.Length || entries.Count >= maxEntries) {
+                        return false;
+                    }
+                    entries.Add(new int[] {number, entryOffset});
                 }
                 number++;
                 offset += n;

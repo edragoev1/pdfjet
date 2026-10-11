@@ -8,6 +8,7 @@ package com.pdfjet.encryption;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -19,6 +20,7 @@ import com.pdfjet.Letter;
 import com.pdfjet.PDF;
 import com.pdfjet.PDFobj;
 import com.pdfjet.Page;
+import com.pdfjet.Stamp;
 import com.pdfjet.TestSupport;
 import com.pdfjet.TextLine;
 import java.io.ByteArrayOutputStream;
@@ -125,5 +127,31 @@ class EncryptionTest {
         int access = accessValue(pdf);
         assertEquals(-3388, access);
         assertTrue(UserAccess.EXTRACT_CONTENTS_FOR_ACCESSIBILITY.isSetIn(new Permissions(access).getAccess()));
+    }
+
+    // A stamp's stream is encrypted as every other stream of an encrypted
+    // document, and reads back as it was drawn (review of 11 October 2026, #1).
+    @Test
+    void theStreamOfAStampIsEncrypted() throws Exception {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        pdf.setEncryption(new Encryption(pdf,
+                new Passwords().setUserPassword("hello").setOwnerPassword("world"),
+                new Permissions().grant(UserAccess.PRINT)));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Stamp stamp = new Stamp(pdf);
+        stamp.fillRect(0f, 0f, 20f, 10f);
+        stamp.complete();
+        stamp.drawOn(page);
+        pdf.complete();
+        PDFobj form = null;
+        for (PDFobj obj : TestSupport.read(bos.toByteArray(), "hello")) {
+            if (obj.getValue("/Subtype").equals("/Form")) {
+                form = obj;
+            }
+        }
+        assertNotNull(form, "no form XObject");
+        String data = TestSupport.latin1(form.getData());
+        assertTrue(data.contains("20 0 l"), "the stamp's stream reads back as " + data);
     }
 }

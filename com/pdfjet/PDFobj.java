@@ -10,8 +10,11 @@ import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.zip.DataFormatException;
 
 /**
@@ -760,6 +763,12 @@ public class PDFobj {
             return objectNumbered(objects, numbers.get(0));
         }
         ByteArrayOutputStream buf = new ByteArrayOutputStream();
+        // A stream named again is charged to the budget again, as its data is
+        // copied again, which decoding it once does not pay for: /Contents
+        // [4 0 R 4 0 R ...] of a stream of 16 MB made gigabytes of a PDF of a
+        // few KB (review of 11 October 2026, #29). Past the budget, the page
+        // has no content, as a stream past it has no data.
+        Set<Integer> joined = new HashSet<Integer>();
         for (int number : numbers) {
             PDFobj page = objectNumbered(objects, number);
             if (page == null) {
@@ -767,6 +776,14 @@ public class PDFobj {
             }
             byte[] data = page.getData();
             if (data != null) {
+                if (joined.contains(number) && page.budget != null) {
+                    page.budget.left -= data.length + 1;
+                    if (page.budget.left < 0) {
+                        page.budget.left = 0;
+                        return null;
+                    }
+                }
+                joined.add(number);
                 buf.write(data, 0, data.length);
                 buf.write('\n');    // A stream can end in the middle of a line.
             }
@@ -811,7 +828,7 @@ public class PDFobj {
      */
     public Font addResource(int coreFont, List<PDFobj> objects) {
         Font font = new Font(coreFont);
-        font.fontID = font.name.replace('-', '_').toUpperCase();
+        font.fontID = font.name.replace('-', '_').toUpperCase(Locale.ROOT);
 
         PDFobj obj = new PDFobj();
         obj.dict.add("<<");

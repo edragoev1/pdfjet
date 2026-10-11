@@ -347,7 +347,7 @@ func (dc *DonutChart) getAltDescription(total float32) string {
 	}
 	separator := " "
 	for _, slice := range dc.slices {
-		if slice.value > 0.0 {
+		if sliceDrawn(slice.value) {
 			sb.WriteString(separator)
 			if slice.text != "" {
 				sb.WriteString(slice.text)
