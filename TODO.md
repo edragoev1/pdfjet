@@ -116,6 +116,14 @@ code, then the release.
   reads; PDF/UA-1 forbids any reference to `.notdef` from text. Reported:
   an error in PDF/UA mode, naming the character and the font, the fallback
   font the remedy.
+- **For 9.0.7: Stamp.Complete writes its stream unencrypted.** In an
+  encrypted PDF, the stream Stamp.Complete writes is not encrypted, as every
+  other stream is. Found by the review of the writer and encryption, and
+  confirmed in the code. The fix in the four ports, each checked for it, with
+  a test that stamps an encrypted PDF and opens it again.
+- **For 9.0.7: the other four reviews.** Parsers; text and fonts; barcodes
+  and tables; and Java, C# and Swift compared with Go. Their findings, once
+  in, as items here.
 - **Longer fuzzing of the font subsetters.** Go's fuzzers ran 5 minutes each
   on every target before 9.0.5 with no failure; the TrueType and CFF
   subsetters, which subset a real font for each input, ran 27,000 and 15,000
