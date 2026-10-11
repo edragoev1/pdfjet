@@ -231,3 +231,93 @@ func TestReadACrossReferenceStreamOfTooManyEntriesIsNotTaken(t *testing.T) {
 		t.Errorf("%d objects of a PDF of three", len(objects))
 	}
 }
+
+// The output of ASCII85Decode is taken from the budget, as the other filters'
+// is: a stream of 'z's after FlateDecode decodes to four bytes for each, past
+// the budget (review of 11 October 2026, #32).
+func TestReadTheOutputOfASCII85IsChargedToTheBudget(t *testing.T) {
+	defer func(was int) { maxDecodedTotal = was }(maxDecodedTotal)
+	maxDecodedTotal = 5000
+	pdf := func(zs int) []byte {
+		var b bytes.Buffer
+		b.WriteString("%PDF-1.5\n")
+		b.WriteString("1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n")
+		b.WriteString("2 0 obj\n<< /Type /Pages /Kids [] /Count 0 >>\nendobj\n")
+		stream := testDeflate([]byte(strings.Repeat("z", zs) + "~>"))
+		fmt.Fprintf(&b, "4 0 obj\n<< /Length %d /Filter [/FlateDecode /ASCII85Decode] >>\nstream\n", len(stream))
+		b.Write(stream)
+		b.WriteString("\nendstream\nendobj\n")
+		b.WriteString("trailer\n<< /Root 1 0 R /Size 5 >>\n%%EOF\n")
+		return b.Bytes()
+	}
+	// 500 'z's, 502 bytes deflated and 2000 decoded, within it
+	objects, err := testNewPDF().Read(pdf(500))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if data := testObjectOfNumber(objects, 4).GetData(); len(data) != 2000 {
+		t.Errorf("500 z's decode to %d bytes, not 2000", len(data))
+	}
+	// 2000, 8000 bytes, past it
+	objects, err = testNewPDF().Read(pdf(2000))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if data := testObjectOfNumber(objects, 4).GetData(); data != nil {
+		t.Errorf("2000 z's past the budget decode to %d bytes, not to nothing", len(data))
+	}
+}
+
+// AddObjects writes every object and reference at generation 0, as the
+// cross-reference table has them: a PDF whose objects had generation 1 lost
+// its pages (review of 11 October 2026, #4).
+func TestReadAddObjectsWritesTheGenerationsAsZero(t *testing.T) {
+	var b bytes.Buffer
+	b.WriteString("%PDF-1.4\n")
+	objects := []string{
+		"<< /Type /Catalog /Pages 2 1 R >>",
+		"<< /Type /Pages /Kids [3 1 R] /Count 1 >>",
+		"<< /Type /Page /Parent 2 1 R /MediaBox [0 0 612 792] >>",
+	}
+	offsets := []int{}
+	for i, object := range objects {
+		offsets = append(offsets, b.Len())
+		fmt.Fprintf(&b, "%d 1 obj\n%s\nendobj\n", i+1, object)
+	}
+	xref := b.Len()
+	fmt.Fprintf(&b, "xref\n0 4\n0000000000 65535 f \n")
+	for _, offset := range offsets {
+		fmt.Fprintf(&b, "%010d 00001 n \n", offset)
+	}
+	fmt.Fprintf(&b, "trailer\n<< /Root 1 1 R /Size 4 >>\nstartxref\n%d\n%%%%EOF\n", xref)
+	read := testRead(t, b.Bytes())
+	doc := testNewDoc()
+	if err := doc.pdf.AddObjects(read); err != nil {
+		t.Fatal(err)
+	}
+	written := doc.complete()
+	if strings.Contains(string(written), " 1 R") || strings.Contains(string(written), " 1 obj") {
+		t.Errorf("a generation of 1 is written: %q", written)
+	}
+	if pages := testNewPDF().GetPageObjects(testRead(t, written)); len(pages) != 1 {
+		t.Errorf("%d pages, not 1", len(pages))
+	}
+}
+
+// A page that /Kids lists again has its resources added once, and a name is
+// found in what was added without a look through it: one page listed 2,000
+// times over 2,000 fonts took two minutes (review of 11 October 2026, #35).
+func TestReadAddResourceObjectsAddsARepeatedPageOnce(t *testing.T) {
+	objects := testRead(t, testPDFWithObjects(
+		"<< /Type /Catalog /Pages 2 0 R >>",
+		"<< /Type /Pages /Kids [3 0 R 3 0 R 3 0 R] /Count 3 >>",
+		"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> >>",
+		"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+		"<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>"))
+	pdf := testNewPDF()
+	pdf.AddResourceObjects(objects)
+	testWant(t, "/F1 4 0 R /F2 5 0 R", strings.Join(pdf.importedFonts, " "))
+	if pdf.importedFontNames["/F2"] != 4 {
+		t.Errorf("/F2 is at %d of the fonts, not 4", pdf.importedFontNames["/F2"])
+	}
+}

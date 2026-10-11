@@ -326,8 +326,18 @@ func (p markdownParser) parseTable(lines []string, i int, blocks *[]*markdownBlo
 	return j
 }
 
+// maxTableColumns is the most columns a table of Markdown has: a header of
+// more is a paragraph. Each row is padded to the header's columns, so a
+// header of thousands of columns over thousands of rows of "|" made cells
+// as the square of the text, 1.17 GB from 24 KB (review of 11 October 2026,
+// #33); with at most 64, the cells grow as the text does.
+const maxTableColumns = 64
+
 func (p markdownParser) isTableStart(lines []string, i int) bool {
 	if i+1 >= len(lines) || strings.IndexByte(lines[i], '|') == -1 || p.indent(lines[i]) >= 4 {
+		return false
+	}
+	if len(p.cells(lines[i])) > maxTableColumns {
 		return false
 	}
 	delimiterRow := lines[i+1]

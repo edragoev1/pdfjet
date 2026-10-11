@@ -336,9 +336,9 @@ func (obj *PDFobj) decode(stream []byte) []byte {
 			obj.decoded(data, err)
 			decoded = obj.applyDecodeParms(data, i)
 		case "/ASCIIHexDecode", "/AHx":
-			decoded = decompressor.ASCIIHexDecode(decoded)
+			decoded = obj.decodedASCII(decompressor.ASCIIHexDecode(decoded))
 		case "/ASCII85Decode", "/A85":
-			decoded = decompressor.ASCII85Decode(decoded)
+			decoded = obj.decodedASCII(decompressor.ASCII85Decode(decoded))
 		case "/RunLengthDecode", "/RL":
 			data, err := decompressor.RunLengthDecodeWithMaxLength(decoded, obj.maxDecodedLength())
 			obj.decoded(data, err)
@@ -372,6 +372,18 @@ func (obj *PDFobj) decoded(data []byte, err error) {
 	if obj.budget != nil {
 		obj.budget.left = max(0, obj.budget.left-len(data))
 	}
+}
+
+// decodedASCII takes the output of ASCII85Decode or ASCIIHexDecode from the
+// PDF's budget, as the other filters' is: a 'z' of ASCII85 is four bytes, and
+// after FlateDecode a PDF of 203 KB decoded to 800 MB past the limit of
+// 256 MB (review of 11 October 2026, #32).
+func (obj *PDFobj) decodedASCII(data []byte) []byte {
+	if len(data) > obj.maxDecodedLength() {
+		obj.decoded(nil, fmt.Errorf("the stream decodes to more than %d bytes", obj.maxDecodedLength()))
+	}
+	obj.decoded(data, nil)
+	return data
 }
 
 // getValues returns the elements of the array that is the value of the key,

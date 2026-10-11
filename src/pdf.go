@@ -66,12 +66,19 @@ type PDF struct {
 	toc                   *Bookmark
 	// The headings of a tagged document, in the order they are drawn, which
 	// its bookmarks are made of when it has none of its own
-	headings                  []heading
-	associatedFiles           []*EmbeddedFile // The files the document carries, in the order they were added.
-	metadata                  []string        // The descriptions that a standard of its own asks the metadata to carry.
-	importedFonts             []string
-	importedXObjects          []string
-	importedExtGStates        []string
+	headings           []heading
+	associatedFiles    []*EmbeddedFile // The files the document carries, in the order they were added.
+	metadata           []string        // The descriptions that a standard of its own asks the metadata to carry.
+	importedFonts      []string
+	importedXObjects   []string
+	importedExtGStates []string
+	// Where each name of the imported entries starts in its list, so that a
+	// name is found at once, not by a look through the list for each entry
+	// of each page: 1,000 pages of 2,000 fonts took 36 s (review of
+	// 11 October 2026, #35)
+	importedFontNames         map[string]int
+	importedXObjectNames      map[string]int
+	importedExtGStateNames    map[string]int
 	uuid                      string
 	prevPage                  *Page
 	err                       error            // The first misuse of the API or error writing to the writer; Complete returns it.
@@ -3558,10 +3565,11 @@ func (pdf *PDF) addExtGStates(resources *PDFobj, objects []*PDFobj) {
 		} else {
 			end = min(end+1, len(entries))
 		}
-		if !slices.Contains(pdf.importedExtGStates, entries[i]) {
+		if _, ok := pdf.importedExtGStateNames[entries[i]]; !ok {
+			pdf.importedExtGStateNames = imported(pdf.importedExtGStateNames, entries[i], len(pdf.importedExtGStates))
 			pdf.importedExtGStates = append(pdf.importedExtGStates, entries[i:end]...)
 		} else {
-			pdf.checkImportedName(pdf.importedExtGStates, entries[i:end])
+			pdf.checkImportedName(pdf.importedExtGStates, pdf.importedExtGStateNames, entries[i:end])
 		}
 		i = end
 	}
@@ -3580,13 +3588,14 @@ func (pdf *PDF) getFontObjects(resources *PDFobj, objects []*PDFobj) []*PDFobj {
 			// Pages can carry separate resource dictionaries that name the same
 			// fonts. They are merged into one /Font dictionary here, so a name
 			// that is already present must not be added twice.
-			if !slices.Contains(pdf.importedFonts, token1) {
+			if _, ok := pdf.importedFontNames[token1]; !ok {
+				pdf.importedFontNames = imported(pdf.importedFontNames, token1, len(pdf.importedFonts))
 				pdf.importedFonts = append(pdf.importedFonts, entries[i:i+4]...)
 				if objNumber := toInteger(entries[i+1]); objNumber > 0 && objNumber <= len(objects) {
 					fonts = append(fonts, objects[objNumber-1])
 				}
 			} else {
-				pdf.checkImportedName(pdf.importedFonts, entries[i:i+4])
+				pdf.checkImportedName(pdf.importedFonts, pdf.importedFontNames, entries[i:i+4])
 			}
 			i += 4
 			continue
@@ -3602,13 +3611,23 @@ func (pdf *PDF) getFontObjects(resources *PDFobj, objects []*PDFobj) []*PDFobj {
 // document share one resources dictionary, where the name has the value of the
 // first page, and the content of this page, drawn with DrawContents, would draw
 // the resource of the first page.
-func (pdf *PDF) checkImportedName(imported []string, entry []string) {
-	i := slices.Index(imported, entry[0])
-	if i == -1 || slices.Equal(imported[i+1:min(i+len(entry), len(imported))], entry[1:]) {
+func (pdf *PDF) checkImportedName(imported []string, names map[string]int, entry []string) {
+	i, ok := names[entry[0]]
+	if !ok || slices.Equal(imported[i+1:min(i+len(entry), len(imported))], entry[1:]) {
 		return
 	}
 	pdf.fail("The pages of the PDF use the name " + entry[0] + " for different resources, " +
 		"and the pages of this document share one resources dictionary.")
+}
+
+// imported records where the name starts in its list of imported entries,
+// making the map at its first name.
+func imported(names map[string]int, name string, at int) map[string]int {
+	if names == nil {
+		names = make(map[string]int)
+	}
+	names[name] = at
+	return names
 }
 
 // getResourceEntries returns the entries of a sub-dictionary of the resources,
@@ -3719,11 +3738,12 @@ func (pdf *PDF) addXObjects(
 		token1 := entries[i]
 		if strings.HasPrefix(token1, "/") && i+3 < len(entries) && entries[i+3] == "R" {
 			// Like the fonts, a name that an earlier page added is kept.
-			if !slices.Contains(pdf.importedXObjects, token1) {
+			if _, ok := pdf.importedXObjectNames[token1]; !ok {
+				pdf.importedXObjectNames = imported(pdf.importedXObjectNames, token1, len(pdf.importedXObjects))
 				pdf.importedXObjects = append(pdf.importedXObjects, entries[i:i+4]...)
 				resources = pdf.addObjectTree(toInteger(entries[i+1]), objects, numbers, resources)
 			} else {
-				pdf.checkImportedName(pdf.importedXObjects, entries[i:i+4])
+				pdf.checkImportedName(pdf.importedXObjects, pdf.importedXObjectNames, entries[i:i+4])
 			}
 			i += 4
 		} else {
@@ -3747,7 +3767,15 @@ func (pdf *PDF) AddResourceObjects(objects []*PDFobj) {
 	numbers := make(map[int]bool)
 
 	pages := pdf.GetPageObjects(objects)
+	// A page that /Kids lists again has its resources added once: one page
+	// listed 2,000 times over 2,000 fonts took two minutes (review of
+	// 11 October 2026, #35)
+	done := make(map[*PDFobj]bool, len(pages))
 	for _, page := range pages {
+		if done[page] {
+			continue
+		}
+		done[page] = true
 		resObj := page.GetResourcesObject(objects)
 		if resObj == nil {
 			continue // A page without resources of its own.
@@ -3783,6 +3811,7 @@ func (pdf *PDF) AddResourceObjects(objects []*PDFobj) {
 
 func (pdf *PDF) addObjectsToPDF(objects []*PDFobj) {
 	for _, obj := range objects {
+		obj.dict = generationZero(obj.dict)
 		if len(obj.dict) == 0 && obj.stream == nil {
 			// A number that the PDF that was read has no object for stays a
 			// free entry of the cross-reference table.
@@ -3832,6 +3861,29 @@ func (pdf *PDF) addObjectsToPDF(objects []*PDFobj) {
 			}
 		}
 	}
+}
+
+// generationZero returns the tokens with the generation of each object and
+// each reference 0, "1 1 obj" as "1 0 obj" and "2 1 R" as "2 0 R", as the
+// cross-reference table writes every generation as 0 and Merge renumbers to
+// it: a PDF whose objects had another generation lost its pages, as a reader
+// found none at the generation the references asked for (review of
+// 11 October 2026, #4). The tokens themselves when none is another.
+func generationZero(dict []string) []string {
+	var zeroed []string
+	for i := 0; i+2 < len(dict); i++ {
+		if (dict[i+2] == "R" || dict[i+2] == "obj") && dict[i+1] != "0" &&
+			isInteger(dict[i]) && isInteger(dict[i+1]) {
+			if zeroed == nil {
+				zeroed = slices.Clone(dict)
+			}
+			zeroed[i+1] = "0"
+		}
+	}
+	if zeroed == nil {
+		return dict
+	}
+	return zeroed
 }
 
 func (pdf *PDF) appendInteger(value int) {
