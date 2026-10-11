@@ -674,12 +674,26 @@ func (obj *PDFobj) GetContentObject(objects []*PDFobj) *PDFobj {
 	}
 	content := newPDFobj()
 	content.data = make([]byte, 0)
+	// A stream named again is charged to the budget again, as its data is
+	// copied again, which decoding it once does not pay for: /Contents
+	// [4 0 R 4 0 R ...] of a stream of 16 MB made gigabytes of a PDF of a few
+	// KB (review of 11 October 2026, #29). Past the budget, the page has no
+	// content, as a stream past it has no data.
+	joined := make(map[int]bool, len(numbers))
 	for _, number := range numbers {
 		page := objectNumbered(objects, number)
 		if page == nil {
 			continue
 		}
 		if data := page.GetData(); data != nil {
+			if joined[number] && page.budget != nil {
+				page.budget.left -= len(data) + 1
+				if page.budget.left < 0 {
+					page.budget.left = 0
+					return nil
+				}
+			}
+			joined[number] = true
 			content.data = append(content.data, data...)
 			content.data = append(content.data, '\n') // A stream can end in the middle of a line.
 		}

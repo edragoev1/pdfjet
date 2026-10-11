@@ -184,3 +184,38 @@ func TestEncryptionACryptFilterThatIsAnObjectOfItsOwnIsFollowed(t *testing.T) {
 		}
 	}
 }
+
+// A stamp's stream is encrypted as every other stream of an encrypted
+// document, and reads back as it was drawn (review of 11 October 2026, #1).
+func TestEncryptionEncryptsTheStreamOfAStamp(t *testing.T) {
+	doc := testNewDoc()
+	enc, err := NewEncryption(doc.pdf,
+		encryption.NewPasswords().SetUserPassword("hello").SetOwnerPassword("world"),
+		encryption.NewPermissions().Grant(encryption.Print))
+	if err != nil {
+		t.Fatal(err)
+	}
+	doc.pdf.SetEncryption(enc)
+	page := NewPage(doc.pdf, letter.Portrait())
+	stamp := NewStamp(doc.pdf)
+	stamp.FillRect(0, 0, 20, 10)
+	stamp.Complete()
+	stamp.DrawOn(page)
+	pdf := doc.complete()
+	objects, err := testNewPDF().ReadWithPassword(pdf, "hello")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var form *PDFobj
+	for _, obj := range objects {
+		if obj.GetValue("/Subtype") == "/Form" {
+			form = obj
+		}
+	}
+	if form == nil {
+		t.Fatal("no form XObject")
+	}
+	if data := string(form.GetData()); !strings.Contains(data, "20 0 l") {
+		t.Errorf("the stamp's stream reads back as %q", data)
+	}
+}

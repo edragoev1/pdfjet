@@ -127,6 +127,10 @@ func (dc *DonutChart) drawSlice(
 	xc, yc, r1, r2, a1, a2 float32) float32 { // a1 > a2
 	page.SetBrushColor(fillColor)
 
+	// No arc of angles that are not numbers, whose loop never ended
+	if !isValue(a1) || !isValue(a2) {
+		return a1
+	}
 	angle1 := a1 - 90.0
 	angle2 := a2 - 90.0
 
@@ -258,7 +262,7 @@ func (dc *DonutChart) DrawOn(page *Page) [2]float32 {
 	// The slices with a value above 0 share the circle
 	total := float32(0.0)
 	for _, slice := range dc.slices {
-		if slice.value > 0.0 {
+		if sliceDrawn(slice.value) {
 			total += slice.value
 		}
 	}
@@ -277,7 +281,7 @@ func (dc *DonutChart) DrawOn(page *Page) [2]float32 {
 	box := [4]float32{dc.x, dc.y, dc.x + float32(2*dc.r1), dc.y + float32(2*dc.r1)}
 	angle := float32(0.0)
 	for _, slice := range dc.slices {
-		if slice.value <= 0.0 {
+		if !sliceDrawn(slice.value) {
 			continue
 		}
 		sweep := float32(slice.value*360.0) / total
@@ -313,6 +317,14 @@ func (dc *DonutChart) DrawOn(page *Page) [2]float32 {
 	page.AddEMC()
 
 	return [2]float32{xc + dc.r1, yc + dc.r1}
+}
+
+// sliceDrawn says whether a slice of the value is drawn: a number above 0,
+// whose 360ths are a number too. A NaN, from 0/0 in an empty category of
+// real data, an infinity, or a value whose 360ths overflow a float32 made the
+// arc's loop endless, until memory ran out (review of 11 October 2026, #2).
+func sliceDrawn(value float32) bool {
+	return value > 0 && isValue(value*360)
 }
 
 // slicePercentage returns the share of the slice in the total, as a whole

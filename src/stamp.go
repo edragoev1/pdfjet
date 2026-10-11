@@ -389,12 +389,19 @@ func (s *Stamp) Complete() {
 		s.pdf.appendString(">>\n")
 	}
 	s.pdf.appendString(">>\n")
+	// Encrypted as every other stream of an encrypted document, which the
+	// stamp's was not: a reader decrypted its plain bytes, and the stamp was
+	// lost (review of 11 October 2026, #1)
+	content := s.buf.Bytes()
+	if s.pdf.encryption != nil {
+		content = s.pdf.encryption.encrypt(content)
+	}
 	s.pdf.appendString("/Length ")
-	s.pdf.appendInteger(s.buf.Len())
+	s.pdf.appendInteger(len(content))
 	s.pdf.appendByte(token.Newline)
 	s.pdf.appendByteArray(token.EndDictionary) // End of XObject dictionary
 	s.pdf.appendByteArray(token.Stream)
-	s.pdf.appendByteArray(s.buf.Bytes())
+	s.pdf.appendByteArray(content)
 	s.pdf.appendByteArray(token.EndStream)
 	s.pdf.endObj()
 	s.pdf.stamps = append(s.pdf.stamps, s)

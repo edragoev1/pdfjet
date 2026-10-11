@@ -2586,7 +2586,19 @@ func (pdf *PDF) ReadWithPassword(buf []byte, password string) (objects []*PDFobj
 			// a few kilobytes that decodes to a megabyte, with an object
 			// listed a thousand times, took seconds.
 			streamBudget := &decodeBudget{readLeft: len(data)}
-			for i := 0; i+1 < len(o2.dict); i += 2 {
+			// No more objects than its /N says, and each taken from the
+			// PDF's budget as the memory it takes: a header of 64 MB of
+			// "1 0 " made millions of objects, gigabytes, from a PDF of 65 KB
+			// (review of 11 October 2026, #30).
+			pairs := len(o2.dict) / 2
+			if count, err := objectStreamNumber(obj.GetValue("/N")); err == nil {
+				pairs = min(pairs, count)
+			}
+			for i := 0; i+1 < len(o2.dict) && i/2 < pairs; i += 2 {
+				budget.left -= objectCost
+				if budget.left < 0 {
+					return nil, errDecodedTotal{maxDecodedTotal}
+				}
 				num := o2.dict[i]
 				number, err := objectStreamNumber(num)
 				if err != nil {
@@ -2903,6 +2915,15 @@ func getObjects(
 	return xref
 }
 
+// minObjectBytes is the fewest bytes an object of a PDF takes, "1 0 obj
+// endobj" less its spaces, and objectCost what an object read takes of the
+// PDF's budget of decoded bytes, about the memory it takes, so that a PDF of
+// a few KB cannot make millions of objects (review of 11 October 2026).
+const (
+	minObjectBytes = 12
+	objectCost     = 256
+)
+
 // xrefEntry is the number and the offset of an object that a cross-reference
 // section lists.
 type xrefEntry struct {
@@ -2999,6 +3020,13 @@ func getStreamObjects(buf []byte, xref *PDFobj, objects *[]*PDFobj, budget *deco
 	xref.setStreamAndData(buf, length, nil, budget)
 	n := n1 + n2 + n3 // Number of bytes per entry
 	entries := make([]xrefEntry, 0)
+	// An object in use is in the PDF, at an offset in it, and takes a few
+	// bytes of it, "1 0 obj endobj" at the least: a stream of more entries
+	// than that, or of an offset past the end, lists objects that are not
+	// there, and the objects are looked for by scanning. Checked as each
+	// entry is read, as keeping them all first, millions of a stream of a
+	// few KB, took gigabytes (review of 11 October 2026, #31).
+	maxEntries := len(buf) / minObjectBytes
 	offset := 0
 	for s := 0; s+1 < len(index); s += 2 {
 		number := index[s]
@@ -3010,7 +3038,11 @@ func getStreamObjects(buf []byte, xref *PDFobj, objects *[]*PDFobj, budget *deco
 				entryType = toInt(xref.data, offset, n1)
 			}
 			if entryType == 1 {
-				entries = append(entries, xrefEntry{number, toInt(xref.data, offset+n1, n2)})
+				entry := xrefEntry{number, toInt(xref.data, offset+n1, n2)}
+				if entry.offset < 0 || entry.offset >= len(buf) || len(entries) >= maxEntries {
+					return false
+				}
+				entries = append(entries, entry)
 			}
 			number++
 			offset += n

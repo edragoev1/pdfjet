@@ -6,6 +6,7 @@
 package pdfjet
 
 import (
+	"math"
 	"strings"
 	"testing"
 
@@ -85,6 +86,25 @@ func TestDonutChartAChartIsAFigureThatListsItsSlices(t *testing.T) {
 	for i, want := range []string{"Donut chart: Apples 25%, Oranges 75%", "Pie chart: 100%", "Most are oranges."} {
 		if got := page.structures[i].altDescription; got != want {
 			t.Errorf("chart %d is described as %q, not %q", i, got, want)
+		}
+	}
+}
+
+// A slice that is not a number, an infinity, or a value whose 360ths
+// overflow is not drawn, and the others are: one made the arc's loop endless
+// (review of 11 October 2026, #2).
+func TestDonutChartASliceThatIsNotANumberIsNotDrawn(t *testing.T) {
+	for _, bad := range []float32{float32(math.NaN()), float32(math.Inf(1)), 1e36} {
+		pdf := testNewPDF()
+		page := NewPage(pdf, testLetterPortrait())
+		chart := testDonutChart(pdf)
+		chart.AddSlice(NewSlice(bad, color.Red, "bad"))
+		chart.AddSlice(NewSlice(1, color.Green, "a"))
+		chart.AddSlice(NewSlice(3, color.Blue, "b"))
+		chart.DrawOn(page)
+		content := testContent(page)
+		if !strings.Contains(content, testHex("25%")) || !strings.Contains(content, testHex("75%")) {
+			t.Errorf("%v: the other slices are not 25%% and 75%% in %q", bad, content)
 		}
 	}
 }
