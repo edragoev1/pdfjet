@@ -266,7 +266,7 @@ public class Font {
     /// setSubset(false) keeps it whole.
     public init(_ objects: inout [PDFobj], _ stream: InputStream) throws {
         let bytes = try Content.getFromStream(stream)
-        try OpenTypeFont.register(&objects, self, InputStream(data: Data(bytes)))
+        try OpenTypeFont.register(&objects, self, bytes)
         setSize(size)
     }
 
@@ -280,7 +280,7 @@ public class Font {
         self.pdfIdentity = pdf.identity
         self.compliance = pdf.compliance
         let bytes = try Content.getFromStream(stream)
-        try OpenTypeFont.register(pdf, self, InputStream(data: Data(bytes)))
+        try OpenTypeFont.register(pdf, self, bytes)
         setSize(size)
     }
 
@@ -302,7 +302,7 @@ public class Font {
             throw PDFjetError(message: "Font file not found: " + fontPath)
         }
         let bytes = try Content.getFromStream(inputStream)
-        try OpenTypeFont.register(pdf, self, InputStream(data: Data(bytes)))
+        try OpenTypeFont.register(pdf, self, bytes)
         setSize(size)
     }
 

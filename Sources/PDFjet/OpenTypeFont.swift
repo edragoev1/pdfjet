@@ -8,8 +8,8 @@ import Foundation
 
 class OpenTypeFont {
     internal static func register(
-            _ pdf: PDF, _ font: Font, _ stream: InputStream) throws {
-        let otf = try OTF(stream)
+            _ pdf: PDF, _ font: Font, _ bytes: [UInt8]) throws {
+        let otf = try OTF(bytes)
         setData(font, otf)
 
         // The font is written at complete(), a subset of the glyphs drawn; its
@@ -27,8 +27,8 @@ class OpenTypeFont {
     // Adds the font to the objects of an existing PDF; its program is written
     // when the objects are added to the PDF, a subset of the glyphs drawn.
     internal static func register(
-            _ objects: inout [PDFobj], _ font: Font, _ stream: InputStream) throws {
-        let otf = try OTF(stream)
+            _ objects: inout [PDFobj], _ font: Font, _ bytes: [UInt8]) throws {
+        let otf = try OTF(bytes)
         setData(font, otf)
         let program = Subset.Program()
         if otf.cff {

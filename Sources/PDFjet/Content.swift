@@ -59,7 +59,9 @@ public class Content {
 
     /// Returns all the bytes read from the stream.
     public static func getFromStream( _ stream: InputStream) throws -> [UInt8] {
-        try self.getFromStream(stream, 4096)
+        // 64 KB at a time: a font of 200 KB in 4 KB reads was 14% of the time
+        // of a page in three fonts, most of it in the reads (10 October 2026)
+        try self.getFromStream(stream, 65536)
     }
 
     /// Returns the lines of a UTF-8 text file, without a byte order mark and

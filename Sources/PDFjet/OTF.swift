@@ -74,8 +74,16 @@ class OTF {
     var markAnchors: [[Int: [Int]]]?
     var baseAnchors: [[Int: [Int]]]?
 
-    init(_ stream: InputStream) throws {
-        buf = try Content.getFromStream(stream)
+    // Reads the font from a stream of its file.
+    convenience init(_ stream: InputStream) throws {
+        try self.init(try Content.getFromStream(stream))
+    }
+
+    // Reads the font from the bytes of its file, which the caller has read
+    // once: reading them again from a stream of them cost a copy and a
+    // second read of the whole file (10 October 2026).
+    init(_ bytes: [UInt8]) throws {
+        buf = bytes
 
         // Extract OTF metadata
         let version = try readUInt32()

@@ -168,6 +168,11 @@ This is the first entry in this file; earlier releases were not tracked here.
   of 30 lines in three IBM Plex Sans fonts takes 3.9 ms, not 5.5, and
   allocates 7.2 MB, not 13.0; the PDFs of the 57 examples are the same, byte
   for byte.
+- Swift: a font read from a file or a stream is read once, 64 KB at a time,
+  and parsed from those bytes, where it was read in 4 KB pieces, copied into
+  a Data and read again from a stream of it. A page of 30 lines in three IBM
+  Plex Sans fonts takes 3.8 ms, not 4.0; the PDFs of the examples are the
+  same.
 - Found by a code review of every change since 9.0.3, on 9 October 2026, and
   fixed in the four ports, each with a test:
   - A font made with `new Font(pdf, ...)` before `addObjects` or
