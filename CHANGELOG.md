@@ -162,6 +162,12 @@ This is the first entry in this file; earlier releases were not tracked here.
   and returns it without a copy. A document of the 600 KB photo allocates
   3.2 MB, not 5.2, and peaks at 81 MB, not 112; a page with Noto Sans 7.6
   MB, not 9.6.
+- Go: the font subsets, the ToUnicode CMaps and the embedded files are
+  compressed with the pooled writers that page content and images use,
+  rather than a new zlib writer of about a megabyte for each stream. A page
+  of 30 lines in three IBM Plex Sans fonts takes 3.9 ms, not 5.5, and
+  allocates 7.2 MB, not 13.0; the PDFs of the 57 examples are the same, byte
+  for byte.
 - Found by a code review of every change since 9.0.3, on 9 October 2026, and
   fixed in the four ports, each with a test:
   - A font made with `new Font(pdf, ...)` before `addObjects` or

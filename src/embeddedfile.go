@@ -7,13 +7,12 @@ package pdfjet
 
 import (
 	"bufio"
-	"bytes"
-	"compress/zlib"
 	"fmt"
 	"io"
 	"os"
 	"strings"
 
+	"github.com/edragoev1/pdfjet/v9/src/internal/compressor"
 	"github.com/edragoev1/pdfjet/v9/src/internal/token"
 	"github.com/edragoev1/pdfjet/v9/src/relationship"
 )
@@ -76,17 +75,7 @@ func NewEmbeddedFileWithRelationship(pdf *PDF, fileName string, reader io.Reader
 	size := len(buf)
 
 	if compress {
-		var compressed bytes.Buffer
-		writer := zlib.NewWriter(&compressed)
-		_, err := writer.Write(buf)
-		if err != nil {
-			panic(err)
-		}
-		err = writer.Close()
-		if err != nil {
-			panic(err)
-		}
-		file.content = compressed.Bytes()
+		file.content = compressor.Deflate(buf)
 	} else {
 		file.content = buf
 	}
