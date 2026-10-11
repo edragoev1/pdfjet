@@ -16,12 +16,21 @@ Only a major issue holds it now; anything else goes into the next 9.0.x.
 Left before the tag: the manual viewer pass (below) on the files of the new
 code, then the release.
 
-Right after the tag: PDFjet Pro to 9.0.5, `./set-version.sh 9.0.5` in
-pdfjet-pro, and push. Its CI builds against the release its go.mod and
-Package.swift name, still 9.0.2, which has no public XML parser, so both of
-its workflows fail from the invoices' use of it (10 October) until then.
+PDFjet Pro is released with it, its first release, on the same day, with
+the same number (the owner, 11 October 2026: the two move together). Right
+after the library's tag: in pdfjet-pro, `./set-version.sh 9.0.5`, the tests
+against the release (`PDFJET=published`), CHANGELOG.md, the tag v9.0.5 and
+push; then pdfjet-pro made public, on the owner's go-ahead. Its CI builds
+against the library's main branch until then, and on a tag against the
+library's tag of the same number.
 
 ## Checks before each release
+
+- **PDFjet Pro, the same day, with the same number.** The library is tagged
+  first, then PDFjet Pro: `./set-version.sh X` in pdfjet-pro, its tests
+  against the release, CHANGELOG.md, the tag vX. The library's CHANGELOG
+  says what changed in it, plainly, a small release as small: never a change
+  made only so that it seems to change.
 
 - **The four ports agree.** `./check-examples.sh` builds and runs the
   examples and the unit tests of the four ports, compares the example PDFs
