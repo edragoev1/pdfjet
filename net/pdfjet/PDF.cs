@@ -1065,6 +1065,20 @@ public sealed class PDF {
         Append('>');
     }
 
+    // Appends a string of letters, which needs no escapes, as (Adobe), or
+    // encrypted in hexadecimal if the document is encrypted: written as it is,
+    // a reader decrypted it to bytes of no meaning (review of 11 October 2026,
+    // #19 and #20).
+    internal void AppendLiteralString(String text) {
+        if (encryption != null) {
+            AppendByteString(Encoding.ASCII.GetBytes(text));
+            return;
+        }
+        Append("(");
+        Append(text);
+        Append(")");
+    }
+
     // Appends the key and the tokens of its value, read from another PDF, if
     // it has one: its strings, literal or hexadecimal, as hexadecimal strings
     // encrypted when the document is.
@@ -1750,7 +1764,9 @@ public sealed class PDF {
                 Append(" ] >>\n");
                 Append("]\n");
             } else {
-                Append("/Name (Default)\n");
+                Append("/Name ");
+                AppendLiteralString("Default");
+                Append("\n");
             }
 
             // The groups hidden by default, for the viewers that read the

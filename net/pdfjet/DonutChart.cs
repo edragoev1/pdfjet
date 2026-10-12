@@ -89,7 +89,10 @@ namespace PDFjet.NET {
             float cross = ax * by - ay * bx;
             // An arc of radius zero, the center of a pie chart, or of no angle has
             // its control points at its ends; the formula would divide 0 by 0.
-            float k2 = (cross == 0f) ? 0f : (4.0f / 3.0f * ((float)Math.Sqrt(2.0 * q1 * q2) - q2)) / cross;
+            // In single precision, the square root of a float, as Go computes
+            // it, for the same chart in every port
+            float k2 = (cross == 0f) ? 0f
+                    : (4.0f / 3.0f * ((float) Math.Sqrt((float) (2f * q1 * q2)) - q2)) / cross;
 
             // Control points coordinates
             float x1 = xc + ax - k2 * ay;

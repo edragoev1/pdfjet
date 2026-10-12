@@ -216,14 +216,16 @@ public class Arc : IDrawable {
             float dx = line.x2 - line.x1;
             float dy = line.y2 - line.y1;
             // Normalize and rotate 90° (clockwise perpendicular)
-            float invLength = 1f / MathF.Sqrt(dx*dx + dy*dy);
+            // The length in double precision, and the angle, as Go computes
+            // them, for the same arc in every port
+            float invLength = (float) (1.0 / Math.Sqrt((float) (dx*dx) + (float) (dy*dy)));
             float nx = -dy * invLength;
             float ny = dx * invLength;
             // Adjust direction based on sweep
             float sign = sweepDegrees > 0f ? 1f : -1f;
             cx = line.x2 + nx * rx * sign;
             cy = line.y2 + ny * ry * sign;
-            startAngle = MathF.Atan2(line.y2 - cy, line.x2 - cx) * (180f / MathF.PI);
+            startAngle = (float) (Math.Atan2(line.y2 - cy, line.x2 - cx) * (180.0 / Math.PI));
         }
 
         if (page == null) {

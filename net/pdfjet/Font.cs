@@ -200,24 +200,29 @@ public class Font {
         pdf.Append("/FontDescriptor ");
         pdf.Append(pdf.GetObjNumber() - 1);
         pdf.Append(" 0 R\n");
-        pdf.Append("/CIDSystemInfo <<\n");
-        pdf.Append("/Registry (Adobe)\n");
+        String ordering, supplement;
         if (fontName.StartsWith("AdobeMingStd", StringComparison.Ordinal)) {
-            pdf.Append("/Ordering (CNS1)\n");
-            pdf.Append("/Supplement 4\n");
+            ordering = "CNS1"; supplement = "4";
         } else if (fontName.StartsWith("AdobeSongStd", StringComparison.Ordinal)
                 || fontName.StartsWith("STHeitiSC", StringComparison.Ordinal)) {
-            pdf.Append("/Ordering (GB1)\n");
-            pdf.Append("/Supplement 4\n");
+            ordering = "GB1"; supplement = "4";
         } else if (fontName.StartsWith("KozMinPro", StringComparison.Ordinal)) {
-            pdf.Append("/Ordering (Japan1)\n");
-            pdf.Append("/Supplement 4\n");
+            ordering = "Japan1"; supplement = "4";
         } else if (fontName.StartsWith("AdobeMyungjoStd", StringComparison.Ordinal)) {
-            pdf.Append("/Ordering (Korea1)\n");
-            pdf.Append("/Supplement 1\n");
+            ordering = "Korea1"; supplement = "1";
         } else {
             throw new Exception("Unsupported font: " + fontName);
         }
+        pdf.Append("/CIDSystemInfo <<\n");
+        pdf.Append("/Registry ");
+        pdf.AppendLiteralString("Adobe");
+        pdf.Append("\n");
+        pdf.Append("/Ordering ");
+        pdf.AppendLiteralString(ordering);
+        pdf.Append("\n");
+        pdf.Append("/Supplement ");
+        pdf.Append(supplement);
+        pdf.Append("\n");
         pdf.Append(">>\n");
         pdf.Append(Token.EndDictionary);
         pdf.EndObj();

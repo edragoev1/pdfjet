@@ -481,5 +481,61 @@ public class ReviewWriterTest {
         Exception attached = complete(Compliance.PDF_UA_1, attach);
         Assert.True(attached == null, "PDF/UA: a file attached: " + attached);
     }
+
+    // Reads the PDF, encrypted with no user password, and returns the strings
+    // after the key in its objects, as a reader decrypts them.
+    private static List<string> DecryptedStrings(byte[] pdf, string key) {
+        List<string> values = new List<string>();
+        foreach (PDFobj obj in TestSupport.Read(pdf, "")) {
+            for (int i = 0; i + 1 < obj.dict.Count; i++) {
+                if (obj.dict[i] == key) {
+                    values.Add(TestSupport.Latin1(Decryptor.ToBytes(obj.dict[i + 1])));
+                }
+            }
+        }
+        return values;
+    }
+
+    // Returns a document of the compliance, written to the stream, encrypted
+    // with no passwords.
+    private static PDF EncryptedDoc(Stream stream, Compliance compliance) {
+        PDF pdf = new PDF(stream, compliance).SetTitle("Test");
+        pdf.SetEncryption(new Encryption(pdf, new Passwords(), new Permissions()));
+        return pdf;
+    }
+
+    // The strings of the system of characters of a CJK font, Adobe and the
+    // ordering, are encrypted in an encrypted document: written as they were,
+    // a reader decrypted them to nothing, and the CMap matched no font (review
+    // of 11 October 2026, #19).
+    [Fact]
+    public void TheCharactersOfACJKFontAreEncrypted() {
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = EncryptedDoc(stream, Compliance.PDF_1_7);
+#pragma warning disable CS0618 // The CJK fonts are deprecated, and still tested
+        Font font = new Font(pdf, CJKFont.KOZ_MIN_PRO_VI_REGULAR);
+#pragma warning restore CS0618
+        new TextLine(font, "\u65e5\u672c").SetLocation(50f, 50f).DrawOn(new Page(pdf, Letter.PORTRAIT));
+        pdf.Complete();
+        Assert.Equal(new List<string> {"Adobe"}, DecryptedStrings(stream.ToArray(), "/Registry"));
+        Assert.Equal(new List<string> {"Japan1"}, DecryptedStrings(stream.ToArray(), "/Ordering"));
+    }
+
+    // The name of the configuration of the layers of a document of PDF/UA is
+    // encrypted in an encrypted document, where a reader decrypted it to
+    // nothing (review of 11 October 2026, #20).
+    [Fact]
+    public void TheNameOfTheLayersIsEncrypted() {
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = EncryptedDoc(stream, Compliance.PDF_UA_1);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(TestSupport.PlexSans(pdf), "Heading")
+                .SetStructureType(StructElem.H1).SetLocation(50f, 50f).DrawOn(page);
+        OptionalContentGroup group = new OptionalContentGroup(pdf, "Layer").SetVisible(true);
+        group.Add(new Rect(10f, 100f, 20f, 20f));
+        group.DrawOn(page);
+        pdf.Complete();
+        Assert.Contains("Default", DecryptedStrings(stream.ToArray(), "/Name"));
+    }
 }
 }

@@ -119,5 +119,27 @@ public class ShapesTest {
         Assert.Contains("0 0 1 RG", content);
         Assert.Contains("0 1 0 RG", content);
     }
+
+    // An arc that starts at the end of a line finds its center and its start
+    // angle with the precision of Go's port, double where Go computes in
+    // double: in float, 4 of 2,000 random arcs were drawn a hundredth apart
+    // (review of 11 October 2026, #25). The expected paths are Go's.
+    [Fact]
+    public void AnArcAtTheEndOfALineIsDrawnAsTheGoPortDrawsIt() {
+        PDF pdf = TestSupport.NewPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new Arc().SetRadiusX(158.77583f).SetRadiusY(189.22208f)
+                .SetStartAngle(-28.21344f).SetSweep(186.41852f)
+                .SetStartPointToEndOf(new Line(2.7493358f, 91.162384f, 462.71942f, 1.1617184f))
+                .SetStrokeColor(0x000000).SetLocation(487.1806f, 508.14288f).DrawOn(page);
+        Assert.Contains("655.27 663.63 661.99 588.89 637.16 525.3 c\n", TestSupport.Content(page));
+
+        page = new Page(pdf, Letter.PORTRAIT);
+        new Arc().SetRadiusX(151.92659f).SetRadiusY(46.18809f)
+                .SetStartAngle(23.969238f).SetSweep(100.79004f)
+                .SetStartPointToEndOf(new Line(21.53635f, 363.53027f, 226.3573f, 534.09174f))
+                .SetStrokeColor(0x000000).SetLocation(7.1584225f, 76.66633f).DrawOn(page);
+        Assert.Contains("271.85 238.26 m\n", TestSupport.Content(page));
+    }
 }
 }

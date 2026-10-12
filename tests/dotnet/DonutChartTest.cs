@@ -89,5 +89,29 @@ public class DonutChartTest {
             Assert.Contains(TestSupport.Hex("75%"), content);
         }
     }
+
+    // A slice is computed with the precision of Go's port, float or double
+    // step by step, so the ports draw the same curves: the square root in
+    // double moved a control point by a hundredth in 133 of 100,000 segments
+    // (review of 11 October 2026, #25). The expected curves are Go's.
+    [Fact]
+    public void ASliceIsDrawnAsTheGoPortDrawsIt() {
+        PDF pdf = TestSupport.NewPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        DonutChart chart = new DonutChart(null, null).SetRadii(46.94574f, 92.64224f);
+        foreach (float value in new float[] {524.55023f, 80.410065f, 7.852018f, 515.9275f, 931.2741f}) {
+            chart.AddSlice(new Slice(value, 0x123456, ""));
+        }
+        chart.SetLocation(247.509f, 97.883514f).DrawOn(page);
+        Assert.Contains("341.4 646.71 341.39 646.26 341.38 645.8 c\n", TestSupport.Content(page));
+
+        page = new Page(pdf, Letter.PORTRAIT);
+        chart = new DonutChart(null, null).SetRadii(179.36f, 65.845535f);
+        foreach (float value in new float[] {472.8191f, 308.4593f, 142.94768f, 299.98398f}) {
+            chart.AddSlice(new Slice(value, 0x123456, ""));
+        }
+        chart.SetLocation(88.44436f, 261.47784f).DrawOn(page);
+        Assert.Contains("131.87 234.15 131.39 234.7 130.91 235.27 c\n", TestSupport.Content(page));
+    }
 }
 }

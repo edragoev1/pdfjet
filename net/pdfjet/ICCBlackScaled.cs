@@ -13,7 +13,8 @@
 
 namespace PDFjet.NET {
 class ICCBlackScaled {
-    public static byte[] profile = {
+    // The bytes of the profile, not to be changed.
+    internal static readonly byte[] profile = {
 (byte) 0x78,
 (byte) 0x9C,
 (byte) 0xB5,
