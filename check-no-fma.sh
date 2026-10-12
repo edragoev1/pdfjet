@@ -20,7 +20,9 @@ asm=$(GOWORK=off GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -a -o /dev/null 
     echo "The Go port does not build for arm64."
     exit 1
 }
-fused=$(printf '%s\n' "$asm" | grep -E '\s(FMADD|FMSUB|FNMADD|FNMSUB)[SD]\s' | grep -oE '\([^()]*\.go:[0-9]+\)' | sort | uniq -c)
+# No match is the good outcome: grep then fails, which pipefail and bash -e
+# (as CI runs it) would take for the check failing, without a word.
+fused=$(printf '%s\n' "$asm" | grep -E '\s(FMADD|FMSUB|FNMADD|FNMSUB)[SD]\s' | grep -oE '\([^()]*\.go:[0-9]+\)' | sort | uniq -c) || true
 if [ -n "$fused" ]; then
     echo "Fused multiply-adds on arm64, where a float multiplication needs float32(...) or float64(...)."
     echo "Why: \"Floating point on ARM\" in PDFjet's README.md, https://github.com/edragoev1/pdfjet#floating-point-on-arm"
