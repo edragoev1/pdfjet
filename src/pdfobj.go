@@ -520,6 +520,37 @@ func (obj *PDFobj) GetValue(key string) string {
 	return token
 }
 
+// valueTokens returns the tokens of the value of the key: one, a reference to
+// an object, as 5 0 R, or an array or a dictionary with the arrays and
+// dictionaries in it, from its opening token to its closing one.
+func (obj *PDFobj) valueTokens(key string) []string {
+	open := slices.Index(obj.dict, "<<")
+	if open == -1 {
+		return nil
+	}
+	i := dictEntryIndex(obj.dict[open:], key)
+	if i == -1 {
+		return nil
+	}
+	start := open + i + 1
+	if start+2 < len(obj.dict) && obj.dict[start+2] == "R" {
+		return obj.dict[start : start+3]
+	}
+	depth := 0
+	for j := start; j < len(obj.dict); j++ {
+		switch obj.dict[j] {
+		case "[", "<<":
+			depth++
+		case "]", ">>":
+			depth--
+		}
+		if depth <= 0 {
+			return obj.dict[start : j+1]
+		}
+	}
+	return obj.dict[start:]
+}
+
 // valueUpTo returns the tokens from the index up to the closing one, with the
 // opening before them and the closing after them.
 func (obj *PDFobj) valueUpTo(i int, closing, opening string) string {

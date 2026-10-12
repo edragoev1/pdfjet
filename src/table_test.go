@@ -1044,6 +1044,10 @@ func TestTableASumReadsTheNumbersAsRightAlignNumbersDoes(t *testing.T) {
 		{"", 0, 0, false},
 		{"1234567890123456789", 0, 0, false},
 		{"1E99999", 0, 0, false},
+		// A space inside is not in a number (review of 11 October 2026, #15).
+		{". 5", 0, 0, false},
+		{"5 .", 0, 0, false},
+		{"(. 5)", 2, 0, false},
 	} {
 		if got, ok := numberOf(c.text, c.decimals); got != c.want || ok != c.ok {
 			t.Errorf("numberOf(%q, %d) = %d, %v", c.text, c.decimals, got, ok)
@@ -1503,5 +1507,44 @@ func TestTableDrawingLeavesTheCellsAsTheyWere(t *testing.T) {
 	table.DrawOn(NewPage(pdf, letter.Portrait()))
 	if got := data[1][0].GetText(); got != long {
 		t.Errorf("the cell's text is %q after drawing, not the text it had", got)
+	}
+}
+
+// AutoAdjustColumnWidths measures the cells of a row longer than the first:
+// it sized the widths from the first row and indexed past them (review of 11
+// October 2026, #17).
+func TestTableAutoAdjustColumnWidthsMeasuresARowLongerThanTheFirst(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	data := [][]*Cell{
+		{NewCell(font, "a"), NewCell(font, "b")},
+		{NewCell(font, "a"), NewCell(font, "b"), NewCell(font, "a wide third cell")},
+	}
+	if message, panicked := testPanic(func() {
+		NewTable().SetTableData(data, 1).AutoAdjustColumnWidths()
+	}); panicked {
+		t.Fatal(message)
+	}
+	if data[1][2].GetWidth() <= data[1][0].GetWidth() {
+		t.Errorf("the third cell is %v wide, the first %v", data[1][2].GetWidth(), data[1][0].GetWidth())
+	}
+}
+
+// A table whose first row is empty is drawn: its rows are completed from the
+// first row that has cells, and the empty row was drawn from its first cell;
+// rows of no cells draw nothing, as no rows do (review of 11 October 2026,
+// #18).
+func TestTableAnEmptyFirstRowIsDrawn(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	for _, data := range [][][]*Cell{{{}, {NewCell(font, "a")}}, {{}}, {{}, {}}} {
+		table := NewTable().SetTableData(data, 1)
+		table.SetLocation(20, 20)
+		if message, panicked := testPanic(func() {
+			table.DrawOn(NewPage(pdf, letter.Portrait()))
+			table.AutoAdjustColumnWidths()
+		}); panicked {
+			t.Fatalf("%d rows: %s", len(data), message)
+		}
 	}
 }

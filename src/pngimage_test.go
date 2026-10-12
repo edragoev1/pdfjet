@@ -17,6 +17,7 @@ import (
 	"testing"
 
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
+	"github.com/edragoev1/pdfjet/v9/src/encryption"
 	"github.com/edragoev1/pdfjet/v9/src/internal/compressor"
 	"github.com/edragoev1/pdfjet/v9/src/internal/decompressor"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
@@ -945,5 +946,68 @@ func TestPNGImageTheDataOfEveryPngSuiteImageEmbeddedAsItIsHasNoFilterTypes(t *te
 	}
 	if embedded == 0 {
 		t.Error("no image embedded as it is")
+	}
+}
+
+// An image copied from a PDF into an encrypted one is encrypted with it, its
+// stream and the palette of its color space, which a reader decrypts back to
+// what they were: they were copied as they were, and a viewer found no image
+// (review of 11 October 2026, #11).
+func TestPNGImageAnImageCopiedIntoAnEncryptedPDFIsEncrypted(t *testing.T) {
+	read := testImageObjects(testRead(t, testPNGSamplesDocument()))
+	doc := testNewDoc()
+	enc, err := NewEncryption(doc.pdf, encryption.NewPasswords(), encryption.NewPermissions())
+	if err != nil {
+		t.Fatal(err)
+	}
+	doc.pdf.SetEncryption(enc)
+	page := NewPage(doc.pdf, letter.Portrait())
+	for _, obj := range read {
+		NewImageFromPDFobj(doc.pdf, obj).DrawOn(page)
+	}
+	pdf := doc.complete()
+	objects, err := testNewPDF().ReadWithPassword(pdf, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	copies := testImageObjects(objects)
+	if len(copies) != len(read) {
+		t.Fatalf("%d images", len(copies))
+	}
+	palettes := 0
+	for i, c := range testPNGSampleCases {
+		if !bytes.Equal(copies[i].stream, read[i].stream) {
+			t.Errorf("%s: the stream is not the one copied", c.name)
+		}
+		colorSpace := read[i].GetValue("/ColorSpace")
+		if got := copies[i].GetValue("/ColorSpace"); got != colorSpace {
+			t.Errorf("%s: /ColorSpace %s, not %s", c.name, got, colorSpace)
+		}
+		if strings.Contains(colorSpace, "/Indexed") {
+			palettes++
+			palette := colorSpace[strings.Index(colorSpace, "<")+1 : strings.Index(colorSpace, ">")]
+			if strings.Contains(string(pdf), palette) {
+				t.Errorf("%s: the palette is in the PDF as it was", c.name)
+			}
+		}
+	}
+	if palettes == 0 {
+		t.Error("no image of a palette was copied")
+	}
+}
+
+// An image whose color space refers to another object of the PDF it was read
+// from is refused, as the object is not copied with it.
+func TestPNGImageAnImageThatRefersToAnotherObjectIsRefused(t *testing.T) {
+	obj := newPDFobj()
+	obj.dict = []string{"<<", "/Type", "/XObject", "/Subtype", "/Image", "/Width", "1", "/Height", "1",
+		"/ColorSpace", "[", "/ICCBased", "5", "0", "R", "]", "/BitsPerComponent", "8", ">>"}
+	message, panicked := testPanic(func() { NewImageFromPDFobj(testNewPDF(), obj) })
+	if !panicked || !strings.Contains(message, "/ICCBased 5 0 R") {
+		t.Errorf("%v: %q", panicked, message)
+	}
+	obj.dict = []string{"<<", "/Width", "1", "/Height", "1", "/ColorSpace", "5", "0", "R", ">>"}
+	if _, panicked := testPanic(func() { NewImageFromPDFobj(testNewPDF(), obj) }); !panicked {
+		t.Error("a color space of a reference is copied")
 	}
 }

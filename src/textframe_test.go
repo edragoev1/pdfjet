@@ -596,3 +596,29 @@ func testJoinedLinesTime(count int) time.Duration {
 	}
 	return shortest
 }
+
+// A word wider than the frame is cut between its characters as TextBlock
+// cuts one: never before a Thai vowel that stays with the letter before it,
+// nor after one written before its letter. TextFrame cut after any code point
+// and drew a row "าษาไ" (review of 11 October 2026, #14).
+func TestTextFrameCutsAWordWhereTextBlockDoes(t *testing.T) {
+	font := NewFontFromFile(testNewPDF(), testRepoPath(t, "fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf"))
+	font.SetSize(12)
+	word := "ภาษาไทยภาษาไทยภาษาไทย"
+	textLine := NewTextLine(font, word)
+	for w := float32(1); w <= 120; w++ {
+		tf := &TextFrame{w: w}
+		rest := word
+		for rest != "" {
+			head := tf.headThatFits(textLine, rest)
+			runes := []rune(head)
+			if isLeadingVowel(runes[len(runes)-1]) && len(head) < len(rest) {
+				t.Fatalf("width %v: %q ends on a vowel written before its letter", w, head)
+			}
+			rest = rest[len(head):]
+			if r := []rune(rest); len(r) > 0 && staysWithPrevious(r[0]) {
+				t.Fatalf("width %v: %q starts a row on a vowel that stays with the letter before it", w, rest)
+			}
+		}
+	}
+}

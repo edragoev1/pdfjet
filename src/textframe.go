@@ -502,18 +502,27 @@ func widthWithin(textLine *TextLine, text string, limit float32) float32 {
 }
 
 // headThatFits returns the longest start of the token that fits in the width
-// of the frame, and at least the first character of the token.
+// of the frame, and at least its first character. The token is cut between
+// its characters as TextBlock cuts a word, never before a combining mark or a
+// Thai vowel that stays with the letter before it (review of 11 October
+// 2026, #14).
 func (tf *TextFrame) headThatFits(textLine *TextLine, token string) string {
-	_, size := utf8.DecodeRuneInString(token)
-	end := size
-	for end < len(token) {
-		_, size = utf8.DecodeRuneInString(token[end:])
-		if textLine.font.StringWidthUsingFallbackFont(textLine.fallbackFont, textLine.fontSize, token[:end+size]) > tf.w {
+	runes := make([]rune, 0, len(token))
+	offsets := make([]int, 0, len(token)+1) // The byte index of each rune
+	for i, r := range token {
+		runes = append(runes, r)
+		offsets = append(offsets, i)
+	}
+	offsets = append(offsets, len(token))
+	end := nextCharacterBreak(runes, 0)
+	for end < len(runes) {
+		next := nextCharacterBreak(runes, end)
+		if textLine.font.StringWidthUsingFallbackFont(textLine.fallbackFont, textLine.fontSize, token[:offsets[next]]) > tf.w {
 			break
 		}
-		end += size
+		end = next
 	}
-	return token[:end]
+	return token[:offsets[end]]
 }
 
 // addToRow adds the string to the row, at the current text position.

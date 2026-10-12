@@ -7,6 +7,28 @@ languages.
 
 This is the first entry in this file; earlier releases were not tracked here.
 
+## v9.0.7 — unreleased
+
+### Fixed
+- Images copied from a PDF with NewImageFromPDFobj, in the four ports: into
+  an encrypted PDF, the stream and the strings of the image's dictionary, as
+  the palette of an /Indexed color space, are encrypted, where they were
+  copied as they were and viewers found no image. An image whose /ColorSpace
+  or /DecodeParms refers to another object of the PDF it was read from, as
+  an /ICCBased profile, is refused: the object is not copied with it, and
+  the reference pointed at another object.
+- TextFrame, and so Markdown, in the four ports: a word wider than the frame
+  is cut between its characters as TextBlock cuts one, never before a
+  combining mark or a Thai vowel that stays with the letter before it.
+- Page sums of tables, in the four ports: a cell of a space inside a number,
+  as ". 5", is not a number; Java threw on it, the other ports counted 0.
+- Swift: a cell of a vertical alignment other than TOP, CENTER and BOTTOM
+  makes complete() throw, where it ended the program.
+- Tables, in the four ports: AutoAdjustColumnWidths measures a row longer
+  than the first, where it indexed past the widths; a table whose first row
+  is empty is drawn, its rows completed from the first row that has cells,
+  and rows of no cells draw nothing, as no rows do.
+
 ## v9.0.5 — unreleased
 
 ### Added

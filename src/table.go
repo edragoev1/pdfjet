@@ -15,6 +15,7 @@ import (
 	"bufio"
 	"math"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -233,13 +234,18 @@ func (table *Table) footerStart() int {
 }
 
 // addCellsToCompleteTheGrid adds empty cells to the rows that are shorter
-// than the first row.
+// than the first row, or, when the first row is empty, than the first row
+// that is not, in the font of its first cell: an empty row was drawn from its
+// first cell (review of 11 October 2026, #18).
 func (table *Table) addCellsToCompleteTheGrid() {
-	if len(table.tableData) == 0 || len(table.tableData[0]) == 0 {
+	first := slices.IndexFunc(table.tableData, func(row []*Cell) bool { return len(row) > 0 })
+	if first == -1 {
+		// Rows of no cells are a table of no rows, which draws nothing.
+		table.tableData = nil
 		return
 	}
-	numOfColumns := len(table.tableData[0])
-	font := table.tableData[0][0].font
+	numOfColumns := len(table.tableData[first])
+	font := table.tableData[first][0].font
 	for i, row := range table.tableData {
 		diff := numOfColumns - len(row)
 		for j := 0; j < diff; j++ {
@@ -518,6 +524,12 @@ func numberOf(text string, decimals int) (int64, bool) {
 	if point != -1 {
 		fraction = str[point+1:]
 		digits = str[:point] + fraction
+	}
+	// A space inside the number, as in ". 5", is not in a number: isNumber
+	// reads past it, and Java's parse threw on it (review of 11 October 2026,
+	// #15)
+	if strings.Trim(digits, "0123456789") != "" {
+		return 0, false
 	}
 	digits = strings.TrimLeft(digits, "0")
 	if digits == "" {
@@ -1714,7 +1726,13 @@ func (table *Table) AutoAdjustColumnWidths() *Table {
 	if len(table.tableData) == 0 {
 		return table
 	}
-	maxColWidths := make([]float32, len(table.tableData[0]))
+	// As many widths as the longest row has cells, as a row may be longer
+	// than the first (review of 11 October 2026, #17)
+	columns := 0
+	for _, row := range table.tableData {
+		columns = max(columns, len(row))
+	}
+	maxColWidths := make([]float32, columns)
 	for _, row := range table.tableData {
 		for i := 0; i < len(row); i++ {
 			cell := row[i]

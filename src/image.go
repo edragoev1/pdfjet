@@ -18,7 +18,9 @@ import (
 	"io"
 	"math"
 	"os"
+	"slices"
 	"strconv"
+	"strings"
 
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/content"
@@ -185,6 +187,17 @@ func NewImageFromPDFobj(pdf *PDF, obj *PDFobj) *Image {
 		panic(err)
 	}
 	image.setPixels(int(width), int(height))
+	// The values copied as they are, but for their strings, encrypted when
+	// the document is, as the palette of an /Indexed color space; and the
+	// stream, encrypted too (review of 11 October 2026, #11)
+	colorSpace := obj.valueTokens("/ColorSpace")
+	decodeParms := obj.valueTokens("/DecodeParms")
+	for _, tokens := range [][]string{colorSpace, decodeParms} {
+		if slices.Contains(tokens, "R") {
+			panic("The image refers to another object of the PDF it was read from, " +
+				"which is not copied with it: " + strings.Join(tokens, " "))
+		}
+	}
 
 	pdf.newObj()
 	pdf.appendString("<<\n")
@@ -199,39 +212,53 @@ func NewImageFromPDFobj(pdf *PDF, obj *PDFobj) *Image {
 	pdf.appendString("/Height ")
 	pdf.appendInteger(image.pixelHeight)
 	pdf.appendString("\n")
-	colorSpace := obj.GetValue("/ColorSpace")
-	if colorSpace != "" {
-		pdf.appendString("/ColorSpace ")
-		pdf.appendString(colorSpace)
-		pdf.appendString("\n")
-	}
+	pdf.appendCopiedValue("/ColorSpace", colorSpace)
 	pdf.appendString("/BitsPerComponent ")
 	pdf.appendString(obj.GetValue("/BitsPerComponent"))
 	pdf.appendString("\n")
-	decodeParms := obj.GetValue("/DecodeParms")
-	if decodeParms != "" {
-		pdf.appendString("/DecodeParms ")
-		pdf.appendString(decodeParms)
-		pdf.appendString("\n")
-	}
+	pdf.appendCopiedValue("/DecodeParms", decodeParms)
 	imageMask := obj.GetValue("/ImageMask")
 	if imageMask != "" {
 		pdf.appendString("/ImageMask ")
 		pdf.appendString(imageMask)
 		pdf.appendString("\n")
 	}
+	stream := obj.stream
+	if pdf.encryption != nil {
+		stream = pdf.encryption.encrypt(stream)
+	}
 	pdf.appendString("/Length ")
-	pdf.appendInteger(len(obj.stream))
+	pdf.appendInteger(len(stream))
 	pdf.appendString("\n")
 	pdf.appendString(">>\n")
 	pdf.appendString("stream\n")
-	pdf.appendByteArray(obj.stream)
+	pdf.appendByteArray(stream)
 	pdf.appendString("\nendstream\n")
 	pdf.endObj()
 	pdf.images = append(pdf.images, image)
 	image.objNumber = pdf.getObjNumber()
 
 	return image
+}
+
+// appendCopiedValue appends the key and the tokens of its value, read from
+// another PDF, if it has one: its strings, literal or hexadecimal, as
+// hexadecimal strings encrypted when the document is.
+func (pdf *PDF) appendCopiedValue(key string, tokens []string) {
+	if len(tokens) == 0 {
+		return
+	}
+	pdf.appendString(key)
+	for _, token := range tokens {
+		pdf.appendString(" ")
+		if pdf.encryption != nil &&
+			(strings.HasPrefix(token, "(") || (strings.HasPrefix(token, "<") && token != "<<")) {
+			pdf.appendByteString(toBytes(token))
+		} else {
+			pdf.appendString(token)
+		}
+	}
+	pdf.appendString("\n")
 }
 
 // setPixels sets the pixels of the image across and down, which it is drawn
