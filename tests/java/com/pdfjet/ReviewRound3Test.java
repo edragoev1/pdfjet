@@ -666,4 +666,27 @@ class ReviewRound3Test {
         final Page page = new Page(pdf, Letter.PORTRAIT);
         assertEquals("The vertical alignment of a cell is top, center or bottom.", assertThrows(IllegalArgumentException.class, () -> table.drawOn(page)).getMessage());
     }
+
+    /**
+     * A word of a text column too wide for its line breaks at a soft hyphen,
+     * the line ending with a hyphen, as TextBlock and TextFrame break it:
+     * TextColumn never broke at one.
+     */
+    @Test
+    void aTextColumnBreaksAWordAtASoftHyphen() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        TextColumn column = new TextColumn();
+        column.setLocation(50f, 100f);
+        column.setWidth(TextBlockTest.softHyphenWidth(font));
+        column.addParagraph(new Paragraph().add(new TextLine(font, "Ab " + TextBlockTest.SOFT_HYPHEN_WORD)));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        column.drawOn(page);
+        // Ab Donau- / dampfschiff- / fahrt
+        String content = TestSupport.content(page);
+        float[] donau = TestSupport.positionOf(content, "Donau-");
+        float[] dampf = TestSupport.positionOf(content, "dampfschiff-");
+        float[] fahrt = TestSupport.positionOf(content, "fahrt");
+        assertTrue(dampf[1] < donau[1] && fahrt[1] < dampf[1], content);
+    }
 }

@@ -2,7 +2,10 @@
 # Draws random shapes in the four ports, the same shapes from the same random
 # numbers, and checks that every port writes the same content for each page as
 # Go, byte for byte: the arcs, ellipses, donut charts, curved paths and rotated
-# text whose paths are made of floating point arithmetic. A run like it against
+# text whose paths are made of floating point arithmetic, and lines, rectangles
+# (rounded, and of a size below zero) and points of every shape. One coordinate
+# in two hundred is NaN, infinite or huge, and a document that fails writes the
+# message of its error, which every port must write the same too. A run like it against
 # Go found the float paths of DonutChart and Arc apart (review of 11 October
 # 2026, #25), which the examples' fixed inputs did not.
 #

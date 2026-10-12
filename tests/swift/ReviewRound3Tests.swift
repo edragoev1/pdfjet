@@ -494,4 +494,24 @@ import Testing
             Page(pdf, obj).addWatermark(TestSupport.helvetica(pdf), "DRAFT")
         }
     }
+
+    /// A word of a text column too wide for its line breaks at a soft hyphen,
+    /// the line ending with a hyphen, as TextBlock and TextFrame break it:
+    /// TextColumn never broke at one.
+    @Test func aTextColumnBreaksAWordAtASoftHyphen() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let column = TextColumn()
+        _ = column.setLocation(50, 100)
+        _ = column.setWidth(TestSupport.softHyphenWidth(font))
+        _ = column.addParagraph(Paragraph().add(TextLine(font, "Ab " + TestSupport.softHyphenWord)))
+        let page = Page(pdf, Letter.PORTRAIT)
+        _ = column.drawOn(page)
+        // Ab Donau- / dampfschiff- / fahrt
+        let content = TestSupport.content(page)
+        let donau = TestSupport.positionOf(content, "Donau-")
+        let dampf = TestSupport.positionOf(content, "dampfschiff-")
+        let fahrt = TestSupport.positionOf(content, "fahrt")
+        #expect(dampf[1] < donau[1] && fahrt[1] < dampf[1], "\(content)")
+    }
 }

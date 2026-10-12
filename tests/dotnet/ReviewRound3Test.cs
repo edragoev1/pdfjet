@@ -595,5 +595,26 @@ public class ReviewRound3Test {
         Page page = new Page(pdf, Letter.PORTRAIT);
         Assert.Equal("The vertical alignment of a cell is top, center or bottom.", Assert.Throws<ArgumentException>(() => table.DrawOn(page)).Message);
     }
+
+    // A word of a text column too wide for its line breaks at a soft hyphen,
+    // the line ending with a hyphen, as TextBlock and TextFrame break it:
+    // TextColumn never broke at one.
+    [Fact]
+    public void ATextColumnBreaksAWordAtASoftHyphen() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        TextColumn column = new TextColumn();
+        column.SetLocation(50f, 100f);
+        column.SetWidth(TextBlockTest.SoftHyphenWidth(font));
+        column.AddParagraph(new Paragraph().Add(new TextLine(font, "Ab Donau\u00addampf\u00adschiff\u00adfahrt")));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        column.DrawOn(page);
+        // Ab Donau- / dampfschiff- / fahrt
+        string content = TestSupport.Content(page);
+        float[] donau = TestSupport.PositionOf(content, "Donau-");
+        float[] dampf = TestSupport.PositionOf(content, "dampfschiff-");
+        float[] fahrt = TestSupport.PositionOf(content, "fahrt");
+        Assert.True(dampf[1] < donau[1] && fahrt[1] < dampf[1], content);
+    }
 }
 }

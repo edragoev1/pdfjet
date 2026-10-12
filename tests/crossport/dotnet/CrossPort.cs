@@ -50,6 +50,37 @@ public class CrossPort {
         return Below(0x1000000);
     }
 
+    // A number from lo up to hi, and one time in two hundred a number no page
+    // holds: NaN, an infinity or a huge one.
+    private float Place(float lo, float hi) {
+        if (Below(200) == 0) {
+            switch (Below(8)) {
+            case 0:
+                return float.NaN;
+            case 1:
+                return float.PositiveInfinity;
+            case 2:
+                return float.NegativeInfinity;
+            case 3:
+                return 1e30f;
+            default:
+                return -1e30f;
+            }
+        }
+        return Between(lo, hi);
+    }
+
+    // A dash pattern.
+    private string Dash() {
+        int on = 1 + Below(9);
+        int off = 1 + Below(9);
+        return "[" + on.ToString(CultureInfo.InvariantCulture) + " "
+                + off.ToString(CultureInfo.InvariantCulture) + "] 0";
+    }
+
+    // The start of the message of a document that failed before it completed.
+    private const string EARLIER = "The PDF was not completed because of an earlier error: ";
+
     public static void Main(string[] args) {
         ulong seed = ulong.Parse(args[0], CultureInfo.InvariantCulture);
         int cases = int.Parse(args[1], CultureInfo.InvariantCulture);
@@ -63,15 +94,15 @@ public class CrossPort {
         }
     }
 
-    // Gives the arc a stroke width, a dash pattern or none, a fill color or
-    // none, and a rotation.
+    // Gives the arc a stroke width, a stroke color or none, a dash pattern or
+    // none, a fill color or none, and a rotation.
     private void StyleArc(Arc arc) {
         arc.SetStrokeWidth(Between(0f, 10f));
         if (Below(2) == 0) {
-            int on = 1 + Below(9);
-            int off = 1 + Below(9);
-            arc.SetStrokeDashPattern("[" + on.ToString(CultureInfo.InvariantCulture) + " "
-                    + off.ToString(CultureInfo.InvariantCulture) + "] 0");
+            arc.SetStrokeColor(Color());
+        }
+        if (Below(2) == 0) {
+            arc.SetStrokeDashPattern(Dash());
         }
         if (Below(2) == 0) {
             arc.SetFillColor(Color());
@@ -80,7 +111,8 @@ public class CrossPort {
     }
 
     // Draws the shapes of one case on a page of a document of its own, and
-    // returns the content of the page, or "error" when the document fails.
+    // returns the content of the page, or "error: " and the message of the
+    // first error when the document fails.
     private byte[] DrawCase() {
         try {
             PDF pdf = new PDF(new MemoryStream());
@@ -88,10 +120,10 @@ public class CrossPort {
             Page page = new Page(pdf, Letter.PORTRAIT);
             int shapes = 1 + Below(4);
             for (int k = 0; k < shapes; k++) {
-                switch (Below(5)) {
+                switch (Below(8)) {
                 case 0: {
                     Arc arc = new Arc();
-                    arc.SetLocation(Between(0f, 612f), Between(0f, 792f));
+                    arc.SetLocation(Place(0f, 612f), Place(0f, 792f));
                     arc.SetRadiusX(Between(0f, 300f));
                     arc.SetRadiusY(Between(0f, 300f));
                     arc.SetStartAngle(Between(-720f, 720f));
@@ -103,7 +135,7 @@ public class CrossPort {
                 case 1: {
                     // The whole of an ellipse, which a random sweep never is
                     Ellipse ellipse = new Ellipse();
-                    ellipse.SetLocation(Between(0f, 612f), Between(0f, 792f));
+                    ellipse.SetLocation(Place(0f, 612f), Place(0f, 792f));
                     ellipse.SetRadiusX(Between(0f, 300f));
                     ellipse.SetRadiusY(Between(0f, 300f));
                     StyleArc(ellipse);
@@ -112,7 +144,7 @@ public class CrossPort {
                 }
                 case 2: {
                     DonutChart chart = new DonutChart(font, font);
-                    chart.SetLocation(Between(0f, 612f), Between(0f, 792f));
+                    chart.SetLocation(Place(0f, 612f), Place(0f, 792f));
                     float outer = Between(1f, 200f);
                     chart.SetRadii(outer, Between(0f, outer));
                     int slices = 1 + Below(6);
@@ -126,10 +158,14 @@ public class CrossPort {
                     Path path = new Path();
                     int points = 2 + Below(6);
                     for (int p = 0; p < points; p++) {
-                        float x = Between(0f, 612f);
-                        float y = Between(0f, 792f);
-                        if (p < points - 1 && Below(3) == 0) {
+                        float x = Place(0f, 612f);
+                        float y = Place(0f, 792f);
+                        if (p > 0 && p < points - 2 && Below(3) == 0) {
+                            // A curve: its two control points and the point it ends at
                             path.Add(new Point(x, y, Point.CONTROL_POINT_C));
+                            path.Add(new Point(Between(0f, 612f), Between(0f, 792f), Point.CONTROL_POINT_C));
+                            path.Add(new Point(Between(0f, 612f), Between(0f, 792f)));
+                            p += 2;
                         } else {
                             path.Add(new Point(x, y));
                         }
@@ -140,10 +176,48 @@ public class CrossPort {
                     path.DrawOn(page);
                     break;
                 }
+                case 4: {
+                    Line line = new Line(Place(0f, 612f), Place(0f, 792f), Place(0f, 612f), Place(0f, 792f));
+                    line.SetStrokeWidth(Between(0f, 10f));
+                    if (Below(2) == 0) {
+                        line.SetStrokeColor(Color());
+                    }
+                    if (Below(2) == 0) {
+                        line.SetStrokeDashPattern(Dash());
+                    }
+                    line.DrawOn(page);
+                    break;
+                }
+                case 5: {
+                    // A size below zero too, and rounded corners
+                    Rect rect = new Rect(Place(0f, 612f), Place(0f, 792f), Between(-200f, 300f), Between(-200f, 300f));
+                    if (Below(2) == 0) {
+                        rect.SetCornerRadius(Between(0f, 50f));
+                    }
+                    if (Below(2) == 0) {
+                        rect.SetFillColor(Color());
+                    }
+                    rect.SetBorderColor(Color());
+                    rect.SetBorderWidth(Between(0f, 5f));
+                    rect.DrawOn(page);
+                    break;
+                }
+                case 6: {
+                    // Every shape of a point, in the order of the enum in every port
+                    Point point = new Point(Place(0f, 612f), Place(0f, 792f));
+                    point.SetRadius(Between(0f, 20f));
+                    point.SetShape((Shape) Below(14));
+                    if (Below(2) == 0) {
+                        point.SetFillColor(Color());
+                    }
+                    point.SetStrokeColor(Color());
+                    point.DrawOn(page);
+                    break;
+                }
                 default: {
                     TextLine line = new TextLine(font, "Text " + k.ToString(CultureInfo.InvariantCulture));
                     line.SetFontSize(Between(4f, 40f));
-                    line.SetLocation(Between(0f, 612f), Between(0f, 792f));
+                    line.SetLocation(Place(0f, 612f), Place(0f, 792f));
                     line.SetTextRotation(Below(361) - 180);
                     line.DrawOn(page);
                     break;
@@ -156,8 +230,12 @@ public class CrossPort {
             Array.Copy(content, withNewline, content.Length);
             withNewline[content.Length] = (byte) '\n';
             return withNewline;
-        } catch (Exception) {
-            return Encoding.ASCII.GetBytes("error\n");
+        } catch (Exception e) {
+            string message = e.Message;
+            if (message.StartsWith(EARLIER, StringComparison.Ordinal)) {
+                message = message.Substring(EARLIER.Length);
+            }
+            return Encoding.UTF8.GetBytes("error: " + message + "\n");
         }
     }
 }

@@ -326,6 +326,9 @@ This is the first entry in this file; earlier releases were not tracked here.
 - A cell's vertical alignment that is not top, center or bottom fails the
   document with the same message in the four ports; Java and C# threw a
   bare "Invalid vertical text alignment option."
+- A TextColumn breaks a word too wide for what is left of its line at a
+  soft hyphen, as TextBlock and TextFrame do, in the four ports: it moved
+  the whole word to the next line.
 
 ## v9.0.5 — 2026-10-12, internal
 

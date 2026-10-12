@@ -366,11 +366,40 @@ public class TextColumn implements Drawable {
                 // column goes on a line of its own rather than after an empty
                 // one, which would leave the line above it blank.
                 String measured = (leading ? Single.space : "") + token;
-                if (list.isEmpty() || (runLength + width(textLine, measured)) <= this.w) {
+                if ((runLength + width(textLine, measured)) <= this.w) {
                     wordStart = list.size();
                     list.add(textLine);
                     runLength += textLine.getWidth();
-                } else {
+                    continue;
+                }
+                // A word that does not fit breaks at a soft hyphen, the line
+                // ending with a hyphen, as far along as fits, as TextBlock and
+                // TextFrame break it; and again on the next lines while the
+                // rest does not fit one: TextColumn never broke at one (review
+                // of 12 October 2026)
+                String prefix = leading ? Single.space : "";
+                boolean broken = false;
+                for (;;) {
+                    String[] parts = TextBlock.softHyphenBreak(prefix + token, this.w - runLength,
+                            head -> width(line, head));
+                    if (parts == null) {
+                        break;
+                    }
+                    list.add(line.copyWithText(parts[0]));
+                    drawLineOfText(page, list, alignment);
+                    moveToNextLine(lineHeight);
+                    list.clear();
+                    wordStart = 0;
+                    runLength = 0f;
+                    prefix = "";
+                    broken = true;
+                    token = parts[1];
+                    textLine = line.copyWithText(token + after);
+                    if (width(textLine, token) <= this.w) {
+                        break;
+                    }
+                }
+                if (!broken && !list.isEmpty()) {
                     drawLineOfText(page, list, alignment);
                     moveToNextLine(lineHeight);
                     list.clear();
@@ -378,9 +407,9 @@ public class TextColumn implements Drawable {
                     if (leading) {
                         textLine = line.copyWithText(token + after);
                     }
-                    list.add(textLine);
-                    runLength = textLine.getWidth();
                 }
+                list.add(textLine);
+                runLength = textLine.getWidth();
             }
         }
         // The last line of a paragraph is not justified.

@@ -856,3 +856,25 @@ func TestReview3ADrawableOfACellStaysWhereTheCallerPutIt(t *testing.T) {
 		testAssertXY(t, before[i][0], before[i][1], after)
 	}
 }
+
+// A word of a text column too wide for its line breaks at a soft hyphen, the
+// line ending with a hyphen, as TextBlock and TextFrame break it: TextColumn
+// never broke at one.
+func TestReview3ATextColumnBreaksAWordAtASoftHyphen(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	column := NewTextColumn()
+	column.SetLocation(50, 100)
+	column.SetWidth(testSoftHyphenWidth(font))
+	column.AddParagraph(NewParagraph().Add(NewTextLine(font, "Ab "+testSoftHyphenWord)))
+	page := NewPage(pdf, testLetterPortrait())
+	column.DrawOn(page)
+	// Ab Donau- / dampfschiff- / fahrt
+	content := testContent(page)
+	donau := testPositionOf(t, content, "Donau-")
+	dampf := testPositionOf(t, content, "dampfschiff-")
+	fahrt := testPositionOf(t, content, "fahrt")
+	if !(dampf[1] < donau[1] && fahrt[1] < dampf[1]) {
+		t.Errorf("the word is not broken at its soft hyphens: %q", content)
+	}
+}

@@ -334,11 +334,39 @@ public class TextColumn : IDrawable {
                 // column goes on a line of its own rather than after an empty
                 // one, which would leave the line above it blank.
                 String measured = (leading ? Single.space : "") + token;
-                if (list.Count == 0 || (runLength + Width(text, measured)) <= this.w) {
+                if ((runLength + Width(text, measured)) <= this.w) {
                     wordStart = list.Count;
                     list.Add(text);
                     runLength += text.GetWidth();
-                } else {
+                    continue;
+                }
+                // A word that does not fit breaks at a soft hyphen, the line
+                // ending with a hyphen, as far along as fits, as TextBlock and
+                // TextFrame break it; and again on the next lines while the
+                // rest does not fit one: TextColumn never broke at one (review
+                // of 12 October 2026)
+                String prefix = leading ? Single.space : "";
+                bool broken = false;
+                for (;;) {
+                    if (!TextBlock.SoftHyphenBreak(prefix + token, this.w - runLength,
+                            h => Width(line, h), out String head, out String rest)) {
+                        break;
+                    }
+                    list.Add(line.CopyWithText(head));
+                    DrawLineOfText(page, list, alignment);
+                    MoveToNextLine(lineHeight);
+                    list.Clear();
+                    wordStart = 0;
+                    runLength = 0f;
+                    prefix = "";
+                    broken = true;
+                    token = rest;
+                    text = line.CopyWithText(token + after);
+                    if (Width(text, token) <= this.w) {
+                        break;
+                    }
+                }
+                if (!broken && list.Count > 0) {
                     DrawLineOfText(page, list, alignment);
                     MoveToNextLine(lineHeight);
                     list.Clear();
@@ -346,9 +374,9 @@ public class TextColumn : IDrawable {
                     if (leading) {
                         text = line.CopyWithText(token + after);
                     }
-                    list.Add(text);
-                    runLength = text.GetWidth();
                 }
+                list.Add(text);
+                runLength = text.GetWidth();
             }
         }
         // The last line of a paragraph is not justified.

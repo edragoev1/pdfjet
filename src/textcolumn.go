@@ -299,11 +299,37 @@ func (textColumn *TextColumn) drawParagraphOn(
 			// goes on a line of its own rather than after an empty one, which
 			// would leave the line above it blank.
 			measured := space + token
-			if len(list) == 0 || (runLength+textLineWidth(text, measured)) <= textColumn.w {
+			if (runLength + textLineWidth(text, measured)) <= textColumn.w {
 				wordStart = len(list)
 				list = append(list, text)
 				runLength += text.GetWidth()
-			} else {
+				continue
+			}
+			// A word that does not fit breaks at a soft hyphen, the line
+			// ending with a hyphen, as far along as fits, as TextBlock and
+			// TextFrame break it; and again on the next lines while the rest
+			// does not fit one: TextColumn never broke at one (review of
+			// 12 October 2026)
+			broken := false
+			for {
+				head, rest, ok := softHyphenBreak(space+token, textColumn.w-runLength, func(head string) float32 {
+					return textLineWidth(text, head)
+				})
+				if !ok {
+					break
+				}
+				list = append(list, line.copyWithText(head))
+				textColumn.drawLineOfText(page, list, textAlignment)
+				textColumn.moveToNextLine(lineHeight)
+				list = make([]*TextLine, 0)
+				wordStart, runLength, space, broken = 0, 0, "", true
+				token = rest
+				text = line.copyWithText(token + after)
+				if textLineWidth(text, token) <= textColumn.w {
+					break
+				}
+			}
+			if !broken && len(list) > 0 {
 				textColumn.drawLineOfText(page, list, textAlignment)
 				textColumn.moveToNextLine(lineHeight)
 				list = make([]*TextLine, 0)
@@ -311,9 +337,9 @@ func (textColumn *TextColumn) drawParagraphOn(
 				if leading {
 					text = line.copyWithText(token + after)
 				}
-				list = append(list, text)
-				runLength = text.GetWidth()
 			}
+			list = append(list, text)
+			runLength = text.GetWidth()
 		}
 	}
 	// The last line of a paragraph is not justified.

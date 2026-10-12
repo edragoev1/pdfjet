@@ -49,6 +49,35 @@ public class CrossPort {
         return below(0x1000000);
     }
 
+    // A number from lo up to hi, and one time in two hundred a number no page
+    // holds: NaN, an infinity or a huge one.
+    private float place(float lo, float hi) {
+        if (below(200) == 0) {
+            switch (below(8)) {
+            case 0:
+                return Float.NaN;
+            case 1:
+                return Float.POSITIVE_INFINITY;
+            case 2:
+                return Float.NEGATIVE_INFINITY;
+            case 3:
+                return 1e30f;
+            default:
+                return -1e30f;
+            }
+        }
+        return between(lo, hi);
+    }
+
+    // A dash pattern.
+    private String dash() {
+        int on = 1 + below(9);
+        return "[" + on + " " + (1 + below(9)) + "] 0";
+    }
+
+    // The start of the message of a document that failed before it completed.
+    private static final String EARLIER = "The PDF was not completed because of an earlier error: ";
+
     public static void main(String[] args) throws Exception {
         long seed = Long.parseUnsignedLong(args[0]);
         int cases = Integer.parseInt(args[1]);
@@ -60,12 +89,15 @@ public class CrossPort {
         }
     }
 
-    // Gives the arc a stroke width, a dash pattern or none, a fill color or
-    // none, and a rotation.
+    // Gives the arc a stroke width, a stroke color or none, a dash pattern or
+    // none, a fill color or none, and a rotation.
     private void styleArc(Arc arc) {
         arc.setStrokeWidth(between(0f, 10f));
         if (below(2) == 0) {
-            arc.setStrokeDashPattern("[" + (1 + below(9)) + " " + (1 + below(9)) + "] 0");
+            arc.setStrokeColor(color());
+        }
+        if (below(2) == 0) {
+            arc.setStrokeDashPattern(dash());
         }
         if (below(2) == 0) {
             arc.setFillColor(color());
@@ -74,7 +106,8 @@ public class CrossPort {
     }
 
     // Draws the shapes of one case on a page of a document of its own, and
-    // returns the content of the page, or "error" when the document fails.
+    // returns the content of the page, or "error: " and the message of the
+    // first error when the document fails.
     private byte[] drawCase() {
         try {
             PDF pdf = new PDF(new ByteArrayOutputStream());
@@ -82,10 +115,10 @@ public class CrossPort {
             Page page = new Page(pdf, Letter.PORTRAIT);
             int shapes = 1 + below(4);
             for (int k = 0; k < shapes; k++) {
-                switch (below(5)) {
+                switch (below(8)) {
                 case 0: {
                     Arc arc = new Arc();
-                    arc.setLocation(between(0f, 612f), between(0f, 792f));
+                    arc.setLocation(place(0f, 612f), place(0f, 792f));
                     arc.setRadiusX(between(0f, 300f));
                     arc.setRadiusY(between(0f, 300f));
                     arc.setStartAngle(between(-720f, 720f));
@@ -97,7 +130,7 @@ public class CrossPort {
                 case 1: {
                     // The whole of an ellipse, which a random sweep never is
                     Ellipse ellipse = new Ellipse();
-                    ellipse.setLocation(between(0f, 612f), between(0f, 792f));
+                    ellipse.setLocation(place(0f, 612f), place(0f, 792f));
                     ellipse.setRadiusX(between(0f, 300f));
                     ellipse.setRadiusY(between(0f, 300f));
                     styleArc(ellipse);
@@ -106,7 +139,7 @@ public class CrossPort {
                 }
                 case 2: {
                     DonutChart chart = new DonutChart(font, font);
-                    chart.setLocation(between(0f, 612f), between(0f, 792f));
+                    chart.setLocation(place(0f, 612f), place(0f, 792f));
                     float outer = between(1f, 200f);
                     chart.setRadii(outer, between(0f, outer));
                     int slices = 1 + below(6);
@@ -120,10 +153,14 @@ public class CrossPort {
                     Path path = new Path();
                     int points = 2 + below(6);
                     for (int p = 0; p < points; p++) {
-                        float x = between(0f, 612f);
-                        float y = between(0f, 792f);
-                        if (p < points - 1 && below(3) == 0) {
+                        float x = place(0f, 612f);
+                        float y = place(0f, 792f);
+                        if (p > 0 && p < points - 2 && below(3) == 0) {
+                            // A curve: its two control points and the point it ends at
                             path.add(new Point(x, y, Point.CONTROL_POINT_C));
+                            path.add(new Point(between(0f, 612f), between(0f, 792f), Point.CONTROL_POINT_C));
+                            path.add(new Point(between(0f, 612f), between(0f, 792f)));
+                            p += 2;
                         } else {
                             path.add(new Point(x, y));
                         }
@@ -134,10 +171,48 @@ public class CrossPort {
                     path.drawOn(page);
                     break;
                 }
+                case 4: {
+                    Line line = new Line(place(0f, 612f), place(0f, 792f), place(0f, 612f), place(0f, 792f));
+                    line.setStrokeWidth(between(0f, 10f));
+                    if (below(2) == 0) {
+                        line.setStrokeColor(color());
+                    }
+                    if (below(2) == 0) {
+                        line.setStrokeDashPattern(dash());
+                    }
+                    line.drawOn(page);
+                    break;
+                }
+                case 5: {
+                    // A size below zero too, and rounded corners
+                    Rect rect = new Rect(place(0f, 612f), place(0f, 792f), between(-200f, 300f), between(-200f, 300f));
+                    if (below(2) == 0) {
+                        rect.setCornerRadius(between(0f, 50f));
+                    }
+                    if (below(2) == 0) {
+                        rect.setFillColor(color());
+                    }
+                    rect.setBorderColor(color());
+                    rect.setBorderWidth(between(0f, 5f));
+                    rect.drawOn(page);
+                    break;
+                }
+                case 6: {
+                    // Every shape of a point, in the order of the enum in every port
+                    Point point = new Point(place(0f, 612f), place(0f, 792f));
+                    point.setRadius(between(0f, 20f));
+                    point.setShape(Shape.values()[below(14)]);
+                    if (below(2) == 0) {
+                        point.setFillColor(color());
+                    }
+                    point.setStrokeColor(color());
+                    point.drawOn(page);
+                    break;
+                }
                 default: {
                     TextLine line = new TextLine(font, "Text " + k);
                     line.setFontSize(between(4f, 40f));
-                    line.setLocation(between(0f, 612f), between(0f, 792f));
+                    line.setLocation(place(0f, 612f), place(0f, 792f));
                     line.setTextRotation(below(361) - 180);
                     line.drawOn(page);
                     break;
@@ -151,7 +226,11 @@ public class CrossPort {
             withNewline[content.length] = '\n';
             return withNewline;
         } catch (Exception e) {
-            return "error\n".getBytes(StandardCharsets.US_ASCII);
+            String message = e.getMessage();
+            if (message.startsWith(EARLIER)) {
+                message = message.substring(EARLIER.length());
+            }
+            return ("error: " + message + "\n").getBytes(StandardCharsets.UTF_8);
         }
     }
 }

@@ -335,21 +335,48 @@ public class TextColumn : Drawable {
                 // column goes on a line of its own rather than after an empty
                 // one, which would leave the line above it blank.
                 let measured = (leading ? Single.space : "") + token
-                if list.isEmpty || (runLength + TextColumn.width(textLine, measured)) <= self.w {
+                if (runLength + TextColumn.width(textLine, measured)) <= self.w {
                     wordStart = list.count
                     list.append(textLine)
                     runLength += textLine.getWidth()
-                } else {
+                    continue
+                }
+                // A word that does not fit breaks at a soft hyphen, the line
+                // ending with a hyphen, as far along as fits, as TextBlock and
+                // TextFrame break it; and again on the next lines while the
+                // rest does not fit one: TextColumn never broke at one (review
+                // of 12 October 2026)
+                var piece = token
+                var prefix = leading ? Single.space : ""
+                var broken = false
+                while let (head, rest) = TextBlock.softHyphenBreak(prefix + piece, self.w - runLength, {
+                    TextColumn.width(line, $0)
+                }) {
+                    list.append(line.copyWithText(head))
+                    drawLineOfText(page, list, alignment)
+                    moveToNextLine(lineHeight)
+                    list.removeAll()
+                    wordStart = 0
+                    runLength = 0
+                    prefix = ""
+                    broken = true
+                    piece = rest
+                    textLine = line.copyWithText(piece + after)
+                    if TextColumn.width(textLine, piece) <= self.w {
+                        break
+                    }
+                }
+                if !broken && !list.isEmpty {
                     drawLineOfText(page, list, alignment)
                     moveToNextLine(lineHeight)
                     list.removeAll()
                     wordStart = 0
                     if leading {
-                        textLine = line.copyWithText(token + after)
+                        textLine = line.copyWithText(piece + after)
                     }
-                    list.append(textLine)
-                    runLength = textLine.getWidth()
                 }
+                list.append(textLine)
+                runLength = textLine.getWidth()
             }
         }
         // The last line of a paragraph is not justified.
