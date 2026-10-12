@@ -8,6 +8,7 @@ package pdfjet
 import (
 	"bytes"
 	"compress/zlib"
+	"math"
 	"runtime"
 	"runtime/debug"
 	"strconv"
@@ -32,6 +33,11 @@ const fuzzMaxAlloc = 256 * 1024 * 1024
 // fuzzMaxAlloc, or takes longer than fuzzMaxTime, which ends the fuzzing
 // process so that the fuzzer keeps the input.
 func fuzzRun(t *testing.T, size int, fn func()) {
+	fuzzRunWithin(t, size, fuzzMaxAlloc, fn)
+}
+
+// fuzzRunWithin is fuzzRun with a limit of allocation of its own.
+func fuzzRunWithin(t *testing.T, size int, maxAlloc uint64, fn func()) {
 	timer := time.AfterFunc(fuzzMaxTime, func() {
 		panic("an input of " + strconv.Itoa(size) + " bytes took longer than " + fuzzMaxTime.String())
 	})
@@ -46,11 +52,26 @@ func fuzzRun(t *testing.T, size int, fn func()) {
 		}
 		var after runtime.MemStats
 		runtime.ReadMemStats(&after)
-		if allocated := after.TotalAlloc - before.TotalAlloc; allocated > fuzzMaxAlloc {
+		if allocated := after.TotalAlloc - before.TotalAlloc; allocated > maxAlloc {
 			t.Fatalf("%d bytes allocated for an input of %d bytes", allocated, size)
 		}
 	}()
 	fn()
+}
+
+// fuzzShortest runs the function, and again, up to three times, while each
+// run takes longer than the limit, and returns the shortest time: a run made
+// slow by the load of the computer is run again, and an input that takes time
+// much worse than linear is slow each time. The checks of time gave false
+// failures under load when they timed one run.
+func fuzzShortest(limit time.Duration, fn func()) time.Duration {
+	shortest := time.Duration(math.MaxInt64)
+	for run := 0; run < 3 && shortest > limit; run++ {
+		start := time.Now()
+		fn()
+		shortest = min(shortest, time.Since(start))
+	}
+	return shortest
 }
 
 // fuzzFontText has letters, marks that go on letters and on other marks,

@@ -77,10 +77,10 @@ func FuzzMarkup(f *testing.F) {
 			}
 			if n := utf8.RuneCountInString(text); n > 0 {
 				long := strings.Repeat(text, (fuzzMarkupRepeated+n-1)/n)
-				start := time.Now()
-				markup.Paragraph(long)
-				if elapsed := time.Since(start); elapsed > fuzzMarkupMaxTime {
-					t.Fatalf("%d characters took %v", utf8.RuneCountInString(long), elapsed)
+				if took := fuzzShortest(fuzzMarkupMaxTime, func() {
+					markup.Paragraph(long)
+				}); took > fuzzMarkupMaxTime {
+					t.Fatalf("%d characters took %v", utf8.RuneCountInString(long), took)
 				}
 			}
 		})

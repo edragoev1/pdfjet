@@ -17,6 +17,7 @@ import (
 	"runtime/debug"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/edragoev1/pdfjet/v9/src/corefont"
 	"github.com/edragoev1/pdfjet/v9/src/encryption"
@@ -275,7 +276,32 @@ func fuzzCorpusSeeds(f *testing.F) [][]byte {
 	return seeds
 }
 
-// FuzzPDFRead fuzzes the bytes of a PDF and the password it is read with.
+// fuzzDecodedTotal is the budget of decoded data that FuzzPDFRead reads with,
+// in place of maxDecodedTotal: an input of a few KB reaches it, so that a way
+// past it, which no input reached when it was 256 MB, allocates more than
+// fuzzReadMaxAlloc (review of 11 October 2026, #29 to #32).
+const fuzzDecodedTotal = 1 << 20
+
+// fuzzReadMaxAlloc is what FuzzPDFRead may allocate for an input of the size:
+// the empty objects of a PDF that numbers one minObjNumberLimit, which any PDF
+// may, 58 MB read, merged and split; a few times fuzzDecodedTotal; and the
+// objects of the input. The PDFs of the seeds allocate a few MB, and a way
+// past the budget hundreds.
+func fuzzReadMaxAlloc(size int) uint64 {
+	return 96<<20 + 128*uint64(size)
+}
+
+// fuzzReadMaxTime is how long FuzzPDFRead may take for an input of the size,
+// which is read in linear time: the seeds take a millisecond or two, and 1,000
+// pages of 2,000 fonts, 92 KB, took 36 seconds when each font was looked for
+// among those of every page before it (review of 11 October 2026, #35).
+func fuzzReadMaxTime(size int) time.Duration {
+	return 200*time.Millisecond + time.Duration(size)*50*time.Microsecond
+}
+
+// FuzzPDFRead fuzzes the bytes of a PDF and the password it is read with,
+// with a budget of decoded data of fuzzDecodedTotal; see fuzzReadMaxAlloc and
+// fuzzReadMaxTime.
 func FuzzPDFRead(f *testing.F) {
 	for _, seed := range fuzzPDFSeeds(f) {
 		f.Add(seed, "")
@@ -284,12 +310,60 @@ func FuzzPDFRead(f *testing.F) {
 	}
 	f.Add([]byte("%PDF-1.4\n"), "")
 	f.Add([]byte{}, "")
+	for _, seed := range fuzzBudgetSeeds() {
+		f.Add(seed, "")
+	}
 	for _, seed := range fuzzCorpusSeeds(f) {
 		f.Add(seed, "")
 	}
 	f.Fuzz(func(t *testing.T, data []byte, password string) {
-		fuzzRun(t, len(data), func() {
-			fuzzReadPDF(t, data, password)
+		defer func(was int) { maxDecodedTotal = was }(maxDecodedTotal)
+		maxDecodedTotal = fuzzDecodedTotal
+		fuzzRunWithin(t, len(data), fuzzReadMaxAlloc(len(data)), func() {
+			limit := fuzzReadMaxTime(len(data))
+			if took := fuzzShortest(limit, func() { fuzzReadPDF(t, data, password) }); took > limit {
+				t.Fatalf("an input of %d bytes took %v", len(data), took)
+			}
 		})
 	})
+}
+
+// fuzzBudgetSeeds are PDFs that reach fuzzDecodedTotal, or would take time or
+// memory far past what their length does, in the ways the reviews found: a
+// stream that decodes past the budget, pages that join copies of one stream,
+// an object stream of a header far longer than its /N, a page that /Kids
+// lists again and again, pages under a value too large to inherit, and pages
+// that share their resources of many fonts.
+func fuzzBudgetSeeds() [][]byte {
+	zeros := testDeflate(make([]byte, 512<<10))
+	// 32 pages of four copies each of a stream of 512 KB: 64 MB uncharged
+	kids := make([]string, 32)
+	for i := range kids {
+		kids[i] = fmt.Sprintf("%d 0 R", 4+i)
+	}
+	joined := []string{
+		"<< /Type /Catalog /Pages 2 0 R >>",
+		fmt.Sprintf("<< /Type /Pages /Kids [%s] /Count %d >>", strings.Join(kids, " "), len(kids)),
+		fmt.Sprintf("<< /Length %d /Filter /FlateDecode >>\nstream\n%s\nendstream", len(zeros), zeros),
+	}
+	for range kids {
+		joined = append(joined, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents [3 0 R 3 0 R 3 0 R 3 0 R] >>")
+	}
+	header := "5 0 " + strings.Repeat("1 0 ", 20000)
+	body := testDeflate([]byte(header + "<< /A 1 >>"))
+	objectStream := []string{
+		"<< /Type /Catalog /Pages 2 0 R >>",
+		"<< /Type /Pages /Kids [] /Count 0 >>",
+		fmt.Sprintf("<< /Type /ObjStm /N 20001 /First %d /Length %d /Filter /FlateDecode >>\nstream\n%s\nendstream",
+			len(header), len(body), body),
+	}
+	return [][]byte{
+		testPDFOfStreams(100, 2<<20),
+		testPDFWithObjects(joined...),
+		testPDFWithObjects(objectStream...),
+		testPDFWithObjects(testRepeatedPage(300)...),
+		testPDFWithObjects(testHugeInheritedBox(100)...),
+		testPDFWithObjects(testSharedResources(300, false)...),
+		testPDFWithObjects(testSharedResources(300, true)...),
+	}
 }

@@ -31,8 +31,9 @@ const fuzzMarkdownMaxTime = time.Second
 
 // The fuzz target of Markdown. Any text is read into blocks and drawn on as
 // many pages as it needs in a PDF/UA document, which is written; see fuzzRun.
-// The text repeated to fuzzMarkdownRepeated characters is read in
-// fuzzMarkdownMaxTime, as the blocks of a text are read in linear time; it is
+// The text repeated to fuzzMarkdownRepeated characters, and the text after its
+// first two lines repeated after them, is read in fuzzMarkdownMaxTime, as the
+// blocks of a text are read in linear time; it is
 // not drawn, since a text of that length can need hundreds of pages, of a
 // column an inch wide in quotes nested as deep as they nest, and they are as
 // much work in every port. The seeds are the texts of the unit tests and a few
@@ -78,6 +79,9 @@ func FuzzMarkdown(f *testing.F) {
 		"|" + strings.Repeat(" a |", 60) + "\n|" + strings.Repeat("---|", 60) + "\n" +
 			strings.Repeat("|"+strings.Repeat(" wordwordword |", 60)+"\n", 30),
 		"```\n" + strings.Repeat("x", 500) + "\n" + strings.Repeat("😀", 200),
+		// A header of 64 columns over rows of "|" alone, each padded to 64
+		// cells (review of 11 October 2026, #33)
+		"|" + strings.Repeat(" a |", 64) + "\n|" + strings.Repeat("---|", 64) + "\n" + strings.Repeat("|\n", 10),
 		// Code in 31 quotes, one column wide, which a character of two UTF-16
 		// code units is wider than.
 		strings.Repeat("> ", 31) + "```\n" + strings.Repeat("> ", 31) + "😀x😀\n" + strings.Repeat("> ", 31) + "```",
@@ -92,12 +96,24 @@ func FuzzMarkdown(f *testing.F) {
 	f.Fuzz(func(t *testing.T, text string) {
 		fuzzRun(t, len(text), func() {
 			fuzzDrawMarkdown(t, text)
-			if n := utf8.RuneCountInString(text); n > 0 {
-				long := strings.Repeat(text, (fuzzMarkdownRepeated+n-1)/n)
-				start := time.Now()
-				markdownParser{}.parse(long)
-				if elapsed := time.Since(start); elapsed > fuzzMarkdownMaxTime {
-					t.Fatalf("%d characters took %v", utf8.RuneCountInString(long), elapsed)
+			// The text repeated whole, and the text with its first two lines
+			// once and the rest repeated, as the rows of a table under its
+			// header and delimiter row: repeated whole, the header came again
+			// and again, and the rows padded to it were not seen (review of
+			// 11 October 2026, #33).
+			head := ""
+			if lines := strings.SplitAfterN(text, "\n", 3); len(lines) == 3 {
+				head = lines[0] + lines[1]
+			}
+			for _, part := range []string{"", head} {
+				body := text[len(part):]
+				if n := utf8.RuneCountInString(body); n > 0 {
+					long := part + strings.Repeat(body, (fuzzMarkdownRepeated+n-1)/n)
+					if took := fuzzShortest(fuzzMarkdownMaxTime, func() {
+						markdownParser{}.parse(long)
+					}); took > fuzzMarkdownMaxTime {
+						t.Fatalf("%d characters took %v", utf8.RuneCountInString(long), took)
+					}
 				}
 			}
 		})
