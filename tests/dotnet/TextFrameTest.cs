@@ -515,5 +515,23 @@ public class TextFrameTest {
             }
         }
     }
+
+    // A word too wide for the frame breaks at a soft hyphen, the row ending
+    // with a hyphen, and no soft hyphen is drawn (review of 11 October 2026,
+    // #21).
+    [Fact]
+    public void BreaksAWordAtASoftHyphen() {
+        Font font = TestSupport.Helvetica(TestSupport.NewPDF());
+        string content = DrawJoined(TextBlockTest.SoftHyphenWidth(font), null, TextBlockTest.SoftHyphenWord);
+        Assert.True(content.Contains(TestSupport.Hex("Donaudampf-"), StringComparison.Ordinal),
+                "no row of Donaudampf-: " + content);
+        foreach (System.Text.RegularExpressions.Match match in
+                System.Text.RegularExpressions.Regex.Matches(content, "<([0-9A-F]+)>")) {
+            string hex = match.Groups[1].Value;
+            for (int i = 0; i + 2 <= hex.Length; i += 2) {
+                Assert.False(hex.Substring(i, 2) == "AD", "a soft hyphen is drawn: " + content);
+            }
+        }
+    }
 }
 }

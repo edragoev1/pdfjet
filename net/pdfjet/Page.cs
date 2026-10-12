@@ -695,6 +695,7 @@ public class Page {
     }
 
     private void DrawASCIIString(Font font, String str) {
+        str = font.WithoutSoftHyphens(str);
         if (str.Length == 0) {
             return;
         }

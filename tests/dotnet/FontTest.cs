@@ -256,11 +256,16 @@ public class FontTest {
         Assert.False(latin.HasGlyph(0x0E01) || latin.HasGlyph(0x1F600), "a character drawn with .notdef has a glyph");
     }
 
+    // A soft hyphen takes no width, as it is drawn only where a line breaks at
+    // it, as a hyphen (review of 11 October 2026, #21); the kerning of the
+    // characters on either side of it is kept.
     [Fact]
-    public void ASoftHyphenIsAHyphenAndANoBreakSpaceIsASpace() {
+    public void ASoftHyphenHasNoWidthAndANoBreakSpaceIsASpace() {
         Font font = TestSupport.Helvetica(TestSupport.NewPDF());
         font.SetKernPairs(true);
-        Assert.Equal(font.StringWidth(10f, "T-"), font.StringWidth(10f, "T\u00ad"));
+        Assert.Equal(font.StringWidth(10f, "AV"), font.StringWidth(10f, "A\u00adV"));
+        Font plex = TestSupport.PlexSans(TestSupport.NewPDF());
+        Assert.Equal(plex.StringWidth(10f, "T"), plex.StringWidth(10f, "T\u00ad"));
         Assert.Equal(font.StringWidth(10f, ". "), font.StringWidth(10f, ".\u00a0"));
         // KPX period space -60
         TestSupport.AssertNear(4.96f, font.StringWidth(10f, ".\u00a0"), 0.001f);

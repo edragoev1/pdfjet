@@ -1968,20 +1968,43 @@ public class Table : IDrawable {
     // than the width of the text in floating point.
     private const float FIT_TOLERANCE = 0.01f;
 
-    private List<String> WrapCellText(List<Cell> row, int index) {
+    internal List<String> WrapCellText(List<Cell> row, int index) {
         Cell cell = row[index];
         float cellWidth = GetTotalWidth(row, index) + FIT_TOLERANCE;
         List<String> lines = new List<String>();
         StringBuilder buf = new StringBuilder();
-        foreach (String token in Util.SplitOnWhitespace(cell.text)) {
-            if (cell.font.StringWidth(cell.fallbackFont, cell.fontSize, token) > cellWidth) {
-                // A token wider than the column starts a line of its own:
-                // after the words before it, or the end of another such
-                // token, it was "listic e" (5 October 2026)
+        Func<String, float> width = text => cell.font.StringWidth(cell.fallbackFont, cell.fontSize, text);
+        foreach (String word in Util.SplitOnWhitespace(cell.text)) {
+            String token = word;
+            while (true) {
+                String joined = (buf.Length > 0) ? buf.ToString() + " " + token : token;
+                if (width(joined) <= cellWidth) {
+                    buf.Length = 0;
+                    buf.Append(joined);
+                    break;
+                }
+                // The token is broken at a soft hyphen, the line ending with a
+                // hyphen, as far along as fits (review of 11 October 2026, #21)
+                String line = buf.ToString();
+                if (line.Length > 0) {
+                    line += " ";
+                }
+                if (TextBlock.SoftHyphenBreak(token, cellWidth, h => width(line + h),
+                        out String head, out String rest)) {
+                    lines.Add(line + head);
+                    buf.Length = 0;
+                    token = rest;
+                    continue;
+                }
                 if (buf.Length > 0) {
                     lines.Add(Util.Trim(buf.ToString()));
                     buf.Length = 0;
+                    continue;
                 }
+                // A token wider than the column starts a line of its own:
+                // after the words before it, or the end of another such
+                // token, it was "listic e" (5 October 2026). It is broken
+                // between its characters.
                 for (int k = 0; k < token.Length; ) {
                     // A character, which is two chars when it is not of the
                     // basic plane, and a line has at least one of them, even
@@ -1990,26 +2013,14 @@ public class Table : IDrawable {
                     // The line ends without the space before the token, which
                     // would count in the width of the text and move it when it
                     // is aligned right or centered.
-                    if (buf.Length > 0 && cell.font.StringWidth(cell.fallbackFont, cell.fontSize,
-                            buf.ToString() + character) > cellWidth) {
+                    if (buf.Length > 0 && width(buf.ToString() + character) > cellWidth) {
                         lines.Add(Util.Trim(buf.ToString()));
                         buf.Length = 0;
                     }
                     buf.Append(character);
                     k += character.Length;
                 }
-            } else if (buf.Length == 0) {
-                // A token that fits the column fits a line of its own, and its
-                // width is the one measured just above.
-                buf.Append(token);
-            } else if (cell.font.StringWidth(cell.fallbackFont, cell.fontSize,
-                    Util.Trim(buf.ToString() + " " + token)) > cellWidth) {
-                lines.Add(Util.Trim(buf.ToString()));
-                buf.Length = 0;
-                buf.Append(token);
-            } else {
-                buf.Append(" ");
-                buf.Append(token);
+                break;
             }
         }
         lines.Add(Util.Trim(buf.ToString()));

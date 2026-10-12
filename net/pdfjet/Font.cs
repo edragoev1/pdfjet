@@ -450,6 +450,7 @@ public class Font {
         }
 
         if (isCoreFont) {
+            str = WithoutSoftHyphens(str);
             for (int i = 0; i < str.Length; ) {
                 int cp = Util.CodePointAt(str, i);
                 i += (cp > 0xFFFF) ? 2 : 1;
@@ -667,6 +668,10 @@ public class Font {
         while (i < str.Length) {
             int cp = Util.CodePointAt(str, i);
             int next = i + ((cp > 0xFFFF) ? 2 : 1);
+            if (cp == 0x00AD && !symbolic) {
+                i = next; // A soft hyphen is not drawn, see WithoutSoftHyphens
+                continue;
+            }
             int c1 = CoreFontCode(cp);
             w -= metrics[c1 - 32][1];
             if (w < 0) {
@@ -683,6 +688,18 @@ public class Font {
         }
 
         return i;
+    }
+
+    // Returns the characters without their soft hyphens, which a core font of
+    // WinAnsi does not draw or measure, as no font does: WinAnsi has a hyphen
+    // at the soft hyphen's code, and a line broken at a soft hyphen ends with
+    // a hyphen of its own (review of 11 October 2026, #21). Symbol and
+    // ZapfDingbats keep theirs, their codes being their characters.
+    internal String WithoutSoftHyphens(String str) {
+        if (symbolic || str.IndexOf('\u00AD') == -1) {
+            return str;
+        }
+        return str.Replace("\u00AD", "");
     }
 
     /// <summary>
@@ -778,12 +795,17 @@ public class Font {
 
     // Returns true for a character that Unicode says is not drawn when a font
     // has no glyph for it, Default_Ignorable_Code_Point, but those that Page
-    // treats on their own: the soft hyphen, the marks of direction, the joiners
-    // and the byte order mark. A variation selector after ™ or ©, as text
-    // pasted from a phone has, a zero width space or a word joiner was drawn as
-    // a box with a width (review of 11 October 2026, #9); it takes no width,
-    // and nothing is drawn for it.
+    // treats on their own: the marks of direction, the joiners and the byte
+    // order mark. A variation selector after ™ or ©, as text pasted from a
+    // phone has, a zero width space or a word joiner was drawn as a box with a
+    // width (review of 11 October 2026, #9); it takes no width, and nothing is
+    // drawn for it. The soft hyphen is one too: a line broken at it ends with
+    // a hyphen that TextBlock, TextFrame and a table's cells put there, and it
+    // was drawn as a hyphen wherever it was (#21).
     internal static bool IsIgnorable(int ch) {
+        if (ch == 0x00AD) {
+            return true;
+        }
         if (ch < 0x034F) {
             return false;
         }

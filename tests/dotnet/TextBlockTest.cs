@@ -6,6 +6,7 @@
  */
 using System.Globalization;
 using System;
+using System.Collections.Generic;
 using Xunit;
 
 namespace PDFjet.NET {
@@ -279,6 +280,39 @@ public class TextBlockTest {
         for (int i = 0; i + 4 <= glyphs.Length; i += 4) {
             Assert.False(glyphs.Substring(i, 4) == "0000", "the stamp draws .notdef: " + content);
         }
+    }
+
+    // SoftHyphenWord is a word of soft hyphens, and SoftHyphenWidth a width
+    // that fits its start up to the first of them that a line can break at
+    // past "Donau", with the hyphen, and no more.
+    internal const string SoftHyphenWord = "Donau\u00addampf\u00adschiff\u00adfahrt";
+
+    internal static float SoftHyphenWidth(Font font) {
+        return font.StringWidth(font.GetSize(), "Donaudampf-") + 1f;
+    }
+
+    // A word too wide for its line breaks at a soft hyphen, the line ending
+    // with a hyphen; it was drawn as a hyphen wherever it was, and broken
+    // between its characters (review of 11 October 2026, #21).
+    [Fact]
+    public void BreaksAWordAtASoftHyphen() {
+        Font font = TestSupport.Helvetica(TestSupport.NewPDF());
+        TextBlock block = new TextBlock(font, "x " + SoftHyphenWord);
+        block.SetWidth(SoftHyphenWidth(font) + 2f * block.GetPadding());
+        List<string> lines = new List<string>();
+        foreach (TextLine line in block.GetTextLines()) {
+            lines.Add(line.text.Replace("\u00ad", ""));
+        }
+        string all = "[" + string.Join("|", lines) + "]";
+        Assert.True(lines.Count >= 2 && lines[0] == "x Donau-", "the lines " + all);
+        for (int i = 0; i < lines.Count - 1; i++) {
+            Assert.True(lines[i].EndsWith("-", StringComparison.Ordinal),
+                    "the lines " + all + ": " + lines[i] + " is not broken at a soft hyphen");
+        }
+        Assert.Equal("x Donaudampfschifffahrt", string.Join("", lines).Replace("-", ""));
+        // A word that fits draws no hyphen.
+        TextLine[] fits = new TextBlock(font, SoftHyphenWord).SetWidth(500f).GetTextLines();
+        Assert.True(fits.Length == 1 && !fits[0].text.Contains('-'), "the lines of a word that fits: " + fits.Length);
     }
 }
 }

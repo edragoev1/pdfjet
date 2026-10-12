@@ -349,7 +349,7 @@ public class TextBlock : IDrawable {
         return this;
     }
 
-    private TextLine[] GetTextLines() {
+    internal TextLine[] GetTextLines() {
         List<TextLine> textLines = new List<TextLine>();
 
         float textAreaWidth = TextAreaWidth();
@@ -401,23 +401,38 @@ public class TextBlock : IDrawable {
                         for (int i = 0; i < words.Length; i++) {
                             String word = words[i];
                             String separator = (i == words.Length - 1) ? " " : "";
-                            if (this.StringWidth(sb.ToString() + word) <= textAreaWidth) {
-                                sb.Append(word).Append(separator);
-                            } else {
+                            while (true) {
+                                if (this.StringWidth(sb.ToString() + word) <= textAreaWidth) {
+                                    sb.Append(word).Append(separator);
+                                    break;
+                                }
+                                // The word is broken at a soft hyphen, the line
+                                // ending with a hyphen, as far along as fits
+                                String pending = sb.ToString();
+                                if (SoftHyphenBreak(word, textAreaWidth,
+                                        h => this.StringWidth(pending + h),
+                                        out String head, out String rest)) {
+                                    textLines.Add(new TextLine(font, pending + head));
+                                    sb.Clear();
+                                    word = rest;
+                                    continue;
+                                }
                                 if (sb.Length > 0) {
                                     // Wrapped at a space, the line keeps it, drawn
                                     // but not measured; at a zero width space it
                                     // has none to keep.
-                                    TextLine textLine = new TextLine(font, Util.Trim(sb.ToString()));
-                                    textLine.trailingSpace = sb[sb.Length - 1] == ' ';
+                                    TextLine textLine = new TextLine(font, Util.Trim(pending));
+                                    textLine.trailingSpace = pending[pending.Length - 1] == ' ';
                                     textLines.Add(textLine);
                                     sb.Clear();
+                                    continue;
                                 }
                                 // A word too wide for a line by itself is broken.
-                                int rest = AddBrokenWordLines(textLines, word, textAreaWidth);
-                                if (rest < word.Length) {
-                                    sb.Append(word.Substring(rest)).Append(separator);
+                                int restIndex = AddBrokenWordLines(textLines, word, textAreaWidth);
+                                if (restIndex < word.Length) {
+                                    sb.Append(word.Substring(restIndex)).Append(separator);
                                 }
+                                break;
                             }
                         }
                     }
@@ -566,6 +581,32 @@ public class TextBlock : IDrawable {
     // font has no glyph for in the fallback font.
     private float StringWidth(String text) {
         return font.StringWidth(fallbackFont, fontSize, GetFallbackFontSize(), text);
+    }
+
+    // Returns the start of the word up to its last soft hyphen whose start,
+    // with a hyphen in place of the soft hyphen, is no wider than the width as
+    // measure measures it, that hyphen at its end, and the rest of the word
+    // after the soft hyphen: a line may break there, and only there is a soft
+    // hyphen drawn, as a hyphen (review of 11 October 2026, #21). A soft hyphen
+    // at the start or the end of the word is no place to break.
+    internal static bool SoftHyphenBreak(String word, float width,
+            Func<String, float> measure, out String head, out String rest) {
+        for (int i = word.LastIndexOf('\u00AD'); i != -1;
+                i = (i == 0) ? -1 : word.LastIndexOf('\u00AD', i - 1)) {
+            if (Util.Trim(word.Substring(0, i).Replace("\u00AD", "")).Length == 0 ||
+                    i + 1 == word.Length) {
+                continue;
+            }
+            String start = word.Substring(0, i) + "-";
+            if (measure(start) <= width) {
+                head = start;
+                rest = word.Substring(i + 1);
+                return true;
+            }
+        }
+        head = "";
+        rest = "";
+        return false;
     }
 
     internal static int NextCharacterBreak(String word, int i) {

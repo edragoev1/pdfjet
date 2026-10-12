@@ -1315,5 +1315,22 @@ public sealed class TableTest : IDisposable {
             }
         }
     }
+
+    // A cell's word too wide for its column breaks at a soft hyphen, the line
+    // ending with a hyphen (review of 11 October 2026, #21).
+    [Fact]
+    public void ACellBreaksAWordAtASoftHyphen() {
+        Font font = TestSupport.Helvetica(TestSupport.NewPDF());
+        Cell cell = new Cell(font, TextBlockTest.SoftHyphenWord);
+        cell.SetWidth(TextBlockTest.SoftHyphenWidth(font));
+        cell.SetLeftPadding(0f);
+        cell.SetRightPadding(0f);
+        List<string> lines = new List<string>();
+        foreach (string line in new Table().WrapCellText(new List<Cell> {cell}, 0)) {
+            lines.Add(line.Replace("\u00ad", ""));
+        }
+        Assert.True(lines.Count >= 2 && lines[0] == "Donaudampf-", "the lines [" + string.Join("|", lines) + "]");
+        Assert.Equal("Donaudampfschifffahrt", string.Join("", lines).Replace("-", ""));
+    }
 }
 }

@@ -428,7 +428,13 @@ public class TextFrame : IDrawable {
                 tokenIndex++;
                 continue;
             }
-            if (buf.Length == 0 && xText == x) {
+            if (TextBlock.SoftHyphenBreak(token, available - runLength,
+                    h => Width(textLine, h), out String softHead, out String softRest)) {
+                // The token is broken at a soft hyphen, the row ending with a
+                // hyphen, as far along as fits (review of 11 October 2026, #21)
+                buf.Append(softHead);
+                tokens[tokenIndex] = softRest;
+            } else if (buf.Length == 0 && xText == x) {
                 // The token does not fit in an empty row, so the row takes as much of it as fits.
                 String head = HeadThatFits(textLine, token);
                 buf.Append(head);
