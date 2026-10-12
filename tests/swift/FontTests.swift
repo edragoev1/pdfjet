@@ -446,7 +446,7 @@ import Testing
 
         let tc = try Font(pdf, TestSupport.open("fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.ttf"))
         try #require(tc.unicodeToGID[0x2215] == tc.unicodeToGID[0xFF0F])
-        let stamp = Stamp(pdf)
+        let stamp = Stamp(pdf).setSize(100, 50)
         stamp.drawText(tc, 12, 0, 12, "1\u{2215}2")
         stamp.drawText(tc, 12, 0, 24, "1\u{FF0F}2")
         content = TestSupport.latin1(stamp.buf)
@@ -461,7 +461,7 @@ import Testing
         let pdf = TestSupport.newPDF()
         let font = try Font(pdf, TestSupport.open("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf"))
         try #require(font.unicodeToGID[0x200C] == 0)
-        let stamp = Stamp(pdf)
+        let stamp = Stamp(pdf).setSize(100, 50)
         stamp.drawText(font, 12, 0, 12, "a\u{200C}\u{200E}b")
         let actualText = "/ActualText <" + Page.toUTF16Hex("a\u{200C}") + ">"
         #expect(TestSupport.latin1(stamp.buf).contains(actualText), "\(TestSupport.latin1(stamp.buf))")

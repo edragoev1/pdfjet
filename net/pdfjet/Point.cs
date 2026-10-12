@@ -281,8 +281,21 @@ public class Point : IDrawable {
             return new float[] {x + r, y + r};
         }
 
-        // A point is a marker and carries no text, so it is decorative content.
-        page.AddArtifactBMC();
+        // A point is a marker and carries no text, so it is decorative content;
+        // a point that is a link is a figure of its own in the Link, described
+        // by what it stands for or by its URI, as a point of a chart is. Its
+        // link was not made (review of 12 October 2026, F15).
+        StructElement link = null;
+        String description = altDescription;
+        if (!String.IsNullOrEmpty(uri)) {
+            if (String.IsNullOrEmpty(description)) {
+                description = uri;
+            }
+            link = page.BeginLink();
+            page.AddBDC(StructElem.FIGURE, null, description);
+        } else {
+            page.AddArtifactBMC();
+        }
         page.SaveGraphicsState();
         if (fillColor != null && strokeColor != null) {
             page.SetBrushColor(fillColor);
@@ -297,11 +310,34 @@ public class Point : IDrawable {
             page.SetPenWidth(strokeWidth);
             this.pathOperator = PathOperator.CLOSE_AND_STROKE;
         }
+        if (fillColor != null && strokeColor == null && IsLineShape(shape)) {
+            // A marker of lines is stroked in the point's color: it was drawn
+            // in the pen's (review of 12 October 2026, F15)
+            page.SetPenColor(fillColor);
+            page.SetPenWidth(strokeWidth);
+        }
         page.DrawPoint(this);
         page.RestoreGraphicsState();
+        if (!String.IsNullOrEmpty(uri)) {
+            page.SetFigureBoundingBox(x - r, y - r, 2*r, 2*r);
+        }
         page.AddEMC();
+        if (!String.IsNullOrEmpty(uri)) {
+            page.EndLink(link);
+            Annotation annotation = new Annotation(
+                    Annotation.Link, x - r, y - r, x + r, y + r,
+                    null, null, 0f, null, null, uri, null, null, null, description);
+            annotation.linkElement = link;
+            page.AddAnnotation(annotation);
+        }
 
         return new float[] {x + r, y + r};
+    }
+
+    // Returns true for a marker drawn of lines alone, which has nothing to fill.
+    private static bool IsLineShape(Shape shape) {
+        return shape == Shape.PLUS || shape == Shape.HORIZONTAL_DASH || shape == Shape.VERTICAL_DASH
+                || shape == Shape.X_MARK || shape == Shape.MULTIPLY;
     }
 }   // End of Point.cs
 }   // End of namespace PDFjet.NET

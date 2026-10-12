@@ -83,6 +83,7 @@ type PDF struct {
 	prevPage               *Page
 	err                    error // The first misuse of the API or error writing to the writer; Complete returns it.
 	completed              bool  // True after Complete.
+	ended                  bool  // True once %%EOF is written: nothing is written after it
 	// The files embedded in the document, and whether one is attached to a
 	// page, which a document of PDF/A takes only as PDF/A-3's associated
 	// files (review of 11 October 2026, #5)
@@ -2490,6 +2491,7 @@ func (pdf *PDF) complete() error {
 	pdf.appendString(strconv.FormatInt(startxref, 10))
 	pdf.appendString("\n")
 	pdf.appendString("%%EOF\n")
+	pdf.ended = true
 
 	if pdf.err != nil {
 		return pdf.err
@@ -4156,7 +4158,13 @@ func (pdf *PDF) appendFloat32(f float32) {
 
 // The append functions keep the first error of the writer for Complete to
 // return, as the other ports let the exception of their stream propagate.
+// After %%EOF they write nothing: an image made after Complete was written
+// after it, into the writer of the caller (review of 12 October 2026, F14).
 func (pdf *PDF) appendString(s string) {
+	if pdf.ended {
+		pdf.fail("The PDF was already completed.")
+		return
+	}
 	if _, err := pdf.writer.WriteString(s); err != nil && pdf.err == nil {
 		pdf.err = err
 	}
@@ -4164,6 +4172,10 @@ func (pdf *PDF) appendString(s string) {
 }
 
 func (pdf *PDF) appendByte(b byte) {
+	if pdf.ended {
+		pdf.fail("The PDF was already completed.")
+		return
+	}
 	if err := pdf.writer.WriteByte(b); err != nil && pdf.err == nil {
 		pdf.err = err
 	}
@@ -4171,6 +4183,10 @@ func (pdf *PDF) appendByte(b byte) {
 }
 
 func (pdf *PDF) appendByteArray(buf []byte) {
+	if pdf.ended {
+		pdf.fail("The PDF was already completed.")
+		return
+	}
 	if _, err := pdf.writer.Write(buf); err != nil && pdf.err == nil {
 		pdf.err = err
 	}

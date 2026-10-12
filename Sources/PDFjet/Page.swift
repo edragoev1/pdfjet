@@ -45,6 +45,33 @@ public class Page {
     // The message of a path whose last curve has no end.
     static let PATH_ENDS_ON_CONTROL_POINT =
             "A path cannot end on a control point: a curve needs a point to end at after its control points."
+    // The message of a curve of the wrong control points.
+    static let CURVE_CONTROL_POINTS =
+            "A curve of a path has two \"c\" control points, or one \"v\" or \"y\" control point, before the point it ends at."
+    // Returns the error of the control points of the path, or nil: a curve has
+    // two "c" control points, or one "v" or "y" one, and a point to end at. A
+    // "c" curve of one control point wrote "c" with four numbers, not six,
+    // which readers refused (review of 12 October 2026, F11).
+    static func pathError(_ path: [Point]) -> String? {
+        var run = 0
+        var op = ""
+        for point in path.dropFirst() {
+            if !point.controlPoint.isEmpty {
+                if run > 0 && point.controlPoint != op {
+                    return CURVE_CONTROL_POINTS
+                }
+                op = point.controlPoint
+                run += 1
+            } else if run > 0 {
+                if (op == "c") != (run == 2) || run > 2 {
+                    return CURVE_CONTROL_POINTS
+                }
+                run = 0
+            }
+        }
+        return (run > 0) ? PATH_ENDS_ON_CONTROL_POINT : nil
+    }
+
     // The message of a color of fewer than three components.
     static let RGB_COUNT = "An RGB color needs a red, a green and a blue value."
     // The message of a transform of fewer than six values.
@@ -1754,8 +1781,8 @@ public class Page {
         if path.count < 2 {
             return // A path needs two points to paint anything.
         }
-        if path[path.count - 1].controlPoint != "" {
-            pdf.fail(Page.PATH_ENDS_ON_CONTROL_POINT)
+        if let message = Page.pathError(path) {
+            pdf.fail(message)
             return
         }
         var point = path[0]
@@ -2429,6 +2456,12 @@ public class Page {
     // written with five decimals, as hundredths would turn it by another
     // angle, by 1.15 degrees for 1.
     func appendRotation(_ cosValue: Float, _ sinValue: Float) {
+        // A NaN or infinite angle fails the document, as a NaN coordinate
+        // does: it wrote 0 0 0 0 0 0 cm, and the content vanished (review of
+        // 12 October 2026, F12).
+        if !FastFloat.isWritable(cosValue) || !FastFloat.isWritable(sinValue) {
+            pdf.fail(FastFloat.NOT_WRITABLE)
+        }
         append(FastFloat.toPreciseByteArray(cosValue))
         append(Token.space)
         append(FastFloat.toPreciseByteArray(sinValue))

@@ -198,7 +198,7 @@ func TestEncryptionEncryptsTheStreamOfAStamp(t *testing.T) {
 	}
 	doc.pdf.SetEncryption(enc)
 	page := NewPage(doc.pdf, letter.Portrait())
-	stamp := NewStamp(doc.pdf)
+	stamp := NewStamp(doc.pdf).SetSize(20, 10)
 	stamp.FillRect(0, 0, 20, 10)
 	stamp.Complete()
 	stamp.DrawOn(page)

@@ -308,4 +308,96 @@ import Testing
             #expect(pdf.error == "The dash pattern \"\" is not an array of non-negative numbers, not all zero, followed by a phase, such as \"[3 3] 0\".")
         }
     }
+
+    /// A NaN or infinite angle fails the document, as a NaN coordinate does:
+    /// it wrote 0 0 0 0 0 0 cm, and the arc or the container vanished (F12).
+    @Test func aNaNRotationFailsTheDocument() {
+        for degrees: Float in [.nan, .infinity] {
+            let pdf = TestSupport.newPDF()
+            let arc = Arc().setRadius(50).setSweep(90).setRotation(degrees)
+            _ = arc.setLocation(100, 100)
+            _ = arc.drawOn(Page(pdf, Letter.PORTRAIT))
+            #expect(pdf.error == "A coordinate, size or width is NaN, infinite or too large for a PDF.")
+
+            let pdf2 = TestSupport.newPDF()
+            let container = Container(100, 100).setRotation(Double(degrees))
+            _ = container.add(Arc().setRadius(10).setSweep(90))
+            _ = container.drawOn(Page(pdf2, Letter.PORTRAIT))
+            #expect(pdf2.error == "A coordinate, size or width is NaN, infinite or too large for a PDF.")
+        }
+    }
+
+    /// A curve has two "c" control points, or one "v" or "y" one: a "c" curve
+    /// of one control point wrote "c" with four numbers, not six, which
+    /// readers refused (F11).
+    @Test func aCurveOfTheWrongControlPointsIsRefused() throws {
+        let start = Point(10, 10)
+        let end = Point(100, 100)
+        let paths: [[Point]] = [
+            [start, Point(20, 20, Point.CONTROL_POINT_C), end],
+            [start, Point(20, 20, Point.CONTROL_POINT_V), Point(30, 30, Point.CONTROL_POINT_V), end],
+            [start, Point(20, 20, Point.CONTROL_POINT_C), Point(30, 30, Point.CONTROL_POINT_Y), end]]
+        for path in paths {
+            let pdf = TestSupport.newPDF()
+            Page(pdf, Letter.PORTRAIT).drawPath(path, PathOperator.STROKE)
+            #expect(pdf.error == "A curve of a path has two \"c\" control points, or one \"v\" or \"y\" control point, before the point it ends at.")
+            let pdf2 = TestSupport.newPDF()
+            try Stamp(pdf2).setSize(200, 200).drawPath(path, PathOperator.STROKE)
+            #expect(pdf2.error == "A curve of a path has two \"c\" control points, or one \"v\" or \"y\" control point, before the point it ends at.")
+        }
+        let pdf = TestSupport.newPDF()
+        Page(pdf, Letter.PORTRAIT).drawPath(
+            [start, Point(20, 20, Point.CONTROL_POINT_C), Point(30, 30, Point.CONTROL_POINT_C), end], PathOperator.STROKE)
+        #expect(pdf.error == nil)
+    }
+
+    /// A point a path lists twice is scaled once: (10, 10) listed twice and
+    /// scaled by 2 became (40, 40), not (20, 20) (F9).
+    @Test func aPointListedTwiceIsScaledOnce() {
+        let shared = Point(10, 10)
+        let other = Point(30, 5)
+        _ = Path().add(shared).add(other).add(shared).scaleBy(2)
+        TestSupport.expectNear(20, shared.getX())
+        TestSupport.expectNear(20, shared.getY())
+        TestSupport.expectNear(60, other.getX())
+    }
+
+    private func roundedRect(_ x: Float, _ y: Float, _ w: Float, _ h: Float) -> String {
+        let page = TestSupport.newPage()
+        _ = Rect(x, y, w, h).setCornerRadius(10).setFillColor(Color.red).drawOn(page)
+        return TestSupport.content(page)
+    }
+
+    /// A rounded rectangle of a negative width and height is the same
+    /// rectangle the other way round: its corners were turned inside out (F10).
+    @Test func aRoundedRectangleOfANegativeSizeIsTheSame() {
+        #expect(roundedRect(100, 100, -50, -40) == roundedRect(50, 60, 50, 40))
+    }
+
+    /// A stamp is given its size before anything is drawn on it, as its y
+    /// runs down from its top: drawn before, the content was below the
+    /// stamp, and was not seen (F13).
+    @Test func aStampIsSizedBeforeItIsDrawnOn() {
+        let pdf = TestSupport.newPDF()
+        Stamp(pdf).fillRect(0, 0, 20, 10)
+        #expect(pdf.error == "Set the size of the stamp before drawing on it: its y runs down from its top.")
+        let pdf2 = TestSupport.newPDF()
+        Stamp(pdf2).setSize(20, 10).fillRect(0, 0, 20, 10).setSize(40, 20)
+        #expect(pdf2.error == "Set the size of the stamp before drawing on it: its y runs down from its top.")
+        let pdf3 = TestSupport.newPDF()
+        Stamp(pdf3).setSize(20, 10).fillRect(0, 0, 20, 10).setSize(40, 10)
+        #expect(pdf3.error == nil)
+    }
+
+    /// A point that is a link, drawn on its own, makes its link, and a marker
+    /// of lines is stroked in the point's color: the link was not made, and a
+    /// plus was drawn in the pen's color (F15).
+    @Test func aPointDrawnOnItsOwnHasItsLinkAndColor() {
+        let page = TestSupport.newPage()
+        _ = Point(100, 100).setURIAction("https://pdfjet.com").drawOn(page)
+        #expect(page.annots.count == 1)
+        let page2 = TestSupport.newPage()
+        _ = Point(100, 100).setShape(Shape.PLUS).setFillColor(Color.red).drawOn(page2)
+        #expect(TestSupport.content(page2).contains("1 0 0 RG\n"), "\(TestSupport.content(page2))")
+    }
 }

@@ -15,6 +15,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/pathoperator"
 	"github.com/edragoev1/pdfjet/v9/src/shape"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
 // Point is a point with a marker: a shape drawn around its (x, y) coordinates,
@@ -247,8 +248,21 @@ func (point *Point) DrawOn(page *Page) [2]float32 {
 		return [2]float32{point.x + point.r, point.y + point.r}
 	}
 
-	// A point is a marker and carries no text, so it is decorative content.
-	page.AddArtifactBMC()
+	// A point is a marker and carries no text, so it is decorative content;
+	// a point that is a link is a figure of its own in the Link, described by
+	// what it stands for or by its URI, as a point of a chart is. Its link
+	// was not made (review of 12 October 2026, F15).
+	var link *structElement
+	description := point.altDescription
+	if point.uri != "" {
+		if description == "" {
+			description = point.uri
+		}
+		link = page.beginLink()
+		page.AddBDC(structelem.Figure, "", "", description)
+	} else {
+		page.AddArtifactBMC()
+	}
 	page.SaveGraphicsState()
 	if point.hasFillColor && point.hasStrokeColor {
 		page.SetBrushColorRGB(point.fillColor)
@@ -263,9 +277,38 @@ func (point *Point) DrawOn(page *Page) [2]float32 {
 		page.SetPenWidth(point.strokeWidth)
 		point.pathOperator = pathoperator.CloseAndStroke
 	}
+	if point.hasFillColor && !point.hasStrokeColor && isLineShape(point.shape) {
+		// A marker of lines is stroked in the point's color: it was drawn in
+		// the pen's (review of 12 October 2026, F15)
+		page.SetPenColorRGB(point.fillColor)
+		page.SetPenWidth(point.strokeWidth)
+	}
 	page.DrawPoint(point)
 	page.RestoreGraphicsState()
+	if point.uri != "" {
+		page.SetFigureBoundingBox(point.x-point.r, point.y-point.r, float32(2*point.r), float32(2*point.r))
+	}
 	page.AddEMC()
+	if point.uri != "" {
+		page.endLink(link)
+		page.addAnnotation(&annotationObject{
+			annotationType: annotationLink,
+			x1:             point.x - point.r,
+			y1:             point.y - point.r,
+			x2:             point.x + point.r,
+			y2:             point.y + point.r,
+			uri:            point.uri,
+			altDescription: description,
+			linkElement:    link,
+		})
+	}
 
 	return [2]float32{point.x + point.r, point.y + point.r}
+}
+
+// isLineShape returns true for a marker drawn of lines alone, which has
+// nothing to fill.
+func isLineShape(s shape.Shape) bool {
+	return s == shape.Plus || s == shape.HorizontalDash || s == shape.VerticalDash ||
+		s == shape.XMark || s == shape.Multiply
 }

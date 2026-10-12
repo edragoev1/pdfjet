@@ -1622,6 +1622,35 @@ final public class Page {
     static final String PATH_ENDS_ON_CONTROL_POINT =
             "A path cannot end on a control point: a curve needs a point to end at after its control points.";
 
+    // The message of a curve of the wrong control points.
+    static final String CURVE_CONTROL_POINTS =
+            "A curve of a path has two \"c\" control points, or one \"v\" or \"y\" control point, before the point it ends at.";
+
+    // Returns the error of the control points of the path, or null: a curve
+    // has two "c" control points, or one "v" or "y" one, and a point to end
+    // at. A "c" curve of one control point wrote "c" with four numbers, not
+    // six, which readers refused (review of 12 October 2026, F11).
+    static String pathError(List<Point> path) {
+        int run = 0;
+        char operator = '\0';
+        for (int i = 1; i < path.size(); i++) {
+            char controlPoint = path.get(i).controlPoint;
+            if (controlPoint != '\0') {
+                if (run > 0 && controlPoint != operator) {
+                    return CURVE_CONTROL_POINTS;
+                }
+                operator = controlPoint;
+                run++;
+            } else if (run > 0) {
+                if ((operator == 'c') != (run == 2) || run > 2) {
+                    return CURVE_CONTROL_POINTS;
+                }
+                run = 0;
+            }
+        }
+        return (run > 0) ? PATH_ENDS_ON_CONTROL_POINT : null;
+    }
+
     private static final String NUMBER = "[+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)";
     // The white space of the pattern is that of Go's \\s, which has no vertical tab.
     private static final String SPACE = "[ \\t\\n\\f\\r]";
@@ -1873,8 +1902,9 @@ final public class Page {
         if (path.size() < 2) {
             return; // A path needs two points to paint anything.
         }
-        if (path.get(path.size() - 1).controlPoint != '\0') {
-            pdf.fail(new IllegalArgumentException(PATH_ENDS_ON_CONTROL_POINT));
+        String message = pathError(path);
+        if (message != null) {
+            pdf.fail(new IllegalArgumentException(message));
             return;
         }
         Point point = path.get(0);
@@ -2564,6 +2594,12 @@ final public class Page {
     // written with five decimals, as hundredths would turn it by another
     // angle, by 1.15 degrees for 1.
     void appendRotation(float cos, float sin) {
+        // A NaN or infinite angle fails the document, as a NaN coordinate
+        // does: it wrote 0 0 0 0 0 0 cm, and the content vanished (review of
+        // 12 October 2026, F12).
+        if (!FastFloat.isWritable(cos) || !FastFloat.isWritable(sin)) {
+            pdf.fail(new IllegalArgumentException(FastFloat.NOT_WRITABLE));
+        }
         append(FastFloat.toPreciseByteArray(cos));
         append(' ');
         append(FastFloat.toPreciseByteArray(sin));

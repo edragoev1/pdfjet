@@ -184,9 +184,15 @@ public class Path : IDrawable {
     /// <param name="factor">the factor used to scale the path.</param>
     /// <returns>this Path object.</returns>
     public Path ScaleBy(float factor) {
+        // A point the path lists more than once is scaled once: (10, 10)
+        // listed twice became (40, 40) (review of 12 October 2026, F9). Point
+        // keeps the Equals of object, so the set holds the points by reference.
+        HashSet<Point> scaled = new HashSet<Point>();
         foreach (Point point in points) {
-            point.x *= factor;
-            point.y *= factor;
+            if (scaled.Add(point)) {
+                point.x *= factor;
+                point.y *= factor;
+            }
         }
         return this;
     }

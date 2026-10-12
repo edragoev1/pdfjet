@@ -338,8 +338,21 @@ public class Point implements Drawable {
             return new float[] {x + r, y + r};
         }
 
-        // A point is a marker and carries no text, so it is decorative content.
-        page.addArtifactBMC();
+        // A point is a marker and carries no text, so it is decorative content;
+        // a point that is a link is a figure of its own in the Link, described
+        // by what it stands for or by its URI, as a point of a chart is. Its
+        // link was not made (review of 12 October 2026, F15).
+        StructElement link = null;
+        String description = altDescription;
+        if (uri != null && !uri.isEmpty()) {
+            if (description == null || description.isEmpty()) {
+                description = uri;
+            }
+            link = page.beginLink();
+            page.addBDC(StructElem.FIGURE, null, description);
+        } else {
+            page.addArtifactBMC();
+        }
         page.saveGraphicsState();
         if (fillColor != null && strokeColor != null) {
             page.setBrushColor(fillColor);
@@ -354,10 +367,33 @@ public class Point implements Drawable {
             page.setPenWidth(strokeWidth);
             this.pathOperator = PathOperator.CLOSE_AND_STROKE;
         }
+        if (fillColor != null && strokeColor == null && isLineShape(shape)) {
+            // A marker of lines is stroked in the point's color: it was drawn
+            // in the pen's (review of 12 October 2026, F15)
+            page.setPenColor(fillColor);
+            page.setPenWidth(strokeWidth);
+        }
         page.drawPoint(this);
         page.restoreGraphicsState();
+        if (uri != null && !uri.isEmpty()) {
+            page.setFigureBoundingBox(x - r, y - r, 2*r, 2*r);
+        }
         page.addEMC();
+        if (uri != null && !uri.isEmpty()) {
+            page.endLink(link);
+            Annotation annotation = new Annotation(
+                    Annotation.Link, x - r, y - r, x + r, y + r,
+                    null, null, 0f, null, null, uri, null, null, null, description);
+            annotation.linkElement = link;
+            page.addAnnotation(annotation);
+        }
 
         return new float[] {x + r, y + r};
+    }
+
+    // Returns true for a marker drawn of lines alone, which has nothing to fill.
+    private static boolean isLineShape(Shape shape) {
+        return shape == Shape.PLUS || shape == Shape.HORIZONTAL_DASH || shape == Shape.VERTICAL_DASH
+                || shape == Shape.X_MARK || shape == Shape.MULTIPLY;
     }
 }   // End of Point.java

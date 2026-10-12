@@ -319,6 +319,34 @@ func markdownFirstLineHeight(paragraph *Paragraph) float32 {
 	return height
 }
 
+// firstBlockHeight returns the height a quote or a list item makes room for
+// on its page before it starts: a line of the text, or a heading and the two
+// lines it keeps with it, when the first of its blocks is one. The first
+// block of a quote or an item skips the check of a page's room, and a heading
+// was drawn into the bottom margin (review of 12 October 2026, F16).
+func (markdown *Markdown) firstBlockHeight(blocks []*markdownBlock) float32 {
+	for len(blocks) > 0 {
+		first := blocks[0]
+		switch first.kind {
+		case markdownHeading:
+			fontSize := float32(markdown.size() * markdownHeadingSizes[first.level-1])
+			return markdown.headingFont.GetBodyHeight(fontSize) +
+				float32(2*markdown.regular.GetBodyHeight(markdown.size()))
+		case markdownQuote:
+			blocks = first.children
+		case markdownList:
+			if len(first.children) == 0 {
+				blocks = nil
+			} else {
+				blocks = first.children[0].children
+			}
+		default:
+			blocks = nil
+		}
+	}
+	return markdown.regular.GetBodyHeight(markdown.size())
+}
+
 // drawHeading draws a heading, larger than the text, which keeps a line of
 // the text after it on its page. Its level as it is tagged is at most one
 // more than that of the heading before it, so that no level is skipped.
@@ -422,7 +450,7 @@ func markdownIsHighSurrogate(unit uint16) bool {
 // drawQuote draws a quote, indented, with a bar on its left.
 func (markdown *Markdown) drawQuote(block *markdownBlock, x, width float32) {
 	markdown.gap(float32(markdown.size() * 0.75))
-	markdown.ensure(markdown.regular.GetBodyHeight(markdown.size()))
+	markdown.ensure(markdown.firstBlockHeight(block.children))
 	indent := markdown.indentWithin(float32(markdown.size()*1.2), width)
 	bar := &[2]float32{x + 2, markdown.y}
 	markdown.quoteBars = append(markdown.quoteBars, bar)
@@ -471,7 +499,7 @@ func (markdown *Markdown) drawList(list *markdownBlock, x, width float32) {
 				markdown.gap(float32(markdown.size() * 0.2))
 			}
 		}
-		markdown.ensure(regular.GetBodyHeight(markdown.size()))
+		markdown.ensure(markdown.firstBlockHeight(item.children))
 		markdown.openContainer(structelem.LI)
 		label := "•"
 		if list.ordered {

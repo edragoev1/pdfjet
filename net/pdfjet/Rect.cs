@@ -201,24 +201,31 @@ public class Rect  : IDrawable {
                 page.SetPenColor(borderColor);
             }
 
+            // The corners of a rectangle of a negative width or height are the
+            // corners of the same rectangle the other way round: they were
+            // turned inside out (review of 12 October 2026, F10)
+            float x = (this.w < 0f) ? this.x + this.w : this.x;
+            float y = (this.h < 0f) ? this.y + this.h : this.y;
+            float w = Math.Abs(this.w);
+            float h = Math.Abs(this.h);
             List<Point> points = new List<Point> {
-                new Point((this.x + r), this.y),
-                new Point((this.x + this.w) - r, this.y),
-                new Point((this.x + this.w - r) + r * k, this.y, Point.CONTROL_POINT_C),
-                new Point((this.x + this.w), (this.y + r) - r * k, Point.CONTROL_POINT_C),
-                new Point((this.x + this.w), (this.y + r)),
-                new Point((this.x + this.w), (this.y + this.h) - r),
-                new Point((this.x + this.w), ((this.y + this.h) - r) + r * k, Point.CONTROL_POINT_C),
-                new Point(((this.x + this.w) - r) + r * k, (this.y + this.h), Point.CONTROL_POINT_C),
-                new Point(((this.x + this.w) - r), (this.y + this.h)),
-                new Point((this.x + r), (this.y + this.h)),
-                new Point(((this.x + r) - r * k), (this.y + this.h), Point.CONTROL_POINT_C),
-                new Point(this.x, ((this.y + this.h) - r) + r * k, Point.CONTROL_POINT_C),
-                new Point(this.x, (this.y + this.h) - r),
-                new Point(this.x, (this.y + r)),
-                new Point(this.x, (this.y + r) - r * k, Point.CONTROL_POINT_C),
-                new Point((this.x + r) - r * k, this.y, Point.CONTROL_POINT_C),
-                new Point((this.x + r), this.y)
+                new Point((x + r), y),
+                new Point((x + w) - r, y),
+                new Point((x + w - r) + r * k, y, Point.CONTROL_POINT_C),
+                new Point((x + w), (y + r) - r * k, Point.CONTROL_POINT_C),
+                new Point((x + w), (y + r)),
+                new Point((x + w), (y + h) - r),
+                new Point((x + w), ((y + h) - r) + r * k, Point.CONTROL_POINT_C),
+                new Point(((x + w) - r) + r * k, (y + h), Point.CONTROL_POINT_C),
+                new Point(((x + w) - r), (y + h)),
+                new Point((x + r), (y + h)),
+                new Point(((x + r) - r * k), (y + h), Point.CONTROL_POINT_C),
+                new Point(x, ((y + h) - r) + r * k, Point.CONTROL_POINT_C),
+                new Point(x, (y + h) - r),
+                new Point(x, (y + r)),
+                new Point(x, (y + r) - r * k, Point.CONTROL_POINT_C),
+                new Point((x + r) - r * k, y, Point.CONTROL_POINT_C),
+                new Point((x + r), y)
             };
             if (fillColor != null && borderColor == null) {
                 page.DrawPath(points, PathOperator.FILL);

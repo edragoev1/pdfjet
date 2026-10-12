@@ -499,7 +499,7 @@ class FontTest {
 
         Font tc = new Font(pdf, TestSupport.open("fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.ttf"));
         assertEquals(tc.unicodeToGID.get(0x2215), tc.unicodeToGID.get(0xFF0F));
-        Stamp stamp = new Stamp(pdf);
+        Stamp stamp = new Stamp(pdf).setSize(100f, 50f);
         stamp.drawText(tc, 12f, 0f, 12f, "1\u22152");
         stamp.drawText(tc, 12f, 0f, 24f, "1\uFF0F2");
         content = stampContent(stamp);
@@ -515,7 +515,7 @@ class FontTest {
         PDF pdf = TestSupport.newPDF();
         Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf"));
         assertEquals(0, font.unicodeToGID.get(0x200C));
-        Stamp stamp = new Stamp(pdf);
+        Stamp stamp = new Stamp(pdf).setSize(100f, 50f);
         stamp.drawText(font, 12f, 0f, 12f, "a\u200C\u200Eb");
         String actualText = "/ActualText <" + Page.toUTF16Hex("a\u200C") + ">";
         assertTrue(stampContent(stamp).contains(actualText), stampContent(stamp));

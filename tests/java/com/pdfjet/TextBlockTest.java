@@ -311,7 +311,7 @@ class TextBlockTest {
         String text = Bidi.reorderVisually("שלום (abc) עולם");
         assertTrue(text.indexOf('\u200E') != -1 || text.indexOf('\u200F') != -1,
                 "the text has no marks of direction: " + text);
-        Stamp stamp = new Stamp(pdf);
+        Stamp stamp = new Stamp(pdf).setSize(100f, 50f);
         stamp.drawText(font, 12f, 0f, 12f, text);
         java.lang.reflect.Field buf = Stamp.class.getDeclaredField("buf");
         buf.setAccessible(true);

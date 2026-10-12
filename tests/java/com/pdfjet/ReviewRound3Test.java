@@ -445,4 +445,113 @@ class ReviewRound3Test {
             assertEquals("The dash pattern \"\" is not an array of non-negative numbers, not all zero, followed by a phase, such as \"[3 3] 0\".", e.getMessage());
         }
     }
+
+    /**
+     * A NaN or infinite angle fails the document, as a NaN coordinate does:
+     * it wrote 0 0 0 0 0 0 cm, and the arc or the container vanished (F12).
+     */
+    @Test
+    void aNaNRotationFailsTheDocument() throws Exception {
+        for (float degrees : new float[] {Float.NaN, Float.POSITIVE_INFINITY}) {
+            final Page page = new Page(TestSupport.newPDF(), Letter.PORTRAIT);
+            final Arc arc = new Arc().setRadius(50f).setSweep(90f).setRotation(degrees);
+            arc.setLocation(100f, 100f);
+            assertEquals("A coordinate, size or width is NaN, infinite or too large for a PDF.", assertThrows(IllegalArgumentException.class, () -> arc.drawOn(page)).getMessage());
+
+            final Page page2 = new Page(TestSupport.newPDF(), Letter.PORTRAIT);
+            final Container container = new Container(100f, 100f).setRotation(degrees);
+            container.add(new Arc().setRadius(10f).setSweep(90f));
+            assertEquals("A coordinate, size or width is NaN, infinite or too large for a PDF.", assertThrows(IllegalArgumentException.class,
+                    () -> container.drawOn(page2)).getMessage());
+        }
+    }
+
+    /**
+     * A curve has two "c" control points, or one "v" or "y" one: a "c" curve
+     * of one control point wrote "c" with four numbers, not six, which
+     * readers refused (F11).
+     */
+    @Test
+    void aCurveOfTheWrongControlPointsIsRefused() throws Exception {
+        Point start = new Point(10f, 10f);
+        Point end = new Point(100f, 100f);
+        List<List<Point>> paths = Arrays.asList(
+                Arrays.asList(start, new Point(20f, 20f, Point.CONTROL_POINT_C), end),
+                Arrays.asList(start, new Point(20f, 20f, Point.CONTROL_POINT_V),
+                        new Point(30f, 30f, Point.CONTROL_POINT_V), end),
+                Arrays.asList(start, new Point(20f, 20f, Point.CONTROL_POINT_C),
+                        new Point(30f, 30f, Point.CONTROL_POINT_Y), end));
+        for (final List<Point> path : paths) {
+            final Page page = new Page(TestSupport.newPDF(), Letter.PORTRAIT);
+            assertEquals("A curve of a path has two \"c\" control points, or one \"v\" or \"y\" control point, before the point it ends at.", assertThrows(IllegalArgumentException.class,
+                    () -> page.drawPath(path, PathOperator.STROKE)).getMessage());
+            final Stamp stamp = new Stamp(TestSupport.newPDF()).setSize(200f, 200f);
+            assertEquals("A curve of a path has two \"c\" control points, or one \"v\" or \"y\" control point, before the point it ends at.", assertThrows(IllegalArgumentException.class,
+                    () -> stamp.drawPath(path, PathOperator.STROKE)).getMessage());
+        }
+        new Page(TestSupport.newPDF(), Letter.PORTRAIT).drawPath(Arrays.asList(start,
+                new Point(20f, 20f, Point.CONTROL_POINT_C), new Point(30f, 30f, Point.CONTROL_POINT_C), end),
+                PathOperator.STROKE);
+    }
+
+    /**
+     * A point a path lists twice is scaled once: (10, 10) listed twice and
+     * scaled by 2 became (40, 40), not (20, 20) (F9).
+     */
+    @Test
+    void aPointListedTwiceIsScaledOnce() {
+        Point shared = new Point(10f, 10f);
+        Point other = new Point(30f, 5f);
+        new Path().add(shared).add(other).add(shared).scaleBy(2f);
+        assertEquals(20f, shared.getX(), 0.01f);
+        assertEquals(20f, shared.getY(), 0.01f);
+        assertEquals(60f, other.getX(), 0.01f);
+    }
+
+    private static String roundedRect(float x, float y, float w, float h) throws Exception {
+        Page page = new Page(TestSupport.newPDF(), Letter.PORTRAIT);
+        new Rect(x, y, w, h).setCornerRadius(10f).setFillColor(Color.red).drawOn(page);
+        return TestSupport.content(page);
+    }
+
+    /**
+     * A rounded rectangle of a negative width and height is the same
+     * rectangle the other way round: its corners were turned inside out (F10).
+     */
+    @Test
+    void aRoundedRectangleOfANegativeSizeIsTheSame() throws Exception {
+        assertEquals(roundedRect(50f, 60f, 50f, 40f), roundedRect(100f, 100f, -50f, -40f));
+    }
+
+    /**
+     * A stamp is given its size before anything is drawn on it, as its y runs
+     * down from its top: drawn before, the content was below the stamp, and
+     * was not seen (F13).
+     */
+    @Test
+    void aStampIsSizedBeforeItIsDrawnOn() throws Exception {
+        final Stamp stamp = new Stamp(TestSupport.newPDF());
+        assertEquals("Set the size of the stamp before drawing on it: its y runs down from its top.", assertThrows(IllegalStateException.class,
+                () -> stamp.fillRect(0f, 0f, 20f, 10f)).getMessage());
+        final Stamp sized = new Stamp(TestSupport.newPDF()).setSize(20f, 10f);
+        sized.fillRect(0f, 0f, 20f, 10f);
+        assertEquals("Set the size of the stamp before drawing on it: its y runs down from its top.", assertThrows(IllegalStateException.class,
+                () -> sized.setSize(40f, 20f)).getMessage());
+        new Stamp(TestSupport.newPDF()).setSize(20f, 10f).fillRect(0f, 0f, 20f, 10f).setSize(40f, 10f);
+    }
+
+    /**
+     * A point that is a link, drawn on its own, makes its link, and a marker
+     * of lines is stroked in the point's color: the link was not made, and a
+     * plus was drawn in the pen's color (F15).
+     */
+    @Test
+    void aPointDrawnOnItsOwnHasItsLinkAndColor() throws Exception {
+        Page page = new Page(TestSupport.newPDF(), Letter.PORTRAIT);
+        new Point(100f, 100f).setURIAction("https://pdfjet.com").drawOn(page);
+        assertEquals(1, page.annots.size());
+        Page page2 = new Page(TestSupport.newPDF(), Letter.PORTRAIT);
+        new Point(100f, 100f).setShape(Shape.PLUS).setFillColor(Color.red).drawOn(page2);
+        assertTrue(TestSupport.content(page2).contains("1 0 0 RG\n"), TestSupport.content(page2));
+    }
 }

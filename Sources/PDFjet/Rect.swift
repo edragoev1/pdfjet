@@ -273,24 +273,31 @@ public class Rect : Drawable {
                 page.setPenColor(self.borderColor)
             }
 
+            // The corners of a rectangle of a negative width or height are the
+            // corners of the same rectangle the other way round: they were
+            // turned inside out (review of 12 October 2026, F10)
+            let x = (self.width < 0) ? self.x + self.width : self.x
+            let y = (self.height < 0) ? self.y + self.height : self.y
+            let w = abs(self.width)
+            let h = abs(self.height)
             var points: [Point] = []
-            points.append(Point(self.x + r, self.y))
-            points.append(Point((self.x + self.width) - r, self.y))
-            points.append(Point((self.x + self.width - r) + r * k, self.y, Point.CONTROL_POINT_C))
-            points.append(Point(self.x + self.width, (self.y + r) - r * k, Point.CONTROL_POINT_C))
-            points.append(Point(self.x + self.width, self.y + r))
-            points.append(Point(self.x + self.width, (self.y + self.height) - r))
-            points.append(Point(self.x + self.width, ((self.y + self.height) - r) + r * k, Point.CONTROL_POINT_C))
-            points.append(Point(((self.x + self.width) - r) + r * k, self.y + self.height, Point.CONTROL_POINT_C))
-            points.append(Point(((self.x + self.width) - r), self.y + self.height))
-            points.append(Point(self.x + r, self.y + self.height))
-            points.append(Point(((self.x + r) - r * k), self.y + self.height, Point.CONTROL_POINT_C))
-            points.append(Point(self.x, ((self.y + self.height) - r) + r * k, Point.CONTROL_POINT_C))
-            points.append(Point(self.x, (self.y + self.height) - r))
-            points.append(Point(self.x, self.y + r))
-            points.append(Point(self.x, (self.y + r) - r * k, Point.CONTROL_POINT_C))
-            points.append(Point((self.x + r) - r * k, self.y, Point.CONTROL_POINT_C))
-            points.append(Point(self.x + r, self.y))
+            points.append(Point(x + r, y))
+            points.append(Point((x + w) - r, y))
+            points.append(Point((x + w - r) + r * k, y, Point.CONTROL_POINT_C))
+            points.append(Point(x + w, (y + r) - r * k, Point.CONTROL_POINT_C))
+            points.append(Point(x + w, y + r))
+            points.append(Point(x + w, (y + h) - r))
+            points.append(Point(x + w, ((y + h) - r) + r * k, Point.CONTROL_POINT_C))
+            points.append(Point(((x + w) - r) + r * k, y + h, Point.CONTROL_POINT_C))
+            points.append(Point(((x + w) - r), y + h))
+            points.append(Point(x + r, y + h))
+            points.append(Point(((x + r) - r * k), y + h, Point.CONTROL_POINT_C))
+            points.append(Point(x, ((y + h) - r) + r * k, Point.CONTROL_POINT_C))
+            points.append(Point(x, (y + h) - r))
+            points.append(Point(x, y + r))
+            points.append(Point(x, (y + r) - r * k, Point.CONTROL_POINT_C))
+            points.append(Point((x + r) - r * k, y, Point.CONTROL_POINT_C))
+            points.append(Point(x + r, y))
 
             if fillColor != nil && borderColor == nil {
                 page.drawPath(points, PathOperator.FILL)

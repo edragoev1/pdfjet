@@ -246,5 +246,30 @@ public class MarkdownTest {
         // A line of pipes that is no table, with no row of delimiters, is text
         Draw(Repeat("| a ", 70) + "|\n");
     }
+
+    // A heading that starts a list item or a quote keeps a line of the text
+    // after it on its page, as any other heading does: it was drawn into the
+    // bottom margin, with nothing after it (review of 12 October 2026, F16).
+    [Fact]
+    public void AHeadingThatStartsAnItemStaysAboveTheMargin() {
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
+        foreach (String container in new String[] {"- ", "> "}) {
+            for (int lines = 15; lines < 35; lines++) {
+                var text = new System.Text.StringBuilder();
+                for (int i = 0; i < lines; i++) {
+                    text.Append("Line\n\n");
+                }
+                text.Append(container).Append("# HEADING\n").Append(container).Append("\n")
+                        .Append(container).Append("after\n");
+                foreach (String content in Draw(text.ToString(), null).contents) {
+                    if (content.Contains(TestSupport.Hex("HEADING"))) {
+                        float y = TestSupport.PositionOf(content, "HEADING")[1];
+                        Assert.True(y >= 72f + 12f, container + lines + ": the heading is at " + y);
+                        Assert.True(content.Contains(TestSupport.Hex("after")), container + lines + ": nothing after it");
+                    }
+                }
+            }
+        }
+    }
 }
 }

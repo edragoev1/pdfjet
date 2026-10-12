@@ -283,24 +283,31 @@ public class Rect implements Drawable {
                 page.setPenColor(borderColor);
             }
 
+            // The corners of a rectangle of a negative width or height are the
+            // corners of the same rectangle the other way round: they were
+            // turned inside out (review of 12 October 2026, F10)
+            float x = (this.w < 0f) ? this.x + this.w : this.x;
+            float y = (this.h < 0f) ? this.y + this.h : this.y;
+            float w = Math.abs(this.w);
+            float h = Math.abs(this.h);
             List<Point> points = new ArrayList<Point>();
-            points.add(new Point((this.x + r), this.y));
-            points.add(new Point((this.x + this.w) - r, this.y));
-            points.add(new Point((this.x + this.w - r) + r * k, this.y, Point.CONTROL_POINT_C));
-            points.add(new Point((this.x + this.w), (this.y + r) - r * k, Point.CONTROL_POINT_C));
-            points.add(new Point((this.x + this.w), (this.y + r)));
-            points.add(new Point((this.x + this.w), (this.y + this.h) - r));
-            points.add(new Point((this.x + this.w), ((this.y + this.h) - r) + r * k, Point.CONTROL_POINT_C));
-            points.add(new Point(((this.x + this.w) - r) + r * k, (this.y + this.h), Point.CONTROL_POINT_C));
-            points.add(new Point(((this.x + this.w) - r), (this.y + this.h)));
-            points.add(new Point((this.x + r), (this.y + this.h)));
-            points.add(new Point(((this.x + r) - r * k), (this.y + this.h), Point.CONTROL_POINT_C));
-            points.add(new Point(this.x, ((this.y + this.h) - r) + r * k, Point.CONTROL_POINT_C));
-            points.add(new Point(this.x, (this.y + this.h) - r));
-            points.add(new Point(this.x, (this.y + r)));
-            points.add(new Point(this.x, (this.y + r) - r * k, Point.CONTROL_POINT_C));
-            points.add(new Point((this.x + r) - r * k, this.y, Point.CONTROL_POINT_C));
-            points.add(new Point((this.x + r), this.y));
+            points.add(new Point((x + r), y));
+            points.add(new Point((x + w) - r, y));
+            points.add(new Point((x + w - r) + r * k, y, Point.CONTROL_POINT_C));
+            points.add(new Point((x + w), (y + r) - r * k, Point.CONTROL_POINT_C));
+            points.add(new Point((x + w), (y + r)));
+            points.add(new Point((x + w), (y + h) - r));
+            points.add(new Point((x + w), ((y + h) - r) + r * k, Point.CONTROL_POINT_C));
+            points.add(new Point(((x + w) - r) + r * k, (y + h), Point.CONTROL_POINT_C));
+            points.add(new Point(((x + w) - r), (y + h)));
+            points.add(new Point((x + r), (y + h)));
+            points.add(new Point(((x + r) - r * k), (y + h), Point.CONTROL_POINT_C));
+            points.add(new Point(x, ((y + h) - r) + r * k, Point.CONTROL_POINT_C));
+            points.add(new Point(x, (y + h) - r));
+            points.add(new Point(x, (y + r)));
+            points.add(new Point(x, (y + r) - r * k, Point.CONTROL_POINT_C));
+            points.add(new Point((x + r) - r * k, y, Point.CONTROL_POINT_C));
+            points.add(new Point((x + r), y));
 
             if (fillColor != null && borderColor == null) {
                 page.drawPath(points, PathOperator.FILL);

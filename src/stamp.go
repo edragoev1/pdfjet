@@ -60,6 +60,7 @@ type Stamp struct {
 	y              float32
 	width          float32
 	height         float32
+	drawn          bool // Whether its content is drawn, at the height it had
 	rotateDegrees  float32
 	scaleX         float32
 	scaleY         float32
@@ -81,11 +82,29 @@ func NewStamp(pdf *PDF) *Stamp {
 	}
 }
 
-// SetSize sets the size of this stamp.
+// SetSize sets the size of this stamp, before anything is drawn on it: its y
+// runs down from its top.
 func (s *Stamp) SetSize(width, height float32) *Stamp {
+	if s.drawn && height != s.height {
+		s.pdf.fail(stampSizeFirst)
+	}
 	s.width = width
 	s.height = height
 	return s
+}
+
+// stampSizeFirst is the message of a stamp drawn on before its size is set.
+const stampSizeFirst = "Set the size of the stamp before drawing on it: its y runs down from its top."
+
+// stampY returns the y of the stamp's content of the y from its top. Drawn
+// before the stamp had a size, the content was below it, and was not seen
+// (review of 12 October 2026, F13).
+func (s *Stamp) stampY(y float32) float32 {
+	if s.height == 0 {
+		s.pdf.fail(stampSizeFirst)
+	}
+	s.drawn = true
+	return s.height - y
 }
 
 // AddFont adds a font used by the text on this stamp.
@@ -220,7 +239,7 @@ func (s *Stamp) SetStrokeWidth(width float32) *Stamp {
 func (s *Stamp) MoveTo(x, y float32) *Stamp {
 	s.appendFloat(x)
 	s.appendString(" ")
-	s.appendFloat(s.height - y)
+	s.appendFloat(s.stampY(y))
 	s.appendString(" m\n")
 	return s
 }
@@ -229,7 +248,7 @@ func (s *Stamp) MoveTo(x, y float32) *Stamp {
 func (s *Stamp) LineTo(x, y float32) *Stamp {
 	s.appendFloat(x)
 	s.appendString(" ")
-	s.appendFloat(s.height - y)
+	s.appendFloat(s.stampY(y))
 	s.appendString(" l\n")
 	return s
 }
@@ -239,15 +258,15 @@ func (s *Stamp) LineTo(x, y float32) *Stamp {
 func (s *Stamp) CurveTo(x1, y1, x2, y2, x3, y3 float32) *Stamp {
 	s.appendFloat(x1)
 	s.appendString(" ")
-	s.appendFloat(s.height - y1)
+	s.appendFloat(s.stampY(y1))
 	s.appendString(" ")
 	s.appendFloat(x2)
 	s.appendString(" ")
-	s.appendFloat(s.height - y2)
+	s.appendFloat(s.stampY(y2))
 	s.appendString(" ")
 	s.appendFloat(x3)
 	s.appendString(" ")
-	s.appendFloat(s.height - y3)
+	s.appendFloat(s.stampY(y3))
 	s.appendString(" c\n")
 	return s
 }
@@ -331,7 +350,7 @@ func (s *Stamp) DrawText(font *Font, fontSize, x, y float32, text string) *Stamp
 	s.appendString(" Tf\n")
 	s.appendFloat(x)
 	s.appendString(" ")
-	s.appendFloat(s.height - y)
+	s.appendFloat(s.stampY(y))
 	s.appendString(" Td\n")
 	s.appendString("<")
 	s.drawEncodedText(font, text)
@@ -490,7 +509,7 @@ func joinerAfter(font *Font, runes []rune, i int) rune {
 func (s *Stamp) appendPoint(point *Point) {
 	s.appendFloat(point.x)
 	s.appendString(" ")
-	s.appendFloat(s.height - point.y)
+	s.appendFloat(s.stampY(point.y))
 	s.appendString(" ")
 }
 
@@ -501,8 +520,8 @@ func (s *Stamp) DrawPath(path []*Point, pathOperator pathoperator.PathOperator) 
 	if len(path) < 2 {
 		return // A path needs two points to paint anything.
 	}
-	if path[len(path)-1].controlPoint != 0 {
-		s.pdf.fail(pathEndsOnControlPoint)
+	if message := pathError(path); message != "" {
+		s.pdf.fail(message)
 		return
 	}
 	point := path[0]

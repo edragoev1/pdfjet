@@ -326,8 +326,22 @@ public class Point : Drawable {
             return [self.x + self.r, self.y + self.r]
         }
 
-        // A point is a marker and carries no text, so it is decorative content.
-        page.addArtifactBMC()
+        // A point is a marker and carries no text, so it is decorative content;
+        // a point that is a link is a figure of its own in the Link, described
+        // by what it stands for or by its URI, as a point of a chart is. Its
+        // link was not made (review of 12 October 2026, F15).
+        var link: StructElement? = nil
+        var description = altDescription ?? ""
+        let uri = getURIAction() ?? ""
+        if !uri.isEmpty {
+            if description.isEmpty {
+                description = uri
+            }
+            link = page.beginLink()
+            page.addBDC(StructElem.FIGURE, nil, nil, description)
+        } else {
+            page.addArtifactBMC()
+        }
         page.saveGraphicsState()
         if fillColor != nil && strokeColor != nil {
             page.setBrushColor(fillColor)
@@ -342,9 +356,30 @@ public class Point : Drawable {
             page.setPenWidth(strokeWidth)
             self.pathOperator = PathOperator.CLOSE_AND_STROKE
         }
+        if fillColor != nil && strokeColor == nil && Point.isLineShape(shape) {
+            // A marker of lines is stroked in the point's color: it was drawn
+            // in the pen's (review of 12 October 2026, F15)
+            page.setPenColor(fillColor)
+            page.setPenWidth(strokeWidth)
+        }
         page.drawPoint(self)
         page.restoreGraphicsState()
+        if !uri.isEmpty {
+            page.setFigureBoundingBox(x - r, y - r, 2 * r, 2 * r)
+        }
         page.addEMC()
+        if !uri.isEmpty {
+            page.endLink(link)
+            page.addAnnotation(Annotation(
+                    Annotation.Link, x - r, y - r, x + r, y + r,
+                    nil, nil, 0.0, nil, nil, uri, nil, nil, nil, description).joining(link))
+        }
         return [self.x + self.r, self.y + self.r]
+    }
+
+    // Returns true for a marker drawn of lines alone, which has nothing to fill.
+    private static func isLineShape(_ shape: Shape) -> Bool {
+        return shape == .PLUS || shape == .HORIZONTAL_DASH || shape == .VERTICAL_DASH
+            || shape == .X_MARK || shape == .MULTIPLY
     }
 }   // End of Point.swift

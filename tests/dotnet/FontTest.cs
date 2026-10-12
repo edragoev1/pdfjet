@@ -503,7 +503,7 @@ public class FontTest {
 
         Font tc = new Font(pdf, TestSupport.RepoPath("fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.ttf"));
         Assert.Equal(tc.unicodeToGID.Get(0x2215), tc.unicodeToGID.Get(0xFF0F));
-        Stamp stamp = new Stamp(pdf);
+        Stamp stamp = new Stamp(pdf).SetSize(100f, 50f);
         stamp.DrawText(tc, 12f, 0f, 12f, "1\u22152");
         stamp.DrawText(tc, 12f, 0f, 24f, "1\uFF0F2");
         content = StampContent(stamp);
@@ -519,7 +519,7 @@ public class FontTest {
         PDF pdf = TestSupport.NewPDF();
         Font font = new Font(pdf, TestSupport.RepoPath("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf"));
         Assert.Equal(0, font.unicodeToGID.Get(0x200C));
-        Stamp stamp = new Stamp(pdf);
+        Stamp stamp = new Stamp(pdf).SetSize(100f, 50f);
         stamp.DrawText(font, 12f, 0f, 12f, "a\u200C\u200Eb");
         string actualText = "/ActualText <" + Page.ToUTF16Hex("a\u200C") + ">";
         Assert.Contains(actualText, StampContent(stamp));

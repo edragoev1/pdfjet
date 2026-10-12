@@ -22,6 +22,8 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/corefont"
 	"github.com/edragoev1/pdfjet/v9/src/internal/decompressor"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
+	"github.com/edragoev1/pdfjet/v9/src/pathoperator"
+	"github.com/edragoev1/pdfjet/v9/src/shape"
 )
 
 // The findings of the third review, of 12 October 2026, as tests.
@@ -557,4 +559,152 @@ func TestReview3TheEdgeCasesOfColumnWidthsInPercent(t *testing.T) {
 	})
 	testRecorded(t, pdf, "The margin of the table, its x, is half the width of the page or more: "+
 		"the columns have no room.")
+}
+
+// A NaN or infinite angle fails the document, as a NaN coordinate does: it
+// wrote 0 0 0 0 0 0 cm, and the arc or the container vanished (F12).
+func TestReview3ANaNRotationFailsTheDocument(t *testing.T) {
+	for _, degrees := range []float32{float32(math.NaN()), float32(math.Inf(1))} {
+		pdf := testNewPDF()
+		arc := NewArc().SetRadius(50).SetSweep(90).SetRotation(degrees)
+		arc.SetLocation(100, 100)
+		arc.DrawOn(NewPage(pdf, testLetterPortrait()))
+		testRecorded(t, pdf, notWritable)
+
+		pdf = testNewPDF()
+		container := NewContainer(100, 100)
+		container.SetRotation(float64(degrees))
+		container.Add(NewArc().SetRadius(10).SetSweep(90))
+		container.DrawOn(NewPage(pdf, testLetterPortrait()))
+		testRecorded(t, pdf, notWritable)
+	}
+}
+
+// A curve has two "c" control points, or one "v" or "y" one: a "c" curve of
+// one control point wrote "c" with four numbers, not six, which readers
+// refused (F11).
+func TestReview3ACurveOfTheWrongControlPointsIsRefused(t *testing.T) {
+	start, end := NewPoint(10, 10), NewPoint(100, 100)
+	for _, path := range [][]*Point{
+		{start, NewControlPointC(20, 20), end},
+		{start, NewControlPointV(20, 20), NewControlPointV(30, 30), end},
+		{start, NewControlPointC(20, 20), NewControlPointY(30, 30), end},
+		{start, NewControlPointC(20, 20), NewControlPointC(30, 30), NewControlPointC(40, 40), end},
+	} {
+		pdf := testNewPDF()
+		page := NewPage(pdf, testLetterPortrait())
+		page.DrawPath(path, pathoperator.Stroke)
+		testRecorded(t, pdf, "A curve of a path has two \"c\" control points, or one \"v\" or \"y\" control point, before the point it ends at.")
+		if strings.Contains(testContent(page), " c\n") {
+			t.Errorf("the curve is drawn: %q", testContent(page))
+		}
+		pdf = testNewPDF()
+		NewStamp(pdf).SetSize(200, 200).DrawPath(path, pathoperator.Stroke)
+		testRecorded(t, pdf, "A curve of a path has two \"c\" control points, or one \"v\" or \"y\" control point, before the point it ends at.")
+	}
+	for _, path := range [][]*Point{
+		{start, NewControlPointC(20, 20), NewControlPointC(30, 30), end},
+		{start, NewControlPointV(20, 20), end, NewControlPointY(30, 30), start},
+	} {
+		pdf := testNewPDF()
+		NewPage(pdf, testLetterPortrait()).DrawPath(path, pathoperator.Stroke)
+		if pdf.err != nil {
+			t.Error(pdf.err)
+		}
+	}
+}
+
+// A point a path lists twice is scaled once: (10, 10) listed twice and scaled
+// by 2 became (40, 40), not (20, 20) (F9).
+func TestReview3APointListedTwiceIsScaledOnce(t *testing.T) {
+	shared := NewPoint(10, 10)
+	other := NewPoint(30, 5)
+	NewPath().Add(shared).Add(other).Add(shared).ScaleBy(2)
+	testNear(t, "x", 20, shared.GetX(), testDelta)
+	testNear(t, "y", 20, shared.GetY(), testDelta)
+	testNear(t, "other x", 60, other.GetX(), testDelta)
+}
+
+// A rounded rectangle of a negative width and height is the same rectangle
+// the other way round: its corners were turned inside out (F10).
+func TestReview3ARoundedRectangleOfANegativeSizeIsTheSame(t *testing.T) {
+	draw := func(x, y, w, h float32) string {
+		page := testNewPage()
+		NewRect(x, y, w, h).SetCornerRadius(10).SetFillColor(color.Red).DrawOn(page)
+		return testContent(page)
+	}
+	if want, got := draw(50, 60, 50, 40), draw(100, 100, -50, -40); got != want {
+		t.Errorf("drew %q, not %q", got, want)
+	}
+}
+
+// A stamp is given its size before anything is drawn on it, as its y runs
+// down from its top: drawn before, the content was below the stamp, and was
+// not seen (F13).
+func TestReview3AStampIsSizedBeforeItIsDrawnOn(t *testing.T) {
+	pdf := testNewPDF()
+	NewStamp(pdf).FillRect(0, 0, 20, 10)
+	testRecorded(t, pdf, "Set the size of the stamp before drawing on it: its y runs down from its top.")
+	pdf = testNewPDF()
+	NewStamp(pdf).SetSize(20, 10).FillRect(0, 0, 20, 10).SetSize(40, 20)
+	testRecorded(t, pdf, "Set the size of the stamp before drawing on it: its y runs down from its top.")
+	pdf = testNewPDF()
+	NewStamp(pdf).SetSize(20, 10).FillRect(0, 0, 20, 10).SetSize(40, 10)
+	if pdf.err != nil {
+		t.Error(pdf.err)
+	}
+}
+
+// Nothing is written after %%EOF: an image made after Complete was written
+// after it, into the writer of the caller, with no error (F14).
+func TestReview3NothingIsWrittenAfterTheEndOfThePDF(t *testing.T) {
+	doc := testNewDoc()
+	NewPage(doc.pdf, testLetterPortrait())
+	raw := doc.complete()
+	NewImageFromFile(doc.pdf, testRepoPath(t, "PngSuite/BASN2C08.PNG"))
+	doc.writer.Flush()
+	if after := doc.buf.Bytes(); len(after) != len(raw) {
+		t.Errorf("%d bytes written after %%%%EOF", len(after)-len(raw))
+	}
+	testRecorded(t, doc.pdf, "The PDF was already completed.")
+}
+
+// A point that is a link, drawn on its own, makes its link, and a marker of
+// lines is stroked in the point's color: the link was not made, and a plus
+// was drawn in the pen's color (F15).
+func TestReview3APointDrawnOnItsOwnHasItsLinkAndColor(t *testing.T) {
+	page := testNewPage()
+	NewPoint(100, 100).SetURIAction("https://pdfjet.com").DrawOn(page)
+	if len(page.annots) != 1 || page.annots[0].uri != "https://pdfjet.com" {
+		t.Errorf("the links of the page: %d", len(page.annots))
+	}
+	page = testNewPage()
+	NewPoint(100, 100).SetShape(shape.Plus).SetFillColor(color.Red).DrawOn(page)
+	if content := testContent(page); !strings.Contains(content, "1 0 0 RG\n") {
+		t.Errorf("the plus is not red: %q", content)
+	}
+}
+
+// A heading that starts a list item or a quote keeps a line of the text after
+// it on its page, as any other heading does: it was drawn into the bottom
+// margin, down to 732 past a margin at 720, with nothing after it (F16).
+func TestReview3AHeadingThatStartsAnItemStaysAboveTheMargin(t *testing.T) {
+	testAllowCoreFonts(t)
+	for _, container := range []string{"- ", "> "} {
+		for lines := 15; lines < 35; lines++ {
+			text := strings.Repeat("Line\n\n", lines) + container + "# HEADING\n" + container + "\n" + container + "after\n"
+			drawn := testDrawMarkdown(text, "")
+			for _, content := range drawn.contents {
+				if !strings.Contains(content, testHex("HEADING")) {
+					continue
+				}
+				if xy := testPositionOf(t, content, "HEADING"); xy[1] < 72+12 {
+					t.Errorf("%q after %d lines: the heading is at %v, in the margin", container, lines, xy[1])
+				}
+				if !strings.Contains(content, testHex("after")) {
+					t.Errorf("%q after %d lines: the heading has no text after it on its page", container, lines)
+				}
+			}
+		}
+	}
 }

@@ -195,9 +195,14 @@ public class Path implements Drawable {
      * @return this Path object.
      */
     public Path scaleBy(float factor) {
+        // A point the path lists more than once is scaled once: (10, 10)
+        // listed twice became (40, 40) (review of 12 October 2026, F9)
+        Set<Point> scaled = Collections.newSetFromMap(new IdentityHashMap<Point, Boolean>());
         for (Point point : points) {
-            point.x *= factor;
-            point.y *= factor;
+            if (scaled.add(point)) {
+                point.x *= factor;
+                point.y *= factor;
+            }
         }
         return this;
     }

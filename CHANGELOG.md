@@ -254,6 +254,30 @@ This is the first entry in this file; earlier releases were not tracked here.
   narrow for " ..." draws nothing, where it drew the mark over the next
   column; the largest float as a share is a share, where it failed the
   document; and a margin of half the page or more is refused.
+- A NaN or infinite rotation of an Arc, a Container or a Stamp fails the
+  document, as a NaN coordinate does, in the four ports: it wrote
+  0 0 0 0 0 0 cm, and what was drawn vanished.
+- A curve of a path has two "c" control points, or one "v" or "y" one; a
+  path of others is refused, on a page and in a stamp, in the four ports:
+  a "c" curve of one control point wrote c with four numbers, not six,
+  which readers refused.
+- Path.ScaleBy scales a point the path lists more than once once, in the
+  four ports: (10, 10) listed twice became (40, 40).
+- A Rect of a negative width or height with a corner radius is the same
+  rectangle the other way round, in the four ports: its corners were
+  turned inside out.
+- A Stamp is given its size before anything is drawn on it, in the four
+  ports: drawn before, the content was below the stamp and not seen; it
+  is refused, and so is a new height after drawing.
+- Go: nothing is written after %%EOF: an image made after Complete was
+  written after it, into the writer of the caller, with no error.
+- A Point that is a link, drawn on its own, makes its link, and a marker
+  of lines, a plus, a dash, an X or a multiply sign, is stroked in the
+  point's color, in the four ports: the link was not made, and the marker
+  was drawn in the pen's color.
+- Markdown: a heading that starts a list item or a quote keeps a line of
+  the text after it on its page, as any other heading does, in the four
+  ports: it was drawn into the bottom margin, with nothing after it.
 
 ## v9.0.5 — 2026-10-12, internal
 

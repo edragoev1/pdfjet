@@ -389,10 +389,32 @@ public class Markdown {
         CloseContainer();
     }
 
+    // The height a quote or a list item makes room for on its page before it
+    // starts: a line of the text, or a heading and the two lines it keeps with
+    // it, when the first of its blocks is one. The first block of a quote or
+    // an item skips the check of a page's room, and a heading was drawn into
+    // the bottom margin (review of 12 October 2026, F16).
+    private float FirstBlockHeight(List<MarkdownParser.Block> blocks) {
+        while (blocks != null && blocks.Count > 0) {
+            MarkdownParser.Block first = blocks[0];
+            if (first.kind == MarkdownParser.Kind.HEADING) {
+                float fontSize = Size() * HEADING_SIZES[first.level - 1];
+                return headingFont.GetBodyHeight(fontSize) + 2f * regular.GetBodyHeight(Size());
+            } else if (first.kind == MarkdownParser.Kind.QUOTE) {
+                blocks = first.children;
+            } else if (first.kind == MarkdownParser.Kind.LIST && first.children.Count > 0) {
+                blocks = first.children[0].children;
+            } else {
+                blocks = null;
+            }
+        }
+        return regular.GetBodyHeight(Size());
+    }
+
     // A quote, indented, with a bar on its left.
     private void DrawQuote(MarkdownParser.Block block, float x, float width) {
         Gap(Size() * 0.75f);
-        Ensure(regular.GetBodyHeight(Size()));
+        Ensure(FirstBlockHeight(block.children));
         float indent = IndentWithin(Size() * 1.2f, width);
         float[] bar = {x + 2f, y};
         quoteBars.Add(bar);
@@ -423,7 +445,7 @@ public class Markdown {
             if (item != list.children[0]) {
                 Gap(list.loose ? Size() * 0.5f : Size() * 0.2f);
             }
-            Ensure(regular.GetBodyHeight(Size()));
+            Ensure(FirstBlockHeight(item.children));
             OpenContainer(StructElem.LI);
             String label = list.ordered ? number.ToString(CultureInfo.InvariantCulture) + "." : "•";
             TextLine text = new TextLine(regular, label).SetStructureType(StructElem.LBL);

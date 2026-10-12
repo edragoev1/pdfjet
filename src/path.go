@@ -174,7 +174,14 @@ func (path *Path) SetLocation(x, y float32) Drawable {
 //
 // Returns this Path object.
 func (path *Path) ScaleBy(factor float32) *Path {
+	// A point the path lists more than once is scaled once: (10, 10) listed
+	// twice became (40, 40) (review of 12 October 2026, F9)
+	scaled := make(map[*Point]bool, len(path.points))
 	for _, point := range path.points {
+		if scaled[point] {
+			continue
+		}
+		scaled[point] = true
 		point.x = float32(point.x * factor)
 		point.y = float32(point.y * factor)
 	}

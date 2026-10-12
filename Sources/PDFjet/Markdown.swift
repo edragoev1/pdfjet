@@ -407,10 +407,32 @@ public class Markdown {
         return max(0, min(indent, width - Markdown.MIN_WIDTH * size()))
     }
 
+    // The height a quote or a list item makes room for on its page before it
+    // starts: a line of the text, or a heading and the two lines it keeps with
+    // it, when the first of its blocks is one. The first block of a quote or
+    // an item skips the check of a page's room, and a heading was drawn into
+    // the bottom margin (review of 12 October 2026, F16).
+    private func firstBlockHeight(_ blocks: [MarkdownParser.Block]) -> Float {
+        var blocks = blocks
+        while let first = blocks.first {
+            if first.kind == .HEADING {
+                let fontSize = size() * Markdown.HEADING_SIZES[first.level - 1]
+                return headingFont.getBodyHeight(fontSize) + 2 * regular.getBodyHeight(size())
+            } else if first.kind == .QUOTE {
+                blocks = first.children
+            } else if first.kind == .LIST, let item = first.children.first {
+                blocks = item.children
+            } else {
+                blocks = []
+            }
+        }
+        return regular.getBodyHeight(size())
+    }
+
     // A quote, indented, with a bar on its left.
     private func drawQuote(_ block: MarkdownParser.Block, _ x: Float, _ width: Float) throws {
         gap(size() * 0.75)
-        ensure(regular.getBodyHeight(size()))
+        ensure(firstBlockHeight(block.children))
         let indent = indentWithin(size() * 1.2, width)
         let bar = QuoteBar(x + 2.0, y)
         quoteBars.append(bar)
@@ -435,7 +457,7 @@ public class Markdown {
             if item !== list.children[0] {
                 gap(list.loose ? size() * 0.5 : size() * 0.2)
             }
-            ensure(regular.getBodyHeight(size()))
+            ensure(firstBlockHeight(item.children))
             openContainer(StructElem.LI)
             let label = list.ordered ? "\(number)." : "•"
             let text = TextLine(regular, label).setStructureType(StructElem.LBL)

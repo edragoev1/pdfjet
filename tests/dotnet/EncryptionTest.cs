@@ -145,7 +145,7 @@ public class EncryptionTest {
                 new Passwords().SetUserPassword("hello").SetOwnerPassword("world"),
                 new Permissions().Grant(UserAccess.PRINT)));
         Page page = new Page(pdf, Letter.PORTRAIT);
-        Stamp stamp = new Stamp(pdf);
+        Stamp stamp = new Stamp(pdf).SetSize(20f, 10f);
         stamp.FillRect(0f, 0f, 20f, 10f);
         stamp.Complete();
         stamp.DrawOn(page);

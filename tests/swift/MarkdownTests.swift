@@ -227,4 +227,21 @@ import Testing
         // A line of pipes that is no table, with no row of delimiters, is text
         try draw(String(repeating: "| a ", count: 70) + "|\n")
     }
+
+    // A heading that starts a list item or a quote keeps a line of the text
+    // after it on its page, as any other heading does: it was drawn into the
+    // bottom margin, with nothing after it (review of 12 October 2026, F16).
+    @Test func aHeadingThatStartsAnItemStaysAboveTheMargin() throws {
+        for container in ["- ", "> "] {
+            for lines in 15..<35 {
+                let text = String(repeating: "Line\n\n", count: lines) + container + "# HEADING\n" + container
+                    + "\n" + container + "after\n"
+                for content in try MarkdownTests.draw(text, nil).contents where content.contains(TestSupport.hex("HEADING")) {
+                    let y = TestSupport.positionOf(content, "HEADING")[1]
+                    #expect(y >= 72 + 12, "\(container)\(lines): the heading is at \(y)")
+                    #expect(content.contains(TestSupport.hex("after")), "\(container)\(lines): nothing after it")
+                }
+            }
+        }
+    }
 }

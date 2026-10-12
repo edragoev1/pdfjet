@@ -201,7 +201,10 @@ public class Path : Drawable {
     ///
     @discardableResult
     public func scaleBy(_ factor: Float) -> Path {
-        for point in points {
+        // A point the path lists more than once is scaled once: (10, 10)
+        // listed twice became (40, 40) (review of 12 October 2026, F9)
+        var scaled = Set<ObjectIdentifier>()
+        for point in points where scaled.insert(ObjectIdentifier(point)).inserted {
             point.x *= factor
             point.y *= factor
         }

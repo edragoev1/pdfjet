@@ -510,7 +510,7 @@ func TestFontTheSecondCharacterOfAGlyphHasItsActualText(t *testing.T) {
 	if tc.unicodeToGID.get(0x2215) != tc.unicodeToGID.get(0xFF0F) {
 		t.Fatal("the font draws ∕ and ／ with two glyphs")
 	}
-	stamp := NewStamp(pdf)
+	stamp := NewStamp(pdf).SetSize(100, 50)
 	stamp.DrawText(tc, 12, 0, 12, "1∕2")
 	stamp.DrawText(tc, 12, 0, 24, "1／2")
 	if content := stamp.buf.String(); !strings.Contains(content, "/ActualText <"+toUTF16Hex("／")+">") ||
@@ -528,7 +528,7 @@ func TestFontAStampKeepsAJoinerInTheActualText(t *testing.T) {
 	if font.unicodeToGID.get(0x200C) != 0 {
 		t.Fatal("the font has a glyph for the ZWNJ")
 	}
-	stamp := NewStamp(pdf)
+	stamp := NewStamp(pdf).SetSize(100, 50)
 	stamp.DrawText(font, 12, 0, 12, "a\u200C\u200Eb")
 	if content := stamp.buf.String(); !strings.Contains(content, "/ActualText <"+toUTF16Hex("a\u200C")+">") {
 		t.Errorf("the ZWNJ is not in the actual text: %q", content)

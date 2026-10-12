@@ -51,6 +51,7 @@ public class Stamp : IDrawable {
     private float y;
     private float width;
     private float height;
+    private bool drawn;         // Whether its content is drawn, at the height it had
     private float rotateDegrees = 0f;
     private float scaleX = 1f;
     private float scaleY = 1f;
@@ -66,11 +67,29 @@ public class Stamp : IDrawable {
         this.pdf = pdf;
     }
 
-    /// <summary>Sets the size of this stamp.</summary>
+    /// <summary>Sets the size of this stamp, before anything is drawn on it:
+    /// its y runs down from its top.</summary>
     public Stamp SetSize(float width, float height) {
+        if (drawn && height != this.height) {
+            pdf.Fail(new InvalidOperationException(SIZE_FIRST));
+        }
         this.width = width;
         this.height = height;
         return this;
+    }
+
+    // The message of a stamp drawn on before its size is set.
+    internal const string SIZE_FIRST = "Set the size of the stamp before drawing on it: its y runs down from its top.";
+
+    // Returns the y of the stamp's content of the y from its top. Drawn before
+    // the stamp had a size, the content was below it, and was not seen
+    // (review of 12 October 2026, F13).
+    private float StampY(float y) {
+        if (height == 0f) {
+            pdf.Fail(new InvalidOperationException(SIZE_FIRST));
+        }
+        drawn = true;
+        return height - y;
     }
 
     /// <summary>Adds a font used by the text on this stamp.</summary>
@@ -205,7 +224,7 @@ public class Stamp : IDrawable {
     public Stamp MoveTo(float x, float y) {
         Append(x);
         Append(" ");
-        Append(height - y);
+        Append(StampY(y));
         Append(" m\n");
         return this;
     }
@@ -214,7 +233,7 @@ public class Stamp : IDrawable {
     public Stamp LineTo(float x, float y) {
         Append(x);
         Append(" ");
-        Append(height - y);
+        Append(StampY(y));
         Append(" l\n");
         return this;
     }
@@ -229,15 +248,15 @@ public class Stamp : IDrawable {
             float y3) {
         Append(x1);
         Append(" ");
-        Append(height - y1);
+        Append(StampY(y1));
         Append(" ");
         Append(x2);
         Append(" ");
-        Append(height - y2);
+        Append(StampY(y2));
         Append(" ");
         Append(x3);
         Append(" ");
-        Append(height - y3);
+        Append(StampY(y3));
         Append(" c\n");
         return this;
     }
@@ -308,7 +327,7 @@ public class Stamp : IDrawable {
         Append(" Tf\n");
         Append(x);
         Append(" ");
-        Append(height - y);
+        Append(StampY(y));
         Append(" Td\n");
         Append("<");
         DrawText(font, text);
@@ -472,7 +491,7 @@ public class Stamp : IDrawable {
     private void Append(Point point) {
         Append(point.x);
         Append(" ");
-        Append(height - point.y);
+        Append(StampY(point.y));
         Append(" ");
     }
 
@@ -485,8 +504,9 @@ public class Stamp : IDrawable {
         if (path.Count < 2) {
             return; // A path needs two points to paint anything.
         }
-        if (path[path.Count - 1].controlPoint != '\0') {
-            pdf.Fail(new ArgumentException(Page.PATH_ENDS_ON_CONTROL_POINT));
+        String message = Page.PathError(path);
+        if (message != null) {
+            pdf.Fail(new ArgumentException(message));
             return;
         }
         Point point = path[0];

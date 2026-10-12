@@ -264,4 +264,37 @@ class MarkdownTest {
         }
         return sb.toString();
     }
+
+    // A heading that starts a list item or a quote keeps a line of the text
+    // after it on its page, as any other heading does: it was drawn into the
+    // bottom margin, with nothing after it (review of 12 October 2026, F16).
+    @Test
+    void aHeadingThatStartsAnItemStaysAboveTheMargin() throws Exception {
+        TestSupport.allowCoreFonts(true);
+        try {
+            headingsStayAboveTheMargin();
+        } finally {
+            TestSupport.allowCoreFonts(false);
+        }
+    }
+
+    private static void headingsStayAboveTheMargin() throws Exception {
+        for (String container : new String[] {"- ", "> "}) {
+            for (int lines = 15; lines < 35; lines++) {
+                StringBuilder text = new StringBuilder();
+                for (int i = 0; i < lines; i++) {
+                    text.append("Line\n\n");
+                }
+                text.append(container).append("# HEADING\n").append(container).append("\n")
+                        .append(container).append("after\n");
+                for (String content : draw(text.toString(), null).contents) {
+                    if (content.contains(TestSupport.hex("HEADING"))) {
+                        float y = TestSupport.positionOf(content, "HEADING")[1];
+                        assertTrue(y >= 72f + 12f, container + lines + ": the heading is at " + y);
+                        assertTrue(content.contains(TestSupport.hex("after")), container + lines + ": nothing after it");
+                    }
+                }
+            }
+        }
+    }
 }

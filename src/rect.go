@@ -231,24 +231,34 @@ func (rect *Rect) DrawOn(page *Page) [2]float32 {
 			page.SetPenColorRGB(rect.borderColor)
 		}
 
+		// The corners of a rectangle of a negative width or height are the
+		// corners of the same rectangle the other way round: they were
+		// turned inside out (review of 12 October 2026, F10)
+		x, y, w, h := rect.x, rect.y, rect.width, rect.height
+		if w < 0 {
+			x, w = x+w, -w
+		}
+		if h < 0 {
+			y, h = y+h, -h
+		}
 		points := make([]*Point, 0)
-		points = append(points, NewPoint(rect.x+r, rect.y))
-		points = append(points, NewPoint((rect.x+rect.width)-r, rect.y))
-		points = append(points, NewControlPointC((rect.x+rect.width-r)+float32(r*k), rect.y))
-		points = append(points, NewControlPointC(rect.x+rect.width, (rect.y+r)-float32(r*k)))
-		points = append(points, NewPoint(rect.x+rect.width, rect.y+r))
-		points = append(points, NewPoint(rect.x+rect.width, (rect.y+rect.height)-r))
-		points = append(points, NewControlPointC(rect.x+rect.width, ((rect.y+rect.height)-r)+float32(r*k)))
-		points = append(points, NewControlPointC(((rect.x+rect.width)-r)+float32(r*k), rect.y+rect.height))
-		points = append(points, NewPoint((rect.x+rect.width)-r, rect.y+rect.height))
-		points = append(points, NewPoint(rect.x+r, rect.y+rect.height))
-		points = append(points, NewControlPointC((rect.x+r)-float32(r*k), rect.y+rect.height))
-		points = append(points, NewControlPointC(rect.x, ((rect.y+rect.height)-r)+float32(r*k)))
-		points = append(points, NewPoint(rect.x, (rect.y+rect.height)-r))
-		points = append(points, NewPoint(rect.x, rect.y+r))
-		points = append(points, NewControlPointC(rect.x, (rect.y+r)-float32(r*k)))
-		points = append(points, NewControlPointC((rect.x+r)-float32(r*k), rect.y))
-		points = append(points, NewPoint(rect.x+r, rect.y))
+		points = append(points, NewPoint(x+r, y))
+		points = append(points, NewPoint((x+w)-r, y))
+		points = append(points, NewControlPointC((x+w-r)+float32(r*k), y))
+		points = append(points, NewControlPointC(x+w, (y+r)-float32(r*k)))
+		points = append(points, NewPoint(x+w, y+r))
+		points = append(points, NewPoint(x+w, (y+h)-r))
+		points = append(points, NewControlPointC(x+w, ((y+h)-r)+float32(r*k)))
+		points = append(points, NewControlPointC(((x+w)-r)+float32(r*k), y+h))
+		points = append(points, NewPoint((x+w)-r, y+h))
+		points = append(points, NewPoint(x+r, y+h))
+		points = append(points, NewControlPointC((x+r)-float32(r*k), y+h))
+		points = append(points, NewControlPointC(x, ((y+h)-r)+float32(r*k)))
+		points = append(points, NewPoint(x, (y+h)-r))
+		points = append(points, NewPoint(x, y+r))
+		points = append(points, NewControlPointC(x, (y+r)-float32(r*k)))
+		points = append(points, NewControlPointC((x+r)-float32(r*k), y))
+		points = append(points, NewPoint(x+r, y))
 
 		if rect.hasFillColor && !rect.hasBorderColor {
 			page.DrawPath(points, pathoperator.Fill)

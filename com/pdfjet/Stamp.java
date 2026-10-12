@@ -51,6 +51,7 @@ public class Stamp implements Drawable {
     private float y;
     private float width;
     private float height;
+    private boolean drawn;      // Whether its content is drawn, at the height it had
     private float rotateDegrees = 0f;
     private float scaleX = 1f;
     private float scaleY = 1f;
@@ -71,16 +72,34 @@ public class Stamp implements Drawable {
     }
 
     /**
-     * Sets the size of this stamp.
+     * Sets the size of this stamp, before anything is drawn on it: its y runs
+     * down from its top.
      *
      * @param width the width.
      * @param height the height.
      * @return this Stamp object.
      */
     public Stamp setSize(float width, float height) {
+        if (drawn && height != this.height) {
+            pdf.fail(new IllegalStateException(SIZE_FIRST));
+        }
         this.width = width;
         this.height = height;
         return this;
+    }
+
+    // The message of a stamp drawn on before its size is set.
+    static final String SIZE_FIRST = "Set the size of the stamp before drawing on it: its y runs down from its top.";
+
+    // Returns the y of the stamp's content of the y from its top. Drawn before
+    // the stamp had a size, the content was below it, and was not seen
+    // (review of 12 October 2026, F13).
+    private float stampY(float y) {
+        if (height == 0f) {
+            pdf.fail(new IllegalStateException(SIZE_FIRST));
+        }
+        drawn = true;
+        return height - y;
     }
 
     /**
@@ -270,7 +289,7 @@ public class Stamp implements Drawable {
     public Stamp moveTo(float x, float y) {
         append(x);
         append(" ");
-        append(height - y);
+        append(stampY(y));
         append(" m\n");
         return this;
     }
@@ -285,7 +304,7 @@ public class Stamp implements Drawable {
     public Stamp lineTo(float x, float y) {
         append(x);
         append(" ");
-        append(height - y);
+        append(stampY(y));
         append(" l\n");
         return this;
     }
@@ -310,15 +329,15 @@ public class Stamp implements Drawable {
             float y3) {
         append(x1);
         append(" ");
-        append(height - y1);
+        append(stampY(y1));
         append(" ");
         append(x2);
         append(" ");
-        append(height - y2);
+        append(stampY(y2));
         append(" ");
         append(x3);
         append(" ");
-        append(height - y3);
+        append(stampY(y3));
         append(" c\n");
         return this;
     }
@@ -435,7 +454,7 @@ public class Stamp implements Drawable {
         append(" Tf\n");
         append(x);
         append(" ");
-        append(height - y);
+        append(stampY(y));
         append(" Td\n");
         append("<");
         drawText(font, text);
@@ -618,7 +637,7 @@ public class Stamp implements Drawable {
     private void append(Point point) {
         append(point.x);
         append(" ");
-        append(height - point.y);
+        append(stampY(point.y));
         append(" ");
     }
 
@@ -635,8 +654,9 @@ public class Stamp implements Drawable {
         if (path.size() < 2) {
             return; // A path needs two points to paint anything.
         }
-        if (path.get(path.size() - 1).controlPoint != '\0') {
-            pdf.fail(new IllegalArgumentException(Page.PATH_ENDS_ON_CONTROL_POINT));
+        String message = Page.pathError(path);
+        if (message != null) {
+            pdf.fail(new IllegalArgumentException(message));
             return;
         }
         Point point = path.get(0);

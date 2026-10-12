@@ -230,7 +230,7 @@ import Testing
         let text = Bidi.reorderVisually("שלום (abc) עולם")
         try #require(text.unicodeScalars.contains { $0.value == 0x200E || $0.value == 0x200F },
                 "the text has no marks of direction: \(text)")
-        let stamp = Stamp(pdf)
+        let stamp = Stamp(pdf).setSize(100, 50)
         stamp.drawText(font, 12, 0, 12, text)
         let content = TestSupport.latin1(stamp.buf)
         // A mark drawn as a glyph the font lacks is in a span of its own, after

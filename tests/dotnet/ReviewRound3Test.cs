@@ -180,7 +180,7 @@ public class ReviewRound3Test {
     public void ALoneSurrogateInAStampIsDrawn() {
         PDF pdf = TestSupport.NewPDF();
         Font font = TestSupport.PlexSans(pdf);
-        Stamp stamp = new Stamp(pdf);
+        Stamp stamp = new Stamp(pdf).SetSize(100f, 50f);
         stamp.DrawText(font, 12f, 0f, 12f, "a\uD800b\uDC00c\uD800");
         MemoryStream buf = (MemoryStream) typeof(Stamp).GetField("buf",
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).GetValue(stamp);
@@ -383,6 +383,96 @@ public class ReviewRound3Test {
             Exception e = Assert.Throws<ArgumentException>(() => arc.DrawOn(page));
             Assert.Equal("The dash pattern \"\" is not an array of non-negative numbers, not all zero, followed by a phase, such as \"[3 3] 0\".", e.Message);
         }
+    }
+
+    // A NaN or infinite angle fails the document, as a NaN coordinate does: it
+    // wrote 0 0 0 0 0 0 cm, and the arc or the container vanished (F12).
+    [Fact]
+    public void ANaNRotationFailsTheDocument() {
+        foreach (float degrees in new float[] {float.NaN, float.PositiveInfinity}) {
+            Page page = new Page(TestSupport.NewPDF(), Letter.PORTRAIT);
+            Arc arc = new Arc().SetRadius(50f).SetSweep(90f).SetRotation(degrees);
+            arc.SetLocation(100f, 100f);
+            Assert.Equal("A coordinate, size or width is NaN, infinite or too large for a PDF.", Assert.Throws<ArgumentException>(() => arc.DrawOn(page)).Message);
+
+            Page page2 = new Page(TestSupport.NewPDF(), Letter.PORTRAIT);
+            Container container = new Container(100f, 100f).SetRotation(degrees);
+            container.Add(new Arc().SetRadius(10f).SetSweep(90f));
+            Assert.Equal("A coordinate, size or width is NaN, infinite or too large for a PDF.", Assert.Throws<ArgumentException>(() => container.DrawOn(page2)).Message);
+        }
+    }
+
+    // A curve has two "c" control points, or one "v" or "y" one: a "c" curve
+    // of one control point wrote "c" with four numbers, not six, which readers
+    // refused (F11).
+    [Fact]
+    public void ACurveOfTheWrongControlPointsIsRefused() {
+        Point start = new Point(10f, 10f);
+        Point end = new Point(100f, 100f);
+        var paths = new List<List<Point>> {
+            new List<Point> {start, new Point(20f, 20f, Point.CONTROL_POINT_C), end},
+            new List<Point> {start, new Point(20f, 20f, Point.CONTROL_POINT_V), new Point(30f, 30f, Point.CONTROL_POINT_V), end},
+            new List<Point> {start, new Point(20f, 20f, Point.CONTROL_POINT_C), new Point(30f, 30f, Point.CONTROL_POINT_Y), end}};
+        foreach (List<Point> path in paths) {
+            Page page = new Page(TestSupport.NewPDF(), Letter.PORTRAIT);
+            Assert.Equal("A curve of a path has two \"c\" control points, or one \"v\" or \"y\" control point, before the point it ends at.", Assert.Throws<ArgumentException>(() => page.DrawPath(path, PathOperator.STROKE)).Message);
+            Stamp stamp = new Stamp(TestSupport.NewPDF()).SetSize(200f, 200f);
+            Assert.Equal("A curve of a path has two \"c\" control points, or one \"v\" or \"y\" control point, before the point it ends at.", Assert.Throws<ArgumentException>(() => stamp.DrawPath(path, PathOperator.STROKE)).Message);
+        }
+        new Page(TestSupport.NewPDF(), Letter.PORTRAIT).DrawPath(new List<Point> {start,
+                new Point(20f, 20f, Point.CONTROL_POINT_C), new Point(30f, 30f, Point.CONTROL_POINT_C), end},
+                PathOperator.STROKE);
+    }
+
+    // A point a path lists twice is scaled once: (10, 10) listed twice and
+    // scaled by 2 became (40, 40), not (20, 20) (F9).
+    [Fact]
+    public void APointListedTwiceIsScaledOnce() {
+        Point shared = new Point(10f, 10f);
+        Point other = new Point(30f, 5f);
+        new Path().Add(shared).Add(other).Add(shared).ScaleBy(2f);
+        TestSupport.AssertNear(20f, shared.GetX(), 0.01f);
+        TestSupport.AssertNear(20f, shared.GetY(), 0.01f);
+        TestSupport.AssertNear(60f, other.GetX(), 0.01f);
+    }
+
+    private static string RoundedRect(float x, float y, float w, float h) {
+        Page page = new Page(TestSupport.NewPDF(), Letter.PORTRAIT);
+        new Rect(x, y, w, h).SetCornerRadius(10f).SetFillColor(Color.red).DrawOn(page);
+        return TestSupport.Content(page);
+    }
+
+    // A rounded rectangle of a negative width and height is the same
+    // rectangle the other way round: its corners were turned inside out (F10).
+    [Fact]
+    public void ARoundedRectangleOfANegativeSizeIsTheSame() {
+        Assert.Equal(RoundedRect(50f, 60f, 50f, 40f), RoundedRect(100f, 100f, -50f, -40f));
+    }
+
+    // A stamp is given its size before anything is drawn on it, as its y runs
+    // down from its top: drawn before, the content was below the stamp, and
+    // was not seen (F13).
+    [Fact]
+    public void AStampIsSizedBeforeItIsDrawnOn() {
+        Stamp stamp = new Stamp(TestSupport.NewPDF());
+        Assert.Equal("Set the size of the stamp before drawing on it: its y runs down from its top.", Assert.Throws<InvalidOperationException>(() => stamp.FillRect(0f, 0f, 20f, 10f)).Message);
+        Stamp sized = new Stamp(TestSupport.NewPDF()).SetSize(20f, 10f);
+        sized.FillRect(0f, 0f, 20f, 10f);
+        Assert.Equal("Set the size of the stamp before drawing on it: its y runs down from its top.", Assert.Throws<InvalidOperationException>(() => sized.SetSize(40f, 20f)).Message);
+        new Stamp(TestSupport.NewPDF()).SetSize(20f, 10f).FillRect(0f, 0f, 20f, 10f).SetSize(40f, 10f);
+    }
+
+    // A point that is a link, drawn on its own, makes its link, and a marker
+    // of lines is stroked in the point's color: the link was not made, and a
+    // plus was drawn in the pen's color (F15).
+    [Fact]
+    public void APointDrawnOnItsOwnHasItsLinkAndColor() {
+        Page page = new Page(TestSupport.NewPDF(), Letter.PORTRAIT);
+        new Point(100f, 100f).SetURIAction("https://pdfjet.com").DrawOn(page);
+        Assert.Single(page.annots);
+        Page page2 = new Page(TestSupport.NewPDF(), Letter.PORTRAIT);
+        new Point(100f, 100f).SetShape(Shape.PLUS).SetFillColor(Color.red).DrawOn(page2);
+        Assert.Contains("1 0 0 RG\n", TestSupport.Content(page2));
     }
 }
 }

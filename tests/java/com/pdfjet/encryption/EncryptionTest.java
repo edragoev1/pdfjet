@@ -147,7 +147,7 @@ class EncryptionTest {
                 new Passwords().setUserPassword("hello").setOwnerPassword("world"),
                 new Permissions().grant(UserAccess.PRINT)));
         Page page = new Page(pdf, Letter.PORTRAIT);
-        Stamp stamp = new Stamp(pdf);
+        Stamp stamp = new Stamp(pdf).setSize(20f, 10f);
         stamp.fillRect(0f, 0f, 20f, 10f);
         stamp.complete();
         stamp.drawOn(page);

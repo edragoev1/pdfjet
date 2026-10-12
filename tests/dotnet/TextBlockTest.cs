@@ -293,7 +293,7 @@ public class TextBlockTest {
         string text = Bidi.ReorderVisually("שלום (abc) עולם");
         Assert.True(text.IndexOf('\u200E') >= 0 || text.IndexOf('\u200F') >= 0,
                 "the text has no marks of direction: " + text);
-        Stamp stamp = new Stamp(pdf);
+        Stamp stamp = new Stamp(pdf).SetSize(100f, 50f);
         stamp.DrawText(font, 12f, 0f, 12f, text);
         System.IO.MemoryStream buf = (System.IO.MemoryStream) typeof(Stamp).GetField("buf",
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).GetValue(stamp);

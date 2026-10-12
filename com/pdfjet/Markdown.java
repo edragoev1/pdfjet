@@ -388,10 +388,32 @@ public class Markdown {
         closeContainer();
     }
 
+    // The height a quote or a list item makes room for on its page before it
+    // starts: a line of the text, or a heading and the two lines it keeps with
+    // it, when the first of its blocks is one. The first block of a quote or
+    // an item skips the check of a page's room, and a heading was drawn into
+    // the bottom margin (review of 12 October 2026, F16).
+    private float firstBlockHeight(List<MarkdownParser.Block> blocks) {
+        while (blocks != null && !blocks.isEmpty()) {
+            MarkdownParser.Block first = blocks.get(0);
+            if (first.kind == MarkdownParser.Kind.HEADING) {
+                float fontSize = size() * HEADING_SIZES[first.level - 1];
+                return headingFont.getBodyHeight(fontSize) + 2f * regular.getBodyHeight(size());
+            } else if (first.kind == MarkdownParser.Kind.QUOTE) {
+                blocks = first.children;
+            } else if (first.kind == MarkdownParser.Kind.LIST && !first.children.isEmpty()) {
+                blocks = first.children.get(0).children;
+            } else {
+                blocks = null;
+            }
+        }
+        return regular.getBodyHeight(size());
+    }
+
     // A quote, indented, with a bar on its left.
     private void drawQuote(MarkdownParser.Block block, float x, float width) throws Exception {
         gap(size() * 0.75f);
-        ensure(regular.getBodyHeight(size()));
+        ensure(firstBlockHeight(block.children));
         float indent = indentWithin(size() * 1.2f, width);
         float[] bar = {x + 2f, y};
         quoteBars.add(bar);
@@ -422,7 +444,7 @@ public class Markdown {
             if (item != list.children.get(0)) {
                 gap(list.loose ? size() * 0.5f : size() * 0.2f);
             }
-            ensure(regular.getBodyHeight(size()));
+            ensure(firstBlockHeight(item.children));
             openContainer(StructElem.LI);
             String label = list.ordered ? number + "." : "•";
             TextLine text = new TextLine(regular, label).setStructureType(StructElem.LBL);

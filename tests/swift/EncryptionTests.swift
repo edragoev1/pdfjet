@@ -129,7 +129,7 @@ import Testing
                 Passwords().setUserPassword("hello").setOwnerPassword("world"),
                 Permissions().grant(UserAccess.PRINT)))
         let page = Page(memory.pdf, Letter.PORTRAIT)
-        let stamp = Stamp(memory.pdf)
+        let stamp = Stamp(memory.pdf).setSize(20, 10)
         stamp.fillRect(0, 0, 20, 10)
         try stamp.complete()
         stamp.drawOn(page)

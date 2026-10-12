@@ -1616,6 +1616,35 @@ public class Page {
     internal const String PATH_ENDS_ON_CONTROL_POINT =
             "A path cannot end on a control point: a curve needs a point to end at after its control points.";
 
+    // The message of a curve of the wrong control points.
+    internal const String CURVE_CONTROL_POINTS =
+            "A curve of a path has two \"c\" control points, or one \"v\" or \"y\" control point, before the point it ends at.";
+
+    // Returns the error of the control points of the path, or null: a curve
+    // has two "c" control points, or one "v" or "y" one, and a point to end
+    // at. A "c" curve of one control point wrote "c" with four numbers, not
+    // six, which readers refused (review of 12 October 2026, F11).
+    internal static String PathError(List<Point> path) {
+        int run = 0;
+        char op = '\0';
+        for (int i = 1; i < path.Count; i++) {
+            char controlPoint = path[i].controlPoint;
+            if (controlPoint != '\0') {
+                if (run > 0 && controlPoint != op) {
+                    return CURVE_CONTROL_POINTS;
+                }
+                op = controlPoint;
+                run++;
+            } else if (run > 0) {
+                if ((op == 'c') != (run == 2) || run > 2) {
+                    return CURVE_CONTROL_POINTS;
+                }
+                run = 0;
+            }
+        }
+        return (run > 0) ? PATH_ENDS_ON_CONTROL_POINT : null;
+    }
+
     private const String NUMBER = "[+-]?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)";
     private static readonly System.Text.RegularExpressions.Regex DASH_PATTERN =
             new System.Text.RegularExpressions.Regex(
@@ -1880,8 +1909,9 @@ public class Page {
         if (path.Count < 2) {
             return; // A path needs two points to paint anything.
         }
-        if (path[path.Count - 1].controlPoint != '\0') {
-            pdf.Fail(new ArgumentException(PATH_ENDS_ON_CONTROL_POINT));
+        String message = PathError(path);
+        if (message != null) {
+            pdf.Fail(new ArgumentException(message));
             return;
         }
         Point point = path[0];
@@ -2480,6 +2510,12 @@ public class Page {
     // written with five decimals, as hundredths would turn it by another
     // angle, by 1.15 degrees for 1.
     internal void AppendRotation(float cos, float sin) {
+        // A NaN or infinite angle fails the document, as a NaN coordinate
+        // does: it wrote 0 0 0 0 0 0 cm, and the content vanished (review of
+        // 12 October 2026, F12).
+        if (!FastFloat.IsWritable(cos) || !FastFloat.IsWritable(sin)) {
+            pdf.Fail(new ArgumentException(FastFloat.NOT_WRITABLE));
+        }
         Append(FastFloat.ToPreciseByteArray(cos));
         Append(' ');
         Append(FastFloat.ToPreciseByteArray(sin));

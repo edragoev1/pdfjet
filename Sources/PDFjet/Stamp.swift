@@ -57,6 +57,7 @@ public class Stamp : Drawable {
     private var y: Float = 0
     private var width: Float = 0
     private var height: Float = 0
+    private var drawn = false   // Whether its content is drawn, at the height it had
     private var rotateDegrees: Float = 0
     private var scaleX: Float = 1.0
     private var scaleY: Float = 1.0
@@ -72,12 +73,30 @@ public class Stamp : Drawable {
         self.document = pdf
     }
 
-    /// Sets the size of this stamp.
+    /// Sets the size of this stamp, before anything is drawn on it: its y runs
+    /// down from its top.
     @discardableResult
     public func setSize(_ width: Float, _ height: Float) -> Stamp {
+        if drawn && height != self.height {
+            pdf.fail(Stamp.SIZE_FIRST)
+        }
         self.width = width
         self.height = height
         return self
+    }
+
+    // The message of a stamp drawn on before its size is set.
+    static let SIZE_FIRST = "Set the size of the stamp before drawing on it: its y runs down from its top."
+
+    // Returns the y of the stamp's content of the y from its top. Drawn before
+    // the stamp had a size, the content was below it, and was not seen
+    // (review of 12 October 2026, F13).
+    private func stampY(_ y: Float) -> Float {
+        if height == 0 {
+            pdf.fail(Stamp.SIZE_FIRST)
+        }
+        drawn = true
+        return height - y
     }
 
     /// Adds a font used by the text on this stamp.
@@ -205,7 +224,7 @@ public class Stamp : Drawable {
     public func moveTo(_ x: Float, _ y: Float) -> Stamp {
         append(x)
         append(" ")
-        append(height - y)
+        append(stampY(y))
         append(" m\n")
         return self
     }
@@ -215,7 +234,7 @@ public class Stamp : Drawable {
     public func lineTo(_ x: Float, _ y: Float) -> Stamp {
         append(x)
         append(" ")
-        append(height - y)
+        append(stampY(y))
         append(" l\n")
         return self
     }
@@ -229,15 +248,15 @@ public class Stamp : Drawable {
     ) -> Stamp {
         append(x1)
         append(" ")
-        append(height - y1)
+        append(stampY(y1))
         append(" ")
         append(x2)
         append(" ")
-        append(height - y2)
+        append(stampY(y2))
         append(" ")
         append(x3)
         append(" ")
-        append(height - y3)
+        append(stampY(y3))
         append(" c\n")
         return self
     }
@@ -336,7 +355,7 @@ public class Stamp : Drawable {
         append(" Tf\n")
         append(x)
         append(" ")
-        append(height - y)
+        append(stampY(y))
         append(" Td\n")
         append("<")
         drawText(font, text)
@@ -484,7 +503,7 @@ public class Stamp : Drawable {
     private func append(_ point: Point) {
         append(point.x)
         append(" ")
-        append(height - point.y)
+        append(stampY(point.y))
         append(" ")
     }
 
@@ -497,8 +516,8 @@ public class Stamp : Drawable {
         guard path.count >= 2 else {
             return // A path needs two points to paint anything.
         }
-        if !path[path.count - 1].controlPoint.isEmpty {
-            pdf.fail(Page.PATH_ENDS_ON_CONTROL_POINT)
+        if let message = Page.pathError(path) {
+            pdf.fail(message)
             return
         }
 

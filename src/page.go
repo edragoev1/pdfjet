@@ -137,6 +137,36 @@ type Page struct {
 // pathEndsOnControlPoint is the message of a path whose last curve has no end.
 const pathEndsOnControlPoint = "A path cannot end on a control point: a curve needs a point to end at after its control points."
 
+// curveControlPoints is the message of a curve of the wrong control points.
+const curveControlPoints = "A curve of a path has two \"c\" control points, or one \"v\" or \"y\" control point, before the point it ends at."
+
+// pathError returns the error of the control points of the path, or "": a
+// curve has two "c" control points, or one "v" or "y" one, and a point to
+// end at. A "c" curve of one control point wrote "c" with four numbers, not
+// six, which readers refused (review of 12 October 2026, F11).
+func pathError(path []*Point) string {
+	run := 0
+	var operator byte
+	for _, point := range path[1:] {
+		if point.controlPoint != 0 {
+			if run > 0 && point.controlPoint != operator {
+				return curveControlPoints
+			}
+			operator = point.controlPoint
+			run++
+		} else if run > 0 {
+			if (operator == 'c') != (run == 2) || run > 2 {
+				return curveControlPoints
+			}
+			run = 0
+		}
+	}
+	if run > 0 {
+		return pathEndsOnControlPoint
+	}
+	return ""
+}
+
 // transformCount is the message of a transform of fewer than six values.
 const transformCount = "A transform needs six values: the scale, the skew and the translation of x and y."
 
@@ -1675,8 +1705,8 @@ func (page *Page) DrawPath(path []*Point, pathOperator pathoperator.PathOperator
 	if len(path) < 2 {
 		return // A path needs two points to paint anything.
 	}
-	if path[len(path)-1].controlPoint != 0 {
-		page.pdf.fail(pathEndsOnControlPoint)
+	if message := pathError(path); message != "" {
+		page.pdf.fail(message)
 		return
 	}
 	point := path[0]
@@ -2944,6 +2974,12 @@ func (page *Page) rotateAroundCenter(centerX, centerY, degrees float32) {
 // the sine, written with five decimals, as hundredths would turn it by another
 // angle, by 1.15 degrees for 1.
 func (page *Page) appendRotation(cos, sin float32) {
+	// A NaN or infinite angle fails the document, as a NaN coordinate does: it
+	// wrote 0 0 0 0 0 0 cm, and the content vanished (review of 12 October
+	// 2026, F12).
+	if !fastfloat.IsWritable(cos) || !fastfloat.IsWritable(sin) {
+		page.pdf.fail(notWritable)
+	}
 	if page.open() {
 		page.grow(4 * fastfloat.MaxLength)
 		page.buf = fastfloat.AppendPrecise(page.buf, cos)
