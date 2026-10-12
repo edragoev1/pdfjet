@@ -86,10 +86,11 @@ FONTTOOLS = '4.65.0'
 # How far apart two widths from StringWidth may be, in font units.
 TOLERANCE = 0.01
 # The characters StringWidth gives no width: they are not drawn. The ZWNJ,
-# ZWJ, LRM, RLM and BOM, and since 9.0.5 the other Default_Ignorable_Code_Point
+# ZWJ, LRM, RLM and BOM, and since 9.0.5 the soft hyphen, drawn as a hyphen
+# only where a line breaks at it, and the other Default_Ignorable_Code_Point
 # characters of the BMP, as the library's isIgnorable has them, U+034F
 # COMBINING GRAPHEME JOINER and the variation selectors among them.
-NOT_DRAWN = ({0x200C, 0x200D, 0x200E, 0x200F, 0xFEFF,
+NOT_DRAWN = ({0x00AD, 0x200C, 0x200D, 0x200E, 0x200F, 0xFEFF,
               0x034F, 0x061C, 0x115F, 0x1160, 0x17B4, 0x17B5, 0x200B, 0x3164, 0xFFA0}
              | set(range(0x180B, 0x1810)) | set(range(0x202A, 0x202F))
              | set(range(0x2060, 0x2070)) | set(range(0xFE00, 0xFE10))
@@ -464,7 +465,7 @@ def check_core_font(args):
         problems.append(f'widths: {len(wrong)} codes, the first {c} ({glyph_at.get(c)}): '
                         f'{port["coreWidths"].get(str(c))}, the AFM {width_of(c)}')
     code_of = {u: c for c, u in char_of.items()}
-    wrong = [(u, w) for u, _, w in port['advances'] if int(u) in code_of and
+    wrong = [(u, w) for u, _, w in port['advances'] if int(u) in code_of and int(u) not in NOT_DRAWN and
              code_of[int(u)] in glyph_at and abs(w - width_of(code_of[int(u)])) > TOLERANCE]
     if wrong:
         u, w = wrong[0]
@@ -487,13 +488,17 @@ def check_core_font(args):
                 pairs[(c1, c2)] = value
     table = {(c1, c2): k for c1, c2, k in port.get('corePairs', []) if c1 in char_of and c2 in char_of}
     kerned = {(code_of[u1], code_of[u2]): k for u1, u2, k in port.get('coreKerning', [])}
-    for what, got in [('kerning table', table), ('kerning', kerned)]:
-        wrong = sorted(p for p in set(got) | set(pairs) if got.get(p) != pairs.get(p))
+    # StringWidth kerns no pair of a character it does not draw, as the soft
+    # hyphen, whose code WinAnsi has as a hyphen.
+    drawn_pairs = {p: v for p, v in pairs.items()
+                   if int(char_of[p[0]]) not in NOT_DRAWN and int(char_of[p[1]]) not in NOT_DRAWN}
+    for what, got, want in [('kerning table', table, pairs), ('kerning', kerned, drawn_pairs)]:
+        wrong = sorted(p for p in set(got) | set(want) if got.get(p) != want.get(p))
         if wrong:
             c1, c2 = wrong[0]
             problems.append(f'{what}: {len(wrong)} pairs of codes differ, the first {c1} {c2} '
                             f'({glyph_at.get(c1)} {glyph_at.get(c2)}): {got.get((c1, c2))}, '
-                            f'the AFM {pairs.get((c1, c2))}')
+                            f'the AFM {want.get((c1, c2))}')
     info = {'unusable pairs': unusable, 'pairs': len(afm._kerning),
             'no glyph': sum(1 for c in char_of if c not in glyph_at)}
     return [(key, problems, info)]

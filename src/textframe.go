@@ -430,7 +430,14 @@ func (tf *TextFrame) drawTokens(page *Page, paragraph *Paragraph, textLine *Text
 			tf.tokenIndex++
 			continue
 		}
-		if buf.Len() == 0 && tf.xText == tf.x {
+		if head, rest, ok := softHyphenBreak(token, available-runLength, func(head string) float32 {
+			return textWidth(textLine, head)
+		}); ok {
+			// The token is broken at a soft hyphen, the row ending with a
+			// hyphen, as far along as fits (review of 11 October 2026, #21)
+			buf.WriteString(head)
+			tf.tokens[tf.tokenIndex] = rest
+		} else if buf.Len() == 0 && tf.xText == tf.x {
 			// The token does not fit in an empty row, so the row takes as much of it as fits.
 			head := tf.headThatFits(textLine, token)
 			buf.WriteString(head)

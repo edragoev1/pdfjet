@@ -1938,36 +1938,50 @@ func wrapCellText(row []*Cell, index int) []string {
 	cellWidth := getTotalWidth(row, index) + fitTolerance
 	lines := make([]string, 0, 1)
 	var buf strings.Builder
+	width := func(text string) float32 {
+		return cell.font.StringWidthUsingFallbackFont(cell.fallbackFont, cell.fontSize, text)
+	}
 	for _, token := range splitOnWhitespace(cell.text) {
-		if cell.font.StringWidthUsingFallbackFont(cell.fallbackFont, cell.fontSize, token) > cellWidth {
+		for {
+			joined := token
+			if buf.Len() > 0 {
+				joined = buf.String() + " " + token
+			}
+			if width(joined) <= cellWidth {
+				buf.Reset()
+				buf.WriteString(joined)
+				break
+			}
+			// The token is broken at a soft hyphen, the line ending with a
+			// hyphen, as far along as fits (review of 11 October 2026, #21)
+			line := buf.String()
+			if line != "" {
+				line += " "
+			}
+			if head, rest, ok := softHyphenBreak(token, cellWidth, func(head string) float32 {
+				return width(line + head)
+			}); ok {
+				lines = append(lines, line+head)
+				buf.Reset()
+				token = rest
+				continue
+			}
 			if buf.Len() > 0 {
 				lines = append(lines, trimSpace(buf.String()))
 				buf.Reset()
+				continue
 			}
+			// A token wider than the column starts a line of its own and is
+			// broken between its characters. A line has at least one
+			// character, even one wider than the column.
 			for _, ch := range token {
-				// A line has at least one character, even one wider than the column.
-				// The line ends without the space before the token, which
-				// would count in the width of the text and move it when it
-				// is aligned right or centered.
-				if buf.Len() > 0 && cell.font.StringWidthUsingFallbackFont(cell.fallbackFont,
-					cell.fontSize, buf.String()+string(ch)) > cellWidth {
+				if buf.Len() > 0 && width(buf.String()+string(ch)) > cellWidth {
 					lines = append(lines, trimSpace(buf.String()))
 					buf.Reset()
 				}
 				buf.WriteRune(ch)
 			}
-		} else if buf.Len() == 0 {
-			// A token that fits the column fits a line of its own, and its
-			// width is the one measured just above.
-			buf.WriteString(token)
-		} else if cell.font.StringWidthUsingFallbackFont(cell.fallbackFont,
-			cell.fontSize, trimSpace(buf.String()+" "+token)) > cellWidth {
-			lines = append(lines, trimSpace(buf.String()))
-			buf.Reset()
-			buf.WriteString(token)
-		} else {
-			buf.WriteString(" ")
-			buf.WriteString(token)
+			break
 		}
 	}
 	return append(lines, trimSpace(buf.String()))

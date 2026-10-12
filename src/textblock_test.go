@@ -393,3 +393,41 @@ func TestTextBlockAStampLeavesOutTheMarksOfDirection(t *testing.T) {
 		}
 	}
 }
+
+// testSoftHyphenWord is a word of soft hyphens, and testSoftHyphenWidth a
+// width that fits its start up to the first of them that a line can break at
+// past "Donau", with the hyphen, and no more.
+const testSoftHyphenWord = "Donau\u00addampf\u00adschiff\u00adfahrt"
+
+func testSoftHyphenWidth(font *Font) float32 {
+	return font.StringWidth(font.size, "Donaudampf-") + 1
+}
+
+// A word too wide for its line breaks at a soft hyphen, the line ending with
+// a hyphen; it was drawn as a hyphen wherever it was, and broken between its
+// characters (review of 11 October 2026, #21).
+func TestTextBlockBreaksAWordAtASoftHyphen(t *testing.T) {
+	font := testHelvetica(testNewPDF())
+	block := NewTextBlock(font, "x "+testSoftHyphenWord)
+	block.SetWidth(testSoftHyphenWidth(font) + 2*block.GetPadding())
+	var lines []string
+	for _, line := range block.getTextLines() {
+		lines = append(lines, strings.ReplaceAll(line.text, "\u00ad", ""))
+	}
+	if len(lines) < 2 || lines[0] != "x Donau-" {
+		t.Fatalf("the lines %q", lines)
+	}
+	for _, line := range lines[:len(lines)-1] {
+		if !strings.HasSuffix(line, "-") {
+			t.Errorf("the lines %q: %q is not broken at a soft hyphen", lines, line)
+		}
+	}
+	if got := strings.ReplaceAll(strings.Join(lines, ""), "-", ""); got != "x Donaudampfschifffahrt" {
+		t.Errorf("the text %q", got)
+	}
+	// A word that fits draws no hyphen.
+	fits := NewTextBlock(font, testSoftHyphenWord).SetWidth(500).getTextLines()
+	if len(fits) != 1 || strings.Contains(fits[0].text, "-") {
+		t.Errorf("the lines of a word that fits: %d", len(fits))
+	}
+}

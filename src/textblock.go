@@ -441,17 +441,31 @@ func (textBlock *TextBlock) getTextLines() []*TextLine {
 						if i < len(words)-1 {
 							separator = ""
 						}
-						if textBlock.stringWidth(sb.String()+word) <= textAreaWidth {
-							sb.WriteString(word + separator)
-						} else {
+						for {
+							if textBlock.stringWidth(sb.String()+word) <= textAreaWidth {
+								sb.WriteString(word + separator)
+								break
+							}
+							// The word is broken at a soft hyphen, the line
+							// ending with a hyphen, as far along as fits
+							line := sb.String()
+							if head, rest, ok := softHyphenBreak(word, textAreaWidth, func(head string) float32 {
+								return textBlock.stringWidth(line + head)
+							}); ok {
+								textLines = append(textLines, NewTextLine(textBlock.font, line+head))
+								sb.Reset()
+								word = rest
+								continue
+							}
 							if sb.Len() > 0 {
 								// Wrapped at a space, the line keeps it, drawn
 								// but not measured; at a zero width space it
 								// has none to keep.
-								textLine := NewTextLine(textBlock.font, trimSpace(sb.String()))
-								textLine.trailingSpace = strings.HasSuffix(sb.String(), " ")
+								textLine := NewTextLine(textBlock.font, trimSpace(line))
+								textLine.trailingSpace = strings.HasSuffix(line, " ")
 								textLines = append(textLines, textLine)
 								sb.Reset()
+								continue
 							}
 							// A word too wide for a line by itself is broken.
 							var rest int
@@ -459,6 +473,7 @@ func (textBlock *TextBlock) getTextLines() []*TextLine {
 							if rest < len(word) {
 								sb.WriteString(word[rest:] + separator)
 							}
+							break
 						}
 					}
 				}
@@ -629,6 +644,25 @@ func (textBlock *TextBlock) newTextLine(text string, from int) *TextLine {
 		to = from
 	}
 	return NewTextLine(textBlock.font, textBlock.part(text, from, to))
+}
+
+// softHyphenBreak returns the start of the word up to its last soft hyphen
+// whose start, with a hyphen in place of the soft hyphen, is no wider than the
+// width as measure measures it, that hyphen at its end, and the rest of the
+// word after the soft hyphen: a line may break there, and only there is a
+// soft hyphen drawn, as a hyphen (review of 11 October 2026, #21). A soft
+// hyphen at the start or the end of the word is no place to break.
+func softHyphenBreak(word string, width float32, measure func(string) float32) (head, rest string, ok bool) {
+	const softHyphen = "\u00AD"
+	for i := strings.LastIndex(word, softHyphen); i != -1; i = strings.LastIndex(word[:i], softHyphen) {
+		if trimSpace(strings.ReplaceAll(word[:i], softHyphen, "")) == "" || i+len(softHyphen) == len(word) {
+			continue
+		}
+		if head := word[:i] + "-"; measure(head) <= width {
+			return head, word[i+len(softHyphen):], true
+		}
+	}
+	return "", "", false
 }
 
 func nextCharacterBreak(runes []rune, i int) int {

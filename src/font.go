@@ -16,6 +16,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"io"
 	"os"
+	"slices"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -486,6 +487,10 @@ func (font *Font) getCoreFontFitChars(text string, width float32) int {
 	runes := []rune(text)
 	i := 0
 	for i < len(runes) {
+		if runes[i] == 0x00AD && !font.symbolic {
+			i++ // A soft hyphen is not drawn, see withoutSoftHyphens
+			continue
+		}
 		c1 := font.coreFontCode(runes[i])
 		w -= float32(font.metrics[c1-32][1])
 		if w < 0 {
@@ -502,6 +507,24 @@ func (font *Font) getCoreFontFitChars(text string, width float32) int {
 	}
 
 	return i
+}
+
+// withoutSoftHyphens returns the characters without their soft hyphens, which
+// a core font of WinAnsi does not draw or measure, as no font does: WinAnsi
+// has a hyphen at the soft hyphen's code, and a line broken at a soft hyphen
+// ends with a hyphen of its own (review of 11 October 2026, #21). Symbol and
+// ZapfDingbats keep theirs, their codes being their characters.
+func (font *Font) withoutSoftHyphens(runes []rune) []rune {
+	if font.symbolic || !slices.Contains(runes, 0x00AD) {
+		return runes
+	}
+	kept := make([]rune, 0, len(runes))
+	for _, c := range runes {
+		if c != 0x00AD {
+			kept = append(kept, c)
+		}
+	}
+	return kept
 }
 
 // coreFontCode returns the code of the character in the encoding of this core
@@ -625,6 +648,7 @@ func (font *Font) StringWidth(fontSize float32, str string) float32 {
 	}
 
 	if font.isCoreFont {
+		runes = font.withoutSoftHyphens(runes)
 		for i, cp := range runes {
 			c1 := font.coreFontCode(cp)
 			width += float32(font.metrics[c1-32][1])
@@ -774,13 +798,17 @@ func isJoinerOrRLM(ch rune) bool {
 
 // isIgnorable returns true for a character that Unicode says is not drawn
 // when a font has no glyph for it, Default_Ignorable_Code_Point, but those
-// that Page treats on their own: the soft hyphen, the marks of direction, the
-// joiners and the byte order mark. A variation selector after ™ or ©, as
-// text pasted from a phone has, a zero width space or a word joiner was drawn
-// as a box with a width (review of 11 October 2026, #9); it takes no width,
-// and nothing is drawn for it.
+// that Page treats on their own: the marks of direction, the joiners and the
+// byte order mark. A variation selector after ™ or ©, as text pasted from a
+// phone has, a zero width space or a word joiner was drawn as a box with a
+// width (review of 11 October 2026, #9); it takes no width, and nothing is
+// drawn for it. The soft hyphen is one too: a line broken at it ends with a
+// hyphen that TextBlock, TextFrame and a table's cells put there, and it was
+// drawn as a hyphen wherever it was (#21).
 func isIgnorable(ch rune) bool {
 	switch {
+	case ch == 0x00AD:
+		return true
 	case ch < 0x034F:
 		return false
 	case ch == 0x034F, ch == 0x061C, ch == 0x115F, ch == 0x1160, ch == 0x17B4, ch == 0x17B5,

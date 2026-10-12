@@ -1548,3 +1548,23 @@ func TestTableAnEmptyFirstRowIsDrawn(t *testing.T) {
 		}
 	}
 }
+
+// A cell's word too wide for its column breaks at a soft hyphen, the line
+// ending with a hyphen (review of 11 October 2026, #21).
+func TestTableACellBreaksAWordAtASoftHyphen(t *testing.T) {
+	font := testHelvetica(testNewPDF())
+	cell := NewCell(font, testSoftHyphenWord)
+	cell.SetWidth(testSoftHyphenWidth(font))
+	cell.SetLeftPadding(0)
+	cell.SetRightPadding(0)
+	var lines []string
+	for _, line := range wrapCellText([]*Cell{cell}, 0) {
+		lines = append(lines, strings.ReplaceAll(line, "\u00ad", ""))
+	}
+	if len(lines) < 2 || lines[0] != "Donaudampf-" {
+		t.Fatalf("the lines %q", lines)
+	}
+	if got := strings.ReplaceAll(strings.Join(lines, ""), "-", ""); got != "Donaudampfschifffahrt" {
+		t.Errorf("the text %q", got)
+	}
+}

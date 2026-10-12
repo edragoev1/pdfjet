@@ -265,10 +265,15 @@ func TestFontAControlCharacterStaysInTheFontOfItsText(t *testing.T) {
 	}
 }
 
-func TestFontASoftHyphenIsAHyphenAndANoBreakSpaceIsASpace(t *testing.T) {
+// A soft hyphen takes no width, as it is drawn only where a line breaks at
+// it, as a hyphen (review of 11 October 2026, #21); the kerning of the
+// characters on either side of it is kept.
+func TestFontASoftHyphenHasNoWidthAndANoBreakSpaceIsASpace(t *testing.T) {
 	font := testHelvetica(testNewPDF())
 	font.SetKernPairs(true)
-	testNear(t, "a soft hyphen", font.StringWidth(10, "T-"), font.StringWidth(10, "T\u00ad"), 0)
+	testNear(t, "a soft hyphen", font.StringWidth(10, "AV"), font.StringWidth(10, "A\u00adV"), 0)
+	plex := testPlexSans(testNewPDF())
+	testNear(t, "a soft hyphen in Plex", plex.StringWidth(10, "T"), plex.StringWidth(10, "T\u00ad"), 0)
 	testNear(t, "a no-break space", font.StringWidth(10, ". "), font.StringWidth(10, ".\u00a0"), 0)
 	// KPX period space -60
 	testNear(t, "a kerned no-break space", 4.96, font.StringWidth(10, ".\u00a0"), 0.001)

@@ -470,7 +470,7 @@ func (page *Page) drawASCIIString(font *Font, text string) {
 	if traceText != nil {
 		traceText(page, font, text)
 	}
-	runes := []rune(text)
+	runes := font.withoutSoftHyphens([]rune(text))
 	if len(runes) == 0 {
 		return
 	}

@@ -6,6 +6,8 @@
 package pdfjet
 
 import (
+	"bytes"
+	"encoding/hex"
 	"fmt"
 	"math"
 	"regexp"
@@ -619,6 +621,22 @@ func TestTextFrameCutsAWordWhereTextBlockDoes(t *testing.T) {
 			if r := []rune(rest); len(r) > 0 && staysWithPrevious(r[0]) {
 				t.Fatalf("width %v: %q starts a row on a vowel that stays with the letter before it", w, rest)
 			}
+		}
+	}
+}
+
+// A word too wide for the frame breaks at a soft hyphen, the row ending with
+// a hyphen, and no soft hyphen is drawn (review of 11 October 2026, #21).
+func TestTextFrameBreaksAWordAtASoftHyphen(t *testing.T) {
+	font := testHelvetica(testNewPDF())
+	content := testDrawJoined(testSoftHyphenWidth(font), nil, testSoftHyphenWord)
+	donaudampf := strings.ToUpper(fmt.Sprintf("%x", "Donaudampf-"))
+	if !strings.Contains(content, donaudampf) {
+		t.Errorf("no row of Donaudampf-: %s", content)
+	}
+	for _, match := range regexp.MustCompile(`<([0-9A-F]+)>`).FindAllStringSubmatch(content, -1) {
+		if drawn, _ := hex.DecodeString(match[1]); bytes.IndexByte(drawn, 0xAD) != -1 {
+			t.Errorf("a soft hyphen is drawn: %s", content)
 		}
 	}
 }
