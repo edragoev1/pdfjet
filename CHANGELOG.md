@@ -17,11 +17,13 @@ This is the first entry in this file; earlier releases were not tracked here.
   may embed" in the README. None of the fonts that come with PDFjet is such
   a font.
 - A font's GPOS table, where its marks go, is read the first time a mark is
-  drawn in it, not when the font is loaded, in Java, C# and Go: most
+  drawn in it, not when the font is loaded, in the four ports: most
   documents draw no mark. A page in Noto Sans takes 2.2 ms instead of 6.3
-  in Java, 2.4 instead of 5.3 in C# and 1.9 instead of 7.0 in Go, and
-  allocates a sixth to a third of what it did; a page in three IBM Plex
-  Sans fonts allocates 15% less. The output is the same, byte for byte.
+  in Java, 2.4 instead of 5.3 in C#, 1.9 instead of 7.0 in Go and 3.7
+  instead of 9.3 in Swift, and allocates a sixth to a third of what it did;
+  a page in three IBM Plex Sans fonts allocates 15% less. A document that
+  draws marks reads the table as before. The output is the same, byte for
+  byte.
 
 ### Fixed
 - An Arc, and so an Ellipse, given a stroke width and no colors is drawn a

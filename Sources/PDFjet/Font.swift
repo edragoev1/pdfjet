@@ -49,19 +49,9 @@ public class Font {
     var advanceWidth: [UInt16] = []
     var unicodeToGID = GlyphMap()
     var unicodeOf: [Int32] = []     // The character of each glyph, see FontWriter.unicodeOfGlyphs
-    // The offsets of the marks that attach to other marks, in font units, by
-    // the glyph IDs of the two marks, or nil. A font has them from its GPOS
-    // table, read from a .otf or .ttf file or from a stream that keeps them.
-    var markToMarkOffsets: [Int: [Int]]?
-    // The anchors of the marks, by glyph ID, for each MarkToBase and
-    // MarkToLigature lookup subtable, or nil: the class and anchor of each
-    // mark. A font has them from its GPOS table, read from a .otf or .ttf file
-    // or from a stream that keeps them.
-    var markAnchors: [[Int: [Int]]]?
-    // The anchors of the letters and ligatures that the marks go on, by glyph
-    // ID, for each subtable in markAnchors, or nil: 1 and an anchor, or 0 and
-    // no anchor, for each class of marks.
-    var baseAnchors: [[Int: [Int]]]?
+    // Where the marks go, from the GPOS table of the font, read when a mark
+    // is first drawn, or nil for a font without one.
+    var gpos: GPOS?
     var cff: Bool = false
     var metrics: [[Int16]]?
     // Tells the font program this font was read from apart from every other,

@@ -71,9 +71,10 @@ class OpenTypeFont {
         font.advanceWidth = otf.advanceWidth
         font.unicodeToGID = otf.unicodeToGID
         font.unicodeOf = FontWriter.unicodeOfGlyphs(otf.unicodeToGID)
-        font.markToMarkOffsets = otf.markToMarkOffsets
-        font.markAnchors = otf.markAnchors
-        font.baseAnchors = otf.baseAnchors
+        if let table = otf.gpos {
+            // A CFF font keeps its CFF table alone, so a copy of the GPOS table.
+            font.gpos = GPOS.of(otf.buf, table.offset ?? 0, table.length ?? -1, otf.numGlyphs, otf.cff)
+        }
         font.fontAscent = otf.ascent!
         font.fontDescent = otf.descent!
         font.fontLineGap = otf.lineGap

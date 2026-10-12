@@ -645,7 +645,7 @@ public class Page {
                 hasNotdef = hasNotdef || isMissing(font, codePoints, gids.count - 1)
             }
             var offsets: [Int]? = nil
-            if hasMarks && font.markAnchors != nil {
+            if hasMarks && font.gpos != nil {
                 offsets = markOffsets(font, codePoints, gids)
             } else if mirrored == nil && joiners == nil && runEdge == nil && !hasNotdef {
                 for gid in gids {
@@ -933,12 +933,13 @@ public class Page {
     // Returns the offset of the mark from the glyph it goes on, from the first
     // MarkToBase or MarkToLigature subtable that has an anchor for both, or nil.
     private func anchorOffset(_ font: Font, _ baseGID: Int, _ markGID: Int) -> [Int]? {
-        for (i, marks) in font.markAnchors!.enumerated() {
+        let gpos = font.gpos!.readTable()
+        for (i, marks) in gpos.markAnchors.enumerated() {
             guard let mark = marks[markGID] else {
                 continue
             }
             let c = 3*mark[0]
-            if let anchors = font.baseAnchors![i][baseGID], c + 2 < anchors.count, anchors[c] == 1 {
+            if let anchors = gpos.baseAnchors[i][baseGID], c + 2 < anchors.count, anchors[c] == 1 {
                 return [anchors[c + 1] - mark[1], anchors[c + 2] - mark[2]]
             }
         }
@@ -948,7 +949,7 @@ public class Page {
     // Moves the mark onto the other mark, if the font has an offset for the two.
     private func placeOnMark(
             _ font: Font, _ gids: [Int], _ x: [Int], _ offsets: inout [Int], _ mark: Int, _ other: Int) {
-        if let offset = font.markToMarkOffsets?[(gids[other] << 16) | gids[mark]] {
+        if let offset = font.gpos?.readTable().markToMarkOffsets[(gids[other] << 16) | gids[mark]] {
             offsets[2*mark] = offsets[2*other] + x[other] + offset[0] - x[mark]
             offsets[2*mark + 1] = offsets[2*other + 1] + offset[1]
         }
@@ -963,7 +964,7 @@ public class Page {
     private func needsShaping(_ font: Font, _ scalars: [Unicode.Scalar]) -> Bool {
         // The font's tables read once, not for each character; a character
         // the font lacks is one Font's lacks says it lacks
-        let hasMarks = font.markAnchors != nil
+        let hasMarks = font.gpos != nil
         let table = font.unicodeToGID
         let first = font.firstChar
         let last = font.lastChar
