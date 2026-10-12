@@ -2027,48 +2027,55 @@ public class Table implements Drawable {
     // than the width of the text in floating point.
     private static final float FIT_TOLERANCE = 0.01f;
 
+    private static float cellTextWidth(Cell cell, String text) {
+        return cell.font.stringWidth(cell.fallbackFont, cell.fontSize, text);
+    }
+
     private List<String> wrapCellText(List<Cell> row, int index) {
         Cell cell = row.get(index);
         float cellWidth = getTotalWidth(row, index) + FIT_TOLERANCE;
         List<String> lines = new ArrayList<String>();
         StringBuilder buf = new StringBuilder();
         for (String token : Util.splitOnWhitespace(cell.text)) {
-            if (cell.font.stringWidth(cell.fallbackFont, cell.fontSize, token) > cellWidth) {
-                // A token wider than the column starts a line of its own:
-                // after the words before it, or the end of another such
-                // token, it was "listic e" (5 October 2026)
+            for (;;) {
+                String joined = (buf.length() > 0) ? buf.toString() + " " + token : token;
+                if (cellTextWidth(cell, joined) <= cellWidth) {
+                    buf.setLength(0);
+                    buf.append(joined);
+                    break;
+                }
+                // The token is broken at a soft hyphen, the line ending with a
+                // hyphen, as far along as fits (review of 11 October 2026, #21)
+                String line = (buf.length() > 0) ? buf.toString() + " " : "";
+                String[] parts = TextBlock.softHyphenBreak(token, cellWidth,
+                        head -> cellTextWidth(cell, line + head));
+                if (parts != null) {
+                    lines.add(line + parts[0]);
+                    buf.setLength(0);
+                    token = parts[1];
+                    continue;
+                }
                 if (buf.length() > 0) {
                     lines.add(buf.toString().trim());
                     buf.setLength(0);
+                    continue;
                 }
+                // A token wider than the column starts a line of its own and
+                // is broken between its characters: after the words before
+                // it, or the end of another such token, it was "listic e" (5
+                // October 2026). A character is two chars when it is not of
+                // the basic plane, and a line has at least one of them, even
+                // one wider than the column.
                 for (int k = 0; k < token.length(); ) {
-                    // A character, which is two chars when it is not of the
-                    // basic plane, and a line has at least one of them, even
-                    // one wider than the column.
                     String character = token.substring(k, k + Character.charCount(token.codePointAt(k)));
-                    // The line ends without the space before the token, which
-                    // would count in the width of the text and move it when it
-                    // is aligned right or centered.
-                    if (buf.length() > 0 && cell.font.stringWidth(cell.fallbackFont, cell.fontSize,
-                            buf.toString() + character) > cellWidth) {
+                    if (buf.length() > 0 && cellTextWidth(cell, buf.toString() + character) > cellWidth) {
                         lines.add(buf.toString().trim());
                         buf.setLength(0);
                     }
                     buf.append(character);
                     k += character.length();
                 }
-            } else if (buf.length() == 0) {
-                // A token that fits the column fits a line of its own, and its
-                // width is the one measured just above.
-                buf.append(token);
-            } else if (cell.font.stringWidth(cell.fallbackFont, cell.fontSize,
-                    (buf.toString() + " " + token).trim()) > cellWidth) {
-                lines.add(buf.toString().trim());
-                buf.setLength(0);
-                buf.append(token);
-            } else {
-                buf.append(" ");
-                buf.append(token);
+                break;
             }
         }
         lines.add(buf.toString().trim());

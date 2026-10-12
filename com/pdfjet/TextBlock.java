@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 /**
  * A block of text that wraps at its width, with an optional border, background
@@ -574,24 +575,39 @@ public class TextBlock implements Drawable {
                         for (int i = 0; i < words.length; i++) {
                             String word = words[i];
                             String separator = (i == words.length - 1) ? " " : "";
-                            if (stringWidth(sb.toString() + word) <= textAreaWidth) {
-                                sb.append(word);
-                                sb.append(separator);
-                            } else {
+                            for (;;) {
+                                if (stringWidth(sb.toString() + word) <= textAreaWidth) {
+                                    sb.append(word);
+                                    sb.append(separator);
+                                    break;
+                                }
+                                // The word is broken at a soft hyphen, the line
+                                // ending with a hyphen, as far along as fits
+                                String lineSoFar = sb.toString();
+                                String[] parts = softHyphenBreak(word, textAreaWidth,
+                                        head -> stringWidth(lineSoFar + head));
+                                if (parts != null) {
+                                    textLines.add(new TextLine(font, lineSoFar + parts[0]));
+                                    sb.setLength(0);
+                                    word = parts[1];
+                                    continue;
+                                }
                                 if (sb.length() > 0) {
                                     // Wrapped at a space, the line keeps it, drawn
                                     // but not measured; at a zero width space it
                                     // has none to keep.
-                                    TextLine textLine = new TextLine(font, sb.toString().trim());
-                                    textLine.trailingSpace = sb.charAt(sb.length() - 1) == ' ';
+                                    TextLine textLine = new TextLine(font, lineSoFar.trim());
+                                    textLine.trailingSpace = lineSoFar.endsWith(" ");
                                     textLines.add(textLine);
                                     sb.setLength(0);
+                                    continue;
                                 }
                                 // A word too wide for a line by itself is broken.
                                 int rest = addBrokenWordLines(textLines, word, textAreaWidth);
                                 if (rest < word.length()) {
                                     sb.append(word.substring(rest) + separator);
                                 }
+                                break;
                             }
                         }
                     }
@@ -741,6 +757,31 @@ public class TextBlock implements Drawable {
     // font has no glyph for in the fallback font.
     private float stringWidth(String text) {
         return font.stringWidth(fallbackFont, fontSize, getFallbackFontSize(), text);
+    }
+
+    /**
+     * Returns the start of the word up to its last soft hyphen whose start,
+     * with a hyphen in place of the soft hyphen, is no wider than the width as
+     * measure measures it, that hyphen at its end, and the rest of the word
+     * after the soft hyphen, or null: a line may break there, and only there
+     * is a soft hyphen drawn, as a hyphen (review of 11 October 2026, #21). A
+     * soft hyphen at the start or the end of the word is no place to break.
+     */
+    static String[] softHyphenBreak(
+            String word, float width, Function<String, Float> measure) {
+        final String softHyphen = "\u00AD";
+        for (int i = word.lastIndexOf(softHyphen); i != -1;
+                i = word.lastIndexOf(softHyphen, i - 1)) {
+            if (Util.trimSpace(word.substring(0, i).replace(softHyphen, "")).isEmpty()
+                    || i + softHyphen.length() == word.length()) {
+                continue;
+            }
+            String head = word.substring(0, i) + "-";
+            if (measure.apply(head) <= width) {
+                return new String[] {head, word.substring(i + softHyphen.length())};
+            }
+        }
+        return null;
     }
 
     // Returns the index after the character at the index, with the marks and

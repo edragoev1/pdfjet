@@ -1352,4 +1352,25 @@ class TableTest {
             table.autoAdjustColumnWidths();
         }
     }
+
+    // A cell's word too wide for its column breaks at a soft hyphen, the line
+    // ending with a hyphen (review of 11 October 2026, #21).
+    @Test
+    void aCellBreaksAWordAtASoftHyphen() throws Exception {
+        Font font = TestSupport.helvetica(TestSupport.newPDF());
+        Cell cell = new Cell(font, TextBlockTest.SOFT_HYPHEN_WORD);
+        cell.setWidth(TextBlockTest.softHyphenWidth(font));
+        cell.setLeftPadding(0f);
+        cell.setRightPadding(0f);
+        java.lang.reflect.Method wrapCellText = Table.class.getDeclaredMethod("wrapCellText", List.class, int.class);
+        wrapCellText.setAccessible(true);
+        List<String> lines = new ArrayList<>();
+        @SuppressWarnings("unchecked")
+        List<String> wrapped = (List<String>) wrapCellText.invoke(new Table(), Arrays.asList(cell), 0);
+        for (String line : wrapped) {
+            lines.add(line.replace("\u00ad", ""));
+        }
+        assertTrue(lines.size() >= 2 && lines.get(0).equals("Donaudampf-"), "the lines " + lines);
+        assertEquals("Donaudampfschifffahrt", String.join("", lines).replace("-", ""), "the text");
+    }
 }

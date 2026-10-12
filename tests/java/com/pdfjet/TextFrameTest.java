@@ -7,6 +7,7 @@
 package com.pdfjet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import java.util.Arrays;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -531,6 +532,23 @@ class TextFrameTest {
                     throw new AssertionError("width " + w + ": \"" + rest
                             + "\" starts a row on a vowel that stays with the letter before it");
                 }
+            }
+        }
+    }
+
+    // A word too wide for the frame breaks at a soft hyphen, the row ending
+    // with a hyphen, and no soft hyphen is drawn (review of 11 October 2026,
+    // #21).
+    @Test
+    void breaksAWordAtASoftHyphen() throws Exception {
+        Font font = TestSupport.helvetica(TestSupport.newPDF());
+        String content = drawJoined(TextBlockTest.softHyphenWidth(font), null, TextBlockTest.SOFT_HYPHEN_WORD);
+        assertTrue(content.contains(TestSupport.hex("Donaudampf-")), "no row of Donaudampf-: " + content);
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("<([0-9A-F]+)>").matcher(content);
+        while (m.find()) {
+            String drawn = m.group(1);
+            for (int i = 0; i + 2 <= drawn.length(); i += 2) {
+                assertFalse(drawn.substring(i, i + 2).equals("AD"), "a soft hyphen is drawn: " + content);
             }
         }
     }

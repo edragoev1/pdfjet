@@ -11,6 +11,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 
 class TextBlockTest {
@@ -300,5 +303,42 @@ class TextBlockTest {
         for (int i = 0; i + 4 <= glyphs.length(); i += 4) {
             assertFalse(glyphs.substring(i, i + 4).equals("0000"), "the stamp draws .notdef: " + content);
         }
+    }
+
+    // SOFT_HYPHEN_WORD is a word of soft hyphens, and softHyphenWidth a width
+    // that fits its start up to the first of them that a line can break at
+    // past "Donau", with the hyphen, and no more.
+    static final String SOFT_HYPHEN_WORD = "Donau\u00addampf\u00adschiff\u00adfahrt";
+
+    static float softHyphenWidth(Font font) {
+        return font.stringWidth(font.getSize(), "Donaudampf-") + 1f;
+    }
+
+    private static TextLine[] textLines(TextBlock block) throws Exception {
+        java.lang.reflect.Method getTextLines = TextBlock.class.getDeclaredMethod("getTextLines");
+        getTextLines.setAccessible(true);
+        return (TextLine[]) getTextLines.invoke(block);
+    }
+
+    // A word too wide for its line breaks at a soft hyphen, the line ending
+    // with a hyphen; it was drawn as a hyphen wherever it was, and broken
+    // between its characters (review of 11 October 2026, #21).
+    @Test
+    void breaksAWordAtASoftHyphen() throws Exception {
+        Font font = TestSupport.helvetica(TestSupport.newPDF());
+        TextBlock block = new TextBlock(font, "x " + SOFT_HYPHEN_WORD);
+        block.setWidth(softHyphenWidth(font) + 2 * block.getPadding());
+        List<String> lines = new ArrayList<>();
+        for (TextLine line : textLines(block)) {
+            lines.add(line.text.replace("\u00ad", ""));
+        }
+        assertTrue(lines.size() >= 2 && lines.get(0).equals("x Donau-"), "the lines " + lines);
+        for (String line : lines.subList(0, lines.size() - 1)) {
+            assertTrue(line.endsWith("-"), "the lines " + lines + ": " + line + " is not broken at a soft hyphen");
+        }
+        assertEquals("x Donaudampfschifffahrt", String.join("", lines).replace("-", ""), "the text");
+        // A word that fits draws no hyphen.
+        TextLine[] fits = textLines(new TextBlock(font, SOFT_HYPHEN_WORD).setWidth(500f));
+        assertTrue(fits.length == 1 && !fits[0].text.contains("-"), "the lines of a word that fits: " + fits.length);
     }
 }

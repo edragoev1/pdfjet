@@ -758,6 +758,7 @@ final public class Page {
     }
 
     private void drawASCIIString(Font font, String str) {
+        str = font.withoutSoftHyphens(str);
         if (str.isEmpty()) {
             return;
         }

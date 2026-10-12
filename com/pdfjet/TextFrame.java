@@ -494,7 +494,14 @@ public class TextFrame implements Drawable {
                 tokenIndex++;
                 continue;
             }
-            if (buf.length() == 0 && xText == x) {
+            String[] parts = TextBlock.softHyphenBreak(token, available - runLength,
+                    head -> width(textLine, head));
+            if (parts != null) {
+                // The token is broken at a soft hyphen, the row ending with a
+                // hyphen, as far along as fits (review of 11 October 2026, #21)
+                buf.append(parts[0]);
+                tokens.set(tokenIndex, parts[1]);
+            } else if (buf.length() == 0 && xText == x) {
                 // The token does not fit in an empty row, so the row takes as much of it as fits.
                 String head = headThatFits(textLine, token);
                 buf.append(head);
