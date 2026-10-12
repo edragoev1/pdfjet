@@ -158,6 +158,25 @@ import Testing
         #expect(pdf2.error == "The page belongs to another PDF.")
     }
 
+    // A font of another PDF is refused and not changed: drawing it records no
+    // glyph and no character in it; in Go, the race detector found 9 data
+    // races when one font was drawn on 4 PDFs at once (review of 12 October
+    // 2026, R23).
+    @Test(.enabled(if: TestSupport.exists("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"),
+            "the fonts directory is not here"))
+    func aFontOfAnotherPDFIsNotChanged() throws {
+        let other = TestSupport.newPDF()
+        let font = try TestSupport.plexSans(other)
+        let used = font.program!.used.bools()
+        let pdf = TestSupport.newPDF()
+        let page = Page(pdf, Letter.PORTRAIT)
+        TextLine(font, "Hello, world").setLocation(50, 50).drawOn(page)
+        TextLine(font, "שלום عالم").setLocation(50, 80).drawOn(page)
+        #expect(pdf.error == "The font belongs to another PDF.")
+        #expect(font.program!.used.bools() == used)
+        #expect(font.program!.chars.isEmpty)
+    }
+
     @Test func fontsImagesStampsAndGroupsBelongToOneDocument() throws {
         let other = TestSupport.newPDF()
 

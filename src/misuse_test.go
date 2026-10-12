@@ -8,7 +8,9 @@ package pdfjet
 import (
 	"fmt"
 	"math"
+	"slices"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
@@ -194,6 +196,31 @@ func TestMisuseAPageIsAddedOnceAndToItsOwnDocument(t *testing.T) {
 	pdf2 := testNewPDF()
 	pdf2.AddPage(NewPageDetached(testNewPDF(), letter.Portrait()))
 	testRecorded(t, pdf2, "The page belongs to another PDF.")
+}
+
+// A font of another PDF is refused and not changed: drawing it records no
+// glyph and no character in it, as the race detector found 9 data races
+// when one font was drawn on 4 PDFs at once (review of 12 October 2026,
+// R23).
+func TestMisuseAFontOfAnotherPDFIsNotChanged(t *testing.T) {
+	other := testNewPDF()
+	font := testTrueTypeFont(t, other)
+	used := slices.Clone(font.program.used.words)
+	var wg sync.WaitGroup
+	for range 4 {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			page := testNewPage()
+			NewTextLine(font, "Hello, world").SetLocation(50, 50).DrawOn(page)
+			NewTextLine(font, "שלום عالم").SetLocation(50, 80).DrawOn(page)
+			testRecorded(t, page.pdf, "The font belongs to another PDF.")
+		}()
+	}
+	wg.Wait()
+	if !slices.Equal(used, font.program.used.words) || len(font.program.chars) != 0 {
+		t.Errorf("the font of another PDF was changed: %d characters", len(font.program.chars))
+	}
 }
 
 func TestMisuseFontsImagesStampsAndGroupsBelongToOneDocument(t *testing.T) {

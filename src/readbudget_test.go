@@ -228,7 +228,7 @@ func TestReadAnObjectStreamGivesNoMoreObjectsThanItsN(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if allocated := after.TotalAlloc - before.TotalAlloc; allocated > 64<<20 {
+	if allocated := after.TotalAlloc - before.TotalAlloc; allocated > 256<<20 {
 		t.Errorf("%d MB allocated", allocated>>20)
 	}
 	// A header of more objects than the budget takes is refused

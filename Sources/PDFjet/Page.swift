@@ -583,8 +583,10 @@ public class Page {
                 codePoints.append(codePoint)
                 gids.append(Font.isControl(codePoint) ? table[0x0020] : table[codePoint])
             }
-            font.useGlyphs(gids)
-            font.useChars(codePoints, gids)
+            if ownsFont(font) {
+                font.useGlyphs(gids)
+                font.useChars(codePoints, gids)
+            }
             Page.appendGlyphsAsHex(gids, &self.buf)
         } else {
             // The marks are moved to where the GPOS table of the font puts
@@ -640,7 +642,9 @@ public class Page {
                 afterRLM = false
                 codePoints.append(codePoint)
                 gids.append(Page.glyphOf(font, codePoint))
-                font.useChar(codePoint, gids[gids.count - 1])
+                if ownsFont(font) {
+                    font.useChar(codePoint, gids[gids.count - 1])
+                }
                 hasMarks = hasMarks || isMark(codePoint)
                 hasNotdef = hasNotdef || isMissing(font, codePoints, gids.count - 1)
             }
@@ -2956,8 +2960,21 @@ public class Page {
     // Appends the glyph number as hexadecimal and records that the font draws
     // it, so that a subset of the font keeps it.
     private func appendGlyph(_ font: Font, _ gid: Int) {
-        font.useGlyph(gid)
+        if ownsFont(font) {
+            font.useGlyph(gid)
+        }
         Page.appendCodePointAsHex(gid, &self.buf)
+    }
+
+    // Says whether the font is of the page's PDF, or of none. A font of
+    // another PDF is refused, and is not changed: what it records it records
+    // for its own PDF, which another thread may be drawing on; in Go, 4 PDFs
+    // drawing one font made 9 data races (review of 12 October 2026, R23).
+    private func ownsFont(_ font: Font) -> Bool {
+        guard let identity = font.pdfIdentity else {
+            return true
+        }
+        return identity == pdf.identity
     }
 
     // Writes the glyphs, four hex digits each, as appendCodePointAsHex writes

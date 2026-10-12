@@ -90,6 +90,11 @@ This is the first entry in this file; earlier releases were not tracked here.
   drawing an OptionalContentGroup, are errors, and an SVG of an opacity
   below 1 is drawn opaque, as an annotation is. They made a document that
   veraPDF refused. PDF/A-2 and PDF/A-3 have both, as before.
+- A font of another PDF, which drawing refuses, is not changed by it, in Go
+  and Swift: the glyphs and characters drawn were recorded in it, for the
+  PDF it belongs to, and with one font drawn on 4 PDFs at once the Go race
+  detector found data races, which can stop the program. Java and C# throw
+  before they change it, as before.
 
 ## v9.0.5 — 2026-10-12, internal
 

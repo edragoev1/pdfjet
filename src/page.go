@@ -518,7 +518,9 @@ func (page *Page) drawUnicodeString(font *Font, text string) {
 		for _, c1 := range runes {
 			if c1 != 0xFEFF && !isIgnorable(c1) { // BOM marker, or one not drawn
 				gid := glyphOf(font, c1)
-				font.useChar(c1, gid)
+				if page.ownsFont(font) {
+					font.useChar(c1, gid)
+				}
 				page.appendGlyph(font, gid)
 			}
 		}
@@ -567,7 +569,9 @@ func (page *Page) drawUnicodeString(font *Font, text string) {
 				afterRLM = false
 				codePoints = append(codePoints, c1)
 				gids = append(gids, glyphOf(font, c1))
-				font.useChar(c1, gids[len(gids)-1])
+				if page.ownsFont(font) {
+					font.useChar(c1, gids[len(gids)-1])
+				}
 				hasMarks = hasMarks || isMark(c1)
 				hasNotdef = hasNotdef || isMissing(font, codePoints, len(gids)-1)
 			}
@@ -1073,8 +1077,19 @@ func (page *Page) appendByteAsHex(b byte) {
 // appendGlyph appends the glyph number as hexadecimal and records that the
 // font draws it, so that a subset of the font keeps it.
 func (page *Page) appendGlyph(font *Font, gid int) {
-	font.useGlyph(gid)
+	if page.ownsFont(font) {
+		font.useGlyph(gid)
+	}
 	page.appendCodePointAsHex(gid)
+}
+
+// ownsFont says whether the font is of the page's PDF, or of none. A font of
+// another PDF is refused, and is not changed: what it records it records for
+// its own PDF, which another goroutine may be drawing on, and with 4 PDFs
+// drawing one font the race detector found 9 data races (review of
+// 12 October 2026, R23).
+func (page *Page) ownsFont(font *Font) bool {
+	return font.pdf == nil || font.pdf == page.pdf
 }
 
 func (page *Page) appendCodePointAsHex(codePoint int) {
