@@ -14,6 +14,7 @@ import (
 	"strconv"
 
 	"github.com/edragoev1/pdfjet/v9/src/encryption"
+	"github.com/edragoev1/pdfjet/v9/src/internal/saslprep"
 )
 
 // userKeys represents user password keys
@@ -52,17 +53,18 @@ func NewEncryption(pdf *PDF,
 
 	enc.stream = bytes.NewBuffer(make([]byte, 0, 32768)) // 32 KB buffer
 
-	userPassword := passwords.GetUserPassword()
-	if len(userPassword) > 127 {
-		userPassword = userPassword[:127]
+	// The passwords prepared with SASLprep, as PDF 2.0 asks of AES-256, so
+	// that a reader that prepares them opens the PDF: an accented letter
+	// typed as a letter and an accent, a full-width letter or a no-break
+	// space were taken as they were (review of 11 October 2026, #27)
+	userPasswordBytes, err := saslprep.PasswordBytes(passwords.GetUserPassword())
+	if err != nil {
+		return nil, pdf.fail(err.Error())
 	}
-	ownerPassword := passwords.GetOwnerPassword()
-	if len(ownerPassword) > 127 {
-		ownerPassword = ownerPassword[:127]
+	ownerPasswordBytes, err := saslprep.PasswordBytes(passwords.GetOwnerPassword())
+	if err != nil {
+		return nil, pdf.fail(err.Error())
 	}
-
-	userPasswordBytes := []byte(userPassword)
-	ownerPasswordBytes := []byte(ownerPassword)
 
 	user, err := enc.computeUserKeys(userPasswordBytes)
 	if err != nil {

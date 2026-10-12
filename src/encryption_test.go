@@ -220,3 +220,43 @@ func TestEncryptionEncryptsTheStreamOfAStamp(t *testing.T) {
 		t.Errorf("the stamp's stream reads back as %q", data)
 	}
 }
+
+// A password is prepared with SASLprep, as PDF 2.0 asks of AES-256: the PDF
+// opens with an accented letter typed as one character or as a letter and an
+// accent, with a full-width letter or its ASCII one, and a password of a
+// character PDF 2.0 does not allow is refused (review of 11 October 2026, #27).
+func TestEncryptionThePasswordIsPreparedWithSASLprep(t *testing.T) {
+	for _, c := range []struct{ set, open string }{
+		{"cafe\u0301", "caf\u00e9"},
+		{"caf\u00e9", "cafe\u0301"},
+		{"\uff30\uff21\uff33\uff33", "PASS"},
+		{"I\u00adX", "\u2168"},
+	} {
+		pdf := testEncryptedWith(t, c.set, "owner")
+		if _, err := testNewPDF().ReadWithPassword(pdf, c.open); err != nil {
+			t.Errorf("set %q, opened with %q: %v", c.set, c.open, err)
+		}
+		if _, err := testNewPDF().ReadWithPassword(pdf, c.set); err != nil {
+			t.Errorf("set %q, opened with it: %v", c.set, err)
+		}
+	}
+	doc := testNewDoc()
+	_, err := NewEncryption(doc.pdf, encryption.NewPasswords().SetUserPassword("bell\u0007"),
+		encryption.NewPermissions())
+	if err == nil || !strings.Contains(err.Error(), "U+0007") {
+		t.Errorf("a password of a control character: %v", err)
+	}
+}
+
+// A PDF whose password was taken as it was, before 9.0.5 and by other
+// writers, still opens with it: the password's own bytes are tried after the
+// prepared ones.
+func TestEncryptionAPasswordTakenAsItWasStillOpens(t *testing.T) {
+	got := aes256Passwords("cafe\u0301")
+	if len(got) != 2 || string(got[0]) != "caf\u00e9" || string(got[1]) != "cafe\u0301" {
+		t.Errorf("%q", got)
+	}
+	if got := aes256Passwords("ascii"); len(got) != 1 {
+		t.Errorf("%q", got)
+	}
+}

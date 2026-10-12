@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/edragoev1/pdfjet/v9/src/internal/decompressor"
+	"github.com/edragoev1/pdfjet/v9/src/internal/saslprep"
 )
 
 var passwordPadding = []byte{
@@ -119,8 +120,13 @@ func newDecryptor(encrypt *PDFobj, objects []*PDFobj, id []byte, password string
 	o := toBytes(encrypt.GetValue("/O"))
 	var err error
 	if r == 5 || r == 6 {
-		d.key, err = getAES256Key(r, utf8Password(password), u, o,
-			toBytes(encrypt.GetValue("/UE")), toBytes(encrypt.GetValue("/OE")))
+		for _, candidate := range aes256Passwords(password) {
+			d.key, err = getAES256Key(r, candidate, u, o,
+				toBytes(encrypt.GetValue("/UE")), toBytes(encrypt.GetValue("/OE")))
+			if err == nil {
+				break
+			}
+		}
 	} else if r >= 2 && r <= 4 {
 		length := getInt(encrypt, "/Length") / 8
 		if v == 1 || r == 2 {
@@ -191,13 +197,17 @@ func cryptDictValue(dict []string, key string, objects []*PDFobj) []string {
 	return objectValue(referred)
 }
 
-// utf8Password returns the UTF-8 bytes of the password, at most 127 of them,
-// which is the password of revisions 5 and 6.
-func utf8Password(password string) []byte {
-	if len(password) > 127 {
-		password = password[:127]
+// aes256Passwords returns the bytes to try for the password of revisions 5
+// and 6: those of the password prepared with SASLprep, as PDF 2.0 asks, and,
+// when they differ, its own UTF-8, at most 127 bytes of either, which PDFjet
+// before 9.0.5 and other writers took (review of 11 October 2026, #27).
+func aes256Passwords(password string) [][]byte {
+	raw := saslprep.Truncate(password)
+	prepared, err := saslprep.PasswordBytes(password)
+	if err != nil || bytes.Equal(prepared, raw) {
+		return [][]byte{raw}
 	}
-	return []byte(password)
+	return [][]byte{prepared, raw}
 }
 
 // latin1Password returns the password in PDFDocEncoding, which is Latin-1 for

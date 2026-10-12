@@ -164,10 +164,10 @@ commit and date. The layout's format version (1) and the look's rules
 - **For 9.0.7: what is left of the review.** ActualText for a document
   that draws two characters of one glyph, which extract as the first drawn
   (#8; the ToUnicode map gives each glyph the character drawn with it, in
-  9.0.5). Passwords not
-  SASLprep'd, as PDF 2.0 asks (#27), which Go cannot do without
-  golang.org/x/text: the owner's choice, implemented from the RFCs. The rest,
-  #1 to #26 and #28 to #38, is fixed in 9.0.5.
+  9.0.5). Passwords prepared with SASLprep, as PDF 2.0 asks (#27):
+  implemented from RFC 4013, RFC 3454 and Unicode 3.2, the owner's choice
+  over golang.org/x/text, on fixes-9.0.7. The rest, #1 to #26 and #28 to
+  #38, is fixed in 9.0.5.
 - **For 9.0.7: CI.** The output of the four ports compared on more than the
   examples' inputs: the float paths of DonutChart and Arc were found apart by
   a random run against Go (#25), which CI does not run. The fuzzers given
