@@ -177,7 +177,7 @@ public class FontTest {
         Page page = new Page(pdf, Letter.PORTRAIT);
         new TextLine(font, "ก\t\U0001F600").SetLocation(10f, 20f).DrawOn(page);
         string content = TestSupport.Content(page);
-        string space = font.unicodeToGID[0x20].ToString("X4");
+        string space = font.unicodeToGID.Get(0x20).ToString("X4");
         Assert.Contains("/Span <</ActualText <FEFF0E01>>> BDC\n<0000> Tj\nEMC\n<" + space + ">", content);
         Assert.Contains("/Span <</ActualText <FEFFD83DDE00>>> BDC\n<0000> Tj\nEMC\n", content);
         // The text a glyph maps to is the character, and a space for a control.
@@ -198,9 +198,9 @@ public class FontTest {
         stamp.DrawText(font, 10f, 5f, 20f, "aก\t");
         stamp.Complete();
         pdf.Complete();
-        string want = "<" + font.unicodeToGID['a'].ToString("X4") +
+        string want = "<" + font.unicodeToGID.Get('a').ToString("X4") +
                 "> Tj\n/Span <</ActualText <FEFF0E01>>> BDC\n<0000> Tj\nEMC\n<" +
-                font.unicodeToGID[0x20].ToString("X4") + "> Tj\n";
+                font.unicodeToGID.Get(0x20).ToString("X4") + "> Tj\n";
         Assert.Contains(want, TestSupport.Latin1(stream.ToArray()));
     }
 
@@ -216,7 +216,7 @@ public class FontTest {
         if (font == null) {
             return;     // The fonts directory is not here.
         }
-        int replacement = font.unicodeToGID[0xFFFD];
+        int replacement = font.unicodeToGID.Get(0xFFFD);
         Assert.True(replacement != 0, "IBM Plex Sans has no U+FFFD");
         float width = font.GlyphAdvance(replacement) * 10f / font.unitsPerEm;
         TestSupport.AssertNear(width, font.StringWidth(10f, "ก"), 0.001f, "a character in the range");
@@ -396,17 +396,17 @@ public class FontTest {
         // needs, and which Unicode makes the signs. The space still wins over
         // the no-break space, and the right single quotation mark over the
         // modifier letter apostrophe.
-        int[] unicodeToGID = new int[0x10000];
+        GlyphMap unicodeToGID = new GlyphMap();
         int[][] glyphs = {
             new[] {0x00B5, 0x03BC}, new[] {0x03A9, 0x2126}, new[] {0x004B, 0x212A}, new[] {0x00C5, 0x212B},
             new[] {0x0020, 0x00A0}, new[] {0x02BC, 0x2019},
         };
         for (int gid = 1; gid <= glyphs.Length; gid++) {
             foreach (int c in glyphs[gid - 1]) {
-                unicodeToGID[c] = gid;
+                unicodeToGID.Set(c, gid);
             }
         }
-        int[] unicodeOf = FontWriter.UnicodeOfGlyphs(unicodeToGID);
+        int[] unicodeOf = GlyphMap.UnicodeOfGlyphs(unicodeToGID);
         int[] want = {0x03BC, 0x03A9, 0x004B, 0x00C5, 0x0020, 0x2019};
         for (int gid = 1; gid <= want.Length; gid++) {
             Assert.Equal(want[gid - 1], unicodeOf[gid]);

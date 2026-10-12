@@ -185,34 +185,48 @@ class FontWriter {
         // glyph. PDF/UA requires every glyph to map to Unicode, so map it to
         // the replacement character.
         list.Add("<0000> <FFFD>\n");
-        StringBuilder buf = new StringBuilder();
-        int[] unicodeOf = UnicodeOfGlyphs(font.unicodeToGID);
-        if (font.program != null && font.program.chars != null) {
-            foreach (KeyValuePair<int, int> entry in font.program.chars) {
-                unicodeOf[entry.Key] = entry.Value;
+        // The glyphs of the map, those of the subset or all of them, each with
+        // its character, the one drawn with it where the document drew one of
+        // several, in the order of the characters, as the map was written when
+        // it walked them.
+        List<long> entries = new List<long>();
+        for (int gid = 1; gid < font.unicodeOf.Length; gid++) {
+            if (kept != null && (gid >= kept.Length || !kept[gid])) {
+                continue;
+            }
+            int c = font.unicodeOf[gid];
+            if (font.program != null && font.program.chars != null) {
+                int drawn;
+                if (font.program.chars.TryGetValue(gid, out drawn)) {
+                    c = drawn;
+                }
+            }
+            if (c >= 0) {
+                entries.Add(((long) c << 32) | (uint) gid);
             }
         }
-        for (int cid = 0; cid <= 0xffff; cid++) {
-            int gid = font.unicodeToGID[cid];
-            if (gid > 0 && unicodeOf[gid] == cid && (kept == null || (gid < kept.Length && kept[gid]))) {
-                buf.Append('<');
-                buf.Append(ToHexString(gid));
-                buf.Append("> <");
-                // A presentation form that the Bidi class puts in maps to the letters it stands for.
-                String letters = Bidi.LettersOf(cid);
-                if (letters == null) {
-                    buf.Append(ToHexString(cid));
-                } else {
-                    foreach (char ch in letters) {
-                        buf.Append(ToHexString(ch));
-                    }
+        entries.Sort();
+        StringBuilder buf = new StringBuilder();
+        foreach (long entry in entries) {
+            int cid = (int) (entry >> 32);
+            int gid = (int) (entry & 0xFFFFFFFFL);
+            buf.Append('<');
+            buf.Append(ToHexString(gid));
+            buf.Append("> <");
+            // A presentation form that the Bidi class puts in maps to the letters it stands for.
+            String letters = Bidi.LettersOf(cid);
+            if (letters == null) {
+                buf.Append(ToHexString(cid));
+            } else {
+                foreach (char ch in letters) {
+                    buf.Append(ToHexString(ch));
                 }
-                buf.Append(">\n");
-                list.Add(buf.ToString());
-                buf.Length = 0;
-                if (list.Count == 100) {
-                    WriteListToBuffer(sb, list);
-                }
+            }
+            buf.Append(">\n");
+            list.Add(buf.ToString());
+            buf.Length = 0;
+            if (list.Count == 100) {
+                WriteListToBuffer(sb, list);
             }
         }
         if (list.Count > 0) {
@@ -260,29 +274,6 @@ class FontWriter {
         return sb.ToString();
     }
 
-    /// <summary>
-    /// Returns the character that each glyph maps to in a ToUnicode CMap. A
-    /// glyph can stand for several characters, like the space and the no-break
-    /// space, but viewers read a CMap with more than one entry for a glyph
-    /// differently. So a glyph maps to the first character that uses it, unless
-    /// that is one text seldom has and another character uses the glyph too,
-    /// like the modifier letter apostrophe and the right single quotation mark.
-    /// </summary>
-    internal static int[] UnicodeOfGlyphs(int[] unicodeToGID) {
-        int[] unicode = new int[0x10000];
-        for (int i = 0; i < unicode.Length; i++) {
-            unicode[i] = -1;
-        }
-        for (int cid = 0; cid <= 0xffff; cid++) {
-            int gid = unicodeToGID[cid];
-            if (gid > 0 && (unicode[gid] == -1 ||
-                    (IsSeldomText(unicode[gid]) && !IsSeldomText(cid)))) {
-                unicode[gid] = cid;
-            }
-        }
-        return unicode;
-    }
-
     // The soft hyphen, the micro sign, the spacing modifier letters, the
     // combining marks, the figure dash, the ohm, kelvin and angstrom signs, the
     // deprecated angle brackets, the CJK and Kangxi radicals, which CJK fonts
@@ -290,7 +281,7 @@ class FontWriter {
     // The micro sign and the three signs are the letters Unicode makes them,
     // mu, omega, K and A with a ring, which a font often draws them with: such
     // a glyph is copied as the letter, as Greek text needs it.
-    private static bool IsSeldomText(int ch) {
+    internal static bool IsSeldomText(int ch) {
         return ch == 0x00AD ||
                 ch == 0x00B5 ||
                 (ch >= 0x02B0 && ch <= 0x036F) ||

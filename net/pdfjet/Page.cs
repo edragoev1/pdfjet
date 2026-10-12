@@ -764,7 +764,7 @@ public class Page {
                         runEdge = new bool[str.Length + 1];
                     }
                     runEdge[n] = true;
-                } else if ((codePoint == 0x200C || codePoint == 0x200D) && font.unicodeToGID[codePoint] == 0) {
+                } else if ((codePoint == 0x200C || codePoint == 0x200D) && font.unicodeToGID.Get(codePoint) == 0) {
                     // A ZWNJ or ZWJ the font has no glyph for goes with the
                     // glyph before it. One with nothing before it is left out.
                     if (n > 0) {
@@ -936,7 +936,7 @@ public class Page {
             Append("> Tj\n");
         }
         if (joiner != 0) {
-            int space = font.unicodeToGID[0x0020];
+            int space = font.unicodeToGID.Get(0x0020);
             Append("[<");
             AppendGlyph(font, space);
             Append("> ");
@@ -970,12 +970,12 @@ public class Page {
     // and not a space, as other PDF writers draw it.
     internal static int GlyphOf(Font font, int codePoint) {
         if (Font.IsControl(codePoint)) {
-            return font.unicodeToGID[0x0020];
+            return font.unicodeToGID.Get(0x0020);
         }
         if (font.Lacks(codePoint)) {
             return font.MissingGlyph();
         }
-        return font.unicodeToGID[codePoint];
+        return font.unicodeToGID.Get(codePoint);
     }
 
     // Returns true if the character at k is one the font does not have, which
@@ -1067,7 +1067,7 @@ public class Page {
         if (offset == null) {
             int letter = Bidi.LetterOfIsolatedForm(baseCodePoint);
             if (letter != 0) {
-                offset = AnchorOffset(font, font.unicodeToGID[letter], markGID);
+                offset = AnchorOffset(font, font.unicodeToGID.Get(letter), markGID);
             }
         }
         return offset;
@@ -1266,7 +1266,7 @@ public class Page {
         Append(ToUTF16Hex(text.ToString()));
         Append(">>> BDC\n");
         if (leadingSpace) {
-            int space = font.unicodeToGID[0x0020];
+            int space = font.unicodeToGID.Get(0x0020);
             Append("[");
             Append(1000f * font.GlyphAdvance(space) / font.unitsPerEm);
             Append(" <");

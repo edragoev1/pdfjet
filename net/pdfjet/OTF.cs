@@ -34,7 +34,7 @@ internal class OTF {
     internal short underlinePosition;
     internal short underlineThickness;
     internal int[] advanceWidth;
-    internal readonly int[] unicodeToGID = new int[0x10000];
+    internal readonly GlyphMap unicodeToGID = new GlyphMap();
     internal System.Collections.Generic.Dictionary<int, int[]> markToMarkOffsets;
     internal System.Collections.Generic.List<System.Collections.Generic.Dictionary<int, int[]>> markAnchors;
     internal System.Collections.Generic.List<System.Collections.Generic.Dictionary<int, int[]>> baseAnchors;
@@ -141,7 +141,7 @@ internal class OTF {
         // with it.
         if (!hasCapHeight) {
             capHeight = ascent;
-            int top = GlyphTop(unicodeToGID['H']);
+            int top = GlyphTop(unicodeToGID.Get('H'));
             if (top != NO_VALUE) {
                 capHeight = top;
             }
@@ -340,8 +340,8 @@ internal class OTF {
             }
             for (long ch = start; ch <= end; ch++) {
                 long gid = startGlyph + (ch - first);
-                if (gid < 0x10000 && unicodeToGID[(int) ch] == 0) {
-                    unicodeToGID[(int) ch] = (int) gid;
+                if (gid < 0x10000 && unicodeToGID.Get((int) ch) == 0) {
+                    unicodeToGID.Set((int) ch, (int) gid);
                 }
             }
             if (end + 1 > next) {
@@ -434,7 +434,7 @@ internal class OTF {
                         gid = (gid + idDelta[seg]) & 0xFFFF;
                     }
                 }
-                unicodeToGID[ch] = gid;
+                unicodeToGID.Set(ch, gid);
             }
         }
     }

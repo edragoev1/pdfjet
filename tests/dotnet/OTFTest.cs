@@ -263,7 +263,7 @@ public class OTFTest {
         // subtable alone.
         Font font = new Font(TestSupport.NewPDF(), TestSupport.RepoPath("fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.ttf"));
         foreach (char ch in "繁體中文A") {
-            Assert.True(font.unicodeToGID[ch] != 0, ch + " has no glyph");
+            Assert.True(font.unicodeToGID.Get(ch) != 0, ch + " has no glyph");
         }
     }
 
@@ -279,8 +279,8 @@ public class OTFTest {
         OTF want = new OTF(new MemoryStream(ttf));
         OTF got = new OTF(new MemoryStream(With(ttf, Table(ttf, "OS/2") + 64, '0')));
         foreach (char ch in "0AZaz~") {
-            Assert.True(got.unicodeToGID[ch] == want.unicodeToGID[ch] && want.unicodeToGID[ch] != 0,
-                    ch + ": glyph " + got.unicodeToGID[ch] + ", not " + want.unicodeToGID[ch]);
+            Assert.True(got.unicodeToGID.Get(ch) == want.unicodeToGID.Get(ch) && want.unicodeToGID.Get(ch) != 0,
+                    ch + ": glyph " + got.unicodeToGID.Get(ch) + ", not " + want.unicodeToGID.Get(ch));
         }
     }
 
@@ -313,9 +313,9 @@ public class OTFTest {
         cut[entry + 11] = (byte) ttf.Length;
         OTF want = new OTF(new MemoryStream(ttf));
         OTF got = new OTF(new MemoryStream(cut));
-        Assert.True(got.unicodeToGID['A'] == want.unicodeToGID['A'] && want.unicodeToGID['A'] != 0);
-        Assert.Equal(0, got.unicodeToGID['¢']);
-        Assert.Equal(0, got.unicodeToGID['£']);
+        Assert.True(got.unicodeToGID.Get('A') == want.unicodeToGID.Get('A') && want.unicodeToGID.Get('A') != 0);
+        Assert.Equal(0, got.unicodeToGID.Get('¢'));
+        Assert.Equal(0, got.unicodeToGID.Get('£'));
         Draws(cut);
     }
 }

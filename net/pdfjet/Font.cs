@@ -49,7 +49,8 @@ public class Font {
     internal int fontUnderlinePosition;
     internal int fontUnderlineThickness;
     internal int[] advanceWidth;
-    internal int[] unicodeToGID;
+    internal GlyphMap unicodeToGID;
+    internal int[] unicodeOf;           // The character of each glyph, see GlyphMap.UnicodeOfGlyphs.
     // The offsets of the marks that attach to other marks, in font units, by
     // the glyph IDs of the two marks, or null. A font has them from its GPOS
     // table, read from a .otf or .ttf file or from a stream that keeps them.
@@ -339,8 +340,15 @@ public class Font {
         foreach (int width in font.advanceWidth) {
             hash = Fold(hash, width);
         }
-        foreach (int gid in font.unicodeToGID) {
-            hash = Fold(hash, gid);
+        // The glyph of each of the 65,536 characters, 0 for those the font
+        // has not, as the array of them was folded: the subset's tag is made
+        // of it, and so the bytes of the PDF.
+        if (font.unicodeToGID != null) {
+            foreach (int[] block in font.unicodeToGID.blocks) {
+                for (int i = 0; i < 256; i++) {
+                    hash = Fold(hash, block == null ? 0 : block[i]);
+                }
+            }
         }
         return hash;
     }
@@ -415,8 +423,7 @@ public class Font {
     // 2026, #8). The first character drawn with the glyph is kept; a document
     // that draws two characters of one glyph extracts the first for both.
     internal void UseChar(int c, int gid) {
-        if (program == null || gid <= 0 || c < 0 || c >= unicodeToGID.Length ||
-                unicodeToGID[c] != gid) {
+        if (program == null || gid <= 0 || unicodeToGID.Get(c) != gid) {
             return;
         }
         if (program.chars == null) {
@@ -512,7 +519,7 @@ public class Font {
         if (IsControl(codePoint)) {
             return false;
         }
-        return codePoint < firstChar || codePoint > lastChar || unicodeToGID[codePoint] == 0;
+        return codePoint < firstChar || codePoint > lastChar || unicodeToGID.Get(codePoint) == 0;
     }
 
     // Returns the glyph a character the font does not have is drawn with:
@@ -526,8 +533,8 @@ public class Font {
             return 0;
         }
         foreach (int c in new int[] {0xFFFD, '?', ' '}) {
-            if (c >= firstChar && c <= lastChar && unicodeToGID[c] != 0) {
-                return unicodeToGID[c];
+            if (c >= firstChar && c <= lastChar && unicodeToGID.Get(c) != 0) {
+                return unicodeToGID.Get(c);
             }
         }
         return 0;

@@ -173,15 +173,15 @@ public class ReviewMediaTest {
         OTF otf = new OTF(new MemoryStream(WithTable(font, "cmap", CmapOfSegments(starts, ends))));
         Assert.True(watch.ElapsedMilliseconds < 2000, "the font loads in " + watch.ElapsedMilliseconds + " ms");
         // The first segment of the character is the one it is in.
-        Assert.Equal(0xFFFE, otf.unicodeToGID[0xFFFE]);
-        Assert.Equal(0, otf.unicodeToGID['A']);
+        Assert.Equal(0xFFFE, otf.unicodeToGID.Get(0xFFFE));
+        Assert.Equal(0, otf.unicodeToGID.Get('A'));
         // Segments of 'A' to 'C' and 'X' to 'Z', with a delta of 0, map each
         // character to the glyph of its code, and none between them.
         otf = new OTF(new MemoryStream(WithTable(font, "cmap",
                 CmapOfSegments(new int[] {'A', 'X'}, new int[] {'C', 'Z'}))));
         int[,] glyphs = {{'@', 0}, {'A', 'A'}, {'C', 'C'}, {'D', 0}, {'W', 0}, {'X', 'X'}, {'Z', 'Z'}, {'[', 0}};
         for (int i = 0; i < glyphs.GetLength(0); i++) {
-            Assert.Equal(glyphs[i, 1], otf.unicodeToGID[glyphs[i, 0]]);
+            Assert.Equal(glyphs[i, 1], otf.unicodeToGID.Get(glyphs[i, 0]));
         }
     }
 
@@ -194,8 +194,8 @@ public class ReviewMediaTest {
         OTF with = new OTF(new MemoryStream(font));
         OTF without = new OTF(new MemoryStream(Without(font, "OS/2")));
         foreach (int ch in new int[] {'A', 'z', 'ก'}) {
-            Assert.NotEqual(0, without.unicodeToGID[ch]);
-            Assert.Equal(with.unicodeToGID[ch], without.unicodeToGID[ch]);
+            Assert.NotEqual(0, without.unicodeToGID.Get(ch));
+            Assert.Equal(with.unicodeToGID.Get(ch), without.unicodeToGID.Get(ch));
         }
     }
 

@@ -39,7 +39,7 @@ public class CFFSubsetTest {
     private static bool[] Used(OTF otf, string text) {
         bool[] used = new bool[0x10000];
         foreach (char ch in text) {
-            used[otf.unicodeToGID[ch]] = true;
+            used[otf.unicodeToGID.Get(ch)] = true;
         }
         return used;
     }
@@ -151,7 +151,7 @@ public class CFFSubsetTest {
         CFFSubset.Index tops = CFFSubset.readIndex(cff, names.end);
         List<CFFSubset.Entry> top = CFFSubset.readDict(cff, tops.objects[0], tops.objects[1]);
         CFFSubset.Index charStrings = CFFSubset.readIndex(cff, CFFSubset.entryOf(top, CFFSubset.CHAR_STRINGS)[0]);
-        int gid = otf.unicodeToGID['Á'];
+        int gid = otf.unicodeToGID.Get('Á');
         int at = charStrings.objects[gid];
         Assert.True(charStrings.objects[gid + 1] - at >= 6,
                 "the charstring of Á is " + (charStrings.objects[gid + 1] - at) + " bytes");
