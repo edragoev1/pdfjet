@@ -159,5 +159,41 @@ public class EncryptionTest {
         Assert.NotNull(form);
         Assert.Contains("20 0 l", TestSupport.Latin1(form.GetData()));
     }
+
+    // A password is prepared with SASLprep, as PDF 2.0 asks of AES-256: the
+    // PDF opens with an accented letter typed as one character or as a letter
+    // and an accent, with a full-width letter or its ASCII one, and a password
+    // of a character PDF 2.0 does not allow is refused (review of 11 October
+    // 2026, #27).
+    [Fact]
+    public void ThePasswordIsPreparedWithSASLprep() {
+        var cases = new (string set, string open)[] {
+            ("cafe\u0301", "caf\u00e9"),
+            ("caf\u00e9", "cafe\u0301"),
+            ("\uff30\uff21\uff33\uff33", "PASS"),
+            ("I\u00adX", "\u2168"),
+        };
+        foreach (var c in cases) {
+            byte[] pdf = Encrypted(c.set, "owner");
+            Assert.Equal("Encrypted title", Title(TestSupport.Read(pdf, c.open)));
+            Assert.Equal("Encrypted title", Title(TestSupport.Read(pdf, c.set)));
+        }
+        PDF doc = new PDF(new MemoryStream());
+        Exception e = Assert.ThrowsAny<Exception>(() => new Encryption(doc,
+                new Passwords().SetUserPassword("bell\u0007"), new Permissions()));
+        Assert.Contains("U+0007", e.Message);
+    }
+
+    // A PDF whose password was taken as it was, before 9.0.5 and by other
+    // writers, still opens with it: the password's own bytes are tried after
+    // the prepared ones.
+    [Fact]
+    public void APasswordTakenAsItWasStillOpens() {
+        List<byte[]> got = Decryptor.Aes256Passwords("cafe\u0301");
+        Assert.Equal(2, got.Count);
+        Assert.Equal("caf\u00e9", System.Text.Encoding.UTF8.GetString(got[0]));
+        Assert.Equal("cafe\u0301", System.Text.Encoding.UTF8.GetString(got[1]));
+        Assert.Single(Decryptor.Aes256Passwords("ascii"));
+    }
 }
 }

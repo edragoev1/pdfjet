@@ -63,8 +63,12 @@ public class Encryption {
         sha384 = SHA384.Create();
         sha512 = SHA512.Create();
 
-        byte[] userPasswordBytes = PasswordBytes(passwords.GetUserPassword());
-        byte[] ownerPasswordBytes = PasswordBytes(passwords.GetOwnerPassword());
+        // The passwords prepared with SASLprep, as PDF 2.0 asks of AES-256, so
+        // that a reader that prepares them opens the PDF: an accented letter
+        // typed as a letter and an accent, a full-width letter or a no-break
+        // space were taken as they were (review of 11 October 2026, #27)
+        byte[] userPasswordBytes = PasswordBytes(pdf, passwords.GetUserPassword());
+        byte[] ownerPasswordBytes = PasswordBytes(pdf, passwords.GetOwnerPassword());
 
         User user = ComputeUserKeys(userPasswordBytes);
         Owner owner = ComputeOwnerKeys(ownerPasswordBytes, user.U);
@@ -164,14 +168,16 @@ public class Encryption {
         return objNumber;
     }
 
-    // Returns the UTF-8 bytes of the password, at most 127 of them, as
-    // ISO 32000-2 algorithm 2.A says.
-    private static byte[] PasswordBytes(String password) {
-        byte[] bytes = Encoding.UTF8.GetBytes(password);
-        if (bytes.Length > 127) {
-            Array.Resize(ref bytes, 127);
+    // Returns the bytes of the password as ISO 32000-2 algorithm 2.A says:
+    // prepared with SASLprep, in UTF-8, at most 127 of them. A password that
+    // SASLprep refuses fails the PDF.
+    private static byte[] PasswordBytes(PDF pdf, String password) {
+        try {
+            return SASLprep.PasswordBytes(password);
+        } catch (ArgumentException e) {
+            pdf.Fail(e);
+            throw;
         }
-        return bytes;
     }
 
     /// <summary>

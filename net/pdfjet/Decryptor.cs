@@ -110,8 +110,16 @@ internal sealed class Decryptor {
         byte[] u = ToBytes(encrypt.GetValue("/U"));
         byte[] o = ToBytes(encrypt.GetValue("/O"));
         if (r == 5 || r == 6) {
-            this.key = GetKey(r, Utf8Password(password), u, o,
-                    ToBytes(encrypt.GetValue("/UE")), ToBytes(encrypt.GetValue("/OE")));
+            List<byte[]> candidates = Aes256Passwords(password);
+            for (int i = 0; ; i++) {
+                try {
+                    this.key = GetKey(r, candidates[i], u, o,
+                            ToBytes(encrypt.GetValue("/UE")), ToBytes(encrypt.GetValue("/OE")));
+                    break;
+                } catch (Exception) when (i + 1 < candidates.Count) {
+                    // Try the next one
+                }
+            }
         } else if (r >= 2 && r <= 4) {
             int length = (v == 1 || r == 2) ? 5 : (v == 4) ? 16 : GetInt(encrypt, "/Length") / 8;
             length = Math.Max(5, Math.Min(length, 16));
@@ -131,14 +139,22 @@ internal sealed class Decryptor {
         }
     }
 
-    // Returns the UTF-8 bytes of the password, at most 127 of them, which is
-    // the password of revisions 5 and 6.
-    private static byte[] Utf8Password(String password) {
-        byte[] bytes = Encoding.UTF8.GetBytes(password);
-        if (bytes.Length > 127) {
-            Array.Resize(ref bytes, 127);
+    // Returns the bytes to try for the password of revisions 5 and 6: those
+    // of the password prepared with SASLprep, as PDF 2.0 asks, and, when they
+    // differ, its own UTF-8, at most 127 bytes of either, which PDFjet before
+    // 9.0.5 and other writers took (review of 11 October 2026, #27).
+    internal static List<byte[]> Aes256Passwords(String password) {
+        byte[] raw = SASLprep.Truncate(password);
+        byte[] prepared;
+        try {
+            prepared = SASLprep.PasswordBytes(password);
+        } catch (ArgumentException) {
+            return new List<byte[]> {raw};
         }
-        return bytes;
+        if (prepared.AsSpan().SequenceEqual(raw)) {
+            return new List<byte[]> {raw};
+        }
+        return new List<byte[]> {prepared, raw};
     }
 
     // Returns the password in PDFDocEncoding, which is Latin-1 for the
