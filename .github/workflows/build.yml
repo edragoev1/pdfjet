@@ -571,6 +571,36 @@ jobs:
             - name: Compare the public API with the last release
               run: ./check-api.sh "$(git describe --tags --abbrev=0 HEAD^)"
 
+    # Draws random arcs, ellipses, donut charts, curved paths and rotated
+    # text in the four ports, from the same random numbers, and checks that
+    # each port writes the same content for every page as Go, byte for byte:
+    # the examples' fixed inputs did not find the float paths of DonutChart
+    # and Arc apart (the review of 11 October 2026, #25). A seed of its own on
+    # each run, printed, so that a failure can be run again.
+    crossport:
+        runs-on: ubuntu-24.04
+        steps:
+            - uses: actions/checkout@v7
+
+            - uses: actions/setup-java@v6
+              with:
+                  distribution: temurin
+                  java-version: "21"
+
+            - uses: actions/setup-dotnet@v6
+              with:
+                  dotnet-version: "8.0.x"
+
+            - uses: actions/setup-go@v7
+              with:
+                  go-version-file: go.mod
+                  cache: false
+
+            - uses: ./.github/actions/install-swift
+
+            - name: Compare random shapes across the ports
+              run: tests/crossport/check-crossport.sh "" 20000
+
     swift-macos:
         runs-on: macos-latest
         timeout-minutes: 30

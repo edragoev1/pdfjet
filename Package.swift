@@ -71,6 +71,8 @@ let package = Package(
         .executableTarget(name: "BookletSnippets", dependencies: ["PDFjet"], path: "booklet/snippets/swift"),
         // The harness of tests/corpus/check-corpus.py --port swift.
         .executableTarget(name: "CorpusSwift", dependencies: ["PDFjet"], path: "tests/corpus/swift"),
+        // The Swift side of tests/crossport/check-crossport.sh.
+        .executableTarget(name: "CrossPortSwift", dependencies: ["PDFjet"], path: "tests/crossport/swift"),
         // The unit tests, run with ./test-swift.sh or swift test.
         .testTarget(name: "PDFjetTests", dependencies: ["PDFjet"], path: "tests/swift"),
     ]
