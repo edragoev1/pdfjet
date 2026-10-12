@@ -819,7 +819,7 @@ final public class Page {
             for (int i = 0; i < length; ) {
                 int cp = str.codePointAt(i);
                 i += Character.charCount(cp);
-                if (cp != 0xFEFF) {     // BOM
+                if (cp != 0xFEFF && !Font.isIgnorable(cp)) {     // BOM, or one not drawn
                     appendGlyph(font, glyphOf(font, cp));
                 }
             }
@@ -861,7 +861,7 @@ final public class Page {
                         }
                         joiners[n - 1] = cp;
                     }
-                } else if (cp != 0xFEFF) {     // BOM
+                } else if (cp != 0xFEFF && !Font.isIgnorable(cp)) {     // BOM, or one not drawn
                     if (afterRLM && Bidi.mirrored(cp) != null) {
                         if (mirrored == null) {
                             mirrored = new boolean[length];
@@ -1270,17 +1270,18 @@ final public class Page {
     // most text is looked at once, with no more than two comparisons and the
     // lookup of its glyph for each character.
     private static boolean needsShaping(Font font, String str) {
-        for (int i = 0; i < str.length(); i++) {
-            char c = str.charAt(i);
+        for (int i = 0; i < str.length(); ) {
+            int c = str.codePointAt(i);
+            i += Character.charCount(c);
             if (c >= 0x0300) {
                 if (c >= 0x200C && c <= 0x200F) {
                     return true;
                 }
-                if (font.markAnchors != null && isMark(str.codePointAt(i))) {
+                if (font.markAnchors != null && isMark(c)) {
                     return true;
                 }
             }
-            if (c != 0xFEFF && font.lacks(str.codePointAt(i))) {
+            if (c != 0xFEFF && !Font.isIgnorable(c) && font.lacks(c)) {
                 return true;
             }
         }

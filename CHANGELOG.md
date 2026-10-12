@@ -27,6 +27,20 @@ This is the first entry in this file; earlier releases were not tracked here.
   longer; GetResourcesObject() gives them, and adding a resource to the page
   gives it a copy of its own first. A smaller /Resources is copied into each
   page, as before.
+- Text, in the four ports: a character that Unicode does not draw without a
+  glyph, as the variation selector after ™ or © in text pasted from a
+  phone, a zero width space or a word joiner, takes no width and draws
+  nothing, where it was a box. A Stamp leaves out the marks of direction
+  and the joiners its font has no glyph for, as a Page does. A right to
+  left TextBlock cut to its height keeps the start of its last line, its
+  "..." at the left, where the line ends in the reading.
+- Tables, in the four ports: drawing a table leaves the caller's cells as
+  they were; a long text was cut to its first line in the cell, and a table
+  made again of the same cells lost the rest.
+- Code 39, in the four ports: a '*' in its data, the character that starts
+  and ends the code, and no data at all are refused when the barcode is
+  made, as the other symbologies refuse what they cannot hold; each drew a
+  code that no scanner reads.
 - Markdown, in the four ports: a table has at most 64 columns, and a wider
   header is a paragraph. Each row is padded to the header's columns, so a
   header of thousands of columns over rows of "|" took memory as the square

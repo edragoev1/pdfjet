@@ -273,4 +273,19 @@ class BarcodeTest {
         assertTrue(before.contains("/Artifact") && before.contains("/P <<"));
     }
 
+    // Code 39 refuses a '*' in its data, the character that starts and ends
+    // the code, and no data at all, when the barcode is made, as the other
+    // symbologies refuse what they cannot hold (review of 11 October 2026, #13).
+    @Test
+    void code39RefusesAStarAndNoData() throws Exception {
+        for (final String text : new String[] {"A*B", "", "abc"}) {
+            Exception e = assertThrows(Exception.class, () -> new Barcode(Barcode.CODE_39, text),
+                    "Code 39 of \"" + text + "\" is made");
+            assertEquals(text.isEmpty()
+                    ? "A Code39 barcode needs at least one character."
+                    : "The input string '*" + text + "*' contains characters that are invalid in a Code39 barcode.",
+                    e.getMessage());
+        }
+        new Barcode(Barcode.CODE_39, "HELLO-39 $/+%.");
+    }
 }

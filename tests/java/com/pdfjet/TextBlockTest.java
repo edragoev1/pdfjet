@@ -227,4 +227,78 @@ class TextBlockTest {
         assertTrue(took < 3000L, "breaking a right to left word of 100,000 letters took " + took + " ms");
         TestSupport.assertXY(100f, 120006f, xy);   // As the Go port breaks it
     }
+
+    // A right to left text cut to its height keeps the start of its last line,
+    // at the right as it is drawn, and its "..." at the left, where the line
+    // ends in the reading (review of 11 October 2026, #7).
+    @Test
+    void aRightToLeftTextCutToItsHeightKeepsTheStartOfItsLastLine() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.ttf"));
+        TextBlock block = new TextBlock(font, "שלום עולם אחד שתיים שלוש ארבע חמש שש שבע שמונה").setRightToLeft(true);
+        block.setSize(80f, 20f);
+        java.lang.reflect.Method getTextLines = TextBlock.class.getDeclaredMethod("getTextLines");
+        getTextLines.setAccessible(true);
+        java.lang.reflect.Method linesThatFit =
+                TextBlock.class.getDeclaredMethod("linesThatFit", TextLine[].class, float.class);
+        linesThatFit.setAccessible(true);
+        TextLine[] lines = (TextLine[]) getTextLines.invoke(block);
+        float fontSize = 12f;   // The size of a new TextBlock
+        float leading = font.getAscent(fontSize) + font.getDescent(fontSize) + font.getLineGap(fontSize);
+        TextLine[] fit = (TextLine[]) linesThatFit.invoke(block, lines, leading);
+        assertTrue(fit.length < lines.length, "the text is not cut: " + fit.length + " lines of " + lines.length);
+        String last = lines[fit.length - 1].text;
+        String got = fit[fit.length - 1].text;
+        assertTrue(got.startsWith("...") && got.endsWith(last.substring(last.offsetByCodePoints(0, 3))),
+                "the last line \"" + got + "\", cut from \"" + last + "\", has lost its start");
+    }
+
+    // A character Unicode does not draw without a glyph, as the variation
+    // selector after ™ in text pasted from a phone, a zero width space or a
+    // word joiner, takes no width and draws nothing, where it was a box with a
+    // width (review of 11 October 2026, #9).
+    @Test
+    void anIgnorableCharacterIsNotDrawn() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        String plain = "Brand\u2122 \u00A9 2026 word";
+        String marked = "Brand\u2122\uFE0F \u00A9\uFE0F 2026\u200B wo\u2060rd";
+        assertEquals(font.stringWidth(12f, plain), font.stringWidth(12f, marked), 0f,
+                "the text is as wide with the marks as without");
+        assertEquals(draw(pdf, font, plain), draw(pdf, font, marked), "the marks draw something");
+        // A supplementary one, a tag character, is not drawn either.
+        assertEquals(draw(pdf, font, plain), draw(pdf, font, plain + "\uDB40\uDC01"));
+    }
+
+    private static String draw(PDF pdf, Font font, String text) throws Exception {
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        TextLine line = new TextLine(font, text);
+        line.setLocation(10f, 10f);
+        line.drawOn(page);
+        return TestSupport.content(page);
+    }
+
+    // A Stamp leaves out the marks of direction and the joiners its font has
+    // no glyph for, as Page does: Hebrew with brackets, reordered for drawing,
+    // wrote two .notdef glyphs (review of 11 October 2026, #10).
+    @Test
+    void aStampLeavesOutTheMarksOfDirection() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.ttf"));
+        String text = Bidi.reorderVisually("שלום (abc) עולם");
+        assertTrue(text.indexOf('\u200E') != -1 || text.indexOf('\u200F') != -1,
+                "the text has no marks of direction: " + text);
+        Stamp stamp = new Stamp(pdf);
+        stamp.drawText(font, 12f, 0f, 12f, text);
+        java.lang.reflect.Field buf = Stamp.class.getDeclaredField("buf");
+        buf.setAccessible(true);
+        String content = TestSupport.latin1(((java.io.ByteArrayOutputStream) buf.get(stamp)).toByteArray());
+        // A mark drawn as a glyph the font lacks is in a span of its own, after
+        // the first run of glyphs; this text has no character the font lacks
+        assertFalse(content.contains("/ActualText"), "the stamp draws a mark as a glyph the font lacks: " + content);
+        String glyphs = content.substring(content.indexOf('<') + 1, content.indexOf('>'));
+        for (int i = 0; i + 4 <= glyphs.length(); i += 4) {
+            assertFalse(glyphs.substring(i, i + 4).equals("0000"), "the stamp draws .notdef: " + content);
+        }
+    }
 }

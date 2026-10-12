@@ -380,6 +380,11 @@ func TestTextBlockAStampLeavesOutTheMarksOfDirection(t *testing.T) {
 	stamp := NewStamp(pdf)
 	stamp.DrawText(font, 12, 0, 12, text)
 	content := stamp.buf.String()
+	// A mark drawn as a glyph the font lacks is in a span of its own, after
+	// the first run of glyphs; this text has no character the font lacks
+	if strings.Contains(content, "/ActualText") {
+		t.Errorf("the stamp draws a mark as a glyph the font lacks: %q", content)
+	}
 	start, end := strings.Index(content, "<"), strings.Index(content, ">")
 	glyphs := content[start+1 : end]
 	for i := 0; i+4 <= len(glyphs); i += 4 {

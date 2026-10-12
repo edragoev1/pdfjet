@@ -566,7 +566,7 @@ final public class Font {
     // control character and that of the glyph missingGlyph gives for a
     // character the font does not have.
     private int advanceWidthOf(int cp) {
-        if (isJoinerOrRLM(cp) || cp == 0xFEFF) {
+        if (isJoinerOrRLM(cp) || cp == 0xFEFF || isIgnorable(cp)) {
             return 0;
         }
         return glyphAdvance(Page.glyphOf(this, cp));
@@ -922,6 +922,29 @@ final public class Font {
     // before or after them an actual text.
     static boolean isJoinerOrRLM(int ch) {
         return ch == 0x200F || ch == 0x200E || ch == 0x200C || ch == 0x200D;
+    }
+
+    // Returns true for a character that Unicode says is not drawn when a font
+    // has no glyph for it, Default_Ignorable_Code_Point, but those that Page
+    // treats on their own: the soft hyphen, the marks of direction, the
+    // joiners and the byte order mark. A variation selector after ™ or ©, as
+    // text pasted from a phone has, a zero width space or a word joiner was
+    // drawn as a box with a width (review of 11 October 2026, #9); it takes no
+    // width, and nothing is drawn for it.
+    static boolean isIgnorable(int ch) {
+        if (ch < 0x034F) {
+            return false;
+        }
+        return ch == 0x034F || ch == 0x061C || ch == 0x115F || ch == 0x1160
+                || ch == 0x17B4 || ch == 0x17B5
+                || (ch >= 0x180B && ch <= 0x180F) || ch == 0x200B
+                || (ch >= 0x202A && ch <= 0x202E)
+                || (ch >= 0x2060 && ch <= 0x206F) || ch == 0x3164
+                || (ch >= 0xFE00 && ch <= 0xFE0F) || ch == 0xFFA0
+                || (ch >= 0xFFF0 && ch <= 0xFFF8)
+                || (ch >= 0x1BCA0 && ch <= 0x1BCA3)
+                || (ch >= 0x1D173 && ch <= 0x1D17A)
+                || (ch >= 0xE0000 && ch <= 0xE0FFF);
     }
 
     // Returns true for the C0 and C1 control characters and DEL, U+0000 to

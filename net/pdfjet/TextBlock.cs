@@ -688,6 +688,17 @@ public class TextBlock : IDrawable {
         for (int i = 0; i < last.Length; i += Util.CharCount(last, i)) {
             offsets.Add(i);
         }
+        // A line of right to left text is kept in the order it is drawn, so its
+        // end, where it is cut and the "..." goes, is at its left: cut at its
+        // right, the start of the line was lost and the "..." came first in the
+        // reading (review of 11 October 2026, #7)
+        if (this.rightToLeft) {
+            if (offsets.Count > 3) {
+                last = last.Substring(offsets[3]);
+            }
+            lines[fit - 1] = new TextLine(font, "..." + last);
+            return lines;
+        }
         if (offsets.Count > 3) {
             last = last.Substring(0, offsets[offsets.Count - 3]);
         }

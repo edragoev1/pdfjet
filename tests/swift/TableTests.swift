@@ -1159,4 +1159,19 @@ import Testing
         }
         TestSupport.expectNear(line + 8, heights[heights.count - 1], 0.001, "the last line")
     }
+
+    // Drawing a table leaves the caller's cells as they were: a long text was
+    // cut to its first line in the cell, and a table made again of the cells
+    // lost the rest (review of 11 October 2026, #12).
+    @Test func drawingLeavesTheCellsAsTheyWere() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let long = String(repeating: "a long text that wraps over several lines ", count: 4)
+        let data = [[Cell(font, "Header")], [Cell(font, long)]]
+        let table = Table().setTableData(data, 1)
+        table.setColumnWidth(0, 80)
+        table.setLocation(20, 20)
+        table.drawOn(Page(pdf, Letter.PORTRAIT))
+        #expect(data[1][0].getText() == long, "the cell's text is \(data[1][0].getText() ?? "nil") after drawing")
+    }
 }

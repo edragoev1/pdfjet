@@ -156,4 +156,67 @@ import Testing
         #expect(content.contains("/H1 <</MCID 0>>") && content.contains("/P <</MCID 1>>"), "\(content)")
     }
 
+    // A right to left text cut to its height keeps the start of its last line,
+    // at the right as it is drawn, and its "..." at the left, where the line
+    // ends in the reading (review of 11 October 2026, #7).
+    @Test func aRightToLeftTextCutToItsHeightKeepsTheStartOfItsLastLine() throws {
+        let pdf = TestSupport.newPDF()
+        let font = try Font(pdf, TestSupport.open("fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.ttf"))
+        let text = "שלום עולם אחד שתיים שלוש ארבע חמש שש שבע שמונה"
+        let lines = TextBlock(font, text).setRightToLeft(true).setWidth(80).layout().textLines
+        let fit = TextBlock(font, text).setRightToLeft(true).setSize(80, 20).layout().textLines
+        try #require(fit.count < lines.count, "the text is not cut: \(fit.count) lines of \(lines.count)")
+        let last = Array(lines[fit.count - 1].text!.unicodeScalars)
+        let got = fit[fit.count - 1].text!
+        var kept = ""
+        kept.unicodeScalars.append(contentsOf: last[3...])
+        #expect(got.hasPrefix("...") && got.hasSuffix(kept),
+                "the last line \(got), cut from \(lines[fit.count - 1].text!), has lost its start")
+    }
+
+    // A character Unicode does not draw without a glyph, as the variation
+    // selector after ™ in text pasted from a phone, a zero width space or a word
+    // joiner, takes no width and draws nothing, where it was a box with a width
+    // (review of 11 October 2026, #9).
+    @Test func anIgnorableCharacterIsNotDrawn() throws {
+        let pdf = TestSupport.newPDF()
+        let font = try Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
+        let plain = "Brand™ © 2026 word"
+        let marked = "Brand™\u{FE0F} ©\u{FE0F} 2026\u{200B} wo\u{2060}rd"
+        #expect(font.stringWidth(12, plain) == font.stringWidth(12, marked),
+                "the text is \(font.stringWidth(12, marked)) wide with the marks, \(font.stringWidth(12, plain)) without")
+        func draw(_ text: String) -> String {
+            let page = Page(pdf, Letter.PORTRAIT)
+            TextLine(font, text).setLocation(10, 10).drawOn(page)
+            return TestSupport.content(page)
+        }
+        let a = draw(plain)
+        let b = draw(marked)
+        #expect(a == b, "the marks draw something:\n\(b)\n\(a)")
+    }
+
+    // A Stamp leaves out the marks of direction and the joiners its font has no
+    // glyph for, as Page does: Hebrew with brackets, reordered for drawing, wrote
+    // two .notdef glyphs (review of 11 October 2026, #10).
+    @Test func aStampLeavesOutTheMarksOfDirection() throws {
+        let pdf = TestSupport.newPDF()
+        let font = try Font(pdf, TestSupport.open("fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.ttf"))
+        let text = Bidi.reorderVisually("שלום (abc) עולם")
+        try #require(text.unicodeScalars.contains { $0.value == 0x200E || $0.value == 0x200F },
+                "the text has no marks of direction: \(text)")
+        let stamp = Stamp(pdf)
+        stamp.drawText(font, 12, 0, 12, text)
+        let content = TestSupport.latin1(stamp.buf)
+        // A mark drawn as a glyph the font lacks is in a span of its own, after
+        // the first run of glyphs; this text has no character the font lacks
+        #expect(!content.contains("/ActualText"), "the stamp draws a mark as a glyph the font lacks: \(content)")
+        let start = try #require(content.firstIndex(of: "<"))
+        let end = try #require(content.firstIndex(of: ">"))
+        let glyphs = Array(content[content.index(after: start)..<end])
+        var i = 0
+        while i + 4 <= glyphs.count {
+            #expect(String(glyphs[i..<(i + 4)]) != "0000", "the stamp draws .notdef: \(content)")
+            i += 4
+        }
+    }
 }

@@ -4,6 +4,7 @@
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
+using System;
 using Xunit;
 
 namespace PDFjet.NET {
@@ -208,6 +209,75 @@ public class TextBlockTest {
         float[] xy = block.SetLocation(0f, 0f).DrawOn(null);
         Assert.True(watch.ElapsedMilliseconds < 3000, "breaking a right to left word of 100,000 letters took " + watch.ElapsedMilliseconds + " ms");
         TestSupport.AssertXY(100f, 120006f, xy);    // As the Go port breaks it
+    }
+
+    [Fact]
+    public void ARightToLeftTextCutToItsHeightKeepsTheStartOfItsLastLine() {
+        // A right to left text cut to its height keeps the start of its last
+        // line, at the right as it is drawn, and its "..." at the left, where
+        // the line ends in the reading (review of 11 October 2026, #7).
+        PDF pdf = TestSupport.NewPDF();
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.ttf"));
+        string text = "שלום עולם אחד שתיים שלוש ארבע חמש שש שבע שמונה";
+        TextLine[] lines = new TextBlock(font, text).SetRightToLeft(true).SetWidth(80f).Layout().textLines;
+        TextLine[] fit = new TextBlock(font, text).SetRightToLeft(true).SetSize(80f, 20f).Layout().textLines;
+        Assert.True(fit.Length < lines.Length, "the text is not cut: " + fit.Length + " lines of " + lines.Length);
+        string last = lines[fit.Length - 1].text;
+        string got = fit[fit.Length - 1].text;
+        int start = 0;
+        for (int k = 0; k < 3; k++) {
+            start += char.IsSurrogatePair(last, start) ? 2 : 1;
+        }
+        Assert.True(got.StartsWith("...", StringComparison.Ordinal) &&
+                got.EndsWith(last.Substring(start), StringComparison.Ordinal),
+                "the last line \"" + got + "\", cut from \"" + last + "\", has lost its start");
+    }
+
+    [Fact]
+    public void AnIgnorableCharacterIsNotDrawn() {
+        // A character Unicode does not draw without a glyph, as the variation
+        // selector after ™ in text pasted from a phone, a zero width space or a
+        // word joiner, takes no width and draws nothing, where it was a box
+        // with a width (review of 11 October 2026, #9).
+        PDF pdf = TestSupport.NewPDF();
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        string plain = "Brand™ © 2026 word";
+        string marked = "Brand™\uFE0F ©\uFE0F 2026\u200B wo\u2060rd\U000E0041";
+        Assert.Equal(font.StringWidth(12f, plain), font.StringWidth(12f, marked));
+        Func<string, string> draw = text => {
+            Page page = new Page(pdf, Letter.PORTRAIT);
+            TextLine line = new TextLine(font, text);
+            line.SetLocation(10f, 10f);
+            line.DrawOn(page);
+            return TestSupport.Content(page);
+        };
+        Assert.Equal(draw(plain), draw(marked));
+    }
+
+    [Fact]
+    public void AStampLeavesOutTheMarksOfDirection() {
+        // A Stamp leaves out the marks of direction and the joiners its font
+        // has no glyph for, as Page does: Hebrew with brackets, reordered for
+        // drawing, wrote two .notdef glyphs (review of 11 October 2026, #10).
+        PDF pdf = TestSupport.NewPDF();
+        Font font = new Font(pdf, TestSupport.Open("fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.ttf"));
+        string text = Bidi.ReorderVisually("שלום (abc) עולם");
+        Assert.True(text.IndexOf('\u200E') >= 0 || text.IndexOf('\u200F') >= 0,
+                "the text has no marks of direction: " + text);
+        Stamp stamp = new Stamp(pdf);
+        stamp.DrawText(font, 12f, 0f, 12f, text);
+        System.IO.MemoryStream buf = (System.IO.MemoryStream) typeof(Stamp).GetField("buf",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).GetValue(stamp);
+        string content = TestSupport.Latin1(buf.ToArray());
+        // A mark drawn as a glyph the font lacks is in a span of its own, after
+        // the first run of glyphs; this text has no character the font lacks
+        Assert.False(content.Contains("/ActualText"), "the stamp draws a mark as a glyph the font lacks: " + content);
+        int start = content.IndexOf('<');
+        int end = content.IndexOf('>');
+        string glyphs = content.Substring(start + 1, end - start - 1);
+        for (int i = 0; i + 4 <= glyphs.Length; i += 4) {
+            Assert.False(glyphs.Substring(i, 4) == "0000", "the stamp draws .notdef: " + content);
+        }
     }
 }
 }

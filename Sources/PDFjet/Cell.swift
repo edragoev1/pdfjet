@@ -153,6 +153,30 @@ public class Cell {
         setAlignmentAt(Cell.valignShift, Alignment.TOP)
     }
 
+    // Returns a copy of the cell, every stored property of it, as Go's
+    // clone := *cell gives: Table wraps the text of copies of the caller's
+    // cells, so that the caller's cells keep their text (review of
+    // 11 October 2026, #12).
+    func copy() -> Cell {
+        let cell = Cell(font, text)
+        cell.fallbackFont = fallbackFont
+        cell.fontSize = fontSize
+        cell.drawable = drawable
+        cell.point = point
+        cell.width = width
+        cell.padding = padding
+        cell.backgroundColor = backgroundColor
+        cell.textColor = textColor
+        cell.borderWidth = borderWidth
+        cell.borderColor = borderColor
+        cell.colspan = colspan
+        cell.rowspan = rowspan
+        cell.rowsSpanned = rowsSpanned
+        cell.uri = uri
+        cell.properties = properties
+        return cell
+    }
+
     /**
      * Sets the font for this cell. The font size does not change; set it with setFontSize.
      * The fallback font changes with the font, unless a different fallback font was set.

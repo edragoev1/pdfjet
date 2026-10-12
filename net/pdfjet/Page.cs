@@ -746,7 +746,7 @@ public class Page {
             int i = 0;
             while (i < str.Length) {
                 int codePoint = Util.CodePointAt(str, i);  // A lone surrogate is drawn as .notdef
-                if (codePoint != 0xFEFF) {                  // BOM
+                if (codePoint != 0xFEFF && !Font.IsIgnorable(codePoint)) { // BOM, or one not drawn
                     AppendGlyph(font, GlyphOf(font, codePoint));
                 }
                 i += Util.CharCount(str, i);
@@ -789,7 +789,7 @@ public class Page {
                         }
                         joiners[n - 1] = codePoint;
                     }
-                } else if (codePoint != 0xFEFF) {           // BOM
+                } else if (codePoint != 0xFEFF && !Font.IsIgnorable(codePoint)) { // BOM, or one not drawn
                     if (afterRLM && Bidi.Mirrored(codePoint).HasValue) {
                         if (mirrored == null) {
                             mirrored = new bool[str.Length];
@@ -1166,8 +1166,15 @@ public class Page {
     // Multilingual Plane, a pair of surrogates, is past the last character of
     // every font, whose range is 16 bits.
     private static bool HasNotdef(Font font, string str) {
-        foreach (char c in str) {
-            if (c != 0xFEFF && font.Lacks(c)) {
+        for (int i = 0; i < str.Length; i++) {
+            int c = str[i];
+            if (char.IsHighSurrogate(str, i) && i + 1 < str.Length && char.IsLowSurrogate(str[i + 1])) {
+                c = char.ConvertToUtf32(str[i], str[i + 1]);
+                i++;
+            }
+            // A character Unicode does not draw is left out, not drawn as
+            // .notdef (review of 11 October 2026, #9)
+            if (c != 0xFEFF && !Font.IsIgnorable(c) && font.Lacks(c)) {
                 return true;
             }
         }

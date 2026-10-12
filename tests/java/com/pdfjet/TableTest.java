@@ -1276,4 +1276,26 @@ class TableTest {
         }
         assertEquals(line + 8f, heights[heights.length - 1], 0.001f, "the last line");
     }
+
+    // Drawing a table leaves the caller's cells as they were: a long text was
+    // cut to its first line in the cell, and a table made again of the cells
+    // lost the rest (review of 11 October 2026, #12).
+    @Test
+    void drawingLeavesTheCellsAsTheyWere() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < 4; i++) {
+            sb.append("a long text that wraps over several lines ");
+        }
+        String text = sb.toString();
+        List<List<Cell>> data = new ArrayList<List<Cell>>();
+        data.add(new ArrayList<Cell>(Arrays.asList(new Cell(font, "Header"))));
+        data.add(new ArrayList<Cell>(Arrays.asList(new Cell(font, text))));
+        Table table = new Table().setTableData(data, 1);
+        table.setColumnWidth(0, 80f);
+        table.setLocation(20f, 20f);
+        table.drawOn(new Page(pdf, Letter.PORTRAIT));
+        assertEquals(text, data.get(1).get(0).getText(), "the cell's text after drawing");
+    }
 }

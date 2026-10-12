@@ -253,5 +253,17 @@ public class BarcodeTest {
         Assert.Contains("/P <<", before);
     }
 
+    [Fact]
+    public void Code39RefusesAStarAndNoData() {
+        // Code 39 refuses a '*' in its data, the character that starts and ends
+        // the code, and no data at all, when the barcode is made, as the other
+        // symbologies refuse what they cannot hold (review of 11 October 2026, #13).
+        foreach (string text in new string[] {"A*B", "", "abc"}) {
+            Assert.ThrowsAny<Exception>(() => new Barcode(Barcode.CODE_39, text));
+        }
+        Exception e = Assert.ThrowsAny<Exception>(() => new Barcode(Barcode.CODE_39, "A*B"));
+        Assert.Equal("The input string '*A*B*' contains characters that are invalid in a Code39 barcode.", e.Message);
+        new Barcode(Barcode.CODE_39, "HELLO-39 $/+%.");
+    }
 }
 }

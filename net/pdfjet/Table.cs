@@ -1819,7 +1819,15 @@ public class Table : IDrawable {
             if (r == footer) {
                 footer2 = first;
             }
-            tableData2.Add(row);    // Add the original row
+            // A copy of the row, as its cells are given the lines of their
+            // text: the caller's cells kept their first line, and a table made
+            // again of them lost the rest (review of 11 October 2026, #12)
+            List<Cell> copied = new List<Cell>(row.Count);
+            foreach (Cell cell in row) {
+                copied.Add(cell?.ShallowCopy());
+            }
+            row = copied;
+            tableData2.Add(row);
             // Every cell of the row is wrapped once, here. The lines it needs
             // are what the cells stacked below it get, and the most lines any
             // cell of the row needs is how many rows to stack. The rows added

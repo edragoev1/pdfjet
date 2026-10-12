@@ -879,6 +879,17 @@ public class TextBlock implements Drawable {
         System.arraycopy(textLines, 0, lines, 0, fit);
         String last = lines[fit - 1].text;
         int count = last.codePointCount(0, last.length());
+        // A line of right to left text is kept in the order it is drawn, so
+        // its end, where it is cut and the "..." goes, is at its left: cut at
+        // its right, the start of the line was lost and the "..." came first
+        // in the reading (review of 11 October 2026, #7)
+        if (rightToLeft) {
+            if (count > 3) {
+                last = last.substring(last.offsetByCodePoints(0, 3));
+            }
+            lines[fit - 1] = new TextLine(font, "..." + last);
+            return lines;
+        }
         if (count > 3) {
             last = last.substring(0, last.offsetByCodePoints(0, count - 3));
         }

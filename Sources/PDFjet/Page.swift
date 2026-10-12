@@ -580,7 +580,8 @@ public class Page {
             let table = font.unicodeToGID
             var gids = [Int]()
             gids.reserveCapacity(scalars.count)
-            for scalar in scalars where scalar.value != 0xFEFF {    // BOM
+            // The BOM, or one not drawn
+            for scalar in scalars where scalar.value != 0xFEFF && !Font.isIgnorable(Int(scalar.value)) {
                 let codePoint = Int(scalar.value)
                 gids.append(Font.isControl(codePoint) ? table[0x0020] : table[codePoint])
             }
@@ -626,6 +627,9 @@ public class Page {
                         }
                         joiners![codePoints.count - 1] = codePoint
                     }
+                    continue
+                }
+                if Font.isIgnorable(codePoint) {   // One not drawn
                     continue
                 }
                 if afterRLM && Bidi.mirrored(scalar.value) != nil {
@@ -973,7 +977,7 @@ public class Page {
                     return true
                 }
             }
-            if codePoint != 0xFEFF && !Font.isControl(codePoint) &&
+            if codePoint != 0xFEFF && !Font.isControl(codePoint) && !Font.isIgnorable(codePoint) &&
                     (codePoint < first || codePoint > last || codePoint >= table.count || table[codePoint] == 0) {
                 return true
             }

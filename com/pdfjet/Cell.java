@@ -176,6 +176,29 @@ public class Cell {
         setAlignmentAt(VALIGN, Alignment.TOP);
     }
 
+    // A copy of the cell, with all of its fields, for a table to wrap the
+    // text of: the caller's cell keeps its text (review of 11 October 2026,
+    // #12). The drawable, the point and the fonts are shared, not copied.
+    Cell(Cell cell) {
+        this.font = cell.font;
+        this.fallbackFont = cell.fallbackFont;
+        this.fontSize = cell.fontSize;
+        this.text = cell.text;
+        this.drawable = cell.drawable;
+        this.point = cell.point;
+        this.width = cell.width;
+        this.padding = cell.padding;
+        this.backgroundColor = cell.backgroundColor;
+        this.textColor = cell.textColor;
+        this.borderWidth = cell.borderWidth;
+        this.borderColor = cell.borderColor;
+        this.colspan = cell.colspan;
+        this.rowspan = cell.rowspan;
+        this.rowsSpanned = cell.rowsSpanned;
+        this.properties = cell.properties;
+        this.uri = cell.uri;
+    }
+
     /**
      * Sets the font for this cell. The font size does not change; set it with setFontSize.
      * The fallback font changes with the font, unless a different fallback font was set.

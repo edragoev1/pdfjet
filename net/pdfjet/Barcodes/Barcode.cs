@@ -140,6 +140,22 @@ public class Barcode : IDrawable {
         tableB.Add( 'X', "bWbwBwbwB" );
         tableB.Add( 'Y', "BWbwBwbwb" );
         tableB.Add( 'Z', "bWBwBwbwb" );
+
+        // Code 39 is checked here, as the other symbologies are, not first when
+        // it is drawn: a '*' in its data, the character that starts and ends
+        // the code, or no data at all made a code that no scanner reads (review
+        // of 11 October 2026, #13)
+        if (barcodeType == Barcode.CODE_39) {
+            if (text.Length == 0) {
+                throw new Exception("A Code39 barcode needs at least one character.");
+            }
+            foreach (char c in text) {
+                if (c == '*' || !tableB.ContainsKey(c)) {
+                    throw new Exception("The input string '*" + text +
+                            "*' contains characters that are invalid in a Code39 barcode.");
+                }
+            }
+        }
     }
 
     IDrawable IDrawable.SetLocation(float x1, float y1) {

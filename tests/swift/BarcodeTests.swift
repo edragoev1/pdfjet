@@ -245,4 +245,19 @@ import Testing
         #expect(before.contains("/Artifact") && before.contains("/P <<"))
     }
 
+    // Code 39 refuses a '*' in its data, the character that starts and ends the
+    // code, and no data at all, when the barcode is made, as the other
+    // symbologies refuse what they cannot hold (review of 11 October 2026, #13).
+    @Test func code39RefusesAStarAndNoData() throws {
+        for (text, message) in [
+                ("A*B", "The input string '*A*B*' contains characters that are invalid in a Code39 barcode."),
+                ("", "A Code39 barcode needs at least one character."),
+                ("abc", "The input string '*abc*' contains characters that are invalid in a Code39 barcode.")] {
+            let error = #expect(throws: PDFjetError.self, "Code 39 of '\(text)' is made") {
+                _ = try Barcode(Barcode.CODE_39, text)
+            }
+            #expect(error?.message == message)
+        }
+        _ = try Barcode(Barcode.CODE_39, "HELLO-39 $/+%.")
+    }
 }

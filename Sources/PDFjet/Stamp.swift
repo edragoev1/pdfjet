@@ -51,7 +51,7 @@ public class Stamp : Drawable {
     private var rotateDegrees: Float = 0
     private var scaleX: Float = 1.0
     private var scaleY: Float = 1.0
-    private var buf = [UInt8]()
+    private(set) var buf = [UInt8]()
     private var fonts: [Font] = []
     private var language: String?
     private var actualText: String?
@@ -404,6 +404,14 @@ public class Stamp : Drawable {
         for scalar in str.unicodeScalars {
             let codePoint = Int(scalar.value)
             if codePoint == 0xFEFF { continue } // Skip BOM
+            // What Page leaves out, it leaves out too: the marks of direction,
+            // a joiner the font has no glyph for, and what Unicode does not
+            // draw; each was drawn as a box, wider than stringWidth measured
+            // the text (review of 11 October 2026, #10)
+            if codePoint == 0x200E || codePoint == 0x200F || Font.isIgnorable(codePoint) ||
+                    ((codePoint == 0x200C || codePoint == 0x200D) && font.unicodeToGID[codePoint] == 0) {
+                continue
+            }
 
             // The glyphs Page draws. The .notdef glyph of a character the font
             // does not have is drawn in a marked content span with the

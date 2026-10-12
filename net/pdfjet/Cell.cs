@@ -673,6 +673,13 @@ public class Cell {
         return PaddingAt(RIGHT_PADDING);
     }
 
+    // Returns a copy of the cell that shares its font, drawable and point:
+    // what the wrap of a table changes is the copy's own (review of 11
+    // October 2026, #12).
+    internal Cell ShallowCopy() {
+        return (Cell) MemberwiseClone();
+    }
+
     /// <summary>
     /// Draws the point, text and borders of this cell.
     /// </summary>

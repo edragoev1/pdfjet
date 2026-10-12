@@ -132,6 +132,23 @@ public class Barcode implements Drawable {
         tableB.put('X', "bWbwBwbwB");
         tableB.put('Y', "BWbwBwbwb");
         tableB.put('Z', "bWBwBwbwb");
+
+        // Code 39 is checked here, as the other symbologies are, not first
+        // when it is drawn: a '*' in its data, the character that starts and
+        // ends the code, or no data at all made a code that no scanner reads
+        // (review of 11 October 2026, #13)
+        if (barcodeType == Barcode.CODE_39) {
+            if (text.isEmpty()) {
+                throw new Exception("A Code39 barcode needs at least one character.");
+            }
+            for (int i = 0; i < text.length(); i++) {
+                char c = text.charAt(i);
+                if (c == '*' || tableB.get(c) == null) {
+                    throw new Exception("The input string '*" + text +
+                            "*' contains characters that are invalid in a Code39 barcode.");
+                }
+            }
+        }
     }
 
     /**

@@ -400,6 +400,15 @@ public class Stamp : IDrawable {
 
             if (codePoint == 0xFEFF) { continue; }  // Skip the BOM
 
+            // What Page leaves out, it leaves out too: the marks of direction,
+            // a joiner the font has no glyph for, and what Unicode does not
+            // draw; each was drawn as a box, wider than StringWidth measured
+            // the text (review of 11 October 2026, #10)
+            if (codePoint == 0x200E || codePoint == 0x200F || Font.IsIgnorable(codePoint) ||
+                    ((codePoint == 0x200C || codePoint == 0x200D) && font.unicodeToGID[codePoint] == 0)) {
+                continue;
+            }
+
             // The glyphs Page draws. The .notdef glyph of a character the font
             // does not have is drawn in a marked content span with the
             // character as its actual text, as on a page.

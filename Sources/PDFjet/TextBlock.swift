@@ -708,6 +708,17 @@ public class TextBlock : Drawable {
         }
         var lines = Array(textLines[..<fit])
         var last = Array(lines[fit - 1].text!.unicodeScalars)
+        // A line of right to left text is kept in the order it is drawn, so its
+        // end, where it is cut and the "..." goes, is at its left: cut at its
+        // right, the start of the line was lost and the "..." came first in the
+        // reading (review of 11 October 2026, #7)
+        if rightToLeft {
+            if last.count > 3 {
+                last.removeFirst(3)
+            }
+            lines[fit - 1] = TextLine(font, "..." + TextBlock.string(last[...]))
+            return lines
+        }
         if last.count > 3 {
             last.removeLast(3)
         }

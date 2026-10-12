@@ -1244,5 +1244,24 @@ public sealed class TableTest : IDisposable {
         }
         TestSupport.AssertNear(line + 8f, heights[heights.Length - 1], 0.001f, "the last line");
     }
+
+    [Fact]
+    public void DrawingLeavesTheCellsAsTheyWere() {
+        // Drawing a table leaves the caller's cells as they were: a long text
+        // was cut to its first line in the cell, and a table made again of the
+        // cells lost the rest (review of 11 October 2026, #12).
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        string longText = string.Concat(System.Linq.Enumerable.Repeat("a long text that wraps over several lines ", 4));
+        List<List<Cell>> data = new List<List<Cell>> {
+            new List<Cell> {new Cell(font, "Header")},
+            new List<Cell> {new Cell(font, longText)},
+        };
+        Table table = new Table().SetTableData(data, 1);
+        table.SetColumnWidth(0, 80f);
+        table.SetLocation(20f, 20f);
+        table.DrawOn(new Page(pdf, Letter.PORTRAIT));
+        Assert.Equal(longText, data[1][0].GetText());
+    }
 }
 }
