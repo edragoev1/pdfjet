@@ -318,5 +318,19 @@ public class OTFTest {
         Assert.Equal(0, got.unicodeToGID.Get('£'));
         Draws(cut);
     }
+
+    // A font whose license forbids embedding it, its fsType Restricted License
+    // embedding and nothing more, is refused, where it was embedded; one that
+    // allows Preview and Print too is embedded, as the least restrictive bit
+    // applies.
+    [Fact]
+    public void AFontWhoseLicenseForbidsEmbeddingIsRefused() {
+        byte[] ttf = FontBytes("fonts/NotoSans/NotoSans-Regular.ttf");
+        int os2 = Table(ttf, "OS/2");
+        string message = Error(With(ttf, os2 + 8, 0x0002));
+        Assert.Contains("may not be embedded", message);
+        Assert.Contains("NotoSans", message);
+        new Font(TestSupport.NewPDF(), new MemoryStream(With(ttf, os2 + 8, 0x0006)));
+    }
 }
 }   // End of namespace PDFjet.NET

@@ -259,8 +259,10 @@ public class Arc : IDrawable {
         } else if (fillColor == null && strokeColor != null) {
             page.SetPenWidth(strokeWidth);
             page.SetPenColor(strokeColor);
-        } else {    // Both brushColor == null and penColor == null
-            page.SetPenWidth(0f);
+        } else {
+            // No colors: a black line of the width set, 0, the thinnest the
+            // device draws, when none was; it was 0 whatever the width
+            page.SetPenWidth(strokeWidth);
             page.SetPenColor(Color.black);
         }
         page.AddArcToPath(

@@ -141,5 +141,22 @@ public class ShapesTest {
                 .SetStrokeColor(0x000000).SetLocation(7.1584225f, 76.66633f).DrawOn(page);
         Assert.Contains("271.85 238.26 m\n", TestSupport.Content(page));
     }
+
+    // An Arc, and so an Ellipse, given a stroke width and no color is drawn a
+    // black line of that width: it was drawn 0 wide, a hairline, whatever the
+    // width; with no width it is 0 wide as before.
+    [Fact]
+    public void AnArcOfAWidthAndNoColorIsDrawnThatWide() {
+        foreach (Arc arc in new Arc[] {new Arc(), new Ellipse()}) {
+            PDF pdf = TestSupport.NewPDF();
+            Page page = new Page(pdf, Letter.PORTRAIT);
+            arc.SetLocation(100f, 100f).SetRadius(40f).SetSweep(270f).SetStrokeWidth(4f).DrawOn(page);
+            Assert.Contains("\n4 w\n", TestSupport.Content(page));
+        }
+        PDF pdf2 = TestSupport.NewPDF();
+        Page page2 = new Page(pdf2, Letter.PORTRAIT);
+        new Arc().SetLocation(100f, 100f).SetRadius(40f).SetSweep(90f).DrawOn(page2);
+        Assert.Contains("\n0 w\n", TestSupport.Content(page2));
+    }
 }
 }
