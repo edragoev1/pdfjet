@@ -1,0 +1,9 @@
+# The removals from the public API that CHANGELOG.md records as made on
+# purpose, which util/compare-api.py lists without failing: each line is the
+# port, a colon and a space, and the line compare-api.py prints after "- ".
+# A removal needs the owner's word and a CHANGELOG.md entry before it goes
+# here.
+
+# 9.0.5: the .stream font format, Removed in CHANGELOG.md
+go: pdfjet func NewFontStream1(pdf *PDF, reader io.Reader) *Font
+go: pdfjet func NewFontStream2(objects *[]*PDFobj, reader io.Reader) *Font

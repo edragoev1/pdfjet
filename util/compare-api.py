@@ -7,10 +7,20 @@ rather than gone and added, and does not fail the check.
 
     python3 util/compare-api.py build/check-api v9.0.1
 """
+import os
 import re
 import sys
 
 work, base = sys.argv[1], sys.argv[2]
+
+# The removals CHANGELOG.md records as made on purpose, each as "port: line"
+# as this script prints it after its "- ": they are listed, and do not fail
+# the check.
+ALLOWED = os.path.join(os.path.dirname(os.path.abspath(__file__)), "api-removed.txt")
+allowed = set()
+if os.path.exists(ALLOWED):
+    with open(ALLOWED, encoding="utf-8") as f:
+        allowed = {line.rstrip("\n") for line in f if line.strip() and not line.startswith("#")}
 
 
 def key(line):
@@ -31,13 +41,13 @@ for port in ["java", "go", "dotnet", "swift"]:
     added = sorted(new_keys[k] for k in new_keys if k not in old_keys)
     print(f"\n=== {port}: {len(removed)} gone (-), {len(changed)} changed (~), {len(added)} added (+) since {base}")
     for line in removed:
-        print("- " + line)
+        print(("- (recorded in api-removed.txt) " if f"{port}: {line}" in allowed else "- ") + line)
     for k in changed:
         print("~ " + old_keys[k])
         print("    now " + new_keys[k])
     for line in added:
         print("+ " + line)
-    gone = gone or bool(removed)
+    gone = gone or any(f"{port}: {line}" not in allowed for line in removed)
 
 print()
 if gone:

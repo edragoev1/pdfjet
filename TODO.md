@@ -190,8 +190,14 @@ commit and date. The layout's format version (1) and the look's rules
   DonutChart and Arc computed in another float width than Go's (#25), which
   the CI's hashes miss as they cover the examples only. GetFitChars counts
   code points in Go and Swift, UTF-16 units in Java and C# (#26).
-- **For 9.0.7: CI.** net48 built, check-api.sh run, and the hashes compared
-  on more than the examples' inputs.
+- **For 9.0.7: CI.** The output of the four ports compared on more than the
+  examples' inputs: the float paths of DonutChart and Arc were found apart by
+  a random run against Go (#25), which CI does not run. The fuzzers given
+  inputs large enough to reach the 256 MB decode limit (#29 to #32), pages
+  timed in FuzzPDFRead (#35), FuzzMarkdown's linear check repeating the
+  body without the header (#33), and FuzzMarkup's timing made steady under
+  load. (Done: net48 built, check-api.sh run against the last tag, and the
+  Java and C# tests run in a Turkish locale, in build.yml.)
 - **Longer fuzzing of the font subsetters.** Go's fuzzers ran 5 minutes each
   on every target before 9.0.5 with no failure; the TrueType and CFF
   subsetters, which subset a real font for each input, ran 27,000 and 15,000

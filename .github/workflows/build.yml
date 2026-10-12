@@ -11,7 +11,11 @@
 # Java port with JDK 8 and runs its examples on Java 8. The corpus job reads,
 # merges and splits the pdf.js and veraPDF test corpora with each port and
 # checks what it gets against MuPDF. The references job checks the images the
-# Go port embeds against Pillow and the fonts it reads against fontTools. The swift-macos job
+# Go port embeds against Pillow and the fonts it reads against fontTools. The api
+# job compares the public API of the four ports with the last release tag, with
+# check-api.sh. The dotnet job also builds the library for .NET Framework 4.8,
+# and it and the java job run their unit tests a second time in a Turkish
+# locale. The swift-macos job
 # builds the Swift port and runs its tests on macOS, where an API a version of
 # macOS lacks fails the build that Linux lets through. The viewers job opens the
 # Java PDFs in PDFium (Chrome), pdf.js (Firefox), Apple's PDFKit (Preview) and
@@ -61,10 +65,14 @@ jobs:
                   distribution: temurin
                   java-version: "21"
 
+            # .NET 8 for the library and its tests, and the .NET 10 SDK, for
+            # C# 14, for the library built for .NET Framework 4.8.
             - if: matrix.port == 'dotnet'
               uses: actions/setup-dotnet@v6
               with:
-                  dotnet-version: "8.0.x"
+                  dotnet-version: |
+                      8.0.x
+                      10.0.x
 
             - if: matrix.port == 'go'
               uses: actions/setup-go@v7
@@ -135,6 +143,24 @@ jobs:
             # its SHA-256; the C# tests restore xUnit from NuGet.
             - name: Run the unit tests
               run: bash -e test-${{ matrix.port }}.sh
+
+            # The unit tests again in a Turkish locale, where "I" lowercases to a
+            # dotless "ı" and a decimal comma is written: what the library
+            # writes and reads must not change with the locale (the review of
+            # 11 October 2026, #3). .NET takes its culture from LANG, through
+            # ICU, whether or not the system has the locale.
+            - name: Run the unit tests in a Turkish locale
+              if: matrix.port == 'java' || matrix.port == 'dotnet'
+              env:
+                  JAVA_TOOL_OPTIONS: -Duser.language=tr -Duser.country=TR
+                  LANG: tr_TR.UTF-8
+              run: bash -e test-${{ matrix.port }}.sh
+
+            # The library built for .NET Framework 4.8, from the same sources,
+            # with warnings as errors.
+            - name: Build the library for .NET Framework 4.8
+              if: matrix.port == 'dotnet'
+              run: bash -e net48/build.sh
 
             # No fused multiply-add in the Go port's code for arm64, which
             # could round otherwise than amd64 and the other ports; the
@@ -484,6 +510,36 @@ jobs:
     # the tests: the swift job builds on Linux, where an API that a version of
     # macOS lacks, such as TaskLocal before 10.15 for a package that names no
     # platform, still builds. Free for a public repository, as every runner is.
+    # Lists the public API of the four ports with check-api.sh and compares it
+    # with the last release tag: the job fails when anything of it is gone
+    # that util/api-removed.txt does not record. What is added and changed is
+    # in the log, to hold against CHANGELOG.md.
+    api:
+        runs-on: ubuntu-24.04
+        steps:
+            - uses: actions/checkout@v7
+              with:
+                  fetch-depth: 0
+
+            - uses: actions/setup-java@v6
+              with:
+                  distribution: temurin
+                  java-version: "21"
+
+            - uses: actions/setup-dotnet@v6
+              with:
+                  dotnet-version: "8.0.x"
+
+            - uses: actions/setup-go@v7
+              with:
+                  go-version-file: go.mod
+                  cache: false
+
+            - uses: ./.github/actions/install-swift
+
+            - name: Compare the public API with the last release
+              run: ./check-api.sh "$(git describe --tags --abbrev=0)"
+
     swift-macos:
         runs-on: macos-latest
         timeout-minutes: 30
