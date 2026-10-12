@@ -136,16 +136,16 @@ func TestReviewMediaTheCharacterMapIsReadInOnePassOverItsSegments(t *testing.T) 
 		t.Errorf("the font loads in %v", elapsed)
 	}
 	// The first segment of the character is the one it is in.
-	if otf.unicodeToGID[0xFFFE] != 0xFFFE || otf.unicodeToGID['A'] != 0 {
-		t.Errorf("0xFFFE is glyph %d, A glyph %d", otf.unicodeToGID[0xFFFE], otf.unicodeToGID['A'])
+	if otf.unicodeToGID.get(0xFFFE) != 0xFFFE || otf.unicodeToGID.get('A') != 0 {
+		t.Errorf("0xFFFE is glyph %d, A glyph %d", otf.unicodeToGID.get(0xFFFE), otf.unicodeToGID.get('A'))
 	}
 	// Segments of 'A' to 'C' and 'X' to 'Z', with a delta of 0, map each
 	// character to the glyph of its code, and none between them.
 	otf = newOpenTypeFont(bytes.NewReader(testOpenTypeWithTable(t, font, "cmap",
 		testCmapOfSegments([]int{'A', 'X'}, []int{'C', 'Z'}))))
 	for ch, gid := range map[rune]int{'@': 0, 'A': 'A', 'C': 'C', 'D': 0, 'W': 0, 'X': 'X', 'Z': 'Z', '[': 0} {
-		if otf.unicodeToGID[ch] != gid {
-			t.Errorf("%q is glyph %d, not %d", ch, otf.unicodeToGID[ch], gid)
+		if otf.unicodeToGID.get(ch) != gid {
+			t.Errorf("%q is glyph %d, not %d", ch, otf.unicodeToGID.get(ch), gid)
 		}
 	}
 }
@@ -158,8 +158,8 @@ func TestReviewMediaAFontWithoutAnOS2TableHasItsCharacters(t *testing.T) {
 	with := newOpenTypeFont(bytes.NewReader(font))
 	without := newOpenTypeFont(bytes.NewReader(testOpenTypeWithout(t, font, "OS/2")))
 	for _, ch := range []rune{'A', 'z', 'ก'} {
-		if without.unicodeToGID[ch] == 0 || without.unicodeToGID[ch] != with.unicodeToGID[ch] {
-			t.Errorf("%q is glyph %d, not %d", ch, without.unicodeToGID[ch], with.unicodeToGID[ch])
+		if without.unicodeToGID.get(ch) == 0 || without.unicodeToGID.get(ch) != with.unicodeToGID.get(ch) {
+			t.Errorf("%q is glyph %d, not %d", ch, without.unicodeToGID.get(ch), with.unicodeToGID.get(ch))
 		}
 	}
 }

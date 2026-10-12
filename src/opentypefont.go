@@ -57,6 +57,7 @@ func setOpenTypeFontData(font *Font, otf *openTypeFont) {
 	font.firstChar = otf.firstChar
 	font.lastChar = otf.lastChar
 	font.unicodeToGID = otf.unicodeToGID
+	font.unicodeOf = unicodeOfGlyphs(otf.unicodeToGID)
 	font.markToMarkOffsets = otf.markToMarkOffsets
 	font.markAnchors = otf.markAnchors
 	font.baseAnchors = otf.baseAnchors

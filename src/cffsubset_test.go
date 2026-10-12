@@ -60,7 +60,7 @@ func testCFFParts(t *testing.T, cff []byte) (charStrings, globalSubrs [][]byte, 
 func testCFFUsed(otf *openTypeFont, text string) []bool {
 	used := make([]bool, 0x10000)
 	for _, ch := range text {
-		used[otf.unicodeToGID[ch]] = true
+		used[otf.unicodeToGID.get(ch)] = true
 	}
 	return used
 }
@@ -215,7 +215,7 @@ func TestCFFSubsetOfAnAccentedLetterDrawnWithSeacIsRefused(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	gid := otf.unicodeToGID['Á']
+	gid := otf.unicodeToGID.get('Á')
 	at := charStrings.objects[gid]
 	if charStrings.objects[gid+1]-at < 6 {
 		t.Fatalf("the charstring of Á is %d bytes", charStrings.objects[gid+1]-at)

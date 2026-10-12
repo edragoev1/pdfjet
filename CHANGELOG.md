@@ -16,6 +16,15 @@ This is the first entry in this file; earlier releases were not tracked here.
   every document. It grows for a glyph past the font's count, so it keeps
   what the array kept; the subsetters read it as an array of the font's
   glyphs. A page in three fonts allocates 0.2 MB less, with the same PDF.
+- The characters of a font and their glyphs, in the four ports: the
+  character-to-glyph table is two levels, 256 blocks of 256 characters made
+  only where the font has a character, some kilobytes for IBM Plex Sans
+  where an array of 65,536 glyphs was 256 or 512 KB for every font of every
+  document; and the character of each glyph, which the ToUnicode map
+  writes, is found once when the font is read, where writing the map walked
+  the 65,536 characters twice. A page in three Plex fonts takes a quarter
+  less time in Go, 3.0 ms where it took 4.0, and allocates 4.2 MB where it
+  allocated 7.6, with the same PDF, byte for byte.
 
 ## v9.0.5 — unreleased
 

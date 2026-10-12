@@ -548,7 +548,7 @@ func (page *Page) drawUnicodeString(font *Font, text string) {
 					runEdge = make([]bool, len(runes)+1)
 				}
 				runEdge[len(codePoints)] = true
-			} else if (c1 == 0x200C || c1 == 0x200D) && font.unicodeToGID[c1] == 0 {
+			} else if (c1 == 0x200C || c1 == 0x200D) && font.unicodeToGID.get(c1) == 0 {
 				// A ZWNJ or ZWJ the font has no glyph for goes with the glyph
 				// before it. One with nothing before it is left out.
 				if len(codePoints) > 0 {
@@ -721,7 +721,7 @@ func (page *Page) appendGlyphWithActualText(
 		page.appendString("> Tj\n")
 	}
 	if joiner != 0 {
-		space := font.unicodeToGID[0x0020]
+		space := font.unicodeToGID.get(0x0020)
 		page.appendString("[<")
 		page.appendGlyph(font, space)
 		page.appendString("> ")
@@ -751,12 +751,12 @@ func textOf(font *Font, c rune) string {
 // missing and not a space, as other PDF writers draw it.
 func glyphOf(font *Font, c rune) int {
 	if isControl(c) {
-		return font.unicodeToGID[0x0020]
+		return font.unicodeToGID.get(0x0020)
 	}
 	if font.lacks(c) {
 		return font.missingGlyph()
 	}
-	return font.unicodeToGID[c]
+	return font.unicodeToGID.get(c)
 }
 
 // isMissing returns true if the character at k is one the font does not have,
@@ -853,7 +853,7 @@ func markToBaseOffset(font *Font, baseCodePoint rune, baseGID, markGID int) []in
 	offset := anchorOffset(font, baseGID, markGID)
 	if offset == nil {
 		if letter := letterOfIsolatedForm(baseCodePoint); letter != 0 {
-			offset = anchorOffset(font, font.unicodeToGID[letter], markGID)
+			offset = anchorOffset(font, font.unicodeToGID.get(letter), markGID)
 		}
 	}
 	return offset
@@ -1009,7 +1009,7 @@ func (page *Page) appendWordWithMovedMarks(font *Font, codePoints []rune, gids, 
 	page.appendString(toUTF16Hex(text.String()))
 	page.appendString(">>> BDC\n")
 	if leadingSpace {
-		space := font.unicodeToGID[0x0020]
+		space := font.unicodeToGID.get(0x0020)
 		page.appendString("[")
 		page.appendFloat32(float32(1000*float32(font.glyphAdvance(space))) / float32(font.unitsPerEm))
 		page.appendString(" <")

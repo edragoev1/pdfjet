@@ -425,7 +425,7 @@ func (s *Stamp) drawEncodedText(font *Font, str string) {
 		// draw; each was drawn as a box, wider than StringWidth measured
 		// the text (review of 11 October 2026, #10)
 		if codePoint == 0x200E || codePoint == 0x200F || isIgnorable(codePoint) ||
-			((codePoint == 0x200C || codePoint == 0x200D) && font.unicodeToGID[codePoint] == 0) {
+			((codePoint == 0x200C || codePoint == 0x200D) && font.unicodeToGID.get(codePoint) == 0) {
 			continue
 		}
 		gid := glyphOf(font, codePoint)

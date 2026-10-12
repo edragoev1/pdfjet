@@ -290,7 +290,7 @@ func TestOTFAFontWithAnEmptyFormat4MapIsReadFromItsFormat12Map(t *testing.T) {
 	// subtable alone.
 	font := NewFontFromFile(testNewPDF(), testRepoPath(t, "fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.ttf"))
 	for _, ch := range "繁體中文A" {
-		if font.unicodeToGID[ch] == 0 {
+		if font.unicodeToGID.get(ch) == 0 {
 			t.Errorf("%c has no glyph", ch)
 		}
 	}
@@ -307,8 +307,8 @@ func TestOTFAFormat12GroupThatStartsBeforeTheFirstCharacterKeepsItsGlyphs(t *tes
 	binary.BigEndian.PutUint16(ttf[os2+64:], '0')
 	got := newOpenTypeFont(bytes.NewReader(ttf))
 	for _, ch := range "0AZaz~" {
-		if got.unicodeToGID[ch] != want.unicodeToGID[ch] || want.unicodeToGID[ch] == 0 {
-			t.Errorf("%q: glyph %d, not %d", ch, got.unicodeToGID[ch], want.unicodeToGID[ch])
+		if got.unicodeToGID.get(ch) != want.unicodeToGID.get(ch) || want.unicodeToGID.get(ch) == 0 {
+			t.Errorf("%q: glyph %d, not %d", ch, got.unicodeToGID.get(ch), want.unicodeToGID.get(ch))
 		}
 	}
 }

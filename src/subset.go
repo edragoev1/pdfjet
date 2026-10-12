@@ -94,8 +94,7 @@ func (font *Font) useGlyph(gid int) {
 // 2026, #8). The first character drawn with the glyph is kept; a document
 // that draws two characters of one glyph extracts the first for both.
 func (font *Font) useChar(c rune, gid int) {
-	if font.program == nil || gid <= 0 || c < 0 || int(c) >= len(font.unicodeToGID) ||
-		font.unicodeToGID[c] != gid {
+	if font.program == nil || gid <= 0 || font.unicodeToGID.get(c) != gid {
 		return
 	}
 	if font.program.chars == nil {

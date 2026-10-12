@@ -18,6 +18,7 @@ package pdfjet
 import (
 	"encoding/hex"
 	"math"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -194,34 +195,49 @@ func toUnicodeCMap(font *Font, kept []bool) string {
 	// PDF/UA requires every glyph to map to Unicode, so map it to the
 	// replacement character.
 	list = append(list, "<0000> <FFFD>\n")
-	var buf strings.Builder
-	unicodeOf := unicodeOfGlyphs(font.unicodeToGID)
-	if font.program != nil {
-		for gid, c := range font.program.chars {
-			unicodeOf[gid] = int(c)
+	// The glyphs of the map, those of the subset or all of them, each with
+	// its character, the one drawn with it where the document drew one of
+	// several, in the order of the characters, as the map was written when it
+	// walked them
+	type entry struct {
+		c   int
+		gid int
+	}
+	var entries []entry
+	for gid := 1; gid < len(font.unicodeOf); gid++ {
+		if kept != nil && (gid >= len(kept) || !kept[gid]) {
+			continue
+		}
+		c := int(font.unicodeOf[gid])
+		if font.program != nil {
+			if drawn, ok := font.program.chars[gid]; ok {
+				c = int(drawn)
+			}
+		}
+		if c >= 0 {
+			entries = append(entries, entry{c, gid})
 		}
 	}
-	for cid := 0; cid <= 0xffff; cid++ {
-		gid := font.unicodeToGID[cid]
-		if gid > 0 && unicodeOf[gid] == cid && (kept == nil || (gid < len(kept) && kept[gid])) {
-			buf.WriteString("<")
-			buf.WriteString(toHexString(gid))
-			buf.WriteString("> <")
-			// A presentation form that the Bidi class puts in maps to the letters it stands for.
-			if letters := lettersOf(rune(cid)); letters != nil {
-				for _, letter := range letters {
-					buf.WriteString(toHexString(int(letter)))
-				}
-			} else {
-				buf.WriteString(toHexString(cid))
+	slices.SortFunc(entries, func(a, b entry) int { return a.c - b.c })
+	var buf strings.Builder
+	for _, e := range entries {
+		buf.WriteString("<")
+		buf.WriteString(toHexString(e.gid))
+		buf.WriteString("> <")
+		// A presentation form that the Bidi class puts in maps to the letters it stands for.
+		if letters := lettersOf(rune(e.c)); letters != nil {
+			for _, letter := range letters {
+				buf.WriteString(toHexString(int(letter)))
 			}
-			buf.WriteString(">\n")
-			list = append(list, buf.String())
-			buf.Reset()
-			if len(list) == 100 {
-				writeListTo(&sb, list)
-				list = nil
-			}
+		} else {
+			buf.WriteString(toHexString(e.c))
+		}
+		buf.WriteString(">\n")
+		list = append(list, buf.String())
+		buf.Reset()
+		if len(list) == 100 {
+			writeListTo(&sb, list)
+			list = nil
 		}
 	}
 	if len(list) > 0 {
@@ -267,27 +283,6 @@ func widthsArray(font *Font, kept []bool) string {
 	}
 	sb.WriteString("]")
 	return sb.String()
-}
-
-// unicodeOfGlyphs returns the character that each glyph maps to in a ToUnicode
-// CMap. A glyph can stand for several characters, like the space and the
-// no-break space, but viewers read a CMap with more than one entry for a glyph
-// differently. So a glyph maps to the first character that uses it, unless
-// that is one text seldom has and another character uses the glyph too, like
-// the modifier letter apostrophe and the right single quotation mark.
-func unicodeOfGlyphs(unicodeToGID []int) []int {
-	chars := make([]int, 0x10000)
-	for i := range chars {
-		chars[i] = -1
-	}
-	for cid := 0; cid <= 0xffff; cid++ {
-		gid := unicodeToGID[cid]
-		if gid > 0 && (chars[gid] == -1 ||
-			(isSeldomText(chars[gid]) && !isSeldomText(cid))) {
-			chars[gid] = cid
-		}
-	}
-	return chars
 }
 
 // isSeldomText returns true for the soft hyphen, the micro sign, the spacing

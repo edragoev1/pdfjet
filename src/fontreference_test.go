@@ -187,11 +187,9 @@ func fontReferenceOf(path string) (ref *fontReference) {
 		ref.Widths[i] = int(width)
 	}
 	ref.CMap = [][2]int{}
-	for c, gid := range font.unicodeToGID {
-		if gid != 0 {
-			ref.CMap = append(ref.CMap, [2]int{c, gid})
-		}
-	}
+	font.unicodeToGID.each(func(c rune, gid int) {
+		ref.CMap = append(ref.CMap, [2]int{int(c), gid})
+	})
 	ref.Advances = [][3]float64{}
 	size := float32(font.unitsPerEm)
 	for c := rune(0); c <= 0xFFFF; c++ {

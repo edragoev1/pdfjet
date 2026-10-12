@@ -58,7 +58,8 @@ type Font struct {
 	fontUnderlinePosition  int16
 	fontUnderlineThickness int16
 	advanceWidth           []uint16
-	unicodeToGID           []int
+	unicodeToGID           *glyphMap
+	unicodeOf              []int32        // The character of each glyph, see unicodeOfGlyphs
 	markToMarkOffsets      map[int][2]int // From the GPOS table
 	markAnchors            []map[int][]int
 	baseAnchors            []map[int][]int
@@ -352,8 +353,19 @@ func checksumOf(font *Font) uint64 {
 	for _, width := range font.advanceWidth {
 		hash = foldChecksum(hash, int(width))
 	}
-	for _, gid := range font.unicodeToGID {
-		hash = foldChecksum(hash, gid)
+	// The glyph of each of the 65,536 characters, 0 for those the font has
+	// not, as the array of them was folded: the subset's tag is made of it,
+	// and so the bytes of the PDF
+	if font.unicodeToGID != nil {
+		for _, block := range font.unicodeToGID.blocks {
+			for i := range 256 {
+				gid := 0
+				if block != nil {
+					gid = int(block[i])
+				}
+				hash = foldChecksum(hash, gid)
+			}
+		}
 	}
 	return hash
 }
@@ -707,7 +719,7 @@ func (font *Font) lacks(c rune) bool {
 	if isControl(c) {
 		return false
 	}
-	return c < font.firstChar || c > font.lastChar || font.unicodeToGID[c] == 0
+	return c < font.firstChar || c > font.lastChar || font.unicodeToGID.get(c) == 0
 }
 
 // missingGlyph returns the glyph a character the font does not have is drawn
@@ -721,8 +733,8 @@ func (font *Font) missingGlyph() int {
 		return 0
 	}
 	for _, c := range []rune{0xFFFD, '?', ' '} {
-		if c >= font.firstChar && c <= font.lastChar && font.unicodeToGID[c] != 0 {
-			return font.unicodeToGID[c]
+		if c >= font.firstChar && c <= font.lastChar && font.unicodeToGID.get(c) != 0 {
+			return font.unicodeToGID.get(c)
 		}
 	}
 	return 0

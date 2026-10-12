@@ -180,7 +180,7 @@ func TestFontACharacterTheFontDoesNotHaveIsDrawnWithNotdef(t *testing.T) {
 	page := NewPage(pdf, letter.Portrait())
 	NewTextLine(font, "ก\t\U0001F600").SetLocation(10, 20).DrawOn(page)
 	content := testContent(page)
-	space := fmt.Sprintf("%04X", font.unicodeToGID[0x20])
+	space := fmt.Sprintf("%04X", font.unicodeToGID.get(0x20))
 	for _, want := range []string{
 		"/Span <</ActualText <FEFF0E01>>> BDC\n<0000> Tj\nEMC\n<" + space + ">",
 		"/Span <</ActualText <FEFFD83DDE00>>> BDC\n<0000> Tj\nEMC\n",
@@ -200,7 +200,7 @@ func TestFontAStampDrawsACharacterTheFontDoesNotHaveWithNotdef(t *testing.T) {
 	stamp := NewStamp(pdf).SetSize(100, 50)
 	stamp.DrawText(font, 10, 5, 20, "aก\t")
 	want := fmt.Sprintf("<%04X> Tj\n/Span <</ActualText <FEFF0E01>>> BDC\n<0000> Tj\nEMC\n<%04X> Tj\n",
-		font.unicodeToGID['a'], font.unicodeToGID[0x20])
+		font.unicodeToGID.get('a'), font.unicodeToGID.get(0x20))
 	if content := stamp.buf.String(); !strings.Contains(content, want) {
 		t.Errorf("%q is not in %q", want, content)
 	}
@@ -213,7 +213,7 @@ func TestFontACompliantDocumentDrawsACharacterTheFontDoesNotHaveWithoutNotdef(t 
 	pdf := testNewPDF()
 	pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	font := testIBMPlexSans(t, pdf)
-	replacement := font.unicodeToGID[0xFFFD]
+	replacement := font.unicodeToGID.get(0xFFFD)
 	if replacement == 0 {
 		t.Fatal("IBM Plex Sans has no U+FFFD")
 	}
@@ -402,18 +402,18 @@ func TestFontAGlyphOfALetterAndASignOfItIsCopiedAsTheLetter(t *testing.T) {
 	// and which Unicode makes the signs. The space still wins over the
 	// no-break space, and the right single quotation mark over the modifier
 	// letter apostrophe.
-	unicodeToGID := make([]int, 0x10000)
+	unicodeToGID := new(glyphMap)
 	for gid, chars := range map[int][]int{
 		1: {0x00B5, 0x03BC}, 2: {0x03A9, 0x2126}, 3: {0x004B, 0x212A}, 4: {0x00C5, 0x212B},
 		5: {0x0020, 0x00A0}, 6: {0x02BC, 0x2019},
 	} {
 		for _, c := range chars {
-			unicodeToGID[c] = gid
+			unicodeToGID.set(rune(c), gid)
 		}
 	}
 	unicodeOf := unicodeOfGlyphs(unicodeToGID)
 	for gid, want := range map[int]int{1: 0x03BC, 2: 0x03A9, 3: 0x004B, 4: 0x00C5, 5: 0x0020, 6: 0x2019} {
-		if unicodeOf[gid] != want {
+		if int(unicodeOf[gid]) != want {
 			t.Errorf("glyph %d is copied as %U, not %U", gid, unicodeOf[gid], want)
 		}
 	}

@@ -48,7 +48,7 @@ type openTypeFont struct {
 	underlinePosition  int16
 	underlineThickness int16
 	advanceWidth       []uint16
-	unicodeToGID       []int
+	unicodeToGID       *glyphMap
 	markToMarkOffsets  map[int][2]int
 	markAnchors        []map[int][]int
 	baseAnchors        []map[int][]int
@@ -82,7 +82,7 @@ func fontError(what string) {
 func newOpenTypeFont(reader io.Reader) *openTypeFont {
 	otf := new(openTypeFont)
 	otf.buf = content.GetFromStream(reader)
-	otf.unicodeToGID = make([]int, 0x10000)
+	otf.unicodeToGID = new(glyphMap)
 	// A font without an OS/2 table does not say which characters it holds,
 	// so its character map is read for all of them.
 	otf.firstChar = 0
@@ -168,7 +168,7 @@ func newOpenTypeFont(reader io.Reader) *openTypeFont {
 	// into the font descriptor, where a reader fits text in a box with it.
 	if !otf.hasCapHeight {
 		otf.capHeight = otf.ascent
-		if top, ok := otf.glyphTop(otf.unicodeToGID['H']); ok {
+		if top, ok := otf.glyphTop(otf.unicodeToGID.get('H')); ok {
 			otf.capHeight = top
 		}
 	}
@@ -375,8 +375,8 @@ func getCmapFormat12(otf *openTypeFont, table *fontTable, offset int) {
 			end = int(otf.lastChar)
 		}
 		for ch := start; ch <= end; ch++ {
-			if gid := startGlyph + (ch - first); gid < 0x10000 && otf.unicodeToGID[ch] == 0 {
-				otf.unicodeToGID[ch] = gid
+			if gid := startGlyph + (ch - first); gid < 0x10000 && otf.unicodeToGID.get(rune(ch)) == 0 {
+				otf.unicodeToGID.set(rune(ch), gid)
 			}
 		}
 		if end+1 > next {
@@ -471,7 +471,7 @@ func getCmapFormat4(otf *openTypeFont, subtable int) {
 					gid = (gid + int(idDelta[seg])) & 0xFFFF
 				}
 			}
-			otf.unicodeToGID[ch] = gid
+			otf.unicodeToGID.set(rune(ch), gid)
 		}
 	}
 }
