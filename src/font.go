@@ -220,23 +220,28 @@ func NewCJKFont(pdf *PDF, cjkFont cjkfont.Font) *Font {
 	pdf.appendString("/FontDescriptor ")
 	pdf.appendInteger(pdf.getObjNumber() - 1)
 	pdf.appendString(" 0 R\n")
-	pdf.appendString("/CIDSystemInfo <<\n")
-	pdf.appendString("/Registry (Adobe)\n")
+	var ordering, supplement string
 	if strings.HasPrefix(fontName, "AdobeMingStd") {
-		pdf.appendString("/Ordering (CNS1)\n")
-		pdf.appendString("/Supplement 4\n")
+		ordering, supplement = "CNS1", "4"
 	} else if strings.HasPrefix(fontName, "AdobeSongStd") || strings.HasPrefix(fontName, "STHeitiSC") {
-		pdf.appendString("/Ordering (GB1)\n")
-		pdf.appendString("/Supplement 4\n")
+		ordering, supplement = "GB1", "4"
 	} else if strings.HasPrefix(fontName, "KozMinPro") {
-		pdf.appendString("/Ordering (Japan1)\n")
-		pdf.appendString("/Supplement 4\n")
+		ordering, supplement = "Japan1", "4"
 	} else if strings.HasPrefix(fontName, "AdobeMyungjoStd") {
-		pdf.appendString("/Ordering (Korea1)\n")
-		pdf.appendString("/Supplement 1\n")
+		ordering, supplement = "Korea1", "1"
 	} else {
 		panic("Unsupported font: " + fontName)
 	}
+	pdf.appendString("/CIDSystemInfo <<\n")
+	pdf.appendString("/Registry ")
+	pdf.appendLiteralString("Adobe")
+	pdf.appendString("\n")
+	pdf.appendString("/Ordering ")
+	pdf.appendLiteralString(ordering)
+	pdf.appendString("\n")
+	pdf.appendString("/Supplement ")
+	pdf.appendString(supplement)
+	pdf.appendString("\n")
 	pdf.appendString(">>\n")
 	pdf.appendString(">>\n")
 	pdf.endObj()

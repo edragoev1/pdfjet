@@ -10,10 +10,12 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
 
+	"github.com/edragoev1/pdfjet/v9/src/cjkfont"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/encryption"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
@@ -495,5 +497,72 @@ func TestWriterACompliantDocumentRefusesWhatItCannotBe(t *testing.T) {
 	// Outside PDF/A a file is attached as before
 	if err := complete(compliance.PDF_UA_1, attach); err != nil {
 		t.Errorf("PDF/UA: a file attached: %v", err)
+	}
+}
+
+// testDecryptedStrings reads the PDF, encrypted with no user password, and
+// returns the strings after the key in its objects, as a reader decrypts
+// them.
+func testDecryptedStrings(t *testing.T, pdf []byte, key string) []string {
+	t.Helper()
+	objects, err := testNewPDF().ReadWithPassword(pdf, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var values []string
+	for _, obj := range objects {
+		for i, token := range obj.dict {
+			if token == key && i+1 < len(obj.dict) {
+				values = append(values, string(toBytes(obj.dict[i+1])))
+			}
+		}
+	}
+	return values
+}
+
+// testEncryptedDoc returns a document of the compliance encrypted with no
+// passwords.
+func testEncryptedDoc(t *testing.T, level compliance.Compliance) *testDoc {
+	t.Helper()
+	doc := testNewDoc()
+	doc.pdf.SetCompliance(level).SetTitle("Test")
+	enc, err := NewEncryption(doc.pdf, encryption.NewPasswords(), encryption.NewPermissions())
+	if err != nil {
+		t.Fatal(err)
+	}
+	doc.pdf.SetEncryption(enc)
+	return doc
+}
+
+// The strings of the system of characters of a CJK font, Adobe and the
+// ordering, are encrypted in an encrypted document: written as they were, a
+// reader decrypted them to nothing, and the CMap matched no font (review of
+// 11 October 2026, #19).
+func TestWriterTheCharactersOfACJKFontAreEncrypted(t *testing.T) {
+	doc := testEncryptedDoc(t, compliance.PDF_1_7)
+	NewTextLine(NewCJKFont(doc.pdf, cjkfont.KozMinProVIRegular), "\u65e5\u672c").
+		SetLocation(50, 50).DrawOn(NewPage(doc.pdf, letter.Portrait()))
+	pdf := doc.complete()
+	if got := testDecryptedStrings(t, pdf, "/Registry"); len(got) != 1 || got[0] != "Adobe" {
+		t.Errorf("/Registry %q", got)
+	}
+	if got := testDecryptedStrings(t, pdf, "/Ordering"); len(got) != 1 || got[0] != "Japan1" {
+		t.Errorf("/Ordering %q", got)
+	}
+}
+
+// The name of the configuration of the layers of a document of PDF/UA is
+// encrypted in an encrypted document, where a reader decrypted it to nothing
+// (review of 11 October 2026, #20).
+func TestWriterTheNameOfTheLayersIsEncrypted(t *testing.T) {
+	doc := testEncryptedDoc(t, compliance.PDF_UA_1)
+	page := NewPage(doc.pdf, letter.Portrait())
+	NewTextLine(testPlexSans(doc.pdf), "Heading").
+		SetStructureType(structelem.H1).SetLocation(50, 50).DrawOn(page)
+	group := NewOptionalContentGroup(doc.pdf, "Layer").SetVisible(true)
+	group.Add(NewRect(10, 100, 20, 20))
+	group.DrawOn(page)
+	if got := testDecryptedStrings(t, doc.complete(), "/Name"); !slices.Contains(got, "Default") {
+		t.Errorf("/Name %q", got)
 	}
 }

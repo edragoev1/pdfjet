@@ -1026,6 +1026,20 @@ func (pdf *PDF) appendByteString(bytes []byte) {
 	pdf.appendString(">")
 }
 
+// appendLiteralString appends a string of letters, which needs no escapes, as
+// (Adobe), or encrypted in hexadecimal if the document is encrypted: written
+// as it is, a reader decrypted it to bytes of no meaning (review of 11
+// October 2026, #19 and #20).
+func (pdf *PDF) appendLiteralString(text string) {
+	if pdf.encryption != nil {
+		pdf.appendByteString([]byte(text))
+		return
+	}
+	pdf.appendString("(")
+	pdf.appendString(text)
+	pdf.appendString(")")
+}
+
 func (pdf *PDF) addRootObject(structTreeRootObjNumber, outlineDictNumber int) int {
 	// Add the root object
 	pdf.newObj()
@@ -1753,7 +1767,9 @@ func (pdf *PDF) addOCProperties() {
 			pdf.appendString(" ] >>\n")
 			pdf.appendString("]\n")
 		} else {
-			pdf.appendString("/Name (Default)\n")
+			pdf.appendString("/Name ")
+			pdf.appendLiteralString("Default")
+			pdf.appendString("\n")
 		}
 
 		// The groups hidden by default, for the viewers that read the

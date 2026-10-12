@@ -24,6 +24,10 @@ This is the first entry in this file; earlier releases were not tracked here.
   as ". 5", is not a number; Java threw on it, the other ports counted 0.
 - Swift: a cell of a vertical alignment other than TOP, CENTER and BOTTOM
   makes complete() throw, where it ended the program.
+- Encrypted documents, in the four ports: the strings of the system of
+  characters of a CJK font, /Registry and /Ordering, and the /Name of the
+  configuration of the layers of a document of PDF/UA or PDF/A, are
+  encrypted, where a reader decrypted them to bytes of no meaning.
 - Tables, in the four ports: AutoAdjustColumnWidths measures a row longer
   than the first, where it indexed past the widths; a table whose first row
   is empty is drawn, its rows completed from the first row that has cells,
