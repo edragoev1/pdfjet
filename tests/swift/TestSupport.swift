@@ -272,6 +272,25 @@ enum TestSupport {
 }
 
 /// A PDF that writes to memory, with the bytes available after complete().
+// The time the work takes, the shortest of up to three runs, each on what
+// prepare makes for it, which is not timed: a run over the limit is run
+// again, as a machine under load can make a linear run slow once, where a
+// quadratic one is slow every time (review of 12 October 2026, C6).
+func shortestTime<T>(_ limit: Duration, prepare: () throws -> T, _ work: (T) throws -> Void) rethrows -> Duration {
+    var shortest = Duration.seconds(Int64.max / 2)
+    var run = 0
+    while run < 3 && shortest >= limit {
+        let input = try prepare()
+        shortest = min(shortest, try ContinuousClock().measure { try work(input) })
+        run += 1
+    }
+    return shortest
+}
+
+func shortestTime(_ limit: Duration, _ work: () throws -> Void) rethrows -> Duration {
+    return try shortestTime(limit, prepare: {}, { _ in try work() })
+}
+
 final class MemoryPDF {
     let stream: OutputStream
     let pdf: PDF

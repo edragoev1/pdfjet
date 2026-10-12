@@ -288,7 +288,7 @@ const fuzzDecodedTotal = 1 << 20
 // objects of the input. The PDFs of the seeds allocate a few MB, and a way
 // past the budget hundreds.
 func fuzzReadMaxAlloc(size int) uint64 {
-	return 96<<20 + 128*uint64(size)
+	return fuzzRaceAlloc * (96<<20 + 128*uint64(size))
 }
 
 // fuzzReadMaxTime is how long FuzzPDFRead may take for an input of the size,
@@ -296,7 +296,7 @@ func fuzzReadMaxAlloc(size int) uint64 {
 // pages of 2,000 fonts, 92 KB, took 36 seconds when each font was looked for
 // among those of every page before it (review of 11 October 2026, #35).
 func fuzzReadMaxTime(size int) time.Duration {
-	return 200*time.Millisecond + time.Duration(size)*50*time.Microsecond
+	return fuzzRaceTime * (200*time.Millisecond + time.Duration(size)*50*time.Microsecond)
 }
 
 // FuzzPDFRead fuzzes the bytes of a PDF and the password it is read with,

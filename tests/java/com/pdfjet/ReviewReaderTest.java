@@ -32,17 +32,23 @@ class ReviewReaderTest {
 
     // Reads the PDF, which must take less than five seconds, and returns its
     // objects, or null when it cannot be read.
-    private static List<PDFobj> readQuickly(byte[] pdf) {
-        long start = System.nanoTime();
-        List<PDFobj> objects;
+    private static List<PDFobj> readQuickly(final byte[] pdf) {
+        final List<List<PDFobj>> objects = new ArrayList<List<PDFobj>>();
+        long elapsed;
         try {
-            objects = TestSupport.read(pdf);
+            elapsed = TestSupport.shortestMillis(5000L, () -> {
+                objects.clear();
+                try {
+                    objects.add(TestSupport.read(pdf));
+                } catch (Exception e) {
+                    objects.add(null);
+                }
+            });
         } catch (Exception e) {
-            objects = null;
+            throw new AssertionError(e);    // The work catches what it throws
         }
-        long elapsed = (System.nanoTime() - start) / 1000000L;
         assertTrue(elapsed < 5000L, "reading " + pdf.length + " bytes took " + elapsed + " ms");
-        return objects;
+        return objects.get(0);
     }
 
     private static String repeat(String text, int count) {

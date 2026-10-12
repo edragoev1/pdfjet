@@ -165,7 +165,7 @@ import Testing
         // The header is read no further than its /N: one of 16 MB was split
         // into its tokens first (review of 12 October 2026, R6)
         let longPDF = objectStream(1, "5 0 " + String(repeating: "1 0 ", count: 4 << 20))
-        let elapsed = try ContinuousClock().measure {
+        let elapsed = try shortestTime(.seconds(2)) {
             _ = try Self.read(longPDF)
         }
         #expect(elapsed < .seconds(2), "\(elapsed)")
@@ -319,16 +319,17 @@ import Testing
         let n = 2000
         let fonts = (0..<n).map { "/F\($0) 4 0 R" }.joined(separator: " ")
         let kids = Array(repeating: "3 0 R", count: n).joined(separator: " ")
-        let objects = try TestSupport.read(TestSupport.pdfWithObjects([
+        let bytes = TestSupport.pdfWithObjects([
             "<< /Type /Catalog /Pages 2 0 R >>",
             "<< /Type /Pages /Kids [\(kids)] /Count \(n) /MediaBox [0 0 612 792] >>",
             "<< /Type /Page /Parent 2 0 R /Resources << /Font << \(fonts) >> >> >>",
             "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
-        ]))
-        let clock = ContinuousClock()
+        ])
+        var objects = [PDFobj]()
         var pages = [PDFobj]()
-        let elapsed = clock.measure {
-            pages = TestSupport.pageObjects(objects)
+        let elapsed = try shortestTime(.seconds(2), prepare: { try TestSupport.read(bytes) }) { read in
+            objects = read
+            pages = TestSupport.pageObjects(read)
         }
         #expect(pages.count == n && pages[0] === pages[n - 1])
         #expect(pages[0].getValue("/MediaBox") == "[ 0 0 612 792 ]")
@@ -346,10 +347,9 @@ import Testing
         var source = ["<< /Type /Catalog /Pages 2 0 R >>",
                       "<< /Type /Pages /Kids [\(kids)] /Count \(n) /MediaBox [0 0 612 792] /CropBox [\(box)] >>"]
         source += Array(repeating: "<< /Type /Page /Parent 2 0 R >>", count: n)
-        let objects = try TestSupport.read(TestSupport.pdfWithObjects(source))
-        let clock = ContinuousClock()
+        let bytes = TestSupport.pdfWithObjects(source)
         var pages = [PDFobj]()
-        let elapsed = try clock.measure {
+        let elapsed = try shortestTime(.seconds(2), prepare: { try TestSupport.read(bytes) }) { objects in
             pages = TestSupport.pageObjects(objects)
             try TestSupport.newPDF().merge(objects)
         }
@@ -374,13 +374,16 @@ import Testing
             let page = inNode
                 ? "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>"
                 : "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources 3 0 R >>"
-            let objects = try TestSupport.read(TestSupport.pdfWithObjects(
+            let bytes = TestSupport.pdfWithObjects(
                     ["<< /Type /Catalog /Pages 2 0 R >>", node, resources,
                      "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"]
-                    + Array(repeating: page, count: n)))
-            let pdf = TestSupport.newPDF()
-            let elapsed = ContinuousClock().measure {
-                pdf.addResourceObjects(from: objects)
+                    + Array(repeating: page, count: n))
+            var pdf = TestSupport.newPDF()
+            let elapsed = try shortestTime(.seconds(2), prepare: {
+                (try TestSupport.read(bytes), TestSupport.newPDF())
+            }) { prepared in
+                pdf = prepared.1
+                pdf.addResourceObjects(from: prepared.0)
             }
             #expect(pdf.importedFonts.count == 4 * n, "in the node \(inNode)")
             #expect(elapsed < .seconds(2), "in the node \(inNode): \(elapsed)")

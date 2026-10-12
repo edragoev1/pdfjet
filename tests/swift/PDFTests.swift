@@ -835,9 +835,8 @@ import Testing
         for _ in 0..<count {
             objects.append("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] >>")
         }
-        let source = try TestSupport.read(pdfWithObjects(objects))
-        let clock = ContinuousClock()
-        let elapsed = try clock.measure {
+        let bytes = pdfWithObjects(objects)
+        let elapsed = try shortestTime(.seconds(10), prepare: { try TestSupport.read(bytes) }) { source in
             #expect(TestSupport.pageObjects(source).count == count)
             let memory = MemoryPDF()
             try memory.pdf.merge(source)

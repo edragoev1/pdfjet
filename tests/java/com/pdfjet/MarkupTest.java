@@ -142,10 +142,9 @@ class MarkupTest {
         for (int i = 0; i < 20000; i++) {
             text.append("[a](b *c `").append(i % 50 == 0 ? "``" : "").append(" [[");
         }
-        long time0 = System.nanoTime();
-        Paragraph paragraph = markup().paragraph(text.toString());
-        long milliseconds = (System.nanoTime() - time0) / 1000000;
-        assertTrue(!paragraph.lines.isEmpty());
+        final Paragraph[] paragraph = new Paragraph[1];
+        long milliseconds = TestSupport.shortestMillis(2000, () -> paragraph[0] = markup().paragraph(text.toString()));
+        assertTrue(!paragraph[0].lines.isEmpty());
         assertTrue(milliseconds < 2000, milliseconds + " ms");
     }
 

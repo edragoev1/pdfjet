@@ -211,10 +211,9 @@ class MarkdownTest {
         for (int i = 0; i < 200000; i++) {
             line.append((char) ('a' + i % 26));
         }
-        long time0 = System.nanoTime();
-        Drawn drawn = draw("```\n" + line + "\n```", null);
-        long milliseconds = (System.nanoTime() - time0) / 1000000;
-        assertTrue(drawn.pages.size() > 1);
+        final Drawn[] drawn = new Drawn[1];
+        long milliseconds = TestSupport.shortestMillis(5000, () -> drawn[0] = draw("```\n" + line + "\n```", null));
+        assertTrue(drawn[0].pages.size() > 1);
         assertTrue(milliseconds < 5000, milliseconds + " ms");
     }
 

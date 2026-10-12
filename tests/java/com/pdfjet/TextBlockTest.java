@@ -208,11 +208,10 @@ class TextBlockTest {
             word.append("abcdefghij");     // 100,000 characters
         }
         TextBlock block = new TextBlock(font, word.toString()).setWidth(100f);
-        long start = System.nanoTime();
-        float[] xy = block.setLocation(0f, 0f).drawOn(null);
-        long took = (System.nanoTime() - start) / 1000000L;
+        final float[][] xy = new float[1][];
+        long took = TestSupport.shortestMillis(3000L, () -> xy[0] = block.setLocation(0f, 0f).drawOn(null));
         assertTrue(took < 3000L, "breaking a word of 100,000 characters took " + took + " ms");
-        TestSupport.assertXY(100f, 78030f, xy);    // 5625 lines of 13.872 points
+        TestSupport.assertXY(100f, 78030f, xy[0]);     // 5625 lines of 13.872 points
     }
 
     @Test
@@ -224,11 +223,10 @@ class TextBlockTest {
             word.append("محمد");     // 100,000 letters, which took about 20 minutes
         }
         TextBlock block = new TextBlock(font, word.toString()).setRightToLeft(true).setWidth(100f);
-        long start = System.nanoTime();
-        float[] xy = block.setLocation(0f, 0f).drawOn(null);
-        long took = (System.nanoTime() - start) / 1000000L;
+        final float[][] xy = new float[1][];
+        long took = TestSupport.shortestMillis(3000L, () -> xy[0] = block.setLocation(0f, 0f).drawOn(null));
         assertTrue(took < 3000L, "breaking a right to left word of 100,000 letters took " + took + " ms");
-        TestSupport.assertXY(100f, 120006f, xy);   // As the Go port breaks it
+        TestSupport.assertXY(100f, 120006f, xy[0]);    // As the Go port breaks it
     }
 
     // A right to left text cut to its height keeps the start of its last line,

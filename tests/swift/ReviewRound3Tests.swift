@@ -183,10 +183,10 @@ import Testing
         for i in 0..<pages {
             objects.append("<< /Type /Page /Parent 2 0 R /MediaBox \(i == 0 ? 4 : 3) 0 R >>")
         }
-        let read = try TestSupport.read(TestSupport.pdfWithObjects(objects))
+        let bytes = TestSupport.pdfWithObjects(objects)
         let pdf = TestSupport.newPDF()
         var found = [PDFobj]()
-        let elapsed = ContinuousClock().measure {
+        let elapsed = try shortestTime(.seconds(1), prepare: { try TestSupport.read(bytes) }) { read in
             found = pdf.getPageObjects(from: read)
         }
         // A few milliseconds; the array copied for each page took 2.5 s
@@ -211,10 +211,13 @@ import Testing
             "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"]
             + Array(repeating: "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font 3 0 R >> >>",
                     count: pages)
-        let read = try TestSupport.read(TestSupport.pdfWithObjects(objects))
-        let pdf = TestSupport.newPDF()
-        let elapsed = ContinuousClock().measure {
-            pdf.addResourceObjects(from: read)
+        let bytes = TestSupport.pdfWithObjects(objects)
+        var pdf = TestSupport.newPDF()
+        let elapsed = try shortestTime(.seconds(2), prepare: {
+            (try TestSupport.read(bytes), TestSupport.newPDF())
+        }) { prepared in
+            pdf = prepared.1
+            pdf.addResourceObjects(from: prepared.0)
         }
         #expect(elapsed < .seconds(2), "\(elapsed)")
         #expect(pdf.importedFonts.count == 4 * fonts)

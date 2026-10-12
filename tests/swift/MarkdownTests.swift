@@ -187,9 +187,10 @@ import Testing
         for i in 0..<200000 {
             line.append(UInt16(0x61 + i % 26))
         }
-        let start = ContinuousClock.now
-        let drawn = try MarkdownTests.draw("```\n" + String(decoding: line, as: UTF16.self) + "\n```", nil)
-        let elapsed = ContinuousClock.now - start
+        var drawn = Drawn()
+        let elapsed = try shortestTime(.seconds(5)) {
+            drawn = try MarkdownTests.draw("```\n" + String(decoding: line, as: UTF16.self) + "\n```", nil)
+        }
         #expect(drawn.pages.count > 1)
         #expect(elapsed < .seconds(5), "\(elapsed)")
     }

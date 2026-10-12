@@ -170,4 +170,26 @@ public final class TestSupport {
         assertEquals(g, rgb[1], 0.0001f, "green");
         assertEquals(b, rgb[2], 0.0001f, "blue");
     }
+
+    /** A piece of work whose time a test measures. */
+    interface Timed {
+        void run() throws Exception;
+    }
+
+    /**
+     * Returns the milliseconds the work takes, the shortest of up to three
+     * runs: a run over the limit is run again, as a machine under load can
+     * make a linear run slow once, where a quadratic one is slow every time;
+     * a test failed at 7,066 ms of 5,000 under load (review of 12 October
+     * 2026, C6).
+     */
+    static long shortestMillis(long limit, Timed work) throws Exception {
+        long shortest = Long.MAX_VALUE;
+        for (int run = 0; run < 3 && shortest >= limit; run++) {
+            long start = System.nanoTime();
+            work.run();
+            shortest = Math.min(shortest, (System.nanoTime() - start) / 1000000L);
+        }
+        return shortest;
+    }
 }

@@ -105,16 +105,29 @@ commit and date. The layout's format version (1) and the look's rules
   cross-reference stream would shrink them a third or more. An option, on by
   default, off for PDF/A-1, which forbids object streams. Measured first, the
   time and the size of a long PDF/UA table, before and after.
-- **The code reviews of 11 and 12 October 2026.** Every finding of the two
-  is fixed for 9.0.7, in the four ports, each with a test (CHANGELOG.md),
-  but object streams, which are 9.1.1 (above). Their CI gaps are closed:
-  the tests run in Turkish, Arabic and Swedish locales, net48 is built,
-  check-api.sh runs against the last tag and fails when a lister fails,
-  the fuzzers read with a budget of 1 MiB that their inputs reach, are
-  timed against the input's length and run a slow input again before they
-  fail, and tests/crossport compares random shapes across the four ports
-  in CI. Left: net48 is built and not tested, so its `CharUnicodeInfo`
-  polyfill, Unicode 8.0 data that Bidi, TextBlock and Page use, is not run.
+- **The code reviews of 11 and 12 October 2026, three rounds.** Every
+  finding is fixed for 9.0.7, in the four ports, each with a test
+  (CHANGELOG.md), but those below and object streams (above). Their CI gaps
+  are closed: the tests run in Turkish, Arabic and Swedish locales, net48 is
+  built, check-api.sh runs against the last tag and fails when a lister
+  fails or lists nothing, FuzzPDFRead reads with a budget of 1 MiB that its
+  inputs reach, the fuzz targets are timed against the input's length and
+  run a slow input again before they fail, the Go tests run under the race
+  detector too, and tests/crossport compares random shapes across the four
+  ports in CI. The Java and Swift tests of a time run a slow piece of work
+  again before they fail; the C# and Go ones still fail on one slow run.
+  Left: net48 is built and not tested, so its `CharUnicodeInfo` polyfill,
+  Unicode 8.0 data that Bidi, TextBlock and Page use, is not run.
+- **For 9.1.1: PDF/A and tagged documents at scale (third review, W1, W2,
+  W3, W5, W6, W7).** 9.0.7 refuses a PDF/A-1 document past its limits; 9.1.1
+  writes one within them at any size: a balanced page tree, a parent tree of
+  /Kids, and resources for each page rather than one dictionary of every
+  image and font, which also keeps a page taken out of the document from
+  carrying all the images. Then: a tagged document keeps less of each page
+  until complete (Java boxes the numbers of the parent tree), the pages
+  keep less once written, a bookmark tree of thousands of levels or
+  siblings is built in linear time, and Java's Compressor is not one
+  synchronized Deflater for every thread.
 - **Longer fuzzing of the font subsetters.** Go's fuzzers ran 5 minutes each
   on every target before 9.0.5 with no failure; the TrueType and CFF
   subsetters, which subset a real font for each input, ran 27,000 and 15,000

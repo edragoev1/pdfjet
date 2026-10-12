@@ -442,7 +442,18 @@ class MergeTest {
         // wrote 189 MB (review of 11 October 2026, #34).
         byte[] source = inheritedResources(1000, 20000);
         List<PDFobj> objects = TestSupport.read(source);
-        long start = System.nanoTime();
+        // The pages and the merge are timed on objects read again for each
+        // run, as getPageObjects changes the objects it reads
+        final byte[][] mergedPDF = new byte[1][];
+        long elapsed = TestSupport.shortestMillis(5000, () -> {
+            List<PDFobj> read = TestSupport.read(source);
+            new PDF().getPageObjects(read);
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            PDF pdf = new PDF(bos);
+            pdf.merge(read);
+            pdf.complete();
+            mergedPDF[0] = bos.toByteArray();
+        });
         List<PDFobj> pages = new PDF().getPageObjects(objects);
         assertEquals(1000, pages.size());
         List<String> first = pages.get(0).inheritedResources;
@@ -452,13 +463,8 @@ class MergeTest {
         PDFobj resources = pages.get(0).getResourcesObject(objects);
         assertTrue(resources != null && resources.getDict().contains("/F20000"),
                 "the resources of a page are not read");
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        PDF pdf = new PDF(bos);
-        pdf.merge(objects);
-        pdf.complete();
-        byte[] merged = bos.toByteArray();
-        long elapsed = (System.nanoTime() - start) / 1000000;
-        assertTrue(elapsed <= 5000, "pages and merge took " + elapsed + " ms");
+        byte[] merged = mergedPDF[0];
+        assertTrue(elapsed <= 5000, "reading, pages and merge took " + elapsed + " ms");
         assertTrue(merged.length <= 2 * source.length,
                 "the merged PDF is " + merged.length + " bytes, of a source of " + source.length);
         List<PDFobj> written = new PDF().getPageObjects(TestSupport.read(merged));

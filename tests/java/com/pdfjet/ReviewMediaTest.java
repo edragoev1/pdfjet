@@ -112,9 +112,7 @@ class ReviewMediaTest {
         // and each of the 20,000 subtables went through all of them: 40 KB of
         // GPOS table kept a font from loading for a minute.
         byte[] font = withTable(font(THAI), "GPOS", gposBomb(20000));
-        long start = System.nanoTime();
-        draws(font);
-        long elapsed = (System.nanoTime() - start) / 1000000;
+        long elapsed = TestSupport.shortestMillis(2000, () -> draws(font));
         assertTrue(elapsed < 2000, "the font loads in " + elapsed + " ms");
     }
 

@@ -23,6 +23,12 @@ cd "$(dirname "$0")" || exit 1
 # left empty printed that nothing was gone (the review of 12 October 2026,
 # CI c).
 set -o pipefail
+# A tag given empty, as a git describe that failed gives, is refused, not
+# taken for v9.0.1 (the review of 12 October 2026, C11)
+if [ $# -gt 0 ] && [ -z "$1" ]; then
+    echo "The tag to compare with is empty."
+    exit 1
+fi
 BASE=${1:-v9.0.1}
 WORK=$(pwd)/build/check-api
 rm -rf "$WORK"
@@ -124,9 +130,17 @@ for line in sys.stdin:
         echo "go list failed on the $TREE tree."
         exit 1
     }
-    for dir in $GODIRS; do
-        "$WORK/goapi" "$dir" || exit 1
-    done > "$OUT/go.txt" 2> "$OUT/go.log" || {
+    # In a subshell, whose exit is the loop's: an exit of the loop itself
+    # left the script before go.log was printed; and a package that lists
+    # nothing is a failure of the lister too, which a package missing from
+    # both trees would not show (the review of 12 October 2026, C11).
+    (
+        for dir in $GODIRS; do
+            declarations=$("$WORK/goapi" "$dir") || exit 1
+            [ -n "$declarations" ] || { echo "Nothing exported was listed in $dir." >&2; exit 1; }
+            printf '%s\n' "$declarations"
+        done
+    ) > "$OUT/go.txt" 2> "$OUT/go.log" || {
         cat "$OUT/go.log"
         exit 1
     }

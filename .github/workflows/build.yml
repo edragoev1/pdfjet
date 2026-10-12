@@ -144,6 +144,14 @@ jobs:
             - name: Run the unit tests
               run: bash -e test-${{ matrix.port }}.sh
 
+            # The Go unit tests again under the race detector: a font drawn
+            # on two PDFs at once made data races that stopped the program,
+            # which only the detector shows (the review of 12 October 2026,
+            # S1 and C5). The fuzz targets' limits allow for its slowness.
+            - name: The unit tests under the race detector
+              if: matrix.port == 'go'
+              run: go test -race ./src/...
+
             # The unit tests again in a Turkish locale, where "I" lowercases to a
             # dotless "ı" and a decimal comma is written: what the library
             # writes and reads must not change with the locale (the review of
@@ -569,8 +577,13 @@ jobs:
             # The last tag before this commit: on a tagged commit, the tag of
             # the commit itself compared the release with itself (the review of
             # 12 October 2026, CI c).
+            # The tag is found in a statement of its own, so that a git
+            # describe that fails fails the step, which it did not inside the
+            # argument (the review of 12 October 2026, C11).
             - name: Compare the public API with the last release
-              run: ./check-api.sh "$(git describe --tags --abbrev=0 HEAD^)"
+              run: |
+                  tag=$(git describe --tags --abbrev=0 HEAD^)
+                  ./check-api.sh "$tag"
 
     # Draws random arcs, ellipses, donut charts, curved paths and rotated
     # text in the four ports, from the same random numbers, and checks that
