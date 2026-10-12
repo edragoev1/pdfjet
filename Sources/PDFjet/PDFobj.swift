@@ -749,26 +749,26 @@ public final class PDFobj {
             return getObject(number: numbers[0], from: objects)
         }
         let content = PDFobj()
-        // A stream named again is charged to the budget again, as its data is
-        // copied again, which decoding it once does not pay for: /Contents
-        // [4 0 R 4 0 R ...] of a stream of 16 MB made gigabytes of a PDF of a
-        // few KB (review of 11 October 2026, #29). Past the budget, the page
-        // has no content, as a stream past it has no data.
-        var joined = Set<Int>()
+        // Each stream copied into the content is charged to the budget, as the
+        // copy is memory of its own, which decoding the stream does not pay
+        // for: /Contents [4 0 R 4 0 R ...] of a stream of 16 MB made gigabytes
+        // of a PDF of a few KB (review of 11 October 2026, #29), and 64 pages
+        // of /Contents [4 0 R 5 0 R] held 1 GB against the budget of 256 MB
+        // (review of 12 October 2026, R16). Past the budget, the page has no
+        // content, as a stream past it has no data.
         for number in numbers {
             guard let object = getObject(number: number, from: objects) else {
                 continue
             }
             if object.stream != nil {
                 let data = object.getData()
-                if joined.contains(number), let budget = object.budget {
+                if let budget = object.budget {
                     budget.left -= data.count + 1
                     if budget.left < 0 {
                         budget.left = 0
                         return nil
                     }
                 }
-                joined.insert(number)
                 content.data.append(contentsOf: data)
                 content.data.append(UInt8(ascii: "\n"))     // A stream can end in the middle of a line.
             }

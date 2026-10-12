@@ -1142,15 +1142,34 @@ class PDFTest {
         PDFobj.MAX_DECODED_TOTAL = 5000;
         try {
             // 100 of the object stream, 1000 of the content decoded once,
-            // 1001 for each copy after the first: three copies take 3102 of
-            // 5000
+            // 1001 for each copy: three copies take 4103 of 5000
             List<PDFobj> objects = TestSupport.newPDF().read(new java.io.ByteArrayInputStream(pdfOfStreams(100, 1000)));
             PDFobj content = pageOfContents(3).getContentObject(objects);
             assertNotNull(content, "three copies within the budget");
             assertEquals(3003, content.data.length);
-            // Five take 5104, past it
+            // Five take 6105, past it
             objects = TestSupport.newPDF().read(new java.io.ByteArrayInputStream(pdfOfStreams(100, 1000)));
             assertNull(pageOfContents(5).getContentObject(objects), "five copies past the budget");
+        } finally {
+            PDFobj.MAX_DECODED_TOTAL = was;
+        }
+    }
+
+    // The content of pages joined from the same streams is charged to the
+    // budget for each page, as each page has its copy: 64 pages of /Contents
+    // [4 0 R 5 0 R], of a stream of 16 MB, held 1 GB against the budget of
+    // 256 MB (review of 12 October 2026, R16).
+    @Test
+    void theJoinedContentOfEachPageIsCharged() throws Exception {
+        int was = PDFobj.MAX_DECODED_TOTAL;
+        PDFobj.MAX_DECODED_TOTAL = 5000;
+        try {
+            // 1100 decoded, and 2002 for each page: two pages take 5104, past it
+            List<PDFobj> objects = TestSupport.newPDF().read(new java.io.ByteArrayInputStream(pdfOfStreams(100, 1000)));
+            PDFobj content = pageOfContents(2).getContentObject(objects);
+            assertNotNull(content, "the first page within the budget");
+            assertEquals(2002, content.data.length);
+            assertNull(pageOfContents(2).getContentObject(objects), "the second page past the budget");
         } finally {
             PDFobj.MAX_DECODED_TOTAL = was;
         }

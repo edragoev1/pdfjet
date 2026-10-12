@@ -78,6 +78,12 @@ This is the first entry in this file; earlier releases were not tracked here.
   for each page: 4,000 pages of one resources object of 4,000 fonts, a file
   of 529 KB, allocated 4.8 GB and took 1.9 seconds in Go; it takes 36 MB
   and 29 ms.
+- GetContentObject charges every stream it copies into the content of a
+  page to the PDF's budget, in the four ports, not only a stream the page
+  names again: each page that joins its streams has a copy of its own, and
+  64 pages of /Contents [4 0 R 5 0 R], of a stream of 16 MB, held 1 GB
+  against the budget of 256 MB. Past the budget, a page has no content, as
+  before; each call makes a copy, and is charged.
 
 ## v9.0.5 — 2026-10-12, internal
 

@@ -124,13 +124,21 @@ import Testing
             return obj
         }
         // 100 of the object stream, 1000 of the content decoded once, 1001
-        // for each copy after the first: three copies take 3102 of 5000
+        // for each copy: three copies take 4103 of 5000
         var objects = try read(Self.pdfOfStreams(100, 1000))
         let content = page(3).getContentObject(objects)
         #expect(content?.data.count == 3003, "three copies within the budget")
-        // Five take 5104, past it
+        // Five take 6105, past it
         objects = try read(Self.pdfOfStreams(100, 1000))
         #expect(page(5).getContentObject(objects) == nil, "five copies past the budget make a content")
+        // The content of pages joined from the same streams is charged for
+        // each page, as each page has its copy: 64 pages of /Contents [4 0 R
+        // 5 0 R], of a stream of 16 MB, held 1 GB against the budget of
+        // 256 MB (review of 12 October 2026, R16). 1100 decoded, and 2002 for
+        // each page: two pages take 5104, past it
+        objects = try read(Self.pdfOfStreams(100, 1000))
+        #expect(page(2).getContentObject(objects)?.data.count == 2002, "the first page within the budget")
+        #expect(page(2).getContentObject(objects) == nil, "the second page past the budget")
     }
 
     // An object stream gives no more objects than its /N says, and each

@@ -153,7 +153,7 @@ func TestReadAContentStreamNamedAgainIsChargedAgain(t *testing.T) {
 		return obj
 	}
 	// 100 of the object stream, 1000 of the content decoded once, 1001 for
-	// each copy after the first: three copies take 3102 of 5000
+	// each copy: three copies take 4103 of 5000
 	objects, err := testNewPDF().Read(testPDFOfStreams(100, 1000))
 	if err != nil {
 		t.Fatal(err)
@@ -161,13 +161,35 @@ func TestReadAContentStreamNamedAgainIsChargedAgain(t *testing.T) {
 	if content := page(3).GetContentObject(objects); content == nil || len(content.data) != 3003 {
 		t.Errorf("three copies within the budget: %v", content)
 	}
-	// Five take 5104, past it
+	// Five take 6105, past it
 	objects, err = testNewPDF().Read(testPDFOfStreams(100, 1000))
 	if err != nil {
 		t.Fatal(err)
 	}
 	if content := page(5).GetContentObject(objects); content != nil {
 		t.Errorf("five copies past the budget make a content of %d bytes, not none", len(content.data))
+	}
+}
+
+// The content of pages joined from the same streams is charged to the budget
+// for each page, as each page has its copy: 64 pages of /Contents [4 0 R
+// 5 0 R], of a stream of 16 MB, held 1 GB against the budget of 256 MB
+// (review of 12 October 2026, R16).
+func TestReadTheJoinedContentOfEachPageIsCharged(t *testing.T) {
+	defer func(was int) { maxDecodedTotal = was }(maxDecodedTotal)
+	maxDecodedTotal = 5000
+	page := newPDFobj()
+	page.dict = append(page.dict, "/Contents", "[", "4", "0", "R", "4", "0", "R", "]")
+	// 1100 decoded, and 2002 for each page: two pages take 5104, past it
+	objects, err := testNewPDF().Read(testPDFOfStreams(100, 1000))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if content := page.GetContentObject(objects); content == nil || len(content.data) != 2002 {
+		t.Errorf("the first page within the budget: %v", content)
+	}
+	if content := page.GetContentObject(objects); content != nil {
+		t.Errorf("the second page past the budget has a content of %d bytes, not none", len(content.data))
 	}
 }
 

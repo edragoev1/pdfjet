@@ -1306,15 +1306,24 @@ public class DecodeBudgetTest {
                 return obj;
             }
             // 100 of the object stream, 1000 of the content decoded once,
-            // 1001 for each copy after the first: three copies take 3102 of
-            // 5000
+            // 1001 for each copy: three copies take 4103 of 5000
             var objects = TestSupport.NewPDF().Read(new MemoryStream(PDFTest.PdfOfStreams(100, 1000)));
             PDFobj content = Page(3).GetContentObject(objects);
             Assert.NotNull(content);
             Assert.Equal(3003, content.data.Length);
-            // Five take 5104, past it
+            // Five take 6105, past it
             objects = TestSupport.NewPDF().Read(new MemoryStream(PDFTest.PdfOfStreams(100, 1000)));
             Assert.Null(Page(5).GetContentObject(objects));
+            // The content of pages joined from the same streams is charged for
+            // each page, as each page has its copy: 64 pages of /Contents
+            // [4 0 R 5 0 R], of a stream of 16 MB, held 1 GB against the budget
+            // of 256 MB (review of 12 October 2026, R16). 1100 decoded, and
+            // 2002 for each page: two pages take 5104, past it
+            objects = TestSupport.NewPDF().Read(new MemoryStream(PDFTest.PdfOfStreams(100, 1000)));
+            content = Page(2).GetContentObject(objects);
+            Assert.NotNull(content);
+            Assert.Equal(2002, content.data.Length);
+            Assert.Null(Page(2).GetContentObject(objects));
         } finally {
             PDFobj.MAX_DECODED_TOTAL = was;
         }
