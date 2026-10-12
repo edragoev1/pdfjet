@@ -44,24 +44,6 @@ func readFully(r io.Reader, buf []byte) {
 	}
 }
 
-func getUint8(r io.Reader) uint8 {
-	buf := make([]byte, 1)
-	readFully(r, buf)
-	return buf[0]
-}
-
-func getUint24(r io.Reader) uint32 {
-	buf := make([]byte, 3)
-	readFully(r, buf)
-	return uint32(buf[0])<<16 | uint32(buf[1])<<8 | uint32(buf[2])
-}
-
-func getUint32(r io.Reader) uint32 {
-	buf := make([]byte, 4)
-	readFully(r, buf)
-	return uint32(buf[0])<<24 | uint32(buf[1])<<16 | uint32(buf[2])<<8 | uint32(buf[3])
-}
-
 // Pre-allocated lowercase hex digits. The ToUnicode CMap is written in
 // lowercase, matching Java's Integer.toHexString. This is deliberately not
 // the uppercase hexDigits table used for the page content streams.
