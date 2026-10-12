@@ -4,48 +4,43 @@ The library work that is open, in the four ports (Java, C#, Go and Swift),
 and the checks that hold before each release. What each release brought is in
 CHANGELOG.md.
 
-## v9.0.5
+## v9.0.7
 
-Frozen. It brings subsets of every embedded font, TrueType and CFF, fonts
-added to an existing PDF included; the `.ttf` and `.otf` fonts read directly,
-with no `.stream` files; `ImageSize`; the EXIF orientation of JPEGs; the public
-XML parser; `Table.setCellPadding`; `addCJKParagraph` with a language; and
-the fixes of a code review of every change since 9.0.3, with a test of each.
-Only a major issue holds it now; anything else goes into the next 9.0.x.
+The first public release since 9.0.3. v9.0.5 was tagged on 12 October 2026
+as an internal release, not published (the owner: "We will label v9.0.5
+internal release and focus on v9.0.7"); nothing more is backported to it,
+and 9.0.7 carries all of it: subsets of every embedded font, TrueType and
+CFF, fonts added to an existing PDF included; the `.ttf` and `.otf` fonts
+read directly, with no `.stream` files; `ImageSize`; the EXIF orientation of
+JPEGs; the public XML parser; `Table.setCellPadding`; `addCJKParagraph` with
+a language; the fixes of the code review of 11 October 2026 (#1 to #38),
+passwords prepared with SASLprep among them; and, new in 9.0.7, fonts that
+forbid embedding refused and the stroke width of an Arc. Only a major issue
+holds it; anything else goes into 9.0.9.
 
-Taken in on 11 October 2026 as major (the owner: "merge them in 9.0.5"): the
-five first fixes of the review of that day, as PDFjet Forms reads PDFs from
-anyone with this reader: #29, #30, #31, the reader's limits; #1, a stamp in
-an encrypted PDF; #2, a NaN slice of a DonutChart; and #3, Java in a Turkish
-locale. Backported too, on the owner's word that day ("everything fixed in
-v9.0.7 should be backported to v9.0.5"): #4, #5, #6, #7, #9, #10, #12, #13,
-#22, #32 to #36; and on the same word, the next ones fixed: #11, #14 to #20,
-#23 to #26, #28, #37 and #38; and #8, a glyph's character in the ToUnicode
-map; #21, the soft hyphen drawn only where a line breaks at it; and #27,
-passwords prepared with SASLprep. The whole review is in 9.0.5.
-
-Left before the tag: the manual viewer pass (below) on the files of the new
-code, then the release.
+Left before the tag: the items for 9.0.7 below, the manual viewer pass
+(below) on the files of the new code, then the release.
 
 PDFjet Pro is released with it, its first release, on the same day, with
-the same number (the owner, 11 October 2026: the two move together). Right
-after the library's tag: in pdfjet-pro, `./set-version.sh 9.0.5`, the tests
-against the release (`PDFJET=published`), CHANGELOG.md, the tag v9.0.5 and
-push; then pdfjet-pro made public, on the owner's go-ahead. Its CI builds
-against the library's main branch until then, and on a tag against the
-library's tag of the same number.
+the same number (the owner, 11 October 2026: the two move together), the
+Swiss QR-bill in it (merged on 12 October 2026). Right after the library's
+tag: in pdfjet-pro, `./set-version.sh 9.0.7`, the tests against the release
+(`PDFJET=published`), CHANGELOG.md, the tag v9.0.7 and push; then
+pdfjet-pro made public, on the owner's go-ahead. Its CI builds against the
+library's main branch until then, and on a tag against the library's tag of
+the same number.
 
 And pdfjet-server to the release: its go.mod requires a snapshot of the
 library of 9 October (v9.0.4-0.20261009203557-ed6b1c9bcec8), which its CI
-and the Forms that is deployed build with, so they have none of 9.0.5's
-fixes, the reader's limits among them, until it requires v9.0.5:
-`go get github.com/edragoev1/pdfjet/v9@v9.0.5 && go mod tidy` in
+and the Forms that is deployed build with, so they have none of the fixes
+since, the reader's limits among them, until it requires v9.0.7:
+`go get github.com/edragoev1/pdfjet/v9@v9.0.7 && go mod tidy` in
 pdfjet-server, its tests, commit and push. Locally its go.work uses the
 library beside it, which has them already.
 
 PDFjet Forms takes the number too (the owner, 11 October 2026): Forms is
-9.0.5 when it is built on the library's 9.0.5, and tags pdfjet-server and
-pdfjet-client v9.0.5 with the deploy that moves it there. Deploys of Forms
+9.0.7 when it is built on the library's 9.0.7, and tags pdfjet-server and
+pdfjet-client v9.0.7 with the deploy that moves it there. Deploys of Forms
 alone between the library's releases keep its number, told apart by their
 commit and date. The layout's format version (1) and the look's rules
 (rules 1) are not these numbers, and never move with them.
@@ -116,8 +111,7 @@ commit and date. The layout's format version (1) and the look's rules
 - **BigTable.setColumnWidthsInPercent, in the four ports.** The width of each
   column drawn, as a percent of the table's width, as Table's
   setColumnWidthsInPercent sets them; BigTable sizes its columns itself today.
-  For the tool that makes a CSV into a report and writes its PDFjet code, and
-  for any BigTable whose columns want widths of their own. Counted in the
+  For any BigTable whose columns want widths of their own. Counted in the
   order setColumns draws the columns; refused when the percents are not one
   for each column. A test in each port, the widths compared across the ports.
 - **For 9.0.7: the code review of 11 October 2026.** Five areas: the
