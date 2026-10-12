@@ -20,7 +20,8 @@ an encrypted PDF; #2, a NaN slice of a DonutChart; and #3, Java in a Turkish
 locale. Backported too, on the owner's word that day ("everything fixed in
 v9.0.7 should be backported to v9.0.5"): #4, #5, #6, #7, #9, #10, #12, #13,
 #22, #32 to #36; and on the same word, the next ones fixed: #11, #14 to #20,
-#23 to #26, #28, #37 and #38. #8, #21 and #27 stay for 9.0.7.
+#23 to #26, #28, #37 and #38; and #8, a glyph's character in the ToUnicode
+map. #21 and #27 stay for 9.0.7.
 
 Left before the tag: the manual viewer pass (below) on the files of the new
 code, then the release.
@@ -159,14 +160,14 @@ commit and date. The layout's format version (1) and the look's rules
   Java, C# and Swift ports against Go, and the parsers of untrusted input.
   Its numbers are kept in the items below. Each fix in the four ports, with
   a test.
-- **For 9.0.7: what is left of the review.** Characters that share a glyph
-  extract as the glyph's lowest character (#8): the ToUnicode map is to give
-  each glyph the character drawn with it, and ActualText is left for a
-  document that draws two characters of one glyph. The soft hyphen always
+- **For 9.0.7: what is left of the review.** ActualText for a document
+  that draws two characters of one glyph, which extract as the first drawn
+  (#8; the ToUnicode map gives each glyph the character drawn with it, in
+  9.0.5). The soft hyphen always
   drawn, never a break (#21), a change of how text is broken. Passwords not
   SASLprep'd, as PDF 2.0 asks (#27), which Go cannot do without
-  golang.org/x/text: to be decided. The rest, #1 to #7, #9 to #20, #22 to
-  #26 and #28 to #38, is fixed in 9.0.5.
+  golang.org/x/text: to be decided. The rest, #1 to #20, #22 to #26 and #28
+  to #38, is fixed in 9.0.5.
 - **For 9.0.7: CI.** The output of the four ports compared on more than the
   examples' inputs: the float paths of DonutChart and Arc were found apart by
   a random run against Go (#25), which CI does not run. The fuzzers given
