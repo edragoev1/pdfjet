@@ -278,4 +278,17 @@ class OTFTest {
             assertEquals(want.unicodeToGID.get(ch), got.unicodeToGID.get(ch), String.valueOf(ch));
         }
     }
+
+    // A font whose license forbids embedding it, its fsType Restricted License
+    // embedding and nothing more, is refused, where it was embedded; one that
+    // allows Preview and Print too is embedded, as the least restrictive bit
+    // applies.
+    @Test
+    void aFontWhoseLicenseForbidsEmbeddingIsRefused() throws Exception {
+        byte[] ttf = font("fonts/NotoSans/NotoSans-Regular.ttf");
+        int os2 = table(ttf, "OS/2");
+        String message = error(with(ttf, os2 + 8, 0x0002));
+        assertTrue(message.contains("may not be embedded") && message.contains("NotoSans"), message);
+        new Font(TestSupport.newPDF(), new ByteArrayInputStream(with(ttf, os2 + 8, 0x0006)));
+    }
 }

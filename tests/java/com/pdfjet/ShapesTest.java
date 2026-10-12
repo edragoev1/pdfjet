@@ -123,4 +123,25 @@ class ShapesTest {
         assertTrue(content.contains("0 0 1 RG"), content);
         assertTrue(content.contains("0 1 0 RG"), content);
     }
+
+    // An Arc, and so an Ellipse, given a stroke width and no color is drawn a
+    // black line of that width: it was drawn 0 wide, a hairline, whatever the
+    // width; with no width it is 0 wide as before.
+    @Test
+    void anArcOfAWidthAndNoColorIsDrawnThatWide() throws Exception {
+        for (Arc arc : new Arc[] {new Arc(), new Ellipse()}) {
+            Page page = page();
+            arc.setLocation(100f, 100f);
+            arc.setRadius(40f);
+            arc.setSweep(270f);
+            arc.setStrokeWidth(4f);
+            arc.drawOn(page);
+            String content = TestSupport.content(page);
+            assertTrue(content.contains("\n4 w\n"), arc.getClass().getSimpleName() + ": " + content);
+        }
+        Page page = page();
+        new Arc().setLocation(100f, 100f).setRadius(40f).setSweep(90f).drawOn(page);
+        String content = TestSupport.content(page);
+        assertTrue(content.contains("\n0 w\n"), "an arc of no width is not 0 wide: " + content);
+    }
 }

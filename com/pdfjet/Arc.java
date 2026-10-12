@@ -313,8 +313,10 @@ public class Arc implements Drawable {
         } else if (fillColor == null && strokeColor != null) {
             page.setPenWidth(strokeWidth);
             page.setPenColor(strokeColor);
-        } else {    // Both brushColor == null and penColor == null
-            page.setPenWidth(0f);
+        } else {
+            // No colors: a black line of the width set, 0, the thinnest the
+            // device draws, when none was; it was 0 whatever the width
+            page.setPenWidth(strokeWidth);
             page.setPenColor(Color.black);
         }
         page.addArcToPath(

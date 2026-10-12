@@ -13,6 +13,7 @@ class OpenTypeFont {
     protected static void register(
             PDF pdf, Font font, InputStream inputStream) throws Exception {
         OTF otf = new OTF(inputStream);
+        checkEmbedding(otf);
         setData(font, otf);
 
         // The font is written at complete(), a subset of the glyphs drawn; its
@@ -33,6 +34,7 @@ class OpenTypeFont {
     protected static void register(
             List<PDFobj> objects, Font font, InputStream inputStream) throws Exception {
         OTF otf = new OTF(inputStream);
+        checkEmbedding(otf);
         setData(font, otf);
         font.program = new Subset.Program(otf.numGlyphs);
         if (otf.cff) {
@@ -43,6 +45,18 @@ class OpenTypeFont {
             font.program.font = otf.buf;
         }
         FontObjects.register(objects, font);
+    }
+
+    // Refuses a font whose license forbids embedding it: the fsType of its
+    // OS/2 table "Restricted License embedding", 2, and none of the bits that
+    // allow it, Preview and Print or Editable, as the least restrictive of the
+    // bits set is the one that applies. It was embedded (review of 9 October
+    // 2026, "a font whose fsType forbids embedding").
+    private static void checkEmbedding(OTF otf) throws IOException {
+        if ((otf.fsType & 0x000F) == 0x0002) {
+            throw new IOException("The font " + otf.fontName + " may not be embedded: its license asks for its maker's " +
+                    "permission first. See \"Choosing a font you may embed\" in PDFjet's README.");
+        }
     }
 
     // Gives the font the name, the metrics and the character map of the
