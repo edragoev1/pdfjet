@@ -2723,7 +2723,6 @@ public sealed class PDF {
                 // An object stream with no stream of its own has no objects,
                 // as it has in the Go and Swift ports.
                 byte[] data = obj.data ?? new byte[0];
-                PDFobj o2 = GetObject(data, 0, Math.Min(first, data.Length));
                 // Its objects are read in no more than its length in all, as
                 // one whose offset is listed again was read again: a stream
                 // of a few kilobytes that decodes to a megabyte, with an
@@ -2733,27 +2732,31 @@ public sealed class PDF {
                 // No more objects than its /N says, and each taken from the
                 // PDF's budget as the memory it takes: a header of 64 MB of
                 // "1 0 " made millions of objects, gigabytes, from a PDF of
-                // 65 KB (review of 11 October 2026, #30).
-                int pairs = o2.dict.Count / 2;
+                // 65 KB (review of 11 October 2026, #30). The header is read
+                // no further than those numbers: one of 200 MB was split into
+                // its tokens first, 10.8 GB in Go (review of 12 October 2026,
+                // R6).
+                int pairs = budget.left / OBJECT_COST + 1;  // One more fails.
                 int count = ToInteger(obj.GetValue("/N"));
                 if (count >= 0) {
                     pairs = Math.Min(pairs, count);
                 }
-                for (int i = 0; i + 1 < o2.dict.Count && i / 2 < pairs; i += 2) {
+                List<String> header = ObjectStreamHeader(data, Math.Min(first, data.Length), 2 * pairs);
+                for (int i = 0; i + 1 < header.Count; i += 2) {
                     budget.left -= OBJECT_COST;
                     if (budget.left < 0) {
                         throw new PDFobj.DecodedTotalException();
                     }
-                    String num = o2.dict[i];
+                    String num = header[i];
                     int number = ObjectStreamNumber(num);
-                    int off = ObjectStreamNumber(o2.dict[i + 1]);
+                    int off = ObjectStreamNumber(header[i + 1]);
                     // The offsets are added as longs, as their sum can be
                     // more than an int holds; one past the end of the data
                     // is the end.
                     int end = data.Length;
-                    if (i <= o2.dict.Count - 4) {
+                    if (i <= header.Count - 4) {
                         end = (int) Math.Min(
-                                (long) first + ObjectStreamNumber(o2.dict[i + 3]), data.Length);
+                                (long) first + ObjectStreamNumber(header[i + 3]), data.Length);
                     }
                     int start = (int) Math.Min((long) first + off, data.Length);
                     PDFobj o3 = ReadObject(data, start, end, streamBudget);
@@ -2958,6 +2961,26 @@ public sealed class PDF {
             return new PDFobj();
         }
         return obj;
+    }
+
+    // Returns the numbers of the header of an object stream, the first length
+    // bytes of its data, split at white space, no more than count of them.
+    internal static List<String> ObjectStreamHeader(byte[] data, int length, int count) {
+        List<String> header = new List<String>(Math.Max(0, Math.Min(count, 1024)));
+        int i = 0;
+        while (i < length && header.Count < count) {
+            while (i < length && IsWhiteSpace(data[i])) {
+                i++;
+            }
+            int start = i;
+            while (i < length && !IsWhiteSpace(data[i])) {
+                i++;
+            }
+            if (i > start) {
+                header.Add(Encoding.Latin1.GetString(data, start, i - start));
+            }
+        }
+        return header;
     }
 
     internal static bool IsWhiteSpace(int c) {

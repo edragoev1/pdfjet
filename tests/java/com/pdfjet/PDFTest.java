@@ -1183,6 +1183,25 @@ class PDFTest {
                 new java.io.ByteArrayInputStream(pdfOfObjectStream(1, "5 0 6 11 ")));
         assertNotNull(objectOfNumber(objects, 5));
         assertNull(objectOfNumber(objects, 6), "an object stream of /N 1 gives objects other than its first");
+        // The header is read no further than its /N: one of 16 MB was split
+        // into its tokens first (review of 12 October 2026, R6)
+        StringBuilder longHeader = new StringBuilder("5 0 ");
+        for (int i = 0; i < 4 << 20; i++) {
+            longHeader.append("1 0 ");
+        }
+        byte[] longPDF = pdfOfObjectStream(1, longHeader.toString());
+        java.lang.management.ThreadMXBean bean = java.lang.management.ManagementFactory.getThreadMXBean();
+        com.sun.management.ThreadMXBean threads = null;
+        if (bean instanceof com.sun.management.ThreadMXBean
+                && ((com.sun.management.ThreadMXBean) bean).isThreadAllocatedMemorySupported()) {
+            threads = (com.sun.management.ThreadMXBean) bean;
+            threads.setThreadAllocatedMemoryEnabled(true);
+        }
+        long id = Thread.currentThread().getId();
+        long before = (threads != null) ? threads.getThreadAllocatedBytes(id) : 0;
+        TestSupport.newPDF().read(new java.io.ByteArrayInputStream(longPDF));
+        long after = (threads != null) ? threads.getThreadAllocatedBytes(id) : 0;
+        assertTrue(after - before <= 128 << 20, ((after - before) >> 20) + " MB allocated");
         // A header of more objects than the budget takes is refused
         int was = PDFobj.MAX_DECODED_TOTAL;
         PDFobj.MAX_DECODED_TOTAL = 100 * PDF.OBJECT_COST;

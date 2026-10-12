@@ -64,6 +64,10 @@ This is the first entry in this file; earlier releases were not tracked here.
   four ports: 1,000 pages under a node of a /CropBox of 20,000 numbers, a
   file of 117 KB, allocated 6.2 GB in Go and took 18 seconds in Swift. A
   page then has the /MediaBox of Letter, as one with none has.
+- The header of an object stream is read no further than the objects its
+  /N says it has, and the PDF's budget allows, in the four ports. It was
+  split into its tokens first: a header of 16 MB of one object allocated
+  892 MB in Go and 569 MB in Java, and took 6 seconds in Swift.
 
 ## v9.0.5 — 2026-10-12, internal
 

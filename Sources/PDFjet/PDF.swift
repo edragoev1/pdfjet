@@ -2295,7 +2295,6 @@ public final class PDF {
                 // A malformed object stream is an error, as in the other
                 // ports, and not a reason to stop the program.
                 let first = try objectStreamNumber(obj.getValue("/First"))
-                let o2 = getObject(obj.data, 0, min(first, obj.data.count))
                 // Its objects are read in no more than its length in all, as
                 // one whose offset is listed again was read again: a stream
                 // of a few kilobytes that decodes to a megabyte, with an
@@ -2305,23 +2304,27 @@ public final class PDF {
                 // No more objects than its /N says, and each taken from the
                 // PDF's budget as the memory it takes: a header of 64 MB of
                 // "1 0 " made millions of objects, gigabytes, from a PDF of
-                // 65 KB (review of 11 October 2026, #30).
-                var pairs = o2.dict.count / 2
+                // 65 KB (review of 11 October 2026, #30). The header is read
+                // no further than those numbers: one of 200 MB was split into
+                // its tokens first, 10.8 GB in Go (review of 12 October 2026,
+                // R6).
+                var pairs = budget.left / PDF.objectCost + 1    // One more fails.
                 if let count = try? objectStreamNumber(obj.getValue("/N")) {
                     pairs = min(pairs, count)
                 }
+                let header = objectStreamHeader(obj.data, min(first, obj.data.count), 2 * pairs)
                 var i = 0
-                while i + 1 < o2.dict.count && i / 2 < pairs {
+                while i + 1 < header.count {
                     budget.left -= PDF.objectCost
                     if budget.left < 0 {
                         throw PDFobj.DecodedTotalError(total: budget.total)
                     }
-                    let num = o2.dict[i]
+                    let num = header[i]
                     let number = try objectStreamNumber(num)
-                    let off = try objectStreamNumber(o2.dict[i + 1])
+                    let off = try objectStreamNumber(header[i + 1])
                     var end = obj.data.count
-                    if i <= o2.dict.count - 4 {
-                        end = min(first + (try objectStreamNumber(o2.dict[i + 3])), obj.data.count)
+                    if i <= header.count - 4 {
+                        end = min(first + (try objectStreamNumber(header[i + 3])), obj.data.count)
                     }
                     let o3 = readObject(obj.data, first + off, end, streamBudget)
                     o3.number = number
@@ -2533,6 +2536,27 @@ public final class PDF {
             return PDFobj()
         }
         return obj
+    }
+
+    // Returns the numbers of the header of an object stream, the first length
+    // bytes of its data, split at white space, no more than count of them.
+    private func objectStreamHeader(_ data: [UInt8], _ length: Int, _ count: Int) -> [String] {
+        var header = [String]()
+        header.reserveCapacity(max(0, min(count, 1024)))
+        var i = 0
+        while i < length && header.count < count {
+            while i < length && isWhiteSpace(data[i]) {
+                i += 1
+            }
+            let start = i
+            while i < length && !isWhiteSpace(data[i]) {
+                i += 1
+            }
+            if i > start {
+                header.append(String(bytes: data[start..<i], encoding: .isoLatin1)!)
+            }
+        }
+        return header
     }
 
     private func isWhiteSpace(_ c: UInt8) -> Bool {

@@ -154,6 +154,13 @@ import Testing
         let objects = try Self.read(objectStream(1, "5 0 6 11 "))
         #expect(Self.objectOfNumber(objects, 5) != nil && Self.objectOfNumber(objects, 6) == nil,
                 "an object stream of /N 1 gives objects other than its first")
+        // The header is read no further than its /N: one of 16 MB was split
+        // into its tokens first (review of 12 October 2026, R6)
+        let longPDF = objectStream(1, "5 0 " + String(repeating: "1 0 ", count: 4 << 20))
+        let elapsed = try ContinuousClock().measure {
+            _ = try Self.read(longPDF)
+        }
+        #expect(elapsed < .seconds(2), "\(elapsed)")
         // A header of more objects than the budget takes is refused
         let header = String(repeating: "1 0 ", count: 1000)
         #expect(throws: (any Error).self, "an object stream of 1000 objects past the budget is read") {

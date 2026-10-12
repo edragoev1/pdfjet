@@ -196,6 +196,19 @@ func TestReadAnObjectStreamGivesNoMoreObjectsThanItsN(t *testing.T) {
 	if testObjectOfNumber(objects, 5) == nil || testObjectOfNumber(objects, 6) != nil {
 		t.Errorf("an object stream of /N 1 gives objects other than its first")
 	}
+	// The header is read no further than its /N: one of 16 MB was split
+	// into its tokens first (review of 12 October 2026, R6)
+	var before, after runtime.MemStats
+	long := objectStream(1, "5 0 "+strings.Repeat("1 0 ", 4<<20))
+	runtime.ReadMemStats(&before)
+	_, err = testNewPDF().Read(long)
+	runtime.ReadMemStats(&after)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if allocated := after.TotalAlloc - before.TotalAlloc; allocated > 64<<20 {
+		t.Errorf("%d MB allocated", allocated>>20)
+	}
 	// A header of more objects than the budget takes is refused
 	defer func(was int) { maxDecodedTotal = was }(maxDecodedTotal)
 	maxDecodedTotal = 100 * objectCost

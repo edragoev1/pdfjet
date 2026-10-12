@@ -2687,7 +2687,6 @@ func (pdf *PDF) ReadWithPassword(buf []byte, password string) (objects []*PDFobj
 				return nil, err
 			}
 			data := obj.GetData()
-			o2 := getObject(data, 0, min(first, len(data)))
 			// Its objects are read in no more than its length in all, as
 			// one whose offset is listed again was read again: a stream of
 			// a few kilobytes that decodes to a megabyte, with an object
@@ -2696,28 +2695,31 @@ func (pdf *PDF) ReadWithPassword(buf []byte, password string) (objects []*PDFobj
 			// No more objects than its /N says, and each taken from the
 			// PDF's budget as the memory it takes: a header of 64 MB of
 			// "1 0 " made millions of objects, gigabytes, from a PDF of 65 KB
-			// (review of 11 October 2026, #30).
-			pairs := len(o2.dict) / 2
+			// (review of 11 October 2026, #30). The header is read no further
+			// than those numbers: one of 200 MB was split into its tokens
+			// first, 10.8 GB (review of 12 October 2026, R6).
+			pairs := budget.left/objectCost + 1 // One more fails.
 			if count, err := objectStreamNumber(obj.GetValue("/N")); err == nil {
 				pairs = min(pairs, count)
 			}
-			for i := 0; i+1 < len(o2.dict) && i/2 < pairs; i += 2 {
+			header := objectStreamHeader(data[:min(first, len(data))], 2*pairs)
+			for i := 0; i+1 < len(header); i += 2 {
 				budget.left -= objectCost
 				if budget.left < 0 {
 					return nil, errDecodedTotal{maxDecodedTotal}
 				}
-				num := o2.dict[i]
+				num := header[i]
 				number, err := objectStreamNumber(num)
 				if err != nil {
 					return nil, err
 				}
-				off, err := objectStreamNumber(o2.dict[i+1])
+				off, err := objectStreamNumber(header[i+1])
 				if err != nil {
 					return nil, err
 				}
 				end := len(data)
-				if i <= len(o2.dict)-4 {
-					tmp, err := objectStreamNumber(o2.dict[i+3])
+				if i <= len(header)-4 {
+					tmp, err := objectStreamNumber(header[i+3])
 					if err != nil {
 						return nil, err
 					}
@@ -2825,6 +2827,26 @@ func getObjectAt(buf []byte, off int) *PDFobj {
 
 // getObject returns the object at the offset, which ends at length at the
 // latest.
+// objectStreamHeader returns the numbers of the header of an object stream,
+// split at white space, no more than count of them.
+func objectStreamHeader(data []byte, count int) []string {
+	header := make([]string, 0, max(0, min(count, 1024)))
+	i := 0
+	for i < len(data) && len(header) < count {
+		for i < len(data) && isWhiteSpace(int(data[i])) {
+			i++
+		}
+		start := i
+		for i < len(data) && !isWhiteSpace(int(data[i])) {
+			i++
+		}
+		if i > start {
+			header = append(header, string(data[start:i]))
+		}
+	}
+	return header
+}
+
 func getObject(buf []byte, off, length int) *PDFobj {
 	obj := newPDFobj()
 	obj.offset = off

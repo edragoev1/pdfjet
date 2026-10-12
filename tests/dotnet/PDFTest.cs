@@ -1300,6 +1300,13 @@ public class DecodeBudgetTest {
         var objects = TestSupport.NewPDF().Read(new MemoryStream(ObjectStream(1, "5 0 6 11 ")));
         Assert.NotNull(PDFTest.ObjectOfNumber(objects, 5));
         Assert.Null(PDFTest.ObjectOfNumber(objects, 6));
+        // The header is read no further than its /N: one of 16 MB was split
+        // into its tokens first (review of 12 October 2026, R6)
+        byte[] longPDF = ObjectStream(1, "5 0 " + new StringBuilder().Insert(0, "1 0 ", 4 << 20));
+        long before = GC.GetAllocatedBytesForCurrentThread();
+        TestSupport.NewPDF().Read(new MemoryStream(longPDF));
+        long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        Assert.True(allocated <= 128 << 20, (allocated >> 20) + " MB allocated");
         // A header of more objects than the budget takes is refused
         int was = PDFobj.MAX_DECODED_TOTAL;
         PDFobj.MAX_DECODED_TOTAL = 100 * PDF.OBJECT_COST;
