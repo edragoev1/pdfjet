@@ -281,6 +281,25 @@ public sealed class PDF {
     internal static bool coreFontsInCompliance;
 #pragma warning restore CS0649
 
+    // Records the misuse of an array of more than 8191 entries, or a
+    // dictionary of more than 4095, in a document of PDF/A-1, which limits them
+    // so: veraPDF refused 4,100 tagged pages, 8,200 pages and 4,100 images
+    // (review of 12 October 2026, W1).
+    internal void CheckPDFA1Size(int count, int limit, String what) {
+        if (IsPDFA1() && count > limit) {
+            String kind = (limit == MAX_PDFA1_DICT_ENTRIES) ? "a dictionary" : "an array";
+            Fail(new InvalidOperationException("PDF/A-1 limits " + kind + " to "
+                    + limit.ToString(CultureInfo.InvariantCulture) + " entries, and " + what + " has "
+                    + count.ToString(CultureInfo.InvariantCulture) + ": make the document PDF/A-2 or PDF/A-3."));
+        }
+    }
+
+    // The most entries of an array and of a dictionary of PDF/A-1, and the
+    // most objects of a document of PDF/A.
+    internal const int MAX_PDFA1_ARRAY_ENTRIES = 8191;
+    internal const int MAX_PDFA1_DICT_ENTRIES = 4095;
+    internal const int MAX_PDFA_OBJECTS = 8388607;
+
     internal void Fail(Exception e) {
         if (error == null) {
             error = e.Message;
@@ -619,6 +638,11 @@ public sealed class PDF {
     private int AddResourcesObject() {
         NewObj();
         Append(Token.BeginDictionary);
+        CheckPDFA1Size(fonts.Count + importedFontNames.Count, MAX_PDFA1_DICT_ENTRIES, "the /Font resources");
+        CheckPDFA1Size(images.Count + stamps.Count + importedXObjectNames.Count, MAX_PDFA1_DICT_ENTRIES,
+                "the /XObject resources");
+        CheckPDFA1Size(states.Count + importedExtGStateNames.Count, MAX_PDFA1_DICT_ENTRIES,
+                "the /ExtGState resources");
         if (fonts.Count > 0 || importedFonts.Count > 0) {
             Append("/Font\n");
             Append(Token.BeginDictionary);
@@ -698,6 +722,7 @@ public sealed class PDF {
         Append(Token.NewObj);
         Append(Token.BeginDictionary);
         Append("/Type /Pages\n");
+        CheckPDFA1Size(pages.Count, MAX_PDFA1_ARRAY_ENTRIES, "the page tree");
         Append("/Kids [\n");
         foreach (Page page in pages) {
             Append(page.objNumber);
@@ -789,6 +814,7 @@ public sealed class PDF {
         Append("/P ");
         Append(parent);
         Append(Token.ObjRef);
+        CheckPDFA1Size(documentKids.Count, MAX_PDFA1_ARRAY_ENTRIES, "the Document element");
         Append("/K [\n");
         foreach (int number in this.documentKids) {
             Append(number);
@@ -867,6 +893,8 @@ public sealed class PDF {
             Append(" 0 R /Pg ");
             Append(element.pageObjNumber);
             Append(Token.ObjRef);
+            CheckPDFA1Size(Math.Max(element.kids.Count + 1, element.mcids.Count), MAX_PDFA1_ARRAY_ENTRIES,
+                    "a " + element.structure + " element");
 
             if (element.annotation != null) {
                 // A link: the marked content of its text, or the elements it
@@ -965,6 +993,13 @@ public sealed class PDF {
         Append(parentTreeNumber);
         Append(Token.NewObj);
         Append(Token.BeginDictionary);
+        int annotations = 0;
+        foreach (StructElement element in annotElements) {
+            if (element.annotation != null) {
+                annotations++;
+            }
+        }
+        CheckPDFA1Size(2 * (pages.Count + annotations), MAX_PDFA1_ARRAY_ENTRIES, "the parent tree");
         Append("/Nums [\n");
         // The keys must be listed in increasing order, so the page entries -
         // whose keys are the /StructParents values 0 .. pages.Count-1 - come
@@ -972,6 +1007,7 @@ public sealed class PDF {
         // indexed by the MCID they were marked with.
         for (int i = 0; i < pages.Count; i++) {
             Append(i);
+            CheckPDFA1Size(pages[i].mcidNumbers.Count, MAX_PDFA1_ARRAY_ENTRIES, "the marked content of a page");
             Append(" [");
             foreach (int number in pages[i].mcidNumbers) {
                 Append(Token.Space);
@@ -2439,6 +2475,13 @@ public sealed class PDF {
 
         int infoObjNumber = AddInfoObject();
         int rootObjNumber = AddRootObject(structTreeRootObjNumber, outlineDictNum);
+        if (IsPDFA() && objOffset.Count > MAX_PDFA_OBJECTS) {
+            // The limit of PDF/A, which was not checked (review of 12 October
+            // 2026, W1)
+            Fail(new InvalidOperationException("PDF/A limits a document to "
+                    + MAX_PDFA_OBJECTS.ToString(CultureInfo.InvariantCulture) + " objects, and this one has "
+                    + objOffset.Count.ToString(CultureInfo.InvariantCulture) + "."));
+        }
         long startxref = byteCount;
 
         // Create the xref table

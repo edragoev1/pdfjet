@@ -454,4 +454,26 @@ import Testing
         let j = added.firstIndex(of: "/Contents")!
         #expect(added[(j + 1)...(j + 5)].joined(separator: " ") == "[ 8 0 R ]")
     }
+
+    /// A document of PDF/A-1 of more than 8191 pages, the most entries of an
+    /// array of PDF/A-1, is refused, and a text of PDF/A of more than 16383
+    /// characters, a string longer than 32767 bytes: veraPDF failed both (W1).
+    @Test func theSizeLimitsOfPDFAAreChecked() throws {
+        let memory = MemoryPDF(Compliance.PDF_A_1B)
+        for _ in 0..<8192 {
+            _ = Page(memory.pdf, Letter.PORTRAIT)
+        }
+        let error = #expect(throws: PDFjetError.self) { try memory.pdf.complete() }
+        #expect(error?.message == "PDF/A-1 limits an array to 8191 entries, and the page tree has 8192: make the document PDF/A-2 or PDF/A-3.")
+
+        let text = String(repeating: "a", count: 16383)
+        let fits = MemoryPDF(Compliance.PDF_A_2B)
+        let fitsFont = try TestSupport.plexSans(fits.pdf)
+        TextLine(fitsFont, text).setLocation(10, 20).drawOn(Page(fits.pdf, Letter.PORTRAIT))
+        #expect(fits.pdf.error == nil)
+        let tooLong = MemoryPDF(Compliance.PDF_A_2B)
+        let tooLongFont = try TestSupport.plexSans(tooLong.pdf)
+        TextLine(tooLongFont, text + "a").setLocation(10, 20).drawOn(Page(tooLong.pdf, Letter.PORTRAIT))
+        #expect(tooLong.pdf.error == "A text of more than 16383 characters is a string longer than PDF/A allows, 32767 bytes: draw it as several lines.")
+    }
 }

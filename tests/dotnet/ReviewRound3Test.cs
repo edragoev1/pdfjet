@@ -521,5 +521,26 @@ public class ReviewRound3Test {
         int j = added.IndexOf("/Contents");
         Assert.Equal("[ 8 0 R ]", string.Join(" ", added.GetRange(j + 1, 5)));
     }
+
+    // A document of PDF/A-1 of more than 8191 pages, the most entries of an
+    // array of PDF/A-1, is refused, and a text of PDF/A of more than 16383
+    // characters, a string longer than 32767 bytes: veraPDF failed both (W1).
+    [Fact]
+    public void TheSizeLimitsOfPDFAAreChecked() {
+        PDF pdf = new PDF(new MemoryStream(), Compliance.PDF_A_1B);
+        for (int i = 0; i < 8192; i++) {
+            new Page(pdf, Letter.PORTRAIT);
+        }
+        Assert.Equal("PDF/A-1 limits an array to 8191 entries, and the page tree has 8192: make the document PDF/A-2 or PDF/A-3.", Assert.Throws<InvalidOperationException>(() => pdf.Complete()).Message);
+
+        string text = new string('a', 16383);
+        PDF fits = new PDF(new MemoryStream(), Compliance.PDF_A_2B);
+        new TextLine(TestSupport.PlexSans(fits), text).SetLocation(10f, 20f).DrawOn(new Page(fits, Letter.PORTRAIT));
+        PDF tooLong = new PDF(new MemoryStream(), Compliance.PDF_A_2B);
+        TextLine line = new TextLine(TestSupport.PlexSans(tooLong), text + "a");
+        line.SetLocation(10f, 20f);
+        Page page = new Page(tooLong, Letter.PORTRAIT);
+        Assert.Equal("A text of more than 16383 characters is a string longer than PDF/A allows, 32767 bytes: draw it as several lines.", Assert.Throws<ArgumentException>(() => line.DrawOn(page)).Message);
+    }
 }
 }

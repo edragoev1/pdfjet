@@ -45,6 +45,11 @@ public class Page {
     // The message of a path whose last curve has no end.
     static let PATH_ENDS_ON_CONTROL_POINT =
             "A path cannot end on a control point: a curve needs a point to end at after its control points."
+    // The most glyphs of a string of PDF/A, of two bytes each, and the message
+    // of a text of more.
+    static let MAX_PDFA_STRING_GLYPHS = 16383
+    static let PDFA_STRING_TOO_LONG =
+            "A text of more than 16383 characters is a string longer than PDF/A allows, 32767 bytes: draw it as several lines."
     // The message of a curve of the wrong control points.
     static let CURVE_CONTROL_POINTS =
             "A curve of a path has two \"c\" control points, or one \"v\" or \"y\" control point, before the point it ends at."
@@ -606,6 +611,12 @@ public class Page {
             return
         }
         let scalars = Array(text.unicodeScalars)
+        // A string of PDF/A is 32767 bytes at most, and a glyph two of them: a
+        // TextLine of 16384 characters failed veraPDF (review of 12 October
+        // 2026, W1)
+        if pdf.isPDFA() && scalars.count > Page.MAX_PDFA_STRING_GLYPHS {
+            pdf.fail(Page.PDFA_STRING_TOO_LONG)
+        }
         if font.isCJK {
             // A CJK font that is not embedded is drawn by the characters
             // themselves, through a UCS-2 CMap, with the glyphs of the

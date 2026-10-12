@@ -799,6 +799,12 @@ final public class Page {
         if (str == null || str.isEmpty()) {
             return;
         }
+        // A string of PDF/A is 32767 bytes at most, and a glyph two of them: a
+        // TextLine of 16384 characters failed veraPDF (review of 12 October
+        // 2026, W1)
+        if (pdf.isPDFA() && str.codePointCount(0, str.length()) > MAX_PDFA_STRING_GLYPHS) {
+            pdf.fail(new IllegalArgumentException(PDFA_STRING_TOO_LONG));
+        }
         // A plain loop over codePointAt()/charCount() is equivalent to
         // str.codePoints().forEach(...) - including surrogate-pair handling -
         // but avoids the Stream/Spliterator/lambda dispatch overhead on what
@@ -1644,6 +1650,12 @@ final public class Page {
     // The message of a path whose last curve has no end.
     static final String PATH_ENDS_ON_CONTROL_POINT =
             "A path cannot end on a control point: a curve needs a point to end at after its control points.";
+
+    // The most glyphs of a string of PDF/A, of two bytes each, and the message
+    // of a text of more.
+    static final int MAX_PDFA_STRING_GLYPHS = 16383;
+    static final String PDFA_STRING_TOO_LONG =
+            "A text of more than 16383 characters is a string longer than PDF/A allows, 32767 bytes: draw it as several lines.";
 
     // The message of a curve of the wrong control points.
     static final String CURVE_CONTROL_POINTS =

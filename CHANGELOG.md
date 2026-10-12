@@ -295,6 +295,20 @@ This is the first entry in this file; earlier releases were not tracked here.
   panicked.
 - Swift: a watermark on a page of a NaN or infinite size fails the
   document, as in the other ports; it stopped the program.
+- A document of PDF/A is refused where it would break PDF/A's limits, in
+  the four ports, rather than written and failed by veraPDF: in PDF/A-1,
+  an array of more than 8191 entries, a page tree, a parent tree, a
+  structure element or the marked content of a page, and a resources
+  dictionary of more than 4095; in any PDF/A, a line of text of more than
+  16383 characters, a string of more than 32767 bytes, and more than
+  8,388,607 objects. PDF/A-1 documents that large can be PDF/A-2 or
+  PDF/A-3 instead. A page tree and resources that keep within PDF/A-1's
+  limits at any size are planned for 9.1.1.
+- Go: the elements of a tagged page still open when it is written are
+  copied out, so the page's array of them is freed; it was kept until
+  Complete, 27% of the heap of a tagged BigTable of a million rows.
+- README: the speed of 500 pages in under 100 ms is that of a warm run,
+  and a tagged BigTable keeps a little of each row until complete().
 
 ## v9.0.5 — 2026-10-12, internal
 

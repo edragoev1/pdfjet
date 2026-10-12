@@ -622,9 +622,37 @@ func (pdf *PDF) appendImportedEntries(tokens []string) {
 	}
 }
 
+// checkPDFA1Size records the misuse of an array of more than 8191 entries, or
+// a dictionary of more than 4095, in a document of PDF/A-1, which limits them
+// so: veraPDF refused 4,100 tagged pages, 8,200 pages and 4,100 images
+// (review of 12 October 2026, W1).
+func (pdf *PDF) checkPDFA1Size(count, limit int, what string) {
+	if pdf.isPDFA1() && count > limit {
+		kind := "an array"
+		if limit == maxPDFA1DictEntries {
+			kind = "a dictionary"
+		}
+		pdf.fail("PDF/A-1 limits " + kind + " to " + strconv.Itoa(limit) + " entries, and " + what +
+			" has " + strconv.Itoa(count) + ": make the document PDF/A-2 or PDF/A-3.")
+	}
+}
+
+// The most entries of an array and of a dictionary of PDF/A-1, and the most
+// objects of a document of PDF/A.
+const (
+	maxPDFA1ArrayEntries = 8191
+	maxPDFA1DictEntries  = 4095
+	maxPDFAObjects       = 8388607
+)
+
 func (pdf *PDF) addResourcesObject() int {
 	pdf.newObj()
 	pdf.appendByteArray(token.BeginDictionary)
+	pdf.checkPDFA1Size(len(pdf.fonts)+len(pdf.importedFontNames), maxPDFA1DictEntries, "the /Font resources")
+	pdf.checkPDFA1Size(len(pdf.images)+len(pdf.stamps)+len(pdf.importedXObjectNames), maxPDFA1DictEntries,
+		"the /XObject resources")
+	pdf.checkPDFA1Size(len(pdf.states)+len(pdf.importedExtGStateNames), maxPDFA1DictEntries,
+		"the /ExtGState resources")
 	if len(pdf.fonts) > 0 || len(pdf.importedFonts) > 0 {
 		pdf.appendString("/Font\n")
 		pdf.appendByteArray(token.BeginDictionary)
@@ -702,6 +730,7 @@ func (pdf *PDF) addPagesObject() {
 	pdf.appendString(" 0 obj\n")
 	pdf.appendByteArray(token.BeginDictionary)
 	pdf.appendString("/Type /Pages\n")
+	pdf.checkPDFA1Size(len(pdf.pages), maxPDFA1ArrayEntries, "the page tree")
 	pdf.appendString("/Kids [\n")
 	for _, page := range pdf.pages {
 		pdf.appendInteger(page.objNumber)
@@ -779,6 +808,7 @@ func (pdf *PDF) addStructDocumentObject(parent int) int {
 	pdf.appendString("/P ")
 	pdf.appendInteger(parent)
 	pdf.appendByteArray(token.ObjRef)
+	pdf.checkPDFA1Size(len(pdf.documentKids), maxPDFA1ArrayEntries, "the Document element")
 	pdf.appendString("/K [\n")
 	for _, number := range pdf.documentKids {
 		pdf.appendInteger(number)
@@ -827,6 +857,8 @@ func (pdf *PDF) addStructElementObject(element *structElement) {
 		pdf.appendString(" 0 R /Pg ")
 		pdf.appendInteger(element.pageObjNumber)
 		pdf.appendString(" 0 R\n")
+		pdf.checkPDFA1Size(max(len(element.kids)+1, len(element.mcids)), maxPDFA1ArrayEntries,
+			"a "+element.structure+" element")
 
 		if element.annotation != nil {
 			// A link: the marked content of its text, or the elements it
@@ -924,6 +956,13 @@ func (pdf *PDF) addNumsParentTree() {
 	pdf.appendInteger(pdf.parentTreeNumber)
 	pdf.appendString(" 0 obj\n")
 	pdf.appendString("<<\n")
+	annotations := 0
+	for _, element := range pdf.annotElements {
+		if element.annotation != nil {
+			annotations++
+		}
+	}
+	pdf.checkPDFA1Size(2*(len(pdf.pages)+annotations), maxPDFA1ArrayEntries, "the parent tree")
 	pdf.appendString("/Nums [\n")
 	// The keys must be listed in increasing order, so the page entries - whose
 	// keys are the /StructParents values 0 .. len(pdf.pages)-1 - come first.
@@ -931,6 +970,7 @@ func (pdf *PDF) addNumsParentTree() {
 	// MCID they were marked with.
 	for i, page := range pdf.pages {
 		pdf.appendInteger(i)
+		pdf.checkPDFA1Size(len(page.mcidNumbers), maxPDFA1ArrayEntries, "the marked content of a page")
 		pdf.appendString(" [")
 		for _, number := range page.mcidNumbers {
 			pdf.appendString(" ")
@@ -1386,7 +1426,13 @@ func (pdf *PDF) addPageStructElements(page *Page) {
 	for i := len(kept); i < len(elements); i++ {
 		elements[i] = nil
 	}
-	page.structures = kept
+	// The elements still open are copied out, as the slice of them would keep
+	// the page's whole array until Complete: 27% of the heap of a tagged
+	// BigTable of a million rows (review of 12 October 2026, W2)
+	page.structures = nil
+	if len(kept) > 0 {
+		page.structures = slices.Clone(kept)
+	}
 }
 
 func (pdf *PDF) addAnnotationObject(annot *annotationObject, index int) int {
@@ -2440,6 +2486,12 @@ func (pdf *PDF) complete() error {
 
 	infoObjNumber := pdf.addInfoObject()
 	rootObjNumber := pdf.addRootObject(structTreeRootObjNumber, outlineDictNum)
+	if pdf.isPDFA() && len(pdf.objOffsets) > maxPDFAObjects {
+		// The limit of PDF/A, which was not checked (review of 12 October
+		// 2026, W1)
+		pdf.fail("PDF/A limits a document to " + strconv.Itoa(maxPDFAObjects) + " objects, and this one has " +
+			strconv.Itoa(len(pdf.objOffsets)) + ".")
+	}
 	startxref := pdf.byteCount
 
 	// Create the xref table

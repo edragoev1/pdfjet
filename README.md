@@ -49,8 +49,9 @@ same output come in four languages, and none of them needs a single dependency.
 - **One API, four languages, the same PDF.** Java, C#, Go and Swift share the
   API, and CI compares the PDFs of every port with Java's, page by page.
 - **Fast and light.** Every port writes a 500-page document with an embedded
-  font in under 100 ms, and each page is written out and freed as soon as the
-  next one starts.
+  font in under 100 ms once it is warm (the first run, with the runtime
+  starting, takes up to about 200 ms), and each page is written out and freed
+  as soon as the next one starts.
 - **No dependencies.** The Java library is a single 0.39 MB jar.
 - **Layout built in.** Tables that break across pages and repeat their header
   rows, text blocks, columns, charts and calendars.
@@ -400,7 +401,9 @@ file, or with `setTableData(header, rows)` from an `Iterable` in Java, an
 `IEnumerable` in C#, a sequence in Swift or an `iter.Seq` in Go
 (`SetTableRows`). It goes through the rows twice, once to measure the columns
 and once to draw them, keeps none of them and writes each page when it is full,
-so its memory stays flat; Example_43 draws 2,546 pages that way.
+so its memory stays flat; Example_43 draws 2,546 pages that way. A tagged
+document, PDF/UA or PDF/A of level A, keeps a little of each row until
+`complete()`, for the structure tree it writes at the end.
 `setColumns(3, 0, 11)` draws the fourth, first and twelfth fields of every row
 and of the header, in that order, where `setNumberOfColumns(n)` draws the first
 n. `setShadingColor` and `setBorderColor` change the colors of every other row

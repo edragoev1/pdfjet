@@ -735,6 +735,12 @@ public class Page {
         if (str == null || str.Length == 0) {
             return;
         }
+        // A string of PDF/A is 32767 bytes at most, and a glyph two of them: a
+        // TextLine of 16384 characters failed veraPDF (review of 12 October
+        // 2026, W1)
+        if (pdf.IsPDFA() && CodePointCount(str) > MAX_PDFA_STRING_GLYPHS) {
+            pdf.Fail(new ArgumentException(PDFA_STRING_TOO_LONG));
+        }
         if (font.isCJK) {
             // A CJK font that is not embedded is drawn by the characters
             // themselves, through a UCS-2 CMap, with the glyphs of the
@@ -1638,6 +1644,23 @@ public class Page {
     // The message of a path whose last curve has no end.
     internal const String PATH_ENDS_ON_CONTROL_POINT =
             "A path cannot end on a control point: a curve needs a point to end at after its control points.";
+
+    // The most glyphs of a string of PDF/A, of two bytes each, and the message
+    // of a text of more.
+    internal const int MAX_PDFA_STRING_GLYPHS = 16383;
+    internal const String PDFA_STRING_TOO_LONG =
+            "A text of more than 16383 characters is a string longer than PDF/A allows, 32767 bytes: draw it as several lines.";
+
+    // Returns the number of characters of the text, a surrogate pair one.
+    private static int CodePointCount(String str) {
+        int count = 0;
+        for (int i = 0; i < str.Length; i++) {
+            if (!(Char.IsLowSurrogate(str[i]) && i > 0 && Char.IsHighSurrogate(str[i - 1]))) {
+                count++;
+            }
+        }
+        return count;
+    }
 
     // The message of a curve of the wrong control points.
     internal const String CURVE_CONTROL_POINTS =

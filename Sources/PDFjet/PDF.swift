@@ -341,6 +341,23 @@ public final class PDF {
     }
 
     /// Records the first misuse of the API, which complete() then throws.
+    // Records the misuse of an array of more than 8191 entries, or a
+    // dictionary of more than 4095, in a document of PDF/A-1, which limits them
+    // so: veraPDF refused 4,100 tagged pages, 8,200 pages and 4,100 images
+    // (review of 12 October 2026, W1).
+    func checkPDFA1Size(_ count: Int, _ limit: Int, _ what: String) {
+        if isPDFA1() && count > limit {
+            let kind = (limit == PDF.MAX_PDFA1_DICT_ENTRIES) ? "a dictionary" : "an array"
+            fail("PDF/A-1 limits \(kind) to \(limit) entries, and \(what) has \(count): make the document PDF/A-2 or PDF/A-3.")
+        }
+    }
+
+    // The most entries of an array and of a dictionary of PDF/A-1, and the
+    // most objects of a document of PDF/A.
+    static let MAX_PDFA1_ARRAY_ENTRIES = 8191
+    static let MAX_PDFA1_DICT_ENTRIES = 4095
+    static let MAX_PDFA_OBJECTS = 8388607
+
     func fail(_ message: String) {
         if error == nil {
             error = message
@@ -650,6 +667,11 @@ public final class PDF {
     private func addResourcesObject() -> Int {
         newObj()
         append(Token.beginDictionary)
+        checkPDFA1Size(fonts.count + importedFontNames.count, PDF.MAX_PDFA1_DICT_ENTRIES, "the /Font resources")
+        checkPDFA1Size(images.count + stamps.count + importedXObjectNames.count, PDF.MAX_PDFA1_DICT_ENTRIES,
+                "the /XObject resources")
+        checkPDFA1Size(states.count + importedExtGStateNames.count, PDF.MAX_PDFA1_DICT_ENTRIES,
+                "the /ExtGState resources")
         if fonts.count > 0 || importedFonts.count > 0 {
             append("/Font\n")
             append(Token.beginDictionary)
@@ -721,6 +743,7 @@ public final class PDF {
         append(Token.newObj)
         append(Token.beginDictionary)
         append("/Type /Pages\n")
+        checkPDFA1Size(pages.count, PDF.MAX_PDFA1_ARRAY_ENTRIES, "the page tree")
         append("/Kids [\n")
         for page in pages {
             append(page.objNumber)
@@ -807,6 +830,7 @@ public final class PDF {
         append("/P ")
         append(parent)
         append(" 0 R\n")
+        checkPDFA1Size(documentKids.count, PDF.MAX_PDFA1_ARRAY_ENTRIES, "the Document element")
         append("/K [\n")
         for number in self.documentKids {
             append(number)
@@ -880,6 +904,8 @@ public final class PDF {
             // than trapping, which is what the other ports do.
             append(element.pageObjNumber ?? 0)
             append(Token.objRef)
+            checkPDFA1Size(max(element.kids.count + 1, element.mcids.count), PDF.MAX_PDFA1_ARRAY_ENTRIES,
+                    "a \(element.structure!) element")
 
             if element.annotation != nil {
                 // A link: the marked content of its text, or the elements it
@@ -976,6 +1002,8 @@ public final class PDF {
         buffer.append(" 0 obj\n")
 
         buffer.append("<<\n")
+        let annotations = annotElements.filter { $0.annotation != nil }.count
+        checkPDFA1Size(2 * (pages.count + annotations), PDF.MAX_PDFA1_ARRAY_ENTRIES, "the parent tree")
         buffer.append("/Nums [\n")
         // The keys must be listed in increasing order, so the page entries -
         // whose keys are the /StructParents values 0 .. pages.count-1 - come
@@ -983,6 +1011,7 @@ public final class PDF {
         // indexed by the MCID they were marked with.
         for (i, page) in pages.enumerated() {
             buffer.append(String(i))
+            checkPDFA1Size(page.mcidNumbers.count, PDF.MAX_PDFA1_ARRAY_ENTRIES, "the marked content of a page")
             buffer.append(" [")
             for number in page.mcidNumbers {
                 buffer.append(" ")
@@ -1964,6 +1993,11 @@ public final class PDF {
 
         let infoObjNumber = addInfoObject()
         let rootObjNumber = addRootObject(structTreeRootObjNumber, outlineDictNum)
+        if isPDFA() && objOffset.count > PDF.MAX_PDFA_OBJECTS {
+            // The limit of PDF/A, which was not checked (review of 12 October
+            // 2026, W1)
+            fail("PDF/A limits a document to \(PDF.MAX_PDFA_OBJECTS) objects, and this one has \(objOffset.count).")
+        }
         let startxref = byteCount
 
         // Create the xref table

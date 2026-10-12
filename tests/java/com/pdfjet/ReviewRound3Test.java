@@ -605,4 +605,30 @@ class ReviewRound3Test {
         int j = added.indexOf("/Contents");
         assertEquals("[ 8 0 R ]", String.join(" ", added.subList(j + 1, j + 6)));
     }
+
+    /**
+     * A document of PDF/A-1 of more than 8191 pages, the most entries of an
+     * array of PDF/A-1, is refused, and a text of PDF/A of more than 16383
+     * characters, a string longer than 32767 bytes: veraPDF failed both (W1).
+     */
+    @Test
+    void theSizeLimitsOfPDFAAreChecked() throws Exception {
+        final PDF pdf = new PDF(new java.io.ByteArrayOutputStream(), Compliance.PDF_A_1B);
+        for (int i = 0; i < 8192; i++) {
+            new Page(pdf, Letter.PORTRAIT);
+        }
+        assertEquals("PDF/A-1 limits an array to 8191 entries, and the page tree has 8192: make the document PDF/A-2 or PDF/A-3.", assertThrows(IllegalStateException.class, () -> pdf.complete()).getMessage());
+
+        StringBuilder text = new StringBuilder();
+        for (int i = 0; i < 16383; i++) {
+            text.append('a');
+        }
+        PDF fits = new PDF(new java.io.ByteArrayOutputStream(), Compliance.PDF_A_2B);
+        new TextLine(TestSupport.plexSans(fits), text.toString()).setLocation(10f, 20f).drawOn(new Page(fits, Letter.PORTRAIT));
+        final PDF tooLong = new PDF(new java.io.ByteArrayOutputStream(), Compliance.PDF_A_2B);
+        final TextLine line = new TextLine(TestSupport.plexSans(tooLong), text.append('a').toString());
+        line.setLocation(10f, 20f);
+        final Page page = new Page(tooLong, Letter.PORTRAIT);
+        assertEquals("A text of more than 16383 characters is a string longer than PDF/A allows, 32767 bytes: draw it as several lines.", assertThrows(IllegalArgumentException.class, () -> line.drawOn(page)).getMessage());
+    }
 }

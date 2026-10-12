@@ -313,6 +313,24 @@ final public class PDF {
      *
      * @param e the exception that says what was wrong.
      */
+    // Records the misuse of an array of more than 8191 entries, or a
+    // dictionary of more than 4095, in a document of PDF/A-1, which limits them
+    // so: veraPDF refused 4,100 tagged pages, 8,200 pages and 4,100 images
+    // (review of 12 October 2026, W1).
+    void checkPDFA1Size(int count, int limit, String what) {
+        if (isPDFA1() && count > limit) {
+            String kind = (limit == MAX_PDFA1_DICT_ENTRIES) ? "a dictionary" : "an array";
+            fail(new IllegalStateException("PDF/A-1 limits " + kind + " to " + limit + " entries, and " + what
+                    + " has " + count + ": make the document PDF/A-2 or PDF/A-3."));
+        }
+    }
+
+    // The most entries of an array and of a dictionary of PDF/A-1, and the
+    // most objects of a document of PDF/A.
+    static final int MAX_PDFA1_ARRAY_ENTRIES = 8191;
+    static final int MAX_PDFA1_DICT_ENTRIES = 4095;
+    static final int MAX_PDFA_OBJECTS = 8388607;
+
     void fail(RuntimeException e) {
         if (error == null) {
             error = e.getMessage();
@@ -668,6 +686,11 @@ final public class PDF {
     private int addResourcesObject() throws Exception {
         newObj();
         append(Token.BEGIN_DICTIONARY);
+        checkPDFA1Size(fonts.size() + importedFontNames.size(), MAX_PDFA1_DICT_ENTRIES, "the /Font resources");
+        checkPDFA1Size(images.size() + stamps.size() + importedXObjectNames.size(), MAX_PDFA1_DICT_ENTRIES,
+                "the /XObject resources");
+        checkPDFA1Size(states.size() + importedExtGStateNames.size(), MAX_PDFA1_DICT_ENTRIES,
+                "the /ExtGState resources");
         if (fonts.size() > 0 || importedFonts.size() > 0) {
             append("/Font\n");
             append(Token.BEGIN_DICTIONARY);
@@ -739,6 +762,7 @@ final public class PDF {
         append(Token.NEW_OBJ);
         append(Token.BEGIN_DICTIONARY);
         append("/Type /Pages\n");
+        checkPDFA1Size(pages.size(), MAX_PDFA1_ARRAY_ENTRIES, "the page tree");
         append("/Kids [\n");
         for (Page page : pages) {
             append(page.objNumber);
@@ -830,6 +854,7 @@ final public class PDF {
         append("/P ");
         append(parent);
         append(" 0 R\n");
+        checkPDFA1Size(documentKids.size(), MAX_PDFA1_ARRAY_ENTRIES, "the Document element");
         append("/K [\n");
         for (Integer number : this.documentKids) {
             append(number.intValue());
@@ -908,6 +933,8 @@ final public class PDF {
             append(" 0 R /Pg ");
             append(element.pageObjNumber);
             append(Token.OBJ_REF);
+            checkPDFA1Size(Math.max(element.kids.size() + 1, element.mcids.size()), MAX_PDFA1_ARRAY_ENTRIES,
+                    "a " + element.structure + " element");
 
             if (element.annotation != null) {
                 // A link: the marked content of its text, or the elements it
@@ -1008,6 +1035,13 @@ final public class PDF {
         append(parentTreeNumber);
         append(Token.NEW_OBJ);
         append(Token.BEGIN_DICTIONARY);
+        int annotations = 0;
+        for (StructElement element : annotElements) {
+            if (element.annotation != null) {
+                annotations++;
+            }
+        }
+        checkPDFA1Size(2 * (pages.size() + annotations), MAX_PDFA1_ARRAY_ENTRIES, "the parent tree");
         append("/Nums [\n");
         // The keys must be listed in increasing order, so the page entries -
         // whose keys are the /StructParents values 0 .. pages.size()-1 - come
@@ -1015,6 +1049,7 @@ final public class PDF {
         // indexed by the MCID they were marked with.
         for (int i = 0; i < pages.size(); i++) {
             append(i);
+            checkPDFA1Size(pages.get(i).mcidNumbers.size(), MAX_PDFA1_ARRAY_ENTRIES, "the marked content of a page");
             append(" [");
             for (Integer number : pages.get(i).mcidNumbers) {
                 append(Token.SPACE);
@@ -2517,6 +2552,12 @@ final public class PDF {
 
         int infoObjNumber = addInfoObject();
         int rootObjNumber = addRootObject(structTreeRootObjNumber, outlineDictNum);
+        if (isPDFA() && objOffset.size() > MAX_PDFA_OBJECTS) {
+            // The limit of PDF/A, which was not checked (review of 12 October
+            // 2026, W1)
+            fail(new IllegalStateException("PDF/A limits a document to " + MAX_PDFA_OBJECTS
+                    + " objects, and this one has " + objOffset.size() + "."));
+        }
         long startxref = byteCount;
 
         // Create the xref table

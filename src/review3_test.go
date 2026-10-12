@@ -21,6 +21,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/capstyle"
 	"github.com/edragoev1/pdfjet/v9/src/cjkfont"
 	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/corefont"
 	"github.com/edragoev1/pdfjet/v9/src/internal/decompressor"
 	"github.com/edragoev1/pdfjet/v9/src/joinstyle"
@@ -796,5 +797,29 @@ func TestReview3DrawingOnAPageOfAPDFThatWasRead(t *testing.T) {
 	added := pages[1].dict
 	if i := slices.Index(added, "/Contents"); i == -1 || strings.Join(added[i+1:i+6], " ") != "[ 8 0 R ]" {
 		t.Errorf("the contents of the second page: %v", added)
+	}
+}
+
+// A document of PDF/A-1 of more than 8191 pages, the most entries of an array
+// of PDF/A-1, is refused, and a text of PDF/A of more than 16383 characters,
+// a string longer than 32767 bytes: veraPDF failed both (W1).
+func TestReview3TheSizeLimitsOfPDFAAreChecked(t *testing.T) {
+	pdf := testNewPDF().SetCompliance(compliance.PDF_A_1B)
+	for range 8192 {
+		NewPage(pdf, testLetterPortrait())
+	}
+	testCompleteFails(t, pdf, "PDF/A-1 limits an array to 8191 entries, and the page tree has 8192: "+
+		"make the document PDF/A-2 or PDF/A-3.")
+
+	for _, characters := range []int{16383, 16384} {
+		pdf := testNewPDF().SetCompliance(compliance.PDF_A_2B)
+		font := testPlexSans(pdf)
+		page := NewPage(pdf, testLetterPortrait())
+		NewTextLine(font, strings.Repeat("a", characters)).SetLocation(10, 20).DrawOn(page)
+		if characters == 16383 && pdf.err != nil {
+			t.Error(pdf.err)
+		} else if characters == 16384 {
+			testRecorded(t, pdf, pdfaStringTooLong)
+		}
 	}
 }
