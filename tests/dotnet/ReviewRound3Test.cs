@@ -581,5 +581,19 @@ public class ReviewRound3Test {
             Assert.Equal(792f, size.GetHeight());
         }
     }
+
+    // A cell's vertical alignment that is not top, center or bottom gives the
+    // same message in the four ports: Java and C# threw a bare "Invalid
+    // vertical text alignment option."
+    [Fact]
+    public void ACellsVerticalAlignmentOfLeftHasTheMessageOfTheFourPorts() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Table table = new Table();
+        table.SetTableData(new List<List<Cell>> {new List<Cell> {new Cell(font, "text").SetVerticalAlignment(Alignment.LEFT)}}, 0);
+        table.SetLocation(50f, 50f);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Assert.Equal("The vertical alignment of a cell is top, center or bottom.", Assert.Throws<ArgumentException>(() => table.DrawOn(page)).Message);
+    }
 }
 }

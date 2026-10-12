@@ -177,9 +177,8 @@ func TestMarkupLongInputsAreReadInLinearTime(t *testing.T) {
 		text.WriteString(" [[")
 	}
 	markup, _ := testMarkup(testNewPDF())
-	start := time.Now()
-	paragraph := markup.Paragraph(text.String())
-	elapsed := time.Since(start)
+	var paragraph *Paragraph
+	elapsed := testShortest(2*time.Second, func() { paragraph = markup.Paragraph(text.String()) })
 	if len(paragraph.lines) == 0 {
 		t.Error("no text lines")
 	}

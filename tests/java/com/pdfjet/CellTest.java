@@ -24,12 +24,14 @@ class CellTest {
     private static final class Box implements Drawable {
         float x;
         float y;
+        float[] drawn;  // Where it was drawn last
         int draws;
 
         @Override
         public float[] drawOn(Page page) {
             if (page != null) {
                 draws++;
+                drawn = new float[] {x, y};
             }
             return new float[] {x + 30f, y + 20f};
         }
@@ -64,15 +66,19 @@ class CellTest {
     void anyDrawableIsMeasuredAndAlignedInTheCell() throws Exception {
         PDF pdf = TestSupport.newPDF();
         Box box = new Box();
+        box.setLocation(7f, 8f);
         Cell cell = new Cell(TestSupport.helvetica(pdf)).setDrawable(box);
         assertEquals(24f, cell.getHeight(100f), TestSupport.DELTA);   // 20 and the paddings of 2
         Page page = new Page(pdf, Letter.PORTRAIT);
         cell.drawOn(page, 10f, 50f, 100f, 24f);
-        TestSupport.assertXY(12f, 52f, new float[] {box.x, box.y});
+        TestSupport.assertXY(12f, 52f, box.drawn);
         cell.setTextAlignment(Alignment.CENTER).drawOn(page, 10f, 50f, 100f, 24f);
-        TestSupport.assertXY(45f, 52f, new float[] {box.x, box.y});
+        TestSupport.assertXY(45f, 52f, box.drawn);
         cell.setTextAlignment(Alignment.RIGHT).drawOn(page, 10f, 50f, 100f, 24f);
-        TestSupport.assertXY(78f, 52f, new float[] {box.x, box.y});
+        TestSupport.assertXY(78f, 52f, box.drawn);
+        // Drawn, the caller's drawable is where the caller put it (review of
+        // 12 October 2026, R22)
+        TestSupport.assertXY(7f, 8f, new float[] {box.x, box.y});
         assertEquals(3, box.draws);
     }
 
@@ -253,5 +259,25 @@ class CellTest {
         assertSame(courier, cell.getFallbackFont());
         cell.setFallbackFont(helvetica).setFont(new Font(pdf, CoreFont.TIMES_ROMAN));
         assertSame(helvetica, cell.getFallbackFont());
+    }
+
+    // An image or a barcode in a table cell is where the caller put it after
+    // the table is drawn, as a text block is: one at 7, 8 was left at 202,
+    // 319.9 (review of 12 October 2026, R22).
+    @Test
+    void aDrawableOfACellStaysWhereTheCallerPutIt() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        Image image = new Image(pdf, TestSupport.open("PngSuite/BASN2C08.PNG"));
+        image.setLocation(7f, 8f);
+        Barcode barcode = new Barcode(Barcode.CODE_128, "12345");
+        barcode.setLocation(7f, 8f);
+        float[][] before = {image.drawOn(null), barcode.drawOn(null)};
+        Table table = new Table();
+        table.setTableData(Arrays.asList(Arrays.asList(new Cell(font).setImage(image), new Cell(font).setBarcode(barcode))), 0);
+        table.setLocation(200f, 300f);
+        table.drawOn(new Page(pdf, Letter.PORTRAIT));
+        TestSupport.assertXY(before[0][0], before[0][1], image.drawOn(null));
+        TestSupport.assertXY(before[1][0], before[1][1], barcode.drawOn(null));
     }
 }

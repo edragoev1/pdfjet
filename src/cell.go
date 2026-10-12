@@ -670,14 +670,30 @@ func (cell *Cell) SetURIAction(uri string) *Cell {
 }
 
 // measureDrawable returns the width and the height of the drawable: its corner
-// when it is placed at 0, 0 and measured without a page. A text block is put
-// back where the caller had it (review of 12 October 2026, R22).
+// when it is placed at 0, 0 and measured without a page. It is put back where
+// the caller had it (review of 12 October 2026, R22).
 func measureDrawable(drawable Drawable) [2]float32 {
 	if textBlock, ok := drawable.(*TextBlock); ok {
 		defer func(x, y float32) { textBlock.x, textBlock.y = x, y }(textBlock.x, textBlock.y)
+	} else {
+		defer keepLocation(drawable)()
 	}
 	drawable.SetLocation(0, 0)
 	return drawable.DrawOn(nil)
+}
+
+// keepLocation returns what puts the drawable back where it is now: its
+// corner, measured where it is, less its size, measured at 0, 0. A drawable
+// has no location to read, and the image or barcode of a cell was left where
+// the table drew it, 7, 8 moved to 202, 319.9 (review of 12 October 2026,
+// R22).
+func keepLocation(drawable Drawable) func() {
+	corner := drawable.DrawOn(nil)
+	drawable.SetLocation(0, 0)
+	size := drawable.DrawOn(nil)
+	x, y := corner[0]-size[0], corner[1]-size[1]
+	drawable.SetLocation(x, y)
+	return func() { drawable.SetLocation(x, y) }
 }
 
 // drawOn draws the point, text and borders of this cell.
@@ -697,6 +713,7 @@ func (cell *Cell) drawOn(page *Page, x, y, w, h float32) {
 		textBlock.SetWidth(w - (cell.paddingAt(cellLeftPadding) + cell.paddingAt(cellRightPadding)))
 		textBlock.DrawOn(page)
 	} else if cell.drawable != nil {
+		defer keepLocation(cell.drawable)()
 		if cell.alignmentAt(cellTextAlignment) == alignment.Right {
 			drawableWidth := measureDrawable(cell.drawable)[0]
 			cell.drawable.SetLocation((x+w)-(drawableWidth+cell.paddingAt(cellRightPadding)), y+cell.paddingAt(cellTopPadding))
@@ -816,6 +833,10 @@ func (cell *Cell) drawBorders(page *Page, x, y, cellW, cellH float32) {
 }
 
 // drawText draws the cell text, or the composite text line, and its link.
+// cellValignMessage is the message of a vertical alignment that is not one,
+// the same in the four ports.
+const cellValignMessage = "The vertical alignment of a cell is top, center or bottom."
+
 func (cell *Cell) drawText(page *Page, x, y, cellW, cellH float32) {
 	ascent := cell.ascent()
 	var yText float32
@@ -829,8 +850,8 @@ func (cell *Cell) drawText(page *Page, x, y, cellW, cellH float32) {
 	default:
 		// alignment.Left, the zero value, panicked (review of 12 October
 		// 2026, F18)
-		page.pdf.fail("The vertical alignment of a cell is alignment.Top, alignment.Center or alignment.Bottom.")
-		yText = y + ascent + cell.paddingAt(cellTopPadding)
+		page.pdf.fail(cellValignMessage)
+		return
 	}
 
 	var xText float32

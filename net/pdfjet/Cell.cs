@@ -707,6 +707,7 @@ public class Cell {
             textBlock.x = textX;
             textBlock.y = textY;
         } else if (drawable != null) {
+            float[] location = LocationOf(drawable);
             if (GetTextAlignment() == Alignment.RIGHT) {
                 float drawableWidth = Measure(drawable)[0];
                 drawable.SetLocation((x + w) - (drawableWidth + PaddingAt(RIGHT_PADDING)), y + PaddingAt(TOP_PADDING));
@@ -716,7 +717,11 @@ public class Cell {
             } else {
                 drawable.SetLocation(x + PaddingAt(LEFT_PADDING), y + PaddingAt(TOP_PADDING));
             }
-            drawable.DrawOn(page);
+            try {
+                drawable.DrawOn(page);
+            } finally {
+                drawable.SetLocation(location[0], location[1]);
+            }
         }
 
         DrawBorders(page, x, y, w, h);
@@ -812,8 +817,25 @@ public class Cell {
             textBlock.y = textY;
             return size;
         }
+        float[] location = LocationOf(drawable);
         drawable.SetLocation(0f, 0f);
-        return drawable.DrawOn(null);
+        float[] measured = drawable.DrawOn(null);
+        drawable.SetLocation(location[0], location[1]);
+        return measured;
+    }
+
+    // Returns where the drawable is now: its corner, measured where it is,
+    // less its size, measured at 0, 0, where it is put back. A drawable has
+    // no location to read, and the image or barcode of a cell was left where
+    // the table drew it, 7, 8 moved to 202, 319.9 (review of 12 October
+    // 2026, R22).
+    internal static float[] LocationOf(IDrawable drawable) {
+        float[] corner = drawable.DrawOn(null);
+        drawable.SetLocation(0f, 0f);
+        float[] size = drawable.DrawOn(null);
+        float[] location = {corner[0] - size[0], corner[1] - size[1]};
+        drawable.SetLocation(location[0], location[1]);
+        return location;
     }
 
     internal void DrawBackground(
@@ -880,7 +902,9 @@ public class Cell {
         } else if (AlignmentAt(VALIGN) == Alignment.BOTTOM) {
             yText = (y + cellH) - PaddingAt(BOTTOM_PADDING);
         } else {
-            throw new Exception("Invalid vertical text alignment option.");
+            // The same message in the four ports (review of 12 October 2026)
+            page.pdf.Fail(new ArgumentException("The vertical alignment of a cell is top, center or bottom."));
+            return;
         }
 
         float xText;

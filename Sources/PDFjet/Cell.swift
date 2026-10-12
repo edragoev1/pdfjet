@@ -792,6 +792,8 @@ public class Cell {
             textBlock.setWidth(w - (paddingAt(Cell.leftPaddingShift) + paddingAt(Cell.rightPaddingShift)))
             textBlock.drawOn(page)
         } else if let drawable = drawable {
+            let location = Cell.locationOf(drawable)
+            defer { drawable.setLocation(location[0], location[1]) }
             if getTextAlignment() == Alignment.RIGHT {
                 let drawableWidth = Cell.measure(drawable)[0]
                 drawable.setLocation((x + w) - (drawableWidth + paddingAt(Cell.rightPaddingShift)), y + paddingAt(Cell.topPaddingShift))
@@ -945,7 +947,7 @@ public class Cell {
         } else {
             // Recorded for complete() to throw, where it ended the program
             // (review of 11 October 2026, #16)
-            page.pdf.fail("Invalid vertical text alignment option.")
+            page.pdf.fail("The vertical alignment of a cell is top, center or bottom.")
             return
         }
 
@@ -1057,8 +1059,24 @@ public class Cell {
             textBlock.setLocation(0.0, 0.0)
             return textBlock.drawOn(nil)
         }
+        let location = locationOf(drawable)
+        defer { drawable.setLocation(location[0], location[1]) }
         drawable.setLocation(0.0, 0.0)
         return drawable.drawOn(nil)
+    }
+
+    // Returns where the drawable is now: its corner, measured where it is,
+    // less its size, measured at 0, 0, where it is put back. A drawable has
+    // no location to read, and the image or barcode of a cell was left where
+    // the table drew it, 7, 8 moved to 202, 319.9 (review of 12 October
+    // 2026, R22).
+    static func locationOf(_ drawable: Drawable) -> [Float] {
+        let corner = drawable.drawOn(nil)
+        drawable.setLocation(0, 0)
+        let size = drawable.drawOn(nil)
+        let location = [corner[0] - size[0], corner[1] - size[1]]
+        drawable.setLocation(location[0], location[1])
+        return location
     }
 
     // How far above the baseline the cell draws: the ascent of its font, and

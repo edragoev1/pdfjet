@@ -320,6 +320,12 @@ This is the first entry in this file; earlier releases were not tracked here.
   type-checking an expression of CRC32. CI builds with 6.2 too.
 - C#: a number past the range of a double, as a /Width of 1e400, is an
   infinity on .NET Framework 4.8 as on .NET 8; it threw there.
+- Drawing a Table leaves any drawable of a cell, an Image, a barcode or one
+  of the caller's, where the caller put it, in the four ports, as it left
+  a TextBlock: an image at 7, 8 was left at 202, 319.9.
+- A cell's vertical alignment that is not top, center or bottom fails the
+  document with the same message in the four ports; Java and C# threw a
+  bare "Invalid vertical text alignment option."
 
 ## v9.0.5 — 2026-10-12, internal
 

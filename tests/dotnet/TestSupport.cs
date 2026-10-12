@@ -202,5 +202,19 @@ public static class TestSupport {
             Directory.Delete(Path, true);
         }
     }
+
+    // Returns the milliseconds the work takes, the shortest of up to three
+    // runs: a run over the limit is run again, as a machine under load can make
+    // a linear run slow once, where a quadratic one is slow every time (review
+    // of 12 October 2026, C6).
+    public static long ShortestMillis(long limit, Action work) {
+        long shortest = long.MaxValue;
+        for (int run = 0; run < 3 && shortest >= limit; run++) {
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            work();
+            shortest = Math.Min(shortest, watch.ElapsedMilliseconds);
+        }
+        return shortest;
+    }
 }
 }

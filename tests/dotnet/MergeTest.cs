@@ -413,8 +413,20 @@ public class MergeTest {
         // to: 1,000 pages under a node of 20,000 fonts took 2.9 GB, and Merge
         // wrote 189 MB (review of 11 October 2026, #34).
         byte[] source = InheritedResources(1000, 20000);
+        // Reading, the pages and the merge are timed on objects read again for
+        // each run, as GetPageObjects changes the objects it reads
+        byte[] merged = null;
+        long milliseconds = TestSupport.ShortestMillis(5000, () => {
+            List<PDFobj> read = TestSupport.Read(source);
+            new PDF().GetPageObjects(read);
+            MemoryStream stream = new MemoryStream();
+            PDF pdf = new PDF(stream);
+            pdf.Merge(read);
+            pdf.Complete();
+            merged = stream.ToArray();
+        });
+        Assert.True(milliseconds <= 5000, "reading, pages and merge took " + milliseconds + " ms");
         List<PDFobj> objects = TestSupport.Read(source);
-        System.Diagnostics.Stopwatch watch = System.Diagnostics.Stopwatch.StartNew();
         List<PDFobj> pages = new PDF().GetPageObjects(objects);
         Assert.Equal(1000, pages.Count);
         List<string> first = pages[0].inheritedResources;
@@ -424,13 +436,6 @@ public class MergeTest {
         PDFobj resources = pages[0].GetResourcesObject(objects);
         Assert.True(resources != null && resources.GetDict().Contains("/F20000"),
                 "the resources of a page are not read");
-        MemoryStream stream = new MemoryStream();
-        PDF pdf = new PDF(stream);
-        pdf.Merge(objects);
-        pdf.Complete();
-        byte[] merged = stream.ToArray();
-        watch.Stop();
-        Assert.True(watch.Elapsed.TotalSeconds <= 5, "pages and merge took " + watch.Elapsed);
         Assert.True(merged.Length <= 2 * source.Length,
                 "the merged PDF is " + merged.Length + " bytes, of a source of " + source.Length);
         List<PDFobj> mergedObjects = TestSupport.Read(merged);

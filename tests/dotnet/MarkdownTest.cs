@@ -204,10 +204,10 @@ public class MarkdownTest {
         for (int i = 0; i < 200000; i++) {
             line.Append((char) ('a' + i % 26));
         }
-        System.Diagnostics.Stopwatch watch = System.Diagnostics.Stopwatch.StartNew();
-        Drawn drawn = Draw("```\n" + line + "\n```", null);
+        Drawn drawn = null;
+        long milliseconds = TestSupport.ShortestMillis(5000, () => drawn = Draw("```\n" + line + "\n```", null));
         Assert.True(drawn.pages.Count > 1);
-        Assert.True(watch.ElapsedMilliseconds < 5000, watch.ElapsedMilliseconds + " ms");
+        Assert.True(milliseconds < 5000, milliseconds + " ms");
     }
 
     [Fact]

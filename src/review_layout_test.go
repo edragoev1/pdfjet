@@ -52,11 +52,13 @@ func TestReviewLayoutTextFrameBreaksALongWordInLinearTime(t *testing.T) {
 	// into: 100,000 characters took 75 seconds.
 	pdf := testNewPDF()
 	font := testHelvetica(pdf)
-	frame := NewTextFrame(font, []string{strings.Repeat("a", 200000)})
-	frame.SetLocation(50, 50).(*TextFrame).SetWidth(400)
-	start := time.Now()
-	frame.DrawOn(NewPageDetached(pdf, letter.Portrait()))
-	if took := time.Since(start); took > 3*time.Second {
+	var frame *TextFrame
+	took := testShortest(3*time.Second, func() {
+		frame = NewTextFrame(font, []string{strings.Repeat("a", 200000)})
+		frame.SetLocation(50, 50).(*TextFrame).SetWidth(400)
+		frame.DrawOn(NewPageDetached(pdf, letter.Portrait()))
+	})
+	if took > 3*time.Second {
 		t.Errorf("took %v", took)
 	}
 	if frame.HasMoreText() {
@@ -100,10 +102,12 @@ func TestReviewLayoutMarkdownQuotesNestedDeeplyKeepTheTextWide(t *testing.T) {
 	// character on each row.
 	pdf := testNewPDF()
 	font := testHelvetica(pdf)
-	pages := []*Page{}
-	start := time.Now()
-	NewMarkdown(font, font, font, font, font).DrawOnPages(pdf, strings.Repeat(">", 20000), &pages, letter.Portrait())
-	if took := time.Since(start); took > 3*time.Second {
+	var pages []*Page
+	took := testShortest(3*time.Second, func() {
+		pages = []*Page{}
+		NewMarkdown(font, font, font, font, font).DrawOnPages(pdf, strings.Repeat(">", 20000), &pages, letter.Portrait())
+	})
+	if took > 3*time.Second {
 		t.Errorf("took %v", took)
 	}
 	if len(pages) > 40 {
@@ -117,18 +121,20 @@ func TestReviewLayoutARunningSumIsAddedUpInLinearTime(t *testing.T) {
 	pdf := testNewPDF()
 	font := testHelvetica(pdf)
 	rows := 40000
-	data := testRows(font, rows, 2)
-	for r := 1; r < rows; r++ {
-		data[r][1].SetText("1,234.50")
-	}
-	table := NewTable().SetTableData(data, 1)
-	table.SetNumberOfFooterRows(1)
-	table.SetRunningSum(rows-1, 1, 2)
-	table.SetLocation(20, 20)
-	pages := []*Page{}
-	start := time.Now()
-	table.DrawOnPages(pdf, &pages, letter.Portrait())
-	if took := time.Since(start); took > 5*time.Second {
+	var pages []*Page
+	took := testShortest(5*time.Second, func() {
+		data := testRows(font, rows, 2)
+		for r := 1; r < rows; r++ {
+			data[r][1].SetText("1,234.50")
+		}
+		table := NewTable().SetTableData(data, 1)
+		table.SetNumberOfFooterRows(1)
+		table.SetRunningSum(rows-1, 1, 2)
+		table.SetLocation(20, 20)
+		pages = []*Page{}
+		table.DrawOnPages(pdf, &pages, letter.Portrait())
+	})
+	if took > 5*time.Second {
 		t.Errorf("took %v", took)
 	}
 	// The footer row is the last row, which has no number of its own.
@@ -370,9 +376,9 @@ func TestReviewLayoutARecordOfManyLinesIsReadInLinearTime(t *testing.T) {
 		text.WriteString("\n" + strings.Repeat("x", 1000) + `","`)
 	}
 	text.WriteString("\nend\"")
-	start := time.Now()
-	fields := testFirstRecord(text.String())
-	if took := time.Since(start); took > 3*time.Second {
+	var fields []string
+	took := testShortest(3*time.Second, func() { fields = testFirstRecord(text.String()) })
+	if took > 3*time.Second {
 		t.Errorf("took %v", took)
 	}
 	testWant(t, "5001 fields", fmt.Sprintf("%d fields", len(fields)))

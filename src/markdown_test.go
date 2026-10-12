@@ -269,9 +269,8 @@ func TestMarkdownLongCodeLinesAreCutInLinearTime(t *testing.T) {
 	for i := 0; i < 200000; i++ {
 		line.WriteByte(byte('a' + i%26))
 	}
-	start := time.Now()
-	drawn := testDrawMarkdown("```\n"+line.String()+"\n```", "")
-	elapsed := time.Since(start)
+	var drawn *testMarkdownDrawn
+	elapsed := testShortest(5*time.Second, func() { drawn = testDrawMarkdown("```\n"+line.String()+"\n```", "") })
 	if len(drawn.pages) <= 1 {
 		t.Errorf("%d pages", len(drawn.pages))
 	}

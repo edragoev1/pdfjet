@@ -650,4 +650,20 @@ class ReviewRound3Test {
             assertEquals(792f, size.getHeight(), 0f, Arrays.toString(box));
         }
     }
+
+    /**
+     * A cell's vertical alignment that is not top, center or bottom gives the
+     * same message in the four ports: Java and C# threw a bare "Invalid
+     * vertical text alignment option."
+     */
+    @Test
+    void aCellsVerticalAlignmentOfLeftHasTheMessageOfTheFourPorts() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        final Table table = new Table();
+        table.setTableData(Arrays.asList(Arrays.asList(new Cell(font, "text").setVerticalAlignment(Alignment.LEFT))), 0);
+        table.setLocation(50f, 50f);
+        final Page page = new Page(pdf, Letter.PORTRAIT);
+        assertEquals("The vertical alignment of a cell is top, center or bottom.", assertThrows(IllegalArgumentException.class, () -> table.drawOn(page)).getMessage());
+    }
 }

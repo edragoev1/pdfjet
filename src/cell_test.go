@@ -145,15 +145,17 @@ func TestCellSetFontChangesTheFallbackFontUnlessAnotherWasSet(t *testing.T) {
 }
 
 // testBox is a drawable that is 30 wide and 20 high, and remembers where it
-// was placed and how many times it was drawn.
+// was drawn and how many times.
 type testBox struct {
 	x, y  float32
+	drawn [2]float32 // Where it was drawn last
 	draws int
 }
 
 func (box *testBox) DrawOn(page *Page) [2]float32 {
 	if page != nil {
 		box.draws++
+		box.drawn = [2]float32{box.x, box.y}
 	}
 	return [2]float32{box.x + 30, box.y + 20}
 }
@@ -187,16 +189,19 @@ func TestCellTheLastContentSetterWins(t *testing.T) {
 
 func TestCellAnyDrawableIsMeasuredAndAlignedInTheCell(t *testing.T) {
 	pdf := testNewPDF()
-	box := &testBox{}
+	box := &testBox{x: 7, y: 8}
 	cell := NewEmptyCell(testHelvetica(pdf)).SetDrawable(box)
 	testNear(t, "height", 24, cell.GetHeight(100), testDelta) // 20 and the paddings of 2
 	page := NewPage(pdf, letter.Portrait())
 	cell.drawOn(page, 10, 50, 100, 24)
-	testAssertXY(t, 12, 52, [2]float32{box.x, box.y})
+	testAssertXY(t, 12, 52, box.drawn)
 	cell.SetTextAlignment(alignment.Center).drawOn(page, 10, 50, 100, 24)
-	testAssertXY(t, 45, 52, [2]float32{box.x, box.y})
+	testAssertXY(t, 45, 52, box.drawn)
 	cell.SetTextAlignment(alignment.Right).drawOn(page, 10, 50, 100, 24)
-	testAssertXY(t, 78, 52, [2]float32{box.x, box.y})
+	testAssertXY(t, 78, 52, box.drawn)
+	// Drawn, the caller's drawable is where the caller put it (review of
+	// 12 October 2026, R22)
+	testAssertXY(t, 7, 8, [2]float32{box.x, box.y})
 	if box.draws != 3 {
 		t.Errorf("draws %d", box.draws)
 	}

@@ -16,6 +16,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 	"unicode/utf16"
 
 	"github.com/edragoev1/pdfjet/v9/src/corefont"
@@ -230,4 +231,12 @@ func testPanic(fn func()) (message string, panicked bool) {
 
 func testLetterPortrait() pagesize.PageSize {
 	return letter.Portrait()
+}
+
+// testShortest returns the time the work takes, the shortest of up to three
+// runs: a run over the limit is run again, as a machine under load can make a
+// linear run slow once, where a quadratic one is slow every time (review of
+// 12 October 2026, C6).
+func testShortest(limit time.Duration, work func()) time.Duration {
+	return fuzzShortest(limit, work)
 }

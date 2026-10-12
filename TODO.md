@@ -114,8 +114,8 @@ commit and date. The layout's format version (1) and the look's rules
   inputs reach, the fuzz targets are timed against the input's length and
   run a slow input again before they fail, the Go tests run under the race
   detector too, and tests/crossport compares random shapes across the four
-  ports in CI. The Java and Swift tests of a time run a slow piece of work
-  again before they fail; the C# and Go ones still fail on one slow run.
+  ports in CI. The tests of a time, in the four ports, run a slow piece of
+  work again before they fail.
   Left: net48 is built and not tested, so its `CharUnicodeInfo` polyfill,
   Unicode 8.0 data that Bidi, TextBlock and Page use, is not run. The
   review ran it under Mono (K3): a character newer than Unicode 8, as the
@@ -123,7 +123,8 @@ commit and date. The layout's format version (1) and the look's rules
   a spacing glyph and not a mark moved by GPOS, though none of the examples
   has one. The polyfill could take the categories of the characters of
   Unicode 9 to 15 from a table of its own, as Go's and .NET 8's are.
-- **Swift's Flate compresses less** (third review, K6): Swift's PDFs are
+- **For 9.1.1: Swift's Flate compresses less** (third review, K6; the
+  owner, 12 October 2026): Swift's PDFs are
   about 9% larger than Go's, the same content after inflating, from its own
   Deflate encoder. Its matches could be searched as zlib's level 6 does.
 - **For 9.1.1: PDF/A and tagged documents at scale (third review, W1, W2,

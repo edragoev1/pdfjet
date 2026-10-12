@@ -142,9 +142,8 @@ public class MarkupTest {
         for (int i = 0; i < 20000; i++) {
             text.Append("[a](b *c `").Append(i % 50 == 0 ? "``" : "").Append(" [[");
         }
-        Stopwatch watch = Stopwatch.StartNew();
-        Paragraph paragraph = NewMarkup().Paragraph(text.ToString());
-        long milliseconds = watch.ElapsedMilliseconds;
+        Paragraph paragraph = null;
+        long milliseconds = TestSupport.ShortestMillis(2000, () => paragraph = NewMarkup().Paragraph(text.ToString()));
         Assert.NotEmpty(paragraph.lines);
         Assert.True(milliseconds < 2000, milliseconds + " ms");
     }

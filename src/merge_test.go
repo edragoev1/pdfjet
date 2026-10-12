@@ -477,8 +477,22 @@ func testInheritedResources(pages, fonts int) []byte {
 // (review of 11 October 2026, #34).
 func TestMergeALargeInheritedResourcesIsWrittenOnce(t *testing.T) {
 	source := testInheritedResources(1000, 20000)
+	// Reading, the pages and the merge are timed on objects read again for
+	// each run, as GetPageObjects changes the objects it reads
+	var merged []byte
+	elapsed := testShortest(5*time.Second, func() {
+		read := testRead(t, source)
+		testNewPDF().GetPageObjects(read)
+		doc := testNewDoc()
+		if err := doc.pdf.Merge(read); err != nil {
+			t.Fatal(err)
+		}
+		merged = doc.complete()
+	})
+	if elapsed > 5*time.Second {
+		t.Errorf("reading, pages and merge took %v", elapsed)
+	}
 	objects := testRead(t, source)
-	start := time.Now()
 	pages := testNewPDF().GetPageObjects(objects)
 	if len(pages) != 1000 {
 		t.Fatalf("%d pages", len(pages))
@@ -490,14 +504,6 @@ func TestMergeALargeInheritedResourcesIsWrittenOnce(t *testing.T) {
 	resources := pages[0].GetResourcesObject(objects)
 	if resources == nil || !slices.Contains(resources.GetDict(), "/F20000") {
 		t.Error("the resources of a page are not read")
-	}
-	doc := testNewDoc()
-	if err := doc.pdf.Merge(objects); err != nil {
-		t.Fatal(err)
-	}
-	merged := doc.complete()
-	if elapsed := time.Since(start); elapsed > 5*time.Second {
-		t.Errorf("pages and merge took %v", elapsed)
 	}
 	if len(merged) > 2*len(source) {
 		t.Errorf("the merged PDF is %d bytes, of a source of %d", len(merged), len(source))

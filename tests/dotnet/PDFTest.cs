@@ -616,15 +616,20 @@ public class PDFTest {
             objects[i + 2] = "<< /Type /Page /Parent 2 0 R >>";
         }
         objects[1] = "<< /Type /Pages /MediaBox [0 0 595 842] /Kids [" + kids + "] /Count " + count + " >>";
-        List<PDFobj> read = TestSupport.Read(PdfWithObjects(objects));
-        System.Diagnostics.Stopwatch watch = System.Diagnostics.Stopwatch.StartNew();
-        List<PDFobj> pages = new PDF().GetPageObjects(read);
-        PDF pdf = new PDF(new MemoryStream());
-        pdf.Merge(read);
-        pdf.Complete();
+        byte[] bytes = PdfWithObjects(objects);
+        List<PDFobj> pages = null;
+        // Timed on objects read again for each run, as GetPageObjects changes
+        // the objects it reads
+        long milliseconds = TestSupport.ShortestMillis(5000, () => {
+            List<PDFobj> read = TestSupport.Read(bytes);
+            pages = new PDF().GetPageObjects(read);
+            PDF pdf = new PDF(new MemoryStream());
+            pdf.Merge(read);
+            pdf.Complete();
+        });
         Assert.Equal(count, pages.Count);
         Assert.Equal(842f, pages[count - 1].GetPageSize().GetHeight());
-        Assert.True(watch.ElapsedMilliseconds < 5000, "It took " + watch.ElapsedMilliseconds + " ms.");
+        Assert.True(milliseconds < 5000, "It took " + milliseconds + " ms.");
     }
 
     [Fact]

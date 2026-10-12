@@ -922,6 +922,7 @@ public class Cell {
             textBlock.x = textX;
             textBlock.y = textY;
         } else if (drawable != null) {
+            float[] location = locationOf(drawable);
             if (getTextAlignment() == Alignment.RIGHT) {
                 float drawableWidth = measure(drawable)[0];
                 drawable.setLocation((x + w) - (drawableWidth + paddingAt(RIGHT_PADDING)), y + paddingAt(TOP_PADDING));
@@ -931,7 +932,11 @@ public class Cell {
             } else {
                 drawable.setLocation(x + paddingAt(LEFT_PADDING), y + paddingAt(TOP_PADDING));
             }
-            drawable.drawOn(page);
+            try {
+                drawable.drawOn(page);
+            } finally {
+                drawable.setLocation(location[0], location[1]);
+            }
         }
 
         drawBorders(page, x, y, w, h);
@@ -1013,6 +1018,26 @@ public class Cell {
         page.addAnnotation(annotation);
     }
 
+    // Returns where the drawable is now: its corner, measured where it is,
+    // less its size, measured at 0, 0, where it is put back. A drawable has
+    // no location to read, and the image or barcode of a cell was left where
+    // the table drew it, 7, 8 moved to 202, 319.9 (review of 12 October
+    // 2026, R22).
+    static float[] locationOf(Drawable drawable) {
+        try {
+            float[] corner = drawable.drawOn(null);
+            drawable.setLocation(0f, 0f);
+            float[] size = drawable.drawOn(null);
+            float[] location = {corner[0] - size[0], corner[1] - size[1]};
+            drawable.setLocation(location[0], location[1]);
+            return location;
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
     // Returns the width and the height of the drawable: its corner when it is
     // placed at 0, 0 and measured without a page. Measuring writes nothing, so
     // an exception from it is not an input or output error. A text block is
@@ -1021,6 +1046,7 @@ public class Cell {
         TextBlock textBlock = (drawable instanceof TextBlock) ? (TextBlock) drawable : null;
         float textX = (textBlock != null) ? textBlock.x : 0f;
         float textY = (textBlock != null) ? textBlock.y : 0f;
+        float[] location = (textBlock == null) ? locationOf(drawable) : null;
         drawable.setLocation(0f, 0f);
         try {
             return drawable.drawOn(null);
@@ -1032,6 +1058,8 @@ public class Cell {
             if (textBlock != null) {
                 textBlock.x = textX;
                 textBlock.y = textY;
+            } else {
+                drawable.setLocation(location[0], location[1]);
             }
         }
     }
@@ -1100,7 +1128,9 @@ public class Cell {
         } else if (alignmentAt(VALIGN) == Alignment.BOTTOM) {
             yText = (y + cellH) - paddingAt(BOTTOM_PADDING);
         } else {
-            throw new Exception("Invalid vertical text alignment option.");
+            // The same message in the four ports (review of 12 October 2026)
+            page.pdf.fail(new IllegalArgumentException("The vertical alignment of a cell is top, center or bottom."));
+            return;
         }
 
         float xText;

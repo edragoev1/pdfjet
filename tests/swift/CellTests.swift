@@ -12,11 +12,13 @@ import Testing
 private final class Box: Drawable {
     var x: Float = 0
     var y: Float = 0
+    var drawn = [Float]()   // Where it was drawn last
     var draws = 0
 
     func drawOn(_ page: Page?) -> [Float] {
         if page != nil {
             draws += 1
+            drawn = [x, y]
         }
         return [x + 30, y + 20]
     }
@@ -47,15 +49,19 @@ private final class Box: Drawable {
     @Test func anyDrawableIsMeasuredAndAlignedInTheCell() {
         let pdf = TestSupport.newPDF()
         let box = Box()
+        _ = box.setLocation(7, 8)
         let cell = Cell(TestSupport.helvetica(pdf)).setDrawable(box)
         TestSupport.expectNear(24, cell.getHeight(100))     // 20 and the paddings of 2
         let page = Page(pdf, Letter.PORTRAIT)
         cell.drawOn(page, 10, 50, 100, 24)
-        TestSupport.expectXY(12, 52, [box.x, box.y])
+        TestSupport.expectXY(12, 52, box.drawn)
         cell.setTextAlignment(Alignment.CENTER).drawOn(page, 10, 50, 100, 24)
-        TestSupport.expectXY(45, 52, [box.x, box.y])
+        TestSupport.expectXY(45, 52, box.drawn)
         cell.setTextAlignment(Alignment.RIGHT).drawOn(page, 10, 50, 100, 24)
-        TestSupport.expectXY(78, 52, [box.x, box.y])
+        TestSupport.expectXY(78, 52, box.drawn)
+        // Drawn, the caller's drawable is where the caller put it (review of
+        // 12 October 2026, R22)
+        TestSupport.expectXY(7, 8, [box.x, box.y])
         #expect(box.draws == 3)
     }
 
@@ -226,7 +232,26 @@ private final class Box: Drawable {
             try memory.pdf.complete()
             Issue.record("complete() did not throw")
         } catch {
-            #expect(TestSupport.message(error).contains("Invalid vertical text alignment option."))
+            #expect(TestSupport.message(error).contains("The vertical alignment of a cell is top, center or bottom."))
         }
+    }
+
+    // An image or a barcode in a table cell is where the caller put it after
+    // the table is drawn, as a text block is: one at 7, 8 was left at 202,
+    // 319.9 (review of 12 October 2026, R22).
+    @Test func aDrawableOfACellStaysWhereTheCallerPutIt() throws {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let image = try Image(pdf, TestSupport.open("PngSuite/BASN2C08.PNG"))
+        _ = image.setLocation(7, 8)
+        let barcode = try Barcode(Barcode.CODE_128, "12345")
+        _ = barcode.setLocation(7, 8)
+        let before = [image.drawOn(nil), barcode.drawOn(nil)]
+        let table = Table()
+        _ = table.setTableData([[Cell(font).setImage(image), Cell(font).setBarcode(barcode)]], 0)
+        _ = table.setLocation(200, 300)
+        _ = table.drawOn(Page(pdf, Letter.PORTRAIT))
+        TestSupport.expectXY(before[0][0], before[0][1], image.drawOn(nil))
+        TestSupport.expectXY(before[1][0], before[1][1], barcode.drawOn(nil))
     }
 }

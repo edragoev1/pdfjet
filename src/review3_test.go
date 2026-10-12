@@ -757,7 +757,7 @@ func TestReview3AValueThatIsNotOneOfItsTypeIsRefused(t *testing.T) {
 	if message, panicked := testPanic(func() { table.DrawOn(page) }); panicked {
 		t.Fatal(message)
 	}
-	testRecorded(t, pdf, "The vertical alignment of a cell is alignment.Top, alignment.Center or alignment.Bottom.")
+	testRecorded(t, pdf, cellValignMessage)
 }
 
 // Drawing on a page of a PDF that was read: the page's own content is drawn
@@ -834,5 +834,25 @@ func TestReview3AMediaBoxOfANaNSizeIsLetter(t *testing.T) {
 		if size := obj.GetPageSize(); size.GetWidth() != 612 || size.GetHeight() != 792 {
 			t.Errorf("%v: %g by %g", box, size.GetWidth(), size.GetHeight())
 		}
+	}
+}
+
+// An image or a barcode in a table cell is where the caller put it after the
+// table is drawn, as a text block is: one at 7, 8 was left at 202, 319.9
+// (R22).
+func TestReview3ADrawableOfACellStaysWhereTheCallerPutIt(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	image := NewImageFromFile(pdf, testRepoPath(t, "PngSuite/BASN2C08.PNG"))
+	image.SetLocation(7, 8)
+	barcode := NewBarcode(CODE_128, "12345")
+	barcode.SetLocation(7, 8)
+	before := [][2]float32{image.DrawOn(nil), barcode.DrawOn(nil)}
+	table := NewTable()
+	table.SetTableData([][]*Cell{{NewEmptyCell(font).SetImage(image), NewEmptyCell(font).SetBarcode(barcode)}}, 0)
+	table.SetLocation(200, 300)
+	table.DrawOn(NewPage(pdf, testLetterPortrait()))
+	for i, after := range [][2]float32{image.DrawOn(nil), barcode.DrawOn(nil)} {
+		testAssertXY(t, before[i][0], before[i][1], after)
 	}
 }

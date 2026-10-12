@@ -14,11 +14,13 @@ public class CellTest {
     private sealed class Box : IDrawable {
         internal float x;
         internal float y;
+        internal float[] drawn;     // Where it was drawn last
         internal int draws;
 
         public float[] DrawOn(Page page) {
             if (page != null) {
                 draws++;
+                drawn = new float[] {x, y};
             }
             return new float[] {x + 30f, y + 20f};
         }
@@ -52,15 +54,19 @@ public class CellTest {
     public void AnyDrawableIsMeasuredAndAlignedInTheCell() {
         PDF pdf = TestSupport.NewPDF();
         Box box = new Box();
+        box.SetLocation(7f, 8f);
         Cell cell = new Cell(TestSupport.Helvetica(pdf)).SetDrawable(box);
         TestSupport.AssertNear(24f, cell.GetHeight(100f), TestSupport.DELTA, "height");  // 20 and the paddings of 2
         Page page = new Page(pdf, Letter.PORTRAIT);
         cell.DrawOn(page, 10f, 50f, 100f, 24f);
-        TestSupport.AssertXY(12f, 52f, new float[] {box.x, box.y});
+        TestSupport.AssertXY(12f, 52f, box.drawn);
         cell.SetTextAlignment(Alignment.CENTER).DrawOn(page, 10f, 50f, 100f, 24f);
-        TestSupport.AssertXY(45f, 52f, new float[] {box.x, box.y});
+        TestSupport.AssertXY(45f, 52f, box.drawn);
         cell.SetTextAlignment(Alignment.RIGHT).DrawOn(page, 10f, 50f, 100f, 24f);
-        TestSupport.AssertXY(78f, 52f, new float[] {box.x, box.y});
+        TestSupport.AssertXY(78f, 52f, box.drawn);
+        // Drawn, the caller's drawable is where the caller put it (review of
+        // 12 October 2026, R22)
+        TestSupport.AssertXY(7f, 8f, new float[] {box.x, box.y});
         Assert.Equal(3, box.draws);
     }
 
@@ -246,6 +252,27 @@ public class CellTest {
         Assert.Same(courier, cell.GetFallbackFont());
         cell.SetFallbackFont(helvetica).SetFont(new Font(pdf, CoreFont.TIMES_ROMAN));
         Assert.Same(helvetica, cell.GetFallbackFont());
+    }
+
+    [Fact]
+    public void ADrawableOfACellStaysWhereTheCallerPutIt() {
+        // An image or a barcode in a table cell is where the caller put it
+        // after the table is drawn, as a text block is: one at 7, 8 was left
+        // at 202, 319.9 (review of 12 October 2026, R22).
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Image image = new Image(pdf, TestSupport.Open("PngSuite/BASN2C08.PNG"));
+        image.SetLocation(7f, 8f);
+        Barcode barcode = new Barcode(Barcode.CODE_128, "12345");
+        barcode.SetLocation(7f, 8f);
+        float[][] before = {image.DrawOn(null), barcode.DrawOn(null)};
+        Table table = new Table();
+        table.SetTableData(new List<List<Cell>> {
+            new List<Cell> {new Cell(font).SetImage(image), new Cell(font).SetBarcode(barcode)}}, 0);
+        table.SetLocation(200f, 300f);
+        table.DrawOn(new Page(pdf, Letter.PORTRAIT));
+        TestSupport.AssertXY(before[0][0], before[0][1], image.DrawOn(null));
+        TestSupport.AssertXY(before[1][0], before[1][1], barcode.DrawOn(null));
     }
 }
 }
