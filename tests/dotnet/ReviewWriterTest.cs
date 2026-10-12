@@ -537,5 +537,16 @@ public class ReviewWriterTest {
         pdf.Complete();
         Assert.Contains("Default", DecryptedStrings(stream.ToArray(), "/Name"));
     }
+
+    // The XMP packet's header begins with the byte order mark, which ISO
+    // 16684-1 asks of it, in the document's metadata and a font's: EF BB BF in
+    // UTF-8, read here as Latin-1 (review of 11 October 2026, #28).
+    [Fact]
+    public void TheXMPPacketHasItsBeginAttribute() {
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
+        string raw = Document(Compliance.PDF_UA_1, null);
+        string header = "<?xpacket begin=\"\u00EF\u00BB\u00BF\" id=\"W5M0MpCehiHzreSzNTczkc9d\"?>";
+        Assert.True(raw.Contains(header) && !raw.Contains("<?xpacket id="), "the packet has no begin attribute");
+    }
 }
 }

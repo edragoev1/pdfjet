@@ -147,8 +147,15 @@ internal class PNGImage {
         // at a time, a file of many chunks took time in the square of its size.
         MemoryStream idatChunks = null;
         List<Chunk> chunks = ProcessPNG(inputStream);
-        foreach (Chunk chunk in chunks) {
+        for (int i = 0; i < chunks.Count; i++) {
+            Chunk chunk = chunks[i];
             String chunkType = System.Text.Encoding.UTF8.GetString(chunk.type);
+            // IHDR first, and once, as the PNG specification asks: a tRNS
+            // before it was read for a gray image and written as the /Mask of
+            // one (review of 11 October 2026, #38)
+            if ((i == 0) != chunkType.Equals("IHDR")) {
+                throw new Exception("Invalid PNG: the IHDR chunk must be the first chunk, and only the first.");
+            }
             if (chunkType.Equals("IHDR")) {
                 if (chunk.GetData().Length != 13) {
                     throw new Exception("Invalid PNG IHDR chunk.");

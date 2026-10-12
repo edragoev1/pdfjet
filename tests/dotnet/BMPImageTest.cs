@@ -344,5 +344,19 @@ public class BMPImageTest {
             Assert.True(raw.Contains("/SMask") == (alpha != 0), "alpha " + alpha + ": a soft mask");
         }
     }
+
+    // A row is read in pieces, so that a header of a width the file does not
+    // have takes no more memory than the file: a 54-byte header of 2^26 pixels
+    // of 32 bits took 256 MB before it failed at the end of its data (review of
+    // 11 October 2026, #37).
+    [Fact]
+    public void ARowTheFileDoesNotHaveTakesNoMemory() {
+        byte[] header = Header(1 << 26, 1, 32, 0);
+        long before = GC.GetAllocatedBytesForCurrentThread();
+        string message = DecodeError(header);
+        long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        Assert.StartsWith("Unexpected end of stream", message);
+        Assert.True(allocated <= 16 << 20, (allocated >> 20) + " MB allocated");
+    }
 }
 }

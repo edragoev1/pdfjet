@@ -345,7 +345,25 @@ class BMPImage {
         }
     }
 
+    // Reads the bytes. More than 64 KB are read in pieces, so that a size the
+    // stream does not have, as a row of a width in the header, takes no more
+    // memory than the stream has: a BMP of a 54-byte header took 256 MB before
+    // it failed at the end of its data (review of 11 October 2026, #37).
     private byte[] GetBytes(System.IO.Stream inputStream, int length) {
+        if (length > 65536) {
+            using MemoryStream bos = new MemoryStream(65536);
+            byte[] piece = new byte[65536];
+            int remaining = length;
+            while (remaining > 0) {
+                int count = inputStream.Read(piece, 0, Math.Min(piece.Length, remaining));
+                if (count <= 0) {
+                    throw new Exception("Unexpected end of stream: expected " + length + " bytes");
+                }
+                bos.Write(piece, 0, count);
+                remaining -= count;
+            }
+            return bos.ToArray();
+        }
         byte[] buf = new byte[length];
         int totalRead = 0;
         while (totalRead < length) {

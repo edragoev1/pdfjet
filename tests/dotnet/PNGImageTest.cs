@@ -891,5 +891,33 @@ public class PNGImageTest {
                 "/ColorSpace", "5", "0", "R", ">>"};
         Assert.ThrowsAny<Exception>(() => new Image(TestSupport.NewPDF(), obj));
     }
+
+    // IHDR is the first chunk, and the only IHDR: a tRNS before it was read for
+    // a gray image, and an RGB image was written with the /Mask of a gray one
+    // (review of 11 October 2026, #38).
+    [Fact]
+    public void TheIHDRChunkIsFirstAndOnce() {
+        byte[] ihdr = new byte[13];
+        PutInt(ihdr, 0, 1);
+        PutInt(ihdr, 4, 1);
+        ihdr[8] = 8;    // RGB of 8 bits
+        ihdr[9] = 2;
+        byte[] idat = Compressor.Deflate(new byte[] {0, 7, 7, 7});
+        Func<(string, byte[])[], byte[]> png = chunks => {
+            MemoryStream ms = new MemoryStream();
+            ms.Write(new byte[] {0x89, (byte) 'P', (byte) 'N', (byte) 'G', (byte) '\r', (byte) '\n', 0x1A, (byte) '\n'});
+            foreach ((string type, byte[] data) in chunks) {
+                WriteChunk(ms, type, data);
+            }
+            return ms.ToArray();
+        };
+        string want = "Invalid PNG: the IHDR chunk must be the first chunk, and only the first.";
+        (string, byte[]) trns = ("tRNS", new byte[] {0, 7});
+        Assert.Equal(want, DecodeError(png(new[] {trns, ("IHDR", ihdr), ("IDAT", idat), ("IEND", new byte[0])})));
+        Assert.Equal(want, DecodeError(png(new[] {("IHDR", ihdr), ("IHDR", ihdr), ("IDAT", idat), ("IEND", new byte[0])})));
+        // In its place, the tRNS of an RGB image is its three samples.
+        new PNGImage(new MemoryStream(png(new[] {("IHDR", ihdr), ("tRNS", new byte[] {0, 7, 0, 7, 0, 7}),
+                ("IDAT", idat), ("IEND", new byte[0])})));
+    }
 }
 }
