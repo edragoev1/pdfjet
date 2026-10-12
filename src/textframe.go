@@ -507,22 +507,36 @@ func widthWithin(textLine *TextLine, text string, limit float32) float32 {
 // Thai vowel that stays with the letter before it (review of 11 October
 // 2026, #14).
 func (tf *TextFrame) headThatFits(textLine *TextLine, token string) string {
-	runes := make([]rune, 0, len(token))
-	offsets := make([]int, 0, len(token)+1) // The byte index of each rune
-	for i, r := range token {
-		runes = append(runes, r)
-		offsets = append(offsets, i)
-	}
-	offsets = append(offsets, len(token))
-	end := nextCharacterBreak(runes, 0)
-	for end < len(runes) {
-		next := nextCharacterBreak(runes, end)
-		if textLine.font.StringWidthUsingFallbackFont(textLine.fallbackFont, textLine.fontSize, token[:offsets[next]]) > tf.w {
+	end := nextCharacterBreakIn(token, 0)
+	for end < len(token) {
+		next := nextCharacterBreakIn(token, end)
+		if textLine.font.StringWidthUsingFallbackFont(textLine.fallbackFont, textLine.fontSize, token[:next]) > tf.w {
 			break
 		}
 		end = next
 	}
-	return token[:offsets[end]]
+	return token[:end]
+}
+
+// nextCharacterBreakIn returns the byte index of the next place after the one
+// at i where the text may be cut between its characters, as nextCharacterBreak
+// finds it in runes: read as far as it, so that a long word is cut in time
+// proportional to its length.
+func nextCharacterBreakIn(text string, i int) int {
+	ch, size := utf8.DecodeRuneInString(text[i:])
+	i += size
+	for isLeadingVowel(ch) && i < len(text) {
+		ch, size = utf8.DecodeRuneInString(text[i:])
+		i += size
+	}
+	for i < len(text) {
+		ch, size = utf8.DecodeRuneInString(text[i:])
+		if !staysWithPrevious(ch) {
+			break
+		}
+		i += size
+	}
+	return i
 }
 
 // addToRow adds the string to the row, at the current text position.
