@@ -162,16 +162,17 @@ class MarkdownParserTest {
         assertEquals(MarkdownParser.MAX_DEPTH, quotes);
     }
 
-    // Four times as long a text is read in about four times the time, not
-    // sixteen; the two times are measured in the same run, the shortest of
+    // Eight times as long a text is read in about eight times the time, not
+    // sixty-four; the two times are measured in the same run, the shortest of
     // three each, so that a busy computer slows both (a limit of 3 s failed
-    // under a fuzzer's load, 9 October 2026).
+    // under a fuzzer's load, 9 October 2026, and a limit of 10 for four times
+    // the text, too near both, failed in CI at 10.1 on 12 October).
     @Test
     void longInputsAreReadQuickly() {
-        long small = parseTime(5000);
+        long small = parseTime(2500);
         long large = parseTime(20000);
-        assertTrue(large <= 10 * small, "20000 repeats took " + large / 1000000
-                + " ms, and 5000 " + small / 1000000 + " ms");
+        assertTrue(large <= 24 * small, "20000 repeats took " + large / 1000000
+                + " ms, and 2500 " + small / 1000000 + " ms");
     }
 
     // The shortest of three times the text of the repeats is read, in nanoseconds.

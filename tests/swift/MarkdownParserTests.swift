@@ -143,14 +143,15 @@ import Testing
                 "65 columns: \(parse(table(65)).prefix(60))")
     }
 
-    // Four times as long a text is read in about four times the time, not
-    // sixteen; the two times are measured in the same run, the shortest of
+    // Eight times as long a text is read in about eight times the time, not
+    // sixty-four; the two times are measured in the same run, the shortest of
     // three each, so that a busy computer slows both (a limit of 3 s failed
-    // under a fuzzer's load, 9 October 2026).
+    // under a fuzzer's load, 9 October 2026, and a limit of 10 for four times
+    // the text, too near both, failed in CI at 10.1 on 12 October).
     @Test func longInputsAreReadQuickly() {
-        let small = parseTime(5000)
+        let small = parseTime(2500)
         let large = parseTime(20000)
-        #expect(large <= 10 * small, "20000 repeats took \(large / 1_000_000) ms, and 5000 \(small / 1_000_000) ms")
+        #expect(large <= 24 * small, "20000 repeats took \(large / 1_000_000) ms, and 2500 \(small / 1_000_000) ms")
     }
 
     // The shortest of three times the text of the repeats is read, in nanoseconds.

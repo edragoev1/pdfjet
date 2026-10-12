@@ -171,16 +171,17 @@ public class MarkdownParserTest {
         Assert.Equal(MarkdownParser.MAX_DEPTH, quotes);
     }
 
-    // Four times as long a text is read in about four times the time, not
-    // sixteen; the two times are measured in the same run, the shortest of
+    // Eight times as long a text is read in about eight times the time, not
+    // sixty-four; the two times are measured in the same run, the shortest of
     // three each, so that a busy computer slows both (a limit of 3 s failed
-    // under a fuzzer's load, 9 October 2026).
+    // under a fuzzer's load, 9 October 2026, and a limit of 10 for four times
+    // the text, too near both, failed in CI at 10.1 on 12 October).
     [Fact]
     public void LongInputsAreReadQuickly() {
-        TimeSpan small = ParseTime(5000);
+        TimeSpan small = ParseTime(2500);
         TimeSpan large = ParseTime(20000);
-        Assert.True(large.Ticks <= 10 * small.Ticks, "20000 repeats took "
-                + large.TotalMilliseconds + " ms, and 5000 " + small.TotalMilliseconds + " ms");
+        Assert.True(large.Ticks <= 24 * small.Ticks, "20000 repeats took "
+                + large.TotalMilliseconds + " ms, and 2500 " + small.TotalMilliseconds + " ms");
     }
 
     // A table of more than 64 columns is marked too wide, and its rows are not

@@ -180,15 +180,16 @@ func TestMarkdownParserContainersNestAtMostMaxDepthLevels(t *testing.T) {
 	}
 }
 
-// Four times as long a text is read in about four times the time, not
-// sixteen; the two times are measured in the same run, the shortest of three
-// each, so that a busy computer slows both (a limit of 3 s failed under a
-// fuzzer's load, 9 October 2026).
+// Eight times as long a text is read in about eight times the time, not
+// sixty-four; the two times are measured in the same run, the shortest of
+// three each, so that a busy computer slows both (a limit of 3 s failed
+// under a fuzzer's load, 9 October 2026, and a limit of 10 for four times
+// the text, too near both, failed in CI at 10.1 on 12 October).
 func TestMarkdownParserLongInputsAreReadQuickly(t *testing.T) {
-	small := testMarkdownParseTime(t, 5000)
+	small := testMarkdownParseTime(t, 2500)
 	large := testMarkdownParseTime(t, 20000)
-	if large > 10*small {
-		t.Errorf("20000 repeats took %v, and 5000 %v", large, small)
+	if large > 24*small {
+		t.Errorf("20000 repeats took %v, and 2500 %v", large, small)
 	}
 }
 
