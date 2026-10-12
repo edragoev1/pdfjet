@@ -2601,11 +2601,6 @@ public sealed class PDF {
         byteCount += len;
     }
 
-    internal void Append(MemoryStream baos) {
-        baos.WriteTo(os);
-        byteCount += baos.Length;
-    }
-
     // The highest object number read in a file of any size: its empty objects
     // take about 30 MB.
     private const int MIN_OBJ_NUMBER_LIMIT = 262144;
@@ -3588,8 +3583,7 @@ public sealed class PDF {
             if (EntryIndex(ValueOf(page), key) != -1) {
                 continue;       // An entry of its own.
             }
-            PDFobj node;
-            List<String> value = InheritedEntry(page, key, objects, nodes, out node);
+            List<String> value = InheritedEntry(page, key, objects, nodes, out _);
             if (SharedInherited(key, value)) {
                 page.inheritedResources = value;
             } else if (value != null) {

@@ -527,25 +527,6 @@ public class Page {
     }
 
     /// <summary>
-    /// Draws the string in the specified 0xRRGGBB color, highlighting the words in the colors map.
-    /// The fallback font is used for characters the main font does not have.
-    /// </summary>
-    internal void DrawString(
-            Font font,
-            Font fallbackFont,
-            float fontSize,
-            String str,
-            float x,
-            float y,
-            Int32 color,
-            Dictionary<String, Int32> colors) {
-        float r = ((color >> 16) & 0xff)/255f;
-        float g = ((color >>  8) & 0xff)/255f;
-        float b = ((color)       & 0xff)/255f;
-        DrawString(font, fallbackFont, fontSize, str, x, y, new float[] {r, g, b}, colors);
-    }
-
-    /// <summary>
     /// Draws the text given by the specified string,
     /// using the specified Thai or Hebrew font and the current brush color.
     /// If the font is missing some glyphs - the fallback font is used.

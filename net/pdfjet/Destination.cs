@@ -31,16 +31,5 @@ public class Destination {
         this.xPosition = xPosition;
         this.yPosition = yPosition;
     }
-
-    /// <summary>
-    /// This constructor is used to create destination objects.
-    /// </summary>
-    /// <param name="name">the name of this destination object.</param>
-    /// <param name="yPosition">the y coordinate of the top left corner.</param>
-    internal Destination(String name, float yPosition) {
-        this.name = name;
-        this.xPosition = 0f;
-        this.yPosition = yPosition;
-    }
 }
 }   // End of namespace PDFjet.NET

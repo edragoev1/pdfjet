@@ -7,7 +7,6 @@
 using System;
 using System.Globalization;
 using System.IO;
-using System.Text;
 using System.Collections.Generic;
 
 namespace PDFjet.NET {
@@ -110,28 +109,6 @@ class OpenTypeFont {
             text += "." + (decimals.EndsWith("0", StringComparison.Ordinal) ? decimals.Substring(0, 1) : decimals);
         }
         return (angle < 0 && rounded != 0) ? "-" + text : text;
-    }
-
-    private static String ToHexString(int code) {
-        String str = Convert.ToString(code, 16);
-        if (str.Length == 1) {
-            return "000" + str;
-        } else if (str.Length == 2) {
-            return "00" + str;
-        } else if (str.Length == 3) {
-            return "0" + str;
-        }
-        return str;
-    }
-
-    private static void WriteListToBuffer(List<String> list, StringBuilder sb) {
-        sb.Append(list.Count);
-        sb.Append(" beginbfchar\n");
-        foreach (String str in list) {
-            sb.Append(str);
-        }
-        sb.Append("endbfchar\n");
-        list.Clear();
     }
 }   // End of OpenTypeFont.cs
 }   // End of namespace PDFjet.NET
