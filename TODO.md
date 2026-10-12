@@ -120,24 +120,6 @@ commit and date. The layout's format version (1) and the look's rules
   for any BigTable whose columns want widths of their own. Counted in the
   order setColumns draws the columns; refused when the percents are not one
   for each column. A test in each port, the widths compared across the ports.
-- **For 9.0.7: an Arc's stroke width without a stroke color.** An Arc given
-  `setStrokeWidth(4)` and no `setStrokeColor` is drawn 0 wide, a hairline:
-  the branch of DrawOn for no colors set sets the pen width to 0, whatever the
-  width. Found by the booklet's drawings, whose shapes snippet sets a color
-  since. The fix in the four ports, with a test, and the other shapes checked
-  for the same pattern (Ellipse, Rect, Line, Point, Path).
-- **For 9.0.7: a font whose fsType forbids embedding.** The fsType of a
-  font's `OS/2` table, bit 0x0002 ("Restricted License embedding"), says the
-  font must not be embedded without its maker's permission; PDFjet reads
-  only the bit that forbids subsetting, and embeds such a font. Refused, in
-  the four ports, with a message that names the font and points to "Choosing
-  a font you may embed" in the README; a test with a font whose fsType has
-  the bit set.
-- **For 9.0.7: a character the font lacks in a PDF/UA document.** It is
-  drawn as the font's `.notdef` glyph, mapped to U+FFFD so that its text
-  reads; PDF/UA-1 forbids any reference to `.notdef` from text. Reported:
-  an error in PDF/UA mode, naming the character and the font, the fallback
-  font the remedy.
 - **For 9.0.7: the code review of 11 October 2026.** Five areas: the
   writer and encryption, text and fonts, barcodes, tables and charts, the
   Java, C# and Swift ports against Go, and the parsers of untrusted input.

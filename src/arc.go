@@ -214,8 +214,10 @@ func (arc *Arc) DrawOn(page *Page) [2]float32 {
 	} else if arc.hasFillColor == false && arc.hasStrokeColor == true {
 		page.SetPenWidth(arc.strokeWidth)
 		page.SetPenColorRGB(arc.strokeColor)
-	} else { // Both arc.brushColor == false and arc.strokeColor == false
-		page.SetPenWidth(0.0)
+	} else {
+		// No colors: a black line of the width set, 0, the thinnest the
+		// device draws, when none was; it was 0 whatever the width
+		page.SetPenWidth(arc.strokeWidth)
 		page.SetPenColor(color.Black)
 	}
 	page.AddArcToPath(

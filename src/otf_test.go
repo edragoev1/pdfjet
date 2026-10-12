@@ -11,6 +11,7 @@ import (
 	"encoding/binary"
 	"io"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/edragoev1/pdfjet/v9/src/letter"
@@ -310,5 +311,25 @@ func TestOTFAFormat12GroupThatStartsBeforeTheFirstCharacterKeepsItsGlyphs(t *tes
 		if got.unicodeToGID.get(ch) != want.unicodeToGID.get(ch) || want.unicodeToGID.get(ch) == 0 {
 			t.Errorf("%q: glyph %d, not %d", ch, got.unicodeToGID.get(ch), want.unicodeToGID.get(ch))
 		}
+	}
+}
+
+// A font whose license forbids embedding it, its fsType Restricted License
+// embedding and nothing more, is refused, where it was embedded; one that
+// allows Preview and Print too is embedded, as the least restrictive bit
+// applies.
+func TestOTFAFontWhoseLicenseForbidsEmbeddingIsRefused(t *testing.T) {
+	ttf := testOpenTypeFontBytes(t, "fonts/NotoSans/NotoSans-Regular.ttf")
+	os2 := testOpenTypeTable(t, ttf, "OS/2")
+	message, panicked := testPanic(func() {
+		NewFont(testNewPDF(), bytes.NewReader(testOpenTypeWith(ttf, os2+8, 0x0002)))
+	})
+	if !panicked || !strings.Contains(message, "may not be embedded") || !strings.Contains(message, "NotoSans") {
+		t.Errorf("%v: %q", panicked, message)
+	}
+	if message, panicked := testPanic(func() {
+		NewFont(testNewPDF(), bytes.NewReader(testOpenTypeWith(ttf, os2+8, 0x0006)))
+	}); panicked {
+		t.Errorf("a font that allows Preview and Print: %s", message)
 	}
 }

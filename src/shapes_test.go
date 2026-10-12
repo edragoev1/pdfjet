@@ -118,3 +118,31 @@ func TestShapesColorsAreSetAsAnIntOrAsAnArray(t *testing.T) {
 		}
 	}
 }
+
+// An Arc, and so an Ellipse, given a stroke width and no color is drawn a
+// black line of that width: it was drawn 0 wide, a hairline, whatever the
+// width; with no width it is 0 wide as before.
+func TestShapesAnArcOfAWidthAndNoColorIsDrawnThatWide(t *testing.T) {
+	for name, arc := range map[string]*Arc{"arc": NewArc(), "ellipse": &NewEllipse().Arc} {
+		pdf := testNewPDF()
+		page := NewPage(pdf, testLetterPortrait())
+		arc.SetLocation(100, 100)
+		arc.SetRadius(40)
+		arc.SetSweep(270)
+		arc.SetStrokeWidth(4)
+		arc.DrawOn(page)
+		if content := testContent(page); !strings.Contains(content, "\n4 w\n") {
+			t.Errorf("%s: not drawn 4 wide: %s", name, content)
+		}
+	}
+	pdf := testNewPDF()
+	page := NewPage(pdf, testLetterPortrait())
+	arc := NewArc()
+	arc.SetLocation(100, 100)
+	arc.SetRadius(40)
+	arc.SetSweep(90)
+	arc.DrawOn(page)
+	if content := testContent(page); !strings.Contains(content, "\n0 w\n") {
+		t.Errorf("an arc of no width is not 0 wide: %s", content)
+	}
+}

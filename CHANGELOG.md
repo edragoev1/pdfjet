@@ -9,6 +9,19 @@ This is the first entry in this file; earlier releases were not tracked here.
 
 ## v9.0.7 — unreleased
 
+### Changed
+- A font whose license forbids embedding it is refused, in the four ports:
+  the fsType of its OS/2 table "Restricted License embedding", and none of
+  the bits that allow embedding, Preview and Print or Editable. It was
+  embedded. The message names the font and points to "Choosing a font you
+  may embed" in the README. None of the fonts that come with PDFjet is such
+  a font.
+
+### Fixed
+- An Arc, and so an Ellipse, given a stroke width and no colors is drawn a
+  black line of that width, in the four ports, where it was drawn 0 wide,
+  the thinnest line the device draws, whatever the width.
+
 ## v9.0.5 — 2026-10-12, internal
 
 An internal release, not published: its changes come out with v9.0.7

@@ -19,6 +19,7 @@ import (
 
 func registerOpenTypeFont(pdf *PDF, font *Font, reader io.Reader) {
 	otf := newOpenTypeFont(reader)
+	checkEmbedding(otf)
 	setOpenTypeFontData(font, otf)
 
 	// The font is written at Complete, a subset of the glyphs drawn; its
@@ -37,6 +38,7 @@ func registerOpenTypeFont(pdf *PDF, font *Font, reader io.Reader) {
 // the glyphs drawn.
 func addOpenTypeFontToObjects(objects *[]*PDFobj, font *Font, reader io.Reader) {
 	otf := newOpenTypeFont(reader)
+	checkEmbedding(otf)
 	setOpenTypeFontData(font, otf)
 	font.program = newFontProgram(otf.numGlyphs)
 	if otf.cff {
@@ -47,6 +49,18 @@ func addOpenTypeFontToObjects(objects *[]*PDFobj, font *Font, reader io.Reader) 
 		font.program.font = otf.buf
 	}
 	addFontToObjects(objects, font)
+}
+
+// checkEmbedding refuses a font whose license forbids embedding it: the
+// fsType of its OS/2 table "Restricted License embedding", 2, and none of
+// the bits that allow it, Preview and Print or Editable, as the least
+// restrictive of the bits set is the one that applies. It was embedded
+// (review of 9 October 2026, "a font whose fsType forbids embedding").
+func checkEmbedding(otf *openTypeFont) {
+	if otf.fsType&0x000F == 0x0002 {
+		panic("The font " + otf.fontName + " may not be embedded: its license asks for its maker's " +
+			"permission first. See \"Choosing a font you may embed\" in PDFjet's README.")
+	}
 }
 
 // setOpenTypeFontData gives the font the name, the metrics and the character
