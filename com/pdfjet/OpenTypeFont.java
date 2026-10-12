@@ -79,9 +79,10 @@ class OpenTypeFont {
         font.advanceWidth = otf.advanceWidth;
         font.unicodeToGID = otf.unicodeToGID;
         font.unicodeOf = GlyphMap.unicodeOfGlyphs(otf.unicodeToGID);
-        font.markToMarkOffsets = otf.markToMarkOffsets;
-        font.markAnchors = otf.markAnchors;
-        font.baseAnchors = otf.baseAnchors;
+        if (otf.gpos != null) {
+            // A CFF font keeps its CFF table alone, so a copy of the GPOS table.
+            font.gpos = GPOS.of(otf.buf, otf.gpos.offset, otf.gpos.length, otf.numGlyphs, otf.cff);
+        }
         font.info = otf.fontInfo;
         font.capHeight = otf.capHeight;
         font.cff = otf.cff;

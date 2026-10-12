@@ -16,6 +16,11 @@ This is the first entry in this file; earlier releases were not tracked here.
   embedded. The message names the font and points to "Choosing a font you
   may embed" in the README. None of the fonts that come with PDFjet is such
   a font.
+- A font's GPOS table, where its marks go, is read the first time a mark is
+  drawn in it, not when the font is loaded, in Java: most documents draw no
+  mark. A page in Noto Sans takes 2.2 ms instead of 6.3 and allocates
+  1.2 MB instead of 7.4; a page in three IBM Plex Sans fonts allocates
+  1.3 MB instead of 1.6. The output is the same, byte for byte.
 
 ### Fixed
 - An Arc, and so an Ellipse, given a stroke width and no colors is drawn a

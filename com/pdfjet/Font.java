@@ -79,24 +79,10 @@ final public class Font {
     /** The character of each glyph, see GlyphMap.unicodeOfGlyphs. */
     int[] unicodeOf;
     /**
-     * The offsets of the marks that attach to other marks, in font units, by
-     * the glyph IDs of the two marks, or null. A font has them from its GPOS
-     * table, read from a .otf or .ttf file or from a stream that keeps them.
+     * Where the marks go, from the GPOS table of the font, read when a mark
+     * is first drawn, or null for a font without one.
      */
-    protected java.util.Map<Integer, int[]> markToMarkOffsets;
-    /**
-     * The anchors of the marks, by glyph ID, for each MarkToBase and
-     * MarkToLigature lookup subtable, or null: the class and anchor of each
-     * mark. A font has them from its GPOS table, read from a .otf or .ttf file
-     * or from a stream that keeps them.
-     */
-    protected java.util.List<java.util.Map<Integer, int[]>> markAnchors;
-    /**
-     * The anchors of the letters and ligatures that the marks go on, by glyph
-     * ID, for each subtable in markAnchors, or null: 1 and an anchor, or 0 and
-     * no anchor, for each class of marks.
-     */
-    protected java.util.List<java.util.Map<Integer, int[]>> baseAnchors;
+    GPOS gpos;
     /** True if the glyph outlines are in CFF format. */
     protected boolean cff;
     /** The character metrics of a core font. */

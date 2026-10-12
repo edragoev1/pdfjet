@@ -852,7 +852,7 @@ final public class Page {
                 }
             }
             int[] offsets = null;
-            if (hasMarks && font.markAnchors != null) {
+            if (hasMarks && font.gpos != null) {
                 offsets = markOffsets(font, codePoints, gids, n);
             } else if (mirrored == null && joiners == null && runEdge == null && !hasNotdef) {
                 for (int i = 0; i < n; i++) {
@@ -1214,12 +1214,13 @@ final public class Page {
     // Returns the offset of the mark from the glyph it goes on, from the first
     // MarkToBase or MarkToLigature subtable that has an anchor for both, or null.
     private static int[] anchorOffset(Font font, int baseGID, int markGID) {
-        for (int i = 0; i < font.markAnchors.size(); i++) {
-            int[] mark = font.markAnchors.get(i).get(markGID);
+        GPOS gpos = font.gpos.read();
+        for (int i = 0; i < gpos.markAnchors.size(); i++) {
+            int[] mark = gpos.markAnchors.get(i).get(markGID);
             if (mark == null) {
                 continue;
             }
-            int[] base = font.baseAnchors.get(i).get(baseGID);
+            int[] base = gpos.baseAnchors.get(i).get(baseGID);
             int c = 3*mark[0];
             if (base != null && c + 2 < base.length && base[c] == 1) {
                 return new int[] {base[c + 1] - mark[1], base[c + 2] - mark[2]};
@@ -1231,7 +1232,7 @@ final public class Page {
     // Moves the mark onto the other mark, if the font has an offset for the two.
     private static void placeOnMark(
             Font font, int[] gids, int[] x, int[] offsets, int mark, int other) {
-        int[] offset = font.markToMarkOffsets.get((gids[other] << 16) | gids[mark]);
+        int[] offset = font.gpos.read().markToMarkOffsets.get((gids[other] << 16) | gids[mark]);
         if (offset != null) {
             offsets[2*mark] = offsets[2*other] + x[other] + offset[0] - x[mark];
             offsets[2*mark + 1] = offsets[2*other + 1] + offset[1];
@@ -1252,7 +1253,7 @@ final public class Page {
                 if (c >= 0x200C && c <= 0x200F) {
                     return true;
                 }
-                if (font.markAnchors != null && isMark(c)) {
+                if (font.gpos != null && isMark(c)) {
                     return true;
                 }
             }
