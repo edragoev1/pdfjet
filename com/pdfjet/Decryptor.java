@@ -111,7 +111,7 @@ final class Decryptor {
         byte[] u = toBytes(encrypt.getValue("/U"));
         byte[] o = toBytes(encrypt.getValue("/O"));
         if (r == 5 || r == 6) {
-            this.key = getKey(r, utf8Password(password), u, o,
+            this.key = getAES256Key(r, aes256Passwords(password), u, o,
                     toBytes(encrypt.getValue("/UE")), toBytes(encrypt.getValue("/OE")));
         } else if (r >= 2 && r <= 4) {
             int length = (v == 1 || r == 2) ? 5 : (v == 4) ? 16 : getInt(encrypt, "/Length") / 8;
@@ -132,11 +132,37 @@ final class Decryptor {
         }
     }
 
-    // Returns the UTF-8 bytes of the password, at most 127 of them, which is
-    // the password of revisions 5 and 6.
-    private static byte[] utf8Password(String password) {
-        byte[] bytes = password.getBytes(java.nio.charset.StandardCharsets.UTF_8);
-        return bytes.length > 127 ? Arrays.copyOf(bytes, 127) : bytes;
+    // Returns the key of revisions 5 and 6 from the first of the candidate
+    // passwords that opens the PDF, or the error of the last one.
+    private static byte[] getAES256Key(int r, byte[][] candidates, byte[] u, byte[] o, byte[] ue, byte[] oe)
+            throws Exception {
+        for (int i = 0; ; i++) {
+            try {
+                return getKey(r, candidates[i], u, o, ue, oe);
+            } catch (Exception e) {
+                if (i == candidates.length - 1) {
+                    throw e;
+                }
+            }
+        }
+    }
+
+    // Returns the bytes to try for the password of revisions 5 and 6: those of
+    // the password prepared with SASLprep, as PDF 2.0 asks, and, when they
+    // differ, its own UTF-8, at most 127 bytes of either, which PDFjet before
+    // 9.0.5 and other writers took (review of 11 October 2026, #27).
+    static byte[][] aes256Passwords(String password) {
+        byte[] raw = SASLprep.truncate(password);
+        byte[] prepared;
+        try {
+            prepared = SASLprep.passwordBytes(password);
+        } catch (IllegalArgumentException e) {
+            return new byte[][] {raw};
+        }
+        if (Arrays.equals(prepared, raw)) {
+            return new byte[][] {raw};
+        }
+        return new byte[][] {prepared, raw};
     }
 
     // Returns the password in PDFDocEncoding, which is Latin-1 for the

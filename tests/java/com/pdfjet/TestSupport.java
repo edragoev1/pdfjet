@@ -127,6 +127,11 @@ public final class TestSupport {
         return new PDF().read(new ByteArrayInputStream(pdf), password);
     }
 
+    /** Returns the bytes the decryptor tries for an AES-256 password, in order. */
+    public static byte[][] aes256Passwords(String password) {
+        return Decryptor.aes256Passwords(password);
+    }
+
     /** Returns the first /ID of the trailer. */
     public static String trailerID(byte[] pdf) {
         String raw = latin1(pdf);

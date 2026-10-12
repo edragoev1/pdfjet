@@ -8,7 +8,6 @@ package com.pdfjet;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -76,8 +75,12 @@ public class Encryption {
             throw new RuntimeException("SHA algorithm not available", e);
         }
 
-        byte[] userPasswordBytes = passwordBytes(passwords.getUserPassword());
-        byte[] ownerPasswordBytes = passwordBytes(passwords.getOwnerPassword());
+        // The passwords prepared with SASLprep, as PDF 2.0 asks of AES-256, so
+        // that a reader that prepares them opens the PDF: an accented letter
+        // typed as a letter and an accent, a full-width letter or a no-break
+        // space were taken as they were (review of 11 October 2026, #27)
+        byte[] userPasswordBytes = passwordBytes(pdf, passwords.getUserPassword());
+        byte[] ownerPasswordBytes = passwordBytes(pdf, passwords.getOwnerPassword());
 
         User user = computeUserKeys(userPasswordBytes);
         Owner owner = computeOwnerKeys(ownerPasswordBytes, user.U);
@@ -189,11 +192,16 @@ public class Encryption {
         return objNumber;
     }
 
-    // Returns the UTF-8 bytes of the password, at most 127 of them, as
-    // ISO 32000-2 algorithm 2.A says.
-    private static byte[] passwordBytes(String password) {
-        byte[] bytes = password.getBytes(StandardCharsets.UTF_8);
-        return bytes.length > 127 ? Arrays.copyOf(bytes, 127) : bytes;
+    // Returns the bytes of the password prepared with SASLprep, in UTF-8, at
+    // most 127 of them, as ISO 32000-2 algorithm 2.A says, or fails with the
+    // character SASLprep does not allow.
+    private static byte[] passwordBytes(PDF pdf, String password) {
+        try {
+            return SASLprep.passwordBytes(password);
+        } catch (IllegalArgumentException e) {
+            pdf.fail(e);
+            throw e;
+        }
     }
 
     /**

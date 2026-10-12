@@ -24,6 +24,7 @@ import com.pdfjet.Stamp;
 import com.pdfjet.TestSupport;
 import com.pdfjet.TextLine;
 import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -160,5 +161,40 @@ class EncryptionTest {
         assertNotNull(form, "no form XObject");
         String data = TestSupport.latin1(form.getData());
         assertTrue(data.contains("20 0 l"), "the stamp's stream reads back as " + data);
+    }
+
+    // A password is prepared with SASLprep, as PDF 2.0 asks of AES-256: the PDF
+    // opens with an accented letter typed as one character or as a letter and
+    // an accent, with a full-width letter or its ASCII one, and a password of a
+    // character PDF 2.0 does not allow is refused (review of 11 October 2026, #27).
+    @Test
+    void thePasswordIsPreparedWithSASLprep() throws Exception {
+        String[][] cases = {
+            {"café", "café"},
+            {"café", "café"},
+            {"ＰＡＳＳ", "PASS"},
+            {"I­X", "Ⅸ"},
+        };
+        for (String[] c : cases) {
+            byte[] pdf = encrypted(c[0], "owner");
+            assertEquals("Encrypted title", title(TestSupport.read(pdf, c[1])), "set " + c[0] + ", opened with " + c[1]);
+            assertEquals("Encrypted title", title(TestSupport.read(pdf, c[0])), "set " + c[0] + ", opened with it");
+        }
+        final PDF pdf = new PDF(new ByteArrayOutputStream());
+        Exception e = assertThrows(IllegalArgumentException.class, () -> new Encryption(pdf,
+                new Passwords().setUserPassword("bell\u0007"), new Permissions()));
+        assertTrue(e.getMessage().contains("U+0007"), e.getMessage());
+    }
+
+    // A PDF whose password was taken as it was, before 9.0.5 and by other
+    // writers, still opens with it: the password's own bytes are tried after
+    // the prepared ones.
+    @Test
+    void aPasswordTakenAsItWasStillOpens() {
+        byte[][] got = TestSupport.aes256Passwords("café");
+        assertEquals(2, got.length);
+        assertEquals("café", new String(got[0], StandardCharsets.UTF_8));
+        assertEquals("café", new String(got[1], StandardCharsets.UTF_8));
+        assertEquals(1, TestSupport.aes256Passwords("ascii").length);
     }
 }
