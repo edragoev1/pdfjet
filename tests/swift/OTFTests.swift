@@ -266,4 +266,21 @@ import Testing
                     "\(ch): glyph \(got.unicodeToGID[c]), not \(want.unicodeToGID[c])")
         }
     }
+
+    // A font whose license forbids embedding it, its fsType Restricted License
+    // embedding and nothing more, is refused, where it was embedded; one that
+    // allows Preview and Print too is embedded, as the least restrictive bit
+    // applies.
+    @Test func aFontWhoseLicenseForbidsEmbeddingIsRefused() throws {
+        let ttf = font("fonts/NotoSans/NotoSans-Regular.ttf")
+        let os2 = table(ttf, "OS/2")
+        let message = error(with(ttf, os2 + 8, 0x0002))
+        #expect(message.contains("may not be embedded") && message.contains("NotoSans"), "\(message)")
+        var objects = [PDFobj]()
+        #expect(throws: PDFjetError.self) {
+            _ = try Font(&objects, InputStream(data: Data(with(ttf, os2 + 8, 0x0002))))
+        }
+        let pdf = TestSupport.newPDF()
+        _ = try Font(pdf, InputStream(data: Data(with(ttf, os2 + 8, 0x0006))))
+    }
 }

@@ -10,6 +10,7 @@ class OpenTypeFont {
     internal static func register(
             _ pdf: PDF, _ font: Font, _ bytes: [UInt8]) throws {
         let otf = try OTF(bytes)
+        try checkEmbedding(otf)
         setData(font, otf)
 
         // The font is written at complete(), a subset of the glyphs drawn; its
@@ -29,6 +30,7 @@ class OpenTypeFont {
     internal static func register(
             _ objects: inout [PDFobj], _ font: Font, _ bytes: [UInt8]) throws {
         let otf = try OTF(bytes)
+        try checkEmbedding(otf)
         setData(font, otf)
         let program = Subset.Program(otf.numGlyphs)
         if otf.cff {
@@ -40,6 +42,19 @@ class OpenTypeFont {
         }
         font.program = program
         FontObjects.register(&objects, font)
+    }
+
+    // Refuses a font whose license forbids embedding it: the fsType of its
+    // OS/2 table "Restricted License embedding", 2, and none of the bits that
+    // allow it, Preview and Print or Editable, as the least restrictive of the
+    // bits set is the one that applies. It was embedded (review of 9 October
+    // 2026, "a font whose fsType forbids embedding").
+    private static func checkEmbedding(_ otf: OTF) throws {
+        if otf.fsType & 0x000F == 0x0002 {
+            throw PDFjetError(message: "The font \(otf.fontName ?? "") may not be embedded: " +
+                    "its license asks for its maker's permission first. " +
+                    "See \"Choosing a font you may embed\" in PDFjet's README.")
+        }
     }
 
     // Gives the font the name, the metrics and the character map of the

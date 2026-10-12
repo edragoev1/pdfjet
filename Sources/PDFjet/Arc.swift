@@ -277,8 +277,10 @@ public class Arc : Drawable {
         } else if fillColor == nil && strokeColor != nil {
             page!.setPenWidth(strokeWidth)
             page!.setPenColor(strokeColor!)
-        } else {    // Both brushColor == nil and penColor == nil
-            page!.setPenWidth(0.0)
+        } else {
+            // No colors: a black line of the width set, 0, the thinnest the
+            // device draws, when none was; it was 0 whatever the width
+            page!.setPenWidth(strokeWidth)
             page!.setPenColor(Color.black)
         }
         _ = page!.addArcToPath(cx, cy, rx, ry, startAngle, sweepDegrees)

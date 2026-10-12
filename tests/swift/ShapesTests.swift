@@ -127,4 +127,25 @@ import Testing
                 .setStrokeColor(0x000000).setLocation(182.30334, 248.89684).drawOn(page)
         #expect(TestSupport.content(page).contains("376.51 449.26 275.7 456.2 225.54 476.35 c\n"))
     }
+
+    // An Arc, and so an Ellipse, given a stroke width and no color is drawn a
+    // black line of that width: it was drawn 0 wide, a hairline, whatever the
+    // width; with no width it is 0 wide as before.
+    @Test func anArcOfAWidthAndNoColorIsDrawnThatWide() {
+        for (name, arc) in [("arc", Arc()), ("ellipse", Ellipse())] {
+            let page = self.page()
+            arc.setLocation(100, 100)
+            _ = arc.setRadius(40).setSweep(270).setStrokeWidth(4)
+            arc.drawOn(page)
+            let content = TestSupport.content(page)
+            #expect(content.contains("\n4 w\n"), "\(name): not drawn 4 wide: \(content)")
+        }
+        let page = self.page()
+        let arc = Arc()
+        arc.setLocation(100, 100)
+        _ = arc.setRadius(40).setSweep(90)
+        arc.drawOn(page)
+        let content = TestSupport.content(page)
+        #expect(content.contains("\n0 w\n"), "an arc of no width is not 0 wide: \(content)")
+    }
 }
