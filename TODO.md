@@ -85,15 +85,12 @@ commit and date. The layout's format version (1) and the look's rules
   when the font is read, the character-to-glyph table in two levels, and
   the glyphs drawn a set of bits; a page in three Plex fonts 25% faster in
   Go and 12 to 20% in the others, with half the memory or less, the 56
-  examples of each port byte for byte the same. Left:
-  - Java first, then the other ports as they need it: the GPOS mark tables
-    (mark to base, mark to mark) read when a mark is first drawn, where
-    every font load reads every anchor pair into a map: 83% of the 7 ms of a
-    page in Noto Sans, and half of what a page in Plex allocates.
-  - `Font.checksumOf` (19% of a page in Plex, in Java) and the format 4 cmap
-    (17%), looked at once the above is done. The checksum still folds the
-    65,536 glyphs, as the subset's tag is made of it: a faster one changes
-    the tags, and so the bytes of every PDF.
+  examples of each port byte for byte the same. Done in 9.0.7, in the four
+  ports: the GPOS table read when a mark is first drawn, and the format 4
+  cmap read a segment at a time (CHANGELOG.md). Left:
+  - `Font.checksumOf` (19% of a page in Plex, in Java). The checksum still
+    folds the 65,536 glyphs, as the subset's tag is made of it: a faster one
+    changes the tags, and so the bytes of every PDF.
   - Not to be done (the owner, 10 October 2026): a lower compression level
     for the font programs, which makes the files larger and changes their
     bytes; a Deflater for each thread in Java; a pool of FlateEncode's
@@ -108,34 +105,16 @@ commit and date. The layout's format version (1) and the look's rules
   cross-reference stream would shrink them a third or more. An option, on by
   default, off for PDF/A-1, which forbids object streams. Measured first, the
   time and the size of a long PDF/UA table, before and after.
-- **BigTable.setColumnWidthsInPercent, in the four ports.** The width of each
-  column drawn, as a percent of the table's width, as Table's
-  setColumnWidthsInPercent sets them; BigTable sizes its columns itself today.
-  For any BigTable whose columns want widths of their own. Counted in the
-  order setColumns draws the columns; refused when the percents are not one
-  for each column. A test in each port, the widths compared across the ports.
-- **For 9.0.7: the code review of 11 October 2026.** Five areas: the
-  writer and encryption, text and fonts, barcodes, tables and charts, the
-  Java, C# and Swift ports against Go, and the parsers of untrusted input.
-  Its numbers are kept in the items below. Each fix in the four ports, with
-  a test.
-- **For 9.0.7: what is left of the review.** ActualText for a document
-  that draws two characters of one glyph, which extract as the first drawn
-  (#8; the ToUnicode map gives each glyph the character drawn with it, in
-  9.0.5). The rest of the 38 is fixed in 9.0.5.
-- **For 9.0.7: CI.** The output of the four ports compared on more than the
-  examples' inputs: the float paths of DonutChart and Arc were found apart by
-  a random run against Go (#25), which CI does not run. The fuzzers given
-  inputs large enough to reach the 256 MB decode limit (#29 to #32), pages
-  timed in FuzzPDFRead (#35), FuzzMarkdown's linear check repeating the
-  body without the header (#33), and FuzzMarkup's timing made steady under
-  load. (Done: net48 built, check-api.sh run against the last tag, and the
-  Java and C# tests run in a Turkish locale, in build.yml; and after the
-  second review, the tests run in an Arabic locale too, and the C# ones in
-  a Swedish one, the timing tests compare a run four times as large with a
-  margin of 10 times, check-api.sh fails when a lister fails or lists
-  nothing, and compares with the tag before a tagged commit, and
-  check-no-fma.sh fails when the arm64 build does.)
+- **The code reviews of 11 and 12 October 2026.** Every finding of the two
+  is fixed for 9.0.7, in the four ports, each with a test (CHANGELOG.md),
+  but object streams, which are 9.1.1 (above). Their CI gaps are closed:
+  the tests run in Turkish, Arabic and Swedish locales, net48 is built,
+  check-api.sh runs against the last tag and fails when a lister fails,
+  the fuzzers read with a budget of 1 MiB that their inputs reach, are
+  timed against the input's length and run a slow input again before they
+  fail, and tests/crossport compares random shapes across the four ports
+  in CI. Left: net48 is built and not tested, so its `CharUnicodeInfo`
+  polyfill, Unicode 8.0 data that Bidi, TextBlock and Page use, is not run.
 - **Longer fuzzing of the font subsetters.** Go's fuzzers ran 5 minutes each
   on every target before 9.0.5 with no failure; the TrueType and CFF
   subsetters, which subset a real font for each input, ran 27,000 and 15,000
