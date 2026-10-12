@@ -100,7 +100,7 @@ commit and date. The layout's format version (1) and the look's rules
     buffers in Swift, which gained 2% and nothing on top of reading a font
     once.
 
-- **Smaller tagged documents, with object streams.** Each cell of a table of
+- **For 9.1.1: smaller tagged documents, with object streams.** Each cell of a table of
   PDF/UA costs 280 to 415 bytes, its text and a structure element of its own,
   each an object written uncompressed: a price list of 3,000 rows of 6
   columns is 4.7 MB. PDF 1.5's object streams, the small objects compressed
