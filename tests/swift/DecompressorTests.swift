@@ -29,15 +29,24 @@ import Testing
         #expect(asciiHexDecode(ascii("7>")) == [0x70])
     }
 
-    @Test func ascii85DecodesWithAndWithoutThePrefix() {
+    @Test func ascii85DecodesWithAndWithoutThePrefix() throws {
         // base64.a85encode(b"Hello world") in Python.
-        #expect(TestSupport.latin1(ascii85Decode(ascii("87cURD]j7BEbo7~>"))) == "Hello world")
-        #expect(TestSupport.latin1(ascii85Decode(ascii("<~87cURD]j7BEbo7~>"))) == "Hello world")
+        #expect(TestSupport.latin1(try ascii85Decode(ascii("87cURD]j7BEbo7~>"))) == "Hello world")
+        #expect(TestSupport.latin1(try ascii85Decode(ascii("<~87cURD]j7BEbo7~>"))) == "Hello world")
     }
 
-    @Test func ascii85DecodesZAsFourZeroBytesAndAPartialLastGroup() {
-        #expect(ascii85Decode(ascii("z~>")) == [0, 0, 0, 0])
-        #expect(ascii85Decode(ascii("z@:B~>")) == [0, 0, 0, 0, 97, 98])
+    @Test func ascii85DecodesZAsFourZeroBytesAndAPartialLastGroup() throws {
+        #expect(try ascii85Decode(ascii("z~>")) == [0, 0, 0, 0])
+        #expect(try ascii85Decode(ascii("z@:B~>")) == [0, 0, 0, 0, 97, 98])
+    }
+
+    // ASCII85 stops as soon as it decodes to more than its limit, as the other
+    // filters do (review of 12 October 2026, R7).
+    @Test func ascii85StopsAtItsLimit() throws {
+        let zs = [UInt8](repeating: 0x7A, count: 1 << 20)
+        let error = #expect(throws: PDFjetError.self) { _ = try ascii85Decode(zs, 100) }
+        #expect(error?.message == "ASCII85 data decodes to more than 100 bytes")
+        #expect(try ascii85Decode(Array(zs.prefix(25)), 100).count == 100)
     }
 
     @Test func runLengthDecodeCopiesLiteralsAndRepeatsRuns() throws {

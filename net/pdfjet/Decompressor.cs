@@ -245,7 +245,15 @@ class Decompressor {
     /// characters is n - 1 bytes.
     /// </summary>
     internal static byte[] ASCII85Decode(byte[] data) {
-        using var bos = new MemoryStream(data.Length * 4 / 5 + 4);
+        return ASCII85Decode(data, Int32.MaxValue);
+    }
+
+    // Decodes the data of an ASCII85Decode stream, and throws as soon as it
+    // decodes to more than maxLength bytes: a stream of 'z's, each four bytes,
+    // was decoded whole first, 4.9 GB in Go from a PDF of 203 KB (review of
+    // 12 October 2026, R7).
+    internal static byte[] ASCII85Decode(byte[] data, int maxLength) {
+        using var bos = new MemoryStream((int) Math.Min(data.Length * 4L / 5 + 4, maxLength));
         long value = 0;
         int count = 0;
         int i = 0;
@@ -271,6 +279,7 @@ class Decompressor {
                     count = 0;
                 }
             }                   // White space, or a character that is not valid.
+            CheckLength(bos.Length, maxLength, "ASCII85");
         }
         if (count > 1) {
             for (int j = count; j < 5; j++) {
@@ -280,6 +289,7 @@ class Decompressor {
                 bos.WriteByte((byte) (value >> (24 - 8 * j)));
             }
         }
+        CheckLength(bos.Length, maxLength, "ASCII85");
         return bos.ToArray();
     }
 

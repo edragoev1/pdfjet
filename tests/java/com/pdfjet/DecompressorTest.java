@@ -47,16 +47,28 @@ class DecompressorTest {
     }
 
     @Test
-    void ascii85DecodesWithAndWithoutThePrefix() {
+    void ascii85DecodesWithAndWithoutThePrefix() throws Exception {
         // base64.a85encode(b"Hello world") in Python.
         assertEquals("Hello world", TestSupport.latin1(Decompressor.ascii85Decode(ascii("87cURD]j7BEbo7~>"))));
         assertEquals("Hello world", TestSupport.latin1(Decompressor.ascii85Decode(ascii("<~87cURD]j7BEbo7~>"))));
     }
 
     @Test
-    void ascii85DecodesZAsFourZeroBytesAndAPartialLastGroup() {
+    void ascii85DecodesZAsFourZeroBytesAndAPartialLastGroup() throws Exception {
         assertArrayEquals(bytes(0, 0, 0, 0), Decompressor.ascii85Decode(ascii("z~>")));
         assertArrayEquals(bytes(0, 0, 0, 0, 'a', 'b'), Decompressor.ascii85Decode(ascii("z@:B~>")));
+    }
+
+    // ASCII85 stops as soon as it decodes to more than its limit, as the other
+    // filters do (review of 12 October 2026, R7).
+    @Test
+    void ascii85StopsAtItsLimit() throws Exception {
+        byte[] zs = new byte[1 << 20];
+        java.util.Arrays.fill(zs, (byte) 'z');
+        Exception e = assertThrows(java.util.zip.DataFormatException.class,
+                () -> Decompressor.ascii85Decode(zs, 100));
+        assertEquals("ASCII85 data decodes to more than 100 bytes", e.getMessage());
+        assertEquals(100, Decompressor.ascii85Decode(java.util.Arrays.copyOf(zs, 25), 100).length);
     }
 
     @Test

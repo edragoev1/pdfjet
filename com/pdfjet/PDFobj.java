@@ -366,9 +366,9 @@ public class PDFobj {
             } else if (filter.equals("/LZWDecode") || filter.equals("/LZW")) {
                 decoded = applyDecodeParms(decoded(Decompressor.lzwDecode(decoded, maxDecodedLength())), i);
             } else if (filter.equals("/ASCIIHexDecode") || filter.equals("/AHx")) {
-                decoded = decodedASCII(Decompressor.asciiHexDecode(decoded));
+                decoded = decodedHex(Decompressor.asciiHexDecode(decoded));
             } else if (filter.equals("/ASCII85Decode") || filter.equals("/A85")) {
-                decoded = decodedASCII(Decompressor.ascii85Decode(decoded));
+                decoded = decoded(Decompressor.ascii85Decode(decoded, maxDecodedLength()));
             } else if (filter.equals("/RunLengthDecode") || filter.equals("/RL")) {
                 decoded = decoded(Decompressor.runLengthDecode(decoded, maxDecodedLength()));
             } else {
@@ -396,11 +396,10 @@ public class PDFobj {
         return data;
     }
 
-    // Takes the output of ASCII85Decode or ASCIIHexDecode from the PDF's
-    // budget, as the other filters' is: a 'z' of ASCII85 is four bytes, and
-    // after FlateDecode a PDF of 203 KB decoded to 800 MB past the limit of
-    // 256 MB (review of 11 October 2026, #32).
-    private byte[] decodedASCII(byte[] data) throws DataFormatException {
+    // Takes the output of ASCIIHexDecode from the PDF's budget, as the other
+    // filters' is (review of 11 October 2026, #32). ASCII85Decode stops at the
+    // budget itself, as a 'z' of it is four bytes.
+    private byte[] decodedHex(byte[] data) throws DataFormatException {
         if (data.length > maxDecodedLength()) {
             throw new DataFormatException(
                     "The stream decodes to more than " + maxDecodedLength() + " bytes");

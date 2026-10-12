@@ -340,9 +340,11 @@ func (obj *PDFobj) decode(stream []byte) []byte {
 			obj.decoded(data, err)
 			decoded = obj.applyDecodeParms(data, i)
 		case "/ASCIIHexDecode", "/AHx":
-			decoded = obj.decodedASCII(decompressor.ASCIIHexDecode(decoded))
+			decoded = obj.decodedHex(decompressor.ASCIIHexDecode(decoded))
 		case "/ASCII85Decode", "/A85":
-			decoded = obj.decodedASCII(decompressor.ASCII85Decode(decoded))
+			data, err := decompressor.ASCII85DecodeWithMaxLength(decoded, obj.maxDecodedLength())
+			obj.decoded(data, err)
+			decoded = data
 		case "/RunLengthDecode", "/RL":
 			data, err := decompressor.RunLengthDecodeWithMaxLength(decoded, obj.maxDecodedLength())
 			obj.decoded(data, err)
@@ -378,11 +380,10 @@ func (obj *PDFobj) decoded(data []byte, err error) {
 	}
 }
 
-// decodedASCII takes the output of ASCII85Decode or ASCIIHexDecode from the
-// PDF's budget, as the other filters' is: a 'z' of ASCII85 is four bytes, and
-// after FlateDecode a PDF of 203 KB decoded to 800 MB past the limit of
-// 256 MB (review of 11 October 2026, #32).
-func (obj *PDFobj) decodedASCII(data []byte) []byte {
+// decodedHex takes the output of ASCIIHexDecode from the PDF's budget, as the
+// other filters' is (review of 11 October 2026, #32). ASCII85Decode stops at
+// the budget itself, as a 'z' of it is four bytes.
+func (obj *PDFobj) decodedHex(data []byte) []byte {
 	if len(data) > obj.maxDecodedLength() {
 		obj.decoded(nil, fmt.Errorf("the stream decodes to more than %d bytes", obj.maxDecodedLength()))
 	}

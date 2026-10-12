@@ -53,6 +53,19 @@ func TestDecompressorAscii85DecodesZAsFourZeroBytesAndAPartialLastGroup(t *testi
 	testEqual(t, "z and partial", []byte{0, 0, 0, 0, 'a', 'b'}, ASCII85Decode([]byte("z@:B~>")))
 }
 
+// ASCII85 stops as soon as it decodes to more than its limit, as the other
+// filters do (review of 12 October 2026, R7).
+func TestDecompressorASCII85StopsAtItsLimit(t *testing.T) {
+	zs := bytes.Repeat([]byte("z"), 1<<20)
+	if _, err := ASCII85DecodeWithMaxLength(zs, 100); err == nil ||
+		err.Error() != "ASCII85 data decodes to more than 100 bytes" {
+		t.Errorf("%v", err)
+	}
+	if decoded, err := ASCII85DecodeWithMaxLength(zs[:25], 100); err != nil || len(decoded) != 100 {
+		t.Errorf("%d bytes, %v", len(decoded), err)
+	}
+}
+
 func TestDecompressorRunLengthDecodeCopiesLiteralsAndRepeatsRuns(t *testing.T) {
 	decoded, err := RunLengthDecode([]byte{2, 'a', 'b', 'c', 254, 'x', 128})
 	if err != nil {

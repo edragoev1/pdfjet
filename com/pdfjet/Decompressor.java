@@ -244,8 +244,17 @@ class Decompressor {
      * ends the data. White space is skipped, and a last group of n
      * characters is n - 1 bytes.
      */
-    static byte[] ascii85Decode(byte[] data) {
-        ByteArrayOutputStream bos = new ByteArrayOutputStream(data.length * 4 / 5 + 4);
+    static byte[] ascii85Decode(byte[] data) throws DataFormatException {
+        return ascii85Decode(data, Integer.MAX_VALUE);
+    }
+
+    // Decodes the data of an ASCII85Decode stream, and throws as soon as it
+    // decodes to more than maxLength bytes: a stream of 'z's, each four bytes,
+    // was decoded whole first, 4.3 GB from a PDF of 203 KB (review of 12
+    // October 2026, R7).
+    static byte[] ascii85Decode(byte[] data, int maxLength) throws DataFormatException {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream(
+                (int) Math.min(data.length * 4L / 5 + 4, maxLength));
         long value = 0;
         int count = 0;
         int i = 0;
@@ -271,6 +280,7 @@ class Decompressor {
                     count = 0;
                 }
             }                   // White space, or a character that is not valid.
+            checkLength(bos.size(), maxLength, "ASCII85");
         }
         if (count > 1) {
             for (int j = count; j < 5; j++) {
@@ -280,6 +290,7 @@ class Decompressor {
                 bos.write((int) (value >> (24 - 8 * j)));
             }
         }
+        checkLength(bos.size(), maxLength, "ASCII85");
         return bos.toByteArray();
     }
 

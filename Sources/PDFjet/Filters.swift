@@ -51,11 +51,14 @@ func hexValue(_ c: UInt8) -> Int {
 ///
 /// Decodes the data of an ASCII85Decode stream. Each group of five characters
 /// from ! to u is four bytes, z is four zero bytes, and ~> ends the data. White
-/// space is skipped, and a last group of n characters is n - 1 bytes.
+/// space is skipped, and a last group of n characters is n - 1 bytes. Data that
+/// decodes to more than maxLength bytes throws as soon as it does: a stream of
+/// 'z's, each four bytes, was decoded whole first, 4.9 GB in Go from a PDF of
+/// 203 KB (review of 12 October 2026, R7).
 ///
-func ascii85Decode(_ data: [UInt8]) -> [UInt8] {
+func ascii85Decode(_ data: [UInt8], _ maxLength: Int = Int.max) throws -> [UInt8] {
     var decoded = [UInt8]()
-    decoded.reserveCapacity(data.count * 4 / 5 + 4)
+    decoded.reserveCapacity(min(data.count * 4 / 5 + 4, maxLength))
     var value: Int64 = 0
     var count = 0
     var i = 0
@@ -80,6 +83,9 @@ func ascii85Decode(_ data: [UInt8]) -> [UInt8] {
             }
         }                       // White space, or a character that is not valid.
         i += 1
+        if decoded.count > maxLength {
+            throw PDFjetError(message: "ASCII85 data decodes to more than \(maxLength) bytes")
+        }
     }
     if count > 1 {
         for _ in count..<5 {
@@ -88,6 +94,9 @@ func ascii85Decode(_ data: [UInt8]) -> [UInt8] {
         for j in 0..<(count - 1) {
             decoded.append(UInt8(truncatingIfNeeded: value >> Int64(24 - 8 * j)))
         }
+    }
+    if decoded.count > maxLength {
+        throw PDFjetError(message: "ASCII85 data decodes to more than \(maxLength) bytes")
     }
     return decoded
 }

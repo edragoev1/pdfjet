@@ -53,6 +53,17 @@ public class DecompressorTest {
         Assert.Equal(Bytes(0, 0, 0, 0, 'a', 'b'), Decompressor.ASCII85Decode(Ascii("z@:B~>")));
     }
 
+    // ASCII85 stops as soon as it decodes to more than its limit, as the other
+    // filters do (review of 12 October 2026, R7).
+    [Fact]
+    public void ASCII85StopsAtItsLimit() {
+        byte[] zs = new byte[1 << 20];
+        Array.Fill(zs, (byte) 'z');
+        var e = Assert.Throws<System.IO.InvalidDataException>(() => Decompressor.ASCII85Decode(zs, 100));
+        Assert.Equal("ASCII85 data decodes to more than 100 bytes", e.Message);
+        Assert.Equal(100, Decompressor.ASCII85Decode(zs[..25], 100).Length);
+    }
+
     [Fact]
     public void RunLengthDecodeCopiesLiteralsAndRepeatsRuns() {
         byte[] encoded = Bytes(2, 'a', 'b', 'c', 254, 'x', 128);

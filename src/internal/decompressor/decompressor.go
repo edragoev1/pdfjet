@@ -11,6 +11,7 @@ import (
 	"compress/zlib"
 	"fmt"
 	"io"
+	"math"
 )
 
 // MaxDecodedLength is the largest number of bytes that a stream, or the
@@ -248,7 +249,16 @@ func HexValue(c int) int {
 // ends the data. White space is skipped, and a last group of n characters is
 // n - 1 bytes.
 func ASCII85Decode(buf []byte) []byte {
-	decoded := make([]byte, 0, len(buf)*4/5+4)
+	decoded, _ := ASCII85DecodeWithMaxLength(buf, math.MaxInt)
+	return decoded
+}
+
+// ASCII85DecodeWithMaxLength decodes the data of an ASCII85Decode stream like
+// ASCII85Decode, and fails as soon as it decodes to more than maxLength
+// bytes: a stream of 'z's, each four bytes, was decoded whole first, 4.9 GB
+// from a PDF of 203 KB (review of 12 October 2026, R7).
+func ASCII85DecodeWithMaxLength(buf []byte, maxLength int) ([]byte, error) {
+	decoded := make([]byte, 0, min(len(buf)*4/5+4, maxLength))
 	var value int64
 	count := 0
 	i := 0
@@ -272,6 +282,9 @@ func ASCII85Decode(buf []byte) []byte {
 				count = 0
 			}
 		} // White space, or a character that is not valid.
+		if len(decoded) > maxLength {
+			return nil, errTooLong("ASCII85", maxLength)
+		}
 	}
 	if count > 1 {
 		for j := count; j < 5; j++ {
@@ -281,7 +294,10 @@ func ASCII85Decode(buf []byte) []byte {
 			decoded = append(decoded, byte(value>>(24-8*j)))
 		}
 	}
-	return decoded
+	if len(decoded) > maxLength {
+		return nil, errTooLong("ASCII85", maxLength)
+	}
+	return decoded, nil
 }
 
 // RunLengthDecode decodes the data of a RunLengthDecode stream. A length byte

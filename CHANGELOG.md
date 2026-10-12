@@ -68,6 +68,11 @@ This is the first entry in this file; earlier releases were not tracked here.
   /N says it has, and the PDF's budget allows, in the four ports. It was
   split into its tokens first: a header of 16 MB of one object allocated
   892 MB in Go and 569 MB in Java, and took 6 seconds in Swift.
+- ASCII85Decode stops as soon as a stream decodes to more than the PDF's
+  budget allows, as the other filters do, in the four ports. It decoded the
+  whole stream first: a file of 195 KB, Flate and then ASCII85 of 200
+  million 'z's, allocated 4.5 GB in Go, with a peak of 2.9 GB, before it
+  was refused; it takes 557 MB, with a peak of 482 MB.
 
 ## v9.0.5 — 2026-10-12, internal
 
