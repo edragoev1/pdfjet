@@ -399,7 +399,7 @@ func testDeepestText(node *XMLNode) string {
 func TestXMLParserReadsALargeInvoiceQuickly(t *testing.T) {
 	small := testParseTime(t, 5000)
 	large := testParseTime(t, 20000)
-	if large > 8*small {
+	if large > 10*small {
 		t.Errorf("an invoice of 20000 lines was read in %v, and one of 5000 in %v", large, small)
 	}
 }

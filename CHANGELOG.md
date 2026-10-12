@@ -95,6 +95,8 @@ This is the first entry in this file; earlier releases were not tracked here.
   PDF it belongs to, and with one font drawn on 4 PDFs at once the Go race
   detector found data races, which can stop the program. Java and C# throw
   before they change it, as before.
+- Java: Permissions.toString writes its raw value in ASCII digits whatever
+  the locale; in an Arabic one it wrote them in Arabic-Indic digits.
 
 ## v9.0.5 — 2026-10-12, internal
 

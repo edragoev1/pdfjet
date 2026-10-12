@@ -335,7 +335,7 @@ public class XMLParserTest {
     public void ReadsALargeInvoiceQuickly() {
         TimeSpan small = ParseTime(5000);
         TimeSpan large = ParseTime(20000);
-        Assert.True(large.Ticks <= 8 * small.Ticks, "an invoice of 20000 lines was read in "
+        Assert.True(large.Ticks <= 10 * small.Ticks, "an invoice of 20000 lines was read in "
                 + large.TotalMilliseconds.ToString(CultureInfo.InvariantCulture) + " ms, and one of 5000 in "
                 + small.TotalMilliseconds.ToString(CultureInfo.InvariantCulture) + " ms");
     }

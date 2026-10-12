@@ -149,7 +149,7 @@ import Testing
     @Test func longInputsAreReadQuickly() {
         let small = parseTime(5000)
         let large = parseTime(20000)
-        #expect(large <= 8 * small, "20000 repeats took \(large / 1_000_000) ms, and 5000 \(small / 1_000_000) ms")
+        #expect(large <= 10 * small, "20000 repeats took \(large / 1_000_000) ms, and 5000 \(small / 1_000_000) ms")
     }
 
     // The shortest of three times the text of the repeats is read, in nanoseconds.

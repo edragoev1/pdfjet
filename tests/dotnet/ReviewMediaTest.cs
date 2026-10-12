@@ -328,7 +328,7 @@ public class ReviewMediaTest {
         // computer slows both (a limit of 2 s failed under load, 9 October 2026).
         TimeSpan small = ClassRulesTime(5000);
         TimeSpan large = ClassRulesTime(20000);
-        Assert.True(large.Ticks <= 8 * small.Ticks, "20000 rules and elements took "
+        Assert.True(large.Ticks <= 10 * small.Ticks, "20000 rules and elements took "
                 + large.TotalMilliseconds + " ms, and 5000 " + small.TotalMilliseconds + " ms");
         // The rules are those of the style sheet, in its order, whatever the
         // order of the classes, and a class named twice has its rules once.

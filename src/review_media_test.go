@@ -303,7 +303,7 @@ func TestReviewMediaTheRulesOfTheClassesOfAnElementAreFoundByClass(t *testing.T)
 	// both (a limit of 2 s failed under load, 9 October 2026).
 	small := testClassRulesTime(t, 5000)
 	large := testClassRulesTime(t, 20000)
-	if large > 8*small {
+	if large > 10*small {
 		t.Errorf("20000 rules and elements took %v, and 5000 %v", large, small)
 	}
 	// The rules are those of the style sheet, in its order, whatever the

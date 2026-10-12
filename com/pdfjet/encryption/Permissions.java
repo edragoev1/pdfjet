@@ -7,6 +7,7 @@
 package com.pdfjet.encryption;
 
 import java.util.EnumSet;
+import java.util.Locale;
 import java.util.Set;
 
 /**
@@ -188,6 +189,6 @@ public class Permissions {
      */
     @Override
     public String toString() {
-        return String.format("Permissions: 0x%X (Raw Value: %d)", permissionsFlags, permissionsFlags);
+        return String.format(Locale.ROOT, "Permissions: 0x%X (Raw Value: %d)", permissionsFlags, permissionsFlags);
     }
 }

@@ -179,7 +179,7 @@ public class MarkdownParserTest {
     public void LongInputsAreReadQuickly() {
         TimeSpan small = ParseTime(5000);
         TimeSpan large = ParseTime(20000);
-        Assert.True(large.Ticks <= 8 * small.Ticks, "20000 repeats took "
+        Assert.True(large.Ticks <= 10 * small.Ticks, "20000 repeats took "
                 + large.TotalMilliseconds + " ms, and 5000 " + small.TotalMilliseconds + " ms");
     }
 

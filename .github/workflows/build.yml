@@ -156,6 +156,25 @@ jobs:
                   LANG: tr_TR.UTF-8
               run: bash -e test-${{ matrix.port }}.sh
 
+            # And in an Arabic locale, which writes its digits as Arabic-Indic
+            # digits, and .NET a right-to-left mark before the minus sign: a
+            # number the library writes is ASCII whatever the locale (the
+            # review of 12 October 2026, CI a, R26).
+            - name: Run the unit tests in an Arabic locale
+              if: matrix.port == 'java' || matrix.port == 'dotnet'
+              env:
+                  JAVA_TOOL_OPTIONS: -Duser.language=ar -Duser.country=SA
+                  LANG: ar_SA.UTF-8
+              run: bash -e test-${{ matrix.port }}.sh
+
+            # And in a Swedish locale, where .NET writes the minus sign of a
+            # number as U+2212, as in the Finnish and Norwegian ones.
+            - name: Run the unit tests in a Swedish locale
+              if: matrix.port == 'dotnet'
+              env:
+                  LANG: sv_SE.UTF-8
+              run: bash -e test-${{ matrix.port }}.sh
+
             # The library built for .NET Framework 4.8, from the same sources,
             # with warnings as errors.
             - name: Build the library for .NET Framework 4.8
@@ -537,8 +556,11 @@ jobs:
 
             - uses: ./.github/actions/install-swift
 
+            # The last tag before this commit: on a tagged commit, the tag of
+            # the commit itself compared the release with itself (the review of
+            # 12 October 2026, CI c).
             - name: Compare the public API with the last release
-              run: ./check-api.sh "$(git describe --tags --abbrev=0)"
+              run: ./check-api.sh "$(git describe --tags --abbrev=0 HEAD^)"
 
     swift-macos:
         runs-on: macos-latest

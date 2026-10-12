@@ -13,6 +13,7 @@ import java.util.Arrays;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -156,7 +157,7 @@ class TextFrameTest {
     private static TextFrame novel(Font font) {
         List<String> paragraphs = new ArrayList<String>();
         for (int i = 0; i < 200; i++) {
-            StringBuilder text = new StringBuilder(String.format("p%03d", i));
+            StringBuilder text = new StringBuilder(String.format(Locale.ROOT, "p%03d", i));
             for (int j = 0; j < 30 + i % 17; j++) {
                 text.append(" word").append(j);
             }
@@ -172,7 +173,7 @@ class TextFrameTest {
         for (int p = 0; p < pages.size(); p++) {
             String content = TestSupport.content(pages.get(p));
             for (int i = 0; i < 200; i++) {
-                if (content.contains(TestSupport.hex(String.format("p%03d", i)))) {
+                if (content.contains(TestSupport.hex(String.format(Locale.ROOT, "p%03d", i)))) {
                     assertEquals(-1, pageOf[i], "paragraph " + i + " starts on two pages");
                     pageOf[i] = p;
                 }
@@ -484,7 +485,7 @@ class TextFrameTest {
     void manyJoinedTextLinesAreMeasuredInLinearTime() throws Exception {
         long small = joinedLinesTime(5000);
         long large = joinedLinesTime(20000);
-        assertTrue(large <= 8 * small, "20000 joined lines took " + large / 1000000
+        assertTrue(large <= 10 * small, "20000 joined lines took " + large / 1000000
                 + " ms, and 5000 " + small / 1000000 + " ms");
     }
 

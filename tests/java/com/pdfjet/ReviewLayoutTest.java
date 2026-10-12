@@ -115,19 +115,33 @@ class ReviewLayoutTest {
     @Test
     void textFrameBreaksALongWordInLinearTime() throws Exception {
         // The rest of the word was measured whole for every row it was broken
-        // into: 100,000 characters took 75 seconds.
-        PDF pdf = TestSupport.newPDF();
-        Font font = TestSupport.helvetica(pdf);
-        List<String> text = new ArrayList<String>();
-        text.add(repeat("a", 200000));
-        TextFrame frame = new TextFrame(font, text);
-        frame.setLocation(50f, 50f);
-        frame.setWidth(400f);
-        long start = System.nanoTime();
-        frame.drawOn(new Page(pdf, Letter.PORTRAIT, Page.DETACHED));
-        long took = (System.nanoTime() - start) / 1000000L;
-        assertTrue(took < 3000L, "took " + took + " ms");
-        assertFalse(frame.hasMoreText(), "the word is not all drawn");
+        // into: 100,000 characters took 75 seconds. A word four times as long
+        // takes about four times the time, not sixteen; the two times are the
+        // shortest of three each, measured in the same run, as a limit of 3
+        // seconds failed on a busy computer (review of 12 October 2026, CI b).
+        long small = longWordTime(50000);
+        long large = longWordTime(200000);
+        assertTrue(large <= 10 * small, "200000 characters took " + large / 1000000
+                + " ms, and 50000 " + small / 1000000 + " ms");
+    }
+
+    // The shortest of three times a TextFrame draws a word of the length.
+    private static long longWordTime(int length) throws Exception {
+        long shortest = Long.MAX_VALUE;
+        for (int run = 0; run < 3; run++) {
+            PDF pdf = TestSupport.newPDF();
+            Font font = TestSupport.helvetica(pdf);
+            List<String> text = new ArrayList<String>();
+            text.add(repeat("a", length));
+            TextFrame frame = new TextFrame(font, text);
+            frame.setLocation(50f, 50f);
+            frame.setWidth(400f);
+            long start = System.nanoTime();
+            frame.drawOn(new Page(pdf, Letter.PORTRAIT, Page.DETACHED));
+            shortest = Math.min(shortest, System.nanoTime() - start);
+            assertFalse(frame.hasMoreText(), "the word is not all drawn");
+        }
+        return shortest;
     }
 
     @Test

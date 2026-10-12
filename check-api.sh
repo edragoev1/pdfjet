@@ -18,6 +18,11 @@
 # an added member is one that goal 6 lists is not a thing a diff can say.
 
 cd "$(dirname "$0")" || exit 1
+# A tool that fails fails the script, in a pipe too: the exit codes of javap,
+# go list, the C# lister and the Swift one were not looked at, and a listing
+# left empty printed that nothing was gone (the review of 12 October 2026,
+# CI c).
+set -o pipefail
 BASE=${1:-v9.0.1}
 WORK=$(pwd)/build/check-api
 rm -rf "$WORK"
@@ -111,13 +116,17 @@ for line in sys.stdin:
             print(current)
     elif current:
         print(current.rstrip(" {") + " :: " + line.strip())
-' > "$OUT/java.txt"
+' > "$OUT/java.txt" || { echo "javap failed on the $TREE tree."; exit 1; }
 
     # Go: the exported declarations of every package, read from the source by
     # util/goapi with Go's own parser, each on one line and without comments
-    (cd "$DIR" && for dir in $(go list -f '{{.Dir}}' ./src/... | grep -v -e /internal -e /examples); do
-        "$WORK/goapi" "$dir"
-    done) > "$OUT/go.txt" 2> "$OUT/go.log" || {
+    GODIRS=$(cd "$DIR" && go list -f '{{.Dir}}' ./src/... | grep -v -e /internal -e /examples) || {
+        echo "go list failed on the $TREE tree."
+        exit 1
+    }
+    for dir in $GODIRS; do
+        "$WORK/goapi" "$dir" || exit 1
+    done > "$OUT/go.txt" 2> "$OUT/go.log" || {
         cat "$OUT/go.log"
         exit 1
     }
@@ -127,7 +136,10 @@ for line in sys.stdin:
         cat "$OUT/dotnet.log"
         exit 1
     }
-    dotnet "$LISTER/bin/Lister.dll" "$DIR/dotnet/PDFjet.dll" > "$OUT/dotnet.txt"
+    dotnet "$LISTER/bin/Lister.dll" "$DIR/dotnet/PDFjet.dll" > "$OUT/dotnet.txt" || {
+        echo "The C# lister failed on the $TREE tree."
+        exit 1
+    }
 
     # Swift
     (cd "$DIR" && swift build --target PDFjet -Xswiftc -emit-symbol-graph \
@@ -149,6 +161,16 @@ for symbol in graph["symbols"]:
     lines.add(deprecated + path + " :: " + declaration)
 print("\n".join(sorted(lines)))
 EOF
+    [ $? -eq 0 ] || { echo "The symbol graph of the $TREE tree was not read."; exit 1; }
+
+    # A port that lists nothing is a failure of its lister, not a port with no
+    # API
+    for PORT in java go dotnet swift; do
+        [ -s "$OUT/$PORT.txt" ] || {
+            echo "Nothing of the $PORT API of the $TREE tree was listed."
+            exit 1
+        }
+    done
 done
 
 python3 util/compare-api.py "$WORK" "$BASE"

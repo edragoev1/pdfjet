@@ -20,6 +20,7 @@ import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import org.junit.jupiter.api.Test;
 
 /** Merging the pages of documents that were read. */
@@ -403,7 +404,7 @@ class MergeTest {
         int xref = sb.length();
         sb.append("xref\n0 ").append(objects.size() + 1).append("\n0000000000 65535 f \n");
         for (int offset : offsets) {
-            sb.append(String.format("%010d 00000 n \n", offset));
+            sb.append(String.format(Locale.ROOT, "%010d 00000 n \n", offset));
         }
         sb.append("trailer\n<< /Size ").append(objects.size() + 1)
                 .append(" /Root 1 0 R >>\nstartxref\n").append(xref).append("\n%%EOF\n");

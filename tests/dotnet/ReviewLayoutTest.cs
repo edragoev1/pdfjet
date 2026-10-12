@@ -466,9 +466,9 @@ public sealed class ReviewLayoutTest : IDisposable {
         block.SetWidth(40f).SetHeight(30f).SetLineSpacing(0f);
         Assert.True(block.Layout().textLines.Length >= 5);
         float zero = 0f;
-        Assert.Equal("2147483647 0 -2147483648 3", Util.SaturatingInt(1f / zero) + " "
-                + Util.SaturatingInt(zero / zero) + " " + Util.SaturatingInt(-1f / zero) + " "
-                + Util.SaturatingInt(3.9f));
+        Assert.Equal(new int[] {Int32.MaxValue, 0, Int32.MinValue, 3}, new int[] {
+                Util.SaturatingInt(1f / zero), Util.SaturatingInt(zero / zero),
+                Util.SaturatingInt(-1f / zero), Util.SaturatingInt(3.9f)});
     }
 
     [Fact]

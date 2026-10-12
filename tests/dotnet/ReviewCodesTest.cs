@@ -221,7 +221,7 @@ public class ReviewCodesTest {
         // The PDF grants the extraction for accessibility all the same
         Match match = Regex.Match(TestSupport.Latin1(stream.ToArray()), "/P (-?\\d+)");
         Assert.True(match.Success);
-        int access = int.Parse(match.Groups[1].Value);
+        int access = int.Parse(match.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture);
         Assert.True((access & (int) UserAccess.EXTRACT_CONTENTS_FOR_ACCESSIBILITY) != 0);
     }
 

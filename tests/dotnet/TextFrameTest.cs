@@ -467,7 +467,7 @@ public class TextFrameTest {
     public void ManyJoinedTextLinesAreMeasuredInLinearTime() {
         TimeSpan small = JoinedLinesTime(5000);
         TimeSpan large = JoinedLinesTime(20000);
-        Assert.True(large.Ticks <= 8 * small.Ticks, "20000 joined lines took "
+        Assert.True(large.Ticks <= 10 * small.Ticks, "20000 joined lines took "
                 + large.TotalMilliseconds + " ms, and 5000 " + small.TotalMilliseconds + " ms");
     }
 

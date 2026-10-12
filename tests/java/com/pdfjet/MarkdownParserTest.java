@@ -170,7 +170,7 @@ class MarkdownParserTest {
     void longInputsAreReadQuickly() {
         long small = parseTime(5000);
         long large = parseTime(20000);
-        assertTrue(large <= 8 * small, "20000 repeats took " + large / 1000000
+        assertTrue(large <= 10 * small, "20000 repeats took " + large / 1000000
                 + " ms, and 5000 " + small / 1000000 + " ms");
     }
 

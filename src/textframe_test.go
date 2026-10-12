@@ -573,7 +573,7 @@ func TestTextFrameALinkEndsBeforeTheSpaceAfterIt(t *testing.T) {
 func TestTextFrameManyJoinedTextLinesAreMeasuredInLinearTime(t *testing.T) {
 	small := testJoinedLinesTime(5000)
 	large := testJoinedLinesTime(20000)
-	if large > 8*small {
+	if large > 10*small {
 		t.Errorf("20000 joined lines took %v, and 5000 %v", large, small)
 	}
 }

@@ -187,7 +187,7 @@ func TestMarkdownParserContainersNestAtMostMaxDepthLevels(t *testing.T) {
 func TestMarkdownParserLongInputsAreReadQuickly(t *testing.T) {
 	small := testMarkdownParseTime(t, 5000)
 	large := testMarkdownParseTime(t, 20000)
-	if large > 8*small {
+	if large > 10*small {
 		t.Errorf("20000 repeats took %v, and 5000 %v", large, small)
 	}
 }

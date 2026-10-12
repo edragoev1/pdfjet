@@ -174,7 +174,7 @@ class PDFTest {
         int xref = off3 + o3.length();
         String body = header + o1 + o2 + o3
                 + "xref\n0 4\n0000000000 65535 f \n"
-                + String.format("%010d 00000 n \n%010d 00000 n \n%010d 00000 n \n", off1, off2, off3)
+                + String.format(Locale.ROOT, "%010d 00000 n \n%010d 00000 n \n%010d 00000 n \n", off1, off2, off3)
                 + "trailer\n<< /Size 4 /Root 1 0 R >>\nstartxref\n" + xref + "\n%%EOF\n";
         return body.getBytes(StandardCharsets.ISO_8859_1);
     }
@@ -592,7 +592,7 @@ class PDFTest {
         int xref = sb.length();
         sb.append("xref\n0 ").append(objects.length + 1).append("\n0000000000 65535 f \n");
         for (int offset : offsets) {
-            sb.append(String.format("%010d 00000 n \n", offset));
+            sb.append(String.format(Locale.ROOT, "%010d 00000 n \n", offset));
         }
         sb.append("trailer\n<< /Size ").append(objects.length + 1)
                 .append(" /Root 1 0 R >>\nstartxref\n").append(xref).append("\n%%EOF\n");
@@ -1342,7 +1342,7 @@ class PDFTest {
         int xref = sb.length();
         sb.append("xref\n0 4\n0000000000 65535 f \n");
         for (int offset : offsets) {
-            sb.append(String.format("%010d 00001 n \n", offset));
+            sb.append(String.format(Locale.ROOT, "%010d 00001 n \n", offset));
         }
         sb.append("trailer\n<< /Root 1 1 R /Size 4 >>\nstartxref\n").append(xref).append("\n%%EOF\n");
         List<PDFobj> read = TestSupport.read(sb.toString().getBytes(StandardCharsets.ISO_8859_1));

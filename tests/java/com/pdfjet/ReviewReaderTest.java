@@ -17,6 +17,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 
@@ -66,7 +67,7 @@ class ReviewReaderTest {
         int xref = sb.length();
         sb.append("xref\n0 ").append(objects.size() + 1).append("\n0000000000 65535 f \n");
         for (int offset : offsets) {
-            sb.append(String.format("%010d 00000 n \n", offset));
+            sb.append(String.format(Locale.ROOT, "%010d 00000 n \n", offset));
         }
         sb.append("trailer\n<< /Size ").append(objects.size() + 1)
                 .append(" /Root 1 0 R >>\nstartxref\n").append(xref).append("\n%%EOF\n");
@@ -166,7 +167,7 @@ class ReviewReaderTest {
         int xref = sb.length();
         sb.append("xref\n0 ").append(objects.size() + 1).append("\n0000000000 65535 f \n");
         for (int offset : offsets) {
-            sb.append(String.format("%010d 00000 n \n", offset));
+            sb.append(String.format(Locale.ROOT, "%010d 00000 n \n", offset));
         }
         sb.append("trailer\n<< /Size ").append(objects.size() + 1)
                 .append(" /Root 1 0 R >>\nstartxref\n").append(xref).append("\n%%EOF\n");
@@ -190,7 +191,7 @@ class ReviewReaderTest {
         StringBuilder sb = new StringBuilder(pdf.substring(0, xref));
         sb.append("xref\n0 4\n0000000000 65535 f \n");
         for (int i = 1; i <= 3; i++) {
-            sb.append(String.format("%010d 00000 n \n", pdf.indexOf(i + " 0 obj")));
+            sb.append(String.format(Locale.ROOT, "%010d 00000 n \n", pdf.indexOf(i + " 0 obj")));
         }
         // Free entries, which make the table big.
         sb.append(repeat("0000000000 65535 f \n", 100000));
@@ -215,7 +216,7 @@ class ReviewReaderTest {
         int xref = sb.length();
         sb.append("xref\n0 ").append(count + 1).append("\n0000000000 65535 f \n");
         for (int offset : offsets) {
-            sb.append(String.format("%010d 00000 n \n", offset));
+            sb.append(String.format(Locale.ROOT, "%010d 00000 n \n", offset));
         }
         sb.append("trailer\n<< /Size ").append(count + 1)
                 .append(" /Root 1 0 R >>\nstartxref\n").append(xref).append("\n%%EOF\n");
@@ -367,7 +368,7 @@ class ReviewReaderTest {
         int offset = sb.length();
         sb.append("5 0 obj\n15\nendobj\n");
         int xref = sb.length();
-        sb.append(String.format("xref\n0 1\n0000000000 65535 f \n5 1\n%010d 00000 n \n", offset));
+        sb.append(String.format(Locale.ROOT, "xref\n0 1\n0000000000 65535 f \n5 1\n%010d 00000 n \n", offset));
         sb.append("trailer\n<< /Size 6 /Root 1 0 R /Prev ").append(prev)
                 .append(" >>\nstartxref\n").append(xref).append("\n%%EOF\n");
         List<PDFobj> objects = TestSupport.read(latin1(sb.toString()));

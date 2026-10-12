@@ -10,9 +10,16 @@
 #
 #   ./check-no-fma.sh
 cd "$(dirname "$0")" || exit 1
-packages=$(GOWORK=off go list ./src/... | grep -v '/examples/')
-# -a, so that the packages are compiled, and print their code, though built before
-asm=$(GOWORK=off GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -a -o /dev/null -gcflags=-S $packages 2>&1)
+set -o pipefail
+packages=$(GOWORK=off go list ./src/... | grep -v '/examples/') || exit 1
+# -a, so that the packages are compiled, and print their code, though built
+# before. A build that fails fails the check: it printed that there was no
+# fused multiply-add (the review of 12 October 2026, CI e).
+asm=$(GOWORK=off GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -a -o /dev/null -gcflags=-S $packages 2>&1) || {
+    printf '%s\n' "$asm" | grep -v '^\s' | tail -20
+    echo "The Go port does not build for arm64."
+    exit 1
+}
 fused=$(printf '%s\n' "$asm" | grep -E '\s(FMADD|FMSUB|FNMADD|FNMSUB)[SD]\s' | grep -oE '\([^()]*\.go:[0-9]+\)' | sort | uniq -c)
 if [ -n "$fused" ]; then
     echo "Fused multiply-adds on arm64, where a float multiplication needs float32(...) or float64(...)."

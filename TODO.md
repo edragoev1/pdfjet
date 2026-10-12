@@ -130,7 +130,12 @@ commit and date. The layout's format version (1) and the look's rules
   timed in FuzzPDFRead (#35), FuzzMarkdown's linear check repeating the
   body without the header (#33), and FuzzMarkup's timing made steady under
   load. (Done: net48 built, check-api.sh run against the last tag, and the
-  Java and C# tests run in a Turkish locale, in build.yml.)
+  Java and C# tests run in a Turkish locale, in build.yml; and after the
+  second review, the tests run in an Arabic locale too, and the C# ones in
+  a Swedish one, the timing tests compare a run four times as large with a
+  margin of 10 times, check-api.sh fails when a lister fails or lists
+  nothing, and compares with the tag before a tagged commit, and
+  check-no-fma.sh fails when the arm64 build does.)
 - **Longer fuzzing of the font subsetters.** Go's fuzzers ran 5 minutes each
   on every target before 9.0.5 with no failure; the TrueType and CFF
   subsetters, which subset a real font for each input, ran 27,000 and 15,000

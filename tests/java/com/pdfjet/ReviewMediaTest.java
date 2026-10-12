@@ -330,7 +330,7 @@ class ReviewMediaTest {
         // computer slows both (a limit of 2 s failed under load, 9 October 2026).
         long small = classRulesTime(5000);
         long large = classRulesTime(20000);
-        assertTrue(large <= 8 * small, "20000 rules and elements took " + large / 1000000
+        assertTrue(large <= 10 * small, "20000 rules and elements took " + large / 1000000
                 + " ms, and 5000 " + small / 1000000 + " ms");
         // The rules are those of the style sheet, in its order, whatever the
         // order of the classes, and a class named twice has its rules once.

@@ -33,7 +33,7 @@ public class EncryptionTest {
     private static int AccessValue(byte[] pdf) {
         Match match = Regex.Match(TestSupport.Latin1(pdf), "/P (-?\\d+)");
         Assert.True(match.Success);
-        return int.Parse(match.Groups[1].Value);
+        return int.Parse(match.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture);
     }
 
     private static string Title(List<PDFobj> objects) {

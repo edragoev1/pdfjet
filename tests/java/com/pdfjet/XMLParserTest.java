@@ -330,7 +330,7 @@ class XMLParserTest {
     void readsALargeInvoiceQuickly() throws Exception {
         long small = parseTime(5000);
         long large = parseTime(20000);
-        assertTrue(large <= 8 * small, "an invoice of 20000 lines was read in " + large / 1000000
+        assertTrue(large <= 10 * small, "an invoice of 20000 lines was read in " + large / 1000000
                 + " ms, and one of 5000 in " + small / 1000000 + " ms");
     }
 
