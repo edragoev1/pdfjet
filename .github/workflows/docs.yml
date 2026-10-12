@@ -47,9 +47,10 @@ jobs:
         steps:
             # Only the ports, the DocFX configuration, the examples, the images
             # the examples read, .github (for the Install Swift action), and
-            # tests/swift, tests/corpus/swift and booklet/snippets/swift, the
-            # paths of the test target, of the corpus harness and of the
-            # booklet snippets, which SwiftPM checks for every target of
+            # tests/swift, tests/corpus/swift, tests/crossport/swift and
+            # booklet/snippets/swift, the paths of the test target, of the
+            # corpus and cross-port harnesses and of the booklet snippets,
+            # which SwiftPM checks for every target of
             # Package.swift, are checked out. Files in the repository root are
             # always checked out, get-fonts-and-data.sh among them.
             - uses: actions/checkout@v7
@@ -66,6 +67,7 @@ jobs:
                       PngSuite
                       tests/swift
                       tests/corpus/swift
+                      tests/crossport/swift
                       booklet/snippets/swift
 
             # The fonts and the data files the examples read.
