@@ -7,22 +7,6 @@ languages.
 
 This is the first entry in this file; earlier releases were not tracked here.
 
-## v9.0.7 — unreleased
-
-### Changed
-- The passwords of AES-256 encryption, in the four ports, are prepared with
-  SASLprep (RFC 4013), as PDF 2.0 asks: the spaces other than the ASCII one
-  are spaces, the characters "commonly mapped to nothing", as the soft
-  hyphen, are left out, and the text is in normalization form KC of Unicode
-  3.2, so that an accented letter typed as one character or as a letter and
-  an accent, or a full-width letter and its ASCII one, is the same password,
-  as Acrobat takes it. A password of a control, private use or other
-  character that SASLprep prohibits, or that mixes right to left with left
-  to right text, is refused. An ASCII password is the same as before, and a
-  PDF whose password was taken as it was still opens with it. The tables
-  are written from RFC 3454 and Unicode 3.2 by util/gen-saslprep.py, with
-  no library added.
-
 ## v9.0.5 — unreleased
 
 ### Added
@@ -174,6 +158,18 @@ This is the first entry in this file; earlier releases were not tracked here.
   characters. It was drawn as a hyphen wherever it was, and never broken
   at. In a TextColumn it is not drawn, and not broken at. Text that has soft
   hyphens wraps otherwise than before.
+- The passwords of AES-256 encryption, in the four ports, are prepared with
+  SASLprep (RFC 4013), as PDF 2.0 asks: the spaces other than the ASCII one
+  are spaces, the characters "commonly mapped to nothing", as the soft
+  hyphen, are left out, and the text is in normalization form KC of Unicode
+  3.2, so that an accented letter typed as one character or as a letter and
+  an accent, or a full-width letter and its ASCII one, is the same password,
+  as Acrobat takes it. A password of a control, private use or other
+  character that SASLprep prohibits, or that mixes right to left with left
+  to right text, is refused. An ASCII password is the same as before, and a
+  PDF whose password was taken as it was still opens with it. The tables
+  are written from RFC 3454 and Unicode 3.2 by util/gen-saslprep.py, with
+  no library added.
 
 ### Removed
 - **The `.stream` font format, in the four ports**, as no client uses it: the
