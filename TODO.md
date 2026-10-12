@@ -19,7 +19,8 @@ anyone with this reader: #29, #30, #31, the reader's limits; #1, a stamp in
 an encrypted PDF; #2, a NaN slice of a DonutChart; and #3, Java in a Turkish
 locale. Backported too, on the owner's word that day ("everything fixed in
 v9.0.7 should be backported to v9.0.5"): #4, #5, #6, #7, #9, #10, #12, #13,
-#22, #32 to #36. The rest of the review stays for 9.0.7.
+#22, #32 to #36; and on the same word, the next ones fixed: #11, #14 to #20,
+#23 to #26, #28, #37 and #38. #8, #21 and #27 stay for 9.0.7.
 
 Left before the tag: the manual viewer pass (below) on the files of the new
 code, then the release.
@@ -158,38 +159,14 @@ commit and date. The layout's format version (1) and the look's rules
   Java, C# and Swift ports against Go, and the parsers of untrusted input.
   Its numbers are kept in the items below. Each fix in the four ports, with
   a test.
-- **For 9.0.7: the reader's limits (review #37, #38).** #29 to #35 were
-  fixed in 9.0.5. A BMP row
-  allocated from the header's width before it is read
-  (#37); a PNG's chunks not checked for order, which gives an invalid /Mask
-  (#38). The fuzzers given inputs large enough to reach the limit, and a
-  time per page.
-- **For 9.0.7: what encryption misses (review #11, #19, #20, #27).** The
-  stamp's stream (#1) was fixed in 9.0.5. An image copied from another PDF
-  by NewImageFromPDFobj (#11); the CIDSystemInfo strings of the deprecated
-  CJK fonts (#19); the optional content's /Name (Default) (#20). Passwords
-  not SASLprep'd, as PDF 2.0 asks (#27).
-- **For 9.0.7: Java's default charset (review #23).** FastFloat and
-  PNGImage use the platform's charset: US-ASCII. A CI job in the tr_TR
-  locale. (#3, the core fonts' names in a Turkish locale, and #2, a NaN
-  slice of a DonutChart, were fixed in 9.0.5.)
-- **For 9.0.7: PDF/A (review #28).** The XMP packet's header without
-  `begin=` (#28). (#5 and #6, files and fonts not embedded, are refused
-  in 9.0.5.)
-- **For 9.0.7: text (review #8, #14, #21).** Characters that share a glyph
-  extract as the glyph's first character: ActualText for the others (#8).
-  (#7, #9 and #10 were fixed in 9.0.5.) TextFrame, so Markdown, breaks Thai
-  words anywhere (#14). The soft hyphen always drawn, never a break (#21).
-- **For 9.0.7: tables (review #15-#18).** (#4, #12 and #13 were fixed in
-  9.0.5.) Java's page sum throws
-  on ". 5" (#15); Swift ends the process on a bad vertical alignment (#16);
-  AutoAdjustColumnWidths with a row longer than the first (#17) and an empty
-  first row (#18) panic.
-- **For 9.0.7: the ports apart (review #24-#26).** (#22 and #36, Swift's
-  SVG, were fixed in 9.0.5.) ICCBlackScaled.profile a public mutable array in Java and C# (#24).
-  DonutChart and Arc computed in another float width than Go's (#25), which
-  the CI's hashes miss as they cover the examples only. GetFitChars counts
-  code points in Go and Swift, UTF-16 units in Java and C# (#26).
+- **For 9.0.7: what is left of the review.** Characters that share a glyph
+  extract as the glyph's lowest character (#8): the ToUnicode map is to give
+  each glyph the character drawn with it, and ActualText is left for a
+  document that draws two characters of one glyph. The soft hyphen always
+  drawn, never a break (#21), a change of how text is broken. Passwords not
+  SASLprep'd, as PDF 2.0 asks (#27), which Go cannot do without
+  golang.org/x/text: to be decided. The rest, #1 to #7, #9 to #20, #22 to
+  #26 and #28 to #38, is fixed in 9.0.5.
 - **For 9.0.7: CI.** The output of the four ports compared on more than the
   examples' inputs: the float paths of DonutChart and Arc were found apart by
   a random run against Go (#25), which CI does not run. The fuzzers given
