@@ -139,7 +139,7 @@ public final class PDF {
     // page, which a document of PDF/A takes only as PDF/A-3's associated
     // files (review of 11 October 2026, #5)
     var embeddedFiles = [EmbeddedFile]()
-    var fileAttachment = false
+    var attachedFiles = [EmbeddedFile]()    // Attached to pages, by FileAttachment
     // Lets the tests of what a document of PDF/A or PDF/UA tags draw in a core
     // font, whose text they find by its encoding: complete() refuses one
     // otherwise. A property of the document, not a static, so that the tests
@@ -1871,7 +1871,12 @@ public final class PDF {
         // attached to a page otherwise made a document that was not PDF/A
         // (review of 11 October 2026, #5)
         if isPDFA() {
-            if fileAttachment {
+            // A file attached to a page of PDF/A-3 that the document carries as an
+            // associated file too is one PDF/A-3 allows, the annotation's /FS the
+            // file specification that /AF lists: it was refused (review of
+            // 12 October 2026, R24)
+            let pdfA3 = !isPDFA1() && compliance != Compliance.PDF_A_2A && compliance != Compliance.PDF_A_2B
+            for file in attachedFiles where !pdfA3 || !associatedFiles.contains(where: { $0 === file }) {
                 let message = "A document of \(compliance)"
                         + " cannot have a file attached to a page: carry it with addAssociatedFile, in PDF/A-3."
                 fail(message)
@@ -2007,6 +2012,13 @@ public final class PDF {
     ///
     @discardableResult
     public func addAssociatedFile(_ file: EmbeddedFile) -> PDF {
+        // A file of another PDF is no object of this one: /AF and /EmbeddedFiles
+        // named an object of the other, as a FileAttachment's file is refused
+        // (review of 12 October 2026, R11)
+        if file.pdfIdentity != identity {
+            fail("The embedded file belongs to another PDF.")
+            return self
+        }
         // PDF/A-1 carries no files at all, and PDF/A-2 only other documents of
         // PDF/A, so a document of either that carries a file is not the
         // document it says it is.

@@ -515,6 +515,25 @@ class ReviewWriterTest {
         }
         // Outside PDF/A a file is attached as before
         assertEquals(null, complete(Compliance.PDF_UA_1, attach), "PDF/UA: a file attached");
+        // A file of PDF/A-3 attached to a page is taken when the document
+        // carries it as an associated file too (review of 12 October 2026, R24)
+        Drawing associated = (pdf, page) -> {
+            text(TestSupport::plexSans).draw(pdf, page);
+            EmbeddedFile file = new EmbeddedFile(pdf, "data.xml",
+                    new ByteArrayInputStream("<a/>".getBytes(StandardCharsets.UTF_8)), false,
+                    "text/xml", Relationship.DATA, "The data");
+            pdf.addAssociatedFile(file);
+            new FileAttachment(file).drawOn(page);
+        };
+        assertEquals(null, complete(Compliance.PDF_A_3B, associated), "PDF/A-3: an associated file attached");
+        // An associated file of another PDF is refused, as an attached one is
+        // (review of 12 October 2026, R11)
+        EmbeddedFile foreign = new EmbeddedFile(new PDF(new ByteArrayOutputStream()), "data.xml",
+                new ByteArrayInputStream("<a/>".getBytes(StandardCharsets.UTF_8)), false,
+                "text/xml", Relationship.DATA, "The data");
+        PDF pdf = new PDF(new ByteArrayOutputStream(), Compliance.PDF_A_3B);
+        Exception e = assertThrows(IllegalArgumentException.class, () -> pdf.addAssociatedFile(foreign));
+        assertEquals("The embedded file belongs to another PDF.", e.getMessage());
     }
 
     // Reads the PDF, encrypted with no user password, and returns the strings

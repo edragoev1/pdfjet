@@ -435,6 +435,23 @@ import Testing
         }
         // Outside PDF/A a file is attached as before
         #expect(try complete(Compliance.PDF_UA_1, attach) == "", "PDF/UA: a file attached")
+        // A file of PDF/A-3 attached to a page is taken when the document
+        // carries it as an associated file too (review of 12 October 2026, R24)
+        let associated: (PDF, Page) throws -> Void = { pdf, page in
+            try text(plexSans)(pdf, page)
+            let file = try EmbeddedFile(pdf, "data.xml", InputStream(data: Data("<a/>".utf8)), false,
+                    "text/xml", Relationship.DATA, "The data")
+            pdf.addAssociatedFile(file)
+            FileAttachment(file).drawOn(page)
+        }
+        #expect(try complete(Compliance.PDF_A_3B, associated) == "", "PDF/A-3: an associated file attached")
+        // An associated file of another PDF is refused, as an attached one is
+        // (review of 12 October 2026, R11)
+        let foreign = try EmbeddedFile(TestSupport.newPDF(), "data.xml", InputStream(data: Data("<a/>".utf8)), false,
+                "text/xml", Relationship.DATA, "The data")
+        let pdf = MemoryPDF(Compliance.PDF_A_3B).pdf
+        pdf.addAssociatedFile(foreign)
+        #expect(pdf.error == "The embedded file belongs to another PDF.")
     }
 
     /// Reads the PDF, encrypted with no user password, and returns the

@@ -124,6 +124,16 @@ This is the first entry in this file; earlier releases were not tracked here.
   each row, and TextFrame copied it, so 4 times the word took 16 times the
   time. A word of 400,000 characters takes 86 ms in Go, where it took 1.8 s,
   and 238 ms in Java, where it took 1.45 s.
+- AddAssociatedFile refuses an EmbeddedFile of another PDF, as a
+  FileAttachment does, in the four ports: the document's /AF and
+  /EmbeddedFiles named an object of the other PDF, a corrupt PDF/A-3.
+- A document of PDF/A-3 takes a file attached to a page with FileAttachment
+  when it carries the file as an associated file too, in the four ports: the
+  annotation's /FS is then the file specification /AF lists, which veraPDF
+  passes. It was refused since 9.0.5. A file attached alone is refused, as
+  in PDF/A-1 and PDF/A-2.
+- Go: an EmbeddedFile no longer keeps its content after it is written; the
+  PDF kept every file whole until it was freed.
 
 ## v9.0.5 — 2026-10-12, internal
 

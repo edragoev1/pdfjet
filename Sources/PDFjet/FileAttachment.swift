@@ -76,7 +76,9 @@ public class FileAttachment : Drawable {
             page!.pdf.fail("The embedded file belongs to another PDF.")
             return [self.x + self.h, self.y + self.h]
         }
-        page!.pdf.fileAttachment = true
+        if let file = embeddedFile {
+            page!.pdf.attachedFiles.append(file)
+        }
         let annotation = Annotation(
                 Annotation.FileAttachment,
                 x,

@@ -130,7 +130,7 @@ final public class PDF {
     // files (review of 11 October 2026, #5): the name of each file by the
     // number of its file specification.
     final Map<Integer, String> embeddedFiles = new LinkedHashMap<Integer, String>();
-    boolean fileAttachment = false;
+    final List<EmbeddedFile> attachedFiles = new ArrayList<EmbeddedFile>();  // Attached to pages, by FileAttachment
     // The descriptions that a standard of its own asks the metadata to carry.
     private final List<String> metadata = new ArrayList<String>();
     private final List<String> importedFonts = new ArrayList<String>();
@@ -2417,13 +2417,20 @@ final public class PDF {
         // attached to a page otherwise made a document that was not PDF/A
         // (review of 11 October 2026, #5).
         if (isPDFA()) {
-            if (fileAttachment) {
-                fail(new IllegalStateException("A document of " + compliance
-                        + " cannot have a file attached to a page: carry it with addAssociatedFile, in PDF/A-3."));
-            }
             Set<Integer> associated = new HashSet<Integer>();
             for (EmbeddedFile file : associatedFiles) {
                 associated.add(file.objNumber);
+            }
+            // A file attached to a page of PDF/A-3 that the document carries as an
+            // associated file too is one PDF/A-3 allows, the annotation's /FS the
+            // file specification that /AF lists: it was refused (review of
+            // 12 October 2026, R24)
+            boolean pdfA3 = !isPDFA1() && compliance != Compliance.PDF_A_2A && compliance != Compliance.PDF_A_2B;
+            for (EmbeddedFile file : attachedFiles) {
+                if (!pdfA3 || !associated.contains(file.objNumber)) {
+                    fail(new IllegalStateException("A document of " + compliance
+                            + " cannot have a file attached to a page: carry it with addAssociatedFile, in PDF/A-3."));
+                }
             }
             for (Map.Entry<Integer, String> file : embeddedFiles.entrySet()) {
                 if (!associated.contains(file.getKey())) {
@@ -2544,6 +2551,13 @@ final public class PDF {
      */
     @SuppressWarnings("deprecation") // PDF_A_3A, which carries files too
     public PDF addAssociatedFile(EmbeddedFile file) {
+        // A file of another PDF is no object of this one: /AF and /EmbeddedFiles
+        // named an object of the other, as a FileAttachment's file is refused
+        // (review of 12 October 2026, R11)
+        if (file.pdf != this) {
+            fail(new IllegalArgumentException("The embedded file belongs to another PDF."));
+            return this;
+        }
         // PDF/A-1 carries no files at all, and PDF/A-2 only other documents of
         // PDF/A, so a document of either that carries a file is not the
         // document it says it is.

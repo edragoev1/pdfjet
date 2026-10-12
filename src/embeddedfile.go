@@ -22,7 +22,6 @@ import (
 type EmbeddedFile struct {
 	objNumber int
 	fileName  string
-	content   []byte
 	pdf       *PDF // The PDF the file is embedded in
 	// How the file relates to the document, for a file of a document of
 	// PDF/A-3, and empty for a file that is only attached to a page.
@@ -75,14 +74,15 @@ func NewEmbeddedFileWithRelationship(pdf *PDF, fileName string, reader io.Reader
 	}
 	size := len(buf)
 
+	// The content is written at once, and not kept: the PDF keeps each file
+	// for the check of PDF/A, which reads its name, and each was kept whole
+	// until the PDF was freed (review of 12 October 2026, R25)
+	content := buf
 	if compress {
-		file.content = compressor.Deflate(buf)
-	} else {
-		file.content = buf
+		content = compressor.Deflate(buf)
 	}
-
 	if pdf.encryption != nil {
-		file.content = pdf.encryption.encrypt(file.content)
+		content = pdf.encryption.encrypt(content)
 	}
 
 	pdf.newObj()
@@ -106,11 +106,11 @@ func NewEmbeddedFileWithRelationship(pdf *PDF, fileName string, reader io.Reader
 		pdf.appendString("/Filter /FlateDecode\n")
 	}
 	pdf.appendString("/Length ")
-	pdf.appendInteger(len(file.content))
+	pdf.appendInteger(len(content))
 	pdf.appendByte('\n')
 	pdf.appendByteArray(token.EndDictionary)
 	pdf.appendByteArray(token.Stream)
-	pdf.appendByteArray(file.content)
+	pdf.appendByteArray(content)
 	pdf.appendByteArray(token.EndStream)
 	pdf.endObj()
 

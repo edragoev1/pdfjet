@@ -500,6 +500,45 @@ func TestWriterACompliantDocumentRefusesWhatItCannotBe(t *testing.T) {
 	}
 }
 
+// A file of PDF/A-3 attached to a page is taken when the document carries it
+// as an associated file too, the annotation's /FS the file specification
+// that /AF lists, which veraPDF passes: it was refused (review of 12 October
+// 2026, R24). Attached alone it is refused, as before.
+func TestWriterAFileOfPDFA3AttachedToAPageIsTakenWhenItIsAssociated(t *testing.T) {
+	complete := func(level compliance.Compliance, associate bool) error {
+		doc := testNewDoc()
+		doc.pdf.SetCompliance(level).SetTitle("Test")
+		page := NewPage(doc.pdf, letter.Portrait())
+		NewTextLine(testPlexSans(doc.pdf), "Text").SetLocation(50, 50).DrawOn(page)
+		file := NewEmbeddedFileWithRelationship(doc.pdf, "data.xml", strings.NewReader("<a/>"), false,
+			"text/xml", relationship.Data, "The data")
+		if associate {
+			doc.pdf.AddAssociatedFile(file)
+		}
+		NewFileAttachment(file).DrawOn(page)
+		return doc.pdf.Complete()
+	}
+	if err := complete(compliance.PDF_A_3B, true); err != nil {
+		t.Errorf("an associated file attached: %v", err)
+	}
+	if err := complete(compliance.PDF_A_3B, false); err == nil || !strings.Contains(err.Error(), "cannot have a file attached to a page") {
+		t.Errorf("a file attached alone: %v", err)
+	}
+}
+
+// An associated file embedded in another PDF is refused, as a file attached
+// with FileAttachment is: /AF and /EmbeddedFiles named an object of the other
+// PDF (review of 12 October 2026, R11).
+func TestWriterAnAssociatedFileOfAnotherPDFIsRefused(t *testing.T) {
+	other := testNewDoc()
+	file := NewEmbeddedFileWithRelationship(other.pdf, "data.xml", strings.NewReader("<a/>"), false,
+		"text/xml", relationship.Data, "The data")
+	doc := testNewDoc()
+	doc.pdf.SetCompliance(compliance.PDF_A_3B).SetTitle("Test")
+	doc.pdf.AddAssociatedFile(file)
+	testRecorded(t, doc.pdf, "The embedded file belongs to another PDF.")
+}
+
 // testDecryptedStrings reads the PDF, encrypted with no user password, and
 // returns the strings after the key in its objects, as a reader decrypts
 // them.

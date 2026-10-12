@@ -87,7 +87,7 @@ type PDF struct {
 	// page, which a document of PDF/A takes only as PDF/A-3's associated
 	// files (review of 11 October 2026, #5)
 	embeddedFiles             []*EmbeddedFile
-	fileAttachment            bool
+	attachedFiles             []*EmbeddedFile  // Attached to pages, by FileAttachment
 	pagesCreated              int              // The pages made for this document, added or detached.
 	annotElements             []*structElement // The elements of the annotations
 	documentKids              []int            // The elements of the Document element, by number
@@ -2339,9 +2339,16 @@ func (pdf *PDF) complete() error {
 	// attached to a page otherwise made a document that was not PDF/A
 	// (review of 11 October 2026, #5)
 	if pdf.isPDFA() {
-		if pdf.fileAttachment {
-			return pdf.fail("A document of " + pdf.compliance.String() +
-				" cannot have a file attached to a page: carry it with AddAssociatedFile, in PDF/A-3.")
+		// A file attached to a page of PDF/A-3 that the document carries as an
+		// associated file too is one PDF/A-3 allows, the annotation's /FS the
+		// file specification that /AF lists: it was refused (review of
+		// 12 October 2026, R24)
+		pdfA3 := !pdf.isPDFA1() && pdf.compliance != compliance.PDF_A_2A && pdf.compliance != compliance.PDF_A_2B
+		for _, file := range pdf.attachedFiles {
+			if !pdfA3 || !slices.Contains(pdf.associatedFiles, file) {
+				return pdf.fail("A document of " + pdf.compliance.String() +
+					" cannot have a file attached to a page: carry it with AddAssociatedFile, in PDF/A-3.")
+			}
 		}
 		for _, file := range pdf.embeddedFiles {
 			if !slices.Contains(pdf.associatedFiles, file) {
@@ -2470,6 +2477,13 @@ func (pdf *PDF) complete() error {
 // The file names what it holds, how it relates to the document and what it
 // is, so it has to be made with NewEmbeddedFileWithRelationship.
 func (pdf *PDF) AddAssociatedFile(file *EmbeddedFile) *PDF {
+	// A file of another PDF is no object of this one: /AF and /EmbeddedFiles
+	// named an object of the other, as a FileAttachment's file is refused
+	// (review of 12 October 2026, R11)
+	if file.pdf != pdf {
+		pdf.fail("The embedded file belongs to another PDF.")
+		return pdf
+	}
 	// PDF/A-1 carries no files at all, and PDF/A-2 only other documents of
 	// PDF/A, so a document of either that carries a file is not the document
 	// it says it is.

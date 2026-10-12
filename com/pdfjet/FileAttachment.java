@@ -112,7 +112,7 @@ public class FileAttachment implements Drawable {
         if (embeddedFile.pdf != page.pdf) {
             page.pdf.fail(new IllegalArgumentException("The embedded file belongs to another PDF."));
         }
-        page.pdf.fileAttachment = true;
+        page.pdf.attachedFiles.add(embeddedFile);
         Annotation annotation = new Annotation(
                 Annotation.FileAttachment,
                 x,

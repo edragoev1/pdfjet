@@ -130,7 +130,7 @@ public sealed class PDF {
     // page, which a document of PDF/A takes only as PDF/A-3's associated
     // files (review of 11 October 2026, #5)
     internal readonly List<EmbeddedFile> embeddedFiles = new List<EmbeddedFile>();
-    internal bool fileAttachment = false;
+    internal readonly List<EmbeddedFile> attachedFiles = new List<EmbeddedFile>();  // Attached to pages, by FileAttachment
     // The descriptions that a standard of its own asks the metadata to carry.
     private readonly List<String> metadata = new List<String>();
     private List<String> importedFonts = new List<String>();
@@ -2337,9 +2337,16 @@ public sealed class PDF {
         // attached to a page otherwise made a document that was not PDF/A
         // (review of 11 October 2026, #5)
         if (IsPDFA()) {
-            if (fileAttachment) {
-                Fail(new InvalidOperationException("A document of " + compliance
-                        + " cannot have a file attached to a page: carry it with AddAssociatedFile, in PDF/A-3."));
+            // A file attached to a page of PDF/A-3 that the document carries as an
+            // associated file too is one PDF/A-3 allows, the annotation's /FS the
+            // file specification that /AF lists: it was refused (review of
+            // 12 October 2026, R24)
+            bool pdfA3 = !IsPDFA1() && compliance != Compliance.PDF_A_2A && compliance != Compliance.PDF_A_2B;
+            foreach (EmbeddedFile file in attachedFiles) {
+                if (!pdfA3 || !associatedFiles.Contains(file)) {
+                    Fail(new InvalidOperationException("A document of " + compliance
+                            + " cannot have a file attached to a page: carry it with AddAssociatedFile, in PDF/A-3."));
+                }
             }
             foreach (EmbeddedFile file in embeddedFiles) {
                 if (!associatedFiles.Contains(file)) {
@@ -2459,6 +2466,13 @@ public sealed class PDF {
     /// <param name="file">The embedded file.</param>
     /// <returns>this PDF object.</returns>
     public PDF AddAssociatedFile(EmbeddedFile file) {
+        // A file of another PDF is no object of this one: /AF and /EmbeddedFiles
+        // named an object of the other, as a FileAttachment's file is refused
+        // (review of 12 October 2026, R11)
+        if (file.pdf != this) {
+            Fail(new ArgumentException("The embedded file belongs to another PDF."));
+            return this;
+        }
         // PDF/A-1 carries no files at all, and PDF/A-2 only other documents of
         // PDF/A, so a document of either that carries a file is not the
         // document it says it is.
