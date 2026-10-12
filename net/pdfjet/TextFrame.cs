@@ -499,11 +499,14 @@ public class TextFrame : IDrawable {
     }
 
     // Returns the longest start of the token that fits in the width of the frame,
-    // and at least the first character of the token.
-    private String HeadThatFits(TextLine textLine, String token) {
-        int end = Util.CharCount(token, 0);
+    // and at least its first character. The token is cut between its
+    // characters as TextBlock cuts a word, never before a combining mark or a
+    // Thai vowel that stays with the letter before it, nor inside a surrogate
+    // pair (review of 11 October 2026, #14).
+    internal String HeadThatFits(TextLine textLine, String token) {
+        int end = TextBlock.NextCharacterBreak(token, 0);
         while (end < token.Length) {
-            int next = end + Util.CharCount(token, end);
+            int next = TextBlock.NextCharacterBreak(token, end);
             if (textLine.font.StringWidth(textLine.fallbackFont, textLine.fontSize, token.Substring(0, next)) > w) {
                 break;
             }

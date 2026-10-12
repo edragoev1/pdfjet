@@ -894,6 +894,10 @@ public sealed class TableTest : IDisposable {
         Assert.Null(Table.NumberOf("", 0));
         Assert.Null(Table.NumberOf("1234567890123456789", 0));
         Assert.Null(Table.NumberOf("1E99999", 0));
+        // A space inside is not in a number (review of 11 October 2026, #15).
+        Assert.Null(Table.NumberOf(". 5", 0));
+        Assert.Null(Table.NumberOf("5 .", 0));
+        Assert.Null(Table.NumberOf("(. 5)", 2));
         Assert.Equal("1,234.50", Table.FormatSum(123450, 2));
         Assert.Equal("-1,234,567", Table.FormatSum(-1234567, 0));
         Assert.Equal("0.05", Table.FormatSum(5, 2));
@@ -1268,6 +1272,48 @@ public sealed class TableTest : IDisposable {
         table.SetLocation(20f, 20f);
         table.DrawOn(new Page(pdf, Letter.PORTRAIT));
         Assert.Equal(longText, data[1][0].GetText());
+    }
+
+    // AutoAdjustColumnWidths measures the cells of a row longer than the
+    // first: it sized the widths from the first row and indexed past them
+    // (review of 11 October 2026, #17).
+    [Fact]
+    public void AutoAdjustColumnWidthsMeasuresARowLongerThanTheFirst() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        List<List<Cell>> data = new List<List<Cell>> {
+            new List<Cell> {new Cell(font, "a"), new Cell(font, "b")},
+            new List<Cell> {new Cell(font, "a"), new Cell(font, "b"), new Cell(font, "a wide third cell")},
+        };
+        new Table().SetTableData(data, 1).AutoAdjustColumnWidths();
+        Assert.True(data[1][2].GetWidth() > data[1][0].GetWidth(),
+                "the third cell is " + data[1][2].GetWidth() + " wide, the first " + data[1][0].GetWidth());
+    }
+
+    // A table whose first row is empty is drawn: its rows are completed from
+    // the first row that has cells, and the empty row was drawn from its first
+    // cell; rows of no cells draw nothing, as no rows do (review of 11 October
+    // 2026, #18). Where Go's index went past the empty row, C# drew nothing of
+    // the table, so the cell of the first data set is looked for on its page.
+    [Fact]
+    public void AnEmptyFirstRowIsDrawn() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        List<List<List<Cell>>> dataSets = new List<List<List<Cell>>> {
+            new List<List<Cell>> {new List<Cell>(), new List<Cell> {new Cell(font, "a")}},
+            new List<List<Cell>> {new List<Cell>()},
+            new List<List<Cell>> {new List<Cell>(), new List<Cell>()},
+        };
+        foreach (List<List<Cell>> data in dataSets) {
+            Table table = new Table().SetTableData(data, 1);
+            table.SetLocation(20f, 20f);
+            Page page = new Page(pdf, Letter.PORTRAIT);
+            table.DrawOn(page);
+            table.AutoAdjustColumnWidths();
+            if (data.Count == 2 && data[1].Count > 0) {
+                Assert.Contains("<" + TestSupport.Hex("a") + ">", TestSupport.Content(page));
+            }
+        }
     }
 }
 }

@@ -208,13 +208,19 @@ public class Table : IDrawable {
         return Math.Max(numOfHeaderRows, tableData.Count - numOfFooterRows);
     }
 
-    // Adds empty cells to the rows that are shorter than the first row.
+    // Adds empty cells to the rows that are shorter than the first row, or,
+    // when the first row is empty, than the first row that is not, in the font
+    // of its first cell: an empty row was drawn from its first cell (review of
+    // 11 October 2026, #18).
     private void AddCellsToCompleteTheGrid() {
-        if (tableData.Count == 0 || tableData[0].Count == 0) {
+        int first = tableData.FindIndex(row => row.Count > 0);
+        if (first == -1) {
+            // Rows of no cells are a table of no rows, which draws nothing.
+            tableData = new List<List<Cell>>();
             return;
         }
-        int numOfColumns = tableData[0].Count;
-        Font font = tableData[0][0].font;
+        int numOfColumns = tableData[first].Count;
+        Font font = tableData[first][0].font;
         foreach (List<Cell> row in tableData) {
             int diff = numOfColumns - row.Count;
             for (int i = 0; i < diff; i++) {
@@ -507,7 +513,16 @@ public class Table : IDrawable {
             return null;
         }
         String fraction = (point == -1) ? "" : str.Substring(point + 1);
-        String digits = ((point == -1) ? str : str.Substring(0, point) + fraction).TrimStart('0');
+        String digits = (point == -1) ? str : str.Substring(0, point) + fraction;
+        // A space inside the number, as in ". 5", is not in a number: IsNumber
+        // reads past it, and Java's parse threw on it (review of 11 October
+        // 2026, #15)
+        foreach (char ch in digits) {
+            if (ch < '0' || ch > '9') {
+                return null;
+            }
+        }
+        digits = digits.TrimStart('0');
         if (digits.Length == 0) {
             return 0L;
         }
@@ -1747,7 +1762,13 @@ public class Table : IDrawable {
         if (tableData.Count == 0) {
             return this;
         }
-        float[] maxColWidths = new float[tableData[0].Count];
+        // As many widths as the longest row has cells, as a row may be longer
+        // than the first (review of 11 October 2026, #17)
+        int columns = 0;
+        foreach (List<Cell> row in tableData) {
+            columns = Math.Max(columns, row.Count);
+        }
+        float[] maxColWidths = new float[columns];
         foreach (List<Cell> row in tableData) {
             for (int i = 0; i < row.Count; i++) {
                 Cell cell = row[i];

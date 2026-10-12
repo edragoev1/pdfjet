@@ -484,6 +484,37 @@ public class PDFobj {
         return token;
     }
 
+    // Returns the tokens of the value of the key: one, a reference to an
+    // object, as 5 0 R, or an array or a dictionary with the arrays and
+    // dictionaries in it, from its opening token to its closing one.
+    internal List<String> ValueTokens(String key) {
+        int open = dict.IndexOf("<<");
+        if (open == -1) {
+            return new List<String>();
+        }
+        int i = PDF.EntryIndex(dict.GetRange(open, dict.Count - open), key);
+        if (i == -1) {
+            return new List<String>();
+        }
+        int start = open + i + 1;
+        if (start + 2 < dict.Count && dict[start + 2].Equals("R")) {
+            return dict.GetRange(start, 3);
+        }
+        int depth = 0;
+        for (int j = start; j < dict.Count; j++) {
+            String token = dict[j];
+            if (token.Equals("[") || token.Equals("<<")) {
+                depth++;
+            } else if (token.Equals("]") || token.Equals(">>")) {
+                depth--;
+            }
+            if (depth <= 0) {
+                return dict.GetRange(start, j + 1 - start);
+            }
+        }
+        return dict.GetRange(start, dict.Count - start);
+    }
+
     // Returns the tokens from the index up to the closing one, with the
     // opening before them and the closing after them.
     private String ValueUpTo(int i, String closing, String opening) {

@@ -489,5 +489,31 @@ public class TextFrameTest {
         }
         return shortest;
     }
+
+    // A word wider than the frame is cut between its characters as TextBlock
+    // cuts one: never before a Thai vowel that stays with the letter before
+    // it, nor after one written before its letter. TextFrame cut after any
+    // code point and drew a row "าษาไ" (review of 11 October 2026, #14).
+    [Fact]
+    public void CutsAWordWhereTextBlockDoes() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = new Font(pdf, TestSupport.RepoPath("fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf"));
+        font.SetSize(12f);
+        String word = "ภาษาไทยภาษาไทยภาษาไทย";
+        TextLine textLine = new TextLine(font, word);
+        for (float w = 1f; w <= 120f; w++) {
+            TextFrame tf = new TextFrame(new List<Paragraph>()).SetWidth(w);
+            String rest = word;
+            while (rest.Length > 0) {
+                String head = tf.HeadThatFits(textLine, rest);
+                int last = char.ConvertToUtf32(head, head.Length - (char.IsLowSurrogate(head[head.Length - 1]) ? 2 : 1));
+                Assert.False(TextBlock.IsLeadingVowel(last) && head.Length < rest.Length,
+                        "width " + w + ": \"" + head + "\" ends on a vowel written before its letter");
+                rest = rest.Substring(head.Length);
+                Assert.False(rest.Length > 0 && TextBlock.StaysWithPrevious(char.ConvertToUtf32(rest, 0)),
+                        "width " + w + ": \"" + rest + "\" starts a row on a vowel that stays with the letter before it");
+            }
+        }
+    }
 }
 }

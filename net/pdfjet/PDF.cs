@@ -1065,6 +1065,26 @@ public sealed class PDF {
         Append('>');
     }
 
+    // Appends the key and the tokens of its value, read from another PDF, if
+    // it has one: its strings, literal or hexadecimal, as hexadecimal strings
+    // encrypted when the document is.
+    internal void AppendCopiedValue(String key, List<String> tokens) {
+        if (tokens.Count == 0) {
+            return;
+        }
+        Append(key);
+        foreach (String token in tokens) {
+            Append(" ");
+            if (encryption != null
+                    && (token.StartsWith("(", StringComparison.Ordinal) || (token.StartsWith("<", StringComparison.Ordinal) && !token.Equals("<<")))) {
+                AppendByteString(Decryptor.ToBytes(token));
+            } else {
+                Append(token);
+            }
+        }
+        Append("\n");
+    }
+
     private int AddRootObject(int structTreeRootObjNumber, int outlineDictNum) {
         // Add the root object
         NewObj();

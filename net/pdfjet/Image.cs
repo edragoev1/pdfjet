@@ -155,6 +155,17 @@ public class Image : IDrawable {
         this.pdf = pdf;
         SetPixels((int) double.Parse(obj.GetValue("/Width"), System.Globalization.CultureInfo.InvariantCulture),
                 (int) double.Parse(obj.GetValue("/Height"), System.Globalization.CultureInfo.InvariantCulture));
+        // The values copied as they are, but for their strings, encrypted when
+        // the document is, as the palette of an /Indexed color space; and the
+        // stream, encrypted too (review of 11 October 2026, #11)
+        List<String> colorSpace = obj.ValueTokens("/ColorSpace");
+        List<String> decodeParms = obj.ValueTokens("/DecodeParms");
+        foreach (List<String> tokens in new List<String>[] {colorSpace, decodeParms}) {
+            if (tokens.Contains("R")) {
+                throw new Exception("The image refers to another object of the PDF it was read from, "
+                        + "which is not copied with it: " + String.Join(" ", tokens));
+            }
+        }
         pdf.NewObj();
         pdf.Append("<<\n");
         pdf.Append("/Type /XObject\n");
@@ -168,33 +179,27 @@ public class Image : IDrawable {
         pdf.Append("/Height ");
         pdf.Append(pixelHeight);
         pdf.Append('\n');
-        String colorSpace = obj.GetValue("/ColorSpace");
-        if (!colorSpace.Equals("")) {
-            pdf.Append("/ColorSpace ");
-            pdf.Append(colorSpace);
-            pdf.Append("\n");
-        }
+        pdf.AppendCopiedValue("/ColorSpace", colorSpace);
         pdf.Append("/BitsPerComponent ");
         pdf.Append(obj.GetValue("/BitsPerComponent"));
         pdf.Append("\n");
-        String decodeParms = obj.GetValue("/DecodeParms");
-        if (!decodeParms.Equals("")) {
-            pdf.Append("/DecodeParms ");
-            pdf.Append(decodeParms);
-            pdf.Append("\n");
-        }
+        pdf.AppendCopiedValue("/DecodeParms", decodeParms);
         String imageMask = obj.GetValue("/ImageMask");
         if (!imageMask.Equals("")) {
             pdf.Append("/ImageMask ");
             pdf.Append(imageMask);
             pdf.Append("\n");
         }
+        byte[] stream = obj.stream;
+        if (pdf.encryption != null) {
+            stream = AES256.Encrypt(stream, pdf.encryption.GetKey());
+        }
         pdf.Append("/Length ");
-        pdf.Append(obj.stream.Length);
+        pdf.Append(stream.Length);
         pdf.Append('\n');
         pdf.Append(">>\n");
         pdf.Append("stream\n");
-        pdf.Append(obj.stream, 0, obj.stream.Length);
+        pdf.Append(stream, 0, stream.Length);
         pdf.Append("\nendstream\n");
         pdf.EndObj();
         pdf.images.Add(this);

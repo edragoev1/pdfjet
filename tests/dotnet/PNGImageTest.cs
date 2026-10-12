@@ -840,5 +840,56 @@ public class PNGImageTest {
         }
         Assert.True(embedded > 0);
     }
+
+    // An image copied from a PDF into an encrypted one is encrypted with it,
+    // its stream and the palette of its color space, which a reader decrypts
+    // back to what they were: they were copied as they were, and a viewer
+    // found no image (review of 11 October 2026, #11).
+    [Fact]
+    public void AnImageCopiedIntoAnEncryptedPDFIsEncrypted() {
+        System.Collections.Generic.List<PDFobj> read = ImageObjects(TestSupport.Read(PngSamplesDocument()));
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream);
+        pdf.SetEncryption(new Encryption(pdf, new Passwords(), new Permissions()));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        foreach (PDFobj obj in read) {
+            new Image(pdf, obj).DrawOn(page);
+        }
+        pdf.Complete();
+        byte[] bytes = stream.ToArray();
+        System.Collections.Generic.List<PDFobj> copies = ImageObjects(TestSupport.Read(bytes, ""));
+        Assert.Equal(read.Count, copies.Count);
+        string raw = TestSupport.Latin1(bytes);
+        object[][] cases = SampleCases();
+        int palettes = 0;
+        for (int i = 0; i < cases.Length; i++) {
+            string name = (string) cases[i][0];
+            Assert.Equal(read[i].stream, copies[i].stream);
+            string colorSpace = read[i].GetValue("/ColorSpace");
+            Assert.Equal(colorSpace, copies[i].GetValue("/ColorSpace"));
+            if (colorSpace.Contains("/Indexed")) {
+                palettes++;
+                int start = colorSpace.IndexOf('<') + 1;
+                string palette = colorSpace.Substring(start, colorSpace.IndexOf('>') - start);
+                Assert.False(raw.Contains(palette), name + ": the palette is in the PDF as it was");
+            }
+        }
+        Assert.True(palettes > 0, "no image of a palette was copied");
+    }
+
+    // An image whose color space refers to another object of the PDF it was
+    // read from is refused, as the object is not copied with it.
+    [Fact]
+    public void AnImageThatRefersToAnotherObjectIsRefused() {
+        PDFobj obj = new PDFobj();
+        obj.dict = new System.Collections.Generic.List<string> {"<<", "/Type", "/XObject", "/Subtype", "/Image",
+                "/Width", "1", "/Height", "1", "/ColorSpace", "[", "/ICCBased", "5", "0", "R", "]",
+                "/BitsPerComponent", "8", ">>"};
+        Exception e = Assert.ThrowsAny<Exception>(() => new Image(TestSupport.NewPDF(), obj));
+        Assert.Contains("/ICCBased 5 0 R", e.Message);
+        obj.dict = new System.Collections.Generic.List<string> {"<<", "/Width", "1", "/Height", "1",
+                "/ColorSpace", "5", "0", "R", ">>"};
+        Assert.ThrowsAny<Exception>(() => new Image(TestSupport.NewPDF(), obj));
+    }
 }
 }

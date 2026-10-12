@@ -568,7 +568,7 @@ public class TextBlock : IDrawable {
         return font.StringWidth(fallbackFont, fontSize, GetFallbackFontSize(), text);
     }
 
-    private static int NextCharacterBreak(String word, int i) {
+    internal static int NextCharacterBreak(String word, int i) {
         int ch = Util.CodePointAt(word, i);
         i += (ch > 0xFFFF) ? 2 : 1;
         while (IsLeadingVowel(ch) && i < word.Length) {
@@ -582,13 +582,13 @@ public class TextBlock : IDrawable {
     }
 
     // The Thai and Lao vowels written before the consonant they follow in speech.
-    private static bool IsLeadingVowel(int ch) {
+    internal static bool IsLeadingVowel(int ch) {
         return (ch >= 0x0E40 && ch <= 0x0E44) || (ch >= 0x0EC0 && ch <= 0x0EC4);
     }
 
     // The combining marks, and the Thai and Lao vowels and signs written after
     // a consonant, like SARA AA and MAI YAMOK, which do not start a line.
-    private static bool StaysWithPrevious(int ch) {
+    internal static bool StaysWithPrevious(int ch) {
         if (ch == 0x200C || ch == 0x200D) {         // ZWNJ, ZWJ
             return true;
         }
