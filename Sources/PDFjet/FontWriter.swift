@@ -104,33 +104,46 @@ class FontWriter {
         // glyph. PDF/UA requires every glyph to map to Unicode, so map it to
         // the replacement character.
         list.append("<0000> <FFFD>\n")
-        var buf = String()
-        var unicodeOf = unicodeOfGlyphs(font.unicodeToGID)
-        if let program = font.program {
-            for (gid, c) in program.chars {
-                unicodeOf[gid] = c
+        // The glyphs of the map, those of the subset or all of them, each with
+        // its character, the one drawn with it where the document drew one of
+        // several, in the order of the characters, as the map was written when
+        // it walked them
+        let unicodeOf = font.unicodeOf
+        let chars = font.program?.chars
+        var entries = [(c: Int, gid: Int)]()
+        if unicodeOf.count > 1 {
+            for gid in 1..<unicodeOf.count {
+                if let kept = kept, gid >= kept.count || !kept[gid] {
+                    continue
+                }
+                var c = Int(unicodeOf[gid])
+                if let drawn = chars?[gid] {
+                    c = drawn
+                }
+                if c >= 0 {
+                    entries.append((c, gid))
+                }
             }
         }
-        for cid in 0...0xffff {
-            let gid = font.unicodeToGID[cid]
-            if gid > 0 && unicodeOf[gid] == cid && (kept == nil || (gid < kept!.count && kept![gid])) {
-                buf.append("<")
-                buf.append(toHexString(Int32(gid)))
-                buf.append("> <")
-                // A presentation form that the Bidi class puts in maps to the letters it stands for.
-                if let letters = Bidi.lettersOf(UInt32(cid)) {
-                    for letter in letters {
-                        buf.append(toHexString(Int32(letter)))
-                    }
-                } else {
-                    buf.append(toHexString(Int32(cid)))
+        entries.sort { $0.c < $1.c }
+        var buf = String()
+        for entry in entries {
+            buf.append("<")
+            buf.append(toHexString(Int32(entry.gid)))
+            buf.append("> <")
+            // A presentation form that the Bidi class puts in maps to the letters it stands for.
+            if let letters = Bidi.lettersOf(UInt32(entry.c)) {
+                for letter in letters {
+                    buf.append(toHexString(Int32(letter)))
                 }
-                buf.append(">\n")
-                list.append(buf)
-                buf = ""
-                if list.count == 100 {
-                    writeListToBuffer(&list, &sb)
-                }
+            } else {
+                buf.append(toHexString(Int32(entry.c)))
+            }
+            buf.append(">\n")
+            list.append(buf)
+            buf = ""
+            if list.count == 100 {
+                writeListToBuffer(&list, &sb)
             }
         }
         if list.count > 0 {
@@ -254,19 +267,25 @@ class FontWriter {
         font.cidFontDictObjNumber = pdf.getObjNumber()
     }
 
-    /// Returns the character that each glyph maps to in a ToUnicode CMap. A
-    /// glyph can stand for several characters, like the space and the no-break
-    /// space, but viewers read a CMap with more than one entry for a glyph
-    /// differently. So a glyph maps to the first character that uses it, unless
-    /// that is one text seldom has and another character uses the glyph too,
-    /// like the modifier letter apostrophe and the right single quotation mark.
-    static func unicodeOfGlyphs(_ unicodeToGID: [Int]) -> [Int] {
-        var unicode = [Int](repeating: -1, count: 0x10000)
-        for cid in 0...0xffff {
-            let gid = unicodeToGID[cid]
-            if gid > 0 && (unicode[gid] == -1 ||
-                    (isSeldomText(unicode[gid]) && !isSeldomText(cid))) {
-                unicode[gid] = cid
+    /// Returns the character that each glyph maps to in a ToUnicode CMap,
+    /// indexed by glyph number, -1 for a glyph of no character. A glyph can
+    /// stand for several characters, like the space and the no-break space,
+    /// but viewers read a CMap with more than one entry for a glyph
+    /// differently. So a glyph maps to the first character that uses it,
+    /// unless that is one text seldom has and another character uses the
+    /// glyph too, like the modifier letter apostrophe and the right single
+    /// quotation mark. It is made once, when the font is read, where the
+    /// ToUnicode map walked the 65,536 characters twice for every font of
+    /// every document.
+    static func unicodeOfGlyphs(_ unicodeToGID: GlyphMap) -> [Int32] {
+        var unicode = [Int32]()
+        unicodeToGID.forEach { cid, gid in
+            if gid >= unicode.count {
+                unicode.append(contentsOf: repeatElement(Int32(-1), count: gid + 1 - unicode.count))
+            }
+            if unicode[gid] == -1 ||
+                    (isSeldomText(Int(unicode[gid])) && !isSeldomText(cid)) {
+                unicode[gid] = Int32(cid)
             }
         }
         return unicode

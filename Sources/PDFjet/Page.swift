@@ -966,7 +966,7 @@ public class Page {
                 }
             }
             if codePoint != 0xFEFF && !Font.isControl(codePoint) && !Font.isIgnorable(codePoint) &&
-                    (codePoint < first || codePoint > last || codePoint >= table.count || table[codePoint] == 0) {
+                    (codePoint < first || codePoint > last || table[codePoint] == 0) {
                 return true
             }
         }

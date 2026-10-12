@@ -47,7 +47,8 @@ public class Font {
     var fontUnderlinePosition: Int16 = 0
     var fontUnderlineThickness: Int16 = 0
     var advanceWidth: [UInt16] = []
-    var unicodeToGID: [Int] = []
+    var unicodeToGID = GlyphMap()
+    var unicodeOf: [Int32] = []     // The character of each glyph, see FontWriter.unicodeOfGlyphs
     // The offsets of the marks that attach to other marks, in font units, by
     // the glyph IDs of the two marks, or nil. A font has them from its GPOS
     // table, read from a .otf or .ttf file or from a stream that keeps them.
@@ -343,10 +344,10 @@ public class Font {
         for width in font.advanceWidth {
             hash = fold(hash, Int(width))
         }
-        for gid in font.unicodeToGID {
-            hash = fold(hash, gid)
-        }
-        return hash
+        // The glyph of each of the 65,536 characters, 0 for those the font has
+        // not, as the array of them was folded: the subset's tag is made of
+        // it, and so the bytes of the PDF
+        return font.unicodeToGID.fold(hash, fold)
     }
 
     // One step of the FNV-1a hash, which is the same in the four ports.
@@ -441,7 +442,7 @@ public class Font {
     // 2026, #8). The first character drawn with the glyph is kept; a document
     // that draws two characters of one glyph extracts the first for both.
     func useChar(_ c: Int, _ gid: Int) {
-        if let program = program, gid > 0, c >= 0, c < unicodeToGID.count,
+        if let program = program, gid > 0,
                 unicodeToGID[c] == gid, program.chars[gid] == nil {
             program.chars[gid] = c
         }
@@ -457,7 +458,7 @@ public class Font {
         var chars = program.chars
         program.chars = [:]     // So that chars is not copied when changed
         for (c, gid) in zip(codePoints, gids)
-                where gid > 0 && c >= 0 && c < table.count && table[c] == gid && chars[gid] == nil {
+                where gid > 0 && table[c] == gid && chars[gid] == nil {
             chars[gid] = c
         }
         program.chars = chars
@@ -518,7 +519,7 @@ public class Font {
                 var gid: Int
                 if Font.isControl(codePoint) {
                     gid = table[0x0020]
-                } else if codePoint < first || codePoint > last || codePoint >= table.count || table[codePoint] == 0 {
+                } else if codePoint < first || codePoint > last || table[codePoint] == 0 {
                     if missing < 0 {
                         missing = missingGlyph()
                     }
@@ -572,8 +573,7 @@ public class Font {
         if Font.isControl(codePoint) {
             return false
         }
-        return codePoint < firstChar || codePoint > lastChar ||
-                codePoint >= unicodeToGID.count || unicodeToGID[codePoint] == 0
+        return codePoint < firstChar || codePoint > lastChar || unicodeToGID[codePoint] == 0
     }
 
     // Returns the glyph a character the font does not have is drawn with:

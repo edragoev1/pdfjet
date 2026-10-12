@@ -1,0 +1,80 @@
+/**
+ * GlyphMap.swift
+ *
+ * Copyright (c) 2026 PDFjet Software
+ * Licensed under the MIT License. See LICENSE file in the project root.
+ */
+import Foundation
+
+// Maps the characters of the Basic Multilingual Plane to the glyphs of a font,
+// as its cmap table does, in two levels: 256 blocks of 256 characters, a block
+// made only where the font has a character in it. A font of 1,000 characters in
+// a few blocks takes some kilobytes, where an array of an Int for each of the
+// 65,536 characters took 512 KB for every font of every document; a lookup is
+// two reads of an array still. The blocks are kept one after another in one
+// array, and the index of each, or -1, in another, so that a copy of the map
+// in a local constant, as the hot loops make one, copies two references.
+struct GlyphMap {
+    private var index = [Int16](repeating: -1, count: 256)
+    private var blocks = [Int32]()
+
+    // Returns the glyph of the character, or 0 for one the font does not have.
+    @inline(__always)
+    subscript(c: Int) -> Int {
+        if c < 0 || c > 0xFFFF {
+            return 0
+        }
+        let block = Int(index[c >> 8])
+        if block < 0 {
+            return 0
+        }
+        return Int(blocks[block << 8 | (c & 0xFF)])
+    }
+
+    // Sets the glyph of the character, which is in the Basic Multilingual
+    // Plane. The map is changed in place: a font's own map is not shared
+    // while it is read, so no copy is made.
+    mutating func set(_ c: Int, _ gid: Int) {
+        var block = Int(index[c >> 8])
+        if block < 0 {
+            if gid == 0 {
+                return
+            }
+            block = blocks.count >> 8
+            index[c >> 8] = Int16(block)
+            blocks.append(contentsOf: repeatElement(Int32(0), count: 256))
+        }
+        blocks[block << 8 | (c & 0xFF)] = Int32(gid)
+    }
+
+    // Calls the function for each character that has a glyph, in the order
+    // of the characters.
+    func forEach(_ body: (_ c: Int, _ gid: Int) -> Void) {
+        for b in 0..<256 {
+            let block = Int(index[b])
+            if block < 0 {
+                continue
+            }
+            for i in 0..<256 {
+                let gid = Int(blocks[block << 8 | i])
+                if gid != 0 {
+                    body(b << 8 | i, gid)
+                }
+            }
+        }
+    }
+
+    // Folds the glyph of each of the 65,536 characters into the hash, 0 for
+    // those the font has not, as the array of them was folded: the subset's
+    // tag is made of it, and so the bytes of the PDF.
+    func fold(_ hash: UInt64, _ step: (UInt64, Int) -> UInt64) -> UInt64 {
+        var hash = hash
+        for b in 0..<256 {
+            let block = Int(index[b])
+            for i in 0..<256 {
+                hash = step(hash, block < 0 ? 0 : Int(blocks[block << 8 | i]))
+            }
+        }
+        return hash
+    }
+}

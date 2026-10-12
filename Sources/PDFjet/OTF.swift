@@ -67,7 +67,7 @@ class OTF {
         return PDFjetError(message: "Invalid font file: \(what).")
     }
 
-    var unicodeToGID = [Int](repeating: 0, count: 0x10000)
+    var unicodeToGID = GlyphMap()
     var markToMarkOffsets: [Int: [Int]]?
     var markAnchors: [[Int: [Int]]]?
     var baseAnchors: [[Int: [Int]]]?
@@ -349,7 +349,7 @@ class OTF {
                 for ch in start...end {
                     let gid = startGlyph + (ch - first)
                     if gid < 0x10000 && unicodeToGID[ch] == 0 {
-                        unicodeToGID[ch] = gid
+                        unicodeToGID.set(ch, gid)
                     }
                 }
             }
@@ -459,7 +459,7 @@ class OTF {
                         gid = (gid + idDelta[seg]) & 0xFFFF
                     }
                 }
-                unicodeToGID[ch] = gid
+                unicodeToGID.set(ch, gid)
             }
         }
     }

@@ -55,6 +55,7 @@ class OpenTypeFont {
         font.bBoxURy = otf.bBoxURy!
         font.advanceWidth = otf.advanceWidth
         font.unicodeToGID = otf.unicodeToGID
+        font.unicodeOf = FontWriter.unicodeOfGlyphs(otf.unicodeToGID)
         font.markToMarkOffsets = otf.markToMarkOffsets
         font.markAnchors = otf.markAnchors
         font.baseAnchors = otf.baseAnchors

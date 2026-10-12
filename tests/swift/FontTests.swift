@@ -348,20 +348,20 @@ import Testing
         // needs, and which Unicode makes the signs. The space still wins over
         // the no-break space, and the right single quotation mark over the
         // modifier letter apostrophe.
-        var unicodeToGID = [Int](repeating: 0, count: 0x10000)
+        var unicodeToGID = GlyphMap()
         let glyphs: [[Int]] = [
             [0x00B5, 0x03BC], [0x03A9, 0x2126], [0x004B, 0x212A], [0x00C5, 0x212B],
             [0x0020, 0x00A0], [0x02BC, 0x2019],
         ]
         for (i, chars) in glyphs.enumerated() {
             for c in chars {
-                unicodeToGID[c] = i + 1
+                unicodeToGID.set(c, i + 1)
             }
         }
         let unicodeOf = FontWriter.unicodeOfGlyphs(unicodeToGID)
         let want = [0x03BC, 0x03A9, 0x004B, 0x00C5, 0x0020, 0x2019]
         for (i, c) in want.enumerated() {
-            #expect(unicodeOf[i + 1] == c, "glyph \(i + 1)")
+            #expect(Int(unicodeOf[i + 1]) == c, "glyph \(i + 1)")
         }
     }
 
