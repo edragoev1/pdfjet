@@ -6,7 +6,12 @@
  */
 package com.pdfjet;
 
+import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -397,6 +402,53 @@ class FontTest {
         int[] want = {0x03BC, 0x03A9, 0x004B, 0x00C5, 0x0020, 0x2019};
         for (int gid = 1; gid <= want.length; gid++) {
             assertEquals(want[gid - 1], unicodeOf[gid], "glyph " + gid);
+        }
+    }
+
+    // Returns the characters the ToUnicode maps of the objects give their
+    // glyphs, each in hexadecimal, as 06F1.
+    private static Set<String> toUnicodeValues(List<PDFobj> objects) {
+        Set<String> values = new HashSet<String>();
+        Pattern entry = Pattern.compile("<[0-9A-Fa-f]{4}> <([0-9A-Fa-f]+)>");
+        for (PDFobj obj : objects) {
+            byte[] data = obj.getData();
+            if (data == null) {
+                continue;
+            }
+            String cmap = TestSupport.latin1(data);
+            if (cmap.startsWith("/CIDInit")) {
+                Matcher m = entry.matcher(cmap);
+                while (m.find()) {
+                    values.add(m.group(1).toUpperCase(Locale.ROOT));
+                }
+            }
+        }
+        return values;
+    }
+
+    @Test
+    void aGlyphOfSeveralCharactersMapsToTheCharacterDrawn() throws Exception {
+        // A glyph a font draws for several characters maps to the character
+        // the document drew with it, not to the lowest of them: a Persian ۱۳۹۸
+        // was copied as the Arabic ١٣٩٨, and the full-width slash of km／h as a
+        // division slash (review of 11 October 2026, #8).
+        assumeTrue(TestSupport.file("fonts/NotoSansArabic/NotoSansArabic-Regular.ttf").exists(),
+                "the fonts directory is not here");
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Font arabic = new Font(pdf, TestSupport.open("fonts/NotoSansArabic/NotoSansArabic-Regular.ttf"));
+        Font tc = new Font(pdf, TestSupport.open("fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.ttf"));
+        new TextLine(arabic, "\u06F1\u06F3\u06F9\u06F8").setLocation(50f, 50f).drawOn(page);
+        new TextLine(tc, "60km\uFF0Fh").setLocation(50f, 100f).drawOn(page);
+        pdf.complete();
+        Set<String> values = toUnicodeValues(TestSupport.read(bos.toByteArray()));
+        for (String want : new String[] {"06F1", "06F3", "06F9", "06F8", "FF0F"}) {
+            assertTrue(values.contains(want), "no glyph maps to U+" + want);
+        }
+        for (String other : new String[] {"0661", "0663", "0669", "2215"}) {
+            assertFalse(values.contains(other),
+                    "a glyph maps to U+" + other + ", which the document did not draw");
         }
     }
 }

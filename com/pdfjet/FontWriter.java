@@ -185,6 +185,11 @@ class FontWriter {
         list.add("<0000> <FFFD>\n");
         StringBuilder buf = new StringBuilder();
         int[] unicodeOf = unicodeOfGlyphs(font.unicodeToGID);
+        if (font.program != null && font.program.chars != null) {
+            for (Map.Entry<Integer, Integer> e : font.program.chars.entrySet()) {
+                unicodeOf[e.getKey()] = e.getValue();
+            }
+        }
         for (int cid = 0; cid <= 0xffff; cid++) {
             int gid = font.unicodeToGID[cid];
             if (gid > 0 && unicodeOf[gid] == cid && (kept == null || (gid < kept.length && kept[gid]))) {

@@ -12,6 +12,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+import java.util.HashMap;
 
 /**
  * Used to create font objects.
@@ -516,6 +517,23 @@ final public class Font {
         if (program != null && gid >= 0 && gid < program.used.length) {
             program.used[gid] = true;
         }
+    }
+
+    // Records that the glyph is drawn for the character, so that the ToUnicode
+    // map gives the glyph the character the document drew, where the font
+    // draws several characters with one glyph: it gave the glyph the lowest of
+    // them, and a Persian ۱ was copied as an Arabic ١ (review of 11 October
+    // 2026, #8). The first character drawn with the glyph is kept; a document
+    // that draws two characters of one glyph extracts the first for both.
+    void useChar(int c, int gid) {
+        if (program == null || gid <= 0 || c < 0 || c >= unicodeToGID.length
+                || unicodeToGID[c] != gid) {
+            return;
+        }
+        if (program.chars == null) {
+            program.chars = new HashMap<Integer, Integer>();
+        }
+        program.chars.putIfAbsent(gid, c);
     }
 
     /**

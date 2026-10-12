@@ -820,7 +820,9 @@ final public class Page {
                 int cp = str.codePointAt(i);
                 i += Character.charCount(cp);
                 if (cp != 0xFEFF && !Font.isIgnorable(cp)) {     // BOM, or one not drawn
-                    appendGlyph(font, glyphOf(font, cp));
+                    int gid = glyphOf(font, cp);
+                    font.useChar(cp, gid);
+                    appendGlyph(font, gid);
                 }
             }
         } else {
@@ -871,6 +873,7 @@ final public class Page {
                     afterRLM = false;
                     codePoints[n] = cp;
                     gids[n] = glyphOf(font, cp);
+                    font.useChar(cp, gids[n]);
                     hasMarks |= isMark(cp);
                     hasNotdef |= isMissing(font, codePoints, n);
                     n++;
