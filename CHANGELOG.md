@@ -34,6 +34,14 @@ This is the first entry in this file; earlier releases were not tracked here.
 - An Arc, and so an Ellipse, given a stroke width and no colors is drawn a
   black line of that width, in the four ports, where it was drawn 0 wide,
   the thinnest line the device draws, whatever the width.
+- The password of AES-256 encryption is cut at 127 bytes of UTF-8, as PDF
+  2.0 asks, even inside a character, in the four ports, as before 9.0.5 and
+  as qpdf, pdf.js and pypdf cut it. 9.0.5 cut it before a character that
+  did not fit whole, so a password longer than 127 bytes could make a PDF
+  that other readers did not open, and a PDF of theirs that PDFjet did not.
+  In Go, a password that is not UTF-8, as one in Latin-1, failed to open
+  a PDF with "slice bounds out of range"; it is tried as its own bytes
+  again.
 
 ## v9.0.5 — 2026-10-12, internal
 

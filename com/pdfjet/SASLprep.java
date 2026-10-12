@@ -119,35 +119,15 @@ final class SASLprep {
     }
 
     /**
-     * Returns the UTF-8 bytes of the password, at most 127, as PDF 2.0 asks,
-     * cut before a character that would not fit whole.
+     * Returns the first 127 UTF-8 bytes of the password, as PDF 2.0 asks, even
+     * when that cuts a character in two, as other readers and writers do.
      *
      * @param password the password.
      * @return the bytes.
      */
     static byte[] truncate(String password) {
-        int end = 0;
-        int length = 0;
-        for (int i = 0; i < password.length(); ) {
-            int c = password.codePointAt(i);
-            int size = utf8Length(c);
-            if (length + size > 127) {
-                break;
-            }
-            length += size;
-            i += Character.charCount(c);
-            end = i;
-        }
-        return password.substring(0, end).getBytes(StandardCharsets.UTF_8);
-    }
-
-    // Returns the number of bytes of the character in UTF-8; a lone surrogate
-    // is written as a question mark.
-    private static int utf8Length(int c) {
-        if (c < 0x80 || (c >= 0xD800 && c <= 0xDFFF)) {
-            return 1;
-        }
-        return (c < 0x800) ? 2 : (c < 0x10000) ? 3 : 4;
+        byte[] bytes = password.getBytes(StandardCharsets.UTF_8);
+        return (bytes.length > 127) ? Arrays.copyOf(bytes, 127) : bytes;
     }
 
     // Returns true if the character is in one of the ranges, first and last,

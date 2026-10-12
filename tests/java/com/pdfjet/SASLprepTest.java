@@ -61,13 +61,17 @@ class SASLprepTest {
                 "a private use character is not refused");
     }
 
+    // The bytes are cut at 127 even inside a character, as ISO 32000-2, qpdf,
+    // pdf.js and pypdf do (review of 12 October 2026, R1).
     @Test
-    void truncateCutsBeforeACharacterThatDoesNotFit() {
+    void truncateCutsAt127Bytes() {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < 126; i++) {
             sb.append('a');
         }
-        assertEquals(126, SASLprep.truncate(sb + "é").length);
+        byte[] bytes = SASLprep.truncate(sb + "é");
+        assertEquals(127, bytes.length);
+        assertEquals((byte) 0xC3, bytes[126]);
         for (int i = 126; i < 200; i++) {
             sb.append('a');
         }

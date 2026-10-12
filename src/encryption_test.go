@@ -259,4 +259,9 @@ func TestEncryptionAPasswordTakenAsItWasStillOpens(t *testing.T) {
 	if got := aes256Passwords("ascii"); len(got) != 1 {
 		t.Errorf("%q", got)
 	}
+	// A password that is not UTF-8, Latin-1 here, is tried as its own bytes
+	// (review of 12 October 2026, R2).
+	if got := aes256Passwords("caf\xe9"); len(got) != 1 || string(got[0]) != "caf\xe9" {
+		t.Errorf("%q", got)
+	}
 }

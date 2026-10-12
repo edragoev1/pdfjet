@@ -58,9 +58,11 @@ func TestPrepareNormalizes(t *testing.T) {
 	}
 }
 
-func TestTruncateCutsBeforeACharacterThatDoesNotFit(t *testing.T) {
+// The bytes are cut at 127 even inside a character, as ISO 32000-2, qpdf,
+// pdf.js and pypdf do (review of 12 October 2026, R1).
+func TestTruncateCutsAt127Bytes(t *testing.T) {
 	password := strings.Repeat("a", 126) + "é"
-	if got := Truncate(password); len(got) != 126 {
+	if got := Truncate(password); string(got) != password[:127] {
 		t.Errorf("%d bytes", len(got))
 	}
 	if got := Truncate(strings.Repeat("a", 200)); len(got) != 127 {

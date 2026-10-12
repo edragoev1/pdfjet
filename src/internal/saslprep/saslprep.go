@@ -17,7 +17,6 @@ import (
 	"errors"
 	"fmt"
 	"sort"
-	"unicode/utf8"
 )
 
 // Prepare returns the password prepared, or an error that names the
@@ -59,17 +58,10 @@ func PasswordBytes(password string) ([]byte, error) {
 	return Truncate(prepared), nil
 }
 
-// Truncate returns the bytes of the password, at most 127, as PDF 2.0 asks,
-// cut before a character that would not fit whole.
+// Truncate returns the first 127 bytes of the password, as PDF 2.0 asks,
+// even when that cuts a character in two, as other readers and writers do.
 func Truncate(password string) []byte {
-	end := 0
-	for i, c := range password {
-		if i+utf8.RuneLen(c) > 127 {
-			break
-		}
-		end = i + utf8.RuneLen(c)
-	}
-	return []byte(password[:end])
+	return []byte(password[:min(len(password), 127)])
 }
 
 // inRanges returns true if the character is in one of the ranges, first and

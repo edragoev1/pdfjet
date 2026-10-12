@@ -65,28 +65,14 @@ internal static class SASLprep {
         return Truncate(Prepare(password));
     }
 
-    // Returns the bytes of the password, at most 127, as PDF 2.0 asks, cut
-    // before a character that would not fit whole.
+    // Returns the first 127 UTF-8 bytes of the password, as PDF 2.0 asks, even
+    // when that cuts a character in two, as other readers and writers do.
     internal static byte[] Truncate(String password) {
-        int end = 0;    // The chars of the password that fit
-        int length = 0; // Their UTF-8 bytes
-        for (int i = 0; i < password.Length; ) {
-            int c = password[i];
-            int chars = 1;
-            if (Char.IsHighSurrogate(password[i]) && i + 1 < password.Length &&
-                    Char.IsLowSurrogate(password[i + 1])) {
-                c = Char.ConvertToUtf32(password[i], password[i + 1]);
-                chars = 2;
-            }
-            int bytes = (c < 0x80) ? 1 : (c < 0x800) ? 2 : (c < 0x10000) ? 3 : 4;
-            if (length + bytes > 127) {
-                break;
-            }
-            length += bytes;
-            i += chars;
-            end = i;
+        byte[] bytes = Encoding.UTF8.GetBytes(password);
+        if (bytes.Length > 127) {
+            Array.Resize(ref bytes, 127);
         }
-        return Encoding.UTF8.GetBytes(password.Substring(0, end));
+        return bytes;
     }
 
     // Returns the code points of the string, a surrogate pair as one; a lone

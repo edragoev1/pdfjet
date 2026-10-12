@@ -94,19 +94,11 @@ enum SASLprep {
     }
 
     ///
-    /// Returns the bytes of the password, at most 127, as PDF 2.0 asks, cut
-    /// before a character that would not fit whole.
+    /// Returns the first 127 UTF-8 bytes of the password, as PDF 2.0 asks,
+    /// even when that cuts a character in two, as other readers and writers do.
     ///
     static func truncate(_ password: String) -> [UInt8] {
-        var bytes = [UInt8]()
-        for scalar in password.unicodeScalars {
-            let encoded = Array(String(scalar).utf8)
-            if bytes.count + encoded.count > 127 {
-                break
-            }
-            bytes += encoded
-        }
-        return bytes
+        return Array(password.utf8.prefix(127))
     }
 
     // Returns the code point as at least four hexadecimal digits, in capitals.

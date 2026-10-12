@@ -58,10 +58,14 @@ public class SASLprepTest {
         Assert.Throws<ArgumentException>(() => SASLprep.Prepare("pass"));
     }
 
+    // The bytes are cut at 127 even inside a character, as ISO 32000-2, qpdf,
+    // pdf.js and pypdf do (review of 12 October 2026, R1).
     [Fact]
-    public void TruncateCutsBeforeACharacterThatDoesNotFit() {
+    public void TruncateCutsAt127Bytes() {
         string password = new string('a', 126) + "é";
-        Assert.Equal(126, SASLprep.Truncate(password).Length);
+        byte[] bytes = SASLprep.Truncate(password);
+        Assert.Equal(127, bytes.Length);
+        Assert.Equal(0xC3, bytes[126]);
         Assert.Equal(127, SASLprep.Truncate(new string('a', 200)).Length);
     }
 }

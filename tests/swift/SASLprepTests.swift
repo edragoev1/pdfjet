@@ -59,9 +59,13 @@ import Testing
         }
     }
 
-    @Test func truncateCutsBeforeACharacterThatDoesNotFit() {
+    // The bytes are cut at 127 even inside a character, as ISO 32000-2, qpdf,
+    // pdf.js and pypdf do (review of 12 October 2026, R1).
+    @Test func truncateCutsAt127Bytes() {
         let password = String(repeating: "a", count: 126) + "\u{E9}"
-        #expect(SASLprep.truncate(password).count == 126)
+        let bytes = SASLprep.truncate(password)
+        #expect(bytes.count == 127)
+        #expect(bytes[126] == 0xC3)
         #expect(SASLprep.truncate(String(repeating: "a", count: 200)).count == 127)
     }
 }
