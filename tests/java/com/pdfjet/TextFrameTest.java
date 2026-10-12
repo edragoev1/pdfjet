@@ -504,4 +504,34 @@ class TextFrameTest {
         }
         return shortest;
     }
+
+    // A word wider than the frame is cut between its characters as TextBlock
+    // cuts one: never before a Thai vowel that stays with the letter before it,
+    // nor after one written before its letter. TextFrame cut after any code
+    // point and drew a row "าษาไ" (review of 11 October 2026, #14).
+    @Test
+    void cutsAWordWhereTextBlockDoes() throws Exception {
+        Font font = new Font(TestSupport.newPDF(),
+                TestSupport.open("fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf"));
+        font.setSize(12f);
+        String word = "ภาษาไทยภาษาไทยภาษาไทย";
+        TextLine textLine = new TextLine(font, word);
+        for (float w = 1f; w <= 120f; w++) {
+            TextFrame tf = new TextFrame(new ArrayList<Paragraph>()).setWidth(w);
+            String rest = word;
+            while (!rest.isEmpty()) {
+                String head = tf.headThatFits(textLine, rest);
+                int last = head.codePointBefore(head.length());
+                if (TextBlock.isLeadingVowel(last) && head.length() < rest.length()) {
+                    throw new AssertionError("width " + w + ": \"" + head
+                            + "\" ends on a vowel written before its letter");
+                }
+                rest = rest.substring(head.length());
+                if (!rest.isEmpty() && TextBlock.staysWithPrevious(rest.codePointAt(0))) {
+                    throw new AssertionError("width " + w + ": \"" + rest
+                            + "\" starts a row on a vowel that stays with the letter before it");
+                }
+            }
+        }
+    }
 }

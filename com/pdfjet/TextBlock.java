@@ -743,7 +743,9 @@ public class TextBlock implements Drawable {
         return font.stringWidth(fallbackFont, fontSize, getFallbackFontSize(), text);
     }
 
-    private static int nextCharacterBreak(String word, int i) {
+    // Returns the index after the character at the index, with the marks and
+    // vowels that stay with it: where a word may be cut.
+    static int nextCharacterBreak(String word, int i) {
         int ch = word.codePointAt(i);
         i += Character.charCount(ch);
         while (isLeadingVowel(ch) && i < word.length()) {
@@ -757,13 +759,13 @@ public class TextBlock implements Drawable {
     }
 
     // The Thai and Lao vowels written before the consonant they follow in speech.
-    private static boolean isLeadingVowel(int ch) {
+    static boolean isLeadingVowel(int ch) {
         return (ch >= 0x0E40 && ch <= 0x0E44) || (ch >= 0x0EC0 && ch <= 0x0EC4);
     }
 
     // The combining marks, and the Thai and Lao vowels and signs written after
     // a consonant, like SARA AA and MAI YAMOK, which do not start a line.
-    private static boolean staysWithPrevious(int ch) {
+    static boolean staysWithPrevious(int ch) {
         if (ch == 0x200C || ch == 0x200D) {         // ZWNJ, ZWJ
             return true;
         }

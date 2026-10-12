@@ -565,11 +565,13 @@ public class TextFrame implements Drawable {
     }
 
     // Returns the longest start of the token that fits in the width of the frame,
-    // and at least the first character of the token.
-    private String headThatFits(TextLine textLine, String token) {
-        int end = Character.charCount(token.codePointAt(0));
+    // and at least its first character. The token is cut between its characters
+    // as TextBlock cuts a word, never before a combining mark or a Thai vowel
+    // that stays with the letter before it (review of 11 October 2026, #14).
+    String headThatFits(TextLine textLine, String token) {
+        int end = TextBlock.nextCharacterBreak(token, 0);
         while (end < token.length()) {
-            int next = end + Character.charCount(token.codePointAt(end));
+            int next = TextBlock.nextCharacterBreak(token, end);
             if (textLine.font.stringWidth(textLine.fallbackFont, textLine.fontSize, token.substring(0, next)) > w) {
                 break;
             }

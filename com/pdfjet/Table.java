@@ -219,13 +219,22 @@ public class Table implements Drawable {
         return Math.max(numOfHeaderRows, tableData.size() - numOfFooterRows);
     }
 
-    // Adds empty cells to the rows that are shorter than the first row.
+    // Adds empty cells to the rows that are shorter than the first row, or,
+    // when the first row is empty, than the first row that is not, in the font
+    // of its first cell: an empty row was drawn from its first cell (review of
+    // 11 October 2026, #18).
     private void addCellsToCompleteTheGrid() {
-        if (tableData.isEmpty() || tableData.get(0).isEmpty()) {
+        int first = 0;
+        while (first < tableData.size() && tableData.get(first).isEmpty()) {
+            first++;
+        }
+        if (first == tableData.size()) {
+            // Rows of no cells are a table of no rows, which draws nothing.
+            tableData = new ArrayList<List<Cell>>();
             return;
         }
-        int numOfColumns = tableData.get(0).size();
-        Font font = tableData.get(0).get(0).font;
+        int numOfColumns = tableData.get(first).size();
+        Font font = tableData.get(first).get(0).font;
         for (List<Cell> row : tableData) {
             int diff = numOfColumns - row.size();
             for (int i = 0; i < diff; i++) {
@@ -535,6 +544,14 @@ public class Table implements Drawable {
         }
         String fraction = (point == -1) ? "" : str.substring(point + 1);
         String digits = (point == -1) ? str : str.substring(0, point) + fraction;
+        // A space inside the number, as in ". 5", is not in a number: isNumber
+        // reads past it, and the parse threw on it (review of 11 October 2026,
+        // #15)
+        for (int i = 0; i < digits.length(); i++) {
+            if (digits.charAt(i) < '0' || digits.charAt(i) > '9') {
+                return null;
+            }
+        }
         int start = 0;
         while (start < digits.length() && digits.charAt(start) == '0') {
             start++;
@@ -1802,7 +1819,13 @@ public class Table implements Drawable {
         if (tableData.isEmpty()) {
             return this;
         }
-        float[] maxColWidths = new float[tableData.get(0).size()];
+        // As many widths as the longest row has cells, as a row may be longer
+        // than the first (review of 11 October 2026, #17)
+        int columns = 0;
+        for (List<Cell> row : tableData) {
+            columns = Math.max(columns, row.size());
+        }
+        float[] maxColWidths = new float[columns];
         for (List<Cell> row : tableData) {
             for (int i = 0; i < row.size(); i++) {
                 Cell cell = row.get(i);

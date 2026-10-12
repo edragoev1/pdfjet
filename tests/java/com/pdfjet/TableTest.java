@@ -926,6 +926,10 @@ class TableTest {
         assertEquals(null, Table.numberOf("", 0));
         assertEquals(null, Table.numberOf("1234567890123456789", 0));
         assertEquals(null, Table.numberOf("1E99999", 0));
+        // A space inside is not in a number (review of 11 October 2026, #15).
+        assertEquals(null, Table.numberOf(". 5", 0));
+        assertEquals(null, Table.numberOf("5 .", 0));
+        assertEquals(null, Table.numberOf("(. 5)", 2));
         assertEquals("1,234.50", Table.formatSum(123450, 2));
         assertEquals("-1,234,567", Table.formatSum(-1234567, 0));
         assertEquals("0.05", Table.formatSum(5, 2));
@@ -1309,5 +1313,43 @@ class TableTest {
         table.setLocation(20f, 20f);
         table.drawOn(new Page(pdf, Letter.PORTRAIT));
         assertEquals(text, data.get(1).get(0).getText(), "the cell's text after drawing");
+    }
+
+    // autoAdjustColumnWidths measures the cells of a row longer than the
+    // first: it sized the widths from the first row and indexed past them
+    // (review of 11 October 2026, #17).
+    @Test
+    void autoAdjustColumnWidthsMeasuresARowLongerThanTheFirst() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        List<List<Cell>> data = new ArrayList<List<Cell>>();
+        data.add(new ArrayList<Cell>(Arrays.asList(new Cell(font, "a"), new Cell(font, "b"))));
+        data.add(new ArrayList<Cell>(Arrays.asList(
+                new Cell(font, "a"), new Cell(font, "b"), new Cell(font, "a wide third cell"))));
+        new Table().setTableData(data, 1).autoAdjustColumnWidths();
+        assertTrue(data.get(1).get(2).getWidth() > data.get(1).get(0).getWidth(),
+                "the third cell is " + data.get(1).get(2).getWidth()
+                + " wide, the first " + data.get(1).get(0).getWidth());
+    }
+
+    // A table whose first row is empty is drawn: its rows are completed from
+    // the first row that has cells, and the empty row was drawn from its first
+    // cell; rows of no cells draw nothing, as no rows do (review of 11 October
+    // 2026, #18).
+    @Test
+    void anEmptyFirstRowIsDrawn() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        List<List<List<Cell>>> dataSets = new ArrayList<List<List<Cell>>>();
+        dataSets.add(new ArrayList<List<Cell>>(Arrays.asList(
+                new ArrayList<Cell>(), new ArrayList<Cell>(Arrays.asList(new Cell(font, "a"))))));
+        dataSets.add(new ArrayList<List<Cell>>(Arrays.asList(new ArrayList<Cell>())));
+        dataSets.add(new ArrayList<List<Cell>>(Arrays.asList(new ArrayList<Cell>(), new ArrayList<Cell>())));
+        for (List<List<Cell>> data : dataSets) {
+            Table table = new Table().setTableData(data, 1);
+            table.setLocation(20f, 20f);
+            table.drawOn(new Page(pdf, Letter.PORTRAIT));
+            table.autoAdjustColumnWidths();
+        }
     }
 }

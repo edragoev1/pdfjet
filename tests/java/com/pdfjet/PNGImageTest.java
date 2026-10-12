@@ -13,6 +13,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.pdfjet.encryption.Passwords;
+import com.pdfjet.encryption.Permissions;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FilterInputStream;
@@ -874,5 +876,56 @@ class PNGImageTest {
             }
         }
         assertTrue(embedded > 0);
+    }
+
+    // An image copied from a PDF into an encrypted one is encrypted with it,
+    // its stream and the palette of its color space, which a reader decrypts
+    // back to what they were: they were copied as they were, and a viewer found
+    // no image (review of 11 October 2026, #11).
+    @Test
+    void anImageCopiedIntoAnEncryptedPDFIsEncrypted() throws Exception {
+        java.util.List<PDFobj> read = imageObjects(TestSupport.read(pngSamplesDocument()));
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        pdf.setEncryption(new Encryption(pdf, new Passwords(), new Permissions()));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        for (PDFobj obj : read) {
+            new Image(pdf, obj).drawOn(page);
+        }
+        pdf.complete();
+        byte[] bytes = bos.toByteArray();
+        java.util.List<PDFobj> copies = imageObjects(TestSupport.read(bytes, ""));
+        assertEquals(read.size(), copies.size(), "images");
+        String text = new String(bytes, StandardCharsets.ISO_8859_1);
+        int palettes = 0;
+        Object[][] cases = sampleCases();
+        for (int i = 0; i < cases.length; i++) {
+            String name = (String) cases[i][0];
+            assertArrayEquals(read.get(i).stream, copies.get(i).stream, name + ": the stream");
+            String colorSpace = read.get(i).getValue("/ColorSpace");
+            assertEquals(colorSpace, copies.get(i).getValue("/ColorSpace"), name);
+            if (colorSpace.contains("/Indexed")) {
+                palettes++;
+                String palette = colorSpace.substring(colorSpace.indexOf('<') + 1, colorSpace.indexOf('>'));
+                assertFalse(text.contains(palette), name + ": the palette is in the PDF as it was");
+            }
+        }
+        assertTrue(palettes > 0, "no image of a palette was copied");
+    }
+
+    // An image whose color space refers to another object of the PDF it was
+    // read from is refused, as the object is not copied with it.
+    @Test
+    void anImageThatRefersToAnotherObjectIsRefused() throws Exception {
+        final PDFobj obj = new PDFobj();
+        obj.dict = new java.util.ArrayList<String>(java.util.Arrays.asList(
+                "<<", "/Type", "/XObject", "/Subtype", "/Image", "/Width", "1", "/Height", "1",
+                "/ColorSpace", "[", "/ICCBased", "5", "0", "R", "]", "/BitsPerComponent", "8", ">>"));
+        Exception e = assertThrows(Exception.class, () -> new Image(TestSupport.newPDF(), obj));
+        assertTrue(String.valueOf(e.getMessage()).contains("/ICCBased 5 0 R"), e.toString());
+        obj.dict = new java.util.ArrayList<String>(java.util.Arrays.asList(
+                "<<", "/Width", "1", "/Height", "1", "/ColorSpace", "5", "0", "R", ">>"));
+        assertThrows(Exception.class, () -> new Image(TestSupport.newPDF(), obj),
+                "a color space of a reference is copied");
     }
 }

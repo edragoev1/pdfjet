@@ -1113,6 +1113,26 @@ final public class PDF {
         append('>');
     }
 
+    // Appends the key and the tokens of its value, read from another PDF, if
+    // it has one: its strings, literal or hexadecimal, as hexadecimal strings
+    // encrypted when the document is.
+    void appendCopiedValue(String key, List<String> tokens) throws Exception {
+        if (tokens.isEmpty()) {
+            return;
+        }
+        append(key);
+        for (String token : tokens) {
+            append(" ");
+            if (encryption != null
+                    && (token.startsWith("(") || (token.startsWith("<") && !token.equals("<<")))) {
+                appendByteString(Decryptor.toBytes(token));
+            } else {
+                append(token);
+            }
+        }
+        append("\n");
+    }
+
     private int addRootObject(
             int structTreeRootObjNumber, int outlineDictNumber) throws Exception {
         // Add the root object

@@ -181,6 +181,18 @@ final public class Image implements Drawable {
         setPixels(
                 (int) Double.parseDouble(obj.getValue("/Width")),
                 (int) Double.parseDouble(obj.getValue("/Height")));
+        // The values copied as they are, but for their strings, encrypted when
+        // the document is, as the palette of an /Indexed color space; and the
+        // stream, encrypted too (review of 11 October 2026, #11)
+        List<String> colorSpace = obj.valueTokens("/ColorSpace");
+        List<String> decodeParms = obj.valueTokens("/DecodeParms");
+        for (List<String> tokens : Arrays.asList(colorSpace, decodeParms)) {
+            if (tokens.contains("R")) {
+                throw new IllegalArgumentException(
+                        "The image refers to another object of the PDF it was read from, "
+                        + "which is not copied with it: " + String.join(" ", tokens));
+            }
+        }
         pdf.newObj();
         pdf.append("<<\n");
         pdf.append("/Type /XObject\n");
@@ -194,33 +206,27 @@ final public class Image implements Drawable {
         pdf.append("/Height ");
         pdf.append(pixelHeight);
         pdf.append('\n');
-        String colorSpace = obj.getValue("/ColorSpace");
-        if (!colorSpace.equals("")) {
-            pdf.append("/ColorSpace ");
-            pdf.append(colorSpace);
-            pdf.append("\n");
-        }
+        pdf.appendCopiedValue("/ColorSpace", colorSpace);
         pdf.append("/BitsPerComponent ");
         pdf.append(obj.getValue("/BitsPerComponent"));
         pdf.append("\n");
-        String decodeParms = obj.getValue("/DecodeParms");
-        if (!decodeParms.equals("")) {
-            pdf.append("/DecodeParms ");
-            pdf.append(decodeParms);
-            pdf.append("\n");
-        }
+        pdf.appendCopiedValue("/DecodeParms", decodeParms);
         String imageMask = obj.getValue("/ImageMask");
         if (!imageMask.equals("")) {
             pdf.append("/ImageMask ");
             pdf.append(imageMask);
             pdf.append("\n");
         }
+        byte[] stream = obj.stream;
+        if (pdf.encryption != null) {
+            stream = AES256.encrypt(stream, pdf.encryption.getKey());
+        }
         pdf.append("/Length ");
-        pdf.append(obj.stream.length);
+        pdf.append(stream.length);
         pdf.append('\n');
         pdf.append(">>\n");
         pdf.append("stream\n");
-        pdf.append(obj.stream, 0, obj.stream.length);
+        pdf.append(stream, 0, stream.length);
         pdf.append("\nendstream\n");
         pdf.endObj();
         pdf.images.add(this);

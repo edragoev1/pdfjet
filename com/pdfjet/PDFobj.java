@@ -543,6 +543,43 @@ public class PDFobj {
         return token;
     }
 
+    // Returns the tokens of the value of the key: one, a reference to an
+    // object, as 5 0 R, or an array or a dictionary with the arrays and
+    // dictionaries in it, from its opening token to its closing one.
+    List<String> valueTokens(String key) {
+        List<String> tokens = new ArrayList<String>();
+        int open = dict.indexOf("<<");
+        if (open == -1) {
+            return tokens;
+        }
+        int i = PDF.entryIndex(dict.subList(open, dict.size()), key);
+        if (i == -1) {
+            return tokens;
+        }
+        int start = open + i + 1;
+        if (start + 2 < dict.size() && dict.get(start + 2).equals("R")) {
+            tokens.addAll(dict.subList(start, start + 3));
+            return tokens;
+        }
+        int depth = 0;
+        for (int j = start; j < dict.size(); j++) {
+            String token = dict.get(j);
+            if (token.equals("[") || token.equals("<<")) {
+                depth++;
+            } else if (token.equals("]") || token.equals(">>")) {
+                depth--;
+            }
+            if (depth <= 0) {
+                tokens.addAll(dict.subList(start, j + 1));
+                return tokens;
+            }
+        }
+        if (start < dict.size()) {
+            tokens.addAll(dict.subList(start, dict.size()));
+        }
+        return tokens;
+    }
+
     // Returns the tokens from the index up to the closing one, with the
     // opening before them and the closing after them.
     private String valueUpTo(int i, String closing, String opening) {
