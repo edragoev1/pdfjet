@@ -573,7 +573,7 @@ func (page *Page) drawUnicodeString(font *Font, text string) {
 			}
 		}
 		var offsets []int
-		if hasMarks && font.markAnchors != nil {
+		if hasMarks && font.gpos != nil {
 			offsets = markOffsets(font, codePoints, gids)
 		} else if mirroredAt == nil && joiners == nil && runEdge == nil && !hasNotdef {
 			for _, gid := range gids {
@@ -863,12 +863,13 @@ func markToBaseOffset(font *Font, baseCodePoint rune, baseGID, markGID int) []in
 // the first MarkToBase or MarkToLigature subtable that has an anchor for both,
 // or nil.
 func anchorOffset(font *Font, baseGID, markGID int) []int {
-	for i, marks := range font.markAnchors {
+	g := font.gpos.read()
+	for i, marks := range g.markAnchors {
 		mark, ok := marks[markGID]
 		if !ok {
 			continue
 		}
-		anchors, ok := font.baseAnchors[i][baseGID]
+		anchors, ok := g.baseAnchors[i][baseGID]
 		c := 3 * mark[0]
 		if ok && c+2 < len(anchors) && anchors[c] == 1 {
 			return []int{anchors[c+1] - mark[1], anchors[c+2] - mark[2]}
@@ -880,7 +881,7 @@ func anchorOffset(font *Font, baseGID, markGID int) []int {
 // placeOnMark moves the mark onto the other mark, if the font has an offset for
 // the two.
 func placeOnMark(font *Font, gids, x, offsets []int, mark, other int) {
-	if offset, ok := font.markToMarkOffsets[(gids[other]<<16)|gids[mark]]; ok {
+	if offset, ok := font.gpos.read().markToMarkOffsets[(gids[other]<<16)|gids[mark]]; ok {
 		offsets[2*mark] = offsets[2*other] + x[other] + offset[0] - x[mark]
 		offsets[2*mark+1] = offsets[2*other+1] + offset[1]
 	}
@@ -898,7 +899,7 @@ func needsShaping(font *Font, runes []rune) bool {
 			if c >= 0x200C && c <= 0x200F {
 				return true
 			}
-			if font.markAnchors != nil && isMark(c) {
+			if font.gpos != nil && isMark(c) {
 				return true
 			}
 		}

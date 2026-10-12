@@ -59,10 +59,8 @@ type Font struct {
 	fontUnderlineThickness int16
 	advanceWidth           []uint16
 	unicodeToGID           *glyphMap
-	unicodeOf              []int32        // The character of each glyph, see unicodeOfGlyphs
-	markToMarkOffsets      map[int][2]int // From the GPOS table
-	markAnchors            []map[int][]int
-	baseAnchors            []map[int][]int
+	unicodeOf              []int32 // The character of each glyph, see unicodeOfGlyphs
+	gpos                   *gpos   // Read when a mark is first drawn, or nil
 	cff                    bool
 	metrics                [][]int // Only used for core fonts.
 	// checksum tells the font program this font was read from apart from

@@ -204,16 +204,20 @@ func fontReferenceOf(path string) (ref *fontReference) {
 			ref.Advances = append(ref.Advances, [3]float64{float64(c), float64(c), width})
 		}
 	}
+	g := &gpos{}
+	if font.gpos != nil {
+		g = font.gpos.read()
+	}
 	ref.MarkAnchors = []map[string][]int{}
-	for _, marks := range font.markAnchors {
+	for _, marks := range g.markAnchors {
 		ref.MarkAnchors = append(ref.MarkAnchors, fontReferenceByGlyph(marks))
 	}
 	ref.BaseAnchors = []map[string][]int{}
-	for _, bases := range font.baseAnchors {
+	for _, bases := range g.baseAnchors {
 		ref.BaseAnchors = append(ref.BaseAnchors, fontReferenceByGlyph(bases))
 	}
 	ref.MarkToMark = map[string][2]int{}
-	for key, offset := range font.markToMarkOffsets {
+	for key, offset := range g.markToMarkOffsets {
 		ref.MarkToMark[strconv.Itoa(key>>16)+" "+strconv.Itoa(key&0xFFFF)] = offset
 	}
 	return ref
