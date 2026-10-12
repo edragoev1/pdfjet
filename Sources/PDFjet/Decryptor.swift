@@ -235,7 +235,7 @@ final class Decryptor {
             _ encryptMetadata: Bool) throws -> [UInt8] {
         let padded = pad(password)
         var key = computeKey(r, length, padded, o, p, id, encryptMetadata)
-        if isUserKey(r, length, key, u, id) {
+        if isUserKey(r, key, u, id) {
             return key
         }
         var hash = Cryptography.md5(padded)
@@ -254,7 +254,7 @@ final class Decryptor {
             }
         }
         key = computeKey(r, length, userPassword, o, p, id, encryptMetadata)
-        if isUserKey(r, length, key, u, id) {
+        if isUserKey(r, key, u, id) {
             return key
         }
         throw passwordError(password)
@@ -289,7 +289,7 @@ final class Decryptor {
     // Algorithms 4 and 5: whether the key computed from a password is the
     // user key, which /U holds encrypted.
     private static func isUserKey(
-            _ r: Int, _ length: Int, _ key: [UInt8], _ u: [UInt8], _ id: [UInt8]) -> Bool {
+            _ r: Int, _ key: [UInt8], _ u: [UInt8], _ id: [UInt8]) -> Bool {
         var check: [UInt8]
         let n: Int
         if r == 2 {

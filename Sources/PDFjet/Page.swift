@@ -359,23 +359,6 @@ public class Page {
         drawString(font, fallbackFont, fontSize, str, xOrig, yOrig, [0.0, 0.0, 0.0], nil)
     }
 
-    /// Draws the string in the specified 0xRRGGBB color, highlighting the words in the colors map.
-    /// The fallback font is used for characters the main font does not have.
-    final func drawString(
-            _ font: Font,
-            _ fallbackFont: Font?,
-            _ fontSize: Float,
-            _ str: String?,
-            _ xOrig: Float,
-            _ yOrig: Float,
-            _ color: Int32,
-            _ highlightColors: [String : Int32]?) {
-        let r = Float((color >> 16) & 0xff)/255.0
-        let g = Float((color >>  8) & 0xff)/255.0
-        let b = Float((color)       & 0xff)/255.0
-        drawString(font, fallbackFont, fontSize, str, xOrig, yOrig, [r, g, b], highlightColors)
-    }
-
     ///
     /// Draws the text given by the specified string,
     /// using the specified main font and text color.
@@ -2335,10 +2318,6 @@ public class Page {
         self.buf.append(contentsOf: str.utf8)
     }
 
-    func append(_ num: UInt32) {
-        append(String(num))
-    }
-
     func append(_ num: Int) {
         append(String(num))
     }
@@ -3095,20 +3074,6 @@ public class Page {
         let xy = textLine.drawOn(self)
         addEMC()
         return xy
-    }
-
-    /**
-     * Begin text block.
-     */
-    func beginText() {
-        append(Token.beginText)
-    }
-
-    /**
-     * End the text block.
-     */
-    func endText() {
-        append(Token.endText)
     }
 
     /**

@@ -8,7 +8,6 @@ import Foundation
 
 struct FontTable {
     var name: String?
-    var checkSum: UInt32?
     var offset: Int?
     var length: Int?
 }
@@ -40,7 +39,6 @@ class OTF {
     var indexToLocFormat = 0
     var loca: FontTable?
     var glyf: FontTable?
-    var postVersion: UInt32? = 0
     var italicAngle: UInt32? = 0
     var underlinePosition: Int16? = 0
     var underlineThickness: Int16? = 0
@@ -111,7 +109,7 @@ class OTF {
             }
             var table = FontTable()
             table.name = String(bytes: name, encoding: .utf8)
-            table.checkSum = try readUInt32()
+            _ = try readUInt32()
             table.offset = Int(try readUInt32())
             table.length = Int(try readUInt32())
 
@@ -476,7 +474,7 @@ class OTF {
 
     private func post(_ table: FontTable) throws {
         self.index = table.offset!
-        self.postVersion = try readUInt32()
+        _ = try readUInt32()
         self.italicAngle = try readUInt32()
         self.underlinePosition  = try readInt16()
         self.underlineThickness = try readInt16()

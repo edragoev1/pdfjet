@@ -102,27 +102,4 @@ class OpenTypeFont {
         }
         return (angle < 0 && rounded != 0) ? "-" + text : text
     }
-
-    private static func toHexString(_ code: Int) -> String {
-        let str = String(code, radix: 16)
-        if str.unicodeScalars.count == 1 {
-            return "000" + str
-        } else if str.unicodeScalars.count == 2 {
-            return "00" + str
-        } else if str.unicodeScalars.count == 3 {
-            return "0" + str
-        }
-        return str
-    }
-
-    private static func writeListToBuffer(
-            _ list: inout [String], _ sb: inout String) {
-        sb.append(String(list.count))
-        sb.append(" beginbfchar\n")
-        for str in list {
-            sb.append(str)
-        }
-        sb.append("endbfchar\n")
-        list.removeAll()
-    }
 }   // End of OpenTypeFont.swift

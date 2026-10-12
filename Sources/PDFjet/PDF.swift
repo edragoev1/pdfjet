@@ -2137,15 +2137,7 @@ public final class PDF {
         append([UInt8](arrayLiteral: number))
     }
 
-    func append(_ number: UInt16) {
-        append(Int(number))
-    }
-
     func append(_ number: Int32) {
-        append(Int(number))
-    }
-
-    func append(_ number: UInt32) {
         append(Int(number))
     }
 

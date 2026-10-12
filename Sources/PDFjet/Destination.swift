@@ -26,16 +26,4 @@ public class Destination {
         self.xPosition = xPosition
         self.yPosition = yPosition
     }
-
-    ///
-    /// This initializer is used to create destination objects.
-    ///
-    /// - Parameter name: the name of this destination object.
-    /// - Parameter yPosition: the y coordinate of the top left corner.
-    ///
-    init(_ name: String, _ yPosition: Float) {
-        self.name = name
-        self.xPosition = 0.0
-        self.yPosition = yPosition
-    }
 }

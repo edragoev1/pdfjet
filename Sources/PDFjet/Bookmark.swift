@@ -7,9 +7,6 @@
 import Foundation
 
 extension String {
-    func indexOf(_ input: String) -> String.Index? {
-        return self.range(of: input)?.lowerBound
-    }
     func lastIndexOf(_ input: String) -> String.Index? {
         return self.range(of: input, options: .backwards)?.lowerBound
     }
