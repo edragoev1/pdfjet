@@ -805,7 +805,7 @@ public class BarChart implements Drawable {
 
     // Tells if the value is a number to draw: a value that is NaN or infinite
     // has no bar, like a value missing at the end of a series.
-    private static boolean isValue(float value) {
+    static boolean isValue(float value) {
         return !Float.isNaN(value) && !Float.isInfinite(value);
     }
 }

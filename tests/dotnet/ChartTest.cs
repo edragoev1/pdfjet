@@ -29,6 +29,20 @@ public class ChartTest {
         return TestSupport.Content(page);
     }
 
+    // A point at an infinity is refused, as a point at NaN is, with the error
+    // of a number a PDF cannot hold (review of 12 October 2026, R3).
+    [Fact]
+    public void AnInfinitePointIsRefused() {
+        PDF pdf = TestSupport.NewPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Chart chart = NewChart(pdf);
+        Series series = chart.AddSeries("");
+        series.AddPoint(1f, 1f);
+        series.AddPoint(2f, float.PositiveInfinity);
+        System.ArgumentException e = Assert.Throws<System.ArgumentException>(() => chart.DrawOn(page));
+        Assert.Contains("NaN, infinite", e.Message);
+    }
+
     [Fact]
     public void AChartWithoutPointsDrawsNothing() {
         PDF pdf = TestSupport.NewPDF();

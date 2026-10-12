@@ -755,6 +755,9 @@ public class Chart implements Drawable {
             xMax = -Float.MAX_VALUE;
             for (Series s : series) {
                 for (Point point : s.points) {
+                    if (!BarChart.isValue(point.x)) {
+                        continue;
+                    }
                     if (point.x < xMin) {
                         xMin = point.x;
                     }
@@ -788,6 +791,9 @@ public class Chart implements Drawable {
             yMax = -Float.MAX_VALUE;
             for (Series s : series) {
                 for (Point point : s.points) {
+                    if (!BarChart.isValue(point.y)) {
+                        continue;
+                    }
                     if (point.y < yMin) {
                         yMin = point.y;
                     }
@@ -957,6 +963,9 @@ public class Chart implements Drawable {
      */
     static Round roundMaxAndMinValues(float maxValue, float minValue) {
         float span = maxValue - minValue;
+        if (!BarChart.isValue(span)) {
+            return unitRange();     // No number, or a span past the largest float
+        }
         if (span <= 0f) { span = flatDataSpan(minValue); }  // guard against flat data
 
         int exponent = (int) Math.floor(Math.log(span) / Math.log(10));
@@ -990,6 +999,9 @@ public class Chart implements Drawable {
         // Round max up, min down to nearest step multiple
         round.maxValue = (float) Math.ceil(maxValue / step) * step;
         round.minValue = (float) Math.floor(minValue / step) * step;
+        if (!BarChart.isValue(round.maxValue - round.minValue)) {
+            return unitRange();     // Rounded past the largest float
+        }
 
         // Recount grid lines from actual rounded range
         round.numOfGridLines = Math.round((round.maxValue - round.minValue) / step);
@@ -999,6 +1011,17 @@ public class Chart implements Drawable {
             round.numOfGridLines = 1;
         }
 
+        return round;
+    }
+
+    // Returns the range from 0 to 1, with one grid line, of data with no number,
+    // or whose range does not fit a float: a series of NaN or infinite values,
+    // or of values near the largest float, whose span is infinite (review of
+    // 12 October 2026, R3).
+    private static Round unitRange() {
+        Round round = new Round();
+        round.maxValue = 1f;
+        round.numOfGridLines = 1;
         return round;
     }
 

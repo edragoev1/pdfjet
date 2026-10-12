@@ -26,6 +26,19 @@ import Testing
         return TestSupport.content(page)
     }
 
+    // A point at an infinity is refused, as a point at NaN is, with the error
+    // of a number a PDF cannot hold (review of 12 October 2026, R3).
+    @Test func anInfinitePointIsRefused() {
+        let memory = MemoryPDF()
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        let chart = chart(memory.pdf)
+        let series = chart.addSeries("")
+        series.addPoint(1, 1)
+        series.addPoint(2, Float.infinity)
+        chart.drawOn(page)
+        #expect(throws: (any Error).self) { try memory.pdf.complete() }
+    }
+
     @Test func aChartWithoutPointsDrawsNothing() {
         let pdf = TestSupport.newPDF()
         let page = Page(pdf, Letter.PORTRAIT)

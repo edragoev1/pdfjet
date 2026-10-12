@@ -165,7 +165,7 @@ public class Image : Drawable {
     /// Creates an image from an image object read from an existing PDF.
     public init(_ pdf: PDF, _ obj: PDFobj) throws {
         self.pdfIdentity = pdf.identity
-        setPixels(Int(Double(obj.getValue("/Width")) ?? 0), Int(Double(obj.getValue("/Height")) ?? 0))
+        setPixels(Image.pixels(obj.getValue("/Width")), Image.pixels(obj.getValue("/Height")))
         // The values copied as they are, but for their strings, encrypted when
         // the document is, as the palette of an /Indexed color space; and the
         // stream, encrypted too (review of 11 October 2026, #11)
@@ -234,6 +234,17 @@ public class Image : Drawable {
 
     // Sets the pixels of the image across and down, which it is drawn at, a
     // pixel to a point, unless the file asks for another size.
+    // Returns the number of pixels of the value, as Java's (int) takes it: 0
+    // for what is not a number, and the largest or smallest Int32 for one past
+    // them. Int() of NaN or of 1e19 stopped the program (review of 12 October
+    // 2026, R12).
+    private static func pixels(_ value: String) -> Int {
+        guard let number = Double(value), !number.isNaN else {
+            return 0
+        }
+        return Int(Swift.min(Swift.max(number, Double(Int32.min)), Double(Int32.max)))
+    }
+
     private func setPixels(_ width: Int, _ height: Int) {
         pixelWidth = width
         pixelHeight = height

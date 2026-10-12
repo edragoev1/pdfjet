@@ -694,7 +694,7 @@ public class Chart : Drawable {
             xMin = Float.greatestFiniteMagnitude
             xMax = -Float.greatestFiniteMagnitude
             for s in series {
-                for point in s.points {
+                for point in s.points where BarChart.isValue(point.x) {
                     if point.x < xMin {
                         xMin = point.x
                     }
@@ -725,7 +725,7 @@ public class Chart : Drawable {
             yMin = Float.greatestFiniteMagnitude
             yMax = -Float.greatestFiniteMagnitude
             for s in series {
-                for point in s.points {
+                for point in s.points where BarChart.isValue(point.y) {
                     if point.y < yMin {
                         yMin = point.y
                     }
@@ -895,12 +895,28 @@ public class Chart : Drawable {
     }
 
     ///
+    /// Returns the range from 0 to 1, with one grid line, of data with no
+    /// number, or whose range does not fit a Float: a series of NaN or infinite
+    /// values, or of values near the largest Float, whose span is infinite
+    /// (review of 12 October 2026, R3).
+    ///
+    private static func unitRange() -> Round {
+        let round = Round()
+        round.maxValue = 1.0
+        round.numOfGridLines = 1
+        return round
+    }
+
+    ///
     /// Rounds the axis range to "nice" values for clean grid lines.
     /// Uses the span (max - min) to support negative values and
     /// zero crossings. Rounds max up and min down to step multiples.
     ///
     static func roundMaxAndMinValues(_ maxValue: Float, _ minValue: Float) -> Round {
         var span = maxValue - minValue
+        if !BarChart.isValue(span) {
+            return unitRange()      // No number, or a span past the largest Float
+        }
         if span <= 0.0 { span = flatDataSpan(minValue) }   // guard against flat data
 
         let exponent = Int(floor(log(Double(span)) / log(10.0)))
@@ -934,6 +950,9 @@ public class Chart : Drawable {
         // Round max up, min down to nearest step multiple
         round.maxValue = ceil(maxValue / step) * step
         round.minValue = floor(minValue / step) * step
+        if !BarChart.isValue(round.maxValue - round.minValue) {
+            return unitRange()      // Rounded past the largest Float
+        }
 
         // Recount grid lines from actual rounded range
         round.numOfGridLines = Int(((round.maxValue - round.minValue) / step).rounded())

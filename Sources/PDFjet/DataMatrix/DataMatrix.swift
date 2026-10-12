@@ -82,6 +82,9 @@ public final class DataMatrix : Drawable {
     }()
 
     private var modules = [[Bool]]()
+    // The error of text that does not fit in the largest symbol, which the
+    // drawing makes the error of the PDF.
+    private var tooLong: String?
     private var x: Float = 0.0
     private var y: Float = 0.0
     private var m1: Float = 2.0     // Module length
@@ -101,8 +104,8 @@ public final class DataMatrix : Drawable {
     }
 
     /// Creates a Data Matrix barcode with the shape DataMatrix.SQUARE or
-    /// DataMatrix.RECTANGLE. Stops the program if the text does not fit in the
-    /// largest symbol.
+    /// DataMatrix.RECTANGLE. Text that does not fit in the largest symbol has
+    /// no modules, and drawing it makes complete() of the PDF throw.
     public convenience init(_ str: String, _ shape: Int) {
         self.init(codewords: DataMatrix.encode(Array(str.utf8)), shape: shape)
     }
@@ -118,8 +121,8 @@ public final class DataMatrix : Drawable {
     /// GS1 does not allow, a parenthesis among them; data longer than 90
     /// characters; data of a field of set length, such as the GTIN of (01) or
     /// the date of (17), that is not that many digits; or a wrong check digit
-    /// of an SSCC (00), a GTIN (01) or (02), or a GLN (410) to (417). Stops the
-    /// program if the data does not fit in the largest symbol, as init does.
+    /// of an SSCC (00), a GTIN (01) or (02), or a GLN (410) to (417). Data that
+    /// does not fit in the largest symbol is as text that does not in init.
     public convenience init(gs1 str: String, _ shape: Int = DataMatrix.SQUARE) throws {
         let elementString = try DataMatrix.gs1ElementString(str)
         self.init(codewords: [DataMatrix.FNC1] + DataMatrix.encodeASCII(Array(elementString.utf8)), shape: shape)
@@ -141,7 +144,11 @@ public final class DataMatrix : Drawable {
 
     // Makes the symbol of the data codewords.
     private init(codewords data: [Int], shape: Int) {
-        let symbol = DataMatrix.selectSymbol(data.count, shape)
+        guard let symbol = DataMatrix.selectSymbol(data.count, shape) else {
+            // It stopped the program (review of 12 October 2026, R12)
+            tooLong = "The text takes \(data.count) codewords; a Data Matrix symbol holds 1558 at most."
+            return
+        }
         let allCodewords = DataMatrix.addErrorCorrection(DataMatrix.pad(data, symbol[4]), symbol)
         let rows = symbol[0]
         let cols = symbol[1]
@@ -222,6 +229,10 @@ public final class DataMatrix : Drawable {
     ///
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
+        if let tooLong = tooLong {
+            page?.pdf.fail(tooLong)
+            return [x, y]
+        }
         let rows = modules.count
         let cols = modules[0].count
         if let page = page {
@@ -334,8 +345,9 @@ public final class DataMatrix : Drawable {
         return (result <= 255) ? result : result - 256
     }
 
-    // Returns the smallest symbol of the shape that holds the data codewords.
-    private static func selectSymbol(_ length: Int, _ shape: Int) -> [Int] {
+    // Returns the smallest symbol of the shape that holds the data codewords,
+    // or nil when none does.
+    private static func selectSymbol(_ length: Int, _ shape: Int) -> [Int]? {
         if shape == RECTANGLE {
             for symbol in RECTANGLES where symbol[4] >= length {
                 return symbol
@@ -344,7 +356,7 @@ public final class DataMatrix : Drawable {
         for symbol in SQUARES where symbol[4] >= length {
             return symbol
         }
-        fatalError("The text takes \(length) codewords; a Data Matrix symbol holds 1558 at most.")
+        return nil
     }
 
     // Fills the rest of the symbol's data capacity with pad codewords: the first

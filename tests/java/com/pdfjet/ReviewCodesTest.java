@@ -75,6 +75,37 @@ class ReviewCodesTest {
         }
     }
 
+    // Data with no number, or whose range does not fit a float, has the range
+    // from 0 to 1, where Swift stopped the program (review of 12 October 2026,
+    // R3).
+    @Test
+    void chartTheRangeOfDataPastTheLargestFloatIsFromZeroToOne() {
+        float inf = Float.POSITIVE_INFINITY;
+        float[][] ranges = {{inf, 0f}, {0f, -inf}, {Float.NaN, Float.NaN}, {3.4e38f, -3.4e38f},
+                {-Float.MAX_VALUE, Float.MAX_VALUE}, {Float.MAX_VALUE, 0f}};
+        for (float[] range : ranges) {
+            Round round = Chart.roundMaxAndMinValues(range[0], range[1]);
+            assertTrue(round.minValue == 0f && round.maxValue == 1f && round.numOfGridLines == 1,
+                    range[0] + ", " + range[1] + ": " + round.minValue + " to " + round.maxValue);
+        }
+    }
+
+    // Stacked bars whose sums overflow a float are drawn on the range from 0
+    // to 1.
+    @Test
+    void barChartStackedBarsPastTheLargestFloatAreDrawn() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Font font = TestSupport.helvetica(pdf);
+        BarChart chart = new BarChart(font, font).setLocation(50f, 50f).setSize(300f, 200f)
+                .setCategories("a").setStacked(true);
+        chart.addSeries("", new float[] {3e38f});
+        chart.addSeries("", new float[] {3e38f});
+        chart.drawOn(page);
+        assertTrue(TestSupport.content(page).contains(TestSupport.hex("1")), "the axis is not from 0 to 1");
+        pdf.complete();
+    }
+
     @Test
     void barChartAValueThatIsNotANumberHasNoBar() throws Exception {
         for (boolean stacked : new boolean[] {false, true}) {

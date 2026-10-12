@@ -710,8 +710,14 @@ public class Font {
         }
         var w = width * Float(unitsPerEm) / size
         if isCJK {
-            // Every glyph of a CJK font is as wide as the font size.
-            return max(0, min(Int(width / size), str.unicodeScalars.count))
+            // Every glyph of a CJK font is as wide as the font size. Int() of a
+            // NaN or infinite width stopped the program (review of 12 October
+            // 2026, R12).
+            let fit = width / size
+            if !(fit > 0) {
+                return 0
+            }
+            return fit >= Float(str.unicodeScalars.count) ? str.unicodeScalars.count : Int(fit)
         }
         if isCoreFont {
             return getCoreFontFitChars(str, w)

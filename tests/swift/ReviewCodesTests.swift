@@ -43,6 +43,36 @@ import Testing
         }
     }
 
+    // Data with no number, or whose range does not fit a Float, has the range
+    // from 0 to 1, where Swift stopped the program (review of 12 October 2026,
+    // R3).
+    @Test func chartTheRangeOfDataPastTheLargestFloatIsFromZeroToOne() {
+        let inf = Float.infinity
+        let big = Float.greatestFiniteMagnitude
+        let ranges: [(Float, Float)] = [(inf, 0), (0, -inf), (.nan, .nan), (3.4e38, -3.4e38),
+                                        (-big, big), (big, 0)]
+        for (maxValue, minValue) in ranges {
+            let round = Chart.roundMaxAndMinValues(maxValue, minValue)
+            #expect(round.minValue == 0 && round.maxValue == 1 && round.numOfGridLines == 1,
+                    "\(maxValue), \(minValue): \(round.minValue) to \(round.maxValue)")
+        }
+    }
+
+    // Stacked bars whose sums overflow a Float are drawn on the range from 0
+    // to 1.
+    @Test func barChartStackedBarsPastTheLargestFloatAreDrawn() throws {
+        let memory = MemoryPDF()
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        let font = TestSupport.helvetica(memory.pdf)
+        let chart = BarChart(font, font).setLocation(50, 50).setSize(300, 200)
+        chart.setCategories("a").setStacked(true)
+        chart.addSeries("", [3e38])
+        chart.addSeries("", [3e38])
+        chart.drawOn(page)
+        #expect(TestSupport.content(page).contains(TestSupport.hex("1")))
+        try memory.pdf.complete()
+    }
+
     @Test func barChartAValueThatIsNotANumberHasNoBar() throws {
         for stacked in [false, true] {
             let memory = MemoryPDF()
@@ -299,5 +329,39 @@ import Testing
         barcode.drawOn(page)
         let content = TestSupport.content(page)
         #expect(content.hasPrefix("/Figure <</MCID 0>>\nBDC\nq\n") && !content.contains("/Artifact"))
+    }
+
+    // Data from the caller or from a file that does not fit stops the program
+    // no more (review of 12 October 2026, R12): an image of a PDF whose
+    // /Width is past an Int, text too long for a Data Matrix symbol, and
+    // getFitChars of a CJK font for a width that is not a number.
+    @Test func imageAWidthPastAnIntTakesTheLargestInt32() throws {
+        for (width, pixels) in [("1e19", Int(Int32.max)), ("1e400", Int(Int32.max)),
+                                ("-1e19", Int(Int32.min)), ("nan", 0), ("x", 0)] {
+            let obj = PDFobj()
+            obj.dict = ["<<", "/Type", "/XObject", "/Subtype", "/Image", "/Width", width,
+                        "/Height", "1", ">>"]
+            let image = try Image(TestSupport.newPDF(), obj)
+            #expect(image.getWidth() == Float(pixels), "\(width)")
+        }
+    }
+
+    @Test func dataMatrixTextTooLongIsTheErrorOfThePDF() {
+        let memory = MemoryPDF()
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        let barcode = DataMatrix(String(repeating: "\u{1}", count: 1600))
+        #expect(barcode.getModules().isEmpty)
+        barcode.setLocation(10, 20)
+        TestSupport.expectXY(10, 20, barcode.drawOn(page))
+        let error = #expect(throws: PDFjetError.self) { try memory.pdf.complete() }
+        #expect(error?.message.contains("a Data Matrix symbol holds 1558 at most") == true)
+    }
+
+    @Test func cjkGetFitCharsOfAWidthThatIsNotANumber() {
+        let font = TestSupport.cjkFont(TestSupport.newPDF(), CJKFont.ADOBE_MING_STD_LIGHT).setSize(10)
+        #expect(font.getFitChars("日本語", .nan) == 0)
+        #expect(font.getFitChars("日本語", .infinity) == 3)
+        #expect(font.getFitChars("日本語", -.infinity) == 0)
+        #expect(font.getFitChars("日本語", 25) == 2)
     }
 }

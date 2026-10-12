@@ -706,7 +706,7 @@ public class BarChart : IDrawable {
 
     // Tells if the value is a number to draw: a value that is NaN or infinite
     // has no bar, like a value missing at the end of a series.
-    private static bool IsValue(float value) {
+    internal static bool IsValue(float value) {
         return !float.IsNaN(value) && !float.IsInfinity(value);
     }
 

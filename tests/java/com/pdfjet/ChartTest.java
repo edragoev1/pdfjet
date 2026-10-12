@@ -8,6 +8,7 @@ package com.pdfjet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
@@ -34,6 +35,20 @@ class ChartTest {
         }
         chart.drawOn(page);
         return TestSupport.content(page);
+    }
+
+    // A point at an infinity is refused, as a point at NaN is, with the error
+    // of a number a PDF cannot hold (review of 12 October 2026, R3).
+    @Test
+    void anInfinitePointIsRefused() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Chart chart = chart(pdf);
+        Series series = chart.addSeries("");
+        series.addPoint(1f, 1f);
+        series.addPoint(2f, Float.POSITIVE_INFINITY);
+        Exception e = assertThrows(IllegalArgumentException.class, () -> chart.drawOn(page));
+        assertTrue(e.getMessage().contains("NaN, infinite"), e.getMessage());
     }
 
     @Test

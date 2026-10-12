@@ -56,6 +56,39 @@ public class ReviewCodesTest {
         }
     }
 
+    // Data with no number, or whose range does not fit a float, has the range
+    // from 0 to 1, where Swift stopped the program (review of 12 October 2026,
+    // R3).
+    [Fact]
+    public void TheRangeOfDataPastTheLargestFloatIsFromZeroToOne() {
+        float inf = float.PositiveInfinity;
+        float[][] ranges = {
+            new float[] {inf, 0f}, new float[] {0f, -inf}, new float[] {float.NaN, float.NaN},
+            new float[] {3.4e38f, -3.4e38f}, new float[] {float.MinValue, float.MaxValue},
+            new float[] {float.MaxValue, 0f}};
+        foreach (float[] range in ranges) {
+            Round round = Chart.RoundMaxAndMinValues(range[0], range[1]);
+            Assert.True(round.minValue == 0f && round.maxValue == 1f && round.numOfGridLines == 1,
+                    range[0] + ", " + range[1] + ": " + round.minValue + " to " + round.maxValue);
+        }
+    }
+
+    // Stacked bars whose sums overflow a float are drawn on the range from 0
+    // to 1.
+    [Fact]
+    public void ABarChartOfStackedBarsPastTheLargestFloatIsDrawn() {
+        PDF pdf = TestSupport.NewPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Font font = TestSupport.Helvetica(pdf);
+        BarChart chart = new BarChart(font, font).SetLocation(50f, 50f).SetSize(300f, 200f)
+                .SetCategories("a").SetStacked(true);
+        chart.AddSeries("", new float[] {3e38f});
+        chart.AddSeries("", new float[] {3e38f});
+        chart.DrawOn(page);
+        Assert.Contains(TestSupport.Hex("1"), TestSupport.Content(page));
+        pdf.Complete();
+    }
+
     [Fact]
     public void ABarChartValueThatIsNotANumberHasNoBar() {
         foreach (bool stacked in new bool[] {false, true}) {

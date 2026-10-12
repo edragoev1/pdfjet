@@ -42,6 +42,18 @@ This is the first entry in this file; earlier releases were not tracked here.
   In Go, a password that is not UTF-8, as one in Latin-1, failed to open
   a PDF with "slice bounds out of range"; it is tried as its own bytes
   again.
+- A Chart or a BarChart of data whose range does not fit a float, as
+  points at an infinity or near the largest float, stacked bars whose sums
+  overflow it, or a series of NaN alone, has the axis from 0 to 1, in the
+  four ports. Swift stopped the program; the other ports could draw an
+  axis of NaN. A point at an infinity is left out of the range, as one at
+  NaN was, and is refused when drawn, as before.
+- Swift no longer stops the program on data from the caller or from a file:
+  an image of a PDF whose /Width or /Height is past an Int, or NaN, is as
+  wide as Java makes it; a DataMatrix of text too long for the largest
+  symbol has no modules, and drawing it makes complete() throw; and
+  getFitChars of a deprecated CJK font for a width of NaN or an infinity
+  returns 0 or every character.
 
 ## v9.0.5 — 2026-10-12, internal
 

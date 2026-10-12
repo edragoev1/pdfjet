@@ -671,6 +671,9 @@ public class Chart : IDrawable {
             xMax = System.Single.MinValue;
             foreach (Series s in series) {
                 foreach (Point point in s.points) {
+                    if (!BarChart.IsValue(point.x)) {
+                        continue;
+                    }
                     if (point.x < xMin) {
                         xMin = point.x;
                     }
@@ -704,6 +707,9 @@ public class Chart : IDrawable {
             yMax = System.Single.MinValue;
             foreach (Series s in series) {
                 foreach (Point point in s.points) {
+                    if (!BarChart.IsValue(point.y)) {
+                        continue;
+                    }
                     if (point.y < yMin) {
                         yMin = point.y;
                     }
@@ -875,6 +881,17 @@ public class Chart : IDrawable {
         return linked;
     }
 
+    // Returns the range from 0 to 1, with one grid line, of data with no number,
+    // or whose range does not fit a float: a series of NaN or infinite values,
+    // or of values near the largest float, whose span is infinite (review of
+    // 12 October 2026, R3).
+    private static Round UnitRange() {
+        Round round = new Round();
+        round.maxValue = 1f;
+        round.numOfGridLines = 1;
+        return round;
+    }
+
     // Returns the span of the range of flat data at the value: 1, or a hundred
     // thousandth of the value when that is more, since above 2^24 a float has no
     // room for 1 more, and the range would stay flat.
@@ -889,6 +906,9 @@ public class Chart : IDrawable {
     /// </summary>
     internal static Round RoundMaxAndMinValues(float maxValue, float minValue) {
         float span = maxValue - minValue;
+        if (!BarChart.IsValue(span)) {
+            return UnitRange();     // No number, or a span past the largest float
+        }
         if (span <= 0f) { span = FlatDataSpan(minValue); }    // guard against flat data
 
         int exponent = (int) Math.Floor(Math.Log(span) / Math.Log(10));
@@ -921,6 +941,9 @@ public class Chart : IDrawable {
         // Round max up, min down to nearest step multiple
         round.maxValue = (float) Math.Ceiling(maxValue / step) * step;
         round.minValue = (float) Math.Floor(minValue / step) * step;
+        if (!BarChart.IsValue(round.maxValue - round.minValue)) {
+            return UnitRange();     // Rounded past the largest float
+        }
 
         round.numOfGridLines = (int) Math.Round((round.maxValue - round.minValue) / step);
         if (round.numOfGridLines < 1 || round.maxValue <= round.minValue) {

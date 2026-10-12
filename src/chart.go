@@ -659,6 +659,9 @@ func (chart *Chart) setXAxisRange() {
 		chart.xMax = -math.MaxFloat32
 		for _, s := range chart.series {
 			for _, point := range s.points {
+				if !isValue(point.x) {
+					continue
+				}
 				if point.x < chart.xMin {
 					chart.xMin = point.x
 				}
@@ -693,6 +696,9 @@ func (chart *Chart) setYAxisRange() {
 		chart.yMax = -math.MaxFloat32
 		for _, s := range chart.series {
 			for _, point := range s.points {
+				if !isValue(point.y) {
+					continue
+				}
 				if point.y < chart.yMin {
 					chart.yMin = point.y
 				}
@@ -856,6 +862,9 @@ func flatDataSpan(value float32) float32 {
 // to ensure they match the final rounded range.
 func roundMaxAndMinValues(maxValue, minValue float32) *roundedRange {
 	span := maxValue - minValue
+	if !isValue(span) {
+		return unitRange() // No number, or a span past the largest float32
+	}
 	if span <= 0 {
 		span = flatDataSpan(minValue) // Guard against flat data
 	}
@@ -922,6 +931,9 @@ func roundMaxAndMinValues(maxValue, minValue float32) *roundedRange {
 	// Round max up, min down to nearest step multiple
 	round.maxValue = float32(float32(math.Ceil(float64(maxValue/step))) * step)
 	round.minValue = float32(float32(math.Floor(float64(minValue/step))) * step)
+	if !isValue(round.maxValue - round.minValue) {
+		return unitRange() // Rounded past the largest float32
+	}
 
 	// Recount grid lines from actual rounded range
 	round.numOfGridLines = int(math.Round(float64((round.maxValue - round.minValue) / step)))
@@ -931,6 +943,17 @@ func roundMaxAndMinValues(maxValue, minValue float32) *roundedRange {
 		round.numOfGridLines = 1
 	}
 
+	return round
+}
+
+// unitRange returns the range from 0 to 1, with one grid line, of data with
+// no number, or whose range does not fit a float32: a series of NaN or
+// infinite values, or of values near the largest float32, whose span is
+// infinite (review of 12 October 2026, R3).
+func unitRange() *roundedRange {
+	round := newRoundedRange()
+	round.maxValue = 1
+	round.numOfGridLines = 1
 	return round
 }
 

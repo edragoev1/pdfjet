@@ -61,6 +61,51 @@ func TestChartTheRoundedRangeOfFlatDataHasAGridLine(t *testing.T) {
 	}
 }
 
+// Data with no number, or whose range does not fit a float32, has the range
+// from 0 to 1, where Swift stopped the program (review of 12 October 2026, R3).
+func TestChartTheRangeOfDataPastTheLargestFloatIsFromZeroToOne(t *testing.T) {
+	nan := float32(math.NaN())
+	inf := float32(math.Inf(1))
+	for _, c := range [][2]float32{{inf, 0}, {0, -inf}, {nan, nan}, {3.4e38, -3.4e38},
+		{-math.MaxFloat32, math.MaxFloat32}, {math.MaxFloat32, 0}} {
+		round := roundMaxAndMinValues(c[0], c[1])
+		if round.minValue != 0 || round.maxValue != 1 || round.numOfGridLines != 1 {
+			t.Errorf("%v: %v to %v with %d grid lines", c, round.minValue, round.maxValue, round.numOfGridLines)
+		}
+	}
+}
+
+// A point at an infinity is refused, as a point at NaN is, with the error
+// of a number a PDF cannot hold.
+func TestChartAnInfinitePointIsRefused(t *testing.T) {
+	pdf := testNewPDF()
+	page := NewPage(pdf, testLetterPortrait())
+	chart := testChart(pdf)
+	series := chart.AddSeries("")
+	series.AddPoint(1, 1)
+	series.AddPoint(2, float32(math.Inf(1)))
+	chart.DrawOn(page)
+	if err := pdf.Complete(); err == nil || !strings.Contains(err.Error(), notWritable) {
+		t.Errorf("%v", err)
+	}
+}
+
+// Stacked bars whose sums overflow a float32 are drawn on the range from 0
+// to 1.
+func TestBarChartStackedBarsPastTheLargestFloatAreDrawn(t *testing.T) {
+	doc := testNewDoc()
+	page := NewPage(doc.pdf, testLetterPortrait())
+	chart := testBarChart(doc.pdf).SetCategories("a").SetStacked(true)
+	chart.AddSeries("", []float32{3e38})
+	chart.AddSeries("", []float32{3e38})
+	if content := testDrawBarChart(t, chart, page); !strings.Contains(content, testHex("1")) {
+		t.Errorf("the axis is not from 0 to 1: %q", content)
+	}
+	if err := doc.pdf.Complete(); err != nil {
+		t.Error(err)
+	}
+}
+
 func TestBarChartAValueThatIsNotANumberHasNoBar(t *testing.T) {
 	nan := float32(math.NaN())
 	inf := float32(math.Inf(1))
