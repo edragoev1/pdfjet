@@ -106,8 +106,11 @@ public class DonutChart : Drawable {
 
     private func getPoint(
             _ xc: Float, _ yc: Float, _ radius: Float, _ angle: Float) -> [Float] {
-        let x = xc + radius*(cos(angle*Float.pi/180.0))
-        let y = yc + radius*(sin(angle*Float.pi/180.0))
+        // The cosine and the sine of the angle in double precision, as Go
+        // computes them, for the same chart in every port (review of
+        // 11 October 2026, #25)
+        let x = xc + radius*Float(cos(Double(angle)*Double.pi/180.0))
+        let y = yc + radius*Float(sin(Double(angle)*Double.pi/180.0))
         return [x, y]
     }
 
@@ -195,7 +198,7 @@ public class DonutChart : Drawable {
 
         if f1 != nil && !text.isEmpty {
             let textWidth = f1!.stringWidth(text)
-            let onRightSide = cos(midAngle * Float.pi / 180.0) >= 0
+            let onRightSide = cos(Double(midAngle) * Double.pi / 180.0) >= 0
 
             let padding: Float = 4.0
             let lineLength = textWidth + padding
@@ -218,7 +221,7 @@ public class DonutChart : Drawable {
                     Swift.max(p1[1], p2[1], baseline + f1!.getDescent(f1!.getSize()))]
         } else {
             // No text — short horizontal stub
-            let onRightSide = cos(midAngle * Float.pi / 180.0) >= 0
+            let onRightSide = cos(Double(midAngle) * Double.pi / 180.0) >= 0
             let xEnd: Float = onRightSide ? p2[0] + 20.0 : p2[0] - 20.0
             page.lineTo(xEnd, p2[1])
             page.strokePath()

@@ -1063,6 +1063,20 @@ public final class PDF {
         append(">")
     }
 
+    /// Appends a string of letters, which needs no escapes, as (Adobe), or
+    /// encrypted in hexadecimal if the document is encrypted: written as it
+    /// is, a reader decrypted it to bytes of no meaning (review of 11 October
+    /// 2026, #19 and #20).
+    func appendLiteralString(_ text: String) {
+        if encryption != nil {
+            appendByteString(Array(text.utf8))
+            return
+        }
+        append("(")
+        append(text)
+        append(")")
+    }
+
     private func addRootObject(
             _ structTreeRootObjNumber: Int,
             _ outlineDictNumber: Int) -> Int {
@@ -1726,7 +1740,9 @@ public final class PDF {
             append(" ] >>\n")
             append("]\n")
         } else {
-            append("/Name (Default)\n")
+            append("/Name ")
+            appendLiteralString("Default")
+            append("\n")
         }
 
         // The groups hidden by default, for the viewers that read the

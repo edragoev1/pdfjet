@@ -106,4 +106,25 @@ import Testing
         #expect(content.contains("0 0 1 RG"), "\(content)")
         #expect(content.contains("0 1 0 RG"), "\(content)")
     }
+
+    // An arc that starts at the end of a line finds its center and its start
+    // angle with the precision of Go's port, double where Go computes in
+    // double: in float, 12 of 2,000 random arcs were drawn a hundredth apart
+    // (review of 11 October 2026, #25). The expected paths are Go's.
+    @Test func anArcAtTheEndOfALineIsDrawnAsTheGoPortDrawsIt() {
+        let pdf = TestSupport.newPDF()
+        var page = Page(pdf, Letter.PORTRAIT)
+        Arc().setRadiusX(119.10132).setRadiusY(84.51296)
+                .setStartAngle(-44.814667).setSweep(352.7614)
+                .setStartPointToEndOf(Line(457.52744, 348.75574, 36.200237, 153.82916))
+                .setStrokeColor(0x000000).setLocation(358.057, 83.32647).drawOn(page)
+        #expect(TestSupport.content(page).contains("200.81 765.98 221.56 716.04 191.69 675.62 c\n"))
+
+        page = Page(pdf, Letter.PORTRAIT)
+        Arc().setRadiusX(179.07474).setRadiusY(46.57458)
+                .setStartAngle(11.943497).setSweep(338.10748)
+                .setStartPointToEndOf(Line(397.40942, 538.2834, 232.55406, 318.26773))
+                .setStrokeColor(0x000000).setLocation(182.30334, 248.89684).drawOn(page)
+        #expect(TestSupport.content(page).contains("376.51 449.26 275.7 456.2 225.54 476.35 c\n"))
+    }
 }

@@ -82,4 +82,27 @@ import Testing
                     "\(bad): the other slices are not 25% and 75% in \(content)")
         }
     }
+
+    // A slice is computed with the precision of Go's port, float or double
+    // step by step, so the ports draw the same curves: the cosine and the
+    // sine in float drew 21 of 300 random charts a hundredth apart (review of
+    // 11 October 2026, #25). The expected curves are Go's.
+    @Test func aSliceIsDrawnAsTheGoPortDrawsIt() {
+        let pdf = TestSupport.newPDF()
+        var page = Page(pdf, Letter.PORTRAIT)
+        var chart = DonutChart(nil, nil).setRadii(163.36272, 132.87044)
+        for value: Float in [736.5481, 275.45578, 860.18787, 464.1474] {
+            chart.addSlice(Slice(value, 0x123456, ""))
+        }
+        chart.setLocation(88.48386, 140.68524).drawOn(page)
+        #expect(TestSupport.content(page).contains("115.28 498.52 116.96 464.15 130.52 433.78 c\n"))
+
+        page = Page(pdf, Letter.PORTRAIT)
+        chart = DonutChart(nil, nil).setRadii(59.125828, 19.265127)
+        for value: Float in [363.0059, 966.9588, 317.46417, 795.0797, 18.464327] {
+            chart.addSlice(Slice(value, 0x123456, ""))
+        }
+        chart.setLocation(262.18466, 51.85658).drawOn(page)
+        #expect(TestSupport.content(page).contains("321.01 700.28 320.71 700.28 320.4 700.26 c\n"))
+    }
 }

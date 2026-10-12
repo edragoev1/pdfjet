@@ -436,4 +436,57 @@ import Testing
         // Outside PDF/A a file is attached as before
         #expect(try complete(Compliance.PDF_UA_1, attach) == "", "PDF/UA: a file attached")
     }
+
+    /// Reads the PDF, encrypted with no user password, and returns the
+    /// strings after the key in its objects, as a reader decrypts them.
+    private func decryptedStrings(_ pdf: [UInt8], _ key: String) throws -> [String] {
+        var values = [String]()
+        for obj in try TestSupport.read(pdf, "") {
+            var i = 0
+            while i + 1 < obj.dict.count {
+                if obj.dict[i] == key {
+                    values.append(TestSupport.latin1(Decryptor.toBytes(obj.dict[i + 1])))
+                }
+                i += 1
+            }
+        }
+        return values
+    }
+
+    /// Returns a document of the compliance, written to memory, encrypted
+    /// with no passwords.
+    private func encryptedDoc(_ compliance: Compliance) -> MemoryPDF {
+        let memory = MemoryPDF(compliance)
+        memory.pdf.setTitle("Test")
+        _ = memory.pdf.setEncryption(Encryption(memory.pdf, Passwords(), Permissions()))
+        return memory
+    }
+
+    /// The strings of the system of characters of a CJK font, Adobe and the
+    /// ordering, are encrypted in an encrypted document: written as they
+    /// were, a reader decrypted them to nothing, and the CMap matched no font
+    /// (review of 11 October 2026, #19).
+    @Test func theCharactersOfACJKFontAreEncrypted() throws {
+        let memory = encryptedDoc(Compliance.PDF_1_7)
+        let font = TestSupport.cjkFont(memory.pdf, CJKFont.KOZ_MIN_PRO_VI_REGULAR)
+        TextLine(font, "\u{65E5}\u{672C}").setLocation(50, 50).drawOn(Page(memory.pdf, Letter.PORTRAIT))
+        try memory.pdf.complete()
+        #expect(try decryptedStrings(memory.bytes, "/Registry") == ["Adobe"])
+        #expect(try decryptedStrings(memory.bytes, "/Ordering") == ["Japan1"])
+    }
+
+    /// The name of the configuration of the layers of a document of PDF/UA
+    /// is encrypted in an encrypted document, where a reader decrypted it to
+    /// nothing (review of 11 October 2026, #20).
+    @Test func theNameOfTheLayersIsEncrypted() throws {
+        let memory = encryptedDoc(Compliance.PDF_UA_1)
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        TextLine(try TestSupport.plexSans(memory.pdf), "Heading")
+                .setStructureType(StructElem.H1).setLocation(50, 50).drawOn(page)
+        let group = OptionalContentGroup(memory.pdf, "Layer").setVisible(true)
+        _ = group.add(Rect(10, 100, 20, 20))
+        group.drawOn(page)
+        try memory.pdf.complete()
+        #expect(try decryptedStrings(memory.bytes, "/Name").contains("Default"))
+    }
 }

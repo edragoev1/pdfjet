@@ -235,14 +235,17 @@ public class Arc : Drawable {
             let dx = p2.x - p1.x
             let dy = p2.y - p1.y
             // Normalize and rotate 90 degrees (clockwise perpendicular)
-            let invLength = 1.0 / sqrt(dx*dx + dy*dy)
+            // The length in double precision, and the angle, as Go computes
+            // them, for the same arc in every port (review of 11 October
+            // 2026, #25)
+            let invLength = Float(1.0 / sqrt(Double(dx*dx + dy*dy)))
             let nx = -dy * invLength
             let ny = dx * invLength
             // Adjust direction based on sweep
             let sign: Float = sweepDegrees > 0.0 ? 1.0 : -1.0
             cx = p2.x + nx * rx * sign
             cy = p2.y + ny * ry * sign
-            startAngle = atan2(p2.y - cy, p2.x - cx) * (180.0 / Float.pi)
+            startAngle = Float(atan2(Double(p2.y - cy), Double(p2.x - cx)) * (180.0 / Double.pi))
         }
 
         if page == nil {

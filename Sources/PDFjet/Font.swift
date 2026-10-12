@@ -206,24 +206,30 @@ public class Font {
         pdf.append("/FontDescriptor ")
         pdf.append(pdf.getObjNumber() - 1)
         pdf.append(" 0 R\n")
-        pdf.append("/CIDSystemInfo <<\n")
-        pdf.append("/Registry (Adobe)\n")
+        let ordering: String
+        let supplement: String
         if fontName!.hasPrefix("AdobeMingStd") {
-            pdf.append("/Ordering (CNS1)\n")
-            pdf.append("/Supplement 4\n")
+            (ordering, supplement) = ("CNS1", "4")
         } else if fontName!.hasPrefix("AdobeSongStd")
                 || fontName!.hasPrefix("STHeitiSC") {
-            pdf.append("/Ordering (GB1)\n")
-            pdf.append("/Supplement 4\n")
+            (ordering, supplement) = ("GB1", "4")
         } else if fontName!.hasPrefix("KozMinPro") {
-            pdf.append("/Ordering (Japan1)\n")
-            pdf.append("/Supplement 4\n")
+            (ordering, supplement) = ("Japan1", "4")
         } else if fontName!.hasPrefix("AdobeMyungjoStd") {
-            pdf.append("/Ordering (Korea1)\n")
-            pdf.append("/Supplement 1\n")
+            (ordering, supplement) = ("Korea1", "1")
         } else {
             fatalError("Unsupported font: " + fontName!)
         }
+        pdf.append("/CIDSystemInfo <<\n")
+        pdf.append("/Registry ")
+        pdf.appendLiteralString("Adobe")
+        pdf.append("\n")
+        pdf.append("/Ordering ")
+        pdf.appendLiteralString(ordering)
+        pdf.append("\n")
+        pdf.append("/Supplement ")
+        pdf.append(supplement)
+        pdf.append("\n")
         pdf.append(">>\n")
         pdf.append(">>\n")
         pdf.endObj()
