@@ -88,7 +88,8 @@ class Decompressor {
     /**
      * Undoes the predictor of the /DecodeParms of a stream: 2 is the TIFF
      * predictor, and 10 to 15 are the PNG predictors, where each row starts
-     * with the type of the PNG filter of that row.
+     * with the type of the PNG filter of that row. The TIFF predictor is undone
+     * in the data itself.
      */
     static byte[] applyPredictor(
             byte[] data,
@@ -113,10 +114,12 @@ class Decompressor {
         return data;
     }
 
-    // Each sample adds the sample of the same color to its left.
+    // Each sample adds the sample of the same color to its left, in the data,
+    // which the reader decoded: a copy of it was not charged to the budget of
+    // what a PDF decodes to (review of 12 October 2026, N3).
     private static byte[] applyTIFFPredictor(
             byte[] data, int colors, int bitsPerComponent, int columns) {
-        byte[] decoded = data.clone();
+        byte[] decoded = data;
         int rowLength = (colors * bitsPerComponent * columns + 7) / 8;
         for (int row = 0; row < decoded.length; row += rowLength) {
             if (bitsPerComponent == 8) {

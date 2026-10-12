@@ -187,5 +187,109 @@ public class ReviewRound3Test {
         string content = TestSupport.Latin1(buf.ToArray());
         Assert.Contains("/ActualText <" + Page.ToUTF16Hex("\uD800") + ">", content);
     }
+
+    // A /MediaBox that refers to an object of more than a box is not read:
+    // 1,000 pages over an array of a million numbers, a PDF of 2 MB, copied
+    // the array for each page, 15 GB in Go (N1).
+    [Fact]
+    public void AMediaBoxOfAnotherObjectIsReadOnlyWhenItIsABox() {
+        int pages = 200;
+        var kids = new System.Text.StringBuilder();
+        for (int i = 0; i < pages; i++) {
+            kids.Append(5 + i).Append(" 0 R ");
+        }
+        var numbers = new System.Text.StringBuilder("[");
+        for (int i = 0; i < 100000; i++) {
+            numbers.Append("0 ");
+        }
+        var objects = new List<string> {
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [" + kids + "] /Count " + pages + " >>",
+            numbers.Append("]").ToString(),
+            "[0 0 612 792]"};
+        for (int i = 0; i < pages; i++) {
+            objects.Add("<< /Type /Page /Parent 2 0 R /MediaBox " + ((i == 0) ? "4" : "3") + " 0 R >>");
+        }
+        PDF pdf = TestSupport.NewPDF();
+        List<PDFobj> read = TestSupport.Read(PDFTest.PdfWithObjects(objects.ToArray()));
+        long before = GC.GetAllocatedBytesForCurrentThread();
+        List<PDFobj> found = pdf.GetPageObjects(read);
+        long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        Assert.True(allocated <= 64 << 20, (allocated >> 20) + " MB allocated");
+        Assert.Equal(pages, found.Count);
+        Assert.Equal("[ 0 0 612 792 ]", found[0].GetValue("/MediaBox"));
+        Assert.Equal("3", found[1].GetValue("/MediaBox"));
+    }
+
+    // A /Font dictionary that is an object of its own, which small resources
+    // of each page refer to, is added once: 4,000 pages over one of 4,000
+    // fonts, a PDF of 1 MB, copied it for each page, 4.6 GB in Go (N2).
+    [Fact]
+    public void AFontDictionaryOfItsOwnIsAddedOnce() {
+        int pages = 2000;
+        int fonts = 2000;
+        var kids = new System.Text.StringBuilder();
+        for (int i = 0; i < pages; i++) {
+            kids.Append(5 + i).Append(" 0 R ");
+        }
+        var entries = new System.Text.StringBuilder("<< ");
+        for (int i = 0; i < fonts; i++) {
+            entries.Append("/F").Append(i).Append(" 4 0 R ");
+        }
+        var objects = new List<string> {
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [" + kids + "] /Count " + pages + " >>",
+            entries.Append(">>").ToString(),
+            "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"};
+        for (int i = 0; i < pages; i++) {
+            objects.Add("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font 3 0 R >> >>");
+        }
+        PDF pdf = TestSupport.NewPDF();
+        List<PDFobj> read = TestSupport.Read(PDFTest.PdfWithObjects(objects.ToArray()));
+        long before = GC.GetAllocatedBytesForCurrentThread();
+        pdf.AddResourceObjects(read);
+        long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        Assert.True(allocated <= 64 << 20, (allocated >> 20) + " MB allocated");
+        var imported = (List<string>) typeof(PDF).GetField("importedFonts",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).GetValue(pdf);
+        Assert.Equal(4 * fonts, imported.Count);
+    }
+
+    // A token of an object stream's header longer than any number is copied
+    // no further than 20 bytes, and the TIFF predictor is undone in the data
+    // the reader decoded: each copied a stream, uncharged (N3).
+    [Fact]
+    public void TheReaderMakesNoUnchargedCopyOfAStream() {
+        string digits = new string('7', 100000);
+        byte[] data = System.Text.Encoding.Latin1.GetBytes(digits + " 5");
+        List<string> header = PDF.ObjectStreamHeader(data, data.Length, 2);
+        Assert.Equal(new List<string> {digits.Substring(0, 20) + "...", "5"}, header);
+        byte[] samples = {1, 1, 1, 5, 0, 0};
+        Assert.Same(samples, Decompressor.ApplyPredictor(samples, 2, 1, 8, 3));
+    }
+
+    // A lone surrogate in a password is EF BF BD in its UTF-8, in every port:
+    // Java's UTF-8 made it '?' (S5).
+    [Fact]
+    public void ALoneSurrogateInAPasswordIsTheReplacementCharacter() {
+        Assert.Equal(new byte[] {(byte) 'a', 0xEF, 0xBF, 0xBD, (byte) 'b'}, SASLprep.Truncate("a\uD800b"));
+        Assert.Equal(new byte[] {0xF0, 0x9F, 0x98, 0x80, 0xEF, 0xBF, 0xBD}, SASLprep.Truncate("\uD83D\uDE00\uDC00"));
+    }
+
+    // An image of a PDF whose /Width is past an int takes the largest or the
+    // smallest, in every port: Go took the smallest int64, and C# the
+    // smallest int (C8).
+    [Fact]
+    public void AWidthPastAnIntTakesTheLargestInt() {
+        string[] widths = {"1e19", "1e400", "-1e19", "NaN", "12.7"};
+        float[] pixels = {int.MaxValue, int.MaxValue, int.MinValue, 0f, 12f};
+        for (int i = 0; i < widths.Length; i++) {
+            PDFobj obj = new PDFobj();
+            obj.dict = new List<string> {
+                "<<", "/Type", "/XObject", "/Subtype", "/Image", "/Width", widths[i], "/Height", "1", ">>"};
+            obj.stream = new byte[0];
+            Assert.Equal(pixels[i], new Image(TestSupport.NewPDF(), obj).GetWidth());
+        }
+    }
 }
 }

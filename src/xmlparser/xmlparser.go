@@ -99,6 +99,12 @@ type parser struct {
 // Parse reads the document and returns its root element. It returns an error
 // if the document is not the XML this reads, has a DOCTYPE, or is more than
 // 20 MB.
+// The namespaces of the reserved prefixes xml and xmlns.
+const (
+	xmlNamespace   = "http://www.w3.org/XML/1998/namespace"
+	xmlnsNamespace = "http://www.w3.org/2000/xmlns/"
+)
+
 func Parse(bytes []byte) (*XMLNode, error) {
 	return parse(bytes, false)
 }
@@ -599,6 +605,13 @@ func (p *parser) openTag() (*XMLNode, error) {
 					return nil, p.error("The prefix " + prefix + " of " + name +
 						" is declared as no namespace")
 				}
+			}
+			// The prefixes xml and xmlns are reserved: xml stands for its
+			// namespace alone, and xmlns and its namespace are never
+			// declared (review of 12 October 2026, C9).
+			if prefix == "xmlns" || (prefix == "xml") != (value == xmlNamespace) || value == xmlnsNamespace {
+				return nil, p.error("The attribute " + attributeName + " of " + name +
+					" declares a reserved prefix or namespace")
 			}
 			declared[prefix] = value
 		}

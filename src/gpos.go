@@ -83,9 +83,18 @@ func (g *gpos) lookups() {
 			g.gposWork--
 			subTable := lookup + g.uint16At(lookup+6+2*j)
 			lookupType2 := lookupType
-			if lookupType2 == 9 { // An extension lookup holds the subtable
+			if lookupType2 == 9 {
+				// An extension lookup holds the subtable, at an offset of 32
+				// bits that is read unsigned, as Java and C# read it: an int
+				// of 32 bits made one of 0x80000000 or more negative, into the
+				// table; past the table, there is no subtable (review of 12
+				// October 2026, S4)
 				lookupType2 = g.uint16At(subTable + 2)
-				subTable += g.uint32At(subTable + 4)
+				extension := int64(g.uint16At(subTable+4))<<16 | int64(g.uint16At(subTable+6))
+				if extension >= int64(g.end-subTable) {
+					continue
+				}
+				subTable += int(extension)
 			}
 			if lookupType2 == 4 && g.uint16At(subTable) == 1 {
 				g.getMarkToBaseAnchors(subTable, false)
@@ -250,6 +259,3 @@ func (g *gpos) int16At(offset int) int {
 	return int(int16(g.uint16At(offset)))
 }
 
-func (g *gpos) uint32At(offset int) int {
-	return g.uint16At(offset)<<16 | g.uint16At(offset+2)
-}

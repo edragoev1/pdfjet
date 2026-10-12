@@ -414,4 +414,21 @@ import Testing
         }
         #expect(error?.message.contains("more than 1000000 elements") == true, "\(error?.message ?? "")")
     }
+
+    // The reserved prefixes are refused as Namespaces in XML refuses them: xml
+    // stands for its namespace alone, and xmlns and its namespace are never
+    // declared. Both <a xmlns:xml='u'/> and <a xmlns:xmlns='u'/> were read
+    // (review of 12 October 2026, C9).
+    @Test func refusesTheReservedPrefixesDeclared() throws {
+        for xml in [
+            "<a xmlns:xml=\"u\"/>",
+            "<a xmlns:xmlns=\"u\"/>",
+            "<a xmlns:p=\"http://www.w3.org/XML/1998/namespace\"/>",
+            "<a xmlns=\"http://www.w3.org/XML/1998/namespace\"/>",
+            "<a xmlns:p=\"http://www.w3.org/2000/xmlns/\"/>",
+            "<a xmlns=\"http://www.w3.org/2000/xmlns/\"/>"] {
+            #expect(message(xml).contains("declares a reserved prefix or namespace"), "\(xml)")
+        }
+        _ = try parse("<a xmlns:xml=\"http://www.w3.org/XML/1998/namespace\" xml:lang=\"en\"/>")
+    }
 }

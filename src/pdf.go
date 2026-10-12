@@ -2059,6 +2059,11 @@ func mergedValue(obj *PDFobj, isPage bool, objects []*PDFobj, nodes pageTreeNode
 }
 
 func objectValue(obj *PDFobj) []string {
+	return append([]string(nil), objectValueTokens(obj)...)
+}
+
+// objectValueTokens returns the tokens of the value of the object, not a copy.
+func objectValueTokens(obj *PDFobj) []string {
 	dict := obj.dict
 	start := 0
 	if len(dict) >= 3 && dict[2] == "obj" {
@@ -2071,7 +2076,7 @@ func objectValue(obj *PDFobj) []string {
 	if end > start && dict[end-1] == "stream" {
 		end--
 	}
-	return append([]string(nil), dict[start:end]...)
+	return dict[start:end]
 }
 
 // pageTreeNodes holds the entries of the nodes of a page tree, each by its
@@ -2855,7 +2860,13 @@ func objectStreamHeader(data []byte, count int) []string {
 		for i < len(data) && !isWhiteSpace(int(data[i])) {
 			i++
 		}
-		if i > start {
+		// A token of more than 20 bytes is no number of a header, and only its
+		// first 20 are copied, with "..." after them: a header of one token
+		// as long as the stream was copied whole, uncharged (review of 12
+		// October 2026, N3).
+		if i-start > 20 {
+			header = append(header, string(data[start:start+20])+"...")
+		} else if i > start {
 			header = append(header, string(data[start:i]))
 		}
 	}
@@ -3642,15 +3653,19 @@ func resolveMediaBox(page *PDFobj, objects []*PDFobj) {
 	start := open + i + 1
 	end := open + dictValueEnd(page.dict[open:], i+1)
 	value := page.dict[start:end]
+	// A box is 6 tokens, its numbers and its brackets, and an object it
+	// refers to of more is not read: a page tree of 1,000 pages over an
+	// array of a million numbers, a PDF of 2 MB, copied the array for each
+	// page, 15 GB in Go (review of 12 October 2026, N1).
 	if isObjectReference(value, 0) {
 		number, _ := strconv.Atoi(value[0])
 		obj := objectNumbered(objects, number)
-		if obj == nil {
+		if obj == nil || len(objectValueTokens(obj)) > 6 {
 			return
 		}
-		value = objectValue(obj)
+		value = objectValueTokens(obj)
 	}
-	if len(value) == 0 || value[0] != "[" {
+	if len(value) == 0 || value[0] != "[" || len(value) > 16 {
 		return
 	}
 	box := []string{}
@@ -3658,10 +3673,10 @@ func resolveMediaBox(page *PDFobj, objects []*PDFobj) {
 		if isObjectReference(value, j) {
 			number, _ := strconv.Atoi(value[j])
 			obj := objectNumbered(objects, number)
-			if obj == nil {
+			if obj == nil || len(objectValueTokens(obj)) > 6 {
 				return
 			}
-			box = append(box, objectValue(obj)...)
+			box = append(box, objectValueTokens(obj)...)
 			j += 2
 		} else {
 			box = append(box, value[j])
@@ -3782,6 +3797,22 @@ func imported(names map[string]int, name string, at int) map[string]int {
 	}
 	names[name] = at
 	return names
+}
+
+// resourceEntryObject returns the number of the object that is the
+// sub-dictionary of the resources, like /Font, when it is an object of its
+// own, or 0.
+func resourceEntryObject(resources *PDFobj, name string) int {
+	dict := resources.GetDict()
+	i := slices.Index(dict, name) + 1
+	if i == 0 || !isObjectReference(dict, i) {
+		return 0
+	}
+	number, err := strconv.Atoi(dict[i])
+	if err != nil {
+		return 0
+	}
+	return number
 }
 
 // getResourceEntries returns the entries of a sub-dictionary of the resources,
@@ -3930,6 +3961,7 @@ func (pdf *PDF) AddResourceObjects(objects []*PDFobj) {
 	// object that holds them: the resources object, the page or the node.
 	done := make(map[*PDFobj]bool, len(pages))
 	added := make(map[int]bool)
+	addedEntries := make(map[string]map[int]bool)
 	for _, page := range pages {
 		if done[page] {
 			continue
@@ -3947,18 +3979,43 @@ func (pdf *PDF) AddResourceObjects(objects []*PDFobj) {
 			continue
 		}
 		added[holder] = true
+		// A /Font, /XObject or /ExtGState dictionary that is an object of its
+		// own is added once too: small resources of each page that refer to
+		// one /Font dictionary of 4,000 fonts, 4,000 pages in a PDF of 1 MB,
+		// copied it for each page, 4.6 GB in Go (review of 12 October 2026,
+		// N2).
+		newEntries := func(name string) bool {
+			number := resourceEntryObject(resObj, name)
+			if number == 0 {
+				return true
+			}
+			if addedEntries[name][number] {
+				return false
+			}
+			if addedEntries[name] == nil {
+				addedEntries[name] = make(map[int]bool)
+			}
+			addedEntries[name][number] = true
+			return true
+		}
 		// A font is copied with every object that it refers to: its descriptor
 		// and font file, and also the widths, the encoding and the other
 		// entries that can be objects of their own.
-		for _, font := range pdf.getFontObjects(resObj, objects) {
-			resources = pdf.addObjectTree(font.number, objects, numbers, resources)
+		if newEntries("/Font") {
+			for _, font := range pdf.getFontObjects(resObj, objects) {
+				resources = pdf.addObjectTree(font.number, objects, numbers, resources)
+			}
 		}
-		resources = pdf.addXObjects(resObj, objects, numbers, resources)
-		pdf.addExtGStates(resObj, objects)
-		// The /ExtGState entries are copied as they are, so the objects that
-		// they refer to have to be copied too.
-		for _, objNumber := range pdf.getReferences(pdf.getResourceEntries(resObj, "/ExtGState", objects)) {
-			resources = pdf.addObjectTree(objNumber, objects, numbers, resources)
+		if newEntries("/XObject") {
+			resources = pdf.addXObjects(resObj, objects, numbers, resources)
+		}
+		if newEntries("/ExtGState") {
+			pdf.addExtGStates(resObj, objects)
+			// The /ExtGState entries are copied as they are, so the objects
+			// that they refer to have to be copied too.
+			for _, objNumber := range pdf.getReferences(pdf.getResourceEntries(resObj, "/ExtGState", objects)) {
+				resources = pdf.addObjectTree(objNumber, objects, numbers, resources)
+			}
 		}
 	}
 	sort.SliceStable(resources, func(i, j int) bool {

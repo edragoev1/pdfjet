@@ -546,3 +546,21 @@ func TestXMLParserReadsAMillionElementsAndNoMore(t *testing.T) {
 		t.Errorf("%d elements: %v", MaxElements+1, err)
 	}
 }
+
+// The reserved prefixes are refused as Namespaces in XML refuses them: xml
+// stands for its namespace alone, and xmlns and its namespace are never
+// declared. Both <a xmlns:xml='u'/> and <a xmlns:xmlns='u'/> were read
+// (review of 12 October 2026, C9).
+func TestXMLParserRefusesTheReservedPrefixesDeclared(t *testing.T) {
+	for _, xml := range []string{
+		`<a xmlns:xml="u"/>`,
+		`<a xmlns:xmlns="u"/>`,
+		`<a xmlns:p="http://www.w3.org/XML/1998/namespace"/>`,
+		`<a xmlns="http://www.w3.org/XML/1998/namespace"/>`,
+		`<a xmlns:p="http://www.w3.org/2000/xmlns/"/>`,
+		`<a xmlns="http://www.w3.org/2000/xmlns/"/>`,
+	} {
+		testContains(t, testMessage(t, xml), "declares a reserved prefix or namespace")
+	}
+	testParse(t, `<a xmlns:xml="http://www.w3.org/XML/1998/namespace" xml:lang="en"/>`)
+}

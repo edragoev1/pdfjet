@@ -181,14 +181,15 @@ jobs:
               if: matrix.port == 'dotnet'
               run: bash -e net48/build.sh
 
-            # The image readers' tests again on 32 bits, where an int is 32
-            # bits: an EXIF offset of 0x7FFFFFFE overflowed there and
-            # panicked, which a 64-bit run cannot see (the review of
-            # 12 October 2026, R29).
-            - name: The image tests on 32 bits
+            # The image readers' and the GPOS table's tests again on 32 bits,
+            # where an int is 32 bits: an EXIF offset of 0x7FFFFFFE overflowed
+            # there and panicked, and a GPOS offset of 0x80000000 or more was
+            # negative, which a 64-bit run cannot see (the reviews of
+            # 12 October 2026, R29 and S4).
+            - name: The image and GPOS tests on 32 bits
               if: matrix.port == 'go'
               working-directory: src
-              run: GOARCH=386 go test -run 'TestJPG|TestPNG|TestBMP|TestImageSize' .
+              run: GOARCH=386 go test -run 'TestJPG|TestPNG|TestBMP|TestImageSize|TestGPOS' .
 
             # No fused multiply-add in the Go port's code for arm64, which
             # could round otherwise than amd64 and the other ports; the

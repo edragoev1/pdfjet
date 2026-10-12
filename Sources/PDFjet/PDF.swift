@@ -2568,7 +2568,13 @@ public final class PDF {
             while i < length && !isWhiteSpace(data[i]) {
                 i += 1
             }
-            if i > start {
+            // A token of more than 20 bytes is no number of a header, and only its
+            // first 20 are copied, with "..." after them: a header of one token
+            // as long as the stream was copied whole, uncharged (review of 12
+            // October 2026, N3).
+            if i - start > 20 {
+                header.append(String(bytes: data[start..<start + 20], encoding: .isoLatin1)! + "...")
+            } else if i > start {
                 header.append(String(bytes: data[start..<i], encoding: .isoLatin1)!)
             }
         }
@@ -3335,6 +3341,11 @@ public final class PDF {
     }
 
     static func valueOf(_ obj: PDFobj) -> [String] {
+        return Array(obj.dict[valueRange(obj)])
+    }
+
+    // Where the value of the object is in its tokens.
+    private static func valueRange(_ obj: PDFobj) -> Range<Int> {
         let dict = obj.dict
         let start = (dict.count >= 3 && dict[2] == "obj") ? 3 : 0
         var end = dict.count
@@ -3344,7 +3355,7 @@ public final class PDF {
         if end > start && dict[end - 1] == "stream" {
             end -= 1
         }
-        return Array(dict[start..<end])
+        return start..<end
     }
 
     // What the nodes of a page tree have or inherit, by the number of the node
@@ -3740,20 +3751,24 @@ public final class PDF {
         let start = open + i + 1
         let end = open + valueEnd(tokens, i + 1)
         var value = Array(page.dict[start..<end])
+        // A box is 6 tokens, its numbers and its brackets, and an object it
+        // refers to of more is not read: a page tree of 1,000 pages over an
+        // array of a million numbers, a PDF of 2 MB, copied the array for
+        // each page, 15 GB in Go (review of 12 October 2026, N1).
         if isReference(value, 0) {
-            guard let obj = objectNumbered(objects, value[0]) else {
+            guard let obj = objectNumbered(objects, value[0]), valueRange(obj).count <= 6 else {
                 return
             }
             value = valueOf(obj)
         }
-        if value.first != "[" {
+        if value.first != "[" || value.count > 16 {
             return
         }
         var box = [String]()
         var j = 0
         while j < value.count {
             if isReference(value, j) {
-                guard let obj = objectNumbered(objects, value[j]) else {
+                guard let obj = objectNumbered(objects, value[j]), valueRange(obj).count <= 6 else {
                     return
                 }
                 box.append(contentsOf: valueOf(obj))
@@ -4012,6 +4027,16 @@ public final class PDF {
         }
     }
 
+    // Returns false when the sub-dictionary of the resources, like /Font, is
+    // an object of its own that was added already, and records it.
+    private static func newEntries(_ resources: PDFobj, _ name: String, _ added: inout Set<String>) -> Bool {
+        let dict = resources.getDict()
+        guard let index = dict.firstIndex(of: name), isReference(dict, index + 1) else {
+            return true
+        }
+        return added.insert(name + " " + dict[index + 1]).inserted
+    }
+
     ///
     /// Adds the fonts, images and graphics states used by the pages to this
     /// document. The objects keep their numbers and are written as they are,
@@ -4037,6 +4062,7 @@ public final class PDF {
         // object that holds them: the resources object, the page or the node.
         var done = Set<ObjectIdentifier>()
         var added = Set<Int>()
+        var addedEntries = Set<String>()
         for page in pages {
             if !done.insert(ObjectIdentifier(page)).inserted {
                 continue
@@ -4048,18 +4074,29 @@ public final class PDF {
             if !added.insert(holder).inserted && holder > 0 {
                 continue
             }
+            // A /Font, /XObject or /ExtGState dictionary that is an object of
+            // its own is added once too: small resources of each page that
+            // refer to one /Font dictionary of 4,000 fonts, 4,000 pages in a
+            // PDF of 1 MB, copied it for each page, 4.6 GB in Go (review of
+            // 12 October 2026, N2).
             // A font is copied with every object that it refers to: its
             // descriptor and font file, and also the widths, the encoding and
             // the other entries that can be objects of their own.
-            for font in getFontObjects(resObj, objects) {
-                addObjectTree(font.number, objects, &numbers, &resources)
+            if PDF.newEntries(resObj, "/Font", &addedEntries) {
+                for font in getFontObjects(resObj, objects) {
+                    addObjectTree(font.number, objects, &numbers, &resources)
+                }
             }
-            addXObjects(resObj, objects, &numbers, &resources)
-            addExtGStates(resObj, objects)
-            // The /ExtGState entries are copied as they are, so the objects
-            // that they refer to have to be copied too.
-            for number in getReferences(getResourceEntries(resObj, "/ExtGState", objects)) {
-                addObjectTree(number, objects, &numbers, &resources)
+            if PDF.newEntries(resObj, "/XObject", &addedEntries) {
+                addXObjects(resObj, objects, &numbers, &resources)
+            }
+            if PDF.newEntries(resObj, "/ExtGState", &addedEntries) {
+                addExtGStates(resObj, objects)
+                // The /ExtGState entries are copied as they are, so the
+                // objects that they refer to have to be copied too.
+                for number in getReferences(getResourceEntries(resObj, "/ExtGState", objects)) {
+                    addObjectTree(number, objects, &numbers, &resources)
+                }
             }
         }
         resources.sort(by: { $0.number < $1.number })

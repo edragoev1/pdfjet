@@ -6,6 +6,7 @@
  */
 package com.pdfjet;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -197,5 +198,147 @@ class ReviewRound3Test {
         new TextLine(font, "d\u200D\u200E\u200Ce\u200D").setLocation(50f, 50f).drawOn(page);
         String content = TestSupport.content(page);
         assertTrue(content.contains("/ActualText <" + Page.toUTF16Hex("\u200Ee\u200D\u200E") + ">"), content);
+    }
+
+    private static long allocated(Runnable run) {
+        java.lang.management.ThreadMXBean bean = java.lang.management.ManagementFactory.getThreadMXBean();
+        if (!(bean instanceof com.sun.management.ThreadMXBean)
+                || !((com.sun.management.ThreadMXBean) bean).isThreadAllocatedMemorySupported()) {
+            return 0;
+        }
+        com.sun.management.ThreadMXBean threads = (com.sun.management.ThreadMXBean) bean;
+        threads.setThreadAllocatedMemoryEnabled(true);
+        long id = Thread.currentThread().getId();
+        long before = threads.getThreadAllocatedBytes(id);
+        run.run();
+        return threads.getThreadAllocatedBytes(id) - before;
+    }
+
+    /**
+     * A /MediaBox that refers to an object of more than a box is not read:
+     * 1,000 pages over an array of a million numbers, a PDF of 2 MB, copied
+     * the array for each page, 15 GB in Go (N1).
+     */
+    @Test
+    void aMediaBoxOfAnotherObjectIsReadOnlyWhenItIsABox() throws Exception {
+        int pages = 200;
+        StringBuilder kids = new StringBuilder();
+        for (int i = 0; i < pages; i++) {
+            kids.append(5 + i).append(" 0 R ");
+        }
+        StringBuilder numbers = new StringBuilder("[");
+        for (int i = 0; i < 100000; i++) {
+            numbers.append("0 ");
+        }
+        List<String> objects = new ArrayList<String>(Arrays.asList(
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [" + kids + "] /Count " + pages + " >>",
+                numbers.append("]").toString(),
+                "[0 0 612 792]"));
+        for (int i = 0; i < pages; i++) {
+            objects.add("<< /Type /Page /Parent 2 0 R /MediaBox " + ((i == 0) ? "4" : "3") + " 0 R >>");
+        }
+        final PDF pdf = TestSupport.newPDF();
+        final List<PDFobj> read = TestSupport.read(PDFTest.pdfWithObjects(objects.toArray(new String[0])));
+        final List<List<PDFobj>> found = new ArrayList<List<PDFobj>>();
+        long bytes = allocated(() -> {
+            try {
+                found.add(pdf.getPageObjects(read));
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+        assertTrue(bytes <= 64 << 20, (bytes >> 20) + " MB allocated");
+        assertEquals(pages, found.get(0).size());
+        assertEquals("[ 0 0 612 792 ]", found.get(0).get(0).getValue("/MediaBox"));
+        assertEquals("3", found.get(0).get(1).getValue("/MediaBox"));
+    }
+
+    /**
+     * A /Font dictionary that is an object of its own, which small resources
+     * of each page refer to, is added once: 4,000 pages over one of 4,000
+     * fonts, a PDF of 1 MB, copied it for each page, 4.6 GB in Go (N2).
+     */
+    @Test
+    void aFontDictionaryOfItsOwnIsAddedOnce() throws Exception {
+        int pages = 2000;
+        int fonts = 2000;
+        StringBuilder kids = new StringBuilder();
+        for (int i = 0; i < pages; i++) {
+            kids.append(5 + i).append(" 0 R ");
+        }
+        StringBuilder entries = new StringBuilder("<< ");
+        for (int i = 0; i < fonts; i++) {
+            entries.append("/F").append(i).append(" 4 0 R ");
+        }
+        List<String> objects = new ArrayList<String>(Arrays.asList(
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [" + kids + "] /Count " + pages + " >>",
+                entries.append(">>").toString(),
+                "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"));
+        for (int i = 0; i < pages; i++) {
+            objects.add("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font 3 0 R >> >>");
+        }
+        final PDF pdf = TestSupport.newPDF();
+        final List<PDFobj> read = TestSupport.read(PDFTest.pdfWithObjects(objects.toArray(new String[0])));
+        long bytes = allocated(() -> {
+            try {
+                pdf.addResourceObjects(read);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+        assertTrue(bytes <= 64 << 20, (bytes >> 20) + " MB allocated");
+        java.lang.reflect.Field imported = PDF.class.getDeclaredField("importedFonts");
+        imported.setAccessible(true);
+        assertEquals(4 * fonts, ((List<?>) imported.get(pdf)).size());
+    }
+
+    /**
+     * A token of an object stream's header longer than any number is copied
+     * no further than 20 bytes, and the TIFF predictor is undone in the data
+     * the reader decoded: each copied a stream, uncharged (N3).
+     */
+    @Test
+    void theReaderMakesNoUnchargedCopyOfAStream() throws Exception {
+        StringBuilder digits = new StringBuilder();
+        for (int i = 0; i < 100000; i++) {
+            digits.append('7');
+        }
+        byte[] data = (digits + " 5").getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+        List<String> header = PDF.objectStreamHeader(data, data.length, 2);
+        assertEquals(Arrays.asList(digits.substring(0, 20) + "...", "5"), header);
+        byte[] samples = {1, 1, 1, 5, 0, 0};
+        org.junit.jupiter.api.Assertions.assertSame(samples, Decompressor.applyPredictor(samples, 2, 1, 8, 3));
+    }
+
+    /**
+     * A lone surrogate in a password is EF BF BD in its UTF-8, as in C# and
+     * Swift: Java's UTF-8 made it '?' (S5).
+     */
+    @Test
+    void aLoneSurrogateInAPasswordIsTheReplacementCharacter() {
+        assertArrayEquals(new byte[] {'a', (byte) 0xEF, (byte) 0xBF, (byte) 0xBD, 'b'},
+                SASLprep.truncate("a\uD800b"));
+        assertArrayEquals(new byte[] {(byte) 0xF0, (byte) 0x9F, (byte) 0x98, (byte) 0x80, (byte) 0xEF, (byte) 0xBF,
+                (byte) 0xBD}, SASLprep.truncate("\uD83D\uDE00\uDC00"));
+    }
+
+    /**
+     * An image of a PDF whose /Width is past an int takes the largest or the
+     * smallest, in every port: Go took the smallest int64, and C# the
+     * smallest int (C8).
+     */
+    @Test
+    void aWidthPastAnIntTakesTheLargestInt() throws Exception {
+        String[] widths = {"1e19", "1e400", "-1e19", "NaN", "12.7"};
+        float[] pixels = {Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MIN_VALUE, 0f, 12f};
+        for (int i = 0; i < widths.length; i++) {
+            PDFobj obj = new PDFobj();
+            obj.dict = new ArrayList<String>(Arrays.asList(
+                    "<<", "/Type", "/XObject", "/Subtype", "/Image", "/Width", widths[i], "/Height", "1", ">>"));
+            obj.stream = new byte[0];
+            assertEquals(pixels[i], new Image(TestSupport.newPDF(), obj).getWidth(), widths[i]);
+        }
     }
 }

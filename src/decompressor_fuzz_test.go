@@ -53,7 +53,7 @@ func fuzzDecompress(data []byte, predictor, colors, bits, columns int) string {
 	runLength, err := decompressor.RunLengthDecode(data)
 	say("runlength", runLength, err)
 	say("predictor", decompressor.ApplyPredictor(
-		data, predictor, colors, bits, columns), nil)
+		append([]byte(nil), data...), predictor, colors, bits, columns), nil)
 	return strings.TrimSpace(report.String())
 }
 

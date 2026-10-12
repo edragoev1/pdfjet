@@ -168,4 +168,55 @@ import Testing
         let content = TestSupport.content(page)
         #expect(content.contains("/ActualText <" + Page.toUTF16Hex("\u{200E}e\u{200D}\u{200E}") + ">"), "\(content)")
     }
+
+    /// A /MediaBox that refers to an object of more than a box is not read:
+    /// 1,000 pages over an array of a million numbers, a PDF of 2 MB, copied
+    /// the array for each page, 15 GB in Go (N1).
+    @Test func aMediaBoxOfAnotherObjectIsReadOnlyWhenItIsABox() throws {
+        let pages = 1000
+        let kids = (0..<pages).map { "\(5 + $0) 0 R" }.joined(separator: " ")
+        var objects = [
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [\(kids)] /Count \(pages) >>",
+            "[" + String(repeating: "0 ", count: 400000) + "]",
+            "[0 0 612 792]"]
+        for i in 0..<pages {
+            objects.append("<< /Type /Page /Parent 2 0 R /MediaBox \(i == 0 ? 4 : 3) 0 R >>")
+        }
+        let read = try TestSupport.read(TestSupport.pdfWithObjects(objects))
+        let pdf = TestSupport.newPDF()
+        var found = [PDFobj]()
+        let elapsed = ContinuousClock().measure {
+            found = pdf.getPageObjects(from: read)
+        }
+        // A few milliseconds; the array copied for each page took 2.5 s
+        #expect(elapsed < .seconds(1), "\(elapsed)")
+        #expect(found.count == pages)
+        #expect(found[0].getValue("/MediaBox") == "[ 0 0 612 792 ]")
+        #expect(found[1].getValue("/MediaBox") == "3")
+    }
+
+    /// A /Font dictionary that is an object of its own, which small resources
+    /// of each page refer to, is added once: 4,000 pages over one of 4,000
+    /// fonts, a PDF of 1 MB, copied it for each page, 4.6 GB in Go (N2).
+    @Test func aFontDictionaryOfItsOwnIsAddedOnce() throws {
+        let pages = 2000
+        let fonts = 2000
+        let kids = (0..<pages).map { "\(5 + $0) 0 R" }.joined(separator: " ")
+        let entries = (0..<fonts).map { "/F\($0) 4 0 R" }.joined(separator: " ")
+        let objects = [
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [\(kids)] /Count \(pages) >>",
+            "<< \(entries) >>",
+            "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"]
+            + Array(repeating: "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font 3 0 R >> >>",
+                    count: pages)
+        let read = try TestSupport.read(TestSupport.pdfWithObjects(objects))
+        let pdf = TestSupport.newPDF()
+        let elapsed = ContinuousClock().measure {
+            pdf.addResourceObjects(from: read)
+        }
+        #expect(elapsed < .seconds(2), "\(elapsed)")
+        #expect(pdf.importedFonts.count == 4 * fonts)
+    }
 }

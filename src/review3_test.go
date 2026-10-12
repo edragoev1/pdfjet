@@ -11,11 +11,13 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
 
 	"github.com/edragoev1/pdfjet/v9/src/cjkfont"
+	"github.com/edragoev1/pdfjet/v9/src/internal/decompressor"
 )
 
 // The findings of the third review, of 12 October 2026, as tests.
@@ -270,5 +272,137 @@ func TestReview3AJoinerInARunIsInItsActualText(t *testing.T) {
 	NewTextLine(font, "d‍‎‌e‍").SetLocation(50, 50).DrawOn(page)
 	if content := testContent(page); !strings.Contains(content, "/ActualText <"+toUTF16Hex("‎e‍‎")+">") {
 		t.Errorf("the ZWJ is not in the actual text: %q", content)
+	}
+}
+
+// testAllocated returns the bytes the function allocates.
+func testAllocated(fn func()) uint64 {
+	var before, after runtime.MemStats
+	runtime.GC()
+	runtime.ReadMemStats(&before)
+	fn()
+	runtime.ReadMemStats(&after)
+	return after.TotalAlloc - before.TotalAlloc
+}
+
+// A /MediaBox that refers to an object of more than a box is not read: 1,000
+// pages over an array of a million numbers, a PDF of 2 MB, copied the array
+// for each page, 15 GB in Go (N1).
+func TestReview3AMediaBoxOfAnotherObjectIsReadOnlyWhenItIsABox(t *testing.T) {
+	const pages = 200
+	kids := make([]string, pages)
+	for i := range kids {
+		kids[i] = strconv.Itoa(5+i) + " 0 R"
+	}
+	objects := []string{
+		"<< /Type /Catalog /Pages 2 0 R >>",
+		"<< /Type /Pages /Kids [" + strings.Join(kids, " ") + "] /Count " + strconv.Itoa(pages) + " >>",
+		"[" + strings.Repeat("0 ", 100000) + "]",
+		"[0 0 612 792]",
+	}
+	for i := range pages {
+		box := "3 0 R"
+		if i == 0 {
+			box = "4 0 R"
+		}
+		objects = append(objects, "<< /Type /Page /Parent 2 0 R /MediaBox "+box+" >>")
+	}
+	pdf := testNewPDF()
+	read := testRead(t, testPDFWithObjects(objects...))
+	var found []*PDFobj
+	if allocated := testAllocated(func() { found = pdf.GetPageObjects(read) }); allocated > 64<<20 {
+		t.Errorf("%d MB allocated", allocated>>20)
+	}
+	if len(found) != pages {
+		t.Fatalf("%d pages", len(found))
+	}
+	if box := found[0].GetValue("/MediaBox"); box != "[ 0 0 612 792 ]" {
+		t.Errorf("the box of the first page is not read: %q", box)
+	}
+	if box := found[1].GetValue("/MediaBox"); box != "3" {
+		t.Errorf("the box of the second page is read: %.20q", box)
+	}
+}
+
+// A /Font dictionary that is an object of its own, which small resources of
+// each page refer to, is added once: 4,000 pages over one of 4,000 fonts, a
+// PDF of 1 MB, copied it for each page, 4.6 GB in Go (N2).
+func TestReview3AFontDictionaryOfItsOwnIsAddedOnce(t *testing.T) {
+	const pages, fonts = 1000, 1000
+	entries := make([]string, fonts)
+	for i := range entries {
+		entries[i] = "/F" + strconv.Itoa(i) + " 4 0 R"
+	}
+	kids := make([]string, pages)
+	for i := range kids {
+		kids[i] = strconv.Itoa(5+i) + " 0 R"
+	}
+	objects := []string{
+		"<< /Type /Catalog /Pages 2 0 R >>",
+		"<< /Type /Pages /Kids [" + strings.Join(kids, " ") + "] /Count " + strconv.Itoa(pages) + " >>",
+		"<< " + strings.Join(entries, " ") + " >>",
+		"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+	}
+	for range pages {
+		objects = append(objects, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font 3 0 R >> >>")
+	}
+	pdf := testNewPDF()
+	read := testRead(t, testPDFWithObjects(objects...))
+	if allocated := testAllocated(func() { pdf.AddResourceObjects(read) }); allocated > 64<<20 {
+		t.Errorf("%d MB allocated", allocated>>20)
+	}
+	if len(pdf.importedFonts) != 4*fonts {
+		t.Errorf("%d tokens of fonts", len(pdf.importedFonts))
+	}
+}
+
+// A token of an object stream's header longer than any number is copied no
+// further than 20 bytes, and the TIFF predictor is undone in the data the
+// reader decoded: each copied a stream, uncharged (N3).
+func TestReview3TheReaderMakesNoUnchargedCopyOfAStream(t *testing.T) {
+	header := objectStreamHeader([]byte(strings.Repeat("7", 100000)+" 5"), 2)
+	if len(header) != 2 || header[0] != strings.Repeat("7", 20)+"..." || header[1] != "5" {
+		t.Errorf("the header %.40q", header)
+	}
+	if _, err := objectStreamNumber(header[0]); err == nil {
+		t.Error("a token of 100,000 digits is a number")
+	}
+	data := []byte{1, 1, 1, 5, 0, 0}
+	if decoded := decompressor.ApplyPredictor(data, 2, 1, 8, 3); &decoded[0] != &data[0] {
+		t.Error("the TIFF predictor copied the data")
+	}
+}
+
+// An image of a PDF whose /Width is past an int32 takes the largest or the
+// smallest, as in Java and Swift: int of 1e19 was the smallest int64, and
+// 1e400 panicked (C8).
+func TestReview3AWidthPastAnIntTakesTheLargestInt32(t *testing.T) {
+	for width, pixels := range map[string]float32{
+		"1e19": math.MaxInt32, "1e400": math.MaxInt32, "-1e19": math.MinInt32, "nan": 0, "12.7": 12} {
+		obj := newPDFobj()
+		obj.dict = []string{"<<", "/Type", "/XObject", "/Subtype", "/Image", "/Width", width, "/Height", "1", ">>"}
+		if image := NewImageFromPDFobj(testNewPDF(), obj); image.GetWidth() != pixels {
+			t.Errorf("%s: %g", width, image.GetWidth())
+		}
+	}
+}
+
+// An extension lookup's offset of 32 bits is read unsigned, as Java and C#
+// read it: on 32 bits, -58 wrapped round into the table, to the mark-to-base
+// subtable before it (S4). CI runs it with GOARCH=386.
+func TestGPOSAnExtensionOffsetPastTheTableIsNoSubtable(t *testing.T) {
+	table := []byte{
+		0, 1, 0, 0, 0, 0, 0, 0, 0, 56, // The header: version 1.0, lookup list at 56
+		0, 1, 0, 12, 0, 18, 0, 1, 0, 24, 0, 36, // Mark to base at 10
+		0, 1, 0, 1, 0, 5, // Mark coverage: glyph 5
+		0, 1, 0, 1, 0, 7, // Base coverage: glyph 7
+		0, 1, 0, 0, 0, 6, 0, 1, 0, 10, 0, 20, // Mark array: class 0, anchor 10, 20
+		0, 1, 0, 4, 0, 1, 0, 30, 0, 40, // Base array: anchor 30, 40
+		0, 1, 0, 4, // Lookup list at 56: one lookup, at 60
+		0, 9, 0, 0, 0, 1, 0, 8, // Extension lookup: one subtable, at 68
+		0, 1, 0, 4, 0xFF, 0xFF, 0xFF, 0xC6, // Extension: mark to base, at -58
+	}
+	if g := newGpos(table, 0, len(table), 10).read(); len(g.markAnchors) != 0 {
+		t.Error("the extension wrapped round to the subtable before it")
 	}
 }

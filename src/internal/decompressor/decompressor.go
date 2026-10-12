@@ -86,7 +86,8 @@ func LZWDecodeWithMaxLength(buf []byte, maxLength int) ([]byte, error) {
 
 // ApplyPredictor undoes the predictor of the /DecodeParms of a stream: 2 is
 // the TIFF predictor, and 10 to 15 are the PNG predictors, where each row
-// starts with the type of the PNG filter of that row.
+// starts with the type of the PNG filter of that row. The TIFF predictor is
+// undone in buf itself.
 func ApplyPredictor(buf []byte, predictor, colors, bitsPerComponent, columns int) []byte {
 	// Larger values are not in real files, and would overflow the row length.
 	if colors < 1 || colors > 256 ||
@@ -105,9 +106,11 @@ func ApplyPredictor(buf []byte, predictor, colors, bitsPerComponent, columns int
 	return buf
 }
 
-// applyTIFFPredictor adds to each sample the sample of the same color to its left.
+// applyTIFFPredictor adds to each sample the sample of the same color to its
+// left, in buf, which the reader decoded: a copy of it was not charged to the
+// budget of what a PDF decodes to (review of 12 October 2026, N3).
 func applyTIFFPredictor(buf []byte, colors, bitsPerComponent, columns int) []byte {
-	decoded := append([]byte{}, buf...)
+	decoded := buf
 	rowLength := (colors*bitsPerComponent*columns + 7) / 8
 	for row := 0; row < len(decoded); row += rowLength {
 		if bitsPerComponent == 8 {

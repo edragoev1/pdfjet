@@ -2054,8 +2054,18 @@ public sealed class PDF {
     }
 
     internal static List<String> ValueOf(PDFobj obj) {
+        int start = ObjectValueStart(obj);
+        return obj.dict.GetRange(start, ObjectValueEnd(obj) - start);
+    }
+
+    // Where the value of the object starts and ends in its tokens.
+    private static int ObjectValueStart(PDFobj obj) {
+        return (obj.dict.Count >= 3 && obj.dict[2].Equals("obj")) ? 3 : 0;
+    }
+
+    private static int ObjectValueEnd(PDFobj obj) {
         List<String> dict = obj.dict;
-        int start = (dict.Count >= 3 && dict[2].Equals("obj")) ? 3 : 0;
+        int start = ObjectValueStart(obj);
         int end = dict.Count;
         if (end > start && dict[end - 1].Equals("endobj")) {
             end--;
@@ -2063,7 +2073,7 @@ public sealed class PDF {
         if (end > start && dict[end - 1].Equals("stream")) {
             end--;
         }
-        return dict.GetRange(start, end - start);
+        return end;
     }
 
     // The entries of the nodes of a page tree, each read once. A node can have
@@ -2991,7 +3001,13 @@ public sealed class PDF {
             while (i < length && !IsWhiteSpace(data[i])) {
                 i++;
             }
-            if (i > start) {
+            // A token of more than 20 bytes is no number of a header, and only its
+            // first 20 are copied, with "..." after them: a header of one token
+            // as long as the stream was copied whole, uncharged (review of 12
+            // October 2026, N3).
+            if (i - start > 20) {
+                header.Add(Encoding.Latin1.GetString(data, start, 20) + "...");
+            } else if (i > start) {
                 header.Add(Encoding.Latin1.GetString(data, start, i - start));
             }
         }
@@ -3672,21 +3688,25 @@ public sealed class PDF {
         int start = open + i + 1;
         int end = open + ValueEnd(tokens, i + 1);
         List<String> value = page.dict.GetRange(start, end - start);
+        // A box is 6 tokens, its numbers and its brackets, and an object it
+        // refers to of more is not read: a page tree of 1,000 pages over an
+        // array of a million numbers, a PDF of 2 MB, copied the array for
+        // each page, 15 GB in Go (review of 12 October 2026, N1).
         if (IsReference(value, 0)) {
             PDFobj obj = PDFobj.ObjectNumbered(objects, Int32.Parse(value[0], CultureInfo.InvariantCulture));
-            if (obj == null) {
+            if (obj == null || ObjectValueEnd(obj) - ObjectValueStart(obj) > 6) {
                 return;
             }
             value = ValueOf(obj);
         }
-        if (value.Count == 0 || !value[0].Equals("[")) {
+        if (value.Count == 0 || !value[0].Equals("[") || value.Count > 16) {
             return;
         }
         List<String> box = new List<String>();
         for (int j = 0; j < value.Count; j++) {
             if (IsReference(value, j)) {
                 PDFobj obj = PDFobj.ObjectNumbered(objects, Int32.Parse(value[j], CultureInfo.InvariantCulture));
-                if (obj == null) {
+                if (obj == null || ObjectValueEnd(obj) - ObjectValueStart(obj) > 6) {
                     return;
                 }
                 box.AddRange(ValueOf(obj));
@@ -3961,6 +3981,17 @@ public sealed class PDF {
         }
     }
 
+    // Returns false when the sub-dictionary of the resources, like /Font, is
+    // an object of its own that was added already, and records it.
+    private static bool NewEntries(PDFobj resources, String name, HashSet<string> added) {
+        List<String> dict = resources.GetDict();
+        int i = dict.IndexOf(name) + 1;
+        if (i == 0 || !IsReference(dict, i)) {
+            return true;
+        }
+        return added.Add(name + " " + dict[i]);
+    }
+
     /// <summary>
     /// Adds the fonts, images and graphics states used by the pages to this
     /// document. The objects keep their numbers and are written as they are,
@@ -3984,6 +4015,7 @@ public sealed class PDF {
         // reference.
         HashSet<PDFobj> done = new HashSet<PDFobj>();
         HashSet<int> added = new HashSet<int>();
+        HashSet<string> addedEntries = new HashSet<string>();
         foreach (PDFobj page in pages) {
             if (!done.Add(page)) {
                 continue;
@@ -3996,18 +4028,29 @@ public sealed class PDF {
             if (!added.Add(holder) && holder > 0) {
                 continue;
             }
+            // A /Font, /XObject or /ExtGState dictionary that is an object of
+            // its own is added once too: small resources of each page that
+            // refer to one /Font dictionary of 4,000 fonts, 4,000 pages in a
+            // PDF of 1 MB, copied it for each page, 4.6 GB in Go (review of
+            // 12 October 2026, N2).
             // A font is copied with every object that it refers to: its
             // descriptor and font file, and also the widths, the encoding and
             // the other entries that can be objects of their own.
-            foreach (PDFobj font in GetFontObjects(resObj, objects)) {
-                AddObjectTree(font.number, objects, numbers, resources);
+            if (NewEntries(resObj, "/Font", addedEntries)) {
+                foreach (PDFobj font in GetFontObjects(resObj, objects)) {
+                    AddObjectTree(font.number, objects, numbers, resources);
+                }
             }
-            AddXObjects(resObj, objects, numbers, resources);
-            AddExtGStates(resObj, objects);
-            // The /ExtGState entries are copied as they are, so the objects
-            // that they refer to have to be copied too.
-            foreach (int number in GetReferences(GetResourceEntries(resObj, "/ExtGState", objects))) {
-                AddObjectTree(number, objects, numbers, resources);
+            if (NewEntries(resObj, "/XObject", addedEntries)) {
+                AddXObjects(resObj, objects, numbers, resources);
+            }
+            if (NewEntries(resObj, "/ExtGState", addedEntries)) {
+                AddExtGStates(resObj, objects);
+                // The /ExtGState entries are copied as they are, so the
+                // objects that they refer to have to be copied too.
+                foreach (int number in GetReferences(GetResourceEntries(resObj, "/ExtGState", objects))) {
+                    AddObjectTree(number, objects, numbers, resources);
+                }
             }
         }
         resources.Sort(delegate(PDFobj o1, PDFobj o2){

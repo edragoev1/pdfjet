@@ -52,6 +52,10 @@ namespace PDFjet.NET {
 /// </para>
 /// </summary>
 public sealed class XMLParser {
+    // The namespaces of the reserved prefixes xml and xmlns.
+    private const string XML_NAMESPACE = "http://www.w3.org/XML/1998/namespace";
+    private const string XMLNS_NAMESPACE = "http://www.w3.org/2000/xmlns/";
+
     /// <summary>How deep the elements of a document may nest.</summary>
     public const int MAX_DEPTH = 256;
     /// <summary>
@@ -521,6 +525,14 @@ public sealed class XMLParser {
                         throw Error("The prefix " + prefix + " of " + name
                                 + " is declared as no namespace");
                     }
+                }
+                // The prefixes xml and xmlns are reserved: xml stands for its
+                // namespace alone, and xmlns and its namespace are never
+                // declared (review of 12 October 2026, C9).
+                if (prefix == "xmlns" || (prefix == "xml") != (value == XML_NAMESPACE)
+                        || value == XMLNS_NAMESPACE) {
+                    throw Error("The attribute " + attributeName + " of " + name
+                            + " declares a reserved prefix or namespace");
                 }
                 declared[prefix] = value;
             }

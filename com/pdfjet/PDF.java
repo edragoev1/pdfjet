@@ -2130,6 +2130,11 @@ final public class PDF {
     }
 
     static List<String> valueOf(PDFobj obj) {
+        return new ArrayList<String>(valueTokens(obj));
+    }
+
+    // The tokens of the value of the object, not a copy.
+    private static List<String> valueTokens(PDFobj obj) {
         List<String> dict = obj.dict;
         int start = (dict.size() >= 3 && dict.get(2).equals("obj")) ? 3 : 0;
         int end = dict.size();
@@ -2139,7 +2144,7 @@ final public class PDF {
         if (end > start && dict.get(end - 1).equals("stream")) {
             end--;
         }
-        return new ArrayList<String>(dict.subList(start, end));
+        return dict.subList(start, end);
     }
 
     // The most tokens of an inherited dictionary that are copied into each page
@@ -3143,7 +3148,13 @@ final public class PDF {
             while (i < length && !isWhiteSpace(data[i] & 0xFF)) {
                 i++;
             }
-            if (i > start) {
+            // A token of more than 20 bytes is no number of a header, and only its
+            // first 20 are copied, with "..." after them: a header of one token
+            // as long as the stream was copied whole, uncharged (review of 12
+            // October 2026, N3).
+            if (i - start > 20) {
+                header.add(new String(data, start, 20, StandardCharsets.ISO_8859_1) + "...");
+            } else if (i > start) {
                 header.add(new String(data, start, i - start, StandardCharsets.ISO_8859_1));
             }
         }
@@ -3853,24 +3864,28 @@ final public class PDF {
         int start = open + i + 1;
         int end = open + valueEnd(tokens, i + 1);
         List<String> value = page.dict.subList(start, end);
+        // A box is 6 tokens, its numbers and its brackets, and an object it
+        // refers to of more is not read: a page tree of 1,000 pages over an
+        // array of a million numbers, a PDF of 2 MB, copied the array for
+        // each page, 15 GB in Go (review of 12 October 2026, N1).
         if (isReference(value, 0)) {
             PDFobj obj = PDFobj.objectNumbered(objects, Integer.parseInt(value.get(0)));
-            if (obj == null) {
+            if (obj == null || valueTokens(obj).size() > 6) {
                 return;
             }
-            value = valueOf(obj);
+            value = valueTokens(obj);
         }
-        if (value.isEmpty() || !value.get(0).equals("[")) {
+        if (value.isEmpty() || !value.get(0).equals("[") || value.size() > 16) {
             return;
         }
         List<String> box = new ArrayList<String>();
         for (int j = 0; j < value.size(); j++) {
             if (isReference(value, j)) {
                 PDFobj obj = PDFobj.objectNumbered(objects, Integer.parseInt(value.get(j)));
-                if (obj == null) {
+                if (obj == null || valueTokens(obj).size() > 6) {
                     return;
                 }
-                box.addAll(valueOf(obj));
+                box.addAll(valueTokens(obj));
                 j += 2;
             } else {
                 box.add(value.get(j));
@@ -4142,6 +4157,17 @@ final public class PDF {
         }
     }
 
+    // Returns false when the sub-dictionary of the resources, like /Font, is
+    // an object of its own that was added already, and records it.
+    private static boolean newEntries(PDFobj resources, String name, Set<String> added) {
+        List<String> dict = resources.getDict();
+        int i = dict.indexOf(name) + 1;
+        if (i == 0 || !isReference(dict, i)) {
+            return true;
+        }
+        return added.add(name + " " + dict.get(i));
+    }
+
     /**
      * Adds the fonts, images and graphics states used by the pages of a PDF
      * that was read to this document. The objects keep their numbers and are
@@ -4167,6 +4193,7 @@ final public class PDF {
         // object that holds them: the resources object, the page or the node.
         Set<PDFobj> done = Collections.newSetFromMap(new IdentityHashMap<PDFobj, Boolean>());
         Set<Integer> added = new HashSet<Integer>();
+        Set<String> addedEntries = new HashSet<String>();
         for (PDFobj page : pages) {
             if (!done.add(page)) {
                 continue;
@@ -4179,18 +4206,29 @@ final public class PDF {
             if (!added.add(holder) && holder > 0) {
                 continue;
             }
+            // A /Font, /XObject or /ExtGState dictionary that is an object of
+            // its own is added once too: small resources of each page that
+            // refer to one /Font dictionary of 4,000 fonts, 4,000 pages in a
+            // PDF of 1 MB, copied it for each page, 4.6 GB in Go (review of
+            // 12 October 2026, N2).
             // A font is copied with every object that it refers to: its
             // descriptor and font file, and also the widths, the encoding and
             // the other entries that can be objects of their own.
-            for (PDFobj font : getFontObjects(resObj, objects)) {
-                addObjectTree(font.number, objects, numbers, resources);
+            if (newEntries(resObj, "/Font", addedEntries)) {
+                for (PDFobj font : getFontObjects(resObj, objects)) {
+                    addObjectTree(font.number, objects, numbers, resources);
+                }
             }
-            addXObjects(resObj, objects, numbers, resources);
-            addExtGStates(resObj, objects);
-            // The /ExtGState entries are copied as they are, so the objects
-            // that they refer to have to be copied too.
-            for (int number : getReferences(getResourceEntries(resObj, "/ExtGState", objects))) {
-                addObjectTree(number, objects, numbers, resources);
+            if (newEntries(resObj, "/XObject", addedEntries)) {
+                addXObjects(resObj, objects, numbers, resources);
+            }
+            if (newEntries(resObj, "/ExtGState", addedEntries)) {
+                addExtGStates(resObj, objects);
+                // The /ExtGState entries are copied as they are, so the
+                // objects that they refer to have to be copied too.
+                for (int number : getReferences(getResourceEntries(resObj, "/ExtGState", objects))) {
+                    addObjectTree(number, objects, numbers, resources);
+                }
             }
         }
         resources.sort((o1, o2) -> Integer.compare(o1.number, o2.number));

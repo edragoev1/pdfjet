@@ -15,6 +15,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/hex"
+	"errors"
 	"io"
 	"math"
 	"os"
@@ -173,20 +174,31 @@ func NewImageForObjects(objects *[]*PDFobj, reader io.Reader) *Image {
 	return image
 }
 
+// pixelsOf returns the number of pixels of the value as Java's (int) takes
+// it: 0 for NaN, and the largest or smallest int32 for one past them. int of
+// 1e19 was the smallest int64 (review of 12 October 2026, C8).
+func pixelsOf(value float64) int {
+	if math.IsNaN(value) {
+		return 0
+	}
+	return int(max(min(value, math.MaxInt32), math.MinInt32))
+}
+
 // NewImageFromPDFobj constructs new image from an existing PDF object.
 func NewImageFromPDFobj(pdf *PDF, obj *PDFobj) *Image {
 	image := new(Image)
 	image.pdf = pdf
 
+	// A number past the range of a float64 is its infinity, as in Java
 	width, err := strconv.ParseFloat(obj.GetValue("/Width"), 64)
-	if err != nil {
+	if err != nil && !errors.Is(err, strconv.ErrRange) {
 		panic(err)
 	}
 	height, err := strconv.ParseFloat(obj.GetValue("/Height"), 64)
-	if err != nil {
+	if err != nil && !errors.Is(err, strconv.ErrRange) {
 		panic(err)
 	}
-	image.setPixels(int(width), int(height))
+	image.setPixels(pixelsOf(width), pixelsOf(height))
 	// The values copied as they are, but for their strings, encrypted when
 	// the document is, as the palette of an /Indexed color space; and the
 	// stream, encrypted too (review of 11 October 2026, #11)

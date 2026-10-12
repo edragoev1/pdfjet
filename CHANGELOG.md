@@ -73,7 +73,10 @@ This is the first entry in this file; earlier releases were not tracked here.
   that is not a dictionary, is not inherited by the pages under it, in the
   four ports: 1,000 pages under a node of a /CropBox of 20,000 numbers, a
   file of 117 KB, allocated 6.2 GB in Go and took 18 seconds in Swift. A
-  page then has the /MediaBox of Letter, as one with none has.
+  page then has the /MediaBox of Letter, as one with none has. A /MediaBox
+  that refers to an object of more than a box is not read either: 1,000
+  pages over an array of a million numbers, a file of 2 MB, allocated 15 GB
+  and took 8.3 seconds in Go; it takes 94 MB and 0.1 seconds.
 - The header of an object stream is read no further than the objects its
   /N says it has, and the PDF's budget allows, in the four ports. It was
   split into its tokens first: a header of 16 MB of one object allocated
@@ -87,7 +90,10 @@ This is the first entry in this file; earlier releases were not tracked here.
   of their own or from a node of the page tree, in the four ports, not once
   for each page: 4,000 pages of one resources object of 4,000 fonts, a file
   of 529 KB, allocated 4.8 GB and took 1.9 seconds in Go; it takes 36 MB
-  and 29 ms.
+  and 29 ms. A /Font, /XObject or /ExtGState dictionary that is an object
+  of its own is added once too: small resources on each of 4,000 pages
+  that refer to one /Font dictionary of 4,000 fonts, a file of 1 MB,
+  allocated 4.6 GB and took 2.5 seconds in Go; it takes 42 MB and 39 ms.
 - GetContentObject charges every stream it copies into the content of a
   page to the PDF's budget, in the four ports, not only a stream the page
   names again: each page that joins its streams has a copy of its own, and
@@ -211,6 +217,22 @@ This is the first entry in this file; earlier releases were not tracked here.
   the four ports, as in a stamp: it was left out.
 - C#: a lone surrogate in the text of a stamp is drawn as a character the
   font does not have, as in Java and Go: it threw.
+- Reading a PDF copies no stream without charging it to the PDF's budget:
+  a token of an object stream's header longer than a number is copied no
+  further than 20 bytes, in the four ports, and the TIFF predictor is
+  undone in the data decoded, in Go, Java and C#.
+- Java: a lone surrogate in a password is EF BF BD in its UTF-8, as in C#
+  and Swift; it was '?', so a PDF one port wrote with it another did not
+  open.
+- An image of a PDF whose /Width or /Height is past an int takes the
+  largest or the smallest int, in Go and C#, as in Java and Swift: Go took
+  the smallest int64, C# the smallest int, and Go panicked on 1e400.
+- The XML parser refuses a declaration of the reserved prefixes, in the
+  four ports: xml stands for its namespace alone, and xmlns and its
+  namespace are never declared. Both were read.
+- Go: an offset of 0x80000000 or more of a GPOS extension lookup is read
+  unsigned on 32 bits too, as in Java and C#: it was negative there, into
+  the table, and the marks were moved by the wrong subtable.
 
 ## v9.0.5 — 2026-10-12, internal
 

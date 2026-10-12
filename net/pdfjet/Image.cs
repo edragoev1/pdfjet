@@ -149,12 +149,22 @@ public class Image : IDrawable {
         inputStream.Close();
     }
 
+    // Returns the number of pixels of the value as Java's (int) takes it: 0
+    // for NaN, and the largest or smallest int for one past them. (int) of
+    // 1e19 was the smallest int on .NET 8 (review of 12 October 2026, C8).
+    private static int PixelsOf(double value) {
+        if (double.IsNaN(value)) {
+            return 0;
+        }
+        return (int) Math.Max(Math.Min(value, int.MaxValue), int.MinValue);
+    }
+
     // Creates new image from an existing PDF object
     /// <summary>Creates an image from an image object read from an existing PDF.</summary>
     public Image(PDF pdf, PDFobj obj) {
         this.pdf = pdf;
-        SetPixels((int) double.Parse(obj.GetValue("/Width"), System.Globalization.CultureInfo.InvariantCulture),
-                (int) double.Parse(obj.GetValue("/Height"), System.Globalization.CultureInfo.InvariantCulture));
+        SetPixels(PixelsOf(double.Parse(obj.GetValue("/Width"), System.Globalization.CultureInfo.InvariantCulture)),
+                PixelsOf(double.Parse(obj.GetValue("/Height"), System.Globalization.CultureInfo.InvariantCulture)));
         // The values copied as they are, but for their strings, encrypted when
         // the document is, as the palette of an /Indexed color space; and the
         // stream, encrypted too (review of 11 October 2026, #11)

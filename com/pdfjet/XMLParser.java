@@ -58,6 +58,10 @@ import java.util.Set;
  * well.
  */
 public final class XMLParser {
+    // The namespaces of the reserved prefixes xml and xmlns.
+    private static final String XML_NAMESPACE = "http://www.w3.org/XML/1998/namespace";
+    private static final String XMLNS_NAMESPACE = "http://www.w3.org/2000/xmlns/";
+
     /** How deep the elements of a document may nest. */
     public static final int MAX_DEPTH = 256;
 
@@ -625,6 +629,14 @@ public final class XMLParser {
                         throw error("The prefix " + prefix + " of " + name
                                 + " is declared as no namespace");
                     }
+                }
+                // The prefixes xml and xmlns are reserved: xml stands for its
+                // namespace alone, and xmlns and its namespace are never
+                // declared (review of 12 October 2026, C9).
+                if (prefix.equals("xmlns") || prefix.equals("xml") != value.equals(XML_NAMESPACE)
+                        || value.equals(XMLNS_NAMESPACE)) {
+                    throw error("The attribute " + attributeName + " of " + name
+                            + " declares a reserved prefix or namespace");
                 }
                 declared.put(prefix, value);
             }

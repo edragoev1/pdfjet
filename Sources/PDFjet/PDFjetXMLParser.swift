@@ -54,6 +54,10 @@ import Foundation
 /// well.
 ///
 public final class PDFjetXMLParser {
+    // The namespaces of the reserved prefixes xml and xmlns.
+    static let xmlNamespace = "http://www.w3.org/XML/1998/namespace"
+    static let xmlnsNamespace = "http://www.w3.org/2000/xmlns/"
+
     /// How deep the elements of a document may nest.
     public static let MAX_DEPTH = 256
     /// How many elements a document may have, a million: an invoice of the
@@ -581,6 +585,13 @@ private struct Reader {
                     if value.isEmpty {
                         throw error("The prefix \(prefix) of \(name) is declared as no namespace")
                     }
+                }
+                // The prefixes xml and xmlns are reserved: xml stands for its
+                // namespace alone, and xmlns and its namespace are never
+                // declared (review of 12 October 2026, C9).
+                if prefix == "xmlns" || (prefix == "xml") != (value == PDFjetXMLParser.xmlNamespace)
+                        || value == PDFjetXMLParser.xmlnsNamespace {
+                    throw error("The attribute \(attributeName) of \(name) declares a reserved prefix or namespace")
                 }
                 declared![prefix] = value
             }
