@@ -36,6 +36,7 @@ public final class PDFobj {
     // into each (see PDF.addInheritedEntries). An array is a value that is
     // copied when it is changed, so the pages hold the node's one array.
     var inheritedResources: [String]?
+    var inheritedFrom = 0       // The number of that node
 
     /// Creates an empty PDF object.
     init() {

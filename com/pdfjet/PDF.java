@@ -3812,6 +3812,7 @@ final public class PDF {
             List<String> value = (entry == null) ? null : entry.value;
             if (isShared(key, value)) {
                 page.inheritedResources = value;
+                page.inheritedFrom = entry.node.number;
             } else if (value != null) {
                 page.dict.addAll(open + 1, value);
                 page.dict.add(open + 1, key);
@@ -4142,10 +4143,15 @@ final public class PDF {
         checkObjects(objects);
         FontObjects.complete(objects);
         List<PDFobj> pages = getPageObjects(objects);
-        // A page that /Kids lists again has its resources added once: one
-        // page listed 2,000 times over 2,000 fonts took two minutes (review of
-        // 11 October 2026, #35).
+        // A page that /Kids lists again has its resources added once, and so
+        // have pages that share them, as an object of their own or from a node
+        // of the page tree: one page listed 2,000 times over 2,000 fonts took
+        // two minutes (review of 11 October 2026, #35), and 4,000 pages of one
+        // resources object of 4,000 fonts allocated 4.8 GB in Go (review of
+        // 12 October 2026, R8). The resources are known by the number of the
+        // object that holds them: the resources object, the page or the node.
         Set<PDFobj> done = Collections.newSetFromMap(new IdentityHashMap<PDFobj, Boolean>());
+        Set<Integer> added = new HashSet<Integer>();
         for (PDFobj page : pages) {
             if (!done.add(page)) {
                 continue;
@@ -4153,6 +4159,10 @@ final public class PDF {
             PDFobj resObj = page.getResourcesObject(objects);
             if (resObj == null) {
                 continue;       // A page without resources of its own.
+            }
+            int holder = (page.inheritedResources != null) ? page.inheritedFrom : resObj.number;
+            if (!added.add(holder) && holder > 0) {
+                continue;
             }
             // A font is copied with every object that it refers to: its
             // descriptor and font file, and also the widths, the encoding and

@@ -3599,9 +3599,10 @@ func addInheritedEntries(page *PDFobj, objects []*PDFobj, nodes pageTreeNodes) {
 		if dictEntryIndex(objectValue(page), key) != -1 {
 			continue // An entry of its own.
 		}
-		_, value := inheritedPageEntry(page, key, objects, nodes)
+		node, value := inheritedPageEntry(page, key, objects, nodes)
 		if sharedInherited(key, value) {
 			page.inheritedResources = value
+			page.inheritedFrom = node.number
 		} else if value != nil {
 			page.dict = insertArrayAt(page.dict, append([]string{key}, value...), open+1)
 		}
@@ -3905,10 +3906,15 @@ func (pdf *PDF) AddResourceObjects(objects []*PDFobj) {
 	numbers := make(map[int]bool)
 
 	pages := pdf.GetPageObjects(objects)
-	// A page that /Kids lists again has its resources added once: one page
-	// listed 2,000 times over 2,000 fonts took two minutes (review of
-	// 11 October 2026, #35)
+	// A page that /Kids lists again has its resources added once, and so
+	// have pages that share them, as an object of their own or from a node
+	// of the page tree: one page listed 2,000 times over 2,000 fonts took
+	// two minutes (review of 11 October 2026, #35), and 4,000 pages of one
+	// resources object of 4,000 fonts allocated 4.8 GB in Go (review of
+	// 12 October 2026, R8). The resources are known by the number of the
+	// object that holds them: the resources object, the page or the node.
 	done := make(map[*PDFobj]bool, len(pages))
+	added := make(map[int]bool)
 	for _, page := range pages {
 		if done[page] {
 			continue
@@ -3918,6 +3924,14 @@ func (pdf *PDF) AddResourceObjects(objects []*PDFobj) {
 		if resObj == nil {
 			continue // A page without resources of its own.
 		}
+		holder := resObj.number
+		if page.inheritedResources != nil {
+			holder = page.inheritedFrom
+		}
+		if holder > 0 && added[holder] {
+			continue
+		}
+		added[holder] = true
 		// A font is copied with every object that it refers to: its descriptor
 		// and font file, and also the widths, the encoding and the other
 		// entries that can be objects of their own.

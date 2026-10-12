@@ -33,6 +33,7 @@ public class PDFobj {
     // dictionary in a node: shared by the pages under the node, not copied
     // into each (see PDF.AddInheritedEntries)
     internal List<String> inheritedResources;
+    internal int inheritedFrom;     // The number of that node
 
     /// <summary>
     /// Creates an object with an empty dictionary.

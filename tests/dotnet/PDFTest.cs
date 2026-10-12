@@ -1209,6 +1209,49 @@ public class PDFTest {
         Assert.Equal("", pages[0].GetValue("/CropBox"));
         Assert.True(allocated <= 64 << 20, (allocated >> 20) + " MB allocated");
     }
+
+    // Returns the objects of a PDF of n pages that share one /Resources of n
+    // fonts: an object of its own, or a dictionary in their node.
+    internal static string[] SharedResources(int n, bool inNode) {
+        StringBuilder fonts = new StringBuilder();
+        StringBuilder kids = new StringBuilder();
+        for (int i = 0; i < n; i++) {
+            fonts.Append(i == 0 ? "" : " ").Append("/F").Append(i).Append(" 4 0 R");
+            kids.Append(i == 0 ? "" : " ").Append(5 + i).Append(" 0 R");
+        }
+        string resources = "<< /Font << " + fonts + " >> >>";
+        string node = "<< /Type /Pages /Kids [" + kids + "] /Count " + n + " >>";
+        string page = "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources 3 0 R >>";
+        if (inNode) {
+            node = "<< /Type /Pages /Kids [" + kids + "] /Count " + n + " /Resources " + resources + " >>";
+            page = "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>";
+        }
+        string[] objects = new string[4 + n];
+        objects[0] = "<< /Type /Catalog /Pages 2 0 R >>";
+        objects[1] = node;
+        objects[2] = resources;
+        objects[3] = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>";
+        Array.Fill(objects, page, 4, n);
+        return objects;
+    }
+
+    // Pages that share their resources, as an object of their own or from
+    // their node, have them added once: 4,000 pages of one resources object of
+    // 4,000 fonts allocated 4.8 GB in Go (review of 12 October 2026, R8).
+    [Fact]
+    public void SharedResourcesAreAddedOnce() {
+        var flags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
+        foreach (bool inNode in new bool[] {false, true}) {
+            List<PDFobj> objects = TestSupport.Read(PdfWithObjects(SharedResources(2000, inNode)));
+            PDF pdf = TestSupport.NewPDF();
+            long before = GC.GetAllocatedBytesForCurrentThread();
+            pdf.AddResourceObjects(objects);
+            long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+            var fonts = (List<string>) typeof(PDF).GetField("importedFonts", flags).GetValue(pdf);
+            Assert.Equal(4 * 2000, fonts.Count);
+            Assert.True(allocated <= 64 << 20, "in the node " + inNode + ": " + (allocated >> 20) + " MB allocated");
+        }
+    }
 }
 
 /// <summary>The budget of what the streams of a PDF decode to, which the test

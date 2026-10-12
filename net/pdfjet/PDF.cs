@@ -3627,9 +3627,10 @@ public sealed class PDF {
             if (EntryIndex(ValueOf(page), key) != -1) {
                 continue;       // An entry of its own.
             }
-            List<String> value = InheritedEntry(page, key, objects, nodes, out _);
+            List<String> value = InheritedEntry(page, key, objects, nodes, out PDFobj node);
             if (SharedInherited(key, value)) {
                 page.inheritedResources = value;
+                page.inheritedFrom = node.number;
             } else if (value != null) {
                 page.dict.InsertRange(open + 1, value);
                 page.dict.Insert(open + 1, key);
@@ -3957,11 +3958,17 @@ public sealed class PDF {
         CheckObjects(objects);
         FontObjects.Complete(objects);
         List<PDFobj> pages = GetPageObjects(objects);
-        // A page that /Kids lists again has its resources added once: one page
-        // listed 2,000 times over 2,000 fonts took two minutes (review of
-        // 11 October 2026, #35). PDFobj keeps the Equals of object, so the set
-        // holds the pages by reference.
+        // A page that /Kids lists again has its resources added once, and so
+        // have pages that share them, as an object of their own or from a node
+        // of the page tree: one page listed 2,000 times over 2,000 fonts took
+        // two minutes (review of 11 October 2026, #35), and 4,000 pages of one
+        // resources object of 4,000 fonts allocated 4.8 GB in Go (review of
+        // 12 October 2026, R8). The resources are known by the number of the
+        // object that holds them: the resources object, the page or the node.
+        // PDFobj keeps the Equals of object, so the set holds the pages by
+        // reference.
         HashSet<PDFobj> done = new HashSet<PDFobj>();
+        HashSet<int> added = new HashSet<int>();
         foreach (PDFobj page in pages) {
             if (!done.Add(page)) {
                 continue;
@@ -3969,6 +3976,10 @@ public sealed class PDF {
             PDFobj resObj = page.GetResourcesObject(objects);
             if (resObj == null) {
                 continue;       // A page without resources of its own.
+            }
+            int holder = (page.inheritedResources != null) ? page.inheritedFrom : resObj.number;
+            if (!added.Add(holder) && holder > 0) {
+                continue;
             }
             // A font is copied with every object that it refers to: its
             // descriptor and font file, and also the widths, the encoding and

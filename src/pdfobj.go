@@ -42,6 +42,7 @@ type PDFobj struct {
 	// dictionary in a node: shared by the pages under the node, not copied
 	// into each (see addInheritedEntries)
 	inheritedResources []string
+	inheritedFrom      int // The number of that node
 }
 
 // maxDecodedTotal is what all the streams of one PDF may decode to together,

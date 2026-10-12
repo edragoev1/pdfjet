@@ -1451,4 +1451,56 @@ class PDFTest {
         assertEquals("", pages.get(0).getValue("/CropBox"));
         assertTrue(after - before <= 64 << 20, ((after - before) >> 20) + " MB allocated");
     }
+
+    // Returns the objects of a PDF of n pages that share one /Resources of n
+    // fonts: an object of its own, or a dictionary in their node.
+    static String[] sharedResources(int n, boolean inNode) {
+        StringBuilder fonts = new StringBuilder();
+        StringBuilder kids = new StringBuilder();
+        for (int i = 0; i < n; i++) {
+            fonts.append(i == 0 ? "" : " ").append("/F").append(i).append(" 4 0 R");
+            kids.append(i == 0 ? "" : " ").append(5 + i).append(" 0 R");
+        }
+        String resources = "<< /Font << " + fonts + " >> >>";
+        String node = "<< /Type /Pages /Kids [" + kids + "] /Count " + n + " >>";
+        String page = "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources 3 0 R >>";
+        if (inNode) {
+            node = "<< /Type /Pages /Kids [" + kids + "] /Count " + n + " /Resources " + resources + " >>";
+            page = "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>";
+        }
+        String[] objects = new String[4 + n];
+        objects[0] = "<< /Type /Catalog /Pages 2 0 R >>";
+        objects[1] = node;
+        objects[2] = resources;
+        objects[3] = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>";
+        Arrays.fill(objects, 4, 4 + n, page);
+        return objects;
+    }
+
+    // Pages that share their resources, as an object of their own or from
+    // their node, have them added once: 4,000 pages of one resources object of
+    // 4,000 fonts allocated 4.8 GB in Go (review of 12 October 2026, R8).
+    @Test
+    void sharedResourcesAreAddedOnce() throws Exception {
+        java.lang.management.ThreadMXBean bean = java.lang.management.ManagementFactory.getThreadMXBean();
+        com.sun.management.ThreadMXBean threads = null;
+        if (bean instanceof com.sun.management.ThreadMXBean
+                && ((com.sun.management.ThreadMXBean) bean).isThreadAllocatedMemorySupported()) {
+            threads = (com.sun.management.ThreadMXBean) bean;
+            threads.setThreadAllocatedMemoryEnabled(true);
+        }
+        long id = Thread.currentThread().getId();
+        Field fonts = PDF.class.getDeclaredField("importedFonts");
+        fonts.setAccessible(true);
+        for (boolean inNode : new boolean[] {false, true}) {
+            List<PDFobj> objects = TestSupport.read(pdfWithObjects(sharedResources(2000, inNode)));
+            PDF pdf = new PDF(new ByteArrayOutputStream());
+            long before = (threads != null) ? threads.getThreadAllocatedBytes(id) : 0;
+            pdf.addResourceObjects(objects);
+            long after = (threads != null) ? threads.getThreadAllocatedBytes(id) : 0;
+            assertEquals(4 * 2000, ((List<?>) fonts.get(pdf)).size(), "in the node " + inNode);
+            assertTrue(after - before <= 64 << 20,
+                    "in the node " + inNode + ": " + ((after - before) >> 20) + " MB allocated");
+        }
+    }
 }

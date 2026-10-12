@@ -54,6 +54,7 @@ public class PDFobj {
      * into each (see PDF.addInheritedEntries), and never changed.
      */
     List<String> inheritedResources;
+    int inheritedFrom;      // The number of that node
 
     /**
      * Creates an object with an empty dictionary.

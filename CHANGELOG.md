@@ -73,6 +73,11 @@ This is the first entry in this file; earlier releases were not tracked here.
   whole stream first: a file of 195 KB, Flate and then ASCII85 of 200
   million 'z's, allocated 4.5 GB in Go, with a peak of 2.9 GB, before it
   was refused; it takes 557 MB, with a peak of 482 MB.
+- AddResourceObjects adds the resources that pages share once, as an object
+  of their own or from a node of the page tree, in the four ports, not once
+  for each page: 4,000 pages of one resources object of 4,000 fonts, a file
+  of 529 KB, allocated 4.8 GB and took 1.9 seconds in Go; it takes 36 MB
+  and 29 ms.
 
 ## v9.0.5 — 2026-10-12, internal
 

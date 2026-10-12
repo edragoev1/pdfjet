@@ -415,3 +415,51 @@ func TestReadAnInheritedValueTooLargeForWhatItIsIsNotInherited(t *testing.T) {
 		t.Errorf("%d MB allocated", allocated>>20)
 	}
 }
+
+// testSharedResources returns the objects of a PDF of n pages that share one
+// /Resources of n fonts: an object of its own, or a dictionary in their node.
+func testSharedResources(n int, inNode bool) []string {
+	fonts := make([]string, n)
+	kids := make([]string, n)
+	for i := range n {
+		fonts[i] = fmt.Sprintf("/F%d 4 0 R", i)
+		kids[i] = fmt.Sprintf("%d 0 R", 5+i)
+	}
+	resources := "<< /Font << " + strings.Join(fonts, " ") + " >> >>"
+	node := fmt.Sprintf("<< /Type /Pages /Kids [%s] /Count %d >>", strings.Join(kids, " "), n)
+	page := "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources 3 0 R >>"
+	if inNode {
+		node = fmt.Sprintf("<< /Type /Pages /Kids [%s] /Count %d /Resources %s >>", strings.Join(kids, " "), n, resources)
+		page = "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>"
+	}
+	objects := []string{
+		"<< /Type /Catalog /Pages 2 0 R >>",
+		node,
+		resources,
+		"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+	}
+	for range n {
+		objects = append(objects, page)
+	}
+	return objects
+}
+
+// Pages that share their resources, as an object of their own or from their
+// node, have them added once: 4,000 pages of one resources object of 4,000
+// fonts allocated 4.8 GB in Go (review of 12 October 2026, R8).
+func TestReadSharedResourcesAreAddedOnce(t *testing.T) {
+	for _, inNode := range []bool{false, true} {
+		objects := testRead(t, testPDFWithObjects(testSharedResources(2000, inNode)...))
+		pdf := testNewPDF()
+		var before, after runtime.MemStats
+		runtime.ReadMemStats(&before)
+		pdf.AddResourceObjects(objects)
+		runtime.ReadMemStats(&after)
+		if len(pdf.importedFonts) != 4*2000 || pdf.importedFontNames["/F1999"] != 4*1999 {
+			t.Errorf("in the node %v: %d tokens of fonts", inNode, len(pdf.importedFonts))
+		}
+		if allocated := after.TotalAlloc - before.TotalAlloc; allocated > 64<<20 {
+			t.Errorf("in the node %v: %d MB allocated", inNode, allocated>>20)
+		}
+	}
+}

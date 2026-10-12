@@ -316,4 +316,32 @@ import Testing
         #expect(pages[0].getValue("/CropBox") == "")
         #expect(elapsed < .seconds(2), "\(elapsed)")
     }
+
+    // Pages that share their resources, as an object of their own or from
+    // their node, have them added once: 4,000 pages of one resources object of
+    // 4,000 fonts allocated 4.8 GB in Go (review of 12 October 2026, R8).
+    @Test func sharedResourcesAreAddedOnce() throws {
+        let n = 2000
+        let fonts = (0..<n).map { "/F\($0) 4 0 R" }.joined(separator: " ")
+        let kids = (0..<n).map { "\(5 + $0) 0 R" }.joined(separator: " ")
+        let resources = "<< /Font << \(fonts) >> >>"
+        for inNode in [false, true] {
+            let node = inNode
+                ? "<< /Type /Pages /Kids [\(kids)] /Count \(n) /Resources \(resources) >>"
+                : "<< /Type /Pages /Kids [\(kids)] /Count \(n) >>"
+            let page = inNode
+                ? "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>"
+                : "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources 3 0 R >>"
+            let objects = try TestSupport.read(TestSupport.pdfWithObjects(
+                    ["<< /Type /Catalog /Pages 2 0 R >>", node, resources,
+                     "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"]
+                    + Array(repeating: page, count: n)))
+            let pdf = TestSupport.newPDF()
+            let elapsed = ContinuousClock().measure {
+                pdf.addResourceObjects(from: objects)
+            }
+            #expect(pdf.importedFonts.count == 4 * n, "in the node \(inNode)")
+            #expect(elapsed < .seconds(2), "in the node \(inNode): \(elapsed)")
+        }
+    }
 }

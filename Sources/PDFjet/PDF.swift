@@ -3699,6 +3699,7 @@ public final class PDF {
             }
             if sharedInherited(key, entry.value) {
                 page.inheritedResources = entry.value   // The node's array, not a copy
+                page.inheritedFrom = entry.node
             } else {
                 page.dict.insert(contentsOf: [key] + entry.value, at: open + 1)
             }
@@ -4011,16 +4012,25 @@ public final class PDF {
         var resources = [PDFobj]()
         var numbers = Set<Int>()
         let pages = getPageObjects(from: objects)
-        // A page that /Kids lists again has its resources added once: one page
-        // listed 2,000 times over 2,000 fonts took two minutes (review of
-        // 11 October 2026, #35)
+        // A page that /Kids lists again has its resources added once, and so
+        // have pages that share them, as an object of their own or from a node
+        // of the page tree: one page listed 2,000 times over 2,000 fonts took
+        // two minutes (review of 11 October 2026, #35), and 4,000 pages of one
+        // resources object of 4,000 fonts allocated 4.8 GB in Go (review of
+        // 12 October 2026, R8). The resources are known by the number of the
+        // object that holds them: the resources object, the page or the node.
         var done = Set<ObjectIdentifier>()
+        var added = Set<Int>()
         for page in pages {
             if !done.insert(ObjectIdentifier(page)).inserted {
                 continue
             }
             guard let resObj = page.getResourcesObject(objects) else {
                 continue        // A page without resources of its own.
+            }
+            let holder = (page.inheritedResources != nil) ? page.inheritedFrom : resObj.number
+            if !added.insert(holder).inserted && holder > 0 {
+                continue
             }
             // A font is copied with every object that it refers to: its
             // descriptor and font file, and also the widths, the encoding and
