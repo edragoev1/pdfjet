@@ -928,4 +928,33 @@ class PNGImageTest {
         assertThrows(Exception.class, () -> new Image(TestSupport.newPDF(), obj),
                 "a color space of a reference is copied");
     }
+
+    // IHDR is the first chunk, and the only IHDR: a tRNS before it was read for a
+    // gray image, and an RGB image was written with the /Mask of a gray one
+    // (review of 11 October 2026, #38).
+    @Test
+    void theIHDRChunkIsFirstAndOnce() throws Exception {
+        byte[] ihdr = ByteBuffer.allocate(13).putInt(1).putInt(1).put((byte) 8).put((byte) 2).array(); // RGB of 8 bits
+        byte[] idat = Compressor.deflate(new byte[] {0, 7, 7, 7});
+        byte[] trns = {0, 7};
+        String want = "Invalid PNG: the IHDR chunk must be the first chunk, and only the first.";
+        byte[] tRNSFirst = chunks("tRNS", trns, "IHDR", ihdr, "IDAT", idat, "IEND", new byte[0]);
+        assertEquals(want, decodeError(tRNSFirst), "tRNS first");
+        byte[] twoIHDR = chunks("IHDR", ihdr, "IHDR", ihdr, "IDAT", idat, "IEND", new byte[0]);
+        assertEquals(want, decodeError(twoIHDR), "two IHDR");
+        // In its place, the tRNS of an RGB image is its three samples.
+        byte[] file = chunks("IHDR", ihdr, "tRNS", new byte[] {0, 7, 0, 7, 0, 7}, "IDAT", idat, "IEND", new byte[0]);
+        new PNGImage(new ByteArrayInputStream(file));
+    }
+
+    // A PNG file of the signature and the chunks, given as pairs of a type and
+    // its data.
+    private static byte[] chunks(Object... typesAndData) {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        bos.write(new byte[] {(byte) 0x89, 'P', 'N', 'G', '\r', '\n', 0x1A, '\n'}, 0, 8);
+        for (int i = 0; i < typesAndData.length; i += 2) {
+            chunk(bos, (String) typesAndData[i], (byte[]) typesAndData[i + 1]);
+        }
+        return bos.toByteArray();
+    }
 }

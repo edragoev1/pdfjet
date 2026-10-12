@@ -575,4 +575,16 @@ class ReviewWriterTest {
         List<String> names = decryptedStrings(bos.toByteArray(), "/Name");
         assertTrue(names.contains("Default"), "/Name " + names);
     }
+
+    // The XMP packet's header begins with the byte order mark, which ISO 16684-1
+    // asks of it, in the document's metadata and a font's (review of 11 October
+    // 2026, #28).
+    @Test
+    void theXMPPacketHasItsBeginAttribute() throws Exception {
+        TestSupport.allowCoreFonts(true);
+        String raw = document(Compliance.PDF_UA_1, null);
+        // The byte order mark in UTF-8, EF BB BF, read as Latin-1.
+        String header = "<?xpacket begin=\"\u00EF\u00BB\u00BF\" id=\"W5M0MpCehiHzreSzNTczkc9d\"?>";
+        assertTrue(raw.contains(header) && !raw.contains("<?xpacket id="), "the packet has no begin attribute");
+    }
 }

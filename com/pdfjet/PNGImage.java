@@ -155,8 +155,15 @@ class PNGImage {
         // more of them is added.
         ByteArrayOutputStream idat = null;
         List<Chunk> chunks = processPNG(inputStream);
-        for (Chunk chunk : chunks) {
+        for (int i = 0; i < chunks.size(); i++) {
+            Chunk chunk = chunks.get(i);
             String chunkType = new String(chunk.type, StandardCharsets.ISO_8859_1);
+            // IHDR first, and once, as the PNG specification asks: a tRNS before
+            // it was read for a gray image and written as the /Mask of one
+            // (review of 11 October 2026, #38)
+            if ((i == 0) != chunkType.equals("IHDR")) {
+                throw new Exception("Invalid PNG: the IHDR chunk must be the first chunk, and only the first.");
+            }
             if (chunkType.equals("IHDR")) {
                 if (chunk.getData().length != 13) {
                     throw new Exception("Invalid PNG IHDR chunk.");

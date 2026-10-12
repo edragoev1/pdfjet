@@ -342,7 +342,25 @@ class BMPImage {
         }
     }
 
+    // Reads length bytes. More than 64 KB are read in pieces, so that a size
+    // the stream does not have, as a row of a width in a header, takes no
+    // more memory than the stream has: a BMP of a 54-byte header took 256 MB
+    // before it failed at the end of its data (review of 11 October 2026, #37).
     private byte[] getBytes(java.io.InputStream inputStream, int length) throws Exception {
+        if (length > 65536) {
+            java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream(65536);
+            byte[] piece = new byte[65536];
+            int remaining = length;
+            while (remaining > 0) {
+                int read = inputStream.read(piece, 0, Math.min(piece.length, remaining));
+                if (read < 0) {
+                    throw new Exception("Unexpected end of stream: expected " + length + " bytes");
+                }
+                bos.write(piece, 0, read);
+                remaining -= read;
+            }
+            return bos.toByteArray();
+        }
         byte[] buf = new byte[length];
         int totalRead = 0;
         while (totalRead < length) {

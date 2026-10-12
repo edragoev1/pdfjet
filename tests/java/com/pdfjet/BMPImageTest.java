@@ -11,6 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -310,5 +311,26 @@ class BMPImageTest {
             String raw = TestSupport.latin1(bos.toByteArray());
             assertEquals(alpha != 0, raw.contains("/SMask"), "alpha " + alpha + ": a soft mask");
         }
+    }
+
+    // A row is read in pieces, so that a header of a width the file does not have
+    // takes no more memory than the file: a 54-byte header of 2^26 pixels of 32
+    // bits took 256 MB before it failed at the end of its data (review of 11
+    // October 2026, #37).
+    @Test
+    void aRowTheFileDoesNotHaveTakesNoMemory() {
+        java.lang.management.ThreadMXBean bean = java.lang.management.ManagementFactory.getThreadMXBean();
+        com.sun.management.ThreadMXBean threads = null;
+        if (bean instanceof com.sun.management.ThreadMXBean
+                && ((com.sun.management.ThreadMXBean) bean).isThreadAllocatedMemorySupported()) {
+            threads = (com.sun.management.ThreadMXBean) bean;
+            threads.setThreadAllocatedMemoryEnabled(true);
+        }
+        long id = Thread.currentThread().getId();
+        long before = (threads != null) ? threads.getThreadAllocatedBytes(id) : 0;
+        String message = decodeError(header(1 << 26, 1, 32, 0));
+        long after = (threads != null) ? threads.getThreadAllocatedBytes(id) : 0;
+        assertTrue(message.startsWith("Unexpected end of stream"), "the error is " + message);
+        assertTrue(after - before <= 16 << 20, ((after - before) >> 20) + " MB allocated");
     }
 }
