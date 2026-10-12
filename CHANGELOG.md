@@ -24,6 +24,11 @@ This is the first entry in this file; earlier releases were not tracked here.
   a page in three IBM Plex Sans fonts allocates 15% less. A document that
   draws marks reads the table as before. The output is the same, byte for
   byte.
+- A font's character map, the format 4 subtable, is read a segment at a
+  time, in the four ports, not a character at a time from the first the
+  font has to the last, the gaps between its segments too: a page in three
+  IBM Plex Sans fonts takes 1.9 ms instead of 2.2 in Java. The characters
+  map to the same glyphs in all 261 fonts that come with PDFjet.
 
 ### Fixed
 - An Arc, and so an Ellipse, given a stroke width and no colors is drawn a

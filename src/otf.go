@@ -411,16 +411,17 @@ func getCmapFormat4(otf *openTypeFont, subtable int) {
 
 	// The segments are in the order of their end codes, so the segment of a
 	// character is the first that ends at it or after it, if it starts at it
-	// or before it. The characters go up, and so does the segment.
-	seg := 0
-	for ch := otf.firstChar; ch <= otf.lastChar; ch++ {
-		for seg < segCount && rune(endCount[seg]) < ch {
-			seg++
+	// or before it. The characters go up, and so does the segment: each
+	// segment has the characters after those of the segments before it, up to
+	// its end, and the characters between segments are passed over, not looked
+	// at one by one.
+	next := int(otf.firstChar) // The first character no segment has had yet
+	for seg := 0; seg < segCount && next <= int(otf.lastChar); seg++ {
+		if int(endCount[seg]) < next {
+			continue
 		}
-		if seg == segCount {
-			break
-		}
-		if rune(startCount[seg]) <= ch {
+		end := min(int(endCount[seg]), int(otf.lastChar))
+		for ch := max(next, int(startCount[seg])); ch <= end; ch++ {
 			gid := 0
 			offset := int(idRangeOffset[seg])
 			if offset == 0 {
@@ -452,6 +453,7 @@ func getCmapFormat4(otf *openTypeFont, subtable int) {
 			}
 			otf.unicodeToGID.set(rune(ch), gid)
 		}
+		next = int(endCount[seg]) + 1
 	}
 }
 

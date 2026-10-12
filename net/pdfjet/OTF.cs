@@ -376,16 +376,17 @@ internal class OTF {
 
         // The segments are in the order of their end codes, so the segment of a
         // character is the first that ends at it or after it, if it starts at
-        // it or before it. The characters go up, and so does the segment.
-        int seg = 0;
-        for (int ch = firstChar; ch <= lastChar; ch++) {
-            while (seg < segCount && endCount[seg] < ch) {
-                seg++;
+        // it or before it. The characters go up, and so does the segment: each
+        // segment has the characters after those of the segments before it,
+        // up to its end, and the characters between segments are passed over,
+        // not looked at one by one.
+        int next = firstChar;   // The first character no segment has had yet
+        for (int seg = 0; seg < segCount && next <= lastChar; seg++) {
+            if (endCount[seg] < next) {
+                continue;
             }
-            if (seg == segCount) {
-                break;
-            }
-            if (startCount[seg] <= ch) {
+            int end = Math.Min(endCount[seg], lastChar);
+            for (int ch = Math.Max(next, startCount[seg]); ch <= end; ch++) {
                 int gid;
                 int offset = idRangeOffset[seg];
                 if (offset == 0) {
@@ -414,6 +415,7 @@ internal class OTF {
                 }
                 unicodeToGID.Set(ch, gid);
             }
+            next = endCount[seg] + 1;
         }
     }
 

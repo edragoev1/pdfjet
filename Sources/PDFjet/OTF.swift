@@ -398,48 +398,56 @@ class OTF {
         }
         // The segments are in the order of their end codes, so the segment of
         // a character is the first that ends at it or after it, if it starts
-        // at it or before it. The characters go up, and so does the segment.
-        var seg = 0
-        for ch in firstChar!...lastChar! {
-            while seg < segCount && endCount[seg] < ch {
-                seg += 1
-            }
-            if seg == segCount {
+        // at it or before it. The characters go up, and so does the segment:
+        // each segment has the characters after those of the segments before
+        // it, up to its end, and the characters between segments are passed
+        // over, not looked at one by one.
+        var next = firstChar!   // The first character no segment has had yet
+        for seg in 0..<segCount {
+            if next > lastChar! {
                 break
             }
-            if startCount[seg] <= ch {
-                var gid = 0
-                var offset = idRangeOffset[seg]
-                if offset == 0 {
-                    // Per spec this is unsigned 16-bit modulo arithmetic.
-                    // idDelta is read as unsigned here (Int(readUInt16())), so
-                    // the sum is always non-negative and % 65536 already gives
-                    // the right answer, but use & 0xFFFF to spell out the
-                    // intended unsigned-16-bit wraparound explicitly (matches
-                    // the other language ports and doesn't rely on that
-                    // coincidence).
-                    gid = (idDelta[seg] + ch) & 0xFFFF
-                } else {
-                    offset /= 2
-                    offset -= segCount - seg
-                    let i2 = offset + (ch - startCount[seg])
-                    if i2 < 0 || i2 >= glyphIdArray.count {
-                        // The segment points outside the glyph ID array, so
-                        // it gives this character no glyph.
-                        continue
-                    }
-                    gid = glyphIdArray[i2]
-                    if gid != 0 {
-                        // idDelta[seg] % 65536 alone is a no-op (idDelta is
-                        // already < 65536) and never wraps the actual sum, so
-                        // a large gid + idDelta could overflow past the valid
-                        // 16-bit glyph ID range uncorrected. Wrap the *sum*
-                        // instead.
-                        gid = (gid + idDelta[seg]) & 0xFFFF
-                    }
-                }
-                unicodeToGID.set(ch, gid)
+            if endCount[seg] < next {
+                continue
             }
+            let first = max(next, startCount[seg])
+            let end = min(endCount[seg], lastChar!)
+            if first <= end {
+                for ch in first...end {
+                    var gid = 0
+                    var offset = idRangeOffset[seg]
+                    if offset == 0 {
+                        // Per spec this is unsigned 16-bit modulo arithmetic.
+                        // idDelta is read as unsigned here (Int(readUInt16())), so
+                        // the sum is always non-negative and % 65536 already gives
+                        // the right answer, but use & 0xFFFF to spell out the
+                        // intended unsigned-16-bit wraparound explicitly (matches
+                        // the other language ports and doesn't rely on that
+                        // coincidence).
+                        gid = (idDelta[seg] + ch) & 0xFFFF
+                    } else {
+                        offset /= 2
+                        offset -= segCount - seg
+                        let i2 = offset + (ch - startCount[seg])
+                        if i2 < 0 || i2 >= glyphIdArray.count {
+                            // The segment points outside the glyph ID array, so
+                            // it gives this character no glyph.
+                            continue
+                        }
+                        gid = glyphIdArray[i2]
+                        if gid != 0 {
+                            // idDelta[seg] % 65536 alone is a no-op (idDelta is
+                            // already < 65536) and never wraps the actual sum, so
+                            // a large gid + idDelta could overflow past the valid
+                            // 16-bit glyph ID range uncorrected. Wrap the *sum*
+                            // instead.
+                            gid = (gid + idDelta[seg]) & 0xFFFF
+                        }
+                    }
+                    unicodeToGID.set(ch, gid)
+                }
+            }
+            next = endCount[seg] + 1
         }
     }
 
