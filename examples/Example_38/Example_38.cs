@@ -46,7 +46,7 @@ public class Example_38 {
         float[] xy = textBlock.DrawOn(page);
 
         // A barcode that holds a whole source file.
-        List<String> lines = Content.LinesOfTextFile("data/Example_12.java");
+        List<String> lines = Content.LinesOfTextFile("data/pdf417-sample.java");
         StringBuilder buf = new StringBuilder();
         foreach (String line in lines) {
             buf.Append(line);
@@ -58,7 +58,7 @@ public class Example_38 {
         barcode.SetLocation(70f, xy[1] + 30f);
         xy = barcode.DrawOn(page);
 
-        text = new TextLine(f1, "The source code of data/Example_12.java, "
+        text = new TextLine(f1, "The source code of data/pdf417-sample.java, "
                 + lines.Count + " lines");
         text.SetFontSize(10f);
         text.SetTextColor(Color.dimgray);

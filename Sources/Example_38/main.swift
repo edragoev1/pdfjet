@@ -41,7 +41,7 @@ public class Example_38 {
         var xy = textBlock.drawOn(page)
 
         // A barcode that holds a whole source file.
-        let lines = try Content.linesOfTextFile("data/Example_12.java")
+        let lines = try Content.linesOfTextFile("data/pdf417-sample.java")
         var buf = String()
         for line in lines {
             buf.append(line)
@@ -53,7 +53,7 @@ public class Example_38 {
         barcode.setLocation(70.0, xy[1] + 30.0)
         xy = barcode.drawOn(page)
 
-        text = TextLine(f1, "The source code of data/Example_12.java, "
+        text = TextLine(f1, "The source code of data/pdf417-sample.java, "
                 + String(lines.count) + " lines")
         text.setFontSize(10.0)
         text.setTextColor(Color.dimgray)
