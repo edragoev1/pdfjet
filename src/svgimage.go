@@ -592,7 +592,9 @@ func (image *SVGImage) drawPath(path *svgPath, page *Page) {
 	if len(path.operations) == 0 || !fill && !stroke || !image.isWritable(path, page) {
 		return
 	}
-	alpha := fill && path.fillAlpha < 1.0 || stroke && path.strokeAlpha < 1.0
+	// PDF/A-1 has no transparency, so there the path is drawn opaque, as an
+	// annotation is (review of 12 October 2026, R9).
+	alpha := !page.pdf.isPDFA1() && (fill && path.fillAlpha < 1.0 || stroke && path.strokeAlpha < 1.0)
 	lineCap := stroke && path.lineCap != capstyle.Butt
 	lineJoin := stroke && path.lineJoin != joinstyle.Miter
 	state := alpha || lineCap || lineJoin

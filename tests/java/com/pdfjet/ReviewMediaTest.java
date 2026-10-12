@@ -236,6 +236,59 @@ class ReviewMediaTest {
         assertEquals("", pdfaError(Compliance.PDF_A_1B, "PngSuite/BASN2C08.PNG"));
     }
 
+    interface Drawing {
+        void draw(PDF pdf, Page page) throws Exception;
+    }
+
+    // The message that a document of the compliance that draws fails with, or
+    // "" when it is completed, and the content of its page.
+    static String[] pdfaDrawError(Compliance level, Drawing drawing) throws Exception {
+        PDF pdf = new PDF(new ByteArrayOutputStream(), level);
+        pdf.setTitle("Title");
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(font, "Text").setLocation(50f, 50f).drawOn(page);
+        try {
+            drawing.draw(pdf, page);
+            String content = TestSupport.content(page);
+            pdf.complete();
+            return new String[] {"", content};
+        } catch (IllegalStateException e) {
+            return new String[] {e.getMessage(), ""};
+        }
+    }
+
+    // PDF/A-1 has no transparency and no optional content, which veraPDF found
+    // in documents of PDF_A_1A and PDF_A_1B (review of 12 October 2026, R9,
+    // R10): a graphics state of an opacity below 1, and an optional content
+    // group, are refused, and an SVG is drawn opaque, as an annotation is.
+    @Test
+    void pdfA1HasNoTransparencyAndNoOptionalContent() throws Exception {
+        Drawing alpha = (pdf, page) -> page.setGraphicsState(new GraphicsState().setAlphaNonStroking(0.5f));
+        assertEquals("A document of PDF_A_1B cannot draw with an opacity below 1: PDF/A-1 has no transparency.",
+                pdfaDrawError(Compliance.PDF_A_1B, alpha)[0]);
+        assertEquals("", pdfaDrawError(Compliance.PDF_A_2B, alpha)[0]);
+        assertEquals("", pdfaDrawError(Compliance.PDF_A_1A, (pdf, page) -> page.setGraphicsState(new GraphicsState()))[0]);
+
+        Drawing svg = (pdf, page) -> {
+            SVGImage image = svg("<svg width=\"10\" height=\"10\"><rect width=\"5\" height=\"5\" fill=\"blue\" fill-opacity=\"0.5\"/></svg>");
+            image.setLocation(50f, 100f);
+            image.drawOn(page);
+        };
+        String[] got = pdfaDrawError(Compliance.PDF_A_1B, svg);
+        assertEquals("", got[0]);
+        assertTrue(!got[1].contains(" gs\n"), "the SVG is drawn with a graphics state in PDF/A-1");
+        got = pdfaDrawError(Compliance.PDF_A_2B, svg);
+        assertEquals("", got[0]);
+        assertTrue(got[1].contains(" gs\n"), "the SVG is drawn opaque in PDF/A-2");
+
+        Drawing layer = (pdf, page) -> new OptionalContentGroup(pdf, "Layer").drawOn(page);
+        assertEquals("A document of PDF_A_1A cannot have optional content: "
+                + "PDF/A-1 has none; PDF/A-2 and PDF/A-3 have it.",
+                pdfaDrawError(Compliance.PDF_A_1A, layer)[0]);
+        assertEquals("", pdfaDrawError(Compliance.PDF_A_2A, layer)[0]);
+    }
+
     private static SVGImage svg(String svg) throws Exception {
         return new SVGImage(new ByteArrayInputStream(svg.getBytes(StandardCharsets.UTF_8)));
     }

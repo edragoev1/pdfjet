@@ -243,6 +243,55 @@ public class ReviewMediaTest {
         Assert.Equal("", PDFAError(Compliance.PDF_A_1B, "PngSuite/BASN2C08.PNG"));
     }
 
+    // The message that a document of the compliance that draws fails with, or
+    // "" when it is completed, and the content of its page.
+    internal static string[] PDFADrawError(Compliance compliance, Action<PDF, Page> draw) {
+        PDF pdf = new PDF(new MemoryStream(), compliance);
+        pdf.SetTitle("Title");
+        Font font = new Font(pdf, TestSupport.RepoPath(THAI));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(font, "Text").SetLocation(50f, 50f).DrawOn(page);
+        try {
+            draw(pdf, page);
+            string content = TestSupport.Content(page);
+            pdf.Complete();
+            return new string[] {"", content};
+        } catch (InvalidOperationException e) {
+            return new string[] {e.Message, ""};
+        }
+    }
+
+    // PDF/A-1 has no transparency and no optional content, which veraPDF found
+    // in documents of PDF_A_1A and PDF_A_1B (review of 12 October 2026, R9,
+    // R10): a graphics state of an opacity below 1, and an optional content
+    // group, are refused, and an SVG is drawn opaque, as an annotation is.
+    [Fact]
+    public void PDFA1HasNoTransparencyAndNoOptionalContent() {
+        Action<PDF, Page> alpha = (pdf, page) => page.SetGraphicsState(new GraphicsState().SetAlphaNonStroking(0.5f));
+        Assert.Equal("A document of PDF_A_1B cannot draw with an opacity below 1: PDF/A-1 has no transparency.",
+                PDFADrawError(Compliance.PDF_A_1B, alpha)[0]);
+        Assert.Equal("", PDFADrawError(Compliance.PDF_A_2B, alpha)[0]);
+        Assert.Equal("", PDFADrawError(Compliance.PDF_A_1A, (pdf, page) => page.SetGraphicsState(new GraphicsState()))[0]);
+
+        Action<PDF, Page> svg = (pdf, page) => {
+            SVGImage image = new SVGImage(new MemoryStream(Encoding.UTF8.GetBytes("<svg width=\"10\" height=\"10\"><rect width=\"5\" height=\"5\" fill=\"blue\" fill-opacity=\"0.5\"/></svg>")));
+            image.SetLocation(50f, 100f);
+            image.DrawOn(page);
+        };
+        string[] got = PDFADrawError(Compliance.PDF_A_1B, svg);
+        Assert.Equal("", got[0]);
+        Assert.DoesNotContain(" gs\n", got[1]);
+        got = PDFADrawError(Compliance.PDF_A_2B, svg);
+        Assert.Equal("", got[0]);
+        Assert.Contains(" gs\n", got[1]);
+
+        Action<PDF, Page> layer = (pdf, page) => new OptionalContentGroup(pdf, "Layer").DrawOn(page);
+        Assert.Equal("A document of PDF_A_1A cannot have optional content: "
+                + "PDF/A-1 has none; PDF/A-2 and PDF/A-3 have it.",
+                PDFADrawError(Compliance.PDF_A_1A, layer)[0]);
+        Assert.Equal("", PDFADrawError(Compliance.PDF_A_2A, layer)[0]);
+    }
+
     private static string DrawSVG(string svg) {
         Page page = new Page(TestSupport.NewPDF(), Letter.PORTRAIT);
         SVGImage image = new SVGImage(new MemoryStream(Encoding.UTF8.GetBytes(svg)));

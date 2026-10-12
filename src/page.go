@@ -1113,6 +1113,13 @@ func (page *Page) SaveGraphicsState() {
 // SetGraphicsState sets the graphics state. Please see Example_31.
 //   - gs: the graphics state to use.
 func (page *Page) SetGraphicsState(gs *GraphicsState) *Page {
+	// PDF/A-1 has no transparency, and veraPDF refused the document (review
+	// of 12 October 2026, R9).
+	if page.pdf.isPDFA1() && (gs.GetAlphaStroking() < 1 || gs.GetAlphaNonStroking() < 1) {
+		page.pdf.fail("A document of " + page.pdf.compliance.String() +
+			" cannot draw with an opacity below 1: PDF/A-1 has no transparency.")
+		return page
+	}
 	// The alphas are written like the other numbers of the PDF: with a
 	// dot whatever the locale, at most two decimals and no exponent.
 	state := "/CA " + string(fastfloat.ToByteArray(gs.GetAlphaStroking())) +

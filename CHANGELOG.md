@@ -84,6 +84,12 @@ This is the first entry in this file; earlier releases were not tracked here.
   64 pages of /Contents [4 0 R 5 0 R], of a stream of 16 MB, held 1 GB
   against the budget of 256 MB. Past the budget, a page has no content, as
   before; each call makes a copy, and is charged.
+- A document of PDF/A-1, PDF_A_1A or PDF_A_1B, refuses transparency and
+  optional content, which PDF/A-1 has not, in the four ports, as it refuses
+  an image with transparency: SetGraphicsState of an opacity below 1, and
+  drawing an OptionalContentGroup, are errors, and an SVG of an opacity
+  below 1 is drawn opaque, as an annotation is. They made a document that
+  veraPDF refused. PDF/A-2 and PDF/A-3 have both, as before.
 
 ## v9.0.5 — 2026-10-12, internal
 

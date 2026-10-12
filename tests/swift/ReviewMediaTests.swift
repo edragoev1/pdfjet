@@ -207,6 +207,59 @@ import Testing
         #expect(try pdfAError(Compliance.PDF_A_1B, "PngSuite/BASN2C08.PNG") == "")
     }
 
+    // The error of completing a document of the compliance that draws, or ""
+    // when it completes, and the content of its page.
+    static func pdfADrawError(_ level: Compliance, _ draw: (PDF, Page) throws -> Void) throws -> (String, String) {
+        let memory = MemoryPDF(level)
+        let pdf = memory.pdf
+        _ = pdf.setTitle("Title")
+        let font = try Font(pdf, TestSupport.open(ReviewMediaTests.trueTypeFont))
+        let page = Page(pdf, Letter.PORTRAIT)
+        TextLine(font, "Text").setLocation(50, 50).drawOn(page)
+        try draw(pdf, page)
+        let content = TestSupport.content(page)
+        do {
+            try pdf.complete()
+        } catch {
+            return (TestSupport.message(error), content)
+        }
+        return ("", content)
+    }
+
+    // PDF/A-1 has no transparency and no optional content, which veraPDF found
+    // in documents of PDF_A_1A and PDF_A_1B (review of 12 October 2026, R9,
+    // R10): a graphics state of an opacity below 1, and an optional content
+    // group, are refused, and an SVG is drawn opaque, as an annotation is.
+    @Test(.enabled(if: TestSupport.exists(trueTypeFont), "the fonts directory is not here"))
+    func pdfA1HasNoTransparencyAndNoOptionalContent() throws {
+        let failed = "The PDF was not completed because of an earlier error: "
+        let alpha: (PDF, Page) throws -> Void = { _, page in
+            page.setGraphicsState(GraphicsState().setAlphaNonStroking(0.5))
+        }
+        #expect(try Self.pdfADrawError(Compliance.PDF_A_1B, alpha).0 == failed
+                + "A document of PDF_A_1B cannot draw with an opacity below 1: PDF/A-1 has no transparency.")
+        #expect(try Self.pdfADrawError(Compliance.PDF_A_2B, alpha).0 == "")
+        #expect(try Self.pdfADrawError(Compliance.PDF_A_1A, { _, page in page.setGraphicsState(GraphicsState()) }).0 == "")
+
+        let svg: (PDF, Page) throws -> Void = { _, page in
+            let image = try SVGImage(stream: InputStream(data: Data("<svg width=\"10\" height=\"10\"><rect width=\"5\" height=\"5\" fill=\"blue\" fill-opacity=\"0.5\"/></svg>".utf8)))
+            _ = image.setLocation(50, 100)
+            image.drawOn(page)
+        }
+        var got = try Self.pdfADrawError(Compliance.PDF_A_1B, svg)
+        #expect(got.0 == "" && !got.1.contains(" gs\n"), "the SVG in PDF/A-1: \(got)")
+        got = try Self.pdfADrawError(Compliance.PDF_A_2B, svg)
+        #expect(got.0 == "" && got.1.contains(" gs\n"), "the SVG in PDF/A-2: \(got)")
+
+        let layer: (PDF, Page) throws -> Void = { pdf, page in
+            OptionalContentGroup(pdf, "Layer").drawOn(page)
+        }
+        #expect(try Self.pdfADrawError(Compliance.PDF_A_1A, layer).0 == failed
+                + "A document of PDF_A_1A cannot have optional content: "
+                + "PDF/A-1 has none; PDF/A-2 and PDF/A-3 have it.")
+        #expect(try Self.pdfADrawError(Compliance.PDF_A_2A, layer).0 == "")
+    }
+
     private func draw(_ svg: String) throws -> String {
         let page = TestSupport.newPage()
         let image = try SVGImage(stream: InputStream(data: Data(svg.utf8)))

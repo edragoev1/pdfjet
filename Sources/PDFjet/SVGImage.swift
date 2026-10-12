@@ -566,7 +566,9 @@ public class SVGImage : Drawable {
         if path.operations.isEmpty || !fill && !stroke || !isWritable(path, page) {
             return
         }
-        let alpha = fill && path.fillAlpha < 1.0 || stroke && path.strokeAlpha < 1.0
+        // PDF/A-1 has no transparency, so there the path is drawn opaque, as
+        // an annotation is (review of 12 October 2026, R9).
+        let alpha = !page.pdf.isPDFA1() && (fill && path.fillAlpha < 1.0 || stroke && path.strokeAlpha < 1.0)
         let lineCap = stroke && path.lineCap != CapStyle.BUTT
         let lineJoin = stroke && path.lineJoin != JoinStyle.MITER
         let state = alpha || lineCap || lineJoin

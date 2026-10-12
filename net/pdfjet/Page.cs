@@ -2344,6 +2344,12 @@ public class Page {
     /// <param name="gs">the graphics state to use.</param>
     /// <returns>this Page object.</returns>
     public Page SetGraphicsState(GraphicsState gs) {
+        // PDF/A-1 has no transparency, and veraPDF refused the document
+        // (review of 12 October 2026, R9).
+        if (pdf.IsPDFA1() && (gs.GetAlphaStroking() < 1f || gs.GetAlphaNonStroking() < 1f)) {
+            pdf.Fail(new InvalidOperationException("A document of " + pdf.compliance
+                    + " cannot draw with an opacity below 1: PDF/A-1 has no transparency."));
+        }
         // The alphas are written like the other numbers of the PDF: with a
         // dot whatever the locale, at most two decimals and no exponent.
         String state = "/CA " +

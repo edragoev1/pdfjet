@@ -573,7 +573,9 @@ public class SVGImage : IDrawable {
         if (path.operations.Count == 0 || (!fill && !stroke) || !IsWritable(path, page)) {
             return;
         }
-        bool alpha = (fill && path.fillAlpha < 1f) || (stroke && path.strokeAlpha < 1f);
+        // PDF/A-1 has no transparency, so there the path is drawn opaque, as
+        // an annotation is (review of 12 October 2026, R9).
+        bool alpha = !page.pdf.IsPDFA1() && ((fill && path.fillAlpha < 1f) || (stroke && path.strokeAlpha < 1f));
         bool lineCap = stroke && path.lineCap != CapStyle.BUTT;
         bool lineJoin = stroke && path.lineJoin != JoinStyle.MITER;
         bool state = alpha || lineCap || lineJoin;

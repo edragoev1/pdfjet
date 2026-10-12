@@ -98,6 +98,12 @@ public class OptionalContentGroup {
             page.pdf.fail("The optional content group belongs to another PDF.")
             return [0.0, 0.0]
         }
+        // veraPDF refused the document (review of 12 October 2026, R10)
+        if page.pdf.isPDFA1() {
+            page.pdf.fail("A document of \(page.pdf.compliance)"
+                    + " cannot have optional content: PDF/A-1 has none; PDF/A-2 and PDF/A-3 have it.")
+            return [0.0, 0.0]
+        }
         var xy: [Float] = [0.0, 0.0]
         if ocgNumber == -1 {
             pdf.newObj()

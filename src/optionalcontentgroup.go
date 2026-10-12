@@ -88,6 +88,12 @@ func (ocg *OptionalContentGroup) DrawOn(page *Page) [2]float32 {
 		page.pdf.fail("The optional content group belongs to another PDF.")
 		return xy
 	}
+	// veraPDF refused the document (review of 12 October 2026, R10)
+	if page.pdf.isPDFA1() {
+		page.pdf.fail("A document of " + page.pdf.compliance.String() +
+			" cannot have optional content: PDF/A-1 has none; PDF/A-2 and PDF/A-3 have it.")
+		return xy
+	}
 	if ocg.ocgNumber == -1 {
 		ocg.pdf.newObj()
 		ocg.pdf.appendByteArray(token.BeginDictionary)

@@ -83,6 +83,11 @@ public class OptionalContentGroup {
         if (page.pdf != pdf) {
             page.pdf.Fail(new ArgumentException("The optional content group belongs to another PDF."));
         }
+        // veraPDF refused the document (review of 12 October 2026, R10)
+        if (page.pdf.IsPDFA1()) {
+            page.pdf.Fail(new InvalidOperationException("A document of " + page.pdf.compliance
+                    + " cannot have optional content: PDF/A-1 has none; PDF/A-2 and PDF/A-3 have it."));
+        }
         float[] xy = new float[] {0f, 0f};
         if (this.ocgNumber == -1) {
             pdf.NewObj();

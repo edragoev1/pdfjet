@@ -632,7 +632,9 @@ public class SVGImage implements Drawable {
         if (path.operations.isEmpty() || !fill && !stroke || !isWritable(path, page)) {
             return;
         }
-        boolean alpha = fill && path.fillAlpha < 1f || stroke && path.strokeAlpha < 1f;
+        // PDF/A-1 has no transparency, so there the path is drawn opaque, as
+        // an annotation is (review of 12 October 2026, R9).
+        boolean alpha = !page.pdf.isPDFA1() && (fill && path.fillAlpha < 1f || stroke && path.strokeAlpha < 1f);
         boolean lineCap = stroke && path.lineCap != CapStyle.BUTT;
         boolean lineJoin = stroke && path.lineJoin != JoinStyle.MITER;
         boolean state = alpha || lineCap || lineJoin;

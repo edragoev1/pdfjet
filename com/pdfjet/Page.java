@@ -2370,6 +2370,12 @@ final public class Page {
      * @return this Page object.
      */
     public Page setGraphicsState(GraphicsState gs) {
+        // PDF/A-1 has no transparency, and veraPDF refused the document
+        // (review of 12 October 2026, R9).
+        if (pdf.isPDFA1() && (gs.getAlphaStroking() < 1f || gs.getAlphaNonStroking() < 1f)) {
+            pdf.fail(new IllegalStateException("A document of " + pdf.compliance
+                    + " cannot draw with an opacity below 1: PDF/A-1 has no transparency."));
+        }
         // The alphas are written like the other numbers of the PDF: with a
         // dot whatever the locale, at most two decimals and no exponent.
         String state = "/CA " +

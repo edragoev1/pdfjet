@@ -213,6 +213,74 @@ func TestReviewMediaAPDFADocumentHoldsNoImageItsLevelHasNot(t *testing.T) {
 	testWant(t, "", testPDFAError(t, compliance.PDF_A_1B, "PngSuite/BASN2C08.PNG"))
 }
 
+// testPDFADrawError returns the error of completing a document of the
+// compliance that draws, and the content of its page.
+func testPDFADrawError(t *testing.T, level compliance.Compliance, draw func(pdf *PDF, page *Page)) (string, string) {
+	t.Helper()
+	pdf := NewPDF(bufio.NewWriter(io.Discard))
+	pdf.SetCompliance(level)
+	pdf.SetTitle("Title")
+	font := testTrueTypeFont(t, pdf)
+	page := NewPage(pdf, letter.Portrait())
+	NewTextLine(font, "Text").SetLocation(50, 50).DrawOn(page)
+	draw(pdf, page)
+	content := testContent(page)
+	if err := pdf.Complete(); err != nil {
+		return err.Error(), content
+	}
+	return "", content
+}
+
+// PDF/A-1 has no transparency and no optional content, which veraPDF found
+// in documents of PDF_A_1A and PDF_A_1B (review of 12 October 2026, R9,
+// R10): a graphics state of an opacity below 1, and an optional content
+// group, are refused, and an SVG is drawn opaque, as an annotation is.
+func TestReviewMediaPDFA1HasNoTransparencyAndNoOptionalContent(t *testing.T) {
+	failed := "The PDF was not completed because of an earlier error: "
+	alpha := func(pdf *PDF, page *Page) {
+		page.SetGraphicsState(NewGraphicsState().SetAlphaNonStroking(0.5))
+	}
+	got, _ := testPDFADrawError(t, compliance.PDF_A_1B, alpha)
+	testWant(t, failed+"A document of PDF_A_1B cannot draw with an opacity below 1: "+
+		"PDF/A-1 has no transparency.", got)
+	got, _ = testPDFADrawError(t, compliance.PDF_A_2B, alpha)
+	testWant(t, "", got)
+	opaque := func(pdf *PDF, page *Page) {
+		page.SetGraphicsState(NewGraphicsState())
+	}
+	got, _ = testPDFADrawError(t, compliance.PDF_A_1A, opaque)
+	testWant(t, "", got)
+
+	svg := func(pdf *PDF, page *Page) {
+		image, err := NewSVGImage(strings.NewReader(
+			`<svg width="10" height="10"><rect width="5" height="5" fill="blue" fill-opacity="0.5"/></svg>`))
+		if err != nil {
+			t.Fatal(err)
+		}
+		image.SetLocation(50, 100)
+		image.DrawOn(page)
+	}
+	got, content := testPDFADrawError(t, compliance.PDF_A_1B, svg)
+	testWant(t, "", got)
+	if strings.Contains(content, " gs\n") {
+		t.Errorf("the SVG is drawn with a graphics state in PDF/A-1: %q", content)
+	}
+	got, content = testPDFADrawError(t, compliance.PDF_A_2B, svg)
+	testWant(t, "", got)
+	if !strings.Contains(content, " gs\n") {
+		t.Errorf("the SVG is drawn opaque in PDF/A-2: %q", content)
+	}
+
+	layer := func(pdf *PDF, page *Page) {
+		NewOptionalContentGroup(pdf, "Layer").DrawOn(page)
+	}
+	got, _ = testPDFADrawError(t, compliance.PDF_A_1A, layer)
+	testWant(t, failed+"A document of PDF_A_1A cannot have optional content: "+
+		"PDF/A-1 has none; PDF/A-2 and PDF/A-3 have it.", got)
+	got, _ = testPDFADrawError(t, compliance.PDF_A_2A, layer)
+	testWant(t, "", got)
+}
+
 func TestReviewMediaTheCommentsOfAStyleSheetAreLeftOutInOnePass(t *testing.T) {
 	svg := `<svg width="10" height="10"><style>` + strings.Repeat("/**/", 40000) +
 		`.a { fill: /* red */ blue } /* .a { fill: red } */ .b { fill: green } /* not closed .a { fill: red }` +
