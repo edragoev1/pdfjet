@@ -491,4 +491,20 @@ import Testing
             }
         }
     }
+
+    // A word too wide for the frame breaks at a soft hyphen, the row ending with
+    // a hyphen, and no soft hyphen is drawn (review of 11 October 2026, #21).
+    @Test func breaksAWordAtASoftHyphen() throws {
+        let font = TestSupport.helvetica(TestSupport.newPDF())
+        let content = drawJoined(TestSupport.softHyphenWidth(font), nil, TestSupport.softHyphenWord)
+        #expect(content.contains(TestSupport.hex("Donaudampf-")), "no row of Donaudampf-: \(content)")
+        let regex = try NSRegularExpression(pattern: "<([0-9A-F]+)>")
+        let range = NSRange(content.startIndex..., in: content)
+        for match in regex.matches(in: content, range: range) {
+            let digits = Array((content as NSString).substring(with: match.range(at: 1)))
+            for i in stride(from: 0, to: digits.count - 1, by: 2) where digits[i] == "A" && digits[i + 1] == "D" {
+                Issue.record("a soft hyphen is drawn: \(content)")
+            }
+        }
+    }
 }

@@ -219,4 +219,25 @@ import Testing
             i += 4
         }
     }
+
+    // A word too wide for its line breaks at a soft hyphen, the line ending with
+    // a hyphen; it was drawn as a hyphen wherever it was, and broken between its
+    // characters (review of 11 October 2026, #21).
+    @Test func breaksAWordAtASoftHyphen() {
+        let font = TestSupport.helvetica(TestSupport.newPDF())
+        let block = TextBlock(font, "x " + TestSupport.softHyphenWord)
+        block.setWidth(TestSupport.softHyphenWidth(font) + 2 * block.getPadding())
+        let lines = block.getTextLines().map { $0.text!.replacingOccurrences(of: "\u{00AD}", with: "") }
+        guard lines.count >= 2 && lines[0] == "x Donau-" else {
+            Issue.record("the lines \(lines)")
+            return
+        }
+        for line in lines.dropLast() where !line.hasSuffix("-") {
+            Issue.record("the lines \(lines): \(line) is not broken at a soft hyphen")
+        }
+        #expect(lines.joined().replacingOccurrences(of: "-", with: "") == "x Donaudampfschifffahrt", "\(lines)")
+        // A word that fits draws no hyphen.
+        let fits = TextBlock(font, TestSupport.softHyphenWord).setWidth(500).getTextLines()
+        #expect(fits.count == 1 && !fits[0].text!.contains("-"), "the lines of a word that fits: \(fits.count)")
+    }
 }

@@ -1214,4 +1214,20 @@ import Testing
             table.autoAdjustColumnWidths()
         }
     }
+
+    // A cell's word too wide for its column breaks at a soft hyphen, the line
+    // ending with a hyphen (review of 11 October 2026, #21).
+    @Test func aCellBreaksAWordAtASoftHyphen() {
+        let font = TestSupport.helvetica(TestSupport.newPDF())
+        let cell = Cell(font, TestSupport.softHyphenWord)
+        cell.setWidth(TestSupport.softHyphenWidth(font))
+        cell.setLeftPadding(0)
+        cell.setRightPadding(0)
+        let lines = Table().wrapCellText([cell], 0).map { $0.replacingOccurrences(of: "\u{00AD}", with: "") }
+        guard lines.count >= 2 && lines[0] == "Donaudampf-" else {
+            Issue.record("the lines \(lines)")
+            return
+        }
+        #expect(lines.joined().replacingOccurrences(of: "-", with: "") == "Donaudampfschifffahrt", "\(lines)")
+    }
 }

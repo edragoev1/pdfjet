@@ -418,7 +418,14 @@ public class TextFrame : Drawable {
                 tokenIndex += 1
                 continue
             }
-            if buf.isEmpty && xText == x {
+            if let (head, rest) = TextBlock.softHyphenBreak(token, available - runLength, {
+                TextFrame.width(textLine, $0)
+            }) {
+                // The token is broken at a soft hyphen, the row ending with a
+                // hyphen, as far along as fits (review of 11 October 2026, #21)
+                buf.append(head)
+                tokens![tokenIndex] = rest
+            } else if buf.isEmpty && xText == x {
                 // The token does not fit in an empty row, so the row takes as much of it as fits.
                 let end = headThatFits(textLine, token)
                 buf.append(String(token.unicodeScalars[..<end]))

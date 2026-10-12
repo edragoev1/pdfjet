@@ -219,10 +219,17 @@ import Testing
         #expect(!latin.hasGlyph(0x0E01) && !latin.hasGlyph(0x1F600), "a character drawn with .notdef has a glyph")
     }
 
-    @Test func aSoftHyphenIsAHyphenAndANoBreakSpaceIsASpace() {
+    // A soft hyphen takes no width, as it is drawn only where a line breaks at
+    // it, as a hyphen (review of 11 October 2026, #21); the kerning of the
+    // characters on either side of it is kept.
+    @Test(.enabled(if: TestSupport.exists("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"),
+            "the fonts directory is not here"))
+    func aSoftHyphenHasNoWidthAndANoBreakSpaceIsASpace() throws {
         let font = TestSupport.helvetica(TestSupport.newPDF())
         font.setKernPairs(true)
-        #expect(font.stringWidth(10, "T-") == font.stringWidth(10, "T\u{00AD}"))
+        #expect(font.stringWidth(10, "AV") == font.stringWidth(10, "A\u{00AD}V"))
+        let plex = try TestSupport.plexSans(TestSupport.newPDF())
+        #expect(plex.stringWidth(10, "T") == plex.stringWidth(10, "T\u{00AD}"))
         #expect(font.stringWidth(10, ". ") == font.stringWidth(10, ".\u{00A0}"))
         // KPX period space -60
         TestSupport.expectNear(4.96, font.stringWidth(10, ".\u{00A0}"), 0.001)

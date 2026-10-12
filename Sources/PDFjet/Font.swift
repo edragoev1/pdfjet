@@ -501,6 +501,9 @@ public class Font {
         if self.isCoreFont {
             var previous = -1
             for scalar in str!.unicodeScalars {
+                if scalar.value == 0x00AD && !symbolic {
+                    continue    // A soft hyphen is not drawn, see withoutSoftHyphens
+                }
                 let c1 = coreFontCode(scalar.value)
                 width += Int(metrics![c1 - 32][1])
                 if self.kernPairs && previous != -1 {
@@ -752,6 +755,11 @@ public class Font {
         var i: Int = 0
         while let current = scalar {
             let next = scalars.next()
+            if current.value == 0x00AD && !symbolic {
+                scalar = next
+                i += 1      // A soft hyphen is not drawn, see withoutSoftHyphens
+                continue
+            }
             let c1 = coreFontCode(current.value)
             w -= Float(metrics![c1 - 32][1])
             if w < 0 {
@@ -767,6 +775,18 @@ public class Font {
             i += 1
         }
         return i
+    }
+
+    // Returns the characters without their soft hyphens, which a core font of
+    // WinAnsi does not draw or measure, as no font does: WinAnsi has a hyphen
+    // at the soft hyphen's code, and a line broken at a soft hyphen ends with a
+    // hyphen of its own (review of 11 October 2026, #21). Symbol and
+    // ZapfDingbats keep theirs, their codes being their characters.
+    func withoutSoftHyphens(_ scalars: [Unicode.Scalar]) -> [Unicode.Scalar] {
+        if symbolic || !scalars.contains(where: { $0.value == 0x00AD }) {
+            return scalars
+        }
+        return scalars.filter { $0.value != 0x00AD }
     }
 
     /// Returns the code of the character in the encoding of this core font:
@@ -917,12 +937,17 @@ public class Font {
 
     // Returns true for a character that Unicode says is not drawn when a font
     // has no glyph for it, Default_Ignorable_Code_Point, but those that Page
-    // treats on their own: the soft hyphen, the marks of direction, the joiners
-    // and the byte order mark. A variation selector after ™ or ©, as text
-    // pasted from a phone has, a zero width space or a word joiner was drawn
-    // as a box with a width (review of 11 October 2026, #9); it takes no
-    // width, and nothing is drawn for it.
+    // treats on their own: the marks of direction, the joiners and the byte
+    // order mark. A variation selector after ™ or ©, as text pasted from a
+    // phone has, a zero width space or a word joiner was drawn as a box with a
+    // width (review of 11 October 2026, #9); it takes no width, and nothing is
+    // drawn for it. The soft hyphen is one too: a line broken at it ends with
+    // a hyphen that TextBlock, TextFrame and a table's cells put there, and it
+    // was drawn as a hyphen wherever it was (#21).
     static func isIgnorable(_ ch: Int) -> Bool {
+        if ch == 0x00AD {
+            return true
+        }
         if ch < 0x034F {
             return false
         }

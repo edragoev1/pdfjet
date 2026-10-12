@@ -348,7 +348,7 @@ public class TextBlock : Drawable {
         return self
     }
 
-    private func getTextLines() -> [TextLine] {
+    func getTextLines() -> [TextLine] {
         var textLines = [TextLine]()
 
         // The padding can be wider than the block, and a text area narrower
@@ -398,27 +398,43 @@ public class TextBlock : Drawable {
                         let words = token.components(separatedBy: "\u{200B}")
                         for (i, word) in words.enumerated() {
                             let separator = (i == words.count - 1) ? " " : ""
-                            if stringWidth(sb + word) <= textAreaWidth {
-                                sb.append(word)
-                                sb.append(separator)
-                            } else {
+                            var word = word
+                            while true {
+                                if stringWidth(sb + word) <= textAreaWidth {
+                                    sb.append(word)
+                                    sb.append(separator)
+                                    break
+                                }
+                                // The word is broken at a soft hyphen, the line
+                                // ending with a hyphen, as far along as fits
+                                let line = sb
+                                if let (head, rest) = TextBlock.softHyphenBreak(word, textAreaWidth, {
+                                    self.stringWidth(line + $0)
+                                }) {
+                                    textLines.append(TextLine(font, line + head))
+                                    sb = ""
+                                    word = rest
+                                    continue
+                                }
                                 if !sb.isEmpty {
                                     // Wrapped at a space, the line keeps it, drawn
                                     // but not measured; at a zero width space it
                                     // has none to keep.
-                                    let textLine = TextLine(font, sb.trim())
+                                    let textLine = TextLine(font, line.trim())
                                     // The last scalar: hasSuffix compares characters,
                                     // and a prepended mark, such as U+0600, joins
                                     // the space after it into one.
-                                    textLine.trailingSpace = sb.unicodeScalars.last == " "
+                                    textLine.trailingSpace = line.unicodeScalars.last == " "
                                     textLines.append(textLine)
                                     sb = ""
+                                    continue
                                 }
                                 // A word too wide for a line by itself is broken.
                                 let rest = addBrokenWordLines(&textLines, word, textAreaWidth)
                                 if rest < word.unicodeScalars.count {
                                     sb = TextBlock.string(Array(word.unicodeScalars)[rest...]) + separator
                                 }
+                                break
                             }
                         }
                     }
@@ -574,6 +590,43 @@ public class TextBlock : Drawable {
     // font has no glyph for in the fallback font.
     private func stringWidth(_ text: String?) -> Float {
         return font.stringWidth(fallbackFont, fontSize, getFallbackFontSize(), text)
+    }
+
+    // Returns the start of the word up to its last soft hyphen whose start,
+    // with a hyphen in place of the soft hyphen, is no wider than the width as
+    // measure measures it, that hyphen at its end, and the rest of the word
+    // after the soft hyphen: a line may break there, and only there is a soft
+    // hyphen drawn, as a hyphen (review of 11 October 2026, #21). A soft
+    // hyphen at the start or the end of the word is no place to break.
+    static func softHyphenBreak(
+            _ word: String,
+            _ width: Float,
+            _ measure: (String) -> Float) -> (head: String, rest: String)? {
+        // Most words have none, and a word of 200,000 characters is looked at
+        // for each row of TextFrame it is broken into: its UTF-8 is searched
+        // with memchr for the second byte of a soft hyphen first, which a
+        // loop over its characters made four times slower.
+        var word = word
+        if word.withUTF8({ $0.isEmpty || memchr($0.baseAddress!, 0xAD, $0.count) == nil }) {
+            return nil
+        }
+        let scalars = word.unicodeScalars
+        var i = scalars.endIndex
+        while i > scalars.startIndex {
+            i = scalars.index(before: i)
+            let after = scalars.index(after: i)
+            if scalars[i].value != 0x00AD || after == scalars.endIndex {
+                continue
+            }
+            if scalars[..<i].allSatisfy({ $0.value == 0x00AD || $0.value <= 0x20 }) {
+                continue    // Nothing but soft hyphens and spaces before it
+            }
+            let head = String(scalars[..<i]) + "-"
+            if measure(head) <= width {
+                return (head, String(scalars[after...]))
+            }
+        }
+        return nil
     }
 
     private static func nextCharacterBreak(_ scalars: [Unicode.Scalar], _ start: Int) -> Int {

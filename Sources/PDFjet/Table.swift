@@ -2005,44 +2005,49 @@ public class Table : Drawable {
 
     // The lines the text of the cell needs to fit the width of its column.
     // A token wider than the column is broken between two of its characters.
-    private func wrapCellText(_ row: [Cell], _ index: Int) -> [String] {
+    func wrapCellText(_ row: [Cell], _ index: Int) -> [String] {
         let cell = row[index]
         let cellWidth = getTotalWidth(row, index) + Table.FIT_TOLERANCE
         var lines = [String]()
         var buf = String()
+        func width(_ text: String) -> Float {
+            return cell.font.stringWidth(cell.fallbackFont, cell.fontSize, text)
+        }
         for token in cell.text!.splitOnWhitespace() {
-            if cell.font.stringWidth(cell.fallbackFont, cell.fontSize, token) > cellWidth {
-                // A token wider than the column starts a line of its own:
-                // after the words before it, or the end of another such
-                // token, it was "listic e" (5 October 2026)
+            var token = token
+            while true {
+                let joined = buf.isEmpty ? token : buf + " " + token
+                if width(joined) <= cellWidth {
+                    buf = joined
+                    break
+                }
+                // The token is broken at a soft hyphen, the line ending with a
+                // hyphen, as far along as fits (review of 11 October 2026, #21)
+                let line = buf.isEmpty ? buf : buf + " "
+                if let (head, rest) = TextBlock.softHyphenBreak(token, cellWidth, { width(line + $0) }) {
+                    lines.append(line + head)
+                    buf = ""
+                    token = rest
+                    continue
+                }
                 if !buf.isEmpty {
                     lines.append(buf.trim())
                     buf = ""
+                    continue
                 }
+                // A token wider than the column starts a line of its own:
+                // after the words before it, or the end of another such
+                // token, it was "listic e" (5 October 2026). It is broken
+                // between its characters, and a line has at least one
+                // character, even one wider than the column.
                 for scalar in token.unicodeScalars {
-                    // A line has at least one character, even one wider than the column.
-                    // The line ends without the space before the token, which
-                    // would count in the width of the text and move it when it
-                    // is aligned right or centered.
-                    if !buf.isEmpty && cell.font.stringWidth(cell.fallbackFont, cell.fontSize,
-                            buf + String(scalar)) > cellWidth {
+                    if !buf.isEmpty && width(buf + String(scalar)) > cellWidth {
                         lines.append(buf.trim())
                         buf = ""
                     }
                     buf.append(String(scalar))
                 }
-            } else if buf.isEmpty {
-                // A token that fits the column fits a line of its own, and its
-                // width is the one measured just above.
-                buf.append(token)
-            } else if cell.font.stringWidth(cell.fallbackFont, cell.fontSize,
-                    (buf + " " + token).trim()) > cellWidth {
-                lines.append(buf.trim())
-                buf = ""
-                buf.append(token)
-            } else {
-                buf.append(" ")
-                buf.append(token)
+                break
             }
         }
         lines.append(buf.trim())

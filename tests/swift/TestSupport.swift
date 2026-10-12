@@ -69,6 +69,15 @@ enum TestSupport {
         return latin1(page.getContent())
     }
 
+    /// A word of soft hyphens, and softHyphenWidth a width that fits its start
+    /// up to the first of them that a line can break at past "Donau", with the
+    /// hyphen, and no more.
+    static let softHyphenWord = "Donau\u{00AD}dampf\u{00AD}schiff\u{00AD}fahrt"
+
+    static func softHyphenWidth(_ font: Font) -> Float {
+        return font.stringWidth(font.size, "Donaudampf-") + 1
+    }
+
     /// Returns the text as a core font draws it: a byte per character in upper case hexadecimal.
     static func hex(_ text: String) -> String {
         let digits = Array("0123456789ABCDEF")

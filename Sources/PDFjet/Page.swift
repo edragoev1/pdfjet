@@ -527,7 +527,7 @@ public class Page {
     }
 
     private final func drawASCIIString(_ font: Font, _ text: String) {
-        let scalars = Array(text.unicodeScalars)
+        let scalars = font.withoutSoftHyphens(Array(text.unicodeScalars))
         if scalars.isEmpty {
             return
         }
