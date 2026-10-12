@@ -506,11 +506,9 @@ import Testing
                 continue
             }
             let rect = (1...4).map { Double(raw[Range(match.range(at: $0), in: raw)!])! }
-            var w = Double(image.getWidth())
-            var h = Double(image.getHeight())
-            if degrees == 90 || degrees == 270 {
-                swap(&w, &h)
-            }
+            // The size as it is drawn, turned or not (review of 12 October 2026, F3)
+            let w = Double(image.getWidth())
+            let h = Double(image.getHeight())
             #expect(rect[0] == 10 && abs(rect[2] - rect[0] - w) <= 0.01 && abs(rect[3] - rect[1] - h) <= 0.01
                     && rect[3] == 792 - 20, "\(degrees): /Rect \(rect)")
         }

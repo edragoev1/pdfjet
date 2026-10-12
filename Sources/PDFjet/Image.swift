@@ -420,18 +420,22 @@ public class Image : Drawable {
     ///
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
+        // The corner of the image as it is drawn, turned or not: an image
+        // turned a quarter of the way gave its corner unturned, and in a table
+        // cell ran over the rows after it (review of 12 October 2026, F3)
+        let corner = [x + getWidth(), y + getHeight()]
         guard let page = page else {
-            return [x + w!, y + h!]     // Measured, not drawn
+            return corner               // Measured, not drawn
         }
         if let identity = pdfIdentity, identity != page.pdf.identity {
             page.pdf.fail("The image belongs to another PDF.")
-            return [x + w!, y + h!]
+            return corner
         }
         if w! == 0.0 || h! == 0.0 {
-            return [x + w!, y + h!]     // A zero size image paints nothing.
+            return corner               // A zero size image paints nothing.
         }
         guard let objNumber = objNumber else {
-            return [x + w!, y + h!]     // The PDF refused the image, and has failed.
+            return corner               // The PDF refused the image, and has failed.
         }
         // A linked image is a Figure in the Link its annotation joins
         var link: StructElement?
@@ -541,27 +545,29 @@ public class Image : Drawable {
                     altDescription).joining(link))
         }
 
-        return [x + w!, y + h!]
+        return corner
     }
 
     ///
-    /// Returns the width of this image when drawn on the page.
+    /// Returns the width of this image when drawn on the page, its height
+    /// before it is turned when it is turned a quarter of the way.
     /// The scaling is take into account.
     ///
     /// - Returns: w - the width of this image.
     ///
     public func getWidth() -> Float {
-        return self.w!
+        return (degrees == 90 || degrees == 270) ? self.h! : self.w!
     }
 
     ///
-    /// Returns the height of this image when drawn on the page.
+    /// Returns the height of this image when drawn on the page, its width
+    /// before it is turned when it is turned a quarter of the way.
     /// The scaling is take into account.
     ///
     /// - Returns: h - the height of this image.
     ///
     public func getHeight() -> Float {
-        return self.h!
+        return (degrees == 90 || degrees == 270) ? self.w! : self.h!
     }
 
     private func addSoftMask(
@@ -824,10 +830,15 @@ public class Image : Drawable {
 
     /// Scales this image to fit between its location and the bottom right corner of the page.
     public func resizeToFit(_ page: Page, keepAspectRatio: Bool) {
+        // The page fits the image as it is drawn, turned or not
+        let across = (page.width - self.x) / getWidth()
+        let down = (page.height - self.y) / getHeight()
         if keepAspectRatio {
-            self.scaleBy(min((page.width - self.x)/self.w!, (page.height - self.y)/self.h!))
+            self.scaleBy(min(across, down))
+        } else if degrees == 90 || degrees == 270 {
+            self.scaleBy(down, across)
         } else {
-            self.scaleBy((page.width - self.x)/self.w!, (page.height - self.y)/self.h!)
+            self.scaleBy(across, down)
         }
     }
 

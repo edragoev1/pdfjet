@@ -106,6 +106,7 @@ public class Bookmark {
                         in: text, range: NSRange(text.startIndex..., in: text), withTemplate: " "))
         bookmark.parent = self
         bookmark.dest = page.addDestination(key, title.textLine.destinationY())
+        bookmark.dest!.bookmark = true
         if children == nil {
             children = [Bookmark]()
         } else {
@@ -118,7 +119,8 @@ public class Bookmark {
 
     /// Returns the name of the destination of this bookmark, or nil for the root bookmark.
     public func getDestinationName() -> String? {
-        return self.key
+        // Named again when it was taken, see PDF.setDestinationObjNumbers
+        return dest?.name ?? self.key
     }
 
     /// Returns the title of this bookmark, or nil for the root bookmark.

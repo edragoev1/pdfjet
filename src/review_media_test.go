@@ -463,10 +463,8 @@ func TestReviewMediaTheLinkOfATurnedImageCoversItAsItIsDrawn(t *testing.T) {
 		for i := range rect {
 			rect[i], _ = strconv.ParseFloat(match[i+1], 64)
 		}
+		// The size as it is drawn, turned or not (review of 12 October 2026, F3)
 		w, h := float64(image.GetWidth()), float64(image.GetHeight())
-		if degrees == 90 || degrees == 270 {
-			w, h = h, w
-		}
 		if rect[0] != 10 || math.Abs(rect[2]-rect[0]-w) > 0.01 || math.Abs(rect[3]-rect[1]-h) > 0.01 ||
 			rect[3] != 792-20 {
 			t.Errorf("%d: /Rect %v", degrees, rect)

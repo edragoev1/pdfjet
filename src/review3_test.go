@@ -11,13 +11,17 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
 	"testing"
 
 	"github.com/edragoev1/pdfjet/v9/src/cjkfont"
+	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/corefont"
 	"github.com/edragoev1/pdfjet/v9/src/internal/decompressor"
+	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
 
 // The findings of the third review, of 12 October 2026, as tests.
@@ -405,4 +409,152 @@ func TestGPOSAnExtensionOffsetPastTheTableIsNoSubtable(t *testing.T) {
 	if g := newGpos(table, 0, len(table), 10).read(); len(g.markAnchors) != 0 {
 		t.Error("the extension wrapped round to the subtable before it")
 	}
+}
+
+// An image turned a quarter of the way is as wide as it was tall: it gave its
+// corner unturned, and in a table cell ran over the rows after it (F3).
+func TestReview3AnImageTurnedAQuarterHasItsDrawnSize(t *testing.T) {
+	pdf := testNewPDF()
+	image := NewImageFromFile(pdf, testRepoPath(t, "PngSuite/BASN2C08.PNG")) // 32 by 32
+	image.ScaleByWidthAndHeight(0.75, 0.375)                                 // 24 by 12
+	image.SetLocation(50, 50)
+	for _, degrees := range []int{90, 270} {
+		image.SetRotation(degrees)
+		testAssertXY(t, 62, 74, image.DrawOn(nil))
+		testNear(t, "width", 12, image.GetWidth(), testDelta)
+		testNear(t, "height", 24, image.GetHeight(), testDelta)
+		page := NewPage(pdf, testLetterPortrait())
+		testAssertXY(t, 62, 74, image.DrawOn(page))
+	}
+	image.SetRotation(0)
+	testAssertXY(t, 74, 62, image.DrawOn(nil))
+	// Turned, the image fits the page as it is drawn
+	image.SetRotation(90)
+	image.ResizeToFit(NewPage(pdf, testLetterPortrait()), false)
+	xy := image.DrawOn(nil)
+	testNear(t, "right", 612, xy[0], testDelta)
+	testNear(t, "bottom", 792, xy[1], testDelta)
+}
+
+// A text line in a text column is raised by its vertical offset once: the
+// column added it, and drawing the line added it again, so a superscript
+// raised 13 points rose 26 (F6).
+func TestReview3ATextColumnRaisesASuperscriptOnce(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	page := NewPage(pdf, testLetterPortrait())
+	paragraph := NewParagraph().Add(NewTextLine(font, "Base")).Add(NewTextLine(font, "sup").SetVerticalOffset(-13))
+	column := NewTextColumn()
+	column.SetLocation(50, 100)
+	column.SetWidth(400)
+	column.AddParagraph(paragraph)
+	column.DrawOn(page)
+	content := testContent(page)
+	base := testPositionOf(t, content, "Base")
+	sup := testPositionOf(t, content, "sup")
+	testNear(t, "rise", 13, sup[1]-base[1], testDelta)
+}
+
+// A destination the document names keeps its name, and a bookmark whose
+// name it is, dest#1, is named again: a link to the document's dest#1 went to
+// the bookmark (F7).
+func TestReview3ADestinationNameOfTheDocumentComesFirst(t *testing.T) {
+	doc := testNewDoc()
+	font := testHelvetica(doc.pdf)
+	page := NewPage(doc.pdf, testLetterPortrait())
+	page.AddDestination("dest#1", 500)
+	NewTextLine(font, "go").SetGoToAction("dest#1").SetLocation(50, 50).DrawOn(page)
+	bookmark := NewBookmark(doc.pdf).AddBookmark(page, NewTitle(font, "A", 10, 100))
+	raw := string(doc.complete())
+	dests := regexp.MustCompile(`/Dest \[\d+ 0 R /XYZ 0 ([\d.]+) 0\]`).FindAllStringSubmatch(raw, -1)
+	if len(dests) != 2 || dests[0][1] != "292" || dests[1][1] == "292" {
+		t.Errorf("the link and the bookmark go to %v", dests)
+	}
+	if name := bookmark.GetDestinationName(); name == "dest#1" {
+		t.Errorf("the bookmark's destination is %s", name)
+	}
+}
+
+// A bookmark on a page that is not added fails the document: it went to
+// /Dest [0 0 R], and readers refused the document (F8).
+func TestReview3ABookmarkOnAPageNotAddedFailsTheDocument(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	NewPage(pdf, testLetterPortrait())
+	detached := NewPageDetached(pdf, testLetterPortrait())
+	NewBookmark(pdf).AddBookmark(detached, NewTitle(font, "Lost", 10, 100))
+	testCompleteFails(t, pdf, "The bookmark Lost is on a page that is not added to the PDF.")
+}
+
+// An empty dash pattern of an arc is refused, with a stroke color and
+// without, as the other shapes and the other ports refuse it: Go took it for
+// none with a stroke color (S3, C7).
+func TestReview3AnArcRefusesAnEmptyDashPattern(t *testing.T) {
+	for _, colored := range []bool{false, true} {
+		pdf := testNewPDF()
+		page := NewPage(pdf, testLetterPortrait())
+		arc := NewArc().SetRadius(50).SetSweep(90).SetStrokeDashPattern("")
+		arc.SetLocation(100, 100)
+		if colored {
+			arc.SetStrokeColor(color.Red)
+		}
+		arc.DrawOn(page)
+		testRecorded(t, pdf, "The dash pattern \"\" is not an array of non-negative numbers, not all zero, "+
+			"followed by a phase, such as \"[3 3] 0\".")
+	}
+}
+
+// The edge cases of SetColumnWidthsInPercent: the columns set again after the
+// percentages, fewer panicked and more were drawn past the page (C4); a
+// column too narrow for " ..." drew it over the next column; the largest
+// float32 as a share made the widths infinite, and Complete failed; a margin
+// of half the page or more made widths of less than nothing (T5).
+func TestReview3TheEdgeCasesOfColumnWidthsInPercent(t *testing.T) {
+	draw := func(change func(*BigTable)) (*PDF, []*Page, error) {
+		doc := testNewDoc()
+		font := NewCoreFont(doc.pdf, corefont.Helvetica())
+		table := NewBigTable(doc.pdf, font, font, letter.Portrait()).SetNumberOfColumns(3)
+		table.SetLocation(36, 20)
+		table.SetFooter("", nil)
+		change(table)
+		long := "A field far wider than a fifth of the width of the table"
+		table.SetTableRows([]string{"A", "B", "C", "D"}, slices.Values([][]string{{long, "b", long, "d"}}))
+		err := table.Complete()
+		return doc.pdf, table.GetPages(), err
+	}
+	for _, columns := range []int{2, 4} {
+		message, panicked := testPanic(func() {
+			pdf, _, _ := draw(func(table *BigTable) {
+				table.SetColumnWidthsInPercent(20, 30, 50)
+				table.SetNumberOfColumns(columns)
+			})
+			testRecorded(t, pdf, "The table has "+strconv.Itoa(columns)+" columns, and 3 percentages: "+
+				"give one for each column.")
+		})
+		if panicked {
+			t.Errorf("%d columns: %s", columns, message)
+		}
+	}
+	pdf, pages, err := draw(func(table *BigTable) { table.SetColumnWidthsInPercent(1, 98, 1) })
+	if err != nil || pdf.err != nil {
+		t.Fatal(err, pdf.err)
+	}
+	for _, text := range testDrawnText(pages[0]) {
+		if strings.HasSuffix(text, " ...") && len(text) <= 4 {
+			t.Errorf("a column too narrow for it draws %q", text)
+		}
+	}
+	pdf, pages, err = draw(func(table *BigTable) { table.SetColumnWidthsInPercent(math.MaxFloat32, 1, 1) })
+	if err != nil || pdf.err != nil {
+		t.Fatal(err, pdf.err)
+	}
+	if !strings.Contains(testContent(pages[0]), "576 ") {
+		t.Errorf("the first column is not the width of the table: %.300q", testContent(pages[0]))
+	}
+	pdf, _, _ = draw(func(table *BigTable) {
+		table.SetColumnWidthsInPercent(20, 30, 50)
+		table.SetLocation(400, 20)
+	})
+	testRecorded(t, pdf, "The margin of the table, its x, is half the width of the page or more: "+
+		"the columns have no room.")
 }

@@ -414,15 +414,19 @@ func (image *Image) SetLanguage(language string) *Image {
 //
 // Returns x and y coordinates of the bottom right corner of this component.
 func (image *Image) DrawOn(page *Page) [2]float32 {
+	// The corner of the image as it is drawn, turned or not: an image turned
+	// a quarter of the way gave its corner unturned, and in a table cell ran
+	// over the rows after it (review of 12 October 2026, F3)
+	corner := [2]float32{image.x + image.GetWidth(), image.y + image.GetHeight()}
 	if page == nil {
-		return [2]float32{image.x + image.w, image.y + image.h} // Measured, not drawn
+		return corner // Measured, not drawn
 	}
 	if image.pdf != nil && page.pdf != image.pdf {
 		page.pdf.fail("The image belongs to another PDF.")
-		return [2]float32{image.x + image.w, image.y + image.h}
+		return corner
 	}
 	if image.w == 0 || image.h == 0 {
-		return [2]float32{image.x + image.w, image.y + image.h} // A zero size image paints nothing.
+		return corner // A zero size image paints nothing.
 	}
 	// A linked image is a Figure in the Link its annotation joins
 	var link *structElement
@@ -537,20 +541,28 @@ func (image *Image) DrawOn(page *Page) [2]float32 {
 		})
 	}
 
-	return [2]float32{image.x + image.w, image.y + image.h}
+	return corner
 }
 
-// GetWidth returns the width of this image when drawn on the page.
+// GetWidth returns the width of this image when drawn on the page, its
+// height before it is turned when it is turned a quarter of the way.
 // The scaling is taken into account.
 // Returns w - the width of this image.
 func (image *Image) GetWidth() float32 {
+	if image.degrees == 90 || image.degrees == 270 {
+		return image.h
+	}
 	return image.w
 }
 
-// GetHeight returns the height of this image when drawn on the page.
+// GetHeight returns the height of this image when drawn on the page, its
+// width before it is turned when it is turned a quarter of the way.
 // The scaling is taken into account.
 // Returns h - the height of this image.
 func (image *Image) GetHeight() float32 {
+	if image.degrees == 90 || image.degrees == 270 {
+		return image.w
+	}
 	return image.h
 }
 
@@ -824,12 +836,15 @@ func (image *Image) addImageToObjects(
 
 // ResizeToFit resizes an image so it would fit on a page.
 func (image *Image) ResizeToFit(page *Page, keepAspectRatio bool) {
+	// The page fits the image as it is drawn, turned or not
+	across := (page.GetWidth() - image.x) / image.GetWidth()
+	down := (page.GetHeight() - image.y) / image.GetHeight()
 	if keepAspectRatio {
-		image.ScaleBy(float32(math.Min(
-			float64((page.GetWidth()-image.x)/image.w),
-			float64((page.GetHeight()-image.y)/image.h))))
+		image.ScaleBy(float32(math.Min(float64(across), float64(down))))
+	} else if image.degrees == 90 || image.degrees == 270 {
+		image.ScaleByWidthAndHeight(down, across)
 	} else {
-		image.ScaleByWidthAndHeight((page.GetWidth()-image.x)/image.w, (page.GetHeight()-image.y)/image.h)
+		image.ScaleByWidthAndHeight(across, down)
 	}
 }
 

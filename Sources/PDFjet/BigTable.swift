@@ -599,6 +599,12 @@ public class BigTable {
     // fields of a column that was cut are drawn with the end of their text
     // replaced by " ...".
     private func setVertLines() {
+        if let count = percents?.count, count != self.widths.count {
+            // The columns were set again after the percentages: fewer stopped the program, and
+        // more were drawn past the page (review of 12 October 2026, C4)
+            percents = nil
+            pdf.fail("The table has \(self.widths.count) columns, and \(count) percentages: give one for each column.")
+        }
         if percents != nil {
             setVertLinesInPercent()
             return
@@ -640,17 +646,26 @@ public class BigTable {
     // field.
     private func setVertLinesInPercent() {
         let percents = self.percents!
-        let tableWidth = pageSize.getWidth() - 2 * self.x
-        var total: Float = 0.0
+        var tableWidth = pageSize.getWidth() - 2 * self.x
+        if !(tableWidth > 0) {
+            // The columns were as wide as less than nothing (review of 12 October
+        // 2026, T5)
+            pdf.fail("The margin of the table, its x, is half the width of the page or more: the columns have no room.")
+            tableWidth = 0
+        }
+        // The shares are added up and taken in double, the largest float a
+        // share as any other: tableWidth*percent was an infinity, and the
+        // document failed (review of 12 October 2026, T5)
+        var total = 0.0
         for percent in percents {
-            total += percent
+            total += Double(percent)
         }
         self.clipped = nil
         var vertLineX = self.x
         vertLines[0] = vertLineX
         for i in 0..<percents.count {
             // Percentages that are all 0 share the width equally.
-            let width = (total > 0) ? tableWidth * percents[i] / total : tableWidth / Float(percents.count)
+            let width = (total > 0) ? Float(Double(tableWidth) * Double(percents[i]) / total) : tableWidth / Float(percents.count)
             let text = max(0, width - 2 * padding)
             if self.widths[i] > text {
                 if self.clipped == nil {
@@ -686,6 +701,11 @@ public class BigTable {
         end = max(0, end - ELLIPSIS.unicodeScalars.count)
         while end > 0 && font.stringWidth(BigTable.string(characters[0..<end]) + ELLIPSIS) > width {
             end -= 1
+        }
+        if font.stringWidth(ELLIPSIS) > width {
+            // A column too narrow for the mark draws nothing: the mark was drawn
+        // over the next column (review of 12 October 2026, T5)
+            return ""
         }
         return BigTable.string(characters[0..<end]) + ELLIPSIS
     }

@@ -429,7 +429,10 @@ public class TextColumn : IDrawable {
                 if (i > 0 && textLine.text.StartsWith(Single.space, StringComparison.Ordinal)) {
                     x1 += dx;
                 }
-                textLine.SetLocation(x1, y1 + textLine.GetVerticalOffset());
+                // The line is at y1: drawing it adds its vertical offset,
+                // which was added here too, so a superscript rose twice as far
+                // (review of 12 October 2026, F6)
+                textLine.SetLocation(x1, y1);
                 textLine.DrawOn(page);
                 x1 += textLine.GetWidth();
                 if (textLine.text.EndsWith(Single.space, StringComparison.Ordinal)) {
@@ -453,7 +456,7 @@ public class TextColumn : IDrawable {
 
         // Each token draws its own link annotation when the line has a URI or GoTo action.
         foreach (TextLine textLine in list) {
-            textLine.SetLocation(x1, y1 + textLine.GetVerticalOffset());
+            textLine.SetLocation(x1, y1);
             textLine.DrawOn(page);
             x1 += textLine.GetWidth();
         }

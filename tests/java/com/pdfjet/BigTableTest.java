@@ -7,6 +7,7 @@
 package com.pdfjet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -546,5 +547,54 @@ class BigTableTest {
                 .setNumberOfColumns(3).setTableData(HEADER, rows()));
         assertTrue(plain.size() < pages.size(),
                 pages.size() + " pages from a y of 500 on the first page, and " + plain.size() + " from the top");
+    }
+
+    // A table of three columns, which fill gives a field wider than its
+    // column in the first and the third, and a fourth field in each row.
+    private static BigTable edgeTable(PDF pdf) throws Exception {
+        Font font = new Font(pdf, CoreFont.HELVETICA);
+        BigTable table = new BigTable(pdf, font, font, Letter.PORTRAIT);
+        table.setNumberOfColumns(3);
+        table.setLocation(36f, 20f);
+        table.setFooter(null, null);
+        return table;
+    }
+
+    private static BigTable fill(BigTable table) {
+        String wide = "A field far wider than a fifth of the width of the table";
+        List<String[]> rows = new ArrayList<String[]>();
+        rows.add(new String[] {wide, "b", wide, "d"});
+        return table.setTableData(new String[] {"A", "B", "C", "D"}, rows);
+    }
+
+    // The edge cases of setColumnWidthsInPercent: the columns set again after
+    // the percentages, fewer threw an ArrayIndexOutOfBoundsException (review
+    // of 12 October 2026, C4); a column too narrow for " ..." drew it over the
+    // next column; the largest float as a share made the widths infinite; a
+    // margin of half the page or more made widths of less than nothing (T5).
+    @Test
+    void theEdgeCasesOfColumnWidthsInPercent() throws Exception {
+        for (int columns : new int[] {2, 4}) {
+            final BigTable table = edgeTable(TestSupport.newPDF());
+            table.setColumnWidthsInPercent(20f, 30f, 50f);
+            table.setNumberOfColumns(columns);
+            Exception e = assertThrows(IllegalArgumentException.class, () -> fill(table).complete());
+            assertEquals("The table has " + columns + " columns, and 3 percentages: give one for each column.",
+                    e.getMessage());
+        }
+        BigTable narrow = edgeTable(TestSupport.newPDF());
+        narrow.setColumnWidthsInPercent(1f, 98f, 1f);
+        fill(narrow).complete();
+        for (String text : drawnText(narrow.getPages().get(0))) {
+            assertFalse(text.equals(" ..."), "a column too narrow for it draws " + text);
+        }
+        BigTable huge = edgeTable(TestSupport.newPDF());
+        huge.setColumnWidthsInPercent(Float.MAX_VALUE, 1f, 1f);
+        fill(huge).complete();
+        assertTrue(TestSupport.content(huge.getPages().get(0)).contains("576 "));
+        final BigTable margin = fill(edgeTable(TestSupport.newPDF()));
+        margin.setColumnWidthsInPercent(20f, 30f, 50f);
+        Exception e = assertThrows(IllegalArgumentException.class, () -> margin.setLocation(400f, 20f));
+        assertEquals("The margin of the table, its x, is half the width of the page or more: the columns have no room.", e.getMessage());
     }
 }

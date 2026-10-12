@@ -258,4 +258,3 @@ func (g *gpos) uint16At(offset int) int {
 func (g *gpos) int16At(offset int) int {
 	return int(int16(g.uint16At(offset)))
 }
-

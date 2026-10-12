@@ -19,6 +19,7 @@ public class Destination {
     internal float xPosition;
     /// <summary>The y coordinate on the page.</summary>
     internal float yPosition;
+    internal bool bookmark;     // Of a bookmark, which names it
 
     /// <summary>
     /// This constructor is used to create destination objects.

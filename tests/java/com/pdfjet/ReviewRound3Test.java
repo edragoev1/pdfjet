@@ -341,4 +341,108 @@ class ReviewRound3Test {
             assertEquals(pixels[i], new Image(TestSupport.newPDF(), obj).getWidth(), widths[i]);
         }
     }
+
+    /**
+     * An image turned a quarter of the way is as wide as it was tall: it gave
+     * its corner unturned, and in a table cell ran over the rows after it (F3).
+     */
+    @Test
+    void anImageTurnedAQuarterHasItsDrawnSize() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Image image = new Image(pdf, TestSupport.open("PngSuite/BASN2C08.PNG"));   // 32 by 32
+        image.scaleBy(0.75f, 0.375f);                                               // 24 by 12
+        image.setLocation(50f, 50f);
+        for (int degrees : new int[] {90, 270}) {
+            image.setRotation(degrees);
+            TestSupport.assertXY(62f, 74f, image.drawOn(null));
+            assertEquals(12f, image.getWidth(), 0.01f);
+            assertEquals(24f, image.getHeight(), 0.01f);
+            TestSupport.assertXY(62f, 74f, image.drawOn(new Page(pdf, Letter.PORTRAIT)));
+        }
+        image.setRotation(0);
+        TestSupport.assertXY(74f, 62f, image.drawOn(null));
+        // Turned, the image fits the page as it is drawn
+        image.setRotation(90);
+        image.resizeToFit(new Page(pdf, Letter.PORTRAIT), false);
+        TestSupport.assertXY(612f, 792f, image.drawOn(null));
+    }
+
+    /**
+     * A text line in a text column is raised by its vertical offset once: the
+     * column added it, and drawing the line added it again, so a superscript
+     * raised 13 points rose 26 (F6).
+     */
+    @Test
+    void aTextColumnRaisesASuperscriptOnce() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Paragraph paragraph = new Paragraph()
+                .add(new TextLine(font, "Base")).add(new TextLine(font, "sup").setVerticalOffset(-13f));
+        TextColumn column = new TextColumn();
+        column.setLocation(50f, 100f);
+        column.setWidth(400f);
+        column.addParagraph(paragraph);
+        column.drawOn(page);
+        String content = TestSupport.content(page);
+        assertEquals(13f, TestSupport.positionOf(content, "sup")[1] - TestSupport.positionOf(content, "Base")[1], 0.01f);
+    }
+
+    /**
+     * A destination the document names keeps its name, and a bookmark whose
+     * name it is, dest#1, is named again: a link to the document's dest#1
+     * went to the bookmark (F7).
+     */
+    @Test
+    void aDestinationNameOfTheDocumentComesFirst() throws Exception {
+        java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+        PDF pdf = new PDF(out);
+        Font font = TestSupport.helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        page.addDestination("dest#1", 500f);
+        new TextLine(font, "go").setGoToAction("dest#1").setLocation(50f, 50f).drawOn(page);
+        Bookmark bookmark = new Bookmark(pdf).addBookmark(page, new Title(font, "A", 10f, 100f));
+        pdf.complete();
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("/Dest \\[\\d+ 0 R /XYZ 0 ([\\d.]+) 0\\]")
+                .matcher(TestSupport.latin1(out.toByteArray()));
+        List<String> ys = new ArrayList<String>();
+        while (m.find()) {
+            ys.add(m.group(1));
+        }
+        assertTrue(ys.size() == 2 && ys.get(0).equals("292") && !ys.get(1).equals("292"), ys.toString());
+        assertFalse(bookmark.getDestinationName().equals("dest#1"));
+    }
+
+    /**
+     * A bookmark on a page that is not added fails the document: it went to
+     * /Dest [0 0 R], and readers refused the document (F8).
+     */
+    @Test
+    void aBookmarkOnAPageNotAddedFailsTheDocument() throws Exception {
+        final PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        new Page(pdf, Letter.PORTRAIT);
+        Page detached = new Page(pdf, Letter.PORTRAIT, Page.DETACHED);
+        new Bookmark(pdf).addBookmark(detached, new Title(font, "Lost", 10f, 100f));
+        Exception e = assertThrows(IllegalStateException.class, () -> pdf.complete());
+        assertEquals("The bookmark Lost is on a page that is not added to the PDF.", e.getMessage());
+    }
+
+    /**
+     * An empty dash pattern of an arc is refused, with a stroke color and
+     * without, in every port: Go took it for none with a stroke color (S3, C7).
+     */
+    @Test
+    void anArcRefusesAnEmptyDashPattern() throws Exception {
+        for (boolean colored : new boolean[] {false, true}) {
+            final Page page = new Page(TestSupport.newPDF(), Letter.PORTRAIT);
+            final Arc arc = new Arc().setRadius(50f).setSweep(90f).setStrokeDashPattern("");
+            arc.setLocation(100f, 100f);
+            if (colored) {
+                arc.setStrokeColor(Color.red);
+            }
+            Exception e = assertThrows(IllegalArgumentException.class, () -> arc.drawOn(page));
+            assertEquals("The dash pattern \"\" is not an array of non-negative numbers, not all zero, followed by a phase, such as \"[3 3] 0\".", e.getMessage());
+        }
+    }
 }

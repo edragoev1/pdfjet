@@ -11,6 +11,7 @@ type Destination struct {
 	xPosition     float32
 	yPosition     float32
 	pageObjNumber int
+	bookmark      bool // Of a bookmark, which names it
 }
 
 // newDestination creates a destination on a page for Page.AddDestination.

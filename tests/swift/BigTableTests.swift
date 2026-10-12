@@ -465,4 +465,51 @@ import Testing
         #expect(plain.count < pages.count,
                 "\(pages.count) pages from a y of 500 on the first page, and \(plain.count) from the top")
     }
+
+    // A table of three columns, which fill gives a field wider than its
+    // column in the first and the third, and a fourth field in each row.
+    private func edgeTable(_ pdf: PDF) throws -> BigTable {
+        let font = try Font(pdf, CoreFont.HELVETICA)
+        let table = BigTable(pdf, font, font, Letter.PORTRAIT)
+        table.setNumberOfColumns(3)
+        table.setLocation(36, 20)
+        table.setFooter(nil, nil)
+        return table
+    }
+
+    @discardableResult
+    private func fill(_ table: BigTable) -> BigTable {
+        let wide = "A field far wider than a fifth of the width of the table"
+        return table.setTableData(["A", "B", "C", "D"], [[wide, "b", wide, "d"]])
+    }
+
+    // The edge cases of setColumnWidthsInPercent: the columns set again after
+    // the percentages, fewer stopped the program (review of 12 October 2026,
+    // C4); a column too narrow for " ..." drew it over the next column; the
+    // largest float as a share made the widths infinite; a margin of half the
+    // page or more made widths of less than nothing (T5).
+    @Test func theEdgeCasesOfColumnWidthsInPercent() throws {
+        for columns in [2, 4] {
+            let pdf = TestSupport.newPDF()
+            let table = try edgeTable(pdf)
+            table.setColumnWidthsInPercent(20, 30, 50)
+            table.setNumberOfColumns(columns)
+            fill(table)
+            _ = try? table.complete()
+            #expect(pdf.error == "The table has \(columns) columns, and 3 percentages: give one for each column.")
+        }
+        let narrow = try edgeTable(TestSupport.newPDF())
+        narrow.setColumnWidthsInPercent(1, 98, 1)
+        try fill(narrow).complete()
+        #expect(!drawnText(narrow.getPages()[0]).contains(" ..."))
+        let huge = try edgeTable(TestSupport.newPDF())
+        huge.setColumnWidthsInPercent(.greatestFiniteMagnitude, 1, 1)
+        try fill(huge).complete()
+        #expect(TestSupport.latin1(huge.getPages()[0].getContent()).contains("576 "))
+        let pdf = TestSupport.newPDF()
+        let margin = try fill(edgeTable(pdf))
+        margin.setColumnWidthsInPercent(20, 30, 50)
+        margin.setLocation(400, 20)
+        #expect(pdf.error == "The margin of the table, its x, is half the width of the page or more: the columns have no room.")
+    }
 }

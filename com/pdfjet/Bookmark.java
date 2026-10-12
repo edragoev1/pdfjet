@@ -83,6 +83,7 @@ public class Bookmark {
                 WHITESPACE.matcher(title.textLine.text).replaceAll(" "));
         bookmark2.parent = this;
         bookmark2.dest = page.addDestination(key, title.textLine.destinationY());
+        bookmark2.dest.bookmark = true;
         if (children == null) {
             children = new ArrayList<Bookmark>();
         } else {
@@ -99,7 +100,8 @@ public class Bookmark {
      * @return the name of the destination.
      */
     public String getDestinationName() {
-        return this.key;
+        // Named again when it was taken, see PDF.setDestinationObjNumbers
+        return (dest != null) ? dest.name : this.key;
     }
 
     /**

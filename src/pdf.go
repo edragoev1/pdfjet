@@ -1177,13 +1177,36 @@ func (pdf *PDF) addPageBox(boxName string, page *Page, rect []float32) {
 }
 
 // setDestinationObjNumbers gives every destination the object number of the
-// page it is on, which the page was given when it was added.
+// page it is on, which the page was given when it was added. The names the
+// document gives its destinations come first, and a bookmark's, dest#1 and
+// on, that one of them has is named again: the link to dest#1 the document
+// made went to the bookmark (review of 12 October 2026, F7).
 func (pdf *PDF) setDestinationObjNumbers() {
+	var bookmarks []*Destination
 	for _, page := range pdf.pages {
 		for _, destination := range page.destinations {
 			destination.pageObjNumber = page.objNumber
-			pdf.destinations[destination.name] = destination
+			if destination.bookmark {
+				bookmarks = append(bookmarks, destination)
+			} else {
+				pdf.destinations[destination.name] = destination
+			}
 		}
+	}
+	taken := make(map[string]bool, len(bookmarks))
+	for _, destination := range bookmarks {
+		taken[destination.name] = true
+	}
+	next := len(bookmarks)
+	for _, destination := range bookmarks {
+		for pdf.destinations[destination.name] != nil {
+			next++
+			if name := "dest#" + strconv.Itoa(next); !taken[name] {
+				destination.name = name
+				taken[name] = true
+			}
+		}
+		pdf.destinations[destination.name] = destination
 	}
 }
 
@@ -3459,6 +3482,11 @@ func (pdf *PDF) addOutlineItem(outlines int, bm1 *Bookmark) {
 		pdf.appendString("/Count ")
 		pdf.appendInteger(count)
 		pdf.appendString("\n")
+	}
+	if bm1.getDestination().pageObjNumber == 0 {
+		// The page was not added: /Dest [0 0 R] went nowhere, and readers
+		// refused the document (review of 12 October 2026, F8)
+		pdf.fail("The bookmark " + bm1.GetTitle() + " is on a page that is not added to the PDF.")
 	}
 	pdf.appendString("/Dest [")
 	pdf.appendInteger(bm1.getDestination().pageObjNumber)

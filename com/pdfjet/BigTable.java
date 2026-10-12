@@ -719,6 +719,14 @@ public class BigTable {
     // fields of a column that was cut are drawn with the end of their text
     // replaced by " ...".
     private void setVertLines() {
+        if (percents != null && percents.length != this.widths.length) {
+            // The columns were set again after the percentages: fewer threw, and
+        // more were drawn past the page (review of 12 October 2026, C4)
+            int count = percents.length;
+            percents = null;
+            pdf.fail(new IllegalArgumentException("The table has " + this.widths.length + " columns, and "
+                    + count + " percentages: give one for each column."));
+        }
         if (percents != null) {
             setVertLinesInPercent();
             return;
@@ -758,7 +766,15 @@ public class BigTable {
     // field.
     private void setVertLinesInPercent() {
         float tableWidth = pageSize.getWidth() - 2*this.x;
-        float total = 0f;
+        if (!(tableWidth > 0f)) {
+            // The columns were as wide as less than nothing (review of 12 October
+        // 2026, T5)
+            pdf.fail(new IllegalArgumentException("The margin of the table, its x, is half the width of the page or more: the columns have no room."));
+        }
+        // The shares are added up and taken in double, the largest float a
+        // share as any other: tableWidth*percent was an infinity, and the
+        // document failed (review of 12 October 2026, T5)
+        double total = 0.0;
         for (float percent : percents) {
             total += percent;
         }
@@ -767,7 +783,7 @@ public class BigTable {
         this.vertLines[0] = vertLineX;
         for (int i = 0; i < percents.length; i++) {
             // Percentages that are all 0 share the width equally.
-            float width = (total > 0f) ? tableWidth*percents[i] / total : tableWidth / percents.length;
+            float width = (total > 0.0) ? (float) ((double) tableWidth * percents[i] / total) : tableWidth / percents.length;
             float text = Math.max(0f, width - 2*this.padding);
             if (this.widths[i] > text) {
                 if (this.clipped == null) {
@@ -814,6 +830,11 @@ public class BigTable {
         end = Math.max(0, end - ELLIPSIS.length());
         while (end > 0 && font.stringWidth(text.substring(0, offsets[end]) + ELLIPSIS) > width) {
             end--;
+        }
+        if (font.stringWidth(ELLIPSIS) > width) {
+            // A column too narrow for the mark draws nothing: the mark was drawn
+        // over the next column (review of 12 October 2026, T5)
+            return "";
         }
         return text.substring(0, offsets[end]) + ELLIPSIS;
     }

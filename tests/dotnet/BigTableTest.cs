@@ -483,5 +483,53 @@ public sealed class BigTableTest : IDisposable {
                 .SetNumberOfColumns(3).SetTableData(Header, Rows()));
         Assert.True(plain.Count < pages.Count, pages.Count + " pages from a y of 500 on the first page, and " + plain.Count + " from the top");
     }
+
+    // A table of three columns, which Fill gives a field wider than its
+    // column in the first and the third, and a fourth field in each row.
+    private static BigTable EdgeTable(PDF pdf) {
+        Font font = new Font(pdf, CoreFont.HELVETICA);
+        BigTable table = new BigTable(pdf, font, font, Letter.PORTRAIT);
+        table.SetNumberOfColumns(3);
+        table.SetLocation(36f, 20f);
+        table.SetFooter(null, null);
+        return table;
+    }
+
+    private static BigTable Fill(BigTable table) {
+        string wide = "A field far wider than a fifth of the width of the table";
+        List<string[]> rows = new List<string[]>();
+        rows.Add(new string[] {wide, "b", wide, "d"});
+        return table.SetTableData(new string[] {"A", "B", "C", "D"}, rows);
+    }
+
+    [Fact]
+    public void TheEdgeCasesOfColumnWidthsInPercent() {
+        // The edge cases of SetColumnWidthsInPercent: the columns set again
+        // after the percentages, fewer threw an IndexOutOfRangeException
+        // (review of 12 October 2026, C4); a column too narrow for " ..." drew
+        // it over the next column; the largest float as a share made the
+        // widths infinite; a margin of half the page or more made widths of
+        // less than nothing (T5).
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
+        foreach (int columns in new int[] {2, 4}) {
+            BigTable table = EdgeTable(TestSupport.NewPDF());
+            table.SetColumnWidthsInPercent(20f, 30f, 50f);
+            table.SetNumberOfColumns(columns);
+            Exception e = Assert.Throws<ArgumentException>(() => Fill(table).Complete());
+            Assert.Equal("The table has " + columns + " columns, and 3 percentages: give one for each column.", e.Message);
+        }
+        BigTable narrow = EdgeTable(TestSupport.NewPDF());
+        narrow.SetColumnWidthsInPercent(1f, 98f, 1f);
+        Fill(narrow).Complete();
+        Assert.DoesNotContain(" ...", DrawnText(narrow.GetPages()[0]));
+        BigTable huge = EdgeTable(TestSupport.NewPDF());
+        huge.SetColumnWidthsInPercent(float.MaxValue, 1f, 1f);
+        Fill(huge).Complete();
+        Assert.Contains("576 ", TestSupport.Content(huge.GetPages()[0]));
+        BigTable margin = Fill(EdgeTable(TestSupport.NewPDF()));
+        margin.SetColumnWidthsInPercent(20f, 30f, 50f);
+        Exception refused = Assert.Throws<ArgumentException>(() => margin.SetLocation(400f, 20f));
+        Assert.Equal("The margin of the table, its x, is half the width of the page or more: the columns have no room.", refused.Message);
+    }
 }
 }

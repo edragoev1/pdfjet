@@ -14,6 +14,7 @@ public class Destination {
     int pageObjNumber;
     float xPosition;
     float yPosition;
+    boolean bookmark;   // Of a bookmark, which names it
 
     /**
      * This constructor is used to create destination objects.

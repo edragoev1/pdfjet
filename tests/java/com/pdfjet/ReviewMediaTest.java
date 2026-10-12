@@ -569,13 +569,9 @@ class ReviewMediaTest {
             for (int i = 0; i < 4; i++) {
                 rect[i] = Double.parseDouble(match.group(i + 1));
             }
+            // The size as it is drawn, turned or not (review of 12 October 2026, F3)
             double w = image.getWidth();
             double h = image.getHeight();
-            if (degrees == 90 || degrees == 270) {
-                double t = w;
-                w = h;
-                h = t;
-            }
             assertEquals(10.0, rect[0], 0.0, degrees + ": /Rect " + Arrays.toString(rect));
             assertEquals(792.0 - 20.0, rect[3], 0.0, degrees + ": /Rect " + Arrays.toString(rect));
             assertEquals(w, rect[2] - rect[0], 0.01, degrees + ": /Rect " + Arrays.toString(rect));

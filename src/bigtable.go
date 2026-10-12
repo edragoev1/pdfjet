@@ -662,6 +662,13 @@ const bigTableEllipsis = " ..."
 // keeps the widths it asked for as far as the page allows, and the fields of a
 // column that was cut are drawn with the end of their text replaced by " ...".
 func (bt *BigTable) setVertLines() {
+	if bt.percents != nil && len(bt.percents) != len(bt.widths) {
+		// The columns were set again after the percentages: fewer panicked,
+		// and more were drawn past the page (review of 12 October 2026, C4)
+		bt.pdf.fail("The table has " + strconv.Itoa(len(bt.widths)) + " columns, and " +
+			strconv.Itoa(len(bt.percents)) + " percentages: give one for each column.")
+		bt.percents = nil
+	}
 	if bt.percents != nil {
 		bt.setVertLinesInPercent()
 		return
@@ -709,9 +716,19 @@ func (bt *BigTable) setVertLines() {
 // its widest field.
 func (bt *BigTable) setVertLinesInPercent() {
 	tableWidth := bt.pageSize.GetWidth() - float32(2*bt.x)
-	var total float32
+	if !(tableWidth > 0) {
+		// The columns were as wide as less than nothing (review of
+		// 12 October 2026, T5)
+		bt.pdf.fail("The margin of the table, its x, is half the width of the page or more: " +
+			"the columns have no room.")
+		tableWidth = 0
+	}
+	// The shares are added up and taken in float64, the largest float32 a
+	// share as any other: tableWidth*percent was an infinity, and Complete
+	// failed (review of 12 October 2026, T5)
+	var total float64
 	for _, percent := range bt.percents {
-		total += percent
+		total += float64(percent)
 	}
 	bt.clipped = nil
 	vertLineX := bt.x
@@ -720,7 +737,7 @@ func (bt *BigTable) setVertLinesInPercent() {
 		// Percentages that are all 0 share the width equally.
 		width := tableWidth / float32(len(bt.percents))
 		if total > 0 {
-			width = float32(tableWidth*percent) / total
+			width = float32(float64(tableWidth) * float64(percent) / total)
 		}
 		if text := max(0, width-float32(2*bt.padding)); bt.widths[i] > text {
 			if bt.clipped == nil {
@@ -759,6 +776,11 @@ func bigTableFit(text string, font *Font, width float32) string {
 	}
 	for end > 0 && font.StringWidth(font.size, string(runes[:end])+bigTableEllipsis) > width {
 		end--
+	}
+	if font.StringWidth(font.size, bigTableEllipsis) > width {
+		// A column too narrow for the mark draws nothing: the mark was drawn
+		// over the next column (review of 12 October 2026, T5)
+		return ""
 	}
 	return string(runes[:end]) + bigTableEllipsis
 }

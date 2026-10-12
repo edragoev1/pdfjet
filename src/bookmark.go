@@ -65,6 +65,7 @@ func (bookmark *Bookmark) AddBookmark(page *Page, title *Title) *Bookmark {
 		bookmarkWhitespace.ReplaceAllString(title.textLine.text, " "))
 	bookmark2.parent = bookmark
 	bookmark2.dest = page.AddDestination(key, title.textLine.destinationY())
+	bookmark2.dest.bookmark = true
 	if bookmark.children == nil {
 		bookmark.children = make([]*Bookmark, 0)
 	} else {
@@ -77,6 +78,9 @@ func (bookmark *Bookmark) AddBookmark(page *Page, title *Title) *Bookmark {
 
 // GetDestinationName returns the name of the destination of this bookmark.
 func (bookmark *Bookmark) GetDestinationName() string {
+	if bookmark.dest != nil {
+		return bookmark.dest.name // Named again when it was taken, see setDestinationObjNumbers
+	}
 	return bookmark.key
 }
 

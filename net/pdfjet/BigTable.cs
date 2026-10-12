@@ -580,6 +580,15 @@ namespace PDFjet.NET {
         // far as the page allows, and the fields of a column that was cut are
         // drawn with the end of their text replaced by " ...".
         private void SetVertLines() {
+            if (percents != null && percents.Length != this.widths.Length) {
+                // The columns were set again after the percentages: fewer threw, and
+            // more were drawn past the page (review of 12 October 2026, C4)
+                int count = percents.Length;
+                percents = null;
+                pdf.Fail(new ArgumentException("The table has " + this.widths.Length.ToString(CultureInfo.InvariantCulture)
+                        + " columns, and " + count.ToString(CultureInfo.InvariantCulture)
+                        + " percentages: give one for each column."));
+            }
             if (percents != null) {
                 SetVertLinesInPercent();
                 return;
@@ -619,7 +628,15 @@ namespace PDFjet.NET {
         // its widest field.
         private void SetVertLinesInPercent() {
             float tableWidth = pageSize.GetWidth() - 2 * this.x;
-            float total = 0f;
+            if (!(tableWidth > 0f)) {
+                // The columns were as wide as less than nothing (review of 12 October
+                // 2026, T5)
+                pdf.Fail(new ArgumentException("The margin of the table, its x, is half the width of the page or more: the columns have no room."));
+            }
+            // The shares are added up and taken in double, the largest float a
+            // share as any other: tableWidth*percent was an infinity, and the
+            // document failed (review of 12 October 2026, T5)
+            double total = 0.0;
             foreach (float percent in percents) {
                 total += percent;
             }
@@ -628,7 +645,7 @@ namespace PDFjet.NET {
             this.vertLines[0] = vertLineX;
             for (int i = 0; i < percents.Length; i++) {
                 // Percentages that are all 0 share the width equally.
-                float width = (total > 0f) ? tableWidth * percents[i] / total : tableWidth / percents.Length;
+                float width = (total > 0.0) ? (float) ((double) tableWidth * percents[i] / total) : tableWidth / percents.Length;
                 float text = Math.Max(0f, width - 2 * this.padding);
                 if (this.widths[i] > text) {
                     if (this.clipped == null) {
@@ -673,6 +690,11 @@ namespace PDFjet.NET {
             end = Math.Max(0, end - ELLIPSIS.Length);
             while (end > 0 && font.StringWidth(text.Substring(0, starts[end]) + ELLIPSIS) > width) {
                 end--;
+            }
+            if (font.StringWidth(ELLIPSIS) > width) {
+                // A column too narrow for the mark draws nothing: the mark was drawn
+                // over the next column (review of 12 October 2026, T5)
+                return "";
             }
             return text.Substring(0, starts[end]) + ELLIPSIS;
         }

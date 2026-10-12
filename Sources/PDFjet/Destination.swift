@@ -13,6 +13,7 @@ public class Destination {
     var pageObjNumber = 0
     var xPosition: Float = 0.0
     var yPosition: Float = 0.0
+    var bookmark = false    // Of a bookmark, which names it
 
     ///
     /// This initializer is used to create destination objects.

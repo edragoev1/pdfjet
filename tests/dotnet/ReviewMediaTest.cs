@@ -576,11 +576,9 @@ public class ReviewMediaTest {
             for (int i = 0; i < 4; i++) {
                 rect[i] = double.Parse(match.Groups[i + 1].Value, CultureInfo.InvariantCulture);
             }
+            // The size as it is drawn, turned or not (review of 12 October 2026, F3)
             double w = image.GetWidth();
             double h = image.GetHeight();
-            if (degrees == 90 || degrees == 270) {
-                (w, h) = (h, w);
-            }
             Assert.Equal(10.0, rect[0]);
             Assert.Equal(792.0 - 20.0, rect[3]);
             Assert.True(Math.Abs(rect[2] - rect[0] - w) <= 0.01, degrees + ": /Rect " + String.Join(" ", rect));

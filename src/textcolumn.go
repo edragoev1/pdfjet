@@ -392,7 +392,10 @@ func (textColumn *TextColumn) drawLineOfText(page *Page, textLines []*TextLine, 
 			if i > 0 && strings.HasPrefix(textLine.text, single.Space) {
 				textColumn.x1 += dx
 			}
-			textLine.SetLocation(textColumn.x1, textColumn.y1+textLine.GetVerticalOffset())
+			// The line is at y1: drawing it adds its vertical offset, which
+			// was added here too, so a superscript rose twice as far (review
+			// of 12 October 2026, F6)
+			textLine.SetLocation(textColumn.x1, textColumn.y1)
 			textLine.DrawOn(page)
 			textColumn.x1 += textLine.GetWidth()
 			if strings.HasSuffix(textLine.text, single.Space) {
@@ -416,7 +419,7 @@ func (textColumn *TextColumn) drawNonJustifiedLine(page *Page, textLines []*Text
 
 	// Each token draws its own link annotation when the line has a URI or GoTo action.
 	for _, textLine := range textLines {
-		textLine.SetLocation(textColumn.x1, textColumn.y1+textLine.GetVerticalOffset())
+		textLine.SetLocation(textColumn.x1, textColumn.y1)
 		textLine.DrawOn(page)
 		textColumn.x1 += textLine.GetWidth()
 	}

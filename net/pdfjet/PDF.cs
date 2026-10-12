@@ -1224,12 +1224,37 @@ public sealed class PDF {
 
     // Gives every destination the object number of the page it is on, which
     // the page was given when it was added.
+    // Gives every destination the object number of the page it is on, which
+    // the page was given when it was added. The names the document gives its
+    // destinations come first, and a bookmark's, dest#1 and on, that one of
+    // them has is named again: the link to dest#1 the document made went to
+    // the bookmark (review of 12 October 2026, F7).
     private void SetDestinationObjNumbers() {
+        List<Destination> bookmarks = new List<Destination>();
         foreach (Page page in pages) {
             foreach (Destination destination in page.destinations) {
                 destination.pageObjNumber = page.objNumber;
-                destinations[destination.name] = destination;
+                if (destination.bookmark) {
+                    bookmarks.Add(destination);
+                } else {
+                    destinations[destination.name] = destination;
+                }
             }
+        }
+        HashSet<String> taken = new HashSet<String>();
+        foreach (Destination destination in bookmarks) {
+            taken.Add(destination.name);
+        }
+        int next = bookmarks.Count;
+        foreach (Destination destination in bookmarks) {
+            while (destinations.ContainsKey(destination.name)) {
+                next++;
+                String name = "dest#" + next;
+                if (taken.Add(name)) {
+                    destination.name = name;
+                }
+            }
+            destinations[destination.name] = destination;
         }
     }
 
@@ -3482,6 +3507,12 @@ public sealed class PDF {
             Append("/Count ");
             Append(count);
             Append("\n");
+        }
+        if (bm1.GetDestination().pageObjNumber == 0) {
+            // The page was not added: /Dest [0 0 R] went nowhere, and readers
+        // refused the document (review of 12 October 2026, F8)
+            Fail(new InvalidOperationException(
+                    "The bookmark " + bm1.GetTitle() + " is on a page that is not added to the PDF."));
         }
         Append("/Dest [");
         Append(bm1.GetDestination().pageObjNumber);

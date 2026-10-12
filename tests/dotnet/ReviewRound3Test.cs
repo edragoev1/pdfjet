@@ -291,5 +291,98 @@ public class ReviewRound3Test {
             Assert.Equal(pixels[i], new Image(TestSupport.NewPDF(), obj).GetWidth());
         }
     }
+
+    // An image turned a quarter of the way is as wide as it was tall: it gave
+    // its corner unturned, and in a table cell ran over the rows after it (F3).
+    [Fact]
+    public void AnImageTurnedAQuarterHasItsDrawnSize() {
+        PDF pdf = TestSupport.NewPDF();
+        Image image = new Image(pdf, TestSupport.Open("PngSuite/BASN2C08.PNG"));   // 32 by 32
+        image.ScaleBy(0.75f, 0.375f);                                               // 24 by 12
+        image.SetLocation(50f, 50f);
+        foreach (int degrees in new int[] {90, 270}) {
+            image.SetRotation(degrees);
+            TestSupport.AssertXY(62f, 74f, image.DrawOn(null));
+            TestSupport.AssertNear(12f, image.GetWidth(), 0.01f);
+            TestSupport.AssertNear(24f, image.GetHeight(), 0.01f);
+            TestSupport.AssertXY(62f, 74f, image.DrawOn(new Page(pdf, Letter.PORTRAIT)));
+        }
+        image.SetRotation(0);
+        TestSupport.AssertXY(74f, 62f, image.DrawOn(null));
+        // Turned, the image fits the page as it is drawn
+        image.SetRotation(90);
+        image.ResizeToFit(new Page(pdf, Letter.PORTRAIT), false);
+        TestSupport.AssertXY(612f, 792f, image.DrawOn(null));
+    }
+
+    // A text line in a text column is raised by its vertical offset once: the
+    // column added it, and drawing the line added it again, so a superscript
+    // raised 13 points rose 26 (F6).
+    [Fact]
+    public void ATextColumnRaisesASuperscriptOnce() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Paragraph paragraph = new Paragraph()
+                .Add(new TextLine(font, "Base")).Add(new TextLine(font, "sup").SetVerticalOffset(-13f));
+        TextColumn column = new TextColumn();
+        column.SetLocation(50f, 100f);
+        column.SetWidth(400f);
+        column.AddParagraph(paragraph);
+        column.DrawOn(page);
+        string content = TestSupport.Content(page);
+        TestSupport.AssertNear(13f, TestSupport.PositionOf(content, "sup")[1] - TestSupport.PositionOf(content, "Base")[1], 0.01f);
+    }
+
+    // A destination the document names keeps its name, and a bookmark whose
+    // name it is, dest#1, is named again: a link to the document's dest#1 went
+    // to the bookmark (F7).
+    [Fact]
+    public void ADestinationNameOfTheDocumentComesFirst() {
+        MemoryStream output = new MemoryStream();
+        PDF pdf = new PDF(output);
+        Font font = TestSupport.Helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        page.AddDestination("dest#1", 500f);
+        new TextLine(font, "go").SetGoToAction("dest#1").SetLocation(50f, 50f).DrawOn(page);
+        Bookmark bookmark = new Bookmark(pdf).AddBookmark(page, new Title(font, "A", 10f, 100f));
+        pdf.Complete();
+        var ys = new List<string>();
+        foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex.Matches(
+                TestSupport.Latin1(output.ToArray()), @"/Dest \[\d+ 0 R /XYZ 0 ([\d.]+) 0\]")) {
+            ys.Add(m.Groups[1].Value);
+        }
+        Assert.True(ys.Count == 2 && ys[0] == "292" && ys[1] != "292", string.Join(" ", ys));
+        Assert.NotEqual("dest#1", bookmark.GetDestinationName());
+    }
+
+    // A bookmark on a page that is not added fails the document: it went to
+    // /Dest [0 0 R], and readers refused the document (F8).
+    [Fact]
+    public void ABookmarkOnAPageNotAddedFailsTheDocument() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        new Page(pdf, Letter.PORTRAIT);
+        Page detached = new Page(pdf, Letter.PORTRAIT, Page.DETACHED);
+        new Bookmark(pdf).AddBookmark(detached, new Title(font, "Lost", 10f, 100f));
+        Exception e = Assert.Throws<InvalidOperationException>(() => pdf.Complete());
+        Assert.Equal("The bookmark Lost is on a page that is not added to the PDF.", e.Message);
+    }
+
+    // An empty dash pattern of an arc is refused, with a stroke color and
+    // without, in every port: Go took it for none with a stroke color (S3, C7).
+    [Fact]
+    public void AnArcRefusesAnEmptyDashPattern() {
+        foreach (bool colored in new bool[] {false, true}) {
+            Page page = new Page(TestSupport.NewPDF(), Letter.PORTRAIT);
+            Arc arc = new Arc().SetRadius(50f).SetSweep(90f).SetStrokeDashPattern("");
+            arc.SetLocation(100f, 100f);
+            if (colored) {
+                arc.SetStrokeColor(Color.red);
+            }
+            Exception e = Assert.Throws<ArgumentException>(() => arc.DrawOn(page));
+            Assert.Equal("The dash pattern \"\" is not an array of non-negative numbers, not all zero, followed by a phase, such as \"[3 3] 0\".", e.Message);
+        }
+    }
 }
 }

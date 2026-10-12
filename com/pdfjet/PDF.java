@@ -1270,12 +1270,37 @@ final public class PDF {
 
     // Gives every destination the object number of the page it is on, which
     // the page was given when it was added.
+    // Gives every destination the object number of the page it is on, which
+    // the page was given when it was added. The names the document gives its
+    // destinations come first, and a bookmark's, dest#1 and on, that one of
+    // them has is named again: the link to dest#1 the document made went to
+    // the bookmark (review of 12 October 2026, F7).
     private void setDestinationObjNumbers() {
+        List<Destination> bookmarks = new ArrayList<Destination>();
         for (Page page : pages) {
             for (Destination destination : page.destinations) {
                 destination.pageObjNumber = page.objNumber;
-                destinations.put(destination.name, destination);
+                if (destination.bookmark) {
+                    bookmarks.add(destination);
+                } else {
+                    destinations.put(destination.name, destination);
+                }
             }
+        }
+        Set<String> taken = new HashSet<String>();
+        for (Destination destination : bookmarks) {
+            taken.add(destination.name);
+        }
+        int next = bookmarks.size();
+        for (Destination destination : bookmarks) {
+            while (destinations.get(destination.name) != null) {
+                next++;
+                String name = "dest#" + next;
+                if (taken.add(name)) {
+                    destination.name = name;
+                }
+            }
+            destinations.put(destination.name, destination);
         }
     }
 
@@ -3651,6 +3676,12 @@ final public class PDF {
             append("/Count ");
             append(count);
             append("\n");
+        }
+        if (bm1.getDestination().pageObjNumber == 0) {
+            // The page was not added: /Dest [0 0 R] went nowhere, and readers
+        // refused the document (review of 12 October 2026, F8)
+            fail(new IllegalStateException(
+                    "The bookmark " + bm1.getTitle() + " is on a page that is not added to the PDF."));
         }
         append("/Dest [");
         append(bm1.getDestination().pageObjNumber);

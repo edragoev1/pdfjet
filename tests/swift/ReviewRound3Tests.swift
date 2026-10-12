@@ -219,4 +219,93 @@ import Testing
         #expect(elapsed < .seconds(2), "\(elapsed)")
         #expect(pdf.importedFonts.count == 4 * fonts)
     }
+
+    /// An image turned a quarter of the way is as wide as it was tall: it gave
+    /// its corner unturned, and in a table cell ran over the rows after it (F3).
+    @Test func anImageTurnedAQuarterHasItsDrawnSize() throws {
+        let pdf = TestSupport.newPDF()
+        let image = try Image(pdf, TestSupport.open("PngSuite/BASN2C08.PNG"))   // 32 by 32
+        _ = image.scaleBy(0.75, 0.375)                                           // 24 by 12
+        _ = image.setLocation(50, 50)
+        for degrees in [90, 270] {
+            _ = try image.setRotation(degrees)
+            TestSupport.expectXY(62, 74, image.drawOn(nil))
+            TestSupport.expectNear(12, image.getWidth())
+            TestSupport.expectNear(24, image.getHeight())
+            TestSupport.expectXY(62, 74, image.drawOn(Page(pdf, Letter.PORTRAIT)))
+        }
+        _ = try image.setRotation(0)
+        TestSupport.expectXY(74, 62, image.drawOn(nil))
+        // Turned, the image fits the page as it is drawn
+        _ = try image.setRotation(90)
+        image.resizeToFit(Page(pdf, Letter.PORTRAIT), keepAspectRatio: false)
+        TestSupport.expectXY(612, 792, image.drawOn(nil))
+    }
+
+    /// A text line in a text column is raised by its vertical offset once:
+    /// the column added it, and drawing the line added it again, so a
+    /// superscript raised 13 points rose 26 (F6).
+    @Test func aTextColumnRaisesASuperscriptOnce() throws {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let page = Page(pdf, Letter.PORTRAIT)
+        let paragraph = Paragraph()
+            .add(TextLine(font, "Base")).add(TextLine(font, "sup").setVerticalOffset(-13))
+        let column = TextColumn()
+        _ = column.setLocation(50, 100)
+        _ = column.setWidth(400)
+        _ = column.addParagraph(paragraph)
+        _ = column.drawOn(page)
+        let content = TestSupport.content(page)
+        let rise = TestSupport.positionOf(content, "sup")[1] - TestSupport.positionOf(content, "Base")[1]
+        TestSupport.expectNear(13, rise)
+    }
+
+    /// A destination the document names keeps its name, and a bookmark whose
+    /// name it is, dest#1, is named again: a link to the document's dest#1
+    /// went to the bookmark (F7).
+    @Test func aDestinationNameOfTheDocumentComesFirst() throws {
+        let memory = MemoryPDF()
+        let font = TestSupport.helvetica(memory.pdf)
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        _ = page.addDestination("dest#1", 500)
+        TextLine(font, "go").setGoToAction("dest#1").setLocation(50, 50).drawOn(page)
+        let bookmark = Bookmark(memory.pdf).addBookmark(page, Title(font, "A", 10, 100))
+        try memory.pdf.complete()
+        let raw = TestSupport.latin1(memory.bytes)
+        let regex = try NSRegularExpression(pattern: "/Dest \\[\\d+ 0 R /XYZ 0 ([\\d.]+) 0\\]")
+        let ys = regex.matches(in: raw, range: NSRange(raw.startIndex..., in: raw)).map {
+            String(raw[Range($0.range(at: 1), in: raw)!])
+        }
+        #expect(ys.count == 2 && ys[0] == "292" && ys[1] != "292", "\(ys)")
+        #expect(bookmark.getDestinationName() != "dest#1")
+    }
+
+    /// A bookmark on a page that is not added fails the document: it went to
+    /// /Dest [0 0 R], and readers refused the document (F8).
+    @Test func aBookmarkOnAPageNotAddedFailsTheDocument() throws {
+        let memory = MemoryPDF()
+        let font = TestSupport.helvetica(memory.pdf)
+        _ = Page(memory.pdf, Letter.PORTRAIT)
+        let detached = Page(memory.pdf, Letter.PORTRAIT, false)
+        _ = Bookmark(memory.pdf).addBookmark(detached, Title(font, "Lost", 10, 100))
+        let error = #expect(throws: PDFjetError.self) { try memory.pdf.complete() }
+        #expect(error?.message == "The bookmark Lost is on a page that is not added to the PDF.")
+    }
+
+    /// An empty dash pattern of an arc is refused, with a stroke color and
+    /// without, in every port: Go took it for none with a stroke color (S3, C7).
+    @Test func anArcRefusesAnEmptyDashPattern() {
+        for colored in [false, true] {
+            let pdf = TestSupport.newPDF()
+            let page = Page(pdf, Letter.PORTRAIT)
+            let arc = Arc().setRadius(50).setSweep(90).setStrokeDashPattern("")
+            _ = arc.setLocation(100, 100)
+            if colored {
+                _ = arc.setStrokeColor(Color.red)
+            }
+            _ = arc.drawOn(page)
+            #expect(pdf.error == "The dash pattern \"\" is not an array of non-negative numbers, not all zero, followed by a phase, such as \"[3 3] 0\".")
+        }
+    }
 }

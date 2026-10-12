@@ -462,7 +462,10 @@ public class TextColumn implements Drawable {
                 if (i > 0 && textLine.text.startsWith(Single.space)) {
                     x1 += dx;
                 }
-                textLine.setLocation(x1, y1 + textLine.getVerticalOffset());
+                // The line is at y1: drawing it adds its vertical offset,
+                // which was added here too, so a superscript rose twice as far
+                // (review of 12 October 2026, F6)
+                textLine.setLocation(x1, y1);
                 textLine.drawOn(page);
                 x1 += textLine.getWidth();
                 if (textLine.text.endsWith(Single.space)) {
@@ -486,7 +489,7 @@ public class TextColumn implements Drawable {
 
         // Each token draws its own link annotation when the line has a URI or GoTo action.
         for (TextLine textLine : list) {
-            textLine.setLocation(x1, y1 + textLine.getVerticalOffset());
+            textLine.setLocation(x1, y1);
             textLine.drawOn(page);
             x1 += textLine.getWidth();
         }

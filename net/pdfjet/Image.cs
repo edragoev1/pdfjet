@@ -387,14 +387,18 @@ public class Image : IDrawable {
     /// <param name="page">the page to draw on.</param>
     /// <returns>x and y coordinates of the bottom right corner of this component.</returns>
     public float[] DrawOn(Page page) {
+        // The corner of the image as it is drawn, turned or not: an image
+        // turned a quarter of the way gave its corner unturned, and in a table
+        // cell ran over the rows after it (review of 12 October 2026, F3)
+        float[] corner = new float[] {x + GetWidth(), y + GetHeight()};
         if (page == null) {
-            return new float[] {x + w, y + h};  // Measured, not drawn
+            return corner;  // Measured, not drawn
         }
         if (pdf != null && page.pdf != pdf) {
             page.pdf.Fail(new ArgumentException("The image belongs to another PDF."));
         }
         if (w == 0f || h == 0f) {
-            return new float[] {x + w, y + h};  // A zero size image paints nothing.
+            return corner;  // A zero size image paints nothing.
         }
         // A linked image is a Figure in the Link its annotation joins
         StructElement link = null;
@@ -507,25 +511,27 @@ public class Image : IDrawable {
             page.AddAnnotation(linkAnnotation);
         }
 
-        return new float[] {x + w, y + h};
+        return corner;
     }
 
     /// <summary>
-    /// Returns the width of this image when drawn on the page.
+    /// Returns the width of this image when drawn on the page, its height
+    /// before it is turned when it is turned a quarter of the way.
     /// The scaling is take into account.
     /// </summary>
     /// <returns>w - the width of this image.</returns>
     public float GetWidth() {
-        return this.w;
+        return (degrees == 90 || degrees == 270) ? this.h : this.w;
     }
 
     /// <summary>
-    /// Returns the height of this image when drawn on the page.
+    /// Returns the height of this image when drawn on the page, its width
+    /// before it is turned when it is turned a quarter of the way.
     /// The scaling is take into account.
     /// </summary>
     /// <returns>h - the height of this image.</returns>
     public float GetHeight() {
-        return this.h;
+        return (degrees == 90 || degrees == 270) ? this.w : this.h;
     }
 
     /// <summary>
@@ -534,10 +540,15 @@ public class Image : IDrawable {
     /// <param name="page">the PDF page</param>
     /// <param name="keepAspectRatio">flag</param>
     public void ResizeToFit(Page page, bool keepAspectRatio) {
+        // The page fits the image as it is drawn, turned or not
+        float across = (page.width - x) / GetWidth();
+        float down = (page.height - y) / GetHeight();
         if (keepAspectRatio) {
-            this.ScaleBy(Math.Min((page.width - x)/w, (page.height - y)/h));
+            this.ScaleBy(Math.Min(across, down));
+        } else if (degrees == 90 || degrees == 270) {
+            this.ScaleBy(down, across);
         } else {
-            this.ScaleBy((page.width - x)/w, (page.height - y)/h);
+            this.ScaleBy(across, down);
         }
     }
 

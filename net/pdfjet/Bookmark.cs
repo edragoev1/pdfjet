@@ -57,6 +57,7 @@ public class Bookmark {
                 key, Regex.Replace(title.textLine.text, @"\s+"," "));
         bookmark.parent = this;
         bookmark.dest = page.AddDestination(key, title.textLine.DestinationY());
+        bookmark.dest.bookmark = true;
         if (children == null) {
             children = new List<Bookmark>();
         } else {
@@ -101,7 +102,8 @@ public class Bookmark {
 
     /// <summary>Returns the name of the destination of this bookmark.</summary>
     public String GetDestinationName() {
-        return this.key;
+        // Named again when it was taken, see PDF.SetDestinationObjNumbers
+        return (dest != null) ? dest.name : this.key;
     }
 
     /// <summary>Returns the title of this bookmark.</summary>

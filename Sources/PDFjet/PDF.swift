@@ -1205,12 +1205,34 @@ public final class PDF {
 
     // Gives every destination the object number of the page it is on, which
     // the page was given when it was added.
+    // Gives every destination the object number of the page it is on, which
+    // the page was given when it was added. The names the document gives its
+    // destinations come first, and a bookmark's, dest#1 and on, that one of
+    // them has is named again: the link to dest#1 the document made went to
+    // the bookmark (review of 12 October 2026, F7).
     private func setDestinationObjNumbers() {
+        var bookmarks = [Destination]()
         for page in pages {
             for destination in page.destinations {
                 destination.pageObjNumber = page.objNumber
-                destinations[destination.name!] = destination
+                if destination.bookmark {
+                    bookmarks.append(destination)
+                } else {
+                    destinations[destination.name!] = destination
+                }
             }
+        }
+        var taken = Set(bookmarks.map { $0.name! })
+        var next = bookmarks.count
+        for destination in bookmarks {
+            while destinations[destination.name!] != nil {
+                next += 1
+                let name = "dest#\(next)"
+                if taken.insert(name).inserted {
+                    destination.name = name
+                }
+            }
+            destinations[destination.name!] = destination
         }
     }
 
@@ -3097,6 +3119,11 @@ public final class PDF {
             append("/Count ")
             append(count)
             append("\n")
+        }
+        if bm1.getDestination()!.pageObjNumber == 0 {
+            // The page was not added: /Dest [0 0 R] went nowhere, and readers
+        // refused the document (review of 12 October 2026, F8)
+            fail("The bookmark \(bm1.getTitle() ?? "") is on a page that is not added to the PDF.")
         }
         append("/Dest [")
         append(bm1.getDestination()!.pageObjNumber)

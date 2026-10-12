@@ -233,6 +233,27 @@ This is the first entry in this file; earlier releases were not tracked here.
 - Go: an offset of 0x80000000 or more of a GPOS extension lookup is read
   unsigned on 32 bits too, as in Java and C#: it was negative there, into
   the table, and the marks were moved by the wrong subtable.
+- An Image turned 90 or 270 degrees is as wide as it was tall, in the four
+  ports: DrawOn returned its corner unturned, and GetWidth and GetHeight
+  its size unturned, so in a table cell it ran over the rows after it;
+  ResizeToFit fits it as it is drawn.
+- A text line in a TextColumn is raised or lowered by its vertical offset
+  once, in the four ports: a superscript rose twice as far as on its own,
+  and its link with it.
+- A destination the document names keeps its name, in the four ports: a
+  bookmark's, dest#1 and on, took it, and the document's link to it went
+  to the bookmark. The bookmark's destination is named again.
+- A bookmark on a page that is not added to the PDF fails the document, in
+  the four ports: it went to /Dest [0 0 R], which readers refused.
+- Go: an empty dash pattern of an Arc with a stroke color is refused, as
+  without one, as the other shapes and the other ports refuse it; it was
+  taken for none.
+- BigTable.setColumnWidthsInPercent, in the four ports: columns set again
+  after the percentages, fewer or more of them, are refused, where fewer
+  stopped the program and more were drawn past the page; a column too
+  narrow for " ..." draws nothing, where it drew the mark over the next
+  column; the largest float as a share is a share, where it failed the
+  document; and a margin of half the page or more is refused.
 
 ## v9.0.5 — 2026-10-12, internal
 

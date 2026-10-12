@@ -480,7 +480,9 @@ public sealed class ReviewLayoutTest : IDisposable {
         PDF pdf = TestSupport.NewPDF();
         Font font = TestSupport.Helvetica(pdf);
         string text = Repeat("a\U0001F600", 40);
-        for (float width = 10f; width < 200f; width += 3f) {
+        // From 14, the width of " ...": a column too narrow for it draws
+        // nothing (review of 12 October 2026, T5)
+        for (float width = 14f; width < 200f; width += 3f) {
             string fit = BigTable.Fit(text, font, width);
             Assert.EndsWith(" ...", fit);
             string kept = fit.Substring(0, fit.Length - 4);

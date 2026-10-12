@@ -419,14 +419,18 @@ final public class Image implements Drawable {
      * @throws Exception If an input or output exception occurred
      */
     public float[] drawOn(Page page) throws Exception {
+        // The corner of the image as it is drawn, turned or not: an image
+        // turned a quarter of the way gave its corner unturned, and in a table
+        // cell ran over the rows after it (review of 12 October 2026, F3)
+        float[] corner = new float[] {x + getWidth(), y + getHeight()};
         if (page == null) {
-            return new float[] {x + w, y + h};  // Measured, not drawn
+            return corner;  // Measured, not drawn
         }
         if (pdf != null && page.pdf != pdf) {
             page.pdf.fail(new IllegalArgumentException("The image belongs to another PDF."));
         }
         if (w == 0f || h == 0f) {
-            return new float[] {x + w, y + h};  // A zero size image paints nothing.
+            return corner;  // A zero size image paints nothing.
         }
         // A linked image is a Figure in the Link its annotation joins.
         StructElement link = null;
@@ -538,27 +542,29 @@ final public class Image implements Drawable {
             page.addAnnotation(linkAnnotation);
         }
 
-        return new float[] {x + w, y + h};
+        return corner;
     }
 
     /**
-     * Returns the width of this image when drawn on the page.
+     * Returns the width of this image when drawn on the page, its height before
+     * it is turned when it is turned a quarter of the way.
      * The scaling is take into account.
      *
      * @return w - the width of this image.
      */
     public float getWidth() {
-        return this.w;
+        return (degrees == 90 || degrees == 270) ? this.h : this.w;
     }
 
     /**
-     * Returns the height of this image when drawn on the page.
+     * Returns the height of this image when drawn on the page, its width before
+     * it is turned when it is turned a quarter of the way.
      * The scaling is take into account.
      *
      * @return h - the height of this image.
      */
     public float getHeight() {
-        return this.h;
+        return (degrees == 90 || degrees == 270) ? this.w : this.h;
     }
 
     private void addSoftMask(
@@ -838,10 +844,15 @@ final public class Image implements Drawable {
      * @param keepAspectRatio flag
      */
     public void resizeToFit(Page page, boolean keepAspectRatio) {
+        // The page fits the image as it is drawn, turned or not
+        float across = (page.width - x) / getWidth();
+        float down = (page.height - y) / getHeight();
         if (keepAspectRatio) {
-            this.scaleBy(Math.min((page.width - x)/w, (page.height - y)/h));
+            this.scaleBy(Math.min(across, down));
+        } else if (degrees == 90 || degrees == 270) {
+            this.scaleBy(down, across);
         } else {
-            this.scaleBy((page.width - x)/w, (page.height - y)/h);
+            this.scaleBy(across, down);
         }
     }
 
