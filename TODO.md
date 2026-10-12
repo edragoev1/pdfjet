@@ -85,33 +85,20 @@ commit and date. The layout's format version (1) and the look's rules
 
 - **v9.0.7: fonts and writing, faster and leaner, in the four ports.** The
   output byte for byte the same: every example and test PDF of the four
-  ports written before and after, and compared. Measured on 10 October with
-  a one-page document of 30 lines:
-  - The reverse map of the ToUnicode CMap, from a glyph to its character,
-    filled once when the cmap is read, in the same pass as `unicodeToGID`,
-    one `int32` a glyph (maxp's count, about 1,500 for IBM Plex Sans), with
-    the same choice of the usual character for a glyph that serves several
-    (`isSeldomText`). Writing the CMap then reads it for the glyphs the
-    subset kept, a few dozen, where it builds a 65,536-entry array and walks
-    the 65,536 characters twice for every font of every document: in Go 29%
-    of the time of a page in three Plex fonts, with its compression, and 12%
-    of what it allocates; in Java 24% of a page in Plex.
-  - The character-to-glyph table, `unicodeToGID`, as a table of two levels:
-    256 blocks of 256 characters, a block made only where the font has a
-    character, so a lookup is still two reads of an array,
-    `blocks[c >> 8][c & 0xFF]`. Today it is 65,536 entries of `int` for
-    every font of every document: 512 KB in Go and Swift, 256 KB in Java
-    and C#, allocated and filled with zeros each time, where IBM Plex Sans
-    has about 1,000 characters in a few blocks, 10 to 20 KB. Measured in Go
-    on 10 October: a parsed Plex font holds 845 KB, 512 KB of it this
-    table. With the reverse map above, as both are how a character finds
-    its glyph and back.
+  ports written before and after, and compared. Done in 9.0.5 (the owner,
+  12 October 2026): the ToUnicode map's character of each glyph found once
+  when the font is read, the character-to-glyph table in two levels, and
+  the glyphs drawn a set of bits; a page in three Plex fonts 25% faster in
+  Go and 12 to 20% in the others, with half the memory or less, the 56
+  examples of each port byte for byte the same. Left:
   - Java first, then the other ports as they need it: the GPOS mark tables
     (mark to base, mark to mark) read when a mark is first drawn, where
     every font load reads every anchor pair into a map: 83% of the 7 ms of a
     page in Noto Sans, and half of what a page in Plex allocates.
   - `Font.checksumOf` (19% of a page in Plex, in Java) and the format 4 cmap
-    (17%), looked at once the above is done.
+    (17%), looked at once the above is done. The checksum still folds the
+    65,536 glyphs, as the subset's tag is made of it: a faster one changes
+    the tags, and so the bytes of every PDF.
   - Not to be done (the owner, 10 October 2026): a lower compression level
     for the font programs, which makes the files larger and changes their
     bytes; a Deflater for each thread in Java; a pool of FlateEncode's

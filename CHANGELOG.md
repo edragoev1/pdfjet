@@ -7,25 +7,6 @@ languages.
 
 This is the first entry in this file; earlier releases were not tracked here.
 
-## v9.0.7 — unreleased
-
-### Changed
-- The glyphs drawn with a font are a set of bits, in the four ports: 128
-  bytes for IBM Plex Sans, sized by the font's glyphs, where an array of a
-  boolean for each of the 65,536 glyph numbers was 64 KB for every font of
-  every document. It grows for a glyph past the font's count, so it keeps
-  what the array kept; the subsetters read it as an array of the font's
-  glyphs. A page in three fonts allocates 0.2 MB less, with the same PDF.
-- The characters of a font and their glyphs, in the four ports: the
-  character-to-glyph table is two levels, 256 blocks of 256 characters made
-  only where the font has a character, some kilobytes for IBM Plex Sans
-  where an array of 65,536 glyphs was 256 or 512 KB for every font of every
-  document; and the character of each glyph, which the ToUnicode map
-  writes, is found once when the font is read, where writing the map walked
-  the 65,536 characters twice. A page in three Plex fonts takes a quarter
-  less time in Go, 3.0 ms where it took 4.0, and allocates 4.2 MB where it
-  allocated 7.6, with the same PDF, byte for byte.
-
 ## v9.0.5 — unreleased
 
 ### Added
@@ -189,6 +170,26 @@ This is the first entry in this file; earlier releases were not tracked here.
   PDF whose password was taken as it was still opens with it. The tables
   are written from RFC 3454 and Unicode 3.2 by util/gen-saslprep.py, with
   no library added.
+- The glyphs drawn with a font are a set of bits, in the four ports: 128
+  bytes for IBM Plex Sans, sized by the font's glyphs, where an array of a
+  boolean for each of the 65,536 glyph numbers was 64 KB for every font of
+  every document. It grows for a glyph past the font's count, so it keeps
+  what the array kept; the subsetters read it as an array of the font's
+  glyphs. A page in three fonts allocates 0.2 MB less, with the same PDF.
+- The characters of a font and their glyphs, in the four ports: the
+  character-to-glyph table is two levels, 256 blocks of 256 characters made
+  only where the font has a character, some kilobytes for IBM Plex Sans
+  where an array of 65,536 glyphs was 256 or 512 KB for every font of every
+  document; and the character of each glyph, which the ToUnicode map
+  writes, is found once when the font is read, where writing the map walked
+  the 65,536 characters twice. A page in three Plex fonts takes a quarter
+  less time in Go, 3.0 ms where it took 4.0, and allocates 4.2 MB where it
+  allocated 7.6, with the same PDF, byte for byte.
+- Swift: a page no longer keeps its PDF alive, as the page and its PDF held
+  each other and no document was freed. A page whose PDF the caller dropped
+  stops with "The PDF of this page was freed: keep the PDF while drawing on
+  its pages."; Go, Java and C#, which collect the two together, are as they
+  were.
 
 ### Removed
 - **The `.stream` font format, in the four ports**, as no client uses it: the
@@ -453,6 +454,12 @@ This is the first entry in this file; earlier releases were not tracked here.
   and an ideographic space of the JP and SC fonts as an em space. A
   document that draws two characters of one glyph gives the first drawn for
   both.
+- Swift: a document is freed once the caller drops it, after complete() or
+  without it, with its pages, fonts, images, stamps, layers, bookmarks and
+  links: a page and its PDF, a stamp, an optional content group and their
+  PDF, a bookmark and its parent and the one before it, and a link and its
+  structure element held each other. 500 one-page documents took 170 MB,
+  and now take 28, as 20 do.
 
 ## v9.0.3 — 2026-10-08
 
