@@ -157,8 +157,8 @@ commit and date. The layout's format version (1) and the look's rules
   Its numbers are kept in the items below. Each fix in the four ports, with
   a test.
 - **For 9.0.7: the reader's limits (review #37, #38).** #29 to #31 were
-  fixed in 9.0.5, #32, #34 and #35 on the branch fixes-9.0.7. #34 on the branch
-  too. A BMP row allocated from the header's width before it is read
+  fixed in 9.0.5, #32, #34 and #35 on the branch fixes-9.0.7. A BMP row
+  allocated from the header's width before it is read
   (#37); a PNG's chunks not checked for order, which gives an invalid /Mask
   (#38). The fuzzers given inputs large enough to reach the limit, and a
   time per page.
