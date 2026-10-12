@@ -410,34 +410,69 @@ public class Stamp : Drawable {
     }
 
     private func drawText(_ font: Font, _ str: String) {
-        for scalar in str.unicodeScalars {
-            let codePoint = Int(scalar.value)
-            if codePoint == 0xFEFF { continue } // Skip BOM
-            // What Page leaves out, it leaves out too: the marks of direction,
-            // a joiner the font has no glyph for, and what Unicode does not
-            // draw; each was drawn as a box, wider than stringWidth measured
-            // the text (review of 11 October 2026, #10)
-            if codePoint == 0x200E || codePoint == 0x200F || Font.isIgnorable(codePoint) ||
-                    ((codePoint == 0x200C || codePoint == 0x200D) && font.unicodeToGID[codePoint] == 0) {
-                continue
-            }
-
+        let codePoints = str.unicodeScalars.map { Int($0.value) }
+        for (i, codePoint) in codePoints.enumerated() where !Stamp.notDrawn(font, codePoint) {
             // The glyphs Page draws. The .notdef glyph of a character the font
             // does not have is drawn in a marked content span with the
-            // character as its actual text, as on a page.
+            // character as its actual text, as on a page, and so is a glyph
+            // the ToUnicode map gives another character, and one with a joiner
+            // after it that the font has no glyph for, whose actual text has
+            // the joiner too: it was left out (review of 12 October 2026, R34).
             let gid = Page.glyphOf(font, codePoint)
             font.useGlyph(gid)
             font.useChar(codePoint, gid)
-            if font.lacks(codePoint) {
+            let joiner = Stamp.joinerAfter(font, codePoints, i + 1)
+            if font.lacks(codePoint) || font.drawnAsAnother(codePoint) || joiner != 0 {
+                var text = Page.textOf(font, codePoint)
+                if joiner != 0 {
+                    text.unicodeScalars.append(Unicode.Scalar(UInt32(joiner))!)
+                }
                 append("> Tj\n/Span <</ActualText <")
-                append(Page.toUTF16Hex(Page.textOf(font, codePoint)))
+                append(Page.toUTF16Hex(text))
                 append(">>> BDC\n<")
                 appendCodePointAsHex(gid)
-                append("> Tj\nEMC\n<")
+                append("> Tj\n")
+                if joiner != 0 {
+                    // A space that takes no room stands in for the joiner, as
+                    // on a page, see Page.appendGlyphWithActualText.
+                    let space = font.unicodeToGID[0x0020]
+                    font.useGlyph(space)
+                    append("[<")
+                    appendCodePointAsHex(space)
+                    append("> ")
+                    append(1000.0 * Float(font.glyphAdvance(space)) / Float(font.unitsPerEm))
+                    append("] TJ\n")
+                }
+                append("EMC\n<")
             } else {
                 appendCodePointAsHex(gid)
             }
         }
+    }
+
+    // Returns true for what Page leaves out, which a stamp leaves out too: the
+    // byte order mark, the marks of direction, a joiner the font has no glyph
+    // for, and what Unicode does not draw; each was drawn as a box, wider than
+    // stringWidth measured the text (review of 11 October 2026, #10).
+    private static func notDrawn(_ font: Font, _ c: Int) -> Bool {
+        return c == 0xFEFF || c == 0x200E || c == 0x200F || Font.isIgnorable(c) ||
+                ((c == 0x200C || c == 0x200D) && font.unicodeToGID[c] == 0)
+    }
+
+    // Returns the zero width non-joiner or joiner the font has no glyph for
+    // that goes with the glyph before the index, the last of them before the
+    // next character drawn, as on a page, or 0 if there is none.
+    private static func joinerAfter(_ font: Font, _ codePoints: [Int], _ start: Int) -> Int {
+        var joiner = 0
+        for c in codePoints[start...] {
+            if !notDrawn(font, c) {
+                break
+            }
+            if c == 0x200C || c == 0x200D {
+                joiner = c
+            }
+        }
+        return joiner
     }
 
     private func append(_ point: Point) {

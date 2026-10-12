@@ -410,8 +410,8 @@ public class Font {
     // map gives the glyph the character the document drew, where the font
     // draws several characters with one glyph: it gave the glyph the lowest of
     // them, and a Persian ۱ was copied as an Arabic ١ (review of 11 October
-    // 2026, #8). The first character drawn with the glyph is kept; a document
-    // that draws two characters of one glyph extracts the first for both.
+    // 2026, #8). The first character drawn with the glyph is kept; the others
+    // drawn with it are given their own as actual text, see DrawnAsAnother.
     internal void UseChar(int c, int gid) {
         if (program == null || gid <= 0 || unicodeToGID.Get(c) != gid) {
             return;
@@ -422,6 +422,18 @@ public class Font {
         if (!program.chars.ContainsKey(gid)) {
             program.chars[gid] = c;
         }
+    }
+
+    // Returns true if the glyph of the character is drawn for another
+    // character too, which the ToUnicode map gives the glyph: the character is
+    // then drawn in a span with itself as its actual text. A document that drew
+    // "١٢٣" and then "۱۲۳" copied the second as "١۲٣" (review of 12 October
+    // 2026, R15).
+    internal bool DrawnAsAnother(int c) {
+        if (program == null || program.chars == null) {
+            return false;
+        }
+        return program.chars.TryGetValue(unicodeToGID.Get(c), out int first) && first != c;
     }
 
     /// <summary>Returns the width of the string at the current font size.</summary>
@@ -438,16 +450,19 @@ public class Font {
         }
 
         if (isCJK) {
-            // Every glyph of a CJK font is as wide as the font size.
+            // Every glyph of a CJK font is as wide as the font size, and the
+            // characters not drawn take no width.
             int count = 0;
             for (int i = 0; i < str.Length; i += (Util.CodePointAt(str, i) > 0xFFFF) ? 2 : 1) {
-                count++;
+                if (!IsNotDrawn(Util.CodePointAt(str, i))) {
+                    count++;
+                }
             }
             return count * fontSize;
         }
 
         if (isCoreFont) {
-            str = WithoutSoftHyphens(str);
+            str = WithoutIgnorables(str);
             for (int i = 0; i < str.Length; ) {
                 int cp = Util.CodePointAt(str, i);
                 i += (cp > 0xFFFF) ? 2 : 1;
@@ -634,12 +649,19 @@ public class Font {
         }
         float w = width * unitsPerEm / size;
         if (isCJK) {
-            // Every glyph of a CJK font is as wide as the font size.
+            // Every glyph of a CJK font is as wide as the font size, and the
+            // characters not drawn take no width.
             int fit = Math.Max(0, (int) (width / size));
             int k = 0;
-            while (k < str.Length && fit > 0) {
-                k += (Util.CodePointAt(str, k) > 0xFFFF) ? 2 : 1;
-                fit--;
+            while (k < str.Length) {
+                int codePoint = Util.CodePointAt(str, k);
+                if (!IsNotDrawn(codePoint)) {
+                    if (fit == 0) {
+                        break;
+                    }
+                    fit--;
+                }
+                k += (codePoint > 0xFFFF) ? 2 : 1;
             }
             return k;
         }
@@ -665,8 +687,8 @@ public class Font {
         while (i < str.Length) {
             int cp = Util.CodePointAt(str, i);
             int next = i + ((cp > 0xFFFF) ? 2 : 1);
-            if (cp == 0x00AD && !symbolic) {
-                i = next; // A soft hyphen is not drawn, see WithoutSoftHyphens
+            if (NotDrawn(cp)) {
+                i = next;
                 continue;
             }
             int c1 = CoreFontCode(cp);
@@ -674,8 +696,13 @@ public class Font {
             if (w < 0) {
                 return i;
             }
-            if (kernPairs && next < str.Length) {
-                w -= Kerning(c1, CoreFontCode(Util.CodePointAt(str, next)));
+            // The kerning is with the next character drawn, as StringWidth's is.
+            int after = next;
+            while (after < str.Length && NotDrawn(Util.CodePointAt(str, after))) {
+                after += (Util.CodePointAt(str, after) > 0xFFFF) ? 2 : 1;
+            }
+            if (kernPairs && after < str.Length) {
+                w -= Kerning(c1, CoreFontCode(Util.CodePointAt(str, after)));
                 if (w < 0) {
                     return i;
                 }
@@ -687,16 +714,48 @@ public class Font {
         return i;
     }
 
-    // Returns the characters without their soft hyphens, which a core font of
-    // WinAnsi does not draw or measure, as no font does: WinAnsi has a hyphen
-    // at the soft hyphen's code, and a line broken at a soft hyphen ends with
-    // a hyphen of its own (review of 11 October 2026, #21). Symbol and
-    // ZapfDingbats keep theirs, their codes being their characters.
-    internal String WithoutSoftHyphens(String str) {
-        if (symbolic || str.IndexOf('\u00AD') == -1) {
+    // Returns the text without the characters a core font of WinAnsi does not
+    // draw or measure, as no font does: the soft hyphen, as WinAnsi has a
+    // hyphen at its code, and a line broken at a soft hyphen ends with a hyphen
+    // of its own (review of 11 October 2026, #21), and the other characters not
+    // drawn, the marks of direction, the joiners, the byte order mark and those
+    // IsIgnorable returns true for, which were drawn as spaces (review of 12
+    // October 2026, R14). Symbol and ZapfDingbats keep theirs, their codes
+    // being their characters.
+    internal String WithoutIgnorables(String str) {
+        if (symbolic) {
             return str;
         }
-        return str.Replace("\u00AD", "");
+        System.Text.StringBuilder sb = null;
+        int i = 0;
+        while (i < str.Length) {
+            int cp = Util.CodePointAt(str, i);
+            int next = i + ((cp > 0xFFFF) ? 2 : 1);
+            if (NotDrawn(cp)) {
+                if (sb == null) {
+                    sb = new System.Text.StringBuilder(str, 0, i, str.Length);
+                }
+            } else if (sb != null) {
+                sb.Append(str, i, next - i);
+            }
+            i = next;
+        }
+        return (sb == null) ? str : sb.ToString();
+    }
+
+    // Returns true for a character that a core font of WinAnsi does not draw
+    // or measure, see WithoutIgnorables.
+    private bool NotDrawn(int cp) {
+        return !symbolic && IsNotDrawn(cp);
+    }
+
+    // Returns true for a character a font that is not embedded, a core font of
+    // WinAnsi or a CJK font, does not draw or measure: the marks of direction,
+    // the joiners, the byte order mark and those IsIgnorable returns true for, the
+    // soft hyphen among them. A CJK font drew each 1 em wide (review of 12
+    // October 2026, R20).
+    internal static bool IsNotDrawn(int cp) {
+        return IsIgnorable(cp) || IsJoinerOrRLM(cp) || cp == 0xFEFF;
     }
 
     /// <summary>

@@ -282,5 +282,10 @@ import Testing
         }
         let pdf = TestSupport.newPDF()
         _ = try Font(pdf, InputStream(data: Data(with(ttf, os2 + 8, 0x0006))))
+        // Bit 0 is reserved, and bit 9 allows the bitmaps alone (R13).
+        for fsType in [0x0003, 0x0200, 0x0204] {
+            let message = error(with(ttf, os2 + 8, fsType))
+            #expect(message.contains("may not be embedded"), "\(fsType): \(message)")
+        }
     }
 }

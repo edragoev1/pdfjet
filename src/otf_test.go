@@ -332,4 +332,13 @@ func TestOTFAFontWhoseLicenseForbidsEmbeddingIsRefused(t *testing.T) {
 	}); panicked {
 		t.Errorf("a font that allows Preview and Print: %s", message)
 	}
+	// Bit 0 is reserved, and bit 9 allows the bitmaps alone (R13).
+	for _, fsType := range []int{0x0003, 0x0200, 0x0204} {
+		message, panicked := testPanic(func() {
+			NewFont(testNewPDF(), bytes.NewReader(testOpenTypeWith(ttf, os2+8, fsType)))
+		})
+		if !panicked || !strings.Contains(message, "may not be embedded") {
+			t.Errorf("fsType %#04x: %v: %q", fsType, panicked, message)
+		}
+	}
 }

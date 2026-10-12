@@ -195,6 +195,32 @@ import Testing
         #expect(a == b, "the marks draw something:\n\(b)\n\(a)")
     }
 
+    // A core font does not draw or measure them either, nor the marks of
+    // direction, the joiners and the byte order mark: they were spaces, so that
+    // "©️ 2026" had two (review of 12 October 2026, R14). getFitChars kerns with
+    // the next character drawn, not with a soft hyphen, as stringWidth does (R19).
+    @Test func aCoreFontDrawsNoIgnorableCharacter() throws {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        font.setSize(12)
+        let plain = "ab \u{00A9} 2026 word"
+        let marked = "a\u{FE0F}b \u{00A9}\u{FE0F} 2026\u{200B} wo\u{2060}r\u{200D}d\u{200E}\u{200C}\u{200F}\u{FEFF}\u{E0041}"
+        #expect(font.stringWidth(12, plain) == font.stringWidth(12, marked),
+                "the text is \(font.stringWidth(12, marked)) wide with the marks, \(font.stringWidth(12, plain)) without")
+        func draw(_ text: String) -> String {
+            let page = Page(pdf, Letter.PORTRAIT)
+            TextLine(font, text).setLocation(10, 10).drawOn(page)
+            return TestSupport.content(page)
+        }
+        let a = draw(plain)
+        let b = draw(marked)
+        #expect(a == b, "the marks draw something:\n\(b)\n\(a)")
+        // A hair over the width, as Float rounds it
+        font.setKernPairs(true)
+        let width = font.stringWidth(12, "AVAV") + 0.001
+        #expect(font.getFitChars("A\u{00AD}VA\u{00AD}V", width) == 6)
+    }
+
     // A Stamp leaves out the marks of direction and the joiners its font has no
     // glyph for, as Page does: Hebrew with brackets, reordered for drawing, wrote
     // two .notdef glyphs (review of 11 October 2026, #10).

@@ -144,6 +144,26 @@ This is the first entry in this file; earlier releases were not tracked here.
   first was drawn as a paragraph of pipes, and a header of 64 columns over
   64 KB of rows of "|" alone took 895 MB in Go. Draw a table that large
   with BigTable.
+- A font whose fsType allows its bitmaps alone to be embedded, bit 9, is
+  refused, in the four ports: PDFjet embeds outlines, and it was embedded.
+  An fsType of Restricted License with the reserved bit 0 set is refused
+  too; it was taken.
+- The core fonts do not draw or measure the characters Unicode does not
+  draw, in the four ports: a variation selector, a zero width space, a word
+  joiner, the joiners, the marks of direction and the byte order mark were
+  each a space, so that "©️ 2026" pasted from a phone had two, in the text
+  copied too. The deprecated CJK fonts drew and measured them, and the soft
+  hyphen, 1 em wide; they leave them out too.
+- GetFitChars of a core font kerns a character with the next one drawn, as
+  StringWidth does, in the four ports: it kerned it with a soft hyphen after
+  it, and counted fewer characters than StringWidth fit.
+- A document that draws two characters of one glyph, as "١٢٣" and then
+  "۱۲۳", or "∕" and then "／", copies each as drawn, in the four ports: the
+  second is drawn with itself as its actual text, as the ToUnicode map
+  gives the glyph the first. It was copied as the first.
+- A stamp gives a zero width non-joiner or joiner its font has no glyph for
+  to the actual text of the glyph before it, as a page does, in the four
+  ports: Persian text in a stamp was copied without its ZWNJ.
 
 ## v9.0.5 — 2026-10-12, internal
 

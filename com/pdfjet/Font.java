@@ -517,8 +517,8 @@ final public class Font {
     // map gives the glyph the character the document drew, where the font
     // draws several characters with one glyph: it gave the glyph the lowest of
     // them, and a Persian ۱ was copied as an Arabic ١ (review of 11 October
-    // 2026, #8). The first character drawn with the glyph is kept; a document
-    // that draws two characters of one glyph extracts the first for both.
+    // 2026, #8). The first character drawn with the glyph is kept; the others
+    // drawn with it are given their own as actual text, see drawnAsAnother.
     void useChar(int c, int gid) {
         if (program == null || gid <= 0 || unicodeToGID.get(c) != gid) {
             return;
@@ -527,6 +527,19 @@ final public class Font {
             program.chars = new HashMap<Integer, Integer>();
         }
         program.chars.putIfAbsent(gid, c);
+    }
+
+    // Returns true if the glyph of the character is drawn for another
+    // character too, which the ToUnicode map gives the glyph: the character is
+    // then drawn in a span with itself as its actual text. A document that drew
+    // "١٢٣" and then "۱۲۳" copied the second as "١۲٣" (review of 12 October
+    // 2026, R15).
+    boolean drawnAsAnother(int c) {
+        if (program == null || program.chars == null) {
+            return false;
+        }
+        Integer first = program.chars.get(unicodeToGID.get(c));
+        return first != null && first != c;
     }
 
     /**
@@ -557,12 +570,13 @@ final public class Font {
         }
 
         if (isCJK) {
-            // Every glyph of a CJK font is as wide as the font size.
-            return str.codePointCount(0, str.length()) * fontSize;
+            // Every glyph of a CJK font is as wide as the font size, and the
+            // characters not drawn take no width.
+            return str.codePoints().filter(cp -> !isNotDrawn(cp)).count() * fontSize;
         }
 
         if (isCoreFont) {
-            str = withoutSoftHyphens(str);
+            str = withoutIgnorables(str);
             for (int i = 0; i < str.length(); ) {
                 int c1 = coreFontCode(str.codePointAt(i));
                 i += Character.charCount(str.codePointAt(i));
@@ -785,9 +799,21 @@ final public class Font {
         float w = width * unitsPerEm / size;
 
         if (isCJK) {
-            // Every glyph of a CJK font is as wide as the font size.
-            int fit = Math.max(0, (int) (width / size));
-            return str.offsetByCodePoints(0, Math.min(fit, str.codePointCount(0, str.length())));
+            // Every glyph of a CJK font is as wide as the font size, and the
+            // characters not drawn take no width.
+            int room = Math.max(0, (int) (width / size));
+            int i = 0;
+            while (i < str.length()) {
+                int cp = str.codePointAt(i);
+                if (!isNotDrawn(cp)) {
+                    if (room == 0) {
+                        break;
+                    }
+                    room--;
+                }
+                i += Character.charCount(cp);
+            }
+            return i;
         }
 
         if (isCoreFont) {
@@ -812,20 +838,26 @@ final public class Font {
 
         int i = 0;
         while (i < str.length()) {
-            if (str.charAt(i) == '\u00AD' && !symbolic) {
-                i++;    // A soft hyphen is not drawn, see withoutSoftHyphens
+            int cp = str.codePointAt(i);
+            if (notDrawn(cp)) {
+                i += Character.charCount(cp);
                 continue;
             }
-            int c1 = coreFontCode(str.codePointAt(i));
-            int next = i + Character.charCount(str.codePointAt(i));
+            int c1 = coreFontCode(cp);
+            int next = i + Character.charCount(cp);
 
             w -= metrics[c1 - 32][1];
             if (w < 0) {
                 return i;
             }
 
-            if (kernPairs && next < str.length()) {
-                w -= kerning(c1, coreFontCode(str.codePointAt(next)));
+            // The kerning is with the next character drawn, as stringWidth's is.
+            int after = next;
+            while (after < str.length() && notDrawn(str.codePointAt(after))) {
+                after += Character.charCount(str.codePointAt(after));
+            }
+            if (kernPairs && after < str.length()) {
+                w -= kerning(c1, coreFontCode(str.codePointAt(after)));
                 if (w < 0) {
                     return i;
                 }
@@ -837,16 +869,36 @@ final public class Font {
         return i;
     }
 
-    // Returns the text without its soft hyphens, which a core font of WinAnsi
-    // does not draw or measure, as no font does: WinAnsi has a hyphen at the
-    // soft hyphen's code, and a line broken at a soft hyphen ends with a hyphen
-    // of its own (review of 11 October 2026, #21). Symbol and ZapfDingbats keep
-    // theirs, their codes being their characters.
-    String withoutSoftHyphens(String str) {
-        if (symbolic || str.indexOf('\u00AD') == -1) {
+    // Returns the text without the characters a core font of WinAnsi does not
+    // draw or measure, as no font does: the soft hyphen, as WinAnsi has a
+    // hyphen at its code, and a line broken at a soft hyphen ends with a hyphen
+    // of its own (review of 11 October 2026, #21), and the other characters not
+    // drawn, the marks of direction, the joiners, the byte order mark and those
+    // isIgnorable returns true for, which were drawn as spaces (review of 12
+    // October 2026, R14). Symbol and ZapfDingbats keep theirs, their codes
+    // being their characters.
+    String withoutIgnorables(String str) {
+        if (symbolic || str.codePoints().noneMatch(this::notDrawn)) {
             return str;
         }
-        return str.replace("\u00AD", "");
+        StringBuilder sb = new StringBuilder(str.length());
+        str.codePoints().filter(cp -> !notDrawn(cp)).forEach(sb::appendCodePoint);
+        return sb.toString();
+    }
+
+    // Returns true for a character that a core font of WinAnsi does not draw
+    // or measure, see withoutIgnorables.
+    private boolean notDrawn(int cp) {
+        return !symbolic && isNotDrawn(cp);
+    }
+
+    // Returns true for a character a font that is not embedded, a core font of
+    // WinAnsi or a CJK font, does not draw or measure: the marks of direction,
+    // the joiners, the byte order mark and those isIgnorable returns true for, the
+    // soft hyphen among them. A CJK font drew each 1 em wide (review of 12
+    // October 2026, R20).
+    static boolean isNotDrawn(int cp) {
+        return isIgnorable(cp) || isJoinerOrRLM(cp) || cp == 0xFEFF;
     }
 
     /**

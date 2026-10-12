@@ -257,6 +257,33 @@ public class TextBlockTest {
     }
 
     [Fact]
+    public void ACoreFontDrawsNoIgnorableCharacter() {
+        // A core font does not draw or measure them either, nor the marks of
+        // direction, the joiners and the byte order mark: they were spaces, so that
+        // "©️ 2026" had two (review of 12 October 2026, R14). GetFitChars kerns with
+        // the next character drawn, not with a soft hyphen, as StringWidth does (R19).
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
+        PDF pdf = TestSupport.NewPDF();
+        Font font = new Font(pdf, CoreFont.HELVETICA);
+        font.SetSize(12f);
+        string plain = "ab \u00A9 2026 word";
+        string marked = "a\uFE0Fb \u00A9\uFE0F 2026\u200B wo\u2060r\u200Dd\u200E\u200C\u200F\uFEFF\U000E0041";
+        Assert.Equal(font.StringWidth(12f, plain), font.StringWidth(12f, marked));
+        Func<string, string> draw = text => {
+            Page page = new Page(pdf, Letter.PORTRAIT);
+            TextLine line = new TextLine(font, text);
+            line.SetLocation(10f, 10f);
+            line.DrawOn(page);
+            return TestSupport.Content(page);
+        };
+        Assert.Equal(draw(plain), draw(marked));
+        // A hair over the width, as float rounds it
+        font.SetKernPairs(true);
+        float width = font.StringWidth(12f, "AVAV") + 0.001f;
+        Assert.Equal(6, font.GetFitChars("A\u00ADVA\u00ADV", width));
+    }
+
+    [Fact]
     public void AStampLeavesOutTheMarksOfDirection() {
         // A Stamp leaves out the marks of direction and the joiners its font
         // has no glyph for, as Page does: Hebrew with brackets, reordered for

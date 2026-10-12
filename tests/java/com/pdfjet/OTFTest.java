@@ -290,5 +290,10 @@ class OTFTest {
         String message = error(with(ttf, os2 + 8, 0x0002));
         assertTrue(message.contains("may not be embedded") && message.contains("NotoSans"), message);
         new Font(TestSupport.newPDF(), new ByteArrayInputStream(with(ttf, os2 + 8, 0x0006)));
+        // Bit 0 is reserved, and bit 9 allows the bitmaps alone (R13).
+        for (int fsType : new int[] {0x0003, 0x0200, 0x0204}) {
+            message = error(with(ttf, os2 + 8, fsType));
+            assertTrue(message.contains("may not be embedded"), fsType + ": " + message);
+        }
     }
 }

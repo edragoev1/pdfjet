@@ -53,8 +53,15 @@ class OpenTypeFont {
     // allow it, Preview and Print or Editable, as the least restrictive of the
     // bits set is the one that applies. It was embedded (review of 9 October
     // 2026, "a font whose fsType forbids embedding").
+    // Bit 1 is tested alone, as bit 0 is reserved, and a font whose fsType allows
+    // its bitmaps alone, bit 9, is refused too, as PDFjet embeds outlines
+    // (review of 12 October 2026, R13).
     private static void CheckEmbedding(OTF otf) {
-        if ((otf.fsType & 0x000F) == 0x0002) {
+        if ((otf.fsType & 0x0200) != 0) {
+            throw new Exception("The font " + otf.fontName + " may not be embedded: its license allows its bitmaps alone " +
+                    "to be embedded, and PDFjet embeds outlines. See \"Choosing a font you may embed\" in PDFjet's README.");
+        }
+        if ((otf.fsType & 0x0002) != 0 && (otf.fsType & 0x000C) == 0) {
             throw new Exception("The font " + otf.fontName + " may not be embedded: its license asks for its maker's " +
                     "permission first. See \"Choosing a font you may embed\" in PDFjet's README.");
         }

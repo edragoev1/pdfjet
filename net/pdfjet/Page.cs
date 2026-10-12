@@ -676,7 +676,7 @@ public class Page {
     }
 
     private void DrawASCIIString(Font font, String str) {
-        str = font.WithoutSoftHyphens(str);
+        str = font.WithoutIgnorables(str);
         if (str.Length == 0) {
             return;
         }
@@ -711,11 +711,12 @@ public class Page {
             // themselves, through a UCS-2 CMap, with the glyphs of the
             // reader's font. PDFjet does not know which characters that font
             // has, and so has no .notdef to draw: a character past its range
-            // is a space.
+            // is a space. What it does not draw, see Font.IsNotDrawn, is
+            // left out.
             int i = 0;
             while (i < str.Length) {
                 int codePoint = Util.CodePointAt(str, i);  // A lone surrogate is drawn as .notdef
-                if (codePoint != 0xFEFF) {                  // BOM
+                if (!Font.IsNotDrawn(codePoint)) {
                     if (codePoint < font.firstChar || codePoint > font.lastChar) {
                         AppendCodePointAsHex(0x0020);       // Space fallback
                     } else {
@@ -724,18 +725,7 @@ public class Page {
                 }
                 i += Util.CharCount(str, i);
             }
-        } else if (!NeedsShaping(font, str)) {
-            int i = 0;
-            while (i < str.Length) {
-                int codePoint = Util.CodePointAt(str, i);  // A lone surrogate is drawn as .notdef
-                if (codePoint != 0xFEFF && !Font.IsIgnorable(codePoint)) { // BOM, or one not drawn
-                    int gid = GlyphOf(font, codePoint);
-                    font.UseChar(codePoint, gid);
-                    AppendGlyph(font, gid);
-                }
-                i += Util.CharCount(str, i);
-            }
-        } else {
+        } else if (NeedsShaping(font, str) || !AppendPlainGlyphs(font, str)) {
             // The marks are moved to where the GPOS table of the font puts
             // them, the characters Bidi mirrored, each after an RLM, are given
             // the characters they stand for as actual text, and a zero width
@@ -981,9 +971,33 @@ public class Page {
     // Returns true if the character at k is one the font does not have, which
     // is drawn with the glyph MissingGlyph gives. The ToUnicode map of the font
     // maps that glyph to U+FFFD or to the character it is, so it is drawn in a
-    // span whose actual text is the character that is missing.
+    // span whose actual text is the character that is missing. A character
+    // whose glyph the ToUnicode map gives another character is drawn in such a
+    // span too.
     private static bool IsMissing(Font font, int[] codePoints, int k) {
-        return font.Lacks(codePoints[k]);
+        return font.Lacks(codePoints[k]) || font.DrawnAsAnother(codePoints[k]);
+    }
+
+    // Draws the glyphs of text that needs no shaping, and returns true. It
+    // draws nothing and returns false when a glyph is drawn for another
+    // character too, which is drawn in a span of its own.
+    private bool AppendPlainGlyphs(Font font, string str) {
+        long start = buf.Length;
+        int i = 0;
+        while (i < str.Length) {
+            int codePoint = Util.CodePointAt(str, i);  // A lone surrogate is drawn as .notdef
+            if (codePoint != 0xFEFF && !Font.IsIgnorable(codePoint)) { // BOM, or one not drawn
+                int gid = GlyphOf(font, codePoint);
+                font.UseChar(codePoint, gid);
+                if (font.DrawnAsAnother(codePoint)) {
+                    buf.SetLength(start);
+                    return false;
+                }
+                AppendGlyph(font, gid);
+            }
+            i += Util.CharCount(str, i);
+        }
+        return true;
     }
 
     // Returns true if the glyph at k is drawn in a marked content span of its

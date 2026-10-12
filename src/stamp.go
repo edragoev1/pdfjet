@@ -411,36 +411,74 @@ func (s *Stamp) Complete() {
 // drawEncodedText appends the glyph IDs of the text as hexadecimal, the glyphs
 // Page draws. The .notdef glyph of a character the font does not have is drawn
 // in a marked content span with the character as its actual text, as on a
-// page.
+// page, and so is a glyph the ToUnicode map gives another character, and one
+// with a joiner after it that the font has no glyph for, whose actual text has
+// the joiner too: it was left out (review of 12 October 2026, R34).
 func (s *Stamp) drawEncodedText(font *Font, str string) {
 	if traceText != nil {
 		traceText(s, font, str)
 	}
-	for _, codePoint := range str {
-		if codePoint == 0xFEFF { // Skip the BOM
-			continue
-		}
-		// What Page leaves out, it leaves out too: the marks of direction,
-		// a joiner the font has no glyph for, and what Unicode does not
-		// draw; each was drawn as a box, wider than StringWidth measured
-		// the text (review of 11 October 2026, #10)
-		if codePoint == 0x200E || codePoint == 0x200F || isIgnorable(codePoint) ||
-			((codePoint == 0x200C || codePoint == 0x200D) && font.unicodeToGID.get(codePoint) == 0) {
+	runes := []rune(str)
+	for i, codePoint := range runes {
+		if notDrawnByStamp(font, codePoint) {
 			continue
 		}
 		gid := glyphOf(font, codePoint)
 		font.useGlyph(gid)
 		font.useChar(codePoint, gid)
-		if font.lacks(codePoint) {
+		joiner := joinerAfter(font, runes, i)
+		if font.lacks(codePoint) || font.drawnAsAnother(codePoint) || joiner != 0 {
+			text := textOf(font, codePoint)
+			if joiner != 0 {
+				text += string(joiner)
+			}
 			s.appendString("> Tj\n/Span <</ActualText <")
-			s.appendString(toUTF16Hex(textOf(font, codePoint)))
+			s.appendString(toUTF16Hex(text))
 			s.appendString(">>> BDC\n<")
 			s.appendCodePointAsHex(gid)
-			s.appendString("> Tj\nEMC\n<")
+			s.appendString("> Tj\n")
+			if joiner != 0 {
+				// A space that takes no room stands in for the joiner, as on
+				// a page, see appendGlyphWithActualText.
+				space := font.unicodeToGID.get(0x0020)
+				font.useGlyph(space)
+				s.appendString("[<")
+				s.appendCodePointAsHex(space)
+				s.appendString("> ")
+				s.appendFloat(float32(1000.0*float32(font.glyphAdvance(space))) / float32(font.unitsPerEm))
+				s.appendString("] TJ\n")
+			}
+			s.appendString("EMC\n<")
 		} else {
 			s.appendCodePointAsHex(gid)
 		}
 	}
+}
+
+// notDrawnByStamp returns true for what Page leaves out, which a Stamp
+// leaves out too: the byte order mark, the marks of direction, a joiner the
+// font has no glyph for, and what Unicode does not draw; each was drawn as a
+// box, wider than StringWidth measured the text (review of 11 October 2026,
+// #10).
+func notDrawnByStamp(font *Font, c rune) bool {
+	return c == 0xFEFF || c == 0x200E || c == 0x200F || isIgnorable(c) ||
+		((c == 0x200C || c == 0x200D) && font.unicodeToGID.get(c) == 0)
+}
+
+// joinerAfter returns the zero width non-joiner or joiner the font has no
+// glyph for that goes with the glyph at i, the last of them before the next
+// character drawn, as on a page, or 0 if there is none.
+func joinerAfter(font *Font, runes []rune, i int) rune {
+	var joiner rune
+	for _, c := range runes[i+1:] {
+		if !notDrawnByStamp(font, c) {
+			break
+		}
+		if c == 0x200C || c == 0x200D {
+			joiner = c
+		}
+	}
+	return joiner
 }
 
 func (s *Stamp) appendPoint(point *Point) {

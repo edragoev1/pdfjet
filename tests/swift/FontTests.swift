@@ -49,6 +49,25 @@ import Testing
         #expect(font.stringWidth(10, "\u{2000B}") == 10)
     }
 
+    // A CJK font does not draw or measure the soft hyphen and the other
+    // characters not drawn: each was drawn, and measured, 1 em wide (review of
+    // 12 October 2026, R20).
+    @Test func aCjkFontDrawsNoIgnorableCharacter() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.cjkFont(pdf, CJKFont.ADOBE_MING_STD_LIGHT)
+        font.setSize(10)
+        let marked = "日\u{00AD}本\u{FE0F}\u{200B}\u{200D}\u{FEFF}"
+        #expect(font.stringWidth(10, marked) == 20)
+        #expect(font.getFitChars(marked, 15) == 2)
+        #expect(font.getFitChars(marked, 20) == marked.unicodeScalars.count)
+        func draw(_ text: String) -> String {
+            let page = Page(pdf, Letter.PORTRAIT)
+            TextLine(font, text).setLocation(10, 10).drawOn(page)
+            return TestSupport.content(page)
+        }
+        #expect(draw("日本") == draw(marked))
+    }
+
     @Test(.enabled(if: TestSupport.exists("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"),
             "the fonts directory is not here"))
     func readsATrueTypeFont() throws {
@@ -406,6 +425,49 @@ import Testing
         for other in ["0661", "0663", "0669", "2215"] {
             #expect(!values.contains(other), "a glyph maps to U+\(other), which the document did not draw")
         }
+    }
+
+    // A document that draws two characters of one glyph gives the second its
+    // own as actual text, as the ToUnicode map gives the glyph the first: "١٢٣"
+    // and then "۱۲۳" copied the second as "١۲٣", and "∕" then "／" in a stamp
+    // gave "∕" twice (review of 12 October 2026, R15).
+    @Test func theSecondCharacterOfAGlyphHasItsActualText() throws {
+        let pdf = TestSupport.newPDF()
+        let arabic = try Font(pdf, TestSupport.open("fonts/NotoSansArabic/NotoSansArabic-Regular.ttf"))
+        try #require(arabic.unicodeToGID[0x0661] == arabic.unicodeToGID[0x06F1])
+        let page = Page(pdf, Letter.PORTRAIT)
+        TextLine(arabic, "\u{0661}\u{0662}\u{0663}").setLocation(50, 50).drawOn(page)
+        #expect(!TestSupport.content(page).contains("/ActualText"), "\(TestSupport.content(page))")
+        TextLine(arabic, "\u{06F1}\u{06F2}\u{06F3}").setLocation(50, 100).drawOn(page)
+        var content = TestSupport.content(page)
+        for c in ["\u{06F1}", "\u{06F3}"] {
+            #expect(content.contains("/ActualText <" + Page.toUTF16Hex(c) + ">"), "\(content)")
+        }
+
+        let tc = try Font(pdf, TestSupport.open("fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.ttf"))
+        try #require(tc.unicodeToGID[0x2215] == tc.unicodeToGID[0xFF0F])
+        let stamp = Stamp(pdf)
+        stamp.drawText(tc, 12, 0, 12, "1\u{2215}2")
+        stamp.drawText(tc, 12, 0, 24, "1\u{FF0F}2")
+        content = TestSupport.latin1(stamp.buf)
+        #expect(content.contains("/ActualText <" + Page.toUTF16Hex("\u{FF0F}") + ">"), "\(content)")
+        #expect(!content.contains("/ActualText <" + Page.toUTF16Hex("\u{2215}") + ">"), "\(content)")
+    }
+
+    // A stamp gives a zero width non-joiner or joiner its font has no glyph
+    // for to the actual text of the glyph before it, as a page does: it was left
+    // out (review of 12 October 2026, R34).
+    @Test func aStampKeepsAJoinerInTheActualText() throws {
+        let pdf = TestSupport.newPDF()
+        let font = try Font(pdf, TestSupport.open("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf"))
+        try #require(font.unicodeToGID[0x200C] == 0)
+        let stamp = Stamp(pdf)
+        stamp.drawText(font, 12, 0, 12, "a\u{200C}\u{200E}b")
+        let actualText = "/ActualText <" + Page.toUTF16Hex("a\u{200C}") + ">"
+        #expect(TestSupport.latin1(stamp.buf).contains(actualText), "\(TestSupport.latin1(stamp.buf))")
+        let page = Page(pdf, Letter.PORTRAIT)
+        TextLine(font, "a\u{200C}\u{200E}b").setLocation(50, 50).drawOn(page)
+        #expect(TestSupport.content(page).contains(actualText), "\(TestSupport.content(page))")
     }
 
     @Test func aWidthPastTheRangeOfAUInt16IsWritten() throws {

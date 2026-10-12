@@ -62,6 +62,31 @@ func TestFontEveryCjkCharacterIsOneEmWideAndSurrogatePairsCountOnce(t *testing.T
 	testNear(t, "one supplementary character", 10, font.StringWidth(10, "𠀋"), 0)
 }
 
+// A CJK font does not draw or measure the soft hyphen and the other
+// characters not drawn: each was drawn, and measured, 1 em wide (review of
+// 12 October 2026, R20).
+func TestFontACjkFontDrawsNoIgnorableCharacter(t *testing.T) {
+	pdf := testNewPDF()
+	font := NewCJKFont(pdf, cjkfont.AdobeMingStdLight)
+	font.SetSize(10)
+	marked := "日\u00AD本\uFE0F\u200B\u200D\uFEFF"
+	testNear(t, "two characters with marks", 20, font.StringWidth(10, marked), 0)
+	if n := font.GetFitChars(marked, 15); n != 2 {
+		t.Errorf("%d characters fit in 1.5 em, not 2", n)
+	}
+	if n := font.GetFitChars(marked, 20); n != len([]rune(marked)) {
+		t.Errorf("%d characters fit in 2 em, not all", n)
+	}
+	draw := func(text string) string {
+		page := NewPage(pdf, letter.Portrait())
+		NewTextLine(font, text).SetLocation(10, 10).DrawOn(page)
+		return testContent(page)
+	}
+	if a, b := draw("日本"), draw(marked); a != b {
+		t.Errorf("the marks draw something:\n%q\n%q", b, a)
+	}
+}
+
 func TestFontReadsATrueTypeFont(t *testing.T) {
 	path := testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")
 	file, err := os.Open(path)
@@ -455,5 +480,62 @@ func TestFontAGlyphOfSeveralCharactersMapsToTheCharacterDrawn(t *testing.T) {
 		if values[other] {
 			t.Errorf("a glyph maps to U+%s, which the document did not draw", other)
 		}
+	}
+}
+
+// A document that draws two characters of one glyph gives the second its own
+// as actual text, as the ToUnicode map gives the glyph the first: "١٢٣" and
+// then "۱۲۳" copied the second as "١۲٣", and "∕" then "／" in a stamp gave
+// "∕" twice (review of 12 October 2026, R15).
+func TestFontTheSecondCharacterOfAGlyphHasItsActualText(t *testing.T) {
+	pdf := testNewPDF()
+	arabic := NewFontFromFile(pdf, testRepoPath(t, "fonts/NotoSansArabic/NotoSansArabic-Regular.ttf"))
+	if arabic.unicodeToGID.get(0x0661) != arabic.unicodeToGID.get(0x06F1) {
+		t.Fatal("the font draws ١ and ۱ with two glyphs")
+	}
+	page := NewPage(pdf, letter.Portrait())
+	NewTextLine(arabic, "١٢٣").SetLocation(50, 50).DrawOn(page)
+	if content := testContent(page); strings.Contains(content, "/ActualText") {
+		t.Errorf("the first characters drawn have an actual text: %q", content)
+	}
+	NewTextLine(arabic, "۱۲۳").SetLocation(50, 100).DrawOn(page)
+	content := testContent(page)
+	for _, c := range "۱۳" {
+		if !strings.Contains(content, "/ActualText <"+toUTF16Hex(string(c))+">") {
+			t.Errorf("U+%04X has no actual text: %q", c, content)
+		}
+	}
+
+	tc := NewFontFromFile(pdf, testRepoPath(t, "fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.ttf"))
+	if tc.unicodeToGID.get(0x2215) != tc.unicodeToGID.get(0xFF0F) {
+		t.Fatal("the font draws ∕ and ／ with two glyphs")
+	}
+	stamp := NewStamp(pdf)
+	stamp.DrawText(tc, 12, 0, 12, "1∕2")
+	stamp.DrawText(tc, 12, 0, 24, "1／2")
+	if content := stamp.buf.String(); !strings.Contains(content, "/ActualText <"+toUTF16Hex("／")+">") ||
+		strings.Contains(content, "/ActualText <"+toUTF16Hex("∕")+">") {
+		t.Errorf("the stamp's ／ has no actual text, or its ∕ has one: %q", content)
+	}
+}
+
+// A stamp gives a zero width non-joiner or joiner its font has no glyph for
+// to the actual text of the glyph before it, as a page does: it was left out
+// (review of 12 October 2026, R34).
+func TestFontAStampKeepsAJoinerInTheActualText(t *testing.T) {
+	pdf := testNewPDF()
+	font := NewFontFromFile(pdf, testRepoPath(t, "fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf"))
+	if font.unicodeToGID.get(0x200C) != 0 {
+		t.Fatal("the font has a glyph for the ZWNJ")
+	}
+	stamp := NewStamp(pdf)
+	stamp.DrawText(font, 12, 0, 12, "a‌‎b")
+	if content := stamp.buf.String(); !strings.Contains(content, "/ActualText <"+toUTF16Hex("a‌")+">") {
+		t.Errorf("the ZWNJ is not in the actual text: %q", content)
+	}
+	page := NewPage(pdf, letter.Portrait())
+	NewTextLine(font, "a‌‎b").SetLocation(50, 50).DrawOn(page)
+	if content := testContent(page); !strings.Contains(content, "/ActualText <"+toUTF16Hex("a‌")+">") {
+		t.Errorf("the page does not do the same: %q", content)
 	}
 }

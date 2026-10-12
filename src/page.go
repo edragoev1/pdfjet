@@ -470,7 +470,7 @@ func (page *Page) drawASCIIString(font *Font, text string) {
 	if traceText != nil {
 		traceText(page, font, text)
 	}
-	runes := font.withoutSoftHyphens([]rune(text))
+	runes := font.withoutIgnorables([]rune(text))
 	if len(runes) == 0 {
 		return
 	}
@@ -505,8 +505,9 @@ func (page *Page) drawUnicodeString(font *Font, text string) {
 		// themselves, through a UCS-2 CMap, with the glyphs of the reader's
 		// font. PDFjet does not know which characters that font has, and so
 		// has no .notdef to draw: a character past its range is a space.
+		// What it does not draw, see isNotDrawn, is left out.
 		for _, c1 := range runes {
-			if c1 != 0xFEFF { // BOM marker
+			if !isNotDrawn(c1) {
 				if c1 < font.firstChar || c1 > font.lastChar {
 					page.appendCodePointAsHex(0x0020)
 				} else {
@@ -514,17 +515,7 @@ func (page *Page) drawUnicodeString(font *Font, text string) {
 				}
 			}
 		}
-	} else if !needsShaping(font, runes) {
-		for _, c1 := range runes {
-			if c1 != 0xFEFF && !isIgnorable(c1) { // BOM marker, or one not drawn
-				gid := glyphOf(font, c1)
-				if page.ownsFont(font) {
-					font.useChar(c1, gid)
-				}
-				page.appendGlyph(font, gid)
-			}
-		}
-	} else {
+	} else if needsShaping(font, runes) || !page.appendPlainGlyphs(font, runes) {
 		// The marks are moved to where the GPOS table of the font puts them, the
 		// characters Bidi mirrored, each after an RLM, are given the characters
 		// they stand for as actual text, and a zero width non-joiner or joiner
@@ -623,6 +614,27 @@ func (page *Page) drawUnicodeString(font *Font, text string) {
 			i = end
 		}
 	}
+}
+
+// appendPlainGlyphs draws the glyphs of text that needs no shaping, and
+// returns true. It draws nothing and returns false when a glyph is drawn for
+// another character too, which is drawn in a span of its own.
+func (page *Page) appendPlainGlyphs(font *Font, runes []rune) bool {
+	start := len(page.buf)
+	for _, c1 := range runes {
+		if c1 != 0xFEFF && !isIgnorable(c1) { // BOM marker, or one not drawn
+			gid := glyphOf(font, c1)
+			if page.ownsFont(font) {
+				font.useChar(c1, gid)
+			}
+			if font.drawnAsAnother(c1) {
+				page.buf = page.buf[:start]
+				return false
+			}
+			page.appendGlyph(font, gid)
+		}
+	}
+	return true
 }
 
 // appendRun draws the glyphs of a left to right run in brackets, nested in
@@ -766,9 +778,10 @@ func glyphOf(font *Font, c rune) int {
 // isMissing returns true if the character at k is one the font does not have,
 // which is drawn with the glyph missingGlyph gives. The ToUnicode map of the
 // font maps that glyph to U+FFFD or to the character it is, so it is drawn in
-// a span whose actual text is the character that is missing.
+// a span whose actual text is the character that is missing. A character whose
+// glyph the ToUnicode map gives another character is drawn in such a span too.
 func isMissing(font *Font, codePoints []rune, k int) bool {
-	return font.lacks(codePoints[k])
+	return font.lacks(codePoints[k]) || font.drawnAsAnother(codePoints[k])
 }
 
 // inOwnSpan returns true if the glyph at k is drawn in a marked content span

@@ -273,6 +273,26 @@ class TextBlockTest {
         assertEquals(draw(pdf, font, plain), draw(pdf, font, plain + "\uDB40\uDC01"));
     }
 
+    // A core font does not draw or measure them either, nor the marks of
+    // direction, the joiners and the byte order mark: they were spaces, so that
+    // "©️ 2026" had two (review of 12 October 2026, R14). getFitChars kerns with
+    // the next character drawn, not with a soft hyphen, as stringWidth does (R19).
+    @Test
+    void aCoreFontDrawsNoIgnorableCharacter() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        font.setSize(12f);
+        String plain = "ab \u00A9 2026 word";
+        String marked = "a\uFE0Fb \u00A9\uFE0F 2026\u200B wo\u2060r\u200Dd\u200E\u200C\u200F\uFEFF\uDB40\uDC01";
+        assertEquals(font.stringWidth(12f, plain), font.stringWidth(12f, marked), 0f,
+                "the text is as wide with the marks as without");
+        assertEquals(draw(pdf, font, plain), draw(pdf, font, marked), "the marks draw something");
+        // A hair over the width, as float rounds it
+        font.setKernPairs(true);
+        float width = font.stringWidth(12f, "AVAV") + 0.001f;
+        assertEquals(6, font.getFitChars("A\u00ADVA\u00ADV", width));
+    }
+
     private static String draw(PDF pdf, Font font, String text) throws Exception {
         Page page = new Page(pdf, Letter.PORTRAIT);
         TextLine line = new TextLine(font, text);

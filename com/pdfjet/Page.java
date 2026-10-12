@@ -316,6 +316,11 @@ final public class Page {
             super(size);
         }
 
+        // Drops what was written after the first bytes.
+        void truncate(int size) {
+            count = size;
+        }
+
         // Makes room for the bytes, doubling the array as ByteArrayOutputStream does.
         private void reserve(int minCapacity) {
             if (minCapacity < 0) {
@@ -729,7 +734,7 @@ final public class Page {
     }
 
     private void drawASCIIString(Font font, String str) {
-        str = font.withoutSoftHyphens(str);
+        str = font.withoutIgnorables(str);
         if (str.isEmpty()) {
             return;
         }
@@ -775,11 +780,12 @@ final public class Page {
             // themselves, through a UCS-2 CMap, with the glyphs of the
             // reader's font. PDFjet does not know which characters that font
             // has, and so has no .notdef to draw: a character past its range
-            // is a space.
+            // is a space. What it does not draw, see Font.isNotDrawn, is
+            // left out.
             for (int i = 0; i < length; ) {
                 int cp = str.codePointAt(i);
                 i += Character.charCount(cp);
-                if (cp != 0xFEFF) {     // BOM
+                if (!Font.isNotDrawn(cp)) {
                     if (cp < font.firstChar || cp > font.lastChar) {
                         appendCodePointAsHex(0x0020);
                     } else {
@@ -787,17 +793,7 @@ final public class Page {
                     }
                 }
             }
-        } else if (!needsShaping(font, str)) {
-            for (int i = 0; i < length; ) {
-                int cp = str.codePointAt(i);
-                i += Character.charCount(cp);
-                if (cp != 0xFEFF && !Font.isIgnorable(cp)) {     // BOM, or one not drawn
-                    int gid = glyphOf(font, cp);
-                    font.useChar(cp, gid);
-                    appendGlyph(font, gid);
-                }
-            }
-        } else {
+        } else if (needsShaping(font, str) || !appendPlainGlyphs(font, str)) {
             // The marks are moved to where the GPOS table of the font puts
             // them, the characters Bidi mirrored, each after an RLM, are given
             // the characters they stand for as actual text, and a zero width
@@ -1087,9 +1083,33 @@ final public class Page {
     // Returns true if the character at k is one the font does not have, which
     // is drawn with the glyph missingGlyph gives. The ToUnicode map of the font
     // maps that glyph to U+FFFD or to the character it is, so it is drawn in a
-    // span whose actual text is the character that is missing.
+    // span whose actual text is the character that is missing. A character
+    // whose glyph the ToUnicode map gives another character is drawn in such a
+    // span too.
     private static boolean isMissing(Font font, int[] codePoints, int k) {
-        return font.lacks(codePoints[k]);
+        return font.lacks(codePoints[k]) || font.drawnAsAnother(codePoints[k]);
+    }
+
+    // Draws the glyphs of text that needs no shaping, and returns true. It
+    // draws nothing and returns false when a glyph is drawn for another
+    // character too, which is drawn in a span of its own.
+    private boolean appendPlainGlyphs(Font font, String str) {
+        ContentBuffer content = (ContentBuffer) buf;
+        int start = content.size();
+        for (int i = 0; i < str.length(); ) {
+            int cp = str.codePointAt(i);
+            i += Character.charCount(cp);
+            if (cp != 0xFEFF && !Font.isIgnorable(cp)) {     // BOM, or one not drawn
+                int gid = glyphOf(font, cp);
+                font.useChar(cp, gid);
+                if (font.drawnAsAnother(cp)) {
+                    content.truncate(start);
+                    return false;
+                }
+                appendGlyph(font, gid);
+            }
+        }
+        return true;
     }
 
     // Returns true if the glyph at k is drawn in a marked content span of its

@@ -62,6 +62,28 @@ public class FontTest {
     }
 
     [Fact]
+    public void ACjkFontDrawsNoIgnorableCharacter() {
+        // A CJK font does not draw or measure the soft hyphen and the other
+        // characters not drawn: each was drawn, and measured, 1 em wide (review of
+        // 12 October 2026, R20).
+        PDF pdf = TestSupport.NewPDF();
+#pragma warning disable CS0618 // The CJK fonts are deprecated, and still tested
+        Font font = new Font(pdf, CJKFont.ADOBE_MING_STD_LIGHT);
+#pragma warning restore CS0618
+        font.SetSize(10f);
+        string marked = "日\u00AD本\uFE0F\u200B\u200D\uFEFF";
+        Assert.Equal(20f, font.StringWidth(10f, marked));
+        Assert.Equal(2, font.GetFitChars(marked, 15f));
+        Assert.Equal(marked.Length, font.GetFitChars(marked, 20f));
+        Func<string, string> draw = text => {
+            Page page = new Page(pdf, Letter.PORTRAIT);
+            new TextLine(font, text).SetLocation(10f, 10f).DrawOn(page);
+            return TestSupport.Content(page);
+        };
+        Assert.Equal(draw("日本"), draw(marked));
+    }
+
+    [Fact]
     public void ReadsATrueTypeFont() {
         string path = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf";
         if (!File.Exists(TestSupport.RepoPath(path))) {
@@ -459,6 +481,57 @@ public class FontTest {
         foreach (string other in new[] {"0661", "0663", "0669", "2215"}) {
             Assert.False(values.Contains(other), "a glyph maps to U+" + other + ", which the document did not draw");
         }
+    }
+
+    [Fact]
+    public void TheSecondCharacterOfAGlyphHasItsActualText() {
+        // A document that draws two characters of one glyph gives the second its
+        // own as actual text, as the ToUnicode map gives the glyph the first: "١٢٣"
+        // and then "۱۲۳" copied the second as "١۲٣", and "∕" then "／" in a stamp
+        // gave "∕" twice (review of 12 October 2026, R15).
+        PDF pdf = TestSupport.NewPDF();
+        Font arabic = new Font(pdf, TestSupport.RepoPath("fonts/NotoSansArabic/NotoSansArabic-Regular.ttf"));
+        Assert.Equal(arabic.unicodeToGID.Get(0x0661), arabic.unicodeToGID.Get(0x06F1));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(arabic, "\u0661\u0662\u0663").SetLocation(50f, 50f).DrawOn(page);
+        Assert.DoesNotContain("/ActualText", TestSupport.Content(page));
+        new TextLine(arabic, "\u06F1\u06F2\u06F3").SetLocation(50f, 100f).DrawOn(page);
+        string content = TestSupport.Content(page);
+        foreach (string c in new[] {"\u06F1", "\u06F3"}) {
+            Assert.Contains("/ActualText <" + Page.ToUTF16Hex(c) + ">", content);
+        }
+
+        Font tc = new Font(pdf, TestSupport.RepoPath("fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.ttf"));
+        Assert.Equal(tc.unicodeToGID.Get(0x2215), tc.unicodeToGID.Get(0xFF0F));
+        Stamp stamp = new Stamp(pdf);
+        stamp.DrawText(tc, 12f, 0f, 12f, "1\u22152");
+        stamp.DrawText(tc, 12f, 0f, 24f, "1\uFF0F2");
+        content = StampContent(stamp);
+        Assert.Contains("/ActualText <" + Page.ToUTF16Hex("\uFF0F") + ">", content);
+        Assert.DoesNotContain("/ActualText <" + Page.ToUTF16Hex("\u2215") + ">", content);
+    }
+
+    [Fact]
+    public void AStampKeepsAJoinerInTheActualText() {
+        // A stamp gives a zero width non-joiner or joiner its font has no glyph
+        // for to the actual text of the glyph before it, as a page does: it was left
+        // out (review of 12 October 2026, R34).
+        PDF pdf = TestSupport.NewPDF();
+        Font font = new Font(pdf, TestSupport.RepoPath("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf"));
+        Assert.Equal(0, font.unicodeToGID.Get(0x200C));
+        Stamp stamp = new Stamp(pdf);
+        stamp.DrawText(font, 12f, 0f, 12f, "a\u200C\u200Eb");
+        string actualText = "/ActualText <" + Page.ToUTF16Hex("a\u200C") + ">";
+        Assert.Contains(actualText, StampContent(stamp));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(font, "a\u200C\u200Eb").SetLocation(50f, 50f).DrawOn(page);
+        Assert.Contains(actualText, TestSupport.Content(page));
+    }
+
+    private static string StampContent(Stamp stamp) {
+        MemoryStream buf = (MemoryStream) typeof(Stamp).GetField("buf",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).GetValue(stamp);
+        return TestSupport.Latin1(buf.ToArray());
     }
 }
 }

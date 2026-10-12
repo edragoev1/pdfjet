@@ -367,6 +367,37 @@ func TestTextBlockAnIgnorableCharacterIsNotDrawn(t *testing.T) {
 	}
 }
 
+// A core font does not draw or measure them either, nor the marks of
+// direction, the joiners and the byte order mark: they were spaces, so that
+// "©️ 2026" had two (review of 12 October 2026, R14). GetFitChars kerns with
+// the next character drawn, not with a soft hyphen, as StringWidth does (R19).
+func TestTextBlockACoreFontDrawsNoIgnorableCharacter(t *testing.T) {
+	pdf := testNewPDF()
+	font := NewCoreFont(pdf, corefont.Helvetica())
+	font.SetSize(12)
+	plain := "ab © 2026 word"
+	marked := "a\uFE0Fb ©\uFE0F 2026\u200B wo\u2060r\u200Dd\u200E\u200C\u200F\uFEFF"
+	if a, b := font.StringWidth(12, plain), font.StringWidth(12, marked); a != b {
+		t.Errorf("the text is %v wide with the marks, %v without", b, a)
+	}
+	draw := func(text string) string {
+		page := NewPage(pdf, testLetterPortrait())
+		line := NewTextLine(font, text)
+		line.SetLocation(10, 10)
+		line.DrawOn(page)
+		return testContent(page)
+	}
+	if a, b := draw(plain), draw(marked); a != b {
+		t.Errorf("the marks draw something:\n%q\n%q", b, a)
+	}
+	// A hair over the width, as float32 rounds it
+	font.SetKernPairs(true)
+	width := font.StringWidth(12, "AVAV") + 0.001
+	if n := font.GetFitChars("A\u00adVA\u00adV", width); n != 6 {
+		t.Errorf("%d characters fit, not 6", n)
+	}
+}
+
 // A Stamp leaves out the marks of direction and the joiners its font has no
 // glyph for, as Page does: Hebrew with brackets, reordered for drawing, wrote
 // two .notdef glyphs (review of 11 October 2026, #10).

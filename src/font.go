@@ -471,8 +471,23 @@ func (font *Font) GetFitChars(text string, width float32) int {
 	}
 	w := float32(width*float32(font.unitsPerEm)) / font.size
 	if font.isCJK {
-		// Every glyph of a CJK font is as wide as the font size.
-		return max(0, min(int(width/font.size), len(runes)))
+		// Every glyph of a CJK font is as wide as the font size, and the
+		// characters not drawn take no width.
+		room := int(width / font.size)
+		if room < 0 {
+			return 0
+		}
+		i := 0
+		for i < len(runes) {
+			if !isNotDrawn(runes[i]) {
+				if room == 0 {
+					break
+				}
+				room--
+			}
+			i++
+		}
+		return i
 	}
 
 	if font.isCoreFont {
@@ -497,8 +512,8 @@ func (font *Font) getCoreFontFitChars(text string, width float32) int {
 	runes := []rune(text)
 	i := 0
 	for i < len(runes) {
-		if runes[i] == 0x00AD && !font.symbolic {
-			i++ // A soft hyphen is not drawn, see withoutSoftHyphens
+		if font.notDrawn(runes[i]) {
+			i++
 			continue
 		}
 		c1 := font.coreFontCode(runes[i])
@@ -507,8 +522,13 @@ func (font *Font) getCoreFontFitChars(text string, width float32) int {
 			return i
 		}
 
-		if font.kernPairs && i < (len(runes)-1) {
-			w -= float32(font.kerning(c1, font.coreFontCode(runes[i+1])))
+		// The kerning is with the next character drawn, as StringWidth's is.
+		next := i + 1
+		for next < len(runes) && font.notDrawn(runes[next]) {
+			next++
+		}
+		if font.kernPairs && next < len(runes) {
+			w -= float32(font.kerning(c1, font.coreFontCode(runes[next])))
 			if w < 0 {
 				return i
 			}
@@ -519,22 +539,40 @@ func (font *Font) getCoreFontFitChars(text string, width float32) int {
 	return i
 }
 
-// withoutSoftHyphens returns the characters without their soft hyphens, which
-// a core font of WinAnsi does not draw or measure, as no font does: WinAnsi
-// has a hyphen at the soft hyphen's code, and a line broken at a soft hyphen
-// ends with a hyphen of its own (review of 11 October 2026, #21). Symbol and
-// ZapfDingbats keep theirs, their codes being their characters.
-func (font *Font) withoutSoftHyphens(runes []rune) []rune {
-	if font.symbolic || !slices.Contains(runes, 0x00AD) {
+// withoutIgnorables returns the characters without those a core font of
+// WinAnsi does not draw or measure, as no font does: the soft hyphen, as
+// WinAnsi has a hyphen at its code, and a line broken at a soft hyphen ends
+// with a hyphen of its own (review of 11 October 2026, #21), and the other
+// characters not drawn, the marks of direction, the joiners, the byte order
+// mark and those isIgnorable returns true for, which were drawn as spaces
+// (review of 12 October 2026, R14). Symbol and ZapfDingbats keep theirs,
+// their codes being their characters.
+func (font *Font) withoutIgnorables(runes []rune) []rune {
+	if !slices.ContainsFunc(runes, font.notDrawn) {
 		return runes
 	}
 	kept := make([]rune, 0, len(runes))
 	for _, c := range runes {
-		if c != 0x00AD {
+		if !font.notDrawn(c) {
 			kept = append(kept, c)
 		}
 	}
 	return kept
+}
+
+// notDrawn returns true for a character that a core font of WinAnsi does not
+// draw or measure, see withoutIgnorables.
+func (font *Font) notDrawn(c rune) bool {
+	return !font.symbolic && isNotDrawn(c)
+}
+
+// isNotDrawn returns true for a character a font that is not embedded, a
+// core font of WinAnsi or a CJK font, does not draw or measure: the marks of
+// direction, the joiners, the byte order mark and those isIgnorable returns
+// true for, the soft hyphen among them. A CJK font drew each 1 em wide
+// (review of 12 October 2026, R20).
+func isNotDrawn(c rune) bool {
+	return isIgnorable(c) || isJoinerOrRLM(c) || c == 0xFEFF
 }
 
 // coreFontCode returns the code of the character in the encoding of this core
@@ -653,12 +691,19 @@ func (font *Font) StringWidth(fontSize float32, str string) float32 {
 
 	runes := []rune(str)
 	if font.isCJK {
-		// Every glyph of a CJK font is as wide as the font size.
-		return float32(float32(len(runes)) * fontSize)
+		// Every glyph of a CJK font is as wide as the font size, and the
+		// characters not drawn take no width.
+		drawn := 0
+		for _, c := range runes {
+			if !isNotDrawn(c) {
+				drawn++
+			}
+		}
+		return float32(float32(drawn) * fontSize)
 	}
 
 	if font.isCoreFont {
-		runes = font.withoutSoftHyphens(runes)
+		runes = font.withoutIgnorables(runes)
 		for i, cp := range runes {
 			c1 := font.coreFontCode(cp)
 			width += float32(font.metrics[c1-32][1])

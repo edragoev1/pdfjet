@@ -73,6 +73,28 @@ class FontTest {
         assertEquals(10f, font.stringWidth(10f, "𠀋"), 0f);
     }
 
+    // A CJK font does not draw or measure the soft hyphen and the other
+    // characters not drawn: each was drawn, and measured, 1 em wide (review of
+    // 12 October 2026, R20).
+    @Test
+    @SuppressWarnings("deprecation")    // The CJK fonts are deprecated, and still tested
+    void aCjkFontDrawsNoIgnorableCharacter() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = new Font(pdf, CJKFont.ADOBE_MING_STD_LIGHT);
+        font.setSize(10f);
+        String marked = "日\u00AD本\uFE0F\u200B\u200D\uFEFF";
+        assertEquals(20f, font.stringWidth(10f, marked), 0f);
+        assertEquals(2, font.getFitChars(marked, 15f));
+        assertEquals(marked.length(), font.getFitChars(marked, 20f));
+        assertEquals(cjkContent(pdf, font, "日本"), cjkContent(pdf, font, marked));
+    }
+
+    private static String cjkContent(PDF pdf, Font font, String text) throws Exception {
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(font, text).setLocation(10f, 10f).drawOn(page);
+        return TestSupport.content(page);
+    }
+
     @Test
     void readsATrueTypeFont() throws Exception {
         String path = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf";
@@ -455,5 +477,56 @@ class FontTest {
             assertFalse(values.contains(other),
                     "a glyph maps to U+" + other + ", which the document did not draw");
         }
+    }
+
+    // A document that draws two characters of one glyph gives the second its
+    // own as actual text, as the ToUnicode map gives the glyph the first: "١٢٣"
+    // and then "۱۲۳" copied the second as "١۲٣", and "∕" then "／" in a stamp
+    // gave "∕" twice (review of 12 October 2026, R15).
+    @Test
+    void theSecondCharacterOfAGlyphHasItsActualText() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font arabic = new Font(pdf, TestSupport.open("fonts/NotoSansArabic/NotoSansArabic-Regular.ttf"));
+        assertEquals(arabic.unicodeToGID.get(0x0661), arabic.unicodeToGID.get(0x06F1));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(arabic, "\u0661\u0662\u0663").setLocation(50f, 50f).drawOn(page);
+        assertFalse(TestSupport.content(page).contains("/ActualText"), TestSupport.content(page));
+        new TextLine(arabic, "\u06F1\u06F2\u06F3").setLocation(50f, 100f).drawOn(page);
+        String content = TestSupport.content(page);
+        for (String c : new String[] {"\u06F1", "\u06F3"}) {
+            assertTrue(content.contains("/ActualText <" + Page.toUTF16Hex(c) + ">"), content);
+        }
+
+        Font tc = new Font(pdf, TestSupport.open("fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.ttf"));
+        assertEquals(tc.unicodeToGID.get(0x2215), tc.unicodeToGID.get(0xFF0F));
+        Stamp stamp = new Stamp(pdf);
+        stamp.drawText(tc, 12f, 0f, 12f, "1\u22152");
+        stamp.drawText(tc, 12f, 0f, 24f, "1\uFF0F2");
+        content = stampContent(stamp);
+        assertTrue(content.contains("/ActualText <" + Page.toUTF16Hex("\uFF0F") + ">"), content);
+        assertFalse(content.contains("/ActualText <" + Page.toUTF16Hex("\u2215") + ">"), content);
+    }
+
+    // A stamp gives a zero width non-joiner or joiner its font has no glyph
+    // for to the actual text of the glyph before it, as a page does: it was left
+    // out (review of 12 October 2026, R34).
+    @Test
+    void aStampKeepsAJoinerInTheActualText() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSansArabic/IBMPlexSansArabic-Regular.ttf"));
+        assertEquals(0, font.unicodeToGID.get(0x200C));
+        Stamp stamp = new Stamp(pdf);
+        stamp.drawText(font, 12f, 0f, 12f, "a\u200C\u200Eb");
+        String actualText = "/ActualText <" + Page.toUTF16Hex("a\u200C") + ">";
+        assertTrue(stampContent(stamp).contains(actualText), stampContent(stamp));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(font, "a\u200C\u200Eb").setLocation(50f, 50f).drawOn(page);
+        assertTrue(TestSupport.content(page).contains(actualText), TestSupport.content(page));
+    }
+
+    private static String stampContent(Stamp stamp) throws Exception {
+        java.lang.reflect.Field buf = Stamp.class.getDeclaredField("buf");
+        buf.setAccessible(true);
+        return TestSupport.latin1(((ByteArrayOutputStream) buf.get(stamp)).toByteArray());
     }
 }

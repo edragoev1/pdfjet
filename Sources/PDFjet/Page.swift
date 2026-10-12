@@ -522,7 +522,7 @@ public class Page {
     }
 
     private final func drawASCIIString(_ font: Font, _ text: String) {
-        let scalars = font.withoutSoftHyphens(Array(text.unicodeScalars))
+        let scalars = font.withoutIgnorables(Array(text.unicodeScalars))
         if scalars.isEmpty {
             return
         }
@@ -554,9 +554,10 @@ public class Page {
             // themselves, through a UCS-2 CMap, with the glyphs of the
             // reader's font. PDFjet does not know which characters that font
             // has, and so has no .notdef to draw: a character past its range
-            // is a space.
+            // is a space. What it does not draw, see Font.isNotDrawn, is
+            // left out.
             for scalar in scalars {
-                if scalar.value != 0xFEFF {     // BOM
+                if !Font.isNotDrawn(scalar.value) {
                     if scalar < Unicode.Scalar(font.firstChar)! ||
                             scalar > Unicode.Scalar(font.lastChar)! {
                         Page.appendCodePointAsHex(0x0020, &self.buf)
@@ -565,30 +566,7 @@ public class Page {
                     }
                 }
             }
-        } else if !needsShaping(font, scalars) {
-            // The font has every character, so each is its glyph, a control
-            // character that of the space, as glyphOf gives them. Looked up in
-            // a local copy of the font's table, marked used in one pass and
-            // written in one, so that a character costs no runtime check of a
-            // class property's exclusive access, which made text in Swift
-            // three times as slow as in Go (9 October 2026).
-            let table = font.unicodeToGID
-            var codePoints = [Int]()
-            var gids = [Int]()
-            codePoints.reserveCapacity(scalars.count)
-            gids.reserveCapacity(scalars.count)
-            // The BOM, or one not drawn
-            for scalar in scalars where scalar.value != 0xFEFF && !Font.isIgnorable(Int(scalar.value)) {
-                let codePoint = Int(scalar.value)
-                codePoints.append(codePoint)
-                gids.append(Font.isControl(codePoint) ? table[0x0020] : table[codePoint])
-            }
-            if ownsFont(font) {
-                font.useGlyphs(gids)
-                font.useChars(codePoints, gids)
-            }
-            Page.appendGlyphsAsHex(gids, &self.buf)
-        } else {
+        } else if needsShaping(font, scalars) || !appendPlainGlyphs(font, scalars) {
             // The marks are moved to where the GPOS table of the font puts
             // them, the characters Bidi mirrored, each after an RLM, are given
             // the characters they stand for as actual text, and a zero width
@@ -843,12 +821,46 @@ public class Page {
         return font.unicodeToGID[codePoint]
     }
 
+    // Draws the glyphs of text that needs no shaping, and returns true. It
+    // draws nothing and returns false when a glyph is drawn for another
+    // character too, which is drawn in a span of its own.
+    private func appendPlainGlyphs(_ font: Font, _ scalars: [Unicode.Scalar]) -> Bool {
+        // The font has every character, so each is its glyph, a control
+        // character that of the space, as glyphOf gives them. Looked up in
+        // a local copy of the font's table, marked used in one pass and
+        // written in one, so that a character costs no runtime check of a
+        // class property's exclusive access, which made text in Swift
+        // three times as slow as in Go (9 October 2026).
+        let table = font.unicodeToGID
+        var codePoints = [Int]()
+        var gids = [Int]()
+        codePoints.reserveCapacity(scalars.count)
+        gids.reserveCapacity(scalars.count)
+        // The BOM, or one not drawn
+        for scalar in scalars where scalar.value != 0xFEFF && !Font.isIgnorable(Int(scalar.value)) {
+            let codePoint = Int(scalar.value)
+            codePoints.append(codePoint)
+            gids.append(Font.isControl(codePoint) ? table[0x0020] : table[codePoint])
+        }
+        if ownsFont(font) {
+            font.useGlyphs(gids)
+            font.useChars(codePoints, gids)
+        }
+        if font.drawsAnyAsAnother(codePoints) {
+            return false
+        }
+        Page.appendGlyphsAsHex(gids, &self.buf)
+        return true
+    }
+
     // Returns true if the character at k is one the font does not have, which
     // is drawn with the glyph missingGlyph gives. The ToUnicode map of the
     // font maps that glyph to U+FFFD or to the character it is, so it is drawn
-    // in a span whose actual text is the character that is missing.
+    // in a span whose actual text is the character that is missing. A character
+    // whose glyph the ToUnicode map gives another character is drawn in such a
+    // span too.
     private func isMissing(_ font: Font, _ codePoints: [Int], _ k: Int) -> Bool {
-        return font.lacks(codePoints[k])
+        return font.lacks(codePoints[k]) || font.drawnAsAnother(codePoints[k])
     }
 
     // Returns true if the glyph at k is drawn in a marked content span of its

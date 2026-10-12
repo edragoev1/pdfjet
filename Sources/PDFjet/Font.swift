@@ -429,8 +429,8 @@ public class Font {
     // map gives the glyph the character the document drew, where the font
     // draws several characters with one glyph: it gave the glyph the lowest of
     // them, and a Persian ۱ was copied as an Arabic ١ (review of 11 October
-    // 2026, #8). The first character drawn with the glyph is kept; a document
-    // that draws two characters of one glyph extracts the first for both.
+    // 2026, #8). The first character drawn with the glyph is kept; the others
+    // drawn with it are given their own as actual text, see drawnAsAnother.
     func useChar(_ c: Int, _ gid: Int) {
         if let program = program, gid > 0,
                 unicodeToGID[c] == gid, program.chars[gid] == nil {
@@ -454,6 +454,33 @@ public class Font {
         program.chars = chars
     }
 
+    // Returns true if the glyph of the character is drawn for another
+    // character too, which the ToUnicode map gives the glyph: the character is
+    // then drawn in a span with itself as its actual text. A document that drew
+    // "١٢٣" and then "۱۲۳" copied the second as "١۲٣" (review of 12 October
+    // 2026, R15).
+    func drawnAsAnother(_ c: Int) -> Bool {
+        guard let first = program?.chars[unicodeToGID[c]] else {
+            return false
+        }
+        return first != c
+    }
+
+    // Returns true if drawnAsAnother is true for one of the characters, in one
+    // access to the font's table and the program's.
+    func drawsAnyAsAnother(_ codePoints: [Int]) -> Bool {
+        guard let chars = program?.chars, !chars.isEmpty else {
+            return false
+        }
+        let table = unicodeToGID
+        for c in codePoints {
+            if let first = chars[table[c]], first != c {
+                return true
+            }
+        }
+        return false
+    }
+
     /// Returns the width of the string at the current font size.
     public func stringWidth(_ str: String?) -> Float {
         return stringWidth(self.size, str)
@@ -474,8 +501,10 @@ public class Font {
         }
 
         if isCJK {
-            // Every glyph of a CJK font is as wide as the font size.
-            return Float(str!.unicodeScalars.count) * fontSize
+            // Every glyph of a CJK font is as wide as the font size, and the
+            // characters not drawn take no width.
+            let drawn = str!.unicodeScalars.reduce(0) { $0 + (Font.isNotDrawn($1.value) ? 0 : 1) }
+            return Float(drawn) * fontSize
         }
 
         // The characters are gone through as they are, with no array of them
@@ -483,8 +512,8 @@ public class Font {
         if self.isCoreFont {
             var previous = -1
             for scalar in str!.unicodeScalars {
-                if scalar.value == 0x00AD && !symbolic {
-                    continue    // A soft hyphen is not drawn, see withoutSoftHyphens
+                if notDrawn(scalar.value) {
+                    continue    // See withoutIgnorables
                 }
                 let c1 = coreFontCode(scalar.value)
                 width += Int(metrics![c1 - 32][1])
@@ -713,11 +742,27 @@ public class Font {
             // Every glyph of a CJK font is as wide as the font size. Int() of a
             // NaN or infinite width stopped the program (review of 12 October
             // 2026, R12).
+            // The characters not drawn take no width.
             let fit = width / size
             if !(fit > 0) {
                 return 0
             }
-            return fit >= Float(str.unicodeScalars.count) ? str.unicodeScalars.count : Int(fit)
+            let scalars = Array(str.unicodeScalars)
+            if fit >= Float(scalars.count) {
+                return scalars.count
+            }
+            var room = Int(fit)
+            var i = 0
+            while i < scalars.count {
+                if !Font.isNotDrawn(scalars[i].value) {
+                    if room == 0 {
+                        break
+                    }
+                    room -= 1
+                }
+                i += 1
+            }
+            return i
         }
         if isCoreFont {
             return getCoreFontFitChars(str, w)
@@ -737,43 +782,62 @@ public class Font {
             _ str: String,
             _ width: Float) -> Int {
         var w: Float = width
-        var scalars = str.unicodeScalars.makeIterator()
-        var scalar = scalars.next()
+        let scalars = Array(str.unicodeScalars)
         var i: Int = 0
-        while let current = scalar {
-            let next = scalars.next()
-            if current.value == 0x00AD && !symbolic {
-                scalar = next
-                i += 1      // A soft hyphen is not drawn, see withoutSoftHyphens
+        while i < scalars.count {
+            if notDrawn(scalars[i].value) {
+                i += 1
                 continue
             }
-            let c1 = coreFontCode(current.value)
+            let c1 = coreFontCode(scalars[i].value)
             w -= Float(metrics![c1 - 32][1])
             if w < 0 {
                 return i
             }
-            if kernPairs, let next = next {
-                w -= Float(kerning(c1, coreFontCode(next.value)))
+            // The kerning is with the next character drawn, as stringWidth's is.
+            var after = i + 1
+            while after < scalars.count && notDrawn(scalars[after].value) {
+                after += 1
+            }
+            if kernPairs && after < scalars.count {
+                w -= Float(kerning(c1, coreFontCode(scalars[after].value)))
                 if w < 0 {
                     return i
                 }
             }
-            scalar = next
             i += 1
         }
         return i
     }
 
-    // Returns the characters without their soft hyphens, which a core font of
-    // WinAnsi does not draw or measure, as no font does: WinAnsi has a hyphen
-    // at the soft hyphen's code, and a line broken at a soft hyphen ends with a
-    // hyphen of its own (review of 11 October 2026, #21). Symbol and
-    // ZapfDingbats keep theirs, their codes being their characters.
-    func withoutSoftHyphens(_ scalars: [Unicode.Scalar]) -> [Unicode.Scalar] {
-        if symbolic || !scalars.contains(where: { $0.value == 0x00AD }) {
+    // Returns the characters without those a core font of WinAnsi does not
+    // draw or measure, as no font does: the soft hyphen, as WinAnsi has a
+    // hyphen at its code, and a line broken at a soft hyphen ends with a hyphen
+    // of its own (review of 11 October 2026, #21), and the other characters not
+    // drawn, the marks of direction, the joiners, the byte order mark and those
+    // isIgnorable returns true for, which were drawn as spaces (review of 12
+    // October 2026, R14). Symbol and ZapfDingbats keep theirs, their codes
+    // being their characters.
+    func withoutIgnorables(_ scalars: [Unicode.Scalar]) -> [Unicode.Scalar] {
+        if !scalars.contains(where: { notDrawn($0.value) }) {
             return scalars
         }
-        return scalars.filter { $0.value != 0x00AD }
+        return scalars.filter { !notDrawn($0.value) }
+    }
+
+    // Returns true for a character that a core font of WinAnsi does not draw
+    // or measure, see withoutIgnorables.
+    private func notDrawn(_ value: UInt32) -> Bool {
+        return !symbolic && Font.isNotDrawn(value)
+    }
+
+    // Returns true for a character a font that is not embedded, a core font of
+    // WinAnsi or a CJK font, does not draw or measure: the marks of direction,
+    // the joiners, the byte order mark and those isIgnorable returns true for, the
+    // soft hyphen among them. A CJK font drew each 1 em wide (review of 12
+    // October 2026, R20).
+    static func isNotDrawn(_ value: UInt32) -> Bool {
+        return Font.isIgnorable(Int(value)) || Font.isJoinerOrRLM(value) || value == 0xFEFF
     }
 
     /// Returns the code of the character in the encoding of this core font:

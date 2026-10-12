@@ -397,34 +397,73 @@ public class Stamp : IDrawable {
         while (i < str.Length) {
             int codePoint = char.ConvertToUtf32(str, i);   // full Unicode scalar value
             i += char.IsHighSurrogate(str[i]) ? 2 : 1;      // advance 1 or 2 char positions
-
-            if (codePoint == 0xFEFF) { continue; }  // Skip the BOM
-
-            // What Page leaves out, it leaves out too: the marks of direction,
-            // a joiner the font has no glyph for, and what Unicode does not
-            // draw; each was drawn as a box, wider than StringWidth measured
-            // the text (review of 11 October 2026, #10)
-            if (codePoint == 0x200E || codePoint == 0x200F || Font.IsIgnorable(codePoint) ||
-                    ((codePoint == 0x200C || codePoint == 0x200D) && font.unicodeToGID.Get(codePoint) == 0)) {
+            if (NotDrawn(font, codePoint)) {
                 continue;
             }
 
             // The glyphs Page draws. The .notdef glyph of a character the font
             // does not have is drawn in a marked content span with the
-            // character as its actual text, as on a page.
+            // character as its actual text, as on a page, and so is a glyph
+            // the ToUnicode map gives another character, and one with a joiner
+            // after it that the font has no glyph for, whose actual text has
+            // the joiner too: it was left out (review of 12 October 2026, R34).
             int gid = Page.GlyphOf(font, codePoint);
             font.UseGlyph(gid);
             font.UseChar(codePoint, gid);
-            if (font.Lacks(codePoint)) {
+            int joiner = JoinerAfter(font, str, i);
+            if (font.Lacks(codePoint) || font.DrawnAsAnother(codePoint) || joiner != 0) {
+                string text = Page.TextOf(codePoint);
+                if (joiner != 0) {
+                    text += (char) joiner;
+                }
                 Append("> Tj\n/Span <</ActualText <");
-                Append(Page.ToUTF16Hex(Page.TextOf(codePoint)));
+                Append(Page.ToUTF16Hex(text));
                 Append(">>> BDC\n<");
                 AppendCodePointAsHex(gid);
-                Append("> Tj\nEMC\n<");
+                Append("> Tj\n");
+                if (joiner != 0) {
+                    // A space that takes no room stands in for the joiner, as
+                    // on a page, see Page.AppendGlyphWithActualText.
+                    int space = font.unicodeToGID.Get(0x0020);
+                    font.UseGlyph(space);
+                    Append("[<");
+                    AppendCodePointAsHex(space);
+                    Append("> ");
+                    Append(1000f * font.GlyphAdvance(space) / font.unitsPerEm);
+                    Append("] TJ\n");
+                }
+                Append("EMC\n<");
             } else {
                 AppendCodePointAsHex(gid);
             }
         }
+    }
+
+    // Returns true for what Page leaves out, which a stamp leaves out too: the
+    // byte order mark, the marks of direction, a joiner the font has no glyph
+    // for, and what Unicode does not draw; each was drawn as a box, wider than
+    // StringWidth measured the text (review of 11 October 2026, #10).
+    private static bool NotDrawn(Font font, int c) {
+        return c == 0xFEFF || c == 0x200E || c == 0x200F || Font.IsIgnorable(c) ||
+                ((c == 0x200C || c == 0x200D) && font.unicodeToGID.Get(c) == 0);
+    }
+
+    // Returns the zero width non-joiner or joiner the font has no glyph for
+    // that goes with the glyph before the index, the last of them before the
+    // next character drawn, as on a page, or 0 if there is none.
+    private static int JoinerAfter(Font font, string str, int i) {
+        int joiner = 0;
+        while (i < str.Length) {
+            int c = char.ConvertToUtf32(str, i);
+            if (!NotDrawn(font, c)) {
+                break;
+            }
+            if (c == 0x200C || c == 0x200D) {
+                joiner = c;
+            }
+            i += char.IsHighSurrogate(str[i]) ? 2 : 1;
+        }
+        return joiner;
     }
 
     private void Append(Point point) {

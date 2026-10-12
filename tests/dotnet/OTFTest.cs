@@ -331,6 +331,10 @@ public class OTFTest {
         Assert.Contains("may not be embedded", message);
         Assert.Contains("NotoSans", message);
         new Font(TestSupport.NewPDF(), new MemoryStream(With(ttf, os2 + 8, 0x0006)));
+        // Bit 0 is reserved, and bit 9 allows the bitmaps alone (R13).
+        foreach (int fsType in new int[] {0x0003, 0x0200, 0x0204}) {
+            Assert.Contains("may not be embedded", Error(With(ttf, os2 + 8, fsType)));
+        }
     }
 }
 }   // End of namespace PDFjet.NET
