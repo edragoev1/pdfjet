@@ -18,6 +18,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
 	"github.com/edragoev1/pdfjet/v9/src/border"
@@ -1972,16 +1973,25 @@ func wrapCellText(row []*Cell, index int) []string {
 				continue
 			}
 			// A token wider than the column starts a line of its own and is
-			// broken between its characters. A line has at least one
-			// character, even one wider than the column.
-			for _, ch := range token {
-				if buf.Len() > 0 && width(buf.String()+string(ch)) > cellWidth {
-					lines = append(lines, trimSpace(buf.String()))
-					buf.Reset()
+			// broken between its characters, the line as long as fits, with
+			// at least one character, even one wider than the column. The
+			// rest is broken again, at a soft hyphen if one fits: "1234<SHY>
+			// 5678" was 123 / 4<SHY>56 / 78, where TextBlock and TextFrame
+			// draw 123 / 4- / 567 / 8 (review of 12 October 2026, T4).
+			end := 0
+			for i, ch := range token {
+				next := i + utf8.RuneLen(ch)
+				if end > 0 && width(token[:next]) > cellWidth {
+					break
 				}
-				buf.WriteRune(ch)
+				end = next
 			}
-			break
+			if end == len(token) {
+				buf.WriteString(token) // A character wider than the column
+				break
+			}
+			lines = append(lines, trimSpace(token[:end]))
+			token = token[end:]
 		}
 	}
 	return append(lines, trimSpace(buf.String()))

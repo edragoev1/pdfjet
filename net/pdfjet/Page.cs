@@ -802,7 +802,7 @@ public class Page {
                     while (j < n && !runEdge[j]) {
                         j++;
                     }
-                    AppendRun(font, codePoints, gids, offsets, i, j);
+                    AppendRun(font, codePoints, gids, offsets, joiners, i, j);
                     runEdge[j] = false;
                     i = j;
                     continue;
@@ -841,11 +841,18 @@ public class Page {
     // the brackets with the run when the text is copied; with the brackets in
     // spans of their own, or mirrored back like the other brackets, they come
     // out the wrong way round. No glyph stands in for the marks: MuPDF moves
-    // the first bracket to the right to left text when one does.
-    private void AppendRun(Font font, int[] codePoints, int[] gids, int[] offsets, int start, int end) {
+    // the first bracket to the right to left text when one does. A zero width
+    // non-joiner or joiner the font has no glyph for is in the actual text
+    // after the glyph before it, as in a word: it was left out (review of 12
+    // October 2026, T7).
+    private void AppendRun(
+            Font font, int[] codePoints, int[] gids, int[] offsets, int[] joiners, int start, int end) {
         StringBuilder text = new StringBuilder("\u200E");
         for (int k = start; k < end; k++) {
             text.Append(TextOf(codePoints[k]));
+            if (joiners != null && joiners[k] != 0) {
+                text.Append(char.ConvertFromUtf32(joiners[k]));
+            }
         }
         text.Append("\u200E");
         Append("> Tj\n/Span <</ActualText <");
@@ -861,18 +868,28 @@ public class Page {
         Append("> Tj\nEMC\n<");
     }
 
+    // Returns true if the glyph at k is drawn in a span of its own at an end
+    // of a word: a character Bidi mirrored, or one the font does not have.
+    private static bool AtWordEnd(Font font, int[] codePoints, bool[] mirrored, int k) {
+        return (mirrored != null && mirrored[k]) || font.Lacks(codePoints[k]);
+    }
+
     // Draws the glyphs of a word, or of the part of a word before a joiner,
     // in a marked content span with the text of the word when it has moved
     // marks, with the mirrored characters and the .notdef glyphs at its ends
-    // in spans of their own.
+    // in spans of their own. A glyph drawn for another character stays in the
+    // word's span, whose actual text gives its character: in a span of its
+    // own, the word's span began with a moved mark, after a space that stands
+    // for it, and the word was copied with a space inside it (review of 12
+    // October 2026, T1).
     private void AppendWord(
             Font font, int[] codePoints, int[] gids, bool[] mirrored, int[] offsets, int i, int end) {
         int wordStart = i;
         int wordEnd = end;
-        while (wordStart < wordEnd && InOwnSpan(font, codePoints, mirrored, wordStart)) {
+        while (wordStart < wordEnd && AtWordEnd(font, codePoints, mirrored, wordStart)) {
             wordStart++;
         }
-        while (wordEnd > wordStart && InOwnSpan(font, codePoints, mirrored, wordEnd - 1)) {
+        while (wordEnd > wordStart && AtWordEnd(font, codePoints, mirrored, wordEnd - 1)) {
             wordEnd--;
         }
         if (offsets != null && IsMoved(offsets, wordStart, wordEnd)) {

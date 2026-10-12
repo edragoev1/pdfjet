@@ -472,11 +472,18 @@ func (font *Font) GetFitChars(text string, width float32) int {
 	w := float32(width*float32(font.unitsPerEm)) / font.size
 	if font.isCJK {
 		// Every glyph of a CJK font is as wide as the font size, and the
-		// characters not drawn take no width.
-		room := int(width / font.size)
-		if room < 0 {
+		// characters not drawn take no width. A width of more characters
+		// than the text has fits all of it: int of 1e30 or of an infinity is
+		// not a number of characters, and none fit (review of 12 October
+		// 2026, T6).
+		fit := width / font.size
+		if !(fit > 0) {
 			return 0
 		}
+		if fit >= float32(len(runes)) {
+			return len(runes)
+		}
+		room := int(fit)
 		i := 0
 		for i < len(runes) {
 			if !isNotDrawn(runes[i]) {

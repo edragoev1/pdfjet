@@ -656,7 +656,7 @@ public class Page {
                     while j < n && !runEdge![j] {
                         j += 1
                     }
-                    appendRun(font, codePoints, gids, offsets, i, j)
+                    appendRun(font, codePoints, gids, offsets, joiners, i, j)
                     runEdge![j] = false
                     i = j
                     continue
@@ -695,12 +695,19 @@ public class Page {
     // the brackets with the run when the text is copied; with the brackets in
     // spans of their own, or mirrored back like the other brackets, they come
     // out the wrong way round. No glyph stands in for the marks: MuPDF moves
-    // the first bracket to the right to left text when one does.
+    // the first bracket to the right to left text when one does. A zero width
+    // non-joiner or joiner the font has no glyph for is in the actual text
+    // after the glyph before it, as in a word: it was left out (review of 12
+    // October 2026, T7).
     private func appendRun(
-            _ font: Font, _ codePoints: [Int], _ gids: [Int], _ offsets: [Int]?, _ start: Int, _ end: Int) {
+            _ font: Font, _ codePoints: [Int], _ gids: [Int], _ offsets: [Int]?, _ joiners: [Int]?,
+            _ start: Int, _ end: Int) {
         var text = "\u{200E}"
         for k in start..<end {
             text.append(Page.textOf(font, codePoints[k]))
+            if let joiner = joiners?[k], joiner != 0, let scalar = Unicode.Scalar(joiner) {
+                text.unicodeScalars.append(scalar)
+            }
         }
         text.append("\u{200E}")
         append("> Tj\n/Span <</ActualText <")
@@ -716,19 +723,29 @@ public class Page {
         append("> Tj\nEMC\n<")
     }
 
+    // Returns true if the glyph at k is drawn in a span of its own at an end
+    // of a word: a character Bidi mirrored, or one the font does not have.
+    private func atWordEnd(_ font: Font, _ codePoints: [Int], _ mirrored: [Bool]?, _ k: Int) -> Bool {
+        return mirrored?[k] == true || font.lacks(codePoints[k])
+    }
+
     // Draws the glyphs of a word, or of the part of a word before a joiner,
     // in a marked content span with the text of the word when it has moved
     // marks, with the mirrored characters and the .notdef glyphs at its ends
-    // in spans of their own.
+    // in spans of their own. A glyph drawn for another character stays in the
+    // word's span, whose actual text gives its character: in a span of its
+    // own, the word's span began with a moved mark, after a space that stands
+    // for it, and the word was copied with a space inside it (review of 12
+    // October 2026, T1).
     private func appendWord(
             _ font: Font, _ codePoints: [Int], _ gids: [Int], _ mirrored: [Bool]?, _ offsets: [Int]?,
             _ i: Int, _ end: Int) {
         var wordStart = i
         var wordEnd = end
-        while wordStart < wordEnd && inOwnSpan(font, codePoints, mirrored, wordStart) {
+        while wordStart < wordEnd && atWordEnd(font, codePoints, mirrored, wordStart) {
             wordStart += 1
         }
-        while wordEnd > wordStart && inOwnSpan(font, codePoints, mirrored, wordEnd - 1) {
+        while wordEnd > wordStart && atWordEnd(font, codePoints, mirrored, wordEnd - 1) {
             wordEnd -= 1
         }
         if let offsets = offsets, isMoved(offsets, wordStart, wordEnd) {

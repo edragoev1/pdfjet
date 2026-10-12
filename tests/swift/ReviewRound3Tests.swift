@@ -94,4 +94,78 @@ import Testing
         }
         #expect(error?.message == "The tables of the Markdown have more than 100000 cells: draw a table that large with BigTable.")
     }
+
+    /// Two characters copied as the same text, as a letter and its
+    /// presentation form, need no actual text for the second: Arabic text
+    /// had three times the spans it needed, its content 27% larger (T2).
+    @Test func aCharacterCopiedAsTheFirstHasNoActualText() throws {
+        let pdf = TestSupport.newPDF()
+        let font = try Font(pdf, TestSupport.open("fonts/NotoSansArabic/NotoSansArabic-Regular.ttf"))
+        try #require(font.unicodeToGID[0x0644] == font.unicodeToGID[0xFEDD])
+        font.useChar(0xFEDD, font.unicodeToGID[0xFEDD])
+        #expect(!font.drawnAsAnother(0x0644))
+        font.useChar(0x0661, font.unicodeToGID[0x0661])
+        #expect(font.drawnAsAnother(0x06F1))
+    }
+
+    /// A glyph drawn for another character stays in the span of a word with
+    /// moved marks, whose actual text gives the character: in a span of its
+    /// own, the word's span began with a moved mark and the space that
+    /// stands for it, and "ةِمى" was copied as "ىمِ ة" (T1).
+    @Test func aWordWithMarksIsCopiedWithoutASpaceInside() throws {
+        let pdf = TestSupport.newPDF()
+        let font = try Font(pdf, TestSupport.open("fonts/NotoSansArabic/NotoSansArabic-Regular.ttf"))
+        let page = Page(pdf, Letter.PORTRAIT)
+        TextLine(font, "\u{0628}").setLocation(50, 50).drawOn(page)
+        // The glyph of ة as drawn first for another character, which no two
+        // characters of this font copied as different text are
+        font.program!.chars[font.unicodeToGID[0x0629]] = 0x58
+        TextLine(font, "\u{0629}\u{0650}\u{0645}\u{0649}").setLocation(50, 100).drawOn(page)
+        let content = TestSupport.content(page)
+        #expect(!content.contains("/ActualText <FEFF0020"), "\(content)")
+        #expect(content.contains("/ActualText <" + Page.toUTF16Hex("\u{0629}\u{0650}\u{0645}\u{0649}") + ">"), "\(content)")
+    }
+
+    /// A cell's word broken between its characters breaks again at a soft
+    /// hyphen, as TextBlock and TextFrame do: "1234<SHY>5678" was
+    /// 123 / 4<SHY>56 / 78 (T4).
+    @Test func aCellBreaksAtASoftHyphenAfterACharacterBreak() {
+        let font = TestSupport.helvetica(TestSupport.newPDF())
+        let cell = Cell(font, "1234\u{00AD}5678")
+        cell.setWidth(font.stringWidth("123"))
+        cell.setLeftPadding(0)
+        cell.setRightPadding(0)
+        let lines = Table().wrapCellText([cell], 0).map { $0.replacingOccurrences(of: "\u{00AD}", with: "") }
+        #expect(lines == ["123", "4-", "567", "8"])
+        let wide = Cell(font, "W")
+        wide.setWidth(1)
+        #expect(Table().wrapCellText([wide], 0) == ["W"])
+    }
+
+    /// A CJK font fits all of a text in a width of more characters than it
+    /// has, as 1e30 or an infinity, in every port: Go and C# fit none (T6).
+    @Test func aCJKFontFitsAllOfATextInAHugeWidth() {
+        let font = TestSupport.cjkFont(TestSupport.newPDF(), CJKFont.ADOBE_MING_STD_LIGHT)
+        let text = "\u{4E2D}\u{6587}\u{5B57}"
+        for width: Float in [1e30, .infinity, .greatestFiniteMagnitude] {
+            #expect(font.getFitChars(text, width) == 3, "width \(width)")
+        }
+        for width: Float in [.nan, -1, 0] {
+            #expect(font.getFitChars(text, width) == 0, "width \(width)")
+        }
+        #expect(font.getFitChars(text, 2 * font.getSize()) == 2)
+    }
+
+    /// A zero width joiner the font has no glyph for, in left to right text
+    /// between two LRMs, is in the actual text of the run, as the stamp keeps
+    /// it: it was left out (T7).
+    @Test func aJoinerInARunIsInItsActualText() throws {
+        let pdf = TestSupport.newPDF()
+        let font = try Font(pdf, TestSupport.open("fonts/NotoSansJP/NotoSansJP-Regular.ttf"))
+        try #require(font.unicodeToGID[0x200D] == 0)
+        let page = Page(pdf, Letter.PORTRAIT)
+        TextLine(font, "d\u{200D}\u{200E}\u{200C}e\u{200D}").setLocation(50, 50).drawOn(page)
+        let content = TestSupport.content(page)
+        #expect(content.contains("/ActualText <" + Page.toUTF16Hex("\u{200E}e\u{200D}\u{200E}") + ">"), "\(content)")
+    }
 }

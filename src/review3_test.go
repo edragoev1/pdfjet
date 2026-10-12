@@ -14,6 +14,8 @@ import (
 	"strings"
 	"sync"
 	"testing"
+
+	"github.com/edragoev1/pdfjet/v9/src/cjkfont"
 )
 
 // The findings of the third review, of 12 October 2026, as tests.
@@ -169,4 +171,104 @@ func TestReview3TheRowsPastTheTableLimitAreNotKept(t *testing.T) {
 	var pages []*Page
 	NewMarkdown(font, font, font, font, font).DrawOnPages(pdf, text, &pages, testLetterPortrait())
 	testRecorded(t, pdf, "The tables of the Markdown have more than 100000 cells: draw a table that large with BigTable.")
+}
+
+// Two characters copy as the same text, as a letter and its presentation
+// form, need no actual text for the second: Arabic text had three times the
+// spans it needed, its content 27% larger (T2).
+func TestReview3ACharacterCopiedAsTheFirstHasNoActualText(t *testing.T) {
+	pdf := testNewPDF()
+	font := NewFontFromFile(pdf, testRepoPath(t, "fonts/NotoSansArabic/NotoSansArabic-Regular.ttf"))
+	if font.unicodeToGID.get(0x0644) != font.unicodeToGID.get(0xFEDD) {
+		t.Fatal("the font draws ل and its isolated form with two glyphs")
+	}
+	font.useChar(0xFEDD, font.unicodeToGID.get(0xFEDD))
+	if font.drawnAsAnother(0x0644) {
+		t.Error("ل copies as its isolated form, and has an actual text")
+	}
+	font.useChar(0x0661, font.unicodeToGID.get(0x0661))
+	if !font.drawnAsAnother(0x06F1) {
+		t.Error("۱ copies as ١, and has no actual text")
+	}
+}
+
+// A glyph drawn for another character stays in the span of a word with
+// moved marks, whose actual text gives the character: in a span of its own,
+// the word's span began with a moved mark and the space that stands for it,
+// and "ةِمى" was copied as "ىمِ ة" (T1).
+func TestReview3AWordWithMarksIsCopiedWithoutASpaceInside(t *testing.T) {
+	pdf := testNewPDF()
+	font := NewFontFromFile(pdf, testRepoPath(t, "fonts/NotoSansArabic/NotoSansArabic-Regular.ttf"))
+	page := NewPage(pdf, testLetterPortrait())
+	NewTextLine(font, "\u0628").SetLocation(50, 50).DrawOn(page)
+	// The glyph of ة as drawn first for another character, which no two
+	// characters of this font copied as different text are
+	font.program.chars[font.unicodeToGID.get(0x0629)] = 'X'
+	NewTextLine(font, "ةِمى").SetLocation(50, 100).DrawOn(page)
+	content := testContent(page)
+	if strings.Contains(content, "/ActualText <FEFF0020") {
+		t.Errorf("an actual text starts with a space: %q", content)
+	}
+	if !strings.Contains(content, "/ActualText <"+toUTF16Hex("ةِمى")+">") {
+		t.Errorf("the word is not copied as written: %q", content)
+	}
+}
+
+// A cell's word broken between its characters breaks again at a soft hyphen,
+// as TextBlock and TextFrame do: "1234<SHY>5678" was 123 / 4<SHY>56 / 78 (T4).
+func TestReview3ACellBreaksAtASoftHyphenAfterACharacterBreak(t *testing.T) {
+	font := testHelvetica(testNewPDF())
+	cell := NewCell(font, "1234­5678")
+	cell.SetWidth(font.StringWidth(font.GetSize(), "123"))
+	cell.SetLeftPadding(0)
+	cell.SetRightPadding(0)
+	var lines []string
+	for _, line := range wrapCellText([]*Cell{cell}, 0) {
+		lines = append(lines, strings.ReplaceAll(line, "­", ""))
+	}
+	if want := []string{"123", "4-", "567", "8"}; strings.Join(lines, "/") != strings.Join(want, "/") {
+		t.Errorf("the lines %q, not %q", lines, want)
+	}
+	cell = NewCell(font, "W")
+	cell.SetWidth(1)
+	if lines := wrapCellText([]*Cell{cell}, 0); len(lines) != 1 || lines[0] != "W" {
+		t.Errorf("a character wider than the column: %q", lines)
+	}
+}
+
+// A CJK font fits all of a text in a width of more characters than it has,
+// as 1e30 or an infinity, as Java does: int of it is no number of characters,
+// and none fit in Go (T6).
+func TestReview3ACJKFontFitsAllOfATextInAHugeWidth(t *testing.T) {
+	font := NewCJKFont(testNewPDF(), cjkfont.AdobeMingStdLight)
+	text := "\u4E2D\u6587\u5B57"
+	for _, width := range []float32{1e30, float32(math.Inf(1)), math.MaxFloat32} {
+		if got := font.GetFitChars(text, width); got != 3 {
+			t.Errorf("%g: %d characters fit, not 3", width, got)
+		}
+	}
+	for _, width := range []float32{float32(math.NaN()), -1, 0} {
+		if got := font.GetFitChars(text, width); got != 0 {
+			t.Errorf("%g: %d characters fit, not 0", width, got)
+		}
+	}
+	if got := font.GetFitChars(text, 2*font.GetSize()); got != 2 {
+		t.Errorf("%d characters fit in two, not 2", got)
+	}
+}
+
+// A zero width joiner the font has no glyph for, in left to right text
+// between two LRMs, is in the actual text of the run, as the stamp keeps it:
+// it was left out (T7).
+func TestReview3AJoinerInARunIsInItsActualText(t *testing.T) {
+	pdf := testNewPDF()
+	font := NewFontFromFile(pdf, testRepoPath(t, "fonts/NotoSansJP/NotoSansJP-Regular.ttf"))
+	if font.unicodeToGID.get(0x200D) != 0 {
+		t.Fatal("the font has a glyph for the ZWJ")
+	}
+	page := NewPage(pdf, testLetterPortrait())
+	NewTextLine(font, "d‍‎‌e‍").SetLocation(50, 50).DrawOn(page)
+	if content := testContent(page); !strings.Contains(content, "/ActualText <"+toUTF16Hex("‎e‍‎")+">") {
+		t.Errorf("the ZWJ is not in the actual text: %q", content)
+	}
 }

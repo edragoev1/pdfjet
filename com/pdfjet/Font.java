@@ -533,13 +533,25 @@ final public class Font {
     // character too, which the ToUnicode map gives the glyph: the character is
     // then drawn in a span with itself as its actual text. A document that drew
     // "١٢٣" and then "۱۲۳" copied the second as "١۲٣" (review of 12 October
-    // 2026, R15).
+    // 2026, R15). A character copied as the other is not, as an Arabic letter
+    // and its form: ل and its isolated form both copy as ل, and Arabic text
+    // had three times the spans it needed, its content 27% larger (review of
+    // 12 October 2026, T2).
     boolean drawnAsAnother(int c) {
         if (program == null || program.chars == null) {
             return false;
         }
         Integer first = program.chars.get(unicodeToGID.get(c));
-        return first != null && first != c;
+        return first != null && first != c && !sameLetters(first, c);
+    }
+
+    // Returns true if the two characters copy as the same text: the letters of
+    // a presentation form, as the ToUnicode map gives them.
+    static boolean sameLetters(int a, int b) {
+        String la = Bidi.lettersOf(a);
+        String lb = Bidi.lettersOf(b);
+        return (la != null ? la : new String(Character.toChars(a)))
+                .equals(lb != null ? lb : new String(Character.toChars(b)));
     }
 
     /**

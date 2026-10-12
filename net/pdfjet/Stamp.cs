@@ -395,8 +395,11 @@ public class Stamp : IDrawable {
     private void DrawText(Font font, string str) {
         int i = 0;
         while (i < str.Length) {
-            int codePoint = char.ConvertToUtf32(str, i);   // full Unicode scalar value
-            i += char.IsHighSurrogate(str[i]) ? 2 : 1;      // advance 1 or 2 char positions
+            // A lone surrogate is a character the font does not have, as in
+            // Java and Go: ConvertToUtf32 threw on it (review of 12 October
+            // 2026, T8).
+            int codePoint = Util.CodePointAt(str, i);
+            i += Util.CharCount(str, i);
             if (NotDrawn(font, codePoint)) {
                 continue;
             }
@@ -454,14 +457,14 @@ public class Stamp : IDrawable {
     private static int JoinerAfter(Font font, string str, int i) {
         int joiner = 0;
         while (i < str.Length) {
-            int c = char.ConvertToUtf32(str, i);
+            int c = Util.CodePointAt(str, i);
             if (!NotDrawn(font, c)) {
                 break;
             }
             if (c == 0x200C || c == 0x200D) {
                 joiner = c;
             }
-            i += char.IsHighSurrogate(str[i]) ? 2 : 1;
+            i += Util.CharCount(str, i);
         }
         return joiner;
     }

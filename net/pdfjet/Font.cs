@@ -428,12 +428,24 @@ public class Font {
     // character too, which the ToUnicode map gives the glyph: the character is
     // then drawn in a span with itself as its actual text. A document that drew
     // "١٢٣" and then "۱۲۳" copied the second as "١۲٣" (review of 12 October
-    // 2026, R15).
+    // 2026, R15). A character copied as the other is not, as an Arabic letter
+    // and its form: ل and its isolated form both copy as ل, and Arabic text
+    // had three times the spans it needed, its content 27% larger (review of
+    // 12 October 2026, T2).
     internal bool DrawnAsAnother(int c) {
         if (program == null || program.chars == null) {
             return false;
         }
-        return program.chars.TryGetValue(unicodeToGID.Get(c), out int first) && first != c;
+        return program.chars.TryGetValue(unicodeToGID.Get(c), out int first) && first != c
+                && !SameLetters(first, c);
+    }
+
+    // Returns true if the two characters copy as the same text: the letters of
+    // a presentation form, as the ToUnicode map gives them.
+    internal static bool SameLetters(int a, int b) {
+        string la = Bidi.LettersOf(a) ?? char.ConvertFromUtf32(a);
+        string lb = Bidi.LettersOf(b) ?? char.ConvertFromUtf32(b);
+        return la == lb;
     }
 
     /// <summary>Returns the width of the string at the current font size.</summary>
@@ -650,8 +662,18 @@ public class Font {
         float w = width * unitsPerEm / size;
         if (isCJK) {
             // Every glyph of a CJK font is as wide as the font size, and the
-            // characters not drawn take no width.
-            int fit = Math.Max(0, (int) (width / size));
+            // characters not drawn take no width. A width of more characters
+            // than the text has fits all of it: (int) of 1e30 or of an
+            // infinity is not a number of characters, and none fit (review of
+            // 12 October 2026, T6).
+            float room = width / size;
+            if (!(room > 0f)) {
+                return 0;
+            }
+            if (room >= str.Length) {
+                return str.Length;
+            }
+            int fit = (int) room;
             int k = 0;
             while (k < str.Length) {
                 int codePoint = Util.CodePointAt(str, k);

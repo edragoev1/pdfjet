@@ -2061,21 +2061,28 @@ public class Table implements Drawable {
                     continue;
                 }
                 // A token wider than the column starts a line of its own and
-                // is broken between its characters: after the words before
-                // it, or the end of another such token, it was "listic e" (5
+                // is broken between its characters: after the words before it,
+                // or the end of another such token, it was "listic e" (5
                 // October 2026). A character is two chars when it is not of
                 // the basic plane, and a line has at least one of them, even
-                // one wider than the column.
-                for (int k = 0; k < token.length(); ) {
-                    String character = token.substring(k, k + Character.charCount(token.codePointAt(k)));
-                    if (buf.length() > 0 && cellTextWidth(cell, buf.toString() + character) > cellWidth) {
-                        lines.add(buf.toString().trim());
-                        buf.setLength(0);
+                // one wider than the column. The rest is broken again, at a
+                // soft hyphen if one fits: "1234<SHY>5678" was 123 / 4<SHY>56
+                // / 78, where TextBlock and TextFrame draw 123 / 4- / 567 / 8
+                // (review of 12 October 2026, T4).
+                int end = 0;
+                while (end < token.length()) {
+                    int next = end + Character.charCount(token.codePointAt(end));
+                    if (end > 0 && cellTextWidth(cell, token.substring(0, next)) > cellWidth) {
+                        break;
                     }
-                    buf.append(character);
-                    k += character.length();
+                    end = next;
                 }
-                break;
+                if (end == token.length()) {
+                    buf.append(token);  // A character wider than the column
+                    break;
+                }
+                lines.add(token.substring(0, end).trim());
+                token = token.substring(end);
             }
         }
         lines.add(buf.toString().trim());

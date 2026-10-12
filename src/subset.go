@@ -8,6 +8,7 @@ package pdfjet
 import (
 	"errors"
 	"math"
+	"slices"
 	"sort"
 
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
@@ -109,13 +110,29 @@ func (font *Font) useChar(c rune, gid int) {
 // another character too, which the ToUnicode map gives the glyph: the
 // character is then drawn in a span with itself as its actual text. A
 // document that drew "١٢٣" and then "۱۲۳" copied the second as "١۲٣"
-// (review of 12 October 2026, R15).
+// (review of 12 October 2026, R15). A character copied as the other is not,
+// as an Arabic letter and its form: ل and its isolated form both copy as ل,
+// and Arabic text had three times the spans it needed, its content 27%
+// larger (review of 12 October 2026, T2).
 func (font *Font) drawnAsAnother(c rune) bool {
 	if font.program == nil || font.program.chars == nil {
 		return false
 	}
 	first, ok := font.program.chars[font.unicodeToGID.get(c)]
-	return ok && first != c
+	return ok && first != c && !sameLetters(first, c)
+}
+
+// sameLetters returns true if the two characters copy as the same text: the
+// letters of a presentation form, as the ToUnicode map gives them.
+func sameLetters(a, b rune) bool {
+	la, lb := lettersOf(a), lettersOf(b)
+	if la == nil {
+		la = []rune{a}
+	}
+	if lb == nil {
+		lb = []rune{b}
+	}
+	return slices.Equal(la, lb)
 }
 
 // SetSubset sets whether this font is embedded as a subset, the outlines of

@@ -2002,25 +2002,28 @@ public class Table : IDrawable {
                     continue;
                 }
                 // A token wider than the column starts a line of its own:
-                // after the words before it, or the end of another such
-                // token, it was "listic e" (5 October 2026). It is broken
-                // between its characters.
-                for (int k = 0; k < token.Length; ) {
-                    // A character, which is two chars when it is not of the
-                    // basic plane, and a line has at least one of them, even
-                    // one wider than the column.
-                    String character = token.Substring(k, Util.CharCount(token, k));
-                    // The line ends without the space before the token, which
-                    // would count in the width of the text and move it when it
-                    // is aligned right or centered.
-                    if (buf.Length > 0 && width(buf.ToString() + character) > cellWidth) {
-                        lines.Add(Util.Trim(buf.ToString()));
-                        buf.Length = 0;
+                // after the words before it, or the end of another such token,
+                // it was "listic e" (5 October 2026). It is broken between its
+                // characters, a character two chars when it is not of the
+                // basic plane, and a line has at least one of them, even one
+                // wider than the column. The rest is broken again, at a soft
+                // hyphen if one fits: "1234<SHY>5678" was 123 / 4<SHY>56 / 78,
+                // where TextBlock and TextFrame draw 123 / 4- / 567 / 8
+                // (review of 12 October 2026, T4).
+                int end = 0;
+                while (end < token.Length) {
+                    int next = end + Util.CharCount(token, end);
+                    if (end > 0 && width(token.Substring(0, next)) > cellWidth) {
+                        break;
                     }
-                    buf.Append(character);
-                    k += character.Length;
+                    end = next;
                 }
-                break;
+                if (end == token.Length) {
+                    buf.Append(token);  // A character wider than the column
+                    break;
+                }
+                lines.Add(Util.Trim(token.Substring(0, end)));
+                token = token.Substring(end);
             }
         }
         lines.Add(Util.Trim(buf.ToString()));

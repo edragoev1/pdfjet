@@ -2036,18 +2036,27 @@ public class Table : Drawable {
                     continue
                 }
                 // A token wider than the column starts a line of its own:
-                // after the words before it, or the end of another such
-                // token, it was "listic e" (5 October 2026). It is broken
-                // between its characters, and a line has at least one
-                // character, even one wider than the column.
-                for scalar in token.unicodeScalars {
-                    if !buf.isEmpty && width(buf + String(scalar)) > cellWidth {
-                        lines.append(buf.trim())
-                        buf = ""
+                // after the words before it, or the end of another such token,
+                // it was "listic e" (5 October 2026). It is broken between its
+                // characters, and a line has at least one character, even one
+                // wider than the column. The rest is broken again, at a soft
+                // hyphen if one fits: "1234<SHY>5678" was 123 / 4<SHY>56 / 78,
+                // where TextBlock and TextFrame draw 123 / 4- / 567 / 8
+                // (review of 12 October 2026, T4).
+                let scalars = Array(token.unicodeScalars)
+                var end = 0
+                while end < scalars.count {
+                    if end > 0 && width(String(String.UnicodeScalarView(scalars[0...end]))) > cellWidth {
+                        break
                     }
-                    buf.append(String(scalar))
+                    end += 1
                 }
-                break
+                if end == scalars.count {
+                    buf = token     // A character wider than the column
+                    break
+                }
+                lines.append(String(String.UnicodeScalarView(scalars[0..<end])).trim())
+                token = String(String.UnicodeScalarView(scalars[end...]))
             }
         }
         lines.append(buf.trim())

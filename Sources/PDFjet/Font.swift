@@ -458,12 +458,23 @@ public class Font {
     // character too, which the ToUnicode map gives the glyph: the character is
     // then drawn in a span with itself as its actual text. A document that drew
     // "١٢٣" and then "۱۲۳" copied the second as "١۲٣" (review of 12 October
-    // 2026, R15).
+    // 2026, R15). A character copied as the other is not, as an Arabic letter
+    // and its form: ل and its isolated form both copy as ل, and Arabic text
+    // had three times the spans it needed, its content 27% larger (review of
+    // 12 October 2026, T2).
     func drawnAsAnother(_ c: Int) -> Bool {
         guard let first = program?.chars[unicodeToGID[c]] else {
             return false
         }
-        return first != c
+        return first != c && !Font.sameLetters(first, c)
+    }
+
+    // Returns true if the two characters copy as the same text: the letters of
+    // a presentation form, as the ToUnicode map gives them.
+    static func sameLetters(_ a: Int, _ b: Int) -> Bool {
+        let la = Bidi.lettersOf(UInt32(a)) ?? [UInt32(a)]
+        let lb = Bidi.lettersOf(UInt32(b)) ?? [UInt32(b)]
+        return la == lb
     }
 
     // Returns true if drawnAsAnother is true for one of the characters, in one
@@ -474,7 +485,7 @@ public class Font {
         }
         let table = unicodeToGID
         for c in codePoints {
-            if let first = chars[table[c]], first != c {
+            if let first = chars[table[c]], first != c, !Font.sameLetters(first, c) {
                 return true
             }
         }

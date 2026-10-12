@@ -101,4 +101,101 @@ class ReviewRound3Test {
         assertEquals("The tables of the Markdown have more than 100000 cells: draw a table that large with BigTable.",
                 e.getMessage());
     }
+
+    /**
+     * Two characters copied as the same text, as a letter and its
+     * presentation form, need no actual text for the second: Arabic text had
+     * three times the spans it needed, its content 27% larger (T2).
+     */
+    @Test
+    void aCharacterCopiedAsTheFirstHasNoActualText() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = new Font(pdf, TestSupport.open("fonts/NotoSansArabic/NotoSansArabic-Regular.ttf"));
+        assertEquals(font.unicodeToGID.get(0x0644), font.unicodeToGID.get(0xFEDD));
+        font.useChar(0xFEDD, font.unicodeToGID.get(0xFEDD));
+        assertFalse(font.drawnAsAnother(0x0644));
+        font.useChar(0x0661, font.unicodeToGID.get(0x0661));
+        assertTrue(font.drawnAsAnother(0x06F1));
+    }
+
+    /**
+     * A glyph drawn for another character stays in the span of a word with
+     * moved marks, whose actual text gives the character: in a span of its
+     * own, the word's span began with a moved mark and the space that stands
+     * for it, and "ةِمى" was copied as "ىمِ ة" (T1).
+     */
+    @Test
+    void aWordWithMarksIsCopiedWithoutASpaceInside() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = new Font(pdf, TestSupport.open("fonts/NotoSansArabic/NotoSansArabic-Regular.ttf"));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(font, "\u0628").setLocation(50f, 50f).drawOn(page);
+        // The glyph of ة as drawn first for another character, which no two
+        // characters of this font copied as different text are
+        font.program.chars.put(font.unicodeToGID.get(0x0629), (int) 'X');
+        new TextLine(font, "\u0629\u0650\u0645\u0649").setLocation(50f, 100f).drawOn(page);
+        String content = TestSupport.content(page);
+        assertFalse(content.contains("/ActualText <FEFF0020"), content);
+        assertTrue(content.contains("/ActualText <" + Page.toUTF16Hex("\u0629\u0650\u0645\u0649") + ">"), content);
+    }
+
+    /**
+     * A cell's word broken between its characters breaks again at a soft
+     * hyphen, as TextBlock and TextFrame do: "1234<SHY>5678" was
+     * 123 / 4<SHY>56 / 78 (T4).
+     */
+    @Test
+    void aCellBreaksAtASoftHyphenAfterACharacterBreak() throws Exception {
+        Font font = TestSupport.helvetica(TestSupport.newPDF());
+        java.lang.reflect.Method wrapCellText = Table.class.getDeclaredMethod("wrapCellText", List.class, int.class);
+        wrapCellText.setAccessible(true);
+        Cell cell = new Cell(font, "1234\u00AD5678");
+        cell.setWidth(font.stringWidth("123"));
+        cell.setLeftPadding(0f);
+        cell.setRightPadding(0f);
+        List<String> lines = new ArrayList<String>();
+        @SuppressWarnings("unchecked")
+        List<String> wrapped = (List<String>) wrapCellText.invoke(new Table(), Arrays.asList(cell), 0);
+        for (String line : wrapped) {
+            lines.add(line.replace("\u00AD", ""));
+        }
+        assertEquals(Arrays.asList("123", "4-", "567", "8"), lines);
+        Cell wide = new Cell(font, "W");
+        wide.setWidth(1f);
+        assertEquals(Arrays.asList("W"), wrapCellText.invoke(new Table(), Arrays.asList(wide), 0));
+    }
+
+    /**
+     * A CJK font fits all of a text in a width of more characters than it
+     * has, as 1e30 or an infinity, in every port: Go and C# fit none (T6).
+     */
+    @Test
+    @SuppressWarnings("deprecation")    // The CJK fonts are deprecated, and still tested
+    void aCJKFontFitsAllOfATextInAHugeWidth() throws Exception {
+        Font font = new Font(TestSupport.newPDF(), CJKFont.ADOBE_MING_STD_LIGHT);
+        String text = "\u4E2D\u6587\u5B57";
+        for (float width : new float[] {1e30f, Float.POSITIVE_INFINITY, Float.MAX_VALUE}) {
+            assertEquals(3, font.getFitChars(text, width), "width " + width);
+        }
+        for (float width : new float[] {Float.NaN, -1f, 0f}) {
+            assertEquals(0, font.getFitChars(text, width), "width " + width);
+        }
+        assertEquals(2, font.getFitChars(text, 2f * font.getSize()));
+    }
+
+    /**
+     * A zero width joiner the font has no glyph for, in left to right text
+     * between two LRMs, is in the actual text of the run, as the stamp keeps
+     * it: it was left out (T7).
+     */
+    @Test
+    void aJoinerInARunIsInItsActualText() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = new Font(pdf, TestSupport.open("fonts/NotoSansJP/NotoSansJP-Regular.ttf"));
+        assertEquals(0, font.unicodeToGID.get(0x200D));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(font, "d\u200D\u200E\u200Ce\u200D").setLocation(50f, 50f).drawOn(page);
+        String content = TestSupport.content(page);
+        assertTrue(content.contains("/ActualText <" + Page.toUTF16Hex("\u200Ee\u200D\u200E") + ">"), content);
+    }
 }

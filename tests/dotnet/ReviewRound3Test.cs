@@ -6,6 +6,7 @@
  */
 using System;
 using System.Collections.Generic;
+using System.IO;
 using Xunit;
 
 namespace PDFjet.NET {
@@ -88,6 +89,103 @@ public class ReviewRound3Test {
                 () => markdown.DrawOn(pdf, text.ToString(), new List<Page>(), Letter.PORTRAIT));
         Assert.Equal("The tables of the Markdown have more than 100000 cells: draw a table that large with BigTable.",
                 e.Message);
+    }
+
+    // Two characters copied as the same text, as a letter and its
+    // presentation form, need no actual text for the second: Arabic text had
+    // three times the spans it needed, its content 27% larger (T2).
+    [Fact]
+    public void ACharacterCopiedAsTheFirstHasNoActualText() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = new Font(pdf, TestSupport.RepoPath("fonts/NotoSansArabic/NotoSansArabic-Regular.ttf"));
+        Assert.Equal(font.unicodeToGID.Get(0x0644), font.unicodeToGID.Get(0xFEDD));
+        font.UseChar(0xFEDD, font.unicodeToGID.Get(0xFEDD));
+        Assert.False(font.DrawnAsAnother(0x0644));
+        font.UseChar(0x0661, font.unicodeToGID.Get(0x0661));
+        Assert.True(font.DrawnAsAnother(0x06F1));
+    }
+
+    // A glyph drawn for another character stays in the span of a word with
+    // moved marks, whose actual text gives the character: in a span of its
+    // own, the word's span began with a moved mark and the space that stands
+    // for it, and "ةِمى" was copied as "ىمِ ة" (T1).
+    [Fact]
+    public void AWordWithMarksIsCopiedWithoutASpaceInside() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = new Font(pdf, TestSupport.RepoPath("fonts/NotoSansArabic/NotoSansArabic-Regular.ttf"));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(font, "\u0628").SetLocation(50f, 50f).DrawOn(page);
+        // The glyph of ة as drawn first for another character, which no two
+        // characters of this font copied as different text are
+        font.program.chars[font.unicodeToGID.Get(0x0629)] = 'X';
+        new TextLine(font, "\u0629\u0650\u0645\u0649").SetLocation(50f, 100f).DrawOn(page);
+        string content = TestSupport.Content(page);
+        Assert.DoesNotContain("/ActualText <FEFF0020", content);
+        Assert.Contains("/ActualText <" + Page.ToUTF16Hex("\u0629\u0650\u0645\u0649") + ">", content);
+    }
+
+    // A cell's word broken between its characters breaks again at a soft
+    // hyphen, as TextBlock and TextFrame do: "1234<SHY>5678" was
+    // 123 / 4<SHY>56 / 78 (T4).
+    [Fact]
+    public void ACellBreaksAtASoftHyphenAfterACharacterBreak() {
+        Font font = TestSupport.Helvetica(TestSupport.NewPDF());
+        Cell cell = new Cell(font, "1234\u00AD5678");
+        cell.SetWidth(font.StringWidth("123"));
+        cell.SetLeftPadding(0f);
+        cell.SetRightPadding(0f);
+        List<string> lines = new List<string>();
+        foreach (string line in new Table().WrapCellText(new List<Cell> {cell}, 0)) {
+            lines.Add(line.Replace("\u00AD", ""));
+        }
+        Assert.Equal(new List<string> {"123", "4-", "567", "8"}, lines);
+        Cell wide = new Cell(font, "W");
+        wide.SetWidth(1f);
+        Assert.Equal(new List<string> {"W"}, new Table().WrapCellText(new List<Cell> {wide}, 0));
+    }
+
+    // A CJK font fits all of a text in a width of more characters than it
+    // has, as 1e30 or an infinity, in every port: Go and C# fit none (T6).
+    [Fact]
+    public void ACJKFontFitsAllOfATextInAHugeWidth() {
+#pragma warning disable CS0618 // The CJK fonts are deprecated, and still tested
+        Font font = new Font(TestSupport.NewPDF(), CJKFont.ADOBE_MING_STD_LIGHT);
+#pragma warning restore CS0618
+        string text = "\u4E2D\u6587\u5B57";
+        foreach (float width in new float[] {1e30f, float.PositiveInfinity, float.MaxValue}) {
+            Assert.Equal(3, font.GetFitChars(text, width));
+        }
+        foreach (float width in new float[] {float.NaN, -1f, 0f}) {
+            Assert.Equal(0, font.GetFitChars(text, width));
+        }
+        Assert.Equal(2, font.GetFitChars(text, 2f * font.GetSize()));
+    }
+
+    // A zero width joiner the font has no glyph for, in left to right text
+    // between two LRMs, is in the actual text of the run, as the stamp keeps
+    // it: it was left out (T7).
+    [Fact]
+    public void AJoinerInARunIsInItsActualText() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = new Font(pdf, TestSupport.RepoPath("fonts/NotoSansJP/NotoSansJP-Regular.ttf"));
+        Assert.Equal(0, font.unicodeToGID.Get(0x200D));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(font, "d\u200D\u200E\u200Ce\u200D").SetLocation(50f, 50f).DrawOn(page);
+        Assert.Contains("/ActualText <" + Page.ToUTF16Hex("\u200Ee\u200D\u200E") + ">", TestSupport.Content(page));
+    }
+
+    // A lone surrogate in the text of a stamp is drawn as a character the font
+    // does not have, as in Java and Go: it threw (T8).
+    [Fact]
+    public void ALoneSurrogateInAStampIsDrawn() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.PlexSans(pdf);
+        Stamp stamp = new Stamp(pdf);
+        stamp.DrawText(font, 12f, 0f, 12f, "a\uD800b\uDC00c\uD800");
+        MemoryStream buf = (MemoryStream) typeof(Stamp).GetField("buf",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).GetValue(stamp);
+        string content = TestSupport.Latin1(buf.ToArray());
+        Assert.Contains("/ActualText <" + Page.ToUTF16Hex("\uD800") + ">", content);
     }
 }
 }

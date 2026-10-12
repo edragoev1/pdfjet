@@ -182,7 +182,10 @@ This is the first entry in this file; earlier releases were not tracked here.
 - A document that draws two characters of one glyph, as "١٢٣" and then
   "۱۲۳", or "∕" and then "／", copies each as drawn, in the four ports: the
   second is drawn with itself as its actual text, as the ToUnicode map
-  gives the glyph the first. It was copied as the first.
+  gives the glyph the first. It was copied as the first. Characters copied
+  as the same text, as an Arabic letter and its presentation form, need
+  none, and in a word with marks the glyph stays in the word's span: the
+  span of its own put a space inside the word when it was copied.
 - A stamp gives a zero width non-joiner or joiner its font has no glyph for
   to the actual text of the glyph before it, as a page does, in the four
   ports: Persian text in a stamp was copied without its ZWNJ.
@@ -197,6 +200,17 @@ This is the first entry in this file; earlier releases were not tracked here.
   an image, a PNG cut short or an SVG that is not SVG, fails the document;
   it panicked, so Markdown from a user could stop a server. Java, C# and
   Swift throw, as before.
+- A word of a table cell broken between its characters breaks again at a
+  soft hyphen, as TextBlock and TextFrame do, in the four ports:
+  "1234<SHY>5678" was 123 / 456 / 78 where they draw 123 / 4- / 567 / 8.
+- GetFitChars of a CJK font fits all of a text in a width of more
+  characters than it has, as 1e30 or an infinity, in Go and C#, as in Java
+  and Swift: none fit.
+- A zero width non-joiner or joiner the font has no glyph for, in left to
+  right text between two left-to-right marks, is in the text copied, in
+  the four ports, as in a stamp: it was left out.
+- C#: a lone surrogate in the text of a stamp is drawn as a character the
+  font does not have, as in Java and Go: it threw.
 
 ## v9.0.5 — 2026-10-12, internal
 

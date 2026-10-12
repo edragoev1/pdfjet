@@ -597,7 +597,7 @@ func (page *Page) drawUnicodeString(font *Font, text string) {
 				for j < n && !runEdge[j] {
 					j++
 				}
-				page.appendRun(font, codePoints, gids, offsets, i, j)
+				page.appendRun(font, codePoints, gids, offsets, joiners, i, j)
 				runEdge[j] = false
 				i = j
 				continue
@@ -656,12 +656,18 @@ func (page *Page) appendPlainGlyphs(font *Font, runes []rune) bool {
 // keep the brackets with the run when the text is copied; with the brackets
 // in spans of their own, or mirrored back like the other brackets, they come
 // out the wrong way round. No glyph stands in for the marks: MuPDF moves the
-// first bracket to the right to left text when one does.
-func (page *Page) appendRun(font *Font, codePoints []rune, gids, offsets []int, start, end int) {
+// first bracket to the right to left text when one does. A zero width
+// non-joiner or joiner the font has no glyph for is in the actual text after
+// the glyph before it, as in a word: it was left out (review of 12 October
+// 2026, T7).
+func (page *Page) appendRun(font *Font, codePoints []rune, gids, offsets []int, joiners []rune, start, end int) {
 	var text strings.Builder
 	text.WriteRune(0x200E)
 	for k := start; k < end; k++ {
 		text.WriteString(textOf(font, codePoints[k]))
+		if joiners != nil && joiners[k] != 0 {
+			text.WriteRune(joiners[k])
+		}
 	}
 	text.WriteRune(0x200E)
 	page.appendString("> Tj\n/Span <</ActualText <")
@@ -680,14 +686,21 @@ func (page *Page) appendRun(font *Font, codePoints []rune, gids, offsets []int, 
 // appendWord draws the glyphs of a word, or of the part of a word before a
 // joiner, in a marked content span with the text of the word when it has moved
 // marks, with the mirrored characters and the .notdef glyphs at its ends in
-// spans of their own.
+// spans of their own. A glyph drawn for another character stays in the
+// word's span, whose actual text gives its character: in a span of its own,
+// the word's span began with a moved mark, after a space that stands for
+// it, and the word was copied with a space inside it (review of 12 October
+// 2026, T1).
 func (page *Page) appendWord(
 	font *Font, codePoints []rune, gids []int, mirroredAt []bool, offsets []int, i, end int) {
+	atEnd := func(k int) bool {
+		return (mirroredAt != nil && mirroredAt[k]) || font.lacks(codePoints[k])
+	}
 	wordStart, wordEnd := i, end
-	for wordStart < wordEnd && inOwnSpan(font, codePoints, mirroredAt, wordStart) {
+	for wordStart < wordEnd && atEnd(wordStart) {
 		wordStart++
 	}
-	for wordEnd > wordStart && inOwnSpan(font, codePoints, mirroredAt, wordEnd-1) {
+	for wordEnd > wordStart && atEnd(wordEnd-1) {
 		wordEnd--
 	}
 	if offsets != nil && isMoved(offsets, wordStart, wordEnd) {
