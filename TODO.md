@@ -117,7 +117,15 @@ commit and date. The layout's format version (1) and the look's rules
   ports in CI. The Java and Swift tests of a time run a slow piece of work
   again before they fail; the C# and Go ones still fail on one slow run.
   Left: net48 is built and not tested, so its `CharUnicodeInfo` polyfill,
-  Unicode 8.0 data that Bidi, TextBlock and Page use, is not run.
+  Unicode 8.0 data that Bidi, TextBlock and Page use, is not run. The
+  review ran it under Mono (K3): a character newer than Unicode 8, as the
+  Arabic mark U+08D4 of Unicode 9, is laid out as another character there,
+  a spacing glyph and not a mark moved by GPOS, though none of the examples
+  has one. The polyfill could take the categories of the characters of
+  Unicode 9 to 15 from a table of its own, as Go's and .NET 8's are.
+- **Swift's Flate compresses less** (third review, K6): Swift's PDFs are
+  about 9% larger than Go's, the same content after inflating, from its own
+  Deflate encoder. Its matches could be searched as zlib's level 6 does.
 - **For 9.1.1: PDF/A and tagged documents at scale (third review, W1, W2,
   W3, W5, W6, W7).** 9.0.7 refuses a PDF/A-1 document past its limits; 9.1.1
   writes one within them at any size: a balanced page tree, a parent tree of

@@ -309,6 +309,17 @@ This is the first entry in this file; earlier releases were not tracked here.
   Complete, 27% of the heap of a tagged BigTable of a million rows.
 - README: the speed of 500 pages in under 100 ms is that of a warm run,
   and a tagged BigTable keeps a little of each row until complete().
+- C#: a structure element is tagged with a language of its own only when
+  it has one, as in the other ports: every table, row, cell, list and
+  paragraph element was tagged en-US, in a German document too, so a
+  screen reader read them in English.
+- A page of a PDF that was read, whose /MediaBox is of a NaN or infinite
+  size, is Letter, as one of no size is, in the four ports: Swift stopped
+  where it was watermarked.
+- Swift builds with Swift 6.2, which Package.swift asks for: it gave up on
+  type-checking an expression of CRC32. CI builds with 6.2 too.
+- C#: a number past the range of a double, as a /Width of 1e400, is an
+  infinity on .NET Framework 4.8 as on .NET 8; it threw there.
 
 ## v9.0.5 — 2026-10-12, internal
 

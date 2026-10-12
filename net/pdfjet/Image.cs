@@ -152,6 +152,23 @@ public class Image : IDrawable {
     // Returns the number of pixels of the value as Java's (int) takes it: 0
     // for NaN, and the largest or smallest int for one past them. (int) of
     // 1e19 was the smallest int on .NET 8 (review of 12 October 2026, C8).
+    // Returns the number of the text, an infinity for one past a double, as
+    // .NET 8 parses it: .NET Framework threw OverflowException where .NET 8
+    // gave an infinity (review of 12 October 2026, K5). Text that is no number
+    // throws FormatException, in both.
+    private static double ParseNumber(String text) {
+        const System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Float;
+        var culture = System.Globalization.CultureInfo.InvariantCulture;
+        if (double.TryParse(text, style, culture, out double value)) {
+            return value;
+        }
+        if (System.Text.RegularExpressions.Regex.IsMatch(text.Trim(), @"^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$")) {
+            return text.Trim().StartsWith("-", StringComparison.Ordinal)
+                    ? double.NegativeInfinity : double.PositiveInfinity;
+        }
+        return double.Parse(text, style, culture);
+    }
+
     private static int PixelsOf(double value) {
         if (double.IsNaN(value)) {
             return 0;
@@ -163,8 +180,7 @@ public class Image : IDrawable {
     /// <summary>Creates an image from an image object read from an existing PDF.</summary>
     public Image(PDF pdf, PDFobj obj) {
         this.pdf = pdf;
-        SetPixels(PixelsOf(double.Parse(obj.GetValue("/Width"), System.Globalization.CultureInfo.InvariantCulture)),
-                PixelsOf(double.Parse(obj.GetValue("/Height"), System.Globalization.CultureInfo.InvariantCulture)));
+        SetPixels(PixelsOf(ParseNumber(obj.GetValue("/Width"))), PixelsOf(ParseNumber(obj.GetValue("/Height"))));
         // The values copied as they are, but for their strings, encrypted when
         // the document is, as the palette of an /Indexed color space; and the
         // stream, encrypted too (review of 11 October 2026, #11)

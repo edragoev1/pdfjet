@@ -823,3 +823,16 @@ func TestReview3TheSizeLimitsOfPDFAAreChecked(t *testing.T) {
 		}
 	}
 }
+
+// A /MediaBox of a NaN or infinite size is no size, and the page is Letter,
+// as of one of 0: Swift stopped where such a page was watermarked (K1).
+func TestReview3AMediaBoxOfANaNSizeIsLetter(t *testing.T) {
+	huge := strings.Repeat("9", 40)
+	for _, box := range [][]string{{"0", "0", "nan", "792"}, {"0", "0", "inf", "792"}, {huge, "0", "-" + huge, "792"}} {
+		obj := newPDFobj()
+		obj.dict = append([]string{"<<", "/Type", "/Page", "/MediaBox", "["}, append(box, "]", ">>")...)
+		if size := obj.GetPageSize(); size.GetWidth() != 612 || size.GetHeight() != 792 {
+			t.Errorf("%v: %g by %g", box, size.GetWidth(), size.GetHeight())
+		}
+	}
+}

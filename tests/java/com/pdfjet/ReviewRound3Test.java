@@ -631,4 +631,23 @@ class ReviewRound3Test {
         final Page page = new Page(tooLong, Letter.PORTRAIT);
         assertEquals("A text of more than 16383 characters is a string longer than PDF/A allows, 32767 bytes: draw it as several lines.", assertThrows(IllegalArgumentException.class, () -> line.drawOn(page)).getMessage());
     }
+
+    /**
+     * A /MediaBox of a NaN or infinite size is no size, and the page is
+     * Letter, as of one of 0: Swift stopped where such a page was watermarked
+     * (K1).
+     */
+    @Test
+    void aMediaBoxOfANaNSizeIsLetter() {
+        String huge = new String(new char[40]).replace('\0', '9');
+        for (String[] box : new String[][] {{"0", "0", "NaN", "792"}, {"0", "0", "Infinity", "792"},
+                {huge, "0", "-" + huge, "792"}}) {
+            PDFobj obj = new PDFobj();
+            obj.dict = new ArrayList<String>(Arrays.asList("<<", "/Type", "/Page", "/MediaBox", "[",
+                    box[0], box[1], box[2], box[3], "]", ">>"));
+            PageSize size = obj.getPageSize();
+            assertEquals(612f, size.getWidth(), 0f, Arrays.toString(box));
+            assertEquals(792f, size.getHeight(), 0f, Arrays.toString(box));
+        }
+    }
 }

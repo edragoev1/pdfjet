@@ -23,7 +23,10 @@ internal class StructElement {
     internal String attributes = null;
     // The parent element, or null for a child of the Document element.
     internal StructElement parent = null;
-    internal String language = "en-US";
+    // The language of the element, or null for that of the document: every
+    // grouping element was tagged en-US, a German table and list too (review
+    // of 12 October 2026, K4)
+    internal String language = null;
     internal String actualText = null;
     internal String altDescription = null;
     internal Annotation annotation = null;

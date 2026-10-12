@@ -100,14 +100,20 @@ class CRC32 {
             data.withUnsafeBufferPointer { bytes in
                 var i = off
                 while i + 8 <= len {
-                    let one = crc ^ (UInt32(bytes[i]) | UInt32(bytes[i + 1]) << 8 |
-                            UInt32(bytes[i + 2]) << 16 | UInt32(bytes[i + 3]) << 24)
-                    let two = UInt32(bytes[i + 4]) | UInt32(bytes[i + 5]) << 8 |
-                            UInt32(bytes[i + 6]) << 16 | UInt32(bytes[i + 7]) << 24
-                    crc = t[7 * 256 + Int(one & 0xff)] ^ t[6 * 256 + Int((one >> 8) & 0xff)] ^
-                            t[5 * 256 + Int((one >> 16) & 0xff)] ^ t[4 * 256 + Int(one >> 24)] ^
-                            t[3 * 256 + Int(two & 0xff)] ^ t[2 * 256 + Int((two >> 8) & 0xff)] ^
-                            t[256 + Int((two >> 16) & 0xff)] ^ t[Int(two >> 24)]
+                    // In small steps of their own types: as one expression,
+                    // Swift 6.2, which Package.swift asks for, gave up on
+                    // type-checking it (review of 12 October 2026, K2)
+                    let low: UInt32 = UInt32(bytes[i]) | UInt32(bytes[i + 1]) << 8
+                    let high: UInt32 = UInt32(bytes[i + 2]) << 16 | UInt32(bytes[i + 3]) << 24
+                    let one: UInt32 = crc ^ (low | high)
+                    let low2: UInt32 = UInt32(bytes[i + 4]) | UInt32(bytes[i + 5]) << 8
+                    let high2: UInt32 = UInt32(bytes[i + 6]) << 16 | UInt32(bytes[i + 7]) << 24
+                    let two: UInt32 = low2 | high2
+                    let a: UInt32 = t[7 * 256 + Int(one & 0xff)] ^ t[6 * 256 + Int((one >> 8) & 0xff)]
+                    let b: UInt32 = t[5 * 256 + Int((one >> 16) & 0xff)] ^ t[4 * 256 + Int(one >> 24)]
+                    let c: UInt32 = t[3 * 256 + Int(two & 0xff)] ^ t[2 * 256 + Int((two >> 8) & 0xff)]
+                    let d: UInt32 = t[256 + Int((two >> 16) & 0xff)] ^ t[Int(two >> 24)]
+                    crc = a ^ b ^ c ^ d
                     i += 8
                 }
                 while i < len {

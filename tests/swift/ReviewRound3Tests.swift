@@ -479,4 +479,19 @@ import Testing
         TextLine(tooLongFont, text + "a").setLocation(10, 20).drawOn(Page(tooLong.pdf, Letter.PORTRAIT))
         #expect(tooLong.pdf.error == "A text of more than 16383 characters is a string longer than PDF/A allows, 32767 bytes: draw it as several lines.")
     }
+
+    /// A /MediaBox of a NaN or infinite size is no size, and the page is
+    /// Letter, as of one of 0: Swift stopped where such a page was
+    /// watermarked (K1).
+    @Test func aMediaBoxOfANaNSizeIsLetter() throws {
+        let huge = String(repeating: "9", count: 40)
+        for box in [["0", "0", "nan", "792"], ["0", "0", "inf", "792"], [huge, "0", "-" + huge, "792"]] {
+            let obj = PDFobj()
+            obj.dict = ["<<", "/Type", "/Page", "/MediaBox", "["] + box + ["]", ">>"]
+            let size = obj.getPageSize()
+            #expect(size.getWidth() == 612 && size.getHeight() == 792, "\(box)")
+            let pdf = TestSupport.newPDF()
+            Page(pdf, obj).addWatermark(TestSupport.helvetica(pdf), "DRAFT")
+        }
+    }
 }

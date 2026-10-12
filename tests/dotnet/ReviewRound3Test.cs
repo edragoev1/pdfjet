@@ -542,5 +542,44 @@ public class ReviewRound3Test {
         Page page = new Page(tooLong, Letter.PORTRAIT);
         Assert.Equal("A text of more than 16383 characters is a string longer than PDF/A allows, 32767 bytes: draw it as several lines.", Assert.Throws<ArgumentException>(() => line.DrawOn(page)).Message);
     }
+
+    // An element is tagged with a language of its own only when it has one,
+    // as in the other ports: every table, row, cell and list element was
+    // tagged en-US, in a German document too (K4).
+    [Fact]
+    public void AnElementIsTaggedWithTheLanguageOfTheDocument() {
+        MemoryStream output = new MemoryStream();
+        PDF pdf = new PDF(output, Compliance.PDF_UA_1);
+        pdf.SetTitle("Tabelle");
+        pdf.SetLanguage("de-DE");
+        Font font = TestSupport.PlexSans(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Table table = new Table();
+        table.SetTableData(new List<List<Cell>> {
+            new List<Cell> {new Cell(font, "Name"), new Cell(font, "Stadt")},
+            new List<Cell> {new Cell(font, "Anna"), new Cell(font, "Berlin")}}, 1);
+        table.SetLocation(50f, 50f);
+        table.DrawOn(page);
+        pdf.Complete();
+        Assert.DoesNotContain("/Lang <" + Util.ToHexString(System.Text.Encoding.UTF8.GetBytes("en-US")) + ">",
+                TestSupport.Latin1(output.ToArray()));
+    }
+
+    // A /MediaBox of a NaN or infinite size is no size, and the page is
+    // Letter, as of one of 0: Swift stopped where such a page was watermarked
+    // (K1); net8 and net48 read the huge numbers alike (K5).
+    [Fact]
+    public void AMediaBoxOfANaNSizeIsLetter() {
+        string huge = new string('9', 40);
+        foreach (string[] box in new string[][] {
+                new string[] {"0", "0", "NaN", "792"}, new string[] {"0", "0", "Infinity", "792"},
+                new string[] {huge, "0", "-" + huge, "792"}}) {
+            PDFobj obj = new PDFobj();
+            obj.dict = new List<string> {"<<", "/Type", "/Page", "/MediaBox", "[", box[0], box[1], box[2], box[3], "]", ">>"};
+            PageSize size = obj.GetPageSize();
+            Assert.Equal(612f, size.GetWidth());
+            Assert.Equal(792f, size.GetHeight());
+        }
+    }
 }
 }

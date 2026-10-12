@@ -641,7 +641,11 @@ func (obj *PDFobj) GetPageSize() pagesize.PageSize {
 				box[j] = value
 			}
 			width, height := math.Abs(box[2]-box[0]), math.Abs(box[3]-box[1])
-			if width == 0 || height == 0 {
+			// A box of a NaN or infinite size is no size, as one of 0 is not:
+			// a page of NaN by 792 stopped Swift where it was watermarked
+			// (review of 12 October 2026, K1).
+			if !(width > 0 && height > 0) || math.IsInf(width, 0) || math.IsInf(height, 0) ||
+				math.IsInf(float64(float32(width)), 0) || math.IsInf(float64(float32(height)), 0) {
 				return letter.Portrait()
 			}
 			return pagesize.NewPageSize(float32(width), float32(height))

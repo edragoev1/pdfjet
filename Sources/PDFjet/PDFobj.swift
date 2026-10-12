@@ -626,7 +626,10 @@ public final class PDFobj {
                 }
                 let width = abs(box[2] - box[0])
                 let height = abs(box[3] - box[1])
-                if width == 0 || height == 0 {
+                // A box of a NaN or infinite size is no size, as one of 0 is
+                // not: a page of NaN by 792 stopped Swift where it was
+                // watermarked (review of 12 October 2026, K1).
+                if !(width > 0 && height > 0) || !width.isFinite || !height.isFinite {
                     return Letter.PORTRAIT
                 }
                 return PageSize(width, height)

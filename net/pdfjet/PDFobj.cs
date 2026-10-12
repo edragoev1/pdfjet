@@ -609,7 +609,10 @@ public class PDFobj {
                 }
                 float width = Math.Abs(box[2] - box[0]);
                 float height = Math.Abs(box[3] - box[1]);
-                if (width == 0f || height == 0f) {
+                // A box of a NaN or infinite size is no size, as one of 0 is
+                // not: a page of NaN by 792 stopped Swift where it was
+                // watermarked (review of 12 October 2026, K1).
+                if (!(width > 0f && height > 0f) || float.IsInfinity(width) || float.IsInfinity(height)) {
                     return Letter.PORTRAIT;
                 }
                 return new PageSize(width, height);

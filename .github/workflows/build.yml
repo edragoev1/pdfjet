@@ -615,6 +615,22 @@ jobs:
             - name: Compare random shapes across the ports
               run: tests/crossport/check-crossport.sh "" 20000
 
+    # The library built with Swift 6.2, the oldest that Package.swift asks for:
+    # CI built with 6.3 alone, and 6.2 gave up on an expression of CRC32
+    # (the review of 12 October 2026, K2).
+    swift-6-2:
+        name: swift (6.2)
+        runs-on: ubuntu-24.04
+        steps:
+            - uses: actions/checkout@v7
+
+            - uses: ./.github/actions/install-swift
+              with:
+                  swift-url: https://download.swift.org/swift-6.2.4-release/ubuntu2404/swift-6.2.4-RELEASE/swift-6.2.4-RELEASE-ubuntu24.04.tar.gz
+
+            - name: Build the library
+              run: swift build --target PDFjet -Xswiftc -warnings-as-errors
+
     swift-macos:
         runs-on: macos-latest
         timeout-minutes: 30
