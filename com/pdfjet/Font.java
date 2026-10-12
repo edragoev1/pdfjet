@@ -513,8 +513,8 @@ final public class Font {
 
     // Records that the glyph is drawn with the font.
     void useGlyph(int gid) {
-        if (program != null && gid >= 0 && gid < program.used.length) {
-            program.used[gid] = true;
+        if (program != null) {
+            program.used.add(gid);
         }
     }
 

@@ -106,11 +106,6 @@ commit and date. The layout's format version (1) and the look's rules
     on 10 October: a parsed Plex font holds 845 KB, 512 KB of it this
     table. With the reverse map above, as both are how a character finds
     its glyph and back.
-  - Done, on the branch glyph-set, to merge after the 9.0.5 tag: the glyphs
-    a document draws, `used`, a set of bits sized by the font's glyphs, 128
-    bytes for IBM Plex Sans, where 65,536 booleans were 64 KB for every
-    font of every document, in the four ports (the owner's idea, 10 October
-    2026).
   - Java first, then the other ports as they need it: the GPOS mark tables
     (mark to base, mark to mark) read when a mark is first drawn, where
     every font load reads every anchor pair into a map: 83% of the 7 ms of a

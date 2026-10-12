@@ -24,9 +24,9 @@ func registerOpenTypeFont(pdf *PDF, font *Font, reader io.Reader) {
 	// The font is written at Complete, a subset of the glyphs drawn; its
 	// pages refer to the number reserved for it.
 	if otf.cff {
-		shareFontProgram(pdf, font, otf.buf[otf.cffOff:otf.cffOff+otf.cffLen], true, otf.fsType&0x0100 != 0)
+		shareFontProgram(pdf, font, otf.buf[otf.cffOff:otf.cffOff+otf.cffLen], true, otf.fsType&0x0100 != 0, otf.numGlyphs)
 	} else {
-		shareFontProgram(pdf, font, otf.buf, false, false)
+		shareFontProgram(pdf, font, otf.buf, false, false, otf.numGlyphs)
 	}
 	font.objNumber = pdf.reserveObjNumber()
 	pdf.fonts = append(pdf.fonts, font)
@@ -38,7 +38,7 @@ func registerOpenTypeFont(pdf *PDF, font *Font, reader io.Reader) {
 func addOpenTypeFontToObjects(objects *[]*PDFobj, font *Font, reader io.Reader) {
 	otf := newOpenTypeFont(reader)
 	setOpenTypeFontData(font, otf)
-	font.program = newFontProgram()
+	font.program = newFontProgram(otf.numGlyphs)
 	if otf.cff {
 		font.program.font = otf.buf[otf.cffOff : otf.cffOff+otf.cffLen]
 		font.program.cff = true

@@ -50,7 +50,7 @@ class OTF {
     var cffLen: Int?
     private var index = 0
     private var gposWork = maxGposWork
-    private var numGlyphs = 0   // Of the maxp table, or 0 when the font has none
+    private(set) var numGlyphs = 0  // Of the maxp table, or 0 when the font has none
 
     // The most work the GPOS table of a font is read with, counted in the
     // glyphs of the coverage tables it names, the glyphs their indexes make

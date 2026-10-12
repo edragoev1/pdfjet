@@ -7,6 +7,16 @@ languages.
 
 This is the first entry in this file; earlier releases were not tracked here.
 
+## v9.0.7 — unreleased
+
+### Changed
+- The glyphs drawn with a font are a set of bits, in the four ports: 128
+  bytes for IBM Plex Sans, sized by the font's glyphs, where an array of a
+  boolean for each of the 65,536 glyph numbers was 64 KB for every font of
+  every document. It grows for a glyph past the font's count, so it keeps
+  what the array kept; the subsetters read it as an array of the font's
+  glyphs. A page in three fonts allocates 0.2 MB less, with the same PDF.
+
 ## v9.0.5 — unreleased
 
 ### Added

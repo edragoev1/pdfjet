@@ -19,9 +19,9 @@ class OpenTypeFont {
         // pages refer to the number reserved for it.
         if (otf.cff) {
             Subset.share(pdf, font, Arrays.copyOfRange(otf.buf, otf.cffOff, otf.cffOff + otf.cffLen),
-                    true, (otf.fsType & 0x0100) != 0);
+                    true, (otf.fsType & 0x0100) != 0, otf.numGlyphs);
         } else {
-            Subset.share(pdf, font, otf.buf, false, false);
+            Subset.share(pdf, font, otf.buf, false, false, otf.numGlyphs);
         }
         font.objNumber = pdf.reserveObjNumber();
         pdf.fonts.add(font);
@@ -34,7 +34,7 @@ class OpenTypeFont {
             List<PDFobj> objects, Font font, InputStream inputStream) throws Exception {
         OTF otf = new OTF(inputStream);
         setData(font, otf);
-        font.program = new Subset.Program();
+        font.program = new Subset.Program(otf.numGlyphs);
         if (otf.cff) {
             font.program.font = Arrays.copyOfRange(otf.buf, otf.cffOff, otf.cffOff + otf.cffLen);
             font.program.cff = true;

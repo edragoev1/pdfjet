@@ -45,7 +45,7 @@ internal class OTF {
     internal int cffLen;
     private int index = 0;
     private int gposWork;
-    private int numGlyphs;  // Of the maxp table, or 0 when the font has none
+    internal int numGlyphs; // Of the maxp table, or 0 when the font has none
 
     // The most work the GPOS table of a font is read with, counted in the
     // glyphs of the coverage tables it names, the glyphs their indexes make

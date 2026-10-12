@@ -23,25 +23,67 @@ import (
 type fontProgram struct {
 	font      []byte // The TrueType font, or the CFF table
 	cff       bool
-	forbidden bool   // The fsType of a CFF font's OS/2 table forbids subsetting
-	used      []bool // The glyphs drawn, by glyph number
+	forbidden bool      // The fsType of a CFF font's OS/2 table forbids subsetting
+	used      *glyphSet // The glyphs drawn, by glyph number
 	// The character first drawn with each glyph, by glyph number, for the
 	// ToUnicode map of a glyph of several characters, as U+3000 and U+2003
 	chars map[int]rune
 	whole bool // Set by SetSubset(false): the font is embedded whole
 }
 
-func newFontProgram() *fontProgram {
-	// A glyph number is written in four hexadecimal digits.
-	program := &fontProgram{used: make([]bool, 0x10000)}
-	program.used[0] = true // .notdef, drawn for a character the font lacks
+// newFontProgram returns the program of a font of the number of glyphs given,
+// the count of its maxp table, or 0 when it has none.
+func newFontProgram(glyphs int) *fontProgram {
+	program := &fontProgram{used: newGlyphSet(glyphs)}
+	program.used.add(0) // .notdef, drawn for a character the font lacks
 	return program
+}
+
+// glyphSet is the set of the glyphs drawn with a font, a bit for each glyph
+// number: 128 bytes for the 1,019 glyphs of IBM Plex Sans, where a bool for
+// each of the 65,536 glyph numbers was 64 KB for every font of every
+// document (the owner's idea, 10 October 2026). It grows for a glyph past
+// the font's count, up to the 65,536 a glyph number can be, so that it keeps
+// what the array kept.
+type glyphSet struct {
+	words []uint64
+}
+
+func newGlyphSet(glyphs int) *glyphSet {
+	if glyphs <= 0 || glyphs > 0x10000 {
+		glyphs = 0x10000 // A glyph number is written in four hexadecimal digits
+	}
+	return &glyphSet{words: make([]uint64, (glyphs+63)/64)}
+}
+
+// add adds the glyph number to the set.
+func (set *glyphSet) add(gid int) {
+	if gid < 0 || gid >= 0x10000 {
+		return
+	}
+	i := gid >> 6
+	if i >= len(set.words) {
+		words := make([]uint64, i+1)
+		copy(words, set.words)
+		set.words = words
+	}
+	set.words[i] |= 1 << uint(gid&63)
+}
+
+// bools returns the set as a bool for each glyph number up to the end of its
+// last word, for the subsetters, which read a glyph number's bool.
+func (set *glyphSet) bools() []bool {
+	used := make([]bool, len(set.words)*64)
+	for gid := range used {
+		used[gid] = set.words[gid>>6]&(1<<uint(gid&63)) != 0
+	}
+	return used
 }
 
 // useGlyph records that the glyph is drawn with the font.
 func (font *Font) useGlyph(gid int) {
-	if font.program != nil && gid >= 0 && gid < len(font.program.used) {
-		font.program.used[gid] = true
+	if font.program != nil {
+		font.program.used.add(gid)
 	}
 }
 
@@ -80,14 +122,14 @@ func (font *Font) SetSubset(subset bool) *Font {
 
 // shareFontProgram gives the font the program of a font the PDF already has
 // from the same file, if any, or else a new one of the program given.
-func shareFontProgram(pdf *PDF, font *Font, program []byte, cff, forbidden bool) {
+func shareFontProgram(pdf *PDF, font *Font, program []byte, cff, forbidden bool, glyphs int) {
 	for _, f := range pdf.fonts {
 		if f.program != nil && f.name == font.name && f.checksum == font.checksum {
 			font.program = f.program
 			return
 		}
 	}
-	font.program = newFontProgram()
+	font.program = newFontProgram(glyphs)
 	font.program.font = program
 	font.program.cff = cff
 	font.program.forbidden = forbidden
@@ -203,9 +245,9 @@ func embeddedProgram(font *Font) ([]byte, []bool, string) {
 		var glyphs []bool
 		var err error
 		if program.cff {
-			subset, glyphs, err = subsetCFF(data, program.used)
+			subset, glyphs, err = subsetCFF(data, program.used.bools())
 		} else {
-			subset, glyphs, err = subsetTrueType(data, program.used)
+			subset, glyphs, err = subsetTrueType(data, program.used.bools())
 		}
 		if err == nil {
 			return subset, glyphs, subsetTag(font.checksum, glyphs) + "+" + font.name
