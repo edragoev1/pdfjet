@@ -654,10 +654,45 @@ public class TextBlock implements Drawable {
             if (next == word.length() && partWidth(shaped, word, start, word.length()) <= textAreaWidth) {
                 break;      // The rest of the word fits on a line.
             }
+            // A soft hyphen before the first break that does not fit is a
+            // better place to break: the line ends there, with a hyphen, as far
+            // along as fits, as TextFrame breaks each row. The rest of a word
+            // broken between characters, and a right to left word, were never
+            // broken at one (review of 12 October 2026, R17 and R18).
+            int k = softHyphenLineEnd(shaped, word, start, next, textAreaWidth);
+            if (k != -1) {
+                // The end of a right to left line is on its left.
+                textLines.add(new TextLine(font, shaped != null
+                        ? "-" + shaped.text(start, k) : word.substring(start, k) + "-"));
+                start = k + 1;
+                continue;
+            }
             textLines.add(new TextLine(font, partText(shaped, word, start, end)));
             start = end;
         }
         return start;
+    }
+
+    // Returns the index of the last soft hyphen of the word between the start
+    // and the first break that does not fit, where a line from the start ends
+    // with a hyphen that fits, or -1 if there is none. As in softHyphenBreak, a
+    // soft hyphen with nothing but spaces before it, or with nothing after it,
+    // is no place to break.
+    private int softHyphenLineEnd(ShapedWord shaped, String word, int start, int next, float textAreaWidth) {
+        for (int k = Math.min(next, word.length() - 2); k > start; k--) {
+            if (word.charAt(k) != '\u00AD') {
+                continue;
+            }
+            if (Util.trimSpace(word.substring(start, k).replace("\u00AD", "")).isEmpty()) {
+                continue;
+            }
+            float width = shaped != null
+                    ? shaped.width(start, k) + stringWidth("-") : stringWidth(word.substring(start, k) + "-");
+            if (width <= textAreaWidth) {
+                return k;
+            }
+        }
+        return -1;
     }
 
     // Returns the width of the part of the word between two indexes: of a
@@ -857,14 +892,32 @@ public class TextBlock implements Drawable {
             for (int i = 0; i < words.length; i++) {
                 String word = words[i];
                 String separator = (i == words.length - 1) ? " " : "";
-                if (lineWidth(sb.toString() + word, from) <= textAreaWidth) {
-                    sb.append(word);
-                    sb.append(separator);
-                } else {
-                    if (sb.length() > from) {
-                        textLines.add(newTextLine(sb.toString(), from));
+                for (;;) {
+                    if (lineWidth(sb.toString() + word, from) <= textAreaWidth) {
+                        sb.append(word);
+                        sb.append(separator);
+                        break;
+                    }
+                    // The word is broken at a soft hyphen, the line ending with
+                    // a hyphen, as far along as fits, as in left to right text:
+                    // it was cut between two characters (review of 12 October
+                    // 2026, R17)
+                    String lineSoFar = sb.toString();
+                    int lineFrom = from;
+                    String[] parts = softHyphenBreak(word, textAreaWidth,
+                            head -> lineWidth(lineSoFar + head, lineFrom));
+                    if (parts != null) {
+                        textLines.add(newTextLine(lineSoFar + parts[0], from));
                         sb.setLength(0);
                         from = 0;
+                        word = parts[1];
+                        continue;
+                    }
+                    if (sb.length() > from) {
+                        textLines.add(newTextLine(lineSoFar, from));
+                        sb.setLength(0);
+                        from = 0;
+                        continue;
                     }
                     // A word too wide for a line by itself is broken.
                     int rest = addBrokenWordLines(textLines, word, textAreaWidth);
@@ -873,6 +926,7 @@ public class TextBlock implements Drawable {
                         sb.append(separator);
                         from = rest;
                     }
+                    break;
                 }
             }
         }

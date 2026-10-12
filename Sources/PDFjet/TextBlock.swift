@@ -494,10 +494,47 @@ public class TextBlock : Drawable {
             if next == scalars.count && partWidth(start, scalars.count) <= textAreaWidth {
                 break       // The rest of the word fits on a line.
             }
+            // A soft hyphen before the first break that does not fit is a
+            // better place to break: the line ends there, with a hyphen, as far
+            // along as fits, as TextFrame breaks each row. The rest of a word
+            // broken between characters, and a right to left word, were never
+            // broken at one (review of 12 October 2026, R17 and R18).
+            if let k = softHyphenLineEnd(scalars, start, next, textAreaWidth, { k in
+                if let shaped = shaped {
+                    return shaped.width(start, k) + self.stringWidth("-")
+                }
+                return self.stringWidth(TextBlock.string(scalars[start..<k]) + "-")
+            }) {
+                // The end of a right to left line is on its left.
+                textLines.append(TextLine(font, shaped != nil
+                        ? "-" + shaped!.text(start, k) : TextBlock.string(scalars[start..<k]) + "-"))
+                start = k + 1
+                continue
+            }
             textLines.append(TextLine(font, partText(start, end)))
             start = end
         }
         return start
+    }
+
+    // Returns the offset of the last soft hyphen of the word between the start
+    // and the first break that does not fit, where a line from the start ends
+    // with a hyphen that fits, or nil if there is none. As in softHyphenBreak,
+    // a soft hyphen with nothing but spaces before it, or with nothing after
+    // it, is no place to break.
+    private func softHyphenLineEnd(
+            _ scalars: [Unicode.Scalar], _ start: Int, _ next: Int, _ textAreaWidth: Float,
+            _ hyphenated: (Int) -> Float) -> Int? {
+        var k = min(next, scalars.count - 2)
+        while k > start {
+            if scalars[k].value == 0x00AD
+                    && !scalars[start..<k].allSatisfy({ $0.value == 0x00AD || $0.value <= 0x20 })
+                    && hyphenated(k) <= textAreaWidth {
+                return k
+            }
+            k -= 1
+        }
+        return nil
     }
 
     // A right to left word too wide for a line, reordered and shaped once,
@@ -705,14 +742,33 @@ public class TextBlock : Drawable {
             let words = token.components(separatedBy: "\u{200B}")
             for (i, word) in words.enumerated() {
                 let separator = (i == words.count - 1) ? " " : ""
-                if lineWidth(sb + word, from) <= textAreaWidth {
-                    sb.append(word)
-                    sb.append(separator)
-                } else {
+                var word = word
+                while true {
+                    if lineWidth(sb + word, from) <= textAreaWidth {
+                        sb.append(word)
+                        sb.append(separator)
+                        break
+                    }
+                    // The word is broken at a soft hyphen, the line ending with
+                    // a hyphen, as far along as fits, as in left to right text:
+                    // it was cut between two characters (review of 12 October
+                    // 2026, R17)
+                    let pending = sb
+                    let lineFrom = from
+                    if let (head, rest) = TextBlock.softHyphenBreak(word, textAreaWidth, {
+                        self.lineWidth(pending + $0, lineFrom)
+                    }) {
+                        textLines.append(newTextLine(pending + head, from))
+                        sb = ""
+                        from = 0
+                        word = rest
+                        continue
+                    }
                     if sb.unicodeScalars.count > from {
                         textLines.append(newTextLine(sb, from))
                         sb = ""
                         from = 0
+                        continue
                     }
                     // A word too wide for a line by itself is broken.
                     let rest = addBrokenWordLines(&textLines, word, textAreaWidth)
@@ -720,6 +776,7 @@ public class TextBlock : Drawable {
                         sb = word + separator
                         from = rest
                     }
+                    break
                 }
             }
         }

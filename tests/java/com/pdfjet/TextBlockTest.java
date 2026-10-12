@@ -361,4 +361,45 @@ class TextBlockTest {
         TextLine[] fits = textLines(new TextBlock(font, SOFT_HYPHEN_WORD).setWidth(500f));
         assertTrue(fits.length == 1 && !fits[0].text.contains("-"), "the lines of a word that fits: " + fits.length);
     }
+
+    // A word broken between its characters breaks at a soft hyphen where one
+    // fits, as TextFrame breaks each row: "1234\u00ad5678" was "12", "34", "56",
+    // "78" with no hyphen, where TextFrame draws "34-", and a line ran across
+    // the soft hyphen of "aaaaaaaaaa\u00adbbbbbbbbbb" where "aa-" fit (review of
+    // 12 October 2026, R18).
+    @Test
+    void aWordBrokenBetweenCharactersBreaksAtASoftHyphen() throws Exception {
+        Font font = TestSupport.helvetica(TestSupport.newPDF());
+        // Two digits and a hyphen fit, three digits do not.
+        assertEquals("12|34-|56|78", lineTexts(font, "1234\u00AD5678",
+                font.stringWidth(font.getSize(), "00-") + 1f, false));
+        assertEquals("aaaa|aaaa|aa-|bbbb|bbbb|bb", lineTexts(font, "aaaaaaaaaa\u00ADbbbbbbbbbb",
+                font.stringWidth(font.getSize(), "aaaa") + 1f, false));
+    }
+
+    // A right to left text block breaks a word at a soft hyphen, the hyphen at
+    // the end of the line, on its left: it was cut between two characters, with
+    // no hyphen (review of 12 October 2026, R17).
+    @Test
+    void aRightToLeftWordBreaksAtASoftHyphen() throws Exception {
+        Font font = new Font(TestSupport.newPDF(), TestSupport.open("fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.ttf"));
+        font.setSize(12f);
+        float width = font.stringWidth(12f, "\u05E9\u05DC\u05D5\u05DD-") + 1f;
+        String word = "\u05E9\u05DC\u05D5\u05DD\u00AD\u05E2\u05D5\u05DC\u05DD\u00AD\u05D0\u05D7\u05D3";
+        String lines = "-\u05DD\u05D5\u05DC\u05E9|-\u05DD\u05DC\u05D5\u05E2|\u05D3\u05D7\u05D0";
+        assertEquals(lines, lineTexts(font, word, width, true));
+        assertEquals("\u05D0|" + lines, lineTexts(font, "\u05D0 " + word, width, true));
+    }
+
+    // Returns the lines of a text block of the text, at the width of text, joined by "|".
+    private static String lineTexts(Font font, String text, float width, boolean rightToLeft) throws Exception {
+        TextBlock block = new TextBlock(font, text);
+        block.setRightToLeft(rightToLeft);
+        block.setWidth(width + 2 * block.getPadding());
+        List<String> lines = new ArrayList<>();
+        for (TextLine line : textLines(block)) {
+            lines.add(line.text.replace("\u00AD", ""));
+        }
+        return String.join("|", lines);
+    }
 }

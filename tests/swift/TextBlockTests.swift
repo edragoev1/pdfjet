@@ -266,4 +266,41 @@ import Testing
         let fits = TextBlock(font, TestSupport.softHyphenWord).setWidth(500).getTextLines()
         #expect(fits.count == 1 && !fits[0].text!.contains("-"), "the lines of a word that fits: \(fits.count)")
     }
+
+    // A word broken between its characters breaks at a soft hyphen where one
+    // fits, as TextFrame breaks each row: "1234\u00ad5678" was "12", "34", "56",
+    // "78" with no hyphen, where TextFrame draws "34-", and a line ran across
+    // the soft hyphen of "aaaaaaaaaa\u00adbbbbbbbbbb" where "aa-" fit (review of
+    // 12 October 2026, R18).
+    @Test func aWordBrokenBetweenCharactersBreaksAtASoftHyphen() {
+        let font = TestSupport.helvetica(TestSupport.newPDF())
+        // Two digits and a hyphen fit, three digits do not.
+        #expect(lineTexts(font, "1234\u{00AD}5678", font.stringWidth(font.getSize(), "00-") + 1, false)
+                == "12|34-|56|78")
+        #expect(lineTexts(font, "aaaaaaaaaa\u{00AD}bbbbbbbbbb", font.stringWidth(font.getSize(), "aaaa") + 1, false)
+                == "aaaa|aaaa|aa-|bbbb|bbbb|bb")
+    }
+
+    // A right to left text block breaks a word at a soft hyphen, the hyphen at
+    // the end of the line, on its left: it was cut between two characters, with
+    // no hyphen (review of 12 October 2026, R17).
+    @Test func aRightToLeftWordBreaksAtASoftHyphen() throws {
+        let font = try Font(TestSupport.newPDF(), TestSupport.open("fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.ttf"))
+        font.setSize(12)
+        let width = font.stringWidth(12, "\u{05E9}\u{05DC}\u{05D5}\u{05DD}-") + 1
+        let word = "\u{05E9}\u{05DC}\u{05D5}\u{05DD}\u{00AD}\u{05E2}\u{05D5}\u{05DC}\u{05DD}\u{00AD}\u{05D0}\u{05D7}\u{05D3}"
+        let lines = "-\u{05DD}\u{05D5}\u{05DC}\u{05E9}|-\u{05DD}\u{05DC}\u{05D5}\u{05E2}|\u{05D3}\u{05D7}\u{05D0}"
+        #expect(lineTexts(font, word, width, true) == lines)
+        #expect(lineTexts(font, "\u{05D0} " + word, width, true) == "\u{05D0}|" + lines)
+    }
+
+    // Returns the lines of a text block of the text, at the width of text, joined by "|".
+    private func lineTexts(_ font: Font, _ text: String, _ width: Float, _ rightToLeft: Bool) -> String {
+        let block = TextBlock(font, text)
+        block.setRightToLeft(rightToLeft)
+        block.setWidth(width + 2 * block.getPadding())
+        return block.getTextLines().map {
+            String(String.UnicodeScalarView($0.text!.unicodeScalars.filter { $0.value != 0x00AD }))
+        }.joined(separator: "|")
+    }
 }

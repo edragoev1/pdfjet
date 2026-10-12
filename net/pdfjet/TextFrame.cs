@@ -378,11 +378,21 @@ public class TextFrame : IDrawable {
         float fontSize = textLine.fontSize;
         StringBuilder buf = new StringBuilder();
         float runLength = 0f;
+        // Where the rest of the token starts, in a token broken into rows: the
+        // rest is not copied for each row, which made the time grow with the
+        // square of a word of thousands of rows (800,000 characters took 0.8
+        // seconds where 200,000 took 0.08 in Java); it is copied once, when
+        // the frame is full.
+        int start = 0;
         while (tokenIndex < tokens.Count) {
             if (!rowOpen && !OpenRow(textLine)) {
+                if (start > 0) {
+                    tokens[tokenIndex] = tokens[tokenIndex].Substring(start);
+                }
                 return false;
             }
-            String token = tokens[tokenIndex];
+            float available = (x + w) - xText;
+            String token = Window(textLine, tokens[tokenIndex], start, available);
             // The last word of a text line that the next text line goes on
             // from has no space after it, and it is measured with the words
             // joined to it, so that the row does not break between them.
@@ -403,7 +413,6 @@ public class TextFrame : IDrawable {
             if (leading) {
                 token = Single.space + token;
             }
-            float available = (x + w) - xText;
             // The first word of a text line joined to the word before it is
             // in the row already when that word made room for it.
             bool reserved = joinReserved && tokenIndex == 0;
@@ -418,6 +427,7 @@ public class TextFrame : IDrawable {
                 buf.Append(text);
                 runLength += Width(textLine, text);
                 tokenIndex++;
+                start = 0;
                 joinReserved = joinsNext;
                 leadingSpace = spaceToNext;
                 continue;
@@ -430,6 +440,7 @@ public class TextFrame : IDrawable {
                 buf.Append(text);
                 runLength += Width(textLine, text);
                 tokenIndex++;
+                start = 0;
                 continue;
             }
             if (TextBlock.SoftHyphenBreak(token, available - runLength,
@@ -437,15 +448,16 @@ public class TextFrame : IDrawable {
                 // The token is broken at a soft hyphen, the row ending with a
                 // hyphen, as far along as fits (review of 11 October 2026, #21)
                 buf.Append(softHead);
-                tokens[tokenIndex] = softRest;
+                start += token.Length - softRest.Length - (leading ? 1 : 0);
             } else if (buf.Length == 0 && xText == x) {
                 // The token does not fit in an empty row, so the row takes as much of it as fits.
                 String head = HeadThatFits(textLine, token);
                 buf.Append(head);
                 if (head.Length == token.Length) {
                     tokenIndex++;
+                    start = 0;
                 } else {
-                    tokens[tokenIndex] = token.Substring(head.Length);
+                    start += head.Length;
                 }
             }
             if (leading && buf.Length == 0) {
@@ -464,6 +476,26 @@ public class TextFrame : IDrawable {
         AddToRow(paragraph, textLine, buf.ToString(), true);
         xText += font.StringWidth(fallbackFont, fontSize, buf.ToString());
         return true;
+    }
+
+    // Returns the rest of the token from the start, or as much of its start as
+    // is wider than the width available, at least 256 characters and up to twice
+    // as many as a row needs: a row is drawn from the start of the rest, and a
+    // start that does not fit is broken as the whole rest would be.
+    private static String Window(TextLine textLine, String token, int start, float available) {
+        for (int size = 256; ; size *= 2) {
+            int end = start + size;
+            if (end >= token.Length) {
+                return (start == 0) ? token : token.Substring(start);
+            }
+            if (char.IsLowSurrogate(token[end])) {
+                end++;
+            }
+            String head = token.Substring(start, end - start);
+            if (Width(textLine, head) > available) {
+                return head;
+            }
+        }
     }
 
     // Returns the width of the text joined to the end of the text line at the

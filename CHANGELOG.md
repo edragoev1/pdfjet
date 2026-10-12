@@ -123,7 +123,9 @@ This is the first entry in this file; earlier releases were not tracked here.
   for a soft hyphen to break at looked at the whole rest of the word for
   each row, and TextFrame copied it, so 4 times the word took 16 times the
   time. A word of 400,000 characters takes 86 ms in Go, where it took 1.8 s,
-  and 238 ms in Java, where it took 1.45 s.
+  and 145 ms in Java, where it took 1.45 s. TextFrame keeps the rest of the
+  word in place as it draws its rows, and copies it once, when the frame is
+  full.
 - AddAssociatedFile refuses an EmbeddedFile of another PDF, as a
   FileAttachment does, in the four ports: the document's /AF and
   /EmbeddedFiles named an object of the other PDF, a corrupt PDF/A-3.
@@ -154,6 +156,12 @@ This is the first entry in this file; earlier releases were not tracked here.
   each a space, so that "©️ 2026" pasted from a phone had two, in the text
   copied too. The deprecated CJK fonts drew and measured them, and the soft
   hyphen, 1 em wide; they leave them out too.
+- A TextBlock breaks a word at a soft hyphen where TextFrame does, in the
+  four ports: a word broken between its characters was never broken at one
+  after its first line, so 12345678 with a soft hyphen after the 4 drew
+  "34" where TextFrame drew "34-", and a right to left TextBlock never
+  broke at one, cutting the word between two characters with no hyphen.
+  Its hyphen is at the end of the line, on the left.
 - GetFitChars of a core font kerns a character with the next one drawn, as
   StringWidth does, in the four ports: it kerned it with a soft hyphen after
   it, and counted fewer characters than StringWidth fit.

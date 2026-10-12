@@ -368,11 +368,23 @@ public class TextFrame : Drawable {
         let fontSize = textLine.fontSize
         var buf = String()
         var runLength: Float = 0.0
+        // Where the rest of the token starts, in a token broken into rows: the
+        // rest is not copied for each row, which made the time grow with the
+        // square of a word of thousands of rows (800,000 characters took 0.8
+        // seconds where 200,000 took 0.08 in Java); it is copied once, when
+        // the frame is full.
+        var start: String.Index? = nil
         while tokenIndex < tokens!.count {
             if !rowOpen && !openRow(textLine) {
+                if let start = start {
+                    tokens![tokenIndex] = String(tokens![tokenIndex].unicodeScalars[start...])
+                }
                 return false
             }
-            var token = tokens![tokenIndex]
+            let available = (x + w) - xText
+            let whole = tokens![tokenIndex]
+            let from = start ?? whole.unicodeScalars.startIndex
+            var token = TextFrame.window(textLine, whole, from, available)
             // The last word of a text line that the next text line goes on
             // from has no space after it, and it is measured with the words
             // joined to it, so that the row does not break between them.
@@ -393,7 +405,6 @@ public class TextFrame : Drawable {
             if leading {
                 token = Single.space + token
             }
-            let available = (x + w) - xText
             // The first word of a text line joined to the word before it is
             // in the row already when that word made room for it.
             let reserved = joinReserved && tokenIndex == 0
@@ -408,6 +419,7 @@ public class TextFrame : Drawable {
                 buf.append(text)
                 runLength += TextFrame.width(textLine, text)
                 tokenIndex += 1
+                start = nil
                 joinReserved = joinsNext
                 leadingSpace = spaceToNext
                 continue
@@ -420,6 +432,7 @@ public class TextFrame : Drawable {
                 buf.append(text)
                 runLength += TextFrame.width(textLine, text)
                 tokenIndex += 1
+                start = nil
                 continue
             }
             if let (head, rest) = TextBlock.softHyphenBreak(token, available - runLength, {
@@ -428,15 +441,18 @@ public class TextFrame : Drawable {
                 // The token is broken at a soft hyphen, the row ending with a
                 // hyphen, as far along as fits (review of 11 October 2026, #21)
                 buf.append(head)
-                tokens![tokenIndex] = rest
+                let consumed = token.unicodeScalars.count - rest.unicodeScalars.count - (leading ? 1 : 0)
+                start = whole.unicodeScalars.index(from, offsetBy: consumed)
             } else if buf.isEmpty && xText == x {
                 // The token does not fit in an empty row, so the row takes as much of it as fits.
                 let end = headThatFits(textLine, token)
                 buf.append(String(token.unicodeScalars[..<end]))
                 if end == token.unicodeScalars.endIndex {
                     tokenIndex += 1
+                    start = nil
                 } else {
-                    tokens![tokenIndex] = String(token.unicodeScalars[end...])
+                    let consumed = token.unicodeScalars.distance(from: token.unicodeScalars.startIndex, to: end)
+                    start = whole.unicodeScalars.index(from, offsetBy: consumed)
                 }
             }
             if leading && buf.isEmpty {
@@ -478,6 +494,27 @@ public class TextFrame : Drawable {
             i += 1
         }
         return width
+    }
+
+    // Returns the rest of the token from the start, or as much of its start as
+    // is wider than the width available, at least 256 characters and up to twice
+    // as many as a row needs: a row is drawn from the start of the rest, and a
+    // start that does not fit is broken as the whole rest would be.
+    private static func window(
+            _ textLine: TextLine, _ token: String, _ start: String.Index, _ available: Float) -> String {
+        let scalars = token.unicodeScalars
+        var size = 256
+        while true {
+            guard let end = scalars.index(start, offsetBy: size, limitedBy: scalars.endIndex),
+                    end < scalars.endIndex else {
+                return start == scalars.startIndex ? token : String(scalars[start...])
+            }
+            let head = String(scalars[start..<end])
+            if width(textLine, head) > available {
+                return head
+            }
+            size *= 2
+        }
     }
 
     // Returns the width of the text when it is no more than the limit, and

@@ -125,6 +125,38 @@ class ReviewLayoutTest {
                 + " ms, and 50000 " + small / 1000000 + " ms");
     }
 
+    // A word broken into rows across frames is drawn whole, in order, the rest
+    // of it kept where the frame was full: it is kept in place as the rows are
+    // drawn, where it was copied for each row, which made the time grow with the
+    // square of the word.
+    @Test
+    void aWordBrokenAcrossFramesIsDrawnWhole() throws Exception {
+        Pattern tj = Pattern.compile("\\[<([0-9A-F]*)>\\] TJ");
+        for (String word : new String[] {repeat("abcdefghi", 300), repeat("abcdefgh\u00AD", 300)}) {
+            PDF pdf = TestSupport.newPDF();
+            Font font = TestSupport.helvetica(pdf);
+            List<String> text = new ArrayList<String>();
+            text.add(word);
+            TextFrame frame = new TextFrame(font, text);
+            frame.setLocation(50f, 50f).setWidth(100f).setHeight(60f);
+            StringBuilder drawn = new StringBuilder();
+            for (int pages = 0; frame.hasMoreText() && pages < 100; pages++) {
+                Page page = new Page(pdf, Letter.PORTRAIT, Page.DETACHED);
+                frame.drawOn(page);
+                Matcher m = tj.matcher(TestSupport.content(page));
+                while (m.find()) {
+                    String hex = m.group(1);
+                    for (int i = 0; i + 2 <= hex.length(); i += 2) {
+                        drawn.append((char) Integer.parseInt(hex.substring(i, i + 2), 16));
+                    }
+                }
+            }
+            // The hyphens of the rows broken at a soft hyphen, and the space
+            // after the word, are not of the word.
+            assertEquals(word.replace("\u00AD", ""), drawn.toString().replace("-", "").replace(" ", ""));
+        }
+    }
+
     // The shortest of three times a TextFrame draws a word of the length.
     private static long longWordTime(int length) throws Exception {
         long shortest = Long.MAX_VALUE;

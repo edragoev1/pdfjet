@@ -544,10 +544,51 @@ func (textBlock *TextBlock) appendBrokenWordLines(
 		if next == len(runes) && width(offsets[start], len(word)) <= textAreaWidth {
 			break // The rest of the word fits on a line.
 		}
+		// A soft hyphen before the first break that does not fit is a better
+		// place to break: the line ends there, with a hyphen, as far along as
+		// fits, as TextFrame breaks each row. The rest of a word broken
+		// between characters, and a right to left word, were never broken at
+		// one (review of 12 October 2026, R17 and R18).
+		if k := softHyphenLineEnd(runes, word, offsets, start, next, func(k int) float32 {
+			if shaped != nil {
+				return shaped.width(offsets[start], offsets[k]) + textBlock.stringWidth("-")
+			}
+			return textBlock.stringWidth(word[offsets[start]:offsets[k]] + "-")
+		}, textAreaWidth); k != -1 {
+			if shaped != nil {
+				// The end of a right to left line is on its left.
+				textLines = append(textLines, NewTextLine(textBlock.font, "-"+shaped.text(offsets[start], offsets[k])))
+			} else {
+				textLines = append(textLines, NewTextLine(textBlock.font, word[offsets[start]:offsets[k]]+"-"))
+			}
+			start = k + 1
+			continue
+		}
 		textLines = append(textLines, line(offsets[start], offsets[end]))
 		start = end
 	}
 	return textLines, offsets[start]
+}
+
+// softHyphenLineEnd returns the rune index of the last soft hyphen of the word
+// between the start and the first break that does not fit, where a line from
+// the start ends with a hyphen that fits, or -1 if there is none. As in
+// softHyphenBreak, a soft hyphen with nothing but spaces before it, or with
+// nothing after it, is no place to break.
+func softHyphenLineEnd(
+	runes []rune, word string, offsets []int, start, next int, hyphenated func(k int) float32, width float32) int {
+	for k := min(next, len(runes)-2); k > start; k-- {
+		if runes[k] != 0x00AD {
+			continue
+		}
+		if trimSpace(strings.ReplaceAll(word[offsets[start]:offsets[k]], "\u00AD", "")) == "" {
+			continue
+		}
+		if hyphenated(k) <= width {
+			return k
+		}
+	}
+	return -1
 }
 
 // shapedWord is a right to left word too wide for a line, reordered and
@@ -737,13 +778,30 @@ func (textBlock *TextBlock) appendRightToLeftLines(
 			if i < len(words)-1 {
 				separator = ""
 			}
-			if textBlock.lineWidth(sb.String()+word, from) <= textAreaWidth {
-				sb.WriteString(word + separator)
-			} else {
-				if sb.Len() > from {
-					textLines = append(textLines, textBlock.newTextLine(sb.String(), from))
+			for {
+				if textBlock.lineWidth(sb.String()+word, from) <= textAreaWidth {
+					sb.WriteString(word + separator)
+					break
+				}
+				// The word is broken at a soft hyphen, the line ending with a
+				// hyphen, as far along as fits, as in left to right text: it
+				// was cut between two characters (review of 12 October 2026,
+				// R17)
+				line := sb.String()
+				if head, rest, ok := softHyphenBreak(word, textAreaWidth, func(head string) float32 {
+					return textBlock.lineWidth(line+head, from)
+				}); ok {
+					textLines = append(textLines, textBlock.newTextLine(line+head, from))
 					sb.Reset()
 					from = 0
+					word = rest
+					continue
+				}
+				if sb.Len() > from {
+					textLines = append(textLines, textBlock.newTextLine(line, from))
+					sb.Reset()
+					from = 0
+					continue
 				}
 				// A word too wide for a line by itself is broken.
 				var rest int
@@ -752,6 +810,7 @@ func (textBlock *TextBlock) appendRightToLeftLines(
 					sb.WriteString(word + separator)
 					from = rest
 				}
+				break
 			}
 		}
 	}

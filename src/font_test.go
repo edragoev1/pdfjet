@@ -529,13 +529,13 @@ func TestFontAStampKeepsAJoinerInTheActualText(t *testing.T) {
 		t.Fatal("the font has a glyph for the ZWNJ")
 	}
 	stamp := NewStamp(pdf)
-	stamp.DrawText(font, 12, 0, 12, "a‌‎b")
-	if content := stamp.buf.String(); !strings.Contains(content, "/ActualText <"+toUTF16Hex("a‌")+">") {
+	stamp.DrawText(font, 12, 0, 12, "a\u200C\u200Eb")
+	if content := stamp.buf.String(); !strings.Contains(content, "/ActualText <"+toUTF16Hex("a\u200C")+">") {
 		t.Errorf("the ZWNJ is not in the actual text: %q", content)
 	}
 	page := NewPage(pdf, letter.Portrait())
-	NewTextLine(font, "a‌‎b").SetLocation(50, 50).DrawOn(page)
-	if content := testContent(page); !strings.Contains(content, "/ActualText <"+toUTF16Hex("a‌")+">") {
+	NewTextLine(font, "a\u200C\u200Eb").SetLocation(50, 50).DrawOn(page)
+	if content := testContent(page); !strings.Contains(content, "/ActualText <"+toUTF16Hex("a\u200C")+">") {
 		t.Errorf("the page does not do the same: %q", content)
 	}
 }

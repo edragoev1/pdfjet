@@ -444,11 +444,21 @@ public class TextFrame implements Drawable {
         float fontSize = textLine.fontSize;
         StringBuilder buf = new StringBuilder();
         float runLength = 0f;
+        // Where the rest of the token starts, in a token broken into rows: the
+        // rest is not copied for each row, which made the time grow with the
+        // square of a word of thousands of rows (800,000 characters took 0.8
+        // seconds where 200,000 took 0.08); it is copied once, when the frame
+        // is full.
+        int start = 0;
         while (tokenIndex < tokens.size()) {
             if (!rowOpen && !openRow(textLine)) {
+                if (start > 0) {
+                    tokens.set(tokenIndex, tokens.get(tokenIndex).substring(start));
+                }
                 return false;
             }
-            String token = tokens.get(tokenIndex);
+            float available = (x + w) - xText;
+            String token = window(textLine, tokens.get(tokenIndex), start, available);
             // The last word of a text line that the next text line goes on
             // from has no space after it, and it is measured with the words
             // joined to it, so that the row does not break between them.
@@ -469,7 +479,6 @@ public class TextFrame implements Drawable {
             if (leading) {
                 token = Single.space + token;
             }
-            float available = (x + w) - xText;
             // The first word of a text line joined to the word before it is
             // in the row already when that word made room for it.
             boolean reserved = joinReserved && tokenIndex == 0;
@@ -484,6 +493,7 @@ public class TextFrame implements Drawable {
                 buf.append(text);
                 runLength += width(textLine, text);
                 tokenIndex++;
+                start = 0;
                 joinReserved = joinsNext;
                 leadingSpace = spaceToNext;
                 continue;
@@ -496,6 +506,7 @@ public class TextFrame implements Drawable {
                 buf.append(text);
                 runLength += width(textLine, text);
                 tokenIndex++;
+                start = 0;
                 continue;
             }
             String[] parts = TextBlock.softHyphenBreak(token, available - runLength,
@@ -504,15 +515,16 @@ public class TextFrame implements Drawable {
                 // The token is broken at a soft hyphen, the row ending with a
                 // hyphen, as far along as fits (review of 11 October 2026, #21)
                 buf.append(parts[0]);
-                tokens.set(tokenIndex, parts[1]);
+                start += token.length() - parts[1].length() - (leading ? 1 : 0);
             } else if (buf.length() == 0 && xText == x) {
                 // The token does not fit in an empty row, so the row takes as much of it as fits.
                 String head = headThatFits(textLine, token);
                 buf.append(head);
                 if (head.length() == token.length()) {
                     tokenIndex++;
+                    start = 0;
                 } else {
-                    tokens.set(tokenIndex, token.substring(head.length()));
+                    start += head.length();
                 }
             }
             if (leading && buf.length() == 0) {
@@ -531,6 +543,26 @@ public class TextFrame implements Drawable {
         addToRow(paragraph, textLine, buf.toString(), true);
         xText += font.stringWidth(fallbackFont, fontSize, buf.toString());
         return true;
+    }
+
+    // Returns the rest of the token from the start, or as much of its start as
+    // is wider than the width available, at least 256 characters and up to twice
+    // as many as a row needs: a row is drawn from the start of the rest, and a
+    // start that does not fit is broken as the whole rest would be.
+    private static String window(TextLine textLine, String token, int start, float available) {
+        for (int size = 256; ; size *= 2) {
+            int end = start + size;
+            if (end >= token.length()) {
+                return (start == 0) ? token : token.substring(start);
+            }
+            if (Character.isLowSurrogate(token.charAt(end))) {
+                end++;
+            }
+            String head = token.substring(start, end);
+            if (width(textLine, head) > available) {
+                return head;
+            }
+        }
     }
 
     // Returns the width of the text joined to the end of the text line at the

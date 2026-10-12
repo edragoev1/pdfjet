@@ -341,5 +341,47 @@ public class TextBlockTest {
         TextLine[] fits = new TextBlock(font, SoftHyphenWord).SetWidth(500f).GetTextLines();
         Assert.True(fits.Length == 1 && !fits[0].text.Contains('-'), "the lines of a word that fits: " + fits.Length);
     }
+
+    [Fact]
+    public void AWordBrokenBetweenCharactersBreaksAtASoftHyphen() {
+        // A word broken between its characters breaks at a soft hyphen where one
+        // fits, as TextFrame breaks each row: "1234\u00ad5678" was "12", "34", "56",
+        // "78" with no hyphen, where TextFrame draws "34-", and a line ran across
+        // the soft hyphen of "aaaaaaaaaa\u00adbbbbbbbbbb" where "aa-" fit (review of
+        // 12 October 2026, R18).
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
+        Font font = new Font(TestSupport.NewPDF(), CoreFont.HELVETICA);
+        // Two digits and a hyphen fit, three digits do not.
+        Assert.Equal("12|34-|56|78", LineTexts(font, "1234\u00AD5678",
+                font.StringWidth(font.GetSize(), "00-") + 1f, false));
+        Assert.Equal("aaaa|aaaa|aa-|bbbb|bbbb|bb", LineTexts(font, "aaaaaaaaaa\u00ADbbbbbbbbbb",
+                font.StringWidth(font.GetSize(), "aaaa") + 1f, false));
+    }
+
+    [Fact]
+    public void ARightToLeftWordBreaksAtASoftHyphen() {
+        // A right to left text block breaks a word at a soft hyphen, the hyphen at
+        // the end of the line, on its left: it was cut between two characters, with
+        // no hyphen (review of 12 October 2026, R17).
+        Font font = new Font(TestSupport.NewPDF(), TestSupport.Open("fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.ttf"));
+        font.SetSize(12f);
+        float width = font.StringWidth(12f, "\u05E9\u05DC\u05D5\u05DD-") + 1f;
+        string word = "\u05E9\u05DC\u05D5\u05DD\u00AD\u05E2\u05D5\u05DC\u05DD\u00AD\u05D0\u05D7\u05D3";
+        string lines = "-\u05DD\u05D5\u05DC\u05E9|-\u05DD\u05DC\u05D5\u05E2|\u05D3\u05D7\u05D0";
+        Assert.Equal(lines, LineTexts(font, word, width, true));
+        Assert.Equal("\u05D0|" + lines, LineTexts(font, "\u05D0 " + word, width, true));
+    }
+
+    // Returns the lines of a text block of the text, at the width of text, joined by "|".
+    private static string LineTexts(Font font, string text, float width, bool rightToLeft) {
+        TextBlock block = new TextBlock(font, text);
+        block.SetRightToLeft(rightToLeft);
+        block.SetWidth(width + 2f * block.GetPadding());
+        List<string> lines = new List<string>();
+        foreach (TextLine line in block.GetTextLines()) {
+            lines.Add(line.text.Replace("\u00AD", ""));
+        }
+        return string.Join("|", lines);
+    }
 }
 }

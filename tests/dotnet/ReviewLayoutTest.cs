@@ -101,6 +101,38 @@ public sealed class ReviewLayoutTest : IDisposable {
     }
 
     [Fact]
+    public void AWordBrokenAcrossFramesIsDrawnWhole() {
+        // A word broken into rows across frames is drawn whole, in order, the rest
+        // of it kept where the frame was full: it is kept in place as the rows are
+        // drawn, where it was copied for each row, which made the time grow with the
+        // square of the word.
+        Regex tj = new Regex("\\[<([0-9A-F]*)>\\] TJ");
+        string Repeat(string text, int count) {
+            return new StringBuilder().Insert(0, text, count).ToString();
+        }
+        foreach (string word in new[] {Repeat("abcdefghi", 300), Repeat("abcdefgh\u00AD", 300)}) {
+            PDF pdf = TestSupport.NewPDF();
+            Font font = TestSupport.Helvetica(pdf);
+            TextFrame frame = new TextFrame(font, new List<String> {word});
+            frame.SetLocation(50f, 50f).SetWidth(100f).SetHeight(60f);
+            StringBuilder drawn = new StringBuilder();
+            for (int pages = 0; frame.HasMoreText() && pages < 100; pages++) {
+                Page page = new Page(pdf, Letter.PORTRAIT, false);
+                frame.DrawOn(page);
+                foreach (Match m in tj.Matches(TestSupport.Content(page))) {
+                    string hex = m.Groups[1].Value;
+                    for (int i = 0; i + 2 <= hex.Length; i += 2) {
+                        drawn.Append((char) Convert.ToInt32(hex.Substring(i, 2), 16));
+                    }
+                }
+            }
+            // The hyphens of the rows broken at a soft hyphen, and the space
+            // after the word, are not of the word.
+            Assert.Equal(word.Replace("\u00AD", ""), drawn.ToString().Replace("-", "").Replace(" ", ""));
+        }
+    }
+
+    [Fact]
     public void MarkdownQuotesNestedDeeplyKeepTheTextWide() {
         // Quotes nested so deeply that the text was narrower than nothing drew
         // one character on each row.

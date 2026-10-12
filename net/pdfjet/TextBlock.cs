@@ -478,10 +478,45 @@ public class TextBlock : IDrawable {
             if (next == word.Length && PartWidth(shaped, word, start, word.Length) <= textAreaWidth) {
                 break;      // The rest of the word fits on a line.
             }
+            // A soft hyphen before the first break that does not fit is a
+            // better place to break: the line ends there, with a hyphen, as far
+            // along as fits, as TextFrame breaks each row. The rest of a word
+            // broken between characters, and a right to left word, were never
+            // broken at one (review of 12 October 2026, R17 and R18).
+            int k = SoftHyphenLineEnd(shaped, word, start, next, textAreaWidth);
+            if (k != -1) {
+                // The end of a right to left line is on its left.
+                textLines.Add(new TextLine(font, shaped != null
+                        ? "-" + shaped.Text(start, k) : word.Substring(start, k - start) + "-"));
+                start = k + 1;
+                continue;
+            }
             textLines.Add(new TextLine(font, PartText(shaped, word, start, end)));
             start = end;
         }
         return start;
+    }
+
+    // Returns the index of the last soft hyphen of the word between the start
+    // and the first break that does not fit, where a line from the start ends
+    // with a hyphen that fits, or -1 if there is none. As in SoftHyphenBreak, a
+    // soft hyphen with nothing but spaces before it, or with nothing after it,
+    // is no place to break.
+    private int SoftHyphenLineEnd(ShapedWord shaped, String word, int start, int next, float textAreaWidth) {
+        for (int k = Math.Min(next, word.Length - 2); k > start; k--) {
+            if (word[k] != '\u00AD') {
+                continue;
+            }
+            if (Util.Trim(word.Substring(start, k - start).Replace("\u00AD", "")).Length == 0) {
+                continue;
+            }
+            float width = shaped != null
+                    ? shaped.Width(start, k) + StringWidth("-") : StringWidth(word.Substring(start, k - start) + "-");
+            if (width <= textAreaWidth) {
+                return k;
+            }
+        }
+        return -1;
     }
 
     // Returns the width of the part of the word between two indexes: of a
@@ -680,13 +715,30 @@ public class TextBlock : IDrawable {
             for (int i = 0; i < words.Length; i++) {
                 String word = words[i];
                 String separator = (i == words.Length - 1) ? " " : "";
-                if (LineWidth(sb.ToString() + word, from) <= textAreaWidth) {
-                    sb.Append(word).Append(separator);
-                } else {
-                    if (sb.Length > from) {
-                        textLines.Add(NewTextLine(sb.ToString(), from));
+                for (;;) {
+                    if (LineWidth(sb.ToString() + word, from) <= textAreaWidth) {
+                        sb.Append(word).Append(separator);
+                        break;
+                    }
+                    // The word is broken at a soft hyphen, the line ending with
+                    // a hyphen, as far along as fits, as in left to right text:
+                    // it was cut between two characters (review of 12 October
+                    // 2026, R17)
+                    String pending = sb.ToString();
+                    int lineFrom = from;
+                    if (SoftHyphenBreak(word, textAreaWidth, h => LineWidth(pending + h, lineFrom),
+                            out String head, out String softRest)) {
+                        textLines.Add(NewTextLine(pending + head, from));
                         sb.Clear();
                         from = 0;
+                        word = softRest;
+                        continue;
+                    }
+                    if (sb.Length > from) {
+                        textLines.Add(NewTextLine(pending, from));
+                        sb.Clear();
+                        from = 0;
+                        continue;
                     }
                     // A word too wide for a line by itself is broken.
                     int rest = AddBrokenWordLines(textLines, word, textAreaWidth);
@@ -694,6 +746,7 @@ public class TextBlock : IDrawable {
                         sb.Append(word).Append(separator);
                         from = rest;
                     }
+                    break;
                 }
             }
         }

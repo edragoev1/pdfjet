@@ -462,3 +462,54 @@ func TestTextBlockBreaksAWordAtASoftHyphen(t *testing.T) {
 		t.Errorf("the lines of a word that fits: %d", len(fits))
 	}
 }
+
+// A word broken between its characters breaks at a soft hyphen where one
+// fits, as TextFrame breaks each row: "1234\u00ad5678" was "12", "34", "56",
+// "78" with no hyphen, where TextFrame draws "34-", and a line ran across
+// the soft hyphen of "aaaaaaaaaa\u00adbbbbbbbbbb" where "aa-" fit (review of
+// 12 October 2026, R18).
+func TestTextBlockAWordBrokenBetweenCharactersBreaksAtASoftHyphen(t *testing.T) {
+	font := testHelvetica(testNewPDF())
+	lines := func(text string, width float32) []string {
+		block := NewTextBlock(font, text)
+		block.SetWidth(width + 2*block.GetPadding())
+		var texts []string
+		for _, line := range block.getTextLines() {
+			texts = append(texts, strings.ReplaceAll(line.text, "\u00ad", ""))
+		}
+		return texts
+	}
+	// Two digits and a hyphen fit, three digits do not.
+	if got := lines("1234\u00ad5678", font.StringWidth(font.size, "00-")+1); strings.Join(got, "|") != "12|34-|56|78" {
+		t.Errorf("the lines %q", got)
+	}
+	got := lines("aaaaaaaaaa\u00adbbbbbbbbbb", font.StringWidth(font.size, "aaaa")+1)
+	if strings.Join(got, "|") != "aaaa|aaaa|aa-|bbbb|bbbb|bb" {
+		t.Errorf("the lines %q", got)
+	}
+}
+
+// A right to left text block breaks a word at a soft hyphen, the hyphen at
+// the end of the line, on its left: it was cut between two characters, with
+// no hyphen (review of 12 October 2026, R17).
+func TestTextBlockARightToLeftWordBreaksAtASoftHyphen(t *testing.T) {
+	pdf := testNewPDF()
+	font := NewFontFromFile(pdf, testRepoPath(t, "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.ttf"))
+	font.SetSize(12)
+	for _, text := range []string{"שלום\u00adעולם\u00adאחד", "א שלום\u00adעולם\u00adאחד"} {
+		block := NewTextBlock(font, text)
+		block.SetRightToLeft(true)
+		block.SetWidth(font.StringWidth(12, "שלום-") + 1 + 2*block.GetPadding())
+		var got []string
+		for _, line := range block.getTextLines() {
+			got = append(got, strings.ReplaceAll(line.text, "\u00ad", ""))
+		}
+		want := "-םולש|-םלוע|דחא"
+		if strings.HasPrefix(text, "א ") {
+			want = "א|-םולש|-םלוע|דחא"
+		}
+		if strings.Join(got, "|") != want {
+			t.Errorf("%q: the lines %q", text, got)
+		}
+	}
+}

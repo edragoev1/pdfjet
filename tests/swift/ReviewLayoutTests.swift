@@ -92,6 +92,42 @@ import Testing
         #expect(!frame.hasMoreText(), "the word is not all drawn")
     }
 
+    // A word broken into rows across frames is drawn whole, in order, the rest
+    // of it kept where the frame was full: it is kept in place as the rows are
+    // drawn, where it was copied for each row, which made the time grow with the
+    // square of the word.
+    @Test func aWordBrokenAcrossFramesIsDrawnWhole() throws {
+        for word in [String(repeating: "abcdefghi", count: 300), String(repeating: "abcdefgh\u{00AD}", count: 300)] {
+            let pdf = TestSupport.newPDF()
+            let font = TestSupport.helvetica(pdf)
+            let frame = TextFrame(font, [word])
+            frame.setLocation(50, 50).setWidth(100).setHeight(60)
+            var drawn = ""
+            var pages = 0
+            while frame.hasMoreText() && pages < 100 {
+                let page = Page(pdf, Letter.PORTRAIT, false)
+                frame.drawOn(page)
+                // The hexadecimal of each "[<...>] TJ"
+                for part in TestSupport.content(page).components(separatedBy: "[<").dropFirst() {
+                    guard let end = part.range(of: ">] TJ") else {
+                        continue
+                    }
+                    let hex = Array(part[..<end.lowerBound])
+                    var i = 0
+                    while i + 2 <= hex.count {
+                        drawn.unicodeScalars.append(Unicode.Scalar(UInt8(String(hex[i..<i + 2]), radix: 16)!))
+                        i += 2
+                    }
+                }
+                pages += 1
+            }
+            // The hyphens of the rows broken at a soft hyphen, and the space
+            // after the word, are not of the word.
+            let got = drawn.replacingOccurrences(of: "-", with: "").replacingOccurrences(of: " ", with: "")
+            #expect(got == word.replacingOccurrences(of: "\u{00AD}", with: ""), "drew \(got.count) characters")
+        }
+    }
+
     @Test func markdownQuotesNestedDeeplyKeepTheTextWide() throws {
         // Quotes nested so deeply that the text was narrower than nothing
         // drew one character on each row.

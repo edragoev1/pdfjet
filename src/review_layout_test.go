@@ -64,6 +64,37 @@ func TestReviewLayoutTextFrameBreaksALongWordInLinearTime(t *testing.T) {
 	}
 }
 
+// A word broken into rows across frames is drawn whole, in order, the rest
+// of it kept where the frame was full: Java, C# and Swift keep it in place
+// as the rows are drawn, where they copied it for each row.
+func TestReviewLayoutAWordBrokenAcrossFramesIsDrawnWhole(t *testing.T) {
+	tj := regexp.MustCompile(`\[<([0-9A-F]*)>\] TJ`)
+	for _, word := range []string{strings.Repeat("abcdefghi", 300), strings.Repeat("abcdefgh\u00AD", 300)} {
+		pdf := testNewPDF()
+		font := testHelvetica(pdf)
+		frame := NewTextFrame(font, []string{word})
+		frame.SetLocation(50, 50)
+		frame.SetWidth(100).SetHeight(60)
+		var drawn strings.Builder
+		for pages := 0; frame.HasMoreText() && pages < 100; pages++ {
+			page := NewPageDetached(pdf, letter.Portrait())
+			frame.DrawOn(page)
+			for _, m := range tj.FindAllStringSubmatch(testContent(page), -1) {
+				for i := 0; i+2 <= len(m[1]); i += 2 {
+					b, _ := strconv.ParseUint(m[1][i:i+2], 16, 8)
+					drawn.WriteByte(byte(b))
+				}
+			}
+		}
+		want := strings.ReplaceAll(word, "\u00AD", "")
+		// The hyphens of the rows broken at a soft hyphen, and the space
+		// after the word, are not of the word.
+		if got := strings.NewReplacer("-", "", " ", "").Replace(drawn.String()); got != want {
+			t.Errorf("drew %d characters of %d: %.60q", len(got), len(want), got)
+		}
+	}
+}
+
 func TestReviewLayoutMarkdownQuotesNestedDeeplyKeepTheTextWide(t *testing.T) {
 	// Quotes nested so deeply that the text was narrower than nothing drew one
 	// character on each row.
