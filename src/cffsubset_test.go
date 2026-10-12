@@ -27,7 +27,7 @@ func testCFF(t testing.TB, path string) (*openTypeFont, []byte) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	otf := newOpenTypeFont(bytes.NewReader(data))
+	otf := newOpenTypeFont(data)
 	return otf, otf.buf[otf.cffOff : otf.cffOff+otf.cffLen]
 }
 
@@ -193,7 +193,7 @@ func FuzzSubsetCFF(f *testing.F) {
 	if err != nil {
 		f.Fatal(err)
 	}
-	otf := newOpenTypeFont(bytes.NewReader(data))
+	otf := newOpenTypeFont(data)
 	f.Add(otf.buf[otf.cffOff:otf.cffOff+otf.cffLen], uint16(36))
 	f.Fuzz(func(t *testing.T, cff []byte, gid uint16) {
 		used := make([]bool, 0x10000)

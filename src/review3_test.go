@@ -6,6 +6,7 @@
 package pdfjet
 
 import (
+	"bytes"
 	"math"
 	"os"
 	"path/filepath"
@@ -887,5 +888,27 @@ func TestReview3AFontChecksumLeavesOutEmptyBlocks(t *testing.T) {
 	font := NewFontFromFile(testNewPDF(), testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
 	if font.checksum != 0xABF1C2C88C082202 {
 		t.Errorf("checksum %X", font.checksum)
+	}
+}
+
+// A font is read into a buffer of its size, once, from a reader that says
+// how many bytes it has left: io.ReadAll grew its buffer as it read, and
+// copied a font of 200 KB several times, about half of what a document of
+// three embedded fonts allocated.
+func TestReview3AFontIsReadIntoABufferOfItsSize(t *testing.T) {
+	data, err := os.ReadFile(testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var before, after runtime.MemStats
+	runtime.GC()
+	runtime.ReadMemStats(&before)
+	buf := readFontData(bytes.NewReader(data))
+	runtime.ReadMemStats(&after)
+	if !bytes.Equal(buf, data) {
+		t.Fatal("the font read is not the font")
+	}
+	if allocated := after.TotalAlloc - before.TotalAlloc; allocated > uint64(len(data))*5/4*fuzzRaceAlloc {
+		t.Errorf("reading a font of %d bytes allocated %d", len(data), allocated)
 	}
 }

@@ -12,7 +12,6 @@ package pdfjet
 // check-no-fma.sh fails if one is removed.
 
 import (
-	"bufio"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"io"
 	"os"
@@ -286,7 +285,7 @@ func NewCJKFont(pdf *PDF, cjkFont cjkfont.Font) *Font {
 // PDF, unless SetSubset(false) keeps it whole.
 func NewFontForObjects(objects *[]*PDFobj, reader io.Reader) *Font {
 	font := new(Font)
-	addOpenTypeFontToObjects(objects, font, reader)
+	addOpenTypeFontToObjects(objects, font, readFontData(reader))
 	font.SetSize(defaultFontSize)
 	return font
 }
@@ -296,7 +295,7 @@ func NewFontForObjects(objects *[]*PDFobj, reader io.Reader) *Font {
 func NewFont(pdf *PDF, reader io.Reader) *Font {
 	font := new(Font)
 	font.pdf = pdf
-	registerOpenTypeFont(pdf, font, reader)
+	registerOpenTypeFont(pdf, font, readFontData(reader))
 	font.SetSize(defaultFontSize)
 	return font
 }
@@ -304,18 +303,16 @@ func NewFont(pdf *PDF, reader io.Reader) *Font {
 // NewFontFromFile creates a font from the .otf or .ttf file at the path and
 // adds it to the PDF. It panics if the file cannot be opened.
 func NewFontFromFile(pdf *PDF, filePath string) *Font {
-	filePath = fontFileOf(filePath)
-	f, err := os.Open(filePath)
+	// The file in one read, into a buffer of its size
+	buf, err := os.ReadFile(fontFileOf(filePath))
 	if err != nil {
 		panic(err)
 	}
-	defer func(f *os.File) {
-		err := f.Close()
-		if err != nil {
-			panic("Error closing file: " + err.Error())
-		}
-	}(f)
-	return NewFont(pdf, bufio.NewReader(f))
+	font := new(Font)
+	font.pdf = pdf
+	registerOpenTypeFont(pdf, font, buf)
+	font.SetSize(defaultFontSize)
+	return font
 }
 
 // fontFileOf returns the path of the font file: the path given, or, for a

@@ -298,12 +298,11 @@ public class Font {
         self.pdfIdentity = pdf.identity
         self.compliance = pdf.compliance
         let fontPath = Font.fontFileOf(fontPath)
-        guard FileManager.default.fileExists(atPath: fontPath),
-                let inputStream = InputStream(fileAtPath: fontPath) else {
+        // The file in one read, as Java, C# and Go read it, at its size
+        guard let data = FileManager.default.contents(atPath: fontPath) else {
             throw PDFjetError(message: "Font file not found: " + fontPath)
         }
-        let bytes = try Content.getFromStream(inputStream)
-        try OpenTypeFont.register(pdf, self, bytes)
+        try OpenTypeFont.register(pdf, self, [UInt8](data))
         setSize(size)
     }
 

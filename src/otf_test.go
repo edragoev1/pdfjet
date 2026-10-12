@@ -195,7 +195,7 @@ func TestOTFAGposTableIsNotReadPastTheWorkAFontNeeds(t *testing.T) {
 
 // testOpenTypeCapHeight returns the cap height PDFjet reads of the font.
 func testOpenTypeCapHeight(font []byte) int {
-	return int(newOpenTypeFont(bytes.NewReader(font)).capHeight)
+	return int(newOpenTypeFont(font).capHeight)
 }
 
 // testOpenTypeLength returns the font with the length of the table of the
@@ -303,10 +303,10 @@ func TestOTFAFormat12GroupThatStartsBeforeTheFirstCharacterKeepsItsGlyphs(t *tes
 	// the group were counted from the first character, not from the group's
 	// own start, and every one was off (the review of 9 October 2026).
 	ttf := testOpenTypeFontBytes(t, "fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.ttf")
-	want := newOpenTypeFont(bytes.NewReader(ttf))
+	want := newOpenTypeFont(ttf)
 	os2 := testOpenTypeTable(t, ttf, "OS/2")
 	binary.BigEndian.PutUint16(ttf[os2+64:], '0')
-	got := newOpenTypeFont(bytes.NewReader(ttf))
+	got := newOpenTypeFont(ttf)
 	for _, ch := range "0AZaz~" {
 		if got.unicodeToGID.get(ch) != want.unicodeToGID.get(ch) || want.unicodeToGID.get(ch) == 0 {
 			t.Errorf("%q: glyph %d, not %d", ch, got.unicodeToGID.get(ch), want.unicodeToGID.get(ch))

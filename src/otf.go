@@ -6,6 +6,7 @@
 package pdfjet
 
 import (
+	"bytes"
 	"io"
 	"strings"
 	"unicode/utf16"
@@ -65,10 +66,27 @@ func fontError(what string) {
 	panic("Invalid font file: " + what + ".")
 }
 
+// readFontData returns the bytes of a font from the reader. A reader that
+// says how many bytes it has left, as a bytes.Reader does, is read into a
+// buffer of that size, once: io.ReadAll grows its buffer as it reads, which
+// copied a font of 200 KB several times, about half of what a document of
+// three embedded fonts allocated in all.
+func readFontData(reader io.Reader) []byte {
+	if sized, ok := reader.(interface{ Len() int }); ok {
+		var buf bytes.Buffer
+		buf.Grow(sized.Len() + bytes.MinRead)
+		if _, err := buf.ReadFrom(reader); err != nil {
+			panic(err)
+		}
+		return buf.Bytes()
+	}
+	return content.GetFromStream(reader)
+}
+
 // newOpenTypeFont is the constructor for TTF and OTF fonts.
-func newOpenTypeFont(reader io.Reader) *openTypeFont {
+func newOpenTypeFont(buf []byte) *openTypeFont {
 	otf := new(openTypeFont)
-	otf.buf = content.GetFromStream(reader)
+	otf.buf = buf
 	otf.unicodeToGID = new(glyphMap)
 	// A font without an OS/2 table does not say which characters it holds,
 	// so its character map is read for all of them.

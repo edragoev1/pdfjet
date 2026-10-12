@@ -130,8 +130,8 @@ func TestReviewMediaTheCharacterMapIsReadInOnePassOverItsSegments(t *testing.T) 
 		ends[i] = 0xFFFE
 	}
 	start := time.Now()
-	otf := newOpenTypeFont(bytes.NewReader(testOpenTypeWithTable(t, font, "cmap",
-		testCmapOfSegments(starts, ends))))
+	otf := newOpenTypeFont(testOpenTypeWithTable(t, font, "cmap",
+		testCmapOfSegments(starts, ends)))
 	if elapsed := time.Since(start); elapsed > 2*time.Second {
 		t.Errorf("the font loads in %v", elapsed)
 	}
@@ -141,8 +141,8 @@ func TestReviewMediaTheCharacterMapIsReadInOnePassOverItsSegments(t *testing.T) 
 	}
 	// Segments of 'A' to 'C' and 'X' to 'Z', with a delta of 0, map each
 	// character to the glyph of its code, and none between them.
-	otf = newOpenTypeFont(bytes.NewReader(testOpenTypeWithTable(t, font, "cmap",
-		testCmapOfSegments([]int{'A', 'X'}, []int{'C', 'Z'}))))
+	otf = newOpenTypeFont(testOpenTypeWithTable(t, font, "cmap",
+		testCmapOfSegments([]int{'A', 'X'}, []int{'C', 'Z'})))
 	for ch, gid := range map[rune]int{'@': 0, 'A': 'A', 'C': 'C', 'D': 0, 'W': 0, 'X': 'X', 'Z': 'Z', '[': 0} {
 		if otf.unicodeToGID.get(ch) != gid {
 			t.Errorf("%q is glyph %d, not %d", ch, otf.unicodeToGID.get(ch), gid)
@@ -155,8 +155,8 @@ func TestReviewMediaAFontWithoutAnOS2TableHasItsCharacters(t *testing.T) {
 	// font without one has every character of its character map, where it
 	// had none and drew every character as .notdef.
 	font := testOpenTypeFontBytes(t, "fonts/NotoSansThai/NotoSansThai-Regular.ttf")
-	with := newOpenTypeFont(bytes.NewReader(font))
-	without := newOpenTypeFont(bytes.NewReader(testOpenTypeWithout(t, font, "OS/2")))
+	with := newOpenTypeFont(font)
+	without := newOpenTypeFont(testOpenTypeWithout(t, font, "OS/2"))
 	for _, ch := range []rune{'A', 'z', 'ก'} {
 		if without.unicodeToGID.get(ch) == 0 || without.unicodeToGID.get(ch) != with.unicodeToGID.get(ch) {
 			t.Errorf("%q is glyph %d, not %d", ch, without.unicodeToGID.get(ch), with.unicodeToGID.get(ch))

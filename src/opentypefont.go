@@ -12,13 +12,12 @@ package pdfjet
 // check-no-fma.sh fails if one is removed.
 
 import (
-	"io"
 	"strconv"
 	"strings"
 )
 
-func registerOpenTypeFont(pdf *PDF, font *Font, reader io.Reader) {
-	otf := newOpenTypeFont(reader)
+func registerOpenTypeFont(pdf *PDF, font *Font, buf []byte) {
+	otf := newOpenTypeFont(buf)
 	checkEmbedding(otf)
 	setOpenTypeFontData(font, otf)
 
@@ -36,8 +35,8 @@ func registerOpenTypeFont(pdf *PDF, font *Font, reader io.Reader) {
 // addOpenTypeFontToObjects adds the font to the objects of an existing PDF;
 // its program is written when the objects are added to the PDF, a subset of
 // the glyphs drawn.
-func addOpenTypeFontToObjects(objects *[]*PDFobj, font *Font, reader io.Reader) {
-	otf := newOpenTypeFont(reader)
+func addOpenTypeFontToObjects(objects *[]*PDFobj, font *Font, buf []byte) {
+	otf := newOpenTypeFont(buf)
 	checkEmbedding(otf)
 	setOpenTypeFontData(font, otf)
 	font.program = newFontProgram(otf.numGlyphs)

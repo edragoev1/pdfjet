@@ -20,6 +20,13 @@ This is the first entry in this file; earlier releases were not tracked here.
   negative one, are refused.
 
 ### Changed
+- Go reads a font into a buffer of its size, once: NewFontFromFile reads
+  the file in one read, and NewFont a reader that says its length, as a
+  bytes.Reader does, at that length. io.ReadAll grew its buffer as it
+  read and copied a font of 200 KB several times, about half of what a
+  document of embedded fonts allocated: a form of PDFjet Forms is made 17%
+  faster, with a third less memory. Swift reads a font file in one read
+  too; Java and C# read at the size already.
 - The examples are 50, in an order by topic, the same in the four ports:
   01 to 05 the scripts and fonts (Latin, Greek and Cyrillic; Chinese;
   Japanese and Korean; Arabic, Hebrew, Persian and Thai; and, new, the

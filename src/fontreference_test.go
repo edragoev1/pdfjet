@@ -7,7 +7,6 @@ package pdfjet
 
 import (
 	"bufio"
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -168,7 +167,7 @@ func fontReferenceOf(path string) (ref *fontReference) {
 	if err != nil {
 		panic(err)
 	}
-	otf := newOpenTypeFont(bytes.NewReader(data))
+	otf := newOpenTypeFont(data)
 	ref.CapHeight = int(otf.capHeight)
 
 	ref.Name = font.name
