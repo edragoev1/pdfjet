@@ -139,4 +139,35 @@ import Testing
         let data = TestSupport.latin1(form.getData())
         #expect(data.contains("20 0 l"), "the stamp's stream reads back as \(data)")
     }
+
+    // A password is prepared with SASLprep, as PDF 2.0 asks of AES-256: the
+    // PDF opens with an accented letter typed as one character or as a letter
+    // and an accent, with a full-width letter or its ASCII one, and a password
+    // of a character PDF 2.0 does not allow is refused (review of 11 October
+    // 2026, #27).
+    @Test func thePasswordIsPreparedWithSASLprep() throws {
+        for (set, open) in [
+            ("cafe\u{301}", "caf\u{E9}"),
+            ("caf\u{E9}", "cafe\u{301}"),
+            ("\u{FF30}\u{FF21}\u{FF33}\u{FF33}", "PASS"),
+            ("I\u{AD}X", "\u{2168}"),
+        ] {
+            let pdf = try encrypted(set, "owner")
+            #expect(title(try TestSupport.read(pdf, open)) == "Encrypted title")
+            #expect(title(try TestSupport.read(pdf, set)) == "Encrypted title")
+        }
+        let memory = MemoryPDF(Compliance.PDF_1_7)
+        _ = Encryption(memory.pdf, Passwords().setUserPassword("bell\u{7}"), Permissions())
+        let refused = #expect(throws: (any Error).self) { try memory.pdf.complete() }
+        #expect(TestSupport.message(refused).contains("U+0007"))
+    }
+
+    // A PDF whose password was taken as it was, before 9.0.5 and by other
+    // writers, still opens with it: the password's own bytes are tried after
+    // the prepared ones.
+    @Test func aPasswordTakenAsItWasStillOpens() {
+        let got = Decryptor.aes256Passwords("cafe\u{301}")
+        #expect(got == [Array("caf\u{E9}".utf8), Array("cafe\u{301}".utf8)])
+        #expect(Decryptor.aes256Passwords("ascii").count == 1)
+    }
 }

@@ -30,8 +30,12 @@ public class Encryption {
         // A random 256-bit (32-byte) file encryption key.
         fileEncryptionKey = Cryptography.randomBytes(32)
 
-        let userPassword = Encryption.toBytes(passwords.getUserPassword())
-        let ownerPassword = Encryption.toBytes(passwords.getOwnerPassword())
+        // The passwords prepared with SASLprep, as PDF 2.0 asks of AES-256, so
+        // that a reader that prepares them opens the PDF: an accented letter
+        // typed as a letter and an accent, a full-width letter or a no-break
+        // space were taken as they were (review of 11 October 2026, #27)
+        let userPassword = Encryption.passwordBytes(pdf, passwords.getUserPassword())
+        let ownerPassword = Encryption.passwordBytes(pdf, passwords.getOwnerPassword())
 
         // Algorithm 8: the U and UE values.
         let userValidationSalt = Cryptography.randomBytes(8)
@@ -148,10 +152,15 @@ public class Encryption {
         return Cryptography.aesEncryptCBC(key, hash, [UInt8](repeating: 0, count: 16))
     }
 
-    // Returns the UTF-8 bytes of a password, at most 127 of them.
-    private static func toBytes(_ password: String) -> [UInt8] {
-        let bytes = Array(password.utf8)
-        return bytes.count > 127 ? Array(bytes[0..<127]) : bytes
+    // Returns the bytes of a password prepared with SASLprep, at most 127 of
+    // them, or fails the PDF with the message of a password it refuses.
+    private static func passwordBytes(_ pdf: PDF, _ password: String) -> [UInt8] {
+        do {
+            return try SASLprep.passwordBytes(password)
+        } catch {
+            pdf.fail((error as? PDFjetError)?.message ?? String(describing: error))
+            return []
+        }
     }
 
     private static func toHex(_ bytes: [UInt8]) -> String {

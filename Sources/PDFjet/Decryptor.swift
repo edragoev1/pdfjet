@@ -114,9 +114,19 @@ final class Decryptor {
         let u = Decryptor.toBytes(encrypt.getValue("/U"))
         let o = Decryptor.toBytes(encrypt.getValue("/O"))
         if r == 5 || r == 6 {
-            self.key = try Decryptor.getKey(r, Decryptor.utf8Password(password), u, o,
-                    Decryptor.toBytes(encrypt.getValue("/UE")),
-                    Decryptor.toBytes(encrypt.getValue("/OE")))
+            let candidates = Decryptor.aes256Passwords(password)
+            var key: [UInt8]?
+            for (i, candidate) in candidates.enumerated() {
+                do {
+                    key = try Decryptor.getKey(r, candidate, u, o,
+                            Decryptor.toBytes(encrypt.getValue("/UE")),
+                            Decryptor.toBytes(encrypt.getValue("/OE")))
+                    break
+                } catch where i < candidates.count - 1 {
+                    continue
+                }
+            }
+            self.key = key!
         } else if r >= 2 && r <= 4 {
             var length = (v == 1 || r == 2) ? 5 : (v == 4) ? 16 : Decryptor.getInt(encrypt, "/Length") / 8
             length = max(5, min(length, 16))
@@ -185,11 +195,16 @@ final class Decryptor {
         return PDF.valueOf(obj)
     }
 
-    // Returns the UTF-8 bytes of the password, at most 127 of them, which is
-    // the password of revisions 5 and 6.
-    private static func utf8Password(_ password: String) -> [UInt8] {
-        let bytes = Array(password.utf8)
-        return bytes.count > 127 ? Array(bytes[0..<127]) : bytes
+    // Returns the bytes to try for the password of revisions 5 and 6: those
+    // of the password prepared with SASLprep, as PDF 2.0 asks, and, when they
+    // differ, its own UTF-8, at most 127 bytes of either, which PDFjet before
+    // 9.0.5 and other writers took (review of 11 October 2026, #27).
+    static func aes256Passwords(_ password: String) -> [[UInt8]] {
+        let raw = SASLprep.truncate(password)
+        guard let prepared = try? SASLprep.passwordBytes(password), prepared != raw else {
+            return [raw]
+        }
+        return [prepared, raw]
     }
 
     // Returns the password in PDFDocEncoding, which is Latin-1 for the
