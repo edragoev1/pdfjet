@@ -51,8 +51,10 @@ type Page struct {
 	pageObj       *PDFobj
 	objNumber     int
 	renderingMode int
-	width         float32
-	height        float32
+	// Whether a text rendering mode other than 0 was written
+	renderingModeSet bool
+	width            float32
+	height           float32
 
 	cropBox  []float32
 	bleedBox []float32
@@ -397,7 +399,11 @@ func (page *Page) drawString(
 	page.appendString("BT\n")
 	page.setTextFont(font, fontSize)
 
-	if page.renderingMode != 0 {
+	// Tr is graphics state and lasts past ET, so once a mode other than 0 is
+	// written, every text after it writes its mode, 0 too (review of 12
+	// October 2026, F1).
+	if page.renderingMode != 0 || page.renderingModeSet {
+		page.renderingModeSet = page.renderingModeSet || page.renderingMode != 0
 		page.appendInteger(page.renderingMode)
 		page.appendString(" Tr\n")
 	}
@@ -498,6 +504,13 @@ func (page *Page) drawASCIIString(font *Font, text string) {
 func (page *Page) drawUnicodeString(font *Font, text string) {
 	if traceText != nil {
 		traceText(page, font, text)
+	}
+	if !page.ownsFont(font) {
+		// Refused, and not drawn: drawing reads what the font recorded for
+		// its own PDF, which another goroutine may be changing (review of
+		// 12 October 2026, S1).
+		page.pdf.fail("The font belongs to another PDF.")
+		return
 	}
 	runes := []rune(text)
 	if font.isCJK {

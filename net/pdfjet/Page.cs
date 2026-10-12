@@ -47,6 +47,8 @@ public class Page {
     internal float height;
 
     internal int renderingMode = 0;
+    // Whether a text rendering mode other than 0 was written
+    private bool renderingModeSet = false;
 
     internal float[] cropBox;
     internal float[] bleedBox;
@@ -609,7 +611,11 @@ public class Page {
 
         Append("BT\n");
         SetTextFont(font, fontSize);
-        if (renderingMode != 0) {
+        // Tr is graphics state and lasts past ET, so once a mode other than 0 is
+        // written, every text after it writes its mode, 0 too (review of 12
+        // October 2026, F1).
+        if (renderingMode != 0 || renderingModeSet) {
+            renderingModeSet = renderingModeSet || renderingMode != 0;
             Append(renderingMode);
             Append(" Tr\n");
         }

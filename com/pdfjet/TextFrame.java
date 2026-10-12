@@ -329,6 +329,12 @@ public class TextFrame implements Drawable {
     public float[] drawOn(PDF pdf, List<Page> pages, PageSize pageSize) throws Exception {
         float[] xy = new float[] {x + w, y};
         float height = h;
+        if (!finite(x) || !finite(y) || !finite(w) || !finite(h)) {
+            // No word is placed at NaN, and pages were made until the memory
+            // ran out (review of 12 October 2026, F4)
+            pdf.fail(new IllegalArgumentException("The text frame's location and size must be numbers, not NaN or infinite."));
+            return xy;
+        }
         if (height <= 0f && pageSize.getHeight() - 2f * y <= 0f) {
             // A frame in the bottom half of the page leaves no height above the
             // margin, and a frame with no height would draw all of the text on
@@ -897,5 +903,9 @@ public class TextFrame implements Drawable {
             list.add(buf.toString());
         }
         return list;
+    }
+
+    static boolean finite(float value) {
+        return !Float.isNaN(value) && !Float.isInfinite(value);
     }
 }   // End of TextFrame.java

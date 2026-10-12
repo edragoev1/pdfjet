@@ -103,8 +103,10 @@ This is the first entry in this file; earlier releases were not tracked here.
 - A font of another PDF, which drawing refuses, is not changed by it, in Go
   and Swift: the glyphs and characters drawn were recorded in it, for the
   PDF it belongs to, and with one font drawn on 4 PDFs at once the Go race
-  detector found data races, which can stop the program. Java and C# throw
-  before they change it, as before.
+  detector found data races, which can stop the program. Nothing is drawn
+  with it, on a page or in a stamp: Go read what the font recorded while
+  another goroutine drew on its PDF, and stopped with "concurrent map read
+  and map write". Java and C# throw before they change it, as before.
 - Java: Permissions.toString writes its raw value in ASCII digits whatever
   the locale; in an Arabic one it wrote them in Arabic-Indic digits.
 - An Arc, and so an Ellipse, of no colors is drawn with its dash pattern,
@@ -155,7 +157,9 @@ This is the first entry in this file; earlier releases were not tracked here.
   100,000 cells in all, make the text an error, in the four ports: the
   first was drawn as a paragraph of pipes, and a header of 64 columns over
   64 KB of rows of "|" alone took 895 MB in Go. Draw a table that large
-  with BigTable.
+  with BigTable. The rows past the limit are counted and not kept, so the
+  text is refused before it takes the memory: 195 KB of such rows took
+  336 MB in Go before it was refused.
 - A font whose fsType allows its bitmaps alone to be embedded, bit 9, is
   refused, in the four ports: PDFjet embeds outlines, and it was embedded.
   An fsType of Restricted License with the reserved bit 0 set is refused
@@ -182,6 +186,17 @@ This is the first entry in this file; earlier releases were not tracked here.
 - A stamp gives a zero width non-joiner or joiner its font has no glyph for
   to the actual text of the glyph before it, as a page does, in the four
   ports: Persian text in a stamp was copied without its ZWNJ.
+- A text rendering mode set back to 0 is written, in the four ports: the
+  mode lasts past the end of the text, and text drawn after invisible text,
+  mode 3, stayed invisible.
+- A TextFrame drawn on pages at a NaN or infinite location, width or
+  height, and a Markdown text of NaN or infinite margins, are refused, in
+  the four ports: no word was placed, and pages were made until the memory
+  ran out.
+- Go: an image of a Markdown text that cannot be read, a file that is not
+  an image, a PNG cut short or an SVG that is not SVG, fails the document;
+  it panicked, so Markdown from a user could stop a server. Java, C# and
+  Swift throw, as before.
 
 ## v9.0.5 — 2026-10-12, internal
 

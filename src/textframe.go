@@ -12,6 +12,7 @@ package pdfjet
 // check-no-fma.sh fails if one is removed.
 
 import (
+	"math"
 	"strings"
 	"unicode/utf8"
 
@@ -215,6 +216,12 @@ func (tf *TextFrame) HasMoreText() bool {
 func (tf *TextFrame) DrawOnPages(pdf *PDF, pages *[]*Page, pageSize pagesize.PageSize) [2]float32 {
 	xy := [2]float32{tf.x + tf.w, tf.y}
 	height := tf.h
+	if !finite(tf.x, tf.y, tf.w, tf.h) {
+		// No word is placed at NaN, and pages were made until the memory
+		// ran out (review of 12 October 2026, F4)
+		pdf.fail("The text frame's location and size must be numbers, not NaN or infinite.")
+		return xy
+	}
 	if height <= 0 && pageSize.GetHeight()-float32(2*tf.y) <= 0 {
 		// A frame in the bottom half of the page leaves no height above the
 		// margin, and a frame with no height would draw all of the text on
@@ -823,4 +830,14 @@ func (tf *TextFrame) tokenize(textLine *TextLine) []string {
 		list = append(list, buf.String())
 	}
 	return list
+}
+
+// finite returns true if none of the values is NaN or infinite.
+func finite(values ...float32) bool {
+	for _, v := range values {
+		if math.IsNaN(float64(v)) || math.IsInf(float64(v), 0) {
+			return false
+		}
+	}
+	return true
 }

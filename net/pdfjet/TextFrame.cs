@@ -224,6 +224,12 @@ public class TextFrame : IDrawable {
     public float[] DrawOn(PDF pdf, List<Page> pages, PageSize pageSize) {
         float[] xy = new float[] {x + w, y};
         float height = h;
+        if (!Finite(x) || !Finite(y) || !Finite(w) || !Finite(h)) {
+            // No word is placed at NaN, and pages were made until the memory
+            // ran out (review of 12 October 2026, F4)
+            pdf.Fail(new ArgumentException("The text frame's location and size must be numbers, not NaN or infinite."));
+            return xy;
+        }
         if (height <= 0f && pageSize.GetHeight() - 2f * y <= 0f) {
             // A frame in the bottom half of the page leaves no height above the
             // margin, and a frame with no height would draw all of the text on
@@ -825,6 +831,10 @@ public class TextFrame : IDrawable {
             list.Add(buf.ToString());
         }
         return list;
+    }
+
+    internal static bool Finite(float value) {
+        return !float.IsNaN(value) && !float.IsInfinity(value);
     }
 }   // End of TextFrame.cs
 }   // End of namespace PDFjet.NET

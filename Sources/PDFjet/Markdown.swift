@@ -168,6 +168,11 @@ public class Markdown {
             pages = self.pages
             self.pages = []
         }
+        if !marginLeft.isFinite || !marginTop.isFinite || !marginRight.isFinite || !marginBottom.isFinite {
+            // Pages were made until the memory ran out (review of 12 October
+            // 2026, F4)
+            throw PDFjetError(message: "The margins of the Markdown must be numbers, not NaN or infinite.")
+        }
         let blocks = MarkdownParser.parse(text)
         let width = pageSize.getWidth() - marginLeft - marginRight
         // A table too wide for a page, or tables too large, make the text an

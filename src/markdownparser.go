@@ -25,7 +25,13 @@ import (
 // Markup reads it, and a tab goes to the next column that is a multiple of 4
 // in Java's characters, where a character outside the Basic Multilingual Plane
 // is two.
-type markdownParser struct{}
+type markdownParser struct {
+	// The cells of the tables read so far, counted as each row is read, so
+	// that the rows past maxTableCells are not kept: padded to the header's
+	// columns, 2 MB of rows made 1.65 GB of cells before the document was
+	// refused (review of 12 October 2026, C2)
+	tableCells *int
+}
 
 const markdownMaxDepth = 32
 
@@ -55,6 +61,7 @@ type markdownBlock struct {
 	rows       [][]string            // Of a table, the header row first
 	alignments []alignment.Alignment // Of a table, of each column, or nil
 	tooWide    bool                  // Of a table of more than maxTableColumns, whose rows are not kept
+	cells      int                   // Of a table, those of its rows, kept or not
 }
 
 func newMarkdownBlock(kind markdownKind) *markdownBlock {
@@ -63,6 +70,9 @@ func newMarkdownBlock(kind markdownKind) *markdownBlock {
 
 // parse returns the blocks of the text.
 func (p markdownParser) parse(text string) []*markdownBlock {
+	if p.tableCells == nil {
+		p.tableCells = new(int)
+	}
 	if !utf8.ValidString(text) {
 		text = string([]rune(text))
 	}
@@ -316,10 +326,15 @@ func (p markdownParser) parseTable(lines []string, i int, blocks *[]*markdownBlo
 	// passed over, not padded: the Markdown is an error (review of
 	// 12 October 2026, R33)
 	table.tooWide = len(header) > maxTableColumns
+	table.cells = len(header)
+	*p.tableCells += len(header)
 	j := i + 2
 	for j < len(lines) && !p.isBlank(lines[j]) && strings.IndexByte(lines[j], '|') != -1 &&
 		!p.interrupts(lines[j]) {
-		if table.tooWide {
+		table.cells += len(header)
+		*p.tableCells += len(header)
+		if table.tooWide || *p.tableCells > maxTableCells {
+			// Counted, not kept: the Markdown is an error
 			j++
 			continue
 		}
@@ -353,8 +368,8 @@ const maxTableCells = 100000
 // and lists too, and whether one of them is too wide.
 func tableCells(blocks []*markdownBlock) (cells int, tooWide bool) {
 	for _, block := range blocks {
-		if block.kind == markdownTable && len(block.rows) > 0 {
-			cells += len(block.rows) * len(block.rows[0])
+		if block.kind == markdownTable {
+			cells += block.cells
 			tooWide = tooWide || block.tooWide
 		}
 		inside, wide := tableCells(block.children)

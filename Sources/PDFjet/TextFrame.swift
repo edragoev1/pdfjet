@@ -211,6 +211,12 @@ public class TextFrame : Drawable {
     public func drawOn(_ pdf: PDF, _ pages: inout [Page], _ pageSize: PageSize) -> [Float] {
         var xy: [Float] = [x + w, y]
         let height = h
+        if !x.isFinite || !y.isFinite || !w.isFinite || !h.isFinite {
+            // No word is placed at NaN, and pages were made until the memory
+            // ran out (review of 12 October 2026, F4)
+            pdf.fail("The text frame's location and size must be numbers, not NaN or infinite.")
+            return xy
+        }
         if height <= 0 && pageSize.getHeight() - 2 * y <= 0 {
             // A frame in the bottom half of the page leaves no height above
             // the margin, and a frame with no height would draw all of the

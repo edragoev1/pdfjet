@@ -34,11 +34,20 @@ internal sealed class MarkdownParser {
         internal readonly List<Block> children = new List<Block>();    // Of a quote, a list or an item
         internal List<List<String>> rows;       // Of a table, the header row first
         internal bool tooWide;                  // Of a table of more than MAX_TABLE_COLUMNS, whose rows are not kept
+        internal int cells;                     // Of a table, those of its rows, kept or not
         internal List<Alignment> alignments;    // Of a table, of each column, or null
 
         internal Block(Kind kind) {
             this.kind = kind;
         }
+    }
+
+    // The cells of the tables read so far, counted as each row is read, so
+    // that the rows past MAX_TABLE_CELLS are not kept: padded to the header's
+    // columns, 2 MB of rows made 1.65 GB of cells before the document was
+    // refused (review of 12 October 2026, C2).
+    private sealed class Count {
+        internal int cells;
     }
 
     private MarkdownParser() {
@@ -59,7 +68,7 @@ internal sealed class MarkdownParser {
             }
         }
         lines.Add(ExpandTabs(text.Substring(start)));
-        return ParseBlocks(lines, 0);
+        return ParseBlocks(lines, 0, new Count());
     }
 
     // A tab is spaces to the next column that is a multiple of 4.
@@ -81,7 +90,7 @@ internal sealed class MarkdownParser {
         return buf.ToString();
     }
 
-    private static List<Block> ParseBlocks(List<String> lines, int depth) {
+    private static List<Block> ParseBlocks(List<String> lines, int depth, Count count) {
         List<Block> blocks = new List<Block>();
         int i = 0;
         while (i < lines.Count) {
@@ -103,11 +112,11 @@ internal sealed class MarkdownParser {
                 blocks.Add(new Block(Kind.RULE));
                 i++;
             } else if (depth < MAX_DEPTH && IsQuote(line)) {
-                i = ParseQuote(lines, i, depth, blocks);
+                i = ParseQuote(lines, i, depth, blocks, count);
             } else if (depth < MAX_DEPTH && ListMarker(line) != null) {
-                i = ParseList(lines, i, depth, blocks);
+                i = ParseList(lines, i, depth, blocks, count);
             } else if (IsTableStart(lines, i)) {
-                i = ParseTable(lines, i, blocks);
+                i = ParseTable(lines, i, blocks, count);
             } else if (Indent(line) >= 4) {
                 i = ParseIndentedCode(lines, i, blocks);
             } else {
@@ -160,7 +169,7 @@ internal sealed class MarkdownParser {
 
     // The lines of a quote, without their >, and the lines that go on from
     // the text of the quote without one, as Markdown allows.
-    private static int ParseQuote(List<String> lines, int i, int depth, List<Block> blocks) {
+    private static int ParseQuote(List<String> lines, int i, int depth, List<Block> blocks, Count count) {
         List<String> quoted = new List<String>();
         int j = i;
         while (j < lines.Count) {
@@ -176,7 +185,7 @@ internal sealed class MarkdownParser {
             j++;
         }
         Block quote = new Block(Kind.QUOTE);
-        quote.children.AddRange(ParseBlocks(quoted, depth + 1));
+        quote.children.AddRange(ParseBlocks(quoted, depth + 1, count));
         blocks.Add(quote);
         return j;
     }
@@ -185,7 +194,7 @@ internal sealed class MarkdownParser {
     // lines indented to its text, with what goes on from its text without an
     // indent. A list ends at an item of another kind, or at a line that is not
     // indented after an empty one.
-    private static int ParseList(List<String> lines, int i, int depth, List<Block> blocks) {
+    private static int ParseList(List<String> lines, int i, int depth, List<Block> blocks, Count count) {
         int[] first = ListMarker(lines[i]);
         Block list = new Block(Kind.LIST);
         list.ordered = first[1] < 0;
@@ -224,7 +233,7 @@ internal sealed class MarkdownParser {
                 list.loose = true;
             }
             Block item = new Block(Kind.ITEM);
-            item.children.AddRange(ParseBlocks(itemLines, depth + 1));
+            item.children.AddRange(ParseBlocks(itemLines, depth + 1, count));
             list.children.Add(item);
             i = j;
         }
@@ -239,7 +248,7 @@ internal sealed class MarkdownParser {
 
     // A table of GitHub's Markdown: a header row, a row of dashes that sets the
     // alignment of each column, and the rows up to an empty line.
-    private static int ParseTable(List<String> lines, int i, List<Block> blocks) {
+    private static int ParseTable(List<String> lines, int i, List<Block> blocks, Count count) {
         List<String> header = Cells(lines[i]);
         List<String> delimiters = Cells(lines[i + 1]);
         Block table = new Block(Kind.TABLE);
@@ -256,10 +265,15 @@ internal sealed class MarkdownParser {
         // passed over, not padded: the Markdown is an error (review of
         // 12 October 2026, R33)
         table.tooWide = header.Count > MAX_TABLE_COLUMNS;
+        table.cells = header.Count;
+        count.cells += header.Count;
         int j = i + 2;
         while (j < lines.Count && !IsBlank(lines[j]) && lines[j].IndexOf('|') != -1
                 && !Interrupts(lines[j])) {
-            if (table.tooWide) {
+            table.cells += header.Count;
+            count.cells += header.Count;
+            if (table.tooWide || count.cells > MAX_TABLE_CELLS) {
+                // Counted, not kept: the Markdown is an error
                 j++;
                 continue;
             }
@@ -294,11 +308,11 @@ internal sealed class MarkdownParser {
     internal static int TableCells(List<Block> blocks) {
         int cells = 0;
         foreach (Block block in blocks) {
-            if (block.kind == Kind.TABLE && block.rows != null && block.rows.Count > 0) {
+            if (block.kind == Kind.TABLE) {
                 if (block.tooWide) {
                     return -1;
                 }
-                cells += block.rows.Count * block.rows[0].Count;
+                cells += block.cells;
             }
             int inside = TableCells(block.children);
             if (inside == -1) {

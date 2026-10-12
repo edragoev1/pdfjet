@@ -152,6 +152,13 @@ public class Markdown {
         this.headingLevel = 0;
         containers.clear();
         quoteBars.clear();
+        if (!TextFrame.finite(marginLeft) || !TextFrame.finite(marginTop)
+                || !TextFrame.finite(marginRight) || !TextFrame.finite(marginBottom)) {
+            // Pages were made until the memory ran out (review of 12 October
+            // 2026, F4)
+            pdf.fail(new IllegalArgumentException("The margins of the Markdown must be numbers, not NaN or infinite."));
+            return new float[] {marginLeft, marginTop};
+        }
         List<MarkdownParser.Block> blocks = MarkdownParser.parse(text);
         float width = pageSize.getWidth() - marginLeft - marginRight;
         // A table too wide for a page, or tables too large, make the text an

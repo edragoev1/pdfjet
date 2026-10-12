@@ -32,6 +32,8 @@ final public class Page {
 
     /** The text rendering mode. */
     protected int renderingMode = 0;
+    /** Whether a text rendering mode other than 0 was written. */
+    private boolean renderingModeSet = false;
     /** The page width. */
     protected float width;
     /** The page height. */
@@ -669,7 +671,11 @@ final public class Page {
 
         append("BT\n");
         setTextFont(font, fontSize);
-        if (renderingMode != 0) {
+        // Tr is graphics state and lasts past ET, so once a mode other than 0 is
+        // written, every text after it writes its mode, 0 too (review of 12
+        // October 2026, F1).
+        if (renderingMode != 0 || renderingModeSet) {
+            renderingModeSet = renderingModeSet || renderingMode != 0;
             append(renderingMode);
             append(" Tr\n");
         }

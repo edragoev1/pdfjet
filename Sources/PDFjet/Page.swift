@@ -66,6 +66,8 @@ public class Page {
     internal var pageObj: PDFobj?
     internal var objNumber = 0
     internal var renderingMode = 0
+    // Whether a text rendering mode other than 0 was written
+    private var renderingModeSet = false
     internal var width: Float = 0.0
     internal var height: Float = 0.0
     internal var rotateDegrees: Float = 0.0
@@ -461,7 +463,11 @@ public class Page {
 
         append(Token.beginText)
         setTextFont(font, fontSize)
-        if self.renderingMode != 0 {
+        // Tr is graphics state and lasts past ET, so once a mode other than 0 is
+        // written, every text after it writes its mode, 0 too (review of 12
+        // October 2026, F1).
+        if self.renderingMode != 0 || self.renderingModeSet {
+            self.renderingModeSet = self.renderingModeSet || self.renderingMode != 0
             append(renderingMode)
             append(" Tr\n")
         }
@@ -548,6 +554,13 @@ public class Page {
     }
 
     private final func drawUnicodeString(_ font: Font, _ text: String) {
+        if !ownsFont(font) {
+            // Refused, and not drawn: drawing reads what the font recorded
+            // for its own PDF, which another thread may be changing (review
+            // of 12 October 2026, S1).
+            pdf.fail("The font belongs to another PDF.")
+            return
+        }
         let scalars = Array(text.unicodeScalars)
         if font.isCJK {
             // A CJK font that is not embedded is drawn by the characters

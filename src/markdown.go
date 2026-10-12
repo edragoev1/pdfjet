@@ -12,6 +12,7 @@ package pdfjet
 // check-no-fma.sh fails if one is removed.
 
 import (
+	"fmt"
 	"math"
 	"os"
 	"path/filepath"
@@ -154,6 +155,12 @@ func (markdown *Markdown) DrawOnPages(pdf *PDF, text string, pages *[]*Page, pag
 	markdown.headingLevel = 0
 	markdown.containers = markdown.containers[:0]
 	markdown.quoteBars = markdown.quoteBars[:0]
+	if !finite(markdown.marginLeft, markdown.marginTop, markdown.marginRight, markdown.marginBottom) {
+		// Pages were made until the memory ran out (review of 12 October
+		// 2026, F4)
+		pdf.fail("The margins of the Markdown must be numbers, not NaN or infinite.")
+		return [2]float32{markdown.marginLeft, markdown.marginTop}
+	}
 	blocks := markdownParser{}.parse(text)
 	width := pageSize.GetWidth() - markdown.marginLeft - markdown.marginRight
 	cells, tooWide := tableCells(blocks)
@@ -562,8 +569,9 @@ func (markdown *Markdown) plainText(text string) string {
 
 // drawImage draws an image as wide as it is, or as the width when it is
 // wider, and as tall as the page when it is taller; or its text, in italic,
-// when it is not read. An image file that cannot be read panics, as the Image
-// of a file does.
+// when it is not read. An image file that cannot be read fails the document:
+// it panicked, and Markdown from a user could stop a server (review of 12
+// October 2026, F5).
 func (markdown *Markdown) drawImage(block *markdownBlock, x, width float32) {
 	markdown.gap(float32(markdown.size() * 0.75))
 	path := markdown.imagePath(block.source)
@@ -585,7 +593,8 @@ func (markdown *Markdown) drawImage(block *markdownBlock, x, width float32) {
 	if strings.HasSuffix(strings.ToLower(path), ".svg") {
 		image, err := NewSVGImageFromFile(path)
 		if err != nil {
-			panic(err)
+			markdown.pdf.fail("The image " + block.source + " could not be read: " + err.Error())
+			return
 		}
 		image.SetAltDescription(alt)
 		imageWidth = image.GetWidth()
@@ -594,7 +603,11 @@ func (markdown *Markdown) drawImage(block *markdownBlock, x, width float32) {
 		image.ScaleBy(scale)
 		drawable = image
 	} else {
-		image := NewImageFromFile(markdown.pdf, path)
+		image, err := readMarkdownImage(markdown.pdf, path)
+		if err != nil {
+			markdown.pdf.fail("The image " + block.source + " could not be read: " + err.Error())
+			return
+		}
 		image.SetAltDescription(alt)
 		imageWidth = image.GetWidth()
 		imageHeight = image.GetHeight()
@@ -607,6 +620,22 @@ func (markdown *Markdown) drawImage(block *markdownBlock, x, width float32) {
 	drawable.DrawOn(markdown.page)
 	markdown.y += float32(imageHeight * scale)
 	markdown.atTop = false
+}
+
+// readMarkdownImage returns the image of the file, or the error that reading
+// it panicked with.
+func readMarkdownImage(pdf *PDF, path string) (image *Image, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			image = nil
+			if e, ok := r.(error); ok {
+				err = e
+			} else {
+				err = fmt.Errorf("%v", r)
+			}
+		}
+	}()
+	return NewImageFromFile(pdf, path), nil
 }
 
 // imagePath returns the path of an image in the image directory, or "" when

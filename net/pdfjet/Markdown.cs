@@ -149,6 +149,13 @@ public class Markdown {
         this.headingLevel = 0;
         containers.Clear();
         quoteBars.Clear();
+        if (!TextFrame.Finite(marginLeft) || !TextFrame.Finite(marginTop)
+                || !TextFrame.Finite(marginRight) || !TextFrame.Finite(marginBottom)) {
+            // Pages were made until the memory ran out (review of 12 October
+            // 2026, F4)
+            pdf.Fail(new ArgumentException("The margins of the Markdown must be numbers, not NaN or infinite."));
+            return new float[] {marginLeft, marginTop};
+        }
         List<MarkdownParser.Block> blocks = MarkdownParser.Parse(text);
         float width = pageSize.GetWidth() - marginLeft - marginRight;
         // A table too wide for a page, or tables too large, make the text an

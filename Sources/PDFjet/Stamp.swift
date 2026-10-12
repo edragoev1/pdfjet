@@ -322,6 +322,12 @@ public class Stamp : Drawable {
             pdf.fail("A stamp draws text with an embedded font, not a core or CJK font.")
             return self
         }
+        if let identity = font.pdfIdentity, identity != pdf.identity {
+            // Refused, and not drawn, which would change the font of another
+            // PDF (review of 12 October 2026, C3)
+            pdf.fail("The font belongs to another PDF.")
+            return self
+        }
         addFont(font)
         append("BT\n")
         append("/F\(font.objNumber)")

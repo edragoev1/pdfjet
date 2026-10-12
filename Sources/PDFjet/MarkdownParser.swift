@@ -33,6 +33,7 @@ final class MarkdownParser {
         var children = [Block]()        // Of a quote, a list or an item
         var rows: [[String]]?           // Of a table, the header row first
         var tooWide = false             // Of a table of more than maxTableColumns, whose rows are not kept
+        var cells = 0                   // Of a table, those of its rows, kept or not
         var alignments: [Alignment]?    // Of a table, of each column, or nil
 
         init(_ kind: Kind) {
@@ -42,6 +43,14 @@ final class MarkdownParser {
 
     // A line of the text, in UTF-16 code units.
     typealias Line = [UInt16]
+
+    // The cells of the tables read so far, counted as each row is read, so
+    // that the rows past maxTableCells are not kept: padded to the header's
+    // columns, 2 MB of rows made 1.65 GB of cells before the document was
+    // refused (review of 12 October 2026, C2).
+    private final class Count {
+        var cells = 0
+    }
 
     private static let tab: UInt16 = 0x09
     private static let lf: UInt16 = 0x0A
@@ -89,7 +98,7 @@ final class MarkdownParser {
             i += 1
         }
         lines.append(expandTabs(units[start...]))
-        return parseBlocks(lines, 0)
+        return parseBlocks(lines, 0, Count())
     }
 
     // A tab is spaces to the next column that is a multiple of 4.
@@ -110,7 +119,7 @@ final class MarkdownParser {
         return buf
     }
 
-    private static func parseBlocks(_ lines: [Line], _ depth: Int) -> [Block] {
+    private static func parseBlocks(_ lines: [Line], _ depth: Int, _ count: Count) -> [Block] {
         var blocks = [Block]()
         var i = 0
         while i < lines.count {
@@ -131,11 +140,11 @@ final class MarkdownParser {
                 blocks.append(Block(.RULE))
                 i += 1
             } else if depth < MAX_DEPTH && isQuote(line) {
-                i = parseQuote(lines, i, depth, &blocks)
+                i = parseQuote(lines, i, depth, &blocks, count)
             } else if depth < MAX_DEPTH && listMarker(line) != nil {
-                i = parseList(lines, i, depth, &blocks)
+                i = parseList(lines, i, depth, &blocks, count)
             } else if isTableStart(lines, i) {
-                i = parseTable(lines, i, &blocks)
+                i = parseTable(lines, i, &blocks, count)
             } else if indent(line) >= 4 {
                 i = parseIndentedCode(lines, i, &blocks)
             } else {
@@ -189,7 +198,7 @@ final class MarkdownParser {
 
     // The lines of a quote, without their >, and the lines that go on from
     // the text of the quote without one, as Markdown allows.
-    private static func parseQuote(_ lines: [Line], _ i: Int, _ depth: Int, _ blocks: inout [Block]) -> Int {
+    private static func parseQuote(_ lines: [Line], _ i: Int, _ depth: Int, _ blocks: inout [Block], _ count: Count) -> Int {
         var quoted = [Line]()
         var j = i
         while j < lines.count {
@@ -205,7 +214,7 @@ final class MarkdownParser {
             j += 1
         }
         let quote = Block(.QUOTE)
-        quote.children.append(contentsOf: parseBlocks(quoted, depth + 1))
+        quote.children.append(contentsOf: parseBlocks(quoted, depth + 1, count))
         blocks.append(quote)
         return j
     }
@@ -214,7 +223,7 @@ final class MarkdownParser {
     // lines indented to its text, with what goes on from its text without an
     // indent. A list ends at an item of another kind, or at a line that is not
     // indented after an empty one.
-    private static func parseList(_ lines: [Line], _ start: Int, _ depth: Int, _ blocks: inout [Block]) -> Int {
+    private static func parseList(_ lines: [Line], _ start: Int, _ depth: Int, _ blocks: inout [Block], _ count: Count) -> Int {
         var i = start
         let first = listMarker(lines[i])!
         let list = Block(.LIST)
@@ -253,7 +262,7 @@ final class MarkdownParser {
                 list.loose = true
             }
             let item = Block(.ITEM)
-            item.children.append(contentsOf: parseBlocks(itemLines, depth + 1))
+            item.children.append(contentsOf: parseBlocks(itemLines, depth + 1, count))
             list.children.append(item)
             i = j
         }
@@ -270,7 +279,7 @@ final class MarkdownParser {
 
     // A table of GitHub's Markdown: a header row, a row of dashes that sets the
     // alignment of each column, and the rows up to an empty line.
-    private static func parseTable(_ lines: [Line], _ i: Int, _ blocks: inout [Block]) -> Int {
+    private static func parseTable(_ lines: [Line], _ i: Int, _ blocks: inout [Block], _ count: Count) -> Int {
         let header = cells(lines[i]).map { string($0) }
         let delimiters = cells(lines[i + 1])
         let table = Block(.TABLE)
@@ -287,10 +296,15 @@ final class MarkdownParser {
         // passed over, not padded: the Markdown is an error (review of
         // 12 October 2026, R33)
         table.tooWide = header.count > maxTableColumns
+        table.cells = header.count
+        count.cells += header.count
         var j = i + 2
         while j < lines.count && !isBlank(lines[j]) && lines[j].contains(pipe)
                 && !interrupts(lines[j]) {
-            if table.tooWide {
+            table.cells += header.count
+            count.cells += header.count
+            if table.tooWide || count.cells > maxTableCells {
+                // Counted, not kept: the Markdown is an error
                 j += 1
                 continue
             }
@@ -327,11 +341,11 @@ final class MarkdownParser {
     static func tableCells(_ blocks: [Block]) -> Int? {
         var cells = 0
         for block in blocks {
-            if block.kind == .TABLE, let rows = block.rows, !rows.isEmpty {
+            if block.kind == .TABLE {
                 if block.tooWide {
                     return nil
                 }
-                cells += rows.count * rows[0].count
+                cells += block.cells
             }
             guard let inside = tableCells(block.children) else {
                 return nil

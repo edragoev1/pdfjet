@@ -316,6 +316,12 @@ func (s *Stamp) DrawText(font *Font, fontSize, x, y float32, text string) *Stamp
 		s.pdf.fail("A stamp draws text with an embedded font, not a core or CJK font.")
 		return s
 	}
+	if font.pdf != nil && font.pdf != s.pdf {
+		// Refused, and not drawn, which would change the font of another
+		// PDF (review of 12 October 2026, C3)
+		s.pdf.fail("The font belongs to another PDF.")
+		return s
+	}
 	s.AddFont(font)
 	s.appendString("BT\n")
 	s.appendString("/F")

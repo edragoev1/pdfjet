@@ -32,11 +32,20 @@ final class MarkdownParser {
         final List<Block> children = new ArrayList<Block>();    // Of a quote, a list or an item
         List<List<String>> rows;        // Of a table, the header row first
         boolean tooWide;                // Of a table of more than MAX_TABLE_COLUMNS, whose rows are not kept
+        int cells;                      // Of a table, those of its rows, kept or not
         List<Alignment> alignments;     // Of a table, of each column, or null
 
         Block(Kind kind) {
             this.kind = kind;
         }
+    }
+
+    // The cells of the tables read so far, counted as each row is read, so
+    // that the rows past MAX_TABLE_CELLS are not kept: padded to the header's
+    // columns, 2 MB of rows made 1.65 GB of cells before the document was
+    // refused (review of 12 October 2026, C2).
+    private static final class Count {
+        int cells;
     }
 
     private MarkdownParser() {
@@ -57,7 +66,7 @@ final class MarkdownParser {
             }
         }
         lines.add(expandTabs(text.substring(start)));
-        return parseBlocks(lines, 0);
+        return parseBlocks(lines, 0, new Count());
     }
 
     // A tab is spaces to the next column that is a multiple of 4.
@@ -79,7 +88,7 @@ final class MarkdownParser {
         return buf.toString();
     }
 
-    private static List<Block> parseBlocks(List<String> lines, int depth) {
+    private static List<Block> parseBlocks(List<String> lines, int depth, Count count) {
         List<Block> blocks = new ArrayList<Block>();
         int i = 0;
         while (i < lines.size()) {
@@ -101,11 +110,11 @@ final class MarkdownParser {
                 blocks.add(new Block(Kind.RULE));
                 i++;
             } else if (depth < MAX_DEPTH && isQuote(line)) {
-                i = parseQuote(lines, i, depth, blocks);
+                i = parseQuote(lines, i, depth, blocks, count);
             } else if (depth < MAX_DEPTH && listMarker(line) != null) {
-                i = parseList(lines, i, depth, blocks);
+                i = parseList(lines, i, depth, blocks, count);
             } else if (isTableStart(lines, i)) {
-                i = parseTable(lines, i, blocks);
+                i = parseTable(lines, i, blocks, count);
             } else if (indent(line) >= 4) {
                 i = parseIndentedCode(lines, i, blocks);
             } else {
@@ -158,7 +167,7 @@ final class MarkdownParser {
 
     // The lines of a quote, without their >, and the lines that go on from
     // the text of the quote without one, as Markdown allows.
-    private static int parseQuote(List<String> lines, int i, int depth, List<Block> blocks) {
+    private static int parseQuote(List<String> lines, int i, int depth, List<Block> blocks, Count count) {
         List<String> quoted = new ArrayList<String>();
         int j = i;
         while (j < lines.size()) {
@@ -174,7 +183,7 @@ final class MarkdownParser {
             j++;
         }
         Block quote = new Block(Kind.QUOTE);
-        quote.children.addAll(parseBlocks(quoted, depth + 1));
+        quote.children.addAll(parseBlocks(quoted, depth + 1, count));
         blocks.add(quote);
         return j;
     }
@@ -183,7 +192,7 @@ final class MarkdownParser {
     // lines indented to its text, with what goes on from its text without an
     // indent. A list ends at an item of another kind, or at a line that is not
     // indented after an empty one.
-    private static int parseList(List<String> lines, int i, int depth, List<Block> blocks) {
+    private static int parseList(List<String> lines, int i, int depth, List<Block> blocks, Count count) {
         int[] first = listMarker(lines.get(i));
         Block list = new Block(Kind.LIST);
         list.ordered = first[1] < 0;
@@ -222,7 +231,7 @@ final class MarkdownParser {
                 list.loose = true;
             }
             Block item = new Block(Kind.ITEM);
-            item.children.addAll(parseBlocks(itemLines, depth + 1));
+            item.children.addAll(parseBlocks(itemLines, depth + 1, count));
             list.children.add(item);
             i = j;
         }
@@ -237,7 +246,7 @@ final class MarkdownParser {
 
     // A table of GitHub's Markdown: a header row, a row of dashes that sets the
     // alignment of each column, and the rows up to an empty line.
-    private static int parseTable(List<String> lines, int i, List<Block> blocks) {
+    private static int parseTable(List<String> lines, int i, List<Block> blocks, Count count) {
         List<String> header = cells(lines.get(i));
         List<String> delimiters = cells(lines.get(i + 1));
         Block table = new Block(Kind.TABLE);
@@ -254,10 +263,15 @@ final class MarkdownParser {
         // passed over, not padded: the Markdown is an error (review of
         // 12 October 2026, R33)
         table.tooWide = header.size() > MAX_TABLE_COLUMNS;
+        table.cells = header.size();
+        count.cells += header.size();
         int j = i + 2;
         while (j < lines.size() && !isBlank(lines.get(j)) && lines.get(j).indexOf('|') != -1
                 && !interrupts(lines.get(j))) {
-            if (table.tooWide) {
+            table.cells += header.size();
+            count.cells += header.size();
+            if (table.tooWide || count.cells > MAX_TABLE_CELLS) {
+                // Counted, not kept: the Markdown is an error
                 j++;
                 continue;
             }
@@ -292,11 +306,11 @@ final class MarkdownParser {
     static int tableCells(List<Block> blocks) {
         int cells = 0;
         for (Block block : blocks) {
-            if (block.kind == Kind.TABLE && block.rows != null && !block.rows.isEmpty()) {
+            if (block.kind == Kind.TABLE) {
                 if (block.tooWide) {
                     return -1;
                 }
-                cells += block.rows.size() * block.rows.get(0).size();
+                cells += block.cells;
             }
             int inside = tableCells(block.children);
             if (inside == -1) {
