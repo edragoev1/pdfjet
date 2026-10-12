@@ -41,9 +41,11 @@ class SVG {
     /// Parses SVG path data into a list of path operations.
     // Returns true when the character separates the numbers of path data: the
     // white space of SVG 1.1 section 8.3.9, which is the white space of XML.
-    // Path data is often written over several lines.
+    // Path data is often written over several lines. The path is read by
+    // Characters, and "\r\n" is one of them, which is white space too: as
+    // two, d="M0 0\r\nL10 10" was not read (review of 11 October 2026, #22).
     private static func isSpace(_ ch: Character) -> Bool {
-        return ch == " " || ch == "\t" || ch == "\n" || ch == "\r"
+        return ch == " " || ch == "\t" || ch == "\n" || ch == "\r" || ch == "\r\n"
     }
 
     // Returns true when the number so far ends with the e of an exponent, so
@@ -466,6 +468,13 @@ class SVG {
         // ports, so that the same arc would be drawn with another number of
         // curves in each.
         let quarters = abs(delta) / (Double.pi / 2.0)
+        // Radii scaled up past what a Float holds, or end points whose
+        // difference is past it, make the sweep NaN: the arc is left out, as
+        // the other ports leave it, and not converted to an Int, which traps
+        // (review of 11 October 2026, #36).
+        if !quarters.isFinite {
+            return lastOp
+        }
         var segments = Int((quarters - 1e-9).rounded(.up))
         if segments < 1 && quarters > 0.0 {
             segments = 1    // A sweep smaller than the tolerance is still one piece.

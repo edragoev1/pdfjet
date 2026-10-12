@@ -7,6 +7,27 @@ languages.
 
 This is the first entry in this file; earlier releases were not tracked here.
 
+## v9.0.7 — unreleased
+
+### Fixed
+- Reading untrusted PDFs, in the four ports: the output of ASCII85Decode
+  and ASCIIHexDecode is counted against the 256 MB that the decoded streams
+  of a PDF may take, as the other filters' is; a stream of 'z's after
+  FlateDecode decoded to 800 MB from 203 KB. Adding the resources of the
+  pages finds each name at once, not by a look through all the names added
+  before, and adds a page that /Kids lists again once: 1,000 pages of 2,000
+  fonts took 36 seconds, and one page listed 2,000 times two minutes.
+- Markdown, in the four ports: a table has at most 64 columns, and a wider
+  header is a paragraph. Each row is padded to the header's columns, so a
+  header of thousands of columns over rows of "|" took memory as the square
+  of the text, 1.17 GB from 24 KB.
+- AddObjects, in the four ports: objects and references of a generation
+  other than 0, "1 1 obj" and "2 1 R", are written at generation 0, as the
+  cross-reference table has them; a reader found no pages in such a PDF.
+- Swift: an SVG arc whose radii, scaled to reach its end, overflow a Float
+  is left out, as in the other ports, where Int(NaN) ended the program; and
+  a carriage return and line feed in path data is white space.
+
 ## v9.0.5 — unreleased
 
 ### Added

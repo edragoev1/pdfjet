@@ -127,6 +127,21 @@ import Testing
         #expect(quotes == MarkdownParser.MAX_DEPTH)
     }
 
+    // A header of more than 64 columns is not a table, but a paragraph: each
+    // row is padded to the header's columns, and thousands of columns over
+    // thousands of rows made cells as the square of the text (review of
+    // 11 October 2026, #33).
+    @Test func aTableHasAtMost64Columns() {
+        func table(_ columns: Int) -> String {
+            return String(repeating: "| a ", count: columns) + "|\n"
+                    + String(repeating: "| - ", count: columns) + "|\n|\n|\n"
+        }
+        let table64 = parse(table(64))
+        #expect(table64.hasPrefix("TABLE("), "64 columns: \(table64.prefix(60))")
+        let table65 = parse(table(65))
+        #expect(!table65.contains("TABLE("), "65 columns make a table: \(table65.prefix(60))")
+    }
+
     // Four times as long a text is read in about four times the time, not
     // sixteen; the two times are measured in the same run, the shortest of
     // three each, so that a busy computer slows both (a limit of 3 s failed

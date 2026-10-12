@@ -340,9 +340,9 @@ public final class PDFobj {
             case "/LZWDecode", "/LZW":
                 decoded = applyDecodeParms(self.decoded(try lzwDecode(decoded, maxDecodedLength())), i)
             case "/ASCIIHexDecode", "/AHx":
-                decoded = asciiHexDecode(decoded)
+                decoded = try decodedASCII(asciiHexDecode(decoded))
             case "/ASCII85Decode", "/A85":
-                decoded = ascii85Decode(decoded)
+                decoded = try decodedASCII(ascii85Decode(decoded))
             case "/RunLengthDecode", "/RL":
                 decoded = self.decoded(try runLengthDecode(decoded, maxDecodedLength()))
             default:
@@ -368,6 +368,17 @@ public final class PDFobj {
             budget.left = max(0, budget.left - data.count)
         }
         return data
+    }
+
+    // Takes the output of ASCII85Decode or ASCIIHexDecode from the PDF's
+    // budget, as the other filters' is: a 'z' of ASCII85 is four bytes, and
+    // after FlateDecode a PDF of 203 KB decoded to 800 MB past the limit of
+    // 256 MB (review of 11 October 2026, #32).
+    private final func decodedASCII(_ data: [UInt8]) throws -> [UInt8] {
+        if data.count > maxDecodedLength() {
+            throw PDFjetError(message: "The stream decodes to more than \(maxDecodedLength()) bytes")
+        }
+        return decoded(data)
     }
 
     // Returns the elements of the array that is the value of the key, or the

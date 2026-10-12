@@ -183,6 +183,26 @@ public class MarkdownParserTest {
                 + large.TotalMilliseconds + " ms, and 5000 " + small.TotalMilliseconds + " ms");
     }
 
+    // A header of more than 64 columns is not a table, but a paragraph: each
+    // row is padded to the header's columns, and thousands of columns over
+    // thousands of rows made cells as the square of the text (review of
+    // 11 October 2026, #33).
+    [Fact]
+    public void ATableHasAtMost64Columns() {
+        string Table(int columns) {
+            StringBuilder text = new StringBuilder();
+            text.Insert(0, "| a ", columns).Append("|\n");
+            for (int i = 0; i < columns; i++) {
+                text.Append("| - ");
+            }
+            return text.Append("|\n|\n|\n").ToString();
+        }
+        string got = Parse(Table(64));
+        Assert.True(got.StartsWith("TABLE(", StringComparison.Ordinal), "64 columns: " + got);
+        got = Parse(Table(65));
+        Assert.False(got.Contains("TABLE("), "65 columns make a table: " + got);
+    }
+
     private static TimeSpan ParseTime(int count) {
         StringBuilder text = new StringBuilder();
         for (int i = 0; i < count; i++) {

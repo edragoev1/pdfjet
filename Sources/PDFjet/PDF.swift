@@ -102,6 +102,13 @@ public final class PDF {
     var importedFonts = [String]()
     var importedXObjects = [String]()
     var importedExtGStates = [String]()
+    // Where each name of the imported entries starts in its list, so that a
+    // name is found at once, not by a look through the list for each entry
+    // of each page: 1,000 pages of 2,000 fonts took 36 s (review of
+    // 11 October 2026, #35)
+    var importedFontNames = [String: Int]()
+    var importedXObjectNames = [String: Int]()
+    var importedExtGStateNames = [String: Int]()
 
     private var metadataObjNumber = 0
     private var outputIntentObjNumber = 0
@@ -3642,10 +3649,11 @@ public final class PDF {
             } else {
                 end = min(end + 1, entries.count)
             }
-            if !importedExtGStates.contains(entries[i]) {
+            if importedExtGStateNames[entries[i]] == nil {
+                importedExtGStateNames[entries[i]] = importedExtGStates.count
                 importedExtGStates.append(contentsOf: entries[i..<end])
             } else {
-                checkImportedName(importedExtGStates, Array(entries[i..<end]))
+                checkImportedName(importedExtGStates, importedExtGStateNames, Array(entries[i..<end]))
             }
             i = end
         }
@@ -3666,14 +3674,15 @@ public final class PDF {
                 // Pages can carry separate resource dictionaries that name the
                 // same fonts. They are merged into one /Font dictionary here,
                 // so a name that is already present must not be added twice.
-                if !importedFonts.contains(token) {
+                if importedFontNames[token] == nil {
+                    importedFontNames[token] = importedFonts.count
                     importedFonts.append(contentsOf: entries[i..<i + 4])
                     let number = toInteger(entries[i + 1])
                     if number > 0 && number <= objects.count {
                         fonts.append(objects[number - 1])
                     }
                 } else {
-                    checkImportedName(importedFonts, Array(entries[i..<i + 4]))
+                    checkImportedName(importedFonts, importedFontNames, Array(entries[i..<i + 4]))
                 }
                 i += 4
                 continue
@@ -3689,8 +3698,8 @@ public final class PDF {
     // document share one resources dictionary, where the name has the value of
     // the first page, and the content of this page, drawn with drawContents,
     // would draw the resource of the first page.
-    private func checkImportedName(_ imported: [String], _ entry: [String]) {
-        guard let i = imported.firstIndex(of: entry[0]) else {
+    private func checkImportedName(_ imported: [String], _ names: [String: Int], _ entry: [String]) {
+        guard let i = names[entry[0]] else {
             return
         }
         if imported[(i + 1)..<min(i + entry.count, imported.count)] == entry[1...] {
@@ -3818,11 +3827,12 @@ public final class PDF {
             let token = entries[i]
             if token.hasPrefix("/") && (i + 3) < entries.count && entries[i + 3] == "R" {
                 // Like the fonts, a name that an earlier page added is kept.
-                if !importedXObjects.contains(token) {
+                if importedXObjectNames[token] == nil {
+                    importedXObjectNames[token] = importedXObjects.count
                     importedXObjects.append(contentsOf: entries[i..<i + 4])
                     addObjectTree(toInteger(entries[i + 1]), objects, &numbers, &resources)
                 } else {
-                    checkImportedName(importedXObjects, Array(entries[i..<i + 4]))
+                    checkImportedName(importedXObjects, importedXObjectNames, Array(entries[i..<i + 4]))
                 }
                 i += 4
             } else {
@@ -3847,7 +3857,14 @@ public final class PDF {
         var resources = [PDFobj]()
         var numbers = Set<Int>()
         let pages = getPageObjects(from: objects)
+        // A page that /Kids lists again has its resources added once: one page
+        // listed 2,000 times over 2,000 fonts took two minutes (review of
+        // 11 October 2026, #35)
+        var done = Set<ObjectIdentifier>()
         for page in pages {
+            if !done.insert(ObjectIdentifier(page)).inserted {
+                continue
+            }
             guard let resObj = page.getResourcesObject(objects) else {
                 continue        // A page without resources of its own.
             }
@@ -3879,6 +3896,7 @@ public final class PDF {
 
     private func addObjectsToPDF(_ objects: [PDFobj]) {
         for obj in objects {
+            obj.dict = generationZero(obj.dict)
             if obj.dict.isEmpty && obj.stream == nil {
                 // A number that the PDF that was read has no object for stays a
                 // free entry of the cross-reference table.
@@ -3931,6 +3949,28 @@ public final class PDF {
                 }
             }
         }
+    }
+
+    // Returns the tokens with the generation of each object and each
+    // reference 0, "1 1 obj" as "1 0 obj" and "2 1 R" as "2 0 R", as the
+    // cross-reference table writes every generation as 0 and merge renumbers
+    // to it: a PDF whose objects had another generation lost its pages, as a
+    // reader found none at the generation the references asked for (review of
+    // 11 October 2026, #4). The tokens themselves when none is another.
+    private func generationZero(_ dict: [String]) -> [String] {
+        var zeroed: [String]?
+        var i = 0
+        while i + 2 < dict.count {
+            if (dict[i + 2] == "R" || dict[i + 2] == "obj") && dict[i + 1] != "0" &&
+                    isInteger(dict[i]) && isInteger(dict[i + 1]) {
+                if zeroed == nil {
+                    zeroed = dict
+                }
+                zeroed![i + 1] = "0"
+            }
+            i += 1
+        }
+        return zeroed ?? dict
     }
 
     // The hexadecimal digits of a string object, in small letters as the

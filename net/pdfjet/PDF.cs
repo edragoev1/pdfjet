@@ -131,6 +131,13 @@ public sealed class PDF {
     private List<String> importedFonts = new List<String>();
     private List<String> importedXObjects = new List<String>();
     private List<String> importedExtGStates = new List<String>();
+    // Where each name of the imported entries starts in its list, so that a
+    // name is found at once, not by a look through the list for each entry
+    // of each page: 1,000 pages of 2,000 fonts took 36 s (review of
+    // 11 October 2026, #35)
+    private readonly Dictionary<String, int> importedFontNames = new Dictionary<String, int>();
+    private readonly Dictionary<String, int> importedXObjectNames = new Dictionary<String, int>();
+    private readonly Dictionary<String, int> importedExtGStateNames = new Dictionary<String, int>();
     private Page prevPage = null;
     private bool contentStreamsCompression = true;
     // The structure elements of the pages of the document, in page order.
@@ -3554,10 +3561,11 @@ public sealed class PDF {
             } else {
                 end = Math.Min(end + 1, entries.Count);
             }
-            if (!importedExtGStates.Contains(entries[i])) {
+            if (!importedExtGStateNames.ContainsKey(entries[i])) {
+                importedExtGStateNames[entries[i]] = importedExtGStates.Count;
                 importedExtGStates.AddRange(entries.GetRange(i, end - i));
             } else {
-                CheckImportedName(importedExtGStates, entries.GetRange(i, end - i));
+                CheckImportedName(importedExtGStates, importedExtGStateNames, entries.GetRange(i, end - i));
             }
             i = end;
         }
@@ -3576,14 +3584,15 @@ public sealed class PDF {
                 // Pages can carry separate resource dictionaries that name the
                 // same fonts. They are merged into one /Font dictionary here,
                 // so a name that is already present must not be added twice.
-                if (!importedFonts.Contains(token)) {
+                if (!importedFontNames.ContainsKey(token)) {
+                    importedFontNames[token] = importedFonts.Count;
                     importedFonts.AddRange(entries.GetRange(i, 4));
                     int number = ToInteger(entries[i + 1]);
                     if (number > 0 && number <= objects.Count) {
                         fonts.Add(objects[number - 1]);
                     }
                 } else {
-                    CheckImportedName(importedFonts, entries.GetRange(i, 4));
+                    CheckImportedName(importedFonts, importedFontNames, entries.GetRange(i, 4));
                 }
                 i += 4;
                 continue;
@@ -3599,9 +3608,9 @@ public sealed class PDF {
     // document share one resources dictionary, where the name has the value
     // of the first page, and the content of this page, drawn with
     // DrawContents, would draw the resource of the first page.
-    private void CheckImportedName(List<String> imported, List<String> entry) {
-        int i = imported.IndexOf(entry[0]);
-        if (i == -1) {
+    private void CheckImportedName(
+            List<String> imported, Dictionary<String, int> names, List<String> entry) {
+        if (!names.TryGetValue(entry[0], out int i)) {
             return;
         }
         bool same = i + entry.Count <= imported.Count;
@@ -3653,6 +3662,29 @@ public sealed class PDF {
             entries.Add(token);
         }
         return entries;
+    }
+
+    // Returns the tokens with the generation of each object and each
+    // reference 0, "1 1 obj" as "1 0 obj" and "2 1 R" as "2 0 R", as the
+    // cross-reference table writes every generation as 0 and Merge renumbers
+    // to it: a PDF whose objects had another generation lost its pages, as a
+    // reader found none at the generation the references asked for (review of
+    // 11 October 2026, #4). The tokens themselves when none is another.
+    internal static List<String> GenerationZero(List<String> dict) {
+        if (dict == null) {
+            return null;
+        }
+        List<String> zeroed = null;
+        for (int i = 0; i + 2 < dict.Count; i++) {
+            if ((dict[i + 2].Equals("R") || dict[i + 2].Equals("obj")) && !dict[i + 1].Equals("0")
+                    && IsInteger(dict[i]) && IsInteger(dict[i + 1])) {
+                if (zeroed == null) {
+                    zeroed = new List<String>(dict);
+                }
+                zeroed[i + 1] = "0";
+            }
+        }
+        return zeroed ?? dict;
     }
 
     private static bool IsInteger(String token) {
@@ -3732,11 +3764,12 @@ public sealed class PDF {
             if (token.StartsWith("/", StringComparison.Ordinal) && (i + 3) < entries.Count
                     && entries[i + 3].Equals("R")) {
                 // Like the fonts, a name that an earlier page added is kept.
-                if (!importedXObjects.Contains(token)) {
+                if (!importedXObjectNames.ContainsKey(token)) {
+                    importedXObjectNames[token] = importedXObjects.Count;
                     importedXObjects.AddRange(entries.GetRange(i, 4));
                     AddObjectTree(ToInteger(entries[i + 1]), objects, numbers, resources);
                 } else {
-                    CheckImportedName(importedXObjects, entries.GetRange(i, 4));
+                    CheckImportedName(importedXObjects, importedXObjectNames, entries.GetRange(i, 4));
                 }
                 i += 4;
             } else {
@@ -3757,7 +3790,15 @@ public sealed class PDF {
         CheckObjects(objects);
         FontObjects.Complete(objects);
         List<PDFobj> pages = GetPageObjects(objects);
+        // A page that /Kids lists again has its resources added once: one page
+        // listed 2,000 times over 2,000 fonts took two minutes (review of
+        // 11 October 2026, #35). PDFobj keeps the Equals of object, so the set
+        // holds the pages by reference.
+        HashSet<PDFobj> done = new HashSet<PDFobj>();
         foreach (PDFobj page in pages) {
+            if (!done.Add(page)) {
+                continue;
+            }
             PDFobj resObj = page.GetResourcesObject(objects);
             if (resObj == null) {
                 continue;       // A page without resources of its own.
@@ -3792,6 +3833,7 @@ public sealed class PDF {
 
     private void AddObjectsToPDF(List<PDFobj> objects) {
         foreach (PDFobj obj in objects) {
+            obj.dict = GenerationZero(obj.dict);
             if (obj.dict.Count == 0 && obj.stream == null) {
                 // A number that the PDF that was read has no object for stays
                 // a free entry of the cross-reference table.

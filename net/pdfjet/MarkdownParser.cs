@@ -266,8 +266,18 @@ internal sealed class MarkdownParser {
         return j;
     }
 
+    // The most columns a table of Markdown has: a header of more is a
+    // paragraph. Each row is padded to the header's columns, so a header of
+    // thousands of columns over thousands of rows of "|" made cells as the
+    // square of the text, 1.17 GB from 24 KB (review of 11 October 2026,
+    // #33); with at most 64, the cells grow as the text does.
+    internal const int MAX_TABLE_COLUMNS = 64;
+
     private static bool IsTableStart(List<String> lines, int i) {
         if (i + 1 >= lines.Count || lines[i].IndexOf('|') == -1 || Indent(lines[i]) >= 4) {
+            return false;
+        }
+        if (Cells(lines[i]).Count > MAX_TABLE_COLUMNS) {
             return false;
         }
         String delimiterRow = lines[i + 1];

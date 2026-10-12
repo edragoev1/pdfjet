@@ -264,8 +264,18 @@ final class MarkdownParser {
         return j;
     }
 
+    // The most columns a table of Markdown has: a header of more is a
+    // paragraph. Each row is padded to the header's columns, so a header of
+    // thousands of columns over thousands of rows of "|" made cells as the
+    // square of the text, 1.17 GB from 24 KB (review of 11 October 2026,
+    // #33); with at most 64, the cells grow as the text does.
+    static final int MAX_TABLE_COLUMNS = 64;
+
     private static boolean isTableStart(List<String> lines, int i) {
         if (i + 1 >= lines.size() || lines.get(i).indexOf('|') == -1 || indent(lines.get(i)) >= 4) {
+            return false;
+        }
+        if (cells(lines.get(i)).size() > MAX_TABLE_COLUMNS) {
             return false;
         }
         String delimiterRow = lines.get(i + 1);

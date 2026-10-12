@@ -317,9 +317,9 @@ public class PDFobj {
             } else if (filter.Equals("/LZWDecode") || filter.Equals("/LZW")) {
                 decoded = ApplyDecodeParms(Decoded(Decompressor.LZWDecode(decoded, MaxDecodedLength())), i);
             } else if (filter.Equals("/ASCIIHexDecode") || filter.Equals("/AHx")) {
-                decoded = Decompressor.ASCIIHexDecode(decoded);
+                decoded = DecodedASCII(Decompressor.ASCIIHexDecode(decoded));
             } else if (filter.Equals("/ASCII85Decode") || filter.Equals("/A85")) {
-                decoded = Decompressor.ASCII85Decode(decoded);
+                decoded = DecodedASCII(Decompressor.ASCII85Decode(decoded));
             } else if (filter.Equals("/RunLengthDecode") || filter.Equals("/RL")) {
                 decoded = Decoded(Decompressor.RunLengthDecode(decoded, MaxDecodedLength()));
             } else {
@@ -345,6 +345,18 @@ public class PDFobj {
             budget.left = Math.Max(0, budget.left - data.Length);
         }
         return data;
+    }
+
+    // Takes the output of ASCII85Decode or ASCIIHexDecode from the PDF's
+    // budget, as the other filters' is: a 'z' of ASCII85 is four bytes, and
+    // after FlateDecode a PDF of 203 KB decoded to 800 MB past the limit of
+    // 256 MB (review of 11 October 2026, #32).
+    private byte[] DecodedASCII(byte[] data) {
+        if (data.Length > MaxDecodedLength()) {
+            throw new InvalidDataException(
+                    "the stream decodes to more than " + MaxDecodedLength() + " bytes");
+        }
+        return Decoded(data);
     }
 
     // Returns the elements of the array that is the value of the key, or the

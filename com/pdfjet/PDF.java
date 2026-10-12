@@ -132,6 +132,13 @@ final public class PDF {
     private final List<String> importedFonts = new ArrayList<String>();
     private final List<String> importedXObjects = new ArrayList<String>();
     private final List<String> importedExtGStates = new ArrayList<String>();
+    // Where each name of the imported entries starts in its list, so that a
+    // name is found at once, not by a look through the list for each entry of
+    // each page: 1,000 pages of 2,000 fonts took 36 s (review of 11 October
+    // 2026, #35).
+    private final Map<String, Integer> importedFontNames = new HashMap<String, Integer>();
+    private final Map<String, Integer> importedXObjectNames = new HashMap<String, Integer>();
+    private final Map<String, Integer> importedExtGStateNames = new HashMap<String, Integer>();
     private Page prevPage = null;
     private boolean contentStreamsCompression = true;
     // The structure elements of the pages of the document, in page order.
@@ -3718,10 +3725,11 @@ final public class PDF {
             } else {
                 end = Math.min(end + 1, entries.size());
             }
-            if (!importedExtGStates.contains(entries.get(i))) {
+            if (!importedExtGStateNames.containsKey(entries.get(i))) {
+                importedExtGStateNames.put(entries.get(i), importedExtGStates.size());
                 importedExtGStates.addAll(entries.subList(i, end));
             } else {
-                checkImportedName(importedExtGStates, entries.subList(i, end));
+                checkImportedName(importedExtGStates, importedExtGStateNames, entries.subList(i, end));
             }
             i = end;
         }
@@ -3740,14 +3748,15 @@ final public class PDF {
                 // Pages can carry separate resource dictionaries that name the
                 // same fonts. They are merged into one /Font dictionary here,
                 // so a name that is already present must not be added twice.
-                if (!importedFonts.contains(token)) {
+                if (!importedFontNames.containsKey(token)) {
+                    importedFontNames.put(token, importedFonts.size());
                     importedFonts.addAll(entries.subList(i, i + 4));
                     int number = toInteger(entries.get(i + 1));
                     if (number > 0 && number <= objects.size()) {
                         fonts.add(objects.get(number - 1));
                     }
                 } else {
-                    checkImportedName(importedFonts, entries.subList(i, i + 4));
+                    checkImportedName(importedFonts, importedFontNames, entries.subList(i, i + 4));
                 }
                 i += 4;
                 continue;
@@ -3763,9 +3772,14 @@ final public class PDF {
     // document share one resources dictionary, where the name has the value
     // of the first page, and the content of this page, drawn with
     // drawContents, would draw the resource of the first page.
-    private void checkImportedName(List<String> imported, List<String> entry) {
-        int i = imported.indexOf(entry.get(0));
-        if (i == -1 || imported.subList(i + 1, Math.min(i + entry.size(), imported.size()))
+    private void checkImportedName(
+            List<String> imported, Map<String, Integer> names, List<String> entry) {
+        Integer at = names.get(entry.get(0));
+        if (at == null) {
+            return;
+        }
+        int i = at;
+        if (imported.subList(i + 1, Math.min(i + entry.size(), imported.size()))
                 .equals(entry.subList(1, entry.size()))) {
             return;
         }
@@ -3811,6 +3825,30 @@ final public class PDF {
             entries.add(token);
         }
         return entries;
+    }
+
+    // Returns the tokens with the generation of each object and each reference
+    // 0, "1 1 obj" as "1 0 obj" and "2 1 R" as "2 0 R", as the cross-reference
+    // table writes every generation as 0 and merge renumbers to it: a PDF
+    // whose objects had another generation lost its pages, as a reader found
+    // none at the generation the references asked for (review of 11 October
+    // 2026, #4). The tokens themselves when none is another.
+    private static List<String> generationZero(List<String> dict) {
+        if (dict == null) {
+            return null;
+        }
+        List<String> zeroed = null;
+        for (int i = 0; i + 2 < dict.size(); i++) {
+            String token = dict.get(i + 2);
+            if ((token.equals("R") || token.equals("obj")) && !dict.get(i + 1).equals("0")
+                    && isInteger(dict.get(i)) && isInteger(dict.get(i + 1))) {
+                if (zeroed == null) {
+                    zeroed = new ArrayList<String>(dict);
+                }
+                zeroed.set(i + 1, "0");
+            }
+        }
+        return zeroed == null ? dict : zeroed;
     }
 
     private static boolean isInteger(String token) {
@@ -3889,11 +3927,12 @@ final public class PDF {
             if (token.startsWith("/") && (i + 3) < entries.size()
                     && entries.get(i + 3).equals("R")) {
                 // Like the fonts, a name that an earlier page added is kept.
-                if (!importedXObjects.contains(token)) {
+                if (!importedXObjectNames.containsKey(token)) {
+                    importedXObjectNames.put(token, importedXObjects.size());
                     importedXObjects.addAll(entries.subList(i, i + 4));
                     addObjectTree(toInteger(entries.get(i + 1)), objects, numbers, resources);
                 } else {
-                    checkImportedName(importedXObjects, entries.subList(i, i + 4));
+                    checkImportedName(importedXObjects, importedXObjectNames, entries.subList(i, i + 4));
                 }
                 i += 4;
             } else {
@@ -3918,7 +3957,14 @@ final public class PDF {
         checkObjects(objects);
         FontObjects.complete(objects);
         List<PDFobj> pages = getPageObjects(objects);
+        // A page that /Kids lists again has its resources added once: one
+        // page listed 2,000 times over 2,000 fonts took two minutes (review of
+        // 11 October 2026, #35).
+        Set<PDFobj> done = Collections.newSetFromMap(new IdentityHashMap<PDFobj, Boolean>());
         for (PDFobj page : pages) {
+            if (!done.add(page)) {
+                continue;
+            }
             PDFobj resObj = page.getResourcesObject(objects);
             if (resObj == null) {
                 continue;       // A page without resources of its own.
@@ -3957,6 +4003,7 @@ final public class PDF {
      */
     private void addObjectsToPDF(List<PDFobj> objects) throws Exception {
         for (PDFobj obj : objects) {
+            obj.dict = generationZero(obj.dict);
             if (obj.dict.isEmpty() && obj.stream == null) {
                 // A number that the PDF that was read has no object for stays
                 // a free entry of the cross-reference table.

@@ -1240,4 +1240,108 @@ class PDFTest {
             java.util.Locale.setDefault(was);
         }
     }
+
+    // A PDF of a stream of the 'z's of ASCII85, after FlateDecode.
+    private static byte[] pdfOfASCII85Zs(int zs) throws Exception {
+        java.io.ByteArrayOutputStream pdf = new java.io.ByteArrayOutputStream();
+        java.nio.charset.Charset latin1 = java.nio.charset.StandardCharsets.ISO_8859_1;
+        pdf.write("%PDF-1.5\n".getBytes(latin1));
+        pdf.write("1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n".getBytes(latin1));
+        pdf.write("2 0 obj\n<< /Type /Pages /Kids [] /Count 0 >>\nendobj\n".getBytes(latin1));
+        StringBuilder text = new StringBuilder();
+        for (int i = 0; i < zs; i++) {
+            text.append('z');
+        }
+        text.append("~>");
+        byte[] stream = deflate(text.toString().getBytes(latin1));
+        pdf.write(("4 0 obj\n<< /Length " + stream.length +
+                " /Filter [/FlateDecode /ASCII85Decode] >>\nstream\n").getBytes(latin1));
+        pdf.write(stream);
+        pdf.write("\nendstream\nendobj\n".getBytes(latin1));
+        pdf.write("trailer\n<< /Root 1 0 R /Size 5 >>\n%%EOF\n".getBytes(latin1));
+        return pdf.toByteArray();
+    }
+
+    // The output of ASCII85Decode is taken from the budget, as the other
+    // filters' is: a stream of 'z's after FlateDecode decodes to four bytes
+    // for each, past the budget (review of 11 October 2026, #32).
+    @Test
+    void theOutputOfASCII85IsChargedToTheBudget() throws Exception {
+        int was = PDFobj.MAX_DECODED_TOTAL;
+        PDFobj.MAX_DECODED_TOTAL = 5000;
+        try {
+            // 500 'z's, 502 bytes deflated and 2000 decoded, within it
+            List<PDFobj> objects = TestSupport.newPDF().read(
+                    new java.io.ByteArrayInputStream(pdfOfASCII85Zs(500)));
+            byte[] data = objectOfNumber(objects, 4).getData();
+            assertNotNull(data, "500 z's decode to nothing");
+            assertEquals(2000, data.length);
+            // 2000, 8000 bytes, past it
+            objects = TestSupport.newPDF().read(new java.io.ByteArrayInputStream(pdfOfASCII85Zs(2000)));
+            assertNull(objectOfNumber(objects, 4).getData(), "2000 z's past the budget decode");
+        } finally {
+            PDFobj.MAX_DECODED_TOTAL = was;
+        }
+    }
+
+    // addObjects writes every object and reference at generation 0, as the
+    // cross-reference table has them: a PDF whose objects had generation 1
+    // lost its pages (review of 11 October 2026, #4).
+    @Test
+    void addObjectsWritesTheGenerationsAsZero() throws Exception {
+        String[] objects = {
+            "<< /Type /Catalog /Pages 2 1 R >>",
+            "<< /Type /Pages /Kids [3 1 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 1 R /MediaBox [0 0 612 792] >>",
+        };
+        StringBuilder sb = new StringBuilder("%PDF-1.4\n");
+        int[] offsets = new int[objects.length];
+        for (int i = 0; i < objects.length; i++) {
+            offsets[i] = sb.length();
+            sb.append(i + 1).append(" 1 obj\n").append(objects[i]).append("\nendobj\n");
+        }
+        int xref = sb.length();
+        sb.append("xref\n0 4\n0000000000 65535 f \n");
+        for (int offset : offsets) {
+            sb.append(String.format("%010d 00001 n \n", offset));
+        }
+        sb.append("trailer\n<< /Root 1 1 R /Size 4 >>\nstartxref\n").append(xref).append("\n%%EOF\n");
+        List<PDFobj> read = TestSupport.read(sb.toString().getBytes(StandardCharsets.ISO_8859_1));
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        pdf.addObjects(read);
+        pdf.complete();
+        String written = new String(bos.toByteArray(), StandardCharsets.ISO_8859_1);
+        assertFalse(written.contains(" 1 R") || written.contains(" 1 obj"),
+                "a generation of 1 is written: " + written);
+        assertEquals(1, new PDF().getPageObjects(TestSupport.read(bos.toByteArray())).size());
+    }
+
+    // A page that /Kids lists again has its resources added once, and a name
+    // is found in what was added without a look through it: one page listed
+    // 2,000 times over 2,000 fonts took two minutes (review of 11 October
+    // 2026, #35).
+    @Test
+    void addResourceObjectsAddsARepeatedPageOnce() throws Exception {
+        List<PDFobj> objects = TestSupport.read(pdfWithObjects(new String[] {
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R 3 0 R 3 0 R] /Count 3 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> >>",
+            "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+            "<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>",
+        }));
+        PDF pdf = new PDF(new ByteArrayOutputStream());
+        pdf.addResourceObjects(objects);
+        Field fonts = PDF.class.getDeclaredField("importedFonts");
+        fonts.setAccessible(true);
+        List<?> importedFonts = (List<?>) fonts.get(pdf);
+        StringBuilder joined = new StringBuilder();
+        for (Object token : importedFonts) {
+            joined.append(joined.length() == 0 ? "" : " ").append(token);
+        }
+        assertEquals("/F1 4 0 R /F2 5 0 R", joined.toString());
+        Field names = PDF.class.getDeclaredField("importedFontNames");
+        names.setAccessible(true);
+        assertEquals(4, ((Map<?, ?>) names.get(pdf)).get("/F2"), "where /F2 is in the fonts");
+    }
 }

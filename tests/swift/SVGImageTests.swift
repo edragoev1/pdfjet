@@ -215,6 +215,24 @@ import Testing
         }
     }
 
+    // An arc whose radii, scaled up to reach the end point, are past what a
+    // Float holds, or whose end points are that far apart, is left out, as
+    // the other ports leave it: converting its NaN sweep to an Int trapped
+    // (review of 11 October 2026, #36).
+    @Test func anArcPastTheRangeOfAFloatIsLeftOut() throws {
+        for data in ["M 0 0 A 1e-30 1e-30 0 0 1 1e30 0", "M -3e38 0 A 1 1 0 0 1 3e38 0"] {
+            let content = try draw("<svg width=\"200\" height=\"200\"><path d=\"" + data + " L 10 10\"/></svg>")
+            #expect(curves(content) == 0, "\(data) draws \(content)")
+        }
+    }
+
+    // A "\r\n" in path data, one Character in Swift, separates the numbers
+    // as a "\n" does (review of 11 October 2026, #22).
+    @Test func aCarriageReturnAndLineFeedIsWhiteSpace() throws {
+        let args = SVG.getOperations("M0 0\r\nL10 10").map { "\($0.cmd)\($0.args)" }
+        #expect(args == ["M[\"0\", \"0\"]", "L[\"10\", \"10\"]"], "\(args)")
+    }
+
     @Test func aSizeWithAUnitIsReadInPoints() throws {
         // A number is in the user unit of the file, which PDFjet draws as a
         // point, and so is a number in px; the units of length are converted.

@@ -7,6 +7,7 @@
 package com.pdfjet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
@@ -187,5 +188,28 @@ class MarkdownParserTest {
             assertTrue(!blocks.isEmpty());
         }
         return shortest;
+    }
+
+    // A header of more than 64 columns is not a table, but a paragraph: each
+    // row is padded to the header's columns, and thousands of columns over
+    // thousands of rows made cells as the square of the text (review of
+    // 11 October 2026, #33).
+    @Test
+    void aTableHasAtMost64Columns() {
+        String got = parse(table(64));
+        assertTrue(got.startsWith("TABLE("), "64 columns: " + got.substring(0, Math.min(60, got.length())));
+        got = parse(table(65));
+        assertFalse(got.contains("TABLE("), "65 columns make a table: " + got.substring(0, Math.min(60, got.length())));
+    }
+
+    // A table of the columns, a header and a delimiter row, with two rows of "|".
+    private static String table(int columns) {
+        StringBuilder header = new StringBuilder();
+        StringBuilder delimiters = new StringBuilder();
+        for (int i = 0; i < columns; i++) {
+            header.append("| a ");
+            delimiters.append("| - ");
+        }
+        return header + "|\n" + delimiters + "|\n|\n|\n";
     }
 }

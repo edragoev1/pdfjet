@@ -299,8 +299,18 @@ final class MarkdownParser {
         return j
     }
 
+    // The most columns a table of Markdown has: a header of more is a
+    // paragraph. Each row is padded to the header's columns, so a header of
+    // thousands of columns over thousands of rows of "|" made cells as the
+    // square of the text, 1.17 GB from 24 KB (review of 11 October 2026,
+    // #33); with at most 64, the cells grow as the text does.
+    static let maxTableColumns = 64
+
     private static func isTableStart(_ lines: [Line], _ i: Int) -> Bool {
         if i + 1 >= lines.count || !lines[i].contains(pipe) || indent(lines[i]) >= 4 {
+            return false
+        }
+        if cells(lines[i]).count > maxTableColumns {
             return false
         }
         let delimiterRow = lines[i + 1]

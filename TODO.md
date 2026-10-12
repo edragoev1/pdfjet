@@ -156,11 +156,11 @@ commit and date. The layout's format version (1) and the look's rules
   Java, C# and Swift ports against Go, and the parsers of untrusted input.
   Its numbers are kept in the items below. Each fix in the four ports, with
   a test.
-- **For 9.0.7: the reader's limits (review #32, #34, #35, #37, #38).**
-  #29 to #31 were fixed in 9.0.5. The output of ASCII85Decode not counted
-  (#32); inherited page entries copied into every page by GetPageObjects and
-  Merge (#34); AddResourceObjects quadratic in the fonts and repeated pages
-  (#35); a BMP row allocated from the header's width before it is read
+- **For 9.0.7: the reader's limits (review #34, #37, #38).** #29 to #31
+  were fixed in 9.0.5, #32 and #35 on the branch fixes-9.0.7. Inherited page
+  entries copied into every page by GetPageObjects and Merge (#34, planned:
+  a large inherited /Resources shared by reference, and written once by
+  Merge); a BMP row allocated from the header's width before it is read
   (#37); a PNG's chunks not checked for order, which gives an invalid /Mask
   (#38). The fuzzers given inputs large enough to reach the limit, and a
   time per page.

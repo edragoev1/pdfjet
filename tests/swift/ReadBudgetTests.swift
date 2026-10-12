@@ -184,4 +184,81 @@ import Testing
                 "the objects are not found by scanning")
         #expect(objects.count <= 10, "\(objects.count) objects of a PDF of three")
     }
+
+    // The output of ASCII85Decode is taken from the budget, as the other
+    // filters' is: a stream of 'z's after FlateDecode decodes to four bytes
+    // for each, past the budget (review of 11 October 2026, #32).
+    @Test func theOutputOfASCII85IsChargedToTheBudget() throws {
+        func read(_ pdf: [UInt8]) throws -> [PDFobj] {
+            return try TestSupport.newPDF().read(from: InputStream(data: Data(pdf)), password: "", decodedTotal: 5000)
+        }
+        func pdf(_ zs: Int) -> [UInt8] {
+            var pdf = [UInt8]()
+            func write(_ text: String) { pdf.append(contentsOf: Array(text.utf8)) }
+            write("%PDF-1.5\n")
+            write("1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n")
+            write("2 0 obj\n<< /Type /Pages /Kids [] /Count 0 >>\nendobj\n")
+            let stream = TestSupport.deflate(Array((String(repeating: "z", count: zs) + "~>").utf8))
+            write("4 0 obj\n<< /Length \(stream.count) /Filter [/FlateDecode /ASCII85Decode] >>\nstream\n")
+            pdf.append(contentsOf: stream)
+            write("\nendstream\nendobj\n")
+            write("trailer\n<< /Root 1 0 R /Size 5 >>\n%%EOF\n")
+            return pdf
+        }
+        // 500 'z's, 502 bytes deflated and 2000 decoded, within it
+        var objects = try read(pdf(500))
+        #expect(Self.objectOfNumber(objects, 4)?.getData().count == 2000, "500 z's do not decode to 2000 bytes")
+        // 2000, 8000 bytes, past it
+        objects = try read(pdf(2000))
+        #expect(Self.objectOfNumber(objects, 4)?.getData().count == 0, "2000 z's past the budget decode to bytes")
+    }
+
+    // addObjects writes every object and reference at generation 0, as the
+    // cross-reference table has them: a PDF whose objects had generation 1
+    // lost its pages (review of 11 October 2026, #4).
+    @Test func addObjectsWritesTheGenerationsAsZero() throws {
+        var body = "%PDF-1.4\n"
+        let objects = [
+            "<< /Type /Catalog /Pages 2 1 R >>",
+            "<< /Type /Pages /Kids [3 1 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 1 R /MediaBox [0 0 612 792] >>",
+        ]
+        var offsets = [Int]()
+        for (i, object) in objects.enumerated() {
+            offsets.append(body.utf8.count)
+            body += "\(i + 1) 1 obj\n\(object)\nendobj\n"
+        }
+        let xref = body.utf8.count
+        body += "xref\n0 4\n0000000000 65535 f \n"
+        for offset in offsets {
+            body += String(format: "%010d 00001 n \n", offset)
+        }
+        body += "trailer\n<< /Root 1 1 R /Size 4 >>\nstartxref\n\(xref)\n%%EOF\n"
+        let read = try TestSupport.read(TestSupport.bytes(body))
+        let doc = MemoryPDF()
+        try doc.pdf.addObjects(read)
+        try doc.pdf.complete()
+        let written = TestSupport.latin1(doc.bytes)
+        #expect(!written.contains(" 1 R") && !written.contains(" 1 obj"), "a generation of 1 is written: \(written)")
+        let pages = TestSupport.pageObjects(try TestSupport.read(doc.bytes))
+        #expect(pages.count == 1, "\(pages.count) pages, not 1")
+    }
+
+    // A page that /Kids lists again has its resources added once, and a name
+    // is found in what was added without a look through it: one page listed
+    // 2,000 times over 2,000 fonts took two minutes (review of 11 October
+    // 2026, #35).
+    @Test func addResourceObjectsAddsARepeatedPageOnce() throws {
+        let objects = try TestSupport.read(TestSupport.pdfWithObjects([
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R 3 0 R 3 0 R] /Count 3 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> >>",
+            "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+            "<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>",
+        ]))
+        let pdf = TestSupport.newPDF()
+        pdf.addResourceObjects(from: objects)
+        #expect(pdf.importedFonts.joined(separator: " ") == "/F1 4 0 R /F2 5 0 R")
+        #expect(pdf.importedFontNames["/F2"] == 4, "/F2 is at \(String(describing: pdf.importedFontNames["/F2"])) of the fonts, not 4")
+    }
 }

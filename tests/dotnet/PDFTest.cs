@@ -1084,6 +1084,60 @@ public class PDFTest {
         // The object stream was read when the PDF was: its object is there.
         Assert.NotEqual("", ObjectOfNumber(objects, 5).GetValue("/Padding"));
     }
+
+    // AddObjects writes every object and reference at generation 0, as the
+    // cross-reference table has them: a PDF whose objects had generation 1
+    // lost its pages (review of 11 October 2026, #4).
+    [Fact]
+    public void AddObjectsWritesTheGenerationsAsZero() {
+        string[] objects = {
+            "<< /Type /Catalog /Pages 2 1 R >>",
+            "<< /Type /Pages /Kids [3 1 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 1 R /MediaBox [0 0 612 792] >>",
+        };
+        StringBuilder sb = new StringBuilder("%PDF-1.4\n");
+        List<int> offsets = new List<int>();
+        for (int i = 0; i < objects.Length; i++) {
+            offsets.Add(sb.Length);
+            sb.Append(i + 1).Append(" 1 obj\n").Append(objects[i]).Append("\nendobj\n");
+        }
+        int xref = sb.Length;
+        sb.Append("xref\n0 4\n0000000000 65535 f \n");
+        foreach (int offset in offsets) {
+            sb.Append(offset.ToString("D10")).Append(" 00001 n \n");
+        }
+        sb.Append("trailer\n<< /Root 1 1 R /Size 4 >>\nstartxref\n").Append(xref).Append("\n%%EOF\n");
+        List<PDFobj> read = TestSupport.Read(Encoding.Latin1.GetBytes(sb.ToString()));
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream);
+        pdf.AddObjects(read);
+        pdf.Complete();
+        string written = TestSupport.Latin1(stream.ToArray());
+        Assert.False(written.Contains(" 1 R") || written.Contains(" 1 obj"),
+                "a generation of 1 is written: " + written);
+        Assert.Single(TestSupport.NewPDF().GetPageObjects(TestSupport.Read(stream.ToArray())));
+    }
+
+    // A page that /Kids lists again has its resources added once, and a name
+    // is found in what was added without a look through it: one page listed
+    // 2,000 times over 2,000 fonts took two minutes (review of 11 October
+    // 2026, #35).
+    [Fact]
+    public void AddResourceObjectsAddsARepeatedPageOnce() {
+        List<PDFobj> objects = TestSupport.Read(PdfWithObjects(new string[] {
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R 3 0 R 3 0 R] /Count 3 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> >>",
+            "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+            "<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>"}));
+        PDF pdf = TestSupport.NewPDF();
+        pdf.AddResourceObjects(objects);
+        var flags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
+        var fonts = (List<string>) typeof(PDF).GetField("importedFonts", flags).GetValue(pdf);
+        var names = (Dictionary<string, int>) typeof(PDF).GetField("importedFontNames", flags).GetValue(pdf);
+        Assert.Equal("/F1 4 0 R /F2 5 0 R", string.Join(" ", fonts));
+        Assert.Equal(4, names["/F2"]);
+    }
 }
 
 /// <summary>The budget of what the streams of a PDF decode to, which the test
@@ -1182,6 +1236,39 @@ public class DecodeBudgetTest {
             string header = new StringBuilder().Insert(0, "1 0 ", 1000).ToString();
             Assert.ThrowsAny<Exception>(() =>
                     TestSupport.NewPDF().Read(new MemoryStream(ObjectStream(1000, header))));
+        } finally {
+            PDFobj.MAX_DECODED_TOTAL = was;
+        }
+    }
+
+    // The output of ASCII85Decode is taken from the budget, as the other
+    // filters' is: a stream of 'z's after FlateDecode decodes to four bytes
+    // for each, past the budget (review of 11 October 2026, #32).
+    [Fact]
+    public void TheOutputOfASCII85IsChargedToTheBudget() {
+        byte[] Pdf(int zs) {
+            var pdf = new MemoryStream();
+            var latin1 = Encoding.Latin1;
+            void Write(string text) { byte[] b = latin1.GetBytes(text); pdf.Write(b, 0, b.Length); }
+            Write("%PDF-1.5\n");
+            Write("1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n");
+            Write("2 0 obj\n<< /Type /Pages /Kids [] /Count 0 >>\nendobj\n");
+            byte[] stream = PDFTest.Deflate(latin1.GetBytes(new string('z', zs) + "~>"));
+            Write("4 0 obj\n<< /Length " + stream.Length + " /Filter [/FlateDecode /ASCII85Decode] >>\nstream\n");
+            pdf.Write(stream, 0, stream.Length);
+            Write("\nendstream\nendobj\n");
+            Write("trailer\n<< /Root 1 0 R /Size 5 >>\n%%EOF\n");
+            return pdf.ToArray();
+        }
+        int was = PDFobj.MAX_DECODED_TOTAL;
+        PDFobj.MAX_DECODED_TOTAL = 5000;
+        try {
+            // 500 'z's, 502 bytes deflated and 2000 decoded, within it
+            var objects = TestSupport.NewPDF().Read(new MemoryStream(Pdf(500)));
+            Assert.Equal(2000, PDFTest.ObjectOfNumber(objects, 4).GetData().Length);
+            // 2000, 8000 bytes, past it
+            objects = TestSupport.NewPDF().Read(new MemoryStream(Pdf(2000)));
+            Assert.Null(PDFTest.ObjectOfNumber(objects, 4).GetData());
         } finally {
             PDFobj.MAX_DECODED_TOTAL = was;
         }
