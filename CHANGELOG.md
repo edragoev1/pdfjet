@@ -54,6 +54,10 @@ This is the first entry in this file; earlier releases were not tracked here.
   symbol has no modules, and drawing it makes complete() throw; and
   getFitChars of a deprecated CJK font for a width of NaN or an infinity
   returns 0 or every character.
+- A page that /Kids lists again is returned again by GetPageObjects, but
+  has the entries it inherits added once, in the four ports: one page of
+  2,000 fonts listed 2,000 times, a file of 37 KB, allocated 3.7 GB and
+  took a second in Go; it takes 5 MB and 19 ms with Merge.
 
 ## v9.0.5 — 2026-10-12, internal
 

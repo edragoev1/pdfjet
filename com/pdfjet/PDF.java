@@ -3731,12 +3731,20 @@ final public class PDF {
             Map<PDFobj, Map<String, List<String>>> nodes) {
         List<PDFobj> stack = new ArrayList<PDFobj>();
         stack.add(root);
+        // A page that /Kids lists again is returned again, but has its entries
+        // added once: one page of 2,000 fonts listed 2,000 times copied the
+        // page at each, 5 seconds for a file of 35 KB (review of 12 October
+        // 2026, R5).
+        Set<PDFobj> prepared = new HashSet<PDFobj>();
         for (boolean first = true; !stack.isEmpty(); first = false) {
             PDFobj obj = stack.remove(stack.size() - 1);
-            if (!first && isPageObject(obj)) {  // The root is a node, whatever it is.
-                addInheritedEntries(obj, objects, nodes);
-                resolveMediaBox(obj, objects);
-                nodes.remove(obj);  // A broken tree can have a page as a node.
+            // The root is a node, whatever it is.
+            if (!first && (prepared.contains(obj) || isPageObject(obj))) {
+                if (prepared.add(obj)) {
+                    addInheritedEntries(obj, objects, nodes);
+                    resolveMediaBox(obj, objects);
+                    nodes.remove(obj);  // A broken tree can have a page as a node.
+                }
                 pages.add(obj);
                 continue;
             }

@@ -3547,13 +3547,21 @@ public sealed class PDF {
             PageTreeNodes nodes) {
         List<PDFobj> stack = new List<PDFobj>();
         stack.Add(root);
+        // A page that /Kids lists again is returned again, but has its entries
+        // added once: one page of 2,000 fonts listed 2,000 times copied the
+        // page at each, 5 seconds for a file of 35 KB (review of 12 October
+        // 2026, R5).
+        HashSet<PDFobj> prepared = new HashSet<PDFobj>();
         for (bool first = true; stack.Count > 0; first = false) {
             PDFobj obj = stack[stack.Count - 1];
             stack.RemoveAt(stack.Count - 1);
-            if (!first && IsPageObject(obj)) {  // The root is a node, whatever it is.
-                AddInheritedEntries(obj, objects, nodes);
-                ResolveMediaBox(obj, objects);
-                nodes.Forget(obj);  // A page of a broken tree can be a node.
+            // The root is a node, whatever it is.
+            if (!first && (prepared.Contains(obj) || IsPageObject(obj))) {
+                if (prepared.Add(obj)) {
+                    AddInheritedEntries(obj, objects, nodes);
+                    ResolveMediaBox(obj, objects);
+                    nodes.Forget(obj);  // A page of a broken tree can be a node.
+                }
                 pages.Add(obj);
                 continue;
             }

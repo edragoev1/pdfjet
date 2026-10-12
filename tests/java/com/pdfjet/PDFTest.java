@@ -1345,4 +1345,46 @@ class PDFTest {
         names.setAccessible(true);
         assertEquals(4, ((Map<?, ?>) names.get(pdf)).get("/F2"), "where /F2 is in the fonts");
     }
+
+    // Returns the objects of a PDF of one page of n fonts that /Kids lists n
+    // times, under a node of the /MediaBox.
+    static String[] repeatedPage(int n) {
+        StringBuilder fonts = new StringBuilder();
+        StringBuilder kids = new StringBuilder();
+        for (int i = 0; i < n; i++) {
+            fonts.append(i == 0 ? "" : " ").append("/F").append(i).append(" 4 0 R");
+            kids.append(i == 0 ? "" : " ").append("3 0 R");
+        }
+        return new String[] {
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [" + kids + "] /Count " + n + " /MediaBox [0 0 612 792] >>",
+            "<< /Type /Page /Parent 2 0 R /Resources << /Font << " + fonts + " >> >> >>",
+            "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+        };
+    }
+
+    // A page that /Kids lists again is returned again, but has its entries
+    // added once: one page of 2,000 fonts listed 2,000 times copied the page
+    // at each, 3.7 GB in Go for a file of 37 KB (review of 12 October 2026,
+    // R5).
+    @Test
+    void aRepeatedPageHasItsEntriesAddedOnce() throws Exception {
+        List<PDFobj> objects = TestSupport.read(pdfWithObjects(repeatedPage(2000)));
+        java.lang.management.ThreadMXBean bean = java.lang.management.ManagementFactory.getThreadMXBean();
+        com.sun.management.ThreadMXBean threads = null;
+        if (bean instanceof com.sun.management.ThreadMXBean
+                && ((com.sun.management.ThreadMXBean) bean).isThreadAllocatedMemorySupported()) {
+            threads = (com.sun.management.ThreadMXBean) bean;
+            threads.setThreadAllocatedMemoryEnabled(true);
+        }
+        long id = Thread.currentThread().getId();
+        long before = (threads != null) ? threads.getThreadAllocatedBytes(id) : 0;
+        List<PDFobj> pages = new PDF().getPageObjects(objects);
+        new PDF(new ByteArrayOutputStream()).merge(objects);
+        long after = (threads != null) ? threads.getThreadAllocatedBytes(id) : 0;
+        assertEquals(2000, pages.size());
+        assertTrue(pages.get(0) == pages.get(1999));
+        assertEquals("[ 0 0 612 792 ]", pages.get(0).getValue("/MediaBox"));
+        assertTrue(after - before <= 64 << 20, ((after - before) >> 20) + " MB allocated");
+    }
 }

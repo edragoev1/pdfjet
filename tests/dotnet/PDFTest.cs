@@ -1138,6 +1138,40 @@ public class PDFTest {
         Assert.Equal("/F1 4 0 R /F2 5 0 R", string.Join(" ", fonts));
         Assert.Equal(4, names["/F2"]);
     }
+
+    // Returns the objects of a PDF of one page of n fonts that /Kids lists n
+    // times, under a node of the /MediaBox.
+    internal static string[] RepeatedPage(int n) {
+        StringBuilder fonts = new StringBuilder();
+        StringBuilder kids = new StringBuilder();
+        for (int i = 0; i < n; i++) {
+            fonts.Append(i == 0 ? "" : " ").Append("/F").Append(i).Append(" 4 0 R");
+            kids.Append(i == 0 ? "" : " ").Append("3 0 R");
+        }
+        return new string[] {
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [" + kids + "] /Count " + n + " /MediaBox [0 0 612 792] >>",
+            "<< /Type /Page /Parent 2 0 R /Resources << /Font << " + fonts + " >> >> >>",
+            "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+        };
+    }
+
+    // A page that /Kids lists again is returned again, but has its entries
+    // added once: one page of 2,000 fonts listed 2,000 times copied the page
+    // at each, 3.7 GB in Go for a file of 37 KB (review of 12 October 2026,
+    // R5).
+    [Fact]
+    public void ARepeatedPageHasItsEntriesAddedOnce() {
+        List<PDFobj> objects = TestSupport.Read(PdfWithObjects(RepeatedPage(2000)));
+        long before = GC.GetAllocatedBytesForCurrentThread();
+        List<PDFobj> pages = new PDF().GetPageObjects(objects);
+        TestSupport.NewPDF().Merge(objects);
+        long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        Assert.Equal(2000, pages.Count);
+        Assert.Same(pages[0], pages[1999]);
+        Assert.Equal("[ 0 0 612 792 ]", pages[0].GetValue("/MediaBox"));
+        Assert.True(allocated <= 64 << 20, (allocated >> 20) + " MB allocated");
+    }
 }
 
 /// <summary>The budget of what the streams of a PDF decode to, which the test

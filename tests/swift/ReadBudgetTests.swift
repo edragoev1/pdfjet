@@ -261,4 +261,29 @@ import Testing
         #expect(pdf.importedFonts.joined(separator: " ") == "/F1 4 0 R /F2 5 0 R")
         #expect(pdf.importedFontNames["/F2"] == 4, "/F2 is at \(String(describing: pdf.importedFontNames["/F2"])) of the fonts, not 4")
     }
+
+    // A page that /Kids lists again is returned again, but has its entries
+    // added once: one page of 2,000 fonts listed 2,000 times copied the page
+    // at each, 3.7 GB in Go for a file of 37 KB (review of 12 October 2026,
+    // R5).
+    @Test func aRepeatedPageHasItsEntriesAddedOnce() throws {
+        let n = 2000
+        let fonts = (0..<n).map { "/F\($0) 4 0 R" }.joined(separator: " ")
+        let kids = Array(repeating: "3 0 R", count: n).joined(separator: " ")
+        let objects = try TestSupport.read(TestSupport.pdfWithObjects([
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [\(kids)] /Count \(n) /MediaBox [0 0 612 792] >>",
+            "<< /Type /Page /Parent 2 0 R /Resources << /Font << \(fonts) >> >> >>",
+            "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+        ]))
+        let clock = ContinuousClock()
+        var pages = [PDFobj]()
+        let elapsed = clock.measure {
+            pages = TestSupport.pageObjects(objects)
+        }
+        #expect(pages.count == n && pages[0] === pages[n - 1])
+        #expect(pages[0].getValue("/MediaBox") == "[ 0 0 612 792 ]")
+        #expect(elapsed < .seconds(2), "\(elapsed)")
+        try TestSupport.newPDF().merge(objects)
+    }
 }

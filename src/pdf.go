@@ -3520,13 +3520,21 @@ func (pdf *PDF) GetPageObjects(objects []*PDFobj) []*PDFobj {
 func (pdf *PDF) getPageObjects(
 	root *PDFobj, objects []*PDFobj, pages *[]*PDFobj, visited map[int]bool, nodes pageTreeNodes) {
 	stack := []*PDFobj{root}
+	// A page that /Kids lists again is returned again, but has its entries
+	// added once: one page of 2,000 fonts listed 2,000 times copied the page
+	// at each, 5 seconds for a file of 35 KB (review of 12 October 2026, R5).
+	prepared := make(map[*PDFobj]bool)
 	for first := true; len(stack) > 0; first = false {
 		obj := stack[len(stack)-1]
 		stack = stack[:len(stack)-1]
-		if !first && isPageObject(obj) { // The root is a node, whatever it is.
-			addInheritedEntries(obj, objects, nodes)
-			resolveMediaBox(obj, objects)
-			delete(nodes, obj) // A broken tree can have a page as a node.
+		// The root is a node, whatever it is.
+		if !first && (prepared[obj] || isPageObject(obj)) {
+			if !prepared[obj] {
+				prepared[obj] = true
+				addInheritedEntries(obj, objects, nodes)
+				resolveMediaBox(obj, objects)
+				delete(nodes, obj) // A broken tree can have a page as a node.
+			}
 			*pages = append(*pages, obj)
 			continue
 		}

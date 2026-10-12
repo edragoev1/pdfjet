@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"compress/zlib"
 	"fmt"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -319,5 +320,44 @@ func TestReadAddResourceObjectsAddsARepeatedPageOnce(t *testing.T) {
 	testWant(t, "/F1 4 0 R /F2 5 0 R", strings.Join(pdf.importedFonts, " "))
 	if pdf.importedFontNames["/F2"] != 4 {
 		t.Errorf("/F2 is at %d of the fonts, not 4", pdf.importedFontNames["/F2"])
+	}
+}
+
+// testRepeatedPage returns the objects of a PDF of one page of n fonts that
+// /Kids lists n times, under a node of the /MediaBox.
+func testRepeatedPage(n int) []string {
+	fonts := make([]string, n)
+	kids := make([]string, n)
+	for i := range n {
+		fonts[i] = fmt.Sprintf("/F%d 4 0 R", i)
+		kids[i] = "3 0 R"
+	}
+	return []string{
+		"<< /Type /Catalog /Pages 2 0 R >>",
+		fmt.Sprintf("<< /Type /Pages /Kids [%s] /Count %d /MediaBox [0 0 612 792] >>", strings.Join(kids, " "), n),
+		fmt.Sprintf("<< /Type /Page /Parent 2 0 R /Resources << /Font << %s >> >> >>", strings.Join(fonts, " ")),
+		"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+	}
+}
+
+// A page that /Kids lists again is returned again, but has its entries added
+// once: one page of 2,000 fonts listed 2,000 times copied the page at each,
+// 3.7 GB in Go for a file of 37 KB (review of 12 October 2026, R5).
+func TestReadARepeatedPageHasItsEntriesAddedOnce(t *testing.T) {
+	objects := testRead(t, testPDFWithObjects(testRepeatedPage(2000)...))
+	var before, after runtime.MemStats
+	runtime.ReadMemStats(&before)
+	pages := testNewPDF().GetPageObjects(objects)
+	merged := testNewDoc()
+	if err := merged.pdf.Merge(objects); err != nil {
+		t.Fatal(err)
+	}
+	runtime.ReadMemStats(&after)
+	if len(pages) != 2000 || pages[0] != pages[1999] {
+		t.Errorf("%d pages", len(pages))
+	}
+	testWant(t, "[ 0 0 612 792 ]", pages[0].GetValue("/MediaBox"))
+	if allocated := after.TotalAlloc - before.TotalAlloc; allocated > 64<<20 {
+		t.Errorf("%d MB allocated", allocated>>20)
 	}
 }

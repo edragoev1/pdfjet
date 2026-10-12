@@ -3618,12 +3618,20 @@ public final class PDF {
             _ inherited: InheritedEntries) {
         var stack = [root]
         var first = true
+        // A page that /Kids lists again is returned again, but has its entries
+        // added once: one page of 2,000 fonts listed 2,000 times copied the
+        // page at each, 5 seconds for a file of 35 KB (review of 12 October
+        // 2026, R5).
+        var prepared = Set<ObjectIdentifier>()
         while let object = stack.popLast() {
             let isRoot = first
             first = false
-            if !isRoot && isPageObject(object) {    // The root is a node, whatever it is.
-                PDF.addInheritedEntries(object, objects, inherited)
-                PDF.resolveMediaBox(object, objects)
+            // The root is a node, whatever it is.
+            if !isRoot && (prepared.contains(ObjectIdentifier(object)) || isPageObject(object)) {
+                if prepared.insert(ObjectIdentifier(object)).inserted {
+                    PDF.addInheritedEntries(object, objects, inherited)
+                    PDF.resolveMediaBox(object, objects)
+                }
                 pages.append(object)
                 continue
             }
