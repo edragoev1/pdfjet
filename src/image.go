@@ -35,7 +35,7 @@ import (
 //
 //	imagetype.JPG, imagetype.PNG or imagetype.BMP
 //
-// Please see Example_03 and Example_24.
+// Please see Example_24 and Example_27.
 type Image struct {
 	objNumber int
 	pdf       *PDF    // The PDF the image was added to, or nil for an image of an existing PDF

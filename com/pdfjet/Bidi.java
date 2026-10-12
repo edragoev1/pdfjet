@@ -13,7 +13,7 @@ import java.util.Set;
 /**
  * Provides BIDI processing for Arabic, Persian, Urdu and Hebrew.
  *
- * Please see Example_27.
+ * Please see Example_04.
  */
 public class Bidi {
 

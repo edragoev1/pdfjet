@@ -14,7 +14,7 @@ import java.util.*;
  * The image type can be one of the following:
  *     ImageType.JPG, ImageType.PNG or ImageType.BMP
  *
- * Please see Example_03 and Example_24.
+ * Please see Example_24 and Example_27.
  */
 final public class Image implements Drawable {
     /** The object number of the image. */

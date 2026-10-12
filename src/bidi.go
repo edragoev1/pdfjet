@@ -633,7 +633,7 @@ func fillBidiTypes(types []int, start, end, t int) {
 // bracket it stands for as actual text, so the text copied from the page has
 // the brackets that were typed.
 //
-// Please see Example_27.
+// Please see Example_04.
 func ReorderVisually(str string) string {
 	return ReorderVisuallyPart(str, 0, len(str))
 }

@@ -148,9 +148,7 @@ public class ReviewRound3Test {
     // has, as 1e30 or an infinity, in every port: Go and C# fit none (T6).
     [Fact]
     public void ACJKFontFitsAllOfATextInAHugeWidth() {
-#pragma warning disable CS0618 // The CJK fonts are deprecated, and still tested
         Font font = new Font(TestSupport.NewPDF(), CJKFont.ADOBE_MING_STD_LIGHT);
-#pragma warning restore CS0618
         string text = "\u4E2D\u6587\u5B57";
         foreach (float width in new float[] {1e30f, float.PositiveInfinity, float.MaxValue}) {
             Assert.Equal(3, font.GetFitChars(text, width));

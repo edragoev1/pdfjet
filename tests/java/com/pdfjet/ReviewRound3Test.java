@@ -172,7 +172,6 @@ class ReviewRound3Test {
      * has, as 1e30 or an infinity, in every port: Go and C# fit none (T6).
      */
     @Test
-    @SuppressWarnings("deprecation")    // The CJK fonts are deprecated, and still tested
     void aCJKFontFitsAllOfATextInAHugeWidth() throws Exception {
         Font font = new Font(TestSupport.newPDF(), CJKFont.ADOBE_MING_STD_LIGHT);
         String text = "\u4E2D\u6587\u5B57";

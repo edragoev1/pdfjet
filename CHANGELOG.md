@@ -20,6 +20,18 @@ This is the first entry in this file; earlier releases were not tracked here.
   negative one, are refused.
 
 ### Changed
+- The first examples are in a clearer order, the same in the four ports:
+  Example_01 Latin, Greek and Cyrillic; 02 Simplified and Traditional
+  Chinese; 03 Japanese and Korean (was 04); 04 Arabic, Hebrew, Persian and
+  Thai, in that order (was 27); and 05, new, the fonts that are not
+  embedded, the core fonts and the CJK fonts, with what they gain, a
+  document of a few kilobytes, and what they cost. The TextFrame example
+  that was 03 is 27, and the five weights of IBM Plex Sans that were 05
+  are Example_58. There are 58 examples.
+- The CJK font constructor is no longer deprecated, nor to be removed in
+  v10, in the four ports: a font that is not embedded keeps a document
+  small, and its documentation says plainly what it costs, as Example_05
+  shows.
 - The number that tells a font apart, of which the tag of its subset is
   made, folds only the blocks of 256 characters the font has glyphs in, in
   the four ports: ten times faster, 6 microseconds for IBM Plex Sans where

@@ -7,7 +7,6 @@
 package examples;
 
 import java.io.*;
-import java.util.*;
 import com.pdfjet.*;
 import com.pdfjet.fonts.*;
 
@@ -17,92 +16,47 @@ import com.pdfjet.fonts.*;
 public class Example_03 {
     public Example_03() throws Exception {
         PDF pdf = new PDF(
-                new BufferedOutputStream(
-                        new FileOutputStream("Example_03.pdf")));
+                new BufferedOutputStream(new FileOutputStream("Example_03.pdf")));
         pdf.setCompliance(Compliance.PDF_UA_1);
-        pdf.setTitle("Paragraphs in a Text Frame");
+        pdf.setTitle("The Universal Declaration of Human Rights in Japanese and Korean");
 
-        Font f1 = new Font(pdf, IBMPlexSans.Regular);
-        f1.setSize(10f);
+        Font f0 = new Font(pdf, IBMPlexSans.Regular);
+        f0.setSize(12f);
 
-        Font f2 = new Font(pdf, IBMPlexSans.Bold);
-        f2.setSize(10f);
+        // The .otf: a page of Japanese or Korean draws hundreds of glyphs, whose CFF
+        // outlines make a smaller subset than the .ttf's, about a quarter.
+        Font f1 = new Font(pdf, "fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf");
+        f1.setSize(12f);
 
-        Font f3 = new Font(pdf, IBMPlexSans.Italic);
-        f3.setSize(10f);
+        Font f2 = new Font(pdf, "fonts/IBMPlexSansKR/IBMPlexSansKR-Regular.otf");
+        f2.setSize(12f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        List<Paragraph> paragraphs = new ArrayList<Paragraph>();
-        Paragraph paragraph = new Paragraph()
-                .add(new TextLine(f1,
-"The small business centres offer practical resources, from step-by-step info on setting up your business to sample business plans to a range of business-related articles and books in our resource libraries.")
-                        .setUnderline(true))
-                .add(new TextLine(f2, "This text is bold!").setTextColor(Color.blue));
-        paragraphs.add(paragraph);
+        // The heading is in IBM Plex Sans, and the characters it has no glyph for,
+        // the name of the language, are in the fallback font.
+        // The line above each block is its heading
+        new TextLine(f0, "This block is Japanese: \u65e5\u672c\u8a9e").setFallbackFont(f1)
+                .setStructureType(StructElem.H1).setLocation(50f, 50f).drawOn(page);
 
-        paragraph = new Paragraph()
-                .add(new TextLine(f1,
-"The centres also offer free one-on-one consultations with business advisors who can review your business plan and make recommendations to improve it.")
-                        .setUnderline(true))
-                .add(new TextLine(f3, "This text is using italic font.").setTextColor(Color.green));
-        paragraphs.add(paragraph);
+        TextBlock textBlock = new TextBlock(
+                f1, Content.ofTextFile("data/languages/japanese.txt"));
+        textBlock.setLanguage("ja");
+        textBlock.setLocation(50f, 70f);
+        textBlock.setWidth(512f);
+        textBlock.drawOn(page);
 
-        // The two paragraphs are a numbered list. The number of a paragraph
-        // is its label, which the text frame draws to the left of it and
-        // reads before it.
-        int paragraphNumber = 1;
-        for (Paragraph p : paragraphs) {
-            p.setListLabel(new TextLine(f2, paragraphNumber + "."), 15f);
-            paragraphNumber++;
-        }
+        page = new Page(pdf, Letter.PORTRAIT);
 
-        TextFrame text = new TextFrame(paragraphs);
-        text.setLocation(70f, 50f);
-        text.setWidth(500f);
-        text.setBorders(true);
-        text.setBorderColor(Color.blue);
-        text.drawOn(page);
+        new TextLine(f0, "This block is Korean: \ud55c\uad6d\uc5b4").setFallbackFont(f2)
+                .setStructureType(StructElem.H1).setLocation(50f, 50f).drawOn(page);
 
-
-        Map<String, Integer> colorMap = new HashMap<String, Integer>();
-        colorMap.put("Physics", Color.firebrick);
-        colorMap.put("physics", Color.firebrick);
-        colorMap.put("Experimentation", Color.sienna);
-        colorMap.put("science", Color.blue);
-        paragraphs = Paragraph.paragraphsFromFile(f1, "data/physics.txt");
-        // The paragraphs under each heading are a numbered list.
-        paragraphNumber = 1;
-        for (Paragraph p : paragraphs) {
-            if (p.startsWith("**")) {
-                p.setStructureType(StructElem.H1);
-                p.getTextLines().get(0).setFont(f2).setFontSize(24f);
-                p.getTextLines().get(0).setTextColor(Color.navy);
-                paragraphNumber = 1;
-            } else {
-                p.setTextColor(Color.dimgray);
-                p.setHighlightColors(colorMap);
-                p.setListLabel(new TextLine(f2, paragraphNumber + "."), 15f);
-                paragraphNumber++;
-            }
-        }
-
-        text = new TextFrame(paragraphs);
-        text.setLocation(70f, 150f);
-        text.setWidth(500f);
-        text.setBorders(true);
-        text.setBorderColor(Color.blue);
-        text.drawOn(page);
-
-        // The rule beside each paragraph reaches from its top to its bottom,
-        // which the frame knows only after it has drawn it.
-        for (Paragraph p : paragraphs) {
-            if (!p.startsWith("**")) {
-                new Line(p.getX1() - 3f, p.getY1(), p.getX1() - 3f, p.getY2())
-                        .setStrokeColor(Color.navy)
-                        .setStrokeWidth(1f).drawOn(page);
-            }
-        }
+        textBlock = new TextBlock(
+                f2, Content.ofTextFile("data/languages/korean.txt"));
+        textBlock.setLanguage("ko");
+        textBlock.setLocation(50f, 70f);
+        textBlock.setWidth(512f);
+        textBlock.drawOn(page);
 
         pdf.complete();
     }

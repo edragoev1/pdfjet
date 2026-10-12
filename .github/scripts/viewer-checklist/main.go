@@ -37,12 +37,12 @@ var sections = []section{
 			"and the triangle, square and circle are half transparent.",
 		"Example_22: each of the 8 entries of the contents jumps to its page.",
 		"Example_07, 34 and 55, the PDF/A examples, open with the PDF/A bar and no error. Keep a screenshot of each.",
-		"Example_05, 07, 34 and 44, tagged since Oct 7, open with no offer to make the document accessible.",
-		"Example_01, 02, 04, 08, 13, 27, 38 and 54 open with no warning and no offer to repair the file. " +
-			"Example_02, the Chinese, embeds two whole fonts, 9.5 MB, and Example_04, Japanese and Korean, " +
-			"two more, 4 MB, as PDFjet does not subset fonts: they may take a moment to open.",
-		"Example_04 and 44 show their Japanese, Korean and Chinese text with no offer of the Asian font pack " +
+		"Example_07, 34, 44 and 58, tagged, open with no offer to make the document accessible.",
+		"Example_01, 02, 03, 04, 08, 13, 38 and 54 open with no warning and no offer to repair the file.",
+		"Example_03 and 44 show their Japanese, Korean and Chinese text with no offer of the Asian font pack " +
 			"and no offer to make the file accessible: their fonts are embedded, IBM Plex Sans JP, KR and SC.",
+		"Example_05 shows the core fonts, and its Chinese, Japanese and Korean greetings in the Adobe CJK " +
+			"fonts, which are not embedded: Acrobat may offer the Asian font pack, which is what the example shows.",
 		"Example_46: the Layers panel lists Relief, Latitude and Longitude, and Capital Cities, " +
 			"and switching each off and on hides and shows it on the map of Europe.",
 	}},
@@ -72,7 +72,7 @@ var sections = []section{
 		"Encrypted_Cyrillic and Encrypted_200_Bytes open with their passwords.",
 		"Example_06: the attachments open, the note shows its text, the link opens, and the shapes are drawn.",
 		"Example_22: the entries of the contents jump to their pages.",
-		"Example_04 and 44 show their Chinese, Japanese and Korean text.",
+		"Example_03 and 44 show their Chinese, Japanese and Korean text, and Example_05 its greetings, in fonts of the system.",
 	}},
 	{"VoiceOver in Preview", "", []string{
 		"Example_01: VoiceOver reads the English, Greek and Bulgarian text, each in its own language.",

@@ -8,175 +8,106 @@ package main
 import (
 	"fmt"
 	"log"
+	"strconv"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
-	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansArabic"
-	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansHebrew"
-	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansThai"
+	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
-	"github.com/edragoev1/pdfjet/v9/src/content"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
-// Example27 draws Thai, Hebrew, Arabic and Persian text.
+// Example27 draws paragraphs of styled text with the Text component on Letter paper.
 func Example27() {
 	pdf, err := pdfjet.NewPDFFile("Example_27.pdf")
 	if err != nil {
 		log.Fatal(err)
 	}
 	pdf.SetCompliance(compliance.PDF_UA_1)
-	pdf.SetTitle("Thai, Hebrew, Arabic and Persian text")
+	pdf.SetTitle("Paragraphs in a Text Frame")
 
-	// Thai font, whose GPOS table places the tone marks above the upper
-	// vowels.
-	// f1 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansThai/NotoSansThai-Regular.ttf")
-	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSansThai.Regular)
-	f1.SetSize(12.0)
+	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
+	f1.SetSize(10.0)
 
-	// Hebrew font
-	// f2 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansHebrew/NotoSansHebrew-Regular.ttf")
-	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSansHebrew.Regular)
-	f2.SetSize(12.0)
+	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold)
+	f2.SetSize(10.0)
 
-	// Arabic font
-	// f3 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansArabic/NotoSansArabic-Regular.ttf")
-	f3 := pdfjet.NewFontFromFile(pdf, IBMPlexSansArabic.Regular)
-	f3.SetSize(12.0)
+	f3 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Italic)
+	f3.SetSize(10.0)
 
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 
-	// A heading, which PAC asks a document for, in the Latin letters the
-	// Thai font has as well
-	pdfjet.NewTextLine(f1, "Thai, Hebrew, Arabic and Persian text").
-		SetStructureType(structelem.H1).
-		SetFontSize(18.0).
-		SetLocation(30.0, 45.0).
-		DrawOn(page)
+	paragraphs := make([]*pdfjet.Paragraph, 0)
 
-	textBlock := pdfjet.NewTextBlock(f1, content.OfTextFile("data/languages/thai.txt"))
-	textBlock.SetLocation(30.0, 65.0)
-	textBlock.SetWidth(430.0)
-	textBlock.SetBorderColor(color.Blue)
-	textBlock.SetPadding(10.0)
-	textBlock.SetLanguage("th")
-	xy := textBlock.DrawOn(page)
+	paragraph := pdfjet.NewParagraph()
+	paragraph.Add(pdfjet.NewTextLine(f1,
+		"The small business centres offer practical resources, from step-by-step info on setting up your business to sample business plans to a range of business-related articles and books in our resource libraries.").SetUnderline(true))
+	paragraph.Add(pdfjet.NewTextLine(f2, "This text is bold!").SetTextColor(color.Blue))
+	paragraphs = append(paragraphs, paragraph)
 
-	x := float32(570.0)
-	y := xy[1] + 55.0
+	paragraph = pdfjet.NewParagraph()
+	paragraph.Add(pdfjet.NewTextLine(f1,
+		"The centres also offer free one-on-one consultations with business advisors who can review your business plan and make recommendations to improve it.").SetUnderline(true))
+	paragraph.Add(pdfjet.NewTextLine(f3, "This text is using italic font.").SetTextColor(color.Green))
+	paragraphs = append(paragraphs, paragraph)
 
-	y += 20.0
-	str := "כך נראית תחתית הטבלה עם סיום הפלייאוף התחתון:"
-	str = pdfjet.ReorderVisually(str)
-	textLine := pdfjet.NewTextLine(f2, str)
-	textLine.SetLanguage("he")
-	textLine.SetLocation(x-f2.StringWidth(f2.GetSize(), str), y)
-	textLine.DrawOn(page)
+	// The two paragraphs are a numbered list. The number of a paragraph is
+	// its label, which the text frame draws to the left of it and reads
+	// before it.
+	paragraphNumber := 1
+	for _, p := range paragraphs {
+		p.SetListLabel(pdfjet.NewTextLine(f2, strconv.Itoa(paragraphNumber)+"."), 15.0)
+		paragraphNumber++
+	}
 
-	y += 20.0
-	str = "10. הפועל כפר סבא 38 נקודות (הפרש שערים 14-)"
-	str = pdfjet.ReorderVisually(str)
-	textLine = pdfjet.NewTextLine(f2, str)
-	textLine.SetLanguage("he")
-	textLine.SetLocation(x-f2.StringWidth(f2.GetSize(), str), y)
-	textLine.DrawOn(page)
+	text := pdfjet.NewTextFrameFromParagraphs(paragraphs)
+	text.SetLocation(70.0, 50.0)
+	text.SetWidth(500.0)
+	text.SetBorders(true)
+	text.SetBorderColor(color.Blue)
+	text.DrawOn(page)
 
-	y += 20.0
-	str = "11. הפועל קריית שמונה 36 נקודות (הפרש שערים 7-)"
-	str = pdfjet.ReorderVisually(str)
-	textLine = pdfjet.NewTextLine(f2, str)
-	textLine.SetLanguage("he")
-	textLine.SetLocation(x-f2.StringWidth(f2.GetSize(), str), y)
-	textLine.DrawOn(page)
+	colorMap := make(map[string]int32)
+	colorMap["Physics"] = color.Firebrick
+	colorMap["physics"] = color.Firebrick
+	colorMap["Experimentation"] = color.Sienna
+	colorMap["science"] = color.Blue
+	paragraphs = pdfjet.ParagraphsFromFile(f1, "data/physics.txt")
+	// The paragraphs under each heading are a numbered list. The number of a
+	// paragraph is its label, which the text frame draws to the left of it
+	// and reads before it.
+	paragraphNumber = 1
+	for _, p := range paragraphs {
+		if p.StartsWith("**") {
+			p.SetStructureType(structelem.H1)
+			p.GetTextLines()[0].SetFont(f2).SetFontSize(24.0)
+			p.GetTextLines()[0].SetTextColor(color.Navy)
+			paragraphNumber = 1
+		} else {
+			p.SetTextColor(color.DimGray)
+			p.SetHighlightColors(colorMap)
+			p.SetListLabel(pdfjet.NewTextLine(f2, strconv.Itoa(paragraphNumber)+"."), 15.0)
+			paragraphNumber++
+		}
+	}
 
-	y += 20.0
-	str = "12. הפועל חיפה 34 נקודות (הפרש שערים 10-)"
-	str = pdfjet.ReorderVisually(str)
-	textLine = pdfjet.NewTextLine(f2, str)
-	textLine.SetLanguage("he")
-	textLine.SetLocation(x-f2.StringWidth(f2.GetSize(), str), y)
-	textLine.DrawOn(page)
+	text = pdfjet.NewTextFrameFromParagraphs(paragraphs)
+	text.SetLocation(70.0, 150.0)
+	text.SetWidth(500.0)
+	text.SetBorders(true)
+	text.SetBorderColor(color.Blue)
+	text.DrawOn(page)
 
-	y += 20.0
-	str = "13. הפועל עכו 34 נקודות (הפרש שערים 21-)"
-	str = pdfjet.ReorderVisually(str)
-	textLine = pdfjet.NewTextLine(f2, str)
-	textLine.SetLanguage("he")
-	textLine.SetLocation(x-f2.StringWidth(f2.GetSize(), str), y)
-	textLine.DrawOn(page)
-
-	y += 65.0
-	y += 20.0
-	str = pdfjet.ReorderVisually(
-		"قالت شركة PSA بيجو ستروين الفرنسية وشريكتها الصينية شركة دونغفينغ موترز الاربعاء إنهما اتفقتا")
-	textLine = pdfjet.NewTextLine(f3, str)
-	textLine.SetLanguage("ar")
-	textLine.SetLocation(x-f3.StringWidth(f3.GetSize(), str), y)
-	textLine.DrawOn(page)
-
-	y += 20.0
-	str = pdfjet.ReorderVisually(
-		"على التعاون في تطوير السيارات التي تعمل بالطاقة الكهربائية اعتبارا من عام 2019.")
-	textLine = pdfjet.NewTextLine(f3, str)
-	textLine.SetLanguage("ar")
-	textLine.SetLocation(x-f3.StringWidth(f3.GetSize(), str), y)
-	textLine.DrawOn(page)
-
-	y += 20.0
-	str = pdfjet.ReorderVisually(
-		"وجاء في تصريح اصدرته في باريس الشركة الفرنسية ان الشركتين ستنتجان نموذجا كهربائيا مشتركا تستخدمه كل")
-	textLine = pdfjet.NewTextLine(f3, str)
-	textLine.SetLanguage("ar")
-	textLine.SetLocation(x-f3.StringWidth(f3.GetSize(), str), y)
-	textLine.DrawOn(page)
-
-	y += 20.0
-	str = pdfjet.ReorderVisually(
-		"من بيجو وسيتروين ودونغفينغ.")
-	textLine = pdfjet.NewTextLine(f3, str)
-	textLine.SetLanguage("ar")
-	textLine.SetLocation(x-f3.StringWidth(f3.GetSize(), str), y)
-	textLine.DrawOn(page)
-
-	y += 20.0
-	str = pdfjet.ReorderVisually(
-		"وقالت إن الخطة تهدف الى تحقيق عائد يزيد على 100 مليار يوان (15,4 مليار دولار) بحلول عام 2020.")
-	textLine = pdfjet.NewTextLine(f3, str)
-	textLine.SetLanguage("ar")
-	textLine.SetLocation(x-f3.StringWidth(f3.GetSize(), str), y)
-	textLine.DrawOn(page)
-
-	// Right to left text in text blocks, wrapped at their width.
-	page = pdfjet.NewPage(pdf, letter.Portrait())
-
-	textBlock = pdfjet.NewTextBlock(f2, content.OfTextFile("data/languages/hebrew.txt"))
-	textBlock.SetLocation(180.0, 30.0)
-	textBlock.SetWidth(400.0)
-	textBlock.SetBorderColor(color.Blue)
-	textBlock.SetPadding(10.0)
-	textBlock.SetRightToLeft(true)
-	textBlock.SetLanguage("he")
-	xy = textBlock.DrawOn(page)
-
-	textBlock = pdfjet.NewTextBlock(f3, content.OfTextFile("data/languages/arabic.txt"))
-	textBlock.SetLocation(180.0, xy[1]+30.0)
-	textBlock.SetWidth(400.0)
-	textBlock.SetBorderColor(color.Blue)
-	textBlock.SetPadding(10.0)
-	textBlock.SetRightToLeft(true)
-	textBlock.SetLanguage("ar")
-	xy = textBlock.DrawOn(page)
-
-	textBlock = pdfjet.NewTextBlock(f3, content.OfTextFile("data/languages/persian.txt"))
-	textBlock.SetLocation(180.0, xy[1]+30.0)
-	textBlock.SetWidth(400.0)
-	textBlock.SetBorderColor(color.Blue)
-	textBlock.SetPadding(10.0)
-	textBlock.SetRightToLeft(true)
-	textBlock.SetLanguage("fa")
-	textBlock.DrawOn(page)
+	// The rule beside each paragraph reaches from its top to its bottom,
+	// which the frame knows only after it has drawn it.
+	for _, p := range paragraphs {
+		if !p.StartsWith("**") {
+			pdfjet.NewLine(
+				p.GetX1()-3.0, p.GetY1(), p.GetX1()-3.0, p.GetY2()).SetStrokeColor(color.Navy).SetStrokeWidth(1.0).DrawOn(page)
+		}
+	}
 
 	if err := pdf.Complete(); err != nil {
 		log.Fatal(err)

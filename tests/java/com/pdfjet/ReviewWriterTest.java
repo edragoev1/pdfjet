@@ -563,7 +563,6 @@ class ReviewWriterTest {
     // a reader decrypted them to nothing, and the CMap matched no font (review
     // of 11 October 2026, #19).
     @Test
-    @SuppressWarnings("deprecation")    // The CJK fonts are deprecated, and still tested
     void theCharactersOfACJKFontAreEncrypted() throws Exception {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         PDF pdf = encryptedDoc(bos, Compliance.PDF_1_7);

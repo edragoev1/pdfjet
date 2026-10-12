@@ -8,93 +8,152 @@ package examples;
 
 import java.io.*;
 import com.pdfjet.*;
-import com.pdfjet.fonts.*;
 
 /**
- * Embedded fonts: the same words in five weights of IBM Plex Sans, in a PDF/UA
- * document.
+ * Fonts that are not embedded: the twelve text faces of the core fonts, and
+ * Chinese, Japanese and Korean in the CJK fonts.
  * <p>
- * An embedded font travels with the document, so the text looks the same in
- * every viewer, every character of the font can be drawn, and the document can
- * be PDF/UA and PDF/A. The fourteen core fonts, Helvetica, Times and Courier,
- * are in every viewer and make the smallest documents, but they draw only the
- * WinAnsi characters, and PDF/UA and PDF/A do not allow them.
+ * The PDF names each font and the viewer supplies it, so the document carries
+ * no glyphs: it is a few kilobytes, where an embedded CJK font adds hundreds,
+ * and it is written in a moment. The cost: the text takes the shapes of the
+ * font the viewer has, so it does not look the same everywhere; the core fonts
+ * draw only the characters of Western European languages; the CJK fonts need
+ * the Adobe Asian font pack, and draw Latin letters and spaces full width; and
+ * a document with a font that is not embedded cannot be PDF/A or PDF/UA. To
+ * carry the glyphs with the document, use an embedded font, as Example_02 and
+ * Example_03 do.
  * </p>
  *
- * @see Font
- * @see TextBlock
+ * @see CoreFont
+ * @see CJKFont
  */
 public class Example_05 {
-    private static final String SAMPLE = "Embedded fonts look the same in every viewer.";
-
-    private static final int BACKGROUND = 0xf1f4f8;
-
     public Example_05() throws Exception {
-        PDF pdf = new PDF(
-                new BufferedOutputStream(new FileOutputStream("Example_05.pdf")));
-        pdf.setCompliance(Compliance.PDF_UA_1);
-        pdf.setTitle("Embedded Fonts");
+        PDF pdf = new PDF(new BufferedOutputStream(new FileOutputStream("Example_05.pdf")));
 
-        Font regular = new Font(pdf, IBMPlexSans.Regular);
-        regular.setSize(11f);
-        Font bold = new Font(pdf, IBMPlexSans.Bold);
-        bold.setSize(24f);
+        Font title = new Font(pdf, CoreFont.HELVETICA_BOLD);
+        title.setSize(22f);
+        Font heading = new Font(pdf, CoreFont.HELVETICA_BOLD);
+        heading.setSize(13f);
+        Font body = new Font(pdf, CoreFont.HELVETICA);
+        body.setSize(10f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        TextLine title = new TextLine(bold, "Embedded Fonts");
-        title.setStructureType(StructElem.H1);
-        title.setLocation(50f, 70f);
-        title.drawOn(page);
+        TextLine text = new TextLine(title, "Fonts that are not embedded");
+        text.setLocation(50f, 60f);
+        text.drawOn(page);
 
-        TextBlock about = new TextBlock(regular,
-                "An embedded font travels with the document: the PDF carries the font program, "
-                + "so the text looks the same in every viewer, every character of the font can be "
-                + "drawn, and the document can be PDF/UA and PDF/A. PDFjet comes with the IBM Plex "
-                + "fonts, Sans, Serif and Mono, with Arabic, Hebrew, Thai, Japanese, Korean and "
-                + "Chinese, in their weights.\n\n"
-                + "The fourteen core fonts, Helvetica, Times and Courier with their bold and italic, "
-                + "Symbol and ZapfDingbats, are in every viewer, so the document carries no font "
-                + "program and is the smallest it can be. But they draw only the characters of "
-                + "Windows Latin 1, the viewer draws them with its own version of the font, and "
-                + "PDF/UA and PDF/A do not allow them. The boxes below are the same words in five "
-                + "weights of IBM Plex Sans.");
-        about.setLineSpacing(1.4f);
-        about.setLocation(50f, 90f);
-        about.setWidth(512f);
-        float y = about.drawOn(page)[1] + 30f;
+        TextBlock block = new TextBlock(body,
+                "None of the fonts of this document is embedded: the PDF names each font, "
+                + "and the viewer supplies it. That keeps the file very small, a few kilobytes, "
+                + "where an embedded Chinese, Japanese or Korean font adds hundreds, and it is "
+                + "written in a moment. What it costs is at the bottom of the page.");
+        block.setLocation(50f, 75f);
+        block.setWidth(512f);
+        float[] end = block.drawOn(page);
 
-        String[] names = {"Light", "Regular", "Medium", "SemiBold", "Bold"};
-        String[] weights = {
-            IBMPlexSans.Light,
-            IBMPlexSans.Regular,
-            IBMPlexSans.Medium,
-            IBMPlexSans.SemiBold,
-            IBMPlexSans.Bold,
+        // The twelve text faces of the core fonts, each drawn in itself
+        text = new TextLine(heading, "The core fonts");
+        text.setLocation(50f, end[1] + 30f);
+        text.drawOn(page);
+        int[] coreFonts = {
+            CoreFont.HELVETICA, CoreFont.HELVETICA_BOLD,
+            CoreFont.HELVETICA_OBLIQUE, CoreFont.HELVETICA_BOLD_OBLIQUE,
+            CoreFont.TIMES_ROMAN, CoreFont.TIMES_BOLD,
+            CoreFont.TIMES_ITALIC, CoreFont.TIMES_BOLD_ITALIC,
+            CoreFont.COURIER, CoreFont.COURIER_BOLD,
+            CoreFont.COURIER_OBLIQUE, CoreFont.COURIER_BOLD_OBLIQUE,
         };
-        for (int i = 0; i < weights.length; i++) {
-            Font font = new Font(pdf, weights[i]);
-            font.setSize(20f);
-            y = drawSample(page, regular, font, "IBM Plex Sans " + names[i], y) + 22f;
+        String[] coreNames = {
+            "Helvetica", "Helvetica-Bold", "Helvetica-Oblique", "Helvetica-BoldOblique",
+            "Times-Roman", "Times-Bold", "Times-Italic", "Times-BoldItalic",
+            "Courier", "Courier-Bold", "Courier-Oblique", "Courier-BoldOblique",
+        };
+        float y = end[1] + 52f;
+        for (int i = 0; i < coreFonts.length; i++) {
+            Font font = new Font(pdf, coreFonts[i]);
+            font.setSize(11f);
+            text = new TextLine(font, coreNames[i]);
+            text.setLocation(50f + (i % 2) * 256f, y);
+            text.drawOn(page);
+            if (i % 2 == 1) {
+                y += 17f;
+            }
         }
 
-        pdf.complete();
-    }
+        // A greeting in each of the four CJK fonts
+        text = new TextLine(heading, "The CJK fonts");
+        text.setLocation(50f, y + 20f);
+        text.drawOn(page);
+        CJKFont[] cjkFonts = {
+            CJKFont.ADOBE_MING_STD_LIGHT,
+            CJKFont.ST_HEITI_SC_LIGHT,
+            CJKFont.KOZ_MIN_PRO_VI_REGULAR,
+            CJKFont.ADOBE_MYUNGJO_STD_MEDIUM,
+        };
+        String[] languages = {
+            "Chinese (Traditional), Adobe Ming Std Light",
+            "Chinese (Simplified), STHeiti SC Light",
+            "Japanese, Kozuka Mincho Pro VI Regular",
+            "Korean, Adobe Myungjo Std Medium",
+        };
+        String[] greetings = {
+            "新年快樂!",
+            "新年快乐!",
+            "明けましておめでとう!",
+            "새해 복 많이 받으세요!",
+        };
+        y += 42f;
+        for (int i = 0; i < cjkFonts.length; i++) {
+            text = new TextLine(body, languages[i]);
+            text.setTextColor(Color.dimgray);
+            text.setLocation(50f, y);
+            text.drawOn(page);
+            Font font = new Font(pdf, cjkFonts[i]);
+            font.setSize(20f);
+            text = new TextLine(font, greetings[i]);
+            text.setLocation(50f, y + 26f);
+            text.drawOn(page);
+            y += 48f;
+        }
 
-    private static float drawSample(Page page, Font labelFont, Font font, String label, float y)
-            throws Exception {
-        TextLine caption = new TextLine(labelFont, label);
-        caption.setTextColor(Color.dimgray);
-        caption.setLocation(50f, y);
-        caption.drawOn(page);
-
-        TextBlock block = new TextBlock(font, SAMPLE);
-        block.setBackgroundColor(BACKGROUND);
-        block.setPadding(10f);
-        block.setLineSpacing(1.2f);
-        block.setLocation(50f, y + 8f);
+        // What it gains, and what it costs
+        text = new TextLine(heading, "Small, at a cost");
+        text.setLocation(50f, y + 8f);
+        text.drawOn(page);
+        Font mark = new Font(pdf, CoreFont.HELVETICA_BOLD);
+        mark.setSize(10f);
+        String[] marks = {"+", "\u2013", "\u2013", "\u2013", "\u2013"};
+        String[] items = {
+            "Very small and fast: the document carries no glyphs, where one CJK font holds "
+                    + "tens of thousands.",
+            "The text takes the shapes and widths of the font the viewer has, so the document "
+                    + "does not look the same everywhere.",
+            "The core fonts draw only the characters of Western European languages.",
+            "The CJK fonts need the Adobe Asian font pack, which Acrobat and Reader offer to "
+                    + "download, and draw Latin letters and spaces full width.",
+            "A document with a font that is not embedded cannot be PDF/A or PDF/UA, so it is "
+                    + "neither archival nor accessible.",
+        };
+        y += 26f;
+        for (int i = 0; i < items.length; i++) {
+            text = new TextLine(mark, marks[i]);
+            text.setLocation(52f, y + 8f);
+            text.drawOn(page);
+            block = new TextBlock(body, items[i]);
+            block.setLocation(66f, y);
+            block.setWidth(496f);
+            end = block.drawOn(page);
+            y = end[1] + 6f;
+        }
+        block = new TextBlock(body, "To carry its glyphs with the document, use an embedded "
+                + "font, as Example_02 and Example_03 do.");
+        block.setLocation(50f, y + 6f);
         block.setWidth(512f);
-        return block.drawOn(page)[1];
+        block.drawOn(page);
+
+        pdf.complete();
     }
 
     public static void main(String[] args) throws Exception {

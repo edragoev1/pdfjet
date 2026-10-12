@@ -54,9 +54,7 @@ public class FontTest {
 
     [Fact]
     public void EveryCjkCharacterIsOneEmWideAndSurrogatePairsCountOnce() {
-#pragma warning disable CS0618 // The CJK fonts are deprecated, and still tested
         Font font = new Font(TestSupport.NewPDF(), CJKFont.ADOBE_MING_STD_LIGHT);
-#pragma warning restore CS0618
         Assert.Equal(20f, font.StringWidth(10f, "日本"));
         Assert.Equal(10f, font.StringWidth(10f, "𠀋"));
     }
@@ -67,9 +65,7 @@ public class FontTest {
         // characters not drawn: each was drawn, and measured, 1 em wide (review of
         // 12 October 2026, R20).
         PDF pdf = TestSupport.NewPDF();
-#pragma warning disable CS0618 // The CJK fonts are deprecated, and still tested
         Font font = new Font(pdf, CJKFont.ADOBE_MING_STD_LIGHT);
-#pragma warning restore CS0618
         font.SetSize(10f);
         string marked = "日\u00AD本\uFE0F\u200B\u200D\uFEFF";
         Assert.Equal(20f, font.StringWidth(10f, marked));

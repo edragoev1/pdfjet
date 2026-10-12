@@ -13,7 +13,7 @@ namespace PDFjet.NET {
     /// <summary>
     /// Provides BIDI processing for Arabic, Persian, Urdu and Hebrew.
     ///
-    /// Please see Example_27.
+    /// Please see Example_04.
     /// </summary>
     public static class Bidi {
         /* General, Isolated, End, Middle, Beginning */

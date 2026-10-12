@@ -6,157 +6,99 @@
  */
 using System;
 using System.IO;
+using System.Collections.Generic;
 using System.Diagnostics;
 using PDFjet.NET;
 
 /**
- * Example_27.cs
+ * Example_27.java
  */
 public class Example_27 {
     public Example_27() {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_27.pdf", FileMode.Create)));
         pdf.SetCompliance(Compliance.PDF_UA_1);
-        pdf.SetTitle("Thai, Hebrew, Arabic and Persian text");
+        pdf.SetTitle("Paragraphs in a Text Frame");
 
-        // Thai font, whose GPOS table places the tone marks above the upper
-        // vowels.
-        // Font f1 = new Font(pdf, "fonts/NotoSansThai/NotoSansThai-Regular.ttf");
-        Font f1 = new Font(pdf, IBMPlexSansThai.Regular);
-        f1.SetSize(12f);
+        Font f1 = new Font(pdf, IBMPlexSans.Regular);
+        f1.SetSize(10f);
 
-        // Hebrew font
-        // Font f2 = new Font(pdf, "fonts/NotoSansHebrew/NotoSansHebrew-Regular.ttf");
-        Font f2 = new Font(pdf, IBMPlexSansHebrew.Regular);
-        f2.SetSize(12f);
+        Font f2 = new Font(pdf, IBMPlexSans.Bold);
+        f2.SetSize(10f);
 
-        // Arabic font
-        // Font f3 = new Font(pdf, "fonts/NotoSansArabic/NotoSansArabic-Regular.ttf");
-        Font f3 = new Font(pdf, IBMPlexSansArabic.Regular);
-        f3.SetSize(12f);
+        Font f3 = new Font(pdf, IBMPlexSans.Italic);
+        f3.SetSize(10f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        // A heading, which PAC asks a document for, in the Latin letters the
-        // Thai font has as well
-        new TextLine(f1, "Thai, Hebrew, Arabic and Persian text")
-                .SetStructureType(StructElem.H1)
-                .SetFontSize(18f)
-                .SetLocation(30f, 45f)
-                .DrawOn(page);
+        List<Paragraph> paragraphs = new List<Paragraph>();
+        Paragraph paragraph = new Paragraph()
+                .Add(new TextLine(f1,
+"The small business centres offer practical resources, from step-by-step info on setting up your business to sample business plans to a range of business-related articles and books in our resource libraries.")
+                        .SetUnderline(true))
+                .Add(new TextLine(f2, "This text is bold!").SetTextColor(Color.blue));
+        paragraphs.Add(paragraph);
 
-        TextBlock textBlock = new TextBlock(f1,
-                Content.OfTextFile("data/languages/thai.txt"));
-        textBlock.SetLocation(30f, 65f);
-        textBlock.SetWidth(430f);
-        textBlock.SetBorderColor(Color.blue);
-        textBlock.SetPadding(10f);
-        textBlock.SetLanguage("th");
-        float[] xy = textBlock.DrawOn(page);
+        paragraph = new Paragraph()
+                .Add(new TextLine(f1,
+"The centres also offer free one-on-one consultations with business advisors who can review your business plan and make recommendations to improve it.")
+                        .SetUnderline(true))
+                .Add(new TextLine(f3, "This text is using italic font.").SetTextColor(Color.green));
+        paragraphs.Add(paragraph);
 
-        float x = 570f;
-        float y = xy[1] + 55f;
+        // The two paragraphs are a numbered list. The number of a paragraph
+        // is its label, which the text frame draws to the left of it and
+        // reads before it.
+        int paragraphNumber = 1;
+        foreach (Paragraph p in paragraphs) {
+            p.SetListLabel(new TextLine(f2, paragraphNumber.ToString() + "."), 15f);
+            paragraphNumber++;
+        }
 
-        String str = "כך נראית תחתית הטבלה עם סיום הפלייאוף התחתון:";
-        str = Bidi.ReorderVisually(str);
-        TextLine textLine = new TextLine(f2, str);
-        textLine.SetLanguage("he");
-        textLine.SetLocation(x - f2.StringWidth(str), y += 20f);
-        textLine.DrawOn(page);
+        TextFrame text = new TextFrame(paragraphs);
+        text.SetLocation(70f, 50f);
+        text.SetWidth(500f);
+        text.SetBorders(true);
+        text.SetBorderColor(Color.blue);
+        text.DrawOn(page);
 
-        str = "10. הפועל כפר סבא 38 נקודות (הפרש שערים 14-)";
-        str = Bidi.ReorderVisually(str);
-        textLine = new TextLine(f2, str);
-        textLine.SetLanguage("he");
-        textLine.SetLocation(x - f2.StringWidth(str), y += 20f);
-        textLine.DrawOn(page);
 
-        str = "11. הפועל קריית שמונה 36 נקודות (הפרש שערים 7-)";
-        str = Bidi.ReorderVisually(str);
-        textLine = new TextLine(f2, str);
-        textLine.SetLanguage("he");
-        textLine.SetLocation(x - f2.StringWidth(str), y += 20f);
-        textLine.DrawOn(page);
+        Dictionary<String, int> colorMap = new Dictionary<String, int>();
+        colorMap["Physics"] = Color.firebrick;
+        colorMap["physics"] = Color.firebrick;
+        colorMap["Experimentation"] = Color.sienna;
+        colorMap["science"] = Color.blue;
+        paragraphs = Paragraph.ParagraphsFromFile(f1, "data/physics.txt");
+        foreach (Paragraph p in paragraphs) {
+            if (p.StartsWith("**")) {
+                p.SetStructureType(StructElem.H1);
+                p.GetTextLines()[0].SetFont(f2).SetFontSize(24f);
+                p.GetTextLines()[0].SetTextColor(Color.navy);
+                paragraphNumber = 1;
+            } else {
+                p.SetTextColor(Color.dimgray);
+                p.SetHighlightColors(colorMap);
+                p.SetListLabel(new TextLine(f2, paragraphNumber.ToString() + "."), 15f);
+                paragraphNumber++;
+            }
+        }
 
-        str = "12. הפועל חיפה 34 נקודות (הפרש שערים 10-)";
-        str = Bidi.ReorderVisually(str);
-        textLine = new TextLine(f2, str);
-        textLine.SetLanguage("he");
-        textLine.SetLocation(x - f2.StringWidth(str), y += 20f);
-        textLine.DrawOn(page);
+        text = new TextFrame(paragraphs);
+        text.SetLocation(70f, 150f);
+        text.SetWidth(500f);
+        text.SetBorders(true);
+        text.SetBorderColor(Color.blue);
+        text.DrawOn(page);
 
-        str = "13. הפועל עכו 34 נקודות (הפרש שערים 21-)";
-        str = Bidi.ReorderVisually(str);
-        textLine = new TextLine(f2, str);
-        textLine.SetLanguage("he");
-        textLine.SetLocation(x - f2.StringWidth(str), y += 20f);
-        textLine.DrawOn(page);
-
-        y += 65f;
-        str = Bidi.ReorderVisually(
-                "قالت شركة PSA بيجو ستروين الفرنسية وشريكتها الصينية شركة دونغفينغ موترز الاربعاء إنهما اتفقتا");
-        textLine = new TextLine(f3, str);
-        textLine.SetLanguage("ar");
-        textLine.SetLocation(x - f3.StringWidth(str), y += 20f);
-        textLine.DrawOn(page);
-
-        str = Bidi.ReorderVisually(
-                "على التعاون في تطوير السيارات التي تعمل بالطاقة الكهربائية اعتبارا من عام 2019.");
-        textLine = new TextLine(f3, str);
-        textLine.SetLanguage("ar");
-        textLine.SetLocation(x - f3.StringWidth(str), y += 20f);
-        textLine.DrawOn(page);
-
-        str = Bidi.ReorderVisually(
-                "وجاء في تصريح اصدرته في باريس الشركة الفرنسية ان الشركتين ستنتجان نموذجا كهربائيا مشتركا تستخدمه كل");
-        textLine = new TextLine(f3, str);
-        textLine.SetLanguage("ar");
-        textLine.SetLocation(x - f3.StringWidth(str), y += 20f);
-        textLine.DrawOn(page);
-
-        str = Bidi.ReorderVisually(
-                "من بيجو وسيتروين ودونغفينغ.");
-        textLine = new TextLine(f3, str);
-        textLine.SetLanguage("ar");
-        textLine.SetLocation(x - f3.StringWidth(str), y += 20f);
-        textLine.DrawOn(page);
-
-        str = Bidi.ReorderVisually(
-                "وقالت إن الخطة تهدف الى تحقيق عائد يزيد على 100 مليار يوان (15,4 مليار دولار) بحلول عام 2020.");
-        textLine = new TextLine(f3, str);
-        textLine.SetLanguage("ar");
-        textLine.SetLocation(x - f3.StringWidth(str), y += 20f);
-        textLine.DrawOn(page);
-
-        // Right to left text in text blocks, wrapped at their width.
-        page = new Page(pdf, Letter.PORTRAIT);
-
-        textBlock = new TextBlock(f2, Content.OfTextFile("data/languages/hebrew.txt"));
-        textBlock.SetLocation(180f, 30f);
-        textBlock.SetWidth(400f);
-        textBlock.SetBorderColor(Color.blue);
-        textBlock.SetPadding(10f);
-        textBlock.SetRightToLeft(true);
-        textBlock.SetLanguage("he");
-        xy = textBlock.DrawOn(page);
-
-        textBlock = new TextBlock(f3, Content.OfTextFile("data/languages/arabic.txt"));
-        textBlock.SetLocation(180f, xy[1] + 30f);
-        textBlock.SetWidth(400f);
-        textBlock.SetBorderColor(Color.blue);
-        textBlock.SetPadding(10f);
-        textBlock.SetRightToLeft(true);
-        textBlock.SetLanguage("ar");
-        xy = textBlock.DrawOn(page);
-
-        textBlock = new TextBlock(f3, Content.OfTextFile("data/languages/persian.txt"));
-        textBlock.SetLocation(180f, xy[1] + 30f);
-        textBlock.SetWidth(400f);
-        textBlock.SetBorderColor(Color.blue);
-        textBlock.SetPadding(10f);
-        textBlock.SetRightToLeft(true);
-        textBlock.SetLanguage("fa");
-        textBlock.DrawOn(page);
+        // The rule beside each paragraph reaches from its top to its bottom,
+        // which the frame knows only after it has drawn it.
+        foreach (Paragraph p in paragraphs) {
+            if (!p.StartsWith("**")) {
+                new Line(p.GetX1() - 3f, p.GetY1(), p.GetX1() - 3f, p.GetY2())
+                        .SetStrokeColor(Color.navy)
+                        .SetStrokeWidth(1f).DrawOn(page);
+            }
+        }
 
         pdf.Complete();
     }

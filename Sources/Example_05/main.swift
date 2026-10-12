@@ -10,90 +10,148 @@ import PDFjet
 /**
  * Example_05.swift
  *
- * Embedded fonts: the same words in five weights of IBM Plex Sans, in a PDF/UA
- * document.
+ * Fonts that are not embedded: the twelve text faces of the core fonts, and
+ * Chinese, Japanese and Korean in the CJK fonts.
  *
- * An embedded font travels with the document, so the text looks the same in
- * every viewer, every character of the font can be drawn, and the document can
- * be PDF/UA and PDF/A. The fourteen core fonts, Helvetica, Times and Courier,
- * are in every viewer and make the smallest documents, but they draw only the
- * WinAnsi characters, and PDF/UA and PDF/A do not allow them.
+ * The PDF names each font and the viewer supplies it, so the document carries
+ * no glyphs: it is a few kilobytes, where an embedded CJK font adds hundreds,
+ * and it is written in a moment. The cost: the text takes the shapes of the
+ * font the viewer has, so it does not look the same everywhere; the core fonts
+ * draw only the characters of Western European languages; the CJK fonts need
+ * the Adobe Asian font pack, and draw Latin letters and spaces full width; and
+ * a document with a font that is not embedded cannot be PDF/A or PDF/UA. To
+ * carry the glyphs with the document, use an embedded font, as Example_02 and
+ * Example_03 do.
  *
- * - SeeAlso: `Font`
- * - SeeAlso: `TextBlock`
+ * See CoreFont and CJKFont.
  */
 public class Example_05 {
-    private static let SAMPLE = "Embedded fonts look the same in every viewer."
-
-    private static let BACKGROUND: Int32 = 0xf1f4f8
-
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_05.pdf", append: false)!)
-        pdf.setCompliance(Compliance.PDF_UA_1)
-        pdf.setTitle("Embedded Fonts")
 
-        let regular = try Font(pdf, IBMPlexSans.Regular)
-        regular.setSize(11.0)
-        let bold = try Font(pdf, IBMPlexSans.Bold)
-        bold.setSize(24.0)
+        let title = try Font(pdf, CoreFont.HELVETICA_BOLD)
+        title.setSize(22.0)
+        let heading = try Font(pdf, CoreFont.HELVETICA_BOLD)
+        heading.setSize(13.0)
+        let body = try Font(pdf, CoreFont.HELVETICA)
+        body.setSize(10.0)
 
         let page = Page(pdf, Letter.PORTRAIT)
 
-        let title = TextLine(bold, "Embedded Fonts")
-        title.setStructureType(StructElem.H1)
-        title.setLocation(50.0, 70.0)
-        title.drawOn(page)
+        var text = TextLine(title, "Fonts that are not embedded")
+        text.setLocation(50.0, 60.0)
+        text.drawOn(page)
 
-        let about = TextBlock(regular,
-                "An embedded font travels with the document: the PDF carries the font program, "
-                + "so the text looks the same in every viewer, every character of the font can be "
-                + "drawn, and the document can be PDF/UA and PDF/A. PDFjet comes with the IBM Plex "
-                + "fonts, Sans, Serif and Mono, with Arabic, Hebrew, Thai, Japanese, Korean and "
-                + "Chinese, in their weights.\n\n"
-                + "The fourteen core fonts, Helvetica, Times and Courier with their bold and italic, "
-                + "Symbol and ZapfDingbats, are in every viewer, so the document carries no font "
-                + "program and is the smallest it can be. But they draw only the characters of "
-                + "Windows Latin 1, the viewer draws them with its own version of the font, and "
-                + "PDF/UA and PDF/A do not allow them. The boxes below are the same words in five "
-                + "weights of IBM Plex Sans.")
-        about.setLineSpacing(1.4)
-        about.setLocation(50.0, 90.0)
-        about.setWidth(512.0)
-        var y: Float = about.drawOn(page)[1] + 30.0
+        var block = TextBlock(body,
+                "None of the fonts of this document is embedded: the PDF names each font, "
+                + "and the viewer supplies it. That keeps the file very small, a few kilobytes, "
+                + "where an embedded Chinese, Japanese or Korean font adds hundreds, and it is "
+                + "written in a moment. What it costs is at the bottom of the page.")
+        block.setLocation(50.0, 75.0)
+        block.setWidth(512.0)
+        var end = block.drawOn(page)
 
-        let names = ["Light", "Regular", "Medium", "SemiBold", "Bold"]
-        let weights = [
-            IBMPlexSans.Light,
-            IBMPlexSans.Regular,
-            IBMPlexSans.Medium,
-            IBMPlexSans.SemiBold,
-            IBMPlexSans.Bold,
+        // The twelve text faces of the core fonts, each drawn in itself
+        text = TextLine(heading, "The core fonts")
+        text.setLocation(50.0, end[1] + 30.0)
+        text.drawOn(page)
+        let coreFonts = [
+            CoreFont.HELVETICA, CoreFont.HELVETICA_BOLD,
+            CoreFont.HELVETICA_OBLIQUE, CoreFont.HELVETICA_BOLD_OBLIQUE,
+            CoreFont.TIMES_ROMAN, CoreFont.TIMES_BOLD,
+            CoreFont.TIMES_ITALIC, CoreFont.TIMES_BOLD_ITALIC,
+            CoreFont.COURIER, CoreFont.COURIER_BOLD,
+            CoreFont.COURIER_OBLIQUE, CoreFont.COURIER_BOLD_OBLIQUE,
         ]
-        for i in 0..<weights.count {
-            let font = try Font(pdf, weights[i])
-            font.setSize(20.0)
-            y = Example_05.drawSample(page, regular, font, "IBM Plex Sans " + names[i], y) + 22.0
+        let coreNames = [
+            "Helvetica", "Helvetica-Bold", "Helvetica-Oblique", "Helvetica-BoldOblique",
+            "Times-Roman", "Times-Bold", "Times-Italic", "Times-BoldItalic",
+            "Courier", "Courier-Bold", "Courier-Oblique", "Courier-BoldOblique",
+        ]
+        var y = end[1] + 52.0
+        for i in 0..<coreFonts.count {
+            let font = try Font(pdf, coreFonts[i])
+            font.setSize(11.0)
+            text = TextLine(font, coreNames[i])
+            text.setLocation(50.0 + Float(i % 2) * 256.0, y)
+            text.drawOn(page)
+            if i % 2 == 1 {
+                y += 17.0
+            }
         }
 
-        try pdf.complete()
-    }
+        // A greeting in each of the four CJK fonts
+        text = TextLine(heading, "The CJK fonts")
+        text.setLocation(50.0, y + 20.0)
+        text.drawOn(page)
+        let cjkFonts = [
+            CJKFont.ADOBE_MING_STD_LIGHT,
+            CJKFont.ST_HEITI_SC_LIGHT,
+            CJKFont.KOZ_MIN_PRO_VI_REGULAR,
+            CJKFont.ADOBE_MYUNGJO_STD_MEDIUM,
+        ]
+        let languages = [
+            "Chinese (Traditional), Adobe Ming Std Light",
+            "Chinese (Simplified), STHeiti SC Light",
+            "Japanese, Kozuka Mincho Pro VI Regular",
+            "Korean, Adobe Myungjo Std Medium",
+        ]
+        let greetings = [
+            "新年快樂!",
+            "新年快乐!",
+            "明けましておめでとう!",
+            "새해 복 많이 받으세요!",
+        ]
+        y += 42.0
+        for i in 0..<cjkFonts.count {
+            text = TextLine(body, languages[i])
+            text.setTextColor(Color.dimgray)
+            text.setLocation(50.0, y)
+            text.drawOn(page)
+            let font = Font(pdf, cjkFonts[i])
+            font.setSize(20.0)
+            text = TextLine(font, greetings[i])
+            text.setLocation(50.0, y + 26.0)
+            text.drawOn(page)
+            y += 48.0
+        }
 
-    // Draws the label, and under it the sample words in the font, in a text
-    // block with a light background, and returns the bottom of the block.
-    private static func drawSample(
-            _ page: Page, _ labelFont: Font, _ font: Font, _ label: String, _ y: Float) -> Float {
-        let caption = TextLine(labelFont, label)
-        caption.setTextColor(Color.dimgray)
-        caption.setLocation(50.0, y)
-        caption.drawOn(page)
-
-        let block = TextBlock(font, SAMPLE)
-        block.setBackgroundColor(BACKGROUND)
-        block.setPadding(10.0)
-        block.setLineSpacing(1.2)
-        block.setLocation(50.0, y + 8.0)
+        // What it gains, and what it costs
+        text = TextLine(heading, "Small, at a cost")
+        text.setLocation(50.0, y + 8.0)
+        text.drawOn(page)
+        let mark = try Font(pdf, CoreFont.HELVETICA_BOLD)
+        mark.setSize(10.0)
+        let marks = ["+", "\u{2013}", "\u{2013}", "\u{2013}", "\u{2013}"]
+        let items = [
+            "Very small and fast: the document carries no glyphs, where one CJK font holds "
+                    + "tens of thousands.",
+            "The text takes the shapes and widths of the font the viewer has, so the document "
+                    + "does not look the same everywhere.",
+            "The core fonts draw only the characters of Western European languages.",
+            "The CJK fonts need the Adobe Asian font pack, which Acrobat and Reader offer to "
+                    + "download, and draw Latin letters and spaces full width.",
+            "A document with a font that is not embedded cannot be PDF/A or PDF/UA, so it is "
+                    + "neither archival nor accessible.",
+        ]
+        y += 26.0
+        for i in 0..<items.count {
+            text = TextLine(mark, marks[i])
+            text.setLocation(52.0, y + 8.0)
+            text.drawOn(page)
+            block = TextBlock(body, items[i])
+            block.setLocation(66.0, y)
+            block.setWidth(496.0)
+            end = block.drawOn(page)
+            y = end[1] + 6.0
+        }
+        block = TextBlock(body, "To carry its glyphs with the document, use an embedded "
+                + "font, as Example_02 and Example_03 do.")
+        block.setLocation(50.0, y + 6.0)
         block.setWidth(512.0)
-        return block.drawOn(page)[1]
+        block.drawOn(page)
+
+        try pdf.complete()
     }
 }   // End of Example_05.swift
 

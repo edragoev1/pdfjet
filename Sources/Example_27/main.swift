@@ -14,155 +14,87 @@ public class Example_27 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_27.pdf", append: false)!)
         pdf.setCompliance(Compliance.PDF_UA_1)
-        pdf.setTitle("Thai, Hebrew, Arabic and Persian text")
+        pdf.setTitle("Paragraphs in a Text Frame")
 
-        // Thai font, whose GPOS table places the tone marks above the upper
-        // vowels.
-        // let f1 = try Font(pdf, "fonts/NotoSansThai/NotoSansThai-Regular.ttf")
-        let f1 = try Font(pdf, IBMPlexSansThai.Regular)
-        f1.setSize(12.0)
+        let f1 = try Font(pdf, IBMPlexSans.Regular)
+        f1.setSize(10.0)
 
-        // Hebrew font
-        // let f2 = try Font(pdf, "fonts/NotoSansHebrew/NotoSansHebrew-Regular.ttf")
-        let f2 = try Font(pdf, IBMPlexSansHebrew.Regular)
-        f2.setSize(12.0)
+        let f2 = try Font(pdf, IBMPlexSans.Bold)
+        f2.setSize(10.0)
 
-        // Arabic font
-        // let f3 = try Font(pdf, "fonts/NotoSansArabic/NotoSansArabic-Regular.ttf")
-        let f3 = try Font(pdf, IBMPlexSansArabic.Regular)
-        f3.setSize(12.0)
+        let f3 = try Font(pdf, IBMPlexSans.Italic)
+        f3.setSize(10.0)
 
-        var page = Page(pdf, Letter.PORTRAIT)
+        let page = Page(pdf, Letter.PORTRAIT)
 
-        // A heading, which PAC asks a document for, in the Latin letters the
-        // Thai font has as well
-        TextLine(f1, "Thai, Hebrew, Arabic and Persian text")
-                .setStructureType(StructElem.H1)
-                .setFontSize(18.0)
-                .setLocation(30.0, 45.0)
-                .drawOn(page)
+        var paragraphs = [Paragraph]()
+        var paragraph = Paragraph()
+                .add(TextLine(f1,
+"The small business centres offer practical resources, from step-by-step info on setting up your business to sample business plans to a range of business-related articles and books in our resource libraries.")
+                        .setUnderline(true))
+                .add(TextLine(f2, "This text is bold!").setTextColor(Color.blue))
+        paragraphs.append(paragraph)
 
-        var textBlock = TextBlock(f1, try Content.ofTextFile("data/languages/thai.txt"))
-        textBlock.setLocation(30.0, 65.0)
-        textBlock.setWidth(430.0)
-        textBlock.setBorderColor(Color.blue)
-        textBlock.setPadding(10.0)
-        textBlock.setLanguage("th")
-        var xy = textBlock.drawOn(page)
+        paragraph = Paragraph()
+                .add(TextLine(f1,
+"The centres also offer free one-on-one consultations with business advisors who can review your business plan and make recommendations to improve it.")
+                        .setUnderline(true))
+                .add(TextLine(f3, "This text is using italic font.").setTextColor(Color.green))
+        paragraphs.append(paragraph)
 
-        let x: Float = 570.0
-        var y: Float = xy[1] + 55.0
+        // The two paragraphs are a numbered list. The number of a paragraph
+        // is its label, which the text frame draws to the left of it and
+        // reads before it.
+        var paragraphNumber: Int = 1
+        for p in paragraphs {
+            p.setListLabel(TextLine(f2, String(paragraphNumber) + "."), 15.0)
+            paragraphNumber += 1
+        }
 
-        y += 20.0
-        var str = "כך נראית תחתית הטבלה עם סיום הפלייאוף התחתון:"
-        str = Bidi.reorderVisually(str)
-        var textLine = TextLine(f2, str)
-        textLine.setLanguage("he")
-        textLine.setLocation(x - f2.stringWidth(str), y)
-        textLine.drawOn(page)
+        var text = TextFrame(paragraphs)
+        text.setLocation(70.0, 50.0)
+        text.setWidth(500.0)
+        text.setBorders(true)
+        text.setBorderColor(Color.blue)
+        text.drawOn(page)
 
-        y += 20.0
-        str = "10. הפועל כפר סבא 38 נקודות (הפרש שערים 14-)"
-        str = Bidi.reorderVisually(str)
-        textLine = TextLine(f2, str)
-        textLine.setLanguage("he")
-        textLine.setLocation(x - f2.stringWidth(str), y)
-        textLine.drawOn(page)
 
-        y += 20.0
-        str = "11. הפועל קריית שמונה 36 נקודות (הפרש שערים 7-)"
-        str = Bidi.reorderVisually(str)
-        textLine = TextLine(f2, str)
-        textLine.setLanguage("he")
-        textLine.setLocation(x - f2.stringWidth(str), y)
-        textLine.drawOn(page)
+        var colorMap = [String: Int32]()
+        colorMap["Physics"] = Color.firebrick
+        colorMap["physics"] = Color.firebrick
+        colorMap["Experimentation"] =  Color.sienna
+        colorMap["science"] = Color.blue
+        paragraphs = try Paragraph.paragraphsFromFile(f1, "data/physics.txt")
+        // The paragraphs under each heading are a numbered list.
+        paragraphNumber = 1
+        for p in paragraphs {
+            if (p.startsWith("**")) {
+                p.setStructureType(StructElem.H1)
+                p.getTextLines()[0].setFont(f2).setFontSize(24.0)
+                p.getTextLines()[0].setTextColor(Color.navy)
+                paragraphNumber = 1
+            } else {
+                p.setTextColor(Color.dimgray)
+                p.setHighlightColors(colorMap)
+                p.setListLabel(TextLine(f2, String(paragraphNumber) + "."), 15.0)
+                paragraphNumber += 1
+            }
+        }
 
-        y += 20.0
-        str = "12. הפועל חיפה 34 נקודות (הפרש שערים 10-)"
-        str = Bidi.reorderVisually(str)
-        textLine = TextLine(f2, str)
-        textLine.setLanguage("he")
-        textLine.setLocation(x - f2.stringWidth(str), y)
-        textLine.drawOn(page)
+        text = TextFrame(paragraphs)
+        text.setLocation(70.0, 150.0)
+        text.setWidth(500.0)
+        text.setBorders(true)
+        text.setBorderColor(Color.blue)
+        text.drawOn(page)
 
-        y += 20.0
-        str = "13. הפועל עכו 34 נקודות (הפרש שערים 21-)"
-        str = Bidi.reorderVisually(str)
-        textLine = TextLine(f2, str)
-        textLine.setLanguage("he")
-        textLine.setLocation(x - f2.stringWidth(str), y)
-        textLine.drawOn(page)
-
-        y += 65.0
-        y += 20.0
-        str = Bidi.reorderVisually(
-                "قالت شركة PSA بيجو ستروين الفرنسية وشريكتها الصينية شركة دونغفينغ موترز الاربعاء إنهما اتفقتا")
-        textLine = TextLine(f3, str)
-        textLine.setLanguage("ar")
-        textLine.setLocation(x - f3.stringWidth(str), y)
-        textLine.drawOn(page)
-
-        y += 20.0
-        str = Bidi.reorderVisually(
-                "على التعاون في تطوير السيارات التي تعمل بالطاقة الكهربائية اعتبارا من عام 2019.")
-        textLine = TextLine(f3, str)
-        textLine.setLanguage("ar")
-        textLine.setLocation(x - f3.stringWidth(str), y)
-        textLine.drawOn(page)
-
-        y += 20.0
-        str = Bidi.reorderVisually(
-                "وجاء في تصريح اصدرته في باريس الشركة الفرنسية ان الشركتين ستنتجان نموذجا كهربائيا مشتركا تستخدمه كل")
-        textLine = TextLine(f3, str)
-        textLine.setLanguage("ar")
-        textLine.setLocation(x - f3.stringWidth(str), y)
-        textLine.drawOn(page)
-
-        y += 20.0
-        str = Bidi.reorderVisually(
-                "من بيجو وسيتروين ودونغفينغ.")
-        textLine = TextLine(f3, str)
-        textLine.setLanguage("ar")
-        textLine.setLocation(x - f3.stringWidth(str), y)
-        textLine.drawOn(page)
-
-        y += 20.0
-        str = Bidi.reorderVisually(
-                "وقالت إن الخطة تهدف الى تحقيق عائد يزيد على 100 مليار يوان (15,4 مليار دولار) بحلول عام 2020.")
-        textLine = TextLine(f3, str)
-        textLine.setLanguage("ar")
-        textLine.setLocation(x - f3.stringWidth(str), y)
-        textLine.drawOn(page)
-
-        // Right to left text in text blocks, wrapped at their width.
-        page = Page(pdf, Letter.PORTRAIT)
-
-        textBlock = TextBlock(f2, try Content.ofTextFile("data/languages/hebrew.txt"))
-        textBlock.setLocation(180.0, 30.0)
-        textBlock.setWidth(400.0)
-        textBlock.setBorderColor(Color.blue)
-        textBlock.setPadding(10.0)
-        textBlock.setRightToLeft(true)
-        textBlock.setLanguage("he")
-        xy = textBlock.drawOn(page)
-
-        textBlock = TextBlock(f3, try Content.ofTextFile("data/languages/arabic.txt"))
-        textBlock.setLocation(180.0, xy[1] + 30.0)
-        textBlock.setWidth(400.0)
-        textBlock.setBorderColor(Color.blue)
-        textBlock.setPadding(10.0)
-        textBlock.setRightToLeft(true)
-        textBlock.setLanguage("ar")
-        xy = textBlock.drawOn(page)
-
-        textBlock = TextBlock(f3, try Content.ofTextFile("data/languages/persian.txt"))
-        textBlock.setLocation(180.0, xy[1] + 30.0)
-        textBlock.setWidth(400.0)
-        textBlock.setBorderColor(Color.blue)
-        textBlock.setPadding(10.0)
-        textBlock.setRightToLeft(true)
-        textBlock.setLanguage("fa")
-        textBlock.drawOn(page)
+        // The rule beside each paragraph reaches from its top to its bottom,
+        // which the frame knows only after it has drawn it.
+        for p in paragraphs where !p.startsWith("**") {
+            Line(p.getX1() - 3.0, p.getY1(), p.getX1() - 3.0, p.getY2())
+                    .setStrokeColor(Color.navy)
+                    .setStrokeWidth(1.0).drawOn(page)
+        }
 
         try pdf.complete()
     }

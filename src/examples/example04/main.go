@@ -11,68 +11,179 @@ import (
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
-	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
+	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansArabic"
+	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansHebrew"
+	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansThai"
+	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/content"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
-// Example04 draws the Universal Declaration of Human Rights in Japanese and
-// Korean, with IBM Plex Sans JP and KR, embedded, as a PDF/UA document: each
-// block with its language and a heading in IBM Plex Sans.
+// Example04 draws Arabic, Hebrew, Persian and Thai text.
 func Example04() {
-	// Initialize new PDF document that will be saved as Example_04.pdf
 	pdf, err := pdfjet.NewPDFFile("Example_04.pdf")
 	if err != nil {
 		log.Fatal(err)
 	}
 	pdf.SetCompliance(compliance.PDF_UA_1)
-	pdf.SetTitle("The Universal Declaration of Human Rights in Japanese and Korean")
+	pdf.SetTitle("Arabic, Hebrew, Persian and Thai text")
 
-	f0 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
-	f0.SetSize(12.0)
-
-	// The .otf: a page of Japanese or Korean draws hundreds of glyphs, whose CFF
-	// outlines make a smaller subset than the .ttf's, about a quarter.
-	f1 := pdfjet.NewFontFromFile(pdf, "fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf")
+	// Thai font, whose GPOS table places the tone marks above the upper
+	// vowels.
+	// f1 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansThai/NotoSansThai-Regular.ttf")
+	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSansThai.Regular)
 	f1.SetSize(12.0)
 
-	f2 := pdfjet.NewFontFromFile(pdf, "fonts/IBMPlexSansKR/IBMPlexSansKR-Regular.otf")
+	// Hebrew font
+	// f2 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansHebrew/NotoSansHebrew-Regular.ttf")
+	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSansHebrew.Regular)
 	f2.SetSize(12.0)
 
-	// Create a new page in portrait Letter size
+	// Arabic font
+	// f3 := pdfjet.NewFontFromFile(pdf, "fonts/NotoSansArabic/NotoSansArabic-Regular.ttf")
+	f3 := pdfjet.NewFontFromFile(pdf, IBMPlexSansArabic.Regular)
+	f3.SetSize(12.0)
+
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 
-	// The heading is in IBM Plex Sans, and the characters it has no glyph for,
-	// the name of the language, are in the fallback font.
-	// The line above each block is its heading
-	pdfjet.NewTextLine(f0, "This block is Japanese: 日本語").SetFallbackFont(f1).SetStructureType(structelem.H1).SetLocation(50.0, 50.0).DrawOn(page)
+	// A heading, which PAC asks a document for, in the Latin letters the
+	// Thai font has as well
+	pdfjet.NewTextLine(f1, "Arabic, Hebrew, Persian and Thai text").
+		SetStructureType(structelem.H1).
+		SetFontSize(18.0).
+		SetLocation(30.0, 45.0).
+		DrawOn(page)
 
-	textBlock := pdfjet.NewTextBlock(f1, content.OfTextFile("data/languages/japanese.txt"))
-	textBlock.SetLanguage("ja")
-	textBlock.SetLocation(50.0, 70.0)
-	textBlock.SetWidth(512.0)
-	_ = textBlock.DrawOn(page)
+	x := float32(570.0)
+	y := float32(70.0)
 
+	y += 20.0
+	str := pdfjet.ReorderVisually(
+		"قالت شركة PSA بيجو ستروين الفرنسية وشريكتها الصينية شركة دونغفينغ موترز الاربعاء إنهما اتفقتا")
+	textLine := pdfjet.NewTextLine(f3, str)
+	textLine.SetLanguage("ar")
+	textLine.SetLocation(x-f3.StringWidth(f3.GetSize(), str), y)
+	textLine.DrawOn(page)
+
+	y += 20.0
+	str = pdfjet.ReorderVisually(
+		"على التعاون في تطوير السيارات التي تعمل بالطاقة الكهربائية اعتبارا من عام 2019.")
+	textLine = pdfjet.NewTextLine(f3, str)
+	textLine.SetLanguage("ar")
+	textLine.SetLocation(x-f3.StringWidth(f3.GetSize(), str), y)
+	textLine.DrawOn(page)
+
+	y += 20.0
+	str = pdfjet.ReorderVisually(
+		"وجاء في تصريح اصدرته في باريس الشركة الفرنسية ان الشركتين ستنتجان نموذجا كهربائيا مشتركا تستخدمه كل")
+	textLine = pdfjet.NewTextLine(f3, str)
+	textLine.SetLanguage("ar")
+	textLine.SetLocation(x-f3.StringWidth(f3.GetSize(), str), y)
+	textLine.DrawOn(page)
+
+	y += 20.0
+	str = pdfjet.ReorderVisually(
+		"من بيجو وسيتروين ودونغفينغ.")
+	textLine = pdfjet.NewTextLine(f3, str)
+	textLine.SetLanguage("ar")
+	textLine.SetLocation(x-f3.StringWidth(f3.GetSize(), str), y)
+	textLine.DrawOn(page)
+
+	y += 20.0
+	str = pdfjet.ReorderVisually(
+		"وقالت إن الخطة تهدف الى تحقيق عائد يزيد على 100 مليار يوان (15,4 مليار دولار) بحلول عام 2020.")
+	textLine = pdfjet.NewTextLine(f3, str)
+	textLine.SetLanguage("ar")
+	textLine.SetLocation(x-f3.StringWidth(f3.GetSize(), str), y)
+	textLine.DrawOn(page)
+
+	y += 45.0
+	y += 20.0
+	str = "כך נראית תחתית הטבלה עם סיום הפלייאוף התחתון:"
+	str = pdfjet.ReorderVisually(str)
+	textLine = pdfjet.NewTextLine(f2, str)
+	textLine.SetLanguage("he")
+	textLine.SetLocation(x-f2.StringWidth(f2.GetSize(), str), y)
+	textLine.DrawOn(page)
+
+	y += 20.0
+	str = "10. הפועל כפר סבא 38 נקודות (הפרש שערים 14-)"
+	str = pdfjet.ReorderVisually(str)
+	textLine = pdfjet.NewTextLine(f2, str)
+	textLine.SetLanguage("he")
+	textLine.SetLocation(x-f2.StringWidth(f2.GetSize(), str), y)
+	textLine.DrawOn(page)
+
+	y += 20.0
+	str = "11. הפועל קריית שמונה 36 נקודות (הפרש שערים 7-)"
+	str = pdfjet.ReorderVisually(str)
+	textLine = pdfjet.NewTextLine(f2, str)
+	textLine.SetLanguage("he")
+	textLine.SetLocation(x-f2.StringWidth(f2.GetSize(), str), y)
+	textLine.DrawOn(page)
+
+	y += 20.0
+	str = "12. הפועל חיפה 34 נקודות (הפרש שערים 10-)"
+	str = pdfjet.ReorderVisually(str)
+	textLine = pdfjet.NewTextLine(f2, str)
+	textLine.SetLanguage("he")
+	textLine.SetLocation(x-f2.StringWidth(f2.GetSize(), str), y)
+	textLine.DrawOn(page)
+
+	y += 20.0
+	str = "13. הפועל עכו 34 נקודות (הפרש שערים 21-)"
+	str = pdfjet.ReorderVisually(str)
+	textLine = pdfjet.NewTextLine(f2, str)
+	textLine.SetLanguage("he")
+	textLine.SetLocation(x-f2.StringWidth(f2.GetSize(), str), y)
+	textLine.DrawOn(page)
+
+	textBlock := pdfjet.NewTextBlock(f1, content.OfTextFile("data/languages/thai.txt"))
+	textBlock.SetLocation(30.0, y+35.0)
+	textBlock.SetWidth(430.0)
+	textBlock.SetBorderColor(color.Blue)
+	textBlock.SetPadding(10.0)
+	textBlock.SetLanguage("th")
+	xy := textBlock.DrawOn(page)
+
+	// Right to left text in text blocks, wrapped at their width.
 	page = pdfjet.NewPage(pdf, letter.Portrait())
 
-	pdfjet.NewTextLine(f0, "This block is Korean: 한국어").SetFallbackFont(f2).SetStructureType(structelem.H1).SetLocation(50.0, 50.0).DrawOn(page)
+	textBlock = pdfjet.NewTextBlock(f3, content.OfTextFile("data/languages/arabic.txt"))
+	textBlock.SetLocation(180.0, 30.0)
+	textBlock.SetWidth(400.0)
+	textBlock.SetBorderColor(color.Blue)
+	textBlock.SetPadding(10.0)
+	textBlock.SetRightToLeft(true)
+	textBlock.SetLanguage("ar")
+	xy = textBlock.DrawOn(page)
 
-	textBlock = pdfjet.NewTextBlock(f2, content.OfTextFile("data/languages/korean.txt"))
-	textBlock.SetLanguage("ko")
-	textBlock.SetLocation(50.0, 70.0)
-	textBlock.SetWidth(512.0)
-	_ = textBlock.DrawOn(page)
+	textBlock = pdfjet.NewTextBlock(f2, content.OfTextFile("data/languages/hebrew.txt"))
+	textBlock.SetLocation(180.0, xy[1]+30.0)
+	textBlock.SetWidth(400.0)
+	textBlock.SetBorderColor(color.Blue)
+	textBlock.SetPadding(10.0)
+	textBlock.SetRightToLeft(true)
+	textBlock.SetLanguage("he")
+	xy = textBlock.DrawOn(page)
 
-	// Finalize the PDF document
+	textBlock = pdfjet.NewTextBlock(f3, content.OfTextFile("data/languages/persian.txt"))
+	textBlock.SetLocation(180.0, xy[1]+30.0)
+	textBlock.SetWidth(400.0)
+	textBlock.SetBorderColor(color.Blue)
+	textBlock.SetPadding(10.0)
+	textBlock.SetRightToLeft(true)
+	textBlock.SetLanguage("fa")
+	textBlock.DrawOn(page)
+
 	if err := pdf.Complete(); err != nil {
 		log.Fatal(err)
 	}
 }
 
 func main() {
-	// Measure and print execution time
 	time0 := time.Now().UnixMilli()
 	Example04()
 	time1 := time.Now().UnixMilli()

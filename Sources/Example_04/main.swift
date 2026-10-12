@@ -12,47 +12,156 @@ import PDFjet
  */
 public class Example_04 {
     public init() throws {
-        let stream = OutputStream(toFileAtPath: "Example_04.pdf", append: false)
-        let pdf = PDF(stream!)
+        let pdf = PDF(OutputStream(toFileAtPath: "Example_04.pdf", append: false)!)
         pdf.setCompliance(Compliance.PDF_UA_1)
-        pdf.setTitle("The Universal Declaration of Human Rights in Japanese and Korean")
+        pdf.setTitle("Arabic, Hebrew, Persian and Thai text")
 
-        let f0 = try Font(pdf, IBMPlexSans.Regular)
-
-        f0.setSize(12.0)
-
-
-        // The .otf: a page of Japanese or Korean draws hundreds of glyphs, whose CFF
-        // outlines make a smaller subset than the .ttf's, about a quarter.
-        let f1 = try Font(pdf, "fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf")
+        // Thai font, whose GPOS table places the tone marks above the upper
+        // vowels.
+        // let f1 = try Font(pdf, "fonts/NotoSansThai/NotoSansThai-Regular.ttf")
+        let f1 = try Font(pdf, IBMPlexSansThai.Regular)
         f1.setSize(12.0)
 
-        let f2 = try Font(pdf, "fonts/IBMPlexSansKR/IBMPlexSansKR-Regular.otf")
+        // Hebrew font
+        // let f2 = try Font(pdf, "fonts/NotoSansHebrew/NotoSansHebrew-Regular.ttf")
+        let f2 = try Font(pdf, IBMPlexSansHebrew.Regular)
         f2.setSize(12.0)
+
+        // Arabic font
+        // let f3 = try Font(pdf, "fonts/NotoSansArabic/NotoSansArabic-Regular.ttf")
+        let f3 = try Font(pdf, IBMPlexSansArabic.Regular)
+        f3.setSize(12.0)
 
         var page = Page(pdf, Letter.PORTRAIT)
 
-        // The heading is in IBM Plex Sans, and the characters it has no glyph for,
-        // the name of the language, are in the fallback font.
-        // The line above each block is its heading
-        TextLine(f0, "This block is Japanese: 日本語").setFallbackFont(f1).setStructureType(StructElem.H1).setLocation(50.0, 50.0).drawOn(page)
+        // A heading, which PAC asks a document for, in the Latin letters the
+        // Thai font has as well
+        TextLine(f1, "Arabic, Hebrew, Persian and Thai text")
+                .setStructureType(StructElem.H1)
+                .setFontSize(18.0)
+                .setLocation(30.0, 45.0)
+                .drawOn(page)
 
-        var textBlock = TextBlock(
-                f1, try Content.ofTextFile("data/languages/japanese.txt"))
-        textBlock.setLanguage("ja")
-        textBlock.setLocation(50.0, 70.0)
-        textBlock.setWidth(512.0)
-        textBlock.drawOn(page)
+        let x: Float = 570.0
+        var y: Float = 70.0
 
+        y += 20.0
+        var str = Bidi.reorderVisually(
+                "قالت شركة PSA بيجو ستروين الفرنسية وشريكتها الصينية شركة دونغفينغ موترز الاربعاء إنهما اتفقتا")
+        var textLine = TextLine(f3, str)
+        textLine.setLanguage("ar")
+        textLine.setLocation(x - f3.stringWidth(str), y)
+        textLine.drawOn(page)
+
+        y += 20.0
+        str = Bidi.reorderVisually(
+                "على التعاون في تطوير السيارات التي تعمل بالطاقة الكهربائية اعتبارا من عام 2019.")
+        textLine = TextLine(f3, str)
+        textLine.setLanguage("ar")
+        textLine.setLocation(x - f3.stringWidth(str), y)
+        textLine.drawOn(page)
+
+        y += 20.0
+        str = Bidi.reorderVisually(
+                "وجاء في تصريح اصدرته في باريس الشركة الفرنسية ان الشركتين ستنتجان نموذجا كهربائيا مشتركا تستخدمه كل")
+        textLine = TextLine(f3, str)
+        textLine.setLanguage("ar")
+        textLine.setLocation(x - f3.stringWidth(str), y)
+        textLine.drawOn(page)
+
+        y += 20.0
+        str = Bidi.reorderVisually(
+                "من بيجو وسيتروين ودونغفينغ.")
+        textLine = TextLine(f3, str)
+        textLine.setLanguage("ar")
+        textLine.setLocation(x - f3.stringWidth(str), y)
+        textLine.drawOn(page)
+
+        y += 20.0
+        str = Bidi.reorderVisually(
+                "وقالت إن الخطة تهدف الى تحقيق عائد يزيد على 100 مليار يوان (15,4 مليار دولار) بحلول عام 2020.")
+        textLine = TextLine(f3, str)
+        textLine.setLanguage("ar")
+        textLine.setLocation(x - f3.stringWidth(str), y)
+        textLine.drawOn(page)
+
+        y += 45.0
+        y += 20.0
+        str = "כך נראית תחתית הטבלה עם סיום הפלייאוף התחתון:"
+        str = Bidi.reorderVisually(str)
+        textLine = TextLine(f2, str)
+        textLine.setLanguage("he")
+        textLine.setLocation(x - f2.stringWidth(str), y)
+        textLine.drawOn(page)
+
+        y += 20.0
+        str = "10. הפועל כפר סבא 38 נקודות (הפרש שערים 14-)"
+        str = Bidi.reorderVisually(str)
+        textLine = TextLine(f2, str)
+        textLine.setLanguage("he")
+        textLine.setLocation(x - f2.stringWidth(str), y)
+        textLine.drawOn(page)
+
+        y += 20.0
+        str = "11. הפועל קריית שמונה 36 נקודות (הפרש שערים 7-)"
+        str = Bidi.reorderVisually(str)
+        textLine = TextLine(f2, str)
+        textLine.setLanguage("he")
+        textLine.setLocation(x - f2.stringWidth(str), y)
+        textLine.drawOn(page)
+
+        y += 20.0
+        str = "12. הפועל חיפה 34 נקודות (הפרש שערים 10-)"
+        str = Bidi.reorderVisually(str)
+        textLine = TextLine(f2, str)
+        textLine.setLanguage("he")
+        textLine.setLocation(x - f2.stringWidth(str), y)
+        textLine.drawOn(page)
+
+        y += 20.0
+        str = "13. הפועל עכו 34 נקודות (הפרש שערים 21-)"
+        str = Bidi.reorderVisually(str)
+        textLine = TextLine(f2, str)
+        textLine.setLanguage("he")
+        textLine.setLocation(x - f2.stringWidth(str), y)
+        textLine.drawOn(page)
+
+        var textBlock = TextBlock(f1, try Content.ofTextFile("data/languages/thai.txt"))
+        textBlock.setLocation(30.0, y + 35.0)
+        textBlock.setWidth(430.0)
+        textBlock.setBorderColor(Color.blue)
+        textBlock.setPadding(10.0)
+        textBlock.setLanguage("th")
+        var xy = textBlock.drawOn(page)
+
+        // Right to left text in text blocks, wrapped at their width.
         page = Page(pdf, Letter.PORTRAIT)
 
-        TextLine(f0, "This block is Korean: 한국어").setFallbackFont(f2).setStructureType(StructElem.H1).setLocation(50.0, 50.0).drawOn(page)
+        textBlock = TextBlock(f3, try Content.ofTextFile("data/languages/arabic.txt"))
+        textBlock.setLocation(180.0, 30.0)
+        textBlock.setWidth(400.0)
+        textBlock.setBorderColor(Color.blue)
+        textBlock.setPadding(10.0)
+        textBlock.setRightToLeft(true)
+        textBlock.setLanguage("ar")
+        xy = textBlock.drawOn(page)
 
-        textBlock = TextBlock(
-                f2, try Content.ofTextFile("data/languages/korean.txt"))
-        textBlock.setLanguage("ko")
-        textBlock.setLocation(50.0, 70.0)
-        textBlock.setWidth(512.0)
+        textBlock = TextBlock(f2, try Content.ofTextFile("data/languages/hebrew.txt"))
+        textBlock.setLocation(180.0, xy[1] + 30.0)
+        textBlock.setWidth(400.0)
+        textBlock.setBorderColor(Color.blue)
+        textBlock.setPadding(10.0)
+        textBlock.setRightToLeft(true)
+        textBlock.setLanguage("he")
+        xy = textBlock.drawOn(page)
+
+        textBlock = TextBlock(f3, try Content.ofTextFile("data/languages/persian.txt"))
+        textBlock.setLocation(180.0, xy[1] + 30.0)
+        textBlock.setWidth(400.0)
+        textBlock.setBorderColor(Color.blue)
+        textBlock.setPadding(10.0)
+        textBlock.setRightToLeft(true)
+        textBlock.setLanguage("fa")
         textBlock.drawOn(page)
 
         try pdf.complete()

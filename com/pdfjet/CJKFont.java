@@ -8,7 +8,8 @@ package com.pdfjet;
 
 /**
  * Used to select Chinese, Japanese and Korean fonts, for the Font constructor
- * that takes one, which is deprecated: these fonts are not embedded. Use an
+ * that takes one: these fonts are not embedded, which keeps a document small,
+ * and the viewer supplies them. To ship the glyphs with the document, use an
  * embedded font, such as IBM Plex Sans JP, KR, SC or TC.
  */
 public enum CJKFont {

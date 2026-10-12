@@ -16,46 +16,147 @@ import com.pdfjet.fonts.*;
 public class Example_04 {
     public Example_04() throws Exception {
         PDF pdf = new PDF(
-                new BufferedOutputStream(new FileOutputStream("Example_04.pdf")));
+                new BufferedOutputStream(
+                        new FileOutputStream("Example_04.pdf")));
         pdf.setCompliance(Compliance.PDF_UA_1);
-        pdf.setTitle("The Universal Declaration of Human Rights in Japanese and Korean");
+        pdf.setTitle("Arabic, Hebrew, Persian and Thai text");
 
-        Font f0 = new Font(pdf, IBMPlexSans.Regular);
-        f0.setSize(12f);
-
-        // The .otf: a page of Japanese or Korean draws hundreds of glyphs, whose CFF
-        // outlines make a smaller subset than the .ttf's, about a quarter.
-        Font f1 = new Font(pdf, "fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf");
+        // Thai font, whose GPOS table places the tone marks above the upper
+        // vowels.
+        // Font f1 = new Font(pdf, "fonts/NotoSansThai/NotoSansThai-Regular.ttf");
+        Font f1 = new Font(pdf, IBMPlexSansThai.Regular);
         f1.setSize(12f);
 
-        Font f2 = new Font(pdf, "fonts/IBMPlexSansKR/IBMPlexSansKR-Regular.otf");
+        // Hebrew font
+        // Font f2 = new Font(pdf, "fonts/NotoSansHebrew/NotoSansHebrew-Regular.ttf");
+        Font f2 = new Font(pdf, IBMPlexSansHebrew.Regular);
         f2.setSize(12f);
+
+        // Arabic font
+        // Font f3 = new Font(pdf, "fonts/NotoSansArabic/NotoSansArabic-Regular.ttf");
+        Font f3 = new Font(pdf, IBMPlexSansArabic.Regular);
+        f3.setSize(12f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        // The heading is in IBM Plex Sans, and the characters it has no glyph for,
-        // the name of the language, are in the fallback font.
-        // The line above each block is its heading
-        new TextLine(f0, "This block is Japanese: \u65e5\u672c\u8a9e").setFallbackFont(f1)
-                .setStructureType(StructElem.H1).setLocation(50f, 50f).drawOn(page);
+        // A heading, which PAC asks a document for, in the Latin letters the
+        // Thai font has as well
+        new TextLine(f1, "Arabic, Hebrew, Persian and Thai text")
+                .setStructureType(StructElem.H1)
+                .setFontSize(18f)
+                .setLocation(30f, 45f)
+                .drawOn(page);
 
-        TextBlock textBlock = new TextBlock(
-                f1, Content.ofTextFile("data/languages/japanese.txt"));
-        textBlock.setLanguage("ja");
-        textBlock.setLocation(50f, 70f);
-        textBlock.setWidth(512f);
-        textBlock.drawOn(page);
+        float x = 570f;
+        float y = 70f;
 
+        String str = Bidi.reorderVisually(
+                "قالت شركة PSA بيجو ستروين الفرنسية وشريكتها الصينية شركة دونغفينغ موترز الاربعاء إنهما اتفقتا");
+        TextLine textLine = new TextLine(f3, str);
+        textLine.setLanguage("ar");
+        textLine.setLocation(x - f3.stringWidth(str), y += 20f);
+        textLine.drawOn(page);
+
+        str = Bidi.reorderVisually(
+                "على التعاون في تطوير السيارات التي تعمل بالطاقة الكهربائية اعتبارا من عام 2019.");
+        textLine = new TextLine(f3, str);
+        textLine.setLanguage("ar");
+        textLine.setLocation(x - f3.stringWidth(str), y += 20f);
+        textLine.drawOn(page);
+
+        str = Bidi.reorderVisually(
+                "وجاء في تصريح اصدرته في باريس الشركة الفرنسية ان الشركتين ستنتجان نموذجا كهربائيا مشتركا تستخدمه كل");
+        textLine = new TextLine(f3, str);
+        textLine.setLanguage("ar");
+        textLine.setLocation(x - f3.stringWidth(str), y += 20f);
+        textLine.drawOn(page);
+
+        str = Bidi.reorderVisually(
+                "من بيجو وسيتروين ودونغفينغ.");
+        textLine = new TextLine(f3, str);
+        textLine.setLanguage("ar");
+        textLine.setLocation(x - f3.stringWidth(str), y += 20f);
+        textLine.drawOn(page);
+
+        str = Bidi.reorderVisually(
+                "وقالت إن الخطة تهدف الى تحقيق عائد يزيد على 100 مليار يوان (15,4 مليار دولار) بحلول عام 2020.");
+        textLine = new TextLine(f3, str);
+        textLine.setLanguage("ar");
+        textLine.setLocation(x - f3.stringWidth(str), y += 20f);
+        textLine.drawOn(page);
+
+        y += 45f;
+        str = "כך נראית תחתית הטבלה עם סיום הפלייאוף התחתון:";
+        str = Bidi.reorderVisually(str);
+        textLine = new TextLine(f2, str);
+        textLine.setLanguage("he");
+        textLine.setLocation(x - f2.stringWidth(str), y += 20f);
+        textLine.drawOn(page);
+
+        str = "10. הפועל כפר סבא 38 נקודות (הפרש שערים 14-)";
+        str = Bidi.reorderVisually(str);
+        textLine = new TextLine(f2, str);
+        textLine.setLanguage("he");
+        textLine.setLocation(x - f2.stringWidth(str), y += 20f);
+        textLine.drawOn(page);
+
+        str = "11. הפועל קריית שמונה 36 נקודות (הפרש שערים 7-)";
+        str = Bidi.reorderVisually(str);
+        textLine = new TextLine(f2, str);
+        textLine.setLanguage("he");
+        textLine.setLocation(x - f2.stringWidth(str), y += 20f);
+        textLine.drawOn(page);
+
+        str = "12. הפועל חיפה 34 נקודות (הפרש שערים 10-)";
+        str = Bidi.reorderVisually(str);
+        textLine = new TextLine(f2, str);
+        textLine.setLanguage("he");
+        textLine.setLocation(x - f2.stringWidth(str), y += 20f);
+        textLine.drawOn(page);
+
+        str = "13. הפועל עכו 34 נקודות (הפרש שערים 21-)";
+        str = Bidi.reorderVisually(str);
+        textLine = new TextLine(f2, str);
+        textLine.setLanguage("he");
+        textLine.setLocation(x - f2.stringWidth(str), y += 20f);
+        textLine.drawOn(page);
+
+        TextBlock textBlock = new TextBlock(f1, Content.ofTextFile("data/languages/thai.txt"));
+        textBlock.setLocation(30f, y + 35f);
+        textBlock.setWidth(430f);
+        textBlock.setBorderColor(Color.blue);
+        textBlock.setPadding(10f);
+        textBlock.setLanguage("th");
+        float[] xy = textBlock.drawOn(page);
+
+        // Right to left text in text blocks, wrapped at their width.
         page = new Page(pdf, Letter.PORTRAIT);
 
-        new TextLine(f0, "This block is Korean: \ud55c\uad6d\uc5b4").setFallbackFont(f2)
-                .setStructureType(StructElem.H1).setLocation(50f, 50f).drawOn(page);
+        textBlock = new TextBlock(f3, Content.ofTextFile("data/languages/arabic.txt"));
+        textBlock.setLocation(180f, 30f);
+        textBlock.setWidth(400f);
+        textBlock.setBorderColor(Color.blue);
+        textBlock.setPadding(10f);
+        textBlock.setRightToLeft(true);
+        textBlock.setLanguage("ar");
+        xy = textBlock.drawOn(page);
 
-        textBlock = new TextBlock(
-                f2, Content.ofTextFile("data/languages/korean.txt"));
-        textBlock.setLanguage("ko");
-        textBlock.setLocation(50f, 70f);
-        textBlock.setWidth(512f);
+        textBlock = new TextBlock(f2, Content.ofTextFile("data/languages/hebrew.txt"));
+        textBlock.setLocation(180f, xy[1] + 30f);
+        textBlock.setWidth(400f);
+        textBlock.setBorderColor(Color.blue);
+        textBlock.setPadding(10f);
+        textBlock.setRightToLeft(true);
+        textBlock.setLanguage("he");
+        xy = textBlock.drawOn(page);
+
+        textBlock = new TextBlock(f3, Content.ofTextFile("data/languages/persian.txt"));
+        textBlock.setLocation(180f, xy[1] + 30f);
+        textBlock.setWidth(400f);
+        textBlock.setBorderColor(Color.blue);
+        textBlock.setPadding(10f);
+        textBlock.setRightToLeft(true);
+        textBlock.setLanguage("fa");
         textBlock.drawOn(page);
 
         pdf.complete();

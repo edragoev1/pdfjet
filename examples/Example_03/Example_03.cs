@@ -6,99 +6,54 @@
  */
 using System;
 using System.IO;
-using System.Collections.Generic;
 using System.Diagnostics;
 using PDFjet.NET;
 
 /**
- * Example_03.java
+ * Example_03.cs
  */
 public class Example_03 {
     public Example_03() {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_03.pdf", FileMode.Create)));
         pdf.SetCompliance(Compliance.PDF_UA_1);
-        pdf.SetTitle("Paragraphs in a Text Frame");
+        pdf.SetTitle("The Universal Declaration of Human Rights in Japanese and Korean");
 
-        Font f1 = new Font(pdf, IBMPlexSans.Regular);
-        f1.SetSize(10f);
+        Font f0 = new Font(pdf, IBMPlexSans.Regular);
+        f0.SetSize(12f);
 
-        Font f2 = new Font(pdf, IBMPlexSans.Bold);
-        f2.SetSize(10f);
+        // The .otf: a page of Japanese or Korean draws hundreds of glyphs, whose CFF
+        // outlines make a smaller subset than the .ttf's, about a quarter.
+        Font f1 = new Font(pdf, "fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf");
+        f1.SetSize(12f);
 
-        Font f3 = new Font(pdf, IBMPlexSans.Italic);
-        f3.SetSize(10f);
+        Font f2 = new Font(pdf, "fonts/IBMPlexSansKR/IBMPlexSansKR-Regular.otf");
+        f2.SetSize(12f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        List<Paragraph> paragraphs = new List<Paragraph>();
-        Paragraph paragraph = new Paragraph()
-                .Add(new TextLine(f1,
-"The small business centres offer practical resources, from step-by-step info on setting up your business to sample business plans to a range of business-related articles and books in our resource libraries.")
-                        .SetUnderline(true))
-                .Add(new TextLine(f2, "This text is bold!").SetTextColor(Color.blue));
-        paragraphs.Add(paragraph);
+        // The heading is in IBM Plex Sans, and the characters it has no glyph for,
+        // the name of the language, are in the fallback font.
+        // The line above each block is its heading
+        new TextLine(f0, "This block is Japanese: 日本語").SetFallbackFont(f1).SetStructureType(StructElem.H1).SetLocation(50f, 50f).DrawOn(page);
 
-        paragraph = new Paragraph()
-                .Add(new TextLine(f1,
-"The centres also offer free one-on-one consultations with business advisors who can review your business plan and make recommendations to improve it.")
-                        .SetUnderline(true))
-                .Add(new TextLine(f3, "This text is using italic font.").SetTextColor(Color.green));
-        paragraphs.Add(paragraph);
+        TextBlock textBlock = new TextBlock(
+                f1, Content.OfTextFile("data/languages/japanese.txt"));
+        textBlock.SetLanguage("ja");
+        textBlock.SetLocation(50f, 70f);
+        textBlock.SetWidth(512f);
+        textBlock.DrawOn(page);
 
-        // The two paragraphs are a numbered list. The number of a paragraph
-        // is its label, which the text frame draws to the left of it and
-        // reads before it.
-        int paragraphNumber = 1;
-        foreach (Paragraph p in paragraphs) {
-            p.SetListLabel(new TextLine(f2, paragraphNumber.ToString() + "."), 15f);
-            paragraphNumber++;
-        }
+        page = new Page(pdf, Letter.PORTRAIT);
 
-        TextFrame text = new TextFrame(paragraphs);
-        text.SetLocation(70f, 50f);
-        text.SetWidth(500f);
-        text.SetBorders(true);
-        text.SetBorderColor(Color.blue);
-        text.DrawOn(page);
+        new TextLine(f0, "This block is Korean: 한국어").SetFallbackFont(f2).SetStructureType(StructElem.H1).SetLocation(50f, 50f).DrawOn(page);
 
-
-        Dictionary<String, int> colorMap = new Dictionary<String, int>();
-        colorMap["Physics"] = Color.firebrick;
-        colorMap["physics"] = Color.firebrick;
-        colorMap["Experimentation"] = Color.sienna;
-        colorMap["science"] = Color.blue;
-        paragraphs = Paragraph.ParagraphsFromFile(f1, "data/physics.txt");
-        foreach (Paragraph p in paragraphs) {
-            if (p.StartsWith("**")) {
-                p.SetStructureType(StructElem.H1);
-                p.GetTextLines()[0].SetFont(f2).SetFontSize(24f);
-                p.GetTextLines()[0].SetTextColor(Color.navy);
-                paragraphNumber = 1;
-            } else {
-                p.SetTextColor(Color.dimgray);
-                p.SetHighlightColors(colorMap);
-                p.SetListLabel(new TextLine(f2, paragraphNumber.ToString() + "."), 15f);
-                paragraphNumber++;
-            }
-        }
-
-        text = new TextFrame(paragraphs);
-        text.SetLocation(70f, 150f);
-        text.SetWidth(500f);
-        text.SetBorders(true);
-        text.SetBorderColor(Color.blue);
-        text.DrawOn(page);
-
-        // The rule beside each paragraph reaches from its top to its bottom,
-        // which the frame knows only after it has drawn it.
-        foreach (Paragraph p in paragraphs) {
-            if (!p.StartsWith("**")) {
-                new Line(p.GetX1() - 3f, p.GetY1(), p.GetX1() - 3f, p.GetY2())
-                        .SetStrokeColor(Color.navy)
-                        .SetStrokeWidth(1f).DrawOn(page);
-            }
-        }
+        textBlock = new TextBlock(
+                f2, Content.OfTextFile("data/languages/korean.txt"));
+        textBlock.SetLanguage("ko");
+        textBlock.SetLocation(50f, 70f);
+        textBlock.SetWidth(512f);
+        textBlock.DrawOn(page);
 
         pdf.Complete();
     }

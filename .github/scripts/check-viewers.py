@@ -94,10 +94,12 @@ PASSWORDS = {
 # The PDFs whose pages an engine may draw differently from MuPDF, as (engine,
 # name) pairs, with the engine None for every engine, and the reason. The
 # check that no page is blank still applies to them.
-# None since Oct 7, 2026: Example_04 and 44, whose CJK fonts were not
-# embedded, embed IBM Plex Sans JP, KR and SC now, as no example uses the
-# Adobe CJK fonts.
-RENDER_EXCEPTIONS = {}
+RENDER_EXCEPTIONS = {
+    (None, 'Example_05'): 'its CJK fonts are not embedded, as the example shows, so each engine draws '
+                          'them with the fonts of the machine it runs on, if it finds any: PDFium drew '
+                          'no Korean, and pdf.js, which uses no fonts of the machine in Node, drew empty '
+                          'boxes',
+}
 
 # The passwords an engine is given in place of the ones in PASSWORDS, with
 # the reason.

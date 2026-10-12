@@ -8,113 +8,71 @@ package main
 import (
 	"fmt"
 	"log"
-	"strconv"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
-	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
+	"github.com/edragoev1/pdfjet/v9/src/content"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
-// Example03 draws paragraphs of styled text with the Text component on Letter paper.
+// Example03 draws the Universal Declaration of Human Rights in Japanese and
+// Korean, with IBM Plex Sans JP and KR, embedded, as a PDF/UA document: each
+// block with its language and a heading in IBM Plex Sans.
 func Example03() {
+	// Initialize new PDF document that will be saved as Example_03.pdf
 	pdf, err := pdfjet.NewPDFFile("Example_03.pdf")
 	if err != nil {
 		log.Fatal(err)
 	}
 	pdf.SetCompliance(compliance.PDF_UA_1)
-	pdf.SetTitle("Paragraphs in a Text Frame")
+	pdf.SetTitle("The Universal Declaration of Human Rights in Japanese and Korean")
 
-	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
-	f1.SetSize(10.0)
+	f0 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
+	f0.SetSize(12.0)
 
-	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold)
-	f2.SetSize(10.0)
+	// The .otf: a page of Japanese or Korean draws hundreds of glyphs, whose CFF
+	// outlines make a smaller subset than the .ttf's, about a quarter.
+	f1 := pdfjet.NewFontFromFile(pdf, "fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf")
+	f1.SetSize(12.0)
 
-	f3 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Italic)
-	f3.SetSize(10.0)
+	f2 := pdfjet.NewFontFromFile(pdf, "fonts/IBMPlexSansKR/IBMPlexSansKR-Regular.otf")
+	f2.SetSize(12.0)
 
+	// Create a new page in portrait Letter size
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 
-	paragraphs := make([]*pdfjet.Paragraph, 0)
+	// The heading is in IBM Plex Sans, and the characters it has no glyph for,
+	// the name of the language, are in the fallback font.
+	// The line above each block is its heading
+	pdfjet.NewTextLine(f0, "This block is Japanese: 日本語").SetFallbackFont(f1).SetStructureType(structelem.H1).SetLocation(50.0, 50.0).DrawOn(page)
 
-	paragraph := pdfjet.NewParagraph()
-	paragraph.Add(pdfjet.NewTextLine(f1,
-		"The small business centres offer practical resources, from step-by-step info on setting up your business to sample business plans to a range of business-related articles and books in our resource libraries.").SetUnderline(true))
-	paragraph.Add(pdfjet.NewTextLine(f2, "This text is bold!").SetTextColor(color.Blue))
-	paragraphs = append(paragraphs, paragraph)
+	textBlock := pdfjet.NewTextBlock(f1, content.OfTextFile("data/languages/japanese.txt"))
+	textBlock.SetLanguage("ja")
+	textBlock.SetLocation(50.0, 70.0)
+	textBlock.SetWidth(512.0)
+	_ = textBlock.DrawOn(page)
 
-	paragraph = pdfjet.NewParagraph()
-	paragraph.Add(pdfjet.NewTextLine(f1,
-		"The centres also offer free one-on-one consultations with business advisors who can review your business plan and make recommendations to improve it.").SetUnderline(true))
-	paragraph.Add(pdfjet.NewTextLine(f3, "This text is using italic font.").SetTextColor(color.Green))
-	paragraphs = append(paragraphs, paragraph)
+	page = pdfjet.NewPage(pdf, letter.Portrait())
 
-	// The two paragraphs are a numbered list. The number of a paragraph is
-	// its label, which the text frame draws to the left of it and reads
-	// before it.
-	paragraphNumber := 1
-	for _, p := range paragraphs {
-		p.SetListLabel(pdfjet.NewTextLine(f2, strconv.Itoa(paragraphNumber)+"."), 15.0)
-		paragraphNumber++
-	}
+	pdfjet.NewTextLine(f0, "This block is Korean: 한국어").SetFallbackFont(f2).SetStructureType(structelem.H1).SetLocation(50.0, 50.0).DrawOn(page)
 
-	text := pdfjet.NewTextFrameFromParagraphs(paragraphs)
-	text.SetLocation(70.0, 50.0)
-	text.SetWidth(500.0)
-	text.SetBorders(true)
-	text.SetBorderColor(color.Blue)
-	text.DrawOn(page)
+	textBlock = pdfjet.NewTextBlock(f2, content.OfTextFile("data/languages/korean.txt"))
+	textBlock.SetLanguage("ko")
+	textBlock.SetLocation(50.0, 70.0)
+	textBlock.SetWidth(512.0)
+	_ = textBlock.DrawOn(page)
 
-	colorMap := make(map[string]int32)
-	colorMap["Physics"] = color.Firebrick
-	colorMap["physics"] = color.Firebrick
-	colorMap["Experimentation"] = color.Sienna
-	colorMap["science"] = color.Blue
-	paragraphs = pdfjet.ParagraphsFromFile(f1, "data/physics.txt")
-	// The paragraphs under each heading are a numbered list. The number of a
-	// paragraph is its label, which the text frame draws to the left of it
-	// and reads before it.
-	paragraphNumber = 1
-	for _, p := range paragraphs {
-		if p.StartsWith("**") {
-			p.SetStructureType(structelem.H1)
-			p.GetTextLines()[0].SetFont(f2).SetFontSize(24.0)
-			p.GetTextLines()[0].SetTextColor(color.Navy)
-			paragraphNumber = 1
-		} else {
-			p.SetTextColor(color.DimGray)
-			p.SetHighlightColors(colorMap)
-			p.SetListLabel(pdfjet.NewTextLine(f2, strconv.Itoa(paragraphNumber)+"."), 15.0)
-			paragraphNumber++
-		}
-	}
-
-	text = pdfjet.NewTextFrameFromParagraphs(paragraphs)
-	text.SetLocation(70.0, 150.0)
-	text.SetWidth(500.0)
-	text.SetBorders(true)
-	text.SetBorderColor(color.Blue)
-	text.DrawOn(page)
-
-	// The rule beside each paragraph reaches from its top to its bottom,
-	// which the frame knows only after it has drawn it.
-	for _, p := range paragraphs {
-		if !p.StartsWith("**") {
-			pdfjet.NewLine(
-				p.GetX1()-3.0, p.GetY1(), p.GetX1()-3.0, p.GetY2()).SetStrokeColor(color.Navy).SetStrokeWidth(1.0).DrawOn(page)
-		}
-	}
-
+	// Finalize the PDF document
 	if err := pdf.Complete(); err != nil {
 		log.Fatal(err)
 	}
 }
 
 func main() {
+	// Measure and print execution time
 	time0 := time.Now().UnixMilli()
 	Example03()
 	time1 := time.Now().UnixMilli()

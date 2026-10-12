@@ -1,5 +1,5 @@
 #!/bin/bash
-# Makes a folder to run the 57 examples on .NET Framework 4.8 on Windows, with
+# Makes a folder to run the 58 examples on .NET Framework 4.8 on Windows, with
 # nothing to install: RunExamples.exe and the net48 PDFjet.dll with its DLLs,
 # and what the examples read, fonts (as the packages have them), data,
 # images, PngSuite, and the sources of examples/ some embed.
@@ -31,13 +31,13 @@ for file in $(grep -rhoE '"examples/[^"]+"' examples/*/Example_*.cs | tr -d '"' 
     cp "$file" "$OUT/$file"
 done
 cat > "$OUT/README.txt" <<'TXT'
-The 57 examples of PDFjet, run on .NET Framework 4.8 against its PDFjet.dll.
+The 58 examples of PDFjet, run on .NET Framework 4.8 against its PDFjet.dll.
 
 Open a Command Prompt in this folder, and run:
 
     RunExamples.exe
 
-It makes Example_01.pdf to Example_57.pdf here, and writes what each did to
+It makes Example_01.pdf to Example_58.pdf here, and writes what each did to
 net48-results.txt: its time, "ok" when its PDF was made whole, else what went
 wrong. RunExamples.exe 7 29 runs those alone.
 TXT

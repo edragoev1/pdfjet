@@ -164,14 +164,16 @@ func newCoreFontForPDFobj(coreFont *corefont.CoreFont) *Font {
 }
 
 // NewCJKFont is the constructor for CJK - Chinese, Japanese and Korean fonts.
-// The font is not embedded: the viewer needs the Adobe Asian font pack, and a
-// PDF with it cannot be PDF/A or PDF/UA. Embedded fonts, such as IBMPlexSansJP,
-// KR, SC and TC, are better: see Example_02 and Example_04.
+// The font is not embedded: the PDF names it and the viewer supplies it, so a
+// document in it is a few kilobytes, where an embedded CJK font adds hundreds.
+// The viewer needs the Adobe Asian font pack, or a font of its own in its
+// place, and the text takes the shapes of the font it finds; Latin letters and
+// spaces are drawn full width; and a PDF with it cannot be PDF/A or PDF/UA. See
+// Example_05. To ship the glyphs with the document, use an embedded font, such
+// as IBMPlexSansJP, KR, SC or TC: see Example_02 and Example_03.
 //
 //   - pdf: the PDF to add this font to.
 //   - cjkFont: the font.
-//
-// Deprecated: Not embedded: the viewer needs the Adobe Asian font pack, and the PDF cannot be PDF/A or PDF/UA. Latin letters and spaces are drawn full width in it. Use an embedded font, such as IBM Plex Sans JP, KR, SC or TC. To be removed in v10.
 func NewCJKFont(pdf *PDF, cjkFont cjkfont.Font) *Font {
 	var fontName string
 	switch cjkFont {

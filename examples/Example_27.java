@@ -7,6 +7,7 @@
 package examples;
 
 import java.io.*;
+import java.util.*;
 import com.pdfjet.*;
 import com.pdfjet.fonts.*;
 
@@ -19,145 +20,89 @@ public class Example_27 {
                 new BufferedOutputStream(
                         new FileOutputStream("Example_27.pdf")));
         pdf.setCompliance(Compliance.PDF_UA_1);
-        pdf.setTitle("Thai, Hebrew, Arabic and Persian text");
+        pdf.setTitle("Paragraphs in a Text Frame");
 
-        // Thai font, whose GPOS table places the tone marks above the upper
-        // vowels.
-        // Font f1 = new Font(pdf, "fonts/NotoSansThai/NotoSansThai-Regular.ttf");
-        Font f1 = new Font(pdf, IBMPlexSansThai.Regular);
-        f1.setSize(12f);
+        Font f1 = new Font(pdf, IBMPlexSans.Regular);
+        f1.setSize(10f);
 
-        // Hebrew font
-        // Font f2 = new Font(pdf, "fonts/NotoSansHebrew/NotoSansHebrew-Regular.ttf");
-        Font f2 = new Font(pdf, IBMPlexSansHebrew.Regular);
-        f2.setSize(12f);
+        Font f2 = new Font(pdf, IBMPlexSans.Bold);
+        f2.setSize(10f);
 
-        // Arabic font
-        // Font f3 = new Font(pdf, "fonts/NotoSansArabic/NotoSansArabic-Regular.ttf");
-        Font f3 = new Font(pdf, IBMPlexSansArabic.Regular);
-        f3.setSize(12f);
+        Font f3 = new Font(pdf, IBMPlexSans.Italic);
+        f3.setSize(10f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        // A heading, which PAC asks a document for, in the Latin letters the
-        // Thai font has as well
-        new TextLine(f1, "Thai, Hebrew, Arabic and Persian text")
-                .setStructureType(StructElem.H1)
-                .setFontSize(18f)
-                .setLocation(30f, 45f)
-                .drawOn(page);
+        List<Paragraph> paragraphs = new ArrayList<Paragraph>();
+        Paragraph paragraph = new Paragraph()
+                .add(new TextLine(f1,
+"The small business centres offer practical resources, from step-by-step info on setting up your business to sample business plans to a range of business-related articles and books in our resource libraries.")
+                        .setUnderline(true))
+                .add(new TextLine(f2, "This text is bold!").setTextColor(Color.blue));
+        paragraphs.add(paragraph);
 
-        TextBlock textBlock = new TextBlock(f1, Content.ofTextFile("data/languages/thai.txt"));
-        textBlock.setLocation(30f, 65f);
-        textBlock.setWidth(430f);
-        textBlock.setBorderColor(Color.blue);
-        textBlock.setPadding(10f);
-        textBlock.setLanguage("th");
-        float[] xy = textBlock.drawOn(page);
+        paragraph = new Paragraph()
+                .add(new TextLine(f1,
+"The centres also offer free one-on-one consultations with business advisors who can review your business plan and make recommendations to improve it.")
+                        .setUnderline(true))
+                .add(new TextLine(f3, "This text is using italic font.").setTextColor(Color.green));
+        paragraphs.add(paragraph);
 
-        float x = 570f;
-        float y = xy[1] + 55f;
+        // The two paragraphs are a numbered list. The number of a paragraph
+        // is its label, which the text frame draws to the left of it and
+        // reads before it.
+        int paragraphNumber = 1;
+        for (Paragraph p : paragraphs) {
+            p.setListLabel(new TextLine(f2, paragraphNumber + "."), 15f);
+            paragraphNumber++;
+        }
 
-        String str = "כך נראית תחתית הטבלה עם סיום הפלייאוף התחתון:";
-        str = Bidi.reorderVisually(str);
-        TextLine textLine = new TextLine(f2, str);
-        textLine.setLanguage("he");
-        textLine.setLocation(x - f2.stringWidth(str), y += 20f);
-        textLine.drawOn(page);
+        TextFrame text = new TextFrame(paragraphs);
+        text.setLocation(70f, 50f);
+        text.setWidth(500f);
+        text.setBorders(true);
+        text.setBorderColor(Color.blue);
+        text.drawOn(page);
 
-        str = "10. הפועל כפר סבא 38 נקודות (הפרש שערים 14-)";
-        str = Bidi.reorderVisually(str);
-        textLine = new TextLine(f2, str);
-        textLine.setLanguage("he");
-        textLine.setLocation(x - f2.stringWidth(str), y += 20f);
-        textLine.drawOn(page);
 
-        str = "11. הפועל קריית שמונה 36 נקודות (הפרש שערים 7-)";
-        str = Bidi.reorderVisually(str);
-        textLine = new TextLine(f2, str);
-        textLine.setLanguage("he");
-        textLine.setLocation(x - f2.stringWidth(str), y += 20f);
-        textLine.drawOn(page);
+        Map<String, Integer> colorMap = new HashMap<String, Integer>();
+        colorMap.put("Physics", Color.firebrick);
+        colorMap.put("physics", Color.firebrick);
+        colorMap.put("Experimentation", Color.sienna);
+        colorMap.put("science", Color.blue);
+        paragraphs = Paragraph.paragraphsFromFile(f1, "data/physics.txt");
+        // The paragraphs under each heading are a numbered list.
+        paragraphNumber = 1;
+        for (Paragraph p : paragraphs) {
+            if (p.startsWith("**")) {
+                p.setStructureType(StructElem.H1);
+                p.getTextLines().get(0).setFont(f2).setFontSize(24f);
+                p.getTextLines().get(0).setTextColor(Color.navy);
+                paragraphNumber = 1;
+            } else {
+                p.setTextColor(Color.dimgray);
+                p.setHighlightColors(colorMap);
+                p.setListLabel(new TextLine(f2, paragraphNumber + "."), 15f);
+                paragraphNumber++;
+            }
+        }
 
-        str = "12. הפועל חיפה 34 נקודות (הפרש שערים 10-)";
-        str = Bidi.reorderVisually(str);
-        textLine = new TextLine(f2, str);
-        textLine.setLanguage("he");
-        textLine.setLocation(x - f2.stringWidth(str), y += 20f);
-        textLine.drawOn(page);
+        text = new TextFrame(paragraphs);
+        text.setLocation(70f, 150f);
+        text.setWidth(500f);
+        text.setBorders(true);
+        text.setBorderColor(Color.blue);
+        text.drawOn(page);
 
-        str = "13. הפועל עכו 34 נקודות (הפרש שערים 21-)";
-        str = Bidi.reorderVisually(str);
-        textLine = new TextLine(f2, str);
-        textLine.setLanguage("he");
-        textLine.setLocation(x - f2.stringWidth(str), y += 20f);
-        textLine.drawOn(page);
-
-        y += 65f;
-        str = Bidi.reorderVisually(
-                "قالت شركة PSA بيجو ستروين الفرنسية وشريكتها الصينية شركة دونغفينغ موترز الاربعاء إنهما اتفقتا");
-        textLine = new TextLine(f3, str);
-        textLine.setLanguage("ar");
-        textLine.setLocation(x - f3.stringWidth(str), y += 20f);
-        textLine.drawOn(page);
-
-        str = Bidi.reorderVisually(
-                "على التعاون في تطوير السيارات التي تعمل بالطاقة الكهربائية اعتبارا من عام 2019.");
-        textLine = new TextLine(f3, str);
-        textLine.setLanguage("ar");
-        textLine.setLocation(x - f3.stringWidth(str), y += 20f);
-        textLine.drawOn(page);
-
-        str = Bidi.reorderVisually(
-                "وجاء في تصريح اصدرته في باريس الشركة الفرنسية ان الشركتين ستنتجان نموذجا كهربائيا مشتركا تستخدمه كل");
-        textLine = new TextLine(f3, str);
-        textLine.setLanguage("ar");
-        textLine.setLocation(x - f3.stringWidth(str), y += 20f);
-        textLine.drawOn(page);
-
-        str = Bidi.reorderVisually(
-                "من بيجو وسيتروين ودونغفينغ.");
-        textLine = new TextLine(f3, str);
-        textLine.setLanguage("ar");
-        textLine.setLocation(x - f3.stringWidth(str), y += 20f);
-        textLine.drawOn(page);
-
-        str = Bidi.reorderVisually(
-                "وقالت إن الخطة تهدف الى تحقيق عائد يزيد على 100 مليار يوان (15,4 مليار دولار) بحلول عام 2020.");
-        textLine = new TextLine(f3, str);
-        textLine.setLanguage("ar");
-        textLine.setLocation(x - f3.stringWidth(str), y += 20f);
-        textLine.drawOn(page);
-
-        // Right to left text in text blocks, wrapped at their width.
-        page = new Page(pdf, Letter.PORTRAIT);
-
-        textBlock = new TextBlock(f2, Content.ofTextFile("data/languages/hebrew.txt"));
-        textBlock.setLocation(180f, 30f);
-        textBlock.setWidth(400f);
-        textBlock.setBorderColor(Color.blue);
-        textBlock.setPadding(10f);
-        textBlock.setRightToLeft(true);
-        textBlock.setLanguage("he");
-        xy = textBlock.drawOn(page);
-
-        textBlock = new TextBlock(f3, Content.ofTextFile("data/languages/arabic.txt"));
-        textBlock.setLocation(180f, xy[1] + 30f);
-        textBlock.setWidth(400f);
-        textBlock.setBorderColor(Color.blue);
-        textBlock.setPadding(10f);
-        textBlock.setRightToLeft(true);
-        textBlock.setLanguage("ar");
-        xy = textBlock.drawOn(page);
-
-        textBlock = new TextBlock(f3, Content.ofTextFile("data/languages/persian.txt"));
-        textBlock.setLocation(180f, xy[1] + 30f);
-        textBlock.setWidth(400f);
-        textBlock.setBorderColor(Color.blue);
-        textBlock.setPadding(10f);
-        textBlock.setRightToLeft(true);
-        textBlock.setLanguage("fa");
-        textBlock.drawOn(page);
+        // The rule beside each paragraph reaches from its top to its bottom,
+        // which the frame knows only after it has drawn it.
+        for (Paragraph p : paragraphs) {
+            if (!p.startsWith("**")) {
+                new Line(p.getX1() - 3f, p.getY1(), p.getX1() - 3f, p.getY2())
+                        .setStrokeColor(Color.navy)
+                        .setStrokeWidth(1f).drawOn(page);
+            }
+        }
 
         pdf.complete();
     }

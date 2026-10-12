@@ -236,7 +236,7 @@ is that of the whole process writing the 500-page document, runtime included.
 
 ## Examples
 
-The [examples](examples) folder has 57 examples, the same in every port. They
+The [examples](examples) folder has 58 examples, the same in every port. They
 read the fonts and data files of the `fonts` and `data` folders, which these
 scripts fetch the first time they run. Build a port and run all of its
 examples, or run one example by its number:
@@ -495,7 +495,7 @@ for drawing. It puts the line in visual order, with left to right text such as
 Latin words and numbers nested in it one level deep, and replaces the Arabic,
 Persian and Urdu letters with their joined forms, including the lam-alef
 ligature. `TextBlock.setRightToLeft(true)` wraps right to left text at the
-width of the text block and prepares each line that way. Example_27 shows both.
+width of the text block and prepares each line that way. Example_04 shows both.
 
 The letters are shaped by replacing them with the presentation forms that fonts
 map to Unicode. PDFjet does not use a font's OpenType substitution table (GSUB),
@@ -554,7 +554,7 @@ where a line may break. It is not drawn. A word too wide for a line by itself
 is broken between its characters, so text without zero width spaces still fits
 in the text block, but its lines can break inside words. A right to left word is
 shaped as a whole before it is broken, so its letters keep their joined forms on
-both sides of the break. The Thai text of Example_27,
+both sides of the break. The Thai text of Example_04,
 `data/languages/thai.txt`, has a zero width space between its words.
 
 ## Marks

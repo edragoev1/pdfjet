@@ -66,7 +66,6 @@ class FontTest {
     }
 
     @Test
-    @SuppressWarnings("deprecation")    // The CJK fonts are deprecated, and still tested
     void everyCjkCharacterIsOneEmWideAndSurrogatePairsCountOnce() throws Exception {
         Font font = new Font(TestSupport.newPDF(), CJKFont.ADOBE_MING_STD_LIGHT);
         assertEquals(20f, font.stringWidth(10f, "日本"), 0f);
@@ -77,7 +76,6 @@ class FontTest {
     // characters not drawn: each was drawn, and measured, 1 em wide (review of
     // 12 October 2026, R20).
     @Test
-    @SuppressWarnings("deprecation")    // The CJK fonts are deprecated, and still tested
     void aCjkFontDrawsNoIgnorableCharacter() throws Exception {
         PDF pdf = TestSupport.newPDF();
         Font font = new Font(pdf, CJKFont.ADOBE_MING_STD_LIGHT);

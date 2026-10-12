@@ -17,42 +17,145 @@ public class Example_04 {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_04.pdf", FileMode.Create)));
         pdf.SetCompliance(Compliance.PDF_UA_1);
-        pdf.SetTitle("The Universal Declaration of Human Rights in Japanese and Korean");
+        pdf.SetTitle("Arabic, Hebrew, Persian and Thai text");
 
-        Font f0 = new Font(pdf, IBMPlexSans.Regular);
-        f0.SetSize(12f);
-
-        // The .otf: a page of Japanese or Korean draws hundreds of glyphs, whose CFF
-        // outlines make a smaller subset than the .ttf's, about a quarter.
-        Font f1 = new Font(pdf, "fonts/IBMPlexSansJP/IBMPlexSansJP-Regular.otf");
+        // Thai font, whose GPOS table places the tone marks above the upper
+        // vowels.
+        // Font f1 = new Font(pdf, "fonts/NotoSansThai/NotoSansThai-Regular.ttf");
+        Font f1 = new Font(pdf, IBMPlexSansThai.Regular);
         f1.SetSize(12f);
 
-        Font f2 = new Font(pdf, "fonts/IBMPlexSansKR/IBMPlexSansKR-Regular.otf");
+        // Hebrew font
+        // Font f2 = new Font(pdf, "fonts/NotoSansHebrew/NotoSansHebrew-Regular.ttf");
+        Font f2 = new Font(pdf, IBMPlexSansHebrew.Regular);
         f2.SetSize(12f);
+
+        // Arabic font
+        // Font f3 = new Font(pdf, "fonts/NotoSansArabic/NotoSansArabic-Regular.ttf");
+        Font f3 = new Font(pdf, IBMPlexSansArabic.Regular);
+        f3.SetSize(12f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        // The heading is in IBM Plex Sans, and the characters it has no glyph for,
-        // the name of the language, are in the fallback font.
-        // The line above each block is its heading
-        new TextLine(f0, "This block is Japanese: 日本語").SetFallbackFont(f1).SetStructureType(StructElem.H1).SetLocation(50f, 50f).DrawOn(page);
+        // A heading, which PAC asks a document for, in the Latin letters the
+        // Thai font has as well
+        new TextLine(f1, "Arabic, Hebrew, Persian and Thai text")
+                .SetStructureType(StructElem.H1)
+                .SetFontSize(18f)
+                .SetLocation(30f, 45f)
+                .DrawOn(page);
 
-        TextBlock textBlock = new TextBlock(
-                f1, Content.OfTextFile("data/languages/japanese.txt"));
-        textBlock.SetLanguage("ja");
-        textBlock.SetLocation(50f, 70f);
-        textBlock.SetWidth(512f);
-        textBlock.DrawOn(page);
+        float x = 570f;
+        float y = 70f;
 
+        String str = Bidi.ReorderVisually(
+                "قالت شركة PSA بيجو ستروين الفرنسية وشريكتها الصينية شركة دونغفينغ موترز الاربعاء إنهما اتفقتا");
+        TextLine textLine = new TextLine(f3, str);
+        textLine.SetLanguage("ar");
+        textLine.SetLocation(x - f3.StringWidth(str), y += 20f);
+        textLine.DrawOn(page);
+
+        str = Bidi.ReorderVisually(
+                "على التعاون في تطوير السيارات التي تعمل بالطاقة الكهربائية اعتبارا من عام 2019.");
+        textLine = new TextLine(f3, str);
+        textLine.SetLanguage("ar");
+        textLine.SetLocation(x - f3.StringWidth(str), y += 20f);
+        textLine.DrawOn(page);
+
+        str = Bidi.ReorderVisually(
+                "وجاء في تصريح اصدرته في باريس الشركة الفرنسية ان الشركتين ستنتجان نموذجا كهربائيا مشتركا تستخدمه كل");
+        textLine = new TextLine(f3, str);
+        textLine.SetLanguage("ar");
+        textLine.SetLocation(x - f3.StringWidth(str), y += 20f);
+        textLine.DrawOn(page);
+
+        str = Bidi.ReorderVisually(
+                "من بيجو وسيتروين ودونغفينغ.");
+        textLine = new TextLine(f3, str);
+        textLine.SetLanguage("ar");
+        textLine.SetLocation(x - f3.StringWidth(str), y += 20f);
+        textLine.DrawOn(page);
+
+        str = Bidi.ReorderVisually(
+                "وقالت إن الخطة تهدف الى تحقيق عائد يزيد على 100 مليار يوان (15,4 مليار دولار) بحلول عام 2020.");
+        textLine = new TextLine(f3, str);
+        textLine.SetLanguage("ar");
+        textLine.SetLocation(x - f3.StringWidth(str), y += 20f);
+        textLine.DrawOn(page);
+
+        y += 45f;
+        str = "כך נראית תחתית הטבלה עם סיום הפלייאוף התחתון:";
+        str = Bidi.ReorderVisually(str);
+        textLine = new TextLine(f2, str);
+        textLine.SetLanguage("he");
+        textLine.SetLocation(x - f2.StringWidth(str), y += 20f);
+        textLine.DrawOn(page);
+
+        str = "10. הפועל כפר סבא 38 נקודות (הפרש שערים 14-)";
+        str = Bidi.ReorderVisually(str);
+        textLine = new TextLine(f2, str);
+        textLine.SetLanguage("he");
+        textLine.SetLocation(x - f2.StringWidth(str), y += 20f);
+        textLine.DrawOn(page);
+
+        str = "11. הפועל קריית שמונה 36 נקודות (הפרש שערים 7-)";
+        str = Bidi.ReorderVisually(str);
+        textLine = new TextLine(f2, str);
+        textLine.SetLanguage("he");
+        textLine.SetLocation(x - f2.StringWidth(str), y += 20f);
+        textLine.DrawOn(page);
+
+        str = "12. הפועל חיפה 34 נקודות (הפרש שערים 10-)";
+        str = Bidi.ReorderVisually(str);
+        textLine = new TextLine(f2, str);
+        textLine.SetLanguage("he");
+        textLine.SetLocation(x - f2.StringWidth(str), y += 20f);
+        textLine.DrawOn(page);
+
+        str = "13. הפועל עכו 34 נקודות (הפרש שערים 21-)";
+        str = Bidi.ReorderVisually(str);
+        textLine = new TextLine(f2, str);
+        textLine.SetLanguage("he");
+        textLine.SetLocation(x - f2.StringWidth(str), y += 20f);
+        textLine.DrawOn(page);
+
+        TextBlock textBlock = new TextBlock(f1,
+                Content.OfTextFile("data/languages/thai.txt"));
+        textBlock.SetLocation(30f, y + 35f);
+        textBlock.SetWidth(430f);
+        textBlock.SetBorderColor(Color.blue);
+        textBlock.SetPadding(10f);
+        textBlock.SetLanguage("th");
+        float[] xy = textBlock.DrawOn(page);
+
+        // Right to left text in text blocks, wrapped at their width.
         page = new Page(pdf, Letter.PORTRAIT);
 
-        new TextLine(f0, "This block is Korean: 한국어").SetFallbackFont(f2).SetStructureType(StructElem.H1).SetLocation(50f, 50f).DrawOn(page);
+        textBlock = new TextBlock(f3, Content.OfTextFile("data/languages/arabic.txt"));
+        textBlock.SetLocation(180f, 30f);
+        textBlock.SetWidth(400f);
+        textBlock.SetBorderColor(Color.blue);
+        textBlock.SetPadding(10f);
+        textBlock.SetRightToLeft(true);
+        textBlock.SetLanguage("ar");
+        xy = textBlock.DrawOn(page);
 
-        textBlock = new TextBlock(
-                f2, Content.OfTextFile("data/languages/korean.txt"));
-        textBlock.SetLanguage("ko");
-        textBlock.SetLocation(50f, 70f);
-        textBlock.SetWidth(512f);
+        textBlock = new TextBlock(f2, Content.OfTextFile("data/languages/hebrew.txt"));
+        textBlock.SetLocation(180f, xy[1] + 30f);
+        textBlock.SetWidth(400f);
+        textBlock.SetBorderColor(Color.blue);
+        textBlock.SetPadding(10f);
+        textBlock.SetRightToLeft(true);
+        textBlock.SetLanguage("he");
+        xy = textBlock.DrawOn(page);
+
+        textBlock = new TextBlock(f3, Content.OfTextFile("data/languages/persian.txt"));
+        textBlock.SetLocation(180f, xy[1] + 30f);
+        textBlock.SetWidth(400f);
+        textBlock.SetBorderColor(Color.blue);
+        textBlock.SetPadding(10f);
+        textBlock.SetRightToLeft(true);
+        textBlock.SetLanguage("fa");
         textBlock.DrawOn(page);
 
         pdf.Complete();

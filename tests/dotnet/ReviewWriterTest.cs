@@ -530,9 +530,7 @@ public class ReviewWriterTest {
     public void TheCharactersOfACJKFontAreEncrypted() {
         MemoryStream stream = new MemoryStream();
         PDF pdf = EncryptedDoc(stream, Compliance.PDF_1_7);
-#pragma warning disable CS0618 // The CJK fonts are deprecated, and still tested
         Font font = new Font(pdf, CJKFont.KOZ_MIN_PRO_VI_REGULAR);
-#pragma warning restore CS0618
         new TextLine(font, "\u65e5\u672c").SetLocation(50f, 50f).DrawOn(new Page(pdf, Letter.PORTRAIT));
         pdf.Complete();
         Assert.Equal(new List<string> {"Adobe"}, DecryptedStrings(stream.ToArray(), "/Registry"));
