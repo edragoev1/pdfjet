@@ -36,7 +36,8 @@ of it. The check fails on a font when the port:
   font's: that of its glyph; that of .notdef, which PDFjet draws, for a
   character the font does not have, in the range or outside it; that of the
   space for a control character, U+0000 to U+001F and U+007F to U+009F; and
-  none for the ZWNJ, ZWJ, LRM, RLM and BOM;
+  none for the ZWNJ, ZWJ, LRM, RLM, BOM and the other default ignorable
+  characters;
 - reads a mark of a MarkToBase or MarkToLigature subtable of GPOS with a
   different class or anchor, a base or ligature with different anchors (the
   anchors of the first letter of a ligature), or a mark on a mark with a
@@ -84,8 +85,15 @@ ROOT = os.path.abspath(os.path.join(HERE, '..', '..', '..'))
 FONTTOOLS = '4.65.0'
 # How far apart two widths from StringWidth may be, in font units.
 TOLERANCE = 0.01
-# The characters StringWidth gives no width: they are not drawn.
-NOT_DRAWN = {0x200C, 0x200D, 0x200E, 0x200F, 0xFEFF}
+# The characters StringWidth gives no width: they are not drawn. The ZWNJ,
+# ZWJ, LRM, RLM and BOM, and since 9.0.5 the other Default_Ignorable_Code_Point
+# characters of the BMP, as the library's isIgnorable has them, U+034F
+# COMBINING GRAPHEME JOINER and the variation selectors among them.
+NOT_DRAWN = ({0x200C, 0x200D, 0x200E, 0x200F, 0xFEFF,
+              0x034F, 0x061C, 0x115F, 0x1160, 0x17B4, 0x17B5, 0x200B, 0x3164, 0xFFA0}
+             | set(range(0x180B, 0x1810)) | set(range(0x202A, 0x202F))
+             | set(range(0x2060, 0x2070)) | set(range(0xFE00, 0xFE10))
+             | set(range(0xFFF0, 0xFFF9)))
 # The control characters, which PDFjet draws as a space.
 CONTROLS = set(range(0x20)) | set(range(0x7F, 0xA0))
 CORE_FONTS = ['Courier', 'Courier-Bold', 'Courier-BoldOblique', 'Courier-Oblique',
