@@ -6,8 +6,6 @@
  */
 package com.pdfjet;
 
-import java.util.*;
-
 /**
  * A polygon annotation.
  */

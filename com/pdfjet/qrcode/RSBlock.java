@@ -16,8 +16,6 @@
  */
 package com.pdfjet.qrcode;
 
-import com.pdfjet.*;
-
 import java.util.ArrayList;
 import java.util.List;
 

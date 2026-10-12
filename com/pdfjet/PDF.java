@@ -6,8 +6,6 @@
  */
 package com.pdfjet;
 
-import com.pdfjet.encryption.*;
-import com.pdfjet.barcodes.*;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
@@ -2835,7 +2833,7 @@ final public class PDF {
 
         List<PDFobj> objects1 = new ArrayList<PDFobj>();
         PDFobj.DecodeBudget budget = new PDFobj.DecodeBudget(buf.length); // For all the streams of this PDF together
-        PDFobj trailer = null;
+        PDFobj trailer;
         try {
             trailer = getObjects(buf, getStartXRef(buf), objects1, 0, new HashSet<Integer>(), budget);
         } catch (PDFobj.DecodedTotalException e) {

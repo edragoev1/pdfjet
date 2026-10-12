@@ -29,16 +29,6 @@ public class Destination {
     }
 
     /**
-     * This constructor is used to create destination objects.
-     *
-     * @param name the name of this destination object.
-     * @param yPosition the y coordinate of the top left corner.
-     */
-    Destination(String name, float yPosition) {
-        this(name, 0f, yPosition);
-    }
-
-    /**
      * Sets the object number of the page this destination points to.
      *
      * @param pageObjNumber the page object number.

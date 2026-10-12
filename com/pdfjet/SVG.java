@@ -208,7 +208,7 @@ class SVG {
         // The current point starts at the origin: path data that begins with a
         // command that needs one is drawn from there rather than throwing.
         PathOp lastOp = new PathOp(' ');
-        PathOp pathOp = null;
+        PathOp pathOp;
         float x0 = 0f;  // Start of subpath
         float y0 = 0f;
         for (PathOp op : list) {

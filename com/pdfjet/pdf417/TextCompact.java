@@ -6,8 +6,6 @@
  */
 package com.pdfjet.pdf417;
 
-import com.pdfjet.*;
-
 class TextCompact {
 /*
  * The following table contains:

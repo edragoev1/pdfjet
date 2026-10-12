@@ -410,7 +410,6 @@ public class Markdown {
             float labelX = list.ordered ? x + indent - size() * 0.4f - text.getWidth() : x + size() * 0.3f;
             text.setLocation(labelX, y + regular.getAscent(size())).drawOn(page);
             openContainer(StructElem.LBODY);
-            boolean top = atTop;
             atTop = true;   // The first block of the item is on the line of its label.
             drawBlocks(item.children, x + indent, width - indent, !list.loose);
             if (atTop) {

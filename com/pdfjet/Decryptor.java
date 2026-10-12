@@ -236,7 +236,7 @@ final class Decryptor {
             boolean encryptMetadata) throws Exception {
         byte[] padded = pad(password);
         byte[] key = computeKey(r, length, padded, o, p, id, encryptMetadata);
-        if (isUserKey(r, length, key, u, id)) {
+        if (isUserKey(r, key, u, id)) {
             return key;
         }
         MessageDigest md5 = MessageDigest.getInstance("MD5");
@@ -256,7 +256,7 @@ final class Decryptor {
             }
         }
         key = computeKey(r, length, userPassword, o, p, id, encryptMetadata);
-        if (isUserKey(r, length, key, u, id)) {
+        if (isUserKey(r, key, u, id)) {
             return key;
         }
         throw passwordException(password);
@@ -295,7 +295,7 @@ final class Decryptor {
 
     // Algorithms 4 and 5: whether the key computed from a password is the
     // user key, which /U holds encrypted.
-    private static boolean isUserKey(int r, int length, byte[] key, byte[] u, byte[] id)
+    private static boolean isUserKey(int r, byte[] key, byte[] u, byte[] id)
             throws Exception {
         byte[] check;
         int n;

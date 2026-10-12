@@ -16,8 +16,6 @@
  */
 package com.pdfjet.qrcode;
 
-import com.pdfjet.*;
-
 class Polynomial {
     private final int[] num;
 

@@ -6,7 +6,6 @@
  */
 package com.pdfjet;
 
-import com.pdfjet.encryption.*;
 import java.io.*;
 import java.util.*;
 
@@ -107,27 +106,5 @@ class OpenTypeFont {
             text += "." + String.valueOf(100 + rounded % 100).substring(1).replaceAll("0$", "");
         }
         return (angle < 0 && rounded != 0) ? "-" + text : text;
-    }
-
-    private static String toHexString(int code) {
-        String str = Integer.toHexString(code);
-        if (str.length() == 1) {
-            return "000" + str;
-        } else if (str.length() == 2) {
-            return "00" + str;
-        } else if (str.length() == 3) {
-            return "0" + str;
-        }
-        return str;
-    }
-
-    private static void writeListToBuffer(List<String> list, StringBuilder sb) {
-        sb.append(list.size());
-        sb.append(" beginbfchar\n");
-        for (String str : list) {
-            sb.append(str);
-        }
-        sb.append("endbfchar\n");
-        list.clear();
     }
 }   // End of OpenTypeFont.java

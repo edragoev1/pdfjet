@@ -6,8 +6,6 @@
  */
 package com.pdfjet;
 
-import java.util.*;
-
 /**
  * The font, font size, location and text for Stamp.drawText.
  */

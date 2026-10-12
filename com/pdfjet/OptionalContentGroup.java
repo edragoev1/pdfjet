@@ -9,7 +9,6 @@
  */
 package com.pdfjet;
 
-import com.pdfjet.encryption.*;
 import java.util.ArrayList;
 import java.util.List;
 

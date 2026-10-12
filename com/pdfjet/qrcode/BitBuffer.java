@@ -16,8 +16,6 @@
  */
 package com.pdfjet.qrcode;
 
-import com.pdfjet.*;
-
 class BitBuffer {
     private byte[] buffer;
     private int length;

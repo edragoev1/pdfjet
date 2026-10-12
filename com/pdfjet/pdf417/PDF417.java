@@ -165,7 +165,7 @@ public class PDF417 implements Drawable {
         List<Integer> list = new ArrayList<Integer>();
 
         int currentMode = ALPHA;
-        int ch = 0;
+        int ch;
         for (int i = 0; i < str.length(); i++) {
             ch = str.charAt(i);
             if (ch == 0x20) {

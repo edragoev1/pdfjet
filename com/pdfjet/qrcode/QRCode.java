@@ -20,7 +20,6 @@ import com.pdfjet.*;
 
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
-import com.pdfjet.*;
 
 /**
  * Used to create 2D QR Code barcodes. Please see Example_20.

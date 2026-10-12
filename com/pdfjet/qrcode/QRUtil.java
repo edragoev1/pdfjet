@@ -16,8 +16,6 @@
  */
 package com.pdfjet.qrcode;
 
-import com.pdfjet.*;
-
 class QRUtil {
     /** The centers of the alignment patterns of each version, in rows and columns. */
     private static final int[][] PATTERN_POSITION_TABLE = {

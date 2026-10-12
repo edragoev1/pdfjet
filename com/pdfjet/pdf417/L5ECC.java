@@ -6,8 +6,6 @@
  */
 package com.pdfjet.pdf417;
 
-import com.pdfjet.*;
-
 class L5ECC {
 public static final int[] table = {
 539,422,  6, 93,862,771,453,106,610,287,107,505,733,877,381,612,

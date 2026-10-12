@@ -571,35 +571,6 @@ final public class Page {
     }
 
     /**
-     * Draws the string using the specified fonts and text color.
-     * If the main font is missing some glyphs, the fallback font is used.
-     * The baseline of the leftmost character is at position (x, y) on the page.
-     *
-     * @param font the main font.
-     * @param fallbackFont the fallback font.
-     * @param fontSize the font size.
-     * @param str the string to be drawn.
-     * @param x the x coordinate.
-     * @param y the y coordinate.
-     * @param color the text color as a 0xRRGGBB value.
-     * @param colors map used to highlight specific words.
-     */
-    void drawString(
-            Font font,
-            Font fallbackFont,
-            float fontSize,
-            String str,
-            float x,
-            float y,
-            int color,
-            Map<String, Integer> colors) {
-        float r = ((color >> 16) & 0xff)/255f;
-        float g = ((color >>  8) & 0xff)/255f;
-        float b = ((color)       & 0xff)/255f;
-        drawString(font, fallbackFont, fontSize, str, x, y, new float[] {r, g, b}, colors);
-    }
-
-    /**
      *  Draws the text given by the specified string,
      *  using the specified main font and the current brush color.
      *  If the main font is missing some glyphs - the fallback font is used.

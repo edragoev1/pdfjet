@@ -16,8 +16,6 @@
  */
 package com.pdfjet.qrcode;
 
-import com.pdfjet.*;
-
 class QRMath {
     private static final int[] EXP_TABLE = new int[256];
     private static final int[] LOG_TABLE = new int[256];

@@ -29,7 +29,7 @@ public class Content {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream(4096);
         try (InputStream stream = new BufferedInputStream(new FileInputStream(fileName))) {
             byte[] buffer = new byte[4096];
-            int read = 0;
+            int read;
             while ((read = stream.read(buffer, 0, buffer.length)) > 0) {
                 bytes.write(buffer, 0, read);
             }
@@ -60,7 +60,7 @@ public class Content {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try (InputStream stream = new BufferedInputStream(new FileInputStream(fileName))) {
             byte[] buffer = new byte[4096];
-            int read = 0;
+            int read;
             while ((read = stream.read(buffer, 0, buffer.length)) > 0) {
                 baos.write(buffer, 0, read);
             }

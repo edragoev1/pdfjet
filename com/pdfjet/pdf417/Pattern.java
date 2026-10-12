@@ -6,8 +6,6 @@
  */
 package com.pdfjet.pdf417;
 
-import com.pdfjet.*;
-
 class Pattern {
 public static final int[][] TABLE = {
 {0,31111136,51111125,21111155,},

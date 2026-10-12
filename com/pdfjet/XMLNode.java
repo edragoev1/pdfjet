@@ -33,10 +33,6 @@ public final class XMLNode {
     private List<XMLNode> children;
     private StringBuilder text;
 
-    XMLNode(String name, String namespace) {
-        this(name, localNameOf(name), namespace);
-    }
-
     // The element of the name and of its name without its prefix, which the
     // parser keeps once for every element of that name.
     XMLNode(String name, String localName, String namespace) {

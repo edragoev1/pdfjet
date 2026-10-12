@@ -16,8 +16,6 @@
  */
 package com.pdfjet.qrcode;
 
-import com.pdfjet.*;
-
 /**
  * Used to specify the error correction level for QR Codes.
  */

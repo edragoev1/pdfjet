@@ -16,8 +16,6 @@
  */
 package com.pdfjet.qrcode;
 
-import com.pdfjet.*;
-
 interface MaskPattern {
     public static final int PATTERN000 = 0;
     public static final int PATTERN001 = 1;
