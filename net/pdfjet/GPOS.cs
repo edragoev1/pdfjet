@@ -95,9 +95,17 @@ internal class GPOS {
                 gposWork--;
                 int subTable = lookup + GetUInt16(lookup + 6 + 2*j);
                 int type = lookupType;
-                if (type == 9) {    // An extension lookup holds the subtable
+                if (type == 9) {
+                    // An extension lookup holds the subtable, at an offset of 32 bits
+                    // that is read unsigned: one of 0x80000000 or more wrapped round
+                    // into the table; past the table, there is no subtable, as in Go
+                    // (review of 12 October 2026, R27)
                     type = GetUInt16(subTable + 2);
-                    subTable += GetUInt32(subTable + 4);
+                    long extension = GetUInt32(subTable + 4);
+                    if (extension >= end - subTable) {
+                        continue;
+                    }
+                    subTable += (int) extension;
                 }
                 if (type == 4 && GetUInt16(subTable) == 1) {
                     MarkToBase(subTable, false);
@@ -261,8 +269,8 @@ internal class GPOS {
         return (short) GetUInt16(offset);
     }
 
-    private int GetUInt32(int offset) {
-        return (GetUInt16(offset) << 16) | GetUInt16(offset + 2);
+    private long GetUInt32(int offset) {
+        return ((long) GetUInt16(offset) << 16) | (long) GetUInt16(offset + 2);
     }
 }
 }

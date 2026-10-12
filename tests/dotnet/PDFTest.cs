@@ -1263,9 +1263,9 @@ public class DecodeBudgetTest {
     [Fact]
     public void TheStreamsOfAPDFDecodeToNoMoreThanTheBudgetTogether() {
         int was = PDFobj.MAX_DECODED_TOTAL;
-        // 5000 for the streams, and what the one object of the object
-        // stream takes of the budget besides
-        PDFobj.MAX_DECODED_TOTAL = 5000 + PDF.OBJECT_COST;
+        // 5000 for the streams: the one object of the object stream takes
+        // nothing of it, as the PDF is long enough to hold it (R32)
+        PDFobj.MAX_DECODED_TOTAL = 5000;
         try {
             // The object stream, read with the PDF, is within the budget, and
             // the content stream is decoded up to what is left of it: 4000
@@ -1279,7 +1279,7 @@ public class DecodeBudgetTest {
             // be read without its objects.
             var e = Assert.ThrowsAny<System.Exception>(() =>
                     TestSupport.NewPDF().Read(new System.IO.MemoryStream(PDFTest.PdfOfStreams(6000, 0))));
-            Assert.Equal("the streams of the PDF decode to more than " + (5000 + PDF.OBJECT_COST) + " bytes together", e.Message);
+            Assert.Equal("the streams of the PDF decode to more than 5000 bytes together", e.Message);
         } finally {
             PDFobj.MAX_DECODED_TOTAL = was;
         }
@@ -1366,6 +1366,42 @@ public class DecodeBudgetTest {
             string header = new StringBuilder().Insert(0, "1 0 ", 1000).ToString();
             Assert.ThrowsAny<Exception>(() =>
                     TestSupport.NewPDF().Read(new MemoryStream(ObjectStream(1000, header))));
+        } finally {
+            PDFobj.MAX_DECODED_TOTAL = was;
+        }
+    }
+
+    // The objects of the object streams of a PDF long enough to hold them take
+    // nothing of its budget: each took the cost of an object, and a real PDF of
+    // 5 MB of 1.1 million objects was refused; a short one that makes as many
+    // is still refused (review of 12 October 2026, R32).
+    [Fact]
+    public void APDFLongEnoughForTheObjectsOfItsObjectStreamsIsRead() {
+        byte[] Objects(int n, int padding) {
+            var header = new StringBuilder();
+            var body = new StringBuilder();
+            for (int i = 0; i < n; i++) {
+                header.Append(10 + i).Append(' ').Append(5 * i).Append(' ');
+                body.Append("null ");
+            }
+            var pdf = new MemoryStream();
+            var latin1 = Encoding.Latin1;
+            void Write(string text) { byte[] b = latin1.GetBytes(text); pdf.Write(b, 0, b.Length); }
+            Write("%PDF-1.5\n%" + new string('x', padding) + "\n");
+            Write("1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n");
+            Write("2 0 obj\n<< /Type /Pages /Kids [] /Count 0 >>\nendobj\n");
+            byte[] stream = PDFTest.Deflate(latin1.GetBytes(header.ToString() + body));
+            Write("3 0 obj\n<< /Type /ObjStm /N " + n + " /First " + header.Length + " /Length " + stream.Length + " /Filter /FlateDecode >>\nstream\n");
+            pdf.Write(stream, 0, stream.Length);
+            Write("\nendstream\nendobj\ntrailer\n<< /Root 1 0 R /Size 3 >>\n%%EOF\n");
+            return pdf.ToArray();
+        }
+        int was = PDFobj.MAX_DECODED_TOTAL;
+        PDFobj.MAX_DECODED_TOTAL = 1000 * PDF.OBJECT_COST;
+        try {
+            var objects = TestSupport.NewPDF().Read(new MemoryStream(Objects(3000, 40000)));
+            Assert.NotNull(PDFTest.ObjectOfNumber(objects, 3009));
+            Assert.ThrowsAny<Exception>(() => TestSupport.NewPDF().Read(new MemoryStream(Objects(3000, 0))));
         } finally {
             PDFobj.MAX_DECODED_TOTAL = was;
         }

@@ -81,6 +81,7 @@ class PNGImage {
         PNGImage image = new PNGImage();
         image.validatePNG(inputStream);
         boolean hasIDAT = false;
+        int chunks = 0;
         byte[] buf = new byte[65536];
         while (true) {
             long length = image.getLong(inputStream);
@@ -89,6 +90,14 @@ class PNGImage {
             }
             byte[] type = image.getNBytes(inputStream, 4);
             String chunkType = new String(type, StandardCharsets.ISO_8859_1);
+            // IHDR first, and once, as reading the image asks: the size of a PNG
+            // that NewImage refused was given (review of 12 October 2026, R28)
+            if (!chunkType.equals("IEND")) {
+                if ((chunks == 0) != chunkType.equals("IHDR")) {
+                    throw new Exception("Invalid PNG: the IHDR chunk must be the first chunk, and only the first.");
+                }
+                chunks++;
+            }
             CRC32 crc = new CRC32();
             crc.update(type, 0, 4);
             if (chunkType.equals("IHDR") && length != 13) {

@@ -2698,14 +2698,15 @@ func (pdf *PDF) ReadWithPassword(buf []byte, password string) (objects []*PDFobj
 			// (review of 11 October 2026, #30). The header is read no further
 			// than those numbers: one of 200 MB was split into its tokens
 			// first, 10.8 GB (review of 12 October 2026, R6).
-			pairs := budget.left/objectCost + 1 // One more fails.
+			pairs := budget.freeObjects + budget.left/objectCost + 1 // One more fails.
 			if count, err := objectStreamNumber(obj.GetValue("/N")); err == nil {
 				pairs = min(pairs, count)
 			}
 			header := objectStreamHeader(data[:min(first, len(data))], 2*pairs)
 			for i := 0; i+1 < len(header); i += 2 {
-				budget.left -= objectCost
-				if budget.left < 0 {
+				if budget.freeObjects > 0 {
+					budget.freeObjects--
+				} else if budget.left -= objectCost; budget.left < 0 {
 					return nil, errDecodedTotal{maxDecodedTotal}
 				}
 				num := header[i]

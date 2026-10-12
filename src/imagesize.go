@@ -115,6 +115,7 @@ func readPNGSize(r *bufio.Reader) (*ImageSize, error) {
 	}
 	image := &pngImage{bitDepth: 8}
 	hasIDAT, hasPLTE := false, false
+	chunks := 0
 	for {
 		var head [8]byte
 		if _, err := io.ReadFull(r, head[:]); err != nil {
@@ -125,6 +126,14 @@ func readPNGSize(r *bufio.Reader) (*ImageSize, error) {
 			return nil, fmt.Errorf("Invalid PNG chunk length %d.", length)
 		}
 		chunkType := string(head[4:])
+		// IHDR first, and once, as reading the image asks: the size of a PNG
+		// that NewImage refused was given (review of 12 October 2026, R28)
+		if chunkType != "IEND" {
+			if (chunks == 0) != (chunkType == "IHDR") {
+				return nil, errors.New("Invalid PNG: the IHDR chunk must be the first chunk, and only the first.")
+			}
+			chunks++
+		}
 		crc := crc32.NewIEEE()
 		crc.Write(head[4:])
 		// The IHDR chunk and a pHYs chunk of their length are read; the

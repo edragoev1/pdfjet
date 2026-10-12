@@ -697,9 +697,15 @@ public class Cell {
             // A line of text is drawn instead of the cell text, on its baseline.
             DrawText(page, x, y, w, h);
         } else if (drawable is TextBlock textBlock) {
+            // The caller's text block and point keep their locations: drawing
+            // the table moved them (review of 12 October 2026, R22)
+            float textX = textBlock.x;
+            float textY = textBlock.y;
             textBlock.SetLocation(x + PaddingAt(LEFT_PADDING), y + PaddingAt(TOP_PADDING));
             textBlock.SetWidth(w - (PaddingAt(LEFT_PADDING) + PaddingAt(RIGHT_PADDING)));
             textBlock.DrawOn(page);
+            textBlock.x = textX;
+            textBlock.y = textY;
         } else if (drawable != null) {
             if (GetTextAlignment() == Alignment.RIGHT) {
                 float drawableWidth = Measure(drawable)[0];
@@ -715,6 +721,8 @@ public class Cell {
 
         DrawBorders(page, x, y, w, h);
         if (point != null) {
+            float pointX = point.x;
+            float pointY = point.y;
             if (AlignmentAt(MARKER_ALIGNMENT) == Alignment.LEFT) {
                 point.x = x + 2*point.r;
             } else if (AlignmentAt(MARKER_ALIGNMENT) == Alignment.RIGHT) {
@@ -727,6 +735,8 @@ public class Cell {
                 // what it stands for, or by its URI, in the Link that holds its
                 // annotation, as PDF/UA asks
                 DrawLinkedPoint(page);
+                point.x = pointX;
+                point.y = pointY;
                 return;
             }
             if (!String.IsNullOrEmpty(point.GetURIAction())) {
@@ -750,6 +760,8 @@ public class Cell {
             page.AddArtifactBMC();
             page.DrawPoint(point);
             page.AddEMC();
+            point.x = pointX;
+            point.y = pointY;
         }
     }
 
@@ -789,6 +801,17 @@ public class Cell {
     // Returns the width and the height of the drawable: its corner when it is
     // placed at 0, 0 and measured without a page.
     internal static float[] Measure(IDrawable drawable) {
+        // A text block is put back where the caller had it (review of
+        // 12 October 2026, R22)
+        if (drawable is TextBlock textBlock) {
+            float textX = textBlock.x;
+            float textY = textBlock.y;
+            textBlock.SetLocation(0f, 0f);
+            float[] size = textBlock.DrawOn(null);
+            textBlock.x = textX;
+            textBlock.y = textY;
+            return size;
+        }
         drawable.SetLocation(0f, 0f);
         return drawable.DrawOn(null);
     }

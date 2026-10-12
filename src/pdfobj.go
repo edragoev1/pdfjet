@@ -66,10 +66,21 @@ const readPerByte = 8
 type decodeBudget struct {
 	left     int
 	readLeft int
+	// The objects of the object streams that take nothing of the budget,
+	// one for each bytesPerFreeObject of the PDF, as many as a PDF of its
+	// length can hold of its own; those past them take objectCost of it
+	freeObjects int
 }
 
+// bytesPerFreeObject is the bytes of a PDF for each object of its object
+// streams that takes nothing of the budget: each one took objectCost, and a
+// real PDF of 5 MB of 1.1 million objects was refused (review of 12 October
+// 2026, R32). A PDF of a few KB still makes no more than the budget's worth.
+const bytesPerFreeObject = 8
+
 func newDecodeBudget(size int) *decodeBudget {
-	return &decodeBudget{left: maxDecodedTotal, readLeft: readPerByte * size}
+	return &decodeBudget{left: maxDecodedTotal, readLeft: readPerByte * size,
+		freeObjects: size / bytesPerFreeObject}
 }
 
 // errDecodedTotal is the error of a PDF whose streams decode to more than

@@ -97,6 +97,33 @@ This is the first entry in this file; earlier releases were not tracked here.
   before they change it, as before.
 - Java: Permissions.toString writes its raw value in ASCII digits whatever
   the locale; in an Arabic one it wrote them in Arabic-Indic digits.
+- An Arc, and so an Ellipse, of no colors is drawn with its dash pattern,
+  in the four ports; the dash was written only with a stroke color, and a
+  dashed arc of no colors was drawn solid.
+- Drawing a Table leaves the TextBlock and the marker Point of a cell where
+  the caller put them, in the four ports: measuring the cell moved the text
+  block to 0, 0, and drawing it moved both to where the cell drew them.
+- Java and C# read the offset of a GPOS extension lookup as the unsigned
+  number it is: an offset of 0x80000000 or more in a malformed font wrapped
+  round to a subtable earlier in the table, which was read; past the table
+  there is no subtable, as in Go and Swift.
+- ImageSize refuses a PNG whose first chunk is not IHDR, or that has two, as
+  NewImage does, in the four ports: it gave the size of such a PNG, which
+  NewImage then refused.
+- Go: a JPEG of an EXIF offset of 0x7FFFFFFE no longer panics on 32-bit
+  platforms, where the offset plus 2 overflowed and passed the bounds check.
+  CI runs the image tests on 32 bits too.
+- The objects of the object streams of a PDF take nothing of the reader's
+  budget up to one for each 8 bytes of the PDF, in the four ports, as many as
+  a PDF of its length can hold of its own; past them each takes 256 bytes, as
+  before. Every one took it, and a real PDF of 5 MB of 1.1 million objects
+  was refused; a short PDF that makes millions of objects still is.
+- A word far wider than a TextFrame, or a TextBlock or a table cell, broken
+  into rows is broken in about linear time, in the four ports: the search
+  for a soft hyphen to break at looked at the whole rest of the word for
+  each row, and TextFrame copied it, so 4 times the word took 16 times the
+  time. A word of 400,000 characters takes 86 ms in Go, where it took 1.8 s,
+  and 238 ms in Java, where it took 1.45 s.
 
 ## v9.0.5 — 2026-10-12, internal
 

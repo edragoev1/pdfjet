@@ -142,7 +142,19 @@ func TestShapesAnArcOfAWidthAndNoColorIsDrawnThatWide(t *testing.T) {
 	arc.SetRadius(40)
 	arc.SetSweep(90)
 	arc.DrawOn(page)
-	if content := testContent(page); !strings.Contains(content, "\n0 w\n") {
-		t.Errorf("an arc of no width is not 0 wide: %s", content)
+	if content := testContent(page); !strings.Contains(content, "\n0 w\n") || strings.Contains(content, " d\n") {
+		t.Errorf("an arc of no width is not 0 wide and solid: %s", content)
+	}
+	// And dashed when it has a dash (review of 12 October 2026, R21)
+	page = NewPage(pdf, testLetterPortrait())
+	arc = NewArc()
+	arc.SetLocation(100, 100)
+	arc.SetRadius(40)
+	arc.SetSweep(120)
+	arc.SetStrokeWidth(3)
+	arc.SetStrokeDashPattern("[6 3] 0")
+	arc.DrawOn(page)
+	if content := testContent(page); !strings.Contains(content, "[6 3] 0 d\n") {
+		t.Errorf("an arc of no color has no dash: %s", content)
 	}
 }

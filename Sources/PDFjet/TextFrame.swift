@@ -381,7 +381,10 @@ public class TextFrame : Drawable {
             // The space after the last word goes at the start of the next text
             // line when that one's space is narrower.
             let spaceToNext = last && !joinsNext && paragraph.spaceMovesToNext(lineIndex)
-            var text = (joinsNext || spaceToNext) ? token : token + Single.space
+            // Whether the token is drawn with the space after it; the text is made
+            // only when the token is drawn whole: made for each row of a word
+            // broken into thousands of rows, it copied the rest of the word each time
+            let withSpace = !(joinsNext || spaceToNext)
             // The first word of a text line starts with the space the text line
             // before left to it, unless the word starts a row: when it does not
             // fit, the row is drawn and the word starts the next one, without it.
@@ -389,7 +392,6 @@ public class TextFrame : Drawable {
             leadingSpace = false
             if leading {
                 token = Single.space + token
-                text = Single.space + text
             }
             let available = (x + w) - xText
             // The first word of a text line joined to the word before it is
@@ -402,6 +404,7 @@ public class TextFrame : Drawable {
             let joined = joinsNext
                     ? joinedWidth(paragraph, lineIndex, runLength + tokenWidth, available) : 0.0
             if reserved || (runLength + tokenWidth + joined) <= available {
+                let text = withSpace ? token + Single.space : token
                 buf.append(text)
                 runLength += TextFrame.width(textLine, text)
                 tokenIndex += 1
@@ -413,6 +416,7 @@ public class TextFrame : Drawable {
                     && (runLength + tokenWidth) <= available {
                 // With the words joined to it the word is wider than the frame,
                 // so they go on the next row.
+                let text = withSpace ? token + Single.space : token
                 buf.append(text)
                 runLength += TextFrame.width(textLine, text)
                 tokenIndex += 1

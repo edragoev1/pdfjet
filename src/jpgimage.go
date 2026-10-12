@@ -472,8 +472,11 @@ func exifOrientation(segment []byte) uint8 {
 	if u16(tiff[2:]) != 42 {
 		return 0
 	}
+	// Checked as ifd > len - 2: on 32 bits, an offset of 0x7FFFFFFE made
+	// ifd + 2 negative, which passed, and the slice panicked (review of
+	// 12 October 2026, R29)
 	ifd := u32(tiff[4:])
-	if ifd < 8 || ifd+2 > len(tiff) {
+	if ifd < 8 || ifd > len(tiff)-2 {
 		return 0
 	}
 	count := u16(tiff[ifd:])

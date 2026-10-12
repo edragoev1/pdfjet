@@ -816,6 +816,13 @@ import Testing
                 "tRNS first")
         #expect(decodeError(file([("IHDR", ihdr), ("IHDR", ihdr), ("IDAT", idat), ("IEND", [])])) == want,
                 "two IHDR")
+        // And ImageSize refuses what reading the image refuses (review of
+        // 12 October 2026, R28)
+        for bad in [file([("tRNS", [0, 7]), ("IHDR", ihdr), ("IDAT", idat), ("IEND", [])]),
+                    file([("IHDR", ihdr), ("IHDR", ihdr), ("IDAT", idat), ("IEND", [])])] {
+            let error = #expect(throws: PDFjetError.self) { _ = try ImageSize.read(InputStream(data: Data(bad))) }
+            #expect(error?.message == want)
+        }
         // In its place, the tRNS of an RGB image is its three samples.
         let png = file([("IHDR", ihdr), ("tRNS", [0, 7, 0, 7, 0, 7]), ("IDAT", idat), ("IEND", [])])
         _ = try PNGImage(InputStream(data: Data(png)))

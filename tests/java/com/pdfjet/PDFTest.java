@@ -1096,9 +1096,9 @@ class PDFTest {
     @Test
     void theStreamsOfAPDFDecodeToNoMoreThanTheBudgetTogether() throws Exception {
         int was = PDFobj.MAX_DECODED_TOTAL;
-        // 5000 for the streams, and what the one object of the object stream
-        // takes of the budget besides
-        PDFobj.MAX_DECODED_TOTAL = 5000 + PDF.OBJECT_COST;
+        // 5000 for the streams: the one object of the object stream takes
+        // nothing of it, as the PDF is long enough to hold it (R32)
+        PDFobj.MAX_DECODED_TOTAL = 5000;
         try {
             // The object stream, read with the PDF, is within the budget, and
             // the content stream is decoded up to what is left of it: 4000
@@ -1112,8 +1112,7 @@ class PDFTest {
             // be read without its objects.
             Exception e = assertThrows(Exception.class, () ->
                     TestSupport.newPDF().read(new java.io.ByteArrayInputStream(pdfOfStreams(6000, 0))));
-            assertEquals("the streams of the PDF decode to more than " + (5000 + PDF.OBJECT_COST) +
-                    " bytes together", e.getMessage());
+            assertEquals("the streams of the PDF decode to more than 5000 bytes together", e.getMessage());
         } finally {
             PDFobj.MAX_DECODED_TOTAL = was;
         }
@@ -1235,6 +1234,52 @@ class PDFTest {
         } finally {
             PDFobj.MAX_DECODED_TOTAL = was;
         }
+    }
+
+    // The objects of the object streams of a PDF long enough to hold them take
+    // nothing of its budget: each took the cost of an object, and a real PDF of
+    // 5 MB of 1.1 million objects was refused; a short one that makes as many
+    // is still refused (review of 12 October 2026, R32).
+    @Test
+    void aPDFLongEnoughForTheObjectsOfItsObjectStreamsIsRead() throws Exception {
+        int was = PDFobj.MAX_DECODED_TOTAL;
+        PDFobj.MAX_DECODED_TOTAL = 1000 * PDF.OBJECT_COST;
+        try {
+            List<PDFobj> objects = TestSupport.newPDF().read(
+                    new java.io.ByteArrayInputStream(pdfOfObjects(3000, 40000)));
+            assertNotNull(objectOfNumber(objects, 3009), "the last object of the object stream");
+            final byte[] shortPDF = pdfOfObjects(3000, 0);
+            assertThrows(Exception.class, () -> TestSupport.newPDF().read(new java.io.ByteArrayInputStream(shortPDF)),
+                    "a short PDF of 3,000 objects past the budget is read");
+        } finally {
+            PDFobj.MAX_DECODED_TOTAL = was;
+        }
+    }
+
+    // A PDF of an object stream of n objects, null each, after a comment of so
+    // many bytes.
+    private static byte[] pdfOfObjects(int n, int padding) throws Exception {
+        StringBuilder header = new StringBuilder();
+        StringBuilder body = new StringBuilder();
+        for (int i = 0; i < n; i++) {
+            header.append(10 + i).append(' ').append(5 * i).append(' ');
+            body.append("null ");
+        }
+        StringBuilder comment = new StringBuilder();
+        for (int i = 0; i < padding; i++) {
+            comment.append('x');
+        }
+        java.nio.charset.Charset latin1 = java.nio.charset.StandardCharsets.ISO_8859_1;
+        java.io.ByteArrayOutputStream pdf = new java.io.ByteArrayOutputStream();
+        pdf.write(("%PDF-1.5\n%" + comment + "\n").getBytes(latin1));
+        pdf.write("1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n".getBytes(latin1));
+        pdf.write("2 0 obj\n<< /Type /Pages /Kids [] /Count 0 >>\nendobj\n".getBytes(latin1));
+        byte[] stream = deflate((header.toString() + body).getBytes(latin1));
+        pdf.write(("3 0 obj\n<< /Type /ObjStm /N " + n + " /First " + header.length() + " /Length " +
+                stream.length + " /Filter /FlateDecode >>\nstream\n").getBytes(latin1));
+        pdf.write(stream);
+        pdf.write("\nendstream\nendobj\ntrailer\n<< /Root 1 0 R /Size 3 >>\n%%EOF\n".getBytes(latin1));
+        return pdf.toByteArray();
     }
 
     // A cross-reference stream of more objects than the PDF has room for, or

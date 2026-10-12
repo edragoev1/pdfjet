@@ -125,6 +125,12 @@ public class PDFobj {
      */
     static final int READ_PER_BYTE = 8;
 
+    // The bytes of a PDF for each object of its object streams that takes
+    // nothing of the budget, as many as a PDF of its length can hold of its own;
+    // those past them take PDF.OBJECT_COST of it. Each one took it, and a real PDF of 5 MB
+    // of 1.1 million objects was refused (review of 12 October 2026, R32).
+    static final int BYTES_PER_FREE_OBJECT = 8;
+
     /**
      * What the streams of one PDF may still decode to, shared by its objects.
      * It also holds what the reader may still read of the PDF, READ_PER_BYTE
@@ -135,9 +141,11 @@ public class PDFobj {
     static final class DecodeBudget {
         int left = MAX_DECODED_TOTAL;
         int readLeft;
+        int freeObjects;
 
         DecodeBudget(int size) {
             this.readLeft = (int) Math.min((long) READ_PER_BYTE * size, Integer.MAX_VALUE);
+            this.freeObjects = size / BYTES_PER_FREE_OBJECT;
         }
     }
 

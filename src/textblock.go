@@ -15,6 +15,7 @@ import (
 	"sort"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
 	"github.com/edragoev1/pdfjet/v9/src/color"
@@ -654,7 +655,23 @@ func (textBlock *TextBlock) newTextLine(text string, from int) *TextLine {
 // hyphen at the start or the end of the word is no place to break.
 func softHyphenBreak(word string, width float32, measure func(string) float32) (head, rest string, ok bool) {
 	const softHyphen = "\u00AD"
-	for i := strings.LastIndex(word, softHyphen); i != -1; i = strings.LastIndex(word[:i], softHyphen) {
+	// A soft hyphen past the start of the word that is wider than the width
+	// has a start wider too: the word is looked at no further than that
+	// start, found by doubling, so that a word broken into thousands of rows
+	// is not searched, and measured, whole for each (16 times the time for
+	// 4 times the word, in each port, review of 12 October 2026)
+	end := len(word)
+	for n := 64; n < len(word); n *= 2 {
+		cut := n
+		for cut < len(word) && !utf8.RuneStart(word[cut]) {
+			cut++
+		}
+		if measure(word[:cut]) > width {
+			end = cut
+			break
+		}
+	}
+	for i := strings.LastIndex(word[:end], softHyphen); i != -1; i = strings.LastIndex(word[:i], softHyphen) {
 		if trimSpace(strings.ReplaceAll(word[:i], softHyphen, "")) == "" || i+len(softHyphen) == len(word) {
 			continue
 		}

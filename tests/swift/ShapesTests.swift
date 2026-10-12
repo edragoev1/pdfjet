@@ -146,6 +146,15 @@ import Testing
         _ = arc.setRadius(40).setSweep(90)
         arc.drawOn(page)
         let content = TestSupport.content(page)
-        #expect(content.contains("\n0 w\n"), "an arc of no width is not 0 wide: \(content)")
+        #expect(content.contains("\n0 w\n") && !content.contains(" d\n"),
+                "an arc of no width is not 0 wide and solid: \(content)")
+        // And dashed when it has a dash (review of 12 October 2026, R21)
+        let dashedPage = self.page()
+        let dashed = Arc()
+        dashed.setLocation(100, 100)
+        _ = dashed.setRadius(40).setSweep(120).setStrokeWidth(3).setStrokeDashPattern("[6 3] 0")
+        dashed.drawOn(dashedPage)
+        let dashedContent = TestSupport.content(dashedPage)
+        #expect(dashedContent.contains("[6 3] 0 d\n"), "an arc of no color has no dash: \(dashedContent)")
     }
 }

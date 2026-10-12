@@ -942,6 +942,12 @@ class PNGImageTest {
         assertEquals(want, decodeError(tRNSFirst), "tRNS first");
         byte[] twoIHDR = chunks("IHDR", ihdr, "IHDR", ihdr, "IDAT", idat, "IEND", new byte[0]);
         assertEquals(want, decodeError(twoIHDR), "two IHDR");
+        // And ImageSize refuses what the constructor refuses (review of
+        // 12 October 2026, R28)
+        for (byte[] file : new byte[][] {tRNSFirst, twoIHDR}) {
+            Exception e = assertThrows(Exception.class, () -> ImageSize.read(new ByteArrayInputStream(file)));
+            assertEquals(want, e.getMessage());
+        }
         // In its place, the tRNS of an RGB image is its three samples.
         byte[] file = chunks("IHDR", ihdr, "tRNS", new byte[] {0, 7, 0, 7, 0, 7}, "IDAT", idat, "IEND", new byte[0]);
         new PNGImage(new ByteArrayInputStream(file));

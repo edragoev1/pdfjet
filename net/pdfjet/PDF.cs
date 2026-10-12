@@ -2736,15 +2736,16 @@ public sealed class PDF {
                 // no further than those numbers: one of 200 MB was split into
                 // its tokens first, 10.8 GB in Go (review of 12 October 2026,
                 // R6).
-                int pairs = budget.left / OBJECT_COST + 1;  // One more fails.
+                int pairs = budget.freeObjects + budget.left / OBJECT_COST + 1;  // One more fails.
                 int count = ToInteger(obj.GetValue("/N"));
                 if (count >= 0) {
                     pairs = Math.Min(pairs, count);
                 }
                 List<String> header = ObjectStreamHeader(data, Math.Min(first, data.Length), 2 * pairs);
                 for (int i = 0; i + 1 < header.Count; i += 2) {
-                    budget.left -= OBJECT_COST;
-                    if (budget.left < 0) {
+                    if (budget.freeObjects > 0) {
+                        budget.freeObjects--;
+                    } else if ((budget.left -= OBJECT_COST) < 0) {
                         throw new PDFobj.DecodedTotalException();
                     }
                     String num = header[i];

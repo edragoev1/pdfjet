@@ -915,6 +915,14 @@ public class PNGImageTest {
         (string, byte[]) trns = ("tRNS", new byte[] {0, 7});
         Assert.Equal(want, DecodeError(png(new[] {trns, ("IHDR", ihdr), ("IDAT", idat), ("IEND", new byte[0])})));
         Assert.Equal(want, DecodeError(png(new[] {("IHDR", ihdr), ("IHDR", ihdr), ("IDAT", idat), ("IEND", new byte[0])})));
+        // And ImageSize refuses what the constructor refuses (review of
+        // 12 October 2026, R28)
+        foreach (byte[] file in new[] {
+                png(new[] {trns, ("IHDR", ihdr), ("IDAT", idat), ("IEND", new byte[0])}),
+                png(new[] {("IHDR", ihdr), ("IHDR", ihdr), ("IDAT", idat), ("IEND", new byte[0])})}) {
+            Exception e = Assert.ThrowsAny<Exception>(() => ImageSize.Read(new MemoryStream(file)));
+            Assert.Equal(want, e.Message);
+        }
         // In its place, the tRNS of an RGB image is its three samples.
         new PNGImage(new MemoryStream(png(new[] {("IHDR", ihdr), ("tRNS", new byte[] {0, 7, 0, 7, 0, 7}),
                 ("IDAT", idat), ("IEND", new byte[0])})));

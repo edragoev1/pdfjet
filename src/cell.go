@@ -670,8 +670,12 @@ func (cell *Cell) SetURIAction(uri string) *Cell {
 }
 
 // measureDrawable returns the width and the height of the drawable: its corner
-// when it is placed at 0, 0 and measured without a page.
+// when it is placed at 0, 0 and measured without a page. A text block is put
+// back where the caller had it (review of 12 October 2026, R22).
 func measureDrawable(drawable Drawable) [2]float32 {
+	if textBlock, ok := drawable.(*TextBlock); ok {
+		defer func(x, y float32) { textBlock.x, textBlock.y = x, y }(textBlock.x, textBlock.y)
+	}
 	drawable.SetLocation(0, 0)
 	return drawable.DrawOn(nil)
 }
@@ -686,6 +690,9 @@ func (cell *Cell) drawOn(page *Page, x, y, w, h float32) {
 		// A line of text is drawn instead of the cell text, on its baseline.
 		cell.drawText(page, x, y, w, h)
 	} else if textBlock, ok := cell.drawable.(*TextBlock); ok {
+		// The caller's text block and point keep their locations: drawing the
+		// table moved them (review of 12 October 2026, R22)
+		defer func(x, y float32) { textBlock.x, textBlock.y = x, y }(textBlock.x, textBlock.y)
 		textBlock.SetLocation(x+cell.paddingAt(cellLeftPadding), y+cell.paddingAt(cellTopPadding))
 		textBlock.SetWidth(w - (cell.paddingAt(cellLeftPadding) + cell.paddingAt(cellRightPadding)))
 		textBlock.DrawOn(page)
@@ -704,6 +711,7 @@ func (cell *Cell) drawOn(page *Page, x, y, w, h float32) {
 
 	cell.drawBorders(page, x, y, w, h)
 	if cell.point != nil {
+		defer func(x, y float32) { cell.point.x, cell.point.y = x, y }(cell.point.x, cell.point.y)
 		switch cell.alignmentAt(cellMarkerAlignment) {
 		case alignment.Left:
 			cell.point.x = x + float32(2*cell.point.r)

@@ -142,6 +142,13 @@ class ShapesTest {
         Page page = page();
         new Arc().setLocation(100f, 100f).setRadius(40f).setSweep(90f).drawOn(page);
         String content = TestSupport.content(page);
-        assertTrue(content.contains("\n0 w\n"), "an arc of no width is not 0 wide: " + content);
+        assertTrue(content.contains("\n0 w\n") && !content.contains(" d\n"),
+                "an arc of no width is not 0 wide and solid: " + content);
+        // And dashed when it has a dash (review of 12 October 2026, R21)
+        page = page();
+        new Arc().setLocation(100f, 100f).setRadius(40f).setSweep(120f).setStrokeWidth(3f)
+                .setStrokeDashPattern("[6 3] 0").drawOn(page);
+        content = TestSupport.content(page);
+        assertTrue(content.contains("[6 3] 0 d\n"), "an arc of no color has no dash: " + content);
     }
 }

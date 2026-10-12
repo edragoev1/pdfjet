@@ -1510,6 +1510,26 @@ func TestTableDrawingLeavesTheCellsAsTheyWere(t *testing.T) {
 	}
 }
 
+// Drawing a table leaves the text block and the marker of a cell where the
+// caller put them: it moved them to where the cell drew them (review of
+// 12 October 2026, R22).
+func TestTableDrawingLeavesTheTextBlockAndTheMarkerWhereTheyWere(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	textBlock := NewTextBlock(font, "a text block in a cell")
+	textBlock.SetLocation(50, 60)
+	point := NewPoint(5, 5)
+	data := [][]*Cell{{NewCell(font, "Header")}, {NewCell(font, "").SetTextBlock(textBlock)},
+		{NewCell(font, "marked").SetMarker(point, alignment.Left)}}
+	table := NewTable().SetTableData(data, 1)
+	table.SetColumnWidth(0, 120)
+	table.SetLocation(200, 300)
+	table.DrawOn(NewPage(pdf, letter.Portrait()))
+	if textBlock.x != 50 || textBlock.y != 60 || point.x != 5 || point.y != 5 {
+		t.Errorf("the text block is at %v, %v and the point at %v, %v", textBlock.x, textBlock.y, point.x, point.y)
+	}
+}
+
 // AutoAdjustColumnWidths measures the cells of a row longer than the first:
 // it sized the widths from the first row and indexed past them (review of 11
 // October 2026, #17).

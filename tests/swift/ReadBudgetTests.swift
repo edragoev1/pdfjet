@@ -82,11 +82,11 @@ import Testing
     @Test func theStreamsOfAPDFDecodeToNoMoreThanTheBudgetTogether() throws {
         // A budget of 5000 for these PDFs alone: the other tests, which run at
         // the same time, read their PDFs with the budget as it is. 5000 for
-        // the streams, and what the one object of the object stream takes of
-        // the budget besides.
+        // the streams: the one object of the object stream takes nothing of
+        // it, as the PDF is long enough to hold it (R32).
         func read(_ pdf: [UInt8]) throws -> [PDFobj] {
             return try TestSupport.newPDF().read(from: InputStream(data: Data(pdf)), password: "",
-                    decodedTotal: 5000 + PDF.objectCost)
+                    decodedTotal: 5000)
         }
         // The object stream, read with the PDF, is within the budget, and the
         // content stream is decoded up to what is left of it: 4000 of 5000 is
@@ -104,7 +104,7 @@ import Testing
         do {
             _ = try read(Self.pdfOfStreams(6000, 0))
         } catch {
-            #expect(String(describing: error) == "the streams of the PDF decode to more than \(5000 + PDF.objectCost) bytes together")
+            #expect(String(describing: error) == "the streams of the PDF decode to more than 5000 bytes together")
         }
     }
     // A /Contents array that names one stream again and again is charged to
@@ -174,6 +174,40 @@ import Testing
         #expect(throws: (any Error).self, "an object stream of 1000 objects past the budget is read") {
             _ = try TestSupport.newPDF().read(from: InputStream(data: Data(objectStream(1000, header))),
                     password: "", decodedTotal: 100 * PDF.objectCost)
+        }
+    }
+
+    // The objects of the object streams of a PDF long enough to hold them take
+    // nothing of its budget: each took the cost of an object, and a real PDF of
+    // 5 MB of 1.1 million objects was refused; a short one that makes as many
+    // is still refused (review of 12 October 2026, R32).
+    @Test func aPDFLongEnoughForTheObjectsOfItsObjectStreamsIsRead() throws {
+        func objects(_ n: Int, _ padding: Int) -> [UInt8] {
+            var header = ""
+            var body = ""
+            for i in 0..<n {
+                header += "\(10 + i) \(5 * i) "
+                body += "null "
+            }
+            var pdf = [UInt8]()
+            func write(_ text: String) { pdf.append(contentsOf: Array(text.utf8)) }
+            write("%PDF-1.5\n%" + String(repeating: "x", count: padding) + "\n")
+            write("1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n")
+            write("2 0 obj\n<< /Type /Pages /Kids [] /Count 0 >>\nendobj\n")
+            let stream = TestSupport.deflate(Array((header + body).utf8))
+            write("3 0 obj\n<< /Type /ObjStm /N \(n) /First \(header.utf8.count) /Length \(stream.count) /Filter /FlateDecode >>\nstream\n")
+            pdf.append(contentsOf: stream)
+            write("\nendstream\nendobj\ntrailer\n<< /Root 1 0 R /Size 3 >>\n%%EOF\n")
+            return pdf
+        }
+        func read(_ pdf: [UInt8]) throws -> [PDFobj] {
+            return try TestSupport.newPDF().read(from: InputStream(data: Data(pdf)), password: "",
+                    decodedTotal: 1000 * PDF.objectCost)
+        }
+        #expect(Self.objectOfNumber(try read(objects(3000, 40000)), 3009) != nil,
+                "the last object of the object stream")
+        #expect(throws: (any Error).self, "a short PDF of 3,000 objects past the budget is read") {
+            _ = try read(objects(3000, 0))
         }
     }
 

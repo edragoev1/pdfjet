@@ -97,6 +97,12 @@ public final class PDFobj {
     /// object of a section ends at the end of the PDF.
     static let readPerByte = 8
 
+    // The bytes of a PDF for each object of its object streams that takes
+    // nothing of the budget, as many as a PDF of its length can hold of its own;
+    // those past them take PDF.objectCost of it. Each one took it, and a real PDF of 5 MB
+    // of 1.1 million objects was refused (review of 12 October 2026, R32).
+    static let bytesPerFreeObject = 8
+
     /// What the streams of one PDF may still decode to, shared by its objects.
     /// It also holds what the reader may still read of the PDF, readPerByte
     /// times its length, so that no PDF is read in more than linear time:
@@ -106,11 +112,13 @@ public final class PDFobj {
         let total: Int
         var left: Int
         var readLeft: Int
+        var freeObjects: Int
 
         init(_ size: Int, _ total: Int = PDFobj.maxDecodedTotal) {
             self.total = total
             left = total
             readLeft = PDFobj.readPerByte * size
+            freeObjects = size / PDFobj.bytesPerFreeObject
         }
     }
 

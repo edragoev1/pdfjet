@@ -2308,16 +2308,20 @@ public final class PDF {
                 // no further than those numbers: one of 200 MB was split into
                 // its tokens first, 10.8 GB in Go (review of 12 October 2026,
                 // R6).
-                var pairs = budget.left / PDF.objectCost + 1    // One more fails.
+                var pairs = budget.freeObjects + budget.left / PDF.objectCost + 1    // One more fails.
                 if let count = try? objectStreamNumber(obj.getValue("/N")) {
                     pairs = min(pairs, count)
                 }
                 let header = objectStreamHeader(obj.data, min(first, obj.data.count), 2 * pairs)
                 var i = 0
                 while i + 1 < header.count {
-                    budget.left -= PDF.objectCost
-                    if budget.left < 0 {
-                        throw PDFobj.DecodedTotalError(total: budget.total)
+                    if budget.freeObjects > 0 {
+                        budget.freeObjects -= 1
+                    } else {
+                        budget.left -= PDF.objectCost
+                        if budget.left < 0 {
+                            throw PDFobj.DecodedTotalError(total: budget.total)
+                        }
                     }
                     let num = header[i]
                     let number = try objectStreamNumber(num)

@@ -591,7 +591,23 @@ public class TextBlock : IDrawable {
     // at the start or the end of the word is no place to break.
     internal static bool SoftHyphenBreak(String word, float width,
             Func<String, float> measure, out String head, out String rest) {
-        for (int i = word.LastIndexOf('\u00AD'); i != -1;
+        // A soft hyphen past the start of the word that is wider than the width
+        // has a start wider too: the word is looked at no further than that
+        // start, found by doubling, so that a word broken into thousands of rows
+        // is not searched, and measured, whole for each (16 times the time for 4
+        // times the word, in each port, review of 12 October 2026)
+        int end = word.Length;
+        for (int n = 64; n < word.Length; n *= 2) {
+            int cut = n;
+            if (Char.IsLowSurrogate(word[cut])) {
+                cut++;
+            }
+            if (measure(word.Substring(0, cut)) > width) {
+                end = cut;
+                break;
+            }
+        }
+        for (int i = (end == 0) ? -1 : word.LastIndexOf('\u00AD', end - 1); i != -1;
                 i = (i == 0) ? -1 : word.LastIndexOf('\u00AD', i - 1)) {
             if (Util.Trim(word.Substring(0, i).Replace("\u00AD", "")).Length == 0 ||
                     i + 1 == word.Length) {

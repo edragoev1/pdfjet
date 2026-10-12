@@ -1274,6 +1274,31 @@ public sealed class TableTest : IDisposable {
         Assert.Equal(longText, data[1][0].GetText());
     }
 
+    [Fact]
+    public void DrawingLeavesTheTextBlockAndTheMarkerWhereTheyWere() {
+        // Drawing a table leaves the text block and the marker of a cell where the
+        // caller put them: it moved them to where the cell drew them (review of
+        // 12 October 2026, R22).
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        TextBlock textBlock = new TextBlock(font, "a text block in a cell");
+        textBlock.SetLocation(50f, 60f);
+        Point point = new Point(5f, 5f);
+        List<List<Cell>> data = new List<List<Cell>> {
+            new List<Cell> {new Cell(font, "Header")},
+            new List<Cell> {new Cell(font, "").SetTextBlock(textBlock)},
+            new List<Cell> {new Cell(font, "marked").SetMarker(point, Alignment.LEFT)},
+        };
+        Table table = new Table().SetTableData(data, 1);
+        table.SetColumnWidth(0, 120f);
+        table.SetLocation(200f, 300f);
+        table.DrawOn(new Page(pdf, Letter.PORTRAIT));
+        Assert.Equal(50f, textBlock.x);
+        Assert.Equal(60f, textBlock.y);
+        Assert.Equal(5f, point.GetX());
+        Assert.Equal(5f, point.GetY());
+    }
+
     // AutoAdjustColumnWidths measures the cells of a row longer than the
     // first: it sized the widths from the first row and indexed past them
     // (review of 11 October 2026, #17).

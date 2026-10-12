@@ -76,9 +76,9 @@ func TestReadAStreamIsDecodedWhenItsDataIsFirstAskedFor(t *testing.T) {
 
 func TestReadTheStreamsOfAPDFDecodeToNoMoreThanTheBudgetTogether(t *testing.T) {
 	defer func(was int) { maxDecodedTotal = was }(maxDecodedTotal)
-	// 5000 for the streams, and what the one object of the object stream
-	// takes of the budget besides
-	maxDecodedTotal = 5000 + objectCost
+	// 5000 for the streams: the one object of the object stream takes
+	// nothing of it, as the PDF is long enough to hold it (R32)
+	maxDecodedTotal = 5000
 
 	// The object stream, read with the PDF, is within the budget, and the
 	// content stream is decoded up to what is left of it: 4000 of 5000 is
@@ -102,7 +102,7 @@ func TestReadTheStreamsOfAPDFDecodeToNoMoreThanTheBudgetTogether(t *testing.T) {
 	// An object stream past the budget is an error, as the PDF cannot be
 	// read without its objects.
 	_, err = testNewPDF().Read(testPDFOfStreams(6000, 0))
-	if err == nil || err.Error() != fmt.Sprintf("the streams of the PDF decode to more than %d bytes together", 5000+objectCost) {
+	if err == nil || err.Error() != "the streams of the PDF decode to more than 5000 bytes together" {
 		t.Errorf("an object stream past the budget: %v", err)
 	}
 }
@@ -483,5 +483,43 @@ func TestReadSharedResourcesAreAddedOnce(t *testing.T) {
 		if allocated := after.TotalAlloc - before.TotalAlloc; allocated > 64<<20 {
 			t.Errorf("in the node %v: %d MB allocated", inNode, allocated>>20)
 		}
+	}
+}
+
+// The objects of the object streams of a PDF long enough to hold them take
+// nothing of its budget: each took objectCost, and a real PDF of 5 MB of
+// 1.1 million objects was refused; a short one that makes as many is still
+// refused (review of 12 October 2026, R32).
+func TestReadAPDFLongEnoughForTheObjectsOfItsObjectStreamsIsRead(t *testing.T) {
+	defer func(was int) { maxDecodedTotal = was }(maxDecodedTotal)
+	maxDecodedTotal = 1000 * objectCost
+	objects := func(n, padding int) []byte {
+		var header, body strings.Builder
+		for i := range n {
+			fmt.Fprintf(&header, "%d %d ", 10+i, 5*i)
+			body.WriteString("null ")
+		}
+		var pdf bytes.Buffer
+		pdf.WriteString("%PDF-1.5\n")
+		pdf.WriteString("%" + strings.Repeat("x", padding) + "\n")
+		pdf.WriteString("1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n")
+		pdf.WriteString("2 0 obj\n<< /Type /Pages /Kids [] /Count 0 >>\nendobj\n")
+		stream := testDeflate([]byte(header.String() + body.String()))
+		fmt.Fprintf(&pdf, "3 0 obj\n<< /Type /ObjStm /N %d /First %d /Length %d /Filter /FlateDecode >>\nstream\n",
+			n, header.Len(), len(stream))
+		pdf.Write(stream)
+		pdf.WriteString("\nendstream\nendobj\n")
+		pdf.WriteString("trailer\n<< /Root 1 0 R /Size 3 >>\n%%EOF\n")
+		return pdf.Bytes()
+	}
+	read, err := testNewPDF().Read(objects(3000, 40000))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if testObjectOfNumber(read, 3009) == nil {
+		t.Error("the last object of the object stream was not read")
+	}
+	if _, err := testNewPDF().Read(objects(3000, 0)); err == nil {
+		t.Error("a short PDF of 3,000 objects past the budget is read")
 	}
 }

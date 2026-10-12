@@ -354,5 +354,27 @@ public class ReviewCodesTest {
         Assert.StartsWith("/Figure <</MCID 0>>\nBDC\nq\n", content);
         Assert.DoesNotContain("/Artifact", content);
     }
+
+    // An extension lookup's offset of 32 bits is read unsigned: one of
+    // 0x80000000 or more wrapped round to a subtable earlier in the table,
+    // which was read; past the table there is no subtable, as in Go (review
+    // of 12 October 2026, R27). The table: a mark-to-base subtable at 10, and
+    // an extension at 68 whose offset, -58 as 32 bits, wrapped round to it.
+    [Fact]
+    public void AGPOSExtensionOffsetPastTheTableIsNoSubtable() {
+        byte[] table = {
+            0, 1, 0, 0, 0, 0, 0, 0, 0, 56,  // The header: version 1.0, lookup list at 56
+            0, 1, 0, 12, 0, 18, 0, 1, 0, 24, 0, 36,  // Mark to base at 10
+            0, 1, 0, 1, 0, 5,  // Mark coverage: glyph 5
+            0, 1, 0, 1, 0, 7,  // Base coverage: glyph 7
+            0, 1, 0, 0, 0, 6, 0, 1, 0, 10, 0, 20,  // Mark array: class 0, anchor 10, 20
+            0, 1, 0, 4, 0, 1, 0, 30, 0, 40,  // Base array: anchor 30, 40
+            0, 1, 0, 4,  // Lookup list at 56: one lookup, at 60
+            0, 9, 0, 0, 0, 1, 0, 8,  // Extension lookup: one subtable, at 68
+            0, 1, 0, 4, 0xFF, 0xFF, 0xFF, 0xC6,  // Extension: mark to base, at -58
+        };
+        GPOS gpos = GPOS.Of(table, 0, table.Length, 10, false).Read();
+        Assert.Empty(gpos.markAnchors);
+    }
 }
 }   // End of namespace PDFjet.NET

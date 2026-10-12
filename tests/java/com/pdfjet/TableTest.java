@@ -1315,6 +1315,30 @@ class TableTest {
         assertEquals(text, data.get(1).get(0).getText(), "the cell's text after drawing");
     }
 
+    // Drawing a table leaves the text block and the marker of a cell where the
+    // caller put them: it moved them to where the cell drew them (review of
+    // 12 October 2026, R22).
+    @Test
+    void drawingLeavesTheTextBlockAndTheMarkerWhereTheyWere() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        TextBlock textBlock = new TextBlock(font, "a text block in a cell");
+        textBlock.setLocation(50f, 60f);
+        Point point = new Point(5f, 5f);
+        List<List<Cell>> data = new ArrayList<List<Cell>>();
+        data.add(new ArrayList<Cell>(Arrays.asList(new Cell(font, "Header"))));
+        data.add(new ArrayList<Cell>(Arrays.asList(new Cell(font, "").setTextBlock(textBlock))));
+        data.add(new ArrayList<Cell>(Arrays.asList(new Cell(font, "marked").setMarker(point, Alignment.LEFT))));
+        Table table = new Table().setTableData(data, 1);
+        table.setColumnWidth(0, 120f);
+        table.setLocation(200f, 300f);
+        table.drawOn(new Page(pdf, Letter.PORTRAIT));
+        assertEquals(50f, textBlock.x);
+        assertEquals(60f, textBlock.y);
+        assertEquals(5f, point.getX());
+        assertEquals(5f, point.getY());
+    }
+
     // autoAdjustColumnWidths measures the cells of a row longer than the
     // first: it sized the widths from the first row and indexed past them
     // (review of 11 October 2026, #17).

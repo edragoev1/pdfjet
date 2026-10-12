@@ -611,7 +611,22 @@ public class TextBlock : Drawable {
             return nil
         }
         let scalars = word.unicodeScalars
-        var i = scalars.endIndex
+        // A soft hyphen past the start of the word that is wider than the width
+        // has a start wider too: the word is looked at no further than that
+        // start, found by doubling, so that a word broken into thousands of rows
+        // is not searched, and measured, whole for each (16 times the time for 4
+        // times the word, in each port, review of 12 October 2026)
+        var end = scalars.endIndex
+        var n = 64
+        while let cut = scalars.index(scalars.startIndex, offsetBy: n, limitedBy: scalars.endIndex),
+                cut < scalars.endIndex {
+            if measure(String(scalars[..<cut])) > width {
+                end = cut
+                break
+            }
+            n *= 2
+        }
+        var i = end
         while i > scalars.startIndex {
             i = scalars.index(before: i)
             let after = scalars.index(after: i)

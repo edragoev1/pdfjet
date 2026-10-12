@@ -243,8 +243,12 @@ public class Arc : IDrawable {
         float centerY = page.height - cy;
         page.RotateAroundCenter(centerX, centerY, rotateDegrees);
         // The dash, the colors and the width are set before the path is begun,
-        // as ISO 32000 has them: none of them is allowed inside a path.
-        if (strokeColor != null && strokeDashPattern != null) {
+        // as ISO 32000 has them: none of them is allowed inside a path. An arc of
+        // no colors is stroked too, in black, and has its dash: it was left out
+        // (review of 12 October 2026, R21); a solid one is written as before.
+        bool noColors = fillColor == null && strokeColor == null;
+        if ((strokeColor != null && strokeDashPattern != null)
+                || (noColors && strokeDashPattern != null && strokeDashPattern != "[] 0")) {
             page.SetStrokeDashPattern(strokeDashPattern);
         }
         string paint = "S\n";

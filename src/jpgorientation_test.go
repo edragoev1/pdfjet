@@ -140,6 +140,9 @@ func TestJPGOrientationOfAMalformedExifIsPassedOver(t *testing.T) {
 		"another byte order":   append([]byte("Exif\x00\x00IM"), testExif(false, 0x0112, 3, 1, 6)[8:]...),
 		"an IFD0 before 8":     append(testExif(false, 0x0112, 3, 1, 6)[:10], 4, 0, 0, 0),
 		"an IFD0 past the end": append(testExif(false, 0x0112, 3, 1, 6)[:10], 0xFF, 0xFF, 0xFF, 0x7F),
+		// On 32 bits, as GOARCH=386 runs it, ifd + 2 was negative (review of
+		// 12 October 2026, R29)
+		"an IFD0 at 0x7FFFFFFE": append(testExif(false, 0x0112, 3, 1, 6)[:10], 0xFE, 0xFF, 0xFF, 0x7F),
 	} {
 		if got := exifOrientation(segment); got != 0 {
 			t.Errorf("%s: %d", name, got)

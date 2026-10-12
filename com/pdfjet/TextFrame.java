@@ -457,7 +457,10 @@ public class TextFrame implements Drawable {
             // The space after the last word goes at the start of the next text
             // line when that one's space is narrower.
             boolean spaceToNext = last && !joinsNext && paragraph.spaceMovesToNext(lineIndex);
-            String text = (joinsNext || spaceToNext) ? token : token + Single.space;
+            // Whether the token is drawn with the space after it; the text is made
+            // only when the token is drawn whole: made for each row of a word
+            // broken into thousands of rows, it copied the rest of the word each time
+            boolean withSpace = !(joinsNext || spaceToNext);
             // The first word of a text line starts with the space the text line
             // before left to it, unless the word starts a row: when it does not
             // fit, the row is drawn and the word starts the next one, without it.
@@ -465,7 +468,6 @@ public class TextFrame implements Drawable {
             leadingSpace = false;
             if (leading) {
                 token = Single.space + token;
-                text = Single.space + text;
             }
             float available = (x + w) - xText;
             // The first word of a text line joined to the word before it is
@@ -478,6 +480,7 @@ public class TextFrame implements Drawable {
             float joined = joinsNext
                     ? joinedWidth(paragraph, lineIndex, runLength + tokenWidth, available) : 0f;
             if (reserved || (runLength + tokenWidth + joined) <= available) {
+                String text = withSpace ? token + Single.space : token;
                 buf.append(text);
                 runLength += width(textLine, text);
                 tokenIndex++;
@@ -489,6 +492,7 @@ public class TextFrame implements Drawable {
                     && (runLength + tokenWidth) <= available) {
                 // With the words joined to it the word is wider than the frame,
                 // so they go on the next row.
+                String text = withSpace ? token + Single.space : token;
                 buf.append(text);
                 runLength += width(textLine, text);
                 tokenIndex++;

@@ -770,7 +770,23 @@ public class TextBlock implements Drawable {
     static String[] softHyphenBreak(
             String word, float width, Function<String, Float> measure) {
         final String softHyphen = "\u00AD";
-        for (int i = word.lastIndexOf(softHyphen); i != -1;
+        // A soft hyphen past the start of the word that is wider than the width
+        // has a start wider too: the word is looked at no further than that
+        // start, found by doubling, so that a word broken into thousands of rows
+        // is not searched, and measured, whole for each (16 times the time for 4
+        // times the word, in each port, review of 12 October 2026)
+        int end = word.length();
+        for (int n = 64; n < word.length(); n *= 2) {
+            int cut = n;
+            if (Character.isLowSurrogate(word.charAt(cut))) {
+                cut++;
+            }
+            if (measure.apply(word.substring(0, cut)) > width) {
+                end = cut;
+                break;
+            }
+        }
+        for (int i = word.lastIndexOf(softHyphen, end - 1); i != -1;
                 i = word.lastIndexOf(softHyphen, i - 1)) {
             if (Util.trimSpace(word.substring(0, i).replace(softHyphen, "")).isEmpty()
                     || i + softHyphen.length() == word.length()) {

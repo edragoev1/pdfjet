@@ -198,8 +198,12 @@ func (arc *Arc) DrawOn(page *Page) [2]float32 {
 
 	page.rotateAroundCenter(centerX, centerY, arc.rotateDegrees)
 	// The dash, the colors and the width are set before the path is begun,
-	// as ISO 32000 has them: none of them is allowed inside a path.
-	if arc.hasStrokeColor == true && arc.strokeDashPattern != "" {
+	// as ISO 32000 has them: none of them is allowed inside a path. An arc of
+	// no colors is stroked too, in black, and has its dash: it was left out
+	// (review of 12 October 2026, R21); a solid one is written as before.
+	noColors := !arc.hasFillColor && !arc.hasStrokeColor
+	if arc.hasStrokeColor && arc.strokeDashPattern != "" ||
+		noColors && arc.strokeDashPattern != "[] 0" {
 		page.SetStrokeDashPattern(arc.strokeDashPattern)
 	}
 	paint := "S\n"

@@ -73,6 +73,7 @@ internal class PNGImage {
         PNGImage image = new PNGImage();
         image.ValidatePNG(inputStream);
         bool hasIDAT = false;
+        int chunks = 0;
         byte[] buf = new byte[65536];
         while (true) {
             UInt32 length = image.GetUInt32(inputStream);
@@ -81,6 +82,14 @@ internal class PNGImage {
             }
             byte[] type = image.GetNBytes(inputStream, 4);
             String chunkType = System.Text.Encoding.UTF8.GetString(type);
+            // IHDR first, and once, as reading the image asks: the size of a PNG
+            // that NewImage refused was given (review of 12 October 2026, R28)
+            if (!chunkType.Equals("IEND")) {
+                if ((chunks == 0) != chunkType.Equals("IHDR")) {
+                    throw new Exception("Invalid PNG: the IHDR chunk must be the first chunk, and only the first.");
+                }
+                chunks++;
+            }
             CRC32 crc = new CRC32();
             crc.Update(type, 0, 4);
             if (chunkType.Equals("IHDR") && length != 13) {

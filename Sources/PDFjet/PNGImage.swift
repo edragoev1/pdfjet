@@ -76,6 +76,7 @@ class PNGImage {
             throw PDFjetError(message: "Wrong PNG signature.")
         }
         var hasIDAT = false
+        var chunks = 0
         while true {
             let length = image.getUInt32(try next(4), 0)
             if length > UInt32(Int32.max) {
@@ -83,6 +84,14 @@ class PNGImage {
             }
             let type = try next(4)
             let chunkType = String(decoding: type, as: UTF8.self)
+            // IHDR first, and once, as reading the image asks: the size of a PNG
+            // that NewImage refused was given (review of 12 October 2026, R28)
+            if chunkType != "IEND" {
+                if (chunks == 0) != (chunkType == "IHDR") {
+                    throw PDFjetError(message: "Invalid PNG: the IHDR chunk must be the first chunk, and only the first.")
+                }
+                chunks += 1
+            }
             let crc = CRC32()
             crc.update(type, 0, 4)
             if chunkType == "IHDR" && length != 13 {

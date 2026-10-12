@@ -912,9 +912,15 @@ public class Cell {
             drawText(page, x, y, w, h);
         } else if (drawable instanceof TextBlock) {
             TextBlock textBlock = (TextBlock) drawable;
+            // The caller's text block and point keep their locations: drawing
+            // the table moved them (review of 12 October 2026, R22)
+            float textX = textBlock.x;
+            float textY = textBlock.y;
             textBlock.setLocation(x + paddingAt(LEFT_PADDING), y + paddingAt(TOP_PADDING));
             textBlock.setWidth(w - (paddingAt(LEFT_PADDING) + paddingAt(RIGHT_PADDING)));
             textBlock.drawOn(page);
+            textBlock.x = textX;
+            textBlock.y = textY;
         } else if (drawable != null) {
             if (getTextAlignment() == Alignment.RIGHT) {
                 float drawableWidth = measure(drawable)[0];
@@ -930,6 +936,8 @@ public class Cell {
 
         drawBorders(page, x, y, w, h);
         if (point != null) {
+            float pointX = point.x;
+            float pointY = point.y;
             if (alignmentAt(MARKER_ALIGNMENT) == Alignment.LEFT) {
                 point.x = x + 2*point.r;
             } else if (alignmentAt(MARKER_ALIGNMENT) == Alignment.RIGHT) {
@@ -942,6 +950,8 @@ public class Cell {
                 // what it stands for, or by its URI, in the Link that holds its
                 // annotation, as PDF/UA asks
                 drawLinkedPoint(page);
+                point.x = pointX;
+                point.y = pointY;
                 return;
             }
             if (!Util.isEmpty(point.getURIAction())) {
@@ -965,6 +975,8 @@ public class Cell {
             page.addArtifactBMC();
             page.drawPoint(point);
             page.addEMC();
+            point.x = pointX;
+            point.y = pointY;
         }
     }
 
@@ -1003,8 +1015,12 @@ public class Cell {
 
     // Returns the width and the height of the drawable: its corner when it is
     // placed at 0, 0 and measured without a page. Measuring writes nothing, so
-    // an exception from it is not an input or output error.
+    // an exception from it is not an input or output error. A text block is
+    // put back where the caller had it (review of 12 October 2026, R22).
     static float[] measure(Drawable drawable) {
+        TextBlock textBlock = (drawable instanceof TextBlock) ? (TextBlock) drawable : null;
+        float textX = (textBlock != null) ? textBlock.x : 0f;
+        float textY = (textBlock != null) ? textBlock.y : 0f;
         drawable.setLocation(0f, 0f);
         try {
             return drawable.drawOn(null);
@@ -1012,6 +1028,11 @@ public class Cell {
             throw e;
         } catch (Exception e) {
             throw new IllegalStateException(e);
+        } finally {
+            if (textBlock != null) {
+                textBlock.x = textX;
+                textBlock.y = textY;
+            }
         }
     }
 

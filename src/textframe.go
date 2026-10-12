@@ -388,9 +388,14 @@ func (tf *TextFrame) drawTokens(page *Page, paragraph *Paragraph, textLine *Text
 		// The space after the last word goes at the start of the next text
 		// line when that one's space is narrower.
 		spaceToNext := last && !joinsNext && paragraph.spaceMovesToNext(tf.lineIndex)
-		text := token + single.Space
-		if joinsNext || spaceToNext {
-			text = token
+		// The token with the space after it, made only when the token is
+		// drawn whole: made for each row of a word broken into thousands of
+		// rows, it copied the rest of the word each time
+		text := func() string {
+			if joinsNext || spaceToNext {
+				return token
+			}
+			return token + single.Space
 		}
 		// The first word of a text line starts with the space the text line
 		// before left to it, unless the word starts a row: when it does not
@@ -399,7 +404,6 @@ func (tf *TextFrame) drawTokens(page *Page, paragraph *Paragraph, textLine *Text
 		tf.leadingSpace = false
 		if leading {
 			token = single.Space + token
-			text = single.Space + text
 		}
 		available := (tf.x + tf.w) - tf.xText
 		// The first word of a text line joined to the word before it is in
@@ -414,6 +418,7 @@ func (tf *TextFrame) drawTokens(page *Page, paragraph *Paragraph, textLine *Text
 			joined = tf.joinedWidth(paragraph, tf.lineIndex, runLength+tokenWidth, available)
 		}
 		if reserved || (runLength+tokenWidth+joined) <= available {
+			text := text()
 			buf.WriteString(text)
 			runLength += textWidth(textLine, text)
 			tf.tokenIndex++
@@ -425,6 +430,7 @@ func (tf *TextFrame) drawTokens(page *Page, paragraph *Paragraph, textLine *Text
 			(runLength+tokenWidth) <= available {
 			// With the words joined to it the word is wider than the frame,
 			// so they go on the next row.
+			text := text()
 			buf.WriteString(text)
 			runLength += textWidth(textLine, text)
 			tf.tokenIndex++

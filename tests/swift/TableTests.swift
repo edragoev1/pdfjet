@@ -1185,6 +1185,25 @@ import Testing
         #expect(data[1][0].getText() == long, "the cell's text is \(data[1][0].getText() ?? "nil") after drawing")
     }
 
+    // Drawing a table leaves the text block and the marker of a cell where the
+    // caller put them: it moved them to where the cell drew them (review of
+    // 12 October 2026, R22).
+    @Test func drawingLeavesTheTextBlockAndTheMarkerWhereTheyWere() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let textBlock = TextBlock(font, "a text block in a cell")
+        textBlock.setLocation(50, 60)
+        let point = Point(5, 5)
+        let data = [[Cell(font, "Header")], [Cell(font, "").setTextBlock(textBlock)],
+                    [Cell(font, "marked").setMarker(point, Alignment.LEFT)]]
+        let table = Table().setTableData(data, 1)
+        table.setColumnWidth(0, 120)
+        table.setLocation(200, 300)
+        table.drawOn(Page(pdf, Letter.PORTRAIT))
+        #expect(textBlock.x == 50 && textBlock.y == 60, "the text block is at \(textBlock.x), \(textBlock.y)")
+        #expect(point.getX() == 5 && point.getY() == 5, "the point is at \(point.getX()), \(point.getY())")
+    }
+
     // AutoAdjustColumnWidths measures the cells of a row longer than the first:
     // it sized the widths from the first row and indexed past them (review of
     // 11 October 2026, #17).

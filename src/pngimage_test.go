@@ -1040,6 +1040,11 @@ func TestPNGImageTheIHDRChunkIsFirstAndOnce(t *testing.T) {
 		if got := testPanicMessage(func() { NewImage(testNewPDF(), bytes.NewReader(file)) }); got != want {
 			t.Errorf("%s: %q", name, got)
 		}
+		// And ImageSize refuses what NewImage refuses (review of 12 October
+		// 2026, R28)
+		if _, err := ReadImageSize(bytes.NewReader(file)); err == nil || err.Error() != want {
+			t.Errorf("%s, ImageSize: %v", name, err)
+		}
 	}
 	// In its place, the tRNS of an RGB image is its three samples.
 	file := png([2]any{"IHDR", ihdr}, [2]any{"tRNS", []byte{0, 7, 0, 7, 0, 7}}, [2]any{"IDAT", idat},

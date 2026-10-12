@@ -784,6 +784,10 @@ public class Cell {
             // A line of text is drawn instead of the cell text, on its baseline.
             drawText(page, x, y, w, h)
         } else if let textBlock = drawable as? TextBlock {
+            // The caller's text block and point keep their locations: drawing
+            // the table moved them (review of 12 October 2026, R22)
+            let (textX, textY) = (textBlock.x, textBlock.y)
+            defer { (textBlock.x, textBlock.y) = (textX, textY) }
             textBlock.setLocation(x + paddingAt(Cell.leftPaddingShift), y + paddingAt(Cell.topPaddingShift))
             textBlock.setWidth(w - (paddingAt(Cell.leftPaddingShift) + paddingAt(Cell.rightPaddingShift)))
             textBlock.drawOn(page)
@@ -801,6 +805,12 @@ public class Cell {
         }
 
         drawBorders(page, x, y, w, h)
+        let pointAt = point.map { ($0.x, $0.y) }
+        defer {
+            if let point = point, let at = pointAt {
+                (point.x, point.y) = at
+            }
+        }
         if point != nil {
             if alignmentAt(Cell.markerAlignmentShift) == Alignment.LEFT {
                 point!.x = x + 2*point!.r
@@ -1039,6 +1049,14 @@ public class Cell {
     // Returns the width and the height of the drawable: its corner when it is
     // placed at 0, 0 and measured without a page.
     static func measure(_ drawable: Drawable) -> [Float] {
+        // A text block is put back where the caller had it (review of
+        // 12 October 2026, R22)
+        if let textBlock = drawable as? TextBlock {
+            let (textX, textY) = (textBlock.x, textBlock.y)
+            defer { (textBlock.x, textBlock.y) = (textX, textY) }
+            textBlock.setLocation(0.0, 0.0)
+            return textBlock.drawOn(nil)
+        }
         drawable.setLocation(0.0, 0.0)
         return drawable.drawOn(nil)
     }

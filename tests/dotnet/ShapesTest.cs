@@ -157,6 +157,12 @@ public class ShapesTest {
         Page page2 = new Page(pdf2, Letter.PORTRAIT);
         new Arc().SetLocation(100f, 100f).SetRadius(40f).SetSweep(90f).DrawOn(page2);
         Assert.Contains("\n0 w\n", TestSupport.Content(page2));
+        Assert.DoesNotContain(" d\n", TestSupport.Content(page2));
+        // And dashed when it has a dash (review of 12 October 2026, R21)
+        Page page3 = new Page(pdf2, Letter.PORTRAIT);
+        new Arc().SetLocation(100f, 100f).SetRadius(40f).SetSweep(120f).SetStrokeWidth(3f)
+                .SetStrokeDashPattern("[6 3] 0").DrawOn(page3);
+        Assert.Contains("[6 3] 0 d\n", TestSupport.Content(page3));
     }
 }
 }
