@@ -75,9 +75,9 @@ MAX_LISTED = 12
 # 'notdef', 'font' or 'outside', or None for all of them; 'extra' lets MuPDF and
 # pdftotext find characters that were not drawn, but not miss any that were.
 EXCEPTIONS = {
-    (41, 7, 'extra'): 'Pages 7 and 8 are merged from data/testPDFs/rc65-16e.pdf, a form, with its '
+    (49, 7, 'extra'): 'Pages 7 and 8 are merged from data/testPDFs/rc65-16e.pdf, a form, with its '
                       'text, which the example did not draw.',
-    (41, 8, 'extra'): 'Merged from data/testPDFs/rc65-16e.pdf, as page 7.',
+    (49, 8, 'extra'): 'Merged from data/testPDFs/rc65-16e.pdf, as page 7.',
     (50, 1, 'extra'): 'The pages are read from data/testPDFs/rc65-16e.pdf, a form, whose labels are '
                       'text; the example draws the answers on the first page.',
     (50, 2, 'extra'): 'Read from data/testPDFs/rc65-16e.pdf, as page 1.',
