@@ -104,7 +104,9 @@ public class DonutChart implements Drawable {
         float cross = ax * by - ay * bx;
         // An arc of radius zero, the center of a pie chart, or of no angle has
         // its control points at its ends; the formula would divide 0 by 0.
-        float k2 = (cross == 0f) ? 0f : (float) (4.0 / 3.0 * (Math.sqrt(2.0 * q1 * q2) - q2) / cross);
+        // In floats, rounded at each step as Go rounds its float32s, which
+        // drew some charts 0.01 apart from it (review of 11 October 2026, #25).
+        float k2 = (cross == 0f) ? 0f : (4.0f / 3.0f) * ((float) Math.sqrt(2f * q1 * q2) - q2) / cross;
 
         // Control points coordinates
         float x1 = xc + ax - k2 * ay;

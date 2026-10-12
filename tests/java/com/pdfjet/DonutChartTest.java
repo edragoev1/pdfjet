@@ -92,4 +92,75 @@ class DonutChartTest {
                     bad + ": the other slices are not 25% and 75% in " + content);
         }
     }
+
+    // Returns the curves the chart of the radii, the location and the values
+    // draws, a line each.
+    private static String curves(float r1, float r2, float x, float y, float... values) throws Exception {
+        Page page = new Page(TestSupport.newPDF(), Letter.PORTRAIT);
+        DonutChart chart = new DonutChart(null, null).setRadii(r1, r2);
+        for (float value : values) {
+            chart.addSlice(new Slice(value, 0x336699, ""));
+        }
+        chart.setLocation(x, y).drawOn(page);
+        StringBuilder sb = new StringBuilder();
+        for (String line : TestSupport.content(page).split("\n")) {
+            if (line.endsWith(" c")) {
+                sb.append(line).append('\n');
+            }
+        }
+        return sb.toString();
+    }
+
+    // The curves of a slice are computed in floats rounded at each step, as
+    // Go computes them: computed in doubles, 15 of 300 random charts were
+    // 0.01 apart from Go's, as the last line of the first chart here and the
+    // fifth of the second were (review of 11 October 2026, #25). The values are Go's.
+    @Test
+    void theCurvesOfTheSlicesAreTheSameAsGos() throws Exception {
+        assertEquals(
+                "321.02 538.8 379.14 509.82 416.28 460.55 c\n"
+                + "307.24 409.27 283.99 420.86 259.31 420.86 c\n"
+                + "470.54 388.56 468.88 288.89 412.26 218.75 c\n"
+                + "343.14 320.89 343.8 360.76 322.1 389.56 c\n"
+                + "371.16 167.84 307.43 140.72 242.25 146.4 c\n"
+                + "278.56 261.63 304.05 272.48 320.49 292.84 c\n"
+                + "134.1 155.82 54.06 251.14 63.48 359.29 c\n"
+                + "72.31 460.64 157.02 538.51 258.75 538.8 c\n"
+                + "218.39 420.74 184.51 389.6 180.98 349.05 c\n"
+                + "177.21 305.79 209.22 267.67 252.49 263.9 c\n"
+                + "258.94 538.8 259.12 538.8 259.31 538.8 c\n"
+                + "259.23 420.86 259.16 420.86 259.09 420.86 c\n",
+                curves(196.57f, 78.628006f, 62.74f, 253.2f, 218.66f, 313.27f, 231.33f, 721.5f, 0.67f));
+        assertEquals(
+                "556.56 622.69 627.89 551.36 627.89 463.38 c\n"
+                + "627.89 448.39 625.77 433.48 621.61 419.08 c\n"
+                + "544.03 449.03 545.05 456.19 545.05 463.38 c\n"
+                + "545.05 505.61 510.81 539.85 468.58 539.85 c\n"
+                + "620.66 415.79 619.6 412.54 618.44 409.31 c\n"
+                + "541.07 438.97 541.58 440.54 542.03 442.12 c\n"
+                + "588.58 326.55 497.28 283.67 414.51 313.52 c\n"
+                + "407.02 316.23 399.74 319.49 392.73 323.28 c\n"
+                + "435.54 394.31 439.03 392.75 442.63 391.45 c\n"
+                + "482.35 377.12 526.18 397.7 540.51 437.43 c\n"
+                + "331.52 356.43 298.91 425.47 312.2 493.8 c\n"
+                + "387.14 445.19 402.79 412.04 432.17 396.13 c\n"
+                + "320.29 535.35 344.57 571.98 379.7 595.59 c\n"
+                + "409.06 515.51 397.4 497.93 393.52 477.98 c\n"
+                + "405.98 613.26 436.92 622.69 468.58 622.69 c\n"
+                + "453.38 539.85 438.53 535.32 425.92 526.84 c\n",
+                curves(159.31f, 76.468796f, 309.27f, 169.31f, 671.72f, 23.38f, 623.93f, 459.3f, 285.28f, 214.6f));
+        // A pie chart, whose inner curves are at its center
+        assertEquals(
+                "185.73 742 218.74 722.94 236.6 692 c\n"
+                + "150 642 150 642 150 642 c\n"
+                + "264.22 644.17 247.83 583.01 200 555.4 c\n"
+                + "184.8 546.62 167.55 542 150 542 c\n"
+                + "150 642 150 642 150 642 c\n"
+                + "150 642 150 642 150 642 c\n"
+                + "94.77 542 50 586.77 50 642 c\n"
+                + "50 697.23 94.77 742 150 742 c\n"
+                + "150 642 150 642 150 642 c\n"
+                + "150 642 150 642 150 642 c\n",
+                curves(100f, 0f, 50f, 50f, 1f, 2f, 3f));
+    }
 }

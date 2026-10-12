@@ -7,6 +7,7 @@
 package com.pdfjet;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.zip.*;
 
@@ -87,7 +88,7 @@ class PNGImage {
                 throw new Exception("Invalid PNG chunk length " + length + ".");
             }
             byte[] type = image.getNBytes(inputStream, 4);
-            String chunkType = new String(type);
+            String chunkType = new String(type, StandardCharsets.ISO_8859_1);
             CRC32 crc = new CRC32();
             crc.update(type, 0, 4);
             if (chunkType.equals("IHDR") && length != 13) {
@@ -155,7 +156,7 @@ class PNGImage {
         ByteArrayOutputStream idat = null;
         List<Chunk> chunks = processPNG(inputStream);
         for (Chunk chunk : chunks) {
-            String chunkType = new String(chunk.type);
+            String chunkType = new String(chunk.type, StandardCharsets.ISO_8859_1);
             if (chunkType.equals("IHDR")) {
                 if (chunk.getData().length != 13) {
                     throw new Exception("Invalid PNG IHDR chunk.");
@@ -460,7 +461,7 @@ class PNGImage {
         List<Chunk> chunks = new ArrayList<Chunk>();
         while (true) {
             Chunk chunk = getChunk(inputStream);
-            if ((new String(chunk.type)).equals("IEND")) {
+            if ((new String(chunk.type, StandardCharsets.ISO_8859_1)).equals("IEND")) {
                 break;
             }
             chunks.add(chunk);

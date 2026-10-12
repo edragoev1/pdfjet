@@ -1113,6 +1113,20 @@ final public class PDF {
         append('>');
     }
 
+    // Appends a string of letters, which needs no escapes, as (Adobe), or
+    // encrypted in hexadecimal if the document is encrypted: written as it is,
+    // a reader decrypted it to bytes of no meaning (review of 11 October 2026,
+    // #19 and #20).
+    void appendLiteralString(String text) throws Exception {
+        if (encryption != null) {
+            appendByteString(text.getBytes(StandardCharsets.US_ASCII));
+            return;
+        }
+        append("(");
+        append(text);
+        append(")");
+    }
+
     // Appends the key and the tokens of its value, read from another PDF, if
     // it has one: its strings, literal or hexadecimal, as hexadecimal strings
     // encrypted when the document is.
@@ -1809,7 +1823,9 @@ final public class PDF {
                 append(" ] >>\n");
                 append("]\n");
             } else {
-                append("/Name (Default)\n");
+                append("/Name ");
+                appendLiteralString("Default");
+                append("\n");
             }
 
             // The groups hidden by default, for the viewers that read the

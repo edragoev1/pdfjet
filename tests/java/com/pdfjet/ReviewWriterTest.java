@@ -516,4 +516,63 @@ class ReviewWriterTest {
         // Outside PDF/A a file is attached as before
         assertEquals(null, complete(Compliance.PDF_UA_1, attach), "PDF/UA: a file attached");
     }
+
+    // Reads the PDF, encrypted with no user password, and returns the strings
+    // after the key in its objects, as a reader decrypts them.
+    private static List<String> decryptedStrings(byte[] pdf, String key) throws Exception {
+        List<String> values = new ArrayList<String>();
+        for (PDFobj obj : TestSupport.read(pdf, "")) {
+            for (int i = 0; i + 1 < obj.dict.size(); i++) {
+                if (obj.dict.get(i).equals(key)) {
+                    values.add(TestSupport.latin1(Decryptor.toBytes(obj.dict.get(i + 1))));
+                }
+            }
+        }
+        return values;
+    }
+
+    // Returns a document of the compliance, written to bos, encrypted with no
+    // passwords.
+    private static PDF encryptedDoc(ByteArrayOutputStream bos, Compliance compliance) throws Exception {
+        PDF pdf = new PDF(bos, compliance).setTitle("Test");
+        pdf.setEncryption(new Encryption(pdf, new Passwords(), new Permissions()));
+        return pdf;
+    }
+
+    // The strings of the system of characters of a CJK font, Adobe and the
+    // ordering, are encrypted in an encrypted document: written as they were,
+    // a reader decrypted them to nothing, and the CMap matched no font (review
+    // of 11 October 2026, #19).
+    @Test
+    @SuppressWarnings("deprecation")    // The CJK fonts are deprecated, and still tested
+    void theCharactersOfACJKFontAreEncrypted() throws Exception {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = encryptedDoc(bos, Compliance.PDF_1_7);
+        new TextLine(new Font(pdf, CJKFont.KOZ_MIN_PRO_VI_REGULAR), "\u65e5\u672c")
+                .setLocation(50f, 50f).drawOn(new Page(pdf, Letter.PORTRAIT));
+        pdf.complete();
+        byte[] bytes = bos.toByteArray();
+        List<String> registry = decryptedStrings(bytes, "/Registry");
+        assertTrue(registry.size() == 1 && registry.get(0).equals("Adobe"), "/Registry " + registry);
+        List<String> ordering = decryptedStrings(bytes, "/Ordering");
+        assertTrue(ordering.size() == 1 && ordering.get(0).equals("Japan1"), "/Ordering " + ordering);
+    }
+
+    // The name of the configuration of the layers of a document of PDF/UA is
+    // encrypted in an encrypted document, where a reader decrypted it to
+    // nothing (review of 11 October 2026, #20).
+    @Test
+    void theNameOfTheLayersIsEncrypted() throws Exception {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = encryptedDoc(bos, Compliance.PDF_UA_1);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(TestSupport.plexSans(pdf), "Heading")
+                .setStructureType(StructElem.H1).setLocation(50f, 50f).drawOn(page);
+        OptionalContentGroup group = new OptionalContentGroup(pdf, "Layer").setVisible(true);
+        group.add(new Rect(10f, 100f, 20f, 20f));
+        group.drawOn(page);
+        pdf.complete();
+        List<String> names = decryptedStrings(bos.toByteArray(), "/Name");
+        assertTrue(names.contains("Default"), "/Name " + names);
+    }
 }

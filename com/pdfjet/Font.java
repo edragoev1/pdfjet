@@ -264,24 +264,34 @@ final public class Font {
         pdf.append("/FontDescriptor ");
         pdf.append(pdf.getObjNumber() - 1);
         pdf.append(" 0 R\n");
-        pdf.append("/CIDSystemInfo <<\n");
-        pdf.append("/Registry (Adobe)\n");
+        String ordering;
+        String supplement;
         if (fontName.startsWith("AdobeMingStd")) {
-            pdf.append("/Ordering (CNS1)\n");
-            pdf.append("/Supplement 4\n");
+            ordering = "CNS1";
+            supplement = "4";
         } else if (fontName.startsWith("AdobeSongStd")
                 || fontName.startsWith("STHeitiSC")) {
-            pdf.append("/Ordering (GB1)\n");
-            pdf.append("/Supplement 4\n");
+            ordering = "GB1";
+            supplement = "4";
         } else if (fontName.startsWith("KozMinPro")) {
-            pdf.append("/Ordering (Japan1)\n");
-            pdf.append("/Supplement 4\n");
+            ordering = "Japan1";
+            supplement = "4";
         } else if (fontName.startsWith("AdobeMyungjoStd")) {
-            pdf.append("/Ordering (Korea1)\n");
-            pdf.append("/Supplement 1\n");
+            ordering = "Korea1";
+            supplement = "1";
         } else {
             throw new Exception("Unsupported font: " + fontName);
         }
+        pdf.append("/CIDSystemInfo <<\n");
+        pdf.append("/Registry ");
+        pdf.appendLiteralString("Adobe");
+        pdf.append("\n");
+        pdf.append("/Ordering ");
+        pdf.appendLiteralString(ordering);
+        pdf.append("\n");
+        pdf.append("/Supplement ");
+        pdf.append(supplement);
+        pdf.append("\n");
         pdf.append(">>\n");
         pdf.append(">>\n");
         pdf.endObj();

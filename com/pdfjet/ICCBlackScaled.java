@@ -13,7 +13,9 @@
 package com.pdfjet;
 
 class ICCBlackScaled {
-    public static byte[] profile = {
+    // The compressed profile, written as it is into every PDF/A document: not
+    // to be changed.
+    static final byte[] profile = {
 (byte) 0x78,
 (byte) 0x9C,
 (byte) 0xB5,

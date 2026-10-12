@@ -7,6 +7,7 @@
 package com.pdfjet;
 
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 class FastFloat {
@@ -37,7 +38,7 @@ class FastFloat {
         if (magnitude >= 8388608.0) {
             // A float of 2^23 or more is a whole number: write all its digits
             String digits = new BigDecimal(magnitude).toBigInteger().toString();
-            byte[] bytes = ((value < 0f ? "-" : "") + digits).getBytes();
+            byte[] bytes = ((value < 0f ? "-" : "") + digits).getBytes(StandardCharsets.US_ASCII);
             System.arraycopy(bytes, 0, buffer, pos, bytes.length);
             return pos + bytes.length;
         }
@@ -130,7 +131,7 @@ class FastFloat {
             }
             text.append(fractionDigits);
         }
-        return text.toString().getBytes();
+        return text.toString().getBytes(StandardCharsets.US_ASCII);
     }
 
     private static int writeInt(int value, byte[] buffer, int pos, int digits) {
