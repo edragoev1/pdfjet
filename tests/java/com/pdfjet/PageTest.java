@@ -15,9 +15,15 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 class PageTest {
+    @AfterEach
+    void forbidCoreFonts() {
+        TestSupport.allowCoreFonts(false);
+    }
+
     @Test
     void aNewPageTracksTheDefaultGraphicsState() throws Exception {
         Page page = new Page(TestSupport.newPDF(), Letter.PORTRAIT);
@@ -291,6 +297,7 @@ class PageTest {
     }
     @Test
     void beginStructElementGroupsWhatIsDrawnIntoAList() throws Exception {
+        TestSupport.allowCoreFonts(true); // What the document tags, in a core font
         // The items of a list are drawn one at a time, so nothing but the page
         // can hold them together: L for the list, LI for each item, and Lbl
         // and LBody for the label and the body of the item.

@@ -27,10 +27,16 @@ import java.io.ByteArrayOutputStream;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 /** AES-256 encryption with the standard security handler, read back with the passwords. */
 class EncryptionTest {
+    @AfterEach
+    void forbidCoreFonts() {
+        TestSupport.allowCoreFonts(false);
+    }
+
     private static byte[] encrypted(Compliance compliance, Passwords passwords, Permissions permissions) throws Exception {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         PDF pdf = new PDF(bos, compliance);
@@ -121,6 +127,7 @@ class EncryptionTest {
 
     @Test
     void pdfUaGrantsExtractionForAccessibility() throws Exception {
+        TestSupport.allowCoreFonts(true); // What the document tags, in a core font
         byte[] pdf = encrypted(Compliance.PDF_UA_1,
                 new Passwords().setUserPassword("hello").setOwnerPassword("world"),
                 new Permissions().grant(UserAccess.PRINT));

@@ -143,6 +143,7 @@ import Testing
         // The span of a cell over a row that wraps to four lines was written
         // as the five rows of the drawing, and not as the two rows of the table.
         let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.coreFontsInCompliance = true    // Draws in a core font
         _ = memory.pdf.setTitle("Title")
         let font = TestSupport.helvetica(memory.pdf)
         let data = [
@@ -251,6 +252,7 @@ import Testing
         // The label of an item was drawn again, as a new item, in every frame
         // the item went on into.
         let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.coreFontsInCompliance = true    // Draws in a core font
         _ = memory.pdf.setTitle("Title")
         let font = TestSupport.helvetica(memory.pdf)
         let item = Paragraph().add(TextLine(font, String(repeating: "word ", count: 400)))
@@ -289,6 +291,7 @@ import Testing
     @Test func aTextColumnDrawsTheLabelOfAListItem() throws {
         // The label that Paragraph.setListLabel sets was left out by TextColumn.
         let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.coreFontsInCompliance = true    // Draws in a core font
         _ = memory.pdf.setTitle("Title")
         let font = TestSupport.helvetica(memory.pdf)
         let page = Page(memory.pdf, Letter.PORTRAIT)

@@ -29,7 +29,7 @@ public class AssociatedFileTest {
         foreach (string fileName in fileNames) {
             pdf.AddAssociatedFile(Attach(pdf, fileName, XML));
         }
-        new TextLine(TestSupport.Helvetica(pdf), "Invoice")
+        new TextLine(TestSupport.PlexSans(pdf), "Invoice")
                 .SetLocation(50f, 50f).DrawOn(new Page(pdf, Letter.PORTRAIT));
         pdf.Complete();
         return TestSupport.Latin1(stream.ToArray());
@@ -111,7 +111,7 @@ public class AssociatedFileTest {
         }
         pdf.AddAssociatedFile(new EmbeddedFile(pdf, "long.xml", Bytes(text.ToString()), true,
                 "text/xml", Relationship.DATA, "A long file."));
-        new TextLine(TestSupport.Helvetica(pdf), "x")
+        new TextLine(TestSupport.PlexSans(pdf), "x")
                 .SetLocation(50f, 50f).DrawOn(new Page(pdf, Letter.PORTRAIT));
         pdf.Complete();
         string raw = TestSupport.Latin1(stream.ToArray());
@@ -131,7 +131,7 @@ public class AssociatedFileTest {
                 "application/vnd.oasis.opendocument.spreadsheet", Relationship.SOURCE, "A sheet."));
         pdf.AddAssociatedFile(new EmbeddedFile(pdf, "odd.bin", Bytes("x"), false,
                 "application/x-(odd) #1", Relationship.SUPPLEMENT, "Something else."));
-        new TextLine(TestSupport.Helvetica(pdf), "x")
+        new TextLine(TestSupport.PlexSans(pdf), "x")
                 .SetLocation(50f, 50f).DrawOn(new Page(pdf, Letter.PORTRAIT));
         pdf.Complete();
         string raw = TestSupport.Latin1(stream.ToArray());
@@ -146,7 +146,7 @@ public class AssociatedFileTest {
     public void ADocumentThatCarriesNoFilesSaysNothingAboutThem() {
         MemoryStream stream = new MemoryStream();
         PDF pdf = new PDF(stream, Compliance.PDF_A_3B);
-        new TextLine(TestSupport.Helvetica(pdf), "x")
+        new TextLine(TestSupport.PlexSans(pdf), "x")
                 .SetLocation(50f, 50f).DrawOn(new Page(pdf, Letter.PORTRAIT));
         pdf.Complete();
         string raw = TestSupport.Latin1(stream.ToArray());
@@ -183,6 +183,7 @@ public class AssociatedFileTest {
 
     [Fact]
     public void TheLevelOfPdfA3aAndPdfUA1IsBoth() {
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
         MemoryStream stream = new MemoryStream();
         PDF pdf = new PDF(stream, Compliance.PDF_A_3A_UA_1).SetTitle("Test");
         Page page = new Page(pdf, Letter.PORTRAIT);

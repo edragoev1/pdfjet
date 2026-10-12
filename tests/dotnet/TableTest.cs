@@ -226,6 +226,7 @@ public sealed class TableTest : IDisposable {
 
     [Fact]
     public void ATableInAPDFUADocumentIsTaggedAsATable() {
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
         System.IO.MemoryStream stream = new System.IO.MemoryStream();
         PDF pdf = new PDF(stream, Compliance.PDF_UA_1).SetTitle("Test");
         pdf.SetTitle("Title");
@@ -260,6 +261,7 @@ public sealed class TableTest : IDisposable {
 
     [Fact]
     public void TheLinkedMarkerOfAWrappedCellIsAFigure() {
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
         // The lines of a wrapped cell are one paragraph, and a figure drawn in
         // it, as its linked marker, was made part of the paragraph, losing its
         // element and its description (the review of 9 October 2026).
@@ -285,6 +287,7 @@ public sealed class TableTest : IDisposable {
 
     [Fact]
     public void TheHeaderRowsOnTheNextPagesAreArtifacts() {
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
         System.IO.MemoryStream stream = new System.IO.MemoryStream();
         PDF pdf = new PDF(stream, Compliance.PDF_UA_1).SetTitle("Test");
         pdf.SetTitle("Title");
@@ -320,6 +323,7 @@ public sealed class TableTest : IDisposable {
 
     [Fact]
     public void ATableWithAPageLeftOutOfTheDocumentStillHasAStructureTree() {
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
         System.IO.MemoryStream stream = new System.IO.MemoryStream();
         PDF pdf = new PDF(stream, Compliance.PDF_UA_1).SetTitle("Test");
         pdf.SetTitle("Title");
@@ -433,6 +437,7 @@ public sealed class TableTest : IDisposable {
 
     [Fact]
     public void ACellThatSpansRowsSaysSoInAPDFUADocument() {
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
         System.IO.MemoryStream stream = new System.IO.MemoryStream();
         PDF pdf = new PDF(stream, Compliance.PDF_UA_1).SetTitle("Test");
         pdf.SetTitle("Title");
@@ -795,6 +800,7 @@ public sealed class TableTest : IDisposable {
 
     [Fact]
     public void TheFooterRowsBeforeTheEndOfTheTableAreArtifacts() {
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
         System.IO.MemoryStream stream = new System.IO.MemoryStream();
         PDF pdf = new PDF(stream, Compliance.PDF_UA_1).SetTitle("Test");
         pdf.SetTitle("Title");

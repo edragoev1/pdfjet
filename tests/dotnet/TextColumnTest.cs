@@ -156,6 +156,7 @@ public class TextColumnTest {
 
     [Fact]
     public void AParagraphIsOneStructureElementOfTheTypeItIsGiven() {
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
         // The words of a paragraph are drawn one at a time, and each was an
         // element of its own, so a reader read every word as a paragraph.
         System.IO.MemoryStream stream = new System.IO.MemoryStream();

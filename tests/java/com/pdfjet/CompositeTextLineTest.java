@@ -12,9 +12,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 class CompositeTextLineTest {
+    @AfterEach
+    void forbidCoreFonts() {
+        TestSupport.allowCoreFonts(false);
+    }
+
     private static CompositeTextLine water(Font font, float fontSize) {
         CompositeTextLine composite = new CompositeTextLine(100f, 100f);
         if (fontSize > 0f) {
@@ -163,6 +169,7 @@ class CompositeTextLineTest {
 
     @Test
     void aFormulaIsOneStructureElement() throws Exception {
+        TestSupport.allowCoreFonts(true); // What the document tags, in a core font
         // The components are the runs of one formula, so a screen reader
         // reads C6H12O6 and not six elements of "C", "6", "H", "12", "O"
         // and "6".

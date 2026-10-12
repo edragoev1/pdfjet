@@ -14,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.List;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -21,6 +22,11 @@ import org.junit.jupiter.api.Test;
  * table, and the destinations and headings in a container.
  */
 class ReviewFollowupTest {
+    @AfterEach
+    void forbidCoreFonts() {
+        TestSupport.allowCoreFonts(false);
+    }
+
     private static final float DELTA = TestSupport.DELTA;
 
     @Test
@@ -58,6 +64,7 @@ class ReviewFollowupTest {
 
     @Test
     void theFooterOfABigTableIsAPaginationArtifact() throws Exception {
+        TestSupport.allowCoreFonts(true); // What the document tags, in a core font
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         PDF pdf = new PDF(bos, Compliance.PDF_UA_1).setTitle("Title");
         Font font = TestSupport.helvetica(pdf);

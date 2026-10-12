@@ -174,6 +174,7 @@ public class ReviewCodesTest {
 
     [Fact]
     public void ThePermissionsOfTheCallerAreNotChanged() {
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
         Permissions permissions = new Permissions().SetAccess(UserAccess.PRINT);
         MemoryStream stream = new MemoryStream();
         PDF pdf = new PDF(stream, Compliance.PDF_UA_1);

@@ -227,6 +227,7 @@ public sealed class BigTableTest : IDisposable {
 
     [Fact]
     public void IsTaggedAsATableInAPDFUADocument() {
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
         // The table is one Table element over all its pages: a TR for each
         // row, and a TH for each header field the first time the header is
         // drawn or a TD for each field of a row, each holding its own text.
@@ -396,6 +397,7 @@ public sealed class BigTableTest : IDisposable {
 
     [Fact]
     public void TheCellOfACutFieldKeepsTheWholeOfItsText() {
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
         // A field the page was too narrow for is drawn cut, but a reader is
         // read the whole of it: the cell of the structure tree keeps it.
         System.IO.MemoryStream stream = new System.IO.MemoryStream();

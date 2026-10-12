@@ -52,6 +52,7 @@ public class ReviewFollowupTest {
 
     [Fact]
     public void TheFooterOfABigTableIsAPaginationArtifact() {
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
         PDF pdf = new PDF(new MemoryStream(), Compliance.PDF_UA_1).SetTitle("Title");
         Font font = TestSupport.Helvetica(pdf);
         List<string[]> rows = new List<string[]>();

@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -36,6 +37,11 @@ import org.junit.jupiter.api.io.TempDir;
  * The tests of the text, table and Markdown layout, from a review of them.
  */
 class ReviewLayoutTest {
+    @AfterEach
+    void forbidCoreFonts() {
+        TestSupport.allowCoreFonts(false);
+    }
+
     @TempDir
     File tempDir;
 
@@ -175,6 +181,7 @@ class ReviewLayoutTest {
 
     @Test
     void aRowSpanCountsTheRowsOfTheTable() throws Exception {
+        TestSupport.allowCoreFonts(true); // What the document tags, in a core font
         // The span of a cell over a row that wraps to four lines was written
         // as the five rows of the drawing, and not as the two rows of the table.
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -304,6 +311,7 @@ class ReviewLayoutTest {
 
     @Test
     void aListItemGoesOnInTheNextFrameWithoutItsLabel() throws Exception {
+        TestSupport.allowCoreFonts(true); // What the document tags, in a core font
         // The label of an item was drawn again, as a new item, in every frame
         // the item went on into.
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -351,6 +359,7 @@ class ReviewLayoutTest {
 
     @Test
     void aTextColumnDrawsTheLabelOfAListItem() throws Exception {
+        TestSupport.allowCoreFonts(true); // What the document tags, in a core font
         // The label that Paragraph.setListLabel sets was left out by TextColumn.
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         PDF pdf = taggedPDF(bos);

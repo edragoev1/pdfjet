@@ -149,6 +149,7 @@ import Testing
     @Test func encryptionThePermissionsOfTheCallerAreNotChanged() throws {
         let permissions = Permissions().setAccess(UserAccess.PRINT)
         let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.coreFontsInCompliance = true    // Draws in a core font
         _ = memory.pdf.setTitle("Encrypted title")
         _ = memory.pdf.setEncryption(Encryption(memory.pdf,
                 Passwords().setUserPassword("").setOwnerPassword("owner"), permissions))

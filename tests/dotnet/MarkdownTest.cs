@@ -63,6 +63,7 @@ public class MarkdownTest {
 
     [Fact]
     public void EveryBlockIsTaggedForPDFUA() {
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
         Drawn drawn = Draw("# Title\n\nText with **bold**.\n\n- one\n- two\n\n> quoted\n\n"
                 + "```\ncode\n```\n\n| A | B |\n|---|---|\n| 1 | 2 |\n\n---\n\n## Next", null);
         Assert.Single(drawn.pages);
@@ -79,6 +80,7 @@ public class MarkdownTest {
 
     [Fact]
     public void HeadingLevelsSkipNone() {
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
         // A text that starts at ### and goes on to ##### is H1, then H2.
         Drawn drawn = Draw("### Three\n\n##### Five\n\n# One", null);
         Assert.Equal(2, Count(drawn.pdf, "H1"));
@@ -88,6 +90,7 @@ public class MarkdownTest {
 
     [Fact]
     public void TheTextFlowsOntoAsManyPagesAsItNeeds() {
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
         StringBuilder text = new StringBuilder("# A long text\n\n");
         for (int i = 0; i < 150; i++) {
             text.Append("Paragraph p").Append(1000 + i)
@@ -108,6 +111,7 @@ public class MarkdownTest {
 
     [Fact]
     public void AListOverPagesIsOneList() {
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
         StringBuilder text = new StringBuilder();
         for (int i = 0; i < 80; i++) {
             text.Append("- item ").Append(i).Append('\n');
@@ -120,6 +124,7 @@ public class MarkdownTest {
 
     [Fact]
     public void ATableGoesOnOnTheNextPageWithItsHeaderRow() {
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
         // Letters of the core fonts that are kerned are drawn apart, so the
         // header is one letter a column.
         StringBuilder text = new StringBuilder("Some text first.\n\n| N | S |\n|---:|---:|\n");
@@ -138,6 +143,7 @@ public class MarkdownTest {
 
     [Fact]
     public void ImagesAreReadOnlyFromTheImageDirectory() {
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
         String text = "![Tux](linux-logo.png)";
         // With no directory, the image's text is drawn instead.
         Drawn drawn = Draw(text, null);
@@ -162,6 +168,7 @@ public class MarkdownTest {
 
     [Fact]
     public void CodeKeepsItsLinesAndGoesOnOnTheNextPage() {
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
         StringBuilder text = new StringBuilder("```\n");
         for (int i = 0; i < 90; i++) {
             text.Append("  line ").Append(i).Append(" *not emphasis*\n");
@@ -176,6 +183,7 @@ public class MarkdownTest {
 
     [Fact]
     public void NumberedListsStartAtTheirFirstNumber() {
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
         Drawn drawn = Draw("3. three\n4. four", null);
         Assert.Contains(TestSupport.Hex("3."), drawn.text, StringComparison.Ordinal);
         Assert.Contains(TestSupport.Hex("4."), drawn.text, StringComparison.Ordinal);
@@ -184,12 +192,14 @@ public class MarkdownTest {
 
     [Fact]
     public void HtmlIsDrawnAsText() {
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
         Drawn drawn = Draw("<b>not bold</b>", null);
         Assert.Contains(TestSupport.Hex("<b>not"), drawn.text, StringComparison.Ordinal);
     }
 
     [Fact]
     public void LongCodeLinesAreCutInLinearTime() {
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
         StringBuilder line = new StringBuilder();
         for (int i = 0; i < 200000; i++) {
             line.Append((char) ('a' + i % 26));

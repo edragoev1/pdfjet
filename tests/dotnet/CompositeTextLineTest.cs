@@ -102,6 +102,7 @@ public class CompositeTextLineTest {
 
     [Fact]
     public void AFormulaIsOneStructureElement() {
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
         // The components are the runs of one formula, so a screen reader
         // reads C6H12O6 and not six elements of "C", "6", "H", "12", "O"
         // and "6".

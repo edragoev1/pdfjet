@@ -12,9 +12,15 @@ import java.util.Arrays;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.ArrayList;
 import java.util.List;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 class TextFrameTest {
+    @AfterEach
+    void forbidCoreFonts() {
+        TestSupport.allowCoreFonts(false);
+    }
+
     // Draws two paragraphs of one line and returns how far below the first the second starts.
     private static float paragraphDistance(Float gap) throws Exception {
         PDF pdf = TestSupport.newPDF();
@@ -112,6 +118,7 @@ class TextFrameTest {
     }
     @Test
     void paragraphsWithALabelAreAList() throws Exception {
+        TestSupport.allowCoreFonts(true); // What the document tags, in a core font
         // The label of an item is drawn where the item begins, so that it
         // reads before the text of the item and not after all of the text.
         java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();

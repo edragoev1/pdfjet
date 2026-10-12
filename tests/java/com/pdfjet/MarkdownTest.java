@@ -12,9 +12,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.List;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 class MarkdownTest {
+    @AfterEach
+    void forbidCoreFonts() {
+        TestSupport.allowCoreFonts(false);
+    }
+
     // A Markdown text drawn in a PDF/UA document: its pages and the whole PDF.
     static final class Drawn {
         List<Page> pages = new ArrayList<Page>();
@@ -64,6 +70,7 @@ class MarkdownTest {
 
     @Test
     void everyBlockIsTaggedForPDFUA() throws Exception {
+        TestSupport.allowCoreFonts(true); // What the document tags, in a core font
         Drawn drawn = draw("# Title\n\nText with **bold**.\n\n- one\n- two\n\n> quoted\n\n"
                 + "```\ncode\n```\n\n| A | B |\n|---|---|\n| 1 | 2 |\n\n---\n\n## Next", null);
         assertEquals(1, drawn.pages.size());
@@ -80,6 +87,7 @@ class MarkdownTest {
 
     @Test
     void headingLevelsSkipNone() throws Exception {
+        TestSupport.allowCoreFonts(true); // What the document tags, in a core font
         // A text that starts at ### and goes on to ##### is H1, then H2.
         Drawn drawn = draw("### Three\n\n##### Five\n\n# One", null);
         assertEquals(2, count(drawn.pdf, "H1"));
@@ -89,6 +97,7 @@ class MarkdownTest {
 
     @Test
     void theTextFlowsOntoAsManyPagesAsItNeeds() throws Exception {
+        TestSupport.allowCoreFonts(true); // What the document tags, in a core font
         StringBuilder text = new StringBuilder("# A long text\n\n");
         for (int i = 0; i < 150; i++) {
             text.append("Paragraph p").append(1000 + i)
@@ -109,6 +118,7 @@ class MarkdownTest {
 
     @Test
     void aListOverPagesIsOneList() throws Exception {
+        TestSupport.allowCoreFonts(true); // What the document tags, in a core font
         StringBuilder text = new StringBuilder();
         for (int i = 0; i < 80; i++) {
             text.append("- item ").append(i).append('\n');
@@ -121,6 +131,7 @@ class MarkdownTest {
 
     @Test
     void aTableGoesOnOnTheNextPageWithItsHeaderRow() throws Exception {
+        TestSupport.allowCoreFonts(true); // What the document tags, in a core font
         // Letters of the core fonts that are kerned are drawn apart, so the
         // header is one letter a column.
         StringBuilder text = new StringBuilder("Some text first.\n\n| N | S |\n|---:|---:|\n");
@@ -138,6 +149,7 @@ class MarkdownTest {
 
     @Test
     void imagesAreReadOnlyFromTheImageDirectory() throws Exception {
+        TestSupport.allowCoreFonts(true); // What the document tags, in a core font
         String text = "![Tux](linux-logo.png)";
         // With no directory, the image's text is drawn instead.
         Drawn drawn = draw(text, null);
@@ -162,6 +174,7 @@ class MarkdownTest {
 
     @Test
     void codeKeepsItsLinesAndGoesOnOnTheNextPage() throws Exception {
+        TestSupport.allowCoreFonts(true); // What the document tags, in a core font
         StringBuilder text = new StringBuilder("```\n");
         for (int i = 0; i < 90; i++) {
             text.append("  line ").append(i).append(" *not emphasis*\n");
@@ -176,6 +189,7 @@ class MarkdownTest {
 
     @Test
     void numberedListsStartAtTheirFirstNumber() throws Exception {
+        TestSupport.allowCoreFonts(true); // What the document tags, in a core font
         Drawn drawn = draw("3. three\n4. four", null);
         assertTrue(drawn.text.contains(TestSupport.hex("3.")));
         assertTrue(drawn.text.contains(TestSupport.hex("4.")));
@@ -184,12 +198,14 @@ class MarkdownTest {
 
     @Test
     void htmlIsDrawnAsText() throws Exception {
+        TestSupport.allowCoreFonts(true); // What the document tags, in a core font
         Drawn drawn = draw("<b>not bold</b>", null);
         assertTrue(drawn.text.contains(TestSupport.hex("<b>not")));
     }
 
     @Test
     void longCodeLinesAreCutInLinearTime() throws Exception {
+        TestSupport.allowCoreFonts(true); // What the document tags, in a core font
         StringBuilder line = new StringBuilder();
         for (int i = 0; i < 200000; i++) {
             line.append((char) ('a' + i % 26));

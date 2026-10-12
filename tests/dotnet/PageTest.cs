@@ -275,6 +275,7 @@ public class PageTest {
     }
     [Fact]
     public void BeginStructElementGroupsWhatIsDrawnIntoAList() {
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
         // The items of a list are drawn one at a time, so nothing but the page
         // can hold them together: L for the list, LI for each item, and Lbl
         // and LBody for the label and the body of the item.

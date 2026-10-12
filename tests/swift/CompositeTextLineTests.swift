@@ -155,6 +155,7 @@ import Testing
         // reads C6H12O6 and not six elements of "C", "6", "H", "12", "O"
         // and "6".
         let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.coreFontsInCompliance = true    // Draws in a core font
         memory.pdf.setTitle("Test")
         memory.pdf.setTitle("Title")
         let page = Page(memory.pdf, Letter.PORTRAIT)

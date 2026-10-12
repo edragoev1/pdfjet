@@ -45,6 +45,13 @@ enum TestSupport {
         return try! Font(pdf, CoreFont.HELVETICA) // The number is valid.
     }
 
+    /// Returns IBM Plex Sans, a font that is embedded, as a document of PDF/A
+    /// or PDF/UA needs: a core font is refused in one (review of
+    /// 11 October 2026, #6).
+    static func plexSans(_ pdf: PDF) throws -> Font {
+        return try Font(pdf, open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
+    }
+
     static func latin1(_ bytes: [UInt8]) -> String {
         var scalars = String.UnicodeScalarView()
         for byte in bytes {

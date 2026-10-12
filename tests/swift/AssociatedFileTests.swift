@@ -27,7 +27,7 @@ import Testing
         for fileName in fileNames {
             memory.pdf.addAssociatedFile(try attach(memory.pdf, fileName, xml))
         }
-        TextLine(TestSupport.helvetica(memory.pdf), "Invoice")
+        TextLine(try TestSupport.plexSans(memory.pdf), "Invoice")
                 .setLocation(50, 50).drawOn(Page(memory.pdf, Letter.PORTRAIT))
         try memory.pdf.complete()
         return TestSupport.latin1(memory.bytes)
@@ -107,7 +107,7 @@ import Testing
         }
         memory.pdf.addAssociatedFile(try EmbeddedFile(memory.pdf, "long.xml", bytes(text), true,
                 "text/xml", Relationship.DATA, "A long file."))
-        TextLine(TestSupport.helvetica(memory.pdf), "x")
+        TextLine(try TestSupport.plexSans(memory.pdf), "x")
                 .setLocation(50, 50).drawOn(Page(memory.pdf, Letter.PORTRAIT))
         try memory.pdf.complete()
         let raw = TestSupport.latin1(memory.bytes)
@@ -124,7 +124,7 @@ import Testing
                 "application/vnd.oasis.opendocument.spreadsheet", Relationship.SOURCE, "A sheet."))
         memory.pdf.addAssociatedFile(try EmbeddedFile(memory.pdf, "odd.bin", bytes("x"), false,
                 "application/x-(odd) #1", Relationship.SUPPLEMENT, "Something else."))
-        TextLine(TestSupport.helvetica(memory.pdf), "x")
+        TextLine(try TestSupport.plexSans(memory.pdf), "x")
                 .setLocation(50, 50).drawOn(Page(memory.pdf, Letter.PORTRAIT))
         try memory.pdf.complete()
         let raw = TestSupport.latin1(memory.bytes)
@@ -137,7 +137,7 @@ import Testing
 
     @Test func aDocumentThatCarriesNoFilesSaysNothingAboutThem() throws {
         let memory = MemoryPDF(Compliance.PDF_A_3B)
-        TextLine(TestSupport.helvetica(memory.pdf), "x")
+        TextLine(try TestSupport.plexSans(memory.pdf), "x")
                 .setLocation(50, 50).drawOn(Page(memory.pdf, Letter.PORTRAIT))
         try memory.pdf.complete()
         let raw = TestSupport.latin1(memory.bytes)
@@ -172,6 +172,7 @@ import Testing
 
     @Test func theLevelOfPdfA3aAndPdfUA1IsBoth() throws {
         let memory = MemoryPDF(Compliance.PDF_A_3A_UA_1)
+        memory.pdf.coreFontsInCompliance = true    // Draws in a core font
         memory.pdf.setTitle("Test")
         let page = Page(memory.pdf, Letter.PORTRAIT)
         TextLine(TestSupport.helvetica(memory.pdf), "Invoice").setLocation(50, 50).drawOn(page)

@@ -99,6 +99,7 @@ public class EncryptionTest {
 
     [Fact]
     public void PdfUaGrantsExtractionForAccessibility() {
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
         byte[] pdf = Encrypted(Compliance.PDF_UA_1,
                 new Passwords().SetUserPassword("hello").SetOwnerPassword("world"),
                 new Permissions().Grant(UserAccess.PRINT));

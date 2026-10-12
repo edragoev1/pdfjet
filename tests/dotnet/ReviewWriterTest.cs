@@ -37,6 +37,7 @@ public class ReviewWriterTest {
 
     [Fact]
     public void APDFAOfLevelBIsNotTagged() {
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
         foreach (Compliance compliance in new Compliance[] {
                 Compliance.PDF_A_1B, Compliance.PDF_A_2B, Compliance.PDF_A_3B}) {
             string raw = Document(compliance, null);
@@ -96,6 +97,11 @@ public class ReviewWriterTest {
         note.SetSize(20f, 20f);
         note.SetContents("A note");
         note.DrawOn(page);
+        // A file attached to a page, which PDF/A refuses: in a PDF/A document
+        // the four others alone
+        if (pdf.IsPDFA()) {
+            return;
+        }
         EmbeddedFile file = new EmbeddedFile(pdf, "a.txt", new MemoryStream(Encoding.UTF8.GetBytes("A file")), false);
         FileAttachment attachment = new FileAttachment(file);
         attachment.SetLocation(200f, 400f);
@@ -105,14 +111,16 @@ public class ReviewWriterTest {
 
     [Fact]
     public void EveryAnnotationIsPrintedAndHasAnAppearance() {
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
 #pragma warning disable CS0618 // PDF_A_3A is deprecated, and still written
         foreach (Compliance compliance in new Compliance[] {Compliance.PDF_1_7, Compliance.PDF_A_2B, Compliance.PDF_A_3A}) {
 #pragma warning restore CS0618
             string raw = Document(compliance, Annotations);
-            Assert.Equal(5, Count(raw, "/Type /Annot\n"));
-            Assert.Equal(5, Count(raw, "/F 4\n"));
-            Assert.Equal(5, Count(raw, "/AP <</N "));
-            Assert.Equal(5, Count(raw, "/Subtype /Form\n"));
+            int want = compliance == Compliance.PDF_1_7 ? 5 : 4;  // No file attached in PDF/A
+            Assert.Equal(want, Count(raw, "/Type /Annot\n"));
+            Assert.Equal(want, Count(raw, "/F 4\n"));
+            Assert.Equal(want, Count(raw, "/AP <</N "));
+            Assert.Equal(want, Count(raw, "/Subtype /Form\n"));
         }
         // The square is drawn in its fill color in its box, which is its rectangle.
         string pdf = Document(Compliance.PDF_1_7, Annotations);
@@ -161,6 +169,7 @@ public class ReviewWriterTest {
 
     [Fact]
     public void APDFA1MapsTheElementOfAnAnnotationToASpan() {
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
         // PDF/A-1, of PDF 1.4, does not know the type Annot, of PDF 1.5: it is
         // role-mapped there (veraPDF, PDF/A-1 6.8.3.4), and not in PDF/A-2.
         foreach (Compliance level in new Compliance[] {Compliance.PDF_A_1A, Compliance.PDF_A_2A}) {
@@ -177,6 +186,7 @@ public class ReviewWriterTest {
 
     [Fact]
     public void APDFA1DrawsAShapeThatIsNotOpaqueOpaque() {
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
         // PDF/A-1 has no transparency: the opacity is ignored there, and kept
         // in the other levels.
         foreach (Compliance level in new Compliance[] {
@@ -210,6 +220,7 @@ public class ReviewWriterTest {
 
     [Fact]
     public void TheTypesOfPDF20AreMappedInTheRoleMap() {
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
         Assert.DoesNotContain("/RoleMap", Document(Compliance.PDF_UA_1, null));
         string raw = Document(Compliance.PDF_UA_1, (pdf, page) => {
             Font font = TestSupport.Helvetica(pdf);
@@ -420,6 +431,55 @@ public class ReviewWriterTest {
         Assert.Matches(@"\d+ 0 obj\n<<\n/Filter /FlateDecode\n/Length1 \d+\n/Metadata \d+ 0 R\n/Length \d+\n>>\nstream\n", raw);
         Assert.Contains("<xmpRights:UsageTerms>", raw);
         Assert.Contains(" &amp; ", raw);
+    }
+    // A document of PDF/A or PDF/UA refuses a font that is not embedded, and one
+    // of PDF/A a file attached to a page or embedded but not as an associated
+    // file of PDF/A-3: each was written, and the document was not what it said
+    // (review of 11 October 2026, #5 and #6).
+    [Fact]
+    public void ACompliantDocumentRefusesWhatItCannotBe() {
+        Func<Compliance, Action<PDF, Page>, Exception> complete = (compliance, draw) => {
+            PDF pdf = new PDF(new MemoryStream(), compliance).SetTitle("Test");
+            Page page = new Page(pdf, Letter.PORTRAIT);
+            draw(pdf, page);
+            return Record.Exception(() => pdf.Complete());
+        };
+        Func<Func<PDF, Font>, Action<PDF, Page>> text = font => (pdf, page) =>
+                new TextLine(font(pdf), "Text").SetLocation(50f, 50f).DrawOn(page);
+#pragma warning disable CS0618 // PDF_A_3A is deprecated, and still written
+        foreach (Compliance compliance in new Compliance[] {
+                Compliance.PDF_UA_1, Compliance.PDF_A_1B, Compliance.PDF_A_3A}) {
+#pragma warning restore CS0618
+            Exception problem = complete(compliance, text(TestSupport.Helvetica));
+            Assert.True(problem is InvalidOperationException
+                    && problem.Message.Contains("The font Helvetica is not embedded"),
+                    compliance + ": Helvetica: " + problem);
+            problem = complete(compliance, text(TestSupport.PlexSans));
+            Assert.True(problem == null, compliance + ": IBM Plex Sans: " + problem);
+        }
+        Action<PDF, Page> attach = (pdf, page) => {
+            text(TestSupport.PlexSans)(pdf, page);
+            EmbeddedFile file = new EmbeddedFile(pdf, "a.txt", new MemoryStream(Encoding.UTF8.GetBytes("A file")), false);
+            new FileAttachment(file).DrawOn(page);
+        };
+        Action<PDF, Page> embed = (pdf, page) => {
+            text(TestSupport.PlexSans)(pdf, page);
+            new EmbeddedFile(pdf, "a.txt", new MemoryStream(Encoding.UTF8.GetBytes("A file")), false);
+        };
+        foreach (Compliance compliance in new Compliance[] {
+                Compliance.PDF_A_1B, Compliance.PDF_A_2B, Compliance.PDF_A_3B}) {
+            Exception problem = complete(compliance, attach);
+            Assert.True(problem is InvalidOperationException
+                    && problem.Message.Contains("cannot have a file attached to a page"),
+                    compliance + ": a file attached: " + problem);
+            problem = complete(compliance, embed);
+            Assert.True(problem is InvalidOperationException
+                    && problem.Message.Contains("but as an associated file"),
+                    compliance + ": a file embedded: " + problem);
+        }
+        // Outside PDF/A a file is attached as before
+        Exception attached = complete(Compliance.PDF_UA_1, attach);
+        Assert.True(attached == null, "PDF/UA: a file attached: " + attached);
     }
 }
 }

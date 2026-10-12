@@ -12,9 +12,12 @@ import Testing
 /// the metadata and the files a document carries.
 @Suite struct ReviewWriterTests {
     /// Writes a document of the compliance with a heading on its one page,
-    /// drawn with draw, and returns it.
+    /// drawn with draw, and returns it. The heading is in a core font, which
+    /// the tests of what a document of PDF/A or PDF/UA tags find by its
+    /// encoding: complete() refuses one otherwise.
     private func document(_ compliance: Compliance, _ draw: ((PDF, Page) throws -> Void)? = nil) throws -> String {
         let memory = MemoryPDF(compliance)
+        memory.pdf.coreFontsInCompliance = true
         memory.pdf.setTitle("Test")
         let page = Page(memory.pdf, Letter.PORTRAIT)
         TextLine(TestSupport.helvetica(memory.pdf), "Heading")
@@ -94,6 +97,11 @@ import Testing
         note.setSize(20, 20)
         note.setContents("A note")
         _ = note.drawOn(page)
+        // A file attached to a page, which PDF/A refuses: in a PDF/A document
+        // the four others alone
+        if pdf.isPDFA() {
+            return
+        }
         let file = try EmbeddedFile(pdf, "a.txt", InputStream(data: Data("A file".utf8)), false)
         let attachment = FileAttachment(file)
         attachment.setLocation(200, 400)
@@ -104,10 +112,11 @@ import Testing
     @Test func everyAnnotationIsPrintedAndHasAnAppearance() throws {
         for compliance in [Compliance.PDF_1_7, Compliance.PDF_A_2B, PDF.complianceA3A] {
             let raw = try document(compliance, annotations)
-            #expect(count(raw, "/Type /Annot\n") == 5, "\(compliance)")
-            #expect(count(raw, "/F 4\n") == 5, "\(compliance)")
-            #expect(count(raw, "/AP <</N ") == 5, "\(compliance)")
-            #expect(count(raw, "/Subtype /Form\n") == 5, "\(compliance)")
+            let want = compliance == Compliance.PDF_1_7 ? 5 : 4    // No file attached in PDF/A
+            #expect(count(raw, "/Type /Annot\n") == want, "\(compliance)")
+            #expect(count(raw, "/F 4\n") == want, "\(compliance)")
+            #expect(count(raw, "/AP <</N ") == want, "\(compliance)")
+            #expect(count(raw, "/Subtype /Form\n") == want, "\(compliance)")
         }
         // The square is drawn in its fill color in its box, which is its rectangle.
         let raw = try document(Compliance.PDF_1_7, annotations)
@@ -368,6 +377,7 @@ import Testing
         // review of 9 October 2026): the hexadecimal of its UTF-8 bytes, as in
         // the other ports.
         let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.coreFontsInCompliance = true    // Draws in a core font
         memory.pdf.setTitle("Test")
         _ = memory.pdf.setEncryption(Encryption(memory.pdf, Passwords(), Permissions()))
         let font = TestSupport.helvetica(memory.pdf)
@@ -382,5 +392,48 @@ import Testing
         let content = TestSupport.latin1(try #require(TestSupport.pageObjects(objects).first?
                 .getContentObject(objects)).getData())
         #expect(content.contains("/Lang <6672>"), "\(content)")
+    }
+
+    /// A document of PDF/A or PDF/UA refuses a font that is not embedded, and
+    /// one of PDF/A a file attached to a page or embedded but not as an
+    /// associated file of PDF/A-3: each was written, and the document was not
+    /// what it said (review of 11 October 2026, #5 and #6).
+    @Test func aCompliantDocumentRefusesWhatItCannotBe() throws {
+        func complete(_ level: Compliance, _ draw: (PDF, Page) throws -> Void) throws -> String {
+            let memory = MemoryPDF(level)
+            memory.pdf.setTitle("Test")
+            let page = Page(memory.pdf, Letter.PORTRAIT)
+            try draw(memory.pdf, page)
+            return completeMessage(memory.pdf)
+        }
+        func text(_ font: @escaping (PDF) throws -> Font) -> (PDF, Page) throws -> Void {
+            return { pdf, page in
+                TextLine(try font(pdf), "Text").setLocation(50, 50).drawOn(page)
+            }
+        }
+        let helvetica: (PDF) throws -> Font = { TestSupport.helvetica($0) }
+        let plexSans: (PDF) throws -> Font = { try TestSupport.plexSans($0) }
+        for level in [Compliance.PDF_UA_1, Compliance.PDF_A_1B, PDF.complianceA3A] {
+            let message = try complete(level, text(helvetica))
+            #expect(message.contains("The font Helvetica is not embedded"), "\(level): Helvetica: \(message)")
+            #expect(try complete(level, text(plexSans)) == "", "\(level): IBM Plex Sans")
+        }
+        let attach: (PDF, Page) throws -> Void = { pdf, page in
+            try text(plexSans)(pdf, page)
+            let file = try EmbeddedFile(pdf, "a.txt", InputStream(data: Data("A file".utf8)), false)
+            FileAttachment(file).drawOn(page)
+        }
+        let embed: (PDF, Page) throws -> Void = { pdf, page in
+            try text(plexSans)(pdf, page)
+            _ = try EmbeddedFile(pdf, "a.txt", InputStream(data: Data("A file".utf8)), false)
+        }
+        for level in [Compliance.PDF_A_1B, Compliance.PDF_A_2B, Compliance.PDF_A_3B] {
+            let attached = try complete(level, attach)
+            #expect(attached.contains("cannot have a file attached to a page"), "\(level): a file attached: \(attached)")
+            let embedded = try complete(level, embed)
+            #expect(embedded.contains("but as an associated file"), "\(level): a file embedded: \(embedded)")
+        }
+        // Outside PDF/A a file is attached as before
+        #expect(try complete(Compliance.PDF_UA_1, attach) == "", "PDF/UA: a file attached")
     }
 }

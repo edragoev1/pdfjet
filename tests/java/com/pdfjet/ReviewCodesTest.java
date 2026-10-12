@@ -23,9 +23,15 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 class ReviewCodesTest {
+    @AfterEach
+    void forbidCoreFonts() {
+        TestSupport.allowCoreFonts(false);
+    }
+
     // Returns the bounding box of the structure element, in the coordinates of the PDF.
     private static float[] bbox(StructElement element) {
         Matcher matcher = Pattern.compile("/BBox \\[(\\S+) (\\S+) (\\S+) (\\S+)\\]").matcher(element.attributes);
@@ -164,6 +170,7 @@ class ReviewCodesTest {
 
     @Test
     void encryptionThePermissionsOfTheCallerAreNotChanged() throws Exception {
+        TestSupport.allowCoreFonts(true); // What the document tags, in a core font
         Permissions permissions = new Permissions().setAccess(EnumSet.of(UserAccess.PRINT));
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         PDF pdf = new PDF(bos, Compliance.PDF_UA_1);

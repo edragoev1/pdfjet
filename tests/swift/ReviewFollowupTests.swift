@@ -47,6 +47,7 @@ import Testing
 
     @Test func theFooterOfABigTableIsAPaginationArtifact() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.coreFontsInCompliance = true    // Draws in a core font
         _ = memory.pdf.setTitle("Title")
         let font = TestSupport.helvetica(memory.pdf)
         var rows = [[String]]()

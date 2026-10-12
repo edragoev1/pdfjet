@@ -76,6 +76,7 @@ public class EmbeddedFile {
         self.fileName = fileName
         self.relationship = relationship
         self.mediaType = mediaType
+        pdf.embeddedFiles.append(self)
         var buf = try Content.getFromStream(stream)
         let size = buf.count
         if compress {

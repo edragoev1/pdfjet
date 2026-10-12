@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 
@@ -28,6 +29,11 @@ import org.junit.jupiter.api.function.Executable;
  * the metadata and the files a document carries.
  */
 class ReviewWriterTest {
+    @AfterEach
+    void forbidCoreFonts() {
+        TestSupport.allowCoreFonts(false);
+    }
+
     private interface Drawing {
         void draw(PDF pdf, Page page) throws Exception;
     }
@@ -62,6 +68,7 @@ class ReviewWriterTest {
     @Test
     @SuppressWarnings("deprecation")
     void aPDFAOfLevelBIsNotTagged() throws Exception {
+        TestSupport.allowCoreFonts(true); // What the document tags, in a core font
         for (Compliance compliance : new Compliance[] {
                 Compliance.PDF_A_1B, Compliance.PDF_A_2B, Compliance.PDF_A_3B}) {
             String raw = document(compliance, null);
@@ -119,6 +126,11 @@ class ReviewWriterTest {
         note.setSize(20f, 20f);
         note.setContents("A note");
         note.drawOn(page);
+        // A file attached to a page, which PDF/A refuses: in a PDF/A document
+        // the four others alone
+        if (pdf.isPDFA()) {
+            return;
+        }
         EmbeddedFile file = new EmbeddedFile(pdf, "a.txt",
                 new ByteArrayInputStream("A file".getBytes(StandardCharsets.UTF_8)), false);
         FileAttachment attachment = new FileAttachment(file);
@@ -130,12 +142,14 @@ class ReviewWriterTest {
     @Test
     @SuppressWarnings("deprecation")
     void everyAnnotationIsPrintedAndHasAnAppearance() throws Exception {
+        TestSupport.allowCoreFonts(true); // What the document tags, in a core font
         for (Compliance compliance : new Compliance[] {Compliance.PDF_1_7, Compliance.PDF_A_2B, Compliance.PDF_A_3A}) {
             String raw = document(compliance, ReviewWriterTest::annotations);
-            assertEquals(5, count(raw, "/Type /Annot\n"), compliance.toString());
-            assertEquals(5, count(raw, "/F 4\n"), compliance.toString());
-            assertEquals(5, count(raw, "/AP <</N "), compliance.toString());
-            assertEquals(5, count(raw, "/Subtype /Form\n"), compliance.toString());
+            int want = compliance == Compliance.PDF_1_7 ? 5 : 4;    // No file attached in PDF/A
+            assertEquals(want, count(raw, "/Type /Annot\n"), compliance.toString());
+            assertEquals(want, count(raw, "/F 4\n"), compliance.toString());
+            assertEquals(want, count(raw, "/AP <</N "), compliance.toString());
+            assertEquals(want, count(raw, "/Subtype /Form\n"), compliance.toString());
         }
         // The square is drawn in its fill color in its box, which is its rectangle.
         String raw = document(Compliance.PDF_1_7, ReviewWriterTest::annotations);
@@ -187,6 +201,7 @@ class ReviewWriterTest {
 
     @Test
     void aPDFA1DrawsAShapeThatIsNotOpaqueOpaque() throws Exception {
+        TestSupport.allowCoreFonts(true); // What the document tags, in a core font
         // PDF/A-1 has no transparency: the opacity is ignored there, and kept
         // in the other levels.
         for (Compliance level : new Compliance[] {
@@ -213,6 +228,7 @@ class ReviewWriterTest {
 
     @Test
     void aPDFA1MapsTheElementOfAnAnnotationToASpan() throws Exception {
+        TestSupport.allowCoreFonts(true); // What the document tags, in a core font
         // PDF/A-1, of PDF 1.4, does not know the type Annot, of PDF 1.5: it is
         // role-mapped there (veraPDF, PDF/A-1 6.8.3.4), and not in PDF/A-2.
         for (Compliance level : new Compliance[] {Compliance.PDF_A_1A, Compliance.PDF_A_2A}) {
@@ -242,6 +258,7 @@ class ReviewWriterTest {
 
     @Test
     void theTypesOfPDF20AreMappedInTheRoleMap() throws Exception {
+        TestSupport.allowCoreFonts(true); // What the document tags, in a core font
         assertFalse(document(Compliance.PDF_UA_1, null).contains("/RoleMap"));
         String raw = document(Compliance.PDF_UA_1, new Drawing() {
             public void draw(PDF pdf, Page page) throws Exception {
@@ -437,5 +454,66 @@ class ReviewWriterTest {
                 "\\d+ 0 obj\n<<\n/Filter /FlateDecode\n/Length1 \\d+\n/Metadata \\d+ 0 R\n/Length \\d+\n>>\nstream\n")
                 .matcher(raw).find(), "the font file does not refer to its metadata");
         assertTrue(raw.contains("<xmpRights:UsageTerms>") && raw.contains(" &amp; "), "the notice is not escaped");
+    }
+
+    private interface FontOf {
+        Font of(PDF pdf) throws Exception;
+    }
+
+    // Completes a document of the compliance with one page, drawn with
+    // drawing, and returns what complete() threw, or null.
+    private static Exception complete(Compliance compliance, Drawing drawing) throws Exception {
+        PDF pdf = new PDF(new ByteArrayOutputStream(), compliance).setTitle("Test");
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        try {
+            drawing.draw(pdf, page);
+            pdf.complete();
+        } catch (IllegalStateException e) {
+            return e;
+        }
+        return null;
+    }
+
+    private static Drawing text(FontOf font) {
+        return (pdf, page) -> new TextLine(font.of(pdf), "Text").setLocation(50f, 50f).drawOn(page);
+    }
+
+    // A document of PDF/A or PDF/UA refuses a font that is not embedded, and
+    // one of PDF/A a file attached to a page or embedded but not as an
+    // associated file of PDF/A-3: each was written, and the document was not
+    // what it said (review of 11 October 2026, #5 and #6).
+    @Test
+    @SuppressWarnings("deprecation") // PDF_A_3A, which is still written
+    void aCompliantDocumentRefusesWhatItCannotBe() throws Exception {
+        for (Compliance compliance : new Compliance[] {
+                Compliance.PDF_UA_1, Compliance.PDF_A_1B, Compliance.PDF_A_3A}) {
+            Exception e = complete(compliance, text(TestSupport::helvetica));
+            assertTrue(e != null && e.getMessage().contains("The font Helvetica is not embedded"),
+                    compliance + ": Helvetica: " + e);
+            e = complete(compliance, text(TestSupport::plexSans));
+            assertEquals(null, e, compliance + ": IBM Plex Sans");
+        }
+        Drawing attach = (pdf, page) -> {
+            text(TestSupport::plexSans).draw(pdf, page);
+            EmbeddedFile file = new EmbeddedFile(pdf, "a.txt",
+                    new ByteArrayInputStream("A file".getBytes(StandardCharsets.UTF_8)), false);
+            new FileAttachment(file).drawOn(page);
+        };
+        Drawing embed = (pdf, page) -> {
+            text(TestSupport::plexSans).draw(pdf, page);
+            new EmbeddedFile(pdf, "a.txt",
+                    new ByteArrayInputStream("A file".getBytes(StandardCharsets.UTF_8)), false);
+        };
+        for (Compliance compliance : new Compliance[] {
+                Compliance.PDF_A_1B, Compliance.PDF_A_2B, Compliance.PDF_A_3B}) {
+            Exception e = complete(compliance, attach);
+            assertTrue(e != null && e.getMessage().contains("cannot have a file attached to a page"),
+                    compliance + ": a file attached: " + e);
+            e = complete(compliance, embed);
+            assertTrue(e != null && e.getMessage().contains("but as an associated file"),
+                    compliance + ": a file embedded: " + e);
+        }
+        // Outside PDF/A a file is attached as before
+        assertEquals(null, complete(Compliance.PDF_UA_1, attach), "PDF/UA: a file attached");
     }
 }

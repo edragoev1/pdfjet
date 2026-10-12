@@ -50,6 +50,32 @@ public static class TestSupport {
         return new Font(pdf, CoreFont.HELVETICA);
     }
 
+    /// <summary>
+    /// Lets the test draw in a core font in a document of PDF/A or PDF/UA,
+    /// which Complete refuses, until the result is disposed: for the tests of
+    /// what such a document tags, which find the text of a core font by its
+    /// encoding. The flag is of the thread, as the test classes run in parallel.
+    /// </summary>
+    public static IDisposable AllowCoreFonts() {
+        PDF.coreFontsInCompliance = true;
+        return new CoreFontsAllowed();
+    }
+
+    private sealed class CoreFontsAllowed : IDisposable {
+        public void Dispose() {
+            PDF.coreFontsInCompliance = false;
+        }
+    }
+
+    /// <summary>
+    /// Returns IBM Plex Sans, a font that is embedded, as a document of PDF/A
+    /// or PDF/UA needs: a core font is refused in one (review of
+    /// 11 October 2026, #6).
+    /// </summary>
+    public static Font PlexSans(PDF pdf) {
+        return new Font(pdf, RepoPath("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+    }
+
     public static string Latin1(byte[] bytes) {
         return Encoding.Latin1.GetString(bytes);
     }

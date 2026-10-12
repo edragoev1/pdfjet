@@ -135,6 +135,16 @@ public final class PDF {
     }.joined()
     // The files the document carries, in the order they were added.
     private var associatedFiles = [EmbeddedFile]()
+    // The files embedded in the document, and whether one is attached to a
+    // page, which a document of PDF/A takes only as PDF/A-3's associated
+    // files (review of 11 October 2026, #5)
+    var embeddedFiles = [EmbeddedFile]()
+    var fileAttachment = false
+    // Lets the tests of what a document of PDF/A or PDF/UA tags draw in a core
+    // font, whose text they find by its encoding: complete() refuses one
+    // otherwise. A property of the document, not a static, so that the tests
+    // that run at the same time do not share it. Never set outside the tests.
+    var coreFontsInCompliance = false
     // The descriptions that a standard of its own asks the metadata to carry.
     private var metadata = [String]()
     private var prevPage: Page?
@@ -1826,6 +1836,35 @@ public final class PDF {
             let message = "A PDF/UA document needs a title: use setTitle."
             fail(message)
             throw PDFjetError(message: message)
+        }
+        // PDF/A and PDF/UA ask for every font to be embedded, which a core font
+        // and the deprecated CJK fonts are not: such a document was written as
+        // what it was not (review of 11 October 2026, #6)
+        if compliance != Compliance.PDF_1_7 && !coreFontsInCompliance {
+            for font in fonts where font.isCoreFont || font.isCJK {
+                let message = "The font " + font.name + " is not embedded, which a document of "
+                        + "\(compliance) needs: use a font that is, such as IBM Plex Sans."
+                fail(message)
+                throw PDFjetError(message: message)
+            }
+        }
+        // PDF/A-1 carries no files, PDF/A-2 only documents of PDF/A, and PDF/A-3
+        // each as an associated file, with its relationship: a file embedded or
+        // attached to a page otherwise made a document that was not PDF/A
+        // (review of 11 October 2026, #5)
+        if isPDFA() {
+            if fileAttachment {
+                let message = "A document of \(compliance)"
+                        + " cannot have a file attached to a page: carry it with addAssociatedFile, in PDF/A-3."
+                fail(message)
+                throw PDFjetError(message: message)
+            }
+            for file in embeddedFiles where !associatedFiles.contains(where: { $0 === file }) {
+                let message = "A document of \(compliance) cannot carry the file " + file.getFileName()
+                        + " but as an associated file: use addAssociatedFile, in PDF/A-3."
+                fail(message)
+                throw PDFjetError(message: message)
+            }
         }
         if prevPage != nil {
             addPageContent(prevPage!)

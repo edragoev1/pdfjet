@@ -19,6 +19,8 @@ import Testing
 
     static func draw(_ text: String, _ imageDirectory: String?) throws -> Drawn {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
+        // The tests find the text of the core fonts by its encoding.
+        memory.pdf.coreFontsInCompliance = true
         memory.pdf.setTitle("Test")
         let pdf = memory.pdf
         pdf.setTitle("Markdown")

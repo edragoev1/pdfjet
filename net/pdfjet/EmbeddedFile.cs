@@ -50,6 +50,7 @@ public class EmbeddedFile {
         this.fileName = fileName;
         this.relationship = relationship;
         this.mediaType = mediaType;
+        pdf.embeddedFiles.Add(this);
         byte[] buf = Content.GetFromStream(stream);
         int size = buf.Length;
 

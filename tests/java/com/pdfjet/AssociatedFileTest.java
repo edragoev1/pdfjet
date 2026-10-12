@@ -15,10 +15,16 @@ import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 /** The files a document carries with it, which PDF/A-3 calls associated files. */
 class AssociatedFileTest {
+    @AfterEach
+    void forbidCoreFonts() {
+        TestSupport.allowCoreFonts(false);
+    }
+
     private static final String XML = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<invoice/>\n";
 
     private static ByteArrayInputStream bytes(String text) {
@@ -36,7 +42,7 @@ class AssociatedFileTest {
         for (String fileName : fileNames) {
             pdf.addAssociatedFile(attach(pdf, fileName, XML));
         }
-        new TextLine(TestSupport.helvetica(pdf), "Invoice")
+        new TextLine(TestSupport.plexSans(pdf), "Invoice")
                 .setLocation(50f, 50f).drawOn(new Page(pdf, Letter.PORTRAIT));
         pdf.complete();
         return TestSupport.latin1(bos.toByteArray());
@@ -117,7 +123,7 @@ class AssociatedFileTest {
         }
         pdf.addAssociatedFile(new EmbeddedFile(pdf, "long.xml", bytes(text.toString()), true,
                 "text/xml", Relationship.DATA, "A long file."));
-        new TextLine(TestSupport.helvetica(pdf), "x")
+        new TextLine(TestSupport.plexSans(pdf), "x")
                 .setLocation(50f, 50f).drawOn(new Page(pdf, Letter.PORTRAIT));
         pdf.complete();
         String raw = TestSupport.latin1(bos.toByteArray());
@@ -137,7 +143,7 @@ class AssociatedFileTest {
                 "application/vnd.oasis.opendocument.spreadsheet", Relationship.SOURCE, "A sheet."));
         pdf.addAssociatedFile(new EmbeddedFile(pdf, "odd.bin", bytes("x"), false,
                 "application/x-(odd) #1", Relationship.SUPPLEMENT, "Something else."));
-        new TextLine(TestSupport.helvetica(pdf), "x")
+        new TextLine(TestSupport.plexSans(pdf), "x")
                 .setLocation(50f, 50f).drawOn(new Page(pdf, Letter.PORTRAIT));
         pdf.complete();
         String raw = TestSupport.latin1(bos.toByteArray());
@@ -152,7 +158,7 @@ class AssociatedFileTest {
     void aDocumentThatCarriesNoFilesSaysNothingAboutThem() throws Exception {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         PDF pdf = new PDF(bos, Compliance.PDF_A_3B);
-        new TextLine(TestSupport.helvetica(pdf), "x")
+        new TextLine(TestSupport.plexSans(pdf), "x")
                 .setLocation(50f, 50f).drawOn(new Page(pdf, Letter.PORTRAIT));
         pdf.complete();
         String raw = TestSupport.latin1(bos.toByteArray());
@@ -189,6 +195,7 @@ class AssociatedFileTest {
 
     @Test
     void theLevelOfPdfA3aAndPdfUA1IsBoth() throws Exception {
+        TestSupport.allowCoreFonts(true); // What the document tags, in a core font
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         PDF pdf = new PDF(bos, Compliance.PDF_A_3A_UA_1).setTitle("Test");
         Page page = new Page(pdf, Letter.PORTRAIT);

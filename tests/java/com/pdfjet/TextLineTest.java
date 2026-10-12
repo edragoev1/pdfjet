@@ -11,9 +11,15 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 class TextLineTest {
+    @AfterEach
+    void forbidCoreFonts() {
+        TestSupport.allowCoreFonts(false);
+    }
+
     @Test
     void drawOnWritesTheTextAsHexAtTheFlippedY() throws Exception {
         PDF pdf = TestSupport.newPDF();
@@ -29,6 +35,7 @@ class TextLineTest {
 
     @Test
     void theUnderlineAndTheStrikeoutOfTaggedTextAreArtifacts() throws Exception {
+        TestSupport.allowCoreFonts(true); // What the document tags, in a core font
         // The line is decoration: an element of its own, described as
         // "Underlined text: " and the text, is read after the text again.
         java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();

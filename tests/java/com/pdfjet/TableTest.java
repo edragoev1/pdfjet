@@ -21,10 +21,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 class TableTest {
+    @AfterEach
+    void forbidCoreFonts() {
+        TestSupport.allowCoreFonts(false);
+    }
+
     @TempDir
     File tempDir;
 
@@ -263,6 +269,7 @@ class TableTest {
 
     @Test
     void aTableInAPDFUADocumentIsTaggedAsATable() throws Exception {
+        TestSupport.allowCoreFonts(true); // What the document tags, in a core font
         java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
         PDF pdf = new PDF(bos, Compliance.PDF_UA_1).setTitle("Test");
         pdf.setTitle("Title");
@@ -296,6 +303,7 @@ class TableTest {
 
     @Test
     void theLinkedMarkerOfAWrappedCellIsAFigure() throws Exception {
+        TestSupport.allowCoreFonts(true); // What the document tags, in a core font
         // The lines of a wrapped cell are one paragraph, and a figure drawn in
         // it, as its linked marker, was made part of the paragraph, losing its
         // element and its description (the review of 9 October 2026).
@@ -321,6 +329,7 @@ class TableTest {
 
     @Test
     void theHeaderRowsOnTheNextPagesAreArtifacts() throws Exception {
+        TestSupport.allowCoreFonts(true); // What the document tags, in a core font
         java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
         PDF pdf = new PDF(bos, Compliance.PDF_UA_1).setTitle("Test");
         pdf.setTitle("Title");
@@ -357,6 +366,7 @@ class TableTest {
 
     @Test
     void aTableWithAPageLeftOutOfTheDocumentStillHasAStructureTree() throws Exception {
+        TestSupport.allowCoreFonts(true); // What the document tags, in a core font
         java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
         PDF pdf = new PDF(bos, Compliance.PDF_UA_1).setTitle("Test");
         pdf.setTitle("Title");
@@ -466,6 +476,7 @@ class TableTest {
 
     @Test
     void aCellThatSpansRowsSaysSoInAPDFUADocument() throws Exception {
+        TestSupport.allowCoreFonts(true); // What the document tags, in a core font
         java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
         PDF pdf = new PDF(bos, Compliance.PDF_UA_1).setTitle("Test");
         pdf.setTitle("Title");
@@ -821,6 +832,7 @@ class TableTest {
 
     @Test
     void theFooterRowsBeforeTheEndOfTheTableAreArtifacts() throws Exception {
+        TestSupport.allowCoreFonts(true); // What the document tags, in a core font
         java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
         PDF pdf = new PDF(bos, Compliance.PDF_UA_1).setTitle("Test");
         pdf.setTitle("Title");

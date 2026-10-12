@@ -17,10 +17,16 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 class BigTableTest {
+    @AfterEach
+    void forbidCoreFonts() {
+        TestSupport.allowCoreFonts(false);
+    }
+
     @TempDir
     File tempDir;
 
@@ -273,6 +279,7 @@ class BigTableTest {
 
     @Test
     void isTaggedAsATableInAPDFUADocument() throws Exception {
+        TestSupport.allowCoreFonts(true); // What the document tags, in a core font
         // The table is one Table element over all its pages: a TR for each
         // row, and a TH for each header field the first time the header is
         // drawn or a TD for each field of a row, each holding its own text.
@@ -449,6 +456,7 @@ class BigTableTest {
 
     @Test
     void theCellOfACutFieldKeepsTheWholeOfItsText() throws Exception {
+        TestSupport.allowCoreFonts(true); // What the document tags, in a core font
         // A field the page was too narrow for is drawn cut, but a reader is
         // read the whole of it: the cell of the structure tree keeps it.
         java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();

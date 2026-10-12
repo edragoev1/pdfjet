@@ -73,6 +73,7 @@ public class FileAttachment : IDrawable {
         if (embeddedFile.pdf != page.pdf) {
             page.pdf.Fail(new ArgumentException("The embedded file belongs to another PDF."));
         }
+        page.pdf.fileAttachment = true;
         Annotation annotation = new Annotation(
                 Annotation.FileAttachment,
                 x,

@@ -11,9 +11,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 class TextColumnTest {
+    @AfterEach
+    void forbidCoreFonts() {
+        TestSupport.allowCoreFonts(false);
+    }
+
     private static final String EIGHT_WORDS = "alpha beta gamma delta epsilon zeta eta theta";
 
     private static TextColumn column(Font font, String text, Alignment alignment) {
@@ -170,6 +176,7 @@ class TextColumnTest {
 
     @Test
     void aParagraphIsOneStructureElementOfTheTypeItIsGiven() throws Exception {
+        TestSupport.allowCoreFonts(true); // What the document tags, in a core font
         // The words of a paragraph are drawn one at a time, and each was an
         // element of its own, so a reader read every word as a paragraph.
         java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();

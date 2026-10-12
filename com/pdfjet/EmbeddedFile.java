@@ -159,6 +159,7 @@ public class EmbeddedFile {
         pdf.endObj();
 
         this.objNumber = pdf.getObjNumber();
+        pdf.embeddedFiles.put(this.objNumber, fileName);
     }
 
     // The media type as a name of PDF: the characters a name cannot hold

@@ -212,6 +212,7 @@ import Testing
 
     @Test func aTableInAPDFUADocumentIsTaggedAsATable() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.coreFontsInCompliance = true    // Draws in a core font
         memory.pdf.setTitle("Test")
         _ = memory.pdf.setTitle("Title")
         let font = TestSupport.helvetica(memory.pdf)
@@ -247,6 +248,7 @@ import Testing
         // element and its description (the review of 9 October 2026).
         for text in ["short", "a note long enough to wrap to four lines"] {
             let memory = MemoryPDF(Compliance.PDF_UA_1)
+            memory.pdf.coreFontsInCompliance = true    // Draws in a core font
             memory.pdf.setTitle("Test")
             let font = TestSupport.helvetica(memory.pdf)
             let marked = Cell(font, text).setMarker(
@@ -266,6 +268,7 @@ import Testing
 
     @Test func theHeaderRowsOnTheNextPagesAreArtifacts() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.coreFontsInCompliance = true    // Draws in a core font
         memory.pdf.setTitle("Test")
         _ = memory.pdf.setTitle("Title")
         let table = Table().setTableData(rows(TestSupport.helvetica(memory.pdf), 60, 2), 1).setLocation(20, 20)
@@ -299,6 +302,7 @@ import Testing
 
     @Test func aTableWithAPageLeftOutOfTheDocumentStillHasAStructureTree() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.coreFontsInCompliance = true    // Draws in a core font
         memory.pdf.setTitle("Test")
         _ = memory.pdf.setTitle("Title")
         let table = Table().setTableData(rows(TestSupport.helvetica(memory.pdf), 60, 2), 1).setLocation(20, 20)
@@ -408,6 +412,7 @@ import Testing
 
     @Test func aCellThatSpansRowsSaysSoInAPDFUADocument() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.coreFontsInCompliance = true    // Draws in a core font
         memory.pdf.setTitle("Test")
         _ = memory.pdf.setTitle("Title")
         let font = TestSupport.helvetica(memory.pdf)
@@ -751,6 +756,7 @@ import Testing
 
     @Test func theFooterRowsBeforeTheEndOfTheTableAreArtifacts() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.coreFontsInCompliance = true    // Draws in a core font
         memory.pdf.setTitle("Test")
         _ = memory.pdf.setTitle("Title")
         let pages = withFooter(memory.pdf, ["total", "sum"])

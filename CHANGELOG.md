@@ -9,6 +9,23 @@ This is the first entry in this file; earlier releases were not tracked here.
 
 ## v9.0.7 — unreleased
 
+### Changed
+- A document of PDF/A or PDF/UA refuses what it cannot be, in the four
+  ports: Complete returns an error, where it wrote a document that said it
+  was PDF/A or PDF/UA and was not, as veraPDF found.
+  - A core font, such as Helvetica, or one of the deprecated CJK fonts, is
+    not embedded, which both standards ask of every font: "The font
+    Helvetica is not embedded, which a document of PDF_UA_1 needs: use a
+    font that is, such as IBM Plex Sans."
+  - In PDF/A, a file attached to a page with FileAttachment, or embedded
+    with NewEmbeddedFile and not carried with AddAssociatedFile: PDF/A-1
+    carries no files, PDF/A-2 only documents of PDF/A, and PDF/A-3 each with
+    its relationship, which AddAssociatedFile writes.
+
+  Code that wrote such documents gets the error now: an embedded font in
+  place of a core one, and AddAssociatedFile in a document of PDF/A-3, make
+  them what they say they are.
+
 ### Fixed
 - Reading untrusted PDFs, in the four ports: the output of ASCII85Decode
   and ASCIIHexDecode is counted against the 256 MB that the decoded streams

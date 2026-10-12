@@ -127,6 +127,12 @@ final public class PDF {
     private String uuid = newDocumentID();
     // The files the document carries, in the order they were added.
     private final List<EmbeddedFile> associatedFiles = new ArrayList<EmbeddedFile>();
+    // The files embedded in the document, and whether one is attached to a
+    // page, which a document of PDF/A takes only as PDF/A-3's associated
+    // files (review of 11 October 2026, #5): the name of each file by the
+    // number of its file specification.
+    final Map<Integer, String> embeddedFiles = new LinkedHashMap<Integer, String>();
+    boolean fileAttachment = false;
     // The descriptions that a standard of its own asks the metadata to carry.
     private final List<String> metadata = new ArrayList<String>();
     private final List<String> importedFonts = new ArrayList<String>();
@@ -163,6 +169,11 @@ final public class PDF {
     int pagesCreated = 0;
 
     static final Logger LOG = Logger.getLogger(PDF.class.getName());
+
+    // Lets the tests of what a document of PDF/A or PDF/UA tags draw in a core
+    // font, whose text they find by its encoding: complete() refuses one
+    // otherwise. Never set outside the tests.
+    static boolean coreFontsInCompliance = false;
 
     // SecureRandom is safe to share between threads.
     private static final SecureRandom RANDOM = new SecureRandom();
@@ -2342,6 +2353,38 @@ final public class PDF {
         if ((compliance == Compliance.PDF_UA_1 || compliance == Compliance.PDF_A_3A_UA_1)
                 && (title == null || title.trim().isEmpty())) {
             fail(new IllegalStateException("A PDF/UA document needs a title: use setTitle."));
+        }
+        // PDF/A and PDF/UA ask for every font to be embedded, which a core font
+        // and the deprecated CJK fonts are not: such a document was written as
+        // what it was not (review of 11 October 2026, #6).
+        if (compliance != Compliance.PDF_1_7 && !coreFontsInCompliance) {
+            for (Font font : fonts) {
+                if (font.isCoreFont || font.isCJK) {
+                    fail(new IllegalStateException("The font " + font.name
+                            + " is not embedded, which a document of " + compliance
+                            + " needs: use a font that is, such as IBM Plex Sans."));
+                }
+            }
+        }
+        // PDF/A-1 carries no files, PDF/A-2 only documents of PDF/A, and PDF/A-3
+        // each as an associated file, with its relationship: a file embedded or
+        // attached to a page otherwise made a document that was not PDF/A
+        // (review of 11 October 2026, #5).
+        if (isPDFA()) {
+            if (fileAttachment) {
+                fail(new IllegalStateException("A document of " + compliance
+                        + " cannot have a file attached to a page: carry it with addAssociatedFile, in PDF/A-3."));
+            }
+            Set<Integer> associated = new HashSet<Integer>();
+            for (EmbeddedFile file : associatedFiles) {
+                associated.add(file.objNumber);
+            }
+            for (Map.Entry<Integer, String> file : embeddedFiles.entrySet()) {
+                if (!associated.contains(file.getKey())) {
+                    fail(new IllegalStateException("A document of " + compliance + " cannot carry the file "
+                            + file.getValue() + " but as an associated file: use addAssociatedFile, in PDF/A-3."));
+                }
+            }
         }
         if (prevPage != null) {
             addPageContent(prevPage);

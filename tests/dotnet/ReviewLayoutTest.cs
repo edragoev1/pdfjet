@@ -148,6 +148,7 @@ public sealed class ReviewLayoutTest : IDisposable {
 
     [Fact]
     public void ARowSpanCountsTheRowsOfTheTable() {
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
         // The span of a cell over a row that wraps to four lines was written as
         // the five rows of the drawing, and not as the two rows of the table.
         MemoryStream stream = new MemoryStream();
@@ -262,6 +263,7 @@ public sealed class ReviewLayoutTest : IDisposable {
 
     [Fact]
     public void AListItemGoesOnInTheNextFrameWithoutItsLabel() {
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
         // The label of an item was drawn again, as a new item, in every frame
         // the item went on into.
         MemoryStream stream = new MemoryStream();
@@ -303,6 +305,7 @@ public sealed class ReviewLayoutTest : IDisposable {
 
     [Fact]
     public void ATextColumnDrawsTheLabelOfAListItem() {
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
         // The label that Paragraph.SetListLabel sets was left out by TextColumn.
         MemoryStream stream = new MemoryStream();
         PDF pdf = TaggedPDF(stream);

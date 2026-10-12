@@ -48,6 +48,25 @@ public final class TestSupport {
         return new Font(pdf, CoreFont.HELVETICA);
     }
 
+    /**
+     * Returns IBM Plex Sans, a font that is embedded, as a document of PDF/A
+     * or PDF/UA needs: a core font is refused in one (review of 11 October
+     * 2026, #6).
+     */
+    public static Font plexSans(PDF pdf) throws Exception {
+        return new Font(pdf, open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+    }
+
+    /**
+     * Lets the test draw in a core font in a document of PDF/A or PDF/UA,
+     * which complete() refuses: for the tests of what such a document tags,
+     * which find the text of a core font by its encoding. A test that sets it
+     * sets it back to false when it ends, in a finally.
+     */
+    public static void allowCoreFonts(boolean allow) {
+        PDF.coreFontsInCompliance = allow;
+    }
+
     public static String latin1(byte[] bytes) {
         return new String(bytes, StandardCharsets.ISO_8859_1);
     }

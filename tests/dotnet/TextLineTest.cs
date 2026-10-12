@@ -4,12 +4,14 @@
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
+using System;
 using Xunit;
 
 namespace PDFjet.NET {
 public class TextLineTest {
     [Fact]
     public void TheUnderlineAndTheStrikeoutOfTaggedTextAreArtifacts() {
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
         // The line is decoration: an element of its own, described as
         // "Underlined text: " and the text, is read after the text again.
         System.IO.MemoryStream output = new System.IO.MemoryStream();

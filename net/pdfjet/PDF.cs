@@ -126,6 +126,11 @@ public sealed class PDF {
     private String language = "en-US";
     // The files the document carries, in the order they were added.
     private readonly List<EmbeddedFile> associatedFiles = new List<EmbeddedFile>();
+    // The files embedded in the document, and whether one is attached to a
+    // page, which a document of PDF/A takes only as PDF/A-3's associated
+    // files (review of 11 October 2026, #5)
+    internal readonly List<EmbeddedFile> embeddedFiles = new List<EmbeddedFile>();
+    internal bool fileAttachment = false;
     // The descriptions that a standard of its own asks the metadata to carry.
     private readonly List<String> metadata = new List<String>();
     private List<String> importedFonts = new List<String>();
@@ -267,6 +272,15 @@ public sealed class PDF {
     }
 
     // Records the first misuse of the API and throws the exception.
+    // Lets the tests of what a document of PDF/A or PDF/UA tags draw in a core
+    // font, whose text they find by its encoding: Complete refuses one
+    // otherwise. Never set outside the tests. Of the thread that sets it, as
+    // xUnit runs the test classes in parallel.
+#pragma warning disable CS0649 // set by the tests only
+    [ThreadStatic]
+    internal static bool coreFontsInCompliance;
+#pragma warning restore CS0649
+
     internal void Fail(Exception e) {
         if (error == null) {
             error = e.Message;
@@ -2254,6 +2268,35 @@ public sealed class PDF {
         if ((compliance == Compliance.PDF_UA_1 || compliance == Compliance.PDF_A_3A_UA_1)
                 && String.IsNullOrWhiteSpace(title)) {
             Fail(new InvalidOperationException("A PDF/UA document needs a title: use SetTitle."));
+        }
+        // PDF/A and PDF/UA ask for every font to be embedded, which a core font
+        // and the deprecated CJK fonts are not: such a document was written as
+        // what it was not (review of 11 October 2026, #6)
+        if (compliance != Compliance.PDF_1_7 && !coreFontsInCompliance) {
+            foreach (Font font in fonts) {
+                if (font.isCoreFont || font.isCJK) {
+                    Fail(new InvalidOperationException("The font " + font.name
+                            + " is not embedded, which a document of " + compliance
+                            + " needs: use a font that is, such as IBM Plex Sans."));
+                }
+            }
+        }
+        // PDF/A-1 carries no files, PDF/A-2 only documents of PDF/A, and PDF/A-3
+        // each as an associated file, with its relationship: a file embedded or
+        // attached to a page otherwise made a document that was not PDF/A
+        // (review of 11 October 2026, #5)
+        if (IsPDFA()) {
+            if (fileAttachment) {
+                Fail(new InvalidOperationException("A document of " + compliance
+                        + " cannot have a file attached to a page: carry it with AddAssociatedFile, in PDF/A-3."));
+            }
+            foreach (EmbeddedFile file in embeddedFiles) {
+                if (!associatedFiles.Contains(file)) {
+                    Fail(new InvalidOperationException("A document of " + compliance
+                            + " cannot carry the file " + file.GetFileName()
+                            + " but as an associated file: use AddAssociatedFile, in PDF/A-3."));
+                }
+            }
         }
         if (prevPage != null) {
             AddPageContent(prevPage);

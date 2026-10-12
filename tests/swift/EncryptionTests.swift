@@ -11,6 +11,7 @@ import Testing
 @Suite struct EncryptionTests {
     private func encrypted(_ compliance: Compliance, _ passwords: Passwords, _ permissions: Permissions) throws -> [UInt8] {
         let memory = MemoryPDF(compliance)
+        memory.pdf.coreFontsInCompliance = true    // Helvetica, in PDF/UA too
         _ = memory.pdf.setTitle("Encrypted title")
         _ = memory.pdf.setEncryption(Encryption(memory.pdf, passwords, permissions))
         let page = Page(memory.pdf, Letter.PORTRAIT)

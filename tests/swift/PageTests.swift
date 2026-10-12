@@ -250,6 +250,7 @@ import Testing
         // can hold them together: L for the list, LI for each item, and Lbl
         // and LBody for the label and the body of the item.
         let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.coreFontsInCompliance = true    // Draws in a core font
         memory.pdf.setTitle("Test")
         _ = memory.pdf.setTitle("Title")
         let font = TestSupport.helvetica(memory.pdf)
