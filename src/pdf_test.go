@@ -984,6 +984,7 @@ func TestPDFTheLengthOfAStreamIsTheEntryOfItsDictionary(t *testing.T) {
 }
 
 func TestPDFTheLevelOfPDFA3aAndPDFUA1IsBoth(t *testing.T) {
+	testAllowCoreFonts(t)
 	doc := testNewDoc()
 	doc.pdf.SetCompliance(compliance.PDF_A_3A_UA_1).SetTitle("Test")
 	page := NewPage(doc.pdf, letter.Portrait())

@@ -306,6 +306,7 @@ func TestPageImportedContentIsSeparatedFromTheOperatorAfterIt(t *testing.T) {
 }
 
 func TestPageBeginStructElementGroupsWhatIsDrawnIntoAList(t *testing.T) {
+	testAllowCoreFonts(t)
 	// The items of a list are drawn one at a time, so nothing but the page
 	// can hold them together: L for the list, LI for each item, and Lbl and
 	// LBody for the label and the body of the item.

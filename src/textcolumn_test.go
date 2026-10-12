@@ -164,6 +164,7 @@ func TestTextColumnTheUnderlineOfALineStopsAtItsTextAndRunsThroughIt(t *testing.
 }
 
 func TestTextColumnAParagraphIsOneStructureElementOfTheTypeItIsGiven(t *testing.T) {
+	testAllowCoreFonts(t)
 	// The words of a paragraph are drawn one at a time, and each was an
 	// element of its own, so a reader read every word as a paragraph.
 	doc := testNewDoc()

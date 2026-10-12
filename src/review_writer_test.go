@@ -40,6 +40,7 @@ func testWriterDoc(t *testing.T, level compliance.Compliance, draw func(pdf *PDF
 }
 
 func TestWriterAPDFAOfLevelBIsNotTagged(t *testing.T) {
+	testAllowCoreFonts(t)
 	for _, level := range []compliance.Compliance{
 		compliance.PDF_A_1B, compliance.PDF_A_2B, compliance.PDF_A_3B} {
 		raw := testWriterDoc(t, level, nil)
@@ -109,6 +110,11 @@ func testAnnotations(pdf *PDF, page *Page) {
 	note.SetSize(20, 20)
 	note.SetContents("A note")
 	note.DrawOn(page)
+	// A file attached to a page, which PDF/A refuses: in a PDF/A document the
+	// four others alone
+	if pdf.isPDFA() {
+		return
+	}
 	file := NewEmbeddedFile(pdf, "a.txt", strings.NewReader("A file"), false)
 	attachment := NewFileAttachment(file)
 	attachment.SetLocation(200, 400)
@@ -117,18 +123,23 @@ func testAnnotations(pdf *PDF, page *Page) {
 }
 
 func TestWriterEveryAnnotationIsPrintedAndHasAnAppearance(t *testing.T) {
+	testAllowCoreFonts(t)
 	for _, level := range []compliance.Compliance{compliance.PDF_1_7, compliance.PDF_A_2B, compliance.PDF_A_3A} {
 		raw := testWriterDoc(t, level, testAnnotations)
-		if n := strings.Count(raw, "/Type /Annot\n"); n != 5 {
+		want := 5
+		if level != compliance.PDF_1_7 {
+			want = 4 // No file attached
+		}
+		if n := strings.Count(raw, "/Type /Annot\n"); n != want {
 			t.Fatalf("%v: %d annotations", level, n)
 		}
-		if n := strings.Count(raw, "/F 4\n"); n != 5 {
+		if n := strings.Count(raw, "/F 4\n"); n != want {
 			t.Errorf("%v: %d annotations are printed", level, n)
 		}
-		if n := strings.Count(raw, "/AP <</N "); n != 5 {
+		if n := strings.Count(raw, "/AP <</N "); n != want {
 			t.Errorf("%v: %d appearances", level, n)
 		}
-		if n := strings.Count(raw, "/Subtype /Form\n"); n != 5 {
+		if n := strings.Count(raw, "/Subtype /Form\n"); n != want {
 			t.Errorf("%v: %d forms", level, n)
 		}
 	}
@@ -193,6 +204,7 @@ func TestWriterAShapeThatIsNotOpaqueIsDrawnWithItsOpacity(t *testing.T) {
 }
 
 func TestWriterAPDFA1DrawsAShapeThatIsNotOpaqueOpaque(t *testing.T) {
+	testAllowCoreFonts(t)
 	// PDF/A-1 has no transparency: the opacity is ignored there, and kept in
 	// the other levels.
 	for _, level := range []compliance.Compliance{
@@ -225,6 +237,7 @@ func TestWriterALinkToADestinationTheDocumentDoesNotHaveIsRefused(t *testing.T) 
 }
 
 func TestWriterTheTypesOfPDF20AreMappedInTheRoleMap(t *testing.T) {
+	testAllowCoreFonts(t)
 	raw := testWriterDoc(t, compliance.PDF_UA_1, nil)
 	if strings.Contains(raw, "/RoleMap") {
 		t.Error("a role map with no type to map")
@@ -419,6 +432,7 @@ func TestWriterTheFontFileRefersToItsMetadataWhoseNoticeIsEscaped(t *testing.T) 
 }
 
 func TestWriterAPDFA1MapsTheElementOfAnAnnotationToASpan(t *testing.T) {
+	testAllowCoreFonts(t)
 	// PDF/A-1, of PDF 1.4, does not know the type Annot, of PDF 1.5: it is
 	// role-mapped there (veraPDF, PDF/A-1 6.8.3.4), and not in PDF/A-2.
 	for _, level := range []compliance.Compliance{compliance.PDF_A_1A, compliance.PDF_A_2A} {
@@ -432,5 +446,54 @@ func TestWriterAPDFA1MapsTheElementOfAnAnnotationToASpan(t *testing.T) {
 		if mapped := strings.Contains(raw, "/Annot /Span"); mapped != (level == compliance.PDF_A_1A) {
 			t.Errorf("%v: Annot mapped %v", level, mapped)
 		}
+	}
+}
+
+// A document of PDF/A or PDF/UA refuses a font that is not embedded, and one
+// of PDF/A a file attached to a page or embedded but not as an associated
+// file of PDF/A-3: each was written, and the document was not what it said
+// (review of 11 October 2026, #5 and #6).
+func TestWriterACompliantDocumentRefusesWhatItCannotBe(t *testing.T) {
+	complete := func(level compliance.Compliance, draw func(pdf *PDF, page *Page)) error {
+		doc := testNewDoc()
+		doc.pdf.SetCompliance(level).SetTitle("Test")
+		page := NewPage(doc.pdf, letter.Portrait())
+		draw(doc.pdf, page)
+		return doc.pdf.Complete()
+	}
+	text := func(font func(pdf *PDF) *Font) func(pdf *PDF, page *Page) {
+		return func(pdf *PDF, page *Page) {
+			NewTextLine(font(pdf), "Text").SetLocation(50, 50).DrawOn(page)
+		}
+	}
+	for _, level := range []compliance.Compliance{compliance.PDF_UA_1, compliance.PDF_A_1B, compliance.PDF_A_3A} {
+		err := complete(level, text(testHelvetica))
+		if err == nil || !strings.Contains(err.Error(), "The font Helvetica is not embedded") {
+			t.Errorf("%v: Helvetica: %v", level, err)
+		}
+		if err := complete(level, text(testPlexSans)); err != nil {
+			t.Errorf("%v: IBM Plex Sans: %v", level, err)
+		}
+	}
+	attach := func(pdf *PDF, page *Page) {
+		text(testPlexSans)(pdf, page)
+		file := NewEmbeddedFile(pdf, "a.txt", strings.NewReader("A file"), false)
+		NewFileAttachment(file).DrawOn(page)
+	}
+	embed := func(pdf *PDF, page *Page) {
+		text(testPlexSans)(pdf, page)
+		NewEmbeddedFile(pdf, "a.txt", strings.NewReader("A file"), false)
+	}
+	for _, level := range []compliance.Compliance{compliance.PDF_A_1B, compliance.PDF_A_2B, compliance.PDF_A_3B} {
+		if err := complete(level, attach); err == nil || !strings.Contains(err.Error(), "cannot have a file attached to a page") {
+			t.Errorf("%v: a file attached: %v", level, err)
+		}
+		if err := complete(level, embed); err == nil || !strings.Contains(err.Error(), "but as an associated file") {
+			t.Errorf("%v: a file embedded: %v", level, err)
+		}
+	}
+	// Outside PDF/A a file is attached as before
+	if err := complete(compliance.PDF_UA_1, attach); err != nil {
+		t.Errorf("PDF/UA: a file attached: %v", err)
 	}
 }

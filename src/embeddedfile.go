@@ -67,6 +67,7 @@ func NewEmbeddedFileWithRelationship(pdf *PDF, fileName string, reader io.Reader
 	file.fileName = fileName
 	file.relationship = relation
 	file.mediaType = mediaType
+	pdf.embeddedFiles = append(pdf.embeddedFiles, file)
 
 	buf, err := io.ReadAll(reader)
 	if err != nil {

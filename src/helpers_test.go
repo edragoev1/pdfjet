@@ -65,6 +65,34 @@ func testHelvetica(pdf *PDF) *Font {
 	return NewCoreFont(pdf, corefont.Helvetica())
 }
 
+// testAllowCoreFonts lets the test draw in a core font in a document of PDF/A
+// or PDF/UA, which Complete refuses: for the tests of what such a document
+// tags, which find the text of a core font by its encoding.
+func testAllowCoreFonts(t *testing.T) {
+	coreFontsInCompliance = true
+	t.Cleanup(func() { coreFontsInCompliance = false })
+}
+
+// testPlexSans returns IBM Plex Sans, a font that is embedded, as a document
+// of PDF/A or PDF/UA needs: a core font is refused in one (review of
+// 11 October 2026, #6).
+func testPlexSans(pdf *PDF) *Font {
+	dir, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+	for {
+		if info, err := os.Stat(filepath.Join(dir, "PngSuite")); err == nil && info.IsDir() {
+			return NewFontFromFile(pdf, filepath.Join(dir, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			panic("the repository is not above " + dir)
+		}
+		dir = parent
+	}
+}
+
 // testRepoPath returns the path of a file of the repository: the tests run in
 // their package directory, so the root is the first directory above it that
 // has the PngSuite directory.

@@ -76,13 +76,18 @@ type PDF struct {
 	// name is found at once, not by a look through the list for each entry
 	// of each page: 1,000 pages of 2,000 fonts took 36 s (review of
 	// 11 October 2026, #35)
-	importedFontNames         map[string]int
-	importedXObjectNames      map[string]int
-	importedExtGStateNames    map[string]int
-	uuid                      string
-	prevPage                  *Page
-	err                       error            // The first misuse of the API or error writing to the writer; Complete returns it.
-	completed                 bool             // True after Complete.
+	importedFontNames      map[string]int
+	importedXObjectNames   map[string]int
+	importedExtGStateNames map[string]int
+	uuid                   string
+	prevPage               *Page
+	err                    error // The first misuse of the API or error writing to the writer; Complete returns it.
+	completed              bool  // True after Complete.
+	// The files embedded in the document, and whether one is attached to a
+	// page, which a document of PDF/A takes only as PDF/A-3's associated
+	// files (review of 11 October 2026, #5)
+	embeddedFiles             []*EmbeddedFile
+	fileAttachment            bool
 	pagesCreated              int              // The pages made for this document, added or detached.
 	annotElements             []*structElement // The elements of the annotations
 	documentKids              []int            // The elements of the Document element, by number
@@ -2287,6 +2292,33 @@ func (pdf *PDF) complete() error {
 		strings.TrimSpace(pdf.title) == "" {
 		return pdf.fail("A PDF/UA document needs a title: use SetTitle.")
 	}
+	// PDF/A and PDF/UA ask for every font to be embedded, which a core font
+	// and the deprecated CJK fonts are not: such a document was written as
+	// what it was not (review of 11 October 2026, #6)
+	if pdf.compliance != compliance.PDF_1_7 && !coreFontsInCompliance {
+		for _, font := range pdf.fonts {
+			if font.isCoreFont || font.isCJK {
+				return pdf.fail("The font " + font.name + " is not embedded, which a document of " +
+					pdf.compliance.String() + " needs: use a font that is, such as IBM Plex Sans.")
+			}
+		}
+	}
+	// PDF/A-1 carries no files, PDF/A-2 only documents of PDF/A, and PDF/A-3
+	// each as an associated file, with its relationship: a file embedded or
+	// attached to a page otherwise made a document that was not PDF/A
+	// (review of 11 October 2026, #5)
+	if pdf.isPDFA() {
+		if pdf.fileAttachment {
+			return pdf.fail("A document of " + pdf.compliance.String() +
+				" cannot have a file attached to a page: carry it with AddAssociatedFile, in PDF/A-3.")
+		}
+		for _, file := range pdf.embeddedFiles {
+			if !slices.Contains(pdf.associatedFiles, file) {
+				return pdf.fail("A document of " + pdf.compliance.String() + " cannot carry the file " +
+					file.GetFileName() + " but as an associated file: use AddAssociatedFile, in PDF/A-3.")
+			}
+		}
+	}
 	if traceComplete != nil {
 		traceComplete(pdf)
 	}
@@ -2958,6 +2990,11 @@ func getObjects(
 	}
 	return xref
 }
+
+// coreFontsInCompliance lets the tests of what a document of PDF/A or PDF/UA
+// tags draw in a core font, whose text they find by its encoding: Complete
+// refuses one otherwise. Never set outside the tests.
+var coreFontsInCompliance = false
 
 // minObjectBytes is the fewest bytes an object of a PDF takes, "1 0 obj
 // endobj" less its spaces, and objectCost what an object read takes of the

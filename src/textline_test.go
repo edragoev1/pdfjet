@@ -133,6 +133,7 @@ func TestTextLineUnderlineAddsAStrokedLine(t *testing.T) {
 }
 
 func TestTextLineTheUnderlineAndTheStrikeoutOfTaggedTextAreArtifacts(t *testing.T) {
+	testAllowCoreFonts(t)
 	// The line is decoration: an element of its own, described as "Underlined
 	// text: " and the text, is read after the text again.
 	doc := testNewDoc()

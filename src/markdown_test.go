@@ -79,6 +79,7 @@ func TestMarkdownAnEmptyTextNeedsNoPage(t *testing.T) {
 }
 
 func TestMarkdownEveryBlockIsTaggedForPDFUA(t *testing.T) {
+	testAllowCoreFonts(t)
 	drawn := testDrawMarkdown("# Title\n\nText with **bold**.\n\n- one\n- two\n\n> quoted\n\n"+
 		"```\ncode\n```\n\n| A | B |\n|---|---|\n| 1 | 2 |\n\n---\n\n## Next", "")
 	if len(drawn.pages) != 1 {
@@ -89,12 +90,14 @@ func TestMarkdownEveryBlockIsTaggedForPDFUA(t *testing.T) {
 }
 
 func TestMarkdownHeadingLevelsSkipNone(t *testing.T) {
+	testAllowCoreFonts(t)
 	// A text that starts at ### and goes on to ##### is H1, then H2.
 	drawn := testDrawMarkdown("### Three\n\n##### Five\n\n# One", "")
 	testAssertStructures(t, drawn, "H1", 2, "H2", 1, "H3", 0)
 }
 
 func TestMarkdownTheTextFlowsOntoAsManyPagesAsItNeeds(t *testing.T) {
+	testAllowCoreFonts(t)
 	var text strings.Builder
 	text.WriteString("# A long text\n\n")
 	for i := 0; i < 150; i++ {
@@ -121,6 +124,7 @@ func TestMarkdownTheTextFlowsOntoAsManyPagesAsItNeeds(t *testing.T) {
 }
 
 func TestMarkdownAListOverPagesIsOneList(t *testing.T) {
+	testAllowCoreFonts(t)
 	var text strings.Builder
 	for i := 0; i < 80; i++ {
 		text.WriteString("- item " + strconv.Itoa(i) + "\n")
@@ -133,6 +137,7 @@ func TestMarkdownAListOverPagesIsOneList(t *testing.T) {
 }
 
 func TestMarkdownATableGoesOnOnTheNextPageWithItsHeaderRow(t *testing.T) {
+	testAllowCoreFonts(t)
 	// Letters of the core fonts that are kerned are drawn apart, so the
 	// header is one letter a column.
 	var text strings.Builder
@@ -156,6 +161,7 @@ func TestMarkdownATableGoesOnOnTheNextPageWithItsHeaderRow(t *testing.T) {
 }
 
 func TestMarkdownImagesAreReadOnlyFromTheImageDirectory(t *testing.T) {
+	testAllowCoreFonts(t)
 	text := "![Tux](linux-logo.png)"
 	// With no directory, the image's text is drawn instead.
 	drawn := testDrawMarkdown(text, "")
@@ -186,6 +192,7 @@ func TestMarkdownImagesAreReadOnlyFromTheImageDirectory(t *testing.T) {
 }
 
 func TestMarkdownCodeKeepsItsLinesAndGoesOnOnTheNextPage(t *testing.T) {
+	testAllowCoreFonts(t)
 	var text strings.Builder
 	text.WriteString("```\n")
 	for i := 0; i < 90; i++ {
@@ -205,6 +212,7 @@ func TestMarkdownCodeKeepsItsLinesAndGoesOnOnTheNextPage(t *testing.T) {
 }
 
 func TestMarkdownNumberedListsStartAtTheirFirstNumber(t *testing.T) {
+	testAllowCoreFonts(t)
 	drawn := testDrawMarkdown("3. three\n4. four", "")
 	if !strings.Contains(drawn.text, testHex("3.")) || !strings.Contains(drawn.text, testHex("4.")) {
 		t.Error("the labels are not 3. and 4.")
@@ -215,6 +223,7 @@ func TestMarkdownNumberedListsStartAtTheirFirstNumber(t *testing.T) {
 }
 
 func TestMarkdownHTMLIsDrawnAsText(t *testing.T) {
+	testAllowCoreFonts(t)
 	drawn := testDrawMarkdown("<b>not bold</b>", "")
 	if !strings.Contains(drawn.text, testHex("<b>not")) {
 		t.Error("the HTML is not drawn as text")
@@ -222,6 +231,7 @@ func TestMarkdownHTMLIsDrawnAsText(t *testing.T) {
 }
 
 func TestMarkdownLongCodeLinesAreCutInLinearTime(t *testing.T) {
+	testAllowCoreFonts(t)
 	var line strings.Builder
 	for i := 0; i < 200000; i++ {
 		line.WriteByte(byte('a' + i%26))

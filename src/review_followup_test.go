@@ -59,6 +59,7 @@ func TestReviewFollowupAPDFADocumentUsesNoCMYKColor(t *testing.T) {
 }
 
 func TestReviewFollowupTheFooterOfABigTableIsAPaginationArtifact(t *testing.T) {
+	testAllowCoreFonts(t)
 	doc := testNewDoc()
 	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Title")
 	font := testHelvetica(doc.pdf)

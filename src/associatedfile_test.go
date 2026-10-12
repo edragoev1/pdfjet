@@ -32,7 +32,7 @@ func testCarry(doc *testDoc, fileNames ...string) string {
 	for _, fileName := range fileNames {
 		doc.pdf.AddAssociatedFile(testAttach(doc.pdf, fileName, testXML))
 	}
-	line := NewTextLine(testHelvetica(doc.pdf), "Invoice")
+	line := NewTextLine(testPlexSans(doc.pdf), "Invoice")
 	line.SetLocation(50, 50)
 	line.DrawOn(NewPage(doc.pdf, letter.Portrait()))
 	return string(doc.complete())
@@ -149,7 +149,7 @@ func TestAssociatedFileTheSizeOfACompressedFileIsTheSizeItHadBeforeItWasCompress
 	text := strings.Repeat("<line>The same line, over and over.</line>\n", 1000)
 	doc.pdf.AddAssociatedFile(NewEmbeddedFileWithRelationship(doc.pdf, "long.xml",
 		strings.NewReader(text), true, "text/xml", relationship.Data, "A long file."))
-	line := NewTextLine(testHelvetica(doc.pdf), "x")
+	line := NewTextLine(testPlexSans(doc.pdf), "x")
 	line.SetLocation(50, 50)
 	line.DrawOn(NewPage(doc.pdf, letter.Portrait()))
 	raw := string(doc.complete())
@@ -178,7 +178,7 @@ func TestAssociatedFileTheMediaTypeIsWrittenAsANameWhateverItHolds(t *testing.T)
 	doc.pdf.AddAssociatedFile(NewEmbeddedFileWithRelationship(doc.pdf, "odd.bin",
 		strings.NewReader("x"), false, "application/x-(odd) #1",
 		relationship.Supplement, "Something else."))
-	line := NewTextLine(testHelvetica(doc.pdf), "x")
+	line := NewTextLine(testPlexSans(doc.pdf), "x")
 	line.SetLocation(50, 50)
 	line.DrawOn(NewPage(doc.pdf, letter.Portrait()))
 	raw := string(doc.complete())

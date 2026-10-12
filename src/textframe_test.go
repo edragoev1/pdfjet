@@ -122,6 +122,7 @@ func TestTextFrameAJustifiedParagraphLeavesItsLastRowAsItIs(t *testing.T) {
 }
 
 func TestTextFrameParagraphsWithALabelAreAList(t *testing.T) {
+	testAllowCoreFonts(t)
 	// The label of an item is drawn where the item begins, so that it reads
 	// before the text of the item and not after all of the text.
 	doc := testNewDoc()

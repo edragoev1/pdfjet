@@ -280,6 +280,7 @@ func TestBigTableAHeaderWithFewerFieldsThanColumnsIsRefused(t *testing.T) {
 }
 
 func TestBigTableIsTaggedAsATableInAPDFUADocument(t *testing.T) {
+	testAllowCoreFonts(t)
 	// The table is one Table element over all its pages: a TR for each row,
 	// and a TH for each header field the first time the header is drawn or a
 	// TD for each field of a row, each holding the text of its cell.
@@ -478,6 +479,7 @@ func TestBigTableATableThatFitsItsPageIsNotCut(t *testing.T) {
 }
 
 func TestBigTableTheCellOfACutFieldKeepsTheWholeOfItsText(t *testing.T) {
+	testAllowCoreFonts(t)
 	// A field the page was too narrow for is drawn cut, but a reader is read
 	// the whole of it: the cell of the structure tree keeps it.
 	doc := testNewDoc()

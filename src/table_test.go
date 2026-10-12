@@ -240,6 +240,7 @@ func TestTableMoreHeaderRowsThanRowsDrawsTheRows(t *testing.T) {
 }
 
 func TestTableInAPDFUADocumentIsTaggedAsATable(t *testing.T) {
+	testAllowCoreFonts(t)
 	doc := testNewDoc()
 	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	doc.pdf.SetTitle("Title")
@@ -282,6 +283,7 @@ func TestTableInAPDFUADocumentIsTaggedAsATable(t *testing.T) {
 }
 
 func TestTableTheLinkedMarkerOfAWrappedCellIsAFigure(t *testing.T) {
+	testAllowCoreFonts(t)
 	// The lines of a wrapped cell are one paragraph, and a figure drawn in
 	// it, as its linked marker, was made part of the paragraph, losing its
 	// element and its description (the review of 9 October 2026).
@@ -309,6 +311,7 @@ func TestTableTheLinkedMarkerOfAWrappedCellIsAFigure(t *testing.T) {
 }
 
 func TestTableHeaderRowsOnTheNextPagesAreArtifacts(t *testing.T) {
+	testAllowCoreFonts(t)
 	doc := testNewDoc()
 	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	doc.pdf.SetTitle("Title")
@@ -352,6 +355,7 @@ func TestTableIsNotTaggedInADocumentThatIsNotPDFUA(t *testing.T) {
 }
 
 func TestTableWithAPageLeftOutOfTheDocumentStillHasAStructureTree(t *testing.T) {
+	testAllowCoreFonts(t)
 	doc := testNewDoc()
 	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	doc.pdf.SetTitle("Title")
@@ -483,6 +487,7 @@ func TestTableAPageBreakKeepsTheRowsOfASpanTogether(t *testing.T) {
 }
 
 func TestTableACellThatSpansRowsSaysSoInAPDFUADocument(t *testing.T) {
+	testAllowCoreFonts(t)
 	doc := testNewDoc()
 	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	doc.pdf.SetTitle("Title")
@@ -923,6 +928,7 @@ func TestTableAFooterRowThatWrapsIsDrawnWholeOnEveryPage(t *testing.T) {
 }
 
 func TestTableTheFooterRowsBeforeTheEndOfTheTableAreArtifacts(t *testing.T) {
+	testAllowCoreFonts(t)
 	doc := testNewDoc()
 	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	doc.pdf.SetTitle("Title")

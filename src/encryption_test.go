@@ -142,6 +142,7 @@ func TestEncryptionPermissionsAreANegativeNumberWithTheReservedBitsSet(t *testin
 }
 
 func TestEncryptionPdfUaGrantsExtractionForAccessibility(t *testing.T) {
+	testAllowCoreFonts(t)
 	pdf := testEncrypted(t, compliance.PDF_UA_1,
 		encryption.NewPasswords().SetUserPassword("hello").SetOwnerPassword("world"),
 		encryption.NewPermissions().Grant(encryption.Print))

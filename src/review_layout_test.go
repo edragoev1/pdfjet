@@ -122,6 +122,7 @@ func TestReviewLayoutASumReadsANumberAsRightAlignNumbersDoes(t *testing.T) {
 }
 
 func TestReviewLayoutARowSpanCountsTheRowsOfTheTable(t *testing.T) {
+	testAllowCoreFonts(t)
 	// The span of a cell over a row that wraps to four lines was written as
 	// the five rows of the drawing, and not as the two rows of the table.
 	doc := testNewDoc()
@@ -241,6 +242,7 @@ func TestReviewLayoutAColumnSpanIsWithinTheRow(t *testing.T) {
 }
 
 func TestReviewLayoutAListItemGoesOnInTheNextFrameWithoutItsLabel(t *testing.T) {
+	testAllowCoreFonts(t)
 	// The label of an item was drawn again, as a new item, in every frame the
 	// item went on into.
 	doc := testNewDoc()
@@ -285,6 +287,7 @@ func TestReviewLayoutAHeadingThatGoesOnInTheNextFrameIsOneBookmark(t *testing.T)
 }
 
 func TestReviewLayoutATextColumnDrawsTheLabelOfAListItem(t *testing.T) {
+	testAllowCoreFonts(t)
 	// The label that Paragraph.SetListLabel sets was left out by TextColumn.
 	doc := testNewDoc()
 	doc.pdf.SetCompliance(compliance.PDF_UA_1)

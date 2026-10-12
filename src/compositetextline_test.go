@@ -173,6 +173,7 @@ func TestCompositeTextLineAFormulaSuperscriptsTheChargeAfterACircumflex(t *testi
 }
 
 func TestCompositeTextLineAFormulaIsOneStructureElement(t *testing.T) {
+	testAllowCoreFonts(t)
 	// The components are the runs of one formula, so a screen reader reads
 	// C6H12O6 and not six elements of "C", "6", "H", "12", "O" and "6".
 	doc := testNewDoc()

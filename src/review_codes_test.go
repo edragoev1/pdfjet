@@ -193,6 +193,7 @@ func TestDecryptorTheContentsOfASignatureAreNotDecrypted(t *testing.T) {
 }
 
 func TestEncryptionThePermissionsOfTheCallerAreNotChanged(t *testing.T) {
+	testAllowCoreFonts(t)
 	permissions := encryption.NewPermissions().SetAccess(encryption.Print)
 	pdf := testEncrypted(t, compliance.PDF_UA_1,
 		encryption.NewPasswords().SetUserPassword("").SetOwnerPassword("owner"), permissions)
