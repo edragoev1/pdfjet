@@ -590,13 +590,13 @@ public class TextBlock : Drawable {
     }
 
     // The Thai and Lao vowels written before the consonant they follow in speech.
-    private static func isLeadingVowel(_ ch: UInt32) -> Bool {
+    static func isLeadingVowel(_ ch: UInt32) -> Bool {
         return (ch >= 0x0E40 && ch <= 0x0E44) || (ch >= 0x0EC0 && ch <= 0x0EC4)
     }
 
     // The combining marks, and the Thai and Lao vowels and signs written after
     // a consonant, like SARA AA and MAI YAMOK, which do not start a line.
-    private static func staysWithPrevious(_ ch: Unicode.Scalar) -> Bool {
+    static func staysWithPrevious(_ ch: Unicode.Scalar) -> Bool {
         if ch.value == 0x200C || ch.value == 0x200D {   // ZWNJ, ZWJ
             return true
         }

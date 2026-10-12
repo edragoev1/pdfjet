@@ -211,4 +211,22 @@ private final class Box: Drawable {
         cell.setFallbackFont(helvetica).setFont(try Font(pdf, CoreFont.TIMES_ROMAN))
         #expect(cell.getFallbackFont() === helvetica)
     }
+
+    // A cell of a vertical alignment other than TOP, CENTER and BOTTOM makes
+    // complete() throw, where it ended the program (review of 11 October
+    // 2026, #16).
+    @Test func aVerticalAlignmentOtherThanTopCenterAndBottomMakesCompleteThrow() throws {
+        let memory = MemoryPDF()
+        let font = TestSupport.helvetica(memory.pdf)
+        let cell = Cell(font, "text").setVerticalAlignment(.LEFT)
+        let table = Table().setTableData([[cell]], 0)
+        table.setLocation(20, 20)
+        table.drawOn(Page(memory.pdf, Letter.PORTRAIT))
+        do {
+            try memory.pdf.complete()
+            Issue.record("complete() did not throw")
+        } catch {
+            #expect(TestSupport.message(error).contains("Invalid vertical text alignment option."))
+        }
+    }
 }

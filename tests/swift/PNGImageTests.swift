@@ -744,4 +744,54 @@ import Testing
         }
         #expect(embedded > 0)
     }
+
+    // An image copied from a PDF into an encrypted one is encrypted with it, its
+    // stream and the palette of its color space, which a reader decrypts back
+    // to what they were: they were copied as they were, and a viewer found no
+    // image (review of 11 October 2026, #11).
+    @Test func anImageCopiedIntoAnEncryptedPDFIsEncrypted() throws {
+        let read = imageObjects(try TestSupport.read(try pngSamplesDocument()))
+        let memory = MemoryPDF()
+        _ = memory.pdf.setEncryption(Encryption(memory.pdf, Passwords(), Permissions()))
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        for obj in read {
+            _ = try Image(memory.pdf, obj).drawOn(page)
+        }
+        try memory.pdf.complete()
+        let pdf = TestSupport.latin1(memory.bytes)
+        let copies = imageObjects(try TestSupport.read(memory.bytes, ""))
+        try #require(copies.count == read.count)
+        var palettes = 0
+        for (i, (name, _, _)) in sampleCases().enumerated() {
+            #expect(copies[i].stream == read[i].stream, "\(name): the stream is not the one copied")
+            let colorSpace = read[i].getValue("/ColorSpace")
+            #expect(copies[i].getValue("/ColorSpace") == colorSpace, "\(name)")
+            if colorSpace.contains("/Indexed") {
+                palettes += 1
+                let open = colorSpace.firstIndex(of: "<")!
+                let close = colorSpace.firstIndex(of: ">")!
+                let palette = String(colorSpace[colorSpace.index(after: open)..<close])
+                #expect(!pdf.contains(palette), "\(name): the palette is in the PDF as it was")
+            }
+        }
+        #expect(palettes > 0, "no image of a palette was copied")
+    }
+
+    // An image whose color space refers to another object of the PDF it was
+    // read from is refused, as the object is not copied with it.
+    @Test func anImageThatRefersToAnotherObjectIsRefused() {
+        let obj = PDFobj()
+        obj.dict = ["<<", "/Type", "/XObject", "/Subtype", "/Image", "/Width", "1", "/Height", "1",
+                "/ColorSpace", "[", "/ICCBased", "5", "0", "R", "]", "/BitsPerComponent", "8", ">>"]
+        do {
+            _ = try Image(TestSupport.newPDF(), obj)
+            Issue.record("an image that refers to another object is copied")
+        } catch {
+            #expect(TestSupport.message(error).contains("/ICCBased 5 0 R"))
+        }
+        obj.dict = ["<<", "/Width", "1", "/Height", "1", "/ColorSpace", "5", "0", "R", ">>"]
+        #expect(throws: (any Error).self, "a color space of a reference is copied") {
+            _ = try Image(TestSupport.newPDF(), obj)
+        }
+    }
 }

@@ -166,6 +166,15 @@ public class Image : Drawable {
     public init(_ pdf: PDF, _ obj: PDFobj) throws {
         self.pdfIdentity = pdf.identity
         setPixels(Int(Double(obj.getValue("/Width")) ?? 0), Int(Double(obj.getValue("/Height")) ?? 0))
+        // The values copied as they are, but for their strings, encrypted when
+        // the document is, as the palette of an /Indexed color space; and the
+        // stream, encrypted too (review of 11 October 2026, #11)
+        let colorSpace = obj.valueTokens("/ColorSpace")
+        let decodeParms = obj.valueTokens("/DecodeParms")
+        for tokens in [colorSpace, decodeParms] where tokens.contains("R") {
+            throw PDFjetError(message: "The image refers to another object of the PDF it was read from, "
+                    + "which is not copied with it: " + tokens.joined(separator: " "))
+        }
         pdf.newObj()
         pdf.append(Token.beginDictionary)
         pdf.append("/Type /XObject\n")
@@ -179,37 +188,48 @@ public class Image : Drawable {
         pdf.append("/Height ")
         pdf.append(pixelHeight)
         pdf.append("\n")
-        let colorSpace = obj.getValue("/ColorSpace")
-        if colorSpace != "" {
-            pdf.append("/ColorSpace ")
-            pdf.append(colorSpace)
-            pdf.append("\n")
-        }
+        appendCopiedValue(pdf, "/ColorSpace", colorSpace)
         pdf.append("/BitsPerComponent ")
         pdf.append(obj.getValue("/BitsPerComponent"))
         pdf.append("\n")
-        let decodeParms = obj.getValue("/DecodeParms")
-        if decodeParms != "" {
-            pdf.append("/DecodeParms ")
-            pdf.append(decodeParms)
-            pdf.append("\n")
-        }
+        appendCopiedValue(pdf, "/DecodeParms", decodeParms)
         let imageMask = obj.getValue("/ImageMask")
         if imageMask != "" {
             pdf.append("/ImageMask ")
             pdf.append(imageMask)
             pdf.append("\n")
         }
+        let stream = pdf.encrypted(obj.stream ?? [])
         pdf.append("/Length ")
-        pdf.append(obj.stream!.count)
+        pdf.append(stream.count)
         pdf.append("\n")
         pdf.append(Token.endDictionary)
         pdf.append(Token.stream)
-        pdf.append(obj.stream!, 0, obj.stream!.count)
+        pdf.append(stream, 0, stream.count)
         pdf.append(Token.endStream)
         pdf.endObj()
         pdf.images.append(self)
         objNumber = pdf.getObjNumber()
+    }
+
+    // Appends the key and the tokens of its value, read from another PDF, if
+    // it has one: its strings, literal or hexadecimal, as hexadecimal strings
+    // encrypted when the document is.
+    private func appendCopiedValue(_ pdf: PDF, _ key: String, _ tokens: [String]) {
+        if tokens.isEmpty {
+            return
+        }
+        pdf.append(key)
+        for token in tokens {
+            pdf.append(" ")
+            if pdf.encryption != nil &&
+                    (token.hasPrefix("(") || (token.hasPrefix("<") && token != "<<")) {
+                pdf.appendByteString(Decryptor.toBytes(token))
+            } else {
+                pdf.append(token)
+            }
+        }
+        pdf.append("\n")
     }
 
     // Sets the pixels of the image across and down, which it is drawn at, a

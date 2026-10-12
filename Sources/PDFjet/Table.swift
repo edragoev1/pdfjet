@@ -214,13 +214,18 @@ public class Table : Drawable {
         return max(numOfHeaderRows, tableData.count - numOfFooterRows)
     }
 
-    // Adds empty cells to the rows that are shorter than the first row.
+    // Adds empty cells to the rows that are shorter than the first row, or,
+    // when the first row is empty, than the first row that is not, in the font
+    // of its first cell: an empty row was drawn from its first cell (review of
+    // 11 October 2026, #18).
     private func addCellsToCompleteTheGrid() {
-        if tableData.isEmpty || tableData[0].isEmpty {
+        guard let first = tableData.firstIndex(where: { !$0.isEmpty }) else {
+            // Rows of no cells are a table of no rows, which draws nothing.
+            tableData = []
             return
         }
-        let numOfColumns = tableData[0].count
-        let font = tableData[0][0].font
+        let numOfColumns = tableData[first].count
+        let font = tableData[first][0].font
         for i in 0..<tableData.count {
             let diff = numOfColumns - tableData[i].count
             for _ in 0..<max(diff, 0) {
@@ -503,6 +508,12 @@ public class Table : Drawable {
         }
         let fraction = points.isEmpty ? [] : [Unicode.Scalar](chars[(points[0] + 1)...])
         var digits = points.isEmpty ? chars : [Unicode.Scalar](chars[..<points[0]]) + fraction
+        // A space inside the number, as in ". 5", is not in a number: isNumber
+        // reads past it, and Java's parse threw on it (review of 11 October
+        // 2026, #15)
+        if digits.contains(where: { $0 < "0" || $0 > "9" }) {
+            return nil
+        }
         while let first = digits.first, first == "0" {
             digits.removeFirst()
         }
@@ -1802,7 +1813,10 @@ public class Table : Drawable {
         if tableData.isEmpty {
             return self
         }
-        var maxColWidths = [Float](repeating: 0.0, count: tableData[0].count)
+        // As many widths as the longest row has cells, as a row may be longer
+        // than the first (review of 11 October 2026, #17)
+        let columns = tableData.map { $0.count }.max() ?? 0
+        var maxColWidths = [Float](repeating: 0.0, count: columns)
         for row in tableData {
             for i in 0..<row.count {
                 let cell = row[i]

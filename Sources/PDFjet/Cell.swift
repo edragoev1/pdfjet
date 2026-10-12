@@ -933,7 +933,10 @@ public class Cell {
         } else if alignmentAt(Cell.valignShift) == Alignment.BOTTOM {
             yText = (y + cellH) - paddingAt(Cell.bottomPaddingShift)
         } else {
-            fatalError("Invalid vertical text alignment option.")
+            // Recorded for complete() to throw, where it ended the program
+            // (review of 11 October 2026, #16)
+            page.pdf.fail("Invalid vertical text alignment option.")
+            return
         }
 
         var xText: Float

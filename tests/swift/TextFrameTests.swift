@@ -460,4 +460,35 @@ import Testing
         }
         return shortest
     }
+
+    // A word wider than the frame is cut between its characters as TextBlock
+    // cuts one: never before a Thai vowel that stays with the letter before
+    // it, nor after one written before its letter. TextFrame cut after any
+    // code point and drew a row "าษาไ" (review of 11 October 2026, #14).
+    @Test(.enabled(if: TestSupport.exists("fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf"),
+            "the fonts directory is not here"))
+    func cutsAWordWhereTextBlockDoes() throws {
+        let font = try Font(TestSupport.newPDF(), TestSupport.path("fonts/IBMPlexSansThai/IBMPlexSansThai-Regular.ttf"))
+        font.setSize(12)
+        let word = "ภาษาไทยภาษาไทยภาษาไทย"
+        let textLine = TextLine(font, word)
+        for w in 1...120 {
+            let frame = TextFrame([Paragraph]()).setWidth(Float(w))
+            var rest = word
+            while !rest.isEmpty {
+                let end = frame.headThatFits(textLine, rest)
+                let head = String(rest.unicodeScalars[..<end])
+                let tail = String(rest.unicodeScalars[end...])
+                if TextBlock.isLeadingVowel(head.unicodeScalars.last!.value) && !tail.isEmpty {
+                    Issue.record("width \(w): \(head) ends on a vowel written before its letter")
+                    return
+                }
+                rest = tail
+                if let first = rest.unicodeScalars.first, TextBlock.staysWithPrevious(first) {
+                    Issue.record("width \(w): \(rest) starts a row on a vowel that stays with the letter before it")
+                    return
+                }
+            }
+        }
+    }
 }

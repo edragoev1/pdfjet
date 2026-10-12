@@ -496,18 +496,40 @@ public class TextFrame : Drawable {
     }
 
     // Returns the end of the longest start of the token that fits in the width
-    // of the frame, and at least the first character of the token.
-    private func headThatFits(_ textLine: TextLine, _ token: String) -> String.UnicodeScalarView.Index {
+    // of the frame, and at least its first character. The token is cut
+    // between its characters as TextBlock cuts a word, never before a
+    // combining mark or a Thai vowel that stays with the letter before it
+    // (review of 11 October 2026, #14).
+    func headThatFits(_ textLine: TextLine, _ token: String) -> String.UnicodeScalarView.Index {
         let scalars = token.unicodeScalars
-        var end = scalars.index(after: scalars.startIndex)
+        var end = TextFrame.nextCharacterBreakIn(scalars, scalars.startIndex)
         while end < scalars.endIndex {
-            let next = scalars.index(after: end)
+            let next = TextFrame.nextCharacterBreakIn(scalars, end)
             if textLine.font!.stringWidth(textLine.fallbackFont, textLine.fontSize, String(scalars[..<next])) > w {
                 break
             }
             end = next
         }
         return end
+    }
+
+    // Returns the index of the next place after the one at the start where
+    // the text may be cut between its characters, as nextCharacterBreak finds
+    // it in an array of scalars: read as far as it, so that a long word is cut
+    // in time proportional to its length.
+    private static func nextCharacterBreakIn(
+            _ scalars: String.UnicodeScalarView,
+            _ start: String.UnicodeScalarView.Index) -> String.UnicodeScalarView.Index {
+        var ch = scalars[start]
+        var i = scalars.index(after: start)
+        while TextBlock.isLeadingVowel(ch.value) && i < scalars.endIndex {
+            ch = scalars[i]
+            i = scalars.index(after: i)
+        }
+        while i < scalars.endIndex && TextBlock.staysWithPrevious(scalars[i]) {
+            i = scalars.index(after: i)
+        }
+        return i
     }
 
     // Adds the string to the row, at the current text position.

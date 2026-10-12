@@ -508,6 +508,40 @@ public final class PDFobj {
         return token
     }
 
+    // Returns the tokens of the value of the key: one, a reference to an
+    // object, as 5 0 R, or an array or a dictionary with the arrays and
+    // dictionaries in it, from its opening token to its closing one.
+    final func valueTokens(_ key: String) -> [String] {
+        guard let open = dict.firstIndex(of: "<<") else {
+            return []
+        }
+        let entry = PDF.entryIndex(Array(dict[open...]), key)
+        if entry == -1 {
+            return []
+        }
+        let start = open + entry + 1
+        if start + 2 < dict.count && dict[start + 2] == "R" {
+            return Array(dict[start..<(start + 3)])
+        }
+        var depth = 0
+        var j = start
+        while j < dict.count {
+            switch dict[j] {
+            case "[", "<<":
+                depth += 1
+            case "]", ">>":
+                depth -= 1
+            default:
+                break
+            }
+            if depth <= 0 {
+                return Array(dict[start...j])
+            }
+            j += 1
+        }
+        return Array(dict[min(start, dict.count)...])
+    }
+
     // Returns the tokens from the index up to the closing one, with the
     // opening before them and the closing after them.
     private final func valueUpTo(_ start: Int, _ closing: String, _ opening: String) -> String {

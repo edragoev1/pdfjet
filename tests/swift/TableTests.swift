@@ -845,6 +845,10 @@ import Testing
         #expect(Table.numberOf("", 0) == nil)
         #expect(Table.numberOf("1234567890123456789", 0) == nil)
         #expect(Table.numberOf("1E99999", 0) == nil)
+        // A space inside is not in a number (review of 11 October 2026, #15).
+        #expect(Table.numberOf(". 5", 0) == nil)
+        #expect(Table.numberOf("5 .", 0) == nil)
+        #expect(Table.numberOf("(. 5)", 2) == nil)
         #expect(Table.formatSum(123450, 2) == "1,234.50")
         #expect(Table.formatSum(-1234567, 0) == "-1,234,567")
         #expect(Table.formatSum(5, 2) == "0.05")
@@ -1179,5 +1183,35 @@ import Testing
         table.setLocation(20, 20)
         table.drawOn(Page(pdf, Letter.PORTRAIT))
         #expect(data[1][0].getText() == long, "the cell's text is \(data[1][0].getText() ?? "nil") after drawing")
+    }
+
+    // AutoAdjustColumnWidths measures the cells of a row longer than the first:
+    // it sized the widths from the first row and indexed past them (review of
+    // 11 October 2026, #17).
+    @Test func autoAdjustColumnWidthsMeasuresARowLongerThanTheFirst() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let data = [
+            [Cell(font, "a"), Cell(font, "b")],
+            [Cell(font, "a"), Cell(font, "b"), Cell(font, "a wide third cell")],
+        ]
+        Table().setTableData(data, 1).autoAdjustColumnWidths()
+        #expect(data[1][2].getWidth() > data[1][0].getWidth(),
+                "the third cell is \(data[1][2].getWidth()) wide, the first \(data[1][0].getWidth())")
+    }
+
+    // A table whose first row is empty is drawn: its rows are completed from
+    // the first row that has cells, and the empty row was drawn from its first
+    // cell; rows of no cells draw nothing, as no rows do (review of 11 October
+    // 2026, #18).
+    @Test func anEmptyFirstRowIsDrawn() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        for data in [[[], [Cell(font, "a")]], [[]], [[], []]] as [[[Cell]]] {
+            let table = Table().setTableData(data, 1)
+            table.setLocation(20, 20)
+            table.drawOn(Page(pdf, Letter.PORTRAIT))
+            table.autoAdjustColumnWidths()
+        }
     }
 }

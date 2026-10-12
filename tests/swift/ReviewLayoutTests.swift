@@ -135,8 +135,9 @@ import Testing
             let want: Int64 = text.contains("(") ? -100 : 100
             #expect(Table.numberOf(text, 0) == want, "\(text.debugDescription)")
         }
-        // Input that isNumber takes and that is not all digits is 0, not a trap.
-        #expect(Table.numberOf(". 5", 0) != nil)
+        // Input that isNumber takes and that is not all digits is not a
+        // number, and not a trap (review of 11 October 2026, #15).
+        #expect(Table.numberOf(". 5", 0) == nil)
     }
 
     @Test func aRowSpanCountsTheRowsOfTheTable() throws {
