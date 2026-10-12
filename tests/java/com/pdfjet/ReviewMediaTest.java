@@ -165,15 +165,15 @@ class ReviewMediaTest {
         long elapsed = (System.nanoTime() - start) / 1000000;
         assertTrue(elapsed < 2000, "the font loads in " + elapsed + " ms");
         // The first segment of the character is the one it is in.
-        assertEquals(0xFFFE, otf.unicodeToGID[0xFFFE]);
-        assertEquals(0, otf.unicodeToGID['A']);
+        assertEquals(0xFFFE, otf.unicodeToGID.get(0xFFFE));
+        assertEquals(0, otf.unicodeToGID.get('A'));
         // Segments of 'A' to 'C' and 'X' to 'Z', with a delta of 0, map each
         // character to the glyph of its code, and none between them.
         otf = new OTF(new ByteArrayInputStream(withTable(font, "cmap",
                 cmapOfSegments(new int[] {'A', 'X'}, new int[] {'C', 'Z'}))));
         int[][] glyphs = {{'@', 0}, {'A', 'A'}, {'C', 'C'}, {'D', 0}, {'W', 0}, {'X', 'X'}, {'Z', 'Z'}, {'[', 0}};
         for (int[] glyph : glyphs) {
-            assertEquals(glyph[1], otf.unicodeToGID[glyph[0]], "character " + (char) glyph[0]);
+            assertEquals(glyph[1], otf.unicodeToGID.get(glyph[0]), "character " + (char) glyph[0]);
         }
     }
 
@@ -186,8 +186,8 @@ class ReviewMediaTest {
         OTF with = new OTF(new ByteArrayInputStream(font));
         OTF without = new OTF(new ByteArrayInputStream(without(font, "OS/2")));
         for (int ch : new int[] {'A', 'z', 'ก'}) {
-            assertTrue(without.unicodeToGID[ch] != 0, "character " + (char) ch);
-            assertEquals(with.unicodeToGID[ch], without.unicodeToGID[ch], "character " + (char) ch);
+            assertTrue(without.unicodeToGID.get(ch) != 0, "character " + (char) ch);
+            assertEquals(with.unicodeToGID.get(ch), without.unicodeToGID.get(ch), "character " + (char) ch);
         }
     }
 

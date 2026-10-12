@@ -826,7 +826,7 @@ final public class Page {
                         runEdge = new boolean[length + 1];
                     }
                     runEdge[n] = true;
-                } else if ((cp == 0x200C || cp == 0x200D) && font.unicodeToGID[cp] == 0) {
+                } else if ((cp == 0x200C || cp == 0x200D) && font.unicodeToGID.get(cp) == 0) {
                     // A ZWNJ or ZWJ the font has no glyph for goes with the
                     // glyph before it. One with nothing before it is left out.
                     if (n > 0) {
@@ -997,7 +997,7 @@ final public class Page {
             append("> Tj\n");
         }
         if (joiner != 0) {
-            int space = font.unicodeToGID[0x0020];
+            int space = font.unicodeToGID.get(0x0020);
             append("[<");
             appendGlyph(font, space);
             append("> ");
@@ -1051,7 +1051,7 @@ final public class Page {
         append(toUTF16Hex(text.toString()));
         append(">>> BDC\n");
         if (leadingSpace) {
-            int space = font.unicodeToGID[0x0020];
+            int space = font.unicodeToGID.get(0x0020);
             append("[");
             append(1000f * font.glyphAdvance(space) / font.unitsPerEm);
             append(" <");
@@ -1076,12 +1076,12 @@ final public class Page {
     // missing and not a space, as other PDF writers draw it.
     static int glyphOf(Font font, int cp) {
         if (Font.isControl(cp)) {
-            return font.unicodeToGID[0x0020];
+            return font.unicodeToGID.get(0x0020);
         }
         if (font.lacks(cp)) {
             return font.missingGlyph();
         }
-        return font.unicodeToGID[cp];
+        return font.unicodeToGID.get(cp);
     }
 
     // Returns true if the character at k is one the font does not have, which
@@ -1205,7 +1205,7 @@ final public class Page {
         if (offset == null) {
             int letter = Bidi.letterOfIsolatedForm(baseCodePoint);
             if (letter != 0) {
-                offset = anchorOffset(font, font.unicodeToGID[letter], markGID);
+                offset = anchorOffset(font, font.unicodeToGID.get(letter), markGID);
             }
         }
         return offset;

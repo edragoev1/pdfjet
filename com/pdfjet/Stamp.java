@@ -554,7 +554,7 @@ public class Stamp implements Drawable {
             // the text (review of 11 October 2026, #10)
             if (codePoint == 0x200E || codePoint == 0x200F || Font.isIgnorable(codePoint)
                     || ((codePoint == 0x200C || codePoint == 0x200D)
-                            && font.unicodeToGID[codePoint] == 0)) {
+                            && font.unicodeToGID.get(codePoint) == 0)) {
                 continue;
             }
 

@@ -260,7 +260,7 @@ class OTFTest {
         // subtable alone.
         Font font = new Font(TestSupport.newPDF(), TestSupport.file("fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.ttf").getPath());
         for (char ch : "繁體中文A".toCharArray()) {
-            assertTrue(font.unicodeToGID[ch] != 0, ch + " has no glyph");
+            assertTrue(font.unicodeToGID.get(ch) != 0, ch + " has no glyph");
         }
     }
 
@@ -274,8 +274,8 @@ class OTFTest {
         OTF want = new OTF(new ByteArrayInputStream(font));
         OTF got = new OTF(new ByteArrayInputStream(with(font, table(font, "OS/2") + 64, '0')));
         for (char ch : "0AZaz~".toCharArray()) {
-            assertTrue(want.unicodeToGID[ch] != 0, ch + " has no glyph");
-            assertEquals(want.unicodeToGID[ch], got.unicodeToGID[ch], String.valueOf(ch));
+            assertTrue(want.unicodeToGID.get(ch) != 0, ch + " has no glyph");
+            assertEquals(want.unicodeToGID.get(ch), got.unicodeToGID.get(ch), String.valueOf(ch));
         }
     }
 }

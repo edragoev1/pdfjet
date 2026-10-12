@@ -35,7 +35,7 @@ class OTF {
     short underlinePosition;
     short underlineThickness;
     int[] advanceWidth;
-    int[] unicodeToGID = new int[0x10000];
+    GlyphMap unicodeToGID = new GlyphMap();
     java.util.Map<Integer, int[]> markToMarkOffsets;
     java.util.List<java.util.Map<Integer, int[]>> markAnchors;
     java.util.List<java.util.Map<Integer, int[]>> baseAnchors;
@@ -147,7 +147,7 @@ class OTF {
         // with it.
         if (!hasCapHeight) {
             capHeight = ascent;
-            int top = glyphTop(unicodeToGID['H']);
+            int top = glyphTop(unicodeToGID.get('H'));
             if (top != NO_VALUE) {
                 capHeight = (short) top;
             }
@@ -346,8 +346,8 @@ class OTF {
             }
             for (long ch = start; ch <= end; ch++) {
                 long gid = startGlyph + (ch - first);
-                if (gid < 0x10000 && unicodeToGID[(int) ch] == 0) {
-                    unicodeToGID[(int) ch] = (int) gid;
+                if (gid < 0x10000 && unicodeToGID.get((int) ch) == 0) {
+                    unicodeToGID.set((int) ch, (int) gid);
                 }
             }
             if (end + 1 > next) {
@@ -440,7 +440,7 @@ class OTF {
                         gid = (gid + idDelta[seg]) & 0xFFFF;
                     }
                 }
-                unicodeToGID[ch] = gid;
+                unicodeToGID.set(ch, gid);
             }
         }
     }

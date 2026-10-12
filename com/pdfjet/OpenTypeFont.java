@@ -64,6 +64,7 @@ class OpenTypeFont {
         font.fontUnderlineThickness = otf.underlineThickness;
         font.advanceWidth = otf.advanceWidth;
         font.unicodeToGID = otf.unicodeToGID;
+        font.unicodeOf = GlyphMap.unicodeOfGlyphs(otf.unicodeToGID);
         font.markToMarkOffsets = otf.markToMarkOffsets;
         font.markAnchors = otf.markAnchors;
         font.baseAnchors = otf.baseAnchors;

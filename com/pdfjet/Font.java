@@ -75,7 +75,9 @@ final public class Font {
     /** The advance width of each glyph. */
     protected int[] advanceWidth;
     /** Maps Unicode code points to glyph IDs. */
-    protected int[] unicodeToGID;
+    GlyphMap unicodeToGID;
+    /** The character of each glyph, see GlyphMap.unicodeOfGlyphs. */
+    int[] unicodeOf;
     /**
      * The offsets of the marks that attach to other marks, in font units, by
      * the glyph IDs of the two marks, or null. A font has them from its GPOS
@@ -409,8 +411,15 @@ final public class Font {
         for (int width : font.advanceWidth) {
             hash = fold(hash, width);
         }
-        for (int gid : font.unicodeToGID) {
-            hash = fold(hash, gid);
+        // The glyph of each of the 65,536 characters, 0 for those the font
+        // has not, as the array of them was folded: the subset's tag is made
+        // of it, and so the bytes of the PDF
+        if (font.unicodeToGID != null) {
+            for (int[] block : font.unicodeToGID.blocks) {
+                for (int i = 0; i < 256; i++) {
+                    hash = fold(hash, block == null ? 0 : block[i]);
+                }
+            }
         }
         return hash;
     }
@@ -525,8 +534,7 @@ final public class Font {
     // 2026, #8). The first character drawn with the glyph is kept; a document
     // that draws two characters of one glyph extracts the first for both.
     void useChar(int c, int gid) {
-        if (program == null || gid <= 0 || c < 0 || c >= unicodeToGID.length
-                || unicodeToGID[c] != gid) {
+        if (program == null || gid <= 0 || unicodeToGID.get(c) != gid) {
             return;
         }
         if (program.chars == null) {
@@ -629,7 +637,7 @@ final public class Font {
         if (isControl(cp)) {
             return false;
         }
-        return cp < firstChar || cp > lastChar || unicodeToGID[cp] == 0;
+        return cp < firstChar || cp > lastChar || unicodeToGID.get(cp) == 0;
     }
 
     // Returns the glyph a character the font does not have is drawn with:
@@ -644,8 +652,8 @@ final public class Font {
             return 0;
         }
         for (int cp : new int[] {0xFFFD, '?', ' '}) {
-            if (cp >= firstChar && cp <= lastChar && unicodeToGID[cp] != 0) {
-                return unicodeToGID[cp];
+            if (cp >= firstChar && cp <= lastChar && unicodeToGID.get(cp) != 0) {
+                return unicodeToGID.get(cp);
             }
         }
         return 0;

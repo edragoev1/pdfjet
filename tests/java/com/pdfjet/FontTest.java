@@ -179,7 +179,7 @@ class FontTest {
         Page page = new Page(pdf, Letter.PORTRAIT);
         new TextLine(font, "ก\t😀").setLocation(10f, 20f).drawOn(page);
         String content = TestSupport.content(page);
-        String space = String.format("%04X", font.unicodeToGID[0x20]);
+        String space = String.format("%04X", font.unicodeToGID.get(0x20));
         for (String want : new String[] {
                 "/Span <</ActualText <FEFF0E01>>> BDC\n<0000> Tj\nEMC\n<" + space + ">",
                 "/Span <</ActualText <FEFFD83DDE00>>> BDC\n<0000> Tj\nEMC\n"}) {
@@ -201,7 +201,7 @@ class FontTest {
         stamp.complete();
         pdf.complete();
         String want = String.format("<%04X> Tj\n/Span <</ActualText <FEFF0E01>>> BDC\n<0000> Tj\nEMC\n<%04X> Tj\n",
-                font.unicodeToGID['a'], font.unicodeToGID[0x20]);
+                font.unicodeToGID.get('a'), font.unicodeToGID.get(0x20));
         String out = TestSupport.latin1(bos.toByteArray());
         assertTrue(out.contains(want), out);
     }
@@ -216,7 +216,7 @@ class FontTest {
         pdf.setCompliance(Compliance.PDF_UA_1).setTitle("Test");
         pdf.setTitle("Title");
         Font font = ibmPlexSans(pdf);
-        int replacement = font.unicodeToGID[0xFFFD];
+        int replacement = font.unicodeToGID.get(0xFFFD);
         assertTrue(replacement != 0, "IBM Plex Sans has no U+FFFD");
         float width = (float) font.glyphAdvance(replacement) * 10f / (float) font.unitsPerEm;
         assertEquals(width, font.stringWidth(10f, "ก"), 0.001f, "a character in the range");
@@ -393,17 +393,17 @@ class FontTest {
         // needs, and which Unicode makes the signs. The space still wins over
         // the no-break space, and the right single quotation mark over the
         // modifier letter apostrophe.
-        int[] unicodeToGID = new int[0x10000];
+        GlyphMap unicodeToGID = new GlyphMap();
         int[][] glyphs = {
             {0x00B5, 0x03BC}, {0x03A9, 0x2126}, {0x004B, 0x212A}, {0x00C5, 0x212B},
             {0x0020, 0x00A0}, {0x02BC, 0x2019},
         };
         for (int gid = 1; gid <= glyphs.length; gid++) {
             for (int c : glyphs[gid - 1]) {
-                unicodeToGID[c] = gid;
+                unicodeToGID.set(c, gid);
             }
         }
-        int[] unicodeOf = FontWriter.unicodeOfGlyphs(unicodeToGID);
+        int[] unicodeOf = GlyphMap.unicodeOfGlyphs(unicodeToGID);
         int[] want = {0x03BC, 0x03A9, 0x004B, 0x00C5, 0x0020, 0x2019};
         for (int gid = 1; gid <= want.length; gid++) {
             assertEquals(want[gid - 1], unicodeOf[gid], "glyph " + gid);

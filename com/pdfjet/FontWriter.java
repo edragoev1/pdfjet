@@ -182,34 +182,51 @@ class FontWriter {
         // glyph. PDF/UA requires every glyph to map to Unicode, so map it to
         // the replacement character.
         list.add("<0000> <FFFD>\n");
-        StringBuilder buf = new StringBuilder();
-        int[] unicodeOf = unicodeOfGlyphs(font.unicodeToGID);
-        if (font.program != null && font.program.chars != null) {
-            for (Map.Entry<Integer, Integer> e : font.program.chars.entrySet()) {
-                unicodeOf[e.getKey()] = e.getValue();
+        // The glyphs of the map, those of the subset or all of them, each with
+        // its character, the one drawn with it where the document drew one of
+        // several, in the order of the characters, as the map was written when
+        // it walked them. An entry is the character in the high 32 bits and
+        // the glyph in the low ones, so that the entries sort by character.
+        int[] unicodeOf = font.unicodeOf;
+        long[] entries = new long[unicodeOf.length];
+        int count = 0;
+        for (int gid = 1; gid < unicodeOf.length; gid++) {
+            if (kept != null && (gid >= kept.length || !kept[gid])) {
+                continue;
+            }
+            int c = unicodeOf[gid];
+            if (font.program != null && font.program.chars != null) {
+                Integer drawn = font.program.chars.get(gid);
+                if (drawn != null) {
+                    c = drawn;
+                }
+            }
+            if (c >= 0) {
+                entries[count++] = ((long) c << 32) | gid;
             }
         }
-        for (int cid = 0; cid <= 0xffff; cid++) {
-            int gid = font.unicodeToGID[cid];
-            if (gid > 0 && unicodeOf[gid] == cid && (kept == null || (gid < kept.length && kept[gid]))) {
-                buf.append('<');
-                buf.append(toHexString(gid));
-                buf.append("> <");
-                // A presentation form that the Bidi class puts in maps to the letters it stands for.
-                String letters = Bidi.lettersOf(cid);
-                if (letters == null) {
-                    buf.append(toHexString(cid));
-                } else {
-                    for (int i = 0; i < letters.length(); i++) {
-                        buf.append(toHexString(letters.charAt(i)));
-                    }
+        Arrays.sort(entries, 0, count);
+        StringBuilder buf = new StringBuilder();
+        for (int i = 0; i < count; i++) {
+            int cid = (int) (entries[i] >>> 32);
+            int gid = (int) entries[i];
+            buf.append('<');
+            buf.append(toHexString(gid));
+            buf.append("> <");
+            // A presentation form that the Bidi class puts in maps to the letters it stands for.
+            String letters = Bidi.lettersOf(cid);
+            if (letters == null) {
+                buf.append(toHexString(cid));
+            } else {
+                for (int j = 0; j < letters.length(); j++) {
+                    buf.append(toHexString(letters.charAt(j)));
                 }
-                buf.append(">\n");
-                list.add(buf.toString());
-                buf.setLength(0);
-                if (list.size() == 100) {
-                    writeListToBuffer(sb, list);
-                }
+            }
+            buf.append(">\n");
+            list.add(buf.toString());
+            buf.setLength(0);
+            if (list.size() == 100) {
+                writeListToBuffer(sb, list);
             }
         }
         if (list.size() > 0) {
@@ -257,27 +274,6 @@ class FontWriter {
         return sb.toString();
     }
 
-    /**
-     * Returns the character that each glyph maps to in a ToUnicode CMap. A
-     * glyph can stand for several characters, like the space and the no-break
-     * space, but viewers read a CMap with more than one entry for a glyph
-     * differently. So a glyph maps to the first character that uses it, unless
-     * that is one text seldom has and another character uses the glyph too,
-     * like the modifier letter apostrophe and the right single quotation mark.
-     */
-    static int[] unicodeOfGlyphs(int[] unicodeToGID) {
-        int[] unicode = new int[0x10000];
-        Arrays.fill(unicode, -1);
-        for (int cid = 0; cid <= 0xffff; cid++) {
-            int gid = unicodeToGID[cid];
-            if (gid > 0 && (unicode[gid] == -1 ||
-                    (isSeldomText(unicode[gid]) && !isSeldomText(cid)))) {
-                unicode[gid] = cid;
-            }
-        }
-        return unicode;
-    }
-
     // The soft hyphen, the micro sign, the spacing modifier letters, the
     // combining marks, the figure dash, the ohm, kelvin and angstrom signs, the
     // deprecated angle brackets, the CJK and Kangxi radicals, which CJK fonts
@@ -285,7 +281,7 @@ class FontWriter {
     // The micro sign and the three signs are the letters Unicode makes them,
     // mu, omega, K and A with a ring, which a font often draws them with: such
     // a glyph is copied as the letter, as Greek text needs it.
-    private static boolean isSeldomText(int ch) {
+    static boolean isSeldomText(int ch) {
         return ch == 0x00AD ||
                 ch == 0x00B5 ||
                 (ch >= 0x02B0 && ch <= 0x036F) ||

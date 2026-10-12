@@ -46,7 +46,7 @@ class CFFSubsetTest {
     private static boolean[] used(OTF otf, String text) {
         boolean[] used = new boolean[0x10000];
         for (int i = 0; i < text.length(); i++) {
-            used[otf.unicodeToGID[text.charAt(i)]] = true;
+            used[otf.unicodeToGID.get(text.charAt(i))] = true;
         }
         return used;
     }
@@ -163,7 +163,7 @@ class CFFSubsetTest {
         CFFSubset.Index tops = CFFSubset.readIndex(cff, names.end);
         List<CFFSubset.Entry> top = CFFSubset.readDict(cff, tops.objects[0], tops.objects[1]);
         CFFSubset.Index charStrings = CFFSubset.readIndex(cff, CFFSubset.entryOf(top, CFFSubset.CHAR_STRINGS)[0]);
-        int gid = otf.unicodeToGID['Á'];
+        int gid = otf.unicodeToGID.get('Á');
         int at = charStrings.objects[gid];
         assertTrue(charStrings.objects[gid + 1] - at >= 6, "the charstring of Á is too short");
         System.arraycopy(new byte[] {(byte) 139, (byte) 139, (byte) 204, (byte) 247, 86, 14}, 0, cff, at, 6);
