@@ -27,9 +27,36 @@ type fontProgram struct {
 	forbidden bool      // The fsType of a CFF font's OS/2 table forbids subsetting
 	used      *glyphSet // The glyphs drawn, by glyph number
 	// The character first drawn with each glyph, by glyph number, for the
-	// ToUnicode map of a glyph of several characters, as U+3000 and U+2003
-	chars map[int]rune
+	// ToUnicode map of a glyph of several characters, as U+3000 and U+2003:
+	// in blocks of 256 glyphs, each made when one of its glyphs is first
+	// drawn, the character plus one, 0 for none, as in Java, where a map of
+	// boxed numbers made each character drawn allocate (12 October 2026).
+	chars [256]*[256]rune
 	whole bool // Set by SetSubset(false): the font is embedded whole
+}
+
+// firstChar returns the character first drawn with the glyph, or -1.
+func (program *fontProgram) firstChar(gid int) rune {
+	block := program.chars[gid>>8&0xFF]
+	if block == nil {
+		return -1
+	}
+	return block[gid&0xFF] - 1
+}
+
+// useFirstChar records the character as the one drawn with the glyph, unless
+// one was, and returns the one drawn first, or -1 when it is this one.
+func (program *fontProgram) useFirstChar(gid int, c rune) rune {
+	block := program.chars[gid>>8&0xFF]
+	if block == nil {
+		block = new([256]rune)
+		program.chars[gid>>8&0xFF] = block
+	}
+	first := block[gid&0xFF] - 1
+	if first < 0 {
+		block[gid&0xFF] = c + 1
+	}
+	return first
 }
 
 // newFontProgram returns the program of a font of the number of glyphs given,
@@ -98,12 +125,7 @@ func (font *Font) useChar(c rune, gid int) {
 	if font.program == nil || gid <= 0 || font.unicodeToGID.get(c) != gid {
 		return
 	}
-	if font.program.chars == nil {
-		font.program.chars = make(map[int]rune)
-	}
-	if _, ok := font.program.chars[gid]; !ok {
-		font.program.chars[gid] = c
-	}
+	font.program.useFirstChar(gid, c)
 }
 
 // drawnAsAnother returns true if the glyph of the character is drawn for
@@ -115,11 +137,31 @@ func (font *Font) useChar(c rune, gid int) {
 // and Arabic text had three times the spans it needed, its content 27%
 // larger (review of 12 October 2026, T2).
 func (font *Font) drawnAsAnother(c rune) bool {
-	if font.program == nil || font.program.chars == nil {
+	if font.program == nil {
 		return false
 	}
-	first, ok := font.program.chars[font.unicodeToGID.get(c)]
-	return ok && first != c && !sameLetters(first, c)
+	return isAnother(font.program.firstChar(font.unicodeToGID.get(c)), c)
+}
+
+// useCharDrawnAsAnother is useChar, then drawnAsAnother, with one lookup of
+// the character's glyph: the plain text of a page asks for each character
+// drawn, and the two calls made 100 pages of text 9% slower in Java
+// (12 October 2026).
+func (font *Font) useCharDrawnAsAnother(c rune, gid int) bool {
+	if font.program == nil {
+		return false
+	}
+	own := font.unicodeToGID.get(c)
+	if gid > 0 && own == gid {
+		return isAnother(font.program.useFirstChar(gid, c), c)
+	}
+	return isAnother(font.program.firstChar(own), c)
+}
+
+// isAnother returns true if the character first drawn with a glyph, or -1,
+// is another than the character, which copies as other text.
+func isAnother(first, c rune) bool {
+	return first >= 0 && first != c && !sameLetters(first, c)
 }
 
 // sameLetters returns true if the two characters copy as the same text: the

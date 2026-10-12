@@ -218,8 +218,8 @@ func TestMisuseAFontOfAnotherPDFIsNotChanged(t *testing.T) {
 		}()
 	}
 	wg.Wait()
-	if !slices.Equal(used, font.program.used.words) || len(font.program.chars) != 0 {
-		t.Errorf("the font of another PDF was changed: %d characters", len(font.program.chars))
+	if !slices.Equal(used, font.program.used.words) || font.program.chars != [256]*[256]rune{} {
+		t.Errorf("the font of another PDF was changed: characters recorded")
 	}
 }
 

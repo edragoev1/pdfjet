@@ -435,9 +435,8 @@ public class Font {
     // 2026, #8). The first character drawn with the glyph is kept; the others
     // drawn with it are given their own as actual text, see drawnAsAnother.
     func useChar(_ c: Int, _ gid: Int) {
-        if let program = program, gid > 0,
-                unicodeToGID[c] == gid, program.chars[gid] == nil {
-            program.chars[gid] = c
+        if let program = program, gid > 0, unicodeToGID[c] == gid {
+            program.chars.use(gid, c)
         }
     }
 
@@ -449,10 +448,9 @@ public class Font {
         }
         let table = unicodeToGID
         var chars = program.chars
-        program.chars = [:]     // So that chars is not copied when changed
-        for (c, gid) in zip(codePoints, gids)
-                where gid > 0 && table[c] == gid && chars[gid] == nil {
-            chars[gid] = c
+        program.chars = GlyphChars()    // So that chars is not copied when changed
+        for (c, gid) in zip(codePoints, gids) where gid > 0 && table[c] == gid {
+            chars.use(gid, c)
         }
         program.chars = chars
     }
@@ -466,10 +464,10 @@ public class Font {
     // had three times the spans it needed, its content 27% larger (review of
     // 12 October 2026, T2).
     func drawnAsAnother(_ c: Int) -> Bool {
-        guard let first = program?.chars[unicodeToGID[c]] else {
+        guard let first = program?.chars.first(unicodeToGID[c]) else {
             return false
         }
-        return first != c && !Font.sameLetters(first, c)
+        return first >= 0 && first != c && !Font.sameLetters(first, c)
     }
 
     // Returns true if the two characters copy as the same text: the letters of
@@ -488,7 +486,8 @@ public class Font {
         }
         let table = unicodeToGID
         for c in codePoints {
-            if let first = chars[table[c]], first != c, !Font.sameLetters(first, c) {
+            let first = chars.first(table[c])
+            if first >= 0, first != c, !Font.sameLetters(first, c) {
                 return true
             }
         }

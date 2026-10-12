@@ -1153,8 +1153,7 @@ final public class Page {
             i += Character.charCount(cp);
             if (cp != 0xFEFF && !Font.isIgnorable(cp)) {     // BOM, or one not drawn
                 int gid = glyphOf(font, cp);
-                font.useChar(cp, gid);
-                if (font.drawnAsAnother(cp)) {
+                if (font.useCharDrawnAsAnother(cp, gid)) {
                     content.truncate(start);
                     return false;
                 }

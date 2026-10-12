@@ -11,7 +11,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.List;
-import java.util.HashMap;
 
 /**
  * Used to create font objects.
@@ -528,10 +527,7 @@ final public class Font {
         if (program == null || gid <= 0 || unicodeToGID.get(c) != gid) {
             return;
         }
-        if (program.chars == null) {
-            program.chars = new HashMap<Integer, Integer>();
-        }
-        program.chars.putIfAbsent(gid, c);
+        program.firstChar(gid, c);
     }
 
     // Returns true if the glyph of the character is drawn for another
@@ -543,11 +539,30 @@ final public class Font {
     // had three times the spans it needed, its content 27% larger (review of
     // 12 October 2026, T2).
     boolean drawnAsAnother(int c) {
-        if (program == null || program.chars == null) {
+        if (program == null) {
             return false;
         }
-        Integer first = program.chars.get(unicodeToGID.get(c));
-        return first != null && first != c && !sameLetters(first, c);
+        return isAnother(program.firstChar(unicodeToGID.get(c)), c);
+    }
+
+    // useChar, then drawnAsAnother, with one lookup of the character's glyph:
+    // the plain text of a page asks for each character drawn, and the two
+    // calls made 100 pages of text 9% slower (12 October 2026).
+    boolean useCharDrawnAsAnother(int c, int gid) {
+        if (program == null) {
+            return false;
+        }
+        int own = unicodeToGID.get(c);
+        if (gid > 0 && own == gid) {
+            return isAnother(program.firstChar(gid, c), c);
+        }
+        return isAnother(program.firstChar(own), c);
+    }
+
+    // Returns true if the character first drawn with a glyph, or -1, is
+    // another than the character, which copies as other text.
+    private static boolean isAnother(int first, int c) {
+        return first >= 0 && first != c && !sameLetters(first, c);
     }
 
     // Returns true if the two characters copy as the same text: the letters of

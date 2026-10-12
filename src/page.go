@@ -696,10 +696,13 @@ func (page *Page) appendPlainGlyphs(font *Font, runes []rune) bool {
 	for _, c1 := range runes {
 		if c1 != 0xFEFF && !isIgnorable(c1) { // BOM marker, or one not drawn
 			gid := glyphOf(font, c1)
+			var another bool
 			if page.ownsFont(font) {
-				font.useChar(c1, gid)
+				another = font.useCharDrawnAsAnother(c1, gid)
+			} else {
+				another = font.drawnAsAnother(c1)
 			}
-			if font.drawnAsAnother(c1) {
+			if another {
 				page.buf = page.buf[:start]
 				return false
 			}

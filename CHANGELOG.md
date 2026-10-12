@@ -20,6 +20,12 @@ This is the first entry in this file; earlier releases were not tracked here.
   negative one, are refused.
 
 ### Changed
+- Drawing text is as fast as before the fixes of 12 October, in the four
+  ports: the character first drawn with each glyph, which decides whether
+  a character is copied as another, is kept in a table of plain numbers,
+  not a map, and a character drawn is looked up once to be recorded and
+  checked. Java drew 100 pages of text in 20.6 ms after the fixes, 18.0
+  before them, and 17.9 now.
 - Go reads a font into a buffer of its size, once: NewFontFromFile reads
   the file in one read, and NewFont a reader that says its length, as a
   bytes.Reader does, at that length. io.ReadAll grew its buffer as it

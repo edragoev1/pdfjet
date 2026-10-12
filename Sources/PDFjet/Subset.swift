@@ -6,6 +6,39 @@
  */
 import Foundation
 
+// The character first drawn with each glyph of a font, by glyph number: in
+// blocks of 256 glyphs, each made when one of its glyphs is first drawn, the
+// character plus one, 0 for none, as in Java, where a map of boxed numbers
+// made each character drawn allocate (12 October 2026).
+struct GlyphChars {
+    private var blocks = [[Int32]?](repeating: nil, count: 256)
+    private(set) var isEmpty = true
+
+    // Returns the character first drawn with the glyph, or -1.
+    func first(_ gid: Int) -> Int {
+        guard let block = blocks[(gid >> 8) & 0xFF] else {
+            return -1
+        }
+        return Int(block[gid & 0xFF]) - 1
+    }
+
+    // Records the character as the one drawn with the glyph, unless one was,
+    // and returns the one drawn first, or -1 when it is this one.
+    @discardableResult
+    mutating func use(_ gid: Int, _ c: Int) -> Int {
+        let b = (gid >> 8) & 0xFF
+        if blocks[b] == nil {
+            blocks[b] = [Int32](repeating: 0, count: 256)
+        }
+        let first = Int(blocks[b]![gid & 0xFF]) - 1
+        if first < 0 {
+            blocks[b]![gid & 0xFF] = Int32(c + 1)
+            isEmpty = false
+        }
+        return first
+    }
+}
+
 /// The subsets of the embedded fonts, .ttf and .otf files, embedded at
 /// complete() with the outlines of the glyphs the document did not draw
 /// emptied. The glyph numbers stay, so the widths, the character map and the
@@ -22,7 +55,7 @@ class Subset {
         var used: GlyphSet
         // The character first drawn with each glyph, by glyph number, for the
         // ToUnicode map of a glyph of several characters, as U+3000 and U+2003
-        var chars = [Int: Int]()
+        var chars = GlyphChars()
         var whole = false           // Set by setSubset(false): the font is embedded whole
 
         // The program of a font of the number of glyphs given, the count of

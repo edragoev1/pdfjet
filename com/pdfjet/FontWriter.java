@@ -195,9 +195,9 @@ class FontWriter {
                 continue;
             }
             int c = unicodeOf[gid];
-            if (font.program != null && font.program.chars != null) {
-                Integer drawn = font.program.chars.get(gid);
-                if (drawn != null) {
+            if (font.program != null) {
+                int drawn = font.program.firstChar(gid);
+                if (drawn >= 0) {
                     c = drawn;
                 }
             }

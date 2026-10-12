@@ -117,7 +117,7 @@ public class ReviewRound3Test {
         new TextLine(font, "\u0628").SetLocation(50f, 50f).DrawOn(page);
         // The glyph of ة as drawn first for another character, which no two
         // characters of this font copied as different text are
-        font.program.chars[font.unicodeToGID.Get(0x0629)] = 'X';
+        font.program.FirstChar(font.unicodeToGID.Get(0x0629), 'X');
         new TextLine(font, "\u0629\u0650\u0645\u0649").SetLocation(50f, 100f).DrawOn(page);
         string content = TestSupport.Content(page);
         Assert.DoesNotContain("/ActualText <FEFF0020", content);

@@ -427,12 +427,7 @@ public class Font {
         if (program == null || gid <= 0 || unicodeToGID.Get(c) != gid) {
             return;
         }
-        if (program.chars == null) {
-            program.chars = new Dictionary<int, int>();
-        }
-        if (!program.chars.ContainsKey(gid)) {
-            program.chars[gid] = c;
-        }
+        program.FirstChar(gid, c);
     }
 
     // Returns true if the glyph of the character is drawn for another
@@ -444,11 +439,30 @@ public class Font {
     // had three times the spans it needed, its content 27% larger (review of
     // 12 October 2026, T2).
     internal bool DrawnAsAnother(int c) {
-        if (program == null || program.chars == null) {
+        if (program == null) {
             return false;
         }
-        return program.chars.TryGetValue(unicodeToGID.Get(c), out int first) && first != c
-                && !SameLetters(first, c);
+        return IsAnother(program.FirstChar(unicodeToGID.Get(c)), c);
+    }
+
+    // UseChar, then DrawnAsAnother, with one lookup of the character's glyph:
+    // the plain text of a page asks for each character drawn, and the two
+    // calls made 100 pages of text 9% slower in Java (12 October 2026).
+    internal bool UseCharDrawnAsAnother(int c, int gid) {
+        if (program == null) {
+            return false;
+        }
+        int own = unicodeToGID.Get(c);
+        if (gid > 0 && own == gid) {
+            return IsAnother(program.FirstChar(gid, c), c);
+        }
+        return IsAnother(program.FirstChar(own), c);
+    }
+
+    // Returns true if the character first drawn with a glyph, or -1, is
+    // another than the character, which copies as other text.
+    private static bool IsAnother(int first, int c) {
+        return first >= 0 && first != c && !SameLetters(first, c);
     }
 
     // Returns true if the two characters copy as the same text: the letters of

@@ -210,7 +210,7 @@ func toUnicodeCMap(font *Font, kept []bool) string {
 		}
 		c := int(font.unicodeOf[gid])
 		if font.program != nil {
-			if drawn, ok := font.program.chars[gid]; ok {
+			if drawn := font.program.firstChar(gid); drawn >= 0 {
 				c = int(drawn)
 			}
 		}

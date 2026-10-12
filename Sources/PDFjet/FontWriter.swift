@@ -117,7 +117,7 @@ class FontWriter {
                     continue
                 }
                 var c = Int(unicodeOf[gid])
-                if let drawn = chars?[gid] {
+                if let drawn = chars?.first(gid), drawn >= 0 {
                     c = drawn
                 }
                 if c >= 0 {

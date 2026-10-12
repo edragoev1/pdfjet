@@ -28,9 +28,33 @@ class Subset {
         // The glyphs drawn, by glyph number, written in four hexadecimal digits.
         internal readonly GlyphSet used;
         // The character first drawn with each glyph, by glyph number, for the
-        // ToUnicode map of a glyph of several characters, as U+3000 and U+2003
-        internal Dictionary<int, int> chars;
+        // ToUnicode map of a glyph of several characters, as U+3000 and U+2003:
+        // in blocks of 256 glyphs, each made when one of its glyphs is first
+        // drawn, the character plus one, 0 for none, as in Java, where a map
+        // of boxed numbers made each character drawn allocate (12 October 2026).
+        private readonly int[][] chars = new int[256][];
         internal bool whole;        // Set by SetSubset(false): the font is embedded whole
+
+        // Returns the character first drawn with the glyph, or -1.
+        internal int FirstChar(int gid) {
+            int[] block = chars[gid >> 8];
+            return block == null ? -1 : block[gid & 0xFF] - 1;
+        }
+
+        // Records the character as the one drawn with the glyph, unless one
+        // was, and returns the one drawn first, or -1 when it is this one.
+        internal int FirstChar(int gid, int c) {
+            int[] block = chars[gid >> 8];
+            if (block == null) {
+                block = new int[256];
+                chars[gid >> 8] = block;
+            }
+            int first = block[gid & 0xFF] - 1;
+            if (first < 0) {
+                block[gid & 0xFF] = c + 1;
+            }
+            return first;
+        }
 
         // The program of a font of the number of glyphs given, the count of its
         // maxp table, or 0 when it has none.

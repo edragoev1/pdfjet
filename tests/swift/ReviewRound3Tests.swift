@@ -119,7 +119,7 @@ import Testing
         TextLine(font, "\u{0628}").setLocation(50, 50).drawOn(page)
         // The glyph of ة as drawn first for another character, which no two
         // characters of this font copied as different text are
-        font.program!.chars[font.unicodeToGID[0x0629]] = 0x58
+        font.program!.chars.use(font.unicodeToGID[0x0629], 0x58)
         TextLine(font, "\u{0629}\u{0650}\u{0645}\u{0649}").setLocation(50, 100).drawOn(page)
         let content = TestSupport.content(page)
         #expect(!content.contains("/ActualText <FEFF0020"), "\(content)")

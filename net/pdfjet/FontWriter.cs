@@ -195,9 +195,9 @@ class FontWriter {
                 continue;
             }
             int c = font.unicodeOf[gid];
-            if (font.program != null && font.program.chars != null) {
-                int drawn;
-                if (font.program.chars.TryGetValue(gid, out drawn)) {
+            if (font.program != null) {
+                int drawn = font.program.FirstChar(gid);
+                if (drawn >= 0) {
                     c = drawn;
                 }
             }

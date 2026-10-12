@@ -216,7 +216,7 @@ func TestReview3AWordWithMarksIsCopiedWithoutASpaceInside(t *testing.T) {
 	NewTextLine(font, "\u0628").SetLocation(50, 50).DrawOn(page)
 	// The glyph of ة as drawn first for another character, which no two
 	// characters of this font copied as different text are
-	font.program.chars[font.unicodeToGID.get(0x0629)] = 'X'
+	font.program.useFirstChar(font.unicodeToGID.get(0x0629), 'X')
 	NewTextLine(font, "ةِمى").SetLocation(50, 100).DrawOn(page)
 	content := testContent(page)
 	if strings.Contains(content, "/ActualText <FEFF0020") {

@@ -134,7 +134,7 @@ class ReviewRound3Test {
         new TextLine(font, "\u0628").setLocation(50f, 50f).drawOn(page);
         // The glyph of ة as drawn first for another character, which no two
         // characters of this font copied as different text are
-        font.program.chars.put(font.unicodeToGID.get(0x0629), (int) 'X');
+        font.program.firstChar(font.unicodeToGID.get(0x0629), 'X');
         new TextLine(font, "\u0629\u0650\u0645\u0649").setLocation(50f, 100f).drawOn(page);
         String content = TestSupport.content(page);
         assertFalse(content.contains("/ActualText <FEFF0020"), content);

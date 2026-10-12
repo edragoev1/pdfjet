@@ -1040,8 +1040,7 @@ public class Page {
             int codePoint = Util.CodePointAt(str, i);  // A lone surrogate is drawn as .notdef
             if (codePoint != 0xFEFF && !Font.IsIgnorable(codePoint)) { // BOM, or one not drawn
                 int gid = GlyphOf(font, codePoint);
-                font.UseChar(codePoint, gid);
-                if (font.DrawnAsAnother(codePoint)) {
+                if (font.UseCharDrawnAsAnother(codePoint, gid)) {
                     buf.SetLength(start);
                     return false;
                 }
