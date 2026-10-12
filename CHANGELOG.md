@@ -17,6 +17,16 @@ This is the first entry in this file; earlier releases were not tracked here.
   pages finds each name at once, not by a look through all the names added
   before, and adds a page that /Kids lists again once: 1,000 pages of 2,000
   fonts took 36 seconds, and one page listed 2,000 times two minutes.
+- Reading and merging pages that inherit a large /Resources, in the four
+  ports: a /Resources dictionary of more than 64 tokens in a node of the
+  page tree is shared by the pages under it, not copied into each, and
+  Merge writes it once, as an object that every page refers to. 1,000 pages
+  under a node of 20,000 fonts, a PDF of 242 KB, took 2.9 GB of memory and
+  36 seconds, and Merge wrote 189 MB; now 0.05 seconds, and a merged PDF of
+  about the source's size. A page's GetDict() shows such resources no
+  longer; GetResourcesObject() gives them, and adding a resource to the page
+  gives it a copy of its own first. A smaller /Resources is copied into each
+  page, as before.
 - Markdown, in the four ports: a table has at most 64 columns, and a wider
   header is a paragraph. Each row is padded to the header's columns, so a
   header of thousands of columns over rows of "|" took memory as the square

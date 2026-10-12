@@ -6,12 +6,16 @@
 package pdfjet
 
 import (
+	"fmt"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
+	"github.com/edragoev1/pdfjet/v9/src/corefont"
 	"github.com/edragoev1/pdfjet/v9/src/encryption"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 )
@@ -440,5 +444,88 @@ func TestMergeAFontAddedToTheObjectsIsWritten(t *testing.T) {
 	}
 	if !found {
 		t.Error("no Type0 font of a subset of Noto Sans")
+	}
+}
+
+// testInheritedResources returns a PDF of pages under one node that holds an
+// inline /Resources of the fonts, which the pages inherit.
+func testInheritedResources(pages, fonts int) []byte {
+	resources := []string{"/Resources << /Font <<"}
+	for i := 1; i <= fonts; i++ {
+		resources = append(resources, fmt.Sprintf("/F%d 3 0 R", i))
+	}
+	resources = append(resources, ">> >>")
+	kids := []string{}
+	for i := 0; i < pages; i++ {
+		kids = append(kids, fmt.Sprintf("%d 0 R", i+4))
+	}
+	objects := []string{
+		"<< /Type /Catalog /Pages 2 0 R >>",
+		fmt.Sprintf("<< /Type /Pages /Kids [%s] /Count %d /MediaBox [0 0 612 792] %s >>",
+			strings.Join(kids, " "), pages, strings.Join(resources, " ")),
+		"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+	}
+	for range pages {
+		objects = append(objects, "<< /Type /Page /Parent 2 0 R >>")
+	}
+	return testPDFWithObjects(objects...)
+}
+
+// A large /Resources that pages inherit is shared by them, not copied into
+// each, and Merge writes it once, an object that each page refers to: 1,000
+// pages under a node of 20,000 fonts took 2.9 GB, and Merge wrote 189 MB
+// (review of 11 October 2026, #34).
+func TestMergeALargeInheritedResourcesIsWrittenOnce(t *testing.T) {
+	source := testInheritedResources(1000, 20000)
+	objects := testRead(t, source)
+	start := time.Now()
+	pages := testNewPDF().GetPageObjects(objects)
+	if len(pages) != 1000 {
+		t.Fatalf("%d pages", len(pages))
+	}
+	first, last := pages[0].inheritedResources, pages[999].inheritedResources
+	if len(first) < 80000 || &first[0] != &last[0] {
+		t.Errorf("the pages do not share their resources: %d tokens", len(first))
+	}
+	resources := pages[0].GetResourcesObject(objects)
+	if resources == nil || !slices.Contains(resources.GetDict(), "/F20000") {
+		t.Error("the resources of a page are not read")
+	}
+	doc := testNewDoc()
+	if err := doc.pdf.Merge(objects); err != nil {
+		t.Fatal(err)
+	}
+	merged := doc.complete()
+	if elapsed := time.Since(start); elapsed > 5*time.Second {
+		t.Errorf("pages and merge took %v", elapsed)
+	}
+	if len(merged) > 2*len(source) {
+		t.Errorf("the merged PDF is %d bytes, of a source of %d", len(merged), len(source))
+	}
+	written := testNewPDF().GetPageObjects(testRead(t, merged))
+	if len(written) != 1000 {
+		t.Fatalf("%d pages merged", len(written))
+	}
+	if r := written[999].GetResourcesObject(testRead(t, merged)); r == nil || !slices.Contains(r.GetDict(), "/F20000") {
+		t.Error("a merged page has lost its resources")
+	}
+}
+
+// A small /Resources that pages inherit is copied into each, as before, and
+// a resource added to a page that shares a large one is the page's alone.
+func TestMergeASmallInheritedResourcesIsCopiedAndASharedOneIsCopiedWhenChanged(t *testing.T) {
+	objects := testRead(t, testInheritedResources(2, 3))
+	pages := testNewPDF().GetPageObjects(objects)
+	if pages[0].inheritedResources != nil || !slices.Contains(pages[0].GetDict(), "/F3") {
+		t.Error("a small /Resources is not copied into the page")
+	}
+	objects = testRead(t, testInheritedResources(2, 100))
+	pages = testNewPDF().GetPageObjects(objects)
+	pages[0].AddCoreFontResource(corefont.Helvetica(), &objects)
+	if pages[0].inheritedResources != nil || !slices.Contains(pages[0].GetDict(), "/F100") {
+		t.Error("the page that a font was added to has no resources of its own")
+	}
+	if pages[1].inheritedResources == nil || slices.Contains(pages[1].inheritedResources, "/HELVETICA") {
+		t.Error("the font added to one page is in the resources of the other")
 	}
 }

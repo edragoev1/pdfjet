@@ -1909,9 +1909,27 @@ func (pdf *PDF) mergePages(objects []*PDFobj, pageObjects []*PDFobj) {
 		}
 	}
 	nodes := make(pageTreeNodes)
+	// A large /Resources that pages inherit from a node of the tree is an
+	// object of its own here, written once, which each page refers to, as
+	// the pages are no longer under the node: a number past those of the
+	// objects stands for it until it gets one of this document.
+	sharedNumbers := make(map[*PDFobj]int)
+	shared := func(node *PDFobj, value []string) []string {
+		number, ok := sharedNumbers[node]
+		if !ok {
+			number = len(objects) + 1 + len(sharedNumbers)
+			sharedNumbers[node] = number
+			numbers[number] = pdf.reserveObjNumber()
+			obj := newPDFobj()
+			obj.number = number
+			obj.dict = value
+			queue = append(queue, obj)
+		}
+		return []string{strconv.Itoa(number), "0", "R"}
+	}
 	for i := 0; i < len(queue); i++ {
 		obj := queue[i]
-		value := mergedValue(obj, mergedPages[obj.number], objects, nodes)
+		value := mergedValue(obj, mergedPages[obj.number], objects, nodes, shared)
 		values[obj.number] = value
 		for j := 0; j < len(value); j++ {
 			if isObjectReference(value, j) {
@@ -1991,7 +2009,8 @@ func isMergedObject(number int, objects []*PDFobj, mergedPages map[int]bool) boo
 // mergedValue returns the value of an object that was read, without its
 // "n g obj" and its "stream" and "endobj" keywords, with a direct /Length for a
 // stream, and for a page with the entries it inherits and without its /Parent.
-func mergedValue(obj *PDFobj, isPage bool, objects []*PDFobj, nodes pageTreeNodes) []string {
+func mergedValue(obj *PDFobj, isPage bool, objects []*PDFobj, nodes pageTreeNodes,
+	shared func(node *PDFobj, value []string) []string) []string {
 	value := objectValue(obj)
 	if obj.stream != nil {
 		value = setDictEntry(value, "/Length", []string{strconv.Itoa(len(obj.stream))})
@@ -1999,7 +2018,10 @@ func mergedValue(obj *PDFobj, isPage bool, objects []*PDFobj, nodes pageTreeNode
 	if isPage {
 		for _, key := range inheritedKeys {
 			if dictEntryIndex(value, key) == -1 {
-				inherited := inheritedPageValue(obj, key, objects, nodes)
+				node, inherited := inheritedPageEntry(obj, key, objects, nodes)
+				if sharedInherited(key, inherited) {
+					inherited = shared(node, inherited) // A reference to it, written once
+				}
 				if inherited == nil && key == "/MediaBox" {
 					inherited = []string{"[", "0", "0", "612", "792", "]"} // Letter
 				}
@@ -2033,13 +2055,28 @@ func objectValue(obj *PDFobj) []string {
 // key, the first of a key, as they are found.
 type pageTreeNodes map[*PDFobj]map[string][]string
 
-// inheritedPageValue returns the value of the entry from the nearest node of
-// the page tree above the page that has it, or nil. The entries of each node
+// maxCopiedInherited is the most tokens of an inherited dictionary that are
+// copied into each page that inherits it. A larger /Resources is shared: the
+// pages keep it by reference, and Merge writes it once, as an object of its
+// own. 1,000 pages under a node of an inline /Resources of 20,000 entries,
+// a PDF of 242 KB, took 2.9 GB, and Merge wrote 189 MB (review of
+// 11 October 2026, #34).
+const maxCopiedInherited = 64
+
+// sharedInherited says whether an inherited value is shared rather than
+// copied: a /Resources dictionary of more than maxCopiedInherited tokens.
+func sharedInherited(key string, value []string) bool {
+	return key == "/Resources" && len(value) > maxCopiedInherited && value[0] == "<<"
+}
+
+// inheritedPageEntry returns the node of the page tree above the page that
+// has the entry, the nearest, and its value, which is the node's and not a
+// copy, or nil and nil. The entries of each node
 // are found once and kept in nodes, as the node of a flat tree lists thousands
 // of pages, and each of them looks up each entry it does not have: veraPDF's
 // test of the implementation limits has 10,000 pages under one node, which
 // took half a minute.
-func inheritedPageValue(page *PDFobj, key string, objects []*PDFobj, nodes pageTreeNodes) []string {
+func inheritedPageEntry(page *PDFobj, key string, objects []*PDFobj, nodes pageTreeNodes) (*PDFobj, []string) {
 	tokens := objectValue(page)
 	var parent []string
 	if i := dictEntryIndex(tokens, "/Parent"); i != -1 {
@@ -2047,11 +2084,11 @@ func inheritedPageValue(page *PDFobj, key string, objects []*PDFobj, nodes pageT
 	}
 	for depth := 0; depth < 64; depth++ { // A loop in a broken tree ends here.
 		if !isObjectReference(parent, 0) {
-			return nil
+			return nil, nil
 		}
 		number, _ := strconv.Atoi(parent[0])
 		if number < 1 || number > len(objects) || objects[number-1] == nil || len(objects[number-1].dict) == 0 {
-			return nil
+			return nil, nil
 		}
 		node := objects[number-1]
 		entries, ok := nodes[node]
@@ -2060,11 +2097,11 @@ func inheritedPageValue(page *PDFobj, key string, objects []*PDFobj, nodes pageT
 			nodes[node] = entries
 		}
 		if value, ok := entries[key]; ok {
-			return append([]string(nil), value...)
+			return node, value
 		}
 		parent = entries["/Parent"]
 	}
-	return nil
+	return nil, nil
 }
 
 // dictEntries returns the entries of the dictionary, the first of each key, by
@@ -3464,7 +3501,10 @@ func addInheritedEntries(page *PDFobj, objects []*PDFobj, nodes pageTreeNodes) {
 		if dictEntryIndex(objectValue(page), key) != -1 {
 			continue // An entry of its own.
 		}
-		if value := inheritedPageValue(page, key, objects, nodes); value != nil {
+		_, value := inheritedPageEntry(page, key, objects, nodes)
+		if sharedInherited(key, value) {
+			page.inheritedResources = value
+		} else if value != nil {
 			page.dict = insertArrayAt(page.dict, append([]string{key}, value...), open+1)
 		}
 	}

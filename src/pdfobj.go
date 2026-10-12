@@ -38,6 +38,10 @@ type PDFobj struct {
 	gsNumber     int   // Graphics savedState Number
 	root         bool  // The catalog that the trailer's /Root names
 	font         *Font // A font added to the objects, filled in when they are added to a PDF
+	// The /Resources a page inherits from the page tree, when it is a large
+	// dictionary in a node: shared by the pages under the node, not copied
+	// into each (see addInheritedEntries)
+	inheritedResources []string
 }
 
 // maxDecodedTotal is what all the streams of one PDF may decode to together,
@@ -715,6 +719,13 @@ func (obj *PDFobj) GetContentObject(objects []*PDFobj) *PDFobj {
 
 // GetResourcesObject returns the resources object of this page, or nil if it has none.
 func (obj *PDFobj) GetResourcesObject(objects []*PDFobj) *PDFobj {
+	if obj.inheritedResources != nil {
+		// The dictionary the page shares with the others under its node, as
+		// an object of its own, which is read and not changed
+		resources := newPDFobj()
+		resources.dict = obj.inheritedResources
+		return resources
+	}
 	for i, token := range obj.dict {
 		if token == "/Resources" {
 			if i+1 >= len(obj.dict) {
@@ -773,8 +784,23 @@ func indexAt(dict []string, index int) int {
 	return min(index, len(dict))
 }
 
+// ownResources gives the page a copy of the /Resources it shares with the
+// others under its node, before a resource is added to it, so that the
+// resource is the page's alone, as it was when every page had a copy.
+func (obj *PDFobj) ownResources() {
+	if obj.inheritedResources == nil {
+		return
+	}
+	if open := slices.Index(obj.dict, "<<"); open != -1 {
+		entry := append([]string{"/Resources"}, obj.inheritedResources...)
+		obj.dict = insertArrayAt(obj.dict, entry, open+1)
+	}
+	obj.inheritedResources = nil
+}
+
 // AddCoreFontResource adds a core font to the resources of this page and returns it.
 func (obj *PDFobj) AddCoreFontResource(coreFont *corefont.CoreFont, objects *[]*PDFobj) *Font {
+	obj.ownResources()
 	font := newCoreFontForPDFobj(coreFont)
 	font.fontID = strings.ToUpper(strings.ReplaceAll(font.name, "-", "_"))
 	obj2 := newPDFobj()
@@ -914,6 +940,7 @@ func addResource(objType string, obj *PDFobj, objects *[]*PDFobj, objNumber int)
 
 // AddImageResource adds an image resource.
 func (obj *PDFobj) AddImageResource(image *Image, objects *[]*PDFobj) {
+	obj.ownResources()
 	for i, token := range obj.dict {
 		if token == "/Resources" {
 			token = tokenAt(obj.dict, i+1)
@@ -929,6 +956,7 @@ func (obj *PDFobj) AddImageResource(image *Image, objects *[]*PDFobj) {
 
 // AddFontResource adds font resource.
 func (obj *PDFobj) AddFontResource(font *Font, objects *[]*PDFobj) {
+	obj.ownResources()
 	for i, token := range obj.dict {
 		if token == "/Resources" {
 			token = tokenAt(obj.dict, i+1)
@@ -1066,6 +1094,7 @@ func getMaxGSNumber(obj *PDFobj) int {
 
 // SetGraphicsState sets the graphics state.
 func (obj *PDFobj) SetGraphicsState(gs *GraphicsState, objects *[]*PDFobj) *PDFobj {
+	obj.ownResources()
 	var resources *PDFobj
 	index := -1
 	for i, token := range obj.dict {
