@@ -18,6 +18,8 @@
   <ItemGroup>
     <Compile Include="../../net/pdfjet/**/*.cs" />
     <Compile Include="*.cs" />
+    <!-- The category table of the .NET Framework build, held to .NET 8's own. -->
+    <Compile Include="../../net48/Compat/UnicodeCategories.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.10.0" />

@@ -1244,7 +1244,7 @@ public class Page {
             bool set = (c >= 0x200C && c <= 0x200F) || (c >= 0xD800 && c <= 0xDBFF);
             if (!set && (c < 0xD800 || c > 0xDFFF)) {
                 System.Globalization.UnicodeCategory category =
-                        System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c);
+                        CharUnicodeInfo.GetUnicodeCategory(c);
                 set = category == System.Globalization.UnicodeCategory.NonSpacingMark ||
                         category == System.Globalization.UnicodeCategory.EnclosingMark;
             }
@@ -1258,7 +1258,7 @@ public class Page {
     private static bool IsMark(int codePoint) {
         // The category of a code point, without a string made for it.
         System.Globalization.UnicodeCategory category =
-                System.Globalization.CharUnicodeInfo.GetUnicodeCategory(codePoint);
+                CharUnicodeInfo.GetUnicodeCategory(codePoint);
         return category == System.Globalization.UnicodeCategory.NonSpacingMark ||
                 category == System.Globalization.UnicodeCategory.EnclosingMark;
     }
@@ -2665,7 +2665,11 @@ public class Page {
             // word keeps its accents, which are placed on their letters and
             // matched with the word.
             if (!Util.IsMark(str, i)) {
-                inWord = Char.IsLetterOrDigit(str, i);
+                // A letter or a digit, as Char.IsLetterOrDigit has it, from
+                // CharUnicodeInfo, whose data the .NET Framework build brings
+                UnicodeCategory category = CharUnicodeInfo.GetUnicodeCategory(str, i);
+                inWord = category <= UnicodeCategory.OtherLetter ||
+                        category == UnicodeCategory.DecimalDigitNumber;
             }
             if (inWord) {
                 DrawWord(font, buf2, color, highlightColors);

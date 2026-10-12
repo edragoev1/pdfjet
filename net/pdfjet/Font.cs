@@ -5,6 +5,7 @@
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 using System;
+using System.Globalization;
 using System.IO;
 using System.Collections.Generic;
 
@@ -330,13 +331,18 @@ public class Font {
         foreach (int width in font.advanceWidth) {
             hash = Fold(hash, width);
         }
-        // The glyph of each of the 65,536 characters, 0 for those the font
-        // has not, as the array of them was folded: the subset's tag is made
-        // of it, and so the bytes of the PDF.
+        // Each block of 256 characters the font has glyphs in, its number
+        // and the glyph of each character, 0 for those the font has not; the
+        // blocks it has none in, most of them, are left out.
         if (font.unicodeToGID != null) {
-            foreach (int[] block in font.unicodeToGID.blocks) {
-                for (int i = 0; i < 256; i++) {
-                    hash = Fold(hash, block == null ? 0 : block[i]);
+            int[][] blocks = font.unicodeToGID.blocks;
+            for (int b = 0; b < blocks.Length; b++) {
+                if (blocks[b] == null) {
+                    continue;
+                }
+                hash = Fold(hash, b);
+                foreach (int gid in blocks[b]) {
+                    hash = Fold(hash, gid);
                 }
             }
         }
@@ -565,8 +571,8 @@ public class Font {
     // and an RLM, LRM, ZWNJ or ZWJ goes with the character after it.
     internal static Font FontOf(Font font, Font fallbackFont, Font active, String str, int i) {
         int cp = Util.CodePointAt(str, i);
-        if (i > 0 && System.Globalization.CharUnicodeInfo.GetUnicodeCategory(cp) ==
-                System.Globalization.UnicodeCategory.NonSpacingMark && active.HasGlyph(cp)) {
+        if (i > 0 && CharUnicodeInfo.GetUnicodeCategory(cp) ==
+                UnicodeCategory.NonSpacingMark && active.HasGlyph(cp)) {
             return active;
         }
         int next = i + ((cp > 0xFFFF) ? 2 : 1);

@@ -514,4 +514,13 @@ import Testing
         let fahrt = TestSupport.positionOf(content, "fahrt")
         #expect(dampf[1] < donau[1] && fahrt[1] < dampf[1], "\(content)")
     }
+
+    /// The number that tells a font program apart, and that the tag of its
+    /// subset is made of, folds the blocks of 256 characters the font has
+    /// glyphs in, and leaves out the rest: it folded all 65,536 characters,
+    /// 236 empty blocks of IBM Plex Sans's 256. The number is the same in the
+    /// four ports.
+    @Test func aFontChecksumLeavesOutEmptyBlocks() throws {
+        #expect(try TestSupport.plexSans(TestSupport.newPDF()).checksum == 0xABF1C2C88C082202)
+    }
 }

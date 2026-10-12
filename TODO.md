@@ -87,10 +87,9 @@ commit and date. The layout's format version (1) and the look's rules
   Go and 12 to 20% in the others, with half the memory or less, the 56
   examples of each port byte for byte the same. Done in 9.0.7, in the four
   ports: the GPOS table read when a mark is first drawn, and the format 4
-  cmap read a segment at a time (CHANGELOG.md). Left:
-  - `Font.checksumOf` (19% of a page in Plex, in Java). The checksum still
-    folds the 65,536 glyphs, as the subset's tag is made of it: a faster one
-    changes the tags, and so the bytes of every PDF.
+  cmap read a segment at a time, and `Font.checksumOf` folding only the
+  blocks of characters a font has glyphs in, which changes the subset tags
+  (CHANGELOG.md).
   - Not to be done (the owner, 10 October 2026): a lower compression level
     for the font programs, which makes the files larger and changes their
     bytes; a Deflater for each thread in Java; a pool of FlateEncode's
@@ -115,14 +114,9 @@ commit and date. The layout's format version (1) and the look's rules
   run a slow input again before they fail, the Go tests run under the race
   detector too, and tests/crossport compares random shapes across the four
   ports in CI. The tests of a time, in the four ports, run a slow piece of
-  work again before they fail.
-  Left: net48 is built and not tested, so its `CharUnicodeInfo` polyfill,
-  Unicode 8.0 data that Bidi, TextBlock and Page use, is not run. The
-  review ran it under Mono (K3): a character newer than Unicode 8, as the
-  Arabic mark U+08D4 of Unicode 9, is laid out as another character there,
-  a spacing glyph and not a mark moved by GPOS, though none of the examples
-  has one. The polyfill could take the categories of the characters of
-  Unicode 9 to 15 from a table of its own, as Go's and .NET 8's are.
+  work again before they fail. The net48 build takes the categories of
+  the characters from a table of .NET 8's, Unicode 15.0, which a test holds
+  to .NET 8's own (K3).
 - **For 9.1.1: Swift's Flate compresses less** (third review, K6; the
   owner, 12 October 2026): Swift's PDFs are
   about 9% larger than Go's, the same content after inflating, from its own

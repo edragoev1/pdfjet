@@ -878,3 +878,15 @@ func TestReview3ATextColumnBreaksAWordAtASoftHyphen(t *testing.T) {
 		t.Errorf("the word is not broken at its soft hyphens: %q", content)
 	}
 }
+
+// The number that tells a font program apart, and that the tag of its subset
+// is made of, folds the blocks of 256 characters the font has glyphs in, and
+// leaves out the rest: it folded all 65,536 characters, 236 empty blocks of
+// IBM Plex Sans's 256. The number is the same in the four ports.
+func TestReview3AFontChecksumLeavesOutEmptyBlocks(t *testing.T) {
+	font := NewFontFromFile(testNewPDF(), testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
+	if font.checksum != 0xABF1C2C88C082202 {
+		t.Errorf("checksum %X", font.checksum)
+	}
+}
+

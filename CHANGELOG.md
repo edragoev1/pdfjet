@@ -20,6 +20,12 @@ This is the first entry in this file; earlier releases were not tracked here.
   negative one, are refused.
 
 ### Changed
+- The number that tells a font apart, of which the tag of its subset is
+  made, folds only the blocks of 256 characters the font has glyphs in, in
+  the four ports: ten times faster, 6 microseconds for IBM Plex Sans where
+  it took 62. The subset tags
+  change, and so the bytes of every PDF with an embedded font; the content
+  is the same.
 - A font whose license forbids embedding it is refused, in the four ports:
   the fsType of its OS/2 table "Restricted License embedding", and none of
   the bits that allow embedding, Preview and Print or Editable. It was
@@ -329,6 +335,10 @@ This is the first entry in this file; earlier releases were not tracked here.
 - A TextColumn breaks a word too wide for what is left of its line at a
   soft hyphen, as TextBlock and TextFrame do, in the four ports: it moved
   the whole word to the next line.
+- .NET Framework 4.8: the category of a character is that of .NET 8, of
+  Unicode 15.0, from a table of the build's own; .NET Framework's data is
+  of Unicode 8.0, and a mark newer than that, as the Arabic U+08D4 of
+  Unicode 9, was laid out as a spacing glyph, not placed as a mark.
 
 ## v9.0.5 — 2026-10-12, internal
 

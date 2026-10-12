@@ -116,18 +116,6 @@ internal static class Net48Extensions {
         }
     }
 
-    extension(CharUnicodeInfo) {
-        public static UnicodeCategory GetUnicodeCategory(int codePoint) {
-            if (codePoint >= 0 && codePoint <= 0xFFFF) {
-                return CharUnicodeInfo.GetUnicodeCategory((char) codePoint);
-            }
-            if (codePoint > 0x10FFFF) {
-                return UnicodeCategory.OtherNotAssigned;
-            }
-            return CharUnicodeInfo.GetUnicodeCategory(char.ConvertFromUtf32(codePoint), 0);
-        }
-    }
-
     extension(Aes aes) {
         public byte[] DecryptCbc(byte[] ciphertext, byte[] iv, PaddingMode paddingMode) {
             aes.Mode = CipherMode.CBC;
@@ -188,6 +176,28 @@ internal static class Net48Extensions {
             }
             return -1;
         }
+    }
+}
+
+// The category of a character as .NET 8 gives it, of Unicode 15.0, where
+// .NET Framework's own CharUnicodeInfo has the data of Unicode 8.0: a class of
+// the same name in PDFjet's namespace, which the source finds before the one
+// of System.Globalization, with the table of Compat/UnicodeCategories.cs.
+internal static class CharUnicodeInfo {
+    internal static UnicodeCategory GetUnicodeCategory(char ch) {
+        return Compat.UnicodeCategories.Of(ch);
+    }
+
+    internal static UnicodeCategory GetUnicodeCategory(int codePoint) {
+        return Compat.UnicodeCategories.Of(codePoint);
+    }
+
+    // The category of the character at the index, a surrogate pair as one.
+    internal static UnicodeCategory GetUnicodeCategory(string s, int index) {
+        if (char.IsSurrogatePair(s, index)) {
+            return Compat.UnicodeCategories.Of(char.ConvertToUtf32(s, index));
+        }
+        return Compat.UnicodeCategories.Of(s[index]);
     }
 }
 

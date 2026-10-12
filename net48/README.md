@@ -39,6 +39,15 @@ System.Numerics.Vectors and System.Runtime.CompilerServices.Unsafe.
   the newer overloads of `string`, `Stream`, `Encoding` and `Aes`; and classes
   of the names .NET Framework lacks, `MathF`, `BitOperations` and
   `CryptographicOperations`, in their namespaces.
+- `Compat/UnicodeCategories.cs` is the general category of every code point
+  as .NET 8 has it, Unicode 15.0, where .NET Framework's data is of Unicode
+  8.0, so that a mark newer than that, as the Arabic U+08D4, is laid out as a
+  mark. A class `CharUnicodeInfo` of PDFjet's namespace in `Polyfills.cs`
+  gives it to the source, which finds it before the one of
+  `System.Globalization`. `make-unicode-categories.py` writes the table, from
+  the data of Python 3.12, of Unicode 15.0 too, and
+  `tests/dotnet/UnicodeCategoriesTest.cs` holds it to .NET 8's own for every
+  code point.
 - `Compat/ZLibStream.cs` is the zlib stream .NET Framework lacks: compressing
   with its `DeflateStream`, and decoding with `Compat/Puff.cs`, a C#
   translation of puff.c, Mark Adler's reference decoder of Deflate. It reads its

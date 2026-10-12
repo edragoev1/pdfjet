@@ -64,15 +64,19 @@ struct GlyphMap {
         }
     }
 
-    // Folds the glyph of each of the 65,536 characters into the hash, 0 for
-    // those the font has not, as the array of them was folded: the subset's
-    // tag is made of it, and so the bytes of the PDF.
+    // Folds each block of 256 characters the font has glyphs in into the
+    // hash, its number and the glyph of each character, 0 for those the font
+    // has not; the blocks it has none in are left out.
     func fold(_ hash: UInt64, _ step: (UInt64, Int) -> UInt64) -> UInt64 {
         var hash = hash
         for b in 0..<256 {
             let block = Int(index[b])
+            if block < 0 {
+                continue
+            }
+            hash = step(hash, b)
             for i in 0..<256 {
-                hash = step(hash, block < 0 ? 0 : Int(blocks[block << 8 | i]))
+                hash = step(hash, Int(blocks[block << 8 | i]))
             }
         }
         return hash

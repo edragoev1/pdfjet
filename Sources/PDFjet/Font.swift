@@ -334,9 +334,9 @@ public class Font {
         for width in font.advanceWidth {
             hash = fold(hash, Int(width))
         }
-        // The glyph of each of the 65,536 characters, 0 for those the font has
-        // not, as the array of them was folded: the subset's tag is made of
-        // it, and so the bytes of the PDF
+        // Each block of 256 characters the font has glyphs in, its number and
+        // the glyph of each character, 0 for those the font has not; the
+        // blocks it has none in, most of them, are left out
         return font.unicodeToGID.fold(hash, fold)
     }
 

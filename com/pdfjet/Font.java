@@ -397,13 +397,18 @@ final public class Font {
         for (int width : font.advanceWidth) {
             hash = fold(hash, width);
         }
-        // The glyph of each of the 65,536 characters, 0 for those the font
-        // has not, as the array of them was folded: the subset's tag is made
-        // of it, and so the bytes of the PDF
+        // Each block of 256 characters the font has glyphs in, its number
+        // and the glyph of each character, 0 for those the font has not; the
+        // blocks it has none in, most of them, are left out
         if (font.unicodeToGID != null) {
-            for (int[] block : font.unicodeToGID.blocks) {
-                for (int i = 0; i < 256; i++) {
-                    hash = fold(hash, block == null ? 0 : block[i]);
+            int[][] blocks = font.unicodeToGID.blocks;
+            for (int b = 0; b < blocks.length; b++) {
+                if (blocks[b] == null) {
+                    continue;
+                }
+                hash = fold(hash, b);
+                for (int gid : blocks[b]) {
+                    hash = fold(hash, gid);
                 }
             }
         }

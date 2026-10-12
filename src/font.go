@@ -351,17 +351,17 @@ func checksumOf(font *Font) uint64 {
 	for _, width := range font.advanceWidth {
 		hash = foldChecksum(hash, int(width))
 	}
-	// The glyph of each of the 65,536 characters, 0 for those the font has
-	// not, as the array of them was folded: the subset's tag is made of it,
-	// and so the bytes of the PDF
+	// Each block of 256 characters the font has glyphs in, its number and
+	// the glyph of each character, 0 for those the font has not; the blocks
+	// it has none in, most of them, are left out
 	if font.unicodeToGID != nil {
-		for _, block := range font.unicodeToGID.blocks {
-			for i := range 256 {
-				gid := 0
-				if block != nil {
-					gid = int(block[i])
-				}
-				hash = foldChecksum(hash, gid)
+		for b, block := range font.unicodeToGID.blocks {
+			if block == nil {
+				continue
+			}
+			hash = foldChecksum(hash, b)
+			for _, gid := range block {
+				hash = foldChecksum(hash, int(gid))
 			}
 		}
 	}

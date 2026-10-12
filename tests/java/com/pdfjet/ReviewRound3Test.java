@@ -12,6 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -688,5 +689,22 @@ class ReviewRound3Test {
         float[] dampf = TestSupport.positionOf(content, "dampfschiff-");
         float[] fahrt = TestSupport.positionOf(content, "fahrt");
         assertTrue(dampf[1] < donau[1] && fahrt[1] < dampf[1], content);
+    }
+
+    /**
+     * The number that tells a font program apart, and that the tag of its
+     * subset is made of, folds the blocks of 256 characters the font has
+     * glyphs in, and leaves out the rest: it folded all 65,536 characters,
+     * 236 empty blocks of IBM Plex Sans's 256. The number is the same in the
+     * four ports.
+     */
+    @Test
+    void aFontChecksumLeavesOutEmptyBlocks() throws Exception {
+        InputStream in = TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf");
+        try {
+            assertEquals(0xABF1C2C88C082202L, new Font(TestSupport.newPDF(), in).checksum);
+        } finally {
+            in.close();
+        }
     }
 }
