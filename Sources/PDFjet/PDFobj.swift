@@ -31,6 +31,11 @@ public final class PDFobj {
     // The objects of a font added to the objects, of which this is the Type0
     // font, filled in when they are added to a PDF
     var fontObjects: FontObjects?
+    // The /Resources a page inherits from the page tree, when it is a large
+    // dictionary in a node: shared by the pages under the node, not copied
+    // into each (see PDF.addInheritedEntries). An array is a value that is
+    // copied when it is changed, so the pages hold the node's one array.
+    var inheritedResources: [String]?
 
     /// Creates an empty PDF object.
     init() {
@@ -742,6 +747,13 @@ public final class PDFobj {
     /// - Parameter objects: the objects of the PDF.
     /// - Returns: the resources object, or nil if the page has none.
     public final func getResourcesObject(_ objects: [PDFobj]) -> PDFobj? {
+        if let inherited = inheritedResources {
+            // The dictionary the page shares with the others under its node,
+            // as an object of its own, which is read and not changed
+            let resources = PDFobj()
+            resources.dict = inherited
+            return resources
+        }
         var i = 0
         while i < dict.count {
             if dict[i] == "/Resources" {
@@ -762,6 +774,19 @@ public final class PDFobj {
         return nil
     }
 
+    // Gives the page a copy of the /Resources it shares with the others
+    // under its node, before a resource is added to it, so that the resource
+    // is the page's alone, as it was when every page had a copy.
+    private final func ownResources() {
+        guard let inherited = inheritedResources else {
+            return
+        }
+        if let open = dict.firstIndex(of: "<<") {
+            dict.insert(contentsOf: ["/Resources"] + inherited, at: open + 1)
+        }
+        inheritedResources = nil
+    }
+
     /// Adds a core font to the resources of this page.
     ///
     /// - Parameter coreFont: the core font.
@@ -770,6 +795,7 @@ public final class PDFobj {
     public final func addResource(
             _ coreFont: Int,
             _ objects: inout [PDFobj]) throws -> Font {
+        ownResources()
         let font = try Font(coreFont)
         font.fontID = font.name.replacingOccurrences(of: "-", with: "_").uppercased()
 
@@ -926,6 +952,7 @@ public final class PDFobj {
     public final func addResource(
             _ image: Image,
             _ objects: inout [PDFobj]) {
+        ownResources()
         for i in 0..<dict.count {
             if dict[i] == "/Resources" {
                 let token = tokenAt(dict, i + 1)
@@ -946,6 +973,7 @@ public final class PDFobj {
     public final func addResource(
             _ font: Font,
             _ objects: inout [PDFobj]) {
+        ownResources()
         for i in 0..<dict.count {
             if dict[i] == "/Resources" {
                 let token = tokenAt(dict, i + 1)
@@ -1094,6 +1122,7 @@ public final class PDFobj {
     /// Adds the graphics state to the resources of this page.
     @discardableResult
     public final func setGraphicsState(_ gs: GraphicsState, _ objects: inout [PDFobj]) -> PDFobj {
+        ownResources()
         var obj: PDFobj?
         var index = -1
         var i = 0

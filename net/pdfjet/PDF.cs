@@ -1873,9 +1873,27 @@ public sealed class PDF {
                 queue.Add(page);
             }
         }
+        // A large /Resources that pages inherit from a node of the tree is an
+        // object of its own here, written once, which each page refers to, as
+        // the pages are no longer under the node: a number past those of the
+        // objects stands for it until it gets one of this document.
+        Dictionary<PDFobj, int> sharedNumbers = new Dictionary<PDFobj, int>();
+        Func<PDFobj, List<String>, List<String>> shared = (node, value) => {
+            int number;
+            if (!sharedNumbers.TryGetValue(node, out number)) {
+                number = objects.Count + 1 + sharedNumbers.Count;
+                sharedNumbers[node] = number;
+                numbers[number] = ReserveObjNumber();
+                PDFobj obj = new PDFobj();
+                obj.number = number;
+                obj.dict = value;
+                queue.Add(obj);
+            }
+            return new List<String> { number.ToString(CultureInfo.InvariantCulture), "0", "R" };
+        };
         for (int i = 0; i < queue.Count; i++) {
             PDFobj obj = queue[i];
-            List<String> value = MergedValue(obj, mergedPages.Contains(obj.number), objects, nodes);
+            List<String> value = MergedValue(obj, mergedPages.Contains(obj.number), objects, nodes, shared);
             values[obj.number] = value;
             for (int j = 0; j < value.Count; j++) {
                 if (IsReference(value, j)) {
@@ -1954,7 +1972,8 @@ public sealed class PDF {
     // its "stream" and "endobj" keywords, with a direct /Length for a stream,
     // and for a page with the entries it inherits and without its /Parent.
     private static List<String> MergedValue(
-            PDFobj obj, bool isPage, List<PDFobj> objects, PageTreeNodes nodes) {
+            PDFobj obj, bool isPage, List<PDFobj> objects, PageTreeNodes nodes,
+            Func<PDFobj, List<String>, List<String>> shared) {
         List<String> value = ValueOf(obj);
         if (obj.stream != null) {
             SetEntry(value, "/Length", new List<String> { obj.stream.Length.ToString(CultureInfo.InvariantCulture) });
@@ -1962,7 +1981,13 @@ public sealed class PDF {
         if (isPage) {
             foreach (String key in INHERITED) {
                 if (EntryIndex(value, key) == -1) {
-                    List<String> inherited = InheritedValue(obj, key, objects, nodes);
+                    PDFobj node;
+                    List<String> inherited = InheritedEntry(obj, key, objects, nodes, out node);
+                    if (SharedInherited(key, inherited)) {
+                        inherited = shared(node, inherited);    // A reference to it, written once
+                    } else if (inherited != null) {
+                        inherited = new List<String>(inherited);
+                    }
                     if (inherited == null && key.Equals("/MediaBox")) {
                         inherited = new List<String> { "[", "0", "0", "612", "792", "]" };    // Letter
                     }
@@ -2029,10 +2054,29 @@ public sealed class PDF {
         return entries;
     }
 
+    // The most tokens of an inherited dictionary that are copied into each
+    // page that inherits it. A larger /Resources is shared: the pages keep it
+    // by reference, and Merge writes it once, as an object of its own. 1,000
+    // pages under a node of an inline /Resources of 20,000 entries, a PDF of
+    // 242 KB, took 2.9 GB, and Merge wrote 189 MB (review of 11 October 2026,
+    // #34).
+    internal const int MAX_COPIED_INHERITED = 64;
+
+    // Returns true when an inherited value is shared rather than copied: a
+    // /Resources dictionary of more than MAX_COPIED_INHERITED tokens.
+    internal static bool SharedInherited(String key, List<String> value) {
+        return key.Equals("/Resources")
+                && value != null
+                && value.Count > MAX_COPIED_INHERITED
+                && value[0].Equals("<<");
+    }
+
     // Returns the value of the entry from the nearest node of the page tree
-    // above the page that has it, or null.
-    private static List<String> InheritedValue(
-            PDFobj page, String key, List<PDFobj> objects, PageTreeNodes nodes) {
+    // above the page that has it, which is the node's and not a copy, and
+    // the node, or null and null.
+    private static List<String> InheritedEntry(
+            PDFobj page, String key, List<PDFobj> objects, PageTreeNodes nodes, out PDFobj node) {
+        node = null;
         Dictionary<String, List<String>> entries = Entries(ValueOf(page));
         for (int depth = 0; depth < 64; depth++) {  // A loop in a broken tree ends here.
             List<String> parent;
@@ -2046,7 +2090,8 @@ public sealed class PDF {
             entries = nodes.EntriesOf(objects[number - 1]);
             List<String> value;
             if (entries.TryGetValue(key, out value)) {
-                return new List<String>(value);
+                node = objects[number - 1];
+                return value;
             }
         }
         return null;
@@ -3462,8 +3507,11 @@ public sealed class PDF {
             if (EntryIndex(ValueOf(page), key) != -1) {
                 continue;       // An entry of its own.
             }
-            List<String> value = InheritedValue(page, key, objects, nodes);
-            if (value != null) {
+            PDFobj node;
+            List<String> value = InheritedEntry(page, key, objects, nodes, out node);
+            if (SharedInherited(key, value)) {
+                page.inheritedResources = value;
+            } else if (value != null) {
                 page.dict.InsertRange(open + 1, value);
                 page.dict.Insert(open + 1, key);
             }

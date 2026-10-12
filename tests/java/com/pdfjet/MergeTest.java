@@ -9,6 +9,8 @@ package com.pdfjet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -388,5 +390,100 @@ class MergeTest {
             }
         }
         assertTrue(found, "no Type0 font of a subset of Noto Sans");
+    }
+
+    // Returns a PDF of the objects, numbered from 1, with a table of them.
+    private static byte[] pdfWithObjects(List<String> objects) {
+        StringBuilder sb = new StringBuilder("%PDF-1.4\n");
+        int[] offsets = new int[objects.size()];
+        for (int i = 0; i < objects.size(); i++) {
+            offsets[i] = sb.length();
+            sb.append(i + 1).append(" 0 obj\n").append(objects.get(i)).append("\nendobj\n");
+        }
+        int xref = sb.length();
+        sb.append("xref\n0 ").append(objects.size() + 1).append("\n0000000000 65535 f \n");
+        for (int offset : offsets) {
+            sb.append(String.format("%010d 00000 n \n", offset));
+        }
+        sb.append("trailer\n<< /Size ").append(objects.size() + 1)
+                .append(" /Root 1 0 R >>\nstartxref\n").append(xref).append("\n%%EOF\n");
+        return sb.toString().getBytes(StandardCharsets.ISO_8859_1);
+    }
+
+    // Returns a PDF of pages under one node that holds an inline /Resources of
+    // the fonts, which the pages inherit.
+    private static byte[] inheritedResources(int pages, int fonts) {
+        StringBuilder resources = new StringBuilder("/Resources << /Font <<");
+        for (int i = 1; i <= fonts; i++) {
+            resources.append(" /F").append(i).append(" 3 0 R");
+        }
+        resources.append(" >> >>");
+        StringBuilder kids = new StringBuilder();
+        for (int i = 0; i < pages; i++) {
+            kids.append(i == 0 ? "" : " ").append(i + 4).append(" 0 R");
+        }
+        List<String> objects = new ArrayList<String>();
+        objects.add("<< /Type /Catalog /Pages 2 0 R >>");
+        objects.add("<< /Type /Pages /Kids [" + kids + "] /Count " + pages
+                + " /MediaBox [0 0 612 792] " + resources + " >>");
+        objects.add("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
+        for (int i = 0; i < pages; i++) {
+            objects.add("<< /Type /Page /Parent 2 0 R >>");
+        }
+        return pdfWithObjects(objects);
+    }
+
+    @Test
+    void aLargeInheritedResourcesIsWrittenOnce() throws Exception {
+        // A large /Resources that pages inherit is shared by them, not copied
+        // into each, and merge writes it once, an object that each page refers
+        // to: 1,000 pages under a node of 20,000 fonts took 2.9 GB, and merge
+        // wrote 189 MB (review of 11 October 2026, #34).
+        byte[] source = inheritedResources(1000, 20000);
+        List<PDFobj> objects = TestSupport.read(source);
+        long start = System.nanoTime();
+        List<PDFobj> pages = new PDF().getPageObjects(objects);
+        assertEquals(1000, pages.size());
+        List<String> first = pages.get(0).inheritedResources;
+        assertNotNull(first, "the page does not share its resources");
+        assertTrue(first.size() >= 80000, first.size() + " tokens");
+        assertSame(first, pages.get(999).inheritedResources, "the pages do not share their resources");
+        PDFobj resources = pages.get(0).getResourcesObject(objects);
+        assertTrue(resources != null && resources.getDict().contains("/F20000"),
+                "the resources of a page are not read");
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        pdf.merge(objects);
+        pdf.complete();
+        byte[] merged = bos.toByteArray();
+        long elapsed = (System.nanoTime() - start) / 1000000;
+        assertTrue(elapsed <= 5000, "pages and merge took " + elapsed + " ms");
+        assertTrue(merged.length <= 2 * source.length,
+                "the merged PDF is " + merged.length + " bytes, of a source of " + source.length);
+        List<PDFobj> written = new PDF().getPageObjects(TestSupport.read(merged));
+        assertEquals(1000, written.size());
+        PDFobj r = written.get(999).getResourcesObject(TestSupport.read(merged));
+        assertTrue(r != null && r.getDict().contains("/F20000"), "a merged page has lost its resources");
+    }
+
+    @Test
+    void aSmallInheritedResourcesIsCopiedAndASharedOneIsCopiedWhenChanged() throws Exception {
+        // A small /Resources that pages inherit is copied into each, as before,
+        // and a resource added to a page that shares a large one is the page's
+        // alone.
+        List<PDFobj> objects = TestSupport.read(inheritedResources(2, 3));
+        List<PDFobj> pages = new PDF().getPageObjects(objects);
+        assertNull(pages.get(0).inheritedResources, "a small /Resources is shared");
+        assertTrue(pages.get(0).getDict().contains("/F3"), "a small /Resources is not copied into the page");
+
+        objects = TestSupport.read(inheritedResources(2, 100));
+        pages = new PDF().getPageObjects(objects);
+        pages.get(0).addResource(CoreFont.HELVETICA, objects);
+        assertNull(pages.get(0).inheritedResources, "the page that a font was added to shares its resources");
+        assertTrue(pages.get(0).getDict().contains("/F100"),
+                "the page that a font was added to has no resources of its own");
+        assertNotNull(pages.get(1).inheritedResources, "the other page no longer shares its resources");
+        assertFalse(pages.get(1).inheritedResources.contains("/HELVETICA"),
+                "the font added to one page is in the resources of the other");
     }
 }

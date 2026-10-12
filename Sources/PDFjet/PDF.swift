@@ -3101,6 +3101,25 @@ public final class PDF {
         var values = [Int: [String]]()
         var queue = [PDFobj]()
         let inherited = InheritedEntries()
+        // A large /Resources that pages inherit from a node of the tree is an
+        // object of its own here, written once, which each page refers to, as
+        // the pages are no longer under the node: a number past those of the
+        // objects stands for it until it gets one of this document.
+        var sharedNumbers = [Int: Int]()    // By the number of the node
+        var added = [PDFobj]()              // The shared objects, queued below
+        let shared = { (node: Int, value: [String]) -> [String] in
+            var number = sharedNumbers[node]
+            if number == nil {
+                number = objects.count + 1 + sharedNumbers.count
+                sharedNumbers[node] = number
+                numbers[number!] = self.reserveObjNumber()
+                let obj = PDFobj()
+                obj.number = number!
+                obj.dict = value
+                added.append(obj)
+            }
+            return [String(number!), "0", "R"]
+        }
         for page in pageObjects {
             if numbers[page.number] == nil {
                 numbers[page.number] = reserveObjNumber()
@@ -3110,7 +3129,9 @@ public final class PDF {
         var i = 0
         while i < queue.count {
             let obj = queue[i]
-            let value = PDF.mergedValue(obj, mergedPages.contains(obj.number), objects, inherited)
+            let value = PDF.mergedValue(obj, mergedPages.contains(obj.number), objects, inherited, shared)
+            queue.append(contentsOf: added)     // Its own references are merged too
+            added.removeAll()
             values[obj.number] = value
             var j = 0
             while j < value.count {
@@ -3194,7 +3215,11 @@ public final class PDF {
     // its "stream" and "endobj" keywords, with a direct /Length for a stream,
     // and for a page with the entries it inherits and without its /Parent.
     private static func mergedValue(
-            _ obj: PDFobj, _ isPage: Bool, _ objects: [PDFobj], _ cache: InheritedEntries) -> [String] {
+            _ obj: PDFobj,
+            _ isPage: Bool,
+            _ objects: [PDFobj],
+            _ cache: InheritedEntries,
+            _ shared: (Int, [String]) -> [String]) -> [String] {
         var value = valueOf(obj)
         if let stream = obj.stream {
             setEntry(&value, "/Length", [String(stream.count)])
@@ -3202,7 +3227,11 @@ public final class PDF {
         if isPage {
             for key in inheritedKeys {
                 if entryIndex(value, key) == -1 {
-                    var inherited = inheritedValue(obj, key, objects, cache)
+                    let entry = inheritedEntry(obj, key, objects, cache)
+                    var inherited = entry?.value
+                    if let entry = entry, sharedInherited(key, entry.value) {
+                        inherited = shared(entry.node, entry.value)    // A reference to it, written once
+                    }
                     if inherited == nil && key == "/MediaBox" {
                         inherited = ["[", "0", "0", "612", "792", "]"]  // Letter
                     }
@@ -3230,22 +3259,45 @@ public final class PDF {
     }
 
     // What the nodes of a page tree have or inherit, by the number of the node
-    // and the key, as inheritedValue finds it. A node can have thousands of
-    // pages, which each looked through the whole of it for an entry that it
-    // does not have, like the /CropBox and /Rotate that most trees do not
-    // have: veraPDF's isartor-6-1-12-t01-fail-a took over a minute to read.
+    // and the key, as inheritedEntry finds it, with the number of the node
+    // that has it. A node can have thousands of pages, which each looked
+    // through the whole of it for an entry that it does not have, like the
+    // /CropBox and /Rotate that most trees do not have: veraPDF's
+    // isartor-6-1-12-t01-fail-a took over a minute to read.
     final class InheritedEntries {
         struct Key: Hashable {
             let number: Int
             let key: String
         }
-        var values = [Key: [String]?]()
+        struct Entry {
+            let node: Int           // The number of the node that has it
+            let value: [String]
+        }
+        var values = [Key: Entry?]()
     }
 
-    // Returns the value of the entry from the nearest node of the page tree
-    // above the page that has it, or nil.
-    private static func inheritedValue(
-            _ page: PDFobj, _ key: String, _ objects: [PDFobj], _ cache: InheritedEntries) -> [String]? {
+    // The most tokens of an inherited dictionary that are copied into each
+    // page that inherits it. A larger /Resources is shared: the pages keep it
+    // by reference, and merge writes it once, as an object of its own. 1,000
+    // pages under a node of an inline /Resources of 20,000 entries, a PDF of
+    // 242 KB, took 2.9 GB, and merge wrote 189 MB (review of 11 October 2026,
+    // #34).
+    static let maxCopiedInherited = 64
+
+    // Says whether an inherited value is shared rather than copied: a
+    // /Resources dictionary of more than maxCopiedInherited tokens.
+    private static func sharedInherited(_ key: String, _ value: [String]) -> Bool {
+        return key == "/Resources" && value.count > maxCopiedInherited && value[0] == "<<"
+    }
+
+    // Returns the number of the nearest node of the page tree above the page
+    // that has the entry, and its value, which is the one the cache keeps for
+    // the node and not a copy, or nil.
+    private static func inheritedEntry(
+            _ page: PDFobj,
+            _ key: String,
+            _ objects: [PDFobj],
+            _ cache: InheritedEntries) -> InheritedEntries.Entry? {
         var tokens = valueOf(page)
         var passed = [InheritedEntries.Key]()   // The nodes that do not have it.
         for _ in 0..<64 {   // A loop in a broken tree ends here, and is not kept.
@@ -3265,7 +3317,8 @@ public final class PDF {
             tokens = valueOf(objects[number - 1])
             let k = entryIndex(tokens, key)
             if k != -1 {
-                return inherited(Array(tokens[(k + 1)..<valueEnd(tokens, k + 1)]), passed, cache)
+                let value = Array(tokens[(k + 1)..<valueEnd(tokens, k + 1)])
+                return inherited(InheritedEntries.Entry(node: number, value: value), passed, cache)
             }
         }
         return nil
@@ -3273,7 +3326,9 @@ public final class PDF {
 
     // Keeps the value for each node that was passed, and returns it.
     private static func inherited(
-            _ value: [String]?, _ passed: [InheritedEntries.Key], _ cache: InheritedEntries) -> [String]? {
+            _ value: InheritedEntries.Entry?,
+            _ passed: [InheritedEntries.Key],
+            _ cache: InheritedEntries) -> InheritedEntries.Entry? {
         for node in passed {
             cache.values[node] = value
         }
@@ -3545,8 +3600,13 @@ public final class PDF {
             if entryIndex(valueOf(page), key) != -1 {
                 continue        // An entry of its own.
             }
-            if let value = inheritedValue(page, key, objects, cache) {
-                page.dict.insert(contentsOf: [key] + value, at: open + 1)
+            guard let entry = inheritedEntry(page, key, objects, cache) else {
+                continue
+            }
+            if sharedInherited(key, entry.value) {
+                page.inheritedResources = entry.value   // The node's array, not a copy
+            } else {
+                page.dict.insert(contentsOf: [key] + entry.value, at: open + 1)
             }
         }
     }

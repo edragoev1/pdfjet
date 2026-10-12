@@ -1943,9 +1943,27 @@ final public class PDF {
                 queue.add(page);
             }
         }
+        // A large /Resources that pages inherit from a node of the tree is an
+        // object of its own here, written once, which each page refers to, as
+        // the pages are no longer under the node: a number past those of the
+        // objects stands for it until it gets one of this document.
+        final Map<PDFobj, Integer> sharedNumbers = new IdentityHashMap<PDFobj, Integer>();
+        Shared shared = (node, value) -> {
+            Integer number = sharedNumbers.get(node);
+            if (number == null) {
+                number = objects.size() + 1 + sharedNumbers.size();
+                sharedNumbers.put(node, number);
+                numbers.put(number, reserveObjNumber());
+                PDFobj obj = new PDFobj();
+                obj.number = number;
+                obj.dict = value;
+                queue.add(obj);
+            }
+            return new ArrayList<String>(Arrays.asList(String.valueOf(number), "0", "R"));
+        };
         for (int i = 0; i < queue.size(); i++) {
             PDFobj obj = queue.get(i);
-            List<String> value = mergedValue(obj, mergedPages.contains(obj.number), objects, nodes);
+            List<String> value = mergedValue(obj, mergedPages.contains(obj.number), objects, nodes, shared);
             values.put(obj.number, value);
             for (int j = 0; j < value.size(); j++) {
                 if (isReference(value, j)) {
@@ -1969,6 +1987,12 @@ final public class PDF {
                 pages.add(new Page(this, numbers.get(obj.number), renumbered(values.get(obj.number), numbers)));
             }
         }
+    }
+
+    // Gives the reference that stands for a shared inherited value of a node,
+    // the object of the value written once, by merge.
+    private interface Shared {
+        List<String> reference(PDFobj node, List<String> value);
     }
 
     // The entries of a page that it can inherit from the page tree.
@@ -2028,7 +2052,11 @@ final public class PDF {
     // its "stream" and "endobj" keywords, with a direct /Length for a stream,
     // and for a page with the entries it inherits and without its /Parent.
     private static List<String> mergedValue(
-            PDFobj obj, boolean isPage, List<PDFobj> objects, Map<PDFobj, Map<String, List<String>>> nodes) {
+            PDFobj obj,
+            boolean isPage,
+            List<PDFobj> objects,
+            Map<PDFobj, Map<String, List<String>>> nodes,
+            Shared shared) {
         List<String> value = valueOf(obj);
         if (obj.stream != null) {
             setEntry(value, "/Length", Collections.singletonList(String.valueOf(obj.stream.length)));
@@ -2036,7 +2064,11 @@ final public class PDF {
         if (isPage) {
             for (String key : INHERITED) {
                 if (entryIndex(value, key) == -1) {
-                    List<String> inherited = inheritedValue(obj, key, objects, nodes);
+                    InheritedEntry entry = inheritedEntry(obj, key, objects, nodes);
+                    List<String> inherited = (entry == null) ? null : entry.value;
+                    if (isShared(key, inherited)) {
+                        inherited = shared.reference(entry.node, inherited);   // A reference to it, written once
+                    }
                     if (inherited == null && key.equals("/MediaBox")) {
                         inherited = Arrays.asList("[", "0", "0", "612", "792", "]");    // Letter
                     }
@@ -2063,11 +2095,41 @@ final public class PDF {
         return new ArrayList<String>(dict.subList(start, end));
     }
 
-    // Returns the value of the entry from the nearest node of the page tree
-    // above the page that has it, or null. The entries of each node are found
-    // once and kept in nodes, as the node of a flat tree lists thousands of
-    // pages, and each of them looks up each entry it does not have.
-    private static List<String> inheritedValue(
+    // The most tokens of an inherited dictionary that are copied into each page
+    // that inherits it. A larger /Resources is shared: the pages keep it by
+    // reference, and merge writes it once, as an object of its own. 1,000
+    // pages under a node of an inline /Resources of 20,000 entries, a PDF of
+    // 242 KB, took 2.9 GB, and merge wrote 189 MB (review of 11 October 2026,
+    // #34).
+    private static final int MAX_COPIED_INHERITED = 64;
+
+    // Returns true when an inherited value is shared rather than copied: a
+    // /Resources dictionary of more than MAX_COPIED_INHERITED tokens.
+    private static boolean isShared(String key, List<String> value) {
+        return key.equals("/Resources")
+                && value != null
+                && value.size() > MAX_COPIED_INHERITED
+                && value.get(0).equals("<<");
+    }
+
+    // A node of the page tree and the value of one of its entries, the node's
+    // and not a copy.
+    private static final class InheritedEntry {
+        final PDFobj node;
+        final List<String> value;
+
+        InheritedEntry(PDFobj node, List<String> value) {
+            this.node = node;
+            this.value = value;
+        }
+    }
+
+    // Returns the entry from the nearest node of the page tree above the page
+    // that has it, with the node, or null. The value is the node's and not a
+    // copy. The entries of each node are found once and kept in nodes, as the
+    // node of a flat tree lists thousands of pages, and each of them looks up
+    // each entry it does not have.
+    private static InheritedEntry inheritedEntry(
             PDFobj page, String key, List<PDFobj> objects, Map<PDFobj, Map<String, List<String>>> nodes) {
         List<String> tokens = valueOf(page);
         int i = entryIndex(tokens, "/Parent");
@@ -2088,7 +2150,7 @@ final public class PDF {
             }
             List<String> value = entries.get(key);
             if (value != null) {
-                return new ArrayList<String>(value);
+                return new InheritedEntry(node, value);
             }
             parent = entries.get("/Parent");
         }
@@ -3626,8 +3688,11 @@ final public class PDF {
             if (entryIndex(valueOf(page), key) != -1) {
                 continue;       // An entry of its own.
             }
-            List<String> value = inheritedValue(page, key, objects, nodes);
-            if (value != null) {
+            InheritedEntry entry = inheritedEntry(page, key, objects, nodes);
+            List<String> value = (entry == null) ? null : entry.value;
+            if (isShared(key, value)) {
+                page.inheritedResources = value;
+            } else if (value != null) {
                 page.dict.addAll(open + 1, value);
                 page.dict.add(open + 1, key);
             }

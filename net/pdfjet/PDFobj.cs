@@ -29,6 +29,10 @@ public class PDFobj {
     internal int gsNumber = -1;
     internal bool root;            // The catalog that the trailer's /Root names
     internal Font font;            // A font added to the objects, filled in when they are added to a PDF
+    // The /Resources a page inherits from the page tree, when it is a large
+    // dictionary in a node: shared by the pages under the node, not copied
+    // into each (see PDF.AddInheritedEntries)
+    internal List<String> inheritedResources;
 
     /// <summary>
     /// Creates an object with an empty dictionary.
@@ -718,6 +722,13 @@ public class PDFobj {
 
     /// <summary>Returns the resources object of this page.</summary>
     public PDFobj GetResourcesObject(List<PDFobj> objects) {
+        if (inheritedResources != null) {
+            // The dictionary the page shares with the others under its node,
+            // as an object of its own, which is read and not changed
+            PDFobj resources = new PDFobj();
+            resources.dict = inheritedResources;
+            return resources;
+        }
         for (int i = 0; i < dict.Count; i++) {
             if (dict[i].Equals("/Resources")) {
                 if (i + 1 >= dict.Count) {
@@ -737,8 +748,24 @@ public class PDFobj {
         return null;
     }
 
+    // Gives the page a copy of the /Resources it shares with the others under
+    // its node, before a resource is added to it, so that the resource is the
+    // page's alone, as it was when every page had a copy.
+    internal void OwnResources() {
+        if (inheritedResources == null) {
+            return;
+        }
+        int open = dict.IndexOf("<<");
+        if (open != -1) {
+            dict.InsertRange(open + 1, inheritedResources);
+            dict.Insert(open + 1, "/Resources");
+        }
+        inheritedResources = null;
+    }
+
     /// <summary>Adds a core font to the resources of this page and returns the font.</summary>
     public Font AddResource(int coreFont, List<PDFobj> objects) {
+        OwnResources();
         Font font = new Font(coreFont);
         font.fontID = font.name.Replace('-', '_').ToUpperInvariant();
 
@@ -880,6 +907,7 @@ public class PDFobj {
 
     /// <summary>Adds an image to the resources of this page.</summary>
     public void AddResource(Image image, List<PDFobj> objects) {
+        OwnResources();
         for (int i = 0; i < dict.Count; i++) {
             if (dict[i].Equals("/Resources")) {
                 String token = TokenAt(dict, i + 1);
@@ -898,6 +926,7 @@ public class PDFobj {
 
     /// <summary>Adds a font to the resources of this page.</summary>
     public void AddResource(Font font, List<PDFobj> objects) {
+        OwnResources();
         for (int i = 0; i < dict.Count; i++) {
             if (dict[i].Equals("/Resources")) {
                 String token = TokenAt(dict, i + 1);
@@ -1039,6 +1068,7 @@ public class PDFobj {
 
     /// <summary>Adds the graphics state to the resources of this page.</summary>
     public PDFobj SetGraphicsState(GraphicsState gs, List<PDFobj> objects) {
+        OwnResources();
         PDFobj obj = null;
         int index = -1;
         for (int i = 0; i < dict.Count; i++) {

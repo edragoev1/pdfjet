@@ -358,4 +358,79 @@ import Testing
         }, "no Type0 font of a subset of Noto Sans")
         expectReferencesResolve(merged)
     }
+
+    // Returns a PDF of pages under one node that holds an inline /Resources
+    // of the fonts, which the pages inherit.
+    private func inheritedResources(_ pages: Int, _ fonts: Int) -> [UInt8] {
+        var resources = ["/Resources << /Font <<"]
+        for i in 1...fonts {
+            resources.append("/F\(i) 3 0 R")
+        }
+        resources.append(">> >>")
+        let kids = (0..<pages).map { "\($0 + 4) 0 R" }
+        var objects = [
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [\(kids.joined(separator: " "))] /Count \(pages)"
+                    + " /MediaBox [0 0 612 792] \(resources.joined(separator: " ")) >>",
+            "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+        ]
+        for _ in 0..<pages {
+            objects.append("<< /Type /Page /Parent 2 0 R >>")
+        }
+        var source = "%PDF-1.4\n"
+        for (i, object) in objects.enumerated() {
+            source += "\(i + 1) 0 obj \(object) endobj\n"
+        }
+        source += "trailer << /Root 1 0 R >>\n%%EOF\n"
+        return Array(source.utf8)
+    }
+
+    @Test func aLargeInheritedResourcesIsWrittenOnce() throws {
+        // A large /Resources that pages inherit is shared by them, not copied
+        // into each, and merge writes it once, an object that each page
+        // refers to: 1,000 pages under a node of 20,000 fonts took 2.9 GB,
+        // and merge wrote 189 MB (review of 11 October 2026, #34).
+        let source = inheritedResources(1000, 20000)
+        let objects = try TestSupport.read(source)
+        let start = Date()
+        let pages = PDF().getPageObjects(from: objects)
+        try #require(pages.count == 1000)
+        #expect((pages[0].inheritedResources?.count ?? 0) >= 80000, "the pages do not share their resources")
+        #expect(pages[999].inheritedResources != nil, "the pages do not share their resources")
+        let resources = pages[0].getResourcesObject(objects)
+        #expect(resources?.getDict().contains("/F20000") == true, "the resources of a page are not read")
+        let memory = MemoryPDF()
+        try memory.pdf.merge(objects)
+        try memory.pdf.complete()
+        let merged = memory.bytes
+        let elapsed = Date().timeIntervalSince(start)
+        #expect(elapsed < 5, "pages and merge took \(elapsed) s")
+        #expect(merged.count <= 2 * source.count,
+                "the merged PDF is \(merged.count) bytes, of a source of \(source.count)")
+        let written = try TestSupport.read(merged)
+        let writtenPages = PDF().getPageObjects(from: written)
+        try #require(writtenPages.count == 1000)
+        #expect(writtenPages[999].getResourcesObject(written)?.getDict().contains("/F20000") == true,
+                "a merged page has lost its resources")
+        expectReferencesResolve(written)
+    }
+
+    @Test func aSmallInheritedResourcesIsCopiedAndASharedOneIsCopiedWhenChanged() throws {
+        // A small /Resources that pages inherit is copied into each, as
+        // before, and a resource added to a page that shares a large one is
+        // the page's alone.
+        var objects = try TestSupport.read(inheritedResources(2, 3))
+        var pages = PDF().getPageObjects(from: objects)
+        #expect(pages[0].inheritedResources == nil && pages[0].getDict().contains("/F3"),
+                "a small /Resources is not copied into the page")
+        objects = try TestSupport.read(inheritedResources(2, 100))
+        pages = PDF().getPageObjects(from: objects)
+        _ = try pages[0].addResource(CoreFont.HELVETICA, &objects)
+        #expect(pages[0].inheritedResources == nil && pages[0].getDict().contains("/F100"),
+                "the page that a font was added to has no resources of its own")
+        #expect(pages[1].inheritedResources != nil
+                && !pages[1].inheritedResources!.contains("/HELVETICA"),
+                "the font added to one page is in the resources of the other")
+        #expect(pages[0].getDict().contains("/HELVETICA"), "the font is not in the page's resources")
+    }
 }

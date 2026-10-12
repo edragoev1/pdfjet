@@ -48,6 +48,12 @@ public class PDFobj {
     boolean root;
     /** A font added to the objects, filled in when they are added to a PDF. */
     Font font;
+    /**
+     * The /Resources a page inherits from the page tree, when it is a large
+     * dictionary in a node: shared by the pages under the node, not copied
+     * into each (see PDF.addInheritedEntries), and never changed.
+     */
+    List<String> inheritedResources;
 
     /**
      * Creates an object with an empty dictionary.
@@ -812,6 +818,13 @@ public class PDFobj {
      * @return the resources object.
      */
     public PDFobj getResourcesObject(List<PDFobj> objects) {
+        if (inheritedResources != null) {
+            // The dictionary the page shares with the others under its node,
+            // as an object of its own, which is read and not changed.
+            PDFobj resources = new PDFobj();
+            resources.dict = inheritedResources;
+            return resources;
+        }
         for (int i = 0; i < dict.size(); i++) {
             if (dict.get(i).equals("/Resources")) {
                 if (i + 1 >= dict.size()) {
@@ -831,6 +844,21 @@ public class PDFobj {
         return null;
     }
 
+    // Gives the page a copy of the /Resources it shares with the others under
+    // its node, before a resource is added to it, so that the resource is the
+    // page's alone, as it was when every page had a copy.
+    private void ownResources() {
+        if (inheritedResources == null) {
+            return;
+        }
+        int open = dict.indexOf("<<");
+        if (open != -1) {
+            dict.addAll(open + 1, inheritedResources);
+            dict.add(open + 1, "/Resources");
+        }
+        inheritedResources = null;
+    }
+
     /**
      * Adds core font resource object to the PDF.
      *
@@ -839,6 +867,7 @@ public class PDFobj {
      * @return the font object.
      */
     public Font addResource(int coreFont, List<PDFobj> objects) {
+        ownResources();
         Font font = new Font(coreFont);
         font.fontID = font.name.replace('-', '_').toUpperCase(Locale.ROOT);
 
@@ -987,6 +1016,7 @@ public class PDFobj {
      * @param objects the objects list.
      */
     public void addResource(Image image, List<PDFobj> objects) {
+        ownResources();
         for (int i = 0; i < dict.size(); i++) {
             if (dict.get(i).equals("/Resources")) {
                 String token = tokenAt(dict, i + 1);
@@ -1010,6 +1040,7 @@ public class PDFobj {
      * @param objects the objects list.
      */
     public void addResource(Font font, List<PDFobj> objects) {
+        ownResources();
         for (int i = 0; i < dict.size(); i++) {
             if (dict.get(i).equals("/Resources")) {
                 String token = tokenAt(dict, i + 1);
@@ -1168,6 +1199,7 @@ public class PDFobj {
      * @return this PDFobj object.
      */
     public PDFobj setGraphicsState(GraphicsState gs, List<PDFobj> objects) {
+        ownResources();
         PDFobj obj = null;
         int index = -1;
         for (int i = 0; i < dict.size(); i++) {

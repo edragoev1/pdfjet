@@ -381,5 +381,82 @@ public class MergeTest {
         }
         Assert.True(found, "no Type0 font of a subset of Noto Sans");
     }
+
+    // Returns a PDF of pages under one node that holds an inline /Resources of
+    // the fonts, which the pages inherit.
+    private static byte[] InheritedResources(int pages, int fonts) {
+        StringBuilder resources = new StringBuilder("/Resources << /Font <<");
+        for (int i = 1; i <= fonts; i++) {
+            resources.Append(" /F").Append(i).Append(" 3 0 R");
+        }
+        resources.Append(" >> >>");
+        List<string> kids = new List<string>();
+        for (int i = 0; i < pages; i++) {
+            kids.Add((i + 4) + " 0 R");
+        }
+        List<string> objects = new List<string> {
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [" + string.Join(" ", kids) + "] /Count " + pages
+                    + " /MediaBox [0 0 612 792] " + resources + " >>",
+            "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+        };
+        for (int i = 0; i < pages; i++) {
+            objects.Add("<< /Type /Page /Parent 2 0 R >>");
+        }
+        return PDFTest.PdfWithObjects(objects.ToArray());
+    }
+
+    [Fact]
+    public void ALargeInheritedResourcesIsWrittenOnce() {
+        // A large /Resources that pages inherit is shared by them, not copied
+        // into each, and Merge writes it once, an object that each page refers
+        // to: 1,000 pages under a node of 20,000 fonts took 2.9 GB, and Merge
+        // wrote 189 MB (review of 11 October 2026, #34).
+        byte[] source = InheritedResources(1000, 20000);
+        List<PDFobj> objects = TestSupport.Read(source);
+        System.Diagnostics.Stopwatch watch = System.Diagnostics.Stopwatch.StartNew();
+        List<PDFobj> pages = new PDF().GetPageObjects(objects);
+        Assert.Equal(1000, pages.Count);
+        List<string> first = pages[0].inheritedResources;
+        Assert.NotNull(first);
+        Assert.True(first.Count >= 80000, "the pages do not share their resources: " + first.Count + " tokens");
+        Assert.Same(first, pages[999].inheritedResources);
+        PDFobj resources = pages[0].GetResourcesObject(objects);
+        Assert.True(resources != null && resources.GetDict().Contains("/F20000"),
+                "the resources of a page are not read");
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream);
+        pdf.Merge(objects);
+        pdf.Complete();
+        byte[] merged = stream.ToArray();
+        watch.Stop();
+        Assert.True(watch.Elapsed.TotalSeconds <= 5, "pages and merge took " + watch.Elapsed);
+        Assert.True(merged.Length <= 2 * source.Length,
+                "the merged PDF is " + merged.Length + " bytes, of a source of " + source.Length);
+        List<PDFobj> mergedObjects = TestSupport.Read(merged);
+        List<PDFobj> written = new PDF().GetPageObjects(mergedObjects);
+        Assert.Equal(1000, written.Count);
+        PDFobj r = written[999].GetResourcesObject(mergedObjects);
+        Assert.True(r != null && r.GetDict().Contains("/F20000"), "a merged page has lost its resources");
+    }
+
+    [Fact]
+    public void ASmallInheritedResourcesIsCopiedAndASharedOneIsCopiedWhenChanged() {
+        // A small /Resources that pages inherit is copied into each, as before,
+        // and a resource added to a page that shares a large one is the page's
+        // alone.
+        List<PDFobj> objects = TestSupport.Read(InheritedResources(2, 3));
+        List<PDFobj> pages = new PDF().GetPageObjects(objects);
+        Assert.Null(pages[0].inheritedResources);
+        Assert.Contains("/F3", pages[0].GetDict());
+
+        objects = TestSupport.Read(InheritedResources(2, 100));
+        pages = new PDF().GetPageObjects(objects);
+        pages[0].AddResource(CoreFont.HELVETICA, objects);
+        Assert.Null(pages[0].inheritedResources);
+        Assert.Contains("/F100", pages[0].GetDict());
+        Assert.NotNull(pages[1].inheritedResources);
+        Assert.DoesNotContain("/HELVETICA", pages[1].inheritedResources);
+    }
 }
 }   // End of namespace PDFjet.NET
