@@ -7,7 +7,12 @@ languages.
 
 This is the first entry in this file; earlier releases were not tracked here.
 
-## v9.0.5 — unreleased
+## v9.0.7 — unreleased
+
+## v9.0.5 — 2026-10-12, internal
+
+An internal release, not published: its changes come out with v9.0.7
+(the owner, 12 October 2026).
 
 ### Added
 - `TextColumn.addCJKParagraph(font, text, language)`, in the four ports
