@@ -1102,6 +1102,110 @@ public class PDFobj {
         }
     }
 
+    // Puts a content stream before the content streams of this page and
+    // another after them, in a /Contents array of its own, or gives a page
+    // that has none the second. Returns false when the /Contents is not a
+    // stream or an array of them, and changes nothing.
+    boolean wrapContents(byte[] before, byte[] after, List<PDFobj> objects) {
+        int i = dict.indexOf("/Contents");
+        if (i == -1) {
+            // A page with no content: addContent added nothing, and the
+            // drawing was lost
+            int end = dict.lastIndexOf(">>");
+            if (end == -1) {
+                return false;
+            }
+            List<String> value = new ArrayList<String>(Arrays.asList("/Contents", "["));
+            value.addAll(addStream(after, objects));
+            value.add("]");
+            dict.addAll(end, value);
+            return true;
+        }
+        int start = i + 1;
+        List<String> refs;
+        int end;
+        if (tokenAt(dict, start).equals("[")) {
+            end = arrayEnd(dict, start + 1);
+            if (end == -1) {
+                return false;
+            }
+            refs = new ArrayList<String>(dict.subList(start + 1, end - 1));
+        } else {
+            if (!PDF.isReference(dict, start)) {
+                return false;
+            }
+            end = start + 3;
+            PDFobj contents = objectAt(objects, dict.get(start));
+            if (contents == null) {
+                return false;
+            }
+            if (contents.data == null && contents.stream == null) {
+                // An array of streams that is an object of its own
+                int k = contents.dict.indexOf("[");
+                int arrayEnd = (k == -1) ? -1 : arrayEnd(contents.dict, k + 1);
+                if (arrayEnd == -1) {
+                    return false;
+                }
+                refs = new ArrayList<String>(contents.dict.subList(k + 1, arrayEnd - 1));
+            } else {
+                refs = new ArrayList<String>(dict.subList(start, end));
+            }
+        }
+        List<String> value = new ArrayList<String>();
+        value.add("[");
+        value.addAll(addStream(before, objects));
+        value.addAll(refs);
+        value.addAll(addStream(after, objects));
+        value.add("]");
+        dict.subList(start, end).clear();
+        dict.addAll(start, value);
+        return true;
+    }
+
+    // Returns the index after the "]" of the array of references that starts
+    // at the index, or -1 when it is not one.
+    private static int arrayEnd(List<String> tokens, int from) {
+        for (int j = from; j < tokens.size(); j += 3) {
+            if (tokens.get(j).equals("]")) {
+                return j + 1;
+            }
+            if (!PDF.isReference(tokens, j)) {
+                return -1;
+            }
+        }
+        return -1;
+    }
+
+    // Adds a stream object of the content, and returns its reference.
+    private static List<String> addStream(byte[] content, List<PDFobj> objects) {
+        PDFobj obj = new PDFobj();
+        obj.setNumber(objects.size() + 1);
+        obj.setStream(content);
+        objects.add(obj);
+        return Arrays.asList(String.valueOf(obj.number), "0", "R");
+    }
+
+    // Returns the lower left corner of the /MediaBox of this page, or 0, 0 when
+    // it has none that is four numbers.
+    float[] mediaBoxOrigin() {
+        int i = dict.indexOf("/MediaBox");
+        if (i == -1 || !tokenAt(dict, i + 1).equals("[")) {
+            return new float[] {0f, 0f};
+        }
+        float[] box = new float[4];
+        for (int j = 0; j < 4; j++) {
+            try {
+                box[j] = Float.parseFloat(tokenAt(dict, i + 2 + j));
+            } catch (NumberFormatException e) {
+                return new float[] {0f, 0f};
+            }
+            if (Float.isNaN(box[j]) || Float.isInfinite(box[j])) {
+                return new float[] {0f, 0f};
+            }
+        }
+        return new float[] {Math.min(box[0], box[2]), Math.min(box[1], box[3])};
+    }
+
     /**
      * Adds content to the PDF.
      *

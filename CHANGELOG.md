@@ -278,6 +278,23 @@ This is the first entry in this file; earlier releases were not tracked here.
 - Markdown: a heading that starts a list item or a quote keeps a line of
   the text after it on its page, as any other heading does, in the four
   ports: it was drawn into the bottom margin, with nothing after it.
+- Drawing on a page of a PDF that was read, in the four ports: the page's
+  own content is drawn in a q and a Q of its own, so that a scale or a
+  text rendering mode it leaves set does not change the drawing; a page
+  with no /Contents gets the drawing, which was lost; the drawing starts
+  at the corner of the /MediaBox, as one of [100 100 712 892] put it
+  outside the page; and a /Contents that is not a stream or an array of
+  them fails the document.
+- A Paragraph drawn by a TextColumn has its coordinates, GetX1 to GetY2,
+  GetTextX and GetTextY, in the four ports, as one a TextFrame draws: they
+  stayed 0.
+- Go: a cap style, a join style, a page layout or a page mode that is not
+  one of its package's is refused: CapStyle(7) wrote "7 J", and "Single
+  Page" broke the catalog. A cell's vertical alignment that is not Top,
+  Center or Bottom fails the document; alignment.Left, the zero value,
+  panicked.
+- Swift: a watermark on a page of a NaN or infinite size fails the
+  document, as in the other ports; it stopped the program.
 
 ## v9.0.5 — 2026-10-12, internal
 

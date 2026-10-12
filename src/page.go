@@ -242,6 +242,16 @@ func NewPageFromObject(pdf *PDF, pageObj *PDFobj) *Page {
 	page.penWidth = 1.0 // The PDF default, as no w is written first
 	page.tmx = [4]float32{1.0, 0.0, 0.0, 1.0}
 	page.SaveGraphicsState()
+	if x0, y0 := pageObj.mediaBoxOrigin(); x0 != 0 || y0 != 0 {
+		// The page starts at the corner of its /MediaBox: at 0, 0 of a box
+		// of [100 100 712 892] the drawing was outside the page (review of
+		// 12 October 2026, F2)
+		page.appendString("1 0 0 1 ")
+		page.appendFloat32(x0)
+		page.appendString(" ")
+		page.appendFloat32(y0)
+		page.appendString(" cm\n")
+	}
 	if pageObj.gsNumber != -1 {
 		page.appendString("/GS")
 		page.appendInteger(pageObj.gsNumber + 1)
@@ -250,11 +260,16 @@ func NewPageFromObject(pdf *PDF, pageObj *PDFobj) *Page {
 	return page
 }
 
-// Complete completes adding content to the existing PDF.
+// Complete completes adding content to the existing PDF. The content of the
+// page is drawn first, in a q and a Q of its own, so that what it leaves set,
+// a scale or a text rendering mode, does not change what is drawn after it;
+// and a page with no content gets this one (review of 12 October 2026, F2).
 func (page *Page) Complete(objects *[]*PDFobj) {
 	page.RestoreGraphicsState()
 	page.checkBalanced()
-	page.pageObj.AddContent(page.getContent(), objects)
+	if !page.pageObj.wrapContents([]byte("q\n"), append([]byte("Q\n"), page.getContent()...), objects) {
+		page.pdf.fail("The /Contents of the page is not a stream or an array of streams: nothing can be drawn on it.")
+	}
 }
 
 // checkBalanced records a SaveGraphicsState without its RestoreGraphicsState,
@@ -1578,6 +1593,13 @@ func (page *Page) GetPenWidth() float32 {
 // SetLineCapStyle sets the current line cap style.
 // Supported values: capstyle.Butt, capstyle.Round and capstyle.ProjectingSquare
 func (page *Page) SetLineCapStyle(style capstyle.CapStyle) *Page {
+	if style < capstyle.Butt || style > capstyle.ProjectingSquare {
+		// Any number was written: CapStyle(7) wrote "7 J" (review of
+		// 12 October 2026, F18)
+		page.pdf.fail("The cap style " + strconv.Itoa(int(style)) +
+			" is not one: use capstyle.Butt, capstyle.Round or capstyle.ProjectingSquare.")
+		return page
+	}
 	page.lineCapStyle = style
 	page.appendInteger(int(page.lineCapStyle))
 	page.appendString(" J\n")
@@ -1587,6 +1609,11 @@ func (page *Page) SetLineCapStyle(style capstyle.CapStyle) *Page {
 // SetLineJoinStyle sets the line join style.
 // Supported values: joinstyle.Miter, joinstyle.Round and joinstyle.Bevel
 func (page *Page) SetLineJoinStyle(style joinstyle.JoinStyle) *Page {
+	if style < joinstyle.Miter || style > joinstyle.Bevel {
+		page.pdf.fail("The join style " + strconv.Itoa(int(style)) +
+			" is not one: use joinstyle.Miter, joinstyle.Round or joinstyle.Bevel.")
+		return page
+	}
 	page.lineJoinStyle = style
 	page.appendInteger(int(page.lineJoinStyle))
 	page.appendString(" j\n")

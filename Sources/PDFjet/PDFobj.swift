@@ -1029,6 +1029,92 @@ public final class PDFobj {
         }
     }
 
+    // Puts a content stream before the content streams of this page and
+    // another after them, in a /Contents array of its own, or gives a page
+    // that has none the second. Returns false when the /Contents is not a
+    // stream or an array of them, and changes nothing.
+    final func wrapContents(_ before: [UInt8], _ after: [UInt8], _ objects: inout [PDFobj]) -> Bool {
+        guard let i = dict.firstIndex(of: "/Contents") else {
+            // A page with no content: addContent added nothing, and the
+            // drawing was lost
+            guard let last = dict.lastIndex(of: ">>") else {
+                return false
+            }
+            dict.insert(contentsOf: ["/Contents", "["] + PDFobj.addStream(after, &objects) + ["]"], at: last)
+            return true
+        }
+        let start = i + 1
+        var refs: [String]
+        var end: Int
+        if tokenAt(dict, start) == "[" {
+            guard let arrayEnd = PDFobj.arrayEnd(dict, start + 1) else {
+                return false
+            }
+            end = arrayEnd
+            refs = Array(dict[(start + 1)..<(end - 1)])
+        } else {
+            guard PDF.isReference(dict, start), let contents = objectAt(objects, dict[start]) else {
+                return false
+            }
+            end = start + 3
+            if contents.data.isEmpty && contents.stream == nil {
+                // An array of streams that is an object of its own
+                guard let k = contents.dict.firstIndex(of: "["),
+                        let arrayEnd = PDFobj.arrayEnd(contents.dict, k + 1) else {
+                    return false
+                }
+                refs = Array(contents.dict[(k + 1)..<(arrayEnd - 1)])
+            } else {
+                refs = Array(dict[start..<end])
+            }
+        }
+        let value = ["["] + PDFobj.addStream(before, &objects) + refs + PDFobj.addStream(after, &objects) + ["]"]
+        dict.replaceSubrange(start..<end, with: value)
+        return true
+    }
+
+    // Returns the index after the "]" of the array of references that starts
+    // at the index, or nil when it is not one.
+    private static func arrayEnd(_ tokens: [String], _ from: Int) -> Int? {
+        var j = from
+        while j < tokens.count {
+            if tokens[j] == "]" {
+                return j + 1
+            }
+            if !PDF.isReference(tokens, j) {
+                return nil
+            }
+            j += 3
+        }
+        return nil
+    }
+
+    // Adds a stream object of the content, and returns its reference.
+    private static func addStream(_ content: [UInt8], _ objects: inout [PDFobj]) -> [String] {
+        let obj = PDFobj()
+        obj.setNumber(objects.count + 1)
+        var stream = content
+        obj.setStream(&stream)
+        objects.append(obj)
+        return [String(obj.number), "0", "R"]
+    }
+
+    // Returns the lower left corner of the /MediaBox of this page, or 0, 0 when
+    // it has none that is four numbers.
+    final func mediaBoxOrigin() -> (x: Float, y: Float) {
+        guard let i = dict.firstIndex(of: "/MediaBox"), tokenAt(dict, i + 1) == "[" else {
+            return (0, 0)
+        }
+        var box = [Float]()
+        for j in 0..<4 {
+            guard let value = Float(tokenAt(dict, i + 2 + j)), value.isFinite else {
+                return (0, 0)
+            }
+            box.append(value)
+        }
+        return (min(box[0], box[2]), min(box[1], box[3]))
+    }
+
     /// Adds a content stream to this page.
     public final func addContent(_ content: inout [UInt8], _ objects: inout [PDFobj]) {
         let obj = PDFobj()

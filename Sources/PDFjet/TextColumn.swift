@@ -271,6 +271,12 @@ public class TextColumn : Drawable {
             }
         }
         self.y1 += maxAscent
+        // The paragraph has its coordinates, as TextFrame gives them: they
+        // stayed 0 (review of 12 October 2026, F17).
+        paragraph.x1 = x
+        paragraph.y1 = y1 - maxAscent
+        paragraph.xText = x
+        paragraph.yText = y1
 
         var runLength: Float = 0.0
         var wordStart = 0       // Where the word being set starts in the list
@@ -348,6 +354,8 @@ public class TextColumn : Drawable {
         }
         // The last line of a paragraph is not justified.
         drawNonJustifiedLine(page, list, alignment)
+        paragraph.x2 = x1
+        paragraph.y2 = y1 + maxDescent
 
         // The paragraph reaches down to the descent of its last line. The
         // spacing and the blank line go between the paragraphs, not after the

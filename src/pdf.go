@@ -2588,15 +2588,30 @@ func (pdf *PDF) SetCreator(creator string) *PDF {
 	return pdf
 }
 
-// SetPageLayout sets the page layout.
+// SetPageLayout sets the page layout. A value that is not one of
+// pagelayout's is refused: it was written as it was, and "Single Page" broke
+// the catalog (review of 12 October 2026, F18).
 func (pdf *PDF) SetPageLayout(pageLayout pagelayout.PageLayout) *PDF {
-	pdf.pageLayout = pageLayout
+	switch pageLayout {
+	case pagelayout.SinglePage, pagelayout.OneColumn, pagelayout.TwoColumnLeft,
+		pagelayout.TwoColumnRight, pagelayout.TwoPageLeft, pagelayout.TwoPageRight:
+		pdf.pageLayout = pageLayout
+	default:
+		pdf.fail("The page layout " + string(pageLayout) + " is not one: use one of pagelayout.")
+	}
 	return pdf
 }
 
-// SetPageMode sets the page mode.
+// SetPageMode sets the page mode. A value that is not one of pagemode's is
+// refused.
 func (pdf *PDF) SetPageMode(pageMode pagemode.PageMode) *PDF {
-	pdf.pageMode = pageMode
+	switch pageMode {
+	case pagemode.UseNone, pagemode.UseOutlines, pagemode.UseThumbs,
+		pagemode.FullScreen, pagemode.UseOC, pagemode.UseAttachments:
+		pdf.pageMode = pageMode
+	default:
+		pdf.fail("The page mode " + string(pageMode) + " is not one: use one of pagemode.")
+	}
 	return pdf
 }
 

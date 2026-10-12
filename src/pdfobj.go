@@ -1068,6 +1068,110 @@ func (obj *PDFobj) AddContent(content []byte, objects *[]*PDFobj) {
 	}
 }
 
+// wrapContents puts a content stream before the content streams of this page
+// and another after them, in a /Contents array of its own, or gives a page
+// that has none the second. It returns false when the /Contents is not a
+// stream or an array of them, and changes nothing.
+func (obj *PDFobj) wrapContents(before, after []byte, objects *[]*PDFobj) bool {
+	refs, start, end, found := obj.contentRefs(*objects)
+	if found && refs == nil {
+		return false
+	}
+	addStream := func(content []byte) []string {
+		stream := newPDFobj().setNumber(len(*objects) + 1).setStream(content)
+		*objects = append(*objects, stream)
+		return []string{strconv.Itoa(stream.number), "0", "R"}
+	}
+	if !found {
+		// A page with no content: AddContent added nothing, and the drawing
+		// was lost
+		end := -1
+		for i := len(obj.dict) - 1; i >= 0; i-- {
+			if obj.dict[i] == ">>" {
+				end = i
+				break
+			}
+		}
+		if end == -1 {
+			return false
+		}
+		value := slices.Concat([]string{"/Contents", "["}, addStream(after), []string{"]"})
+		obj.dict = slices.Concat(obj.dict[:end], value, obj.dict[end:])
+		return true
+	}
+	value := slices.Concat([]string{"["}, addStream(before), refs, addStream(after), []string{"]"})
+	obj.dict = slices.Concat(obj.dict[:start], value, obj.dict[end:])
+	return true
+}
+
+// contentRefs returns the references of the content streams of this page,
+// "n 0 R" each, and where the value of its /Contents is in its dictionary, from
+// start to end; found is false for a page with no /Contents, and refs nil for
+// a /Contents that is not a stream or an array of them.
+func (obj *PDFobj) contentRefs(objects []*PDFobj) (refs []string, start, end int, found bool) {
+	i := slices.Index(obj.dict, "/Contents")
+	if i == -1 {
+		return nil, 0, 0, false
+	}
+	start = i + 1
+	array := func(tokens []string, from int) ([]string, int) {
+		var refs []string
+		for j := from; j < len(tokens); j += 3 {
+			if tokens[j] == "]" {
+				return refs, j + 1
+			}
+			if !isObjectReference(tokens, j) {
+				return nil, 0
+			}
+			refs = append(refs, tokens[j:j+3]...)
+		}
+		return nil, 0
+	}
+	if tokenAt(obj.dict, start) == "[" {
+		refs, end = array(obj.dict, start+1)
+		if refs == nil {
+			return nil, 0, 0, true
+		}
+		return refs, start, end, true
+	}
+	if !isObjectReference(obj.dict, start) {
+		return nil, 0, 0, true
+	}
+	end = start + 3
+	contents := objectAt(objects, obj.dict[start])
+	if contents == nil {
+		return nil, 0, 0, true
+	}
+	if contents.data == nil && contents.stream == nil {
+		// An array of streams that is an object of its own
+		k := slices.Index(contents.dict, "[")
+		if k == -1 {
+			return nil, 0, 0, true
+		}
+		refs, _ = array(contents.dict, k+1)
+		return refs, start, end, true
+	}
+	return obj.dict[start:end:end], start, end, true
+}
+
+// mediaBoxOrigin returns the lower left corner of the /MediaBox of this page,
+// or 0, 0 when it has none that is four numbers.
+func (obj *PDFobj) mediaBoxOrigin() (float32, float32) {
+	i := slices.Index(obj.dict, "/MediaBox")
+	if i == -1 || tokenAt(obj.dict, i+1) != "[" {
+		return 0, 0
+	}
+	var box [4]float64
+	for j := range box {
+		value, err := strconv.ParseFloat(tokenAt(obj.dict, i+2+j), 32)
+		if err != nil || math.IsNaN(value) || math.IsInf(value, 0) {
+			return 0, 0
+		}
+		box[j] = value
+	}
+	return float32(min(box[0], box[2])), float32(min(box[1], box[3]))
+}
+
 // AddPrefixContent adds a content stream before the existing content streams
 // of this page. The original code was provided by Stefan Ostermann author of
 // ScribMaster and HandWrite Pro. Additional code to handle PDFs with indirect

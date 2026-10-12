@@ -982,6 +982,106 @@ public class PDFobj {
         }
     }
 
+    // Puts a content stream before the content streams of this page and
+    // another after them, in a /Contents array of its own, or gives a page
+    // that has none the second. Returns false when the /Contents is not a
+    // stream or an array of them, and changes nothing.
+    internal bool WrapContents(byte[] before, byte[] after, List<PDFobj> objects) {
+        int i = dict.IndexOf("/Contents");
+        if (i == -1) {
+            // A page with no content: AddContent added nothing, and the
+            // drawing was lost
+            int last = dict.LastIndexOf(">>");
+            if (last == -1) {
+                return false;
+            }
+            List<String> added = new List<String> {"/Contents", "["};
+            added.AddRange(AddStream(after, objects));
+            added.Add("]");
+            dict.InsertRange(last, added);
+            return true;
+        }
+        int start = i + 1;
+        List<String> refs;
+        int end;
+        if (TokenAt(dict, start) == "[") {
+            end = ArrayEnd(dict, start + 1);
+            if (end == -1) {
+                return false;
+            }
+            refs = dict.GetRange(start + 1, end - 1 - (start + 1));
+        } else {
+            if (!PDF.IsReference(dict, start)) {
+                return false;
+            }
+            end = start + 3;
+            PDFobj contents = ObjectAt(objects, dict[start]);
+            if (contents == null) {
+                return false;
+            }
+            if (contents.data == null && contents.stream == null) {
+                // An array of streams that is an object of its own
+                int k = contents.dict.IndexOf("[");
+                int arrayEnd = (k == -1) ? -1 : ArrayEnd(contents.dict, k + 1);
+                if (arrayEnd == -1) {
+                    return false;
+                }
+                refs = contents.dict.GetRange(k + 1, arrayEnd - 1 - (k + 1));
+            } else {
+                refs = dict.GetRange(start, 3);
+            }
+        }
+        List<String> value = new List<String> {"["};
+        value.AddRange(AddStream(before, objects));
+        value.AddRange(refs);
+        value.AddRange(AddStream(after, objects));
+        value.Add("]");
+        dict.RemoveRange(start, end - start);
+        dict.InsertRange(start, value);
+        return true;
+    }
+
+    // Returns the index after the "]" of the array of references that starts
+    // at the index, or -1 when it is not one.
+    private static int ArrayEnd(List<String> tokens, int from) {
+        for (int j = from; j < tokens.Count; j += 3) {
+            if (tokens[j] == "]") {
+                return j + 1;
+            }
+            if (!PDF.IsReference(tokens, j)) {
+                return -1;
+            }
+        }
+        return -1;
+    }
+
+    // Adds a stream object of the content, and returns its reference.
+    private static List<String> AddStream(byte[] content, List<PDFobj> objects) {
+        PDFobj obj = new PDFobj();
+        obj.SetNumber(objects.Count + 1);
+        obj.SetStream(content);
+        objects.Add(obj);
+        return new List<String> {obj.number.ToString(System.Globalization.CultureInfo.InvariantCulture), "0", "R"};
+    }
+
+    // Returns the lower left corner of the /MediaBox of this page, or 0, 0 when
+    // it has none that is four numbers.
+    internal float[] MediaBoxOrigin() {
+        int i = dict.IndexOf("/MediaBox");
+        if (i == -1 || TokenAt(dict, i + 1) != "[") {
+            return new float[] {0f, 0f};
+        }
+        float[] box = new float[4];
+        for (int j = 0; j < 4; j++) {
+            if (!float.TryParse(TokenAt(dict, i + 2 + j), System.Globalization.NumberStyles.Float,
+                    System.Globalization.CultureInfo.InvariantCulture, out box[j])
+                    || float.IsNaN(box[j]) || float.IsInfinity(box[j])) {
+                return new float[] {0f, 0f};
+            }
+        }
+        return new float[] {Math.Min(box[0], box[2]), Math.Min(box[1], box[3])};
+    }
+
     /// <summary>Adds a content stream to this page.</summary>
     public void AddContent(byte[] content, List<PDFobj> objects) {
         PDFobj obj = new PDFobj();

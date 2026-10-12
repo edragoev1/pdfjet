@@ -827,7 +827,10 @@ func (cell *Cell) drawText(page *Page, x, y, cellW, cellH float32) {
 	case alignment.Bottom:
 		yText = (y + cellH) - cell.paddingAt(cellBottomPadding)
 	default:
-		panic("Invalid vertical text alignment option.")
+		// alignment.Left, the zero value, panicked (review of 12 October
+		// 2026, F18)
+		page.pdf.fail("The vertical alignment of a cell is alignment.Top, alignment.Center or alignment.Bottom.")
+		yText = y + ascent + cell.paddingAt(cellTopPadding)
 	}
 
 	var xText float32

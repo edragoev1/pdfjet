@@ -400,4 +400,58 @@ import Testing
         _ = Point(100, 100).setShape(Shape.PLUS).setFillColor(Color.red).drawOn(page2)
         #expect(TestSupport.content(page2).contains("1 0 0 RG\n"), "\(TestSupport.content(page2))")
     }
+
+    /// A paragraph a text column draws has its coordinates, as one a text
+    /// frame draws does: they stayed 0 (F17).
+    @Test func aParagraphOfATextColumnHasItsCoordinates() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let paragraph = Paragraph().add(TextLine(font, "Hello, world"))
+        let column = TextColumn()
+        _ = column.setLocation(50, 100)
+        _ = column.setWidth(400)
+        _ = column.addParagraph(paragraph)
+        _ = column.drawOn(Page(pdf, Letter.PORTRAIT))
+        TestSupport.expectNear(50, paragraph.getX1())
+        TestSupport.expectNear(100, paragraph.getY1())
+        TestSupport.expectNear(100 + font.getAscent(), paragraph.getTextY())
+        #expect(paragraph.getY2() > paragraph.getTextY() && paragraph.getX2() > 50)
+    }
+
+    /// A watermark on a page of a NaN size fails the document, as in the other
+    /// ports: Int() of the NaN angle stopped the program (S2).
+    @Test func aWatermarkOnAPageOfANaNSizeFailsTheDocument() {
+        let pdf = TestSupport.newPDF()
+        let page = Page(pdf, PageSize(.nan, .nan))
+        page.addWatermark(TestSupport.helvetica(pdf), "DRAFT")
+        #expect(pdf.error != nil)
+    }
+
+    /// Drawing on a page of a PDF that was read: the page's own content is
+    /// drawn in a q and a Q of its own; a page with no /Contents gets the
+    /// drawing, which was lost; and the drawing starts at the corner of the
+    /// /MediaBox (F2).
+    @Test func drawingOnAPageOfAPDFThatWasRead() throws {
+        var objects = try TestSupport.read(TestSupport.pdfWithObjects([
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [3 0 R 5 0 R] /Count 2 >>",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [100 100 712 892] /Contents 4 0 R >>",
+                "<< /Length 18 >>\nstream\n0.5 0 0 0.5 0 0 cm\nendstream",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>"]))
+        let pdf = TestSupport.newPDF()
+        let pages = pdf.getPageObjects(from: objects)
+        for pageObj in pages {
+            let page = Page(pdf, pageObj)
+            page.fillRect(0, 0, 30, 30)
+            page.complete(&objects)
+        }
+        let wrapped = pages[0].dict
+        let i = wrapped.firstIndex(of: "/Contents")!
+        #expect(wrapped[(i + 1)...(i + 11)].joined(separator: " ") == "[ 6 0 R 4 0 R 7 0 R ]")
+        #expect(TestSupport.latin1(objects[5].stream!) == "q\n")
+        #expect(TestSupport.latin1(objects[6].stream!).hasPrefix("Q\nq\n1 0 0 1 100 100 cm\n"))
+        let added = pages[1].dict
+        let j = added.firstIndex(of: "/Contents")!
+        #expect(added[(j + 1)...(j + 5)].joined(separator: " ") == "[ 8 0 R ]")
+    }
 }

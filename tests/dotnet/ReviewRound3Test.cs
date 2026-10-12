@@ -474,5 +474,52 @@ public class ReviewRound3Test {
         new Point(100f, 100f).SetShape(Shape.PLUS).SetFillColor(Color.red).DrawOn(page2);
         Assert.Contains("1 0 0 RG\n", TestSupport.Content(page2));
     }
+
+    // A paragraph a text column draws has its coordinates, as one a text
+    // frame draws does: they stayed 0 (F17).
+    [Fact]
+    public void AParagraphOfATextColumnHasItsCoordinates() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Paragraph paragraph = new Paragraph().Add(new TextLine(font, "Hello, world"));
+        TextColumn column = new TextColumn();
+        column.SetLocation(50f, 100f);
+        column.SetWidth(400f);
+        column.AddParagraph(paragraph);
+        column.DrawOn(new Page(pdf, Letter.PORTRAIT));
+        TestSupport.AssertNear(50f, paragraph.GetX1(), 0.01f);
+        TestSupport.AssertNear(100f, paragraph.GetY1(), 0.01f);
+        TestSupport.AssertNear(100f + font.GetAscent(), paragraph.GetTextY(), 0.01f);
+        Assert.True(paragraph.GetY2() > paragraph.GetTextY() && paragraph.GetX2() > 50f);
+    }
+
+    // Drawing on a page of a PDF that was read: the page's own content is
+    // drawn in a q and a Q of its own; a page with no /Contents gets the
+    // drawing, which was lost; and the drawing starts at the corner of the
+    // /MediaBox (F2).
+    [Fact]
+    public void DrawingOnAPageOfAPDFThatWasRead() {
+        List<PDFobj> objects = TestSupport.Read(PDFTest.PdfWithObjects(new string[] {
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [3 0 R 5 0 R] /Count 2 >>",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [100 100 712 892] /Contents 4 0 R >>",
+                "<< /Length 18 >>\nstream\n0.5 0 0 0.5 0 0 cm\nendstream",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>"}));
+        PDF pdf = TestSupport.NewPDF();
+        List<PDFobj> pages = pdf.GetPageObjects(objects);
+        foreach (PDFobj pageObj in pages) {
+            Page page = new Page(pdf, pageObj);
+            page.FillRect(0f, 0f, 30f, 30f);
+            page.Complete(objects);
+        }
+        List<string> wrapped = pages[0].dict;
+        int i = wrapped.IndexOf("/Contents");
+        Assert.Equal("[ 6 0 R 4 0 R 7 0 R ]", string.Join(" ", wrapped.GetRange(i + 1, 11)));
+        Assert.Equal("q\n", TestSupport.Latin1(objects[5].stream));
+        Assert.StartsWith("Q\nq\n1 0 0 1 100 100 cm\n", TestSupport.Latin1(objects[6].stream));
+        List<string> added = pages[1].dict;
+        int j = added.IndexOf("/Contents");
+        Assert.Equal("[ 8 0 R ]", string.Join(" ", added.GetRange(j + 1, 5)));
+    }
 }
 }

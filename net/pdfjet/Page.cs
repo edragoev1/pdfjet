@@ -190,6 +190,17 @@ public class Page {
         this.height = pageSize.GetHeight();
         this.buf = new MemoryStream(8192);
         SaveGraphicsState();
+        float[] origin = pageObj.MediaBoxOrigin();
+        if (origin[0] != 0f || origin[1] != 0f) {
+            // The page starts at the corner of its /MediaBox: at 0, 0 of a box
+            // of [100 100 712 892] the drawing was outside the page (review of
+            // 12 October 2026, F2)
+            Append("1 0 0 1 ");
+            Append(origin[0]);
+            Append(" ");
+            Append(origin[1]);
+            Append(" cm\n");
+        }
         if (pageObj.gsNumber != -1) {
             Append("/GS");
             Append(pageObj.gsNumber + 1);
@@ -199,9 +210,21 @@ public class Page {
 
     /// <summary>Finishes a page read from an existing PDF by adding its new content to the objects.</summary>
     public void Complete(List<PDFobj> objects) {
+        // The content of the page is drawn first, in a q and a Q of its own,
+        // so that what it leaves set, a scale or a text rendering mode, does
+        // not change what is drawn after it; and a page with no content gets
+        // this one (review of 12 October 2026, F2).
         RestoreGraphicsState();
         CheckBalanced();
-        pageObj.AddContent(GetContent(), objects);
+        byte[] content = GetContent();
+        byte[] after = new byte[content.Length + 2];
+        after[0] = (byte) 'Q';
+        after[1] = (byte) '\n';
+        Array.Copy(content, 0, after, 2, content.Length);
+        if (!pageObj.WrapContents(new byte[] {(byte) 'q', (byte) '\n'}, after, objects)) {
+            pdf.Fail(new InvalidOperationException(
+                    "The /Contents of the page is not a stream or an array of streams: nothing can be drawn on it."));
+        }
     }
 
     // Checks that every SaveGraphicsState has its RestoreGraphicsState and every

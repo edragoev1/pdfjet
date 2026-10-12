@@ -554,4 +554,55 @@ class ReviewRound3Test {
         new Point(100f, 100f).setShape(Shape.PLUS).setFillColor(Color.red).drawOn(page2);
         assertTrue(TestSupport.content(page2).contains("1 0 0 RG\n"), TestSupport.content(page2));
     }
+
+    /**
+     * A paragraph a text column draws has its coordinates, as one a text
+     * frame draws does: they stayed 0 (F17).
+     */
+    @Test
+    void aParagraphOfATextColumnHasItsCoordinates() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        Paragraph paragraph = new Paragraph().add(new TextLine(font, "Hello, world"));
+        TextColumn column = new TextColumn();
+        column.setLocation(50f, 100f);
+        column.setWidth(400f);
+        column.addParagraph(paragraph);
+        column.drawOn(new Page(pdf, Letter.PORTRAIT));
+        assertEquals(50f, paragraph.getX1(), 0.01f);
+        assertEquals(100f, paragraph.getY1(), 0.01f);
+        assertEquals(100f + font.getAscent(), paragraph.getTextY(), 0.01f);
+        assertTrue(paragraph.getY2() > paragraph.getTextY() && paragraph.getX2() > 50f);
+    }
+
+    /**
+     * Drawing on a page of a PDF that was read: the page's own content is
+     * drawn in a q and a Q of its own; a page with no /Contents gets the
+     * drawing, which was lost; and the drawing starts at the corner of the
+     * /MediaBox (F2).
+     */
+    @Test
+    void drawingOnAPageOfAPDFThatWasRead() throws Exception {
+        List<PDFobj> objects = TestSupport.read(PDFTest.pdfWithObjects(new String[] {
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [3 0 R 5 0 R] /Count 2 >>",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [100 100 712 892] /Contents 4 0 R >>",
+                "<< /Length 18 >>\nstream\n0.5 0 0 0.5 0 0 cm\nendstream",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>"}));
+        PDF pdf = TestSupport.newPDF();
+        List<PDFobj> pages = pdf.getPageObjects(objects);
+        for (PDFobj pageObj : pages) {
+            Page page = new Page(pdf, pageObj);
+            page.fillRect(0f, 0f, 30f, 30f);
+            page.complete(objects);
+        }
+        List<String> wrapped = pages.get(0).dict;
+        int i = wrapped.indexOf("/Contents");
+        assertEquals("[ 6 0 R 4 0 R 7 0 R ]", String.join(" ", wrapped.subList(i + 1, i + 12)));
+        assertEquals("q\n", TestSupport.latin1(objects.get(5).stream));
+        assertTrue(TestSupport.latin1(objects.get(6).stream).startsWith("Q\nq\n1 0 0 1 100 100 cm\n"));
+        List<String> added = pages.get(1).dict;
+        int j = added.indexOf("/Contents");
+        assertEquals("[ 8 0 R ]", String.join(" ", added.subList(j + 1, j + 6)));
+    }
 }

@@ -223,6 +223,17 @@ public class Page {
         self.width = pageSize.getWidth()
         self.height = pageSize.getHeight()
         saveGraphicsState()
+        let origin = self.pageObj!.mediaBoxOrigin()
+        if origin.x != 0 || origin.y != 0 {
+            // The page starts at the corner of its /MediaBox: at 0, 0 of a box
+            // of [100 100 712 892] the drawing was outside the page (review of
+            // 12 October 2026, F2)
+            append("1 0 0 1 ")
+            append(origin.x)
+            append(" ")
+            append(origin.y)
+            append(" cm\n")
+        }
         if pageObj.gsNumber != -1 {
             append("/GS")
             append(pageObj.gsNumber + 1)
@@ -232,9 +243,15 @@ public class Page {
 
     /// Finishes a page read from an existing PDF by adding its new content to the objects.
     public func complete(_ objects: inout [PDFobj]) {
+        // The content of the page is drawn first, in a q and a Q of its own,
+        // so that what it leaves set, a scale or a text rendering mode, does
+        // not change what is drawn after it; and a page with no content gets
+        // this one (review of 12 October 2026, F2).
         restoreGraphicsState()
         checkBalanced()
-        pageObj!.addContent(&self.buf, &objects)
+        if !pageObj!.wrapContents(Array("q\n".utf8), Array("Q\n".utf8) + self.buf, &objects) {
+            pdf.fail("The /Contents of the page is not a stream or an array of streams: nothing can be drawn on it.")
+        }
     }
 
     /// Checks that every saveGraphicsState has its restoreGraphicsState and every
@@ -3087,6 +3104,14 @@ public class Page {
         let stringWidth = font.stringWidth(text)
         let offset = (hypotenuse - stringWidth) / 2.0
         let angle = atan(Double(self.height / self.width))
+        if !angle.isFinite || !offset.isFinite {
+            // A page of a NaN or infinite size, as a /MediaBox of a PDF that
+            // was read can be, fails the document, as the other ports fail
+            // it: Int() of the NaN angle stopped the program (review of
+            // 12 October 2026, S2)
+            pdf.fail(FastFloat.NOT_WRITABLE)
+            return
+        }
         let watermark = TextLine(font)
         watermark.setTextColor(Color.lightgrey)
         watermark.setText(text)

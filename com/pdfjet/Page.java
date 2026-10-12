@@ -214,6 +214,17 @@ final public class Page {
         height = pageSize.getHeight();
         buf = new ContentBuffer(8192);
         this.saveGraphicsState();
+        float[] origin = pageObj.mediaBoxOrigin();
+        if (origin[0] != 0f || origin[1] != 0f) {
+            // The page starts at the corner of its /MediaBox: at 0, 0 of a box
+            // of [100 100 712 892] the drawing was outside the page (review of
+            // 12 October 2026, F2)
+            append("1 0 0 1 ");
+            append(origin[0]);
+            append(" ");
+            append(origin[1]);
+            append(" cm\n");
+        }
         if (pageObj.gsNumber != -1) {
             append("/GS");
             append(pageObj.gsNumber + 1);
@@ -285,14 +296,26 @@ final public class Page {
     }
 
     /**
-     * Completes the page.
+     * Completes adding content to the existing PDF. The content of the page
+     * is drawn first, in a q and a Q of its own, so that what it leaves set, a
+     * scale or a text rendering mode, does not change what is drawn after it;
+     * and a page with no content gets this one (review of 12 October 2026,
+     * F2).
      *
-     * @param objects list of the page objects.
+     * @param objects the objects of the PDF the page is of.
      */
     public void complete(List<PDFobj> objects) {
         restoreGraphicsState();
         checkBalanced();
-        pageObj.addContent(getContent(), objects);
+        byte[] content = getContent();
+        byte[] after = new byte[content.length + 2];
+        after[0] = 'Q';
+        after[1] = '\n';
+        System.arraycopy(content, 0, after, 2, content.length);
+        if (!pageObj.wrapContents(new byte[] {'q', '\n'}, after, objects)) {
+            pdf.fail(new IllegalStateException(
+                    "The /Contents of the page is not a stream or an array of streams: nothing can be drawn on it."));
+        }
     }
 
     /**

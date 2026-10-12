@@ -228,6 +228,10 @@ func (textColumn *TextColumn) drawParagraphOn(
 		}
 	}
 	textColumn.y1 += maxAscent
+	// The paragraph has its coordinates, as TextFrame gives them: they stayed
+	// 0 (review of 12 October 2026, F17).
+	paragraph.x1, paragraph.y1 = textColumn.x, textColumn.y1-maxAscent
+	paragraph.xText, paragraph.yText = textColumn.x, textColumn.y1
 
 	var runLength float32
 	wordStart := 0 // Where the word being set starts in the list
@@ -314,6 +318,7 @@ func (textColumn *TextColumn) drawParagraphOn(
 	}
 	// The last line of a paragraph is not justified.
 	textColumn.drawNonJustifiedLine(page, list, textAlignment)
+	paragraph.x2, paragraph.y2 = textColumn.x1, textColumn.y1+maxDescent
 
 	// The paragraph reaches down to the descent of its last line. The spacing
 	// and the blank line go between the paragraphs, not after the last one.

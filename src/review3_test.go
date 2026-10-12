@@ -17,10 +17,13 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/edragoev1/pdfjet/v9/src/alignment"
+	"github.com/edragoev1/pdfjet/v9/src/capstyle"
 	"github.com/edragoev1/pdfjet/v9/src/cjkfont"
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/corefont"
 	"github.com/edragoev1/pdfjet/v9/src/internal/decompressor"
+	"github.com/edragoev1/pdfjet/v9/src/joinstyle"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 	"github.com/edragoev1/pdfjet/v9/src/pathoperator"
 	"github.com/edragoev1/pdfjet/v9/src/shape"
@@ -706,5 +709,92 @@ func TestReview3AHeadingThatStartsAnItemStaysAboveTheMargin(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+// A paragraph a text column draws has its coordinates, as one a text frame
+// draws does: they stayed 0 (F17).
+func TestReview3AParagraphOfATextColumnHasItsCoordinates(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	paragraph := NewParagraph().Add(NewTextLine(font, "Hello, world"))
+	column := NewTextColumn()
+	column.SetLocation(50, 100)
+	column.SetWidth(400)
+	column.AddParagraph(paragraph)
+	column.DrawOn(NewPage(pdf, testLetterPortrait()))
+	testNear(t, "x1", 50, paragraph.GetX1(), testDelta)
+	testNear(t, "y1", 100, paragraph.GetY1(), testDelta)
+	testNear(t, "text y", 100+font.GetAscent(font.GetSize()), paragraph.GetTextY(), testDelta)
+	if !(paragraph.GetY2() > paragraph.GetTextY() && paragraph.GetX2() > 50) {
+		t.Errorf("x2 %g, y2 %g", paragraph.GetX2(), paragraph.GetY2())
+	}
+}
+
+// A cap style, a join style, a page layout, a page mode or a cell's vertical
+// alignment that is not one is refused: CapStyle(7) wrote "7 J", "Single
+// Page" broke the catalog, and alignment.Left in a cell panicked (F18).
+func TestReview3AValueThatIsNotOneOfItsTypeIsRefused(t *testing.T) {
+	page := testNewPage()
+	page.SetLineCapStyle(capstyle.CapStyle(7))
+	testRecorded(t, page.pdf, "The cap style 7 is not one: use capstyle.Butt, capstyle.Round or capstyle.ProjectingSquare.")
+	page = testNewPage()
+	page.SetLineJoinStyle(joinstyle.JoinStyle(-1))
+	testRecorded(t, page.pdf, "The join style -1 is not one: use joinstyle.Miter, joinstyle.Round or joinstyle.Bevel.")
+	pdf := testNewPDF().SetPageLayout("Single Page")
+	testRecorded(t, pdf, "The page layout Single Page is not one: use one of pagelayout.")
+	pdf = testNewPDF().SetPageMode("Outlines")
+	testRecorded(t, pdf, "The page mode Outlines is not one: use one of pagemode.")
+
+	pdf = testNewPDF()
+	font := testHelvetica(pdf)
+	table := NewTable()
+	cell := NewCell(font, "text").SetVerticalAlignment(alignment.Left)
+	table.SetTableData([][]*Cell{{cell}}, 0)
+	table.SetLocation(50, 50)
+	page = NewPage(pdf, testLetterPortrait())
+	if message, panicked := testPanic(func() { table.DrawOn(page) }); panicked {
+		t.Fatal(message)
+	}
+	testRecorded(t, pdf, "The vertical alignment of a cell is alignment.Top, alignment.Center or alignment.Bottom.")
+}
+
+// Drawing on a page of a PDF that was read: the page's own content is drawn
+// in a q and a Q of its own, so that a scale it leaves set does not change
+// the drawing; a page with no /Contents gets the drawing, which was lost; and
+// the drawing starts at the corner of the /MediaBox, as [100 100 712 892] put
+// it outside the page (F2).
+func TestReview3DrawingOnAPageOfAPDFThatWasRead(t *testing.T) {
+	objects := testRead(t, testPDFWithObjects(
+		"<< /Type /Catalog /Pages 2 0 R >>",
+		"<< /Type /Pages /Kids [3 0 R 5 0 R] /Count 2 >>",
+		"<< /Type /Page /Parent 2 0 R /MediaBox [100 100 712 892] /Contents 4 0 R >>",
+		"<< /Length 18 >>\nstream\n0.5 0 0 0.5 0 0 cm\nendstream",
+		"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>",
+	))
+	pdf := testNewPDF()
+	pages := pdf.GetPageObjects(objects)
+	for _, pageObj := range pages {
+		page := NewPageFromObject(pdf, pageObj)
+		page.FillRect(0, 0, 30, 30)
+		page.Complete(&objects)
+	}
+	if pdf.err != nil {
+		t.Fatal(pdf.err)
+	}
+	wrapped := pages[0].dict
+	i := slices.Index(wrapped, "/Contents")
+	if i == -1 || strings.Join(wrapped[i+1:i+12], " ") != "[ 6 0 R 4 0 R 7 0 R ]" {
+		t.Errorf("the contents of the first page: %v", wrapped)
+	}
+	if before := string(objects[5].stream); before != "q\n" {
+		t.Errorf("the stream before: %q", before)
+	}
+	if after := string(objects[6].stream); !strings.HasPrefix(after, "Q\nq\n1 0 0 1 100 100 cm\n") {
+		t.Errorf("the stream after: %q", after)
+	}
+	added := pages[1].dict
+	if i := slices.Index(added, "/Contents"); i == -1 || strings.Join(added[i+1:i+6], " ") != "[ 8 0 R ]" {
+		t.Errorf("the contents of the second page: %v", added)
 	}
 }
