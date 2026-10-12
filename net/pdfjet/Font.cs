@@ -51,19 +51,9 @@ public class Font {
     internal int[] advanceWidth;
     internal GlyphMap unicodeToGID;
     internal int[] unicodeOf;           // The character of each glyph, see GlyphMap.UnicodeOfGlyphs.
-    // The offsets of the marks that attach to other marks, in font units, by
-    // the glyph IDs of the two marks, or null. A font has them from its GPOS
-    // table, read from a .otf or .ttf file or from a stream that keeps them.
-    internal Dictionary<int, int[]> markToMarkOffsets;
-    // The anchors of the marks, by glyph ID, for each MarkToBase and
-    // MarkToLigature lookup subtable, or null: the class and anchor of each
-    // mark. A font has them from its GPOS table, read from a .otf or .ttf file
-    // or from a stream that keeps them.
-    internal List<Dictionary<int, int[]>> markAnchors;
-    // The anchors of the letters and ligatures that the marks go on, by glyph
-    // ID, for each subtable in markAnchors, or null: 1 and an anchor, or 0 and
-    // no anchor, for each class of marks.
-    internal List<Dictionary<int, int[]>> baseAnchors;
+    // Where the marks go, from the GPOS table of the font, read when a mark
+    // is first drawn, or null for a font without one.
+    internal GPOS gpos;
     internal bool cff;
     internal int[][] metrics;           // Only used for core fonts.
     // Tells the font program this font was read from apart from every other,

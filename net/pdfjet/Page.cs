@@ -791,7 +791,7 @@ public class Page {
                 i += Util.CharCount(str, i);
             }
             int[] offsets = null;
-            if (hasMarks && font.markAnchors != null) {
+            if (hasMarks && font.gpos != null) {
                 offsets = MarkOffsets(font, codePoints, gids, n);
             } else if (mirrored == null && joiners == null && runEdge == null && !hasNotdef) {
                 for (int k = 0; k < n; k++) {
@@ -1076,13 +1076,14 @@ public class Page {
     // Returns the offset of the mark from the glyph it goes on, from the first
     // MarkToBase or MarkToLigature subtable that has an anchor for both, or null.
     private static int[] AnchorOffset(Font font, int baseGID, int markGID) {
-        for (int i = 0; i < font.markAnchors.Count; i++) {
+        GPOS gpos = font.gpos.Read();
+        for (int i = 0; i < gpos.markAnchors.Count; i++) {
             int[] mark;
-            if (!font.markAnchors[i].TryGetValue(markGID, out mark)) {
+            if (!gpos.markAnchors[i].TryGetValue(markGID, out mark)) {
                 continue;
             }
             int[] anchors;
-            font.baseAnchors[i].TryGetValue(baseGID, out anchors);
+            gpos.baseAnchors[i].TryGetValue(baseGID, out anchors);
             int c = 3*mark[0];
             if (anchors != null && c + 2 < anchors.Length && anchors[c] == 1) {
                 return new int[] {anchors[c + 1] - mark[1], anchors[c + 2] - mark[2]};
@@ -1095,7 +1096,7 @@ public class Page {
     private static void PlaceOnMark(
             Font font, int[] gids, int[] x, int[] offsets, int mark, int other) {
         int[] offset;
-        if (font.markToMarkOffsets.TryGetValue((gids[other] << 16) | gids[mark], out offset)) {
+        if (font.gpos.Read().markToMarkOffsets.TryGetValue((gids[other] << 16) | gids[mark], out offset)) {
             offsets[2*mark] = offsets[2*other] + x[other] + offset[0] - x[mark];
             offsets[2*mark + 1] = offsets[2*other + 1] + offset[1];
         }
@@ -1113,7 +1114,7 @@ public class Page {
             return true;
         }
         ReadOnlySpan<char> span = str.AsSpan();
-        if (font.markAnchors == null) {
+        if (font.gpos == null) {
             return span.IndexOfAnyInRange('\u200C', '\u200F') >= 0;
         }
         int start = span.IndexOfAnyInRange('\u0300', '\uFFFF');
