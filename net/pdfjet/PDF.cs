@@ -2123,6 +2123,16 @@ public sealed class PDF {
                 && value[0].Equals("<<");
     }
 
+    // Returns true when an inherited value is too large for what it is, and is
+    // not inherited: a /MediaBox or a /CropBox is four numbers and /Rotate one,
+    // and a /Resources of more than MAX_COPIED_INHERITED tokens that is not a
+    // dictionary is not one. 1,000 pages under a node of a /CropBox of 20,000
+    // numbers, a PDF of 117 KB, took 6.2 GB in Go (review of 12 October 2026,
+    // R4).
+    private static bool TooLargeToInherit(String key, List<String> value) {
+        return value.Count > MAX_COPIED_INHERITED && !SharedInherited(key, value);
+    }
+
     // Returns the value of the entry from the nearest node of the page tree
     // above the page that has it, which is the node's and not a copy, and
     // the node, or null and null.
@@ -2142,6 +2152,9 @@ public sealed class PDF {
             entries = nodes.EntriesOf(objects[number - 1]);
             List<String> value;
             if (entries.TryGetValue(key, out value)) {
+                if (TooLargeToInherit(key, value)) {
+                    return null;
+                }
                 node = objects[number - 1];
                 return value;
             }

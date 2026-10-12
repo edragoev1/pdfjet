@@ -1387,4 +1387,49 @@ class PDFTest {
         assertEquals("[ 0 0 612 792 ]", pages.get(0).getValue("/MediaBox"));
         assertTrue(after - before <= 64 << 20, ((after - before) >> 20) + " MB allocated");
     }
+
+    // Returns the objects of a PDF of n pages under a node of a /CropBox of
+    // 20,000 numbers.
+    static String[] hugeInheritedBox(int n) {
+        StringBuilder kids = new StringBuilder();
+        for (int i = 0; i < n; i++) {
+            kids.append(i == 0 ? "" : " ").append(3 + i).append(" 0 R");
+        }
+        StringBuilder box = new StringBuilder();
+        for (int i = 0; i < 20000; i++) {
+            box.append(" 1");
+        }
+        String[] objects = new String[2 + n];
+        objects[0] = "<< /Type /Catalog /Pages 2 0 R >>";
+        objects[1] = "<< /Type /Pages /Kids [" + kids + "] /Count " + n
+                + " /MediaBox [0 0 612 792] /CropBox [" + box + "] >>";
+        for (int i = 0; i < n; i++) {
+            objects[2 + i] = "<< /Type /Page /Parent 2 0 R >>";
+        }
+        return objects;
+    }
+
+    // An inherited value too large for what it is, as a /CropBox of 20,000
+    // numbers, is not inherited: 1,000 pages under it, a PDF of 117 KB, took
+    // 6.2 GB in Go (review of 12 October 2026, R4).
+    @Test
+    void anInheritedValueTooLargeForWhatItIsIsNotInherited() throws Exception {
+        List<PDFobj> objects = TestSupport.read(pdfWithObjects(hugeInheritedBox(1000)));
+        java.lang.management.ThreadMXBean bean = java.lang.management.ManagementFactory.getThreadMXBean();
+        com.sun.management.ThreadMXBean threads = null;
+        if (bean instanceof com.sun.management.ThreadMXBean
+                && ((com.sun.management.ThreadMXBean) bean).isThreadAllocatedMemorySupported()) {
+            threads = (com.sun.management.ThreadMXBean) bean;
+            threads.setThreadAllocatedMemoryEnabled(true);
+        }
+        long id = Thread.currentThread().getId();
+        long before = (threads != null) ? threads.getThreadAllocatedBytes(id) : 0;
+        List<PDFobj> pages = new PDF().getPageObjects(objects);
+        new PDF(new ByteArrayOutputStream()).merge(objects);
+        long after = (threads != null) ? threads.getThreadAllocatedBytes(id) : 0;
+        assertEquals(1000, pages.size());
+        assertEquals("[ 0 0 612 792 ]", pages.get(0).getValue("/MediaBox"));
+        assertEquals("", pages.get(0).getValue("/CropBox"));
+        assertTrue(after - before <= 64 << 20, ((after - before) >> 20) + " MB allocated");
+    }
 }

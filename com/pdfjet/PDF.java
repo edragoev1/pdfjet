@@ -2159,6 +2159,16 @@ final public class PDF {
                 && value.get(0).equals("<<");
     }
 
+    // Returns true when an inherited value is too large for what it is, and is
+    // not inherited: a /MediaBox or a /CropBox is four numbers and /Rotate one,
+    // and a /Resources of more than MAX_COPIED_INHERITED tokens that is not a
+    // dictionary is not one. 1,000 pages under a node of a /CropBox of 20,000
+    // numbers, a PDF of 117 KB, took 6.2 GB in Go (review of 12 October 2026,
+    // R4).
+    private static boolean tooLargeToInherit(String key, List<String> value) {
+        return value.size() > MAX_COPIED_INHERITED && !isShared(key, value);
+    }
+
     // A node of the page tree and the value of one of its entries, the node's
     // and not a copy.
     private static final class InheritedEntry {
@@ -2197,7 +2207,7 @@ final public class PDF {
             }
             List<String> value = entries.get(key);
             if (value != null) {
-                return new InheritedEntry(node, value);
+                return tooLargeToInherit(key, value) ? null : new InheritedEntry(node, value);
             }
             parent = entries.get("/Parent");
         }

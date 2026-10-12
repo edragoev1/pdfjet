@@ -361,3 +361,44 @@ func TestReadARepeatedPageHasItsEntriesAddedOnce(t *testing.T) {
 		t.Errorf("%d MB allocated", allocated>>20)
 	}
 }
+
+// testHugeInheritedBox returns the objects of a PDF of n pages under a node
+// of a /CropBox of 20,000 numbers.
+func testHugeInheritedBox(n int) []string {
+	kids := make([]string, n)
+	for i := range n {
+		kids[i] = fmt.Sprintf("%d 0 R", 3+i)
+	}
+	objects := []string{
+		"<< /Type /Catalog /Pages 2 0 R >>",
+		fmt.Sprintf("<< /Type /Pages /Kids [%s] /Count %d /MediaBox [0 0 612 792] /CropBox [%s] >>",
+			strings.Join(kids, " "), n, strings.Repeat(" 1", 20000)),
+	}
+	for range n {
+		objects = append(objects, "<< /Type /Page /Parent 2 0 R >>")
+	}
+	return objects
+}
+
+// An inherited value too large for what it is, as a /CropBox of 20,000
+// numbers, is not inherited: 1,000 pages under it, a PDF of 117 KB, took
+// 6.2 GB in Go (review of 12 October 2026, R4).
+func TestReadAnInheritedValueTooLargeForWhatItIsIsNotInherited(t *testing.T) {
+	objects := testRead(t, testPDFWithObjects(testHugeInheritedBox(1000)...))
+	var before, after runtime.MemStats
+	runtime.ReadMemStats(&before)
+	pages := testNewPDF().GetPageObjects(objects)
+	merged := testNewDoc()
+	if err := merged.pdf.Merge(objects); err != nil {
+		t.Fatal(err)
+	}
+	runtime.ReadMemStats(&after)
+	if len(pages) != 1000 {
+		t.Errorf("%d pages", len(pages))
+	}
+	testWant(t, "[ 0 0 612 792 ]", pages[0].GetValue("/MediaBox"))
+	testWant(t, "", pages[0].GetValue("/CropBox"))
+	if allocated := after.TotalAlloc - before.TotalAlloc; allocated > 64<<20 {
+		t.Errorf("%d MB allocated", allocated>>20)
+	}
+}

@@ -286,4 +286,27 @@ import Testing
         #expect(elapsed < .seconds(2), "\(elapsed)")
         try TestSupport.newPDF().merge(objects)
     }
+
+    // An inherited value too large for what it is, as a /CropBox of 20,000
+    // numbers, is not inherited: 1,000 pages under it, a PDF of 117 KB, took
+    // 6.2 GB in Go (review of 12 October 2026, R4).
+    @Test func anInheritedValueTooLargeForWhatItIsIsNotInherited() throws {
+        let n = 1000
+        let kids = (0..<n).map { "\(3 + $0) 0 R" }.joined(separator: " ")
+        let box = String(repeating: " 1", count: 20000)
+        var source = ["<< /Type /Catalog /Pages 2 0 R >>",
+                      "<< /Type /Pages /Kids [\(kids)] /Count \(n) /MediaBox [0 0 612 792] /CropBox [\(box)] >>"]
+        source += Array(repeating: "<< /Type /Page /Parent 2 0 R >>", count: n)
+        let objects = try TestSupport.read(TestSupport.pdfWithObjects(source))
+        let clock = ContinuousClock()
+        var pages = [PDFobj]()
+        let elapsed = try clock.measure {
+            pages = TestSupport.pageObjects(objects)
+            try TestSupport.newPDF().merge(objects)
+        }
+        #expect(pages.count == n)
+        #expect(pages[0].getValue("/MediaBox") == "[ 0 0 612 792 ]")
+        #expect(pages[0].getValue("/CropBox") == "")
+        #expect(elapsed < .seconds(2), "\(elapsed)")
+    }
 }

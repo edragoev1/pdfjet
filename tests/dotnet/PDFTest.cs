@@ -1172,6 +1172,43 @@ public class PDFTest {
         Assert.Equal("[ 0 0 612 792 ]", pages[0].GetValue("/MediaBox"));
         Assert.True(allocated <= 64 << 20, (allocated >> 20) + " MB allocated");
     }
+
+    // Returns the objects of a PDF of n pages under a node of a /CropBox of
+    // 20,000 numbers.
+    internal static string[] HugeInheritedBox(int n) {
+        StringBuilder kids = new StringBuilder();
+        for (int i = 0; i < n; i++) {
+            kids.Append(i == 0 ? "" : " ").Append(3 + i).Append(" 0 R");
+        }
+        StringBuilder box = new StringBuilder();
+        for (int i = 0; i < 20000; i++) {
+            box.Append(" 1");
+        }
+        string[] objects = new string[2 + n];
+        objects[0] = "<< /Type /Catalog /Pages 2 0 R >>";
+        objects[1] = "<< /Type /Pages /Kids [" + kids + "] /Count " + n
+                + " /MediaBox [0 0 612 792] /CropBox [" + box + "] >>";
+        for (int i = 0; i < n; i++) {
+            objects[2 + i] = "<< /Type /Page /Parent 2 0 R >>";
+        }
+        return objects;
+    }
+
+    // An inherited value too large for what it is, as a /CropBox of 20,000
+    // numbers, is not inherited: 1,000 pages under it, a PDF of 117 KB, took
+    // 6.2 GB in Go (review of 12 October 2026, R4).
+    [Fact]
+    public void AnInheritedValueTooLargeForWhatItIsIsNotInherited() {
+        List<PDFobj> objects = TestSupport.Read(PdfWithObjects(HugeInheritedBox(1000)));
+        long before = GC.GetAllocatedBytesForCurrentThread();
+        List<PDFobj> pages = new PDF().GetPageObjects(objects);
+        TestSupport.NewPDF().Merge(objects);
+        long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        Assert.Equal(1000, pages.Count);
+        Assert.Equal("[ 0 0 612 792 ]", pages[0].GetValue("/MediaBox"));
+        Assert.Equal("", pages[0].GetValue("/CropBox"));
+        Assert.True(allocated <= 64 << 20, (allocated >> 20) + " MB allocated");
+    }
 }
 
 /// <summary>The budget of what the streams of a PDF decode to, which the test

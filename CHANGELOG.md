@@ -58,6 +58,12 @@ This is the first entry in this file; earlier releases were not tracked here.
   has the entries it inherits added once, in the four ports: one page of
   2,000 fonts listed 2,000 times, a file of 37 KB, allocated 3.7 GB and
   took a second in Go; it takes 5 MB and 19 ms with Merge.
+- An entry of the page tree too large for what it is, a /MediaBox,
+  /CropBox or /Rotate of more than 64 tokens, or a /Resources that large
+  that is not a dictionary, is not inherited by the pages under it, in the
+  four ports: 1,000 pages under a node of a /CropBox of 20,000 numbers, a
+  file of 117 KB, allocated 6.2 GB in Go and took 18 seconds in Swift. A
+  page then has the /MediaBox of Letter, as one with none has.
 
 ## v9.0.5 — 2026-10-12, internal
 

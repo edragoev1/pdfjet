@@ -3339,6 +3339,16 @@ public final class PDF {
         return key == "/Resources" && value.count > maxCopiedInherited && value[0] == "<<"
     }
 
+    // Returns true when an inherited value is too large for what it is, and is
+    // not inherited: a /MediaBox or a /CropBox is four numbers and /Rotate one,
+    // and a /Resources of more than maxCopiedInherited tokens that is not a
+    // dictionary is not one. 1,000 pages under a node of a /CropBox of 20,000
+    // numbers, a PDF of 117 KB, took 6.2 GB in Go (review of 12 October 2026,
+    // R4).
+    private static func tooLargeToInherit(_ key: String, _ value: [String]) -> Bool {
+        return value.count > maxCopiedInherited && !sharedInherited(key, value)
+    }
+
     // Returns the number of the nearest node of the page tree above the page
     // that has the entry, and its value, which is the one the cache keeps for
     // the node and not a copy, or nil.
@@ -3367,6 +3377,9 @@ public final class PDF {
             let k = entryIndex(tokens, key)
             if k != -1 {
                 let value = Array(tokens[(k + 1)..<valueEnd(tokens, k + 1)])
+                if tooLargeToInherit(key, value) {
+                    return inherited(nil, passed, cache)
+                }
                 return inherited(InheritedEntries.Entry(node: number, value: value), passed, cache)
             }
         }

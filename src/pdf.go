@@ -2092,6 +2092,16 @@ func sharedInherited(key string, value []string) bool {
 	return key == "/Resources" && len(value) > maxCopiedInherited && value[0] == "<<"
 }
 
+// tooLargeToInherit says whether an inherited value is too large for what it
+// is, and is not inherited: a /MediaBox or a /CropBox is four numbers and
+// /Rotate one, and a /Resources of more than maxCopiedInherited tokens that
+// is not a dictionary is not one. 1,000 pages under a node of a /CropBox of
+// 20,000 numbers, a PDF of 117 KB, took 6.2 GB in Go (review of 12 October
+// 2026, R4).
+func tooLargeToInherit(key string, value []string) bool {
+	return len(value) > maxCopiedInherited && !sharedInherited(key, value)
+}
+
 // inheritedPageEntry returns the node of the page tree above the page that
 // has the entry, the nearest, and its value, which is the node's and not a
 // copy, or nil and nil. The entries of each node
@@ -2120,6 +2130,9 @@ func inheritedPageEntry(page *PDFobj, key string, objects []*PDFobj, nodes pageT
 			nodes[node] = entries
 		}
 		if value, ok := entries[key]; ok {
+			if tooLargeToInherit(key, value) {
+				return nil, nil
+			}
 			return node, value
 		}
 		parent = entries["/Parent"]
