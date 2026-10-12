@@ -418,6 +418,7 @@ public class Stamp : Drawable {
             // character as its actual text, as on a page.
             let gid = Page.glyphOf(font, codePoint)
             font.useGlyph(gid)
+            font.useChar(codePoint, gid)
             if font.lacks(codePoint) {
                 append("> Tj\n/Span <</ActualText <")
                 append(Page.toUTF16Hex(Page.textOf(font, codePoint)))

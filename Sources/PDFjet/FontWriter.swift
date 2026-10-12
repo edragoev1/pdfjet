@@ -105,7 +105,12 @@ class FontWriter {
         // the replacement character.
         list.append("<0000> <FFFD>\n")
         var buf = String()
-        let unicodeOf = unicodeOfGlyphs(font.unicodeToGID)
+        var unicodeOf = unicodeOfGlyphs(font.unicodeToGID)
+        if let program = font.program {
+            for (gid, c) in program.chars {
+                unicodeOf[gid] = c
+            }
+        }
         for cid in 0...0xffff {
             let gid = font.unicodeToGID[cid]
             if gid > 0 && unicodeOf[gid] == cid && (kept == nil || (gid < kept!.count && kept![gid])) {

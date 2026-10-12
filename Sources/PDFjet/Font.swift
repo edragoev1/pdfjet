@@ -443,6 +443,35 @@ public class Font {
         }
     }
 
+    // Records that the glyph is drawn for the character, so that the ToUnicode
+    // map gives the glyph the character the document drew, where the font
+    // draws several characters with one glyph: it gave the glyph the lowest of
+    // them, and a Persian ۱ was copied as an Arabic ١ (review of 11 October
+    // 2026, #8). The first character drawn with the glyph is kept; a document
+    // that draws two characters of one glyph extracts the first for both.
+    func useChar(_ c: Int, _ gid: Int) {
+        if let program = program, gid > 0, c >= 0, c < unicodeToGID.count,
+                unicodeToGID[c] == gid, program.chars[gid] == nil {
+            program.chars[gid] = c
+        }
+    }
+
+    // Records the characters drawn with the glyphs, as useChar records each,
+    // in one access to the font's table and the program's.
+    func useChars(_ codePoints: [Int], _ gids: [Int]) {
+        guard let program = program else {
+            return
+        }
+        let table = unicodeToGID
+        var chars = program.chars
+        program.chars = [:]     // So that chars is not copied when changed
+        for (c, gid) in zip(codePoints, gids)
+                where gid > 0 && c >= 0 && c < table.count && table[c] == gid && chars[gid] == nil {
+            chars[gid] = c
+        }
+        program.chars = chars
+    }
+
     /// Returns the width of the string at the current font size.
     public func stringWidth(_ str: String?) -> Float {
         return stringWidth(self.size, str)

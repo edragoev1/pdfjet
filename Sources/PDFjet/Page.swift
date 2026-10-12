@@ -578,14 +578,18 @@ public class Page {
             // class property's exclusive access, which made text in Swift
             // three times as slow as in Go (9 October 2026).
             let table = font.unicodeToGID
+            var codePoints = [Int]()
             var gids = [Int]()
+            codePoints.reserveCapacity(scalars.count)
             gids.reserveCapacity(scalars.count)
             // The BOM, or one not drawn
             for scalar in scalars where scalar.value != 0xFEFF && !Font.isIgnorable(Int(scalar.value)) {
                 let codePoint = Int(scalar.value)
+                codePoints.append(codePoint)
                 gids.append(Font.isControl(codePoint) ? table[0x0020] : table[codePoint])
             }
             font.useGlyphs(gids)
+            font.useChars(codePoints, gids)
             Page.appendGlyphsAsHex(gids, &self.buf)
         } else {
             // The marks are moved to where the GPOS table of the font puts
@@ -641,6 +645,7 @@ public class Page {
                 afterRLM = false
                 codePoints.append(codePoint)
                 gids.append(Page.glyphOf(font, codePoint))
+                font.useChar(codePoint, gids[gids.count - 1])
                 hasMarks = hasMarks || isMark(codePoint)
                 hasNotdef = hasNotdef || isMissing(font, codePoints, gids.count - 1)
             }

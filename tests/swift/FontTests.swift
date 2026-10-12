@@ -358,6 +358,49 @@ import Testing
         }
     }
 
+    // Returns the characters the ToUnicode maps of the objects give their
+    // glyphs, each in hexadecimal, as 06F1.
+    private func toUnicodeValues(_ objects: [PDFobj]) throws -> Set<String> {
+        var values = Set<String>()
+        let entry = try NSRegularExpression(pattern: "<[0-9A-Fa-f]{4}> <([0-9A-Fa-f]+)>")
+        for obj in objects {
+            let cmap = TestSupport.latin1(obj.getData())
+            if cmap.hasPrefix("/CIDInit") {
+                let range = NSRange(cmap.startIndex..., in: cmap)
+                for match in entry.matches(in: cmap, range: range) {
+                    if let value = Range(match.range(at: 1), in: cmap) {
+                        values.insert(cmap[value].uppercased())
+                    }
+                }
+            }
+        }
+        return values
+    }
+
+    @Test(.enabled(if: TestSupport.exists("fonts/NotoSansArabic/NotoSansArabic-Regular.ttf") &&
+            TestSupport.exists("fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.ttf"),
+            "the fonts directory is not here"))
+    func aGlyphOfSeveralCharactersMapsToTheCharacterDrawn() throws {
+        // A glyph a font draws for several characters maps to the character
+        // the document drew with it, not to the lowest of them: a Persian ۱۳۹۸
+        // was copied as the Arabic ١٣٩٨, and the full-width slash of km／h as a
+        // division slash (review of 11 October 2026, #8).
+        let memory = MemoryPDF()
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        let arabic = try Font(memory.pdf, TestSupport.open("fonts/NotoSansArabic/NotoSansArabic-Regular.ttf"))
+        let tc = try Font(memory.pdf, TestSupport.open("fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.ttf"))
+        TextLine(arabic, "\u{06F1}\u{06F3}\u{06F9}\u{06F8}").setLocation(50, 50).drawOn(page)
+        TextLine(tc, "60km\u{FF0F}h").setLocation(50, 100).drawOn(page)
+        try memory.pdf.complete()
+        let values = try toUnicodeValues(try TestSupport.read(memory.bytes))
+        for want in ["06F1", "06F3", "06F9", "06F8", "FF0F"] {
+            #expect(values.contains(want), "no glyph maps to U+\(want)")
+        }
+        for other in ["0661", "0663", "0669", "2215"] {
+            #expect(!values.contains(other), "a glyph maps to U+\(other), which the document did not draw")
+        }
+    }
+
     @Test func aWidthPastTheRangeOfAUInt16IsWritten() throws {
         // Noto Sans made of 256 units per em, and its glyph 0 of 65,535 units,
         // 255,996 of the thousandths of the PDF: the widths of the /W array

@@ -20,6 +20,9 @@ class Subset {
         var forbidden = false       // The fsType of a CFF font's OS/2 table forbids subsetting
         // The glyphs drawn, by glyph number, written in four hexadecimal digits.
         var used = [Bool](repeating: false, count: 0x10000)
+        // The character first drawn with each glyph, by glyph number, for the
+        // ToUnicode map of a glyph of several characters, as U+3000 and U+2003
+        var chars = [Int: Int]()
         var whole = false           // Set by setSubset(false): the font is embedded whole
 
         init() {
