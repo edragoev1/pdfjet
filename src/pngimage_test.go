@@ -1011,3 +1011,40 @@ func TestPNGImageAnImageThatRefersToAnotherObjectIsRefused(t *testing.T) {
 		t.Error("a color space of a reference is copied")
 	}
 }
+
+// IHDR is the first chunk, and the only IHDR: a tRNS before it was read for a
+// gray image, and an RGB image was written with the /Mask of a gray one
+// (review of 11 October 2026, #38).
+func TestPNGImageTheIHDRChunkIsFirstAndOnce(t *testing.T) {
+	ihdr := make([]byte, 13)
+	binary.BigEndian.PutUint32(ihdr[0:], 1)
+	binary.BigEndian.PutUint32(ihdr[4:], 1)
+	ihdr[8] = 8 // RGB of 8 bits
+	ihdr[9] = 2
+	idat := compressor.Deflate([]byte{0, 7, 7, 7})
+	png := func(chunks ...[2]any) []byte {
+		var buf bytes.Buffer
+		buf.Write([]byte{0x89, 'P', 'N', 'G', '\r', '\n', 0x1A, '\n'})
+		for _, chunk := range chunks {
+			testPNGChunk(&buf, chunk[0].(string), chunk[1].([]byte))
+		}
+		return buf.Bytes()
+	}
+	want := "Invalid PNG: the IHDR chunk must be the first chunk, and only the first."
+	trns := [2]any{"tRNS", []byte{0, 7}}
+	for name, file := range map[string][]byte{
+		"tRNS first": png(trns, [2]any{"IHDR", ihdr}, [2]any{"IDAT", idat}, [2]any{"IEND", []byte{}}),
+		"two IHDR": png([2]any{"IHDR", ihdr}, [2]any{"IHDR", ihdr}, [2]any{"IDAT", idat},
+			[2]any{"IEND", []byte{}}),
+	} {
+		if got := testPanicMessage(func() { NewImage(testNewPDF(), bytes.NewReader(file)) }); got != want {
+			t.Errorf("%s: %q", name, got)
+		}
+	}
+	// In its place, the tRNS of an RGB image is its three samples.
+	file := png([2]any{"IHDR", ihdr}, [2]any{"tRNS", []byte{0, 7, 0, 7, 0, 7}}, [2]any{"IDAT", idat},
+		[2]any{"IEND", []byte{}})
+	if message, panicked := testPanic(func() { NewImage(testNewPDF(), bytes.NewReader(file)) }); panicked {
+		t.Error(message)
+	}
+}

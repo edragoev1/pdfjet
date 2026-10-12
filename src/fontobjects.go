@@ -141,7 +141,7 @@ func (font *Font) completeObjects() {
 
 func addMetadataObject2(objects *[]*PDFobj, font *Font) int {
 	var sb strings.Builder
-	sb.WriteString("<?xpacket id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n")
+	sb.WriteString("<?xpacket begin=\"\uFEFF\" id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n")
 	sb.WriteString("<x:xmpmeta xmlns:x=\"adobe:ns:meta/\">\n")
 	sb.WriteString("<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">\n")
 	sb.WriteString("<rdf:Description rdf:about=\"\" xmlns:xmpRights=\"http://ns.adobe.com/xap/1.0/rights/\">\n")

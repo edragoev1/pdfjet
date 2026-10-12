@@ -445,7 +445,10 @@ func (font *Font) GetUnderlinePosition(fontSize float32) float32 {
 }
 
 // GetFitChars returns the number of characters from the specified text string
-// that will fit within the specified width.
+// that will fit within the specified width. They are counted in runes, not in
+// bytes, so that string([]rune(text)[:n]) is the text that fits; Java and C#
+// count UTF-16 chars, where a character outside the Basic Multilingual Plane
+// is two.
 func (font *Font) GetFitChars(text string, width float32) int {
 	runes := []rune(text)
 	// Text of no size has no width, and all of it fits in any width.

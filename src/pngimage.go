@@ -105,8 +105,14 @@ func newPNGImage(reader io.Reader) *pngImage {
 
 	chunks := image.processPNG(reader)
 
-	for _, chunk := range chunks {
+	for i, chunk := range chunks {
 		chunkType := string(chunk.chunkType)
+		// IHDR first, and once, as the PNG specification asks: a tRNS before
+		// it was read for a gray image and written as the /Mask of one
+		// (review of 11 October 2026, #38)
+		if (i == 0) != (chunkType == "IHDR") {
+			panic("Invalid PNG: the IHDR chunk must be the first chunk, and only the first.")
+		}
 		switch chunkType {
 		case "IHDR":
 			if len(chunk.chunkData) != 13 {

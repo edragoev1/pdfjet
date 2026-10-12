@@ -10,6 +10,7 @@ import (
 	"encoding/binary"
 	"math"
 	"os"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -346,5 +347,22 @@ func TestBMPImageTheAlphaIsTheSoftMaskOfTheImage(t *testing.T) {
 		if strings.Contains(raw, "/SMask") != (alpha != 0) {
 			t.Errorf("alpha %d: a soft mask is %v", alpha, strings.Contains(raw, "/SMask"))
 		}
+	}
+}
+
+// A row is read in pieces, so that a header of a width the file does not have
+// takes no more memory than the file: a 54-byte header of 2^26 pixels of 32
+// bits took 256 MB before it failed at the end of its data (review of 11
+// October 2026, #37).
+func TestBMPImageARowTheFileDoesNotHaveTakesNoMemory(t *testing.T) {
+	var before, after runtime.MemStats
+	runtime.ReadMemStats(&before)
+	message := testBMPError(testBMPHeader(1<<26, 1, 32, 0))
+	runtime.ReadMemStats(&after)
+	if !strings.HasPrefix(message, "Unexpected end of stream") {
+		t.Errorf("the error is %q", message)
+	}
+	if allocated := after.TotalAlloc - before.TotalAlloc; allocated > 16<<20 {
+		t.Errorf("%d MB allocated", allocated>>20)
 	}
 }

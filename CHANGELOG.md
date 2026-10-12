@@ -28,6 +28,17 @@ This is the first entry in this file; earlier releases were not tracked here.
   characters of a CJK font, /Registry and /Ordering, and the /Name of the
   configuration of the layers of a document of PDF/UA or PDF/A, are
   encrypted, where a reader decrypted them to bytes of no meaning.
+- The XMP metadata, of the document and of a font, in the four ports: the
+  packet's header begins with the byte order mark, `begin="\uFEFF"`, which
+  ISO 16684-1 asks of it.
+- Reading a BMP, in the four ports: a row is read in pieces, so that a header
+  of a width the file does not have takes no more memory than the file; a
+  54-byte header took 256 MB before it failed at the end of its data.
+- Reading a PNG, in the four ports: IHDR must be the first chunk, and the
+  only IHDR. A tRNS before it was read for a gray image, and an RGB image
+  was written with the /Mask of a gray one.
+- GetFitChars, documented in Go and Swift: Go and Swift count in runes and
+  Unicode scalars, Java and C# in UTF-16 chars, as each port's strings do.
 - Tables, in the four ports: AutoAdjustColumnWidths measures a row longer
   than the first, where it indexed past the widths; a table whose first row
   is empty is drawn, its rows completed from the first row that has cells,

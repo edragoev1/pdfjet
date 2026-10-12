@@ -566,3 +566,15 @@ func TestWriterTheNameOfTheLayersIsEncrypted(t *testing.T) {
 		t.Errorf("/Name %q", got)
 	}
 }
+
+// The XMP packet's header begins with the byte order mark, which ISO 16684-1
+// asks of it, in the document's metadata and a font's (review of 11 October
+// 2026, #28).
+func TestWriterTheXMPPacketHasItsBeginAttribute(t *testing.T) {
+	testAllowCoreFonts(t)
+	raw := testWriterDoc(t, compliance.PDF_UA_1, nil)
+	header := "<?xpacket begin=\"\uFEFF\" id=\"W5M0MpCehiHzreSzNTczkc9d\"?>"
+	if !strings.Contains(raw, header) || strings.Contains(raw, "<?xpacket id=") {
+		t.Error("the packet has no begin attribute")
+	}
+}

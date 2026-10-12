@@ -94,10 +94,24 @@ func skipNBytes(reader io.Reader, n int) {
 	}
 }
 
+// getNBytes reads n bytes. More than 64 KB are read in pieces, so that a
+// size the stream does not have, as a row of a width in a header, takes no
+// more memory than the stream has: a BMP of a 54-byte header took 256 MB
+// before it failed at the end of its data (review of 11 October 2026, #37).
 func getNBytes(r io.Reader, n int) []byte {
-	buf := make([]byte, n)
-	readFully(r, buf)
-	return buf
+	if n <= 1<<16 {
+		buf := make([]byte, n)
+		readFully(r, buf)
+		return buf
+	}
+	var buf bytes.Buffer
+	if read, err := io.CopyN(&buf, r, int64(n)); read != int64(n) {
+		if err != nil && err != io.EOF {
+			panic(err)
+		}
+		panic("Unexpected end of stream: expected " + strconv.Itoa(n) + " bytes")
+	}
+	return buf.Bytes()
 }
 
 // isASCIIWhitespace reports the ASCII whitespace that Java's \s matches; a
