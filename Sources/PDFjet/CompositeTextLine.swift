@@ -5,7 +5,7 @@
  * Licensed under the MIT License. See LICENSE file in the project root.
  *
  * This class was designed and implemented by Jon T. Swanson, Ph.D.
- * Refactored and integrated into the project by Eugene Dragoev - 2nd June 2012.
+ * Refactored and integrated into the project by Evgeni Dragoev - 2nd June 2012.
  */
 import Foundation
 

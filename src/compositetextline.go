@@ -21,7 +21,7 @@ import (
 
 // CompositeTextLine constructs composite text line objects.
 // This class was designed and implemented by Jon T. Swanson, Ph.D.
-// Refactored and integrated into the project by Eugene Dragoev - 1st of June 2020.
+// Refactored and integrated into the project by Evgeni Dragoev - 1st of June 2020.
 type CompositeTextLine struct {
 	x         int
 	y         int

@@ -9,7 +9,7 @@ import Foundation
 /**
  * Interface that is required for components that can be drawn on a PDF page as part of Optional Content Group.
  *
- * @author Mark Paxton, Eugene Dragoev
+ * @author Mark Paxton, Evgeni Dragoev
  */
 public protocol Drawable: AnyObject {
 

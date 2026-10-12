@@ -11,7 +11,7 @@ import java.util.*;
 /**
  * This class was designed and implemented by Jon T. Swanson, Ph.D.
  *
- * Refactored and integrated into the project by Eugene Dragoev - 2nd June 2012.
+ * Refactored and integrated into the project by Evgeni Dragoev - 2nd June 2012.
  * Used to create composite text line objects.
  */
 public class CompositeTextLine implements BaselineDrawable {
