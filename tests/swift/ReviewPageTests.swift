@@ -12,11 +12,11 @@ import Testing
 /// the review of the page drawing found them.
 @Suite struct ReviewPageTests {
     private func taggedPage() -> Page {
-        return Page(MemoryPDF(Compliance.PDF_UA_1).pdf, Letter.PORTRAIT)
+        return TestSupport.newPage(Letter.PORTRAIT, Compliance.PDF_UA_1)
     }
 
     private func newPage() -> Page {
-        return Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        return TestSupport.newPage()
     }
 
     private func count(_ text: String, _ part: String) -> Int {

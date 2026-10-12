@@ -9,14 +9,14 @@ import Testing
 
 @Suite struct PageTests {
     @Test func aNewPageTracksTheDefaultGraphicsState() {
-        let page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        let page = TestSupport.newPage()
         #expect(page.getPenWidth() == 1)
         TestSupport.expectRGB(0, 0, 0, page.getPenColor())
         TestSupport.expectRGB(0, 0, 0, page.getBrushColor())
     }
 
     @Test func cmykSettersWriteCmykAndTrackTheRgbOfTheStandard() {
-        let page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        let page = TestSupport.newPage()
         page.setPenColorCMYK(0, 1, 1, 0)
         page.setBrushColorCMYK(0, 0, 0, 1)
         #expect(TestSupport.content(page) == "0 1 1 0 K\n0 0 0 1 k\n")
@@ -25,7 +25,7 @@ import Testing
     }
 
     @Test func restoreGraphicsStateRestoresTheTrackedState() {
-        let page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        let page = TestSupport.newPage()
         page.setPenColor(Int32(0xFF0000))
         page.saveGraphicsState()
         page.setPenWidth(3)
@@ -37,7 +37,7 @@ import Testing
     }
 
     @Test func aColorOrPenWidthThatIsSetAlreadyIsNotWrittenAgain() {
-        let page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        let page = TestSupport.newPage()
         page.setBrushColor(Color.black)     // Written, as a new page has written no color
         page.setBrushColor(Color.black)
         page.setPenColor(Color.red)
@@ -48,7 +48,7 @@ import Testing
     }
 
     @Test func qAndQKeepWhatTheContentHasWritten() {
-        let page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        let page = TestSupport.newPage()
         page.setBrushColor(Color.black)
         page.saveGraphicsState()
         page.setBrushColor(Color.blue)
@@ -64,7 +64,7 @@ import Testing
         // the y coordinates that follow are measured in the space it made. A
         // restore has the height back, where every coordinate after it was
         // measured from the scaled height.
-        let page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        let page = TestSupport.newPage()
         var values = [Float](repeating: 0.0, count: 9)
         values[Page.MSCALE_X] = 2.0
         values[Page.MSCALE_Y] = 2.0
@@ -78,7 +78,7 @@ import Testing
     }
 
     @Test func anRgbColorAfterACmykColorIsWritten() {
-        let page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        let page = TestSupport.newPage()
         page.setBrushColor(Color.black)
         page.setBrushColorCMYK(0, 0, 0, 1)
         page.setBrushColor(Color.black)
@@ -102,24 +102,24 @@ import Testing
     }
 
     @Test func fillRectWritesOneRectangleWithTheEdgesOfThePath() {
-        var page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        var page = TestSupport.newPage()
         page.fillRect(10, 20, 30, 40)
         #expect(TestSupport.content(page) == "10 732 30 40 re\nf\n")
 
         // A path wrote the top edge at 792 and the bottom one at 791.99, where
         // rounding the height alone would make it 0.
-        page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        page = TestSupport.newPage()
         page.fillRect(0, 0.004, 1, 0.004)
         #expect(TestSupport.content(page) == "0 791.99 1 0.01 re\nf\n")
 
         // Far outside the page the rectangle is still a path.
-        page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        page = TestSupport.newPage()
         page.fillRect(200000, 0, 10, 10)
         #expect(TestSupport.content(page) == "200000 792 m\n200010 792 l\n200010 782 l\n200000 782 l\nf\n")
     }
 
     @Test func gettersReturnCopies() {
-        let page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        let page = TestSupport.newPage()
         var pen = page.getPenColor()
         pen[0] = 1
         var brush = page.getBrushColor()
@@ -135,7 +135,7 @@ import Testing
     @Test func appendWritesStringsInUtf8AndIntegersAndNumbersInDecimal() {
         let euros = String(repeating: "\u{20AC}", count: 256)
         let digits = String(repeating: "0123456789", count: 1000) + "\u{E9}"
-        let page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        let page = TestSupport.newPage()
         page.append("BT \u{E9}\u{2260}\u{1F600} ")
         page.append(-2147483648 as Int)
         page.append(UInt8(ascii: " "))
@@ -153,7 +153,7 @@ import Testing
     }
 
     @Test func drawLineWritesAStrokedPathWithTheYFlipped() {
-        let page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        let page = TestSupport.newPage()
         page.drawLine(10, 20, 30, 40)
         let content = TestSupport.content(page)
         #expect(content.contains("10 772 m\n30 752 l\nS\n"), "\(content)")
@@ -209,7 +209,7 @@ import Testing
     }
 
     @Test func aPathWithFewerThanTwoPointsPaintsNothing() {
-        let page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        let page = TestSupport.newPage()
         var path = [Point]()
         page.drawPath(path, PathOperator.STROKE)
         path.append(Point(10, 10))
@@ -218,7 +218,7 @@ import Testing
     }
 
     @Test func theShapesAreDrawnOrFilled() {
-        let page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        let page = TestSupport.newPage()
         page.drawCircle(50, 50, 10)
         page.fillCircle(50, 50, 10)
         page.drawRoundedRect(10, 10, 100, 50, 5, 5)
@@ -241,7 +241,7 @@ import Testing
     }
 
     @Test func importedContentIsSeparatedFromTheOperatorAfterIt() {
-        let page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        let page = TestSupport.newPage()
         page.drawContents(TestSupport.bytes("BT ET"), 100, 0, 0, 1, 1)
         #expect(TestSupport.content(page).contains("BT ET\nQ\n"), "\(TestSupport.content(page))")
     }

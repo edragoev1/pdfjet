@@ -38,7 +38,7 @@ import Testing
                     "\(TestSupport.content(page))")
             #expect(completeMessage(pdf) == earlier + notWritable)
         }
-        let page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        let page = TestSupport.newPage()
         page.drawLine(0, 0, 100000000, 0)
         #expect(TestSupport.content(page).contains("100000000 792 l\n"), "\(TestSupport.content(page))")
         #expect(page.pdf.error == nil)
@@ -54,7 +54,7 @@ import Testing
     }
 
     @Test func aDashPatternIsAnArrayAndAPhase() {
-        let page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        let page = TestSupport.newPage()
         _ = page.setStrokeDashPattern("[] 0")
         _ = page.setStrokeDashPattern("[3 3] 0")
         _ = page.setStrokeDashPattern(" [2.5 .5 1]  0.5 ")
@@ -71,7 +71,7 @@ import Testing
     }
 
     @Test func aNegativePenWidthIsRefused() {
-        let page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        let page = TestSupport.newPage()
         _ = page.setPenWidth(0)
         #expect(page.pdf.error == nil)
         _ = page.setPenWidth(-2)
@@ -152,7 +152,8 @@ import Testing
         #expect(pdf.error == "The page was already added to the PDF.")
 
         let pdf2 = TestSupport.newPDF()
-        let foreign = Page(TestSupport.newPDF(), Letter.PORTRAIT, Page.DETACHED)
+        let pdf3 = TestSupport.newPDF()
+        let foreign = Page(pdf3, Letter.PORTRAIT, Page.DETACHED)
         pdf2.addPage(foreign)
         #expect(pdf2.error == "The page belongs to another PDF.")
     }

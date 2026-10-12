@@ -30,7 +30,7 @@ import Testing
     }
 
     @Test func drawOnReturnsTheCornerOfTheModules() {
-        let page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        let page = TestSupport.newPage()
         let dm = DataMatrix("123456").setLocation(5, 5).setModuleLength(3)
         TestSupport.expectXY(35, 35, dm.drawOn(page))
     }

@@ -101,7 +101,7 @@ import Testing
         // the space after it, and its link reached one space past the word. The
         // box now holds the text that shows.
         var words = ["Click", "here", "for", "the", "whole", "story", "of", "it"]
-        var page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        var page = TestSupport.newPage()
         var font = TestSupport.helvetica(page.pdf)
         let column = TextColumn()
         column.setWidth(120.0)
@@ -114,7 +114,7 @@ import Testing
         // Rows of two words, justified and so drawn a word at a time, and a
         // last row of one, drawn as it is.
         words = ["word", "word", "word", "word", "word"]
-        page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        page = TestSupport.newPage()
         font = TestSupport.helvetica(page.pdf)
         let paragraph = Paragraph().setTextAlignment(Alignment.JUSTIFY)
         paragraph.add(TextLine(font, words.joined(separator: " ")).setURIAction("https://pdfjet.com"))
@@ -124,7 +124,7 @@ import Testing
         checkLinks("justified TextFrame", page, font, words)
 
         // A text line of its own keeps the spaces it is given out of its box too.
-        page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        page = TestSupport.newPage()
         font = TestSupport.helvetica(page.pdf)
         let line = TextLine(font, "  link  ").setURIAction("https://pdfjet.com")
         line.setLocation(100.0, 100.0)

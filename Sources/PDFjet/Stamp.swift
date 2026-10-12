@@ -43,7 +43,16 @@ import Foundation
 public class Stamp : Drawable {
     internal var objNumber: Int?
 
-    private let pdf: PDF
+    // The document of this stamp, held weakly: the document holds its stamps
+    // once they are complete, and a strong reference back would keep both.
+    // The caller holds the PDF while it makes and draws its stamps.
+    private weak var document: PDF?
+    private var pdf: PDF {
+        guard let document = document else {
+            preconditionFailure("The PDF of this stamp was freed: keep the PDF while using its stamps.")
+        }
+        return document
+    }
     private var x: Float = 0
     private var y: Float = 0
     private var width: Float = 0
@@ -60,7 +69,7 @@ public class Stamp : Drawable {
 
     /// Creates a stamp for the specified document.
     public init(_ pdf: PDF) {
-        self.pdf = pdf
+        self.document = pdf
     }
 
     /// Sets the size of this stamp.

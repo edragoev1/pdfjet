@@ -10,7 +10,7 @@ import Testing
 /// Line, Rect, Arc, Path, RadioButton, CheckBox and CalendarMonth locations and corners.
 @Suite struct ShapesTests {
     private func page() -> Page {
-        return Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        return TestSupport.newPage()
     }
 
     @Test func lineSetLocationMovesTheWholeLine() {

@@ -50,7 +50,19 @@ public class Page {
     // The message of a transform of fewer than six values.
     static let TRANSFORM_COUNT = "A transform needs six values: the scale, the skew and the translation of x and y."
 
-    internal var pdf: PDF
+    // The document of this page. The document holds its pages, so the page
+    // holds it weakly: were both strong, neither would ever be freed, and a
+    // program writing many documents would keep every one of them. A caller
+    // draws on a page while it holds the PDF, as it must to complete it; a
+    // page whose PDF was freed has no document to draw for, and using it stops
+    // the program with a message that says so, not a crash further on.
+    private weak var document: PDF?
+    internal var pdf: PDF {
+        guard let document = document else {
+            preconditionFailure("The PDF of this page was freed: keep the PDF while drawing on its pages.")
+        }
+        return document
+    }
     internal var pageObj: PDFobj?
     internal var objNumber = 0
     internal var renderingMode = 0
@@ -156,7 +168,7 @@ public class Page {
             _ pdf: PDF,
             _ pageSize: PageSize,
             _ addPageToPDF: Bool) {
-        self.pdf = pdf
+        self.document = pdf
         self.annots = [Annotation]()
         self.destinations = [Destination]()
         self.width = pageSize.getWidth()
@@ -176,7 +188,7 @@ public class Page {
 
     /// Creates a page from a page object read from an existing PDF.
     public init(_ pdf: PDF, _ pageObj: PDFobj) {
-        self.pdf = pdf
+        self.document = pdf
         self.pageObj = Page.removeComments(pageObj)
         let pageSize = self.pageObj!.getPageSize()
         self.width = pageSize.getWidth()
@@ -211,7 +223,7 @@ public class Page {
     // when the PDF is completed, under the object number reserved for it, and
     // nothing can be drawn on it.
     init(_ pdf: PDF, _ objNumber: Int, _ mergedDict: [String]) {
-        self.pdf = pdf
+        self.document = pdf
         self.objNumber = objNumber
         self.mergedDict = mergedDict
         self.added = true
@@ -2806,6 +2818,9 @@ public class Page {
             // Contents
             if let link = annotation.linkElement {
                 link.annotation = annotation
+                // The element now holds the annotation; the annotation
+                // letting go of the element breaks the cycle between them.
+                annotation.linkElement = nil
                 return
             }
             let element = StructElement()

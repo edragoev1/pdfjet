@@ -65,7 +65,7 @@ import Testing
                 UInt16(Code128Table.FNC_4), UInt16(Code128Table.SHIFT), 0x1f + 64]
         #expect(Barcode.code128Codewords("\u{85}x\u{9f}").codewords == want)
         // Each takes three of the 48 codewords
-        _ = try Barcode(Barcode.CODE_128, String(repeating: "\u{80}", count: 16)).drawOn(Page(TestSupport.newPDF(), Letter.PORTRAIT))
+        _ = try Barcode(Barcode.CODE_128, String(repeating: "\u{80}", count: 16)).drawOn(TestSupport.newPage())
         let error = #expect(throws: PDFjetError.self) {
             _ = try Barcode(Barcode.CODE_128, String(repeating: "\u{80}", count: 17))
         }
@@ -258,7 +258,7 @@ import Testing
     }
 
     @Test func dataMatrixTheBrushOfThePageIsKept() {
-        let page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        let page = TestSupport.newPage()
         page.setBrushColor(Color.blue)
         DataMatrix("Hello").setModuleColor(Color.red).drawOn(page)
         let content = TestSupport.content(page)

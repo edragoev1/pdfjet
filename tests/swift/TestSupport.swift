@@ -41,6 +41,29 @@ enum TestSupport {
         return PDF(OutputStream(toMemory: ()))
     }
 
+    // The documents of the pages newPage returns, kept for the rest of the run.
+    private final class KeptDocuments: @unchecked Sendable {
+        private let lock = NSLock()
+        private var documents = [PDF]()
+
+        func keep(_ pdf: PDF) {
+            lock.lock()
+            documents.append(pdf)
+            lock.unlock()
+        }
+    }
+    private static let kept = KeptDocuments()
+
+    /// Returns a page of a new document in memory, for a test that needs only
+    /// the page. A page holds its PDF weakly, as the PDF holds its pages, and a
+    /// page whose PDF was freed cannot be drawn on: the document is kept here.
+    static func newPage(_ pageSize: PageSize = Letter.PORTRAIT,
+            _ compliance: Compliance = Compliance.PDF_1_7) -> Page {
+        let pdf = PDF(OutputStream(toMemory: ()), compliance)
+        kept.keep(pdf)
+        return Page(pdf, pageSize)
+    }
+
     static func helvetica(_ pdf: PDF) -> Font {
         return try! Font(pdf, CoreFont.HELVETICA) // The number is valid.
     }

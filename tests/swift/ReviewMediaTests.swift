@@ -208,7 +208,7 @@ import Testing
     }
 
     private func draw(_ svg: String) throws -> String {
-        let page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        let page = TestSupport.newPage()
         let image = try SVGImage(stream: InputStream(data: Data(svg.utf8)))
         _ = image.setLocation(0, 0)
         image.drawOn(page)

@@ -1057,7 +1057,7 @@ import Testing
     }
 
     @Test func theLinesOfTheCellsAreBlackWhateverPenColorThePageHas() throws {
-        let page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        let page = TestSupport.newPage()
         page.setPenColor(Color.blue)
         let table = Table().setTableData(rows(TestSupport.helvetica(page.pdf), 2, 2), 0)
         table.setLocation(50, 50)
@@ -1080,7 +1080,7 @@ import Testing
     }
 
     @Test func aTableWithoutLinesHasNoneUnderItsHeader() {
-        let page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        let page = TestSupport.newPage()
         let table = Table().setTableData(rows(TestSupport.helvetica(page.pdf), 3, 2), 1)
         table.setCellBorders(false)
         table.setLocation(50, 50)

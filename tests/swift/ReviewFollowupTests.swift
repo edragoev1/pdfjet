@@ -74,9 +74,11 @@ import Testing
     // 100, 200 turned by the degrees, or on the page at x, y moved by 100, 200
     // when there is no container, and returns the page.
     private func drawInContainer(_ inContainer: Bool, _ degrees: Double) -> Page {
-        let pdf = MemoryPDF(Compliance.PDF_UA_1).pdf
+        // The test reads the headings of the document of the page it returns,
+        // which newPage keeps.
+        let page = TestSupport.newPage(Letter.PORTRAIT, Compliance.PDF_UA_1)
+        let pdf = page.pdf
         _ = pdf.setTitle("Title")
-        let page = Page(pdf, Letter.PORTRAIT)
         let font = TestSupport.helvetica(pdf)
         let line = TextLine(font, "Heading")
         line.setDestination("heading")

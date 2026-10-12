@@ -19,7 +19,17 @@ public class OptionalContentGroup {
     var objNumber = 0
     var name: String?
 
-    private var pdf: PDF
+    // The document of this group, held weakly: the document holds the groups
+    // drawn on its pages, and a strong reference back would keep both. The
+    // caller holds the PDF while it draws its groups.
+    private weak var document: PDF?
+    private var pdf: PDF {
+        guard let document = document else {
+            preconditionFailure(
+                    "The PDF of this optional content group was freed: keep the PDF while drawing the group.")
+        }
+        return document
+    }
     private var ocgNumber: Int = -1
     var visible = false
     private var printable = false
@@ -28,7 +38,7 @@ public class OptionalContentGroup {
 
     /// Creates an optional content group, also called a layer.
     public init(_ pdf: PDF, _ name: String) {
-        self.pdf = pdf
+        self.document = pdf
         self.name = name
     }
 

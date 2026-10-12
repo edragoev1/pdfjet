@@ -129,7 +129,7 @@ import Testing
     @Test func theGuardBarsReachFiveModulesBelowTheOthers() throws {
         // At a module of 2 the bars are 100 long, so the guard bars are 110.
         for type in [Barcode.EAN_13, Barcode.UPC_A] {
-            let page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+            let page = TestSupport.newPage()
             let barcode = try Barcode(type, type == Barcode.UPC_A ? "01234567890" : "012345678901")
             _ = barcode.setModuleLength(Float(2))
             _ = barcode.setLocation(0, 0)
@@ -139,7 +139,7 @@ import Testing
     }
 
     @Test func upcATheBarsOfTheFirstAndTheLastDigitAreAsLongAsTheGuardBars() throws {
-        let page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        let page = TestSupport.newPage()
         let barcode = try Barcode(Barcode.UPC_A, "01234567890")
         _ = barcode.setModuleLength(Float(2))
         _ = barcode.setLocation(0, 0)
@@ -150,7 +150,7 @@ import Testing
     }
 
     @Test func isBlackWhateverPenColorThePageHas() throws {
-        let page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        let page = TestSupport.newPage()
         page.setPenColor(Color.blue)
         try Barcode(Barcode.CODE_128, "AB").drawOn(page)
         let content = TestSupport.content(page)
@@ -208,7 +208,7 @@ import Testing
     /// ZXing reads the ITF-14 barcodes of these GTINs back, their check digits
     /// added, in each direction.
     @Test func itf14DrawsTheBarsAndTheBearerBars() throws {
-        let page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        let page = TestSupport.newPage()
         let barcode = try Barcode(Barcode.ITF_14, "1540014128876")
         barcode.setLocation(100.0, 100.0)
         barcode.drawOn(page)

@@ -9,7 +9,7 @@ import Testing
 
 @Suite struct PDF417Tests {
     @Test func drawingTwiceDoesNotMoveTheSymbol() throws {
-        let page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        let page = TestSupport.newPage()
         let symbol = try PDF417("Hello, World!")
         TestSupport.expectXY(281.25, 11.25, symbol.drawOn(page))
         TestSupport.expectXY(281.25, 11.25, symbol.drawOn(page))

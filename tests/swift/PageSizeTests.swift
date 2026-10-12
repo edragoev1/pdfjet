@@ -32,7 +32,7 @@ import Testing
     }
 
     @Test func aPageTakesItsSizeFromThePageSize() {
-        let page = Page(TestSupport.newPDF(), A4.LANDSCAPE)
+        let page = TestSupport.newPage(A4.LANDSCAPE)
         #expect(page.getWidth() == 842)
         #expect(page.getHeight() == 595)
         let custom = PageSize(100, 200)

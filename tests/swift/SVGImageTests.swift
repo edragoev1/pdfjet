@@ -14,7 +14,7 @@ import Testing
     }
 
     private func draw(_ svg: String, sourceLocation: SourceLocation = #_sourceLocation) throws -> String {
-        let page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        let page = TestSupport.newPage()
         let svgImage = try image(svg)
         _ = svgImage.setLocation(0, 0)
         TestSupport.expectXY(svgImage.getWidth(), svgImage.getHeight(), svgImage.drawOn(page), sourceLocation: sourceLocation)
@@ -32,7 +32,7 @@ import Testing
         svgImage.scaleBy(0.5)
         #expect(svgImage.getWidth() == 50)
         #expect(svgImage.getHeight() == 25)
-        let page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        let page = TestSupport.newPage()
         _ = svgImage.setLocation(0, 0)
         TestSupport.expectXY(50, 25, svgImage.drawOn(page))
         let content = TestSupport.content(page)
@@ -513,7 +513,7 @@ import Testing
     @Test func scalingScalesTheStrokes() throws {
         let svgImage = try image("<svg width=\"100\" height=\"50\"><path d=\"M10 10 L90 40\" stroke=\"red\" stroke-width=\"4\"/></svg>")
         svgImage.scaleBy(0.5)
-        let page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        let page = TestSupport.newPage()
         _ = svgImage.setLocation(0, 0)
         svgImage.drawOn(page)
         let content = TestSupport.content(page)
@@ -549,7 +549,7 @@ import Testing
     @Test func drawsTheGroupsTransformsShapesAndStylesOfTheFuzzSeed() throws {
         // The seed of the fuzz target of the Go port, which is drawn without
         // failing.
-        let page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        let page = TestSupport.newPage()
         let svgImage = try image("<svg width=\"100\" height=\"50\" viewBox=\"0 0 200 100\" preserveAspectRatio=\"xMinYMax slice\">"
                 + "<style>.a{fill:rgb(10%,20,30);stroke:currentColor;stroke-width:2px} .b{opacity:.5}</style>"
                 + "<g transform=\"translate(10,5) rotate(30 5 5) skewX(10)\" color=\"blue\" class=\"a\" fill-rule=\"evenodd\">"

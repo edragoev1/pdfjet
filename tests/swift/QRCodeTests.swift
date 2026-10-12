@@ -56,7 +56,7 @@ import Testing
     }
 
     @Test func drawOnReturnsTheSameCornerEveryTime() throws {
-        let page = Page(TestSupport.newPDF(), Letter.PORTRAIT)
+        let page = TestSupport.newPage()
         let qr = try QRCode("Hello", ErrorCorrectionLevel.L).setLocation(10, 10).setModuleLength(2)
         TestSupport.expectXY(76, 76, qr.drawOn(page))
         TestSupport.expectXY(76, 76, qr.drawOn(page))

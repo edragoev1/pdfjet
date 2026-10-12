@@ -19,8 +19,12 @@ public class Bookmark {
     private var destNumber = 0
     private var key: String?
     private var title: String?
-    private var parent: Bookmark?
-    private var prev: Bookmark?
+    // A bookmark holds its children, and the one before it holds it in the
+    // same list, so the links back, to the parent and to the one before, are
+    // weak: strong ones would make cycles that keep the outline after its
+    // document is let go.
+    private weak var parent: Bookmark?
+    private weak var prev: Bookmark?
     private var next: Bookmark?
     private var children: [Bookmark]?
     private var dest: Destination?
