@@ -196,6 +196,11 @@ func toUnicodeCMap(font *Font, kept []bool) string {
 	list = append(list, "<0000> <FFFD>\n")
 	var buf strings.Builder
 	unicodeOf := unicodeOfGlyphs(font.unicodeToGID)
+	if font.program != nil {
+		for gid, c := range font.program.chars {
+			unicodeOf[gid] = int(c)
+		}
+	}
 	for cid := 0; cid <= 0xffff; cid++ {
 		gid := font.unicodeToGID[cid]
 		if gid > 0 && unicodeOf[gid] == cid && (kept == nil || (gid < len(kept) && kept[gid])) {

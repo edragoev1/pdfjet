@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"os"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -409,6 +410,45 @@ func TestFontAGlyphOfALetterAndASignOfItIsCopiedAsTheLetter(t *testing.T) {
 	for gid, want := range map[int]int{1: 0x03BC, 2: 0x03A9, 3: 0x004B, 4: 0x00C5, 5: 0x0020, 6: 0x2019} {
 		if unicodeOf[gid] != want {
 			t.Errorf("glyph %d is copied as %U, not %U", gid, unicodeOf[gid], want)
+		}
+	}
+}
+
+// testToUnicodeValues returns the characters the ToUnicode maps of the
+// objects give their glyphs, each in hexadecimal, as 06F1.
+func testToUnicodeValues(objects []*PDFobj) map[string]bool {
+	values := make(map[string]bool)
+	entry := regexp.MustCompile(`<[0-9A-Fa-f]{4}> <([0-9A-Fa-f]+)>`)
+	for _, obj := range objects {
+		if cmap := string(obj.GetData()); strings.HasPrefix(cmap, "/CIDInit") {
+			for _, match := range entry.FindAllStringSubmatch(cmap, -1) {
+				values[strings.ToUpper(match[1])] = true
+			}
+		}
+	}
+	return values
+}
+
+// A glyph a font draws for several characters maps to the character the
+// document drew with it, not to the lowest of them: a Persian ۱۳۹۸ was
+// copied as the Arabic ١٣٩٨, and the full-width slash of km／h as a division
+// slash (review of 11 October 2026, #8).
+func TestFontAGlyphOfSeveralCharactersMapsToTheCharacterDrawn(t *testing.T) {
+	doc := testNewDoc()
+	page := NewPage(doc.pdf, letter.Portrait())
+	arabic := NewFontFromFile(doc.pdf, testRepoPath(t, "fonts/NotoSansArabic/NotoSansArabic-Regular.ttf"))
+	tc := NewFontFromFile(doc.pdf, testRepoPath(t, "fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.ttf"))
+	NewTextLine(arabic, "\u06F1\u06F3\u06F9\u06F8").SetLocation(50, 50).DrawOn(page)
+	NewTextLine(tc, "60km\uFF0Fh").SetLocation(50, 100).DrawOn(page)
+	values := testToUnicodeValues(testRead(t, doc.complete()))
+	for _, want := range []string{"06F1", "06F3", "06F9", "06F8", "FF0F"} {
+		if !values[want] {
+			t.Errorf("no glyph maps to U+%s", want)
+		}
+	}
+	for _, other := range []string{"0661", "0663", "0669", "2215"} {
+		if values[other] {
+			t.Errorf("a glyph maps to U+%s, which the document did not draw", other)
 		}
 	}
 }

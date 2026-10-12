@@ -7,6 +7,17 @@ languages.
 
 This is the first entry in this file; earlier releases were not tracked here.
 
+## v9.0.7 — unreleased
+
+### Fixed
+- Text copied from a PDF, in the four ports: a glyph that a font draws for
+  several characters maps to the character the document drew with it, not
+  to the lowest of them. A Persian ۱۳۹۸ in Noto Sans Arabic was copied as the
+  Arabic ١٣٩٨, the full-width slash of IBM Plex Sans TC as a division slash,
+  and an ideographic space of the JP and SC fonts as an em space. A
+  document that draws two characters of one glyph gives the first drawn for
+  both.
+
 ## v9.0.5 — unreleased
 
 ### Added

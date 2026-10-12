@@ -25,7 +25,10 @@ type fontProgram struct {
 	cff       bool
 	forbidden bool   // The fsType of a CFF font's OS/2 table forbids subsetting
 	used      []bool // The glyphs drawn, by glyph number
-	whole     bool   // Set by SetSubset(false): the font is embedded whole
+	// The character first drawn with each glyph, by glyph number, for the
+	// ToUnicode map of a glyph of several characters, as U+3000 and U+2003
+	chars map[int]rune
+	whole bool // Set by SetSubset(false): the font is embedded whole
 }
 
 func newFontProgram() *fontProgram {
@@ -39,6 +42,25 @@ func newFontProgram() *fontProgram {
 func (font *Font) useGlyph(gid int) {
 	if font.program != nil && gid >= 0 && gid < len(font.program.used) {
 		font.program.used[gid] = true
+	}
+}
+
+// useChar records that the glyph is drawn for the character, so that the
+// ToUnicode map gives the glyph the character the document drew, where the
+// font draws several characters with one glyph: it gave the glyph the lowest
+// of them, and a Persian ۱ was copied as an Arabic ١ (review of 11 October
+// 2026, #8). The first character drawn with the glyph is kept; a document
+// that draws two characters of one glyph extracts the first for both.
+func (font *Font) useChar(c rune, gid int) {
+	if font.program == nil || gid <= 0 || c < 0 || int(c) >= len(font.unicodeToGID) ||
+		font.unicodeToGID[c] != gid {
+		return
+	}
+	if font.program.chars == nil {
+		font.program.chars = make(map[int]rune)
+	}
+	if _, ok := font.program.chars[gid]; !ok {
+		font.program.chars[gid] = c
 	}
 }
 
