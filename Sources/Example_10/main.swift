@@ -7,124 +7,64 @@
 import Foundation
 import PDFjet
 
-///
-/// Example_10.swift
-///
+/**
+ * Example_10.swift
+ */
 public class Example_10 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_10.pdf", append: false)!)
         pdf.setCompliance(Compliance.PDF_UA_1)
-        pdf.setTitle("Switzerland")
+        pdf.setTitle("Text block with highlighted keywords")
 
-        let image1 = try Image(pdf, "images/swiss-admin.jpg")
-        image1.setAltDescription(
-                "A map of Switzerland's 26 cantons, numbered and named in a key, with their capitals, Bern marked as the national capital, the lakes and rivers, and the neighboring countries.")
-
+        // let f1 = try Font(pdf, SourceSerif4.Regular)
+        // let f1 = try Font(pdf, NotoSans.Regular)
         let f1 = try Font(pdf, IBMPlexSans.Regular)
-        f1.setSize(10.0)
-
-        let f2 = try Font(pdf, IBMPlexSans.SemiBold)
-        f2.setSize(14.0)
-
-        let f3 = try Font(pdf, IBMPlexSans.SemiBold)
-        f3.setSize(12.0)
-
-        let f4 = try Font(pdf, IBMPlexSans.Italic)
-        f4.setSize(10.0)
+        f1.setSize(15.0)
 
         let page = Page(pdf, Letter.PORTRAIT)
 
-        // The map is 310 points tall, so that it and the text fit the page,
-        // and centered over the text.
-        image1.scaleBy(310.0 / image1.getHeight())
-        image1.setLocation(90.0 + (470.0 - image1.getWidth()) / 2.0, 35.0)
-        image1.drawOn(page)
+        // A heading, which PAC asks a document for
+        TextLine(f1, "Text block with highlighted keywords")
+                .setStructureType(StructElem.H1)
+                .setFontSize(18.0)
+                .setLocation(100.0, 36.0)
+                .drawOn(page)
 
-        // To rotate the column, add it to a Container and rotate that; see Example_35.
-        let column = TextColumn()
-        column.setLineSpacing(1.3)      // 1.3 x font height
-        column.setParagraphSpacing(1.0) // 1.0 x line spacing
+        var colors = [String : Int32]()
+        colors["Everyone"] = Color.firebrick
+        colors["pay"] = Color.green
+        colors["freedom"] = Color.blue
 
-        let p2 = Paragraph()
-        p2.setStructureType(StructElem.H1)
-        p2.add(TextLine(f2, "Introduction"))
+        // page.saveGraphicsState()
 
-        var buf = String()
-        buf.append("The Swiss Confederation was founded in 1291 as a defensive ")
-        buf.append("alliance among three cantons. In succeeding years, other ")
-        buf.append("localities joined the original three. ")
-        buf.append("The Swiss Confederation secured its independence from the ")
-        buf.append("Holy Roman Empire in 1499. Switzerland's sovereignty and ")
-        buf.append("neutrality have long been honored by the major European ")
-        buf.append("powers, and the country was not involved in either of the ")
-        buf.append("two World Wars. The political and economic integration of ")
-        buf.append("Europe over the past half century, as well as Switzerland's ")
-        buf.append("role in many UN and international organizations, has ")
-        buf.append("strengthened Switzerland's ties with its neighbors. ")
-        buf.append("However, the country did not officially become a UN member ")
-        buf.append("until 2002.")
+        let gs = GraphicsState()
+        gs.setAlphaStroking(0.5)        // Stroking alpha
+        gs.setAlphaNonStroking(0.5)     // Non-Stroking alpha
+        page.setGraphicsState(gs)
 
-        let p3 = Paragraph()
-        // p3.setTextAlignment(Alignment.LEFT)
-        // p3.setTextAlignment(Alignment.RIGHT)
-        p3.setTextAlignment(Alignment.JUSTIFY)
-        var text = TextLine(f1, buf)
-        p3.add(text)
+        let englishText = try Content.ofTextFile("data/languages/english.txt")
+        // f1.setSize(14.0)
+        let textBlock = TextBlock(f1, englishText)
+        textBlock.setLocation(100.0, 50.0)
+        textBlock.setWidth(400.0)
+        // With a height the text that does not fit is cut; without one the
+        // block is as tall as its text.
+        textBlock.setHeight(450.0)
+        textBlock.setVerticalAlignment(Alignment.TOP)
+        // textBlock.setVerticalAlignment(Alignment.BOTTOM)
+        // textBlock.setVerticalAlignment(Alignment.CENTER)
+        // textBlock.setTextAlignment(Alignment.CENTER)
+        textBlock.setBackgroundColor(Color.whitesmoke)
+        textBlock.setHighlightColors(colors)
+        textBlock.setBorderColor(Color.black)
+        let xy = textBlock.drawOn(page)
 
-        buf = String()
-        buf.append("Switzerland remains active in many UN and international ")
-        buf.append("organizations but retains a strong commitment to neutrality.")
+        page.setGraphicsState(GraphicsState())      // Reset GS
+        // page.restoreGraphicsState()
 
-        text = TextLine(f1, buf)
-        text.setTextColor(Color.firebrick)
-        p3.add(text)
-
-        let p4 = Paragraph()
-        p4.setStructureType(StructElem.H1)
-        p4.add(TextLine(f3, "Economy"))
-
-        buf = String()
-        buf.append("Switzerland is a peaceful, prosperous, and stable modern ")
-        buf.append("market economy with low unemployment, a highly skilled ")
-        buf.append("labor force, and a per capita GDP larger than that of the ")
-        buf.append("big Western European economies. The Swiss in recent years ")
-        buf.append("have brought their economic practices largely into ")
-        buf.append("conformity with the EU's to enhance their international ")
-        buf.append("competitiveness. Switzerland remains a safe haven for ")
-        buf.append("investors, because it has maintained a degree of bank secrecy ")
-        buf.append("and has kept up the franc's long-term external value. ")
-        buf.append("Reflecting the anemic economic conditions of Europe, GDP ")
-        buf.append("growth stagnated during the 2001-03 period, improved during ")
-        buf.append("2004-05 to 1.8% annually and to 2.9% in 2006.")
-
-        let p5 = Paragraph()
-        p5.setTextAlignment(Alignment.JUSTIFY)
-        text = TextLine(f1, buf)
-        p5.add(text)
-
-        text = TextLine(f4,
-                "Even so, unemployment has remained at less than half the EU average.")
-        text.setTextColor(Color.blue)
-        p5.add(text)
-
-        column.addParagraph(p2)
-        column.addParagraph(p3)
-        column.addParagraph(p4)
-        column.addParagraph(p5)
-
-        column.setLocation(90.0, 365.0)
-
-        let columnWidth: Float = 470.0
-        column.setWidth(columnWidth)
-        column.setHeight(100.0)
-        let xy = column.drawOn(page)
-
-        let line = Line(
-                xy[0] - columnWidth,
-                xy[1],
-                xy[0],
-                xy[1])
-        line.drawOn(page)
+        let rect = Rect(xy[0], xy[1], 20.0, 20.0)
+        rect.setBorderColor(Color.black)
+        rect.drawOn(page)
 
         try pdf.complete()
     }

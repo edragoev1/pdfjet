@@ -77,7 +77,7 @@ import Testing
 
     @Test func theDictionarySaysTheKeyIs256BitsForAcrobat() throws {
         // Adobe Acrobat opens no AES-256 file without /Length, though PDF 2.0
-        // leaves it optional for V 5 (found on 1 October 2026, with Example_30)
+        // leaves it optional for V 5 (found on 1 October 2026, with Example_47)
         #expect(TestSupport.latin1(try encrypted("", "world")).contains("/R 6\n/Length 256\n"))
     }
 

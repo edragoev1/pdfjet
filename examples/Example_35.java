@@ -6,151 +6,139 @@
  */
 package examples;
 
-import java.util.*;
 import java.io.*;
-import java.nio.file.*;
-import java.time.Duration;
-import java.time.Instant;
 import com.pdfjet.*;
 import com.pdfjet.fonts.*;
 
 /**
  * Example_35.java
+ * Using PDF layers (optional content groups) that can be shown or hidden: a
+ * shaded relief map of Europe, the lines of latitude and longitude over it,
+ * and the capital cities. The map covers 12°W to 42°E and 34°N to 62°N, and
+ * longitude and latitude map linearly to x and y on it.
  */
 public class Example_35 {
+    private final float x0 = 50f;       // The top left corner of the map
+    private final float y0 = 180f;
+    private final float w = 512f;       // The size of the map
+    private final float h = 512f * 840f / 1084f;
+
+    private float mapX(float longitude) {
+        return x0 + (longitude + 12f) / 54f * w;
+    }
+
+    private float mapY(float latitude) {
+        return y0 + (62f - latitude) / 28f * h;
+    }
+
     public Example_35() throws Exception {
         PDF pdf = new PDF(new BufferedOutputStream(new FileOutputStream("Example_35.pdf")));
+        // A tagged document; PDF/UA has no setting for a layer that is not
+        // printed, so this one prints every layer that is shown.
         pdf.setCompliance(Compliance.PDF_UA_1);
-        pdf.setTitle("Containers and Stamps");
+        pdf.setTitle("PDF Layers: a map of Europe in three layers");
+
+        Font f1 = new Font(pdf, IBMPlexSans.Regular);
+        Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        Font f1 = new Font(pdf, IBMPlexSans.Regular);
-        f1.setSize(14f);
+        TextLine text = new TextLine(f2, "PDF Layers");
+        text.setFontSize(22f);
+        text.setLocation(50f, 80f);
+        text.drawOn(page);
 
-        Font f2 = new Font(pdf, IBMPlexSans.Bold);
-        f2.setSize(14f);
+        TextBlock textBlock = new TextBlock(f1,
+                "Each part of this map is a layer, an optional content group, that "
+                + "a PDF viewer lists in its Layers panel and can show or hide: the "
+                + "relief, the lines of latitude and longitude, and the capital "
+                + "cities. As a PDF/UA document, this one prints every layer it shows.");
+        textBlock.setFontSize(12f);
+        textBlock.setLineSpacing(1.5f);
+        textBlock.setLocation(50f, 95f);
+        textBlock.setWidth(512f);
+        textBlock.drawOn(page);
 
-        // The heading, above the drawings, which are 40 points lower for it
-        new TextLine(f2, "Containers and Stamps")
-                .setStructureType(StructElem.H1)
-                .setFontSize(18f)
-                .setLocation(50f, 30f)
-                .drawOn(page);
+        Image image = new Image(pdf, "images/europe-relief.png");
+        image.resizeWidth(w);
+        image.setLocation(x0, y0);
+        image.setAltDescription("A relief map of Europe, from Ireland to Turkey");
 
-        // Base container
-        Container container = new Container(400f, 400f);
-        container.setLocation(100f, 140f);
+        // A layer is hidden and not printed unless it is set to be.
+        OptionalContentGroup group = new OptionalContentGroup(pdf, "Relief");
+        group.setVisible(true);
+        group.setPrintable(true);
+        group.add(image);
+        group.drawOn(page);
 
-        // Add a rectangle to container
-        Rect rect = new Rect(0f, 0f, 400f, 400f);
-        rect.setFillColor(Color.gray);
-        container.add(rect);
+        group = new OptionalContentGroup(pdf, "Latitude and Longitude");
+        group.setVisible(true);
+        for (int longitude = -10; longitude <= 40; longitude += 5) {
+            Line line = new Line(mapX(longitude), y0, mapX(longitude), y0 + h);
+            line.setStrokeWidth(0.5f);
+            line.setStrokeColor(Color.white);
+            group.add(line);
 
-        Stamp stamp = new Stamp(pdf).setSize(400f, 400f).addFont(f1).addFont(f2);
+            String label = (longitude < 0) ? -longitude + "°W" :
+                    (longitude > 0) ? longitude + "°E" : "0°";
+            text = new TextLine(f1, label);
+            text.setFontSize(8f);
+            text.setTextColor(Color.dimgray);
+            text.setLocation(mapX(longitude) - text.getWidth() / 2f, y0 + h + 12f);
+            group.add(text);
+        }
+        for (int latitude = 35; latitude <= 60; latitude += 5) {
+            Line line = new Line(x0, mapY(latitude), x0 + w, mapY(latitude));
+            line.setStrokeWidth(0.5f);
+            line.setStrokeColor(Color.white);
+            group.add(line);
 
-        // Draw path ...
-        stamp.setFillColor(Color.lightblue)
-            .setStrokeColor(Color.red)
-            .setStrokeWidth(4f)
-            .moveTo(0f, 0f)
-            .lineTo(400f, 0f)
-            .lineTo(400f, 400f)
-            .lineTo(0f, 400f)
-            .closeFillAndStrokePath();
+            text = new TextLine(f1, latitude + "°N");
+            text.setFontSize(8f);
+            text.setTextColor(Color.dimgray);
+            text.setLocation(x0 + w + 4f, mapY(latitude) + 3f);
+            group.add(text);
+        }
+        group.drawOn(page);
 
-        // Draw Rectangle
-        stamp.setStrokeColor(Color.blue)
-            .setStrokeWidth(1f)
-            .drawRect(10f, 10f, 380f, 380f);
+        String[] cities = {
+            "Athens", "Ankara", "Berlin", "Bucharest", "Dublin",
+            "Kyiv", "Lisbon", "London", "Madrid", "Oslo",
+            "Paris", "Rome", "Stockholm", "Vienna", "Warsaw",
+        };
+        float[][] locations = {     // Longitude and latitude
+            {23.73f, 37.98f}, {32.86f, 39.93f}, {13.40f, 52.52f},
+            {26.10f, 44.43f}, {-6.26f, 53.35f}, {30.52f, 50.45f},
+            {-9.14f, 38.72f}, {-0.13f, 51.51f}, {-3.70f, 40.42f},
+            {10.75f, 59.91f}, { 2.35f, 48.86f}, {12.50f, 41.90f},
+            {18.07f, 59.33f}, {16.37f, 48.21f}, {21.01f, 52.23f},
+        };
+        group = new OptionalContentGroup(pdf, "Capital Cities");
+        group.setVisible(true);
+        group.setPrintable(true);
+        for (int i = 0; i < cities.length; i++) {
+            float x = mapX(locations[i][0]);
+            float y = mapY(locations[i][1]);
 
-        // Fill Rectangle
-        stamp.setFillColor(Color.darkgreen).fillRect(10f, 10f, 20f, 20f);
+            Point point = new Point(x, y);
+            point.setRadius(2.5f);
+            point.setFillColor(Color.white);
+            point.setStrokeColor(Color.black);
+            group.add(point);
 
-        // Draw some text
-        TextParameters parameters = new TextParameters()
-            .setFont(f1)
-            .setFontSize(14f)
-            .setLocation(40f, 25f)  // Clear of the square, which the text would run over
-            .setText("Hello, World!");
-        stamp.drawText(parameters);
+            text = new TextLine(f2, cities[i]);
+            text.setFontSize(8f);
+            text.setLocation(x + 5f, y + 3f);
+            group.add(text);
+        }
+        group.drawOn(page);
 
-        // Change some parameters and draw the text again
-        parameters.setFont(f2).setLocation(40f, 50f);
-        stamp.setFillColor(Color.darkgreen).drawText(parameters);
-
-        stamp.complete();   // The stamp is complete!
-
-        stamp.setLocation(50f, 90f).drawOn(page);
-
-        // Rotate the stamp counter clockwise and draw it again
-        stamp.setRotation(-15).drawOn(page);
-
-        // Rotate the stamp clockwise and draw it again
-        stamp.setRotation(15).drawOn(page);
-
-        // Draw the stamp again at a quarter of its size
-        stamp.setRotation(0).scaleBy(0.25f).setLocation(360f, 520f).drawOn(page);
-
-        // Add a text line to container
-        TextLine title = new TextLine(f1, "Container");
-        title.setLocation(150f, 20f);
-        container.add(title);
-
-        // Nested container #1
-        Container nested1 = new Container(200f, 200f);
-        nested1.setLocation(0f, 0f);
-        nested1.setRotation(-30);
-        nested1.scaleBy(0.8f);
-
-        Rect innerRect = new Rect(0f, 0f, 200f, 200f);
-        innerRect.setFillColor(Color.blue);
-        nested1.add(innerRect);
-
-        TextLine innerText = new TextLine(f1, "Nested 1");
-        innerText.setLocation(50f, 100f);
-        innerText.setTextColor(Color.white);   // On the blue of the rectangle
-        nested1.add(innerText);
-
-        container.add(nested1);
-
-        // Nested container #2
-        Container nested2 = new Container(100f, 100f);
-        nested2.setLocation(250f, 250f);
-        nested2.setRotation(-45);
-
-        Rect smallRect = new Rect(0f, 0f, 100f, 100f);
-        smallRect.setFillColor(Color.red);
-        nested2.add(smallRect);
-
-        TextLine smallText = new TextLine(f1, "Nested 2");
-        smallText.setLocation(10f, 50f);
-        nested2.add(smallText);
-
-        container.add(nested2);
-
-        container.setRotation(45);
-        // Draw the entire hierarchy on the page
-        container.drawOn(page);
-
-        Container container5 = new Container(200f, 20f);
-        Rect rect5 = new Rect(0f, 0f, 200f, 20f);
-        container5.add(rect5);
-
-        Rect rect6 = new Rect(0f, 0f, 10f, 10f);
-        rect6.setFillColor(Color.blue);
-        container5.add(rect6);
-
-        Rect rect7 = new Rect(190f, 10f, 10f, 10f);
-        rect7.setBorderColor(Color.red);
-        rect7.setBorderWidth(2f);
-        container5.add(rect7);
-
-        container5.setLocation(50f, 640f);
-        container5.drawOn(page);
-
-        container5.setRotation(90);
-        container5.drawOn(page);
+        text = new TextLine(f1, "Relief: Natural Earth, public domain, naturalearthdata.com");
+        text.setFontSize(8f);
+        text.setTextColor(Color.dimgray);
+        text.setURIAction("https://www.naturalearthdata.com");
+        text.setLocation(x0, y0 + h + 30f);
+        text.drawOn(page);
 
         pdf.complete();
     }
@@ -161,4 +149,4 @@ public class Example_35 {
         long time1 = System.currentTimeMillis();
         System.out.printf("Example_35 => %4d ms%n", time1 - time0);
     }
-}
+}   // End of Example_35.java

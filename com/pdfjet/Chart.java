@@ -10,7 +10,7 @@ import java.math.*;
 import java.util.*;
 
 /**
- * XY chart renderer for PDF pages. See Example_09.
+ * XY chart renderer for PDF pages. See Example_26.
  */
 public class Chart implements Drawable {
     private float w = 300f;

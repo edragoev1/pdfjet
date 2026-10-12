@@ -6,163 +6,68 @@
  */
 package examples;
 
-import java.io.BufferedOutputStream;
-import java.io.FileOutputStream;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
+import java.io.*;
+import java.util.*;
 import com.pdfjet.*;
 import com.pdfjet.fonts.*;
+import com.pdfjet.pdf417.*;
 
 /**
  * Example_38.java
- *
- * Draws a table whose cells span columns and rows, and explains how. A cell
- * spans columns with setColSpan and rows with setRowSpan. The table is also a
- * check of the geometry of the cells: their backgrounds meet without gaps and
- * their borders line up.
+ * This example draws a PDF417 barcode that holds a whole source file, with an
+ * explanation and a caption.
  */
 public class Example_38 {
-    private Font font;
-
     public Example_38() throws Exception {
-        BufferedOutputStream bos =
-                new BufferedOutputStream(new FileOutputStream("Example_38.pdf"));
-
-        PDF pdf = new PDF(bos);
+        PDF pdf = new PDF(
+            new BufferedOutputStream(new FileOutputStream("Example_38.pdf")));
         pdf.setCompliance(Compliance.PDF_UA_1);
-        pdf.setTitle("Table Cells That Span Rows and Columns");
-        font = new Font(pdf, IBMPlexMono.Regular);
-        Font f1 = new Font(pdf, IBMPlexSans.SemiBold);
-        Font f2 = new Font(pdf, IBMPlexSans.Regular);
+        pdf.setTitle("PDF417 barcode example");
 
-        Page page = new Page(pdf, Letter.LANDSCAPE);
+        Font f1 = new Font(pdf, IBMPlexSans.Regular);
+        Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
 
-        TextLine title = new TextLine(f1, "Table Cells That Span Rows and Columns");
-        title.setStructureType(StructElem.H1);
-        title.setFontSize(18f);
-        title.setLocation(50f, 50f);
-        title.drawOn(page);
+        Page page = new Page(pdf, Letter.PORTRAIT);
 
-        TextBlock textBlock = new TextBlock(f2,
-                "The cells of this table span up to five columns and up to four rows, as "
-                + "the name in each cell says: 1x3 is one column wide and three rows tall. "
-                + "A cell spans columns with setColSpan and rows with setRowSpan, and draws "
-                + "its text, its background and its borders once over all of them. The table "
-                + "keeps its shape, so every row holds a cell for every column and the cells "
-                + "a span covers are left empty. The example is also a check of the geometry "
-                + "of the cells: their backgrounds meet without gaps and their borders line "
-                + "up. The header row above them numbers the columns.");
-        textBlock.setFontSize(11f);
-        textBlock.setLineSpacing(1.3f);
-        textBlock.setLocation(50f, 65f);
-        textBlock.setWidth(500f);
+        TextLine text = new TextLine(f2, "PDF417 Barcode");
+        text.setStructureType(StructElem.H1);
+        text.setFontSize(22f);
+        text.setLocation(70f, 80f);
+        text.drawOn(page);
+
+        TextBlock textBlock = new TextBlock(f1,
+                "PDF417 is a stacked two-dimensional barcode, used on boarding passes, "
+                + "identity cards and shipping labels. It holds text and binary data, "
+                + "and its error correction lets a scanner read it even when part of "
+                + "it is damaged.");
+        textBlock.setFontSize(12f);
+        textBlock.setLineSpacing(1.5f);
+        textBlock.setLocation(70f, 95f);
+        textBlock.setWidth(470f);
         float[] xy = textBlock.drawOn(page);
 
-        Table table = new Table();
-        table.setTableData(createTableData(f1), 1);
-        table.setBottomMargin(10f);
-        table.setLocation(50f, xy[1] + 20f);
-        table.drawOn(page);
+        // A barcode that holds a whole source file.
+        List<String> lines = Content.linesOfTextFile("data/Example_12.java");
+        StringBuilder buf = new StringBuilder();
+        for (String line : lines) {
+            buf.append(line);
+            // Both CR and LF are required!
+            buf.append("\r\n");
+        }
+
+        PDF417 barcode = new PDF417(buf.toString());
+        barcode.setModuleLength(1f);
+        barcode.setLocation(70f, xy[1] + 30f);
+        xy = barcode.drawOn(page);
+
+        text = new TextLine(f1, "The source code of data/Example_12.java, "
+                + lines.size() + " lines");
+        text.setFontSize(10f);
+        text.setTextColor(Color.dimgray);
+        text.setLocation(70f, xy[1] + 20f);
+        text.drawOn(page);
 
         pdf.complete();
-    }
-
-    /**
-     * Returns a header row that numbers the columns, and under it the cells
-     * of a 10 by 10 table whose cells span columns and rows. They are the
-     * table of this HTML, cell for cell:
-     * <pre>
-     * &lt;table border="solid"&gt;
-     * &lt;tr&gt;&lt;td colspan="2" rowspan="2"&gt;2x2&lt;/td&gt;&lt;td colspan="2"&gt;2x1&lt;/td&gt;
-     *     &lt;td colspan="2"&gt;2x1&lt;/td&gt;&lt;td colspan="2"&gt;2x1&lt;/td&gt;&lt;td colspan="2"&gt;2x1&lt;/td&gt;&lt;/tr&gt;
-     * &lt;tr&gt;&lt;td colspan="2" rowspan="2"&gt;2x2&lt;/td&gt;&lt;td&gt;1x1&lt;/td&gt;&lt;td colspan="5"&gt;5x1&lt;/td&gt;&lt;/tr&gt;
-     * &lt;tr&gt;&lt;td rowspan="2"&gt;1x2&lt;/td&gt;&lt;td&gt;1x1&lt;/td&gt;&lt;td colspan="2" rowspan="2"&gt;2x2&lt;/td&gt;
-     *     &lt;td rowspan="2"&gt;1x2&lt;/td&gt;&lt;td colspan="3"&gt;3x1&lt;/td&gt;&lt;/tr&gt;
-     * &lt;tr&gt;&lt;td&gt;1x1&lt;/td&gt;&lt;td rowspan="3"&gt;1x3&lt;/td&gt;&lt;td&gt;1x1&lt;/td&gt;&lt;td colspan="2"&gt;2x1&lt;/td&gt;
-     *     &lt;td rowspan="2"&gt;1x2&lt;/td&gt;&lt;/tr&gt;
-     * &lt;tr&gt;&lt;td rowspan="2"&gt;1x2&lt;/td&gt;&lt;td&gt;1x1&lt;/td&gt;&lt;td colspan="2"&gt;2x1&lt;/td&gt;
-     *     &lt;td colspan="4" rowspan="4"&gt;4x4&lt;/td&gt;&lt;/tr&gt;
-     * &lt;tr&gt;&lt;td&gt;1x1&lt;/td&gt;&lt;td rowspan="3"&gt;1x3&lt;/td&gt;&lt;td rowspan="3"&gt;1x3&lt;/td&gt;
-     *     &lt;td rowspan="3"&gt;1x3&lt;/td&gt;&lt;/tr&gt;
-     * &lt;tr&gt;&lt;td rowspan="2"&gt;1x2&lt;/td&gt;&lt;td&gt;1x1&lt;/td&gt;&lt;td rowspan="4"&gt;1x4&lt;/td&gt;&lt;/tr&gt;
-     * &lt;tr&gt;&lt;td&gt;1x1&lt;/td&gt;&lt;/tr&gt;
-     * &lt;tr&gt;&lt;td rowspan="2"&gt;1x2&lt;/td&gt;&lt;td&gt;1x1&lt;/td&gt;&lt;td colspan="2"&gt;2x1&lt;/td&gt;
-     *     &lt;td colspan="2" rowspan="2"&gt;2x2&lt;/td&gt;&lt;td rowspan="2"&gt;1x2&lt;/td&gt;&lt;td&gt;1x1&lt;/td&gt;
-     *     &lt;td&gt;1x1&lt;/td&gt;&lt;/tr&gt;
-     * &lt;tr&gt;&lt;td&gt;1x1&lt;/td&gt;&lt;td&gt;1x1&lt;/td&gt;&lt;td&gt;1x1&lt;/td&gt;&lt;td&gt;1x1&lt;/td&gt;&lt;td&gt;1x1&lt;/td&gt;&lt;/tr&gt;
-     * &lt;/table&gt;
-     * </pre>
-     *
-     * @param headerFont the font of the header row, which numbers the columns.
-     * @return the rows of the table.
-     * @throws Exception if a cell cannot be made.
-     */
-    private List<List<Cell>> createTableData(Font headerFont) throws Exception {
-        // The columns and the rows each cell spans, in the order a browser
-        // reads the cells of the HTML above.
-        int[][][] spans = {
-            {{2, 2}, {2, 1}, {2, 1}, {2, 1}, {2, 1}},
-            {{2, 2}, {1, 1}, {5, 1}},
-            {{1, 2}, {1, 1}, {2, 2}, {1, 2}, {3, 1}},
-            {{1, 1}, {1, 3}, {1, 1}, {2, 1}, {1, 2}},
-            {{1, 2}, {1, 1}, {2, 1}, {4, 4}},
-            {{1, 1}, {1, 3}, {1, 3}, {1, 3}},
-            {{1, 2}, {1, 1}, {1, 4}},
-            {{1, 1}},
-            {{1, 2}, {1, 1}, {2, 1}, {2, 2}, {1, 2}, {1, 1}, {1, 1}},
-            {{1, 1}, {1, 1}, {1, 1}, {1, 1}, {1, 1}},
-        };
-        int columns = 10;
-        Cell[][] grid = new Cell[spans.length][columns];
-        for (int r = 0; r < spans.length; r++) {
-            int c = 0;
-            for (int[] span : spans[r]) {
-                // The next column that no cell of a row above spans over.
-                while (c < columns && grid[r][c] != null) {
-                    c++;
-                }
-                grid[r][c] = getCell(font, span[0], span[1], span[0] + "x" + span[1]);
-                // A table keeps its shape, so every row holds a cell for every
-                // column: the cells a span covers are there and are empty.
-                for (int r2 = r; r2 < r + span[1] && r2 < spans.length; r2++) {
-                    for (int c2 = c; c2 < c + span[0] && c2 < columns; c2++) {
-                        if (grid[r2][c2] == null) {
-                            grid[r2][c2] = getCell(font, 1, 1, "");
-                        }
-                    }
-                }
-                c += span[0];
-            }
-        }
-        List<List<Cell>> rows = new LinkedList<List<Cell>>();
-        // The header row, above the cells: it numbers the columns.
-        List<Cell> header = new LinkedList<Cell>();
-        for (int c = 0; c < columns; c++) {
-            header.add(getCell(headerFont, 1, 1, String.valueOf(c + 1)));
-        }
-        rows.add(header);
-        for (Cell[] row : grid) {
-            rows.add(new LinkedList<Cell>(Arrays.asList(row)));
-        }
-        return rows;
-    }
-
-    private Cell getCell(Font font, int colSpan, int rowSpan, String text) throws Exception {
-        Cell cell = new Cell(font);
-        cell.setColSpan(colSpan);
-        cell.setRowSpan(rowSpan);
-        cell.setWidth(50f);
-        cell.setText(text);
-        cell.setBorder(Border.TOP, true);
-        cell.setBorder(Border.BOTTOM, true);
-        cell.setBorder(Border.LEFT, true);
-        cell.setBorder(Border.RIGHT, true);
-        cell.setTextAlignment(Alignment.CENTER);
-        cell.setVerticalAlignment(Alignment.CENTER);
-        cell.setBackgroundColor(0xD8F0E4);     // A pastel mint
-        cell.setBorderWidth(1f);
-        return cell;
     }
 
     public static void main(String[] args) throws Exception {

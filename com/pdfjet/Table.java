@@ -14,7 +14,7 @@ import java.util.*;
 /**
  * Used to create table objects and draw them on a page.
  *
- * Please see Example_08.
+ * Please see Example_20.
  */
 public class Table implements Drawable {
     private List<List<Cell>> tableData;

@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <!-- The 58 examples of examples/, as they are, run one after the other on
+  <!-- The 50 examples of examples/, as they are, run one after the other on
        .NET Framework 4.8 against the net48 PDFjet.dll: see RunExamples.cs. -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>

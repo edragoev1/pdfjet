@@ -18,118 +18,89 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
-// Example06 attaches two files to a page, and adds a note, a link and
-// polygon, square and circle annotations next to labels that describe them.
+const sample = "Embedded fonts look the same in every viewer."
+
+const background = 0xf1f4f8
+
+// Example06 draws the same words in five weights of IBM Plex Sans, in a PDF/UA
+// document.
+//
+// An embedded font travels with the document, so the text looks the same in
+// every viewer, every character of the font can be drawn, and the document can
+// be PDF/UA and PDF/A. The fourteen core fonts, Helvetica, Times and Courier,
+// are in every viewer and make the smallest documents, but they draw only the
+// WinAnsi characters, and PDF/UA and PDF/A do not allow them.
 func Example06() {
 	pdf, err := pdfjet.NewPDFFile("Example_06.pdf")
 	if err != nil {
 		log.Fatal(err)
 	}
 	pdf.SetCompliance(compliance.PDF_UA_1)
-	pdf.SetTitle("Attachments and Annotations")
+	pdf.SetTitle("Embedded Fonts")
 
-	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
-	f1.SetSize(12.0)
-
-	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
-	f2.SetSize(14.0)
-
-	file1 := pdfjet.NewEmbeddedFileAtPath(pdf, "images/linux-logo.png", false)
-	file2 := pdfjet.NewEmbeddedFileAtPath(pdf, "src/examples/example02/main.go", true)
+	regular := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
+	regular.SetSize(11.0)
+	bold := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold)
+	bold.SetSize(24.0)
 
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 
-	text := pdfjet.NewTextLine(f2, "Attachments and annotations")
-	text.SetStructureType(structelem.H1)
-	text.SetFontSize(22.0)
-	text.SetLocation(70.0, 80.0)
-	text.DrawOn(page)
+	title := pdfjet.NewTextLine(bold, "Embedded Fonts")
+	title.SetStructureType(structelem.H1)
+	title.SetLocation(50.0, 70.0)
+	title.DrawOn(page)
 
-	text = pdfjet.NewTextLine(f1,
-		"Open this page in a PDF viewer that shows annotations, and hover over the icons.")
-	text.SetTextColor(color.DimGray)
-	text.SetLocation(70.0, 105.0)
-	text.DrawOn(page)
+	about := pdfjet.NewTextBlock(regular,
+		"An embedded font travels with the document: the PDF carries the font program, "+
+			"so the text looks the same in every viewer, every character of the font can be "+
+			"drawn, and the document can be PDF/UA and PDF/A. PDFjet comes with the IBM Plex "+
+			"fonts, Sans, Serif and Mono, with Arabic, Hebrew, Thai, Japanese, Korean and "+
+			"Chinese, in their weights.\n\n"+
+			"The fourteen core fonts, Helvetica, Times and Courier with their bold and italic, "+
+			"Symbol and ZapfDingbats, are in every viewer, so the document carries no font "+
+			"program and is the smallest it can be. But they draw only the characters of "+
+			"Windows Latin 1, the viewer draws them with its own version of the font, and "+
+			"PDF/UA and PDF/A do not allow them. The boxes below are the same words in five "+
+			"weights of IBM Plex Sans.")
+	about.SetLineSpacing(1.4)
+	about.SetLocation(50.0, 90.0)
+	about.SetWidth(512.0)
+	y := about.DrawOn(page)[1] + 30.0
 
-	// File attachments. The files are stored inside the PDF.
-	pdfjet.NewTextLine(f2, "Attached files").SetStructureType(structelem.H2).SetLocation(70.0, 160.0).DrawOn(page)
-
-	attachment := pdfjet.NewFileAttachment(file1)
-	attachment.SetLocation(70.0, 175.0)
-	attachment.SetIconPushPin()
-	attachment.SetTitle("Attached File: " + file1.GetFileName())
-	attachment.SetContents(
-		"Right mouse click on the icon to save the attached file.")
-	attachment.DrawOn(page)
-	pdfjet.NewTextLine(f1, "linux-logo.png, an image, with a push pin icon").
-		SetLocation(105.0, 192.0).DrawOn(page)
-
-	attachment = pdfjet.NewFileAttachment(file2)
-	attachment.SetLocation(70.0, 210.0)
-	attachment.SetIconPaperclip()
-	attachment.SetTitle("Attached File: " + file2.GetFileName())
-	attachment.SetContents(
-		"Right mouse click on the icon to save the attached file.")
-	attachment.DrawOn(page)
-	pdfjet.NewTextLine(f1, "The source code of Example_02, with a paperclip icon").
-		SetLocation(105.0, 227.0).DrawOn(page)
-
-	// A note, and a link.
-	pdfjet.NewTextLine(f2, "A note and a link").SetStructureType(structelem.H2).SetLocation(70.0, 290.0).DrawOn(page)
-
-	textAnnotation := pdfjet.NewTextAnnotation()
-	textAnnotation.SetLocation(70.0, 305.0)
-	textAnnotation.SetSize(24.0, 24.0)
-	textAnnotation.SetTitle("Reviewer")
-	textAnnotation.SetContents("Please check the figures on page 2.")
-	textAnnotation.DrawOn(page)
-	pdfjet.NewTextLine(f1, "A text annotation: click the note icon to read it").
-		SetLocation(105.0, 322.0).DrawOn(page)
-
-	text = pdfjet.NewTextLine(f1, "Visit https://pdfjet.com")
-	text.SetTextColor(color.Blue)
-	text.SetUnderline(true)
-	text.SetURIAction("https://pdfjet.com")
-	text.SetLocation(105.0, 357.0)
-	text.DrawOn(page)
-
-	// Shape annotations, drawn half transparent over the page.
-	pdfjet.NewTextLine(f2, "Shape annotations").SetLocation(70.0, 420.0).DrawOn(page)
-
-	polygonAnnotation := pdfjet.NewPolygonAnnotation()
-	polygonAnnotation.SetLocation(70.0, 440.0)
-	polygonAnnotation.SetVertices([]float32{0.0, 60.0, 30.0, 0.0, 60.0, 60.0, 0.0, 60.0})
-	polygonAnnotation.SetFillColor(color.Red)
-	polygonAnnotation.SetOpacity(0.5)
-	polygonAnnotation.SetTitle("Polygon")
-	polygonAnnotation.SetContents("Polygon Annotation")
-	polygonAnnotation.DrawOn(page)
-
-	squareAnnotation := pdfjet.NewSquareAnnotation()
-	squareAnnotation.SetLocation(170.0, 440.0)
-	squareAnnotation.SetSize(60.0, 60.0)
-	squareAnnotation.SetFillColorRGB([3]float32{0.0, 0.5, 0.0})
-	squareAnnotation.SetOpacity(0.5)
-	squareAnnotation.SetTitle("Square")
-	squareAnnotation.SetContents("Square Annotation")
-	squareAnnotation.DrawOn(page)
-
-	circleAnnotation := pdfjet.NewCircleAnnotation()
-	circleAnnotation.SetLocation(270.0, 440.0)
-	circleAnnotation.SetSize(60.0, 60.0)
-	circleAnnotation.SetFillColorRGB([3]float32{0.0, 0.0, 1.0})
-	circleAnnotation.SetOpacity(0.5)
-	circleAnnotation.SetTitle("Circle")
-	circleAnnotation.SetContents("Circle Annotation")
-	circleAnnotation.DrawOn(page)
-
-	pdfjet.NewTextLine(f1, "Polygon").SetLocation(78.0, 520.0).DrawOn(page)
-	pdfjet.NewTextLine(f1, "Square").SetLocation(180.0, 520.0).DrawOn(page)
-	pdfjet.NewTextLine(f1, "Circle").SetLocation(283.0, 520.0).DrawOn(page)
+	names := []string{"Light", "Regular", "Medium", "SemiBold", "Bold"}
+	weights := []string{
+		IBMPlexSans.Light,
+		IBMPlexSans.Regular,
+		IBMPlexSans.Medium,
+		IBMPlexSans.SemiBold,
+		IBMPlexSans.Bold,
+	}
+	for i := range weights {
+		font := pdfjet.NewFontFromFile(pdf, weights[i])
+		font.SetSize(20.0)
+		y = drawSample(page, regular, font, "IBM Plex Sans "+names[i], y) + 22.0
+	}
 
 	if err := pdf.Complete(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+// drawSample draws the label, and under it the sample words in the font, in a
+// text block with a light background, and returns the bottom of the block.
+func drawSample(page *pdfjet.Page, labelFont, font *pdfjet.Font, label string, y float32) float32 {
+	caption := pdfjet.NewTextLine(labelFont, label)
+	caption.SetTextColor(color.DimGray)
+	caption.SetLocation(50.0, y)
+	caption.DrawOn(page)
+
+	block := pdfjet.NewTextBlock(font, sample)
+	block.SetBackgroundColor(background)
+	block.SetPadding(10.0)
+	block.SetLineSpacing(1.2)
+	block.SetLocation(50.0, y+8.0)
+	block.SetWidth(512.0)
+	return block.DrawOn(page)[1]
 }
 
 func main() {

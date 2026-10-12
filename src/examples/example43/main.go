@@ -12,49 +12,119 @@ import (
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
+	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
+	"github.com/edragoev1/pdfjet/v9/src/mark"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
-// Example43 draws a very large table across thousands of pages.
+// Example43 draws a survey with check boxes and radio buttons.
 func Example43() {
 	pdf, err := pdfjet.NewPDFFile("Example_43.pdf")
 	if err != nil {
 		log.Fatal(err)
 	}
-	// Uncomment the line below to make this a PDF/UA document. A BigTable is
-	// tagged as a table: a TR for each row, holding a TH or a TD with the
-	// text of each cell, which is what a screen reader reads a table from.
-	// It is off here because of what it costs at this size: every tagged
-	// cell is an object of its own, so this document goes from 5,108 objects
-	// and 11.8 MB to 1.25 million objects and 249 MB. The 10-page file below
-	// is the size to see the tagging at.
-	// pdf.SetCompliance(compliance.PDF_UA_1)
-	pdf.SetTitle("Electric Vehicle Population Data") // Required for PDF/UA !
+	pdf.SetCompliance(compliance.PDF_UA_1)
+	pdf.SetTitle("Customer Survey")
 
-	// Used for performance testing. Results in 2000+ pages PDF.
-	fileName := "data/Electric_Vehicle_Population_Data.csv"
-	// fileName := "data/Electric_Vehicle_Population_10_Pages.csv"
+	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
+	f1.SetSize(11.0)
 
-	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
-	f1.SetSize(10.0)
+	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
+	f2.SetSize(12.0)
 
-	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
-	f2.SetSize(9.0)
+	page := pdfjet.NewPage(pdf, letter.Portrait())
 
-	table := pdfjet.NewBigTable(pdf, f1, f2, letter.Landscape())
-	table.SetNumberOfColumns(9)                // The order of the
-	_, err = table.SetTableData(fileName, ",") // these statements
-	if err != nil {
-		log.Printf("Failed to load table data: %v", err)
-		return
-	}
-	table.SetLocation(0.0, 0.0) // is
-	table.SetBottomMargin(20.0) // very
-	err = table.Complete()      // important!
-	if err != nil {
-		log.Printf("Failed to render table: %v", err)
-		return
-	}
+	var x float32 = 70.0
+	var y float32 = 90.0
+
+	text := pdfjet.NewTextLine(f2, "Customer Survey")
+	text.SetStructureType(structelem.H1)
+	text.SetFontSize(22.0)
+	text.SetLocation(x, y)
+	text.DrawOn(page)
+
+	// Check boxes, one below the other.
+	y += 50.0
+	pdfjet.NewTextLine(f2, "Which PDFjet ports do you use?").SetLocation(x, y).DrawOn(page)
+
+	y += 15.0
+	pdfjet.NewCheckBox(f1, "Java").
+		SetCheckmarkColor(color.Blue).
+		Check(mark.Check).
+		SetLocation(x, y).
+		DrawOn(page)
+
+	y += 25.0
+	pdfjet.NewCheckBox(f1, "C#").
+		SetCheckmarkColor(color.Blue).
+		Check(mark.Check).
+		SetLocation(x, y).
+		DrawOn(page)
+
+	y += 25.0
+	pdfjet.NewCheckBox(f1, "Swift").
+		SetLocation(x, y).
+		DrawOn(page)
+
+	y += 25.0
+	pdfjet.NewCheckBox(f1, "Go").
+		SetLocation(x, y).
+		DrawOn(page)
+
+	// Radio buttons in a row. Each one starts where the one before it ends.
+	y += 50.0
+	pdfjet.NewTextLine(f2, "How did you hear about PDFjet?").SetLocation(x, y).DrawOn(page)
+
+	y += 15.0
+	xy := pdfjet.NewRadioButton(f1, "Web search").
+		Select(true).
+		SetLocation(x, y).
+		DrawOn(page)
+
+	xy = pdfjet.NewRadioButton(f1, "A colleague").
+		SetLocation(xy[0]+20.0, y).
+		DrawOn(page)
+
+	pdfjet.NewRadioButton(f1, "Other").
+		SetLocation(xy[0]+20.0, y).
+		DrawOn(page)
+
+	y += 50.0
+	pdfjet.NewTextLine(f2, "Would you recommend PDFjet?").SetLocation(x, y).DrawOn(page)
+
+	y += 15.0
+	xy = pdfjet.NewRadioButton(f1, "Yes").
+		Select(true).
+		SetLocation(x, y).
+		DrawOn(page)
+
+	pdfjet.NewRadioButton(f1, "No").
+		SetLocation(xy[0]+20.0, y).
+		DrawOn(page)
+
+	// A check box marked with an X, and one with a link.
+	y += 50.0
+	pdfjet.NewTextLine(f2, "Stay in touch").SetLocation(x, y).DrawOn(page)
+
+	y += 15.0
+	pdfjet.NewCheckBox(f1, "Send me news about new releases").
+		SetCheckmarkColor(color.Red).
+		Check(mark.X).
+		SetLocation(x, y).
+		DrawOn(page)
+
+	y += 25.0
+	xy = pdfjet.NewCheckBox(f1, "Visit https://pdfjet.com").
+		SetURIAction("https://pdfjet.com").
+		SetLocation(x, y).
+		DrawOn(page)
+
+	// A border around the survey.
+	rect := pdfjet.NewRect(50.0, 50.0, 512.0, xy[1]+25.0-50.0)
+	rect.SetBorderColor(color.LightGray)
+	rect.DrawOn(page)
 
 	if err := pdf.Complete(); err != nil {
 		log.Fatal(err)

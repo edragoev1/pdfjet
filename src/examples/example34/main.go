@@ -6,161 +6,174 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"log"
 	"os"
-	"strconv"
-	"strings"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
-	"github.com/edragoev1/pdfjet/v9/src/alignment"
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
+	"github.com/edragoev1/pdfjet/v9/src/errorcorrectionlevel"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
-	"github.com/edragoev1/pdfjet/v9/src/shape"
+	"github.com/edragoev1/pdfjet/v9/src/qrcode"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
-// Example34 draws a table that spans multiple pages.
+// Example34 draws a letterhead: a logo read from a PDF file, a maple leaf
+// drawn as a path with curves, and a QR code with the address of a web site.
 func Example34() {
 	pdf, err := pdfjet.NewPDFFile("Example_34.pdf")
 	if err != nil {
 		log.Fatal(err)
 	}
-	pdf.SetCompliance(compliance.PDF_A_1A)
-	pdf.SetTitle("World Communications")
+	pdf.SetCompliance(compliance.PDF_UA_1)
+	pdf.SetTitle("PDFjet Software Letterhead")
 
-	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold)
-	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
-	f3 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.BoldItalic)
-
-	f1.SetSize(7.0)
-	f2.SetSize(7.0)
-	f3.SetSize(7.0)
-
-	table := pdfjet.NewTable()
-	tableData := getData(
-		"data/world-communications.txt", "|", 2, f1, f2)
-
-	p1 := pdfjet.NewPoint(0.0, 0.0)
-	p1.SetShape(shape.Circle)
-	p1.SetRadius(2.0)
-	p1.SetStrokeColor(color.DarkOliveGreen)
-	p1.SetURIAction("https://en.wikipedia.org/wiki/India")
-	tableData[4][3].SetMarker(p1, alignment.Right)
-
-	p1 = pdfjet.NewPoint(0.0, 0.0)
-	p1.SetShape(shape.Diamond)
-	p1.SetRadius(2.5)
-	p1.SetStrokeColor(color.Blue)
-	p1.SetURIAction("https://en.wikipedia.org/wiki/European_Union")
-	tableData[5][3].SetMarker(p1, alignment.Right)
-
-	p1 = pdfjet.NewPoint(0.0, 0.0)
-	p1.SetShape(shape.Star)
-	p1.SetRadius(3.0)
-	p1.SetStrokeColor(color.Red)
-	p1.SetURIAction("https://en.wikipedia.org/wiki/United_States")
-	tableData[6][3].SetMarker(p1, alignment.Right)
-
-	table.SetTableData(tableData, 2)
-	table.SetBottomMargin(15.0)
-	// The table is about 555 points wide: at x = 30 it fits on the page.
-	table.SetLocation(30.0, 30.0)
-	table.SetTextColorInRow(6, color.Blue)
-	table.SetTextColorInRow(39, color.Firebrick)
-	table.SetFontInRow(26, f3)
-	table.RemoveLineBetweenRows(0, 1)
-	table.AutoAdjustColumnWidths()
-	table.SetColumnWidth(0, 50.0)
-	table.SetColumnWidth(3, 80.0)
-	table.RightAlignNumbers()
-
-	pages := make([]*pdfjet.Page, 0)
-	table.DrawOnPages(pdf, &pages, letter.Portrait())
-	for i := 0; i < len(pages); i++ {
-		page := pages[i]
-		textLine := pdfjet.NewTextLine(f1, "Page "+strconv.Itoa(i+1)+" of "+strconv.Itoa(len(pages)))
-		page.AddFooter(textLine)
-		pdf.AddPage(page)
-	}
-
-	if err := pdf.Complete(); err != nil {
-		log.Fatal(err)
-	}
-}
-
-func getData(fileName, delimiter string, numOfHeaderRows int, f1, f2 *pdfjet.Font) [][]*pdfjet.Cell {
-	tableData := make([][]*pdfjet.Cell, 0)
-
-	f, err := os.Open(fileName)
+	// Read the logo from a PDF file, and add the resources of its pages, its
+	// fonts and images, to this PDF. The logo itself is drawn with paths and
+	// has none.
+	buf, err := os.ReadFile("data/testPDFs/PDFjetLogo.pdf")
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer func(f *os.File) {
-		if err := f.Close(); err != nil {
-			log.Printf("error closing %s: %v", fileName, err)
-		}
-	}(f)
-
-	scanner := bufio.NewScanner(f)
-	currentRow := 0
-	for scanner.Scan() {
-		line := scanner.Text()
-		row := make([]*pdfjet.Cell, 0)
-		var cols []string
-		if delimiter == "|" {
-			cols = strings.Split(line, "|")
-		} else if delimiter == "\t" {
-			cols = strings.Split(line, "\t")
-		} else {
-			log.Fatal("Only pipes and tabs can be used as delimiters")
-		}
-		for i := 0; i < len(cols); i++ {
-			text := strings.TrimSpace(cols[i])
-			var cell *pdfjet.Cell
-			if currentRow < numOfHeaderRows {
-				cell = pdfjet.NewCell(f1, text)
-			} else {
-				cell = pdfjet.NewCell(f2, text)
-			}
-			cell.SetTopPadding(2.0)
-			cell.SetBottomPadding(2.0)
-			cell.SetLeftPadding(2.0)
-			if i == 3 {
-				cell.SetRightPadding(10.0)
-			} else {
-				cell.SetRightPadding(2.0)
-			}
-			row = append(row, cell)
-		}
-		tableData = append(tableData, row)
-		currentRow++
-	}
-	if err := scanner.Err(); err != nil {
+	objects, err := pdf.Read(buf)
+	if err != nil {
 		log.Fatal(err)
 	}
 
-	appendMissingCells(tableData, f2)
+	pdf.AddResourceObjects(objects)
 
-	return tableData
-}
+	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
+	f1.SetSize(11.0)
 
-func appendMissingCells(tableData [][]*pdfjet.Cell, font *pdfjet.Font) {
-	firstRow := tableData[0]
-	numOfColumns := len(firstRow)
-	for i := 0; i < len(tableData); i++ {
-		dataRow := tableData[i]
-		dataRowColumns := len(dataRow)
-		if dataRowColumns < numOfColumns {
-			for j := 0; j < (numOfColumns - dataRowColumns); j++ {
-				dataRow = append(dataRow, pdfjet.NewCell(font, ""))
-			}
-			tableData[i] = dataRow
-			dataRow[dataRowColumns-1].SetColSpan((numOfColumns - dataRowColumns) + 1)
-		}
+	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
+	f2.SetSize(11.0)
+
+	pages := pdf.GetPageObjects(objects)
+	content := pages[0].GetContentObject(objects)
+
+	page := pdfjet.NewPage(pdf, letter.Portrait())
+
+	// Draw the content of the first page of the logo PDF, at half its size.
+	// DrawContents anchors the content by the point that is height points
+	// above the origin of its page, which it puts at x and y here. The logo
+	// is in the top left corner of its page, so that point is the top of the
+	// page and the height to give is the height of the page.
+	height := letter.Portrait().GetHeight()
+	x := float32(60.0)
+	y := float32(40.0)
+	xScale := float32(0.5)
+	yScale := float32(0.5)
+
+	// The logo is a figure, with an alternate description for screen readers.
+	page.AddBDC(structelem.Figure, "", "", "The PDFjet logo")
+	page.DrawContents(
+		content.GetData(),
+		height,
+		x,
+		y,
+		xScale,
+		yScale)
+	// The logo is 216 by 68 points, at the top left of its page, so half of
+	// that here: the box PDF/UA asks every figure for.
+	page.SetFigureBoundingBox(x, y, 216.0*xScale, 68.0*yScale)
+	page.AddEMC()
+
+	pdfjet.NewTextLine(f2, "PDFjet Software").SetLocation(390.0, 60.0).DrawOn(page)
+	pdfjet.NewTextLine(f1, "Unionville, Ontario, Canada").SetLocation(390.0, 76.0).DrawOn(page)
+	// An address on the page is a link to it, as PAC asks of text that reads as one
+	pdfjet.NewTextLine(f1, "https://pdfjet.com").SetURIAction("https://pdfjet.com").SetLocation(390.0, 92.0).DrawOn(page)
+
+	// A thin rule under the letterhead, an artifact.
+	page.AddArtifactBMC()
+	page.SetPenColor(color.DarkRed)
+	page.SetPenWidth(1.0)
+	page.DrawLine(60.0, 115.0, 552.0, 115.0)
+	page.AddEMC()
+
+	// The heading of the page, which PAC asks a document for
+	text := pdfjet.NewTextLine(f2, "The logo on this page was read from a PDF file.")
+	text.SetStructureType(structelem.H1)
+	text.SetFontSize(16.0)
+	text.SetLocation(60.0, 170.0)
+	text.DrawOn(page)
+
+	textBlock := pdfjet.NewTextBlock(f1,
+		"The logo is the content of the first page of data/testPDFs/PDFjetLogo.pdf, "+
+			"drawn here at half its size with page.drawContents. It stays sharp "+
+			"at any zoom, because it is drawn as vector graphics and not as an image.\n\n"+
+			"The maple leaf below is a Path with curves, and the QR code "+
+			"holds the address of the PDFjet web site.")
+	textBlock.SetFontSize(12.0)
+	textBlock.SetLineSpacing(1.5)
+	textBlock.SetLocation(60.0, 185.0)
+	textBlock.SetWidth(490.0)
+	textBlock.DrawOn(page)
+
+	// A maple leaf, drawn with lines and with curves from control points.
+	path := pdfjet.NewPath()
+	path.Add(pdfjet.NewPoint(13.0, 0.0))
+	path.Add(pdfjet.NewPoint(15.5, 4.5))
+	path.Add(pdfjet.NewPoint(18.0, 3.5))
+	path.Add(pdfjet.NewControlPointC(15.5, 13.5))
+	path.Add(pdfjet.NewControlPointC(15.5, 13.5))
+	path.Add(pdfjet.NewPoint(20.5, 7.5))
+	path.Add(pdfjet.NewPoint(21.0, 9.5))
+	path.Add(pdfjet.NewPoint(25.0, 9.0))
+	path.Add(pdfjet.NewPoint(24.0, 13.0))
+	path.Add(pdfjet.NewPoint(25.5, 14.0))
+	path.Add(pdfjet.NewPoint(19.0, 19.0))
+	path.Add(pdfjet.NewPoint(20.0, 21.5))
+	path.Add(pdfjet.NewPoint(13.5, 20.5))
+	path.Add(pdfjet.NewPoint(13.5, 27.0))
+	path.Add(pdfjet.NewPoint(12.5, 27.0))
+	path.Add(pdfjet.NewPoint(12.5, 20.5))
+	path.Add(pdfjet.NewPoint(6.0, 21.5))
+	path.Add(pdfjet.NewPoint(7.0, 19.0))
+	path.Add(pdfjet.NewPoint(0.5, 14.0))
+	path.Add(pdfjet.NewPoint(2.0, 13.0))
+	path.Add(pdfjet.NewPoint(1.0, 9.0))
+	path.Add(pdfjet.NewPoint(5.0, 9.5))
+	path.Add(pdfjet.NewPoint(5.5, 7.5))
+	path.Add(pdfjet.NewControlPointC(10.5, 13.5))
+	path.Add(pdfjet.NewControlPointC(10.5, 13.5))
+	path.Add(pdfjet.NewPoint(8.0, 3.5))
+	path.Add(pdfjet.NewPoint(10.5, 4.5))
+	path.SetClosed(true)
+	path.SetStrokeColor(color.Red)
+	path.SetFillShape(true)
+	path.SetLocation(60.0, 330.0)
+	path.ScaleBy(6.0)
+	path.DrawOn(page)
+
+	qr := qrcode.NewQRCode(
+		"https://pdfjet.com",
+		errorcorrectionlevel.M) // Medium
+	qr.SetModuleLength(5.0)
+	qr.SetLocation(300.0, 340.0)
+	xy := qr.DrawOn(page)
+
+	// A frame around the QR code, an artifact.
+	page.AddArtifactBMC()
+	page.SetPenColor(color.LightGray)
+	page.SetPenWidth(0.5)
+	page.DrawRect(290.0, 330.0, xy[0]-280.0, xy[1]-320.0)
+	page.AddEMC()
+
+	caption := pdfjet.NewTextLine(f1, "A Path with curves")
+	caption.SetTextColor(color.DimGray)
+	caption.SetLocation(60.0, xy[1]+35.0)
+	caption.DrawOn(page)
+
+	caption = pdfjet.NewTextLine(f1, "Scan to visit https://pdfjet.com").SetURIAction("https://pdfjet.com")
+	caption.SetTextColor(color.DimGray)
+	caption.SetLocation(290.0, xy[1]+35.0)
+	caption.DrawOn(page)
+
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
 	}
 }
 

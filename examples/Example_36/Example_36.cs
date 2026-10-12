@@ -11,86 +11,118 @@ using PDFjet.NET;
 
 /**
  * Example_36.cs
- * This example draws two map pages first and their contents page last, and
- * then adds the pages to the PDF in reading order, with the contents first.
+ * This example draws a Code 128, a Code 39, a UPC-A and an EAN-13 barcode,
+ * each next to a label, and then barcodes drawn from top to bottom and from
+ * bottom to top.
  */
 public class Example_36 {
     public Example_36() {
-        PDF pdf = new PDF(new BufferedStream(
+        PDF pdf = new PDF( new BufferedStream(
                 new FileStream("Example_36.pdf", FileMode.Create)));
         pdf.SetCompliance(Compliance.PDF_UA_1);
-        pdf.SetTitle("Maps");
+        pdf.SetTitle("Linear Barcodes");
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
+        f1.SetSize(12f);
+
         Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
+        f2.SetSize(12f);
 
-        String[] titles = {"Europe", "Spain"};
-        String[] files = {"images/ee-map.png", "images/spain-admin.jpg"};
-        String[] descriptions = {
-                "A map of Europe in which the member states of the European Union are shaded, and Turkey, a candidate to join when the map was made, in another shade.",
-                "A map of the 17 autonomous communities of Spain and its two autonomous cities, Ceuta and Melilla, with their capitals.",
-        };
+        Page page = new Page(pdf, Letter.PORTRAIT);
 
-        // 1. Draw the map pages. They are detached, so they are not in the PDF yet.
-        Page[] mapPages = new Page[titles.Length];
-        for (int i = 0; i < titles.Length; i++) {
-            Page page = new Page(pdf, A4.PORTRAIT, Page.DETACHED);
-
-            TextLine title = new TextLine(f2, titles[i]);
-            title.SetFontSize(24f);
-            title.SetLocation(50f, 80f);
-            title.DrawOn(page);
-
-            // Scale the image to the width of the page between the margins.
-            Image image = new Image(pdf, files[i]);
-            image.SetAltDescription(descriptions[i]);
-            image.ScaleBy((page.GetWidth() - 100f) / image.GetWidth());
-            image.SetLocation(50f, 100f);
-            image.DrawOn(page);
-
-            TextLine footer = new TextLine(f1, "Page " + (i + 2));
-            footer.SetFontSize(10f);
-            footer.SetTextColor(Color.dimgray);
-            footer.SetLocation(50f, page.GetHeight() - 40f);
-            footer.DrawOn(page);
-
-            mapPages[i] = page;
-        }
-
-        // 2. Draw the contents page last, now that the map pages are ready.
-        Page contents = new Page(pdf, A4.PORTRAIT, Page.DETACHED);
-
-        TextLine text = new TextLine(f2, "Maps");
+        TextLine text = new TextLine(f2, "Linear Barcodes");
         text.SetStructureType(StructElem.H1);
-        text.SetFontSize(24f);
-        text.SetLocation(50f, 80f);
-        text.DrawOn(contents);
+        text.SetFontSize(22f);
+        text.SetLocation(70f, 80f);
+        text.DrawOn(page);
+
+        String[] labels = {
+            "Code 128",
+            "Code 39",
+            "UPC-A",
+            "EAN-13",
+            "GS1-128",
+        };
+        String[] notes = {
+            "Letters, digits and symbols",
+            "Upper case letters and digits",
+            "11 digits, the check digit is added",
+            "12 digits, the check digit is added",
+            "GS1 data: a GTIN and a batch number",
+        };
+        Barcode[] barcodes = {
+            new Barcode(Barcode.CODE_128, "Hellö, World!"),
+            new Barcode(Barcode.CODE_39, "WIKIPEDIA"),
+            new Barcode(Barcode.UPC_A, "51234567890"),
+            new Barcode(Barcode.EAN_13, "051234567890"),
+            new Barcode(Barcode.GS1_128, "(01)09506000134352(10)ABC123"),
+        };
+        // UPC-A and EAN-13 need wider bars for the digits under them.
+        float[] moduleLengths = {0.75f, 0.75f, 1f, 1f, 0.75f};
 
         float y = 130f;
-        for (int i = 0; i < titles.Length; i++) {
-            text = new TextLine(f1, titles[i] + " . . . . . . . . . . page " + (i + 2));
-            text.SetFontSize(14f);
-            text.SetLocation(50f, y);
-            text.DrawOn(contents);
-            y += 25f;
+        float[] xy;
+        for (int i = 0; i < barcodes.Length; i++) {
+            new TextLine(f2, labels[i]).SetLocation(70f, y + 15f).DrawOn(page);
+            TextLine note = new TextLine(f1, notes[i]);
+            note.SetFontSize(10f);
+            note.SetTextColor(Color.dimgray);
+            note.SetLocation(70f, y + 32f);
+            note.DrawOn(page);
+
+            barcodes[i].SetLocation(290f, y);
+            barcodes[i].SetModuleLength(moduleLengths[i]);
+            barcodes[i].SetFont(f1);
+            xy = barcodes[i].DrawOn(page);
+            y = xy[1] + 30f;
         }
 
-        TextBlock textBlock = new TextBlock(f1,
-                "This page was drawn after the two map pages, but it is the first page "
-                + "of the document, because the pages were created detached and added "
-                + "to the PDF in reading order with addPage.");
-        textBlock.SetFontSize(12f);
-        textBlock.SetLineSpacing(1.5f);
-        textBlock.SetTextColor(Color.dimgray);
-        textBlock.SetLocation(50f, y + 20f);
-        textBlock.SetWidth(contents.GetWidth() - 100f);
-        textBlock.DrawOn(contents);
+        // The same barcodes can be drawn from top to bottom and from bottom to top.
+        new TextLine(f2, "Vertical barcodes").SetLocation(70f, y + 15f).DrawOn(page);
 
-        // 3. Add the pages in reading order.
-        pdf.AddPage(contents);
-        for (int i = 0; i < mapPages.Length; i++) {
-            pdf.AddPage(mapPages[i]);
-        }
+        Barcode barcode = new Barcode(Barcode.CODE_128, "G86513JVW0C");
+        barcode.SetLocation(70f, y + 35f);
+        barcode.SetModuleLength(0.75f);
+        barcode.SetDirection(Direction.TOP_TO_BOTTOM);
+        barcode.SetFont(f1);
+        xy = barcode.DrawOn(page);
+
+        barcode = new Barcode(Barcode.CODE_39, "CODE39");
+        barcode.SetLocation(xy[0] + 60f, y + 35f);
+        barcode.SetModuleLength(0.75f);
+        barcode.SetDirection(Direction.BOTTOM_TO_TOP);
+        barcode.SetFont(f1);
+        xy = barcode.DrawOn(page);
+
+        barcode = new Barcode(Barcode.EAN_13, "051234567890");
+        barcode.SetLocation(xy[0] + 60f, y + 35f);
+        barcode.SetModuleLength(1f);
+        barcode.SetDirection(Direction.BOTTOM_TO_TOP);
+        barcode.SetFont(f1);
+        barcode.DrawOn(page);
+
+        // ITF-14, the GTIN of a carton, framed by bearer bars.
+        Page page2 = new Page(pdf, Letter.PORTRAIT);
+        TextLine heading2 = new TextLine(f2, "Barcodes for Cartons");
+        heading2.SetStructureType(StructElem.H2);
+        heading2.SetFontSize(18f);
+        heading2.SetLocation(70f, 80f);
+        heading2.DrawOn(page2);
+
+        TextLine label = new TextLine(f2, "ITF-14");
+        label.SetLocation(70f, 135f);
+        label.DrawOn(page2);
+        TextLine cartonNote = new TextLine(f1, "The GTIN of a carton, 13 digits and the check digit PDFjet adds, framed by bearer bars");
+        cartonNote.SetFontSize(10f);
+        cartonNote.SetTextColor(Color.dimgray);
+        cartonNote.SetLocation(70f, 152f);
+        cartonNote.DrawOn(page2);
+
+        Barcode itf = new Barcode(Barcode.ITF_14, "1540014128876");
+        itf.SetLocation(70f, 175f);
+        itf.SetModuleLength(1f);
+        itf.SetFont(f1);
+        itf.DrawOn(page2);
 
         pdf.Complete();
     }

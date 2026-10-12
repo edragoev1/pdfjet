@@ -6,93 +6,113 @@
  */
 using System;
 using System.IO;
+using System.Collections.Generic;
 using System.Diagnostics;
 using PDFjet.NET;
 
 /**
  * Example_39.cs
  *
- * Draws a horizontal bar chart of the ten longest rivers, each bar in its own
- * color with its length written inside it, under a title and a subtitle, and
- * a color key and a source note under the chart.
+ * Draws the pages of a document first and finishes them last. The two map
+ * pages are drawn first and the contents page last, and the three are added
+ * to the PDF in reading order, the contents first. They are made detached,
+ * outside the PDF, so a "Page X of N" footer is drawn on each once the
+ * number of pages is known.
  */
 public class Example_39 {
     public Example_39() {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_39.pdf", FileMode.Create)));
         pdf.SetCompliance(Compliance.PDF_UA_1);
-        pdf.SetTitle("10 Longest Rivers in the World");
+        pdf.SetTitle("Maps");
 
-        Font f1 = new Font(pdf, IBMPlexSans.Bold);
-        f1.SetSize(15f);
+        Font f1 = new Font(pdf, IBMPlexSans.Regular);
+        Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
 
-        Font f2 = new Font(pdf, IBMPlexSans.Regular);
-        f2.SetSize(9f);
+        String[] titles = {"Europe", "Spain"};
+        String[] files = {"images/ee-map.png", "images/spain-admin.jpg"};
+        String[] descriptions = {
+                "A map of Europe in which the member states of the European Union are shaded, and Turkey, a candidate to join when the map was made, in another shade.",
+                "A map of the 17 autonomous communities of Spain and its two autonomous cities, Ceuta and Melilla, with their capitals.",
+        };
 
-        Font f3 = new Font(pdf, IBMPlexSans.Bold);
-        f3.SetSize(9f);
+        // 1. Draw the map pages. They are detached, so they are not in the PDF yet.
+        Page[] mapPages = new Page[titles.Length];
+        for (int i = 0; i < titles.Length; i++) {
+            Page page = new Page(pdf, A4.PORTRAIT, Page.DETACHED);
 
-        Font f4 = new Font(pdf, IBMPlexSans.Regular);
-        f4.SetSize(8f);
+            TextLine title = new TextLine(f2, titles[i]);
+            title.SetFontSize(24f);
+            title.SetLocation(50f, 80f);
+            title.DrawOn(page);
 
-        Page page = new Page(pdf, Letter.PORTRAIT);
+            // Scale the image to the width of the page between the margins.
+            Image image = new Image(pdf, files[i]);
+            image.SetAltDescription(descriptions[i]);
+            image.ScaleBy((page.GetWidth() - 100f) / image.GetWidth());
+            image.SetLocation(50f, 100f);
+            image.DrawOn(page);
 
-        // The heading of the page, above the chart
-        new TextLine(f1, "Rivers of the World")
-                .SetStructureType(StructElem.H1)
-                .SetFontSize(18f)
-                .SetLocation(36f, 40f)
-                .DrawOn(page);
-
-        String[] rivers = {
-                "Nile", "Amazon", "Yangtze", "Mississippi-Missouri", "Yenisey-Baikal-Selenga",
-                "Huang He (Yellow)", "Ob-Irtysh", "Paraná", "Congo", "Amur"};
-        float[] lengths = {6650f, 6400f, 6300f, 5971f, 5540f, 5464f, 5410f, 4880f, 4700f, 4444f};
-        int[] colors = {
-                0x477aa8, 0x5f7e5f, 0x8b6f47, 0x8e7152, 0x517aa0,
-                0x967110, 0x687b68, 0x8e7155, 0x5c5c5c, 0x897154};
-
-        BarChart chart = new BarChart(f1, f2);
-        chart.SetLocation(36f, 70f);
-        chart.SetSize(540f, 400f);
-        chart.SetTitle("10 Longest Rivers in the World");
-        chart.SetSubtitle("Length in kilometers · Color reflects typical sediment / pollution character");
-        chart.SetCategories(rivers);
-        chart.AddSeries("", lengths, colors);
-        chart.SetHorizontal(true);
-        chart.SetGroupGap(0.4f);
-        chart.SetValueAxisMinMax(0f, 8000f, 4);
-        chart.SetGridLineWidth(0.75f);
-        chart.SetGridLineColor(0xe0e0e0);
-        chart.SetGridLineDashPattern("[] 0");
-        chart.SetAxisLineWidth(0f);
-        chart.SetDrawValueLabels(true);
-        chart.SetValueLabelsInside(true);
-        chart.SetGroupingUsed(true);
-        chart.SetAltDescription(
-                "The ten longest rivers in the world, in kilometers: Nile 6,650, Amazon 6,400, Yangtze 6,300, Mississippi-Missouri 5,971, Yenisey-Baikal-Selenga 5,540, Huang He (Yellow) 5,464, Ob-Irtysh 5,410, Paraná 4,880, Congo 4,700, Amur 4,444.");
-        chart.DrawOn(page);
-
-        // The color key under the chart
-        int gray = 0x444444;
-        new TextLine(f3, "Color key (illustrative):")
-                .SetTextColor(gray).SetLocation(171f, 496f).DrawOn(page);
-        int[] keyColors = {0x477aa8, 0x5f7e5f, 0x8e7155, 0x967110, 0x5c5c5c};
-        String[] keyTexts = {
-                "Clear / low sediment", "Sediment-rich, relatively clean", "Polluted / industrial & agricultural",
-                "Heavy natural sediment (loess)", "Natural dark tannin stain (Congo)"};
-        float[] keyX = {171f, 262f, 398f, 171f, 313f};
-        float[] keyY = {512f, 512f, 512f, 527f, 527f};
-        for (int i = 0; i < keyColors.Length; i++) {
-            // The swatches are rectangles, drawn as artifacts next to their text.
-            new Rect(keyX[i], keyY[i] - 8.5f, 10.5f, 10.5f).SetFillColor(keyColors[i]).DrawOn(page);
-            new TextLine(f4, keyTexts[i])
-                    .SetTextColor(gray).SetLocation(keyX[i] + 15f, keyY[i]).DrawOn(page);
+            mapPages[i] = page;
         }
 
-        String note = "Color mapping is illustrative; lengths and conditions vary by source and season.";
-        new TextLine(f4, note)
-                .SetTextColor(0x696969).SetLocation(576f - f4.StringWidth(note), 550f).DrawOn(page);
+        // 2. Draw the contents page last, now that the map pages are ready.
+        Page contents = new Page(pdf, A4.PORTRAIT, Page.DETACHED);
+
+        TextLine text = new TextLine(f2, "Maps");
+        text.SetStructureType(StructElem.H1);
+        text.SetFontSize(24f);
+        text.SetLocation(50f, 80f);
+        text.DrawOn(contents);
+
+        float y = 130f;
+        for (int i = 0; i < titles.Length; i++) {
+            text = new TextLine(f1, titles[i] + " . . . . . . . . . . page " + (i + 2));
+            text.SetFontSize(14f);
+            text.SetLocation(50f, y);
+            text.DrawOn(contents);
+            y += 25f;
+        }
+
+        TextBlock textBlock = new TextBlock(f1,
+                "This page was drawn after the two map pages, but it is the first page "
+                + "of the document: the pages were made detached and are added to the PDF "
+                + "in reading order. The footer \"Page X of N\" is drawn on each page last, "
+                + "when the number of pages is known.");
+        textBlock.SetFontSize(12f);
+        textBlock.SetLineSpacing(1.5f);
+        textBlock.SetTextColor(Color.dimgray);
+        textBlock.SetLocation(50f, y + 20f);
+        textBlock.SetWidth(contents.GetWidth() - 100f);
+        textBlock.DrawOn(contents);
+
+        // 3. The pages in reading order, and a footer on each, now that their
+        // number is known.
+        List<Page> pages = new List<Page>();
+        pages.Add(contents);
+        pages.AddRange(mapPages);
+        float fontSize = 10f;
+        for (int i = 0; i < pages.Count; i++) {
+            Page page = pages[i];
+
+            Line line = new Line(70f, page.GetHeight() - 60f,
+                    page.GetWidth() - 70f, page.GetHeight() - 60f);
+            line.SetStrokeColor(Color.lightgray);
+            line.DrawOn(page);
+
+            // A page number is an artifact: a screen reader skips it.
+            String footer = "Page " + (i + 1) + " of " + pages.Count;
+            page.AddArtifactBMC();
+            page.SetBrushColor(Color.black);
+            page.DrawString(
+                    f1,
+                    fontSize,
+                    footer,
+                    (page.GetWidth() - f1.StringWidth(fontSize, footer))/2f,
+                    page.GetHeight() - 40f);
+            page.AddEMC();
+        }
+        pdf.AddPages(pages);
 
         pdf.Complete();
     }

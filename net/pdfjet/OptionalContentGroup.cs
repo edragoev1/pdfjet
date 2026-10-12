@@ -13,7 +13,7 @@ using System.Collections.Generic;
 namespace PDFjet.NET {
 /// <summary>
 /// Container for drawable objects that can be drawn on a page as part of Optional Content Group.
-/// Please see the PDF specification and Example_30 for more details.
+/// Please see the PDF specification and Example_47 for more details.
 /// </summary>
 /// <remarks>Author: Mark Paxton</remarks>
 public class OptionalContentGroup {

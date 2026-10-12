@@ -8,91 +8,61 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Diagnostics;
+
 using PDFjet.NET;
 
 /**
  * Example_18.cs
- * This example shows how to write "Page X of N" footer on every page.
+ * Paragraphs written with the inline markup of Markdown: **bold**, *italic*,
+ * `code` and [links](url), each drawn in its own font by Markup, with the
+ * punctuation after a word in another style next to it. The paragraphs flow
+ * in a text frame, and the list is a list of paragraphs with labels.
  */
 public class Example_18 {
     public Example_18() {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_18.pdf", FileMode.Create)));
         pdf.SetCompliance(Compliance.PDF_UA_1);
-        pdf.SetTitle("How to Number Pages");
+        pdf.SetTitle("Inline markup");
 
-        Font f1 = new Font(pdf, IBMPlexSans.Regular);
-        Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
+        Font regular = new Font(pdf, IBMPlexSans.Regular).SetSize(11f);
+        Font bold = new Font(pdf, IBMPlexSans.Bold).SetSize(11f);
+        Font italic = new Font(pdf, IBMPlexSans.Italic).SetSize(11f);
+        Font boldItalic = new Font(pdf, IBMPlexSans.BoldItalic).SetSize(11f);
+        Font code = new Font(pdf, IBMPlexMono.Regular).SetSize(10f);
+        Font heading = new Font(pdf, IBMPlexSans.SemiBold);
+        Markup markup = new Markup(regular, bold, italic, boldItalic, code);
 
-        String[] titles = {
-            "1. Create the pages",
-            "2. Draw the content",
-            "3. Add the footers",
+        List<Paragraph> paragraphs = new List<Paragraph>();
+        paragraphs.Add(new Paragraph(new TextLine(heading, "Inline markup").SetFontSize(22f))
+                .SetStructureType(StructElem.H1));
+        paragraphs.AddRange(markup.Paragraphs(
+                "**Markup** reads the inline markup of Markdown and draws each part in its own "
+                + "font: **bold**, *italic*, ***bold italic***, `code` and "
+                + "[links](https://pdfjet.com). A word keeps the punctuation after it, as in "
+                + "*this*, and a mark with no match, such as the one in 2 * 3, is text.\n"
+                + "\n"
+                + "A backslash makes a mark text too: \\*not italic\\*. Code keeps its marks "
+                + "as they are, as in `a*b*c`, and a link can have emphasis in it: "
+                + "[the **PDFjet** repository](https://github.com/edragoev1/pdfjet)."));
+
+        String[] items = {
+            "`Markup.paragraph` makes one paragraph of a text.",
+            "`Markup.paragraphs` makes one of each part between the empty lines.",
+            "The paragraphs go in a **TextFrame** or a **TextColumn**, as any others do.",
         };
-        String[] texts = {
-            "The total number of pages is not known until all the content is drawn. "
-                + "That is why the pages in this document are created with Page.DETACHED: "
-                + "they are not added to the PDF yet, and they are kept in a list instead.",
-            "Each page gets its content, like this heading and this paragraph. "
-                + "Long documents would flow their text or tables from page to page here.",
-            "Now the list holds every page, so its size is the total number of pages. "
-                + "The footer \"Page X of N\" is drawn on each page, "
-                + "and then all the pages are added to the PDF with addPages.",
-        };
+        for (int i = 0; i < items.Length; i++) {
+            paragraphs.Add(markup.Paragraph(items[i])
+                    .SetListLabel(new TextLine(regular, (i + 1) + "."), 16f));
+        }
 
+        TextFrame frame = new TextFrame(paragraphs);
+        frame.SetLocation(70f, 70f);
+        frame.SetWidth(470f);
+        frame.SetParagraphGap(8f);
         List<Page> pages = new List<Page>();
-        for (int i = 0; i < titles.Length; i++) {
-            Page page = new Page(pdf, A4.PORTRAIT, Page.DETACHED);
-
-            TextLine header = new TextLine(f1, "How to number pages");
-            header.SetFontSize(10f);
-            header.SetTextColor(Color.dimgray);
-            header.SetLocation(70f, 50f);
-            header.DrawOn(page);
-
-            Line line = new Line(70f, 60f, page.GetWidth() - 70f, 60f);
-            line.SetStrokeColor(Color.lightgray);
-            line.DrawOn(page);
-
-            TextLine title = new TextLine(f2, titles[i]);
-            title.SetStructureType(StructElem.H1);
-            title.SetFontSize(20f);
-            title.SetLocation(70f, 120f);
-            title.DrawOn(page);
-
-            TextBlock textBlock = new TextBlock(f1, texts[i]);
-            textBlock.SetFontSize(12f);
-            textBlock.SetLineSpacing(1.5f);
-            textBlock.SetLocation(70f, 140f);
-            textBlock.SetWidth(page.GetWidth() - 140f);
-            textBlock.DrawOn(page);
-
-            pages.Add(page);
-        }
-
-        float fontSize = 10f;
-        for (int i = 0; i < pages.Count; i++) {
-            Page page = pages[i];
-
-            Line line = new Line(70f, page.GetHeight() - 60f,
-                    page.GetWidth() - 70f, page.GetHeight() - 60f);
-            line.SetStrokeColor(Color.lightgray);
-            line.DrawOn(page);
-
-            // A page number is an artifact: a screen reader skips it.
-            String footer = "Page " + (i + 1) + " of " + pages.Count;
-            page.AddArtifactBMC();
-            page.SetBrushColor(Color.black);
-            page.DrawString(
-                    f1,
-                    fontSize,
-                    footer,
-                    (page.GetWidth() - f1.StringWidth(fontSize, footer))/2f,
-                    page.GetHeight() - 40f);
-            page.AddEMC();
-        }
+        frame.DrawOn(pdf, pages, Letter.PORTRAIT);
         pdf.AddPages(pages);
-
         pdf.Complete();
     }
 
@@ -104,5 +74,4 @@ public class Example_18 {
         sw.Stop();
         Console.WriteLine($"Example_18 => {time1 - time0,4} ms");
     }
-
 }   // End of Example_18.cs

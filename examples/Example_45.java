@@ -7,91 +7,76 @@
 package examples;
 
 import java.io.*;
-import java.util.*;
 import com.pdfjet.*;
 import com.pdfjet.fonts.*;
 
 /**
  * Example_45.java
- * Using the Form and Field classes to draw a shipment request. A field at x = 0
- * starts a new row, the other fields of the row start at their own x, and a
- * field with an empty label continues the value above it on a new line.
+ * This example adds a "DRAFT" watermark to every page of a two-page
+ * document that is PDF/A-3a and PDF/UA-1. The watermark is drawn first, so the
+ * text of the page is drawn over it.
  */
 public class Example_45 {
-    public Example_45() throws Exception {
 
+    public Example_45() throws Exception {
         PDF pdf = new PDF(
-                new BufferedOutputStream(
-                        new FileOutputStream("Example_45.pdf")));
-        pdf.setCompliance(Compliance.PDF_UA_1);
-        pdf.setTitle("Shipment Request");
+                new BufferedOutputStream(new FileOutputStream("Example_45.pdf")),
+                Compliance.PDF_A_3A_UA_1);
+        pdf.setTitle("A Draft, Archived as PDF/A-3a and PDF/UA-1");
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
         Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
+        Font f3 = new Font(pdf, IBMPlexSans.Bold);
 
-        Page page = new Page(pdf, Letter.PORTRAIT);
+        String[] titles = {
+            "Project Proposal",
+            "Budget and Schedule",
+        };
+        String[] texts = {
+            "This proposal describes a new reporting service that creates invoices, "
+                + "statements and delivery notes as PDF documents. The documents are "
+                + "archived as PDF/A-3a, so they can be opened and printed exactly "
+                + "the same way for many years.\n\n"
+                + "The watermark tells every reader that this is a draft. It is drawn "
+                + "in light gray behind the text, at an angle from the bottom left "
+                + "corner to the top right corner of the page.",
+            "The service will be built in three phases over six months. The first "
+                + "phase delivers invoices, the second statements, and the third "
+                + "delivery notes.\n\n"
+                + "The budget and the schedule will be final once the proposal is "
+                + "approved. Until then, every page of this document is marked as a draft.",
+        };
 
-        TextLine text = new TextLine(f2, "Shipment Request");
-        text.setStructureType(StructElem.H1);
-        text.setFontSize(22f);
-        text.setLocation(56f, 80f);
-        text.drawOn(page);
+        for (int i = 0; i < titles.length; i++) {
+            Page page = new Page(pdf, A4.LANDSCAPE);
 
-        TextBlock textBlock = new TextBlock(f1,
-                "A Form draws its fields in rows. A field at x = 0 starts a new row, "
-                + "the other fields of the row start at their own x, and a field with "
-                + "an empty label continues the value above it on a new line.");
-        textBlock.setFontSize(12f);
-        textBlock.setLineSpacing(1.5f);
-        textBlock.setLocation(56f, 95f);
-        textBlock.setWidth(500f);
-        float[] xy = textBlock.drawOn(page);
+            // The watermark is drawn before the content of the page.
+            f3.setSize(120f);
+            page.addWatermark(f3, "DRAFT");
 
-        float w = 500f; // The width of the form
+            TextLine title = new TextLine(f2, titles[i]);
+            title.setStructureType(StructElem.H1);
+            title.setFontSize(28f);
+            title.setLocation(70f, 100f);
+            title.drawOn(page);
 
-        List<Field> fields = new ArrayList<Field>();
-        fields.add(new Field(   0f, "Sender", "Maple Leaf Instruments Ltd."));
-        fields.add(new Field(   0f, "Street Address", "480 King Street West"));
-        fields.add(new Field(6*w/8, "Suite", "1200"));
-        fields.add(new Field(   0f, "City", "Toronto"));
-        fields.add(new Field(3*w/8, "Province", "Ontario"));
-        fields.add(new Field(5*w/8, "Postal Code", "M5V 1L7"));
-        fields.add(new Field(6*w/8, "Country", "Canada"));
-        fields.add(new Field(   0f, "Recipient", "Nordic Sensor Labs AB"));
-        fields.add(new Field(   0f, "Street Address", "Drottninggatan 55"));
-        fields.add(new Field(6*w/8, "Floor", "3"));
-        fields.add(new Field(   0f, "City", "Stockholm"));
-        fields.add(new Field(5*w/8, "Postal Code", "111 21"));
-        fields.add(new Field(6*w/8, "Country", "Sweden"));
-        fields.add(new Field(   0f, "Contact", "Anna Lindqvist"));
-        fields.add(new Field(3*w/8, "Email", "anna.lindqvist@example.com"));
-        fields.add(new Field(   0f, "Contents", "Two calibrated pressure sensors"));
-        fields.add(new Field(5*w/8, "Weight", "3.2 kg"));
-        fields.add(new Field(6*w/8, "Declared Value", "CAD 1,450.00"));
-        fields.add(new Field(   0f, "Instructions",
-                "Keep upright and away from magnets. Deliver on a weekday"));
-        fields.add(new Field(   0f, "", "between 9:00 and 17:00, to the reception on the third floor."));
+            TextBlock textBlock = new TextBlock(f1, texts[i]);
+            textBlock.setFontSize(14f);
+            textBlock.setLineSpacing(1.5f);
+            textBlock.setLocation(70f, 130f);
+            textBlock.setWidth(page.getWidth() - 140f);
+            textBlock.drawOn(page);
 
-        xy = new Form(fields)
-                .setLabelFont(f1)
-                .setLabelFontSize(8f)
-                .setLabelColor(Color.dimgray)
-                .setValueFont(f2)
-                .setValueFontSize(10f)
-                .setValueColor(Color.black)
-                .setLocation(56f, xy[1] + 20f)
-                .setWidth(w)
-                .setStrokeWidth(0.5f)
-                .drawOn(page);
-
-        text = new TextLine(f1, "The recipient signs for the package on delivery.");
-        text.setFontSize(10f);
-        text.setTextColor(Color.dimgray);
-        text.setLocation(56f, xy[1] + 20f);
-        text.drawOn(page);
+            TextLine footer = new TextLine(f1, "Page " + (i + 1) + " of " + titles.length);
+            footer.setFontSize(10f);
+            footer.setTextColor(Color.dimgray);
+            footer.setLocation(70f, page.getHeight() - 40f);
+            footer.drawOn(page);
+        }
 
         pdf.complete();
     }
+
 
     public static void main(String[] args) throws Exception {
         long time0 = System.currentTimeMillis();

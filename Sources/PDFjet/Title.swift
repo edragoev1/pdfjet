@@ -6,7 +6,7 @@
  */
 
 ///
-/// Please see Example_48
+/// Please see Example_41
 ///
 public class Title : Drawable {
     var prefix: TextLine

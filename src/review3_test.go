@@ -889,4 +889,3 @@ func TestReview3AFontChecksumLeavesOutEmptyBlocks(t *testing.T) {
 		t.Errorf("checksum %X", font.checksum)
 	}
 }
-

@@ -20,7 +20,7 @@ import (
 
 // Path is used to create path objects.
 // The path objects may consist of lines, splines or both.
-// Please see Example_20 and Example_22.
+// Please see Example_34 and Example_40.
 type Path struct {
 	points        []*Point
 	color         [3]float32

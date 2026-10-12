@@ -6,7 +6,6 @@
  */
 using System;
 using System.IO;
-using System.Collections.Generic;
 using System.Diagnostics;
 using PDFjet.NET;
 
@@ -18,65 +17,107 @@ public class Example_08 {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_08.pdf", FileMode.Create)));
         pdf.SetCompliance(Compliance.PDF_UA_1);
-        pdf.SetTitle("Electric Vehicle Population");
+        pdf.SetTitle("The Ascent and Descent of a Font");
 
-        Font f1 = new Font(pdf, IBMPlexSans.SemiBold);
-        f1.SetSize(7f);
+        Font f1 = new Font(pdf, IBMPlexSans.Regular);
+        f1.SetSize(72f);
 
         Font f2 = new Font(pdf, IBMPlexSans.Regular);
-        f2.SetSize(7f);
+        f2.SetSize(24f);
 
-        Font f3 = new Font(pdf, IBMPlexSans.BoldItalic);
-        f3.SetSize(7f);
+        Page page = new Page(pdf, Letter.PORTRAIT);
 
-        Image image = new Image(pdf, "images/TeslaX.png");
-        image.SetAltDescription(
-                "A white Tesla Model X with a black glass roof, seen from the front left.");
-        image.ScaleBy(1f/3f);      // The image is 120 DPI, so 0.6 of its pixels
+        float x1 = 90f;
+        float y1 = 100f;
 
-        Barcode barcode = new Barcode(Barcode.CODE_128, "Hello, World!");
-        barcode.SetModuleLength(0.75f);
-        // Comment out the line below if you don't want to print the text underneath the barcode.
-        barcode.SetFont(f1);
-
-        Table table = new Table(f1, f2, "data/Electric_Vehicle_Population_10_Pages.csv");
-        table.SetVisibleColumns(1, 2, 3, 4, 5, 6, 7, 9);
-        table.GetCellAt(4, 0).SetImage(image);
-        table.GetCellAt(5, 0).SetColSpan(8);
-        table.GetCellAt(5, 0).SetBarcode(barcode);
-        table.GetCellAt(20, 0).SetColSpan(6);
-        table.GetCellAt(20, 6).SetColSpan(2);
-        table.AutoAdjustColumnWidths();
-        table.SetColumnWidth(0, image.GetWidth() + 4f);
-        table.SetColumnWidth(3, table.GetColumnWidth(3) + 10f);
-        table.SetColumnWidth(5, table.GetColumnWidth(5) + 10f);
-        table.RightAlignNumbers();
-
-        table.SetLocation(30f, 30f);
-        // table.SetFirstPageTopMargin(150f);
-        table.SetBottomMargin(15f);
-        table.SetTextColorInRow(12, Color.blue);
-        table.SetTextColorInRow(13, Color.firebrick);
-        table.SetFontInRow(14, f3);
-
-        // A heading on the first page only, which the table starts under: the
-        // first page is made here, and the table goes on to new pages.
-        Page first = new Page(pdf, Letter.PORTRAIT, false);
-        new TextLine(f1, "Electric Vehicle Population")
+        // A heading, which PAC asks a document for
+        new TextLine(f2, "The Ascent and Descent of a Font")
                 .SetStructureType(StructElem.H1)
-                .SetFontSize(14f)
-                .SetLocation(30f, 44f)
-                .DrawOn(first);
-        table.SetFirstPageTopMargin(56f);
+                .SetFontSize(18f)
+                .SetLocation(x1, 45f)
+                .DrawOn(page);
 
-        List<Page> pages = new List<Page>();
-        pages.Add(first);
-        table.DrawOn(pdf, first, pages, Letter.PORTRAIT);
-        for (int i = 0; i < pages.Count; i++) {
-            Page page = pages[i];
-            page.AddFooter(new TextLine(f1, "Page " + (i + 1) + " of " + pages.Count));
-            pdf.AddPage(page);
-        }
+        TextLine textLine = new TextLine(f2, "(x1, y1)");
+        textLine.SetLocation(x1, y1 - 15f);
+        textLine.DrawOn(page);
+
+        TextBlock textBlock = new TextBlock(f1,
+            "Hello, World! This example shows the functionality of the TextBlock.");
+        textBlock.SetLocation(x1, y1);
+        textBlock.SetWidth(500f);
+        textBlock.SetBorderColor(Color.lightgreen);
+        textBlock.SetBackgroundColor(Color.lightgreen);
+        textBlock.SetTextColor(Color.black);
+        float[] xy = textBlock.DrawOn(page);
+
+        // Text on the left
+        TextLine ascentText = new TextLine(f2, "Ascent");
+        ascentText.SetFontSize(18f);
+        ascentText.SetLocation(x1 - 85f, y1 + 40f);
+        ascentText.DrawOn(page);
+
+        TextLine descentText = new TextLine(f2, "Descent");
+        descentText.SetFontSize(18f);
+        descentText.SetLocation(x1 - 85f, y1 + f1.GetAscent() + 15f);
+        descentText.DrawOn(page);
+
+        // Line beside the text ascent
+        Line blueLine = new Line(
+            x1 - 10f,
+            y1,
+            x1 - 10f,
+            y1 + f1.GetAscent());
+        blueLine.SetStrokeColor(Color.blue);
+        blueLine.SetStrokeWidth(3f);
+        blueLine.DrawOn(page);
+
+        // Line beside the text descent
+        Line redLine = new Line(
+            x1 - 10f,
+            y1 + f1.GetAscent(),
+            x1 - 10f,
+            y1 + f1.GetAscent() + f1.GetDescent());
+        redLine.SetStrokeColor(Color.red);
+        redLine.SetStrokeWidth(3f);
+        redLine.DrawOn(page);
+
+        Line baseLine = new Line(
+                x1,
+                y1 + f1.GetAscent(),
+                xy[0],
+                y1 + f1.GetAscent());
+        baseLine.DrawOn(page);
+
+        Line descentLine = new Line(
+                x1,
+                y1 + (f1.GetAscent() + f1.GetDescent()),
+                xy[0],
+                y1 + (f1.GetAscent() + f1.GetDescent()));
+        descentLine.DrawOn(page);
+
+        Line ascentLine = new Line(
+                x1,
+                y1 + f1.GetBodyHeight() + f1.GetAscent(),
+                xy[0],
+                y1 + f1.GetBodyHeight() + f1.GetAscent());
+        ascentLine.DrawOn(page);
+
+        Point p1 = new Point(x1, y1);
+        p1.SetRadius(5f);
+        p1.DrawOn(page);
+
+        Point p2 = new Point(xy[0], xy[1]);
+        p2.SetRadius(5f);
+        p2.DrawOn(page);
+
+        f2.SetSize(24f);
+        TextLine textLine3 = new TextLine(f2, "(x2, y2)");
+        textLine3.SetLocation(xy[0] - 80f, xy[1] + 30f);
+        textLine3.DrawOn(page);
+
+        Rect rect = new Rect(xy[0], xy[1], 20f, 20f);
+        rect.SetBorderColor(Color.black);
+        rect.DrawOn(page);
 
         pdf.Complete();
     }

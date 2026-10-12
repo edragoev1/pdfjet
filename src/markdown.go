@@ -51,7 +51,7 @@ const (
 // a space, links in a table cell are its text, and an image is drawn only when
 // it is alone in its paragraph, from the directory that SetImageDirectory
 // names; with none, its text is drawn instead, so that a text from anyone
-// reads no file. Please see Example_54.
+// reads no file. Please see Example_19.
 type Markdown struct {
 	regular        *Font
 	bold           *Font

@@ -52,7 +52,7 @@ import (
 // can hold a stamp, so a header written once can be placed inside a group
 // that is rotated with the rest of it.
 //
-// Please see Example_35.
+// Please see Example_31.
 type Stamp struct {
 	objNumber      int
 	pdf            *PDF

@@ -18,7 +18,7 @@ ENGINE is one of:
 PDF_FOLDER has the Java examples, Example_NN.pdf, which the compare job has
 checked are the examples of every port. ENCRYPTED_FOLDER has the PDFs that
 encrypted-pdfs/main.go writes, with a Cyrillic and a 200 byte password.
-Example_30 is opened with its user password and again with its owner
+Example_47 is opened with its user password and again with its owner
 password, the one encrypted PDF with the Cyrillic password and the other with
 the 200 byte one. The check fails when, in the engine:
 
@@ -66,7 +66,7 @@ from concurrent.futures import ProcessPoolExecutor
 import pymupdf
 
 ENGINES = {'pdfium': 'PDFium', 'pdfjs': 'pdf.js', 'pdfkit': 'PDFKit', 'poppler': 'Poppler'}
-EXAMPLES = range(1, 58)
+EXAMPLES = range(1, 51)
 MAX_PAGES = 10
 RESOLUTION = 72
 SCRIPTS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -75,10 +75,10 @@ EXAMPLES_DIR = os.path.join(SCRIPTS_DIR, '..', '..', 'examples')
 # Calibrated on the examples of Sep 29, 2026, with the pinned versions, on the
 # pages RENDER_EXCEPTIONS leaves in. The smallest ink ratio was 0.61 in PDFium,
 # 0.55 in pdf.js and 0.43 in Poppler, all on the thin table lines of
-# Example_43; a blank page has 0. The most blocks that differ were 2.9% in
-# PDFium, on the heavier lines of the tables of Example_13, 1.3% in pdf.js, and
-# 3.2% in Poppler, which draws the thin grid lines of the chart of Example_09
-# a full pixel wide; the annotations PDFium left out of Example_06, before
+# Example_24; a blank page has 0. The most blocks that differ were 2.9% in
+# PDFium, on the heavier lines of the tables of Example_21, 1.3% in pdf.js, and
+# 3.2% in Poppler, which draws the thin grid lines of the chart of Example_26
+# a full pixel wide; the annotations PDFium left out of Example_42, before
 # they had appearance streams, were 4.7%.
 MIN_INK_RATIO = 0.25
 SHRINK = 8

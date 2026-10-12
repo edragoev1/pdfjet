@@ -7,43 +7,117 @@
 package examples;
 
 import java.io.*;
-import java.util.*;
 import com.pdfjet.*;
 import com.pdfjet.fonts.*;
 
 /**
  * Example_43.java
+ * This example draws a survey with check boxes and radio buttons.
  */
 public class Example_43 {
     public Example_43() throws Exception {
-        PDF pdf = new PDF(  // Use 8MB buffer to speed operation
-                new BufferedOutputStream(new FileOutputStream("Example_43.pdf"), 8*1024*1024));
-        // Uncomment the line below to make this a PDF/UA document. A BigTable
-        // is tagged as a table: a TR for each row, holding a TH or a TD with
-        // the text of each cell, which is what a screen reader reads a table
-        // from. It is off here because of what it costs at this size: every
-        // tagged cell is an object of its own, so this document goes from
-        // 5,108 objects and 11.8 MB to 1.25 million objects and 249 MB. The
-        // 10-page file below is the size to see the tagging at.
-        // pdf.setCompliance(Compliance.PDF_UA_1);
-        pdf.setTitle("Electric Vehicle Population Data");   // Required for PDF/UA !
+        PDF pdf = new PDF(
+                new BufferedOutputStream(new FileOutputStream("Example_43.pdf")));
+        pdf.setCompliance(Compliance.PDF_UA_1);
+        pdf.setTitle("Customer Survey");
 
-        // Used for performance testing. Results in 2000+ pages PDF.
-        String fileName = "data/Electric_Vehicle_Population_Data.csv";
-        // String fileName = "data/Electric_Vehicle_Population_10_Pages.csv";
+        Font f1 = new Font(pdf, IBMPlexSans.Regular);
+        f1.setSize(11f);
 
-        Font f1 = new Font(pdf, IBMPlexSans.SemiBold);
-        f1.setSize(10f);
+        Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
+        f2.setSize(12f);
 
-        Font f2 = new Font(pdf, IBMPlexSans.Regular);
-        f2.setSize(9f);
+        Page page = new Page(pdf, Letter.PORTRAIT);
 
-        BigTable table = new BigTable(pdf, f1, f2, Letter.LANDSCAPE);
-        table.setNumberOfColumns(9);        // The order of the
-        table.setTableData(fileName, ",");  // these statements
-        table.setLocation(0f, 0f);          // is
-        table.setBottomMargin(20f);         // very
-        table.complete();                   // important!
+        float x = 70f;
+        float y = 90f;
+
+        TextLine text = new TextLine(f2, "Customer Survey");
+        text.setStructureType(StructElem.H1);
+        text.setFontSize(22f);
+        text.setLocation(x, y);
+        text.drawOn(page);
+
+        // Check boxes, one below the other.
+        y += 50f;
+        new TextLine(f2, "Which PDFjet ports do you use?").setLocation(x, y).drawOn(page);
+
+        y += 15f;
+        new CheckBox(f1, "Java")
+                .setLocation(x, y)
+                .setCheckmarkColor(Color.blue)
+                .check(Mark.CHECK)
+                .drawOn(page);
+
+        y += 25f;
+        new CheckBox(f1, "C#")
+                .setLocation(x, y)
+                .setCheckmarkColor(Color.blue)
+                .check(Mark.CHECK)
+                .drawOn(page);
+
+        y += 25f;
+        new CheckBox(f1, "Swift")
+                .setLocation(x, y)
+                .drawOn(page);
+
+        y += 25f;
+        new CheckBox(f1, "Go")
+                .setLocation(x, y)
+                .drawOn(page);
+
+        // Radio buttons in a row. Each one starts where the one before it ends.
+        y += 50f;
+        new TextLine(f2, "How did you hear about PDFjet?").setLocation(x, y).drawOn(page);
+
+        y += 15f;
+        float[] xy = new RadioButton(f1, "Web search")
+                .setLocation(x, y)
+                .select(true)
+                .drawOn(page);
+
+        xy = new RadioButton(f1, "A colleague")
+                .setLocation(xy[0] + 20f, y)
+                .drawOn(page);
+
+        new RadioButton(f1, "Other")
+                .setLocation(xy[0] + 20f, y)
+                .drawOn(page);
+
+        y += 50f;
+        new TextLine(f2, "Would you recommend PDFjet?").setLocation(x, y).drawOn(page);
+
+        y += 15f;
+        xy = new RadioButton(f1, "Yes")
+                .setLocation(x, y)
+                .select(true)
+                .drawOn(page);
+
+        new RadioButton(f1, "No")
+                .setLocation(xy[0] + 20f, y)
+                .drawOn(page);
+
+        // A check box marked with an X, and one with a link.
+        y += 50f;
+        new TextLine(f2, "Stay in touch").setLocation(x, y).drawOn(page);
+
+        y += 15f;
+        new CheckBox(f1, "Send me news about new releases")
+                .setLocation(x, y)
+                .setCheckmarkColor(Color.red)
+                .check(Mark.X)
+                .drawOn(page);
+
+        y += 25f;
+        xy = new CheckBox(f1, "Visit https://pdfjet.com")
+                .setLocation(x, y)
+                .setURIAction("https://pdfjet.com")
+                .drawOn(page);
+
+        // A border around the survey.
+        Rect rect = new Rect(50f, 50f, 512f, xy[1] + 25f - 50f);
+        rect.setBorderColor(Color.lightgray);
+        rect.drawOn(page);
 
         pdf.complete();
     }

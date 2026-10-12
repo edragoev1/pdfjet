@@ -10,7 +10,7 @@ namespace PDFjet.NET {
 /// <summary>
 /// Used to create line objects.
 ///
-/// Please see Example_23 and Example_46.
+/// Please see Example_08 and Example_35.
 /// </summary>
 public class Line : IDrawable {
     internal float x1;

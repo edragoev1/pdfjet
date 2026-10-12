@@ -7,119 +7,145 @@
 package examples;
 
 import java.io.*;
+import java.util.*;
 import com.pdfjet.*;
 import com.pdfjet.fonts.*;
 
 /**
  * Example_23.java
  */
-public class Example_23 {
+final public class Example_23 {
     public Example_23() throws Exception {
-        PDF pdf = new PDF(new FileOutputStream("Example_23.pdf"));
-        pdf.setCompliance(Compliance.PDF_UA_1);
-        pdf.setTitle("The Ascent and Descent of a Font");
+        PDF pdf = new PDF(
+                new BufferedOutputStream(new FileOutputStream("Example_23.pdf")));
+        pdf.setCompliance(Compliance.PDF_A_1A);
+        pdf.setTitle("World Communications");
 
-        Font f1 = new Font(pdf, IBMPlexSans.Regular);
-        f1.setSize(72f);
-
+        Font f1 = new Font(pdf, IBMPlexSans.Bold);
         Font f2 = new Font(pdf, IBMPlexSans.Regular);
-        f2.setSize(24f);
+        Font f3 = new Font(pdf, IBMPlexSans.BoldItalic);
 
-        Page page = new Page(pdf, Letter.PORTRAIT);
+        f1.setSize(7f);
+        f2.setSize(7f);
+        f3.setSize(7f);
 
-        float x1 = 90f;
-        float y1 = 100f;
+        Table table = new Table();
+        List<List<Cell>> tableData = getData(
+                "data/world-communications.txt", "|", 2, f1, f2);
 
-        // A heading, which PAC asks a document for
-        new TextLine(f2, "The Ascent and Descent of a Font")
-                .setStructureType(StructElem.H1)
-                .setFontSize(18f)
-                .setLocation(x1, 45f)
-                .drawOn(page);
+        Point p1 = new Point();
+        p1.setShape(Shape.CIRCLE);
+        p1.setRadius(2f);
+        p1.setStrokeColor(Color.darkolivegreen);
+        p1.setURIAction("https://en.wikipedia.org/wiki/India");
+        tableData.get(4).get(3).setMarker(p1, Alignment.RIGHT);
 
-        TextLine textLine = new TextLine(f2, "(x1, y1)");
-        textLine.setLocation(x1, y1 - 15f);
-        textLine.drawOn(page);
+        p1 = new Point();
+        p1.setShape(Shape.DIAMOND);
+        p1.setRadius(2.5f);
+        p1.setStrokeColor(Color.blue);
+        p1.setURIAction("https://en.wikipedia.org/wiki/European_Union");
+        tableData.get(5).get(3).setMarker(p1, Alignment.RIGHT);
 
-        TextBlock textBlock = new TextBlock(f1,
-            "Hello, World! This example shows the functionality of the TextBlock.");
-        textBlock.setLocation(x1, y1);
-        textBlock.setWidth(500f);
-        textBlock.setBorderColor(Color.lightgreen);
-        textBlock.setBackgroundColor(Color.lightgreen);
-        textBlock.setTextColor(Color.black);
-        float[] xy = textBlock.drawOn(page);
+        p1 = new Point();
+        p1.setShape(Shape.STAR);
+        p1.setRadius(3f);
+        p1.setStrokeColor(Color.red);
+        p1.setURIAction("https://en.wikipedia.org/wiki/United_States");
+        tableData.get(6).get(3).setMarker(p1, Alignment.RIGHT);
 
-        // Text on the left
-        TextLine ascentText = new TextLine(f2, "Ascent");
-        ascentText.setFontSize(18f);
-        ascentText.setLocation(x1 - 85f, y1 + 40f);
-        ascentText.drawOn(page);
+        table.setTableData(tableData, 2);
+        table.setBottomMargin(15f);
+        // The table is about 555 points wide: at x = 30 it fits on the page.
+        table.setLocation(30f, 30f);
+        table.setTextColorInRow(6, Color.blue);
+        table.setTextColorInRow(39, Color.firebrick);
+        table.setFontInRow(26, f3);
+        table.removeLineBetweenRows(0, 1);
+        table.autoAdjustColumnWidths();
+        table.setColumnWidth(0, 50f);
+        table.setColumnWidth(3, 80f);
+        table.rightAlignNumbers();
 
-        TextLine descentText = new TextLine(f2, "Descent");
-        descentText.setFontSize(18f);
-        descentText.setLocation(x1 - 85f, y1 + f1.getAscent() + 15f);
-        descentText.drawOn(page);
-
-        // Line beside the text ascent
-        Line blueLine = new Line(
-            x1 - 10f,
-            y1,
-            x1 - 10f,
-            y1 + f1.getAscent());
-        blueLine.setStrokeColor(Color.blue);
-        blueLine.setStrokeWidth(3f);
-        blueLine.drawOn(page);
-
-        // Line beside the text descent
-        Line redLine = new Line(
-            x1 - 10f,
-            y1 + f1.getAscent(),
-            x1 - 10f,
-            y1 + f1.getAscent() + f1.getDescent());
-        redLine.setStrokeColor(Color.red);
-        redLine.setStrokeWidth(3f);
-        redLine.drawOn(page);
-
-        Line baseLine = new Line(
-                x1,
-                y1 + f1.getAscent(),
-                xy[0],
-                y1 + f1.getAscent());
-        baseLine.drawOn(page);
-
-        Line descentLine = new Line(
-                x1,
-                y1 + (f1.getAscent() + f1.getDescent()),
-                xy[0],
-                y1 + (f1.getAscent() + f1.getDescent()));
-        descentLine.drawOn(page);
-
-        Line ascentLine = new Line(
-                x1,
-                y1 + f1.getBodyHeight() + f1.getAscent(),
-                xy[0],
-                y1 + f1.getBodyHeight() + f1.getAscent());
-        ascentLine.drawOn(page);
-
-        Point p1 = new Point(x1, y1);
-        p1.setRadius(5f);
-        p1.drawOn(page);
-
-        Point p2 = new Point(xy[0], xy[1]);
-        p2.setRadius(5f);
-        p2.drawOn(page);
-
-        f2.setSize(24f);
-        TextLine textLine3 = new TextLine(f2, "(x2, y2)");
-        textLine3.setLocation(xy[0] - 80f, xy[1] + 30f);
-        textLine3.drawOn(page);
-
-        Rect rect = new Rect(xy[0], xy[1], 20f, 20f);
-        rect.setBorderColor(Color.black);
-        rect.drawOn(page);
+        List<Page> pages = new ArrayList<Page>();
+        table.drawOn(pdf, pages, Letter.PORTRAIT);
+        for (int i = 0; i < pages.size(); i++) {
+            Page page = pages.get(i);
+            page.addFooter(new TextLine(f1, "Page " + (i + 1) + " of " + pages.size()));
+            pdf.addPage(page);
+        }
 
         pdf.complete();
+    }
+
+
+    public List<List<Cell>> getData(
+            String fileName,
+            String delimiter,
+            int numOfHeaderRows,
+            Font f1,
+            Font f2) throws Exception {
+        List<List<Cell>> tableData = new ArrayList<List<Cell>>();
+
+        int currentRow = 0;
+        BufferedReader reader = null;
+        try {
+            reader = new BufferedReader(
+                    new InputStreamReader(new FileInputStream(fileName), "UTF-8"));
+            String line = null;
+            while ((line = reader.readLine()) != null) {
+                List<Cell> row = new ArrayList<Cell>();
+                String[] cols = null;
+                if (delimiter.equals("|")) {
+                    cols = line.split("\\|", -1);
+                } else if (delimiter.equals("\t")) {
+                    cols = line.split("\t", -1);
+                } else {
+                    throw new Exception(
+                            "Only pipes and tabs can be used as delimiters");
+                }
+                for (int i = 0; i < cols.length; i++) {
+                    String text = cols[i].trim();
+                    Cell cell = null;
+                    if (currentRow < numOfHeaderRows) {
+                        cell = new Cell(f1, text);
+                    } else {
+                        cell = new Cell(f2, text);
+                    }
+                    cell.setTopPadding(2f);
+                    cell.setBottomPadding(2f);
+                    cell.setLeftPadding(2f);
+                    if (i == 3) {
+                        cell.setRightPadding(10f);
+                    } else {
+                        cell.setRightPadding(2f);
+                    }
+                    row.add(cell);
+                }
+                tableData.add(row);
+                currentRow++;
+            }
+        } finally {
+            reader.close();
+        }
+        appendMissingCells(tableData, f2);
+
+        return tableData;
+    }
+
+    private void appendMissingCells(List<List<Cell>> tableData, Font f2) {
+        List<Cell> firstRow = tableData.get(0);
+        int numOfColumns = firstRow.size();
+        for (int i = 0; i < tableData.size(); i++) {
+            List<Cell> dataRow = tableData.get(i);
+            int dataRowColumns = dataRow.size();
+            if (dataRowColumns < numOfColumns) {
+                for (int j = 0; j < (numOfColumns - dataRowColumns); j++) {
+                    dataRow.add(new Cell(f2));
+                }
+                dataRow.get(dataRowColumns - 1).setColSpan((numOfColumns - dataRowColumns) + 1);
+            }
+        }
     }
 
     public static void main(String[] args) throws Exception {

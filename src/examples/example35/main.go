@@ -15,150 +15,139 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
-	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
-// Example35 draws a stamp and a hierarchy of nested containers.
+// Example35 uses PDF layers (optional content groups) that can be shown or
+// hidden: a shaded relief map of Europe, the lines of latitude and longitude
+// over it, and the capital cities. The map covers 12°W to 42°E and 34°N to
+// 62°N, and longitude and latitude map linearly to x and y on it.
 func Example35() {
+	var x0 float32 = 50.0 // The top left corner of the map
+	var y0 float32 = 180.0
+	var w float32 = 512.0 // The size of the map
+	var h float32 = 512.0 * 840.0 / 1084.0
+
+	mapX := func(longitude float32) float32 {
+		return x0 + (longitude+12.0)/54.0*w
+	}
+	mapY := func(latitude float32) float32 {
+		return y0 + (62.0-latitude)/28.0*h
+	}
+
 	pdf, err := pdfjet.NewPDFFile("Example_35.pdf")
 	if err != nil {
 		log.Fatal(err)
 	}
+	// A tagged document; PDF/UA has no setting for a layer that is not
+	// printed, so this one prints every layer that is shown.
 	pdf.SetCompliance(compliance.PDF_UA_1)
-	pdf.SetTitle("Containers and Stamps")
+	pdf.SetTitle("PDF Layers: a map of Europe in three layers")
+
+	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
+	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
 
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 
-	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
-	f1.SetSize(14.0)
+	text := pdfjet.NewTextLine(f2, "PDF Layers")
+	text.SetFontSize(22.0)
+	text.SetLocation(50.0, 80.0)
+	text.DrawOn(page)
 
-	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold)
-	f2.SetSize(14.0)
+	textBlock := pdfjet.NewTextBlock(f1,
+		"Each part of this map is a layer, an optional content group, that "+
+			"a PDF viewer lists in its Layers panel and can show or hide: the "+
+			"relief, the lines of latitude and longitude, and the capital "+
+			"cities. As a PDF/UA document, this one prints every layer it shows.")
+	textBlock.SetFontSize(12.0)
+	textBlock.SetLineSpacing(1.5)
+	textBlock.SetLocation(50.0, 95.0)
+	textBlock.SetWidth(512.0)
+	textBlock.DrawOn(page)
 
-	// The heading, above the drawings, which are 40 points lower for it
-	pdfjet.NewTextLine(f2, "Containers and Stamps").
-		SetStructureType(structelem.H1).
-		SetFontSize(18.0).
-		SetLocation(50.0, 30.0).
-		DrawOn(page)
+	image := pdfjet.NewImageFromFile(pdf, "images/europe-relief.png")
+	image.ResizeWidth(w)
+	image.SetLocation(x0, y0)
+	image.SetAltDescription("A relief map of Europe, from Ireland to Turkey")
 
-	// Base container
-	container := pdfjet.NewContainer(400.0, 400.0)
-	container.SetLocation(100.0, 140.0)
+	// A layer is hidden and not printed unless it is set to be.
+	group := pdfjet.NewOptionalContentGroup(pdf, "Relief")
+	group.SetVisible(true)
+	group.SetPrintable(true)
+	group.Add(image)
+	group.DrawOn(page)
 
-	// Add a rectangle to container
-	rect := pdfjet.NewRect(0.0, 0.0, 400.0, 400.0)
-	rect.SetFillColor(color.Gray)
-	container.Add(rect)
+	group = pdfjet.NewOptionalContentGroup(pdf, "Latitude and Longitude")
+	group.SetVisible(true)
+	for longitude := -10; longitude <= 40; longitude += 5 {
+		line := pdfjet.NewLine(mapX(float32(longitude)), y0, mapX(float32(longitude)), y0+h)
+		line.SetStrokeWidth(0.5)
+		line.SetStrokeColor(color.White)
+		group.Add(line)
 
-	stamp := pdfjet.NewStamp(pdf).
-		SetSize(400.0, 400.0).
-		AddFont(f1).
-		AddFont(f2)
+		label := "0°"
+		if longitude < 0 {
+			label = fmt.Sprintf("%d°W", -longitude)
+		} else if longitude > 0 {
+			label = fmt.Sprintf("%d°E", longitude)
+		}
+		text = pdfjet.NewTextLine(f1, label)
+		text.SetFontSize(8.0)
+		text.SetTextColor(color.DimGray)
+		text.SetLocation(mapX(float32(longitude))-text.GetWidth()/2.0, y0+h+12.0)
+		group.Add(text)
+	}
+	for latitude := 35; latitude <= 60; latitude += 5 {
+		line := pdfjet.NewLine(x0, mapY(float32(latitude)), x0+w, mapY(float32(latitude)))
+		line.SetStrokeWidth(0.5)
+		line.SetStrokeColor(color.White)
+		group.Add(line)
 
-	// Draw path ...
-	stamp.SetFillColor(color.LightBlue).
-		SetStrokeColor(color.Red).
-		SetStrokeWidth(4.0).
-		MoveTo(0.0, 0.0).
-		LineTo(400.0, 0.0).
-		LineTo(400.0, 400.0).
-		LineTo(0.0, 400.0).
-		CloseFillAndStrokePath()
+		text = pdfjet.NewTextLine(f1, fmt.Sprintf("%d°N", latitude))
+		text.SetFontSize(8.0)
+		text.SetTextColor(color.DimGray)
+		text.SetLocation(x0+w+4.0, mapY(float32(latitude))+3.0)
+		group.Add(text)
+	}
+	group.DrawOn(page)
 
-	// Draw Rectangle
-	stamp.SetStrokeColor(color.Blue).
-		SetStrokeWidth(1.0).
-		DrawRect(10.0, 10.0, 380.0, 380.0)
+	cities := []string{
+		"Athens", "Ankara", "Berlin", "Bucharest", "Dublin",
+		"Kyiv", "Lisbon", "London", "Madrid", "Oslo",
+		"Paris", "Rome", "Stockholm", "Vienna", "Warsaw",
+	}
+	locations := [][2]float32{ // Longitude and latitude
+		{23.73, 37.98}, {32.86, 39.93}, {13.40, 52.52},
+		{26.10, 44.43}, {-6.26, 53.35}, {30.52, 50.45},
+		{-9.14, 38.72}, {-0.13, 51.51}, {-3.70, 40.42},
+		{10.75, 59.91}, {2.35, 48.86}, {12.50, 41.90},
+		{18.07, 59.33}, {16.37, 48.21}, {21.01, 52.23},
+	}
+	group = pdfjet.NewOptionalContentGroup(pdf, "Capital Cities")
+	group.SetVisible(true)
+	group.SetPrintable(true)
+	for i := 0; i < len(cities); i++ {
+		x := mapX(locations[i][0])
+		y := mapY(locations[i][1])
 
-	// Fill Rectangle
-	stamp.SetFillColor(color.DarkGreen).
-		FillRect(10.0, 10.0, 20.0, 20.0)
+		point := pdfjet.NewPoint(x, y)
+		point.SetRadius(2.5)
+		point.SetFillColor(color.White)
+		point.SetStrokeColor(color.Black)
+		group.Add(point)
 
-	// Draw some text
-	params := pdfjet.NewTextParameters().
-		SetFont(f1).
-		SetFontSize(14.0).
-		SetLocation(40.0, 25.0). // Clear of the square, which the text would run over
-		SetText("Hello, World!")
-	stamp.DrawTextUsingParams(params)
+		text = pdfjet.NewTextLine(f2, cities[i])
+		text.SetFontSize(8.0)
+		text.SetLocation(x+5.0, y+3.0)
+		group.Add(text)
+	}
+	group.DrawOn(page)
 
-	// Change some parameters and draw the text again
-	params.SetFont(f2).SetLocation(40.0, 50.0)
-	stamp.SetFillColor(color.DarkGreen).DrawTextUsingParams(params)
-
-	stamp.Complete() // The stamp is complete!
-
-	stamp.SetLocation(50.0, 90.0).DrawOn(page)
-
-	// Rotate the stamp counter clockwise and draw it again
-	stamp.SetRotation(-15).DrawOn(page)
-
-	// Rotate the stamp clockwise and draw it again
-	stamp.SetRotation(15).DrawOn(page)
-
-	// Draw the stamp again at a quarter of its size
-	stamp.SetRotation(0).ScaleBy(0.25).SetLocation(360.0, 520.0).DrawOn(page)
-
-	// Add a text line to container
-	title := pdfjet.NewTextLine(f1, "Container")
-	title.SetLocation(150.0, 20.0)
-	container.Add(title)
-
-	// Nested container #1
-	nested1 := pdfjet.NewContainer(200.0, 200.0)
-	nested1.SetLocation(0.0, 0.0)
-	nested1.SetRotation(-30)
-	nested1.ScaleBy(0.8)
-
-	innerRect := pdfjet.NewRect(0.0, 0.0, 200.0, 200.0)
-	innerRect.SetFillColor(color.Blue)
-	nested1.Add(innerRect)
-
-	innerText := pdfjet.NewTextLine(f1, "Nested 1")
-	innerText.SetLocation(50.0, 100.0)
-	innerText.SetTextColor(color.White) // On the blue of the rectangle
-	nested1.Add(innerText)
-
-	container.Add(nested1)
-
-	// Nested container #2
-	nested2 := pdfjet.NewContainer(100.0, 100.0)
-	nested2.SetLocation(250.0, 250.0)
-	nested2.SetRotation(-45)
-
-	smallRect := pdfjet.NewRect(0.0, 0.0, 100.0, 100.0)
-	smallRect.SetFillColor(color.Red)
-	nested2.Add(smallRect)
-
-	smallText := pdfjet.NewTextLine(f1, "Nested 2")
-	smallText.SetLocation(10.0, 50.0)
-	nested2.Add(smallText)
-
-	container.Add(nested2)
-
-	container.SetRotation(45)
-	// Draw the entire hierarchy on the page
-	container.DrawOn(page)
-
-	container5 := pdfjet.NewContainer(200.0, 20.0)
-	rect5 := pdfjet.NewRect(0.0, 0.0, 200.0, 20.0)
-	container5.Add(rect5)
-
-	rect6 := pdfjet.NewRect(0.0, 0.0, 10.0, 10.0)
-	rect6.SetFillColor(color.Blue)
-	container5.Add(rect6)
-
-	rect7 := pdfjet.NewRect(190.0, 10.0, 10.0, 10.0)
-	rect7.SetBorderColor(color.Red)
-	rect7.SetBorderWidth(2.0)
-	container5.Add(rect7)
-
-	container5.SetLocation(50.0, 640.0)
-	container5.DrawOn(page)
-
-	container5.SetRotation(90)
-	container5.DrawOn(page)
+	text = pdfjet.NewTextLine(f1, "Relief: Natural Earth, public domain, naturalearthdata.com")
+	text.SetFontSize(8.0)
+	text.SetTextColor(color.DimGray)
+	text.SetURIAction("https://www.naturalearthdata.com")
+	text.SetLocation(x0, y0+h+30.0)
+	text.DrawOn(page)
 
 	if err := pdf.Complete(); err != nil {
 		log.Fatal(err)

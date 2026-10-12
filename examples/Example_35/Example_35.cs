@@ -6,148 +6,139 @@
  */
 using System;
 using System.IO;
-using System.Collections.Generic;
 using System.Diagnostics;
 using PDFjet.NET;
 
 /**
  * Example_35.cs
+ * Using PDF layers (optional content groups) that can be shown or hidden: a
+ * shaded relief map of Europe, the lines of latitude and longitude over it,
+ * and the capital cities. The map covers 12°W to 42°E and 34°N to 62°N, and
+ * longitude and latitude map linearly to x and y on it.
  */
 public class Example_35 {
+    private readonly float x0 = 50f;       // The top left corner of the map
+    private readonly float y0 = 180f;
+    private readonly float w = 512f;       // The size of the map
+    private readonly float h = 512f * 840f / 1084f;
+
+    private float MapX(float longitude) {
+        return x0 + (longitude + 12f) / 54f * w;
+    }
+
+    private float MapY(float latitude) {
+        return y0 + (62f - latitude) / 28f * h;
+    }
+
     public Example_35() {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_35.pdf", FileMode.Create)));
+        // A tagged document; PDF/UA has no setting for a layer that is not
+        // printed, so this one prints every layer that is shown.
         pdf.SetCompliance(Compliance.PDF_UA_1);
-        pdf.SetTitle("Containers and Stamps");
+        pdf.SetTitle("PDF Layers: a map of Europe in three layers");
+
+        Font f1 = new Font(pdf, IBMPlexSans.Regular);
+        Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        Font f1 = new Font(pdf, IBMPlexSans.Regular);
-        f1.SetSize(14f);
+        TextLine text = new TextLine(f2, "PDF Layers");
+        text.SetFontSize(22f);
+        text.SetLocation(50f, 80f);
+        text.DrawOn(page);
 
-        Font f2 = new Font(pdf, IBMPlexSans.Bold);
-        f2.SetSize(14f);
+        TextBlock textBlock = new TextBlock(f1,
+                "Each part of this map is a layer, an optional content group, that "
+                + "a PDF viewer lists in its Layers panel and can show or hide: the "
+                + "relief, the lines of latitude and longitude, and the capital "
+                + "cities. As a PDF/UA document, this one prints every layer it shows.");
+        textBlock.SetFontSize(12f);
+        textBlock.SetLineSpacing(1.5f);
+        textBlock.SetLocation(50f, 95f);
+        textBlock.SetWidth(512f);
+        textBlock.DrawOn(page);
 
-        // The heading, above the drawings, which are 40 points lower for it
-        new TextLine(f2, "Containers and Stamps")
-                .SetStructureType(StructElem.H1)
-                .SetFontSize(18f)
-                .SetLocation(50f, 30f)
-                .DrawOn(page);
+        Image image = new Image(pdf, "images/europe-relief.png");
+        image.ResizeWidth(w);
+        image.SetLocation(x0, y0);
+        image.SetAltDescription("A relief map of Europe, from Ireland to Turkey");
 
-        // Base container
-        Container container = new Container(400f, 400f);
-        container.SetLocation(100f, 140f);
+        // A layer is hidden and not printed unless it is set to be.
+        OptionalContentGroup group = new OptionalContentGroup(pdf, "Relief");
+        group.SetVisible(true);
+        group.SetPrintable(true);
+        group.Add(image);
+        group.DrawOn(page);
 
-        // Add a rectangle to container
-        Rect rect = new Rect(0f, 0f, 400f, 400f);
-        rect.SetFillColor(Color.gray);
-        container.Add(rect);
+        group = new OptionalContentGroup(pdf, "Latitude and Longitude");
+        group.SetVisible(true);
+        for (int longitude = -10; longitude <= 40; longitude += 5) {
+            Line line = new Line(MapX(longitude), y0, MapX(longitude), y0 + h);
+            line.SetStrokeWidth(0.5f);
+            line.SetStrokeColor(Color.white);
+            group.Add(line);
 
-        var stamp = new Stamp(pdf).SetSize(400f, 400f).AddFont(f1).AddFont(f2);
+            String label = (longitude < 0) ? -longitude + "°W" :
+                    (longitude > 0) ? longitude + "°E" : "0°";
+            text = new TextLine(f1, label);
+            text.SetFontSize(8f);
+            text.SetTextColor(Color.dimgray);
+            text.SetLocation(MapX(longitude) - text.GetWidth() / 2f, y0 + h + 12f);
+            group.Add(text);
+        }
+        for (int latitude = 35; latitude <= 60; latitude += 5) {
+            Line line = new Line(x0, MapY(latitude), x0 + w, MapY(latitude));
+            line.SetStrokeWidth(0.5f);
+            line.SetStrokeColor(Color.white);
+            group.Add(line);
 
-        // Draw path ...
-        stamp.SetFillColor(Color.lightblue)
-            .SetStrokeColor(Color.red)
-            .SetStrokeWidth(4f)
-            .MoveTo(0f, 0f)
-            .LineTo(400f, 0f)
-            .LineTo(400f, 400f)
-            .LineTo(0f, 400f)
-            .CloseFillAndStrokePath();
+            text = new TextLine(f1, latitude + "°N");
+            text.SetFontSize(8f);
+            text.SetTextColor(Color.dimgray);
+            text.SetLocation(x0 + w + 4f, MapY(latitude) + 3f);
+            group.Add(text);
+        }
+        group.DrawOn(page);
 
-        // Draw Rectangle
-        stamp.SetStrokeColor(Color.blue)
-            .SetStrokeWidth(1f)
-            .DrawRect(10f, 10f, 380f, 380f);
+        String[] cities = {
+            "Athens", "Ankara", "Berlin", "Bucharest", "Dublin",
+            "Kyiv", "Lisbon", "London", "Madrid", "Oslo",
+            "Paris", "Rome", "Stockholm", "Vienna", "Warsaw",
+        };
+        float[,] locations = {     // Longitude and latitude
+            {23.73f, 37.98f}, {32.86f, 39.93f}, {13.40f, 52.52f},
+            {26.10f, 44.43f}, {-6.26f, 53.35f}, {30.52f, 50.45f},
+            {-9.14f, 38.72f}, {-0.13f, 51.51f}, {-3.70f, 40.42f},
+            {10.75f, 59.91f}, { 2.35f, 48.86f}, {12.50f, 41.90f},
+            {18.07f, 59.33f}, {16.37f, 48.21f}, {21.01f, 52.23f},
+        };
+        group = new OptionalContentGroup(pdf, "Capital Cities");
+        group.SetVisible(true);
+        group.SetPrintable(true);
+        for (int i = 0; i < cities.Length; i++) {
+            float x = MapX(locations[i, 0]);
+            float y = MapY(locations[i, 1]);
 
-        // Fill Rectangle
-        stamp.SetFillColor(Color.darkgreen).FillRect(10f, 10f, 20f, 20f);
+            Point point = new Point(x, y);
+            point.SetRadius(2.5f);
+            point.SetFillColor(Color.white);
+            point.SetStrokeColor(Color.black);
+            group.Add(point);
 
-        // Draw some text
-        var parameters = new TextParameters()
-            .SetFont(f1)
-            .SetFontSize(14f)
-            .SetLocation(40f, 25f) // Clear of the square, which the text would run over
-            .SetText("Hello, World!");
-        stamp.DrawText(parameters);
+            text = new TextLine(f2, cities[i]);
+            text.SetFontSize(8f);
+            text.SetLocation(x + 5f, y + 3f);
+            group.Add(text);
+        }
+        group.DrawOn(page);
 
-        // Change some parameters and draw the text again
-        parameters.SetFont(f2).SetLocation(40f, 50f);
-        stamp.SetFillColor(Color.darkgreen).DrawText(parameters);
-
-        stamp.Complete();   // The stamp is complete!
-
-        stamp.SetLocation(50f, 90f).DrawOn(page);
-
-        // Rotate the stamp counter clockwise and draw it again
-        stamp.SetRotation(-15).DrawOn(page);
-
-        // Rotate the stamp clockwise and draw it again
-        stamp.SetRotation(15).DrawOn(page);
-
-        // Draw the stamp again at a quarter of its size
-        stamp.SetRotation(0).ScaleBy(0.25f).SetLocation(360f, 520f).DrawOn(page);
-
-        // Add a text line to container
-        TextLine title = new TextLine(f1, "Container");
-        title.SetLocation(150f, 20f);
-        container.Add(title);
-
-        // Nested container #1
-        Container nested1 = new Container(200f, 200f);
-        nested1.SetLocation(0f, 0f);
-        nested1.SetRotation(-30);
-        nested1.ScaleBy(0.8f);
-
-        Rect innerRect = new Rect(0f, 0f, 200f, 200f);
-        innerRect.SetFillColor(Color.blue);
-        nested1.Add(innerRect);
-
-        TextLine innerText = new TextLine(f1, "Nested 1");
-        innerText.SetLocation(50f, 100f);
-        innerText.SetTextColor(Color.white);   // On the blue of the rectangle
-        nested1.Add(innerText);
-
-        container.Add(nested1);
-
-        // Nested container #2
-        Container nested2 = new Container(100f, 100f);
-        nested2.SetLocation(250f, 250f);
-        nested2.SetRotation(-45);
-
-        Rect smallRect = new Rect(0f, 0f, 100f, 100f);
-        smallRect.SetFillColor(Color.red);
-        nested2.Add(smallRect);
-
-        TextLine smallText = new TextLine(f1, "Nested 2");
-        smallText.SetLocation(10f, 50f);
-        nested2.Add(smallText);
-
-        container.Add(nested2);
-
-        container.SetRotation(45);
-        // Draw the entire hierarchy on the page
-        container.DrawOn(page);
-
-        var container5 = new Container(200f, 20f);
-        var rect5 = new Rect(0f, 0f, 200f, 20f);
-        container5.Add(rect5);
-
-        var rect6 = new Rect(0f, 0f, 10f, 10f);
-        rect6.SetFillColor(Color.blue);
-        container5.Add(rect6);
-
-        var rect7 = new Rect(190f, 10f, 10f, 10f);
-        rect7.SetBorderColor(Color.red);
-        rect7.SetBorderWidth(2f);
-        container5.Add(rect7);
-
-        container5.SetLocation(50f, 640f);
-        container5.DrawOn(page);
-
-        container5.SetRotation(90);
-        container5.DrawOn(page);
+        text = new TextLine(f1, "Relief: Natural Earth, public domain, naturalearthdata.com");
+        text.SetFontSize(8f);
+        text.SetTextColor(Color.dimgray);
+        text.SetURIAction("https://www.naturalearthdata.com");
+        text.SetLocation(x0, y0 + h + 30f);
+        text.DrawOn(page);
 
         pdf.Complete();
     }

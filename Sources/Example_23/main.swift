@@ -13,110 +13,134 @@ import PDFjet
 public class Example_23 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_23.pdf", append: false)!)
-        pdf.setCompliance(Compliance.PDF_UA_1)
-        pdf.setTitle("The Ascent and Descent of a Font")
+        pdf.setCompliance(Compliance.PDF_A_1A)
+        pdf.setTitle("World Communications")
 
-        let f1 = try Font(pdf, IBMPlexSans.Regular)
-        f1.setSize(72.0)
-
+        let f1 = try Font(pdf, IBMPlexSans.Bold)
         let f2 = try Font(pdf, IBMPlexSans.Regular)
-        f2.setSize(24.0)
+        let f3 = try Font(pdf, IBMPlexSans.BoldItalic)
 
-        let page = Page(pdf, Letter.PORTRAIT)
+        f1.setSize(7.0)
+        f2.setSize(7.0)
+        f3.setSize(7.0)
 
-        let x1: Float = 90.0
-        let y1: Float = 100.0
+        let table = Table()
+        let tableData = try getData(
+                "data/world-communications.txt", "|", 2, f1, f2)
 
-        // A heading, which PAC asks a document for
-        TextLine(f2, "The Ascent and Descent of a Font")
-                .setStructureType(StructElem.H1)
-                .setFontSize(18.0)
-                .setLocation(x1, 45.0)
-                .drawOn(page)
+        var p1 = Point()
+        p1.setShape(Shape.CIRCLE)
+        p1.setRadius(2.0)
+        p1.setStrokeColor(Color.darkolivegreen)
+        p1.setURIAction("https://en.wikipedia.org/wiki/India")
+        tableData[4][3].setMarker(p1, Alignment.RIGHT)
 
-        let textLine = TextLine(f2, "(x1, y1)")
-        textLine.setLocation(x1, y1 - 15.0)
-        textLine.drawOn(page)
+        p1 = Point()
+        p1.setShape(Shape.DIAMOND)
+        p1.setRadius(2.5)
+        p1.setStrokeColor(Color.blue)
+        p1.setURIAction("https://en.wikipedia.org/wiki/European_Union")
+        tableData[5][3].setMarker(p1, Alignment.RIGHT)
 
-        let textBlock = TextBlock(f1,
-            "Hello, World! This example shows the functionality of the TextBlock.")
-        textBlock.setLocation(x1, y1)
-        textBlock.setWidth(500.0)
-        textBlock.setBorderColor(Color.lightgreen)
-        textBlock.setBackgroundColor(Color.lightgreen)
-        textBlock.setTextColor(Color.black)
-        let xy = textBlock.drawOn(page)
+        p1 = Point()
+        p1.setShape(Shape.STAR)
+        p1.setRadius(3.0)
+        p1.setStrokeColor(Color.red)
+        p1.setURIAction("https://en.wikipedia.org/wiki/United_States")
+        tableData[6][3].setMarker(p1, Alignment.RIGHT)
 
-        // Text on the left
-        let ascentText = TextLine(f2, "Ascent")
-        ascentText.setFontSize(18.0)
-        ascentText.setLocation(x1 - 85.0, y1 + 40.0)
-        ascentText.drawOn(page)
+        table.setTableData(tableData, 2)
+        table.setBottomMargin(15.0)
+        // The table is about 555 points wide: at x = 30 it fits on the page.
+        table.setLocation(30.0, 30.0)
+        table.setTextColorInRow(6, Color.blue)
+        table.setTextColorInRow(39, Color.firebrick)
+        table.setFontInRow(26, f3)
+        table.removeLineBetweenRows(0, 1)
+        table.autoAdjustColumnWidths()
+        table.setColumnWidth(0, 50.0)
+        table.setColumnWidth(3, 80.0)
+        table.rightAlignNumbers()
 
-        let descentText = TextLine(f2, "Descent")
-        descentText.setFontSize(18.0)
-        descentText.setLocation(x1 - 85.0, y1 + f1.getAscent() + 15.0)
-        descentText.drawOn(page)
-
-        // Line beside the text ascent
-        let blueLine = Line(
-            x1 - 10.0,
-            y1,
-            x1 - 10.0,
-            y1 + f1.getAscent())
-        blueLine.setStrokeColor(Color.blue)
-        blueLine.setStrokeWidth(3.0)
-        blueLine.drawOn(page)
-
-        // Line beside the text descent
-        let redLine = Line(
-            x1 - 10.0,
-            y1 + f1.getAscent(),
-            x1 - 10.0,
-            y1 + f1.getAscent() + f1.getDescent())
-        redLine.setStrokeColor(Color.red)
-        redLine.setStrokeWidth(3.0)
-        redLine.drawOn(page)
-
-        let baseLine = Line(
-                x1,
-                y1 + f1.getAscent(),
-                xy[0],
-                y1 + f1.getAscent())
-        baseLine.drawOn(page)
-
-        let descentLine = Line(
-                x1,
-                y1 + (f1.getAscent() + f1.getDescent()),
-                xy[0],
-                y1 + (f1.getAscent() + f1.getDescent()))
-        descentLine.drawOn(page)
-
-        let ascentLine = Line(
-                x1,
-                y1 + f1.getBodyHeight() + f1.getAscent(),
-                xy[0],
-                y1 + f1.getBodyHeight() + f1.getAscent())
-        ascentLine.drawOn(page)
-
-        let p1 = Point(x1, y1)
-        p1.setRadius(5.0)
-        p1.drawOn(page)
-
-        let p2 = Point(xy[0], xy[1])
-        p2.setRadius(5.0)
-        p2.drawOn(page)
-
-        f2.setSize(24.0)
-        let textLine3 = TextLine(f2, "(x2, y2)")
-        textLine3.setLocation(xy[0] - 80.0, xy[1] + 30.0)
-        textLine3.drawOn(page)
-
-        let rect = Rect(xy[0], xy[1], 20.0, 20.0)
-        rect.setBorderColor(Color.black)
-        rect.drawOn(page)
+        var pages = [Page]()
+        table.drawOn(pdf, &pages, Letter.PORTRAIT)
+        for i in 0..<pages.count {
+            let page = pages[i]
+            page.addFooter(TextLine(f1, "Page \(i + 1) of \(pages.count)"))
+            pdf.addPage(page)
+        }
 
         try pdf.complete()
+    }
+
+    public func getData(
+            _ fileName: String,
+            _ delimiter: String,
+            _ numOfHeaderRows: Int,
+            _ f1: Font,
+            _ f2: Font) throws -> [[Cell]] {
+        var tableData = [[Cell]]()
+
+        var currentRow: Int = 0
+        let lines = (try String(contentsOfFile: fileName, encoding: .utf8))
+                .replacingOccurrences(of: "\r\n", with: "\n")
+                .components(separatedBy: "\n")
+
+        for line in lines {
+            if line.isEmpty {
+                continue
+            }
+
+            var row = [Cell]()
+            var cols: [String]?
+            if delimiter == "|" {
+                cols = line.components(separatedBy: "|")
+            } else if delimiter == "\t" {
+                cols = line.components(separatedBy: "\t")
+            } else {
+                print("Only pipes and tabs can be used as delimiters")
+            }
+
+            for i in 0..<cols!.count {
+                let text = cols![i].trimmingCharacters(in: .whitespacesAndNewlines)
+                var cell: Cell?
+                if currentRow < numOfHeaderRows {
+                    cell = Cell(f1, text)
+                } else {
+                    cell = Cell(f2, text)
+                }
+                cell!.setTopPadding(2.0)
+                cell!.setBottomPadding(2.0)
+                cell!.setLeftPadding(2.0)
+                if i == 3 {
+                    cell!.setRightPadding(10.0)
+                } else {
+                    cell!.setRightPadding(2.0)
+                }
+                row.append(cell!)
+            }
+            tableData.append(row)
+
+            currentRow += 1
+        }
+        appendMissingCells(&tableData, f2)
+        return tableData
+    }
+
+    private func appendMissingCells(_ tableData: inout [[Cell]], _ f2: Font) {
+        let firstRow = tableData[0]
+        let numOfColumns = firstRow.count
+        for i in 0..<tableData.count {
+            var dataRow = tableData[i]
+            let dataRowColumns = dataRow.count
+            if dataRowColumns < numOfColumns {
+                for _ in 0..<(numOfColumns - dataRowColumns) {
+                    dataRow.append(Cell(f2, ""))
+                }
+                tableData[i] = dataRow
+                dataRow[dataRowColumns - 1].setColSpan(numOfColumns - dataRowColumns + 1)
+            }
+        }
     }
 }   // End of Example_23.swift
 

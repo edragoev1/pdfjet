@@ -292,7 +292,7 @@ func TestTextColumnALinkEndsBeforeTheSpaceAfterIt(t *testing.T) {
 
 func TestTextColumnTheLanguageOfATextLineIsKeptInItsWords(t *testing.T) {
 	// The paragraph is one element for its words, which dropped the language
-	// of the text line they came from, so Example_29's Greek was read as
+	// of the text line they came from, so Example_22's Greek was read as
 	// English (the viewer pass, 7 October 2026). Each word keeps it in its
 	// marked content; a text line of no language adds none.
 	doc := testNewDoc()
@@ -315,7 +315,7 @@ func TestTextColumnTheLanguageOfATextLineIsKeptInItsWords(t *testing.T) {
 }
 
 func TestTextColumnACJKParagraphHasTheLanguageGiven(t *testing.T) {
-	// Example_44's Chinese was read as English, as AddCJKParagraph took no
+	// Example_13's Chinese was read as English, as AddCJKParagraph took no
 	// language (the NVDA pass, 7 October 2026). Every line it makes has the
 	// language given; AddCJKParagraph gives none.
 	for _, language := range []string{"zh-Hans", ""} {

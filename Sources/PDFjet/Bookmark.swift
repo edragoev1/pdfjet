@@ -13,7 +13,7 @@ extension String {
 }
 
 ///
-/// Please see Example_48
+/// Please see Example_41
 ///
 public class Bookmark {
     private var destNumber = 0

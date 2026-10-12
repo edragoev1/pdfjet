@@ -9,120 +9,86 @@ import PDFjet
 
 /**
  * Example_11.swift
- * This example draws a Code 128, a Code 39, a UPC-A and an EAN-13 barcode,
- * each next to a label, and then barcodes drawn from top to bottom and from
- * bottom to top.
+ * Using the TextBlock component to draw text next to images. The drawOn
+ * methods of Image and TextBlock return the bottom of what they drew, so each
+ * row starts below the taller of the image and the text next to it.
  */
 public class Example_11 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_11.pdf", append: false)!)
         pdf.setCompliance(Compliance.PDF_UA_1)
-        pdf.setTitle("Linear Barcodes")
+        pdf.setTitle("Text Next to Images")
 
         let f1 = try Font(pdf, IBMPlexSans.Regular)
-        f1.setSize(12.0)
-
         let f2 = try Font(pdf, IBMPlexSans.SemiBold)
-        f2.setSize(12.0)
 
         let page = Page(pdf, Letter.PORTRAIT)
 
-        let text = TextLine(f2, "Linear Barcodes")
+        var text = TextLine(f2, "Text Next to Images")
         text.setStructureType(StructElem.H1)
         text.setFontSize(22.0)
-        text.setLocation(70.0, 80.0)
+        text.setLocation(50.0, 80.0)
         text.drawOn(page)
 
-        let labels = [
-            "Code 128",
-            "Code 39",
-            "UPC-A",
-            "EAN-13",
-            "GS1-128",
-        ]
-        let notes = [
-            "Letters, digits and symbols",
-            "Upper case letters and digits",
-            "11 digits, the check digit is added",
-            "12 digits, the check digit is added",
-            "GS1 data: a GTIN and a batch number",
-        ]
-        let barcodes = [
-            try Barcode(Barcode.CODE_128, "Hellö, World!"),
-            try Barcode(Barcode.CODE_39, "WIKIPEDIA"),
-            try Barcode(Barcode.UPC_A, "51234567890"),
-            try Barcode(Barcode.EAN_13, "051234567890"),
-            try Barcode(Barcode.GS1_128, "(01)09506000134352(10)ABC123"),
-        ]
-        // UPC-A and EAN-13 need wider bars for the digits under them.
-        let moduleLengths: [Float] = [0.75, 0.75, 1.0, 1.0, 0.75]
+        var textBlock = TextBlock(f1,
+                "Each map below is an Image with a TextBlock next to it. The drawOn "
+                + "method of both returns the bottom of what it drew, so every row "
+                + "starts below the taller of the two.")
+        textBlock.setFontSize(12.0)
+        textBlock.setLineSpacing(1.5)
+        textBlock.setLocation(50.0, 95.0)
+        textBlock.setWidth(512.0)
+        let xy = textBlock.drawOn(page)
 
-        var y: Float = 130.0
-        for i in 0..<barcodes.count {
-            TextLine(f2, labels[i]).setLocation(70.0, y + 15.0).drawOn(page)
-            let note = TextLine(f1, notes[i])
-            note.setFontSize(10.0)
-            note.setTextColor(Color.dimgray)
-            note.setLocation(70.0, y + 32.0)
-            note.drawOn(page)
+        let imageFiles = [
+            "images/ee-map.png",
+            "images/spain-admin.jpg",
+        ]
+        let titles = [
+            "The European Union",
+            "The Regions of Spain",
+        ]
+        let descriptions = [
+            "A map of Europe with the member states of the European Union and "
+                + "the countries that were candidates to join it when the map was "
+                + "made. The image is a PNG file of 687 by 710 pixels, drawn 200 "
+                + "points wide.",
+            "A map of the 17 autonomous communities of Spain and its two "
+                + "autonomous cities, Ceuta and Melilla, with their capitals. The "
+                + "image is a JPEG file of 2,017 by 2,412 pixels, drawn 200 points "
+                + "wide, which prints at more than 700 dots per inch.",
+        ]
 
-            let barcode = barcodes[i]
-            barcode.setLocation(290.0, y)
-            barcode.setModuleLength(moduleLengths[i])
-            barcode.setFont(f1)
-            let xy = barcode.drawOn(page)
-            y = xy[1] + 30.0
+        let x1: Float = 50.0    // The images
+        let x2: Float = 270.0   // The text next to them
+        var y: Float = xy[1] + 25.0
+        for i in 0..<imageFiles.count {
+            let image = try Image(pdf, imageFiles[i])
+            // The text beside a map describes it, so it describes it to a
+            // screen reader too.
+            image.setAltDescription(descriptions[i])
+            image.resizeWidth(200.0)
+            image.setLocation(x1, y)
+            let imageXY = image.drawOn(page)
+
+            text = TextLine(f2, titles[i])
+            text.setFontSize(14.0)
+            text.setLocation(x2, y + f2.getAscent(14.0))
+            text.drawOn(page)
+
+            textBlock = TextBlock(f1, descriptions[i])
+            textBlock.setFontSize(11.0)
+            textBlock.setLineSpacing(1.5)
+            textBlock.setLocation(x2, y + 25.0)
+            textBlock.setWidth(292.0)
+            let textXY = textBlock.drawOn(page)
+
+            y = max(imageXY[1], textXY[1]) + 25.0
         }
-
-        // The same barcodes can be drawn from top to bottom and from bottom to top.
-        TextLine(f2, "Vertical barcodes").setLocation(70.0, y + 15.0).drawOn(page)
-
-        var barcode = try Barcode(Barcode.CODE_128, "G86513JVW0C")
-        barcode.setLocation(70.0, y + 35.0)
-        barcode.setModuleLength(0.75)
-        barcode.setDirection(Direction.TOP_TO_BOTTOM)
-        barcode.setFont(f1)
-        var xy = barcode.drawOn(page)
-
-        barcode = try Barcode(Barcode.CODE_39, "CODE39")
-        barcode.setLocation(xy[0] + 60.0, y + 35.0)
-        barcode.setModuleLength(0.75)
-        barcode.setDirection(Direction.BOTTOM_TO_TOP)
-        barcode.setFont(f1)
-        xy = barcode.drawOn(page)
-
-        barcode = try Barcode(Barcode.EAN_13, "051234567890")
-        barcode.setLocation(xy[0] + 60.0, y + 35.0)
-        barcode.setModuleLength(1.0)
-        barcode.setDirection(Direction.BOTTOM_TO_TOP)
-        barcode.setFont(f1)
-        barcode.drawOn(page)
-
-        // ITF-14, the GTIN of a carton, framed by bearer bars.
-        let page2 = Page(pdf, Letter.PORTRAIT)
-        let heading2 = TextLine(f2, "Barcodes for Cartons")
-        heading2.setStructureType(StructElem.H2)
-        heading2.setFontSize(18.0)
-        heading2.setLocation(70.0, 80.0)
-        heading2.drawOn(page2)
-
-        TextLine(f2, "ITF-14").setLocation(70.0, 135.0).drawOn(page2)
-        let cartonNote = TextLine(f1, "The GTIN of a carton, 13 digits and the check digit PDFjet adds, framed by bearer bars")
-        cartonNote.setFontSize(10.0)
-        cartonNote.setTextColor(Color.dimgray)
-        cartonNote.setLocation(70.0, 152.0)
-        cartonNote.drawOn(page2)
-
-        let itf = try Barcode(Barcode.ITF_14, "1540014128876")
-        itf.setLocation(70.0, 175.0)
-        itf.setModuleLength(1.0)
-        itf.setFont(f1)
-        itf.drawOn(page2)
 
         try pdf.complete()
     }
 }   // End of Example_11.swift
-
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
 _ = try Example_11()

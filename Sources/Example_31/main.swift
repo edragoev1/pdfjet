@@ -9,125 +9,141 @@ import PDFjet
 
 /**
  * Example_31.swift
- * This example draws with transparency. A GraphicsState sets the alpha of the
- * fills and of the strokes: opaque shapes hide what is under them, transparent
- * ones mix with it, and the stroke of a shape can be more or less transparent
- * than its fill.
  */
 public class Example_31 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_31.pdf", append: false)!)
         pdf.setCompliance(Compliance.PDF_UA_1)
-        pdf.setTitle("Transparency")
-
-        let f1 = try Font(pdf, IBMPlexSans.Regular)
-        let f2 = try Font(pdf, IBMPlexSans.SemiBold)
+        pdf.setTitle("Containers and Stamps")
 
         let page = Page(pdf, Letter.PORTRAIT)
 
-        var text = TextLine(f2, "Transparency")
-        text.setStructureType(StructElem.H1)
-        text.setFontSize(22.0)
-        text.setLocation(50.0, 80.0)
-        text.drawOn(page)
+        let f1 = try Font(pdf, IBMPlexSans.Regular)
+        f1.setSize(14.0)
 
-        let textBlock = TextBlock(f1,
-                "A GraphicsState sets the alpha of the fills and of the strokes that "
-                + "follow it, until the graphics state is restored. Opaque shapes hide "
-                + "what is under them, transparent ones mix with it, and the stroke of "
-                + "a shape can be more or less transparent than its fill.")
-        textBlock.setFontSize(12.0)
-        textBlock.setLineSpacing(1.5)
-        textBlock.setLocation(50.0, 95.0)
-        textBlock.setWidth(512.0)
-        let xy = textBlock.drawOn(page)
+        let f2 = try Font(pdf, IBMPlexSans.Bold)
+        f2.setSize(14.0)
 
-        var y: Float = xy[1] + 30.0
-        let colors = [Color.blue, Color.green, Color.red]
+        // The heading, above the drawings, which are 40 points lower for it
+        TextLine(f2, "Containers and Stamps")
+                .setStructureType(StructElem.H1)
+                .setFontSize(18.0)
+                .setLocation(50.0, 30.0)
+                .drawOn(page)
 
-        // Opaque rectangles: each one hides the one under it.
-        TextLine(f2, "Opaque").setLocation(50.0, y).drawOn(page)
-        page.addArtifactBMC()  // The shapes carry no text, so they are artifacts.
-        for i in 0..<colors.count {
-            page.setBrushColor(colors[i])
-            page.fillRect(50.0 + Float(i) * 60.0, y + 15.0 + Float(i) * 30.0, 120.0, 120.0)
-        }
-        page.addEMC()
+        // Base container
+        let container = Container(400.0, 400.0)
+        container.setLocation(100.0, 140.0)
 
-        // Half transparent rectangles: the colors mix where they overlap.
-        TextLine(f2, "50% transparent").setLocation(320.0, y).drawOn(page)
-        page.addArtifactBMC()
-        page.saveGraphicsState()
-        var gs = GraphicsState()
-        gs.setAlphaStroking(0.5)    // The stroking alpha constant
-        gs.setAlphaNonStroking(0.5) // The non-stroking alpha constant
-        page.setGraphicsState(gs)
-        for i in 0..<colors.count {
-            page.setBrushColor(colors[i])
-            page.fillRect(320.0 + Float(i) * 60.0, y + 15.0 + Float(i) * 30.0, 120.0, 120.0)
-        }
-        page.restoreGraphicsState()
-        page.addEMC()
+        // Add a rectangle to container
+        let rect = Rect(0.0, 0.0, 400.0, 400.0)
+        rect.setFillColor(Color.gray)
+        container.add(rect)
 
-        // The same blue over a gray bar at four levels of alpha.
-        y += 245.0
-        TextLine(f2, "Fill alpha").setLocation(50.0, y).drawOn(page)
-        page.addArtifactBMC()
-        page.setBrushColor(Color.gray)
-        page.fillRect(50.0, y + 55.0, 506.0, 30.0)
-        page.addEMC()
-        let alphas: [Float] = [0.25, 0.5, 0.75, 1.0]
-        for i in 0..<alphas.count {
-            let x: Float = 50.0 + Float(i) * 132.0
-            page.addArtifactBMC()
-            page.saveGraphicsState()
-            gs = GraphicsState()
-            gs.setAlphaNonStroking(alphas[i])
-            page.setGraphicsState(gs)
-            page.setBrushColor(Color.blue)
-            page.fillRect(x, y + 15.0, 110.0, 110.0)
-            page.restoreGraphicsState()
-            page.addEMC()
+        let stamp = Stamp(pdf).setSize(400.0, 400.0).addFont(f1).addFont(f2)
 
-            text = TextLine(f1, "\(Int((alphas[i] * 100.0).rounded()))%")
-            text.setFontSize(10.0)
-            text.setTextColor(Color.dimgray)
-            text.setLocation(x, y + 140.0)
-            text.drawOn(page)
-        }
+        // Draw path ...
+        stamp.setFillColor(Color.lightblue)
+            .setStrokeColor(Color.red)
+            .setStrokeWidth(4.0)
+            .moveTo(0.0, 0.0)
+            .lineTo(400.0, 0.0)
+            .lineTo(400.0, 400.0)
+            .lineTo(0.0, 400.0)
+            .closeFillAndStrokePath()
 
-        // A thick stroke and a fill, each transparent on its own: the stroke
-        // shows the fill through it, then the fill shows the stroke.
-        y += 175.0
-        TextLine(f2, "Stroke alpha and fill alpha").setLocation(50.0, y).drawOn(page)
-        let labels = [
-            "Stroke 25%, fill 100%",
-            "Stroke 100%, fill 25%",
-            "Stroke 50%, fill 50%",
-        ]
-        let strokeAndFill: [[Float]] = [[0.25, 1.0], [1.0, 0.25], [0.5, 0.5]]
-        for i in 0..<labels.count {
-            let x: Float = 100.0 + Float(i) * 180.0
-            page.addArtifactBMC()
-            page.saveGraphicsState()
-            gs = GraphicsState()
-            gs.setAlphaStroking(strokeAndFill[i][0])
-            gs.setAlphaNonStroking(strokeAndFill[i][1])
-            page.setGraphicsState(gs)
-            page.setBrushColor(Color.red)
-            page.fillCircle(x, y + 65.0, 40.0)
-            page.setPenColor(Color.blue)
-            page.setPenWidth(16.0)
-            page.drawCircle(x, y + 65.0, 40.0)
-            page.restoreGraphicsState()
-            page.addEMC()
+        // Draw Rectangle
+        stamp.setStrokeColor(Color.blue)
+            .setStrokeWidth(1.0)
+            .drawRect(10.0, 10.0, 380.0, 380.0)
 
-            text = TextLine(f1, labels[i])
-            text.setFontSize(10.0)
-            text.setTextColor(Color.dimgray)
-            text.setLocation(x - text.getWidth() / 2.0, y + 130.0)
-            text.drawOn(page)
-        }
+        // Fill Rectangle
+        stamp.setFillColor(Color.darkgreen).fillRect(10.0, 10.0, 20.0, 20.0)
+
+        // Draw some text
+        let parameters = TextParameters()
+            .setFont(f1)
+            .setFontSize(14.0)
+            .setLocation(40.0, 25.0)   // Clear of the square, which the text would run over
+            .setText("Hello, World!")
+        stamp.drawText(parameters)
+
+        // Change some parameters and draw the text again
+        parameters.setFont(f2).setLocation(40.0, 50.0)
+        stamp.setFillColor(Color.darkgreen).drawText(parameters)
+
+        try stamp.complete()    // The stamp is complete!
+
+        stamp.setLocation(50.0, 90.0).drawOn(page)
+
+        // Rotate the stamp counter clockwise and draw it again
+        stamp.setRotation(-15).drawOn(page)
+
+        // Rotate the stamp clockwise and draw it again
+        stamp.setRotation(15).drawOn(page)
+
+        // Draw the stamp again at a quarter of its size
+        stamp.setRotation(0).scaleBy(0.25).setLocation(360.0, 520.0).drawOn(page)
+
+        // Add a text line to container
+        let title = TextLine(f1, "Container")
+        title.setLocation(150.0, 20.0)
+        container.add(title)
+
+        // Nested container #1
+        let nested1 = Container(200.0, 200.0)
+        nested1.setLocation(0.0, 0.0)
+        nested1.setRotation(-30)
+        nested1.scaleBy(0.8)
+
+        let innerRect = Rect(0.0, 0.0, 200.0, 200.0)
+        innerRect.setFillColor(Color.blue)
+        nested1.add(innerRect)
+
+        let innerText = TextLine(f1, "Nested 1")
+        innerText.setLocation(50.0, 100.0)
+        innerText.setTextColor(Color.white)   // On the blue of the rectangle
+        nested1.add(innerText)
+
+        container.add(nested1)
+
+        // Nested container #2
+        let nested2 = Container(100.0, 100.0)
+        nested2.setLocation(250.0, 250.0)
+        nested2.setRotation(-45)
+
+        let smallRect = Rect(0.0, 0.0, 100.0, 100.0)
+        smallRect.setFillColor(Color.red)
+        nested2.add(smallRect)
+
+        let smallText = TextLine(f1, "Nested 2")
+        smallText.setLocation(10.0, 50.0)
+        nested2.add(smallText)
+
+        container.add(nested2)
+
+        container.setRotation(45)
+        // Draw the entire hierarchy on the page
+        _ = container.drawOn(page)
+
+        let container5 = Container(200.0, 20.0)
+        let rect5 = Rect(0.0, 0.0, 200.0, 20.0)
+        container5.add(rect5)
+
+        let rect6 = Rect(0.0, 0.0, 10.0, 10.0)
+        rect6.setFillColor(Color.blue)
+        container5.add(rect6)
+
+        let rect7 = Rect(190.0, 10.0, 10.0, 10.0)
+        rect7.setBorderColor(Color.red)
+        rect7.setBorderWidth(2.0)
+        container5.add(rect7)
+
+        container5.setLocation(50.0, 640.0)
+        _ = container5.drawOn(page)
+
+        container5.setRotation(90)
+        _ = container5.drawOn(page)
 
         try pdf.complete()
     }

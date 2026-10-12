@@ -206,7 +206,7 @@ class TextColumnTest {
     @Test
     void theLanguageOfATextLineIsKeptInItsWords() throws Exception {
         // The paragraph is one element for its words, which dropped the
-        // language of the text line they came from, so Example_29's Greek was
+        // language of the text line they came from, so Example_22's Greek was
         // read as English (the viewer pass, 7 October 2026). Each word keeps
         // it in its marked content; a text line of no language adds none.
         PDF pdf = new PDF(new java.io.ByteArrayOutputStream(), Compliance.PDF_UA_1).setTitle("Test");
@@ -225,7 +225,7 @@ class TextColumnTest {
 
     @Test
     void aCJKParagraphHasTheLanguageGiven() throws Exception {
-        // Example_44's Chinese was read as English, as addCJKParagraph took no
+        // Example_13's Chinese was read as English, as addCJKParagraph took no
         // language (the NVDA pass, 7 October 2026). Every line it makes has
         // the language given; with none, it gives none.
         for (String language : new String[] {"zh-Hans", null}) {

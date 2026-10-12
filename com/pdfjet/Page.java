@@ -2462,7 +2462,7 @@ final public class Page {
     }
 
     /**
-     * Saves the graphics state. Please see Example_31.
+     * Saves the graphics state. Please see Example_30.
      */
     public void saveGraphicsState() {
         savedStates.add(new State(brushColor, brushColorWritten, penColor, penColorWritten,
@@ -2472,7 +2472,7 @@ final public class Page {
     }
 
     /**
-     * Sets the graphics state. Please see Example_31.
+     * Sets the graphics state. Please see Example_30.
      *
      * @param gs the graphics state to use.
      * @return this Page object.
@@ -2504,7 +2504,7 @@ final public class Page {
     }
 
     /**
-     * Restores the graphics state. Please see Example_31.
+     * Restores the graphics state. Please see Example_30.
      */
     public void restoreGraphicsState() {
         if (savedStates.isEmpty()) {

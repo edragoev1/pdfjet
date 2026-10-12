@@ -27,7 +27,7 @@ import (
 // all four sides of the symbol, so leave that much space around it; scanners
 // reject symbols with less.
 //
-// Please see Example_12.
+// Please see Example_38.
 type PDF417 struct {
 	x1, y1         float32
 	w1             float32

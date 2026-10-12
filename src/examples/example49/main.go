@@ -8,102 +8,115 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
-	"github.com/edragoev1/pdfjet/v9/src/SourceSerif4"
-	"github.com/edragoev1/pdfjet/v9/src/alignment"
-	"github.com/edragoev1/pdfjet/v9/src/color"
-	"github.com/edragoev1/pdfjet/v9/src/compliance"
+	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
-	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
-// Example49 draws a menu with paragraphs that mix fonts, sizes and colors,
-// currency signs raised with a vertical offset, and a rotated, underlined label.
+// Example49 merges and splits existing PDF documents. merge draws a cover page and
+// merges three documents after it, into Example_49.pdf: the pages of each
+// follow in their order and keep their content, resources, annotations and
+// links, and what belongs to a whole document, such as its bookmarks, form
+// fields and tagging, is left out. split writes one PDF for each page of a
+// document, Example_49_1.pdf to Example_49_5.pdf, and all of its pages in
+// reverse order to Example_49_reversed.pdf; a link to a page that is not in
+// the same PDF leads nowhere.
 func Example49() {
+	merge()
+	split()
+}
+
+func merge() {
 	pdf, err := pdfjet.NewPDFFile("Example_49.pdf")
 	if err != nil {
 		log.Fatal(err)
 	}
-	pdf.SetCompliance(compliance.PDF_UA_1)
-	pdf.SetTitle("Paragraphs with mixed text styles")
 
-	f1 := pdfjet.NewFontFromFile(pdf, SourceSerif4.Regular)
-	f1.SetSize(14.0)
-
-	f2 := pdfjet.NewFontFromFile(pdf, SourceSerif4.Italic)
-	f2.SetSize(14.0)
-
-	f3 := pdfjet.NewFontFromFile(pdf, SourceSerif4.SemiBold)
-	f3.SetSize(14.0)
-
-	f4 := pdfjet.NewFontFromFile(pdf, SourceSerif4.SemiBold)
-	f4.SetSize(9.0)
-
-	page := pdfjet.NewPage(pdf, letter.Portrait())
-
-	title := pdfjet.NewTextLine(f3, "Café Menu")
-	title.SetStructureType(structelem.H1)
-	title.SetFontSize(28.0)
-	title.SetLocation(70.0, 100.0)
-	title.DrawOn(page)
-
-	// Each paragraph mixes a name, an italic description and a price
-	// with a small dollar sign raised by a vertical offset.
-	names := []string{"Espresso", "Cappuccino", "Hot chocolate"}
-	notes := []string{"rich and intense", "with steamed milk foam", "made with dark cocoa"}
-	prices := []string{"3.25", "4.50", "3.95"}
-
-	column := pdfjet.NewTextColumn()
-	for i := 0; i < len(names); i++ {
-		paragraph := pdfjet.NewParagraph().
-			Add(pdfjet.NewTextLine(f3, names[i])).
-			Add(pdfjet.NewTextLine(f2, notes[i]).SetTextColor(color.DimGray)).
-			Add(pdfjet.NewTextLine(f4, "$").SetVerticalOffset(-4.0)).
-			Add(pdfjet.NewTextLine(f1, prices[i]).SetTextColor(color.DarkRed))
-		column.AddParagraph(paragraph)
+	fileNames := []string{
+		"data/testPDFs/scanned-linearized.pdf",
+		"data/testPDFs/rc65-16e.pdf",
+		"data/testPDFs/PDFjetLogo.pdf",
+	}
+	documents := make([][]*pdfjet.PDFobj, 0)
+	for _, fileName := range fileNames {
+		buf, err := os.ReadFile(fileName)
+		if err != nil {
+			log.Fatal(err)
+		}
+		objects, err := pdf.Read(buf)
+		if err != nil {
+			log.Fatal(err)
+		}
+		documents = append(documents, objects)
 	}
 
-	// A paragraph that colors some of its words, aligned to the right.
-	column.AddParagraph(pdfjet.NewParagraph().
-		Add(pdfjet.NewTextLine(f2, "Freshly")).
-		Add(pdfjet.NewTextLine(f3, "roasted").SetTextColor(color.SaddleBrown)).
-		Add(pdfjet.NewTextLine(f2, "every")).
-		Add(pdfjet.NewTextLine(f3, "morning").SetTextColor(color.Sienna)).
-		SetTextAlignment(alignment.Right))
+	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold)
+	f1.SetSize(24.0)
+	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
+	f2.SetSize(12.0)
 
-	column.SetLocation(70.0, 140.0)
-	column.SetWidth(470.0)
-	column.SetParagraphSpacing(1.8)
-	xy := column.DrawOn(page)
+	page := pdfjet.NewPage(pdf, letter.Portrait())
+	pdfjet.NewTextLine(f1, "Merged documents").SetLocation(50.0, 80.0).DrawOn(page)
+	y := float32(130.0)
+	for i, fileName := range fileNames {
+		pages := len(pdf.GetPageObjects(documents[i]))
+		text := fmt.Sprintf("%s, %d pages", fileName, pages)
+		if pages == 1 {
+			text = fmt.Sprintf("%s, %d page", fileName, pages)
+		}
+		pdfjet.NewTextLine(f2, text).SetLocation(50.0, y).DrawOn(page)
+		y += 20.0
+	}
 
-	// A TextFrame wraps the words of its paragraphs to its width.
-	paragraphs := make([]*pdfjet.Paragraph, 0)
-	paragraphs = append(paragraphs, pdfjet.NewParagraph().
-		Add(pdfjet.NewTextLine(f1, "Our beans come from small farms in")).
-		Add(pdfjet.NewTextLine(f3, "Colombia,")).
-		Add(pdfjet.NewTextLine(f3, "Ethiopia")).
-		Add(pdfjet.NewTextLine(f1, "and")).
-		Add(pdfjet.NewTextLine(f3, "Guatemala,")).
-		Add(pdfjet.NewTextLine(f1, "and we roast them in small batches.")).
-		Add(pdfjet.NewTextLine(f2, "Ask us about the beans of the week.").SetTextColor(color.DarkRed)))
-	paragraphs = append(paragraphs, pdfjet.NewParagraph().
-		Add(pdfjet.NewTextLine(f2, "Prices include tax.").SetTextColor(color.DimGray)))
+	for _, objects := range documents {
+		if err := pdf.Merge(objects); err != nil {
+			log.Fatal(err)
+		}
+	}
 
-	frame := pdfjet.NewTextFrameFromParagraphs(paragraphs)
-	frame.SetLocation(70.0, xy[1]+30.0)
-	frame.SetWidth(470.0)
-	frame.DrawOn(page)
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
+}
 
-	label := pdfjet.NewTextLine(f3, "Today's special!")
-	label.SetFontSize(18.0)
-	label.SetTextColor(color.Red)
-	label.SetLocation(400.0, 90.0)
-	label.SetTextRotation(15)
-	label.SetUnderline(true)
-	label.DrawOn(page)
+func split() {
+	buf, err := os.ReadFile("data/testPDFs/scanned-linearized.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
+	objects, err := pdfjet.NewPDFReader().Read(buf)
+	if err != nil {
+		log.Fatal(err)
+	}
+	count := len(pdfjet.NewPDFReader().GetPageObjects(objects))
 
+	for i := 1; i <= count; i++ {
+		part, err := pdfjet.NewPDFFile(fmt.Sprintf("Example_49_%d.pdf", i))
+		if err != nil {
+			log.Fatal(err)
+		}
+		if err := part.MergePages(objects, i); err != nil {
+			log.Fatal(err)
+		}
+		if err := part.Complete(); err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	reversed := make([]int, count)
+	for i := range reversed {
+		reversed[i] = count - i
+	}
+	pdf, err := pdfjet.NewPDFFile("Example_49_reversed.pdf")
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := pdf.MergePages(objects, reversed...); err != nil {
+		log.Fatal(err)
+	}
 	if err := pdf.Complete(); err != nil {
 		log.Fatal(err)
 	}

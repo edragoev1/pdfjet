@@ -6,129 +6,161 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"log"
+	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
+	"github.com/edragoev1/pdfjet/v9/src/alignment"
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
-	"github.com/edragoev1/pdfjet/v9/src/structelem"
+	"github.com/edragoev1/pdfjet/v9/src/shape"
 )
 
-// Example23 shows the ascent, descent and baseline of the text in a TextBlock.
+// Example23 draws a table that spans multiple pages.
 func Example23() {
 	pdf, err := pdfjet.NewPDFFile("Example_23.pdf")
 	if err != nil {
 		log.Fatal(err)
 	}
-	pdf.SetCompliance(compliance.PDF_UA_1)
-	pdf.SetTitle("The Ascent and Descent of a Font")
+	pdf.SetCompliance(compliance.PDF_A_1A)
+	pdf.SetTitle("World Communications")
 
-	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
-	f1.SetSize(72.0)
-
+	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold)
 	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
-	f2.SetSize(24.0)
+	f3 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.BoldItalic)
 
-	page := pdfjet.NewPage(pdf, letter.Portrait())
+	f1.SetSize(7.0)
+	f2.SetSize(7.0)
+	f3.SetSize(7.0)
 
-	x1 := float32(90.0)
-	y1 := float32(100.0)
+	table := pdfjet.NewTable()
+	tableData := getData(
+		"data/world-communications.txt", "|", 2, f1, f2)
 
-	// A heading, which PAC asks a document for
-	pdfjet.NewTextLine(f2, "The Ascent and Descent of a Font").
-		SetStructureType(structelem.H1).
-		SetFontSize(18.0).
-		SetLocation(x1, 45.0).
-		DrawOn(page)
+	p1 := pdfjet.NewPoint(0.0, 0.0)
+	p1.SetShape(shape.Circle)
+	p1.SetRadius(2.0)
+	p1.SetStrokeColor(color.DarkOliveGreen)
+	p1.SetURIAction("https://en.wikipedia.org/wiki/India")
+	tableData[4][3].SetMarker(p1, alignment.Right)
 
-	textLine := pdfjet.NewTextLine(f2, "(x1, y1)")
-	textLine.SetLocation(x1, y1-15.0)
-	textLine.DrawOn(page)
+	p1 = pdfjet.NewPoint(0.0, 0.0)
+	p1.SetShape(shape.Diamond)
+	p1.SetRadius(2.5)
+	p1.SetStrokeColor(color.Blue)
+	p1.SetURIAction("https://en.wikipedia.org/wiki/European_Union")
+	tableData[5][3].SetMarker(p1, alignment.Right)
 
-	textBlock := pdfjet.NewTextBlock(f1,
-		"Hello, World! This example shows the functionality of the TextBlock.")
-	textBlock.SetLocation(x1, y1)
-	textBlock.SetWidth(500.0)
-	textBlock.SetBorderColor(color.LightGreen)
-	textBlock.SetBackgroundColor(color.LightGreen)
-	textBlock.SetTextColor(color.Black)
-	xy := textBlock.DrawOn(page)
+	p1 = pdfjet.NewPoint(0.0, 0.0)
+	p1.SetShape(shape.Star)
+	p1.SetRadius(3.0)
+	p1.SetStrokeColor(color.Red)
+	p1.SetURIAction("https://en.wikipedia.org/wiki/United_States")
+	tableData[6][3].SetMarker(p1, alignment.Right)
 
-	// Text on the left
-	ascentText := pdfjet.NewTextLine(f2, "Ascent")
-	ascentText.SetFontSize(18.0)
-	ascentText.SetLocation(x1-85.0, y1+40.0)
-	ascentText.DrawOn(page)
+	table.SetTableData(tableData, 2)
+	table.SetBottomMargin(15.0)
+	// The table is about 555 points wide: at x = 30 it fits on the page.
+	table.SetLocation(30.0, 30.0)
+	table.SetTextColorInRow(6, color.Blue)
+	table.SetTextColorInRow(39, color.Firebrick)
+	table.SetFontInRow(26, f3)
+	table.RemoveLineBetweenRows(0, 1)
+	table.AutoAdjustColumnWidths()
+	table.SetColumnWidth(0, 50.0)
+	table.SetColumnWidth(3, 80.0)
+	table.RightAlignNumbers()
 
-	descentText := pdfjet.NewTextLine(f2, "Descent")
-	descentText.SetFontSize(18.0)
-	descentText.SetLocation(x1-85.0, y1+f1.GetAscent(f1.GetSize())+15.0)
-	descentText.DrawOn(page)
-
-	// Line beside the text ascent
-	blueLine := pdfjet.NewLine(
-		x1-10.0,
-		y1,
-		x1-10.0,
-		y1+f1.GetAscent(f1.GetSize()))
-	blueLine.SetStrokeColor(color.Blue)
-	blueLine.SetStrokeWidth(3.0)
-	blueLine.DrawOn(page)
-
-	// Line beside the text descent
-	redLine := pdfjet.NewLine(
-		x1-10.0,
-		y1+f1.GetAscent(f1.GetSize()),
-		x1-10.0,
-		y1+f1.GetAscent(f1.GetSize())+f1.GetDescent(f1.GetSize()))
-	redLine.SetStrokeColor(color.Red)
-	redLine.SetStrokeWidth(3.0)
-	redLine.DrawOn(page)
-
-	baseLine := pdfjet.NewLine(
-		x1,
-		y1+f1.GetAscent(f1.GetSize()),
-		xy[0],
-		y1+f1.GetAscent(f1.GetSize()))
-	baseLine.DrawOn(page)
-
-	descentLine := pdfjet.NewLine(
-		x1,
-		y1+(f1.GetAscent(f1.GetSize())+f1.GetDescent(f1.GetSize())),
-		xy[0],
-		y1+(f1.GetAscent(f1.GetSize())+f1.GetDescent(f1.GetSize())))
-	descentLine.DrawOn(page)
-
-	ascentLine := pdfjet.NewLine(
-		x1,
-		y1+f1.GetBodyHeight(f1.GetSize())+f1.GetAscent(f1.GetSize()),
-		xy[0],
-		y1+f1.GetBodyHeight(f1.GetSize())+f1.GetAscent(f1.GetSize()))
-	ascentLine.DrawOn(page)
-
-	p1 := pdfjet.NewPoint(x1, y1)
-	p1.SetRadius(5.0)
-	p1.DrawOn(page)
-
-	p2 := pdfjet.NewPoint(xy[0], xy[1])
-	p2.SetRadius(5.0)
-	p2.DrawOn(page)
-
-	f2.SetSize(24.0)
-	textLine3 := pdfjet.NewTextLine(f2, "(x2, y2)")
-	textLine3.SetLocation(xy[0]-80.0, xy[1]+30.0)
-	textLine3.DrawOn(page)
-
-	rect := pdfjet.NewRect(xy[0], xy[1], 20.0, 20.0)
-	rect.SetBorderColor(color.Black)
-	rect.DrawOn(page)
+	pages := make([]*pdfjet.Page, 0)
+	table.DrawOnPages(pdf, &pages, letter.Portrait())
+	for i := 0; i < len(pages); i++ {
+		page := pages[i]
+		textLine := pdfjet.NewTextLine(f1, "Page "+strconv.Itoa(i+1)+" of "+strconv.Itoa(len(pages)))
+		page.AddFooter(textLine)
+		pdf.AddPage(page)
+	}
 
 	if err := pdf.Complete(); err != nil {
 		log.Fatal(err)
+	}
+}
+
+func getData(fileName, delimiter string, numOfHeaderRows int, f1, f2 *pdfjet.Font) [][]*pdfjet.Cell {
+	tableData := make([][]*pdfjet.Cell, 0)
+
+	f, err := os.Open(fileName)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer func(f *os.File) {
+		if err := f.Close(); err != nil {
+			log.Printf("error closing %s: %v", fileName, err)
+		}
+	}(f)
+
+	scanner := bufio.NewScanner(f)
+	currentRow := 0
+	for scanner.Scan() {
+		line := scanner.Text()
+		row := make([]*pdfjet.Cell, 0)
+		var cols []string
+		if delimiter == "|" {
+			cols = strings.Split(line, "|")
+		} else if delimiter == "\t" {
+			cols = strings.Split(line, "\t")
+		} else {
+			log.Fatal("Only pipes and tabs can be used as delimiters")
+		}
+		for i := 0; i < len(cols); i++ {
+			text := strings.TrimSpace(cols[i])
+			var cell *pdfjet.Cell
+			if currentRow < numOfHeaderRows {
+				cell = pdfjet.NewCell(f1, text)
+			} else {
+				cell = pdfjet.NewCell(f2, text)
+			}
+			cell.SetTopPadding(2.0)
+			cell.SetBottomPadding(2.0)
+			cell.SetLeftPadding(2.0)
+			if i == 3 {
+				cell.SetRightPadding(10.0)
+			} else {
+				cell.SetRightPadding(2.0)
+			}
+			row = append(row, cell)
+		}
+		tableData = append(tableData, row)
+		currentRow++
+	}
+	if err := scanner.Err(); err != nil {
+		log.Fatal(err)
+	}
+
+	appendMissingCells(tableData, f2)
+
+	return tableData
+}
+
+func appendMissingCells(tableData [][]*pdfjet.Cell, font *pdfjet.Font) {
+	firstRow := tableData[0]
+	numOfColumns := len(firstRow)
+	for i := 0; i < len(tableData); i++ {
+		dataRow := tableData[i]
+		dataRowColumns := len(dataRow)
+		if dataRowColumns < numOfColumns {
+			for j := 0; j < (numOfColumns - dataRowColumns); j++ {
+				dataRow = append(dataRow, pdfjet.NewCell(font, ""))
+			}
+			tableData[i] = dataRow
+			dataRow[dataRowColumns-1].SetColSpan((numOfColumns - dataRowColumns) + 1)
+		}
 	}
 }
 

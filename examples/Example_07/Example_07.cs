@@ -11,65 +11,80 @@ using PDFjet.NET;
 
 /**
  * Example_07.cs
- * This example adds a "DRAFT" watermark to every page of a two-page
- * document that is PDF/A-3a and PDF/UA-1. The watermark is drawn first, so the
- * text of the page is drawn over it.
+ * This example reads fonts from OpenType and TrueType files. Any .otf or
+ * .ttf file on the computer is a font for PDFjet. A font is
+ * embedded as a subset of the glyphs the document draws, unless it is set
+ * to stay whole.
  */
 public class Example_07 {
     public Example_07() {
-        PDF pdf = new PDF(
-                new BufferedStream(new FileStream("Example_07.pdf", FileMode.Create)),
-                Compliance.PDF_A_3A_UA_1);
-        pdf.SetTitle("A Draft, Archived as PDF/A-3a and PDF/UA-1");
+        PDF pdf = new PDF(new BufferedStream(
+                new FileStream("Example_07.pdf", FileMode.Create)));
+        pdf.SetCompliance(Compliance.PDF_UA_1);
+        pdf.SetTitle("Fonts from .otf and .ttf Files");
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
         Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
-        Font f3 = new Font(pdf, IBMPlexSans.Bold);
 
-        String[] titles = {
-            "Project Proposal",
-            "Budget and Schedule",
+        Page page = new Page(pdf, Letter.PORTRAIT);
+
+        TextLine text = new TextLine(f2, "Fonts from .otf and .ttf Files");
+        text.SetStructureType(StructElem.H1);
+        text.SetFontSize(22f);
+        text.SetLocation(50f, 80f);
+        text.DrawOn(page);
+
+        TextBlock textBlock = new TextBlock(f1,
+                "PDFjet reads OpenType and TrueType fonts as they are: pass the path "
+                + "of any .otf or .ttf file on the computer to the Font constructor. "
+                + "The IBMPlexSans and NotoSans constants are the paths of the fonts "
+                + "that come with PDFjet. A font is embedded with only the "
+                + "glyphs the document draws, which keeps the file small, whatever its "
+                + "outlines. The paragraph below is drawn four times.");
+        textBlock.SetFontSize(12f);
+        textBlock.SetLineSpacing(1.5f);
+        textBlock.SetLocation(50f, 95f);
+        textBlock.SetWidth(512f);
+        float[] xy = textBlock.DrawOn(page);
+
+        String[] files = {
+            "fonts/IBMPlexSans/IBMPlexSans-Regular.otf",
+            IBMPlexSans.Regular,
+            SourceSerif4.Regular,
+            NotoSans.Regular,
         };
-        String[] texts = {
-            "This proposal describes a new reporting service that creates invoices, "
-                + "statements and delivery notes as PDF documents. The documents are "
-                + "archived as PDF/A-3a, so they can be opened and printed exactly "
-                + "the same way for many years.\n\n"
-                + "The watermark tells every reader that this is a draft. It is drawn "
-                + "in light gray behind the text, at an angle from the bottom left "
-                + "corner to the top right corner of the page.",
-            "The service will be built in three phases over six months. The first "
-                + "phase delivers invoices, the second statements, and the third "
-                + "delivery notes.\n\n"
-                + "The budget and the schedule will be final once the proposal is "
-                + "approved. Until then, every page of this document is marked as a draft.",
+        String[] kinds = {
+            "OpenType with CFF outlines, from the .otf file, embedded as a subset",
+            "TrueType, from the .ttf file, embedded as a subset",
+            "Another TrueType font, embedded as a subset",
+            "A TrueType font kept whole: subsetting turned off",
         };
+        String sample = "The quick brown fox jumps over the lazy dog. "
+                + "Ξεσκεπάζω την ψυχοφθόρα βδελυγμία. "
+                + "Съешь же ещё этих мягких французских булок, да выпей чаю.";
 
-        for (int i = 0; i < titles.Length; i++) {
-            Page page = new Page(pdf, A4.LANDSCAPE);
+        float y = xy[1] + 30f;
+        for (int i = 0; i < files.Length; i++) {
+            text = new TextLine(f2, files[i]);
+            text.SetFontSize(11f);
+            text.SetLocation(50f, y);
+            text.DrawOn(page);
 
-            // The watermark is drawn before the content of the page.
-            f3.SetSize(120f);
-            page.AddWatermark(f3, "DRAFT");
+            text = new TextLine(f1, kinds[i]);
+            text.SetFontSize(10f);
+            text.SetTextColor(Color.dimgray);
+            text.SetLocation(50f, y + 15f);
+            text.DrawOn(page);
 
-            TextLine title = new TextLine(f2, titles[i]);
-            title.SetStructureType(StructElem.H1);
-            title.SetFontSize(28f);
-            title.SetLocation(70f, 100f);
-            title.DrawOn(page);
-
-            TextBlock textBlock = new TextBlock(f1, texts[i]);
-            textBlock.SetFontSize(14f);
-            textBlock.SetLineSpacing(1.5f);
-            textBlock.SetLocation(70f, 130f);
-            textBlock.SetWidth(page.GetWidth() - 140f);
-            textBlock.DrawOn(page);
-
-            TextLine footer = new TextLine(f1, "Page " + (i + 1) + " of " + titles.Length);
-            footer.SetFontSize(10f);
-            footer.SetTextColor(Color.dimgray);
-            footer.SetLocation(70f, page.GetHeight() - 40f);
-            footer.DrawOn(page);
+            Font font = new Font(pdf, files[i]);
+            font.SetSubset(i != 3);
+            textBlock = new TextBlock(font, sample);
+            textBlock.SetFontSize(13f);
+            textBlock.SetLineSpacing(1.4f);
+            textBlock.SetLocation(50f, y + 28f);
+            textBlock.SetWidth(512f);
+            xy = textBlock.DrawOn(page);
+            y = xy[1] + 30f;
         }
 
         pdf.Complete();

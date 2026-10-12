@@ -18,89 +18,126 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
-// Example40 draws two bar charts with vertical bars from the same data: the
-// two series grouped by month, and the same series stacked, with a legend
-// under each title. The second page is the calendar of 2026, a CalendarMonth
-// for each month, with the weeks starting on Monday.
+// Example40 links a contents page to three chapters, and each chapter
+// back to the contents, with destinations and "Go To" actions.
 func Example40() {
 	pdf, err := pdfjet.NewPDFFile("Example_40.pdf")
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	pdf.SetCompliance(compliance.PDF_UA_1)
-	pdf.SetTitle("Units sold by month")
+	pdf.SetTitle("Internal links and destinations")
 
-	page := pdfjet.NewPage(pdf, letter.Portrait())
+	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
+	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
 
-	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold)
-	f1.SetSize(10.0)
-
-	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
-	f2.SetSize(8.0)
-
-	// The heading of the document, above the charts
-	pdfjet.NewTextLine(f1, "Sales in 2025 and 2026").
-		SetStructureType(structelem.H1).
-		SetFontSize(18.0).
-		SetLocation(70.0, 45.0).
-		DrawOn(page)
-
-	months := []string{
-		"Jan", "Feb", "Mar", "Apr", "May", "Jun",
-		"Jul", "Aug", "Sep", "Oct", "Nov", "Dec"}
-	units2025 := []float32{45.0, 65.0, 31.0, 45.0, 65.0, 31.0, 38.0, 52.0, 47.0, 59.0, 66.0, 72.0}
-	units2026 := []float32{75.0, 20.0, 73.0, 75.0, 20.0, 73.0, 61.0, 58.0, 69.0, 64.0, 77.0, 80.0}
-
-	chart := pdfjet.NewBarChart(f1, f2)
-	chart.SetSize(500.0, 300.0)
-	chart.SetTitle("Units sold by month")
-	chart.SetXAxisTitle("Month")
-	chart.SetYAxisTitle("Units")
-	chart.SetCategories(months...)
-	chart.AddSeriesWithColor("2025", units2025, color.SeaGreen)
-	chart.AddSeriesWithColor("2026", units2026, color.IndianRed)
-	chart.SetGroupGap(0.4)
-	chart.SetBarGap(0.1)
-	chart.SetAltDescription("Units sold by month in 2025 and 2026, side by side: from 31 to 72 a month in 2025 and from 20 to 80 in 2026, the most in December in both years.")
-	chart.SetLocation(70.0, 70.0)
-	chart.DrawOn(page)
-
-	stacked := pdfjet.NewBarChart(f1, f2)
-	stacked.SetSize(500.0, 300.0)
-	stacked.SetTitle("Units sold by month, stacked")
-	stacked.SetXAxisTitle("Month")
-	stacked.SetYAxisTitle("Units")
-	stacked.SetCategories(months...)
-	stacked.AddSeriesWithColor("2025", units2025, color.SeaGreen)
-	stacked.AddSeriesWithColor("2026", units2026, color.IndianRed)
-	stacked.SetStacked(true)
-	stacked.SetDrawValueLabels(true)
-	stacked.SetAltDescription("Units sold by month in 2025 and 2026, stacked: from 85 a month, in February and May, to 152 in December.")
-	stacked.SetLocation(70.0, 420.0)
-	stacked.DrawOn(page)
-
-	page = pdfjet.NewPage(pdf, letter.Portrait())
-	title := pdfjet.NewTextLine(f1, "Calendar 2026").SetFontSize(14.0)
-	title.SetStructureType(structelem.H2) // Under the heading of the first page
-	title.SetLocation(50.0, 45.0)
-	title.DrawOn(page)
-	monthNames := []string{
-		"January", "February", "March", "April", "May", "June",
-		"July", "August", "September", "October", "November", "December"}
-	for i := 0; i < 12; i++ {
-		x := 50.0 + float32(i%3)*182.0
-		y := 65.0 + float32(i/3)*177.0
-		monthName := pdfjet.NewTextLine(f1, monthNames[i])
-		monthName.SetLocation(x, y+12.0)
-		monthName.DrawOn(page)
-		calendar := pdfjet.NewCalendarMonth(f1, f2, 2026, i+1)
-		calendar.SetFirstDayOfWeek(time.Monday)
-		calendar.SetCellWidth(21.0)
-		calendar.SetCellHeight(21.0)
-		calendar.SetLocation(x, y+18.0)
-		calendar.DrawOn(page)
+	chapters := []string{
+		"Destinations",
+		"Go To actions",
+		"Links on shapes and images",
 	}
+	texts := []string{
+		"A destination is a named place in a document. The title of this chapter " +
+			"is the destination \"chapter1\", set with setDestination.",
+		"A Go To action makes something a link to a destination. The chapter titles " +
+			"on the contents page are text lines with a Go To action.",
+		"Rectangles and images can be links too. Click the arrow in the top left " +
+			"corner, or the arrow image next to it, to go back to the contents.",
+	}
+
+	// The contents page. The destination is the top of the page.
+	page := pdfjet.NewPage(pdf, letter.Portrait())
+	page.AddDestinationAt("contents", 0.0, 0.0)
+
+	text := pdfjet.NewTextLine(f2, "Contents")
+	text.SetStructureType(structelem.H1)
+	text.SetFontSize(24.0)
+	text.SetLocation(90.0, 100.0)
+	text.DrawOn(page)
+
+	// The contents are a list: each item is the number of its chapter, which
+	// labels the item, and the title of the chapter, which is the body of the
+	// item and the link to it. A reader reads them as the items of a list and
+	// not as lines of text that happen to follow one another.
+	y := float32(150.0)
+	page.BeginStructElement(structelem.L)
+	for i := 0; i < len(chapters); i++ {
+		page.BeginStructElement(structelem.LI)
+		label := "Chapter " + fmt.Sprint(i+1) + ":"
+		text = pdfjet.NewTextLine(f1, label)
+		text.SetStructureType(structelem.Lbl)
+		text.SetFontSize(14.0)
+		text.SetLocation(90.0, y)
+		text.DrawOn(page)
+
+		// The title, its underline and its link are the body of the item,
+		// which is what an LI may hold beside its label.
+		page.BeginStructElement(structelem.LBody)
+		text = pdfjet.NewTextLine(f1, chapters[i])
+		text.SetFontSize(14.0)
+		text.SetTextColor(color.Blue)
+		text.SetUnderline(true)
+		text.SetGoToAction("chapter" + fmt.Sprint(i+1))
+		text.SetLocation(90.0+f1.StringWidth(14.0, label+" "), y)
+		text.DrawOn(page)
+		page.EndStructElement()
+		page.EndStructElement()
+		y += 30.0
+	}
+	page.EndStructElement()
+
+	for i := 0; i < len(chapters); i++ {
+		page = pdfjet.NewPage(pdf, letter.Portrait())
+
+		// The title of the chapter is its destination.
+		text = pdfjet.NewTextLine(f2, "Chapter "+fmt.Sprint(i+1)+": "+chapters[i])
+		text.SetFontSize(20.0)
+		text.SetDestination("chapter" + fmt.Sprint(i+1))
+		text.SetLocation(90.0, 100.0)
+		text.DrawOn(page)
+
+		textBlock := pdfjet.NewTextBlock(f1, texts[i])
+		textBlock.SetFontSize(12.0)
+		textBlock.SetLineSpacing(1.5)
+		textBlock.SetLocation(90.0, 125.0)
+		textBlock.SetWidth(430.0)
+		textBlock.DrawOn(page)
+
+		text = pdfjet.NewTextLine(f1, "Back to the contents")
+		text.SetFontSize(12.0)
+		text.SetTextColor(color.Blue)
+		text.SetUnderline(true)
+		text.SetGoToAction("contents")
+		text.SetLocation(90.0, 250.0)
+		text.DrawOn(page)
+	}
+
+	// On the last page, a rect with no border links to the contents too.
+	rect := pdfjet.NewRect(20.0, 20.0, 20.0, 20.0)
+	rect.SetGoToAction("contents")
+	rect.DrawOn(page)
+
+	// Create an up arrow and place it in the rect
+	path := pdfjet.NewPath()
+	path.Add(pdfjet.NewPoint(30.0, 21.0))
+	path.Add(pdfjet.NewPoint(37.0, 29.0))
+	path.Add(pdfjet.NewPoint(33.0, 29.0))
+	path.Add(pdfjet.NewPoint(33.0, 39.0))
+	path.Add(pdfjet.NewPoint(27.0, 39.0))
+	path.Add(pdfjet.NewPoint(27.0, 29.0))
+	path.Add(pdfjet.NewPoint(23.0, 29.0))
+	path.SetClosed(true)
+	path.SetStrokeColor(color.DeepSkyBlue)
+	path.SetFillShape(true)
+	path.DrawOn(page)
+
+	// And so does an image of an arrow.
+	image := pdfjet.NewImageFromFile(pdf, "images/up-arrow.png")
+	image.SetAltDescription(
+		"An arrow pointing up, which goes back to the contents of the document when it is clicked.")
+	image.SetLocation(50.0, 20.0)
+	image.SetGoToAction("contents")
+	image.DrawOn(page)
 
 	if err := pdf.Complete(); err != nil {
 		log.Fatal(err)

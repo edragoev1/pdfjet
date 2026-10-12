@@ -34,7 +34,7 @@ import java.util.List;
  * On one page the stamp is the larger, since its XObject costs about 300
  * bytes of its own, and it draws only paths and text in an embedded font.
  * <p>
- * Please see Example_06 and Example_35.
+ * Please see Example_42 and Example_31.
  */
 public class Container implements Drawable {
     float x;

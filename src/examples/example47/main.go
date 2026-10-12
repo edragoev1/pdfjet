@@ -8,80 +8,66 @@ package main
 import (
 	"fmt"
 	"log"
-	"regexp"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
-	"github.com/edragoev1/pdfjet/v9/src/compliance"
-	"github.com/edragoev1/pdfjet/v9/src/content"
+	"github.com/edragoev1/pdfjet/v9/src/encryption"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
-	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
-// Example47 flows text through columns using the TextFrame class.
+// Example47 encrypts the PDF and attaches embedded files to a page.
 func Example47() {
 	pdf, err := pdfjet.NewPDFFile("Example_47.pdf")
 	if err != nil {
 		log.Fatal(err)
 	}
-	pdf.SetCompliance(compliance.PDF_UA_1)
-	pdf.SetTitle("Text flowing through columns")
+	// pdf.SetCompliance(compliance.PDF_UA_1)
+
+	passwords := encryption.NewPasswords()
+	passwords.SetUserPassword("hello")
+	passwords.SetOwnerPassword("world")
+
+	permissions := encryption.NewPermissions()
+	permissions.Grant(
+		encryption.Print | // Set both to allow the user to print
+			encryption.PrintHighQuality | // this document with high quality
+			// encryption.ModifyContents|
+			// encryption.CopyContents|
+			encryption.AssembleDocument)
+
+	enc, err := pdfjet.NewEncryption(pdf, passwords, permissions)
+	if err != nil {
+		log.Fatal(err)
+	}
+	pdf.SetEncryption(enc)
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
-	f1.SetSize(14.0)
+	f1.SetSize(36.0)
 
-	// Use regexp.Split to match Java's split("\\n\\n") regex behavior
-	re := regexp.MustCompile(`\n\n`)
-	paragraphs := re.Split(content.OfTextFile("data/dostoevsky.txt"), -1)
+	image := pdfjet.NewImageFromFile(pdf, "images/ee-map.png")
 
-	x := float32(50.0)
-	y := float32(50.0)
-	w := float32(230.0)
-	h := float32(500.0)
-	gap := float32(20.0)
+	file1 := pdfjet.NewEmbeddedFileAtPath(pdf, "images/linux-logo.png", false)
 
-	textFrame := pdfjet.NewTextFrame(f1, paragraphs)
+	page := pdfjet.NewPage(pdf, letter.Portrait())
 
-	var page *pdfjet.Page
-	first := true
-	for textFrame.HasMoreText() {
-		page = pdfjet.NewPage(pdf, letter.Landscape())
-		if first {
-			// The heading, on the first page only, which its columns start under
-			pdfjet.NewTextLine(f1, "The Idiot, by Fyodor Dostoevsky").
-				SetStructureType(structelem.H1).
-				SetFontSize(20.0).
-				SetLocation(50.0, 50.0).
-				DrawOn(page)
-			y = 80.0
-			first = false
-		}
+	textLine := pdfjet.NewTextLine(f1, "Hello, World!")
+	textLine.SetLocation(100.0, 100.0)
+	textLine.DrawOn(page)
 
-		textFrame.SetLocation(x, y)
-		textFrame.SetWidth(w)
-		textFrame.SetHeight(h)
-		textFrame.DrawOn(page)
+	image.SetLocation(100, 150)
+	image.ScaleBy(0.5)
+	image.DrawOn(page)
 
-		if textFrame.HasMoreText() {
-			x += w + gap
-			textFrame.SetLocation(x, y)
-			textFrame.SetWidth(w)
-			textFrame.SetHeight(h)
-			textFrame.DrawOn(page)
-		}
-
-		if textFrame.HasMoreText() {
-			x += w + gap
-			textFrame.SetLocation(x, y)
-			textFrame.SetWidth(w)
-			textFrame.SetHeight(h)
-			textFrame.DrawOn(page)
-		}
-
-		x = 50.0
-		y = 50.0
-	}
+	// File attachment functionality
+	attachment := pdfjet.NewFileAttachment(file1)
+	attachment.SetLocation(100.0, 550.0)
+	attachment.SetIconPushPin()
+	attachment.SetIconSize(24.0)
+	attachment.SetTitle("Attached File: " + file1.GetFileName())
+	attachment.SetContents(
+		"Right mouse click on the icon to save the attached file.")
+	attachment.DrawOn(page)
 
 	if err := pdf.Complete(); err != nil {
 		log.Fatal(err)

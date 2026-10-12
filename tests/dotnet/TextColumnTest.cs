@@ -186,7 +186,7 @@ public class TextColumnTest {
     [Fact]
     public void TheLanguageOfATextLineIsKeptInItsWords() {
         // The paragraph is one element for its words, which dropped the
-        // language of the text line they came from, so Example_29's Greek was
+        // language of the text line they came from, so Example_22's Greek was
         // read as English (the viewer pass, 7 October 2026). Each word keeps
         // it in its marked content; a text line of no language adds none.
         PDF pdf = new PDF(new System.IO.MemoryStream(), Compliance.PDF_UA_1).SetTitle("Test");
@@ -205,7 +205,7 @@ public class TextColumnTest {
 
     [Fact]
     public void ACJKParagraphHasTheLanguageGiven() {
-        // Example_44's Chinese was read as English, as AddCJKParagraph took no
+        // Example_13's Chinese was read as English, as AddCJKParagraph took no
         // language (the NVDA pass, 7 October 2026). Every line it makes has
         // the language given; with none, it gives none.
         foreach (string language in new string[] {"zh-Hans", null}) {

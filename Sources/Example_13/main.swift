@@ -14,136 +14,42 @@ public class Example_13 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_13.pdf", append: false)!)
         pdf.setCompliance(Compliance.PDF_UA_1)
-        pdf.setTitle("Winter Reading Scores")
+        pdf.setTitle("Switzerland, in English and Chinese")
 
-        let f1 = try Font(pdf, IBMPlexSans.Bold)
-        f1.setSize(7.0)
+        let f1 = try Font(pdf, IBMPlexSans.Regular)
+        f1.setSize(12.0)
 
-        let f2 = try Font(pdf, IBMPlexSans.Regular)
-        f2.setSize(7.0)
+        // Chinese (Simplified) font
+        let f2 = try Font(pdf, IBMPlexSansSC.Regular)
+        f2.setSize(12.0)
 
-        var tableData = [[Cell]]()
-        let text = (try String(contentsOfFile:
-                "data/winter-2009.txt", encoding: .utf8)).trimmingCharacters(in: .newlines)
-        let lines = text.replacingOccurrences(of: "\r\n", with: "\n").components(separatedBy: "\n")
-        for line1 in lines {
-            let line = line1.trimmingCharacters(in: .newlines)
-            var row = [Cell]()
-            let columns = line.components(separatedBy: "|")
-            for column in columns {
-                row.append(Cell(f2, String(column)))
-            }
-            tableData.append(row)
-        }
+        let page = Page(pdf, Letter.PORTRAIT)
 
-        let table = Table()
-        table.setTableData(tableData, 2)
-        table.setLocation(100.0, 50.0)
-        table.setBottomMargin(10.0)
+        let column = TextColumn()
+        column.setLocation(70.0, 70.0)
+        column.setWidth(500.0)
+        column.setLineSpacing(1.5)      // 1.5 x font height
+        column.setParagraphSpacing(0.5) // 0.5 x line spacing
 
-        table.setFontInRow(0, f1)
-        table.setFontInRow(1, f1)
+        let p1 = Paragraph()
+        p1.add(TextLine(f1,
+"The Swiss Confederation was founded in 1291 as a defensive alliance among three cantons. In succeeding years, other localities joined the original three. The Swiss Confederation secured its independence from the Holy Roman Empire in 1499. Switzerland's sovereignty and neutrality have long been honored by the major European powers, and the country was not involved in either of the two World Wars. The political and economic integration of Europe over the past half century, as well as Switzerland's role in many UN and international organizations, has strengthened Switzerland's ties with its neighbors. However, the country did not officially become a UN member until 2002."))
+        column.addParagraph(p1)
 
-        table.autoAdjustColumnWidths()
-        table.removeLineBetweenRows(0, 1)
+        let chinese = "用于附属装置选择器应用程序的分析方法和计算基于与物料、附属装置和机器有关的不同参数和变量。 此类参数和变量的准确性会影响附属装置选择 应用程序结果的准确性。 虽然沃尔沃建筑设备公司、其子公司和附属公司（统称“沃尔沃建筑设备”）已尽力确保附属装置选择应用程序的准确性，但沃尔沃建筑设备无法保证结果准确无误。 因此，沃尔沃建筑设备并未对附属装置选择应用程序结果的准确性作出保证或声明（无论明示或暗示）。 沃尔沃建筑设备特此声明不对有关附属装置选择应用程序报告，此处获得的结果，或用于附属装置选择应用程序的设备的适宜性的所有明示或暗示保证，包括但不限于用于特定目的的适销性或合适性的任何保证承担任何责任。 在任何情况下，沃尔沃建筑设备均不对为实体或由实体创建的结果（或任何其它实体）以及由此造成的任何间接、意外、必然或特殊损害，包括但不限于损失收益或利润承担任何责任。"
+        let xy = column.drawOn(page)
 
-        var cell = table.getCellAt(1, 1)
-        cell.setBorder(Border.TOP, true)
-
-        cell = table.getCellAt(1, 2)
-        cell.setBorder(Border.TOP, true)
-
-        cell = table.getCellAt(0, 1)
-        cell.setColSpan(2)
-        cell.setTextAlignment(Alignment.CENTER)
-
-        var column = table.getColumn(7)
-        for i in 0..<column.count {
-            cell = column[i]
-            cell.setTextAlignment(Alignment.CENTER)
-        }
-
-        column = table.getColumn(4)
-        for i in 2..<column.count {
-            cell = column[i]
-            cell.setTextAlignment(Alignment.CENTER)
-            if let value = Int(cell.getText()!) {
-                if value > 40 {
-                    cell.setBackgroundColor(Color.darkseagreen)
-                } else {
-                    cell.setBackgroundColor(Color.yellow)
-                }
-            }
-        }
-
-        column = table.getColumn(2)
-        for i in 2..<column.count {
-            cell = column[i]
-            if cell.getText() == "Smith" {
-                cell.setUnderline(true)
-            }
-            if cell.getText() == "Bowden" {
-                cell.setStrikeout(true)
-            }
-        }
-
-        column = table.getColumn(2)
-        for i in 2..<column.count {
-            cell = column[i]
-            if cell.getText() == "Bowden" {
-                cell.setStrikeout(false)
-            }
-        }
-
-        setBgColorForRow(table, 0, Color.lightgray)
-        setBgColorForRow(table, 1, Color.lightgray)
-
-        table.setColumnWidth(3, 10.0)
-        blankOutColumn(table, 3)
-
-        table.setColumnWidth(8, 10.0)
-        blankOutColumn(table, 8)
-
-        // A heading on the first page only, above the table: the first page is
-        // made here, and the table goes on to new pages.
-        let first = Page(pdf, Letter.PORTRAIT, false)
-        TextLine(f1, "Winter Reading Scores")
-                .setStructureType(StructElem.H1)
-                .setFontSize(16.0)
-                .setLocation(100.0, 38.0)
-                .drawOn(first)
-        table.setFirstPageTopMargin(50.0)
-
-        var pages = [first]
-        table.drawOn(pdf, first, &pages, Letter.PORTRAIT)
-        for i in 0..<pages.count {
-            let page = pages[i]
-            page.addFooter(TextLine(f1, "Page \(i + 1) of \(pages.count)"))
-            pdf.addPage(page)
-        }
+        // The Chinese in a column of its own, set tighter: IBM Plex Sans SC has a
+        // line gap of a whole em, which the lines of a paragraph are set with.
+        let column2 = TextColumn()
+        column2.setLocation(70.0, xy[1] + 12.0)
+        column2.setWidth(500.0)
+        column2.setLineSpacing(1.2)
+        column2.addCJKParagraph(f2, chinese, "zh-Hans") // Read by a screen reader as Chinese
+        column2.drawOn(page)
 
         try pdf.complete()
     }
-
-    public func blankOutColumn(_ table: Table, _ index: Int) {
-        let column = table.getColumn(index)
-        for cell in column {
-            cell.setBackgroundColor(Color.white)
-            cell.setBorder(Border.TOP, false)
-            cell.setBorder(Border.BOTTOM, false)
-        }
-    }
-
-    public func setBgColorForRow(
-            _ table: Table,
-            _ index: Int,
-            _ color: Int32) {
-        let row = table.getRow(index)
-        for cell in row {
-            cell.setBackgroundColor(color)
-        }
-    }
-
 }   // End of Example_13.swift
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)

@@ -33,8 +33,8 @@ import (
 // Use a TextFrame for text that continues from one frame to the next: the
 // columns of an article, or the pages of a long text. Use a TextColumn to
 // draw paragraphs in one place, with justified text or a rotation, and a
-// TextBlock for one run of text in one font. Please see Example_27 and
-// Example_47.
+// TextBlock for one run of text in one font. Please see Example_14 and
+// Example_15.
 type TextFrame struct {
 	paragraphs      []*Paragraph
 	x, y, w, h      float32

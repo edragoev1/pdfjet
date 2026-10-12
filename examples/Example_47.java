@@ -7,9 +7,9 @@
 package examples;
 
 import java.io.*;
-import java.util.*;
 import com.pdfjet.*;
 import com.pdfjet.fonts.*;
+import com.pdfjet.encryption.*;
 
 /**
  * Example_47.java
@@ -18,61 +18,48 @@ public class Example_47 {
     public Example_47() throws Exception {
         PDF pdf = new PDF(
             new BufferedOutputStream(new FileOutputStream("Example_47.pdf")));
-        pdf.setCompliance(Compliance.PDF_UA_1);
-        pdf.setTitle("Text flowing through columns");
+        // pdf.setCompliance(Compliance.PDF_UA_1);
+
+        Passwords passwords = new Passwords();
+        passwords.setUserPassword("hello");
+        passwords.setOwnerPassword("world");
+
+        Permissions permissions = new Permissions();
+        permissions.grant(
+            UserAccess.PRINT,               // Set both to allow the user to print
+            UserAccess.PRINT_HIGH_QUALITY,  // this document with high quality
+            // UserAccess.MODIFY_CONTENTS,
+            // UserAccess.COPY_CONTENTS,
+            UserAccess.ASSEMBLE_DOCUMENT);
+
+        pdf.setEncryption(new Encryption(pdf, passwords, permissions));
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
-        f1.setSize(14f);
+        f1.setSize(36f);
 
-        List<String> paragraphs = new ArrayList<>(
-                Arrays.asList(Content.ofTextFile("data/dostoevsky.txt").split("\\n\\n")));
+        Image image = new Image(pdf, "images/ee-map.png");
 
-        float x = 50f;
-        float y = 50f;
-        float w = 230f;
-        float h = 500f;
-        float gap = 20f;
+        EmbeddedFile file1 = new EmbeddedFile(pdf, "images/linux-logo.png", false);
 
-        Page page = null;
-        TextFrame textFrame = new TextFrame(f1, paragraphs);
-        boolean first = true;
-        while (textFrame.hasMoreText()) {
-            page = new Page(pdf, Letter.LANDSCAPE);
-            if (first) {
-                // The heading, on the first page only, which its columns start under
-                new TextLine(f1, "The Idiot, by Fyodor Dostoevsky")
-                        .setStructureType(StructElem.H1)
-                        .setFontSize(20f)
-                        .setLocation(50f, 50f)
-                        .drawOn(page);
-                y = 80f;
-                first = false;
-            }
+        Page page = new Page(pdf, Letter.PORTRAIT);
 
-            textFrame.setLocation(x, y);
-            textFrame.setWidth(w);
-            textFrame.setHeight(h);
-            textFrame.drawOn(page);
+        TextLine textLine = new TextLine(f1, "Hello, World!");
+        textLine.setLocation(100f, 100f);
+        textLine.drawOn(page);
 
-            if (textFrame.hasMoreText()) {
-                x += w + gap;
-                textFrame.setLocation(x, y);
-                textFrame.setWidth(w);
-                textFrame.setHeight(h);
-                textFrame.drawOn(page);
-            }
+        image.setLocation(100, 150);
+        image.scaleBy(.5f);
+        image.drawOn(page);
 
-            if (textFrame.hasMoreText()) {
-                x += w + gap;
-                textFrame.setLocation(x, y);
-                textFrame.setWidth(w);
-                textFrame.setHeight(h);
-                textFrame.drawOn(page);
-            }
-
-            x = 50f;
-            y = 50f;
-        }
+        // File attachment functionality
+        FileAttachment attachment = new FileAttachment(file1);
+        attachment.setLocation(100f, 550f);
+        attachment.setIconPushPin();
+        attachment.setIconSize(24f);
+        attachment.setTitle("Attached File: " + file1.getFileName());
+        attachment.setContents(
+                "Right mouse click on the icon to save the attached file.");
+        attachment.drawOn(page);
 
         pdf.complete();
     }

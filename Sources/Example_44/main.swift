@@ -9,44 +9,79 @@ import PDFjet
 
 /**
  * Example_44.swift
+ * Using the Form and Field classes to draw a shipment request. A field at x = 0
+ * starts a new row, the other fields of the row start at their own x, and a
+ * field with an empty label continues the value above it on a new line.
  */
 public class Example_44 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_44.pdf", append: false)!)
         pdf.setCompliance(Compliance.PDF_UA_1)
-        pdf.setTitle("Switzerland, in English and Chinese")
+        pdf.setTitle("Shipment Request")
 
         let f1 = try Font(pdf, IBMPlexSans.Regular)
-        f1.setSize(12.0)
-
-        // Chinese (Simplified) font
-        let f2 = try Font(pdf, IBMPlexSansSC.Regular)
-        f2.setSize(12.0)
+        let f2 = try Font(pdf, IBMPlexSans.SemiBold)
 
         let page = Page(pdf, Letter.PORTRAIT)
 
-        let column = TextColumn()
-        column.setLocation(70.0, 70.0)
-        column.setWidth(500.0)
-        column.setLineSpacing(1.5)      // 1.5 x font height
-        column.setParagraphSpacing(0.5) // 0.5 x line spacing
+        var text = TextLine(f2, "Shipment Request")
+        text.setStructureType(StructElem.H1)
+        text.setFontSize(22.0)
+        text.setLocation(56.0, 80.0)
+        text.drawOn(page)
 
-        let p1 = Paragraph()
-        p1.add(TextLine(f1,
-"The Swiss Confederation was founded in 1291 as a defensive alliance among three cantons. In succeeding years, other localities joined the original three. The Swiss Confederation secured its independence from the Holy Roman Empire in 1499. Switzerland's sovereignty and neutrality have long been honored by the major European powers, and the country was not involved in either of the two World Wars. The political and economic integration of Europe over the past half century, as well as Switzerland's role in many UN and international organizations, has strengthened Switzerland's ties with its neighbors. However, the country did not officially become a UN member until 2002."))
-        column.addParagraph(p1)
+        let textBlock = TextBlock(f1,
+                "A Form draws its fields in rows. A field at x = 0 starts a new row, "
+                + "the other fields of the row start at their own x, and a field with "
+                + "an empty label continues the value above it on a new line.")
+        textBlock.setFontSize(12.0)
+        textBlock.setLineSpacing(1.5)
+        textBlock.setLocation(56.0, 95.0)
+        textBlock.setWidth(500.0)
+        var xy = textBlock.drawOn(page)
 
-        let chinese = "用于附属装置选择器应用程序的分析方法和计算基于与物料、附属装置和机器有关的不同参数和变量。 此类参数和变量的准确性会影响附属装置选择 应用程序结果的准确性。 虽然沃尔沃建筑设备公司、其子公司和附属公司（统称“沃尔沃建筑设备”）已尽力确保附属装置选择应用程序的准确性，但沃尔沃建筑设备无法保证结果准确无误。 因此，沃尔沃建筑设备并未对附属装置选择应用程序结果的准确性作出保证或声明（无论明示或暗示）。 沃尔沃建筑设备特此声明不对有关附属装置选择应用程序报告，此处获得的结果，或用于附属装置选择应用程序的设备的适宜性的所有明示或暗示保证，包括但不限于用于特定目的的适销性或合适性的任何保证承担任何责任。 在任何情况下，沃尔沃建筑设备均不对为实体或由实体创建的结果（或任何其它实体）以及由此造成的任何间接、意外、必然或特殊损害，包括但不限于损失收益或利润承担任何责任。"
-        let xy = column.drawOn(page)
+        let w: Float = 500.0    // The width of the form
 
-        // The Chinese in a column of its own, set tighter: IBM Plex Sans SC has a
-        // line gap of a whole em, which the lines of a paragraph are set with.
-        let column2 = TextColumn()
-        column2.setLocation(70.0, xy[1] + 12.0)
-        column2.setWidth(500.0)
-        column2.setLineSpacing(1.2)
-        column2.addCJKParagraph(f2, chinese, "zh-Hans") // Read by a screen reader as Chinese
-        column2.drawOn(page)
+        var fields = [Field]()
+        fields.append(Field(  0.0, "Sender", "Maple Leaf Instruments Ltd."))
+        fields.append(Field(  0.0, "Street Address", "480 King Street West"))
+        fields.append(Field(6*w/8, "Suite", "1200"))
+        fields.append(Field(  0.0, "City", "Toronto"))
+        fields.append(Field(3*w/8, "Province", "Ontario"))
+        fields.append(Field(5*w/8, "Postal Code", "M5V 1L7"))
+        fields.append(Field(6*w/8, "Country", "Canada"))
+        fields.append(Field(  0.0, "Recipient", "Nordic Sensor Labs AB"))
+        fields.append(Field(  0.0, "Street Address", "Drottninggatan 55"))
+        fields.append(Field(6*w/8, "Floor", "3"))
+        fields.append(Field(  0.0, "City", "Stockholm"))
+        fields.append(Field(5*w/8, "Postal Code", "111 21"))
+        fields.append(Field(6*w/8, "Country", "Sweden"))
+        fields.append(Field(  0.0, "Contact", "Anna Lindqvist"))
+        fields.append(Field(3*w/8, "Email", "anna.lindqvist@example.com"))
+        fields.append(Field(  0.0, "Contents", "Two calibrated pressure sensors"))
+        fields.append(Field(5*w/8, "Weight", "3.2 kg"))
+        fields.append(Field(6*w/8, "Declared Value", "CAD 1,450.00"))
+        fields.append(Field(  0.0, "Instructions",
+                "Keep upright and away from magnets. Deliver on a weekday"))
+        fields.append(Field(  0.0, "", "between 9:00 and 17:00, to the reception on the third floor."))
+
+        xy = Form(fields)
+                .setLabelFont(f1)
+                .setLabelFontSize(8.0)
+                .setLabelColor(Color.dimgray)
+                .setValueFont(f2)
+                .setValueFontSize(10.0)
+                .setValueColor(Color.black)
+                .setLocation(56.0, xy[1] + 20.0)
+                .setWidth(w)
+                .setStrokeWidth(0.5)
+                .drawOn(page)
+
+        text = TextLine(f1, "The recipient signs for the package on delivery.")
+        text.setFontSize(10.0)
+        text.setTextColor(Color.dimgray)
+        text.setLocation(56.0, xy[1] + 20.0)
+        text.drawOn(page)
 
         try pdf.complete()
     }

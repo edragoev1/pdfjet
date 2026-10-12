@@ -2442,7 +2442,7 @@ public class Page {
     }
 
     /// <summary>
-    /// Saves the graphics state. Please see Example_31.
+    /// Saves the graphics state. Please see Example_30.
     /// </summary>
     public void SaveGraphicsState() {
         savedStates.Add(new State(brushColor, brushColorWritten, penColor, penColorWritten,
@@ -2452,7 +2452,7 @@ public class Page {
     }
 
     /// <summary>
-    /// Sets the graphics state. Please see Example_31.
+    /// Sets the graphics state. Please see Example_30.
     /// </summary>
     /// <param name="gs">the graphics state to use.</param>
     /// <returns>this Page object.</returns>
@@ -2483,7 +2483,7 @@ public class Page {
     }
 
     /// <summary>
-    /// Restores the graphics state. Please see Example_31.
+    /// Restores the graphics state. Please see Example_30.
     /// </summary>
     public void RestoreGraphicsState() {
         if (savedStates.Count == 0) {

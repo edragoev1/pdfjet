@@ -14,7 +14,7 @@ namespace PDFjet.NET {
 /// Used to create image objects and draw them on a page.
 /// The image type can be one of the following: ImageType.JPG, ImageType.PNG or ImageType.BMP
 ///
-/// Please see Example_24 and Example_27.
+/// Please see Example_32 and Example_14.
 /// </summary>
 public class Image : IDrawable {
     internal int objNumber;

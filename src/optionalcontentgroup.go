@@ -13,7 +13,7 @@ import (
 )
 
 // OptionalContentGroup is container for drawable objects that can be drawn on a page as part of Optional Content Group.
-// Please see the PDF specification and Example_30 for more details.
+// Please see the PDF specification and Example_47 for more details.
 //
 // @author Mark Paxton
 type OptionalContentGroup struct {

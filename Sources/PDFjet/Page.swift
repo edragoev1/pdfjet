@@ -1232,7 +1232,7 @@ public class Page {
         append(" Ts\n<")
     }
 
-    /// Saves the current graphics state. Please see Example_31.
+    /// Saves the current graphics state. Please see Example_30.
     public func saveGraphicsState() {
         savedStates.append(State(brushColor, brushColorWritten, penColor, penColorWritten,
                 penWidth, penWidthWritten, writtenFont, writtenFontSize,
@@ -1241,7 +1241,7 @@ public class Page {
     }
 
     ///
-    /// Sets the graphics state. Please see Example_31.
+    /// Sets the graphics state. Please see Example_30.
     ///
     /// - Parameter gs: the graphics state to use.
     /// - Returns: this page.
@@ -1272,7 +1272,7 @@ public class Page {
         return self
     }
 
-    /// Restores the last saved graphics state. Please see Example_31.
+    /// Restores the last saved graphics state. Please see Example_30.
     public func restoreGraphicsState() {
         guard let state = savedStates.popLast() else {
             pdf.fail("restoreGraphicsState was called without a matching saveGraphicsState.")

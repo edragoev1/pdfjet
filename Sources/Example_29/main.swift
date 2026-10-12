@@ -9,72 +9,209 @@ import PDFjet
 
 /**
  * Example_29.swift
- * This example draws a table whose cells hold text columns: each paragraph of
- * English and Greek text wraps inside its cell, and the cell grows to fit it.
+ *
+ * The shapes PDFjet draws, each in a cell of its own under its name: lines
+ * with dashes and caps, rectangles with square and rounded corners, the
+ * markers of charts, an ellipse, arcs, a path of Bézier curves, and a closed
+ * path, filled. The second page draws text at every angle around a point.
+ *
+ * Each shape is a Drawable: it is given its location, its size, its colors
+ * and the width of its stroke, and drawOn draws it as vector graphics, which
+ * stay sharp at any zoom. The shapes carry no text, so they are artifacts of
+ * the PDF/UA document, and the name under each shape says what it is.
  */
 public class Example_29 {
+    private static let NAVY: Int32 = 0x1d3557
+    private static let TEAL: Int32 = 0x2a9d8f
+    private static let RED: Int32 = 0xe63946
+    private static let PALE: Int32 = 0xe8f1f2
+
+    // The cells of the grid: four across, 128 points wide, and 160 tall.
+    private static let LEFT: Float = 50.0
+    private static let TOP: Float = 150.0
+    private static let CELL_WIDTH: Float = 128.0
+    private static let CELL_HEIGHT: Float = 160.0
+
+    private let label: Font
+
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_29.pdf", append: false)!)
         pdf.setCompliance(Compliance.PDF_UA_1)
-        pdf.setTitle("Text Columns in Table Cells")
+        pdf.setTitle("Shapes")
 
-        let f1 = try Font(pdf, IBMPlexSans.Regular)
-        f1.setSize(10.0)
+        let regular = try Font(pdf, IBMPlexSans.Regular)
+        let semiBold = try Font(pdf, IBMPlexSans.SemiBold)
+        label = try Font(pdf, IBMPlexSans.Regular)
+        label.setSize(9.0)
 
-        let f2 = try Font(pdf, IBMPlexSans.SemiBold)
-        f2.setSize(10.0)
+        let navy = Example_29.NAVY
+        let teal = Example_29.TEAL
+        let red = Example_29.RED
+        let pale = Example_29.PALE
+        let left = Example_29.LEFT
 
-        let page = Page(pdf, Letter.PORTRAIT)
+        var page = Page(pdf, Letter.PORTRAIT)
 
-        let text = TextLine(f2, "Text Columns in Table Cells")
-        text.setStructureType(StructElem.H1)
-        text.setFontSize(22.0)
-        text.setLocation(50.0, 70.0)
-        text.drawOn(page)
+        let title = TextLine(semiBold, "Shapes")
+        title.setStructureType(StructElem.H1)
+        title.setFontSize(22.0)
+        title.setLocation(left, 70.0)
+        title.drawOn(page)
 
-        let languages = ["English", "Greek"]
-        let files = ["data/languages/english.txt", "data/languages/greek.txt"]
+        let about = TextBlock(regular,
+                "PDFjet draws shapes as vector graphics, which stay sharp at any zoom. Each "
+                + "shape is a Drawable: give it a location, a size, its colors and the width "
+                + "of its stroke, and drawOn draws it on the page.")
+        about.setFontSize(11.0)
+        about.setLineSpacing(1.4)
+        about.setLocation(left, 85.0)
+        about.setWidth(512.0)
+        about.drawOn(page)
 
-        var tableData = [[Cell]]()
+        // Lines: solid, dashed and dotted with round caps
+        var c = cell(page, 0, 0, "Line: solid, dashed, and dotted with round caps")
+        Line(c[0] + 10.0, c[1] + 30.0, c[0] + 110.0, c[1] + 30.0)
+                .setStrokeWidth(3.0).setStrokeColor(navy).drawOn(page)
+        Line(c[0] + 10.0, c[1] + 60.0, c[0] + 110.0, c[1] + 60.0)
+                .setStrokeWidth(3.0).setStrokeColor(teal).setStrokeDashPattern("[8 4] 0").drawOn(page)
+        Line(c[0] + 10.0, c[1] + 90.0, c[0] + 110.0, c[1] + 90.0)
+                .setStrokeWidth(5.0).setStrokeColor(red).setStrokeDashPattern("[0 10] 0")
+                .setLineCapStyle(CapStyle.ROUND).drawOn(page)
 
-        var row = [Cell]()
-        row.append(Cell(f2, "Language"))
-        row.append(Cell(f2, "Text"))
-        tableData.append(row)
+        // A rectangle, filled and outlined
+        c = cell(page, 1, 0, "Rect: filled, with a border")
+        Rect(c[0] + 10.0, c[1] + 20.0, 100.0, 80.0)
+                .setFillColor(pale).setBorderColor(navy).setBorderWidth(2.0).drawOn(page)
 
-        for i in 0..<languages.count {
-            // Each line of the file after the first two is a paragraph.
-            let lines = try Content.linesOfTextFile(files[i])
-            let column = TextColumn()
-            column.setWidth(400.0)
-            for j in 2..<lines.count {
-                let paragraph = Paragraph()
-                let line = TextLine(f1, lines[j])
-                if languages[i] == "Greek" {
-                    line.setLanguage("el")      // Read by a screen reader as Greek
-                }
-                paragraph.add(line)
-                column.addParagraph(paragraph)
-            }
+        // A rectangle with rounded corners
+        c = cell(page, 2, 0, "Rect: setCornerRadius")
+        Rect(c[0] + 10.0, c[1] + 20.0, 100.0, 80.0)
+                .setFillColor(teal).setBorderColor(navy).setBorderWidth(2.0)
+                .setCornerRadius(16.0).drawOn(page)
 
-            row = [Cell]()
-            row.append(Cell(f1, languages[i]))
-            row.append(Cell(f1, ""))
-            row[1].setTextColumn(column)
-            tableData.append(row)
+        // The markers of a chart, each a Point with a shape
+        c = cell(page, 3, 0, "Point: the markers of charts")
+        let shapes: [Shape] = [
+            Shape.CIRCLE, Shape.DIAMOND, Shape.BOX, Shape.STAR,
+            Shape.UP_ARROW, Shape.DOWN_ARROW, Shape.PLUS, Shape.X_MARK,
+        ]
+        for i in 0..<shapes.count {
+            let point = Point(c[0] + 20.0 + Float(i % 4) * 27.0, c[1] + 35.0 + Float(i / 4) * 45.0)
+            point.setShape(shapes[i])
+            point.setRadius(9.0)
+            point.setFillColor(i % 2 == 0 ? teal : red)
+            point.setStrokeColor(navy)
+            point.drawOn(page)
         }
 
-        let table = Table()
-        table.setTableData(tableData, 1)
-        table.setColumnWidth(0, 90.0)
-        table.setColumnWidth(1, 420.0)
-        table.setLocation(50.0, 100.0)
-        table.drawOn(page)
+        // An ellipse, turned by 30 degrees
+        c = cell(page, 0, 1, "Ellipse: setRotation")
+        Ellipse()
+                .setLocation(c[0] + 60.0, c[1] + 60.0)
+                .setRadiusX(50.0)
+                .setRadiusY(25.0)
+                .setFillColor(pale)
+                .setStrokeWidth(2.0)
+                .setStrokeColor(navy)
+                .setRotation(30.0)
+                .drawOn(page)
+
+        // An arc of three quarters of a circle
+        c = cell(page, 1, 1, "Arc: setStartAngle and setSweep")
+        Arc()
+                .setLocation(c[0] + 60.0, c[1] + 60.0)
+                .setRadius(40.0)
+                .setStartAngle(0.0)
+                .setSweep(270.0)
+                .setStrokeWidth(6.0)
+                .setStrokeColor(teal)
+                .drawOn(page)
+
+        // A wave of Bézier curves: a point, two control points, a point
+        c = cell(page, 2, 1, "Path: Bézier curves")
+        let wave = Path()
+        wave.add(Point(0.0, 30.0))
+        wave.add(Point(20.0, 0.0, Point.CONTROL_POINT_C))
+        wave.add(Point(30.0, 0.0, Point.CONTROL_POINT_C))
+        wave.add(Point(50.0, 30.0))
+        wave.add(Point(70.0, 60.0, Point.CONTROL_POINT_C))
+        wave.add(Point(80.0, 60.0, Point.CONTROL_POINT_C))
+        wave.add(Point(100.0, 30.0))
+        wave.setStrokeColor(red)
+        wave.setStrokeWidth(3.0)
+        wave.setLocation(c[0] + 10.0, c[1] + 30.0)
+        wave.drawOn(page)
+
+        // A closed path of lines, filled: a six-pointed star
+        c = cell(page, 3, 1, "Path: closed and filled")
+        let star = Path()
+        for i in 0..<12 {
+            let angle = Double.pi / 6.0 * Double(i) - Double.pi / 2.0
+            let r: Float = (i % 2 == 0) ? 50.0 : 25.0
+            star.add(Point(50.0 + r * Float(cos(angle)), 50.0 + r * Float(sin(angle))))
+        }
+        star.setClosed(true)
+        star.setFillShape(true)
+        star.setStrokeColor(navy)
+        star.setLocation(c[0] + 10.0, c[1] + 10.0)
+        star.drawOn(page)
+
+        // The second page: text at every angle around a point
+        page = Page(pdf, Letter.PORTRAIT)
+        let heading = TextLine(semiBold, "Text at every angle")
+        heading.setStructureType(StructElem.H2)
+        heading.setFontSize(18.0)
+        heading.setLocation(left, 70.0)
+        heading.drawOn(page)
+
+        let rotation = TextBlock(regular,
+                "setTextRotation turns a TextLine about the point of its location, here every "
+                + "15 degrees about the middle of the page, underlined with setUnderline.")
+        rotation.setFontSize(11.0)
+        rotation.setLineSpacing(1.4)
+        rotation.setLocation(left, 85.0)
+        rotation.setWidth(512.0)
+        rotation.drawOn(page)
+
+        let cx: Float = page.getWidth() / 2.0
+        let cy: Float = 380.0
+        let text = TextLine(regular)
+        text.setFontSize(10.0)
+        text.setUnderline(true)
+        text.setLocation(cx, cy)
+        var i = 0
+        while i < 360 {
+            text.setTextRotation(-i)
+            // The spaces keep the start of the text clear of the circle
+            text.setText("                        Hello, World: \(i) degrees")
+            text.drawOn(page)
+            i += 15
+        }
+        let hub = Point(cx, cy)
+        hub.setShape(Shape.CIRCLE)
+        hub.setFillColor(navy)
+        hub.setRadius(46.0)
+        hub.drawOn(page)
+        hub.setFillColor(Color.white)
+        hub.setRadius(32.0)
+        hub.drawOn(page)
 
         try pdf.complete()
     }
-}   // End of Example_29.swift
 
+    // Draws the name of the cell of the grid under it, and returns the top
+    // left corner of its drawing area.
+    private func cell(_ page: Page, _ column: Int, _ row: Int, _ name: String) -> [Float] {
+        let x: Float = Example_29.LEFT + Float(column) * Example_29.CELL_WIDTH
+        let y: Float = Example_29.TOP + Float(row) * Example_29.CELL_HEIGHT
+        let caption = TextBlock(label, name)
+        caption.setTextColor(Color.dimgray)
+        caption.setLocation(x, y + 125.0)
+        caption.setWidth(Example_29.CELL_WIDTH - 12.0)
+        caption.drawOn(page)
+        return [x, y]
+    }
+}   // End of Example_29.swift
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
 _ = try Example_29()

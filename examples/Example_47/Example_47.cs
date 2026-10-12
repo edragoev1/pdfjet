@@ -6,9 +6,6 @@
  */
 using System;
 using System.IO;
-using System.Collections.Generic;
-using System.Text.RegularExpressions;
-using System.Diagnostics;
 
 using PDFjet.NET;
 
@@ -18,69 +15,56 @@ using PDFjet.NET;
 public class Example_47 {
     public Example_47() {
         PDF pdf = new PDF(new BufferedStream(
-                new FileStream("Example_47.pdf", FileMode.Create)));
-        pdf.SetCompliance(Compliance.PDF_UA_1);
-        pdf.SetTitle("Text flowing through columns");
+            new FileStream("Example_47.pdf", FileMode.Create)));
+        // pdf.SetCompliance(Compliance.PDF_UA_1);
+
+        var passwords = new Passwords();
+        passwords.SetUserPassword("hello");
+        passwords.SetOwnerPassword("world");
+
+        var permissions = new Permissions();
+        permissions.Grant(
+            UserAccess.PRINT |               // Set both to allow the user to print
+            UserAccess.PRINT_HIGH_QUALITY |    // this document with high quality
+            // UserAccess.MODIFY_CONTENTS |
+            // UserAccess.COPY_CONTENTS |
+            UserAccess.ASSEMBLE_DOCUMENT);
+
+        pdf.SetEncryption(new Encryption(pdf, passwords, permissions));
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
-        f1.SetSize(14f);
+        f1.SetSize(36f);
 
-        // Use Regex.Split to match Java's split("\\n\\n") regex behavior
-        List<string> paragraphs = new List<string>(
-                Regex.Split(Content.OfTextFile("data/dostoevsky.txt"), "\\n\\n"));
+        Image image = new Image(pdf, "images/ee-map.png");
 
-        float x = 50f;
-        float y = 50f;
-        float w = 230f;
-        float h = 500f;
-        float gap = 20f;
+        EmbeddedFile file1 = new EmbeddedFile(pdf, "images/linux-logo.png", false);
 
-        Page page = null;
-        TextFrame textFrame = new TextFrame(f1, paragraphs);
-        bool first = true;
-        while (textFrame.HasMoreText()) {
-            page = new Page(pdf, Letter.LANDSCAPE);
-            if (first) {
-                // The heading, on the first page only, which its columns start under
-                new TextLine(f1, "The Idiot, by Fyodor Dostoevsky")
-                        .SetStructureType(StructElem.H1)
-                        .SetFontSize(20f)
-                        .SetLocation(50f, 50f)
-                        .DrawOn(page);
-                y = 80f;
-                first = false;
-            }
+        Page page = new Page(pdf, Letter.PORTRAIT);
 
-            textFrame.SetLocation(x, y);
-            textFrame.SetWidth(w);
-            textFrame.SetHeight(h);
-            textFrame.DrawOn(page);
+        TextLine textLine = new TextLine(f1, "Hello, World!");
+        textLine.SetLocation(100f, 100f);
+        textLine.DrawOn(page);
 
-            if (textFrame.HasMoreText()) {
-                x += w + gap;
-                textFrame.SetLocation(x, y);
-                textFrame.SetWidth(w);
-                textFrame.SetHeight(h);
-                textFrame.DrawOn(page);
-            }
+        image.SetLocation(100, 150);
+        image.ScaleBy(.5f);
+        image.DrawOn(page);
 
-            if (textFrame.HasMoreText()) {
-                x += w + gap;
-                textFrame.SetLocation(x, y);
-                textFrame.SetWidth(w);
-                textFrame.SetHeight(h);
-                textFrame.DrawOn(page);
-            }
-
-            x = 50f;
-            y = 50f;
-        }
+        // File attachment functionality
+        FileAttachment attachment = new FileAttachment(file1);
+        attachment.SetLocation(100f, 550f);
+        attachment.SetIconPushPin();
+        attachment.SetIconSize(24f);
+        attachment.SetTitle("Attached File: " + file1.GetFileName());
+        attachment.SetContents(
+                "Right mouse click on the icon to save the attached file.");
+        attachment.DrawOn(page);
 
         pdf.Complete();
     }
 
     public static void Main(String[] args) {
-        Stopwatch sw = Stopwatch.StartNew();
+        System.Diagnostics.Stopwatch sw =
+                System.Diagnostics.Stopwatch.StartNew();
         long time0 = sw.ElapsedMilliseconds;
         new Example_47();
         long time1 = sw.ElapsedMilliseconds;

@@ -14,7 +14,7 @@ import Foundation
  *  all four sides of the symbol, so leave that much space around it; scanners
  *  reject symbols with less.
  *
- *  Please see Example_12.
+ *  Please see Example_38.
  */
 public class PDF417 : Drawable {
     private static let ALPHA = 0x08

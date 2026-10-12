@@ -8,98 +8,68 @@ package main
 import (
 	"fmt"
 	"log"
+	"strconv"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
+	"github.com/edragoev1/pdfjet/v9/src/IBMPlexMono"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
-	"github.com/edragoev1/pdfjet/v9/src/a4"
-	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
+	"github.com/edragoev1/pdfjet/v9/src/letter"
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
-// Example18
-// This example shows how to write "Page X of N" footer on every page.
+// Example18 draws paragraphs written with the inline markup of Markdown:
+// **bold**, *italic*, `code` and [links](url), each drawn in its own font by
+// Markup, with the punctuation after a word in another style next to it. The
+// paragraphs flow in a text frame, and the list is a list of paragraphs with
+// labels.
 func Example18() {
 	pdf, err := pdfjet.NewPDFFile("Example_18.pdf")
 	if err != nil {
 		log.Fatal(err)
 	}
 	pdf.SetCompliance(compliance.PDF_UA_1)
-	pdf.SetTitle("How to Number Pages")
+	pdf.SetTitle("Inline markup")
 
-	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
-	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
+	regular := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular).SetSize(11.0)
+	bold := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold).SetSize(11.0)
+	italic := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Italic).SetSize(11.0)
+	boldItalic := pdfjet.NewFontFromFile(pdf, IBMPlexSans.BoldItalic).SetSize(11.0)
+	code := pdfjet.NewFontFromFile(pdf, IBMPlexMono.Regular).SetSize(10.0)
+	heading := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
+	markup := pdfjet.NewMarkup(regular, bold, italic, boldItalic, code)
 
-	titles := []string{
-		"1. Create the pages",
-		"2. Draw the content",
-		"3. Add the footers",
+	paragraphs := []*pdfjet.Paragraph{
+		pdfjet.NewParagraph().Add(pdfjet.NewTextLine(heading, "Inline markup").SetFontSize(22.0)).
+			SetStructureType(structelem.H1),
 	}
-	texts := []string{
-		"The total number of pages is not known until all the content is drawn. " +
-			"That is why the pages in this document are created with Page.DETACHED: " +
-			"they are not added to the PDF yet, and they are kept in a list instead.",
-		"Each page gets its content, like this heading and this paragraph. " +
-			"Long documents would flow their text or tables from page to page here.",
-		"Now the list holds every page, so its size is the total number of pages. " +
-			"The footer \"Page X of N\" is drawn on each page, " +
-			"and then all the pages are added to the PDF with addPages.",
+	paragraphs = append(paragraphs, markup.Paragraphs(
+		"**Markup** reads the inline markup of Markdown and draws each part in its own "+
+			"font: **bold**, *italic*, ***bold italic***, `code` and "+
+			"[links](https://pdfjet.com). A word keeps the punctuation after it, as in "+
+			"*this*, and a mark with no match, such as the one in 2 * 3, is text.\n"+
+			"\n"+
+			"A backslash makes a mark text too: \\*not italic\\*. Code keeps its marks "+
+			"as they are, as in `a*b*c`, and a link can have emphasis in it: "+
+			"[the **PDFjet** repository](https://github.com/edragoev1/pdfjet).")...)
+
+	items := []string{
+		"`Markup.paragraph` makes one paragraph of a text.",
+		"`Markup.paragraphs` makes one of each part between the empty lines.",
+		"The paragraphs go in a **TextFrame** or a **TextColumn**, as any others do.",
+	}
+	for i, item := range items {
+		paragraphs = append(paragraphs, markup.Paragraph(item).
+			SetListLabel(pdfjet.NewTextLine(regular, strconv.Itoa(i+1)+"."), 16.0))
 	}
 
+	frame := pdfjet.NewTextFrameFromParagraphs(paragraphs)
+	frame.SetLocation(70.0, 70.0)
+	frame.SetWidth(470.0).SetParagraphGap(8.0)
 	pages := make([]*pdfjet.Page, 0)
-	for i := 0; i < len(titles); i++ {
-		page := pdfjet.NewPageDetached(pdf, a4.Portrait())
-
-		header := pdfjet.NewTextLine(f1, "How to number pages")
-		header.SetFontSize(10.0)
-		header.SetTextColor(color.DimGray)
-		header.SetLocation(70.0, 50.0)
-		header.DrawOn(page)
-
-		line := pdfjet.NewLine(70.0, 60.0, page.GetWidth()-70.0, 60.0)
-		line.SetStrokeColor(color.LightGray)
-		line.DrawOn(page)
-
-		title := pdfjet.NewTextLine(f2, titles[i])
-		title.SetStructureType(structelem.H1)
-		title.SetFontSize(20.0)
-		title.SetLocation(70.0, 120.0)
-		title.DrawOn(page)
-
-		textBlock := pdfjet.NewTextBlock(f1, texts[i])
-		textBlock.SetFontSize(12.0)
-		textBlock.SetLineSpacing(1.5)
-		textBlock.SetLocation(70.0, 140.0)
-		textBlock.SetWidth(page.GetWidth() - 140.0)
-		textBlock.DrawOn(page)
-
-		pages = append(pages, page)
-	}
-
-	fontSize := float32(10.0)
-	for i := 0; i < len(pages); i++ {
-		page := pages[i]
-
-		line := pdfjet.NewLine(70.0, page.GetHeight()-60.0,
-			page.GetWidth()-70.0, page.GetHeight()-60.0)
-		line.SetStrokeColor(color.LightGray)
-		line.DrawOn(page)
-
-		// A page number is an artifact: a screen reader skips it.
-		footer := "Page " + fmt.Sprint(i+1) + " of " + fmt.Sprint(len(pages))
-		page.AddArtifactBMC()
-		page.SetBrushColor(color.Black)
-		page.DrawStringUsingFontSize(
-			f1,
-			fontSize,
-			footer,
-			(page.GetWidth()-f1.StringWidth(fontSize, footer))/2.0,
-			page.GetHeight()-40.0)
-		page.AddEMC()
-	}
+	frame.DrawOnPages(pdf, &pages, letter.Portrait())
 	pdf.AddPages(pages)
-
 	if err := pdf.Complete(); err != nil {
 		log.Fatal(err)
 	}

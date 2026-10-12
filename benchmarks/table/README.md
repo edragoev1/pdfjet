@@ -153,10 +153,10 @@ A 50,000-row table is 1,072 pages, and about 9.7 MB in Java and C#.
   Huffman codes that fit it, which took its 50,000-row file from 14,566,771
   bytes to 11,839,117.
 
-## At the size of Example_43
+## At the size of Example_24
 
 The release plan asks how `Table` fares on the table `BigTable` draws in
-Example_43, the whole `data/Electric_Vehicle_Population_Data.csv`. That is
+Example_24, the whole `data/Electric_Vehicle_Population_Data.csv`. That is
 124,716 rows, so 1.12 million `Cell` objects, and 2,673 pages here:
 
 ```
@@ -199,8 +199,8 @@ first document and the peak at this size were not measured on their own in
 either run. At e662e6bc (`results/2026-09-18-e662e6bc-124716.log`) they were
 Java 4,029 ms, C# 4,628, Go 1,701 and Swift 5,948, with the same files.
 
-The geometry is this benchmark's, not Example_43's, so the page counts differ
-a little: Example_43 is 2,546 pages of the same data. On that table, in the run
+The geometry is this benchmark's, not Example_24's, so the page counts differ
+a little: Example_24 is 2,546 pages of the same data. On that table, in the run
 at 7dbfee5d and on this machine, `BigTable` took 1,959 ms in a new JVM and
 peaked at 390 MB, and `Table` in Java 4,467 ms and 1,330 MB (`../results/`).
 What `Table` cannot do is draw the table without holding all 1.12 million

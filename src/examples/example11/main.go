@@ -12,123 +12,88 @@ import (
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
-	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
-	"github.com/edragoev1/pdfjet/v9/src/direction"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
-// Example11 draws a Code 128, a Code 39, a UPC-A and an EAN-13 barcode,
-// each next to a label, and then barcodes drawn from top to bottom and from
-// bottom to top.
+// Example11 uses the TextBlock component to draw text next to images. The
+// DrawOn methods of Image and TextBlock return the bottom of what they drew,
+// so each row starts below the taller of the image and the text next to it.
 func Example11() {
 	pdf, err := pdfjet.NewPDFFile("Example_11.pdf")
 	if err != nil {
 		log.Fatal(err)
 	}
 	pdf.SetCompliance(compliance.PDF_UA_1)
-	pdf.SetTitle("Linear Barcodes")
+	pdf.SetTitle("Text Next to Images")
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
-	f1.SetSize(12.0)
-
 	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
-	f2.SetSize(12.0)
 
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 
-	text := pdfjet.NewTextLine(f2, "Linear Barcodes")
+	text := pdfjet.NewTextLine(f2, "Text Next to Images")
 	text.SetStructureType(structelem.H1)
 	text.SetFontSize(22.0)
-	text.SetLocation(70.0, 80.0)
+	text.SetLocation(50.0, 80.0)
 	text.DrawOn(page)
 
-	labels := []string{
-		"Code 128",
-		"Code 39",
-		"UPC-A",
-		"EAN-13",
-		"GS1-128",
-	}
-	notes := []string{
-		"Letters, digits and symbols",
-		"Upper case letters and digits",
-		"11 digits, the check digit is added",
-		"12 digits, the check digit is added",
-		"GS1 data: a GTIN and a batch number",
-	}
-	barcodes := []*pdfjet.Barcode{
-		pdfjet.NewBarcode(pdfjet.CODE_128, "Hellö, World!"),
-		pdfjet.NewBarcode(pdfjet.CODE_39, "WIKIPEDIA"),
-		pdfjet.NewBarcode(pdfjet.UPC_A, "51234567890"),
-		pdfjet.NewBarcode(pdfjet.EAN_13, "051234567890"),
-		pdfjet.NewBarcode(pdfjet.GS1_128, "(01)09506000134352(10)ABC123"),
-	}
-	// UPC-A and EAN-13 need wider bars for the digits under them.
-	moduleLengths := []float32{0.75, 0.75, 1.0, 1.0, 0.75}
+	textBlock := pdfjet.NewTextBlock(f1,
+		"Each map below is an Image with a TextBlock next to it. The drawOn "+
+			"method of both returns the bottom of what it drew, so every row "+
+			"starts below the taller of the two.")
+	textBlock.SetFontSize(12.0)
+	textBlock.SetLineSpacing(1.5)
+	textBlock.SetLocation(50.0, 95.0)
+	textBlock.SetWidth(512.0)
+	xy := textBlock.DrawOn(page)
 
-	y := float32(130.0)
-	for i := 0; i < len(barcodes); i++ {
-		pdfjet.NewTextLine(f2, labels[i]).SetLocation(70.0, y+15.0).DrawOn(page)
-		note := pdfjet.NewTextLine(f1, notes[i])
-		note.SetFontSize(10.0)
-		note.SetTextColor(color.DimGray)
-		note.SetLocation(70.0, y+32.0)
-		note.DrawOn(page)
-
-		barcode := barcodes[i]
-		barcode.SetLocation(290.0, y)
-		barcode.SetModuleLength(moduleLengths[i])
-		barcode.SetFont(f1)
-		xy := barcode.DrawOn(page)
-		y = xy[1] + 30.0
+	imageFiles := []string{
+		"images/ee-map.png",
+		"images/spain-admin.jpg",
+	}
+	titles := []string{
+		"The European Union",
+		"The Regions of Spain",
+	}
+	descriptions := []string{
+		"A map of Europe with the member states of the European Union and " +
+			"the countries that were candidates to join it when the map was " +
+			"made. The image is a PNG file of 687 by 710 pixels, drawn 200 " +
+			"points wide.",
+		"A map of the 17 autonomous communities of Spain and its two " +
+			"autonomous cities, Ceuta and Melilla, with their capitals. The " +
+			"image is a JPEG file of 2,017 by 2,412 pixels, drawn 200 points " +
+			"wide, which prints at more than 700 dots per inch.",
 	}
 
-	// The same barcodes can be drawn from top to bottom and from bottom to top.
-	pdfjet.NewTextLine(f2, "Vertical barcodes").SetLocation(70.0, y+15.0).DrawOn(page)
+	var x1 float32 = 50.0  // The images
+	var x2 float32 = 270.0 // The text next to them
+	y := xy[1] + 25.0
+	for i := 0; i < len(imageFiles); i++ {
+		image := pdfjet.NewImageFromFile(pdf, imageFiles[i])
+		// The text beside a map describes it, so it describes it to a screen
+		// reader too.
+		image.SetAltDescription(descriptions[i])
+		image.ResizeWidth(200.0)
+		image.SetLocation(x1, y)
+		imageXY := image.DrawOn(page)
 
-	barcode := pdfjet.NewBarcode(pdfjet.CODE_128, "G86513JVW0C")
-	barcode.SetLocation(70.0, y+35.0)
-	barcode.SetModuleLength(0.75)
-	barcode.SetDirection(direction.TopToBottom)
-	barcode.SetFont(f1)
-	xy := barcode.DrawOn(page)
+		text = pdfjet.NewTextLine(f2, titles[i])
+		text.SetFontSize(14.0)
+		text.SetLocation(x2, y+f2.GetAscent(14.0))
+		text.DrawOn(page)
 
-	barcode = pdfjet.NewBarcode(pdfjet.CODE_39, "CODE39")
-	barcode.SetLocation(xy[0]+60.0, y+35.0)
-	barcode.SetModuleLength(0.75)
-	barcode.SetDirection(direction.BottomToTop)
-	barcode.SetFont(f1)
-	xy = barcode.DrawOn(page)
+		textBlock = pdfjet.NewTextBlock(f1, descriptions[i])
+		textBlock.SetFontSize(11.0)
+		textBlock.SetLineSpacing(1.5)
+		textBlock.SetLocation(x2, y+25.0)
+		textBlock.SetWidth(292.0)
+		textXY := textBlock.DrawOn(page)
 
-	barcode = pdfjet.NewBarcode(pdfjet.EAN_13, "051234567890")
-	barcode.SetLocation(xy[0]+60.0, y+35.0)
-	barcode.SetModuleLength(1.0)
-	barcode.SetDirection(direction.BottomToTop)
-	barcode.SetFont(f1)
-	barcode.DrawOn(page)
-
-	// ITF-14, the GTIN of a carton, framed by bearer bars.
-	page2 := pdfjet.NewPage(pdf, letter.Portrait())
-	heading2 := pdfjet.NewTextLine(f2, "Barcodes for Cartons")
-	heading2.SetStructureType(structelem.H2)
-	heading2.SetFontSize(18.0)
-	heading2.SetLocation(70.0, 80.0)
-	heading2.DrawOn(page2)
-
-	pdfjet.NewTextLine(f2, "ITF-14").SetLocation(70.0, 135.0).DrawOn(page2)
-	cartonNote := pdfjet.NewTextLine(f1, "The GTIN of a carton, 13 digits and the check digit PDFjet adds, framed by bearer bars")
-	cartonNote.SetFontSize(10.0)
-	cartonNote.SetTextColor(color.DimGray)
-	cartonNote.SetLocation(70.0, 152.0)
-	cartonNote.DrawOn(page2)
-
-	itf := pdfjet.NewBarcode(pdfjet.ITF_14, "1540014128876")
-	itf.SetLocation(70.0, 175.0)
-	itf.SetModuleLength(1.0)
-	itf.SetFont(f1)
-	itf.DrawOn(page2)
+		y = max(imageXY[1], textXY[1]) + 25.0
+	}
 
 	if err := pdf.Complete(); err != nil {
 		log.Fatal(err)

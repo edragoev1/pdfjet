@@ -10,142 +10,162 @@ import java.io.*;
 import java.util.*;
 import com.pdfjet.*;
 import com.pdfjet.fonts.*;
+import com.pdfjet.qrcode.*;
 
 /**
  * Example_34.java
+ * This example draws a letterhead: a logo read from a PDF file, a maple leaf
+ * drawn as a path with curves, and a QR code with the address of a web site.
  */
-final public class Example_34 {
+class Example_34 {
     public Example_34() throws Exception {
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_34.pdf")));
-        pdf.setCompliance(Compliance.PDF_A_1A);
-        pdf.setTitle("World Communications");
+        pdf.setCompliance(Compliance.PDF_UA_1);
+        pdf.setTitle("PDFjet Software Letterhead");
 
-        Font f1 = new Font(pdf, IBMPlexSans.Bold);
-        Font f2 = new Font(pdf, IBMPlexSans.Regular);
-        Font f3 = new Font(pdf, IBMPlexSans.BoldItalic);
+        // Read the logo from a PDF file, and add the resources of its pages, its
+        // fonts and images, to this PDF. The logo itself is drawn with paths and
+        // has none.
+        BufferedInputStream bis = new BufferedInputStream(
+                new FileInputStream("data/testPDFs/PDFjetLogo.pdf"));
+        List<PDFobj> objects = pdf.read(bis);
 
-        f1.setSize(7f);
-        f2.setSize(7f);
-        f3.setSize(7f);
+        pdf.addResourceObjects(objects);
 
-        Table table = new Table();
-        List<List<Cell>> tableData = getData(
-                "data/world-communications.txt", "|", 2, f1, f2);
+        Font f1 = new Font(pdf, IBMPlexSans.Regular);
+        f1.setSize(11f);
 
-        Point p1 = new Point();
-        p1.setShape(Shape.CIRCLE);
-        p1.setRadius(2f);
-        p1.setStrokeColor(Color.darkolivegreen);
-        p1.setURIAction("https://en.wikipedia.org/wiki/India");
-        tableData.get(4).get(3).setMarker(p1, Alignment.RIGHT);
+        Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
+        f2.setSize(11f);
 
-        p1 = new Point();
-        p1.setShape(Shape.DIAMOND);
-        p1.setRadius(2.5f);
-        p1.setStrokeColor(Color.blue);
-        p1.setURIAction("https://en.wikipedia.org/wiki/European_Union");
-        tableData.get(5).get(3).setMarker(p1, Alignment.RIGHT);
+        List<PDFobj> pages = pdf.getPageObjects(objects);
+        PDFobj content = pages.get(0).getContentObject(objects);
 
-        p1 = new Point();
-        p1.setShape(Shape.STAR);
-        p1.setRadius(3f);
-        p1.setStrokeColor(Color.red);
-        p1.setURIAction("https://en.wikipedia.org/wiki/United_States");
-        tableData.get(6).get(3).setMarker(p1, Alignment.RIGHT);
+        Page page = new Page(pdf, Letter.PORTRAIT);
 
-        table.setTableData(tableData, 2);
-        table.setBottomMargin(15f);
-        // The table is about 555 points wide: at x = 30 it fits on the page.
-        table.setLocation(30f, 30f);
-        table.setTextColorInRow(6, Color.blue);
-        table.setTextColorInRow(39, Color.firebrick);
-        table.setFontInRow(26, f3);
-        table.removeLineBetweenRows(0, 1);
-        table.autoAdjustColumnWidths();
-        table.setColumnWidth(0, 50f);
-        table.setColumnWidth(3, 80f);
-        table.rightAlignNumbers();
+        // Draw the content of the first page of the logo PDF, at half its size.
+        // drawContents anchors the content by the point that is height points
+        // above the origin of its page, which it puts at x and y here. The
+        // logo is in the top left corner of its page, so that point is the top
+        // of the page and the height to give is the height of the page.
+        float height = Letter.PORTRAIT.getHeight();
+        float x = 60f;
+        float y = 40f;
+        float xScale = 0.5f;
+        float yScale = 0.5f;
 
-        List<Page> pages = new ArrayList<Page>();
-        table.drawOn(pdf, pages, Letter.PORTRAIT);
-        for (int i = 0; i < pages.size(); i++) {
-            Page page = pages.get(i);
-            page.addFooter(new TextLine(f1, "Page " + (i + 1) + " of " + pages.size()));
-            pdf.addPage(page);
-        }
+        // The logo is a figure, with an alternate description for screen readers.
+        page.addBDC(StructElem.FIGURE, null, "The PDFjet logo");
+        page.drawContents(
+                content.getData(),
+                height,
+                x,
+                y,
+                xScale,
+                yScale);
+        // The logo is 216 by 68 points, at the top left of its page, so half of
+        // that here: the box PDF/UA asks every figure for.
+        page.setFigureBoundingBox(x, y, 216f * xScale, 68f * yScale);
+        page.addEMC();
+
+        new TextLine(f2, "PDFjet Software").setLocation(390f, 60f).drawOn(page);
+        new TextLine(f1, "Unionville, Ontario, Canada").setLocation(390f, 76f).drawOn(page);
+        // An address on the page is a link to it, as PAC asks of text that reads as one
+        new TextLine(f1, "https://pdfjet.com").setURIAction("https://pdfjet.com").setLocation(390f, 92f).drawOn(page);
+
+        // A thin rule under the letterhead, an artifact.
+        page.addArtifactBMC();
+        page.setPenColor(Color.darkred);
+        page.setPenWidth(1f);
+        page.drawLine(60f, 115f, 552f, 115f);
+        page.addEMC();
+
+        // The heading of the page, which PAC asks a document for
+        TextLine text = new TextLine(f2, "The logo on this page was read from a PDF file.");
+        text.setStructureType(StructElem.H1);
+        text.setFontSize(16f);
+        text.setLocation(60f, 170f);
+        text.drawOn(page);
+
+        TextBlock textBlock = new TextBlock(f1,
+                "The logo is the content of the first page of data/testPDFs/PDFjetLogo.pdf, "
+                + "drawn here at half its size with page.drawContents. It stays sharp "
+                + "at any zoom, because it is drawn as vector graphics and not as an image.\n\n"
+                + "The maple leaf below is a Path with curves, and the QR code "
+                + "holds the address of the PDFjet web site.");
+        textBlock.setFontSize(12f);
+        textBlock.setLineSpacing(1.5f);
+        textBlock.setLocation(60f, 185f);
+        textBlock.setWidth(490f);
+        textBlock.drawOn(page);
+
+        // A maple leaf, drawn with lines and with curves from control points.
+        Path path = new Path();
+
+        path.add(new Point(13.0f,  0.0f));
+        path.add(new Point(15.5f,  4.5f));
+
+        path.add(new Point(18.0f,  3.5f));
+        path.add(new Point(15.5f, 13.5f, Point.CONTROL_POINT_C));
+        path.add(new Point(15.5f, 13.5f, Point.CONTROL_POINT_C));
+        path.add(new Point(20.5f,  7.5f));
+
+        path.add(new Point(21.0f,  9.5f));
+        path.add(new Point(25.0f,  9.0f));
+        path.add(new Point(24.0f, 13.0f));
+        path.add(new Point(25.5f, 14.0f));
+        path.add(new Point(19.0f, 19.0f));
+        path.add(new Point(20.0f, 21.5f));
+        path.add(new Point(13.5f, 20.5f));
+        path.add(new Point(13.5f, 27.0f));
+        path.add(new Point(12.5f, 27.0f));
+        path.add(new Point(12.5f, 20.5f));
+        path.add(new Point( 6.0f, 21.5f));
+        path.add(new Point( 7.0f, 19.0f));
+        path.add(new Point( 0.5f, 14.0f));
+        path.add(new Point( 2.0f, 13.0f));
+        path.add(new Point( 1.0f,  9.0f));
+        path.add(new Point( 5.0f,  9.5f));
+
+        path.add(new Point( 5.5f,  7.5f));
+        path.add(new Point(10.5f, 13.5f, Point.CONTROL_POINT_C));
+        path.add(new Point(10.5f, 13.5f, Point.CONTROL_POINT_C));
+        path.add(new Point( 8.0f,  3.5f));
+
+        path.add(new Point(10.5f,  4.5f));
+        path.setClosed(true);
+        path.setStrokeColor(Color.red);
+        path.setFillShape(true);
+        path.setLocation(60f, 330f);
+        path.scaleBy(6f);
+        path.drawOn(page);
+
+        QRCode qr = new QRCode(
+                "https://pdfjet.com",
+                ErrorCorrectionLevel.M);   // Medium
+        qr.setModuleLength(5f);
+        qr.setLocation(300f, 340f);
+        float[] xy = qr.drawOn(page);
+
+        // A frame around the QR code, an artifact.
+        page.addArtifactBMC();
+        page.setPenColor(Color.lightgray);
+        page.setPenWidth(0.5f);
+        page.drawRect(290f, 330f, xy[0] - 280f, xy[1] - 320f);
+        page.addEMC();
+
+        TextLine caption = new TextLine(f1, "A Path with curves");
+        caption.setTextColor(Color.dimgray);
+        caption.setLocation(60f, xy[1] + 35f);
+        caption.drawOn(page);
+
+        caption = new TextLine(f1, "Scan to visit https://pdfjet.com").setURIAction("https://pdfjet.com");
+        caption.setTextColor(Color.dimgray);
+        caption.setLocation(290f, xy[1] + 35f);
+        caption.drawOn(page);
 
         pdf.complete();
-    }
-
-
-    public List<List<Cell>> getData(
-            String fileName,
-            String delimiter,
-            int numOfHeaderRows,
-            Font f1,
-            Font f2) throws Exception {
-        List<List<Cell>> tableData = new ArrayList<List<Cell>>();
-
-        int currentRow = 0;
-        BufferedReader reader = null;
-        try {
-            reader = new BufferedReader(
-                    new InputStreamReader(new FileInputStream(fileName), "UTF-8"));
-            String line = null;
-            while ((line = reader.readLine()) != null) {
-                List<Cell> row = new ArrayList<Cell>();
-                String[] cols = null;
-                if (delimiter.equals("|")) {
-                    cols = line.split("\\|", -1);
-                } else if (delimiter.equals("\t")) {
-                    cols = line.split("\t", -1);
-                } else {
-                    throw new Exception(
-                            "Only pipes and tabs can be used as delimiters");
-                }
-                for (int i = 0; i < cols.length; i++) {
-                    String text = cols[i].trim();
-                    Cell cell = null;
-                    if (currentRow < numOfHeaderRows) {
-                        cell = new Cell(f1, text);
-                    } else {
-                        cell = new Cell(f2, text);
-                    }
-                    cell.setTopPadding(2f);
-                    cell.setBottomPadding(2f);
-                    cell.setLeftPadding(2f);
-                    if (i == 3) {
-                        cell.setRightPadding(10f);
-                    } else {
-                        cell.setRightPadding(2f);
-                    }
-                    row.add(cell);
-                }
-                tableData.add(row);
-                currentRow++;
-            }
-        } finally {
-            reader.close();
-        }
-        appendMissingCells(tableData, f2);
-
-        return tableData;
-    }
-
-    private void appendMissingCells(List<List<Cell>> tableData, Font f2) {
-        List<Cell> firstRow = tableData.get(0);
-        int numOfColumns = firstRow.size();
-        for (int i = 0; i < tableData.size(); i++) {
-            List<Cell> dataRow = tableData.get(i);
-            int dataRowColumns = dataRow.size();
-            if (dataRowColumns < numOfColumns) {
-                for (int j = 0; j < (numOfColumns - dataRowColumns); j++) {
-                    dataRow.add(new Cell(f2));
-                }
-                dataRow.get(dataRowColumns - 1).setColSpan((numOfColumns - dataRowColumns) + 1);
-            }
-        }
     }
 
     public static void main(String[] args) throws Exception {

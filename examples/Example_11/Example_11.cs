@@ -11,118 +11,83 @@ using PDFjet.NET;
 
 /**
  * Example_11.cs
- * This example draws a Code 128, a Code 39, a UPC-A and an EAN-13 barcode,
- * each next to a label, and then barcodes drawn from top to bottom and from
- * bottom to top.
+ * Using the TextBlock component to draw text next to images. The DrawOn
+ * methods of Image and TextBlock return the bottom of what they drew, so each
+ * row starts below the taller of the image and the text next to it.
  */
 public class Example_11 {
     public Example_11() {
-        PDF pdf = new PDF( new BufferedStream(
+        PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_11.pdf", FileMode.Create)));
         pdf.SetCompliance(Compliance.PDF_UA_1);
-        pdf.SetTitle("Linear Barcodes");
+        pdf.SetTitle("Text Next to Images");
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
-        f1.SetSize(12f);
-
         Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
-        f2.SetSize(12f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        TextLine text = new TextLine(f2, "Linear Barcodes");
+        TextLine text = new TextLine(f2, "Text Next to Images");
         text.SetStructureType(StructElem.H1);
         text.SetFontSize(22f);
-        text.SetLocation(70f, 80f);
+        text.SetLocation(50f, 80f);
         text.DrawOn(page);
 
-        String[] labels = {
-            "Code 128",
-            "Code 39",
-            "UPC-A",
-            "EAN-13",
-            "GS1-128",
-        };
-        String[] notes = {
-            "Letters, digits and symbols",
-            "Upper case letters and digits",
-            "11 digits, the check digit is added",
-            "12 digits, the check digit is added",
-            "GS1 data: a GTIN and a batch number",
-        };
-        Barcode[] barcodes = {
-            new Barcode(Barcode.CODE_128, "Hellö, World!"),
-            new Barcode(Barcode.CODE_39, "WIKIPEDIA"),
-            new Barcode(Barcode.UPC_A, "51234567890"),
-            new Barcode(Barcode.EAN_13, "051234567890"),
-            new Barcode(Barcode.GS1_128, "(01)09506000134352(10)ABC123"),
-        };
-        // UPC-A and EAN-13 need wider bars for the digits under them.
-        float[] moduleLengths = {0.75f, 0.75f, 1f, 1f, 0.75f};
+        TextBlock textBlock = new TextBlock(f1,
+                "Each map below is an Image with a TextBlock next to it. The drawOn "
+                + "method of both returns the bottom of what it drew, so every row "
+                + "starts below the taller of the two.");
+        textBlock.SetFontSize(12f);
+        textBlock.SetLineSpacing(1.5f);
+        textBlock.SetLocation(50f, 95f);
+        textBlock.SetWidth(512f);
+        float[] xy = textBlock.DrawOn(page);
 
-        float y = 130f;
-        float[] xy;
-        for (int i = 0; i < barcodes.Length; i++) {
-            new TextLine(f2, labels[i]).SetLocation(70f, y + 15f).DrawOn(page);
-            TextLine note = new TextLine(f1, notes[i]);
-            note.SetFontSize(10f);
-            note.SetTextColor(Color.dimgray);
-            note.SetLocation(70f, y + 32f);
-            note.DrawOn(page);
+        String[] imageFiles = {
+            "images/ee-map.png",
+            "images/spain-admin.jpg",
+        };
+        String[] titles = {
+            "The European Union",
+            "The Regions of Spain",
+        };
+        String[] descriptions = {
+            "A map of Europe with the member states of the European Union and "
+                + "the countries that were candidates to join it when the map was "
+                + "made. The image is a PNG file of 687 by 710 pixels, drawn 200 "
+                + "points wide.",
+            "A map of the 17 autonomous communities of Spain and its two "
+                + "autonomous cities, Ceuta and Melilla, with their capitals. The "
+                + "image is a JPEG file of 2,017 by 2,412 pixels, drawn 200 points "
+                + "wide, which prints at more than 700 dots per inch.",
+        };
 
-            barcodes[i].SetLocation(290f, y);
-            barcodes[i].SetModuleLength(moduleLengths[i]);
-            barcodes[i].SetFont(f1);
-            xy = barcodes[i].DrawOn(page);
-            y = xy[1] + 30f;
+        float x1 = 50f;     // The images
+        float x2 = 270f;    // The text next to them
+        float y = xy[1] + 25f;
+        for (int i = 0; i < imageFiles.Length; i++) {
+            Image image = new Image(pdf, imageFiles[i]);
+            // The text beside a map describes it, so it describes it to a
+            // screen reader too.
+            image.SetAltDescription(descriptions[i]);
+            image.ResizeWidth(200f);
+            image.SetLocation(x1, y);
+            float[] imageXY = image.DrawOn(page);
+
+            text = new TextLine(f2, titles[i]);
+            text.SetFontSize(14f);
+            text.SetLocation(x2, y + f2.GetAscent(14f));
+            text.DrawOn(page);
+
+            textBlock = new TextBlock(f1, descriptions[i]);
+            textBlock.SetFontSize(11f);
+            textBlock.SetLineSpacing(1.5f);
+            textBlock.SetLocation(x2, y + 25f);
+            textBlock.SetWidth(292f);
+            float[] textXY = textBlock.DrawOn(page);
+
+            y = Math.Max(imageXY[1], textXY[1]) + 25f;
         }
-
-        // The same barcodes can be drawn from top to bottom and from bottom to top.
-        new TextLine(f2, "Vertical barcodes").SetLocation(70f, y + 15f).DrawOn(page);
-
-        Barcode barcode = new Barcode(Barcode.CODE_128, "G86513JVW0C");
-        barcode.SetLocation(70f, y + 35f);
-        barcode.SetModuleLength(0.75f);
-        barcode.SetDirection(Direction.TOP_TO_BOTTOM);
-        barcode.SetFont(f1);
-        xy = barcode.DrawOn(page);
-
-        barcode = new Barcode(Barcode.CODE_39, "CODE39");
-        barcode.SetLocation(xy[0] + 60f, y + 35f);
-        barcode.SetModuleLength(0.75f);
-        barcode.SetDirection(Direction.BOTTOM_TO_TOP);
-        barcode.SetFont(f1);
-        xy = barcode.DrawOn(page);
-
-        barcode = new Barcode(Barcode.EAN_13, "051234567890");
-        barcode.SetLocation(xy[0] + 60f, y + 35f);
-        barcode.SetModuleLength(1f);
-        barcode.SetDirection(Direction.BOTTOM_TO_TOP);
-        barcode.SetFont(f1);
-        barcode.DrawOn(page);
-
-        // ITF-14, the GTIN of a carton, framed by bearer bars.
-        Page page2 = new Page(pdf, Letter.PORTRAIT);
-        TextLine heading2 = new TextLine(f2, "Barcodes for Cartons");
-        heading2.SetStructureType(StructElem.H2);
-        heading2.SetFontSize(18f);
-        heading2.SetLocation(70f, 80f);
-        heading2.DrawOn(page2);
-
-        TextLine label = new TextLine(f2, "ITF-14");
-        label.SetLocation(70f, 135f);
-        label.DrawOn(page2);
-        TextLine cartonNote = new TextLine(f1, "The GTIN of a carton, 13 digits and the check digit PDFjet adds, framed by bearer bars");
-        cartonNote.SetFontSize(10f);
-        cartonNote.SetTextColor(Color.dimgray);
-        cartonNote.SetLocation(70f, 152f);
-        cartonNote.DrawOn(page2);
-
-        Barcode itf = new Barcode(Barcode.ITF_14, "1540014128876");
-        itf.SetLocation(70f, 175f);
-        itf.SetModuleLength(1f);
-        itf.SetFont(f1);
-        itf.DrawOn(page2);
 
         pdf.Complete();
     }

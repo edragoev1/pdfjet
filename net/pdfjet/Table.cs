@@ -14,7 +14,7 @@ namespace PDFjet.NET {
 /// <summary>
 /// Used to create table objects and draw them on a page.
 ///
-/// Please see Example_08.
+/// Please see Example_20.
 /// </summary>
 public class Table : IDrawable {
     private List<List<Cell>> tableData;

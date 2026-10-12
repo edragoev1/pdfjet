@@ -9,74 +9,92 @@ import PDFjet
 
 /**
  * Example_14.swift
- * Drawing Data Matrix barcodes.
  */
 public class Example_14 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_14.pdf", append: false)!)
         pdf.setCompliance(Compliance.PDF_UA_1)
-        pdf.setTitle("Data Matrix Barcodes")
+        pdf.setTitle("Paragraphs in a Text Frame")
 
         let f1 = try Font(pdf, IBMPlexSans.Regular)
         f1.setSize(10.0)
 
+        let f2 = try Font(pdf, IBMPlexSans.Bold)
+        f2.setSize(10.0)
+
+        let f3 = try Font(pdf, IBMPlexSans.Italic)
+        f3.setSize(10.0)
+
         let page = Page(pdf, Letter.PORTRAIT)
 
-        // The heading of the document, above the symbols
-        TextLine(f1, "Data Matrix Barcodes")
-                .setStructureType(StructElem.H1)
-                .setFontSize(18.0)
-                .setLocation(50.0, 36.0)
-                .drawOn(page)
+        var paragraphs = [Paragraph]()
+        var paragraph = Paragraph()
+                .add(TextLine(f1,
+"The small business centres offer practical resources, from step-by-step info on setting up your business to sample business plans to a range of business-related articles and books in our resource libraries.")
+                        .setUnderline(true))
+                .add(TextLine(f2, "This text is bold!").setTextColor(Color.blue))
+        paragraphs.append(paragraph)
 
-        var barcode = DataMatrix("https://github.com/edragoev1/pdfjet")
-        barcode.setLocation(50.0, 50.0)
-        barcode.setModuleLength(3.0)
-        var xy = barcode.drawOn(page)
-        var caption = TextLine(f1, "A web address")
-        caption.setLocation(50.0, xy[1] + 20.0)
-        caption.drawOn(page)
+        paragraph = Paragraph()
+                .add(TextLine(f1,
+"The centres also offer free one-on-one consultations with business advisors who can review your business plan and make recommendations to improve it.")
+                        .setUnderline(true))
+                .add(TextLine(f3, "This text is using italic font.").setTextColor(Color.green))
+        paragraphs.append(paragraph)
 
-        barcode = DataMatrix("Grüße aus München! こんにちは 😀")
-        barcode.setLocation(300.0, 50.0)
-        barcode.setModuleLength(3.0)
-        xy = barcode.drawOn(page)
-        caption = TextLine(f1, "Text in UTF-8")
-        caption.setLocation(300.0, xy[1] + 20.0)
-        caption.drawOn(page)
-
-        barcode = DataMatrix("PDFjet 9.0.5", DataMatrix.RECTANGLE)
-        barcode.setLocation(50.0, 250.0)
-        barcode.setModuleLength(4.0)
-        barcode.setModuleColor(Color.blue)
-        xy = barcode.drawOn(page)
-        caption = TextLine(f1, "A rectangular symbol")
-        caption.setLocation(50.0, xy[1] + 20.0)
-        caption.drawOn(page)
-
-        var sb = ""
-        for i in 1...20 {
-            sb += "Line \(i) of a longer text in a larger symbol.\n"
+        // The two paragraphs are a numbered list. The number of a paragraph
+        // is its label, which the text frame draws to the left of it and
+        // reads before it.
+        var paragraphNumber: Int = 1
+        for p in paragraphs {
+            p.setListLabel(TextLine(f2, String(paragraphNumber) + "."), 15.0)
+            paragraphNumber += 1
         }
-        barcode = DataMatrix(sb)
-        barcode.setLocation(300.0, 250.0)
-        barcode.setModuleLength(2.0)
-        xy = barcode.drawOn(page)
-        caption = TextLine(f1, "A larger symbol")
-        caption.setLocation(300.0, xy[1] + 20.0)
-        caption.drawOn(page)
 
-        barcode = try DataMatrix(gs1: "(01)09506000134352(17)261231(10)ABC123(21)XYZ-42")
-        barcode.setLocation(50.0, 400.0)
-        barcode.setModuleLength(3.0)
-        xy = barcode.drawOn(page)
-        // On two lines, clear of the larger symbol at its right
-        caption = TextLine(f1, "GS1: a GTIN, an expiry date,")
-        caption.setLocation(50.0, xy[1] + 20.0)
-        caption.drawOn(page)
-        caption = TextLine(f1, "a batch and a serial number")
-        caption.setLocation(50.0, xy[1] + 20.0 + 14.0)  // A line of 10 points, and its spacing
-        caption.drawOn(page)
+        var text = TextFrame(paragraphs)
+        text.setLocation(70.0, 50.0)
+        text.setWidth(500.0)
+        text.setBorders(true)
+        text.setBorderColor(Color.blue)
+        text.drawOn(page)
+
+
+        var colorMap = [String: Int32]()
+        colorMap["Physics"] = Color.firebrick
+        colorMap["physics"] = Color.firebrick
+        colorMap["Experimentation"] =  Color.sienna
+        colorMap["science"] = Color.blue
+        paragraphs = try Paragraph.paragraphsFromFile(f1, "data/physics.txt")
+        // The paragraphs under each heading are a numbered list.
+        paragraphNumber = 1
+        for p in paragraphs {
+            if (p.startsWith("**")) {
+                p.setStructureType(StructElem.H1)
+                p.getTextLines()[0].setFont(f2).setFontSize(24.0)
+                p.getTextLines()[0].setTextColor(Color.navy)
+                paragraphNumber = 1
+            } else {
+                p.setTextColor(Color.dimgray)
+                p.setHighlightColors(colorMap)
+                p.setListLabel(TextLine(f2, String(paragraphNumber) + "."), 15.0)
+                paragraphNumber += 1
+            }
+        }
+
+        text = TextFrame(paragraphs)
+        text.setLocation(70.0, 150.0)
+        text.setWidth(500.0)
+        text.setBorders(true)
+        text.setBorderColor(Color.blue)
+        text.drawOn(page)
+
+        // The rule beside each paragraph reaches from its top to its bottom,
+        // which the frame knows only after it has drawn it.
+        for p in paragraphs where !p.startsWith("**") {
+            Line(p.getX1() - 3.0, p.getY1(), p.getX1() - 3.0, p.getY2())
+                    .setStrokeColor(Color.navy)
+                    .setStrokeWidth(1.0).drawOn(page)
+        }
 
         try pdf.complete()
     }

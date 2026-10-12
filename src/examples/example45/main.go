@@ -12,87 +12,72 @@ import (
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
+	"github.com/edragoev1/pdfjet/v9/src/a4"
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
-	"github.com/edragoev1/pdfjet/v9/src/letter"
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
-// Example45 uses the Form and Field classes to draw a shipment request. A
-// field at x = 0 starts a new row, the other fields of the row start at their
-// own x, and a field with an empty label continues the value above it on a
-// new line.
+// Example45 adds a "DRAFT" watermark to every page of a two-page document
+// that is PDF/A-3a and PDF/UA-1. The watermark is drawn first, so the text of
+// the page is drawn over it.
 func Example45() {
 	pdf, err := pdfjet.NewPDFFile("Example_45.pdf")
 	if err != nil {
 		log.Fatal(err)
 	}
-	pdf.SetCompliance(compliance.PDF_UA_1)
-	pdf.SetTitle("Shipment Request")
+	pdf.SetCompliance(compliance.PDF_A_3A_UA_1)
+	pdf.SetTitle("A Draft, Archived as PDF/A-3a and PDF/UA-1")
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
+	f3 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold)
 
-	page := pdfjet.NewPage(pdf, letter.Portrait())
+	titles := []string{
+		"Project Proposal",
+		"Budget and Schedule",
+	}
+	texts := []string{
+		"This proposal describes a new reporting service that creates invoices, " +
+			"statements and delivery notes as PDF documents. The documents are " +
+			"archived as PDF/A-3a, so they can be opened and printed exactly " +
+			"the same way for many years.\n\n" +
+			"The watermark tells every reader that this is a draft. It is drawn " +
+			"in light gray behind the text, at an angle from the bottom left " +
+			"corner to the top right corner of the page.",
+		"The service will be built in three phases over six months. The first " +
+			"phase delivers invoices, the second statements, and the third " +
+			"delivery notes.\n\n" +
+			"The budget and the schedule will be final once the proposal is " +
+			"approved. Until then, every page of this document is marked as a draft.",
+	}
 
-	text := pdfjet.NewTextLine(f2, "Shipment Request")
-	text.SetStructureType(structelem.H1)
-	text.SetFontSize(22.0)
-	text.SetLocation(56.0, 80.0)
-	text.DrawOn(page)
+	for i := 0; i < len(titles); i++ {
+		page := pdfjet.NewPage(pdf, a4.Landscape())
 
-	textBlock := pdfjet.NewTextBlock(f1,
-		"A Form draws its fields in rows. A field at x = 0 starts a new row, "+
-			"the other fields of the row start at their own x, and a field with "+
-			"an empty label continues the value above it on a new line.")
-	textBlock.SetFontSize(12.0)
-	textBlock.SetLineSpacing(1.5)
-	textBlock.SetLocation(56.0, 95.0)
-	textBlock.SetWidth(500.0)
-	xy := textBlock.DrawOn(page)
+		// The watermark is drawn before the content of the page.
+		f3.SetSize(120.0)
+		page.AddWatermark(f3, "DRAFT")
 
-	var w float32 = 500.0 // The width of the form
+		title := pdfjet.NewTextLine(f2, titles[i])
+		title.SetStructureType(structelem.H1)
+		title.SetFontSize(28.0)
+		title.SetLocation(70.0, 100.0)
+		title.DrawOn(page)
 
-	fields := make([]*pdfjet.Field, 0)
-	fields = append(fields, pdfjet.NewField(0.0, "Sender", "Maple Leaf Instruments Ltd."))
-	fields = append(fields, pdfjet.NewField(0.0, "Street Address", "480 King Street West"))
-	fields = append(fields, pdfjet.NewField(6*w/8, "Suite", "1200"))
-	fields = append(fields, pdfjet.NewField(0.0, "City", "Toronto"))
-	fields = append(fields, pdfjet.NewField(3*w/8, "Province", "Ontario"))
-	fields = append(fields, pdfjet.NewField(5*w/8, "Postal Code", "M5V 1L7"))
-	fields = append(fields, pdfjet.NewField(6*w/8, "Country", "Canada"))
-	fields = append(fields, pdfjet.NewField(0.0, "Recipient", "Nordic Sensor Labs AB"))
-	fields = append(fields, pdfjet.NewField(0.0, "Street Address", "Drottninggatan 55"))
-	fields = append(fields, pdfjet.NewField(6*w/8, "Floor", "3"))
-	fields = append(fields, pdfjet.NewField(0.0, "City", "Stockholm"))
-	fields = append(fields, pdfjet.NewField(5*w/8, "Postal Code", "111 21"))
-	fields = append(fields, pdfjet.NewField(6*w/8, "Country", "Sweden"))
-	fields = append(fields, pdfjet.NewField(0.0, "Contact", "Anna Lindqvist"))
-	fields = append(fields, pdfjet.NewField(3*w/8, "Email", "anna.lindqvist@example.com"))
-	fields = append(fields, pdfjet.NewField(0.0, "Contents", "Two calibrated pressure sensors"))
-	fields = append(fields, pdfjet.NewField(5*w/8, "Weight", "3.2 kg"))
-	fields = append(fields, pdfjet.NewField(6*w/8, "Declared Value", "CAD 1,450.00"))
-	fields = append(fields, pdfjet.NewField(0.0, "Instructions",
-		"Keep upright and away from magnets. Deliver on a weekday"))
-	fields = append(fields, pdfjet.NewField(0.0, "", "between 9:00 and 17:00, to the reception on the third floor."))
+		textBlock := pdfjet.NewTextBlock(f1, texts[i])
+		textBlock.SetFontSize(14.0)
+		textBlock.SetLineSpacing(1.5)
+		textBlock.SetLocation(70.0, 130.0)
+		textBlock.SetWidth(page.GetWidth() - 140.0)
+		textBlock.DrawOn(page)
 
-	xy = pdfjet.NewForm(fields).
-		SetLabelFont(f1).
-		SetLabelFontSize(8.0).
-		SetLabelColor(color.DimGray).
-		SetValueFont(f2).
-		SetValueFontSize(10.0).
-		SetValueColor(color.Black).
-		SetWidth(w).
-		SetStrokeWidth(0.5).
-		SetLocation(56.0, xy[1]+20.0).
-		DrawOn(page)
-
-	text = pdfjet.NewTextLine(f1, "The recipient signs for the package on delivery.")
-	text.SetFontSize(10.0)
-	text.SetTextColor(color.DimGray)
-	text.SetLocation(56.0, xy[1]+20.0)
-	text.DrawOn(page)
+		footer := pdfjet.NewTextLine(f1, "Page "+fmt.Sprint(i+1)+" of "+fmt.Sprint(len(titles)))
+		footer.SetFontSize(10.0)
+		footer.SetTextColor(color.DimGray)
+		footer.SetLocation(70.0, page.GetHeight()-40.0)
+		footer.DrawOn(page)
+	}
 
 	if err := pdf.Complete(); err != nil {
 		log.Fatal(err)

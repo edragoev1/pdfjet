@@ -9,87 +9,105 @@ import (
 	"fmt"
 	"log"
 	"strconv"
-	"strings"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
-	"github.com/edragoev1/pdfjet/v9/src/datamatrix"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
-// Example14 draws Data Matrix barcodes.
+// Example14 draws paragraphs of styled text with the Text component on Letter paper.
 func Example14() {
 	pdf, err := pdfjet.NewPDFFile("Example_14.pdf")
 	if err != nil {
 		log.Fatal(err)
 	}
 	pdf.SetCompliance(compliance.PDF_UA_1)
-	pdf.SetTitle("Data Matrix Barcodes")
+	pdf.SetTitle("Paragraphs in a Text Frame")
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	f1.SetSize(10.0)
 
+	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold)
+	f2.SetSize(10.0)
+
+	f3 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Italic)
+	f3.SetSize(10.0)
+
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 
-	// The heading of the document, above the symbols
-	pdfjet.NewTextLine(f1, "Data Matrix Barcodes").
-		SetStructureType(structelem.H1).
-		SetFontSize(18.0).
-		SetLocation(50.0, 36.0).
-		DrawOn(page)
+	paragraphs := make([]*pdfjet.Paragraph, 0)
 
-	barcode := datamatrix.NewDataMatrix("https://github.com/edragoev1/pdfjet")
-	barcode.SetLocation(50.0, 50.0)
-	barcode.SetModuleLength(3.0)
-	xy := barcode.DrawOn(page)
-	caption := pdfjet.NewTextLine(f1, "A web address")
-	caption.SetLocation(50.0, xy[1]+20.0)
-	caption.DrawOn(page)
+	paragraph := pdfjet.NewParagraph()
+	paragraph.Add(pdfjet.NewTextLine(f1,
+		"The small business centres offer practical resources, from step-by-step info on setting up your business to sample business plans to a range of business-related articles and books in our resource libraries.").SetUnderline(true))
+	paragraph.Add(pdfjet.NewTextLine(f2, "This text is bold!").SetTextColor(color.Blue))
+	paragraphs = append(paragraphs, paragraph)
 
-	barcode = datamatrix.NewDataMatrix("Grüße aus München! こんにちは 😀")
-	barcode.SetLocation(300.0, 50.0)
-	barcode.SetModuleLength(3.0)
-	xy = barcode.DrawOn(page)
-	caption = pdfjet.NewTextLine(f1, "Text in UTF-8")
-	caption.SetLocation(300.0, xy[1]+20.0)
-	caption.DrawOn(page)
+	paragraph = pdfjet.NewParagraph()
+	paragraph.Add(pdfjet.NewTextLine(f1,
+		"The centres also offer free one-on-one consultations with business advisors who can review your business plan and make recommendations to improve it.").SetUnderline(true))
+	paragraph.Add(pdfjet.NewTextLine(f3, "This text is using italic font.").SetTextColor(color.Green))
+	paragraphs = append(paragraphs, paragraph)
 
-	barcode = datamatrix.NewDataMatrixWithShape("PDFjet 9.0.5", datamatrix.Rectangle)
-	barcode.SetLocation(50.0, 250.0)
-	barcode.SetModuleLength(4.0)
-	barcode.SetModuleColor(color.Blue)
-	xy = barcode.DrawOn(page)
-	caption = pdfjet.NewTextLine(f1, "A rectangular symbol")
-	caption.SetLocation(50.0, xy[1]+20.0)
-	caption.DrawOn(page)
-
-	var sb strings.Builder
-	for i := 1; i <= 20; i++ {
-		sb.WriteString("Line " + strconv.Itoa(i) + " of a longer text in a larger symbol.\n")
+	// The two paragraphs are a numbered list. The number of a paragraph is
+	// its label, which the text frame draws to the left of it and reads
+	// before it.
+	paragraphNumber := 1
+	for _, p := range paragraphs {
+		p.SetListLabel(pdfjet.NewTextLine(f2, strconv.Itoa(paragraphNumber)+"."), 15.0)
+		paragraphNumber++
 	}
-	barcode = datamatrix.NewDataMatrix(sb.String())
-	barcode.SetLocation(300.0, 250.0)
-	barcode.SetModuleLength(2.0)
-	xy = barcode.DrawOn(page)
-	caption = pdfjet.NewTextLine(f1, "A larger symbol")
-	caption.SetLocation(300.0, xy[1]+20.0)
-	caption.DrawOn(page)
 
-	barcode = datamatrix.NewGS1DataMatrix("(01)09506000134352(17)261231(10)ABC123(21)XYZ-42")
-	barcode.SetLocation(50.0, 400.0)
-	barcode.SetModuleLength(3.0)
-	xy = barcode.DrawOn(page)
-	// On two lines, clear of the larger symbol at its right
-	caption = pdfjet.NewTextLine(f1, "GS1: a GTIN, an expiry date,")
-	caption.SetLocation(50.0, xy[1]+20.0)
-	caption.DrawOn(page)
-	caption = pdfjet.NewTextLine(f1, "a batch and a serial number")
-	caption.SetLocation(50.0, xy[1]+20.0+14.0) // A line of 10 points, and its spacing
-	caption.DrawOn(page)
+	text := pdfjet.NewTextFrameFromParagraphs(paragraphs)
+	text.SetLocation(70.0, 50.0)
+	text.SetWidth(500.0)
+	text.SetBorders(true)
+	text.SetBorderColor(color.Blue)
+	text.DrawOn(page)
+
+	colorMap := make(map[string]int32)
+	colorMap["Physics"] = color.Firebrick
+	colorMap["physics"] = color.Firebrick
+	colorMap["Experimentation"] = color.Sienna
+	colorMap["science"] = color.Blue
+	paragraphs = pdfjet.ParagraphsFromFile(f1, "data/physics.txt")
+	// The paragraphs under each heading are a numbered list. The number of a
+	// paragraph is its label, which the text frame draws to the left of it
+	// and reads before it.
+	paragraphNumber = 1
+	for _, p := range paragraphs {
+		if p.StartsWith("**") {
+			p.SetStructureType(structelem.H1)
+			p.GetTextLines()[0].SetFont(f2).SetFontSize(24.0)
+			p.GetTextLines()[0].SetTextColor(color.Navy)
+			paragraphNumber = 1
+		} else {
+			p.SetTextColor(color.DimGray)
+			p.SetHighlightColors(colorMap)
+			p.SetListLabel(pdfjet.NewTextLine(f2, strconv.Itoa(paragraphNumber)+"."), 15.0)
+			paragraphNumber++
+		}
+	}
+
+	text = pdfjet.NewTextFrameFromParagraphs(paragraphs)
+	text.SetLocation(70.0, 150.0)
+	text.SetWidth(500.0)
+	text.SetBorders(true)
+	text.SetBorderColor(color.Blue)
+	text.DrawOn(page)
+
+	// The rule beside each paragraph reaches from its top to its bottom,
+	// which the frame knows only after it has drawn it.
+	for _, p := range paragraphs {
+		if !p.StartsWith("**") {
+			pdfjet.NewLine(
+				p.GetX1()-3.0, p.GetY1(), p.GetX1()-3.0, p.GetY2()).SetStrokeColor(color.Navy).SetStrokeWidth(1.0).DrawOn(page)
+		}
+	}
 
 	if err := pdf.Complete(); err != nil {
 		log.Fatal(err)

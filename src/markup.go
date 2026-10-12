@@ -23,7 +23,7 @@ import (
 // Headings, lists, block quotes and the rest of Markdown's blocks are not
 // read: a line break is a space, and Paragraphs splits a text into paragraphs
 // at its empty lines. The markup is read in time linear in the length of the
-// text, so it can come from anyone. Please see Example_53.
+// text, so it can come from anyone. Please see Example_18.
 //
 // The text is read as characters, as Java reads it, with the whitespace of
 // Java's Character.isWhitespace. A byte of the text that is not valid UTF-8

@@ -66,7 +66,7 @@ commit and date. The layout's format version (1) and the look's rules
 - **The manual viewer pass.** The PDFs in `viewer-files-to-test`, opened by
   hand in Acrobat Reader, and with NVDA where a file is tagged; see the README
   there for the files of each release. One question is open from the pass of
-  9.0.3: Example_06's shapes have their opacity in an ExtGState and in the
+  9.0.3: Example_42's shapes have their opacity in an ExtGState and in the
   annotation's `/CA`, and ISO 32000 applies `/CA` to the appearance, so a
   strict viewer could draw them at 25% where MuPDF, PDFium, Poppler and pdf.js
   draw them at 50%.

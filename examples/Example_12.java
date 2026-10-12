@@ -7,65 +7,128 @@
 package examples;
 
 import java.io.*;
-import java.util.*;
 import com.pdfjet.*;
 import com.pdfjet.fonts.*;
-import com.pdfjet.pdf417.*;
 
 /**
  * Example_12.java
- * This example draws a PDF417 barcode that holds a whole source file, with an
- * explanation and a caption.
  */
 public class Example_12 {
     public Example_12() throws Exception {
         PDF pdf = new PDF(
             new BufferedOutputStream(new FileOutputStream("Example_12.pdf")));
         pdf.setCompliance(Compliance.PDF_UA_1);
-        pdf.setTitle("PDF417 barcode example");
+        pdf.setTitle("Switzerland");
+
+        Image image1 = new Image(pdf, "images/swiss-admin.jpg");
+        image1.setAltDescription(
+                "A map of Switzerland's 26 cantons, numbered and named in a key, with their capitals, Bern marked as the national capital, the lakes and rivers, and the neighboring countries.");
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
+        f1.setSize(10f);
+
         Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
+        f2.setSize(14f);
+
+        Font f3 = new Font(pdf, IBMPlexSans.SemiBold);
+        f3.setSize(12f);
+
+        Font f4 = new Font(pdf, IBMPlexSans.Italic);
+        f4.setSize(10f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        TextLine text = new TextLine(f2, "PDF417 Barcode");
-        text.setStructureType(StructElem.H1);
-        text.setFontSize(22f);
-        text.setLocation(70f, 80f);
-        text.drawOn(page);
+        // The map is 310 points tall, so that it and the text fit the page,
+        // and centered over the text.
+        image1.scaleBy(310f / image1.getHeight());
+        image1.setLocation(90f + (470f - image1.getWidth()) / 2f, 35f);
+        image1.drawOn(page);
 
-        TextBlock textBlock = new TextBlock(f1,
-                "PDF417 is a stacked two-dimensional barcode, used on boarding passes, "
-                + "identity cards and shipping labels. It holds text and binary data, "
-                + "and its error correction lets a scanner read it even when part of "
-                + "it is damaged.");
-        textBlock.setFontSize(12f);
-        textBlock.setLineSpacing(1.5f);
-        textBlock.setLocation(70f, 95f);
-        textBlock.setWidth(470f);
-        float[] xy = textBlock.drawOn(page);
+        // To rotate the column, add it to a Container and rotate that; see Example_31.
+        TextColumn column = new TextColumn();
+        column.setLineSpacing(1.3f);        // 1.3 x font height
+        column.setParagraphSpacing(1.0f);   // 1.0 x line spacing
 
-        // A barcode that holds a whole source file.
-        List<String> lines = Content.linesOfTextFile("data/Example_12.java");
+        Paragraph p2 = new Paragraph();
+        p2.setStructureType(StructElem.H1);
+        p2.add(new TextLine(f2, "Introduction"));
+
         StringBuilder buf = new StringBuilder();
-        for (String line : lines) {
-            buf.append(line);
-            // Both CR and LF are required!
-            buf.append("\r\n");
-        }
+        buf.append("The Swiss Confederation was founded in 1291 as a defensive ");
+        buf.append("alliance among three cantons. In succeeding years, other ");
+        buf.append("localities joined the original three. ");
+        buf.append("The Swiss Confederation secured its independence from the ");
+        buf.append("Holy Roman Empire in 1499. Switzerland's sovereignty and ");
+        buf.append("neutrality have long been honored by the major European ");
+        buf.append("powers, and the country was not involved in either of the ");
+        buf.append("two World Wars. The political and economic integration of ");
+        buf.append("Europe over the past half century, as well as Switzerland's ");
+        buf.append("role in many UN and international organizations, has ");
+        buf.append("strengthened Switzerland's ties with its neighbors. ");
+        buf.append("However, the country did not officially become a UN member ");
+        buf.append("until 2002.");
 
-        PDF417 barcode = new PDF417(buf.toString());
-        barcode.setModuleLength(1f);
-        barcode.setLocation(70f, xy[1] + 30f);
-        xy = barcode.drawOn(page);
+        Paragraph p3 = new Paragraph();
+        // p3.setTextAlignment(Alignment.LEFT);
+        // p3.setTextAlignment(Alignment.RIGHT);
+        p3.setTextAlignment(Alignment.JUSTIFY);
+        TextLine text = new TextLine(f1, buf.toString());
+        p3.add(text);
 
-        text = new TextLine(f1, "The source code of data/Example_12.java, "
-                + lines.size() + " lines");
-        text.setFontSize(10f);
-        text.setTextColor(Color.dimgray);
-        text.setLocation(70f, xy[1] + 20f);
-        text.drawOn(page);
+        buf = new StringBuilder();
+        buf.append("Switzerland remains active in many UN and international ");
+        buf.append("organizations but retains a strong commitment to neutrality.");
+
+        text = new TextLine(f1, buf.toString());
+        text.setTextColor(Color.firebrick);
+        p3.add(text);
+
+        Paragraph p4 = new Paragraph();
+        p4.setStructureType(StructElem.H1);
+        p4.add(new TextLine(f3, "Economy"));
+
+        buf = new StringBuilder();
+        buf.append("Switzerland is a peaceful, prosperous, and stable modern ");
+        buf.append("market economy with low unemployment, a highly skilled ");
+        buf.append("labor force, and a per capita GDP larger than that of the ");
+        buf.append("big Western European economies. The Swiss in recent years ");
+        buf.append("have brought their economic practices largely into ");
+        buf.append("conformity with the EU's to enhance their international ");
+        buf.append("competitiveness. Switzerland remains a safe haven for ");
+        buf.append("investors, because it has maintained a degree of bank secrecy ");
+        buf.append("and has kept up the franc's long-term external value. ");
+        buf.append("Reflecting the anemic economic conditions of Europe, GDP ");
+        buf.append("growth stagnated during the 2001-03 period, improved during ");
+        buf.append("2004-05 to 1.8% annually and to 2.9% in 2006.");
+
+        Paragraph p5 = new Paragraph();
+        p5.setTextAlignment(Alignment.JUSTIFY);
+        text = new TextLine(f1, buf.toString());
+        p5.add(text);
+
+        text = new TextLine(f4,
+                "Even so, unemployment has remained at less than half the EU average.");
+        text.setTextColor(Color.blue);
+        p5.add(text);
+
+        column.addParagraph(p2);
+        column.addParagraph(p3);
+        column.addParagraph(p4);
+        column.addParagraph(p5);
+
+        column.setLocation(90f, 365f);
+
+        float columnWidth = 470f;
+        column.setWidth(columnWidth);
+        column.setHeight(100f);
+        float[] xy = column.drawOn(page);
+
+        Line line = new Line(
+                xy[0] - columnWidth,
+                xy[1],
+                xy[0],
+                xy[1]);
+        line.drawOn(page);
 
         pdf.complete();
     }

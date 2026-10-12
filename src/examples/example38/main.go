@@ -8,153 +8,74 @@ package main
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
-	"github.com/edragoev1/pdfjet/v9/src/IBMPlexMono"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
-	"github.com/edragoev1/pdfjet/v9/src/alignment"
-	"github.com/edragoev1/pdfjet/v9/src/border"
+	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
+	"github.com/edragoev1/pdfjet/v9/src/content"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
+	"github.com/edragoev1/pdfjet/v9/src/pdf417"
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
-// Example38 draws a table whose cells span columns and rows, and explains how.
-// A cell spans columns with setColSpan and rows with setRowSpan. The table is
-// also a check of the geometry of the cells: their backgrounds meet without
-// gaps and their borders line up.
+// Example38 draws a PDF417 barcode that holds a whole source file, with an
+// explanation and a caption.
 func Example38() {
 	pdf, err := pdfjet.NewPDFFile("Example_38.pdf")
 	if err != nil {
 		log.Fatal(err)
 	}
 	pdf.SetCompliance(compliance.PDF_UA_1)
-	pdf.SetTitle("Table Cells That Span Rows and Columns")
-	font := pdfjet.NewFontFromFile(pdf, IBMPlexMono.Regular)
-	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
-	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
+	pdf.SetTitle("PDF417 barcode example")
 
-	page := pdfjet.NewPage(pdf, letter.Landscape())
+	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
+	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
 
-	title := pdfjet.NewTextLine(f1, "Table Cells That Span Rows and Columns")
-	title.SetStructureType(structelem.H1)
-	title.SetFontSize(18.0)
-	title.SetLocation(50.0, 50.0)
-	title.DrawOn(page)
+	page := pdfjet.NewPage(pdf, letter.Portrait())
 
-	textBlock := pdfjet.NewTextBlock(f2,
-		"The cells of this table span up to five columns and up to four rows, as "+
-			"the name in each cell says: 1x3 is one column wide and three rows tall. "+
-			"A cell spans columns with setColSpan and rows with setRowSpan, and draws "+
-			"its text, its background and its borders once over all of them. The table "+
-			"keeps its shape, so every row holds a cell for every column and the cells "+
-			"a span covers are left empty. The example is also a check of the geometry "+
-			"of the cells: their backgrounds meet without gaps and their borders line "+
-			"up. The header row above them numbers the columns.")
-	textBlock.SetFontSize(11.0)
-	textBlock.SetLineSpacing(1.3)
-	textBlock.SetLocation(50.0, 65.0)
-	textBlock.SetWidth(500.0)
+	text := pdfjet.NewTextLine(f2, "PDF417 Barcode")
+	text.SetStructureType(structelem.H1)
+	text.SetFontSize(22.0)
+	text.SetLocation(70.0, 80.0)
+	text.DrawOn(page)
+
+	textBlock := pdfjet.NewTextBlock(f1,
+		"PDF417 is a stacked two-dimensional barcode, used on boarding passes, "+
+			"identity cards and shipping labels. It holds text and binary data, "+
+			"and its error correction lets a scanner read it even when part of "+
+			"it is damaged.")
+	textBlock.SetFontSize(12.0)
+	textBlock.SetLineSpacing(1.5)
+	textBlock.SetLocation(70.0, 95.0)
+	textBlock.SetWidth(470.0)
 	xy := textBlock.DrawOn(page)
 
-	table := pdfjet.NewTable()
-	table.SetTableData(createTableData(font, f1), 1)
-	table.SetBottomMargin(10.0)
-	table.SetLocation(50.0, xy[1]+20.0)
-	table.DrawOn(page)
+	// A barcode that holds a whole source file.
+	lines := content.LinesOfTextFile("data/Example_12.java")
+	var buf strings.Builder
+	for _, line := range lines {
+		buf.WriteString(line)
+		buf.WriteString("\r\n") // CR and LF are both required!
+	}
+
+	barcode := pdf417.NewPDF417(buf.String())
+	barcode.SetModuleLength(1.0)
+	barcode.SetLocation(70.0, xy[1]+30.0)
+	xy = barcode.DrawOn(page)
+
+	text = pdfjet.NewTextLine(f1, "The source code of data/Example_12.java, "+
+		fmt.Sprint(len(lines))+" lines")
+	text.SetFontSize(10.0)
+	text.SetTextColor(color.DimGray)
+	text.SetLocation(70.0, xy[1]+20.0)
+	text.DrawOn(page)
 
 	if err := pdf.Complete(); err != nil {
 		log.Fatal(err)
 	}
-}
-
-// createTableData returns a header row that numbers the columns, in the
-// header font, and under it the cells of a 10 by 10 table whose cells span
-// columns and rows. They are the table of this HTML, cell for cell:
-//
-//	<table border="solid">
-//	<tr><td colspan="2" rowspan="2">2x2</td><td colspan="2">2x1</td>
-//	    <td colspan="2">2x1</td><td colspan="2">2x1</td><td colspan="2">2x1</td></tr>
-//	<tr><td colspan="2" rowspan="2">2x2</td><td>1x1</td><td colspan="5">5x1</td></tr>
-//	<tr><td rowspan="2">1x2</td><td>1x1</td><td colspan="2" rowspan="2">2x2</td>
-//	    <td rowspan="2">1x2</td><td colspan="3">3x1</td></tr>
-//	<tr><td>1x1</td><td rowspan="3">1x3</td><td>1x1</td><td colspan="2">2x1</td>
-//	    <td rowspan="2">1x2</td></tr>
-//	<tr><td rowspan="2">1x2</td><td>1x1</td><td colspan="2">2x1</td>
-//	    <td colspan="4" rowspan="4">4x4</td></tr>
-//	<tr><td>1x1</td><td rowspan="3">1x3</td><td rowspan="3">1x3</td>
-//	    <td rowspan="3">1x3</td></tr>
-//	<tr><td rowspan="2">1x2</td><td>1x1</td><td rowspan="4">1x4</td></tr>
-//	<tr><td>1x1</td></tr>
-//	<tr><td rowspan="2">1x2</td><td>1x1</td><td colspan="2">2x1</td>
-//	    <td colspan="2" rowspan="2">2x2</td><td rowspan="2">1x2</td><td>1x1</td>
-//	    <td>1x1</td></tr>
-//	<tr><td>1x1</td><td>1x1</td><td>1x1</td><td>1x1</td><td>1x1</td></tr>
-//	</table>
-func createTableData(font, headerFont *pdfjet.Font) [][]*pdfjet.Cell {
-	// The columns and the rows each cell spans, in the order a browser reads
-	// the cells of the HTML above.
-	spans := [][][2]int{
-		{{2, 2}, {2, 1}, {2, 1}, {2, 1}, {2, 1}},
-		{{2, 2}, {1, 1}, {5, 1}},
-		{{1, 2}, {1, 1}, {2, 2}, {1, 2}, {3, 1}},
-		{{1, 1}, {1, 3}, {1, 1}, {2, 1}, {1, 2}},
-		{{1, 2}, {1, 1}, {2, 1}, {4, 4}},
-		{{1, 1}, {1, 3}, {1, 3}, {1, 3}},
-		{{1, 2}, {1, 1}, {1, 4}},
-		{{1, 1}},
-		{{1, 2}, {1, 1}, {2, 1}, {2, 2}, {1, 2}, {1, 1}, {1, 1}},
-		{{1, 1}, {1, 1}, {1, 1}, {1, 1}, {1, 1}},
-	}
-	columns := 10
-	grid := make([][]*pdfjet.Cell, len(spans))
-	for r := range grid {
-		grid[r] = make([]*pdfjet.Cell, columns)
-	}
-	for r := range spans {
-		c := 0
-		for _, span := range spans[r] {
-			// The next column that no cell of a row above spans over.
-			for c < columns && grid[r][c] != nil {
-				c++
-			}
-			grid[r][c] = getCell(font, span[0], span[1],
-				fmt.Sprintf("%dx%d", span[0], span[1]))
-			// A table keeps its shape, so every row holds a cell for every
-			// column: the cells a span covers are there and are empty.
-			for r2 := r; r2 < r+span[1] && r2 < len(spans); r2++ {
-				for c2 := c; c2 < c+span[0] && c2 < columns; c2++ {
-					if grid[r2][c2] == nil {
-						grid[r2][c2] = getCell(font, 1, 1, "")
-					}
-				}
-			}
-			c += span[0]
-		}
-	}
-	// The header row, above the cells: it numbers the columns.
-	header := make([]*pdfjet.Cell, columns)
-	for c := range header {
-		header[c] = getCell(headerFont, 1, 1, fmt.Sprintf("%d", c+1))
-	}
-	return append([][]*pdfjet.Cell{header}, grid...)
-}
-
-func getCell(font *pdfjet.Font, colSpan, rowSpan int, text string) *pdfjet.Cell {
-	cell := pdfjet.NewCell(font, text)
-	cell.SetColSpan(colSpan)
-	cell.SetRowSpan(rowSpan)
-	cell.SetWidth(50.0)
-	cell.SetBorder(border.Top, true)
-	cell.SetBorder(border.Bottom, true)
-	cell.SetBorder(border.Left, true)
-	cell.SetBorder(border.Right, true)
-	cell.SetTextAlignment(alignment.Center)
-	cell.SetVerticalAlignment(alignment.Center)
-	cell.SetBackgroundColor(0xD8F0E4) // A pastel mint
-	cell.SetBorderWidth(1.0)
-	return cell
 }
 
 func main() {

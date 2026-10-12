@@ -17,7 +17,7 @@ namespace PDFjet.NET {
 ///  all four sides of the symbol, so leave that much space around it; scanners
 ///  reject symbols with less.
 ///
-///  Please see Example_12.
+///  Please see Example_38.
 /// </summary>
 public class PDF417 : IDrawable {
     private const int ALPHA = 0x08;

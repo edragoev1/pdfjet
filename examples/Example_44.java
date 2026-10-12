@@ -7,50 +7,88 @@
 package examples;
 
 import java.io.*;
+import java.util.*;
 import com.pdfjet.*;
 import com.pdfjet.fonts.*;
 
 /**
  * Example_44.java
+ * Using the Form and Field classes to draw a shipment request. A field at x = 0
+ * starts a new row, the other fields of the row start at their own x, and a
+ * field with an empty label continues the value above it on a new line.
  */
 public class Example_44 {
     public Example_44() throws Exception {
+
         PDF pdf = new PDF(
-                new BufferedOutputStream(new FileOutputStream("Example_44.pdf")));
+                new BufferedOutputStream(
+                        new FileOutputStream("Example_44.pdf")));
         pdf.setCompliance(Compliance.PDF_UA_1);
-        pdf.setTitle("Switzerland, in English and Chinese");
+        pdf.setTitle("Shipment Request");
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
-        f1.setSize(12f);
-
-        // Chinese (Simplified) font
-        Font f2 = new Font(pdf, IBMPlexSansSC.Regular);
-        f2.setSize(12f);
+        Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        TextColumn column = new TextColumn();
-        column.setLocation(70f, 70f);
-        column.setWidth(500f);
-        column.setLineSpacing(1.5f);        // 1.5 x font height
-        column.setParagraphSpacing(0.5f);   // 0.5 x line spacing
+        TextLine text = new TextLine(f2, "Shipment Request");
+        text.setStructureType(StructElem.H1);
+        text.setFontSize(22f);
+        text.setLocation(56f, 80f);
+        text.drawOn(page);
 
-        Paragraph p1 = new Paragraph();
-        p1.add(new TextLine(f1,
-"The Swiss Confederation was founded in 1291 as a defensive alliance among three cantons. In succeeding years, other localities joined the original three. The Swiss Confederation secured its independence from the Holy Roman Empire in 1499. Switzerland's sovereignty and neutrality have long been honored by the major European powers, and the country was not involved in either of the two World Wars. The political and economic integration of Europe over the past half century, as well as Switzerland's role in many UN and international organizations, has strengthened Switzerland's ties with its neighbors. However, the country did not officially become a UN member until 2002."));
-        column.addParagraph(p1);
+        TextBlock textBlock = new TextBlock(f1,
+                "A Form draws its fields in rows. A field at x = 0 starts a new row, "
+                + "the other fields of the row start at their own x, and a field with "
+                + "an empty label continues the value above it on a new line.");
+        textBlock.setFontSize(12f);
+        textBlock.setLineSpacing(1.5f);
+        textBlock.setLocation(56f, 95f);
+        textBlock.setWidth(500f);
+        float[] xy = textBlock.drawOn(page);
 
-        String chinese = "用于附属装置选择器应用程序的分析方法和计算基于与物料、附属装置和机器有关的不同参数和变量。 此类参数和变量的准确性会影响附属装置选择 应用程序结果的准确性。 虽然沃尔沃建筑设备公司、其子公司和附属公司（统称“沃尔沃建筑设备”）已尽力确保附属装置选择应用程序的准确性，但沃尔沃建筑设备无法保证结果准确无误。 因此，沃尔沃建筑设备并未对附属装置选择应用程序结果的准确性作出保证或声明（无论明示或暗示）。 沃尔沃建筑设备特此声明不对有关附属装置选择应用程序报告，此处获得的结果，或用于附属装置选择应用程序的设备的适宜性的所有明示或暗示保证，包括但不限于用于特定目的的适销性或合适性的任何保证承担任何责任。 在任何情况下，沃尔沃建筑设备均不对为实体或由实体创建的结果（或任何其它实体）以及由此造成的任何间接、意外、必然或特殊损害，包括但不限于损失收益或利润承担任何责任。";
-        float[] xy = column.drawOn(page);
+        float w = 500f; // The width of the form
 
-        // The Chinese in a column of its own, set tighter: IBM Plex Sans SC has a
-        // line gap of a whole em, which the lines of a paragraph are set with.
-        TextColumn column2 = new TextColumn();
-        column2.setLocation(70f, xy[1] + 12f);
-        column2.setWidth(500f);
-        column2.setLineSpacing(1.2f);
-        column2.addCJKParagraph(f2, chinese, "zh-Hans"); // Read by a screen reader as Chinese
-        column2.drawOn(page);
+        List<Field> fields = new ArrayList<Field>();
+        fields.add(new Field(   0f, "Sender", "Maple Leaf Instruments Ltd."));
+        fields.add(new Field(   0f, "Street Address", "480 King Street West"));
+        fields.add(new Field(6*w/8, "Suite", "1200"));
+        fields.add(new Field(   0f, "City", "Toronto"));
+        fields.add(new Field(3*w/8, "Province", "Ontario"));
+        fields.add(new Field(5*w/8, "Postal Code", "M5V 1L7"));
+        fields.add(new Field(6*w/8, "Country", "Canada"));
+        fields.add(new Field(   0f, "Recipient", "Nordic Sensor Labs AB"));
+        fields.add(new Field(   0f, "Street Address", "Drottninggatan 55"));
+        fields.add(new Field(6*w/8, "Floor", "3"));
+        fields.add(new Field(   0f, "City", "Stockholm"));
+        fields.add(new Field(5*w/8, "Postal Code", "111 21"));
+        fields.add(new Field(6*w/8, "Country", "Sweden"));
+        fields.add(new Field(   0f, "Contact", "Anna Lindqvist"));
+        fields.add(new Field(3*w/8, "Email", "anna.lindqvist@example.com"));
+        fields.add(new Field(   0f, "Contents", "Two calibrated pressure sensors"));
+        fields.add(new Field(5*w/8, "Weight", "3.2 kg"));
+        fields.add(new Field(6*w/8, "Declared Value", "CAD 1,450.00"));
+        fields.add(new Field(   0f, "Instructions",
+                "Keep upright and away from magnets. Deliver on a weekday"));
+        fields.add(new Field(   0f, "", "between 9:00 and 17:00, to the reception on the third floor."));
+
+        xy = new Form(fields)
+                .setLabelFont(f1)
+                .setLabelFontSize(8f)
+                .setLabelColor(Color.dimgray)
+                .setValueFont(f2)
+                .setValueFontSize(10f)
+                .setValueColor(Color.black)
+                .setLocation(56f, xy[1] + 20f)
+                .setWidth(w)
+                .setStrokeWidth(0.5f)
+                .drawOn(page);
+
+        text = new TextLine(f1, "The recipient signs for the package on delivery.");
+        text.setFontSize(10f);
+        text.setTextColor(Color.dimgray);
+        text.setLocation(56f, xy[1] + 20f);
+        text.drawOn(page);
 
         pdf.complete();
     }

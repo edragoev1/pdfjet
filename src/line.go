@@ -19,7 +19,7 @@ import (
 )
 
 // Line is used to create line objects.
-// Please see Example_23 and Example_46.
+// Please see Example_08 and Example_35.
 type Line struct {
 	x1             float32
 	y1             float32

@@ -1214,7 +1214,7 @@ func (page *Page) appendCodePointAsHex(codePoint int) {
 	}
 }
 
-// SaveGraphicsState saves the current graphics state. Please see Example_31.
+// SaveGraphicsState saves the current graphics state. Please see Example_30.
 func (page *Page) SaveGraphicsState() {
 	page.savedStates = append(page.savedStates, newSavedState(
 		page.brushColor, page.brushColorWritten, page.penColor, page.penColorWritten,
@@ -1223,7 +1223,7 @@ func (page *Page) SaveGraphicsState() {
 	page.appendString("q\n")
 }
 
-// SetGraphicsState sets the graphics state. Please see Example_31.
+// SetGraphicsState sets the graphics state. Please see Example_30.
 //   - gs: the graphics state to use.
 func (page *Page) SetGraphicsState(gs *GraphicsState) *Page {
 	// PDF/A-1 has no transparency, and veraPDF refused the document (review
@@ -1248,7 +1248,7 @@ func (page *Page) SetGraphicsState(gs *GraphicsState) *Page {
 	return page
 }
 
-// RestoreGraphicsState restores the last saved graphics state. Please see Example_31.
+// RestoreGraphicsState restores the last saved graphics state. Please see Example_30.
 func (page *Page) RestoreGraphicsState() {
 	if len(page.savedStates) == 0 {
 		page.pdf.fail("RestoreGraphicsState was called without a matching SaveGraphicsState.")

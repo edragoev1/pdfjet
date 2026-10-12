@@ -4,13 +4,13 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 /**
- * Example_43 drawn by PDFjet in four ways: the same CSV file, 9 columns with
+ * Example_24 drawn by PDFjet in four ways: the same CSV file, 9 columns with
  * widths measured from every field with the header font, shaded alternate
  * rows, a line above each row, vertical lines at the end of each page, the
  * header on every page, and "Page i of N" footers.
  *
  * Configurations:
- *   jet               Example_43 as it is, with BigTable
+ *   jet               Example_24 as it is, with BigTable
  *   jet-table         PDFjet's own Table, the same 9 columns built as Cell objects
  *   jet-page          PDFjet drawing the same table on its Page, call by call
  *   jet-page-stream   jet-page with each page written when the next one starts
@@ -33,7 +33,7 @@ public class BigTableBench {
     static final String ROOT = System.getProperty("pdfjet.root", ".") + "/";
     static final String TITLE = "Electric Vehicle Population Data";
 
-    // The geometry of BigTable in Example_43, from PDFjet's metrics of IBM Plex
+    // The geometry of BigTable in Example_24, from PDFjet's metrics of IBM Plex
     // Sans SemiBold at 10 points (A1, D1) and Regular at 9 points (A2, D2).
     static final float A1 = 10.25f, D1 = 2.75f, A2 = 9.225f, D2 = 2.475f;
     static final float H = 612f, BOTTOM = 20f, PADDING = 2f;
@@ -218,7 +218,7 @@ public class BigTableBench {
         s.line(c.v[0], yText - A2, c.v[COLUMNS], yText - A2);
     }
 
-    // Example_43, with the fonts and the data file given as paths from the root.
+    // Example_24, with the fonts and the data file given as paths from the root.
     static int jet(String file, OutputStream os) throws Exception {
         com.pdfjet.PDF pdf = new com.pdfjet.PDF(os);
         pdf.setTitle(TITLE);
@@ -353,7 +353,7 @@ public class BigTableBench {
         return pages;
     }
 
-    // Every configuration writes through the same 8 MB buffer as Example_43.
+    // Every configuration writes through the same 8 MB buffer as Example_24.
     static int run(String config, String csv, OutputStream sink) throws Exception {
         BufferedOutputStream os = new BufferedOutputStream(sink, 8 * 1024 * 1024);
         int pages;

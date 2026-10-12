@@ -7,78 +7,117 @@
 package examples;
 
 import java.io.*;
-import java.util.*;
 import com.pdfjet.*;
 import com.pdfjet.fonts.*;
-import com.pdfjet.barcodes.*;
 
 /**
  * Example_08.java
  */
 public class Example_08 {
     public Example_08() throws Exception {
-        PDF pdf = new PDF(
-                new BufferedOutputStream(new FileOutputStream("Example_08.pdf")));
+        PDF pdf = new PDF(new FileOutputStream("Example_08.pdf"));
         pdf.setCompliance(Compliance.PDF_UA_1);
-        pdf.setTitle("Electric Vehicle Population");
+        pdf.setTitle("The Ascent and Descent of a Font");
 
-        Font f1 = new Font(pdf, IBMPlexSans.SemiBold);
-        f1.setSize(7f);
+        Font f1 = new Font(pdf, IBMPlexSans.Regular);
+        f1.setSize(72f);
 
         Font f2 = new Font(pdf, IBMPlexSans.Regular);
-        f2.setSize(7f);
+        f2.setSize(24f);
 
-        Font f3 = new Font(pdf, IBMPlexSans.BoldItalic);
-        f3.setSize(7f);
+        Page page = new Page(pdf, Letter.PORTRAIT);
 
-        Image image = new Image(pdf, "images/TeslaX.png");
-        image.setAltDescription(
-                "A white Tesla Model X with a black glass roof, seen from the front left.");
-        image.scaleBy(1f/3f);      // The image is 120 DPI, so 0.6 of its pixels
+        float x1 = 90f;
+        float y1 = 100f;
 
-        Barcode barcode = new Barcode(Barcode.CODE_128, "Hello, World!");
-        barcode.setModuleLength(0.75f);
-        // Comment out the line below if you don't want to print the text underneath the barcode.
-        barcode.setFont(f1);
-
-        Table table = new Table(f1, f2, "data/Electric_Vehicle_Population_10_Pages.csv");
-        table.setVisibleColumns(1, 2, 3, 4, 5, 6, 7, 9);
-        table.getCellAt(4, 0).setImage(image);
-        table.getCellAt(5, 0).setColSpan(8);
-        table.getCellAt(5, 0).setBarcode(barcode);
-        table.getCellAt(20, 0).setColSpan(6);
-        table.getCellAt(20, 6).setColSpan(2);
-        table.autoAdjustColumnWidths();
-        table.setColumnWidth(0, image.getWidth() + 4f);
-        table.setColumnWidth(3, table.getColumnWidth(3) + 10f);
-        table.setColumnWidth(5, table.getColumnWidth(5) + 10f);
-        table.rightAlignNumbers();
-
-        table.setLocation(30f, 30f);
-        // table.setFirstPageTopMargin(150f);
-        table.setBottomMargin(15f);
-        table.setTextColorInRow(12, Color.blue);
-        table.setTextColorInRow(13, Color.firebrick);
-        table.setFontInRow(14, f3);
-
-        // A heading on the first page only, which the table starts under: the
-        // first page is made here, and the table goes on to new pages.
-        Page first = new Page(pdf, Letter.PORTRAIT, Page.DETACHED);
-        new TextLine(f1, "Electric Vehicle Population")
+        // A heading, which PAC asks a document for
+        new TextLine(f2, "The Ascent and Descent of a Font")
                 .setStructureType(StructElem.H1)
-                .setFontSize(14f)
-                .setLocation(30f, 44f)
-                .drawOn(first);
-        table.setFirstPageTopMargin(56f);
+                .setFontSize(18f)
+                .setLocation(x1, 45f)
+                .drawOn(page);
 
-        List<Page> pages = new ArrayList<Page>();
-        pages.add(first);
-        table.drawOn(pdf, first, pages, Letter.PORTRAIT);
-        for (int i = 0; i < pages.size(); i++) {
-            Page page = pages.get(i);
-            page.addFooter(new TextLine(f1, "Page " + (i + 1) + " of " + pages.size()));
-            pdf.addPage(page);
-        }
+        TextLine textLine = new TextLine(f2, "(x1, y1)");
+        textLine.setLocation(x1, y1 - 15f);
+        textLine.drawOn(page);
+
+        TextBlock textBlock = new TextBlock(f1,
+            "Hello, World! This example shows the functionality of the TextBlock.");
+        textBlock.setLocation(x1, y1);
+        textBlock.setWidth(500f);
+        textBlock.setBorderColor(Color.lightgreen);
+        textBlock.setBackgroundColor(Color.lightgreen);
+        textBlock.setTextColor(Color.black);
+        float[] xy = textBlock.drawOn(page);
+
+        // Text on the left
+        TextLine ascentText = new TextLine(f2, "Ascent");
+        ascentText.setFontSize(18f);
+        ascentText.setLocation(x1 - 85f, y1 + 40f);
+        ascentText.drawOn(page);
+
+        TextLine descentText = new TextLine(f2, "Descent");
+        descentText.setFontSize(18f);
+        descentText.setLocation(x1 - 85f, y1 + f1.getAscent() + 15f);
+        descentText.drawOn(page);
+
+        // Line beside the text ascent
+        Line blueLine = new Line(
+            x1 - 10f,
+            y1,
+            x1 - 10f,
+            y1 + f1.getAscent());
+        blueLine.setStrokeColor(Color.blue);
+        blueLine.setStrokeWidth(3f);
+        blueLine.drawOn(page);
+
+        // Line beside the text descent
+        Line redLine = new Line(
+            x1 - 10f,
+            y1 + f1.getAscent(),
+            x1 - 10f,
+            y1 + f1.getAscent() + f1.getDescent());
+        redLine.setStrokeColor(Color.red);
+        redLine.setStrokeWidth(3f);
+        redLine.drawOn(page);
+
+        Line baseLine = new Line(
+                x1,
+                y1 + f1.getAscent(),
+                xy[0],
+                y1 + f1.getAscent());
+        baseLine.drawOn(page);
+
+        Line descentLine = new Line(
+                x1,
+                y1 + (f1.getAscent() + f1.getDescent()),
+                xy[0],
+                y1 + (f1.getAscent() + f1.getDescent()));
+        descentLine.drawOn(page);
+
+        Line ascentLine = new Line(
+                x1,
+                y1 + f1.getBodyHeight() + f1.getAscent(),
+                xy[0],
+                y1 + f1.getBodyHeight() + f1.getAscent());
+        ascentLine.drawOn(page);
+
+        Point p1 = new Point(x1, y1);
+        p1.setRadius(5f);
+        p1.drawOn(page);
+
+        Point p2 = new Point(xy[0], xy[1]);
+        p2.setRadius(5f);
+        p2.drawOn(page);
+
+        f2.setSize(24f);
+        TextLine textLine3 = new TextLine(f2, "(x2, y2)");
+        textLine3.setLocation(xy[0] - 80f, xy[1] + 30f);
+        textLine3.drawOn(page);
+
+        Rect rect = new Rect(xy[0], xy[1], 20f, 20f);
+        rect.setBorderColor(Color.black);
+        rect.drawOn(page);
 
         pdf.complete();
     }
@@ -89,4 +128,4 @@ public class Example_08 {
         long time1 = System.currentTimeMillis();
         System.out.printf("Example_08 => %4d ms%n", time1 - time0);
     }
-} // End of Example_08.java
+}   // End of Example_08.java

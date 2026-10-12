@@ -8,7 +8,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"strconv"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
@@ -19,71 +18,114 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
-// Example08 draws a table.
+// Example08 shows the ascent, descent and baseline of the text in a TextBlock.
 func Example08() {
 	pdf, err := pdfjet.NewPDFFile("Example_08.pdf")
 	if err != nil {
 		log.Fatal(err)
 	}
 	pdf.SetCompliance(compliance.PDF_UA_1)
-	pdf.SetTitle("Electric Vehicle Population")
+	pdf.SetTitle("The Ascent and Descent of a Font")
 
-	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
-	f1.SetSize(7.0)
+	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
+	f1.SetSize(72.0)
 
 	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
-	f2.SetSize(7.0)
+	f2.SetSize(24.0)
 
-	f3 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.BoldItalic)
-	f3.SetSize(7.0)
+	page := pdfjet.NewPage(pdf, letter.Portrait())
 
-	image := pdfjet.NewImageFromFile(pdf, "images/TeslaX.png")
-	image.SetAltDescription(
-		"A white Tesla Model X with a black glass roof, seen from the front left.")
-	image.ScaleBy(1.0 / 3.0) // The image is 120 DPI, so 0.6 of its pixels
+	x1 := float32(90.0)
+	y1 := float32(100.0)
 
-	barcode := pdfjet.NewBarcode(pdfjet.CODE_128, "Hello, World!")
-	barcode.SetModuleLength(0.75)
-	// Comment out the line below if you don't want to print the text underneath the barcode.
-	barcode.SetFont(f1)
-
-	table := pdfjet.NewTableFromFile(f1, f2, "data/Electric_Vehicle_Population_10_Pages.csv")
-	table.SetVisibleColumns(1, 2, 3, 4, 5, 6, 7, 9)
-	table.GetCellAt(4, 0).SetImage(image)
-	table.GetCellAt(5, 0).SetColSpan(8)
-	table.GetCellAt(5, 0).SetBarcode(barcode)
-	table.GetCellAt(20, 0).SetColSpan(6)
-	table.GetCellAt(20, 6).SetColSpan(2)
-	table.AutoAdjustColumnWidths()
-	table.SetColumnWidth(0, image.GetWidth()+4.0)
-	table.SetColumnWidth(3, table.GetColumnWidth(3)+10.0)
-	table.SetColumnWidth(5, table.GetColumnWidth(5)+10.0)
-	table.RightAlignNumbers()
-
-	table.SetLocation(30.0, 30.0)
-	// table.SetFirstPageTopMargin(150.0)
-	table.SetBottomMargin(15.0)
-	table.SetTextColorInRow(12, color.Blue)
-	table.SetTextColorInRow(13, color.Firebrick)
-	table.SetFontInRow(14, f3)
-
-	// A heading on the first page only, which the table starts under: the
-	// first page is made here, and the table goes on to new pages.
-	first := pdfjet.NewPageDetached(pdf, letter.Portrait())
-	pdfjet.NewTextLine(f1, "Electric Vehicle Population").
+	// A heading, which PAC asks a document for
+	pdfjet.NewTextLine(f2, "The Ascent and Descent of a Font").
 		SetStructureType(structelem.H1).
-		SetFontSize(14.0).
-		SetLocation(30.0, 44.0).
-		DrawOn(first)
-	table.SetFirstPageTopMargin(56.0)
+		SetFontSize(18.0).
+		SetLocation(x1, 45.0).
+		DrawOn(page)
 
-	pages := []*pdfjet.Page{first}
-	table.DrawOnPagesFrom(pdf, first, &pages, letter.Portrait())
-	for i := 0; i < len(pages); i++ {
-		page := pages[i]
-		page.AddFooter(pdfjet.NewTextLine(f1, "Page "+strconv.Itoa(i+1)+" of "+strconv.Itoa(len(pages))))
-		pdf.AddPage(page)
-	}
+	textLine := pdfjet.NewTextLine(f2, "(x1, y1)")
+	textLine.SetLocation(x1, y1-15.0)
+	textLine.DrawOn(page)
+
+	textBlock := pdfjet.NewTextBlock(f1,
+		"Hello, World! This example shows the functionality of the TextBlock.")
+	textBlock.SetLocation(x1, y1)
+	textBlock.SetWidth(500.0)
+	textBlock.SetBorderColor(color.LightGreen)
+	textBlock.SetBackgroundColor(color.LightGreen)
+	textBlock.SetTextColor(color.Black)
+	xy := textBlock.DrawOn(page)
+
+	// Text on the left
+	ascentText := pdfjet.NewTextLine(f2, "Ascent")
+	ascentText.SetFontSize(18.0)
+	ascentText.SetLocation(x1-85.0, y1+40.0)
+	ascentText.DrawOn(page)
+
+	descentText := pdfjet.NewTextLine(f2, "Descent")
+	descentText.SetFontSize(18.0)
+	descentText.SetLocation(x1-85.0, y1+f1.GetAscent(f1.GetSize())+15.0)
+	descentText.DrawOn(page)
+
+	// Line beside the text ascent
+	blueLine := pdfjet.NewLine(
+		x1-10.0,
+		y1,
+		x1-10.0,
+		y1+f1.GetAscent(f1.GetSize()))
+	blueLine.SetStrokeColor(color.Blue)
+	blueLine.SetStrokeWidth(3.0)
+	blueLine.DrawOn(page)
+
+	// Line beside the text descent
+	redLine := pdfjet.NewLine(
+		x1-10.0,
+		y1+f1.GetAscent(f1.GetSize()),
+		x1-10.0,
+		y1+f1.GetAscent(f1.GetSize())+f1.GetDescent(f1.GetSize()))
+	redLine.SetStrokeColor(color.Red)
+	redLine.SetStrokeWidth(3.0)
+	redLine.DrawOn(page)
+
+	baseLine := pdfjet.NewLine(
+		x1,
+		y1+f1.GetAscent(f1.GetSize()),
+		xy[0],
+		y1+f1.GetAscent(f1.GetSize()))
+	baseLine.DrawOn(page)
+
+	descentLine := pdfjet.NewLine(
+		x1,
+		y1+(f1.GetAscent(f1.GetSize())+f1.GetDescent(f1.GetSize())),
+		xy[0],
+		y1+(f1.GetAscent(f1.GetSize())+f1.GetDescent(f1.GetSize())))
+	descentLine.DrawOn(page)
+
+	ascentLine := pdfjet.NewLine(
+		x1,
+		y1+f1.GetBodyHeight(f1.GetSize())+f1.GetAscent(f1.GetSize()),
+		xy[0],
+		y1+f1.GetBodyHeight(f1.GetSize())+f1.GetAscent(f1.GetSize()))
+	ascentLine.DrawOn(page)
+
+	p1 := pdfjet.NewPoint(x1, y1)
+	p1.SetRadius(5.0)
+	p1.DrawOn(page)
+
+	p2 := pdfjet.NewPoint(xy[0], xy[1])
+	p2.SetRadius(5.0)
+	p2.DrawOn(page)
+
+	f2.SetSize(24.0)
+	textLine3 := pdfjet.NewTextLine(f2, "(x2, y2)")
+	textLine3.SetLocation(xy[0]-80.0, xy[1]+30.0)
+	textLine3.DrawOn(page)
+
+	rect := pdfjet.NewRect(xy[0], xy[1], 20.0, 20.0)
+	rect.SetBorderColor(color.Black)
+	rect.DrawOn(page)
 
 	if err := pdf.Complete(); err != nil {
 		log.Fatal(err)

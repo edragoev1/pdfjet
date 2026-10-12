@@ -11,37 +11,112 @@ using PDFjet.NET;
 
 /**
  * Example_43.cs
+ * This example draws a survey with check boxes and radio buttons.
  */
 public class Example_43 {
     public Example_43() {
-        PDF pdf = new PDF(
-            new BufferedStream(new FileStream("Example_43.pdf", FileMode.Create)));
-        // Uncomment the line below to make this a PDF/UA document. A BigTable
-        // is tagged as a table: a TR for each row, holding a TH or a TD with
-        // the text of each cell, which is what a screen reader reads a table
-        // from. It is off here because of what it costs at this size: every
-        // tagged cell is an object of its own, so this document goes from
-        // 5,108 objects and 11.8 MB to 1.25 million objects and 249 MB. The
-        // 10-page file below is the size to see the tagging at.
-        // pdf.SetCompliance(Compliance.PDF_UA_1);
-        pdf.SetTitle("Electric Vehicle Population Data");    // Required for PDF/UA !
+        PDF pdf = new PDF(new BufferedStream(
+                new FileStream("Example_43.pdf", FileMode.Create)));
+        pdf.SetCompliance(Compliance.PDF_UA_1);
+        pdf.SetTitle("Customer Survey");
 
-        // Used for performance testing. Results in 2000+ pages PDF.
-        String fileName = "data/Electric_Vehicle_Population_Data.csv";
-        // String fileName = "data/Electric_Vehicle_Population_10_Pages.csv";
+        Font f1 = new Font(pdf, IBMPlexSans.Regular);
+        f1.SetSize(11f);
 
-        Font f1 = new Font(pdf, IBMPlexSans.SemiBold);
-        f1.SetSize(10f);
+        Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
+        f2.SetSize(12f);
 
-        Font f2 = new Font(pdf, IBMPlexSans.Regular);
-        f2.SetSize(9f);
+        Page page = new Page(pdf, Letter.PORTRAIT);
 
-        BigTable table = new BigTable(pdf, f1, f2, Letter.LANDSCAPE);
-        table.SetNumberOfColumns(9);        // The order of the
-        table.SetTableData(fileName, ",");  // these statements
-        table.SetLocation(0f, 0f);          // is
-        table.SetBottomMargin(20f);         // very
-        table.Complete();                   // important!
+        float x = 70f;
+        float y = 90f;
+
+        TextLine text = new TextLine(f2, "Customer Survey");
+        text.SetStructureType(StructElem.H1);
+        text.SetFontSize(22f);
+        text.SetLocation(x, y);
+        text.DrawOn(page);
+
+        // Check boxes, one below the other.
+        y += 50f;
+        new TextLine(f2, "Which PDFjet ports do you use?").SetLocation(x, y).DrawOn(page);
+
+        y += 15f;
+        new CheckBox(f1, "Java")
+                .SetLocation(x, y)
+                .SetCheckmarkColor(Color.blue)
+                .Check(Mark.CHECK)
+                .DrawOn(page);
+
+        y += 25f;
+        new CheckBox(f1, "C#")
+                .SetLocation(x, y)
+                .SetCheckmarkColor(Color.blue)
+                .Check(Mark.CHECK)
+                .DrawOn(page);
+
+        y += 25f;
+        new CheckBox(f1, "Swift")
+                .SetLocation(x, y)
+                .DrawOn(page);
+
+        y += 25f;
+        new CheckBox(f1, "Go")
+                .SetLocation(x, y)
+                .DrawOn(page);
+
+        // Radio buttons in a row. Each one starts where the one before it ends.
+        y += 50f;
+        new TextLine(f2, "How did you hear about PDFjet?").SetLocation(x, y).DrawOn(page);
+
+        y += 15f;
+        float[] xy = new RadioButton(f1, "Web search")
+                .SetLocation(x, y)
+                .Select(true)
+                .DrawOn(page);
+
+        xy = new RadioButton(f1, "A colleague")
+                .SetLocation(xy[0] + 20f, y)
+                .DrawOn(page);
+
+        new RadioButton(f1, "Other")
+                .SetLocation(xy[0] + 20f, y)
+                .DrawOn(page);
+
+        y += 50f;
+        new TextLine(f2, "Would you recommend PDFjet?").SetLocation(x, y).DrawOn(page);
+
+        y += 15f;
+        xy = new RadioButton(f1, "Yes")
+                .SetLocation(x, y)
+                .Select(true)
+                .DrawOn(page);
+
+        new RadioButton(f1, "No")
+                .SetLocation(xy[0] + 20f, y)
+                .DrawOn(page);
+
+        // A check box marked with an X, and one with a link.
+        y += 50f;
+        new TextLine(f2, "Stay in touch").SetLocation(x, y).DrawOn(page);
+
+        y += 15f;
+        new CheckBox(f1, "Send me news about new releases")
+                .SetLocation(x, y)
+                .SetCheckmarkColor(Color.red)
+                .Check(Mark.X)
+                .DrawOn(page);
+
+        y += 25f;
+        xy = new CheckBox(f1, "Visit https://pdfjet.com")
+                .SetLocation(x, y)
+                .SetURIAction("https://pdfjet.com")
+                .DrawOn(page);
+
+        // A border around the survey.
+        Rect rect = new Rect(50f, 50f, 512f, xy[1] + 25f - 50f);
+        rect.SetBorderColor(Color.lightgray);
+        rect.DrawOn(page);
 
         pdf.Complete();
     }

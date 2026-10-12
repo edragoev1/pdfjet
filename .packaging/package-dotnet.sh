@@ -103,12 +103,12 @@ done
 rm "$TAR"
 
 # The Java examples and the go.mod file of the Go port are not needed, but
-# Example_32 draws the source of Example_02.java.
+# Example_42 attaches Example_02.java.
 find "$STAGE/examples" -maxdepth 1 -name '*.java' ! -name Example_02.java -delete
 rm -f "$STAGE/images/go.mod"
 
 # The fonts of the package are the fonts directory as it is: the .ttf files,
-# which PDFjet subsets, and IBM Plex Sans as .otf too, which Examples 28, 37
+# which PDFjet subsets, and IBM Plex Sans as .otf too, which Examples 07, 48
 # and 50 read.
 
 cd "$STAGE"

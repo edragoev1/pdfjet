@@ -11,7 +11,7 @@ import Foundation
 /// The image type can be one of the following:
 /// ImageType.JPG, ImageType.PNG or ImageType.BMP
 ///
-/// Please see Example_24 and Example_27.
+/// Please see Example_32 and Example_14.
 ///
 public class Image : Drawable {
     var objNumber: Int?

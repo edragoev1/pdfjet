@@ -35,7 +35,7 @@ public class Example_02 {
 
         // The heading is in IBM Plex Sans, and the characters it has no glyph for,
         // the name of the language, are in the fallback font. The names are
-        // escapes, so that the source Example_32 prints stays ASCII.
+        // escapes, so that the source stays ASCII.
         // The line above each block is its heading
         new TextLine(f0, "This block is Simplified Chinese: \u7b80\u4f53\u4e2d\u6587").setFallbackFont(f1)
                 .setStructureType(StructElem.H1).setLocation(50f, 50f).drawOn(page);

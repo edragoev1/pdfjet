@@ -7,119 +7,232 @@
 package examples;
 
 import java.io.*;
+import java.util.*;
 import com.pdfjet.*;
 import com.pdfjet.fonts.*;
 
 /**
  * Example_26.java
- * This example draws a survey with check boxes and radio buttons.
+ *
+ * Draws an XY chart of the countries of a data file, each a marker that links
+ * to a page about the country, with the trend line of the points, and a table
+ * of the countries with a marker of their own.
  */
-public class Example_26 {
+final public class Example_26 {
+    /** A country of the data file: its name and its point on the chart. */
+    private static final class Country {
+        final String name;
+        final Point point;
+        Country(String name, Point point) {
+            this.name = name;
+            this.point = point;
+        }
+    }
+
     public Example_26() throws Exception {
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_26.pdf")));
         pdf.setCompliance(Compliance.PDF_UA_1);
-        pdf.setTitle("Customer Survey");
+        pdf.setTitle("World View - Communications");
 
-        Font f1 = new Font(pdf, IBMPlexSans.Regular);
-        f1.setSize(11f);
+        Font f1 = new Font(pdf, IBMPlexSans.Bold);
+        f1.setSize(8f);
 
-        Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
-        f2.setSize(12f);
+        Font f2 = new Font(pdf, IBMPlexSans.Regular);
+        f2.setSize(8f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        float x = 70f;
-        float y = 90f;
+        List<Country> countries = readCountries("data/world-communications.txt", "|");
 
-        TextLine text = new TextLine(f2, "Customer Survey");
-        text.setStructureType(StructElem.H1);
-        text.setFontSize(22f);
-        text.setLocation(x, y);
-        text.drawOn(page);
-
-        // Check boxes, one below the other.
-        y += 50f;
-        new TextLine(f2, "Which PDFjet ports do you use?").setLocation(x, y).drawOn(page);
-
-        y += 15f;
-        new CheckBox(f1, "Java")
-                .setLocation(x, y)
-                .setCheckmarkColor(Color.blue)
-                .check(Mark.CHECK)
+        // The heading of the document, above the chart
+        new TextLine(f1, "Cell Phones and Internet Use by Country")
+                .setStructureType(StructElem.H1)
+                .setFontSize(16f)
+                .setLocation(70f, 36f)
                 .drawOn(page);
 
-        y += 25f;
-        new CheckBox(f1, "C#")
-                .setLocation(x, y)
-                .setCheckmarkColor(Color.blue)
-                .check(Mark.CHECK)
-                .drawOn(page);
+        Chart chart = new Chart(f1, f2);
+        chart.setLocation(70f, 50f);
+        chart.setSize(500f, 300f);
+        chart.setTitle("World View - Communications");
+        chart.setXAxisTitle("Cell phones per capita");
+        chart.setYAxisTitle("Internet users % of the population");
+        Series markers = chart.addSeries("").setStrokeColor(Color.gray);
+        for (Country country : countries) {
+            markers.addPoint(country.point);
+        }
+        addTrendLine(chart, countries);
+        chart.drawOn(page);
 
-        y += 25f;
-        new CheckBox(f1, "Swift")
-                .setLocation(x, y)
-                .drawOn(page);
-
-        y += 25f;
-        new CheckBox(f1, "Go")
-                .setLocation(x, y)
-                .drawOn(page);
-
-        // Radio buttons in a row. Each one starts where the one before it ends.
-        y += 50f;
-        new TextLine(f2, "How did you hear about PDFjet?").setLocation(x, y).drawOn(page);
-
-        y += 15f;
-        float[] xy = new RadioButton(f1, "Web search")
-                .setLocation(x, y)
-                .select(true)
-                .drawOn(page);
-
-        xy = new RadioButton(f1, "A colleague")
-                .setLocation(xy[0] + 20f, y)
-                .drawOn(page);
-
-        new RadioButton(f1, "Other")
-                .setLocation(xy[0] + 20f, y)
-                .drawOn(page);
-
-        y += 50f;
-        new TextLine(f2, "Would you recommend PDFjet?").setLocation(x, y).drawOn(page);
-
-        y += 15f;
-        xy = new RadioButton(f1, "Yes")
-                .setLocation(x, y)
-                .select(true)
-                .drawOn(page);
-
-        new RadioButton(f1, "No")
-                .setLocation(xy[0] + 20f, y)
-                .drawOn(page);
-
-        // A check box marked with an X, and one with a link.
-        y += 50f;
-        new TextLine(f2, "Stay in touch").setLocation(x, y).drawOn(page);
-
-        y += 15f;
-        new CheckBox(f1, "Send me news about new releases")
-                .setLocation(x, y)
-                .setCheckmarkColor(Color.red)
-                .check(Mark.X)
-                .drawOn(page);
-
-        y += 25f;
-        xy = new CheckBox(f1, "Visit https://pdfjet.com")
-                .setLocation(x, y)
-                .setURIAction("https://pdfjet.com")
-                .drawOn(page);
-
-        // A border around the survey.
-        Rect rect = new Rect(50f, 50f, 512f, xy[1] + 25f - 50f);
-        rect.setBorderColor(Color.lightgray);
-        rect.drawOn(page);
+        f1.setSize(7f);
+        f2.setSize(7f);
+        addTableToChart(page, countries, f1, f2);
 
         pdf.complete();
+    }
+
+    public void addTrendLine(Chart chart, List<Country> countries) {
+        List<Point> points = new ArrayList<Point>();
+        for (Country country : countries) {
+            points.add(country.point);
+        }
+        float m = slope(points);
+        float b = intercept(points, m);
+        chart.addSeries("Trend line")
+                .setDrawPath(true)
+                .setStrokeColor(Color.blue)
+                .setShape(Shape.INVISIBLE)
+                .addPoint(0f, b)
+                .addPoint(1.5f, m * 1.5f + b);
+    }
+
+    public void addTableToChart(
+            Page page, List<Country> countries, Font f1, Font f2) throws Exception {
+        Table table = new Table();
+        List<List<Cell>> tableData = new ArrayList<List<Cell>>();
+
+        // The header row: the country heads its marker and its name
+        List<Cell> headerRow = new ArrayList<Cell>();
+        Cell header = new Cell(f1, "Country");
+        header.setColSpan(2);
+        headerRow.add(header);
+        headerRow.add(new Cell(f1, ""));
+        headerRow.add(new Cell(f1, "Page about the country"));
+        tableData.add(headerRow);
+
+        for (Country country : countries) {
+            if (country.point.getShape() != Shape.CIRCLE) {
+                List<Cell> tableRow = new ArrayList<Cell>();
+
+                Cell cell = new Cell(f2);
+                cell.setMarker(country.point, Alignment.LEFT);
+                cell.setText("");
+                tableRow.add(cell);
+
+                cell = new Cell(f1);
+                cell.setText(country.name);
+                tableRow.add(cell);
+
+                // The address is a link to it: text that reads as an address and is
+                // not one, PAC reports
+                cell = new Cell(f2);
+                cell.setText(country.point.getURIAction());
+                cell.setURIAction(country.point.getURIAction());
+                tableRow.add(cell);
+
+                tableData.add(tableRow);
+            }
+        }
+        table.setTableData(tableData, 1);
+        table.autoAdjustColumnWidths();
+        table.setCellBorderWidth(0.2f);
+        table.setLocation(70f, 360f);
+        table.setColumnWidth(0, 9f);
+        table.drawOn(page);
+    }
+
+    public List<Country> readCountries(
+            String fileName,
+            String delimiter) throws Exception {
+        List<Country> countries = new ArrayList<Country>();
+        BufferedReader reader = null;
+        try {
+            reader = new BufferedReader(
+                    new InputStreamReader(new FileInputStream(fileName), "UTF-8"));
+            String line = null;
+            while ((line = reader.readLine()) != null) {
+                String[] cols = null;
+                if (delimiter.equals("|")) {
+                    cols = line.split("\\|", -1);
+                } else if (delimiter.equals("\t")) {
+                    cols = line.split("\t", -1);
+                } else {
+                    throw new Exception(
+                        "Only pipes and tabs can be used as delimiters");
+                }
+
+                try {
+                    double population =
+                            Double.valueOf(cols[1].replace(",", ""));
+                    String name = cols[0].trim();
+                    String country_name = name;
+                    country_name = country_name.replace(" ", "_");
+                    country_name = country_name.replace("'", "_");
+                    country_name = country_name.replace(",", "_");
+                    country_name = country_name.replace("(", "_");
+                    country_name = country_name.replace(")", "_");
+                    Point point = new Point(
+                            (float) (Double.valueOf(cols[5].replace(",", "")) / population),
+                            (float) (Double.valueOf(cols[7].replace(",", "")) / population * 100));
+                    point.setURIAction("http://pdfjet.com/country/" + country_name + ".txt");
+                    point.setAltDescription(name); // What the link of the point is, for a screen reader
+                    point.setRadius(2f);
+
+                    if (point.getX() > 1.25f) {
+                        point.setShape(Shape.RIGHT_ARROW);
+                        point.setStrokeColor(Color.black);
+                    } else if (point.getY() > 80f) {
+                        point.setShape(Shape.UP_ARROW);
+                        point.setStrokeColor(Color.blue);
+                    } else if (name.equals("France")) {
+                        point.setShape(Shape.MULTIPLY);
+                        point.setStrokeColor(Color.green);
+                    } else if (name.equals("Canada")) {
+                        point.setShape(Shape.BOX);
+                        point.setStrokeColor(Color.orange);
+                    } else if (name.startsWith("United States")) {
+                        point.setShape(Shape.STAR);
+                        point.setStrokeColor(Color.red);
+                    }
+
+                    countries.add(new Country(name, point));
+                } catch (Exception e) {
+                }
+            }
+        } finally {
+            reader.close();
+        }
+        return countries;
+    }
+
+    // The slope and intercept of the ordinary least squares trend line of the points.
+    private static float slope(List<Point> points) {
+        return covar(points) / devsq(points) * (points.size() - 1);
+    }
+
+    private static float intercept(List<Point> points, float slope) {
+        float[] mean = mean(points);
+        return mean[1] - slope * mean[0];
+    }
+
+    private static float[] mean(List<Point> points) {
+        float[] mean = new float[2];
+        for (Point point : points) {
+            mean[0] += point.getX();
+            mean[1] += point.getY();
+        }
+        mean[0] /= points.size();
+        mean[1] /= points.size();
+        return mean;
+    }
+
+    private static float covar(List<Point> points) {
+        float covariance = 0f;
+        float[] mean = mean(points);
+        for (Point point : points) {
+            covariance += (point.getX() - mean[0]) * (point.getY() - mean[1]);
+        }
+        return covariance / (points.size() - 1);
+    }
+
+    private static float devsq(List<Point> points) {
+        float devsq = 0f;
+        float[] mean = mean(points);
+        for (Point point : points) {
+            devsq = devsq + (float) Math.pow(point.getX() - mean[0], 2);
+        }
+        return devsq;
     }
 
     public static void main(String[] args) throws Exception {

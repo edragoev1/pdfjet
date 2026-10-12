@@ -5,142 +5,165 @@
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 using System;
-using System.IO;
 using System.Collections.Generic;
+using System.IO;
 using System.Diagnostics;
 using PDFjet.NET;
 
 /**
  * Example_34.cs
+ * This example draws a letterhead: a logo read from a PDF file, a maple leaf
+ * drawn as a path with curves, and a QR code with the address of a web site.
  */
-public class Example_34 {
+class Example_34 {
     public Example_34() {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_34.pdf", FileMode.Create)));
-        pdf.SetCompliance(Compliance.PDF_A_1A);
-        pdf.SetTitle("World Communications");
+        pdf.SetCompliance(Compliance.PDF_UA_1);
+        pdf.SetTitle("PDFjet Software Letterhead");
 
-        Font f1 = new Font(pdf, IBMPlexSans.Bold);
-        Font f2 = new Font(pdf, IBMPlexSans.Regular);
-        Font f3 = new Font(pdf, IBMPlexSans.BoldItalic);
+        // Read the logo from a PDF file, and add the resources of its pages, its
+        // fonts and images, to this PDF. The logo itself is drawn with paths and
+        // has none.
+        BufferedStream bis = new BufferedStream(
+                new FileStream("data/testPDFs/PDFjetLogo.pdf", FileMode.Open));
+        List<PDFobj> objects = pdf.Read(bis);
 
-        f1.SetSize(7f);
-        f2.SetSize(7f);
-        f3.SetSize(7f);
+        pdf.AddResourceObjects(objects);
 
-        Table table = new Table();
-        List<List<Cell>> tableData = GetData(
-                "data/world-communications.txt", "|", 2, f1, f2);
+        Font f1 = new Font(pdf, IBMPlexSans.Regular);
+        f1.SetSize(11f);
 
-        Point p1 = new Point();
-        p1.SetShape(Shape.CIRCLE);
-        p1.SetRadius(2f);
-        p1.SetStrokeColor(Color.darkolivegreen);
-        p1.SetURIAction("https://en.wikipedia.org/wiki/India");
-        tableData[4][3].SetMarker(p1, Alignment.RIGHT);
+        Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
+        f2.SetSize(11f);
 
-        p1 = new Point();
-        p1.SetShape(Shape.DIAMOND);
-        p1.SetRadius(2.5f);
-        p1.SetStrokeColor(Color.blue);
-        p1.SetURIAction("https://en.wikipedia.org/wiki/European_Union");
-        tableData[5][3].SetMarker(p1, Alignment.RIGHT);
+        List<PDFobj> pages = pdf.GetPageObjects(objects);
+        PDFobj content = pages[0].GetContentObject(objects);
 
-        p1 = new Point();
-        p1.SetShape(Shape.STAR);
-        p1.SetRadius(3f);
-        p1.SetStrokeColor(Color.red);
-        p1.SetURIAction("https://en.wikipedia.org/wiki/United_States");
-        tableData[6][3].SetMarker(p1, Alignment.RIGHT);
+        Page page = new Page(pdf, Letter.PORTRAIT);
 
-        table.SetTableData(tableData, 2);
-        table.SetBottomMargin(15f);
-        // The table is about 555 points wide: at x = 30 it fits on the page.
-        table.SetLocation(30f, 30f);
-        table.SetTextColorInRow(6, Color.blue);
-        table.SetTextColorInRow(39, Color.firebrick);
-        table.SetFontInRow(26, f3);
-        table.RemoveLineBetweenRows(0, 1);
-        table.AutoAdjustColumnWidths();
-        table.SetColumnWidth(0, 50f);
-        table.SetColumnWidth(3, 80f);
-        table.RightAlignNumbers();
+        // Draw the content of the first page of the logo PDF, at half its size.
+        // DrawContents anchors the content by the point that is height points
+        // above the origin of its page, which it puts at x and y here. The
+        // logo is in the top left corner of its page, so that point is the top
+        // of the page and the height to give is the height of the page.
+        float height = Letter.PORTRAIT.GetHeight();
+        float x = 60f;
+        float y = 40f;
+        float xScale = 0.5f;
+        float yScale = 0.5f;
 
-        List<Page> pages = new List<Page>();
-        table.DrawOn(pdf, pages, Letter.PORTRAIT);
-        for (int i = 0; i < pages.Count; i++) {
-            Page page = pages[i];
-            page.AddFooter(new TextLine(f1, "Page " + (i + 1) + " of " + pages.Count));
-            pdf.AddPage(page);
-        }
+        // The logo is a figure, with an alternate description for screen readers.
+        page.AddBDC(StructElem.FIGURE, null, "The PDFjet logo");
+        page.DrawContents(
+                content.GetData(),
+                height,
+                x,
+                y,
+                xScale,
+                yScale);
+        // The logo is 216 by 68 points, at the top left of its page, so half of
+        // that here: the box PDF/UA asks every figure for.
+        page.SetFigureBoundingBox(x, y, 216f * xScale, 68f * yScale);
+        page.AddEMC();
+
+        new TextLine(f2, "PDFjet Software").SetLocation(390f, 60f).DrawOn(page);
+        new TextLine(f1, "Unionville, Ontario, Canada").SetLocation(390f, 76f).DrawOn(page);
+        // An address on the page is a link to it, as PAC asks of text that reads as one
+        new TextLine(f1, "https://pdfjet.com").SetURIAction("https://pdfjet.com").SetLocation(390f, 92f).DrawOn(page);
+
+        // A thin rule under the letterhead, an artifact.
+        page.AddArtifactBMC();
+        page.SetPenColor(Color.darkred);
+        page.SetPenWidth(1f);
+        page.DrawLine(60f, 115f, 552f, 115f);
+        page.AddEMC();
+
+        // The heading of the page, which PAC asks a document for
+        TextLine text = new TextLine(f2, "The logo on this page was read from a PDF file.");
+        text.SetStructureType(StructElem.H1);
+        text.SetFontSize(16f);
+        text.SetLocation(60f, 170f);
+        text.DrawOn(page);
+
+        TextBlock textBlock = new TextBlock(f1,
+                "The logo is the content of the first page of data/testPDFs/PDFjetLogo.pdf, "
+                + "drawn here at half its size with page.drawContents. It stays sharp "
+                + "at any zoom, because it is drawn as vector graphics and not as an image.\n\n"
+                + "The maple leaf below is a Path with curves, and the QR code "
+                + "holds the address of the PDFjet web site.");
+        textBlock.SetFontSize(12f);
+        textBlock.SetLineSpacing(1.5f);
+        textBlock.SetLocation(60f, 185f);
+        textBlock.SetWidth(490f);
+        textBlock.DrawOn(page);
+
+        // A maple leaf, drawn with lines and with curves from control points.
+        PDFjet.NET.Path path = new PDFjet.NET.Path();
+
+        path.Add(new Point(13.0f,  0.0f));
+        path.Add(new Point(15.5f,  4.5f));
+
+        path.Add(new Point(18.0f,  3.5f));
+        path.Add(new Point(15.5f, 13.5f, Point.CONTROL_POINT_C));
+        path.Add(new Point(15.5f, 13.5f, Point.CONTROL_POINT_C));
+        path.Add(new Point(20.5f,  7.5f));
+
+        path.Add(new Point(21.0f,  9.5f));
+        path.Add(new Point(25.0f,  9.0f));
+        path.Add(new Point(24.0f, 13.0f));
+        path.Add(new Point(25.5f, 14.0f));
+        path.Add(new Point(19.0f, 19.0f));
+        path.Add(new Point(20.0f, 21.5f));
+        path.Add(new Point(13.5f, 20.5f));
+        path.Add(new Point(13.5f, 27.0f));
+        path.Add(new Point(12.5f, 27.0f));
+        path.Add(new Point(12.5f, 20.5f));
+        path.Add(new Point( 6.0f, 21.5f));
+        path.Add(new Point( 7.0f, 19.0f));
+        path.Add(new Point( 0.5f, 14.0f));
+        path.Add(new Point( 2.0f, 13.0f));
+        path.Add(new Point( 1.0f,  9.0f));
+        path.Add(new Point( 5.0f,  9.5f));
+
+        path.Add(new Point( 5.5f,  7.5f));
+        path.Add(new Point(10.5f, 13.5f, Point.CONTROL_POINT_C));
+        path.Add(new Point(10.5f, 13.5f, Point.CONTROL_POINT_C));
+        path.Add(new Point( 8.0f,  3.5f));
+
+        path.Add(new Point(10.5f,  4.5f));
+        path.SetClosed(true);
+        path.SetStrokeColor(Color.red);
+        path.SetFillShape(true);
+        path.SetLocation(60f, 330f);
+        path.ScaleBy(6f);
+        path.DrawOn(page);
+
+        QRCode qr = new QRCode(
+                "https://pdfjet.com",
+                ErrorCorrectionLevel.M);   // Medium
+        qr.SetModuleLength(5f);
+        qr.SetLocation(300f, 340f);
+        float[] xy = qr.DrawOn(page);
+
+        // A frame around the QR code, an artifact.
+        page.AddArtifactBMC();
+        page.SetPenColor(Color.lightgray);
+        page.SetPenWidth(0.5f);
+        page.DrawRect(290f, 330f, xy[0] - 280f, xy[1] - 320f);
+        page.AddEMC();
+
+        TextLine caption = new TextLine(f1, "A Path with curves");
+        caption.SetTextColor(Color.dimgray);
+        caption.SetLocation(60f, xy[1] + 35f);
+        caption.DrawOn(page);
+
+        caption = new TextLine(f1, "Scan to visit https://pdfjet.com").SetURIAction("https://pdfjet.com");
+        caption.SetTextColor(Color.dimgray);
+        caption.SetLocation(290f, xy[1] + 35f);
+        caption.DrawOn(page);
 
         pdf.Complete();
-    }
-
-    public List<List<Cell>> GetData(
-            String fileName,
-            String delimiter,
-            int numOfHeaderRows,
-            Font f1,
-            Font f2) {
-        List<List<Cell>> tableData = new List<List<Cell>>();
-
-        int currentRow = 0;
-        StreamReader reader = new StreamReader(fileName);
-        String line = null;
-        while ((line = reader.ReadLine()) != null) {
-            List<Cell> row = new List<Cell>();
-            String[] cols = null;
-            if (delimiter.Equals("|")) {
-                cols = line.Split(new Char[] {'|'});
-            } else if (delimiter.Equals("\t")) {
-                cols = line.Split(new Char[] {'\t'});
-            } else {
-                throw new Exception(
-                        "Only pipes and tabs can be used as delimiters");
-            }
-            for (int i = 0; i < cols.Length; i++) {
-                String text = cols[i].Trim();
-                Cell cell = null;
-                if (currentRow < numOfHeaderRows) {
-                    cell = new Cell(f1, text);
-                } else {
-                    cell = new Cell(f2, text);
-                }
-                cell.SetTopPadding(2f);
-                cell.SetBottomPadding(2f);
-                cell.SetLeftPadding(2f);
-                if (i == 3) {
-                    cell.SetRightPadding(10f);
-                } else {
-                    cell.SetRightPadding(2f);
-                }
-                row.Add(cell);
-            }
-            tableData.Add(row);
-            currentRow++;
-        }
-        reader.Close();
-        AppendMissingCells(tableData, f2);
-
-        return tableData;
-    }
-
-
-    private void AppendMissingCells(List<List<Cell>> tableData, Font f2) {
-        List<Cell> firstRow = tableData[0];
-        int numOfColumns = firstRow.Count;
-        for (int i = 0; i < tableData.Count; i++) {
-            List<Cell> dataRow = tableData[i];
-            int dataRowColumns = dataRow.Count;
-            if (dataRowColumns < numOfColumns) {
-                for (int j = 0; j < (numOfColumns - dataRowColumns); j++) {
-                    dataRow.Add(new Cell(f2));
-                }
-                dataRow[dataRowColumns - 1].SetColSpan(
-                        (numOfColumns - dataRowColumns) + 1);
-            }
-        }
     }
 
     public static void Main(String[] args) {

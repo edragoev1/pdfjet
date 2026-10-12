@@ -73,9 +73,9 @@ same output come in four languages, and none of them needs a single dependency.
 <table>
   <tr>
     <td align="center"><a href="examples/Example_01.java"><img src="images/readme/example-text.png" alt="Text blocks in English, Greek and Bulgarian" width="200"></a><br>Text in any script</td>
-    <td align="center"><a href="examples/Example_34.java"><img src="images/readme/example-table.png" alt="A table of country data" width="200"></a><br>Tables</td>
-    <td align="center"><a href="examples/Example_25.java"><img src="images/readme/example-chart.png" alt="A donut chart" width="200"></a><br>Charts</td>
-    <td align="center"><a href="examples/Example_14.java"><img src="images/readme/example-barcodes.png" alt="QR, Data Matrix and PDF417 symbols" width="200"></a><br>Barcodes</td>
+    <td align="center"><a href="examples/Example_23.java"><img src="images/readme/example-table.png" alt="A table of country data" width="200"></a><br>Tables</td>
+    <td align="center"><a href="examples/Example_28.java"><img src="images/readme/example-chart.png" alt="A donut chart" width="200"></a><br>Charts</td>
+    <td align="center"><a href="examples/Example_37.java"><img src="images/readme/example-barcodes.png" alt="QR, Data Matrix and PDF417 symbols" width="200"></a><br>Barcodes</td>
   </tr>
 </table>
 
@@ -236,7 +236,7 @@ is that of the whole process writing the 500-page document, runtime included.
 
 ## Examples
 
-The [examples](examples) folder has 58 examples, the same in every port. They
+The [examples](examples) folder has 50 examples, the same in every port. They
 read the fonts and data files of the `fonts` and `data` folders, which these
 scripts fetch the first time they run. Build a port and run all of its
 examples, or run one example by its number:
@@ -388,7 +388,7 @@ has one job:
 | `Stamp` | Content that repeats on many pages, like a header, a footer or a watermark. It is written once as a form XObject and each placement is a single operator, so the file stays small. |
 
 `Table` and `BigTable` draw tables, with a `TextBlock` in a cell when the
-cell text needs wrapping. Example_01, 10, 16, 19, 35 and 47 show these classes.
+cell text needs wrapping. Example_01, 10, 11, 12, 15 and 31 show these classes.
 Their data files are comma, pipe or tab separated values read as RFC 4180
 reads them, so a quoted field can hold a delimiter or, as a spreadsheet exports
 a cell of several lines, line breaks, which a table draws as spaces.
@@ -401,7 +401,7 @@ file, or with `setTableData(header, rows)` from an `Iterable` in Java, an
 `IEnumerable` in C#, a sequence in Swift or an `iter.Seq` in Go
 (`SetTableRows`). It goes through the rows twice, once to measure the columns
 and once to draw them, keeps none of them and writes each page when it is full,
-so its memory stays flat; Example_43 draws 2,546 pages that way. A tagged
+so its memory stays flat; Example_24 draws 2,546 pages that way. A tagged
 document, PDF/UA or PDF/A of level A, keeps a little of each row until
 `complete()`, for the structure tree it writes at the end.
 `setColumns(3, 0, 11)` draws the fourth, first and twelfth fields of every row
@@ -578,7 +578,7 @@ positions of the glyphs rather than by the ActualText.
 
 `Encryption` encrypts a PDF with 256-bit AES, revision 6 of the standard
 security handler of ISO 32000-2, with a user password, an owner password and
-the permissions granted to the user. Example_30 shows it in all four ports. The
+the permissions granted to the user. Example_47 shows it in all four ports. The
 Java, C# and Go ports use the ciphers and hash functions of their platforms.
 Swift has no cryptography in its standard library on Linux, and this library has
 no dependencies on external packages, so the Swift port has its own AES, SHA-2,
@@ -623,7 +623,7 @@ debug build.
 
 `merge` adds all the pages of a document that was read after the pages of a PDF,
 in their order. A PDF can merge several documents and draw pages of its own
-before, between and after them; Example_41 puts a cover page in front of three
+before, between and after them; Example_49 puts a cover page in front of three
 documents:
 
 ```java
@@ -664,7 +664,7 @@ data: `getData` returns null, nil in Go, and an empty array in Swift.
 `merge` with page numbers adds the listed pages of a document that was read,
 counted from 1, in the order they are listed. A document is split by merging
 each part of it into a PDF of its own, as the objects that `read` returned can
-be merged into any number of PDFs. Example_51 writes each page of a document to
+be merged into any number of PDFs. Example_49 writes each page of a document to
 a PDF of its own, and all of its pages in reverse order to one more:
 
 ```java
@@ -771,7 +771,7 @@ Swift; see "Mistakes that are refused".
 `[Flags]` enum, Go a `UserAccess` bit set and Swift an `OptionSet`, and the
 values are combined with `|`. A Java enum is not a set of flags, so Java
 `grant` and `revoke` take a list of values and `getAccess` and `setAccess` a
-`Set<UserAccess>`, as Example_30 shows. In all four ports the values are the
+`Set<UserAccess>`, as Example_47 shows. In all four ports the values are the
 permission bits of the standard (`getValue()` in Java and Swift), `getAccess`
 holds the `/P` entry of the encryption dictionary without its reserved bits,
 the constructor from an int (Go `NewPermissionsFromInt`) keeps the permission

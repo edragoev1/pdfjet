@@ -8,109 +8,146 @@ package main
 import (
 	"fmt"
 	"log"
+	"regexp"
+	"strconv"
+	"strings"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
-	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
+	"github.com/edragoev1/pdfjet/v9/src/SourceSerif4"
+	"github.com/edragoev1/pdfjet/v9/src/a5"
+	"github.com/edragoev1/pdfjet/v9/src/alignment"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
-	"github.com/edragoev1/pdfjet/v9/src/letter"
+	"github.com/edragoev1/pdfjet/v9/src/content"
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
-// The vehicles of data/Electric_Vehicle_Population_Data.csv by model year
-// and kind, which Example_43 draws as a table: the rows of the file whose
-// "Electric Vehicle Type" begins with "Battery Electric" and with
-// "Plug-in Hybrid", counted by the "Model Year" column. The file holds
-// 124,716 rows, of which 124,419 are registered in Washington State, and
-// model years from 1997; the years before 2011 are a few dozen vehicles
-// in all and are left out here.
 var (
-	years   = []int{2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023}
-	battery = []int{753, 798, 2936, 1805, 3612, 3891, 4458, 9946, 8576, 9315, 14755, 23507, 11853}
-	hybrid  = []int{75, 870, 1645, 1804, 1323, 1811, 4100, 4278, 1874, 1611, 3541, 4015, 1500}
+	partRe    = regexp.MustCompile(`^PART [IVX]+$`)
+	chapterRe = regexp.MustCompile(`^[IVXL]+\.$`)
+	blockRe   = regexp.MustCompile(`\n\s*\n`)
 )
 
-// Example17 draws a line chart of two series over the same years: a Chart with a Series
-// for each line, drawn with setDrawPath so the points are joined, and the
-// markers left visible so each year can be read off the line.
+// Example17 sets a whole novel, "The Idiot" by Fyodor Dostoyevsky, as a
+// book: a title page, and each chapter on new A5 pages that a TextFrame flows
+// onto, with the words in italics and a number on every page. The time it
+// prints is the time PDFjet takes to set the 241,527 words of
+// data/the-idiot.txt.
 func Example17() {
 	pdf, err := pdfjet.NewPDFFile("Example_17.pdf")
 	if err != nil {
 		log.Fatal(err)
 	}
 	pdf.SetCompliance(compliance.PDF_UA_1)
-	pdf.SetTitle("Electric Vehicles by Model Year")
+	pdf.SetTitle("The Idiot")
+	pdf.SetAuthor("Fyodor Dostoyevsky")
 
-	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
-	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
+	regular := pdfjet.NewFontFromFile(pdf, SourceSerif4.Regular)
+	italic := pdfjet.NewFontFromFile(pdf, SourceSerif4.Italic)
+	semiBold := pdfjet.NewFontFromFile(pdf, SourceSerif4.SemiBold)
+	regular.SetSize(10.0)
+	italic.SetSize(10.0)
 
-	page := pdfjet.NewPage(pdf, letter.Portrait())
+	pages := make([]*pdfjet.Page, 0)
 
-	title := pdfjet.NewTextLine(f1, "Electric Vehicles by Model Year")
-	title.SetStructureType(structelem.H1)
-	title.SetFontSize(18.0)
-	title.SetLocation(50.0, 50.0)
-	title.DrawOn(page)
-
-	textBlock := pdfjet.NewTextBlock(f2,
-		"A line chart is a Chart with a Series for each line: the points of the "+
-			"series are added in the order they are joined, and setDrawPath draws "+
-			"the line through them. The markers are left visible here so that the "+
-			"count for each model year can be read off the line; setShape with "+
-			"Shape.INVISIBLE leaves the line alone.\n\n"+
-			"The counts are the vehicles of "+
-			"data/Electric_Vehicle_Population_Data.csv, the file Example_43 draws "+
-			"as a table of 2,546 pages, by model year and by kind.")
-	textBlock.SetFontSize(11.0)
-	textBlock.SetLineSpacing(1.4)
-	textBlock.SetLocation(50.0, 72.0)
-	textBlock.SetWidth(512.0)
-	xy := textBlock.DrawOn(page)
-
-	f1.SetSize(12.0)
-	f2.SetSize(9.0)
-
-	chart := pdfjet.NewChart(f1, f2)
-	chart.SetLocation(70.0, xy[1]+30.0)
-	chart.SetSize(480.0, 340.0)
-	chart.SetTitle("Battery electric and plug-in hybrid vehicles")
-	chart.SetSubtitle("Registrations in the Washington State data file")
-	chart.SetXAxisTitle("Model year")
-	chart.SetYAxisTitle("Vehicles")
-	// The years and the counts are whole numbers, so the axis labels are.
-	chart.SetMaximumFractionDigits(0)
-	// The axes are set rather than worked out from the points, so that
-	// every label of the years is a year: 2011 to 2023 in six steps is one
-	// every two years, where the range a chart picks for itself would be
-	// 2010 to 2025 in steps of two and a half.
-	chart.SetXAxisMinMax(2011.0, 2023.0, 6)
-	chart.SetYAxisMinMax(0.0, 25000.0, 5)
-	chart.SetAltDescription(
-		"A line chart of the vehicles of the data file by model year, from 2011 " +
-			"to 2023. Battery electric vehicles rise from 753 in 2011 to 23,507 in " +
-			"2022 and fall to 11,853 in 2023, the last model year of the file. " +
-			"Plug-in hybrids stay far lower, from 75 in 2011 to a high of 4,278 in " +
-			"2018 and 1,500 in 2023.")
-
-	batterySeries := chart.AddSeries("Battery electric").
-		SetDrawPath(true).
-		SetStrokeColor(0x1D3557). // navy blue
-		SetStrokeWidth(1.5)
-	for i, year := range years {
-		batterySeries.AddPoint(float32(year), float32(battery[i]))
+	// The title page.
+	title := []*pdfjet.Paragraph{
+		centered(pdfjet.NewTextLine(semiBold, "The Idiot").SetFontSize(28.0), structelem.H1),
+		centered(pdfjet.NewTextLine(regular, "Fyodor Dostoyevsky").SetFontSize(14.0), structelem.P),
+		centered(pdfjet.NewTextLine(italic, "Translated by Eva Martin"), structelem.P),
 	}
+	titleFrame := pdfjet.NewTextFrameFromParagraphs(title)
+	titleFrame.SetLocation(54.0, 200.0)
+	titleFrame.SetWidth(312.0).SetParagraphGap(16.0)
+	titleFrame.DrawOnPages(pdf, &pages, a5.Portrait())
+	titlePages := len(pages)
 
-	hybridSeries := chart.AddSeries("Plug-in hybrid").
-		SetDrawPath(true).
-		SetStrokeColor(0xC1121F). // deep red
-		SetStrokeWidth(1.5)
-	for i, year := range years {
-		hybridSeries.AddPoint(float32(year), float32(hybrid[i]))
+	// The novel: parts begin with "PART I" and chapters with their number,
+	// "I.", and the paragraphs are separated by an empty line.
+	var chapter []*pdfjet.Paragraph
+	for _, block := range blockRe.Split(content.OfTextFile("data/the-idiot.txt"), -1) {
+		text := strings.Join(strings.Fields(block), " ")
+		if partRe.MatchString(text) {
+			drawChapter(pdf, &pages, chapter)
+			chapter = []*pdfjet.Paragraph{
+				centered(pdfjet.NewTextLine(semiBold, text).SetFontSize(16.0), structelem.H1),
+			}
+		} else if chapterRe.MatchString(text) {
+			if len(chapter) > 1 {
+				drawChapter(pdf, &pages, chapter)
+				chapter = nil
+			}
+			chapter = append(chapter,
+				centered(pdfjet.NewTextLine(semiBold, text).SetFontSize(14.0), structelem.H2))
+		} else if text != "" {
+			chapter = append(chapter, paragraph(text, regular, italic))
+		}
 	}
+	drawChapter(pdf, &pages, chapter)
 
-	chart.DrawOn(page)
+	// A number at the foot of every page but the title page.
+	for i := titlePages; i < len(pages); i++ {
+		number := pdfjet.NewTextLine(regular, strconv.Itoa(i-titlePages+1))
+		number.SetFontSize(9.0)
+		pages[i].AddFooterOffsetBy(number, 30.0)
+	}
+	pdf.AddPages(pages)
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
+}
 
-	pdf.Complete()
+// drawChapter draws a chapter on new pages, which it starts at the top of.
+func drawChapter(pdf *pdfjet.PDF, pages *[]*pdfjet.Page, chapter []*pdfjet.Paragraph) {
+	if chapter != nil {
+		frame := pdfjet.NewTextFrameFromParagraphs(chapter)
+		frame.SetLocation(54.0, 54.0)
+		frame.SetWidth(312.0).SetParagraphGap(4.0)
+		frame.DrawOnPages(pdf, pages, a5.Portrait())
+	}
+}
+
+func centered(textLine *pdfjet.TextLine, structureType structelem.StructElem) *pdfjet.Paragraph {
+	return pdfjet.NewParagraph().Add(textLine).SetTextAlignment(alignment.Center).
+		SetStructureType(structureType)
+}
+
+// paragraph returns a justified paragraph of the text, in which _underscores_
+// mark the words in italics. A word in italics is set in italics whole, with
+// the punctuation around it, since a paragraph puts a space between its text
+// lines.
+func paragraph(text string, regular, italic *pdfjet.Font) *pdfjet.Paragraph {
+	p := pdfjet.NewParagraph().SetTextAlignment(alignment.Justify)
+	var run strings.Builder
+	runItalic := false
+	inItalic := false
+	fontOf := func(isItalic bool) *pdfjet.Font {
+		if isItalic {
+			return italic
+		}
+		return regular
+	}
+	for _, word := range strings.Split(text, " ") {
+		wordItalic := inItalic || strings.Contains(word, "_")
+		for _, ch := range word {
+			if ch == '_' {
+				inItalic = !inItalic
+			}
+		}
+		if run.Len() > 0 && wordItalic != runItalic {
+			p.Add(pdfjet.NewTextLine(fontOf(runItalic), run.String()))
+			run.Reset()
+		}
+		if run.Len() > 0 {
+			run.WriteByte(' ')
+		}
+		run.WriteString(strings.ReplaceAll(word, "_", ""))
+		runItalic = wordItalic
+	}
+	if run.Len() > 0 {
+		p.Add(pdfjet.NewTextLine(fontOf(runItalic), run.String()))
+	}
+	return p
 }
 
 func main() {

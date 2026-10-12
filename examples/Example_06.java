@@ -7,121 +7,94 @@
 package examples;
 
 import java.io.*;
-
 import com.pdfjet.*;
 import com.pdfjet.fonts.*;
 
 /**
- * Example_06.java
- * This example attaches two files to a page, and adds a note, a link and
- * polygon, square and circle annotations next to labels that describe them.
+ * Embedded fonts: the same words in five weights of IBM Plex Sans, in a PDF/UA
+ * document.
+ * <p>
+ * An embedded font travels with the document, so the text looks the same in
+ * every viewer, every character of the font can be drawn, and the document can
+ * be PDF/UA and PDF/A. The fourteen core fonts, Helvetica, Times and Courier,
+ * are in every viewer and make the smallest documents, but they draw only the
+ * WinAnsi characters, and PDF/UA and PDF/A do not allow them.
+ * </p>
+ *
+ * @see Font
+ * @see TextBlock
  */
 public class Example_06 {
+    private static final String SAMPLE = "Embedded fonts look the same in every viewer.";
+
+    private static final int BACKGROUND = 0xf1f4f8;
+
     public Example_06() throws Exception {
-        PDF pdf = new PDF(new BufferedOutputStream(new FileOutputStream("Example_06.pdf")));
+        PDF pdf = new PDF(
+                new BufferedOutputStream(new FileOutputStream("Example_06.pdf")));
         pdf.setCompliance(Compliance.PDF_UA_1);
-        pdf.setTitle("Attachments and Annotations");
+        pdf.setTitle("Embedded Fonts");
 
-        Font f1 = new Font(pdf, IBMPlexSans.Regular);
-        f1.setSize(12f);
-
-        Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
-        f2.setSize(14f);
-
-        EmbeddedFile file1 = new EmbeddedFile(pdf, "images/linux-logo.png", false);
-        EmbeddedFile file2 = new EmbeddedFile(pdf, "examples/Example_02.java", true);
+        Font regular = new Font(pdf, IBMPlexSans.Regular);
+        regular.setSize(11f);
+        Font bold = new Font(pdf, IBMPlexSans.Bold);
+        bold.setSize(24f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        TextLine text = new TextLine(f2, "Attachments and annotations");
-        text.setStructureType(StructElem.H1);
-        text.setFontSize(22f);
-        text.setLocation(70f, 80f);
-        text.drawOn(page);
+        TextLine title = new TextLine(bold, "Embedded Fonts");
+        title.setStructureType(StructElem.H1);
+        title.setLocation(50f, 70f);
+        title.drawOn(page);
 
-        text = new TextLine(f1,
-                "Open this page in a PDF viewer that shows annotations, and hover over the icons.");
-        text.setTextColor(Color.dimgray);
-        text.setLocation(70f, 105f);
-        text.drawOn(page);
+        TextBlock about = new TextBlock(regular,
+                "An embedded font travels with the document: the PDF carries the font program, "
+                + "so the text looks the same in every viewer, every character of the font can be "
+                + "drawn, and the document can be PDF/UA and PDF/A. PDFjet comes with the IBM Plex "
+                + "fonts, Sans, Serif and Mono, with Arabic, Hebrew, Thai, Japanese, Korean and "
+                + "Chinese, in their weights.\n\n"
+                + "The fourteen core fonts, Helvetica, Times and Courier with their bold and italic, "
+                + "Symbol and ZapfDingbats, are in every viewer, so the document carries no font "
+                + "program and is the smallest it can be. But they draw only the characters of "
+                + "Windows Latin 1, the viewer draws them with its own version of the font, and "
+                + "PDF/UA and PDF/A do not allow them. The boxes below are the same words in five "
+                + "weights of IBM Plex Sans.");
+        about.setLineSpacing(1.4f);
+        about.setLocation(50f, 90f);
+        about.setWidth(512f);
+        float y = about.drawOn(page)[1] + 30f;
 
-        // File attachments. The files are stored inside the PDF.
-        new TextLine(f2, "Attached files").setStructureType(StructElem.H2).setLocation(70f, 160f).drawOn(page);
-
-        FileAttachment attachment = new FileAttachment(file1);
-        attachment.setLocation(70f, 175f);
-        attachment.setIconPushPin();
-        attachment.setTitle("Attached File: " + file1.getFileName());
-        attachment.setContents(
-                "Right mouse click on the icon to save the attached file.");
-        attachment.drawOn(page);
-        new TextLine(f1, "linux-logo.png, an image, with a push pin icon")
-                .setLocation(105f, 192f).drawOn(page);
-
-        attachment = new FileAttachment(file2);
-        attachment.setLocation(70f, 210f);
-        attachment.setIconPaperclip();
-        attachment.setTitle("Attached File: " + file2.getFileName());
-        attachment.setContents(
-                "Right mouse click on the icon to save the attached file.");
-        attachment.drawOn(page);
-        new TextLine(f1, "The source code of Example_02, with a paperclip icon")
-                .setLocation(105f, 227f).drawOn(page);
-
-        // A note, and a link.
-        new TextLine(f2, "A note and a link").setStructureType(StructElem.H2).setLocation(70f, 290f).drawOn(page);
-
-        TextAnnotation textAnnotation = new TextAnnotation();
-        textAnnotation.setLocation(70f, 305f);
-        textAnnotation.setSize(24f, 24f);
-        textAnnotation.setTitle("Reviewer");
-        textAnnotation.setContents("Please check the figures on page 2.");
-        textAnnotation.drawOn(page);
-        new TextLine(f1, "A text annotation: click the note icon to read it")
-                .setLocation(105f, 322f).drawOn(page);
-
-        text = new TextLine(f1, "Visit https://pdfjet.com");
-        text.setTextColor(Color.blue);
-        text.setUnderline(true);
-        text.setURIAction("https://pdfjet.com");
-        text.setLocation(105f, 357f);
-        text.drawOn(page);
-
-        // Shape annotations, drawn half transparent over the page.
-        new TextLine(f2, "Shape annotations").setLocation(70f, 420f).drawOn(page);
-
-        PolygonAnnotation polygonAnnotation = new PolygonAnnotation();
-        polygonAnnotation.setLocation(70f, 440f);
-        polygonAnnotation.setVertices(new float[] {0f, 60f, 30f, 0f, 60f, 60f, 0f, 60f});
-        polygonAnnotation.setFillColor(Color.red);
-        polygonAnnotation.setOpacity(0.5f);
-        polygonAnnotation.setTitle("Polygon");
-        polygonAnnotation.setContents("Polygon Annotation");
-        polygonAnnotation.drawOn(page);
-
-        SquareAnnotation squareAnnotation = new SquareAnnotation();
-        squareAnnotation.setLocation(170f, 440f);
-        squareAnnotation.setSize(60f, 60f);
-        squareAnnotation.setFillColor(new float[] {0f, 0.5f, 0f});
-        squareAnnotation.setOpacity(0.5f);
-        squareAnnotation.setTitle("Square");
-        squareAnnotation.setContents("Square Annotation");
-        squareAnnotation.drawOn(page);
-
-        CircleAnnotation circleAnnotation = new CircleAnnotation();
-        circleAnnotation.setLocation(270f, 440f);
-        circleAnnotation.setSize(60f, 60f);
-        circleAnnotation.setFillColor(new float[] {0f, 0f, 1f});
-        circleAnnotation.setOpacity(0.5f);
-        circleAnnotation.setTitle("Circle");
-        circleAnnotation.setContents("Circle Annotation");
-        circleAnnotation.drawOn(page);
-
-        new TextLine(f1, "Polygon").setLocation(78f, 520f).drawOn(page);
-        new TextLine(f1, "Square").setLocation(180f, 520f).drawOn(page);
-        new TextLine(f1, "Circle").setLocation(283f, 520f).drawOn(page);
+        String[] names = {"Light", "Regular", "Medium", "SemiBold", "Bold"};
+        String[] weights = {
+            IBMPlexSans.Light,
+            IBMPlexSans.Regular,
+            IBMPlexSans.Medium,
+            IBMPlexSans.SemiBold,
+            IBMPlexSans.Bold,
+        };
+        for (int i = 0; i < weights.length; i++) {
+            Font font = new Font(pdf, weights[i]);
+            font.setSize(20f);
+            y = drawSample(page, regular, font, "IBM Plex Sans " + names[i], y) + 22f;
+        }
 
         pdf.complete();
+    }
+
+    private static float drawSample(Page page, Font labelFont, Font font, String label, float y)
+            throws Exception {
+        TextLine caption = new TextLine(labelFont, label);
+        caption.setTextColor(Color.dimgray);
+        caption.setLocation(50f, y);
+        caption.drawOn(page);
+
+        TextBlock block = new TextBlock(font, SAMPLE);
+        block.setBackgroundColor(BACKGROUND);
+        block.setPadding(10f);
+        block.setLineSpacing(1.2f);
+        block.setLocation(50f, y + 8f);
+        block.setWidth(512f);
+        return block.drawOn(page)[1];
     }
 
     public static void main(String[] args) throws Exception {

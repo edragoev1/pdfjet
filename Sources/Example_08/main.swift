@@ -14,64 +14,107 @@ public class Example_08 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_08.pdf", append: false)!)
         pdf.setCompliance(Compliance.PDF_UA_1)
-        pdf.setTitle("Electric Vehicle Population")
+        pdf.setTitle("The Ascent and Descent of a Font")
 
-        let f1 = try Font(pdf, IBMPlexSans.SemiBold)
-        f1.setSize(7.0)
+        let f1 = try Font(pdf, IBMPlexSans.Regular)
+        f1.setSize(72.0)
 
         let f2 = try Font(pdf, IBMPlexSans.Regular)
-        f2.setSize(7.0)
+        f2.setSize(24.0)
 
-        let f3 = try Font(pdf, IBMPlexSans.BoldItalic)
-        f3.setSize(7.0)
+        let page = Page(pdf, Letter.PORTRAIT)
 
-        let image = try Image(pdf, "images/TeslaX.png")
-        image.setAltDescription(
-                "A white Tesla Model X with a black glass roof, seen from the front left.")
-        image.scaleBy(1.0 / 3.0)    // The image is 120 DPI, so 0.6 of its pixels
+        let x1: Float = 90.0
+        let y1: Float = 100.0
 
-        let barcode = try Barcode(Barcode.CODE_128, "Hello, World!")
-        barcode.setModuleLength(0.75)
-        // Comment out the line below if you don't want to print the text underneath the barcode.
-        barcode.setFont(f1)
-
-        let table = try Table(f1, f2, "data/Electric_Vehicle_Population_10_Pages.csv")
-        table.setVisibleColumns(1, 2, 3, 4, 5, 6, 7, 9)
-        table.getCellAt(4, 0).setImage(image)
-        table.getCellAt(5, 0).setColSpan(8)
-        table.getCellAt(5, 0).setBarcode(barcode)
-        table.getCellAt(20, 0).setColSpan(6)
-        table.getCellAt(20, 6).setColSpan(2)
-        table.autoAdjustColumnWidths()
-        table.setColumnWidth(0, image.getWidth() + 4.0)
-        table.setColumnWidth(3, table.getColumnWidth(3) + 10.0)
-        table.setColumnWidth(5, table.getColumnWidth(5) + 10.0)
-        table.rightAlignNumbers()
-
-        table.setLocation(30.0, 30.0)
-        // table.setFirstPageTopMargin(150.0)
-        table.setBottomMargin(15.0)
-        table.setTextColorInRow(12, Color.blue)
-        table.setTextColorInRow(13, Color.firebrick)
-        table.setFontInRow(14, f3)
-
-        // A heading on the first page only, which the table starts under: the
-        // first page is made here, and the table goes on to new pages.
-        let first = Page(pdf, Letter.PORTRAIT, false)
-        TextLine(f1, "Electric Vehicle Population")
+        // A heading, which PAC asks a document for
+        TextLine(f2, "The Ascent and Descent of a Font")
                 .setStructureType(StructElem.H1)
-                .setFontSize(14.0)
-                .setLocation(30.0, 44.0)
-                .drawOn(first)
-        table.setFirstPageTopMargin(56.0)
+                .setFontSize(18.0)
+                .setLocation(x1, 45.0)
+                .drawOn(page)
 
-        var pages = [first]
-        table.drawOn(pdf, first, &pages, Letter.PORTRAIT)
-        for i in 0..<pages.count {
-            let page = pages[i]
-            page.addFooter(TextLine(f1, "Page \(i + 1) of \(pages.count)"))
-            pdf.addPage(page)
-        }
+        let textLine = TextLine(f2, "(x1, y1)")
+        textLine.setLocation(x1, y1 - 15.0)
+        textLine.drawOn(page)
+
+        let textBlock = TextBlock(f1,
+            "Hello, World! This example shows the functionality of the TextBlock.")
+        textBlock.setLocation(x1, y1)
+        textBlock.setWidth(500.0)
+        textBlock.setBorderColor(Color.lightgreen)
+        textBlock.setBackgroundColor(Color.lightgreen)
+        textBlock.setTextColor(Color.black)
+        let xy = textBlock.drawOn(page)
+
+        // Text on the left
+        let ascentText = TextLine(f2, "Ascent")
+        ascentText.setFontSize(18.0)
+        ascentText.setLocation(x1 - 85.0, y1 + 40.0)
+        ascentText.drawOn(page)
+
+        let descentText = TextLine(f2, "Descent")
+        descentText.setFontSize(18.0)
+        descentText.setLocation(x1 - 85.0, y1 + f1.getAscent() + 15.0)
+        descentText.drawOn(page)
+
+        // Line beside the text ascent
+        let blueLine = Line(
+            x1 - 10.0,
+            y1,
+            x1 - 10.0,
+            y1 + f1.getAscent())
+        blueLine.setStrokeColor(Color.blue)
+        blueLine.setStrokeWidth(3.0)
+        blueLine.drawOn(page)
+
+        // Line beside the text descent
+        let redLine = Line(
+            x1 - 10.0,
+            y1 + f1.getAscent(),
+            x1 - 10.0,
+            y1 + f1.getAscent() + f1.getDescent())
+        redLine.setStrokeColor(Color.red)
+        redLine.setStrokeWidth(3.0)
+        redLine.drawOn(page)
+
+        let baseLine = Line(
+                x1,
+                y1 + f1.getAscent(),
+                xy[0],
+                y1 + f1.getAscent())
+        baseLine.drawOn(page)
+
+        let descentLine = Line(
+                x1,
+                y1 + (f1.getAscent() + f1.getDescent()),
+                xy[0],
+                y1 + (f1.getAscent() + f1.getDescent()))
+        descentLine.drawOn(page)
+
+        let ascentLine = Line(
+                x1,
+                y1 + f1.getBodyHeight() + f1.getAscent(),
+                xy[0],
+                y1 + f1.getBodyHeight() + f1.getAscent())
+        ascentLine.drawOn(page)
+
+        let p1 = Point(x1, y1)
+        p1.setRadius(5.0)
+        p1.drawOn(page)
+
+        let p2 = Point(xy[0], xy[1])
+        p2.setRadius(5.0)
+        p2.drawOn(page)
+
+        f2.setSize(24.0)
+        let textLine3 = TextLine(f2, "(x2, y2)")
+        textLine3.setLocation(xy[0] - 80.0, xy[1] + 30.0)
+        textLine3.drawOn(page)
+
+        let rect = Rect(xy[0], xy[1], 20.0, 20.0)
+        rect.setBorderColor(Color.black)
+        rect.drawOn(page)
 
         try pdf.complete()
     }

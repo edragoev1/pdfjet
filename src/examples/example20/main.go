@@ -8,169 +8,82 @@ package main
 import (
 	"fmt"
 	"log"
-	"os"
+	"strconv"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
-	"github.com/edragoev1/pdfjet/v9/src/errorcorrectionlevel"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
-	"github.com/edragoev1/pdfjet/v9/src/qrcode"
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
-// Example20 draws a letterhead: a logo read from a PDF file, a maple leaf
-// drawn as a path with curves, and a QR code with the address of a web site.
+// Example20 draws a table.
 func Example20() {
 	pdf, err := pdfjet.NewPDFFile("Example_20.pdf")
 	if err != nil {
 		log.Fatal(err)
 	}
 	pdf.SetCompliance(compliance.PDF_UA_1)
-	pdf.SetTitle("PDFjet Software Letterhead")
+	pdf.SetTitle("Electric Vehicle Population")
 
-	// Read the logo from a PDF file, and add the resources of its pages, its
-	// fonts and images, to this PDF. The logo itself is drawn with paths and
-	// has none.
-	buf, err := os.ReadFile("data/testPDFs/PDFjetLogo.pdf")
-	if err != nil {
-		log.Fatal(err)
+	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
+	f1.SetSize(7.0)
+
+	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
+	f2.SetSize(7.0)
+
+	f3 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.BoldItalic)
+	f3.SetSize(7.0)
+
+	image := pdfjet.NewImageFromFile(pdf, "images/TeslaX.png")
+	image.SetAltDescription(
+		"A white Tesla Model X with a black glass roof, seen from the front left.")
+	image.ScaleBy(1.0 / 3.0) // The image is 120 DPI, so 0.6 of its pixels
+
+	barcode := pdfjet.NewBarcode(pdfjet.CODE_128, "Hello, World!")
+	barcode.SetModuleLength(0.75)
+	// Comment out the line below if you don't want to print the text underneath the barcode.
+	barcode.SetFont(f1)
+
+	table := pdfjet.NewTableFromFile(f1, f2, "data/Electric_Vehicle_Population_10_Pages.csv")
+	table.SetVisibleColumns(1, 2, 3, 4, 5, 6, 7, 9)
+	table.GetCellAt(4, 0).SetImage(image)
+	table.GetCellAt(5, 0).SetColSpan(8)
+	table.GetCellAt(5, 0).SetBarcode(barcode)
+	table.GetCellAt(20, 0).SetColSpan(6)
+	table.GetCellAt(20, 6).SetColSpan(2)
+	table.AutoAdjustColumnWidths()
+	table.SetColumnWidth(0, image.GetWidth()+4.0)
+	table.SetColumnWidth(3, table.GetColumnWidth(3)+10.0)
+	table.SetColumnWidth(5, table.GetColumnWidth(5)+10.0)
+	table.RightAlignNumbers()
+
+	table.SetLocation(30.0, 30.0)
+	// table.SetFirstPageTopMargin(150.0)
+	table.SetBottomMargin(15.0)
+	table.SetTextColorInRow(12, color.Blue)
+	table.SetTextColorInRow(13, color.Firebrick)
+	table.SetFontInRow(14, f3)
+
+	// A heading on the first page only, which the table starts under: the
+	// first page is made here, and the table goes on to new pages.
+	first := pdfjet.NewPageDetached(pdf, letter.Portrait())
+	pdfjet.NewTextLine(f1, "Electric Vehicle Population").
+		SetStructureType(structelem.H1).
+		SetFontSize(14.0).
+		SetLocation(30.0, 44.0).
+		DrawOn(first)
+	table.SetFirstPageTopMargin(56.0)
+
+	pages := []*pdfjet.Page{first}
+	table.DrawOnPagesFrom(pdf, first, &pages, letter.Portrait())
+	for i := 0; i < len(pages); i++ {
+		page := pages[i]
+		page.AddFooter(pdfjet.NewTextLine(f1, "Page "+strconv.Itoa(i+1)+" of "+strconv.Itoa(len(pages))))
+		pdf.AddPage(page)
 	}
-	objects, err := pdf.Read(buf)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	pdf.AddResourceObjects(objects)
-
-	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
-	f1.SetSize(11.0)
-
-	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
-	f2.SetSize(11.0)
-
-	pages := pdf.GetPageObjects(objects)
-	content := pages[0].GetContentObject(objects)
-
-	page := pdfjet.NewPage(pdf, letter.Portrait())
-
-	// Draw the content of the first page of the logo PDF, at half its size.
-	// DrawContents anchors the content by the point that is height points
-	// above the origin of its page, which it puts at x and y here. The logo
-	// is in the top left corner of its page, so that point is the top of the
-	// page and the height to give is the height of the page.
-	height := letter.Portrait().GetHeight()
-	x := float32(60.0)
-	y := float32(40.0)
-	xScale := float32(0.5)
-	yScale := float32(0.5)
-
-	// The logo is a figure, with an alternate description for screen readers.
-	page.AddBDC(structelem.Figure, "", "", "The PDFjet logo")
-	page.DrawContents(
-		content.GetData(),
-		height,
-		x,
-		y,
-		xScale,
-		yScale)
-	// The logo is 216 by 68 points, at the top left of its page, so half of
-	// that here: the box PDF/UA asks every figure for.
-	page.SetFigureBoundingBox(x, y, 216.0*xScale, 68.0*yScale)
-	page.AddEMC()
-
-	pdfjet.NewTextLine(f2, "PDFjet Software").SetLocation(390.0, 60.0).DrawOn(page)
-	pdfjet.NewTextLine(f1, "Unionville, Ontario, Canada").SetLocation(390.0, 76.0).DrawOn(page)
-	// An address on the page is a link to it, as PAC asks of text that reads as one
-	pdfjet.NewTextLine(f1, "https://pdfjet.com").SetURIAction("https://pdfjet.com").SetLocation(390.0, 92.0).DrawOn(page)
-
-	// A thin rule under the letterhead, an artifact.
-	page.AddArtifactBMC()
-	page.SetPenColor(color.DarkRed)
-	page.SetPenWidth(1.0)
-	page.DrawLine(60.0, 115.0, 552.0, 115.0)
-	page.AddEMC()
-
-	// The heading of the page, which PAC asks a document for
-	text := pdfjet.NewTextLine(f2, "The logo on this page was read from a PDF file.")
-	text.SetStructureType(structelem.H1)
-	text.SetFontSize(16.0)
-	text.SetLocation(60.0, 170.0)
-	text.DrawOn(page)
-
-	textBlock := pdfjet.NewTextBlock(f1,
-		"The logo is the content of the first page of data/testPDFs/PDFjetLogo.pdf, "+
-			"drawn here at half its size with page.drawContents. It stays sharp "+
-			"at any zoom, because it is drawn as vector graphics and not as an image.\n\n"+
-			"The maple leaf below is a Path with curves, and the QR code "+
-			"holds the address of the PDFjet web site.")
-	textBlock.SetFontSize(12.0)
-	textBlock.SetLineSpacing(1.5)
-	textBlock.SetLocation(60.0, 185.0)
-	textBlock.SetWidth(490.0)
-	textBlock.DrawOn(page)
-
-	// A maple leaf, drawn with lines and with curves from control points.
-	path := pdfjet.NewPath()
-	path.Add(pdfjet.NewPoint(13.0, 0.0))
-	path.Add(pdfjet.NewPoint(15.5, 4.5))
-	path.Add(pdfjet.NewPoint(18.0, 3.5))
-	path.Add(pdfjet.NewControlPointC(15.5, 13.5))
-	path.Add(pdfjet.NewControlPointC(15.5, 13.5))
-	path.Add(pdfjet.NewPoint(20.5, 7.5))
-	path.Add(pdfjet.NewPoint(21.0, 9.5))
-	path.Add(pdfjet.NewPoint(25.0, 9.0))
-	path.Add(pdfjet.NewPoint(24.0, 13.0))
-	path.Add(pdfjet.NewPoint(25.5, 14.0))
-	path.Add(pdfjet.NewPoint(19.0, 19.0))
-	path.Add(pdfjet.NewPoint(20.0, 21.5))
-	path.Add(pdfjet.NewPoint(13.5, 20.5))
-	path.Add(pdfjet.NewPoint(13.5, 27.0))
-	path.Add(pdfjet.NewPoint(12.5, 27.0))
-	path.Add(pdfjet.NewPoint(12.5, 20.5))
-	path.Add(pdfjet.NewPoint(6.0, 21.5))
-	path.Add(pdfjet.NewPoint(7.0, 19.0))
-	path.Add(pdfjet.NewPoint(0.5, 14.0))
-	path.Add(pdfjet.NewPoint(2.0, 13.0))
-	path.Add(pdfjet.NewPoint(1.0, 9.0))
-	path.Add(pdfjet.NewPoint(5.0, 9.5))
-	path.Add(pdfjet.NewPoint(5.5, 7.5))
-	path.Add(pdfjet.NewControlPointC(10.5, 13.5))
-	path.Add(pdfjet.NewControlPointC(10.5, 13.5))
-	path.Add(pdfjet.NewPoint(8.0, 3.5))
-	path.Add(pdfjet.NewPoint(10.5, 4.5))
-	path.SetClosed(true)
-	path.SetStrokeColor(color.Red)
-	path.SetFillShape(true)
-	path.SetLocation(60.0, 330.0)
-	path.ScaleBy(6.0)
-	path.DrawOn(page)
-
-	qr := qrcode.NewQRCode(
-		"https://pdfjet.com",
-		errorcorrectionlevel.M) // Medium
-	qr.SetModuleLength(5.0)
-	qr.SetLocation(300.0, 340.0)
-	xy := qr.DrawOn(page)
-
-	// A frame around the QR code, an artifact.
-	page.AddArtifactBMC()
-	page.SetPenColor(color.LightGray)
-	page.SetPenWidth(0.5)
-	page.DrawRect(290.0, 330.0, xy[0]-280.0, xy[1]-320.0)
-	page.AddEMC()
-
-	caption := pdfjet.NewTextLine(f1, "A Path with curves")
-	caption.SetTextColor(color.DimGray)
-	caption.SetLocation(60.0, xy[1]+35.0)
-	caption.DrawOn(page)
-
-	caption = pdfjet.NewTextLine(f1, "Scan to visit https://pdfjet.com").SetURIAction("https://pdfjet.com")
-	caption.SetTextColor(color.DimGray)
-	caption.SetLocation(290.0, xy[1]+35.0)
-	caption.DrawOn(page)
 
 	if err := pdf.Complete(); err != nil {
 		log.Fatal(err)

@@ -6,7 +6,7 @@ the programs, the method and the results that `pdfjet-benchmarks.html` quotes.
 | File | What it is |
 |---|---|
 | `TextBench.java` | A multilingual document: pages of 60 lines of Latin, Greek and Cyrillic text |
-| `BigTableBench.java` | Example_43: a 2,546-page table from a 124,716-row CSV file |
+| `BigTableBench.java` | Example_24: a 2,546-page table from a 124,716-row CSV file |
 | `run.sh` | Builds PDFjet from this checkout and the benchmarks, runs them and writes `build/results-<date>-<time>.log` |
 | `results/` | The logs of the runs; the figures below are from `2026-09-18-e662e6bc.log` |
 | `ports/` | The four ports of PDFjet on the text document; see `ports/README.md` |
@@ -17,7 +17,7 @@ the programs, the method and the results that `pdfjet-benchmarks.html` quotes.
 ```
 benchmarks/run.sh              # both benchmarks, a few minutes
 benchmarks/run.sh text         # the text document only
-benchmarks/run.sh table        # Example_43 only
+benchmarks/run.sh table        # Example_24 only
 benchmarks/run.sh all --quick  # a short run that checks that everything works
 TABLE_CONFIGS="jet jet-table" benchmarks/run.sh table   # some of the table configurations
 ```
@@ -35,7 +35,7 @@ before used the `.otf.stream` and `.ttf.stream` files. The table has four:
 
 | Configuration | What it draws with |
 |---|---|
-| `jet` | Example_43 as it is, with `BigTable` |
+| `jet` | Example_24 as it is, with `BigTable` |
 | `jet-table` | `Table`, the same 9 columns built as `Cell` objects |
 | `jet-page` | `Page`, through a driver that follows `BigTable` step by step, every page kept until the footers are drawn |
 | `jet-page-stream` | `Page`, through the same driver, each page written when the next one starts |
@@ -48,7 +48,7 @@ before used the `.otf.stream` and `.ttf.stream` files. The table has four:
 - Allocations are the bytes the thread allocated per document
   (`ThreadMXBean.getCurrentThreadAllocatedBytes`).
 - The text document is written to memory with `-Xmx4g`, one `drawString` call
-  per line; the table is written through an 8 MB buffer, as Example_43 writes
+  per line; the table is written through an 8 MB buffer, as Example_24 writes
   it, to a stream that only counts the bytes, with `-Xmx8g`.
 - First run: a new JVM, timed from the start of `main`.
 - Peak memory: the largest resident size, from `/usr/bin/time`, of a new JVM
@@ -107,7 +107,7 @@ The files are 6% smaller and the time 5 ms shorter than at 4ee4e7cb (59 ms and
 567,688 bytes with IBM Plex Sans), as d2f5d4cb writes a color or a font only
 when it changes.
 
-### Example_43, 2,546 pages
+### Example_24, 2,546 pages
 
 | Configuration | Time | First run | Allocated | Peak memory | Smallest heap | File | Code |
 |---|---:|---:|---:|---:|---:|---:|---:|

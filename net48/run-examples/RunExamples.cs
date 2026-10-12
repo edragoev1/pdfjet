@@ -12,7 +12,7 @@ using System.Reflection;
 using System.Text;
 
 /// <summary>
-/// Runs Example_01 to Example_58, compiled as they are, on .NET Framework 4.8
+/// Runs Example_01 to Example_06, compiled as they are, on .NET Framework 4.8
 /// against the net48 PDFjet.dll, in the folder it is started in, which has
 /// the folders the examples read, fonts, data, images, PngSuite and examples:
 /// each example's Main, its time, whether its PDF was made whole, and what it
@@ -35,7 +35,7 @@ public static class RunExamples {
                 + (Environment.Is64BitProcess ? "64-bit" : "32-bit"));
         int failed = 0;
         int ran = 0;
-        for (int i = 1; i <= 58; i++) {
+        for (int i = 1; i <= 50; i++) {
             if (args.Length > 0 && Array.IndexOf(args, i.ToString()) < 0) {
                 continue;
             }

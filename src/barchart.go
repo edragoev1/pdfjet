@@ -32,8 +32,8 @@ type barSeries struct {
 const noColor int32 = -1
 
 // BarChart is a bar chart renderer for PDF pages: one slot per category, the
-// bars of the series grouped inside each slot. See Example_39 (horizontal
-// bars) and Example_40 (vertical bars).
+// bars of the series grouped inside each slot. See Example_27, of horizontal
+// and vertical bars.
 type BarChart struct {
 	x1, y1 float32
 	w, h   float32

@@ -10,90 +10,108 @@ import PDFjet
 /**
  * Example_39.swift
  *
- * Draws a horizontal bar chart of the ten longest rivers, each bar in its own
- * color with its length written inside it, under a title and a subtitle, and
- * a color key and a source note under the chart.
+ * Draws the pages of a document first and finishes them last. The two map
+ * pages are drawn first and the contents page last, and the three are added
+ * to the PDF in reading order, the contents first. They are made detached,
+ * outside the PDF, so a "Page X of N" footer is drawn on each once the
+ * number of pages is known.
  */
 public class Example_39 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_39.pdf", append: false)!)
         pdf.setCompliance(Compliance.PDF_UA_1)
-        pdf.setTitle("10 Longest Rivers in the World")
+        pdf.setTitle("Maps")
 
-        let f1 = try Font(pdf, IBMPlexSans.Bold)
-        f1.setSize(15.0)
+        let f1 = try Font(pdf, IBMPlexSans.Regular)
+        let f2 = try Font(pdf, IBMPlexSans.SemiBold)
 
-        let f2 = try Font(pdf, IBMPlexSans.Regular)
-        f2.setSize(9.0)
+        let titles = ["Europe", "Spain"]
+        let files = ["images/ee-map.png", "images/spain-admin.jpg"]
+        let descriptions = [
+                "A map of Europe in which the member states of the European Union are shaded, and Turkey, a candidate to join when the map was made, in another shade.",
+                "A map of the 17 autonomous communities of Spain and its two autonomous cities, Ceuta and Melilla, with their capitals.",
+        ]
 
-        let f3 = try Font(pdf, IBMPlexSans.Bold)
-        f3.setSize(9.0)
+        // 1. Draw the map pages. They are detached, so they are not in the PDF yet.
+        var mapPages = [Page]()
+        for i in 0..<titles.count {
+            let page = Page(pdf, A4.PORTRAIT, Page.DETACHED)
 
-        let f4 = try Font(pdf, IBMPlexSans.Regular)
-        f4.setSize(8.0)
+            let title = TextLine(f2, titles[i])
+            title.setFontSize(24.0)
+            title.setLocation(50.0, 80.0)
+            title.drawOn(page)
 
-        let page = Page(pdf, Letter.PORTRAIT)
+            // Scale the image to the width of the page between the margins.
+            let image = try Image(pdf, files[i])
+            image.setAltDescription(descriptions[i])
+            image.scaleBy((page.getWidth() - 100.0) / image.getWidth())
+            image.setLocation(50.0, 100.0)
+            image.drawOn(page)
 
-        // The heading of the page, above the chart
-        TextLine(f1, "Rivers of the World")
-                .setStructureType(StructElem.H1)
-                .setFontSize(18.0)
-                .setLocation(36.0, 40.0)
-                .drawOn(page)
-
-        let rivers = [
-                "Nile", "Amazon", "Yangtze", "Mississippi-Missouri", "Yenisey-Baikal-Selenga",
-                "Huang He (Yellow)", "Ob-Irtysh", "Paraná", "Congo", "Amur"]
-        let lengths: [Float] = [6650.0, 6400.0, 6300.0, 5971.0, 5540.0, 5464.0, 5410.0, 4880.0, 4700.0, 4444.0]
-        let colors: [Int32] = [
-                0x477aa8, 0x5f7e5f, 0x8b6f47, 0x8e7152, 0x517aa0,
-                0x967110, 0x687b68, 0x8e7155, 0x5c5c5c, 0x897154]
-
-        let chart = BarChart(f1, f2)
-        chart.setLocation(36.0, 70.0)
-        chart.setSize(540.0, 400.0)
-        chart.setTitle("10 Longest Rivers in the World")
-        chart.setSubtitle("Length in kilometers · Color reflects typical sediment / pollution character")
-        chart.setCategories(rivers)
-        chart.addSeries("", lengths, colors)
-        chart.setHorizontal(true)
-        chart.setGroupGap(0.4)
-        chart.setValueAxisMinMax(0.0, 8000.0, 4)
-        chart.setGridLineWidth(0.75)
-        chart.setGridLineColor(0xe0e0e0)
-        chart.setGridLineDashPattern("[] 0")
-        chart.setAxisLineWidth(0.0)
-        chart.setDrawValueLabels(true)
-        chart.setValueLabelsInside(true)
-        chart.setGroupingUsed(true)
-        chart.setAltDescription(
-                "The ten longest rivers in the world, in kilometers: Nile 6,650, Amazon 6,400, Yangtze 6,300, Mississippi-Missouri 5,971, Yenisey-Baikal-Selenga 5,540, Huang He (Yellow) 5,464, Ob-Irtysh 5,410, Paraná 4,880, Congo 4,700, Amur 4,444.")
-        chart.drawOn(page)
-
-        // The color key under the chart
-        let gray: Int32 = 0x444444
-        TextLine(f3, "Color key (illustrative):")
-                .setTextColor(gray).setLocation(171.0, 496.0).drawOn(page)
-        let keyColors: [Int32] = [0x477aa8, 0x5f7e5f, 0x8e7155, 0x967110, 0x5c5c5c]
-        let keyTexts = [
-                "Clear / low sediment", "Sediment-rich, relatively clean", "Polluted / industrial & agricultural",
-                "Heavy natural sediment (loess)", "Natural dark tannin stain (Congo)"]
-        let keyX: [Float] = [171.0, 262.0, 398.0, 171.0, 313.0]
-        let keyY: [Float] = [512.0, 512.0, 512.0, 527.0, 527.0]
-        for i in 0..<keyColors.count {
-            // The swatches are rectangles, drawn as artifacts next to their text.
-            Rect(keyX[i], keyY[i] - 8.5, 10.5, 10.5).setFillColor(keyColors[i]).drawOn(page)
-            TextLine(f4, keyTexts[i])
-                    .setTextColor(gray).setLocation(keyX[i] + 15.0, keyY[i]).drawOn(page)
+            mapPages.append(page)
         }
 
-        let note = "Color mapping is illustrative; lengths and conditions vary by source and season."
-        TextLine(f4, note)
-                .setTextColor(0x696969).setLocation(576.0 - f4.stringWidth(note), 550.0).drawOn(page)
+        // 2. Draw the contents page last, now that the map pages are ready.
+        let contents = Page(pdf, A4.PORTRAIT, Page.DETACHED)
+
+        var text = TextLine(f2, "Maps")
+        text.setStructureType(StructElem.H1)
+        text.setFontSize(24.0)
+        text.setLocation(50.0, 80.0)
+        text.drawOn(contents)
+
+        var y: Float = 130.0
+        for i in 0..<titles.count {
+            text = TextLine(f1, titles[i] + " . . . . . . . . . . page " + String(i + 2))
+            text.setFontSize(14.0)
+            text.setLocation(50.0, y)
+            text.drawOn(contents)
+            y += 25.0
+        }
+
+        let textBlock = TextBlock(f1,
+                "This page was drawn after the two map pages, but it is the first page "
+                + "of the document: the pages were made detached and are added to the PDF "
+                + "in reading order. The footer \"Page X of N\" is drawn on each page last, "
+                + "when the number of pages is known.")
+        textBlock.setFontSize(12.0)
+        textBlock.setLineSpacing(1.5)
+        textBlock.setTextColor(Color.dimgray)
+        textBlock.setLocation(50.0, y + 20.0)
+        textBlock.setWidth(contents.getWidth() - 100.0)
+        textBlock.drawOn(contents)
+
+        // 3. The pages in reading order, and a footer on each, now that their
+        // number is known.
+        let pages = [contents] + mapPages
+        let fontSize: Float = 10.0
+        for i in 0..<pages.count {
+            let page = pages[i]
+
+            let line = Line(70.0, page.getHeight() - 60.0,
+                    page.getWidth() - 70.0, page.getHeight() - 60.0)
+            line.setStrokeColor(Color.lightgray)
+            line.drawOn(page)
+
+            // A page number is an artifact: a screen reader skips it.
+            let footer = "Page " + String(i + 1) + " of " + String(pages.count)
+            page.addArtifactBMC()
+            page.setBrushColor(Color.black)
+            page.drawString(
+                    f1,
+                    fontSize,
+                    footer,
+                    (page.getWidth() - f1.stringWidth(fontSize, footer))/2.0,
+                    page.getHeight() - 40.0)
+            page.addEMC()
+        }
+        pdf.addPages(pages)
 
         try pdf.complete()
     }
 }   // End of Example_39.swift
+
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
 _ = try Example_39()

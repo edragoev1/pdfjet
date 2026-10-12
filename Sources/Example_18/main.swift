@@ -9,90 +9,58 @@ import PDFjet
 
 /**
  * Example_18.swift
- * This example shows how to write "Page X of N" footer on every page.
+ * Paragraphs written with the inline markup of Markdown: **bold**, *italic*,
+ * `code` and [links](url), each drawn in its own font by Markup, with the
+ * punctuation after a word in another style next to it. The paragraphs flow
+ * in a text frame, and the list is a list of paragraphs with labels.
  */
 public class Example_18 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_18.pdf", append: false)!)
         pdf.setCompliance(Compliance.PDF_UA_1)
-        pdf.setTitle("How to Number Pages")
+        pdf.setTitle("Inline markup")
 
-        let f1 = try Font(pdf, IBMPlexSans.Regular)
-        let f2 = try Font(pdf, IBMPlexSans.SemiBold)
+        let regular = try Font(pdf, IBMPlexSans.Regular).setSize(11.0)
+        let bold = try Font(pdf, IBMPlexSans.Bold).setSize(11.0)
+        let italic = try Font(pdf, IBMPlexSans.Italic).setSize(11.0)
+        let boldItalic = try Font(pdf, IBMPlexSans.BoldItalic).setSize(11.0)
+        let code = try Font(pdf, IBMPlexMono.Regular).setSize(10.0)
+        let heading = try Font(pdf, IBMPlexSans.SemiBold)
+        let markup = Markup(regular, bold, italic, boldItalic, code)
 
-        let titles = [
-            "1. Create the pages",
-            "2. Draw the content",
-            "3. Add the footers",
+        var paragraphs = [Paragraph]()
+        paragraphs.append(Paragraph(TextLine(heading, "Inline markup").setFontSize(22.0))
+                .setStructureType(StructElem.H1))
+        paragraphs.append(contentsOf: markup.paragraphs(
+                "**Markup** reads the inline markup of Markdown and draws each part in its own "
+                + "font: **bold**, *italic*, ***bold italic***, `code` and "
+                + "[links](https://pdfjet.com). A word keeps the punctuation after it, as in "
+                + "*this*, and a mark with no match, such as the one in 2 * 3, is text.\n"
+                + "\n"
+                + "A backslash makes a mark text too: \\*not italic\\*. Code keeps its marks "
+                + "as they are, as in `a*b*c`, and a link can have emphasis in it: "
+                + "[the **PDFjet** repository](https://github.com/edragoev1/pdfjet)."))
+
+        let items = [
+            "`Markup.paragraph` makes one paragraph of a text.",
+            "`Markup.paragraphs` makes one of each part between the empty lines.",
+            "The paragraphs go in a **TextFrame** or a **TextColumn**, as any others do.",
         ]
-        let texts = [
-            "The total number of pages is not known until all the content is drawn. "
-                + "That is why the pages in this document are created with Page.DETACHED: "
-                + "they are not added to the PDF yet, and they are kept in a list instead.",
-            "Each page gets its content, like this heading and this paragraph. "
-                + "Long documents would flow their text or tables from page to page here.",
-            "Now the list holds every page, so its size is the total number of pages. "
-                + "The footer \"Page X of N\" is drawn on each page, "
-                + "and then all the pages are added to the PDF with addPages.",
-        ]
+        for (i, item) in items.enumerated() {
+            paragraphs.append(markup.paragraph(item)
+                    .setListLabel(TextLine(regular, "\(i + 1)."), 16.0))
+        }
 
+        let frame = TextFrame(paragraphs)
+        frame.setLocation(70.0, 70.0)
+        frame.setWidth(470.0)
+        frame.setParagraphGap(8.0)
         var pages = [Page]()
-        for i in 0..<titles.count {
-            let page = Page(pdf, A4.PORTRAIT, Page.DETACHED)
-
-            let header = TextLine(f1, "How to number pages")
-            header.setFontSize(10.0)
-            header.setTextColor(Color.dimgray)
-            header.setLocation(70.0, 50.0)
-            header.drawOn(page)
-
-            let line = Line(70.0, 60.0, page.getWidth() - 70.0, 60.0)
-            line.setStrokeColor(Color.lightgray)
-            line.drawOn(page)
-
-            let title = TextLine(f2, titles[i])
-            title.setStructureType(StructElem.H1)
-            title.setFontSize(20.0)
-            title.setLocation(70.0, 120.0)
-            title.drawOn(page)
-
-            let textBlock = TextBlock(f1, texts[i])
-            textBlock.setFontSize(12.0)
-            textBlock.setLineSpacing(1.5)
-            textBlock.setLocation(70.0, 140.0)
-            textBlock.setWidth(page.getWidth() - 140.0)
-            textBlock.drawOn(page)
-
-            pages.append(page)
-        }
-
-        let fontSize: Float = 10.0
-        for i in 0..<pages.count {
-            let page = pages[i]
-
-            let line = Line(70.0, page.getHeight() - 60.0,
-                    page.getWidth() - 70.0, page.getHeight() - 60.0)
-            line.setStrokeColor(Color.lightgray)
-            line.drawOn(page)
-
-            // A page number is an artifact: a screen reader skips it.
-            let footer = "Page " + String(i + 1) + " of " + String(pages.count)
-            page.addArtifactBMC()
-            page.setBrushColor(Color.black)
-            page.drawString(
-                    f1,
-                    fontSize,
-                    footer,
-                    (page.getWidth() - f1.stringWidth(fontSize, footer))/2.0,
-                    page.getHeight() - 40.0)
-            page.addEMC()
-        }
+        frame.drawOn(pdf, &pages, Letter.PORTRAIT)
         pdf.addPages(pages)
-
         try pdf.complete()
     }
-}   // End of Example_18.swift
-
+}
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
 _ = try Example_18()

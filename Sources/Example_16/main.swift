@@ -9,66 +9,94 @@ import PDFjet
 
 /**
  * Example_16.swift
+ * This example draws a menu with paragraphs that mix fonts, sizes and colors,
+ * currency signs raised with a vertical offset, and a rotated, underlined label.
  */
 public class Example_16 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_16.pdf", append: false)!)
         pdf.setCompliance(Compliance.PDF_UA_1)
-        pdf.setTitle("Text block with highlighted keywords")
+        pdf.setTitle("Paragraphs with mixed text styles")
 
-        // let f1 = try Font(pdf, SourceSerif4.Regular)
-        // let f1 = try Font(pdf, NotoSans.Regular)
-        let f1 = try Font(pdf, IBMPlexSans.Regular)
-        f1.setSize(15.0)
+        let f1 = try Font(pdf, SourceSerif4.Regular)
+        f1.setSize(14.0)
+
+        let f2 = try Font(pdf, SourceSerif4.Italic)
+        f2.setSize(14.0)
+
+        let f3 = try Font(pdf, SourceSerif4.SemiBold)
+        f3.setSize(14.0)
+
+        let f4 = try Font(pdf, SourceSerif4.SemiBold)
+        f4.setSize(9.0)
 
         let page = Page(pdf, Letter.PORTRAIT)
 
-        // A heading, which PAC asks a document for
-        TextLine(f1, "Text block with highlighted keywords")
-                .setStructureType(StructElem.H1)
-                .setFontSize(18.0)
-                .setLocation(100.0, 36.0)
-                .drawOn(page)
+        let title = TextLine(f3, "Café Menu")
+        title.setStructureType(StructElem.H1)
+        title.setFontSize(28.0)
+        title.setLocation(70.0, 100.0)
+        title.drawOn(page)
 
-        var colors = [String : Int32]()
-        colors["Everyone"] = Color.firebrick
-        colors["pay"] = Color.green
-        colors["freedom"] = Color.blue
+        // Each paragraph mixes a name, an italic description and a price
+        // with a small dollar sign raised by a vertical offset.
+        let names = ["Espresso", "Cappuccino", "Hot chocolate"]
+        let notes = ["rich and intense", "with steamed milk foam", "made with dark cocoa"]
+        let prices = ["3.25", "4.50", "3.95"]
 
-        // page.saveGraphicsState()
+        let column = TextColumn()
+        for i in 0..<names.count {
+            let paragraph = Paragraph()
+                    .add(TextLine(f3, names[i]))
+                    .add(TextLine(f2, notes[i]).setTextColor(Color.dimgray))
+                    .add(TextLine(f4, "$").setVerticalOffset(-4.0))
+                    .add(TextLine(f1, prices[i]).setTextColor(Color.darkred))
+            column.addParagraph(paragraph)
+        }
 
-        let gs = GraphicsState()
-        gs.setAlphaStroking(0.5)        // Stroking alpha
-        gs.setAlphaNonStroking(0.5)     // Non-Stroking alpha
-        page.setGraphicsState(gs)
+        // A paragraph that colors some of its words, aligned to the right.
+        column.addParagraph(Paragraph()
+                .add(TextLine(f2, "Freshly"))
+                .add(TextLine(f3, "roasted").setTextColor(Color.saddlebrown))
+                .add(TextLine(f2, "every"))
+                .add(TextLine(f3, "morning").setTextColor(Color.sienna))
+                .setTextAlignment(Alignment.RIGHT))
 
-        let englishText = try Content.ofTextFile("data/languages/english.txt")
-        // f1.setSize(14.0)
-        let textBlock = TextBlock(f1, englishText)
-        textBlock.setLocation(100.0, 50.0)
-        textBlock.setWidth(400.0)
-        // With a height the text that does not fit is cut; without one the
-        // block is as tall as its text.
-        textBlock.setHeight(450.0)
-        textBlock.setVerticalAlignment(Alignment.TOP)
-        // textBlock.setVerticalAlignment(Alignment.BOTTOM)
-        // textBlock.setVerticalAlignment(Alignment.CENTER)
-        // textBlock.setTextAlignment(Alignment.CENTER)
-        textBlock.setBackgroundColor(Color.whitesmoke)
-        textBlock.setHighlightColors(colors)
-        textBlock.setBorderColor(Color.black)
-        let xy = textBlock.drawOn(page)
+        column.setLocation(70.0, 140.0)
+        column.setWidth(470.0)
+        column.setParagraphSpacing(1.8)
+        let xy = column.drawOn(page)
 
-        page.setGraphicsState(GraphicsState())      // Reset GS
-        // page.restoreGraphicsState()
+        // A TextFrame wraps the words of its paragraphs to its width.
+        var paragraphs = [Paragraph]()
+        paragraphs.append(Paragraph()
+                .add(TextLine(f1, "Our beans come from small farms in"))
+                .add(TextLine(f3, "Colombia,"))
+                .add(TextLine(f3, "Ethiopia"))
+                .add(TextLine(f1, "and"))
+                .add(TextLine(f3, "Guatemala,"))
+                .add(TextLine(f1, "and we roast them in small batches."))
+                .add(TextLine(f2, "Ask us about the beans of the week.").setTextColor(Color.darkred)))
+        paragraphs.append(Paragraph()
+                .add(TextLine(f2, "Prices include tax.").setTextColor(Color.dimgray)))
 
-        let rect = Rect(xy[0], xy[1], 20.0, 20.0)
-        rect.setBorderColor(Color.black)
-        rect.drawOn(page)
+        let frame = TextFrame(paragraphs)
+        frame.setLocation(70.0, xy[1] + 30.0)
+        frame.setWidth(470.0)
+        frame.drawOn(page)
+
+        let label = TextLine(f3, "Today's special!")
+        label.setFontSize(18.0)
+        label.setTextColor(Color.red)
+        label.setLocation(400.0, 90.0)
+        label.setTextRotation(15)
+        label.setUnderline(true)
+        label.drawOn(page)
 
         try pdf.complete()
     }
 }   // End of Example_16.swift
+
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
 _ = try Example_16()

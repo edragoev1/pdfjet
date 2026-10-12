@@ -11,73 +11,98 @@ import (
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
-	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
+	"github.com/edragoev1/pdfjet/v9/src/SourceSerif4"
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
-	"github.com/edragoev1/pdfjet/v9/src/content"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
-// Example16 draws a text block with highlighted keywords.
+// Example16 draws a menu with paragraphs that mix fonts, sizes and colors,
+// currency signs raised with a vertical offset, and a rotated, underlined label.
 func Example16() {
 	pdf, err := pdfjet.NewPDFFile("Example_16.pdf")
 	if err != nil {
 		log.Fatal(err)
 	}
 	pdf.SetCompliance(compliance.PDF_UA_1)
-	pdf.SetTitle("Text block with highlighted keywords")
+	pdf.SetTitle("Paragraphs with mixed text styles")
 
-	// f1 := pdfjet.NewFontFromFile(pdf, SourceSerif4.Regular)
-	// f1 := pdfjet.NewFontFromFile(pdf, NotoSans.Regular)
-	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
-	f1.SetSize(15.0)
+	f1 := pdfjet.NewFontFromFile(pdf, SourceSerif4.Regular)
+	f1.SetSize(14.0)
+
+	f2 := pdfjet.NewFontFromFile(pdf, SourceSerif4.Italic)
+	f2.SetSize(14.0)
+
+	f3 := pdfjet.NewFontFromFile(pdf, SourceSerif4.SemiBold)
+	f3.SetSize(14.0)
+
+	f4 := pdfjet.NewFontFromFile(pdf, SourceSerif4.SemiBold)
+	f4.SetSize(9.0)
 
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 
-	// A heading, which PAC asks a document for
-	pdfjet.NewTextLine(f1, "Text block with highlighted keywords").
-		SetStructureType(structelem.H1).
-		SetFontSize(18.0).
-		SetLocation(100.0, 36.0).
-		DrawOn(page)
+	title := pdfjet.NewTextLine(f3, "Café Menu")
+	title.SetStructureType(structelem.H1)
+	title.SetFontSize(28.0)
+	title.SetLocation(70.0, 100.0)
+	title.DrawOn(page)
 
-	colors := make(map[string]int32)
-	colors["Everyone"] = color.Firebrick
-	colors["pay"] = color.Green
-	colors["freedom"] = color.Blue
+	// Each paragraph mixes a name, an italic description and a price
+	// with a small dollar sign raised by a vertical offset.
+	names := []string{"Espresso", "Cappuccino", "Hot chocolate"}
+	notes := []string{"rich and intense", "with steamed milk foam", "made with dark cocoa"}
+	prices := []string{"3.25", "4.50", "3.95"}
 
-	// page.SaveGraphicsState()
+	column := pdfjet.NewTextColumn()
+	for i := 0; i < len(names); i++ {
+		paragraph := pdfjet.NewParagraph().
+			Add(pdfjet.NewTextLine(f3, names[i])).
+			Add(pdfjet.NewTextLine(f2, notes[i]).SetTextColor(color.DimGray)).
+			Add(pdfjet.NewTextLine(f4, "$").SetVerticalOffset(-4.0)).
+			Add(pdfjet.NewTextLine(f1, prices[i]).SetTextColor(color.DarkRed))
+		column.AddParagraph(paragraph)
+	}
 
-	gs := pdfjet.NewGraphicsState()
-	gs.SetAlphaStroking(0.5)    // Stroking alpha
-	gs.SetAlphaNonStroking(0.5) // Non-Stroking alpha
-	page.SetGraphicsState(gs)
+	// A paragraph that colors some of its words, aligned to the right.
+	column.AddParagraph(pdfjet.NewParagraph().
+		Add(pdfjet.NewTextLine(f2, "Freshly")).
+		Add(pdfjet.NewTextLine(f3, "roasted").SetTextColor(color.SaddleBrown)).
+		Add(pdfjet.NewTextLine(f2, "every")).
+		Add(pdfjet.NewTextLine(f3, "morning").SetTextColor(color.Sienna)).
+		SetTextAlignment(alignment.Right))
 
-	englishText := content.OfTextFile("data/languages/english.txt")
-	// f1.SetSize(14.0)
-	textBlock := pdfjet.NewTextBlock(f1, englishText)
-	textBlock.SetLocation(100.0, 50.0)
-	textBlock.SetWidth(400.0)
-	// With a height the text that does not fit is cut; without one the
-	// block is as tall as its text.
-	textBlock.SetHeight(450.0)
-	textBlock.SetVerticalAlignment(alignment.Top)
-	// textBlock.SetVerticalAlignment(alignment.Bottom)
-	// textBlock.SetVerticalAlignment(alignment.Center)
-	// textBlock.SetTextAlignment(alignment.Center)
-	textBlock.SetBackgroundColor(color.WhiteSmoke)
-	textBlock.SetHighlightColors(colors)
-	textBlock.SetBorderColor(color.Black)
-	xy := textBlock.DrawOn(page)
+	column.SetLocation(70.0, 140.0)
+	column.SetWidth(470.0)
+	column.SetParagraphSpacing(1.8)
+	xy := column.DrawOn(page)
 
-	page.SetGraphicsState(pdfjet.NewGraphicsState()) // Reset GS
-	// page.RestoreGraphicsState()
+	// A TextFrame wraps the words of its paragraphs to its width.
+	paragraphs := make([]*pdfjet.Paragraph, 0)
+	paragraphs = append(paragraphs, pdfjet.NewParagraph().
+		Add(pdfjet.NewTextLine(f1, "Our beans come from small farms in")).
+		Add(pdfjet.NewTextLine(f3, "Colombia,")).
+		Add(pdfjet.NewTextLine(f3, "Ethiopia")).
+		Add(pdfjet.NewTextLine(f1, "and")).
+		Add(pdfjet.NewTextLine(f3, "Guatemala,")).
+		Add(pdfjet.NewTextLine(f1, "and we roast them in small batches.")).
+		Add(pdfjet.NewTextLine(f2, "Ask us about the beans of the week.").SetTextColor(color.DarkRed)))
+	paragraphs = append(paragraphs, pdfjet.NewParagraph().
+		Add(pdfjet.NewTextLine(f2, "Prices include tax.").SetTextColor(color.DimGray)))
 
-	rect := pdfjet.NewRect(xy[0], xy[1], 20.0, 20.0)
-	rect.SetBorderColor(color.Black)
-	rect.DrawOn(page)
+	frame := pdfjet.NewTextFrameFromParagraphs(paragraphs)
+	frame.SetLocation(70.0, xy[1]+30.0)
+	frame.SetWidth(470.0)
+	frame.DrawOn(page)
+
+	label := pdfjet.NewTextLine(f3, "Today's special!")
+	label.SetFontSize(18.0)
+	label.SetTextColor(color.Red)
+	label.SetLocation(400.0, 90.0)
+	label.SetTextRotation(15)
+	label.SetUnderline(true)
+	label.DrawOn(page)
 
 	if err := pdf.Complete(); err != nil {
 		log.Fatal(err)

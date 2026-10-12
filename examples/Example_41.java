@@ -7,52 +7,118 @@
 package examples;
 
 import java.io.*;
-import java.util.*;
 import com.pdfjet.*;
 import com.pdfjet.fonts.*;
 
 /**
  * Example_41.java
- *
- * Merges existing PDF documents into one, after a cover page drawn with PDFjet.
- * The pages of each document follow in their order and keep their content,
- * resources, annotations and links. The parts of a document that belong to the
- * whole document, such as its bookmarks, form fields and tagging, are left out.
+ * This example draws the outline of a short guide to the structure of a PDF
+ * file, and adds a bookmark for each of its titles. The numbers of the titles
+ * come from their place in the tree of bookmarks.
  */
-class Example_41 {
+public class Example_41 {
     public Example_41() throws Exception {
-        PDF pdf = new PDF(new BufferedOutputStream(new FileOutputStream("Example_41.pdf")));
+        PDF pdf = new PDF(
+                new BufferedOutputStream(new FileOutputStream("Example_41.pdf")));
+        pdf.setCompliance(Compliance.PDF_UA_1);
+        pdf.setTitle("The structure of a PDF file");
 
-        String[] fileNames = {
-            "data/testPDFs/scanned-linearized.pdf",
-            "data/testPDFs/rc65-16e.pdf",
-            "data/testPDFs/PDFjetLogo.pdf"
-        };
-        List<List<PDFobj>> documents = new ArrayList<List<PDFobj>>();
-        for (String fileName : fileNames) {
-            BufferedInputStream bis = new BufferedInputStream(new FileInputStream(fileName));
-            documents.add(pdf.read(bis));
-            bis.close();
-        }
+        Font f1 = new Font(pdf, IBMPlexSans.Regular);
+        f1.setSize(14f);
 
-        Font f1 = new Font(pdf, IBMPlexSans.Bold);
-        f1.setSize(24f);
-        Font f2 = new Font(pdf, IBMPlexSans.Regular);
-        f2.setSize(12f);
+        Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
+        f2.setSize(20f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
-        new TextLine(f1, "Merged documents").setLocation(50f, 80f).drawOn(page);
-        float y = 130f;
-        for (int i = 0; i < fileNames.length; i++) {
-            int pages = pdf.getPageObjects(documents.get(i)).size();
-            String text = fileNames[i] + ", " + pages + (pages == 1 ? " page" : " pages");
-            new TextLine(f2, text).setLocation(50f, y).drawOn(page);
-            y += 20f;
-        }
 
-        for (List<PDFobj> objects : documents) {
-            pdf.merge(objects);
-        }
+        Bookmark toc = new Bookmark(pdf);
+        Title title = null;
+
+        float x = 70f;
+        float y = 80f;
+        float offset = 50f;
+
+        // A bookmark without a number.
+        title = new Title(f2, "The structure of a PDF file", x, y);
+        title.getTextLine().setStructureType(StructElem.H1);
+        toc.addBookmark(page, title);
+        title.drawOn(page);
+
+        y += 50f;
+        title = new Title(f1, "File header", x, y).setOffset(offset);
+        toc.addBookmark(page, title).autoNumber(title.getPrefix());
+        title.drawOn(page);
+
+        y += 30f;
+        title = new Title(f1, "File body", x, y).setOffset(offset);
+        Bookmark body = toc.addBookmark(page, title).autoNumber(title.getPrefix());
+        title.drawOn(page);
+
+        // Bookmarks nested in "File body".
+        y += 30f;
+        title = new Title(f1, "Objects", x, y).setOffset(offset);
+        body.addBookmark(page, title).autoNumber(title.getPrefix());
+        title.drawOn(page);
+
+        y += 30f;
+        title = new Title(f1, "Streams", x, y).setOffset(offset);
+        body.addBookmark(page, title).autoNumber(title.getPrefix());
+        title.drawOn(page);
+
+        y += 30f;
+        title = new Title(f1, "Cross-reference table", x, y).setOffset(offset);
+        toc.addBookmark(page, title).autoNumber(title.getPrefix());
+        title.drawOn(page);
+
+        y += 30f;
+        title = new Title(f1, "File trailer", x, y).setOffset(offset);
+        toc.addBookmark(page, title).autoNumber(title.getPrefix());
+        title.drawOn(page);
+
+        page = new Page(pdf, Letter.PORTRAIT);
+
+        y = 80f;
+        title = new Title(f1, "Incremental updates", x, y).setOffset(offset);
+        Bookmark bm = toc.addBookmark(page, title).autoNumber(title.getPrefix());
+        title.drawOn(page);
+
+        y += 30f;
+        title = new Title(f1, "New and changed objects", x, y).setOffset(offset);
+        bm = bm.addBookmark(page, title).autoNumber(title.getPrefix());
+        title.drawOn(page);
+
+        // Two levels down.
+        y += 30f;
+        title = new Title(f1, "Changed objects keep their numbers", x, y).setOffset(offset);
+        bm.addBookmark(page, title).autoNumber(title.getPrefix());
+        title.drawOn(page);
+
+        y += 30f;
+        title = new Title(f1, "Deleted objects are marked as free", x, y).setOffset(offset);
+        bm.addBookmark(page, title).autoNumber(title.getPrefix());
+        title.drawOn(page);
+
+        // Back up one level.
+        y += 30f;
+        bm = bm.getParent();
+        title = new Title(f1, "A new cross-reference section", x, y).setOffset(offset);
+        bm.addBookmark(page, title).autoNumber(title.getPrefix());
+        title.drawOn(page);
+
+        y += 30f;
+        title = new Title(f1, "A new trailer", x, y).setOffset(offset);
+        bm.addBookmark(page, title).autoNumber(title.getPrefix());
+        title.drawOn(page);
+
+        y += 30f;
+        title = new Title(f1, "Linearized files", x, y).setOffset(offset);
+        toc.addBookmark(page, title).autoNumber(title.getPrefix());
+        title.drawOn(page);
+
+        y += 50f;
+        title = new Title(f2, "Summary", x, y);
+        toc.addBookmark(page, title);
+        title.drawOn(page);
 
         pdf.complete();
     }

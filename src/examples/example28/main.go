@@ -12,88 +12,44 @@ import (
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
-	"github.com/edragoev1/pdfjet/v9/src/NotoSans"
-	"github.com/edragoev1/pdfjet/v9/src/SourceSerif4"
-	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
-// Example28 reads fonts from OpenType and TrueType files. Any .otf or .ttf
-// file on the computer is a font for PDFjet. A font is embedded as a subset
-// of the glyphs the document draws, unless it is set to stay whole.
+// Example28 draws a donut chart.
 func Example28() {
 	pdf, err := pdfjet.NewPDFFile("Example_28.pdf")
 	if err != nil {
 		log.Fatal(err)
 	}
 	pdf.SetCompliance(compliance.PDF_UA_1)
-	pdf.SetTitle("Fonts from .otf and .ttf Files")
-
-	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
-	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
+	pdf.SetTitle("Fruit Donut Chart")
 
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 
-	text := pdfjet.NewTextLine(f2, "Fonts from .otf and .ttf Files")
-	text.SetStructureType(structelem.H1)
-	text.SetFontSize(22.0)
-	text.SetLocation(50.0, 80.0)
-	text.DrawOn(page)
+	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
+	f1.SetSize(12.0)
+	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold)
+	f2.SetSize(10.0)
 
-	textBlock := pdfjet.NewTextBlock(f1,
-		"PDFjet reads OpenType and TrueType fonts as they are: pass the path "+
-			"of any .otf or .ttf file on the computer to the Font constructor. "+
-			"The IBMPlexSans and NotoSans constants are the paths of the fonts "+
-			"that come with PDFjet. A font is embedded with only the "+
-			"glyphs the document draws, which keeps the file small, whatever its "+
-			"outlines. The paragraph below is drawn four times.")
-	textBlock.SetFontSize(12.0)
-	textBlock.SetLineSpacing(1.5)
-	textBlock.SetLocation(50.0, 95.0)
-	textBlock.SetWidth(512.0)
-	xy := textBlock.DrawOn(page)
+	// A heading, which PAC asks a document for
+	pdfjet.NewTextLine(f2, "Fruit Donut Chart").
+		SetStructureType(structelem.H1).
+		SetFontSize(18.0).
+		SetLocation(100.0, 100.0).
+		DrawOn(page)
 
-	files := []string{
-		"fonts/IBMPlexSans/IBMPlexSans-Regular.otf",
-		IBMPlexSans.Regular,
-		SourceSerif4.Regular,
-		NotoSans.Regular,
-	}
-	kinds := []string{
-		"OpenType with CFF outlines, from the .otf file, embedded as a subset",
-		"TrueType, from the .ttf file, embedded as a subset",
-		"Another TrueType font, embedded as a subset",
-		"A TrueType font kept whole: subsetting turned off",
-	}
-	sample := "The quick brown fox jumps over the lazy dog. " +
-		"Ξεσκεπάζω την ψυχοφθόρα βδελυγμία. " +
-		"Съешь же ещё этих мягких французских булок, да выпей чаю."
+	chart := pdfjet.NewDonutChart(f1, f2)
+	chart.SetLocation(100.0, 200.0)
+	chart.SetRadii(200.0, 120.0) // an inner radius of 0 makes a pie chart
 
-	y := xy[1] + 30.0
-	for i := 0; i < len(files); i++ {
-		text = pdfjet.NewTextLine(f2, files[i])
-		text.SetFontSize(11.0)
-		text.SetLocation(50.0, y)
-		text.DrawOn(page)
-
-		text = pdfjet.NewTextLine(f1, kinds[i])
-		text.SetFontSize(10.0)
-		text.SetTextColor(color.DimGray)
-		text.SetLocation(50.0, y+15.0)
-		text.DrawOn(page)
-
-		font := pdfjet.NewFontFromFile(pdf, files[i])
-		font.SetSubset(i != 3)
-		textBlock = pdfjet.NewTextBlock(font, sample)
-		textBlock.SetFontSize(13.0)
-		textBlock.SetLineSpacing(1.4)
-		textBlock.SetLocation(50.0, y+28.0)
-		textBlock.SetWidth(512.0)
-		xy = textBlock.DrawOn(page)
-		y = xy[1] + 30.0
-	}
+	chart.AddSlice(pdfjet.NewSlice(25.0, 0xC1121F, "Apples"))  // deep red
+	chart.AddSlice(pdfjet.NewSlice(20.0, 0x1D3557, "Oranges")) // navy blue
+	chart.AddSlice(pdfjet.NewSlice(30.0, 0x1A7468, "Bananas")) // dark teal
+	chart.AddSlice(pdfjet.NewSlice(15.0, 0xB16104, "Grapes"))  // burnt orange
+	chart.AddSlice(pdfjet.NewSlice(10.0, 0x846F1E, "Lemons"))  // dark gold
+	chart.DrawOn(page)
 
 	if err := pdf.Complete(); err != nil {
 		log.Fatal(err)

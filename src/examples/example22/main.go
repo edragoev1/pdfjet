@@ -12,132 +12,74 @@ import (
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
-	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
+	"github.com/edragoev1/pdfjet/v9/src/content"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
-// Example22 links a contents page to three chapters, and each chapter
-// back to the contents, with destinations and "Go To" actions.
+// Example22 draws a table whose cells hold text columns: each paragraph of
+// English and Greek text wraps inside its cell, and the cell grows to fit it.
 func Example22() {
 	pdf, err := pdfjet.NewPDFFile("Example_22.pdf")
 	if err != nil {
 		log.Fatal(err)
 	}
 	pdf.SetCompliance(compliance.PDF_UA_1)
-	pdf.SetTitle("Internal links and destinations")
+	pdf.SetTitle("Text Columns in Table Cells")
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
+	f1.SetSize(10.0)
+
 	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
+	f2.SetSize(10.0)
 
-	chapters := []string{
-		"Destinations",
-		"Go To actions",
-		"Links on shapes and images",
-	}
-	texts := []string{
-		"A destination is a named place in a document. The title of this chapter " +
-			"is the destination \"chapter1\", set with setDestination.",
-		"A Go To action makes something a link to a destination. The chapter titles " +
-			"on the contents page are text lines with a Go To action.",
-		"Rectangles and images can be links too. Click the arrow in the top left " +
-			"corner, or the arrow image next to it, to go back to the contents.",
-	}
-
-	// The contents page. The destination is the top of the page.
 	page := pdfjet.NewPage(pdf, letter.Portrait())
-	page.AddDestinationAt("contents", 0.0, 0.0)
 
-	text := pdfjet.NewTextLine(f2, "Contents")
+	text := pdfjet.NewTextLine(f2, "Text Columns in Table Cells")
 	text.SetStructureType(structelem.H1)
-	text.SetFontSize(24.0)
-	text.SetLocation(90.0, 100.0)
+	text.SetFontSize(22.0)
+	text.SetLocation(50.0, 70.0)
 	text.DrawOn(page)
 
-	// The contents are a list: each item is the number of its chapter, which
-	// labels the item, and the title of the chapter, which is the body of the
-	// item and the link to it. A reader reads them as the items of a list and
-	// not as lines of text that happen to follow one another.
-	y := float32(150.0)
-	page.BeginStructElement(structelem.L)
-	for i := 0; i < len(chapters); i++ {
-		page.BeginStructElement(structelem.LI)
-		label := "Chapter " + fmt.Sprint(i+1) + ":"
-		text = pdfjet.NewTextLine(f1, label)
-		text.SetStructureType(structelem.Lbl)
-		text.SetFontSize(14.0)
-		text.SetLocation(90.0, y)
-		text.DrawOn(page)
+	languages := []string{"English", "Greek"}
+	files := []string{"data/languages/english.txt", "data/languages/greek.txt"}
 
-		// The title, its underline and its link are the body of the item,
-		// which is what an LI may hold beside its label.
-		page.BeginStructElement(structelem.LBody)
-		text = pdfjet.NewTextLine(f1, chapters[i])
-		text.SetFontSize(14.0)
-		text.SetTextColor(color.Blue)
-		text.SetUnderline(true)
-		text.SetGoToAction("chapter" + fmt.Sprint(i+1))
-		text.SetLocation(90.0+f1.StringWidth(14.0, label+" "), y)
-		text.DrawOn(page)
-		page.EndStructElement()
-		page.EndStructElement()
-		y += 30.0
-	}
-	page.EndStructElement()
+	tableData := make([][]*pdfjet.Cell, 0)
 
-	for i := 0; i < len(chapters); i++ {
-		page = pdfjet.NewPage(pdf, letter.Portrait())
+	row := make([]*pdfjet.Cell, 0)
+	row = append(row, pdfjet.NewCell(f2, "Language"))
+	row = append(row, pdfjet.NewCell(f2, "Text"))
+	tableData = append(tableData, row)
 
-		// The title of the chapter is its destination.
-		text = pdfjet.NewTextLine(f2, "Chapter "+fmt.Sprint(i+1)+": "+chapters[i])
-		text.SetFontSize(20.0)
-		text.SetDestination("chapter" + fmt.Sprint(i+1))
-		text.SetLocation(90.0, 100.0)
-		text.DrawOn(page)
+	for i := 0; i < len(languages); i++ {
+		// Each line of the file after the first two is a paragraph.
+		lines := content.LinesOfTextFile(files[i])
+		column := pdfjet.NewTextColumn()
+		column.SetWidth(400.0)
+		for j := 2; j < len(lines); j++ {
+			paragraph := pdfjet.NewParagraph()
+			line := pdfjet.NewTextLine(f1, lines[j])
+			if languages[i] == "Greek" {
+				line.SetLanguage("el") // Read by a screen reader as Greek
+			}
+			paragraph.Add(line)
+			column.AddParagraph(paragraph)
+		}
 
-		textBlock := pdfjet.NewTextBlock(f1, texts[i])
-		textBlock.SetFontSize(12.0)
-		textBlock.SetLineSpacing(1.5)
-		textBlock.SetLocation(90.0, 125.0)
-		textBlock.SetWidth(430.0)
-		textBlock.DrawOn(page)
-
-		text = pdfjet.NewTextLine(f1, "Back to the contents")
-		text.SetFontSize(12.0)
-		text.SetTextColor(color.Blue)
-		text.SetUnderline(true)
-		text.SetGoToAction("contents")
-		text.SetLocation(90.0, 250.0)
-		text.DrawOn(page)
+		row = make([]*pdfjet.Cell, 0)
+		row = append(row, pdfjet.NewCell(f1, languages[i]))
+		row = append(row, pdfjet.NewCell(f1, ""))
+		row[1].SetTextColumn(column)
+		tableData = append(tableData, row)
 	}
 
-	// On the last page, a rect with no border links to the contents too.
-	rect := pdfjet.NewRect(20.0, 20.0, 20.0, 20.0)
-	rect.SetGoToAction("contents")
-	rect.DrawOn(page)
-
-	// Create an up arrow and place it in the rect
-	path := pdfjet.NewPath()
-	path.Add(pdfjet.NewPoint(30.0, 21.0))
-	path.Add(pdfjet.NewPoint(37.0, 29.0))
-	path.Add(pdfjet.NewPoint(33.0, 29.0))
-	path.Add(pdfjet.NewPoint(33.0, 39.0))
-	path.Add(pdfjet.NewPoint(27.0, 39.0))
-	path.Add(pdfjet.NewPoint(27.0, 29.0))
-	path.Add(pdfjet.NewPoint(23.0, 29.0))
-	path.SetClosed(true)
-	path.SetStrokeColor(color.DeepSkyBlue)
-	path.SetFillShape(true)
-	path.DrawOn(page)
-
-	// And so does an image of an arrow.
-	image := pdfjet.NewImageFromFile(pdf, "images/up-arrow.png")
-	image.SetAltDescription(
-		"An arrow pointing up, which goes back to the contents of the document when it is clicked.")
-	image.SetLocation(50.0, 20.0)
-	image.SetGoToAction("contents")
-	image.DrawOn(page)
+	table := pdfjet.NewTable()
+	table.SetTableData(tableData, 1)
+	table.SetColumnWidth(0, 90.0)
+	table.SetColumnWidth(1, 420.0)
+	table.SetLocation(50.0, 100.0)
+	table.DrawOn(page)
 
 	if err := pdf.Complete(); err != nil {
 		log.Fatal(err)

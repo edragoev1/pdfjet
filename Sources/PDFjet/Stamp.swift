@@ -38,7 +38,7 @@ import Foundation
 /// can hold a stamp, so a header written once can be placed inside a group
 /// that is rotated with the rest of it.
 ///
-/// Please see Example_35.
+/// Please see Example_31.
 ///
 public class Stamp : Drawable {
     internal var objNumber: Int?

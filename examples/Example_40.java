@@ -7,92 +7,131 @@
 package examples;
 
 import java.io.*;
-import java.time.DayOfWeek;
 import com.pdfjet.*;
 import com.pdfjet.fonts.*;
 
 /**
  * Example_40.java
- *
- * Draws two bar charts with vertical bars from the same data: the two series
- * grouped by month, and the same series stacked, with a legend under each title.
- * The second page is the calendar of 2026, a CalendarMonth for each month, with
- * the weeks starting on Monday.
+ * This example links a contents page to three chapters, and each chapter
+ * back to the contents, with destinations and "Go To" actions.
  */
-final public class Example_40 {
+public class Example_40 {
     public Example_40() throws Exception {
         PDF pdf = new PDF(
-                new BufferedOutputStream(new FileOutputStream("Example_40.pdf")));
+            new BufferedOutputStream(new FileOutputStream("Example_40.pdf")));
         pdf.setCompliance(Compliance.PDF_UA_1);
-        pdf.setTitle("Units sold by month");
+        pdf.setTitle("Internal links and destinations");
 
+        Font f1 = new Font(pdf, IBMPlexSans.Regular);
+        Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
+
+        String[] chapters = {
+            "Destinations",
+            "Go To actions",
+            "Links on shapes and images",
+        };
+        String[] texts = {
+            "A destination is a named place in a document. The title of this chapter "
+                + "is the destination \"chapter1\", set with setDestination.",
+            "A Go To action makes something a link to a destination. The chapter titles "
+                + "on the contents page are text lines with a Go To action.",
+            "Rectangles and images can be links too. Click the arrow in the top left "
+                + "corner, or the arrow image next to it, to go back to the contents.",
+        };
+
+        // The contents page. The destination is the top of the page.
         Page page = new Page(pdf, Letter.PORTRAIT);
+        page.addDestination("contents", 0f, 0f);
 
-        Font f1 = new Font(pdf, IBMPlexSans.Bold);
-        f1.setSize(10f);
+        TextLine text = new TextLine(f2, "Contents");
+        text.setStructureType(StructElem.H1);
+        text.setFontSize(24f);
+        text.setLocation(90f, 100f);
+        text.drawOn(page);
 
-        Font f2 = new Font(pdf, IBMPlexSans.Regular);
-        f2.setSize(8f);
+        // The contents are a list: each item is the number of its chapter,
+        // which labels the item, and the title of the chapter, which is the
+        // body of the item and the link to it. A reader reads them as the
+        // items of a list and not as lines of text that follow one another.
+        float y = 150f;
+        page.beginStructElement(StructElem.L);
+        for (int i = 0; i < chapters.length; i++) {
+            page.beginStructElement(StructElem.LI);
+            String label = "Chapter " + (i + 1) + ":";
+            text = new TextLine(f1, label);
+            text.setStructureType(StructElem.LBL);
+            text.setFontSize(14f);
+            text.setLocation(90f, y);
+            text.drawOn(page);
 
-        // The heading of the document, above the charts
-        new TextLine(f1, "Sales in 2025 and 2026")
-                .setStructureType(StructElem.H1)
-                .setFontSize(18f)
-                .setLocation(70f, 45f)
-                .drawOn(page);
-
-        String[] months = {
-                "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
-        float[] units2025 = {45f, 65f, 31f, 45f, 65f, 31f, 38f, 52f, 47f, 59f, 66f, 72f};
-        float[] units2026 = {75f, 20f, 73f, 75f, 20f, 73f, 61f, 58f, 69f, 64f, 77f, 80f};
-
-        BarChart chart = new BarChart(f1, f2);
-        chart.setLocation(70f, 70f);
-        chart.setSize(500f, 300f);
-        chart.setTitle("Units sold by month");
-        chart.setXAxisTitle("Month");
-        chart.setYAxisTitle("Units");
-        chart.setCategories(months);
-        chart.addSeries("2025", units2025, Color.seagreen);
-        chart.addSeries("2026", units2026, Color.indianred);
-        chart.setGroupGap(0.4f);
-        chart.setBarGap(0.1f);
-        chart.setAltDescription("Units sold by month in 2025 and 2026, side by side: from 31 to 72 a month in 2025 and from 20 to 80 in 2026, the most in December in both years.");
-        chart.drawOn(page);
-
-        BarChart stacked = new BarChart(f1, f2);
-        stacked.setLocation(70f, 420f);
-        stacked.setSize(500f, 300f);
-        stacked.setTitle("Units sold by month, stacked");
-        stacked.setXAxisTitle("Month");
-        stacked.setYAxisTitle("Units");
-        stacked.setCategories(months);
-        stacked.addSeries("2025", units2025, Color.seagreen);
-        stacked.addSeries("2026", units2026, Color.indianred);
-        stacked.setStacked(true);
-        stacked.setDrawValueLabels(true);
-        stacked.setAltDescription("Units sold by month in 2025 and 2026, stacked: from 85 a month, in February and May, to 152 in December.");
-        stacked.drawOn(page);
-
-        page = new Page(pdf, Letter.PORTRAIT);
-        new TextLine(f1, "Calendar 2026").setFontSize(14f)
-                .setStructureType(StructElem.H2) // Under the heading of the first page
-                .setLocation(50f, 45f).drawOn(page);
-        String[] monthNames = {
-                "January", "February", "March", "April", "May", "June",
-                "July", "August", "September", "October", "November", "December"};
-        for (int i = 0; i < 12; i++) {
-            float x = 50f + (i % 3)*182f;
-            float y = 65f + (i / 3)*177f;
-            new TextLine(f1, monthNames[i]).setLocation(x, y + 12f).drawOn(page);
-            CalendarMonth calendar = new CalendarMonth(f1, f2, 2026, i + 1);
-            calendar.setFirstDayOfWeek(DayOfWeek.MONDAY);
-            calendar.setCellWidth(21f);
-            calendar.setCellHeight(21f);
-            calendar.setLocation(x, y + 18f);
-            calendar.drawOn(page);
+            // The title, its underline and its link are the body of the item,
+            // which is what an LI may hold beside its label.
+            page.beginStructElement(StructElem.LBODY);
+            text = new TextLine(f1, chapters[i]);
+            text.setFontSize(14f);
+            text.setTextColor(Color.blue);
+            text.setUnderline(true);
+            text.setGoToAction("chapter" + (i + 1));
+            text.setLocation(90f + f1.stringWidth(14f, label + " "), y);
+            text.drawOn(page);
+            page.endStructElement();
+            page.endStructElement();
+            y += 30f;
         }
+        page.endStructElement();
+
+        for (int i = 0; i < chapters.length; i++) {
+            page = new Page(pdf, Letter.PORTRAIT);
+
+            // The title of the chapter is its destination.
+            text = new TextLine(f2, "Chapter " + (i + 1) + ": " + chapters[i]);
+            text.setFontSize(20f);
+            text.setDestination("chapter" + (i + 1));
+            text.setLocation(90f, 100f);
+            text.drawOn(page);
+
+            TextBlock textBlock = new TextBlock(f1, texts[i]);
+            textBlock.setFontSize(12f);
+            textBlock.setLineSpacing(1.5f);
+            textBlock.setLocation(90f, 125f);
+            textBlock.setWidth(430f);
+            textBlock.drawOn(page);
+
+            text = new TextLine(f1, "Back to the contents");
+            text.setFontSize(12f);
+            text.setTextColor(Color.blue);
+            text.setUnderline(true);
+            text.setGoToAction("contents");
+            text.setLocation(90f, 250f);
+            text.drawOn(page);
+        }
+
+        // On the last page, a rect with no border links to the contents too.
+        Rect rect = new Rect(20f, 20f, 20f, 20f);
+        rect.setGoToAction("contents");
+        rect.drawOn(page);
+
+        // Create an up arrow and place it in the rect
+        Path path = new Path();
+        path.add(new Point(30f, 21f));
+        path.add(new Point(37f, 29f));
+        path.add(new Point(33f, 29f));
+        path.add(new Point(33f, 39f));
+        path.add(new Point(27f, 39f));
+        path.add(new Point(27f, 29f));
+        path.add(new Point(23f, 29f));
+        path.setClosed(true);
+        path.setStrokeColor(Color.deepskyblue);
+        path.setFillShape(true);
+        path.drawOn(page);
+
+        // And so does an image of an arrow.
+        Image image = new Image(pdf, "images/up-arrow.png");
+        image.setAltDescription(
+                "An arrow pointing up, which goes back to the contents of the document when it is clicked.");
+        image.setLocation(50f, 20f);
+        image.setGoToAction("contents");
+        image.drawOn(page);
 
         pdf.complete();
     }

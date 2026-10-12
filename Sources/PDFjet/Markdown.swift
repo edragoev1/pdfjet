@@ -20,7 +20,7 @@ import Foundation
 /// is a space, links in a table cell are its text, and an image is drawn only
 /// when it is alone in its paragraph, from the directory that
 /// setImageDirectory names; with none, its text is drawn instead, so that a
-/// text from anyone reads no file. Please see Example_54.
+/// text from anyone reads no file. Please see Example_19.
 ///
 public class Markdown {
     // The heading sizes, as factors of the size of the text.

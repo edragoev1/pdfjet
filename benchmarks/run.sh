@@ -4,7 +4,7 @@
 #
 #   benchmarks/run.sh              both benchmarks, a few minutes
 #   benchmarks/run.sh text         the multilingual text document only
-#   benchmarks/run.sh table        Example_43's big table only
+#   benchmarks/run.sh table        Example_24's big table only
 #   benchmarks/run.sh all --quick  a short run that checks that everything works
 #
 # Needs a JDK (21 was used) and GNU time; mutool for the checks
@@ -76,7 +76,7 @@ peak() {
         CSV="$ROOT/data/Electric_Vehicle_Population_Data.csv"; RUNS=3; HEAPS="32m 64m 128m 256m 512m 1g 2g 4g 8g"
         if [ -n "$QUICK" ]; then CSV="$ROOT/data/Electric_Vehicle_Population_10_Pages.csv"; RUNS=1; HEAPS="32m 64m"; fi
         J="java -Xmx8g $PROPS -cp $CP BigTableBench"
-        echo "== table: Example_43, $(basename "$CSV")"
+        echo "== table: Example_24, $(basename "$CSV")"
         for c in $CONFIGS; do $J bench $c "$CSV" 2>&1 | grep -E 'median|Exception'; done
         echo "== table: first run in a new JVM"
         for c in $CONFIGS; do $J cold $c "$CSV" 2>&1 | grep -E 'cold|Exception'; done

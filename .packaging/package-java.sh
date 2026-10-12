@@ -93,7 +93,7 @@ find "$STAGE/examples" -mindepth 1 -maxdepth 1 -type d -exec rm -rf {} +
 rm -f "$STAGE/images/go.mod"
 
 # The fonts of the package are the fonts directory as it is: the .ttf files,
-# which PDFjet subsets, and IBM Plex Sans as .otf too, which Examples 28, 37
+# which PDFjet subsets, and IBM Plex Sans as .otf too, which Examples 07, 48
 # and 50 read.
 
 cd "$STAGE"

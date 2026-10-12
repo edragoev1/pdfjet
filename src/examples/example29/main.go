@@ -8,82 +8,222 @@ package main
 import (
 	"fmt"
 	"log"
+	"math"
+	"strconv"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
+	"github.com/edragoev1/pdfjet/v9/src/capstyle"
+	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
-	"github.com/edragoev1/pdfjet/v9/src/content"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
+	"github.com/edragoev1/pdfjet/v9/src/shape"
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
-// Example29 draws a table whose cells hold text columns: each paragraph of
-// English and Greek text wraps inside its cell, and the cell grows to fit it.
+const navy = 0x1d3557
+const teal = 0x2a9d8f
+const red = 0xe63946
+const pale = 0xe8f1f2
+
+// The cells of the grid: four across, 128 points wide, and 160 tall.
+const left float32 = 50.0
+const top float32 = 150.0
+const cellWidth float32 = 128.0
+const cellHeight float32 = 160.0
+
+// Example29 draws the shapes PDFjet draws, each in a cell of its own under
+// its name: lines with dashes and caps, rectangles with square and rounded
+// corners, the markers of charts, an ellipse, arcs, a path of Bézier curves,
+// and a closed path, filled. The second page draws text at every angle around
+// a point.
+//
+// Each shape is a Drawable: it is given its location, its size, its colors
+// and the width of its stroke, and DrawOn draws it as vector graphics, which
+// stay sharp at any zoom. The shapes carry no text, so they are artifacts of
+// the PDF/UA document, and the name under each shape says what it is.
 func Example29() {
 	pdf, err := pdfjet.NewPDFFile("Example_29.pdf")
 	if err != nil {
 		log.Fatal(err)
 	}
 	pdf.SetCompliance(compliance.PDF_UA_1)
-	pdf.SetTitle("Text Columns in Table Cells")
+	pdf.SetTitle("Shapes")
 
-	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
-	f1.SetSize(10.0)
-
-	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
-	f2.SetSize(10.0)
+	regular := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
+	semiBold := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
+	label := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
+	label.SetSize(9.0)
 
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 
-	text := pdfjet.NewTextLine(f2, "Text Columns in Table Cells")
-	text.SetStructureType(structelem.H1)
-	text.SetFontSize(22.0)
-	text.SetLocation(50.0, 70.0)
-	text.DrawOn(page)
+	title := pdfjet.NewTextLine(semiBold, "Shapes")
+	title.SetStructureType(structelem.H1)
+	title.SetFontSize(22.0)
+	title.SetLocation(left, 70.0)
+	title.DrawOn(page)
 
-	languages := []string{"English", "Greek"}
-	files := []string{"data/languages/english.txt", "data/languages/greek.txt"}
+	about := pdfjet.NewTextBlock(regular,
+		"PDFjet draws shapes as vector graphics, which stay sharp at any zoom. Each "+
+			"shape is a Drawable: give it a location, a size, its colors and the width "+
+			"of its stroke, and drawOn draws it on the page.")
+	about.SetFontSize(11.0)
+	about.SetLineSpacing(1.4)
+	about.SetLocation(left, 85.0)
+	about.SetWidth(512.0)
+	about.DrawOn(page)
 
-	tableData := make([][]*pdfjet.Cell, 0)
+	// Lines: solid, dashed and dotted with round caps
+	c := cell(page, label, 0, 0, "Line: solid, dashed, and dotted with round caps")
+	pdfjet.NewLine(c[0]+10.0, c[1]+30.0, c[0]+110.0, c[1]+30.0).
+		SetStrokeWidth(3.0).SetStrokeColor(navy).DrawOn(page)
+	pdfjet.NewLine(c[0]+10.0, c[1]+60.0, c[0]+110.0, c[1]+60.0).
+		SetStrokeWidth(3.0).SetStrokeColor(teal).SetStrokeDashPattern("[8 4] 0").DrawOn(page)
+	pdfjet.NewLine(c[0]+10.0, c[1]+90.0, c[0]+110.0, c[1]+90.0).
+		SetStrokeWidth(5.0).SetStrokeColor(red).SetStrokeDashPattern("[0 10] 0").
+		SetLineCapStyle(capstyle.Round).DrawOn(page)
 
-	row := make([]*pdfjet.Cell, 0)
-	row = append(row, pdfjet.NewCell(f2, "Language"))
-	row = append(row, pdfjet.NewCell(f2, "Text"))
-	tableData = append(tableData, row)
+	// A rectangle, filled and outlined
+	c = cell(page, label, 1, 0, "Rect: filled, with a border")
+	pdfjet.NewRect(c[0]+10.0, c[1]+20.0, 100.0, 80.0).
+		SetFillColor(pale).SetBorderColor(navy).SetBorderWidth(2.0).DrawOn(page)
 
-	for i := 0; i < len(languages); i++ {
-		// Each line of the file after the first two is a paragraph.
-		lines := content.LinesOfTextFile(files[i])
-		column := pdfjet.NewTextColumn()
-		column.SetWidth(400.0)
-		for j := 2; j < len(lines); j++ {
-			paragraph := pdfjet.NewParagraph()
-			line := pdfjet.NewTextLine(f1, lines[j])
-			if languages[i] == "Greek" {
-				line.SetLanguage("el") // Read by a screen reader as Greek
-			}
-			paragraph.Add(line)
-			column.AddParagraph(paragraph)
+	// A rectangle with rounded corners
+	c = cell(page, label, 2, 0, "Rect: setCornerRadius")
+	pdfjet.NewRect(c[0]+10.0, c[1]+20.0, 100.0, 80.0).
+		SetFillColor(teal).SetBorderColor(navy).SetBorderWidth(2.0).
+		SetCornerRadius(16.0).DrawOn(page)
+
+	// The markers of a chart, each a Point with a shape
+	c = cell(page, label, 3, 0, "Point: the markers of charts")
+	shapes := []shape.Shape{
+		shape.Circle, shape.Diamond, shape.Box, shape.Star,
+		shape.UpArrow, shape.DownArrow, shape.Plus, shape.XMark,
+	}
+	for i := 0; i < len(shapes); i++ {
+		point := pdfjet.NewPoint(c[0]+20.0+float32(i%4)*27.0, c[1]+35.0+float32(i/4)*45.0)
+		point.SetShape(shapes[i])
+		point.SetRadius(9.0)
+		if i%2 == 0 {
+			point.SetFillColor(teal)
+		} else {
+			point.SetFillColor(red)
 		}
-
-		row = make([]*pdfjet.Cell, 0)
-		row = append(row, pdfjet.NewCell(f1, languages[i]))
-		row = append(row, pdfjet.NewCell(f1, ""))
-		row[1].SetTextColumn(column)
-		tableData = append(tableData, row)
+		point.SetStrokeColor(navy)
+		point.DrawOn(page)
 	}
 
-	table := pdfjet.NewTable()
-	table.SetTableData(tableData, 1)
-	table.SetColumnWidth(0, 90.0)
-	table.SetColumnWidth(1, 420.0)
-	table.SetLocation(50.0, 100.0)
-	table.DrawOn(page)
+	// An ellipse, turned by 30 degrees
+	c = cell(page, label, 0, 1, "Ellipse: setRotation")
+	ellipse := pdfjet.NewEllipse()
+	ellipse.SetLocation(c[0]+60.0, c[1]+60.0)
+	ellipse.SetRadiusX(50.0)
+	ellipse.SetRadiusY(25.0)
+	ellipse.SetFillColor(pale)
+	ellipse.SetStrokeWidth(2.0)
+	ellipse.SetStrokeColor(navy)
+	ellipse.SetRotation(30.0)
+	ellipse.DrawOn(page)
+
+	// An arc of three quarters of a circle
+	c = cell(page, label, 1, 1, "Arc: setStartAngle and setSweep")
+	arc := pdfjet.NewArc()
+	arc.SetLocation(c[0]+60.0, c[1]+60.0)
+	arc.SetRadius(40.0)
+	arc.SetStartAngle(0.0)
+	arc.SetSweep(270.0)
+	arc.SetStrokeWidth(6.0)
+	arc.SetStrokeColor(teal)
+	arc.DrawOn(page)
+
+	// A wave of Bézier curves: a point, two control points, a point
+	c = cell(page, label, 2, 1, "Path: Bézier curves")
+	wave := pdfjet.NewPath()
+	wave.Add(pdfjet.NewPoint(0.0, 30.0))
+	wave.Add(pdfjet.NewControlPointC(20.0, 0.0))
+	wave.Add(pdfjet.NewControlPointC(30.0, 0.0))
+	wave.Add(pdfjet.NewPoint(50.0, 30.0))
+	wave.Add(pdfjet.NewControlPointC(70.0, 60.0))
+	wave.Add(pdfjet.NewControlPointC(80.0, 60.0))
+	wave.Add(pdfjet.NewPoint(100.0, 30.0))
+	wave.SetStrokeColor(red)
+	wave.SetStrokeWidth(3.0)
+	wave.SetLocation(c[0]+10.0, c[1]+30.0)
+	wave.DrawOn(page)
+
+	// A closed path of lines, filled: a six-pointed star
+	c = cell(page, label, 3, 1, "Path: closed and filled")
+	star := pdfjet.NewPath()
+	for i := 0; i < 12; i++ {
+		angle := math.Pi/6.0*float64(i) - math.Pi/2.0
+		var r float32 = 25.0
+		if i%2 == 0 {
+			r = 50.0
+		}
+		star.Add(pdfjet.NewPoint(
+			50.0+r*float32(math.Cos(angle)), 50.0+r*float32(math.Sin(angle))))
+	}
+	star.SetClosed(true)
+	star.SetFillShape(true)
+	star.SetStrokeColor(navy)
+	star.SetLocation(c[0]+10.0, c[1]+10.0)
+	star.DrawOn(page)
+
+	// The second page: text at every angle around a point
+	page = pdfjet.NewPage(pdf, letter.Portrait())
+	heading := pdfjet.NewTextLine(semiBold, "Text at every angle")
+	heading.SetStructureType(structelem.H2)
+	heading.SetFontSize(18.0)
+	heading.SetLocation(left, 70.0)
+	heading.DrawOn(page)
+
+	rotation := pdfjet.NewTextBlock(regular,
+		"setTextRotation turns a TextLine about the point of its location, here every "+
+			"15 degrees about the middle of the page, underlined with setUnderline.")
+	rotation.SetFontSize(11.0)
+	rotation.SetLineSpacing(1.4)
+	rotation.SetLocation(left, 85.0)
+	rotation.SetWidth(512.0)
+	rotation.DrawOn(page)
+
+	cx := page.GetWidth() / 2.0
+	var cy float32 = 380.0
+	text := pdfjet.NewEmptyTextLine(regular)
+	text.SetFontSize(10.0)
+	text.SetUnderline(true)
+	text.SetLocation(cx, cy)
+	for i := 0; i < 360; i += 15 {
+		text.SetTextRotation(-i)
+		// The spaces keep the start of the text clear of the circle
+		text.SetText("                        Hello, World: " + strconv.Itoa(i) + " degrees")
+		text.DrawOn(page)
+	}
+	hub := pdfjet.NewPoint(cx, cy)
+	hub.SetShape(shape.Circle)
+	hub.SetFillColor(navy)
+	hub.SetRadius(46.0)
+	hub.DrawOn(page)
+	hub.SetFillColor(color.White)
+	hub.SetRadius(32.0)
+	hub.DrawOn(page)
 
 	if err := pdf.Complete(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+// cell draws the name of the cell of the grid under it, and returns the top
+// left corner of its drawing area.
+func cell(page *pdfjet.Page, label *pdfjet.Font, column, row int, name string) [2]float32 {
+	x := left + float32(column)*cellWidth
+	y := top + float32(row)*cellHeight
+	caption := pdfjet.NewTextBlock(label, name)
+	caption.SetTextColor(color.DimGray)
+	caption.SetLocation(x, y+125.0)
+	caption.SetWidth(cellWidth - 12.0)
+	caption.DrawOn(page)
+	return [2]float32{x, y}
 }
 
 func main() {

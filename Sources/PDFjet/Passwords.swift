@@ -13,7 +13,7 @@
 /// 127 bytes, as other viewers do, and opens the PDF only when just those
 /// are typed, so a password of 127 bytes or fewer is the one to give.
 ///
-/// Please see Example_30.
+/// Please see Example_47.
 ///
 public class Passwords {
     private var userPassword = ""

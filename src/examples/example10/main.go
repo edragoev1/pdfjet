@@ -8,7 +8,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"strings"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
@@ -16,128 +15,69 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
+	"github.com/edragoev1/pdfjet/v9/src/content"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
-// Example10 shows how to lay out paragraphs in a text column.
+// Example10 draws a text block with highlighted keywords.
 func Example10() {
 	pdf, err := pdfjet.NewPDFFile("Example_10.pdf")
 	if err != nil {
 		log.Fatal(err)
 	}
 	pdf.SetCompliance(compliance.PDF_UA_1)
-	pdf.SetTitle("Switzerland")
+	pdf.SetTitle("Text block with highlighted keywords")
 
-	image1 := pdfjet.NewImageFromFile(pdf, "images/swiss-admin.jpg")
-	image1.SetAltDescription(
-		"A map of Switzerland's 26 cantons, numbered and named in a key, with their capitals, Bern marked as the national capital, the lakes and rivers, and the neighboring countries.")
-
+	// f1 := pdfjet.NewFontFromFile(pdf, SourceSerif4.Regular)
+	// f1 := pdfjet.NewFontFromFile(pdf, NotoSans.Regular)
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
-	f1.SetSize(10.0)
-
-	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
-	f2.SetSize(14.0)
-
-	f3 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
-	f3.SetSize(12.0)
-
-	f4 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Italic)
-	f4.SetSize(10.0)
+	f1.SetSize(15.0)
 
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 
-	// The map is 310 points tall, so that it and the text fit the page, and
-	// centered over the text.
-	image1.ScaleBy(310.0 / image1.GetHeight())
-	image1.SetLocation(90.0+(470.0-image1.GetWidth())/2.0, 35.0)
-	image1.DrawOn(page)
+	// A heading, which PAC asks a document for
+	pdfjet.NewTextLine(f1, "Text block with highlighted keywords").
+		SetStructureType(structelem.H1).
+		SetFontSize(18.0).
+		SetLocation(100.0, 36.0).
+		DrawOn(page)
 
-	// To rotate the column, add it to a Container and rotate that; see Example_35.
-	column := pdfjet.NewTextColumn()
-	column.SetLineSpacing(1.3)      // 1.3 x font height
-	column.SetParagraphSpacing(1.0) // 1.0 x line spacing
+	colors := make(map[string]int32)
+	colors["Everyone"] = color.Firebrick
+	colors["pay"] = color.Green
+	colors["freedom"] = color.Blue
 
-	p2 := pdfjet.NewParagraph()
-	p2.SetStructureType(structelem.H1)
-	p2.Add(pdfjet.NewTextLine(f2, "Introduction"))
+	// page.SaveGraphicsState()
 
-	var buf strings.Builder
-	buf.WriteString("The Swiss Confederation was founded in 1291 as a defensive ")
-	buf.WriteString("alliance among three cantons. In succeeding years, other ")
-	buf.WriteString("localities joined the original three. ")
-	buf.WriteString("The Swiss Confederation secured its independence from the ")
-	buf.WriteString("Holy Roman Empire in 1499. Switzerland's sovereignty and ")
-	buf.WriteString("neutrality have long been honored by the major European ")
-	buf.WriteString("powers, and the country was not involved in either of the ")
-	buf.WriteString("two World Wars. The political and economic integration of ")
-	buf.WriteString("Europe over the past half century, as well as Switzerland's ")
-	buf.WriteString("role in many UN and international organizations, has ")
-	buf.WriteString("strengthened Switzerland's ties with its neighbors. ")
-	buf.WriteString("However, the country did not officially become a UN member ")
-	buf.WriteString("until 2002.")
+	gs := pdfjet.NewGraphicsState()
+	gs.SetAlphaStroking(0.5)    // Stroking alpha
+	gs.SetAlphaNonStroking(0.5) // Non-Stroking alpha
+	page.SetGraphicsState(gs)
 
-	p3 := pdfjet.NewParagraph()
-	// p3.SetTextAlignment(alignment.Left)
-	// p3.SetTextAlignment(alignment.Right)
-	p3.SetTextAlignment(alignment.Justify)
-	text := pdfjet.NewTextLine(f1, buf.String())
-	p3.Add(text)
+	englishText := content.OfTextFile("data/languages/english.txt")
+	// f1.SetSize(14.0)
+	textBlock := pdfjet.NewTextBlock(f1, englishText)
+	textBlock.SetLocation(100.0, 50.0)
+	textBlock.SetWidth(400.0)
+	// With a height the text that does not fit is cut; without one the
+	// block is as tall as its text.
+	textBlock.SetHeight(450.0)
+	textBlock.SetVerticalAlignment(alignment.Top)
+	// textBlock.SetVerticalAlignment(alignment.Bottom)
+	// textBlock.SetVerticalAlignment(alignment.Center)
+	// textBlock.SetTextAlignment(alignment.Center)
+	textBlock.SetBackgroundColor(color.WhiteSmoke)
+	textBlock.SetHighlightColors(colors)
+	textBlock.SetBorderColor(color.Black)
+	xy := textBlock.DrawOn(page)
 
-	buf.Reset()
-	buf.WriteString("Switzerland remains active in many UN and international ")
-	buf.WriteString("organizations but retains a strong commitment to neutrality.")
+	page.SetGraphicsState(pdfjet.NewGraphicsState()) // Reset GS
+	// page.RestoreGraphicsState()
 
-	text = pdfjet.NewTextLine(f1, buf.String())
-	text.SetTextColor(color.Firebrick)
-	p3.Add(text)
-
-	p4 := pdfjet.NewParagraph()
-	p4.SetStructureType(structelem.H1)
-	p4.Add(pdfjet.NewTextLine(f3, "Economy"))
-
-	buf.Reset()
-	buf.WriteString("Switzerland is a peaceful, prosperous, and stable modern ")
-	buf.WriteString("market economy with low unemployment, a highly skilled ")
-	buf.WriteString("labor force, and a per capita GDP larger than that of the ")
-	buf.WriteString("big Western European economies. The Swiss in recent years ")
-	buf.WriteString("have brought their economic practices largely into ")
-	buf.WriteString("conformity with the EU's to enhance their international ")
-	buf.WriteString("competitiveness. Switzerland remains a safe haven for ")
-	buf.WriteString("investors, because it has maintained a degree of bank secrecy ")
-	buf.WriteString("and has kept up the franc's long-term external value. ")
-	buf.WriteString("Reflecting the anemic economic conditions of Europe, GDP ")
-	buf.WriteString("growth stagnated during the 2001-03 period, improved during ")
-	buf.WriteString("2004-05 to 1.8% annually and to 2.9% in 2006.")
-
-	p5 := pdfjet.NewParagraph()
-	p5.SetTextAlignment(alignment.Justify)
-	text = pdfjet.NewTextLine(f1, buf.String())
-	p5.Add(text)
-
-	text = pdfjet.NewTextLine(f4,
-		"Even so, unemployment has remained at less than half the EU average.")
-	text.SetTextColor(color.Blue)
-	p5.Add(text)
-
-	column.AddParagraph(p2)
-	column.AddParagraph(p3)
-	column.AddParagraph(p4)
-	column.AddParagraph(p5)
-
-	column.SetLocation(90.0, 365.0)
-
-	columnWidth := float32(470.0)
-	column.SetWidth(columnWidth)
-	column.SetHeight(100.0)
-	xy := column.DrawOn(page)
-
-	line := pdfjet.NewLine(
-		xy[0]-columnWidth,
-		xy[1],
-		xy[0],
-		xy[1])
-	line.DrawOn(page)
+	rect := pdfjet.NewRect(xy[0], xy[1], 20.0, 20.0)
+	rect.SetBorderColor(color.Black)
+	rect.DrawOn(page)
 
 	if err := pdf.Complete(); err != nil {
 		log.Fatal(err)

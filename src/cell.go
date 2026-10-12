@@ -289,7 +289,7 @@ func (cell *Cell) GetBarcode() *Barcode {
 
 // SetMarker sets the marker drawn in this cell: a Point, placed at the left or
 // the right of the cell and centered vertically.
-// See the Point class and Example_09 for more information.
+// See the Point class and Example_26 for more information.
 //   - point: the point.
 //   - align: alignment.Left or alignment.Right.
 func (cell *Cell) SetMarker(point *Point, align alignment.Alignment) *Cell {
@@ -559,7 +559,7 @@ func (cell *Cell) GetColSpan() int {
 // borders once over all of them, and a page break moves the whole of it to the
 // next page. The table keeps its shape, so the rows under this one still hold
 // a cell at this column, which is left empty. A row span of 1, the default,
-// spans nothing. Please see Example_38.
+// spans nothing. Please see Example_21.
 //   - rowspan: the number of rows, from 1.
 func (cell *Cell) SetRowSpan(rowspan int) *Cell {
 	if rowspan < 1 {

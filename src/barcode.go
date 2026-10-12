@@ -27,7 +27,7 @@ import (
 // without its check digit, which is added, as for UPC-A and EAN-13. The text of a GS1-128 barcode is GS1 data written as people read
 // it, each Application Identifier in parentheses and its data after it, such as
 // "(01)09506000134352(10)ABC123", and is drawn so under its bars.
-// Please see Example_11.
+// Please see Example_36.
 type Barcode struct {
 	barcodeType     int
 	text            string

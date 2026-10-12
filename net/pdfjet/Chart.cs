@@ -9,7 +9,7 @@ using System.Collections.Generic;
 
 namespace PDFjet.NET {
 /// <summary>
-/// XY chart renderer for PDF pages. See Example_09.
+/// XY chart renderer for PDF pages. See Example_26.
 /// </summary>
 public class Chart : IDrawable {
     private float w = 300f;

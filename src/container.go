@@ -41,7 +41,7 @@ import (
 // On one page the stamp is the larger, since its XObject costs about 300
 // bytes of its own, and it draws only paths and text in an embedded font.
 //
-// Please see Example_06 and Example_35.
+// Please see Example_42 and Example_31.
 type Container struct {
 	x             float32    // The X coordinate of the container on the page.
 	y             float32    // The Y coordinate of the container on the page.

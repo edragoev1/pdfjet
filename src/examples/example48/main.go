@@ -6,122 +6,59 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
-	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
-	"github.com/edragoev1/pdfjet/v9/src/compliance"
-	"github.com/edragoev1/pdfjet/v9/src/letter"
-	"github.com/edragoev1/pdfjet/v9/src/structelem"
+	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/content"
 )
 
-// Example48 draws the outline of a short guide to the structure of a PDF
-// file, and adds a bookmark for each of its titles. The numbers of the titles
-// come from their place in the tree of bookmarks.
-func Example48() {
+// Example48 opens an existing PDF, adds a font resource and writes on every page.
+func Example48(fileName string) {
 	pdf, err := pdfjet.NewPDFFile("Example_48.pdf")
 	if err != nil {
 		log.Fatal(err)
 	}
-	pdf.SetCompliance(compliance.PDF_UA_1)
-	pdf.SetTitle("The structure of a PDF file")
+	objects, err := pdf.Read(content.OfBinaryFile(fileName))
+	if err != nil {
+		log.Fatal(err)
+	}
+	// A font added to an existing PDF is embedded as a subset of the glyphs
+	// drawn, as in a new PDF.
+	file1, err := os.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf")
+	if err != nil {
+		log.Fatal(err)
+	}
+	reader := bufio.NewReader(file1)
+	font1 := pdfjet.NewFontForObjects(&objects, reader)
+	font1.SetSize(72.0)
 
-	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
-	f1.SetSize(14.0)
+	text := pdfjet.NewTextLine(font1, "This is a test!")
+	text.SetLocation(84.0, 350.0) // the T lines up with the scanned text
+	text.SetTextColor(color.Peru)
 
-	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
-	f2.SetSize(20.0)
+	pages := pdf.GetPageObjects(objects)
+	for _, pageObj := range pages {
+		gs := pdfjet.NewGraphicsState()
+		gs.SetAlphaStroking(0.75)    // Stroking alpha
+		gs.SetAlphaNonStroking(0.75) // Non-stroking alpha
+		pageObj.SetGraphicsState(gs, &objects)
 
-	page := pdfjet.NewPage(pdf, letter.Portrait())
+		page := pdfjet.NewPageFromObject(pdf, pageObj)
+		page.AddFontResource(font1, &objects)
+		page.SetBrushColor(color.Blue)
+		// page.DrawString(font1, nil, font1.GetSize(), "Hello, World!", 50.0, 200.0)
+		text.DrawOn(page)
 
-	var toc = pdfjet.NewBookmark(pdf)
-	x := float32(70.0)
-	y := float32(80.0)
-	offset := float32(50.0)
-
-	// A bookmark without a number.
-	title := pdfjet.NewTitle(f2, "The structure of a PDF file", x, y)
-	title.GetTextLine().SetStructureType(structelem.H1)
-	toc.AddBookmark(page, title)
-	title.DrawOn(page)
-
-	y += 50.0
-	title = pdfjet.NewTitle(f1, "File header", x, y).SetOffset(offset)
-	toc.AddBookmark(page, title).AutoNumber(title.GetPrefix())
-	title.DrawOn(page)
-
-	y += 30.0
-	title = pdfjet.NewTitle(f1, "File body", x, y).SetOffset(offset)
-	body := toc.AddBookmark(page, title).AutoNumber(title.GetPrefix())
-	title.DrawOn(page)
-
-	// Bookmarks nested in "File body".
-	y += 30.0
-	title = pdfjet.NewTitle(f1, "Objects", x, y).SetOffset(offset)
-	body.AddBookmark(page, title).AutoNumber(title.GetPrefix())
-	title.DrawOn(page)
-
-	y += 30.0
-	title = pdfjet.NewTitle(f1, "Streams", x, y).SetOffset(offset)
-	body.AddBookmark(page, title).AutoNumber(title.GetPrefix())
-	title.DrawOn(page)
-
-	y += 30.0
-	title = pdfjet.NewTitle(f1, "Cross-reference table", x, y).SetOffset(offset)
-	toc.AddBookmark(page, title).AutoNumber(title.GetPrefix())
-	title.DrawOn(page)
-
-	y += 30.0
-	title = pdfjet.NewTitle(f1, "File trailer", x, y).SetOffset(offset)
-	toc.AddBookmark(page, title).AutoNumber(title.GetPrefix())
-	title.DrawOn(page)
-
-	page = pdfjet.NewPage(pdf, letter.Portrait())
-
-	y = 80.0
-	title = pdfjet.NewTitle(f1, "Incremental updates", x, y).SetOffset(offset)
-	bm := toc.AddBookmark(page, title).AutoNumber(title.GetPrefix())
-	title.DrawOn(page)
-
-	y += 30.0
-	title = pdfjet.NewTitle(f1, "New and changed objects", x, y).SetOffset(offset)
-	bm = bm.AddBookmark(page, title).AutoNumber(title.GetPrefix())
-	title.DrawOn(page)
-
-	// Two levels down.
-	y += 30.0
-	title = pdfjet.NewTitle(f1, "Changed objects keep their numbers", x, y).SetOffset(offset)
-	bm.AddBookmark(page, title).AutoNumber(title.GetPrefix())
-	title.DrawOn(page)
-
-	y += 30.0
-	title = pdfjet.NewTitle(f1, "Deleted objects are marked as free", x, y).SetOffset(offset)
-	bm.AddBookmark(page, title).AutoNumber(title.GetPrefix())
-	title.DrawOn(page)
-
-	// Back up one level.
-	y += 30.0
-	bm = bm.GetParent()
-	title = pdfjet.NewTitle(f1, "A new cross-reference section", x, y).SetOffset(offset)
-	bm.AddBookmark(page, title).AutoNumber(title.GetPrefix())
-	title.DrawOn(page)
-
-	y += 30.0
-	title = pdfjet.NewTitle(f1, "A new trailer", x, y).SetOffset(offset)
-	bm.AddBookmark(page, title).AutoNumber(title.GetPrefix())
-	title.DrawOn(page)
-
-	y += 30.0
-	title = pdfjet.NewTitle(f1, "Linearized files", x, y).SetOffset(offset)
-	toc.AddBookmark(page, title).AutoNumber(title.GetPrefix())
-	title.DrawOn(page)
-
-	y += 50.0
-	title = pdfjet.NewTitle(f2, "Summary", x, y)
-	toc.AddBookmark(page, title)
-	title.DrawOn(page)
+		page.Complete(&objects) // The graphics stack is unwinded automatically
+	}
+	if err := pdf.AddObjects(objects); err != nil {
+		log.Fatal(err)
+	}
 
 	if err := pdf.Complete(); err != nil {
 		log.Fatal(err)
@@ -130,7 +67,7 @@ func Example48() {
 
 func main() {
 	time0 := time.Now().UnixMilli()
-	Example48()
+	Example48("data/testPDFs/scanned-linearized.pdf")
 	time1 := time.Now().UnixMilli()
 	fmt.Printf("Example_48 => %4d ms\n", time1-time0)
 }

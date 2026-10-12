@@ -5,55 +5,119 @@
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Diagnostics;
 using PDFjet.NET;
 
 /**
  * Example_41.cs
- *
- * Merges existing PDF documents into one, after a cover page drawn with PDFjet.
- * The pages of each document follow in their order and keep their content,
- * resources, annotations and links. The parts of a document that belong to the
- * whole document, such as its bookmarks, form fields and tagging, are left out.
+ * This example draws the outline of a short guide to the structure of a PDF
+ * file, and adds a bookmark for each of its titles. The numbers of the titles
+ * come from their place in the tree of bookmarks.
  */
 public class Example_41 {
     public Example_41() {
         PDF pdf = new PDF(new BufferedStream(
-                new FileStream("Example_41.pdf", FileMode.Create)));
+            new FileStream("Example_41.pdf", FileMode.Create)));
+        pdf.SetCompliance(Compliance.PDF_UA_1);
+        pdf.SetTitle("The structure of a PDF file");
 
-        String[] fileNames = {
-            "data/testPDFs/scanned-linearized.pdf",
-            "data/testPDFs/rc65-16e.pdf",
-            "data/testPDFs/PDFjetLogo.pdf"
-        };
-        List<List<PDFobj>> documents = new List<List<PDFobj>>();
-        foreach (String fileName in fileNames) {
-            using (BufferedStream stream = new BufferedStream(
-                    new FileStream(fileName, FileMode.Open, FileAccess.Read))) {
-                documents.Add(pdf.Read(stream));
-            }
-        }
+        Font f1 = new Font(pdf, IBMPlexSans.Regular);
+        f1.SetSize(14f);
 
-        Font f1 = new Font(pdf, IBMPlexSans.Bold);
-        f1.SetSize(24f);
-        Font f2 = new Font(pdf, IBMPlexSans.Regular);
-        f2.SetSize(12f);
+        Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
+        f2.SetSize(20f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
-        new TextLine(f1, "Merged documents").SetLocation(50f, 80f).DrawOn(page);
-        float y = 130f;
-        for (int i = 0; i < fileNames.Length; i++) {
-            int pages = pdf.GetPageObjects(documents[i]).Count;
-            String text = fileNames[i] + ", " + pages + (pages == 1 ? " page" : " pages");
-            new TextLine(f2, text).SetLocation(50f, y).DrawOn(page);
-            y += 20f;
-        }
 
-        foreach (List<PDFobj> objects in documents) {
-            pdf.Merge(objects);
-        }
+        Bookmark toc = new Bookmark(pdf);
+        Title title = null;
+
+        float x = 70f;
+        float y = 80f;
+        float offset = 50f;
+
+        // A bookmark without a number.
+        title = new Title(f2, "The structure of a PDF file", x, y);
+        title.GetTextLine().SetStructureType(StructElem.H1);
+        toc.AddBookmark(page, title);
+        title.DrawOn(page);
+
+        y += 50f;
+        title = new Title(f1, "File header", x, y).SetOffset(offset);
+        toc.AddBookmark(page, title).AutoNumber(title.GetPrefix());
+        title.DrawOn(page);
+
+        y += 30f;
+        title = new Title(f1, "File body", x, y).SetOffset(offset);
+        Bookmark body = toc.AddBookmark(page, title).AutoNumber(title.GetPrefix());
+        title.DrawOn(page);
+
+        // Bookmarks nested in "File body".
+        y += 30f;
+        title = new Title(f1, "Objects", x, y).SetOffset(offset);
+        body.AddBookmark(page, title).AutoNumber(title.GetPrefix());
+        title.DrawOn(page);
+
+        y += 30f;
+        title = new Title(f1, "Streams", x, y).SetOffset(offset);
+        body.AddBookmark(page, title).AutoNumber(title.GetPrefix());
+        title.DrawOn(page);
+
+        y += 30f;
+        title = new Title(f1, "Cross-reference table", x, y).SetOffset(offset);
+        toc.AddBookmark(page, title).AutoNumber(title.GetPrefix());
+        title.DrawOn(page);
+
+        y += 30f;
+        title = new Title(f1, "File trailer", x, y).SetOffset(offset);
+        toc.AddBookmark(page, title).AutoNumber(title.GetPrefix());
+        title.DrawOn(page);
+
+        page = new Page(pdf, Letter.PORTRAIT);
+
+        y = 80f;
+        title = new Title(f1, "Incremental updates", x, y).SetOffset(offset);
+        Bookmark bm = toc.AddBookmark(page, title).AutoNumber(title.GetPrefix());
+        title.DrawOn(page);
+
+        y += 30f;
+        title = new Title(f1, "New and changed objects", x, y).SetOffset(offset);
+        bm = bm.AddBookmark(page, title).AutoNumber(title.GetPrefix());
+        title.DrawOn(page);
+
+        // Two levels down.
+        y += 30f;
+        title = new Title(f1, "Changed objects keep their numbers", x, y).SetOffset(offset);
+        bm.AddBookmark(page, title).AutoNumber(title.GetPrefix());
+        title.DrawOn(page);
+
+        y += 30f;
+        title = new Title(f1, "Deleted objects are marked as free", x, y).SetOffset(offset);
+        bm.AddBookmark(page, title).AutoNumber(title.GetPrefix());
+        title.DrawOn(page);
+
+        // Back up one level.
+        y += 30f;
+        bm = bm.GetParent();
+        title = new Title(f1, "A new cross-reference section", x, y).SetOffset(offset);
+        bm.AddBookmark(page, title).AutoNumber(title.GetPrefix());
+        title.DrawOn(page);
+
+        y += 30f;
+        title = new Title(f1, "A new trailer", x, y).SetOffset(offset);
+        bm.AddBookmark(page, title).AutoNumber(title.GetPrefix());
+        title.DrawOn(page);
+
+        y += 30f;
+        title = new Title(f1, "Linearized files", x, y).SetOffset(offset);
+        toc.AddBookmark(page, title).AutoNumber(title.GetPrefix());
+        title.DrawOn(page);
+
+        y += 50f;
+        title = new Title(f2, "Summary", x, y);
+        toc.AddBookmark(page, title);
+        title.DrawOn(page);
 
         pdf.Complete();
     }
@@ -63,6 +127,7 @@ public class Example_41 {
         long time0 = sw.ElapsedMilliseconds;
         new Example_41();
         long time1 = sw.ElapsedMilliseconds;
+        sw.Stop();
         Console.WriteLine($"Example_41 => {time1 - time0,4} ms");
     }
 }   // End of Example_41.cs

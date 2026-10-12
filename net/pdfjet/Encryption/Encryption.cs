@@ -30,7 +30,7 @@ internal sealed class Owner {
 
 /// <summary>
 /// Encrypts a PDF with 256-bit AES as defined in ISO 32000-2 (PDF 2.0).
-/// Pass the encryption object to PDF.SetEncryption. Please see Example_30.
+/// Pass the encryption object to PDF.SetEncryption. Please see Example_47.
 /// </summary>
 public class Encryption {
     private readonly byte[] fileEncryptionKey;

@@ -9,69 +9,84 @@ import PDFjet
 
 /**
  * Example_07.swift
- * This example adds a "DRAFT" watermark to every page of a two-page
- * document that is PDF/A-3a and PDF/UA-1. The watermark is drawn first, so the
- * text of the page is drawn over it.
+ * This example reads fonts from OpenType and TrueType files. Any .otf or
+ * .ttf file on the computer is a font for PDFjet. A font is
+ * embedded as a subset of the glyphs the document draws, unless it is set
+ * to stay whole.
  */
 public class Example_07 {
     public init() throws {
-        let pdf = PDF(OutputStream(toFileAtPath: "Example_07.pdf", append: false)!, Compliance.PDF_A_3A_UA_1)
-        pdf.setTitle("A Draft, Archived as PDF/A-3a and PDF/UA-1")
+        let pdf = PDF(OutputStream(toFileAtPath: "Example_07.pdf", append: false)!)
+        pdf.setCompliance(Compliance.PDF_UA_1)
+        pdf.setTitle("Fonts from .otf and .ttf Files")
 
         let f1 = try Font(pdf, IBMPlexSans.Regular)
         let f2 = try Font(pdf, IBMPlexSans.SemiBold)
-        let f3 = try Font(pdf, IBMPlexSans.Bold)
 
-        let titles = [
-            "Project Proposal",
-            "Budget and Schedule",
+        let page = Page(pdf, Letter.PORTRAIT)
+
+        var text = TextLine(f2, "Fonts from .otf and .ttf Files")
+        text.setStructureType(StructElem.H1)
+        text.setFontSize(22.0)
+        text.setLocation(50.0, 80.0)
+        text.drawOn(page)
+
+        var textBlock = TextBlock(f1,
+                "PDFjet reads OpenType and TrueType fonts as they are: pass the path "
+                + "of any .otf or .ttf file on the computer to the Font constructor. "
+                + "The IBMPlexSans and NotoSans constants are the paths of the fonts "
+                + "that come with PDFjet. A font is embedded with only the "
+                + "glyphs the document draws, which keeps the file small, whatever its "
+                + "outlines. The paragraph below is drawn four times.")
+        textBlock.setFontSize(12.0)
+        textBlock.setLineSpacing(1.5)
+        textBlock.setLocation(50.0, 95.0)
+        textBlock.setWidth(512.0)
+        var xy = textBlock.drawOn(page)
+
+        let files = [
+            "fonts/IBMPlexSans/IBMPlexSans-Regular.otf",
+            IBMPlexSans.Regular,
+            SourceSerif4.Regular,
+            NotoSans.Regular,
         ]
-        let texts = [
-            "This proposal describes a new reporting service that creates invoices, "
-                + "statements and delivery notes as PDF documents. The documents are "
-                + "archived as PDF/A-3a, so they can be opened and printed exactly "
-                + "the same way for many years.\n\n"
-                + "The watermark tells every reader that this is a draft. It is drawn "
-                + "in light gray behind the text, at an angle from the bottom left "
-                + "corner to the top right corner of the page.",
-            "The service will be built in three phases over six months. The first "
-                + "phase delivers invoices, the second statements, and the third "
-                + "delivery notes.\n\n"
-                + "The budget and the schedule will be final once the proposal is "
-                + "approved. Until then, every page of this document is marked as a draft.",
+        let kinds = [
+            "OpenType with CFF outlines, from the .otf file, embedded as a subset",
+            "TrueType, from the .ttf file, embedded as a subset",
+            "Another TrueType font, embedded as a subset",
+            "A TrueType font kept whole: subsetting turned off",
         ]
+        let sample = "The quick brown fox jumps over the lazy dog. "
+                + "Ξεσκεπάζω την ψυχοφθόρα βδελυγμία. "
+                + "Съешь же ещё этих мягких французских булок, да выпей чаю."
 
-        for i in 0..<titles.count {
-            let page = Page(pdf, A4.LANDSCAPE)
+        var y: Float = xy[1] + 30.0
+        for i in 0..<files.count {
+            text = TextLine(f2, files[i])
+            text.setFontSize(11.0)
+            text.setLocation(50.0, y)
+            text.drawOn(page)
 
-            // The watermark is drawn before the content of the page.
-            f3.setSize(120.0)
-            page.addWatermark(f3, "DRAFT")
+            text = TextLine(f1, kinds[i])
+            text.setFontSize(10.0)
+            text.setTextColor(Color.dimgray)
+            text.setLocation(50.0, y + 15.0)
+            text.drawOn(page)
 
-            let title = TextLine(f2, titles[i])
-            title.setStructureType(StructElem.H1)
-            title.setFontSize(28.0)
-            title.setLocation(70.0, 100.0)
-            title.drawOn(page)
-
-            let textBlock = TextBlock(f1, texts[i])
-            textBlock.setFontSize(14.0)
-            textBlock.setLineSpacing(1.5)
-            textBlock.setLocation(70.0, 130.0)
-            textBlock.setWidth(page.getWidth() - 140.0)
-            textBlock.drawOn(page)
-
-            let footer = TextLine(f1, "Page " + String(i + 1) + " of " + String(titles.count))
-            footer.setFontSize(10.0)
-            footer.setTextColor(Color.dimgray)
-            footer.setLocation(70.0, page.getHeight() - 40.0)
-            footer.drawOn(page)
+            let font = try Font(pdf, files[i])
+            font.setSubset(i != 3)
+            textBlock = TextBlock(font, sample)
+            textBlock.setFontSize(13.0)
+            textBlock.setLineSpacing(1.4)
+            textBlock.setLocation(50.0, y + 28.0)
+            textBlock.setWidth(512.0)
+            xy = textBlock.drawOn(page)
+            y = xy[1] + 30.0
         }
 
         try pdf.complete()
     }
 }   // End of Example_07.swift
-
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
 _ = try Example_07()

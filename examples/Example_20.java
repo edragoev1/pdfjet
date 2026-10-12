@@ -10,160 +10,75 @@ import java.io.*;
 import java.util.*;
 import com.pdfjet.*;
 import com.pdfjet.fonts.*;
-import com.pdfjet.qrcode.*;
+import com.pdfjet.barcodes.*;
 
 /**
  * Example_20.java
- * This example draws a letterhead: a logo read from a PDF file, a maple leaf
- * drawn as a path with curves, and a QR code with the address of a web site.
  */
-class Example_20 {
+public class Example_20 {
     public Example_20() throws Exception {
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_20.pdf")));
         pdf.setCompliance(Compliance.PDF_UA_1);
-        pdf.setTitle("PDFjet Software Letterhead");
+        pdf.setTitle("Electric Vehicle Population");
 
-        // Read the logo from a PDF file, and add the resources of its pages, its
-        // fonts and images, to this PDF. The logo itself is drawn with paths and
-        // has none.
-        BufferedInputStream bis = new BufferedInputStream(
-                new FileInputStream("data/testPDFs/PDFjetLogo.pdf"));
-        List<PDFobj> objects = pdf.read(bis);
+        Font f1 = new Font(pdf, IBMPlexSans.SemiBold);
+        f1.setSize(7f);
 
-        pdf.addResourceObjects(objects);
+        Font f2 = new Font(pdf, IBMPlexSans.Regular);
+        f2.setSize(7f);
 
-        Font f1 = new Font(pdf, IBMPlexSans.Regular);
-        f1.setSize(11f);
+        Font f3 = new Font(pdf, IBMPlexSans.BoldItalic);
+        f3.setSize(7f);
 
-        Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
-        f2.setSize(11f);
+        Image image = new Image(pdf, "images/TeslaX.png");
+        image.setAltDescription(
+                "A white Tesla Model X with a black glass roof, seen from the front left.");
+        image.scaleBy(1f/3f);      // The image is 120 DPI, so 0.6 of its pixels
 
-        List<PDFobj> pages = pdf.getPageObjects(objects);
-        PDFobj content = pages.get(0).getContentObject(objects);
+        Barcode barcode = new Barcode(Barcode.CODE_128, "Hello, World!");
+        barcode.setModuleLength(0.75f);
+        // Comment out the line below if you don't want to print the text underneath the barcode.
+        barcode.setFont(f1);
 
-        Page page = new Page(pdf, Letter.PORTRAIT);
+        Table table = new Table(f1, f2, "data/Electric_Vehicle_Population_10_Pages.csv");
+        table.setVisibleColumns(1, 2, 3, 4, 5, 6, 7, 9);
+        table.getCellAt(4, 0).setImage(image);
+        table.getCellAt(5, 0).setColSpan(8);
+        table.getCellAt(5, 0).setBarcode(barcode);
+        table.getCellAt(20, 0).setColSpan(6);
+        table.getCellAt(20, 6).setColSpan(2);
+        table.autoAdjustColumnWidths();
+        table.setColumnWidth(0, image.getWidth() + 4f);
+        table.setColumnWidth(3, table.getColumnWidth(3) + 10f);
+        table.setColumnWidth(5, table.getColumnWidth(5) + 10f);
+        table.rightAlignNumbers();
 
-        // Draw the content of the first page of the logo PDF, at half its size.
-        // drawContents anchors the content by the point that is height points
-        // above the origin of its page, which it puts at x and y here. The
-        // logo is in the top left corner of its page, so that point is the top
-        // of the page and the height to give is the height of the page.
-        float height = Letter.PORTRAIT.getHeight();
-        float x = 60f;
-        float y = 40f;
-        float xScale = 0.5f;
-        float yScale = 0.5f;
+        table.setLocation(30f, 30f);
+        // table.setFirstPageTopMargin(150f);
+        table.setBottomMargin(15f);
+        table.setTextColorInRow(12, Color.blue);
+        table.setTextColorInRow(13, Color.firebrick);
+        table.setFontInRow(14, f3);
 
-        // The logo is a figure, with an alternate description for screen readers.
-        page.addBDC(StructElem.FIGURE, null, "The PDFjet logo");
-        page.drawContents(
-                content.getData(),
-                height,
-                x,
-                y,
-                xScale,
-                yScale);
-        // The logo is 216 by 68 points, at the top left of its page, so half of
-        // that here: the box PDF/UA asks every figure for.
-        page.setFigureBoundingBox(x, y, 216f * xScale, 68f * yScale);
-        page.addEMC();
+        // A heading on the first page only, which the table starts under: the
+        // first page is made here, and the table goes on to new pages.
+        Page first = new Page(pdf, Letter.PORTRAIT, Page.DETACHED);
+        new TextLine(f1, "Electric Vehicle Population")
+                .setStructureType(StructElem.H1)
+                .setFontSize(14f)
+                .setLocation(30f, 44f)
+                .drawOn(first);
+        table.setFirstPageTopMargin(56f);
 
-        new TextLine(f2, "PDFjet Software").setLocation(390f, 60f).drawOn(page);
-        new TextLine(f1, "Unionville, Ontario, Canada").setLocation(390f, 76f).drawOn(page);
-        // An address on the page is a link to it, as PAC asks of text that reads as one
-        new TextLine(f1, "https://pdfjet.com").setURIAction("https://pdfjet.com").setLocation(390f, 92f).drawOn(page);
-
-        // A thin rule under the letterhead, an artifact.
-        page.addArtifactBMC();
-        page.setPenColor(Color.darkred);
-        page.setPenWidth(1f);
-        page.drawLine(60f, 115f, 552f, 115f);
-        page.addEMC();
-
-        // The heading of the page, which PAC asks a document for
-        TextLine text = new TextLine(f2, "The logo on this page was read from a PDF file.");
-        text.setStructureType(StructElem.H1);
-        text.setFontSize(16f);
-        text.setLocation(60f, 170f);
-        text.drawOn(page);
-
-        TextBlock textBlock = new TextBlock(f1,
-                "The logo is the content of the first page of data/testPDFs/PDFjetLogo.pdf, "
-                + "drawn here at half its size with page.drawContents. It stays sharp "
-                + "at any zoom, because it is drawn as vector graphics and not as an image.\n\n"
-                + "The maple leaf below is a Path with curves, and the QR code "
-                + "holds the address of the PDFjet web site.");
-        textBlock.setFontSize(12f);
-        textBlock.setLineSpacing(1.5f);
-        textBlock.setLocation(60f, 185f);
-        textBlock.setWidth(490f);
-        textBlock.drawOn(page);
-
-        // A maple leaf, drawn with lines and with curves from control points.
-        Path path = new Path();
-
-        path.add(new Point(13.0f,  0.0f));
-        path.add(new Point(15.5f,  4.5f));
-
-        path.add(new Point(18.0f,  3.5f));
-        path.add(new Point(15.5f, 13.5f, Point.CONTROL_POINT_C));
-        path.add(new Point(15.5f, 13.5f, Point.CONTROL_POINT_C));
-        path.add(new Point(20.5f,  7.5f));
-
-        path.add(new Point(21.0f,  9.5f));
-        path.add(new Point(25.0f,  9.0f));
-        path.add(new Point(24.0f, 13.0f));
-        path.add(new Point(25.5f, 14.0f));
-        path.add(new Point(19.0f, 19.0f));
-        path.add(new Point(20.0f, 21.5f));
-        path.add(new Point(13.5f, 20.5f));
-        path.add(new Point(13.5f, 27.0f));
-        path.add(new Point(12.5f, 27.0f));
-        path.add(new Point(12.5f, 20.5f));
-        path.add(new Point( 6.0f, 21.5f));
-        path.add(new Point( 7.0f, 19.0f));
-        path.add(new Point( 0.5f, 14.0f));
-        path.add(new Point( 2.0f, 13.0f));
-        path.add(new Point( 1.0f,  9.0f));
-        path.add(new Point( 5.0f,  9.5f));
-
-        path.add(new Point( 5.5f,  7.5f));
-        path.add(new Point(10.5f, 13.5f, Point.CONTROL_POINT_C));
-        path.add(new Point(10.5f, 13.5f, Point.CONTROL_POINT_C));
-        path.add(new Point( 8.0f,  3.5f));
-
-        path.add(new Point(10.5f,  4.5f));
-        path.setClosed(true);
-        path.setStrokeColor(Color.red);
-        path.setFillShape(true);
-        path.setLocation(60f, 330f);
-        path.scaleBy(6f);
-        path.drawOn(page);
-
-        QRCode qr = new QRCode(
-                "https://pdfjet.com",
-                ErrorCorrectionLevel.M);   // Medium
-        qr.setModuleLength(5f);
-        qr.setLocation(300f, 340f);
-        float[] xy = qr.drawOn(page);
-
-        // A frame around the QR code, an artifact.
-        page.addArtifactBMC();
-        page.setPenColor(Color.lightgray);
-        page.setPenWidth(0.5f);
-        page.drawRect(290f, 330f, xy[0] - 280f, xy[1] - 320f);
-        page.addEMC();
-
-        TextLine caption = new TextLine(f1, "A Path with curves");
-        caption.setTextColor(Color.dimgray);
-        caption.setLocation(60f, xy[1] + 35f);
-        caption.drawOn(page);
-
-        caption = new TextLine(f1, "Scan to visit https://pdfjet.com").setURIAction("https://pdfjet.com");
-        caption.setTextColor(Color.dimgray);
-        caption.setLocation(290f, xy[1] + 35f);
-        caption.drawOn(page);
+        List<Page> pages = new ArrayList<Page>();
+        pages.add(first);
+        table.drawOn(pdf, first, pages, Letter.PORTRAIT);
+        for (int i = 0; i < pages.size(); i++) {
+            Page page = pages.get(i);
+            page.addFooter(new TextLine(f1, "Page " + (i + 1) + " of " + pages.size()));
+            pdf.addPage(page);
+        }
 
         pdf.complete();
     }
@@ -174,4 +89,4 @@ class Example_20 {
         long time1 = System.currentTimeMillis();
         System.out.printf("Example_20 => %4d ms%n", time1 - time0);
     }
-}   // End of Example_20.java
+} // End of Example_20.java

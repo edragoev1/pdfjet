@@ -12,92 +12,110 @@ import (
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
+	"github.com/edragoev1/pdfjet/v9/src/a4"
+	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
-	"github.com/edragoev1/pdfjet/v9/src/letter"
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
-// Example39 draws a horizontal bar chart of the ten longest rivers, each bar
-// in its own color with its length written inside it, under a title and a
-// subtitle, and a color key and a source note under the chart.
+// Example39 draws the pages of a document first and finishes them last. The two map
+// pages are drawn first and the contents page last, and the three are added
+// to the PDF in reading order, the contents first. They are made detached,
+// outside the PDF, so a "Page X of N" footer is drawn on each once the
+// number of pages is known.
 func Example39() {
 	pdf, err := pdfjet.NewPDFFile("Example_39.pdf")
 	if err != nil {
 		log.Fatal(err)
 	}
 	pdf.SetCompliance(compliance.PDF_UA_1)
-	pdf.SetTitle("10 Longest Rivers in the World")
+	pdf.SetTitle("Maps")
 
-	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold)
-	f1.SetSize(15.0)
+	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
+	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
 
-	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
-	f2.SetSize(9.0)
-
-	f3 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold)
-	f3.SetSize(9.0)
-
-	f4 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
-	f4.SetSize(8.0)
-
-	page := pdfjet.NewPage(pdf, letter.Portrait())
-
-	// The heading of the page, above the chart
-	pdfjet.NewTextLine(f1, "Rivers of the World").
-		SetStructureType(structelem.H1).
-		SetFontSize(18.0).
-		SetLocation(36.0, 40.0).
-		DrawOn(page)
-
-	rivers := []string{
-		"Nile", "Amazon", "Yangtze", "Mississippi-Missouri", "Yenisey-Baikal-Selenga",
-		"Huang He (Yellow)", "Ob-Irtysh", "Paraná", "Congo", "Amur"}
-	lengths := []float32{6650.0, 6400.0, 6300.0, 5971.0, 5540.0, 5464.0, 5410.0, 4880.0, 4700.0, 4444.0}
-	colors := []int32{
-		0x477aa8, 0x5f7e5f, 0x8b6f47, 0x8e7152, 0x517aa0,
-		0x967110, 0x687b68, 0x8e7155, 0x5c5c5c, 0x897154}
-
-	chart := pdfjet.NewBarChart(f1, f2)
-	chart.SetSize(540.0, 400.0)
-	chart.SetTitle("10 Longest Rivers in the World")
-	chart.SetSubtitle("Length in kilometers · Color reflects typical sediment / pollution character")
-	chart.SetCategories(rivers...)
-	chart.AddSeriesWithColors("", lengths, colors)
-	chart.SetHorizontal(true)
-	chart.SetGroupGap(0.4)
-	chart.SetValueAxisMinMax(0.0, 8000.0, 4)
-	chart.SetGridLineWidth(0.75)
-	chart.SetGridLineColor(0xe0e0e0)
-	chart.SetGridLineDashPattern("[] 0")
-	chart.SetAxisLineWidth(0.0)
-	chart.SetDrawValueLabels(true)
-	chart.SetValueLabelsInside(true)
-	chart.SetGroupingUsed(true)
-	chart.SetAltDescription(
-		"The ten longest rivers in the world, in kilometers: Nile 6,650, Amazon 6,400, Yangtze 6,300, Mississippi-Missouri 5,971, Yenisey-Baikal-Selenga 5,540, Huang He (Yellow) 5,464, Ob-Irtysh 5,410, Paraná 4,880, Congo 4,700, Amur 4,444.")
-	chart.SetLocation(36.0, 70.0)
-	chart.DrawOn(page)
-
-	// The color key under the chart
-	gray := int32(0x444444)
-	pdfjet.NewTextLine(f3, "Color key (illustrative):").
-		SetTextColor(gray).SetLocation(171.0, 496.0).DrawOn(page)
-	keyColors := []int32{0x477aa8, 0x5f7e5f, 0x8e7155, 0x967110, 0x5c5c5c}
-	keyTexts := []string{
-		"Clear / low sediment", "Sediment-rich, relatively clean", "Polluted / industrial & agricultural",
-		"Heavy natural sediment (loess)", "Natural dark tannin stain (Congo)"}
-	keyX := []float32{171.0, 262.0, 398.0, 171.0, 313.0}
-	keyY := []float32{512.0, 512.0, 512.0, 527.0, 527.0}
-	for i := range keyColors {
-		// The swatches are rectangles, drawn as artifacts next to their text.
-		pdfjet.NewRect(keyX[i], keyY[i]-8.5, 10.5, 10.5).SetFillColor(keyColors[i]).DrawOn(page)
-		pdfjet.NewTextLine(f4, keyTexts[i]).
-			SetTextColor(gray).SetLocation(keyX[i]+15.0, keyY[i]).DrawOn(page)
+	titles := []string{"Europe", "Spain"}
+	files := []string{"images/ee-map.png", "images/spain-admin.jpg"}
+	descriptions := []string{
+		"A map of Europe in which the member states of the European Union are shaded, and Turkey, a candidate to join when the map was made, in another shade.",
+		"A map of the 17 autonomous communities of Spain and its two autonomous cities, Ceuta and Melilla, with their capitals.",
 	}
 
-	note := "Color mapping is illustrative; lengths and conditions vary by source and season."
-	pdfjet.NewTextLine(f4, note).
-		SetTextColor(0x696969).SetLocation(576.0-f4.StringWidth(f4.GetSize(), note), 550.0).DrawOn(page)
+	// 1. Draw the map pages. They are detached, so they are not in the PDF yet.
+	mapPages := make([]*pdfjet.Page, len(titles))
+	for i := 0; i < len(titles); i++ {
+		page := pdfjet.NewPageDetached(pdf, a4.Portrait())
+
+		title := pdfjet.NewTextLine(f2, titles[i])
+		title.SetFontSize(24.0)
+		title.SetLocation(50.0, 80.0)
+		title.DrawOn(page)
+
+		// Scale the image to the width of the page between the margins.
+		image := pdfjet.NewImageFromFile(pdf, files[i])
+		image.SetAltDescription(descriptions[i])
+		image.ScaleBy((page.GetWidth() - 100.0) / image.GetWidth())
+		image.SetLocation(50.0, 100.0)
+		image.DrawOn(page)
+
+		mapPages[i] = page
+	}
+
+	// 2. Draw the contents page last, now that the map pages are ready.
+	contents := pdfjet.NewPageDetached(pdf, a4.Portrait())
+
+	text := pdfjet.NewTextLine(f2, "Maps")
+	text.SetStructureType(structelem.H1)
+	text.SetFontSize(24.0)
+	text.SetLocation(50.0, 80.0)
+	text.DrawOn(contents)
+
+	y := float32(130.0)
+	for i := 0; i < len(titles); i++ {
+		text = pdfjet.NewTextLine(f1, titles[i]+" . . . . . . . . . . page "+fmt.Sprint(i+2))
+		text.SetFontSize(14.0)
+		text.SetLocation(50.0, y)
+		text.DrawOn(contents)
+		y += 25.0
+	}
+
+	textBlock := pdfjet.NewTextBlock(f1,
+		"This page was drawn after the two map pages, but it is the first page "+
+			"of the document: the pages were made detached and are added to the PDF "+
+			"in reading order. The footer \"Page X of N\" is drawn on each page last, "+
+			"when the number of pages is known.")
+	textBlock.SetFontSize(12.0)
+	textBlock.SetLineSpacing(1.5)
+	textBlock.SetTextColor(color.DimGray)
+	textBlock.SetLocation(50.0, y+20.0)
+	textBlock.SetWidth(contents.GetWidth() - 100.0)
+	textBlock.DrawOn(contents)
+
+	// 3. The pages in reading order, and a footer on each, now that their
+	// number is known.
+	pages := append([]*pdfjet.Page{contents}, mapPages...)
+	fontSize := float32(10.0)
+	for i := 0; i < len(pages); i++ {
+		page := pages[i]
+
+		line := pdfjet.NewLine(70.0, page.GetHeight()-60.0,
+			page.GetWidth()-70.0, page.GetHeight()-60.0)
+		line.SetStrokeColor(color.LightGray)
+		line.DrawOn(page)
+
+		// A page number is an artifact: a screen reader skips it.
+		footer := "Page " + fmt.Sprint(i+1) + " of " + fmt.Sprint(len(pages))
+		page.AddArtifactBMC()
+		page.SetBrushColor(color.Black)
+		page.DrawStringUsingFontSize(
+			f1,
+			fontSize,
+			footer,
+			(page.GetWidth()-f1.StringWidth(fontSize, footer))/2.0,
+			page.GetHeight()-40.0)
+		page.AddEMC()
+	}
+	pdf.AddPages(pages)
 
 	if err := pdf.Complete(); err != nil {
 		log.Fatal(err)

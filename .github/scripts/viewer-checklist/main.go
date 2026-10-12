@@ -27,62 +27,62 @@ type section struct {
 
 var sections = []section{
 	{"Acrobat Reader on Windows", "", []string{
-		"Example_30 asks for a password, and opens with the user password hello.",
+		"Example_47 asks for a password, and opens with the user password hello.",
 		"Opened with hello: File > Properties > Security shows printing allowed and copying of content not allowed.",
-		"Example_30 opens with the owner password world, and then copying is allowed.",
+		"Example_47 opens with the owner password world, and then copying is allowed.",
 		"Encrypted_Cyrillic opens with the password пароль (a Russian keyboard, or pasted).",
 		"Encrypted_200_Bytes opens with 0123456789 typed 20 times, 200 characters (paste it).",
-		"Example_06: the push pin and the paperclip open linux-logo.png and Example_02.java, and each can be saved.",
-		"Example_06: the note icon shows \"Please check the figures on page 2.\", the link opens pdfjet.com, " +
+		"Example_42: the push pin and the paperclip open linux-logo.png and Example_02.java, and each can be saved.",
+		"Example_42: the note icon shows \"Please check the figures on page 2.\", the link opens pdfjet.com, " +
 			"and the triangle, square and circle are half transparent.",
-		"Example_22: each of the 8 entries of the contents jumps to its page.",
-		"Example_07, 34 and 55, the PDF/A examples, open with the PDF/A bar and no error. Keep a screenshot of each.",
-		"Example_07, 34, 44 and 58, tagged, open with no offer to make the document accessible.",
-		"Example_01, 02, 03, 04, 08, 13, 38 and 54 open with no warning and no offer to repair the file.",
-		"Example_03 and 44 show their Japanese, Korean and Chinese text with no offer of the Asian font pack " +
+		"Example_40: each of the 8 entries of the contents jumps to its page.",
+		"Example_23, 45 and 46, the PDF/A examples, open with the PDF/A bar and no error. Keep a screenshot of each.",
+		"Example_06, 13, 23 and 45, tagged, open with no offer to make the document accessible.",
+		"Example_01, 02, 03, 04, 19, 20 and 21 open with no warning and no offer to repair the file.",
+		"Example_03 and 13 show their Japanese, Korean and Chinese text with no offer of the Asian font pack " +
 			"and no offer to make the file accessible: their fonts are embedded, IBM Plex Sans JP, KR and SC.",
 		"Example_05 shows the core fonts, and its Chinese, Japanese and Korean greetings in the Adobe CJK " +
 			"fonts, which are not embedded: Acrobat may offer the Asian font pack, which is what the example shows.",
-		"Example_46: the Layers panel lists Relief, Latitude and Longitude, and Capital Cities, " +
+		"Example_35: the Layers panel lists Relief, Latitude and Longitude, and Capital Cities, " +
 			"and switching each off and on hides and shows it on the map of Europe.",
 	}},
 	{"NVDA with Acrobat Reader", "", []string{
 		"Example_01: NVDA reads the English, Greek and Bulgarian text, each in its own language.",
-		"Example_54: H moves from heading to heading, in the order of the page.",
-		"Example_38: in the table, NVDA says the column header of each cell (Ctrl+Alt+arrow keys).",
-		"Example_25: NVDA reads the description of the donut chart, not only \"graphic\".",
-		"Example_22: NVDA says \"link\" and the text of each entry of the contents.",
+		"Example_19: H moves from heading to heading, in the order of the page.",
+		"Example_21: in the table, NVDA says the column header of each cell (Ctrl+Alt+arrow keys).",
+		"Example_28: NVDA reads the description of the donut chart, not only \"graphic\".",
+		"Example_40: NVDA says \"link\" and the text of each entry of the contents.",
 	}},
 	{"Edge on Windows", "Edge draws PDFs with Adobe's engine.", []string{
-		"Example_30 opens with hello, and prints; copying is not allowed.",
+		"Example_47 opens with hello, and prints; copying is not allowed.",
 		"Encrypted_Cyrillic and Encrypted_200_Bytes open with their passwords.",
-		"Example_06: the icons and the shapes are where Acrobat draws them, and the note and the attachments open.",
-		"Example_01, 02, 08, 13, 27, 38 and 54 look as they do in Acrobat Reader.",
+		"Example_42: the icons and the shapes are where Acrobat draws them, and the note and the attachments open.",
+		"Example_01, 02, 04, 19, 20 and 21 look as they do in Acrobat Reader.",
 	}},
 	{"Foxit PDF Reader", "", []string{
-		"Example_30 opens with hello, and prints; copying is not allowed.",
-		"Example_46: the Layers panel lists its three layers, and each hides and shows.",
+		"Example_47 opens with hello, and prints; copying is not allowed.",
+		"Example_35: the Layers panel lists its three layers, and each hides and shows.",
 		"Encrypted_Cyrillic and Encrypted_200_Bytes open with their passwords.",
-		"Example_06: the icons and the shapes are where Acrobat draws them, and the note and the attachments open.",
-		"Example_01, 02, 08, 13, 27, 38 and 54 look as they do in Acrobat Reader.",
+		"Example_42: the icons and the shapes are where Acrobat draws them, and the note and the attachments open.",
+		"Example_01, 02, 04, 19, 20 and 21 look as they do in Acrobat Reader.",
 	}},
 	{"Preview on the Mac", "", []string{
-		"Example_30 opens with hello; the Inspector (Cmd-I), lock tab, shows printing allowed and copying not.",
-		"Example_30 opens with the owner password world.",
+		"Example_47 opens with hello; the Inspector (Cmd-I), lock tab, shows printing allowed and copying not.",
+		"Example_47 opens with the owner password world.",
 		"Encrypted_Cyrillic and Encrypted_200_Bytes open with their passwords.",
-		"Example_06: the attachments open, the note shows its text, the link opens, and the shapes are drawn.",
-		"Example_22: the entries of the contents jump to their pages.",
-		"Example_03 and 44 show their Chinese, Japanese and Korean text, and Example_05 its greetings, in fonts of the system.",
+		"Example_42: the attachments open, the note shows its text, the link opens, and the shapes are drawn.",
+		"Example_40: the entries of the contents jump to their pages.",
+		"Example_03 and 13 show their Chinese, Japanese and Korean text, and Example_05 its greetings, in fonts of the system.",
 	}},
 	{"VoiceOver in Preview", "", []string{
 		"Example_01: VoiceOver reads the English, Greek and Bulgarian text, each in its own language.",
-		"Example_54: the headings come in the order of the page (VO+Cmd+H).",
-		"Example_38: VoiceOver says the column header of each cell of the table.",
-		"Example_25: VoiceOver reads the description of the donut chart.",
+		"Example_19: the headings come in the order of the page (VO+Cmd+H).",
+		"Example_21: VoiceOver says the column header of each cell of the table.",
+		"Example_28: VoiceOver reads the description of the donut chart.",
 	}},
 	{"Firefox, now and then", "Firefox is checked automatically; this is a look by hand.", []string{
-		"Example_30 asks for a password, and opens with hello.",
-		"Example_06: the attachments are listed in the sidebar, and open.",
+		"Example_47 asks for a password, and opens with hello.",
+		"Example_42: the attachments are listed in the sidebar, and open.",
 	}},
 }
 
@@ -178,7 +178,7 @@ func main() {
 	y += 30
 
 	intro := textBlock(regular, 10, "The manual viewer pass of TODO.md. The files are in viewer-files-to-test: the Java "+
-		"examples built from main, Example_30 with the user password hello and the owner password world, "+
+		"examples built from main, Example_47 with the user password hello and the owner password world, "+
 		"and Encrypted_Cyrillic and Encrypted_200_Bytes. Tick each box when it holds; when it does not, "+
 		"write what you see on the lines below the viewer.", marginX, 612-2*marginX, soft)
 	y = intro.DrawOn(page)[1] + 8

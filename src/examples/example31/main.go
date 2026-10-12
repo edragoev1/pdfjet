@@ -8,7 +8,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"math"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
@@ -19,126 +18,147 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
-// Example31 draws with transparency. A GraphicsState sets the alpha of the
-// fills and of the strokes: opaque shapes hide what is under them, transparent
-// ones mix with it, and the stroke of a shape can be more or less transparent
-// than its fill.
+// Example31 draws a stamp and a hierarchy of nested containers.
 func Example31() {
 	pdf, err := pdfjet.NewPDFFile("Example_31.pdf")
 	if err != nil {
 		log.Fatal(err)
 	}
 	pdf.SetCompliance(compliance.PDF_UA_1)
-	pdf.SetTitle("Transparency")
-
-	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
-	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
+	pdf.SetTitle("Containers and Stamps")
 
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 
-	text := pdfjet.NewTextLine(f2, "Transparency")
-	text.SetStructureType(structelem.H1)
-	text.SetFontSize(22.0)
-	text.SetLocation(50.0, 80.0)
-	text.DrawOn(page)
+	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
+	f1.SetSize(14.0)
 
-	textBlock := pdfjet.NewTextBlock(f1,
-		"A GraphicsState sets the alpha of the fills and of the strokes that "+
-			"follow it, until the graphics state is restored. Opaque shapes hide "+
-			"what is under them, transparent ones mix with it, and the stroke of "+
-			"a shape can be more or less transparent than its fill.")
-	textBlock.SetFontSize(12.0)
-	textBlock.SetLineSpacing(1.5)
-	textBlock.SetLocation(50.0, 95.0)
-	textBlock.SetWidth(512.0)
-	xy := textBlock.DrawOn(page)
+	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold)
+	f2.SetSize(14.0)
 
-	y := xy[1] + 30.0
-	colors := []int32{color.Blue, color.Green, color.Red}
+	// The heading, above the drawings, which are 40 points lower for it
+	pdfjet.NewTextLine(f2, "Containers and Stamps").
+		SetStructureType(structelem.H1).
+		SetFontSize(18.0).
+		SetLocation(50.0, 30.0).
+		DrawOn(page)
 
-	// Opaque rectangles: each one hides the one under it.
-	pdfjet.NewTextLine(f2, "Opaque").SetLocation(50.0, y).DrawOn(page)
-	page.AddArtifactBMC() // The shapes carry no text, so they are artifacts.
-	for i := 0; i < len(colors); i++ {
-		page.SetBrushColor(colors[i])
-		page.FillRect(50.0+float32(i)*60.0, y+15.0+float32(i)*30.0, 120.0, 120.0)
-	}
-	page.AddEMC()
+	// Base container
+	container := pdfjet.NewContainer(400.0, 400.0)
+	container.SetLocation(100.0, 140.0)
 
-	// Half transparent rectangles: the colors mix where they overlap.
-	pdfjet.NewTextLine(f2, "50% transparent").SetLocation(320.0, y).DrawOn(page)
-	page.AddArtifactBMC()
-	page.SaveGraphicsState()
-	gs := pdfjet.NewGraphicsState()
-	gs.SetAlphaStroking(0.5)    // The stroking alpha constant
-	gs.SetAlphaNonStroking(0.5) // The non-stroking alpha constant
-	page.SetGraphicsState(gs)
-	for i := 0; i < len(colors); i++ {
-		page.SetBrushColor(colors[i])
-		page.FillRect(320.0+float32(i)*60.0, y+15.0+float32(i)*30.0, 120.0, 120.0)
-	}
-	page.RestoreGraphicsState()
-	page.AddEMC()
+	// Add a rectangle to container
+	rect := pdfjet.NewRect(0.0, 0.0, 400.0, 400.0)
+	rect.SetFillColor(color.Gray)
+	container.Add(rect)
 
-	// The same blue over a gray bar at four levels of alpha.
-	y += 245.0
-	pdfjet.NewTextLine(f2, "Fill alpha").SetLocation(50.0, y).DrawOn(page)
-	page.AddArtifactBMC()
-	page.SetBrushColor(color.Gray)
-	page.FillRect(50.0, y+55.0, 506.0, 30.0)
-	page.AddEMC()
-	alphas := []float32{0.25, 0.5, 0.75, 1.0}
-	for i := 0; i < len(alphas); i++ {
-		x := 50.0 + float32(i)*132.0
-		page.AddArtifactBMC()
-		page.SaveGraphicsState()
-		gs = pdfjet.NewGraphicsState()
-		gs.SetAlphaNonStroking(alphas[i])
-		page.SetGraphicsState(gs)
-		page.SetBrushColor(color.Blue)
-		page.FillRect(x, y+15.0, 110.0, 110.0)
-		page.RestoreGraphicsState()
-		page.AddEMC()
+	stamp := pdfjet.NewStamp(pdf).
+		SetSize(400.0, 400.0).
+		AddFont(f1).
+		AddFont(f2)
 
-		text = pdfjet.NewTextLine(f1, fmt.Sprintf("%d%%", int(math.Round(float64(alphas[i]*100.0)))))
-		text.SetFontSize(10.0)
-		text.SetTextColor(color.DimGray)
-		text.SetLocation(x, y+140.0)
-		text.DrawOn(page)
-	}
+	// Draw path ...
+	stamp.SetFillColor(color.LightBlue).
+		SetStrokeColor(color.Red).
+		SetStrokeWidth(4.0).
+		MoveTo(0.0, 0.0).
+		LineTo(400.0, 0.0).
+		LineTo(400.0, 400.0).
+		LineTo(0.0, 400.0).
+		CloseFillAndStrokePath()
 
-	// A thick stroke and a fill, each transparent on its own: the stroke
-	// shows the fill through it, then the fill shows the stroke.
-	y += 175.0
-	pdfjet.NewTextLine(f2, "Stroke alpha and fill alpha").SetLocation(50.0, y).DrawOn(page)
-	labels := []string{
-		"Stroke 25%, fill 100%",
-		"Stroke 100%, fill 25%",
-		"Stroke 50%, fill 50%",
-	}
-	strokeAndFill := [][2]float32{{0.25, 1.0}, {1.0, 0.25}, {0.5, 0.5}}
-	for i := 0; i < len(labels); i++ {
-		x := 100.0 + float32(i)*180.0
-		page.AddArtifactBMC()
-		page.SaveGraphicsState()
-		gs = pdfjet.NewGraphicsState()
-		gs.SetAlphaStroking(strokeAndFill[i][0])
-		gs.SetAlphaNonStroking(strokeAndFill[i][1])
-		page.SetGraphicsState(gs)
-		page.SetBrushColor(color.Red)
-		page.FillCircle(x, y+65.0, 40.0)
-		page.SetPenColor(color.Blue)
-		page.SetPenWidth(16.0)
-		page.DrawCircle(x, y+65.0, 40.0)
-		page.RestoreGraphicsState()
-		page.AddEMC()
+	// Draw Rectangle
+	stamp.SetStrokeColor(color.Blue).
+		SetStrokeWidth(1.0).
+		DrawRect(10.0, 10.0, 380.0, 380.0)
 
-		text = pdfjet.NewTextLine(f1, labels[i])
-		text.SetFontSize(10.0)
-		text.SetTextColor(color.DimGray)
-		text.SetLocation(x-text.GetWidth()/2.0, y+130.0)
-		text.DrawOn(page)
-	}
+	// Fill Rectangle
+	stamp.SetFillColor(color.DarkGreen).
+		FillRect(10.0, 10.0, 20.0, 20.0)
+
+	// Draw some text
+	params := pdfjet.NewTextParameters().
+		SetFont(f1).
+		SetFontSize(14.0).
+		SetLocation(40.0, 25.0). // Clear of the square, which the text would run over
+		SetText("Hello, World!")
+	stamp.DrawTextUsingParams(params)
+
+	// Change some parameters and draw the text again
+	params.SetFont(f2).SetLocation(40.0, 50.0)
+	stamp.SetFillColor(color.DarkGreen).DrawTextUsingParams(params)
+
+	stamp.Complete() // The stamp is complete!
+
+	stamp.SetLocation(50.0, 90.0).DrawOn(page)
+
+	// Rotate the stamp counter clockwise and draw it again
+	stamp.SetRotation(-15).DrawOn(page)
+
+	// Rotate the stamp clockwise and draw it again
+	stamp.SetRotation(15).DrawOn(page)
+
+	// Draw the stamp again at a quarter of its size
+	stamp.SetRotation(0).ScaleBy(0.25).SetLocation(360.0, 520.0).DrawOn(page)
+
+	// Add a text line to container
+	title := pdfjet.NewTextLine(f1, "Container")
+	title.SetLocation(150.0, 20.0)
+	container.Add(title)
+
+	// Nested container #1
+	nested1 := pdfjet.NewContainer(200.0, 200.0)
+	nested1.SetLocation(0.0, 0.0)
+	nested1.SetRotation(-30)
+	nested1.ScaleBy(0.8)
+
+	innerRect := pdfjet.NewRect(0.0, 0.0, 200.0, 200.0)
+	innerRect.SetFillColor(color.Blue)
+	nested1.Add(innerRect)
+
+	innerText := pdfjet.NewTextLine(f1, "Nested 1")
+	innerText.SetLocation(50.0, 100.0)
+	innerText.SetTextColor(color.White) // On the blue of the rectangle
+	nested1.Add(innerText)
+
+	container.Add(nested1)
+
+	// Nested container #2
+	nested2 := pdfjet.NewContainer(100.0, 100.0)
+	nested2.SetLocation(250.0, 250.0)
+	nested2.SetRotation(-45)
+
+	smallRect := pdfjet.NewRect(0.0, 0.0, 100.0, 100.0)
+	smallRect.SetFillColor(color.Red)
+	nested2.Add(smallRect)
+
+	smallText := pdfjet.NewTextLine(f1, "Nested 2")
+	smallText.SetLocation(10.0, 50.0)
+	nested2.Add(smallText)
+
+	container.Add(nested2)
+
+	container.SetRotation(45)
+	// Draw the entire hierarchy on the page
+	container.DrawOn(page)
+
+	container5 := pdfjet.NewContainer(200.0, 20.0)
+	rect5 := pdfjet.NewRect(0.0, 0.0, 200.0, 20.0)
+	container5.Add(rect5)
+
+	rect6 := pdfjet.NewRect(0.0, 0.0, 10.0, 10.0)
+	rect6.SetFillColor(color.Blue)
+	container5.Add(rect6)
+
+	rect7 := pdfjet.NewRect(190.0, 10.0, 10.0, 10.0)
+	rect7.SetBorderColor(color.Red)
+	rect7.SetBorderWidth(2.0)
+	container5.Add(rect7)
+
+	container5.SetLocation(50.0, 640.0)
+	container5.DrawOn(page)
+
+	container5.SetRotation(90)
+	container5.DrawOn(page)
 
 	if err := pdf.Complete(); err != nil {
 		log.Fatal(err)

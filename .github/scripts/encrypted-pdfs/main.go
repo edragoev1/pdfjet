@@ -1,4 +1,4 @@
-// Writes two encrypted PDFs beside Example_30 for check-viewers.py: one with
+// Writes two encrypted PDFs beside Example_47 for check-viewers.py: one with
 // a Cyrillic user password, which a viewer must pass on as UTF-8, and one with
 // a 200 byte user password, which a viewer must cut at 127 bytes, as PDFjet
 // does. The passwords are the ones in PASSWORDS in check-viewers.py.

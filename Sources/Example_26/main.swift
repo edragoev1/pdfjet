@@ -7,118 +7,223 @@
 import Foundation
 import PDFjet
 
-/**
- * Example_26.swift
- * This example draws a survey with check boxes and radio buttons.
- */
+///
+/// Example_26.swift
+///
+/// Draws an XY chart of the countries of a data file, each a marker that links
+/// to a page about the country, with the trend line of the points, and a table
+/// of the countries with a marker of their own.
+///
+struct ExampleError: Error, CustomStringConvertible {
+    let message: String
+    var description: String { message }
+}
+
+/// A country of the data file: its name and its point on the chart.
+struct Country {
+    let name: String
+    let point: Point
+}
+
 public class Example_26 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_26.pdf", append: false)!)
         pdf.setCompliance(Compliance.PDF_UA_1)
-        pdf.setTitle("Customer Survey")
+        pdf.setTitle("World View - Communications")
 
-        let f1 = try Font(pdf, IBMPlexSans.Regular)
-        f1.setSize(11.0)
+        let f1 = try Font(pdf, IBMPlexSans.Bold)
+        f1.setSize(8.0)
 
-        let f2 = try Font(pdf, IBMPlexSans.SemiBold)
-        f2.setSize(12.0)
+        let f2 = try Font(pdf, IBMPlexSans.Regular)
+        f2.setSize(8.0)
 
         let page = Page(pdf, Letter.PORTRAIT)
 
-        let x: Float = 70.0
-        var y: Float = 90.0
+        let countries = try readCountries("data/world-communications.txt", "|")
 
-        let text = TextLine(f2, "Customer Survey")
-        text.setStructureType(StructElem.H1)
-        text.setFontSize(22.0)
-        text.setLocation(x, y)
-        text.drawOn(page)
-
-        // Check boxes, one below the other.
-        y += 50.0
-        TextLine(f2, "Which PDFjet ports do you use?").setLocation(x, y).drawOn(page)
-
-        y += 15.0
-        CheckBox(f1, "Java")
-                .setLocation(x, y)
-                .setCheckmarkColor(Color.blue)
-                .check(Mark.CHECK)
+        // The heading of the document, above the chart
+        TextLine(f1, "Cell Phones and Internet Use by Country")
+                .setStructureType(StructElem.H1)
+                .setFontSize(16.0)
+                .setLocation(70.0, 36.0)
                 .drawOn(page)
 
-        y += 25.0
-        CheckBox(f1, "C#")
-                .setLocation(x, y)
-                .setCheckmarkColor(Color.blue)
-                .check(Mark.CHECK)
-                .drawOn(page)
+        let chart = Chart(f1, f2)
+        chart.setLocation(70.0, 50.0)
+        chart.setSize(500.0, 300.0)
+        chart.setTitle("World View - Communications")
+        chart.setXAxisTitle("Cell phones per capita")
+        chart.setYAxisTitle("Internet users % of the population")
+        let markers = chart.addSeries("").setStrokeColor(Color.gray)
+        for country in countries {
+            markers.addPoint(country.point)
+        }
+        addTrendLine(chart, countries)
+        chart.drawOn(page)
 
-        y += 25.0
-        CheckBox(f1, "Swift")
-                .setLocation(x, y)
-                .drawOn(page)
-
-        y += 25.0
-        CheckBox(f1, "Go")
-                .setLocation(x, y)
-                .drawOn(page)
-
-        // Radio buttons in a row. Each one starts where the one before it ends.
-        y += 50.0
-        TextLine(f2, "How did you hear about PDFjet?").setLocation(x, y).drawOn(page)
-
-        y += 15.0
-        var xy = RadioButton(f1, "Web search")
-                .setLocation(x, y)
-                .select(true)
-                .drawOn(page)
-
-        xy = RadioButton(f1, "A colleague")
-                .setLocation(xy[0] + 20.0, y)
-                .drawOn(page)
-
-        RadioButton(f1, "Other")
-                .setLocation(xy[0] + 20.0, y)
-                .drawOn(page)
-
-        y += 50.0
-        TextLine(f2, "Would you recommend PDFjet?").setLocation(x, y).drawOn(page)
-
-        y += 15.0
-        xy = RadioButton(f1, "Yes")
-                .setLocation(x, y)
-                .select(true)
-                .drawOn(page)
-
-        RadioButton(f1, "No")
-                .setLocation(xy[0] + 20.0, y)
-                .drawOn(page)
-
-        // A check box marked with an X, and one with a link.
-        y += 50.0
-        TextLine(f2, "Stay in touch").setLocation(x, y).drawOn(page)
-
-        y += 15.0
-        CheckBox(f1, "Send me news about new releases")
-                .setLocation(x, y)
-                .setCheckmarkColor(Color.red)
-                .check(Mark.X)
-                .drawOn(page)
-
-        y += 25.0
-        xy = CheckBox(f1, "Visit https://pdfjet.com")
-                .setLocation(x, y)
-                .setURIAction("https://pdfjet.com")
-                .drawOn(page)
-
-        // A border around the survey.
-        let rect = Rect(50.0, 50.0, 512.0, xy[1] + 25.0 - 50.0)
-        rect.setBorderColor(Color.lightgray)
-        rect.drawOn(page)
+        f1.setSize(7.0)
+        f2.setSize(7.0)
+        try addTableToChart(page, countries, f1, f2)
 
         try pdf.complete()
     }
-}   // End of Example_26.swift
 
+    func addTrendLine(_ chart: Chart, _ countries: [Country]) {
+        let points = countries.map { $0.point }
+        let m = slope(points)
+        let b = intercept(points, m)
+        chart.addSeries("Trend line")
+                .setDrawPath(true)
+                .setStrokeColor(Color.blue)
+                .setShape(Shape.INVISIBLE)
+                .addPoint(0.0, b)
+                .addPoint(1.5, m * 1.5 + b)
+    }
+
+    func addTableToChart(
+            _ page: Page,
+            _ countries: [Country],
+            _ f1: Font,
+            _ f2: Font) throws {
+        let table = Table()
+        var tableData = [[Cell]]()
+
+        // The header row: the country heads its marker and its name
+        var headerRow = [Cell]()
+        let header = Cell(f1, "Country")
+        header.setColSpan(2)
+        headerRow.append(header)
+        headerRow.append(Cell(f1, ""))
+        headerRow.append(Cell(f1, "Page about the country"))
+        tableData.append(headerRow)
+
+        for country in countries {
+            if country.point.getShape() != Shape.CIRCLE {
+                var tableRow = [Cell]()
+
+                var cell = Cell(f2, "")
+                cell.setMarker(country.point, Alignment.LEFT)
+                tableRow.append(cell)
+
+                cell = Cell(f1, country.name)
+                tableRow.append(cell)
+
+                // The address is a link to it: text that reads as an address and is
+                // not one, PAC reports
+                cell = Cell(f2, country.point.getURIAction())
+                cell.setURIAction(country.point.getURIAction()!)
+                tableRow.append(cell)
+
+                tableData.append(tableRow)
+            }
+        }
+        table.setTableData(tableData, 1)
+        table.autoAdjustColumnWidths()
+        table.setCellBorderWidth(0.2)
+        table.setLocation(70.0, 360.0)
+        table.setColumnWidth(0, 9.0)
+        table.drawOn(page)
+    }
+
+    func readCountries(
+            _ fileName: String,
+            _ delimiter: String) throws -> [Country] {
+        var countries = [Country]()
+
+        let text = (try String(contentsOfFile:
+                fileName, encoding: .utf8)).trimmingCharacters(in: .newlines)
+        let lines = text.replacingOccurrences(of: "\r\n", with: "\n").components(separatedBy: "\n")
+        for line1 in lines {
+            let line = line1.trimmingCharacters(in: .whitespacesAndNewlines)
+            var cols: [String]?
+            if delimiter == "|" {
+                cols = line.components(separatedBy: "|")
+            } else if delimiter == "\t" {
+                cols = line.components(separatedBy: "\t")
+            } else {
+                throw ExampleError(
+                        message: "Only pipes and tabs can be used as delimiters")
+            }
+
+            let name = cols![0].trimmingCharacters(in: .whitespacesAndNewlines)
+            let population = Double(cols![1].filter({ $0 != "," }))
+            let x = Double(cols![5].filter({ $0 != "," }))
+            let y = Double(cols![7].filter({ $0 != "," }).trimmingCharacters(in: .whitespacesAndNewlines))
+
+            if population != nil && x != nil && y != nil {
+                var country_name = name
+                country_name = country_name.replacingOccurrences(of: " ", with: "_")
+                country_name = country_name.replacingOccurrences(of: "'", with: "_")
+                country_name = country_name.replacingOccurrences(of: ",", with: "_")
+                country_name = country_name.replacingOccurrences(of: "(", with: "_")
+                country_name = country_name.replacingOccurrences(of: ")", with: "_")
+                let point = Point(Float(x! / population!), Float(y! / population! * 100.0))
+                point.setURIAction("http://pdfjet.com/country/\(country_name).txt")
+                point.setAltDescription(name) // What the link of the point is, for a screen reader
+                point.setRadius(2.0)
+
+                if point.getX() > 1.25 {
+                    point.setShape(Shape.RIGHT_ARROW)
+                    point.setStrokeColor(Color.black)
+                } else if point.getY() > 80.0 {
+                    point.setShape(Shape.UP_ARROW)
+                    point.setStrokeColor(Color.blue)
+                } else if name == "France" {
+                    point.setShape(Shape.MULTIPLY)
+                    point.setStrokeColor(Color.green)
+                } else if name == "Canada" {
+                    point.setShape(Shape.BOX)
+                    point.setStrokeColor(Color.orange)
+                } else if name.hasPrefix("United States") {
+                    point.setShape(Shape.STAR)
+                    point.setStrokeColor(Color.red)
+                }
+                countries.append(Country(name: name, point: point))
+            }
+        }
+        return countries
+    }
+
+    // The slope and intercept of the ordinary least squares trend line of the points.
+    private func slope(_ points: [Point]) -> Float {
+        return covar(points) / devsq(points) * Float(points.count - 1)
+    }
+
+    private func intercept(_ points: [Point], _ slope: Float) -> Float {
+        let m = mean(points)
+        return m[1] - slope * m[0]
+    }
+
+    private func mean(_ points: [Point]) -> [Float] {
+        var m = [Float](repeating: 0, count: 2)
+        for point in points {
+            m[0] += point.getX()
+            m[1] += point.getY()
+        }
+        let n = Float(points.count)
+        m[0] /= n
+        m[1] /= n
+        return m
+    }
+
+    private func covar(_ points: [Point]) -> Float {
+        var covariance: Float = 0.0
+        let m = mean(points)
+        for point in points {
+            covariance += (point.getX() - m[0]) * (point.getY() - m[1])
+        }
+        return covariance / Float(points.count - 1)
+    }
+
+    private func devsq(_ points: [Point]) -> Float {
+        var sum: Float = 0.0
+        let m = mean(points)
+        for point in points {
+            sum += Float(pow(Double(point.getX() - m[0]), 2))
+        }
+        return sum
+    }
+}   // End of Example_26.swift
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
 _ = try Example_26()

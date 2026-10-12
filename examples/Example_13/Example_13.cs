@@ -6,7 +6,6 @@
  */
 using System;
 using System.IO;
-using System.Collections.Generic;
 using System.Diagnostics;
 using PDFjet.NET;
 
@@ -18,141 +17,41 @@ public class Example_13 {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_13.pdf", FileMode.Create)));
         pdf.SetCompliance(Compliance.PDF_UA_1);
-        pdf.SetTitle("Winter Reading Scores");
+        pdf.SetTitle("Switzerland, in English and Chinese");
 
-        Font f1 = new Font(pdf, IBMPlexSans.Bold);
-        f1.SetSize(7f);
+        Font f1 = new Font(pdf, IBMPlexSans.Regular);
+        f1.SetSize(12f);
 
-        Font f2 = new Font(pdf, IBMPlexSans.Regular);
-        f2.SetSize(7f);
+        // Chinese (Simplified) font
+        Font f2 = new Font(pdf, IBMPlexSansSC.Regular);
+        f2.SetSize(12f);
 
-        List<List<Cell>> tableData = new List<List<Cell>>();
-        StreamReader reader = new StreamReader(
-                new FileStream("data/winter-2009.txt", FileMode.Open, FileAccess.Read));
-        String line;
-        while ((line = reader.ReadLine()) != null) {
-            List<Cell> row = new List<Cell>();
-            String[] columns = line.Split(new Char[] {'|'});
-            // C# will not let this be named "column" like the Java original -
-            // that name is used later in the method.
-            foreach (String col in columns) {
-                row.Add(new Cell(f2, col));
-            }
-            tableData.Add(row);
-        }
-        reader.Close();
+        Page page = new Page(pdf, Letter.PORTRAIT);
 
-        Table table = new Table();
-        table.SetTableData(tableData, 2);
-        table.SetLocation(100f, 50f);
-        table.SetBottomMargin(10f);
+        TextColumn column = new TextColumn();
+        column.SetLocation(70f, 70f);
+        column.SetWidth(500f);
+        column.SetLineSpacing(1.5f);        // 1.5 x font height
+        column.SetParagraphSpacing(0.5f);   // 0.5 x line spacing
 
-        table.SetFontInRow(0, f1);
-        table.SetFontInRow(1, f1);
+        Paragraph p1 = new Paragraph();
+        p1.Add(new TextLine(f1,
+"The Swiss Confederation was founded in 1291 as a defensive alliance among three cantons. In succeeding years, other localities joined the original three. The Swiss Confederation secured its independence from the Holy Roman Empire in 1499. Switzerland's sovereignty and neutrality have long been honored by the major European powers, and the country was not involved in either of the two World Wars. The political and economic integration of Europe over the past half century, as well as Switzerland's role in many UN and international organizations, has strengthened Switzerland's ties with its neighbors. However, the country did not officially become a UN member until 2002."));
+        column.AddParagraph(p1);
 
-        table.AutoAdjustColumnWidths();
-        table.RemoveLineBetweenRows(0, 1);
+        String chinese = "用于附属装置选择器应用程序的分析方法和计算基于与物料、附属装置和机器有关的不同参数和变量。 此类参数和变量的准确性会影响附属装置选择 应用程序结果的准确性。 虽然沃尔沃建筑设备公司、其子公司和附属公司（统称“沃尔沃建筑设备”）已尽力确保附属装置选择应用程序的准确性，但沃尔沃建筑设备无法保证结果准确无误。 因此，沃尔沃建筑设备并未对附属装置选择应用程序结果的准确性作出保证或声明（无论明示或暗示）。 沃尔沃建筑设备特此声明不对有关附属装置选择应用程序报告，此处获得的结果，或用于附属装置选择应用程序的设备的适宜性的所有明示或暗示保证，包括但不限于用于特定目的的适销性或合适性的任何保证承担任何责任。 在任何情况下，沃尔沃建筑设备均不对为实体或由实体创建的结果（或任何其它实体）以及由此造成的任何间接、意外、必然或特殊损害，包括但不限于损失收益或利润承担任何责任。";
+        float[] xy = column.DrawOn(page);
 
-        Cell cell = table.GetCellAt(1, 1);
-        cell.SetBorder(Border.TOP, true);
-
-        cell = table.GetCellAt(1, 2);
-        cell.SetBorder(Border.TOP, true);
-
-        cell = table.GetCellAt(0, 1);
-        cell.SetColSpan(2);
-        cell.SetTextAlignment(Alignment.CENTER);
-
-        List<Cell> column = table.GetColumn(7);
-        for (int i = 0; i < column.Count; i++) {
-            cell = column[i];
-            cell.SetTextAlignment(Alignment.CENTER);
-        }
-
-        column = table.GetColumn(4);
-        for (int i = 2; i < column.Count; i++) {
-            cell = column[i];
-            try {
-                cell.SetTextAlignment(Alignment.CENTER);
-                if (Int32.Parse(cell.GetText()) > 40) {
-                    cell.SetBackgroundColor(Color.darkseagreen);
-                } else {
-                    cell.SetBackgroundColor(Color.yellow);
-                }
-            } catch (Exception) {
-            }
-        }
-
-        column = table.GetColumn(2);
-        for (int i = 2; i < column.Count; i++) {
-            cell = column[i];
-            try {
-                if (cell.GetText().Equals("Smith")) {
-                    cell.SetUnderline(true);
-                }
-                if (cell.GetText().Equals("Bowden")) {
-                    cell.SetStrikeout(true);
-                }
-            } catch (Exception) {
-            }
-        }
-
-        column = table.GetColumn(2);
-        for (int i = 2; i < column.Count; i++) {
-            cell = column[i];
-            try {
-                if (cell.GetText().Equals("Bowden")) {
-                    cell.SetStrikeout(false);
-                }
-            } catch (Exception) {
-            }
-        }
-
-        SetBgColorForRow(table, 0, Color.lightgray);
-        SetBgColorForRow(table, 1, Color.lightgray);
-
-        table.SetColumnWidth(3, 10f);
-        BlankOutColumn(table, 3);
-
-        table.SetColumnWidth(8, 10f);
-        BlankOutColumn(table, 8);
-
-        // A heading on the first page only, above the table: the first page is
-        // made here, and the table goes on to new pages.
-        Page first = new Page(pdf, Letter.PORTRAIT, false);
-        new TextLine(f1, "Winter Reading Scores")
-                .SetStructureType(StructElem.H1)
-                .SetFontSize(16f)
-                .SetLocation(100f, 38f)
-                .DrawOn(first);
-        table.SetFirstPageTopMargin(50f);
-
-        List<Page> pages = new List<Page>();
-        pages.Add(first);
-        table.DrawOn(pdf, first, pages, Letter.PORTRAIT);
-        for (int i = 0; i < pages.Count; i++) {
-            Page page = pages[i];
-            page.AddFooter(new TextLine(f1, "Page " + (i + 1) + " of " + pages.Count));
-            pdf.AddPage(page);
-        }
+        // The Chinese in a column of its own, set tighter: IBM Plex Sans SC has a
+        // line gap of a whole em, which the lines of a paragraph are set with.
+        TextColumn column2 = new TextColumn();
+        column2.SetLocation(70f, xy[1] + 12f);
+        column2.SetWidth(500f);
+        column2.SetLineSpacing(1.2f);
+        column2.AddCJKParagraph(f2, chinese, "zh-Hans"); // Read by a screen reader as Chinese
+        column2.DrawOn(page);
 
         pdf.Complete();
-    }
-
-    public void BlankOutColumn(Table table, int index) {
-        List<Cell> column = table.GetColumn(index);
-        foreach (Cell cell in column) {
-            cell.SetBackgroundColor(Color.white);
-            cell.SetBorder(Border.TOP, false);
-            cell.SetBorder(Border.BOTTOM, false);
-        }
-    }
-
-    public void SetBgColorForRow(Table table, int index, int color) {
-        List<Cell> row = table.GetRow(index);
-        foreach (Cell cell in row) {
-            cell.SetBackgroundColor(color);
-        }
     }
 
     public static void Main(String[] args) {

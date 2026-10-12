@@ -6,131 +6,74 @@
  */
 using System;
 using System.IO;
+using System.Collections.Generic;
 using System.Diagnostics;
 using PDFjet.NET;
 
 /**
  * Example_22.cs
- * This example links a contents page to three chapters, and each chapter
- * back to the contents, with destinations and "Go To" actions.
+ * This example draws a table whose cells hold text columns: each paragraph of
+ * English and Greek text wraps inside its cell, and the cell grows to fit it.
  */
 public class Example_22 {
     public Example_22() {
         PDF pdf = new PDF(new BufferedStream(
-            new FileStream("Example_22.pdf", FileMode.Create)));
+                new FileStream("Example_22.pdf", FileMode.Create)));
         pdf.SetCompliance(Compliance.PDF_UA_1);
-        pdf.SetTitle("Internal links and destinations");
+        pdf.SetTitle("Text Columns in Table Cells");
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
+        f1.SetSize(10f);
+
         Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
+        f2.SetSize(10f);
 
-        String[] chapters = {
-            "Destinations",
-            "Go To actions",
-            "Links on shapes and images",
-        };
-        String[] texts = {
-            "A destination is a named place in a document. The title of this chapter "
-                + "is the destination \"chapter1\", set with setDestination.",
-            "A Go To action makes something a link to a destination. The chapter titles "
-                + "on the contents page are text lines with a Go To action.",
-            "Rectangles and images can be links too. Click the arrow in the top left "
-                + "corner, or the arrow image next to it, to go back to the contents.",
-        };
-
-        // The contents page. The destination is the top of the page.
         Page page = new Page(pdf, Letter.PORTRAIT);
-        page.AddDestination("contents", 0f, 0f);
 
-        TextLine text = new TextLine(f2, "Contents");
+        TextLine text = new TextLine(f2, "Text Columns in Table Cells");
         text.SetStructureType(StructElem.H1);
-        text.SetFontSize(24f);
-        text.SetLocation(90f, 100f);
+        text.SetFontSize(22f);
+        text.SetLocation(50f, 70f);
         text.DrawOn(page);
 
-        // The contents are a list: each item is the number of its chapter,
-        // which labels the item, and the title of the chapter, which is the
-        // body of the item and the link to it. A reader reads them as the
-        // items of a list and not as lines of text that follow one another.
-        float y = 150f;
-        page.BeginStructElement(StructElem.L);
-        for (int i = 0; i < chapters.Length; i++) {
-            page.BeginStructElement(StructElem.LI);
-            String label = "Chapter " + (i + 1) + ":";
-            text = new TextLine(f1, label);
-            text.SetStructureType(StructElem.LBL);
-            text.SetFontSize(14f);
-            text.SetLocation(90f, y);
-            text.DrawOn(page);
+        String[] languages = {"English", "Greek"};
+        String[] files = {"data/languages/english.txt", "data/languages/greek.txt"};
 
-            // The title, its underline and its link are the body of the item,
-            // which is what an LI may hold beside its label.
-            page.BeginStructElement(StructElem.LBODY);
-            text = new TextLine(f1, chapters[i]);
-            text.SetFontSize(14f);
-            text.SetTextColor(Color.blue);
-            text.SetUnderline(true);
-            text.SetGoToAction("chapter" + (i + 1));
-            text.SetLocation(90f + f1.StringWidth(14f, label + " "), y);
-            text.DrawOn(page);
-            page.EndStructElement();
-            page.EndStructElement();
-            y += 30f;
-        }
-        page.EndStructElement();
+        List<List<Cell>> tableData = new List<List<Cell>>();
 
-        for (int i = 0; i < chapters.Length; i++) {
-            page = new Page(pdf, Letter.PORTRAIT);
+        List<Cell> row = new List<Cell>();
+        row.Add(new Cell(f2, "Language"));
+        row.Add(new Cell(f2, "Text"));
+        tableData.Add(row);
 
-            // The title of the chapter is its destination.
-            text = new TextLine(f2, "Chapter " + (i + 1) + ": " + chapters[i]);
-            text.SetFontSize(20f);
-            text.SetDestination("chapter" + (i + 1));
-            text.SetLocation(90f, 100f);
-            text.DrawOn(page);
+        for (int i = 0; i < languages.Length; i++) {
+            // Each line of the file after the first two is a paragraph.
+            List<String> lines = Content.LinesOfTextFile(files[i]);
+            TextColumn column = new TextColumn();
+            column.SetWidth(400f);
+            for (int j = 2; j < lines.Count; j++) {
+                Paragraph paragraph = new Paragraph();
+                TextLine line = new TextLine(f1, lines[j]);
+                if (languages[i] == "Greek") {
+                    line.SetLanguage("el");     // Read by a screen reader as Greek
+                }
+                paragraph.Add(line);
+                column.AddParagraph(paragraph);
+            }
 
-            TextBlock textBlock = new TextBlock(f1, texts[i]);
-            textBlock.SetFontSize(12f);
-            textBlock.SetLineSpacing(1.5f);
-            textBlock.SetLocation(90f, 125f);
-            textBlock.SetWidth(430f);
-            textBlock.DrawOn(page);
-
-            text = new TextLine(f1, "Back to the contents");
-            text.SetFontSize(12f);
-            text.SetTextColor(Color.blue);
-            text.SetUnderline(true);
-            text.SetGoToAction("contents");
-            text.SetLocation(90f, 250f);
-            text.DrawOn(page);
+            row = new List<Cell>();
+            row.Add(new Cell(f1, languages[i]));
+            row.Add(new Cell(f1, ""));
+            row[1].SetTextColumn(column);
+            tableData.Add(row);
         }
 
-        // On the last page, a rect with no border links to the contents too.
-        Rect rect = new Rect(20f, 20f, 20f, 20f);
-        rect.SetGoToAction("contents");
-        rect.DrawOn(page);
-
-        // Create an up arrow and place it in the rect
-        PDFjet.NET.Path path = new PDFjet.NET.Path();
-        path.Add(new Point(30f, 21f));
-        path.Add(new Point(37f, 29f));
-        path.Add(new Point(33f, 29f));
-        path.Add(new Point(33f, 39f));
-        path.Add(new Point(27f, 39f));
-        path.Add(new Point(27f, 29f));
-        path.Add(new Point(23f, 29f));
-        path.SetClosed(true);
-        path.SetStrokeColor(Color.deepskyblue);
-        path.SetFillShape(true);
-        path.DrawOn(page);
-
-        // And so does an image of an arrow.
-        Image image = new Image(pdf, "images/up-arrow.png");
-        image.SetAltDescription(
-                "An arrow pointing up, which goes back to the contents of the document when it is clicked.");
-        image.SetLocation(50f, 20f);
-        image.SetGoToAction("contents");
-        image.DrawOn(page);
+        Table table = new Table();
+        table.SetTableData(tableData, 1);
+        table.SetColumnWidth(0, 90f);
+        table.SetColumnWidth(1, 420f);
+        table.SetLocation(50f, 100f);
+        table.DrawOn(page);
 
         pdf.Complete();
     }

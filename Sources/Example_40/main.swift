@@ -9,89 +9,130 @@ import PDFjet
 
 /**
  * Example_40.swift
- *
- * Draws two bar charts with vertical bars from the same data: the two series
- * grouped by month, and the same series stacked, with a legend under each title.
- * The second page is the calendar of 2026, a CalendarMonth for each month, with
- * the weeks starting on Monday.
+ * This example links a contents page to three chapters, and each chapter
+ * back to the contents, with destinations and "Go To" actions.
  */
 public class Example_40 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_40.pdf", append: false)!)
         pdf.setCompliance(Compliance.PDF_UA_1)
-        pdf.setTitle("Units sold by month")
+        pdf.setTitle("Internal links and destinations")
 
+        let f1 = try Font(pdf, IBMPlexSans.Regular)
+        let f2 = try Font(pdf, IBMPlexSans.SemiBold)
+
+        let chapters = [
+            "Destinations",
+            "Go To actions",
+            "Links on shapes and images",
+        ]
+        let texts = [
+            "A destination is a named place in a document. The title of this chapter "
+                + "is the destination \"chapter1\", set with setDestination.",
+            "A Go To action makes something a link to a destination. The chapter titles "
+                + "on the contents page are text lines with a Go To action.",
+            "Rectangles and images can be links too. Click the arrow in the top left "
+                + "corner, or the arrow image next to it, to go back to the contents.",
+        ]
+
+        // The contents page. The destination is the top of the page.
         var page = Page(pdf, Letter.PORTRAIT)
+        page.addDestination("contents", 0.0, 0.0)
 
-        let f1 = try Font(pdf, IBMPlexSans.Bold)
-        f1.setSize(10.0)
+        var text = TextLine(f2, "Contents")
+        text.setStructureType(StructElem.H1)
+        text.setFontSize(24.0)
+        text.setLocation(90.0, 100.0)
+        text.drawOn(page)
 
-        let f2 = try Font(pdf, IBMPlexSans.Regular)
-        f2.setSize(8.0)
+        // The contents are a list: each item is the number of its chapter,
+        // which labels the item, and the title of the chapter, which is the
+        // body of the item and the link to it. A reader reads them as the
+        // items of a list and not as lines of text that follow one another.
+        var y: Float = 150.0
+        page.beginStructElement(StructElem.L)
+        for i in 0..<chapters.count {
+            page.beginStructElement(StructElem.LI)
+            let label = "Chapter " + String(i + 1) + ":"
+            text = TextLine(f1, label)
+            text.setStructureType(StructElem.LBL)
+            text.setFontSize(14.0)
+            text.setLocation(90.0, y)
+            text.drawOn(page)
 
-        // The heading of the document, above the charts
-        TextLine(f1, "Sales in 2025 and 2026")
-                .setStructureType(StructElem.H1)
-                .setFontSize(18.0)
-                .setLocation(70.0, 45.0)
-                .drawOn(page)
-
-        let months = [
-                "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-        let units2025: [Float] = [45.0, 65.0, 31.0, 45.0, 65.0, 31.0, 38.0, 52.0, 47.0, 59.0, 66.0, 72.0]
-        let units2026: [Float] = [75.0, 20.0, 73.0, 75.0, 20.0, 73.0, 61.0, 58.0, 69.0, 64.0, 77.0, 80.0]
-
-        let chart = BarChart(f1, f2)
-        chart.setLocation(70.0, 70.0)
-        chart.setSize(500.0, 300.0)
-        chart.setTitle("Units sold by month")
-        chart.setXAxisTitle("Month")
-        chart.setYAxisTitle("Units")
-        chart.setCategories(months)
-        chart.addSeries("2025", units2025, Color.seagreen)
-        chart.addSeries("2026", units2026, Color.indianred)
-        chart.setGroupGap(0.4)
-        chart.setBarGap(0.1)
-        chart.setAltDescription("Units sold by month in 2025 and 2026, side by side: from 31 to 72 a month in 2025 and from 20 to 80 in 2026, the most in December in both years.")
-        chart.drawOn(page)
-
-        let stacked = BarChart(f1, f2)
-        stacked.setLocation(70.0, 420.0)
-        stacked.setSize(500.0, 300.0)
-        stacked.setTitle("Units sold by month, stacked")
-        stacked.setXAxisTitle("Month")
-        stacked.setYAxisTitle("Units")
-        stacked.setCategories(months)
-        stacked.addSeries("2025", units2025, Color.seagreen)
-        stacked.addSeries("2026", units2026, Color.indianred)
-        stacked.setStacked(true)
-        stacked.setDrawValueLabels(true)
-        stacked.setAltDescription("Units sold by month in 2025 and 2026, stacked: from 85 a month, in February and May, to 152 in December.")
-        stacked.drawOn(page)
-
-        page = Page(pdf, Letter.PORTRAIT)
-        TextLine(f1, "Calendar 2026").setFontSize(14.0)
-                .setStructureType(StructElem.H2) // Under the heading of the first page
-                .setLocation(50.0, 45.0).drawOn(page)
-        let monthNames = [
-                "January", "February", "March", "April", "May", "June",
-                "July", "August", "September", "October", "November", "December"]
-        for i in 0..<12 {
-            let x = 50.0 + Float(i % 3)*182.0
-            let y = 65.0 + Float(i / 3)*177.0
-            TextLine(f1, monthNames[i]).setLocation(x, y + 12.0).drawOn(page)
-            let calendar = CalendarMonth(f1, f2, 2026, i + 1)
-            calendar.setFirstDayOfWeek(2)   // Monday
-            calendar.setCellWidth(21.0)
-            calendar.setCellHeight(21.0)
-            calendar.setLocation(x, y + 18.0)
-            calendar.drawOn(page)
+            // The title, its underline and its link are the body of the item,
+            // which is what an LI may hold beside its label.
+            page.beginStructElement(StructElem.LBODY)
+            text = TextLine(f1, chapters[i])
+            text.setFontSize(14.0)
+            text.setTextColor(Color.blue)
+            text.setUnderline(true)
+            text.setGoToAction("chapter" + String(i + 1))
+            text.setLocation(90.0 + f1.stringWidth(14.0, label + " "), y)
+            text.drawOn(page)
+            page.endStructElement()
+            page.endStructElement()
+            y += 30.0
         }
+        page.endStructElement()
+
+        for i in 0..<chapters.count {
+            page = Page(pdf, Letter.PORTRAIT)
+
+            // The title of the chapter is its destination.
+            text = TextLine(f2, "Chapter " + String(i + 1) + ": " + chapters[i])
+            text.setFontSize(20.0)
+            text.setDestination("chapter" + String(i + 1))
+            text.setLocation(90.0, 100.0)
+            text.drawOn(page)
+
+            let textBlock = TextBlock(f1, texts[i])
+            textBlock.setFontSize(12.0)
+            textBlock.setLineSpacing(1.5)
+            textBlock.setLocation(90.0, 125.0)
+            textBlock.setWidth(430.0)
+            textBlock.drawOn(page)
+
+            text = TextLine(f1, "Back to the contents")
+            text.setFontSize(12.0)
+            text.setTextColor(Color.blue)
+            text.setUnderline(true)
+            text.setGoToAction("contents")
+            text.setLocation(90.0, 250.0)
+            text.drawOn(page)
+        }
+
+        // On the last page, a rect with no border links to the contents too.
+        let rect = Rect(20.0, 20.0, 20.0, 20.0)
+        rect.setGoToAction("contents")
+        rect.drawOn(page)
+
+        // Create an up arrow and place it in the rect
+        let path = Path()
+        path.add(Point(30.0, 21.0))
+        path.add(Point(37.0, 29.0))
+        path.add(Point(33.0, 29.0))
+        path.add(Point(33.0, 39.0))
+        path.add(Point(27.0, 39.0))
+        path.add(Point(27.0, 29.0))
+        path.add(Point(23.0, 29.0))
+        path.setClosed(true)
+        path.setStrokeColor(Color.deepskyblue)
+        path.setFillShape(true)
+        path.drawOn(page)
+
+        // And so does an image of an arrow.
+        let image = try Image(pdf, "images/up-arrow.png")
+        image.setAltDescription(
+                "An arrow pointing up, which goes back to the contents of the document when it is clicked.")
+        image.setLocation(50.0, 20.0)
+        image.setGoToAction("contents")
+        image.drawOn(page)
 
         try pdf.complete()
     }
 }   // End of Example_40.swift
+
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
 _ = try Example_40()

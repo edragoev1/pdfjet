@@ -9,7 +9,7 @@
 /// Encrypts a PDF with 256-bit AES as defined in ISO 32000-2 (PDF 2.0).
 /// Pass the encryption object to PDF.setEncryption.
 ///
-/// Please see Example_30.
+/// Please see Example_47.
 ///
 public class Encryption {
     private let fileEncryptionKey: [UInt8]

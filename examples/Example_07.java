@@ -12,71 +12,84 @@ import com.pdfjet.fonts.*;
 
 /**
  * Example_07.java
- * This example adds a "DRAFT" watermark to every page of a two-page
- * document that is PDF/A-3a and PDF/UA-1. The watermark is drawn first, so the
- * text of the page is drawn over it.
+ * This example reads fonts from OpenType and TrueType files. Any .otf or
+ * .ttf file on the computer is a font for PDFjet. A font is
+ * embedded as a subset of the glyphs the document draws, unless it is set
+ * to stay whole.
  */
 public class Example_07 {
-
     public Example_07() throws Exception {
         PDF pdf = new PDF(
-                new BufferedOutputStream(new FileOutputStream("Example_07.pdf")),
-                Compliance.PDF_A_3A_UA_1);
-        pdf.setTitle("A Draft, Archived as PDF/A-3a and PDF/UA-1");
+                new BufferedOutputStream(new FileOutputStream("Example_07.pdf")));
+        pdf.setCompliance(Compliance.PDF_UA_1);
+        pdf.setTitle("Fonts from .otf and .ttf Files");
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
         Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
-        Font f3 = new Font(pdf, IBMPlexSans.Bold);
 
-        String[] titles = {
-            "Project Proposal",
-            "Budget and Schedule",
+        Page page = new Page(pdf, Letter.PORTRAIT);
+
+        TextLine text = new TextLine(f2, "Fonts from .otf and .ttf Files");
+        text.setStructureType(StructElem.H1);
+        text.setFontSize(22f);
+        text.setLocation(50f, 80f);
+        text.drawOn(page);
+
+        TextBlock textBlock = new TextBlock(f1,
+                "PDFjet reads OpenType and TrueType fonts as they are: pass the path "
+                + "of any .otf or .ttf file on the computer to the Font constructor. "
+                + "The IBMPlexSans and NotoSans constants are the paths of the fonts "
+                + "that come with PDFjet. A font is embedded with only the "
+                + "glyphs the document draws, which keeps the file small, whatever its "
+                + "outlines. The paragraph below is drawn four times.");
+        textBlock.setFontSize(12f);
+        textBlock.setLineSpacing(1.5f);
+        textBlock.setLocation(50f, 95f);
+        textBlock.setWidth(512f);
+        float[] xy = textBlock.drawOn(page);
+
+        String[] files = {
+            "fonts/IBMPlexSans/IBMPlexSans-Regular.otf",
+            IBMPlexSans.Regular,
+            SourceSerif4.Regular,
+            NotoSans.Regular,
         };
-        String[] texts = {
-            "This proposal describes a new reporting service that creates invoices, "
-                + "statements and delivery notes as PDF documents. The documents are "
-                + "archived as PDF/A-3a, so they can be opened and printed exactly "
-                + "the same way for many years.\n\n"
-                + "The watermark tells every reader that this is a draft. It is drawn "
-                + "in light gray behind the text, at an angle from the bottom left "
-                + "corner to the top right corner of the page.",
-            "The service will be built in three phases over six months. The first "
-                + "phase delivers invoices, the second statements, and the third "
-                + "delivery notes.\n\n"
-                + "The budget and the schedule will be final once the proposal is "
-                + "approved. Until then, every page of this document is marked as a draft.",
+        String[] kinds = {
+            "OpenType with CFF outlines, from the .otf file, embedded as a subset",
+            "TrueType, from the .ttf file, embedded as a subset",
+            "Another TrueType font, embedded as a subset",
+            "A TrueType font kept whole: subsetting turned off",
         };
+        String sample = "The quick brown fox jumps over the lazy dog. "
+                + "Ξεσκεπάζω την ψυχοφθόρα βδελυγμία. "
+                + "Съешь же ещё этих мягких французских булок, да выпей чаю.";
 
-        for (int i = 0; i < titles.length; i++) {
-            Page page = new Page(pdf, A4.LANDSCAPE);
+        float y = xy[1] + 30f;
+        for (int i = 0; i < files.length; i++) {
+            text = new TextLine(f2, files[i]);
+            text.setFontSize(11f);
+            text.setLocation(50f, y);
+            text.drawOn(page);
 
-            // The watermark is drawn before the content of the page.
-            f3.setSize(120f);
-            page.addWatermark(f3, "DRAFT");
+            text = new TextLine(f1, kinds[i]);
+            text.setFontSize(10f);
+            text.setTextColor(Color.dimgray);
+            text.setLocation(50f, y + 15f);
+            text.drawOn(page);
 
-            TextLine title = new TextLine(f2, titles[i]);
-            title.setStructureType(StructElem.H1);
-            title.setFontSize(28f);
-            title.setLocation(70f, 100f);
-            title.drawOn(page);
-
-            TextBlock textBlock = new TextBlock(f1, texts[i]);
-            textBlock.setFontSize(14f);
-            textBlock.setLineSpacing(1.5f);
-            textBlock.setLocation(70f, 130f);
-            textBlock.setWidth(page.getWidth() - 140f);
-            textBlock.drawOn(page);
-
-            TextLine footer = new TextLine(f1, "Page " + (i + 1) + " of " + titles.length);
-            footer.setFontSize(10f);
-            footer.setTextColor(Color.dimgray);
-            footer.setLocation(70f, page.getHeight() - 40f);
-            footer.drawOn(page);
+            Font font = new Font(pdf, files[i]);
+            font.setSubset(i != 3);
+            textBlock = new TextBlock(font, sample);
+            textBlock.setFontSize(13f);
+            textBlock.setLineSpacing(1.4f);
+            textBlock.setLocation(50f, y + 28f);
+            textBlock.setWidth(512f);
+            xy = textBlock.drawOn(page);
+            y = xy[1] + 30f;
         }
 
         pdf.complete();
     }
-
 
     public static void main(String[] args) throws Exception {
         long time0 = System.currentTimeMillis();

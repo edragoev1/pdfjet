@@ -9,101 +9,138 @@ import PDFjet
 
 /**
  * Example_17.swift
- *
- * Draws a line chart of two series over the same years: a Chart with a Series
- * for each line, drawn with setDrawPath so the points are joined, and the
- * markers left visible so each year can be read off the line.
+ * A whole novel, "The Idiot" by Fyodor Dostoyevsky, set as a book: a title
+ * page, and each chapter on new A5 pages that a TextFrame flows onto, with
+ * the words in italics and a number on every page. The time it prints is the
+ * time PDFjet takes to set the 241,527 words of data/the-idiot.txt.
  */
 public class Example_17 {
-    // The vehicles of data/Electric_Vehicle_Population_Data.csv by model year
-    // and kind, which Example_43 draws as a table: the rows of the file whose
-    // "Electric Vehicle Type" begins with "Battery Electric" and with
-    // "Plug-in Hybrid", counted by the "Model Year" column. The file holds
-    // 124,716 rows, of which 124,419 are registered in Washington State, and
-    // model years from 1997; the years before 2011 are a few dozen vehicles
-    // in all and are left out here.
-    private let years =
-            [2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023]
-    private let battery =
-            [ 753,  798, 2936, 1805, 3612, 3891, 4458, 9946, 8576, 9315, 14755, 23507, 11853]
-    private let hybrid =
-            [  75,  870, 1645, 1804, 1323, 1811, 4100, 4278, 1874, 1611,  3541,  4015,  1500]
-
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_17.pdf", append: false)!)
         pdf.setCompliance(Compliance.PDF_UA_1)
-        pdf.setTitle("Electric Vehicles by Model Year")
+        pdf.setTitle("The Idiot")
+        pdf.setAuthor("Fyodor Dostoyevsky")
 
-        let f1 = try Font(pdf, IBMPlexSans.SemiBold)
-        let f2 = try Font(pdf, IBMPlexSans.Regular)
+        let regular = try Font(pdf, SourceSerif4.Regular)
+        let italic = try Font(pdf, SourceSerif4.Italic)
+        let semiBold = try Font(pdf, SourceSerif4.SemiBold)
+        regular.setSize(10.0)
+        italic.setSize(10.0)
 
-        let page = Page(pdf, Letter.PORTRAIT)
+        var pages = [Page]()
 
-        let title = TextLine(f1, "Electric Vehicles by Model Year")
-        title.setStructureType(StructElem.H1)
-        title.setFontSize(18.0)
-        title.setLocation(50.0, 50.0)
-        title.drawOn(page)
+        // The title page.
+        let title = [
+            Example_17.centered(TextLine(semiBold, "The Idiot").setFontSize(28.0), StructElem.H1),
+            Example_17.centered(TextLine(regular, "Fyodor Dostoyevsky").setFontSize(14.0), StructElem.P),
+            Example_17.centered(TextLine(italic, "Translated by Eva Martin"), StructElem.P),
+        ]
+        TextFrame(title).setLocation(54.0, 200.0).setWidth(312.0).setParagraphGap(16.0)
+                .drawOn(pdf, &pages, A5.PORTRAIT)
+        let titlePages = pages.count
 
-        let textBlock = TextBlock(f2,
-                "A line chart is a Chart with a Series for each line: the points of the " +
-                "series are added in the order they are joined, and setDrawPath draws " +
-                "the line through them. The markers are left visible here so that the " +
-                "count for each model year can be read off the line; setShape with " +
-                "Shape.INVISIBLE leaves the line alone.\n\n" +
-                "The counts are the vehicles of " +
-                "data/Electric_Vehicle_Population_Data.csv, the file Example_43 draws " +
-                "as a table of 2,546 pages, by model year and by kind.")
-        textBlock.setFontSize(11.0)
-        textBlock.setLineSpacing(1.4)
-        textBlock.setLocation(50.0, 72.0)
-        textBlock.setWidth(512.0)
-        let xy = textBlock.drawOn(page)
-
-        f1.setSize(12.0)
-        f2.setSize(9.0)
-
-        let chart = Chart(f1, f2)
-        chart.setLocation(70.0, xy[1] + 30.0)
-        chart.setSize(480.0, 340.0)
-        chart.setTitle("Battery electric and plug-in hybrid vehicles")
-        chart.setSubtitle("Registrations in the Washington State data file")
-        chart.setXAxisTitle("Model year")
-        chart.setYAxisTitle("Vehicles")
-        // The years and the counts are whole numbers, so the axis labels are.
-        chart.setMaximumFractionDigits(0)
-        // The axes are set rather than worked out from the points, so that
-        // every label of the years is a year: 2011 to 2023 in six steps is one
-        // every two years, where the range a chart picks for itself would be
-        // 2010 to 2025 in steps of two and a half.
-        chart.setXAxisMinMax(2011.0, 2023.0, 6)
-        chart.setYAxisMinMax(0.0, 25000.0, 5)
-        chart.setAltDescription(
-                "A line chart of the vehicles of the data file by model year, from 2011 " +
-                "to 2023. Battery electric vehicles rise from 753 in 2011 to 23,507 in " +
-                "2022 and fall to 11,853 in 2023, the last model year of the file. " +
-                "Plug-in hybrids stay far lower, from 75 in 2011 to a high of 4,278 in " +
-                "2018 and 1,500 in 2023.")
-
-        let batterySeries = chart.addSeries("Battery electric")
-                .setDrawPath(true)
-                .setStrokeColor(0x1D3557)       // navy blue
-                .setStrokeWidth(1.5)
-        for (i, year) in years.enumerated() {
-            batterySeries.addPoint(Float(year), Float(battery[i]))
+        // The novel: parts begin with "PART I" and chapters with their number,
+        // "I.", and the paragraphs are separated by an empty line.
+        var blocks = [String]()
+        var lines = [Substring]()
+        for line in try Content.ofTextFile("data/the-idiot.txt").split(separator: "\n",
+                omittingEmptySubsequences: false) {
+            if line.trimmingCharacters(in: .whitespaces).isEmpty {
+                if !lines.isEmpty {
+                    blocks.append(lines.joined(separator: " "))
+                    lines.removeAll()
+                }
+            } else {
+                lines.append(line)
+            }
         }
-
-        let hybridSeries = chart.addSeries("Plug-in hybrid")
-                .setDrawPath(true)
-                .setStrokeColor(0xC1121F)       // deep red
-                .setStrokeWidth(1.5)
-        for (i, year) in years.enumerated() {
-            hybridSeries.addPoint(Float(year), Float(hybrid[i]))
+        if !lines.isEmpty {
+            blocks.append(lines.joined(separator: " "))
         }
+        var chapter: [Paragraph]? = nil
+        for block in blocks {
+            let text = block.split(whereSeparator: { $0.isWhitespace }).joined(separator: " ")
+            if Example_17.isPart(text) {
+                try Example_17.drawChapter(pdf, &pages, chapter)
+                chapter = [Example_17.centered(TextLine(semiBold, text).setFontSize(16.0), StructElem.H1)]
+            } else if Example_17.isChapter(text) {
+                if let current = chapter, current.count > 1 {
+                    try Example_17.drawChapter(pdf, &pages, current)
+                    chapter = []
+                }
+                chapter!.append(Example_17.centered(TextLine(semiBold, text).setFontSize(14.0), StructElem.H2))
+            } else if !text.isEmpty {
+                chapter!.append(Example_17.paragraph(text, regular, italic))
+            }
+        }
+        try Example_17.drawChapter(pdf, &pages, chapter)
 
-        chart.drawOn(page)
-
+        // A number at the foot of every page but the title page.
+        for i in titlePages..<pages.count {
+            let number = TextLine(regular, String(i - titlePages + 1))
+            number.setFontSize(9.0)
+            _ = pages[i].addFooter(number, 30.0)
+        }
+        pdf.addPages(pages)
         try pdf.complete()
+    }
+
+    private static let romanDigits = Set("IVXL")
+
+    // "PART I" to "PART IV".
+    private static func isPart(_ text: String) -> Bool {
+        guard text.hasPrefix("PART ") else { return false }
+        let number = text.dropFirst(5)
+        return !number.isEmpty && number.allSatisfy { romanDigits.contains($0) }
+    }
+
+    // A chapter number, "I." to "L.".
+    private static func isChapter(_ text: String) -> Bool {
+        guard text.hasSuffix(".") else { return false }
+        let number = text.dropLast()
+        return !number.isEmpty && number.allSatisfy { romanDigits.contains($0) }
+    }
+
+    // Draws a chapter on new pages, which it starts at the top of.
+    private static func drawChapter(_ pdf: PDF, _ pages: inout [Page], _ chapter: [Paragraph]?) throws {
+        if let chapter = chapter {
+            TextFrame(chapter).setLocation(54.0, 54.0).setWidth(312.0).setParagraphGap(4.0)
+                    .drawOn(pdf, &pages, A5.PORTRAIT)
+        }
+    }
+
+    private static func centered(_ textLine: TextLine, _ structureType: StructElem) -> Paragraph {
+        return Paragraph(textLine).setTextAlignment(Alignment.CENTER).setStructureType(structureType)
+    }
+
+    // A justified paragraph of the text, in which _underscores_ mark the
+    // words in italics. A word in italics is set in italics whole, with the
+    // punctuation around it, since a paragraph puts a space between its text
+    // lines.
+    private static func paragraph(_ text: String, _ regular: Font, _ italic: Font) -> Paragraph {
+        let paragraph = Paragraph().setTextAlignment(Alignment.JUSTIFY)
+        var run = ""
+        var runItalic = false
+        var inItalic = false
+        for word in text.split(separator: " ") {
+            let wordItalic = inItalic || word.contains("_")
+            for ch in word where ch == "_" {
+                inItalic = !inItalic
+            }
+            if !run.isEmpty && wordItalic != runItalic {
+                paragraph.add(TextLine(runItalic ? italic : regular, run))
+                run = ""
+            }
+            if !run.isEmpty {
+                run += " "
+            }
+            run += word.replacingOccurrences(of: "_", with: "")
+            runItalic = wordItalic
+        }
+        if !run.isEmpty {
+            paragraph.add(TextLine(runItalic ? italic : regular, run))
+        }
+        return paragraph
     }
 }   // End of Example_17.swift
 

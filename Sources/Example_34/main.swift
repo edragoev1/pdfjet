@@ -9,138 +9,156 @@ import PDFjet
 
 /**
  * Example_34.swift
+ * This example draws a letterhead: a logo read from a PDF file, a maple leaf
+ * drawn as a path with curves, and a QR code with the address of a web site.
  */
 public class Example_34 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_34.pdf", append: false)!)
-        pdf.setCompliance(Compliance.PDF_A_1A)
-        pdf.setTitle("World Communications")
+        pdf.setCompliance(Compliance.PDF_UA_1)
+        pdf.setTitle("PDFjet Software Letterhead")
 
-        let f1 = try Font(pdf, IBMPlexSans.Bold)
-        let f2 = try Font(pdf, IBMPlexSans.Regular)
-        let f3 = try Font(pdf, IBMPlexSans.BoldItalic)
+        // Read the logo from a PDF file, and add the resources of its pages, its
+        // fonts and images, to this PDF. The logo itself is drawn with paths and
+        // has none.
+        let objects = try pdf.read(
+                from: InputStream(fileAtPath: "data/testPDFs/PDFjetLogo.pdf")!)
 
-        f1.setSize(7.0)
-        f2.setSize(7.0)
-        f3.setSize(7.0)
+        pdf.addResourceObjects(from: objects)
 
-        let table = Table()
-        let tableData = try getData(
-                "data/world-communications.txt", "|", 2, f1, f2)
+        let f1 = try Font(pdf, IBMPlexSans.Regular)
+        f1.setSize(11.0)
 
-        var p1 = Point()
-        p1.setShape(Shape.CIRCLE)
-        p1.setRadius(2.0)
-        p1.setStrokeColor(Color.darkolivegreen)
-        p1.setURIAction("https://en.wikipedia.org/wiki/India")
-        tableData[4][3].setMarker(p1, Alignment.RIGHT)
+        let f2 = try Font(pdf, IBMPlexSans.SemiBold)
+        f2.setSize(11.0)
 
-        p1 = Point()
-        p1.setShape(Shape.DIAMOND)
-        p1.setRadius(2.5)
-        p1.setStrokeColor(Color.blue)
-        p1.setURIAction("https://en.wikipedia.org/wiki/European_Union")
-        tableData[5][3].setMarker(p1, Alignment.RIGHT)
+        let pages = pdf.getPageObjects(from: objects)
+        let content = pages[0].getContentObject(objects)!
 
-        p1 = Point()
-        p1.setShape(Shape.STAR)
-        p1.setRadius(3.0)
-        p1.setStrokeColor(Color.red)
-        p1.setURIAction("https://en.wikipedia.org/wiki/United_States")
-        tableData[6][3].setMarker(p1, Alignment.RIGHT)
+        let page = Page(pdf, Letter.PORTRAIT)
 
-        table.setTableData(tableData, 2)
-        table.setBottomMargin(15.0)
-        // The table is about 555 points wide: at x = 30 it fits on the page.
-        table.setLocation(30.0, 30.0)
-        table.setTextColorInRow(6, Color.blue)
-        table.setTextColorInRow(39, Color.firebrick)
-        table.setFontInRow(26, f3)
-        table.removeLineBetweenRows(0, 1)
-        table.autoAdjustColumnWidths()
-        table.setColumnWidth(0, 50.0)
-        table.setColumnWidth(3, 80.0)
-        table.rightAlignNumbers()
+        // Draw the content of the first page of the logo PDF, at half its size.
+        // drawContents anchors the content by the point that is height points
+        // above the origin of its page, which it puts at x and y here. The
+        // logo is in the top left corner of its page, so that point is the top
+        // of the page and the height to give is the height of the page.
+        let height: Float = Letter.PORTRAIT.getHeight()
+        let x: Float = 60.0
+        let y: Float = 40.0
+        let xScale: Float = 0.5
+        let yScale: Float = 0.5
 
-        var pages = [Page]()
-        table.drawOn(pdf, &pages, Letter.PORTRAIT)
-        for i in 0..<pages.count {
-            let page = pages[i]
-            page.addFooter(TextLine(f1, "Page \(i + 1) of \(pages.count)"))
-            pdf.addPage(page)
-        }
+        // The logo is a figure, with an alternate description for screen readers.
+        page.addBDC(StructElem.FIGURE, nil, "The PDFjet logo")
+        page.drawContents(
+                content.getData(),
+                height,
+                x,
+                y,
+                xScale,
+                yScale)
+        // The logo is 216 by 68 points, at the top left of its page, so half of
+        // that here: the box PDF/UA asks every figure for.
+        page.setFigureBoundingBox(x, y, 216.0 * xScale, 68.0 * yScale)
+        page.addEMC()
+
+        TextLine(f2, "PDFjet Software").setLocation(390.0, 60.0).drawOn(page)
+        TextLine(f1, "Unionville, Ontario, Canada").setLocation(390.0, 76.0).drawOn(page)
+        // An address on the page is a link to it, as PAC asks of text that reads as one
+        TextLine(f1, "https://pdfjet.com").setURIAction("https://pdfjet.com").setLocation(390.0, 92.0).drawOn(page)
+
+        // A thin rule under the letterhead, an artifact.
+        page.addArtifactBMC()
+        page.setPenColor(Color.darkred)
+        page.setPenWidth(1.0)
+        page.drawLine(60.0, 115.0, 552.0, 115.0)
+        page.addEMC()
+
+        // The heading of the page, which PAC asks a document for
+        let text = TextLine(f2, "The logo on this page was read from a PDF file.")
+        text.setStructureType(StructElem.H1)
+        text.setFontSize(16.0)
+        text.setLocation(60.0, 170.0)
+        text.drawOn(page)
+
+        let textBlock = TextBlock(f1,
+                "The logo is the content of the first page of data/testPDFs/PDFjetLogo.pdf, "
+                + "drawn here at half its size with page.drawContents. It stays sharp "
+                + "at any zoom, because it is drawn as vector graphics and not as an image.\n\n"
+                + "The maple leaf below is a Path with curves, and the QR code "
+                + "holds the address of the PDFjet web site.")
+        textBlock.setFontSize(12.0)
+        textBlock.setLineSpacing(1.5)
+        textBlock.setLocation(60.0, 185.0)
+        textBlock.setWidth(490.0)
+        textBlock.drawOn(page)
+
+        // A maple leaf, drawn with lines and with curves from control points.
+        let path = Path()
+
+        path.add(Point(13.0,  0.0))
+        path.add(Point(15.5,  4.5))
+
+        path.add(Point(18.0,  3.5))
+        path.add(Point(15.5, 13.5, Point.CONTROL_POINT_C))
+        path.add(Point(15.5, 13.5, Point.CONTROL_POINT_C))
+        path.add(Point(20.5,  7.5))
+
+        path.add(Point(21.0,  9.5))
+        path.add(Point(25.0,  9.0))
+        path.add(Point(24.0, 13.0))
+        path.add(Point(25.5, 14.0))
+        path.add(Point(19.0, 19.0))
+        path.add(Point(20.0, 21.5))
+        path.add(Point(13.5, 20.5))
+        path.add(Point(13.5, 27.0))
+        path.add(Point(12.5, 27.0))
+        path.add(Point(12.5, 20.5))
+        path.add(Point( 6.0, 21.5))
+        path.add(Point( 7.0, 19.0))
+        path.add(Point( 0.5, 14.0))
+        path.add(Point( 2.0, 13.0))
+        path.add(Point( 1.0,  9.0))
+        path.add(Point( 5.0,  9.5))
+
+        path.add(Point( 5.5,  7.5))
+        path.add(Point(10.5, 13.5, Point.CONTROL_POINT_C))
+        path.add(Point(10.5, 13.5, Point.CONTROL_POINT_C))
+        path.add(Point( 8.0,  3.5))
+
+        path.add(Point(10.5,  4.5))
+        path.setClosed(true)
+        path.setStrokeColor(Color.red)
+        path.setFillShape(true)
+        path.setLocation(60.0, 330.0)
+        path.scaleBy(6.0)
+        path.drawOn(page)
+
+        let qr = try QRCode(
+                "https://pdfjet.com",
+                ErrorCorrectionLevel.M)    // Medium
+        qr.setModuleLength(5.0)
+        qr.setLocation(300.0, 340.0)
+        let xy = qr.drawOn(page)
+
+        // A frame around the QR code, an artifact.
+        page.addArtifactBMC()
+        page.setPenColor(Color.lightgray)
+        page.setPenWidth(0.5)
+        page.drawRect(290.0, 330.0, xy[0] - 280.0, xy[1] - 320.0)
+        page.addEMC()
+
+        var caption = TextLine(f1, "A Path with curves")
+        caption.setTextColor(Color.dimgray)
+        caption.setLocation(60.0, xy[1] + 35.0)
+        caption.drawOn(page)
+
+        caption = TextLine(f1, "Scan to visit https://pdfjet.com").setURIAction("https://pdfjet.com")
+        caption.setTextColor(Color.dimgray)
+        caption.setLocation(290.0, xy[1] + 35.0)
+        caption.drawOn(page)
 
         try pdf.complete()
-    }
-
-    public func getData(
-            _ fileName: String,
-            _ delimiter: String,
-            _ numOfHeaderRows: Int,
-            _ f1: Font,
-            _ f2: Font) throws -> [[Cell]] {
-        var tableData = [[Cell]]()
-
-        var currentRow: Int = 0
-        let lines = (try String(contentsOfFile: fileName, encoding: .utf8))
-                .replacingOccurrences(of: "\r\n", with: "\n")
-                .components(separatedBy: "\n")
-
-        for line in lines {
-            if line.isEmpty {
-                continue
-            }
-
-            var row = [Cell]()
-            var cols: [String]?
-            if delimiter == "|" {
-                cols = line.components(separatedBy: "|")
-            } else if delimiter == "\t" {
-                cols = line.components(separatedBy: "\t")
-            } else {
-                print("Only pipes and tabs can be used as delimiters")
-            }
-
-            for i in 0..<cols!.count {
-                let text = cols![i].trimmingCharacters(in: .whitespacesAndNewlines)
-                var cell: Cell?
-                if currentRow < numOfHeaderRows {
-                    cell = Cell(f1, text)
-                } else {
-                    cell = Cell(f2, text)
-                }
-                cell!.setTopPadding(2.0)
-                cell!.setBottomPadding(2.0)
-                cell!.setLeftPadding(2.0)
-                if i == 3 {
-                    cell!.setRightPadding(10.0)
-                } else {
-                    cell!.setRightPadding(2.0)
-                }
-                row.append(cell!)
-            }
-            tableData.append(row)
-
-            currentRow += 1
-        }
-        appendMissingCells(&tableData, f2)
-        return tableData
-    }
-
-    private func appendMissingCells(_ tableData: inout [[Cell]], _ f2: Font) {
-        let firstRow = tableData[0]
-        let numOfColumns = firstRow.count
-        for i in 0..<tableData.count {
-            var dataRow = tableData[i]
-            let dataRowColumns = dataRow.count
-            if dataRowColumns < numOfColumns {
-                for _ in 0..<(numOfColumns - dataRowColumns) {
-                    dataRow.append(Cell(f2, ""))
-                }
-                tableData[i] = dataRow
-                dataRow[dataRowColumns - 1].setColSpan(numOfColumns - dataRowColumns + 1)
-            }
-        }
     }
 }   // End of Example_34.swift
 

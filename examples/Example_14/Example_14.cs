@@ -6,81 +6,99 @@
  */
 using System;
 using System.IO;
-using System.Text;
+using System.Collections.Generic;
 using System.Diagnostics;
 using PDFjet.NET;
 
 /**
- * Example_14.cs
- * Drawing Data Matrix barcodes.
+ * Example_14.java
  */
 public class Example_14 {
     public Example_14() {
         PDF pdf = new PDF(new BufferedStream(
-            new FileStream("Example_14.pdf", FileMode.Create)));
+                new FileStream("Example_14.pdf", FileMode.Create)));
         pdf.SetCompliance(Compliance.PDF_UA_1);
-        pdf.SetTitle("Data Matrix Barcodes");
+        pdf.SetTitle("Paragraphs in a Text Frame");
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
         f1.SetSize(10f);
 
+        Font f2 = new Font(pdf, IBMPlexSans.Bold);
+        f2.SetSize(10f);
+
+        Font f3 = new Font(pdf, IBMPlexSans.Italic);
+        f3.SetSize(10f);
+
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        // The heading of the document, above the symbols
-        new TextLine(f1, "Data Matrix Barcodes")
-                .SetStructureType(StructElem.H1)
-                .SetFontSize(18f)
-                .SetLocation(50f, 36f)
-                .DrawOn(page);
+        List<Paragraph> paragraphs = new List<Paragraph>();
+        Paragraph paragraph = new Paragraph()
+                .Add(new TextLine(f1,
+"The small business centres offer practical resources, from step-by-step info on setting up your business to sample business plans to a range of business-related articles and books in our resource libraries.")
+                        .SetUnderline(true))
+                .Add(new TextLine(f2, "This text is bold!").SetTextColor(Color.blue));
+        paragraphs.Add(paragraph);
 
-        DataMatrix barcode = new DataMatrix("https://github.com/edragoev1/pdfjet");
-        barcode.SetLocation(50f, 50f);
-        barcode.SetModuleLength(3f);
-        float[] xy = barcode.DrawOn(page);
-        TextLine caption = new TextLine(f1, "A web address");
-        caption.SetLocation(50f, xy[1] + 20f);
-        caption.DrawOn(page);
+        paragraph = new Paragraph()
+                .Add(new TextLine(f1,
+"The centres also offer free one-on-one consultations with business advisors who can review your business plan and make recommendations to improve it.")
+                        .SetUnderline(true))
+                .Add(new TextLine(f3, "This text is using italic font.").SetTextColor(Color.green));
+        paragraphs.Add(paragraph);
 
-        barcode = new DataMatrix("Grüße aus München! こんにちは 😀");
-        barcode.SetLocation(300f, 50f);
-        barcode.SetModuleLength(3f);
-        xy = barcode.DrawOn(page);
-        caption = new TextLine(f1, "Text in UTF-8");
-        caption.SetLocation(300f, xy[1] + 20f);
-        caption.DrawOn(page);
-
-        barcode = new DataMatrix("PDFjet 9.0.5", DataMatrix.RECTANGLE);
-        barcode.SetLocation(50f, 250f);
-        barcode.SetModuleLength(4f);
-        barcode.SetModuleColor(Color.blue);
-        xy = barcode.DrawOn(page);
-        caption = new TextLine(f1, "A rectangular symbol");
-        caption.SetLocation(50f, xy[1] + 20f);
-        caption.DrawOn(page);
-
-        StringBuilder sb = new StringBuilder();
-        for (int i = 1; i <= 20; i++) {
-            sb.Append("Line ").Append(i).Append(" of a longer text in a larger symbol.\n");
+        // The two paragraphs are a numbered list. The number of a paragraph
+        // is its label, which the text frame draws to the left of it and
+        // reads before it.
+        int paragraphNumber = 1;
+        foreach (Paragraph p in paragraphs) {
+            p.SetListLabel(new TextLine(f2, paragraphNumber.ToString() + "."), 15f);
+            paragraphNumber++;
         }
-        barcode = new DataMatrix(sb.ToString());
-        barcode.SetLocation(300f, 250f);
-        barcode.SetModuleLength(2f);
-        xy = barcode.DrawOn(page);
-        caption = new TextLine(f1, "A larger symbol");
-        caption.SetLocation(300f, xy[1] + 20f);
-        caption.DrawOn(page);
 
-        barcode = DataMatrix.FromGS1("(01)09506000134352(17)261231(10)ABC123(21)XYZ-42");
-        barcode.SetLocation(50f, 400f);
-        barcode.SetModuleLength(3f);
-        xy = barcode.DrawOn(page);
-        // On two lines, clear of the larger symbol at its right
-        caption = new TextLine(f1, "GS1: a GTIN, an expiry date,");
-        caption.SetLocation(50f, xy[1] + 20f);
-        caption.DrawOn(page);
-        caption = new TextLine(f1, "a batch and a serial number");
-        caption.SetLocation(50f, xy[1] + 20f + 14f); // A line of 10 points, and its spacing
-        caption.DrawOn(page);
+        TextFrame text = new TextFrame(paragraphs);
+        text.SetLocation(70f, 50f);
+        text.SetWidth(500f);
+        text.SetBorders(true);
+        text.SetBorderColor(Color.blue);
+        text.DrawOn(page);
+
+
+        Dictionary<String, int> colorMap = new Dictionary<String, int>();
+        colorMap["Physics"] = Color.firebrick;
+        colorMap["physics"] = Color.firebrick;
+        colorMap["Experimentation"] = Color.sienna;
+        colorMap["science"] = Color.blue;
+        paragraphs = Paragraph.ParagraphsFromFile(f1, "data/physics.txt");
+        foreach (Paragraph p in paragraphs) {
+            if (p.StartsWith("**")) {
+                p.SetStructureType(StructElem.H1);
+                p.GetTextLines()[0].SetFont(f2).SetFontSize(24f);
+                p.GetTextLines()[0].SetTextColor(Color.navy);
+                paragraphNumber = 1;
+            } else {
+                p.SetTextColor(Color.dimgray);
+                p.SetHighlightColors(colorMap);
+                p.SetListLabel(new TextLine(f2, paragraphNumber.ToString() + "."), 15f);
+                paragraphNumber++;
+            }
+        }
+
+        text = new TextFrame(paragraphs);
+        text.SetLocation(70f, 150f);
+        text.SetWidth(500f);
+        text.SetBorders(true);
+        text.SetBorderColor(Color.blue);
+        text.DrawOn(page);
+
+        // The rule beside each paragraph reaches from its top to its bottom,
+        // which the frame knows only after it has drawn it.
+        foreach (Paragraph p in paragraphs) {
+            if (!p.StartsWith("**")) {
+                new Line(p.GetX1() - 3f, p.GetY1(), p.GetX1() - 3f, p.GetY2())
+                        .SetStrokeColor(Color.navy)
+                        .SetStrokeWidth(1f).DrawOn(page);
+            }
+        }
 
         pdf.Complete();
     }

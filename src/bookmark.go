@@ -13,7 +13,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
-// Bookmark please see Example_48
+// Bookmark please see Example_41
 type Bookmark struct {
 	destNumber int
 	key        string

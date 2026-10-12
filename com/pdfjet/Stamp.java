@@ -40,7 +40,7 @@ import java.nio.charset.StandardCharsets;
  * can hold a stamp, so a header written once can be placed inside a group
  * that is rotated with the rest of it.
  * <p>
- * Please see Example_35.
+ * Please see Example_31.
  */
 public class Stamp implements Drawable {
     /** The object number of this stamp. */

@@ -20,14 +20,22 @@ This is the first entry in this file; earlier releases were not tracked here.
   negative one, are refused.
 
 ### Changed
-- The first examples are in a clearer order, the same in the four ports:
-  Example_01 Latin, Greek and Cyrillic; 02 Simplified and Traditional
-  Chinese; 03 Japanese and Korean (was 04); 04 Arabic, Hebrew, Persian and
-  Thai, in that order (was 27); and 05, new, the fonts that are not
-  embedded, the core fonts and the CJK fonts, with what they gain, a
-  document of a few kilobytes, and what they cost. The TextFrame example
-  that was 03 is 27, and the five weights of IBM Plex Sans that were 05
-  are Example_58. There are 58 examples.
+- The examples are 50, in an order by topic, the same in the four ports:
+  01 to 05 the scripts and fonts (Latin, Greek and Cyrillic; Chinese;
+  Japanese and Korean; Arabic, Hebrew, Persian and Thai; and, new, the
+  fonts that are not embedded, the core fonts and the CJK fonts, with
+  what they gain and cost), then fonts and text (06 to 09), text layout
+  (10 to 19), tables (20 to 24), charts (25 to 28), graphics and images
+  (29 to 35), barcodes (36 to 38), navigation and pages (39 to 42), forms
+  (43, 44), standards and security (45 to 47) and existing PDFs (48 to
+  50). Examples that showed the same thing twice are one: the table
+  headers with the spanned cells (21), the horizontal with the vertical
+  bar charts (27), QR codes with Data Matrix (37), page numbers with the
+  contents page drawn last (39), and merging with splitting (49). The
+  company form, the second of two forms, the source listing, the calendar
+  and the tagged copy of the BigTable example are gone; Example_24 says
+  how to tag its table. examples-java.html and examples-dotnet.html list
+  them, and the old numbers are not kept.
 - The CJK font constructor is no longer deprecated, nor to be removed in
   v10, in the four ports: a font that is not embedded keeps a document
   small, and its documentation says plainly what it costs, as Example_05

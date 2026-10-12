@@ -8,149 +8,57 @@ package main
 import (
 	"fmt"
 	"log"
-	"strconv"
-	"strings"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
-	"github.com/edragoev1/pdfjet/v9/src/alignment"
-	"github.com/edragoev1/pdfjet/v9/src/border"
-	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansSC"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
-	"github.com/edragoev1/pdfjet/v9/src/content"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
-	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
-// Example13 draws a table that spans multiple pages.
+// Example13 draws a text column that contains English and Chinese paragraphs.
 func Example13() {
 	pdf, err := pdfjet.NewPDFFile("Example_13.pdf")
 	if err != nil {
 		log.Fatal(err)
 	}
 	pdf.SetCompliance(compliance.PDF_UA_1)
-	pdf.SetTitle("Winter Reading Scores")
+	pdf.SetTitle("Switzerland, in English and Chinese")
 
-	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold)
-	f1.SetSize(7.0)
+	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
+	f1.SetSize(12.0)
 
-	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
-	f2.SetSize(7.0)
+	// Chinese (Simplified) font
+	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSansSC.Regular)
+	f2.SetSize(12.0)
 
-	tableData := make([][]*pdfjet.Cell, 0)
-	lines := content.LinesOfTextFile("data/winter-2009.txt")
-	for _, line := range lines {
-		row := make([]*pdfjet.Cell, 0)
-		for _, column := range strings.Split(line, "|") {
-			row = append(row, pdfjet.NewCell(f2, column))
-		}
-		tableData = append(tableData, row)
-	}
+	page := pdfjet.NewPage(pdf, letter.Portrait())
 
-	table := pdfjet.NewTable()
-	table.SetTableData(tableData, 2)
-	table.SetLocation(100.0, 50.0)
-	table.SetBottomMargin(10.0)
+	column := pdfjet.NewTextColumn()
+	column.SetLocation(70.0, 70.0)
+	column.SetWidth(500.0)
+	column.SetLineSpacing(1.5)      // 1.5 x font height
+	column.SetParagraphSpacing(0.5) // 0.5 x line spacing
 
-	table.SetFontInRow(0, f1)
-	table.SetFontInRow(1, f1)
+	p1 := pdfjet.NewParagraph()
+	p1.Add(pdfjet.NewTextLine(f1, "The Swiss Confederation was founded in 1291 as a defensive alliance among three cantons. In succeeding years, other localities joined the original three. The Swiss Confederation secured its independence from the Holy Roman Empire in 1499. Switzerland's sovereignty and neutrality have long been honored by the major European powers, and the country was not involved in either of the two World Wars. The political and economic integration of Europe over the past half century, as well as Switzerland's role in many UN and international organizations, has strengthened Switzerland's ties with its neighbors. However, the country did not officially become a UN member until 2002."))
+	column.AddParagraph(p1)
 
-	table.AutoAdjustColumnWidths()
-	table.RemoveLineBetweenRows(0, 1)
+	chinese := "用于附属装置选择器应用程序的分析方法和计算基于与物料、附属装置和机器有关的不同参数和变量。 此类参数和变量的准确性会影响附属装置选择 应用程序结果的准确性。 虽然沃尔沃建筑设备公司、其子公司和附属公司（统称“沃尔沃建筑设备”）已尽力确保附属装置选择应用程序的准确性，但沃尔沃建筑设备无法保证结果准确无误。 因此，沃尔沃建筑设备并未对附属装置选择应用程序结果的准确性作出保证或声明（无论明示或暗示）。 沃尔沃建筑设备特此声明不对有关附属装置选择应用程序报告，此处获得的结果，或用于附属装置选择应用程序的设备的适宜性的所有明示或暗示保证，包括但不限于用于特定目的的适销性或合适性的任何保证承担任何责任。 在任何情况下，沃尔沃建筑设备均不对为实体或由实体创建的结果（或任何其它实体）以及由此造成的任何间接、意外、必然或特殊损害，包括但不限于损失收益或利润承担任何责任。"
+	xy := column.DrawOn(page)
 
-	cell := table.GetCellAt(1, 1)
-	cell.SetBorder(border.Top, true)
-
-	cell = table.GetCellAt(1, 2)
-	cell.SetBorder(border.Top, true)
-
-	cell = table.GetCellAt(0, 1)
-	cell.SetColSpan(2)
-	cell.SetTextAlignment(alignment.Center)
-
-	column := table.GetColumn(7)
-	for _, cell := range column {
-		cell.SetTextAlignment(alignment.Center)
-	}
-
-	column = table.GetColumn(4)
-	for i := 2; i < len(column); i++ {
-		cell := column[i]
-		cell.SetTextAlignment(alignment.Center)
-		n, err := strconv.Atoi(cell.GetText())
-		if err != nil {
-			continue
-		}
-		if n > 40 {
-			cell.SetBackgroundColor(color.DarkSeaGreen)
-		} else {
-			cell.SetBackgroundColor(color.Yellow)
-		}
-	}
-
-	column = table.GetColumn(2)
-	for i := 2; i < len(column); i++ {
-		cell := column[i]
-		if cell.GetText() == "Smith" {
-			cell.SetUnderline(true)
-		}
-		if cell.GetText() == "Bowden" {
-			cell.SetStrikeout(true)
-		}
-	}
-
-	column = table.GetColumn(2)
-	for i := 2; i < len(column); i++ {
-		cell := column[i]
-		if cell.GetText() == "Bowden" {
-			cell.SetStrikeout(false)
-		}
-	}
-
-	setBgColorForRow(table, 0, color.LightGray)
-	setBgColorForRow(table, 1, color.LightGray)
-
-	table.SetColumnWidth(3, 10.0)
-	blankOutColumn(table, 3)
-
-	table.SetColumnWidth(8, 10.0)
-	blankOutColumn(table, 8)
-
-	// A heading on the first page only, above the table: the first page is
-	// made here, and the table goes on to new pages.
-	first := pdfjet.NewPageDetached(pdf, letter.Portrait())
-	pdfjet.NewTextLine(f1, "Winter Reading Scores").
-		SetStructureType(structelem.H1).
-		SetFontSize(16.0).
-		SetLocation(100.0, 38.0).
-		DrawOn(first)
-	table.SetFirstPageTopMargin(50.0)
-
-	pages := []*pdfjet.Page{first}
-	table.DrawOnPagesFrom(pdf, first, &pages, letter.Portrait())
-	for i, page := range pages {
-		page.AddFooter(pdfjet.NewTextLine(f1,
-			"Page "+strconv.Itoa(i+1)+" of "+strconv.Itoa(len(pages))))
-		pdf.AddPage(page)
-	}
+	// The Chinese in a column of its own, set tighter: IBM Plex Sans SC has a
+	// line gap of a whole em, which the lines of a paragraph are set with.
+	column2 := pdfjet.NewTextColumn()
+	column2.SetLocation(70.0, xy[1]+12.0)
+	column2.SetWidth(500.0)
+	column2.SetLineSpacing(1.2)
+	column2.AddCJKParagraphWithLanguage(f2, chinese, "zh-Hans") // Read by a screen reader as Chinese
+	column2.DrawOn(page)
 
 	if err := pdf.Complete(); err != nil {
 		log.Fatal(err)
-	}
-}
-
-func blankOutColumn(table *pdfjet.Table, index int) {
-	for _, cell := range table.GetColumn(index) {
-		cell.SetBackgroundColor(color.White)
-		cell.SetBorder(border.Top, false)
-		cell.SetBorder(border.Bottom, false)
-	}
-}
-
-func setBgColorForRow(table *pdfjet.Table, index int, color int32) {
-	for _, cell := range table.GetRow(index) {
-		cell.SetBackgroundColor(color)
 	}
 }
 

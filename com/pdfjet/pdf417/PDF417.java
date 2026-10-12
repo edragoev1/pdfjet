@@ -18,7 +18,7 @@ import java.util.*;
  * all four sides of the symbol, so leave that much space around it; scanners
  * reject symbols with less.
  *
- * Please see Example_12.
+ * Please see Example_38.
  */
 public class PDF417 implements Drawable {
     private static final int ALPHA = 0x08;

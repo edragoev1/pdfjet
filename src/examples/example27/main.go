@@ -8,7 +8,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"strconv"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
@@ -19,99 +18,149 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
-// Example27 draws paragraphs of styled text with the Text component on Letter paper.
+// Example27 draws bar charts. The first page is a horizontal bar chart of the ten
+// longest rivers, each bar in its own color with its length inside it, and a
+// color key under the chart. The second page draws two charts with vertical
+// bars from the same data: the two series grouped by month, and the same
+// series stacked.
 func Example27() {
 	pdf, err := pdfjet.NewPDFFile("Example_27.pdf")
 	if err != nil {
 		log.Fatal(err)
 	}
 	pdf.SetCompliance(compliance.PDF_UA_1)
-	pdf.SetTitle("Paragraphs in a Text Frame")
+	pdf.SetTitle("Bar Charts")
 
-	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
-	f1.SetSize(10.0)
-
-	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold)
-	f2.SetSize(10.0)
-
-	f3 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Italic)
-	f3.SetSize(10.0)
-
-	page := pdfjet.NewPage(pdf, letter.Portrait())
-
-	paragraphs := make([]*pdfjet.Paragraph, 0)
-
-	paragraph := pdfjet.NewParagraph()
-	paragraph.Add(pdfjet.NewTextLine(f1,
-		"The small business centres offer practical resources, from step-by-step info on setting up your business to sample business plans to a range of business-related articles and books in our resource libraries.").SetUnderline(true))
-	paragraph.Add(pdfjet.NewTextLine(f2, "This text is bold!").SetTextColor(color.Blue))
-	paragraphs = append(paragraphs, paragraph)
-
-	paragraph = pdfjet.NewParagraph()
-	paragraph.Add(pdfjet.NewTextLine(f1,
-		"The centres also offer free one-on-one consultations with business advisors who can review your business plan and make recommendations to improve it.").SetUnderline(true))
-	paragraph.Add(pdfjet.NewTextLine(f3, "This text is using italic font.").SetTextColor(color.Green))
-	paragraphs = append(paragraphs, paragraph)
-
-	// The two paragraphs are a numbered list. The number of a paragraph is
-	// its label, which the text frame draws to the left of it and reads
-	// before it.
-	paragraphNumber := 1
-	for _, p := range paragraphs {
-		p.SetListLabel(pdfjet.NewTextLine(f2, strconv.Itoa(paragraphNumber)+"."), 15.0)
-		paragraphNumber++
-	}
-
-	text := pdfjet.NewTextFrameFromParagraphs(paragraphs)
-	text.SetLocation(70.0, 50.0)
-	text.SetWidth(500.0)
-	text.SetBorders(true)
-	text.SetBorderColor(color.Blue)
-	text.DrawOn(page)
-
-	colorMap := make(map[string]int32)
-	colorMap["Physics"] = color.Firebrick
-	colorMap["physics"] = color.Firebrick
-	colorMap["Experimentation"] = color.Sienna
-	colorMap["science"] = color.Blue
-	paragraphs = pdfjet.ParagraphsFromFile(f1, "data/physics.txt")
-	// The paragraphs under each heading are a numbered list. The number of a
-	// paragraph is its label, which the text frame draws to the left of it
-	// and reads before it.
-	paragraphNumber = 1
-	for _, p := range paragraphs {
-		if p.StartsWith("**") {
-			p.SetStructureType(structelem.H1)
-			p.GetTextLines()[0].SetFont(f2).SetFontSize(24.0)
-			p.GetTextLines()[0].SetTextColor(color.Navy)
-			paragraphNumber = 1
-		} else {
-			p.SetTextColor(color.DimGray)
-			p.SetHighlightColors(colorMap)
-			p.SetListLabel(pdfjet.NewTextLine(f2, strconv.Itoa(paragraphNumber)+"."), 15.0)
-			paragraphNumber++
-		}
-	}
-
-	text = pdfjet.NewTextFrameFromParagraphs(paragraphs)
-	text.SetLocation(70.0, 150.0)
-	text.SetWidth(500.0)
-	text.SetBorders(true)
-	text.SetBorderColor(color.Blue)
-	text.DrawOn(page)
-
-	// The rule beside each paragraph reaches from its top to its bottom,
-	// which the frame knows only after it has drawn it.
-	for _, p := range paragraphs {
-		if !p.StartsWith("**") {
-			pdfjet.NewLine(
-				p.GetX1()-3.0, p.GetY1(), p.GetX1()-3.0, p.GetY2()).SetStrokeColor(color.Navy).SetStrokeWidth(1.0).DrawOn(page)
-		}
-	}
+	drawHorizontal(pdf)
+	drawVertical(pdf)
 
 	if err := pdf.Complete(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func drawHorizontal(pdf *pdfjet.PDF) {
+	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold)
+	f1.SetSize(15.0)
+
+	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
+	f2.SetSize(9.0)
+
+	f3 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold)
+	f3.SetSize(9.0)
+
+	f4 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
+	f4.SetSize(8.0)
+
+	page := pdfjet.NewPage(pdf, letter.Portrait())
+
+	// The heading of the page, above the chart
+	pdfjet.NewTextLine(f1, "Rivers of the World").
+		SetStructureType(structelem.H1).
+		SetFontSize(18.0).
+		SetLocation(36.0, 40.0).
+		DrawOn(page)
+
+	rivers := []string{
+		"Nile", "Amazon", "Yangtze", "Mississippi-Missouri", "Yenisey-Baikal-Selenga",
+		"Huang He (Yellow)", "Ob-Irtysh", "Paraná", "Congo", "Amur"}
+	lengths := []float32{6650.0, 6400.0, 6300.0, 5971.0, 5540.0, 5464.0, 5410.0, 4880.0, 4700.0, 4444.0}
+	colors := []int32{
+		0x477aa8, 0x5f7e5f, 0x8b6f47, 0x8e7152, 0x517aa0,
+		0x967110, 0x687b68, 0x8e7155, 0x5c5c5c, 0x897154}
+
+	chart := pdfjet.NewBarChart(f1, f2)
+	chart.SetSize(540.0, 400.0)
+	chart.SetTitle("10 Longest Rivers in the World")
+	chart.SetSubtitle("Length in kilometers · Color reflects typical sediment / pollution character")
+	chart.SetCategories(rivers...)
+	chart.AddSeriesWithColors("", lengths, colors)
+	chart.SetHorizontal(true)
+	chart.SetGroupGap(0.4)
+	chart.SetValueAxisMinMax(0.0, 8000.0, 4)
+	chart.SetGridLineWidth(0.75)
+	chart.SetGridLineColor(0xe0e0e0)
+	chart.SetGridLineDashPattern("[] 0")
+	chart.SetAxisLineWidth(0.0)
+	chart.SetDrawValueLabels(true)
+	chart.SetValueLabelsInside(true)
+	chart.SetGroupingUsed(true)
+	chart.SetAltDescription(
+		"The ten longest rivers in the world, in kilometers: Nile 6,650, Amazon 6,400, Yangtze 6,300, Mississippi-Missouri 5,971, Yenisey-Baikal-Selenga 5,540, Huang He (Yellow) 5,464, Ob-Irtysh 5,410, Paraná 4,880, Congo 4,700, Amur 4,444.")
+	chart.SetLocation(36.0, 70.0)
+	chart.DrawOn(page)
+
+	// The color key under the chart
+	gray := int32(0x444444)
+	pdfjet.NewTextLine(f3, "Color key (illustrative):").
+		SetTextColor(gray).SetLocation(171.0, 496.0).DrawOn(page)
+	keyColors := []int32{0x477aa8, 0x5f7e5f, 0x8e7155, 0x967110, 0x5c5c5c}
+	keyTexts := []string{
+		"Clear / low sediment", "Sediment-rich, relatively clean", "Polluted / industrial & agricultural",
+		"Heavy natural sediment (loess)", "Natural dark tannin stain (Congo)"}
+	keyX := []float32{171.0, 262.0, 398.0, 171.0, 313.0}
+	keyY := []float32{512.0, 512.0, 512.0, 527.0, 527.0}
+	for i := range keyColors {
+		// The swatches are rectangles, drawn as artifacts next to their text.
+		pdfjet.NewRect(keyX[i], keyY[i]-8.5, 10.5, 10.5).SetFillColor(keyColors[i]).DrawOn(page)
+		pdfjet.NewTextLine(f4, keyTexts[i]).
+			SetTextColor(gray).SetLocation(keyX[i]+15.0, keyY[i]).DrawOn(page)
+	}
+
+	note := "Color mapping is illustrative; lengths and conditions vary by source and season."
+	pdfjet.NewTextLine(f4, note).
+		SetTextColor(0x696969).SetLocation(576.0-f4.StringWidth(f4.GetSize(), note), 550.0).DrawOn(page)
+}
+
+func drawVertical(pdf *pdfjet.PDF) {
+	page := pdfjet.NewPage(pdf, letter.Portrait())
+
+	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold)
+	f1.SetSize(10.0)
+
+	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
+	f2.SetSize(8.0)
+
+	// The heading of the document, above the charts
+	pdfjet.NewTextLine(f1, "Sales in 2025 and 2026").
+		SetStructureType(structelem.H1).
+		SetFontSize(18.0).
+		SetLocation(70.0, 45.0).
+		DrawOn(page)
+
+	months := []string{
+		"Jan", "Feb", "Mar", "Apr", "May", "Jun",
+		"Jul", "Aug", "Sep", "Oct", "Nov", "Dec"}
+	units2025 := []float32{45.0, 65.0, 31.0, 45.0, 65.0, 31.0, 38.0, 52.0, 47.0, 59.0, 66.0, 72.0}
+	units2026 := []float32{75.0, 20.0, 73.0, 75.0, 20.0, 73.0, 61.0, 58.0, 69.0, 64.0, 77.0, 80.0}
+
+	chart := pdfjet.NewBarChart(f1, f2)
+	chart.SetSize(500.0, 300.0)
+	chart.SetTitle("Units sold by month")
+	chart.SetXAxisTitle("Month")
+	chart.SetYAxisTitle("Units")
+	chart.SetCategories(months...)
+	chart.AddSeriesWithColor("2025", units2025, color.SeaGreen)
+	chart.AddSeriesWithColor("2026", units2026, color.IndianRed)
+	chart.SetGroupGap(0.4)
+	chart.SetBarGap(0.1)
+	chart.SetAltDescription("Units sold by month in 2025 and 2026, side by side: from 31 to 72 a month in 2025 and from 20 to 80 in 2026, the most in December in both years.")
+	chart.SetLocation(70.0, 70.0)
+	chart.DrawOn(page)
+
+	stacked := pdfjet.NewBarChart(f1, f2)
+	stacked.SetSize(500.0, 300.0)
+	stacked.SetTitle("Units sold by month, stacked")
+	stacked.SetXAxisTitle("Month")
+	stacked.SetYAxisTitle("Units")
+	stacked.SetCategories(months...)
+	stacked.AddSeriesWithColor("2025", units2025, color.SeaGreen)
+	stacked.AddSeriesWithColor("2026", units2026, color.IndianRed)
+	stacked.SetStacked(true)
+	stacked.SetDrawValueLabels(true)
+	stacked.SetAltDescription("Units sold by month in 2025 and 2026, stacked: from 85 a month, in February and May, to 152 in December.")
+	stacked.SetLocation(70.0, 420.0)
+	stacked.DrawOn(page)
 }
 
 func main() {

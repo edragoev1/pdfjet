@@ -9,141 +9,133 @@ import PDFjet
 
 /**
  * Example_35.swift
+ * Using PDF layers (optional content groups) that can be shown or hidden: a
+ * shaded relief map of Europe, the lines of latitude and longitude over it,
+ * and the capital cities. The map covers 12°W to 42°E and 34°N to 62°N, and
+ * longitude and latitude map linearly to x and y on it.
  */
 public class Example_35 {
+    private let x0: Float = 50.0    // The top left corner of the map
+    private let y0: Float = 180.0
+    private let w: Float = 512.0    // The size of the map
+    private let h: Float = 512.0 * 840.0 / 1084.0
+
+    private func mapX(_ longitude: Float) -> Float {
+        return x0 + (longitude + 12.0) / 54.0 * w
+    }
+
+    private func mapY(_ latitude: Float) -> Float {
+        return y0 + (62.0 - latitude) / 28.0 * h
+    }
+
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_35.pdf", append: false)!)
+        // A tagged document; PDF/UA has no setting for a layer that is not
+        // printed, so this one prints every layer that is shown.
         pdf.setCompliance(Compliance.PDF_UA_1)
-        pdf.setTitle("Containers and Stamps")
+        pdf.setTitle("PDF Layers: a map of Europe in three layers")
+
+        let f1 = try Font(pdf, IBMPlexSans.Regular)
+        let f2 = try Font(pdf, IBMPlexSans.SemiBold)
 
         let page = Page(pdf, Letter.PORTRAIT)
 
-        let f1 = try Font(pdf, IBMPlexSans.Regular)
-        f1.setSize(14.0)
+        var text = TextLine(f2, "PDF Layers")
+        text.setFontSize(22.0)
+        text.setLocation(50.0, 80.0)
+        text.drawOn(page)
 
-        let f2 = try Font(pdf, IBMPlexSans.Bold)
-        f2.setSize(14.0)
+        let textBlock = TextBlock(f1,
+                "Each part of this map is a layer, an optional content group, that "
+                + "a PDF viewer lists in its Layers panel and can show or hide: the "
+                + "relief, the lines of latitude and longitude, and the capital "
+                + "cities. As a PDF/UA document, this one prints every layer it shows.")
+        textBlock.setFontSize(12.0)
+        textBlock.setLineSpacing(1.5)
+        textBlock.setLocation(50.0, 95.0)
+        textBlock.setWidth(512.0)
+        textBlock.drawOn(page)
 
-        // The heading, above the drawings, which are 40 points lower for it
-        TextLine(f2, "Containers and Stamps")
-                .setStructureType(StructElem.H1)
-                .setFontSize(18.0)
-                .setLocation(50.0, 30.0)
-                .drawOn(page)
+        let image = try Image(pdf, "images/europe-relief.png")
+        image.resizeWidth(w)
+        image.setLocation(x0, y0)
+        image.setAltDescription("A relief map of Europe, from Ireland to Turkey")
 
-        // Base container
-        let container = Container(400.0, 400.0)
-        container.setLocation(100.0, 140.0)
+        // A layer is hidden and not printed unless it is set to be.
+        var group = OptionalContentGroup(pdf, "Relief")
+        group.setVisible(true)
+        group.setPrintable(true)
+        group.add(image)
+        group.drawOn(page)
 
-        // Add a rectangle to container
-        let rect = Rect(0.0, 0.0, 400.0, 400.0)
-        rect.setFillColor(Color.gray)
-        container.add(rect)
+        group = OptionalContentGroup(pdf, "Latitude and Longitude")
+        group.setVisible(true)
+        for longitude in stride(from: -10, through: 40, by: 5) {
+            let line = Line(mapX(Float(longitude)), y0, mapX(Float(longitude)), y0 + h)
+            line.setStrokeWidth(0.5)
+            line.setStrokeColor(Color.white)
+            group.add(line)
 
-        let stamp = Stamp(pdf).setSize(400.0, 400.0).addFont(f1).addFont(f2)
+            let label = (longitude < 0) ? "\(-longitude)°W" :
+                    (longitude > 0) ? "\(longitude)°E" : "0°"
+            text = TextLine(f1, label)
+            text.setFontSize(8.0)
+            text.setTextColor(Color.dimgray)
+            text.setLocation(mapX(Float(longitude)) - text.getWidth() / 2.0, y0 + h + 12.0)
+            group.add(text)
+        }
+        for latitude in stride(from: 35, through: 60, by: 5) {
+            let line = Line(x0, mapY(Float(latitude)), x0 + w, mapY(Float(latitude)))
+            line.setStrokeWidth(0.5)
+            line.setStrokeColor(Color.white)
+            group.add(line)
 
-        // Draw path ...
-        stamp.setFillColor(Color.lightblue)
-            .setStrokeColor(Color.red)
-            .setStrokeWidth(4.0)
-            .moveTo(0.0, 0.0)
-            .lineTo(400.0, 0.0)
-            .lineTo(400.0, 400.0)
-            .lineTo(0.0, 400.0)
-            .closeFillAndStrokePath()
+            text = TextLine(f1, "\(latitude)°N")
+            text.setFontSize(8.0)
+            text.setTextColor(Color.dimgray)
+            text.setLocation(x0 + w + 4.0, mapY(Float(latitude)) + 3.0)
+            group.add(text)
+        }
+        group.drawOn(page)
 
-        // Draw Rectangle
-        stamp.setStrokeColor(Color.blue)
-            .setStrokeWidth(1.0)
-            .drawRect(10.0, 10.0, 380.0, 380.0)
+        let cities = [
+            "Athens", "Ankara", "Berlin", "Bucharest", "Dublin",
+            "Kyiv", "Lisbon", "London", "Madrid", "Oslo",
+            "Paris", "Rome", "Stockholm", "Vienna", "Warsaw",
+        ]
+        let locations: [[Float]] = [    // Longitude and latitude
+            [23.73, 37.98], [32.86, 39.93], [13.40, 52.52],
+            [26.10, 44.43], [-6.26, 53.35], [30.52, 50.45],
+            [-9.14, 38.72], [-0.13, 51.51], [-3.70, 40.42],
+            [10.75, 59.91], [ 2.35, 48.86], [12.50, 41.90],
+            [18.07, 59.33], [16.37, 48.21], [21.01, 52.23],
+        ]
+        group = OptionalContentGroup(pdf, "Capital Cities")
+        group.setVisible(true)
+        group.setPrintable(true)
+        for i in 0..<cities.count {
+            let x = mapX(locations[i][0])
+            let y = mapY(locations[i][1])
 
-        // Fill Rectangle
-        stamp.setFillColor(Color.darkgreen).fillRect(10.0, 10.0, 20.0, 20.0)
+            let point = Point(x, y)
+            point.setRadius(2.5)
+            point.setFillColor(Color.white)
+            point.setStrokeColor(Color.black)
+            group.add(point)
 
-        // Draw some text
-        let parameters = TextParameters()
-            .setFont(f1)
-            .setFontSize(14.0)
-            .setLocation(40.0, 25.0)   // Clear of the square, which the text would run over
-            .setText("Hello, World!")
-        stamp.drawText(parameters)
+            text = TextLine(f2, cities[i])
+            text.setFontSize(8.0)
+            text.setLocation(x + 5.0, y + 3.0)
+            group.add(text)
+        }
+        group.drawOn(page)
 
-        // Change some parameters and draw the text again
-        parameters.setFont(f2).setLocation(40.0, 50.0)
-        stamp.setFillColor(Color.darkgreen).drawText(parameters)
-
-        try stamp.complete()    // The stamp is complete!
-
-        stamp.setLocation(50.0, 90.0).drawOn(page)
-
-        // Rotate the stamp counter clockwise and draw it again
-        stamp.setRotation(-15).drawOn(page)
-
-        // Rotate the stamp clockwise and draw it again
-        stamp.setRotation(15).drawOn(page)
-
-        // Draw the stamp again at a quarter of its size
-        stamp.setRotation(0).scaleBy(0.25).setLocation(360.0, 520.0).drawOn(page)
-
-        // Add a text line to container
-        let title = TextLine(f1, "Container")
-        title.setLocation(150.0, 20.0)
-        container.add(title)
-
-        // Nested container #1
-        let nested1 = Container(200.0, 200.0)
-        nested1.setLocation(0.0, 0.0)
-        nested1.setRotation(-30)
-        nested1.scaleBy(0.8)
-
-        let innerRect = Rect(0.0, 0.0, 200.0, 200.0)
-        innerRect.setFillColor(Color.blue)
-        nested1.add(innerRect)
-
-        let innerText = TextLine(f1, "Nested 1")
-        innerText.setLocation(50.0, 100.0)
-        innerText.setTextColor(Color.white)   // On the blue of the rectangle
-        nested1.add(innerText)
-
-        container.add(nested1)
-
-        // Nested container #2
-        let nested2 = Container(100.0, 100.0)
-        nested2.setLocation(250.0, 250.0)
-        nested2.setRotation(-45)
-
-        let smallRect = Rect(0.0, 0.0, 100.0, 100.0)
-        smallRect.setFillColor(Color.red)
-        nested2.add(smallRect)
-
-        let smallText = TextLine(f1, "Nested 2")
-        smallText.setLocation(10.0, 50.0)
-        nested2.add(smallText)
-
-        container.add(nested2)
-
-        container.setRotation(45)
-        // Draw the entire hierarchy on the page
-        _ = container.drawOn(page)
-
-        let container5 = Container(200.0, 20.0)
-        let rect5 = Rect(0.0, 0.0, 200.0, 20.0)
-        container5.add(rect5)
-
-        let rect6 = Rect(0.0, 0.0, 10.0, 10.0)
-        rect6.setFillColor(Color.blue)
-        container5.add(rect6)
-
-        let rect7 = Rect(190.0, 10.0, 10.0, 10.0)
-        rect7.setBorderColor(Color.red)
-        rect7.setBorderWidth(2.0)
-        container5.add(rect7)
-
-        container5.setLocation(50.0, 640.0)
-        _ = container5.drawOn(page)
-
-        container5.setRotation(90)
-        _ = container5.drawOn(page)
+        text = TextLine(f1, "Relief: Natural Earth, public domain, naturalearthdata.com")
+        text.setFontSize(8.0)
+        text.setTextColor(Color.dimgray)
+        text.setURIAction("https://www.naturalearthdata.com")
+        text.setLocation(x0, y0 + h + 30.0)
+        text.drawOn(page)
 
         try pdf.complete()
     }

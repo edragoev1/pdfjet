@@ -24,7 +24,7 @@ import java.util.function.Function;
  * wraps right to left and Thai text, highlights keywords and can be cut to a
  * height. Use a TextColumn for paragraphs of TextLine objects that differ in
  * font or color, for justified text or for a rotated column, and a TextFrame
- * for text that flows from one frame to the next. See Example_01, 16 and 19.
+ * for text that flows from one frame to the next. See Example_01, 10 and 11.
  */
 public class TextBlock implements Drawable {
     float x;

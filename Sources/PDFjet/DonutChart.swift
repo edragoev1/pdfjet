@@ -9,7 +9,7 @@ import Foundation
 ///
 /// A donut or pie chart: each slice is its value's share of the sum of the
 /// values, with a label next to it and its percentage inside it. A chart with
-/// an inner radius of 0 is a pie chart. See Example_25.
+/// an inner radius of 0 is a pie chart. See Example_28.
 ///
 public class DonutChart : Drawable {
     var f1: Font?

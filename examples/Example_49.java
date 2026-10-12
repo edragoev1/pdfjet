@@ -13,91 +13,77 @@ import com.pdfjet.fonts.*;
 
 /**
  * Example_49.java
- * This example draws a menu with paragraphs that mix fonts, sizes and colors,
- * currency signs raised with a vertical offset, and a rotated, underlined label.
+ *
+ * Merges and splits existing PDF documents. merge draws a cover page and
+ * merges three documents after it, into Example_49.pdf: the pages of each
+ * follow in their order and keep their content, resources, annotations and
+ * links, and what belongs to a whole document, such as its bookmarks, form
+ * fields and tagging, is left out. split writes one PDF for each page of a
+ * document, Example_49_1.pdf to Example_49_5.pdf, and all of its pages in
+ * reverse order to Example_49_reversed.pdf; a link to a page that is not in
+ * the same PDF leads nowhere.
  */
-public class Example_49 {
+final class Example_49 {
     public Example_49() throws Exception {
-        PDF pdf = new PDF(
-                new BufferedOutputStream(new FileOutputStream("Example_49.pdf")));
-        pdf.setCompliance(Compliance.PDF_UA_1);
-        pdf.setTitle("Paragraphs with mixed text styles");
+        merge();
+        split();
+    }
 
-        Font f1 = new Font(pdf, SourceSerif4.Regular);
-        f1.setSize(14f);
+    private void merge() throws Exception {
+        PDF pdf = new PDF(new BufferedOutputStream(new FileOutputStream("Example_49.pdf")));
 
-        Font f2 = new Font(pdf, SourceSerif4.Italic);
-        f2.setSize(14f);
-
-        Font f3 = new Font(pdf, SourceSerif4.SemiBold);
-        f3.setSize(14f);
-
-        Font f4 = new Font(pdf, SourceSerif4.SemiBold);
-        f4.setSize(9f);
-
-        Page page = new Page(pdf, Letter.PORTRAIT);
-
-        TextLine title = new TextLine(f3, "Café Menu");
-        title.setStructureType(StructElem.H1);
-        title.setFontSize(28f);
-        title.setLocation(70f, 100f);
-        title.drawOn(page);
-
-        // Each paragraph mixes a name, an italic description and a price
-        // with a small dollar sign raised by a vertical offset.
-        String[] names = {"Espresso", "Cappuccino", "Hot chocolate"};
-        String[] notes = {"rich and intense", "with steamed milk foam", "made with dark cocoa"};
-        String[] prices = {"3.25", "4.50", "3.95"};
-
-        TextColumn column = new TextColumn();
-        for (int i = 0; i < names.length; i++) {
-            Paragraph paragraph = new Paragraph()
-                    .add(new TextLine(f3, names[i]))
-                    .add(new TextLine(f2, notes[i]).setTextColor(Color.dimgray))
-                    .add(new TextLine(f4, "$").setVerticalOffset(-4f))
-                    .add(new TextLine(f1, prices[i]).setTextColor(Color.darkred));
-            column.addParagraph(paragraph);
+        String[] fileNames = {
+            "data/testPDFs/scanned-linearized.pdf",
+            "data/testPDFs/rc65-16e.pdf",
+            "data/testPDFs/PDFjetLogo.pdf"
+        };
+        List<List<PDFobj>> documents = new ArrayList<List<PDFobj>>();
+        for (String fileName : fileNames) {
+            BufferedInputStream bis = new BufferedInputStream(new FileInputStream(fileName));
+            documents.add(pdf.read(bis));
+            bis.close();
         }
 
-        // A paragraph that colors some of its words, aligned to the right.
-        column.addParagraph(new Paragraph()
-                .add(new TextLine(f2, "Freshly"))
-                .add(new TextLine(f3, "roasted").setTextColor(Color.saddlebrown))
-                .add(new TextLine(f2, "every"))
-                .add(new TextLine(f3, "morning").setTextColor(Color.sienna))
-                .setTextAlignment(Alignment.RIGHT));
+        Font f1 = new Font(pdf, IBMPlexSans.Bold);
+        f1.setSize(24f);
+        Font f2 = new Font(pdf, IBMPlexSans.Regular);
+        f2.setSize(12f);
 
-        column.setLocation(70f, 140f);
-        column.setWidth(470f);
-        column.setParagraphSpacing(1.8f);
-        float[] xy = column.drawOn(page);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextLine(f1, "Merged documents").setLocation(50f, 80f).drawOn(page);
+        float y = 130f;
+        for (int i = 0; i < fileNames.length; i++) {
+            int pages = pdf.getPageObjects(documents.get(i)).size();
+            String text = fileNames[i] + ", " + pages + (pages == 1 ? " page" : " pages");
+            new TextLine(f2, text).setLocation(50f, y).drawOn(page);
+            y += 20f;
+        }
 
-        // A TextFrame wraps the words of its paragraphs to its width.
-        List<Paragraph> paragraphs = new ArrayList<Paragraph>();
-        paragraphs.add(new Paragraph()
-                .add(new TextLine(f1, "Our beans come from small farms in"))
-                .add(new TextLine(f3, "Colombia,"))
-                .add(new TextLine(f3, "Ethiopia"))
-                .add(new TextLine(f1, "and"))
-                .add(new TextLine(f3, "Guatemala,"))
-                .add(new TextLine(f1, "and we roast them in small batches."))
-                .add(new TextLine(f2, "Ask us about the beans of the week.").setTextColor(Color.darkred)));
-        paragraphs.add(new Paragraph()
-                .add(new TextLine(f2, "Prices include tax.").setTextColor(Color.dimgray)));
+        for (List<PDFobj> objects : documents) {
+            pdf.merge(objects);
+        }
 
-        TextFrame frame = new TextFrame(paragraphs);
-        frame.setLocation(70f, xy[1] + 30f);
-        frame.setWidth(470f);
-        frame.drawOn(page);
+        pdf.complete();
+    }
 
-        TextLine label = new TextLine(f3, "Today's special!");
-        label.setFontSize(18f);
-        label.setTextColor(Color.red);
-        label.setLocation(400f, 90f);
-        label.setTextRotation(15);
-        label.setUnderline(true);
-        label.drawOn(page);
+    private void split() throws Exception {
+        BufferedInputStream bis = new BufferedInputStream(new FileInputStream("data/testPDFs/scanned-linearized.pdf"));
+        List<PDFobj> objects = new PDF().read(bis);
+        bis.close();
+        int count = new PDF().getPageObjects(objects).size();
 
+        for (int i = 1; i <= count; i++) {
+            PDF part = new PDF(new BufferedOutputStream(new FileOutputStream("Example_49_" + i + ".pdf")));
+            part.merge(objects, i);
+            part.complete();
+        }
+
+        int[] reversed = new int[count];
+        for (int i = 0; i < count; i++) {
+            reversed[i] = count - i;
+        }
+        PDF pdf = new PDF(new BufferedOutputStream(new FileOutputStream("Example_49_reversed.pdf")));
+        pdf.merge(objects, reversed);
         pdf.complete();
     }
 

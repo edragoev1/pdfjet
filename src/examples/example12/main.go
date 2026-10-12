@@ -13,65 +13,131 @@ import (
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
+	"github.com/edragoev1/pdfjet/v9/src/alignment"
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
-	"github.com/edragoev1/pdfjet/v9/src/content"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
-	"github.com/edragoev1/pdfjet/v9/src/pdf417"
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
-// Example12 draws a PDF417 barcode that holds a whole source file, with an
-// explanation and a caption.
+// Example12 shows how to lay out paragraphs in a text column.
 func Example12() {
 	pdf, err := pdfjet.NewPDFFile("Example_12.pdf")
 	if err != nil {
 		log.Fatal(err)
 	}
 	pdf.SetCompliance(compliance.PDF_UA_1)
-	pdf.SetTitle("PDF417 barcode example")
+	pdf.SetTitle("Switzerland")
+
+	image1 := pdfjet.NewImageFromFile(pdf, "images/swiss-admin.jpg")
+	image1.SetAltDescription(
+		"A map of Switzerland's 26 cantons, numbered and named in a key, with their capitals, Bern marked as the national capital, the lakes and rivers, and the neighboring countries.")
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
+	f1.SetSize(10.0)
+
 	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
+	f2.SetSize(14.0)
+
+	f3 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
+	f3.SetSize(12.0)
+
+	f4 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Italic)
+	f4.SetSize(10.0)
 
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 
-	text := pdfjet.NewTextLine(f2, "PDF417 Barcode")
-	text.SetStructureType(structelem.H1)
-	text.SetFontSize(22.0)
-	text.SetLocation(70.0, 80.0)
-	text.DrawOn(page)
+	// The map is 310 points tall, so that it and the text fit the page, and
+	// centered over the text.
+	image1.ScaleBy(310.0 / image1.GetHeight())
+	image1.SetLocation(90.0+(470.0-image1.GetWidth())/2.0, 35.0)
+	image1.DrawOn(page)
 
-	textBlock := pdfjet.NewTextBlock(f1,
-		"PDF417 is a stacked two-dimensional barcode, used on boarding passes, "+
-			"identity cards and shipping labels. It holds text and binary data, "+
-			"and its error correction lets a scanner read it even when part of "+
-			"it is damaged.")
-	textBlock.SetFontSize(12.0)
-	textBlock.SetLineSpacing(1.5)
-	textBlock.SetLocation(70.0, 95.0)
-	textBlock.SetWidth(470.0)
-	xy := textBlock.DrawOn(page)
+	// To rotate the column, add it to a Container and rotate that; see Example_31.
+	column := pdfjet.NewTextColumn()
+	column.SetLineSpacing(1.3)      // 1.3 x font height
+	column.SetParagraphSpacing(1.0) // 1.0 x line spacing
 
-	// A barcode that holds a whole source file.
-	lines := content.LinesOfTextFile("data/Example_12.java")
+	p2 := pdfjet.NewParagraph()
+	p2.SetStructureType(structelem.H1)
+	p2.Add(pdfjet.NewTextLine(f2, "Introduction"))
+
 	var buf strings.Builder
-	for _, line := range lines {
-		buf.WriteString(line)
-		buf.WriteString("\r\n") // CR and LF are both required!
-	}
+	buf.WriteString("The Swiss Confederation was founded in 1291 as a defensive ")
+	buf.WriteString("alliance among three cantons. In succeeding years, other ")
+	buf.WriteString("localities joined the original three. ")
+	buf.WriteString("The Swiss Confederation secured its independence from the ")
+	buf.WriteString("Holy Roman Empire in 1499. Switzerland's sovereignty and ")
+	buf.WriteString("neutrality have long been honored by the major European ")
+	buf.WriteString("powers, and the country was not involved in either of the ")
+	buf.WriteString("two World Wars. The political and economic integration of ")
+	buf.WriteString("Europe over the past half century, as well as Switzerland's ")
+	buf.WriteString("role in many UN and international organizations, has ")
+	buf.WriteString("strengthened Switzerland's ties with its neighbors. ")
+	buf.WriteString("However, the country did not officially become a UN member ")
+	buf.WriteString("until 2002.")
 
-	barcode := pdf417.NewPDF417(buf.String())
-	barcode.SetModuleLength(1.0)
-	barcode.SetLocation(70.0, xy[1]+30.0)
-	xy = barcode.DrawOn(page)
+	p3 := pdfjet.NewParagraph()
+	// p3.SetTextAlignment(alignment.Left)
+	// p3.SetTextAlignment(alignment.Right)
+	p3.SetTextAlignment(alignment.Justify)
+	text := pdfjet.NewTextLine(f1, buf.String())
+	p3.Add(text)
 
-	text = pdfjet.NewTextLine(f1, "The source code of data/Example_12.java, "+
-		fmt.Sprint(len(lines))+" lines")
-	text.SetFontSize(10.0)
-	text.SetTextColor(color.DimGray)
-	text.SetLocation(70.0, xy[1]+20.0)
-	text.DrawOn(page)
+	buf.Reset()
+	buf.WriteString("Switzerland remains active in many UN and international ")
+	buf.WriteString("organizations but retains a strong commitment to neutrality.")
+
+	text = pdfjet.NewTextLine(f1, buf.String())
+	text.SetTextColor(color.Firebrick)
+	p3.Add(text)
+
+	p4 := pdfjet.NewParagraph()
+	p4.SetStructureType(structelem.H1)
+	p4.Add(pdfjet.NewTextLine(f3, "Economy"))
+
+	buf.Reset()
+	buf.WriteString("Switzerland is a peaceful, prosperous, and stable modern ")
+	buf.WriteString("market economy with low unemployment, a highly skilled ")
+	buf.WriteString("labor force, and a per capita GDP larger than that of the ")
+	buf.WriteString("big Western European economies. The Swiss in recent years ")
+	buf.WriteString("have brought their economic practices largely into ")
+	buf.WriteString("conformity with the EU's to enhance their international ")
+	buf.WriteString("competitiveness. Switzerland remains a safe haven for ")
+	buf.WriteString("investors, because it has maintained a degree of bank secrecy ")
+	buf.WriteString("and has kept up the franc's long-term external value. ")
+	buf.WriteString("Reflecting the anemic economic conditions of Europe, GDP ")
+	buf.WriteString("growth stagnated during the 2001-03 period, improved during ")
+	buf.WriteString("2004-05 to 1.8% annually and to 2.9% in 2006.")
+
+	p5 := pdfjet.NewParagraph()
+	p5.SetTextAlignment(alignment.Justify)
+	text = pdfjet.NewTextLine(f1, buf.String())
+	p5.Add(text)
+
+	text = pdfjet.NewTextLine(f4,
+		"Even so, unemployment has remained at less than half the EU average.")
+	text.SetTextColor(color.Blue)
+	p5.Add(text)
+
+	column.AddParagraph(p2)
+	column.AddParagraph(p3)
+	column.AddParagraph(p4)
+	column.AddParagraph(p5)
+
+	column.SetLocation(90.0, 365.0)
+
+	columnWidth := float32(470.0)
+	column.SetWidth(columnWidth)
+	column.SetHeight(100.0)
+	xy := column.DrawOn(page)
+
+	line := pdfjet.NewLine(
+		xy[0]-columnWidth,
+		xy[1],
+		xy[0],
+		xy[1])
+	line.DrawOn(page)
 
 	if err := pdf.Complete(); err != nil {
 		log.Fatal(err)

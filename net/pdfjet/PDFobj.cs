@@ -13,7 +13,7 @@ using System.Text;
 namespace PDFjet.NET {
 /// <summary>
 /// An object of a PDF that was read with PDF.Read, which holds the tokens of
-/// its dictionary and its stream. See Example_20, Example_37 and Example_50.
+/// its dictionary and its stream. See Example_34, Example_48 and Example_50.
 /// </summary>
 public class PDFobj {
     internal int number;           // The object number

@@ -6,7 +6,7 @@
 package pdfjet
 
 // Field describes field object that is used from the Form class.
-// Please see Example_45
+// Please see Example_44
 type Field struct {
 	x     float32
 	label string

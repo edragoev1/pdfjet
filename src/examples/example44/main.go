@@ -12,50 +12,87 @@ import (
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
-	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSansSC"
+	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
-// Example44 draws a text column that contains English and Chinese paragraphs.
+// Example44 uses the Form and Field classes to draw a shipment request. A
+// field at x = 0 starts a new row, the other fields of the row start at their
+// own x, and a field with an empty label continues the value above it on a
+// new line.
 func Example44() {
 	pdf, err := pdfjet.NewPDFFile("Example_44.pdf")
 	if err != nil {
 		log.Fatal(err)
 	}
 	pdf.SetCompliance(compliance.PDF_UA_1)
-	pdf.SetTitle("Switzerland, in English and Chinese")
+	pdf.SetTitle("Shipment Request")
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
-	f1.SetSize(12.0)
-
-	// Chinese (Simplified) font
-	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSansSC.Regular)
-	f2.SetSize(12.0)
+	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
 
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 
-	column := pdfjet.NewTextColumn()
-	column.SetLocation(70.0, 70.0)
-	column.SetWidth(500.0)
-	column.SetLineSpacing(1.5)      // 1.5 x font height
-	column.SetParagraphSpacing(0.5) // 0.5 x line spacing
+	text := pdfjet.NewTextLine(f2, "Shipment Request")
+	text.SetStructureType(structelem.H1)
+	text.SetFontSize(22.0)
+	text.SetLocation(56.0, 80.0)
+	text.DrawOn(page)
 
-	p1 := pdfjet.NewParagraph()
-	p1.Add(pdfjet.NewTextLine(f1, "The Swiss Confederation was founded in 1291 as a defensive alliance among three cantons. In succeeding years, other localities joined the original three. The Swiss Confederation secured its independence from the Holy Roman Empire in 1499. Switzerland's sovereignty and neutrality have long been honored by the major European powers, and the country was not involved in either of the two World Wars. The political and economic integration of Europe over the past half century, as well as Switzerland's role in many UN and international organizations, has strengthened Switzerland's ties with its neighbors. However, the country did not officially become a UN member until 2002."))
-	column.AddParagraph(p1)
+	textBlock := pdfjet.NewTextBlock(f1,
+		"A Form draws its fields in rows. A field at x = 0 starts a new row, "+
+			"the other fields of the row start at their own x, and a field with "+
+			"an empty label continues the value above it on a new line.")
+	textBlock.SetFontSize(12.0)
+	textBlock.SetLineSpacing(1.5)
+	textBlock.SetLocation(56.0, 95.0)
+	textBlock.SetWidth(500.0)
+	xy := textBlock.DrawOn(page)
 
-	chinese := "用于附属装置选择器应用程序的分析方法和计算基于与物料、附属装置和机器有关的不同参数和变量。 此类参数和变量的准确性会影响附属装置选择 应用程序结果的准确性。 虽然沃尔沃建筑设备公司、其子公司和附属公司（统称“沃尔沃建筑设备”）已尽力确保附属装置选择应用程序的准确性，但沃尔沃建筑设备无法保证结果准确无误。 因此，沃尔沃建筑设备并未对附属装置选择应用程序结果的准确性作出保证或声明（无论明示或暗示）。 沃尔沃建筑设备特此声明不对有关附属装置选择应用程序报告，此处获得的结果，或用于附属装置选择应用程序的设备的适宜性的所有明示或暗示保证，包括但不限于用于特定目的的适销性或合适性的任何保证承担任何责任。 在任何情况下，沃尔沃建筑设备均不对为实体或由实体创建的结果（或任何其它实体）以及由此造成的任何间接、意外、必然或特殊损害，包括但不限于损失收益或利润承担任何责任。"
-	xy := column.DrawOn(page)
+	var w float32 = 500.0 // The width of the form
 
-	// The Chinese in a column of its own, set tighter: IBM Plex Sans SC has a
-	// line gap of a whole em, which the lines of a paragraph are set with.
-	column2 := pdfjet.NewTextColumn()
-	column2.SetLocation(70.0, xy[1]+12.0)
-	column2.SetWidth(500.0)
-	column2.SetLineSpacing(1.2)
-	column2.AddCJKParagraphWithLanguage(f2, chinese, "zh-Hans") // Read by a screen reader as Chinese
-	column2.DrawOn(page)
+	fields := make([]*pdfjet.Field, 0)
+	fields = append(fields, pdfjet.NewField(0.0, "Sender", "Maple Leaf Instruments Ltd."))
+	fields = append(fields, pdfjet.NewField(0.0, "Street Address", "480 King Street West"))
+	fields = append(fields, pdfjet.NewField(6*w/8, "Suite", "1200"))
+	fields = append(fields, pdfjet.NewField(0.0, "City", "Toronto"))
+	fields = append(fields, pdfjet.NewField(3*w/8, "Province", "Ontario"))
+	fields = append(fields, pdfjet.NewField(5*w/8, "Postal Code", "M5V 1L7"))
+	fields = append(fields, pdfjet.NewField(6*w/8, "Country", "Canada"))
+	fields = append(fields, pdfjet.NewField(0.0, "Recipient", "Nordic Sensor Labs AB"))
+	fields = append(fields, pdfjet.NewField(0.0, "Street Address", "Drottninggatan 55"))
+	fields = append(fields, pdfjet.NewField(6*w/8, "Floor", "3"))
+	fields = append(fields, pdfjet.NewField(0.0, "City", "Stockholm"))
+	fields = append(fields, pdfjet.NewField(5*w/8, "Postal Code", "111 21"))
+	fields = append(fields, pdfjet.NewField(6*w/8, "Country", "Sweden"))
+	fields = append(fields, pdfjet.NewField(0.0, "Contact", "Anna Lindqvist"))
+	fields = append(fields, pdfjet.NewField(3*w/8, "Email", "anna.lindqvist@example.com"))
+	fields = append(fields, pdfjet.NewField(0.0, "Contents", "Two calibrated pressure sensors"))
+	fields = append(fields, pdfjet.NewField(5*w/8, "Weight", "3.2 kg"))
+	fields = append(fields, pdfjet.NewField(6*w/8, "Declared Value", "CAD 1,450.00"))
+	fields = append(fields, pdfjet.NewField(0.0, "Instructions",
+		"Keep upright and away from magnets. Deliver on a weekday"))
+	fields = append(fields, pdfjet.NewField(0.0, "", "between 9:00 and 17:00, to the reception on the third floor."))
+
+	xy = pdfjet.NewForm(fields).
+		SetLabelFont(f1).
+		SetLabelFontSize(8.0).
+		SetLabelColor(color.DimGray).
+		SetValueFont(f2).
+		SetValueFontSize(10.0).
+		SetValueColor(color.Black).
+		SetWidth(w).
+		SetStrokeWidth(0.5).
+		SetLocation(56.0, xy[1]+20.0).
+		DrawOn(page)
+
+	text = pdfjet.NewTextLine(f1, "The recipient signs for the package on delivery.")
+	text.SetFontSize(10.0)
+	text.SetTextColor(color.DimGray)
+	text.SetLocation(56.0, xy[1]+20.0)
+	text.DrawOn(page)
 
 	if err := pdf.Complete(); err != nil {
 		log.Fatal(err)

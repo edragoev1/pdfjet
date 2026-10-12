@@ -8,7 +8,7 @@ package com.pdfjet;
 
 /**
  * Used to create line objects.
- * Please see Example_23 and Example_46.
+ * Please see Example_08 and Example_35.
  */
 public class Line implements Drawable {
     /** The x coordinate of the start point. */

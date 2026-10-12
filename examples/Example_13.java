@@ -7,152 +7,52 @@
 package examples;
 
 import java.io.*;
-import java.util.*;
 import com.pdfjet.*;
 import com.pdfjet.fonts.*;
 
 /**
  * Example_13.java
  */
-final public class Example_13 {
+public class Example_13 {
     public Example_13() throws Exception {
         PDF pdf = new PDF(
-                new BufferedOutputStream(
-                        new FileOutputStream("Example_13.pdf")));
+                new BufferedOutputStream(new FileOutputStream("Example_13.pdf")));
         pdf.setCompliance(Compliance.PDF_UA_1);
-        pdf.setTitle("Winter Reading Scores");
+        pdf.setTitle("Switzerland, in English and Chinese");
 
-        Font f1 = new Font(pdf, IBMPlexSans.Bold);
-        f1.setSize(7f);
+        Font f1 = new Font(pdf, IBMPlexSans.Regular);
+        f1.setSize(12f);
 
-        Font f2 = new Font(pdf, IBMPlexSans.Regular);
-        f2.setSize(7f);
+        // Chinese (Simplified) font
+        Font f2 = new Font(pdf, IBMPlexSansSC.Regular);
+        f2.setSize(12f);
 
-        List<List<Cell>> tableData = new ArrayList<List<Cell>>();
-        BufferedReader reader = new BufferedReader(
-                new InputStreamReader(new FileInputStream("data/winter-2009.txt"), "UTF-8"));
-        String line;
-        while ((line = reader.readLine()) != null) {
-            List<Cell> row = new ArrayList<Cell>();
-            String[] columns = line.split("\\|", -1);
-            for (String column : columns) {
-                row.add(new Cell(f2, column));
-            }
-            tableData.add(row);
-        }
-        reader.close();
+        Page page = new Page(pdf, Letter.PORTRAIT);
 
-        Table table = new Table();
-        table.setTableData(tableData, 2);
-        table.setLocation(100f, 50f);
-        table.setBottomMargin(10f);
+        TextColumn column = new TextColumn();
+        column.setLocation(70f, 70f);
+        column.setWidth(500f);
+        column.setLineSpacing(1.5f);        // 1.5 x font height
+        column.setParagraphSpacing(0.5f);   // 0.5 x line spacing
 
-        table.setFontInRow(0, f1);
-        table.setFontInRow(1, f1);
+        Paragraph p1 = new Paragraph();
+        p1.add(new TextLine(f1,
+"The Swiss Confederation was founded in 1291 as a defensive alliance among three cantons. In succeeding years, other localities joined the original three. The Swiss Confederation secured its independence from the Holy Roman Empire in 1499. Switzerland's sovereignty and neutrality have long been honored by the major European powers, and the country was not involved in either of the two World Wars. The political and economic integration of Europe over the past half century, as well as Switzerland's role in many UN and international organizations, has strengthened Switzerland's ties with its neighbors. However, the country did not officially become a UN member until 2002."));
+        column.addParagraph(p1);
 
-        table.autoAdjustColumnWidths();
-        table.removeLineBetweenRows(0, 1);
+        String chinese = "用于附属装置选择器应用程序的分析方法和计算基于与物料、附属装置和机器有关的不同参数和变量。 此类参数和变量的准确性会影响附属装置选择 应用程序结果的准确性。 虽然沃尔沃建筑设备公司、其子公司和附属公司（统称“沃尔沃建筑设备”）已尽力确保附属装置选择应用程序的准确性，但沃尔沃建筑设备无法保证结果准确无误。 因此，沃尔沃建筑设备并未对附属装置选择应用程序结果的准确性作出保证或声明（无论明示或暗示）。 沃尔沃建筑设备特此声明不对有关附属装置选择应用程序报告，此处获得的结果，或用于附属装置选择应用程序的设备的适宜性的所有明示或暗示保证，包括但不限于用于特定目的的适销性或合适性的任何保证承担任何责任。 在任何情况下，沃尔沃建筑设备均不对为实体或由实体创建的结果（或任何其它实体）以及由此造成的任何间接、意外、必然或特殊损害，包括但不限于损失收益或利润承担任何责任。";
+        float[] xy = column.drawOn(page);
 
-        Cell cell = table.getCellAt(1, 1);
-        cell.setBorder(Border.TOP, true);
-
-        cell = table.getCellAt(1, 2);
-        cell.setBorder(Border.TOP, true);
-
-        cell = table.getCellAt(0, 1);
-        cell.setColSpan(2);
-        cell.setTextAlignment(Alignment.CENTER);
-
-        List<Cell> column = table.getColumn(7);
-        for (int i = 0; i < column.size(); i++) {
-            cell = column.get(i);
-            cell.setTextAlignment(Alignment.CENTER);
-        }
-
-        column = table.getColumn(4);
-        for (int i = 2; i < column.size(); i++) {
-            cell = column.get(i);
-            try {
-                cell.setTextAlignment(Alignment.CENTER);
-                if (Integer.valueOf(cell.getText()) > 40) {
-                    cell.setBackgroundColor(Color.darkseagreen);
-                } else {
-                    cell.setBackgroundColor(Color.yellow);
-                }
-            } catch (Exception e) {
-            }
-        }
-
-        column = table.getColumn(2);
-        for (int i = 2; i < column.size(); i++) {
-            cell = column.get(i);
-            try {
-                if (cell.getText().equals("Smith")) {
-                    cell.setUnderline(true);
-                }
-                if (cell.getText().equals("Bowden")) {
-                    cell.setStrikeout(true);
-                }
-            } catch (Exception e) {
-            }
-        }
-
-        column = table.getColumn(2);
-        for (int i = 2; i < column.size(); i++) {
-            cell = column.get(i);
-            try {
-                if (cell.getText().equals("Bowden")) {
-                    cell.setStrikeout(false);
-                }
-            } catch (Exception e) {
-            }
-        }
-
-        setBgColorForRow(table, 0, Color.lightgray);
-        setBgColorForRow(table, 1, Color.lightgray);
-
-        table.setColumnWidth(3, 10f);
-        blankOutColumn(table, 3);
-
-        table.setColumnWidth(8, 10f);
-        blankOutColumn(table, 8);
-
-        // A heading on the first page only, above the table: the first page is
-        // made here, and the table goes on to new pages.
-        Page first = new Page(pdf, Letter.PORTRAIT, Page.DETACHED);
-        new TextLine(f1, "Winter Reading Scores")
-                .setStructureType(StructElem.H1)
-                .setFontSize(16f)
-                .setLocation(100f, 38f)
-                .drawOn(first);
-        table.setFirstPageTopMargin(50f);
-
-        List<Page> pages = new ArrayList<Page>();
-        pages.add(first);
-        table.drawOn(pdf, first, pages, Letter.PORTRAIT);
-        for (int i = 0; i < pages.size(); i++) {
-            Page page = pages.get(i);
-            page.addFooter(new TextLine(f1, "Page " + (i + 1) + " of " + pages.size()));
-            pdf.addPage(page);
-        }
+        // The Chinese in a column of its own, set tighter: IBM Plex Sans SC has a
+        // line gap of a whole em, which the lines of a paragraph are set with.
+        TextColumn column2 = new TextColumn();
+        column2.setLocation(70f, xy[1] + 12f);
+        column2.setWidth(500f);
+        column2.setLineSpacing(1.2f);
+        column2.addCJKParagraph(f2, chinese, "zh-Hans"); // Read by a screen reader as Chinese
+        column2.drawOn(page);
 
         pdf.complete();
-    }
-
-    public void blankOutColumn(Table table, int index) throws Exception {
-        List<Cell> column = table.getColumn(index);
-        for (Cell cell : column) {
-            cell.setBackgroundColor(Color.white);
-            cell.setBorder(Border.TOP, false);
-            cell.setBorder(Border.BOTTOM, false);
-        }
-    }
-
-    public void setBgColorForRow(Table table, int index, int color) throws Exception {
-        List<Cell> row = table.getRow(index);
-        for (Cell cell : row) {
-            cell.setBackgroundColor(color);
-        }
     }
 
     public static void main(String[] args) throws Exception {

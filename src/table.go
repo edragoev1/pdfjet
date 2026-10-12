@@ -29,7 +29,7 @@ import (
 )
 
 // Table is used to create table objects and draw them on a page.
-// Please see Example_08.
+// Please see Example_20.
 type Table struct {
 	tableData       [][]*Cell
 	numOfHeaderRows int

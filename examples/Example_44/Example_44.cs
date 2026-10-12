@@ -6,50 +6,87 @@
  */
 using System;
 using System.IO;
+using System.Collections.Generic;
 using System.Diagnostics;
 using PDFjet.NET;
 
 /**
  * Example_44.cs
+ * Using the Form and Field classes to draw a shipment request. A field at x = 0
+ * starts a new row, the other fields of the row start at their own x, and a
+ * field with an empty label continues the value above it on a new line.
  */
 public class Example_44 {
     public Example_44() {
+
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_44.pdf", FileMode.Create)));
         pdf.SetCompliance(Compliance.PDF_UA_1);
-        pdf.SetTitle("Switzerland, in English and Chinese");
+        pdf.SetTitle("Shipment Request");
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
-        f1.SetSize(12f);
-
-        // Chinese (Simplified) font
-        Font f2 = new Font(pdf, IBMPlexSansSC.Regular);
-        f2.SetSize(12f);
+        Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        TextColumn column = new TextColumn();
-        column.SetLocation(70f, 70f);
-        column.SetWidth(500f);
-        column.SetLineSpacing(1.5f);        // 1.5 x font height
-        column.SetParagraphSpacing(0.5f);   // 0.5 x line spacing
+        TextLine text = new TextLine(f2, "Shipment Request");
+        text.SetStructureType(StructElem.H1);
+        text.SetFontSize(22f);
+        text.SetLocation(56f, 80f);
+        text.DrawOn(page);
 
-        Paragraph p1 = new Paragraph();
-        p1.Add(new TextLine(f1,
-"The Swiss Confederation was founded in 1291 as a defensive alliance among three cantons. In succeeding years, other localities joined the original three. The Swiss Confederation secured its independence from the Holy Roman Empire in 1499. Switzerland's sovereignty and neutrality have long been honored by the major European powers, and the country was not involved in either of the two World Wars. The political and economic integration of Europe over the past half century, as well as Switzerland's role in many UN and international organizations, has strengthened Switzerland's ties with its neighbors. However, the country did not officially become a UN member until 2002."));
-        column.AddParagraph(p1);
+        TextBlock textBlock = new TextBlock(f1,
+                "A Form draws its fields in rows. A field at x = 0 starts a new row, "
+                + "the other fields of the row start at their own x, and a field with "
+                + "an empty label continues the value above it on a new line.");
+        textBlock.SetFontSize(12f);
+        textBlock.SetLineSpacing(1.5f);
+        textBlock.SetLocation(56f, 95f);
+        textBlock.SetWidth(500f);
+        float[] xy = textBlock.DrawOn(page);
 
-        String chinese = "用于附属装置选择器应用程序的分析方法和计算基于与物料、附属装置和机器有关的不同参数和变量。 此类参数和变量的准确性会影响附属装置选择 应用程序结果的准确性。 虽然沃尔沃建筑设备公司、其子公司和附属公司（统称“沃尔沃建筑设备”）已尽力确保附属装置选择应用程序的准确性，但沃尔沃建筑设备无法保证结果准确无误。 因此，沃尔沃建筑设备并未对附属装置选择应用程序结果的准确性作出保证或声明（无论明示或暗示）。 沃尔沃建筑设备特此声明不对有关附属装置选择应用程序报告，此处获得的结果，或用于附属装置选择应用程序的设备的适宜性的所有明示或暗示保证，包括但不限于用于特定目的的适销性或合适性的任何保证承担任何责任。 在任何情况下，沃尔沃建筑设备均不对为实体或由实体创建的结果（或任何其它实体）以及由此造成的任何间接、意外、必然或特殊损害，包括但不限于损失收益或利润承担任何责任。";
-        float[] xy = column.DrawOn(page);
+        float w = 500f; // The width of the form
 
-        // The Chinese in a column of its own, set tighter: IBM Plex Sans SC has a
-        // line gap of a whole em, which the lines of a paragraph are set with.
-        TextColumn column2 = new TextColumn();
-        column2.SetLocation(70f, xy[1] + 12f);
-        column2.SetWidth(500f);
-        column2.SetLineSpacing(1.2f);
-        column2.AddCJKParagraph(f2, chinese, "zh-Hans"); // Read by a screen reader as Chinese
-        column2.DrawOn(page);
+        List<Field> fields = new List<Field>();
+        fields.Add(new Field(   0f, "Sender", "Maple Leaf Instruments Ltd."));
+        fields.Add(new Field(   0f, "Street Address", "480 King Street West"));
+        fields.Add(new Field(6*w/8, "Suite", "1200"));
+        fields.Add(new Field(   0f, "City", "Toronto"));
+        fields.Add(new Field(3*w/8, "Province", "Ontario"));
+        fields.Add(new Field(5*w/8, "Postal Code", "M5V 1L7"));
+        fields.Add(new Field(6*w/8, "Country", "Canada"));
+        fields.Add(new Field(   0f, "Recipient", "Nordic Sensor Labs AB"));
+        fields.Add(new Field(   0f, "Street Address", "Drottninggatan 55"));
+        fields.Add(new Field(6*w/8, "Floor", "3"));
+        fields.Add(new Field(   0f, "City", "Stockholm"));
+        fields.Add(new Field(5*w/8, "Postal Code", "111 21"));
+        fields.Add(new Field(6*w/8, "Country", "Sweden"));
+        fields.Add(new Field(   0f, "Contact", "Anna Lindqvist"));
+        fields.Add(new Field(3*w/8, "Email", "anna.lindqvist@example.com"));
+        fields.Add(new Field(   0f, "Contents", "Two calibrated pressure sensors"));
+        fields.Add(new Field(5*w/8, "Weight", "3.2 kg"));
+        fields.Add(new Field(6*w/8, "Declared Value", "CAD 1,450.00"));
+        fields.Add(new Field(   0f, "Instructions",
+                "Keep upright and away from magnets. Deliver on a weekday"));
+        fields.Add(new Field(   0f, "", "between 9:00 and 17:00, to the reception on the third floor."));
+
+        xy = new Form(fields)
+                .SetLabelFont(f1)
+                .SetLabelFontSize(8f)
+                .SetLabelColor(Color.dimgray)
+                .SetValueFont(f2)
+                .SetValueFontSize(10f)
+                .SetValueColor(Color.black)
+                .SetLocation(56f, xy[1] + 20f)
+                .SetWidth(w)
+                .SetStrokeWidth(0.5f)
+                .DrawOn(page);
+
+        text = new TextLine(f1, "The recipient signs for the package on delivery.");
+        text.SetFontSize(10f);
+        text.SetTextColor(Color.dimgray);
+        text.SetLocation(56f, xy[1] + 20f);
+        text.DrawOn(page);
 
         pdf.Complete();
     }

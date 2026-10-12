@@ -9,7 +9,7 @@ import Foundation
 ///
 /// Used to create line objects.
 ///
-/// Please see Example_23 and Example_46.
+/// Please see Example_08 and Example_35.
 ///
 public class Line : Drawable {
     private var x1: Float = 0.0

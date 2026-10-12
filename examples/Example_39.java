@@ -7,93 +7,114 @@
 package examples;
 
 import java.io.*;
+import java.util.*;
 import com.pdfjet.*;
 import com.pdfjet.fonts.*;
 
 /**
  * Example_39.java
  *
- * Draws a horizontal bar chart of the ten longest rivers, each bar in its own
- * color with its length written inside it, under a title and a subtitle, and
- * a color key and a source note under the chart.
+ * Draws the pages of a document first and finishes them last. The two map
+ * pages are drawn first and the contents page last, and the three are added
+ * to the PDF in reading order, the contents first. They are made detached,
+ * outside the PDF, so a "Page X of N" footer is drawn on each once the
+ * number of pages is known.
  */
 final public class Example_39 {
     public Example_39() throws Exception {
         PDF pdf = new PDF(
-                new BufferedOutputStream(new FileOutputStream("Example_39.pdf")));
+                new BufferedOutputStream(
+                        new FileOutputStream("Example_39.pdf")));
         pdf.setCompliance(Compliance.PDF_UA_1);
-        pdf.setTitle("10 Longest Rivers in the World");
+        pdf.setTitle("Maps");
 
-        Font f1 = new Font(pdf, IBMPlexSans.Bold);
-        f1.setSize(15f);
+        Font f1 = new Font(pdf, IBMPlexSans.Regular);
+        Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
 
-        Font f2 = new Font(pdf, IBMPlexSans.Regular);
-        f2.setSize(9f);
+        String[] titles = {"Europe", "Spain"};
+        String[] files = {"images/ee-map.png", "images/spain-admin.jpg"};
+        String[] descriptions = {
+                "A map of Europe in which the member states of the European Union are shaded, and Turkey, a candidate to join when the map was made, in another shade.",
+                "A map of the 17 autonomous communities of Spain and its two autonomous cities, Ceuta and Melilla, with their capitals.",
+        };
 
-        Font f3 = new Font(pdf, IBMPlexSans.Bold);
-        f3.setSize(9f);
+        // 1. Draw the map pages. They are detached, so they are not in the PDF yet.
+        Page[] mapPages = new Page[titles.length];
+        for (int i = 0; i < titles.length; i++) {
+            Page page = new Page(pdf, A4.PORTRAIT, Page.DETACHED);
 
-        Font f4 = new Font(pdf, IBMPlexSans.Regular);
-        f4.setSize(8f);
+            TextLine title = new TextLine(f2, titles[i]);
+            title.setFontSize(24f);
+            title.setLocation(50f, 80f);
+            title.drawOn(page);
 
-        Page page = new Page(pdf, Letter.PORTRAIT);
+            // Scale the image to the width of the page between the margins.
+            Image image = new Image(pdf, files[i]);
+            image.setAltDescription(descriptions[i]);
+            image.scaleBy((page.getWidth() - 100f) / image.getWidth());
+            image.setLocation(50f, 100f);
+            image.drawOn(page);
 
-        // The heading of the page, above the chart
-        new TextLine(f1, "Rivers of the World")
-                .setStructureType(StructElem.H1)
-                .setFontSize(18f)
-                .setLocation(36f, 40f)
-                .drawOn(page);
-
-        String[] rivers = {
-                "Nile", "Amazon", "Yangtze", "Mississippi-Missouri", "Yenisey-Baikal-Selenga",
-                "Huang He (Yellow)", "Ob-Irtysh", "Paraná", "Congo", "Amur"};
-        float[] lengths = {6650f, 6400f, 6300f, 5971f, 5540f, 5464f, 5410f, 4880f, 4700f, 4444f};
-        int[] colors = {
-                0x477aa8, 0x5f7e5f, 0x8b6f47, 0x8e7152, 0x517aa0,
-                0x967110, 0x687b68, 0x8e7155, 0x5c5c5c, 0x897154};
-
-        BarChart chart = new BarChart(f1, f2);
-        chart.setLocation(36f, 70f);
-        chart.setSize(540f, 400f);
-        chart.setTitle("10 Longest Rivers in the World");
-        chart.setSubtitle("Length in kilometers · Color reflects typical sediment / pollution character");
-        chart.setCategories(rivers);
-        chart.addSeries("", lengths, colors);
-        chart.setHorizontal(true);
-        chart.setGroupGap(0.4f);
-        chart.setValueAxisMinMax(0f, 8000f, 4);
-        chart.setGridLineWidth(0.75f);
-        chart.setGridLineColor(0xe0e0e0);
-        chart.setGridLineDashPattern("[] 0");
-        chart.setAxisLineWidth(0f);
-        chart.setDrawValueLabels(true);
-        chart.setValueLabelsInside(true);
-        chart.setGroupingUsed(true);
-        chart.setAltDescription(
-                "The ten longest rivers in the world, in kilometers: Nile 6,650, Amazon 6,400, Yangtze 6,300, Mississippi-Missouri 5,971, Yenisey-Baikal-Selenga 5,540, Huang He (Yellow) 5,464, Ob-Irtysh 5,410, Paraná 4,880, Congo 4,700, Amur 4,444.");
-        chart.drawOn(page);
-
-        // The color key under the chart
-        int gray = 0x444444;
-        new TextLine(f3, "Color key (illustrative):")
-                .setTextColor(gray).setLocation(171f, 496f).drawOn(page);
-        int[] keyColors = {0x477aa8, 0x5f7e5f, 0x8e7155, 0x967110, 0x5c5c5c};
-        String[] keyTexts = {
-                "Clear / low sediment", "Sediment-rich, relatively clean", "Polluted / industrial & agricultural",
-                "Heavy natural sediment (loess)", "Natural dark tannin stain (Congo)"};
-        float[] keyX = {171f, 262f, 398f, 171f, 313f};
-        float[] keyY = {512f, 512f, 512f, 527f, 527f};
-        for (int i = 0; i < keyColors.length; i++) {
-            // The swatches are rectangles, drawn as artifacts next to their text.
-            new Rect(keyX[i], keyY[i] - 8.5f, 10.5f, 10.5f).setFillColor(keyColors[i]).drawOn(page);
-            new TextLine(f4, keyTexts[i])
-                    .setTextColor(gray).setLocation(keyX[i] + 15f, keyY[i]).drawOn(page);
+            mapPages[i] = page;
         }
 
-        String note = "Color mapping is illustrative; lengths and conditions vary by source and season.";
-        new TextLine(f4, note)
-                .setTextColor(0x696969).setLocation(576f - f4.stringWidth(note), 550f).drawOn(page);
+        // 2. Draw the contents page last, now that the map pages are ready.
+        Page contents = new Page(pdf, A4.PORTRAIT, Page.DETACHED);
+
+        TextLine text = new TextLine(f2, "Maps");
+        text.setStructureType(StructElem.H1);
+        text.setFontSize(24f);
+        text.setLocation(50f, 80f);
+        text.drawOn(contents);
+
+        float y = 130f;
+        for (int i = 0; i < titles.length; i++) {
+            text = new TextLine(f1, titles[i] + " . . . . . . . . . . page " + (i + 2));
+            text.setFontSize(14f);
+            text.setLocation(50f, y);
+            text.drawOn(contents);
+            y += 25f;
+        }
+
+        TextBlock textBlock = new TextBlock(f1,
+                "This page was drawn after the two map pages, but it is the first page "
+                + "of the document: the pages were made detached and are added to the PDF "
+                + "in reading order. The footer \"Page X of N\" is drawn on each page last, "
+                + "when the number of pages is known.");
+        textBlock.setFontSize(12f);
+        textBlock.setLineSpacing(1.5f);
+        textBlock.setTextColor(Color.dimgray);
+        textBlock.setLocation(50f, y + 20f);
+        textBlock.setWidth(contents.getWidth() - 100f);
+        textBlock.drawOn(contents);
+
+        // 3. The pages in reading order, and a footer on each, now that their
+        // number is known.
+        List<Page> pages = new ArrayList<Page>();
+        pages.add(contents);
+        pages.addAll(Arrays.asList(mapPages));
+        float fontSize = 10f;
+        for (int i = 0; i < pages.size(); i++) {
+            Page page = pages.get(i);
+
+            Line line = new Line(70f, page.getHeight() - 60f,
+                    page.getWidth() - 70f, page.getHeight() - 60f);
+            line.setStrokeColor(Color.lightgray);
+            line.drawOn(page);
+
+            // A page number is an artifact: a screen reader skips it.
+            String footer = "Page " + (i + 1) + " of " + pages.size();
+            page.addArtifactBMC();
+            page.setBrushColor(Color.black);
+            page.drawString(
+                    f1,
+                    fontSize,
+                    footer,
+                    (page.getWidth() - f1.stringWidth(fontSize, footer))/2f,
+                    page.getHeight() - 40f);
+            page.addEMC();
+        }
+        pdf.addPages(pages);
 
         pdf.complete();
     }

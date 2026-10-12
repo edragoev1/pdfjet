@@ -9,7 +9,7 @@ import Foundation
 ///
 /// Used to create table objects and draw them on a page.
 ///
-/// Please see Example_08.
+/// Please see Example_20.
 ///
 public class Table : Drawable {
     private var tableData: [[Cell]]

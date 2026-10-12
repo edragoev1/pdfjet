@@ -235,7 +235,7 @@ MAX_CONTRAST_PAGES = 5
 # Colors of text that may contrast less, by example, with the reason: WCAG
 # asks no contrast of text that is decoration.
 CONTRAST_EXCEPTIONS = {
-    ('Example_07.pdf', '#d4d4d4'): 'the DRAFT watermark, which is decoration',
+    ('Example_45.pdf', '#d4d4d4'): 'the DRAFT watermark, which is decoration',
 }
 
 

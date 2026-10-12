@@ -9,118 +9,87 @@ using System.IO;
 using System.Diagnostics;
 using PDFjet.NET;
 
-/**
- * Example_06.cs
- * This example attaches two files to a page, and adds a note, a link and
- * polygon, square and circle annotations next to labels that describe them.
- */
+/// <summary>
+/// Embedded fonts: the same words in five weights of IBM Plex Sans, in a
+/// PDF/UA document.
+/// </summary>
+/// <remarks>
+/// An embedded font travels with the document, so the text looks the same in
+/// every viewer, every character of the font can be drawn, and the document can
+/// be PDF/UA and PDF/A. The fourteen core fonts, Helvetica, Times and Courier,
+/// are in every viewer and make the smallest documents, but they draw only the
+/// WinAnsi characters, and PDF/UA and PDF/A do not allow them.
+/// </remarks>
 public class Example_06 {
+    private const String SAMPLE = "Embedded fonts look the same in every viewer.";
+
+    private const int BACKGROUND = 0xf1f4f8;
+
     public Example_06() {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_06.pdf", FileMode.Create)));
         pdf.SetCompliance(Compliance.PDF_UA_1);
-        pdf.SetTitle("Attachments and Annotations");
+        pdf.SetTitle("Embedded Fonts");
 
-        Font f1 = new Font(pdf, IBMPlexSans.Regular);
-        f1.SetSize(12f);
-
-        Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
-        f2.SetSize(14f);
-
-        EmbeddedFile file1 = new EmbeddedFile(pdf, "images/linux-logo.png", false);
-        EmbeddedFile file2 = new EmbeddedFile(pdf, "examples/Example_02/Example_02.cs", true);
+        Font regular = new Font(pdf, IBMPlexSans.Regular);
+        regular.SetSize(11f);
+        Font bold = new Font(pdf, IBMPlexSans.Bold);
+        bold.SetSize(24f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        TextLine text = new TextLine(f2, "Attachments and annotations");
-        text.SetStructureType(StructElem.H1);
-        text.SetFontSize(22f);
-        text.SetLocation(70f, 80f);
-        text.DrawOn(page);
+        TextLine title = new TextLine(bold, "Embedded Fonts");
+        title.SetStructureType(StructElem.H1);
+        title.SetLocation(50f, 70f);
+        title.DrawOn(page);
 
-        text = new TextLine(f1,
-                "Open this page in a PDF viewer that shows annotations, and hover over the icons.");
-        text.SetTextColor(Color.dimgray);
-        text.SetLocation(70f, 105f);
-        text.DrawOn(page);
+        TextBlock about = new TextBlock(regular,
+                "An embedded font travels with the document: the PDF carries the font program, "
+                + "so the text looks the same in every viewer, every character of the font can be "
+                + "drawn, and the document can be PDF/UA and PDF/A. PDFjet comes with the IBM Plex "
+                + "fonts, Sans, Serif and Mono, with Arabic, Hebrew, Thai, Japanese, Korean and "
+                + "Chinese, in their weights.\n\n"
+                + "The fourteen core fonts, Helvetica, Times and Courier with their bold and italic, "
+                + "Symbol and ZapfDingbats, are in every viewer, so the document carries no font "
+                + "program and is the smallest it can be. But they draw only the characters of "
+                + "Windows Latin 1, the viewer draws them with its own version of the font, and "
+                + "PDF/UA and PDF/A do not allow them. The boxes below are the same words in five "
+                + "weights of IBM Plex Sans.");
+        about.SetLineSpacing(1.4f);
+        about.SetLocation(50f, 90f);
+        about.SetWidth(512f);
+        float y = about.DrawOn(page)[1] + 30f;
 
-        // File attachments. The files are stored inside the PDF.
-        new TextLine(f2, "Attached files").SetStructureType(StructElem.H2).SetLocation(70f, 160f).DrawOn(page);
-
-        FileAttachment attachment = new FileAttachment(file1);
-        attachment.SetLocation(70f, 175f);
-        attachment.SetIconPushPin();
-        attachment.SetTitle("Attached File: " + file1.GetFileName());
-        attachment.SetContents(
-                "Right mouse click on the icon to save the attached file.");
-        attachment.DrawOn(page);
-        new TextLine(f1, "linux-logo.png, an image, with a push pin icon")
-                .SetLocation(105f, 192f).DrawOn(page);
-
-        attachment = new FileAttachment(file2);
-        attachment.SetLocation(70f, 210f);
-        attachment.SetIconPaperclip();
-        attachment.SetTitle("Attached File: " + file2.GetFileName());
-        attachment.SetContents(
-                "Right mouse click on the icon to save the attached file.");
-        attachment.DrawOn(page);
-        new TextLine(f1, "The source code of Example_02, with a paperclip icon")
-                .SetLocation(105f, 227f).DrawOn(page);
-
-        // A note, and a link.
-        new TextLine(f2, "A note and a link").SetStructureType(StructElem.H2).SetLocation(70f, 290f).DrawOn(page);
-
-        TextAnnotation textAnnotation = new TextAnnotation();
-        textAnnotation.SetLocation(70f, 305f);
-        textAnnotation.SetSize(24f, 24f);
-        textAnnotation.SetTitle("Reviewer");
-        textAnnotation.SetContents("Please check the figures on page 2.");
-        textAnnotation.DrawOn(page);
-        new TextLine(f1, "A text annotation: click the note icon to read it")
-                .SetLocation(105f, 322f).DrawOn(page);
-
-        text = new TextLine(f1, "Visit https://pdfjet.com");
-        text.SetTextColor(Color.blue);
-        text.SetUnderline(true);
-        text.SetURIAction("https://pdfjet.com");
-        text.SetLocation(105f, 357f);
-        text.DrawOn(page);
-
-        // Shape annotations, drawn half transparent over the page.
-        new TextLine(f2, "Shape annotations").SetLocation(70f, 420f).DrawOn(page);
-
-        PolygonAnnotation polygonAnnotation = new PolygonAnnotation();
-        polygonAnnotation.SetLocation(70f, 440f);
-        polygonAnnotation.SetVertices(new float[] {0f, 60f, 30f, 0f, 60f, 60f, 0f, 60f});
-        polygonAnnotation.SetFillColor(Color.red);
-        polygonAnnotation.SetOpacity(0.5f);
-        polygonAnnotation.SetTitle("Polygon");
-        polygonAnnotation.SetContents("Polygon Annotation");
-        polygonAnnotation.DrawOn(page);
-
-        SquareAnnotation squareAnnotation = new SquareAnnotation();
-        squareAnnotation.SetLocation(170f, 440f);
-        squareAnnotation.SetSize(60f, 60f);
-        squareAnnotation.SetFillColor(new float[] {0f, 0.5f, 0f});
-        squareAnnotation.SetOpacity(0.5f);
-        squareAnnotation.SetTitle("Square");
-        squareAnnotation.SetContents("Square Annotation");
-        squareAnnotation.DrawOn(page);
-
-        CircleAnnotation circleAnnotation = new CircleAnnotation();
-        circleAnnotation.SetLocation(270f, 440f);
-        circleAnnotation.SetSize(60f, 60f);
-        circleAnnotation.SetFillColor(new float[] {0f, 0f, 1f});
-        circleAnnotation.SetOpacity(0.5f);
-        circleAnnotation.SetTitle("Circle");
-        circleAnnotation.SetContents("Circle Annotation");
-        circleAnnotation.DrawOn(page);
-
-        new TextLine(f1, "Polygon").SetLocation(78f, 520f).DrawOn(page);
-        new TextLine(f1, "Square").SetLocation(180f, 520f).DrawOn(page);
-        new TextLine(f1, "Circle").SetLocation(283f, 520f).DrawOn(page);
+        String[] names = {"Light", "Regular", "Medium", "SemiBold", "Bold"};
+        String[] weights = {
+            IBMPlexSans.Light,
+            IBMPlexSans.Regular,
+            IBMPlexSans.Medium,
+            IBMPlexSans.SemiBold,
+            IBMPlexSans.Bold,
+        };
+        for (int i = 0; i < weights.Length; i++) {
+            Font font = new Font(pdf, weights[i]);
+            font.SetSize(20f);
+            y = DrawSample(page, regular, font, "IBM Plex Sans " + names[i], y) + 22f;
+        }
 
         pdf.Complete();
+    }
+
+    private static float DrawSample(Page page, Font labelFont, Font font, String label, float y) {
+        TextLine caption = new TextLine(labelFont, label);
+        caption.SetTextColor(Color.dimgray);
+        caption.SetLocation(50f, y);
+        caption.DrawOn(page);
+
+        TextBlock block = new TextBlock(font, SAMPLE);
+        block.SetBackgroundColor(BACKGROUND);
+        block.SetPadding(10f);
+        block.SetLineSpacing(1.2f);
+        block.SetLocation(50f, y + 8f);
+        block.SetWidth(512f);
+        return block.DrawOn(page)[1];
     }
 
     public static void Main(String[] args) {
@@ -128,7 +97,6 @@ public class Example_06 {
         long time0 = sw.ElapsedMilliseconds;
         new Example_06();
         long time1 = sw.ElapsedMilliseconds;
-        sw.Stop();
         Console.WriteLine($"Example_06 => {time1 - time0,4} ms");
     }
 }   // End of Example_06.cs

@@ -7,131 +7,74 @@
 package examples;
 
 import java.io.*;
+import java.util.*;
 import com.pdfjet.*;
 import com.pdfjet.fonts.*;
 
 /**
  * Example_22.java
- * This example links a contents page to three chapters, and each chapter
- * back to the contents, with destinations and "Go To" actions.
+ * This example draws a table whose cells hold text columns: each paragraph of
+ * English and Greek text wraps inside its cell, and the cell grows to fit it.
  */
 public class Example_22 {
     public Example_22() throws Exception {
         PDF pdf = new PDF(
-            new BufferedOutputStream(new FileOutputStream("Example_22.pdf")));
+                new BufferedOutputStream(new FileOutputStream("Example_22.pdf")));
         pdf.setCompliance(Compliance.PDF_UA_1);
-        pdf.setTitle("Internal links and destinations");
+        pdf.setTitle("Text Columns in Table Cells");
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
+        f1.setSize(10f);
+
         Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
+        f2.setSize(10f);
 
-        String[] chapters = {
-            "Destinations",
-            "Go To actions",
-            "Links on shapes and images",
-        };
-        String[] texts = {
-            "A destination is a named place in a document. The title of this chapter "
-                + "is the destination \"chapter1\", set with setDestination.",
-            "A Go To action makes something a link to a destination. The chapter titles "
-                + "on the contents page are text lines with a Go To action.",
-            "Rectangles and images can be links too. Click the arrow in the top left "
-                + "corner, or the arrow image next to it, to go back to the contents.",
-        };
-
-        // The contents page. The destination is the top of the page.
         Page page = new Page(pdf, Letter.PORTRAIT);
-        page.addDestination("contents", 0f, 0f);
 
-        TextLine text = new TextLine(f2, "Contents");
+        TextLine text = new TextLine(f2, "Text Columns in Table Cells");
         text.setStructureType(StructElem.H1);
-        text.setFontSize(24f);
-        text.setLocation(90f, 100f);
+        text.setFontSize(22f);
+        text.setLocation(50f, 70f);
         text.drawOn(page);
 
-        // The contents are a list: each item is the number of its chapter,
-        // which labels the item, and the title of the chapter, which is the
-        // body of the item and the link to it. A reader reads them as the
-        // items of a list and not as lines of text that follow one another.
-        float y = 150f;
-        page.beginStructElement(StructElem.L);
-        for (int i = 0; i < chapters.length; i++) {
-            page.beginStructElement(StructElem.LI);
-            String label = "Chapter " + (i + 1) + ":";
-            text = new TextLine(f1, label);
-            text.setStructureType(StructElem.LBL);
-            text.setFontSize(14f);
-            text.setLocation(90f, y);
-            text.drawOn(page);
+        String[] languages = {"English", "Greek"};
+        String[] files = {"data/languages/english.txt", "data/languages/greek.txt"};
 
-            // The title, its underline and its link are the body of the item,
-            // which is what an LI may hold beside its label.
-            page.beginStructElement(StructElem.LBODY);
-            text = new TextLine(f1, chapters[i]);
-            text.setFontSize(14f);
-            text.setTextColor(Color.blue);
-            text.setUnderline(true);
-            text.setGoToAction("chapter" + (i + 1));
-            text.setLocation(90f + f1.stringWidth(14f, label + " "), y);
-            text.drawOn(page);
-            page.endStructElement();
-            page.endStructElement();
-            y += 30f;
-        }
-        page.endStructElement();
+        List<List<Cell>> tableData = new ArrayList<List<Cell>>();
 
-        for (int i = 0; i < chapters.length; i++) {
-            page = new Page(pdf, Letter.PORTRAIT);
+        List<Cell> row = new ArrayList<Cell>();
+        row.add(new Cell(f2, "Language"));
+        row.add(new Cell(f2, "Text"));
+        tableData.add(row);
 
-            // The title of the chapter is its destination.
-            text = new TextLine(f2, "Chapter " + (i + 1) + ": " + chapters[i]);
-            text.setFontSize(20f);
-            text.setDestination("chapter" + (i + 1));
-            text.setLocation(90f, 100f);
-            text.drawOn(page);
+        for (int i = 0; i < languages.length; i++) {
+            // Each line of the file after the first two is a paragraph.
+            List<String> lines = Content.linesOfTextFile(files[i]);
+            TextColumn column = new TextColumn();
+            column.setWidth(400f);
+            for (int j = 2; j < lines.size(); j++) {
+                Paragraph paragraph = new Paragraph();
+                TextLine line = new TextLine(f1, lines.get(j));
+                if (languages[i].equals("Greek")) {
+                    line.setLanguage("el");     // Read by a screen reader as Greek
+                }
+                paragraph.add(line);
+                column.addParagraph(paragraph);
+            }
 
-            TextBlock textBlock = new TextBlock(f1, texts[i]);
-            textBlock.setFontSize(12f);
-            textBlock.setLineSpacing(1.5f);
-            textBlock.setLocation(90f, 125f);
-            textBlock.setWidth(430f);
-            textBlock.drawOn(page);
-
-            text = new TextLine(f1, "Back to the contents");
-            text.setFontSize(12f);
-            text.setTextColor(Color.blue);
-            text.setUnderline(true);
-            text.setGoToAction("contents");
-            text.setLocation(90f, 250f);
-            text.drawOn(page);
+            row = new ArrayList<Cell>();
+            row.add(new Cell(f1, languages[i]));
+            row.add(new Cell(f1, ""));
+            row.get(1).setTextColumn(column);
+            tableData.add(row);
         }
 
-        // On the last page, a rect with no border links to the contents too.
-        Rect rect = new Rect(20f, 20f, 20f, 20f);
-        rect.setGoToAction("contents");
-        rect.drawOn(page);
-
-        // Create an up arrow and place it in the rect
-        Path path = new Path();
-        path.add(new Point(30f, 21f));
-        path.add(new Point(37f, 29f));
-        path.add(new Point(33f, 29f));
-        path.add(new Point(33f, 39f));
-        path.add(new Point(27f, 39f));
-        path.add(new Point(27f, 29f));
-        path.add(new Point(23f, 29f));
-        path.setClosed(true);
-        path.setStrokeColor(Color.deepskyblue);
-        path.setFillShape(true);
-        path.drawOn(page);
-
-        // And so does an image of an arrow.
-        Image image = new Image(pdf, "images/up-arrow.png");
-        image.setAltDescription(
-                "An arrow pointing up, which goes back to the contents of the document when it is clicked.");
-        image.setLocation(50f, 20f);
-        image.setGoToAction("contents");
-        image.drawOn(page);
+        Table table = new Table();
+        table.setTableData(tableData, 1);
+        table.setColumnWidth(0, 90f);
+        table.setColumnWidth(1, 420f);
+        table.setLocation(50f, 100f);
+        table.drawOn(page);
 
         pdf.complete();
     }

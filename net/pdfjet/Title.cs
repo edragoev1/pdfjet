@@ -8,7 +8,7 @@ using System;
 
 namespace PDFjet.NET {
 /// <summary>
-/// Please see Example_48
+/// Please see Example_41
 /// </summary>
 public class Title : IDrawable {
     internal TextLine prefix = null;

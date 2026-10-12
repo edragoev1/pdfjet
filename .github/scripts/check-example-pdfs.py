@@ -40,7 +40,7 @@ from concurrent.futures import ProcessPoolExecutor
 import pymupdf
 
 PORTS = ['java', 'dotnet', 'go', 'swift']
-EXAMPLES = range(1, 59)
+EXAMPLES = range(1, 51)
 MAX_PAGES = 10
 RESOLUTION = 50
 EXAMPLES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'examples')
@@ -105,7 +105,7 @@ def render(path, password):
                     for span in line['spans']:
                         spans.append((i + 1, span['text'], span['font'], round(span['size'], 2),
                                       span['color'], tuple(round(v, 2) for v in span['bbox'])))
-        # Only hashes are kept, because Example_43 has thousands of pages.
+        # Only hashes are kept, because Example_24 has thousands of pages.
         content = [hashlib.sha256(b' '.join(doc[i].read_contents().split())).digest()
                    for i in range(doc.page_count)]
         return doc.page_count, pages, spans, content

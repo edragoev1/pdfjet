@@ -16,7 +16,7 @@ namespace PDFjet.NET {
 /// The text of an ITF-14 barcode is the 13 digits of a GTIN without its check
 /// digit, which is added, as for UPC-A and EAN-13.
 ///
-/// Please see Example_11.
+/// Please see Example_36.
 /// </summary>
 public class Barcode : IDrawable {
     /// <summary>

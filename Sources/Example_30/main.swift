@@ -9,52 +9,125 @@ import PDFjet
 
 /**
  * Example_30.swift
+ * This example draws with transparency. A GraphicsState sets the alpha of the
+ * fills and of the strokes: opaque shapes hide what is under them, transparent
+ * ones mix with it, and the stroke of a shape can be more or less transparent
+ * than its fill.
  */
 public class Example_30 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_30.pdf", append: false)!)
-        // pdf.setCompliance(Compliance.PDF_UA_1)
-
-        let passwords = Passwords()
-        passwords.setUserPassword("hello")
-        passwords.setOwnerPassword("world")
-
-        let permissions = Permissions()
-        permissions.grant(
-            UserAccess.PRINT |               // Set both to allow the user to print
-            UserAccess.PRINT_HIGH_QUALITY |  // this document with high quality
-            // UserAccess.MODIFY_CONTENTS |
-            // UserAccess.COPY_CONTENTS |
-            UserAccess.ASSEMBLE_DOCUMENT)
-
-        pdf.setEncryption(Encryption(pdf, passwords, permissions))
+        pdf.setCompliance(Compliance.PDF_UA_1)
+        pdf.setTitle("Transparency")
 
         let f1 = try Font(pdf, IBMPlexSans.Regular)
-        f1.setSize(36.0)
-
-        let image = try Image(pdf, "images/ee-map.png")
-
-        let file1 = try EmbeddedFile(pdf, "images/linux-logo.png", false)
+        let f2 = try Font(pdf, IBMPlexSans.SemiBold)
 
         let page = Page(pdf, Letter.PORTRAIT)
 
-        let textLine = TextLine(f1, "Hello, World!")
-        textLine.setLocation(100.0, 100.0)
-        textLine.drawOn(page)
+        var text = TextLine(f2, "Transparency")
+        text.setStructureType(StructElem.H1)
+        text.setFontSize(22.0)
+        text.setLocation(50.0, 80.0)
+        text.drawOn(page)
 
-        image.setLocation(100.0, 150.0)
-        image.scaleBy(0.5)
-        image.drawOn(page)
+        let textBlock = TextBlock(f1,
+                "A GraphicsState sets the alpha of the fills and of the strokes that "
+                + "follow it, until the graphics state is restored. Opaque shapes hide "
+                + "what is under them, transparent ones mix with it, and the stroke of "
+                + "a shape can be more or less transparent than its fill.")
+        textBlock.setFontSize(12.0)
+        textBlock.setLineSpacing(1.5)
+        textBlock.setLocation(50.0, 95.0)
+        textBlock.setWidth(512.0)
+        let xy = textBlock.drawOn(page)
 
-        // File attachment functionality
-        let attachment = FileAttachment(file1)
-        attachment.setLocation(100.0, 550.0)
-        attachment.setIconPushPin()
-        attachment.setIconSize(24.0)
-        attachment.setTitle("Attached File: " + file1.getFileName())
-        attachment.setContents(
-                "Right mouse click on the icon to save the attached file.")
-        attachment.drawOn(page)
+        var y: Float = xy[1] + 30.0
+        let colors = [Color.blue, Color.green, Color.red]
+
+        // Opaque rectangles: each one hides the one under it.
+        TextLine(f2, "Opaque").setLocation(50.0, y).drawOn(page)
+        page.addArtifactBMC()  // The shapes carry no text, so they are artifacts.
+        for i in 0..<colors.count {
+            page.setBrushColor(colors[i])
+            page.fillRect(50.0 + Float(i) * 60.0, y + 15.0 + Float(i) * 30.0, 120.0, 120.0)
+        }
+        page.addEMC()
+
+        // Half transparent rectangles: the colors mix where they overlap.
+        TextLine(f2, "50% transparent").setLocation(320.0, y).drawOn(page)
+        page.addArtifactBMC()
+        page.saveGraphicsState()
+        var gs = GraphicsState()
+        gs.setAlphaStroking(0.5)    // The stroking alpha constant
+        gs.setAlphaNonStroking(0.5) // The non-stroking alpha constant
+        page.setGraphicsState(gs)
+        for i in 0..<colors.count {
+            page.setBrushColor(colors[i])
+            page.fillRect(320.0 + Float(i) * 60.0, y + 15.0 + Float(i) * 30.0, 120.0, 120.0)
+        }
+        page.restoreGraphicsState()
+        page.addEMC()
+
+        // The same blue over a gray bar at four levels of alpha.
+        y += 245.0
+        TextLine(f2, "Fill alpha").setLocation(50.0, y).drawOn(page)
+        page.addArtifactBMC()
+        page.setBrushColor(Color.gray)
+        page.fillRect(50.0, y + 55.0, 506.0, 30.0)
+        page.addEMC()
+        let alphas: [Float] = [0.25, 0.5, 0.75, 1.0]
+        for i in 0..<alphas.count {
+            let x: Float = 50.0 + Float(i) * 132.0
+            page.addArtifactBMC()
+            page.saveGraphicsState()
+            gs = GraphicsState()
+            gs.setAlphaNonStroking(alphas[i])
+            page.setGraphicsState(gs)
+            page.setBrushColor(Color.blue)
+            page.fillRect(x, y + 15.0, 110.0, 110.0)
+            page.restoreGraphicsState()
+            page.addEMC()
+
+            text = TextLine(f1, "\(Int((alphas[i] * 100.0).rounded()))%")
+            text.setFontSize(10.0)
+            text.setTextColor(Color.dimgray)
+            text.setLocation(x, y + 140.0)
+            text.drawOn(page)
+        }
+
+        // A thick stroke and a fill, each transparent on its own: the stroke
+        // shows the fill through it, then the fill shows the stroke.
+        y += 175.0
+        TextLine(f2, "Stroke alpha and fill alpha").setLocation(50.0, y).drawOn(page)
+        let labels = [
+            "Stroke 25%, fill 100%",
+            "Stroke 100%, fill 25%",
+            "Stroke 50%, fill 50%",
+        ]
+        let strokeAndFill: [[Float]] = [[0.25, 1.0], [1.0, 0.25], [0.5, 0.5]]
+        for i in 0..<labels.count {
+            let x: Float = 100.0 + Float(i) * 180.0
+            page.addArtifactBMC()
+            page.saveGraphicsState()
+            gs = GraphicsState()
+            gs.setAlphaStroking(strokeAndFill[i][0])
+            gs.setAlphaNonStroking(strokeAndFill[i][1])
+            page.setGraphicsState(gs)
+            page.setBrushColor(Color.red)
+            page.fillCircle(x, y + 65.0, 40.0)
+            page.setPenColor(Color.blue)
+            page.setPenWidth(16.0)
+            page.drawCircle(x, y + 65.0, 40.0)
+            page.restoreGraphicsState()
+            page.addEMC()
+
+            text = TextLine(f1, labels[i])
+            text.setFontSize(10.0)
+            text.setTextColor(Color.dimgray)
+            text.setLocation(x - text.getWidth() / 2.0, y + 130.0)
+            text.drawOn(page)
+        }
 
         try pdf.complete()
     }

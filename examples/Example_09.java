@@ -7,232 +7,136 @@
 package examples;
 
 import java.io.*;
-import java.util.*;
 import com.pdfjet.*;
 import com.pdfjet.fonts.*;
 
 /**
  * Example_09.java
- *
- * Draws an XY chart of the countries of a data file, each a marker that links
- * to a page about the country, with the trend line of the points, and a table
- * of the countries with a marker of their own.
+ * This example draws chemical formulas with CompositeTextLine: the digits of
+ * a formula are subscripts, the charge of an ion and the mass number of an
+ * isotope are superscripts.
  */
-final public class Example_09 {
-    /** A country of the data file: its name and its point on the chart. */
-    private static final class Country {
-        final String name;
-        final Point point;
-        Country(String name, Point point) {
-            this.name = name;
-            this.point = point;
-        }
-    }
+public class Example_09 {
+    // The sections of the page: the formulas as CompositeTextLine.addFormula
+    // reads them, and what each one is called.
+    private static final String[][] COMPOUNDS = {
+        {"H2O", "Water"},
+        {"CO2", "Carbon dioxide"},
+        {"NaCl", "Sodium chloride"},
+        {"H2SO4", "Sulfuric acid"},
+        {"NaHCO3", "Sodium bicarbonate"},
+        {"Fe2O3", "Iron(III) oxide"},
+        {"Ca(OH)2", "Calcium hydroxide"},
+        {"CuSO4·5H2O", "Copper(II) sulfate"},
+        {"(NH4)3PO4", "Ammonium phosphate"},
+        {"KAl(SO4)2", "Potassium alum"},
+    };
+
+    private static final String[][] ORGANIC = {
+        {"C6H12O6", "Glucose"},
+        {"CH3COOH", "Acetic acid"},
+        {"C8H10N4O2", "Caffeine"},
+        {"C9H8O4", "Aspirin"},
+        {"C2H5OH", "Ethanol"},
+        {"CH3(CH2)14COOH", "Palmitic acid"},
+    };
+
+    private static final String[][] IONS = {
+        {"Na^+", "Sodium"},
+        {"Ca^2+", "Calcium"},
+        {"NH4^+", "Ammonium"},
+        {"OH^-", "Hydroxide"},
+        {"SO4^2-", "Sulfate"},
+        {"PO4^3-", "Phosphate"},
+    };
+
+    private static final String[][] ISOTOPES = {
+        {"^3H", "Tritium"},
+        {"^14C", "Carbon-14"},
+        {"^235U", "Uranium-235"},
+    };
+
+    private static final String[][] REACTIONS = {
+        {"2H2 + O2 → 2H2O", "Hydrogen burns"},
+        {"N2 + 3H2 → 2NH3", "Ammonia, the Haber process"},
+        {"CaCO3 → CaO + CO2", "Limestone is calcined"},
+        {"CH4 + 2O2 → CO2 + 2H2O", "Methane burns"},
+    };
 
     public Example_09() throws Exception {
         PDF pdf = new PDF(
-                new BufferedOutputStream(new FileOutputStream("Example_09.pdf")));
+            new BufferedOutputStream(new FileOutputStream("Example_09.pdf")));
         pdf.setCompliance(Compliance.PDF_UA_1);
-        pdf.setTitle("World View - Communications");
+        pdf.setTitle("Chemical Formulas");
 
-        Font f1 = new Font(pdf, IBMPlexSans.Bold);
-        f1.setSize(8f);
-
-        Font f2 = new Font(pdf, IBMPlexSans.Regular);
-        f2.setSize(8f);
+        Font f1 = new Font(pdf, IBMPlexSans.Regular);
+        Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        List<Country> countries = readCountries("data/world-communications.txt", "|");
+        TextLine title = new TextLine(f2, "Chemical Formulas");
+        title.setFontSize(18f);
+        title.setStructureType(StructElem.H1);
+        title.setLocation(60f, 70f);
+        title.drawOn(page);
 
-        // The heading of the document, above the chart
-        new TextLine(f1, "Cell Phones and Internet Use by Country")
-                .setStructureType(StructElem.H1)
-                .setFontSize(16f)
-                .setLocation(70f, 36f)
-                .drawOn(page);
+        TextBlock intro = new TextBlock(f1,
+                "A CompositeTextLine draws one line of text out of parts that sit on "
+                + "the baseline, above it or below it. AddFormula reads a formula and "
+                + "places its parts: the digits that follow an element or a bracket are "
+                + "subscripts, and what follows a circumflex is a superscript, the "
+                + "charge of an ion or the mass number of an isotope. Each formula "
+                + "below is one line and, in this tagged document, one structure "
+                + "element, so a screen reader reads the formula and not its parts.");
+        intro.setFontSize(11f);
+        intro.setLineSpacing(1.5f);
+        intro.setLocation(60f, 90f);
+        intro.setWidth(492f);
+        float[] xy = intro.drawOn(page);
 
-        Chart chart = new Chart(f1, f2);
-        chart.setLocation(70f, 50f);
-        chart.setSize(500f, 300f);
-        chart.setTitle("World View - Communications");
-        chart.setXAxisTitle("Cell phones per capita");
-        chart.setYAxisTitle("Internet users % of the population");
-        Series markers = chart.addSeries("").setStrokeColor(Color.gray);
-        for (Country country : countries) {
-            markers.addPoint(country.point);
-        }
-        addTrendLine(chart, countries);
-        chart.drawOn(page);
-
-        f1.setSize(7f);
-        f2.setSize(7f);
-        addTableToChart(page, countries, f1, f2);
+        float y = xy[1] + 26f;
+        y = drawSection(page, f1, f2, "Compounds", COMPOUNDS, 2, 266f, 150f, y);
+        y = drawSection(page, f1, f2, "Organic compounds", ORGANIC, 2, 266f, 150f, y);
+        y = drawSection(page, f1, f2, "Ions", IONS, 3, 170f, 60f, y);
+        y = drawSection(page, f1, f2, "Isotopes", ISOTOPES, 3, 170f, 60f, y);
+        drawSection(page, f1, f2, "Reactions", REACTIONS, 1, 0f, 210f, y);
 
         pdf.complete();
     }
 
-    public void addTrendLine(Chart chart, List<Country> countries) {
-        List<Point> points = new ArrayList<Point>();
-        for (Country country : countries) {
-            points.add(country.point);
+    // Draws the heading of a section and its formulas in the number of
+    // columns, and returns the y where the next section begins.
+    private float drawSection(Page page, Font f1, Font f2, String title,
+            String[][] items, int columns, float columnWidth, float nameOffset, float y)
+            throws Exception {
+        TextLine heading = new TextLine(f2, title);
+        heading.setFontSize(13f);
+        heading.setStructureType(StructElem.H2);
+        heading.setLocation(60f, y);
+        heading.drawOn(page);
+
+        y += 22f;
+        for (int i = 0; i < items.length; i++) {
+            float x = 70f + (i % columns)*columnWidth;
+            drawFormula(page, f1, items[i][0], items[i][1], x, y + (i / columns)*24f, nameOffset);
         }
-        float m = slope(points);
-        float b = intercept(points, m);
-        chart.addSeries("Trend line")
-                .setDrawPath(true)
-                .setStrokeColor(Color.blue)
-                .setShape(Shape.INVISIBLE)
-                .addPoint(0f, b)
-                .addPoint(1.5f, m * 1.5f + b);
+        int rows = (items.length + columns - 1) / columns;
+        return y + rows*24f + 10f;
     }
 
-    public void addTableToChart(
-            Page page, List<Country> countries, Font f1, Font f2) throws Exception {
-        Table table = new Table();
-        List<List<Cell>> tableData = new ArrayList<List<Cell>>();
+    // Draws the formula at the location and its name the offset to the right of it.
+    private void drawFormula(Page page, Font font, String formula, String name,
+            float x, float y, float nameOffset) throws Exception {
+        CompositeTextLine composite = new CompositeTextLine(x, y);
+        composite.setFontSize(14f);
+        composite.addFormula(font, formula);
+        composite.drawOn(page);
 
-        // The header row: the country heads its marker and its name
-        List<Cell> headerRow = new ArrayList<Cell>();
-        Cell header = new Cell(f1, "Country");
-        header.setColSpan(2);
-        headerRow.add(header);
-        headerRow.add(new Cell(f1, ""));
-        headerRow.add(new Cell(f1, "Page about the country"));
-        tableData.add(headerRow);
-
-        for (Country country : countries) {
-            if (country.point.getShape() != Shape.CIRCLE) {
-                List<Cell> tableRow = new ArrayList<Cell>();
-
-                Cell cell = new Cell(f2);
-                cell.setMarker(country.point, Alignment.LEFT);
-                cell.setText("");
-                tableRow.add(cell);
-
-                cell = new Cell(f1);
-                cell.setText(country.name);
-                tableRow.add(cell);
-
-                // The address is a link to it: text that reads as an address and is
-                // not one, PAC reports
-                cell = new Cell(f2);
-                cell.setText(country.point.getURIAction());
-                cell.setURIAction(country.point.getURIAction());
-                tableRow.add(cell);
-
-                tableData.add(tableRow);
-            }
-        }
-        table.setTableData(tableData, 1);
-        table.autoAdjustColumnWidths();
-        table.setCellBorderWidth(0.2f);
-        table.setLocation(70f, 360f);
-        table.setColumnWidth(0, 9f);
-        table.drawOn(page);
-    }
-
-    public List<Country> readCountries(
-            String fileName,
-            String delimiter) throws Exception {
-        List<Country> countries = new ArrayList<Country>();
-        BufferedReader reader = null;
-        try {
-            reader = new BufferedReader(
-                    new InputStreamReader(new FileInputStream(fileName), "UTF-8"));
-            String line = null;
-            while ((line = reader.readLine()) != null) {
-                String[] cols = null;
-                if (delimiter.equals("|")) {
-                    cols = line.split("\\|", -1);
-                } else if (delimiter.equals("\t")) {
-                    cols = line.split("\t", -1);
-                } else {
-                    throw new Exception(
-                        "Only pipes and tabs can be used as delimiters");
-                }
-
-                try {
-                    double population =
-                            Double.valueOf(cols[1].replace(",", ""));
-                    String name = cols[0].trim();
-                    String country_name = name;
-                    country_name = country_name.replace(" ", "_");
-                    country_name = country_name.replace("'", "_");
-                    country_name = country_name.replace(",", "_");
-                    country_name = country_name.replace("(", "_");
-                    country_name = country_name.replace(")", "_");
-                    Point point = new Point(
-                            (float) (Double.valueOf(cols[5].replace(",", "")) / population),
-                            (float) (Double.valueOf(cols[7].replace(",", "")) / population * 100));
-                    point.setURIAction("http://pdfjet.com/country/" + country_name + ".txt");
-                    point.setAltDescription(name); // What the link of the point is, for a screen reader
-                    point.setRadius(2f);
-
-                    if (point.getX() > 1.25f) {
-                        point.setShape(Shape.RIGHT_ARROW);
-                        point.setStrokeColor(Color.black);
-                    } else if (point.getY() > 80f) {
-                        point.setShape(Shape.UP_ARROW);
-                        point.setStrokeColor(Color.blue);
-                    } else if (name.equals("France")) {
-                        point.setShape(Shape.MULTIPLY);
-                        point.setStrokeColor(Color.green);
-                    } else if (name.equals("Canada")) {
-                        point.setShape(Shape.BOX);
-                        point.setStrokeColor(Color.orange);
-                    } else if (name.startsWith("United States")) {
-                        point.setShape(Shape.STAR);
-                        point.setStrokeColor(Color.red);
-                    }
-
-                    countries.add(new Country(name, point));
-                } catch (Exception e) {
-                }
-            }
-        } finally {
-            reader.close();
-        }
-        return countries;
-    }
-
-    // The slope and intercept of the ordinary least squares trend line of the points.
-    private static float slope(List<Point> points) {
-        return covar(points) / devsq(points) * (points.size() - 1);
-    }
-
-    private static float intercept(List<Point> points, float slope) {
-        float[] mean = mean(points);
-        return mean[1] - slope * mean[0];
-    }
-
-    private static float[] mean(List<Point> points) {
-        float[] mean = new float[2];
-        for (Point point : points) {
-            mean[0] += point.getX();
-            mean[1] += point.getY();
-        }
-        mean[0] /= points.size();
-        mean[1] /= points.size();
-        return mean;
-    }
-
-    private static float covar(List<Point> points) {
-        float covariance = 0f;
-        float[] mean = mean(points);
-        for (Point point : points) {
-            covariance += (point.getX() - mean[0]) * (point.getY() - mean[1]);
-        }
-        return covariance / (points.size() - 1);
-    }
-
-    private static float devsq(List<Point> points) {
-        float devsq = 0f;
-        float[] mean = mean(points);
-        for (Point point : points) {
-            devsq = devsq + (float) Math.pow(point.getX() - mean[0], 2);
-        }
-        return devsq;
+        TextLine text = new TextLine(font, name);
+        text.setFontSize(10f);
+        text.setTextColor(Color.dimgray);
+        text.setLocation(x + nameOffset, y);
+        text.drawOn(page);
     }
 
     public static void main(String[] args) throws Exception {

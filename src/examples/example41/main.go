@@ -8,66 +8,120 @@ package main
 import (
 	"fmt"
 	"log"
-	"os"
 	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
+	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
+	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
-// Example41 merges existing PDF documents into one, after a cover page drawn
-// with PDFjet. The pages of each document follow in their order and keep their
-// content, resources, annotations and links. The parts of a document that
-// belong to the whole document, such as its bookmarks, form fields and
-// tagging, are left out.
+// Example41 draws the outline of a short guide to the structure of a PDF
+// file, and adds a bookmark for each of its titles. The numbers of the titles
+// come from their place in the tree of bookmarks.
 func Example41() {
 	pdf, err := pdfjet.NewPDFFile("Example_41.pdf")
 	if err != nil {
 		log.Fatal(err)
 	}
+	pdf.SetCompliance(compliance.PDF_UA_1)
+	pdf.SetTitle("The structure of a PDF file")
 
-	fileNames := []string{
-		"data/testPDFs/scanned-linearized.pdf",
-		"data/testPDFs/rc65-16e.pdf",
-		"data/testPDFs/PDFjetLogo.pdf",
-	}
-	documents := make([][]*pdfjet.PDFobj, 0)
-	for _, fileName := range fileNames {
-		buf, err := os.ReadFile(fileName)
-		if err != nil {
-			log.Fatal(err)
-		}
-		objects, err := pdf.Read(buf)
-		if err != nil {
-			log.Fatal(err)
-		}
-		documents = append(documents, objects)
-	}
+	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
+	f1.SetSize(14.0)
 
-	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold)
-	f1.SetSize(24.0)
-	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
-	f2.SetSize(12.0)
+	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
+	f2.SetSize(20.0)
 
 	page := pdfjet.NewPage(pdf, letter.Portrait())
-	pdfjet.NewTextLine(f1, "Merged documents").SetLocation(50.0, 80.0).DrawOn(page)
-	y := float32(130.0)
-	for i, fileName := range fileNames {
-		pages := len(pdf.GetPageObjects(documents[i]))
-		text := fmt.Sprintf("%s, %d pages", fileName, pages)
-		if pages == 1 {
-			text = fmt.Sprintf("%s, %d page", fileName, pages)
-		}
-		pdfjet.NewTextLine(f2, text).SetLocation(50.0, y).DrawOn(page)
-		y += 20.0
-	}
 
-	for _, objects := range documents {
-		if err := pdf.Merge(objects); err != nil {
-			log.Fatal(err)
-		}
-	}
+	var toc = pdfjet.NewBookmark(pdf)
+	x := float32(70.0)
+	y := float32(80.0)
+	offset := float32(50.0)
+
+	// A bookmark without a number.
+	title := pdfjet.NewTitle(f2, "The structure of a PDF file", x, y)
+	title.GetTextLine().SetStructureType(structelem.H1)
+	toc.AddBookmark(page, title)
+	title.DrawOn(page)
+
+	y += 50.0
+	title = pdfjet.NewTitle(f1, "File header", x, y).SetOffset(offset)
+	toc.AddBookmark(page, title).AutoNumber(title.GetPrefix())
+	title.DrawOn(page)
+
+	y += 30.0
+	title = pdfjet.NewTitle(f1, "File body", x, y).SetOffset(offset)
+	body := toc.AddBookmark(page, title).AutoNumber(title.GetPrefix())
+	title.DrawOn(page)
+
+	// Bookmarks nested in "File body".
+	y += 30.0
+	title = pdfjet.NewTitle(f1, "Objects", x, y).SetOffset(offset)
+	body.AddBookmark(page, title).AutoNumber(title.GetPrefix())
+	title.DrawOn(page)
+
+	y += 30.0
+	title = pdfjet.NewTitle(f1, "Streams", x, y).SetOffset(offset)
+	body.AddBookmark(page, title).AutoNumber(title.GetPrefix())
+	title.DrawOn(page)
+
+	y += 30.0
+	title = pdfjet.NewTitle(f1, "Cross-reference table", x, y).SetOffset(offset)
+	toc.AddBookmark(page, title).AutoNumber(title.GetPrefix())
+	title.DrawOn(page)
+
+	y += 30.0
+	title = pdfjet.NewTitle(f1, "File trailer", x, y).SetOffset(offset)
+	toc.AddBookmark(page, title).AutoNumber(title.GetPrefix())
+	title.DrawOn(page)
+
+	page = pdfjet.NewPage(pdf, letter.Portrait())
+
+	y = 80.0
+	title = pdfjet.NewTitle(f1, "Incremental updates", x, y).SetOffset(offset)
+	bm := toc.AddBookmark(page, title).AutoNumber(title.GetPrefix())
+	title.DrawOn(page)
+
+	y += 30.0
+	title = pdfjet.NewTitle(f1, "New and changed objects", x, y).SetOffset(offset)
+	bm = bm.AddBookmark(page, title).AutoNumber(title.GetPrefix())
+	title.DrawOn(page)
+
+	// Two levels down.
+	y += 30.0
+	title = pdfjet.NewTitle(f1, "Changed objects keep their numbers", x, y).SetOffset(offset)
+	bm.AddBookmark(page, title).AutoNumber(title.GetPrefix())
+	title.DrawOn(page)
+
+	y += 30.0
+	title = pdfjet.NewTitle(f1, "Deleted objects are marked as free", x, y).SetOffset(offset)
+	bm.AddBookmark(page, title).AutoNumber(title.GetPrefix())
+	title.DrawOn(page)
+
+	// Back up one level.
+	y += 30.0
+	bm = bm.GetParent()
+	title = pdfjet.NewTitle(f1, "A new cross-reference section", x, y).SetOffset(offset)
+	bm.AddBookmark(page, title).AutoNumber(title.GetPrefix())
+	title.DrawOn(page)
+
+	y += 30.0
+	title = pdfjet.NewTitle(f1, "A new trailer", x, y).SetOffset(offset)
+	bm.AddBookmark(page, title).AutoNumber(title.GetPrefix())
+	title.DrawOn(page)
+
+	y += 30.0
+	title = pdfjet.NewTitle(f1, "Linearized files", x, y).SetOffset(offset)
+	toc.AddBookmark(page, title).AutoNumber(title.GetPrefix())
+	title.DrawOn(page)
+
+	y += 50.0
+	title = pdfjet.NewTitle(f2, "Summary", x, y)
+	toc.AddBookmark(page, title)
+	title.DrawOn(page)
 
 	if err := pdf.Complete(); err != nil {
 		log.Fatal(err)

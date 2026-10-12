@@ -9,94 +9,72 @@ import PDFjet
 
 /**
  * Example_49.swift
- * This example draws a menu with paragraphs that mix fonts, sizes and colors,
- * currency signs raised with a vertical offset, and a rotated, underlined label.
+ *
+ * Merges and splits existing PDF documents. merge draws a cover page and
+ * merges three documents after it, into Example_49.pdf: the pages of each
+ * follow in their order and keep their content, resources, annotations and
+ * links, and what belongs to a whole document, such as its bookmarks, form
+ * fields and tagging, is left out. split writes one PDF for each page of a
+ * document, Example_49_1.pdf to Example_49_5.pdf, and all of its pages in
+ * reverse order to Example_49_reversed.pdf; a link to a page that is not in
+ * the same PDF leads nowhere.
  */
 public class Example_49 {
     public init() throws {
+        try merge()
+        try split()
+    }
+
+    private func merge() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_49.pdf", append: false)!)
-        pdf.setCompliance(Compliance.PDF_UA_1)
-        pdf.setTitle("Paragraphs with mixed text styles")
 
-        let f1 = try Font(pdf, SourceSerif4.Regular)
-        f1.setSize(14.0)
-
-        let f2 = try Font(pdf, SourceSerif4.Italic)
-        f2.setSize(14.0)
-
-        let f3 = try Font(pdf, SourceSerif4.SemiBold)
-        f3.setSize(14.0)
-
-        let f4 = try Font(pdf, SourceSerif4.SemiBold)
-        f4.setSize(9.0)
-
-        let page = Page(pdf, Letter.PORTRAIT)
-
-        let title = TextLine(f3, "Café Menu")
-        title.setStructureType(StructElem.H1)
-        title.setFontSize(28.0)
-        title.setLocation(70.0, 100.0)
-        title.drawOn(page)
-
-        // Each paragraph mixes a name, an italic description and a price
-        // with a small dollar sign raised by a vertical offset.
-        let names = ["Espresso", "Cappuccino", "Hot chocolate"]
-        let notes = ["rich and intense", "with steamed milk foam", "made with dark cocoa"]
-        let prices = ["3.25", "4.50", "3.95"]
-
-        let column = TextColumn()
-        for i in 0..<names.count {
-            let paragraph = Paragraph()
-                    .add(TextLine(f3, names[i]))
-                    .add(TextLine(f2, notes[i]).setTextColor(Color.dimgray))
-                    .add(TextLine(f4, "$").setVerticalOffset(-4.0))
-                    .add(TextLine(f1, prices[i]).setTextColor(Color.darkred))
-            column.addParagraph(paragraph)
+        let fileNames = [
+            "data/testPDFs/scanned-linearized.pdf",
+            "data/testPDFs/rc65-16e.pdf",
+            "data/testPDFs/PDFjetLogo.pdf"
+        ]
+        var documents = [[PDFobj]]()
+        for fileName in fileNames {
+            documents.append(try pdf.read(from: InputStream(fileAtPath: fileName)!))
         }
 
-        // A paragraph that colors some of its words, aligned to the right.
-        column.addParagraph(Paragraph()
-                .add(TextLine(f2, "Freshly"))
-                .add(TextLine(f3, "roasted").setTextColor(Color.saddlebrown))
-                .add(TextLine(f2, "every"))
-                .add(TextLine(f3, "morning").setTextColor(Color.sienna))
-                .setTextAlignment(Alignment.RIGHT))
+        let f1 = try Font(pdf, IBMPlexSans.Bold)
+        f1.setSize(24.0)
+        let f2 = try Font(pdf, IBMPlexSans.Regular)
+        f2.setSize(12.0)
 
-        column.setLocation(70.0, 140.0)
-        column.setWidth(470.0)
-        column.setParagraphSpacing(1.8)
-        let xy = column.drawOn(page)
+        let page = Page(pdf, Letter.PORTRAIT)
+        TextLine(f1, "Merged documents").setLocation(50.0, 80.0).drawOn(page)
+        var y: Float = 130.0
+        for i in 0..<fileNames.count {
+            let pages = pdf.getPageObjects(from: documents[i]).count
+            let text = fileNames[i] + ", " + String(pages) + (pages == 1 ? " page" : " pages")
+            TextLine(f2, text).setLocation(50.0, y).drawOn(page)
+            y += 20.0
+        }
 
-        // A TextFrame wraps the words of its paragraphs to its width.
-        var paragraphs = [Paragraph]()
-        paragraphs.append(Paragraph()
-                .add(TextLine(f1, "Our beans come from small farms in"))
-                .add(TextLine(f3, "Colombia,"))
-                .add(TextLine(f3, "Ethiopia"))
-                .add(TextLine(f1, "and"))
-                .add(TextLine(f3, "Guatemala,"))
-                .add(TextLine(f1, "and we roast them in small batches."))
-                .add(TextLine(f2, "Ask us about the beans of the week.").setTextColor(Color.darkred)))
-        paragraphs.append(Paragraph()
-                .add(TextLine(f2, "Prices include tax.").setTextColor(Color.dimgray)))
-
-        let frame = TextFrame(paragraphs)
-        frame.setLocation(70.0, xy[1] + 30.0)
-        frame.setWidth(470.0)
-        frame.drawOn(page)
-
-        let label = TextLine(f3, "Today's special!")
-        label.setFontSize(18.0)
-        label.setTextColor(Color.red)
-        label.setLocation(400.0, 90.0)
-        label.setTextRotation(15)
-        label.setUnderline(true)
-        label.drawOn(page)
+        for objects in documents {
+            try pdf.merge(objects)
+        }
 
         try pdf.complete()
     }
-}   // End of Example_49.swift
 
+    private func split() throws {
+        let objects = try PDF().read(from: InputStream(fileAtPath: "data/testPDFs/scanned-linearized.pdf")!)
+        let count = PDF().getPageObjects(from: objects).count
+
+        for i in 1...count {
+            let part = PDF(OutputStream(toFileAtPath: "Example_49_\(i).pdf", append: false)!)
+            try part.merge(objects, [i])
+            try part.complete()
+        }
+
+        let pdf = PDF(OutputStream(toFileAtPath: "Example_49_reversed.pdf", append: false)!)
+        try pdf.merge(objects, Array((1...count).reversed()))
+        try pdf.complete()
+    }
+}   // End of Example_49.swift
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
 _ = try Example_49()

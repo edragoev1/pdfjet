@@ -12,7 +12,7 @@ namespace PDFjet.NET {
 /// Used to create path objects.
 /// The path objects may consist of lines, splines or both.
 ///
-/// Please see Example_20 and Example_22.
+/// Please see Example_34 and Example_40.
 /// </summary>
 public class Path : IDrawable {
     private float[] color = new float[] {0f, 0f, 0f};

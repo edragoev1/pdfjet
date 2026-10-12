@@ -6,101 +6,153 @@
  */
 using System;
 using System.IO;
-using System.Collections.Generic;
 using System.Diagnostics;
 using PDFjet.NET;
 
 /**
- * Example_27.java
+ * Example_27.cs
+ *
+ * Draws bar charts. The first page is a horizontal bar chart of the ten
+ * longest rivers, each bar in its own color with its length inside it, and a
+ * color key under the chart. The second page draws two charts with vertical
+ * bars from the same data: the two series grouped by month, and the same
+ * series stacked.
  */
 public class Example_27 {
     public Example_27() {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_27.pdf", FileMode.Create)));
         pdf.SetCompliance(Compliance.PDF_UA_1);
-        pdf.SetTitle("Paragraphs in a Text Frame");
+        pdf.SetTitle("Bar Charts");
 
-        Font f1 = new Font(pdf, IBMPlexSans.Regular);
-        f1.SetSize(10f);
+        DrawHorizontal(pdf);
+        DrawVertical(pdf);
 
-        Font f2 = new Font(pdf, IBMPlexSans.Bold);
-        f2.SetSize(10f);
+        pdf.Complete();
+    }
 
-        Font f3 = new Font(pdf, IBMPlexSans.Italic);
-        f3.SetSize(10f);
+    private void DrawHorizontal(PDF pdf) {
+        Font f1 = new Font(pdf, IBMPlexSans.Bold);
+        f1.SetSize(15f);
+
+        Font f2 = new Font(pdf, IBMPlexSans.Regular);
+        f2.SetSize(9f);
+
+        Font f3 = new Font(pdf, IBMPlexSans.Bold);
+        f3.SetSize(9f);
+
+        Font f4 = new Font(pdf, IBMPlexSans.Regular);
+        f4.SetSize(8f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        List<Paragraph> paragraphs = new List<Paragraph>();
-        Paragraph paragraph = new Paragraph()
-                .Add(new TextLine(f1,
-"The small business centres offer practical resources, from step-by-step info on setting up your business to sample business plans to a range of business-related articles and books in our resource libraries.")
-                        .SetUnderline(true))
-                .Add(new TextLine(f2, "This text is bold!").SetTextColor(Color.blue));
-        paragraphs.Add(paragraph);
+        // The heading of the page, above the chart
+        new TextLine(f1, "Rivers of the World")
+                .SetStructureType(StructElem.H1)
+                .SetFontSize(18f)
+                .SetLocation(36f, 40f)
+                .DrawOn(page);
 
-        paragraph = new Paragraph()
-                .Add(new TextLine(f1,
-"The centres also offer free one-on-one consultations with business advisors who can review your business plan and make recommendations to improve it.")
-                        .SetUnderline(true))
-                .Add(new TextLine(f3, "This text is using italic font.").SetTextColor(Color.green));
-        paragraphs.Add(paragraph);
+        String[] rivers = {
+                "Nile", "Amazon", "Yangtze", "Mississippi-Missouri", "Yenisey-Baikal-Selenga",
+                "Huang He (Yellow)", "Ob-Irtysh", "Paraná", "Congo", "Amur"};
+        float[] lengths = {6650f, 6400f, 6300f, 5971f, 5540f, 5464f, 5410f, 4880f, 4700f, 4444f};
+        int[] colors = {
+                0x477aa8, 0x5f7e5f, 0x8b6f47, 0x8e7152, 0x517aa0,
+                0x967110, 0x687b68, 0x8e7155, 0x5c5c5c, 0x897154};
 
-        // The two paragraphs are a numbered list. The number of a paragraph
-        // is its label, which the text frame draws to the left of it and
-        // reads before it.
-        int paragraphNumber = 1;
-        foreach (Paragraph p in paragraphs) {
-            p.SetListLabel(new TextLine(f2, paragraphNumber.ToString() + "."), 15f);
-            paragraphNumber++;
+        BarChart chart = new BarChart(f1, f2);
+        chart.SetLocation(36f, 70f);
+        chart.SetSize(540f, 400f);
+        chart.SetTitle("10 Longest Rivers in the World");
+        chart.SetSubtitle("Length in kilometers · Color reflects typical sediment / pollution character");
+        chart.SetCategories(rivers);
+        chart.AddSeries("", lengths, colors);
+        chart.SetHorizontal(true);
+        chart.SetGroupGap(0.4f);
+        chart.SetValueAxisMinMax(0f, 8000f, 4);
+        chart.SetGridLineWidth(0.75f);
+        chart.SetGridLineColor(0xe0e0e0);
+        chart.SetGridLineDashPattern("[] 0");
+        chart.SetAxisLineWidth(0f);
+        chart.SetDrawValueLabels(true);
+        chart.SetValueLabelsInside(true);
+        chart.SetGroupingUsed(true);
+        chart.SetAltDescription(
+                "The ten longest rivers in the world, in kilometers: Nile 6,650, Amazon 6,400, Yangtze 6,300, Mississippi-Missouri 5,971, Yenisey-Baikal-Selenga 5,540, Huang He (Yellow) 5,464, Ob-Irtysh 5,410, Paraná 4,880, Congo 4,700, Amur 4,444.");
+        chart.DrawOn(page);
+
+        // The color key under the chart
+        int gray = 0x444444;
+        new TextLine(f3, "Color key (illustrative):")
+                .SetTextColor(gray).SetLocation(171f, 496f).DrawOn(page);
+        int[] keyColors = {0x477aa8, 0x5f7e5f, 0x8e7155, 0x967110, 0x5c5c5c};
+        String[] keyTexts = {
+                "Clear / low sediment", "Sediment-rich, relatively clean", "Polluted / industrial & agricultural",
+                "Heavy natural sediment (loess)", "Natural dark tannin stain (Congo)"};
+        float[] keyX = {171f, 262f, 398f, 171f, 313f};
+        float[] keyY = {512f, 512f, 512f, 527f, 527f};
+        for (int i = 0; i < keyColors.Length; i++) {
+            // The swatches are rectangles, drawn as artifacts next to their text.
+            new Rect(keyX[i], keyY[i] - 8.5f, 10.5f, 10.5f).SetFillColor(keyColors[i]).DrawOn(page);
+            new TextLine(f4, keyTexts[i])
+                    .SetTextColor(gray).SetLocation(keyX[i] + 15f, keyY[i]).DrawOn(page);
         }
 
-        TextFrame text = new TextFrame(paragraphs);
-        text.SetLocation(70f, 50f);
-        text.SetWidth(500f);
-        text.SetBorders(true);
-        text.SetBorderColor(Color.blue);
-        text.DrawOn(page);
+        String note = "Color mapping is illustrative; lengths and conditions vary by source and season.";
+        new TextLine(f4, note)
+                .SetTextColor(0x696969).SetLocation(576f - f4.StringWidth(note), 550f).DrawOn(page);
+    }
 
+    private void DrawVertical(PDF pdf) {
+        Page page = new Page(pdf, Letter.PORTRAIT);
 
-        Dictionary<String, int> colorMap = new Dictionary<String, int>();
-        colorMap["Physics"] = Color.firebrick;
-        colorMap["physics"] = Color.firebrick;
-        colorMap["Experimentation"] = Color.sienna;
-        colorMap["science"] = Color.blue;
-        paragraphs = Paragraph.ParagraphsFromFile(f1, "data/physics.txt");
-        foreach (Paragraph p in paragraphs) {
-            if (p.StartsWith("**")) {
-                p.SetStructureType(StructElem.H1);
-                p.GetTextLines()[0].SetFont(f2).SetFontSize(24f);
-                p.GetTextLines()[0].SetTextColor(Color.navy);
-                paragraphNumber = 1;
-            } else {
-                p.SetTextColor(Color.dimgray);
-                p.SetHighlightColors(colorMap);
-                p.SetListLabel(new TextLine(f2, paragraphNumber.ToString() + "."), 15f);
-                paragraphNumber++;
-            }
-        }
+        Font f1 = new Font(pdf, IBMPlexSans.Bold);
+        f1.SetSize(10f);
 
-        text = new TextFrame(paragraphs);
-        text.SetLocation(70f, 150f);
-        text.SetWidth(500f);
-        text.SetBorders(true);
-        text.SetBorderColor(Color.blue);
-        text.DrawOn(page);
+        Font f2 = new Font(pdf, IBMPlexSans.Regular);
+        f2.SetSize(8f);
 
-        // The rule beside each paragraph reaches from its top to its bottom,
-        // which the frame knows only after it has drawn it.
-        foreach (Paragraph p in paragraphs) {
-            if (!p.StartsWith("**")) {
-                new Line(p.GetX1() - 3f, p.GetY1(), p.GetX1() - 3f, p.GetY2())
-                        .SetStrokeColor(Color.navy)
-                        .SetStrokeWidth(1f).DrawOn(page);
-            }
-        }
+        // The heading of the document, above the charts
+        new TextLine(f1, "Sales in 2025 and 2026")
+                .SetStructureType(StructElem.H1)
+                .SetFontSize(18f)
+                .SetLocation(70f, 45f)
+                .DrawOn(page);
 
-        pdf.Complete();
+        String[] months = {
+                "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+        float[] units2025 = {45f, 65f, 31f, 45f, 65f, 31f, 38f, 52f, 47f, 59f, 66f, 72f};
+        float[] units2026 = {75f, 20f, 73f, 75f, 20f, 73f, 61f, 58f, 69f, 64f, 77f, 80f};
+
+        BarChart chart = new BarChart(f1, f2);
+        chart.SetLocation(70f, 70f);
+        chart.SetSize(500f, 300f);
+        chart.SetTitle("Units sold by month");
+        chart.SetXAxisTitle("Month");
+        chart.SetYAxisTitle("Units");
+        chart.SetCategories(months);
+        chart.AddSeries("2025", units2025, Color.seagreen);
+        chart.AddSeries("2026", units2026, Color.indianred);
+        chart.SetGroupGap(0.4f);
+        chart.SetBarGap(0.1f);
+        chart.SetAltDescription("Units sold by month in 2025 and 2026, side by side: from 31 to 72 a month in 2025 and from 20 to 80 in 2026, the most in December in both years.");
+        chart.DrawOn(page);
+
+        BarChart stacked = new BarChart(f1, f2);
+        stacked.SetLocation(70f, 420f);
+        stacked.SetSize(500f, 300f);
+        stacked.SetTitle("Units sold by month, stacked");
+        stacked.SetXAxisTitle("Month");
+        stacked.SetYAxisTitle("Units");
+        stacked.SetCategories(months);
+        stacked.AddSeries("2025", units2025, Color.seagreen);
+        stacked.AddSeries("2026", units2026, Color.indianred);
+        stacked.SetStacked(true);
+        stacked.SetDrawValueLabels(true);
+        stacked.SetAltDescription("Units sold by month in 2025 and 2026, stacked: from 85 a month, in February and May, to 152 in December.");
+        stacked.DrawOn(page);
     }
 
     public static void Main(String[] args) {

@@ -6,7 +6,7 @@
  */
 using System;
 using System.IO;
-using System.Text;
+using System.Collections.Generic;
 using System.Diagnostics;
 using PDFjet.NET;
 
@@ -18,117 +18,57 @@ public class Example_10 {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_10.pdf", FileMode.Create)));
         pdf.SetCompliance(Compliance.PDF_UA_1);
-        pdf.SetTitle("Switzerland");
+        pdf.SetTitle("Text block with highlighted keywords");
 
-        Image image1 = new Image(pdf, "images/swiss-admin.jpg");
-        image1.SetAltDescription(
-                "A map of Switzerland's 26 cantons, numbered and named in a key, with their capitals, Bern marked as the national capital, the lakes and rivers, and the neighboring countries.");
-
+        // Font f1 = new Font(pdf, SourceSerif4.Regular);
+        // Font f1 = new Font(pdf, NotoSans.Regular);
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
-        f1.SetSize(10f);
-
-        Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
-        f2.SetSize(14f);
-
-        Font f3 = new Font(pdf, IBMPlexSans.SemiBold);
-        f3.SetSize(12f);
-
-        Font f4 = new Font(pdf, IBMPlexSans.Italic);
-        f4.SetSize(10f);
+        f1.SetSize(15f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        // The map is 310 points tall, so that it and the text fit the page,
-        // and centered over the text.
-        image1.ScaleBy(310f / image1.GetHeight());
-        image1.SetLocation(90f + (470f - image1.GetWidth()) / 2f, 35f);
-        image1.DrawOn(page);
+        // A heading, which PAC asks a document for
+        new TextLine(f1, "Text block with highlighted keywords")
+                .SetStructureType(StructElem.H1)
+                .SetFontSize(18f)
+                .SetLocation(100f, 36f)
+                .DrawOn(page);
 
-        // To rotate the column, add it to a Container and rotate that; see Example_35.
-        TextColumn column = new TextColumn();
-        column.SetLineSpacing(1.3f);        // 1.3 x font height
-        column.SetParagraphSpacing(1.0f);   // 1.0 x line spacing
+        Dictionary<String, Int32> colors = new Dictionary<String, Int32>();
+        colors["Everyone"] = Color.firebrick;
+        colors["pay"] = Color.green;
+        colors["freedom"] = Color.blue;
 
-        Paragraph p2 = new Paragraph();
-        p2.SetStructureType(StructElem.H1);
-        p2.Add(new TextLine(f2, "Introduction"));
+        // page.SaveGraphicsState();
 
-        StringBuilder buf = new StringBuilder();
-        buf.Append("The Swiss Confederation was founded in 1291 as a defensive ");
-        buf.Append("alliance among three cantons. In succeeding years, other ");
-        buf.Append("localities joined the original three. ");
-        buf.Append("The Swiss Confederation secured its independence from the ");
-        buf.Append("Holy Roman Empire in 1499. Switzerland's sovereignty and ");
-        buf.Append("neutrality have long been honored by the major European ");
-        buf.Append("powers, and the country was not involved in either of the ");
-        buf.Append("two World Wars. The political and economic integration of ");
-        buf.Append("Europe over the past half century, as well as Switzerland's ");
-        buf.Append("role in many UN and international organizations, has ");
-        buf.Append("strengthened Switzerland's ties with its neighbors. ");
-        buf.Append("However, the country did not officially become a UN member ");
-        buf.Append("until 2002.");
+        GraphicsState gs = new GraphicsState();
+        gs.SetAlphaStroking(0.5f);                  // Stroking alpha
+        gs.SetAlphaNonStroking(0.5f);               // Non-Stroking alpha
+        page.SetGraphicsState(gs);
 
-        Paragraph p3 = new Paragraph();
-        // p3.SetTextAlignment(Alignment.LEFT);
-        // p3.SetTextAlignment(Alignment.RIGHT);
-        p3.SetTextAlignment(Alignment.JUSTIFY);
-        TextLine text = new TextLine(f1, buf.ToString());
-        p3.Add(text);
+        String englishText = Content.OfTextFile("data/languages/english.txt");
+        // f1.SetSize(14f);
+        TextBlock textBlock = new TextBlock(f1, englishText);
+        textBlock.SetLocation(100f, 50f);
+        textBlock.SetWidth(400f);
+        // With a height the text that does not fit is cut; without one the
+        // block is as tall as its text.
+        textBlock.SetHeight(450f);
+        textBlock.SetVerticalAlignment(Alignment.TOP);
+        // textBlock.SetVerticalAlignment(Alignment.BOTTOM);
+        // textBlock.SetVerticalAlignment(Alignment.CENTER);
+        // textBlock.SetTextAlignment(Alignment.CENTER);
+        textBlock.SetBackgroundColor(Color.whitesmoke);
+        textBlock.SetHighlightColors(colors);
+        textBlock.SetBorderColor(Color.black);
+        float[] xy = textBlock.DrawOn(page);
 
-        buf = new StringBuilder();
-        buf.Append("Switzerland remains active in many UN and international ");
-        buf.Append("organizations but retains a strong commitment to neutrality.");
+        page.SetGraphicsState(new GraphicsState()); // Reset GS
+        // page.RestoreGraphicsState();
 
-        text = new TextLine(f1, buf.ToString());
-        text.SetTextColor(Color.firebrick);
-        p3.Add(text);
-
-        Paragraph p4 = new Paragraph();
-        p4.SetStructureType(StructElem.H1);
-        p4.Add(new TextLine(f3, "Economy"));
-
-        buf = new StringBuilder();
-        buf.Append("Switzerland is a peaceful, prosperous, and stable modern ");
-        buf.Append("market economy with low unemployment, a highly skilled ");
-        buf.Append("labor force, and a per capita GDP larger than that of the ");
-        buf.Append("big Western European economies. The Swiss in recent years ");
-        buf.Append("have brought their economic practices largely into ");
-        buf.Append("conformity with the EU's to enhance their international ");
-        buf.Append("competitiveness. Switzerland remains a safe haven for ");
-        buf.Append("investors, because it has maintained a degree of bank secrecy ");
-        buf.Append("and has kept up the franc's long-term external value. ");
-        buf.Append("Reflecting the anemic economic conditions of Europe, GDP ");
-        buf.Append("growth stagnated during the 2001-03 period, improved during ");
-        buf.Append("2004-05 to 1.8% annually and to 2.9% in 2006.");
-
-        Paragraph p5 = new Paragraph();
-        p5.SetTextAlignment(Alignment.JUSTIFY);
-        text = new TextLine(f1, buf.ToString());
-        p5.Add(text);
-
-        text = new TextLine(f4,
-                "Even so, unemployment has remained at less than half the EU average.");
-        text.SetTextColor(Color.blue);
-        p5.Add(text);
-
-        column.AddParagraph(p2);
-        column.AddParagraph(p3);
-        column.AddParagraph(p4);
-        column.AddParagraph(p5);
-
-        column.SetLocation(90f, 365f);
-
-        float columnWidth = 470f;
-        column.SetWidth(columnWidth);
-        column.SetHeight(100f);
-        float[] xy = column.DrawOn(page);
-
-        Line line = new Line(
-                xy[0] - columnWidth,
-                xy[1],
-                xy[0],
-                xy[1]);
-        line.DrawOn(page);
+        Rect rect = new Rect(xy[0], xy[1], 20f, 20f);
+        rect.SetBorderColor(Color.black);
+        rect.DrawOn(page);
 
         pdf.Complete();
     }

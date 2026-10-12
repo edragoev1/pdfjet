@@ -7,221 +7,134 @@
 import Foundation
 import PDFjet
 
-///
-/// Example_09.swift
-///
-/// Draws an XY chart of the countries of a data file, each a marker that links
-/// to a page about the country, with the trend line of the points, and a table
-/// of the countries with a marker of their own.
-///
-struct ExampleError: Error, CustomStringConvertible {
-    let message: String
-    var description: String { message }
-}
-
-/// A country of the data file: its name and its point on the chart.
-struct Country {
-    let name: String
-    let point: Point
-}
-
+/**
+ * Example_09.swift
+ * This example draws chemical formulas with CompositeTextLine: the digits of
+ * a formula are subscripts, the charge of an ion and the mass number of an
+ * isotope are superscripts.
+ */
 public class Example_09 {
+    // The sections of the page: the formulas as CompositeTextLine.addFormula
+    // reads them, and what each one is called.
+    private let compounds = [
+        ("H2O", "Water"),
+        ("CO2", "Carbon dioxide"),
+        ("NaCl", "Sodium chloride"),
+        ("H2SO4", "Sulfuric acid"),
+        ("NaHCO3", "Sodium bicarbonate"),
+        ("Fe2O3", "Iron(III) oxide"),
+        ("Ca(OH)2", "Calcium hydroxide"),
+        ("CuSO4\u{00B7}5H2O", "Copper(II) sulfate"),
+        ("(NH4)3PO4", "Ammonium phosphate"),
+        ("KAl(SO4)2", "Potassium alum"),
+    ]
+
+    private let organic = [
+        ("C6H12O6", "Glucose"),
+        ("CH3COOH", "Acetic acid"),
+        ("C8H10N4O2", "Caffeine"),
+        ("C9H8O4", "Aspirin"),
+        ("C2H5OH", "Ethanol"),
+        ("CH3(CH2)14COOH", "Palmitic acid"),
+    ]
+
+    private let ions = [
+        ("Na^+", "Sodium"),
+        ("Ca^2+", "Calcium"),
+        ("NH4^+", "Ammonium"),
+        ("OH^-", "Hydroxide"),
+        ("SO4^2-", "Sulfate"),
+        ("PO4^3-", "Phosphate"),
+    ]
+
+    private let isotopes = [
+        ("^3H", "Tritium"),
+        ("^14C", "Carbon-14"),
+        ("^235U", "Uranium-235"),
+    ]
+
+    private let reactions = [
+        ("2H2 + O2 \u{2192} 2H2O", "Hydrogen burns"),
+        ("N2 + 3H2 \u{2192} 2NH3", "Ammonia, the Haber process"),
+        ("CaCO3 \u{2192} CaO + CO2", "Limestone is calcined"),
+        ("CH4 + 2O2 \u{2192} CO2 + 2H2O", "Methane burns"),
+    ]
+
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_09.pdf", append: false)!)
         pdf.setCompliance(Compliance.PDF_UA_1)
-        pdf.setTitle("World View - Communications")
+        pdf.setTitle("Chemical Formulas")
 
-        let f1 = try Font(pdf, IBMPlexSans.Bold)
-        f1.setSize(8.0)
-
-        let f2 = try Font(pdf, IBMPlexSans.Regular)
-        f2.setSize(8.0)
+        let f1 = try Font(pdf, IBMPlexSans.Regular)
+        let f2 = try Font(pdf, IBMPlexSans.SemiBold)
 
         let page = Page(pdf, Letter.PORTRAIT)
 
-        let countries = try readCountries("data/world-communications.txt", "|")
+        let title = TextLine(f2, "Chemical Formulas")
+        title.setFontSize(18.0)
+        title.setStructureType(StructElem.H1)
+        title.setLocation(60.0, 70.0)
+        title.drawOn(page)
 
-        // The heading of the document, above the chart
-        TextLine(f1, "Cell Phones and Internet Use by Country")
-                .setStructureType(StructElem.H1)
-                .setFontSize(16.0)
-                .setLocation(70.0, 36.0)
-                .drawOn(page)
+        let intro = TextBlock(f1,
+                "A CompositeTextLine draws one line of text out of parts that sit on "
+                + "the baseline, above it or below it. AddFormula reads a formula and "
+                + "places its parts: the digits that follow an element or a bracket are "
+                + "subscripts, and what follows a circumflex is a superscript, the "
+                + "charge of an ion or the mass number of an isotope. Each formula "
+                + "below is one line and, in this tagged document, one structure "
+                + "element, so a screen reader reads the formula and not its parts.")
+        intro.setFontSize(11.0)
+        intro.setLineSpacing(1.5)
+        intro.setLocation(60.0, 90.0)
+        intro.setWidth(492.0)
+        let xy = intro.drawOn(page)
 
-        let chart = Chart(f1, f2)
-        chart.setLocation(70.0, 50.0)
-        chart.setSize(500.0, 300.0)
-        chart.setTitle("World View - Communications")
-        chart.setXAxisTitle("Cell phones per capita")
-        chart.setYAxisTitle("Internet users % of the population")
-        let markers = chart.addSeries("").setStrokeColor(Color.gray)
-        for country in countries {
-            markers.addPoint(country.point)
-        }
-        addTrendLine(chart, countries)
-        chart.drawOn(page)
-
-        f1.setSize(7.0)
-        f2.setSize(7.0)
-        try addTableToChart(page, countries, f1, f2)
+        var y = xy[1] + 26.0
+        y = drawSection(page, f1, f2, "Compounds", compounds, 2, 266.0, 150.0, y)
+        y = drawSection(page, f1, f2, "Organic compounds", organic, 2, 266.0, 150.0, y)
+        y = drawSection(page, f1, f2, "Ions", ions, 3, 170.0, 60.0, y)
+        y = drawSection(page, f1, f2, "Isotopes", isotopes, 3, 170.0, 60.0, y)
+        _ = drawSection(page, f1, f2, "Reactions", reactions, 1, 0.0, 210.0, y)
 
         try pdf.complete()
     }
 
-    func addTrendLine(_ chart: Chart, _ countries: [Country]) {
-        let points = countries.map { $0.point }
-        let m = slope(points)
-        let b = intercept(points, m)
-        chart.addSeries("Trend line")
-                .setDrawPath(true)
-                .setStrokeColor(Color.blue)
-                .setShape(Shape.INVISIBLE)
-                .addPoint(0.0, b)
-                .addPoint(1.5, m * 1.5 + b)
-    }
+    // Draws the heading of a section and its formulas in the number of
+    // columns, and returns the y where the next section begins.
+    private func drawSection(
+            _ page: Page, _ f1: Font, _ f2: Font, _ title: String,
+            _ items: [(String, String)], _ columns: Int,
+            _ columnWidth: Float, _ nameOffset: Float, _ y: Float) -> Float {
+        let heading = TextLine(f2, title)
+        heading.setFontSize(13.0)
+        heading.setStructureType(StructElem.H2)
+        heading.setLocation(60.0, y)
+        heading.drawOn(page)
 
-    func addTableToChart(
-            _ page: Page,
-            _ countries: [Country],
-            _ f1: Font,
-            _ f2: Font) throws {
-        let table = Table()
-        var tableData = [[Cell]]()
-
-        // The header row: the country heads its marker and its name
-        var headerRow = [Cell]()
-        let header = Cell(f1, "Country")
-        header.setColSpan(2)
-        headerRow.append(header)
-        headerRow.append(Cell(f1, ""))
-        headerRow.append(Cell(f1, "Page about the country"))
-        tableData.append(headerRow)
-
-        for country in countries {
-            if country.point.getShape() != Shape.CIRCLE {
-                var tableRow = [Cell]()
-
-                var cell = Cell(f2, "")
-                cell.setMarker(country.point, Alignment.LEFT)
-                tableRow.append(cell)
-
-                cell = Cell(f1, country.name)
-                tableRow.append(cell)
-
-                // The address is a link to it: text that reads as an address and is
-                // not one, PAC reports
-                cell = Cell(f2, country.point.getURIAction())
-                cell.setURIAction(country.point.getURIAction()!)
-                tableRow.append(cell)
-
-                tableData.append(tableRow)
-            }
+        let top = y + 22.0
+        for (i, item) in items.enumerated() {
+            let x = 70.0 + Float(i % columns)*columnWidth
+            drawFormula(page, f1, item.0, item.1, x, top + Float(i / columns)*24.0, nameOffset)
         }
-        table.setTableData(tableData, 1)
-        table.autoAdjustColumnWidths()
-        table.setCellBorderWidth(0.2)
-        table.setLocation(70.0, 360.0)
-        table.setColumnWidth(0, 9.0)
-        table.drawOn(page)
+        let rows = (items.count + columns - 1) / columns
+        return top + Float(rows)*24.0 + 10.0
     }
 
-    func readCountries(
-            _ fileName: String,
-            _ delimiter: String) throws -> [Country] {
-        var countries = [Country]()
+    // Draws the formula at the location and its name the offset to the right of it.
+    private func drawFormula(
+            _ page: Page, _ font: Font, _ formula: String, _ name: String,
+            _ x: Float, _ y: Float, _ nameOffset: Float) {
+        let composite = CompositeTextLine(x, y)
+        composite.setFontSize(14.0)
+        composite.addFormula(font, formula)
+        composite.drawOn(page)
 
-        let text = (try String(contentsOfFile:
-                fileName, encoding: .utf8)).trimmingCharacters(in: .newlines)
-        let lines = text.replacingOccurrences(of: "\r\n", with: "\n").components(separatedBy: "\n")
-        for line1 in lines {
-            let line = line1.trimmingCharacters(in: .whitespacesAndNewlines)
-            var cols: [String]?
-            if delimiter == "|" {
-                cols = line.components(separatedBy: "|")
-            } else if delimiter == "\t" {
-                cols = line.components(separatedBy: "\t")
-            } else {
-                throw ExampleError(
-                        message: "Only pipes and tabs can be used as delimiters")
-            }
-
-            let name = cols![0].trimmingCharacters(in: .whitespacesAndNewlines)
-            let population = Double(cols![1].filter({ $0 != "," }))
-            let x = Double(cols![5].filter({ $0 != "," }))
-            let y = Double(cols![7].filter({ $0 != "," }).trimmingCharacters(in: .whitespacesAndNewlines))
-
-            if population != nil && x != nil && y != nil {
-                var country_name = name
-                country_name = country_name.replacingOccurrences(of: " ", with: "_")
-                country_name = country_name.replacingOccurrences(of: "'", with: "_")
-                country_name = country_name.replacingOccurrences(of: ",", with: "_")
-                country_name = country_name.replacingOccurrences(of: "(", with: "_")
-                country_name = country_name.replacingOccurrences(of: ")", with: "_")
-                let point = Point(Float(x! / population!), Float(y! / population! * 100.0))
-                point.setURIAction("http://pdfjet.com/country/\(country_name).txt")
-                point.setAltDescription(name) // What the link of the point is, for a screen reader
-                point.setRadius(2.0)
-
-                if point.getX() > 1.25 {
-                    point.setShape(Shape.RIGHT_ARROW)
-                    point.setStrokeColor(Color.black)
-                } else if point.getY() > 80.0 {
-                    point.setShape(Shape.UP_ARROW)
-                    point.setStrokeColor(Color.blue)
-                } else if name == "France" {
-                    point.setShape(Shape.MULTIPLY)
-                    point.setStrokeColor(Color.green)
-                } else if name == "Canada" {
-                    point.setShape(Shape.BOX)
-                    point.setStrokeColor(Color.orange)
-                } else if name.hasPrefix("United States") {
-                    point.setShape(Shape.STAR)
-                    point.setStrokeColor(Color.red)
-                }
-                countries.append(Country(name: name, point: point))
-            }
-        }
-        return countries
-    }
-
-    // The slope and intercept of the ordinary least squares trend line of the points.
-    private func slope(_ points: [Point]) -> Float {
-        return covar(points) / devsq(points) * Float(points.count - 1)
-    }
-
-    private func intercept(_ points: [Point], _ slope: Float) -> Float {
-        let m = mean(points)
-        return m[1] - slope * m[0]
-    }
-
-    private func mean(_ points: [Point]) -> [Float] {
-        var m = [Float](repeating: 0, count: 2)
-        for point in points {
-            m[0] += point.getX()
-            m[1] += point.getY()
-        }
-        let n = Float(points.count)
-        m[0] /= n
-        m[1] /= n
-        return m
-    }
-
-    private func covar(_ points: [Point]) -> Float {
-        var covariance: Float = 0.0
-        let m = mean(points)
-        for point in points {
-            covariance += (point.getX() - m[0]) * (point.getY() - m[1])
-        }
-        return covariance / Float(points.count - 1)
-    }
-
-    private func devsq(_ points: [Point]) -> Float {
-        var sum: Float = 0.0
-        let m = mean(points)
-        for point in points {
-            sum += Float(pow(Double(point.getX() - m[0]), 2))
-        }
-        return sum
+        let text = TextLine(font, name)
+        text.setFontSize(10.0)
+        text.setTextColor(Color.dimgray)
+        text.setLocation(x + nameOffset, y)
+        text.drawOn(page)
     }
 }   // End of Example_09.swift
 

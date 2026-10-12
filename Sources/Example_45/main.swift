@@ -9,83 +9,69 @@ import PDFjet
 
 /**
  * Example_45.swift
- * Using the Form and Field classes to draw a shipment request. A field at x = 0
- * starts a new row, the other fields of the row start at their own x, and a
- * field with an empty label continues the value above it on a new line.
+ * This example adds a "DRAFT" watermark to every page of a two-page
+ * document that is PDF/A-3a and PDF/UA-1. The watermark is drawn first, so the
+ * text of the page is drawn over it.
  */
 public class Example_45 {
     public init() throws {
-        let pdf = PDF(OutputStream(toFileAtPath: "Example_45.pdf", append: false)!)
-        pdf.setCompliance(Compliance.PDF_UA_1)
-        pdf.setTitle("Shipment Request")
+        let pdf = PDF(OutputStream(toFileAtPath: "Example_45.pdf", append: false)!, Compliance.PDF_A_3A_UA_1)
+        pdf.setTitle("A Draft, Archived as PDF/A-3a and PDF/UA-1")
 
         let f1 = try Font(pdf, IBMPlexSans.Regular)
         let f2 = try Font(pdf, IBMPlexSans.SemiBold)
+        let f3 = try Font(pdf, IBMPlexSans.Bold)
 
-        let page = Page(pdf, Letter.PORTRAIT)
+        let titles = [
+            "Project Proposal",
+            "Budget and Schedule",
+        ]
+        let texts = [
+            "This proposal describes a new reporting service that creates invoices, "
+                + "statements and delivery notes as PDF documents. The documents are "
+                + "archived as PDF/A-3a, so they can be opened and printed exactly "
+                + "the same way for many years.\n\n"
+                + "The watermark tells every reader that this is a draft. It is drawn "
+                + "in light gray behind the text, at an angle from the bottom left "
+                + "corner to the top right corner of the page.",
+            "The service will be built in three phases over six months. The first "
+                + "phase delivers invoices, the second statements, and the third "
+                + "delivery notes.\n\n"
+                + "The budget and the schedule will be final once the proposal is "
+                + "approved. Until then, every page of this document is marked as a draft.",
+        ]
 
-        var text = TextLine(f2, "Shipment Request")
-        text.setStructureType(StructElem.H1)
-        text.setFontSize(22.0)
-        text.setLocation(56.0, 80.0)
-        text.drawOn(page)
+        for i in 0..<titles.count {
+            let page = Page(pdf, A4.LANDSCAPE)
 
-        let textBlock = TextBlock(f1,
-                "A Form draws its fields in rows. A field at x = 0 starts a new row, "
-                + "the other fields of the row start at their own x, and a field with "
-                + "an empty label continues the value above it on a new line.")
-        textBlock.setFontSize(12.0)
-        textBlock.setLineSpacing(1.5)
-        textBlock.setLocation(56.0, 95.0)
-        textBlock.setWidth(500.0)
-        var xy = textBlock.drawOn(page)
+            // The watermark is drawn before the content of the page.
+            f3.setSize(120.0)
+            page.addWatermark(f3, "DRAFT")
 
-        let w: Float = 500.0    // The width of the form
+            let title = TextLine(f2, titles[i])
+            title.setStructureType(StructElem.H1)
+            title.setFontSize(28.0)
+            title.setLocation(70.0, 100.0)
+            title.drawOn(page)
 
-        var fields = [Field]()
-        fields.append(Field(  0.0, "Sender", "Maple Leaf Instruments Ltd."))
-        fields.append(Field(  0.0, "Street Address", "480 King Street West"))
-        fields.append(Field(6*w/8, "Suite", "1200"))
-        fields.append(Field(  0.0, "City", "Toronto"))
-        fields.append(Field(3*w/8, "Province", "Ontario"))
-        fields.append(Field(5*w/8, "Postal Code", "M5V 1L7"))
-        fields.append(Field(6*w/8, "Country", "Canada"))
-        fields.append(Field(  0.0, "Recipient", "Nordic Sensor Labs AB"))
-        fields.append(Field(  0.0, "Street Address", "Drottninggatan 55"))
-        fields.append(Field(6*w/8, "Floor", "3"))
-        fields.append(Field(  0.0, "City", "Stockholm"))
-        fields.append(Field(5*w/8, "Postal Code", "111 21"))
-        fields.append(Field(6*w/8, "Country", "Sweden"))
-        fields.append(Field(  0.0, "Contact", "Anna Lindqvist"))
-        fields.append(Field(3*w/8, "Email", "anna.lindqvist@example.com"))
-        fields.append(Field(  0.0, "Contents", "Two calibrated pressure sensors"))
-        fields.append(Field(5*w/8, "Weight", "3.2 kg"))
-        fields.append(Field(6*w/8, "Declared Value", "CAD 1,450.00"))
-        fields.append(Field(  0.0, "Instructions",
-                "Keep upright and away from magnets. Deliver on a weekday"))
-        fields.append(Field(  0.0, "", "between 9:00 and 17:00, to the reception on the third floor."))
+            let textBlock = TextBlock(f1, texts[i])
+            textBlock.setFontSize(14.0)
+            textBlock.setLineSpacing(1.5)
+            textBlock.setLocation(70.0, 130.0)
+            textBlock.setWidth(page.getWidth() - 140.0)
+            textBlock.drawOn(page)
 
-        xy = Form(fields)
-                .setLabelFont(f1)
-                .setLabelFontSize(8.0)
-                .setLabelColor(Color.dimgray)
-                .setValueFont(f2)
-                .setValueFontSize(10.0)
-                .setValueColor(Color.black)
-                .setLocation(56.0, xy[1] + 20.0)
-                .setWidth(w)
-                .setStrokeWidth(0.5)
-                .drawOn(page)
-
-        text = TextLine(f1, "The recipient signs for the package on delivery.")
-        text.setFontSize(10.0)
-        text.setTextColor(Color.dimgray)
-        text.setLocation(56.0, xy[1] + 20.0)
-        text.drawOn(page)
+            let footer = TextLine(f1, "Page " + String(i + 1) + " of " + String(titles.count))
+            footer.setFontSize(10.0)
+            footer.setTextColor(Color.dimgray)
+            footer.setLocation(70.0, page.getHeight() - 40.0)
+            footer.drawOn(page)
+        }
 
         try pdf.complete()
     }
 }   // End of Example_45.swift
+
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
 _ = try Example_45()

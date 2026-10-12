@@ -96,7 +96,7 @@ for port in java dotnet go swift; do
     fi
     mkdir -p "$WORK/pdfs/$port"
     missing=0
-    for i in $(seq -w 1 58); do
+    for i in $(seq -w 1 50); do
         if [ -s Example_$i.pdf ]; then
             mv Example_$i.pdf "$WORK/pdfs/$port/"
         else
@@ -126,7 +126,7 @@ if ! JAVA_HOME="$JAVA8_HOME" PATH="$JAVA8_HOME/bin:$PATH" \
     exit 1
 fi
 missing=0
-for i in $(seq -w 1 58); do
+for i in $(seq -w 1 50); do
     if [ ! -s Example_$i.pdf ]; then
         echo "java (JDK 8): Example_$i.pdf was not created"
         missing=1
@@ -151,7 +151,7 @@ fi
 # checked that the content streams of the other three are the same.
 "$WORK/venv/bin/python" .github/scripts/check-pdfua-tags.py "$WORK/pdfs/java" || exit 1
 
-# The Java PDFs, and two more encrypted like Example_30, in PDFium, pdf.js and
+# The Java PDFs, and two more encrypted like Example_47, in PDFium, pdf.js and
 # Poppler, whose renders and contact sheets are kept in $WORK/viewers/ENGINE.
 # pdf.js is installed from package-lock.json, as in the workflow.
 rm -rf "$WORK/encrypted" "$WORK/viewers"

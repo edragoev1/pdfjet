@@ -22,7 +22,7 @@ import (
 )
 
 // PDFobj is an object of a PDF that was read with PDF.Read, which holds the
-// tokens of its dictionary and its stream. See Example_20, Example_37 and
+// tokens of its dictionary and its stream. See Example_34, Example_48 and
 // Example_50.
 type PDFobj struct {
 	number       int      // The object number

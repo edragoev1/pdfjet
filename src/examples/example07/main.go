@@ -12,71 +12,87 @@ import (
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
-	"github.com/edragoev1/pdfjet/v9/src/a4"
+	"github.com/edragoev1/pdfjet/v9/src/NotoSans"
+	"github.com/edragoev1/pdfjet/v9/src/SourceSerif4"
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
+	"github.com/edragoev1/pdfjet/v9/src/letter"
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
-// Example07 adds a "DRAFT" watermark to every page of a two-page document
-// that is PDF/A-3a and PDF/UA-1. The watermark is drawn first, so the text of
-// the page is drawn over it.
+// Example07 reads fonts from OpenType and TrueType files. Any .otf or .ttf
+// file on the computer is a font for PDFjet. A font is embedded as a subset
+// of the glyphs the document draws, unless it is set to stay whole.
 func Example07() {
 	pdf, err := pdfjet.NewPDFFile("Example_07.pdf")
 	if err != nil {
 		log.Fatal(err)
 	}
-	pdf.SetCompliance(compliance.PDF_A_3A_UA_1)
-	pdf.SetTitle("A Draft, Archived as PDF/A-3a and PDF/UA-1")
+	pdf.SetCompliance(compliance.PDF_UA_1)
+	pdf.SetTitle("Fonts from .otf and .ttf Files")
 
 	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
-	f3 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold)
 
-	titles := []string{
-		"Project Proposal",
-		"Budget and Schedule",
+	page := pdfjet.NewPage(pdf, letter.Portrait())
+
+	text := pdfjet.NewTextLine(f2, "Fonts from .otf and .ttf Files")
+	text.SetStructureType(structelem.H1)
+	text.SetFontSize(22.0)
+	text.SetLocation(50.0, 80.0)
+	text.DrawOn(page)
+
+	textBlock := pdfjet.NewTextBlock(f1,
+		"PDFjet reads OpenType and TrueType fonts as they are: pass the path "+
+			"of any .otf or .ttf file on the computer to the Font constructor. "+
+			"The IBMPlexSans and NotoSans constants are the paths of the fonts "+
+			"that come with PDFjet. A font is embedded with only the "+
+			"glyphs the document draws, which keeps the file small, whatever its "+
+			"outlines. The paragraph below is drawn four times.")
+	textBlock.SetFontSize(12.0)
+	textBlock.SetLineSpacing(1.5)
+	textBlock.SetLocation(50.0, 95.0)
+	textBlock.SetWidth(512.0)
+	xy := textBlock.DrawOn(page)
+
+	files := []string{
+		"fonts/IBMPlexSans/IBMPlexSans-Regular.otf",
+		IBMPlexSans.Regular,
+		SourceSerif4.Regular,
+		NotoSans.Regular,
 	}
-	texts := []string{
-		"This proposal describes a new reporting service that creates invoices, " +
-			"statements and delivery notes as PDF documents. The documents are " +
-			"archived as PDF/A-3a, so they can be opened and printed exactly " +
-			"the same way for many years.\n\n" +
-			"The watermark tells every reader that this is a draft. It is drawn " +
-			"in light gray behind the text, at an angle from the bottom left " +
-			"corner to the top right corner of the page.",
-		"The service will be built in three phases over six months. The first " +
-			"phase delivers invoices, the second statements, and the third " +
-			"delivery notes.\n\n" +
-			"The budget and the schedule will be final once the proposal is " +
-			"approved. Until then, every page of this document is marked as a draft.",
+	kinds := []string{
+		"OpenType with CFF outlines, from the .otf file, embedded as a subset",
+		"TrueType, from the .ttf file, embedded as a subset",
+		"Another TrueType font, embedded as a subset",
+		"A TrueType font kept whole: subsetting turned off",
 	}
+	sample := "The quick brown fox jumps over the lazy dog. " +
+		"Ξεσκεπάζω την ψυχοφθόρα βδελυγμία. " +
+		"Съешь же ещё этих мягких французских булок, да выпей чаю."
 
-	for i := 0; i < len(titles); i++ {
-		page := pdfjet.NewPage(pdf, a4.Landscape())
+	y := xy[1] + 30.0
+	for i := 0; i < len(files); i++ {
+		text = pdfjet.NewTextLine(f2, files[i])
+		text.SetFontSize(11.0)
+		text.SetLocation(50.0, y)
+		text.DrawOn(page)
 
-		// The watermark is drawn before the content of the page.
-		f3.SetSize(120.0)
-		page.AddWatermark(f3, "DRAFT")
+		text = pdfjet.NewTextLine(f1, kinds[i])
+		text.SetFontSize(10.0)
+		text.SetTextColor(color.DimGray)
+		text.SetLocation(50.0, y+15.0)
+		text.DrawOn(page)
 
-		title := pdfjet.NewTextLine(f2, titles[i])
-		title.SetStructureType(structelem.H1)
-		title.SetFontSize(28.0)
-		title.SetLocation(70.0, 100.0)
-		title.DrawOn(page)
-
-		textBlock := pdfjet.NewTextBlock(f1, texts[i])
-		textBlock.SetFontSize(14.0)
-		textBlock.SetLineSpacing(1.5)
-		textBlock.SetLocation(70.0, 130.0)
-		textBlock.SetWidth(page.GetWidth() - 140.0)
-		textBlock.DrawOn(page)
-
-		footer := pdfjet.NewTextLine(f1, "Page "+fmt.Sprint(i+1)+" of "+fmt.Sprint(len(titles)))
-		footer.SetFontSize(10.0)
-		footer.SetTextColor(color.DimGray)
-		footer.SetLocation(70.0, page.GetHeight()-40.0)
-		footer.DrawOn(page)
+		font := pdfjet.NewFontFromFile(pdf, files[i])
+		font.SetSubset(i != 3)
+		textBlock = pdfjet.NewTextBlock(font, sample)
+		textBlock.SetFontSize(13.0)
+		textBlock.SetLineSpacing(1.4)
+		textBlock.SetLocation(50.0, y+28.0)
+		textBlock.SetWidth(512.0)
+		xy = textBlock.DrawOn(page)
+		y = xy[1] + 30.0
 	}
 
 	if err := pdf.Complete(); err != nil {

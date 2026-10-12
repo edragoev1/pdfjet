@@ -9,122 +9,86 @@ package examples;
 import java.io.*;
 import com.pdfjet.*;
 import com.pdfjet.fonts.*;
-import com.pdfjet.barcodes.*;
 
 /**
  * Example_11.java
- * This example draws a Code 128, a Code 39, a UPC-A and an EAN-13 barcode,
- * each next to a label, and then barcodes drawn from top to bottom and from
- * bottom to top.
+ * Using the TextBlock component to draw text next to images. The drawOn
+ * methods of Image and TextBlock return the bottom of what they drew, so each
+ * row starts below the taller of the image and the text next to it.
  */
 public class Example_11 {
     public Example_11() throws Exception {
         PDF pdf = new PDF(
-            new BufferedOutputStream(new FileOutputStream("Example_11.pdf")));
+                new BufferedOutputStream(new FileOutputStream("Example_11.pdf")));
         pdf.setCompliance(Compliance.PDF_UA_1);
-        pdf.setTitle("Linear Barcodes");
+        pdf.setTitle("Text Next to Images");
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
-        f1.setSize(12f);
-
         Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
-        f2.setSize(12f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        TextLine text = new TextLine(f2, "Linear Barcodes");
+        TextLine text = new TextLine(f2, "Text Next to Images");
         text.setStructureType(StructElem.H1);
         text.setFontSize(22f);
-        text.setLocation(70f, 80f);
+        text.setLocation(50f, 80f);
         text.drawOn(page);
 
-        String[] labels = {
-            "Code 128",
-            "Code 39",
-            "UPC-A",
-            "EAN-13",
-            "GS1-128",
-        };
-        String[] notes = {
-            "Letters, digits and symbols",
-            "Upper case letters and digits",
-            "11 digits, the check digit is added",
-            "12 digits, the check digit is added",
-            "GS1 data: a GTIN and a batch number",
-        };
-        Barcode[] barcodes = {
-            new Barcode(Barcode.CODE_128, "Hellö, World!"),
-            new Barcode(Barcode.CODE_39, "WIKIPEDIA"),
-            new Barcode(Barcode.UPC_A, "51234567890"),
-            new Barcode(Barcode.EAN_13, "051234567890"),
-            new Barcode(Barcode.GS1_128, "(01)09506000134352(10)ABC123"),
-        };
-        // UPC-A and EAN-13 need wider bars for the digits under them.
-        float[] moduleLengths = {0.75f, 0.75f, 1f, 1f, 0.75f};
+        TextBlock textBlock = new TextBlock(f1,
+                "Each map below is an Image with a TextBlock next to it. The drawOn "
+                + "method of both returns the bottom of what it drew, so every row "
+                + "starts below the taller of the two.");
+        textBlock.setFontSize(12f);
+        textBlock.setLineSpacing(1.5f);
+        textBlock.setLocation(50f, 95f);
+        textBlock.setWidth(512f);
+        float[] xy = textBlock.drawOn(page);
 
-        float y = 130f;
-        for (int i = 0; i < barcodes.length; i++) {
-            new TextLine(f2, labels[i]).setLocation(70f, y + 15f).drawOn(page);
-            TextLine note = new TextLine(f1, notes[i]);
-            note.setFontSize(10f);
-            note.setTextColor(Color.dimgray);
-            note.setLocation(70f, y + 32f);
-            note.drawOn(page);
+        String[] imageFiles = {
+            "images/ee-map.png",
+            "images/spain-admin.jpg",
+        };
+        String[] titles = {
+            "The European Union",
+            "The Regions of Spain",
+        };
+        String[] descriptions = {
+            "A map of Europe with the member states of the European Union and "
+                + "the countries that were candidates to join it when the map was "
+                + "made. The image is a PNG file of 687 by 710 pixels, drawn 200 "
+                + "points wide.",
+            "A map of the 17 autonomous communities of Spain and its two "
+                + "autonomous cities, Ceuta and Melilla, with their capitals. The "
+                + "image is a JPEG file of 2,017 by 2,412 pixels, drawn 200 points "
+                + "wide, which prints at more than 700 dots per inch.",
+        };
 
-            Barcode barcode = barcodes[i];
-            barcode.setLocation(290f, y);
-            barcode.setModuleLength(moduleLengths[i]);
-            barcode.setFont(f1);
-            float[] xy = barcode.drawOn(page);
-            y = xy[1] + 30f;
+        float x1 = 50f;     // The images
+        float x2 = 270f;    // The text next to them
+        float y = xy[1] + 25f;
+        for (int i = 0; i < imageFiles.length; i++) {
+            Image image = new Image(pdf, imageFiles[i]);
+            // The text beside a map describes it, so it describes it to a
+            // screen reader too.
+            image.setAltDescription(descriptions[i]);
+            image.resizeWidth(200f);
+            image.setLocation(x1, y);
+            float[] imageXY = image.drawOn(page);
+
+            text = new TextLine(f2, titles[i]);
+            text.setFontSize(14f);
+            text.setLocation(x2, y + f2.getAscent(14f));
+            text.drawOn(page);
+
+            textBlock = new TextBlock(f1, descriptions[i]);
+            textBlock.setFontSize(11f);
+            textBlock.setLineSpacing(1.5f);
+            textBlock.setLocation(x2, y + 25f);
+            textBlock.setWidth(292f);
+            float[] textXY = textBlock.drawOn(page);
+
+            y = Math.max(imageXY[1], textXY[1]) + 25f;
         }
-
-        // The same barcodes can be drawn from top to bottom and from bottom to top.
-        new TextLine(f2, "Vertical barcodes").setLocation(70f, y + 15f).drawOn(page);
-
-        Barcode barcode = new Barcode(Barcode.CODE_128, "G86513JVW0C");
-        barcode.setLocation(70f, y + 35f);
-        barcode.setModuleLength(0.75f);
-        barcode.setDirection(Direction.TOP_TO_BOTTOM);
-        barcode.setFont(f1);
-        float[] xy = barcode.drawOn(page);
-
-        barcode = new Barcode(Barcode.CODE_39, "CODE39");
-        barcode.setLocation(xy[0] + 60f, y + 35f);
-        barcode.setModuleLength(0.75f);
-        barcode.setDirection(Direction.BOTTOM_TO_TOP);
-        barcode.setFont(f1);
-        xy = barcode.drawOn(page);
-
-        barcode = new Barcode(Barcode.EAN_13, "051234567890");
-        barcode.setLocation(xy[0] + 60f, y + 35f);
-        barcode.setModuleLength(1f);
-        barcode.setDirection(Direction.BOTTOM_TO_TOP);
-        barcode.setFont(f1);
-        barcode.drawOn(page);
-
-        // ITF-14, the GTIN of a carton, framed by bearer bars.
-        Page page2 = new Page(pdf, Letter.PORTRAIT);
-        TextLine heading2 = new TextLine(f2, "Barcodes for Cartons");
-        heading2.setStructureType(StructElem.H2);
-        heading2.setFontSize(18f);
-        heading2.setLocation(70f, 80f);
-        heading2.drawOn(page2);
-
-        TextLine label = new TextLine(f2, "ITF-14");
-        label.setLocation(70f, 135f);
-        label.drawOn(page2);
-        TextLine cartonNote = new TextLine(f1, "The GTIN of a carton, 13 digits and the check digit PDFjet adds, framed by bearer bars");
-        cartonNote.setFontSize(10f);
-        cartonNote.setTextColor(Color.dimgray);
-        cartonNote.setLocation(70f, 152f);
-        cartonNote.drawOn(page2);
-
-        Barcode itf = new Barcode(Barcode.ITF_14, "1540014128876");
-        itf.setLocation(70f, 175f);
-        itf.setModuleLength(1f);
-        itf.setFont(f1);
-        itf.drawOn(page2);
 
         pdf.complete();
     }

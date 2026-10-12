@@ -10,8 +10,8 @@ using System.Collections.Generic;
 namespace PDFjet.NET {
 /// <summary>
 /// Bar chart renderer for PDF pages: one slot per category, the bars of the
-/// series grouped inside each slot. See Example_39 (horizontal bars) and
-/// Example_40 (vertical bars).
+/// series grouped inside each slot. See Example_27, of horizontal and
+/// vertical bars.
 /// </summary>
 public class BarChart : IDrawable {
     /// <summary>

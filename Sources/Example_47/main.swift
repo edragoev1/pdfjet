@@ -13,61 +13,48 @@ import PDFjet
 public class Example_47 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_47.pdf", append: false)!)
-        pdf.setCompliance(Compliance.PDF_UA_1)
-        pdf.setTitle("Text flowing through columns")
+        // pdf.setCompliance(Compliance.PDF_UA_1)
+
+        let passwords = Passwords()
+        passwords.setUserPassword("hello")
+        passwords.setOwnerPassword("world")
+
+        let permissions = Permissions()
+        permissions.grant(
+            UserAccess.PRINT |               // Set both to allow the user to print
+            UserAccess.PRINT_HIGH_QUALITY |  // this document with high quality
+            // UserAccess.MODIFY_CONTENTS |
+            // UserAccess.COPY_CONTENTS |
+            UserAccess.ASSEMBLE_DOCUMENT)
+
+        pdf.setEncryption(Encryption(pdf, passwords, permissions))
 
         let f1 = try Font(pdf, IBMPlexSans.Regular)
-        f1.setSize(14.0)
+        f1.setSize(36.0)
 
-        let paragraphs = try Content.ofTextFile(
-                "data/dostoevsky.txt").components(separatedBy: "\n\n")
+        let image = try Image(pdf, "images/ee-map.png")
 
-        var x: Float = 50.0
-        var y: Float = 50.0
-        let w: Float = 230.0
-        let h: Float = 500.0
-        let gap: Float = 20.0
+        let file1 = try EmbeddedFile(pdf, "images/linux-logo.png", false)
 
-        var page: Page? = nil
-        let textFrame = TextFrame(f1, paragraphs)
-        var first = true
-        while textFrame.hasMoreText() {
-            page = Page(pdf, Letter.LANDSCAPE)
-            if first {
-                // The heading, on the first page only, which its columns start under
-                TextLine(f1, "The Idiot, by Fyodor Dostoevsky")
-                        .setStructureType(StructElem.H1)
-                        .setFontSize(20.0)
-                        .setLocation(50.0, 50.0)
-                        .drawOn(page!)
-                y = 80.0
-                first = false
-            }
+        let page = Page(pdf, Letter.PORTRAIT)
 
-            textFrame.setLocation(x, y)
-            textFrame.setWidth(w)
-            textFrame.setHeight(h)
-            textFrame.drawOn(page)
+        let textLine = TextLine(f1, "Hello, World!")
+        textLine.setLocation(100.0, 100.0)
+        textLine.drawOn(page)
 
-            if (textFrame.hasMoreText()) {
-                x += w + gap
-                textFrame.setLocation(x, y)
-                textFrame.setWidth(w)
-                textFrame.setHeight(h)
-                textFrame.drawOn(page)
-            }
+        image.setLocation(100.0, 150.0)
+        image.scaleBy(0.5)
+        image.drawOn(page)
 
-            if (textFrame.hasMoreText()) {
-                x += w + gap
-                textFrame.setLocation(x, y)
-                textFrame.setWidth(w)
-                textFrame.setHeight(h)
-                textFrame.drawOn(page)
-            }
-
-            x = 50.0
-            y = 50.0
-        }
+        // File attachment functionality
+        let attachment = FileAttachment(file1)
+        attachment.setLocation(100.0, 550.0)
+        attachment.setIconPushPin()
+        attachment.setIconSize(24.0)
+        attachment.setTitle("Attached File: " + file1.getFileName())
+        attachment.setContents(
+                "Right mouse click on the icon to save the attached file.")
+        attachment.drawOn(page)
 
         try pdf.complete()
     }

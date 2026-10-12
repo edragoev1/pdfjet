@@ -9,47 +9,118 @@ import PDFjet
 
 /**
  * Example_41.swift
- *
- * Merges existing PDF documents into one, after a cover page drawn with PDFjet.
- * The pages of each document follow in their order and keep their content,
- * resources, annotations and links. The parts of a document that belong to the
- * whole document, such as its bookmarks, form fields and tagging, are left out.
+ * This example draws the outline of a short guide to the structure of a PDF
+ * file, and adds a bookmark for each of its titles. The numbers of the titles
+ * come from their place in the tree of bookmarks.
  */
 public class Example_41 {
+
     public init() throws {
-        let pdf = PDF(OutputStream(toFileAtPath: "Example_41.pdf", append: false)!)
+        let stream = OutputStream(toFileAtPath: "Example_41.pdf", append: false)
 
-        let fileNames = [
-            "data/testPDFs/scanned-linearized.pdf",
-            "data/testPDFs/rc65-16e.pdf",
-            "data/testPDFs/PDFjetLogo.pdf"
-        ]
-        var documents = [[PDFobj]]()
-        for fileName in fileNames {
-            documents.append(try pdf.read(from: InputStream(fileAtPath: fileName)!))
-        }
+        let pdf = PDF(stream!)
+        pdf.setCompliance(Compliance.PDF_UA_1)
+        pdf.setTitle("The structure of a PDF file")
 
-        let f1 = try Font(pdf, IBMPlexSans.Bold)
-        f1.setSize(24.0)
-        let f2 = try Font(pdf, IBMPlexSans.Regular)
-        f2.setSize(12.0)
+        let f1 = try Font(pdf, IBMPlexSans.Regular)
+        f1.setSize(14.0)
 
-        let page = Page(pdf, Letter.PORTRAIT)
-        TextLine(f1, "Merged documents").setLocation(50.0, 80.0).drawOn(page)
-        var y: Float = 130.0
-        for i in 0..<fileNames.count {
-            let pages = pdf.getPageObjects(from: documents[i]).count
-            let text = fileNames[i] + ", " + String(pages) + (pages == 1 ? " page" : " pages")
-            TextLine(f2, text).setLocation(50.0, y).drawOn(page)
-            y += 20.0
-        }
+        let f2 = try Font(pdf, IBMPlexSans.SemiBold)
+        f2.setSize(20.0)
 
-        for objects in documents {
-            try pdf.merge(objects)
-        }
+        var page = Page(pdf, Letter.PORTRAIT)
+
+        let toc = Bookmark(pdf)
+
+        let x: Float = 70.0
+        var y: Float = 80.0
+        let offset: Float = 50.0
+
+        // A bookmark without a number.
+        var title = Title(f2, "The structure of a PDF file", x, y)
+        title.getTextLine().setStructureType(StructElem.H1)
+        toc.addBookmark(page, title)
+        title.drawOn(page)
+
+        y += 50.0
+        title = Title(f1, "File header", x, y).setOffset(offset)
+        toc.addBookmark(page, title).autoNumber(title.getPrefix())
+        title.drawOn(page)
+
+        y += 30.0
+        title = Title(f1, "File body", x, y).setOffset(offset)
+        let body = toc.addBookmark(page, title).autoNumber(title.getPrefix())
+        title.drawOn(page)
+
+        // Bookmarks nested in "File body".
+        y += 30.0
+        title = Title(f1, "Objects", x, y).setOffset(offset)
+        body.addBookmark(page, title).autoNumber(title.getPrefix())
+        title.drawOn(page)
+
+        y += 30.0
+        title = Title(f1, "Streams", x, y).setOffset(offset)
+        body.addBookmark(page, title).autoNumber(title.getPrefix())
+        title.drawOn(page)
+
+        y += 30.0
+        title = Title(f1, "Cross-reference table", x, y).setOffset(offset)
+        toc.addBookmark(page, title).autoNumber(title.getPrefix())
+        title.drawOn(page)
+
+        y += 30.0
+        title = Title(f1, "File trailer", x, y).setOffset(offset)
+        toc.addBookmark(page, title).autoNumber(title.getPrefix())
+        title.drawOn(page)
+
+        page = Page(pdf, Letter.PORTRAIT)
+
+        y = 80.0
+        title = Title(f1, "Incremental updates", x, y).setOffset(offset)
+        var bm = toc.addBookmark(page, title).autoNumber(title.getPrefix())
+        title.drawOn(page)
+
+        y += 30.0
+        title = Title(f1, "New and changed objects", x, y).setOffset(offset)
+        bm = bm.addBookmark(page, title).autoNumber(title.getPrefix())
+        title.drawOn(page)
+
+        // Two levels down.
+        y += 30.0
+        title = Title(f1, "Changed objects keep their numbers", x, y).setOffset(offset)
+        bm.addBookmark(page, title).autoNumber(title.getPrefix())
+        title.drawOn(page)
+
+        y += 30.0
+        title = Title(f1, "Deleted objects are marked as free", x, y).setOffset(offset)
+        bm.addBookmark(page, title).autoNumber(title.getPrefix())
+        title.drawOn(page)
+
+        // Back up one level.
+        y += 30.0
+        bm = bm.getParent()!
+        title = Title(f1, "A new cross-reference section", x, y).setOffset(offset)
+        bm.addBookmark(page, title).autoNumber(title.getPrefix())
+        title.drawOn(page)
+
+        y += 30.0
+        title = Title(f1, "A new trailer", x, y).setOffset(offset)
+        bm.addBookmark(page, title).autoNumber(title.getPrefix())
+        title.drawOn(page)
+
+        y += 30.0
+        title = Title(f1, "Linearized files", x, y).setOffset(offset)
+        toc.addBookmark(page, title).autoNumber(title.getPrefix())
+        title.drawOn(page)
+
+        y += 50.0
+        title = Title(f2, "Summary", x, y)
+        toc.addBookmark(page, title)
+        title.drawOn(page)
 
         try pdf.complete()
     }
+
 }   // End of Example_41.swift
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)

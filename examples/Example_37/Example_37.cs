@@ -6,56 +6,199 @@
  */
 using System;
 using System.IO;
-using System.Collections.Generic;
 using System.Diagnostics;
 using PDFjet.NET;
+using System.Text;
 
 /**
  * Example_37.cs
+ *
+ * Draws two-dimensional barcodes. The same web address as a QR code with
+ * each of the four error correction levels, where a higher level lets a
+ * scanner read a code that is more damaged or covered and leaves room for
+ * less data; GS1 data as a GS1 Digital Link in a QR code; and Data Matrix
+ * symbols of a web address, text in UTF-8, a rectangle, a larger symbol and
+ * GS1 data.
  */
-class Example_37 {
-    public Example_37(String fileName) {
+public class Example_37 {
+    public Example_37() {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_37.pdf", FileMode.Create)));
-        List<PDFobj> objects = pdf.Read(new FileStream(fileName, FileMode.Open, FileAccess.Read));
+        pdf.SetCompliance(Compliance.PDF_UA_1);
+        pdf.SetTitle("QR Codes and Data Matrix Barcodes");
 
-        // A font added to an existing PDF is embedded as a subset of the glyphs
-        // drawn, as in a new PDF.
-        Font f1 = new Font(objects,
-                new FileStream("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf",
-                FileMode.Open,
-                FileAccess.Read));
-        f1.SetSize(72f);
-
-        TextLine text = new TextLine(f1, "This is a test!");
-        text.SetLocation(84f, 350f);    // the T lines up with the scanned text
-        text.SetTextColor(Color.peru);
-
-        List<PDFobj> pages = pdf.GetPageObjects(objects);
-        foreach (PDFobj pageObj in pages) {
-            GraphicsState gs = new GraphicsState();
-            gs.SetAlphaStroking(0.75f);         // Stroking alpha
-            gs.SetAlphaNonStroking(0.75f);      // Non-stroking alpha
-            pageObj.SetGraphicsState(gs, objects);
-
-            Page page = new Page(pdf, pageObj);
-            page.AddResource(f1, objects);
-            page.SetBrushColor(Color.blue);
-            // page.DrawString(f1, "Hello, World!", 50f, 200f);
-            text.DrawOn(page);
-
-            page.Complete(objects); // The graphics stack is unwinded automatically
-        }
-        pdf.AddObjects(objects);
+        DrawQRCodes(pdf);
+        DrawDataMatrix(pdf);
 
         pdf.Complete();
+    }
+
+    private void DrawQRCodes(PDF pdf) {
+        Font f1 = new Font(pdf, IBMPlexSans.Regular);
+        Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
+
+        Page page = new Page(pdf, Letter.PORTRAIT);
+
+        TextLine text = new TextLine(f2, "QR Code Error Correction");
+        text.SetStructureType(StructElem.H1);
+        text.SetFontSize(22f);
+        text.SetLocation(70f, 80f);
+        text.DrawOn(page);
+
+        TextBlock textBlock = new TextBlock(f1,
+                "Each QR code below holds the same address, the home page of PDFjet. "
+                + "A higher error correction level lets a scanner read the code when "
+                + "more of it is damaged or covered, and leaves room for less data, "
+                + "so longer data at a higher level makes a larger code.");
+        textBlock.SetFontSize(12f);
+        textBlock.SetLineSpacing(1.5f);
+        textBlock.SetLocation(70f, 95f);
+        textBlock.SetWidth(470f);
+        textBlock.DrawOn(page);
+
+        ErrorCorrectionLevel[] levels = {
+            ErrorCorrectionLevel.L,
+            ErrorCorrectionLevel.M,
+            ErrorCorrectionLevel.Q,
+            ErrorCorrectionLevel.H,
+        };
+        String[] names = {
+            "L (Low)",
+            "M (Medium)",
+            "Q (Quartile)",
+            "H (High)",
+        };
+        String[] notes = {
+            "About 7% can be restored, 78 bytes fit in this size",
+            "About 15% can be restored, 62 bytes fit in this size",
+            "About 25% can be restored, 46 bytes fit in this size",
+            "About 30% can be restored, 34 bytes fit in this size",
+        };
+
+        // Two rows of two codes.
+        for (int i = 0; i < levels.Length; i++) {
+            float x = 70f + (i % 2) * 250f;
+            float y = 200f + (i / 2) * 250f;
+
+            QRCode qr = new QRCode("https://pdfjet.com", levels[i]);
+            qr.SetModuleLength(5f);
+            qr.SetLocation(x, y);
+            float[] xy = qr.DrawOn(page);
+
+            text = new TextLine(f2, names[i]);
+            text.SetFontSize(12f);
+            text.SetLocation(x, xy[1] + 20f);
+            text.DrawOn(page);
+
+            text = new TextLine(f1, notes[i]);
+            text.SetFontSize(10f);
+            text.SetTextColor(Color.dimgray);
+            text.SetLocation(x, xy[1] + 35f);
+            text.DrawOn(page);
+        }
+
+        // GS1 data as a GS1 Digital Link, a web address an ordinary QR code carries.
+        Page page2 = new Page(pdf, Letter.PORTRAIT);
+        text = new TextLine(f2, "GS1 Digital Link");
+        text.SetStructureType(StructElem.H2);
+        text.SetFontSize(18f);
+        text.SetLocation(70f, 80f);
+        text.DrawOn(page2);
+
+        String link = GS1.DigitalLink("https://id.gs1.org", "(01)09506000134352(10)ABC123(17)261231");
+        TextBlock note = new TextBlock(f1, "The GS1 data (01)09506000134352(10)ABC123(17)261231, a GTIN, a batch and an expiry date, "
+                + "is this web address, a GS1 Digital Link, which an ordinary QR code carries and any phone opens:");
+        note.SetFontSize(12f);
+        note.SetLineSpacing(1.5f);
+        note.SetLocation(70f, 95f);
+        note.SetWidth(470f);
+        float[] corner = note.DrawOn(page2);
+
+        // The address as a link, not as text in the paragraph, which PDF/UA
+        // checkers take for a link without its Link element
+        text = new TextLine(f1, link);
+        text.SetFontSize(12f);
+        text.SetTextColor(Color.blue);
+        text.SetUnderline(true);
+        text.SetURIAction(link);
+        text.SetLocation(70f, corner[1] + 20f);
+        text.DrawOn(page2);
+
+        QRCode code = new QRCode(link, ErrorCorrectionLevel.M);
+        code.SetModuleLength(4f);
+        code.SetLocation(70f, corner[1] + 50f);
+        code.DrawOn(page2);
+    }
+
+    private void DrawDataMatrix(PDF pdf) {
+        Font f1 = new Font(pdf, IBMPlexSans.Regular);
+        f1.SetSize(10f);
+
+        Page page = new Page(pdf, Letter.PORTRAIT);
+
+        // The heading of the document, above the symbols
+        new TextLine(f1, "Data Matrix Barcodes")
+                .SetStructureType(StructElem.H1)
+                .SetFontSize(18f)
+                .SetLocation(50f, 36f)
+                .DrawOn(page);
+
+        DataMatrix barcode = new DataMatrix("https://github.com/edragoev1/pdfjet");
+        barcode.SetLocation(50f, 50f);
+        barcode.SetModuleLength(3f);
+        float[] xy = barcode.DrawOn(page);
+        TextLine caption = new TextLine(f1, "A web address");
+        caption.SetLocation(50f, xy[1] + 20f);
+        caption.DrawOn(page);
+
+        barcode = new DataMatrix("Grüße aus München! こんにちは 😀");
+        barcode.SetLocation(300f, 50f);
+        barcode.SetModuleLength(3f);
+        xy = barcode.DrawOn(page);
+        caption = new TextLine(f1, "Text in UTF-8");
+        caption.SetLocation(300f, xy[1] + 20f);
+        caption.DrawOn(page);
+
+        barcode = new DataMatrix("PDFjet 9.0.5", DataMatrix.RECTANGLE);
+        barcode.SetLocation(50f, 250f);
+        barcode.SetModuleLength(4f);
+        barcode.SetModuleColor(Color.blue);
+        xy = barcode.DrawOn(page);
+        caption = new TextLine(f1, "A rectangular symbol");
+        caption.SetLocation(50f, xy[1] + 20f);
+        caption.DrawOn(page);
+
+        StringBuilder sb = new StringBuilder();
+        for (int i = 1; i <= 20; i++) {
+            sb.Append("Line ").Append(i).Append(" of a longer text in a larger symbol.\n");
+        }
+        barcode = new DataMatrix(sb.ToString());
+        barcode.SetLocation(300f, 250f);
+        barcode.SetModuleLength(2f);
+        xy = barcode.DrawOn(page);
+        caption = new TextLine(f1, "A larger symbol");
+        caption.SetLocation(300f, xy[1] + 20f);
+        caption.DrawOn(page);
+
+        barcode = DataMatrix.FromGS1("(01)09506000134352(17)261231(10)ABC123(21)XYZ-42");
+        barcode.SetLocation(50f, 400f);
+        barcode.SetModuleLength(3f);
+        xy = barcode.DrawOn(page);
+        // On two lines, clear of the larger symbol at its right
+        caption = new TextLine(f1, "GS1: a GTIN, an expiry date,");
+        caption.SetLocation(50f, xy[1] + 20f);
+        caption.DrawOn(page);
+        caption = new TextLine(f1, "a batch and a serial number");
+        caption.SetLocation(50f, xy[1] + 20f + 14f); // A line of 10 points, and its spacing
+        caption.DrawOn(page);
     }
 
     public static void Main(String[] args) {
         Stopwatch sw = Stopwatch.StartNew();
         long time0 = sw.ElapsedMilliseconds;
-        new Example_37("data/testPDFs/scanned-linearized.pdf");
+        new Example_37();
         long time1 = sw.ElapsedMilliseconds;
+        sw.Stop();
         Console.WriteLine($"Example_37 => {time1 - time0,4} ms");
     }
 }   // End of Example_37.cs

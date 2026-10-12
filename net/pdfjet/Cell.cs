@@ -276,7 +276,7 @@ public class Cell {
     /// <summary>
     /// Sets the marker drawn in this cell: a Point, placed at the left or the
     /// right of the cell and centered vertically.
-    /// See the Point class and Example_09 for more information.
+    /// See the Point class and Example_26 for more information.
     /// </summary>
     /// <param name="point">the point.</param>
     /// <param name="alignment">Alignment.LEFT or Alignment.RIGHT.</param>
@@ -535,7 +535,7 @@ public class Cell {
     /// moves the whole of it to the next page. The table keeps its shape, so
     /// the rows under this one still hold a cell at this column, which is
     /// left empty. A row span of 1, the default, spans nothing. Please see
-    /// Example_38.
+    /// Example_21.
     /// </summary>
     /// <param name="rowspan">the number of rows, from 1.</param>
     /// <returns>this Cell object.</returns>

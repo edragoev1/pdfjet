@@ -8,62 +8,127 @@ using System;
 using System.IO;
 using System.Text;
 using System.Diagnostics;
-using System.Collections.Generic;
 using PDFjet.NET;
 
 /**
  * Example_12.cs
- * This example draws a PDF417 barcode that holds a whole source file, with an
- * explanation and a caption.
  */
 public class Example_12 {
     public Example_12() {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_12.pdf", FileMode.Create)));
         pdf.SetCompliance(Compliance.PDF_UA_1);
-        pdf.SetTitle("PDF417 barcode example");
+        pdf.SetTitle("Switzerland");
+
+        Image image1 = new Image(pdf, "images/swiss-admin.jpg");
+        image1.SetAltDescription(
+                "A map of Switzerland's 26 cantons, numbered and named in a key, with their capitals, Bern marked as the national capital, the lakes and rivers, and the neighboring countries.");
 
         Font f1 = new Font(pdf, IBMPlexSans.Regular);
+        f1.SetSize(10f);
+
         Font f2 = new Font(pdf, IBMPlexSans.SemiBold);
+        f2.SetSize(14f);
+
+        Font f3 = new Font(pdf, IBMPlexSans.SemiBold);
+        f3.SetSize(12f);
+
+        Font f4 = new Font(pdf, IBMPlexSans.Italic);
+        f4.SetSize(10f);
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        TextLine text = new TextLine(f2, "PDF417 Barcode");
-        text.SetStructureType(StructElem.H1);
-        text.SetFontSize(22f);
-        text.SetLocation(70f, 80f);
-        text.DrawOn(page);
+        // The map is 310 points tall, so that it and the text fit the page,
+        // and centered over the text.
+        image1.ScaleBy(310f / image1.GetHeight());
+        image1.SetLocation(90f + (470f - image1.GetWidth()) / 2f, 35f);
+        image1.DrawOn(page);
 
-        TextBlock textBlock = new TextBlock(f1,
-                "PDF417 is a stacked two-dimensional barcode, used on boarding passes, "
-                + "identity cards and shipping labels. It holds text and binary data, "
-                + "and its error correction lets a scanner read it even when part of "
-                + "it is damaged.");
-        textBlock.SetFontSize(12f);
-        textBlock.SetLineSpacing(1.5f);
-        textBlock.SetLocation(70f, 95f);
-        textBlock.SetWidth(470f);
-        float[] xy = textBlock.DrawOn(page);
+        // To rotate the column, add it to a Container and rotate that; see Example_31.
+        TextColumn column = new TextColumn();
+        column.SetLineSpacing(1.3f);        // 1.3 x font height
+        column.SetParagraphSpacing(1.0f);   // 1.0 x line spacing
 
-        // A barcode that holds a whole source file.
-        List<String> lines = Content.LinesOfTextFile("data/Example_12.java");
+        Paragraph p2 = new Paragraph();
+        p2.SetStructureType(StructElem.H1);
+        p2.Add(new TextLine(f2, "Introduction"));
+
         StringBuilder buf = new StringBuilder();
-        foreach (String line in lines) {
-            buf.Append(line);
-            buf.Append("\r\n"); // CR and LF both required!
-        }
+        buf.Append("The Swiss Confederation was founded in 1291 as a defensive ");
+        buf.Append("alliance among three cantons. In succeeding years, other ");
+        buf.Append("localities joined the original three. ");
+        buf.Append("The Swiss Confederation secured its independence from the ");
+        buf.Append("Holy Roman Empire in 1499. Switzerland's sovereignty and ");
+        buf.Append("neutrality have long been honored by the major European ");
+        buf.Append("powers, and the country was not involved in either of the ");
+        buf.Append("two World Wars. The political and economic integration of ");
+        buf.Append("Europe over the past half century, as well as Switzerland's ");
+        buf.Append("role in many UN and international organizations, has ");
+        buf.Append("strengthened Switzerland's ties with its neighbors. ");
+        buf.Append("However, the country did not officially become a UN member ");
+        buf.Append("until 2002.");
 
-        PDF417 barcode = new PDF417(buf.ToString());
-        barcode.SetModuleLength(1f);
-        barcode.SetLocation(70f, xy[1] + 30f);
-        xy = barcode.DrawOn(page);
+        Paragraph p3 = new Paragraph();
+        // p3.SetTextAlignment(Alignment.LEFT);
+        // p3.SetTextAlignment(Alignment.RIGHT);
+        p3.SetTextAlignment(Alignment.JUSTIFY);
+        TextLine text = new TextLine(f1, buf.ToString());
+        p3.Add(text);
 
-        text = new TextLine(f1, "The source code of data/Example_12.java, "
-                + lines.Count + " lines");
-        text.SetFontSize(10f);
-        text.SetTextColor(Color.dimgray);
-        text.SetLocation(70f, xy[1] + 20f);
-        text.DrawOn(page);
+        buf = new StringBuilder();
+        buf.Append("Switzerland remains active in many UN and international ");
+        buf.Append("organizations but retains a strong commitment to neutrality.");
+
+        text = new TextLine(f1, buf.ToString());
+        text.SetTextColor(Color.firebrick);
+        p3.Add(text);
+
+        Paragraph p4 = new Paragraph();
+        p4.SetStructureType(StructElem.H1);
+        p4.Add(new TextLine(f3, "Economy"));
+
+        buf = new StringBuilder();
+        buf.Append("Switzerland is a peaceful, prosperous, and stable modern ");
+        buf.Append("market economy with low unemployment, a highly skilled ");
+        buf.Append("labor force, and a per capita GDP larger than that of the ");
+        buf.Append("big Western European economies. The Swiss in recent years ");
+        buf.Append("have brought their economic practices largely into ");
+        buf.Append("conformity with the EU's to enhance their international ");
+        buf.Append("competitiveness. Switzerland remains a safe haven for ");
+        buf.Append("investors, because it has maintained a degree of bank secrecy ");
+        buf.Append("and has kept up the franc's long-term external value. ");
+        buf.Append("Reflecting the anemic economic conditions of Europe, GDP ");
+        buf.Append("growth stagnated during the 2001-03 period, improved during ");
+        buf.Append("2004-05 to 1.8% annually and to 2.9% in 2006.");
+
+        Paragraph p5 = new Paragraph();
+        p5.SetTextAlignment(Alignment.JUSTIFY);
+        text = new TextLine(f1, buf.ToString());
+        p5.Add(text);
+
+        text = new TextLine(f4,
+                "Even so, unemployment has remained at less than half the EU average.");
+        text.SetTextColor(Color.blue);
+        p5.Add(text);
+
+        column.AddParagraph(p2);
+        column.AddParagraph(p3);
+        column.AddParagraph(p4);
+        column.AddParagraph(p5);
+
+        column.SetLocation(90f, 365f);
+
+        float columnWidth = 470f;
+        column.SetWidth(columnWidth);
+        column.SetHeight(100f);
+        float[] xy = column.DrawOn(page);
+
+        Line line = new Line(
+                xy[0] - columnWidth,
+                xy[1],
+                xy[0],
+                xy[1]);
+        line.DrawOn(page);
 
         pdf.Complete();
     }
@@ -76,4 +141,4 @@ public class Example_12 {
         sw.Stop();
         Console.WriteLine($"Example_12 => {time1 - time0,4} ms");
     }
-}
+}   // End of Example_12.cs

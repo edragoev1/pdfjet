@@ -117,7 +117,7 @@ class EncryptionTest {
     @Test
     void theDictionarySaysTheKeyIs256BitsForAcrobat() throws Exception {
         // Adobe Acrobat opens no AES-256 file without /Length, though PDF 2.0
-        // leaves it optional for V 5 (found on 1 October 2026, with Example_30)
+        // leaves it optional for V 5 (found on 1 October 2026, with Example_47)
         assertTrue(TestSupport.latin1(encrypted("", "world")).contains("/R 6\n/Length 256\n"));
     }
 
