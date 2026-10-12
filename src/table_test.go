@@ -1482,3 +1482,20 @@ func TestTableTheLinesOfAWrappedCellAreEvenlyApartWithItsPadding(t *testing.T) {
 	}
 	testNear(t, "the last line", line+8, heights[len(heights)-1], 0.001)
 }
+
+// Drawing a table leaves the caller's cells as they were: a long text was
+// cut to its first line in the cell, and a table made again of the cells
+// lost the rest (review of 11 October 2026, #12).
+func TestTableDrawingLeavesTheCellsAsTheyWere(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	long := strings.Repeat("a long text that wraps over several lines ", 4)
+	data := [][]*Cell{{NewCell(font, "Header")}, {NewCell(font, long)}}
+	table := NewTable().SetTableData(data, 1)
+	table.SetColumnWidth(0, 80)
+	table.SetLocation(20, 20)
+	table.DrawOn(NewPage(pdf, letter.Portrait()))
+	if got := data[1][0].GetText(); got != long {
+		t.Errorf("the cell's text is %q after drawing, not the text it had", got)
+	}
+}

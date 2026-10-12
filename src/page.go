@@ -516,7 +516,7 @@ func (page *Page) drawUnicodeString(font *Font, text string) {
 		}
 	} else if !needsShaping(font, runes) {
 		for _, c1 := range runes {
-			if c1 != 0xFEFF { // BOM marker
+			if c1 != 0xFEFF && !isIgnorable(c1) { // BOM marker, or one not drawn
 				page.appendGlyph(font, glyphOf(font, c1))
 			}
 		}
@@ -555,7 +555,7 @@ func (page *Page) drawUnicodeString(font *Font, text string) {
 					}
 					joiners[len(codePoints)-1] = c1
 				}
-			} else if c1 != 0xFEFF { // BOM marker
+			} else if c1 != 0xFEFF && !isIgnorable(c1) { // BOM marker, or one not drawn
 				if _, ok := mirrored(c1); afterRLM && ok {
 					if mirroredAt == nil {
 						mirroredAt = make([]bool, len(runes))
@@ -899,7 +899,7 @@ func needsShaping(font *Font, runes []rune) bool {
 				return true
 			}
 		}
-		if c != 0xFEFF && font.lacks(c) {
+		if c != 0xFEFF && !isIgnorable(c) && font.lacks(c) {
 			return true
 		}
 	}

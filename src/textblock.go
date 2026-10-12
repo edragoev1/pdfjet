@@ -767,6 +767,17 @@ func (textBlock *TextBlock) linesThatFit(textLines []*TextLine, leading float32)
 	lines := make([]*TextLine, fit)
 	copy(lines, textLines)
 	last := []rune(lines[fit-1].text)
+	// A line of right to left text is kept in the order it is drawn, so its
+	// end, where it is cut and the "..." goes, is at its left: cut at its
+	// right, the start of the line was lost and the "..." came first in the
+	// reading (review of 11 October 2026, #7)
+	if textBlock.rightToLeft {
+		if len(last) > 3 {
+			last = last[3:]
+		}
+		lines[fit-1] = NewTextLine(textBlock.font, "..."+string(last))
+		return lines
+	}
 	if len(last) > 3 {
 		last = last[:len(last)-3]
 	}

@@ -320,3 +320,71 @@ func TestTextBlockALongRightToLeftWordIsBrokenInTimeThatGrowsWithTheWord(t *test
 	// The other ports check the same height
 	testNear(t, "height", 120006, block.DrawOn(nil)[1], 0.5)
 }
+
+// A right to left text cut to its height keeps the start of its last line,
+// at the right as it is drawn, and its "..." at the left, where the line
+// ends in the reading (review of 11 October 2026, #7).
+func TestTextBlockARightToLeftTextCutToItsHeightKeepsTheStartOfItsLastLine(t *testing.T) {
+	pdf := testNewPDF()
+	font := NewFontFromFile(pdf, testRepoPath(t, "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.ttf"))
+	block := NewTextBlock(font, "שלום עולם אחד שתיים שלוש ארבע חמש שש שבע שמונה").SetRightToLeft(true)
+	block.SetSize(80, 20)
+	lines := block.getTextLines()
+	ascent, descent := font.GetAscent(block.fontSize), font.GetDescent(block.fontSize)
+	leading := (ascent + descent + font.GetLineGap(block.fontSize)) * block.lineSpacing
+	fit := block.linesThatFit(lines, leading)
+	if len(fit) >= len(lines) {
+		t.Fatalf("the text is not cut: %d lines of %d", len(fit), len(lines))
+	}
+	last := []rune(lines[len(fit)-1].text)
+	got := fit[len(fit)-1].text
+	if !strings.HasPrefix(got, "...") || !strings.HasSuffix(got, string(last[3:])) {
+		t.Errorf("the last line %q, cut from %q, has lost its start", got, string(last))
+	}
+}
+
+// A character Unicode does not draw without a glyph, as the variation
+// selector after ™ in text pasted from a phone, a zero width space or a word
+// joiner, takes no width and draws nothing, where it was a box with a width
+// (review of 11 October 2026, #9).
+func TestTextBlockAnIgnorableCharacterIsNotDrawn(t *testing.T) {
+	pdf := testNewPDF()
+	font := NewFontFromFile(pdf, testRepoPath(t, "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
+	plain := "Brand™ © 2026 word"
+	marked := "Brand™️ ©️ 2026​ wo⁠rd"
+	if a, b := font.StringWidth(12, plain), font.StringWidth(12, marked); a != b {
+		t.Errorf("the text is %v wide with the marks, %v without", b, a)
+	}
+	draw := func(text string) string {
+		page := NewPage(pdf, testLetterPortrait())
+		line := NewTextLine(font, text)
+		line.SetLocation(10, 10)
+		line.DrawOn(page)
+		return testContent(page)
+	}
+	if a, b := draw(plain), draw(marked); a != b {
+		t.Errorf("the marks draw something:\n%q\n%q", b, a)
+	}
+}
+
+// A Stamp leaves out the marks of direction and the joiners its font has no
+// glyph for, as Page does: Hebrew with brackets, reordered for drawing, wrote
+// two .notdef glyphs (review of 11 October 2026, #10).
+func TestTextBlockAStampLeavesOutTheMarksOfDirection(t *testing.T) {
+	pdf := testNewPDF()
+	font := NewFontFromFile(pdf, testRepoPath(t, "fonts/IBMPlexSansHebrew/IBMPlexSansHebrew-Regular.ttf"))
+	text := ReorderVisually("שלום (abc) עולם")
+	if !strings.ContainsAny(text, "‎‏") {
+		t.Fatalf("the text has no marks of direction: %q", text)
+	}
+	stamp := NewStamp(pdf)
+	stamp.DrawText(font, 12, 0, 12, text)
+	content := stamp.buf.String()
+	start, end := strings.Index(content, "<"), strings.Index(content, ">")
+	glyphs := content[start+1 : end]
+	for i := 0; i+4 <= len(glyphs); i += 4 {
+		if glyphs[i:i+4] == "0000" {
+			t.Errorf("the stamp draws .notdef: %q", content)
+		}
+	}
+}

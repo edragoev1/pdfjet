@@ -136,6 +136,21 @@ func NewBarcode(barcodeType int, text string) *Barcode {
 	barcode.tableB['Y'] = "BWbwBwbwb"
 	barcode.tableB['Z'] = "bWBwBwbwb"
 
+	// Code 39 is checked here, as the other symbologies are, not first when
+	// it is drawn: a '*' in its data, the character that starts and ends the
+	// code, or no data at all made a code that no scanner reads (review of
+	// 11 October 2026, #13)
+	if barcodeType == CODE_39 {
+		if text == "" {
+			panic("A Code39 barcode needs at least one character.")
+		}
+		for i := 0; i < len(text); i++ {
+			if text[i] == '*' || barcode.tableB[text[i]] == "" {
+				panic("The input string '*" + text +
+					"*' contains characters that are invalid in a Code39 barcode.")
+			}
+		}
+	}
 	return barcode
 }
 

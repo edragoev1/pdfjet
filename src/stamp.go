@@ -420,6 +420,14 @@ func (s *Stamp) drawEncodedText(font *Font, str string) {
 		if codePoint == 0xFEFF { // Skip the BOM
 			continue
 		}
+		// What Page leaves out, it leaves out too: the marks of direction,
+		// a joiner the font has no glyph for, and what Unicode does not
+		// draw; each was drawn as a box, wider than StringWidth measured
+		// the text (review of 11 October 2026, #10)
+		if codePoint == 0x200E || codePoint == 0x200F || isIgnorable(codePoint) ||
+			((codePoint == 0x200C || codePoint == 0x200D) && font.unicodeToGID[codePoint] == 0) {
+			continue
+		}
 		gid := glyphOf(font, codePoint)
 		font.useGlyph(gid)
 		if font.lacks(codePoint) {

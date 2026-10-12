@@ -308,3 +308,20 @@ func TestBarcodeADescribedBarcodeIsOneFigure(t *testing.T) {
 		t.Error("a barcode with no description is not drawn as before")
 	}
 }
+
+// Code 39 refuses a '*' in its data, the character that starts and ends the
+// code, and no data at all, when the barcode is made, as the other
+// symbologies refuse what they cannot hold (review of 11 October 2026, #13).
+func TestBarcodeCode39RefusesAStarAndNoData(t *testing.T) {
+	for _, text := range []string{"A*B", "", "abc"} {
+		func() {
+			defer func() {
+				if recover() == nil {
+					t.Errorf("Code 39 of %q is made", text)
+				}
+			}()
+			NewBarcode(CODE_39, text)
+		}()
+	}
+	NewBarcode(CODE_39, "HELLO-39 $/+%.")
+}
