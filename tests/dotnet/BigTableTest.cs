@@ -328,6 +328,45 @@ public sealed class BigTableTest : IDisposable {
 
     // A table of one column of the given text, drawn on a letter page in a
     // font wide enough that the text may not fit it.
+    [Fact]
+    public void TheColumnsCanBeGivenWidthsInPercent() {
+        // The columns take the percentages of the table's width that
+        // SetColumnWidthsInPercent gives them, the page less the margin on each
+        // side, and a field wider than its column is cut to fit it; percentages that
+        // are not one for each column, or a negative one, are refused.
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
+        PDF pdf = TestSupport.NewPDF();
+        Font font = new Font(pdf, CoreFont.HELVETICA);
+        BigTable table = new BigTable(pdf, font, font, Letter.PORTRAIT);
+        table.SetNumberOfColumns(3);
+        table.SetColumnWidthsInPercent(20f, 30f, 50f);
+        List<string[]> rows = new List<string[]>();
+        rows.Add(new string[] {"A field far wider than a fifth of the width of the table", "b", "c"});
+        table.SetTableData(new string[] {"A", "B", "C"}, rows);
+        table.SetLocation(36f, 20f);
+        table.SetFooter(null, null);
+        table.Complete();
+        Page page = table.GetPages()[0];
+        // The vertical lines, 540 points of the table at 20, 30 and 50 percent.
+        List<float> lines = new List<float>();
+        foreach (Match m in new Regex("([-0-9.]+) [-0-9.]+ m").Matches(TestSupport.Content(page))) {
+            lines.Add(float.Parse(m.Groups[1].Value, CultureInfo.InvariantCulture));
+        }
+        foreach (float x in new float[] {36f, 144f, 306f, 576f}) {
+            Assert.Contains(x, lines);
+        }
+        List<string> drawn = DrawnText(page);
+        Assert.True(drawn.Count == 6 && drawn[3].EndsWith(" ...", StringComparison.Ordinal) && drawn[4] == "b",
+                string.Join("|", drawn));
+        Assert.True(font.StringWidth(drawn[3]) <= 108f - 4f, "the cut field is " + font.StringWidth(drawn[3]));
+
+        foreach (float[] percents in new float[][] {new float[] {50f, 50f}, new float[] {20f, 30f, -50f}}) {
+            BigTable refused = new BigTable(TestSupport.NewPDF(), font, font, Letter.PORTRAIT);
+            refused.SetNumberOfColumns(3);
+            Assert.Throws<ArgumentException>(() => refused.SetColumnWidthsInPercent(percents));
+        }
+    }
+
     private static BigTable TooWide(PDF pdf, Font font, string text) {
         BigTable table = new BigTable(pdf, font, font, Letter.PORTRAIT);
         table.SetNumberOfColumns(1);

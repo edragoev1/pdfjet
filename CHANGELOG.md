@@ -9,6 +9,16 @@ This is the first entry in this file; earlier releases were not tracked here.
 
 ## v9.0.7 — unreleased
 
+### Added
+- `BigTable.setColumnWidthsInPercent(percents)`, in the four ports: the
+  width of each column, in the order `setColumns` draws them, as a
+  percentage of the table's width, the page less the margin on each side,
+  as Table's `setColumnWidthsInPercent` gives them; percentages that do not
+  add up to 100 are shares of it. A field wider than its column is cut to
+  fit it, ending in " ...". Without it each column is as wide as its widest
+  field, as before. Percentages that are not one for each column, or a
+  negative one, are refused.
+
 ### Changed
 - A font whose license forbids embedding it is refused, in the four ports:
   the fsType of its OS/2 table "Restricted License embedding", and none of

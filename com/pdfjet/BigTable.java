@@ -58,6 +58,7 @@ public class BigTable {
     private boolean checkLineBreaks;        // The rows are not read from a file, which has no line breaks left
     private int[] columns = new int[0];     // The fields drawn, in the order they are drawn
     private int numberOfColumns;            // The length of columns
+    private float[] percents;               // The width of each column, as a percent of the table's, or null
     private int fieldsNeeded;               // The fields a row needs: the largest index plus 1
     private boolean startNewPage = true;
     private int dataRows;           // The rows under the header, counted by setTableData
@@ -134,6 +135,37 @@ public class BigTable {
         this.columns = columns.clone();
         this.numberOfColumns = columns.length;
         this.fieldsNeeded = fieldsNeeded;
+        return this;
+    }
+
+    /**
+     * Gives the columns, in the order setColumns draws them, their percentages
+     * of the width of the table, the width of the page less the margin of
+     * setLocation on each side, as Table's setColumnWidthsInPercent does;
+     * percentages that do not add up to 100 are shares of it. A field wider
+     * than its column is cut to fit it, its text ending in " ...". Without
+     * them each column is as wide as its widest field. Call it after
+     * setColumns or setNumberOfColumns: percentages that are not one for each
+     * column, or one that is negative or not a number, are refused.
+     *
+     * @param percents the percentage of each column.
+     * @return this BigTable object.
+     */
+    public BigTable setColumnWidthsInPercent(float... percents) {
+        if (percents.length != numberOfColumns) {
+            pdf.fail(new IllegalArgumentException("The table has " + numberOfColumns + " columns, and "
+                    + percents.length + " percentages: give one for each column."));
+        }
+        for (float percent : percents) {
+            if (!(percent >= 0f) || percent == Float.POSITIVE_INFINITY) {
+                pdf.fail(new IllegalArgumentException(
+                        "The width of a column cannot be a negative percentage, or not a number."));
+            }
+        }
+        this.percents = percents.clone();
+        if (vertLines != null) {
+            setVertLines();
+        }
         return this;
     }
 
@@ -687,6 +719,10 @@ public class BigTable {
     // fields of a column that was cut are drawn with the end of their text
     // replaced by " ...".
     private void setVertLines() {
+        if (percents != null) {
+            setVertLinesInPercent();
+            return;
+        }
         float[] widths = this.widths.clone();
         // The table is drawn between the margin it starts at and the same
         // margin on the right of the page.
@@ -712,6 +748,34 @@ public class BigTable {
         this.vertLines[0] = vertLineX;
         for (int i = 0; i < widths.length; i++) {
             vertLineX += widths[i] + 2*this.padding;
+            this.vertLines[i + 1] = vertLineX;
+        }
+    }
+
+    // Puts each vertical line where the columns before it end, each column the
+    // percentage of the table's width setColumnWidthsInPercent gives it, its
+    // padding in it, and cuts the fields of a column narrower than its widest
+    // field.
+    private void setVertLinesInPercent() {
+        float tableWidth = pageSize.getWidth() - 2*this.x;
+        float total = 0f;
+        for (float percent : percents) {
+            total += percent;
+        }
+        this.clipped = null;
+        float vertLineX = this.x;
+        this.vertLines[0] = vertLineX;
+        for (int i = 0; i < percents.length; i++) {
+            // Percentages that are all 0 share the width equally.
+            float width = (total > 0f) ? tableWidth*percents[i] / total : tableWidth / percents.length;
+            float text = Math.max(0f, width - 2*this.padding);
+            if (this.widths[i] > text) {
+                if (this.clipped == null) {
+                    this.clipped = this.widths.clone();
+                }
+                this.clipped[i] = text;
+            }
+            vertLineX += width;
             this.vertLines[i + 1] = vertLineX;
         }
     }

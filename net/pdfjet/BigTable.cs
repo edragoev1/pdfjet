@@ -56,6 +56,7 @@ namespace PDFjet.NET {
         private bool checkLineBreaks;   // The rows are not read from a file, which has no line breaks left
         private int[] columns = new int[0];     // The fields drawn, in the order they are drawn
         private int numberOfColumns;            // The length of columns
+        private float[] percents;               // The width of each column, as a percent of the table's, or null
         private int fieldsNeeded;               // The fields a row needs: the largest index plus 1
         private bool startNewPage = true;
         private int dataRows;           // The rows under the header, counted by SetTableData
@@ -120,6 +121,38 @@ namespace PDFjet.NET {
             this.columns = (int[]) columns.Clone();
             this.numberOfColumns = columns.Length;
             this.fieldsNeeded = fieldsNeeded;
+            return this;
+        }
+
+        /// <summary>
+        /// Gives the columns, in the order SetColumns draws them, their
+        /// percentages of the width of the table, the width of the page less
+        /// the margin of SetLocation on each side, as Table's
+        /// SetColumnWidthsInPercent does; percentages that do not add up to 100
+        /// are shares of it. A field wider than its column is cut to fit it,
+        /// its text ending in " ...". Without them each column is as wide as
+        /// its widest field. Call it after SetColumns or SetNumberOfColumns:
+        /// percentages that are not one for each column, or one that is
+        /// negative or not a number, are refused.
+        /// </summary>
+        public BigTable SetColumnWidthsInPercent(params float[] percents) {
+            if (percents.Length != numberOfColumns) {
+                pdf.Fail(new ArgumentException("The table has " + numberOfColumns.ToString(CultureInfo.InvariantCulture)
+                        + " columns, and " + percents.Length.ToString(CultureInfo.InvariantCulture)
+                        + " percentages: give one for each column."));
+                return this;
+            }
+            foreach (float percent in percents) {
+                if (!(percent >= 0f) || float.IsPositiveInfinity(percent)) {
+                    pdf.Fail(new ArgumentException(
+                            "The width of a column cannot be a negative percentage, or not a number."));
+                    return this;
+                }
+            }
+            this.percents = (float[]) percents.Clone();
+            if (vertLines != null) {
+                SetVertLines();
+            }
             return this;
         }
 
@@ -547,6 +580,10 @@ namespace PDFjet.NET {
         // far as the page allows, and the fields of a column that was cut are
         // drawn with the end of their text replaced by " ...".
         private void SetVertLines() {
+            if (percents != null) {
+                SetVertLinesInPercent();
+                return;
+            }
             float[] widths = (float[]) this.widths.Clone();
             // The table is drawn between the margin it starts at and the same
             // margin on the right of the page.
@@ -572,6 +609,34 @@ namespace PDFjet.NET {
             this.vertLines[0] = vertLineX;
             for (int i = 0; i < widths.Length; i++) {
                 vertLineX += widths[i] + 2 * this.padding;
+                this.vertLines[i + 1] = vertLineX;
+            }
+        }
+
+        // Puts each vertical line where the columns before it end, each column
+        // the percentage of the table's width SetColumnWidthsInPercent gives
+        // it, its padding in it, and cuts the fields of a column narrower than
+        // its widest field.
+        private void SetVertLinesInPercent() {
+            float tableWidth = pageSize.GetWidth() - 2 * this.x;
+            float total = 0f;
+            foreach (float percent in percents) {
+                total += percent;
+            }
+            this.clipped = null;
+            float vertLineX = this.x;
+            this.vertLines[0] = vertLineX;
+            for (int i = 0; i < percents.Length; i++) {
+                // Percentages that are all 0 share the width equally.
+                float width = (total > 0f) ? tableWidth * percents[i] / total : tableWidth / percents.Length;
+                float text = Math.Max(0f, width - 2 * this.padding);
+                if (this.widths[i] > text) {
+                    if (this.clipped == null) {
+                        this.clipped = (float[]) this.widths.Clone();
+                    }
+                    this.clipped[i] = text;
+                }
+                vertLineX += width;
                 this.vertLines[i + 1] = vertLineX;
             }
         }

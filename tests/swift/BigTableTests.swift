@@ -311,6 +311,42 @@ import Testing
 
     // A table of one column of the given text, drawn on a letter page in a
     // font wide enough that the text may not fit it.
+    // The columns take the percentages of the table's width that
+    // setColumnWidthsInPercent gives them, the page less the margin on each
+    // side, and a field wider than its column is cut to fit it; percentages that
+    // are not one for each column, or a negative one, are refused.
+    @Test func theColumnsCanBeGivenWidthsInPercent() throws {
+        let pdf = TestSupport.newPDF()
+        let font = try Font(pdf, CoreFont.HELVETICA)
+        let table = BigTable(pdf, font, font, Letter.PORTRAIT)
+        table.setNumberOfColumns(3)
+        table.setColumnWidthsInPercent(20, 30, 50)
+        table.setTableData(["A", "B", "C"], [["A field far wider than a fifth of the width of the table", "b", "c"]])
+        table.setLocation(36, 20)
+        table.setFooter(nil, nil)
+        try table.complete()
+        let page = table.getPages()[0]
+        // The vertical lines, 540 points of the table at 20, 30 and 50 percent.
+        let content = TestSupport.latin1(page.getContent())
+        let regex = try NSRegularExpression(pattern: "([-0-9.]+) [-0-9.]+ m")
+        let lines = regex.matches(in: content, range: NSRange(content.startIndex..., in: content)).map {
+            Float(String(content[Range($0.range(at: 1), in: content)!]))!
+        }
+        for x: Float in [36, 144, 306, 576] {
+            #expect(lines.contains(x), "no line at x=\(x): \(lines)")
+        }
+        let drawn = drawnText(page)
+        #expect(drawn.count == 6 && drawn[3].hasSuffix(" ...") && drawn[4] == "b", "\(drawn)")
+        #expect(font.stringWidth(drawn[3]) <= 108 - 4, "the cut field is \(font.stringWidth(drawn[3]))")
+
+        let tooFew = TestSupport.newPDF()
+        BigTable(tooFew, font, font, Letter.PORTRAIT).setNumberOfColumns(3).setColumnWidthsInPercent(50, 50)
+        #expect(tooFew.error != nil, "two percentages for three columns are not refused")
+        let negative = TestSupport.newPDF()
+        BigTable(negative, font, font, Letter.PORTRAIT).setNumberOfColumns(3).setColumnWidthsInPercent(20, 30, -50)
+        #expect(negative.error != nil, "a negative percentage is not refused")
+    }
+
     private func tooWide(_ pdf: PDF, _ font: Font, _ text: String) throws -> BigTable {
         let table = BigTable(pdf, font, font, Letter.PORTRAIT)
         table.setNumberOfColumns(1)

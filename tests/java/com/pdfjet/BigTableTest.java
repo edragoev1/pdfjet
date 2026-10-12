@@ -385,6 +385,45 @@ class BigTableTest {
 
     // A table of one column of the given text, drawn on a letter page in a
     // font wide enough that the text may not fit it.
+    // The columns take the percentages of the table's width that
+    // setColumnWidthsInPercent gives them, the page less the margin on each
+    // side, and a field wider than its column is cut to fit it; percentages that
+    // are not one for each column, or a negative one, are refused.
+    @Test
+    void theColumnsCanBeGivenWidthsInPercent() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = new Font(pdf, CoreFont.HELVETICA);
+        BigTable table = new BigTable(pdf, font, font, Letter.PORTRAIT);
+        table.setNumberOfColumns(3);
+        table.setColumnWidthsInPercent(20f, 30f, 50f);
+        List<String[]> rows = new ArrayList<String[]>();
+        rows.add(new String[] {"A field far wider than a fifth of the width of the table", "b", "c"});
+        table.setTableData(new String[] {"A", "B", "C"}, rows);
+        table.setLocation(36f, 20f);
+        table.setFooter(null, null);
+        table.complete();
+        Page page = table.getPages().get(0);
+        // The vertical lines, 540 points of the table at 20, 30 and 50 percent.
+        List<Float> lines = new ArrayList<Float>();
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("([-0-9.]+) [-0-9.]+ m")
+                .matcher(TestSupport.content(page));
+        while (m.find()) {
+            lines.add(Float.parseFloat(m.group(1)));
+        }
+        for (float x : new float[] {36f, 144f, 306f, 576f}) {
+            assertTrue(lines.contains(x), "no line at x=" + x + ": " + lines);
+        }
+        List<String> drawn = drawnText(page);
+        assertTrue(drawn.size() == 6 && drawn.get(3).endsWith(" ...") && drawn.get(4).equals("b"), drawn.toString());
+        assertTrue(font.stringWidth(drawn.get(3)) <= 108f - 4f, "the cut field is " + font.stringWidth(drawn.get(3)));
+
+        for (float[] percents : new float[][] {{50f, 50f}, {20f, 30f, -50f}}) {
+            BigTable refused = new BigTable(TestSupport.newPDF(), font, font, Letter.PORTRAIT);
+            refused.setNumberOfColumns(3);
+            assertThrows(IllegalArgumentException.class, () -> refused.setColumnWidthsInPercent(percents));
+        }
+    }
+
     private static BigTable tooWide(PDF pdf, Font font, String text) throws Exception {
         BigTable table = new BigTable(pdf, font, font, Letter.PORTRAIT);
         table.setNumberOfColumns(1);

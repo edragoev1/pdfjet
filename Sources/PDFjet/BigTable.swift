@@ -49,6 +49,7 @@ public class BigTable {
     private var readError: Error?       // The error opening the data file, if any
     private var columns: [Int] = []         // The fields drawn, in the order they are drawn
     private var numberOfColumns: Int = 0    // The length of columns
+    private var percents: [Float]?          // The width of each column, as a percent of the table's, or nil
     private var fieldsNeeded: Int = 0       // The fields a row needs: the largest index plus 1
     private var startNewPage: Bool = true
     private var dataRows: Int = 0       // The rows under the header, counted by setTableData
@@ -114,6 +115,33 @@ public class BigTable {
         self.columns = columns
         self.numberOfColumns = columns.count
         self.fieldsNeeded = fieldsNeeded
+        return self
+    }
+
+    /// Gives the columns, in the order setColumns draws them, their percentages
+    /// of the width of the table, the width of the page less the margin of
+    /// setLocation on each side, as Table's setColumnWidthsInPercent does;
+    /// percentages that do not add up to 100 are shares of it. A field wider
+    /// than its column is cut to fit it, its text ending in " ...". Without
+    /// them each column is as wide as its widest field. Call it after
+    /// setColumns or setNumberOfColumns: percentages that are not one for each
+    /// column, or one that is negative or not a number, are recorded on the
+    /// PDF as misuse, and the widths are left as they were.
+    @discardableResult
+    public func setColumnWidthsInPercent(_ percents: Float...) -> BigTable {
+        if percents.count != numberOfColumns {
+            pdf.fail("The table has \(numberOfColumns) columns, and \(percents.count) percentages: "
+                    + "give one for each column.")
+            return self
+        }
+        if percents.contains(where: { !($0 >= 0) || $0 == Float.infinity }) {
+            pdf.fail("The width of a column cannot be a negative percentage, or not a number.")
+            return self
+        }
+        self.percents = percents
+        if !vertLines.isEmpty {
+            setVertLines()
+        }
         return self
     }
 
@@ -571,6 +599,10 @@ public class BigTable {
     // fields of a column that was cut are drawn with the end of their text
     // replaced by " ...".
     private func setVertLines() {
+        if percents != nil {
+            setVertLinesInPercent()
+            return
+        }
         var widths = self.widths
         // The table is drawn between the margin it starts at and the same
         // margin on the right of the page.
@@ -598,6 +630,35 @@ public class BigTable {
         vertLines[0] = vertLineX
         for i in 0..<widths.count {
             vertLineX += widths[i] + 2 * padding
+            vertLines[i + 1] = vertLineX
+        }
+    }
+
+    // Puts each vertical line where the columns before it end, each column the
+    // percentage of the table's width setColumnWidthsInPercent gives it, its
+    // padding in it, and cuts the fields of a column narrower than its widest
+    // field.
+    private func setVertLinesInPercent() {
+        let percents = self.percents!
+        let tableWidth = pageSize.getWidth() - 2 * self.x
+        var total: Float = 0.0
+        for percent in percents {
+            total += percent
+        }
+        self.clipped = nil
+        var vertLineX = self.x
+        vertLines[0] = vertLineX
+        for i in 0..<percents.count {
+            // Percentages that are all 0 share the width equally.
+            let width = (total > 0) ? tableWidth * percents[i] / total : tableWidth / Float(percents.count)
+            let text = max(0, width - 2 * padding)
+            if self.widths[i] > text {
+                if self.clipped == nil {
+                    self.clipped = self.widths
+                }
+                self.clipped![i] = text
+            }
+            vertLineX += width
             vertLines[i + 1] = vertLineX
         }
     }

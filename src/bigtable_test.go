@@ -536,3 +536,50 @@ func TestBigTableCanStartOnAPageWithAHeadingAboveIt(t *testing.T) {
 		t.Errorf("%d pages from a y of 500 on the first page, and %d from the top", len(pages), len(plain))
 	}
 }
+
+// The columns take the percentages of the table's width that
+// SetColumnWidthsInPercent gives them, the page less the margin on each side,
+// and a field wider than its column is cut to fit it; percentages that are
+// not one for each column, or a negative one, are refused.
+func TestBigTableTheColumnsCanBeGivenWidthsInPercent(t *testing.T) {
+	doc := testNewDoc()
+	font := NewCoreFont(doc.pdf, corefont.Helvetica())
+	table := NewBigTable(doc.pdf, font, font, letter.Portrait()).SetNumberOfColumns(3)
+	table.SetColumnWidthsInPercent(20, 30, 50)
+	long := "A field far wider than a fifth of the width of the table"
+	table.SetTableRows([]string{"A", "B", "C"}, slices.Values([][]string{{long, "b", "c"}}))
+	table.SetLocation(36, 20)
+	table.SetFooter("", nil)
+	if err := table.Complete(); err != nil {
+		t.Fatal(err)
+	}
+	if doc.pdf.err != nil {
+		t.Fatal(doc.pdf.err)
+	}
+	page := table.GetPages()[0]
+	// The vertical lines, 540 points of the table at 20, 30 and 50 percent.
+	lines := map[string]bool{}
+	for _, m := range regexp.MustCompile(`([-0-9.]+) [-0-9.]+ m`).FindAllStringSubmatch(testContent(page), -1) {
+		lines[m[1]] = true
+	}
+	for _, x := range []string{"36", "144", "306", "576"} {
+		if !lines[x] {
+			t.Errorf("no line at x=%s: %v", x, lines)
+		}
+	}
+	drawn := testDrawnText(page)
+	if len(drawn) != 6 || !strings.HasSuffix(drawn[3], " ...") || drawn[4] != "b" {
+		t.Errorf("the page drew %q", drawn)
+	}
+	if width := font.StringWidth(font.size, drawn[3]); width > 108-4 {
+		t.Errorf("the cut field is %v wide", width)
+	}
+
+	for _, percents := range [][]float32{{50, 50}, {20, 30, -50}} {
+		doc := testNewDoc()
+		NewBigTable(doc.pdf, font, font, letter.Portrait()).SetNumberOfColumns(3).SetColumnWidthsInPercent(percents...)
+		if doc.pdf.err == nil {
+			t.Errorf("%v is not refused", percents)
+		}
+	}
+}

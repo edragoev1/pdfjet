@@ -67,11 +67,12 @@ type BigTable struct {
 	footerText      string
 	footerFont      *Font // nil for the header font
 	rows            iter.Seq[[]string]
-	checkLineBreaks bool  // The rows are not read from a file, which has no line breaks left
-	readErr         error // The error reading the data file, if any
-	columns         []int // The fields drawn, in the order they are drawn
-	numberOfColumns int   // The length of columns
-	fieldsNeeded    int   // The fields a row needs: the largest index plus 1
+	checkLineBreaks bool      // The rows are not read from a file, which has no line breaks left
+	readErr         error     // The error reading the data file, if any
+	columns         []int     // The fields drawn, in the order they are drawn
+	percents        []float32 // The width of each column, as a percent of the table's, or nil
+	numberOfColumns int       // The length of columns
+	fieldsNeeded    int       // The fields a row needs: the largest index plus 1
 	startNewPage    bool
 	dataRows        int // The rows under the header, counted by SetTableData
 	pageCount       int // The pages they take, counted by Complete
@@ -143,6 +144,34 @@ func (bt *BigTable) SetColumns(columns ...int) *BigTable {
 	bt.columns = append([]int(nil), columns...)
 	bt.numberOfColumns = len(columns)
 	bt.fieldsNeeded = fieldsNeeded
+	return bt
+}
+
+// SetColumnWidthsInPercent gives the columns, in the order SetColumns draws
+// them, their percentages of the width of the table, the width of the page
+// less the margin of SetLocation on each side, as Table's
+// SetColumnWidthsInPercent does; percentages that do not add up to 100 are
+// shares of it. A field wider than its column is cut to fit it, its text
+// ending in " ...". Without them each column is as wide as its widest field.
+// Call it after SetColumns or SetNumberOfColumns: percentages that are not one
+// for each column, or one that is negative or not a number, are recorded on
+// the PDF as misuse, and the widths are left as they were.
+func (bt *BigTable) SetColumnWidthsInPercent(percents ...float32) *BigTable {
+	if len(percents) != bt.numberOfColumns {
+		bt.pdf.fail("The table has " + strconv.Itoa(bt.numberOfColumns) + " columns, and " +
+			strconv.Itoa(len(percents)) + " percentages: give one for each column.")
+		return bt
+	}
+	for _, percent := range percents {
+		if !(percent >= 0) || math.IsInf(float64(percent), 1) {
+			bt.pdf.fail("The width of a column cannot be a negative percentage, or not a number.")
+			return bt
+		}
+	}
+	bt.percents = append([]float32(nil), percents...)
+	if bt.vertLines != nil {
+		bt.setVertLines()
+	}
 	return bt
 }
 
@@ -633,6 +662,10 @@ const bigTableEllipsis = " ..."
 // keeps the widths it asked for as far as the page allows, and the fields of a
 // column that was cut are drawn with the end of their text replaced by " ...".
 func (bt *BigTable) setVertLines() {
+	if bt.percents != nil {
+		bt.setVertLinesInPercent()
+		return
+	}
 	widths := make([]float32, len(bt.widths))
 	copy(widths, bt.widths)
 	// The table is drawn between the margin it starts at and the same margin
@@ -666,6 +699,37 @@ func (bt *BigTable) setVertLines() {
 	bt.vertLines[0] = vertLineX
 	for i := 0; i < len(widths); i++ {
 		vertLineX += widths[i] + float32(2*bt.padding)
+		bt.vertLines[i+1] = vertLineX
+	}
+}
+
+// setVertLinesInPercent puts each vertical line where the columns before it
+// end, each column the percentage of the table's width SetColumnWidthsInPercent
+// gives it, its padding in it, and cuts the fields of a column narrower than
+// its widest field.
+func (bt *BigTable) setVertLinesInPercent() {
+	tableWidth := bt.pageSize.GetWidth() - float32(2*bt.x)
+	var total float32
+	for _, percent := range bt.percents {
+		total += percent
+	}
+	bt.clipped = nil
+	vertLineX := bt.x
+	bt.vertLines[0] = vertLineX
+	for i, percent := range bt.percents {
+		// Percentages that are all 0 share the width equally.
+		width := tableWidth / float32(len(bt.percents))
+		if total > 0 {
+			width = float32(tableWidth*percent) / total
+		}
+		if text := max(0, width-float32(2*bt.padding)); bt.widths[i] > text {
+			if bt.clipped == nil {
+				bt.clipped = make([]float32, len(bt.widths))
+				copy(bt.clipped, bt.widths)
+			}
+			bt.clipped[i] = text
+		}
+		vertLineX += width
 		bt.vertLines[i+1] = vertLineX
 	}
 }
