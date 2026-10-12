@@ -481,14 +481,6 @@ class OTF {
         return ((long) high << 16) | low;
     }
 
-    private int getInt16(int offset) {
-        return (short) getUInt16(offset);
-    }
-
-    private int getUInt32(int offset) {
-        return (getUInt16(offset) << 16) | getUInt16(offset + 2);
-    }
-
     // Panics unless the next count bytes of the font are there. The index runs
     // past the end when a table of the directory points outside the font.
     private void need(int count) throws IOException {
