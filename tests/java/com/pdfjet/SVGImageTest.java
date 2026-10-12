@@ -6,6 +6,7 @@
  */
 package com.pdfjet;
 
+import java.util.Locale;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -606,7 +607,7 @@ class SVGImageTest {
             String svg = "<svg width=\"100\" height=\"100\"><path d=\"M 0 0 L " + number + " 5\"/></svg>";
             Exception e = assertThrows(Exception.class,
                     () -> new SVGImage(new ByteArrayInputStream(svg.getBytes(StandardCharsets.UTF_8))));
-            assertTrue(e.getMessage().toLowerCase().contains("invalid path data"), number + ": " + e);
+            assertTrue(e.getMessage().toLowerCase(Locale.ROOT).contains("invalid path data"), number + ": " + e);
         }
     }
 }

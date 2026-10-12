@@ -4,6 +4,7 @@
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
+using System.Globalization;
 using System;
 using System.Collections.Generic;
 using Xunit;
@@ -28,7 +29,7 @@ public class TextColumnTest {
             if (line.EndsWith(" Td")) {
                 string[] parts = line.Split(' ');
                 list.Add(new float[] {
-                        float.Parse(parts[0]), float.Parse(parts[1])});
+                        float.Parse(parts[0], CultureInfo.InvariantCulture), float.Parse(parts[1], CultureInfo.InvariantCulture)});
             }
         }
         return list;
@@ -126,9 +127,9 @@ public class TextColumnTest {
         for (int i = 0; i < rows.Length - 1; i++) {
             if (rows[i].EndsWith(" m") && rows[i + 1].EndsWith(" l")) {
                 segments.Add(new float[] {
-                        float.Parse(rows[i].Split(' ')[0]),
-                        float.Parse(rows[i + 1].Split(' ')[0]),
-                        float.Parse(rows[i].Split(' ')[1])});
+                        float.Parse(rows[i].Split(' ')[0], CultureInfo.InvariantCulture),
+                        float.Parse(rows[i + 1].Split(' ')[0], CultureInfo.InvariantCulture),
+                        float.Parse(rows[i].Split(' ')[1], CultureInfo.InvariantCulture)});
             }
         }
         Assert.True(segments.Count > 2);

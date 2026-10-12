@@ -6,6 +6,7 @@
  */
 package com.pdfjet;
 
+import java.util.Locale;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -218,7 +219,7 @@ class TextColumnTest {
         Page page = new Page(pdf, Letter.PORTRAIT);
         column.drawOn(page);
         String content = TestSupport.latin1(page.getContent());
-        assertEquals(8, count(content.toLowerCase(), "/lang <656c>"), content);
+        assertEquals(8, count(content.toLowerCase(Locale.ROOT), "/lang <656c>"), content);
         assertEquals(8, count(content, "/Lang"), content);
     }
 
@@ -244,7 +245,7 @@ class TextColumnTest {
             int lines = count(content, "/P <</MCID");
             int want = language == null ? 0 : lines;
             assertTrue(lines >= 2, content);
-            assertEquals(want, count(content.toLowerCase(), "/lang <7a682d48616e73>"), content);
+            assertEquals(want, count(content.toLowerCase(Locale.ROOT), "/lang <7a682d48616e73>"), content);
             assertEquals(want, count(content, "/Lang"), content);
         }
     }

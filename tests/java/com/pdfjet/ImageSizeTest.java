@@ -6,6 +6,7 @@
  */
 package com.pdfjet;
 
+import java.util.Locale;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -68,7 +69,7 @@ class ImageSizeTest {
             if (f.isDirectory()) {
                 collect(f, files);
             } else {
-                String name = f.getName().toLowerCase();
+                String name = f.getName().toLowerCase(Locale.ROOT);
                 if (name.endsWith(".png") || name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".bmp")) {
                     files.add(f);
                 }

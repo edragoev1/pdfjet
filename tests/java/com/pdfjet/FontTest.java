@@ -6,6 +6,7 @@
  */
 package com.pdfjet;
 
+import java.util.Locale;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -127,7 +128,7 @@ class FontTest {
         assertEquals(2.22f, font.stringWidth(10f, "\u2019"), 0.001f);
         Page page = new Page(pdf, Letter.PORTRAIT);
         new TextLine(font, "Don\u2019t \u20ac5 \u2014 \u201cHi\u201d").setLocation(10f, 20f).drawOn(page);
-        assertTrue(TestSupport.content(page).toLowerCase().contains("<446f6e927420803520972093486994>"),
+        assertTrue(TestSupport.content(page).toLowerCase(Locale.ROOT).contains("<446f6e927420803520972093486994>"),
                 TestSupport.content(page));
     }
 

@@ -4,6 +4,7 @@
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
+using System.Globalization;
 using System;
 using Xunit;
 
@@ -101,7 +102,7 @@ public class TextBlockTest {
         string content = TestSupport.Content(page);
         Assert.Contains("0 0 1 RG", content);
         Assert.DoesNotContain("3 w", content);
-        Assert.Contains(font.GetUnderlineThickness(font.GetSize()) + " w", content);
+        Assert.Contains(font.GetUnderlineThickness(font.GetSize()).ToString(CultureInfo.InvariantCulture) + " w", content);
     }
 
     [Fact]

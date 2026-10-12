@@ -6,6 +6,7 @@
  */
 package com.pdfjet;
 
+import java.util.Locale;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -560,7 +561,7 @@ class PDFTest {
         pdf.complete();
         PDFobj element = TestSupport.findObject(TestSupport.read(bos.toByteArray()), "/Alt");
         assertNotNull(element);
-        assertTrue(element.getValue("/Alt").toLowerCase().startsWith("<feff"), element.getValue("/Alt"));
+        assertTrue(element.getValue("/Alt").toLowerCase(Locale.ROOT).startsWith("<feff"), element.getValue("/Alt"));
         assertEquals("Gr\u00fc\u00dfe \u2013 \u7dda", TestSupport.utf16Hex(element.getValue("/Alt")));
     }
 

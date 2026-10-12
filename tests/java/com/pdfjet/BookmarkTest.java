@@ -6,6 +6,7 @@
  */
 package com.pdfjet;
 
+import java.util.Locale;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -104,7 +105,7 @@ class BookmarkTest {
         root.addBookmark(page, new Title(TestSupport.helvetica(pdf), "\u00dcbersicht \u2013 r\u00e9sum\u00e9", 10f, 10f));
         pdf.complete();
         PDFobj obj = item(TestSupport.read(bos.toByteArray()), "\u00dcbersicht \u2013 r\u00e9sum\u00e9");
-        assertEquals("<feff00dc", obj.getValue("/Title").substring(0, 9).toLowerCase());
+        assertEquals("<feff00dc", obj.getValue("/Title").substring(0, 9).toLowerCase(Locale.ROOT));
     }
 
     // A document with the headings, as text lines of their structure types,
