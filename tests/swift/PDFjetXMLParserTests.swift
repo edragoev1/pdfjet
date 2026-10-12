@@ -379,6 +379,29 @@ import Testing
         #expect(message(#"<a xmlns:="urn:x"/>"#).contains("empty prefix"))
     }
 
+    // What is not XML is an error: a name that is not one of XML, a declaration
+    // after a space, -- in a comment, ]]> in text and an attribute written twice
+    // under two prefixes of one namespace were read (review of 12 October 2026,
+    // R30, R31). Names of other scripts, a prefixed name and a processing
+    // instruction whose name starts with xml are read as before.
+    @Test func refusesWhatIsNotXML() throws {
+        #expect(message(" <?xml version=\"1.0\" encoding=\"ISO-8859-1\"?><r>\u{e9}</r>")
+                .contains("The XML declaration is not at the start of the document"))
+        #expect(message("<r/><?XML x?>").contains("The XML declaration is not at the start"))
+        for xml in [#"<a"b/>"#, "<1/>", "<!x/>", "<a&b/>", "<:a/>", "<a:/>", "<a:b:c/>"] {
+            #expect(message(xml).contains("is not a name of XML"), "\(xml)")
+        }
+        #expect(messageSkipping("<r><!DOCTYPE x/></r>").contains("is not a name of XML"))
+        #expect(message(#"<r a"b="1"/>"#).contains("is not a name of XML"))
+        #expect(message("<r>a ]]> b</r>").contains("The text has ]]> in it"))
+        #expect(message("<r><!-- a -- b --></r>").contains("A comment has -- in it"))
+        #expect(message("<r><!-- a ---></r>").contains("A comment has -- in it"))
+        #expect(message(#"<r xmlns:a="urn:x" xmlns:b="urn:x" a:c="1" b:c="2"/>"#)
+                .contains("The attributes a:c and b:c of r are the same attribute"))
+        _ = try parse(#"<?xml-stylesheet href="a.xsl"?><Größe ελληνικά="1" a:b="2" xmlns:a="urn:a">x ] y ]] z</Größe>"#)
+        _ = try parse("<r><!-- a - b --></r>")
+    }
+
     @Test func readsAMillionElementsAndNoMore() throws {
         // A document of 20 MB of tiny elements took hundreds of megabytes (the
         // review of 9 October 2026).

@@ -364,6 +364,12 @@ public sealed class XMLParser {
         if (end == -1) {
             throw Error("The comment does not end");
         }
+        // A comment has no -- in it, and does not end with -, as XML has it
+        // (review of 12 October 2026, R31)
+        int dashes = xml.IndexOf("--", index + 4, StringComparison.Ordinal);
+        if ((dashes != -1 && dashes < end) || (end > index + 4 && xml[end - 1] == '-')) {
+            throw Error("A comment has -- in it");
+        }
         Skip(end + 3 - index);
     }
 
@@ -371,6 +377,17 @@ public sealed class XMLParser {
         int end = xml.IndexOf("?>", index, StringComparison.Ordinal);
         if (end == -1) {
             throw Error("The processing instruction does not end");
+        }
+        // Its name is not xml, in any case, which is the declaration's alone:
+        // a declaration after a space was read as a processing instruction,
+        // and the encoding it named was not looked at (review of 12 October
+        // 2026, R30)
+        int target = index + 2;
+        while (target < end && !IsWhitespace(xml[target])) {
+            target++;
+        }
+        if (String.Equals(xml.Substring(index + 2, target - index - 2), "xml", StringComparison.OrdinalIgnoreCase)) {
+            throw Error("The XML declaration is not at the start of the document");
         }
         Skip(end + 2 - index);
     }
@@ -432,6 +449,9 @@ public sealed class XMLParser {
         if (name.Length == 0) {
             throw Error("A tag has no name");
         }
+        if (!IsName(name)) {
+            throw Error("The name of the tag " + name + " is not a name of XML");
+        }
         Dictionary<string, string> declared = null;
         attributes.Clear();
         HashSet<string> written = null;     // Past a few attributes, which are compared one by one
@@ -452,6 +472,11 @@ public sealed class XMLParser {
             string attributeName = Name();
             if (attributeName.Length == 0) {
                 throw Error("The attributes of " + name + " are not a name and a value");
+            }
+            // xmlns: is refused below, for its empty prefix
+            if (!IsName(attributeName) && attributeName != "xmlns:") {
+                throw Error("The name of the attribute " + attributeName + " of " + name
+                        + " is not a name of XML");
             }
             SkipWhitespace();
             if (Peek() != '=') {
@@ -513,11 +538,27 @@ public sealed class XMLParser {
         int colon = name.IndexOf(':');
         XMLNode node = new XMLNode(name, (colon == -1) ? name : Kept(name.Substring(colon + 1)), ns);
         if (!skipDoctype) {
+            // Two attributes of the same namespace and local name are one
+            // attribute written twice, as a:x and b:x of one namespace (review
+            // of 12 October 2026, R31)
+            Dictionary<string, string> expanded = null;
             foreach (KeyValuePair<string, string> attribute in attributes) {
                 string prefix = PrefixOf(attribute.Key);
-                if (prefix.Length != 0 && prefix != "xmlns" && NamespaceOf(prefix, declared) == null) {
-                    throw Error("The prefix " + prefix + " of the attribute " + attribute.Key
-                            + " of " + name + " is not declared");
+                if (prefix.Length != 0 && prefix != "xmlns") {
+                    string attributeNamespace = NamespaceOf(prefix, declared);
+                    if (attributeNamespace == null) {
+                        throw Error("The prefix " + prefix + " of the attribute " + attribute.Key
+                                + " of " + name + " is not declared");
+                    }
+                    if (expanded == null) {
+                        expanded = new Dictionary<string, string>();
+                    }
+                    string key = attributeNamespace + " " + attribute.Key.Substring(prefix.Length + 1);
+                    if (expanded.TryGetValue(key, out string other)) {
+                        throw Error("The attributes " + other + " and " + attribute.Key + " of " + name
+                                + " are the same attribute");
+                    }
+                    expanded[key] = attribute.Key;
                 }
             }
         }
@@ -604,10 +645,14 @@ public sealed class XMLParser {
         Skip(end + 3 - index);
     }
 
-    // The text up to the next <, with its entities read.
+    // The text up to the next <, with its entities read. It has no ]]>, which
+    // ends character data alone (review of 12 October 2026, R31).
     private void Text(List<XMLNode> open) {
         StringBuilder buf = new StringBuilder();
         while (index < xml.Length && Peek() != '<') {
+            if (Peek() == ']' && String.CompareOrdinal(xml, index, "]]>", 0, 3) == 0) {
+                throw Error("The text has ]]> in it");
+            }
             char ch = Next();
             if (ch == '&') {
                 buf.Append(Entity());
@@ -778,6 +823,57 @@ public sealed class XMLParser {
             return false;
         }
         return true;
+    }
+
+    // Returns true when the name is one of XML with namespaces: a letter, _ or
+    // another start character of a name of XML 1.0, then its name characters,
+    // with no more than one colon, between a prefix and a local name. The name
+    // of a tag was anything up to a space, = / > or <, as <a"b/>, <1/> and
+    // <!x/> (review of 12 October 2026, R31).
+    private static bool IsName(string name) {
+        int colons = 0;
+        bool start = true;
+        for (int i = 0; i < name.Length; ) {
+            int ch = name[i];
+            if (Char.IsHighSurrogate(name[i]) && i + 1 < name.Length && Char.IsLowSurrogate(name[i + 1])) {
+                ch = Char.ConvertToUtf32(name[i], name[i + 1]);
+                i += 2;
+            } else {
+                i++;
+            }
+            if (ch == ':') {
+                colons++;
+                if (start || colons > 1) {
+                    return false;
+                }
+                start = true;
+            } else if (start) {
+                if (!IsNameStart(ch)) {
+                    return false;
+                }
+                start = false;
+            } else if (!IsNameStart(ch) && !IsNameRest(ch)) {
+                return false;
+            }
+        }
+        return !start;
+    }
+
+    // Returns true when the character may start a name of XML 1.0, a colon
+    // aside.
+    private static bool IsNameStart(int ch) {
+        return (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') || ch == '_'
+                || (ch >= 0xC0 && ch <= 0xD6) || (ch >= 0xD8 && ch <= 0xF6) || (ch >= 0xF8 && ch <= 0x2FF)
+                || (ch >= 0x370 && ch <= 0x37D) || (ch >= 0x37F && ch <= 0x1FFF) || (ch >= 0x200C && ch <= 0x200D)
+                || (ch >= 0x2070 && ch <= 0x218F) || (ch >= 0x2C00 && ch <= 0x2FEF) || (ch >= 0x3001 && ch <= 0xD7FF)
+                || (ch >= 0xF900 && ch <= 0xFDCF) || (ch >= 0xFDF0 && ch <= 0xFFFD) || (ch >= 0x10000 && ch <= 0xEFFFF);
+    }
+
+    // Returns true when the character may be in a name of XML 1.0, after its
+    // first, besides those that may start it.
+    private static bool IsNameRest(int ch) {
+        return ch == '-' || ch == '.' || (ch >= '0' && ch <= '9') || ch == 0xB7
+                || (ch >= 0x300 && ch <= 0x36F) || (ch >= 0x203F && ch <= 0x2040);
     }
 
     private static bool IsWhitespace(char ch) {

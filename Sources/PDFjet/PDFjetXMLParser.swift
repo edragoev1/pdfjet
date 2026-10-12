@@ -243,6 +243,10 @@ private struct Reader {
     private static let cdataEnd = Array("]]>".utf16)
     private static let instructionStart = Array("<?".utf16)
     private static let instructionEnd = Array("?>".utf16)
+    private static let twoDashes = Array("--".utf16)
+    private static let characterDataEnd = Array("]]>".utf16)
+    private static let dash: UInt16 = 0x2D             // -
+    private static let closingBracket: UInt16 = 0x5D   // ]
     private static let declarationStart = Array("<?xml".utf16)
     private static let doctypeStart = Array("<!DOCTYPE".utf16)
     private static let encodingWord = Array("encoding".utf16)
@@ -427,6 +431,12 @@ private struct Reader {
         if end == -1 {
             throw error("The comment does not end")
         }
+        // A comment has no -- in it, and does not end with -, as XML has it
+        // (review of 12 October 2026, R31)
+        let dashes = Reader.indexOf(xml, Reader.twoDashes, index + 4)
+        if (dashes != -1 && dashes < end) || (end > index + 4 && xml[end - 1] == Reader.dash) {
+            throw error("A comment has -- in it")
+        }
         skip(end + 3 - index)
     }
 
@@ -434,6 +444,17 @@ private struct Reader {
         let end = indexOf(Reader.instructionEnd)
         if end == -1 {
             throw error("The processing instruction does not end")
+        }
+        // Its name is not xml, in any case, which is the declaration's alone:
+        // a declaration after a space was read as a processing instruction,
+        // and the encoding it named was not looked at (review of 12 October
+        // 2026, R30)
+        var target = index + 2
+        while target < end && !Reader.isWhitespace(xml[target]) {
+            target += 1
+        }
+        if String(decoding: xml[(index + 2)..<target], as: UTF16.self).lowercased() == "xml" {
+            throw error("The XML declaration is not at the start of the document")
         }
         skip(end + 2 - index)
     }
@@ -495,6 +516,9 @@ private struct Reader {
         if name.isEmpty {
             throw error("A tag has no name")
         }
+        if !Reader.isName(name) {
+            throw error("The name of the tag \(name) is not a name of XML")
+        }
         var declared: [String: String]? = nil
         var attributes = [(String, String)]()
         var written: Set<String>? = nil     // Past a few attributes, which are compared one by one
@@ -517,6 +541,10 @@ private struct Reader {
             let attributeName = self.name()
             if attributeName.isEmpty {
                 throw error("The attributes of \(name) are not a name and a value")
+            }
+            // xmlns: is refused below, for its empty prefix
+            if !Reader.isName(attributeName) && attributeName != "xmlns:" {
+                throw error("The name of the attribute \(attributeName) of \(name) is not a name of XML")
             }
             skipWhitespace()
             if peek() != Reader.equal {
@@ -568,11 +596,21 @@ private struct Reader {
             throw error("The prefix \(prefix) of \(name) is not declared")
         }
         let node = PDFjetXMLNode(name, namespace ?? "")
+        // Two attributes of the same namespace and local name are one
+        // attribute written twice, as a:x and b:x of one namespace (review of
+        // 12 October 2026, R31)
+        var expanded = [String: String]()
         for attribute in attributes {
             let attributePrefix = Reader.prefixOf(attribute.0)
-            if !attributePrefix.isEmpty && attributePrefix != "xmlns" && !skipDoctype
-                    && namespaceOf(attributePrefix, declared) == nil {
-                throw error("The prefix \(attributePrefix) of the attribute \(attribute.0) of \(name) is not declared")
+            if !attributePrefix.isEmpty && attributePrefix != "xmlns" && !skipDoctype {
+                guard let attributeNamespace = namespaceOf(attributePrefix, declared) else {
+                    throw error("The prefix \(attributePrefix) of the attribute \(attribute.0) of \(name) is not declared")
+                }
+                let key = attributeNamespace + " " + attribute.0.dropFirst(attributePrefix.count + 1)
+                if let other = expanded[key] {
+                    throw error("The attributes \(other) and \(attribute.0) of \(name) are the same attribute")
+                }
+                expanded[key] = attribute.0
             }
             node.addAttribute(attribute.0, attribute.1)
         }
@@ -661,7 +699,9 @@ private struct Reader {
     }
 
     // The text up to the next <, with its entities read. The characters
-    // between the entities are added as they stand, a run at a time.
+    // between the entities are added as they stand, a run at a time. It has
+    // no ]]>, which ends character data alone (review of 12 October 2026,
+    // R31).
     private mutating func text() throws {
         var buf = [UInt16]()
         var start = index
@@ -669,6 +709,9 @@ private struct Reader {
             let ch = xml[index]
             if ch == Reader.less {
                 break
+            }
+            if ch == Reader.closingBracket && startsWith(Reader.characterDataEnd) {
+                throw error("The text has ]]> in it")
             }
             if ch == Reader.ampersand {
                 buf.append(contentsOf: xml[start..<index])
@@ -838,6 +881,50 @@ private struct Reader {
             return false
         }
         return true
+    }
+
+    // Whether the name is one of XML with namespaces: a letter, _ or another
+    // start character of a name of XML 1.0, then its name characters, with no
+    // more than one colon, between a prefix and a local name. The name of a
+    // tag was anything up to a space, = / > or <, as <a"b/>, <1/> and <!x/>
+    // (review of 12 October 2026, R31).
+    private static func isName(_ name: String) -> Bool {
+        var colons = 0
+        var start = true
+        for scalar in name.unicodeScalars {
+            let ch = scalar.value
+            if ch == 0x3A {     // :
+                colons += 1
+                if start || colons > 1 {
+                    return false
+                }
+                start = true
+            } else if start {
+                if !isNameStart(ch) {
+                    return false
+                }
+                start = false
+            } else if !isNameStart(ch) && !isNameRest(ch) {
+                return false
+            }
+        }
+        return !start
+    }
+
+    // Whether the character may start a name of XML 1.0, a colon aside.
+    private static func isNameStart(_ ch: UInt32) -> Bool {
+        return (0x41...0x5A).contains(ch) || (0x61...0x7A).contains(ch) || ch == 0x5F
+            || (0xC0...0xD6).contains(ch) || (0xD8...0xF6).contains(ch) || (0xF8...0x2FF).contains(ch)
+            || (0x370...0x37D).contains(ch) || (0x37F...0x1FFF).contains(ch) || (0x200C...0x200D).contains(ch)
+            || (0x2070...0x218F).contains(ch) || (0x2C00...0x2FEF).contains(ch) || (0x3001...0xD7FF).contains(ch)
+            || (0xF900...0xFDCF).contains(ch) || (0xFDF0...0xFFFD).contains(ch) || (0x10000...0xEFFFF).contains(ch)
+    }
+
+    // Whether the character may be in a name of XML 1.0, after its first,
+    // besides those that may start it.
+    private static func isNameRest(_ ch: UInt32) -> Bool {
+        return ch == 0x2D || ch == 0x2E || (0x30...0x39).contains(ch) || ch == 0xB7
+            || (0x300...0x36F).contains(ch) || (0x203F...0x2040).contains(ch)
     }
 
     private static func isWhitespace(_ ch: UInt16) -> Bool {

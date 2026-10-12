@@ -466,6 +466,12 @@ public final class XMLParser {
         if (end == -1) {
             throw error("The comment does not end");
         }
+        // A comment has no -- in it, and does not end with -, as XML has it
+        // (review of 12 October 2026, R31)
+        int dashes = xml.indexOf("--", index + 4);
+        if ((dashes != -1 && dashes < end) || (end > index + 4 && xml.charAt(end - 1) == '-')) {
+            throw error("A comment has -- in it");
+        }
         skip(end + 3 - index);
     }
 
@@ -473,6 +479,17 @@ public final class XMLParser {
         int end = xml.indexOf("?>", index);
         if (end == -1) {
             throw error("The processing instruction does not end");
+        }
+        // Its name is not xml, in any case, which is the declaration's alone:
+        // a declaration after a space was read as a processing instruction,
+        // and the encoding it named was not looked at (review of 12 October
+        // 2026, R30)
+        int target = index + 2;
+        while (target < end && !isWhitespace(xml.charAt(target))) {
+            target++;
+        }
+        if (xml.substring(index + 2, target).equalsIgnoreCase("xml")) {
+            throw error("The XML declaration is not at the start of the document");
         }
         skip(end + 2 - index);
     }
@@ -536,6 +553,9 @@ public final class XMLParser {
         if (name.isEmpty()) {
             throw error("A tag has no name");
         }
+        if (!isName(name)) {
+            throw error("The name of the tag " + name + " is not a name of XML");
+        }
         Map<String, String> declared = null;
         List<String> attributes = new ArrayList<String>();   // Names and values
         Set<String> written = null;     // Past a few attributes, which are compared one by one
@@ -556,6 +576,11 @@ public final class XMLParser {
             String attributeName = name();
             if (attributeName.isEmpty()) {
                 throw error("The attributes of " + name + " are not a name and a value");
+            }
+            // xmlns: is refused below, for its empty prefix
+            if (!isName(attributeName) && !attributeName.equals("xmlns:")) {
+                throw error("The name of the attribute " + attributeName + " of " + name
+                        + " is not a name of XML");
             }
             skipWhitespace();
             if (peek() != '=') {
@@ -616,12 +641,27 @@ public final class XMLParser {
             namespace = "";
         }
         XMLNode node = new XMLNode(name, keep(XMLNode.localNameOf(name)), namespace);
+        // Two attributes of the same namespace and local name are one
+        // attribute written twice, as a:x and b:x of one namespace (review of
+        // 12 October 2026, R31)
+        Map<String, String> expanded = null;
         for (int i = 0; i < attributes.size() && !skipDoctype; i += 2) {
             String prefix = prefixOf(attributes.get(i));
-            if (!prefix.isEmpty() && !prefix.equals("xmlns")
-                    && namespaceOf(prefix, declared, scopes) == null) {
-                throw error("The prefix " + prefix + " of the attribute " + attributes.get(i)
-                        + " of " + name + " is not declared");
+            if (!prefix.isEmpty() && !prefix.equals("xmlns")) {
+                String attributeNamespace = namespaceOf(prefix, declared, scopes);
+                if (attributeNamespace == null) {
+                    throw error("The prefix " + prefix + " of the attribute " + attributes.get(i)
+                            + " of " + name + " is not declared");
+                }
+                if (expanded == null) {
+                    expanded = new HashMap<String, String>();
+                }
+                String key = attributeNamespace + " " + attributes.get(i).substring(prefix.length() + 1);
+                String other = expanded.put(key, attributes.get(i));
+                if (other != null) {
+                    throw error("The attributes " + other + " and " + attributes.get(i) + " of " + name
+                            + " are the same attribute");
+                }
             }
         }
         node.setAttributes(attributes.toArray(new String[attributes.size()]));
@@ -705,10 +745,14 @@ public final class XMLParser {
         skip(end + 3 - index);
     }
 
-    // The text up to the next <, with its entities read.
+    // The text up to the next <, with its entities read. It has no ]]>, which
+    // ends character data alone (review of 12 October 2026, R31).
     private void text(List<XMLNode> open) throws XMLException {
         StringBuilder buf = new StringBuilder();
         while (index < xml.length() && peek() != '<') {
+            if (peek() == ']' && xml.startsWith("]]>", index)) {
+                throw error("The text has ]]> in it");
+            }
             char ch = next();
             if (ch == '&') {
                 buf.append(entity());
@@ -870,6 +914,52 @@ public final class XMLParser {
             return false;
         }
         return true;
+    }
+
+    // Returns true when the name is one of XML with namespaces: a letter, _ or
+    // another start character of a name of XML 1.0, then its name characters,
+    // with no more than one colon, between a prefix and a local name. The name
+    // of a tag was anything up to a space, = / > or <, as <a"b/>, <1/> and
+    // <!x/> (review of 12 October 2026, R31).
+    private static boolean isName(String name) {
+        int colons = 0;
+        boolean start = true;
+        for (int i = 0; i < name.length(); ) {
+            int ch = name.codePointAt(i);
+            i += Character.charCount(ch);
+            if (ch == ':') {
+                colons++;
+                if (start || colons > 1) {
+                    return false;
+                }
+                start = true;
+            } else if (start) {
+                if (!isNameStart(ch)) {
+                    return false;
+                }
+                start = false;
+            } else if (!isNameStart(ch) && !isNameRest(ch)) {
+                return false;
+            }
+        }
+        return !start;
+    }
+
+    // Returns true when the character may start a name of XML 1.0, a colon
+    // aside.
+    private static boolean isNameStart(int ch) {
+        return (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') || ch == '_'
+                || (ch >= 0xC0 && ch <= 0xD6) || (ch >= 0xD8 && ch <= 0xF6) || (ch >= 0xF8 && ch <= 0x2FF)
+                || (ch >= 0x370 && ch <= 0x37D) || (ch >= 0x37F && ch <= 0x1FFF) || (ch >= 0x200C && ch <= 0x200D)
+                || (ch >= 0x2070 && ch <= 0x218F) || (ch >= 0x2C00 && ch <= 0x2FEF) || (ch >= 0x3001 && ch <= 0xD7FF)
+                || (ch >= 0xF900 && ch <= 0xFDCF) || (ch >= 0xFDF0 && ch <= 0xFFFD) || (ch >= 0x10000 && ch <= 0xEFFFF);
+    }
+
+    // Returns true when the character may be in a name of XML 1.0, after its
+    // first, besides those that may start it.
+    private static boolean isNameRest(int ch) {
+        return ch == '-' || ch == '.' || (ch >= '0' && ch <= '9') || ch == 0xB7
+                || (ch >= 0x300 && ch <= 0x36F) || (ch >= 0x203F && ch <= 0x2040);
     }
 
     private static boolean isWhitespace(char ch) {

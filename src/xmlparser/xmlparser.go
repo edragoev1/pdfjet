@@ -429,6 +429,11 @@ func (p *parser) comment() error {
 	if end == -1 {
 		return p.error("The comment does not end")
 	}
+	// A comment has no -- in it, and does not end with -, as XML has it
+	// (review of 12 October 2026, R31)
+	if indexOf(p.xml[:end], "--", p.index+4) != -1 || (end > p.index+4 && p.xml[end-1] == '-') {
+		return p.error("A comment has -- in it")
+	}
 	p.skip(end + 3 - p.index)
 	return nil
 }
@@ -437,6 +442,17 @@ func (p *parser) processingInstruction() error {
 	end := indexOf(p.xml, "?>", p.index)
 	if end == -1 {
 		return p.error("The processing instruction does not end")
+	}
+	// Its name is not xml, in any case, which is the declaration's alone: a
+	// declaration after a space was read as a processing instruction, and
+	// the encoding it named was not looked at (review of 12 October 2026,
+	// R30)
+	target := p.index + 2
+	for target < end && !isWhitespace(p.xml[target]) {
+		target++
+	}
+	if strings.EqualFold(string(p.xml[p.index+2:target]), "xml") {
+		return p.error("The XML declaration is not at the start of the document")
 	}
 	p.skip(end + 2 - p.index)
 	return nil
@@ -509,6 +525,9 @@ func (p *parser) openTag() (*XMLNode, error) {
 	if name == "" {
 		return nil, p.error("A tag has no name")
 	}
+	if !isName(name) {
+		return nil, p.error("The name of the tag " + name + " is not a name of XML")
+	}
 	var declared map[string]string
 	var attributes []XMLAttribute
 	var written map[string]bool // Past a few attributes, which are compared one by one
@@ -529,6 +548,10 @@ func (p *parser) openTag() (*XMLNode, error) {
 		attributeName := p.name()
 		if attributeName == "" {
 			return nil, p.error("The attributes of " + name + " are not a name and a value")
+		}
+		// xmlns: is refused below, for its empty prefix
+		if !isName(attributeName) && attributeName != "xmlns:" {
+			return nil, p.error("The name of the attribute " + attributeName + " of " + name + " is not a name of XML")
 		}
 		p.skipWhitespace()
 		if p.peek() != '=' {
@@ -588,13 +611,27 @@ func (p *parser) openTag() (*XMLNode, error) {
 		return nil, p.error("The prefix " + prefixOf(name) + " of " + name + " is not declared")
 	}
 	node := newXMLNode(name, namespace)
+	// Two attributes of the same namespace and local name are one attribute
+	// written twice, as a:x and b:x of one namespace (review of 12 October
+	// 2026, R31)
+	var expanded map[string]string
 	for _, attribute := range attributes {
 		prefix := prefixOf(attribute.Name)
 		if prefix != "" && prefix != "xmlns" && !p.skipDoctype {
-			if _, found := p.namespaceOf(prefix, declared); !found {
+			attributeNamespace, found := p.namespaceOf(prefix, declared)
+			if !found {
 				return nil, p.error("The prefix " + prefix + " of the attribute " + attribute.Name +
 					" of " + name + " is not declared")
 			}
+			if expanded == nil {
+				expanded = make(map[string]string)
+			}
+			key := attributeNamespace + " " + attribute.Name[len(prefix)+1:]
+			if other, twice := expanded[key]; twice {
+				return nil, p.error("The attributes " + other + " and " + attribute.Name + " of " + name +
+					" are the same attribute")
+			}
+			expanded[key] = attribute.Name
 		}
 		node.addAttribute(attribute.Name, attribute.Value)
 	}
@@ -683,10 +720,14 @@ func (p *parser) characterData() error {
 	return nil
 }
 
-// The text up to the next <, with its entities read.
+// The text up to the next <, with its entities read. It has no ]]>, which
+// ends character data alone (review of 12 October 2026, R31).
 func (p *parser) text() error {
 	var buf strings.Builder
 	for p.index < len(p.xml) && p.peek() != '<' {
+		if p.peek() == ']' && p.startsWith("]]>") {
+			return p.error("The text has ]]> in it")
+		}
 		ch := p.next()
 		if ch == '&' {
 			characters, err := p.entity()
@@ -866,6 +907,51 @@ func (p *parser) skipWhitespace() {
 	for p.index < len(p.xml) && isWhitespace(p.peek()) {
 		p.next()
 	}
+}
+
+// isName says whether the name is one of XML with namespaces: a letter, _ or
+// another start character of a name of XML 1.0, then its name characters,
+// with no more than one colon, between a prefix and a local name. The name of
+// a tag was anything up to a space, = / > or <, as <a"b/>, <1/> and <!x/>
+// (review of 12 October 2026, R31).
+func isName(name string) bool {
+	colons := 0
+	start := true
+	for _, ch := range name {
+		switch {
+		case ch == ':':
+			colons++
+			if start || colons > 1 {
+				return false
+			}
+			start = true
+		case start:
+			if !isNameStart(ch) {
+				return false
+			}
+			start = false
+		case !isNameStart(ch) && !isNameRest(ch):
+			return false
+		}
+	}
+	return !start
+}
+
+// isNameStart says whether the character may start a name of XML 1.0, a
+// colon aside.
+func isNameStart(ch rune) bool {
+	return ch >= 'A' && ch <= 'Z' || ch >= 'a' && ch <= 'z' || ch == '_' ||
+		ch >= 0xC0 && ch <= 0xD6 || ch >= 0xD8 && ch <= 0xF6 || ch >= 0xF8 && ch <= 0x2FF ||
+		ch >= 0x370 && ch <= 0x37D || ch >= 0x37F && ch <= 0x1FFF || ch >= 0x200C && ch <= 0x200D ||
+		ch >= 0x2070 && ch <= 0x218F || ch >= 0x2C00 && ch <= 0x2FEF || ch >= 0x3001 && ch <= 0xD7FF ||
+		ch >= 0xF900 && ch <= 0xFDCF || ch >= 0xFDF0 && ch <= 0xFFFD || ch >= 0x10000 && ch <= 0xEFFFF
+}
+
+// isNameRest says whether the character may be in a name of XML 1.0, after
+// its first, besides those that may start it.
+func isNameRest(ch rune) bool {
+	return ch == '-' || ch == '.' || ch >= '0' && ch <= '9' || ch == 0xB7 ||
+		ch >= 0x300 && ch <= 0x36F || ch >= 0x203F && ch <= 0x2040
 }
 
 func isWhitespace(ch rune) bool {

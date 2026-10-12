@@ -221,5 +221,30 @@ public class MarkdownTest {
         markdown.DrawOn(pdf, "```\n\uD83D\uDE00x\uD83D\uDE00\n```", pages, Letter.PORTRAIT);
         Assert.Single(pages);
     }
+
+    // A table of more than 64 columns, and tables of more than 100,000 cells,
+    // make the text an error: the first was drawn as a paragraph of pipes, and a
+    // header of 64 columns over rows of "|" made 64 cells of a row of 2 bytes,
+    // 895 MB in Go from 64 KB (review of 12 October 2026, R33).
+    [Fact]
+    public void ATableTooWideOrTooLargeIsAnError() {
+        string Repeat(string text, int count) {
+            return new StringBuilder().Insert(0, text, count).ToString();
+        }
+        string Table(int columns, int rows) {
+            return Repeat("| a ", columns) + "|\n" + Repeat("| - ", columns) + "|\n" + Repeat("|\n", rows);
+        }
+        void Draw(string text) {
+            using IDisposable coreFonts = TestSupport.AllowCoreFonts();
+            PDF pdf = new PDF(new MemoryStream());
+            Font font = new Font(pdf, CoreFont.HELVETICA);
+            new Markdown(font, font, font, font, font).DrawOn(pdf, text, new List<Page>(), Letter.PORTRAIT);
+        }
+        Draw(Table(64, 2));
+        Assert.Contains("more than 64 columns", Assert.Throws<ArgumentException>(() => Draw(Table(65, 2))).Message);
+        Assert.Contains("more than 100000 cells", Assert.Throws<ArgumentException>(() => Draw(Table(64, 1600))).Message);
+        // A line of pipes that is no table, with no row of delimiters, is text
+        Draw(Repeat("| a ", 70) + "|\n");
+    }
 }
 }

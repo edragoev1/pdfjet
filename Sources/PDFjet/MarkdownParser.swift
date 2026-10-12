@@ -32,6 +32,7 @@ final class MarkdownParser {
         var loose = false               // Of a list whose items are apart, with an empty line between them
         var children = [Block]()        // Of a quote, a list or an item
         var rows: [[String]]?           // Of a table, the header row first
+        var tooWide = false             // Of a table of more than maxTableColumns, whose rows are not kept
         var alignments: [Alignment]?    // Of a table, of each column, or nil
 
         init(_ kind: Kind) {
@@ -282,9 +283,17 @@ final class MarkdownParser {
             alignments.append((left && right) ? Alignment.CENTER : right ? Alignment.RIGHT : Alignment.LEFT)
         }
         rows.append(header)
+        // A table of more columns than a page shows is marked, and its rows are
+        // passed over, not padded: the Markdown is an error (review of
+        // 12 October 2026, R33)
+        table.tooWide = header.count > maxTableColumns
         var j = i + 2
         while j < lines.count && !isBlank(lines[j]) && lines[j].contains(pipe)
                 && !interrupts(lines[j]) {
+            if table.tooWide {
+                j += 1
+                continue
+            }
             var row = cells(lines[j]).map { string($0) }
             // Every row has a cell for each column.
             while row.count < header.count {
@@ -299,18 +308,41 @@ final class MarkdownParser {
         return j
     }
 
-    // The most columns a table of Markdown has: a header of more is a
-    // paragraph. Each row is padded to the header's columns, so a header of
-    // thousands of columns over thousands of rows of "|" made cells as the
-    // square of the text, 1.17 GB from 24 KB (review of 11 October 2026,
-    // #33); with at most 64, the cells grow as the text does.
+    // The most columns a table of Markdown has. Each row is padded to the
+    // header's columns, so a header of thousands of columns over thousands of
+    // rows of "|" made cells as the square of the text, 1.17 GB from 24 KB
+    // (review of 11 October 2026, #33); with at most 64, the cells grow as the
+    // text does. A table of more is an error, more than a page shows: it was
+    // read as a paragraph of pipes (review of 12 October 2026, R33).
     static let maxTableColumns = 64
+
+    // The most cells the tables of a Markdown text have together: a header of
+    // 64 columns over rows of "|" made 64 cells of a row of 2 bytes, 895 MB in
+    // Go from 64 KB (review of 12 October 2026, R33). A table that large is
+    // BigTable's.
+    static let maxTableCells = 100000
+
+    // The cells of the tables of the blocks, those in quotes and lists too,
+    // or nil when one of them is too wide.
+    static func tableCells(_ blocks: [Block]) -> Int? {
+        var cells = 0
+        for block in blocks {
+            if block.kind == .TABLE, let rows = block.rows, !rows.isEmpty {
+                if block.tooWide {
+                    return nil
+                }
+                cells += rows.count * rows[0].count
+            }
+            guard let inside = tableCells(block.children) else {
+                return nil
+            }
+            cells += inside
+        }
+        return cells
+    }
 
     private static func isTableStart(_ lines: [Line], _ i: Int) -> Bool {
         if i + 1 >= lines.count || !lines[i].contains(pipe) || indent(lines[i]) >= 4 {
-            return false
-        }
-        if cells(lines[i]).count > maxTableColumns {
             return false
         }
         let delimiterRow = lines[i + 1]

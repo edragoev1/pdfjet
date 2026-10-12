@@ -481,6 +481,29 @@ func TestXMLParserReadsAStylesheetInstructionFirstAndAQuoteInAnInstructionOfTheD
 	testContains(t, testMessage(t, `<a xmlns:="urn:x"/>`), "empty prefix")
 }
 
+// What is not XML is an error: a name that is not one of XML, a declaration
+// after a space, -- in a comment, ]]> in text and an attribute written twice
+// under two prefixes of one namespace were read (review of 12 October 2026,
+// R30, R31). Names of other scripts, a prefixed name and a processing
+// instruction whose name starts with xml are read as before.
+func TestXMLParserRefusesWhatIsNotXML(t *testing.T) {
+	testContains(t, testMessage(t, " <?xml version=\"1.0\" encoding=\"ISO-8859-1\"?><r>\u00e9</r>"),
+		"The XML declaration is not at the start of the document")
+	testContains(t, testMessage(t, "<r/><?XML x?>"), "The XML declaration is not at the start")
+	for _, xml := range []string{`<a"b/>`, `<1/>`, `<!x/>`, `<a&b/>`, `<:a/>`, `<a:/>`, `<a:b:c/>`} {
+		testContains(t, testMessage(t, xml), "is not a name of XML")
+	}
+	testContains(t, testMessageSkipping(t, `<r><!DOCTYPE x/></r>`), "is not a name of XML")
+	testContains(t, testMessage(t, `<r a"b="1"/>`), "is not a name of XML")
+	testContains(t, testMessage(t, `<r>a ]]> b</r>`), "The text has ]]> in it")
+	testContains(t, testMessage(t, `<r><!-- a -- b --></r>`), "A comment has -- in it")
+	testContains(t, testMessage(t, `<r><!-- a ---></r>`), "A comment has -- in it")
+	testContains(t, testMessage(t, `<r xmlns:a="urn:x" xmlns:b="urn:x" a:c="1" b:c="2"/>`),
+		"The attributes a:c and b:c of r are the same attribute")
+	testParse(t, `<?xml-stylesheet href="a.xsl"?><Größe ελληνικά="1" a:b="2" xmlns:a="urn:a">x ] y ]] z</Größe>`)
+	testParse(t, `<r><!-- a - b --></r>`)
+}
+
 // FuzzXMLParser checks that any bytes are read or refused, strictly and with a
 // DOCTYPE skipped, without a panic, and that what the strict parse reads, the
 // lenient one reads the same.

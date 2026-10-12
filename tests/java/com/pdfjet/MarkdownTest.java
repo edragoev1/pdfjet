@@ -7,6 +7,7 @@
 package com.pdfjet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
@@ -228,5 +229,39 @@ class MarkdownTest {
         List<Page> pages = new ArrayList<Page>();
         markdown.drawOn(pdf, "```\n\uD83D\uDE00x\uD83D\uDE00\n```", pages, Letter.PORTRAIT);
         assertEquals(1, pages.size());
+    }
+
+    // A table of more than 64 columns, and tables of more than 100,000 cells,
+    // make the text an error: the first was drawn as a paragraph of pipes, and a
+    // header of 64 columns over rows of "|" made 64 cells of a row of 2 bytes,
+    // 895 MB in Go from 64 KB (review of 12 October 2026, R33).
+    @Test
+    void aTableTooWideOrTooLargeIsAnError() throws Exception {
+        drawTable(64, 2);
+        Exception e = assertThrows(IllegalArgumentException.class, () -> drawTable(65, 2));
+        assertTrue(e.getMessage().contains("more than 64 columns"), e.getMessage());
+        e = assertThrows(IllegalArgumentException.class, () -> drawTable(64, 1600));
+        assertTrue(e.getMessage().contains("more than 100000 cells"), e.getMessage());
+        // A line of pipes that is no table, with no row of delimiters, is text
+        drawText(repeat("| a ", 70) + "|\n");
+    }
+
+    // Draws a table of the columns over rows of "|" alone.
+    private static void drawTable(int columns, int rows) throws Exception {
+        drawText(repeat("| a ", columns) + "|\n" + repeat("| - ", columns) + "|\n" + repeat("|\n", rows));
+    }
+
+    private static void drawText(String text) throws Exception {
+        PDF pdf = new PDF(new ByteArrayOutputStream());
+        Font font = TestSupport.helvetica(pdf);
+        new Markdown(font, font, font, font, font).drawOn(pdf, text, new ArrayList<Page>(), Letter.PORTRAIT);
+    }
+
+    private static String repeat(String text, int count) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < count; i++) {
+            sb.append(text);
+        }
+        return sb.toString();
     }
 }

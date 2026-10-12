@@ -151,6 +151,18 @@ public class Markdown {
         quoteBars.Clear();
         List<MarkdownParser.Block> blocks = MarkdownParser.Parse(text);
         float width = pageSize.GetWidth() - marginLeft - marginRight;
+        // A table too wide for a page, or tables too large, make the text an
+        // error, as a table of more columns was drawn as a paragraph of pipes
+        // (review of 12 October 2026, R33)
+        int cells = MarkdownParser.TableCells(blocks);
+        if (cells == -1) {
+            pdf.Fail(new ArgumentException("A table of the Markdown has more than "
+                    + MarkdownParser.MAX_TABLE_COLUMNS + " columns, more than a page can show."));
+        }
+        if (cells > MarkdownParser.MAX_TABLE_CELLS) {
+            pdf.Fail(new ArgumentException("The tables of the Markdown have more than "
+                    + MarkdownParser.MAX_TABLE_CELLS + " cells: draw a table that large with BigTable."));
+        }
         if (blocks.Count > 0) {
             NewPage();
             DrawBlocks(blocks, marginLeft, width, false);

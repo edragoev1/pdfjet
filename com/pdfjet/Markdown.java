@@ -154,6 +154,18 @@ public class Markdown {
         quoteBars.clear();
         List<MarkdownParser.Block> blocks = MarkdownParser.parse(text);
         float width = pageSize.getWidth() - marginLeft - marginRight;
+        // A table too wide for a page, or tables too large, make the text an
+        // error, as a table of more columns was drawn as a paragraph of pipes
+        // (review of 12 October 2026, R33)
+        int cells = MarkdownParser.tableCells(blocks);
+        if (cells == -1) {
+            pdf.fail(new IllegalArgumentException("A table of the Markdown has more than "
+                    + MarkdownParser.MAX_TABLE_COLUMNS + " columns, more than a page can show."));
+        }
+        if (cells > MarkdownParser.MAX_TABLE_CELLS) {
+            pdf.fail(new IllegalArgumentException("The tables of the Markdown have more than "
+                    + MarkdownParser.MAX_TABLE_CELLS + " cells: draw a table that large with BigTable."));
+        }
         if (!blocks.isEmpty()) {
             newPage();
             drawBlocks(blocks, marginLeft, width, false);

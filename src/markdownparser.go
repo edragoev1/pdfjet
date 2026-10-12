@@ -54,6 +54,7 @@ type markdownBlock struct {
 	children   []*markdownBlock      // Of a quote, a list or an item
 	rows       [][]string            // Of a table, the header row first
 	alignments []alignment.Alignment // Of a table, of each column, or nil
+	tooWide    bool                  // Of a table of more than maxTableColumns, whose rows are not kept
 }
 
 func newMarkdownBlock(kind markdownKind) *markdownBlock {
@@ -311,9 +312,17 @@ func (p markdownParser) parseTable(lines []string, i int, blocks *[]*markdownBlo
 		}
 	}
 	table.rows = append(table.rows, header)
+	// A table of more columns than a page shows is marked, and its rows are
+	// passed over, not padded: the Markdown is an error (review of
+	// 12 October 2026, R33)
+	table.tooWide = len(header) > maxTableColumns
 	j := i + 2
 	for j < len(lines) && !p.isBlank(lines[j]) && strings.IndexByte(lines[j], '|') != -1 &&
 		!p.interrupts(lines[j]) {
+		if table.tooWide {
+			j++
+			continue
+		}
 		row := p.cells(lines[j])
 		// Every row has a cell for each column.
 		for len(row) < len(header) {
@@ -326,18 +335,37 @@ func (p markdownParser) parseTable(lines []string, i int, blocks *[]*markdownBlo
 	return j
 }
 
-// maxTableColumns is the most columns a table of Markdown has: a header of
-// more is a paragraph. Each row is padded to the header's columns, so a
-// header of thousands of columns over thousands of rows of "|" made cells
-// as the square of the text, 1.17 GB from 24 KB (review of 11 October 2026,
-// #33); with at most 64, the cells grow as the text does.
+// maxTableColumns is the most columns a table of Markdown has. Each row is
+// padded to the header's columns, so a header of thousands of columns over
+// thousands of rows of "|" made cells as the square of the text, 1.17 GB from
+// 24 KB (review of 11 October 2026, #33); with at most 64, the cells grow as
+// the text does. A table of more is an error, more than a page shows: it was
+// read as a paragraph of pipes (review of 12 October 2026, R33).
 const maxTableColumns = 64
+
+// maxTableCells is the most cells the tables of a Markdown text have
+// together: a header of 64 columns over rows of "|" made 64 cells of a row of
+// 2 bytes, 895 MB from 64 KB (review of 12 October 2026, R33). A table that
+// large is BigTable's.
+const maxTableCells = 100000
+
+// tableCells returns the cells of the tables of the blocks, those in quotes
+// and lists too, and whether one of them is too wide.
+func tableCells(blocks []*markdownBlock) (cells int, tooWide bool) {
+	for _, block := range blocks {
+		if block.kind == markdownTable && len(block.rows) > 0 {
+			cells += len(block.rows) * len(block.rows[0])
+			tooWide = tooWide || block.tooWide
+		}
+		inside, wide := tableCells(block.children)
+		cells += inside
+		tooWide = tooWide || wide
+	}
+	return cells, tooWide
+}
 
 func (p markdownParser) isTableStart(lines []string, i int) bool {
 	if i+1 >= len(lines) || strings.IndexByte(lines[i], '|') == -1 || p.indent(lines[i]) >= 4 {
-		return false
-	}
-	if len(p.cells(lines[i])) > maxTableColumns {
 		return false
 	}
 	delimiterRow := lines[i+1]

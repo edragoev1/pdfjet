@@ -190,16 +190,17 @@ class MarkdownParserTest {
         return shortest;
     }
 
-    // A header of more than 64 columns is not a table, but a paragraph: each
-    // row is padded to the header's columns, and thousands of columns over
-    // thousands of rows made cells as the square of the text (review of
-    // 11 October 2026, #33).
+    // A table of more than 64 columns is marked too wide, and its rows are not
+    // padded: thousands of columns over thousands of rows made cells as the
+    // square of the text (review of 11 October 2026, #33); drawn, it is an
+    // error (review of 12 October 2026, R33).
     @Test
     void aTableHasAtMost64Columns() {
         String got = parse(table(64));
         assertTrue(got.startsWith("TABLE("), "64 columns: " + got.substring(0, Math.min(60, got.length())));
-        got = parse(table(65));
-        assertFalse(got.contains("TABLE("), "65 columns make a table: " + got.substring(0, Math.min(60, got.length())));
+        List<MarkdownParser.Block> blocks = MarkdownParser.parse(table(65));
+        assertTrue(blocks.size() == 1 && blocks.get(0).tooWide && blocks.get(0).rows.size() == 1,
+                "65 columns: " + parse(table(65)));
     }
 
     // A table of the columns, a header and a delimiter row, with two rows of "|".

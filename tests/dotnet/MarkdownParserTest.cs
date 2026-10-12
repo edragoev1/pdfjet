@@ -183,10 +183,10 @@ public class MarkdownParserTest {
                 + large.TotalMilliseconds + " ms, and 5000 " + small.TotalMilliseconds + " ms");
     }
 
-    // A header of more than 64 columns is not a table, but a paragraph: each
-    // row is padded to the header's columns, and thousands of columns over
-    // thousands of rows made cells as the square of the text (review of
-    // 11 October 2026, #33).
+    // A table of more than 64 columns is marked too wide, and its rows are not
+    // padded: thousands of columns over thousands of rows made cells as the
+    // square of the text (review of 11 October 2026, #33); drawn, it is an
+    // error (review of 12 October 2026, R33).
     [Fact]
     public void ATableHasAtMost64Columns() {
         string Table(int columns) {
@@ -199,8 +199,8 @@ public class MarkdownParserTest {
         }
         string got = Parse(Table(64));
         Assert.True(got.StartsWith("TABLE(", StringComparison.Ordinal), "64 columns: " + got);
-        got = Parse(Table(65));
-        Assert.False(got.Contains("TABLE("), "65 columns make a table: " + got);
+        List<MarkdownParser.Block> blocks = MarkdownParser.Parse(Table(65));
+        Assert.True(blocks.Count == 1 && blocks[0].tooWide && blocks[0].rows.Count == 1, "65 columns: " + Parse(Table(65)));
     }
 
     private static TimeSpan ParseTime(int count) {

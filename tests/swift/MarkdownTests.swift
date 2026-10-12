@@ -205,4 +205,26 @@ import Testing
         try markdown.drawOn(pdf, "```\n\u{1F600}x\u{1F600}\n```", &pages, Letter.PORTRAIT)
         #expect(pages.count == 1)
     }
+
+    // A table of more than 64 columns, and tables of more than 100,000 cells,
+    // make the text an error: the first was drawn as a paragraph of pipes, and a
+    // header of 64 columns over rows of "|" made 64 cells of a row of 2 bytes,
+    // 895 MB in Go from 64 KB (review of 12 October 2026, R33).
+    @Test func aTableTooWideOrTooLargeIsAnError() throws {
+        func table(_ columns: Int, _ rows: Int) -> String {
+            String(repeating: "| a ", count: columns) + "|\n" +
+                String(repeating: "| - ", count: columns) + "|\n" + String(repeating: "|\n", count: rows)
+        }
+        func draw(_ text: String) throws {
+            let pdf = MemoryPDF(Compliance.PDF_1_7).pdf
+            let font = try Font(pdf, CoreFont.HELVETICA)
+            var pages = [Page]()
+            try Markdown(font, font, font, font, font).drawOn(pdf, text, &pages, Letter.PORTRAIT)
+        }
+        try draw(table(64, 2))
+        #expect(throws: PDFjetError.self) { try draw(table(65, 2)) }
+        #expect(throws: PDFjetError.self) { try draw(table(64, 1600)) }
+        // A line of pipes that is no table, with no row of delimiters, is text
+        try draw(String(repeating: "| a ", count: 70) + "|\n")
+    }
 }

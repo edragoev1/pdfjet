@@ -127,10 +127,10 @@ import Testing
         #expect(quotes == MarkdownParser.MAX_DEPTH)
     }
 
-    // A header of more than 64 columns is not a table, but a paragraph: each
-    // row is padded to the header's columns, and thousands of columns over
-    // thousands of rows made cells as the square of the text (review of
-    // 11 October 2026, #33).
+    // A table of more than 64 columns is marked too wide, and its rows are not
+    // padded: thousands of columns over thousands of rows made cells as the
+    // square of the text (review of 11 October 2026, #33); drawn, it is an
+    // error (review of 12 October 2026, R33).
     @Test func aTableHasAtMost64Columns() {
         func table(_ columns: Int) -> String {
             return String(repeating: "| a ", count: columns) + "|\n"
@@ -138,8 +138,9 @@ import Testing
         }
         let table64 = parse(table(64))
         #expect(table64.hasPrefix("TABLE("), "64 columns: \(table64.prefix(60))")
-        let table65 = parse(table(65))
-        #expect(!table65.contains("TABLE("), "65 columns make a table: \(table65.prefix(60))")
+        let blocks = MarkdownParser.parse(table(65))
+        #expect(blocks.count == 1 && blocks[0].tooWide && blocks[0].rows?.count == 1,
+                "65 columns: \(parse(table(65)).prefix(60))")
     }
 
     // Four times as long a text is read in about four times the time, not

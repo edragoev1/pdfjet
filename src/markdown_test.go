@@ -230,6 +230,39 @@ func TestMarkdownHTMLIsDrawnAsText(t *testing.T) {
 	}
 }
 
+// A table of more than 64 columns, and tables of more than 100,000 cells,
+// make the text an error: the first was drawn as a paragraph of pipes, and a
+// header of 64 columns over rows of "|" made 64 cells of a row of 2 bytes,
+// 895 MB from 64 KB (review of 12 October 2026, R33).
+func TestMarkdownATableTooWideOrTooLargeIsAnError(t *testing.T) {
+	testAllowCoreFonts(t)
+	draw := func(text string) error {
+		pdf := testNewPDF()
+		font := NewCoreFont(pdf, corefont.Helvetica())
+		pages := make([]*Page, 0)
+		NewMarkdown(font, font, font, font, font).DrawOnPages(pdf, text, &pages, letter.Portrait())
+		return pdf.err
+	}
+	table := func(columns, rows int) string {
+		return strings.Repeat("| a ", columns) + "|\n" + strings.Repeat("| - ", columns) + "|\n" +
+			strings.Repeat("|\n", rows)
+	}
+	if err := draw(table(64, 2)); err != nil {
+		t.Errorf("64 columns: %v", err)
+	}
+	if err := draw(table(65, 2)); err == nil || !strings.Contains(err.Error(), "more than 64 columns") {
+		t.Errorf("65 columns: %v", err)
+	}
+	if err := draw(table(64, 1600)); err == nil || !strings.Contains(err.Error(), "more than 100000 cells") {
+		t.Errorf("102,464 cells: %v", err)
+	}
+	// A paragraph of pipes that is no table, with no row of delimiters, is
+	// text, as before
+	if err := draw(strings.Repeat("| a ", 70) + "|\n"); err != nil {
+		t.Errorf("a line of pipes: %v", err)
+	}
+}
+
 func TestMarkdownLongCodeLinesAreCutInLinearTime(t *testing.T) {
 	testAllowCoreFonts(t)
 	var line strings.Builder

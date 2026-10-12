@@ -170,6 +170,17 @@ public class Markdown {
         }
         let blocks = MarkdownParser.parse(text)
         let width = pageSize.getWidth() - marginLeft - marginRight
+        // A table too wide for a page, or tables too large, make the text an
+        // error, as a table of more columns was drawn as a paragraph of pipes
+        // (review of 12 October 2026, R33)
+        guard let cells = MarkdownParser.tableCells(blocks) else {
+            throw PDFjetError(message: "A table of the Markdown has more than \(MarkdownParser.maxTableColumns)"
+                    + " columns, more than a page can show.")
+        }
+        if cells > MarkdownParser.maxTableCells {
+            throw PDFjetError(message: "The tables of the Markdown have more than \(MarkdownParser.maxTableCells)"
+                    + " cells: draw a table that large with BigTable.")
+        }
         if !blocks.isEmpty {
             newPage()
             try drawBlocks(blocks, marginLeft, width, false)

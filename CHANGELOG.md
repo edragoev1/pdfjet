@@ -134,6 +134,16 @@ This is the first entry in this file; earlier releases were not tracked here.
   in PDF/A-1 and PDF/A-2.
 - Go: an EmbeddedFile no longer keeps its content after it is written; the
   PDF kept every file whole until it was freed.
+- The XML parser of SVG images and of the markup refuses what is not XML, in
+  the four ports: a comment with -- in it, an XML declaration after the
+  start, a tag or attribute whose name is not a name of XML, two attributes
+  that are the same once their prefixes are resolved, and ]]> in the text.
+  Such files were read, and drawn, where other readers refuse them.
+- A table of Markdown with more than 64 columns, and tables of more than
+  100,000 cells in all, make the text an error, in the four ports: the
+  first was drawn as a paragraph of pipes, and a header of 64 columns over
+  64 KB of rows of "|" alone took 895 MB in Go. Draw a table that large
+  with BigTable.
 
 ## v9.0.5 — 2026-10-12, internal
 

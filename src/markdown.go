@@ -156,6 +156,20 @@ func (markdown *Markdown) DrawOnPages(pdf *PDF, text string, pages *[]*Page, pag
 	markdown.quoteBars = markdown.quoteBars[:0]
 	blocks := markdownParser{}.parse(text)
 	width := pageSize.GetWidth() - markdown.marginLeft - markdown.marginRight
+	cells, tooWide := tableCells(blocks)
+	// A table too wide for a page, or tables too large, make the text an
+	// error, as a table of more columns was drawn as a paragraph of pipes
+	// (review of 12 October 2026, R33)
+	if tooWide {
+		pdf.fail("A table of the Markdown has more than " + strconv.Itoa(maxTableColumns) +
+			" columns, more than a page can show.")
+		return [2]float32{markdown.marginLeft + width, markdown.marginTop}
+	}
+	if cells > maxTableCells {
+		pdf.fail("The tables of the Markdown have more than " + strconv.Itoa(maxTableCells) +
+			" cells: draw a table that large with BigTable.")
+		return [2]float32{markdown.marginLeft + width, markdown.marginTop}
+	}
 	if len(blocks) > 0 {
 		markdown.newPage()
 		markdown.drawBlocks(blocks, markdown.marginLeft, width, false)

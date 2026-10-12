@@ -388,6 +388,38 @@ class XMLParserTest {
         assertTrue(m.contains("empty prefix"), m);
     }
 
+    // What is not XML is an error: a name that is not one of XML, a declaration
+    // after a space, -- in a comment, ]]> in text and an attribute written twice
+    // under two prefixes of one namespace were read (review of 12 October 2026,
+    // R30, R31). Names of other scripts, a prefixed name and a processing
+    // instruction whose name starts with xml are read as before.
+    @Test
+    void refusesWhatIsNotXML() throws Exception {
+        String m = message(" <?xml version=\"1.0\" encoding=\"ISO-8859-1\"?><r>\u00e9</r>");
+        assertTrue(m.contains("The XML declaration is not at the start of the document"), m);
+        m = message("<r/><?XML x?>");
+        assertTrue(m.contains("The XML declaration is not at the start"), m);
+        for (String xml : new String[] {"<a\"b/>", "<1/>", "<!x/>", "<a&b/>", "<:a/>", "<a:/>", "<a:b:c/>"}) {
+            m = message(xml);
+            assertTrue(m.contains("is not a name of XML"), xml + ": " + m);
+        }
+        m = messageSkipping("<r><!DOCTYPE x/></r>");
+        assertTrue(m.contains("is not a name of XML"), m);
+        m = message("<r a\"b=\"1\"/>");
+        assertTrue(m.contains("is not a name of XML"), m);
+        m = message("<r>a ]]> b</r>");
+        assertTrue(m.contains("The text has ]]> in it"), m);
+        m = message("<r><!-- a -- b --></r>");
+        assertTrue(m.contains("A comment has -- in it"), m);
+        m = message("<r><!-- a ---></r>");
+        assertTrue(m.contains("A comment has -- in it"), m);
+        m = message("<r xmlns:a=\"urn:x\" xmlns:b=\"urn:x\" a:c=\"1\" b:c=\"2\"/>");
+        assertTrue(m.contains("The attributes a:c and b:c of r are the same attribute"), m);
+        parse("<?xml-stylesheet href=\"a.xsl\"?><Gr\u00f6\u00dfe \u03b5\u03bb\u03bb\u03b7\u03bd\u03b9\u03ba\u03ac=\"1\""
+                + " a:b=\"2\" xmlns:a=\"urn:a\">x ] y ]] z</Gr\u00f6\u00dfe>");
+        parse("<r><!-- a - b --></r>");
+    }
+
     private static long parseTime(int count) throws Exception {
         StringBuilder xml = new StringBuilder("<rsm:CrossIndustryInvoice xmlns:rsm=\"urn:one\" xmlns:ram=\"urn:two\">");
         for (int i = 0; i < count; i++) {

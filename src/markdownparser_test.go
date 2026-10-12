@@ -246,18 +246,20 @@ func TestMarkdownParserDescribesAFileOfInputs(t *testing.T) {
 	}
 }
 
-// A header of more than 64 columns is not a table, but a paragraph: each row
-// is padded to the header's columns, and thousands of columns over
-// thousands of rows made cells as the square of the text (review of
-// 11 October 2026, #33).
+// A table of more than 64 columns is marked too wide, and its rows are not
+// padded: thousands of columns over thousands of rows made cells as the
+// square of the text (review of 11 October 2026, #33); drawn, it is an error
+// (R33).
 func TestMarkdownATableHasAtMost64Columns(t *testing.T) {
 	table := func(columns int) string {
 		return strings.Repeat("| a ", columns) + "|\n" + strings.Repeat("| - ", columns) + "|\n|\n|\n"
 	}
-	if got := testDescribeMarkdown(markdownParser{}.parse(table(64))); !strings.HasPrefix(got, "TABLE(") {
-		t.Errorf("64 columns: %.60s", got)
+	blocks := markdownParser{}.parse(table(64))
+	if len(blocks) != 1 || blocks[0].kind != markdownTable || blocks[0].tooWide || len(blocks[0].rows) != 3 {
+		t.Errorf("64 columns: %s", testDescribeMarkdown(blocks))
 	}
-	if got := testDescribeMarkdown(markdownParser{}.parse(table(65))); strings.Contains(got, "TABLE(") {
-		t.Errorf("65 columns make a table: %.60s", got)
+	blocks = markdownParser{}.parse(table(65))
+	if len(blocks) != 1 || !blocks[0].tooWide || len(blocks[0].rows) != 1 {
+		t.Errorf("65 columns: %s", testDescribeMarkdown(blocks))
 	}
 }

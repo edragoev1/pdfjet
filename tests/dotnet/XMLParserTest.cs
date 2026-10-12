@@ -421,6 +421,31 @@ public class XMLParserTest {
         Assert.Contains("empty prefix", Message("<a xmlns:=\"urn:x\"/>"), StringComparison.Ordinal);
     }
 
+    // What is not XML is an error: a name that is not one of XML, a declaration
+    // after a space, -- in a comment, ]]> in text and an attribute written twice
+    // under two prefixes of one namespace were read (review of 12 October 2026,
+    // R30, R31). Names of other scripts, a prefixed name and a processing
+    // instruction whose name starts with xml are read as before.
+    [Fact]
+    public void RefusesWhatIsNotXML() {
+        Assert.Contains("The XML declaration is not at the start of the document",
+                Message(" <?xml version=\"1.0\" encoding=\"ISO-8859-1\"?><r>\u00e9</r>"), StringComparison.Ordinal);
+        Assert.Contains("The XML declaration is not at the start", Message("<r/><?XML x?>"), StringComparison.Ordinal);
+        foreach (string xml in new string[] {"<a\"b/>", "<1/>", "<!x/>", "<a&b/>", "<:a/>", "<a:/>", "<a:b:c/>"}) {
+            Assert.Contains("is not a name of XML", Message(xml), StringComparison.Ordinal);
+        }
+        Assert.Contains("is not a name of XML", Assert.Throws<XMLException>(() => { Skipping("<r><!DOCTYPE x/></r>"); }).Message,
+                StringComparison.Ordinal);
+        Assert.Contains("is not a name of XML", Message("<r a\"b=\"1\"/>"), StringComparison.Ordinal);
+        Assert.Contains("The text has ]]> in it", Message("<r>a ]]> b</r>"), StringComparison.Ordinal);
+        Assert.Contains("A comment has -- in it", Message("<r><!-- a -- b --></r>"), StringComparison.Ordinal);
+        Assert.Contains("A comment has -- in it", Message("<r><!-- a ---></r>"), StringComparison.Ordinal);
+        Assert.Contains("The attributes a:c and b:c of r are the same attribute",
+                Message("<r xmlns:a=\"urn:x\" xmlns:b=\"urn:x\" a:c=\"1\" b:c=\"2\"/>"), StringComparison.Ordinal);
+        Parse("<?xml-stylesheet href=\"a.xsl\"?><Größe ελληνικά=\"1\" a:b=\"2\" xmlns:a=\"urn:a\">x ] y ]] z</Größe>");
+        Parse("<r><!-- a - b --></r>");
+    }
+
     [Fact]
     public void ReadsAMillionElementsAndNoMore() {
         // A document of 20 MB of tiny elements took hundreds of megabytes (the

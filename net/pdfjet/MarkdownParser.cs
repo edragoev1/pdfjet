@@ -33,6 +33,7 @@ internal sealed class MarkdownParser {
         internal bool loose;            // Of a list whose items are apart, with an empty line between them
         internal readonly List<Block> children = new List<Block>();    // Of a quote, a list or an item
         internal List<List<String>> rows;       // Of a table, the header row first
+        internal bool tooWide;                  // Of a table of more than MAX_TABLE_COLUMNS, whose rows are not kept
         internal List<Alignment> alignments;    // Of a table, of each column, or null
 
         internal Block(Kind kind) {
@@ -251,9 +252,17 @@ internal sealed class MarkdownParser {
             table.alignments.Add((left && right) ? Alignment.CENTER : right ? Alignment.RIGHT : Alignment.LEFT);
         }
         table.rows.Add(header);
+        // A table of more columns than a page shows is marked, and its rows are
+        // passed over, not padded: the Markdown is an error (review of
+        // 12 October 2026, R33)
+        table.tooWide = header.Count > MAX_TABLE_COLUMNS;
         int j = i + 2;
         while (j < lines.Count && !IsBlank(lines[j]) && lines[j].IndexOf('|') != -1
                 && !Interrupts(lines[j])) {
+            if (table.tooWide) {
+                j++;
+                continue;
+            }
             List<String> row = Cells(lines[j]);
             // Every row has a cell for each column.
             while (row.Count < header.Count) {
@@ -266,18 +275,42 @@ internal sealed class MarkdownParser {
         return j;
     }
 
-    // The most columns a table of Markdown has: a header of more is a
-    // paragraph. Each row is padded to the header's columns, so a header of
-    // thousands of columns over thousands of rows of "|" made cells as the
-    // square of the text, 1.17 GB from 24 KB (review of 11 October 2026,
-    // #33); with at most 64, the cells grow as the text does.
+    // The most columns a table of Markdown has. Each row is padded to the
+    // header's columns, so a header of thousands of columns over thousands of
+    // rows of "|" made cells as the square of the text, 1.17 GB from 24 KB
+    // (review of 11 October 2026, #33); with at most 64, the cells grow as the
+    // text does. A table of more is an error, more than a page shows: it was
+    // read as a paragraph of pipes (review of 12 October 2026, R33).
     internal const int MAX_TABLE_COLUMNS = 64;
+
+    // The most cells the tables of a Markdown text have together: a header of
+    // 64 columns over rows of "|" made 64 cells of a row of 2 bytes, 895 MB in
+    // Go from 64 KB (review of 12 October 2026, R33). A table that large is
+    // BigTable's.
+    internal const int MAX_TABLE_CELLS = 100000;
+
+    // Returns the cells of the tables of the blocks, those in quotes and
+    // lists too, or -1 when one of them is too wide.
+    internal static int TableCells(List<Block> blocks) {
+        int cells = 0;
+        foreach (Block block in blocks) {
+            if (block.kind == Kind.TABLE && block.rows != null && block.rows.Count > 0) {
+                if (block.tooWide) {
+                    return -1;
+                }
+                cells += block.rows.Count * block.rows[0].Count;
+            }
+            int inside = TableCells(block.children);
+            if (inside == -1) {
+                return -1;
+            }
+            cells += inside;
+        }
+        return cells;
+    }
 
     private static bool IsTableStart(List<String> lines, int i) {
         if (i + 1 >= lines.Count || lines[i].IndexOf('|') == -1 || Indent(lines[i]) >= 4) {
-            return false;
-        }
-        if (Cells(lines[i]).Count > MAX_TABLE_COLUMNS) {
             return false;
         }
         String delimiterRow = lines[i + 1];

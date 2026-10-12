@@ -31,6 +31,7 @@ final class MarkdownParser {
         boolean loose;          // Of a list whose items are apart, with an empty line between them
         final List<Block> children = new ArrayList<Block>();    // Of a quote, a list or an item
         List<List<String>> rows;        // Of a table, the header row first
+        boolean tooWide;                // Of a table of more than MAX_TABLE_COLUMNS, whose rows are not kept
         List<Alignment> alignments;     // Of a table, of each column, or null
 
         Block(Kind kind) {
@@ -249,9 +250,17 @@ final class MarkdownParser {
             table.alignments.add((left && right) ? Alignment.CENTER : right ? Alignment.RIGHT : Alignment.LEFT);
         }
         table.rows.add(header);
+        // A table of more columns than a page shows is marked, and its rows are
+        // passed over, not padded: the Markdown is an error (review of
+        // 12 October 2026, R33)
+        table.tooWide = header.size() > MAX_TABLE_COLUMNS;
         int j = i + 2;
         while (j < lines.size() && !isBlank(lines.get(j)) && lines.get(j).indexOf('|') != -1
                 && !interrupts(lines.get(j))) {
+            if (table.tooWide) {
+                j++;
+                continue;
+            }
             List<String> row = cells(lines.get(j));
             // Every row has a cell for each column.
             while (row.size() < header.size()) {
@@ -264,18 +273,42 @@ final class MarkdownParser {
         return j;
     }
 
-    // The most columns a table of Markdown has: a header of more is a
-    // paragraph. Each row is padded to the header's columns, so a header of
-    // thousands of columns over thousands of rows of "|" made cells as the
-    // square of the text, 1.17 GB from 24 KB (review of 11 October 2026,
-    // #33); with at most 64, the cells grow as the text does.
+    // The most columns a table of Markdown has. Each row is padded to the
+    // header's columns, so a header of thousands of columns over thousands of
+    // rows of "|" made cells as the square of the text, 1.17 GB from 24 KB
+    // (review of 11 October 2026, #33); with at most 64, the cells grow as the
+    // text does. A table of more is an error, more than a page shows: it was
+    // read as a paragraph of pipes (review of 12 October 2026, R33).
     static final int MAX_TABLE_COLUMNS = 64;
+
+    // The most cells the tables of a Markdown text have together: a header of
+    // 64 columns over rows of "|" made 64 cells of a row of 2 bytes, 895 MB in
+    // Go from 64 KB (review of 12 October 2026, R33). A table that large is
+    // BigTable's.
+    static final int MAX_TABLE_CELLS = 100000;
+
+    // Returns the cells of the tables of the blocks, those in quotes and
+    // lists too, or -1 when one of them is too wide.
+    static int tableCells(List<Block> blocks) {
+        int cells = 0;
+        for (Block block : blocks) {
+            if (block.kind == Kind.TABLE && block.rows != null && !block.rows.isEmpty()) {
+                if (block.tooWide) {
+                    return -1;
+                }
+                cells += block.rows.size() * block.rows.get(0).size();
+            }
+            int inside = tableCells(block.children);
+            if (inside == -1) {
+                return -1;
+            }
+            cells += inside;
+        }
+        return cells;
+    }
 
     private static boolean isTableStart(List<String> lines, int i) {
         if (i + 1 >= lines.size() || lines.get(i).indexOf('|') == -1 || indent(lines.get(i)) >= 4) {
-            return false;
-        }
-        if (cells(lines.get(i)).size() > MAX_TABLE_COLUMNS) {
             return false;
         }
         String delimiterRow = lines.get(i + 1);
