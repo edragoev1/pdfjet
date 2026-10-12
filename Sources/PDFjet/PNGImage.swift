@@ -144,8 +144,14 @@ class PNGImage {
         var buffer = try readPNG(stream)
         let chunks = try processPNG(&buffer)
         var hasImageData = false
-        for chunk in chunks {
+        for (i, chunk) in chunks.enumerated() {
             let chunkType = String(decoding: chunk.type!, as: UTF8.self)
+            // IHDR first, and once, as the PNG specification asks: a tRNS before
+            // it was read for a gray image and written as the /Mask of one
+            // (review of 11 October 2026, #38)
+            if (i == 0) != (chunkType == "IHDR") {
+                throw PDFjetError(message: "Invalid PNG: the IHDR chunk must be the first chunk, and only the first.")
+            }
             if chunkType == "IHDR" {
                 if chunk.getData()!.count != 13 {
                     throw PDFjetError(message: "Invalid PNG IHDR chunk.")

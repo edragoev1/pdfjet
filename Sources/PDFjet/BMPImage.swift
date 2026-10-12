@@ -370,9 +370,23 @@ class BMPImage {
     }
 
     // Reads length bytes: a single read may return fewer bytes than asked for.
+    // More than 64 KB are read in pieces, so that a size the stream does not
+    // have, as a row of a width in a header, takes no more memory than the
+    // stream has: a BMP of a 54-byte header took 256 MB before it failed at
+    // the end of its data (review of 11 October 2026, #37).
     private func getBytes(_ stream: InputStream, _ length: Int) throws -> [UInt8] {
         if length < 0 {
             throw BMPImageError.invalidImageData
+        }
+        if length > 65536 {
+            var buf = [UInt8]()
+            var remaining = length
+            while remaining > 0 {
+                let piece = try getBytes(stream, min(remaining, 65536))
+                buf.append(contentsOf: piece)
+                remaining -= piece.count
+            }
+            return buf
         }
         var buf = [UInt8](repeating: 0, count: length)
         var offset = 0

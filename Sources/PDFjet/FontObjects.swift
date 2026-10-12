@@ -133,7 +133,7 @@ final class FontObjects {
             _ objects: inout [PDFobj],
             _ font: Font) -> Int {
         var sb = String()
-        sb.append("<?xpacket id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n")
+        sb.append("<?xpacket begin=\"\u{FEFF}\" id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n")
         sb.append("<x:xmpmeta xmlns:x=\"adobe:ns:meta/\">\n")
         sb.append("<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">\n")
         sb.append("<rdf:Description rdf:about=\"\" xmlns:xmpRights=\"http://ns.adobe.com/xap/1.0/rights/\">\n")

@@ -680,6 +680,8 @@ public class Font {
 
     ///
     /// Returns the number of characters from the specified string that will fit within the specified width.
+    /// They are counted in Unicode scalars, so that the first n of str.unicodeScalars are the text that
+    /// fits; Java and C# count UTF-16 chars, where a character outside the Basic Multilingual Plane is two.
     ///
     /// - Parameter str: the specified string.
     /// - Parameter width: the specified width.

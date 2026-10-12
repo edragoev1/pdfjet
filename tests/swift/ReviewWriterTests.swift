@@ -489,4 +489,17 @@ import Testing
         try memory.pdf.complete()
         #expect(try decryptedStrings(memory.bytes, "/Name").contains("Default"))
     }
+
+    /// The XMP packet's header begins with the byte order mark, which ISO
+    /// 16684-1 asks of it, in the document's metadata and a font's, written
+    /// as UTF-8 once (review of 11 October 2026, #28).
+    @Test func theXMPPacketHasItsBeginAttribute() throws {
+        let raw = try document(Compliance.PDF_UA_1) { pdf, page in
+            TextLine(try TestSupport.plexSans(pdf), "Text").setLocation(50, 100).drawOn(page)
+        }
+        // The bytes EF BB BF, read as Latin-1.
+        let header = "<?xpacket begin=\"\u{EF}\u{BB}\u{BF}\" id=\"W5M0MpCehiHzreSzNTczkc9d\"?>"
+        #expect(count(raw, header) == 2, "the document's packet and the font's")
+        #expect(count(raw, "<?xpacket ") == 4, "a packet without a begin attribute")
+    }
 }

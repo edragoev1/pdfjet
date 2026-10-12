@@ -394,7 +394,9 @@ public final class PDF {
 
     func addMetadataObject(_ notice: String, _ fontMetadataObject: Bool) -> Int {
         var sb = String()
-        sb.append("<?xpacket id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n")
+        // The header begins with the byte order mark, which ISO 16684-1 asks
+        // of it, written as UTF-8 (review of 11 October 2026, #28)
+        sb.append("<?xpacket begin=\"\u{FEFF}\" id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n")
         sb.append("<x:xmpmeta xmlns:x=\"adobe:ns:meta/\"\n")
         sb.append("    x:xmptk=\"Adobe XMP Core 5.4-c005 78.147326, 2012/08/23-13:03:03\">\n")
         sb.append("<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">\n")

@@ -794,4 +794,30 @@ import Testing
             _ = try Image(TestSupport.newPDF(), obj)
         }
     }
+
+    // IHDR is the first chunk, and the only IHDR: a tRNS before it was read
+    // for a gray image, and an RGB image was written with the /Mask of a gray
+    // one (review of 11 October 2026, #38).
+    @Test func theIHDRChunkIsFirstAndOnce() throws {
+        var ihdr = [UInt8]()
+        PNGImageTests.bigEndian32(1, &ihdr)
+        PNGImageTests.bigEndian32(1, &ihdr)
+        ihdr.append(contentsOf: [8, 2, 0, 0, 0])    // RGB of 8 bits
+        let idat = TestSupport.deflate([0, 7, 7, 7])
+        func file(_ chunks: [(String, [UInt8])]) -> [UInt8] {
+            var bytes: [UInt8] = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]
+            for (type, data) in chunks {
+                chunk(&bytes, type, data)
+            }
+            return bytes
+        }
+        let want = "Invalid PNG: the IHDR chunk must be the first chunk, and only the first."
+        #expect(decodeError(file([("tRNS", [0, 7]), ("IHDR", ihdr), ("IDAT", idat), ("IEND", [])])) == want,
+                "tRNS first")
+        #expect(decodeError(file([("IHDR", ihdr), ("IHDR", ihdr), ("IDAT", idat), ("IEND", [])])) == want,
+                "two IHDR")
+        // In its place, the tRNS of an RGB image is its three samples.
+        let png = file([("IHDR", ihdr), ("tRNS", [0, 7, 0, 7, 0, 7]), ("IDAT", idat), ("IEND", [])])
+        _ = try PNGImage(InputStream(data: Data(png)))
+    }
 }
