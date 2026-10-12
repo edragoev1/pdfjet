@@ -414,6 +414,7 @@ public class Stamp : IDrawable {
             // character as its actual text, as on a page.
             int gid = Page.GlyphOf(font, codePoint);
             font.UseGlyph(gid);
+            font.UseChar(codePoint, gid);
             if (font.Lacks(codePoint)) {
                 Append("> Tj\n/Span <</ActualText <");
                 Append(Page.ToUTF16Hex(Page.TextOf(codePoint)));

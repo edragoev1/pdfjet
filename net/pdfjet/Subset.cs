@@ -27,6 +27,9 @@ class Subset {
         internal bool forbidden;    // The fsType of a CFF font's OS/2 table forbids subsetting
         // The glyphs drawn, by glyph number, written in four hexadecimal digits.
         internal readonly bool[] used = new bool[0x10000];
+        // The character first drawn with each glyph, by glyph number, for the
+        // ToUnicode map of a glyph of several characters, as U+3000 and U+2003
+        internal Dictionary<int, int> chars;
         internal bool whole;        // Set by SetSubset(false): the font is embedded whole
 
         internal Program() {

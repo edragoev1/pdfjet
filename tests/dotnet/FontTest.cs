@@ -5,8 +5,10 @@
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Text.RegularExpressions;
 using Xunit;
 
 namespace PDFjet.NET {
@@ -403,6 +405,54 @@ public class FontTest {
         int[] want = {0x03BC, 0x03A9, 0x004B, 0x00C5, 0x0020, 0x2019};
         for (int gid = 1; gid <= want.Length; gid++) {
             Assert.Equal(want[gid - 1], unicodeOf[gid]);
+        }
+    }
+
+    // Returns the characters the ToUnicode maps of the objects give their
+    // glyphs, each in hexadecimal, as 06F1.
+    private static HashSet<string> ToUnicodeValues(List<PDFobj> objects) {
+        HashSet<string> values = new HashSet<string>();
+        Regex entry = new Regex("<[0-9A-Fa-f]{4}> <([0-9A-Fa-f]+)>");
+        foreach (PDFobj obj in objects) {
+            byte[] data = obj.GetData();
+            if (data == null) {
+                continue;
+            }
+            string cmap = TestSupport.Latin1(data);
+            if (cmap.StartsWith("/CIDInit", StringComparison.Ordinal)) {
+                foreach (Match match in entry.Matches(cmap)) {
+                    values.Add(match.Groups[1].Value.ToUpperInvariant());
+                }
+            }
+        }
+        return values;
+    }
+
+    [Fact]
+    public void AGlyphOfSeveralCharactersMapsToTheCharacterDrawn() {
+        // A glyph a font draws for several characters maps to the character
+        // the document drew with it, not to the lowest of them: a Persian ۱۳۹۸
+        // was copied as the Arabic ١٣٩٨, and the full-width slash of km／h as a
+        // division slash (review of 11 October 2026, #8).
+        string arabicPath = "fonts/NotoSansArabic/NotoSansArabic-Regular.ttf";
+        string tcPath = "fonts/IBMPlexSansTC/IBMPlexSansTC-Regular.ttf";
+        if (!File.Exists(TestSupport.RepoPath(arabicPath)) || !File.Exists(TestSupport.RepoPath(tcPath))) {
+            return;     // The fonts directory is not here.
+        }
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Font arabic = new Font(pdf, TestSupport.RepoPath(arabicPath));
+        Font tc = new Font(pdf, TestSupport.RepoPath(tcPath));
+        new TextLine(arabic, "\u06F1\u06F3\u06F9\u06F8").SetLocation(50f, 50f).DrawOn(page);
+        new TextLine(tc, "60km\uFF0Fh").SetLocation(50f, 100f).DrawOn(page);
+        pdf.Complete();
+        HashSet<string> values = ToUnicodeValues(TestSupport.Read(stream.ToArray()));
+        foreach (string want in new[] {"06F1", "06F3", "06F9", "06F8", "FF0F"}) {
+            Assert.True(values.Contains(want), "no glyph maps to U+" + want);
+        }
+        foreach (string other in new[] {"0661", "0663", "0669", "2215"}) {
+            Assert.False(values.Contains(other), "a glyph maps to U+" + other + ", which the document did not draw");
         }
     }
 }

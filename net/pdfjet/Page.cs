@@ -747,7 +747,9 @@ public class Page {
             while (i < str.Length) {
                 int codePoint = Util.CodePointAt(str, i);  // A lone surrogate is drawn as .notdef
                 if (codePoint != 0xFEFF && !Font.IsIgnorable(codePoint)) { // BOM, or one not drawn
-                    AppendGlyph(font, GlyphOf(font, codePoint));
+                    int gid = GlyphOf(font, codePoint);
+                    font.UseChar(codePoint, gid);
+                    AppendGlyph(font, gid);
                 }
                 i += Util.CharCount(str, i);
             }
@@ -799,6 +801,7 @@ public class Page {
                     afterRLM = false;
                     codePoints[n] = codePoint;
                     gids[n] = GlyphOf(font, codePoint);
+                    font.UseChar(codePoint, gids[n]);
                     hasMarks |= IsMark(codePoint);
                     hasNotdef |= IsMissing(font, codePoints, n);
                     n++;

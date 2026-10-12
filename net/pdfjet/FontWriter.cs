@@ -187,6 +187,11 @@ class FontWriter {
         list.Add("<0000> <FFFD>\n");
         StringBuilder buf = new StringBuilder();
         int[] unicodeOf = UnicodeOfGlyphs(font.unicodeToGID);
+        if (font.program != null && font.program.chars != null) {
+            foreach (KeyValuePair<int, int> entry in font.program.chars) {
+                unicodeOf[entry.Key] = entry.Value;
+            }
+        }
         for (int cid = 0; cid <= 0xffff; cid++) {
             int gid = font.unicodeToGID[cid];
             if (gid > 0 && unicodeOf[gid] == cid && (kept == null || (gid < kept.Length && kept[gid]))) {

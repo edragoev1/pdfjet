@@ -408,6 +408,25 @@ public class Font {
         }
     }
 
+    // Records that the glyph is drawn for the character, so that the ToUnicode
+    // map gives the glyph the character the document drew, where the font
+    // draws several characters with one glyph: it gave the glyph the lowest of
+    // them, and a Persian ۱ was copied as an Arabic ١ (review of 11 October
+    // 2026, #8). The first character drawn with the glyph is kept; a document
+    // that draws two characters of one glyph extracts the first for both.
+    internal void UseChar(int c, int gid) {
+        if (program == null || gid <= 0 || c < 0 || c >= unicodeToGID.Length ||
+                unicodeToGID[c] != gid) {
+            return;
+        }
+        if (program.chars == null) {
+            program.chars = new Dictionary<int, int>();
+        }
+        if (!program.chars.ContainsKey(gid)) {
+            program.chars[gid] = c;
+        }
+    }
+
     /// <summary>Returns the width of the string at the current font size.</summary>
     public float StringWidth(String str) {
         return StringWidth(this.size, str);
