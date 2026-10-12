@@ -36,7 +36,8 @@ public class SVGImage : Drawable {
      * - Parameter fileAtPath: the path to the SVG file.
      */
     public convenience init?(fileAtPath: String) throws {
-        guard let fileStream = InputStream(fileAtPath: fileAtPath) else {
+        guard FileManager.default.fileExists(atPath: fileAtPath),
+                let fileStream = InputStream(fileAtPath: fileAtPath) else {
             return nil  // cannot open file
         }
         // This constructor owns the stream it created, so it closes it

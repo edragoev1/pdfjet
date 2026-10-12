@@ -68,6 +68,9 @@ This is the first entry in this file; earlier releases were not tracked here.
 - Swift: an SVG arc whose radii, scaled to reach its end, overflow a Float
   is left out, as in the other ports, where Int(NaN) ended the program; and
   a carriage return and line feed in path data is white space.
+- Swift on Linux: a missing file given to Content, SVGImage or ImageSize is
+  refused without Foundation logging the CoreFoundation symbols it could not
+  link.
 
 ## v9.0.5 — unreleased
 

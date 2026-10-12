@@ -30,7 +30,11 @@ public class Content {
 
     /// Returns the contents of the specified file as bytes.
     public static func ofBinaryFile( _ fileName: String) throws -> [UInt8] {
-        guard let stream = InputStream(fileAtPath: fileName) else {
+        // A missing file is told before a stream is opened: the error of a
+        // stream on Linux has Foundation look for its networking library,
+        // which logs the symbols it does not find.
+        guard FileManager.default.fileExists(atPath: fileName),
+                let stream = InputStream(fileAtPath: fileName) else {
             throw PDFjetError(message: "Cannot open file: " + fileName)
         }
         return try getFromStream(stream)

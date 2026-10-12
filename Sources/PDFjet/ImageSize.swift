@@ -41,7 +41,8 @@ public final class ImageSize {
 
     /// Reads the size of the PNG, JPEG or BMP file at the path.
     public static func read(_ filePath: String) throws -> ImageSize {
-        guard let stream = InputStream(fileAtPath: filePath) else {
+        guard FileManager.default.fileExists(atPath: filePath),
+                let stream = InputStream(fileAtPath: filePath) else {
             throw PDFjetError(message: "Cannot open the file \(filePath).")
         }
         return try read(stream)
