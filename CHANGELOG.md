@@ -7,17 +7,6 @@ languages.
 
 This is the first entry in this file; earlier releases were not tracked here.
 
-## v9.0.7 — unreleased
-
-### Changed
-- The soft hyphen, U+00AD, in the four ports: it takes no width and is not
-  drawn, and a word too wide for its line breaks at its last soft hyphen
-  that fits, the line ending with a hyphen, in TextBlock, TextFrame (and so
-  Markdown) and a table's cells, before it is broken between its
-  characters. It was drawn as a hyphen wherever it was, and never broken
-  at. In a TextColumn it is not drawn, and not broken at. Text that has soft
-  hyphens wraps otherwise than before.
-
 ## v9.0.5 — unreleased
 
 ### Added
@@ -162,6 +151,13 @@ This is the first entry in this file; earlier releases were not tracked here.
   Code that wrote such documents gets the error now: an embedded font in
   place of a core one, and AddAssociatedFile in a document of PDF/A-3, make
   them what they say they are.
+- The soft hyphen, U+00AD, in the four ports: it takes no width and is not
+  drawn, and a word too wide for its line breaks at its last soft hyphen
+  that fits, the line ending with a hyphen, in TextBlock, TextFrame (and so
+  Markdown) and a table's cells, before it is broken between its
+  characters. It was drawn as a hyphen wherever it was, and never broken
+  at. In a TextColumn it is not drawn, and not broken at. Text that has soft
+  hyphens wraps otherwise than before.
 
 ### Removed
 - **The `.stream` font format, in the four ports**, as no client uses it: the
