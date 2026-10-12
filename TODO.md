@@ -17,7 +17,9 @@ Taken in on 11 October 2026 as major (the owner: "merge them in 9.0.5"): the
 five first fixes of the review of that day, as PDFjet Forms reads PDFs from
 anyone with this reader: #29, #30, #31, the reader's limits; #1, a stamp in
 an encrypted PDF; #2, a NaN slice of a DonutChart; and #3, Java in a Turkish
-locale. The rest of the review stays for 9.0.7.
+locale. Backported too, on the owner's word that day ("everything fixed in
+v9.0.7 should be backported to v9.0.5"): #4, #5, #6, #7, #9, #10, #12, #13,
+#22, #32 to #36. The rest of the review stays for 9.0.7.
 
 Left before the tag: the manual viewer pass (below) on the files of the new
 code, then the release.
@@ -156,8 +158,8 @@ commit and date. The layout's format version (1) and the look's rules
   Java, C# and Swift ports against Go, and the parsers of untrusted input.
   Its numbers are kept in the items below. Each fix in the four ports, with
   a test.
-- **For 9.0.7: the reader's limits (review #37, #38).** #29 to #31 were
-  fixed in 9.0.5, #32, #34 and #35 on the branch fixes-9.0.7. A BMP row
+- **For 9.0.7: the reader's limits (review #37, #38).** #29 to #35 were
+  fixed in 9.0.5. A BMP row
   allocated from the header's width before it is read
   (#37); a PNG's chunks not checked for order, which gives an invalid /Mask
   (#38). The fuzzers given inputs large enough to reach the limit, and a
@@ -171,27 +173,20 @@ commit and date. The layout's format version (1) and the look's rules
   PNGImage use the platform's charset: US-ASCII. A CI job in the tr_TR
   locale. (#3, the core fonts' names in a Turkish locale, and #2, a NaN
   slice of a DonutChart, were fixed in 9.0.5.)
-- **For 9.0.7: PDF/A and PDF/UA (review #5, #6, #28).** Embedded files and
-  file attachments are accepted in PDF/A (#5), and fonts that are not
-  embedded, core and CJK, in PDF/A and PDF/UA (#6): refused, as the README
-  says. The XMP packet's header without `begin=` (#28).
-- **For 9.0.7: text (review #7-#10, #14, #21).** A right-to-left TextBlock
-  cut to its height loses the start of its last line (#7). Characters that
-  share a glyph extract as the glyph's first character: ActualText for the
-  others (#8). Default ignorable characters, U+FE0F, U+200B, U+2060, drawn
-  as a box with a width (#9); Stamp.DrawText draws LRM, RLM, ZWJ and ZWNJ
-  as boxes, which Page skips (#10). TextFrame, so Markdown, breaks Thai
+- **For 9.0.7: PDF/A (review #28).** The XMP packet's header without
+  `begin=` (#28). (#5 and #6, files and fonts not embedded, are refused
+  in 9.0.5.)
+- **For 9.0.7: text (review #8, #14, #21).** Characters that share a glyph
+  extract as the glyph's first character: ActualText for the others (#8).
+  (#7, #9 and #10 were fixed in 9.0.5.) TextFrame, so Markdown, breaks Thai
   words anywhere (#14). The soft hyphen always drawn, never a break (#21).
-- **For 9.0.7: tables, barcodes, Merge (review #4, #12, #13, #15-#18).**
-  Drawing a table rewrites the caller's cells (#12); Java's page sum throws
+- **For 9.0.7: tables (review #15-#18).** (#4, #12 and #13 were fixed in
+  9.0.5.) Java's page sum throws
   on ". 5" (#15); Swift ends the process on a bad vertical alignment (#16);
   AutoAdjustColumnWidths with a row longer than the first (#17) and an empty
-  first row (#18) panic. Code 39 accepts '*' and an empty string, checked
-  only in DrawOn (#13). AddObjects keeps generation numbers the xref writes
-  as 0 (#4).
-- **For 9.0.7: the ports apart (review #22, #24-#26, #36).** Swift's SVG
-  paths reject CR LF (#22), and an SVG arc that becomes NaN traps in Swift
-  (#36). ICCBlackScaled.profile a public mutable array in Java and C# (#24).
+  first row (#18) panic.
+- **For 9.0.7: the ports apart (review #24-#26).** (#22 and #36, Swift's
+  SVG, were fixed in 9.0.5.) ICCBlackScaled.profile a public mutable array in Java and C# (#24).
   DonutChart and Arc computed in another float width than Go's (#25), which
   the CI's hashes miss as they cover the examples only. GetFitChars counts
   code points in Go and Swift, UTF-16 units in Java and C# (#26).

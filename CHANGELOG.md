@@ -7,71 +7,6 @@ languages.
 
 This is the first entry in this file; earlier releases were not tracked here.
 
-## v9.0.7 — unreleased
-
-### Changed
-- A document of PDF/A or PDF/UA refuses what it cannot be, in the four
-  ports: Complete returns an error, where it wrote a document that said it
-  was PDF/A or PDF/UA and was not, as veraPDF found.
-  - A core font, such as Helvetica, or one of the deprecated CJK fonts, is
-    not embedded, which both standards ask of every font: "The font
-    Helvetica is not embedded, which a document of PDF_UA_1 needs: use a
-    font that is, such as IBM Plex Sans."
-  - In PDF/A, a file attached to a page with FileAttachment, or embedded
-    with NewEmbeddedFile and not carried with AddAssociatedFile: PDF/A-1
-    carries no files, PDF/A-2 only documents of PDF/A, and PDF/A-3 each with
-    its relationship, which AddAssociatedFile writes.
-
-  Code that wrote such documents gets the error now: an embedded font in
-  place of a core one, and AddAssociatedFile in a document of PDF/A-3, make
-  them what they say they are.
-
-### Fixed
-- Reading untrusted PDFs, in the four ports: the output of ASCII85Decode
-  and ASCIIHexDecode is counted against the 256 MB that the decoded streams
-  of a PDF may take, as the other filters' is; a stream of 'z's after
-  FlateDecode decoded to 800 MB from 203 KB. Adding the resources of the
-  pages finds each name at once, not by a look through all the names added
-  before, and adds a page that /Kids lists again once: 1,000 pages of 2,000
-  fonts took 36 seconds, and one page listed 2,000 times two minutes.
-- Reading and merging pages that inherit a large /Resources, in the four
-  ports: a /Resources dictionary of more than 64 tokens in a node of the
-  page tree is shared by the pages under it, not copied into each, and
-  Merge writes it once, as an object that every page refers to. 1,000 pages
-  under a node of 20,000 fonts, a PDF of 242 KB, took 2.9 GB of memory and
-  36 seconds, and Merge wrote 189 MB; now 0.05 seconds, and a merged PDF of
-  about the source's size. A page's GetDict() shows such resources no
-  longer; GetResourcesObject() gives them, and adding a resource to the page
-  gives it a copy of its own first. A smaller /Resources is copied into each
-  page, as before.
-- Text, in the four ports: a character that Unicode does not draw without a
-  glyph, as the variation selector after ™ or © in text pasted from a
-  phone, a zero width space or a word joiner, takes no width and draws
-  nothing, where it was a box. A Stamp leaves out the marks of direction
-  and the joiners its font has no glyph for, as a Page does. A right to
-  left TextBlock cut to its height keeps the start of its last line, its
-  "..." at the left, where the line ends in the reading.
-- Tables, in the four ports: drawing a table leaves the caller's cells as
-  they were; a long text was cut to its first line in the cell, and a table
-  made again of the same cells lost the rest.
-- Code 39, in the four ports: a '*' in its data, the character that starts
-  and ends the code, and no data at all are refused when the barcode is
-  made, as the other symbologies refuse what they cannot hold; each drew a
-  code that no scanner reads.
-- Markdown, in the four ports: a table has at most 64 columns, and a wider
-  header is a paragraph. Each row is padded to the header's columns, so a
-  header of thousands of columns over rows of "|" took memory as the square
-  of the text, 1.17 GB from 24 KB.
-- AddObjects, in the four ports: objects and references of a generation
-  other than 0, "1 1 obj" and "2 1 R", are written at generation 0, as the
-  cross-reference table has them; a reader found no pages in such a PDF.
-- Swift: an SVG arc whose radii, scaled to reach its end, overflow a Float
-  is left out, as in the other ports, where Int(NaN) ended the program; and
-  a carriage return and line feed in path data is white space.
-- Swift on Linux: a missing file given to Content, SVGImage or ImageSize is
-  refused without Foundation logging the CoreFoundation symbols it could not
-  link.
-
 ## v9.0.5 — unreleased
 
 ### Added
@@ -201,6 +136,21 @@ This is the first entry in this file; earlier releases were not tracked here.
   Team License cover, one developer, and two to five, as pdfjet.com has said
   since the licenses were renamed (they were the Named Developer and the
   Transferable Developer licenses).
+- A document of PDF/A or PDF/UA refuses what it cannot be, in the four
+  ports: Complete returns an error, where it wrote a document that said it
+  was PDF/A or PDF/UA and was not, as veraPDF found.
+  - A core font, such as Helvetica, or one of the deprecated CJK fonts, is
+    not embedded, which both standards ask of every font: "The font
+    Helvetica is not embedded, which a document of PDF_UA_1 needs: use a
+    font that is, such as IBM Plex Sans."
+  - In PDF/A, a file attached to a page with FileAttachment, or embedded
+    with NewEmbeddedFile and not carried with AddAssociatedFile: PDF/A-1
+    carries no files, PDF/A-2 only documents of PDF/A, and PDF/A-3 each with
+    its relationship, which AddAssociatedFile writes.
+
+  Code that wrote such documents gets the error now: an embedded font in
+  place of a core one, and AddAssociatedFile in a document of PDF/A-3, make
+  them what they say they are.
 
 ### Removed
 - **The `.stream` font format, in the four ports**, as no client uses it: the
@@ -381,6 +331,50 @@ This is the first entry in this file; earlier releases were not tracked here.
   there the marker is added to the data embedded. A JPEG that stops in its
   scan, as an upload or a copy cut short, is refused as before, and so is a
   progressive one without the marker.
+- Reading untrusted PDFs, in the four ports: the output of ASCII85Decode
+  and ASCIIHexDecode is counted against the 256 MB that the decoded streams
+  of a PDF may take, as the other filters' is; a stream of 'z's after
+  FlateDecode decoded to 800 MB from 203 KB. Adding the resources of the
+  pages finds each name at once, not by a look through all the names added
+  before, and adds a page that /Kids lists again once: 1,000 pages of 2,000
+  fonts took 36 seconds, and one page listed 2,000 times two minutes.
+- Reading and merging pages that inherit a large /Resources, in the four
+  ports: a /Resources dictionary of more than 64 tokens in a node of the
+  page tree is shared by the pages under it, not copied into each, and
+  Merge writes it once, as an object that every page refers to. 1,000 pages
+  under a node of 20,000 fonts, a PDF of 242 KB, took 2.9 GB of memory and
+  36 seconds, and Merge wrote 189 MB; now 0.05 seconds, and a merged PDF of
+  about the source's size. A page's GetDict() shows such resources no
+  longer; GetResourcesObject() gives them, and adding a resource to the page
+  gives it a copy of its own first. A smaller /Resources is copied into each
+  page, as before.
+- Text, in the four ports: a character that Unicode does not draw without a
+  glyph, as the variation selector after ™ or © in text pasted from a
+  phone, a zero width space or a word joiner, takes no width and draws
+  nothing, where it was a box. A Stamp leaves out the marks of direction
+  and the joiners its font has no glyph for, as a Page does. A right to
+  left TextBlock cut to its height keeps the start of its last line, its
+  "..." at the left, where the line ends in the reading.
+- Tables, in the four ports: drawing a table leaves the caller's cells as
+  they were; a long text was cut to its first line in the cell, and a table
+  made again of the same cells lost the rest.
+- Code 39, in the four ports: a '*' in its data, the character that starts
+  and ends the code, and no data at all are refused when the barcode is
+  made, as the other symbologies refuse what they cannot hold; each drew a
+  code that no scanner reads.
+- Markdown, in the four ports: a table has at most 64 columns, and a wider
+  header is a paragraph. Each row is padded to the header's columns, so a
+  header of thousands of columns over rows of "|" took memory as the square
+  of the text, 1.17 GB from 24 KB.
+- AddObjects, in the four ports: objects and references of a generation
+  other than 0, "1 1 obj" and "2 1 R", are written at generation 0, as the
+  cross-reference table has them; a reader found no pages in such a PDF.
+- Swift: an SVG arc whose radii, scaled to reach its end, overflow a Float
+  is left out, as in the other ports, where Int(NaN) ended the program; and
+  a carriage return and line feed in path data is white space.
+- Swift on Linux: a missing file given to Content, SVGImage or ImageSize is
+  refused without Foundation logging the CoreFoundation symbols it could not
+  link.
 
 ## v9.0.3 — 2026-10-08
 
