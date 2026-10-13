@@ -12,7 +12,7 @@ for .NET Framework 4.8.
 | `PDFjet.dll` | The library, for .NET 8 and later. Reference it from your project. |
 | `net48/` | The library for .NET Framework 4.8, `PDFjet.dll`, with the four DLLs of Microsoft it needs beside it. |
 | `docs/dotnet/index.html` | The API reference. |
-| `examples/` | 57 example projects. |
+| `examples/` | 50 example projects. |
 | `examples-dotnet.html` | What each example shows, with links to its source and its PDF. |
 | `Example_*.pdf` | The PDFs the examples create. |
 | `build-dotnet.sh`, `build-dotnet.cmd` | Build and run all the examples. |
