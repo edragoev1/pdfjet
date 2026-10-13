@@ -35,6 +35,7 @@ NAME="PDFjet-ForJava-Pro-$VERSION"
 STAGE="build/package-java/$NAME"
 ZIP="$PWD/.commercial-packages/$NAME.zip"
 CORE_NAME="PDFjet-ForJava-Core-$VERSION"
+REPO=$PWD
 PRO=${PDFJET_PRO:-$(cd .. && pwd)/pdfjet-pro}
 if ! git -C "$PRO" rev-parse --verify -q HEAD > /dev/null; then
     echo "PDFjet Pro is not in $PRO: set PDFJET_PRO to its repository."
@@ -177,27 +178,55 @@ stamp "$CORE_NAME"
 zip_sorted "$CORE_ZIP" "$CORE_NAME"
 
 # The package for buyers adds PDFjet Pro, from the last commit of its
-# repository: PDFjet-Sign.jar, built for Java 8 as PDFjet.jar is, against it,
-# its reference, its examples and the certificate of the signing one.
+# repository, compiled into PDFjet.jar with the library (the owner, 12 October
+# 2026: one PDFjet.jar), for Java 8, with "PDFjet Pro" in its manifest so that
+# it is told from the jar of PDFjet Core; the API reference of both; its
+# examples and the certificate of the signing one.
 cd "$NAME"
 PRO_TAR=$PWD/../pro.tar
+mkdir pro-src
+git -C "$REPO" archive -o "$PRO_TAR" HEAD com
+tar -x -C pro-src -f "$PRO_TAR"
 git -C "$PRO" archive -o "$PRO_TAR" HEAD com/pdfjet/sign com/pdfjet/invoice \
     examples/package/java tests/data/rsa-signer.p12
-mkdir pro-src
 tar -x -C pro-src -f "$PRO_TAR"
 rm "$PRO_TAR"
-javac -O -encoding utf-8 $RELEASE -Xlint -Xlint:-options -Werror -cp PDFjet.jar \
-    pro-src/com/pdfjet/sign/*.java pro-src/com/pdfjet/invoice/*.java -d out/pro
-stamp out/pro
+javac -O -encoding utf-8 $RELEASE -Xlint -Xlint:-options -Werror \
+    pro-src/com/pdfjet/*.java \
+    pro-src/com/pdfjet/barcodes/*.java \
+    pro-src/com/pdfjet/pdf417/*.java \
+    pro-src/com/pdfjet/qrcode/*.java \
+    pro-src/com/pdfjet/datamatrix/*.java \
+    pro-src/com/pdfjet/internal/*.java \
+    pro-src/com/pdfjet/fonts/*.java \
+    pro-src/com/pdfjet/encryption/*.java \
+    pro-src/com/pdfjet/sign/*.java \
+    pro-src/com/pdfjet/invoice/*.java \
+    -d out/library
+stamp out/library
+printf 'Implementation-Title: PDFjet Pro\nImplementation-Version: %s\nImplementation-Vendor: PDFjet Software\n' \
+    "${VERSION#v}" > pro-manifest.txt
+rm PDFjet.jar
 if jar --help 2>&1 | grep -q -- '--date'; then
     jar --date="${RELEASE_DAY:0:4}-${RELEASE_DAY:4:2}-${RELEASE_DAY:6:2}T17:00:00Z" \
-        --create --file PDFjet-Sign.jar -C out/pro .
+        --create --file PDFjet.jar --manifest pro-manifest.txt -C out/library .
 else
-    jar cf PDFjet-Sign.jar -C out/pro .
+    jar cfm PDFjet.jar pro-manifest.txt -C out/library .
 fi
+rm pro-manifest.txt
+rm -rf docs/java
 javadoc -quiet -public -doctitle "PDFjet Pro for Java" -windowtitle "PDFjet Pro for Java" \
-    -cp PDFjet.jar pro-src/com/pdfjet/sign/*.java pro-src/com/pdfjet/invoice/*.java \
-    -d docs/java-pro
+    -sourcepath pro-src \
+    pro-src/com/pdfjet/*.java \
+    pro-src/com/pdfjet/barcodes/*.java \
+    pro-src/com/pdfjet/encryption/*.java \
+    pro-src/com/pdfjet/fonts/*.java \
+    pro-src/com/pdfjet/pdf417/*.java \
+    pro-src/com/pdfjet/qrcode/*.java \
+    pro-src/com/pdfjet/datamatrix/*.java \
+    pro-src/com/pdfjet/sign/*.java \
+    pro-src/com/pdfjet/invoice/*.java \
+    -d docs/java
 mkdir -p examples/pro
 cp pro-src/examples/package/java/*.java examples/pro/
 cp pro-src/tests/data/rsa-signer.p12 examples/pro/demo-signer.p12

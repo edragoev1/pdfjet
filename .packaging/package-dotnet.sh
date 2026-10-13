@@ -49,6 +49,7 @@ NAME="PDFjet-For.NET-Pro-$VERSION"
 STAGE="build/package-dotnet/$NAME"
 ZIP="$PWD/.commercial-packages/$NAME.zip"
 CORE_NAME="PDFjet-For.NET-Core-$VERSION"
+REPO=$PWD
 PRO=${PDFJET_PRO:-$(cd .. && pwd)/pdfjet-pro}
 if ! git -C "$PRO" rev-parse --verify -q HEAD > /dev/null; then
     echo "PDFjet Pro is not in $PRO: set PDFJET_PRO to its repository."
@@ -186,23 +187,35 @@ stamp "$CORE_NAME"
 zip_sorted "$CORE_ZIP" "$CORE_NAME"
 
 # The package for buyers adds PDFjet Pro, from the last commit of its
-# repository, built from a copy of it, as a build beside it can find another
-# PDFjet.dll than the one given: PDFjet.Sign.dll, against the package's
-# PDFjet.dll, strong-named with the same key and version, its example projects
-# and the certificate of the signing one.
+# repository, compiled into PDFjet.dll with the library (the owner, 12 October
+# 2026: one PDFjet.dll): the same assembly, PDFjet 9.0.0.0 with the same strong
+# name, so that it replaces the PDFjet.dll of PDFjet Core, and of the releases
+# before, with no change to a project that references it; "PDFjet Pro" as its
+# product, so that it is told from the one of PDFjet Core. It is built from a
+# copy of the two repositories, as a build beside them can find another
+# PDFjet.dll than the one meant. net48/PDFjet.dll stays PDFjet Core, as PDFjet
+# Pro is built for .NET 8. With it, the example projects of PDFjet Pro and the
+# certificate of the signing one.
 cd "$NAME"
 PRO_TAR=$PWD/../pro.tar
-git -C "$PRO" archive -o "$PRO_TAR" HEAD PDFjet.Sign.csproj net examples/package/dotnet \
-    tests/data/rsa-signer.p12
 mkdir pro-src
+git -C "$REPO" archive -o "$PRO_TAR" HEAD net PDFjet.csproj
+tar -x -C pro-src -f "$PRO_TAR"
+git -C "$PRO" archive -o "$PRO_TAR" HEAD net/pdfjet/Sign net/pdfjet/Invoice \
+    examples/package/dotnet tests/data/rsa-signer.p12
 tar -x -C pro-src -f "$PRO_TAR"
 rm "$PRO_TAR"
-dotnet build pro-src/PDFjet.Sign.csproj -c release -p:TreatWarningsAsErrors=true \
-    -p:PDFjetDll="$PWD/PDFjet.dll" \
+perl -0pi -e 's|(    <Compile Include="net/pdfjet/Encryption/\*\.cs" />\n)|$1    <Compile Include="net/pdfjet/Sign/*.cs" />\n    <Compile Include="net/pdfjet/Invoice/*.cs" />\n|' \
+    pro-src/PDFjet.csproj
+if ! grep -q 'net/pdfjet/Invoice/\*\.cs' pro-src/PDFjet.csproj; then
+    echo "The sources of PDFjet Pro could not be added to PDFjet.csproj"
+    exit 1
+fi
+dotnet build pro-src/PDFjet.csproj -c release -p:TreatWarningsAsErrors=true \
     -p:SignAssembly=true -p:AssemblyOriginatorKeyFile="$PDFJET_SNK" \
     -p:FileVersion="${VERSION#v}" -p:InformationalVersion="${VERSION#v}" \
-    -o pro-out
-cp pro-out/PDFjet.Sign.dll .
+    -p:Product="PDFjet Pro" -o pro-out
+cp pro-out/PDFjet.dll PDFjet.dll
 mkdir -p examples/pro
 cp -r pro-src/examples/package/dotnet/* examples/pro/
 cp pro-src/tests/data/rsa-signer.p12 examples/pro/demo-signer.p12

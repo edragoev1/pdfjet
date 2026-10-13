@@ -1,13 +1,12 @@
 
 ## PDFjet Pro
 
-This package includes PDFjet Pro: digital signatures, and electronic invoices
-with the Swiss QR-bill.
+This package is PDFjet Pro: its `PDFjet.jar` has, besides the library,
+digital signatures, and electronic invoices with the Swiss QR-bill. The API
+reference, `docs/java/index.html`, covers them.
 
 | Path | What it is |
 |---|---|
-| `PDFjet-Sign.jar` | PDFjet Pro, built for Java 8 and later. Put it on the class path with `PDFjet.jar`. |
-| `docs/java-pro/index.html` | The API reference of PDFjet Pro. |
 | `examples/pro/SignDocument.java` | Signs a document: a PAdES signature, visible on the page. |
 | `examples/pro/WriteInvoice.java` | Writes an electronic invoice of Factur-X and ZUGFeRD. |
 | `examples/pro/DrawSwissQRBill.java` | Draws the Swiss QR-bill of an invoice. |
@@ -21,3 +20,6 @@ with the Swiss QR-bill.
 - **PDFjet Invoice** (`com.pdfjet.invoice`): ZUGFeRD and Factur-X in every
   profile, and XRechnung, written into a PDF/A-3 document and read back; the
   Swiss QR-bill.
+
+The manifest of this `PDFjet.jar` names it PDFjet Pro, as the jar of PDFjet
+Core, of the same name, is not.
