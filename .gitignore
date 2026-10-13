@@ -19,6 +19,7 @@ out
 .idea/dictionaries/
 .idea/compiler.xml
 .idea/go.imports.xml
+.idea/doNotAskNotifications.xml
 docs/
 docfx/api/
 *.swp
