@@ -350,7 +350,20 @@ public class TextColumn : IDrawable {
                 for (;;) {
                     if (!TextBlock.SoftHyphenBreak(prefix + token, this.w - runLength,
                             h => Width(line, h), out String head, out String rest)) {
-                        break;
+                        // Its first piece does not fit the rest of the line: a
+                        // word wider than the column breaks on the next line,
+                        // where it was put whole (the review of 12 October 2026)
+                        if (broken || list.Count == 0 || Width(line, token) <= this.w) {
+                            break;
+                        }
+                        DrawLineOfText(page, list, alignment);
+                        MoveToNextLine(lineHeight);
+                        list.Clear();
+                        wordStart = 0;
+                        runLength = 0f;
+                        prefix = "";
+                        text = line.CopyWithText(token + after);
+                        continue;
                     }
                     list.Add(line.CopyWithText(head));
                     DrawLineOfText(page, list, alignment);

@@ -11,12 +11,14 @@ import Foundation
 // character plus one, 0 for none, as in Java, where a map of boxed numbers
 // made each character drawn allocate (12 October 2026).
 struct GlyphChars {
-    private var blocks = [[Int32]?](repeating: nil, count: 256)
+    // Empty until a character is recorded, so that an empty one, which
+    // useChars makes for each run of text, allocates nothing
+    private var blocks = [[Int32]?]()
     private(set) var isEmpty = true
 
     // Returns the character first drawn with the glyph, or -1.
     func first(_ gid: Int) -> Int {
-        guard let block = blocks[(gid >> 8) & 0xFF] else {
+        guard !blocks.isEmpty, let block = blocks[(gid >> 8) & 0xFF] else {
             return -1
         }
         return Int(block[gid & 0xFF]) - 1
@@ -27,6 +29,9 @@ struct GlyphChars {
     @discardableResult
     mutating func use(_ gid: Int, _ c: Int) -> Int {
         let b = (gid >> 8) & 0xFF
+        if blocks.isEmpty {
+            blocks = [[Int32]?](repeating: nil, count: 256)
+        }
         if blocks[b] == nil {
             blocks[b] = [Int32](repeating: 0, count: 256)
         }

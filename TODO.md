@@ -117,6 +117,13 @@ commit and date. The layout's format version (1) and the look's rules
   work again before they fail. The net48 build takes the categories of
   the characters from a table of .NET 8's, Unicode 15.0, which a test holds
   to .NET 8's own (K3).
+- **For 9.0.9: a cell's drawable put back exactly** (the final review of
+  12 October 2026): a table puts the image or barcode of a cell back where
+  the caller had it, its location found as its corner less its size, in
+  float arithmetic, so 7.13, 8.29 comes back as 7.130005, 8.290001, in every
+  port alike; the measuring costs two more drawOn(null) calls a draw. A
+  getter of the location, or the cell drawing at an offset without moving
+  the drawable, would put it back exactly.
 - **For 9.1.1: Swift's Flate compresses less** (third review, K6; the
   owner, 12 October 2026): Swift's PDFs are
   about 9% larger than Go's, the same content after inflating, from its own

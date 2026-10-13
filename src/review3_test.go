@@ -912,3 +912,26 @@ func TestReview3AFontIsReadIntoABufferOfItsSize(t *testing.T) {
 		t.Errorf("reading a font of %d bytes allocated %d", len(data), allocated)
 	}
 }
+
+// A word too wide for the column whose first piece does not fit the rest of
+// its line breaks at its soft hyphens on the next lines: it was put on the
+// next line whole, past the column's edge (review of 12 October 2026).
+func TestReview3ATextColumnBreaksAWordThatStartsANewLine(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	font.SetSize(10)
+	column := NewTextColumn()
+	column.SetLocation(50, 100)
+	column.SetWidth(100)
+	word := strings.Repeat("bbbbbbbbbb­", 3) + "bbbbbbbbbb"
+	column.AddParagraph(NewParagraph().Add(NewTextLine(font, strings.Repeat("a", 17)+" "+word)))
+	page := NewPage(pdf, testLetterPortrait())
+	column.DrawOn(page)
+	// aaaaaaaaaaaaaaaaa / bbbbbbbbbb- / bbbbbbbbbb- / bbbbbbbbbb- / bbbbbbbbbb
+	content := testContent(page)
+	a := testPositionOf(t, content, strings.Repeat("a", 17))
+	b := testPositionOf(t, content, "bbbbbbbbbb-")
+	if !(b[1] < a[1]) {
+		t.Errorf("the word is not broken at its soft hyphens: %q", content)
+	}
+}

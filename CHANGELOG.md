@@ -371,7 +371,8 @@ This is the first entry in this file; earlier releases were not tracked here.
   bare "Invalid vertical text alignment option."
 - A TextColumn breaks a word too wide for what is left of its line at a
   soft hyphen, as TextBlock and TextFrame do, in the four ports: it moved
-  the whole word to the next line.
+  the whole word to the next line. A word wider than the column whose first
+  piece does not fit the rest of its line breaks on the next lines.
 - .NET Framework 4.8: the category of a character is that of .NET 8, of
   Unicode 15.0, from a table of the build's own; .NET Framework's data is
   of Unicode 8.0, and a mark newer than that, as the Arabic U+08D4 of

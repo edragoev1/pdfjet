@@ -383,7 +383,20 @@ public class TextColumn implements Drawable {
                     String[] parts = TextBlock.softHyphenBreak(prefix + token, this.w - runLength,
                             head -> width(line, head));
                     if (parts == null) {
-                        break;
+                        // Its first piece does not fit the rest of the line: a
+                        // word wider than the column breaks on the next line,
+                        // where it was put whole (the review of 12 October 2026)
+                        if (broken || list.isEmpty() || width(line, token) <= this.w) {
+                            break;
+                        }
+                        drawLineOfText(page, list, alignment);
+                        moveToNextLine(lineHeight);
+                        list.clear();
+                        wordStart = 0;
+                        runLength = 0f;
+                        prefix = "";
+                        textLine = line.copyWithText(token + after);
+                        continue;
                     }
                     list.add(line.copyWithText(parts[0]));
                     drawLineOfText(page, list, alignment);

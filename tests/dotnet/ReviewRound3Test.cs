@@ -625,5 +625,26 @@ public class ReviewRound3Test {
         Font font = new Font(TestSupport.NewPDF(), TestSupport.Open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
         Assert.Equal(0xABF1C2C88C082202UL, font.checksum);
     }
+
+    // A word too wide for the column whose first piece does not fit the rest
+    // of its line breaks at its soft hyphens on the next lines: it was put on
+    // the next line whole, past the column's edge.
+    [Fact]
+    public void ATextColumnBreaksAWordThatStartsANewLine() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        font.SetSize(10f);
+        TextColumn column = new TextColumn();
+        column.SetLocation(50f, 100f);
+        column.SetWidth(100f);
+        column.AddParagraph(new Paragraph().Add(new TextLine(font, "aaaaaaaaaaaaaaaaa bbbbbbbbbb\u00ADbbbbbbbbbb\u00ADbbbbbbbbbb\u00ADbbbbbbbbbb")));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        column.DrawOn(page);
+        // aaaaaaaaaaaaaaaaa / bbbbbbbbbb- / bbbbbbbbbb- / bbbbbbbbbb- / bbbbbbbbbb
+        string content = TestSupport.Content(page);
+        float[] a = TestSupport.PositionOf(content, "aaaaaaaaaaaaaaaaa");
+        float[] b = TestSupport.PositionOf(content, "bbbbbbbbbb-");
+        Assert.True(b[1] < a[1], content);
+    }
 }
 }

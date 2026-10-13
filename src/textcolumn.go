@@ -316,7 +316,18 @@ func (textColumn *TextColumn) drawParagraphOn(
 					return textLineWidth(text, head)
 				})
 				if !ok {
-					break
+					// Its first piece does not fit the rest of the line: a
+					// word wider than the column breaks on the next line,
+					// where it was put whole (the review of 12 October 2026)
+					if broken || len(list) == 0 || textLineWidth(line.copyWithText(token+after), token) <= textColumn.w {
+						break
+					}
+					textColumn.drawLineOfText(page, list, textAlignment)
+					textColumn.moveToNextLine(lineHeight)
+					list = make([]*TextLine, 0)
+					wordStart, runLength, space = 0, 0, ""
+					text = line.copyWithText(token + after)
+					continue
 				}
 				list = append(list, line.copyWithText(head))
 				textColumn.drawLineOfText(page, list, textAlignment)

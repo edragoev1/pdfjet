@@ -812,16 +812,21 @@ public class Cell {
             float textX = textBlock.x;
             float textY = textBlock.y;
             textBlock.SetLocation(0f, 0f);
-            float[] size = textBlock.DrawOn(null);
-            textBlock.x = textX;
-            textBlock.y = textY;
-            return size;
+            try {
+                return textBlock.DrawOn(null);
+            } finally {
+                textBlock.x = textX;
+                textBlock.y = textY;
+            }
         }
+        // Put back when measuring throws too, as in Java and Swift
         float[] location = LocationOf(drawable);
         drawable.SetLocation(0f, 0f);
-        float[] measured = drawable.DrawOn(null);
-        drawable.SetLocation(location[0], location[1]);
-        return measured;
+        try {
+            return drawable.DrawOn(null);
+        } finally {
+            drawable.SetLocation(location[0], location[1]);
+        }
     }
 
     // Returns where the drawable is now: its corner, measured where it is,

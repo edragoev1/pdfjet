@@ -523,4 +523,24 @@ import Testing
     @Test func aFontChecksumLeavesOutEmptyBlocks() throws {
         #expect(try TestSupport.plexSans(TestSupport.newPDF()).checksum == 0xABF1C2C88C082202)
     }
+
+    /// A word too wide for the column whose first piece does not fit the rest
+    /// of its line breaks at its soft hyphens on the next lines: it was put on
+    /// the next line whole, past the column's edge.
+    @Test func aTextColumnBreaksAWordThatStartsANewLine() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        font.setSize(10.0)
+        let column = TextColumn()
+        _ = column.setLocation(50, 100)
+        _ = column.setWidth(100)
+        _ = column.addParagraph(Paragraph().add(TextLine(font, "aaaaaaaaaaaaaaaaa bbbbbbbbbb\u{00AD}bbbbbbbbbb\u{00AD}bbbbbbbbbb\u{00AD}bbbbbbbbbb")))
+        let page = Page(pdf, Letter.PORTRAIT)
+        _ = column.drawOn(page)
+        // aaaaaaaaaaaaaaaaa / bbbbbbbbbb- / bbbbbbbbbb- / bbbbbbbbbb- / bbbbbbbbbb
+        let content = TestSupport.content(page)
+        let a = TestSupport.positionOf(content, "aaaaaaaaaaaaaaaaa")
+        let b = TestSupport.positionOf(content, "bbbbbbbbbb-")
+        #expect(b[1] < a[1], "\(content)")
+    }
 }

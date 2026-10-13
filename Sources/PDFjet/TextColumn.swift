@@ -349,9 +349,25 @@ public class TextColumn : Drawable {
                 var piece = token
                 var prefix = leading ? Single.space : ""
                 var broken = false
-                while let (head, rest) = TextBlock.softHyphenBreak(prefix + piece, self.w - runLength, {
-                    TextColumn.width(line, $0)
-                }) {
+                while true {
+                    guard let (head, rest) = TextBlock.softHyphenBreak(prefix + piece, self.w - runLength, {
+                        TextColumn.width(line, $0)
+                    }) else {
+                        // Its first piece does not fit the rest of the line: a
+                        // word wider than the column breaks on the next line,
+                        // where it was put whole (the review of 12 October 2026)
+                        if broken || list.isEmpty || TextColumn.width(line, piece) <= self.w {
+                            break
+                        }
+                        drawLineOfText(page, list, alignment)
+                        moveToNextLine(lineHeight)
+                        list.removeAll()
+                        wordStart = 0
+                        runLength = 0
+                        prefix = ""
+                        textLine = line.copyWithText(piece + after)
+                        continue
+                    }
                     list.append(line.copyWithText(head))
                     drawLineOfText(page, list, alignment)
                     moveToNextLine(lineHeight)

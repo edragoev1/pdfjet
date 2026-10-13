@@ -706,4 +706,27 @@ class ReviewRound3Test {
             in.close();
         }
     }
+
+    /**
+     * A word too wide for the column whose first piece does not fit the rest
+     * of its line breaks at its soft hyphens on the next lines: it was put on
+     * the next line whole, past the column's edge.
+     */
+    @Test
+    void aTextColumnBreaksAWordThatStartsANewLine() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        font.setSize(10f);
+        TextColumn column = new TextColumn();
+        column.setLocation(50f, 100f);
+        column.setWidth(100f);
+        column.addParagraph(new Paragraph().add(new TextLine(font, "aaaaaaaaaaaaaaaaa bbbbbbbbbb\u00ADbbbbbbbbbb\u00ADbbbbbbbbbb\u00ADbbbbbbbbbb")));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        column.drawOn(page);
+        // aaaaaaaaaaaaaaaaa / bbbbbbbbbb- / bbbbbbbbbb- / bbbbbbbbbb- / bbbbbbbbbb
+        String content = TestSupport.content(page);
+        float[] a = TestSupport.positionOf(content, "aaaaaaaaaaaaaaaaa");
+        float[] b = TestSupport.positionOf(content, "bbbbbbbbbb-");
+        assertTrue(b[1] < a[1], content);
+    }
 }
