@@ -16,8 +16,7 @@
 # It also builds .commercial-packages/PDFjet-For.NET-Core-vX.Y.Z.zip, PDFjet
 # Core: the library and its examples, with no PDFjet Pro, under the MIT
 # License of this repository, which the library is (the owner, 12 October
-# 2026: "Core", where it was the evaluation package, "Eval", under an
-# evaluation license).
+# 2026).
 #
 # PDFjet Pro is built from the last commit of the pdfjet-pro repository, beside
 # this one or in PDFJET_PRO, with the files of .packaging/dotnet-pro.
@@ -231,14 +230,10 @@ rm -rf build/package-dotnet
 # PDFjet Core again, without the version in its name, for the GitHub release:
 # the website links to releases/latest/download/PDFjet-For.NET-Core.zip, which
 # GitHub sends to the latest release's file of that name, so that the link
-# never changes; the version is in the name of the folder inside. And once
-# more as PDFjet-For.NET-Eval.zip, the name of the links before 9.0.7, for a
-# release or two, so that they keep working.
+# never changes; the version is in the name of the folder inside.
 LATEST_ZIP="$(dirname "$CORE_ZIP")/PDFjet-For.NET-Core.zip"
-OLD_ZIP="$(dirname "$CORE_ZIP")/PDFjet-For.NET-Eval.zip"
 cp "$CORE_ZIP" "$LATEST_ZIP"
-cp "$CORE_ZIP" "$OLD_ZIP"
 
 echo "Created $ZIP"
 echo "Created $CORE_ZIP"
-echo "Created $LATEST_ZIP and $OLD_ZIP, the same, for the GitHub release"
+echo "Created $LATEST_ZIP, the same, for the GitHub release"
