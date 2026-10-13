@@ -327,8 +327,8 @@ class OTF {
             if start <= end {
                 for ch in start...end {
                     let gid = startGlyph + (ch - first)
-                    if gid < 0x10000 && unicodeToGID[ch] == 0 {
-                        unicodeToGID.set(ch, gid)
+                    if gid < 0x10000 {
+                        unicodeToGID.setIfAbsent(ch, gid)
                     }
                 }
             }

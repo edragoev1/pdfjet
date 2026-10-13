@@ -372,8 +372,8 @@ func getCmapFormat12(otf *openTypeFont, table *fontTable, offset int) {
 			end = int(otf.lastChar)
 		}
 		for ch := start; ch <= end; ch++ {
-			if gid := startGlyph + (ch - first); gid < 0x10000 && otf.unicodeToGID.get(rune(ch)) == 0 {
-				otf.unicodeToGID.set(rune(ch), gid)
+			if gid := startGlyph + (ch - first); gid < 0x10000 {
+				otf.unicodeToGID.setIfAbsent(rune(ch), gid)
 			}
 		}
 		if end+1 > next {

@@ -243,9 +243,12 @@ class OTF {
                 }
             } else if (platformID == 3 && encodingID == 1 && languageID == 0x409) {
                 // Windows
-                String str = new String(buf, start, length, "UTF-16");
+                // UTF-16BE, which the Windows names are, without the lookup of
+                // a charset by its name and the look for a byte order mark of
+                // "UTF-16" for each record
+                String str = new String(buf, start, length, StandardCharsets.UTF_16BE);
                 if (nameID == 6) {
-                    fontName = new String(str.getBytes(StandardCharsets.UTF_8));
+                    fontName = str;
                 } else {
                     winFontInfo.append(str);
                     winFontInfo.append('\n');
@@ -324,8 +327,8 @@ class OTF {
             }
             for (long ch = start; ch <= end; ch++) {
                 long gid = startGlyph + (ch - first);
-                if (gid < 0x10000 && unicodeToGID.get((int) ch) == 0) {
-                    unicodeToGID.set((int) ch, (int) gid);
+                if (gid < 0x10000) {
+                    unicodeToGID.setIfAbsent((int) ch, (int) gid);
                 }
             }
             if (end + 1 > next) {

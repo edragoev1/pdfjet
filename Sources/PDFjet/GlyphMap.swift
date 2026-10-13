@@ -47,6 +47,25 @@ struct GlyphMap {
         blocks[block << 8 | (c & 0xFF)] = Int32(gid)
     }
 
+    // Sets the glyph of the character, which is in the Basic Multilingual
+    // Plane, unless it has one: as get and then set, with one lookup of its
+    // block, for the format 12 subtable of a font, which maps again the
+    // characters its format 4 subtable mapped (12 October 2026).
+    mutating func setIfAbsent(_ c: Int, _ gid: Int) {
+        var block = Int(index[c >> 8])
+        if block < 0 {
+            if gid == 0 {
+                return
+            }
+            block = blocks.count >> 8
+            index[c >> 8] = Int16(block)
+            blocks.append(contentsOf: repeatElement(Int32(0), count: 256))
+        }
+        if blocks[block << 8 | (c & 0xFF)] == 0 {
+            blocks[block << 8 | (c & 0xFF)] = Int32(gid)
+        }
+    }
+
     // Calls the function for each character that has a glyph, in the order
     // of the characters.
     func forEach(_ body: (_ c: Int, _ gid: Int) -> Void) {

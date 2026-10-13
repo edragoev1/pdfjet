@@ -50,6 +50,24 @@ class GlyphMap {
         block[c & 0xFF] = gid;
     }
 
+    // Sets the glyph of the character, which is in the Basic Multilingual
+    // Plane, unless it has one: as get and then set, with one lookup of its
+    // block, for the format 12 subtable of a font, which maps again the
+    // characters its format 4 subtable mapped (12 October 2026).
+    void setIfAbsent(int c, int gid) {
+        int[] block = blocks[c >> 8];
+        if (block == null) {
+            if (gid == 0) {
+                return;
+            }
+            block = new int[256];
+            blocks[c >> 8] = block;
+        }
+        if (block[c & 0xFF] == 0) {
+            block[c & 0xFF] = gid;
+        }
+    }
+
     // Calls the visitor for each character that has a glyph, in the order of
     // the characters.
     void each(Visitor visitor) {

@@ -318,8 +318,8 @@ internal class OTF {
             }
             for (long ch = start; ch <= end; ch++) {
                 long gid = startGlyph + (ch - first);
-                if (gid < 0x10000 && unicodeToGID.Get((int) ch) == 0) {
-                    unicodeToGID.Set((int) ch, (int) gid);
+                if (gid < 0x10000) {
+                    unicodeToGID.SetIfAbsent((int) ch, (int) gid);
                 }
             }
             if (end + 1 > next) {

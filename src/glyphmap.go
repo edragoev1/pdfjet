@@ -44,6 +44,24 @@ func (m *glyphMap) set(c rune, gid int) {
 	block[c&0xFF] = int32(gid)
 }
 
+// setIfAbsent sets the glyph of the character, which is in the Basic
+// Multilingual Plane, unless it has one: as get and then set, with one lookup
+// of its block, for the format 12 subtable of a font, which maps again the
+// characters its format 4 subtable mapped (12 October 2026).
+func (m *glyphMap) setIfAbsent(c rune, gid int) {
+	block := m.blocks[c>>8]
+	if block == nil {
+		if gid == 0 {
+			return
+		}
+		block = new([256]int32)
+		m.blocks[c>>8] = block
+	}
+	if block[c&0xFF] == 0 {
+		block[c&0xFF] = int32(gid)
+	}
+}
+
 // each calls the function for each character that has a glyph, in the order
 // of the characters.
 func (m *glyphMap) each(fn func(c rune, gid int)) {
