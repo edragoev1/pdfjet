@@ -9,8 +9,14 @@
 # package are in .packaging/java.
 #
 # It also builds .commercial-packages/PDFjet-ForJava-Eval-vX.Y.Z.zip, the
-# evaluation package: the same files, with the evaluation license agreement of
-# .packaging/LICENSE-EVALUATION as its LICENSE.
+# evaluation package: the library and its examples, with the evaluation license
+# agreement of .packaging/LICENSE-EVALUATION as its LICENSE.
+#
+# The package for buyers, Solo and Team, has PDFjet Pro too, which the
+# evaluation package has not (the owner, 12 October 2026: "The whole reason to
+# buy the packaged version is to get the Pro"): PDFjet-Sign.jar, its reference
+# and three examples, built from the last commit of the pdfjet-pro repository,
+# beside this one or in PDFJET_PRO, with the files of .packaging/java-pro.
 #
 # The package is made from the last commit, not the working tree. Its PDFs are
 # created by its own build-java.sh, so the scripts a client runs are tested.
@@ -30,6 +36,11 @@ NAME="PDFjet-ForJava-$VERSION"
 STAGE="build/package-java/$NAME"
 ZIP="$PWD/.commercial-packages/$NAME.zip"
 EVAL_NAME="PDFjet-ForJava-Eval-$VERSION"
+PRO=${PDFJET_PRO:-$(cd .. && pwd)/pdfjet-pro}
+if ! git -C "$PRO" rev-parse --verify -q HEAD > /dev/null; then
+    echo "PDFjet Pro is not in $PRO: set PDFJET_PRO to its repository."
+    exit 1
+fi
 EVAL_ZIP="$PWD/.commercial-packages/$EVAL_NAME.zip"
 
 # From 9.0.5 every file and directory of a package has one time: the day of
@@ -65,7 +76,7 @@ mkdir -p "$STAGE" .commercial-packages
 # Through a file, not a pipe, so that a failing git archive stops the script.
 TAR=$PWD/$STAGE.tar
 git archive -o "$TAR" HEAD \
-    .packaging/java .packaging/LICENSE-EVALUATION \
+    .packaging/java .packaging/java-pro .packaging/LICENSE-EVALUATION \
     com examples images PngSuite \
     CHANGELOG.md THIRD-PARTIES.TXT examples-java.html
 tar -x -C "$STAGE" -f "$TAR"
@@ -142,6 +153,7 @@ rm -rf com out
 # build the library from its sources.
 mv .packaging/java/* .
 mv .packaging/LICENSE-EVALUATION ..
+mv .packaging/java-pro ..
 rm -rf .packaging
 
 # Creates the PDFs of the package with its own script.
@@ -157,14 +169,57 @@ for i in $(seq -w 1 50); do
 done
 
 cd ..
-stamp "$NAME"
-zip_sorted "$ZIP" "$NAME"
 
-# The evaluation package is the same package under the evaluation license.
-mv "$NAME" "$EVAL_NAME"
+# The evaluation package: the library and its examples, as they are now, under
+# the evaluation license.
+cp -a "$NAME" "$EVAL_NAME"
 mv LICENSE-EVALUATION "$EVAL_NAME/LICENSE"
 stamp "$EVAL_NAME"
 zip_sorted "$EVAL_ZIP" "$EVAL_NAME"
+
+# The package for buyers adds PDFjet Pro, from the last commit of its
+# repository: PDFjet-Sign.jar, built for Java 8 as PDFjet.jar is, against it,
+# its reference, its examples and the certificate of the signing one.
+cd "$NAME"
+PRO_TAR=$PWD/../pro.tar
+git -C "$PRO" archive -o "$PRO_TAR" HEAD com/pdfjet/sign com/pdfjet/invoice \
+    examples/package/java tests/data/rsa-signer.p12
+mkdir pro-src
+tar -x -C pro-src -f "$PRO_TAR"
+rm "$PRO_TAR"
+javac -O -encoding utf-8 $RELEASE -Xlint -Xlint:-options -Werror -cp PDFjet.jar \
+    pro-src/com/pdfjet/sign/*.java pro-src/com/pdfjet/invoice/*.java -d out/pro
+stamp out/pro
+if jar --help 2>&1 | grep -q -- '--date'; then
+    jar --date="${RELEASE_DAY:0:4}-${RELEASE_DAY:4:2}-${RELEASE_DAY:6:2}T17:00:00Z" \
+        --create --file PDFjet-Sign.jar -C out/pro .
+else
+    jar cf PDFjet-Sign.jar -C out/pro .
+fi
+javadoc -quiet -public -doctitle "PDFjet Pro for Java" -windowtitle "PDFjet Pro for Java" \
+    -cp PDFjet.jar pro-src/com/pdfjet/sign/*.java pro-src/com/pdfjet/invoice/*.java \
+    -d docs/java-pro
+mkdir -p examples/pro
+cp pro-src/examples/package/java/*.java examples/pro/
+cp pro-src/tests/data/rsa-signer.p12 examples/pro/demo-signer.p12
+rm -rf pro-src out
+mv ../java-pro/build-pro.sh ../java-pro/build-pro.cmd .
+cat ../java-pro/README-PRO.md >> README.md
+rm -rf ../java-pro
+
+# Creates the PDFs of PDFjet Pro with the package's own script.
+./build-pro.sh
+rm -rf out-pro
+for pdf in Pro_SignDocument Pro_WriteInvoice Pro_DrawSwissQRBill; do
+    if ! tail -c 32 "$pdf.pdf" 2>/dev/null | grep -q '%%EOF'; then
+        echo "$pdf.pdf was not created or is incomplete"
+        exit 1
+    fi
+done
+
+cd ..
+stamp "$NAME"
+zip_sorted "$ZIP" "$NAME"
 cd ../..
 rm -rf build/package-java
 
