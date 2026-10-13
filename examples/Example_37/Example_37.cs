@@ -159,7 +159,7 @@ public class Example_37 {
         caption.SetLocation(300f, xy[1] + 20f);
         caption.DrawOn(page);
 
-        barcode = new DataMatrix("PDFjet 9.0.5", DataMatrix.RECTANGLE);
+        barcode = new DataMatrix("PDFjet 9.0.7", DataMatrix.RECTANGLE);
         barcode.SetLocation(50f, 250f);
         barcode.SetModuleLength(4f);
         barcode.SetModuleColor(Color.blue);

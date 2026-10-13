@@ -18,8 +18,10 @@ passwords prepared with SASLprep among them; and, new in 9.0.7, fonts that
 forbid embedding refused and the stroke width of an Arc. Only a major issue
 holds it; anything else goes into 9.0.9.
 
-Left before the tag: the items for 9.0.7 below, the manual viewer pass
-(below) on the files of the new code, then the release.
+The version is 9.0.7 in the four ports since 12 October 2026, after a
+last review of the day's changes and an hour of fuzzing the font and text
+targets. Left before the tag: the items for 9.0.7 below, the manual viewer
+pass (below) on the files of the new code, then the release.
 
 PDFjet Pro is released with it, its first release, on the same day, with
 the same number (the owner, 11 October 2026: the two move together), the

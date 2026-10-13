@@ -7,7 +7,7 @@ languages.
 
 This is the first entry in this file; earlier releases were not tracked here.
 
-## v9.0.7 — unreleased
+## v9.0.7 — 2026-10-12
 
 ### Added
 - `BigTable.setColumnWidthsInPercent(percents)`, in the four ports: the
