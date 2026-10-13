@@ -1,5 +1,5 @@
 #!/bin/bash
-# Builds .commercial-packages/PDFjet-For.NET-vX.Y.Z.zip, a self-contained
+# Builds .commercial-packages/PDFjet-For.NET-Pro-vX.Y.Z.zip, a self-contained
 # package for .NET clients: PDFjet.dll, the DocFX reference, the example
 # projects with the PDFs they create, the files they read (data, the fonts,
 # images, PngSuite), and scripts that build and run the examples against PDFjet.dll.
@@ -8,20 +8,19 @@
 # The README, the commercial LICENSE and the build and run scripts of the
 # package are in .packaging/dotnet.
 #
-# It also builds .commercial-packages/PDFjet-For.NET-Eval-vX.Y.Z.zip, the
-# evaluation package: the library and its examples, with the evaluation license
-# agreement of .packaging/LICENSE-EVALUATION as its LICENSE.
+# The package for buyers, Solo and Team, is PDFjet Pro: the library and PDFjet
+# Pro (the owner, 12 October 2026: "The whole reason to buy the packaged version
+# is to get the Pro"), with the commercial license agreement of pdfjet.com as
+# its LICENSE: .commercial-packages/PDFjet-For.NET-Pro-vX.Y.Z.zip.
 #
-# The package for buyers, Solo and Team, has PDFjet Pro too, which the
-# evaluation package has not (the owner, 12 October 2026: "The whole reason to
-# buy the packaged version is to get the Pro"): PDFjet.Sign.dll, strong-named
-# as PDFjet.dll is, and three example projects, built from the last commit of
-# the pdfjet-pro repository, beside this one or in PDFJET_PRO, with the files
-# of .packaging/dotnet-pro.
+# It also builds .commercial-packages/PDFjet-For.NET-Core-vX.Y.Z.zip, PDFjet
+# Core: the library and its examples, with no PDFjet Pro, under the MIT
+# License of this repository, which the library is (the owner, 12 October
+# 2026: "Core", where it was the evaluation package, "Eval", under an
+# evaluation license).
 #
-# The package is made from the last commit, not the working tree. Its PDFs are
-# created by its own build-dotnet.sh, so the scripts a client runs are tested.
-# Building the reference needs DocFX: dotnet tool install -g docfx
+# PDFjet Pro is built from the last commit of the pdfjet-pro repository, beside
+# this one or in PDFJET_PRO, with the files of .packaging/dotnet-pro.
 
 # PDFjet.dll is strong-named, in both packages: the key is not in the
 # repository, but in the owner's private files, and is given by PDFJET_SNK:
@@ -47,16 +46,16 @@ if [ -z "$VERSION" ]; then
     echo "Could not read the version from net/pdfjet/PDF.cs"
     exit 1
 fi
-NAME="PDFjet-For.NET-$VERSION"
+NAME="PDFjet-For.NET-Pro-$VERSION"
 STAGE="build/package-dotnet/$NAME"
 ZIP="$PWD/.commercial-packages/$NAME.zip"
-EVAL_NAME="PDFjet-For.NET-Eval-$VERSION"
+CORE_NAME="PDFjet-For.NET-Core-$VERSION"
 PRO=${PDFJET_PRO:-$(cd .. && pwd)/pdfjet-pro}
 if ! git -C "$PRO" rev-parse --verify -q HEAD > /dev/null; then
     echo "PDFjet Pro is not in $PRO: set PDFJET_PRO to its repository."
     exit 1
 fi
-EVAL_ZIP="$PWD/.commercial-packages/$EVAL_NAME.zip"
+CORE_ZIP="$PWD/.commercial-packages/$CORE_NAME.zip"
 
 # From 9.0.5 every file and directory of a package has one time: the day of
 # the commit the package is made from, in Ontario, where it is made, at
@@ -85,13 +84,13 @@ if [ -n "$(git status --porcelain)" ]; then
     echo "Warning: uncommitted changes are left out; the package is made from $(git rev-parse --short HEAD)."
 fi
 
-rm -rf "$(dirname "$STAGE")" "$ZIP" "$EVAL_ZIP"
+rm -rf "$(dirname "$STAGE")" "$ZIP" "$CORE_ZIP"
 mkdir -p "$STAGE" .commercial-packages
 
 # Through a file, not a pipe, so that a failing git archive stops the script.
 TAR=$PWD/$STAGE.tar
 git archive -o "$TAR" HEAD \
-    .packaging/dotnet .packaging/dotnet-pro .packaging/LICENSE-EVALUATION \
+    .packaging/dotnet .packaging/dotnet-pro LICENSE \
     net net48 PDFjet.csproj examples images PngSuite docfx \
     CHANGELOG.md THIRD-PARTIES.TXT examples-dotnet.html
 tar -x -C "$STAGE" -f "$TAR"
@@ -161,8 +160,8 @@ fi
 # pdfjet.com, its README is about the prebuilt library, and its build and run
 # scripts build the examples against PDFjet.dll, where those of the repository
 # build the library from its sources.
+mv LICENSE ../LICENSE-MIT
 mv .packaging/dotnet/* .
-mv .packaging/LICENSE-EVALUATION ..
 mv .packaging/dotnet-pro ..
 rm -rf .packaging
 
@@ -180,12 +179,12 @@ done
 
 cd ..
 
-# The evaluation package: the library and its examples, as they are now, under
-# the evaluation license.
-cp -a "$NAME" "$EVAL_NAME"
-mv LICENSE-EVALUATION "$EVAL_NAME/LICENSE"
-stamp "$EVAL_NAME"
-zip_sorted "$EVAL_ZIP" "$EVAL_NAME"
+# PDFjet Core: the library and its examples, as they are now, under the MIT
+# License.
+cp -a "$NAME" "$CORE_NAME"
+mv LICENSE-MIT "$CORE_NAME/LICENSE"
+stamp "$CORE_NAME"
+zip_sorted "$CORE_ZIP" "$CORE_NAME"
 
 # The package for buyers adds PDFjet Pro, from the last commit of its
 # repository, built from a copy of it, as a build beside it can find another
@@ -229,13 +228,17 @@ zip_sorted "$ZIP" "$NAME"
 cd ../..
 rm -rf build/package-dotnet
 
-# The evaluation package again, without the version in its name, for the
-# GitHub release: the website links to releases/latest/download/PDFjet-For.NET-Eval.zip,
-# which GitHub sends to the latest release's file of that name, so that the
-# link never changes. The version is in the name of the folder inside.
-LATEST_ZIP="$(dirname "$EVAL_ZIP")/PDFjet-For.NET-Eval.zip"
-cp "$EVAL_ZIP" "$LATEST_ZIP"
+# PDFjet Core again, without the version in its name, for the GitHub release:
+# the website links to releases/latest/download/PDFjet-For.NET-Core.zip, which
+# GitHub sends to the latest release's file of that name, so that the link
+# never changes; the version is in the name of the folder inside. And once
+# more as PDFjet-For.NET-Eval.zip, the name of the links before 9.0.7, for a
+# release or two, so that they keep working.
+LATEST_ZIP="$(dirname "$CORE_ZIP")/PDFjet-For.NET-Core.zip"
+OLD_ZIP="$(dirname "$CORE_ZIP")/PDFjet-For.NET-Eval.zip"
+cp "$CORE_ZIP" "$LATEST_ZIP"
+cp "$CORE_ZIP" "$OLD_ZIP"
 
 echo "Created $ZIP"
-echo "Created $EVAL_ZIP"
-echo "Created $LATEST_ZIP, the same, for the GitHub release"
+echo "Created $CORE_ZIP"
+echo "Created $LATEST_ZIP and $OLD_ZIP, the same, for the GitHub release"

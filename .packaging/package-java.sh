@@ -1,5 +1,5 @@
 #!/bin/bash
-# Builds .commercial-packages/PDFjet-ForJava-vX.Y.Z.zip, a self-contained
+# Builds .commercial-packages/PDFjet-ForJava-Pro-vX.Y.Z.zip, a self-contained
 # package for Java clients: PDFjet.jar, the Javadoc reference, the examples
 # with the PDFs they create, the files they read (data, the fonts,
 # images, PngSuite), and scripts that build and run the examples against PDFjet.jar.
@@ -8,19 +8,19 @@
 # The README, the commercial LICENSE and the build and run scripts of the
 # package are in .packaging/java.
 #
-# It also builds .commercial-packages/PDFjet-ForJava-Eval-vX.Y.Z.zip, the
-# evaluation package: the library and its examples, with the evaluation license
-# agreement of .packaging/LICENSE-EVALUATION as its LICENSE.
+# The package for buyers, Solo and Team, is PDFjet Pro: the library and PDFjet
+# Pro (the owner, 12 October 2026: "The whole reason to buy the packaged version
+# is to get the Pro"), with the commercial license agreement of pdfjet.com as
+# its LICENSE: .commercial-packages/PDFjet-ForJava-Pro-vX.Y.Z.zip.
 #
-# The package for buyers, Solo and Team, has PDFjet Pro too, which the
-# evaluation package has not (the owner, 12 October 2026: "The whole reason to
-# buy the packaged version is to get the Pro"): PDFjet-Sign.jar, its reference
-# and three examples, built from the last commit of the pdfjet-pro repository,
-# beside this one or in PDFJET_PRO, with the files of .packaging/java-pro.
+# It also builds .commercial-packages/PDFjet-ForJava-Core-vX.Y.Z.zip, PDFjet
+# Core: the library and its examples, with no PDFjet Pro, under the MIT
+# License of this repository, which the library is (the owner, 12 October
+# 2026: "Core", where it was the evaluation package, "Eval", under an
+# evaluation license).
 #
-# The package is made from the last commit, not the working tree. Its PDFs are
-# created by its own build-java.sh, so the scripts a client runs are tested.
-# PDFjet.jar is built for Java 8, as the build scripts of the repository are.
+# PDFjet Pro is built from the last commit of the pdfjet-pro repository, beside
+# this one or in PDFJET_PRO, with the files of .packaging/java-pro.
 
 # Stop at the first failure, so a broken build is never zipped.
 set -e
@@ -32,16 +32,16 @@ if [ -z "$VERSION" ]; then
     echo "Could not read the version from com/pdfjet/PDF.java"
     exit 1
 fi
-NAME="PDFjet-ForJava-$VERSION"
+NAME="PDFjet-ForJava-Pro-$VERSION"
 STAGE="build/package-java/$NAME"
 ZIP="$PWD/.commercial-packages/$NAME.zip"
-EVAL_NAME="PDFjet-ForJava-Eval-$VERSION"
+CORE_NAME="PDFjet-ForJava-Core-$VERSION"
 PRO=${PDFJET_PRO:-$(cd .. && pwd)/pdfjet-pro}
 if ! git -C "$PRO" rev-parse --verify -q HEAD > /dev/null; then
     echo "PDFjet Pro is not in $PRO: set PDFJET_PRO to its repository."
     exit 1
 fi
-EVAL_ZIP="$PWD/.commercial-packages/$EVAL_NAME.zip"
+CORE_ZIP="$PWD/.commercial-packages/$CORE_NAME.zip"
 
 # From 9.0.5 every file and directory of a package has one time: the day of
 # the commit the package is made from, in Ontario, where it is made, at
@@ -70,13 +70,13 @@ if [ -n "$(git status --porcelain)" ]; then
     echo "Warning: uncommitted changes are left out; the package is made from $(git rev-parse --short HEAD)."
 fi
 
-rm -rf "$(dirname "$STAGE")" "$ZIP" "$EVAL_ZIP"
+rm -rf "$(dirname "$STAGE")" "$ZIP" "$CORE_ZIP"
 mkdir -p "$STAGE" .commercial-packages
 
 # Through a file, not a pipe, so that a failing git archive stops the script.
 TAR=$PWD/$STAGE.tar
 git archive -o "$TAR" HEAD \
-    .packaging/java .packaging/java-pro .packaging/LICENSE-EVALUATION \
+    .packaging/java .packaging/java-pro LICENSE \
     com examples images PngSuite \
     CHANGELOG.md THIRD-PARTIES.TXT examples-java.html
 tar -x -C "$STAGE" -f "$TAR"
@@ -151,8 +151,8 @@ rm -rf com out
 # pdfjet.com, its README is about the prebuilt library, and its build and run
 # scripts build the examples against PDFjet.jar, where those of the repository
 # build the library from its sources.
+mv LICENSE ../LICENSE-MIT
 mv .packaging/java/* .
-mv .packaging/LICENSE-EVALUATION ..
 mv .packaging/java-pro ..
 rm -rf .packaging
 
@@ -170,12 +170,12 @@ done
 
 cd ..
 
-# The evaluation package: the library and its examples, as they are now, under
-# the evaluation license.
-cp -a "$NAME" "$EVAL_NAME"
-mv LICENSE-EVALUATION "$EVAL_NAME/LICENSE"
-stamp "$EVAL_NAME"
-zip_sorted "$EVAL_ZIP" "$EVAL_NAME"
+# PDFjet Core: the library and its examples, as they are now, under the MIT
+# License.
+cp -a "$NAME" "$CORE_NAME"
+mv LICENSE-MIT "$CORE_NAME/LICENSE"
+stamp "$CORE_NAME"
+zip_sorted "$CORE_ZIP" "$CORE_NAME"
 
 # The package for buyers adds PDFjet Pro, from the last commit of its
 # repository: PDFjet-Sign.jar, built for Java 8 as PDFjet.jar is, against it,
@@ -223,13 +223,17 @@ zip_sorted "$ZIP" "$NAME"
 cd ../..
 rm -rf build/package-java
 
-# The evaluation package again, without the version in its name, for the
-# GitHub release: the website links to releases/latest/download/PDFjet-ForJava-Eval.zip,
-# which GitHub sends to the latest release's file of that name, so that the
-# link never changes. The version is in the name of the folder inside.
-LATEST_ZIP="$(dirname "$EVAL_ZIP")/PDFjet-ForJava-Eval.zip"
-cp "$EVAL_ZIP" "$LATEST_ZIP"
+# PDFjet Core again, without the version in its name, for the GitHub release:
+# the website links to releases/latest/download/PDFjet-ForJava-Core.zip, which
+# GitHub sends to the latest release's file of that name, so that the link
+# never changes; the version is in the name of the folder inside. And once
+# more as PDFjet-ForJava-Eval.zip, the name of the links before 9.0.7, for a
+# release or two, so that they keep working.
+LATEST_ZIP="$(dirname "$CORE_ZIP")/PDFjet-ForJava-Core.zip"
+OLD_ZIP="$(dirname "$CORE_ZIP")/PDFjet-ForJava-Eval.zip"
+cp "$CORE_ZIP" "$LATEST_ZIP"
+cp "$CORE_ZIP" "$OLD_ZIP"
 
 echo "Created $ZIP"
-echo "Created $EVAL_ZIP"
-echo "Created $LATEST_ZIP, the same, for the GitHub release"
+echo "Created $CORE_ZIP"
+echo "Created $LATEST_ZIP and $OLD_ZIP, the same, for the GitHub release"
