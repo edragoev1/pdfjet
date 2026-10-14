@@ -52,7 +52,7 @@ same output come in four languages, and none of them needs a single dependency.
   font in under 100 ms once it is warm (the first run, with the runtime
   starting, takes up to about 200 ms), and each page is written out and freed
   as soon as the next one starts.
-- **No dependencies.** The Java library is a single 0.39 MB jar.
+- **No dependencies.** The Java library is a single 0.6 MB jar.
 - **Layout built in.** Tables that break across pages and repeat their header
   rows, text blocks, columns, charts and calendars.
 - **Barcodes built in.** EAN-13, UPC-A, Code 39, Code 128, QR, Data Matrix and
