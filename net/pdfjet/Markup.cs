@@ -12,11 +12,17 @@ namespace PDFjet.NET {
 /// <summary>
 /// Makes paragraphs of text with the inline markup of Markdown: **bold**,
 /// *italic*, ***bold italic***, `code` and [links](https://pdfjet.com), in the
-/// fonts given for each. A backslash before a punctuation character, as in \*,
-/// makes it plain text, and so is a mark that has no match, such as the * of
-/// 2 * 3. Emphasis can be inside a link, and neither inside code. A word keeps
-/// its punctuation next to it in another style, as in **bold**, with no space
-/// between them: the paragraph joins its text lines with Paragraph.AddJoined.
+/// fonts given for each, and as GitHub's Markdown has them, __bold__ and
+/// _italic_, ~~strikethrough~~, and links that are their address,
+/// &lt;https://pdfjet.com&gt; or https://pdfjet.com alone. An _ emphasizes
+/// only at the edge of a word, so that snake_case is text; an address alone
+/// ends before the punctuation at its end, as the period of a sentence, and
+/// before a ) that closes no ( of its own. A backslash before a punctuation
+/// character, as in \*, makes it plain text, and so is a mark that has no
+/// match, such as the * of 2 * 3. Emphasis can be inside a link, and neither
+/// inside code. A word keeps its punctuation next to it in another style, as
+/// in **bold**, with no space between them: the paragraph joins its text
+/// lines with Paragraph.AddJoined.
 /// <para>
 /// Headings, lists, block quotes and the rest of Markdown's blocks are not
 /// read: a line break is a space, and Paragraphs splits a text into paragraphs
@@ -28,6 +34,7 @@ public class Markup {
     private const int BOLD = 1;
     private const int ITALIC = 2;
     private const int CODE = 4;
+    private const int STRIKE = 8;
 
     private readonly Font regular;
     private readonly Font bold;
@@ -153,6 +160,9 @@ public class Markup {
                 : ((flags & BOLD) != 0) ? bold
                 : ((flags & ITALIC) != 0) ? italic : regular;
         TextLine textLine = new TextLine(font, text);
+        if ((flags & STRIKE) != 0) {
+            textLine.SetStrikeout(true);
+        }
         if (link != null) {
             textLine.SetURIAction(link);
             textLine.SetTextColor(linkColor);
@@ -166,15 +176,19 @@ public class Markup {
         return true;
     }
 
-    // Text in one style, or a run of * that may open or close emphasis, which
-    // is text too as far as it does not.
+    // Text in one style, or a run of *, of _ or of ~~ that may open or close
+    // emphasis or a strikethrough, which is text too as far as it does not.
+    // The text is null while the run's emphasis is not matched yet.
     private sealed class Node {
         internal String text;
         internal int flags;
         internal String link;
-        // Of a run of *: how many of them are not matched yet, whether they can
-        // open and close emphasis, and the emphasis the run opens and closes,
-        // counted in levels of the flags.
+        // Of a run: its character, *, _ or ~, where it is among the nodes, how
+        // many of its characters are not matched yet, whether they can open
+        // and close emphasis, and the emphasis the run opens and closes,
+        // counted in levels of bold, italic and strikethrough.
+        internal char ch;
+        internal int index;
         internal int count;
         internal bool canOpen;
         internal bool canClose;
@@ -248,13 +262,14 @@ public class Markup {
         }
 
         // Reads the text from start to end into nodes, all in the link when it
-        // is not null, with the emphasis of the runs of * matched.
+        // is not null, with the emphasis of the runs of *, _ and ~~ matched.
         internal void Parse(int start, int end, String link, List<Node> nodes) {
             int first = nodes.Count;
             StringBuilder buf = new StringBuilder();
             int i = start;
             while (i < end) {
                 char ch = text[i];
+                int autolinkEnd;
                 if (ch == '\\' && i + 1 < end && IsASCIIPunctuation(text[i + 1])) {
                     buf.Append(text[i + 1]);
                     i += 2;
@@ -271,18 +286,41 @@ public class Markup {
                         nodes.Add(new Node(CodeText(text.Substring(i + length, close - (i + length))), CODE, link));
                     }
                     i = (close == -1) ? i + length : close + length;
-                } else if (ch == '*') {
+                } else if (ch == '*' || ch == '_' || ch == '~') {
                     int length = 1;
-                    while (i + length < end && text[i + length] == '*') {
+                    while (i + length < end && text[i + length] == ch) {
                         length++;
+                    }
+                    if (ch == '~' && length != 2) {
+                        // A strikethrough is two ~, and one or three are text, as in ~5
+                        buf.Append(text, i, length);
+                        i += length;
+                        continue;
                     }
                     Flush(buf, link, nodes);
                     Node run = new Node(null, 0, link);
+                    run.ch = ch;
+                    run.index = nodes.Count;
                     run.count = length;
-                    run.canOpen = i + length < end && !Util.IsJavaWhitespace(text[i + length]);
-                    run.canClose = i > start && !Util.IsJavaWhitespace(text[i - 1]);
+                    // Before the run, or after it, a space, or the start or the end
+                    bool left = i + length < end && !Util.IsJavaWhitespace(text[i + length]);
+                    bool right = i > start && !Util.IsJavaWhitespace(text[i - 1]);
+                    run.canOpen = left;
+                    run.canClose = right;
+                    if (ch == '_') {
+                        // Inside a word, as in snake_case, an _ is text
+                        run.canOpen = left && (!right || IsASCIIPunctuation(text[i - 1]));
+                        run.canClose = right && (!left || IsASCIIPunctuation(text[i + length]));
+                    }
                     nodes.Add(run);
                     i += length;
+                } else if ((autolinkEnd = AutolinkEnd(i, start, end, link)) > i) {
+                    Flush(buf, link, nodes);
+                    String url = (ch == '<')
+                            ? text.Substring(i + 1, autolinkEnd - 1 - (i + 1))
+                            : text.Substring(i, autolinkEnd - i);
+                    nodes.Add(new Node(url, 0, url));
+                    i = autolinkEnd;
                 } else if (ch == '[' && link == null && IsLink(i, end)) {
                     int close = closingBracket[i];
                     int urlEnd = nextParenthesis[close + 2];
@@ -307,6 +345,79 @@ public class Markup {
             }
             int urlEnd = nextParenthesis[close + 2];
             return urlEnd < end && urlEnd > close + 2 && nextSpace[close + 2] > urlEnd;
+        }
+
+        // Returns where a link that is its address ends, after its > when it is
+        // in < and >, or i when there is none at i, or the text is in a link
+        // already: an address of http:// or https:// and a host, in < and >
+        // with no space in it, or alone, after a space, the start, a (, or a *,
+        // _ or ~ of emphasis. An address alone ends at a space or a <, and then
+        // before the punctuation at its end, ? ! . , : * _ and ~, and before
+        // each ) at its end that closes no ( in it, as GitHub's Markdown reads it.
+        private int AutolinkEnd(int i, int start, int end, String link) {
+            if (link != null || (text[i] != '<' && text[i] != 'h')) {
+                return i;
+            }
+            int from = i;
+            if (text[i] == '<') {
+                from = i + 1;
+            } else if (i > start && !Util.IsJavaWhitespace(text[i - 1]) && "(*_~".IndexOf(text[i - 1]) == -1) {
+                return i;
+            }
+            int host = SchemeEnd(from, end);
+            if (host == -1 || host >= end || !IsHostChar(text[host])) {
+                return i;
+            }
+            int j = host;
+            while (j < end && !Util.IsJavaWhitespace(text[j]) && text[j] != '<' && text[j] != '>') {
+                j++;
+            }
+            if (text[i] == '<') {
+                return (j < end && text[j] == '>') ? j + 1 : i;
+            }
+            int opening = Count(from, j, '(');
+            int closing = Count(from, j, ')');
+            while (j > host) {
+                char last = text[j - 1];
+                if ("?!.,:*_~".IndexOf(last) != -1) {
+                    j--;
+                } else if (last == ')' && opening < closing) {
+                    j--;
+                    closing--;
+                } else {
+                    break;
+                }
+            }
+            return (j == host) ? i : j;
+        }
+
+        // Returns where the host starts after http:// or https:// at the
+        // index, or -1.
+        private int SchemeEnd(int i, int end) {
+            foreach (String scheme in new String[] {"https://", "http://"}) {
+                int n = scheme.Length;
+                if (i + n <= end && String.CompareOrdinal(text, i, scheme, 0, n) == 0) {
+                    return i + n;
+                }
+            }
+            return -1;
+        }
+
+        // Returns true for a letter, a digit or a character that is not ASCII,
+        // as the first character of a host is.
+        private static bool IsHostChar(char ch) {
+            return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch > 0x7F;
+        }
+
+        // Returns how many of the character are in the text from start to end.
+        private int Count(int start, int end, char ch) {
+            int n = 0;
+            for (int i = start; i < end; i++) {
+                if (text[i] == ch) {
+                    n++;
+                }
+            }
+            return n;
         }
 
         // Returns where the next run of backticks of the length starts, after
@@ -345,20 +456,42 @@ public class Markup {
             }
         }
 
-        // Matches the runs of * from the index on, each closer with the nearest
-        // opener before it: two of each make bold and one italic, and the runs
-        // between them can no longer match. Then gives every node the emphasis
-        // it is in, and turns what is left of each run into text.
+        // Matches the runs from the index on, each closer with the nearest
+        // opener of its character before it: two * or _ of each make bold and
+        // one italic, and ~~ a strikethrough. The runs of * and _ between a
+        // closer and its opener can no longer match. Then gives every node the
+        // emphasis it is in, and turns what is left of each run into text.
         private static void MatchEmphasis(List<Node> nodes, int first) {
-            Stack<Node> openers = new Stack<Node>();
+            // The runs that can still open, of *, of _ and of ~
+            Stack<Node> stars = new Stack<Node>();
+            Stack<Node> underscores = new Stack<Node>();
+            Stack<Node> tildes = new Stack<Node>();
             for (int i = first; i < nodes.Count; i++) {
                 Node node = nodes[i];
                 if (node.text != null) {
                     continue;
                 }
+                if (node.ch == '~') {
+                    if (node.canClose && tildes.Count > 0) {
+                        Node opener = tildes.Pop();
+                        opener.opens = Add(opener.opens, STRIKE);
+                        node.closes = Add(node.closes, STRIKE);
+                        opener.count = 0;
+                        node.count = 0;
+                    }
+                    if (node.count > 0 && node.canOpen) {
+                        tildes.Push(node);
+                    }
+                    continue;
+                }
+                Stack<Node> own = (node.ch == '_') ? underscores : stars;
+                Stack<Node> other = (node.ch == '_') ? stars : underscores;
                 if (node.canClose) {
-                    while (node.count > 0 && openers.Count > 0) {
-                        Node opener = openers.Peek();
+                    while (node.count > 0 && own.Count > 0) {
+                        Node opener = own.Peek();
+                        while (other.Count > 0 && other.Peek().index > opener.index) {
+                            other.Pop();
+                        }
                         int use = (node.count >= 2 && opener.count >= 2) ? 2 : 1;
                         int flag = (use == 2) ? BOLD : ITALIC;
                         opener.opens = Add(opener.opens, flag);
@@ -366,47 +499,51 @@ public class Markup {
                         opener.count -= use;
                         node.count -= use;
                         if (opener.count == 0) {
-                            openers.Pop();
+                            own.Pop();
                         }
                     }
                 }
                 if (node.count > 0 && node.canOpen) {
-                    openers.Push(node);
+                    own.Push(node);
                 }
             }
             // The emphasis in effect, in levels, since bold can be in bold.
-            int boldLevel = 0;
-            int italicLevel = 0;
+            int[] levels = new int[3];
             for (int i = first; i < nodes.Count; i++) {
                 Node node = nodes[i];
                 if (node.text == null) {
-                    boldLevel -= Level(node.closes, BOLD);
-                    italicLevel -= Level(node.closes, ITALIC);
-                    node.text = Repeat('*', node.count);
-                    node.flags = Emphasis(boldLevel, italicLevel);
-                    boldLevel += Level(node.opens, BOLD);
-                    italicLevel += Level(node.opens, ITALIC);
+                    for (int k = 0; k < levels.Length; k++) {
+                        levels[k] -= Level(node.closes, k);
+                    }
+                    node.text = Repeat(node.ch, node.count);
+                    node.flags = Emphasis(levels);
+                    for (int k = 0; k < levels.Length; k++) {
+                        levels[k] += Level(node.opens, k);
+                    }
                 } else {
-                    node.flags |= Emphasis(boldLevel, italicLevel);
+                    node.flags |= Emphasis(levels);
                 }
             }
         }
 
-        private static int Emphasis(int boldLevel, int italicLevel) {
-            return ((boldLevel > 0) ? BOLD : 0) | ((italicLevel > 0) ? ITALIC : 0);
+        // The flags of the levels of bold, italic and strikethrough in effect.
+        private static int Emphasis(int[] levels) {
+            return ((levels[0] > 0) ? BOLD : 0) | ((levels[1] > 0) ? ITALIC : 0)
+                    | ((levels[2] > 0) ? STRIKE : 0);
         }
 
-        // The levels of bold and of italic, [bold, italic], with one more of the flag.
+        // The levels of bold, italic and strikethrough with one more of the flag.
         private static int[] Add(int[] levels, int flag) {
             if (levels == null) {
-                levels = new int[2];
+                levels = new int[3];
             }
-            levels[(flag == BOLD) ? 0 : 1]++;
+            levels[(flag == BOLD) ? 0 : (flag == ITALIC) ? 1 : 2]++;
             return levels;
         }
 
-        private static int Level(int[] levels, int flag) {
-            return (levels == null) ? 0 : levels[(flag == BOLD) ? 0 : 1];
+        // The level of bold (0), italic (1) or strikethrough (2).
+        private static int Level(int[] levels, int k) {
+            return (levels == null) ? 0 : levels[k];
         }
 
         private static String Repeat(char ch, int count) {

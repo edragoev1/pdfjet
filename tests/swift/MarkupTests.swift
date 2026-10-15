@@ -29,8 +29,9 @@ import Testing
         }
 
         // The text lines of the paragraph, each as its text and its font: R, B, I,
-        // X for bold italic, or C for code, with the link after a space, and a +
-        // before the text of one that is joined to the text line before it.
+        // X for bold italic, or C for code, then ~ when it is struck through,
+        // with the link after a space, and a + before the text of one that is
+        // joined to the text line before it.
         func describe(_ paragraph: Paragraph) -> [String] {
             var list = [String]()
             for i in 0..<paragraph.lines.count {
@@ -38,8 +39,9 @@ import Testing
                 let font = line.getFont()
                 let style = (font === bold) ? "B" : (font === italic) ? "I"
                         : (font === boldItalic) ? "X" : (font === code) ? "C" : "R"
+                let strike = line.getStrikeout() ? "~" : ""
                 let link = line.getURIAction().map { " " + $0 } ?? ""
-                list.append((paragraph.joinsPrevious(i) ? "+" : "") + line.getText()! + "|" + style + link)
+                list.append((paragraph.joinsPrevious(i) ? "+" : "") + line.getText()! + "|" + style + strike + link)
             }
             return list
         }
@@ -127,6 +129,63 @@ import Testing
         for i in 0..<20000 {
             text += "[a](b *c `" + (i % 50 == 0 ? "``" : "") + " [["
         }
+        let clock = ContinuousClock()
+        var paragraph: Paragraph?
+        let elapsed = clock.measure {
+            paragraph = Fonts().markup.paragraph(text)
+        }
+        let milliseconds = elapsed.components.seconds * 1000
+                + elapsed.components.attoseconds / 1_000_000_000_000_000
+        #expect(!paragraph!.lines.isEmpty)
+        #expect(milliseconds < 2000, "\(milliseconds) ms")
+    }
+
+    // GitHub's Markdown: _ emphasizes as * does, but only at the edge of a
+    // word, so that snake_case and file names are text.
+    @Test func underscoresEmphasizeAtTheEdgesOfWords() {
+        #expect(parse("_italic_ and __bold__") == ["italic|I", " and |R", "bold|B"])
+        #expect(parse("snake_case_name stays") == ["snake_case_name stays|R"])
+        #expect(parse("file_name and _x_") == ["file_name and |R", "x|I"])
+        #expect(parse("__a _b_ c__") == ["a |B", "b|X", " c|B"])
+        #expect(parse("(_x_)") == ["(|R", "+x|I", "+)|R"])
+        #expect(parse("_open only") == ["_open only|R"])
+        // The * closes first, and the _ inside it can no longer match.
+        #expect(parse("*a _b* c_") == ["a _b|I", " c_|R"])
+    }
+
+    // Two ~ strike through, as in GitHub's Markdown; one or three are text.
+    @Test func twoTildesStrikeThrough() {
+        #expect(parse("~~gone~~ here") == ["gone|R~", " here|R"])
+        #expect(parse("a ~~b *c*~~ d") == ["a |R", "b |R~", "c|I~", " d|R"])
+        #expect(parse("~5 and ~~~x~~~") == ["~5 and ~~~x~~~|R"])
+        #expect(parse("~~ a ~~") == ["~~ a ~~|R"])
+    }
+
+    // An address of http:// or https:// is a link: in < and >, or alone,
+    // without the punctuation at its end and a ) that closes no ( of its own.
+    @Test func anAddressIsALink() {
+        #expect(parse("see https://pdfjet.com.")
+                == ["see |R", "https://pdfjet.com|R https://pdfjet.com", "+.|R"])
+        #expect(parse("(https://pdfjet.com)")
+                == ["(|R", "+https://pdfjet.com|R https://pdfjet.com", "+)|R"])
+        #expect(parse("https://en.wikipedia.org/wiki/Foo_(bar)")
+                == ["https://en.wikipedia.org/wiki/Foo_(bar)|R https://en.wikipedia.org/wiki/Foo_(bar)"])
+        #expect(parse("go to http://a.b/c?d=1&e=2, then")
+                == ["go to |R", "http://a.b/c?d=1&e=2|R http://a.b/c?d=1&e=2", "+, then|R"])
+        #expect(parse("<https://pdfjet.com/a_b>") == ["https://pdfjet.com/a_b|R https://pdfjet.com/a_b"])
+        #expect(parse("*https://pdfjet.com*") == ["https://pdfjet.com|I https://pdfjet.com"])
+        #expect(parse("[text](https://x.com) https://y.com")
+                == ["text|R https://x.com", "https://y.com|R https://y.com"])
+        #expect(parse("xhttps://a.b") == ["xhttps://a.b|R"])
+        #expect(parse("http:// alone") == ["http:// alone|R"])
+        #expect(parse("<http://a b>") == ["<http://a b>|R"])
+    }
+
+    @Test func longAddressesAreReadInLinearTime() {
+        // The ) at the end of an address, and < that no > closes, would each
+        // take quadratic time with a naive search.
+        let text = "http://a" + String(repeating: ")", count: 40000)
+                + String(repeating: "<http://a_~", count: 20000)
         let clock = ContinuousClock()
         var paragraph: Paragraph?
         let elapsed = clock.measure {

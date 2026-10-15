@@ -705,7 +705,15 @@ public class TextFrame : Drawable {
                     withSpace.isLastToken = true
                     withSpace.setLocation(part.x + shift, yText).drawOn(page)
                 } else {
-                    part.textLine.copyWithText(part.text).setLocation(part.x + shift, yText).drawOn(page)
+                    let line = part.textLine.copyWithText(part.text)
+                    if lastRowOfParagraph && i == lastWithText && part.text.unicodeScalars.last == " " {
+                        // The last word of the paragraph, with the space that
+                        // every word has after it, left out of its underline
+                        // too: a link that ended a paragraph was underlined one
+                        // space too far (14 October 2026)
+                        line.isLastToken = true
+                    }
+                    line.setLocation(part.x + shift, yText).drawOn(page)
                 }
                 endParagraphElement(page)
                 if part.startsParagraph {

@@ -35,8 +35,9 @@ class MarkupTest {
     }
 
     // The text lines of the paragraph, each as its text and its font: R, B, I,
-    // X for bold italic, or C for code, with the link after a space, and a +
-    // before the text of one that is joined to the text line before it.
+    // X for bold italic, or C for code, then ~ when it is struck through, with
+    // the link after a space, and a + before the text of one that is joined to
+    // the text line before it.
     private static List<String> describe(Paragraph paragraph) {
         List<String> list = new ArrayList<String>();
         for (int i = 0; i < paragraph.lines.size(); i++) {
@@ -44,6 +45,9 @@ class MarkupTest {
             Font font = line.getFont();
             String style = (font == bold) ? "B" : (font == italic) ? "I"
                     : (font == boldItalic) ? "X" : (font == code) ? "C" : "R";
+            if (line.getStrikeout()) {
+                style += "~";
+            }
             String link = (line.getURIAction() == null) ? "" : " " + line.getURIAction();
             list.add((paragraph.joinsPrevious(i) ? "+" : "") + line.getText() + "|" + style + link);
         }
@@ -141,6 +145,69 @@ class MarkupTest {
         StringBuilder text = new StringBuilder();
         for (int i = 0; i < 20000; i++) {
             text.append("[a](b *c `").append(i % 50 == 0 ? "``" : "").append(" [[");
+        }
+        final Paragraph[] paragraph = new Paragraph[1];
+        long milliseconds = TestSupport.shortestMillis(2000, () -> paragraph[0] = markup().paragraph(text.toString()));
+        assertTrue(!paragraph[0].lines.isEmpty());
+        assertTrue(milliseconds < 2000, milliseconds + " ms");
+    }
+
+    // GitHub's Markdown: _ emphasizes as * does, but only at the edge of a
+    // word, so that snake_case and file names are text.
+    @Test
+    void underscoresEmphasizeAtTheEdgesOfWords() throws Exception {
+        assertEquals(Arrays.asList("italic|I", " and |R", "bold|B"), parse("_italic_ and __bold__"));
+        assertEquals(Arrays.asList("snake_case_name stays|R"), parse("snake_case_name stays"));
+        assertEquals(Arrays.asList("file_name and |R", "x|I"), parse("file_name and _x_"));
+        assertEquals(Arrays.asList("a |B", "b|X", " c|B"), parse("__a _b_ c__"));
+        assertEquals(Arrays.asList("(|R", "+x|I", "+)|R"), parse("(_x_)"));
+        assertEquals(Arrays.asList("_open only|R"), parse("_open only"));
+        // The * closes first, and the _ inside it can no longer match.
+        assertEquals(Arrays.asList("a _b|I", " c_|R"), parse("*a _b* c_"));
+    }
+
+    // Two ~ strike through, as in GitHub's Markdown; one or three are text.
+    @Test
+    void twoTildesStrikeThrough() throws Exception {
+        assertEquals(Arrays.asList("gone|R~", " here|R"), parse("~~gone~~ here"));
+        assertEquals(Arrays.asList("a |R", "b |R~", "c|I~", " d|R"), parse("a ~~b *c*~~ d"));
+        assertEquals(Arrays.asList("~5 and ~~~x~~~|R"), parse("~5 and ~~~x~~~"));
+        assertEquals(Arrays.asList("~~ a ~~|R"), parse("~~ a ~~"));
+    }
+
+    // An address of http:// or https:// is a link: in < and >, or alone,
+    // without the punctuation at its end and a ) that closes no ( of its own.
+    @Test
+    void anAddressIsALink() throws Exception {
+        assertEquals(Arrays.asList("see |R", "https://pdfjet.com|R https://pdfjet.com", "+.|R"),
+                parse("see https://pdfjet.com."));
+        assertEquals(Arrays.asList("(|R", "+https://pdfjet.com|R https://pdfjet.com", "+)|R"),
+                parse("(https://pdfjet.com)"));
+        assertEquals(Arrays.asList(
+                "https://en.wikipedia.org/wiki/Foo_(bar)|R https://en.wikipedia.org/wiki/Foo_(bar)"),
+                parse("https://en.wikipedia.org/wiki/Foo_(bar)"));
+        assertEquals(Arrays.asList("go to |R", "http://a.b/c?d=1&e=2|R http://a.b/c?d=1&e=2", "+, then|R"),
+                parse("go to http://a.b/c?d=1&e=2, then"));
+        assertEquals(Arrays.asList("https://pdfjet.com/a_b|R https://pdfjet.com/a_b"),
+                parse("<https://pdfjet.com/a_b>"));
+        assertEquals(Arrays.asList("https://pdfjet.com|I https://pdfjet.com"), parse("*https://pdfjet.com*"));
+        assertEquals(Arrays.asList("text|R https://x.com", "https://y.com|R https://y.com"),
+                parse("[text](https://x.com) https://y.com"));
+        assertEquals(Arrays.asList("xhttps://a.b|R"), parse("xhttps://a.b"));
+        assertEquals(Arrays.asList("http:// alone|R"), parse("http:// alone"));
+        assertEquals(Arrays.asList("<http://a b>|R"), parse("<http://a b>"));
+    }
+
+    @Test
+    void longAddressesAreReadInLinearTime() throws Exception {
+        // The ) at the end of an address, and < that no > closes, would each
+        // take quadratic time with a naive search.
+        StringBuilder text = new StringBuilder("http://a");
+        for (int i = 0; i < 40000; i++) {
+            text.append(')');
+        }
+        for (int i = 0; i < 20000; i++) {
+            text.append("<http://a_~");
         }
         final Paragraph[] paragraph = new Paragraph[1];
         long milliseconds = TestSupport.shortestMillis(2000, () -> paragraph[0] = markup().paragraph(text.toString()));

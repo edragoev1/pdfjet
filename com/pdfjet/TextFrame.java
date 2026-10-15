@@ -740,12 +740,21 @@ public class TextFrame implements Drawable {
             } else if (alignment == Alignment.CENTER) {
                 shift = (w - rowWidth) / 2f;
             }
+            RowPart lastWithText = lastWithText();
             for (RowPart part : row) {
                 beginParagraphElement(page, part.paragraph, part.x + shift, yText);
-                if (endSpace && part == lastWithText() && !part.text.endsWith(Single.space)) {
+                if (endSpace && part == lastWithText && !part.text.endsWith(Single.space)) {
                     // The space of the word break, drawn after the last word of
                     // the row, and left out of its underline
                     TextLine withSpace = part.textLine.copyWithText(part.text + Single.space);
+                    withSpace.isLastToken = true;
+                    withSpace.setLocation(part.x + shift, yText).drawOn(page);
+                } else if (lastRowOfParagraph && part == lastWithText && part.text.endsWith(Single.space)) {
+                    // The last word of the paragraph, with the space that every
+                    // word has after it, left out of its underline too: a link
+                    // that ended a paragraph was underlined one space too far
+                    // (14 October 2026)
+                    TextLine withSpace = part.textLine.copyWithText(part.text);
                     withSpace.isLastToken = true;
                     withSpace.setLocation(part.x + shift, yText).drawOn(page);
                 } else {

@@ -14,6 +14,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -473,6 +475,25 @@ class TextFrameTest {
     @Test
     void aLinkEndsBeforeTheSpaceAfterIt() throws Exception {
         checkALinkEndsBeforeTheSpaceAfterIt(false);
+    }
+
+    // A link that ends a paragraph has the space that every word has after it:
+    // its underline stopped one space after the word (14 October 2026).
+    @Test
+    void theUnderlineOfTheLastWordStopsAtTheWord() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        Paragraph paragraph = new Paragraph()
+                .add(new TextLine(font, "Tell the"))
+                .add(new TextLine(font, "users").setURIAction("https://pdfjet.com").setUnderline(true));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextFrame(Arrays.asList(paragraph)).setLocation(10f, 10f).setWidth(300f).drawOn(page);
+        String content = TestSupport.content(page);
+        Matcher line = Pattern.compile("([0-9.]+) [0-9.]+ m\n([0-9.]+) [0-9.]+ l").matcher(content);
+        assertTrue(line.find(), "no underline:\n" + content);
+        float x1 = Float.parseFloat(line.group(1));
+        float x2 = Float.parseFloat(line.group(2));
+        assertEquals(font.stringWidth(font.getSize(), "users"), x2 - x1, TestSupport.DELTA);
     }
 
     // Every text line is one word joined to the word before it, so the width

@@ -20,6 +20,14 @@ This is the first entry in this file; earlier releases were not tracked here.
   four ports: the color of the headings, which are in the color of the text
   unless it is set; of the links, blue unless it is set; and of the box of a
   task that is done, green, 0x1A7F37, unless it is set.
+- In `Markup`, and so in `Markdown`, in the four ports, the inline markup
+  of GitHub's Markdown that was drawn as it was typed: `_italic_` and
+  `__bold__`, which emphasize only at the edge of a word, so that
+  `snake_case` is text; `~~strikethrough~~`, two tildes, one or three being
+  text, as in `~5`; and links that are their address, `<https://pdfjet.com>`
+  or `https://pdfjet.com` alone, which ends before the punctuation at its
+  end, as the period of a sentence, and before a `)` that closes no `(` of
+  its own.
 
 ### Changed
 - The Go port asks for Go 1.26 or later, not 1.27: nothing in it needs
@@ -33,6 +41,11 @@ This is the first entry in this file; earlier releases were not tracked here.
   905 ms, against 845 ms in 9.0.1. In C# they take 11% less time, 2,296 ms
   where they took 2,576 ms; in Java and Swift about the same. The PDFs are
   the same, apart from their dates and IDs.
+
+### Fixed
+- A link, or any underlined or struck-through text, that ended a paragraph
+  of a `TextFrame`, as in `Markdown` and `Markup`, had its line drawn one
+  space past its last word, in the four ports.
 
 ## v9.0.7 — 2026-10-12
 

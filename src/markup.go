@@ -13,7 +13,12 @@ import (
 
 // Markup makes paragraphs of text with the inline markup of Markdown:
 // **bold**, *italic*, ***bold italic***, `code` and [links](https://pdfjet.com),
-// in the fonts given for each. A backslash before a punctuation character, as
+// in the fonts given for each, and as GitHub's Markdown has them, __bold__ and
+// _italic_, ~~strikethrough~~, and links that are their address,
+// <https://pdfjet.com> or https://pdfjet.com alone. An _ emphasizes only at
+// the edge of a word, so that snake_case is text; an address alone ends
+// before the punctuation at its end, as the period of a sentence, and before a
+// ) that closes no ( of its own. A backslash before a punctuation character, as
 // in \*, makes it plain text, and so is a mark that has no match, such as the
 // * of 2 * 3. Emphasis can be inside a link, and neither inside code. A word
 // keeps its punctuation next to it in another style, as in **bold**, with no
@@ -43,6 +48,7 @@ const (
 	markupBold   = 1
 	markupItalic = 2
 	markupCode   = 4
+	markupStrike = 8
 )
 
 // NewMarkup creates the markup of paragraphs in the fonts, each at its size.
@@ -155,6 +161,9 @@ func (markup *Markup) addRun(paragraph *Paragraph, text string, flags int, link 
 		font = markup.italic
 	}
 	textLine := NewTextLine(font, text)
+	if flags&markupStrike != 0 {
+		textLine.SetStrikeout(true)
+	}
 	if link != "" {
 		textLine.SetURIAction(link)
 		textLine.SetTextColor(markup.linkColor)
@@ -168,24 +177,28 @@ func (markup *Markup) addRun(paragraph *Paragraph, text string, flags int, link 
 	return true
 }
 
-// markupNode is text in one style, or a run of * that may open or close
-// emphasis, which is text too as far as it does not. The link is "" for text
-// that is not in a link: the URL of a link is never empty.
+// markupNode is text in one style, or a run of *, of _ or of ~~ that may open
+// or close emphasis or a strikethrough, which is text too as far as it does
+// not. The link is "" for text that is not in a link: the URL of a link is
+// never empty.
 type markupNode struct {
 	text  string
 	flags int
 	link  string
-	// Whether the node is a run of * whose emphasis is not matched yet, which
-	// is when Java's text is null.
+	// Whether the node is a run whose emphasis is not matched yet, which is
+	// when Java's text is null.
 	run bool
-	// Of a run of *: how many of them are not matched yet, whether they can
-	// open and close emphasis, and the emphasis the run opens and closes,
-	// counted in levels of the flags.
+	// Of a run: its character, *, _ or ~, where it is among the nodes, how
+	// many of its characters are not matched yet, whether they can open and
+	// close emphasis, and the emphasis the run opens and closes, counted in
+	// levels of bold, italic and strikethrough.
+	char     rune
+	index    int
 	count    int
 	canOpen  bool
 	canClose bool
-	opens    *[2]int
-	closes   *[2]int
+	opens    *[3]int
+	closes   *[3]int
 }
 
 type markupParser struct {
@@ -291,18 +304,41 @@ func (parser *markupParser) parse(start, end int, link string, nodes []*markupNo
 			} else {
 				i = close + length
 			}
-		} else if ch == '*' {
+		} else if ch == '*' || ch == '_' || ch == '~' {
 			length := 1
-			for i+length < end && text[i+length] == '*' {
+			for i+length < end && text[i+length] == ch {
 				length++
 			}
+			if ch == '~' && length != 2 {
+				// A strikethrough is two ~, and one or three are text, as in ~5
+				buf = append(buf, text[i:i+length]...)
+				i += length
+				continue
+			}
 			buf, nodes = markupFlush(buf, link, nodes)
-			run := &markupNode{link: link, run: true}
-			run.count = length
-			run.canOpen = i+length < end && !isJavaWhitespace(text[i+length])
-			run.canClose = i > start && !isJavaWhitespace(text[i-1])
+			run := &markupNode{link: link, run: true, char: ch, index: len(nodes), count: length}
+			// Before the run, or after it, a space, or the start or the end
+			left := i+length < end && !isJavaWhitespace(text[i+length])
+			right := i > start && !isJavaWhitespace(text[i-1])
+			run.canOpen = left
+			run.canClose = right
+			if ch == '_' {
+				// Inside a word, as in snake_case, an _ is text
+				run.canOpen = left && (!right || isASCIIPunctuation(text[i-1]))
+				run.canClose = right && (!left || isASCIIPunctuation(text[i+length]))
+			}
 			nodes = append(nodes, run)
 			i += length
+		} else if urlEnd := parser.autolinkEnd(i, start, end, link); urlEnd > i {
+			buf, nodes = markupFlush(buf, link, nodes)
+			if ch == '<' {
+				url := string(text[i+1 : urlEnd-1])
+				nodes = append(nodes, &markupNode{text: url, link: url})
+			} else {
+				url := string(text[i:urlEnd])
+				nodes = append(nodes, &markupNode{text: url, link: url})
+			}
+			i = urlEnd
 		} else if ch == '[' && link == "" && parser.isLink(i, end) {
 			close := parser.closingBracket[i]
 			urlEnd := parser.nextParenthesis[close+2]
@@ -333,6 +369,85 @@ func (parser *markupParser) isLink(i, end int) bool {
 	}
 	urlEnd := parser.nextParenthesis[close+2]
 	return urlEnd < end && urlEnd > close+2 && parser.nextSpace[close+2] > urlEnd
+}
+
+// autolinkEnd returns where a link that is its address ends, after its >
+// when it is in < and >, or i when there is none at i, or the text is in a
+// link already: an address of http:// or https:// and a host, in < and > with
+// no space in it, or alone, after a space, the start, a (, or a *, _ or ~ of
+// emphasis. An address alone ends at a space or a <, and then before the
+// punctuation at its end, ? ! . , : * _ and ~, and before each ) at its end
+// that closes no ( in it, as GitHub's Markdown reads it.
+func (parser *markupParser) autolinkEnd(i, start, end int, link string) int {
+	text := parser.text
+	if link != "" || (text[i] != '<' && text[i] != 'h') {
+		return i
+	}
+	from := i
+	if text[i] == '<' {
+		from = i + 1
+	} else if i > start && !isJavaWhitespace(text[i-1]) && !strings.ContainsRune("(*_~", text[i-1]) {
+		return i
+	}
+	host := markupSchemeEnd(text, from, end)
+	if host == -1 || host >= end || !markupIsHostChar(text[host]) {
+		return i
+	}
+	j := host
+	for j < end && !isJavaWhitespace(text[j]) && text[j] != '<' && text[j] != '>' {
+		j++
+	}
+	if text[i] == '<' {
+		if j < end && text[j] == '>' {
+			return j + 1
+		}
+		return i
+	}
+	opening := markupCount(text[from:j], '(')
+	closing := markupCount(text[from:j], ')')
+	for j > host {
+		last := text[j-1]
+		if strings.ContainsRune("?!.,:*_~", last) {
+			j--
+		} else if last == ')' && opening < closing {
+			j--
+			closing--
+		} else {
+			break
+		}
+	}
+	if j == host {
+		return i
+	}
+	return j
+}
+
+// markupSchemeEnd returns where the host starts after http:// or https:// at
+// the index, or -1.
+func markupSchemeEnd(text []rune, i, end int) int {
+	for _, scheme := range []string{"https://", "http://"} {
+		n := len(scheme)
+		if i+n <= end && string(text[i:i+n]) == scheme {
+			return i + n
+		}
+	}
+	return -1
+}
+
+// markupIsHostChar returns true for a letter, a digit or a character that is
+// not ASCII, as the first character of a host is.
+func markupIsHostChar(ch rune) bool {
+	return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch > 0x7F
+}
+
+func markupCount(text []rune, ch rune) int {
+	n := 0
+	for _, c := range text {
+		if c == ch {
+			n++
+		}
+	}
+	return n
 }
 
 // closingBackticks returns where the next run of backticks of the length
@@ -379,20 +494,43 @@ func markupFlush(buf []rune, link string, nodes []*markupNode) ([]rune, []*marku
 	return buf, nodes
 }
 
-// markupMatchEmphasis matches the runs of * from the index on, each closer
-// with the nearest opener before it: two of each make bold and one italic,
-// and the runs between them can no longer match. Then gives every node the
+// markupMatchEmphasis matches the runs from the index on, each closer with
+// the nearest opener of its character before it: two * or _ of each make bold
+// and one italic, and ~~ a strikethrough. The runs of * and _ between a
+// closer and its opener can no longer match. Then gives every node the
 // emphasis it is in, and turns what is left of each run into text.
 func markupMatchEmphasis(nodes []*markupNode, first int) {
-	openers := make([]*markupNode, 0)
+	// The runs that can still open, of *, of _ and of ~
+	var stars, underscores, tildes []*markupNode
 	for i := first; i < len(nodes); i++ {
 		node := nodes[i]
 		if !node.run {
 			continue
 		}
+		if node.char == '~' {
+			if node.canClose && len(tildes) > 0 {
+				opener := tildes[len(tildes)-1]
+				tildes = tildes[:len(tildes)-1]
+				opener.opens = markupAdd(opener.opens, markupStrike)
+				node.closes = markupAdd(node.closes, markupStrike)
+				opener.count = 0
+				node.count = 0
+			}
+			if node.count > 0 && node.canOpen {
+				tildes = append(tildes, node)
+			}
+			continue
+		}
+		own, other := &stars, &underscores
+		if node.char == '_' {
+			own, other = &underscores, &stars
+		}
 		if node.canClose {
-			for node.count > 0 && len(openers) > 0 {
-				opener := openers[len(openers)-1]
+			for node.count > 0 && len(*own) > 0 {
+				opener := (*own)[len(*own)-1]
+				for len(*other) > 0 && (*other)[len(*other)-1].index > opener.index {
+					*other = (*other)[:len(*other)-1]
+				}
 				use := 1
 				if node.count >= 2 && opener.count >= 2 {
 					use = 2
@@ -406,66 +544,73 @@ func markupMatchEmphasis(nodes []*markupNode, first int) {
 				opener.count -= use
 				node.count -= use
 				if opener.count == 0 {
-					openers = openers[:len(openers)-1]
+					*own = (*own)[:len(*own)-1]
 				}
 			}
 		}
 		if node.count > 0 && node.canOpen {
-			openers = append(openers, node)
+			*own = append(*own, node)
 		}
 	}
 	// The emphasis in effect, in levels, since bold can be in bold.
-	boldLevel := 0
-	italicLevel := 0
+	var levels [3]int
 	for i := first; i < len(nodes); i++ {
 		node := nodes[i]
 		if node.run {
-			boldLevel -= markupLevel(node.closes, markupBold)
-			italicLevel -= markupLevel(node.closes, markupItalic)
-			node.text = strings.Repeat("*", node.count)
+			for k := range levels {
+				levels[k] -= markupLevel(node.closes, k)
+			}
+			node.text = strings.Repeat(string(node.char), node.count)
 			node.run = false
-			node.flags = markupEmphasis(boldLevel, italicLevel)
-			boldLevel += markupLevel(node.opens, markupBold)
-			italicLevel += markupLevel(node.opens, markupItalic)
+			node.flags = markupEmphasis(levels)
+			for k := range levels {
+				levels[k] += markupLevel(node.opens, k)
+			}
 		} else {
-			node.flags |= markupEmphasis(boldLevel, italicLevel)
+			node.flags |= markupEmphasis(levels)
 		}
 	}
 }
 
-func markupEmphasis(boldLevel, italicLevel int) int {
+// markupEmphasis returns the flags of the levels of bold, italic and
+// strikethrough in effect.
+func markupEmphasis(levels [3]int) int {
 	flags := 0
-	if boldLevel > 0 {
+	if levels[0] > 0 {
 		flags |= markupBold
 	}
-	if italicLevel > 0 {
+	if levels[1] > 0 {
 		flags |= markupItalic
+	}
+	if levels[2] > 0 {
+		flags |= markupStrike
 	}
 	return flags
 }
 
-// markupAdd returns the levels of bold and of italic, [bold, italic], with one
+// markupAdd returns the levels of bold, italic and strikethrough with one
 // more of the flag.
-func markupAdd(levels *[2]int, flag int) *[2]int {
+func markupAdd(levels *[3]int, flag int) *[3]int {
 	if levels == nil {
-		levels = new([2]int)
+		levels = new([3]int)
 	}
-	if flag == markupBold {
+	switch flag {
+	case markupBold:
 		levels[0]++
-	} else {
+	case markupItalic:
 		levels[1]++
+	default:
+		levels[2]++
 	}
 	return levels
 }
 
-func markupLevel(levels *[2]int, flag int) int {
+// markupLevel returns the level of bold (0), italic (1) or strikethrough (2).
+func markupLevel(levels *[3]int, k int) int {
 	if levels == nil {
 		return 0
 	}
-	if flag == markupBold {
-		return levels[0]
-	}
-	return levels[1]
+	return levels[k]
 }
 
 func isASCIIPunctuation(ch rune) bool {

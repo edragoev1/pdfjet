@@ -11,8 +11,13 @@ import java.util.*;
 /**
  * Makes paragraphs of text with the inline markup of Markdown: **bold**,
  * *italic*, ***bold italic***, `code` and [links](https://pdfjet.com), in the
- * fonts given for each. A backslash before a punctuation character, as in \*,
- * makes it plain text, and so is a mark that has no match, such as the * of
+ * fonts given for each, and as GitHub's Markdown has them, __bold__ and
+ * _italic_, ~~strikethrough~~, and links that are their address,
+ * &lt;https://pdfjet.com&gt; or https://pdfjet.com alone. An _ emphasizes only
+ * at the edge of a word, so that snake_case is text; an address alone ends
+ * before the punctuation at its end, as the period of a sentence, and before a
+ * ) that closes no ( of its own. A backslash before a punctuation character,
+ * as in \*, makes it plain text, and so is a mark that has no match, such as the * of
  * 2 * 3. Emphasis can be inside a link, and neither inside code. A word keeps
  * its punctuation next to it in another style, as in **bold**, with no space
  * between them: the paragraph joins its text lines with Paragraph.addJoined.
@@ -26,6 +31,7 @@ public class Markup {
     private static final int BOLD = 1;
     private static final int ITALIC = 2;
     private static final int CODE = 4;
+    private static final int STRIKE = 8;
 
     private final Font regular;
     private final Font bold;
@@ -155,6 +161,9 @@ public class Markup {
                 : ((flags & BOLD) != 0) ? bold
                 : ((flags & ITALIC) != 0) ? italic : regular;
         TextLine textLine = new TextLine(font, text);
+        if ((flags & STRIKE) != 0) {
+            textLine.setStrikeout(true);
+        }
         if (link != null) {
             textLine.setURIAction(link);
             textLine.setTextColor(linkColor);
@@ -168,15 +177,20 @@ public class Markup {
         return true;
     }
 
-    // Text in one style, or a run of * that may open or close emphasis, which
-    // is text too as far as it does not.
+    // Text in one style, or a run of *, of _ or of ~~ that may open or close
+    // emphasis or a strikethrough, which is text too as far as it does not.
+    // The text is null while the node is a run whose emphasis is not matched
+    // yet.
     private static final class Node {
         String text;
         int flags;
         String link;
-        // Of a run of *: how many of them are not matched yet, whether they can
-        // open and close emphasis, and the emphasis the run opens and closes,
-        // counted in levels of the flags.
+        // Of a run: its character, *, _ or ~, where it is among the nodes, how
+        // many of its characters are not matched yet, whether they can open and
+        // close emphasis, and the emphasis the run opens and closes, counted in
+        // levels of bold, italic and strikethrough.
+        char ch;
+        int index;
         int count;
         boolean canOpen;
         boolean canClose;
@@ -250,13 +264,14 @@ public class Markup {
         }
 
         // Reads the text from start to end into nodes, all in the link when it
-        // is not null, with the emphasis of the runs of * matched.
+        // is not null, with the emphasis of the runs of *, _ and ~~ matched.
         void parse(int start, int end, String link, List<Node> nodes) {
             int first = nodes.size();
             StringBuilder buf = new StringBuilder();
             int i = start;
             while (i < end) {
                 char ch = text.charAt(i);
+                int addressEnd;
                 if (ch == '\\' && i + 1 < end && isASCIIPunctuation(text.charAt(i + 1))) {
                     buf.append(text.charAt(i + 1));
                     i += 2;
@@ -273,18 +288,39 @@ public class Markup {
                         nodes.add(new Node(codeText(text.substring(i + length, close)), CODE, link));
                     }
                     i = (close == -1) ? i + length : close + length;
-                } else if (ch == '*') {
+                } else if (ch == '*' || ch == '_' || ch == '~') {
                     int length = 1;
-                    while (i + length < end && text.charAt(i + length) == '*') {
+                    while (i + length < end && text.charAt(i + length) == ch) {
                         length++;
+                    }
+                    if (ch == '~' && length != 2) {
+                        // A strikethrough is two ~, and one or three are text, as in ~5
+                        buf.append(text, i, i + length);
+                        i += length;
+                        continue;
                     }
                     flush(buf, link, nodes);
                     Node run = new Node(null, 0, link);
+                    run.ch = ch;
+                    run.index = nodes.size();
                     run.count = length;
-                    run.canOpen = i + length < end && !Character.isWhitespace(text.charAt(i + length));
-                    run.canClose = i > start && !Character.isWhitespace(text.charAt(i - 1));
+                    // Before the run, or after it, a space, or the start or the end
+                    boolean left = i + length < end && !Character.isWhitespace(text.charAt(i + length));
+                    boolean right = i > start && !Character.isWhitespace(text.charAt(i - 1));
+                    run.canOpen = left;
+                    run.canClose = right;
+                    if (ch == '_') {
+                        // Inside a word, as in snake_case, an _ is text
+                        run.canOpen = left && (!right || isASCIIPunctuation(text.charAt(i - 1)));
+                        run.canClose = right && (!left || isASCIIPunctuation(text.charAt(i + length)));
+                    }
                     nodes.add(run);
                     i += length;
+                } else if ((addressEnd = autolinkEnd(i, start, end, link)) > i) {
+                    flush(buf, link, nodes);
+                    String url = (ch == '<') ? text.substring(i + 1, addressEnd - 1) : text.substring(i, addressEnd);
+                    nodes.add(new Node(url, 0, url));
+                    i = addressEnd;
                 } else if (ch == '[' && link == null && isLink(i, end)) {
                     int close = closingBracket[i];
                     int urlEnd = nextParenthesis[close + 2];
@@ -309,6 +345,80 @@ public class Markup {
             }
             int urlEnd = nextParenthesis[close + 2];
             return urlEnd < end && urlEnd > close + 2 && nextSpace[close + 2] > urlEnd;
+        }
+
+        // Returns where a link that is its address ends, after its > when it is
+        // in < and >, or i when there is none at i, or the text is in a link
+        // already: an address of http:// or https:// and a host, in < and >
+        // with no space in it, or alone, after a space, the start, a (, or a *,
+        // _ or ~ of emphasis. An address alone ends at a space or a <, and then
+        // before the punctuation at its end, ? ! . , : * _ and ~, and before
+        // each ) at its end that closes no ( in it, as GitHub's Markdown reads it.
+        private int autolinkEnd(int i, int start, int end, String link) {
+            if (link != null || (text.charAt(i) != '<' && text.charAt(i) != 'h')) {
+                return i;
+            }
+            int from = i;
+            if (text.charAt(i) == '<') {
+                from = i + 1;
+            } else if (i > start && !Character.isWhitespace(text.charAt(i - 1))
+                    && "(*_~".indexOf(text.charAt(i - 1)) == -1) {
+                return i;
+            }
+            int host = schemeEnd(from, end);
+            if (host == -1 || host >= end || !isHostChar(text.charAt(host))) {
+                return i;
+            }
+            int j = host;
+            while (j < end && !Character.isWhitespace(text.charAt(j))
+                    && text.charAt(j) != '<' && text.charAt(j) != '>') {
+                j++;
+            }
+            if (text.charAt(i) == '<') {
+                return (j < end && text.charAt(j) == '>') ? j + 1 : i;
+            }
+            int opening = count(from, j, '(');
+            int closing = count(from, j, ')');
+            while (j > host) {
+                char last = text.charAt(j - 1);
+                if ("?!.,:*_~".indexOf(last) != -1) {
+                    j--;
+                } else if (last == ')' && opening < closing) {
+                    j--;
+                    closing--;
+                } else {
+                    break;
+                }
+            }
+            return (j == host) ? i : j;
+        }
+
+        // Returns where the host starts after http:// or https:// at the
+        // index, or -1.
+        private int schemeEnd(int i, int end) {
+            for (String scheme : new String[] {"https://", "http://"}) {
+                int n = scheme.length();
+                if (i + n <= end && text.startsWith(scheme, i)) {
+                    return i + n;
+                }
+            }
+            return -1;
+        }
+
+        // Returns true for a letter, a digit or a character that is not ASCII,
+        // as the first character of a host is.
+        private static boolean isHostChar(char ch) {
+            return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch > 0x7F;
+        }
+
+        private int count(int from, int to, char ch) {
+            int n = 0;
+            for (int k = from; k < to; k++) {
+                if (text.charAt(k) == ch) {
+                    n++;
+                }
+            }
+            return n;
         }
 
         // Returns where the next run of backticks of the length starts, after
@@ -347,20 +457,42 @@ public class Markup {
             }
         }
 
-        // Matches the runs of * from the index on, each closer with the nearest
-        // opener before it: two of each make bold and one italic, and the runs
-        // between them can no longer match. Then gives every node the emphasis
-        // it is in, and turns what is left of each run into text.
+        // Matches the runs from the index on, each closer with the nearest
+        // opener of its character before it: two * or _ of each make bold and
+        // one italic, and ~~ a strikethrough. The runs of * and _ between a
+        // closer and its opener can no longer match. Then gives every node the
+        // emphasis it is in, and turns what is left of each run into text.
         private static void matchEmphasis(List<Node> nodes, int first) {
-            Deque<Node> openers = new ArrayDeque<Node>();
+            // The runs that can still open, of *, of _ and of ~
+            Deque<Node> stars = new ArrayDeque<Node>();
+            Deque<Node> underscores = new ArrayDeque<Node>();
+            Deque<Node> tildes = new ArrayDeque<Node>();
             for (int i = first; i < nodes.size(); i++) {
                 Node node = nodes.get(i);
                 if (node.text != null) {
                     continue;
                 }
+                if (node.ch == '~') {
+                    if (node.canClose && !tildes.isEmpty()) {
+                        Node opener = tildes.pop();
+                        opener.opens = add(opener.opens, STRIKE);
+                        node.closes = add(node.closes, STRIKE);
+                        opener.count = 0;
+                        node.count = 0;
+                    }
+                    if (node.count > 0 && node.canOpen) {
+                        tildes.push(node);
+                    }
+                    continue;
+                }
+                Deque<Node> own = (node.ch == '_') ? underscores : stars;
+                Deque<Node> other = (node.ch == '_') ? stars : underscores;
                 if (node.canClose) {
-                    while (node.count > 0 && !openers.isEmpty()) {
-                        Node opener = openers.peek();
+                    while (node.count > 0 && !own.isEmpty()) {
+                        Node opener = own.peek();
+                        while (!other.isEmpty() && other.peek().index > opener.index) {
+                            other.pop();
+                        }
                         int use = (node.count >= 2 && opener.count >= 2) ? 2 : 1;
                         int flag = (use == 2) ? BOLD : ITALIC;
                         opener.opens = add(opener.opens, flag);
@@ -368,47 +500,51 @@ public class Markup {
                         opener.count -= use;
                         node.count -= use;
                         if (opener.count == 0) {
-                            openers.pop();
+                            own.pop();
                         }
                     }
                 }
                 if (node.count > 0 && node.canOpen) {
-                    openers.push(node);
+                    own.push(node);
                 }
             }
             // The emphasis in effect, in levels, since bold can be in bold.
-            int boldLevel = 0;
-            int italicLevel = 0;
+            int[] levels = new int[3];
             for (int i = first; i < nodes.size(); i++) {
                 Node node = nodes.get(i);
                 if (node.text == null) {
-                    boldLevel -= level(node.closes, BOLD);
-                    italicLevel -= level(node.closes, ITALIC);
-                    node.text = repeat('*', node.count);
-                    node.flags = emphasis(boldLevel, italicLevel);
-                    boldLevel += level(node.opens, BOLD);
-                    italicLevel += level(node.opens, ITALIC);
+                    for (int k = 0; k < levels.length; k++) {
+                        levels[k] -= level(node.closes, k);
+                    }
+                    node.text = repeat(node.ch, node.count);
+                    node.flags = emphasis(levels);
+                    for (int k = 0; k < levels.length; k++) {
+                        levels[k] += level(node.opens, k);
+                    }
                 } else {
-                    node.flags |= emphasis(boldLevel, italicLevel);
+                    node.flags |= emphasis(levels);
                 }
             }
         }
 
-        private static int emphasis(int boldLevel, int italicLevel) {
-            return ((boldLevel > 0) ? BOLD : 0) | ((italicLevel > 0) ? ITALIC : 0);
+        // The flags of the levels of bold, italic and strikethrough in effect.
+        private static int emphasis(int[] levels) {
+            return ((levels[0] > 0) ? BOLD : 0) | ((levels[1] > 0) ? ITALIC : 0)
+                    | ((levels[2] > 0) ? STRIKE : 0);
         }
 
-        // The levels of bold and of italic, [bold, italic], with one more of the flag.
+        // The levels of bold, italic and strikethrough with one more of the flag.
         private static int[] add(int[] levels, int flag) {
             if (levels == null) {
-                levels = new int[2];
+                levels = new int[3];
             }
-            levels[(flag == BOLD) ? 0 : 1]++;
+            levels[(flag == BOLD) ? 0 : (flag == ITALIC) ? 1 : 2]++;
             return levels;
         }
 
-        private static int level(int[] levels, int flag) {
-            return (levels == null) ? 0 : levels[(flag == BOLD) ? 0 : 1];
+        // The level of bold (0), italic (1) or strikethrough (2).
+        private static int level(int[] levels, int k) {
+            return (levels == null) ? 0 : levels[k];
         }
 
         private static String repeat(char ch, int count) {

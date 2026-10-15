@@ -32,8 +32,9 @@ public class MarkupTest {
     }
 
     // The text lines of the paragraph, each as its text and its font: R, B, I,
-    // X for bold italic, or C for code, with the link after a space, and a +
-    // before the text of one that is joined to the text line before it.
+    // X for bold italic, or C for code, then ~ when it is struck through, with
+    // the link after a space, and a + before the text of one that is joined to
+    // the text line before it.
     private List<String> Describe(Paragraph paragraph) {
         List<String> list = new List<String>();
         for (int i = 0; i < paragraph.lines.Count; i++) {
@@ -41,6 +42,9 @@ public class MarkupTest {
             Font font = line.GetFont();
             String style = (font == bold) ? "B" : (font == italic) ? "I"
                     : (font == boldItalic) ? "X" : (font == code) ? "C" : "R";
+            if (line.GetStrikeout()) {
+                style += "~";
+            }
             String link = (line.GetURIAction() == null) ? "" : " " + line.GetURIAction();
             list.Add((paragraph.JoinsPrevious(i) ? "+" : "") + line.GetText() + "|" + style + link);
         }
@@ -141,6 +145,68 @@ public class MarkupTest {
         StringBuilder text = new StringBuilder();
         for (int i = 0; i < 20000; i++) {
             text.Append("[a](b *c `").Append(i % 50 == 0 ? "``" : "").Append(" [[");
+        }
+        Paragraph paragraph = null;
+        long milliseconds = TestSupport.ShortestMillis(2000, () => paragraph = NewMarkup().Paragraph(text.ToString()));
+        Assert.NotEmpty(paragraph.lines);
+        Assert.True(milliseconds < 2000, milliseconds + " ms");
+    }
+
+    // GitHub's Markdown: _ emphasizes as * does, but only at the edge of a word,
+    // so that snake_case and file names are text.
+    [Fact]
+    public void UnderscoresEmphasizeAtTheEdgesOfWords() {
+        Assert.Equal(Lines("italic|I", " and |R", "bold|B"), Parse("_italic_ and __bold__"));
+        Assert.Equal(Lines("snake_case_name stays|R"), Parse("snake_case_name stays"));
+        Assert.Equal(Lines("file_name and |R", "x|I"), Parse("file_name and _x_"));
+        Assert.Equal(Lines("a |B", "b|X", " c|B"), Parse("__a _b_ c__"));
+        Assert.Equal(Lines("(|R", "+x|I", "+)|R"), Parse("(_x_)"));
+        Assert.Equal(Lines("_open only|R"), Parse("_open only"));
+        // The * closes first, and the _ inside it can no longer match.
+        Assert.Equal(Lines("a _b|I", " c_|R"), Parse("*a _b* c_"));
+    }
+
+    // Two ~ strike through, as in GitHub's Markdown; one or three are text.
+    [Fact]
+    public void TwoTildesStrikeThrough() {
+        Assert.Equal(Lines("gone|R~", " here|R"), Parse("~~gone~~ here"));
+        Assert.Equal(Lines("a |R", "b |R~", "c|I~", " d|R"), Parse("a ~~b *c*~~ d"));
+        Assert.Equal(Lines("~5 and ~~~x~~~|R"), Parse("~5 and ~~~x~~~"));
+        Assert.Equal(Lines("~~ a ~~|R"), Parse("~~ a ~~"));
+    }
+
+    // An address of http:// or https:// is a link: in < and >, or alone,
+    // without the punctuation at its end and a ) that closes no ( of its own.
+    [Fact]
+    public void AnAddressIsALink() {
+        Assert.Equal(Lines("see |R", "https://pdfjet.com|R https://pdfjet.com", "+.|R"),
+                Parse("see https://pdfjet.com."));
+        Assert.Equal(Lines("(|R", "+https://pdfjet.com|R https://pdfjet.com", "+)|R"),
+                Parse("(https://pdfjet.com)"));
+        Assert.Equal(Lines("https://en.wikipedia.org/wiki/Foo_(bar)|R https://en.wikipedia.org/wiki/Foo_(bar)"),
+                Parse("https://en.wikipedia.org/wiki/Foo_(bar)"));
+        Assert.Equal(Lines("go to |R", "http://a.b/c?d=1&e=2|R http://a.b/c?d=1&e=2", "+, then|R"),
+                Parse("go to http://a.b/c?d=1&e=2, then"));
+        Assert.Equal(Lines("https://pdfjet.com/a_b|R https://pdfjet.com/a_b"), Parse("<https://pdfjet.com/a_b>"));
+        Assert.Equal(Lines("https://pdfjet.com|I https://pdfjet.com"), Parse("*https://pdfjet.com*"));
+        Assert.Equal(Lines("text|R https://x.com", "https://y.com|R https://y.com"),
+                Parse("[text](https://x.com) https://y.com"));
+        Assert.Equal(Lines("xhttps://a.b|R"), Parse("xhttps://a.b"));
+        Assert.Equal(Lines("http:// alone|R"), Parse("http:// alone"));
+        Assert.Equal(Lines("<http://a b>|R"), Parse("<http://a b>"));
+    }
+
+    [Fact]
+    public void LongAddressesAreReadInLinearTime() {
+        // The ) at the end of an address, and < that no > closes, would each
+        // take quadratic time with a naive search.
+        StringBuilder text = new StringBuilder();
+        text.Append("http://a");
+        for (int i = 0; i < 40000; i++) {
+            text.Append(')');
+        }
+        for (int i = 0; i < 20000; i++) {
+            text.Append("<http://a_~");
         }
         Paragraph paragraph = null;
         long milliseconds = TestSupport.ShortestMillis(2000, () => paragraph = NewMarkup().Paragraph(text.ToString()));

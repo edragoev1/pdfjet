@@ -33,9 +33,9 @@ func testMarkup(pdf *PDF) (*Markup, *testMarkupFonts) {
 }
 
 // testDescribeMarkup returns the text lines of the paragraph, each as its text
-// and its font: R, B, I, X for bold italic, or C for code, with the link after
-// a space, and a + before the text of one that is joined to the text line
-// before it.
+// and its font: R, B, I, X for bold italic, or C for code, then ~ when it is
+// struck through, with the link after a space, and a + before the text of one
+// that is joined to the text line before it.
 func testDescribeMarkup(paragraph *Paragraph, fonts *testMarkupFonts) []string {
 	list := make([]string, 0)
 	for i, line := range paragraph.lines {
@@ -49,6 +49,9 @@ func testDescribeMarkup(paragraph *Paragraph, fonts *testMarkupFonts) []string {
 			style = "X"
 		case fonts.code:
 			style = "C"
+		}
+		if line.strikeout {
+			style += "~"
 		}
 		link := ""
 		if line.GetURIAction() != "" {
@@ -175,6 +178,69 @@ func TestMarkupLongInputsAreReadInLinearTime(t *testing.T) {
 			text.WriteString("``")
 		}
 		text.WriteString(" [[")
+	}
+	markup, _ := testMarkup(testNewPDF())
+	var paragraph *Paragraph
+	elapsed := testShortest(2*time.Second, func() { paragraph = markup.Paragraph(text.String()) })
+	if len(paragraph.lines) == 0 {
+		t.Error("no text lines")
+	}
+	if elapsed > 2*time.Second {
+		t.Errorf("%v", elapsed)
+	}
+}
+
+// GitHub's Markdown: _ emphasizes as * does, but only at the edge of a word,
+// so that snake_case and file names are text.
+func TestMarkupUnderscoresEmphasizeAtTheEdgesOfWords(t *testing.T) {
+	testAssertMarkup(t,
+		[]string{"_italic_ and __bold__", "italic|I", " and |R", "bold|B"},
+		[]string{"snake_case_name stays", "snake_case_name stays|R"},
+		[]string{"file_name and _x_", "file_name and |R", "x|I"},
+		[]string{"__a _b_ c__", "a |B", "b|X", " c|B"},
+		[]string{"(_x_)", "(|R", "+x|I", "+)|R"},
+		[]string{"_open only", "_open only|R"},
+		// The * closes first, and the _ inside it can no longer match.
+		[]string{"*a _b* c_", "a _b|I", " c_|R"})
+}
+
+// Two ~ strike through, as in GitHub's Markdown; one or three are text.
+func TestMarkupTwoTildesStrikeThrough(t *testing.T) {
+	testAssertMarkup(t,
+		[]string{"~~gone~~ here", "gone|R~", " here|R"},
+		[]string{"a ~~b *c*~~ d", "a |R", "b |R~", "c|I~", " d|R"},
+		[]string{"~5 and ~~~x~~~", "~5 and ~~~x~~~|R"},
+		[]string{"~~ a ~~", "~~ a ~~|R"})
+}
+
+// An address of http:// or https:// is a link: in < and >, or alone, without
+// the punctuation at its end and a ) that closes no ( of its own.
+func TestMarkupAnAddressIsALink(t *testing.T) {
+	testAssertMarkup(t,
+		[]string{"see https://pdfjet.com.", "see |R", "https://pdfjet.com|R https://pdfjet.com", "+.|R"},
+		[]string{"(https://pdfjet.com)", "(|R", "+https://pdfjet.com|R https://pdfjet.com", "+)|R"},
+		[]string{"https://en.wikipedia.org/wiki/Foo_(bar)",
+			"https://en.wikipedia.org/wiki/Foo_(bar)|R https://en.wikipedia.org/wiki/Foo_(bar)"},
+		[]string{"go to http://a.b/c?d=1&e=2, then",
+			"go to |R", "http://a.b/c?d=1&e=2|R http://a.b/c?d=1&e=2", "+, then|R"},
+		[]string{"<https://pdfjet.com/a_b>", "https://pdfjet.com/a_b|R https://pdfjet.com/a_b"},
+		[]string{"*https://pdfjet.com*", "https://pdfjet.com|I https://pdfjet.com"},
+		[]string{"[text](https://x.com) https://y.com", "text|R https://x.com", "https://y.com|R https://y.com"},
+		[]string{"xhttps://a.b", "xhttps://a.b|R"},
+		[]string{"http:// alone", "http:// alone|R"},
+		[]string{"<http://a b>", "<http://a b>|R"})
+}
+
+func TestMarkupLongAddressesAreReadInLinearTime(t *testing.T) {
+	// The ) at the end of an address, and < that no > closes, would each
+	// take quadratic time with a naive search.
+	var text strings.Builder
+	text.WriteString("http://a")
+	for i := 0; i < 40000; i++ {
+		text.WriteString(")")
+	}
+	for i := 0; i < 20000; i++ {
+		text.WriteString("<http://a_~")
 	}
 	markup, _ := testMarkup(testNewPDF())
 	var paragraph *Paragraph

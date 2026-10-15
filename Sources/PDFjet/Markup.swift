@@ -9,9 +9,14 @@ import Foundation
 ///
 /// Makes paragraphs of text with the inline markup of Markdown: **bold**,
 /// *italic*, ***bold italic***, `code` and [links](https://pdfjet.com), in the
-/// fonts given for each. A backslash before a punctuation character, as in \*,
-/// makes it plain text, and so is a mark that has no match, such as the * of
-/// 2 * 3. Emphasis can be inside a link, and neither inside code. A word keeps
+/// fonts given for each, and as GitHub's Markdown has them, __bold__ and
+/// _italic_, ~~strikethrough~~, and links that are their address,
+/// <https://pdfjet.com> or https://pdfjet.com alone. An _ emphasizes only at
+/// the edge of a word, so that snake_case is text; an address alone ends
+/// before the punctuation at its end, as the period of a sentence, and before
+/// a ) that closes no ( of its own. A backslash before a punctuation character,
+/// as in \*, makes it plain text, and so is a mark that has no match, such as
+/// the * of 2 * 3. Emphasis can be inside a link, and neither inside code. A word keeps
 /// its punctuation next to it in another style, as in **bold**, with no space
 /// between them: the paragraph joins its text lines with Paragraph.addJoined.
 ///
@@ -24,6 +29,7 @@ public class Markup {
     private static let BOLD = 1
     private static let ITALIC = 2
     private static let CODE = 4
+    private static let STRIKE = 8
 
     private let regular: Font
     private let bold: Font
@@ -167,6 +173,9 @@ public class Markup {
                 : ((flags & Markup.BOLD) != 0) ? bold
                 : ((flags & Markup.ITALIC) != 0) ? italic : regular
         let textLine = TextLine(font, text)
+        if (flags & Markup.STRIKE) != 0 {
+            textLine.setStrikeout(true)
+        }
         if let link {
             textLine.setURIAction(link)
             textLine.setTextColor(linkColor)
@@ -198,15 +207,19 @@ public class Markup {
         return String.isJavaWhitespace(scalar)
     }
 
-    // Text in one style, or a run of * that may open or close emphasis, which
-    // is text too as far as it does not.
+    // Text in one style, or a run of *, of _ or of ~~ that may open or close
+    // emphasis or a strikethrough, which is text too as far as it does not.
+    // The text is nil while the run's emphasis is not matched yet.
     private final class Node {
         var text: String?
         var flags: Int
         var link: String?
-        // Of a run of *: how many of them are not matched yet, whether they can
-        // open and close emphasis, and the emphasis the run opens and closes,
-        // counted in levels of the flags.
+        // Of a run: its character, *, _ or ~, where it is among the nodes, how
+        // many of its characters are not matched yet, whether they can open
+        // and close emphasis, and the emphasis the run opens and closes,
+        // counted in levels of bold, italic and strikethrough.
+        var char: UInt16 = 0
+        var index = 0
         var count = 0
         var canOpen = false
         var canClose = false
@@ -288,6 +301,11 @@ public class Markup {
         private static let backslash = UInt16(UInt8(ascii: "\\"))
         private static let backtick = UInt16(UInt8(ascii: "`"))
         private static let star = UInt16(UInt8(ascii: "*"))
+        private static let underscore = UInt16(UInt8(ascii: "_"))
+        private static let tilde = UInt16(UInt8(ascii: "~"))
+        private static let lessThan = UInt16(UInt8(ascii: "<"))
+        private static let greaterThan = UInt16(UInt8(ascii: ">"))
+        private static let letterH = UInt16(UInt8(ascii: "h"))
         private static let openBracket = UInt16(UInt8(ascii: "["))
         private static let closeBracket = UInt16(UInt8(ascii: "]"))
         private static let openParenthesis = UInt16(UInt8(ascii: "("))
@@ -318,18 +336,41 @@ public class Markup {
                         nodes.append(Node(Parser.codeText(text[(i + length)..<close]), Markup.CODE, link))
                     }
                     i = (close == -1) ? i + length : close + length
-                } else if ch == Parser.star {
+                } else if ch == Parser.star || ch == Parser.underscore || ch == Parser.tilde {
                     var length = 1
-                    while i + length < end && text[i + length] == Parser.star {
+                    while i + length < end && text[i + length] == ch {
                         length += 1
+                    }
+                    if ch == Parser.tilde && length != 2 {
+                        // A strikethrough is two ~, and one or three are text, as in ~5
+                        buf.append(contentsOf: text[i..<(i + length)])
+                        i += length
+                        continue
                     }
                     Parser.flush(&buf, link, &nodes)
                     let run = Node(nil, 0, link)
+                    run.char = ch
+                    run.index = nodes.count
                     run.count = length
-                    run.canOpen = i + length < end && !Markup.isWhitespace(text[i + length])
-                    run.canClose = i > start && !Markup.isWhitespace(text[i - 1])
+                    // Before the run, or after it, a space, or the start or the end
+                    let left = i + length < end && !Markup.isWhitespace(text[i + length])
+                    let right = i > start && !Markup.isWhitespace(text[i - 1])
+                    run.canOpen = left
+                    run.canClose = right
+                    if ch == Parser.underscore {
+                        // Inside a word, as in snake_case, an _ is text
+                        run.canOpen = left && (!right || Parser.isASCIIPunctuation(text[i - 1]))
+                        run.canClose = right && (!left || Parser.isASCIIPunctuation(text[i + length]))
+                    }
                     nodes.append(run)
                     i += length
+                } else if case let urlEnd = autolinkEnd(i, start, end, link), urlEnd > i {
+                    Parser.flush(&buf, link, &nodes)
+                    let url = (ch == Parser.lessThan)
+                            ? Parser.string(text[(i + 1)..<(urlEnd - 1)])
+                            : Parser.string(text[i..<urlEnd])
+                    nodes.append(Node(url, 0, url))
+                    i = urlEnd
                 } else if ch == Parser.openBracket && link == nil && isLink(i, end) {
                     let close = closingBracket[i]
                     let urlEnd = nextParenthesis[close + 2]
@@ -354,6 +395,94 @@ public class Markup {
             }
             let urlEnd = nextParenthesis[close + 2]
             return urlEnd < end && urlEnd > close + 2 && nextSpace[close + 2] > urlEnd
+        }
+
+        // Returns where a link that is its address ends, after its > when it
+        // is in < and >, or i when there is none at i, or the text is in a link
+        // already: an address of http:// or https:// and a host, in < and >
+        // with no space in it, or alone, after a space, the start, a (, or a *,
+        // _ or ~ of emphasis. An address alone ends at a space or a <, and then
+        // before the punctuation at its end, ? ! . , : * _ and ~, and before
+        // each ) at its end that closes no ( in it, as GitHub's Markdown reads it.
+        private func autolinkEnd(_ i: Int, _ start: Int, _ end: Int, _ link: String?) -> Int {
+            if link != nil || (text[i] != Parser.lessThan && text[i] != Parser.letterH) {
+                return i
+            }
+            var from = i
+            if text[i] == Parser.lessThan {
+                from = i + 1
+            } else if i > start && !Markup.isWhitespace(text[i - 1]) && !Parser.isAutolinkStart(text[i - 1]) {
+                return i
+            }
+            let host = schemeEnd(from, end)
+            if host == -1 || host >= end || !Parser.isHostChar(text[host]) {
+                return i
+            }
+            var j = host
+            while j < end && !Markup.isWhitespace(text[j])
+                    && text[j] != Parser.lessThan && text[j] != Parser.greaterThan {
+                j += 1
+            }
+            if text[i] == Parser.lessThan {
+                return (j < end && text[j] == Parser.greaterThan) ? j + 1 : i
+            }
+            var opening = 0
+            var closing = 0
+            for k in from..<j {
+                if text[k] == Parser.openParenthesis {
+                    opening += 1
+                } else if text[k] == Parser.closeParenthesis {
+                    closing += 1
+                }
+            }
+            while j > host {
+                let last = text[j - 1]
+                if Parser.isAutolinkTrailing(last) {
+                    j -= 1
+                } else if last == Parser.closeParenthesis && opening < closing {
+                    j -= 1
+                    closing -= 1
+                } else {
+                    break
+                }
+            }
+            return (j == host) ? i : j
+        }
+
+        // Returns where the host starts after http:// or https:// at the
+        // index, or -1.
+        private func schemeEnd(_ i: Int, _ end: Int) -> Int {
+            for scheme in Parser.schemes {
+                let n = scheme.count
+                if i + n <= end && text[i..<(i + n)].elementsEqual(scheme) {
+                    return i + n
+                }
+            }
+            return -1
+        }
+
+        private static let schemes = [Array("https://".utf16), Array("http://".utf16)]
+
+        // True for a letter, a digit or a character that is not ASCII, as the
+        // first character of a host is.
+        private static func isHostChar(_ ch: UInt16) -> Bool {
+            return (ch >= 0x61 && ch <= 0x7A) || (ch >= 0x41 && ch <= 0x5A)
+                    || (ch >= 0x30 && ch <= 0x39) || ch > 0x7F
+        }
+
+        // True for (, *, _ and ~, after which an address alone can start.
+        private static func isAutolinkStart(_ ch: UInt16) -> Bool {
+            return ch == openParenthesis || ch == star || ch == underscore || ch == tilde
+        }
+
+        // True for ? ! . , : * _ and ~, which an address alone ends before.
+        private static func isAutolinkTrailing(_ ch: UInt16) -> Bool {
+            switch ch {
+            case 0x3F, 0x21, 0x2E, 0x2C, 0x3A, star, underscore, tilde:
+                return true
+            default:
+                return false
+            }
         }
 
         // Returns where the next run of backticks of the length starts, after
@@ -395,65 +524,99 @@ public class Markup {
             }
         }
 
-        // Matches the runs of * from the index on, each closer with the nearest
-        // opener before it: two of each make bold and one italic, and the runs
-        // between them can no longer match. Then gives every node the emphasis
-        // it is in, and turns what is left of each run into text.
+        // Matches the runs from the index on, each closer with the nearest
+        // opener of its character before it: two * or _ of each make bold and
+        // one italic, and ~~ a strikethrough. The runs of * and _ between a
+        // closer and its opener can no longer match. Then gives every node the
+        // emphasis it is in, and turns what is left of each run into text.
         private static func matchEmphasis(_ nodes: inout [Node], _ first: Int) {
-            var openers = [Node]()
+            // The runs that can still open, of *, of _ and of ~
+            var stars = [Node]()
+            var underscores = [Node]()
+            var tildes = [Node]()
             for i in first..<nodes.count {
                 let node = nodes[i]
                 if node.text != nil {
                     continue
                 }
-                if node.canClose {
-                    while node.count > 0, let opener = openers.last {
-                        let use = (node.count >= 2 && opener.count >= 2) ? 2 : 1
-                        let flag = (use == 2) ? Markup.BOLD : Markup.ITALIC
-                        opener.opens = add(opener.opens, flag)
-                        node.closes = add(node.closes, flag)
-                        opener.count -= use
-                        node.count -= use
-                        if opener.count == 0 {
-                            openers.removeLast()
-                        }
+                if node.char == tilde {
+                    if node.canClose, let opener = tildes.popLast() {
+                        opener.opens = add(opener.opens, Markup.STRIKE)
+                        node.closes = add(node.closes, Markup.STRIKE)
+                        opener.count = 0
+                        node.count = 0
                     }
+                    if node.count > 0 && node.canOpen {
+                        tildes.append(node)
+                    }
+                    continue
                 }
-                if node.count > 0 && node.canOpen {
-                    openers.append(node)
+                if node.char == star {
+                    match(node, &stars, &underscores)
+                } else {
+                    match(node, &underscores, &stars)
                 }
             }
             // The emphasis in effect, in levels, since bold can be in bold.
-            var boldLevel = 0
-            var italicLevel = 0
+            var levels = [0, 0, 0]
             for i in first..<nodes.count {
                 let node = nodes[i]
                 if node.text == nil {
-                    boldLevel -= level(node.closes, Markup.BOLD)
-                    italicLevel -= level(node.closes, Markup.ITALIC)
-                    node.text = String(repeating: "*", count: node.count)
-                    node.flags = emphasis(boldLevel, italicLevel)
-                    boldLevel += level(node.opens, Markup.BOLD)
-                    italicLevel += level(node.opens, Markup.ITALIC)
+                    if let closes = node.closes {
+                        for k in 0..<3 {
+                            levels[k] -= closes[k]
+                        }
+                    }
+                    node.text = String(repeating: Character(Unicode.Scalar(node.char)!), count: node.count)
+                    node.flags = emphasis(levels)
+                    if let opens = node.opens {
+                        for k in 0..<3 {
+                            levels[k] += opens[k]
+                        }
+                    }
                 } else {
-                    node.flags |= emphasis(boldLevel, italicLevel)
+                    node.flags |= emphasis(levels)
                 }
             }
         }
 
-        private static func emphasis(_ boldLevel: Int, _ italicLevel: Int) -> Int {
-            return ((boldLevel > 0) ? Markup.BOLD : 0) | ((italicLevel > 0) ? Markup.ITALIC : 0)
+        // Matches a run of * or _ that can close with the openers of its own
+        // character, and drops the openers of the other character that are
+        // after the opener it matches. Then the run opens what is left of it.
+        private static func match(_ node: Node, _ own: inout [Node], _ other: inout [Node]) {
+            if node.canClose {
+                while node.count > 0, let opener = own.last {
+                    while let after = other.last, after.index > opener.index {
+                        other.removeLast()
+                    }
+                    let use = (node.count >= 2 && opener.count >= 2) ? 2 : 1
+                    let flag = (use == 2) ? Markup.BOLD : Markup.ITALIC
+                    opener.opens = add(opener.opens, flag)
+                    node.closes = add(node.closes, flag)
+                    opener.count -= use
+                    node.count -= use
+                    if opener.count == 0 {
+                        own.removeLast()
+                    }
+                }
+            }
+            if node.count > 0 && node.canOpen {
+                own.append(node)
+            }
         }
 
-        // The levels of bold and of italic, [bold, italic], with one more of the flag.
+        // The flags of the levels of bold, italic and strikethrough in effect.
+        private static func emphasis(_ levels: [Int]) -> Int {
+            return ((levels[0] > 0) ? Markup.BOLD : 0) | ((levels[1] > 0) ? Markup.ITALIC : 0)
+                    | ((levels[2] > 0) ? Markup.STRIKE : 0)
+        }
+
+        // The levels of bold, italic and strikethrough, [bold, italic, strike],
+        // with one more of the flag.
         private static func add(_ levels: [Int]?, _ flag: Int) -> [Int] {
-            var levels = levels ?? [0, 0]
-            levels[(flag == Markup.BOLD) ? 0 : 1] += 1
+            var levels = levels ?? [0, 0, 0]
+            levels[(flag == Markup.BOLD) ? 0 : (flag == Markup.ITALIC) ? 1 : 2] += 1
             return levels
-        }
-
-        private static func level(_ levels: [Int]?, _ flag: Int) -> Int {
-            return (levels == nil) ? 0 : levels![(flag == Markup.BOLD) ? 0 : 1]
         }
 
         private static func isASCIIPunctuation(_ ch: UInt16) -> Bool {

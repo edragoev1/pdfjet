@@ -427,6 +427,24 @@ import Testing
         try TextFrameTests.checkALinkEndsBeforeTheSpaceAfterIt(false)
     }
 
+    // A link that ends a paragraph has the space that every word has after it:
+    // its underline stopped one space after the word (14 October 2026).
+    @Test func theUnderlineOfTheLastWordStopsAtTheWord() throws {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let paragraph = Paragraph()
+                .add(TextLine(font, "Tell the"))
+                .add(TextLine(font, "users").setURIAction("https://pdfjet.com").setUnderline(true))
+        let page = Page(pdf, Letter.PORTRAIT)
+        TextFrame([paragraph]).setLocation(10, 10).setWidth(300).drawOn(page)
+        let content = TestSupport.content(page)
+        let line = try #require(content.firstMatch(of: /([0-9.]+) [0-9.]+ m\n([0-9.]+) [0-9.]+ l/),
+                "no underline:\n\(content)")
+        let x1 = try #require(Float(String(line.1)))
+        let x2 = try #require(Float(String(line.2)))
+        TestSupport.expectNear(font.stringWidth(font.getSize(), "users"), x2 - x1)
+    }
+
     // Every text line is one word joined to the word before it, so the width
     // of the words joined to a word was measured over and over. Four times as
     // many lines take about four times the time, not sixteen; the two times

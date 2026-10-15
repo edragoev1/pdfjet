@@ -7,6 +7,8 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
+using System.Text.RegularExpressions;
 using Xunit;
 
 namespace PDFjet.NET {
@@ -455,6 +457,25 @@ public class TextFrameTest {
     [Fact]
     public void ALinkEndsBeforeTheSpaceAfterIt() {
         CheckALinkEndsBeforeTheSpaceAfterIt(false);
+    }
+
+    // A link that ends a paragraph has the space that every word has after it:
+    // its underline stopped one space after the word (14 October 2026).
+    [Fact]
+    public void TheUnderlineOfTheLastWordStopsAtTheWord() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Paragraph paragraph = new Paragraph()
+                .Add(new TextLine(font, "Tell the"))
+                .Add(new TextLine(font, "users").SetURIAction("https://pdfjet.com").SetUnderline(true));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new TextFrame(new List<Paragraph> {paragraph}).SetLocation(10f, 10f).SetWidth(300f).DrawOn(page);
+        String content = TestSupport.Content(page);
+        Match line = Regex.Match(content, "([0-9.]+) [0-9.]+ m\n([0-9.]+) [0-9.]+ l");
+        Assert.True(line.Success, "no underline:\n" + content);
+        float x1 = float.Parse(line.Groups[1].Value, CultureInfo.InvariantCulture);
+        float x2 = float.Parse(line.Groups[2].Value, CultureInfo.InvariantCulture);
+        TestSupport.AssertNear(font.StringWidth("users"), x2 - x1, TestSupport.DELTA, "the underline");
     }
 
     // Every text line is one word joined to the word before it, so the width

@@ -603,6 +603,12 @@ func (tf *TextFrame) drawRow(page *Page, lastRowOfParagraph bool) {
 				// the row, and left out of its underline
 				line = part.textLine.copyWithText(part.text + single.Space)
 				line.isLastToken = true
+			} else if lastRowOfParagraph && i == lastWithText && strings.HasSuffix(part.text, single.Space) {
+				// The last word of the paragraph, with the space that every
+				// word has after it, left out of its underline too: a link
+				// that ended a paragraph was underlined one space too far
+				// (14 October 2026)
+				line.isLastToken = true
 			}
 			line.SetLocation(part.x+shift, tf.yText)
 			restore := tf.beginParagraphElement(page, part.paragraph, part.x+shift, tf.yText)

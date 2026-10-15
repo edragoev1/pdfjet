@@ -670,17 +670,23 @@ public class TextFrame : IDrawable {
             } else if (alignment == Alignment.CENTER) {
                 shift = (w - rowWidth) / 2f;
             }
+            RowPart lastWithText = LastWithText();
             foreach (RowPart part in row) {
                 BeginParagraphElement(page, part.paragraph, part.x + shift, yText);
-                if (endSpace && part == LastWithText() && part.text[part.text.Length - 1] != ' ') {
+                TextLine line = part.textLine.CopyWithText(part.text);
+                if (endSpace && part == lastWithText && part.text[part.text.Length - 1] != ' ') {
                     // The space of the word break, drawn after the last word of
                     // the row, and left out of its underline
-                    TextLine withSpace = part.textLine.CopyWithText(part.text + Single.space);
-                    withSpace.isLastToken = true;
-                    withSpace.SetLocation(part.x + shift, yText).DrawOn(page);
-                } else {
-                    part.textLine.CopyWithText(part.text).SetLocation(part.x + shift, yText).DrawOn(page);
+                    line = part.textLine.CopyWithText(part.text + Single.space);
+                    line.isLastToken = true;
+                } else if (lastRowOfParagraph && part == lastWithText && part.text[part.text.Length - 1] == ' ') {
+                    // The last word of the paragraph, with the space that every
+                    // word has after it, left out of its underline too: a link
+                    // that ended a paragraph was underlined one space too far
+                    // (14 October 2026)
+                    line.isLastToken = true;
                 }
+                line.SetLocation(part.x + shift, yText).DrawOn(page);
                 EndParagraphElement(page);
                 if (part.startsParagraph) {
                     part.paragraph.xText += shift;

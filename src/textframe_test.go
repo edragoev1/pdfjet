@@ -564,6 +564,27 @@ func TestTextFrameALinkEndsBeforeTheSpaceAfterIt(t *testing.T) {
 	testCheckALinkEndsBeforeTheSpaceAfterIt(t, false)
 }
 
+// A link that ends a paragraph has the space that every word has after it:
+// its underline stopped one space after the word (14 October 2026).
+func TestTextFrameTheUnderlineOfTheLastWordStopsAtTheWord(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	paragraph := NewParagraph().
+		Add(NewTextLine(font, "Tell the")).
+		Add(NewTextLine(font, "users").SetURIAction("https://pdfjet.com").SetUnderline(true))
+	page := NewPage(pdf, letter.Portrait())
+	frame := NewTextFrameFromParagraphs([]*Paragraph{paragraph}).SetWidth(300)
+	frame.SetLocation(10, 10)
+	frame.DrawOn(page)
+	line := regexp.MustCompile(`([0-9.]+) [0-9.]+ m\n([0-9.]+) [0-9.]+ l`).FindStringSubmatch(testContent(page))
+	if line == nil {
+		t.Fatalf("no underline:\n%s", testContent(page))
+	}
+	x1, _ := strconv.ParseFloat(line[1], 32)
+	x2, _ := strconv.ParseFloat(line[2], 32)
+	testNear(t, "the underline", font.StringWidth(font.GetSize(), "users"), float32(x2-x1), testDelta)
+}
+
 // Every text line is one word joined to the word before it, so the width of
 // the words joined to a word was measured over and over. Four times as many
 // lines take about four times the time, not sixteen; the two times are

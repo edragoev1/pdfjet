@@ -39,7 +39,11 @@ public class Example_18 {
                 + "\n"
                 + "A backslash makes a mark text too: \\*not italic\\*. Code keeps its marks "
                 + "as they are, as in `a*b*c`, and a link can have emphasis in it: "
-                + "[the **PDFjet** repository](https://github.com/edragoev1/pdfjet)."))
+                + "[the **PDFjet** repository](https://github.com/edragoev1/pdfjet).\n"
+                + "\n"
+                + "As in GitHub's Markdown, _underscores_ and __two of them__ emphasize too, "
+                + "but not inside a word, as in snake_case; ~~two tildes~~ strike a word through; "
+                + "and an address is a link by itself: https://pdfjet.com"))
 
         let items = [
             "`Markup.paragraph` makes one paragraph of a text.",
