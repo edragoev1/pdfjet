@@ -80,6 +80,23 @@ commit and date. The layout's format version (1) and the look's rules
 
 ## Open
 
+- **v9.1.1: the first PDF of a process faster, in the four ports.** Measured
+  on 15 October 2026 with typical documents, a one-page invoice, a 9-page
+  report and an 11-page Markdown text (branch measure/common-documents,
+  benchmarks/common): warm, complete() takes 2 to 4 ms, so the encoding of
+  the text hardly counts; the first PDF of a process does. Java: new PDF()
+  took 55 ms, SimpleDateFormat 37 ms, SecureRandom 22 ms and Logger.getLogger
+  14 ms; with the date worked out by hand (Howard Hinnant's civil from days,
+  the same as SimpleDateFormat on 100,000 times), the document ID from
+  ThreadLocalRandom and the logger made when it is used, new PDF() takes
+  4 ms and the first invoice 44 ms, not 89. C#: new PDF() 13.5 ms,
+  RandomNumberGenerator 7.9 ms and the date's ToString 5.5 ms, of a first PDF
+  of 45 ms. Swift: DateFormatter 1.7 ms of 5 ms. Go: 1.5 ms in all. To do in
+  the four ports, so that they stay alike: the date by hand, and the
+  document ID from a random generator that is not a cryptographic one, as it
+  tells documents apart and is no secret (encryption keeps its own); in Java
+  the logger made when it is used. The Java change is on the branch.
+
 - **v9.1.1: faster compression of text, the hex strings kept, in the four
   ports.** In Java, the 2,546 pages of Example_24 spend more time in zlib
   than in all of PDFjet's own code (profiles of 15 October 2026): zlib's
