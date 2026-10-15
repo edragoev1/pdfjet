@@ -166,23 +166,56 @@ final public class PDF {
     // The pages made for this document, added or detached.
     int pagesCreated = 0;
 
-    static final Logger LOG = Logger.getLogger(PDF.class.getName());
+    // The logger, made when it is first used: Logger.getLogger took 14 ms
+    // of the first PDF of a JVM.
+    static final class Log {
+        static final Logger LOG = Logger.getLogger(PDF.class.getName());
+    }
 
     // Lets the tests of what a document of PDF/A or PDF/UA tags draw in a core
     // font, whose text they find by its encoding: complete() refuses one
     // otherwise. Never set outside the tests.
     static boolean coreFontsInCompliance = false;
 
-    // SecureRandom is safe to share between threads.
-    private static final SecureRandom RANDOM = new SecureRandom();
-
     // Returns a new document ID for the trailer and the XMP metadata: 16 random
     // bytes as 32 hexadecimal digits, so documents made at the same time, even
-    // in the same millisecond, get different IDs.
+    // in the same millisecond, get different IDs. The ID is to tell documents
+    // apart, not a secret, so ThreadLocalRandom makes it: SecureRandom took
+    // 22 ms to start in the first PDF of a JVM.
     private static String newDocumentID() {
         byte[] bytes = new byte[16];
-        RANDOM.nextBytes(bytes);
+        java.util.concurrent.ThreadLocalRandom.current().nextBytes(bytes);
         return Util.toHexString(bytes);
+    }
+
+    // Returns the time, in milliseconds since 1970, as yyyy-MM-ddTHH:mm:ss in
+    // UTC, worked out by hand: SimpleDateFormat took 37 ms to read the
+    // calendars and the locales in the first PDF of a JVM. The date of the
+    // days since 1970 is that of Howard Hinnant's days_from_civil, reversed.
+    static String utcDate(long millis) {
+        long days = Math.floorDiv(millis, 86400000L);
+        long seconds = Math.floorMod(millis, 86400000L) / 1000;
+        long z = days + 719468;
+        long era = Math.floorDiv(z, 146097);
+        long doe = z - era * 146097;
+        long yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365;
+        long doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+        long mp = (5 * doy + 2) / 153;
+        long day = doy - (153 * mp + 2) / 5 + 1;
+        long month = mp < 10 ? mp + 3 : mp - 9;
+        long year = yoe + era * 400 + (month <= 2 ? 1 : 0);
+        StringBuilder sb = new StringBuilder(19);
+        sb.append(year).append('-');
+        two(sb, month).append('-');
+        two(sb, day).append('T');
+        two(sb, seconds / 3600).append(':');
+        two(sb, seconds / 60 % 60).append(':');
+        two(sb, seconds % 60);
+        return sb.toString();
+    }
+
+    private static StringBuilder two(StringBuilder sb, long value) {
+        return sb.append((char) ('0' + value / 10)).append((char) ('0' + value % 10));
     }
 
     /**
@@ -242,9 +275,7 @@ final public class PDF {
         this.compliance = compliance;
 
         // The creation date is in UTC, so the XMP metadata says so with a Z.
-        SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US);
-        sdf1.setTimeZone(TimeZone.getTimeZone("UTC"));
-        createDate = sdf1.format(new Date()) + "Z";     // XMP metadata
+        createDate = utcDate(System.currentTimeMillis()) + "Z";     // XMP metadata
 
         append("%PDF-1.7\n");
         append('%');
