@@ -227,7 +227,7 @@ rm -rf ../dotnet-pro
 # Creates the PDFs of PDFjet Pro with the package's own script.
 ./build-pro.sh
 rm -rf examples/pro/*/bin examples/pro/*/obj
-for pdf in Pro_SignDocument Pro_WriteInvoice Pro_DrawSwissQRBill; do
+for pdf in Pro_SignDocument Pro_WriteInvoice Pro_DrawSwissQRBill Pro_DrawEPCQRCode; do
     if ! tail -c 32 "$pdf.pdf" 2>/dev/null | grep -q '%%EOF'; then
         echo "$pdf.pdf was not created or is incomplete"
         exit 1
