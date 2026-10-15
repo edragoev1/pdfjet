@@ -960,4 +960,30 @@ import Testing
         #expect(TestSupport.latin1(objects[0].getData()) == "abcde")
     }
 
+    // The creation date is worked out by hand, as new PDF() took 1.7 ms of the
+    // first PDF of a process with DateFormatter: it gives what DateFormatter
+    // gives, at the edges of the days, the months, the leap years and the
+    // centuries, and at times all over four centuries.
+    @Test func theCreationDateIsThatOfDateFormatter() {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+        formatter.timeZone = TimeZone(identifier: "UTC")
+        let edges: [Int64] = [0, 86_399_999, 86_400_000, 951_782_400_000, 951_868_799_000, 4_107_542_400_000,
+                4_107_456_000_000, 1_767_225_599_999, 1_767_225_600_000, 253_402_300_799_000]
+        var seed: UInt64 = 15
+        for i in 0..<(1000 + edges.count) {
+            var millis: Int64
+            if i < edges.count {
+                millis = edges[i]
+            } else {
+                seed = seed &* 6364136223846793005 &+ 1442695040888963407
+                millis = Int64(seed >> 20) % 13_600_000_000_000
+            }
+            let want = formatter.string(from: Date(timeIntervalSince1970: Double(millis / 1000)))
+            #expect(PDF.utcDate(millis) == want, "at \(millis)")
+        }
+    }
+
 }

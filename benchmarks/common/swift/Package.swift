@@ -10,6 +10,6 @@ let package = Package(
     ],
     targets: [
         .executableTarget(name: "FirstPdf",
-            dependencies: [.product(name: "PDFjet", package: "measure")]),
+            dependencies: [.product(name: "PDFjet", package: "pdfjet")]),
     ]
 )

@@ -194,6 +194,35 @@ public final class PDF {
         self.init(os, Compliance.PDF_1_7)
     }
 
+    // Returns the time, in milliseconds since 1970, as yyyy-MM-ddTHH:mm:ss in
+    // UTC, worked out by hand, as in the other ports: DateFormatter took 1.7 ms
+    // of the first PDF of a process. The date of the days since 1970 is that of
+    // Howard Hinnant's days_from_civil, reversed.
+    static func utcDate(_ millis: Int64) -> String {
+        let days = floorDiv(millis, 86_400_000)
+        let seconds = (millis - days * 86_400_000) / 1000
+        let z = days + 719_468
+        let era = floorDiv(z, 146_097)
+        let doe = z - era * 146_097
+        let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146_096) / 365
+        let doy = doe - (365 * yoe + yoe / 4 - yoe / 100)
+        let mp = (5 * doy + 2) / 153
+        let day = doy - (153 * mp + 2) / 5 + 1
+        let month = mp < 10 ? mp + 3 : mp - 9
+        let year = yoe + era * 400 + (month <= 2 ? 1 : 0)
+        return String(year) + "-" + two(month) + "-" + two(day) + "T" +
+            two(seconds / 3600) + ":" + two(seconds / 60 % 60) + ":" + two(seconds % 60)
+    }
+
+    private static func floorDiv(_ a: Int64, _ b: Int64) -> Int64 {
+        let q = a / b
+        return (a % b != 0 && (a < 0) != (b < 0)) ? q - 1 : q
+    }
+
+    private static func two(_ value: Int64) -> String {
+        return String(value / 10) + String(value % 10)
+    }
+
     /// Here is the layout of the PDF document:
     ///
     /// Metadata Object
@@ -236,15 +265,8 @@ public final class PDF {
         self.os = BufferedOutputStream(os)
         self.compliance = compliance
 
-        let date = Date()
-        let dateFormatter1 = DateFormatter()
-        // Gregorian year and ASCII digits whatever the user's locale is, as in the other ports.
-        dateFormatter1.locale = Locale(identifier: "en_US_POSIX")
-        dateFormatter1.calendar = Calendar(identifier: .gregorian)
-        dateFormatter1.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
         // The creation date is in UTC, so the XMP metadata says so with a Z.
-        dateFormatter1.timeZone = TimeZone(identifier: "UTC")
-        self.createDate = dateFormatter1.string(from: date) + "Z"
+        self.createDate = PDF.utcDate(Int64((Date().timeIntervalSince1970 * 1000).rounded(.down))) + "Z"
 
         append("%PDF-1.7\n")
         append("%")

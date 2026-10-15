@@ -1444,6 +1444,25 @@ public class DecodeBudgetTest {
             PDFobj.MAX_DECODED_TOTAL = was;
         }
     }
+
+    // The creation date is worked out by hand, as new PDF() took 5.5 ms of the
+    // first PDF of a process with the culture's ToString: it gives what
+    // ToString gives, at the edges of the days, the months, the leap years and
+    // the centuries, and at times all over four centuries.
+    [Fact]
+    public void TheCreationDateIsThatOfToString() {
+        var utcDate = typeof(PDF).GetMethod("UtcDate",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+        long[] edges = {0L, 86399999L, 86400000L, 951782400000L, 951868799000L, 4107542400000L,
+                4107456000000L, 1767225599999L, 1767225600000L, 253402300799000L};
+        var random = new Random(15);
+        for (int i = 0; i < 10000 + edges.Length; i++) {
+            long millis = i < edges.Length ? edges[i] : (long) (random.NextDouble() * 13600000000000L);
+            string want = DateTimeOffset.FromUnixTimeMilliseconds(millis).UtcDateTime.ToString(
+                    "yyyy-MM-dd'T'HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture);
+            Assert.Equal(want, (string) utcDate.Invoke(null, new object[] {millis}));
+        }
+    }
 }
 
 [CollectionDefinition("DecodeBudget", DisableParallelization = true)]

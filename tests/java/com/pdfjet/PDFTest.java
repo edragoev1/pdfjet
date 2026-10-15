@@ -1567,4 +1567,21 @@ class PDFTest {
                     "in the node " + inNode + ": " + ((after - before) >> 20) + " MB allocated");
         }
     }
+
+    // The creation date is worked out by hand, as new PDF() took 37 ms of the
+    // first PDF of a JVM with SimpleDateFormat: it gives what SimpleDateFormat
+    // gives, at the edges of the days, the months, the leap years and the
+    // centuries, and at times all over four centuries.
+    @Test
+    void theCreationDateIsThatOfSimpleDateFormat() {
+        java.text.SimpleDateFormat format = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US);
+        format.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
+        long[] edges = {0L, 86399999L, 86400000L, 951782400000L, 951868799000L, 4107542400000L,
+                4107456000000L, 1767225599999L, 1767225600000L, 253402300799000L};
+        java.util.Random random = new java.util.Random(15);
+        for (int i = 0; i < 10000 + edges.length; i++) {
+            long millis = i < edges.length ? edges[i] : (long) (random.nextDouble() * 13600000000000L);
+            assertEquals(format.format(new java.util.Date(millis)), PDF.utcDate(millis), "at " + millis);
+        }
+    }
 }

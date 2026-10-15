@@ -8,7 +8,6 @@ package com.pdfjet;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.security.SecureRandom;
 import java.text.*;
 import java.util.*;
 import java.util.logging.Logger;

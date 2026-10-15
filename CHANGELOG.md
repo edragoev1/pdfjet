@@ -7,6 +7,24 @@ languages.
 
 This is the first entry in this file; earlier releases were not tracked here.
 
+## v9.1.1 — not released yet
+
+### Changed
+- The first PDF of a process is made faster: new PDF() no longer starts
+  what Java, .NET and Swift take a long time to start the first time. The
+  creation date is worked out by hand, as the formatters of the platform
+  give it (SimpleDateFormat in Java took 37 ms, ToString in C# 5.5 ms and
+  DateFormatter in Swift 1.7 ms of the first PDF); the document ID, which
+  tells documents apart and is no secret, comes from ThreadLocalRandom in
+  Java, not SecureRandom (22 ms), and from a Guid in C#, not
+  RandomNumberGenerator (7.9 ms), and is 32 hexadecimal digits as before;
+  and in Java the logger is made when something is logged (14 ms). The
+  first one-page invoice of a JVM takes 44 ms, not 89, and new PDF() 4 ms,
+  not 55; in C# new PDF() takes 6 ms, not 13.5, and in Swift 0.2 ms, not
+  2.2. Go took 1.5 ms for its first PDF, and is as it was. Encryption keeps
+  its own cryptographic random numbers. The benchmark is in
+  benchmarks/common.
+
 ## v9.0.9 — 2026-10-15
 
 ### Added

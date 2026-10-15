@@ -108,8 +108,9 @@ public sealed class PDF {
     private Dictionary<String, Destination> destinations = new Dictionary<String, Destination>();
     // The document ID for the trailer and the XMP metadata: 16 random bytes as
     // 32 hexadecimal digits, so documents made at the same time get different IDs.
-    private String uuid = Convert.ToHexString(
-            System.Security.Cryptography.RandomNumberGenerator.GetBytes(16)).ToLowerInvariant();
+    // The ID is to tell documents apart, not a secret, so a Guid makes it:
+    // RandomNumberGenerator took 7.9 ms to start in the first PDF of a process.
+    private String uuid = Guid.NewGuid().ToString("N");
     private Stream os = null;
     private readonly List<long> objOffset = new List<long>(); // Required by the xref section
     private String producer = "PDFjet v9.0.9";
@@ -205,6 +206,41 @@ public sealed class PDF {
     public PDF(Stream os) : this(os, Compliance.PDF_1_7) {
     }
 
+    // Returns the time, in milliseconds since 1970, as yyyy-MM-ddTHH:mm:ss in
+    // UTC, worked out by hand, as in the other ports: the culture's ToString
+    // took 5.5 ms in the first PDF of a process. The date of the days since
+    // 1970 is that of Howard Hinnant's days_from_civil, reversed.
+    internal static String UtcDate(long millis) {
+        long days = FloorDiv(millis, 86400000L);
+        long seconds = (millis - days * 86400000L) / 1000;
+        long z = days + 719468;
+        long era = FloorDiv(z, 146097);
+        long doe = z - era * 146097;
+        long yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365;
+        long doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+        long mp = (5 * doy + 2) / 153;
+        long day = doy - (153 * mp + 2) / 5 + 1;
+        long month = mp < 10 ? mp + 3 : mp - 9;
+        long year = yoe + era * 400 + (month <= 2 ? 1 : 0);
+        StringBuilder sb = new StringBuilder(19);
+        sb.Append(year.ToString(CultureInfo.InvariantCulture)).Append('-');
+        Two(sb, month).Append('-');
+        Two(sb, day).Append('T');
+        Two(sb, seconds / 3600).Append(':');
+        Two(sb, seconds / 60 % 60).Append(':');
+        Two(sb, seconds % 60);
+        return sb.ToString();
+    }
+
+    private static long FloorDiv(long a, long b) {
+        long q = a / b;
+        return (a % b != 0 && (a < 0) != (b < 0)) ? q - 1 : q;
+    }
+
+    private static StringBuilder Two(StringBuilder sb, long value) {
+        return sb.Append((char) ('0' + value / 10)).Append((char) ('0' + value % 10));
+    }
+
     /// <summary>
     /// Creates a PDF document with the specified compliance level.
     /// </summary>
@@ -215,7 +251,7 @@ public sealed class PDF {
         this.compliance = compliance;
 
         // The creation date is in UTC, so the XMP metadata says so with a Z.
-        createDate = DateTime.UtcNow.ToString("yyyy-MM-dd'T'HH:mm:ss", CultureInfo.InvariantCulture) + "Z";
+        createDate = UtcDate(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()) + "Z";
 
         Append("%PDF-1.7\n");
         Append('%');
