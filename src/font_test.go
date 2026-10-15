@@ -539,3 +539,32 @@ func TestFontAStampKeepsAJoinerInTheActualText(t *testing.T) {
 		t.Errorf("the page does not do the same: %q", content)
 	}
 }
+
+func TestFontTheASCIIGlyphsAreThoseOfTheLongWay(t *testing.T) {
+	// setASCIIGlyphs keeps the glyph and the width of each printable ASCII
+	// character, which StringWidth and Page then use without glyphOf and
+	// advanceWidthOf: they must give what those give.
+	font := testPlexSans(testNewPDF())
+	var all []rune
+	for c := rune(0x20); c < 0x7F; c++ {
+		all = append(all, c)
+		if font.asciiGID[c-0x20] == 0 {
+			t.Errorf("%q: IBM Plex Sans has it, and it has no glyph", c)
+			continue
+		}
+		if gid := int(font.asciiGID[c-0x20]); gid != glyphOf(font, c) {
+			t.Errorf("%q: glyph %d, glyphOf %d", c, gid, glyphOf(font, c))
+		}
+		if width := int(font.asciiAdvance[c-0x20]); width != font.advanceWidthOf(c) {
+			t.Errorf("%q: width %d, advanceWidthOf %d", c, width, font.advanceWidthOf(c))
+		}
+	}
+	var sum float32
+	for _, c := range all {
+		sum += float32(font.advanceWidthOf(c))
+	}
+	want := float32(sum*12) / float32(font.unitsPerEm)
+	if got := font.StringWidth(12, string(all)); got != want {
+		t.Errorf("StringWidth %v, the long way %v", got, want)
+	}
+}

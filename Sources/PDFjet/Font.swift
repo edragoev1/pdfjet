@@ -49,6 +49,18 @@ public class Font {
     var advanceWidth: [UInt16] = []
     var unicodeToGID = GlyphMap()
     var unicodeOf: [Int32] = []     // The character of each glyph, see FontWriter.unicodeOfGlyphs
+    // The glyph and the advance width of each printable ASCII character,
+    // U+0020 to U+007E, that the font has, from setASCIIGlyphs: glyph 0 for one
+    // it lacks, which is looked up as any other character. Most text is
+    // these characters, and they skip the tests that glyphOf and
+    // advanceWidthOf make: a table of 2,546 pages took 37% longer in 9.0.7
+    // than in 9.0.1 (15 October 2026).
+    var asciiGID = [UInt16](repeating: 0, count: 95)
+    var asciiAdvance = [UInt16](repeating: 0, count: 95)
+    // asciiPlain is true for a printable ASCII character drawn once already,
+    // with its own glyph, so that it is not drawn as another character the
+    // next time either: the first character drawn with a glyph never changes.
+    var asciiPlain = [Bool](repeating: false, count: 95)
     // Where the marks go, from the GPOS table of the font, read when a mark
     // is first drawn, or nil for a font without one.
     var gpos: GPOS?
@@ -542,9 +554,15 @@ public class Font {
             let widths = advanceWidth
             let first = firstChar
             let last = lastChar
+            let asciiGIDs = asciiGID
+            let asciiWidths = asciiAdvance
             var missing = -1    // The glyph of a character the font lacks, looked up once
             for scalar in str!.unicodeScalars {
                 let codePoint = Int(scalar.value)
+                if codePoint >= 0x20 && codePoint < 0x7F && asciiGIDs[codePoint - 0x20] != 0 {
+                    width += Int(asciiWidths[codePoint - 0x20])
+                    continue
+                }
                 if Font.isJoinerOrRLM(scalar.value) || codePoint == 0xFEFF || Font.isIgnorable(codePoint) {
                     continue
                 }
@@ -576,6 +594,22 @@ public class Font {
             return 0
         }
         return glyphAdvance(Page.glyphOf(self, codePoint))
+    }
+
+    // Reads the glyph and the advance width of each printable ASCII character
+    // the font has into asciiGID and asciiAdvance, once its character map and
+    // its widths are read. They are those glyphOf and advanceWidthOf give:
+    // none of these characters is a control character, an ignorable one or a
+    // mark.
+    func setASCIIGlyphs() {
+        if advanceWidth.isEmpty {
+            return
+        }
+        for c in 0x20..<0x7F where !lacks(c) {
+            let gid = unicodeToGID[c]
+            asciiGID[c - 0x20] = UInt16(gid)
+            asciiAdvance[c - 0x20] = UInt16(glyphAdvance(gid))
+        }
     }
 
     // Returns the advance width of the glyph, in font units. A font can list

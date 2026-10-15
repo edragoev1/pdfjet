@@ -59,9 +59,21 @@ type Font struct {
 	advanceWidth           []uint16
 	unicodeToGID           *glyphMap
 	unicodeOf              []int32 // The character of each glyph, see unicodeOfGlyphs
-	gpos                   *gpos   // Read when a mark is first drawn, or nil
-	cff                    bool
-	metrics                [][]int // Only used for core fonts.
+	// The glyph and the advance width of each printable ASCII character,
+	// U+0020 to U+007E, that the font has, from setASCIIGlyphs: glyph 0 for one
+	// it lacks, which is looked up as any other character. Most text is
+	// these characters, and they skip the tests that glyphOf and
+	// advanceWidthOf make: a table of 2,546 pages took 37% longer in 9.0.7
+	// than in 9.0.1 (15 October 2026).
+	asciiGID     [95]uint16
+	asciiAdvance [95]uint16
+	// asciiPlain is true for a printable ASCII character drawn once already,
+	// with its own glyph, so that it is not drawn as another character the
+	// next time either: the first character drawn with a glyph never changes.
+	asciiPlain [95]bool
+	gpos       *gpos // Read when a mark is first drawn, or nil
+	cff        bool
+	metrics    [][]int // Only used for core fonts.
 	// checksum tells the font program this font was read from apart from
 	// every other, so that a PDF embeds each one once.
 	checksum uint64
@@ -695,12 +707,11 @@ func (font *Font) StringWidth(fontSize float32, str string) float32 {
 		return width
 	}
 
-	runes := []rune(str)
 	if font.isCJK {
 		// Every glyph of a CJK font is as wide as the font size, and the
 		// characters not drawn take no width.
 		drawn := 0
-		for _, c := range runes {
+		for _, c := range str {
 			if !isNotDrawn(c) {
 				drawn++
 			}
@@ -709,7 +720,7 @@ func (font *Font) StringWidth(fontSize float32, str string) float32 {
 	}
 
 	if font.isCoreFont {
-		runes = font.withoutIgnorables(runes)
+		runes := font.withoutIgnorables([]rune(str))
 		for i, cp := range runes {
 			c1 := font.coreFontCode(cp)
 			width += float32(font.metrics[c1-32][1])
@@ -718,8 +729,12 @@ func (font *Font) StringWidth(fontSize float32, str string) float32 {
 			}
 		}
 	} else {
-		for _, c1 := range runes {
-			width += float32(font.advanceWidthOf(c1))
+		for _, c1 := range str {
+			if c1 >= 0x20 && c1 < 0x7F && font.asciiGID[c1-0x20] != 0 {
+				width += float32(font.asciiAdvance[c1-0x20])
+			} else {
+				width += float32(font.advanceWidthOf(c1))
+			}
 		}
 	}
 
@@ -736,6 +751,24 @@ func (font *Font) advanceWidthOf(c rune) int {
 		return 0
 	}
 	return font.glyphAdvance(glyphOf(font, c))
+}
+
+// setASCIIGlyphs reads the glyph and the advance width of each printable
+// ASCII character the font has into asciiGID and asciiAdvance, once its
+// character map and its widths are read. They are those glyphOf and
+// advanceWidthOf give: none of these characters is a control character, an
+// ignorable one or a mark.
+func (font *Font) setASCIIGlyphs() {
+	if len(font.advanceWidth) == 0 {
+		return
+	}
+	for c := rune(0x20); c < 0x7F; c++ {
+		if !font.lacks(c) {
+			gid := font.unicodeToGID.get(c)
+			font.asciiGID[c-0x20] = uint16(gid)
+			font.asciiAdvance[c-0x20] = uint16(font.glyphAdvance(gid))
+		}
+	}
 }
 
 // glyphAdvance returns the advance width of the glyph, in font units. A font

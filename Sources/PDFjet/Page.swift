@@ -916,23 +916,49 @@ public class Page {
         // written in one, so that a character costs no runtime check of a
         // class property's exclusive access, which made text in Swift
         // three times as slow as in Go (9 October 2026).
+        // A printable ASCII character the font has, already marked plain, is
+        // its glyph at once, and is not looked at by useChars and
+        // drawsAnyAsAnother: codePoints and their glyphs, charGIDs, are the
+        // other characters, and stay empty, allocating nothing, for most text.
         let table = font.unicodeToGID
+        let asciiGIDs = font.asciiGID
+        let owns = ownsFont(font)
+        let plain = owns ? font.asciiPlain : []
         var codePoints = [Int]()
+        var charGIDs = [Int]()
         var gids = [Int]()
-        codePoints.reserveCapacity(scalars.count)
         gids.reserveCapacity(scalars.count)
         // The BOM, or one not drawn
         for scalar in scalars where scalar.value != 0xFEFF && !Font.isIgnorable(Int(scalar.value)) {
             let codePoint = Int(scalar.value)
+            if codePoint >= 0x20 && codePoint < 0x7F && asciiGIDs[codePoint - 0x20] != 0 {
+                let gid = Int(asciiGIDs[codePoint - 0x20])
+                gids.append(gid)
+                if owns && plain[codePoint - 0x20] {
+                    continue
+                }
+                codePoints.append(codePoint)
+                charGIDs.append(gid)
+                continue
+            }
+            let gid = Font.isControl(codePoint) ? table[0x0020] : table[codePoint]
+            gids.append(gid)
             codePoints.append(codePoint)
-            gids.append(Font.isControl(codePoint) ? table[0x0020] : table[codePoint])
+            charGIDs.append(gid)
         }
-        if ownsFont(font) {
+        if owns {
             font.useGlyphs(gids)
-            font.useChars(codePoints, gids)
+            font.useChars(codePoints, charGIDs)
         }
         if font.drawsAnyAsAnother(codePoints) {
             return false
+        }
+        if owns {
+            // None is drawn as another character, and none will be.
+            for codePoint in codePoints where codePoint >= 0x20 && codePoint < 0x7F &&
+                    asciiGIDs[codePoint - 0x20] != 0 {
+                font.asciiPlain[codePoint - 0x20] = true
+            }
         }
         Page.appendGlyphsAsHex(gids, &self.buf)
         return true
@@ -1069,8 +1095,12 @@ public class Page {
         let table = font.unicodeToGID
         let first = font.firstChar
         let last = font.lastChar
+        let asciiGIDs = font.asciiGID
         for scalar in scalars {
             let codePoint = Int(scalar.value)
+            if codePoint >= 0x20 && codePoint < 0x7F && asciiGIDs[codePoint - 0x20] != 0 {
+                continue
+            }
             if codePoint >= 0x0300 {
                 if Font.isJoinerOrRLM(scalar.value) {
                     return true

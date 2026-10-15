@@ -1151,11 +1151,19 @@ final public class Page {
         for (int i = 0; i < str.length(); ) {
             int cp = str.codePointAt(i);
             i += Character.charCount(cp);
+            boolean ascii = cp >= 0x20 && cp < 0x7F && font.asciiGID[cp - 0x20] != 0;
+            if (ascii && font.asciiPlain[cp - 0x20]) {
+                appendGlyph(font, font.asciiGID[cp - 0x20]);
+                continue;
+            }
             if (cp != 0xFEFF && !Font.isIgnorable(cp)) {     // BOM, or one not drawn
                 int gid = glyphOf(font, cp);
                 if (font.useCharDrawnAsAnother(cp, gid)) {
                     content.truncate(start);
                     return false;
+                }
+                if (ascii) {
+                    font.asciiPlain[cp - 0x20] = true;
                 }
                 appendGlyph(font, gid);
             }
@@ -1320,6 +1328,9 @@ final public class Page {
         for (int i = 0; i < str.length(); ) {
             int c = str.codePointAt(i);
             i += Character.charCount(c);
+            if (c >= 0x20 && c < 0x7F && font.asciiGID[c - 0x20] != 0) {
+                continue;
+            }
             if (c >= 0x0300) {
                 if (c >= 0x200C && c <= 0x200F) {
                     return true;

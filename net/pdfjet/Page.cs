@@ -1038,11 +1038,20 @@ public class Page {
         int i = 0;
         while (i < str.Length) {
             int codePoint = Util.CodePointAt(str, i);  // A lone surrogate is drawn as .notdef
+            bool ascii = codePoint >= 0x20 && codePoint < 0x7F && font.asciiGID[codePoint - 0x20] != 0;
+            if (ascii && font.asciiPlain[codePoint - 0x20]) {
+                AppendGlyph(font, font.asciiGID[codePoint - 0x20]);
+                i++;
+                continue;
+            }
             if (codePoint != 0xFEFF && !Font.IsIgnorable(codePoint)) { // BOM, or one not drawn
                 int gid = GlyphOf(font, codePoint);
                 if (font.UseCharDrawnAsAnother(codePoint, gid)) {
                     buf.SetLength(start);
                     return false;
+                }
+                if (ascii) {
+                    font.asciiPlain[codePoint - 0x20] = true;
                 }
                 AppendGlyph(font, gid);
             }
@@ -1222,6 +1231,9 @@ public class Page {
             if (char.IsHighSurrogate(str, i) && i + 1 < str.Length && char.IsLowSurrogate(str[i + 1])) {
                 c = char.ConvertToUtf32(str[i], str[i + 1]);
                 i++;
+            }
+            if (c >= 0x20 && c < 0x7F && font.asciiGID[c - 0x20] != 0) {
+                continue;
             }
             // A character Unicode does not draw is left out, not drawn as
             // .notdef (review of 11 October 2026, #9)

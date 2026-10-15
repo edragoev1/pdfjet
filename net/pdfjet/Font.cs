@@ -52,6 +52,18 @@ public class Font {
     internal int[] advanceWidth;
     internal GlyphMap unicodeToGID;
     internal int[] unicodeOf;           // The character of each glyph, see GlyphMap.UnicodeOfGlyphs.
+    // The glyph and the advance width of each printable ASCII character,
+    // U+0020 to U+007E, that the font has, from SetASCIIGlyphs: glyph 0 for one
+    // it lacks, which is looked up as any other character. Most text is
+    // these characters, and they skip the tests that GlyphOf and
+    // AdvanceWidthOf make: a table of 2,546 pages took 37% longer in 9.0.7
+    // than in 9.0.1 (15 October 2026).
+    internal readonly ushort[] asciiGID = new ushort[95];
+    internal readonly ushort[] asciiAdvance = new ushort[95];
+    // True for a printable ASCII character drawn once already, with its own
+    // glyph, so that it is not drawn as another character the next time
+    // either: the first character drawn with a glyph never changes.
+    internal readonly bool[] asciiPlain = new bool[95];
     // Where the marks go, from the GPOS table of the font, read when a mark
     // is first drawn, or null for a font without one.
     internal GPOS gpos;
@@ -513,7 +525,11 @@ public class Font {
             for (int i = 0; i < str.Length; ) {
                 int codePoint = Util.CodePointAt(str, i);
                 i += (codePoint > 0xFFFF) ? 2 : 1;
-                width += AdvanceWidthOf(codePoint);
+                if (codePoint >= 0x20 && codePoint < 0x7F && asciiGID[codePoint - 0x20] != 0) {
+                    width += asciiAdvance[codePoint - 0x20];
+                } else {
+                    width += AdvanceWidthOf(codePoint);
+                }
             }
         }
 
@@ -530,6 +546,24 @@ public class Font {
             return 0;
         }
         return GlyphAdvance(Page.GlyphOf(this, codePoint));
+    }
+
+    // Reads the glyph and the advance width of each printable ASCII character
+    // the font has into asciiGID and asciiAdvance, once its character map and
+    // its widths are read. They are those GlyphOf and AdvanceWidthOf give:
+    // none of these characters is a control character, an ignorable one or a
+    // mark.
+    internal void SetASCIIGlyphs() {
+        if (advanceWidth == null || advanceWidth.Length == 0) {
+            return;
+        }
+        for (int c = 0x20; c < 0x7F; c++) {
+            if (!Lacks(c)) {
+                int gid = unicodeToGID.Get(c);
+                asciiGID[c - 0x20] = (ushort) gid;
+                asciiAdvance[c - 0x20] = (ushort) GlyphAdvance(gid);
+            }
+        }
     }
 
     // Returns the advance width of the glyph, in font units. A font can list

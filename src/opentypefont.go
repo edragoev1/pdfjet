@@ -93,6 +93,7 @@ func setOpenTypeFontData(font *Font, otf *openTypeFont) {
 	font.fontUnderlinePosition = otf.underlinePosition
 	font.fontUnderlineThickness = otf.underlineThickness
 	font.advanceWidth = otf.advanceWidth
+	font.setASCIIGlyphs()
 	font.info = otf.fontInfo
 	font.capHeight = otf.capHeight
 	font.cff = otf.cff

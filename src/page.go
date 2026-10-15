@@ -693,11 +693,17 @@ func (page *Page) drawUnicodeString(font *Font, text string) {
 // another character too, which is drawn in a span of its own.
 func (page *Page) appendPlainGlyphs(font *Font, runes []rune) bool {
 	start := len(page.buf)
+	owns := page.ownsFont(font)
 	for _, c1 := range runes {
+		ascii := c1 >= 0x20 && c1 < 0x7F && font.asciiGID[c1-0x20] != 0
+		if ascii && owns && font.asciiPlain[c1-0x20] {
+			page.appendGlyph(font, int(font.asciiGID[c1-0x20]))
+			continue
+		}
 		if c1 != 0xFEFF && !isIgnorable(c1) { // BOM marker, or one not drawn
 			gid := glyphOf(font, c1)
 			var another bool
-			if page.ownsFont(font) {
+			if owns {
 				another = font.useCharDrawnAsAnother(c1, gid)
 			} else {
 				another = font.drawnAsAnother(c1)
@@ -705,6 +711,9 @@ func (page *Page) appendPlainGlyphs(font *Font, runes []rune) bool {
 			if another {
 				page.buf = page.buf[:start]
 				return false
+			}
+			if ascii && owns {
+				font.asciiPlain[c1-0x20] = true
 			}
 			page.appendGlyph(font, gid)
 		}
@@ -1000,6 +1009,9 @@ func placeOnMark(font *Font, gids, x, offsets []int, mark, other int) {
 // its glyph for each character.
 func needsShaping(font *Font, runes []rune) bool {
 	for _, c := range runes {
+		if c >= 0x20 && c < 0x7F && font.asciiGID[c-0x20] != 0 {
+			continue
+		}
 		if c >= 0x0300 {
 			if c >= 0x200C && c <= 0x200F {
 				return true

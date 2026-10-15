@@ -82,6 +82,7 @@ class OpenTypeFont {
         font.advanceWidth = otf.advanceWidth;
         font.unicodeToGID = otf.unicodeToGID;
         font.unicodeOf = GlyphMap.UnicodeOfGlyphs(otf.unicodeToGID);
+        font.SetASCIIGlyphs();
         if (otf.gpos != null) {
             // A CFF font keeps its CFF table alone, so a copy of the GPOS table.
             font.gpos = GPOS.Of(otf.buf, otf.gpos.offset, otf.gpos.length, otf.numGlyphs, otf.cff);

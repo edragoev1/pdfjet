@@ -78,6 +78,22 @@ final public class Font {
     /** The character of each glyph, see GlyphMap.unicodeOfGlyphs. */
     int[] unicodeOf;
     /**
+     * The glyph and the advance width of each printable ASCII character,
+     * U+0020 to U+007E, that the font has, from setASCIIGlyphs: glyph 0 for one
+     * it lacks, which is looked up as any other character. Most text is these
+     * characters, and they skip the tests that glyphOf and advanceWidthOf
+     * make: a table of 2,546 pages took 37% longer in 9.0.7 than in 9.0.1
+     * (15 October 2026).
+     */
+    final int[] asciiGID = new int[95];
+    final int[] asciiAdvance = new int[95];
+    /**
+     * True for a printable ASCII character drawn once already, with its own
+     * glyph, so that it is not drawn as another character the next time
+     * either: the first character drawn with a glyph never changes.
+     */
+    final boolean[] asciiPlain = new boolean[95];
+    /**
      * Where the marks go, from the GPOS table of the font, read when a mark
      * is first drawn, or null for a font without one.
      */
@@ -621,7 +637,11 @@ final public class Font {
             for (int i = 0; i < str.length(); ) {
                 int cp = str.codePointAt(i);
                 i += Character.charCount(cp);
-                width += advanceWidthOf(cp);
+                if (cp >= 0x20 && cp < 0x7F && asciiGID[cp - 0x20] != 0) {
+                    width += asciiAdvance[cp - 0x20];
+                } else {
+                    width += advanceWidthOf(cp);
+                }
             }
         }
 
@@ -638,6 +658,23 @@ final public class Font {
             return 0;
         }
         return glyphAdvance(Page.glyphOf(this, cp));
+    }
+
+    // Reads the glyph and the advance width of each printable ASCII character
+    // the font has into asciiGID and asciiAdvance, once its character map and
+    // its widths are read. They are those glyphOf and advanceWidthOf give: none
+    // of these characters is a control character, an ignorable one or a mark.
+    void setASCIIGlyphs() {
+        if (advanceWidth == null || advanceWidth.length == 0) {
+            return;
+        }
+        for (int c = 0x20; c < 0x7F; c++) {
+            if (!lacks(c)) {
+                int gid = unicodeToGID.get(c);
+                asciiGID[c - 0x20] = gid;
+                asciiAdvance[c - 0x20] = glyphAdvance(gid);
+            }
+        }
     }
 
     // Returns the advance width of the glyph, in font units. A font can list

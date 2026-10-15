@@ -25,6 +25,14 @@ This is the first entry in this file; earlier releases were not tracked here.
 - The Go port asks for Go 1.26 or later, not 1.27: nothing in it needs
   1.27, and Go supports its last two releases. CI tests it with 1.26 as
   well as 1.27, as it does Swift 6.2 beside the newest.
+- Text of printable ASCII characters is measured and drawn faster, in the
+  four ports: each font keeps the glyph and the width of the ones it has,
+  read once, where every character went through the tests that 9.0.3 to
+  9.0.5 added for control, ignorable and missing characters. The 2,546
+  pages of Example_24 took 37% longer in Go than in 9.0.1: 1,145 ms, now
+  905 ms, against 845 ms in 9.0.1. In C# they take 11% less time, 2,296 ms
+  where they took 2,576 ms; in Java and Swift about the same. The PDFs are
+  the same, apart from their dates and IDs.
 
 ## v9.0.7 — 2026-10-12
 

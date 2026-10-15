@@ -78,6 +78,7 @@ class OpenTypeFont {
         font.bBoxURy = otf.bBoxURy!
         font.advanceWidth = otf.advanceWidth
         font.unicodeToGID = otf.unicodeToGID
+        font.setASCIIGlyphs()
         font.unicodeOf = FontWriter.unicodeOfGlyphs(otf.unicodeToGID)
         if let table = otf.gpos {
             // A CFF font keeps its CFF table alone, so a copy of the GPOS table.

@@ -86,6 +86,7 @@ class OpenTypeFont {
         font.advanceWidth = otf.advanceWidth;
         font.unicodeToGID = otf.unicodeToGID;
         font.unicodeOf = GlyphMap.unicodeOfGlyphs(otf.unicodeToGID);
+        font.setASCIIGlyphs();
         if (otf.gpos != null) {
             // A CFF font keeps its CFF table alone, so a copy of the GPOS table.
             font.gpos = GPOS.of(otf.buf, otf.gpos.offset, otf.gpos.length, otf.numGlyphs, otf.cff);
