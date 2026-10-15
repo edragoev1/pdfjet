@@ -923,28 +923,32 @@ public class Page {
         let table = font.unicodeToGID
         let asciiGIDs = font.asciiGID
         let owns = ownsFont(font)
-        let plain = owns ? font.asciiPlain : []
         var codePoints = [Int]()
         var charGIDs = [Int]()
         var gids = [Int]()
         gids.reserveCapacity(scalars.count)
-        // The BOM, or one not drawn
-        for scalar in scalars where scalar.value != 0xFEFF && !Font.isIgnorable(Int(scalar.value)) {
-            let codePoint = Int(scalar.value)
-            if codePoint >= 0x20 && codePoint < 0x7F && asciiGIDs[codePoint - 0x20] != 0 {
-                let gid = Int(asciiGIDs[codePoint - 0x20])
-                gids.append(gid)
-                if owns && plain[codePoint - 0x20] {
+        // The local copy of asciiPlain ends with this block, before the font's
+        // array is written below, which a second reference to it would copy.
+        do {
+            let plain = owns ? font.asciiPlain : []
+            // The BOM, or one not drawn
+            for scalar in scalars where scalar.value != 0xFEFF && !Font.isIgnorable(Int(scalar.value)) {
+                let codePoint = Int(scalar.value)
+                if codePoint >= 0x20 && codePoint < 0x7F && asciiGIDs[codePoint - 0x20] != 0 {
+                    let gid = Int(asciiGIDs[codePoint - 0x20])
+                    gids.append(gid)
+                    if owns && plain[codePoint - 0x20] {
+                        continue
+                    }
+                    codePoints.append(codePoint)
+                    charGIDs.append(gid)
                     continue
                 }
+                let gid = Font.isControl(codePoint) ? table[0x0020] : table[codePoint]
+                gids.append(gid)
                 codePoints.append(codePoint)
                 charGIDs.append(gid)
-                continue
             }
-            let gid = Font.isControl(codePoint) ? table[0x0020] : table[codePoint]
-            gids.append(gid)
-            codePoints.append(codePoint)
-            charGIDs.append(gid)
         }
         if owns {
             font.useGlyphs(gids)

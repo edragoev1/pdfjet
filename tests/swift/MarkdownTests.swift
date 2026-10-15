@@ -96,6 +96,15 @@ import Testing
         }
     }
 
+    // Color.transparent leaves the color of a done task's box green: it filled
+    // the box with the color last set, black (review of 15 October 2026).
+    @Test func aTransparentCheckColorKeepsTheGreen() throws {
+        let font = try TestSupport.plexSans(MemoryPDF(Compliance.PDF_1_7).pdf)
+        let markdown = Markdown(font, font, font, font, font).setCheckColor(Color.transparent)
+        let checkColor = Mirror(reflecting: markdown).children.first { $0.label == "checkColor" }?.value as? Int32
+        #expect(checkColor == 0x1A7F37, "the check color is \(String(checkColor ?? 0, radix: 16))")
+    }
+
     @Test func headingLevelsSkipNone() throws {
         // A text that starts at ### and goes on to ##### is H1, then H2.
         let drawn = try MarkdownTests.draw("### Three\n\n##### Five\n\n# One", nil)

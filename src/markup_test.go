@@ -166,6 +166,8 @@ func TestMarkupALinkIsColoredAndUnderlined(t *testing.T) {
 		t.Error("the link is not underlined")
 	}
 	testAssertRGB(t, 1, 0, 0, line.GetTextColor())
+	// The underline in the color of the link, not black
+	testAssertRGB(t, 1, 0, 0, line.GetDecorationColor())
 }
 
 func TestMarkupLongInputsAreReadInLinearTime(t *testing.T) {
@@ -210,7 +212,11 @@ func TestMarkupTwoTildesStrikeThrough(t *testing.T) {
 		[]string{"~~gone~~ here", "gone|R~", " here|R"},
 		[]string{"a ~~b *c*~~ d", "a |R", "b |R~", "c|I~", " d|R"},
 		[]string{"~5 and ~~~x~~~", "~5 and ~~~x~~~|R"},
-		[]string{"~~ a ~~", "~~ a ~~|R"})
+		[]string{"~~ a ~~", "~~ a ~~|R"},
+		// They nest, and do not cross.
+		[]string{"~~a *b~~ c*", "a *b|R~", " c*|R"},
+		[]string{"*a ~~b* c~~", "a ~~b|I", " c~~|R"},
+		[]string{"**a ~~b~~ c**", "a |B", "b|B~", " c|B"})
 }
 
 // An address of http:// or https:// is a link: in < and >, or alone, without
@@ -227,6 +233,10 @@ func TestMarkupAnAddressIsALink(t *testing.T) {
 		[]string{"*https://pdfjet.com*", "https://pdfjet.com|I https://pdfjet.com"},
 		[]string{"[text](https://x.com) https://y.com", "text|R https://x.com", "https://y.com|R https://y.com"},
 		[]string{"xhttps://a.b", "xhttps://a.b|R"},
+		[]string{"HTTPS://A.B/x", "HTTPS://A.B/x|R HTTPS://A.B/x"},
+		[]string{"<Http://a.b>", "Http://a.b|R Http://a.b"},
+		// Only the ASCII letters are folded: ſ is not an s.
+		[]string{"httpſ://a.b", "httpſ://a.b|R"},
 		[]string{"http:// alone", "http:// alone|R"},
 		[]string{"<http://a b>", "<http://a b>|R"})
 }

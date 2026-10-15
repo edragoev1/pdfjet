@@ -57,6 +57,11 @@ func FuzzMarkup(f *testing.F) {
 		"[a]([b](c))", "\\", "*\\", "`\\`", "``", "` `", "****", "[]()", "[](x)",
 		"*\u00A0a*", "*\u2007a\u2007*", "a\u2028*b*\u3000c", "\u001C*a*\u001F",
 		"**ÄÖ**, `日本` [𝄞](u)", "a\xffb *\xc3* [\xe2\x82](\xf0)",
+		// GitHub's _, ~~ and addresses: words with _ in them, runs that
+		// cross, and addresses with the punctuation and the ) at their end.
+		"_a_ and __b__", "snake_case_name", "*a _b* c_", "~~a~~ ~b~ ~~~c~~~", "~~a *b~~ c*",
+		"<https://a.b>", "see https://a.b.", "(https://a.b/c_(d)))", "https://", "<http://a b>",
+		"x_https://a.b", "https://a.b)))))", "<<https://a>>", "_https://a.b_", "😀_a_😀 ~~😀~~",
 	} {
 		f.Add(text)
 	}
@@ -65,7 +70,7 @@ func FuzzMarkup(f *testing.F) {
 			pdf := NewPDF(bufio.NewWriter(io.Discard))
 			markup, _ := testMarkup(pdf)
 			paragraph := markup.Paragraph(text)
-			if !strings.ContainsAny(text, "*`[]()\\") {
+			if !strings.ContainsAny(text, "*_~`[]()<\\") && !strings.Contains(text, "://") {
 				fuzzCheckPlainMarkup(t, text, paragraph)
 			}
 			paragraphs := append(markup.Paragraphs(text), paragraph)

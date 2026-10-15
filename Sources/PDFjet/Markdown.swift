@@ -140,13 +140,16 @@ public class Markdown {
     ///
     /// Sets the color of the box of a task that is done, - [x] in the
     /// Markdown, as a 0xRRGGBB value, which has a white check mark in it. It is
-    /// green, 0x1A7F37, unless it is set.
+    /// green, 0x1A7F37, unless it is set; Color.transparent leaves it as it is.
     ///
     /// - Parameter checkColor: the color.
     /// - Returns: this Markdown.
     ///
     @discardableResult
     public func setCheckColor(_ checkColor: Int32) -> Markdown {
+        if checkColor == Color.transparent {
+            return self
+        }
         self.checkColor = checkColor
         return self
     }

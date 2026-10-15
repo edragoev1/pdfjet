@@ -10,7 +10,8 @@ import Foundation
 /// Makes paragraphs of text with the inline markup of Markdown: **bold**,
 /// *italic*, ***bold italic***, `code` and [links](https://pdfjet.com), in the
 /// fonts given for each, and as GitHub's Markdown has them, __bold__ and
-/// _italic_, ~~strikethrough~~, and links that are their address,
+/// _italic_, ~~strikethrough~~ of two ~, one being text here, as in ~5, and
+/// links that are their address,
 /// <https://pdfjet.com> or https://pdfjet.com alone. An _ emphasizes only at
 /// the edge of a word, so that snake_case is text; an address alone ends
 /// before the punctuation at its end, as the period of a sentence, and before
@@ -179,6 +180,9 @@ public class Markup {
         if let link {
             textLine.setURIAction(link)
             textLine.setTextColor(linkColor)
+            // The underline in the color of the link: it was black under the
+            // blue (review of 15 October 2026)
+            textLine.setDecorationColor(linkColor)
             textLine.setUnderline(linkUnderline)
         }
         if joined {
@@ -306,6 +310,7 @@ public class Markup {
         private static let lessThan = UInt16(UInt8(ascii: "<"))
         private static let greaterThan = UInt16(UInt8(ascii: ">"))
         private static let letterH = UInt16(UInt8(ascii: "h"))
+        private static let capitalH = UInt16(UInt8(ascii: "H"))
         private static let openBracket = UInt16(UInt8(ascii: "["))
         private static let closeBracket = UInt16(UInt8(ascii: "]"))
         private static let openParenthesis = UInt16(UInt8(ascii: "("))
@@ -405,7 +410,8 @@ public class Markup {
         // before the punctuation at its end, ? ! . , : * _ and ~, and before
         // each ) at its end that closes no ( in it, as GitHub's Markdown reads it.
         private func autolinkEnd(_ i: Int, _ start: Int, _ end: Int, _ link: String?) -> Int {
-            if link != nil || (text[i] != Parser.lessThan && text[i] != Parser.letterH) {
+            if link != nil || (text[i] != Parser.lessThan && text[i] != Parser.letterH
+                    && text[i] != Parser.capitalH) {
                 return i
             }
             var from = i
@@ -450,11 +456,26 @@ public class Markup {
         }
 
         // Returns where the host starts after http:// or https:// at the
-        // index, or -1.
+        // index, in capitals or not, or -1. Only the ASCII letters are folded,
+        // so that the four ports agree.
         private func schemeEnd(_ i: Int, _ end: Int) -> Int {
             for scheme in Parser.schemes {
                 let n = scheme.count
-                if i + n <= end && text[i..<(i + n)].elementsEqual(scheme) {
+                if i + n > end {
+                    continue
+                }
+                var k = 0
+                while k < n {
+                    var ch = text[i + k]
+                    if ch >= 0x41 && ch <= 0x5A {
+                        ch += 0x20
+                    }
+                    if ch != scheme[k] {
+                        break
+                    }
+                    k += 1
+                }
+                if k == n {
                     return i + n
                 }
             }
@@ -526,8 +547,9 @@ public class Markup {
 
         // Matches the runs from the index on, each closer with the nearest
         // opener of its character before it: two * or _ of each make bold and
-        // one italic, and ~~ a strikethrough. The runs of * and _ between a
-        // closer and its opener can no longer match. Then gives every node the
+        // one italic, and ~~ a strikethrough. The runs of the other characters
+        // between a closer and its opener can no longer match, so that emphasis
+        // and strikethrough nest and do not cross. Then gives every node the
         // emphasis it is in, and turns what is left of each run into text.
         private static func matchEmphasis(_ nodes: inout [Node], _ first: Int) {
             // The runs that can still open, of *, of _ and of ~
@@ -541,6 +563,8 @@ public class Markup {
                 }
                 if node.char == tilde {
                     if node.canClose, let opener = tildes.popLast() {
+                        dropAfter(&stars, opener.index)
+                        dropAfter(&underscores, opener.index)
                         opener.opens = add(opener.opens, Markup.STRIKE)
                         node.closes = add(node.closes, Markup.STRIKE)
                         opener.count = 0
@@ -552,9 +576,9 @@ public class Markup {
                     continue
                 }
                 if node.char == star {
-                    match(node, &stars, &underscores)
+                    match(node, &stars, &underscores, &tildes)
                 } else {
-                    match(node, &underscores, &stars)
+                    match(node, &underscores, &stars, &tildes)
                 }
             }
             // The emphasis in effect, in levels, since bold can be in bold.
@@ -581,14 +605,15 @@ public class Markup {
         }
 
         // Matches a run of * or _ that can close with the openers of its own
-        // character, and drops the openers of the other character that are
-        // after the opener it matches. Then the run opens what is left of it.
-        private static func match(_ node: Node, _ own: inout [Node], _ other: inout [Node]) {
+        // character, and drops the openers of the other character and of ~
+        // that are after the opener it matches. Then the run opens what is
+        // left of it.
+        private static func match(_ node: Node, _ own: inout [Node], _ other: inout [Node],
+                _ tildes: inout [Node]) {
             if node.canClose {
                 while node.count > 0, let opener = own.last {
-                    while let after = other.last, after.index > opener.index {
-                        other.removeLast()
-                    }
+                    dropAfter(&other, opener.index)
+                    dropAfter(&tildes, opener.index)
                     let use = (node.count >= 2 && opener.count >= 2) ? 2 : 1
                     let flag = (use == 2) ? Markup.BOLD : Markup.ITALIC
                     opener.opens = add(opener.opens, flag)
@@ -602,6 +627,13 @@ public class Markup {
             }
             if node.count > 0 && node.canOpen {
                 own.append(node)
+            }
+        }
+
+        // Drops the openers after the index from the stack.
+        private static func dropAfter(_ openers: inout [Node], _ index: Int) {
+            while let after = openers.last, after.index > index {
+                openers.removeLast()
             }
         }
 

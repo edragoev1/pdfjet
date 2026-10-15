@@ -102,6 +102,26 @@ class MarkdownTest {
         }
     }
 
+    // Color.transparent leaves the color of a done task's box green: it filled
+    // the box with the color last set, black (review of 15 October 2026).
+    @Test
+    void aTransparentCheckColorKeepsTheGreen() throws Exception {
+        TestSupport.allowCoreFonts(true); // What the document tags, in a core font
+        String[] contents = new String[2];
+        for (int i = 0; i < contents.length; i++) {
+            PDF pdf = TestSupport.newPDF();
+            Font font = TestSupport.helvetica(pdf);
+            Markdown markdown = new Markdown(font, font, font, font, font);
+            if (i == 1) {
+                markdown.setCheckColor(Color.transparent);
+            }
+            List<Page> pages = new ArrayList<Page>();
+            markdown.drawOn(pdf, "- [x] done", pages, Letter.PORTRAIT);
+            contents[i] = TestSupport.content(pages.get(0));
+        }
+        assertEquals(contents[0], contents[1]);
+    }
+
     @Test
     void headingLevelsSkipNone() throws Exception {
         TestSupport.allowCoreFonts(true); // What the document tags, in a core font

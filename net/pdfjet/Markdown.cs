@@ -129,11 +129,15 @@ public class Markdown {
     /// <summary>
     /// Sets the color of the box of a task that is done, - [x] in the
     /// Markdown, as a 0xRRGGBB value, which has a white check mark in it. It
-    /// is green, 0x1A7F37, unless it is set.
+    /// is green, 0x1A7F37, unless it is set; Color.transparent leaves it as
+    /// it is.
     /// </summary>
     /// <param name="checkColor">the color.</param>
     /// <returns>this Markdown.</returns>
     public Markdown SetCheckColor(int checkColor) {
+        if (checkColor == Color.transparent) {
+            return this;
+        }
         this.checkColor = checkColor;
         return this;
     }

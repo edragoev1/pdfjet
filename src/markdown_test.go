@@ -6,6 +6,7 @@
 package pdfjet
 
 import (
+	"github.com/edragoev1/pdfjet/v9/src/color"
 	"regexp"
 	"strconv"
 	"strings"
@@ -99,6 +100,16 @@ func TestMarkdownTasksAreLabeledByTheirBoxes(t *testing.T) {
 		if strings.Count(drawn.pdf, "/ActualText "+actualText) != 1 || strings.Count(drawn.pdf, "/Alt "+actualText) != 1 {
 			t.Errorf("no /ActualText %s", actualText)
 		}
+	}
+}
+
+// color.Transparent leaves the color of a done task's box green: it filled
+// the box with the color last set, black (review of 15 October 2026).
+func TestMarkdownATransparentCheckColorKeepsTheGreen(t *testing.T) {
+	font := testPlexSans(testNewPDF())
+	markdown := NewMarkdown(font, font, font, font, font).SetCheckColor(color.Transparent)
+	if markdown.checkColor != 0x1A7F37 {
+		t.Errorf("the check color is %06X", markdown.checkColor)
 	}
 }
 

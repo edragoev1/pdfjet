@@ -143,8 +143,11 @@ func (markdown *Markdown) SetLinkColor(linkColor int32) *Markdown {
 
 // SetCheckColor sets the color of the box of a task that is done, - [x] in
 // the Markdown, as a 0xRRGGBB value, which has a white check mark in it. It
-// is green, 0x1A7F37, unless it is set.
+// is green, 0x1A7F37, unless it is set; color.Transparent leaves it as it is.
 func (markdown *Markdown) SetCheckColor(checkColor int32) *Markdown {
+	if checkColor == color.Transparent {
+		return markdown
+	}
 	markdown.checkColor = checkColor
 	return markdown
 }

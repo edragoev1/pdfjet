@@ -136,6 +136,8 @@ public class MarkupTest {
         TextLine line = paragraph.lines[0];
         Assert.True(line.GetUnderline());
         TestSupport.AssertRGB(1f, 0f, 0f, line.GetTextColor());
+        // The underline in the color of the link, not black
+        TestSupport.AssertRGB(1f, 0f, 0f, line.GetDecorationColor());
     }
 
     [Fact]
@@ -173,6 +175,10 @@ public class MarkupTest {
         Assert.Equal(Lines("a |R", "b |R~", "c|I~", " d|R"), Parse("a ~~b *c*~~ d"));
         Assert.Equal(Lines("~5 and ~~~x~~~|R"), Parse("~5 and ~~~x~~~"));
         Assert.Equal(Lines("~~ a ~~|R"), Parse("~~ a ~~"));
+        // They nest, and do not cross.
+        Assert.Equal(Lines("a *b|R~", " c*|R"), Parse("~~a *b~~ c*"));
+        Assert.Equal(Lines("a ~~b|I", " c~~|R"), Parse("*a ~~b* c~~"));
+        Assert.Equal(Lines("a |B", "b|B~", " c|B"), Parse("**a ~~b~~ c**"));
     }
 
     // An address of http:// or https:// is a link: in < and >, or alone,
@@ -192,6 +198,10 @@ public class MarkupTest {
         Assert.Equal(Lines("text|R https://x.com", "https://y.com|R https://y.com"),
                 Parse("[text](https://x.com) https://y.com"));
         Assert.Equal(Lines("xhttps://a.b|R"), Parse("xhttps://a.b"));
+        Assert.Equal(Lines("HTTPS://A.B/x|R HTTPS://A.B/x"), Parse("HTTPS://A.B/x"));
+        Assert.Equal(Lines("Http://a.b|R Http://a.b"), Parse("<Http://a.b>"));
+        // Only the ASCII letters are folded: ſ is not an s.
+        Assert.Equal(Lines("httpſ://a.b|R"), Parse("httpſ://a.b"));
         Assert.Equal(Lines("http:// alone|R"), Parse("http:// alone"));
         Assert.Equal(Lines("<http://a b>|R"), Parse("<http://a b>"));
     }

@@ -13,7 +13,8 @@ namespace PDFjet.NET {
 /// Makes paragraphs of text with the inline markup of Markdown: **bold**,
 /// *italic*, ***bold italic***, `code` and [links](https://pdfjet.com), in the
 /// fonts given for each, and as GitHub's Markdown has them, __bold__ and
-/// _italic_, ~~strikethrough~~, and links that are their address,
+/// _italic_, ~~strikethrough~~ of two ~, one being text here, as in ~5, and
+/// links that are their address,
 /// &lt;https://pdfjet.com&gt; or https://pdfjet.com alone. An _ emphasizes
 /// only at the edge of a word, so that snake_case is text; an address alone
 /// ends before the punctuation at its end, as the period of a sentence, and
@@ -166,6 +167,9 @@ public class Markup {
         if (link != null) {
             textLine.SetURIAction(link);
             textLine.SetTextColor(linkColor);
+            // The underline in the color of the link: it was black under the
+            // blue (review of 15 October 2026)
+            textLine.SetDecorationColor(linkColor);
             textLine.SetUnderline(linkUnderline);
         }
         if (joined) {
@@ -355,7 +359,7 @@ public class Markup {
         // before the punctuation at its end, ? ! . , : * _ and ~, and before
         // each ) at its end that closes no ( in it, as GitHub's Markdown reads it.
         private int AutolinkEnd(int i, int start, int end, String link) {
-            if (link != null || (text[i] != '<' && text[i] != 'h')) {
+            if (link != null || (text[i] != '<' && text[i] != 'h' && text[i] != 'H')) {
                 return i;
             }
             int from = i;
@@ -392,11 +396,26 @@ public class Markup {
         }
 
         // Returns where the host starts after http:// or https:// at the
-        // index, or -1.
+        // index, in capitals or not, or -1. Only the ASCII letters are folded,
+        // so that the four ports agree.
         private int SchemeEnd(int i, int end) {
             foreach (String scheme in new String[] {"https://", "http://"}) {
                 int n = scheme.Length;
-                if (i + n <= end && String.CompareOrdinal(text, i, scheme, 0, n) == 0) {
+                if (i + n > end) {
+                    continue;
+                }
+                int k = 0;
+                while (k < n) {
+                    char ch = text[i + k];
+                    if (ch >= 'A' && ch <= 'Z') {
+                        ch = (char) (ch + ('a' - 'A'));
+                    }
+                    if (ch != scheme[k]) {
+                        break;
+                    }
+                    k++;
+                }
+                if (k == n) {
                     return i + n;
                 }
             }
@@ -458,8 +477,9 @@ public class Markup {
 
         // Matches the runs from the index on, each closer with the nearest
         // opener of its character before it: two * or _ of each make bold and
-        // one italic, and ~~ a strikethrough. The runs of * and _ between a
-        // closer and its opener can no longer match. Then gives every node the
+        // one italic, and ~~ a strikethrough. The runs of the other characters
+        // between a closer and its opener can no longer match, so that emphasis
+        // and strikethrough nest and do not cross. Then gives every node the
         // emphasis it is in, and turns what is left of each run into text.
         private static void MatchEmphasis(List<Node> nodes, int first) {
             // The runs that can still open, of *, of _ and of ~
@@ -474,6 +494,8 @@ public class Markup {
                 if (node.ch == '~') {
                     if (node.canClose && tildes.Count > 0) {
                         Node opener = tildes.Pop();
+                        DropAfter(stars, opener.index);
+                        DropAfter(underscores, opener.index);
                         opener.opens = Add(opener.opens, STRIKE);
                         node.closes = Add(node.closes, STRIKE);
                         opener.count = 0;
@@ -489,9 +511,8 @@ public class Markup {
                 if (node.canClose) {
                     while (node.count > 0 && own.Count > 0) {
                         Node opener = own.Peek();
-                        while (other.Count > 0 && other.Peek().index > opener.index) {
-                            other.Pop();
-                        }
+                        DropAfter(other, opener.index);
+                        DropAfter(tildes, opener.index);
                         int use = (node.count >= 2 && opener.count >= 2) ? 2 : 1;
                         int flag = (use == 2) ? BOLD : ITALIC;
                         opener.opens = Add(opener.opens, flag);
@@ -523,6 +544,13 @@ public class Markup {
                 } else {
                     node.flags |= Emphasis(levels);
                 }
+            }
+        }
+
+        // Drops the openers after the index from the stack.
+        private static void DropAfter(Stack<Node> openers, int index) {
+            while (openers.Count > 0 && openers.Peek().index > index) {
+                openers.Pop();
             }
         }
 

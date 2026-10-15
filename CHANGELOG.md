@@ -19,7 +19,8 @@ This is the first entry in this file; earlier releases were not tracked here.
 - `Markdown.setHeadingColor`, `setLinkColor` and `setCheckColor`, in the
   four ports: the color of the headings, which are in the color of the text
   unless it is set; of the links, blue unless it is set; and of the box of a
-  task that is done, green, 0x1A7F37, unless it is set.
+  task that is done, green, 0x1A7F37, unless it is set;
+  `Color.transparent` leaves each as it is.
 - In `Markup`, and so in `Markdown`, in the four ports, the inline markup
   of GitHub's Markdown that was drawn as it was typed: `_italic_` and
   `__bold__`, which emphasize only at the edge of a word, so that
@@ -46,6 +47,8 @@ This is the first entry in this file; earlier releases were not tracked here.
 - A link, or any underlined or struck-through text, that ended a paragraph
   of a `TextFrame`, as in `Markdown` and `Markup`, had its line drawn one
   space past its last word, in the four ports.
+- The underline of a link of `Markup` and `Markdown` is in the color of the
+  link; it was black under the blue.
 
 ## v9.0.7 — 2026-10-12
 

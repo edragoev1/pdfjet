@@ -136,6 +136,9 @@ class MarkupTest {
         assertTrue(line.getUnderline());
         assertEquals(Arrays.asList(1f, 0f, 0f), Arrays.asList(line.getTextColor()[0], line.getTextColor()[1],
                 line.getTextColor()[2]));
+        // The underline in the color of the link, not black
+        assertEquals(Arrays.asList(1f, 0f, 0f), Arrays.asList(line.getDecorationColor()[0],
+                line.getDecorationColor()[1], line.getDecorationColor()[2]));
     }
 
     @Test
@@ -173,6 +176,10 @@ class MarkupTest {
         assertEquals(Arrays.asList("a |R", "b |R~", "c|I~", " d|R"), parse("a ~~b *c*~~ d"));
         assertEquals(Arrays.asList("~5 and ~~~x~~~|R"), parse("~5 and ~~~x~~~"));
         assertEquals(Arrays.asList("~~ a ~~|R"), parse("~~ a ~~"));
+        // They nest, and do not cross.
+        assertEquals(Arrays.asList("a *b|R~", " c*|R"), parse("~~a *b~~ c*"));
+        assertEquals(Arrays.asList("a ~~b|I", " c~~|R"), parse("*a ~~b* c~~"));
+        assertEquals(Arrays.asList("a |B", "b|B~", " c|B"), parse("**a ~~b~~ c**"));
     }
 
     // An address of http:// or https:// is a link: in < and >, or alone,
@@ -194,6 +201,10 @@ class MarkupTest {
         assertEquals(Arrays.asList("text|R https://x.com", "https://y.com|R https://y.com"),
                 parse("[text](https://x.com) https://y.com"));
         assertEquals(Arrays.asList("xhttps://a.b|R"), parse("xhttps://a.b"));
+        assertEquals(Arrays.asList("HTTPS://A.B/x|R HTTPS://A.B/x"), parse("HTTPS://A.B/x"));
+        assertEquals(Arrays.asList("Http://a.b|R Http://a.b"), parse("<Http://a.b>"));
+        // Only the ASCII letters are folded: ſ is not an s.
+        assertEquals(Arrays.asList("httpſ://a.b|R"), parse("httpſ://a.b"));
         assertEquals(Arrays.asList("http:// alone|R"), parse("http:// alone"));
         assertEquals(Arrays.asList("<http://a b>|R"), parse("<http://a b>"));
     }

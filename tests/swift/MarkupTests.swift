@@ -120,6 +120,8 @@ import Testing
         let line = paragraph.lines[0]
         #expect(line.getUnderline())
         TestSupport.expectRGB(1, 0, 0, line.getTextColor())
+        // The underline in the color of the link, not black
+        TestSupport.expectRGB(1, 0, 0, line.getDecorationColor())
     }
 
     @Test func longInputsAreReadInLinearTime() {
@@ -159,6 +161,10 @@ import Testing
         #expect(parse("a ~~b *c*~~ d") == ["a |R", "b |R~", "c|I~", " d|R"])
         #expect(parse("~5 and ~~~x~~~") == ["~5 and ~~~x~~~|R"])
         #expect(parse("~~ a ~~") == ["~~ a ~~|R"])
+        // They nest, and do not cross.
+        #expect(parse("~~a *b~~ c*") == ["a *b|R~", " c*|R"])
+        #expect(parse("*a ~~b* c~~") == ["a ~~b|I", " c~~|R"])
+        #expect(parse("**a ~~b~~ c**") == ["a |B", "b|B~", " c|B"])
     }
 
     // An address of http:// or https:// is a link: in < and >, or alone,
@@ -177,6 +183,10 @@ import Testing
         #expect(parse("[text](https://x.com) https://y.com")
                 == ["text|R https://x.com", "https://y.com|R https://y.com"])
         #expect(parse("xhttps://a.b") == ["xhttps://a.b|R"])
+        #expect(parse("HTTPS://A.B/x") == ["HTTPS://A.B/x|R HTTPS://A.B/x"])
+        #expect(parse("<Http://a.b>") == ["Http://a.b|R Http://a.b"])
+        // Only the ASCII letters are folded: ſ is not an s.
+        #expect(parse("httpſ://a.b") == ["httpſ://a.b|R"])
         #expect(parse("http:// alone") == ["http:// alone|R"])
         #expect(parse("<http://a b>") == ["<http://a b>|R"])
     }

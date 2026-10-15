@@ -12,7 +12,8 @@ import java.util.*;
  * Makes paragraphs of text with the inline markup of Markdown: **bold**,
  * *italic*, ***bold italic***, `code` and [links](https://pdfjet.com), in the
  * fonts given for each, and as GitHub's Markdown has them, __bold__ and
- * _italic_, ~~strikethrough~~, and links that are their address,
+ * _italic_, ~~strikethrough~~ of two ~, one being text here, as in ~5, and
+ * links that are their address,
  * &lt;https://pdfjet.com&gt; or https://pdfjet.com alone. An _ emphasizes only
  * at the edge of a word, so that snake_case is text; an address alone ends
  * before the punctuation at its end, as the period of a sentence, and before a
@@ -167,6 +168,9 @@ public class Markup {
         if (link != null) {
             textLine.setURIAction(link);
             textLine.setTextColor(linkColor);
+            // The underline in the color of the link: it was black under the
+            // blue (review of 15 October 2026)
+            textLine.setDecorationColor(linkColor);
             textLine.setUnderline(linkUnderline);
         }
         if (joined) {
@@ -355,7 +359,7 @@ public class Markup {
         // before the punctuation at its end, ? ! . , : * _ and ~, and before
         // each ) at its end that closes no ( in it, as GitHub's Markdown reads it.
         private int autolinkEnd(int i, int start, int end, String link) {
-            if (link != null || (text.charAt(i) != '<' && text.charAt(i) != 'h')) {
+            if (link != null || (text.charAt(i) != '<' && text.charAt(i) != 'h' && text.charAt(i) != 'H')) {
                 return i;
             }
             int from = i;
@@ -394,11 +398,26 @@ public class Markup {
         }
 
         // Returns where the host starts after http:// or https:// at the
-        // index, or -1.
+        // index, in capitals or not, or -1. Only the ASCII letters are folded,
+        // so that the four ports agree.
         private int schemeEnd(int i, int end) {
             for (String scheme : new String[] {"https://", "http://"}) {
                 int n = scheme.length();
-                if (i + n <= end && text.startsWith(scheme, i)) {
+                if (i + n > end) {
+                    continue;
+                }
+                int k = 0;
+                while (k < n) {
+                    char ch = text.charAt(i + k);
+                    if (ch >= 'A' && ch <= 'Z') {
+                        ch += 'a' - 'A';
+                    }
+                    if (ch != scheme.charAt(k)) {
+                        break;
+                    }
+                    k++;
+                }
+                if (k == n) {
                     return i + n;
                 }
             }
@@ -459,8 +478,9 @@ public class Markup {
 
         // Matches the runs from the index on, each closer with the nearest
         // opener of its character before it: two * or _ of each make bold and
-        // one italic, and ~~ a strikethrough. The runs of * and _ between a
-        // closer and its opener can no longer match. Then gives every node the
+        // one italic, and ~~ a strikethrough. The runs of the other characters
+        // between a closer and its opener can no longer match, so that emphasis
+        // and strikethrough nest and do not cross. Then gives every node the
         // emphasis it is in, and turns what is left of each run into text.
         private static void matchEmphasis(List<Node> nodes, int first) {
             // The runs that can still open, of *, of _ and of ~
@@ -475,6 +495,8 @@ public class Markup {
                 if (node.ch == '~') {
                     if (node.canClose && !tildes.isEmpty()) {
                         Node opener = tildes.pop();
+                        dropAfter(stars, opener.index);
+                        dropAfter(underscores, opener.index);
                         opener.opens = add(opener.opens, STRIKE);
                         node.closes = add(node.closes, STRIKE);
                         opener.count = 0;
@@ -490,9 +512,8 @@ public class Markup {
                 if (node.canClose) {
                     while (node.count > 0 && !own.isEmpty()) {
                         Node opener = own.peek();
-                        while (!other.isEmpty() && other.peek().index > opener.index) {
-                            other.pop();
-                        }
+                        dropAfter(other, opener.index);
+                        dropAfter(tildes, opener.index);
                         int use = (node.count >= 2 && opener.count >= 2) ? 2 : 1;
                         int flag = (use == 2) ? BOLD : ITALIC;
                         opener.opens = add(opener.opens, flag);
@@ -524,6 +545,13 @@ public class Markup {
                 } else {
                     node.flags |= emphasis(levels);
                 }
+            }
+        }
+
+        // Drops the openers after the index from the stack.
+        private static void dropAfter(Deque<Node> openers, int index) {
+            while (!openers.isEmpty() && openers.peek().index > index) {
+                openers.pop();
             }
         }
 

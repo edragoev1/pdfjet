@@ -14,7 +14,8 @@ import (
 // Markup makes paragraphs of text with the inline markup of Markdown:
 // **bold**, *italic*, ***bold italic***, `code` and [links](https://pdfjet.com),
 // in the fonts given for each, and as GitHub's Markdown has them, __bold__ and
-// _italic_, ~~strikethrough~~, and links that are their address,
+// _italic_, ~~strikethrough~~ of two ~, one being text here, as in ~5, and
+// links that are their address,
 // <https://pdfjet.com> or https://pdfjet.com alone. An _ emphasizes only at
 // the edge of a word, so that snake_case is text; an address alone ends
 // before the punctuation at its end, as the period of a sentence, and before a
@@ -167,6 +168,9 @@ func (markup *Markup) addRun(paragraph *Paragraph, text string, flags int, link 
 	if link != "" {
 		textLine.SetURIAction(link)
 		textLine.SetTextColor(markup.linkColor)
+		// The underline in the color of the link: it was black under the
+		// blue (review of 15 October 2026)
+		textLine.SetDecorationColor(markup.linkColor)
 		textLine.SetUnderline(markup.linkUnderline)
 	}
 	if joined {
@@ -380,7 +384,7 @@ func (parser *markupParser) isLink(i, end int) bool {
 // that closes no ( in it, as GitHub's Markdown reads it.
 func (parser *markupParser) autolinkEnd(i, start, end int, link string) int {
 	text := parser.text
-	if link != "" || (text[i] != '<' && text[i] != 'h') {
+	if link != "" || (text[i] != '<' && text[i] != 'h' && text[i] != 'H') {
 		return i
 	}
 	from := i
@@ -423,11 +427,26 @@ func (parser *markupParser) autolinkEnd(i, start, end int, link string) int {
 }
 
 // markupSchemeEnd returns where the host starts after http:// or https:// at
-// the index, or -1.
+// the index, in capitals or not, or -1. Only the ASCII letters are folded, so
+// that the four ports agree.
 func markupSchemeEnd(text []rune, i, end int) int {
 	for _, scheme := range []string{"https://", "http://"} {
 		n := len(scheme)
-		if i+n <= end && string(text[i:i+n]) == scheme {
+		if i+n > end {
+			continue
+		}
+		k := 0
+		for k < n {
+			ch := text[i+k]
+			if ch >= 'A' && ch <= 'Z' {
+				ch += 'a' - 'A'
+			}
+			if ch != rune(scheme[k]) {
+				break
+			}
+			k++
+		}
+		if k == n {
 			return i + n
 		}
 	}
@@ -496,9 +515,10 @@ func markupFlush(buf []rune, link string, nodes []*markupNode) ([]rune, []*marku
 
 // markupMatchEmphasis matches the runs from the index on, each closer with
 // the nearest opener of its character before it: two * or _ of each make bold
-// and one italic, and ~~ a strikethrough. The runs of * and _ between a
-// closer and its opener can no longer match. Then gives every node the
-// emphasis it is in, and turns what is left of each run into text.
+// and one italic, and ~~ a strikethrough. The runs of the other characters
+// between a closer and its opener can no longer match, so that emphasis and
+// strikethrough nest and do not cross. Then gives every node the emphasis it
+// is in, and turns what is left of each run into text.
 func markupMatchEmphasis(nodes []*markupNode, first int) {
 	// The runs that can still open, of *, of _ and of ~
 	var stars, underscores, tildes []*markupNode
@@ -511,6 +531,8 @@ func markupMatchEmphasis(nodes []*markupNode, first int) {
 			if node.canClose && len(tildes) > 0 {
 				opener := tildes[len(tildes)-1]
 				tildes = tildes[:len(tildes)-1]
+				markupDropAfter(&stars, opener.index)
+				markupDropAfter(&underscores, opener.index)
 				opener.opens = markupAdd(opener.opens, markupStrike)
 				node.closes = markupAdd(node.closes, markupStrike)
 				opener.count = 0
@@ -528,9 +550,8 @@ func markupMatchEmphasis(nodes []*markupNode, first int) {
 		if node.canClose {
 			for node.count > 0 && len(*own) > 0 {
 				opener := (*own)[len(*own)-1]
-				for len(*other) > 0 && (*other)[len(*other)-1].index > opener.index {
-					*other = (*other)[:len(*other)-1]
-				}
+				markupDropAfter(other, opener.index)
+				markupDropAfter(&tildes, opener.index)
 				use := 1
 				if node.count >= 2 && opener.count >= 2 {
 					use = 2
@@ -569,6 +590,13 @@ func markupMatchEmphasis(nodes []*markupNode, first int) {
 		} else {
 			node.flags |= markupEmphasis(levels)
 		}
+	}
+}
+
+// markupDropAfter drops the openers after the index from the stack.
+func markupDropAfter(openers *[]*markupNode, index int) {
+	for len(*openers) > 0 && (*openers)[len(*openers)-1].index > index {
+		*openers = (*openers)[:len(*openers)-1]
 	}
 }
 

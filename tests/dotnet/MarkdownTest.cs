@@ -95,6 +95,17 @@ public class MarkdownTest {
         }
     }
 
+    // Color.transparent leaves the color of a done task's box green: it filled
+    // the box with the color last set, black (review of 15 October 2026).
+    [Fact]
+    public void ATransparentCheckColorKeepsTheGreen() {
+        Font font = TestSupport.PlexSans(TestSupport.NewPDF());
+        Markdown markdown = new Markdown(font, font, font, font, font).SetCheckColor(Color.transparent);
+        int checkColor = (int) typeof(Markdown).GetField("checkColor",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).GetValue(markdown);
+        Assert.True(checkColor == 0x1A7F37, "the check color is " + checkColor.ToString("X6"));
+    }
+
     [Fact]
     public void HeadingLevelsSkipNone() {
         using IDisposable coreFonts = TestSupport.AllowCoreFonts();
