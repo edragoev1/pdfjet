@@ -72,6 +72,21 @@ nothing else running:
 The figures of another machine are not compared with these: the release
 before is run on it as well, from its tag in a worktree.
 
+Example_24 runs warm, so it cannot see what the first PDF of a process costs,
+which a command-line tool, a serverless function or a server just started pays
+each time. That is the second check before a release: the first PDF of a fresh
+process, in the four ports, with the programs of `benchmarks/common`
+(CommonBench cold invoice in Java; FirstPdf in C#, Go and Swift), the median of
+5 processes. The figures of 15 October 2026, after the change of 9.1.1 (new
+PDF() 55 ms in Java before it):
+
+| Port | First PDF |
+|---|---|
+| Java, a one-page invoice | 44 ms |
+| C# | 39 ms |
+| Swift | 3 ms |
+| Go | 1.5 ms |
+
 ## Method
 
 - Each configuration runs in its own JVM: 2 warm-up runs and 7 measured runs,
