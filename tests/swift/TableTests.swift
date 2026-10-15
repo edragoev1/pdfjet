@@ -21,6 +21,44 @@ import Testing
         return data
     }
 
+    // A cell drawn whole, as a TextBlock is, that is taller than a page ran off
+    // the page with no error, and what did not fit was lost (issue #4, 15 October
+    // 2026): it fails, and the same text in a text cell goes on over the pages.
+    @Test func aCellTallerThanAPageThatCannotBeSplitFails() throws {
+        var words = ""
+        for i in 0..<200 {
+            words += "word\(i) "
+        }
+        func draw(_ textBlock: Bool) throws -> (MemoryPDF, [Page]) {
+            let memory = MemoryPDF()
+            let font = try TestSupport.plexSans(memory.pdf)
+            var cell = Cell(font, words)
+            if textBlock {
+                cell = Cell(font, "")
+                cell.setTextBlock(TextBlock(font, words))
+            }
+            cell.setWidth(70.0)
+            let table = Table().setTableData([[Cell(font, "header")], [cell]], 1)
+            table.setLocation(50.0, 50.0)
+            table.setBottomMargin(20.0)
+            var pages = [Page]()
+            table.drawOn(memory.pdf, &pages, Letter.PORTRAIT)
+            memory.pdf.addPages(pages)
+            return (memory, pages)
+        }
+
+        var (memory, pages) = try draw(true)
+        #expect(pages.count == 1, "\(pages.count) pages, want the one the row would have been drawn on")
+        let error = #expect(throws: PDFjetError.self) { try memory.pdf.complete() }
+        let message = TestSupport.message(error)
+        #expect(message.contains("cannot be split across pages"), "got \(message)")
+        #expect(message.contains("The row at index 1 of the table"), "got \(message)")
+
+        (memory, pages) = try draw(false)
+        #expect(pages.count == 6, "the text cell takes \(pages.count) pages, want 6")
+        try memory.pdf.complete()
+    }
+
     @Test func measuringAndDrawingReturnTheSameCorner() {
         let pdf = TestSupport.newPDF()
         let font = TestSupport.helvetica(pdf)
@@ -90,7 +128,9 @@ import Testing
         #expect(table.getCellAt(2, 2).getText() == "7")
     }
 
-    @Test func aRowTallerThanThePageIsDrawnRatherThanAskedForForever() {
+    // A row taller than the page is refused, rather than asked a new page for
+    // forever, and no longer drawn off the page (issue #4).
+    @Test func aRowTallerThanThePageIsRefusedRatherThanAskedForForever() {
         let pdf = TestSupport.newPDF()
         let font = TestSupport.helvetica(pdf)
         var text = ""
@@ -109,7 +149,8 @@ import Testing
         _ = table.drawOn(pdf, &pages, Letter.PORTRAIT)
         #expect(pages.count == 1)
         #expect(table.getRowsRendered() == -1)
-        #expect(TestSupport.content(pages[0]).contains(TestSupport.hex("word0")))
+        let error = #expect(throws: PDFjetError.self) { try pdf.complete() }
+        #expect(TestSupport.message(error).contains("cannot be split across pages"))
     }
 
     @Test func aHeaderTallerThanHalfThePageIsDrawnOnTheFirstPageAlone() {

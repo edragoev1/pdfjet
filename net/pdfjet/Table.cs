@@ -1283,6 +1283,22 @@ public class Table : IDrawable {
         }
         for (int r = first; r < end; r++) {
             if (page != null) {
+                if (y + heights[r] > page.height) {
+                    // A row of a cell drawn whole, such as a TextBlock or an
+                    // image, is taller than a page: drawn, it ran off the page,
+                    // and what did not fit was lost with no error (issue #4,
+                    // 15 October 2026). A row that only reaches into the bottom
+                    // margin is drawn, as before. Fail throws, so nothing more
+                    // is drawn, and no more pages are asked for.
+                    rendered = -1;
+                    page.pdf.Fail(new InvalidOperationException(String.Format(CultureInfo.InvariantCulture,
+                            "The row at index {0} of the table is {1:F0} points tall, "
+                            + "and runs off the page, which has {2:F0} points for it: a cell with a TextBlock, "
+                            + "an image or another drawable is drawn whole and cannot be split across pages. "
+                            + "Put the text in a text cell, which is split across pages, or make the cell smaller.",
+                            r, heights[r], page.height - bottomMargin - top)));
+                    return new float[] {x, y};
+                }
                 DrawRow(page, tableData[r], x, y, heights, r, end, StructElem.TD);
             }
             y += heights[r];

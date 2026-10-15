@@ -84,8 +84,10 @@ public sealed class TableTest : IDisposable {
         Assert.Equal("7", table.GetCellAt(2, 2).GetText());
     }
 
+    // A row taller than the page is refused, rather than asked a new page for
+    // forever, and no longer drawn off the page (issue #4).
     [Fact]
-    public void ARowTallerThanThePageIsDrawnRatherThanAskedForForever() {
+    public void ARowTallerThanThePageIsRefusedRatherThanAskedForForever() {
         PDF pdf = TestSupport.NewPDF();
         Font font = TestSupport.Helvetica(pdf);
         StringBuilder text = new StringBuilder();
@@ -100,10 +102,56 @@ public sealed class TableTest : IDisposable {
         Table table = new Table().SetTableData(data, 1).SetLocation(50f, 50f).SetBottomMargin(20f);
         Assert.True(tall.GetHeight(66f) > 792f);      // taller than a Letter page
         List<Page> pages = new List<Page>();
-        table.DrawOn(pdf, pages, Letter.PORTRAIT);    // asked for pages forever before
+        // Asked for pages forever before.
+        Assert.Throws<InvalidOperationException>(() => table.DrawOn(pdf, pages, Letter.PORTRAIT));
         Assert.Single(pages);
         Assert.Equal(-1, table.GetRowsRendered());
-        Assert.Contains(TestSupport.Hex("word0"), TestSupport.Content(pages[0]));
+        Assert.Contains("cannot be split across pages",
+                Assert.Throws<InvalidOperationException>(() => pdf.Complete()).Message);
+    }
+
+    // A cell drawn whole, as a TextBlock is, that is taller than a page ran off
+    // the page with no error, and what did not fit was lost (issue #4, 15 October
+    // 2026): it fails, and the same text in a text cell goes on over the pages.
+    [Fact]
+    public void ACellTallerThanAPageThatCannotBeSplitFails() {
+        StringBuilder words = new StringBuilder();
+        for (int i = 0; i < 200; i++) {
+            words.Append("word").Append(i).Append(' ');
+        }
+
+        PDF pdf = TestSupport.NewPDF();
+        List<Page> pages = new List<Page>();
+        Table table = TallCellTable(pdf, words.ToString(), true);
+        InvalidOperationException e = Assert.Throws<InvalidOperationException>(
+                () => table.DrawOn(pdf, pages, Letter.PORTRAIT));
+        Assert.Contains("The row at index 1 of the table", e.Message);
+        pdf.AddPages(pages);
+        Assert.Single(pages);    // the one the row would have been drawn on
+        string message = Assert.Throws<InvalidOperationException>(() => pdf.Complete()).Message;
+        Assert.Contains("cannot be split across pages", message);
+        Assert.Contains("The row at index 1 of the table", message);
+
+        pdf = TestSupport.NewPDF();
+        pages = new List<Page>();
+        TallCellTable(pdf, words.ToString(), false).DrawOn(pdf, pages, Letter.PORTRAIT);
+        pdf.AddPages(pages);
+        Assert.Equal(6, pages.Count);    // the text cell is split across pages
+        pdf.Complete();
+    }
+
+    private static Table TallCellTable(PDF pdf, string words, bool textBlock) {
+        Font font = TestSupport.PlexSans(pdf);
+        Cell cell = new Cell(font, words);
+        if (textBlock) {
+            cell = new Cell(font, "");
+            cell.SetTextBlock(new TextBlock(font, words));
+        }
+        cell.SetWidth(70f);
+        List<List<Cell>> data = new List<List<Cell>>();
+        data.Add(new List<Cell> { new Cell(font, "header") });
+        data.Add(new List<Cell> { cell });
+        return new Table().SetTableData(data, 1).SetLocation(50f, 50f).SetBottomMargin(20f);
     }
 
     [Fact]

@@ -42,6 +42,53 @@ func testRows(font *Font, count, columns int) [][]*Cell {
 	return data
 }
 
+// A cell drawn whole, as a TextBlock is, that is taller than a page ran off
+// the page with no error, and what did not fit was lost (issue #4, 15 October
+// 2026): it fails, and the same text in a text cell goes on over the pages.
+func TestTableACellTallerThanAPageThatCannotBeSplitFails(t *testing.T) {
+	var words strings.Builder
+	for i := 0; i < 200; i++ {
+		fmt.Fprintf(&words, "word%d ", i)
+	}
+	draw := func(textBlock bool) (*testDoc, []*Page) {
+		doc := testNewDoc()
+		font := testPlexSans(doc.pdf)
+		cell := NewCell(font, words.String())
+		if textBlock {
+			cell = NewCell(font, "").SetTextBlock(NewTextBlock(font, words.String()))
+		}
+		cell.SetWidth(70)
+		table := NewTable()
+		table.SetTableData([][]*Cell{{NewCell(font, "header")}, {cell}}, 1)
+		table.SetLocation(50, 50)
+		table.SetBottomMargin(20)
+		var pages []*Page
+		table.DrawOnPages(doc.pdf, &pages, letter.Portrait())
+		doc.pdf.AddPages(pages)
+		return doc, pages
+	}
+
+	doc, pages := draw(true)
+	if len(pages) != 1 {
+		t.Errorf("%d pages, want the one the row would have been drawn on", len(pages))
+	}
+	err := doc.pdf.Complete()
+	if err == nil || !strings.Contains(err.Error(), "cannot be split across pages") {
+		t.Fatalf("got %v", err)
+	}
+	if !strings.Contains(err.Error(), "The row at index 1 of the table") {
+		t.Errorf("got %v", err)
+	}
+
+	doc, pages = draw(false)
+	if len(pages) != 6 {
+		t.Errorf("the text cell takes %d pages, want 6", len(pages))
+	}
+	if err := doc.pdf.Complete(); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestTableMeasuringAndDrawingReturnTheSameCorner(t *testing.T) {
 	pdf := testNewPDF()
 	table := NewTable().SetTableData(testRows(testHelvetica(pdf), 5, 3), 1)
@@ -129,7 +176,9 @@ func TestTableTheFileConstructorReadsLineBreaksInQuotedFieldsAsSpaces(t *testing
 	}
 }
 
-func TestTableARowTallerThanThePageIsDrawnRatherThanAskedForForever(t *testing.T) {
+// A row taller than the page is refused, rather than asked a new page for
+// forever, and no longer drawn off the page (issue #4).
+func TestTableARowTallerThanThePageIsRefusedRatherThanAskedForForever(t *testing.T) {
 	pdf := testNewPDF()
 	font := testHelvetica(pdf)
 	var text strings.Builder
@@ -153,8 +202,8 @@ func TestTableARowTallerThanThePageIsDrawnRatherThanAskedForForever(t *testing.T
 	if table.GetRowsRendered() != -1 {
 		t.Errorf("rows rendered %d", table.GetRowsRendered())
 	}
-	if !strings.Contains(testContent(pages[0]), testHex("word0")) {
-		t.Error("the row taller than the page is not drawn")
+	if err := pdf.Complete(); err == nil || !strings.Contains(err.Error(), "cannot be split across pages") {
+		t.Errorf("got %v", err)
 	}
 }
 

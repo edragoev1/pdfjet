@@ -11,6 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
@@ -82,9 +83,11 @@ class TableTest {
         assertTrue(!first.contains(TestSupport.hex("row59")) && second.contains(TestSupport.hex("row59")));
     }
 
+    // A row taller than the page is refused, rather than asked a new page for
+    // forever, and no longer drawn off the page (issue #4).
     @Test
-    void aRowTallerThanThePageIsDrawnRatherThanAskedForForever() throws Exception {
-        PDF pdf = TestSupport.newPDF();
+    void aRowTallerThanThePageIsRefusedRatherThanAskedForForever() throws Exception {
+        final PDF pdf = TestSupport.newPDF();
         Font font = TestSupport.helvetica(pdf);
         StringBuilder text = new StringBuilder();
         for (int i = 0; i < 200; i++) {
@@ -99,13 +102,57 @@ class TableTest {
         tall.setTextBlock(new TextBlock(font, text.toString())).setWidth(70f);
         row.add(tall);
         data.add(row);
-        Table table = new Table().setTableData(data, 1).setLocation(50f, 50f).setBottomMargin(20f);
+        final Table table = new Table().setTableData(data, 1).setLocation(50f, 50f).setBottomMargin(20f);
         assertTrue(tall.getHeight(66f) > 792f);      // taller than a Letter page
-        List<Page> pages = new ArrayList<Page>();
-        table.drawOn(pdf, pages, Letter.PORTRAIT);   // asked for pages forever before
+        final List<Page> pages = new ArrayList<Page>();
+        // Asked for pages forever before, and then drawn off the page.
+        assertThrows(IllegalStateException.class, () -> table.drawOn(pdf, pages, Letter.PORTRAIT));
         assertEquals(1, pages.size());
         assertEquals(-1, table.getRowsRendered());
-        assertTrue(TestSupport.content(pages.get(0)).contains(TestSupport.hex("word0")));
+        Exception e = assertThrows(IllegalStateException.class, () -> pdf.complete());
+        assertTrue(e.getMessage().contains("cannot be split across pages"), e.getMessage());
+    }
+
+    // A cell drawn whole, as a TextBlock is, that is taller than a page ran off
+    // the page with no error, and what did not fit was lost (issue #4, 15 October
+    // 2026): it fails, and the same text in a text cell goes on over the pages.
+    @Test
+    void aCellTallerThanAPageThatCannotBeSplitFails() throws Exception {
+        StringBuilder words = new StringBuilder();
+        for (int i = 0; i < 200; i++) {
+            words.append("word").append(i).append(' ');
+        }
+
+        final PDF pdf = TestSupport.newPDF();
+        final List<Page> pages = new ArrayList<Page>();
+        final Table table = tallCellTable(pdf, words.toString(), true);
+        assertThrows(IllegalStateException.class, () -> table.drawOn(pdf, pages, Letter.PORTRAIT));
+        assertEquals(1, pages.size(), "want the one page the row would have been drawn on");
+        pdf.addPages(pages);
+        Exception e = assertThrows(IllegalStateException.class, () -> pdf.complete());
+        assertTrue(e.getMessage().contains("cannot be split across pages"), e.getMessage());
+        assertTrue(e.getMessage().contains("The row at index 1 of the table"), e.getMessage());
+
+        PDF text = TestSupport.newPDF();
+        List<Page> textPages = new ArrayList<Page>();
+        tallCellTable(text, words.toString(), false).drawOn(text, textPages, Letter.PORTRAIT);
+        assertEquals(6, textPages.size(), "the text cell takes 6 pages");
+        text.addPages(textPages);
+        text.complete();
+    }
+
+    private static Table tallCellTable(PDF pdf, String words, boolean textBlock) throws Exception {
+        Font font = TestSupport.plexSans(pdf);
+        Cell cell = new Cell(font, words);
+        if (textBlock) {
+            cell = new Cell(font, "");
+            cell.setTextBlock(new TextBlock(font, words));
+        }
+        cell.setWidth(70f);
+        List<List<Cell>> data = new ArrayList<List<Cell>>();
+        data.add(new ArrayList<Cell>(Arrays.asList(new Cell(font, "header"))));
+        data.add(new ArrayList<Cell>(Arrays.asList(cell)));
+        return new Table().setTableData(data, 1).setLocation(50f, 50f).setBottomMargin(20f);
     }
 
     @Test

@@ -1298,6 +1298,22 @@ public class Table : Drawable {
         }
         for r in first..<max(first, end) {
             if let page = page {
+                if y + heights[r] > page.height {
+                    // A row of a cell drawn whole, such as a TextBlock or an
+                    // image, is taller than a page: drawn, it ran off the page,
+                    // and what did not fit was lost with no error (issue #4,
+                    // 15 October 2026). A row that only reaches into the bottom
+                    // margin is drawn, as before.
+                    page.pdf.fail("The row at index \(r) of the table is "
+                            + "\(String(format: "%.0f", heights[r])) points tall, "
+                            + "and runs off the page, which has "
+                            + "\(String(format: "%.0f", page.height - bottomMargin - top)) points for it: "
+                            + "a cell with a TextBlock, an image or another drawable is drawn whole "
+                            + "and cannot be split across pages. "
+                            + "Put the text in a text cell, which is split across pages, or make the cell smaller.")
+                    rendered = -1   // Nothing more is drawn, and no more pages are asked for
+                    return [x, y]
+                }
                 drawRow(page, tableData[r], x, y, heights, r, end, StructElem.TD)
             }
             y += heights[r]

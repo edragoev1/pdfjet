@@ -1329,6 +1329,22 @@ public class Table implements Drawable {
         }
         for (int r = first; r < end; r++) {
             if (page != null) {
+                if (y + heights[r] > page.height) {
+                    // A row of a cell drawn whole, such as a TextBlock or an
+                    // image, is taller than a page: drawn, it ran off the page,
+                    // and what did not fit was lost with no error (issue #4,
+                    // 15 October 2026). A row that only reaches into the bottom
+                    // margin is drawn, as before. The PDF fails, which throws
+                    // here and makes complete() throw too.
+                    rendered = -1; // Nothing more is drawn, and no more pages are asked for
+                    page.pdf.fail(new IllegalStateException(String.format(Locale.ROOT,
+                            "The row at index %d of the table is %.0f points tall, "
+                            + "and runs off the page, which has %.0f points for it: a cell with a TextBlock, "
+                            + "an image or another drawable is drawn whole and cannot be split across pages. "
+                            + "Put the text in a text cell, which is split across pages, or make the cell smaller.",
+                            r, heights[r], page.height - bottomMargin - top)));
+                    return new float[] {x, y};
+                }
                 drawRow(page, tableData.get(r), x, y, heights, r, end, StructElem.TD);
             }
             y += heights[r];

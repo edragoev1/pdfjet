@@ -25,6 +25,16 @@ This is the first entry in this file; earlier releases were not tracked here.
   its own cryptographic random numbers. The benchmark is in
   benchmarks/common.
 
+### Fixed
+- A table row taller than the page, of a cell drawn whole such as a
+  TextBlock or an image, was drawn on one page and ran off it, and what did
+  not fit was lost with no error (issue #4). It is now refused, saying which
+  row it is, how tall, and that a text cell, which a table splits across
+  pages, holds such text: in Java and C# drawOn throws, as their other
+  refusals do, and complete() throws after it; in Go and Swift complete()
+  fails. A row that only reaches into the bottom margin is drawn as before.
+  In the four ports.
+
 ## v9.0.9 — 2026-10-15
 
 ### Added
