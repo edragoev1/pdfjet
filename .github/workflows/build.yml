@@ -631,6 +631,27 @@ jobs:
             - name: Build the library
               run: swift build --target PDFjet -Xswiftc -warnings-as-errors
 
+    # The Go port tested with Go 1.26, the oldest that go.mod asks for, as
+    # the other jobs build with the toolchain of go.mod, 1.27: GOTOOLCHAIN
+    # local keeps Go from switching to it. Go 1.26 deflates no bytes in 11
+    # bytes, where 1.27 does in 8 (15 October 2026).
+    go-1-26:
+        name: go (1.26)
+        runs-on: ubuntu-24.04
+        env:
+            GOTOOLCHAIN: local
+        steps:
+            - uses: actions/checkout@v7
+
+            - uses: actions/setup-go@v7
+              with:
+                  go-version: "1.26"
+
+            - name: Unit tests
+              run: |
+                  go version
+                  ./test-go.sh
+
     swift-macos:
         runs-on: macos-latest
         timeout-minutes: 30

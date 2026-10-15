@@ -21,6 +21,11 @@ This is the first entry in this file; earlier releases were not tracked here.
   unless it is set; of the links, blue unless it is set; and of the box of a
   task that is done, green, 0x1A7F37, unless it is set.
 
+### Changed
+- The Go port asks for Go 1.26 or later, not 1.27: nothing in it needs
+  1.27, and Go supports its last two releases. CI tests it with 1.26 as
+  well as 1.27, as it does Swift 6.2 beside the newest.
+
 ## v9.0.7 — 2026-10-12
 
 ### Added
