@@ -183,13 +183,17 @@ class MarkdownParserTest {
     // sixty-four; the two times are measured in the same run, the shortest of
     // three each, so that a busy computer slows both (a limit of 3 s failed
     // under a fuzzer's load, 9 October 2026, and a limit of 10 for four times
-    // the text, too near both, failed in CI at 10.1 on 12 October).
+    // the text, too near both, failed in CI at 10.1 on 12 October). The shorter
+    // text is 5000 repeats, not 2500, and the limit 32: four times linear, 8,
+    // and half of quadratic, 64. In CI's Arabic locale of .NET, 2500 repeats
+    // took 17 ms, short enough for a pause to count, and 20000 took 28 times
+    // as long, over the limit of 24 (15 October).
     @Test
     void longInputsAreReadQuickly() {
-        long small = parseTime(2500);
-        long large = parseTime(20000);
-        assertTrue(large <= 24 * small, "20000 repeats took " + large / 1000000
-                + " ms, and 2500 " + small / 1000000 + " ms");
+        long small = parseTime(5000);
+        long large = parseTime(40000);
+        assertTrue(large <= 32 * small, "40000 repeats took " + large / 1000000
+                + " ms, and 5000 " + small / 1000000 + " ms");
     }
 
     // The shortest of three times the text of the repeats is read, in nanoseconds.

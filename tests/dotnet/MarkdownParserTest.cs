@@ -191,13 +191,17 @@ public class MarkdownParserTest {
     // sixty-four; the two times are measured in the same run, the shortest of
     // three each, so that a busy computer slows both (a limit of 3 s failed
     // under a fuzzer's load, 9 October 2026, and a limit of 10 for four times
-    // the text, too near both, failed in CI at 10.1 on 12 October).
+    // the text, too near both, failed in CI at 10.1 on 12 October). The shorter
+    // text is 5000 repeats, not 2500, and the limit 32: four times linear, 8,
+    // and half of quadratic, 64. In CI's Arabic locale of .NET, 2500 repeats
+    // took 17 ms, short enough for a pause to count, and 20000 took 28 times
+    // as long, over the limit of 24 (15 October).
     [Fact]
     public void LongInputsAreReadQuickly() {
-        TimeSpan small = ParseTime(2500);
-        TimeSpan large = ParseTime(20000);
-        Assert.True(large.Ticks <= 24 * small.Ticks, "20000 repeats took "
-                + large.TotalMilliseconds + " ms, and 2500 " + small.TotalMilliseconds + " ms");
+        TimeSpan small = ParseTime(5000);
+        TimeSpan large = ParseTime(40000);
+        Assert.True(large.Ticks <= 32 * small.Ticks, "40000 repeats took "
+                + large.TotalMilliseconds + " ms, and 5000 " + small.TotalMilliseconds + " ms");
     }
 
     // A table of more than 64 columns is marked too wide, and its rows are not
