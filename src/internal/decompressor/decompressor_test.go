@@ -248,10 +248,16 @@ func TestDecompressorRunLengthDecodeRejectsDataThatDecodesToMoreThanTheLimit(t *
 	}
 }
 
+// A zlib stream that inflates to no bytes, of whatever length: Go 1.27
+// writes it in 8 bytes, as Java does, and Go 1.26 in 11, with an empty
+// stored block.
 func TestDecompressorDeflateOfNoBytesIsAnEmptyZlibStream(t *testing.T) {
 	deflated := compressor.Deflate([]byte{})
-	if len(deflated) != 8 || deflated[0] != 0x78 {
+	if len(deflated) < 8 || deflated[0] != 0x78 {
 		t.Errorf("deflated %v", deflated)
+	}
+	if inflated, err := Inflate(deflated); err != nil || len(inflated) != 0 {
+		t.Errorf("inflated %v, error %v", inflated, err)
 	}
 }
 
