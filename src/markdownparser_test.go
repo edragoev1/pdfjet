@@ -20,7 +20,8 @@ import (
 
 // testDescribeMarkdown returns the blocks as text: H1(text), P(text),
 // CODE(text), RULE, IMG(alt|source), QUOTE[...], UL[...] or OL3[...] with its
-// start, * after a list that is loose, I[...] for an item, and
+// start, * after a list that is loose, I[...] for an item, T[...] for a task
+// and X[...] for a task that is done, and
 // TABLE(a,b;c,d|L,C) with its rows and alignments.
 func testDescribeMarkdown(blocks []*markdownBlock) string {
 	var buf strings.Builder
@@ -52,7 +53,7 @@ func testDescribeMarkdown(blocks []*markdownBlock) string {
 			}
 			buf.WriteString("[" + testDescribeMarkdown(block.children) + "]")
 		case markdownItem:
-			buf.WriteString("I[" + testDescribeMarkdown(block.children) + "]")
+			buf.WriteString([]string{"I", "T", "X"}[block.task] + "[" + testDescribeMarkdown(block.children) + "]")
 		case markdownTable:
 			var rows strings.Builder
 			for _, row := range block.rows {
@@ -142,6 +143,21 @@ func TestMarkdownParserBulletAndNumberedLists(t *testing.T) {
 		"UL*[I[P(a)] I[P(b)]]", "- a\n\n- b",
 		"UL*[I[P(a) P(more)]]", "- a\n\n  more",
 		"UL[I[P(a)]] P(after)", "- a\n\nafter")
+}
+
+func TestMarkdownParserTaskLists(t *testing.T) {
+	testAssertMarkdown(t,
+		"UL[X[P(done)] T[P(open)] I[P(plain)]]", "- [x] done\n- [ ] open\n- plain",
+		"UL[X[P(Done)]]", "* [X] Done",
+		"OL1[T[P(first)]]", "1. [ ] first",
+		"UL[T[P(a) UL[X[P(b)]]]]", "- [ ] a\n  - [x] b",
+		"UL[T[P(tab)]]", "- [ ]\ttab",
+		// Not tasks: no space after the box, no text, another letter
+		"UL[I[P([ ]no space)]]", "- [ ]no space",
+		"UL[I[P([ ])]]", "- [ ]",
+		"UL[I[P([ ])]]", "- [ ]   ",
+		"UL[I[P([y] other)]]", "- [y] other",
+		"P([x] not in a list)", "[x] not in a list")
 }
 
 func TestMarkdownParserANumberedListInterruptsAParagraphOnlyWhenItStartsAtOne(t *testing.T) {

@@ -7,6 +7,20 @@ languages.
 
 This is the first entry in this file; earlier releases were not tracked here.
 
+## v9.0.9 — not released yet
+
+### Added
+- Task lists in `Markdown`, in the four ports, as GitHub's Markdown writes
+  them: an item that starts with `[ ]` or `[x]` is drawn with a box in
+  place of its bullet or number, gray when the task is open, and filled
+  with a white check mark when it is done. In a PDF/UA document the box is
+  the label of the item, read as ☐ or ☑. A list without tasks is drawn as
+  before.
+- `Markdown.setHeadingColor`, `setLinkColor` and `setCheckColor`, in the
+  four ports: the color of the headings, which are in the color of the text
+  unless it is set; of the links, blue unless it is set; and of the box of a
+  task that is done, green, 0x1A7F37, unless it is set.
+
 ## v9.0.7 — 2026-10-12
 
 ### Added

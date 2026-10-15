@@ -11,7 +11,8 @@ import Testing
 @Suite struct MarkdownParserTests {
     // The blocks as text: H1(text), P(text), CODE(text), RULE, IMG(alt|source),
     // QUOTE[...], UL[...] or OL3[...] with its start, * after a list that is
-    // loose, I[...] for an item, and TABLE(a,b;c,d|L,C) with its rows and alignments.
+    // loose, I[...] for an item, T[...] for a task and X[...] for a task that is
+    // done, and TABLE(a,b;c,d|L,C) with its rows and alignments.
     static func describe(_ blocks: [MarkdownParser.Block]) -> String {
         var buf = ""
         for block in blocks {
@@ -35,7 +36,7 @@ import Testing
                 buf += (block.ordered ? "OL\(block.start)" : "UL") + (block.loose ? "*" : "")
                         + "[\(describe(block.children))]"
             case .ITEM:
-                buf += "I[\(describe(block.children))]"
+                buf += ["I", "T", "X"][block.task.rawValue] + "[\(describe(block.children))]"
             case .TABLE:
                 let rows = block.rows!.map { $0.joined(separator: ",") }.joined(separator: ";")
                 var alignments = ""
@@ -95,6 +96,20 @@ import Testing
         #expect(parse("- a\n\n- b") == "UL*[I[P(a)] I[P(b)]]")
         #expect(parse("- a\n\n  more") == "UL*[I[P(a) P(more)]]")
         #expect(parse("- a\n\nafter") == "UL[I[P(a)]] P(after)")
+    }
+
+    @Test func taskLists() {
+        #expect(parse("- [x] done\n- [ ] open\n- plain") == "UL[X[P(done)] T[P(open)] I[P(plain)]]")
+        #expect(parse("* [X] Done") == "UL[X[P(Done)]]")
+        #expect(parse("1. [ ] first") == "OL1[T[P(first)]]")
+        #expect(parse("- [ ] a\n  - [x] b") == "UL[T[P(a) UL[X[P(b)]]]]")
+        #expect(parse("- [ ]\ttab") == "UL[T[P(tab)]]")
+        // Not tasks: no space after the box, no text, another letter
+        #expect(parse("- [ ]no space") == "UL[I[P([ ]no space)]]")
+        #expect(parse("- [ ]") == "UL[I[P([ ])]]")
+        #expect(parse("- [ ]   ") == "UL[I[P([ ])]]")
+        #expect(parse("- [y] other") == "UL[I[P([y] other)]]")
+        #expect(parse("[x] not in a list") == "P([x] not in a list)")
     }
 
     @Test func aNumberedListInterruptsAParagraphOnlyWhenItStartsAtOne() {

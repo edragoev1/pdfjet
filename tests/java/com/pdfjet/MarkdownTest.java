@@ -87,6 +87,22 @@ class MarkdownTest {
     }
 
     @Test
+    void tasksAreLabeledByTheirBoxes() throws Exception {
+        TestSupport.allowCoreFonts(true); // What the document tags, in a core font
+        Drawn drawn = draw("- [x] done\n- [ ] open\n- plain", null);
+        assertEquals(1, count(drawn.pdf, "L"));
+        assertEquals(3, count(drawn.pdf, "LI"));
+        assertEquals(3, count(drawn.pdf, "Lbl"));
+        assertEquals(3, count(drawn.pdf, "LBody"));
+        // The boxes are read as ☑ and ☐, in UTF-16BE, their actual text and their
+        // description, the plain item by its bullet
+        for (String actualText : new String[] {"<feff2611>", "<feff2610>"}) {
+            assertEquals(1, drawn.pdf.split("/ActualText " + actualText, -1).length - 1, "/ActualText " + actualText);
+            assertEquals(1, drawn.pdf.split("/Alt " + actualText, -1).length - 1, "/Alt " + actualText);
+        }
+    }
+
+    @Test
     void headingLevelsSkipNone() throws Exception {
         TestSupport.allowCoreFonts(true); // What the document tags, in a core font
         // A text that starts at ### and goes on to ##### is H1, then H2.

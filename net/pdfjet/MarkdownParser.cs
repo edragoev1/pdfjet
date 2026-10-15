@@ -23,6 +23,10 @@ internal sealed class MarkdownParser {
 
     internal enum Kind { HEADING, PARAGRAPH, CODE, QUOTE, LIST, ITEM, RULE, TABLE, IMAGE }
 
+    // Whether an item of a list is a task, as GitHub's Markdown writes one,
+    // - [ ] or - [x], and whether it is done.
+    internal enum Task { NONE, OPEN, DONE }
+
     internal sealed class Block {
         internal readonly Kind kind;
         internal int level;             // Of a heading, 1 to 6
@@ -36,6 +40,7 @@ internal sealed class MarkdownParser {
         internal bool tooWide;                  // Of a table of more than MAX_TABLE_COLUMNS, whose rows are not kept
         internal int cells;                     // Of a table, those of its rows, kept or not
         internal List<Alignment> alignments;    // Of a table, of each column, or null
+        internal Task task = Task.NONE;         // Of an item of a task list, whether it is checked
 
         internal Block(Kind kind) {
             this.kind = kind;
@@ -233,12 +238,39 @@ internal sealed class MarkdownParser {
                 list.loose = true;
             }
             Block item = new Block(Kind.ITEM);
+            String firstLine = itemLines[0];
+            item.task = TaskOf(ref firstLine);
+            itemLines[0] = firstLine;
             item.children.AddRange(ParseBlocks(itemLines, depth + 1, count));
             list.children.Add(item);
             i = j;
         }
         blocks.Add(list);
         return i;
+    }
+
+    // Returns whether the first line of an item starts as a task does, [ ]
+    // or [x] or [X], followed by a space or a tab and the text of the task,
+    // and sets the line to the line without it.
+    private static Task TaskOf(ref String line) {
+        if (line.Length < 5 || line[0] != '[' || line[2] != ']' || (line[3] != ' ' && line[3] != '\t')) {
+            return Task.NONE;
+        }
+        String text = line.Substring(4);
+        if (Util.Trim(text).Length == 0) {
+            return Task.NONE;
+        }
+        switch (line[1]) {
+            case ' ':
+                line = text;
+                return Task.OPEN;
+            case 'x':
+            case 'X':
+                line = text;
+                return Task.DONE;
+            default:
+                return Task.NONE;
+        }
     }
 
     private static bool SameList(String line, int[] first) {

@@ -89,6 +89,19 @@ func TestMarkdownEveryBlockIsTaggedForPDFUA(t *testing.T) {
 		"BlockQuote", 1, "Code", 1, "Table", 1)
 }
 
+func TestMarkdownTasksAreLabeledByTheirBoxes(t *testing.T) {
+	testAllowCoreFonts(t)
+	drawn := testDrawMarkdown("- [x] done\n- [ ] open\n- plain", "")
+	testAssertStructures(t, drawn, "L", 1, "LI", 3, "Lbl", 3, "LBody", 3)
+	// The boxes are read as ☑ and ☐, in UTF-16BE, their actual text and their
+	// description, the plain item by its bullet
+	for _, actualText := range []string{"<feff2611>", "<feff2610>"} {
+		if strings.Count(drawn.pdf, "/ActualText "+actualText) != 1 || strings.Count(drawn.pdf, "/Alt "+actualText) != 1 {
+			t.Errorf("no /ActualText %s", actualText)
+		}
+	}
+}
+
 func TestMarkdownHeadingLevelsSkipNone(t *testing.T) {
 	testAllowCoreFonts(t)
 	// A text that starts at ### and goes on to ##### is H1, then H2.

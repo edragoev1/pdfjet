@@ -22,6 +22,10 @@ final class MarkdownParser {
 
     enum Kind { case HEADING, PARAGRAPH, CODE, QUOTE, LIST, ITEM, RULE, TABLE, IMAGE }
 
+    // Whether an item of a list is a task, as GitHub's Markdown writes one,
+    // - [ ] or - [x], and whether it is done.
+    enum Task: Int { case NONE, OPEN, DONE }
+
     final class Block {
         let kind: Kind
         var level = 0                   // Of a heading, 1 to 6
@@ -35,6 +39,7 @@ final class MarkdownParser {
         var tooWide = false             // Of a table of more than maxTableColumns, whose rows are not kept
         var cells = 0                   // Of a table, those of its rows, kept or not
         var alignments: [Alignment]?    // Of a table, of each column, or nil
+        var task = Task.NONE            // Of an item of a task list, whether it is checked
 
         init(_ kind: Kind) {
             self.kind = kind
@@ -262,12 +267,35 @@ final class MarkdownParser {
                 list.loose = true
             }
             let item = Block(.ITEM)
+            (item.task, itemLines[0]) = taskOf(itemLines[0])
             item.children.append(contentsOf: parseBlocks(itemLines, depth + 1, count))
             list.children.append(item)
             i = j
         }
         blocks.append(list)
         return i
+    }
+
+    // Whether the first line of an item starts as a task does, [ ] or [x] or
+    // [X], followed by a space or a tab and the text of the task, and the line
+    // without it.
+    private static func taskOf(_ line: Line) -> (Task, Line) {
+        if line.count < 5 || line[0] != openBracket || line[2] != closeBracket
+                || (line[3] != space && line[3] != tab) {
+            return (.NONE, line)
+        }
+        let text = Line(line[4...])
+        if isBlank(text) {
+            return (.NONE, line)
+        }
+        switch line[1] {
+        case space:
+            return (.OPEN, text)
+        case 0x78, 0x58:    // x, X
+            return (.DONE, text)
+        default:
+            return (.NONE, line)
+        }
     }
 
     private static func sameList(_ line: Line, _ first: [Int]) -> Bool {

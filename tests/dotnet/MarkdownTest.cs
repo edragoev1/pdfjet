@@ -79,6 +79,23 @@ public class MarkdownTest {
     }
 
     [Fact]
+    public void TasksAreLabeledByTheirBoxes() {
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
+        Drawn drawn = Draw("- [x] done\n- [ ] open\n- plain", null);
+        Assert.Equal(1, Count(drawn.pdf, "L"));
+        Assert.Equal(3, Count(drawn.pdf, "LI"));
+        Assert.Equal(3, Count(drawn.pdf, "Lbl"));
+        Assert.Equal(3, Count(drawn.pdf, "LBody"));
+        // The boxes are read as ☑ and ☐, in UTF-16BE, their actual text and
+        // their description, the plain item by its bullet
+        foreach (String actualText in new String[] {"<feff2611>", "<feff2610>"}) {
+            Assert.True(MarkdownParserTest.Occurrences(drawn.pdf, "/ActualText " + actualText) == 1
+                    && MarkdownParserTest.Occurrences(drawn.pdf, "/Alt " + actualText) == 1,
+                    "no /ActualText " + actualText);
+        }
+    }
+
+    [Fact]
     public void HeadingLevelsSkipNone() {
         using IDisposable coreFonts = TestSupport.AllowCoreFonts();
         // A text that starts at ### and goes on to ##### is H1, then H2.

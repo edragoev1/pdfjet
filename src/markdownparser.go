@@ -62,7 +62,18 @@ type markdownBlock struct {
 	alignments []alignment.Alignment // Of a table, of each column, or nil
 	tooWide    bool                  // Of a table of more than maxTableColumns, whose rows are not kept
 	cells      int                   // Of a table, those of its rows, kept or not
+	task       markdownTask          // Of an item of a task list, whether it is checked
 }
+
+// markdownTask is whether an item of a list is a task, as GitHub's Markdown
+// writes one, - [ ] or - [x], and whether it is done.
+type markdownTask int
+
+const (
+	markdownNoTask markdownTask = iota
+	markdownTaskOpen
+	markdownTaskDone
+)
 
 func newMarkdownBlock(kind markdownKind) *markdownBlock {
 	return &markdownBlock{kind: kind, start: 1, children: make([]*markdownBlock, 0)}
@@ -277,12 +288,33 @@ func (p markdownParser) parseList(lines []string, i, depth int, blocks *[]*markd
 			list.loose = true
 		}
 		item := newMarkdownBlock(markdownItem)
+		item.task, itemLines[0] = p.taskOf(itemLines[0])
 		item.children = append(item.children, p.parseBlocks(itemLines, depth+1)...)
 		list.children = append(list.children, item)
 		i = j
 	}
 	*blocks = append(*blocks, list)
 	return i
+}
+
+// taskOf returns whether the first line of an item starts as a task does, [ ]
+// or [x] or [X], followed by a space or a tab and the text of the task, and
+// the line without it.
+func (p markdownParser) taskOf(line string) (markdownTask, string) {
+	if len(line) < 5 || line[0] != '[' || line[2] != ']' || (line[3] != ' ' && line[3] != '\t') {
+		return markdownNoTask, line
+	}
+	text := line[4:]
+	if trimSpace(text) == "" {
+		return markdownNoTask, line
+	}
+	switch line[1] {
+	case ' ':
+		return markdownTaskOpen, text
+	case 'x', 'X':
+		return markdownTaskDone, text
+	}
+	return markdownNoTask, line
 }
 
 func markdownContains(list []string, s string) bool {

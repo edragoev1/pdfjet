@@ -13,11 +13,12 @@ import java.util.*;
  * Draws a Markdown text on as many pages as it needs: headings of # and of
  * underlines, paragraphs with the inline markup of Markup, bullet and
  * numbered lists that nest, block quotes, fenced and indented code, thematic
- * breaks, the tables of GitHub's Markdown, and images alone in their
- * paragraph. In a PDF/UA document the headings are H1 to H6, with no level
- * skipped, the lists are lists, the quotes BlockQuotes, the code Code, the
- * tables tables and the images figures, with their text as the alternate
- * description.
+ * breaks, the tables and the task lists of GitHub's Markdown, - [ ] and
+ * - [x], drawn as boxes, and images alone in their paragraph. In a PDF/UA
+ * document the headings are H1 to H6, with no level skipped, the lists are
+ * lists, the boxes of the tasks their labels, read as ☐ and ☑, the quotes
+ * BlockQuotes, the code Code, the tables tables and the images figures, with
+ * their text as the alternate description.
  * <p>
  * It is not all of Markdown: HTML is drawn as the text it is, a line break
  * is a space, links in a table cell are its text, and an image is drawn only
@@ -32,6 +33,7 @@ public class Markdown {
     private static final int RULE_COLOR = 0xC8CCD2;
     private static final int QUOTE_BAR_COLOR = 0xB0B6BF;
     private static final int TABLE_HEADER_BACKGROUND = 0xEEF0F3;
+    private static final int TASK_BOX_COLOR = 0x8C959F;
     // The least width, in sizes of the text, that quotes and lists nested in
     // each other leave their text: deeper ones are not indented further, so
     // that the text is never narrower than nothing.
@@ -44,6 +46,8 @@ public class Markdown {
     private final Font code;
     private final Markup markup;
     private Font headingFont;
+    private int headingColor = Color.transparent;  // Leaves the headings in the color of the text
+    private int checkColor = 0x1A7F37;              // Of the box of a task that is done
     private float marginLeft = 72f;
     private float marginTop = 72f;
     private float marginRight = 72f;
@@ -96,6 +100,42 @@ public class Markdown {
      */
     public Markdown setHeadingFont(Font font) {
         this.headingFont = font;
+        return this;
+    }
+
+    /**
+     * Sets the color of the headings. They are in the color of the text
+     * unless it is set.
+     *
+     * @param headingColor the color as a 0xRRGGBB value.
+     * @return this Markdown.
+     */
+    public Markdown setHeadingColor(int headingColor) {
+        this.headingColor = headingColor;
+        return this;
+    }
+
+    /**
+     * Sets the color of the text of links. They are blue unless it is set.
+     *
+     * @param linkColor the color as a 0xRRGGBB value.
+     * @return this Markdown.
+     */
+    public Markdown setLinkColor(int linkColor) {
+        markup.setLinkColor(linkColor);
+        return this;
+    }
+
+    /**
+     * Sets the color of the box of a task that is done, - [x] in the
+     * Markdown, which has a white check mark in it. It is green, 0x1A7F37,
+     * unless it is set.
+     *
+     * @param checkColor the color as a 0xRRGGBB value.
+     * @return this Markdown.
+     */
+    public Markdown setCheckColor(int checkColor) {
+        this.checkColor = checkColor;
         return this;
     }
 
@@ -320,6 +360,9 @@ public class Markdown {
                 line.setFont(boldItalic);
             }
             line.setFontSize(fontSize);
+            if (line.getURIAction() == null && line.getGoToAction() == null) {
+                line.setTextColor(headingColor);
+            }
         }
         headingLevel = Math.min(block.level, headingLevel + 1);
         StructElem[] levels = {StructElem.H1, StructElem.H2, StructElem.H3,
@@ -446,10 +489,14 @@ public class Markdown {
             }
             ensure(firstBlockHeight(item.children));
             openContainer(StructElem.LI);
-            String label = list.ordered ? number + "." : "•";
-            TextLine text = new TextLine(regular, label).setStructureType(StructElem.LBL);
-            float labelX = list.ordered ? x + indent - size() * 0.4f - text.getWidth() : x + size() * 0.3f;
-            text.setLocation(labelX, y + regular.getAscent(size())).drawOn(page);
+            if (item.task != MarkdownParser.Task.NONE) {
+                drawTaskBox(item.task == MarkdownParser.Task.DONE, x, indent);
+            } else {
+                String label = list.ordered ? number + "." : "•";
+                TextLine text = new TextLine(regular, label).setStructureType(StructElem.LBL);
+                float labelX = list.ordered ? x + indent - size() * 0.4f - text.getWidth() : x + size() * 0.3f;
+                text.setLocation(labelX, y + regular.getAscent(size())).drawOn(page);
+            }
             openContainer(StructElem.LBODY);
             atTop = true;   // The first block of the item is on the line of its label.
             drawBlocks(item.children, x + indent, width - indent, !list.loose);
@@ -463,6 +510,60 @@ public class Markdown {
             number++;
         }
         closeContainer();
+    }
+
+    // The box of a task in place of the label of its item, on the line of its
+    // first text: a gray box, or a box of the check color with a white check
+    // mark when the task is done. A screen reader reads it as ☐ or ☑, the
+    // label of the item.
+    private void drawTaskBox(boolean done, float x, float indent) throws Exception {
+        float size = size();
+        float side = size * 0.8f;
+        float left = x + (indent - size * 0.4f - side) / 2f;
+        float baseline = y + regular.getAscent(size);
+        float top = (baseline - size * 0.36f) - side / 2f;
+        String actualText = done ? "☑" : "☐";
+        // The box is drawn with the page's paths, not a Rect and Lines, which
+        // are artifacts, as artifacts may not be inside the label.
+        page.addBDC(StructElem.LBL, actualText, actualText);
+        page.saveGraphicsState();
+        List<Point> box = roundedBox(left, top, side, side * 0.2f);
+        if (done) {
+            page.setBrushColor(checkColor);
+            page.drawPath(box, PathOperator.FILL);
+            page.setPenColor(Color.white);
+            page.setPenWidth(side * 0.14f);
+            page.setLineCapStyle(CapStyle.ROUND);
+            page.setLineJoinStyle(JoinStyle.ROUND);
+            page.moveTo(left + side * 0.24f, top + side * 0.52f);
+            page.lineTo(left + side * 0.43f, top + side * 0.70f);
+            page.lineTo(left + side * 0.77f, top + side * 0.31f);
+            page.strokePath();
+        } else {
+            page.setBrushColor(Color.white);
+            page.setPenColor(TASK_BOX_COLOR);
+            page.setPenWidth(size * 0.08f);
+            page.drawPath(box, PathOperator.FILL_AND_STROKE);
+        }
+        page.restoreGraphicsState();
+        page.addEMC();
+    }
+
+    // The path of a square with rounded corners, of the side and the radius,
+    // its top left corner at x and y.
+    private static List<Point> roundedBox(float x, float y, float side, float r) {
+        final float k = 0.55228f;
+        float c = r * k;
+        char cp = Point.CONTROL_POINT_C;
+        return Arrays.asList(
+                new Point(x + r, y), new Point((x + side) - r, y),
+                new Point(((x + side) - r) + c, y, cp), new Point(x + side, (y + r) - c, cp), new Point(x + side, y + r),
+                new Point(x + side, (y + side) - r),
+                new Point(x + side, ((y + side) - r) + c, cp), new Point(((x + side) - r) + c, y + side, cp), new Point((x + side) - r, y + side),
+                new Point(x + r, y + side),
+                new Point((x + r) - c, y + side, cp), new Point(x, ((y + side) - r) + c, cp), new Point(x, (y + side) - r),
+                new Point(x, y + r),
+                new Point(x, (y + r) - c, cp), new Point((x + r) - c, y, cp), new Point(x + r, y));
     }
 
     private void drawRule(float x, float width) throws Exception {

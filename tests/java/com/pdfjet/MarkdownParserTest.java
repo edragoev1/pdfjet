@@ -16,7 +16,8 @@ import org.junit.jupiter.api.Test;
 class MarkdownParserTest {
     // The blocks as text: H1(text), P(text), CODE(text), RULE, IMG(alt|source),
     // QUOTE[...], UL[...] or OL3[...] with its start, * after a list that is
-    // loose, I[...] for an item, and TABLE(a,b;c,d|L,C) with its rows and alignments.
+    // loose, I[...] for an item, T[...] for a task and X[...] for a task that is
+    // done, and TABLE(a,b;c,d|L,C) with its rows and alignments.
     static String describe(List<MarkdownParser.Block> blocks) {
         StringBuilder buf = new StringBuilder();
         for (MarkdownParser.Block block : blocks) {
@@ -47,7 +48,8 @@ class MarkdownParserTest {
                             .append('[').append(describe(block.children)).append(']');
                     break;
                 case ITEM:
-                    buf.append("I[").append(describe(block.children)).append(']');
+                    buf.append(new String[] {"I", "T", "X"}[block.task.ordinal()])
+                            .append('[').append(describe(block.children)).append(']');
                     break;
                 case TABLE:
                     StringBuilder rows = new StringBuilder();
@@ -121,6 +123,21 @@ class MarkdownParserTest {
         assertEquals("UL*[I[P(a)] I[P(b)]]", parse("- a\n\n- b"));
         assertEquals("UL*[I[P(a) P(more)]]", parse("- a\n\n  more"));
         assertEquals("UL[I[P(a)]] P(after)", parse("- a\n\nafter"));
+    }
+
+    @Test
+    void taskLists() {
+        assertEquals("UL[X[P(done)] T[P(open)] I[P(plain)]]", parse("- [x] done\n- [ ] open\n- plain"));
+        assertEquals("UL[X[P(Done)]]", parse("* [X] Done"));
+        assertEquals("OL1[T[P(first)]]", parse("1. [ ] first"));
+        assertEquals("UL[T[P(a) UL[X[P(b)]]]]", parse("- [ ] a\n  - [x] b"));
+        assertEquals("UL[T[P(tab)]]", parse("- [ ]\ttab"));
+        // Not tasks: no space after the box, no text, another letter
+        assertEquals("UL[I[P([ ]no space)]]", parse("- [ ]no space"));
+        assertEquals("UL[I[P([ ])]]", parse("- [ ]"));
+        assertEquals("UL[I[P([ ])]]", parse("- [ ]   "));
+        assertEquals("UL[I[P([y] other)]]", parse("- [y] other"));
+        assertEquals("P([x] not in a list)", parse("[x] not in a list"));
     }
 
     @Test

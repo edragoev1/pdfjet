@@ -21,6 +21,10 @@ final class MarkdownParser {
 
     enum Kind { HEADING, PARAGRAPH, CODE, QUOTE, LIST, ITEM, RULE, TABLE, IMAGE }
 
+    // Whether an item of a list is a task, as GitHub's Markdown writes one,
+    // - [ ] or - [x], and whether it is done.
+    enum Task { NONE, OPEN, DONE }
+
     static final class Block {
         final Kind kind;
         int level;              // Of a heading, 1 to 6
@@ -34,6 +38,7 @@ final class MarkdownParser {
         boolean tooWide;                // Of a table of more than MAX_TABLE_COLUMNS, whose rows are not kept
         int cells;                      // Of a table, those of its rows, kept or not
         List<Alignment> alignments;     // Of a table, of each column, or null
+        Task task = Task.NONE;          // Of an item of a task list, whether it is checked
 
         Block(Kind kind) {
             this.kind = kind;
@@ -231,12 +236,39 @@ final class MarkdownParser {
                 list.loose = true;
             }
             Block item = new Block(Kind.ITEM);
+            String firstLine = itemLines.get(0);
+            item.task = taskOf(firstLine);
+            if (item.task != Task.NONE) {
+                itemLines.set(0, firstLine.substring(4));
+            }
             item.children.addAll(parseBlocks(itemLines, depth + 1, count));
             list.children.add(item);
             i = j;
         }
         blocks.add(list);
         return i;
+    }
+
+    // Whether the first line of an item starts as a task does, [ ] or [x] or
+    // [X], followed by a space or a tab and the text of the task, which is the
+    // line from its fifth character.
+    private static Task taskOf(String line) {
+        if (line.length() < 5 || line.charAt(0) != '[' || line.charAt(2) != ']'
+                || (line.charAt(3) != ' ' && line.charAt(3) != '\t')) {
+            return Task.NONE;
+        }
+        if (line.substring(4).trim().isEmpty()) {
+            return Task.NONE;
+        }
+        switch (line.charAt(1)) {
+            case ' ':
+                return Task.OPEN;
+            case 'x':
+            case 'X':
+                return Task.DONE;
+            default:
+                return Task.NONE;
+        }
     }
 
     private static boolean sameList(String line, int[] first) {

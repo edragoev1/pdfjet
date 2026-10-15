@@ -82,6 +82,20 @@ import Testing
         #expect(MarkdownTests.count(drawn.pdf, "Table") == 1)
     }
 
+    @Test func tasksAreLabeledByTheirBoxes() throws {
+        let drawn = try MarkdownTests.draw("- [x] done\n- [ ] open\n- plain", nil)
+        #expect(MarkdownTests.count(drawn.pdf, "L") == 1)
+        #expect(MarkdownTests.count(drawn.pdf, "LI") == 3)
+        #expect(MarkdownTests.count(drawn.pdf, "Lbl") == 3)
+        #expect(MarkdownTests.count(drawn.pdf, "LBody") == 3)
+        // The boxes are read as ☑ and ☐, in UTF-16BE, their actual text and
+        // their description, the plain item by its bullet
+        for actualText in ["<feff2611>", "<feff2610>"] {
+            #expect(drawn.pdf.components(separatedBy: "/ActualText " + actualText).count - 1 == 1)
+            #expect(drawn.pdf.components(separatedBy: "/Alt " + actualText).count - 1 == 1)
+        }
+    }
+
     @Test func headingLevelsSkipNone() throws {
         // A text that starts at ### and goes on to ##### is H1, then H2.
         let drawn = try MarkdownTests.draw("### Three\n\n##### Five\n\n# One", nil)

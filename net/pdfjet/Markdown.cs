@@ -15,11 +15,12 @@ namespace PDFjet.NET {
 /// Draws a Markdown text on as many pages as it needs: headings of # and of
 /// underlines, paragraphs with the inline markup of Markup, bullet and
 /// numbered lists that nest, block quotes, fenced and indented code, thematic
-/// breaks, the tables of GitHub's Markdown, and images alone in their
-/// paragraph. In a PDF/UA document the headings are H1 to H6, with no level
-/// skipped, the lists are lists, the quotes BlockQuotes, the code Code, the
-/// tables tables and the images figures, with their text as the alternate
-/// description.
+/// breaks, the tables and the task lists of GitHub's Markdown, - [ ] and
+/// - [x], drawn as boxes, and images alone in their paragraph. In a PDF/UA
+/// document the headings are H1 to H6, with no level skipped, the lists are
+/// lists, the boxes of the tasks their labels, read as ☐ and ☑, the quotes
+/// BlockQuotes, the code Code, the tables tables and the images figures, with
+/// their text as the alternate description.
 /// <para>
 /// It is not all of Markdown: HTML is drawn as the text it is, a line break
 /// is a space, links in a table cell are its text, and an image is drawn only
@@ -35,6 +36,7 @@ public class Markdown {
     private const int RULE_COLOR = 0xC8CCD2;
     private const int QUOTE_BAR_COLOR = 0xB0B6BF;
     private const int TABLE_HEADER_BACKGROUND = 0xEEF0F3;
+    private const int TASK_BOX_COLOR = 0x8C959F;
     // The least width, in sizes of the text, that quotes and lists nested in
     // each other leave their text: deeper ones are not indented further, so
     // that the text is never narrower than nothing.
@@ -47,6 +49,8 @@ public class Markdown {
     private readonly Font code;
     private readonly Markup markup;
     private Font headingFont;
+    private int headingColor = Color.transparent;   // Leaves the headings in the color of the text
+    private int checkColor = 0x1A7F37;              // Of the box of a task that is done
     private float marginLeft = 72f;
     private float marginTop = 72f;
     private float marginRight = 72f;
@@ -97,6 +101,40 @@ public class Markdown {
     /// <returns>this Markdown.</returns>
     public Markdown SetHeadingFont(Font font) {
         this.headingFont = font;
+        return this;
+    }
+
+    /// <summary>
+    /// Sets the color of the headings, as a 0xRRGGBB value. They are in the
+    /// color of the text unless it is set.
+    /// </summary>
+    /// <param name="headingColor">the color.</param>
+    /// <returns>this Markdown.</returns>
+    public Markdown SetHeadingColor(int headingColor) {
+        this.headingColor = headingColor;
+        return this;
+    }
+
+    /// <summary>
+    /// Sets the color of the text of links, as a 0xRRGGBB value. They are
+    /// blue unless it is set.
+    /// </summary>
+    /// <param name="linkColor">the color.</param>
+    /// <returns>this Markdown.</returns>
+    public Markdown SetLinkColor(int linkColor) {
+        markup.SetLinkColor(linkColor);
+        return this;
+    }
+
+    /// <summary>
+    /// Sets the color of the box of a task that is done, - [x] in the
+    /// Markdown, as a 0xRRGGBB value, which has a white check mark in it. It
+    /// is green, 0x1A7F37, unless it is set.
+    /// </summary>
+    /// <param name="checkColor">the color.</param>
+    /// <returns>this Markdown.</returns>
+    public Markdown SetCheckColor(int checkColor) {
+        this.checkColor = checkColor;
         return this;
     }
 
@@ -321,6 +359,9 @@ public class Markdown {
                 line.SetFont(boldItalic);
             }
             line.SetFontSize(fontSize);
+            if (String.IsNullOrEmpty(line.GetURIAction()) && String.IsNullOrEmpty(line.GetGoToAction())) {
+                line.SetTextColor(headingColor);
+            }
         }
         headingLevel = Math.Min(block.level, headingLevel + 1);
         StructElem[] levels = {StructElem.H1, StructElem.H2, StructElem.H3,
@@ -447,10 +488,14 @@ public class Markdown {
             }
             Ensure(FirstBlockHeight(item.children));
             OpenContainer(StructElem.LI);
-            String label = list.ordered ? number.ToString(CultureInfo.InvariantCulture) + "." : "•";
-            TextLine text = new TextLine(regular, label).SetStructureType(StructElem.LBL);
-            float labelX = list.ordered ? x + indent - Size() * 0.4f - text.GetWidth() : x + Size() * 0.3f;
-            text.SetLocation(labelX, y + regular.GetAscent(Size())).DrawOn(page);
+            if (item.task != MarkdownParser.Task.NONE) {
+                DrawTaskBox(item.task == MarkdownParser.Task.DONE, x, indent);
+            } else {
+                String label = list.ordered ? number.ToString(CultureInfo.InvariantCulture) + "." : "•";
+                TextLine text = new TextLine(regular, label).SetStructureType(StructElem.LBL);
+                float labelX = list.ordered ? x + indent - Size() * 0.4f - text.GetWidth() : x + Size() * 0.3f;
+                text.SetLocation(labelX, y + regular.GetAscent(Size())).DrawOn(page);
+            }
             OpenContainer(StructElem.LBODY);
             bool top = atTop;
             atTop = true;   // The first block of the item is on the line of its label.
@@ -465,6 +510,61 @@ public class Markdown {
             number++;
         }
         CloseContainer();
+    }
+
+    // Draws the box of a task in place of the label of its item, on the line
+    // of its first text: a gray box, or a box of the check color with a white
+    // check mark when the task is done. A screen reader reads it as ☐ or ☑,
+    // the label of the item.
+    private void DrawTaskBox(bool done, float x, float indent) {
+        float size = Size();
+        float side = size * 0.8f;
+        float left = x + (indent - size * 0.4f - side) / 2f;
+        float baseline = y + regular.GetAscent(size);
+        float top = (baseline - size * 0.36f) - side / 2f;
+        String actualText = done ? "☑" : "☐";
+        // The box is drawn with the page's paths, not a Rect and Lines, which
+        // are artifacts, as artifacts may not be inside the label.
+        page.AddBDC(StructElem.LBL, actualText, actualText);
+        page.SaveGraphicsState();
+        List<Point> box = RoundedBox(left, top, side, side * 0.2f);
+        if (done) {
+            page.SetBrushColor(checkColor);
+            page.DrawPath(box, PathOperator.FILL);
+            page.SetPenColor(Color.white);
+            page.SetPenWidth(side * 0.14f);
+            page.SetLineCapStyle(CapStyle.ROUND);
+            page.SetLineJoinStyle(JoinStyle.ROUND);
+            page.MoveTo(left + side * 0.24f, top + side * 0.52f);
+            page.LineTo(left + side * 0.43f, top + side * 0.70f);
+            page.LineTo(left + side * 0.77f, top + side * 0.31f);
+            page.StrokePath();
+        } else {
+            page.SetBrushColor(Color.white);
+            page.SetPenColor(TASK_BOX_COLOR);
+            page.SetPenWidth(size * 0.08f);
+            page.DrawPath(box, PathOperator.FILL_AND_STROKE);
+        }
+        page.RestoreGraphicsState();
+        page.AddEMC();
+    }
+
+    // The path of a square with rounded corners, of the side and the radius,
+    // its top left corner at x and y.
+    private static List<Point> RoundedBox(float x, float y, float side, float r) {
+        const float k = 0.55228f;
+        float c = r * k;
+        char cp = Point.CONTROL_POINT_C;
+        return new List<Point> {
+            new Point(x + r, y), new Point((x + side) - r, y),
+            new Point(((x + side) - r) + c, y, cp), new Point(x + side, (y + r) - c, cp), new Point(x + side, y + r),
+            new Point(x + side, (y + side) - r),
+            new Point(x + side, ((y + side) - r) + c, cp), new Point(((x + side) - r) + c, y + side, cp), new Point((x + side) - r, y + side),
+            new Point(x + r, y + side),
+            new Point((x + r) - c, y + side, cp), new Point(x, ((y + side) - r) + c, cp), new Point(x, (y + side) - r),
+            new Point(x, y + r),
+            new Point(x, (y + r) - c, cp), new Point((x + r) - c, y, cp), new Point(x + r, y),
+        };
     }
 
     private void DrawRule(float x, float width) {

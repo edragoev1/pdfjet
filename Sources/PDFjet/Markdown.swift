@@ -10,11 +10,12 @@ import Foundation
 /// Draws a Markdown text on as many pages as it needs: headings of # and of
 /// underlines, paragraphs with the inline markup of Markup, bullet and
 /// numbered lists that nest, block quotes, fenced and indented code, thematic
-/// breaks, the tables of GitHub's Markdown, and images alone in their
-/// paragraph. In a PDF/UA document the headings are H1 to H6, with no level
-/// skipped, the lists are lists, the quotes BlockQuotes, the code Code, the
-/// tables tables and the images figures, with their text as the alternate
-/// description.
+/// breaks, the tables and the task lists of GitHub's Markdown, - [ ] and
+/// - [x], drawn as boxes, and images alone in their paragraph. In a PDF/UA
+/// document the headings are H1 to H6, with no level skipped, the lists are
+/// lists, the boxes of the tasks their labels, read as ☐ and ☑, the quotes
+/// BlockQuotes, the code Code, the tables tables and the images figures, with
+/// their text as the alternate description.
 ///
 /// It is not all of Markdown: HTML is drawn as the text it is, a line break
 /// is a space, links in a table cell are its text, and an image is drawn only
@@ -29,6 +30,7 @@ public class Markdown {
     private static let RULE_COLOR: Int32 = 0xC8CCD2
     private static let QUOTE_BAR_COLOR: Int32 = 0xB0B6BF
     private static let TABLE_HEADER_BACKGROUND: Int32 = 0xEEF0F3
+    private static let TASK_BOX_COLOR: Int32 = 0x8C959F
     // The least width, in sizes of the text, that quotes and lists nested in
     // each other leave their text: deeper ones are not indented further, so
     // that the text is never narrower than nothing.
@@ -41,6 +43,8 @@ public class Markdown {
     private let code: Font
     private let markup: Markup
     private var headingFont: Font
+    private var headingColor: Int32 = Color.transparent    // Leaves the headings in the color of the text
+    private var checkColor: Int32 = 0x1A7F37               // Of the box of a task that is done
     private var marginLeft: Float = 72.0
     private var marginTop: Float = 72.0
     private var marginRight: Float = 72.0
@@ -104,6 +108,46 @@ public class Markdown {
     @discardableResult
     public func setHeadingFont(_ font: Font) -> Markdown {
         self.headingFont = font
+        return self
+    }
+
+    ///
+    /// Sets the color of the headings, as a 0xRRGGBB value. They are in the
+    /// color of the text unless it is set.
+    ///
+    /// - Parameter headingColor: the color.
+    /// - Returns: this Markdown.
+    ///
+    @discardableResult
+    public func setHeadingColor(_ headingColor: Int32) -> Markdown {
+        self.headingColor = headingColor
+        return self
+    }
+
+    ///
+    /// Sets the color of the text of links, as a 0xRRGGBB value. They are blue
+    /// unless it is set.
+    ///
+    /// - Parameter linkColor: the color.
+    /// - Returns: this Markdown.
+    ///
+    @discardableResult
+    public func setLinkColor(_ linkColor: Int32) -> Markdown {
+        markup.setLinkColor(linkColor)
+        return self
+    }
+
+    ///
+    /// Sets the color of the box of a task that is done, - [x] in the
+    /// Markdown, as a 0xRRGGBB value, which has a white check mark in it. It is
+    /// green, 0x1A7F37, unless it is set.
+    ///
+    /// - Parameter checkColor: the color.
+    /// - Returns: this Markdown.
+    ///
+    @discardableResult
+    public func setCheckColor(_ checkColor: Int32) -> Markdown {
+        self.checkColor = checkColor
         return self
     }
 
@@ -327,6 +371,9 @@ public class Markdown {
                 line.setFont(boldItalic)
             }
             line.setFontSize(fontSize)
+            if (line.getURIAction() ?? "").isEmpty && (line.getGoToAction() ?? "").isEmpty {
+                line.setTextColor(headingColor)
+            }
         }
         headingLevel = min(block.level, headingLevel + 1)
         let levels = [StructElem.H1, StructElem.H2, StructElem.H3,
@@ -459,10 +506,14 @@ public class Markdown {
             }
             ensure(firstBlockHeight(item.children))
             openContainer(StructElem.LI)
-            let label = list.ordered ? "\(number)." : "•"
-            let text = TextLine(regular, label).setStructureType(StructElem.LBL)
-            let labelX = list.ordered ? x + indent - size() * 0.4 - text.getWidth() : x + size() * 0.3
-            text.setLocation(labelX, y + regular.getAscent(size())).drawOn(page)
+            if item.task != .NONE {
+                drawTaskBox(item.task == .DONE, x, indent)
+            } else {
+                let label = list.ordered ? "\(number)." : "•"
+                let text = TextLine(regular, label).setStructureType(StructElem.LBL)
+                let labelX = list.ordered ? x + indent - size() * 0.4 - text.getWidth() : x + size() * 0.3
+                text.setLocation(labelX, y + regular.getAscent(size())).drawOn(page)
+            }
             openContainer(StructElem.LBODY)
             atTop = true    // The first block of the item is on the line of its label.
             try drawBlocks(item.children, x + indent, width - indent, !list.loose)
@@ -476,6 +527,62 @@ public class Markdown {
             number += 1
         }
         closeContainer()
+    }
+
+    // The box of a task in place of the label of its item, on the line of its
+    // first text: a gray box, or a box of the check color with a white check
+    // mark when the task is done. A screen reader reads it as ☐ or ☑, the
+    // label of the item.
+    private func drawTaskBox(_ done: Bool, _ x: Float, _ indent: Float) {
+        let page = self.page!
+        let size = self.size()
+        let side = size * 0.8
+        let left = x + (indent - size * 0.4 - side) / 2
+        let baseline = y + regular.getAscent(size)
+        let top = (baseline - size * 0.36) - side / 2
+        let actualText = done ? "☑" : "☐"
+        // The box is drawn with the page's paths, not a Rect and Lines, which
+        // are artifacts, as artifacts may not be inside the label.
+        page.addBDC(StructElem.LBL, nil, actualText, actualText)
+        page.saveGraphicsState()
+        let box = Markdown.roundedBox(left, top, side, side * 0.2)
+        if done {
+            page.setBrushColor(checkColor)
+            page.drawPath(box, PathOperator.FILL)
+            page.setPenColor(Color.white)
+            page.setPenWidth(side * 0.14)
+            page.setLineCapStyle(CapStyle.ROUND)
+            page.setLineJoinStyle(JoinStyle.ROUND)
+            page.moveTo(left + side * 0.24, top + side * 0.52)
+            page.lineTo(left + side * 0.43, top + side * 0.70)
+            page.lineTo(left + side * 0.77, top + side * 0.31)
+            page.strokePath()
+        } else {
+            page.setBrushColor(Color.white)
+            page.setPenColor(Markdown.TASK_BOX_COLOR)
+            page.setPenWidth(size * 0.08)
+            page.drawPath(box, PathOperator.FILL_AND_STROKE)
+        }
+        page.restoreGraphicsState()
+        page.addEMC()
+    }
+
+    // The path of a square with rounded corners, of the side and the radius,
+    // its top left corner at x and y.
+    private static func roundedBox(_ x: Float, _ y: Float, _ side: Float, _ r: Float) -> [Point] {
+        let k: Float = 0.55228
+        let c = r * k
+        let C = Point.CONTROL_POINT_C
+        return [
+            Point(x + r, y), Point((x + side) - r, y),
+            Point(((x + side) - r) + c, y, C), Point(x + side, (y + r) - c, C), Point(x + side, y + r),
+            Point(x + side, (y + side) - r),
+            Point(x + side, ((y + side) - r) + c, C), Point(((x + side) - r) + c, y + side, C), Point((x + side) - r, y + side),
+            Point(x + r, y + side),
+            Point((x + r) - c, y + side, C), Point(x, ((y + side) - r) + c, C), Point(x, (y + side) - r),
+            Point(x, y + r),
+            Point(x, (y + r) - c, C), Point((x + r) - c, y, C), Point(x + r, y),
+        ]
     }
 
     private func drawRule(_ x: Float, _ width: Float) {

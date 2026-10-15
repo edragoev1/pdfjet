@@ -20,7 +20,11 @@ import (
 	"strings"
 	"unicode/utf16"
 
+	"github.com/edragoev1/pdfjet/v9/src/capstyle"
+	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/joinstyle"
 	"github.com/edragoev1/pdfjet/v9/src/pagesize"
+	"github.com/edragoev1/pdfjet/v9/src/pathoperator"
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
@@ -32,6 +36,7 @@ const (
 	markdownRuleColor             = 0xC8CCD2
 	markdownQuoteBarColor         = 0xB0B6BF
 	markdownTableHeaderBackground = 0xEEF0F3
+	markdownTaskBoxColor          = 0x8C959F
 	// The least width, in sizes of the text, that quotes and lists nested in
 	// each other leave their text: deeper ones are not indented further, so
 	// that the text is never narrower than nothing.
@@ -41,11 +46,12 @@ const (
 // Markdown draws a Markdown text on as many pages as it needs: headings of #
 // and of underlines, paragraphs with the inline markup of Markup, bullet and
 // numbered lists that nest, block quotes, fenced and indented code, thematic
-// breaks, the tables of GitHub's Markdown, and images alone in their
-// paragraph. In a PDF/UA document the headings are H1 to H6, with no level
-// skipped, the lists are lists, the quotes BlockQuotes, the code Code, the
-// tables tables and the images figures, with their text as the alternate
-// description.
+// breaks, the tables and the task lists of GitHub's Markdown, - [ ] and
+// - [x], drawn as boxes, and images alone in their paragraph. In a PDF/UA
+// document the headings are H1 to H6, with no level skipped, the lists are
+// lists, the boxes of the tasks their labels, read as ☐ and ☑, the quotes
+// BlockQuotes, the code Code, the tables tables and the images figures, with
+// their text as the alternate description.
 //
 // It is not all of Markdown: HTML is drawn as the text it is, a line break is
 // a space, links in a table cell are its text, and an image is drawn only when
@@ -60,6 +66,8 @@ type Markdown struct {
 	code           *Font
 	markup         *Markup
 	headingFont    *Font
+	headingColor   int32 // color.Transparent leaves the headings in the color of the text
+	checkColor     int32 // Of the box of a task that is done
 	marginLeft     float32
 	marginTop      float32
 	marginRight    float32
@@ -103,6 +111,8 @@ func NewMarkdown(regular, bold, italic, boldItalic, code *Font) *Markdown {
 		code:         code,
 		markup:       NewMarkup(regular, bold, italic, boldItalic, code),
 		headingFont:  bold,
+		headingColor: color.Transparent,
+		checkColor:   0x1A7F37,
 		marginLeft:   72,
 		marginTop:    72,
 		marginRight:  72,
@@ -114,6 +124,28 @@ func NewMarkdown(regular, bold, italic, boldItalic, code *Font) *Markdown {
 // it is set.
 func (markdown *Markdown) SetHeadingFont(font *Font) *Markdown {
 	markdown.headingFont = font
+	return markdown
+}
+
+// SetHeadingColor sets the color of the headings, as a 0xRRGGBB value. They
+// are in the color of the text unless it is set.
+func (markdown *Markdown) SetHeadingColor(headingColor int32) *Markdown {
+	markdown.headingColor = headingColor
+	return markdown
+}
+
+// SetLinkColor sets the color of the text of links, as a 0xRRGGBB value. They
+// are blue unless it is set.
+func (markdown *Markdown) SetLinkColor(linkColor int32) *Markdown {
+	markdown.markup.SetLinkColor(linkColor)
+	return markdown
+}
+
+// SetCheckColor sets the color of the box of a task that is done, - [x] in
+// the Markdown, as a 0xRRGGBB value, which has a white check mark in it. It
+// is green, 0x1A7F37, unless it is set.
+func (markdown *Markdown) SetCheckColor(checkColor int32) *Markdown {
+	markdown.checkColor = checkColor
 	return markdown
 }
 
@@ -365,6 +397,9 @@ func (markdown *Markdown) drawHeading(block *markdownBlock, x, width float32) {
 			line.SetFont(markdown.boldItalic)
 		}
 		line.SetFontSize(fontSize)
+		if line.uri == "" && line.key == "" {
+			line.SetTextColor(markdown.headingColor)
+		}
 	}
 	markdown.headingLevel = min(block.level, markdown.headingLevel+1)
 	levels := [6]structelem.StructElem{structelem.H1, structelem.H2, structelem.H3,
@@ -501,16 +536,20 @@ func (markdown *Markdown) drawList(list *markdownBlock, x, width float32) {
 		}
 		markdown.ensure(markdown.firstBlockHeight(item.children))
 		markdown.openContainer(structelem.LI)
-		label := "•"
-		if list.ordered {
-			label = strconv.Itoa(number) + "."
+		if item.task != markdownNoTask {
+			markdown.drawTaskBox(item.task == markdownTaskDone, x, indent)
+		} else {
+			label := "•"
+			if list.ordered {
+				label = strconv.Itoa(number) + "."
+			}
+			text := NewTextLine(regular, label).SetStructureType(structelem.Lbl)
+			labelX := x + float32(markdown.size()*0.3)
+			if list.ordered {
+				labelX = x + indent - float32(markdown.size()*0.4) - text.GetWidth()
+			}
+			text.SetLocation(labelX, markdown.y+regular.GetAscent(markdown.size())).DrawOn(markdown.page)
 		}
-		text := NewTextLine(regular, label).SetStructureType(structelem.Lbl)
-		labelX := x + float32(markdown.size()*0.3)
-		if list.ordered {
-			labelX = x + indent - float32(markdown.size()*0.4) - text.GetWidth()
-		}
-		text.SetLocation(labelX, markdown.y+regular.GetAscent(markdown.size())).DrawOn(markdown.page)
 		markdown.openContainer(structelem.LBody)
 		markdown.atTop = true // The first block of the item is on the line of its label.
 		markdown.drawBlocks(item.children, x+indent, width-indent, !list.loose)
@@ -524,6 +563,64 @@ func (markdown *Markdown) drawList(list *markdownBlock, x, width float32) {
 		number++
 	}
 	markdown.closeContainer()
+}
+
+// drawTaskBox draws the box of a task in place of the label of its item, on
+// the line of its first text: a gray box, or a box of the check color with a
+// white check mark when the task is done. A screen reader reads it as ☐ or ☑,
+// the label of the item.
+func (markdown *Markdown) drawTaskBox(done bool, x, indent float32) {
+	page := markdown.page
+	size := markdown.size()
+	side := float32(size * 0.8)
+	left := x + float32((indent-float32(size*0.4)-side)/2)
+	baseline := markdown.y + markdown.regular.GetAscent(size)
+	top := (baseline - float32(size*0.36)) - float32(side/2)
+	actualText := "☐"
+	if done {
+		actualText = "☑"
+	}
+	// The box is drawn with the page's paths, not a Rect and Lines, which
+	// are artifacts, as artifacts may not be inside the label.
+	page.AddBDC(structelem.Lbl, "", actualText, actualText)
+	page.SaveGraphicsState()
+	box := markdownRoundedBox(left, top, side, float32(side*0.2))
+	if done {
+		page.SetBrushColor(markdown.checkColor)
+		page.DrawPath(box, pathoperator.Fill)
+		page.SetPenColor(color.White)
+		page.SetPenWidth(float32(side * 0.14))
+		page.SetLineCapStyle(capstyle.Round)
+		page.SetLineJoinStyle(joinstyle.Round)
+		page.MoveTo(left+float32(side*0.24), top+float32(side*0.52))
+		page.LineTo(left+float32(side*0.43), top+float32(side*0.70))
+		page.LineTo(left+float32(side*0.77), top+float32(side*0.31))
+		page.StrokePath()
+	} else {
+		page.SetBrushColor(color.White)
+		page.SetPenColor(markdownTaskBoxColor)
+		page.SetPenWidth(float32(size * 0.08))
+		page.DrawPath(box, pathoperator.FillAndStroke)
+	}
+	page.RestoreGraphicsState()
+	page.AddEMC()
+}
+
+// markdownRoundedBox returns the path of a square with rounded corners, of
+// the side and the radius, its top left corner at x and y.
+func markdownRoundedBox(x, y, side, r float32) []*Point {
+	const k float32 = 0.55228
+	c := float32(r * k)
+	return []*Point{
+		NewPoint(x+r, y), NewPoint((x+side)-r, y),
+		NewControlPointC(((x+side)-r)+c, y), NewControlPointC(x+side, (y+r)-c), NewPoint(x+side, y+r),
+		NewPoint(x+side, (y+side)-r),
+		NewControlPointC(x+side, ((y+side)-r)+c), NewControlPointC(((x+side)-r)+c, y+side), NewPoint((x+side)-r, y+side),
+		NewPoint(x+r, y+side),
+		NewControlPointC((x+r)-c, y+side), NewControlPointC(x, ((y+side)-r)+c), NewPoint(x, (y+side)-r),
+		NewPoint(x, y+r),
+		NewControlPointC(x, (y+r)-c), NewControlPointC((x+r)-c, y), NewPoint(x+r, y),
+	}
 }
 
 func (markdown *Markdown) drawRule(x, width float32) {

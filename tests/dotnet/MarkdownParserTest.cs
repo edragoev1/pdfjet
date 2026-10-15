@@ -14,7 +14,8 @@ namespace PDFjet.NET {
 public class MarkdownParserTest {
     // The blocks as text: H1(text), P(text), CODE(text), RULE, IMG(alt|source),
     // QUOTE[...], UL[...] or OL3[...] with its start, * after a list that is
-    // loose, I[...] for an item, and TABLE(a,b;c,d|L,C) with its rows and alignments.
+    // loose, I[...] for an item, T[...] for a task and X[...] for a task that is
+    // done, and TABLE(a,b;c,d|L,C) with its rows and alignments.
     internal static String Describe(List<MarkdownParser.Block> blocks) {
         StringBuilder buf = new StringBuilder();
         foreach (MarkdownParser.Block block in blocks) {
@@ -45,7 +46,7 @@ public class MarkdownParserTest {
                             .Append('[').Append(Describe(block.children)).Append(']');
                     break;
                 case MarkdownParser.Kind.ITEM:
-                    buf.Append("I[").Append(Describe(block.children)).Append(']');
+                    buf.Append(new String[] {"I", "T", "X"}[(int) block.task]).Append('[').Append(Describe(block.children)).Append(']');
                     break;
                 case MarkdownParser.Kind.TABLE:
                     StringBuilder rows = new StringBuilder();
@@ -130,6 +131,21 @@ public class MarkdownParserTest {
         Assert.Equal("UL*[I[P(a)] I[P(b)]]", Parse("- a\n\n- b"));
         Assert.Equal("UL*[I[P(a) P(more)]]", Parse("- a\n\n  more"));
         Assert.Equal("UL[I[P(a)]] P(after)", Parse("- a\n\nafter"));
+    }
+
+    [Fact]
+    public void TaskLists() {
+        Assert.Equal("UL[X[P(done)] T[P(open)] I[P(plain)]]", Parse("- [x] done\n- [ ] open\n- plain"));
+        Assert.Equal("UL[X[P(Done)]]", Parse("* [X] Done"));
+        Assert.Equal("OL1[T[P(first)]]", Parse("1. [ ] first"));
+        Assert.Equal("UL[T[P(a) UL[X[P(b)]]]]", Parse("- [ ] a\n  - [x] b"));
+        Assert.Equal("UL[T[P(tab)]]", Parse("- [ ]\ttab"));
+        // Not tasks: no space after the box, no text, another letter
+        Assert.Equal("UL[I[P([ ]no space)]]", Parse("- [ ]no space"));
+        Assert.Equal("UL[I[P([ ])]]", Parse("- [ ]"));
+        Assert.Equal("UL[I[P([ ])]]", Parse("- [ ]   "));
+        Assert.Equal("UL[I[P([y] other)]]", Parse("- [y] other"));
+        Assert.Equal("P([x] not in a list)", Parse("[x] not in a list"));
     }
 
     [Fact]
