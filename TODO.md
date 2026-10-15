@@ -98,24 +98,11 @@ commit and date. The layout's format version (1) and the look's rules
   the logger made when it is used. Done on 15 October 2026 (0cb12f10): Java,
   C# and Swift; Go needed nothing. CHANGELOG.md, v9.1.1.
 
-- **v9.1.5: faster compression of text, the hex strings kept, in the four
-  ports.** In Java, the 2,546 pages of Example_24 spend more time in zlib
-  than in all of PDFjet's own code (profiles of 15 October 2026): zlib's
-  default level is slow on the many "00" of the hex glyph strings,
-  `<0044002A0032> Tj`, 82.4 MB of content compressed to 10.77 MB in
-  1,107 ms. The hex strings stay: literal strings, `(...) Tj`, were tried
-  before and some viewers read them wrong. To measure, then decide: one-byte
-  codes, two hex digits a glyph, which needs a font of up to 256 glyphs, or
-  more subsets of it, with its own encoding and ToUnicode map; and zlib's
-  strategies and levels, against the size of the file (level 4 is twice as
-  fast, the file 16% larger). The smaller wins the same profile showed in
-  BigTable were tried in Java on 15 October 2026 and gave nothing: lines of
-  ASCII read with no second look at their UTF-8 (20 to 40 ms slower), the
-  number written last written again from its bytes (no change), and fit by
-  running sums of the widths (the same time, 2% less allocated); the JIT
-  already does well there. Go, with no JIT, may differ: to profile there
-  before changing anything.
-
+- **Dropped: faster compression of the hex text strings** (the owner,
+  15 October 2026: "OUT"). zlib is slow on the "00" of hex glyph strings, a
+  second of Example_24's 2,546 pages in Java, but typical documents of 5 to 10
+  pages compress in 2 to 4 ms, and the hex strings stay. Not to be proposed
+  again. The smaller BigTable wins were tried in Java and gave nothing.
 - **v9.0.7: fonts and writing, faster and leaner, in the four ports.** The
   output byte for byte the same: every example and test PDF of the four
   ports written before and after, and compared. Done in 9.0.5 (the owner,
