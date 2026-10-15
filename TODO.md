@@ -98,7 +98,7 @@ commit and date. The layout's format version (1) and the look's rules
   the logger made when it is used. Done on 15 October 2026 (0cb12f10): Java,
   C# and Swift; Go needed nothing. CHANGELOG.md, v9.1.1.
 
-- **v9.1.1: faster compression of text, the hex strings kept, in the four
+- **v9.1.5: faster compression of text, the hex strings kept, in the four
   ports.** In Java, the 2,546 pages of Example_24 spend more time in zlib
   than in all of PDFjet's own code (profiles of 15 October 2026): zlib's
   default level is slow on the many "00" of the hex glyph strings,
@@ -134,7 +134,7 @@ commit and date. The layout's format version (1) and the look's rules
     buffers in Swift, which gained 2% and nothing on top of reading a font
     once.
 
-- **For 9.1.1: smaller tagged documents, with object streams.** Each cell of a table of
+- **For 9.1.5: smaller tagged documents, with object streams.** Each cell of a table of
   PDF/UA costs 280 to 415 bytes, its text and a structure element of its own,
   each an object written uncompressed: a price list of 3,000 rows of 6
   columns is 4.7 MB. PDF 1.5's object streams, the small objects compressed
@@ -162,12 +162,12 @@ commit and date. The layout's format version (1) and the look's rules
   port alike; the measuring costs two more drawOn(null) calls a draw. A
   getter of the location, or the cell drawing at an offset without moving
   the drawable, would put it back exactly.
-- **For 9.1.1: Swift's Flate compresses less** (third review, K6; the
+- **For 9.1.5: Swift's Flate compresses less** (third review, K6; the
   owner, 12 October 2026): Swift's PDFs are
   about 9% larger than Go's, the same content after inflating, from its own
   Deflate encoder. Its matches could be searched as zlib's level 6 does.
-- **For 9.1.1: PDF/A and tagged documents at scale (third review, W1, W2,
-  W3, W5, W6, W7).** 9.0.7 refuses a PDF/A-1 document past its limits; 9.1.1
+- **For 9.1.5: PDF/A and tagged documents at scale (third review, W1, W2,
+  W3, W5, W6, W7).** 9.0.7 refuses a PDF/A-1 document past its limits; 9.1.5
   writes one within them at any size: a balanced page tree, a parent tree of
   /Kids, and resources for each page rather than one dictionary of every
   image and font, which also keeps a page taken out of the document from
