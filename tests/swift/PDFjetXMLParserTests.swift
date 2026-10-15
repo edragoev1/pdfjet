@@ -299,14 +299,18 @@ import Testing
         return deepest.getText()
     }
 
-    // A document of four times as many lines is read in about four times the
-    // time, not sixteen. The two times are measured in the same run, the
-    // shortest of three each, so that a slow or busy computer, or a debug
-    // build, slows both.
+    // A document of eight times as many lines is read in about eight times the
+    // time, not sixty-four. The two times are measured in the same run, the
+    // shortest of three each, so that a slow or busy computer, or a
+    // debug build, slows both. The
+    // shorter invoice is 10000 lines and the limit 32: four times linear, 8,
+    // and half of quadratic, 64. With 5000 and 20000 lines and a limit of 10,
+    // CI's Swedish locale of .NET took 11.3 times as long, 22 ms against
+    // 255 ms, a pause in the longer one (15 October 2026).
     @Test func readsALargeInvoiceQuickly() throws {
-        let small = try parseTime(5000)
-        let large = try parseTime(20000)
-        #expect(large <= small * 8, "an invoice of 20000 lines was read in \(large), and one of 5000 in \(small)")
+        let small = try parseTime(10000)
+        let large = try parseTime(80000)
+        #expect(large <= small * 32, "an invoice of 80000 lines was read in \(large), and one of 10000 in \(small)")
     }
 
     // Reads an invoice of the lines three times, checks what it read, and

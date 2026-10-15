@@ -328,15 +328,19 @@ public class XMLParserTest {
         return deepest.GetText();
     }
 
-    // A document of four times as many lines is read in about four times the
-    // time, not sixteen. The two times are measured in the same run, the
-    // shortest of three each, so that a slow or busy computer slows both.
+    // A document of eight times as many lines is read in about eight times the
+    // time, not sixty-four. The two times are measured in the same run, the
+    // shortest of three each, so that a slow or busy computer slows both. The
+    // shorter invoice is 10000 lines and the limit 32: four times linear, 8,
+    // and half of quadratic, 64. With 5000 and 20000 lines and a limit of 10,
+    // CI's Swedish locale of .NET took 11.3 times as long, 22 ms against
+    // 255 ms, a pause in the longer one (15 October 2026).
     [Fact]
     public void ReadsALargeInvoiceQuickly() {
-        TimeSpan small = ParseTime(5000);
-        TimeSpan large = ParseTime(20000);
-        Assert.True(large.Ticks <= 10 * small.Ticks, "an invoice of 20000 lines was read in "
-                + large.TotalMilliseconds.ToString(CultureInfo.InvariantCulture) + " ms, and one of 5000 in "
+        TimeSpan small = ParseTime(10000);
+        TimeSpan large = ParseTime(80000);
+        Assert.True(large.Ticks <= 32 * small.Ticks, "an invoice of 80000 lines was read in "
+                + large.TotalMilliseconds.ToString(CultureInfo.InvariantCulture) + " ms, and one of 10000 in "
                 + small.TotalMilliseconds.ToString(CultureInfo.InvariantCulture) + " ms");
     }
 
