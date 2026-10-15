@@ -80,6 +80,12 @@ commit and date. The layout's format version (1) and the look's rules
 
 ## Open
 
+- **A link that ends a paragraph underlines the space after it.** In
+  Markdown (and Markup), `Tell the [users](https://example.com)` at the end
+  of a paragraph draws the underline of "users" one space too long; with a
+  period after the link it is right. Seen in Go on 14 October 2026; check
+  the four ports, then fix in all four with a test.
+
 - **v9.0.7: fonts and writing, faster and leaner, in the four ports.** The
   output byte for byte the same: every example and test PDF of the four
   ports written before and after, and compared. Done in 9.0.5 (the owner,
