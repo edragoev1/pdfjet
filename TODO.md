@@ -80,20 +80,19 @@ commit and date. The layout's format version (1) and the look's rules
 
 ## Open
 
-- **v9.1.1: text written as binary strings, not hex, in the four ports.**
-  Page writes each glyph as hexadecimal, `<0044002A0032> Tj`, four
-  characters for each glyph, and zlib's default level is slow on the many
-  "00" of hex: in Java, the 2,546 pages of Example_24 spend more time in
-  Deflater than in all of PDFjet's own code (profiles of 15 October 2026).
-  zlib on that content, measured: hex, 82.4 MB to 10.77 MB in 1,107 ms; the
-  same glyphs as binary literal strings, `(...) Tj`, 62.6 MB to 10.00 MB in
-  579 ms. About 0.5 s less for Example_24, from 1.67 s, and every text-heavy
-  PDF about 7% smaller. To do: escape `(`, `)`, `\` and CR (a raw CR in a
-  literal string reads as LF); the same bytes in the four ports
-  (check-examples); the tests that look for hex glyph strings; veraPDF, and
-  PDFium, pdf.js, Poppler and MuPDF on the examples. Then the smaller wins the
-  same profile shows in BigTable: FastFloat.write and the reading and
-  splitting of the CSV file, about 20% of the Java time.
+- **v9.1.1: faster compression of text, the hex strings kept, in the four
+  ports.** In Java, the 2,546 pages of Example_24 spend more time in zlib
+  than in all of PDFjet's own code (profiles of 15 October 2026): zlib's
+  default level is slow on the many "00" of the hex glyph strings,
+  `<0044002A0032> Tj`, 82.4 MB of content compressed to 10.77 MB in
+  1,107 ms. The hex strings stay: literal strings, `(...) Tj`, were tried
+  before and some viewers read them wrong. To measure, then decide: one-byte
+  codes, two hex digits a glyph, which needs a font of up to 256 glyphs, or
+  more subsets of it, with its own encoding and ToUnicode map; and zlib's
+  strategies and levels, against the size of the file (level 4 is twice as
+  fast, the file 16% larger). Then the smaller wins of the same profile in
+  BigTable: FastFloat.write and the reading and splitting of the CSV file,
+  about 20% of the Java time.
 
 - **v9.0.7: fonts and writing, faster and leaner, in the four ports.** The
   output byte for byte the same: every example and test PDF of the four
