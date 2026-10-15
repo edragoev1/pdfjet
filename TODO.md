@@ -80,7 +80,7 @@ commit and date. The layout's format version (1) and the look's rules
 
 ## Open
 
-- **v9.1.1: the first PDF of a process faster, in the four ports.** Measured
+- ✅ **v9.1.1: the first PDF of a process faster, in the four ports.** Measured
   on 15 October 2026 with typical documents, a one-page invoice, a 9-page
   report and an 11-page Markdown text (branch measure/common-documents,
   benchmarks/common): warm, complete() takes 2 to 4 ms, so the encoding of
@@ -95,7 +95,8 @@ commit and date. The layout's format version (1) and the look's rules
   the four ports, so that they stay alike: the date by hand, and the
   document ID from a random generator that is not a cryptographic one, as it
   tells documents apart and is no secret (encryption keeps its own); in Java
-  the logger made when it is used. The Java change is on the branch.
+  the logger made when it is used. Done on 15 October 2026 (0cb12f10): Java,
+  C# and Swift; Go needed nothing. CHANGELOG.md, v9.1.1.
 
 - **v9.1.1: faster compression of text, the hex strings kept, in the four
   ports.** In Java, the 2,546 pages of Example_24 spend more time in zlib
