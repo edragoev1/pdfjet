@@ -90,9 +90,13 @@ commit and date. The layout's format version (1) and the look's rules
   codes, two hex digits a glyph, which needs a font of up to 256 glyphs, or
   more subsets of it, with its own encoding and ToUnicode map; and zlib's
   strategies and levels, against the size of the file (level 4 is twice as
-  fast, the file 16% larger). Then the smaller wins of the same profile in
-  BigTable: FastFloat.write and the reading and splitting of the CSV file,
-  about 20% of the Java time.
+  fast, the file 16% larger). The smaller wins the same profile showed in
+  BigTable were tried in Java on 15 October 2026 and gave nothing: lines of
+  ASCII read with no second look at their UTF-8 (20 to 40 ms slower), the
+  number written last written again from its bytes (no change), and fit by
+  running sums of the widths (the same time, 2% less allocated); the JIT
+  already does well there. Go, with no JIT, may differ: to profile there
+  before changing anything.
 
 - **v9.0.7: fonts and writing, faster and leaner, in the four ports.** The
   output byte for byte the same: every example and test PDF of the four
