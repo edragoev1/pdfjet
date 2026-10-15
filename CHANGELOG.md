@@ -7,7 +7,7 @@ languages.
 
 This is the first entry in this file; earlier releases were not tracked here.
 
-## v9.0.9 — not released yet
+## v9.0.9 — 2026-10-15
 
 ### Added
 - Task lists in `Markdown`, in the four ports, as GitHub's Markdown writes
