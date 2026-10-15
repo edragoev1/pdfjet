@@ -40,6 +40,38 @@ before used the `.otf.stream` and `.ttf.stream` files. The table has four:
 | `jet-page` | `Page`, through a driver that follows `BigTable` step by step, every page kept until the footers are drawn |
 | `jet-page-stream` | `Page`, through the same driver, each page written when the next one starts |
 
+## Before a release
+
+Example_24, the 2,546-page table, is run in the four ports before each
+release and compared with the figures below, so that a release is not
+slower than the one before it without anyone knowing: the per-character
+tests of 9.0.3 to 9.0.5 made it 37% slower in Go, unseen until 15 October
+2026. A port more than 5% slower is looked into before the release.
+
+```
+TABLE_CONFIGS=jet benchmarks/run.sh table     # Java: the median of 7 runs
+dotnet build PDFjet.csproj -c release && dotnet build examples/Example_24/Example_24.csproj -c release
+dotnet examples/Example_24/bin/release/net8.0/Example_24.dll   # C#: 7 times, the median
+swift build -c release --product Example_24
+$(swift build -c release --show-bin-path)/Example_24           # Swift: 7 times, the median
+go run ./src/examples/example24                                # Go: 7 times, the median
+```
+
+Each prints the time of the document in milliseconds; the PDF is checked
+too: 2,546 pages, the last footer "Page 2546 of 2546". The figures of
+15 October 2026, at d040076b, on the machine of the results below, with
+nothing else running:
+
+| Port | Example_24 |
+|---|---|
+| Go | 905 ms |
+| Java | 1,694 ms |
+| C# | 2,296 ms |
+| Swift | 2,672 ms |
+
+The figures of another machine are not compared with these: the release
+before is run on it as well, from its tag in a worktree.
+
 ## Method
 
 - Each configuration runs in its own JVM: 2 warm-up runs and 7 measured runs,
