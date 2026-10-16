@@ -108,20 +108,34 @@ commit and date. The layout's format version (1) and the look's rules
     complete(boolean closeStream) in Java and Swift, keeping today's default,
     and the leaveOpen of .NET's StreamWriter in C#. Until then: a
     FilterOutputStream whose close() does nothing.
-  - **Narrower exceptions on PDF's own methods (Java only).** complete() and
+  - **Narrower exceptions on PDF's own methods (Java only; for C#, see
+    below).** complete() and
     the constructors declare throws Exception; narrow them to IOException
     where that is all they throw, after checking what they really throw.
     Drawable.drawOn() keeps throws Exception: narrowing an interface breaks
     every class that implements it with throws Exception.
-  - **The end of a drawn table, by name.** drawOn() returns float[] {x, y};
-    add a method that returns a small immutable class with named getters,
-    and keep drawOn() as it is. Not named Point, which is PDFjet's drawable
-    point.
-  - **A vertical alignment that can't be one is refused.**
+  - **The end of a drawn table, by name, in the four ports.** drawOn()
+    returns float[] {x, y} in Java and C#, [Float] in Swift and [2]float32
+    in Go, read by [0] and [1]; add a method that returns a small immutable
+    class (a struct in Go and Swift) with named getters, and keep drawOn()
+    as it is. Not named Point, which is PDFjet's drawable point.
+  - **A vertical alignment that can't be one is not taken.**
     setVerticalAlignment(Alignment.RIGHT), of TextBlock and Cell, is taken
-    as TOP without a word; throw IllegalArgumentException for anything but
-    TOP, CENTER and BOTTOM, and the same in the other ports, each its own
-    way. A separate enum for vertical alignment would break existing code.
+    as TOP without a word, in the four ports. Java throws
+    IllegalArgumentException and C# ArgumentException for anything but TOP,
+    CENTER and BOTTOM. Go and Swift keep the alignment the object had, as
+    said in their docs: Go has no exceptions, and a setter of Swift that
+    throws, or one of Go that returns an error, would break the chains of
+    setters every caller writes. A separate enum for vertical alignment
+    would break existing code.
+  - **C#: specific exceptions, not System.Exception** (found on 16 October
+    2026, from the Java point above). 74 places throw a plain Exception, so
+    a caller cannot tell a font that cannot be read from a file that cannot
+    be written; throw ArgumentException, IOException, InvalidDataException
+    or NotSupportedException, as the rest of the C# port already does, each
+    by what went wrong. Breaks no caller: a catch of Exception still catches
+    them all. Swift already throws its own PDFjetError, and Go returns
+    errors.
 
 - **Dropped: faster compression of the hex text strings** (the owner,
   15 October 2026: "OUT"). zlib is slow on the "00" of hex glyph strings, a
