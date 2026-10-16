@@ -37,8 +37,9 @@ same output come in four languages, and none of them needs a single dependency.
 > alone, and move them to the new commits when a `git pull` changes a pin.
 > `./get-fonts-and-data.sh`, or `get-fonts-and-data.cmd` on Windows, does it
 > without building anything. They need git.
-> Using PDFjet from Go with `go get`? The module has no fonts: the Go part of
-> [Quick start](#quick-start) says how to get pdfjet-fonts. The core fonts,
+> Using PDFjet from Go with `go get`, or from Maven Central? The module and the
+> jar have no fonts: the Go part of [Quick start](#quick-start) says how to
+> get pdfjet-fonts. The core fonts,
 > such as Helvetica, need no files at all.
 
 ## Why PDFjet
@@ -89,8 +90,27 @@ working directory, so run the program in a folder that has this repository's
 <details open>
 <summary><b>Java</b></summary>
 
-Build `PDFjet.jar` with `./build-java.sh`, which also runs the examples, and
-put it on the class path.
+PDFjet is on Maven Central, as `com.pdfjet:pdfjet`. With Maven:
+
+```xml
+<dependency>
+  <groupId>com.pdfjet</groupId>
+  <artifactId>pdfjet</artifactId>
+  <version>9.0.9</version>
+</dependency>
+```
+
+With Gradle:
+
+```groovy
+implementation("com.pdfjet:pdfjet:9.0.9")
+```
+
+The jar has no fonts, as the Go module has none: clone pdfjet-fonts as
+`fonts/` next to your program, as the Go part below says, or copy the fonts
+you use from it; the core fonts need no files. Or build `PDFjet.jar` from
+this repository with `./build-java.sh`, which also runs the examples, and put
+it on the class path.
 
 ```java
 import com.pdfjet.*;
