@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The POM of PDFjet Pro, com.pdfjet:pdfjet-pro, for the PDFjet.jar beside
+     it: to install the jar in a local or a company's Maven repository, as
+     README.md says. PDFjet Pro is not on Maven Central. -->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.pdfjet</groupId>
+  <artifactId>pdfjet-pro</artifactId>
+  <version>@VERSION@</version>
+  <packaging>jar</packaging>
+  <name>PDFjet Pro</name>
+  <description>PDFjet with PDFjet Sign, PAdES digital signatures, and PDFjet Invoice, ZUGFeRD, Factur-X and XRechnung electronic invoices, the Swiss QR-bill and the EPC QR code. Java 8 or later; no dependencies.</description>
+  <url>https://pdfjet.com</url>
+  <licenses>
+    <license>
+      <name>PDFjet Pro License Agreement</name>
+      <comments>The LICENSE file of the package</comments>
+    </license>
+  </licenses>
+  <organization>
+    <name>PDFjet Software</name>
+    <url>https://pdfjet.com</url>
+  </organization>
+</project>

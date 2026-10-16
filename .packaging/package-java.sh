@@ -181,7 +181,8 @@ zip_sorted "$CORE_ZIP" "$CORE_NAME"
 # repository, compiled into PDFjet.jar with the library (the owner, 12 October
 # 2026: one PDFjet.jar), for Java 8, with "PDFjet Pro" in its manifest so that
 # it is told from the jar of PDFjet Core; the API reference of both; its
-# examples and the certificate of the signing one.
+# examples and the certificate of the signing one; and the POM of the jar,
+# com.pdfjet:pdfjet-pro, to install it in a Maven repository.
 cd "$NAME"
 PRO_TAR=$PWD/../pro.tar
 mkdir pro-src
@@ -232,7 +233,10 @@ cp pro-src/examples/package/java/*.java examples/pro/
 cp pro-src/tests/data/rsa-signer.p12 examples/pro/demo-signer.p12
 rm -rf pro-src out
 mv ../java-pro/build-pro.sh ../java-pro/build-pro.cmd .
-cat ../java-pro/README-PRO.md >> README.md
+# The POM and the README of PDFjet Pro, with its version: the jar installed
+# as com.pdfjet:pdfjet-pro in a Maven repository, as the README says
+sed "s/@VERSION@/${VERSION#v}/g" ../java-pro/pom.xml > pom.xml
+sed "s/@VERSION@/${VERSION#v}/g" ../java-pro/README-PRO.md >> README.md
 rm -rf ../java-pro
 
 # Creates the PDFs of PDFjet Pro with the package's own script.
