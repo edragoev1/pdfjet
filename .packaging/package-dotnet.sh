@@ -24,7 +24,7 @@
 # PDFjet.dll is strong-named, in both packages: the key is not in the
 # repository, but in the owner's private files, and is given by PDFJET_SNK:
 #
-#   PDFJET_SNK=~/Projects/pdfjet-pro-private/signing/PDFjet.snk .packaging/package-dotnet.sh
+#   PDFJET_SNK=~/Projects/private/pdfjet-pro-private/signing/PDFjet.snk .packaging/package-dotnet.sh
 #
 # Without it the script stops, so that no package is made unsigned. Its public
 # key token is e66c1909913f295d.
