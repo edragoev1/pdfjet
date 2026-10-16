@@ -37,9 +37,9 @@ same output come in four languages, and none of them needs a single dependency.
 > alone, and move them to the new commits when a `git pull` changes a pin.
 > `./get-fonts-and-data.sh`, or `get-fonts-and-data.cmd` on Windows, does it
 > without building anything. They need git.
-> Using PDFjet from Go with `go get`, or from Maven Central? The module and the
-> jar have no fonts: the Go part of [Quick start](#quick-start) says how to
-> get pdfjet-fonts. The core fonts,
+> Using PDFjet from Go with `go get`, from Maven Central or from NuGet? The
+> module, the jar and the package have no fonts: the Go part of
+> [Quick start](#quick-start) says how to get pdfjet-fonts. The core fonts,
 > such as Helvetica, need no files at all.
 
 ## Why PDFjet
@@ -133,7 +133,23 @@ public class Hello {
 <details>
 <summary><b>C#</b></summary>
 
-Build `bin/release/net8.0/PDFjet.dll` with `./build-dotnet.sh` and reference it.
+PDFjet is on NuGet, as `PDFjet`, for .NET 8 or later and .NET Framework 4.8,
+strong-named. With the .NET CLI:
+
+```bash
+dotnet add package PDFjet --version 9.0.9
+```
+
+Or in the project file:
+
+```xml
+<PackageReference Include="PDFjet" Version="9.0.9" />
+```
+
+The package has no fonts, as the jar has none: get pdfjet-fonts as the Go part
+below says, or copy the fonts you use from it; the core fonts need no files.
+Or build `bin/release/net8.0/PDFjet.dll` from this repository with
+`./build-dotnet.sh` and reference it.
 
 ```csharp
 using System.IO;
