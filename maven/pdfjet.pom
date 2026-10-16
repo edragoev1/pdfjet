@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The POM of com.pdfjet:pdfjet on Maven Central, made by package-maven.sh
+     for the PDFjet.jar of a release's PDFjet-ForJava-Core zip, as released:
+     $version$ and $commit$ are written in by the script. -->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.pdfjet</groupId>
+  <artifactId>pdfjet</artifactId>
+  <version>$version$</version>
+  <packaging>jar</packaging>
+  <name>PDFjet</name>
+  <description>Fast, dependency-free PDF generation: text in many scripts with TrueType and OpenType fonts embedded as subsets, tables, charts, barcodes, SVG and Markdown, PDF/UA and PDF/A, merging and AES-256. Java 8 or later. The same API in .NET, Go and Swift.</description>
+  <url>https://github.com/edragoev1/pdfjet</url>
+  <licenses>
+    <license>
+      <name>MIT License</name>
+      <url>https://opensource.org/license/mit</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+  <developers>
+    <developer>
+      <name>PDFjet Software</name>
+      <email>support@pdfjet.com</email>
+      <organization>PDFjet Software</organization>
+      <organizationUrl>https://pdfjet.com</organizationUrl>
+    </developer>
+  </developers>
+  <scm>
+    <connection>scm:git:https://github.com/edragoev1/pdfjet.git</connection>
+    <developerConnection>scm:git:https://github.com/edragoev1/pdfjet.git</developerConnection>
+    <url>https://github.com/edragoev1/pdfjet/tree/$commit$</url>
+    <tag>v$version$</tag>
+  </scm>
+  <issueManagement>
+    <system>GitHub</system>
+    <url>https://github.com/edragoev1/pdfjet/issues</url>
+  </issueManagement>
+</project>
