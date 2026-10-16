@@ -98,6 +98,31 @@ commit and date. The layout's format version (1) and the look's rules
   the logger made when it is used. Done on 15 October 2026 (0cb12f10): Java,
   C# and Swift; Go needed nothing. CHANGELOG.md, v9.1.1.
 
+- **v9.1.1: four small API fixes, from a developer evaluating the Java port
+  (GitHub Discussion #5, 16 October 2026).** All additive or a check, all
+  on Java 8, in the four ports where they apply; the owner, 16 October 2026:
+  "add them to the TODO for 9.1.1".
+  - **complete() that leaves the stream open.** Java, C# and Swift close
+    the output stream in complete(), so several PDFs cannot be written into
+    one ZipOutputStream; Go already leaves a writer it is given open. Add
+    complete(boolean closeStream) in Java and Swift, keeping today's default,
+    and the leaveOpen of .NET's StreamWriter in C#. Until then: a
+    FilterOutputStream whose close() does nothing.
+  - **Narrower exceptions on PDF's own methods (Java only).** complete() and
+    the constructors declare throws Exception; narrow them to IOException
+    where that is all they throw, after checking what they really throw.
+    Drawable.drawOn() keeps throws Exception: narrowing an interface breaks
+    every class that implements it with throws Exception.
+  - **The end of a drawn table, by name.** drawOn() returns float[] {x, y};
+    add a method that returns a small immutable class with named getters,
+    and keep drawOn() as it is. Not named Point, which is PDFjet's drawable
+    point.
+  - **A vertical alignment that can't be one is refused.**
+    setVerticalAlignment(Alignment.RIGHT), of TextBlock and Cell, is taken
+    as TOP without a word; throw IllegalArgumentException for anything but
+    TOP, CENTER and BOTTOM, and the same in the other ports, each its own
+    way. A separate enum for vertical alignment would break existing code.
+
 - **Dropped: faster compression of the hex text strings** (the owner,
   15 October 2026: "OUT"). zlib is slow on the "00" of hex glyph strings, a
   second of Example_24's 2,546 pages in Java, but typical documents of 5 to 10
