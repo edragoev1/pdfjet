@@ -620,5 +620,18 @@ public class SVGImageTest {
         Assert.True((bool) parse.Invoke(null, args));
         Assert.Equal(double.NegativeInfinity, (double) args[1]);
     }
+
+    // İ in a color is i, its simple lower case, as in the other ports: .NET's
+    // invariant culture left it as it was (review of 17 October 2026)
+    [Fact]
+    public void ADottedCapitalIInAColorIsI() {
+        var parse = typeof(PDF).Assembly.GetType("PDFjet.NET.SVGState").GetMethod("ParseColor",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+        object[] args = {"fill", "L\u0130ME", 0};
+        Assert.True((bool) parse.Invoke(null, args));
+        object[] lime = {"fill", "lime", 0};
+        parse.Invoke(null, lime);
+        Assert.Equal(lime[2], args[2]);
+    }
 }
 }

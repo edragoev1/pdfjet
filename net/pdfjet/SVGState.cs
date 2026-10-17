@@ -203,7 +203,9 @@ internal class SVGState {
             color = (hex[0] == '-') ? -number : number;
             return true;
         }
-        String lower = value.ToLowerInvariant();
+        // İ is i, its simple lower case, as in the other ports: .NET's
+        // invariant culture left it as it was (review of 17 October 2026)
+        String lower = value.Replace('\u0130', 'i').ToLowerInvariant();
         if (lower.StartsWith("rgb(", StringComparison.Ordinal) || lower.StartsWith("rgba(", StringComparison.Ordinal)) {
             int open = lower.IndexOf('(');
             int end = lower.IndexOf(')');

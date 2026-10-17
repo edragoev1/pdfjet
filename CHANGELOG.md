@@ -135,6 +135,7 @@ This is the first entry in this file; earlier releases were not tracked here.
   Swift took any other text, NaN too, for 0.
 - C# on .NET Framework 4.8: a token above U+00FF of a merged object is
   written as '?', as in .NET 8 and Java; its Latin-1 best-fitted Ā as A.
+- C#: İ in an SVG color is i, as in the other ports.
 - Reading an encrypted PDF with many strings after /Contents in one
   dictionary took time growing with the square of their number, as each
   string looked for its dictionary's ends again: a PDF of 560 KB took 17
