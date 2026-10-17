@@ -11,6 +11,7 @@ import (
 	"crypto/rand"
 	"errors"
 	"io"
+	"slices"
 )
 
 // aes256 provides methods for AES-256 encryption in various modes.
@@ -121,7 +122,9 @@ func aesPkcs7Pad(data []byte, blockSize int) []byte {
 	for i := range padText {
 		padText[i] = byte(padding)
 	}
-	return append(data, padText...)
+	// A new slice: appended to data, the padding was written into the spare
+	// capacity of a stream that was read (review of 17 October 2026).
+	return slices.Concat(data, padText)
 }
 
 // EncryptWithZeroIV helper function for backward compatibility - static method style

@@ -1936,6 +1936,10 @@ func (pdf *PDF) Merge(objects []*PDFobj) error {
 // by merging each part of it into a PDF of its own: the objects that Read
 // returned can be merged into any number of PDFs.
 //
+// The merges of one Read's objects are made one after the other: Merge,
+// MergePages and GetPageObjects fill in the objects as they read them, so a
+// document split on several goroutines is read once on each.
+//
 // The pages are merged as Merge merges all of them, and a link to a page that
 // is not merged leads nowhere. A page number that the document does not have,
 // or one that is listed twice, is refused: MergePages records the mistake and
@@ -2720,6 +2724,9 @@ func contains(slice []string, text string) bool {
 // Read returns the objects of the PDF in buf. An encrypted PDF is decrypted
 // when it opens without a password. It returns an error if the PDF needs a
 // password or cannot be read.
+//
+// The objects are filled in by the calls that use them, and are not safe to
+// share between goroutines: each goroutine reads its own.
 func (pdf *PDF) Read(buf []byte) ([]*PDFobj, error) {
 	return pdf.ReadWithPassword(buf, "")
 }
@@ -3790,7 +3797,11 @@ func resolveMediaBox(page *PDFobj, objects []*PDFobj) {
 			return
 		}
 	}
-	page.dict = slices.Concat(page.dict[:start], box, page.dict[end:])
+	// A box of numbers already, as on a second call, is left as it is: the
+	// objects are only read then (review of 17 October 2026).
+	if !slices.Equal(box, page.dict[start:end]) {
+		page.dict = slices.Concat(page.dict[:start], box, page.dict[end:])
+	}
 }
 
 func isPageObject(obj *PDFobj) bool {

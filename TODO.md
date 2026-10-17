@@ -302,7 +302,7 @@ The Go port:
 - [x] qrcode: a negative error-correction level loops for ever; 4 to 7
       give wrong format bits: refuse them.
 - [x] table wrapCellText: a slice bound panic on invalid UTF-8.
-- [ ] GetPageObjects rewrites shared objects on every call, and
+- [x] GetPageObjects rewrites shared objects on every call, and
       aesPkcs7Pad appends into a decrypted stream: a race when one Read is
       merged on several goroutines.
 - [ ] structelem.StructElem and relationship.Relationship written raw:

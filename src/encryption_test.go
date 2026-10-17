@@ -265,3 +265,21 @@ func TestEncryptionAPasswordTakenAsItWasStillOpens(t *testing.T) {
 		t.Errorf("%q", got)
 	}
 }
+
+// The padding of a stream encrypted with AES is a new slice: appended to the
+// stream, it was written into the spare capacity of a stream that was read,
+// which several goroutines merging one Read wrote at once (review of
+// 17 October 2026).
+func TestTheAESPaddingLeavesTheStreamAlone(t *testing.T) {
+	buffer := make([]byte, 72, 80)
+	for i := range buffer[:80] {
+		buffer[:80][i] = 0xAA
+	}
+	padded := aesPkcs7Pad(buffer[:72], 16)
+	if len(padded) != 80 || padded[79] != 8 {
+		t.Fatalf("the padding is wrong: %d bytes, the last %d", len(padded), padded[len(padded)-1])
+	}
+	if buffer[:80][72] != 0xAA {
+		t.Errorf("the padding was written into the stream's spare capacity")
+	}
+}

@@ -85,6 +85,12 @@ This is the first entry in this file; earlier releases were not tracked here.
 - A font with neither TrueType nor CFF outlines, as a CFF2 variable font,
   was embedded as TrueType, which viewers could not draw. It is now
   refused with "a CFF2 font is not supported". In the four ports.
+- Go: a stream encrypted with AES had its padding written into the spare
+  capacity of the stream that was read, so merging one Read on several
+  goroutines wrote the same bytes at once. The padding is a new slice, a
+  second GetPageObjects leaves the page boxes as they are, and the docs of
+  Read and MergePages say that the objects of one Read are used on one
+  goroutine at a time.
 - Reading an encrypted PDF with many strings after /Contents in one
   dictionary took time growing with the square of their number, as each
   string looked for its dictionary's ends again: a PDF of 560 KB took 17
