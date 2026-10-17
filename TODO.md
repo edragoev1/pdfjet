@@ -108,13 +108,15 @@ commit and date. The layout's format version (1) and the look's rules
     complete(boolean closeStream) in Java and Swift, keeping today's default,
     and the leaveOpen of .NET's StreamWriter in C#. Until then: a
     FilterOutputStream whose close() does nothing.
-  - **Not in 9.1.1: narrower exceptions on PDF's own methods (Java).**
-    The owner, 17 October 2026, after weighing it: little value, a tidier
-    signature, for a careful refactor of the chain of internal methods
-    complete() calls, and a source break, rare but real: a caller's catch of
-    a checked exception other than IOException round complete() stops
-    compiling, "exception is never thrown". Programs already compiled run
-    as before; PDF is final. Maybe in a major release, 10.
+  - **v9.1.1: narrower exceptions on PDF's own methods (Java).** The
+    owner, 17 October 2026, after weighing it: "OK - do the narrower Java
+    exception too." complete() and the constructors declare IOException
+    where that is all they throw. Weighed: a tidier signature, a careful
+    refactor of the chain of internal methods complete() calls, and a
+    source break, rare: a caller's catch of a checked exception other than
+    IOException round complete() stops compiling, "exception is never
+    thrown"; programs already compiled run as before; PDF is final; said in
+    the CHANGELOG. Drawable.drawOn() keeps throws Exception.
   - **Not built: the end of a drawn component, by name.** Asked once
     (Discussion #5): a class with named getters in place of drawOn()'s
     float[] {x, y}. Designed on 17 October 2026 (ComponentEnd,
