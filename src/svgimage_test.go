@@ -6,8 +6,10 @@
 package pdfjet
 
 import (
+	"strconv"
 	"strings"
 	"testing"
+	"time"
 )
 
 func testNewSVG(t *testing.T, svg string) *SVGImage {
@@ -668,5 +670,38 @@ func TestSVGImageRefusesPathDataWithANumberThatIsNotOne(t *testing.T) {
 		if err == nil || !strings.Contains(strings.ToLower(err.Error()), "invalid path data") {
 			t.Errorf("%q: %v", number, err)
 		}
+	}
+}
+
+// The style sheet applies maxSVGApplied declarations at most: N copies of a
+// rule for a class and N elements of it took seconds; and an element of many
+// classes is linear (review of 17 October 2026).
+func TestASVGStyleSheetAppliesALimitedNumberOfDeclarations(t *testing.T) {
+	var svg strings.Builder
+	svg.WriteString(`<svg viewBox="0 0 10 10"><style>`)
+	for i := 0; i < 1001; i++ {
+		svg.WriteString(".a{fill:red}")
+	}
+	svg.WriteString("</style>")
+	for i := 0; i < 1001; i++ {
+		svg.WriteString(`<g class="a"/>`)
+	}
+	svg.WriteString("</svg>")
+	if _, err := NewSVGImage(strings.NewReader(svg.String())); err == nil ||
+		!strings.Contains(err.Error(), "applies more than 1000000 declarations") {
+		t.Errorf("refused: %v", err)
+	}
+	var classes strings.Builder
+	classes.WriteString(`<svg viewBox="0 0 10 10"><style>.c1{fill:red}</style><path class="`)
+	for i := 0; i < 50000; i++ {
+		classes.WriteString("c" + strconv.Itoa(i) + " ")
+	}
+	classes.WriteString(`" d="M0 0L5 5"/></svg>`)
+	start := time.Now()
+	if _, err := NewSVGImage(strings.NewReader(classes.String())); err != nil {
+		t.Fatal(err)
+	}
+	if time.Since(start) > 5*time.Second {
+		t.Errorf("50,000 classes took %v", time.Since(start))
 	}
 }

@@ -88,6 +88,13 @@ This is the first entry in this file; earlier releases were not tracked here.
   s. Each dictionary is now looked at once; the same file reads in about
   0.1 s. The strings of a signature are left as they were. In the four
   ports.
+- SVG: an element with many classes took time growing with the square of
+  their number (432 KB, 8 s), and a style sheet of many rules for a class
+  with many elements of it the rules times the elements (416 KB, 20 s). The
+  classes are now looked up in a set, and a style sheet applies 1,000,000
+  declarations at most: past that, the SVG is refused with "The style
+  sheet of the SVG applies more than 1000000 declarations." A real SVG
+  applies a few thousand. In the four ports.
 - Java: the library builds with JDK 23 and later, whose javac warned of the
   documentation comment before the package of ImageSize.java and
   SASLprepTables.java, an error as the build treats warnings; tested on

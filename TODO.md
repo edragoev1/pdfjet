@@ -267,9 +267,9 @@ Java's parsers (in the other ports where they share the code):
 - [x] OTF name(): no limit on the text of the name records: a 593 KB
       font is an OutOfMemoryError, a 125 KB one 65 M characters in the XMP
       (Java, Go; check C# and Swift).
-- [ ] SVG StyleSheet.forClasses quadratic in the classes of an element
+- [x] SVG StyleSheet.forClasses quadratic in the classes of an element
       (Java, Go; check C#, Swift).
-- [ ] SVG rules times elements, repeated rules not merged.
+- [x] SVG rules times elements, repeated rules not merged.
 - [x] Decryptor isSignatureDict quadratic per dictionary (four ports):
       decide once per dictionary.
 - [ ] Image(PDF, PDFobj): /Filter and /BitsPerComponent written empty;

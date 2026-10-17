@@ -159,7 +159,11 @@ func elementState(parent svgState, colorMap map[string]int32, rules *svgStyleShe
 			return state, err
 		}
 	}
-	for _, rule := range rules.forClasses(strings.Fields(attributes["class"])) {
+	ofClasses, err := rules.forClasses(strings.Fields(attributes["class"]))
+	if err != nil {
+		return state, err
+	}
+	for _, rule := range ofClasses {
 		for _, declaration := range rule.declarations {
 			if err := state.setProperty(colorMap, declaration[0], declaration[1]); err != nil {
 				return state, err

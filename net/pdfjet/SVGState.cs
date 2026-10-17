@@ -520,10 +520,19 @@ internal class SVGStyleSheet {
 
     // Returns the rules for any of the classes, in the order of the style
     // sheet, each rule once.
+    // The declarations its rules have applied, to elements, MAX_APPLIED at
+    // most: N copies of a rule for a class and N elements of it were N x N
+    // declarations, 20 s for 416 KB (review of 17 October 2026)
+    internal const int MAX_APPLIED = 1000000;
+    private long applied = 0;
+
     internal List<SVGRule> ForClasses(String[] classes) {
         List<int> indexes = new List<int>();
+        // A set, not the classes before each: one element of N classes was
+        // N x N
+        HashSet<String> seen = new HashSet<String>(StringComparer.Ordinal);
         for (int i = 0; i < classes.Length; i++) {
-            if (Array.IndexOf(classes, classes[i], 0, i) >= 0) {
+            if (!seen.Add(classes[i])) {
                 continue;   // A class named twice has its rules once.
             }
             List<int> found;
@@ -534,7 +543,13 @@ internal class SVGStyleSheet {
         indexes.Sort();
         List<SVGRule> list = new List<SVGRule>(indexes.Count);
         foreach (int index in indexes) {
-            list.Add(rules[index]);
+            SVGRule rule = rules[index];
+            applied += rule.declarations.Count;
+            if (applied > MAX_APPLIED) {
+                throw new ArgumentException(
+                        "The style sheet of the SVG applies more than " + MAX_APPLIED + " declarations.");
+            }
+            list.Add(rule);
         }
         return list;
     }

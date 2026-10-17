@@ -91,6 +91,11 @@ class SVGState {
     static class StyleSheet {
         private final List<Rule> rules = new ArrayList<Rule>();
         private final Map<String, List<Integer>> byClass = new HashMap<String, List<Integer>>();
+        // The declarations its rules have applied, to elements, MAX_APPLIED at
+        // most: N copies of a rule for a class and N elements of it were N x N
+        // declarations, 20 s for 416 KB (review of 17 October 2026)
+        static final int MAX_APPLIED = 1000000;
+        private long applied = 0;
 
         // Adds the rules of a style element after those before it.
         void add(List<Rule> newRules) {
@@ -109,8 +114,11 @@ class SVGState {
         // sheet, each rule once.
         List<Rule> forClasses(List<String> classes) {
             List<Integer> indexes = new ArrayList<Integer>();
+            // A set, not the classes before each: one element of N classes
+            // was N x N
+            java.util.Set<String> seen = new java.util.HashSet<String>();
             for (int i = 0; i < classes.size(); i++) {
-                if (classes.subList(0, i).contains(classes.get(i))) {
+                if (!seen.add(classes.get(i))) {
                     continue;   // A class named twice has its rules once.
                 }
                 List<Integer> ofClass = byClass.get(classes.get(i));
@@ -121,7 +129,13 @@ class SVGState {
             Collections.sort(indexes);
             List<Rule> found = new ArrayList<Rule>(indexes.size());
             for (int index : indexes) {
-                found.add(rules.get(index));
+                Rule rule = rules.get(index);
+                applied += rule.declarations.size();
+                if (applied > MAX_APPLIED) {
+                    throw new IllegalArgumentException(
+                            "The style sheet of the SVG applies more than " + MAX_APPLIED + " declarations.");
+                }
+                found.add(rule);
             }
             return found;
         }

@@ -76,6 +76,9 @@ type svgRule struct {
 type svgStyleSheet struct {
 	rules   []svgRule
 	byClass map[string][]int
+	// The declarations its rules have applied to elements, maxSVGApplied at
+	// most
+	applied int
 }
 
 func newSVGStyleSheet() *svgStyleSheet {
@@ -92,21 +95,33 @@ func (sheet *svgStyleSheet) add(rules []svgRule) {
 
 // forClasses returns the rules for any of the classes, in the order of the
 // style sheet, each rule once.
-func (sheet *svgStyleSheet) forClasses(classes []string) []svgRule {
+func (sheet *svgStyleSheet) forClasses(classes []string) ([]svgRule, error) {
 	indexes := make([]int, 0)
-	for i, class := range classes {
-		if slices.Contains(classes[:i], class) {
+	// A set, not the classes before each: one element of N classes was N x N
+	seen := make(map[string]bool, len(classes))
+	for _, class := range classes {
+		if seen[class] {
 			continue // A class named twice has its rules once.
 		}
+		seen[class] = true
 		indexes = append(indexes, sheet.byClass[class]...)
 	}
 	slices.Sort(indexes)
 	rules := make([]svgRule, len(indexes))
 	for i, index := range indexes {
 		rules[i] = sheet.rules[index]
+		sheet.applied += len(rules[i].declarations)
+		if sheet.applied > maxSVGApplied {
+			return nil, fmt.Errorf("The style sheet of the SVG applies more than %d declarations.", maxSVGApplied)
+		}
 	}
-	return rules
+	return rules, nil
 }
+
+// maxSVGApplied is the most declarations the rules of a style sheet apply
+// to elements: N copies of a rule for a class and N elements of it were N x
+// N declarations, 20 s for 416 KB (review of 17 October 2026).
+const maxSVGApplied = 1000000
 
 // parseSVGStyleSheet returns the rules of the text of a <style> element that
 // are for a class, in the order of the text.

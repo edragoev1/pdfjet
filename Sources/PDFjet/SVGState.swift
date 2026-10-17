@@ -482,6 +482,11 @@ struct SVGState {
 struct SVGStyleSheet {
     private var rules = [SVGRule]()
     private var byClass = [[UInt8]: [Int]]()
+    // The declarations its rules have applied, to elements, maxApplied at
+    // most: N copies of a rule for a class and N elements of it were N x N
+    // declarations, 20 s for 416 KB (review of 17 October 2026)
+    static let maxApplied = 1000000
+    private var applied = 0
 
     /// Adds the rules of a <style> element after those before it.
     mutating func add(_ rules: [SVGRule]) {
@@ -493,7 +498,7 @@ struct SVGStyleSheet {
 
     /// Returns the rules for any of the classes, in the order of the style
     /// sheet, each rule once.
-    func forClasses(_ classes: [String]) -> [SVGRule] {
+    mutating func forClasses(_ classes: [String]) throws -> [SVGRule] {
         var indexes = [Int]()
         var seen = Set<[UInt8]>()
         for name in classes {
@@ -503,7 +508,16 @@ struct SVGStyleSheet {
             }
             indexes.append(contentsOf: byClass[key] ?? [])
         }
-        return indexes.sorted().map { rules[$0] }
+        var found = [SVGRule]()
+        for index in indexes.sorted() {
+            applied += rules[index].declarations.count
+            if applied > SVGStyleSheet.maxApplied {
+                throw PDFjetError(message:
+                    "The style sheet of the SVG applies more than \(SVGStyleSheet.maxApplied) declarations.")
+            }
+            found.append(rules[index])
+        }
+        return found
     }
 }
 

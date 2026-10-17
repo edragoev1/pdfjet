@@ -610,4 +610,32 @@ class SVGImageTest {
             assertTrue(e.getMessage().toLowerCase(Locale.ROOT).contains("invalid path data"), number + ": " + e);
         }
     }
+
+    // The style sheet applies MAX_APPLIED declarations at most: N copies of a
+    // rule for a class and N elements of it took seconds; and an element of
+    // many classes is linear (review of 17 October 2026)
+    @Test
+    void aStyleSheetAppliesALimitedNumberOfDeclarations() throws Exception {
+        StringBuilder svg = new StringBuilder("<svg viewBox=\"0 0 10 10\"><style>");
+        for (int i = 0; i < 1001; i++) {
+            svg.append(".a{fill:red}");
+        }
+        svg.append("</style>");
+        for (int i = 0; i < 1001; i++) {
+            svg.append("<g class=\"a\"/>");
+        }
+        svg.append("</svg>");
+        Exception e = org.junit.jupiter.api.Assertions.assertThrows(Exception.class,
+                () -> new SVGImage(new ByteArrayInputStream(svg.toString().getBytes(StandardCharsets.UTF_8))));
+        assertTrue(e.getMessage().contains("applies more than 1000000 declarations"), e.getMessage());
+
+        StringBuilder classes = new StringBuilder("<svg viewBox=\"0 0 10 10\"><style>.c1{fill:red}</style><path class=\"");
+        for (int i = 0; i < 50000; i++) {
+            classes.append('c').append(i).append(' ');
+        }
+        classes.append("\" d=\"M0 0L5 5\"/></svg>");
+        long start = System.nanoTime();
+        new SVGImage(new ByteArrayInputStream(classes.toString().getBytes(StandardCharsets.UTF_8)));
+        assertTrue(System.nanoTime() - start < 5_000_000_000L, "50,000 classes took too long");
+    }
 }

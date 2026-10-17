@@ -99,7 +99,7 @@ public class SVGImage : Drawable {
                     order.append(attributeName)
                 }
             }
-            var state = try SVGImage.elementState(stack[stack.count - 1], rules, values, order)
+            var state = try SVGImage.elementState(stack[stack.count - 1], &rules, values, order)
             if SVGImage.templates.contains(name) {
                 state.hidden = true
             }
@@ -137,14 +137,14 @@ public class SVGImage : Drawable {
     // presentation attributes, in their order, then the rules of the style
     // sheet for its classes, in the order of the style sheet, then its style
     // attribute, and its transform.
-    private static func elementState(_ parent: SVGState, _ rules: SVGStyleSheet,
+    private static func elementState(_ parent: SVGState, _ rules: inout SVGStyleSheet,
             _ attributes: [String: String], _ order: [String]) throws -> SVGState {
         var state = parent
         state.ownOpacity = 1.0
         for name in order {
             try state.setProperty(name, attributes[name]!)
         }
-        for rule in rules.forClasses(SVGState.fields(attributes["class"] ?? "")) {
+        for rule in try rules.forClasses(SVGState.fields(attributes["class"] ?? "")) {
             for (name, value) in rule.declarations {
                 try state.setProperty(name, value)
             }
