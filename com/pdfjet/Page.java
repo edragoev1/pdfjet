@@ -381,7 +381,7 @@ final public class Page {
             for (int i = 0; i < length; i++) {
                 char ch = str.charAt(i);
                 if (ch >= 0x80) {
-                    byte[] rest = str.substring(i).getBytes(StandardCharsets.UTF_8);
+                    byte[] rest = Util.utf8(str.substring(i));
                     write(rest, 0, rest.length);
                     return;
                 }
@@ -2842,7 +2842,7 @@ final public class Page {
                 // marked content, as the paragraph is one element for all of them.
                 if (language != null && !language.isEmpty()) {
                     append(" /Lang <");
-                    append(Util.toHexString(language.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+                    append(Util.toHexString(Util.utf8(language)));
                     append(">");
                 }
                 append(">>\n");

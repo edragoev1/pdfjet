@@ -285,7 +285,7 @@ The C# port against Java:
       leaves out \v.
 - [x] net48: NumberFormat F rounding half away from zero (chart labels).
 - [x] Highlight keywords lower-cased per character (final sigma, İ).
-- [ ] A lone surrogate written as EF BF BD where Java writes 3F (URIs,
+- [x] A lone surrogate written as EF BF BD where Java writes 3F (URIs,
       QR, DataMatrix, and the other places): one choice for all ports.
 - [ ] SVG numbers: hex floats and underscores refused where the others
       take them.

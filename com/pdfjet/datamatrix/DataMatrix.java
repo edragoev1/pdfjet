@@ -119,7 +119,7 @@ public final class DataMatrix implements Drawable {
      * @throws IllegalArgumentException if the text does not fit in the largest symbol.
      */
     public DataMatrix(String str, int shape) {
-        this(encode(str.getBytes(StandardCharsets.UTF_8)), shape);
+        this(encode(utf8(str)), shape);
     }
 
     /**
@@ -620,5 +620,22 @@ public final class DataMatrix implements Drawable {
         module(1, ncol - 3, chr, 6);
         module(1, ncol - 2, chr, 7);
         module(1, ncol - 1, chr, 8);
+    }
+
+    // The UTF-8 of the text, with each lone surrogate the replacement
+    // character, EF BF BD, as in the other ports: Java's getBytes made it '?'
+    // (review of 17 October 2026).
+    private static byte[] utf8(String text) {
+        StringBuilder sb = new StringBuilder(text.length());
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if (Character.isHighSurrogate(c) && i + 1 < text.length()
+                    && Character.isLowSurrogate(text.charAt(i + 1))) {
+                sb.append(c).append(text.charAt(++i));
+            } else {
+                sb.append(Character.isSurrogate(c) ? '\uFFFD' : c);
+            }
+        }
+        return sb.toString().getBytes(StandardCharsets.UTF_8);
     }
 }   // End of DataMatrix.java

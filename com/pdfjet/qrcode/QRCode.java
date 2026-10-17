@@ -59,7 +59,7 @@ final public class QRCode implements Drawable {
      * @throws IllegalArgumentException If the string does not fit in a version 40 symbol.
      */
     public QRCode(String str, ErrorCorrectionLevel errorCorrectionLevel) throws UnsupportedEncodingException {
-        this.qrData = str.getBytes(StandardCharsets.UTF_8);
+        this.qrData = utf8(str);
         for (byte b : qrData) {
             if (b < 0) {
                 eci = true;
@@ -519,5 +519,22 @@ final public class QRCode implements Drawable {
         }
 
         return data;
+    }
+
+    // The UTF-8 of the text, with each lone surrogate the replacement
+    // character, EF BF BD, as in the other ports: Java's getBytes made it '?'
+    // (review of 17 October 2026).
+    private static byte[] utf8(String text) {
+        StringBuilder sb = new StringBuilder(text.length());
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if (Character.isHighSurrogate(c) && i + 1 < text.length()
+                    && Character.isLowSurrogate(text.charAt(i + 1))) {
+                sb.append(c).append(text.charAt(++i));
+            } else {
+                sb.append(Character.isSurrogate(c) ? '\uFFFD' : c);
+            }
+        }
+        return sb.toString().getBytes(StandardCharsets.UTF_8);
     }
 }

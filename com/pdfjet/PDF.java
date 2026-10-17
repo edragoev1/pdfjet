@@ -573,7 +573,7 @@ final public class PDF {
         // The metadata is encrypted like every other stream, and the
         // encryption dictionary says so with /EncryptMetadata true. Readers do
         // not agree on which metadata streams to leave alone when it is false.
-        byte[] xml = sb.toString().getBytes(StandardCharsets.UTF_8);
+        byte[] xml = Util.utf8(sb.toString());
         if (encryption != null) {
             xml = AES256.encrypt(xml, encryption.getKey());
         }
@@ -1034,7 +1034,7 @@ final public class PDF {
             }
 
             if (language != null && !language.isEmpty()) {
-                byte[] languageBytes = language.getBytes(StandardCharsets.UTF_8);
+                byte[] languageBytes = Util.utf8(language);
                 if (encryption != null) {
                     languageBytes = AES256.encrypt(languageBytes, encryption.getKey());
                 }
@@ -1220,7 +1220,7 @@ final public class PDF {
         append("/Type /Catalog\n");
 
         if (compliance != Compliance.PDF_1_7) {
-            byte[] languageBytes = this.language.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            byte[] languageBytes = Util.utf8(this.language);
             if (encryption != null) {
                 languageBytes = AES256.encrypt(languageBytes, encryption.getKey());
             }
@@ -1744,7 +1744,7 @@ final public class PDF {
             if (!Util.isEmpty(annot.uri)) {
                 append("/A <<\n");
                 append("/S /URI\n");
-                byte[] uri = annot.uri.getBytes(StandardCharsets.UTF_8);
+                byte[] uri = Util.utf8(annot.uri);
                 if (encryption != null) {
                     uri = AES256.encrypt(uri, encryption.getKey());
                 }
@@ -2844,7 +2844,7 @@ final public class PDF {
      * @throws IOException if writing to the output fails.
      */
     void append(String str) throws IOException {
-        byte[] buf = str.getBytes(StandardCharsets.UTF_8);
+        byte[] buf = Util.utf8(str);
         os.write(buf);
         byteCount += buf.length;
     }

@@ -84,7 +84,7 @@ class FontWriter {
             }
         }
 
-        addCompressedStream(pdf, toUnicodeCMap(font, kept).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        addCompressedStream(pdf, Util.utf8(toUnicodeCMap(font, kept)));
         font.toUnicodeCMapObjNumber = pdf.getObjNumber();
     }
 

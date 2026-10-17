@@ -452,7 +452,7 @@ public class SVGImage implements Drawable {
             sx = scale;
             sy = scale;
             // The value is read in bytes of UTF-8, as the Go port reads it.
-            byte[] bytes = align.getBytes(StandardCharsets.UTF_8);
+            byte[] bytes = Util.utf8(align);
             if (bytes.length != 8) {
                 bytes = "xMidYMid".getBytes(StandardCharsets.US_ASCII);
             }

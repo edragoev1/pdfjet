@@ -146,7 +146,7 @@ class OTF {
             throw fontError("no outlines PDFjet can embed, a glyf or a CFF table: a CFF2 font is not supported");
         }
         // The name goes into the PDF as the name of the font.
-        if (fontName == null || !FontWriter.isFontName(fontName.getBytes(StandardCharsets.UTF_8))) {
+        if (fontName == null || !FontWriter.isFontName(Util.utf8(fontName))) {
             throw fontError("the font name");
         }
     }

@@ -123,6 +123,9 @@ This is the first entry in this file; earlier releases were not tracked here.
 - The keywords of a text block and the words they are matched with are in
   lower case as in Java in the four ports: İ is i with a combining dot, and
   a sigma that ends a word is ς, in Go, C# and Swift.
+- Java: a lone surrogate, in a link's URI, a QR code, a DataMatrix, the
+  metadata or the language, is written as the replacement character, EF BF
+  BD, as in the other ports; it was '?'.
 - Reading an encrypted PDF with many strings after /Contents in one
   dictionary took time growing with the square of their number, as each
   string looked for its dictionary's ends again: a PDF of 560 KB took 17

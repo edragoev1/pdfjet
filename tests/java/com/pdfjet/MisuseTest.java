@@ -500,4 +500,21 @@ class MisuseTest {
             }
         }));
     }
+
+    // A lone surrogate is written as the replacement character, EF BF BD, as
+    // in the other ports: Java's getBytes made it '?' (review of
+    // 17 October 2026)
+    @Test
+    void aLoneSurrogateIsTheReplacementCharacter() throws Exception {
+        org.junit.jupiter.api.Assertions.assertArrayEquals(
+                new byte[] {'a', (byte) 0xEF, (byte) 0xBF, (byte) 0xBD, 'b', (byte) 0xF0, (byte) 0x9F, (byte) 0x98, (byte) 0x80},
+                Util.utf8("a\uD800b\uD83D\uDE00"));
+        org.junit.jupiter.api.Assertions.assertArrayEquals(
+                new com.pdfjet.qrcode.QRCode("a\uFFFDb", com.pdfjet.qrcode.ErrorCorrectionLevel.M).getModules(),
+                new com.pdfjet.qrcode.QRCode("a\uDC00b", com.pdfjet.qrcode.ErrorCorrectionLevel.M).getModules());
+        org.junit.jupiter.api.Assertions.assertArrayEquals(
+                new com.pdfjet.datamatrix.DataMatrix("a\uFFFDb").getModules(),
+                new com.pdfjet.datamatrix.DataMatrix("a\uDC00b").getModules());
+    }
 }
+

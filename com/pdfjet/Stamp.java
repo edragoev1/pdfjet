@@ -175,7 +175,7 @@ public class Stamp implements Drawable {
 
     private void append(String str) {
         checkNotCompleted();
-        byte[] bytes = str.getBytes(StandardCharsets.UTF_8);
+        byte[] bytes = Util.utf8(str);
         buf.write(bytes, 0, bytes.length);
     }
 

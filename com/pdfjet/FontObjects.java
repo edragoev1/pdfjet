@@ -95,7 +95,7 @@ class FontObjects {
         completeCIDFontDictionary(objs.cidFont, font, baseFont, font.kept);
 
         byte[] cmap = Compressor.deflate(
-                FontWriter.toUnicodeCMap(font, font.kept).getBytes(StandardCharsets.UTF_8));
+                Util.utf8(FontWriter.toUnicodeCMap(font, font.kept)));
         obj = objs.toUnicode;
         obj.dict.add("<<");
         obj.dict.add("/Filter");
@@ -150,7 +150,7 @@ class FontObjects {
         sb.append("</x:xmpmeta>\n");
         sb.append("<?xpacket end=\"r\"?>");
 
-        byte[] xml = sb.toString().getBytes(StandardCharsets.UTF_8);
+        byte[] xml = Util.utf8(sb.toString());
 
         // This is the metadata object
         PDFobj obj = new PDFobj();

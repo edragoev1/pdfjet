@@ -322,7 +322,7 @@ class SVGState {
     // bytes of UTF-8, as the Go port counts them.
     static Integer parseColor(ColorMap colorMap, String property, String value) {
         if (value.startsWith("#")) {
-            byte[] hex = value.substring(1).getBytes(StandardCharsets.UTF_8);
+            byte[] hex = Util.utf8(value.substring(1));
             if (hex.length == 3) {
                 hex = new byte[] {hex[0], hex[0], hex[1], hex[1], hex[2], hex[2]};
             }

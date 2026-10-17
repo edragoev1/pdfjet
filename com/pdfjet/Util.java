@@ -14,6 +14,39 @@ import java.util.List;
  * Utility methods.
  */
 class Util {
+    // Returns the UTF-8 of the text, with each lone surrogate the replacement
+    // character, EF BF BD, as C# writes it and as Go and Swift write text they
+    // cannot read: Java's getBytes made it '?' (review of 17 October 2026).
+    static byte[] utf8(String text) {
+        return withoutLoneSurrogates(text).getBytes(java.nio.charset.StandardCharsets.UTF_8);
+    }
+
+    // Returns the text with each lone surrogate the replacement character,
+    // U+FFFD, whose UTF-8 is EF BF BD, as C# and Swift encode one: Java's
+    // UTF-8 made it '?' (review of 12 October 2026, S5).
+    static String withoutLoneSurrogates(String text) {
+        StringBuilder sb = null;
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            boolean pair = Character.isHighSurrogate(c) && i + 1 < text.length()
+                    && Character.isLowSurrogate(text.charAt(i + 1));
+            if (pair) {
+                if (sb != null) {
+                    sb.append(c).append(text.charAt(i + 1));
+                }
+                i++;
+            } else if (Character.isSurrogate(c)) {
+                if (sb == null) {
+                    sb = new StringBuilder(text.substring(0, i));
+                }
+                sb.append('\uFFFD');
+            } else if (sb != null) {
+                sb.append(c);
+            }
+        }
+        return (sb != null) ? sb.toString() : text;
+    }
+
     /** The default constructor */
     Util() {
     }

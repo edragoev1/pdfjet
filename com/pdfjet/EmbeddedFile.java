@@ -166,7 +166,7 @@ public class EmbeddedFile {
     // is /text#2Fxml.
     private static String toName(String mediaType) {
         StringBuilder sb = new StringBuilder("/");
-        for (byte b : mediaType.getBytes(StandardCharsets.UTF_8)) {
+        for (byte b : Util.utf8(mediaType)) {
             int ch = b & 0xFF;
             if (ch > 0x20 && ch < 0x7F && "()<>[]{}/%#".indexOf(ch) == -1) {
                 sb.append((char) ch);
