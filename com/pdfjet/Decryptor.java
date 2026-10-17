@@ -168,13 +168,16 @@ final class Decryptor {
     // Returns the password in PDFDocEncoding, which is Latin-1 for the
     // characters a password is likely to have, at most 32 bytes of it, which
     // is the password of revisions 2 to 4.
-    private static byte[] latin1Password(String password) {
-        byte[] bytes = new byte[Math.min(password.length(), 32)];
-        for (int i = 0; i < bytes.length; i++) {
-            char c = password.charAt(i);
-            bytes[i] = (byte) (c < 256 ? c : '?');
+    // A character past U+FFFF is one '?', as in Go and Swift, and not one for
+    // each of its two UTF-16 units (review of 17 October 2026).
+    static byte[] latin1Password(String password) {
+        java.io.ByteArrayOutputStream bytes = new java.io.ByteArrayOutputStream(32);
+        for (int i = 0; i < password.length() && bytes.size() < 32; ) {
+            int c = password.codePointAt(i);
+            bytes.write(c < 256 ? c : '?');
+            i += Character.charCount(c);
         }
-        return bytes;
+        return bytes.toByteArray();
     }
 
     // The exception for a password that does not open the PDF.

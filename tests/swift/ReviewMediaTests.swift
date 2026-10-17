@@ -552,4 +552,20 @@ import Testing
         TextLine(font, "Text").setLocation(50, 50).drawOn(Page(pdf, Letter.PORTRAIT))
         try pdf.complete()
     }
+
+    // A stream that cannot be read, as one of a missing file, is an error of
+    // the stream: ImageSize said it was not an image, and SVGImage drew an
+    // empty one (review of 17 October 2026)
+    @Test func aStreamThatCannotBeReadIsItsError() {
+        do {
+            _ = try ImageSize.read(InputStream(fileAtPath: "/no/such/folder/a.png")!)
+            Issue.record("ImageSize read a missing file")
+        } catch {
+            #expect(!TestSupport.message(error).contains("is not a PNG"), "\(error)")
+        }
+        #expect(throws: (any Error).self) {
+            _ = try SVGImage(stream: InputStream(fileAtPath: "/no/such/folder/a.svg")!)
+        }
+    }
 }
+

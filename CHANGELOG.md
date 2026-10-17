@@ -108,6 +108,12 @@ This is the first entry in this file; earlier releases were not tracked here.
 - A text block of a width of NaN or an infinity drew a character on each
   line and gave NaN as its corner. It is refused when drawn: "The width of
   a text block is a finite number." In the four ports.
+- The password of a PDF encrypted with RC4 or AES-128 has one '?' for a
+  character past U+FFFF in Java and C#, as in Go and Swift, and not one for
+  each of its two UTF-16 units.
+- Swift: ImageSize and SVGImage of a stream that cannot be read, as one of a
+  missing file, throw the stream's error; they said "not a PNG, JPEG or BMP
+  file" and drew an empty SVG.
 - Reading an encrypted PDF with many strings after /Contents in one
   dictionary took time growing with the square of their number, as each
   string looked for its dictionary's ends again: a PDF of 560 KB took 17

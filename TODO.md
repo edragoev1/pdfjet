@@ -322,9 +322,9 @@ The Swift port:
       on Linux with no error: a closed stream crashes where Java throws.
 - [x] Its deinit flushes and closes the caller's stream when complete()
       was never called; Java leaves it.
-- [ ] RC4 and AES-128 passwords above U+FFFF: per code point, Java per
+- [x] RC4 and AES-128 passwords above U+FFFF: per code point, Java per
       UTF-16 unit (Go as Swift).
-- [ ] SVGImage and ImageSize hide a stream that cannot be read.
+- [x] SVGImage and ImageSize hide a stream that cannot be read.
 
 The release (scripts and the checklist):
 - [ ] The checklist's gh release step: the jar and dll from the Core zips,

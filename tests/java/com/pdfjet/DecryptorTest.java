@@ -48,4 +48,18 @@ class DecryptorTest {
             assertEquals(c[1], Decryptor.getMethod(encrypt, "/StdCF", objects), "/CF " + c[0]);
         }
     }
+
+    // A password of revisions 2 to 4 has one '?' for a character past U+FFFF,
+    // as in Go and Swift, and not one for each UTF-16 unit (review of
+    // 17 October 2026)
+    @Test
+    void aCharacterPastFFFFIsOneQuestionMarkOfThePassword() {
+        org.junit.jupiter.api.Assertions.assertArrayEquals(
+                new byte[] {'a', '?', (byte) 0xE9}, Decryptor.latin1Password("a\uD83D\uDE00\u00E9"));
+        StringBuilder many = new StringBuilder();
+        for (int i = 0; i < 40; i++) {
+            many.append("\uD83D\uDE00");
+        }
+        org.junit.jupiter.api.Assertions.assertEquals(32, Decryptor.latin1Password(many.toString()).length);
+    }
 }

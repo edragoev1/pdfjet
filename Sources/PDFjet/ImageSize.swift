@@ -57,7 +57,19 @@ public final class ImageSize {
     public static func read(_ stream: InputStream) throws -> ImageSize {
         stream.open()
         defer { stream.close() }
-        let reader = StreamReader(stream)
+        do {
+            return try read(StreamReader(stream))
+        } catch {
+            // A stream that cannot be read, as one of a missing file, was
+            // "not a PNG, JPEG or BMP file" (review of 17 October 2026)
+            if stream.streamStatus == .error {
+                throw stream.streamError ?? PDFjetError(message: "Cannot read the stream.")
+            }
+            throw error
+        }
+    }
+
+    private static func read(_ reader: StreamReader) throws -> ImageSize {
         let head = reader.upTo(4)
         reader.unread(head)
         // Four bytes at least, as the other ports peek at them, before the

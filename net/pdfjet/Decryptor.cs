@@ -159,13 +159,18 @@ internal sealed class Decryptor {
     // Returns the password in PDFDocEncoding, which is Latin-1 for the
     // characters a password is likely to have, at most 32 bytes of it, which
     // is the password of revisions 2 to 4.
+    // A character past U+FFFF is one '?', as in Go and Swift, and not one for
+    // each of its two UTF-16 units (review of 17 October 2026).
     private static byte[] Latin1Password(String password) {
-        byte[] bytes = new byte[Math.Min(password.Length, 32)];
-        for (int i = 0; i < bytes.Length; i++) {
+        List<byte> bytes = new List<byte>(32);
+        for (int i = 0; i < password.Length && bytes.Count < 32; i++) {
             char c = password[i];
-            bytes[i] = (byte) (c < 256 ? c : '?');
+            if (char.IsHighSurrogate(c) && i + 1 < password.Length && char.IsLowSurrogate(password[i + 1])) {
+                i++;
+            }
+            bytes.Add((byte) (c < 256 ? c : '?'));
         }
-        return bytes;
+        return bytes.ToArray();
     }
 
     // The exception for a password that does not open the PDF.

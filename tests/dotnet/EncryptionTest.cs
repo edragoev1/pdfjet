@@ -7,6 +7,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 using Xunit;
 
@@ -195,6 +196,18 @@ public class EncryptionTest {
         Assert.Equal("caf\u00e9", System.Text.Encoding.UTF8.GetString(got[0]));
         Assert.Equal("cafe\u0301", System.Text.Encoding.UTF8.GetString(got[1]));
         Assert.Single(Decryptor.Aes256Passwords("ascii"));
+    }
+
+    // A password of revisions 2 to 4 has one '?' for a character past U+FFFF,
+    // as in Go and Swift, and not one for each UTF-16 unit (review of
+    // 17 October 2026)
+    [Fact]
+    public void ACharacterPastFFFFIsOneQuestionMarkOfThePassword() {
+        var method = typeof(PDF).Assembly.GetType("PDFjet.NET.Decryptor").GetMethod("Latin1Password",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+        Assert.Equal(new byte[] {(byte) 'a', (byte) '?', 0xE9},
+                (byte[]) method.Invoke(null, new object[] {"a\uD83D\uDE00\u00E9"}));
+        Assert.Equal(32, ((byte[]) method.Invoke(null, new object[] {string.Concat(Enumerable.Repeat("\uD83D\uDE00", 40))})).Length);
     }
 }
 }

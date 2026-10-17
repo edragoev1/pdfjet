@@ -74,6 +74,11 @@ public class SVGImage : Drawable {
             }
             bytes.append(contentsOf: buffer[0..<read])
         }
+        // A stream that cannot be read, as one of a missing file, was an
+        // empty SVG (review of 17 October 2026)
+        if stream.streamStatus == .error {
+            throw stream.streamError ?? PDFjetError(message: "Cannot read the stream.")
+        }
 
         let document: PDFjetXMLNode
         do {
