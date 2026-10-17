@@ -13,6 +13,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/edragoev1/pdfjet/v9/src/cjkfont"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/encryption"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
@@ -533,4 +534,38 @@ func TestABigTableStartsOnlyOnAPageOfItsPDF(t *testing.T) {
 	foreign := NewPage(testNewPDF(), letter.Portrait())
 	NewBigTable(pdf, font, font, letter.Portrait()).SetFirstPage(foreign, 100)
 	testRecorded(t, pdf, "The page belongs to another PDF.")
+}
+
+// A compliance, a CJK font or a month that is not one is refused: the
+// compliance any number, the font after half its objects were written, and
+// month 13 January of the next year (review of 17 October 2026).
+func TestAComplianceCJKFontOrMonthThatIsNotOneIsRefused(t *testing.T) {
+	pdf := testNewPDF()
+	pdf.SetCompliance(compliance.Compliance(42))
+	testRecorded(t, pdf, "The compliance 42 is not one: use one of the compliance package's.")
+
+	pdf = testNewPDF()
+	func() {
+		defer func() {
+			if recover() == nil {
+				t.Errorf("an unknown CJK font is taken")
+			}
+		}()
+		NewCJKFont(pdf, cjkfont.Font(9))
+	}()
+	if pdf.getObjNumber() != 0 {
+		t.Errorf("the unknown CJK font wrote %d objects", pdf.getObjNumber())
+	}
+
+	font := testHelvetica(testNewPDF())
+	for _, month := range []int{0, 13} {
+		func() {
+			defer func() {
+				if recover() == nil {
+					t.Errorf("the month %d is taken", month)
+				}
+			}()
+			NewCalendarMonth(font, font, 2026, month)
+		}()
+	}
 }

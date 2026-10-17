@@ -293,7 +293,7 @@ The C# port against Java:
 - [ ] AppendToken best-fits characters above U+00FF where Java writes ?.
 - [ ] Image ParseNumber: Unicode digits and Trim, "infinity"; "100f".
 - [ ] SVGState lower-casing of İ.
-- [ ] CalendarMonth: years past 9999, an open DayOfWeek.
+- [x] CalendarMonth: years past 9999, an open DayOfWeek.
 - [ ] Where Java is the odd one: Chart fractionDigitsOf saturating at
       2^63 (Go too), Float.parseFloat taking 595f and hex in /MediaBox,
       Page's trim() of a NBSP description.
@@ -311,7 +311,7 @@ The Go port:
       on the other PDF.
 - [x] contentRefs and GetContentObject take an annotation's /Contents for
       the page's (four ports): dictEntryIndex.
-- [ ] SetCompliance takes any value; NewCJKFont of an unknown font writes
+- [x] SetCompliance takes any value; NewCJKFont of an unknown font writes
       half an object before it panics; CalendarMonth months out of range.
 - [ ] Example 25 does not check Complete's error.
 - [ ] tests/crossport: Java and C# below(8), Go and Swift below(5).

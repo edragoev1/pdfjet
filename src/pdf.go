@@ -176,6 +176,12 @@ func NewPDF(w *bufio.Writer) *PDF {
 
 // SetCompliance sets the PDF/UA or PDF/A compliance of this document. See the compliance package.
 func (pdf *PDF) SetCompliance(level compliance.Compliance) *PDF {
+	// Any number was taken, Compliance(42) a document that is none of them
+	// (review of 17 October 2026)
+	if level < compliance.PDF_1_7 || level > compliance.PDF_A_3A_UA_1 {
+		pdf.fail("The compliance " + strconv.Itoa(int(level)) + " is not one: use one of the compliance package's.")
+		return pdf
+	}
 	// ISO 19005 does not allow a PDF/A document to be encrypted, and the
 	// encryption is written for the compliance: it grants a PDF/UA document
 	// the permission to extract its content for accessibility.

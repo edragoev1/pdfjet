@@ -40,6 +40,11 @@ public class CalendarMonth : Drawable {
     public init(_ f1: Font, _ f2: Font, _ year: Int, _ month: Int) {
         self.f1 = f1
         self.f2 = f2
+        // Month 13 was January of the next year, and 0 December of the last
+        // (review of 17 October 2026); Java refuses it
+        if month < 1 || month > 12 {
+            fatalError("The month \(month) is not one: from 1 to 12.")
+        }
         // The Gregorian calendar, whatever the locale
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(identifier: "UTC")!

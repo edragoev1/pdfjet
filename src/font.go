@@ -16,6 +16,7 @@ import (
 	"io"
 	"os"
 	"slices"
+	"strconv"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -196,6 +197,10 @@ func NewCJKFont(pdf *PDF, cjkFont cjkfont.Font) *Font {
 		fontName = "KozMinProVI-Regular"
 	case cjkfont.AdobeMyungjoStdMedium: // Korean font
 		fontName = "AdobeMyungjoStd-Medium"
+	default:
+		// Refused before anything is written: half of the font's objects
+		// were written before the panic (review of 17 October 2026)
+		panic("Unsupported font: cjkfont.Font(" + strconv.Itoa(int(cjkFont)) + ")")
 	}
 
 	font := new(Font)

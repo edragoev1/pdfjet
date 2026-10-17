@@ -47,6 +47,11 @@ func NewCalendarMonth(f1, f2 *Font, year, month int) *CalendarMonth {
 	calendarMonth := new(CalendarMonth)
 	calendarMonth.f1 = f1
 	calendarMonth.f2 = f2
+	// Month 13 was January of the next year, and 0 December of the last
+	// (review of 17 October 2026); Java refuses it
+	if month < 1 || month > 12 {
+		panic("The month " + strconv.Itoa(month) + " is not one: from 1 to 12.")
+	}
 	first := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
 	// Day 0 of the next month is the last day of this one.
 	calendarMonth.daysInMonth = time.Date(year, time.Month(month)+1, 0, 0, 0, 0, 0, time.UTC).Day()

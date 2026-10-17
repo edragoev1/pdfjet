@@ -31,6 +31,8 @@ public class CalendarMonth : IDrawable {
     private readonly int firstDayOfMonth;
     private int firstDayOfWeek = 0;
 
+    private static readonly int[] DAYS_IN_MONTH = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+
     /// <summary>
     /// Creates a calendar for the specified month.
     /// </summary>
@@ -41,9 +43,21 @@ public class CalendarMonth : IDrawable {
     public CalendarMonth(Font f1, Font f2, int year, int month) {
         this.f1 = f1;
         this.f2 = f2;
-        // The Gregorian calendar, whatever the culture
-        daysInMonth = DateTime.DaysInMonth(year, month);
-        firstDayOfMonth = (int) new DateTime(year, month, 1).DayOfWeek;
+        // The Gregorian calendar, whatever the culture, of any year as Java's:
+        // DateTime refused the years past 9999 (review of 17 October 2026)
+        if (month < 1 || month > 12) {
+            throw new ArgumentOutOfRangeException(nameof(month), "The month " + month + " is not one: from 1 to 12.");
+        }
+        bool leap = year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
+        daysInMonth = month == 2 ? (leap ? 29 : 28) : DAYS_IN_MONTH[month - 1];
+        // The days since 1 January 1970, a Thursday, of the first of the month
+        long y = month <= 2 ? (long) year - 1 : year;
+        long era = (y >= 0 ? y : y - 399) / 400;
+        long yearOfEra = y - era * 400;
+        long dayOfYear = (153 * (month > 2 ? month - 3 : month + 9) + 2) / 5;
+        long dayOfEra = yearOfEra * 365 + yearOfEra / 4 - yearOfEra / 100 + dayOfYear;
+        long days = era * 146097 + dayOfEra - 719468;
+        firstDayOfMonth = (int) (((days + 4) % 7 + 7) % 7);
         foreach (String day in DAYS) {
             float w = 2*f1.StringWidth(day);
             if (w > dx) {
@@ -82,7 +96,8 @@ public class CalendarMonth : IDrawable {
     /// Sunday; many countries start the week on Monday.
     /// </summary>
     public CalendarMonth SetFirstDayOfWeek(DayOfWeek day) {
-        this.firstDayOfWeek = (int) day;
+        // Any number was taken, and drew the days out of their columns
+        this.firstDayOfWeek = ((int) day % 7 + 7) % 7;
         return this;
     }
 

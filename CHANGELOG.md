@@ -99,6 +99,12 @@ This is the first entry in this file; earlier releases were not tracked here.
 - BigTable's setFirstPage took a page of another PDF, drew the table on it
   and recorded its mistakes on that PDF. The page is now refused with "The
   page belongs to another PDF." In the four ports.
+- Go: SetCompliance took any number, and NewCJKFont of a font that is not
+  one wrote half of its objects before it panicked. Both are refused first.
+- CalendarMonth: month 13 was January of the next year in Go and Swift,
+  and is now refused, as Java does. C# draws the years past 9999, as Java
+  does, and a first day of the week out of range is wrapped, as in Go and
+  Swift.
 - Reading an encrypted PDF with many strings after /Contents in one
   dictionary took time growing with the square of their number, as each
   string looked for its dictionary's ends again: a PDF of 560 KB took 17
