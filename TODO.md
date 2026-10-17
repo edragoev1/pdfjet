@@ -162,7 +162,8 @@ commit and date. The layout's format version (1) and the look's rules
   docs.yml move to 25, after the checks and the documentation pass on 25
   here.
 
-- **v9.1.1: the Swift port's ciphers checked against published values.**
+- ✅ (17 October 2026: tests/swift/CryptographyTests.swift, all agree.)
+  **v9.1.1: the Swift port's ciphers checked against published values.**
   Swift has its own AES, SHA-256, SHA-384, SHA-512, MD5 and RC4
   (Cryptography.swift), as Foundation has no cryptography on Linux; its
   tests open what it encrypts, but none checks a cipher against the
