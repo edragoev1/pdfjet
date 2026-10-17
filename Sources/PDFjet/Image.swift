@@ -162,6 +162,13 @@ public class Image : Drawable {
         }
     }
 
+    // Writes the key and its value, when it has one
+    private static func appendIfAny(_ pdf: PDF, _ key: String, _ value: String) {
+        if !value.isEmpty {
+            pdf.append(key + " " + value + "\n")
+        }
+    }
+
     /// Creates an image from an image object read from an existing PDF.
     public init(_ pdf: PDF, _ obj: PDFobj) throws {
         self.pdfIdentity = pdf.identity
@@ -175,13 +182,19 @@ public class Image : Drawable {
             throw PDFjetError(message: "The image refers to another object of the PDF it was read from, "
                     + "which is not copied with it: " + tokens.joined(separator: " "))
         }
+        // An image object with no stream is refused before anything of it is
+        // written: it was half written, and complete() then wrote a corrupt
+        // PDF; and /Filter and /BitsPerComponent are written only when it has
+        // them, an empty value took the next key for its own (review of 17
+        // October 2026)
+        guard obj.stream != nil else {
+            throw PDFjetError(message: "The image object has no stream.")
+        }
         pdf.newObj()
         pdf.append(Token.beginDictionary)
         pdf.append("/Type /XObject\n")
         pdf.append("/Subtype /Image\n")
-        pdf.append("/Filter ")
-        pdf.append(obj.getValue("/Filter"))
-        pdf.append("\n")
+        Image.appendIfAny(pdf, "/Filter", obj.getValue("/Filter"))
         pdf.append("/Width ")
         pdf.append(pixelWidth)
         pdf.append("\n")
@@ -189,9 +202,7 @@ public class Image : Drawable {
         pdf.append(pixelHeight)
         pdf.append("\n")
         appendCopiedValue(pdf, "/ColorSpace", colorSpace)
-        pdf.append("/BitsPerComponent ")
-        pdf.append(obj.getValue("/BitsPerComponent"))
-        pdf.append("\n")
+        Image.appendIfAny(pdf, "/BitsPerComponent", obj.getValue("/BitsPerComponent"))
         appendCopiedValue(pdf, "/DecodeParms", decodeParms)
         let imageMask = obj.getValue("/ImageMask")
         if imageMask != "" {

@@ -443,4 +443,30 @@ class MisuseTest {
                     public void execute() throws Throwable { ua.setCompliance(Compliance.PDF_UA_1); }
                 }));
     }
+
+    // An image object of a PDF that was read, with no /Filter, is copied
+    // with no "/Filter " that takes /Width for its value; one with no stream
+    // is refused before any of it is written, and the PDF completes whole
+    // (review of 17 October 2026)
+    @Test
+    void anImageObjectOfAReadPdfIsCopiedWhole() throws Exception {
+        String unfiltered = "%PDF-1.4\n1 0 obj\n<< /Type /XObject /Subtype /Image /Width 2 /Height 1"
+                + " /BitsPerComponent 8 /ColorSpace /DeviceGray /Length 2 >>\nstream\nAB\nendstream\nendobj\n"
+                + "2 0 obj\n<< /Type /XObject /Subtype /Image /Width 10 /Height 10 /BitsPerComponent 8"
+                + " /ColorSpace /DeviceGray >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF\n";
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        java.util.List<PDFobj> objects = pdf.read(new java.io.ByteArrayInputStream(
+                unfiltered.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1)));
+        new Image(pdf, objects.get(0));
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> new Image(pdf, objects.get(1)));
+        assertEquals("The image object has no stream.", e.getMessage());
+        new Page(pdf, Letter.PORTRAIT);
+        pdf.complete();
+        String written = new String(bos.toByteArray(), java.nio.charset.StandardCharsets.ISO_8859_1);
+        assertFalse(written.contains("/Filter \n"), "an empty /Filter");
+        assertFalse(written.contains("/BitsPerComponent \n"), "an empty /BitsPerComponent");
+        assertTrue(written.contains("/Subtype /Image\n/Width 2\n"));
+        assertEquals(1, written.split("/Subtype /Image", -1).length - 1, "one image object, whole");
+    }
 }

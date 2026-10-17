@@ -178,6 +178,16 @@ public class Image : IDrawable {
 
     // Creates new image from an existing PDF object
     /// <summary>Creates an image from an image object read from an existing PDF.</summary>
+    // Writes the key and its value, when it has one
+    private static void AppendIfAny(PDF pdf, String key, String value) {
+        if (value.Length > 0) {
+            pdf.Append(key);
+            pdf.Append(" ");
+            pdf.Append(value);
+            pdf.Append("\n");
+        }
+    }
+
     public Image(PDF pdf, PDFobj obj) {
         this.pdf = pdf;
         SetPixels(PixelsOf(ParseNumber(obj.GetValue("/Width"))), PixelsOf(ParseNumber(obj.GetValue("/Height"))));
@@ -192,13 +202,19 @@ public class Image : IDrawable {
                         + "which is not copied with it: " + String.Join(" ", tokens));
             }
         }
+        // An image object with no stream is refused before anything of it is
+        // written: it was half written, and complete() then wrote a corrupt
+        // PDF; and /Filter and /BitsPerComponent are written only when it has
+        // them, an empty value took the next key for its own (review of 17
+        // October 2026)
+        if (obj.stream == null) {
+            throw new InvalidDataException("The image object has no stream.");
+        }
         pdf.NewObj();
         pdf.Append("<<\n");
         pdf.Append("/Type /XObject\n");
         pdf.Append("/Subtype /Image\n");
-        pdf.Append("/Filter ");
-        pdf.Append(obj.GetValue("/Filter"));
-        pdf.Append("\n");
+        AppendIfAny(pdf, "/Filter", obj.GetValue("/Filter"));
         pdf.Append("/Width ");
         pdf.Append(pixelWidth);
         pdf.Append('\n');
@@ -206,9 +222,7 @@ public class Image : IDrawable {
         pdf.Append(pixelHeight);
         pdf.Append('\n');
         pdf.AppendCopiedValue("/ColorSpace", colorSpace);
-        pdf.Append("/BitsPerComponent ");
-        pdf.Append(obj.GetValue("/BitsPerComponent"));
-        pdf.Append("\n");
+        AppendIfAny(pdf, "/BitsPerComponent", obj.GetValue("/BitsPerComponent"));
         pdf.AppendCopiedValue("/DecodeParms", decodeParms);
         String imageMask = obj.GetValue("/ImageMask");
         if (!imageMask.Equals("")) {

@@ -392,6 +392,7 @@ func TestReview3AWidthPastAnIntTakesTheLargestInt32(t *testing.T) {
 		"1e19": math.MaxInt32, "1e400": math.MaxInt32, "-1e19": math.MinInt32, "nan": 0, "12.7": 12} {
 		obj := newPDFobj()
 		obj.dict = []string{"<<", "/Type", "/XObject", "/Subtype", "/Image", "/Width", width, "/Height", "1", ">>"}
+		obj.stream = []byte{0} // an image object without one is refused
 		if image := NewImageFromPDFobj(testNewPDF(), obj); image.GetWidth() != pixels {
 			t.Errorf("%s: %g", width, image.GetWidth())
 		}

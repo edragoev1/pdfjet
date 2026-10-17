@@ -341,6 +341,7 @@ import Testing
             let obj = PDFobj()
             obj.dict = ["<<", "/Type", "/XObject", "/Subtype", "/Image", "/Width", width,
                         "/Height", "1", ">>"]
+            obj.stream = [0]    // An image object without one is refused
             let image = try Image(TestSupport.newPDF(), obj)
             #expect(image.getWidth() == Float(pixels), "\(width)")
         }

@@ -95,6 +95,13 @@ This is the first entry in this file; earlier releases were not tracked here.
   declarations at most: past that, the SVG is refused with "The style
   sheet of the SVG applies more than 1000000 declarations." A real SVG
   applies a few thousand. In the four ports.
+- An image made from an image object of a PDF that was read wrote
+  "/Filter " and "/BitsPerComponent " with no value when the object had
+  none, so the next key was taken for their value and viewers dropped the
+  image; and one with no stream was half written, after which complete()
+  wrote a corrupt PDF. Now the two keys are written only when the object
+  has them, and an object with no stream is refused before any of it is
+  written: "The image object has no stream." In the four ports.
 - Java: the library builds with JDK 23 and later, whose javac warned of the
   documentation comment before the package of ImageSize.java and
   SASLprepTables.java, an error as the build treats warnings; tested on

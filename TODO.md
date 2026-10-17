@@ -272,7 +272,7 @@ Java's parsers (in the other ports where they share the code):
 - [x] SVG rules times elements, repeated rules not merged.
 - [x] Decryptor isSignatureDict quadratic per dictionary (four ports):
       decide once per dictionary.
-- [ ] Image(PDF, PDFobj): /Filter and /BitsPerComponent written empty;
+- [x] Image(PDF, PDFobj): /Filter and /BitsPerComponent written empty;
       an image object without a stream half written, complete() then
       succeeding with a corrupt PDF (four ports).
 - [ ] A font with neither glyf nor CFF (as CFF2) accepted and embedded as

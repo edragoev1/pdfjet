@@ -211,13 +211,19 @@ func NewImageFromPDFobj(pdf *PDF, obj *PDFobj) *Image {
 		}
 	}
 
+	// An image object with no stream is refused before anything of it is
+	// written: it was half written, and complete() then wrote a corrupt
+	// PDF; and /Filter and /BitsPerComponent are written only when it has
+	// them, an empty value took the next key for its own (review of 17
+	// October 2026)
+	if obj.stream == nil {
+		panic("The image object has no stream.")
+	}
 	pdf.newObj()
 	pdf.appendString("<<\n")
 	pdf.appendString("/Type /XObject\n")
 	pdf.appendString("/Subtype /Image\n")
-	pdf.appendString("/Filter ")
-	pdf.appendString(obj.GetValue("/Filter"))
-	pdf.appendString("\n")
+	appendIfAny(pdf, "/Filter", obj.GetValue("/Filter"))
 	pdf.appendString("/Width ")
 	pdf.appendInteger(image.pixelWidth)
 	pdf.appendString("\n")
@@ -225,9 +231,7 @@ func NewImageFromPDFobj(pdf *PDF, obj *PDFobj) *Image {
 	pdf.appendInteger(image.pixelHeight)
 	pdf.appendString("\n")
 	pdf.appendCopiedValue("/ColorSpace", colorSpace)
-	pdf.appendString("/BitsPerComponent ")
-	pdf.appendString(obj.GetValue("/BitsPerComponent"))
-	pdf.appendString("\n")
+	appendIfAny(pdf, "/BitsPerComponent", obj.GetValue("/BitsPerComponent"))
 	pdf.appendCopiedValue("/DecodeParms", decodeParms)
 	imageMask := obj.GetValue("/ImageMask")
 	if imageMask != "" {
@@ -867,4 +871,11 @@ func imageTypeOf(buf []byte) imagetype.ImageType {
 		return imagetype.BMP
 	}
 	panic("The image is not a PNG, JPEG or BMP file.")
+}
+
+// appendIfAny writes the key and its value, when it has one.
+func appendIfAny(pdf *PDF, key, value string) {
+	if value != "" {
+		pdf.appendString(key + " " + value + "\n")
+	}
 }

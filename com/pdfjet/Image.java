@@ -192,13 +192,19 @@ final public class Image implements Drawable {
                         + "which is not copied with it: " + String.join(" ", tokens));
             }
         }
+        // An image object with no stream is refused before anything of it is
+        // written: it was half written, and complete() then wrote a corrupt
+        // PDF; and /Filter and /BitsPerComponent are written only when it has
+        // them, an empty value took the next key for its own (review of 17
+        // October 2026)
+        if (obj.stream == null) {
+            throw new IllegalArgumentException("The image object has no stream.");
+        }
         pdf.newObj();
         pdf.append("<<\n");
         pdf.append("/Type /XObject\n");
         pdf.append("/Subtype /Image\n");
-        pdf.append("/Filter ");
-        pdf.append(obj.getValue("/Filter"));
-        pdf.append("\n");
+        appendIfAny(pdf, "/Filter", obj.getValue("/Filter"));
         pdf.append("/Width ");
         pdf.append(pixelWidth);
         pdf.append('\n');
@@ -206,9 +212,7 @@ final public class Image implements Drawable {
         pdf.append(pixelHeight);
         pdf.append('\n');
         pdf.appendCopiedValue("/ColorSpace", colorSpace);
-        pdf.append("/BitsPerComponent ");
-        pdf.append(obj.getValue("/BitsPerComponent"));
-        pdf.append("\n");
+        appendIfAny(pdf, "/BitsPerComponent", obj.getValue("/BitsPerComponent"));
         pdf.appendCopiedValue("/DecodeParms", decodeParms);
         String imageMask = obj.getValue("/ImageMask");
         if (!imageMask.equals("")) {
@@ -230,6 +234,16 @@ final public class Image implements Drawable {
         pdf.endObj();
         pdf.images.add(this);
         objNumber = pdf.getObjNumber();
+    }
+
+    // Writes the key and its value, when it has one
+    private static void appendIfAny(PDF pdf, String key, String value) throws java.io.IOException {
+        if (!value.isEmpty()) {
+            pdf.append(key);
+            pdf.append(" ");
+            pdf.append(value);
+            pdf.append("\n");
+        }
     }
 
     // Sets the pixels of the image across and down, which it is drawn at, a
