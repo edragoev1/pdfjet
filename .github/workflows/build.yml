@@ -224,8 +224,10 @@ jobs:
                   java-version: "8"
 
             # -Werror as build-java.sh: a warning fails the build.
+            # Java 8's javac makes no folder of -d, as later ones do
             - name: Compile the library and the examples
               run: |
+                  mkdir -p out/production out/examples
                   javac -encoding utf-8 -Xlint -Xlint:-options -Werror \
                       com/pdfjet/*.java com/pdfjet/*/*.java -d out/production
                   javac -encoding utf-8 -Xlint -Xlint:-options -Werror \
