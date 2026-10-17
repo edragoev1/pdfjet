@@ -34,13 +34,6 @@ public class ExceptionTypeTest {
     }
 
     [Fact]
-    public void AWrongPasswordIsUnauthorizedAccess() {
-        using Stream stream = TestSupport.Open("encrypted-files-to-test/Example_30 B mupdf-aes256 open-password-hello.pdf");
-        Exception e = Assert.Throws<UnauthorizedAccessException>(() => new PDF().Read(stream, "wrong"));
-        Assert.Equal("The password of the PDF is not correct.", e.Message);
-    }
-
-    [Fact]
     public void AFontThatIsNoFontIsInvalidData() {
         byte[] junk = new byte[12];
         Assert.Throws<InvalidDataException>(() => new Font(TestSupport.NewPDF(), new MemoryStream(junk)));

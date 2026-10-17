@@ -48,6 +48,8 @@ public static class Corpus {
                 || type == typeof(InvalidOperationException)
                 || e is IOException
                 || e is InvalidDataException
+                // A PDF that needs a password (17 October 2026)
+                || type == typeof(UnauthorizedAccessException)
                 // PDFjet's own, as of a security handler it does not know
                 // (17 October 2026); one of .NET's, of a stream, is a crash
                 || (e is NotSupportedException && e.TargetSite?.DeclaringType?.Namespace == "PDFjet.NET");

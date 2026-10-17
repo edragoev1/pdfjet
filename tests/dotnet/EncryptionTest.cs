@@ -60,9 +60,10 @@ public class EncryptionTest {
     [Fact]
     public void AWrongOrMissingPasswordFailsWithAMessage() {
         byte[] pdf = Encrypted("hello", "world");
-        Exception wrong = Assert.ThrowsAny<Exception>(() => TestSupport.Read(pdf, "wrong"));
+        // UnauthorizedAccessException, not a plain Exception (review of 17 October 2026)
+        Exception wrong = Assert.Throws<UnauthorizedAccessException>(() => TestSupport.Read(pdf, "wrong"));
         Assert.Equal("The password of the PDF is not correct.", wrong.Message);
-        Exception missing = Assert.ThrowsAny<Exception>(() => TestSupport.Read(pdf));
+        Exception missing = Assert.Throws<UnauthorizedAccessException>(() => TestSupport.Read(pdf));
         Assert.Equal("The PDF needs a password.", missing.Message);
     }
 
