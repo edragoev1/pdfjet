@@ -275,7 +275,7 @@ Java's parsers (in the other ports where they share the code):
 - [x] Image(PDF, PDFobj): /Filter and /BitsPerComponent written empty;
       an image object without a stream half written, complete() then
       succeeding with a corrupt PDF (four ports).
-- [ ] A font with neither glyf nor CFF (as CFF2) accepted and embedded as
+- [x] A font with neither glyf nor CFF (as CFF2) accepted and embedded as
       TrueType: refuse it.
 
 The C# port against Java:

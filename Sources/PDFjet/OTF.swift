@@ -146,6 +146,12 @@ class OTF {
         if advanceWidth.isEmpty {
             throw OTF.fontError("no advance widths")
         }
+        // A font with neither TrueType outlines nor CFF ones, as a CFF2 variable
+        // font, was embedded as TrueType, which viewers could not use (review
+        // of 17 October 2026)
+        if !cff && glyf == nil {
+            throw OTF.fontError("no outlines PDFjet can embed, a glyf or a CFF table: a CFF2 font is not supported")
+        }
         // The name goes into the PDF as the name of the font.
         if fontName == nil || !FontWriter.isFontName(Array(fontName!.utf8)) {
             throw OTF.fontError("the font name")

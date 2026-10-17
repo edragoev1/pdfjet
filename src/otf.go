@@ -178,6 +178,12 @@ func newOpenTypeFont(buf []byte) *openTypeFont {
 	if len(otf.advanceWidth) == 0 {
 		fontError("no advance widths")
 	}
+	// A font with neither TrueType outlines nor CFF ones, as a CFF2 variable
+	// font, was embedded as TrueType, which viewers could not use (review
+	// of 17 October 2026)
+	if !otf.cff && otf.glyf == nil {
+		fontError("no outlines PDFjet can embed, a glyf or a CFF table: a CFF2 font is not supported")
+	}
 	// The name goes into the PDF as the name of the font.
 	if !isFontName([]byte(otf.fontName)) {
 		fontError("the font name")

@@ -133,6 +133,12 @@ internal class OTF {
         if (advanceWidth == null || advanceWidth.Length == 0) {
             throw FontError("no advance widths");
         }
+        // A font with neither TrueType outlines nor CFF ones, as a CFF2 variable
+        // font, was embedded as TrueType, which viewers could not use (review
+        // of 17 October 2026)
+        if (!cff && glyf == null) {
+            throw FontError("no outlines PDFjet can embed, a glyf or a CFF table: a CFF2 font is not supported");
+        }
         // The name goes into the PDF as the name of the font.
         if (fontName == null || !FontWriter.IsFontName(Encoding.UTF8.GetBytes(fontName))) {
             throw FontError("the font name");

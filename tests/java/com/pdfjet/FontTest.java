@@ -571,4 +571,21 @@ class FontTest {
         assertTrue(loaded.info.length() <= OTF.MAX_FONT_INFO_BYTES + count,
                 "the information is " + loaded.info.length() + " characters");
     }
+
+    // A font with neither glyf nor CFF outlines, as a CFF2 variable font, is
+    // refused, not embedded as TrueType (review of 17 October 2026)
+    @Test
+    void aFontWithoutOutlinesPDFjetCanEmbedIsRefused() throws Exception {
+        byte[] font = TestSupport.readAll(TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.otf"));
+        int tables = ((font[4] & 0xFF) << 8) | (font[5] & 0xFF);
+        for (int i = 0; i < tables; i++) {
+            int entry = 12 + 16 * i;
+            if (font[entry] == 'C' && font[entry + 1] == 'F' && font[entry + 2] == 'F' && font[entry + 3] == ' ') {
+                font[entry + 3] = '2';
+            }
+        }
+        java.io.IOException e = org.junit.jupiter.api.Assertions.assertThrows(java.io.IOException.class,
+                () -> new Font(TestSupport.newPDF(), new java.io.ByteArrayInputStream(font)));
+        assertTrue(e.getMessage().contains("a CFF2 font is not supported"), e.getMessage());
+    }
 }

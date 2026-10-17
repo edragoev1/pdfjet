@@ -82,6 +82,9 @@ This is the first entry in this file; earlier releases were not tracked here.
   every PDF that used it. The information is now kept to 64 KB of the
   records of each platform; a real font's copyright and license are a few
   KB. In the four ports.
+- A font with neither TrueType nor CFF outlines, as a CFF2 variable font,
+  was embedded as TrueType, which viewers could not draw. It is now
+  refused with "a CFF2 font is not supported". In the four ports.
 - Reading an encrypted PDF with many strings after /Contents in one
   dictionary took time growing with the square of their number, as each
   string looked for its dictionary's ends again: a PDF of 560 KB took 17
