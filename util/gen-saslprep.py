@@ -206,7 +206,7 @@ out[-1:] = ["}", "", "}  // End of namespace PDFjet.NET", ""]
 write("net/pdfjet/SASLprepTables.cs", "\n".join(out))
 
 # Java
-out = ["/**"] + [" * " + line if line else " *" for line in HEADER.splitlines()] + [" */"]
+out = ["/*"] + [" * " + line if line else " *" for line in HEADER.splitlines()] + [" */"]
 out += ["package com.pdfjet;", "", "final class SASLprepTables {", "    private SASLprepTables() {", "    }", ""]
 for name, values, comment in lists:
     out.append(f"    // {comment}, in hexadecimal")

@@ -1,4 +1,4 @@
-/**
+/*
  * The tables of SASLprep, RFC 4013, written by util/gen-saslprep.py from the
  * tables of stringprep, RFC 3454, and the data of Unicode 3.2,
  * UnicodeData-3.2.0.txt and CompositionExclusions-3.2.0.txt, Copyright (c)
