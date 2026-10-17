@@ -337,13 +337,26 @@ import Testing
     // getFitChars of a CJK font for a width that is not a number.
     @Test func imageAWidthPastAnIntTakesTheLargestInt32() throws {
         for (width, pixels) in [("1e19", Int(Int32.max)), ("1e400", Int(Int32.max)),
-                                ("-1e19", Int(Int32.min)), ("nan", 0), ("x", 0)] {
+                                ("-1e19", Int(Int32.min)), ("12.7", 12)] {
             let obj = PDFobj()
             obj.dict = ["<<", "/Type", "/XObject", "/Subtype", "/Image", "/Width", width,
                         "/Height", "1", ">>"]
             obj.stream = [0]    // An image object without one is refused
             let image = try Image(TestSupport.newPDF(), obj)
             #expect(image.getWidth() == Float(pixels), "\(width)")
+        }
+        // Only a number in decimal, in the four ports (review of 17 October 2026)
+        for width in ["NaN", "nan", "100f", "0x10", "inf", " 12", "5 0 R", "x"] {
+            let obj = PDFobj()
+            obj.dict = ["<<", "/Type", "/XObject", "/Subtype", "/Image", "/Width", width,
+                        "/Height", "1", ">>"]
+            obj.stream = [0]
+            do {
+                _ = try Image(TestSupport.newPDF(), obj)
+                Issue.record("\(width) is read")
+            } catch {
+                #expect(TestSupport.message(error) == "The /Width of the image object is not a number: \(width)")
+            }
         }
     }
 

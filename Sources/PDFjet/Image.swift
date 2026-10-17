@@ -172,7 +172,7 @@ public class Image : Drawable {
     /// Creates an image from an image object read from an existing PDF.
     public init(_ pdf: PDF, _ obj: PDFobj) throws {
         self.pdfIdentity = pdf.identity
-        setPixels(Image.pixels(obj.getValue("/Width")), Image.pixels(obj.getValue("/Height")))
+        setPixels(Image.pixels(try Image.sizeOf(obj, "/Width")), Image.pixels(try Image.sizeOf(obj, "/Height")))
         // The values copied as they are, but for their strings, encrypted when
         // the document is, as the palette of an /Indexed color space; and the
         // stream, encrypted too (review of 11 October 2026, #11)
@@ -249,10 +249,20 @@ public class Image : Drawable {
     // for what is not a number, and the largest or smallest Int32 for one past
     // them. Int() of NaN or of 1e19 stopped the program (review of 12 October
     // 2026, R12).
-    private static func pixels(_ value: String) -> Int {
-        guard let number = Double(value), !number.isNaN else {
-            return 0
+    // The number of the key, which is a number in decimal, with an exponent
+    // or not, in the four ports: Java read 100f and hex, C# white space and
+    // Infinity, Go inf, and Swift took any other text for 0 (review of
+    // 17 October 2026). One past a double is its infinity.
+    private static func sizeOf(_ obj: PDFobj, _ key: String) throws -> Double {
+        let value = obj.getValue(key)
+        guard value.range(of: "^[+-]?([0-9]+\\.?[0-9]*|\\.[0-9]+)([eE][+-]?[0-9]+)?$", options: .regularExpression) != nil,
+                let number = Double(value) else {
+            throw PDFjetError(message: "The \(key) of the image object is not a number: \(value)")
         }
+        return number
+    }
+
+    private static func pixels(_ number: Double) -> Int {
         return Int(Swift.min(Swift.max(number, Double(Int32.min)), Double(Int32.max)))
     }
 

@@ -290,8 +290,8 @@ The C# port against Java:
 - [x] SVG numbers: hex floats and underscores refused where the others
       take them.
 - [x] EmbeddedFile registered before its stream is read (Go too).
-- [ ] AppendToken best-fits characters above U+00FF where Java writes ?.
-- [ ] Image ParseNumber: Unicode digits and Trim, "infinity"; "100f".
+- [x] AppendToken best-fits characters above U+00FF where Java writes ?.
+- [x] Image ParseNumber: Unicode digits and Trim, "infinity"; "100f".
 - [ ] SVGState lower-casing of İ.
 - [x] CalendarMonth: years past 9999, an open DayOfWeek.
 - [ ] Where Java is the odd one: Chart fractionDigitsOf saturating at

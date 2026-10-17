@@ -389,13 +389,27 @@ func TestReview3TheReaderMakesNoUnchargedCopyOfAStream(t *testing.T) {
 // 1e400 panicked (C8).
 func TestReview3AWidthPastAnIntTakesTheLargestInt32(t *testing.T) {
 	for width, pixels := range map[string]float32{
-		"1e19": math.MaxInt32, "1e400": math.MaxInt32, "-1e19": math.MinInt32, "nan": 0, "12.7": 12} {
+		"1e19": math.MaxInt32, "1e400": math.MaxInt32, "-1e19": math.MinInt32, "12.7": 12} {
 		obj := newPDFobj()
 		obj.dict = []string{"<<", "/Type", "/XObject", "/Subtype", "/Image", "/Width", width, "/Height", "1", ">>"}
 		obj.stream = []byte{0} // an image object without one is refused
 		if image := NewImageFromPDFobj(testNewPDF(), obj); image.GetWidth() != pixels {
 			t.Errorf("%s: %g", width, image.GetWidth())
 		}
+	}
+	// Only a number in decimal, in the four ports (review of 17 October 2026)
+	for _, width := range []string{"NaN", "nan", "100f", "0x10", "inf", " 12", "5 0 R"} {
+		obj := newPDFobj()
+		obj.dict = []string{"<<", "/Type", "/XObject", "/Subtype", "/Image", "/Width", width, "/Height", "1", ">>"}
+		obj.stream = []byte{0}
+		func() {
+			defer func() {
+				if r := recover(); r != "The /Width of the image object is not a number: "+width {
+					t.Errorf("%q: %v", width, r)
+				}
+			}()
+			NewImageFromPDFobj(testNewPDF(), obj)
+		}()
 	}
 }
 

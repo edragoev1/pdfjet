@@ -90,8 +90,13 @@ internal static class Net48Extensions {
     }
 
     extension(Encoding) {
-        public static Encoding Latin1 => Encoding.GetEncoding(28591);
+        // A character past U+00FF is '?', as in .NET 8 and Java: the encoding
+        // of .NET Framework best-fits it, Ā as A (review of 17 October 2026).
+        public static Encoding Latin1 => latin1;
     }
+
+    private static readonly Encoding latin1 = Encoding.GetEncoding(28591,
+            new EncoderReplacementFallback("?"), new DecoderReplacementFallback("?"));
 
     extension(Encoding encoding) {
         public int GetBytes(string s, System.Span<byte> bytes) {

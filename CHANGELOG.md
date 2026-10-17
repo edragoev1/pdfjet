@@ -129,6 +129,12 @@ This is the first entry in this file; earlier releases were not tracked here.
 - SVG: a number of an attribute is read only when written in decimal, in
   the four ports: Java, Go and Swift read 0x1p3 and 1_000, which are none
   of SVG's, where C# did not.
+- The /Width and /Height of an image object read from a PDF are numbers in
+  decimal, with an exponent or not, in the four ports, and other text is
+  refused: Java read 100f and hex, C# white space and Infinity, Go inf, and
+  Swift took any other text, NaN too, for 0.
+- C# on .NET Framework 4.8: a token above U+00FF of a merged object is
+  written as '?', as in .NET 8 and Java; its Latin-1 best-fitted Ā as A.
 - Reading an encrypted PDF with many strings after /Contents in one
   dictionary took time growing with the square of their number, as each
   string looked for its dictionary's ends again: a PDF of 560 KB took 17

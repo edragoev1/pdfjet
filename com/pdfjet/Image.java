@@ -168,6 +168,18 @@ final public class Image implements Drawable {
         inputStream.close();
     }
 
+    // The number of the key, which is a number in decimal, with an exponent
+    // or not, in the four ports: Java read 100f and hex, C# white space and
+    // Infinity, Go inf, and Swift took any other text for 0 (review of
+    // 17 October 2026). One past a double is its infinity.
+    private static double sizeOf(PDFobj obj, String key) {
+        String value = obj.getValue(key);
+        if (!value.matches("[+-]?([0-9]+\\.?[0-9]*|\\.[0-9]+)([eE][+-]?[0-9]+)?")) {
+            throw new IllegalArgumentException("The " + key + " of the image object is not a number: " + value);
+        }
+        return Double.parseDouble(value);
+    }
+
     /**
      * Creates new image from PDFobj
      *
@@ -177,9 +189,7 @@ final public class Image implements Drawable {
      */
     public Image(PDF pdf, PDFobj obj) throws Exception {
         this.pdf = pdf;
-        setPixels(
-                (int) Double.parseDouble(obj.getValue("/Width")),
-                (int) Double.parseDouble(obj.getValue("/Height")));
+        setPixels((int) sizeOf(obj, "/Width"), (int) sizeOf(obj, "/Height"));
         // The values copied as they are, but for their strings, encrypted when
         // the document is, as the palette of an /Indexed color space; and the
         // stream, encrypted too (review of 11 October 2026, #11)

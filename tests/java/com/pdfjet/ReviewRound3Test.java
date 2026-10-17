@@ -331,8 +331,9 @@ class ReviewRound3Test {
      */
     @Test
     void aWidthPastAnIntTakesTheLargestInt() throws Exception {
-        String[] widths = {"1e19", "1e400", "-1e19", "NaN", "12.7"};
-        float[] pixels = {Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MIN_VALUE, 0f, 12f};
+        // NaN is no number of a PDF, and is refused (review of 17 October 2026)
+        String[] widths = {"1e19", "1e400", "-1e19", "12.7"};
+        float[] pixels = {Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MIN_VALUE, 12f};
         for (int i = 0; i < widths.length; i++) {
             PDFobj obj = new PDFobj();
             obj.dict = new ArrayList<String>(Arrays.asList(

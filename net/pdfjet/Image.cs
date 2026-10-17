@@ -156,6 +156,18 @@ public class Image : IDrawable {
     // .NET 8 parses it: .NET Framework threw OverflowException where .NET 8
     // gave an infinity (review of 12 October 2026, K5). Text that is no number
     // throws FormatException, in both.
+    // The number of the key, which is a number in decimal, with an exponent
+    // or not, in the four ports: Java read 100f and hex, C# white space and
+    // Infinity, Go inf, and Swift took any other text for 0 (review of
+    // 17 October 2026). One past a double is its infinity.
+    private static double SizeOf(PDFobj obj, String key) {
+        String value = obj.GetValue(key);
+        if (!System.Text.RegularExpressions.Regex.IsMatch(value, @"^[+-]?([0-9]+\.?[0-9]*|\.[0-9]+)([eE][+-]?[0-9]+)?$")) {
+            throw new InvalidDataException("The " + key + " of the image object is not a number: " + value);
+        }
+        return ParseNumber(value);
+    }
+
     private static double ParseNumber(String text) {
         const System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Float;
         var culture = System.Globalization.CultureInfo.InvariantCulture;
@@ -190,7 +202,7 @@ public class Image : IDrawable {
 
     public Image(PDF pdf, PDFobj obj) {
         this.pdf = pdf;
-        SetPixels(PixelsOf(ParseNumber(obj.GetValue("/Width"))), PixelsOf(ParseNumber(obj.GetValue("/Height"))));
+        SetPixels(PixelsOf(SizeOf(obj, "/Width")), PixelsOf(SizeOf(obj, "/Height")));
         // The values copied as they are, but for their strings, encrypted when
         // the document is, as the palette of an /Indexed color space; and the
         // stream, encrypted too (review of 11 October 2026, #11)

@@ -279,14 +279,23 @@ public class ReviewRound3Test {
     // smallest int (C8).
     [Fact]
     public void AWidthPastAnIntTakesTheLargestInt() {
-        string[] widths = {"1e19", "1e400", "-1e19", "NaN", "12.7"};
-        float[] pixels = {int.MaxValue, int.MaxValue, int.MinValue, 0f, 12f};
+        string[] widths = {"1e19", "1e400", "-1e19", "12.7"};
+        float[] pixels = {int.MaxValue, int.MaxValue, int.MinValue, 12f};
         for (int i = 0; i < widths.Length; i++) {
             PDFobj obj = new PDFobj();
             obj.dict = new List<string> {
                 "<<", "/Type", "/XObject", "/Subtype", "/Image", "/Width", widths[i], "/Height", "1", ">>"};
             obj.stream = new byte[0];
             Assert.Equal(pixels[i], new Image(TestSupport.NewPDF(), obj).GetWidth());
+        }
+        // Only a number in decimal, in the four ports (review of 17 October 2026)
+        foreach (string width in new[] {"NaN", "nan", "100f", "0x10", "inf", " 12", "5 0 R"}) {
+            PDFobj obj = new PDFobj();
+            obj.dict = new List<string> {
+                "<<", "/Type", "/XObject", "/Subtype", "/Image", "/Width", width, "/Height", "1", ">>"};
+            obj.stream = new byte[0];
+            Assert.Equal("The /Width of the image object is not a number: " + width,
+                    Assert.Throws<InvalidDataException>(() => new Image(TestSupport.NewPDF(), obj)).Message);
         }
     }
 

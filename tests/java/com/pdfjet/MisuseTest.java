@@ -516,5 +516,27 @@ class MisuseTest {
                 new com.pdfjet.datamatrix.DataMatrix("a\uFFFDb").getModules(),
                 new com.pdfjet.datamatrix.DataMatrix("a\uDC00b").getModules());
     }
+
+    // The width and height of an image object are numbers in decimal, in the
+    // four ports: Java read 100f and hex (review of 17 October 2026)
+    @Test
+    void theSizeOfAnImageObjectIsANumberInDecimal() throws Exception {
+        for (String width : new String[] {"NaN", "nan", "100f", "0x10", "inf", " 12", "5 0 R"}) {
+            PDFobj obj = new PDFobj();
+            obj.dict = new java.util.ArrayList<String>(java.util.Arrays.asList(
+                    "<<", "/Type", "/XObject", "/Subtype", "/Image", "/Width", width, "/Height", "1", ">>"));
+            obj.stream = new byte[1];
+            assertEquals("The /Width of the image object is not a number: " + width,
+                    org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,
+                            () -> new Image(TestSupport.newPDF(), obj)).getMessage());
+        }
+        PDFobj obj = new PDFobj();
+        obj.dict = new java.util.ArrayList<String>(java.util.Arrays.asList(
+                "<<", "/Type", "/XObject", "/Subtype", "/Image", "/Width", "1e400", "/Height", "12.7", ">>"));
+        obj.stream = new byte[1];
+        Image image = new Image(TestSupport.newPDF(), obj);
+        assertEquals((float) Integer.MAX_VALUE, image.getWidth());
+        assertEquals(12f, image.getHeight());
+    }
 }
 
