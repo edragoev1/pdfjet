@@ -86,7 +86,14 @@ class BufferedOutputStream {
                 outputStream.write($0.baseAddress! + totalWritten, maxLength: $0.count - totalWritten)
             }
             if written <= 0 {
-                writeError = outputStream.streamError ?? PDFjetError(message: "Cannot write to the stream.")
+                // The stream's error only when it has one: Foundation on
+                // Linux traps on streamError of a stream with none, as one
+                // already closed, where Java throws (review of 17 October
+                // 2026)
+                writeError = outputStream.streamStatus == .error ? outputStream.streamError : nil
+                if writeError == nil {
+                    writeError = PDFjetError(message: "Cannot write to the stream.")
+                }
             } else {
                 totalWritten += written
             }
@@ -94,7 +101,7 @@ class BufferedOutputStream {
         buffer.removeAll(keepingCapacity: true)
     }
 
-    deinit {
-        try? close()
-    }
+    // A PDF released without complete() leaves the caller's stream as it is,
+    // neither flushed nor closed, as Java does: it flushed half a PDF into
+    // it and closed it, though the caller might go on writing to it.
 }

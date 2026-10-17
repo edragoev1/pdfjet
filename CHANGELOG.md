@@ -70,6 +70,12 @@ This is the first entry in this file; earlier releases were not tracked here.
   vertical alignment of a text block is top, center or bottom." In Java
   and C# drawOn throws; in Go and Swift complete() fails. Measuring with
   drawOn(null) is as before. In the four ports.
+- Swift: a PDF written into a stream that is closed, as a second PDF into
+  one that complete() closed, crashed the program on Linux, where Foundation
+  traps on the error of a stream that has none; it now throws, as Java
+  does. A PDF released without complete() no longer flushes what it has
+  into the caller's stream and closes it: the stream is left as it was, as
+  in Java.
 - Java: the library builds with JDK 23 and later, whose javac warned of the
   documentation comment before the package of ImageSize.java and
   SASLprepTables.java, an error as the build treats warnings; tested on

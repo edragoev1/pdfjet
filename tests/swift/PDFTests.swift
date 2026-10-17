@@ -139,6 +139,33 @@ import Testing
         stream.close()
     }
 
+    // A second PDF into a stream that complete() closed throws, as Java's
+    // IOException: Foundation on Linux trapped on its streamError (review of
+    // 17 October 2026)
+    @Test func aPdfIntoAClosedStreamThrows() throws {
+        let stream = OutputStream(toMemory: ())
+        let first = PDF(stream)
+        _ = Page(first, Letter.PORTRAIT)
+        try first.complete()
+        let second = PDF(stream)
+        _ = Page(second, Letter.PORTRAIT)
+        #expect(throws: (any Error).self) { try second.complete() }
+    }
+
+    // A PDF released without complete() leaves the caller's stream open and
+    // as it was, as Java does: it flushed half a PDF into it and closed it
+    @Test func aPdfReleasedWithoutCompleteLeavesTheStream() throws {
+        let stream = OutputStream(toMemory: ())
+        do {
+            let pdf = PDF(stream)
+            _ = Page(pdf, Letter.PORTRAIT)
+        }
+        #expect(stream.streamStatus != .closed)
+        let data = stream.property(forKey: .dataWrittenToMemoryStreamKey) as? Data
+        #expect((data ?? Data()).isEmpty)
+        stream.close()
+    }
+
     @Test func readsAPdfWithABlankPage() throws {
         let memory = MemoryPDF()
         _ = Page(memory.pdf, Letter.PORTRAIT)

@@ -318,9 +318,9 @@ The Go port:
 - [ ] TextBlock SetWidth(NaN): Go fails, Java draws.
 
 The Swift port:
-- [ ] BufferedOutputStream: a failed write reads streamError, which traps
+- [x] BufferedOutputStream: a failed write reads streamError, which traps
       on Linux with no error: a closed stream crashes where Java throws.
-- [ ] Its deinit flushes and closes the caller's stream when complete()
+- [x] Its deinit flushes and closes the caller's stream when complete()
       was never called; Java leaves it.
 - [ ] RC4 and AES-128 passwords above U+FFFF: per code point, Java per
       UTF-16 unit (Go as Swift).
