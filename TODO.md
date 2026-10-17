@@ -240,6 +240,107 @@ commit and date. The layout's format version (1) and the look's rules
   subsetters, which subset a real font for each input, ran 27,000 and 15,000
   inputs. A run of a night on those two.
 
+## v9.1.1: the code review of 17 October 2026, all to fix before the release
+
+Seven reviews, read-only: the changes since v9.0.9, Java's parsers, the C#,
+Go and Swift ports, Pro, and the release. The owner: "We must fix all the
+issues found before we release 9.1.1." Each fix in every port it applies to,
+with a test. Pro's are in pdfjet-pro's TODO.
+
+Fixed:
+- [x] C#: the wrong password and the unreadable font were still a plain
+      Exception (dea57791).
+
+The 9.1.1 changes:
+- [ ] Table: a row drawn whole, refused on the first page when a
+      first-page top margin leaves it no room, though the next page has
+      it: refuse only when no page would have room (four ports).
+- [ ] CHANGELOG: the Swift and C# overload makes a bare method reference
+      to complete ambiguous; the EULA of the packages; the boolean's
+      opposite meanings (Java and Swift close, C# leaves open).
+- [ ] The creation date of years below 1000, not padded to four digits as
+      Go's is (Java, C#, Swift).
+- [ ] Tests: complete(false) and Complete(true) on the error path, the
+      stream left open.
+
+Java's parsers (in the other ports where they share the code):
+- [ ] OTF name(): no limit on the text of the name records: a 593 KB
+      font is an OutOfMemoryError, a 125 KB one 65 M characters in the XMP
+      (Java, Go; check C# and Swift).
+- [ ] SVG StyleSheet.forClasses quadratic in the classes of an element
+      (Java, Go; check C#, Swift).
+- [ ] SVG rules times elements, repeated rules not merged.
+- [ ] Decryptor isSignatureDict quadratic per dictionary (four ports):
+      decide once per dictionary.
+- [ ] Image(PDF, PDFobj): /Filter and /BitsPerComponent written empty;
+      an image object without a stream half written, complete() then
+      succeeding with a corrupt PDF (four ports).
+- [ ] A font with neither glyf nor CFF (as CFF2) accepted and embedded as
+      TrueType: refuse it.
+
+The C# port against Java:
+- [ ] TextBlock soft hyphen after a Unicode space (Util.Trim against
+      Java's trimSpace); Swift too.
+- [ ] Bookmark titles: Unicode \s in place of ASCII whitespace; Go's
+      leaves out \v.
+- [ ] net48: NumberFormat F rounding half away from zero (chart labels).
+- [ ] Highlight keywords lower-cased per character (final sigma, İ).
+- [ ] A lone surrogate written as EF BF BD where Java writes 3F (URIs,
+      QR, DataMatrix, and the other places): one choice for all ports.
+- [ ] SVG numbers: hex floats and underscores refused where the others
+      take them.
+- [ ] EmbeddedFile registered before its stream is read (Go too).
+- [ ] AppendToken best-fits characters above U+00FF where Java writes ?.
+- [ ] Image ParseNumber: Unicode digits and Trim, "infinity"; "100f".
+- [ ] SVGState lower-casing of İ.
+- [ ] CalendarMonth: years past 9999, an open DayOfWeek.
+- [ ] Where Java is the odd one: Chart fractionDigitsOf saturating at
+      2^63 (Go too), Float.parseFloat taking 595f and hex in /MediaBox,
+      Page's trim() of a NBSP description.
+
+The Go port:
+- [ ] qrcode: a negative error-correction level loops for ever; 4 to 7
+      give wrong format bits: refuse them.
+- [ ] table wrapCellText: a slice bound panic on invalid UTF-8.
+- [ ] GetPageObjects rewrites shared objects on every call, and
+      aesPkcs7Pad appends into a decrypted stream: a race when one Read is
+      merged on several goroutines.
+- [ ] structelem.StructElem and relationship.Relationship written raw:
+      refuse a value that is not one of theirs, as CapStyle.
+- [ ] BigTable.SetFirstPage of another PDF accepted, its error recorded
+      on the other PDF.
+- [ ] contentRefs and GetContentObject take an annotation's /Contents for
+      the page's (four ports): dictEntryIndex.
+- [ ] SetCompliance takes any value; NewCJKFont of an unknown font writes
+      half an object before it panics; CalendarMonth months out of range.
+- [ ] Example 25 does not check Complete's error.
+- [ ] tests/crossport: Java and C# below(8), Go and Swift below(5).
+- [ ] TextBlock SetWidth(NaN): Go fails, Java draws.
+
+The Swift port:
+- [ ] BufferedOutputStream: a failed write reads streamError, which traps
+      on Linux with no error: a closed stream crashes where Java throws.
+- [ ] Its deinit flushes and closes the caller's stream when complete()
+      was never called; Java leaves it.
+- [ ] RC4 and AES-128 passwords above U+FFFF: per code point, Java per
+      UTF-16 unit (Go as Swift).
+- [ ] SVGImage and ImageSize hide a stream that cannot be read.
+
+The release (scripts and the checklist):
+- [ ] The checklist's gh release step: the jar and dll from the Core zips,
+      not the developer build.
+- [ ] The packaging builds Pro from its HEAD, not its tag: check its
+      version.sh.
+- [ ] A check that the four version strings, Example_37 and the tests
+      agree, and that CHANGELOG has the date.
+- [ ] Reproducible zips: javadoc -notimestamp; the Core zips for Maven and
+      NuGet from the GitHub release.
+- [ ] CI runs the booklet's snippets.
+- [ ] build-*.sh: set -e; build-java.sh leaves old classes of the
+      subpackages.
+- [ ] TODO's check-api line: v9.0.9; Pro's library.sh comment of
+      GONOSUMDB; windows.yml checks only that a PDF is not empty.
+
 ## Known and accepted (document, do not fix)
 
 - Only Arabic and Persian letters are shaped.
