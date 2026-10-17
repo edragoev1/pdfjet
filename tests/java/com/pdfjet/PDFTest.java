@@ -1633,4 +1633,25 @@ class PDFTest {
         assertEquals("0005-01-01T00:00:00", PDF.utcDate(-62009366400000L));
         assertEquals("0001-01-01T00:00:00", PDF.utcDate(-62135596800000L));
     }
+
+    // A PDF that cannot be completed leaves the stream open when it is to be
+    // left open, and closes it when not (review of 17 October 2026)
+    @Test
+    void aPDFThatFailsLeavesTheStreamAsAsked() throws Exception {
+        for (boolean closeStream : new boolean[] {false, true}) {
+            final boolean[] closed = {false};
+            ByteArrayOutputStream bos = new ByteArrayOutputStream() {
+                @Override
+                public void close() throws IOException {
+                    closed[0] = true;
+                    super.close();
+                }
+            };
+            final PDF pdf = new PDF(bos, Compliance.PDF_UA_1);   // with no title
+            new Page(pdf, Letter.PORTRAIT);
+            org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException.class,
+                    () -> pdf.complete(closeStream));
+            assertEquals(closeStream, closed[0], "closeStream " + closeStream);
+        }
+    }
 }

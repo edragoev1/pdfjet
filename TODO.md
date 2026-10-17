@@ -260,7 +260,7 @@ The 9.1.1 changes:
       opposite meanings (Java and Swift close, C# leaves open).
 - [x] The creation date of years below 1000, not padded to four digits as
       Go's is (Java, C#, Swift).
-- [ ] Tests: complete(false) and Complete(true) on the error path, the
+- [x] Tests: complete(false) and Complete(true) on the error path, the
       stream left open.
 
 Java's parsers (in the other ports where they share the code):

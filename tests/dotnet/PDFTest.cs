@@ -1272,6 +1272,30 @@ public class PDFTest {
             Assert.True(allocated <= 64 << 20, "in the node " + inNode + ": " + (allocated >> 20) + " MB allocated");
         }
     }
+
+    // A year below 1000 is in four digits, as Go writes it (review of
+    // 17 October 2026)
+    [Fact]
+    public void AYearBelow1000IsInFourDigits() {
+        var utcDate = typeof(PDF).GetMethod("UtcDate",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+        Assert.Equal("0999-01-01T00:00:00", (string) utcDate.Invoke(null, new object[] {-30641760000000L}));
+        Assert.Equal("0005-01-01T00:00:00", (string) utcDate.Invoke(null, new object[] {-62009366400000L}));
+        Assert.Equal("0001-01-01T00:00:00", (string) utcDate.Invoke(null, new object[] {-62135596800000L}));
+    }
+
+    // A PDF that cannot be completed leaves the stream open when it is to be
+    // left open, and closes it when not (review of 17 October 2026)
+    [Fact]
+    public void APDFThatFailsLeavesTheStreamAsAsked() {
+        foreach (bool leaveOpen in new[] {true, false}) {
+            ClosingStream stream = new ClosingStream();
+            PDF pdf = new PDF(stream, Compliance.PDF_UA_1);     // with no title
+            new Page(pdf, Letter.PORTRAIT);
+            Assert.Throws<InvalidOperationException>(() => pdf.Complete(leaveOpen));
+            Assert.Equal(!leaveOpen, stream.Closed);
+        }
+    }
 }
 
 /// <summary>The budget of what the streams of a PDF decode to, which the test
@@ -1482,16 +1506,5 @@ public class DecodeBudgetTest {
 
 [CollectionDefinition("DecodeBudget", DisableParallelization = true)]
 public class DecodeBudgetCollection {
-
-    // A year below 1000 is in four digits, as Go writes it (review of
-    // 17 October 2026)
-    [Fact]
-    public void AYearBelow1000IsInFourDigits() {
-        var utcDate = typeof(PDF).GetMethod("UtcDate",
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
-        Assert.Equal("0999-01-01T00:00:00", (string) utcDate.Invoke(null, new object[] {-30641760000000L}));
-        Assert.Equal("0005-01-01T00:00:00", (string) utcDate.Invoke(null, new object[] {-62009366400000L}));
-        Assert.Equal("0001-01-01T00:00:00", (string) utcDate.Invoke(null, new object[] {-62135596800000L}));
-    }
 }
 }

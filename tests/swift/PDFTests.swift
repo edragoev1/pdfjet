@@ -1050,4 +1050,16 @@ import Testing
         #expect(PDF.utcDate(-62009366400000) == "0005-01-01T00:00:00")
         #expect(PDF.utcDate(-62135596800000) == "0001-01-01T00:00:00")
     }
+
+    // A PDF that cannot be completed leaves the stream open when it is to be
+    // left open, and closes it when not (review of 17 October 2026)
+    @Test func aPDFThatFailsLeavesTheStreamAsAsked() {
+        for closeStream in [false, true] {
+            let stream = OutputStream(toMemory: ())
+            let pdf = PDF(stream, Compliance.PDF_UA_1)     // with no title
+            _ = Page(pdf, Letter.PORTRAIT)
+            #expect(throws: (any Error).self) { try pdf.complete(closeStream: closeStream) }
+            #expect((stream.streamStatus == .closed) == closeStream, "closeStream \(closeStream)")
+        }
+    }
 }
