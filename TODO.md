@@ -151,7 +151,10 @@ commit and date. The layout's format version (1) and the look's rules
     them all. Swift already throws its own PDFjetError, and Go returns
     errors.
 
-- **v9.1.1: CI on JDK 25 and JDK 8** (the owner, 17 October 2026: this
+- ✅ (17 October 2026: every job of JDK 21 on 25; the java8 job and
+  check-examples.sh compile the library and the examples with JDK 8 and run
+  nothing, the owner: "For Java 8 we will only do compile run.")
+  **v9.1.1: CI on JDK 25 and JDK 8** (the owner, 17 October 2026: this
   machine on 25 by default; the versions between tried now and then by
   hand). JDK 23's javac warned of a doc comment before a package, an error
   with -Werror (fixed 17 October 2026, 07c7b7e5); 8, 11, 17, 21 and 25 all

@@ -7,3 +7,10 @@
 # 9.0.5: the .stream font format, Removed in CHANGELOG.md
 go: pdfjet func NewFontStream1(pdf *PDF, reader io.Reader) *Font
 go: pdfjet func NewFontStream2(objects *[]*PDFobj, reader io.Reader) *Font
+
+# 9.1.1: PDF's constructors and complete() declare IOException, not
+# Exception (the owner, 17 October 2026; Changed in CHANGELOG.md): the same
+# members, their throws narrower, which javap lists as gone and added
+java: public final class com.pdfjet.PDF :: public com.pdfjet.PDF(java.io.OutputStream) throws java.lang.Exception;
+java: public final class com.pdfjet.PDF :: public com.pdfjet.PDF(java.io.OutputStream, com.pdfjet.Compliance) throws java.lang.Exception;
+java: public final class com.pdfjet.PDF :: public void complete() throws java.lang.Exception;

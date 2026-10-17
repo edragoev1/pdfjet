@@ -5,8 +5,8 @@
 #
 # Builds the Java, C#, Go and Swift ports and runs their examples with the
 # build-*.sh scripts and their unit tests with the test-*.sh scripts, as the
-# workflow's port jobs do, builds and tests the Java port again with JDK 8, as
-# its java (JDK 8) job does, then checks the example PDFs with
+# workflow's port jobs do, compiles the Java port with JDK 8, as its java
+# (JDK 8, compile only) job does, then checks the example PDFs with
 # .github/scripts/check-example-pdfs.py and their tags with
 # .github/scripts/check-pdfua-tags.py, as its compare job does, and opens the
 # Java PDFs in PDFium, pdf.js and Poppler with .github/scripts/check-viewers.py,
@@ -115,32 +115,19 @@ for port in java dotnet go swift; do
     fi
 done
 
-# The Java port again with JDK 8, as the java (JDK 8) job of the workflow does.
-# Its PDFs are not compared, as in the workflow.
-echo "Building and running the java examples with JDK 8, logging to $WORK/logs/java8.log"
-bash clean.sh > /dev/null
-if ! JAVA_HOME="$JAVA8_HOME" PATH="$JAVA8_HOME/bin:$PATH" \
-        bash -e build-java.sh > "$WORK/logs/java8.log" 2>&1; then
+# The Java port compiled with JDK 8, as the java (JDK 8, compile only) job of
+# the workflow does: the library and the examples, nothing run (the owner, 17
+# October 2026). PATH=/opt/jdk8u504-b01/bin:$PATH ./test-java.sh runs the
+# tests on Java 8 by hand.
+echo "Compiling the java library and examples with JDK 8, logging to $WORK/logs/java8.log"
+rm -rf "$WORK/java8" && mkdir -p "$WORK/java8/production" "$WORK/java8/examples"
+if ! { "$JAVA8_HOME/bin/javac" -encoding utf-8 -Xlint -Xlint:-options -Werror \
+            com/pdfjet/*.java com/pdfjet/*/*.java -d "$WORK/java8/production" &&
+        "$JAVA8_HOME/bin/javac" -encoding utf-8 -Xlint -Xlint:-options -Werror \
+            -cp "$WORK/java8/production" examples/Example_*.java -d "$WORK/java8/examples"; } \
+        > "$WORK/logs/java8.log" 2>&1; then
     tail -n 20 "$WORK/logs/java8.log"
     echo "The java build with JDK 8 failed."
-    exit 1
-fi
-missing=0
-for i in $(seq -w 1 50); do
-    if [ ! -s Example_$i.pdf ]; then
-        echo "java (JDK 8): Example_$i.pdf was not created"
-        missing=1
-    fi
-done
-bash clean.sh > /dev/null
-if [ $missing = 1 ]; then
-    exit 1
-fi
-echo "Running the java unit tests with JDK 8, logging to $WORK/logs/java8-tests.log"
-if ! JAVA_HOME="$JAVA8_HOME" PATH="$JAVA8_HOME/bin:$PATH" \
-        bash -e test-java.sh > "$WORK/logs/java8-tests.log" 2>&1; then
-    tail -n 40 "$WORK/logs/java8-tests.log"
-    echo "The java unit tests with JDK 8 failed."
     exit 1
 fi
 
