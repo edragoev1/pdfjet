@@ -390,10 +390,28 @@ func (d *decryptor) decryptStrings(obj *PDFobj) {
 	if d.stringMethod == cryptNone {
 		return
 	}
+	// The dictionary of each token and whether each is a signature
+	// dictionary, found once: for each string after /Contents a scan to its
+	// dictionary's ends made a PDF of 560 KB take 17 s (review of 17 October
+	// 2026)
+	var starts []int
+	var signatures map[int]bool
 	for i, token := range obj.dict {
 		if strings.HasPrefix(token, "(") || (strings.HasPrefix(token, "<") && token != "<<") {
-			if i > 0 && obj.dict[i-1] == "/Contents" && isSignatureDict(obj.dict, i) {
-				continue
+			if i > 0 && obj.dict[i-1] == "/Contents" {
+				if starts == nil {
+					starts = dictionaryStarts(obj.dict)
+					signatures = map[int]bool{}
+				}
+				start := starts[i]
+				signature, known := signatures[start]
+				if !known {
+					signature = isSignatureDictFrom(obj.dict, start)
+					signatures[start] = signature
+				}
+				if signature {
+					continue
+				}
 			}
 			obj.dict[i] = "<" + hex.EncodeToString(d.decrypt(toBytes(token), d.stringMethod, obj)) + ">"
 		}
@@ -416,6 +434,32 @@ func isSignatureDict(dict []string, i int) bool {
 			level--
 		}
 	}
+	return isSignatureDictFrom(dict, start)
+}
+
+// dictionaryStarts returns the index of the << of the dictionary each token
+// is in, the innermost, or -1 for one in none, as isSignatureDict finds it, in
+// one pass.
+func dictionaryStarts(dict []string) []int {
+	starts := make([]int, len(dict))
+	open := make([]int, 0, 8)
+	for j, token := range dict {
+		starts[j] = -1
+		if len(open) > 0 {
+			starts[j] = open[len(open)-1]
+		}
+		if token == "<<" {
+			open = append(open, j)
+		} else if token == ">>" && len(open) > 0 {
+			open = open[:len(open)-1]
+		}
+	}
+	return starts
+}
+
+// isSignatureDictFrom tells if the dictionary whose << is at start is a
+// signature dictionary.
+func isSignatureDictFrom(dict []string, start int) bool {
 	// Its entries, not those of the dictionaries in it
 	level := 0
 	for j := start + 1; j < len(dict); j++ {

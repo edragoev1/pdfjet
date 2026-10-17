@@ -349,11 +349,30 @@ final class Decryptor {
             return
         }
         let digits = Array("0123456789abcdef")
+        // The dictionary of each token and whether each is a signature
+        // dictionary, found once: for each string after /Contents a scan to
+        // its dictionary's ends made a PDF of 560 KB take 17 s (review of 17
+        // October 2026)
+        var starts: [Int]? = nil
+        var signatures = [Int: Bool]()
         for i in 0..<obj.dict.count {
             let token = obj.dict[i]
             if token.hasPrefix("(") || (token.hasPrefix("<") && token != "<<") {
-                if i > 0 && obj.dict[i - 1] == "/Contents" && Decryptor.isSignatureDict(obj.dict, i) {
-                    continue
+                if i > 0 && obj.dict[i - 1] == "/Contents" {
+                    if starts == nil {
+                        starts = Decryptor.dictionaryStarts(obj.dict)
+                    }
+                    let start = starts![i]
+                    let signature: Bool
+                    if let known = signatures[start] {
+                        signature = known
+                    } else {
+                        signature = Decryptor.isSignatureDictFrom(obj.dict, start)
+                        signatures[start] = signature
+                    }
+                    if signature {
+                        continue
+                    }
                 }
                 var hex = "<"
                 for b in decrypt(Decryptor.toBytes(token), stringMethod, obj) {
@@ -384,8 +403,31 @@ final class Decryptor {
             }
             start -= 1
         }
+        return isSignatureDictFrom(dict, start)
+    }
+
+    // The index of the << of the dictionary each token is in, the innermost,
+    // or -1 for one in none, as isSignatureDict finds it, in one pass
+    static func dictionaryStarts(_ dict: [String]) -> [Int] {
+        var starts = [Int](repeating: -1, count: dict.count)
+        var open = [Int]()
+        for j in 0..<dict.count {
+            if let last = open.last {
+                starts[j] = last
+            }
+            if dict[j] == "<<" {
+                open.append(j)
+            } else if dict[j] == ">>" && !open.isEmpty {
+                open.removeLast()
+            }
+        }
+        return starts
+    }
+
+    // Tells if the dictionary whose << is at start is a signature dictionary
+    static func isSignatureDictFrom(_ dict: [String], _ start: Int) -> Bool {
         // Its entries, not those of the dictionaries in it
-        level = 0
+        var level = 0
         var j = start + 1
         while j < dict.count {
             switch dict[j] {

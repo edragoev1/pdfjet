@@ -82,6 +82,12 @@ This is the first entry in this file; earlier releases were not tracked here.
   every PDF that used it. The information is now kept to 64 KB of the
   records of each platform; a real font's copyright and license are a few
   KB. In the four ports.
+- Reading an encrypted PDF with many strings after /Contents in one
+  dictionary took time growing with the square of their number, as each
+  string looked for its dictionary's ends again: a PDF of 560 KB took 17
+  s. Each dictionary is now looked at once; the same file reads in about
+  0.1 s. The strings of a signature are left as they were. In the four
+  ports.
 - Java: the library builds with JDK 23 and later, whose javac warned of the
   documentation comment before the package of ImageSize.java and
   SASLprepTables.java, an error as the build treats warnings; tested on

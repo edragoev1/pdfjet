@@ -394,11 +394,29 @@ final class Decryptor {
         if (stringMethod == NONE) {
             return;
         }
+        // The dictionary of each token and whether each is a signature
+        // dictionary, found once: for each string after /Contents a scan to
+        // its dictionary's ends made a PDF of 560 KB take 17 s (review of 17
+        // October 2026)
+        int[] starts = null;
+        java.util.Map<Integer, Boolean> signatures = null;
         for (int i = 0; i < obj.dict.size(); i++) {
             String token = obj.dict.get(i);
             if (token.startsWith("(") || (token.startsWith("<") && !token.equals("<<"))) {
-                if (i > 0 && obj.dict.get(i - 1).equals("/Contents") && isSignatureDict(obj.dict, i)) {
-                    continue;
+                if (i > 0 && obj.dict.get(i - 1).equals("/Contents")) {
+                    if (starts == null) {
+                        starts = dictionaryStarts(obj.dict);
+                        signatures = new java.util.HashMap<>();
+                    }
+                    int start = starts[i];
+                    Boolean signature = signatures.get(start);
+                    if (signature == null) {
+                        signature = isSignatureDictFrom(obj.dict, start);
+                        signatures.put(start, signature);
+                    }
+                    if (signature) {
+                        continue;
+                    }
                 }
                 byte[] bytes = decrypt(toBytes(token), stringMethod, obj);
                 StringBuilder buf = new StringBuilder("<");
@@ -427,6 +445,29 @@ final class Decryptor {
                 level--;
             }
         }
+        return isSignatureDictFrom(dict, start);
+    }
+
+    // The index of the << of the dictionary each token is in, the innermost,
+    // or -1 for one in none, as isSignatureDict finds it, in one pass
+    static int[] dictionaryStarts(List<String> dict) {
+        int[] starts = new int[dict.size()];
+        int[] open = new int[dict.size()];
+        int depth = 0;
+        for (int j = 0; j < dict.size(); j++) {
+            String token = dict.get(j);
+            starts[j] = depth > 0 ? open[depth - 1] : -1;
+            if (token.equals("<<")) {
+                open[depth++] = j;
+            } else if (token.equals(">>") && depth > 0) {
+                depth--;
+            }
+        }
+        return starts;
+    }
+
+    // Tells if the dictionary whose << is at start is a signature dictionary
+    static boolean isSignatureDictFrom(List<String> dict, int start) {
         // Its entries, not those of the dictionaries in it
         int level = 0;
         for (int j = start + 1; j < dict.size(); j++) {

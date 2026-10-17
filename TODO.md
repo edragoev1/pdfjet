@@ -270,7 +270,7 @@ Java's parsers (in the other ports where they share the code):
 - [ ] SVG StyleSheet.forClasses quadratic in the classes of an element
       (Java, Go; check C#, Swift).
 - [ ] SVG rules times elements, repeated rules not merged.
-- [ ] Decryptor isSignatureDict quadratic per dictionary (four ports):
+- [x] Decryptor isSignatureDict quadratic per dictionary (four ports):
       decide once per dictionary.
 - [ ] Image(PDF, PDFobj): /Filter and /BitsPerComponent written empty;
       an image object without a stream half written, complete() then

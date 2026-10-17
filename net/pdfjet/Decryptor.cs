@@ -367,11 +367,28 @@ internal sealed class Decryptor {
         if (stringMethod == NONE) {
             return;
         }
+        // The dictionary of each token and whether each is a signature
+        // dictionary, found once: for each string after /Contents a scan to
+        // its dictionary's ends made a PDF of 560 KB take 17 s (review of 17
+        // October 2026)
+        int[] starts = null;
+        Dictionary<int, bool> signatures = null;
         for (int i = 0; i < obj.dict.Count; i++) {
             String token = obj.dict[i];
             if (token.StartsWith("(", StringComparison.Ordinal) || (token.StartsWith("<", StringComparison.Ordinal) && !token.Equals("<<"))) {
-                if (i > 0 && obj.dict[i - 1].Equals("/Contents") && IsSignatureDict(obj.dict, i)) {
-                    continue;
+                if (i > 0 && obj.dict[i - 1].Equals("/Contents")) {
+                    if (starts == null) {
+                        starts = DictionaryStarts(obj.dict);
+                        signatures = new Dictionary<int, bool>();
+                    }
+                    int start = starts[i];
+                    if (!signatures.TryGetValue(start, out bool signature)) {
+                        signature = IsSignatureDictFrom(obj.dict, start);
+                        signatures[start] = signature;
+                    }
+                    if (signature) {
+                        continue;
+                    }
                 }
                 byte[] bytes = Decrypt(ToBytes(token), stringMethod, obj);
                 obj.dict[i] = "<" + Convert.ToHexString(bytes).ToLowerInvariant() + ">";
@@ -395,6 +412,29 @@ internal sealed class Decryptor {
                 level--;
             }
         }
+        return IsSignatureDictFrom(dict, start);
+    }
+
+    // The index of the << of the dictionary each token is in, the innermost,
+    // or -1 for one in none, as IsSignatureDict finds it, in one pass
+    internal static int[] DictionaryStarts(List<String> dict) {
+        int[] starts = new int[dict.Count];
+        int[] open = new int[dict.Count];
+        int depth = 0;
+        for (int j = 0; j < dict.Count; j++) {
+            String token = dict[j];
+            starts[j] = depth > 0 ? open[depth - 1] : -1;
+            if (token.Equals("<<")) {
+                open[depth++] = j;
+            } else if (token.Equals(">>") && depth > 0) {
+                depth--;
+            }
+        }
+        return starts;
+    }
+
+    // Tells if the dictionary whose << is at start is a signature dictionary
+    internal static bool IsSignatureDictFrom(List<String> dict, int start) {
         // Its entries, not those of the dictionaries in it
         int depth = 0;
         for (int j = start + 1; j < dict.Count; j++) {
