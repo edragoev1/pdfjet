@@ -254,6 +254,13 @@ func (otf *openTypeFont) glyphTop(gid int) (int16, bool) {
 	return int16(yMax), ok
 }
 
+// maxFontInfoBytes is the most of the name records' bytes kept as the font's information, of
+// each platform: a font of 593 KB whose 40,000 records name one string of
+// 65,000 bytes was gigabytes of text, and a smaller one put 65 million
+// characters in the XMP of every PDF that used it (review of 17 October
+// 2026). A font's copyright and license are a few KB.
+const maxFontInfoBytes = 65536
+
 func getNameTable(otf *openTypeFont, table *fontTable) {
 	otf.index = table.offset
 	otf.format = int(readUint16(otf))
@@ -261,6 +268,8 @@ func getNameTable(otf *openTypeFont, table *fontTable) {
 	otf.stringOffset = int(readUint16(otf))
 	var macFontInfo strings.Builder
 	var winFontInfo strings.Builder
+	// The bytes of the records of each, up to maxFontInfoBytes
+	macBytes, winBytes := 0, 0
 
 	for r := 0; r < otf.count; r++ {
 		platformID := readUint16(otf)
@@ -279,7 +288,8 @@ func getNameTable(otf *openTypeFont, table *fontTable) {
 			// Macintosh
 			if nameID == 6 {
 				otf.fontName = utf8text.Decode(buffer)
-			} else {
+			} else if macBytes+length <= maxFontInfoBytes {
+				macBytes += length
 				// This record's own decoded text, not otf.fontName (which
 				// may not even be set yet - name records aren't guaranteed
 				// to arrive in nameID order).
@@ -295,7 +305,8 @@ func getNameTable(otf *openTypeFont, table *fontTable) {
 			str := string(utf16.Decode(w))
 			if nameID == 6 {
 				otf.fontName = str
-			} else {
+			} else if winBytes+length <= maxFontInfoBytes {
+				winBytes += length
 				winFontInfo.WriteString(str)
 				winFontInfo.WriteString("\n")
 			}

@@ -216,6 +216,13 @@ class OTF {
         return tableUInt16(glyf, start + 8).map { Int16(truncatingIfNeeded: $0) }
     }
 
+    // The most of the name records' bytes kept as the font's information, of
+    // each platform: a font of 593 KB whose 40,000 records name one string of
+    // 65,000 bytes was gigabytes of text, and a smaller one put 65 million
+    // characters in the XMP of every PDF that used it (review of 17 October
+    // 2026). A font's copyright and license are a few KB.
+    static let maxFontInfoBytes = 65536
+
     private func n4me(_ table: FontTable) throws {
         self.index = table.offset!
         try readUInt16()            // format
@@ -224,6 +231,9 @@ class OTF {
 
         var macFontInfo = ""
         var winFontInfo = ""
+        // The bytes of the records of each, up to maxFontInfoBytes
+        var macBytes = 0
+        var winBytes = 0
         for _ in 0..<count {
             let platformID = try readUInt16()
             let encodingID = try readUInt16()
@@ -244,7 +254,8 @@ class OTF {
                 let str = String(decoding: buffer, as: UTF8.self)
                 if nameID == 6 {
                     fontName = str
-                } else {
+                } else if macBytes + length <= OTF.maxFontInfoBytes {
+                    macBytes += length
                     macFontInfo.append(str)
                     macFontInfo.append("\n")
                 }
@@ -254,7 +265,8 @@ class OTF {
                 let str = String(bytes: buffer, encoding: .utf16)
                 if nameID == 6 {
                     fontName = str
-                } else {
+                } else if winBytes + length <= OTF.maxFontInfoBytes {
+                    winBytes += length
                     if str != nil {
                         winFontInfo.append(str!)
                         winFontInfo.append("\n")

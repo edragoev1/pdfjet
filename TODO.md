@@ -264,7 +264,7 @@ The 9.1.1 changes:
       stream left open.
 
 Java's parsers (in the other ports where they share the code):
-- [ ] OTF name(): no limit on the text of the name records: a 593 KB
+- [x] OTF name(): no limit on the text of the name records: a 593 KB
       font is an OutOfMemoryError, a 125 KB one 65 M characters in the XMP
       (Java, Go; check C# and Swift).
 - [ ] SVG StyleSheet.forClasses quadratic in the classes of an element

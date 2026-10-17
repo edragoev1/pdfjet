@@ -527,4 +527,48 @@ class FontTest {
         buf.setAccessible(true);
         return TestSupport.latin1(((ByteArrayOutputStream) buf.get(stamp)).toByteArray());
     }
+
+    // A name table of many records that all point at one long string is
+    // kept to OTF.MAX_FONT_INFO_BYTES of them: 1,000 records of 65,000 bytes
+    // were 65 million characters in the XMP of every PDF that used the font,
+    // and 40,000 an OutOfMemoryError (review of 17 October 2026)
+    @Test
+    void aFontsInformationHasALimit() throws Exception {
+        byte[] font = TestSupport.readAll(TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        int count = 1000;
+        int length = 65000;
+        java.io.ByteArrayOutputStream table = new java.io.ByteArrayOutputStream();
+        java.io.DataOutputStream out = new java.io.DataOutputStream(table);
+        String name = "BombFont";
+        out.writeShort(0);
+        out.writeShort(count + 1);
+        out.writeShort(6 + 12 * (count + 1));
+        out.writeShort(1); out.writeShort(0); out.writeShort(0); out.writeShort(6);
+        out.writeShort(name.length()); out.writeShort(0);
+        for (int i = 0; i < count; i++) {
+            out.writeShort(1); out.writeShort(0); out.writeShort(0); out.writeShort(1);
+            out.writeShort(length); out.writeShort(name.length());
+        }
+        out.writeBytes(name);
+        for (int i = 0; i < length; i++) {
+            out.writeByte('A');
+        }
+        byte[] nameTable = table.toByteArray();
+        byte[] bomb = java.util.Arrays.copyOf(font, font.length + nameTable.length);
+        System.arraycopy(nameTable, 0, bomb, font.length, nameTable.length);
+        int tables = ((bomb[4] & 0xFF) << 8) | (bomb[5] & 0xFF);
+        for (int i = 0; i < tables; i++) {
+            int entry = 12 + 16 * i;
+            if (bomb[entry] == 'n' && bomb[entry + 1] == 'a' && bomb[entry + 2] == 'm' && bomb[entry + 3] == 'e') {
+                for (int k = 0; k < 4; k++) {
+                    bomb[entry + 8 + k] = (byte) (font.length >> (24 - 8 * k));
+                    bomb[entry + 12 + k] = (byte) (nameTable.length >> (24 - 8 * k));
+                }
+            }
+        }
+        Font loaded = new Font(TestSupport.newPDF(), new java.io.ByteArrayInputStream(bomb));
+        assertEquals("BombFont", loaded.getName());
+        assertTrue(loaded.info.length() <= OTF.MAX_FONT_INFO_BYTES + count,
+                "the information is " + loaded.info.length() + " characters");
+    }
 }

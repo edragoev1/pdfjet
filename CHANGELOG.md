@@ -76,6 +76,12 @@ This is the first entry in this file; earlier releases were not tracked here.
   does. A PDF released without complete() no longer flushes what it has
   into the caller's stream and closes it: the stream is left as it was, as
   in Java.
+- A font whose name table has many records pointing at one long string was
+  gigabytes of text as its information: a font of 593 KB ran out of
+  memory, and one of 125 KB put 65 million characters in the metadata of
+  every PDF that used it. The information is now kept to 64 KB of the
+  records of each platform; a real font's copyright and license are a few
+  KB. In the four ports.
 - Java: the library builds with JDK 23 and later, whose javac warned of the
   documentation comment before the package of ImageSize.java and
   SASLprepTables.java, an error as the build treats warnings; tested on

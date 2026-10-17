@@ -206,6 +206,13 @@ internal class OTF {
         return (yMax == NO_VALUE) ? NO_VALUE : (short) yMax;
     }
 
+    // The most of the name records' bytes kept as the font's information, of
+    // each platform: a font of 593 KB whose 40,000 records name one string of
+    // 65,000 bytes was gigabytes of text, and a smaller one put 65 million
+    // characters in the XMP of every PDF that used it (review of 17 October
+    // 2026). A font's copyright and license are a few KB.
+    internal const int MAX_FONT_INFO_BYTES = 65536;
+
     private void Name(FontTable table) {
         index = table.offset;
         ReadUInt16();  // format
@@ -213,6 +220,9 @@ internal class OTF {
         int stringOffset = ReadUInt16();
         StringBuilder macFontInfo = new StringBuilder();
         StringBuilder winFontInfo = new StringBuilder();
+        // The bytes of the records of each, up to MAX_FONT_INFO_BYTES
+        int macBytes = 0;
+        int winBytes = 0;
 
         for (int r = 0; r < count; r++) {
             int platformID = ReadUInt16();
@@ -231,7 +241,8 @@ internal class OTF {
                 String str = Encoding.UTF8.GetString(buf, start, length);
                 if (nameID == 6) {
                     fontName = str;
-                } else {
+                } else if (macBytes + length <= MAX_FONT_INFO_BYTES) {
+                    macBytes += length;
                     macFontInfo.Append(str);
                     macFontInfo.Append('\n');
                 }
@@ -240,7 +251,8 @@ internal class OTF {
                 String str = Encoding.BigEndianUnicode.GetString(buf, start, length);
                 if (nameID == 6) {
                     fontName = str;
-                } else {
+                } else if (winBytes + length <= MAX_FONT_INFO_BYTES) {
+                    winBytes += length;
                     winFontInfo.Append(str);
                     winFontInfo.Append('\n');
                 }

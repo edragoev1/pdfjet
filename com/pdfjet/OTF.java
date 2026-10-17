@@ -212,6 +212,13 @@ class OTF {
         return (yMax == NO_VALUE) ? NO_VALUE : (short) yMax;
     }
 
+    // The most of the name records' bytes kept as the font's information, of
+    // each platform: a font of 593 KB whose 40,000 records name one string of
+    // 65,000 bytes was gigabytes of text, OutOfMemoryError, and a smaller one
+    // put 65 million characters in the XMP of every PDF that used it (review
+    // of 17 October 2026). A font's copyright and license are a few KB.
+    static final int MAX_FONT_INFO_BYTES = 65536;
+
     private void name(FontTable table) throws IOException {
         index = table.offset;
         readUInt16();  // format
@@ -219,6 +226,9 @@ class OTF {
         int stringOffset = readUInt16();
         StringBuilder macFontInfo = new StringBuilder();
         StringBuilder winFontInfo = new StringBuilder();
+        // The bytes of the records of each, up to MAX_FONT_INFO_BYTES
+        int macBytes = 0;
+        int winBytes = 0;
 
         for (int r = 0; r < count; r++) {
             int platformID = readUInt16();
@@ -237,7 +247,8 @@ class OTF {
                 String str = UTF8.decode(buf, start, length);
                 if (nameID == 6) {
                     fontName = str;
-                } else {
+                } else if (macBytes + length <= MAX_FONT_INFO_BYTES) {
+                    macBytes += length;
                     macFontInfo.append(str);
                     macFontInfo.append('\n');
                 }
@@ -249,7 +260,8 @@ class OTF {
                 String str = new String(buf, start, length, StandardCharsets.UTF_16BE);
                 if (nameID == 6) {
                     fontName = str;
-                } else {
+                } else if (winBytes + length <= MAX_FONT_INFO_BYTES) {
+                    winBytes += length;
                     winFontInfo.append(str);
                     winFontInfo.append('\n');
                 }
