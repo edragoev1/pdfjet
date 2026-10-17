@@ -255,7 +255,7 @@ The 9.1.1 changes:
 - [x] Table: a row drawn whole, refused on the first page when a
       first-page top margin leaves it no room, though the next page has
       it: refuse only when no page would have room (four ports).
-- [ ] CHANGELOG: the Swift and C# overload makes a bare method reference
+- [x] CHANGELOG: the Swift and C# overload makes a bare method reference
       to complete ambiguous; the EULA of the packages; the boolean's
       opposite meanings (Java and Swift close, C# leaves open).
 - [x] The creation date of years below 1000, not padded to four digits as

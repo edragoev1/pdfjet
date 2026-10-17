@@ -15,9 +15,19 @@ This is the first entry in this file; earlier releases were not tracked here.
   Discussion #5): complete(false) in Java and complete(closeStream: false)
   in Swift flush it and leave it open; in C#, Complete(true) does, its
   leaveOpen as StreamWriter's. complete() closes the stream as before. Go
-  already leaves a writer it is given open.
+  already leaves a writer it is given open. Mind the boolean when porting
+  code: true closes the stream in Java and Swift, and leaves it open in C#.
+  In C# and Swift a bare reference to the method, as var f = pdf.Complete
+  or let f = pdf.complete, now names two methods and does not compile:
+  call it in a lambda, or name the one, as pdf.complete(closeStream:).
+- PDFjet on Maven Central, com.pdfjet:pdfjet: package-maven.sh makes the
+  bundle, and the Pro package has a pom.xml for com.pdfjet:pdfjet-pro, to
+  install it in a local repository.
 
 ### Changed
+- The license of the Java and .NET packages: no limit on servers,
+  computers, CPUs or cores, as the buy pages say; it said one copy on one
+  computer at a time.
 - C#: the library throws exceptions of their kind, not a plain
   System.Exception, in every place that did (GitHub Discussion #5), so a
   caller can tell what went wrong: InvalidDataException for a PNG, BMP,
@@ -183,8 +193,9 @@ This is the first entry in this file; earlier releases were not tracked here.
   In the four ports.
 - Java: the library builds with JDK 23 and later, whose javac warned of the
   documentation comment before the package of ImageSize.java and
-  SASLprepTables.java, an error as the build treats warnings; tested on
-  JDK 8, 11, 17, 21 and 25.
+  SASLprepTables.java, an error as the build treats warnings. It is
+  developed and tested on JDK 25, and compiled for Java 8 and checked on
+  the JDK 8 runtime.
 
 ## v9.0.9 — 2026-10-15
 
