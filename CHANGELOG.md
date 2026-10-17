@@ -110,6 +110,11 @@ This is the first entry in this file; earlier releases were not tracked here.
 - Go: a cell's word of invalid UTF-8, as Latin-1 text, broken between its
   characters in a narrow column panicked with a slice bound past the text:
   each character is now its bytes in the text.
+- A page that was read, with an annotation in its /Annots before its own
+  /Contents, had the annotation's /Contents, a string, taken for its
+  content: stamping it was refused as "not a stream". The page's own
+  entries are looked at now, for /Contents and the /Kids of the page tree.
+  In the four ports.
 - Java: the library builds with JDK 23 and later, whose javac warned of the
   documentation comment before the package of ImageSize.java and
   SASLprepTables.java, an error as the build treats warnings; tested on

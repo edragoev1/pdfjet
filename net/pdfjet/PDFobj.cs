@@ -541,9 +541,23 @@ public class PDFobj {
     // array of them. A dictionary that ends in the middle of them, or a token
     // that is not a number where one belongs, ends the list: a PDF that was
     // read can hold anything.
+    // The index of the key among this dictionary's own entries, not those of
+    // the dictionaries in it, or -1 when it has none
+    internal int EntryIndexOf(String key) {
+        int open = dict.IndexOf("<<");
+        if (open == -1) {
+            return dict.IndexOf(key);   // Tokens with no dictionary, as an object made by hand
+        }
+        int i = PDF.EntryIndex(dict.GetRange(open, dict.Count - open), key);
+        return i == -1 ? -1 : i + open;
+    }
+
     internal List<Int32> GetObjectNumbers(String key) {
         List<Int32> numbers = new List<Int32>();
-        for (int i = 0; i < dict.Count; i++) {
+        // The key of this dictionary, not one of a dictionary in it: the
+        // /Contents of an annotation of /Annots before the page's own was
+        // taken for the page's (review of 17 October 2026)
+        for (int i = EntryIndexOf(key); i >= 0 && i < dict.Count; i++) {
             String token = dict[i];
             if (token.Equals(key)) {
                 if (++i >= dict.Count) {
@@ -990,7 +1004,7 @@ public class PDFobj {
     // that has none the second. Returns false when the /Contents is not a
     // stream or an array of them, and changes nothing.
     internal bool WrapContents(byte[] before, byte[] after, List<PDFobj> objects) {
-        int i = dict.IndexOf("/Contents");
+        int i = EntryIndexOf("/Contents");
         if (i == -1) {
             // A page with no content: AddContent added nothing, and the
             // drawing was lost
@@ -1093,7 +1107,8 @@ public class PDFobj {
         objects.Add(obj);
 
         String objNumber = obj.number.ToString(CultureInfo.InvariantCulture);
-        for (int i = 0; i < dict.Count; i++) {
+        // The page's own /Contents, not an annotation's in it
+        for (int i = EntryIndexOf("/Contents"); i >= 0 && i < dict.Count; i++) {
             if (dict[i].Equals("/Contents")) {
                 i += 1;
                 String token = TokenAt(dict, i);
@@ -1151,7 +1166,8 @@ public class PDFobj {
         objects.Add(obj);
 
         String objNumber = obj.number.ToString(CultureInfo.InvariantCulture);
-        for (int i = 0; i < dict.Count; i++) {
+        // The page's own /Contents, not an annotation's in it
+        for (int i = EntryIndexOf("/Contents"); i >= 0 && i < dict.Count; i++) {
             if (dict[i].Equals("/Contents")) {
                 i += 1;
                 String token = TokenAt(dict, i);

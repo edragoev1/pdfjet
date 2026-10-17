@@ -568,10 +568,23 @@ public final class PDFobj {
     // array of them. A dictionary that ends in the middle of them, or a token
     // that is not a number where one belongs, ends the list: a PDF that was
     // read can hold anything.
+    // The index of the key among this dictionary's own entries, not those of
+    // the dictionaries in it, or -1 when it has none
+    final func entryIndexOf(_ key: String) -> Int {
+        guard let open = dict.firstIndex(of: "<<") else {
+            return dict.firstIndex(of: key) ?? -1  // Tokens with no dictionary, as an object made by hand
+        }
+        let i = PDF.entryIndex(Array(dict[open...]), key)
+        return i == -1 ? -1 : i + open
+    }
+
     final func getObjectNumbers(_ key: String) -> [Int] {
         var numbers = [Int]()
-        var i = 0
-        while i < dict.count {
+        // The key of this dictionary, not one of a dictionary in it: the
+        // /Contents of an annotation of /Annots before the page's own was
+        // taken for the page's (review of 17 October 2026)
+        var i = entryIndexOf(key)
+        while i >= 0 && i < dict.count {
             let token = dict[i]
             if token == key {
                 i += 1
@@ -1037,7 +1050,8 @@ public final class PDFobj {
     // that has none the second. Returns false when the /Contents is not a
     // stream or an array of them, and changes nothing.
     final func wrapContents(_ before: [UInt8], _ after: [UInt8], _ objects: inout [PDFobj]) -> Bool {
-        guard let i = dict.firstIndex(of: "/Contents") else {
+        let i = entryIndexOf("/Contents")
+        guard i >= 0 else {
             // A page with no content: addContent added nothing, and the
             // drawing was lost
             guard let last = dict.lastIndex(of: ">>") else {
@@ -1126,8 +1140,9 @@ public final class PDFobj {
         objects.append(obj)
 
         let objNumber = String(obj.number)
-        var i = 0
-        while i < dict.count {
+        // The page's own /Contents, not an annotation's in it
+        var i = entryIndexOf("/Contents")
+        while i >= 0 && i < dict.count {
             if dict[i] == "/Contents" {
                 i += 1
                 let token = tokenAt(dict, i)
@@ -1192,8 +1207,9 @@ public final class PDFobj {
         objects.append(obj)
 
         let objNumber = String(obj.number)
-        var i = 0
-        while i < dict.count {
+        // The page's own /Contents, not an annotation's in it
+        var i = entryIndexOf("/Contents")
+        while i >= 0 && i < dict.count {
             if dict[i] == "/Contents" {
                 i += 1
                 let token = tokenAt(dict, i)

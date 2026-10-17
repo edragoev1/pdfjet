@@ -614,7 +614,11 @@ public class PDFobj {
     // read can hold anything.
     List<Integer> getObjectNumbers(String key) {
         List<Integer> numbers = new ArrayList<Integer>();
-        for (int i = 0; i < dict.size(); i++) {
+        // The key of this dictionary, not one of a dictionary in it: the
+        // /Contents of an annotation of /Annots before the page's own was
+        // taken for the page's (review of 17 October 2026)
+        int entry = entryIndexOf(key);
+        for (int i = entry; i >= 0 && i < dict.size(); i++) {
             String token = dict.get(i);
             if (token.equals(key)) {
                 if (++i >= dict.size()) {
@@ -648,6 +652,17 @@ public class PDFobj {
             }
         }
         return numbers;
+    }
+
+    // The index of the key among this dictionary's own entries, not those of
+    // the dictionaries in it, or -1 when it has none
+    int entryIndexOf(String key) {
+        int open = dict.indexOf("<<");
+        if (open == -1) {
+            return dict.indexOf(key);   // Tokens with no dictionary, as an object made by hand
+        }
+        int i = PDF.entryIndex(dict.subList(open, dict.size()), key);
+        return i == -1 ? -1 : i + open;
     }
 
     // Returns the object number of the token, or null when it is not one.
@@ -1110,7 +1125,7 @@ public class PDFobj {
     // that has none the second. Returns false when the /Contents is not a
     // stream or an array of them, and changes nothing.
     boolean wrapContents(byte[] before, byte[] after, List<PDFobj> objects) {
-        int i = dict.indexOf("/Contents");
+        int i = entryIndexOf("/Contents");
         if (i == -1) {
             // A page with no content: addContent added nothing, and the
             // drawing was lost
@@ -1222,7 +1237,8 @@ public class PDFobj {
         objects.add(obj);
 
         String objNumber = String.valueOf(obj.number);
-        for (int i = 0; i < dict.size(); i++) {
+        // The page's own /Contents, not an annotation's in it
+        for (int i = entryIndexOf("/Contents"); i >= 0 && i < dict.size(); i++) {
             if (dict.get(i).equals("/Contents")) {
                 i += 1;
                 String token = tokenAt(dict, i);
@@ -1283,7 +1299,8 @@ public class PDFobj {
         objects.add(obj);
 
         String objNumber = String.valueOf(obj.number);
-        for (int i = 0; i < dict.size(); i++) {
+        // The page's own /Contents, not an annotation's in it
+        for (int i = entryIndexOf("/Contents"); i >= 0 && i < dict.size(); i++) {
             if (dict.get(i).equals("/Contents")) {
                 i += 1;
                 String token = tokenAt(dict, i);

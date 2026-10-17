@@ -309,7 +309,7 @@ The Go port:
       refuse a value that is not one of theirs, as CapStyle.
 - [ ] BigTable.SetFirstPage of another PDF accepted, its error recorded
       on the other PDF.
-- [ ] contentRefs and GetContentObject take an annotation's /Contents for
+- [x] contentRefs and GetContentObject take an annotation's /Contents for
       the page's (four ports): dictEntryIndex.
 - [ ] SetCompliance takes any value; NewCJKFont of an unknown font writes
       half an object before it panics; CalendarMonth months out of range.

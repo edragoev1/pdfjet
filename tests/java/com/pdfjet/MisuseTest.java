@@ -469,4 +469,21 @@ class MisuseTest {
         assertTrue(written.contains("/Subtype /Image\n/Width 2\n"));
         assertEquals(1, written.split("/Subtype /Image", -1).length - 1, "one image object, whole");
     }
+
+    // The /Contents of a page, not that of an annotation in its /Annots
+    // before it: the note's string was taken for the page's content
+    // (review of 17 October 2026)
+    @Test
+    void thePagesContentsIsItsOwnNotAnAnnotations() throws Exception {
+        String text = "%PDF-1.4\n1 0 obj\n<< /Type /Page /Annots [ << /Subtype /Text /Contents (note) >> ]"
+                + " /Contents 2 0 R >>\nendobj\n2 0 obj\n<< /Length 4 >>\nstream\nq Q\n\nendstream\nendobj\n"
+                + "trailer\n<< /Root 1 0 R >>\n%%EOF\n";
+        PDF pdf = new PDF(new ByteArrayOutputStream());
+        java.util.List<PDFobj> objects = pdf.read(new java.io.ByteArrayInputStream(
+                text.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1)));
+        PDFobj page = objects.get(0);
+        assertEquals(java.util.Arrays.asList(2), page.getObjectNumbers("/Contents"));
+        PDFobj contents = page.getContentObject(objects);
+        assertTrue(contents != null && contents.stream != null, "the page's own content stream");
+    }
 }

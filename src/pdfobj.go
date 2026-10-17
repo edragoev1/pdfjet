@@ -582,9 +582,26 @@ func (obj *PDFobj) valueUpTo(i int, closing, opening string) string {
 // reference or an array of them. A dictionary that ends in the middle of
 // them, or a token that is not a number where one belongs, ends the list: a
 // PDF that was read can hold anything.
+// entryIndexOf returns the index of the key among this dictionary's own
+// entries, not those of the dictionaries in it, or -1 when it has none.
+func (obj *PDFobj) entryIndexOf(key string) int {
+	open := slices.Index(obj.dict, "<<")
+	if open == -1 {
+		return slices.Index(obj.dict, key) // Tokens with no dictionary, as an object made by hand
+	}
+	i := dictEntryIndex(obj.dict[open:], key)
+	if i == -1 {
+		return -1
+	}
+	return i + open
+}
+
 func (obj *PDFobj) getObjectNumbers(key string) []int {
 	numbers := make([]int, 0)
-	for i := 0; i < len(obj.dict); i++ {
+	// The key of this dictionary, not one of a dictionary in it: the
+	// /Contents of an annotation of /Annots before the page's own was taken
+	// for the page's (review of 17 October 2026)
+	for i := obj.entryIndexOf(key); i >= 0 && i < len(obj.dict); i++ {
 		token := obj.dict[i]
 		if token == key {
 			i++
@@ -1026,7 +1043,8 @@ func (obj *PDFobj) AddContent(content []byte, objects *[]*PDFobj) {
 	*objects = append(*objects, obj2)
 
 	objNumber := strconv.Itoa(obj2.number)
-	for i := 0; i < len(obj.dict); i++ {
+	// The page's own /Contents, not an annotation's in it
+	for i := obj.entryIndexOf("/Contents"); i >= 0 && i < len(obj.dict); i++ {
 		if obj.dict[i] == "/Contents" {
 			i++
 			token := tokenAt(obj.dict, i)
@@ -1113,7 +1131,7 @@ func (obj *PDFobj) wrapContents(before, after []byte, objects *[]*PDFobj) bool {
 // start to end; found is false for a page with no /Contents, and refs nil for
 // a /Contents that is not a stream or an array of them.
 func (obj *PDFobj) contentRefs(objects []*PDFobj) (refs []string, start, end int, found bool) {
-	i := slices.Index(obj.dict, "/Contents")
+	i := obj.entryIndexOf("/Contents")
 	if i == -1 {
 		return nil, 0, 0, false
 	}
@@ -1187,7 +1205,8 @@ func (obj *PDFobj) AddPrefixContent(content []byte, objects *[]*PDFobj) {
 	*objects = append(*objects, obj2)
 
 	objNumber := strconv.Itoa(obj2.number)
-	for i := 0; i < len(obj.dict); i++ {
+	// The page's own /Contents, not an annotation's in it
+	for i := obj.entryIndexOf("/Contents"); i >= 0 && i < len(obj.dict); i++ {
 		if obj.dict[i] == "/Contents" {
 			i++
 			token := tokenAt(obj.dict, i)
