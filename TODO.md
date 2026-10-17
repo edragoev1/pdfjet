@@ -299,7 +299,7 @@ The C# port against Java:
       Page's trim() of a NBSP description.
 
 The Go port:
-- [ ] qrcode: a negative error-correction level loops for ever; 4 to 7
+- [x] qrcode: a negative error-correction level loops for ever; 4 to 7
       give wrong format bits: refuse them.
 - [ ] table wrapCellText: a slice bound panic on invalid UTF-8.
 - [ ] GetPageObjects rewrites shared objects on every call, and

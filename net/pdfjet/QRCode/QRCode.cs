@@ -56,6 +56,13 @@ public class QRCode : IDrawable {
     /// <param name="errorCorrectionLevel">the desired error correction level.</param>
     /// <exception cref="ArgumentException">If the string does not fit in a version 40 symbol.</exception>
     public QRCode(String str, ErrorCorrectionLevel errorCorrectionLevel) {
+        // A level that is not one, as a C# enum holds any int: 4 to 7 gave
+        // format bits that are not the blocks' (review of 17 October 2026)
+        if (errorCorrectionLevel != ErrorCorrectionLevel.L && errorCorrectionLevel != ErrorCorrectionLevel.M
+                && errorCorrectionLevel != ErrorCorrectionLevel.Q && errorCorrectionLevel != ErrorCorrectionLevel.H) {
+            throw new ArgumentException("The error correction level " + (int) errorCorrectionLevel
+                    + " is not one: use ErrorCorrectionLevel.L, M, Q or H.");
+        }
         this.qrData = Encoding.GetEncoding("utf-8").GetBytes(str);
         foreach (byte b in qrData) {
             if (b > 127) {

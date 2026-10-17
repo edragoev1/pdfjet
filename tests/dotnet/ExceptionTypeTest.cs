@@ -47,6 +47,13 @@ public class ExceptionTypeTest {
     }
 
     [Fact]
+    public void AQRCodeLevelThatIsNotOneIsRefused() {
+        foreach (int level in new[] {-1, 4, 7, 99}) {
+            Assert.Throws<ArgumentException>(() => new QRCode("x", (ErrorCorrectionLevel) level));
+        }
+    }
+
+    [Fact]
     public void NoPlainExceptionIsThrownByTheLibrary() {
         foreach (string file in Directory.GetFiles(TestSupport.RepoPath("net/pdfjet"), "*.cs", SearchOption.AllDirectories)) {
             // Made by a helper and thrown by its callers too, as the

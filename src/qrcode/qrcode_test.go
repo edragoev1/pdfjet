@@ -8,6 +8,7 @@ package qrcode
 import (
 	"bufio"
 	"bytes"
+	"fmt"
 	"math"
 	"strings"
 	"testing"
@@ -146,5 +147,20 @@ func TestQRCodeADescribedQRCodeIsAFigure(t *testing.T) {
 	NewQRCode("https://pdfjet.com", errorcorrectionlevel.M).DrawOn(plain)
 	if content := string(plain.GetContent()); !strings.HasPrefix(content, "/Artifact BMC\n") {
 		t.Errorf("a QR code with no description is not decoration: %.80q", content)
+	}
+}
+
+// A level that is not one is refused: a negative one looped for ever, and 4
+// to 7 gave wrong format bits (review of 17 October 2026).
+func TestALevelThatIsNotOneIsRefused(t *testing.T) {
+	for _, level := range []errorcorrectionlevel.ErrorCorrectionLevel{-1, 4, 7, 99} {
+		func() {
+			defer func() {
+				if r := recover(); r == nil || !strings.Contains(fmt.Sprint(r), "is not one") {
+					t.Errorf("%d: %v", level, r)
+				}
+			}()
+			NewQRCode("x", level)
+		}()
 	}
 }

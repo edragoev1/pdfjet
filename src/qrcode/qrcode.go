@@ -62,6 +62,15 @@ const eciBits = 12
 // @param str the string to encode.
 // @param errorCorrectionLevel the desired error correction level.
 func NewQRCode(str string, errorCorrectionLevel errorcorrectionlevel.ErrorCorrectionLevel) *QRCode {
+	// A level that is not one, as an ErrorCorrectionLevel is an int: a
+	// negative one looped for ever in getBCHDigit, and 4 to 7 gave format
+	// bits that are not the blocks' (review of 17 October 2026)
+	switch errorCorrectionLevel {
+	case errorcorrectionlevel.L, errorcorrectionlevel.M, errorcorrectionlevel.Q, errorcorrectionlevel.H:
+	default:
+		panic("The error correction level " + strconv.Itoa(int(errorCorrectionLevel)) +
+			" is not one: use errorcorrectionlevel.L, M, Q or H.")
+	}
 	qrcode := new(QRCode)
 	qrcode.pad0 = 0xEC
 	qrcode.pad1 = 0x11

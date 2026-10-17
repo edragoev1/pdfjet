@@ -102,6 +102,11 @@ This is the first entry in this file; earlier releases were not tracked here.
   wrote a corrupt PDF. Now the two keys are written only when the object
   has them, and an object with no stream is refused before any of it is
   written: "The image object has no stream." In the four ports.
+- Go: a QR code of an error correction level that is not one looped for
+  ever when it was negative, and gave format bits that are not its blocks'
+  for 4 to 7; C# the same for 4 to 7, as its enum holds any int. Both now
+  refuse it: "The error correction level 4 is not one: use
+  errorcorrectionlevel.L, M, Q or H." Java and Swift have closed enums.
 - Java: the library builds with JDK 23 and later, whose javac warned of the
   documentation comment before the package of ImageSize.java and
   SASLprepTables.java, an error as the build treats warnings; tested on
