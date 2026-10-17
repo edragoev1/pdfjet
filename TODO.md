@@ -114,11 +114,18 @@ commit and date. The layout's format version (1) and the look's rules
     where that is all they throw, after checking what they really throw.
     Drawable.drawOn() keeps throws Exception: narrowing an interface breaks
     every class that implements it with throws Exception.
-  - **The end of a drawn table, by name, in the four ports.** drawOn()
+  - **The end of a drawn component, by name, in the four ports.** drawOn()
     returns float[] {x, y} in Java and C#, [Float] in Swift and [2]float32
-    in Go, read by [0] and [1]; add a method that returns a small immutable
-    class (a struct in Go and Swift) with named getters, and keep drawOn()
-    as it is. Not named Point, which is PDFjet's drawable point.
+    in Go, read by [0] and [1]. Decided by the owner, 17 October 2026: a
+    class ComponentEnd, x and y with getters, read only, and drawAndGetEnd
+    on every drawable at once, which calls drawOn and wraps its x and y:
+    a default method of Drawable in Java, an extension method of IDrawable
+    in C# (.NET Framework 4.8 too), an extension of the protocol Drawable in
+    Swift (no try: drawOn does not throw), a function in Go,
+    pdfjet.DrawAndGetEnd(d, page), as Go has no default methods. The 28
+    classes are not changed; drawOn() stays as it is, and the examples keep
+    it: "if people use the new one - fine." A documentation comment, a unit
+    test in each port, and a line in the CHANGELOG.
   - **A vertical alignment that can't be one is not taken.**
     setVerticalAlignment(Alignment.RIGHT), of TextBlock and Cell, is taken
     as TOP without a word, in the four ports. Java throws
