@@ -108,24 +108,21 @@ commit and date. The layout's format version (1) and the look's rules
     complete(boolean closeStream) in Java and Swift, keeping today's default,
     and the leaveOpen of .NET's StreamWriter in C#. Until then: a
     FilterOutputStream whose close() does nothing.
-  - **Narrower exceptions on PDF's own methods (Java only; for C#, see
-    below).** complete() and
-    the constructors declare throws Exception; narrow them to IOException
-    where that is all they throw, after checking what they really throw.
-    Drawable.drawOn() keeps throws Exception: narrowing an interface breaks
-    every class that implements it with throws Exception.
-  - **The end of a drawn component, by name, in the four ports.** drawOn()
-    returns float[] {x, y} in Java and C#, [Float] in Swift and [2]float32
-    in Go, read by [0] and [1]. Decided by the owner, 17 October 2026: a
-    class ComponentEnd, x and y with getters, read only, and drawAndGetEnd
-    on every drawable at once, which calls drawOn and wraps its x and y:
-    a default method of Drawable in Java, an extension method of IDrawable
-    in C# (.NET Framework 4.8 too), an extension of the protocol Drawable in
-    Swift (no try: drawOn does not throw), a function in Go,
-    pdfjet.DrawAndGetEnd(d, page), as Go has no default methods. The 28
-    classes are not changed; drawOn() stays as it is, and the examples keep
-    it: "if people use the new one - fine." A documentation comment, a unit
-    test in each port, and a line in the CHANGELOG.
+  - **Not in 9.1.1: narrower exceptions on PDF's own methods (Java).**
+    The owner, 17 October 2026, after weighing it: little value, a tidier
+    signature, for a careful refactor of the chain of internal methods
+    complete() calls, and a source break, rare but real: a caller's catch of
+    a checked exception other than IOException round complete() stops
+    compiling, "exception is never thrown". Programs already compiled run
+    as before; PDF is final. Maybe in a major release, 10.
+  - **Not built: the end of a drawn component, by name.** Asked once
+    (Discussion #5): a class with named getters in place of drawOn()'s
+    float[] {x, y}. Designed on 17 October 2026 (ComponentEnd,
+    drawAndGetEnd, one method a port), then dropped by the owner: "xy[0]
+    and xy[1] are not difficult to decypher", and a public API is kept for
+    good. Not to be proposed again unless more people ask. The reply to
+    the developer, who was told it would come in 9.1.1, says so when 9.1.1
+    is out.
   - (Done 17 October 2026, as a Cell's: a Cell already refused one since
     the third review of 12 October, so the setters stay as they are and a
     TextBlock is refused when drawn, in the four ports.)
