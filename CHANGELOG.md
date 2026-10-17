@@ -142,6 +142,10 @@ This is the first entry in this file; earlier releases were not tracked here.
   four ports: Java read 595f, and Java, Go and Swift hex.
 - Java: an annotation of a tagged document whose description is a no-break
   space is refused, as in the other ports.
+- Table: a row drawn whole, of a TextBlock or an image, that fits a page
+  from its top but not under the first-page top margin goes on the next
+  page; it was refused, though the next page had room for it. In the four
+  ports.
 - Reading an encrypted PDF with many strings after /Contents in one
   dictionary took time growing with the square of their number, as each
   string looked for its dictionary's ends again: a PDF of 560 KB took 17

@@ -1330,6 +1330,15 @@ public class Table implements Drawable {
         for (int r = first; r < end; r++) {
             if (page != null) {
                 if (y + heights[r] > page.height) {
+                    // The first row of the first page, which starts lower than the next
+                    // pages do, under a first-page top margin, goes on the next page when it
+                    // fits there: it was refused, though the next page had room for it
+                    // (review of 17 October 2026).
+                    if (r == first && y > top && top + heights[r] <= page.height) {
+                        end = r;
+                        more = true;
+                        break;
+                    }
                     // A row of a cell drawn whole, such as a TextBlock or an
                     // image, is taller than a page: drawn, it ran off the page,
                     // and what did not fit was lost with no error (issue #4,

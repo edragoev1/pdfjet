@@ -252,7 +252,7 @@ Fixed:
       Exception (dea57791).
 
 The 9.1.1 changes:
-- [ ] Table: a row drawn whole, refused on the first page when a
+- [x] Table: a row drawn whole, refused on the first page when a
       first-page top margin leaves it no room, though the next page has
       it: refuse only when no page would have room (four ports).
 - [ ] CHANGELOG: the Swift and C# overload makes a bare method reference

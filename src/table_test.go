@@ -1651,3 +1651,42 @@ func TestACellOfInvalidUTF8IsBrokenWithoutAPanic(t *testing.T) {
 	table.SetLocation(50, 50)
 	table.DrawOn(NewPage(pdf, testLetterPortrait()))
 }
+
+// A row drawn whole that fits a page from its top, but not under the
+// first-page top margin, goes on the next page: it was refused, though the
+// next page had room for it (review of 17 October 2026).
+func TestARowDrawnWholeGoesOnTheNextPageWhenTheFirstHasNoRoom(t *testing.T) {
+	drawsWhole := func(words int, firstPageTopMargin float32) bool {
+		pdf := testNewPDF()
+		font := testHelvetica(pdf)
+		var text strings.Builder
+		for i := 0; i < words; i++ {
+			fmt.Fprintf(&text, "word%d ", i)
+		}
+		cell := NewCell(font, "").SetTextBlock(NewTextBlock(font, text.String()))
+		cell.SetWidth(70)
+		table := NewTable().SetTableData([][]*Cell{{cell}}, 0)
+		table.SetLocation(50, 50)
+		table.SetBottomMargin(30)
+		if firstPageTopMargin > 0 {
+			table.SetFirstPageTopMargin(firstPageTopMargin)
+		}
+		var pages []*Page
+		table.DrawOnPages(pdf, &pages, letter.Portrait())
+		pdf.AddPages(pages)
+		return pdf.Complete() == nil
+	}
+	moved := 0
+	for words := 40; words <= 70; words++ {
+		if !drawsWhole(words, 0) {
+			continue
+		}
+		if !drawsWhole(words, 400) {
+			t.Errorf("the row of %d words is refused under the margin", words)
+		}
+		moved++
+	}
+	if moved == 0 || moved == 31 {
+		t.Errorf("the rows tried are not of every height: %d", moved)
+	}
+}

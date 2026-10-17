@@ -1405,5 +1405,47 @@ public sealed class TableTest : IDisposable {
         Assert.True(lines.Count >= 2 && lines[0] == "Donaudampf-", "the lines [" + string.Join("|", lines) + "]");
         Assert.Equal("Donaudampfschifffahrt", string.Join("", lines).Replace("-", ""));
     }
+
+    // A row drawn whole that fits a page from its top, but not under the
+    // first-page top margin, goes on the next page: it was refused, though the
+    // next page had room for it (review of 17 October 2026).
+    [Fact]
+    public void ARowDrawnWholeGoesOnTheNextPageWhenTheFirstHasNoRoom() {
+        int moved = 0;
+        for (int words = 40; words <= 70; words++) {
+            if (!DrawsWhole(words, 0f)) {
+                continue;
+            }
+            Assert.True(DrawsWhole(words, 400f), "the row of " + words + " words is refused under the margin");
+            moved++;
+        }
+        Assert.True(moved > 0 && moved < 31, "the rows tried are of every height: " + moved);
+    }
+
+    private static bool DrawsWhole(int words, float firstPageTopMargin) {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        StringBuilder text = new StringBuilder();
+        for (int i = 0; i < words; i++) {
+            text.Append("word").Append(i).Append(' ');
+        }
+        Cell cell = new Cell(font, "");
+        cell.SetTextBlock(new TextBlock(font, text.ToString()));
+        cell.SetWidth(70f);
+        List<List<Cell>> data = new List<List<Cell>> { new List<Cell> { cell } };
+        Table table = new Table().SetTableData(data, 0).SetLocation(50f, 50f).SetBottomMargin(30f);
+        if (firstPageTopMargin > 0f) {
+            table.SetFirstPageTopMargin(firstPageTopMargin);
+        }
+        List<Page> pages = new List<Page>();
+        try {
+            table.DrawOn(pdf, pages, Letter.PORTRAIT);
+            pdf.AddPages(pages);
+            pdf.Complete();
+            return true;
+        } catch (InvalidOperationException) {
+            return false;
+        }
+    }
 }
 }

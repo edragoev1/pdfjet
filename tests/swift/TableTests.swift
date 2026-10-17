@@ -1290,4 +1290,42 @@ import Testing
         }
         #expect(lines.joined().replacingOccurrences(of: "-", with: "") == "Donaudampfschifffahrt", "\(lines)")
     }
+
+    // A row drawn whole that fits a page from its top, but not under the
+    // first-page top margin, goes on the next page: it was refused, though the
+    // next page had room for it (review of 17 October 2026).
+    @Test func aRowDrawnWholeGoesOnTheNextPageWhenTheFirstHasNoRoom() {
+        func drawsWhole(_ words: Int, _ firstPageTopMargin: Float) -> Bool {
+            let memory = MemoryPDF()
+            let font = TestSupport.helvetica(memory.pdf)
+            var text = ""
+            for i in 0..<words {
+                text += "word\(i) "
+            }
+            let cell = Cell(font, "")
+            cell.setTextBlock(TextBlock(font, text))
+            cell.setWidth(70.0)
+            let table = Table().setTableData([[cell]], 0)
+            table.setLocation(50.0, 50.0)
+            table.setBottomMargin(30.0)
+            if firstPageTopMargin > 0 {
+                _ = table.setFirstPageTopMargin(firstPageTopMargin)
+            }
+            var pages = [Page]()
+            table.drawOn(memory.pdf, &pages, Letter.PORTRAIT)
+            memory.pdf.addPages(pages)
+            do {
+                try memory.pdf.complete()
+                return true
+            } catch {
+                return false
+            }
+        }
+        var moved = 0
+        for words in 40...70 where drawsWhole(words, 0) {
+            #expect(drawsWhole(words, 400), "the row of \(words) words is refused under the margin")
+            moved += 1
+        }
+        #expect(moved > 0 && moved < 31, "the rows tried are of every height: \(moved)")
+    }
 }

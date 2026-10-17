@@ -1444,4 +1444,50 @@ class TableTest {
         assertTrue(lines.size() >= 2 && lines.get(0).equals("Donaudampf-"), "the lines " + lines);
         assertEquals("Donaudampfschifffahrt", String.join("", lines).replace("-", ""), "the text");
     }
+
+    // A row drawn whole that fits a page from its top, but not under the
+    // first-page top margin, goes on the next page: it was refused, though the
+    // next page had room for it (review of 17 October 2026). Whatever the
+    // height of the row, a table that can be drawn from the top of a page can
+    // be drawn under the margin.
+    @Test
+    void aRowDrawnWholeGoesOnTheNextPageWhenTheFirstHasNoRoom() throws Exception {
+        int moved = 0;
+        for (int words = 40; words <= 70; words++) {
+            if (!drawsWhole(words, 0f)) {
+                continue;
+            }
+            assertTrue(drawsWhole(words, 400f), "the row of " + words + " words is refused under the margin");
+            moved++;
+        }
+        assertTrue(moved > 0 && moved < 31, "the rows tried are of every height: " + moved);
+    }
+
+    private static boolean drawsWhole(int words, float firstPageTopMargin) throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        StringBuilder text = new StringBuilder();
+        for (int i = 0; i < words; i++) {
+            text.append("word").append(i).append(' ');
+        }
+        Cell cell = new Cell(font, "");
+        cell.setTextBlock(new TextBlock(font, text.toString()));
+        cell.setWidth(70f);
+        List<List<Cell>> data = new ArrayList<List<Cell>>();
+        data.add(new ArrayList<Cell>(java.util.Arrays.asList(cell)));
+        Table table = new Table().setTableData(data, 0).setLocation(50f, 50f).setBottomMargin(30f);
+        if (firstPageTopMargin > 0f) {
+            table.setFirstPageTopMargin(firstPageTopMargin);
+        }
+        List<Page> pages = new ArrayList<Page>();
+        try {
+            table.drawOn(pdf, pages, Letter.PORTRAIT);
+            pdf.addPages(pages);
+            pdf.complete();
+            return true;
+        } catch (IllegalStateException e) {
+            return false;
+        }
+    }
 }
+
