@@ -14,15 +14,47 @@ import java.util.List;
  * Utility methods.
  */
 class Util {
-    private static final java.util.regex.Pattern DECIMAL_NUMBER =
-            java.util.regex.Pattern.compile("[+-]?([0-9]+\\.?[0-9]*|\\.[0-9]+)([eE][+-]?[0-9]+)?");
-
     // Returns true when the text is a number written in decimal, with an
     // exponent or not, and not one with a suffix, as 595f, or in hexadecimal,
     // which Float.parseFloat reads and the other ports do not (review of
-    // 17 October 2026).
+    // 17 October 2026). The characters are read one by one, as in Go and
+    // Swift, not with a regular expression.
     static boolean isDecimalNumber(String text) {
-        return DECIMAL_NUMBER.matcher(text).matches();
+        int n = text.length();
+        int i = 0;
+        if (i < n && (text.charAt(i) == '+' || text.charAt(i) == '-')) {
+            i++;
+        }
+        int digits = 0;
+        while (i < n && text.charAt(i) >= '0' && text.charAt(i) <= '9') {
+            i++;
+            digits++;
+        }
+        if (i < n && text.charAt(i) == '.') {
+            i++;
+            while (i < n && text.charAt(i) >= '0' && text.charAt(i) <= '9') {
+                i++;
+                digits++;
+            }
+        }
+        if (digits == 0) {
+            return false;
+        }
+        if (i < n && (text.charAt(i) == 'e' || text.charAt(i) == 'E')) {
+            i++;
+            if (i < n && (text.charAt(i) == '+' || text.charAt(i) == '-')) {
+                i++;
+            }
+            int exponent = 0;
+            while (i < n && text.charAt(i) >= '0' && text.charAt(i) <= '9') {
+                i++;
+                exponent++;
+            }
+            if (exponent == 0) {
+                return false;
+            }
+        }
+        return i == n;
     }
 
     // Returns the UTF-8 of the text, with each lone surrogate the replacement

@@ -554,4 +554,18 @@ class MisuseTest {
                 "<<", "/Type", "/Page", "/MediaBox", "[", "0", "0", "595", "842", "]", ">>"));
         assertEquals(595f, page.getPageSize().getWidth());
     }
+
+    // A number in decimal, as the four ports read one of an image object or of
+    // a /MediaBox (review of 17 October 2026)
+    @Test
+    void aDecimalNumber() {
+        for (String text : new String[] {"1", "-1.5", ".5", "5.", "1e3", "1E-3", "+.5e+2", "0012"}) {
+            assertTrue(Util.isDecimalNumber(text), text);
+        }
+        for (String text : new String[] {"", "+", ".", "-.", "e3", "1e", "1e+", "0x10", "1f", " 1", "1 ",
+                "1_0", "inf", "NaN", "1.2.3"}) {
+            assertFalse(Util.isDecimalNumber(text), text);
+        }
+    }
 }
+
