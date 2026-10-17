@@ -292,7 +292,7 @@ public class SVGImageTest {
         };
         for (int i = 0; i < boxes.Length; i++) {
             string svg = "<svg width=\"10\" height=\"10\" viewBox=\"" + boxes[i] + "\"/>";
-            Exception e = Assert.Throws<Exception>(() => Parse(svg));
+            Exception e = Assert.Throws<InvalidDataException>(() => Parse(svg));
             Assert.Equal("Invalid SVG viewBox \"" + boxes[i] + "\": " + messages[i], e.Message);
         }
     }

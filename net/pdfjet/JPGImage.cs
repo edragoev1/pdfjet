@@ -357,7 +357,7 @@ class JPGImage {
     private void ReadAPP0(Stream stream) {
         int length = GetUInt16(stream);
         if (length < 2) {
-            throw new Exception("Invalid marker segment length.");
+            throw new InvalidDataException("Invalid marker segment length.");
         }
         byte[] segment = new byte[length - 2];
         for (int i = 0; i < segment.Length; i++) {
@@ -383,7 +383,7 @@ class JPGImage {
     private void ReadAPP1(Stream stream) {
         int length = GetUInt16(stream);
         if (length < 2) {
-            throw new Exception("Invalid marker segment length.");
+            throw new InvalidDataException("Invalid marker segment length.");
         }
         byte[] segment = new byte[length - 2];
         for (int i = 0; i < segment.Length; i++) {

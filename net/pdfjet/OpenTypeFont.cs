@@ -58,11 +58,11 @@ class OpenTypeFont {
     // (review of 12 October 2026, R13).
     private static void CheckEmbedding(OTF otf) {
         if ((otf.fsType & 0x0200) != 0) {
-            throw new Exception("The font " + otf.fontName + " may not be embedded: its license allows its bitmaps alone " +
+            throw new InvalidOperationException("The font " + otf.fontName + " may not be embedded: its license allows its bitmaps alone " +
                     "to be embedded, and PDFjet embeds outlines. See \"Choosing a font you may embed\" in PDFjet's README.");
         }
         if ((otf.fsType & 0x0002) != 0 && (otf.fsType & 0x000C) == 0) {
-            throw new Exception("The font " + otf.fontName + " may not be embedded: its license asks for its maker's " +
+            throw new InvalidOperationException("The font " + otf.fontName + " may not be embedded: its license asks for its maker's " +
                     "permission first. See \"Choosing a font you may embed\" in PDFjet's README.");
         }
     }

@@ -85,7 +85,7 @@ public sealed class ImageSize {
             return new ImageSize(bmp.GetWidth(), bmp.GetHeight(),
                     bmp.GetPhysicalWidth(), bmp.GetPhysicalHeight(), false);
         }
-        throw new Exception("The image is not a PNG, JPEG or BMP file.");
+        throw new InvalidDataException("The image is not a PNG, JPEG or BMP file.");
     }
 
     /// <summary>The width the image is drawn at, in points, as Image's GetWidth before it is scaled.</summary>

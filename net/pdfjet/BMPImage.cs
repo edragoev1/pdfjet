@@ -74,7 +74,7 @@ class BMPImage {
             // width and the height of the OS/2 header are 2 bytes each, so the
             // fields that follow are not where the larger headers have them.
             if (headerSize < 40) {
-                throw new Exception("Unsupported BMP header of " + headerSize + " bytes.");
+                throw new NotSupportedException("Unsupported BMP header of " + headerSize + " bytes.");
             }
             w = ReadSignedInt(stream);
             h = ReadSignedInt(stream);
@@ -89,23 +89,23 @@ class BMPImage {
             // The size and the bit depth come from the file, so they are
             // checked before any buffer is allocated for the image.
             if (w <= 0 || h <= 0) {         // -int.MinValue is negative
-                throw new Exception("Invalid BMP image size.");
+                throw new InvalidDataException("Invalid BMP image size.");
             }
             if (bpp != 1 && bpp != 4 && bpp != 8 && bpp != 16 && bpp != 24 && bpp != 32) {
-                throw new Exception(
+                throw new NotSupportedException(
                         "Can only parse 1 bit, 4bit, 8bit, 16bit, 24bit and 32bit images");
             }
             // RLE and the JPEG and PNG compressions are not supported, and their
             // data is not read as pixels.
             if (compression != BI_RGB && !(compression == BI_BITFIELDS && (bpp == 16 || bpp == 32))) {
-                throw new Exception("Compressed BMP images are not supported.");
+                throw new NotSupportedException("Compressed BMP images are not supported.");
             }
             long rowSize = 4 * ((bpp * (long) w + 31) / 32);
             // A height of at most the limit keeps the products in a long.
             if (h > Decompressor.MAX_DECODED_LENGTH ||
                     3L * w * h > Decompressor.MAX_DECODED_LENGTH ||
                     rowSize * h > Decompressor.MAX_DECODED_LENGTH) {
-                throw new Exception(
+                throw new NotSupportedException(
                         "The BMP image is larger than " + Decompressor.MAX_DECODED_LENGTH + " bytes.");
             }
             SkipNBytes(stream, 4);                      // The size of the pixels
@@ -119,7 +119,7 @@ class BMPImage {
                 if (bpp <= 8) {
                     int colors = (colorsUsed == 0) ? (1 << bpp) : colorsUsed;
                     if (colors < 0 || colors > 256) {
-                        throw new Exception("Invalid BMP palette size "
+                        throw new InvalidDataException("Invalid BMP palette size "
                                 + colors.ToString(CultureInfo.InvariantCulture) + ".");
                     }
                 }
@@ -156,7 +156,7 @@ class BMPImage {
             if (bpp <= 8) {
                 int numpalcol = (colorsUsed == 0) ? (1 << bpp) : colorsUsed;
                 if (numpalcol < 0 || numpalcol > 256) {
-                    throw new Exception("Invalid BMP palette size "
+                    throw new InvalidDataException("Invalid BMP palette size "
                             + numpalcol.ToString(CultureInfo.InvariantCulture) + ".");
                 }
                 ParsePalette(stream, numpalcol);
@@ -167,7 +167,7 @@ class BMPImage {
             }
             ParseData(stream);
         } else {
-            throw new Exception("BMP data could not be parsed!");
+            throw new InvalidDataException("BMP data could not be parsed!");
         }
     }
 
@@ -200,7 +200,7 @@ class BMPImage {
             case 24: break;                         // bytes are correct
             case 32: row = MasksTo24(row, w, 4, masks); break;
             default:
-                throw new Exception(
+                throw new NotSupportedException(
                         "Can only parse 1 bit, 4bit, 8bit, 16bit, 24bit and 32bit images");
             }
 
@@ -339,7 +339,7 @@ class BMPImage {
             byte[] buffer = new byte[Math.Min(8192, n - (int)skipped)];
             int read = inputStream.Read(buffer, 0, buffer.Length);
             if (read <= 0) {
-                throw new Exception("Failed to skip " + n + " bytes");
+                throw new EndOfStreamException("Failed to skip " + n + " bytes");
             }
             skipped += read;
         }
@@ -357,7 +357,7 @@ class BMPImage {
             while (remaining > 0) {
                 int count = inputStream.Read(piece, 0, Math.Min(piece.Length, remaining));
                 if (count <= 0) {
-                    throw new Exception("Unexpected end of stream: expected " + length + " bytes");
+                    throw new EndOfStreamException("Unexpected end of stream: expected " + length + " bytes");
                 }
                 bos.Write(piece, 0, count);
                 remaining -= count;
@@ -370,7 +370,7 @@ class BMPImage {
             int read = inputStream.Read(buf, totalRead, length - totalRead);
             // Stream.Read returns 0 at the end of the stream, where Java's read returns -1.
             if (read <= 0) {
-                throw new Exception("Unexpected end of stream: expected " + length + " bytes");
+                throw new EndOfStreamException("Unexpected end of stream: expected " + length + " bytes");
             }
             totalRead += read;
         }

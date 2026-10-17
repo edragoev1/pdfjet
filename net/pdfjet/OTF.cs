@@ -276,7 +276,7 @@ internal class OTF {
             }
         }
         if (!format4subtable && format12Offset == -1) {
-            throw new Exception("Format 4 subtable not found in this font.");
+            throw new NotSupportedException("Format 4 subtable not found in this font.");
         }
         if (format4subtable) {
             CmapFormat4(tableOffset + subtableOffset);

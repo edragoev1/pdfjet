@@ -79,15 +79,15 @@ public class Barcode : IDrawable {
         this.text = text;
 
         if (barcodeType == Barcode.UPC_A && (text.Length != 11 || !HasOnlyDigits(text))) {
-            throw new Exception("UPC-A barcodes must have exactly 11 digits!");
+            throw new ArgumentException("UPC-A barcodes must have exactly 11 digits!");
         } else if (barcodeType == Barcode.EAN_13 && (text.Length != 12 || !HasOnlyDigits(text))) {
-            throw new Exception("EAN-13 barcodes must have exactly 12 digits!");
+            throw new ArgumentException("EAN-13 barcodes must have exactly 12 digits!");
         } else if (barcodeType == Barcode.CODE_128) {
             Code128Codewords(text);     // Throws for a text that a barcode cannot hold
         } else if (barcodeType == Barcode.GS1_128) {
             GS1128Codewords(text);      // Throws for data that is not GS1, or too long
         } else if (barcodeType == Barcode.ITF_14 && (text.Length != 13 || !HasOnlyDigits(text))) {
-            throw new Exception("ITF-14 barcodes must have exactly 13 digits!");
+            throw new ArgumentException("ITF-14 barcodes must have exactly 13 digits!");
         }
 
         for (int i = 0; i < 10; i++) {
@@ -147,11 +147,11 @@ public class Barcode : IDrawable {
         // of 11 October 2026, #13)
         if (barcodeType == Barcode.CODE_39) {
             if (text.Length == 0) {
-                throw new Exception("A Code39 barcode needs at least one character.");
+                throw new ArgumentException("A Code39 barcode needs at least one character.");
             }
             foreach (char c in text) {
                 if (c == '*' || !tableB.ContainsKey(c)) {
-                    throw new Exception("The input string '*" + text +
+                    throw new ArgumentException("The input string '*" + text +
                             "*' contains characters that are invalid in a Code39 barcode.");
                 }
             }
@@ -269,7 +269,7 @@ public class Barcode : IDrawable {
             } else if (barcodeType == Barcode.ITF_14) {
                 extent = DrawITF14(page, x1, y1);
             } else {
-                throw new Exception("Unsupported Barcode Type.");
+                throw new ArgumentException("Unsupported Barcode Type.");
             }
             if (figure) {
                 // The box of the bars and the text, which can reach left of x1
@@ -462,13 +462,13 @@ public class Barcode : IDrawable {
         List<Int32> items = new List<Int32>();
         foreach (char symchar in text) {
             if (symchar > 255) {
-                throw new Exception("Code 128 barcodes can only hold characters up to U+00FF!");
+                throw new ArgumentException("Code 128 barcodes can only hold characters up to U+00FF!");
             }
             items.Add(symchar);
         }
         List<Int32> list = Code128Encode(items);
         if (list.Count - 1 > 48) {
-            throw new Exception(
+            throw new ArgumentException(
                     "Code 128 barcodes hold at most 48 codewords, and a character below 32 or from 160 to 255 takes two, and one from 128 to 159 three!");
         }
         return list;
@@ -718,7 +718,7 @@ public class Barcode : IDrawable {
         float length = 0f;
         foreach (char symbol in fullText) {
             if (!tableB.TryGetValue(symbol, out String code)) {
-                throw new Exception("The input string '" + fullText +
+                throw new ArgumentException("The input string '" + fullText +
                         "' contains characters that are invalid in a Code39 barcode.");
             }
             foreach (char ch in code) {

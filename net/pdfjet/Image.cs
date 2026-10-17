@@ -188,7 +188,7 @@ public class Image : IDrawable {
         List<String> decodeParms = obj.ValueTokens("/DecodeParms");
         foreach (List<String> tokens in new List<String>[] {colorSpace, decodeParms}) {
             if (tokens.Contains("R")) {
-                throw new Exception("The image refers to another object of the PDF it was read from, "
+                throw new NotSupportedException("The image refers to another object of the PDF it was read from, "
                         + "which is not copied with it: " + String.Join(" ", tokens));
             }
         }
@@ -310,7 +310,7 @@ public class Image : IDrawable {
     /// <summary>Rotates this image clockwise by 0, 90, 180 or 270 degrees, as every rotation in PDFjet turns.</summary>
     public Image SetRotation(int degrees) {
         if (degrees != 0 && degrees != 90 && degrees != 180 && degrees != 270) {
-            throw new Exception("The rotation angle must be 0, 90, 180 or 270");
+            throw new ArgumentException("The rotation angle must be 0, 90, 180 or 270");
         }
         this.degrees = degrees;
         return this;
@@ -868,7 +868,7 @@ public class Image : IDrawable {
         if (bytes.Length >= 2 && bytes[0] == (byte) 'B' && bytes[1] == (byte) 'M') {
             return ImageType.BMP;
         }
-        throw new Exception("The image is not a PNG, JPEG or BMP file.");
+        throw new InvalidDataException("The image is not a PNG, JPEG or BMP file.");
     }
 }   // End of Image.cs
 }   // End of namespace PDFjet.NET

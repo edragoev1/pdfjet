@@ -5,6 +5,7 @@
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Reflection;
@@ -195,7 +196,7 @@ internal class SVGState {
             for (int i = start; i < hex.Length; i++) {
                 int digit = HexDigit(hex[i]);
                 if (digit < 0) {
-                    throw new Exception("Invalid SVG " + name + ": invalid color \"" + value + "\".");
+                    throw new InvalidDataException("Invalid SVG " + name + ": invalid color \"" + value + "\".");
                 }
                 number = number*16 + digit;
             }

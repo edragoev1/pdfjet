@@ -69,7 +69,7 @@ internal sealed class Decryptor {
             }
         }
         if (encrypt == null) {
-            throw new Exception("The encryption dictionary of the PDF was not found.");
+            throw new InvalidDataException("The encryption dictionary of the PDF was not found.");
         }
         byte[] id = new byte[0];
         i = trailer.dict.IndexOf("/ID");
@@ -91,7 +91,7 @@ internal sealed class Decryptor {
     internal Decryptor(PDFobj encrypt, List<PDFobj> objects, byte[] id, String password) {
         this.objNumber = encrypt.number;
         if (!encrypt.GetValue("/Filter").Equals("/Standard")) {
-            throw new Exception("The security handler of the PDF is not supported: " +
+            throw new NotSupportedException("The security handler of the PDF is not supported: " +
                     encrypt.GetValue("/Filter"));
         }
         int v = GetInt(encrypt, "/V");
@@ -104,7 +104,7 @@ internal sealed class Decryptor {
             this.streamMethod = GetMethod(encrypt, encrypt.GetValue("/StmF"), objects);
             this.stringMethod = GetMethod(encrypt, encrypt.GetValue("/StrF"), objects);
         } else {
-            throw new Exception("The encryption of the PDF is not supported: /V " + v.ToString(CultureInfo.InvariantCulture));
+            throw new NotSupportedException("The encryption of the PDF is not supported: /V " + v.ToString(CultureInfo.InvariantCulture));
         }
         byte[] u = ToBytes(encrypt.GetValue("/U"));
         byte[] o = ToBytes(encrypt.GetValue("/O"));
@@ -127,14 +127,14 @@ internal sealed class Decryptor {
             // revisions 5 and 6 have.
             foreach (int method in new int[] {streamMethod, stringMethod}) {
                 if ((method == AES_128 && length < 11) || method == AES_256) {
-                    throw new Exception("The encryption of the PDF is not valid: /R " + r.ToString(CultureInfo.InvariantCulture) +
+                    throw new InvalidDataException("The encryption of the PDF is not valid: /R " + r.ToString(CultureInfo.InvariantCulture) +
                             " with a key of " + (8 * length).ToString(CultureInfo.InvariantCulture) + " bits for AES");
                 }
             }
             this.key = GetKey(r, length, Latin1Password(password),
                     o, u, GetInt(encrypt, "/P"), id, encryptMetadata);
         } else {
-            throw new Exception("The encryption of the PDF is not supported: /R " + r.ToString(CultureInfo.InvariantCulture));
+            throw new NotSupportedException("The encryption of the PDF is not supported: /R " + r.ToString(CultureInfo.InvariantCulture));
         }
     }
 
@@ -309,7 +309,7 @@ internal sealed class Decryptor {
     // 6 from /UE with the user password, or from /OE with the owner password.
     private static byte[] GetKey(int r, byte[] password, byte[] u, byte[] o, byte[] ue, byte[] oe) {
         if (u.Length < 48 || ue.Length < 32) {
-            throw new Exception("The encryption dictionary of the PDF is not valid.");
+            throw new InvalidDataException("The encryption dictionary of the PDF is not valid.");
         }
         byte[] none = new byte[0];
         if (GetHash(r, password, u.AsSpan(32, 8).ToArray(), none).AsSpan().SequenceEqual(u.AsSpan(0, 32))) {

@@ -71,7 +71,7 @@ public class SVGImage : IDrawable {
         try {
             document = XMLParser.ParseSkippingDoctype(stream);
         } catch (XMLException e) {
-            throw new Exception("parsing SVG: " + e.Message, e);
+            throw new InvalidDataException("parsing SVG: " + e.Message, e);
         }
         bool root = true;
         Draw(document, stack, rules, ref root);
@@ -388,13 +388,13 @@ public class SVGImage : IDrawable {
         float[] box = new float[4];
         List<double> list = SVGState.ParseNumbers(viewBox);
         if (list == null || list.Count != 4) {
-            throw new Exception("Invalid SVG viewBox \"" + viewBox + "\": four numbers are needed.");
+            throw new InvalidDataException("Invalid SVG viewBox \"" + viewBox + "\": four numbers are needed.");
         }
         for (int i = 0; i < 4; i++) {
             box[i] = (float) list[i];
         }
         if (box[2] == 0f || box[3] == 0f) {
-            throw new Exception(
+            throw new InvalidDataException(
                     "Invalid SVG viewBox \"" + viewBox + "\": its width and height cannot be zero.");
         }
         // A size the file does not give, or one in a unit PDFjet cannot read,

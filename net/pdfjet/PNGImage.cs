@@ -78,7 +78,7 @@ internal class PNGImage {
         while (true) {
             UInt32 length = image.GetUInt32(inputStream);
             if (length > int.MaxValue) {
-                throw new Exception("Invalid PNG chunk length " + length + ".");
+                throw new InvalidDataException("Invalid PNG chunk length " + length + ".");
             }
             byte[] type = image.GetNBytes(inputStream, 4);
             String chunkType = System.Text.Encoding.UTF8.GetString(type);
@@ -86,14 +86,14 @@ internal class PNGImage {
             // that NewImage refused was given (review of 12 October 2026, R28)
             if (!chunkType.Equals("IEND")) {
                 if ((chunks == 0) != chunkType.Equals("IHDR")) {
-                    throw new Exception("Invalid PNG: the IHDR chunk must be the first chunk, and only the first.");
+                    throw new InvalidDataException("Invalid PNG: the IHDR chunk must be the first chunk, and only the first.");
                 }
                 chunks++;
             }
             CRC32 crc = new CRC32();
             crc.Update(type, 0, 4);
             if (chunkType.Equals("IHDR") && length != 13) {
-                throw new Exception("Invalid PNG IHDR chunk.");
+                throw new InvalidDataException("Invalid PNG IHDR chunk.");
             }
             byte[] data = null;
             if (chunkType.Equals("IHDR") || (chunkType.Equals("pHYs") && length == 9)) {
@@ -104,14 +104,14 @@ internal class PNGImage {
                 while (remaining > 0) {
                     int n = inputStream.Read(buf, 0, (int) Math.Min(remaining, buf.Length));
                     if (n <= 0) {
-                        throw new Exception("Unexpected end of the PNG stream.");
+                        throw new EndOfStreamException("Unexpected end of the PNG stream.");
                     }
                     crc.Update(buf, 0, n);
                     remaining -= n;
                 }
             }
             if (image.GetUInt32(inputStream) != crc.GetValue()) {
-                throw new Exception("Chunk has bad CRC.");
+                throw new InvalidDataException("Chunk has bad CRC.");
             }
             if (chunkType.Equals("IEND")) {
                 break;
@@ -121,13 +121,13 @@ internal class PNGImage {
                 image.bitDepth = data[8];
                 image.colorType = data[9];
                 if (data[10] != 0) {
-                    throw new Exception("Unknown PNG compression method.");
+                    throw new InvalidDataException("Unknown PNG compression method.");
                 }
                 if (data[11] != 0) {
-                    throw new Exception("Unknown PNG filter method.");
+                    throw new InvalidDataException("Unknown PNG filter method.");
                 }
                 if (data[12] == 1) {
-                    throw new Exception("Interlaced PNG images are not supported.");
+                    throw new NotSupportedException("Interlaced PNG images are not supported.");
                 }
             } else if (chunkType.Equals("IDAT")) {
                 // An empty one holds none of the image data (the review of
@@ -135,7 +135,7 @@ internal class PNGImage {
                 hasIDAT = hasIDAT || length > 0;
             } else if (chunkType.Equals("PLTE")) {
                 if (length % 3 != 0 || length == 0 || length > 3*256) {
-                    throw new Exception("Incorrect palette length.");
+                    throw new InvalidDataException("Incorrect palette length.");
                 }
                 image.pLTE = new byte[0];
             } else if (chunkType.Equals("pHYs") && data != null) {
@@ -144,7 +144,7 @@ internal class PNGImage {
         }
         image.GetImageDataLength();
         if (!hasIDAT) {
-            throw new Exception("The PNG image has no image data.");
+            throw new InvalidDataException("The PNG image has no image data.");
         }
         return image;
     }
@@ -163,11 +163,11 @@ internal class PNGImage {
             // before it was read for a gray image and written as the /Mask of
             // one (review of 11 October 2026, #38)
             if ((i == 0) != chunkType.Equals("IHDR")) {
-                throw new Exception("Invalid PNG: the IHDR chunk must be the first chunk, and only the first.");
+                throw new InvalidDataException("Invalid PNG: the IHDR chunk must be the first chunk, and only the first.");
             }
             if (chunkType.Equals("IHDR")) {
                 if (chunk.GetData().Length != 13) {
-                    throw new Exception("Invalid PNG IHDR chunk.");
+                    throw new InvalidDataException("Invalid PNG IHDR chunk.");
                 }
                 this.w = (int) ToUInt32(chunk.GetData(), 0);    // Width
                 this.h = (int) ToUInt32(chunk.GetData(), 4);    // Height
@@ -177,14 +177,14 @@ internal class PNGImage {
                 // method are defined, and libpng refuses a file of another
                 // one, where the rows of this one would be read as if it were 0.
                 if (chunk.GetData()[10] != 0) {
-                    throw new Exception("Unknown PNG compression method.");
+                    throw new InvalidDataException("Unknown PNG compression method.");
                 }
                 if (chunk.GetData()[11] != 0) {
-                    throw new Exception("Unknown PNG filter method.");
+                    throw new InvalidDataException("Unknown PNG filter method.");
                 }
 
                 if (chunk.GetData()[12] == 1) {
-                    throw new Exception("Interlaced PNG images are not supported.\n" +
+                    throw new NotSupportedException("Interlaced PNG images are not supported.\n" +
                             "Convert the image using OptiPNG:\noptipng -i0 -o7 myimage.png");
                 }
             } else if (chunkType.Equals("IDAT")) {
@@ -196,7 +196,7 @@ internal class PNGImage {
                 // 1 to 256 colors of 3 bytes each.
                 byte[] colors = chunk.GetData();
                 if (colors.Length % 3 != 0 || colors.Length == 0 || colors.Length > 3*256) {
-                    throw new Exception("Incorrect palette length.");
+                    throw new InvalidDataException("Incorrect palette length.");
                 }
                 // An index past the colors of the palette is drawn black, as
                 // libpng and browsers draw it.
@@ -220,12 +220,12 @@ internal class PNGImage {
         }
         long imageDataLength = GetImageDataLength();
         if (iDAT == null) {
-            throw new Exception("The PNG image has no image data.");
+            throw new InvalidDataException("The PNG image has no image data.");
         }
         // The rows of the image; data after the last row is ignored.
         byte[] inflatedImageData = Decompressor.InflateExact(iDAT, (int) imageDataLength, out bool exact);
         if (inflatedImageData.Length < imageDataLength) {
-            throw new Exception("The PNG image data is shorter than the image.");
+            throw new InvalidDataException("The PNG image data is shorter than the image.");
         }
 
         // The IDAT data that is the rows of the image and nothing more is
@@ -252,7 +252,7 @@ internal class PNGImage {
         for (int row = 0; row < h; row++) {
             int filter = buf[row * (bytesPerRow + 1)];
             if (filter > 4) {
-                throw new Exception("Invalid PNG filter type " + filter + ".");
+                throw new InvalidDataException("Invalid PNG filter type " + filter + ".");
             }
         }
         stream = iDAT;
@@ -289,20 +289,20 @@ internal class PNGImage {
             } else if (bitDepth == 4 || bitDepth == 2 || bitDepth == 1) {
                 imageData = GetImageColorType0BitDepthBelow8(inflatedImageData);
             } else {
-                throw new Exception("Image with unsupported bit depth == " + bitDepth);
+                throw new NotSupportedException("Image with unsupported bit depth == " + bitDepth);
             }
         } else if (colorType == 4) {
             // Grayscale image with alpha
             if (bitDepth == 8) {
                 imageData = GetImageColorType4BitDepth8(inflatedImageData);
             } else {
-                throw new Exception("Image with unsupported bit depth == " + bitDepth);
+                throw new NotSupportedException("Image with unsupported bit depth == " + bitDepth);
             }
         } else if (colorType == 6) {
             if (bitDepth == 8) {
                 imageData = GetImageColorType6BitDepth8(inflatedImageData);
             } else {
-                throw new Exception("Image with unsupported bit depth == " + bitDepth);
+                throw new NotSupportedException("Image with unsupported bit depth == " + bitDepth);
             }
         } else if (colorType == 2) {
             // True color image; a PLTE chunk in it is only a suggested palette
@@ -457,12 +457,12 @@ internal class PNGImage {
     // checked before any buffer is allocated for the image.
     private long GetImageDataLength() {
         if (w <= 0 || h <= 0) {
-            throw new Exception("Invalid PNG image size.");
+            throw new InvalidDataException("Invalid PNG image size.");
         }
         // Each row has a filter type byte, so a taller image is too large; a
         // height of at most the limit also keeps the products below in a long.
         if (h > Decompressor.MAX_DECODED_LENGTH) {
-            throw new Exception("The PNG image is larger than " + Decompressor.MAX_DECODED_LENGTH + " bytes.");
+            throw new NotSupportedException("The PNG image is larger than " + Decompressor.MAX_DECODED_LENGTH + " bytes.");
         }
         int channels;
         bool validBitDepth;
@@ -482,20 +482,20 @@ internal class PNGImage {
             channels = 4;
             validBitDepth = bitDepth == 8 || bitDepth == 16;
         } else {
-            throw new Exception("Invalid PNG color type " + colorType + ".");
+            throw new InvalidDataException("Invalid PNG color type " + colorType + ".");
         }
         if (!validBitDepth) {
-            throw new Exception("Invalid PNG bit depth " + bitDepth + " for color type " + colorType + ".");
+            throw new InvalidDataException("Invalid PNG bit depth " + bitDepth + " for color type " + colorType + ".");
         }
         if (colorType == 3 && pLTE == null) {
-            throw new Exception("The PNG palette image has no PLTE chunk.");
+            throw new InvalidDataException("The PNG palette image has no PLTE chunk.");
         }
         long bytesPerRow = ((long) w * channels * bitDepth + 7) / 8;
         long length = h * (1 + bytesPerRow);
         // A palette image becomes 3 bytes of RGB and 1 byte of alpha per pixel.
         long decodedLength = (colorType == 3) ? 4L * w * h : length;
         if (length > Decompressor.MAX_DECODED_LENGTH || decodedLength > Decompressor.MAX_DECODED_LENGTH) {
-            throw new Exception("The PNG image is larger than " + Decompressor.MAX_DECODED_LENGTH + " bytes.");
+            throw new NotSupportedException("The PNG image is larger than " + Decompressor.MAX_DECODED_LENGTH + " bytes.");
         }
         return length;
     }
@@ -512,7 +512,7 @@ internal class PNGImage {
                 buf[7] == 0x0A) {
             // The PNG signature is correct.
         } else {
-            throw new Exception("Wrong PNG signature.");
+            throw new InvalidDataException("Wrong PNG signature.");
         }
     }
 
@@ -527,7 +527,7 @@ internal class PNGImage {
         crc.Update(chunk.type, 0, 4);
         crc.Update(chunk.data, 0, (int) chunk.length);
         if (crc.GetValue() != chunk.crc) {
-            throw new Exception("Chunk has bad CRC.");
+            throw new InvalidDataException("Chunk has bad CRC.");
         }
 
         return chunk;
@@ -542,7 +542,7 @@ internal class PNGImage {
     // have fails at the end of the stream instead of allocating the length.
     private byte[] GetNBytes(System.IO.Stream inputStream, UInt32 n) {
         if (n > int.MaxValue) {
-            throw new Exception("Invalid PNG chunk length " + n + ".");
+            throw new InvalidDataException("Invalid PNG chunk length " + n + ".");
         }
         using var bos = new MemoryStream((int) Math.Min(n, 65536));
         byte[] buf = new byte[(int) Math.Min(n, 65536)];
@@ -551,7 +551,7 @@ internal class PNGImage {
             // Stream.Read returns 0 at the end of the stream.
             int count = inputStream.Read(buf, 0, (int) Math.Min(buf.Length, remaining));
             if (count <= 0) {
-                throw new Exception("Unexpected end of the PNG stream.");
+                throw new EndOfStreamException("Unexpected end of the PNG stream.");
             }
             bos.Write(buf, 0, count);
             remaining -= count;
@@ -619,7 +619,7 @@ internal class PNGImage {
                     image[line + i] += (byte) Paeth(a, b, c);
                 }
             } else {
-                throw new Exception("Invalid PNG filter type " + filter + ".");
+                throw new InvalidDataException("Invalid PNG filter type " + filter + ".");
             }
             prior = line;
         }

@@ -2173,7 +2173,7 @@ public class Page {
         if (mode >= 0 && mode <= 7) {
             this.renderingMode = mode;
         } else {
-            throw new Exception("Invalid text rendering mode: " + mode.ToString(CultureInfo.InvariantCulture));
+            throw new ArgumentException("Invalid text rendering mode: " + mode.ToString(CultureInfo.InvariantCulture));
         }
         return this;
     }

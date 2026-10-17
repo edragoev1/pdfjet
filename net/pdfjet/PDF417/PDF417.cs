@@ -61,7 +61,7 @@ public class PDF417 : IDrawable {
 
         foreach (char ch in str) {
             if (ch > 126) {
-                throw new Exception("The string contains unencodable characters.");
+                throw new ArgumentException("The string contains unencodable characters.");
             }
         }
 
@@ -73,7 +73,7 @@ public class PDF417 : IDrawable {
             rows = 3;
         }
         if (rows * cols > 928) {
-            throw new Exception("The string is too long for a PDF417 barcode.");
+            throw new ArgumentException("The string is too long for a PDF417 barcode.");
         }
         this.codewords = new int[rows * (cols + 2)];
 

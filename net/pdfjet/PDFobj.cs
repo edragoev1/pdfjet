@@ -141,7 +141,7 @@ public class PDFobj {
             // made, so that a file of a few bytes that says its stream is a
             // gigabyte takes no memory.
             if (length < 0 || streamOffset < 0 || length > buf.Length - streamOffset) {
-                throw new Exception("The stream of an object is not in the PDF.");
+                throw new InvalidDataException("The stream of an object is not in the PDF.");
             }
             this.stream = new byte[length];
             Array.Copy(buf, streamOffset, stream, 0, length);
@@ -640,11 +640,11 @@ public class PDFobj {
         i += open;
         int number = ToLength(TokenAt(dict, i + 1));
         if (i + 2 >= dict.Count) {
-            throw new Exception("The dictionary ends after the /Length.");
+            throw new InvalidDataException("The dictionary ends after the /Length.");
         }
         if (dict[i + 2].Equals("0")) {
             if (i + 3 >= dict.Count) {
-                throw new Exception("The dictionary ends after the /Length.");
+                throw new InvalidDataException("The dictionary ends after the /Length.");
             }
             if (dict[i + 3].Equals("R")) {
                 return GetLength(numbered, number);
@@ -668,7 +668,7 @@ public class PDFobj {
     private static int ToLength(String token) {
         int length;
         if (!Int32.TryParse(token, NumberStyles.Integer, CultureInfo.InvariantCulture, out length)) {
-            throw new Exception("The /Length of a stream is not a number.");
+            throw new InvalidDataException("The /Length of a stream is not a number.");
         }
         return length;
     }

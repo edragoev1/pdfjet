@@ -18,6 +18,17 @@ This is the first entry in this file; earlier releases were not tracked here.
   already leaves a writer it is given open.
 
 ### Changed
+- C#: the library throws exceptions of their kind, not a plain
+  System.Exception, in its 85 places that did (GitHub Discussion #5), so a
+  caller can tell what went wrong: InvalidDataException for a PNG, BMP,
+  JPEG, SVG or PDF that cannot be read; EndOfStreamException for one cut
+  short; NotSupportedException for what PDFjet does not support, as an
+  interlaced PNG, a compressed BMP or an encryption it does not know;
+  ArgumentException for a wrong argument, as a rotation of 45 degrees, a
+  text rendering mode of 9, or a barcode's text it cannot hold; and
+  InvalidOperationException for a font whose license does not allow it to
+  be embedded. The messages are as before. A catch of Exception catches
+  them all, as before.
 - Java: the constructors PDF(OutputStream) and PDF(OutputStream,
   Compliance) and complete() declare throws IOException, not throws
   Exception: it is all they throw, besides unchecked exceptions (GitHub

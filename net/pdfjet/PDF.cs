@@ -2781,7 +2781,7 @@ public sealed class PDF {
             }
         }
         if (maxObjNumber > Math.Max(size, MIN_OBJ_NUMBER_LIMIT)) {
-            throw new Exception("The PDF of " + size
+            throw new InvalidDataException("The PDF of " + size
                     + " bytes cannot hold an object numbered " + maxObjNumber + ".");
         }
 
@@ -2951,7 +2951,7 @@ public sealed class PDF {
         if (number >= 0) {
             return number;
         }
-        throw new Exception("The object stream of the PDF is malformed: \""
+        throw new InvalidDataException("The object stream of the PDF is malformed: \""
                 + token + "\" is not a number.");
     }
 

@@ -220,7 +220,7 @@ public class Font {
         } else if (fontName.StartsWith("AdobeMyungjoStd", StringComparison.Ordinal)) {
             ordering = "Korea1"; supplement = "1";
         } else {
-            throw new Exception("Unsupported font: " + fontName);
+            throw new ArgumentException("Unsupported font: " + fontName);
         }
         pdf.Append("/CIDSystemInfo <<\n");
         pdf.Append("/Registry ");
@@ -256,7 +256,7 @@ public class Font {
             pdf.Append(fontName + "-UniKS-UCS2-H\n");
             pdf.Append("/Encoding /UniKS-UCS2-H\n");
         } else {
-            throw new Exception("Unsupported font: " + fontName);
+            throw new ArgumentException("Unsupported font: " + fontName);
         }
         pdf.Append("/DescendantFonts [");
         pdf.Append(pdf.GetObjNumber() - 1);

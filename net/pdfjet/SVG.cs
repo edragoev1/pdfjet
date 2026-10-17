@@ -5,6 +5,7 @@
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
@@ -138,7 +139,7 @@ namespace PDFjet.NET {
                     CultureInfo.InvariantCulture, out value) && !float.IsInfinity(value) && !float.IsNaN(value)) {
                 return value;
             }
-            throw new Exception("Invalid path data: " + arg);
+            throw new InvalidDataException("Invalid path data: " + arg);
         }
 
         // Returns whether the text is a number as SVG writes one: a sign or

@@ -140,7 +140,9 @@ commit and date. The layout's format version (1) and the look's rules
     throws, or one of Go that returns an error, would break the chains of
     setters every caller writes. A separate enum for vertical alignment
     would break existing code.
-  - **C#: specific exceptions, not System.Exception** (found on 16 October
+  - (Done 17 October 2026: 85 places, 74 of the library's folder and 11 of
+    Barcodes and PDF417; a test keeps a plain one from coming back.)
+    **C#: specific exceptions, not System.Exception** (found on 16 October
     2026, from the Java point above). 74 places throw a plain Exception, so
     a caller cannot tell a font that cannot be read from a file that cannot
     be written; throw ArgumentException, IOException, InvalidDataException
