@@ -341,9 +341,47 @@ extension Util {
     // exponent or not, and not one in hexadecimal or named, as inf or nan,
     // which the parsers of the four ports read differently (review of
     // 17 October 2026).
+    // The characters are read one by one: a regular expression was made for
+    // each number read (17 October 2026).
     static func isDecimalNumber(_ text: String) -> Bool {
-        return text.range(of: "^[+-]?([0-9]+\\.?[0-9]*|\\.[0-9]+)([eE][+-]?[0-9]+)?$",
-                options: .regularExpression) != nil
+        let bytes = Array(text.utf8)
+        var i = 0
+        func isDigit(_ i: Int) -> Bool {
+            return i < bytes.count && bytes[i] >= 0x30 && bytes[i] <= 0x39
+        }
+        if i < bytes.count && (bytes[i] == 0x2B || bytes[i] == 0x2D) {
+            i += 1
+        }
+        var digits = 0
+        while isDigit(i) {
+            i += 1
+            digits += 1
+        }
+        if i < bytes.count && bytes[i] == 0x2E {
+            i += 1
+            while isDigit(i) {
+                i += 1
+                digits += 1
+            }
+        }
+        if digits == 0 {
+            return false
+        }
+        if i < bytes.count && (bytes[i] == 0x65 || bytes[i] == 0x45) {
+            i += 1
+            if i < bytes.count && (bytes[i] == 0x2B || bytes[i] == 0x2D) {
+                i += 1
+            }
+            var exponent = 0
+            while isDigit(i) {
+                i += 1
+                exponent += 1
+            }
+            if exponent == 0 {
+                return false
+            }
+        }
+        return i == bytes.count
     }
 
     // Returns the text in lower case as Java's toLowerCase of Locale.ROOT has

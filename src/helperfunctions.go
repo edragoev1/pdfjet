@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"regexp"
 	"strconv"
 	"strings"
 	"unicode"
@@ -493,12 +492,46 @@ func caseIgnorable(r rune) bool {
 	return unicode.In(r, unicode.Mn, unicode.Me, unicode.Cf, unicode.Lm, unicode.Sk)
 }
 
-var decimalNumber = regexp.MustCompile(`^[+-]?([0-9]+\.?[0-9]*|\.[0-9]+)([eE][+-]?[0-9]+)?$`)
-
 // isDecimalNumber returns true when the text is a number written in decimal,
 // with an exponent or not, and not one in hexadecimal, with underscores, or
 // named, as inf or nan, which the parsers of the four ports read differently
 // (review of 17 October 2026).
+//
+// The characters are read one by one, not with a regular expression, which
+// allocated for each number read under the race detector (17 October 2026).
 func isDecimalNumber(text string) bool {
-	return decimalNumber.MatchString(text)
+	i := 0
+	if i < len(text) && (text[i] == '+' || text[i] == '-') {
+		i++
+	}
+	digits := 0
+	for i < len(text) && text[i] >= '0' && text[i] <= '9' {
+		i++
+		digits++
+	}
+	if i < len(text) && text[i] == '.' {
+		i++
+		for i < len(text) && text[i] >= '0' && text[i] <= '9' {
+			i++
+			digits++
+		}
+	}
+	if digits == 0 {
+		return false
+	}
+	if i < len(text) && (text[i] == 'e' || text[i] == 'E') {
+		i++
+		if i < len(text) && (text[i] == '+' || text[i] == '-') {
+			i++
+		}
+		exponent := 0
+		for i < len(text) && text[i] >= '0' && text[i] <= '9' {
+			i++
+			exponent++
+		}
+		if exponent == 0 {
+			return false
+		}
+	}
+	return i == len(text)
 }

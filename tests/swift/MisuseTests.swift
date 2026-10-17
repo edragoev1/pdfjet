@@ -443,4 +443,16 @@ import Testing
             #expect(page.getPageSize().getWidth() == Letter.PORTRAIT.getWidth(), "\(width)")
         }
     }
+
+    // A number in decimal, as the four ports read one of an image object or of
+    // a /MediaBox (review of 17 October 2026)
+    @Test func aDecimalNumber() {
+        for text in ["1", "-1.5", ".5", "5.", "1e3", "1E-3", "+.5e+2", "0012"] {
+            #expect(Util.isDecimalNumber(text), "\(text)")
+        }
+        for text in ["", "+", ".", "-.", "e3", "1e", "1e+", "0x10", "1f", " 1", "1 ", "1_0", "inf", "NaN", "1.2.3"] {
+            #expect(!Util.isDecimalNumber(text), "\(text)")
+        }
+    }
 }
+
