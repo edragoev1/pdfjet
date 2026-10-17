@@ -289,7 +289,7 @@ The C# port against Java:
       QR, DataMatrix, and the other places): one choice for all ports.
 - [ ] SVG numbers: hex floats and underscores refused where the others
       take them.
-- [ ] EmbeddedFile registered before its stream is read (Go too).
+- [x] EmbeddedFile registered before its stream is read (Go too).
 - [ ] AppendToken best-fits characters above U+00FF where Java writes ?.
 - [ ] Image ParseNumber: Unicode digits and Trim, "infinity"; "100f".
 - [ ] SVGState lower-casing of İ.
@@ -305,7 +305,7 @@ The Go port:
 - [x] GetPageObjects rewrites shared objects on every call, and
       aesPkcs7Pad appends into a decrypted stream: a race when one Read is
       merged on several goroutines.
-- [ ] structelem.StructElem and relationship.Relationship written raw:
+- [x] structelem.StructElem and relationship.Relationship written raw:
       refuse a value that is not one of theirs, as CapStyle.
 - [ ] BigTable.SetFirstPage of another PDF accepted, its error recorded
       on the other PDF.

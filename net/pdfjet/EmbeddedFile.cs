@@ -50,8 +50,10 @@ public class EmbeddedFile {
         this.fileName = fileName;
         this.relationship = relationship;
         this.mediaType = mediaType;
-        pdf.embeddedFiles.Add(this);
         byte[] buf = Content.GetFromStream(stream);
+        // The file is the PDF's once it is read: one that could not be read
+        // was left in the list, with no object (review of 17 October 2026)
+        pdf.embeddedFiles.Add(this);
         int size = buf.Length;
 
         if (compress) {

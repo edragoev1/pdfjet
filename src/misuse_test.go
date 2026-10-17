@@ -17,6 +17,7 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/encryption"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 	"github.com/edragoev1/pdfjet/v9/src/pagesize"
+	"github.com/edragoev1/pdfjet/v9/src/relationship"
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
@@ -485,4 +486,41 @@ func TestMisuseTheComplianceIsSetBeforeTheEncryption(t *testing.T) {
 	ua.SetEncryption(enc)
 	ua.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	testRefused(t, ua, "Set the compliance before the encryption, which is written for it.")
+}
+
+// A structure type or a relationship that is not one of theirs is refused:
+// both are strings, and any one was written raw, "P /Bogus (x" as the type of
+// an element and in the content (review of 17 October 2026).
+func TestAStructureTypeOrRelationshipThatIsNotOneIsRefused(t *testing.T) {
+	pdf := testNewPDF()
+	pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
+	page := NewPage(pdf, letter.Portrait())
+	page.AddBDC(structelem.StructElem("P /Bogus (x"), "en-US", "", "")
+	page.AddEMC()
+	testRecorded(t, pdf, `The structure type "P /Bogus (x" is not one: use one of structelem's.`)
+	if content := testContent(page); strings.Contains(content, "Bogus") {
+		t.Errorf("the structure type was written: %q", content)
+	}
+
+	pdf = testNewPDF()
+	NewEmbeddedFileWithRelationship(pdf, "a.xml", strings.NewReader("<a/>"), false,
+		"text/xml", relationship.Relationship("/Data /Bogus"), "")
+	testRecorded(t, pdf, `The relationship "/Data /Bogus" is not one: use relationship.Source, Data, Alternative, Supplement or Unspecified.`)
+}
+
+type testFailingReader struct{}
+
+func (testFailingReader) Read([]byte) (int, error) { return 0, fmt.Errorf("the disk failed") }
+
+// An embedded file whose stream cannot be read is not the PDF's: it was left
+// in the list, with no object (review of 17 October 2026).
+func TestAnEmbeddedFileThatCannotBeReadIsNotThePDFs(t *testing.T) {
+	pdf := testNewPDF()
+	func() {
+		defer func() { _ = recover() }()
+		NewEmbeddedFileWithRelationship(pdf, "a.xml", testFailingReader{}, false, "text/xml", relationship.Data, "")
+	}()
+	if len(pdf.embeddedFiles) != 0 {
+		t.Errorf("the file that could not be read is the PDF's")
+	}
 }

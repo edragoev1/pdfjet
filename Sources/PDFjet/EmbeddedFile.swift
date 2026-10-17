@@ -76,8 +76,10 @@ public class EmbeddedFile {
         self.fileName = fileName
         self.relationship = relationship
         self.mediaType = mediaType
-        pdf.embeddedFiles.append(self)
         var buf = try Content.getFromStream(stream)
+        // The file is the PDF's once it is read: one that could not be read
+        // was left in the list, with no object (review of 17 October 2026)
+        pdf.embeddedFiles.append(self)
         let size = buf.count
         if compress {
             var buf2 = [UInt8]()

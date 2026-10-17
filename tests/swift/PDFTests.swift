@@ -1032,4 +1032,15 @@ import Testing
         }
     }
 
+    // An embedded file whose stream cannot be read is not the PDF's: it was
+    // left in the list, with no object (review of 17 October 2026).
+    @Test func anEmbeddedFileThatCannotBeReadIsNotThePDFs() {
+        let pdf = PDF(OutputStream(toMemory: ()))
+        let stream = InputStream(fileAtPath: "/no/such/folder/a.xml")!
+        #expect(throws: (any Error).self) {
+            _ = try EmbeddedFile(pdf, "a.xml", stream, false, "text/xml", Relationship.DATA, nil)
+        }
+        #expect(pdf.embeddedFiles.isEmpty)
+    }
 }
+

@@ -2322,6 +2322,27 @@ func (page *Page) setStructElementsPageObjNumber(pageObjNumber int) {
 	}
 }
 
+// knownStructure returns the structure type when it is one of structelem's,
+// and P after recording the mistake when it is not: StructElem is a string,
+// and any one was written raw, "P /Bogus (x" as the type of an element and
+// in the content (review of 17 October 2026). Java's is an enum.
+func (page *Page) knownStructure(structure structelem.StructElem) structelem.StructElem {
+	switch structure {
+	case structelem.Document, structelem.Part, structelem.Div, structelem.Sect,
+		structelem.H1, structelem.H2, structelem.H3, structelem.H4, structelem.H5, structelem.H6,
+		structelem.P, structelem.Title, structelem.Lbl, structelem.BlockQuote,
+		structelem.Span, structelem.Em, structelem.Strong, structelem.Code,
+		structelem.Link, structelem.Annot, structelem.L, structelem.LI, structelem.LBody,
+		structelem.Table, structelem.TR, structelem.TH, structelem.TD,
+		structelem.THead, structelem.TBody, structelem.TFoot, structelem.Caption,
+		structelem.Figure, structelem.Artifact:
+		return structure
+	}
+	page.pdf.fail("The structure type " + strconv.Quote(string(structure)) +
+		" is not one: use one of structelem's.")
+	return structelem.P
+}
+
 // AddBDC begins marked content for a structure element with BDC, when the
 // document is tagged: PDF/UA, or a PDF/A of level A.
 func (page *Page) AddBDC(structure structelem.StructElem, language, actualText, altDescription string) {
@@ -2333,6 +2354,7 @@ func (page *Page) AddBDC(structure structelem.StructElem, language, actualText, 
 // needs no paragraph under it.
 func (page *Page) addBDC(
 	structure structelem.StructElem, language, actualText, altDescription, attributes string) {
+	structure = page.knownStructure(structure)
 	// An artifact is not an element of the structure: what is drawn as one,
 	// like a text line of the structure type Artifact, is marked as one.
 	if structure == structelem.Artifact {
@@ -2605,6 +2627,7 @@ func (page *Page) EndStructElement() {
 // written, like the Table of a table that runs over pages.
 func (page *Page) addStructElementOpen(
 	parent *structElement, structure structelem.StructElem, attributes string, open bool) *structElement {
+	structure = page.knownStructure(structure)
 	if !page.pdf.isTagged() || page.artifactDepth != 0 {
 		return nil
 	}

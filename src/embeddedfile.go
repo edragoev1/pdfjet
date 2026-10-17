@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/edragoev1/pdfjet/v9/src/internal/compressor"
@@ -64,14 +65,27 @@ func NewEmbeddedFileWithRelationship(pdf *PDF, fileName string, reader io.Reader
 	file := new(EmbeddedFile)
 	file.pdf = pdf
 	file.fileName = fileName
+	// A relationship that is not one of relationship's was written raw, as
+	// any name or text in the dictionary (review of 17 October 2026)
+	switch relation {
+	case "", relationship.Source, relationship.Data, relationship.Alternative,
+		relationship.Supplement, relationship.Unspecified:
+	default:
+		pdf.fail("The relationship " + strconv.Quote(string(relation)) +
+			" is not one: use relationship.Source, Data, Alternative, Supplement or Unspecified.")
+		relation = ""
+	}
 	file.relationship = relation
 	file.mediaType = mediaType
-	pdf.embeddedFiles = append(pdf.embeddedFiles, file)
 
 	buf, err := io.ReadAll(reader)
 	if err != nil {
 		panic(err)
 	}
+	// The file is the PDF's once it is read: one that could not be read was
+	// left in the list, with no object, for the check of PDF/A (review of
+	// 17 October 2026)
+	pdf.embeddedFiles = append(pdf.embeddedFiles, file)
 	size := len(buf)
 
 	// The content is written at once, and not kept: the PDF keeps each file
