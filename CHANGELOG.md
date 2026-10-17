@@ -194,8 +194,8 @@ This is the first entry in this file; earlier releases were not tracked here.
 - Java: the library builds with JDK 23 and later, whose javac warned of the
   documentation comment before the package of ImageSize.java and
   SASLprepTables.java, an error as the build treats warnings. It is
-  developed and tested on JDK 25, and compiled for Java 8 and checked on
-  the JDK 8 runtime.
+  developed and tested on JDK 25, and compiled for Java 8 with
+  --release 8.
 
 ## v9.0.9 — 2026-10-15
 
