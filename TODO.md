@@ -137,6 +137,21 @@ commit and date. The layout's format version (1) and the look's rules
     them all. Swift already throws its own PDFjetError, and Go returns
     errors.
 
+- **v9.1.1: CI on JDK 25 and JDK 8** (the owner, 17 October 2026: this
+  machine on 25 by default; the versions between tried now and then by
+  hand). JDK 23's javac warned of a doc comment before a package, an error
+  with -Werror (fixed 17 October 2026, 07c7b7e5); 8, 11, 17, 21 and 25 all
+  pass the 909 tests. The jobs of JDK 21 in build.yml, windows.yml and
+  docs.yml move to 25, after the checks and the documentation pass on 25
+  here.
+
+- **v9.1.1: the Swift port's ciphers checked against published values.**
+  Swift has its own AES, SHA-256, SHA-384, SHA-512, MD5 and RC4
+  (Cryptography.swift), as Foundation has no cryptography on Linux; its
+  tests open what it encrypts, but none checks a cipher against the
+  standards' known answers: FIPS 197's and NIST's AES vectors, FIPS 180-4's
+  and NIST's SHA ones, RFC 1321's MD5 and RFC 6229's RC4.
+
 - **Dropped: faster compression of the hex text strings** (the owner,
   15 October 2026: "OUT"). zlib is slow on the "00" of hex glyph strings, a
   second of Example_24's 2,546 pages in Java, but typical documents of 5 to 10
