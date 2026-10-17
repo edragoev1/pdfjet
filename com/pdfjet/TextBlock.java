@@ -1111,6 +1111,11 @@ public class TextBlock implements Drawable {
             page.pdf.fail(new IllegalArgumentException(
                     "The vertical alignment of a text block is top, center or bottom."));
         }
+        // A width of NaN drew a character on each line, and gave NaN as the
+        // corner (review of 17 October 2026)
+        if (Float.isNaN(width) || Float.isInfinite(width)) {
+            page.pdf.fail(new IllegalArgumentException("The width of a text block is a finite number."));
+        }
 
         page.saveGraphicsState();
 

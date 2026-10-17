@@ -105,6 +105,9 @@ This is the first entry in this file; earlier releases were not tracked here.
   and is now refused, as Java does. C# draws the years past 9999, as Java
   does, and a first day of the week out of range is wrapped, as in Go and
   Swift.
+- A text block of a width of NaN or an infinity drew a character on each
+  line and gave NaN as its corner. It is refused when drawn: "The width of
+  a text block is a finite number." In the four ports.
 - Reading an encrypted PDF with many strings after /Contents in one
   dictionary took time growing with the square of their number, as each
   string looked for its dictionary's ends again: a PDF of 560 KB took 17

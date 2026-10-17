@@ -54,7 +54,7 @@ public class CrossPort {
     // holds: NaN, an infinity or a huge one.
     private float Place(float lo, float hi) {
         if (Below(200) == 0) {
-            switch (Below(8)) {
+            switch (Below(5)) {
             case 0:
                 return float.NaN;
             case 1:

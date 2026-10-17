@@ -12,6 +12,7 @@ package pdfjet
 // check-no-fma.sh fails if one is removed.
 
 import (
+	"math"
 	"sort"
 	"strings"
 	"unicode"
@@ -971,6 +972,12 @@ func (textBlock *TextBlock) DrawOn(page *Page) [2]float32 {
 	case alignment.Top, alignment.Center, alignment.Bottom:
 	default:
 		page.pdf.fail(textBlockValignMessage)
+		return [2]float32{textBlock.x + textBlock.width, textBlock.y + blockHeight}
+	}
+	// A width of NaN drew a character on each line, and gave NaN as the
+	// corner (review of 17 October 2026)
+	if w := float64(textBlock.width); math.IsNaN(w) || math.IsInf(w, 0) {
+		page.pdf.fail("The width of a text block is a finite number.")
 		return [2]float32{textBlock.x + textBlock.width, textBlock.y + blockHeight}
 	}
 

@@ -110,7 +110,9 @@ func Example25() {
 
 	chart.DrawOn(page)
 
-	pdf.Complete()
+	if err := pdf.Complete(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {

@@ -900,6 +900,11 @@ public class TextBlock : IDrawable {
             page.pdf.Fail(new ArgumentException(
                     "The vertical alignment of a text block is top, center or bottom."));
         }
+        // A width of NaN drew a character on each line, and gave NaN as the
+        // corner (review of 17 October 2026)
+        if (float.IsNaN(width) || float.IsInfinity(width)) {
+            page.pdf.Fail(new ArgumentException("The width of a text block is a finite number."));
+        }
 
         page.SaveGraphicsState();
 

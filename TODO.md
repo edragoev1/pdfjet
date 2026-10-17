@@ -313,9 +313,9 @@ The Go port:
       the page's (four ports): dictEntryIndex.
 - [x] SetCompliance takes any value; NewCJKFont of an unknown font writes
       half an object before it panics; CalendarMonth months out of range.
-- [ ] Example 25 does not check Complete's error.
-- [ ] tests/crossport: Java and C# below(8), Go and Swift below(5).
-- [ ] TextBlock SetWidth(NaN): Go fails, Java draws.
+- [x] Example 25 does not check Complete's error.
+- [x] tests/crossport: Java and C# below(8), Go and Swift below(5).
+- [x] TextBlock SetWidth(NaN): Go fails, Java draws.
 
 The Swift port:
 - [x] BufferedOutputStream: a failed write reads streamError, which traps

@@ -7,6 +7,7 @@ package pdfjet
 
 import (
 	"fmt"
+	"math"
 	"strings"
 	"testing"
 	"time"
@@ -527,4 +528,14 @@ func TestATextBlockVerticalAlignmentOfRightIsRefused(t *testing.T) {
 	}
 	block.DrawOn(NewPage(pdf, testLetterPortrait()))
 	testRecorded(t, pdf, textBlockValignMessage)
+}
+
+// A width of NaN drew a character on each line, and gave NaN as the corner
+// (review of 17 October 2026).
+func TestATextBlockWidthOfNaNIsRefused(t *testing.T) {
+	pdf := testNewPDF()
+	block := NewTextBlock(testHelvetica(pdf), "Hello world").SetWidth(float32(math.NaN()))
+	block.SetLocation(50, 50)
+	block.DrawOn(NewPage(pdf, testLetterPortrait()))
+	testRecorded(t, pdf, "The width of a text block is a finite number.")
 }

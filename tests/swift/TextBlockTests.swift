@@ -319,4 +319,19 @@ import Testing
             #expect(TestSupport.message(error).contains("The vertical alignment of a text block is top, center or bottom."))
         }
     }
+
+    // A width of NaN drew a character on each line, and gave NaN as the
+    // corner (review of 17 October 2026)
+    @Test func aWidthOfNaNMakesCompleteThrow() throws {
+        let memory = MemoryPDF()
+        let block = TextBlock(TestSupport.helvetica(memory.pdf), "Hello world").setWidth(.nan)
+        block.setLocation(50, 50)
+        block.drawOn(Page(memory.pdf, Letter.PORTRAIT))
+        do {
+            try memory.pdf.complete()
+            Issue.record("complete() did not throw")
+        } catch {
+            #expect(TestSupport.message(error).contains("The width of a text block is a finite number."))
+        }
+    }
 }

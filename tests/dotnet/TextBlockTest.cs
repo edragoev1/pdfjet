@@ -398,5 +398,18 @@ public class TextBlockTest {
         Assert.Equal("The vertical alignment of a text block is top, center or bottom.",
                 Assert.Throws<ArgumentException>(() => block.DrawOn(page)).Message);
     }
+
+    // A width of NaN drew a character on each line, and gave NaN as the
+    // corner (review of 17 October 2026)
+    [Fact]
+    public void AWidthOfNaNIsRefused() {
+        PDF pdf = TestSupport.NewPDF();
+        TextBlock block = new TextBlock(TestSupport.Helvetica(pdf), "Hello world");
+        block.SetWidth(float.NaN);
+        block.SetLocation(50f, 50f);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Assert.Equal("The width of a text block is a finite number.",
+                Assert.Throws<ArgumentException>(() => block.DrawOn(page)).Message);
+    }
 }
 }

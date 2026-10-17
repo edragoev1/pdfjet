@@ -416,4 +416,18 @@ class TextBlockTest {
                 org.junit.jupiter.api.Assertions.assertThrows(
                         IllegalArgumentException.class, () -> block.drawOn(page)).getMessage());
     }
+
+    // A width of NaN drew a character on each line, and gave NaN as the
+    // corner (review of 17 October 2026)
+    @Test
+    void aWidthOfNaNIsRefused() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        final TextBlock block = new TextBlock(TestSupport.helvetica(pdf), "Hello world");
+        block.setWidth(Float.NaN);
+        block.setLocation(50f, 50f);
+        final Page page = new Page(pdf, Letter.PORTRAIT);
+        assertEquals("The width of a text block is a finite number.",
+                org.junit.jupiter.api.Assertions.assertThrows(
+                        IllegalArgumentException.class, () -> block.drawOn(page)).getMessage());
+    }
 }

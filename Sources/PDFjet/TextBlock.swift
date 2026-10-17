@@ -934,6 +934,12 @@ public class TextBlock : Drawable {
             page!.pdf.fail("The vertical alignment of a text block is top, center or bottom.")
             return [x + width, y + blockHeight]
         }
+        // A width of NaN drew a character on each line, and gave NaN as the
+        // corner (review of 17 October 2026)
+        if !width.isFinite {
+            page!.pdf.fail("The width of a text block is a finite number.")
+            return [x + width, y + blockHeight]
+        }
 
         page!.saveGraphicsState()
 
