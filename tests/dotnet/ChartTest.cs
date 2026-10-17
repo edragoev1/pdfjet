@@ -4,6 +4,7 @@
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -267,6 +268,38 @@ public class ChartTest {
             sb.Append(((int) unit).ToString("x4"));
         }
         return sb.Append('>').ToString();
+    }
+
+    // The labels round the exact value half to even, as Java's DecimalFormat
+    // does, on .NET Framework too, whose ToString("F") rounds 15 digits half
+    // away from zero (review of 17 October 2026). .NET 8's ToString("F")
+    // rounds as Java does, and the two agree on any value.
+    [Fact]
+    public void TheLabelsRoundHalfToEvenAsJava() {
+        Type type = typeof(PDF).Assembly.GetType("PDFjet.NET.NumberFormat");
+        Func<double, int, String> format = (value, digits) => {
+            object nf = type.GetMethod("GetInstance").Invoke(null, null);
+            type.GetMethod("SetMaximumFractionDigits").Invoke(nf, new object[] {digits});
+            type.GetMethod("SetMinimumFractionDigits").Invoke(nf, new object[] {digits});
+            return (String) type.GetMethod("Format").Invoke(nf, new object[] {value});
+        };
+        Assert.Equal("0.12", format(0.125, 2));
+        Assert.Equal("1.00", format(1.005, 2));
+        Assert.Equal("2", format(2.5, 0));
+        Assert.Equal("4", format(3.5, 0));
+        Assert.Equal("0.00", format(-0.001, 2));
+        Assert.Equal("-1.50", format(-1.5, 2));
+        Assert.Equal("10000000000000000000000", format(1e22, 0));
+        Random random = new Random(17);
+        for (int i = 0; i < 20000; i++) {
+            double value = (random.NextDouble() - 0.5) * Math.Pow(10, random.Next(-6, 12));
+            int digits = random.Next(0, 9);
+            String want = value.ToString("F" + digits, System.Globalization.CultureInfo.InvariantCulture);
+            if (want.Trim('-', '0', '.').Length == 0) {
+                want = want.TrimStart('-');
+            }
+            Assert.Equal(want, format(value, digits));
+        }
     }
 }
 }

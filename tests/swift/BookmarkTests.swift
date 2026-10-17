@@ -22,6 +22,10 @@ import Testing
         #expect(child.getTitle() == "Chapter one intro")
         #expect(child.getDestinationName() != nil)
         #expect(child.getParent() === root)
+        // A vertical tab is whitespace, and a no-break space is not, in the four
+        // ports (review of 17 October 2026)
+        let other = root.addBookmark(page, Title(TestSupport.helvetica(pdf), "A\u{0B}b\u{A0}c", 10, 10))
+        #expect(other.getTitle() == "A b\u{A0}c")
     }
 
     private func item(_ objects: [PDFobj], _ title: String) throws -> PDFobj {

@@ -26,6 +26,10 @@ public class BookmarkTest {
         Assert.Equal("Chapter one intro", child.GetTitle());
         Assert.NotNull(child.GetDestinationName());
         Assert.Same(root, child.GetParent());
+        // A vertical tab is whitespace, and a no-break space is not, in the four
+        // ports (review of 17 October 2026)
+        Bookmark other = root.AddBookmark(page, new Title(TestSupport.Helvetica(pdf), "A\u000Bb\u00A0c", 10f, 10f));
+        Assert.Equal("A b\u00A0c", other.GetTitle());
     }
 
     private static PDFobj Item(List<PDFobj> objects, string title) {

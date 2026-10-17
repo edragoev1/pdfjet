@@ -264,6 +264,71 @@ internal class Util {
         }
         return (int) value;
     }
+    // Returns the text in lower case as Java's toLowerCase of Locale.ROOT has
+    // it, which ToLowerInvariant, character by character, does not: İ is i
+    // and a combining dot, and a sigma that ends a word is ς. The keywords of
+    // a text block are highlighted as in Java (review of 17 October 2026).
+    internal static String LowerAsJava(String text) {
+        if (text.IndexOf('\u0130') == -1 && text.IndexOf('\u03A3') == -1) {
+            return text.ToLowerInvariant();
+        }
+        StringBuilder buf = new StringBuilder(text.Length + 1);
+        for (int i = 0; i < text.Length; i++) {
+            char c = text[i];
+            if (c == '\u0130') {
+                buf.Append("i\u0307");
+            } else if (c == '\u03A3' && FinalSigma(text, i)) {
+                buf.Append('\u03C2');
+            } else if (char.IsHighSurrogate(c) && i + 1 < text.Length && char.IsLowSurrogate(text[i + 1])) {
+                buf.Append(text.Substring(i, 2).ToLowerInvariant());
+                i++;
+            } else {
+                buf.Append(char.ToLowerInvariant(c));
+            }
+        }
+        return buf.ToString();
+    }
+
+    // True when the sigma at i ends a word, as Unicode's Final_Sigma has it: a
+    // cased letter before it, and none after it, past the characters that
+    // case ignores.
+    private static bool FinalSigma(String text, int i) {
+        bool before = false;
+        for (int j = i - 1; j >= 0; j--) {
+            if (!CaseIgnorable(text[j])) {
+                before = Cased(text[j]);
+                break;
+            }
+        }
+        if (!before) {
+            return false;
+        }
+        for (int j = i + 1; j < text.Length; j++) {
+            if (!CaseIgnorable(text[j])) {
+                return !Cased(text[j]);
+            }
+        }
+        return true;
+    }
+
+    private static bool Cased(char c) {
+        UnicodeCategory category = char.GetUnicodeCategory(c);
+        return category == UnicodeCategory.UppercaseLetter || category == UnicodeCategory.LowercaseLetter
+                || category == UnicodeCategory.TitlecaseLetter;
+    }
+
+    private static bool CaseIgnorable(char c) {
+        switch (c) {
+        case '\'': case '.': case ':': case '^': case '`':
+        case '\u00AD': case '\u00B7': case '\u2018': case '\u2019': case '\u2024': case '\u2027':
+            return true;
+        }
+        UnicodeCategory category = char.GetUnicodeCategory(c);
+        return category == UnicodeCategory.NonSpacingMark || category == UnicodeCategory.EnclosingMark
+                || category == UnicodeCategory.Format || category == UnicodeCategory.ModifierLetter
+                || category == UnicodeCategory.ModifierSymbol;
+    }
+
 
     /// <summary>
     /// Removes the leading and trailing characters with a code of 0x20 or less,

@@ -2644,7 +2644,7 @@ public class Page {
             // holds it in lower case, as TextBlock.SetHighlightColors does
             int highlight;
             if (highlightColors.TryGetValue(str, out highlight) ||
-                    highlightColors.TryGetValue(str.ToLowerInvariant(), out highlight)) {
+                    highlightColors.TryGetValue(Util.LowerAsJava(str), out highlight)) {
                 SetBrushColor(highlight);
             } else {
                 SetBrushColor(color);

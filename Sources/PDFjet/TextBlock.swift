@@ -281,7 +281,7 @@ public class TextBlock : Drawable {
     public func setHighlightColors(_ map: [String: Int32]) -> TextBlock {
         var colors = [String: Int32]()
         for (key, value) in map {
-            colors[key.lowercased()] = value
+            colors[Util.lowerAsJava(key)] = value
         }
         self.keywordHighlightColors = colors
         return self

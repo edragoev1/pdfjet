@@ -46,7 +46,9 @@ func NewBookmarkAt(page *Page, y float32, key, title string) *Bookmark {
 
 // bookmarkWhitespace matches the runs of whitespace of a title, which a
 // bookmark shows as one space; it is compiled once, not for every bookmark.
-var bookmarkWhitespace = regexp.MustCompile(`\s+`)
+// Java's \s, with the vertical tab that Go's \s leaves out (review of
+// 17 October 2026).
+var bookmarkWhitespace = regexp.MustCompile(`[ \t\n\v\f\r]+`)
 
 // AddBookmark adds bookmark to the page.
 func (bookmark *Bookmark) AddBookmark(page *Page, title *Title) *Bookmark {

@@ -114,6 +114,15 @@ This is the first entry in this file; earlier releases were not tracked here.
 - Swift: ImageSize and SVGImage of a stream that cannot be read, as one of a
   missing file, throw the stream's error; they said "not a PNG, JPEG or BMP
   file" and drew an empty SVG.
+- A soft hyphen after a Unicode space, as an em space, breaks a text block's
+  line in Java as in the other ports.
+- Bookmark titles: the whitespace that runs into one space is Java's, the
+  vertical tab with the others in Go, and not a no-break space in C#.
+- C# on .NET Framework 4.8: the labels of a chart round the exact value
+  half to even, as Java and .NET 8 do; 0.125 was 0.13.
+- The keywords of a text block and the words they are matched with are in
+  lower case as in Java in the four ports: İ is i with a combining dot, and
+  a sigma that ends a word is ς, in Go, C# and Swift.
 - Reading an encrypted PDF with many strings after /Contents in one
   dictionary took time growing with the square of their number, as each
   string looked for its dictionary's ends again: a PDF of 560 KB took 17

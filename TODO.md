@@ -279,12 +279,12 @@ Java's parsers (in the other ports where they share the code):
       TrueType: refuse it.
 
 The C# port against Java:
-- [ ] TextBlock soft hyphen after a Unicode space (Util.Trim against
+- [x] TextBlock soft hyphen after a Unicode space (Util.Trim against
       Java's trimSpace); Swift too.
-- [ ] Bookmark titles: Unicode \s in place of ASCII whitespace; Go's
+- [x] Bookmark titles: Unicode \s in place of ASCII whitespace; Go's
       leaves out \v.
-- [ ] net48: NumberFormat F rounding half away from zero (chart labels).
-- [ ] Highlight keywords lower-cased per character (final sigma, İ).
+- [x] net48: NumberFormat F rounding half away from zero (chart labels).
+- [x] Highlight keywords lower-cased per character (final sigma, İ).
 - [ ] A lone surrogate written as EF BF BD where Java writes 3F (URIs,
       QR, DataMatrix, and the other places): one choice for all ports.
 - [ ] SVG numbers: hex floats and underscores refused where the others

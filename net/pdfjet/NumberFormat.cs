@@ -6,6 +6,7 @@
  */
 using System;
 using System.Globalization;
+using System.Numerics;
 
 namespace PDFjet.NET {
 /// <summary>Formats numbers with a minimum and a maximum number of fraction digits.</summary>
@@ -48,7 +49,7 @@ internal class NumberFormat {
         if (Double.IsInfinity(value)) {
             return (value < 0) ? "-Infinity" : "Infinity";
         }
-        String label = value.ToString("F" + maxFractionDigits, CultureInfo.InvariantCulture);
+        String label = Fixed(value, maxFractionDigits);
         int point = label.IndexOf('.');
         if (point != -1) {
             int end = label.Length;
@@ -64,6 +65,42 @@ internal class NumberFormat {
             label = label.TrimStart('-');
         }
         return label;
+    }
+
+    // The value with the digits after the point, the exact value of the double
+    // rounded half to even, as Java's DecimalFormat rounds it. ToString("F")
+    // does so on .NET 8, but on .NET Framework it rounds 15 digits of the
+    // value half away from zero: 0.125 was 0.13, and 1.005 1.01, where Java
+    // has 0.12 and 1.00 (review of 17 October 2026).
+    private static String Fixed(double value, int digits) {
+        long bits = BitConverter.DoubleToInt64Bits(value);
+        bool negative = bits < 0;
+        int exponent = (int) ((bits >> 52) & 0x7FF);
+        long mantissa = bits & 0xFFFFFFFFFFFFFL;
+        if (exponent == 0) {
+            exponent = 1;   // Subnormal
+        } else {
+            mantissa |= 1L << 52;
+        }
+        exponent -= 1075;   // value = mantissa * 2^exponent
+        BigInteger scaled = new BigInteger(mantissa) * BigInteger.Pow(10, digits);
+        if (exponent >= 0) {
+            scaled <<= exponent;
+        } else {
+            BigInteger divisor = BigInteger.One << -exponent;
+            BigInteger remainder;
+            scaled = BigInteger.DivRem(scaled, divisor, out remainder);
+            int half = (remainder * 2).CompareTo(divisor);
+            if (half > 0 || (half == 0 && !scaled.IsEven)) {
+                scaled += 1;
+            }
+        }
+        String text = scaled.ToString(CultureInfo.InvariantCulture);
+        if (digits > 0) {
+            text = text.PadLeft(digits + 1, '0');
+            text = text.Substring(0, text.Length - digits) + "." + text.Substring(text.Length - digits);
+        }
+        return negative ? "-" + text : text;
     }
 }   // End of NumberFormat.cs
 }   // End of package PDFjet.NET

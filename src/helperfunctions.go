@@ -434,3 +434,60 @@ func cjkLineEnd(line []rune, next rune) int {
 	}
 	return end
 }
+
+// lowerAsJava returns the text in lower case as Java's toLowerCase of
+// Locale.ROOT has it, which strings.ToLower, character by character, does not:
+// İ is i and a combining dot, and a sigma that ends a word is ς. The keywords
+// of a text block are highlighted as in Java (review of 17 October 2026).
+func lowerAsJava(text string) string {
+	if !strings.ContainsAny(text, "\u0130\u03A3") {
+		return strings.ToLower(text)
+	}
+	runes := []rune(text)
+	var buf strings.Builder
+	for i, r := range runes {
+		switch {
+		case r == 0x0130:
+			buf.WriteString("i\u0307")
+		case r == 0x03A3 && finalSigma(runes, i):
+			buf.WriteRune(0x03C2)
+		default:
+			buf.WriteRune(unicode.ToLower(r))
+		}
+	}
+	return buf.String()
+}
+
+// finalSigma returns true when the sigma at i ends a word, as Unicode's
+// Final_Sigma has it: a cased letter before it, and none after it, past the
+// characters that case ignores.
+func finalSigma(runes []rune, i int) bool {
+	before := false
+	for j := i - 1; j >= 0; j-- {
+		if !caseIgnorable(runes[j]) {
+			before = cased(runes[j])
+			break
+		}
+	}
+	if !before {
+		return false
+	}
+	for j := i + 1; j < len(runes); j++ {
+		if !caseIgnorable(runes[j]) {
+			return !cased(runes[j])
+		}
+	}
+	return true
+}
+
+func cased(r rune) bool {
+	return unicode.IsUpper(r) || unicode.IsLower(r) || unicode.IsTitle(r)
+}
+
+func caseIgnorable(r rune) bool {
+	switch r {
+	case '\'', '.', ':', '^', '`', 0x00AD, 0x00B7, 0x2018, 0x2019, 0x2024, 0x2027:
+		return true
+	}
+	return unicode.In(r, unicode.Mn, unicode.Me, unicode.Cf, unicode.Lm, unicode.Sk)
+}

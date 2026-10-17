@@ -36,6 +36,10 @@ class BookmarkTest {
         assertEquals("Chapter one intro", child.getTitle());
         assertNotNull(child.getDestinationName());
         assertSame(root, child.getParent());
+        // A vertical tab is whitespace, and a no-break space is not, in the four
+        // ports (review of 17 October 2026)
+        Bookmark other = root.addBookmark(page, new Title(TestSupport.helvetica(pdf), "A\u000Bb\u00A0c", 10f, 10f));
+        assertEquals("A b\u00A0c", other.getTitle());
     }
 
     private static PDFobj item(List<PDFobj> objects, String title) {

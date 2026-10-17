@@ -381,7 +381,7 @@ func (textBlock *TextBlock) SetURIAction(uri string) *TextBlock {
 func (textBlock *TextBlock) SetHighlightColors(keywordHighlightColors map[string]int32) *TextBlock {
 	textBlock.keywordHighlightColors = make(map[string]int32)
 	for key, value := range keywordHighlightColors {
-		textBlock.keywordHighlightColors[strings.ToLower(key)] = value
+		textBlock.keywordHighlightColors[lowerAsJava(key)] = value
 	}
 	return textBlock
 }

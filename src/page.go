@@ -2271,7 +2271,7 @@ func (page *Page) drawWord(font *Font, buf *strings.Builder, brush [3]float32, c
 		// holds it in lower case, as TextBlock.SetHighlightColors does
 		brushColor, ok := colors[buf.String()]
 		if !ok {
-			brushColor, ok = colors[strings.ToLower(buf.String())]
+			brushColor, ok = colors[lowerAsJava(buf.String())]
 		}
 		if ok {
 			page.SetBrushColor(brushColor)

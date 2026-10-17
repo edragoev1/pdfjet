@@ -2538,7 +2538,7 @@ public class Page {
     // or in lower case. The keys are compared by their code points, as in the
     // other ports, and not by canonical equivalence, as Swift compares strings.
     private func highlightColor(_ highlightColors: [String : Int32], _ word: String) -> Int32? {
-        let lower = word.lowercased()
+        let lower = Util.lowerAsJava(word)
         var lowerColor: Int32?
         for (key, color) in highlightColors {
             if key.unicodeScalars.elementsEqual(word.unicodeScalars) {

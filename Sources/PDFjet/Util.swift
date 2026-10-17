@@ -333,4 +333,70 @@ final class DataFileLines {
             }
         }
     }
+
+}
+
+extension Util {
+    // Returns the text in lower case as Java's toLowerCase of Locale.ROOT has
+    // it, which lowercased() does not on Linux: a sigma that ends a word is ς.
+    // The keywords of a text block are highlighted as in Java (review of
+    // 17 October 2026).
+    static func lowerAsJava(_ text: String) -> String {
+        let scalars = Array(text.unicodeScalars)
+        var result = String.UnicodeScalarView()
+        for (i, scalar) in scalars.enumerated() {
+            if scalar.value == 0x03A3 && finalSigma(scalars, i) {
+                result.append(Unicode.Scalar(0x03C2)!)
+            } else {
+                result.append(contentsOf: scalar.properties.lowercaseMapping.unicodeScalars)
+            }
+        }
+        return String(result)
+    }
+
+    // True when the sigma at i ends a word, as Unicode's Final_Sigma has it: a
+    // cased letter before it, and none after it, past the characters that
+    // case ignores.
+    private static func finalSigma(_ scalars: [Unicode.Scalar], _ i: Int) -> Bool {
+        var before = false
+        var j = i - 1
+        while j >= 0 {
+            if !caseIgnorable(scalars[j]) {
+                before = cased(scalars[j])
+                break
+            }
+            j -= 1
+        }
+        if !before {
+            return false
+        }
+        for k in (i + 1)..<scalars.count where !caseIgnorable(scalars[k]) {
+            return !cased(scalars[k])
+        }
+        return true
+    }
+
+    private static func cased(_ scalar: Unicode.Scalar) -> Bool {
+        switch scalar.properties.generalCategory {
+        case .uppercaseLetter, .lowercaseLetter, .titlecaseLetter:
+            return true
+        default:
+            return false
+        }
+    }
+
+    private static func caseIgnorable(_ scalar: Unicode.Scalar) -> Bool {
+        switch scalar.value {
+        case 0x27, 0x2E, 0x3A, 0x5E, 0x60, 0x00AD, 0x00B7, 0x2018, 0x2019, 0x2024, 0x2027:
+            return true
+        default:
+            break
+        }
+        switch scalar.properties.generalCategory {
+        case .nonspacingMark, .enclosingMark, .format, .modifierLetter, .modifierSymbol:
+            return true
+        default:
+            return false
+        }
+    }
 }   // End of Util.swift

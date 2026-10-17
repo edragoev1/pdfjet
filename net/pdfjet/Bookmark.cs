@@ -53,8 +53,10 @@ public class Bookmark {
         }
         String key = bm.NextKey();
 
+        // Java's \s: the \s of .NET is every Unicode space, which made a
+        // no-break space of a title a plain one (review of 17 October 2026)
         Bookmark bookmark = new Bookmark(
-                key, Regex.Replace(title.textLine.text, @"\s+"," "));
+                key, Regex.Replace(title.textLine.text, @"[ \t\n\v\f\r]+", " "));
         bookmark.parent = this;
         bookmark.dest = page.AddDestination(key, title.textLine.DestinationY());
         bookmark.dest.bookmark = true;

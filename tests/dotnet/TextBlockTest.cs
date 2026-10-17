@@ -411,5 +411,28 @@ public class TextBlockTest {
         Assert.Equal("The width of a text block is a finite number.",
                 Assert.Throws<ArgumentException>(() => block.DrawOn(page)).Message);
     }
+
+    // The keywords and the words are in lower case as Java's toLowerCase of
+    // Locale.ROOT has them: İ is i and a combining dot, and a sigma that ends
+    // a word is ς (review of 17 October 2026)
+    [Fact]
+    public void TheLowerCaseIsJavas() {
+        var lower = typeof(PDF).Assembly.GetType("PDFjet.NET.Util").GetMethod("LowerAsJava",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+        String[,] cases = {
+            {"\u039F\u0394\u039F\u03A3", "\u03BF\u03B4\u03BF\u03C2"},
+            {"\u03A3\u0391", "\u03C3\u03B1"},
+            {"\u0130STANBUL", "i\u0307stanbul"},
+            {"A\u03A3.", "a\u03C2."},
+            {"A\u03A3'B", "a\u03C3'b"},
+            {"\u03A3", "\u03C3"},
+            {"A\u03A3\u0301", "a\u03C2\u0301"},
+            {"\u00C0\u03A31", "\u00E0\u03C21"},
+            {"\u0391\u03A3\u00AD\u0392", "\u03B1\u03C3\u00AD\u03B2"},
+        };
+        for (int i = 0; i < cases.GetLength(0); i++) {
+            Assert.Equal(cases[i, 1], (String) lower.Invoke(null, new object[] {cases[i, 0]}));
+        }
+    }
 }
 }

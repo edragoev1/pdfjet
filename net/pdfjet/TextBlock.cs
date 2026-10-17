@@ -312,7 +312,7 @@ public class TextBlock : IDrawable {
     public TextBlock SetHighlightColors(Dictionary<string, int> map) {
         this.keywordHighlightColors = new Dictionary<string, int>();
         foreach (var key in map.Keys) {
-            this.keywordHighlightColors[key.ToLowerInvariant()] = map[key];
+            this.keywordHighlightColors[Util.LowerAsJava(key)] = map[key];
         }
         return this;
     }

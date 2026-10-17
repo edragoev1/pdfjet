@@ -430,4 +430,24 @@ class TextBlockTest {
                 org.junit.jupiter.api.Assertions.assertThrows(
                         IllegalArgumentException.class, () -> block.drawOn(page)).getMessage());
     }
+
+    // A soft hyphen after a Unicode space, an em space, breaks the line as in
+    // the other ports: Java alone took the space for nothing (review of
+    // 17 October 2026)
+    @Test
+    void aSoftHyphenAfterAnEmSpaceBreaksAsInTheOtherPorts() throws Exception {
+        TextBlock block = new TextBlock(TestSupport.helvetica(TestSupport.newPDF()),
+                "\u2003\u00ADabcdefghijklmnopqrstuvwxyz");
+        block.setWidth(60f);
+        java.lang.reflect.Method getTextLines = TextBlock.class.getDeclaredMethod("getTextLines");
+        getTextLines.setAccessible(true);
+        TextLine[] lines = (TextLine[]) getTextLines.invoke(block);
+        String[] texts = new String[lines.length];
+        for (int i = 0; i < lines.length; i++) {
+            texts[i] = lines[i].text;
+        }
+        org.junit.jupiter.api.Assertions.assertArrayEquals(
+                new String[] {"\u2003-", "abcdefghij", "klmnopqrst", "uvwxyz"}, texts);
+    }
 }
+

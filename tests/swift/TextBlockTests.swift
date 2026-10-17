@@ -334,4 +334,25 @@ import Testing
             #expect(TestSupport.message(error).contains("The width of a text block is a finite number."))
         }
     }
+
+    // The keywords and the words are in lower case as Java's toLowerCase of
+    // Locale.ROOT has them: İ is i and a combining dot, and a sigma that ends
+    // a word is ς (review of 17 October 2026)
+    @Test func theLowerCaseIsJavas() {
+        let cases: [(String, String)] = [
+            ("\u{039F}\u{0394}\u{039F}\u{03A3}", "\u{03BF}\u{03B4}\u{03BF}\u{03C2}"),
+            ("\u{03A3}\u{0391}", "\u{03C3}\u{03B1}"),
+            ("\u{0130}STANBUL", "i\u{0307}stanbul"),
+            ("A\u{03A3}.", "a\u{03C2}."),
+            ("A\u{03A3}'B", "a\u{03C3}'b"),
+            ("\u{03A3}", "\u{03C3}"),
+            ("A\u{03A3}\u{0301}", "a\u{03C2}\u{0301}"),
+            ("\u{00C0}\u{03A3}1", "\u{00E0}\u{03C2}1"),
+            ("\u{0391}\u{03A3}\u{00AD}\u{0392}", "\u{03B1}\u{03C3}\u{00AD}\u{03B2}"),
+        ]
+        for (text, java) in cases {
+            #expect(Array(Util.lowerAsJava(text).unicodeScalars) == Array(java.unicodeScalars), "\(text)")
+        }
+    }
 }
+

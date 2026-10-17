@@ -683,7 +683,9 @@ public class TextBlock implements Drawable {
             if (word.charAt(k) != '\u00AD') {
                 continue;
             }
-            if (Util.trimSpace(word.substring(start, k).replace("\u00AD", "")).isEmpty()) {
+            // trim(), the characters to U+0020, as the other ports: a Unicode
+            // space counted as nothing here (review of 17 October 2026)
+            if (word.substring(start, k).replace("\u00AD", "").trim().isEmpty()) {
                 continue;
             }
             float width = shaped != null
@@ -823,7 +825,8 @@ public class TextBlock implements Drawable {
         }
         for (int i = word.lastIndexOf(softHyphen, end - 1); i != -1;
                 i = word.lastIndexOf(softHyphen, i - 1)) {
-            if (Util.trimSpace(word.substring(0, i).replace(softHyphen, "")).isEmpty()
+            // trim(), the characters to U+0020, as the other ports
+            if (word.substring(0, i).replace(softHyphen, "").trim().isEmpty()
                     || i + softHyphen.length() == word.length()) {
                 continue;
             }

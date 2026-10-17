@@ -36,6 +36,12 @@ func TestBookmarkATitleHasItsWhitespaceCollapsed(t *testing.T) {
 	if child.GetParent() != root {
 		t.Error("wrong parent")
 	}
+	// A vertical tab is whitespace, and a no-break space is not, in the four
+	// ports (review of 17 October 2026)
+	other := root.AddBookmark(page, NewTitle(testHelvetica(pdf), "A\vb\u00A0c", 10, 10))
+	if other.GetTitle() != "A b\u00A0c" {
+		t.Errorf("title %q", other.GetTitle())
+	}
 }
 
 func testOutlineItem(t *testing.T, objects []*PDFobj, title string) *PDFobj {
