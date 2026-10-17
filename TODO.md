@@ -287,7 +287,7 @@ The C# port against Java:
 - [x] Highlight keywords lower-cased per character (final sigma, İ).
 - [x] A lone surrogate written as EF BF BD where Java writes 3F (URIs,
       QR, DataMatrix, and the other places): one choice for all ports.
-- [ ] SVG numbers: hex floats and underscores refused where the others
+- [x] SVG numbers: hex floats and underscores refused where the others
       take them.
 - [x] EmbeddedFile registered before its stream is read (Go too).
 - [ ] AppendToken best-fits characters above U+00FF where Java writes ?.

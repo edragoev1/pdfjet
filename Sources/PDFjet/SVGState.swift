@@ -415,7 +415,7 @@ struct SVGState {
     }
 
     /// Returns the number of the text, or nil for text that is not one: a
-    /// hexadecimal number needs an exponent, a NaN is written nan, and a
+    /// number is written in decimal, a NaN is written nan, and a
     /// number too large for a Double is not read as an infinity.
     static func parseDouble(_ text: String) -> Double? {
         guard let number = Double(text), isNumber(text, number) else {
@@ -443,7 +443,10 @@ struct SVGState {
         if number.isInfinite {
             return digits == "inf" || digits == "infinity"
         }
-        return !digits.hasPrefix("0x") || digits.contains("p")
+        // Only a number written in decimal: a hexadecimal number, as 0x1p3,
+        // is none of SVG's, and C# did not read one (review of
+        // 17 October 2026)
+        return digits.allSatisfy { "0123456789.e+-".contains($0) }
     }
 
     // The math.Min and math.Max of the other ports: NaN if either number is,

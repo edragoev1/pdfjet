@@ -126,6 +126,9 @@ This is the first entry in this file; earlier releases were not tracked here.
 - Java: a lone surrogate, in a link's URI, a QR code, a DataMatrix, the
   metadata or the language, is written as the replacement character, EF BF
   BD, as in the other ports; it was '?'.
+- SVG: a number of an attribute is read only when written in decimal, in
+  the four ports: Java, Go and Swift read 0x1p3 and 1_000, which are none
+  of SVG's, where C# did not.
 - Reading an encrypted PDF with many strings after /Contents in one
   dictionary took time growing with the square of their number, as each
   string looked for its dictionary's ends again: a PDF of 560 KB took 17

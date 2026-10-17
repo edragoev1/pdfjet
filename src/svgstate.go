@@ -340,7 +340,7 @@ func parseSVGColor(colorMap map[string]int32, value string) (int32, bool, error)
 				part = part[:len(part)-1]
 				scale = 2.55
 			}
-			number, err := strconv.ParseFloat(part, 64)
+			number, err := parseSVGFloat(part, 64)
 			if err != nil || math.IsNaN(number) || math.IsInf(number, 0) {
 				return 0, false, nil
 			}
@@ -363,7 +363,7 @@ func parseSVGOpacity(value string) (float32, bool) {
 		value = value[:len(value)-1]
 		scale = 0.01
 	}
-	number, err := strconv.ParseFloat(strings.TrimSpace(value), 64)
+	number, err := parseSVGFloat(strings.TrimSpace(value), 64)
 	if err != nil || math.IsNaN(number) {
 		return 0.0, false
 	}
@@ -409,7 +409,7 @@ func parseSVGNumbers(text string) ([]float64, error) {
 		if buf.Len() == 0 {
 			return nil
 		}
-		number, err := strconv.ParseFloat(buf.String(), 64)
+		number, err := parseSVGFloat(buf.String(), 64)
 		if err == nil && (math.IsInf(number, 0) || math.IsNaN(number)) {
 			err = fmt.Errorf("%q is not a number", buf.String())
 		}
@@ -509,4 +509,20 @@ func parseSVGTransform(text string) (matrix [6]float64, ok bool) {
 		matrix = svgMultiply(matrix, m)
 	}
 	return matrix, true
+}
+
+// parseSVGFloat reads a number of an attribute as strconv.ParseFloat does,
+// with inf, infinity and nan in any case, but only one written in decimal:
+// a hexadecimal number, as 0x1p3, or one with underscores, as 1_000, is none
+// of SVG's, and C# did not read them (review of 17 October 2026).
+func parseSVGFloat(text string, bitSize int) (float64, error) {
+	digits := strings.TrimLeft(text, "+-")
+	switch strings.ToLower(digits) {
+	case "inf", "infinity", "nan":
+	default:
+		if strings.Trim(text, "0123456789.eE+-") != "" {
+			return 0, fmt.Errorf("%q is not a number", text)
+		}
+	}
+	return strconv.ParseFloat(text, bitSize)
 }

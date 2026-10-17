@@ -6,6 +6,7 @@
 package pdfjet
 
 import (
+	"math"
 	"strconv"
 	"strings"
 	"testing"
@@ -703,5 +704,22 @@ func TestASVGStyleSheetAppliesALimitedNumberOfDeclarations(t *testing.T) {
 	}
 	if time.Since(start) > 5*time.Second {
 		t.Errorf("50,000 classes took %v", time.Since(start))
+	}
+}
+
+// A number of an attribute is written in decimal: a hexadecimal one, as
+// 0x1p3, or one with underscores, as 1_000, is none of SVG's, and is not read
+// in any port (review of 17 October 2026).
+func TestANumberOfAnAttributeIsWrittenInDecimal(t *testing.T) {
+	for _, text := range []string{"0x1p3", "1_000", "0x10", "1f"} {
+		if _, err := parseSVGFloat(text, 64); err == nil {
+			t.Errorf("%q is read", text)
+		}
+	}
+	if n, err := parseSVGFloat("1e3", 64); err != nil || n != 1000 {
+		t.Errorf("1e3: %v %v", n, err)
+	}
+	if n, err := parseSVGFloat("-inf", 64); err != nil || !math.IsInf(n, -1) {
+		t.Errorf("-inf: %v %v", n, err)
 	}
 }

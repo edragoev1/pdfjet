@@ -638,4 +638,19 @@ class SVGImageTest {
         new SVGImage(new ByteArrayInputStream(classes.toString().getBytes(StandardCharsets.UTF_8)));
         assertTrue(System.nanoTime() - start < 5_000_000_000L, "50,000 classes took too long");
     }
+
+    // A number of an attribute is written in decimal: a hexadecimal one, as
+    // 0x1p3, or one with underscores, as 1_000, is none of SVG's, and is not
+    // read in any port (review of 17 October 2026)
+    @Test
+    void aNumberOfAnAttributeIsWrittenInDecimal() {
+        for (String text : new String[] {"0x1p3", "1_000", "0x10", "1f"}) {
+            org.junit.jupiter.api.Assertions.assertThrows(NumberFormatException.class,
+                    () -> SVGState.parseNumber(text, false), text);
+        }
+        assertEquals(1000.0, SVGState.parseNumber("1e3", false));
+        assertEquals(0.5, SVGState.parseNumber("+.5", false));
+        assertEquals(Double.NEGATIVE_INFINITY, SVGState.parseNumber("-inf", false));
+        assertTrue(Double.isNaN(SVGState.parseNumber("NaN", false)));
+    }
 }

@@ -543,55 +543,19 @@ class SVGState {
         if (text.isEmpty() || "fFdD".indexOf(text.charAt(text.length() - 1)) >= 0) {
             throw new NumberFormatException("\"" + text + "\" is not a number");
         }
+        // Only a number written in decimal: a hexadecimal number, as 0x1p3, or
+        // one with underscores, as 1_000, is none of SVG's, and C# did not
+        // read them (review of 17 October 2026)
         for (int i = 0; i < text.length(); i++) {
-            if ("0123456789.eE+-xXpPabcdefABCDEF_".indexOf(text.charAt(i)) < 0) {
+            if ("0123456789.eE+-".indexOf(text.charAt(i)) < 0) {
                 throw new NumberFormatException("\"" + text + "\" is not a number");
             }
         }
-        String digits = text;
-        if (text.indexOf('_') >= 0) {
-            if (!underscoresOK(text)) {
-                throw new NumberFormatException("\"" + text + "\" is not a number");
-            }
-            digits = text.replace("_", "");
-        }
-        double number = single ? Float.parseFloat(digits) : Double.parseDouble(digits);
+        double number = single ? Float.parseFloat(text) : Double.parseDouble(text);
         if (Double.isInfinite(number)) {
             throw new NumberFormatException("\"" + text + "\" is out of range");
         }
         return number;
-    }
-
-    // Returns true when every underscore of the number is between two digits,
-    // or between the 0x of a hexadecimal number and a digit, as Go writes
-    // them: 1_000 is 1000.
-    private static boolean underscoresOK(String text) {
-        char saw = '^';     // The start, 0 for a digit, _ or ! for anything else
-        int i = (text.startsWith("+") || text.startsWith("-")) ? 1 : 0;
-        String lower = asciiLower(text);
-        boolean hex = false;
-        if (lower.length() >= i + 2 && lower.charAt(i) == '0' &&
-                (lower.charAt(i + 1) == 'b' || lower.charAt(i + 1) == 'o' || lower.charAt(i + 1) == 'x')) {
-            hex = lower.charAt(i + 1) == 'x';
-            saw = '0';
-            i += 2;
-        }
-        for (; i < lower.length(); i++) {
-            char ch = lower.charAt(i);
-            if (ch >= '0' && ch <= '9' || hex && ch >= 'a' && ch <= 'f') {
-                saw = '0';
-            } else if (ch == '_') {
-                if (saw != '0') {
-                    return false;
-                }
-                saw = '_';
-            } else if (saw == '_') {
-                return false;
-            } else {
-                saw = '!';
-            }
-        }
-        return saw != '_';
     }
 
     // Returns the text with the letters A to Z in lower case, and no other.

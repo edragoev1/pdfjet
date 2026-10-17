@@ -602,5 +602,23 @@ public class SVGImageTest {
             Assert.Contains("invalid path data", e.Message.ToLowerInvariant());
         }
     }
+
+    // A number of an attribute is written in decimal: a hexadecimal one, as
+    // 0x1p3, or one with underscores, as 1_000, is none of SVG's, and is not
+    // read in any port (review of 17 October 2026)
+    [Fact]
+    public void ANumberOfAnAttributeIsWrittenInDecimal() {
+        var parse = typeof(PDF).Assembly.GetType("PDFjet.NET.SVGState").GetMethod("ParseDouble",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+        foreach (String text in new[] {"0x1p3", "1_000", "0x10", "1f"}) {
+            Assert.False((bool) parse.Invoke(null, new object[] {text, 0.0}), text);
+        }
+        object[] args = {"1e3", 0.0};
+        Assert.True((bool) parse.Invoke(null, args));
+        Assert.Equal(1000.0, (double) args[1]);
+        args = new object[] {"-inf", 0.0};
+        Assert.True((bool) parse.Invoke(null, args));
+        Assert.Equal(double.NegativeInfinity, (double) args[1]);
+    }
 }
 }

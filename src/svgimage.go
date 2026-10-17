@@ -17,7 +17,6 @@ import (
 	"io"
 	"math"
 	"os"
-	"strconv"
 	"strings"
 
 	"github.com/edragoev1/pdfjet/v9/src/capstyle"
@@ -409,7 +408,7 @@ func parseLength(value string) float32 {
 			break
 		}
 	}
-	number, err := strconv.ParseFloat(value, 32)
+	number, err := parseSVGFloat(value, 32)
 	if err != nil || math.IsInf(number, 0) || math.IsNaN(number) {
 		return 0.0
 	}
@@ -423,7 +422,7 @@ func parseFloatLenient(value string) (float32, error) {
 	if value == "" {
 		return 0.0, nil
 	}
-	v, err := strconv.ParseFloat(value, 32)
+	v, err := parseSVGFloat(value, 32)
 	if err != nil {
 		return 0.0, fmt.Errorf("%q: %w", value, err)
 	}

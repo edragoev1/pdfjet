@@ -594,4 +594,15 @@ import Testing
             }
         }
     }
+
+    // A number of an attribute is written in decimal: a hexadecimal one, as
+    // 0x1p3, or one with underscores, as 1_000, is none of SVG's, and is not
+    // read in any port (review of 17 October 2026)
+    @Test func aNumberOfAnAttributeIsWrittenInDecimal() {
+        for text in ["0x1p3", "1_000", "0x10", "1f"] {
+            #expect(SVGState.parseDouble(text) == nil, "\(text)")
+        }
+        #expect(SVGState.parseDouble("1e3") == 1000)
+        #expect(SVGState.parseDouble("-inf") == -Double.infinity)
+    }
 }
