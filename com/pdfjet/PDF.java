@@ -227,9 +227,9 @@ final public class PDF {
      *  Creates a PDF object that represents a PDF document.
      *
      *  @param os the associated output stream.
-     *  @throws Exception if an input or output exception occurred
+     *  @throws IOException if an input or output exception occurred
      */
-    public PDF(OutputStream os) throws Exception { this(os, Compliance.PDF_1_7); }
+    public PDF(OutputStream os) throws IOException { this(os, Compliance.PDF_1_7); }
 
     // Here is the layout of the PDF document:
     //
@@ -267,9 +267,9 @@ final public class PDF {
      *
      *  @param os the associated output stream.
      *  @param compliance must be: Compliance.PDF_UA_1, Compliance.PDF_A_1A to Compliance.PDF_A_3B, or Compliance.PDF_A_3A_UA_1, which is both PDF/A-3a and PDF/UA-1
-     *  @throws Exception  If an input or output exception occurred
+     *  @throws IOException  If an input or output exception occurred
      */
-    public PDF(OutputStream os, Compliance compliance) throws Exception {
+    public PDF(OutputStream os, Compliance compliance) throws IOException {
         this.os = os;
         this.compliance = compliance;
 
@@ -436,7 +436,7 @@ final public class PDF {
     }
 
     @SuppressWarnings("deprecation") // PDF_A_3A, which is still written
-    int addMetadataObject(String notice, boolean fontMetadataObject) throws Exception {
+    int addMetadataObject(String notice, boolean fontMetadataObject) throws IOException {
         StringBuilder sb = new StringBuilder();
         // The header begins with the byte order mark, which ISO 16684-1
         // asks of it (review of 11 October 2026, #28)
@@ -640,7 +640,7 @@ final public class PDF {
         return sb.toString();
     }
 
-    private int addOutputIntentObject() throws Exception {
+    private int addOutputIntentObject() throws IOException {
         byte[] profile = ICCBlackScaled.profile;
         if (encryption != null) {
             profile = AES256.encrypt(profile, encryption.getKey());
@@ -713,7 +713,7 @@ final public class PDF {
         }
     }
 
-    private int addResourcesObject() throws Exception {
+    private int addResourcesObject() throws IOException {
         newObj();
         append(Token.BEGIN_DICTIONARY);
         checkPDFA1Size(fonts.size() + importedFontNames.size(), MAX_PDFA1_DICT_ENTRIES, "the /Font resources");
@@ -786,7 +786,7 @@ final public class PDF {
         return getObjNumber();
     }
 
-    private void addPagesObject() throws Exception {
+    private void addPagesObject() throws IOException {
         setObjOffset(pagesObjNumber, byteCount);
         append(pagesObjNumber);
         append(Token.NEW_OBJ);
@@ -817,7 +817,7 @@ final public class PDF {
         }
     }
 
-    private int addStructTreeRootObject() throws Exception {
+    private int addStructTreeRootObject() throws IOException {
         setObjOffset(structTreeRootNumber, byteCount);
         append(structTreeRootNumber);
         append(" 0 obj\n");
@@ -874,7 +874,7 @@ final public class PDF {
     // The types of PDF 2.0 among the elements, which the role map maps.
     private final Set<String> roles = new HashSet<String>();
 
-    private int addStructDocumentObject(int parent) throws Exception {
+    private int addStructDocumentObject(int parent) throws IOException {
         setObjOffset(documentElementNumber, byteCount);
         append(documentElementNumber);
         append(" 0 obj\n");
@@ -900,7 +900,7 @@ final public class PDF {
     // document of many pages holds no more of them than the page it is
     // drawing. What it keeps is the elements that are still open and the ones
     // of an annotation, whose object is written when the document is completed.
-    private void addPageStructElements(Page page) throws Exception {
+    private void addPageStructElements(Page page) throws IOException {
         if (!isTagged() || page.structures.isEmpty()) {
             return;
         }
@@ -942,7 +942,7 @@ final public class PDF {
 
     // Writes one structure element, under the number it was given when it was
     // made.
-    private void addStructElementObject(StructElement element) throws Exception {
+    private void addStructElementObject(StructElement element) throws IOException {
         {
             setObjOffset(element.objNumber, byteCount);
             append(element.objNumber);
@@ -1060,7 +1060,7 @@ final public class PDF {
         }
     }
 
-    private void addNumsParentTree() throws Exception {
+    private void addNumsParentTree() throws IOException {
         setObjOffset(parentTreeNumber, byteCount);
         append(parentTreeNumber);
         append(Token.NEW_OBJ);
@@ -1107,7 +1107,7 @@ final public class PDF {
 
     // Adds the document information dictionary, which readers like pdfinfo
     // show. It says what the XMP metadata of PDF/A and PDF/UA documents says.
-    private int addInfoObject() throws Exception {
+    private int addInfoObject() throws IOException {
         newObj();
         append(Token.BEGIN_DICTIONARY);
         appendInfoText("/Title", title);
@@ -1130,7 +1130,7 @@ final public class PDF {
 
     // Appends an entry of the information dictionary with the text, unless
     // the text is null.
-    private void appendInfoText(String key, String text) throws Exception {
+    private void appendInfoText(String key, String text) throws IOException {
         if (text != null) {
             append(key);
             append(Token.SPACE);
@@ -1148,7 +1148,7 @@ final public class PDF {
      * @param text the text.
      * @throws Exception if writing to the output fails.
      */
-    void appendTextString(String text) throws Exception {
+    void appendTextString(String text) throws IOException {
         byte[] bytes = ("\uFEFF" + text).getBytes(StandardCharsets.UTF_16BE);
         if (encryption != null) {
             bytes = AES256.encrypt(bytes, encryption.getKey());
@@ -1160,7 +1160,7 @@ final public class PDF {
 
     // Appends an entry of the information dictionary with the bytes of a
     // string, encrypted if the document is encrypted.
-    private void appendInfoString(String key, byte[] bytes) throws Exception {
+    private void appendInfoString(String key, byte[] bytes) throws IOException {
         append(key);
         append(Token.SPACE);
         appendByteString(bytes);
@@ -1169,7 +1169,7 @@ final public class PDF {
 
     // Appends a string of bytes, like a date, in hexadecimal, encrypted if the
     // document is encrypted.
-    void appendByteString(byte[] bytes) throws Exception {
+    void appendByteString(byte[] bytes) throws IOException {
         if (encryption != null) {
             bytes = AES256.encrypt(bytes, encryption.getKey());
         }
@@ -1182,7 +1182,7 @@ final public class PDF {
     // encrypted in hexadecimal if the document is encrypted: written as it is,
     // a reader decrypted it to bytes of no meaning (review of 11 October 2026,
     // #19 and #20).
-    void appendLiteralString(String text) throws Exception {
+    void appendLiteralString(String text) throws IOException {
         if (encryption != null) {
             appendByteString(text.getBytes(StandardCharsets.US_ASCII));
             return;
@@ -1213,7 +1213,7 @@ final public class PDF {
     }
 
     private int addRootObject(
-            int structTreeRootObjNumber, int outlineDictNumber) throws Exception {
+            int structTreeRootObjNumber, int outlineDictNumber) throws IOException {
         // Add the root object
         newObj();
         append(Token.BEGIN_DICTIONARY);
@@ -1285,7 +1285,7 @@ final public class PDF {
     // The files the document carries: /AF says which they are and how each of
     // them relates to the document, and the name tree of /EmbeddedFiles is
     // where a reader of the document looks for a file by its name.
-    private void addAssociatedFiles() throws Exception {
+    private void addAssociatedFiles() throws IOException {
         if (associatedFiles.isEmpty()) {
             return;
         }
@@ -1319,7 +1319,7 @@ final public class PDF {
         append("]>>>>\n");
     }
 
-    private void addPageBox(String boxName, Page page, float[] rect) throws Exception {
+    private void addPageBox(String boxName, Page page, float[] rect) throws IOException {
         append("/");
         append(boxName);
         append(" [");
@@ -1369,7 +1369,7 @@ final public class PDF {
         }
     }
 
-    private void addAllPages(int resObjNumber) throws Exception {
+    private void addAllPages(int resObjNumber) throws IOException {
         setDestinationObjNumbers();
         addAnnotDictionaries();
 
@@ -1453,7 +1453,7 @@ final public class PDF {
         }
     }
 
-    private void addPageContent(Page page) throws Exception {
+    private void addPageContent(Page page) throws IOException {
         page.checkBalanced();
         if (contentStreamsCompression) {
             // Page content usually compresses to less than an eighth of its size.
@@ -1515,7 +1515,7 @@ final public class PDF {
     // of the annotation, from its lower left corner to its upper right one, in
     // the coordinates of the page.
     private int addAppearanceObject(
-            Annotation annot, float minX, float minY, float maxX, float maxY) throws Exception {
+            Annotation annot, float minX, float minY, float maxX, float maxY) throws IOException {
         float w = maxX - minX;
         float h = maxY - minY;
         ByteArrayOutputStream buf = new ByteArrayOutputStream();
@@ -1636,7 +1636,7 @@ final public class PDF {
         buf.write(bytes, 0, bytes.length);
     }
 
-    private int addAnnotationObject(Annotation annot, int index) throws Exception {
+    private int addAnnotationObject(Annotation annot, int index) throws IOException {
         // The rectangle of an annotation of vertices, a polygon, is the box of its
         // vertices, which are relative to its location; its second corner is not
         // set
@@ -1857,7 +1857,7 @@ final public class PDF {
         return index;
     }
 
-    private void addAnnotDictionaries() throws Exception {
+    private void addAnnotDictionaries() throws IOException {
         int index = pages.size();
         for (StructElement element : this.annotElements) {
             if (element.annotation != null) {
@@ -1878,7 +1878,7 @@ final public class PDF {
         }
     }
 
-    private void addOCProperties() throws Exception {
+    private void addOCProperties() throws IOException {
         if (!groups.isEmpty()) {
             List<OCG> list = new ArrayList<OCG>();
             StringBuilder buf = new StringBuilder();
@@ -2460,9 +2460,9 @@ final public class PDF {
      * Completes the construction of the PDF and writes it to the output stream.
      * The output stream is then automatically closed.
      *
-     * @throws Exception  If an input or output exception occurred
+     * @throws IOException  If an input or output exception occurred
      */
-    public void complete() throws Exception {
+    public void complete() throws IOException {
         complete(true);
     }
 
@@ -2473,9 +2473,9 @@ final public class PDF {
      * ZipOutputStream.
      *
      * @param closeStream whether the output stream is closed.
-     * @throws Exception  If an input or output exception occurred
+     * @throws IOException  If an input or output exception occurred
      */
-    public void complete(boolean closeStream) throws Exception {
+    public void complete(boolean closeStream) throws IOException {
         // The output stream is closed also when the document could not be
         // completed, unless it is to be left open.
         try {
@@ -2498,7 +2498,7 @@ final public class PDF {
     }
 
     // Writes the rest of the PDF.
-    private void writeRest() throws Exception {
+    private void writeRest() throws IOException {
         if (completed) {
             fail(new IllegalStateException("complete() was already called."));
         }
@@ -3692,7 +3692,7 @@ final public class PDF {
      * @return the object number of the outline dictionary.
      * @throws Exception if there is an issue.
      */
-    int addOutlineDict(Bookmark toc) throws Exception {
+    int addOutlineDict(Bookmark toc) throws IOException {
         newObj();
         append(Token.BEGIN_DICTIONARY);
         append("/Type /Outlines\n");
@@ -3719,7 +3719,7 @@ final public class PDF {
      * @param bm1 the bookmark.
      * @throws Exception if there is an issue.
      */
-    void addOutlineItem(int outlines, Bookmark bm1) throws Exception {
+    void addOutlineItem(int outlines, Bookmark bm1) throws IOException {
         int prev = (bm1.getPrevBookmark() == null) ? 0 : outlines + bm1.getPrevBookmark().objNumber;
         int next = (bm1.getNextBookmark() == null) ? 0 : outlines + bm1.getNextBookmark().objNumber;
 

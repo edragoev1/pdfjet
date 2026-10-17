@@ -6,6 +6,7 @@
  */
 package com.pdfjet;
 
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -145,7 +146,7 @@ class Subset {
      * map once, and the Type0 font of each Font under the number its pages
      * refer to.
      */
-    static void addTrueTypeFonts(PDF pdf) throws Exception {
+    static void addTrueTypeFonts(PDF pdf) throws IOException {
         for (Font font : pdf.fonts) {
             if (font.program == null) {
                 continue;
@@ -186,7 +187,7 @@ class Subset {
      * embedded before is not written again: its name and object numbers are
      * used.
      */
-    private static boolean[] embedProgram(PDF pdf, Font font) throws Exception {
+    private static boolean[] embedProgram(PDF pdf, Font font) throws IOException {
         for (Font f : pdf.fonts) {
             if (f == font) {
                 break;
@@ -241,7 +242,7 @@ class Subset {
      * and sets the name of the font, with the tag of a subset, and the glyphs
      * the subset keeps, null for a whole font.
      */
-    static byte[] embeddedProgram(Font font) throws Exception {
+    static byte[] embeddedProgram(Font font) throws IOException {
         Program program = font.program;
         byte[] data = program.font;
         if (!program.whole && !program.forbidden) {
@@ -277,7 +278,7 @@ class Subset {
      * the subset keeps: a bit for each glyph number, the first in the high bit
      * of the first byte.
      */
-    private static void addCIDSetObject(PDF pdf, Font font, boolean[] kept) throws Exception {
+    private static void addCIDSetObject(PDF pdf, Font font, boolean[] kept) throws IOException {
         if (kept == null || font.cidSetObjNumber != 0 ||
                 (pdf.compliance != Compliance.PDF_A_1A && pdf.compliance != Compliance.PDF_A_1B)) {
             return;

@@ -18,6 +18,15 @@ This is the first entry in this file; earlier releases were not tracked here.
   already leaves a writer it is given open.
 
 ### Changed
+- Java: the constructors PDF(OutputStream) and PDF(OutputStream,
+  Compliance) and complete() declare throws IOException, not throws
+  Exception: it is all they throw, besides unchecked exceptions (GitHub
+  Discussion #5). A caller's catch of Exception or IOException is as before,
+  and programs already compiled run as before. Code that catches another
+  checked exception round them, which they never threw, no longer
+  compiles: "exception is never thrown". Drawable.drawOn() keeps throws
+  Exception, as narrowing an interface breaks the classes that implement
+  it.
 - The first PDF of a process is made faster: new PDF() no longer starts
   what Java, .NET and Swift take a long time to start the first time. The
   creation date is worked out by hand, as the formatters of the platform

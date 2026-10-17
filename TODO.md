@@ -108,7 +108,10 @@ commit and date. The layout's format version (1) and the look's rules
     complete(boolean closeStream) in Java and Swift, keeping today's default,
     and the leaveOpen of .NET's StreamWriter in C#. Until then: a
     FilterOutputStream whose close() does nothing.
-  - **v9.1.1: narrower exceptions on PDF's own methods (Java).** The
+  - (Done 17 October 2026: 35 internal methods of PDF, FontWriter,
+    FontObjects and Subset narrowed, javac leading; PDFjet Pro builds and
+    passes against it.) **v9.1.1: narrower exceptions on PDF's own methods
+    (Java).** The
     owner, 17 October 2026, after weighing it: "OK - do the narrower Java
     exception too." complete() and the constructors declare IOException
     where that is all they throw. Weighed: a tidier signature, a careful

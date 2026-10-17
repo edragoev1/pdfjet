@@ -6,6 +6,7 @@
  */
 package com.pdfjet;
 
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -16,7 +17,7 @@ import java.util.*;
 class FontWriter {
     // Writes the font descriptor with the name given, which is the font's own,
     // or that of a subset.
-    static void addFontDescriptorObject(PDF pdf, Font font, String fontName) throws Exception {
+    static void addFontDescriptorObject(PDF pdf, Font font, String fontName) throws IOException {
         for (Font f : pdf.fonts) {
             if (f.fontDescriptorObjNumber != 0 && f.name.equals(font.name) && f.checksum == font.checksum) {
                 font.fontDescriptorObjNumber = f.fontDescriptorObjNumber;
@@ -75,7 +76,7 @@ class FontWriter {
 
     // Writes the ToUnicode map of the font: of every glyph that has a
     // character, or only of the glyphs kept, for a subset.
-    static void addToUnicodeCMapObject(PDF pdf, Font font, boolean[] kept) throws Exception {
+    static void addToUnicodeCMapObject(PDF pdf, Font font, boolean[] kept) throws IOException {
         for (Font f : pdf.fonts) {
             if (f.toUnicodeCMapObjNumber != 0 && f.name.equals(font.name) && f.checksum == font.checksum) {
                 font.toUnicodeCMapObjNumber = f.toUnicodeCMapObjNumber;
@@ -88,7 +89,7 @@ class FontWriter {
     }
 
     // Writes a stream object of the data, compressed.
-    static void addCompressedStream(PDF pdf, byte[] data) throws Exception {
+    static void addCompressedStream(PDF pdf, byte[] data) throws IOException {
         byte[] compressed = Compressor.deflate(data);
         if (pdf.encryption != null) {
             compressed = AES256.encrypt(compressed, pdf.encryption.getKey());
@@ -108,7 +109,7 @@ class FontWriter {
 
     // Writes the CID font with the name given, which is the font's own, or
     // that of a subset, whose widths are those of the glyphs it keeps.
-    static void addCIDFontDictionaryObject(PDF pdf, Font font, String baseFont, boolean[] kept) throws Exception {
+    static void addCIDFontDictionaryObject(PDF pdf, Font font, String baseFont, boolean[] kept) throws IOException {
         for (Font f : pdf.fonts) {
             if (f.cidFontDictObjNumber != 0 && f.name.equals(font.name) && f.checksum == font.checksum) {
                 font.cidFontDictObjNumber = f.cidFontDictObjNumber;

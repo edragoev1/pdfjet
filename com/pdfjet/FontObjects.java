@@ -6,6 +6,7 @@
  */
 package com.pdfjet;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
@@ -131,7 +132,7 @@ class FontObjects {
         font.objects = null;
     }
 
-    static int addMetadataObject(List<PDFobj> objects, Font font) throws Exception {
+    static int addMetadataObject(List<PDFobj> objects, Font font) throws IOException {
         StringBuilder sb = new StringBuilder();
         sb.append("<?xpacket begin=\"\uFEFF\" id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n");
         sb.append("<x:xmpmeta xmlns:x=\"adobe:ns:meta/\">\n");
