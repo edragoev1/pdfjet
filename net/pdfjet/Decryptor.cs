@@ -170,7 +170,8 @@ internal sealed class Decryptor {
 
     // The exception for a password that does not open the PDF.
     private static Exception PasswordException(byte[] password) {
-        return new Exception(password.Length == 0 ?
+        // Its own kind, so that a caller can ask for the password again
+        return new UnauthorizedAccessException(password.Length == 0 ?
                 "The PDF needs a password." : "The password of the PDF is not correct.");
     }
 

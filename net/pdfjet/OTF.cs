@@ -45,7 +45,7 @@ internal class OTF {
     internal int numGlyphs; // Of the maxp table, or 0 when the font has none
 
     private static Exception FontError(String what) {
-        return new Exception("Invalid font file: " + what + ".");
+        return new InvalidDataException("Invalid font file: " + what + ".");
     }
 
     /// <summary>Parses the font read from the stream.</summary>
