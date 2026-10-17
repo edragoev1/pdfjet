@@ -55,6 +55,18 @@ class BufferedOutputStream {
         }
     }
 
+    /// Flushes the buffer and lets the stream go, open: neither this nor the
+    /// release of this buffer closes it, as complete(closeStream: false) asks
+    /// for a stream the caller goes on writing to.
+    /// - Throws: the error of flush.
+    func flushAndLeaveOpen() throws {
+        if closed {
+            return
+        }
+        closed = true
+        try flush()
+    }
+
     /// Flushes the buffer and closes the stream
     /// - Throws: the error of flush.
     func close() throws {

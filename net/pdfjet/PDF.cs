@@ -2399,15 +2399,32 @@ public sealed class PDF {
     /// The output stream is then automatically closed.
     /// </summary>
     public void Complete() {
+        Complete(false);
+    }
+
+    /// <summary>
+    /// Completes the construction of the PDF and writes it to the output stream,
+    /// which is then flushed and left open when leaveOpen is true, as the
+    /// leaveOpen of StreamWriter: for a stream the caller goes on writing to or
+    /// reading, as a response's body. Else the output stream is closed.
+    /// </summary>
+    /// <param name="leaveOpen">whether the output stream is left open.</param>
+    public void Complete(bool leaveOpen) {
         // The output stream is closed also when the document could not be
-        // completed.
+        // completed, unless it is to be left open.
         try {
             WriteRest();
         } catch (Exception) {
-            os.Close();
+            if (!leaveOpen) {
+                os.Close();
+            }
             throw;
         }
-        os.Close();
+        if (leaveOpen) {
+            os.Flush();
+        } else {
+            os.Close();
+        }
     }
 
     // Writes the rest of the PDF.

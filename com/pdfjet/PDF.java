@@ -2463,19 +2463,38 @@ final public class PDF {
      * @throws Exception  If an input or output exception occurred
      */
     public void complete() throws Exception {
+        complete(true);
+    }
+
+    /**
+     * Completes the construction of the PDF and writes it to the output stream,
+     * which is then closed when closeStream is true, else flushed and left
+     * open: for several PDFs written into one stream, as the entries of a
+     * ZipOutputStream.
+     *
+     * @param closeStream whether the output stream is closed.
+     * @throws Exception  If an input or output exception occurred
+     */
+    public void complete(boolean closeStream) throws Exception {
         // The output stream is closed also when the document could not be
-        // completed.
+        // completed, unless it is to be left open.
         try {
             writeRest();
         } catch (Exception e) {
-            try {
-                os.close();
-            } catch (IOException closeError) {
-                e.addSuppressed(closeError);
+            if (closeStream) {
+                try {
+                    os.close();
+                } catch (IOException closeError) {
+                    e.addSuppressed(closeError);
+                }
             }
             throw e;
         }
-        os.close();
+        if (closeStream) {
+            os.close();
+        } else {
+            os.flush();
+        }
     }
 
     // Writes the rest of the PDF.

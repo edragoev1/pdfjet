@@ -139,6 +139,21 @@ public class PDFTest {
         Assert.True(stream.Closed);
     }
 
+    // Complete(leaveOpen: true), as the leaveOpen of StreamWriter, for a
+    // stream the caller goes on with (GitHub Discussion #5)
+    [Fact]
+    public void CompleteLeavesTheStreamOpenWhenAsked() {
+        ClosingStream stream = new ClosingStream();
+        PDF pdf = new PDF(stream);
+        new Page(pdf, Letter.PORTRAIT);
+        pdf.Complete(true);
+        Assert.False(stream.Closed);
+        Assert.True(stream.CanWrite);
+        Assert.Single(new PDF().GetPageObjects(TestSupport.Read(stream.ToArray())));
+        stream.Close();
+        Assert.True(stream.Closed);
+    }
+
     [Fact]
     public void ReadsAPdfWithABlankPage() {
         MemoryStream stream = new MemoryStream();

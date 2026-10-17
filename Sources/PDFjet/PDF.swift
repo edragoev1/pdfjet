@@ -1894,15 +1894,35 @@ public final class PDF {
     /// - Throws: an error if the PDF cannot be written to the output stream.
     ///
     public func complete() throws {
+        try complete(closeStream: true)
+    }
+
+    ///
+    /// Completes the construction of the PDF and writes it to the output stream,
+    /// which is then closed when closeStream is true, else flushed and left
+    /// open: for several PDFs written into one stream.
+    ///
+    /// - Parameter closeStream: whether the output stream is closed.
+    /// - Throws: an error if the PDF cannot be written to the output stream.
+    ///
+    public func complete(closeStream: Bool) throws {
         // The output stream is closed also when the document could not be
-        // completed.
+        // completed, unless it is to be left open.
         do {
             try writeRest()
         } catch {
-            try? os?.close()
+            if closeStream {
+                try? os?.close()
+            } else {
+                try? os?.flushAndLeaveOpen()
+            }
             throw error
         }
-        try os!.close()
+        if closeStream {
+            try os!.close()
+        } else {
+            try os!.flushAndLeaveOpen()
+        }
     }
 
     // Writes the rest of the PDF.

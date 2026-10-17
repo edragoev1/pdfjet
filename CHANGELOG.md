@@ -9,6 +9,14 @@ This is the first entry in this file; earlier releases were not tracked here.
 
 ## v9.1.1 — not released yet
 
+### Added
+- complete() can leave the output stream open, so that several PDFs can be
+  written into one stream, as the entries of a ZipOutputStream (GitHub
+  Discussion #5): complete(false) in Java and complete(closeStream: false)
+  in Swift flush it and leave it open; in C#, Complete(true) does, its
+  leaveOpen as StreamWriter's. complete() closes the stream as before. Go
+  already leaves a writer it is given open.
+
 ### Changed
 - The first PDF of a process is made faster: new PDF() no longer starts
   what Java, .NET and Swift take a long time to start the first time. The
@@ -34,6 +42,10 @@ This is the first entry in this file; earlier releases were not tracked here.
   refusals do, and complete() throws after it; in Go and Swift complete()
   fails. A row that only reaches into the bottom margin is drawn as before.
   In the four ports.
+- Java: the library builds with JDK 23 and later, whose javac warned of the
+  documentation comment before the package of ImageSize.java and
+  SASLprepTables.java, an error as the build treats warnings; tested on
+  JDK 8, 11, 17, 21 and 25.
 
 ## v9.0.9 — 2026-10-15
 

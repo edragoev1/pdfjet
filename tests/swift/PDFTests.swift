@@ -120,6 +120,25 @@ import Testing
         #expect(stream.streamStatus == .closed)
     }
 
+    // complete(closeStream: false), as GitHub Discussion #5 asks: two PDFs
+    // written one after the other into one stream, left open between them,
+    // also once the first PDF is released, whose buffer closed the stream as
+    // it went
+    @Test func completeLeavesTheStreamOpenWhenAsked() throws {
+        let stream = OutputStream(toMemory: ())
+        for _ in 0..<2 {
+            let pdf = PDF(stream)
+            _ = Page(pdf, Letter.PORTRAIT)
+            try pdf.complete(closeStream: false)
+            #expect(stream.streamStatus != .closed)
+        }
+        let data = stream.property(forKey: .dataWrittenToMemoryStreamKey) as? Data
+        let text = String(decoding: data ?? Data(), as: UTF8.self)
+        #expect(text.components(separatedBy: "%PDF-").count == 3)
+        #expect(text.components(separatedBy: "%%EOF").count == 3)
+        stream.close()
+    }
+
     @Test func readsAPdfWithABlankPage() throws {
         let memory = MemoryPDF()
         _ = Page(memory.pdf, Letter.PORTRAIT)

@@ -151,6 +151,46 @@ class PDFTest {
         assertTrue(closed[0]);
     }
 
+    // complete(false), as GitHub Discussion #5 asks: several PDFs written into
+    // one ZipOutputStream, each an entry, the stream left open for the next
+    @Test
+    void completeLeavesTheStreamOpenWhenAsked() throws Exception {
+        final boolean[] closed = {false};
+        ByteArrayOutputStream bos = new ByteArrayOutputStream() {
+            @Override
+            public void close() throws IOException {
+                closed[0] = true;
+                super.close();
+            }
+        };
+        java.util.zip.ZipOutputStream zip = new java.util.zip.ZipOutputStream(bos);
+        for (String name : new String[] {"one.pdf", "two.pdf"}) {
+            zip.putNextEntry(new java.util.zip.ZipEntry(name));
+            PDF pdf = new PDF(zip);
+            new Page(pdf, Letter.PORTRAIT);
+            pdf.complete(false);
+            zip.closeEntry();
+        }
+        assertFalse(closed[0]);
+        zip.close();
+        assertTrue(closed[0]);
+
+        java.util.zip.ZipInputStream in = new java.util.zip.ZipInputStream(
+                new java.io.ByteArrayInputStream(bos.toByteArray()));
+        int entries = 0;
+        for (java.util.zip.ZipEntry entry; (entry = in.getNextEntry()) != null; ) {
+            ByteArrayOutputStream pdf = new ByteArrayOutputStream();
+            byte[] buf = new byte[8192];
+            for (int n; (n = in.read(buf)) > 0; ) {
+                pdf.write(buf, 0, n);
+            }
+            String text = new String(pdf.toByteArray(), StandardCharsets.ISO_8859_1);
+            assertTrue(text.startsWith("%PDF-") && text.trim().endsWith("%%EOF"), entry.getName());
+            entries++;
+        }
+        assertEquals(2, entries);
+    }
+
     @Test
     void readsAPdfWithABlankPage() throws Exception {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
