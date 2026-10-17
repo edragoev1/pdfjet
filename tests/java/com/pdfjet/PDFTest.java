@@ -1624,4 +1624,13 @@ class PDFTest {
             assertEquals(format.format(new java.util.Date(millis)), PDF.utcDate(millis), "at " + millis);
         }
     }
+
+    // A year below 1000 is in four digits, as Go writes it (review of
+    // 17 October 2026)
+    @Test
+    void aYearBelow1000IsInFourDigits() {
+        assertEquals("0999-01-01T00:00:00", PDF.utcDate(-30641760000000L));
+        assertEquals("0005-01-01T00:00:00", PDF.utcDate(-62009366400000L));
+        assertEquals("0001-01-01T00:00:00", PDF.utcDate(-62135596800000L));
+    }
 }

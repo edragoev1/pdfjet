@@ -1482,5 +1482,16 @@ public class DecodeBudgetTest {
 
 [CollectionDefinition("DecodeBudget", DisableParallelization = true)]
 public class DecodeBudgetCollection {
+
+    // A year below 1000 is in four digits, as Go writes it (review of
+    // 17 October 2026)
+    [Fact]
+    public void AYearBelow1000IsInFourDigits() {
+        var utcDate = typeof(PDF).GetMethod("UtcDate",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+        Assert.Equal("0999-01-01T00:00:00", (string) utcDate.Invoke(null, new object[] {-30641760000000L}));
+        Assert.Equal("0005-01-01T00:00:00", (string) utcDate.Invoke(null, new object[] {-62009366400000L}));
+        Assert.Equal("0001-01-01T00:00:00", (string) utcDate.Invoke(null, new object[] {-62135596800000L}));
+    }
 }
 }

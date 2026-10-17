@@ -210,7 +210,11 @@ public final class PDF {
         let day = doy - (153 * mp + 2) / 5 + 1
         let month = mp < 10 ? mp + 3 : mp - 9
         let year = yoe + era * 400 + (month <= 2 ? 1 : 0)
-        return String(year) + "-" + two(month) + "-" + two(day) + "T" +
+        // The year in four digits, as Go writes it, 0999 for 999 (review of
+        // 17 October 2026)
+        let digits = String(year)
+        let padded = (year >= 0 && year < 1000) ? String(repeating: "0", count: 4 - digits.count) + digits : digits
+        return padded + "-" + two(month) + "-" + two(day) + "T" +
             two(seconds / 3600) + ":" + two(seconds / 60 % 60) + ":" + two(seconds % 60)
     }
 

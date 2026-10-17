@@ -1042,5 +1042,12 @@ import Testing
         }
         #expect(pdf.embeddedFiles.isEmpty)
     }
-}
 
+    // A year below 1000 is in four digits, as Go writes it (review of
+    // 17 October 2026)
+    @Test func aYearBelow1000IsInFourDigits() {
+        #expect(PDF.utcDate(-30641760000000) == "0999-01-01T00:00:00")
+        #expect(PDF.utcDate(-62009366400000) == "0005-01-01T00:00:00")
+        #expect(PDF.utcDate(-62135596800000) == "0001-01-01T00:00:00")
+    }
+}

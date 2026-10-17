@@ -146,6 +146,8 @@ This is the first entry in this file; earlier releases were not tracked here.
   from its top but not under the first-page top margin goes on the next
   page; it was refused, though the next page had room for it. In the four
   ports.
+- The creation date of a year below 1000, of a clock set wrong, is written
+  in four digits in Java, C# and Swift, as Go writes it.
 - Reading an encrypted PDF with many strings after /Contents in one
   dictionary took time growing with the square of their number, as each
   string looked for its dictionary's ends again: a PDF of 560 KB took 17

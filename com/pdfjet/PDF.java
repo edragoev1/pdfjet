@@ -204,6 +204,11 @@ final public class PDF {
         long month = mp < 10 ? mp + 3 : mp - 9;
         long year = yoe + era * 400 + (month <= 2 ? 1 : 0);
         StringBuilder sb = new StringBuilder(19);
+        // The year in four digits, as Go writes it, 0999 for 999 (review of
+        // 17 October 2026)
+        if (year >= 0 && year < 1000) {
+            sb.append(year < 10 ? "000" : year < 100 ? "00" : "0");
+        }
         sb.append(year).append('-');
         two(sb, month).append('-');
         two(sb, day).append('T');

@@ -223,7 +223,9 @@ public sealed class PDF {
         long month = mp < 10 ? mp + 3 : mp - 9;
         long year = yoe + era * 400 + (month <= 2 ? 1 : 0);
         StringBuilder sb = new StringBuilder(19);
-        sb.Append(year.ToString(CultureInfo.InvariantCulture)).Append('-');
+        // The year in four digits, as Go writes it, 0999 for 999 (review of
+        // 17 October 2026)
+        sb.Append(year.ToString(year >= 0 ? "D4" : "D", CultureInfo.InvariantCulture)).Append('-');
         Two(sb, month).Append('-');
         Two(sb, day).Append('T');
         Two(sb, seconds / 3600).Append(':');

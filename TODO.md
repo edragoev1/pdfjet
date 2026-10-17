@@ -258,7 +258,7 @@ The 9.1.1 changes:
 - [ ] CHANGELOG: the Swift and C# overload makes a bare method reference
       to complete ambiguous; the EULA of the packages; the boolean's
       opposite meanings (Java and Swift close, C# leaves open).
-- [ ] The creation date of years below 1000, not padded to four digits as
+- [x] The creation date of years below 1000, not padded to four digits as
       Go's is (Java, C#, Swift).
 - [ ] Tests: complete(false) and Complete(true) on the error path, the
       stream left open.
