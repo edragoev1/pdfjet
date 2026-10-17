@@ -415,5 +415,20 @@ public class MisuseTest {
         Assert.Throws<ArgumentOutOfRangeException>(() => new CalendarMonth(font, font, 2026, 13));
         Assert.Throws<ArgumentOutOfRangeException>(() => new CalendarMonth(font, font, 2026, 0));
     }
+
+    // A number in decimal, as the four ports read one of an image object or of
+    // a /MediaBox (review of 17 October 2026)
+    [Fact]
+    public void ADecimalNumber() {
+        var isDecimal = typeof(PDF).Assembly.GetType("PDFjet.NET.Util").GetMethod("IsDecimalNumber",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+        foreach (String text in new[] {"1", "-1.5", ".5", "5.", "1e3", "1E-3", "+.5e+2", "0012"}) {
+            Assert.True((bool) isDecimal.Invoke(null, new object[] {text}), text);
+        }
+        foreach (String text in new[] {"", "+", ".", "-.", "e3", "1e", "1e+", "0x10", "1f", " 1", "1 ",
+                "1_0", "inf", "NaN", "1.2.3", "\u0661"}) {
+            Assert.False((bool) isDecimal.Invoke(null, new object[] {text}), text);
+        }
+    }
 }
 }

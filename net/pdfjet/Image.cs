@@ -152,33 +152,27 @@ public class Image : IDrawable {
     // Returns the number of pixels of the value as Java's (int) takes it: 0
     // for NaN, and the largest or smallest int for one past them. (int) of
     // 1e19 was the smallest int on .NET 8 (review of 12 October 2026, C8).
-    // Returns the number of the text, an infinity for one past a double, as
-    // .NET 8 parses it: .NET Framework threw OverflowException where .NET 8
-    // gave an infinity (review of 12 October 2026, K5). Text that is no number
-    // throws FormatException, in both.
     // The number of the key, which is a number in decimal, with an exponent
     // or not, in the four ports: Java read 100f and hex, C# white space and
     // Infinity, Go inf, and Swift took any other text for 0 (review of
-    // 17 October 2026). One past a double is its infinity.
+    // 17 October 2026).
     private static double SizeOf(PDFobj obj, String key) {
         String value = obj.GetValue(key);
-        if (!System.Text.RegularExpressions.Regex.IsMatch(value, @"^[+-]?([0-9]+\.?[0-9]*|\.[0-9]+)([eE][+-]?[0-9]+)?$")) {
+        if (!Util.IsDecimalNumber(value)) {
             throw new InvalidDataException("The " + key + " of the image object is not a number: " + value);
         }
         return ParseNumber(value);
     }
 
+    // Returns the number of a number in decimal, an infinity for one past a
+    // double, as .NET 8 parses it: .NET Framework threw OverflowException
+    // where .NET 8 gave an infinity (review of 12 October 2026, K5).
     private static double ParseNumber(String text) {
-        const System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Float;
-        var culture = System.Globalization.CultureInfo.InvariantCulture;
-        if (double.TryParse(text, style, culture, out double value)) {
+        if (double.TryParse(text, System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture, out double value)) {
             return value;
         }
-        if (System.Text.RegularExpressions.Regex.IsMatch(text.Trim(), @"^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$")) {
-            return text.Trim().StartsWith("-", StringComparison.Ordinal)
-                    ? double.NegativeInfinity : double.PositiveInfinity;
-        }
-        return double.Parse(text, style, culture);
+        return text.StartsWith("-", StringComparison.Ordinal) ? double.NegativeInfinity : double.PositiveInfinity;
     }
 
     private static int PixelsOf(double value) {

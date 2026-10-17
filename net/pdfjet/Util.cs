@@ -330,6 +330,49 @@ internal class Util {
     }
 
 
+    // Returns true when the text is a number written in decimal, with an
+    // exponent or not, and not one in hexadecimal or named, as Infinity, as
+    // the four ports read one of an image object (review of 17 October 2026).
+    // The characters are read one by one, as in the other ports, not with a
+    // regular expression.
+    internal static bool IsDecimalNumber(String text) {
+        int n = text.Length;
+        int i = 0;
+        if (i < n && (text[i] == '+' || text[i] == '-')) {
+            i++;
+        }
+        int digits = 0;
+        while (i < n && text[i] >= '0' && text[i] <= '9') {
+            i++;
+            digits++;
+        }
+        if (i < n && text[i] == '.') {
+            i++;
+            while (i < n && text[i] >= '0' && text[i] <= '9') {
+                i++;
+                digits++;
+            }
+        }
+        if (digits == 0) {
+            return false;
+        }
+        if (i < n && (text[i] == 'e' || text[i] == 'E')) {
+            i++;
+            if (i < n && (text[i] == '+' || text[i] == '-')) {
+                i++;
+            }
+            int exponent = 0;
+            while (i < n && text[i] >= '0' && text[i] <= '9') {
+                i++;
+                exponent++;
+            }
+            if (exponent == 0) {
+                return false;
+            }
+        }
+        return i == n;
+    }
+
     /// <summary>
     /// Removes the leading and trailing characters with a code of 0x20 or less,
     /// like Java's String.trim. .NET's Trim also removes U+00A0 and the other
