@@ -1994,8 +1994,13 @@ func wrapCellText(row []*Cell, index int) []string {
 			// 5678" was 123 / 4<SHY>56 / 78, where TextBlock and TextFrame
 			// draw 123 / 4- / 567 / 8 (review of 12 October 2026, T4).
 			end := 0
-			for i, ch := range token {
-				next := i + utf8.RuneLen(ch)
+			for i := range token {
+				// The bytes of the character in the text: RuneLen of the
+				// U+FFFD that range gives for an invalid byte is 3, where the
+				// byte is 1, and the slice ran past the text (review of 17
+				// October 2026)
+				_, size := utf8.DecodeRuneInString(token[i:])
+				next := i + size
 				if end > 0 && width(token[:next]) > cellWidth {
 					break
 				}

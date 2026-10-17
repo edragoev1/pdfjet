@@ -301,7 +301,7 @@ The C# port against Java:
 The Go port:
 - [x] qrcode: a negative error-correction level loops for ever; 4 to 7
       give wrong format bits: refuse them.
-- [ ] table wrapCellText: a slice bound panic on invalid UTF-8.
+- [x] table wrapCellText: a slice bound panic on invalid UTF-8.
 - [ ] GetPageObjects rewrites shared objects on every call, and
       aesPkcs7Pad appends into a decrypted stream: a race when one Read is
       merged on several goroutines.

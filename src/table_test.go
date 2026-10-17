@@ -1637,3 +1637,17 @@ func TestTableACellBreaksAWordAtASoftHyphen(t *testing.T) {
 		t.Errorf("the text %q", got)
 	}
 }
+
+// A word of invalid UTF-8, as Latin-1 text, broken between its characters
+// in a narrow column: the slice of a character ran past the text and
+// panicked (review of 17 October 2026).
+func TestACellOfInvalidUTF8IsBrokenWithoutAPanic(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	cell := NewCell(font, "Caf\xe9 Caf\xe9 R\xe9sum\xe9")
+	table := NewTable()
+	table.SetTableData([][]*Cell{{cell}}, 0)
+	table.SetColumnWidth(0, 15)
+	table.SetLocation(50, 50)
+	table.DrawOn(NewPage(pdf, testLetterPortrait()))
+}

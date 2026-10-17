@@ -107,6 +107,9 @@ This is the first entry in this file; earlier releases were not tracked here.
   for 4 to 7; C# the same for 4 to 7, as its enum holds any int. Both now
   refuse it: "The error correction level 4 is not one: use
   errorcorrectionlevel.L, M, Q or H." Java and Swift have closed enums.
+- Go: a cell's word of invalid UTF-8, as Latin-1 text, broken between its
+  characters in a narrow column panicked with a slice bound past the text:
+  each character is now its bytes in the text.
 - Java: the library builds with JDK 23 and later, whose javac warned of the
   documentation comment before the package of ImageSize.java and
   SASLprepTables.java, an error as the build treats warnings; tested on
