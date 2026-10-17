@@ -717,7 +717,10 @@ public class Chart implements Drawable {
     static int fractionDigitsOf(float step, int maxDigits) {
         for (int digits = 0; digits < maxDigits; digits++) {
             double scaled = step * Math.pow(10, digits);
-            if (Math.abs(scaled - Math.round(scaled)) < 1e-4) {
+            // rint, a double, as the other ports round: round is a long, which
+            // stops at 2^63, so a step of 1e19 had fraction digits (review of
+            // 17 October 2026)
+            if (Math.abs(scaled - Math.rint(scaled)) < 1e-4) {
                 return digits;
             }
         }

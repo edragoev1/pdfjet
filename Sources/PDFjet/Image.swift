@@ -255,8 +255,7 @@ public class Image : Drawable {
     // 17 October 2026). One past a double is its infinity.
     private static func sizeOf(_ obj: PDFobj, _ key: String) throws -> Double {
         let value = obj.getValue(key)
-        guard value.range(of: "^[+-]?([0-9]+\\.?[0-9]*|\\.[0-9]+)([eE][+-]?[0-9]+)?$", options: .regularExpression) != nil,
-                let number = Double(value) else {
+        guard Util.isDecimalNumber(value), let number = Double(value) else {
             throw PDFjetError(message: "The \(key) of the image object is not a number: \(value)")
         }
         return number

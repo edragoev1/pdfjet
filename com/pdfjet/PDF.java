@@ -4019,9 +4019,7 @@ final public class PDF {
             return;
         }
         for (String number : box.subList(1, 5)) {
-            try {
-                Double.parseDouble(number);
-            } catch (NumberFormatException e) {
+            if (!Util.isDecimalNumber(number)) {
                 return;
             }
         }

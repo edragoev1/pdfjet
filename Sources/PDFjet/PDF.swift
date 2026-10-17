@@ -3887,7 +3887,7 @@ public final class PDF {
         if box.count != 6 || box[0] != "[" || box[5] != "]" {
             return
         }
-        for number in box[1..<5] where Double(number) == nil {
+        for number in box[1..<5] where !Util.isDecimalNumber(number) || Double(number) == nil {
             return
         }
         page.dict.replaceSubrange(start..<end, with: box)

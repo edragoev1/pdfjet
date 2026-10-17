@@ -3799,7 +3799,7 @@ func resolveMediaBox(page *PDFobj, objects []*PDFobj) {
 		return
 	}
 	for _, number := range box[1:5] {
-		if _, err := strconv.ParseFloat(number, 64); err != nil {
+		if _, err := strconv.ParseFloat(number, 64); err != nil || !isDecimalNumber(number) {
 			return
 		}
 	}

@@ -294,7 +294,7 @@ The C# port against Java:
 - [x] Image ParseNumber: Unicode digits and Trim, "infinity"; "100f".
 - [x] SVGState lower-casing of İ.
 - [x] CalendarMonth: years past 9999, an open DayOfWeek.
-- [ ] Where Java is the odd one: Chart fractionDigitsOf saturating at
+- [x] Where Java is the odd one: Chart fractionDigitsOf saturating at
       2^63 (Go too), Float.parseFloat taking 595f and hex in /MediaBox,
       Page's trim() of a NBSP description.
 

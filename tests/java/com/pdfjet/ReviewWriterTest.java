@@ -326,6 +326,13 @@ class ReviewWriterTest {
                 fails(IllegalStateException.class, new Executable() {
             public void execute() throws Throwable { new SquareAnnotation().drawOn(page); }
         }));
+        // Nor does a no-break space, as in the other ports (review of
+        // 17 October 2026)
+        assertEquals("An annotation of a tagged document, PDF/UA or PDF/A of level A, "
+                + "needs contents, a title or an alternative description.",
+                fails(IllegalStateException.class, new Executable() {
+            public void execute() throws Throwable { new SquareAnnotation().setContents("\u00A0").drawOn(page); }
+        }));
         // One that is not tagged needs none.
         PDF pdf2 = TestSupport.newPDF();
         new SquareAnnotation().drawOn(new Page(pdf2, Letter.PORTRAIT));

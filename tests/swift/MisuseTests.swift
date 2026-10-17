@@ -433,4 +433,14 @@ import Testing
         _ = BigTable(pdf, font, font, Letter.PORTRAIT).setFirstPage(foreign, 100)
         #expect(pdf.error == "The page belongs to another PDF.")
     }
+
+    // The numbers of a /MediaBox are in decimal, as in the four ports: Java
+    // read 595f and hex, and Go and Swift hex (review of 17 October 2026)
+    @Test func theNumbersOfAMediaBoxAreInDecimal() {
+        for width in ["595f", "0x253p0", "595d"] {
+            let page = PDFobj()
+            page.dict = ["<<", "/Type", "/Page", "/MediaBox", "[", "0", "0", width, "842", "]", ">>"]
+            #expect(page.getPageSize().getWidth() == Letter.PORTRAIT.getWidth(), "\(width)")
+        }
+    }
 }

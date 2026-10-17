@@ -337,6 +337,15 @@ final class DataFileLines {
 }
 
 extension Util {
+    // Returns true when the text is a number written in decimal, with an
+    // exponent or not, and not one in hexadecimal or named, as inf or nan,
+    // which the parsers of the four ports read differently (review of
+    // 17 October 2026).
+    static func isDecimalNumber(_ text: String) -> Bool {
+        return text.range(of: "^[+-]?([0-9]+\\.?[0-9]*|\\.[0-9]+)([eE][+-]?[0-9]+)?$",
+                options: .regularExpression) != nil
+    }
+
     // Returns the text in lower case as Java's toLowerCase of Locale.ROOT has
     // it, which lowercased() does not on Linux: a sigma that ends a word is ς.
     // The keywords of a text block are highlighted as in Java (review of

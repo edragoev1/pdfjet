@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"regexp"
 	"strconv"
 	"strings"
 	"unicode"
@@ -490,4 +491,14 @@ func caseIgnorable(r rune) bool {
 		return true
 	}
 	return unicode.In(r, unicode.Mn, unicode.Me, unicode.Cf, unicode.Lm, unicode.Sk)
+}
+
+var decimalNumber = regexp.MustCompile(`^[+-]?([0-9]+\.?[0-9]*|\.[0-9]+)([eE][+-]?[0-9]+)?$`)
+
+// isDecimalNumber returns true when the text is a number written in decimal,
+// with an exponent or not, and not one in hexadecimal, with underscores, or
+// named, as inf or nan, which the parsers of the four ports read differently
+// (review of 17 October 2026).
+func isDecimalNumber(text string) bool {
+	return decimalNumber.MatchString(text)
 }

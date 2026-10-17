@@ -632,7 +632,10 @@ public final class PDFobj {
                 }
                 var box = [Float](repeating: 0.0, count: 4)
                 for j in 0..<4 {
-                    guard let value = Float(tokenAt(dict, i + 2 + j)) else {
+                    // Only a number in decimal, as in the four ports: Java read
+                    // 595f, and Go, Swift and Java hex (review of 17 October 2026)
+                    let token = tokenAt(dict, i + 2 + j)
+                    guard Util.isDecimalNumber(token), let value = Float(token) else {
                         return Letter.PORTRAIT
                     }
                     box[j] = value
@@ -1124,7 +1127,8 @@ public final class PDFobj {
         }
         var box = [Float]()
         for j in 0..<4 {
-            guard let value = Float(tokenAt(dict, i + 2 + j)), value.isFinite else {
+            let token = tokenAt(dict, i + 2 + j)
+            guard Util.isDecimalNumber(token), let value = Float(token), value.isFinite else {
                 return (0, 0)
             }
             box.append(value)

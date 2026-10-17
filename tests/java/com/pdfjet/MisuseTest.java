@@ -538,5 +538,20 @@ class MisuseTest {
         assertEquals((float) Integer.MAX_VALUE, image.getWidth());
         assertEquals(12f, image.getHeight());
     }
-}
 
+    // The numbers of a /MediaBox are in decimal, as in the four ports: Java
+    // read 595f and hex, and Go and Swift hex (review of 17 October 2026)
+    @Test
+    void theNumbersOfAMediaBoxAreInDecimal() {
+        for (String width : new String[] {"595f", "0x253p0", "595d"}) {
+            PDFobj page = new PDFobj();
+            page.dict = new java.util.ArrayList<String>(java.util.Arrays.asList(
+                    "<<", "/Type", "/Page", "/MediaBox", "[", "0", "0", width, "842", "]", ">>"));
+            assertEquals(Letter.PORTRAIT.getWidth(), page.getPageSize().getWidth(), width);
+        }
+        PDFobj page = new PDFobj();
+        page.dict = new java.util.ArrayList<String>(java.util.Arrays.asList(
+                "<<", "/Type", "/Page", "/MediaBox", "[", "0", "0", "595", "842", "]", ">>"));
+        assertEquals(595f, page.getPageSize().getWidth());
+    }
+}

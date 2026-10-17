@@ -19,7 +19,6 @@ import (
 	"io"
 	"math"
 	"os"
-	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -185,15 +184,13 @@ func pixelsOf(value float64) int {
 	return int(max(min(value, math.MaxInt32), math.MinInt32))
 }
 
-var imageSizeNumber = regexp.MustCompile(`^[+-]?([0-9]+\.?[0-9]*|\.[0-9]+)([eE][+-]?[0-9]+)?$`)
-
 // imageSizeOf returns the number of the key, which is a number in decimal,
 // with an exponent or not, in the four ports: Java read 100f and hex, C#
 // white space and Infinity, Go inf, and Swift took any other text for 0
 // (review of 17 October 2026). One past a float64 is its infinity.
 func imageSizeOf(obj *PDFobj, key string) float64 {
 	value := obj.GetValue(key)
-	if !imageSizeNumber.MatchString(value) {
+	if !isDecimalNumber(value) {
 		panic("The " + key + " of the image object is not a number: " + value)
 	}
 	number, err := strconv.ParseFloat(value, 64)

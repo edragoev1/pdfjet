@@ -296,4 +296,14 @@ class ChartTest {
         assertFalse(raw.contains("/StructElem"));
         assertEquals(1, raw.split("/Subtype /Link").length - 1);
     }
+
+    // A step past 2^63 has no fraction digits, as in the other ports: round,
+    // a long, stopped at 2^63 (review of 17 October 2026)
+    @Test
+    void aStepPast2To63HasNoFractionDigits() {
+        assertEquals(0, Chart.fractionDigitsOf(1e19f, 6));
+        assertEquals(0, Chart.fractionDigitsOf(-1e30f, 6));
+        assertEquals(2, Chart.fractionDigitsOf(0.25f, 6));
+    }
 }
+

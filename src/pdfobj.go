@@ -651,8 +651,11 @@ func (obj *PDFobj) GetPageSize() pagesize.PageSize {
 			}
 			box := [4]float64{}
 			for j := 0; j < 4; j++ {
-				value, err := strconv.ParseFloat(tokenAt(obj.dict, i+2+j), 32)
-				if err != nil {
+				// Only a number in decimal, as in the four ports: Java read
+				// 595f, and Go, Swift and Java hex (review of 17 October 2026)
+				token := tokenAt(obj.dict, i+2+j)
+				value, err := strconv.ParseFloat(token, 32)
+				if err != nil || !isDecimalNumber(token) {
 					return letter.Portrait()
 				}
 				box[j] = value
@@ -1185,8 +1188,9 @@ func (obj *PDFobj) mediaBoxOrigin() (float32, float32) {
 	}
 	var box [4]float64
 	for j := range box {
-		value, err := strconv.ParseFloat(tokenAt(obj.dict, i+2+j), 32)
-		if err != nil || math.IsNaN(value) || math.IsInf(value, 0) {
+		token := tokenAt(obj.dict, i+2+j)
+		value, err := strconv.ParseFloat(token, 32)
+		if err != nil || !isDecimalNumber(token) || math.IsNaN(value) || math.IsInf(value, 0) {
 			return 0, 0
 		}
 		box[j] = value

@@ -3172,8 +3172,9 @@ final public class Page {
                 element.altDescription = title;
             }
             // An annotation stands for what it says, which only the one who
-            // draws it can say, as a figure does.
-            if (element.altDescription == null || element.altDescription.trim().isEmpty()) {
+            // draws it can say, as a figure does. A no-break space says
+            // nothing, as in the other ports (review of 17 October 2026).
+            if (element.altDescription == null || Util.trimSpace(element.altDescription).isEmpty()) {
                 pdf.fail(new IllegalStateException("An annotation of a tagged document, PDF/UA or PDF/A of level A, "
                         + "needs contents, a title or an alternative description."));
             }

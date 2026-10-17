@@ -569,3 +569,15 @@ func TestAComplianceCJKFontOrMonthThatIsNotOneIsRefused(t *testing.T) {
 		}()
 	}
 }
+
+// The numbers of a /MediaBox are in decimal, as in the four ports: Java read
+// 595f and hex, and Go and Swift hex (review of 17 October 2026).
+func TestTheNumbersOfAMediaBoxAreInDecimal(t *testing.T) {
+	for _, width := range []string{"595f", "0x253p0", "595d"} {
+		page := newPDFobj()
+		page.dict = []string{"<<", "/Type", "/Page", "/MediaBox", "[", "0", "0", width, "842", "]", ">>"}
+		if got := page.GetPageSize(); got != letter.Portrait() {
+			t.Errorf("%s: %v", width, got)
+		}
+	}
+}

@@ -14,6 +14,17 @@ import java.util.List;
  * Utility methods.
  */
 class Util {
+    private static final java.util.regex.Pattern DECIMAL_NUMBER =
+            java.util.regex.Pattern.compile("[+-]?([0-9]+\\.?[0-9]*|\\.[0-9]+)([eE][+-]?[0-9]+)?");
+
+    // Returns true when the text is a number written in decimal, with an
+    // exponent or not, and not one with a suffix, as 595f, or in hexadecimal,
+    // which Float.parseFloat reads and the other ports do not (review of
+    // 17 October 2026).
+    static boolean isDecimalNumber(String text) {
+        return DECIMAL_NUMBER.matcher(text).matches();
+    }
+
     // Returns the UTF-8 of the text, with each lone surrogate the replacement
     // character, EF BF BD, as C# writes it and as Go and Swift write text they
     // cannot read: Java's getBytes made it '?' (review of 17 October 2026).

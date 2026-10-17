@@ -722,11 +722,13 @@ public class PDFobj {
                 }
                 float[] box = new float[4];
                 for (int j = 0; j < 4; j++) {
-                    try {
-                        box[j] = Float.parseFloat(tokenAt(dict, i + 2 + j));
-                    } catch (NumberFormatException e) {
+                    // Only a number in decimal, as in the four ports: Java read
+                    // 595f and hex (review of 17 October 2026)
+                    String token = tokenAt(dict, i + 2 + j);
+                    if (!Util.isDecimalNumber(token)) {
                         return Letter.PORTRAIT;
                     }
+                    box[j] = Float.parseFloat(token);
                 }
                 float width = Math.abs(box[2] - box[0]);
                 float height = Math.abs(box[3] - box[1]);
@@ -1212,11 +1214,11 @@ public class PDFobj {
         }
         float[] box = new float[4];
         for (int j = 0; j < 4; j++) {
-            try {
-                box[j] = Float.parseFloat(tokenAt(dict, i + 2 + j));
-            } catch (NumberFormatException e) {
+            String token = tokenAt(dict, i + 2 + j);
+            if (!Util.isDecimalNumber(token)) {
                 return new float[] {0f, 0f};
             }
+            box[j] = Float.parseFloat(token);
             if (Float.isNaN(box[j]) || Float.isInfinite(box[j])) {
                 return new float[] {0f, 0f};
             }

@@ -174,7 +174,7 @@ final public class Image implements Drawable {
     // 17 October 2026). One past a double is its infinity.
     private static double sizeOf(PDFobj obj, String key) {
         String value = obj.getValue(key);
-        if (!value.matches("[+-]?([0-9]+\\.?[0-9]*|\\.[0-9]+)([eE][+-]?[0-9]+)?")) {
+        if (!Util.isDecimalNumber(value)) {
             throw new IllegalArgumentException("The " + key + " of the image object is not a number: " + value);
         }
         return Double.parseDouble(value);
