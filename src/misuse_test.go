@@ -524,3 +524,13 @@ func TestAnEmbeddedFileThatCannotBeReadIsNotThePDFs(t *testing.T) {
 		t.Errorf("the file that could not be read is the PDF's")
 	}
 }
+
+// The first page of a big table is a page of its PDF: one of another PDF was
+// drawn on, its mistakes recorded on the other (review of 17 October 2026).
+func TestABigTableStartsOnlyOnAPageOfItsPDF(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	foreign := NewPage(testNewPDF(), letter.Portrait())
+	NewBigTable(pdf, font, font, letter.Portrait()).SetFirstPage(foreign, 100)
+	testRecorded(t, pdf, "The page belongs to another PDF.")
+}

@@ -376,5 +376,16 @@ public class MisuseTest {
         Assert.Equal("Set the compliance before the encryption, which is written for it.",
                 Assert.Throws<InvalidOperationException>(() => ua.SetCompliance(Compliance.PDF_UA_1)).Message);
     }
+
+    // The first page of a big table is a page of its PDF: one of another PDF
+    // was drawn on, its mistakes recorded on the other (review of 17 October 2026)
+    [Fact]
+    public void ABigTableStartsOnlyOnAPageOfItsPDF() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Page foreign = new Page(TestSupport.NewPDF(), Letter.PORTRAIT);
+        Assert.Equal("The page belongs to another PDF.", Assert.Throws<ArgumentException>(
+                () => new BigTable(pdf, font, font, Letter.PORTRAIT).SetFirstPage(foreign, 100f)).Message);
+    }
 }
 }

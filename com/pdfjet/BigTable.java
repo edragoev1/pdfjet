@@ -295,6 +295,12 @@ public class BigTable {
      * @return this BigTable object.
      */
     public BigTable setFirstPage(Page page, float y) {
+        // A page of another PDF is refused: the table was drawn on it, and
+        // its mistakes recorded on the other PDF (review of 17 October 2026)
+        if (page != null && page.pdf != pdf) {
+            pdf.fail(new IllegalArgumentException("The page belongs to another PDF."));
+            return this;
+        }
         this.firstPage = page;
         this.firstPageY = y;
         return this;

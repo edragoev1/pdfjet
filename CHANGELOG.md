@@ -96,6 +96,9 @@ This is the first entry in this file; earlier releases were not tracked here.
   structure. It is now refused, as a cap style is.
 - An embedded file whose stream could not be read stayed in the PDF's list
   of files, with no object (Go, C# and Swift; Java adds it once written).
+- BigTable's setFirstPage took a page of another PDF, drew the table on it
+  and recorded its mistakes on that PDF. The page is now refused with "The
+  page belongs to another PDF." In the four ports.
 - Reading an encrypted PDF with many strings after /Contents in one
   dictionary took time growing with the square of their number, as each
   string looked for its dictionary's ends again: a PDF of 560 KB took 17

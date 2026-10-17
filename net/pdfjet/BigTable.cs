@@ -265,6 +265,12 @@ namespace PDFjet.NET {
         /// <param name="y">the top of the table on it.</param>
         /// <returns>this BigTable object.</returns>
         public BigTable SetFirstPage(Page page, float y) {
+            // A page of another PDF is refused: the table was drawn on it, and
+            // its mistakes recorded on the other PDF (review of 17 October 2026)
+            if (page != null && page.pdf != pdf) {
+                pdf.Fail(new ArgumentException("The page belongs to another PDF."));
+                return this;
+            }
             this.firstPage = page;
             this.firstPageY = y;
             return this;

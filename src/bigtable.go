@@ -260,6 +260,12 @@ func (bt *BigTable) SetBottomMargin(bottomMargin float32) *BigTable {
 // When the header and the first row do not fit on the page above its bottom
 // margin, the table starts on a new page instead, and draws nothing on it.
 func (bt *BigTable) SetFirstPage(page *Page, y float32) *BigTable {
+	// A page of another PDF is refused: the table was drawn on it, and its
+	// mistakes recorded on the other PDF (review of 17 October 2026)
+	if page != nil && page.pdf != bt.pdf {
+		bt.pdf.fail("The page belongs to another PDF.")
+		return bt
+	}
 	bt.firstPage = page
 	bt.firstPageY = y
 	return bt

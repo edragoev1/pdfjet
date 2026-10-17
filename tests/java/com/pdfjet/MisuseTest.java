@@ -486,4 +486,18 @@ class MisuseTest {
         PDFobj contents = page.getContentObject(objects);
         assertTrue(contents != null && contents.stream != null, "the page's own content stream");
     }
+
+    // The first page of a big table is a page of its PDF: one of another PDF
+    // was drawn on, its mistakes recorded on the other (review of 17 October 2026)
+    @Test
+    void aBigTableStartsOnlyOnAPageOfItsPDF() throws Exception {
+        final PDF pdf = TestSupport.newPDF();
+        final Font font = TestSupport.helvetica(pdf);
+        final Page foreign = new Page(TestSupport.newPDF(), Letter.PORTRAIT);
+        assertEquals("The page belongs to another PDF.", fails(IllegalArgumentException.class, new Executable() {
+            public void execute() throws Throwable {
+                new BigTable(pdf, font, font, Letter.PORTRAIT).setFirstPage(foreign, 100f);
+            }
+        }));
+    }
 }

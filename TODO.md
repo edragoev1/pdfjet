@@ -307,7 +307,7 @@ The Go port:
       merged on several goroutines.
 - [x] structelem.StructElem and relationship.Relationship written raw:
       refuse a value that is not one of theirs, as CapStyle.
-- [ ] BigTable.SetFirstPage of another PDF accepted, its error recorded
+- [x] BigTable.SetFirstPage of another PDF accepted, its error recorded
       on the other PDF.
 - [x] contentRefs and GetContentObject take an annotation's /Contents for
       the page's (four ports): dictEntryIndex.

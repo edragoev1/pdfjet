@@ -422,4 +422,15 @@ import Testing
         _ = page.setCropBox(0, 0, .nan, 100)
         #expect(completeMessage(pdf) == notWritable)
     }
+
+    // The first page of a big table is a page of its PDF: one of another PDF
+    // was drawn on, its mistakes recorded on the other (review of 17 October 2026)
+    @Test func aBigTableStartsOnlyOnAPageOfItsPDF() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let other = TestSupport.newPDF()
+        let foreign = Page(other, Letter.PORTRAIT)
+        _ = BigTable(pdf, font, font, Letter.PORTRAIT).setFirstPage(foreign, 100)
+        #expect(pdf.error == "The page belongs to another PDF.")
+    }
 }

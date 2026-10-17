@@ -241,6 +241,12 @@ public class BigTable {
     /// and draws nothing on it.
     @discardableResult
     public func setFirstPage(_ page: Page, _ y: Float) -> BigTable {
+        // A page of another PDF is refused: the table was drawn on it, and
+        // its mistakes recorded on the other PDF (review of 17 October 2026)
+        if page.pdf !== pdf {
+            pdf.fail("The page belongs to another PDF.")
+            return self
+        }
         self.firstPage = page
         self.firstPageY = y
         return self
