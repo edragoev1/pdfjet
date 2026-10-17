@@ -93,12 +93,36 @@ jobs:
               run: |
                   missing=0
                   for i in $(seq -w 1 50); do
-                      if [ ! -s "Example_$i.pdf" ]; then
+                      # One that ends with %%EOF, not one cut short
+                      if [ ! -s "Example_$i.pdf" ] || ! tail -c 32 "Example_$i.pdf" | grep -q '%%EOF'; then
                           echo "::error::Example_$i.pdf was not created"
                           missing=1
                       fi
                   done
                   exit $missing
+
+            # The snippets of the booklet compile against the library: an API
+            # change that breaks one fails here, where it was caught only by
+            # check-examples.sh (review of 17 October 2026). Their PDFs are
+            # compared by booklet/check-snippets.sh, which needs the four ports
+            # in one place. Swift's are a product of the package, which
+            # build-swift.sh builds.
+            - name: Compile the snippets of the booklet
+              if: matrix.port != 'swift'
+              run: |
+                  case ${{ matrix.port }} in
+                  java)
+                      javac -encoding utf-8 --release 8 -Xlint -Xlint:-options -Werror -d build/snippets \
+                          com/pdfjet/*.java com/pdfjet/barcodes/*.java com/pdfjet/pdf417/*.java \
+                          com/pdfjet/qrcode/*.java com/pdfjet/datamatrix/*.java com/pdfjet/internal/*.java \
+                          com/pdfjet/fonts/*.java com/pdfjet/encryption/*.java \
+                          booklet/snippets/java/Snippets.java ;;
+                  dotnet)
+                      dotnet build booklet/snippets/csharp/Snippets.csproj -c release \
+                          -p:TreatWarningsAsErrors=true -o build/snippets ;;
+                  go)
+                      go vet ./booklet/snippets/go ;;
+                  esac
 
             # The compare job checks these PDFs.
             - name: Upload the example PDFs

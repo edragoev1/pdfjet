@@ -4,7 +4,7 @@ set -e
 
 rm -rf docs/java
 
-javadoc -public -doctitle "PDFjet for Java" -windowtitle "PDFjet for Java" \
+javadoc -notimestamp -public -doctitle "PDFjet for Java" -windowtitle "PDFjet for Java" \
     com/pdfjet/*.java \
     com/pdfjet/barcodes/*.java \
     com/pdfjet/encryption/*.java \

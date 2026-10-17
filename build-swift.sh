@@ -1,4 +1,8 @@
 bash "$(dirname "$0")/get-fonts-and-data.sh" || exit 1
+# Stop at the first failure: a library that does not build, or go vet, was
+# passed over, and the script gave the exit code of the last example (review
+# of 17 October 2026).
+set -e
 # The folder of this script, which has fonts and data, from wherever it is run.
 cd "$(dirname "$0")" || exit 1
 rm -rf .build

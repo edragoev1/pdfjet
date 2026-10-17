@@ -60,11 +60,13 @@ commit and date. The layout's format version (1) and the look's rules
   with Java's, page by page and in every content stream, checks the PDF/UA and
   PDF/A files with veraPDF, opens the Java PDFs in PDFium, pdf.js and
   Poppler, and compares the snippets of the booklet in the four ports. The
-  Build workflow runs the same checks on every push.
-- **The public API.** `./check-api.sh v9.0.3` (the last release) lists what
+  Build workflow runs the same checks on every push, but for the snippets,
+  which it compiles and does not compare.
+- **The public API.** `./check-api.sh v9.0.9` (the last release) lists what
   was added and what was removed in each port: nothing is removed and no
-  signature changes in a 9.0.x release, and what is added is what CHANGELOG.md
-  lists.
+  signature changes but those util/api-removed.txt lists, each with the
+  owner's word and a line of CHANGELOG.md, and what is added is what
+  CHANGELOG.md lists.
 - **The manual viewer pass.** The PDFs in `viewer-files-to-test`, opened by
   hand in Acrobat Reader, and with NVDA where a file is tagged; see the README
   there for the files of each release. One question is open from the pass of
@@ -327,19 +329,21 @@ The Swift port:
 - [x] SVGImage and ImageSize hide a stream that cannot be read.
 
 The release (scripts and the checklist):
-- [ ] The checklist's gh release step: the jar and dll from the Core zips,
+- [x] The checklist's gh release step: the jar and dll from the Core zips,
       not the developer build.
-- [ ] The packaging builds Pro from its HEAD, not its tag: check its
+- [x] The packaging builds Pro from its HEAD, not its tag: check its
       version.sh.
-- [ ] A check that the four version strings, Example_37 and the tests
+- [x] A check that the four version strings, Example_37 and the tests
       agree, and that CHANGELOG has the date.
-- [ ] Reproducible zips: javadoc -notimestamp; the Core zips for Maven and
+- [x] Reproducible zips: javadoc -notimestamp; the Core zips for Maven and
       NuGet from the GitHub release.
-- [ ] CI runs the booklet's snippets.
-- [ ] build-*.sh: set -e; build-java.sh leaves old classes of the
+- [x] CI runs the booklet's snippets.
+- [x] build-*.sh: set -e; build-java.sh leaves old classes of the
       subpackages.
-- [ ] TODO's check-api line: v9.0.9; Pro's library.sh comment of
-      GONOSUMDB; windows.yml checks only that a PDF is not empty.
+- [x] TODO's check-api line: v9.0.9; windows.yml checks only that a PDF
+      is not empty (and build.yml: %%EOF now).
+- [ ] Pro's library.sh comment of GONOSUMDB: with the Pro fixes, after the
+      reset.
 
 ## Known and accepted (document, do not fix)
 

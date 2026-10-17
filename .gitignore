@@ -38,3 +38,5 @@ booklet/*.pdf
 
 # The packages of the pdf.js renderer, which npm ci installs
 .github/scripts/render-pdfjs/node_modules/
+# The jar and the dll of a GitHub release, taken from its Core zips
+release-assets/

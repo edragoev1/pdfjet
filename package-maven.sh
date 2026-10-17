@@ -18,6 +18,9 @@ cd "$(dirname "$0")"
 version=${1:?the version, such as 9.0.9}
 zip=${2:?the PDFjet-ForJava-Core zip of the release}
 commit=$(git rev-list -n1 "v$version")
+# The entries of the jars made here have the time of the tag's commit, so that
+# two bundles of a release are the same (review of 17 October 2026)
+date=$(TZ=UTC git log -1 --format=%cd --date=format-local:%Y-%m-%dT%H:%M:%SZ "v$version")
 top="PDFjet-ForJava-Core-v$version"
 work=out/maven/work
 dir=out/maven/stage/com/pdfjet/pdfjet/$version
@@ -30,11 +33,11 @@ cp "$work/PDFjet.jar" "$base.jar"
 
 # The API reference of the release, as the javadoc jar
 unzip -q -o "$zip" "$top/docs/java/*" -d "$work/docs"
-jar cf "$base-javadoc.jar" -C "$work/docs/$top/docs/java" .
+jar --date="$date" -cf "$base-javadoc.jar" -C "$work/docs/$top/docs/java" .
 
 # The sources of the tag: the packages build-java.sh builds the jar of
 git archive "v$version" com/pdfjet | tar -x -C "$work/sources"
-jar cf "$base-sources.jar" -C "$work/sources" com
+jar --date="$date" -cf "$base-sources.jar" -C "$work/sources" com
 
 sed -e "s/\$version\\$/$version/g" -e "s/\$commit\\$/$commit/g" maven/pdfjet.pom > "$base.pom"
 

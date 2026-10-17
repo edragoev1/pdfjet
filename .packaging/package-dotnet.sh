@@ -55,6 +55,25 @@ if ! git -C "$PRO" rev-parse --verify -q HEAD > /dev/null; then
     echo "PDFjet Pro is not in $PRO: set PDFJET_PRO to its repository."
     exit 1
 fi
+# The version is the same in the four ports, their tests and Example_37, and
+# CHANGELOG.md gives it its date; PDFJET_DRAFT=1 asks for no date, for a
+# package made to look at before the release (review of 17 October 2026).
+if ! util/check-version.sh ${PDFJET_DRAFT:+--draft} > /dev/null; then
+    exit 1
+fi
+# The Pro zip is of the release when the last commit of pdfjet-pro is tagged
+# with its version; before Pro's tag it is a draft, made again from the tag
+# (the checklist, step 9), which PDFJET_PRO_RELEASE=1 asks for: then a commit
+# that is not the tag is refused (review of 17 October 2026).
+PRO_TAG=$(git -C "$PRO" describe --exact-match --tags HEAD 2> /dev/null || true)
+if [ "$PRO_TAG" != "$VERSION" ]; then
+    if [ -n "${PDFJET_PRO_RELEASE:-}" ]; then
+        echo "pdfjet-pro is at $(git -C "$PRO" describe --tags HEAD), not at its tag $VERSION."
+        exit 1
+    fi
+    echo "Note: pdfjet-pro is at $(git -C "$PRO" describe --tags HEAD), not tagged $VERSION:"
+    echo "the Pro zip is a draft, to make again from Pro's tag with PDFJET_PRO_RELEASE=1."
+fi
 CORE_ZIP="$PWD/.commercial-packages/$CORE_NAME.zip"
 
 # From 9.0.5 every file and directory of a package has one time: the day of

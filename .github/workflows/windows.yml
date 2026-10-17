@@ -70,8 +70,11 @@ jobs:
               run: |
                   cat build.log
                   missing=""
+                  # A PDF that is there and ends with %%EOF, not one cut short by
+                  # an example that failed as it wrote it (review of
+                  # 17 October 2026)
                   for i in $(seq -w 1 50); do
-                      if [ ! -s "Example_$i.pdf" ]; then
+                      if [ ! -s "Example_$i.pdf" ] || ! tail -c 32 "Example_$i.pdf" | grep -q '%%EOF'; then
                           missing="$missing $i"
                       fi
                   done
