@@ -400,4 +400,20 @@ class TextBlockTest {
         }
         return String.join("|", lines);
     }
+
+    // A vertical alignment that is not one, as RIGHT, was taken as TOP
+    // without a word: refused when the block is drawn, as a cell's is
+    // (GitHub Discussion #5)
+    @Test
+    void aVerticalAlignmentOfRightIsRefused() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        final TextBlock block = new TextBlock(TestSupport.helvetica(pdf), "text");
+        block.setVerticalAlignment(Alignment.RIGHT);
+        block.setLocation(50f, 50f);
+        block.drawOn(null);
+        final Page page = new Page(pdf, Letter.PORTRAIT);
+        assertEquals("The vertical alignment of a text block is top, center or bottom.",
+                org.junit.jupiter.api.Assertions.assertThrows(
+                        IllegalArgumentException.class, () -> block.drawOn(page)).getMessage());
+    }
 }

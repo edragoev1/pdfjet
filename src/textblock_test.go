@@ -513,3 +513,18 @@ func TestTextBlockARightToLeftWordBreaksAtASoftHyphen(t *testing.T) {
 		}
 	}
 }
+
+// A vertical alignment that is not one, as alignment.Right, was taken as Top
+// without a word: refused when the block is drawn, as a cell's is, Complete
+// failing with the message (GitHub Discussion #5)
+func TestATextBlockVerticalAlignmentOfRightIsRefused(t *testing.T) {
+	pdf := testNewPDF()
+	block := NewTextBlock(testHelvetica(pdf), "text").SetVerticalAlignment(alignment.Right)
+	block.SetLocation(50, 50)
+	block.DrawOn(nil)
+	if pdf.err != nil {
+		t.Fatalf("measured: %v", pdf.err)
+	}
+	block.DrawOn(NewPage(pdf, testLetterPortrait()))
+	testRecorded(t, pdf, textBlockValignMessage)
+}

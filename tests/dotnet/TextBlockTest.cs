@@ -383,5 +383,20 @@ public class TextBlockTest {
         }
         return string.Join("|", lines);
     }
+
+    // A vertical alignment that is not one, as RIGHT, was taken as TOP
+    // without a word: refused when the block is drawn, as a cell's is
+    // (GitHub Discussion #5)
+    [Fact]
+    public void AVerticalAlignmentOfRightIsRefused() {
+        PDF pdf = TestSupport.NewPDF();
+        TextBlock block = new TextBlock(TestSupport.Helvetica(pdf), "text");
+        block.SetVerticalAlignment(Alignment.RIGHT);
+        block.SetLocation(50f, 50f);
+        block.DrawOn(null);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Assert.Equal("The vertical alignment of a text block is top, center or bottom.",
+                Assert.Throws<ArgumentException>(() => block.DrawOn(page)).Message);
+    }
 }
 }

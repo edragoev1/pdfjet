@@ -102,7 +102,7 @@ commit and date. The layout's format version (1) and the look's rules
   (GitHub Discussion #5, 16 October 2026).** All additive or a check, all
   on Java 8, in the four ports where they apply; the owner, 16 October 2026:
   "add them to the TODO for 9.1.1".
-  - **complete() that leaves the stream open.** Java, C# and Swift close
+  - (Done 17 October 2026, 86677f8e.) **complete() that leaves the stream open.** Java, C# and Swift close
     the output stream in complete(), so several PDFs cannot be written into
     one ZipOutputStream; Go already leaves a writer it is given open. Add
     complete(boolean closeStream) in Java and Swift, keeping today's default,
@@ -126,7 +126,10 @@ commit and date. The layout's format version (1) and the look's rules
     classes are not changed; drawOn() stays as it is, and the examples keep
     it: "if people use the new one - fine." A documentation comment, a unit
     test in each port, and a line in the CHANGELOG.
-  - **A vertical alignment that can't be one is not taken.**
+  - (Done 17 October 2026, as a Cell's: a Cell already refused one since
+    the third review of 12 October, so the setters stay as they are and a
+    TextBlock is refused when drawn, in the four ports.)
+    **A vertical alignment that can't be one is not taken.**
     setVerticalAlignment(Alignment.RIGHT), of TextBlock and Cell, is taken
     as TOP without a word, in the four ports. Java throws
     IllegalArgumentException and C# ArgumentException for anything but TOP,

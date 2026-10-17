@@ -1104,6 +1104,13 @@ public class TextBlock implements Drawable {
         if (page == null) {
             return new float[] {this.x + this.width, this.y + blockHeight};
         }
+        // A vertical alignment that is not one, as RIGHT, was taken as TOP
+        // without a word: refused, as a cell's is (GitHub Discussion #5)
+        if (verticalAlignment != Alignment.TOP && verticalAlignment != Alignment.CENTER
+                && verticalAlignment != Alignment.BOTTOM) {
+            page.pdf.fail(new IllegalArgumentException(
+                    "The vertical alignment of a text block is top, center or bottom."));
+        }
 
         page.saveGraphicsState();
 

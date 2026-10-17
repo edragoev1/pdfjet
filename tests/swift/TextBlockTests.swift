@@ -303,4 +303,20 @@ import Testing
             String(String.UnicodeScalarView($0.text!.unicodeScalars.filter { $0.value != 0x00AD }))
         }.joined(separator: "|")
     }
+
+    // A vertical alignment that is not one, as RIGHT, was taken as TOP
+    // without a word: refused when the block is drawn, as a cell's is,
+    // complete() throwing (GitHub Discussion #5)
+    @Test func aVerticalAlignmentOfRightMakesCompleteThrow() throws {
+        let memory = MemoryPDF()
+        let block = TextBlock(TestSupport.helvetica(memory.pdf), "text").setVerticalAlignment(.RIGHT)
+        block.setLocation(50, 50)
+        block.drawOn(Page(memory.pdf, Letter.PORTRAIT))
+        do {
+            try memory.pdf.complete()
+            Issue.record("complete() did not throw")
+        } catch {
+            #expect(TestSupport.message(error).contains("The vertical alignment of a text block is top, center or bottom."))
+        }
+    }
 }

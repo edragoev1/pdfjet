@@ -927,6 +927,13 @@ public class TextBlock : Drawable {
         if page == nil {
             return [x + width, y + blockHeight]
         }
+        // A vertical alignment that is not one, as RIGHT, was taken as TOP
+        // without a word: refused, as a cell's is, complete() failing with
+        // the message (GitHub Discussion #5)
+        if verticalAlignment != .TOP && verticalAlignment != .CENTER && verticalAlignment != .BOTTOM {
+            page!.pdf.fail("The vertical alignment of a text block is top, center or bottom.")
+            return [x + width, y + blockHeight]
+        }
 
         page!.saveGraphicsState()
 

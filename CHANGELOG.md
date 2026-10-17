@@ -42,6 +42,12 @@ This is the first entry in this file; earlier releases were not tracked here.
   refusals do, and complete() throws after it; in Go and Swift complete()
   fails. A row that only reaches into the bottom margin is drawn as before.
   In the four ports.
+- A TextBlock's vertical alignment that is not one, as Alignment.RIGHT,
+  was taken as TOP without a word (GitHub Discussion #5). It is now
+  refused when the block is drawn, as a Cell's already is: "The
+  vertical alignment of a text block is top, center or bottom." In Java
+  and C# drawOn throws; in Go and Swift complete() fails. Measuring with
+  drawOn(null) is as before. In the four ports.
 - Java: the library builds with JDK 23 and later, whose javac warned of the
   documentation comment before the package of ImageSize.java and
   SASLprepTables.java, an error as the build treats warnings; tested on

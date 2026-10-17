@@ -953,11 +953,24 @@ func (textBlock *TextBlock) layout() (textLines []*TextLine, yText, leading, blo
 	return textLines, yText, leading, blockHeight
 }
 
+// textBlockValignMessage is the message of a vertical alignment that is not
+// one, the same in the four ports.
+const textBlockValignMessage = "The vertical alignment of a text block is top, center or bottom."
+
 // DrawOn draws this text block on the specified page and returns the x and y
 // coordinates of its bottom right corner.
 func (textBlock *TextBlock) DrawOn(page *Page) [2]float32 {
 	textLines, yText, leading, blockHeight := textBlock.layout()
 	if page == nil {
+		return [2]float32{textBlock.x + textBlock.width, textBlock.y + blockHeight}
+	}
+	// A vertical alignment that is not one, as alignment.Right, was taken as
+	// Top without a word: refused, as a cell's is, Complete failing with the
+	// message (GitHub Discussion #5)
+	switch textBlock.verticalAlignment {
+	case alignment.Top, alignment.Center, alignment.Bottom:
+	default:
+		page.pdf.fail(textBlockValignMessage)
 		return [2]float32{textBlock.x + textBlock.width, textBlock.y + blockHeight}
 	}
 
