@@ -280,14 +280,16 @@ import Testing
 
     @Test func theRulesOfTheClassesOfAnElementAreFoundByClass() throws {
         // Rules and elements of three classes each: every element went
-        // through every rule for each of its classes. Four times as many of
-        // both take about four times the time, not sixteen; the two times are
+        // through every rule for each of its classes. Eight times as many of
+        // both take about eight times the time, not sixty-four; the limit is 24
+        // times, for a busy computer (10 times failed, 11.3, on GitHub's runner,
+        // 18 October 2026); the two times are
         // measured in the same run, the shortest of three each, so that a busy
         // computer slows both (a limit of 2 s failed under load, 9 October
         // 2026). Half as many as the other ports, as the debug build is slow.
-        let small = try classRulesTime(2500)
+        let small = try classRulesTime(1250)
         let large = try classRulesTime(10000)
-        #expect(large <= small * 8, "10000 rules and elements took \(large), and 2500 \(small)")
+        #expect(large <= small * 24, "10000 rules and elements took \(large), and 1250 \(small)")
         // The rules are those of the style sheet, in its order, whatever the
         // order of the classes, and a class named twice has its rules once.
         let content = try draw("<svg width=\"10\" height=\"10\"><style>.b{fill:red} .a{fill:blue} .b{stroke:green}"

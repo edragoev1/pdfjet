@@ -322,14 +322,16 @@ class ReviewMediaTest {
     @Test
     void theRulesOfTheClassesOfAnElementAreFoundByClass() throws Exception {
         // Rules and elements of three classes each: every element went
-        // through every rule for each of its classes. Four times as many of
-        // both take about four times the time, not sixteen; the two times are
+        // through every rule for each of its classes. Eight times as many of
+        // both take about eight times the time, not sixty-four; the limit is 24
+        // times, for a busy computer (10 times failed, 11.3, on GitHub's runner,
+        // 18 October 2026); the two times are
         // measured in the same run, the shortest of three each, so that a busy
         // computer slows both (a limit of 2 s failed under load, 9 October 2026).
-        long small = classRulesTime(5000);
+        long small = classRulesTime(2500);
         long large = classRulesTime(20000);
-        assertTrue(large <= 10 * small, "20000 rules and elements took " + large / 1000000
-                + " ms, and 5000 " + small / 1000000 + " ms");
+        assertTrue(large <= 24 * small, "20000 rules and elements took " + large / 1000000
+                + " ms, and 2500 " + small / 1000000 + " ms");
         // The rules are those of the style sheet, in its order, whatever the
         // order of the classes, and a class named twice has its rules once.
         String content = draw("<svg width=\"10\" height=\"10\"><style>.b{fill:red} .a{fill:blue} .b{stroke:green}"

@@ -297,14 +297,16 @@ func TestReviewMediaTheCommentsOfAStyleSheetAreLeftOutInOnePass(t *testing.T) {
 
 func TestReviewMediaTheRulesOfTheClassesOfAnElementAreFoundByClass(t *testing.T) {
 	// Rules and elements of three classes each: every element went through
-	// every rule for each of its classes. Four times as many of both take
-	// about four times the time, not sixteen; the two times are measured in
+	// every rule for each of its classes. Eight times as many of both take
+	// about eight times the time, not sixty-four; the limit is 24 times, for a
+	// busy computer (10 times failed, 11.3, on GitHub's runner, 18 October
+	// 2026); the two times are measured in
 	// the same run, the shortest of three each, so that a busy computer slows
 	// both (a limit of 2 s failed under load, 9 October 2026).
-	small := testClassRulesTime(t, 5000)
+	small := testClassRulesTime(t, 2500)
 	large := testClassRulesTime(t, 20000)
-	if large > 10*small {
-		t.Errorf("20000 rules and elements took %v, and 5000 %v", large, small)
+	if large > 24*small {
+		t.Errorf("20000 rules and elements took %v, and 2500 %v", large, small)
 	}
 	// The rules are those of the style sheet, in its order, whatever the
 	// order of the classes, and a class named twice has its rules once.
