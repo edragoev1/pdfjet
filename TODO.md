@@ -264,6 +264,14 @@ issues found before we release 9.1.1." Each fix in every port it applies to,
 with a test. Pro's are in pdfjet-pro's TODO.
 
 Fixed:
+- [x] Swift, from the Swift Package Index's builds of v9.0.9 (18 October
+      2026): on Android, Chart's grid rounding called ceil and floor on
+      Floats, which Android's C library has for Doubles alone (now the
+      Float's own `rounded(.up)` and `rounded(.down)`); on tvOS, watchOS and
+      WebAssembly, the corpus harness's signals (`sigaltstack`, Darwin) did
+      not build, and the index builds every target: the harness is for
+      macOS and Linux alone. The library built on Swift 6.2 to 6.4, macOS,
+      iOS, visionOS and Linux; Swift 6.1 is below the package's 6.2.
 - [x] C#: the wrong password and the unreadable font were still a plain
       Exception (dea57791).
 

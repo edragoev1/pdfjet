@@ -20,6 +20,11 @@
 // prints the crash, the signal and the step it was at, as its JSON, in place
 // of the Swift backtracer. To see where the trap is, run the harness alone
 // with SWIFT_BACKTRACE=enable=yes, which leaves the signal to the backtracer.
+// It runs on macOS and Linux alone, where check-corpus.py runs it: the
+// signals and their stack are of their C libraries, which tvOS, watchOS and
+// WebAssembly do not have, and the Swift Package Index builds every target
+// of the package for each of them (18 October 2026).
+#if os(macOS) || os(Linux)
 import Foundation
 import PDFjet
 #if canImport(Glibc)
@@ -169,3 +174,7 @@ if ProcessInfo.processInfo.environment["SWIFT_BACKTRACE"] == nil {
 let encoder = JSONEncoder()
 encoder.outputFormatting = .sortedKeys
 FileHandle.standardOutput.write(try encoder.encode(run(args[1], args[2], args[3])) + Data("\n".utf8))
+
+#else
+print("CorpusSwift runs on macOS and Linux alone.")
+#endif

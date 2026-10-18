@@ -948,8 +948,11 @@ public class Chart : Drawable {
         let round = Round()
 
         // Round max up, min down to nearest step multiple
-        round.maxValue = ceil(maxValue / step) * step
-        round.minValue = floor(minValue / step) * step
+        // Rounded by the Float's own rounded, not ceil and floor, which
+        // Android's C library has for Double alone (the Swift Package
+        // Index's Android build, 18 October 2026)
+        round.maxValue = (maxValue / step).rounded(.up) * step
+        round.minValue = (minValue / step).rounded(.down) * step
         if !BarChart.isValue(round.maxValue - round.minValue) {
             return unitRange()      // Rounded past the largest Float
         }
