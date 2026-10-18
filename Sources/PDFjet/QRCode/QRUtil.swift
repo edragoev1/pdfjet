@@ -61,8 +61,11 @@ class QRUtil {
         [6, 30, 58, 86, 114, 142, 170],
     ]
 
-    // The generator polynomial of the BCH(18, 6) code of the version information.
-    private let G18 = (1 << 12) | (1 << 11) | (1 << 10) | (1 << 9) | (1 << 8) | (1 << 5) | (1 << 2) | (1 << 0)
+    // The generator polynomial of the BCH(18, 6) code of the version
+    // information: the bits 12, 11, 10, 9, 8, 5, 2 and 0, as one number, which
+    // Swift 6.1 type-checks at once and could not as eight shifts (the Swift
+    // Package Index's build, 18 October 2026).
+    private let G18: Int = 0b1_1111_0010_0101
 
     private var G15: Int
     var G15_MASK: Int

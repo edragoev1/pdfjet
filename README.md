@@ -14,7 +14,7 @@
   <img src="https://img.shields.io/badge/Java-8%2B-b07219.svg" alt="Java 8+">
   <img src="https://img.shields.io/badge/.NET-8-512bd4.svg" alt=".NET 8">
   <img src="https://img.shields.io/badge/Go-1.26%2B-00add8.svg" alt="Go 1.26+">
-  <img src="https://img.shields.io/badge/Swift-6.2%2B-f05138.svg" alt="Swift 6.2+">
+  <img src="https://img.shields.io/badge/Swift-6.1%2B-f05138.svg" alt="Swift 6.1+">
 </p>
 
 <p align="center">
