@@ -237,6 +237,20 @@ commit and date. The layout's format version (1) and the look's rules
   keep less once written, a bookmark tree of thousands of levels or
   siblings is built in linear time, and Java's Compressor is not one
   synchronized Deflater for every thread.
+- **For 9.1.5: kerning of TrueType and OpenType fonts, opt in** (18 October
+  2026): no slower when off, and little code.
+  `Font.SetKernPairs(true)` kerns the 14 standard fonts today; the same call
+  for a .ttf or .otf font, off by default, so that a document that does not
+  ask for it is as fast as now. From the GPOS table, read already for the
+  marks (`gpos.go`, lazily, within its work limit): its PairPos lookups,
+  format 1 (glyph pairs) and format 2 (class pairs), of the `kern` feature;
+  the `kern` table of an older TrueType font without GPOS. The pairs read
+  the first time a kerned font measures or draws, into one map of glyph
+  pairs. Every width counts them, as the standard fonts' do: StringWidth,
+  the wrapping, justification and alignment of TextLine, TextBlock and the
+  table cells; the text written as `TJ` with the adjustments. Four ports,
+  one test of the widths and the drawn text agreeing in all four, and
+  Example_24 timed with it off (no slower) and on.
 - **Longer fuzzing of the font subsetters.** Go's fuzzers ran 5 minutes each
   on every target before 9.0.5 with no failure; the TrueType and CFF
   subsetters, which subset a real font for each input, ran 27,000 and 15,000
