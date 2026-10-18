@@ -630,18 +630,19 @@ jobs:
             - name: Compare random shapes across the ports
               run: tests/crossport/check-crossport.sh "" 20000
 
-    # The library built with Swift 6.2, the oldest that Package.swift asks for:
+    # The library built with Swift 6.1, the oldest that Package.swift asks for:
     # CI built with 6.3 alone, and 6.2 gave up on an expression of CRC32
-    # (the review of 12 October 2026, K2).
-    swift-6-2:
-        name: swift (6.2)
+    # (the review of 12 October 2026, K2); 6.1 since 18 October 2026, as the
+    # Swift Package Index builds 6.1 too.
+    swift-6-1:
+        name: swift (6.1)
         runs-on: ubuntu-24.04
         steps:
             - uses: actions/checkout@v7
 
             - uses: ./.github/actions/install-swift
               with:
-                  swift-url: https://download.swift.org/swift-6.2.4-release/ubuntu2404/swift-6.2.4-RELEASE/swift-6.2.4-RELEASE-ubuntu24.04.tar.gz
+                  swift-url: https://download.swift.org/swift-6.1.3-release/ubuntu2404/swift-6.1.3-RELEASE/swift-6.1.3-RELEASE-ubuntu24.04.tar.gz
 
             - name: Build the library
               run: swift build --target PDFjet -Xswiftc -warnings-as-errors
@@ -677,7 +678,7 @@ jobs:
               run: ./get-fonts-and-data.sh
 
             # The newest release of Xcode on the runner, not a beta beside it,
-            # for Swift 6.2, which Package.swift asks for.
+            # for Swift 6.1 or later, which Package.swift asks for.
             - name: Use the newest Xcode
               run: |
                   sudo xcode-select -s "$(printf "%s\n" /Applications/Xcode*.app | grep -iv beta | sort -V | tail -1)"
