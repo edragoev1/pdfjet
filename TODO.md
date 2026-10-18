@@ -271,7 +271,10 @@ Fixed:
       WebAssembly, the corpus harness's signals (`sigaltstack`, Darwin) did
       not build, and the index builds every target: the harness is for
       macOS and Linux alone. The library built on Swift 6.2 to 6.4, macOS,
-      iOS, visionOS and Linux; Swift 6.1 is below the package's 6.2.
+      iOS, visionOS and Linux. Swift 6.1 again the oldest the package asks
+      for, as before March 2026: the QR code's version polynomial written
+      as one number, which 6.1 type-checks, and CI's oldest-Swift job on
+      6.1.3.
 - [x] C#: the wrong password and the unreadable font were still a plain
       Exception (dea57791).
 
