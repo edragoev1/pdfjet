@@ -5,7 +5,10 @@
   </picture>
 </p>
 
-<h3 align="center">Fast, dependency-free PDF generation for Java, C#, Go and Swift</h3>
+<h3 align="center">Standards-compliant PDFs, at jet speed.</h3>
+
+<p align="center">In the language you already use: Java, C#, Go or Swift.<br>
+<b>PDF/UA and PDF/A in the same document</b>: readable by screen readers, and made to last.</p>
 
 <p align="center">
   <a href="https://github.com/edragoev1/pdfjet/actions/workflows/build.yml"><img src="https://github.com/edragoev1/pdfjet/actions/workflows/build.yml/badge.svg" alt="Build"></a>
@@ -23,7 +26,7 @@
   <a href="CHANGELOG.md">Changelog</a>
 </p>
 
-PDFjet creates PDF documents: text in any script, tables, charts, barcodes and
+PDFjet creates PDF documents: text in most scripts, tables, charts, barcodes and
 images, accessible and archival when you need it to be. The same API and the
 same output come in four languages, and none of them needs a single dependency.
 
