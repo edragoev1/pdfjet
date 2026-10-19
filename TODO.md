@@ -100,6 +100,28 @@ commit and date. The layout's format version (1) and the look's rules
   the logger made when it is used. Done on 15 October 2026 (0cb12f10): Java,
   C# and Swift; Go needed nothing. CHANGELOG.md, v9.1.1.
 
+- ✅ **v9.1.3: from Stefan Ostermann's fork of PDFjet (soster/pdfjet, used
+  by his Android app, which draws on PDFs that were read).** Done on 19
+  October 2026 on the branch stefan-fixes, in the four ports, with tests in
+  each; merge after the 9.1.1 tag. Written from his descriptions, not his
+  code (his fork is BSD-2-Clause), and credited to him in the CHANGELOG.
+  - **A filled-in form that is drawn on keeps its fields.** addObjects()
+    wrote a new catalog of /Type and /Pages only, so the /AcroForm of the
+    PDF that was read was lost and viewers showed no field values. The new
+    catalog carries it over, a dictionary or a reference. Only /AcroForm:
+    outlines, names and a structure tree are still not carried over (a
+    structure tree would be wrong with untagged content drawn on top).
+  - **GraphicsState.setBlendMode()**, the sixteen blend modes of the PDF
+    (BlendMode; blendmode.BlendMode in Go, a string type, "" for none), for
+    new pages and pages that were read; no blend mode writes the state as
+    before; PDF/A-1 takes only NORMAL. veraPDF passes PDF/A-2B and 3B with
+    MULTIPLY. Asked by one developer; the owner chose to add it, 19 October
+    2026.
+  - **The same state set again on a page that was read is reused**, by
+    exactly the same entries, as Page.setGraphicsState already did.
+  - Already in PDFjet 9 before his fork had it: an /ExtGState found by its
+    key whatever the names of its states (/Gs1, /R7).
+
 - **v9.1.1: four small API fixes, from a developer evaluating the Java port
   (GitHub Discussion #5, 16 October 2026).** All additive or a check, all
   on Java 8, in the four ports where they apply; the owner, 16 October 2026:
