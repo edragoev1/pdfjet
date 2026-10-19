@@ -398,6 +398,11 @@ The release (scripts and the checklist):
 ## Known and accepted (document, do not fix)
 
 - Only Arabic and Persian letters are shaped.
+- No Indic scripts (Devanagari, Bengali, Tamil...), Khmer, Myanmar, Sinhala or
+  Nastaliq Urdu: they need GSUB and a shaping engine's reordering, which PDFjet
+  does not have (checked 19 October 2026: हिन्दी drawn with its vowel after its
+  consonant and its conjunct unjoined). Said in the README, under Marks, and on
+  pdfjet.com's FAQs.
 - No explicit bidi embedding, override or isolate controls.
 - Poppler separates an Arabic comma from its word; MuPDF moves numbers next to
   words and can move a bracket at a line end.

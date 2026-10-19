@@ -610,6 +610,13 @@ extracts the word whole. MuPDF 1.27 extracts the letters and marks in order,
 but puts spaces inside some of these words, after a moved mark, going by the
 positions of the glyphs rather than by the ActualText.
 
+Scripts whose letters change shape or order by the letters around them, such
+as Devanagari (Hindi), Bengali, Tamil and the other Indic scripts, Khmer,
+Myanmar, Sinhala and the Nastaliq style of Urdu, are not supported: they need
+the substitution table (GSUB) and the reordering of a shaping engine, which
+PDFjet does not have. Their letters are drawn one after another, so a vowel
+written before its consonant comes after it, and conjuncts are not joined.
+
 ## Encryption
 
 `Encryption` encrypts a PDF with 256-bit AES, revision 6 of the standard
