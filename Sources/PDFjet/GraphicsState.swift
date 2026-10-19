@@ -43,4 +43,38 @@ public class GraphicsState {
     public func getAlphaNonStroking() -> Float {
         return self.ca
     }
+
+    // Nil writes no /BM entry, as before there was a blend mode (suggested by
+    // Stefan Ostermann, of his fork of PDFjet, 19 October 2026).
+    private var blendMode: BlendMode? = nil
+
+    /// Sets the blend mode: how what is drawn is mixed with what is already on
+    /// the page. BlendMode.MULTIPLY draws like a highlighter pen. The blend
+    /// mode stays until a graphics state sets another one, so set
+    /// BlendMode.NORMAL to go back to painting over. A PDF/A-1 document takes
+    /// only BlendMode.NORMAL. Nil sets none.
+    @discardableResult
+    public func setBlendMode(_ blendMode: BlendMode?) -> GraphicsState {
+        self.blendMode = blendMode
+        return self
+    }
+
+    /// Returns the blend mode, or nil if none was set.
+    public func getBlendMode() -> BlendMode? {
+        return self.blendMode
+    }
+
+    // The entries of the state's /ExtGState dictionary, as the page and an
+    // imported page write them: the alphas with a dot whatever the locale, at
+    // most two decimals and no exponent, then the blend mode if it has one.
+    func entries() -> String {
+        var state = "/CA " +
+                String(decoding: FastFloat.toByteArray(CA), as: UTF8.self) +
+                " /ca " +
+                String(decoding: FastFloat.toByteArray(ca), as: UTF8.self)
+        if let blendMode = blendMode {
+            state += " /BM /" + blendMode.rawValue
+        }
+        return state
+    }
 }

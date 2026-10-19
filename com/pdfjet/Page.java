@@ -2494,12 +2494,12 @@ final public class Page {
             pdf.fail(new IllegalStateException("A document of " + pdf.compliance
                     + " cannot draw with an opacity below 1: PDF/A-1 has no transparency."));
         }
-        // The alphas are written like the other numbers of the PDF: with a
-        // dot whatever the locale, at most two decimals and no exponent.
-        String state = "/CA " +
-                new String(FastFloat.toByteArray(gs.getAlphaStroking()), StandardCharsets.US_ASCII) +
-                " /ca " +
-                new String(FastFloat.toByteArray(gs.getAlphaNonStroking()), StandardCharsets.US_ASCII);
+        if (pdf.isPDFA1() && gs.getBlendMode() != null && gs.getBlendMode() != BlendMode.NORMAL) {
+            pdf.fail(new IllegalStateException("A document of " + pdf.compliance
+                    + " cannot draw with the blend mode " + gs.getBlendMode().name
+                    + ": PDF/A-1 has no transparency."));
+        }
+        String state = gs.entries();
         Integer n;
         if (pdf.states.containsKey(state)) {
             n = pdf.states.get(state);

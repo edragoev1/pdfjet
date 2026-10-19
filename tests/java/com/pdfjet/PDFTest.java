@@ -1654,4 +1654,43 @@ class PDFTest {
             assertEquals(closeStream, closed[0], "closeStream " + closeStream);
         }
     }
+
+    // A filled-in form that is drawn on keeps its fields: the catalog of the
+    // document carries over the /AcroForm of the one that was read, which a
+    // viewer needs to show the values (Stefan Ostermann's fork of PDFjet, 19
+    // October 2026). Without one, there is none.
+    @Test
+    void aFormThatIsDrawnOnKeepsItsFields() throws Exception {
+        String[] form = {
+            "<< /Type /Catalog /Pages 2 0 R /AcroForm << /Fields [4 0 R] /NeedAppearances true >> >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 200] /Annots [4 0 R] /Resources << >> /Contents 5 0 R >>",
+            "<< /Type /Annot /Subtype /Widget /FT /Tx /T (name) /V (Alice) /Rect [20 100 200 130] /P 3 0 R >>",
+        };
+        String[] byReference = form.clone();
+        byReference[0] = "<< /Type /Catalog /Pages 2 0 R /AcroForm 6 0 R >>";
+        String[] noForm = form.clone();
+        noForm[0] = "<< /Type /Catalog /Pages 2 0 R >>";
+        String[][] cases = {form, byReference, noForm};
+        String[] expected = {"/AcroForm << /Fields [ 4 0 R ] /NeedAppearances true >>\n", "/AcroForm 6 0 R\n", null};
+        for (int c = 0; c < cases.length; c++) {
+            List<PDFobj> objects = TestSupport.read(TestSupport.minimalPDF(cases[c], "BT ET"));
+            PDFobj page = new PDF().getPageObjects(objects).get(0);
+            page.addContent("0 0 m 10 10 l S\n".getBytes(StandardCharsets.US_ASCII), objects);
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            PDF pdf = new PDF(bos);
+            pdf.addObjects(objects);
+            pdf.complete();
+            String out = new String(bos.toByteArray(), StandardCharsets.ISO_8859_1);
+            Matcher root = Pattern.compile("/Root (\\d+) 0 R").matcher(out);
+            assertTrue(root.find(), out);
+            int start = out.indexOf("\n" + root.group(1) + " 0 obj\n") + 1;
+            String catalog = out.substring(start, out.indexOf("endobj", start));
+            if (expected[c] == null) {
+                assertFalse(catalog.contains("/AcroForm"), catalog);
+            } else {
+                assertTrue(catalog.contains(expected[c]), catalog);
+            }
+        }
+    }
 }

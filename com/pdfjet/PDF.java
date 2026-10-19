@@ -118,6 +118,11 @@ final public class PDF {
     private String createDate;      // XMP metadata
     private long byteCount = 0;
     private int pagesObjNumber = 0;
+    // The /AcroForm of the catalog of a PDF whose objects were added, which
+    // the catalog of this document carries over: without it a filled-in form
+    // that was drawn on lost its fields, and viewers showed none of their
+    // values (Stefan Ostermann's fork of PDFjet, 19 October 2026).
+    private List<String> acroForm = null;
     private PageLayout pageLayout = null;
     private PageMode pageMode = null;
     private String language = "en-US";
@@ -1263,6 +1268,12 @@ final public class PDF {
         append("/Pages ");
         append(pagesObjNumber);
         append(Token.OBJ_REF);
+
+        if (acroForm != null && !acroForm.isEmpty()) {
+            append("/AcroForm ");
+            appendTokens(acroForm);
+            append(Token.NEWLINE);
+        }
 
         addAssociatedFiles();
 
@@ -3820,8 +3831,26 @@ final public class PDF {
         }
         checkObjects(objects);
         this.pagesObjNumber = Integer.parseInt(pagesObject.dict.get(0));
+        this.acroForm = acroFormOf(objects);
         FontObjects.complete(objects);
         addObjectsToPDF(objects);
+    }
+
+    // Returns the value of the /AcroForm entry of the catalog of the objects, a
+    // dictionary or a reference to one, or null. The objects keep their
+    // numbers, so a reference still names the same form.
+    private static List<String> acroFormOf(List<PDFobj> objects) {
+        for (PDFobj obj : objects) {
+            if (obj.root) {
+                List<String> tokens = valueOf(obj);
+                int i = entryIndex(tokens, "/AcroForm");
+                if (i == -1) {
+                    return null;
+                }
+                return new ArrayList<String>(tokens.subList(i + 1, valueEnd(tokens, i + 1)));
+            }
+        }
+        return null;
     }
 
     // Refuses objects of a PDF that was read when writing them would break this

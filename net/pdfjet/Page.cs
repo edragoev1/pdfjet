@@ -2474,12 +2474,12 @@ public class Page {
             pdf.Fail(new InvalidOperationException("A document of " + pdf.compliance
                     + " cannot draw with an opacity below 1: PDF/A-1 has no transparency."));
         }
-        // The alphas are written like the other numbers of the PDF: with a
-        // dot whatever the locale, at most two decimals and no exponent.
-        String state = "/CA " +
-                Encoding.ASCII.GetString(FastFloat.ToByteArray(gs.GetAlphaStroking())) +
-                " /ca " +
-                Encoding.ASCII.GetString(FastFloat.ToByteArray(gs.GetAlphaNonStroking()));
+        if (pdf.IsPDFA1() && gs.GetBlendMode() != null && gs.GetBlendMode() != BlendMode.NORMAL) {
+            pdf.Fail(new InvalidOperationException("A document of " + pdf.compliance
+                    + " cannot draw with the blend mode " + gs.GetBlendMode().Value.ToPDFName()
+                    + ": PDF/A-1 has no transparency."));
+        }
+        String state = gs.Entries();
         Int32 n;
         if (pdf.states.ContainsKey(state)) {
             n = pdf.states[state];

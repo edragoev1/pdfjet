@@ -7,6 +7,30 @@ languages.
 
 This is the first entry in this file; earlier releases were not tracked here.
 
+## v9.1.3 — not released yet
+
+### Added
+- A blend mode for a graphics state: GraphicsState.setBlendMode() with the
+  BlendMode of the PDF's sixteen (blendmode.BlendMode in Go), for new pages
+  and for pages of a PDF that was read. BlendMode.MULTIPLY draws like a
+  highlighter pen that leaves the text under it readable. A state with no
+  blend mode is written as before, with no /BM entry. A PDF/A-1 document
+  takes only NORMAL, as it has no transparency. Suggested by Stefan
+  Ostermann, from his fork of PDFjet.
+
+### Fixed
+- A filled-in PDF form that is drawn on keeps its fields: addObjects() now
+  carries the /AcroForm of the catalog of the PDF that was read over to the
+  catalog of the new one. Viewers showed none of the field values, as the
+  form was no longer a form. Other entries of that catalog, as its outlines
+  or its structure tree, are still not carried over. Found by Stefan
+  Ostermann, in his fork of PDFjet.
+- Setting the same graphics state again on a page of a PDF that was read
+  reuses the state rather than adding another to its /ExtGState, as the
+  graphics states of a new page already did. Only exactly the same entries
+  are reused, so a state with a blend mode is never taken for one without.
+  From Stefan Ostermann's fork of PDFjet.
+
 ## v9.1.1 — not released yet
 
 ### Added

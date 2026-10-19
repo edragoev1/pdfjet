@@ -5,10 +5,18 @@
 
 package pdfjet
 
+import (
+	"github.com/edragoev1/pdfjet/v9/src/blendmode"
+	"github.com/edragoev1/pdfjet/v9/src/internal/fastfloat"
+)
+
 // GraphicsState is used to create graphics state objects.
 type GraphicsState struct {
 	strokingAlpha    float32
 	nonStrokingAlpha float32
+	// "" writes no /BM entry, as before there was a blend mode (suggested by
+	// Stefan Ostermann, of his fork of PDFjet, 19 October 2026).
+	blendMode blendmode.BlendMode
 }
 
 // NewGraphicsState is the constructor.
@@ -43,4 +51,32 @@ func (state *GraphicsState) SetAlphaNonStroking(nonStrokingAlpha float32) *Graph
 // GetAlphaNonStroking returns the non stroking alpha.
 func (state *GraphicsState) GetAlphaNonStroking() float32 {
 	return state.nonStrokingAlpha
+}
+
+// SetBlendMode sets the blend mode: how what is drawn is mixed with what is
+// already on the page. blendmode.Multiply draws like a highlighter pen. The
+// blend mode stays until a graphics state sets another one, so set
+// blendmode.Normal to go back to painting over. A PDF/A-1 document takes only
+// blendmode.Normal. "" sets none.
+func (state *GraphicsState) SetBlendMode(blendMode blendmode.BlendMode) *GraphicsState {
+	state.blendMode = blendMode
+	return state
+}
+
+// GetBlendMode returns the blend mode, or "" if none was set.
+func (state *GraphicsState) GetBlendMode() blendmode.BlendMode {
+	return state.blendMode
+}
+
+// entries returns the entries of the state's /ExtGState dictionary, as the
+// page and an imported page write them: the alphas with a dot whatever the
+// locale, at most two decimals and no exponent, then the blend mode if it has
+// one.
+func (state *GraphicsState) entries() string {
+	entries := "/CA " + string(fastfloat.ToByteArray(state.strokingAlpha)) +
+		" /ca " + string(fastfloat.ToByteArray(state.nonStrokingAlpha))
+	if state.blendMode != "" {
+		entries += " /BM /" + string(state.blendMode)
+	}
+	return entries
 }

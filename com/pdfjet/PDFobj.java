@@ -1412,14 +1412,43 @@ public class PDFobj {
             obj = extGState;
             index = obj.dict.indexOf("<<") + 1;
         }
-        gsNumber = getMaxGSNumber(obj);
-        String name = "/GS" + (gsNumber + 1);
-        obj.dict.addAll(index, Arrays.asList(
-                name, "<<",
-                "/CA", new String(FastFloat.toByteArray(gs.getAlphaStroking()), StandardCharsets.US_ASCII),
-                "/ca", new String(FastFloat.toByteArray(gs.getAlphaNonStroking()), StandardCharsets.US_ASCII),
-                ">>"));
+        List<String> entries = Arrays.asList(gs.entries().split(" "));
+        String name = sameState(obj, index, entries);
+        if (name != null) {
+            gsNumber = Integer.parseInt(name.substring(3)) - 1;
+        } else {
+            gsNumber = getMaxGSNumber(obj);
+            name = "/GS" + (gsNumber + 1);
+            List<String> state = new ArrayList<String>();
+            state.add(name);
+            state.add("<<");
+            state.addAll(entries);
+            state.add(">>");
+            obj.dict.addAll(index, state);
+        }
         addPrefixContent(("q\n" + name + " gs\n").getBytes(StandardCharsets.UTF_8), objects);
         return this;
+    }
+
+    // Returns the name of a /GS state of the /ExtGState dictionary whose
+    // entries at index are these entries and no others, or null: setting the
+    // same state again reuses it rather than adding another (Stefan
+    // Ostermann's fork of PDFjet, 19 October 2026). Only our own /GS names
+    // with a number are reused, and only for exactly the same entries, so a
+    // state with a blend mode is not taken for one without.
+    private static String sameState(PDFobj obj, int index, List<String> entries) {
+        int i = index;
+        while (i < obj.dict.size() && !obj.dict.get(i).equals(">>")) {
+            String key = obj.dict.get(i);
+            int end = PDF.valueEnd(obj.dict, i + 1);
+            if (key.matches("/GS[0-9]{1,9}")
+                    && end - i == entries.size() + 3
+                    && obj.dict.get(i + 1).equals("<<")
+                    && obj.dict.subList(i + 2, end - 1).equals(entries)) {
+                return key;
+            }
+            i = end;
+        }
+        return null;
     }
 }

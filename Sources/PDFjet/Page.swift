@@ -1289,12 +1289,12 @@ public class Page {
                     + " cannot draw with an opacity below 1: PDF/A-1 has no transparency.")
             return self
         }
-        // The alphas are written like the other numbers of the PDF: with a
-        // dot whatever the locale, at most two decimals and no exponent.
-        let state = "/CA " +
-                String(decoding: FastFloat.toByteArray(gs.getAlphaStroking()), as: UTF8.self) +
-                " /ca " +
-                String(decoding: FastFloat.toByteArray(gs.getAlphaNonStroking()), as: UTF8.self)
+        if pdf.isPDFA1(), let blendMode = gs.getBlendMode(), blendMode != BlendMode.NORMAL {
+            pdf.fail("A document of \(pdf.compliance)"
+                    + " cannot draw with the blend mode \(blendMode.rawValue): PDF/A-1 has no transparency.")
+            return self
+        }
+        let state = gs.entries()
         var n = pdf.states[state]
         if n == nil {
             n = pdf.states.count + 1

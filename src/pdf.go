@@ -99,6 +99,12 @@ type PDF struct {
 	contentStreamsCompression bool
 	file                      *os.File
 	scratch                   []byte // The digits of the number appendInteger or appendFloat32 writes
+
+	// The /AcroForm of the catalog of a PDF whose objects were added, which
+	// the catalog of this document carries over: without it a filled-in form
+	// that was drawn on lost its fields, and viewers showed none of their
+	// values (Stefan Ostermann's fork of PDFjet, 19 October 2026).
+	acroForm []string
 }
 
 // ocgObject holds an object number and a name.
@@ -1135,6 +1141,12 @@ func (pdf *PDF) addRootObject(structTreeRootObjNumber, outlineDictNumber int) in
 	pdf.appendString("/Pages ")
 	pdf.appendInteger(pdf.pagesObjNumber)
 	pdf.appendString(" 0 R\n")
+
+	if len(pdf.acroForm) > 0 {
+		pdf.appendString("/AcroForm ")
+		pdf.appendTokens(pdf.acroForm)
+		pdf.appendString("\n")
+	}
 
 	pdf.addAssociatedFiles()
 
@@ -3613,8 +3625,21 @@ func (pdf *PDF) AddObjects(objects []*PDFobj) error {
 		return err
 	}
 	pdf.pagesObjNumber = objNumber
+	pdf.acroForm = acroFormOf(objects)
 	completeFontObjects(objects)
 	pdf.addObjectsToPDF(objects)
+	return nil
+}
+
+// acroFormOf returns the value of the /AcroForm entry of the catalog of the
+// objects, a dictionary or a reference to one, or nil. The objects keep their
+// numbers, so a reference still names the same form.
+func acroFormOf(objects []*PDFobj) []string {
+	for _, obj := range objects {
+		if obj.root {
+			return slices.Clone(obj.valueTokens("/AcroForm"))
+		}
+	}
 	return nil
 }
 

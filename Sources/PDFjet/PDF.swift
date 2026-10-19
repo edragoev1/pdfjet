@@ -125,6 +125,11 @@ public final class PDF {
     private var createDate: String?
     private var byteCount = 0
     private var pagesObjNumber = 0
+    // The /AcroForm of the catalog of a PDF whose objects were added, which
+    // the catalog of this document carries over: without it a filled-in form
+    // that was drawn on lost its fields, and viewers showed none of their
+    // values (Stefan Ostermann's fork of PDFjet, 19 October 2026).
+    private var acroForm: [String]? = nil
     private var pageLayout: PageLayout?
     private var pageMode: PageMode?
     private var language: String = "en-US"
@@ -1178,6 +1183,12 @@ public final class PDF {
         append("/Pages ")
         append(pagesObjNumber)
         append(Token.objRef)
+
+        if let acroForm = acroForm, !acroForm.isEmpty {
+            append("/AcroForm ")
+            appendTokens(acroForm)
+            append("\n")
+        }
 
         addAssociatedFiles()
 
@@ -3705,8 +3716,24 @@ public final class PDF {
             try refuse(message)
         }
         self.pagesObjNumber = number
+        self.acroForm = PDF.acroFormOf(objects)
         FontObjects.complete(objects)
         addObjectsToPDF(objects)
+    }
+
+    // Returns the value of the /AcroForm entry of the catalog of the objects, a
+    // dictionary or a reference to one, or nil. The objects keep their
+    // numbers, so a reference still names the same form.
+    private static func acroFormOf(_ objects: [PDFobj]) -> [String]? {
+        for obj in objects where obj.root {
+            let tokens = valueOf(obj)
+            let i = entryIndex(tokens, "/AcroForm")
+            if i == -1 {
+                return nil
+            }
+            return Array(tokens[(i + 1)..<valueEnd(tokens, i + 1)])
+        }
+        return nil
     }
 
     // Returns why the objects of a PDF that was read cannot be written, or nil.

@@ -1319,15 +1319,48 @@ public final class PDFobj {
             resources = object
             index = (resources.dict.firstIndex(of: "<<") ?? -1) + 1
         }
-        gsNumber = getMaxGSNumber(resources)
-        let name = "/GS" + String(gsNumber + 1)
-        resources.dict.insert(contentsOf: [
-                name, "<<",
-                "/CA", String(decoding: FastFloat.toByteArray(gs.getAlphaStroking()), as: UTF8.self),
-                "/ca", String(decoding: FastFloat.toByteArray(gs.getAlphaNonStroking()), as: UTF8.self),
-                ">>"], at: index)
+        let entries = gs.entries().split(separator: " ").map(String.init)
+        var name: String
+        if let same = PDFobj.sameState(resources, index, entries) {
+            name = same
+            gsNumber = Int(same.dropFirst(3))! - 1
+        } else {
+            gsNumber = getMaxGSNumber(resources)
+            name = "/GS" + String(gsNumber + 1)
+            resources.dict.insert(contentsOf: [name, "<<"] + entries + [">>"], at: index)
+        }
         var content = Array("q\n\(name) gs\n".utf8)
         addPrefixContent(&content, &objects)
         return self
+    }
+
+    // Returns the name of a /GS state of the /ExtGState dictionary whose
+    // entries at index are these entries and no others, or nil: setting the
+    // same state again reuses it rather than adding another (Stefan
+    // Ostermann's fork of PDFjet, 19 October 2026). Only our own /GS names
+    // with a number are reused, and only for exactly the same entries, so a
+    // state with a blend mode is not taken for one without.
+    private static func sameState(_ obj: PDFobj, _ index: Int, _ entries: [String]) -> String? {
+        var i = index
+        while i < obj.dict.count && obj.dict[i] != ">>" {
+            let key = obj.dict[i]
+            let end = PDF.valueEnd(obj.dict, i + 1)
+            if isGSName(key)
+                    && end - i == entries.count + 3
+                    && obj.dict[i + 1] == "<<"
+                    && Array(obj.dict[(i + 2)..<(end - 1)]) == entries {
+                return key
+            }
+            i = end
+        }
+        return nil
+    }
+
+    // Returns true for /GS and one to nine digits, as Java's matches of
+    // "/GS[0-9]{1,9}".
+    private static func isGSName(_ key: String) -> Bool {
+        let digits = key.utf8.dropFirst(3)
+        return key.hasPrefix("/GS") && (1...9).contains(digits.count)
+                && digits.allSatisfy { $0 >= UInt8(ascii: "0") && $0 <= UInt8(ascii: "9") }
     }
 }

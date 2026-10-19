@@ -119,6 +119,31 @@ public final class TestSupport {
         return text.startsWith("﻿") ? text.substring(1) : text;
     }
 
+    /**
+     * Returns a PDF of the objects, numbered from 1, and a last one that is
+     * the content stream, with a cross-reference table and a trailer whose
+     * /Root is object 1.
+     */
+    public static byte[] minimalPDF(String[] objects, String content) {
+        StringBuilder sb = new StringBuilder("%PDF-1.7\n");
+        int[] offsets = new int[objects.length + 1];
+        for (int i = 0; i < objects.length; i++) {
+            offsets[i] = sb.length();
+            sb.append(i + 1).append(" 0 obj\n").append(objects[i]).append("\nendobj\n");
+        }
+        offsets[objects.length] = sb.length();
+        sb.append(objects.length + 1).append(" 0 obj\n<< /Length ").append(content.length())
+                .append(" >>\nstream\n").append(content).append("\nendstream\nendobj\n");
+        int xref = sb.length();
+        sb.append("xref\n0 ").append(objects.length + 2).append("\n0000000000 65535 f \n");
+        for (int offset : offsets) {
+            sb.append(String.format("%010d 00000 n \n", offset));
+        }
+        sb.append("trailer\n<< /Size ").append(objects.length + 2).append(" /Root 1 0 R >>\nstartxref\n")
+                .append(xref).append("\n%%EOF\n");
+        return sb.toString().getBytes(StandardCharsets.ISO_8859_1);
+    }
+
     public static List<PDFobj> read(byte[] pdf) throws Exception {
         return new PDF().read(new ByteArrayInputStream(pdf));
     }

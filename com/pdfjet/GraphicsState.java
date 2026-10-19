@@ -61,4 +61,46 @@ public class GraphicsState {
     public float getAlphaNonStroking() {
         return this.ca;
     }
+
+    // Null writes no /BM entry, as before there was a blend mode (suggested
+    // by Stefan Ostermann, of his fork of PDFjet, 19 October 2026).
+    private BlendMode blendMode = null;
+
+    /**
+     * Sets the blend mode: how what is drawn is mixed with what is already on
+     * the page. BlendMode.MULTIPLY draws like a highlighter pen. The blend
+     * mode stays until a graphics state sets another one, so set
+     * BlendMode.NORMAL to go back to painting over. A PDF/A-1 document takes
+     * only BlendMode.NORMAL.
+     *
+     * @param blendMode the blend mode, or null for none
+     * @return this GraphicsState object.
+     */
+    public GraphicsState setBlendMode(BlendMode blendMode) {
+        this.blendMode = blendMode;
+        return this;
+    }
+
+    /**
+     * Returns the blend mode, or null if none was set.
+     *
+     * @return the blend mode.
+     */
+    public BlendMode getBlendMode() {
+        return this.blendMode;
+    }
+
+    // The entries of the state's /ExtGState dictionary, as the page and an
+    // imported page write them: the alphas with a dot whatever the locale, at
+    // most two decimals and no exponent, then the blend mode if it has one.
+    String entries() {
+        String state = "/CA " +
+                new String(FastFloat.toByteArray(CA), java.nio.charset.StandardCharsets.US_ASCII) +
+                " /ca " +
+                new String(FastFloat.toByteArray(ca), java.nio.charset.StandardCharsets.US_ASCII);
+        if (blendMode != null) {
+            state += " /BM /" + blendMode.name;
+        }
+        return state;
+    }
 }

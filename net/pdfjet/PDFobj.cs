@@ -1268,15 +1268,67 @@ public class PDFobj {
             obj = extGState;
             index = obj.dict.IndexOf("<<") + 1;
         }
-        gsNumber = GetMaxGSNumber(obj);
-        String name = "/GS" + (gsNumber + 1).ToString(CultureInfo.InvariantCulture);
-        obj.dict.InsertRange(index, new String[] {
-                name, "<<",
-                "/CA", Encoding.ASCII.GetString(FastFloat.ToByteArray(gs.GetAlphaStroking())),
-                "/ca", Encoding.ASCII.GetString(FastFloat.ToByteArray(gs.GetAlphaNonStroking())),
-                ">>"});
+        List<String> entries = new List<String>(gs.Entries().Split(' '));
+        String name = SameState(obj, index, entries);
+        if (name != null) {
+            gsNumber = Int32.Parse(name.Substring(3), CultureInfo.InvariantCulture) - 1;
+        } else {
+            gsNumber = GetMaxGSNumber(obj);
+            name = "/GS" + (gsNumber + 1).ToString(CultureInfo.InvariantCulture);
+            List<String> state = new List<String>();
+            state.Add(name);
+            state.Add("<<");
+            state.AddRange(entries);
+            state.Add(">>");
+            obj.dict.InsertRange(index, state);
+        }
         AddPrefixContent(Encoding.ASCII.GetBytes("q\n" + name + " gs\n"), objects);
         return this;
+    }
+
+    // Returns the name of a /GS state of the /ExtGState dictionary whose
+    // entries at index are these entries and no others, or null: setting the
+    // same state again reuses it rather than adding another (Stefan
+    // Ostermann's fork of PDFjet, 19 October 2026). Only our own /GS names
+    // with a number are reused, and only for exactly the same entries, so a
+    // state with a blend mode is not taken for one without.
+    private static String SameState(PDFobj obj, int index, List<String> entries) {
+        int i = index;
+        while (i < obj.dict.Count && obj.dict[i] != ">>") {
+            String key = obj.dict[i];
+            int end = PDF.ValueEnd(obj.dict, i + 1);
+            if (IsGSName(key)
+                    && end - i == entries.Count + 3
+                    && obj.dict[i + 1] == "<<"
+                    && SameTokens(obj.dict, i + 2, entries)) {
+                return key;
+            }
+            i = end;
+        }
+        return null;
+    }
+
+    // Returns true for /GS and one to nine digits, as Java's matches of
+    // "/GS[0-9]{1,9}".
+    private static bool IsGSName(String key) {
+        if (!key.StartsWith("/GS", StringComparison.Ordinal) || key.Length < 4 || key.Length > 12) {
+            return false;
+        }
+        for (int i = 3; i < key.Length; i++) {
+            if (key[i] < '0' || key[i] > '9') {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static bool SameTokens(List<String> tokens, int start, List<String> entries) {
+        for (int i = 0; i < entries.Count; i++) {
+            if (tokens[start + i] != entries[i]) {
+                return false;
+            }
+        }
+        return true;
     }
 }
 }   // End of namespace PDFjet.NET

@@ -26,6 +26,7 @@ import (
 	"unicode/utf16"
 	"unicode/utf8"
 
+	"github.com/edragoev1/pdfjet/v9/src/blendmode"
 	"github.com/edragoev1/pdfjet/v9/src/capstyle"
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/corefont"
@@ -1248,10 +1249,13 @@ func (page *Page) SetGraphicsState(gs *GraphicsState) *Page {
 			" cannot draw with an opacity below 1: PDF/A-1 has no transparency.")
 		return page
 	}
-	// The alphas are written like the other numbers of the PDF: with a
-	// dot whatever the locale, at most two decimals and no exponent.
-	state := "/CA " + string(fastfloat.ToByteArray(gs.GetAlphaStroking())) +
-		" /ca " + string(fastfloat.ToByteArray(gs.GetAlphaNonStroking()))
+	if page.pdf.isPDFA1() && gs.GetBlendMode() != "" && gs.GetBlendMode() != blendmode.Normal {
+		page.pdf.fail("A document of " + page.pdf.compliance.String() +
+			" cannot draw with the blend mode " + string(gs.GetBlendMode()) +
+			": PDF/A-1 has no transparency.")
+		return page
+	}
+	state := gs.entries()
 	n, ok := page.pdf.states[state]
 	if !ok {
 		n = len(page.pdf.states) + 1

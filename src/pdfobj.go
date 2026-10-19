@@ -16,7 +16,6 @@ import (
 
 	"github.com/edragoev1/pdfjet/v9/src/corefont"
 	"github.com/edragoev1/pdfjet/v9/src/internal/decompressor"
-	"github.com/edragoev1/pdfjet/v9/src/internal/fastfloat"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 	"github.com/edragoev1/pdfjet/v9/src/pagesize"
 )
@@ -1312,13 +1311,54 @@ func (obj *PDFobj) SetGraphicsState(gs *GraphicsState, objects *[]*PDFobj) *PDFo
 		resources = o
 		index = slices.Index(resources.dict, "<<") + 1
 	}
-	obj.gsNumber = getMaxGSNumber(resources)
-	name := "/GS" + strconv.Itoa(obj.gsNumber+1)
-	resources.dict = insertArrayAt(resources.dict, []string{
-		name, "<<",
-		"/CA", string(fastfloat.ToByteArray(gs.GetAlphaStroking())),
-		"/ca", string(fastfloat.ToByteArray(gs.GetAlphaNonStroking())),
-		">>"}, index)
+	entries := strings.Split(gs.entries(), " ")
+	name := sameState(resources, index, entries)
+	if name != "" {
+		n, _ := strconv.Atoi(name[3:])
+		obj.gsNumber = n - 1
+	} else {
+		obj.gsNumber = getMaxGSNumber(resources)
+		name = "/GS" + strconv.Itoa(obj.gsNumber+1)
+		state := append([]string{name, "<<"}, entries...)
+		state = append(state, ">>")
+		resources.dict = insertArrayAt(resources.dict, state, index)
+	}
 	obj.AddPrefixContent([]byte("q\n"+name+" gs\n"), objects)
 	return obj
+}
+
+// sameState returns the name of a /GS state of the /ExtGState dictionary
+// whose entries at index are these entries and no others, or "": setting the
+// same state again reuses it rather than adding another (Stefan Ostermann's
+// fork of PDFjet, 19 October 2026). Only our own /GS names with a number are
+// reused, and only for exactly the same entries, so a state with a blend mode
+// is not taken for one without.
+func sameState(obj *PDFobj, index int, entries []string) string {
+	i := index
+	for i < len(obj.dict) && obj.dict[i] != ">>" {
+		key := obj.dict[i]
+		end := dictValueEnd(obj.dict, i+1)
+		if isGSName(key) &&
+			end-i == len(entries)+3 &&
+			obj.dict[i+1] == "<<" &&
+			slices.Equal(obj.dict[i+2:end-1], entries) {
+			return key
+		}
+		i = end
+	}
+	return ""
+}
+
+// isGSName returns true for /GS and one to nine digits, as Java's matches of
+// "/GS[0-9]{1,9}".
+func isGSName(key string) bool {
+	if !strings.HasPrefix(key, "/GS") || len(key) < 4 || len(key) > 12 {
+		return false
+	}
+	for _, c := range key[3:] {
+		if c < '0' || c > '9' {
+			return false
+		}
+	}
+	return true
 }

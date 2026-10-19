@@ -122,6 +122,11 @@ public sealed class PDF {
     private String createDate;      // XMP metadata
     private long byteCount = 0;
     private int pagesObjNumber = 0;
+    // The /AcroForm of the catalog of a PDF whose objects were added, which
+    // the catalog of this document carries over: without it a filled-in form
+    // that was drawn on lost its fields, and viewers showed none of their
+    // values (Stefan Ostermann's fork of PDFjet, 19 October 2026).
+    private List<String> acroForm = null;
     private PageLayout? pageLayout = null;
     private PageMode? pageMode = null;
     private String language = "en-US";
@@ -1220,6 +1225,12 @@ public sealed class PDF {
         Append("/Pages ");
         Append(pagesObjNumber);
         Append(" 0 R\n");
+
+        if (acroForm != null && acroForm.Count > 0) {
+            Append("/AcroForm ");
+            AppendTokens(acroForm);
+            Append("\n");
+        }
 
         AddAssociatedFiles();
 
@@ -3652,8 +3663,26 @@ public sealed class PDF {
         }
         CheckObjects(objects);
         this.pagesObjNumber = Int32.Parse(pagesObject.dict[0], CultureInfo.InvariantCulture);
+        this.acroForm = AcroFormOf(objects);
         FontObjects.Complete(objects);
         AddObjectsToPDF(objects);
+    }
+
+    // Returns the value of the /AcroForm entry of the catalog of the objects, a
+    // dictionary or a reference to one, or null. The objects keep their
+    // numbers, so a reference still names the same form.
+    private static List<String> AcroFormOf(List<PDFobj> objects) {
+        foreach (PDFobj obj in objects) {
+            if (obj.root) {
+                List<String> tokens = ValueOf(obj);
+                int i = EntryIndex(tokens, "/AcroForm");
+                if (i == -1) {
+                    return null;
+                }
+                return tokens.GetRange(i + 1, ValueEnd(tokens, i + 1) - (i + 1));
+            }
+        }
+        return null;
     }
 
     // Refuses objects of a PDF that was read when writing them would break this
