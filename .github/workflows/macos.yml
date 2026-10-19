@@ -1,0 +1,50 @@
+# Runs the Go port on a Mac: its unit tests, and build-go.sh, which builds and
+# runs the 50 examples, on Apple silicon. A job fails if an example does not
+# create its PDF file. The Build workflow tests Go on Linux only, and Swift on
+# macOS; this one is run by hand, once before each release, with the Windows
+# workflow (the owner, 19 October 2026). It only runs when started from the
+# Actions tab with Run workflow.
+
+name: macOS
+
+on:
+    workflow_dispatch:
+
+permissions:
+    contents: read
+
+jobs:
+    go:
+        name: go (macOS)
+        runs-on: macos-latest
+        timeout-minutes: 30
+        steps:
+            - uses: actions/checkout@v7
+
+            - name: Get the fonts and the data files
+              run: ./get-fonts-and-data.sh
+
+            - uses: actions/setup-go@v7
+              with:
+                  go-version-file: go.mod
+                  cache: false
+
+            - name: Build and run the examples
+              run: |
+                  sw_vers
+                  go version
+                  bash -e build-go.sh
+
+            - name: Check that every example created its PDF file
+              run: |
+                  missing=0
+                  for i in $(seq -w 1 50); do
+                      if [ ! -s "Example_$i.pdf" ] || ! tail -c 32 "Example_$i.pdf" | grep -q '%%EOF'; then
+                          echo "::error::Example_$i.pdf was not created"
+                          missing=1
+                      fi
+                  done
+                  exit $missing
+
+            - name: Unit tests
+              run: ./test-go.sh

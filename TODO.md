@@ -76,6 +76,11 @@ commit and date. The layout's format version (1) and the look's rules
   draw them at 50%.
 - **PAC.** The PDF/UA files in `pdf-ua-files-to-test`, checked with PAC on
   Windows; see the README there for which files go in.
+- **Windows and macOS.** The Windows and macOS workflows, started by hand
+  from the Actions tab on the commit to tag: Windows builds and runs the
+  examples of the four ports, macOS the examples and the unit tests of Go.
+  The Build workflow runs on Linux, with Swift on macOS too; these two are
+  not run on every push, only before a release (the owner, 19 October 2026).
 - **Benchmarks.** `benchmarks/run.sh` and the four ports' text and table
   benchmarks in `benchmarks/ports` and `benchmarks/table`, against the last
   release; the results are kept in their `results` folders.
