@@ -100,10 +100,10 @@ commit and date. The layout's format version (1) and the look's rules
   the logger made when it is used. Done on 15 October 2026 (0cb12f10): Java,
   C# and Swift; Go needed nothing. CHANGELOG.md, v9.1.1.
 
-- ✅ **v9.1.3: from Stefan Ostermann's fork of PDFjet (soster/pdfjet, used
+- ✅ **v9.1.1: from Stefan Ostermann's fork of PDFjet (soster/pdfjet, used
   by his Android app, which draws on PDFs that were read).** Done on 19
   October 2026 on the branch stefan-fixes, in the four ports, with tests in
-  each; merge after the 9.1.1 tag. Written from his descriptions, not his
+  each; merged into main for 9.1.1, the owner's choice. Written from his descriptions, not his
   code (his fork is BSD-2-Clause), and credited to him in the CHANGELOG.
   - **A filled-in form that is drawn on keeps its fields.** addObjects()
     wrote a new catalog of /Type and /Pages only, so the /AcroForm of the
