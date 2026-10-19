@@ -2189,7 +2189,7 @@ public class Page {
             return [x1, y1, x2, y2, x3, y3]
         }
         let sweepDegrees = max(-360.0, min(360.0, sweepDegrees))
-        let numSegments = Int(ceil(abs(sweepDegrees) / 90.0))
+        let numSegments = Int((abs(sweepDegrees) / 90.0).rounded(.up))
         var angleRad = Double(startAngle) * .pi / 180.0
         let deltaPerSeg = Double(sweepDegrees / Float(numSegments)) * .pi / 180.0
 
@@ -3213,7 +3213,7 @@ public class Page {
         append(scaley)
         append(Token.space)
 
-        if asin(values[Page.MSKEW_Y]) != 0.0 {
+        if asin(Double(values[Page.MSKEW_Y])) != 0.0 {
             transx -= values[Page.MSKEW_Y] * height / scaley
         }
 

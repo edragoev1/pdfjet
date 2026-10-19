@@ -230,7 +230,7 @@ final class FontObjects {
         // The width of the glyphs past the /W array: those past the advance
         // widths, which have the width of the last one.
         obj.dict.append("/DW")
-        obj.dict.append(String(Int32(round(k * Float(font.advanceWidth[font.advanceWidth.count - 1])))))
+        obj.dict.append(String(Int32((k * Float(font.advanceWidth[font.advanceWidth.count - 1])).rounded())))
         obj.dict.append("/W")
         obj.dict.append(FontWriter.widthsArray(font, kept))
         obj.dict.append("/CIDToGIDMap")

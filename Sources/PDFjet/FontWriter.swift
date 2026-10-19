@@ -171,7 +171,7 @@ class FontWriter {
         guard let kept = kept else {
             buffer.append("[0[\n")
             for i in 0..<font.advanceWidth.count {
-                buffer.append(String(Int32(round(k * Float(font.advanceWidth[i])))))
+                buffer.append(String(Int32((k * Float(font.advanceWidth[i])).rounded())))
                 buffer.append(" ")
             }
             buffer.append("]]")
@@ -189,7 +189,7 @@ class FontWriter {
             buffer.append(String(gid))
             buffer.append("[")
             while gid < count && kept[gid] {
-                buffer.append(String(Int32(round(k * Float(font.advanceWidth[gid])))))
+                buffer.append(String(Int32((k * Float(font.advanceWidth[gid])).rounded())))
                 buffer.append(" ")
                 gid += 1
             }
@@ -254,7 +254,7 @@ class FontWriter {
         // The width of the glyphs past the /W array: those past the advance
         // widths, which have the width of the last one.
         pdf.append("/DW ")
-        pdf.append(Int32(round(k * Float(font.advanceWidth[font.advanceWidth.count - 1]))))
+        pdf.append(Int32((k * Float(font.advanceWidth[font.advanceWidth.count - 1])).rounded()))
         pdf.append(Token.newline)
         pdf.append("/W ")
         pdf.append(widthsArray(font, kept))

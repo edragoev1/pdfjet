@@ -274,7 +274,10 @@ Fixed:
       iOS, visionOS and Linux. Swift 6.1 again the oldest the package asks
       for, as before March 2026: the QR code's version polynomial written
       as one number, which 6.1 type-checks, and CI's oldest-Swift job on
-      6.1.3.
+      6.1.3. Android, built here with Swift 6.4.1's Android SDK and NDK r30
+      as the index does: also round and sqrt on Floats in the fonts' widths
+      and the donut's arcs, and ceil and asin in Page (now `rounded()`,
+      `squareRoot()`, `rounded(.up)` and asin of a Double); the same values.
 - [x] C#: the wrong password and the unreadable font were still a plain
       Exception (dea57791).
 
