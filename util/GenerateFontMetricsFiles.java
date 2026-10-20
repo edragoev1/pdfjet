@@ -66,8 +66,8 @@ public class GenerateFontMetricsFiles {
         sb1.append("            ");
         int numberOfPairs = 0;
         int ch = 0; // the last unicode character
-        for (int i = 0; i < otf.unicodeToGID.length; i++) {
-            int gid = otf.unicodeToGID[i];
+        for (int i = 0; i <= 0xFFFF; i++) {
+            int gid = otf.unicodeToGID.get(i);
             if (gid != 0) {
                 sb1.append((i - ch) + ", ");
                 // A font can list fewer advance widths than it has glyphs, and
