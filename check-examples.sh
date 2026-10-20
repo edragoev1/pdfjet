@@ -12,7 +12,11 @@
 # Java PDFs in PDFium, pdf.js and Poppler with .github/scripts/check-viewers.py,
 # as its viewers job does; its PDFKit check needs macOS, so it is left to the
 # workflow. Last, it builds and runs the snippets of the booklet in the four
-# ports and compares their PDFs, with booklet/check-snippets.sh.
+# ports and compares their PDFs, with booklet/check-snippets.sh. Then qpdf
+# --check reads every PDF of the examples, the encrypted ones and the
+# snippets: the cross-reference table, the lengths of the streams and their
+# compression, the encryption, which a PDF can get wrong and still pass the
+# checks above (the owner, 20 October 2026); the workflow does not run it.
 #
 # The ports are built one after another in this folder. clean.sh runs before
 # each one, so no output of an earlier build, like the DLL of an example that
@@ -22,8 +26,8 @@
 # Needs the four toolchains, python3 and veraPDF, run as "verapdf" or as the
 # command in the VERAPDF environment variable, a JDK 8, found in the
 # JAVA8_HOME environment variable or in /opt/jdk8* or /usr/lib/jvm, Node 22.13
-# or later with npm, for pdf.js, and Poppler's pdftoppm and pdftotext, all on
-# the PATH. The script stops before it builds anything when one is missing.
+# or later with npm, for pdf.js, Poppler's pdftoppm and pdftotext, and qpdf,
+# all on the PATH. The script stops before it builds anything when one is missing.
 
 bash "$(dirname "$0")/get-fonts-and-data.sh" || exit 1
 cd "$(dirname "$0")" || exit 1
@@ -53,6 +57,12 @@ fi
 if ! command -v pdftoppm > /dev/null || ! command -v pdftotext > /dev/null; then
     echo "Poppler's pdftoppm and pdftotext were not found. Install them, with"
     echo "\"sudo apt-get install poppler-utils\" on Ubuntu, or \"brew install poppler\" on macOS."
+    exit 1
+fi
+
+if ! command -v qpdf > /dev/null; then
+    echo "qpdf was not found. Install it, with \"sudo apt-get install qpdf\" on Ubuntu,"
+    echo "or \"brew install qpdf\" on macOS."
     exit 1
 fi
 
@@ -153,4 +163,34 @@ done
 # The snippets of the booklet, which it works on in build/check-snippets with
 # the Python environment above.
 echo "Building and running the booklet snippets"
-PYTHON="$WORK/venv/bin/python" bash booklet/check-snippets.sh
+PYTHON="$WORK/venv/bin/python" bash booklet/check-snippets.sh || exit 1
+
+# Each PDF read by qpdf, which says "No syntax or stream encoding errors
+# found" and exits 0 for one it finds nothing wrong with: 3 is a warning, as of
+# a stream it repaired, 2 an error. The encrypted ones are opened with their
+# owner password, "world", as Example_47 has it, or the Cyrillic one of
+# encrypted-pdfs.
+echo "Checking the PDFs with qpdf"
+failed=0
+count=0
+shopt -s nullglob
+for pdf in "$WORK"/pdfs/*/*.pdf "$WORK"/encrypted/*.pdf build/check-snippets/*/out/*.pdf; do
+    count=$((count + 1))
+    for password in "" world "владелец"; do
+        out=$(qpdf --password="$password" --check "$pdf" 2>&1)
+        status=$?
+        if [ $status -ne 2 ] || ! grep -q "invalid password" <<< "$out"; then
+            break
+        fi
+    done
+    if [ $status -ne 0 ]; then
+        echo "qpdf: $pdf"
+        grep -v "^checking \|^PDF Version\|^File is not" <<< "$out" | head -n 10
+        failed=1
+    fi
+done
+if [ $failed = 1 ]; then
+    echo "qpdf found problems in the PDFs above."
+    exit 1
+fi
+echo "qpdf found no problems in the $count PDFs."
