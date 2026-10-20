@@ -94,7 +94,9 @@ commit and date. The layout's format version (1) and the look's rules
   ms, the same PDF). The remaining 13 ms came in with other commits of that
   week (d99b2a5c measured 120 before the fix): bisect again with f511f976
   applied, and profile (perf needs kernel.perf_event_paranoid lowered, the
-  owner's call). The README claims under 120 ms, true either way.
+  owner's call). The README claims under 120 ms, true either way. Also
+  Example_17, the 745-page novel, on 20 October: Go 398 ms, Java 972, C#
+  1,246, Swift 1,505 (each a new process): the clearest case to profile.
 
 - ✅ **v9.1.1: the first PDF of a process faster, in the four ports.** Measured
   on 15 October 2026 with typical documents, a one-page invoice, a 9-page
