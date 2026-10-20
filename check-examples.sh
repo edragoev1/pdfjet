@@ -16,7 +16,8 @@
 # --check reads every PDF of the examples, the encrypted ones and the
 # snippets: the cross-reference table, the lengths of the streams and their
 # compression, the encryption, which a PDF can get wrong and still pass the
-# checks above (the owner, 20 October 2026); the workflow does not run it.
+# checks above (the owner, 20 October 2026), with .github/scripts/check-qpdf.sh,
+# as the compare job does with the examples and the encrypted ones.
 #
 # The ports are built one after another in this folder. clean.sh runs before
 # each one, so no output of an earlier build, like the DLL of an example that
@@ -60,6 +61,7 @@ if ! command -v pdftoppm > /dev/null || ! command -v pdftotext > /dev/null; then
     exit 1
 fi
 
+# Checked here too, so the script stops before it builds anything.
 if ! command -v qpdf > /dev/null; then
     echo "qpdf was not found. Install it, with \"sudo apt-get install qpdf\" on Ubuntu,"
     echo "or \"brew install qpdf\" on macOS."
@@ -165,32 +167,8 @@ done
 echo "Building and running the booklet snippets"
 PYTHON="$WORK/venv/bin/python" bash booklet/check-snippets.sh || exit 1
 
-# Each PDF read by qpdf, which says "No syntax or stream encoding errors
-# found" and exits 0 for one it finds nothing wrong with: 3 is a warning, as of
-# a stream it repaired, 2 an error. The encrypted ones are opened with their
-# owner password, "world", as Example_47 has it, or the Cyrillic one of
-# encrypted-pdfs.
+# Each PDF read by qpdf, as the compare job of the workflow does with the
+# examples and the encrypted ones; the snippets here too.
 echo "Checking the PDFs with qpdf"
-failed=0
-count=0
-shopt -s nullglob
-for pdf in "$WORK"/pdfs/*/*.pdf "$WORK"/encrypted/*.pdf build/check-snippets/*/out/*.pdf; do
-    count=$((count + 1))
-    for password in "" world "владелец"; do
-        out=$(qpdf --password="$password" --check "$pdf" 2>&1)
-        status=$?
-        if [ $status -ne 2 ] || ! grep -q "invalid password" <<< "$out"; then
-            break
-        fi
-    done
-    if [ $status -ne 0 ]; then
-        echo "qpdf: $pdf"
-        grep -v "^checking \|^PDF Version\|^File is not" <<< "$out" | head -n 10
-        failed=1
-    fi
-done
-if [ $failed = 1 ]; then
-    echo "qpdf found problems in the PDFs above."
-    exit 1
-fi
-echo "qpdf found no problems in the $count PDFs."
+bash .github/scripts/check-qpdf.sh "$WORK"/pdfs/*/*.pdf "$WORK"/encrypted/*.pdf \
+    build/check-snippets/*/out/*.pdf

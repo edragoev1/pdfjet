@@ -258,7 +258,8 @@ jobs:
                       -cp out/production examples/Example_*.java -d out/examples
 
     # Checks the PDFs of all four ports with .github/scripts/check-example-pdfs.py,
-    # and what the tags of the tagged ones stand for with check-pdfua-tags.py.
+    # what the tags of the tagged ones stand for with check-pdfua-tags.py, and
+    # their structure, with the encrypted ones, with check-qpdf.sh.
     compare:
         needs: build
         runs-on: ubuntu-24.04
@@ -281,6 +282,11 @@ jobs:
               with:
                   name: text-trace
                   path: ${{ runner.temp }}/text
+
+            - uses: actions/download-artifact@v8
+              with:
+                  name: encrypted-pdfs
+                  path: ${{ runner.temp }}/encrypted
 
             # veraPDF runs on Java.
             - uses: actions/setup-java@v6
@@ -355,6 +361,16 @@ jobs:
               run: |
                   "$RUNNER_TEMP/venv/bin/python" .github/scripts/check-pdfua-tags.py \
                       "$RUNNER_TEMP/pdfs/example-pdfs-java"
+
+            # qpdf reads the structure of each PDF: the cross-reference table,
+            # the lengths of the streams and their compression, the encryption
+            # (the owner, 20 October 2026). The package list was updated above.
+            - name: Check the PDFs with qpdf
+              run: |
+                  sudo apt-get install -y -q qpdf
+                  qpdf --version | head -n 1
+                  bash .github/scripts/check-qpdf.sh "$RUNNER_TEMP"/pdfs/example-pdfs-*/*.pdf \
+                      "$RUNNER_TEMP"/encrypted/*.pdf
 
     # Opens the Java PDFs, which the compare job checks are those of every port,
     # and the encrypted ones of the go job, in the engines of the viewers most
