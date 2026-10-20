@@ -61,6 +61,13 @@ public class Font {
     // with its own glyph, so that it is not drawn as another character the
     // next time either: the first character drawn with a glyph never changes.
     var asciiPlain = [Bool](repeating: false, count: 95)
+    // The glyphs the font draws for more than one character, by glyph number:
+    // the only ones whose characters are recorded and looked at in plain text.
+    // Every character went through useChars and drawsAnyAsAnother, which made
+    // a 500-page Greek and Cyrillic text in Swift 30% slower, 113 ms where it
+    // took 87 (review #8 of 11 October; found 20 October 2026). Made when a
+    // character other than printable ASCII is first drawn.
+    lazy var sharedGlyph: [Bool] = unicodeToGID.sharedGlyphs()
     // Where the marks go, from the GPOS table of the font, read when a mark
     // is first drawn, or nil for a font without one.
     var gpos: GPOS?

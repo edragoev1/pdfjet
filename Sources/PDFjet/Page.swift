@@ -923,6 +923,7 @@ public class Page {
         let table = font.unicodeToGID
         let asciiGIDs = font.asciiGID
         let owns = ownsFont(font)
+        var shared = [Bool]()       // font.sharedGlyph, at the first character it is needed for
         var codePoints = [Int]()
         var charGIDs = [Int]()
         var gids = [Int]()
@@ -946,8 +947,15 @@ public class Page {
                 }
                 let gid = Font.isControl(codePoint) ? table[0x0020] : table[codePoint]
                 gids.append(gid)
-                codePoints.append(codePoint)
-                charGIDs.append(gid)
+                if shared.isEmpty {
+                    shared = font.sharedGlyph
+                }
+                // A glyph of one character is given it by the ToUnicode map
+                // already, and is drawn for no other
+                if shared[gid] {
+                    codePoints.append(codePoint)
+                    charGIDs.append(gid)
+                }
             }
         }
         if owns {

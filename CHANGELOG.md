@@ -7,6 +7,15 @@ languages.
 
 This is the first entry in this file; earlier releases were not tracked here.
 
+## v9.1.3 — not released yet
+
+### Changed
+- Swift: text other than printable ASCII is drawn faster: a 500-page text
+  in Latin, Greek and Cyrillic takes 100 ms, where 9.0.9 and 9.1.1 took 113.
+  Only the glyphs a font draws for more than one character, as one glyph for
+  two kinds of space, have the character drawn with them recorded for the
+  ToUnicode map; every character was, since 9.0.7. The PDF is the same.
+
 ## v9.1.1 — 2026-10-20
 
 ### Added
