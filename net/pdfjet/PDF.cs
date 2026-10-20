@@ -3663,7 +3663,9 @@ public sealed class PDF {
         }
         CheckObjects(objects);
         this.pagesObjNumber = Int32.Parse(pagesObject.dict[0], CultureInfo.InvariantCulture);
-        this.acroForm = AcroFormOf(objects);
+        // Its references take generation 0, as every object's does (review of
+        // 20 October 2026): "7 1 R" named an object the PDF no longer had
+        this.acroForm = GenerationZero(AcroFormOf(objects));
         FontObjects.Complete(objects);
         AddObjectsToPDF(objects);
     }

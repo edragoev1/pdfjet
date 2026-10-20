@@ -6,6 +6,8 @@
 package pdfjet
 
 import (
+	"strconv"
+
 	"github.com/edragoev1/pdfjet/v9/src/blendmode"
 	"github.com/edragoev1/pdfjet/v9/src/internal/fastfloat"
 )
@@ -57,8 +59,21 @@ func (state *GraphicsState) GetAlphaNonStroking() float32 {
 // already on the page. blendmode.Multiply draws like a highlighter pen. The
 // blend mode stays until a graphics state sets another one, so set
 // blendmode.Normal to go back to painting over. A PDF/A-1 document takes only
-// blendmode.Normal. "" sets none.
+// blendmode.Normal. "" sets none. A blend mode that is not one of
+// blendmode's panics.
 func (state *GraphicsState) SetBlendMode(blendMode blendmode.BlendMode) *GraphicsState {
+	// Any text was written as the name, "multiply" or "Multiply /SMask 9 0 R"
+	// into the /ExtGState, where the enums of the other ports take only the
+	// sixteen (review of 20 October 2026)
+	switch blendMode {
+	case "", blendmode.Normal, blendmode.Multiply, blendmode.Screen, blendmode.Overlay,
+		blendmode.Darken, blendmode.Lighten, blendmode.ColorDodge, blendmode.ColorBurn,
+		blendmode.HardLight, blendmode.SoftLight, blendmode.Difference, blendmode.Exclusion,
+		blendmode.Hue, blendmode.Saturation, blendmode.Color, blendmode.Luminosity:
+	default:
+		panic("The blend mode " + strconv.Quote(string(blendMode)) +
+			" is not one: use one of package blendmode, as blendmode.Multiply.")
+	}
 	state.blendMode = blendMode
 	return state
 }

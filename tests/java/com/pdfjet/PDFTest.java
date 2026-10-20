@@ -1671,8 +1671,14 @@ class PDFTest {
         byReference[0] = "<< /Type /Catalog /Pages 2 0 R /AcroForm 6 0 R >>";
         String[] noForm = form.clone();
         noForm[0] = "<< /Type /Catalog /Pages 2 0 R >>";
-        String[][] cases = {form, byReference, noForm};
-        String[] expected = {"/AcroForm << /Fields [ 4 0 R ] /NeedAppearances true >>\n", "/AcroForm 6 0 R\n", null};
+        // References of another generation take 0, as every object's (review of
+        // 20 October 2026)
+        String[] generationOne = form.clone();
+        generationOne[0] = "<< /Type /Catalog /Pages 2 0 R /AcroForm << /Fields [4 1 R] /NeedAppearances true >> >>";
+        String[] referenceOne = form.clone();
+        referenceOne[0] = "<< /Type /Catalog /Pages 2 0 R /AcroForm 6 1 R >>";
+        String[][] cases = {form, byReference, noForm, generationOne, referenceOne};
+        String[] expected = {"/AcroForm << /Fields [ 4 0 R ] /NeedAppearances true >>\n", "/AcroForm 6 0 R\n", null, "/AcroForm << /Fields [ 4 0 R ] /NeedAppearances true >>\n", "/AcroForm 6 0 R\n"};
         for (int c = 0; c < cases.length; c++) {
             List<PDFobj> objects = TestSupport.read(TestSupport.minimalPDF(cases[c], "BT ET"));
             PDFobj page = new PDF().getPageObjects(objects).get(0);

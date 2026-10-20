@@ -3716,7 +3716,9 @@ public final class PDF {
             try refuse(message)
         }
         self.pagesObjNumber = number
-        self.acroForm = PDF.acroFormOf(objects)
+        // Its references take generation 0, as every object's does (review of
+        // 20 October 2026): "7 1 R" named an object the PDF no longer had
+        self.acroForm = PDF.acroFormOf(objects).map { generationZero($0) }
         FontObjects.complete(objects)
         addObjectsToPDF(objects)
     }

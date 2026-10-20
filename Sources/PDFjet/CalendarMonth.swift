@@ -28,6 +28,8 @@ public class CalendarMonth : Drawable {
     // the week, from 0 for Sunday to 6 for Saturday.
     private let firstDayOfMonth: Int
     private var firstDayOfWeek = 0
+    // A month that is not one, refused when the calendar is drawn
+    private var monthNotOne: Int?
 
     ///
     /// Creates a calendar for the specified month.
@@ -41,9 +43,13 @@ public class CalendarMonth : Drawable {
         self.f1 = f1
         self.f2 = f2
         // Month 13 was January of the next year, and 0 December of the last
-        // (review of 17 October 2026); Java refuses it
+        // (review of 17 October 2026); Java refuses it. Refused when drawn,
+        // complete() failing with the message, as a fatalError stopped the
+        // program (review of 20 October 2026)
+        var month = month
         if month < 1 || month > 12 {
-            fatalError("The month \(month) is not one: from 1 to 12.")
+            monthNotOne = month
+            month = 1
         }
         // The Gregorian calendar, whatever the locale
         var calendar = Calendar(identifier: .gregorian)
@@ -119,6 +125,10 @@ public class CalendarMonth : Drawable {
     public func drawOn(_ page: Page?) -> [Float] {
         guard let page else {
             return [x1 + 7*dx, y1 + 7*dy]  // Measured, not drawn
+        }
+        if let monthNotOne {
+            page.pdf.fail("The month \(monthNotOne) is not one: from 1 to 12.")
+            return [x1 + 7*dx, y1 + 7*dy]
         }
         // The first day of the month is in this column of the first week.
         let firstColumn = (firstDayOfMonth - firstDayOfWeek + 7) % 7

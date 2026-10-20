@@ -94,8 +94,14 @@ public class GraphicsStateTest {
         byReference[0] = "<< /Type /Catalog /Pages 2 0 R /AcroForm 6 0 R >>";
         string[] noForm = (string[]) form.Clone();
         noForm[0] = "<< /Type /Catalog /Pages 2 0 R >>";
-        string[][] cases = {form, byReference, noForm};
-        string[] expected = {"/AcroForm << /Fields [ 4 0 R ] /NeedAppearances true >>\n", "/AcroForm 6 0 R\n", null};
+        // References of another generation take 0, as every object's (review of
+        // 20 October 2026)
+        string[] generationOne = (string[]) form.Clone();
+        generationOne[0] = "<< /Type /Catalog /Pages 2 0 R /AcroForm << /Fields [4 1 R] /NeedAppearances true >> >>";
+        string[] referenceOne = (string[]) form.Clone();
+        referenceOne[0] = "<< /Type /Catalog /Pages 2 0 R /AcroForm 6 1 R >>";
+        string[][] cases = {form, byReference, noForm, generationOne, referenceOne};
+        string[] expected = {"/AcroForm << /Fields [ 4 0 R ] /NeedAppearances true >>\n", "/AcroForm 6 0 R\n", null, "/AcroForm << /Fields [ 4 0 R ] /NeedAppearances true >>\n", "/AcroForm 6 0 R\n"};
         for (int c = 0; c < cases.Length; c++) {
             List<PDFobj> objects = TestSupport.Read(PDFTest.PdfWithObjects(cases[c]));
             PDFobj page = new PDF().GetPageObjects(objects)[0];

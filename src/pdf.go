@@ -3625,7 +3625,9 @@ func (pdf *PDF) AddObjects(objects []*PDFobj) error {
 		return err
 	}
 	pdf.pagesObjNumber = objNumber
-	pdf.acroForm = acroFormOf(objects)
+	// Its references take generation 0, as every object's does (review of
+	// 20 October 2026): "7 1 R" named an object the PDF no longer had
+	pdf.acroForm = generationZero(acroFormOf(objects))
 	completeFontObjects(objects)
 	pdf.addObjectsToPDF(objects)
 	return nil

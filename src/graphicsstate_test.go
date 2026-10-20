@@ -6,6 +6,7 @@
 package pdfjet
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 	"testing"
@@ -36,6 +37,29 @@ func TestGraphicsStateTheBlendModeIsWrittenInTheState(t *testing.T) {
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("no %q in\n%s", want, out)
+		}
+	}
+}
+
+// A blend mode that is not one of the sixteen panics: any text was written into
+// the /ExtGState as the name (review of 20 October 2026).
+func TestGraphicsStateABlendModeThatIsNotOnePanics(t *testing.T) {
+	for _, mode := range []blendmode.BlendMode{"multiply", "Multiply /SMask 9 0 R"} {
+		func() {
+			defer func() {
+				r := recover()
+				if r == nil {
+					t.Errorf("%q was taken", mode)
+				} else if !strings.Contains(fmt.Sprint(r), "is not one: use one of package blendmode") {
+					t.Errorf("%q: %v", mode, r)
+				}
+			}()
+			NewGraphicsState().SetBlendMode(mode)
+		}()
+	}
+	for _, mode := range []blendmode.BlendMode{"", blendmode.Normal, blendmode.Luminosity} {
+		if got := NewGraphicsState().SetBlendMode(mode).GetBlendMode(); got != mode {
+			t.Errorf("%q gave %q", mode, got)
 		}
 	}
 }
@@ -104,8 +128,13 @@ func TestGraphicsStateAFormThatIsDrawnOnKeepsItsFields(t *testing.T) {
 	}
 	byReference := append([]string{"<< /Type /Catalog /Pages 2 0 R /AcroForm 6 0 R >>"}, form[1:]...)
 	noForm := append([]string{"<< /Type /Catalog /Pages 2 0 R >>"}, form[1:]...)
-	cases := [][]string{form, byReference, noForm}
-	expected := []string{"/AcroForm << /Fields [ 4 0 R ] /NeedAppearances true >>\n", "/AcroForm 6 0 R\n", ""}
+	// References of another generation take 0, as every object's (review of
+	// 20 October 2026)
+	generationOne := append([]string{"<< /Type /Catalog /Pages 2 0 R /AcroForm << /Fields [4 1 R] /NeedAppearances true >> >>"}, form[1:]...)
+	referenceOne := append([]string{"<< /Type /Catalog /Pages 2 0 R /AcroForm 6 1 R >>"}, form[1:]...)
+	cases := [][]string{form, byReference, noForm, generationOne, referenceOne}
+	expected := []string{"/AcroForm << /Fields [ 4 0 R ] /NeedAppearances true >>\n", "/AcroForm 6 0 R\n", "",
+		"/AcroForm << /Fields [ 4 0 R ] /NeedAppearances true >>\n", "/AcroForm 6 0 R\n"}
 	for c, objectsOfCase := range cases {
 		objects := testRead(t, testPDFWithObjects(objectsOfCase...))
 		page := testNewPDF().GetPageObjects(objects)[0]

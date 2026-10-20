@@ -3831,7 +3831,9 @@ final public class PDF {
         }
         checkObjects(objects);
         this.pagesObjNumber = Integer.parseInt(pagesObject.dict.get(0));
-        this.acroForm = acroFormOf(objects);
+        // Its references take generation 0, as every object's does (review of
+        // 20 October 2026): "7 1 R" named an object the PDF no longer had
+        this.acroForm = generationZero(acroFormOf(objects));
         FontObjects.complete(objects);
         addObjectsToPDF(objects);
     }

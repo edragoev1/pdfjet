@@ -96,6 +96,25 @@ import Testing
         #expect(line.contains("0 0 1 RG\n") && line.contains("1.25 w\n"), "\(line)")
     }
 
+    // A month that is not one, 0 or 13, makes complete() throw when the
+    // calendar is drawn, where a fatalError stopped the program (review of
+    // 20 October 2026). Measuring it is as before.
+    @Test func aMonthThatIsNotOneMakesCompleteThrow() throws {
+        for month in [0, 13] {
+            let memory = MemoryPDF()
+            let font = TestSupport.helvetica(memory.pdf)
+            let calendar = CalendarMonth(font, font, 2026, month)
+            TestSupport.expectXY(252, 252, calendar.drawOn(nil))
+            calendar.drawOn(Page(memory.pdf, Letter.PORTRAIT))
+            do {
+                try memory.pdf.complete()
+                Issue.record("complete() did not throw for month \(month)")
+            } catch {
+                #expect(TestSupport.message(error).contains("The month \(month) is not one: from 1 to 12."))
+            }
+        }
+    }
+
     @Test func colorsAreSetAsAnIntOrAsAnArray() {
         let page = self.page()
         Line(10, 10, 50, 10).setStrokeColor(Color.red).drawOn(page)

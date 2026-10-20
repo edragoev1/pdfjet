@@ -88,6 +88,10 @@ import Testing
             (form, "/AcroForm << /Fields [ 4 0 R ] /NeedAppearances true >>\n"),
             (byReference, "/AcroForm 6 0 R\n"),
             (noForm, nil),
+            // References of another generation take 0, as every object's
+            // (review of 20 October 2026)
+            (["<< /Type /Catalog /Pages 2 0 R /AcroForm << /Fields [4 1 R] /NeedAppearances true >> >>"] + form.dropFirst(), "/AcroForm << /Fields [ 4 0 R ] /NeedAppearances true >>\n"),
+            (["<< /Type /Catalog /Pages 2 0 R /AcroForm 6 1 R >>"] + form.dropFirst(), "/AcroForm 6 0 R\n"),
         ]
         for (objectsOfCase, expected) in cases {
             var objects = try TestSupport.read(TestSupport.pdfWithObjects(objectsOfCase))

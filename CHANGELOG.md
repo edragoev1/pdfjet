@@ -29,8 +29,9 @@ This is the first entry in this file; earlier releases were not tracked here.
   and for pages of a PDF that was read. BlendMode.MULTIPLY draws like a
   highlighter pen that leaves the text under it readable. A state with no
   blend mode is written as before, with no /BM entry. A PDF/A-1 document
-  takes only NORMAL, as it has no transparency. Suggested by Stefan
-  Ostermann, from his fork of PDFjet.
+  takes only NORMAL, as it has no transparency. In Go, a blend mode that
+  is not one of blendmode's panics. Suggested by Stefan Ostermann, from his
+  fork of PDFjet.
 
 ### Changed
 - The license of the Java and .NET packages: no limit on servers,
