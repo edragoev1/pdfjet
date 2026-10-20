@@ -1,0 +1,33 @@
+== environment
+openjdk version "25.0.4.1" 2026-08-18 LTS
+.NET SDK 8.0.424
+go version go1.27.2 linux/amd64
+Swift version 6.4.1 (swift-6.4.1-RELEASE)
+cpus 12, AMD Ryzen 5 5600G with Radeon Graphics
+2026-10-20T13:03:19-04:00
+736e0c6d package-maven.sh: jar --create --date --file, as jar takes --date only with the long options
+== ports: Latin, Greek and Cyrillic, 60 lines per page, IBM Plex Sans
+java 100 pages: median 16 ms (min 15, max 18, 7 runs), 112644 bytes
+dotnet 100 pages: median 38 ms (min 20, max 41, 7 runs), 112644 bytes
+go 100 pages: median 11 ms (min 11, max 13, 7 runs), 108351 bytes
+swift 100 pages: median 23 ms (min 23, max 24, 7 runs), 126040 bytes
+java 500 pages: median 64 ms (min 59, max 65, 7 runs), 494731 bytes
+dotnet 500 pages: median 61 ms (min 59, max 92, 7 runs), 494731 bytes
+go 500 pages: median 56 ms (min 55, max 59, 7 runs), 473487 bytes
+swift 500 pages: median 114 ms (min 110, max 116, 7 runs), 558540 bytes
+== ports: first document in a new process, 500 pages
+java cold 500 pages: 142 ms, 494731 bytes
+dotnet cold 500 pages: 237 ms, 494731 bytes
+go cold 500 pages: 60 ms, 473487 bytes
+swift cold 500 pages: 181 ms, 558540 bytes
+== ports: peak memory, one 500-page document, runtime defaults, median of 3
+java peak 85032 KB
+dotnet peak 49156 KB
+go peak 11120 KB
+swift peak 23536 KB
+== ports: 3-page samples
+java: 20993 bytes, page 1: The quick brown fox jumps over the lazy dog 0.0|Ξεσκεπάζω την ψυχοφθόρα βδελυγμία 0.1|Съешь же ещё этих мягких французских булок 0.2|
+dotnet: 20993 bytes, page 1: The quick brown fox jumps over the lazy dog 0.0|Ξεσκεπάζω την ψυχοφθόρα βδελυγμία 0.1|Съешь же ещё этих мягких французских булок 0.2|
+go: 21255 bytes, page 1: The quick brown fox jumps over the lazy dog 0.0|Ξεσκεπάζω την ψυχοφθόρα βδελυγμία 0.1|Съешь же ещё этих мягких французских булок 0.2|
+swift: 22545 bytes, page 1: The quick brown fox jumps over the lazy dog 0.0|Ξεσκεπάζω την ψυχοφθόρα βδελυγμία 0.1|Съешь же ещё этих мягких французских булок 0.2|
+2026-10-20T13:03:26-04:00

@@ -53,8 +53,8 @@ same output come in four languages, and none of them needs a single dependency.
 - **One API, four languages, the same PDF.** Java, C#, Go and Swift share the
   API, and CI compares the PDFs of every port with Java's, page by page.
 - **Fast and light.** Every port writes a 500-page document with an embedded
-  font in under 100 ms once it is warm (the first run, with the runtime
-  starting, takes up to about 200 ms), and each page is written out and freed
+  font in under 120 ms once it is warm (the first run, with the runtime
+  starting, takes up to about 250 ms), and each page is written out and freed
   as soon as the next one starts.
 - **No dependencies.** The Java library is a single 0.6 MB jar.
 - **Layout built in.** Tables that break across pages and repeat their header
@@ -263,15 +263,16 @@ try pdf.complete()
 ## Performance
 
 Each port writing a document with 60 lines of Latin, Greek and Cyrillic text per
-page in IBM Plex Sans, the median of 7 runs on an AMD Ryzen 5 5600G. Peak memory
+page in IBM Plex Sans, the median of 7 runs on an AMD Ryzen 5 5600G, at 9.1.1
+(20 October 2026, benchmarks/ports/results/2026-10-20-736e0c6d.log). Peak memory
 is that of the whole process writing the 500-page document, runtime included.
 
 | Port | 100 pages | 500 pages | Peak memory |
 |---|---|---|---|
-| Java | 15 ms | 73 ms | 96 MB |
-| C# | 22 ms | 70 ms | 57 MB |
-| Go | 10 ms | 51 ms | 10 MB |
-| Swift | 22 ms | 94 ms | 29 MB |
+| Java | 16 ms | 64 ms | 83 MB |
+| C# | 38 ms | 61 ms | 48 MB |
+| Go | 11 ms | 56 ms | 11 MB |
+| Swift | 23 ms | 114 ms | 23 MB |
 
 ## Examples
 
