@@ -33,11 +33,11 @@ cp "$work/PDFjet.jar" "$base.jar"
 
 # The API reference of the release, as the javadoc jar
 unzip -q -o "$zip" "$top/docs/java/*" -d "$work/docs"
-jar --date="$date" -cf "$base-javadoc.jar" -C "$work/docs/$top/docs/java" .
+jar --create --date="$date" --file "$base-javadoc.jar" -C "$work/docs/$top/docs/java" .
 
 # The sources of the tag: the packages build-java.sh builds the jar of
 git archive "v$version" com/pdfjet | tar -x -C "$work/sources"
-jar --date="$date" -cf "$base-sources.jar" -C "$work/sources" com
+jar --create --date="$date" --file "$base-sources.jar" -C "$work/sources" com
 
 sed -e "s/\$version\\$/$version/g" -e "s/\$commit\\$/$commit/g" maven/pdfjet.pom > "$base.pom"
 
