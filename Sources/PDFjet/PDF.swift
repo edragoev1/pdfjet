@@ -116,7 +116,7 @@ public final class PDF {
     // The digits of the number append(Int) writes, the most an Int has and its sign.
     private var digits = [UInt8](repeating: 0, count: 20)
     private var objOffset = [Int]()
-    private var producer = "PDFjet v9.0.9"
+    private var producer = "PDFjet v9.1.1"
     private var title: String?
     private var author: String?
     private var subject: String?

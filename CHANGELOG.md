@@ -7,7 +7,7 @@ languages.
 
 This is the first entry in this file; earlier releases were not tracked here.
 
-## v9.1.1 — not released yet
+## v9.1.1 — 2026-10-20
 
 ### Added
 - complete() can leave the output stream open, so that several PDFs can be

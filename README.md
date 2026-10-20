@@ -99,14 +99,14 @@ PDFjet is on Maven Central, as `com.pdfjet:pdfjet`. With Maven:
 <dependency>
   <groupId>com.pdfjet</groupId>
   <artifactId>pdfjet</artifactId>
-  <version>9.0.9</version>
+  <version>9.1.1</version>
 </dependency>
 ```
 
 With Gradle:
 
 ```groovy
-implementation("com.pdfjet:pdfjet:9.0.9")
+implementation("com.pdfjet:pdfjet:9.1.1")
 ```
 
 The jar has no fonts, as the Go module has none: clone pdfjet-fonts as
@@ -140,13 +140,13 @@ PDFjet is on NuGet, as `PDFjet`, for .NET 8 or later and .NET Framework 4.8,
 strong-named. With the .NET CLI:
 
 ```bash
-dotnet add package PDFjet --version 9.0.9
+dotnet add package PDFjet --version 9.1.1
 ```
 
 Or in the project file:
 
 ```xml
-<PackageReference Include="PDFjet" Version="9.0.9" />
+<PackageReference Include="PDFjet" Version="9.1.1" />
 ```
 
 The package has no fonts, as the jar has none: get pdfjet-fonts as the Go part

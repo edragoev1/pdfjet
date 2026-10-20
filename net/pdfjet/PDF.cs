@@ -113,7 +113,7 @@ public sealed class PDF {
     private String uuid = Guid.NewGuid().ToString("N");
     private Stream os = null;
     private readonly List<long> objOffset = new List<long>(); // Required by the xref section
-    private String producer = "PDFjet v9.0.9";
+    private String producer = "PDFjet v9.1.1";
     private String title;
     private String author;
     private String subject;

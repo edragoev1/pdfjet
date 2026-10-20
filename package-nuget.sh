@@ -4,16 +4,16 @@
 # again: the .NET 8 one, and the .NET Framework 4.8 one, whose System.Memory
 # is a dependency of the package rather than a file in it.
 #
-#   ./package-nuget.sh 9.0.9 ~/Projects/PDFjet-For.NET-Core-v9.0.9.zip
+#   ./package-nuget.sh 9.1.1 ~/Projects/PDFjet-For.NET-Core-v9.1.1.zip
 #
-# It writes out/nuget/PDFjet.9.0.9.nupkg. Pushing it is the owner's, with
+# It writes out/nuget/PDFjet.9.1.1.nupkg. Pushing it is the owner's, with
 # their API key of nuget.org, which never goes in a file of the repository:
 #
-#   dotnet nuget push out/nuget/PDFjet.9.0.9.nupkg --api-key KEY --source https://api.nuget.org/v3/index.json
+#   dotnet nuget push out/nuget/PDFjet.9.1.1.nupkg --api-key KEY --source https://api.nuget.org/v3/index.json
 
 set -euo pipefail
 cd "$(dirname "$0")"
-version=${1:?the version, such as 9.0.9}
+version=${1:?the version, such as 9.1.1}
 zip=${2:?the PDFjet-For.NET-Core zip of the release}
 commit=$(git rev-list -n1 "v$version")
 stage=out/nuget/stage

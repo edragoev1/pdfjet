@@ -6,16 +6,16 @@
 # key and with its MD5, SHA-1, SHA-256 and SHA-512 checksums, in the layout
 # of the repository, zipped.
 #
-#   ./package-maven.sh 9.0.9 ~/Projects/PDFjet-ForJava-Core-v9.0.9.zip
+#   ./package-maven.sh 9.1.1 ~/Projects/PDFjet-ForJava-Core-v9.1.1.zip
 #
-# It writes out/maven/pdfjet-9.0.9-bundle.zip. gpg asks the owner for the
+# It writes out/maven/pdfjet-9.1.1-bundle.zip. gpg asks the owner for the
 # key's passphrase, which never goes in a file or a command; GPG_KEY chooses
 # a key other than the default one. Uploading the bundle is the owner's, on
 # https://central.sonatype.com/publishing, Publish Component.
 
 set -euo pipefail
 cd "$(dirname "$0")"
-version=${1:?the version, such as 9.0.9}
+version=${1:?the version, such as 9.1.1}
 zip=${2:?the PDFjet-ForJava-Core zip of the release}
 commit=$(git rev-list -n1 "v$version")
 # The entries of the jars made here have the time of the tag's commit, so that
