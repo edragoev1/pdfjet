@@ -68,9 +68,9 @@ This is the first entry in this file; earlier releases were not tracked here.
   Java, not SecureRandom (22 ms), and from a Guid in C#, not
   RandomNumberGenerator (7.9 ms), and is 32 hexadecimal digits as before;
   and in Java the logger is made when something is logged (14 ms). The
-  first one-page invoice of a JVM takes 44 ms, not 89, and new PDF() 4 ms,
-  not 55; in C# new PDF() takes 6 ms, not 13.5, and in Swift 0.2 ms, not
-  2.2. Go took 1.5 ms for its first PDF, and is as it was. Encryption keeps
+  first one-page invoice of a JVM takes about 45 ms, not 89, and new PDF()
+  4 ms, not 55; in C# new PDF() takes 6 ms, not 13.5, and in Swift 0.2 ms,
+  not 2.2. Go took 1.5 ms for its first PDF, and is as it was. Encryption keeps
   its own cryptographic random numbers. The benchmark is in
   benchmarks/common.
 
