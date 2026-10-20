@@ -87,6 +87,15 @@ commit and date. The layout's format version (1) and the look's rules
 
 ## Open
 
+- **Swift, the rest of a slowdown of 9 to 15 October 2026 (found 20 October,
+  at 9.1.1).** The ports benchmark's 500-page text took 87 ms at 413e3352 and
+  113 at 9.0.9 and 9.1.1, on the same Swift 6.4.1. 9754d54e, review #8's
+  ToUnicode characters, was the larger part, fixed for 9.1.3 (f511f976: 100
+  ms, the same PDF). The remaining 13 ms came in with other commits of that
+  week (d99b2a5c measured 120 before the fix): bisect again with f511f976
+  applied, and profile (perf needs kernel.perf_event_paranoid lowered, the
+  owner's call). The README claims under 120 ms, true either way.
+
 - ✅ **v9.1.1: the first PDF of a process faster, in the four ports.** Measured
   on 15 October 2026 with typical documents, a one-page invoice, a 9-page
   report and an 11-page Markdown text (branch measure/common-documents,
