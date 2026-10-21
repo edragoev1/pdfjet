@@ -48,8 +48,8 @@ same output come in four languages, and none of them needs a third-party library
   font in under 120 ms once it is warm (the first run, with the runtime
   starting, takes up to about 250 ms), and each page is written out and freed
   as soon as the next one starts.
-- **No dependencies.** The Java library is a single 0.6 MB jar. (On .NET
-  Framework 4.8 alone, the NuGet package pulls in Microsoft's System.Memory.)
+- **No dependencies.** The Java library is a single 0.6 MB jar, and the .NET
+  library a single 0.8 MB DLL.
 - **Layout built in.** Tables that break across pages and repeat their header
   rows, text blocks, columns, charts and calendars.
 - **Barcodes built in.** EAN-13, UPC-A, Code 39, Code 128, QR, Data Matrix and
