@@ -48,7 +48,7 @@ same output come in four languages, and none of them needs a third-party library
   font in under 120 ms once it is warm (the first run, with the runtime
   starting, takes up to about 250 ms), and each page is written out and freed
   as soon as the next one starts.
-- **No dependencies.** The Java library is a single 0.6 MB jar, and the .NET
+- **No third-party dependencies.** The Java library is a single 0.6 MB jar, and the .NET
   library a single 0.8 MB DLL.
 - **Layout built in.** Tables that break across pages and repeat their header
   rows, text blocks, columns, charts and calendars.
