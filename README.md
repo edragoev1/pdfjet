@@ -31,19 +31,11 @@ images, accessible and archival when you need it to be. The same API and the
 same output come in four languages, and none of them needs a third-party library.
 
 > [!NOTE]
-> **The fonts and the data files are fetched.** The fonts and the data files the
-> examples read are two more repositories,
+> The fonts and the examples' data live in
 > [pdfjet-fonts](https://github.com/edragoev1/pdfjet-fonts) and
-> [pdfjet-data](https://github.com/edragoev1/pdfjet-data), at the commits that
-> `fonts-and-data.txt` pins. The build, run and test scripts fetch them into
-> the folders `fonts` and `data` the first time they run, the pinned commits
-> alone, and move them to the new commits when a `git pull` changes a pin.
-> `./get-fonts-and-data.sh`, or `get-fonts-and-data.cmd` on Windows, does it
-> without building anything. They need git.
-> Using PDFjet from Go with `go get`, from Maven Central or from NuGet? The
-> module, the jar and the package have no fonts: the Go part of
-> [Quick start](#quick-start) says how to get pdfjet-fonts. The core fonts,
-> such as Helvetica, need no files at all.
+> [pdfjet-data](https://github.com/edragoev1/pdfjet-data); the scripts fetch
+> them (see [Examples](#examples)). The packages from Maven Central, NuGet
+> and `go get` have no fonts, and the core fonts, such as Helvetica, need none.
 
 ## Why PDFjet
 
@@ -288,6 +280,18 @@ examples, or run one example by its number:
 | C# | `./build-dotnet.sh` | `./run-dotnet.sh 01` |
 | Go | `./build-go.sh` | `./run-go.sh 01` |
 | Swift | `./build-swift.sh` | `./run-swift.sh 01` |
+
+The fonts and the data files are two more repositories,
+[pdfjet-fonts](https://github.com/edragoev1/pdfjet-fonts) and
+[pdfjet-data](https://github.com/edragoev1/pdfjet-data), at the commits that
+`fonts-and-data.txt` pins. The build, run and test scripts fetch them into
+the folders `fonts` and `data` the first time they run, the pinned commits
+alone, and move them to the new commits when a `git pull` changes a pin.
+`./get-fonts-and-data.sh`, or `get-fonts-and-data.cmd` on Windows, does it
+without building anything. They need git. Using PDFjet from Go with
+`go get`, from Maven Central or from NuGet? The module, the jar and the
+package have no fonts: the Go part of [Quick start](#quick-start) says how to
+get pdfjet-fonts.
 
 On Linux, install these first:
 
