@@ -28,7 +28,7 @@
 
 PDFjet creates PDF documents: text in most scripts, tables, charts, barcodes and
 images, accessible and archival when you need it to be. The same API and the
-same output come in four languages, and none of them needs a single dependency.
+same output come in four languages, and none of them needs a third-party library.
 
 > [!NOTE]
 > **The fonts and the data files are fetched.** The fonts and the data files the
@@ -56,12 +56,13 @@ same output come in four languages, and none of them needs a single dependency.
   font in under 120 ms once it is warm (the first run, with the runtime
   starting, takes up to about 250 ms), and each page is written out and freed
   as soon as the next one starts.
-- **No dependencies.** The Java library is a single 0.6 MB jar.
+- **No dependencies.** The Java library is a single 0.6 MB jar. (On .NET
+  Framework 4.8 alone, the NuGet package pulls in Microsoft's System.Memory.)
 - **Layout built in.** Tables that break across pages and repeat their header
   rows, text blocks, columns, charts and calendars.
 - **Barcodes built in.** EAN-13, UPC-A, Code 39, Code 128, QR, Data Matrix and
   PDF417.
-- **Fonts ready to use.** 252 TrueType fonts from the IBM Plex, Noto and
+- **Fonts ready to use.** 261 TrueType and OpenType fonts from the IBM Plex, Noto and
   other families, with Unicode text in Latin, Greek, Cyrillic, CJK and right
   to left scripts, embedded as subsets of the glyphs a document draws. IBM
   Plex Sans alone covers all 24 official languages of the European Union,
@@ -76,7 +77,7 @@ same output come in four languages, and none of them needs a single dependency.
 
 <table>
   <tr>
-    <td align="center"><a href="examples/Example_01.java"><img src="images/readme/example-text.png" alt="Text blocks in English, Greek and Bulgarian" width="200"></a><br>Text in any script</td>
+    <td align="center"><a href="examples/Example_01.java"><img src="images/readme/example-text.png" alt="Text blocks in English, Greek and Bulgarian" width="200"></a><br>Text in many scripts</td>
     <td align="center"><a href="examples/Example_23.java"><img src="images/readme/example-table.png" alt="A table of country data" width="200"></a><br>Tables</td>
     <td align="center"><a href="examples/Example_28.java"><img src="images/readme/example-chart.png" alt="A donut chart" width="200"></a><br>Charts</td>
     <td align="center"><a href="examples/Example_37.java"><img src="images/readme/example-barcodes.png" alt="QR, Data Matrix and PDF417 symbols" width="200"></a><br>Barcodes</td>
@@ -238,7 +239,7 @@ Add PDFjet to the `Package.swift` of your package:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/edragoev1/pdfjet.git", from: "9.0.0"),
+    .package(url: "https://github.com/edragoev1/pdfjet.git", from: "9.1.1"),
 ],
 targets: [
     .executableTarget(name: "App", dependencies: [
