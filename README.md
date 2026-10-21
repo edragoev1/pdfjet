@@ -1,6 +1,6 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="images/readme/pdfjet-logo-dark.svg">
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/edragoev1/pdfjet/main/images/readme/pdfjet-logo-dark.svg">
     <img src="images/readme/pdfjet-logo.svg" alt="PDFjet" width="320">
   </picture>
 </p>
