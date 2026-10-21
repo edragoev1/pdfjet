@@ -40,3 +40,12 @@ booklet/*.pdf
 .github/scripts/render-pdfjs/node_modules/
 # The jar and the dll of a GitHub release, taken from its Core zips
 release-assets/
+
+# The owner's own setup, kept on this computer and out of the repository:
+# the IntelliJ project, the scripts that register and switch the JDKs, and
+# the folder of PDF/UA issues being looked at
+/.idea/
+/pdfjet.iml
+/switch.sh
+/register-jdks.sh
+/pdf-ua-issues-to-resolve/
