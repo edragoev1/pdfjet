@@ -298,6 +298,19 @@ commit and date. The layout's format version (1) and the look's rules
   keep less once written, a bookmark tree of thousands of levels or
   siblings is built in linear time, and Java's Compressor is not one
   synchronized Deflater for every thread.
+- **For 9.1.5: local letter shapes from GSUB, opt in** (22 October 2026).
+  No port reads a font's GSUB table today. A small reader of its single
+  substitutions (lookup type 1) for the `locl` feature of a language,
+  off by default, as kerning is: Bulgarian Cyrillic first (IBM Plex Sans has
+  26 such letters), then whatever the font carries for Serbian and
+  Macedonian (б, and italics), Romanian (ș and ț with the comma below) and
+  Polish (the steeper acute). The PDF must still say what each swapped glyph
+  means (ToUnicode), so that copying, search and screen readers read the
+  same text; the subset takes the swapped glyphs. Later, the same reader
+  for standard ligatures (lookup type 4, `liga`, opt in, Turkish's dotless ı
+  kept apart) and small capitals. Not full shaping: Devanagari and the
+  like need a shaping engine. For the library only; Forms keeps the
+  default shapes.
 - **For 9.1.5: kerning of TrueType and OpenType fonts, opt in** (18 October
   2026): no slower when off, and little code.
   `Font.SetKernPairs(true)` kerns the 14 standard fonts today; the same call
