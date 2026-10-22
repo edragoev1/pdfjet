@@ -87,6 +87,20 @@ commit and date. The layout's format version (1) and the look's rules
 
 ## Open
 
+- **v9.1.3: an image copied from a PDF that was read keeps its
+  transparency, in the four ports (found 22 October 2026).** new Image(pdf,
+  obj) in Java and C#, NewImageFromPDFobj in Go and init(pdf, obj) in Swift
+  copy the image's stream as it is, but leave out /SMask (the alpha of a
+  PNG, a separate image object) and /Mask (a color key, an array, or a
+  reference to a stencil image), with no error: a logo on a transparent
+  background is drawn on a solid box. The constructors already refuse a
+  /ColorSpace or /DecodeParms that refers to another object. Fix: copy the
+  soft mask with the image (an image object of its own, its stream as it
+  is, encrypted when the document is), and the /Mask array as it is; a
+  /Mask that refers to an object copied as the soft mask is. Tests in each
+  port: a PNG with alpha and one with a color key, copied, keep their masks
+  byte for byte; CHANGELOG.md.
+
 - **Swift, the rest of a slowdown of 9 to 15 October 2026 (found 20 October,
   at 9.1.1).** The ports benchmark's 500-page text took 87 ms at 413e3352 and
   113 at 9.0.9 and 9.1.1, on the same Swift 6.4.1. 9754d54e, review #8's
