@@ -279,6 +279,15 @@ commit and date. The layout's format version (1) and the look's rules
   owner, 12 October 2026): Swift's PDFs are
   about 9% larger than Go's, the same content after inflating, from its own
   Deflate encoder. Its matches could be searched as zlib's level 6 does.
+- **For 9.1.5: profile the Swift port before tuning it** (22 October 2026).
+  Example_24's 500 pages take 113 ms in Swift, against 56 to 64 in Go, C#
+  and Java (9.1.1). Where the rest goes is not measured: Swift's own
+  Deflate, CRC32 and AES (Go's are its standard library's, tuned for years,
+  with assembly for AES and CRC32), the counting of references of many small
+  objects, String work done where bytes would do, or arrays copied on
+  change and bounds checks in tight loops. A profile of Example_24 first
+  (perf on Linux, Instruments on a Mac), then the changes where the time
+  is, each measured against the last tag.
 - **For 9.1.5: PDF/A and tagged documents at scale (third review, W1, W2,
   W3, W5, W6, W7).** 9.0.7 refuses a PDF/A-1 document past its limits; 9.1.5
   writes one within them at any size: a balanced page tree, a parent tree of
