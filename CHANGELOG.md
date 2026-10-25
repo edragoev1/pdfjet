@@ -35,6 +35,16 @@ This is the first entry in this file; earlier releases were not tracked here.
   two kinds of space, have the character drawn with them recorded for the
   ToUnicode map; every character was, since 9.0.7. The PDF is the same.
 
+### Fixed
+- An image copied from a PDF that was read, with `new Image(pdf, obj)`
+  (`NewImageFromPDFobj` in Go), keeps its transparency, in the four ports:
+  its soft mask, the alpha of a PNG, and its mask, a color key or a stencil,
+  are copied with it, encrypted when the document is. They were left out,
+  with no error, and a logo on a transparent background was drawn on a
+  solid box. Its /Decode and /Matte are copied too. A mask that cannot be
+  copied, of an object that was not read from a PDF, is an error, as a
+  color space that refers to another object is.
+
 ## v9.1.1 — 2026-10-20
 
 ### Added

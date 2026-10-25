@@ -194,15 +194,72 @@ public class Image : IDrawable {
         }
     }
 
+    // An image object of a PDF that was read, copied into this one. Its soft
+    // mask, the alpha of a PNG, and its mask, a color key or a stencil, are
+    // copied with it: they were left out, and a logo on a transparent
+    // background was drawn on a solid box (22 October 2026).
     public Image(PDF pdf, PDFobj obj) {
         this.pdf = pdf;
         SetPixels(PixelsOf(SizeOf(obj, "/Width")), PixelsOf(SizeOf(obj, "/Height")));
+        int softMask = CopiedMask(pdf, obj, "/SMask");
+        int mask = 0;
+        List<String> maskArray = obj.ValueTokens("/Mask");
+        if (maskArray.Contains("R")) {
+            mask = CopiedMask(pdf, obj, "/Mask");
+            maskArray = new List<String>();
+        }
+        AppendImageObject(pdf, obj, softMask, mask, maskArray);
+        pdf.images.Add(this);
+        objNumber = pdf.GetObjNumber();
+    }
+
+    // Copies the image that the key of the image refers to, its soft mask or
+    // its stencil mask, from the PDF it was read from, and returns its number
+    // in this PDF, or 0 when the image has none.
+    private static int CopiedMask(PDF pdf, PDFobj obj, String key) {
+        List<String> tokens = obj.ValueTokens(key);
+        if (tokens.Count == 0 || (tokens.Count == 1 && tokens[0] == "/None")) {
+            return 0;
+        }
+        int number;
+        if (tokens.Count != 3 || tokens[2] != "R" ||
+                !Int32.TryParse(tokens[0], NumberStyles.None, CultureInfo.InvariantCulture, out number)) {
+            throw new NotSupportedException(
+                    "The " + key + " of the image is not a reference to an image: " + String.Join(" ", tokens));
+        }
+        PDFobj mask = null;
+        if (obj.readObjects != null) {
+            obj.readObjects.TryGetValue(number, out mask);
+        }
+        if (mask == null) {
+            throw new NotSupportedException("The image refers to another object of the PDF it was read from, "
+                    + "which is not copied with it: " + key + " " + String.Join(" ", tokens));
+        }
+        if (mask.GetValue("/Subtype") != "/Image") {
+            throw new NotSupportedException(
+                    "The " + key + " of the image is not an image: " + String.Join(" ", tokens));
+        }
+        if (mask.ValueTokens("/SMask").Count > 0 || mask.ValueTokens("/Mask").Count > 0) {
+            throw new NotSupportedException("The " + key + " of the image has a mask of its own.");
+        }
+        SizeOf(mask, "/Width");
+        SizeOf(mask, "/Height");
+        AppendImageObject(pdf, mask, 0, 0, new List<String>());
+        return pdf.GetObjNumber();
+    }
+
+    // Writes an image object copied from another PDF, with the numbers of its
+    // soft mask and its stencil mask in this PDF, or 0, or the array of its
+    // color key mask.
+    private static void AppendImageObject(PDF pdf, PDFobj obj, int softMask, int mask, List<String> maskArray) {
         // The values copied as they are, but for their strings, encrypted when
         // the document is, as the palette of an /Indexed color space; and the
         // stream, encrypted too (review of 11 October 2026, #11)
         List<String> colorSpace = obj.ValueTokens("/ColorSpace");
         List<String> decodeParms = obj.ValueTokens("/DecodeParms");
-        foreach (List<String> tokens in new List<String>[] {colorSpace, decodeParms}) {
+        List<String> decode = obj.ValueTokens("/Decode");
+        List<String> matte = obj.ValueTokens("/Matte");
+        foreach (List<String> tokens in new List<String>[] {colorSpace, decodeParms, decode, matte, maskArray}) {
             if (tokens.Contains("R")) {
                 throw new NotSupportedException("The image refers to another object of the PDF it was read from, "
                         + "which is not copied with it: " + String.Join(" ", tokens));
@@ -222,20 +279,33 @@ public class Image : IDrawable {
         pdf.Append("/Subtype /Image\n");
         AppendIfAny(pdf, "/Filter", obj.GetValue("/Filter"));
         pdf.Append("/Width ");
-        pdf.Append(pixelWidth);
+        pdf.Append(PixelsOf(SizeOf(obj, "/Width")));
         pdf.Append('\n');
         pdf.Append("/Height ");
-        pdf.Append(pixelHeight);
+        pdf.Append(PixelsOf(SizeOf(obj, "/Height")));
         pdf.Append('\n');
         pdf.AppendCopiedValue("/ColorSpace", colorSpace);
         AppendIfAny(pdf, "/BitsPerComponent", obj.GetValue("/BitsPerComponent"));
         pdf.AppendCopiedValue("/DecodeParms", decodeParms);
+        pdf.AppendCopiedValue("/Decode", decode);
+        pdf.AppendCopiedValue("/Matte", matte);
         String imageMask = obj.GetValue("/ImageMask");
         if (!imageMask.Equals("")) {
             pdf.Append("/ImageMask ");
             pdf.Append(imageMask);
             pdf.Append("\n");
         }
+        if (softMask != 0) {
+            pdf.Append("/SMask ");
+            pdf.Append(softMask);
+            pdf.Append(" 0 R\n");
+        }
+        if (mask != 0) {
+            pdf.Append("/Mask ");
+            pdf.Append(mask);
+            pdf.Append(" 0 R\n");
+        }
+        pdf.AppendCopiedValue("/Mask", maskArray);
         byte[] stream = obj.stream;
         if (pdf.encryption != null) {
             stream = AES256.Encrypt(stream, pdf.encryption.GetKey());
@@ -248,8 +318,6 @@ public class Image : IDrawable {
         pdf.Append(stream, 0, stream.Length);
         pdf.Append("\nendstream\n");
         pdf.EndObj();
-        pdf.images.Add(this);
-        objNumber = pdf.GetObjNumber();
     }
 
     IDrawable IDrawable.SetLocation(float x, float y) {

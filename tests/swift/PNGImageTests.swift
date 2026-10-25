@@ -728,6 +728,71 @@ import Testing
         }
     }
 
+    // An image copied from a PDF that was read keeps its soft mask, the alpha
+    // of a PNG, an image of its own copied with it, and its color key mask:
+    // both were left out, and a logo on a transparent background was drawn
+    // on a solid box (22 October 2026).
+    @Test func anImageCopiedFromAPDFThatWasReadKeepsItsMasks() throws {
+        let memory = MemoryPDF()
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        for name in ["BASN6A08", "TBRN2C08"] {
+            _ = try Image(memory.pdf, TestSupport.open("PngSuite/\(name).PNG")).drawOn(page)
+        }
+        try memory.pdf.complete()
+        let read = try TestSupport.read(memory.bytes)
+        let drawn = drawnImages(read)
+        try #require(drawn.count == 2)
+        #expect(drawn[0].getValue("/SMask") != "")
+        #expect(drawn[1].getValue("/Mask") != "")
+        var numbered = [Int: PDFobj]()
+        for obj in read {
+            numbered[obj.number] = obj
+        }
+        for encrypted in [false, true] {
+            let copied = MemoryPDF()
+            if encrypted {
+                _ = copied.pdf.setEncryption(Encryption(copied.pdf, Passwords(), Permissions()))
+            }
+            let copiedPage = Page(copied.pdf, Letter.PORTRAIT)
+            for obj in drawn {
+                _ = try Image(copied.pdf, obj).drawOn(copiedPage)
+            }
+            try copied.pdf.complete()
+            let objects = try TestSupport.read(copied.bytes, "")
+            var copies = [Int: PDFobj]()
+            for obj in objects {
+                copies[obj.number] = obj
+            }
+            let images = drawnImages(objects)
+            try #require(images.count == 2, "encrypted \(encrypted)")
+            let softMask = try #require(copies[images[0].getObjectNumbers("/SMask")[0]])
+            let alpha = try #require(numbered[drawn[0].getObjectNumbers("/SMask")[0]])
+            #expect(softMask.getData() == alpha.getData(), "the soft mask, encrypted \(encrypted)")
+            #expect(images[1].getValue("/Mask") == drawn[1].getValue("/Mask"), "encrypted \(encrypted)")
+        }
+    }
+
+    // The images drawn, not their soft masks.
+    private func drawnImages(_ objects: [PDFobj]) -> [PDFobj] {
+        return imageObjects(objects).filter { $0.getValue("/ColorSpace") != "/DeviceGray" }
+    }
+
+    // The mask of an image that was not read from a PDF, which has no other
+    // objects to copy it from, is refused, as a color space that refers to
+    // one is.
+    @Test func aMaskThatCannotBeCopiedIsRefused() {
+        let obj = PDFobj()
+        obj.dict = ["<<", "/Width", "1", "/Height", "1", "/SMask", "5", "0", "R", ">>"]
+        do {
+            _ = try Image(MemoryPDF().pdf, obj)
+            Issue.record("a mask that cannot be copied was left out")
+        } catch let error as PDFjetError {
+            #expect(error.message.contains("/SMask 5 0 R"), "\(error.message)")
+        } catch {
+            Issue.record("\(error)")
+        }
+    }
+
     @Test func theDataOfEveryPngSuiteImageEmbeddedAsItIsHasNoFilterTypes() throws {
         var embedded = 0
         for (name, width, height, colorType, bitDepth, _, _, _, _) in PNGImageTests.suite {

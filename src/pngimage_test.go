@@ -1053,3 +1053,85 @@ func TestPNGImageTheIHDRChunkIsFirstAndOnce(t *testing.T) {
 		t.Error(message)
 	}
 }
+
+// An image copied from a PDF that was read keeps its soft mask, the alpha of
+// a PNG, an image of its own copied with it, and its color key mask: both were
+// left out, and a logo on a transparent background was drawn on a solid box
+// (22 October 2026).
+func TestPNGImageAnImageCopiedFromAPDFThatWasReadKeepsItsMasks(t *testing.T) {
+	doc := testNewDoc()
+	page := NewPage(doc.pdf, letter.Portrait())
+	for _, name := range []string{"BASN6A08", "TBRN2C08"} {
+		png, err := os.ReadFile(testRepoPath(t, "PngSuite/"+name+".PNG"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		NewImage(doc.pdf, bytes.NewReader(png)).DrawOn(page)
+	}
+	read := testRead(t, doc.complete())
+	// The images drawn, not their soft masks
+	var drawn []*PDFobj
+	for _, obj := range testImageObjects(read) {
+		if obj.GetValue("/ColorSpace") != "/DeviceGray" {
+			drawn = append(drawn, obj)
+		}
+	}
+	if len(drawn) != 2 || drawn[0].GetValue("/SMask") == "" || drawn[1].GetValue("/Mask") == "" {
+		t.Fatalf("the PNGs are not drawn with an /SMask and a /Mask: %d images", len(drawn))
+	}
+	numbered := make(map[int]*PDFobj)
+	for _, obj := range read {
+		numbered[obj.number] = obj
+	}
+
+	for _, encrypted := range []bool{false, true} {
+		copied := testNewDoc()
+		if encrypted {
+			enc, err := NewEncryption(copied.pdf, encryption.NewPasswords(), encryption.NewPermissions())
+			if err != nil {
+				t.Fatal(err)
+			}
+			copied.pdf.SetEncryption(enc)
+		}
+		page = NewPage(copied.pdf, letter.Portrait())
+		for _, obj := range drawn {
+			NewImageFromPDFobj(copied.pdf, obj).DrawOn(page)
+		}
+		objects, err := testNewPDF().ReadWithPassword(copied.complete(), "")
+		if err != nil {
+			t.Fatal(err)
+		}
+		copies := make(map[int]*PDFobj)
+		for _, obj := range objects {
+			copies[obj.number] = obj
+		}
+		var images []*PDFobj
+		for _, obj := range testImageObjects(objects) {
+			if obj.GetValue("/ColorSpace") != "/DeviceGray" {
+				images = append(images, obj)
+			}
+		}
+		if len(images) != 2 {
+			t.Fatalf("encrypted %v: %d images", encrypted, len(images))
+		}
+		softMask := copies[images[0].getObjectNumbers("/SMask")[0]]
+		alpha := numbered[drawn[0].getObjectNumbers("/SMask")[0]]
+		if softMask == nil || !bytes.Equal(softMask.GetData(), alpha.GetData()) {
+			t.Errorf("encrypted %v: the soft mask is not the one copied", encrypted)
+		}
+		if got, want := images[1].GetValue("/Mask"), drawn[1].GetValue("/Mask"); got != want {
+			t.Errorf("encrypted %v: /Mask %s, not %s", encrypted, got, want)
+		}
+	}
+}
+
+// The mask of an image that was not read from a PDF, which has no other
+// objects to copy it from, is refused, as a color space that refers to one is.
+func TestPNGImageAMaskThatCannotBeCopiedIsRefused(t *testing.T) {
+	obj := newPDFobj()
+	obj.dict = []string{"<<", "/Width", "1", "/Height", "1", "/SMask", "5", "0", "R", ">>"}
+	message, panicked := testPanic(func() { NewImageFromPDFobj(testNewPDF(), obj) })
+	if !panicked || !strings.Contains(message, "/SMask 5 0 R") {
+		t.Errorf("%v: %q", panicked, message)
+	}
+}

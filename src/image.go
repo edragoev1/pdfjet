@@ -200,18 +200,69 @@ func imageSizeOf(obj *PDFobj, key string) float64 {
 	return number
 }
 
-// NewImageFromPDFobj constructs new image from an existing PDF object.
+// NewImageFromPDFobj constructs new image from an existing PDF object. The
+// image's soft mask, the alpha of a PNG, and its mask, a color key or a
+// stencil, are copied with it: they were left out, and a logo on a
+// transparent background was drawn on a solid box (22 October 2026).
 func NewImageFromPDFobj(pdf *PDF, obj *PDFobj) *Image {
 	image := new(Image)
 	image.pdf = pdf
 
 	image.setPixels(pixelsOf(imageSizeOf(obj, "/Width")), pixelsOf(imageSizeOf(obj, "/Height")))
+	softMask := copiedMask(pdf, obj, "/SMask")
+	mask := 0
+	maskArray := obj.valueTokens("/Mask")
+	if slices.Contains(maskArray, "R") {
+		mask = copiedMask(pdf, obj, "/Mask")
+		maskArray = nil
+	}
+	appendImageObject(pdf, obj, softMask, mask, maskArray)
+	pdf.images = append(pdf.images, image)
+	image.objNumber = pdf.getObjNumber()
+
+	return image
+}
+
+// copiedMask copies the image that the key of the image refers to, its soft
+// mask or its stencil mask, from the PDF it was read from, and returns its
+// number in this PDF, or 0 when the image has none.
+func copiedMask(pdf *PDF, obj *PDFobj, key string) int {
+	tokens := obj.valueTokens(key)
+	if len(tokens) == 0 || (len(tokens) == 1 && tokens[0] == "/None") {
+		return 0
+	}
+	if len(tokens) != 3 || tokens[2] != "R" {
+		panic("The " + key + " of the image is not a reference to an image: " + strings.Join(tokens, " "))
+	}
+	mask := obj.readObjects[toInteger(tokens[0])]
+	if mask == nil {
+		panic("The image refers to another object of the PDF it was read from, " +
+			"which is not copied with it: " + key + " " + strings.Join(tokens, " "))
+	}
+	if mask.GetValue("/Subtype") != "/Image" {
+		panic("The " + key + " of the image is not an image: " + strings.Join(tokens, " "))
+	}
+	if len(mask.valueTokens("/SMask")) > 0 || len(mask.valueTokens("/Mask")) > 0 {
+		panic("The " + key + " of the image has a mask of its own.")
+	}
+	imageSizeOf(mask, "/Width")
+	imageSizeOf(mask, "/Height")
+	appendImageObject(pdf, mask, 0, 0, nil)
+	return pdf.getObjNumber()
+}
+
+// appendImageObject writes an image object copied from another PDF, with the
+// numbers of its soft mask and its stencil mask in this PDF, or 0, or the
+// array of its color key mask.
+func appendImageObject(pdf *PDF, obj *PDFobj, softMask, mask int, maskArray []string) {
 	// The values copied as they are, but for their strings, encrypted when
 	// the document is, as the palette of an /Indexed color space; and the
 	// stream, encrypted too (review of 11 October 2026, #11)
 	colorSpace := obj.valueTokens("/ColorSpace")
 	decodeParms := obj.valueTokens("/DecodeParms")
-	for _, tokens := range [][]string{colorSpace, decodeParms} {
+	decode := obj.valueTokens("/Decode")
+	matte := obj.valueTokens("/Matte")
+	for _, tokens := range [][]string{colorSpace, decodeParms, decode, matte, maskArray} {
 		if slices.Contains(tokens, "R") {
 			panic("The image refers to another object of the PDF it was read from, " +
 				"which is not copied with it: " + strings.Join(tokens, " "))
@@ -232,20 +283,33 @@ func NewImageFromPDFobj(pdf *PDF, obj *PDFobj) *Image {
 	pdf.appendString("/Subtype /Image\n")
 	appendIfAny(pdf, "/Filter", obj.GetValue("/Filter"))
 	pdf.appendString("/Width ")
-	pdf.appendInteger(image.pixelWidth)
+	pdf.appendInteger(pixelsOf(imageSizeOf(obj, "/Width")))
 	pdf.appendString("\n")
 	pdf.appendString("/Height ")
-	pdf.appendInteger(image.pixelHeight)
+	pdf.appendInteger(pixelsOf(imageSizeOf(obj, "/Height")))
 	pdf.appendString("\n")
 	pdf.appendCopiedValue("/ColorSpace", colorSpace)
 	appendIfAny(pdf, "/BitsPerComponent", obj.GetValue("/BitsPerComponent"))
 	pdf.appendCopiedValue("/DecodeParms", decodeParms)
+	pdf.appendCopiedValue("/Decode", decode)
+	pdf.appendCopiedValue("/Matte", matte)
 	imageMask := obj.GetValue("/ImageMask")
 	if imageMask != "" {
 		pdf.appendString("/ImageMask ")
 		pdf.appendString(imageMask)
 		pdf.appendString("\n")
 	}
+	if softMask != 0 {
+		pdf.appendString("/SMask ")
+		pdf.appendInteger(softMask)
+		pdf.appendString(" 0 R\n")
+	}
+	if mask != 0 {
+		pdf.appendString("/Mask ")
+		pdf.appendInteger(mask)
+		pdf.appendString(" 0 R\n")
+	}
+	pdf.appendCopiedValue("/Mask", maskArray)
 	stream := obj.stream
 	if pdf.encryption != nil {
 		stream = pdf.encryption.encrypt(stream)
@@ -258,10 +322,6 @@ func NewImageFromPDFobj(pdf *PDF, obj *PDFobj) *Image {
 	pdf.appendByteArray(stream)
 	pdf.appendString("\nendstream\n")
 	pdf.endObj()
-	pdf.images = append(pdf.images, image)
-	image.objNumber = pdf.getObjNumber()
-
-	return image
 }
 
 // appendCopiedValue appends the key and the tokens of its value, read from

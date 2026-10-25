@@ -2935,6 +2935,11 @@ public sealed class PDF {
         if (root != null) {
             root.root = true;
         }
+        Dictionary<int, PDFobj> readObjects = new Dictionary<int, PDFobj>();
+        foreach (PDFobj obj in sorted) {
+            readObjects[obj.number] = obj;
+            obj.readObjects = readObjects;
+        }
         return sorted;
     }
 

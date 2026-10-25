@@ -818,6 +818,79 @@ public class PNGImageTest {
         }
     }
 
+    // An image copied from a PDF that was read keeps its soft mask, the alpha
+    // of a PNG, an image of its own copied with it, and its color key mask:
+    // both were left out, and a logo on a transparent background was drawn
+    // on a solid box (22 October 2026).
+    [Fact]
+    public void AnImageCopiedFromAPDFThatWasReadKeepsItsMasks() {
+        MemoryStream stream = new MemoryStream();
+        PDF pdf = new PDF(stream);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        foreach (string name in new string[] {"BASN6A08", "TBRN2C08"}) {
+            using (Stream png = TestSupport.Open("PngSuite/" + name + ".PNG")) {
+                new Image(pdf, png).DrawOn(page);
+            }
+        }
+        pdf.Complete();
+        System.Collections.Generic.List<PDFobj> read = TestSupport.Read(stream.ToArray());
+        System.Collections.Generic.List<PDFobj> drawn = DrawnImages(read);
+        Assert.Equal(2, drawn.Count);
+        Assert.NotEqual("", drawn[0].GetValue("/SMask"));
+        Assert.NotEqual("", drawn[1].GetValue("/Mask"));
+        var numbered = new System.Collections.Generic.Dictionary<int, PDFobj>();
+        foreach (PDFobj obj in read) {
+            numbered[obj.number] = obj;
+        }
+        foreach (bool encrypted in new bool[] {false, true}) {
+            MemoryStream output = new MemoryStream();
+            PDF copied = new PDF(output);
+            if (encrypted) {
+                copied.SetEncryption(new Encryption(copied, new Passwords(), new Permissions()));
+            }
+            Page copiedPage = new Page(copied, Letter.PORTRAIT);
+            foreach (PDFobj obj in drawn) {
+                new Image(copied, obj).DrawOn(copiedPage);
+            }
+            copied.Complete();
+            System.Collections.Generic.List<PDFobj> objects = TestSupport.Read(output.ToArray(), "");
+            var copies = new System.Collections.Generic.Dictionary<int, PDFobj>();
+            foreach (PDFobj obj in objects) {
+                copies[obj.number] = obj;
+            }
+            System.Collections.Generic.List<PDFobj> images = DrawnImages(objects);
+            Assert.Equal(2, images.Count);
+            PDFobj softMask = copies[images[0].GetObjectNumbers("/SMask")[0]];
+            PDFobj alpha = numbered[drawn[0].GetObjectNumbers("/SMask")[0]];
+            Assert.Equal(alpha.GetData(), softMask.GetData());
+            Assert.Equal(drawn[1].GetValue("/Mask"), images[1].GetValue("/Mask"));
+        }
+    }
+
+    // The images drawn, not their soft masks.
+    private static System.Collections.Generic.List<PDFobj> DrawnImages(System.Collections.Generic.List<PDFobj> objects) {
+        var drawn = new System.Collections.Generic.List<PDFobj>();
+        foreach (PDFobj obj in ImageObjects(objects)) {
+            if (obj.GetValue("/ColorSpace") != "/DeviceGray") {
+                drawn.Add(obj);
+            }
+        }
+        return drawn;
+    }
+
+    // The mask of an image that was not read from a PDF, which has no other
+    // objects to copy it from, is refused, as a color space that refers to
+    // one is.
+    [Fact]
+    public void AMaskThatCannotBeCopiedIsRefused() {
+        PDFobj obj = new PDFobj();
+        obj.dict = new System.Collections.Generic.List<string> {
+                "<<", "/Width", "1", "/Height", "1", "/SMask", "5", "0", "R", ">>"};
+        NotSupportedException e = Assert.Throws<NotSupportedException>(
+                () => new Image(new PDF(new MemoryStream()), obj));
+        Assert.Contains("/SMask 5 0 R", e.Message);
+    }
+
     [Fact]
     public void TheDataOfEveryPngSuiteImageEmbeddedAsItIsHasNoFilterTypes() {
         int embedded = 0;

@@ -42,6 +42,9 @@ type PDFobj struct {
 	// into each (see addInheritedEntries)
 	inheritedResources []string
 	inheritedFrom      int // The number of that node
+	// The objects of the PDF it was read from, by number, for the masks of
+	// an image copied into another PDF; nil for an object not read
+	readObjects map[int]*PDFobj
 }
 
 // maxDecodedTotal is what all the streams of one PDF may decode to together,

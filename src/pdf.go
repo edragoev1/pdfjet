@@ -2881,6 +2881,11 @@ func (pdf *PDF) ReadWithPassword(buf []byte, password string) (objects []*PDFobj
 	if root := objectNumbered(sorted, trailerRoot(trailer)); root != nil {
 		root.root = true
 	}
+	readObjects := make(map[int]*PDFobj, len(sorted))
+	for _, obj := range sorted {
+		readObjects[obj.number] = obj
+		obj.readObjects = readObjects
+	}
 	return sorted, nil
 }
 

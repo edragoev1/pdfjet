@@ -55,6 +55,9 @@ public class PDFobj {
      */
     List<String> inheritedResources;
     int inheritedFrom;      // The number of that node
+    // The objects of the PDF it was read from, by number, for the masks of an
+    // image copied into another PDF; null for an object not read
+    Map<Integer, PDFobj> readObjects;
 
     /**
      * Creates an object with an empty dictionary.

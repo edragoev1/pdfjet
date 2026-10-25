@@ -37,6 +37,9 @@ public final class PDFobj {
     // copied when it is changed, so the pages hold the node's one array.
     var inheritedResources: [String]?
     var inheritedFrom = 0       // The number of that node
+    // The objects of the PDF it was read from, by number, for the masks of an
+    // image copied into another PDF; nil for an object not read
+    var readObjects: ReadObjects?
 
     /// Creates an empty PDF object.
     init() {
@@ -1362,5 +1365,25 @@ public final class PDFobj {
         let digits = key.utf8.dropFirst(3)
         return key.hasPrefix("/GS") && (1...9).contains(digits.count)
                 && digits.allSatisfy { $0 >= UInt8(ascii: "0") && $0 <= UInt8(ascii: "9") }
+    }
+}
+
+// The objects of a PDF that was read, by number. Each object holds this, and
+// this holds the objects weakly, so that the objects do not hold one another
+// and are freed with the list that read() returned.
+final class ReadObjects {
+    private struct Weak {
+        weak var obj: PDFobj?
+    }
+    private var objects = [Int: Weak]()
+
+    init(_ objects: [PDFobj]) {
+        for obj in objects {
+            self.objects[obj.number] = Weak(obj: obj)
+        }
+    }
+
+    func object(_ number: Int) -> PDFobj? {
+        return objects[number]?.obj
     }
 }

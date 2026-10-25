@@ -181,7 +181,9 @@ final public class Image implements Drawable {
     }
 
     /**
-     * Creates new image from PDFobj
+     * Creates new image from PDFobj, an image object of a PDF that was read.
+     * Its soft mask, the alpha of a PNG, and its mask, a color key or a
+     * stencil, are copied with it.
      *
      * @param pdf the PDF
      * @param obj the PDFobj
@@ -190,12 +192,66 @@ final public class Image implements Drawable {
     public Image(PDF pdf, PDFobj obj) throws Exception {
         this.pdf = pdf;
         setPixels((int) sizeOf(obj, "/Width"), (int) sizeOf(obj, "/Height"));
+        // The soft mask, the alpha of a PNG, and the mask, a color key or a
+        // stencil, are copied with the image: they were left out, and a logo
+        // on a transparent background was drawn on a solid box (22 October
+        // 2026)
+        int softMask = copiedMask(pdf, obj, "/SMask");
+        int mask = 0;
+        List<String> maskArray = obj.valueTokens("/Mask");
+        if (maskArray.contains("R")) {
+            mask = copiedMask(pdf, obj, "/Mask");
+            maskArray = new ArrayList<String>();
+        }
+        appendImageObject(pdf, obj, softMask, mask, maskArray);
+        pdf.images.add(this);
+        objNumber = pdf.getObjNumber();
+    }
+
+    // Copies the image that the key of the image refers to, its soft mask or
+    // its stencil mask, from the PDF it was read from, and returns its number
+    // in this PDF, or 0 when the image has none.
+    private static int copiedMask(PDF pdf, PDFobj obj, String key) throws Exception {
+        List<String> tokens = obj.valueTokens(key);
+        if (tokens.isEmpty() || (tokens.size() == 1 && tokens.get(0).equals("/None"))) {
+            return 0;
+        }
+        if (tokens.size() != 3 || !tokens.get(2).equals("R") || !tokens.get(0).matches("[0-9]{1,9}")) {
+            throw new IllegalArgumentException(
+                    "The " + key + " of the image is not a reference to an image: " + String.join(" ", tokens));
+        }
+        PDFobj mask = (obj.readObjects != null) ? obj.readObjects.get(Integer.parseInt(tokens.get(0))) : null;
+        if (mask == null) {
+            throw new IllegalArgumentException(
+                    "The image refers to another object of the PDF it was read from, "
+                    + "which is not copied with it: " + key + " " + String.join(" ", tokens));
+        }
+        if (!mask.getValue("/Subtype").equals("/Image")) {
+            throw new IllegalArgumentException(
+                    "The " + key + " of the image is not an image: " + String.join(" ", tokens));
+        }
+        if (!mask.valueTokens("/SMask").isEmpty() || !mask.valueTokens("/Mask").isEmpty()) {
+            throw new IllegalArgumentException("The " + key + " of the image has a mask of its own.");
+        }
+        sizeOf(mask, "/Width");
+        sizeOf(mask, "/Height");
+        appendImageObject(pdf, mask, 0, 0, new ArrayList<String>());
+        return pdf.getObjNumber();
+    }
+
+    // Writes an image object copied from another PDF, with the numbers of its
+    // soft mask and its stencil mask in this PDF, or 0, or the array of its
+    // color key mask.
+    private static void appendImageObject(
+            PDF pdf, PDFobj obj, int softMask, int mask, List<String> maskArray) throws Exception {
         // The values copied as they are, but for their strings, encrypted when
         // the document is, as the palette of an /Indexed color space; and the
         // stream, encrypted too (review of 11 October 2026, #11)
         List<String> colorSpace = obj.valueTokens("/ColorSpace");
         List<String> decodeParms = obj.valueTokens("/DecodeParms");
-        for (List<String> tokens : Arrays.asList(colorSpace, decodeParms)) {
+        List<String> decode = obj.valueTokens("/Decode");
+        List<String> matte = obj.valueTokens("/Matte");
+        for (List<String> tokens : Arrays.asList(colorSpace, decodeParms, decode, matte, maskArray)) {
             if (tokens.contains("R")) {
                 throw new IllegalArgumentException(
                         "The image refers to another object of the PDF it was read from, "
@@ -216,20 +272,33 @@ final public class Image implements Drawable {
         pdf.append("/Subtype /Image\n");
         appendIfAny(pdf, "/Filter", obj.getValue("/Filter"));
         pdf.append("/Width ");
-        pdf.append(pixelWidth);
+        pdf.append((int) sizeOf(obj, "/Width"));
         pdf.append('\n');
         pdf.append("/Height ");
-        pdf.append(pixelHeight);
+        pdf.append((int) sizeOf(obj, "/Height"));
         pdf.append('\n');
         pdf.appendCopiedValue("/ColorSpace", colorSpace);
         appendIfAny(pdf, "/BitsPerComponent", obj.getValue("/BitsPerComponent"));
         pdf.appendCopiedValue("/DecodeParms", decodeParms);
+        pdf.appendCopiedValue("/Decode", decode);
+        pdf.appendCopiedValue("/Matte", matte);
         String imageMask = obj.getValue("/ImageMask");
         if (!imageMask.equals("")) {
             pdf.append("/ImageMask ");
             pdf.append(imageMask);
             pdf.append("\n");
         }
+        if (softMask != 0) {
+            pdf.append("/SMask ");
+            pdf.append(softMask);
+            pdf.append(" 0 R\n");
+        }
+        if (mask != 0) {
+            pdf.append("/Mask ");
+            pdf.append(mask);
+            pdf.append(" 0 R\n");
+        }
+        pdf.appendCopiedValue("/Mask", maskArray);
         byte[] stream = obj.stream;
         if (pdf.encryption != null) {
             stream = AES256.encrypt(stream, pdf.encryption.getKey());
@@ -242,8 +311,6 @@ final public class Image implements Drawable {
         pdf.append(stream, 0, stream.length);
         pdf.append("\nendstream\n");
         pdf.endObj();
-        pdf.images.add(this);
-        objNumber = pdf.getObjNumber();
     }
 
     // Writes the key and its value, when it has one

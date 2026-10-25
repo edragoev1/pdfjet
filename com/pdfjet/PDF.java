@@ -3094,6 +3094,11 @@ final public class PDF {
         if (root != null) {
             root.root = true;
         }
+        Map<Integer, PDFobj> readObjects = new HashMap<Integer, PDFobj>();
+        for (PDFobj obj : sorted) {
+            readObjects.put(obj.number, obj);
+            obj.readObjects = readObjects;
+        }
         return sorted;
     }
 

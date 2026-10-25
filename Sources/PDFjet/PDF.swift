@@ -2469,6 +2469,10 @@ public final class PDF {
         if let root = PDF.objectNumbered(sorted, String(trailerRoot(trailer))) {
             root.root = true
         }
+        let readObjects = ReadObjects(sorted)
+        for obj in sorted {
+            obj.readObjects = readObjects
+        }
         return sorted
     }
 

@@ -9,6 +9,7 @@ package com.pdfjet;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -850,6 +851,82 @@ class PNGImageTest {
                 assertArrayEquals((byte[]) cases[i][2], copies.get(i).getData(), name);
             }
         }
+    }
+
+    // An image copied from a PDF that was read keeps its soft mask, the alpha
+    // of a PNG, an image of its own copied with it, and its color key mask:
+    // both were left out, and a logo on a transparent background was drawn
+    // on a solid box (22 October 2026).
+    @Test
+    void anImageCopiedFromAPDFThatWasReadKeepsItsMasks() throws Exception {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        for (String name : new String[] {"BASN6A08", "TBRN2C08"}) {
+            InputStream in = TestSupport.open("PngSuite/" + name + ".PNG");
+            try {
+                new Image(pdf, in).drawOn(page);
+            } finally {
+                in.close();
+            }
+        }
+        pdf.complete();
+        java.util.List<PDFobj> read = TestSupport.read(bos.toByteArray());
+        java.util.List<PDFobj> drawn = drawnImages(read);
+        assertEquals(2, drawn.size());
+        assertNotEquals("", drawn.get(0).getValue("/SMask"));
+        assertNotEquals("", drawn.get(1).getValue("/Mask"));
+        java.util.Map<Integer, PDFobj> numbered = new java.util.HashMap<Integer, PDFobj>();
+        for (PDFobj obj : read) {
+            numbered.put(obj.number, obj);
+        }
+        for (boolean encrypted : new boolean[] {false, true}) {
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            PDF copied = new PDF(out);
+            if (encrypted) {
+                copied.setEncryption(new Encryption(copied, new Passwords(), new Permissions()));
+            }
+            Page copiedPage = new Page(copied, Letter.PORTRAIT);
+            for (PDFobj obj : drawn) {
+                new Image(copied, obj).drawOn(copiedPage);
+            }
+            copied.complete();
+            java.util.List<PDFobj> objects = TestSupport.read(out.toByteArray(), "");
+            java.util.Map<Integer, PDFobj> copies = new java.util.HashMap<Integer, PDFobj>();
+            for (PDFobj obj : objects) {
+                copies.put(obj.number, obj);
+            }
+            java.util.List<PDFobj> images = drawnImages(objects);
+            assertEquals(2, images.size(), "encrypted " + encrypted);
+            PDFobj softMask = copies.get(images.get(0).getObjectNumbers("/SMask").get(0));
+            PDFobj alpha = numbered.get(drawn.get(0).getObjectNumbers("/SMask").get(0));
+            assertArrayEquals(alpha.getData(), softMask.getData(), "the soft mask, encrypted " + encrypted);
+            assertEquals(drawn.get(1).getValue("/Mask"), images.get(1).getValue("/Mask"), "encrypted " + encrypted);
+        }
+    }
+
+    // The images drawn, not their soft masks.
+    private static java.util.List<PDFobj> drawnImages(java.util.List<PDFobj> objects) {
+        java.util.List<PDFobj> drawn = new java.util.ArrayList<PDFobj>();
+        for (PDFobj obj : imageObjects(objects)) {
+            if (!obj.getValue("/ColorSpace").equals("/DeviceGray")) {
+                drawn.add(obj);
+            }
+        }
+        return drawn;
+    }
+
+    // The mask of an image that was not read from a PDF, which has no other
+    // objects to copy it from, is refused, as a color space that refers to
+    // one is.
+    @Test
+    void aMaskThatCannotBeCopiedIsRefused() {
+        PDFobj obj = new PDFobj();
+        obj.dict = new java.util.ArrayList<String>(java.util.Arrays.asList(
+                "<<", "/Width", "1", "/Height", "1", "/SMask", "5", "0", "R", ">>"));
+        Exception e = assertThrows(IllegalArgumentException.class,
+                () -> new Image(new PDF(new ByteArrayOutputStream()), obj));
+        assertTrue(e.getMessage().contains("/SMask 5 0 R"), e.getMessage());
     }
 
     @Test

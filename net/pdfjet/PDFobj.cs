@@ -34,6 +34,9 @@ public class PDFobj {
     // into each (see PDF.AddInheritedEntries)
     internal List<String> inheritedResources;
     internal int inheritedFrom;     // The number of that node
+    // The objects of the PDF it was read from, by number, for the masks of an
+    // image copied into another PDF; null for an object not read
+    internal Dictionary<int, PDFobj> readObjects;
 
     /// <summary>
     /// Creates an object with an empty dictionary.

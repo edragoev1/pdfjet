@@ -169,16 +169,68 @@ public class Image : Drawable {
         }
     }
 
-    /// Creates an image from an image object read from an existing PDF.
+    /// Creates an image from an image object read from an existing PDF. Its
+    /// soft mask, the alpha of a PNG, and its mask, a color key or a stencil,
+    /// are copied with it.
     public init(_ pdf: PDF, _ obj: PDFobj) throws {
         self.pdfIdentity = pdf.identity
         setPixels(Image.pixels(try Image.sizeOf(obj, "/Width")), Image.pixels(try Image.sizeOf(obj, "/Height")))
+        // They were left out, and a logo on a transparent background was
+        // drawn on a solid box (22 October 2026)
+        let softMask = try Image.copiedMask(pdf, obj, "/SMask")
+        var mask = 0
+        var maskArray = obj.valueTokens("/Mask")
+        if maskArray.contains("R") {
+            mask = try Image.copiedMask(pdf, obj, "/Mask")
+            maskArray = []
+        }
+        try Image.appendImageObject(pdf, obj, softMask, mask, maskArray)
+        pdf.images.append(self)
+        objNumber = pdf.getObjNumber()
+    }
+
+    // Copies the image that the key of the image refers to, its soft mask or
+    // its stencil mask, from the PDF it was read from, and returns its number
+    // in this PDF, or 0 when the image has none.
+    private static func copiedMask(_ pdf: PDF, _ obj: PDFobj, _ key: String) throws -> Int {
+        let tokens = obj.valueTokens(key)
+        if tokens.isEmpty || tokens == ["/None"] {
+            return 0
+        }
+        guard tokens.count == 3, tokens[2] == "R", let number = Int(tokens[0]) else {
+            throw PDFjetError(message: "The " + key + " of the image is not a reference to an image: "
+                    + tokens.joined(separator: " "))
+        }
+        guard let mask = obj.readObjects?.object(number) else {
+            throw PDFjetError(message: "The image refers to another object of the PDF it was read from, "
+                    + "which is not copied with it: " + key + " " + tokens.joined(separator: " "))
+        }
+        if mask.getValue("/Subtype") != "/Image" {
+            throw PDFjetError(message: "The " + key + " of the image is not an image: "
+                    + tokens.joined(separator: " "))
+        }
+        if !mask.valueTokens("/SMask").isEmpty || !mask.valueTokens("/Mask").isEmpty {
+            throw PDFjetError(message: "The " + key + " of the image has a mask of its own.")
+        }
+        _ = try sizeOf(mask, "/Width")
+        _ = try sizeOf(mask, "/Height")
+        try appendImageObject(pdf, mask, 0, 0, [])
+        return pdf.getObjNumber()
+    }
+
+    // Writes an image object copied from another PDF, with the numbers of its
+    // soft mask and its stencil mask in this PDF, or 0, or the array of its
+    // color key mask.
+    private static func appendImageObject(
+            _ pdf: PDF, _ obj: PDFobj, _ softMask: Int, _ mask: Int, _ maskArray: [String]) throws {
         // The values copied as they are, but for their strings, encrypted when
         // the document is, as the palette of an /Indexed color space; and the
         // stream, encrypted too (review of 11 October 2026, #11)
         let colorSpace = obj.valueTokens("/ColorSpace")
         let decodeParms = obj.valueTokens("/DecodeParms")
-        for tokens in [colorSpace, decodeParms] where tokens.contains("R") {
+        let decode = obj.valueTokens("/Decode")
+        let matte = obj.valueTokens("/Matte")
+        for tokens in [colorSpace, decodeParms, decode, matte, maskArray] where tokens.contains("R") {
             throw PDFjetError(message: "The image refers to another object of the PDF it was read from, "
                     + "which is not copied with it: " + tokens.joined(separator: " "))
         }
@@ -194,22 +246,35 @@ public class Image : Drawable {
         pdf.append(Token.beginDictionary)
         pdf.append("/Type /XObject\n")
         pdf.append("/Subtype /Image\n")
-        Image.appendIfAny(pdf, "/Filter", obj.getValue("/Filter"))
+        appendIfAny(pdf, "/Filter", obj.getValue("/Filter"))
         pdf.append("/Width ")
-        pdf.append(pixelWidth)
+        pdf.append(pixels(try sizeOf(obj, "/Width")))
         pdf.append("\n")
         pdf.append("/Height ")
-        pdf.append(pixelHeight)
+        pdf.append(pixels(try sizeOf(obj, "/Height")))
         pdf.append("\n")
         appendCopiedValue(pdf, "/ColorSpace", colorSpace)
-        Image.appendIfAny(pdf, "/BitsPerComponent", obj.getValue("/BitsPerComponent"))
+        appendIfAny(pdf, "/BitsPerComponent", obj.getValue("/BitsPerComponent"))
         appendCopiedValue(pdf, "/DecodeParms", decodeParms)
+        appendCopiedValue(pdf, "/Decode", decode)
+        appendCopiedValue(pdf, "/Matte", matte)
         let imageMask = obj.getValue("/ImageMask")
         if imageMask != "" {
             pdf.append("/ImageMask ")
             pdf.append(imageMask)
             pdf.append("\n")
         }
+        if softMask != 0 {
+            pdf.append("/SMask ")
+            pdf.append(softMask)
+            pdf.append(" 0 R\n")
+        }
+        if mask != 0 {
+            pdf.append("/Mask ")
+            pdf.append(mask)
+            pdf.append(" 0 R\n")
+        }
+        appendCopiedValue(pdf, "/Mask", maskArray)
         let stream = pdf.encrypted(obj.stream ?? [])
         pdf.append("/Length ")
         pdf.append(stream.count)
@@ -219,14 +284,12 @@ public class Image : Drawable {
         pdf.append(stream, 0, stream.count)
         pdf.append(Token.endStream)
         pdf.endObj()
-        pdf.images.append(self)
-        objNumber = pdf.getObjNumber()
     }
 
     // Appends the key and the tokens of its value, read from another PDF, if
     // it has one: its strings, literal or hexadecimal, as hexadecimal strings
     // encrypted when the document is.
-    private func appendCopiedValue(_ pdf: PDF, _ key: String, _ tokens: [String]) {
+    private static func appendCopiedValue(_ pdf: PDF, _ key: String, _ tokens: [String]) {
         if tokens.isEmpty {
             return
         }

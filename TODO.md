@@ -87,8 +87,11 @@ commit and date. The layout's format version (1) and the look's rules
 
 ## Open
 
-- **v9.1.3: an image copied from a PDF that was read keeps its
-  transparency, in the four ports (found 22 October 2026).** new Image(pdf,
+- ✅ Done 25 October 2026. **v9.1.3: an image copied from a PDF that was
+  read keeps its transparency, in the four ports (found 22 October 2026).**
+  Each object read keeps the objects of its PDF by number (weakly in
+  Swift), so the image's /SMask and a /Mask that refers to a stencil are
+  copied as image objects of their own; /Decode and /Matte copied too. new Image(pdf,
   obj) in Java and C#, NewImageFromPDFobj in Go and init(pdf, obj) in Swift
   copy the image's stream as it is, but leave out /SMask (the alpha of a
   PNG, a separate image object) and /Mask (a color key, an array, or a
