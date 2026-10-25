@@ -546,11 +546,12 @@ final public class Font {
         return c >= 0 && !Page.isMark(c) && !Page.isRightToLeft(c);
     }
 
-    // Returns the glyph the character is drawn with, as Page draws it, or -1
-    // when it is not drawn: an RLM, LRM, byte order mark or a character
-    // isIgnorable returns true for is not, nor a ZWNJ or ZWJ the font has no
-    // glyph for. The glyphs drawn are the pairs kerned.
-    int kerningGlyph(int c) {
+    // Returns the glyph the character is drawn with, or -1 when it is not
+    // drawn: an RLM, LRM, byte order mark or a character isIgnorable returns
+    // true for is not, nor a ZWNJ or ZWJ the font has no glyph for. Page draws
+    // the glyphs it gives, and the kerning measures the pairs of the same
+    // glyphs, so the two decide it in this one place.
+    int drawnGlyph(int c) {
         if (c >= 0x20 && c < 0x7F && asciiGID[c - 0x20] != 0) {
             return asciiGID[c - 0x20];
         }
@@ -571,7 +572,7 @@ final public class Font {
         for (int i = 0; i < text.length(); ) {
             int c = text.codePointAt(i);
             i += Character.charCount(c);
-            int gid = kerningGlyph(c);
+            int gid = drawnGlyph(c);
             if (gid < 0) {
                 continue;
             }
@@ -978,7 +979,7 @@ final public class Font {
             // as stringWidth measures it: a pair kerned wider takes its room
             // only when its second character is there.
             if (kerned) {
-                int gid = kerningGlyph(cp);
+                int gid = drawnGlyph(cp);
                 if (gid >= 0) {
                     if (previous >= 0) {
                         advance += glyphKerning(previous, gid);

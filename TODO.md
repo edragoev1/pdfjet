@@ -340,15 +340,15 @@ commit and date. The layout's format version (1) and the look's rules
   kern features of each script's default language; a class of a format 2
   subtable it has no values for goes on to the next subtable; Swift stops at
   the end of the kern table and sizes sharedGlyph by the glyphs of the font.
+  Fixed too, 25 October: Java keeps the pairs and the classes in a map of
+  ints of its own, IntMap, where a HashMap boxed every key and value; which
+  glyph a character is drawn with, if any, is decided in one place in each
+  port, drawnGlyph, which Page draws with and the kerning measures with
+  (Swift's 500 pages of text 98 ms, as before).
   Left as they are, for later:
   - Whether a glyph is kerned is decided by the character unicodeOf gives
     it, so a glyph a font uses both for a mark and for a spacing character,
     which is rare, is not kerned.
-  - Java keeps the pairs in maps of boxed Integer and Short: a lookup per
-    pair, slower than an array would be. Only kerned text pays it.
-  - Which characters are drawn, and so kerned, is decided twice, where text
-    is measured and where it is drawn. The tests check that the two agree;
-    a change to one must be made to the other.
   Removed, 25 October 2026 (the owner): the reading of the kern table of
   an older TrueType font without GPOS, in the four ports. None of the 261
   fonts PDFjet ships has a kern table, and none of the 372 fonts of this

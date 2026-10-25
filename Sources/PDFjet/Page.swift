@@ -698,7 +698,8 @@ public class Page {
                     }
                     continue
                 }
-                if Font.isIgnorable(codePoint) {   // One not drawn
+                let gid = font.drawnGlyph(codePoint)
+                if gid < 0 {
                     continue
                 }
                 if afterRLM && Bidi.mirrored(scalar.value) != nil {
@@ -709,7 +710,7 @@ public class Page {
                 }
                 afterRLM = false
                 codePoints.append(codePoint)
-                gids.append(Page.glyphOf(font, codePoint))
+                gids.append(gid)
                 if ownsFont(font) {
                     font.useChar(codePoint, gids[gids.count - 1])
                 }
@@ -932,17 +933,15 @@ public class Page {
     // draws nothing and returns false when a glyph is drawn for another
     // character too, which is drawn in a span of its own.
     private func appendPlainGlyphs(_ font: Font, _ scalars: [Unicode.Scalar]) -> Bool {
-        // The font has every character, so each is its glyph, a control
-        // character that of the space, as glyphOf gives them. Looked up in
-        // a local copy of the font's table, marked used in one pass and
+        // A character is drawn with the glyph drawnGlyph gives, as the
+        // kerning measures it. The glyphs are marked used in one pass and
         // written in one, so that a character costs no runtime check of a
-        // class property's exclusive access, which made text in Swift
-        // three times as slow as in Go (9 October 2026).
+        // class property's exclusive access, which made text in Swift three
+        // times as slow as in Go (9 October 2026).
         // A printable ASCII character the font has, already marked plain, is
         // its glyph at once, and is not looked at by useChars and
         // drawsAnyAsAnother: codePoints and their glyphs, charGIDs, are the
         // other characters, and stay empty, allocating nothing, for most text.
-        let table = font.unicodeToGID
         let asciiGIDs = font.asciiGID
         let owns = ownsFont(font)
         var shared = [Bool]()       // font.sharedGlyph, at the first character it is needed for
@@ -954,8 +953,7 @@ public class Page {
         // array is written below, which a second reference to it would copy.
         do {
             let plain = owns ? font.asciiPlain : []
-            // The BOM, or one not drawn
-            for scalar in scalars where scalar.value != 0xFEFF && !Font.isIgnorable(Int(scalar.value)) {
+            for scalar in scalars {
                 let codePoint = Int(scalar.value)
                 if codePoint >= 0x20 && codePoint < 0x7F && asciiGIDs[codePoint - 0x20] != 0 {
                     let gid = Int(asciiGIDs[codePoint - 0x20])
@@ -967,7 +965,10 @@ public class Page {
                     charGIDs.append(gid)
                     continue
                 }
-                let gid = Font.isControl(codePoint) ? table[0x0020] : table[codePoint]
+                let gid = font.drawnGlyph(codePoint)
+                if gid < 0 {
+                    continue
+                }
                 gids.append(gid)
                 if shared.isEmpty {
                     shared = font.sharedGlyph

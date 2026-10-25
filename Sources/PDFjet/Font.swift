@@ -456,11 +456,12 @@ public class Font {
         return c >= 0 && !Page.isMark(c) && !Page.isRightToLeft(c)
     }
 
-    // Returns the glyph the character is drawn with, as Page draws it, or -1
-    // when it is not drawn: an RLM, LRM, byte order mark or a character
-    // isIgnorable returns true for is not, nor a ZWNJ or ZWJ the font has no
-    // glyph for. The glyphs drawn are the pairs kerned.
-    func kerningGlyph(_ codePoint: Int) -> Int {
+    // Returns the glyph the character is drawn with, or -1 when it is not
+    // drawn: an RLM, LRM, byte order mark or a character isIgnorable returns
+    // true for is not, nor a ZWNJ or ZWJ the font has no glyph for. Page draws
+    // the glyphs it gives, and the kerning measures the pairs of the same
+    // glyphs, so the two decide it in this one place.
+    func drawnGlyph(_ codePoint: Int) -> Int {
         if codePoint >= 0x20 && codePoint < 0x7F && asciiGID[codePoint - 0x20] != 0 {
             return Int(asciiGID[codePoint - 0x20])
         }
@@ -479,7 +480,7 @@ public class Font {
         var total = 0
         var previous = -1
         for scalar in text.unicodeScalars {
-            let gid = kerningGlyph(Int(scalar.value))
+            let gid = drawnGlyph(Int(scalar.value))
             if gid < 0 {
                 continue
             }
@@ -919,7 +920,7 @@ public class Font {
         var i = 0
         for scalar in str.unicodeScalars {
             var advance = advanceWidthOf(Int(scalar.value))
-            let gid = kerningGlyph(Int(scalar.value))
+            let gid = drawnGlyph(Int(scalar.value))
             if gid >= 0 {
                 if previous >= 0 {
                     advance += glyphKerning(previous, gid)

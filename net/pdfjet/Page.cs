@@ -827,7 +827,7 @@ public class Page {
                         }
                         joiners[n - 1] = codePoint;
                     }
-                } else if (codePoint != 0xFEFF && !Font.IsIgnorable(codePoint)) { // BOM, or one not drawn
+                } else if (font.DrawnGlyph(codePoint, out int gid)) {
                     if (afterRLM && Bidi.Mirrored(codePoint).HasValue) {
                         if (mirrored == null) {
                             mirrored = new bool[str.Length];
@@ -836,7 +836,7 @@ public class Page {
                     }
                     afterRLM = false;
                     codePoints[n] = codePoint;
-                    gids[n] = GlyphOf(font, codePoint);
+                    gids[n] = gid;
                     font.UseChar(codePoint, gids[n]);
                     hasMarks |= IsMark(codePoint);
                     hasNotdef |= IsMissing(font, codePoints, n);
@@ -1084,8 +1084,7 @@ public class Page {
                 i++;
                 continue;
             }
-            if (codePoint != 0xFEFF && !Font.IsIgnorable(codePoint)) { // BOM, or one not drawn
-                int gid = GlyphOf(font, codePoint);
+            if (font.DrawnGlyph(codePoint, out int gid)) {
                 if (font.UseCharDrawnAsAnother(codePoint, gid)) {
                     buf.SetLength(start);
                     kernPrevious = previous;

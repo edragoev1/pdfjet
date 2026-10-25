@@ -894,7 +894,11 @@ final public class Page {
                         }
                         joiners[n - 1] = cp;
                     }
-                } else if (cp != 0xFEFF && !Font.isIgnorable(cp)) {     // BOM, or one not drawn
+                } else {
+                    int gid = font.drawnGlyph(cp);
+                    if (gid < 0) {
+                        continue;
+                    }
                     if (afterRLM && Bidi.mirrored(cp) != null) {
                         if (mirrored == null) {
                             mirrored = new boolean[length];
@@ -903,7 +907,7 @@ final public class Page {
                     }
                     afterRLM = false;
                     codePoints[n] = cp;
-                    gids[n] = glyphOf(font, cp);
+                    gids[n] = gid;
                     font.useChar(cp, gids[n]);
                     hasMarks |= isMark(cp);
                     hasNotdef |= isMissing(font, codePoints, n);
@@ -1187,8 +1191,8 @@ final public class Page {
                 appendGlyph(font, font.asciiGID[cp - 0x20]);
                 continue;
             }
-            if (cp != 0xFEFF && !Font.isIgnorable(cp)) {     // BOM, or one not drawn
-                int gid = glyphOf(font, cp);
+            int gid = font.drawnGlyph(cp);
+            if (gid >= 0) {
                 if (font.useCharDrawnAsAnother(cp, gid)) {
                     content.truncate(start);
                     kernPrevious = kernBefore;

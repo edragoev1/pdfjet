@@ -446,11 +446,12 @@ public class Font {
         return c >= 0 && !Page.IsMark(c) && !Page.IsRightToLeft(c);
     }
 
-    // Returns true if the character is drawn, as Page draws it, with the glyph
-    // it gives: an RLM, LRM, byte order mark or a character IsIgnorable returns
-    // true for is not, nor a ZWNJ or ZWJ the font has no glyph for. The glyphs
-    // drawn are the pairs kerned.
-    internal bool KerningGlyph(int c, out int gid) {
+    // Returns true if the character is drawn, with the glyph it gives: an
+    // RLM, LRM, byte order mark or a character IsIgnorable returns true for is
+    // not, nor a ZWNJ or ZWJ the font has no glyph for. Page draws the glyphs
+    // it gives, and the kerning measures the pairs of the same glyphs, so the
+    // two decide it in this one place.
+    internal bool DrawnGlyph(int c, out int gid) {
         if (c >= 0x20 && c < 0x7F && asciiGID[c - 0x20] != 0) {
             gid = asciiGID[c - 0x20];
             return true;
@@ -475,7 +476,7 @@ public class Font {
             int c = Util.CodePointAt(str, i);
             i += (c > 0xFFFF) ? 2 : 1;
             int gid;
-            if (!KerningGlyph(c, out gid)) {
+            if (!DrawnGlyph(c, out gid)) {
                 continue;
             }
             if (previous >= 0) {
@@ -845,7 +846,7 @@ public class Font {
             // as StringWidth measures it: a pair kerned wider takes its room
             // only when its second character is there.
             int gid;
-            if (kerned && KerningGlyph(codePoint, out gid)) {
+            if (kerned && DrawnGlyph(codePoint, out gid)) {
                 if (previous >= 0) {
                     advance += GlyphKerning(previous, gid);
                 }

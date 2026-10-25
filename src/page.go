@@ -641,7 +641,7 @@ func (page *Page) drawUnicodeString(font *Font, text string) {
 					}
 					joiners[len(codePoints)-1] = c1
 				}
-			} else if c1 != 0xFEFF && !isIgnorable(c1) { // BOM marker, or one not drawn
+			} else if gid, drawn := font.drawnGlyph(c1); drawn {
 				if _, ok := mirrored(c1); afterRLM && ok {
 					if mirroredAt == nil {
 						mirroredAt = make([]bool, len(runes))
@@ -650,7 +650,7 @@ func (page *Page) drawUnicodeString(font *Font, text string) {
 				}
 				afterRLM = false
 				codePoints = append(codePoints, c1)
-				gids = append(gids, glyphOf(font, c1))
+				gids = append(gids, gid)
 				if page.ownsFont(font) {
 					font.useChar(c1, gids[len(gids)-1])
 				}
@@ -722,8 +722,7 @@ func (page *Page) appendPlainGlyphs(font *Font, runes []rune) bool {
 			page.appendGlyph(font, int(font.asciiGID[c1-0x20]))
 			continue
 		}
-		if c1 != 0xFEFF && !isIgnorable(c1) { // BOM marker, or one not drawn
-			gid := glyphOf(font, c1)
+		if gid, drawn := font.drawnGlyph(c1); drawn {
 			var another bool
 			if owns {
 				another = font.useCharDrawnAsAnother(c1, gid)

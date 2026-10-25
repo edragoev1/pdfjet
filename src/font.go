@@ -460,11 +460,12 @@ func (font *Font) glyphKerning(first, second int) int {
 	return font.kernTables.pair(first, second)
 }
 
-// kerningGlyph returns the glyph the character is drawn with, and whether it
-// is drawn at all, as Page draws it: an RLM, LRM, byte order mark or a
-// character isIgnorable returns true for is not, nor a ZWNJ or ZWJ the font
-// has no glyph for. The glyphs drawn are the pairs kerned.
-func (font *Font) kerningGlyph(c rune) (int, bool) {
+// drawnGlyph returns the glyph the character is drawn with, and whether it is
+// drawn at all: an RLM, LRM, byte order mark or a character isIgnorable
+// returns true for is not, nor a ZWNJ or ZWJ the font has no glyph for. Page
+// draws the glyphs it gives, and the kerning measures the pairs of the same
+// glyphs, so the two decide it in this one place.
+func (font *Font) drawnGlyph(c rune) (int, bool) {
 	if c >= 0x20 && c < 0x7F && font.asciiGID[c-0x20] != 0 {
 		return int(font.asciiGID[c-0x20]), true
 	}
@@ -483,7 +484,7 @@ func (font *Font) textKerning(text string) int {
 	total := 0
 	previous := -1
 	for _, c := range text {
-		gid, drawn := font.kerningGlyph(c)
+		gid, drawn := font.drawnGlyph(c)
 		if !drawn {
 			continue
 		}
@@ -594,7 +595,7 @@ func (font *Font) GetFitChars(text string, width float32) int {
 		// StringWidth measures it: a pair kerned wider takes its room only
 		// when its second character is there.
 		if kerned {
-			if gid, drawn := font.kerningGlyph(runes[i]); drawn {
+			if gid, drawn := font.drawnGlyph(runes[i]); drawn {
 				if previous >= 0 {
 					advance += font.glyphKerning(previous, gid)
 				}

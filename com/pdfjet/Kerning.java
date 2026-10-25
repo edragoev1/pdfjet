@@ -8,9 +8,7 @@ package com.pdfjet;
 
 import java.util.ArrayList;
 import java.util.BitSet;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * How far apart pairs of glyphs go, from the font: the PairPos lookups of the
@@ -38,9 +36,9 @@ class Kerning {
     // the pair.
     private static final class PairSubtable {
         BitSet covered = new BitSet();
-        Map<Integer, Short> pairs;          // Format 1, by (first << 16) | second
-        Map<Integer, Integer> firstClass;   // Format 2, the class of each first glyph
-        Map<Integer, Integer> secondClass;  // Format 2, the class of each second glyph
+        IntMap pairs;           // Format 1, by (first << 16) | second
+        IntMap firstClass;      // Format 2, the class of each first glyph
+        IntMap secondClass;     // Format 2, the class of each second glyph
         int secondCount;                    // Format 2, the classes of the second glyphs
         short[] classAdvance;               // Format 2, by first class * secondCount + second class
     }
@@ -90,17 +88,15 @@ class Kerning {
                     continue;
                 }
                 if (s.pairs != null) {
-                    Short v = s.pairs.get((first << 16) | second);
-                    if (v != null) {
+                    int v = s.pairs.get((first << 16) | second, NONE);
+                    if (v != NONE) {
                         total += v;
                         break;
                     }
                     continue;   // A pair set without the second glyph: the next subtable
                 }
-                Integer c1 = s.firstClass.get(first);
-                Integer c2 = s.secondClass.get(second);
-                long class1 = (c1 != null) ? c1 : 0;
-                long class2 = (c2 != null) ? c2 : 0;
+                long class1 = s.firstClass.get(first, 0);
+                long class2 = s.secondClass.get(second, 0);
                 if (class2 >= s.secondCount || class1*s.secondCount + class2 >= s.classAdvance.length) {
                     continue;   // A class the subtable has no values for: the next subtable
                 }
@@ -245,7 +241,7 @@ class Kerning {
         int size2 = valueSize(g.getUInt16(subTable + 6))[0];
         int pairSetCount = g.getUInt16(subTable + 8);
         PairSubtable s = new PairSubtable();
-        s.pairs = new HashMap<Integer, Short>();
+        s.pairs = new IntMap();
         for (int i = 0; i < firstGlyphs.length; i++) {
             if (i >= pairSetCount || g.gposWork == 0) {
                 break;
@@ -258,15 +254,12 @@ class Kerning {
             for (int j = 0; j < pairCount; j++) {
                 int record = pairSet + 2 + j*(2 + size1 + size2);
                 int second = g.getUInt16(record);
-                int key = (first << 16) | second;
-                if (s.pairs.containsKey(key)) {
-                    continue;   // The first record of a pair is the one applied
-                }
                 int v = 0;
                 if (xAdvance >= 0) {
                     v = g.getInt16(record + 2 + xAdvance);
                 }
-                s.pairs.put(key, (short) v);
+                // The first record of a pair is the one applied
+                s.pairs.putIfAbsent((first << 16) | second, v);
             }
         }
         return s;
@@ -309,9 +302,9 @@ class Kerning {
 
     // Reads a class definition table: the class of each glyph it gives one,
     // every other glyph of class 0.
-    private Map<Integer, Integer> classDef(int offset) {
+    private IntMap classDef(int offset) {
         GPOS g = gpos;
-        Map<Integer, Integer> classes = new HashMap<Integer, Integer>();
+        IntMap classes = new IntMap();
         int limit = (g.numGlyphs > 0) ? g.numGlyphs : 0x10000;
         int format = g.getUInt16(offset);
         if (format == 1) {
@@ -341,5 +334,76 @@ class Kerning {
             }
         }
         return classes;
+    }
+
+    // What IntMap.get returns for a pair a subtable does not have: no value
+    // of 16 bits is it.
+    private static final int NONE = Integer.MIN_VALUE;
+
+    // A map of int keys to int values, for the pairs and the classes of the
+    // glyphs: a HashMap boxed each key and value, and each pair measured was
+    // a lookup of boxed integers. Open addressing in arrays kept at most half
+    // full.
+    private static final class IntMap {
+        private int[] keys = new int[16];
+        private int[] values = new int[16];
+        private boolean[] used = new boolean[16];
+        private int size;
+
+        // Returns the value of the key, or none when it has no value.
+        int get(int key, int none) {
+            int i = slot(key);
+            return used[i] ? values[i] : none;
+        }
+
+        // Gives the key the value.
+        void put(int key, int value) {
+            int i = slot(key);
+            if (!used[i]) {
+                if (2*(size + 1) > keys.length) {
+                    grow();
+                    i = slot(key);
+                }
+                used[i] = true;
+                keys[i] = key;
+                size++;
+            }
+            values[i] = value;
+        }
+
+        // Gives the key the value, unless it has one.
+        void putIfAbsent(int key, int value) {
+            if (!used[slot(key)]) {
+                put(key, value);
+            }
+        }
+
+        // Returns where the key is, or the empty slot where it would go.
+        private int slot(int key) {
+            int mask = keys.length - 1;
+            int h = key * 0x9E3779B9;
+            int i = (h ^ (h >>> 16)) & mask;
+            while (used[i] && keys[i] != key) {
+                i = (i + 1) & mask;
+            }
+            return i;
+        }
+
+        private void grow() {
+            int[] oldKeys = keys;
+            int[] oldValues = values;
+            boolean[] oldUsed = used;
+            keys = new int[2*oldKeys.length];
+            values = new int[2*oldKeys.length];
+            used = new boolean[2*oldKeys.length];
+            for (int j = 0; j < oldKeys.length; j++) {
+                if (oldUsed[j]) {
+                    int i = slot(oldKeys[j]);
+                    used[i] = true;
+                    keys[i] = oldKeys[j];
+                    values[i] = oldValues[j];
+                }
+            }
+        }
     }
 }   // End of Kerning.java
