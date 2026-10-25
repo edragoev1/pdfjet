@@ -67,7 +67,6 @@ class DrawableTest {
         });
         m.put("Rect", (pdf, font) -> new Rect().setSize(50f, 30f).setBorderColor(Color.black));
         m.put("Container", (pdf, font) -> new Container(80f, 40f).add(new Rect().setSize(80f, 40f).setBorderColor(Color.black)));
-        m.put("CalendarMonth", (pdf, font) -> new CalendarMonth(font, font, 2026, 9));
         m.put("Form", (pdf, font) -> new Form(Arrays.asList(new Field(0f, "Name", "John"))).setLabelFont(font).setValueFont(font));
         m.put("CheckBox", (pdf, font) -> new CheckBox(font, "Check"));
         m.put("RadioButton", (pdf, font) -> new RadioButton(font, "Radio"));
@@ -196,8 +195,8 @@ class DrawableTest {
     void aChartLeavesThePageWithThePenItFoundOnIt() throws Exception {
         // The charts set the pen to their own and then to the default of a
         // page, so a line drawn after one came out in the default pen rather
-        // than the pen the caller had set. A Stamp and a CalendarMonth keep
-        // the pen of the caller; the charts do now too.
+        // than the pen the caller had set. A Stamp keeps the pen of the
+        // caller; the charts do now too.
         for (String name : new String[] {"Chart", "BarChart", "DonutChart", "Stamp"}) {
             PDF pdf = TestSupport.newPDF();
             Page page = new Page(pdf, Letter.PORTRAIT);

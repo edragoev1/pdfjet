@@ -24,7 +24,7 @@ PDFjet comes in four languages, Java, C#, Go and Swift, with the same API and th
 - Text in Latin, Greek, Cyrillic, Chinese, Japanese, Korean, Thai, Hebrew, Arabic and Persian, with right to left text, kerning and fallback fonts.
 - 260 font files ready to use, from the IBM Plex, Noto, Source Serif and JetBrains Mono families, and any OpenType or TrueType file on the computer.
 - Text lines, text blocks, columns and frames that wrap and flow text, and tables that break across pages and repeat their header rows.
-- Bar charts, donut charts, XY charts and calendars.
+- Bar charts, donut charts and XY charts.
 - Barcodes: Code 128, Code 39, UPC-A, EAN-13, QR codes, Data Matrix and PDF417.
 - PNG, JPEG and BMP images, and SVG drawn as vector graphics.
 - Links, bookmarks, annotations, attached files, layers and forms.
@@ -320,9 +320,6 @@ A BarChart draws a series of values for each category, side by side, or stacked 
 
 @snippet donut-chart Donut and pie charts
 A DonutChart draws its slices with their labels and shares. An inner radius of 0 makes a pie chart.
-
-@snippet calendar A calendar
-A CalendarMonth draws a month of a year, with its weeks starting on the day setFirstDayOfWeek sets.
 
 # Barcodes
 

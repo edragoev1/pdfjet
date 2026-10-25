@@ -536,10 +536,10 @@ func TestABigTableStartsOnlyOnAPageOfItsPDF(t *testing.T) {
 	testRecorded(t, pdf, "The page belongs to another PDF.")
 }
 
-// A compliance, a CJK font or a month that is not one is refused: the
-// compliance any number, the font after half its objects were written, and
-// month 13 January of the next year (review of 17 October 2026).
-func TestAComplianceCJKFontOrMonthThatIsNotOneIsRefused(t *testing.T) {
+// A compliance or a CJK font that is not one is refused: the compliance any
+// number, the font after half its objects were written (review of 17
+// October 2026).
+func TestAComplianceOrCJKFontThatIsNotOneIsRefused(t *testing.T) {
 	pdf := testNewPDF()
 	pdf.SetCompliance(compliance.Compliance(42))
 	testRecorded(t, pdf, "The compliance 42 is not one: use one of the compliance package's.")
@@ -555,18 +555,6 @@ func TestAComplianceCJKFontOrMonthThatIsNotOneIsRefused(t *testing.T) {
 	}()
 	if pdf.getObjNumber() != 0 {
 		t.Errorf("the unknown CJK font wrote %d objects", pdf.getObjNumber())
-	}
-
-	font := testHelvetica(testNewPDF())
-	for _, month := range []int{0, 13} {
-		func() {
-			defer func() {
-				if recover() == nil {
-					t.Errorf("the month %d is taken", month)
-				}
-			}()
-			NewCalendarMonth(font, font, 2026, month)
-		}()
 	}
 }
 

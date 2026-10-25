@@ -51,7 +51,7 @@ same output come in four languages, and none of them needs a third-party library
 - **No third-party dependencies.** The Java library is a single 0.6 MB jar, and the .NET
   library a single 0.8 MB DLL.
 - **Layout built in.** Tables that break across pages and repeat their header
-  rows, text blocks, columns, charts and calendars.
+  rows, text blocks, columns and charts.
 - **Barcodes built in.** EAN-13, UPC-A, Code 39, Code 128, QR, Data Matrix and
   PDF417.
 - **Fonts ready to use.** 261 TrueType and OpenType fonts from the IBM Plex, Noto and

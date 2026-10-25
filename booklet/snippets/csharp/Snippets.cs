@@ -607,16 +607,6 @@ public class Snippets {
         chart.DrawOn(new Page(pdf, Letter.PORTRAIT));
     }
 
-    // @snippet calendar
-    static void Calendar(PDF pdf, Font font) {
-        Font bold = new Font(pdf, IBMPlexSans.Bold).SetSize(10f);
-        Font small = new Font(pdf, IBMPlexSans.Regular).SetSize(9f);
-        CalendarMonth month = new CalendarMonth(bold, small, 2026, 12);
-        month.SetFirstDayOfWeek(DayOfWeek.Monday);
-        month.SetLocation(50f, 50f);
-        month.DrawOn(new Page(pdf, Letter.PORTRAIT));
-    }
-
     // --- Barcodes -----------------------------------------------------------
 
     // @snippet barcodes
@@ -856,7 +846,6 @@ public class Snippets {
         Run("line-chart", LineChart);
         Run("bar-chart", BarChart);
         Run("donut-chart", DonutChart);
-        Run("calendar", Calendar);
         Run("barcodes", Barcodes);
         Run("qr-code", QrCode);
         Run("data-matrix", DataMatrix);

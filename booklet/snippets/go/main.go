@@ -18,7 +18,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
@@ -666,16 +665,6 @@ func donutChart(pdf *pdfjet.PDF, font *pdfjet.Font) {
 	chart.DrawOn(pdfjet.NewPage(pdf, letter.Portrait()))
 }
 
-// @snippet calendar
-func calendar(pdf *pdfjet.PDF, font *pdfjet.Font) {
-	bold := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold).SetSize(10)
-	small := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular).SetSize(9)
-	month := pdfjet.NewCalendarMonth(bold, small, 2026, 12)
-	month.SetFirstDayOfWeek(time.Monday)
-	month.SetLocation(50, 50)
-	month.DrawOn(pdfjet.NewPage(pdf, letter.Portrait()))
-}
-
 // --- Barcodes ---------------------------------------------------------------
 
 // @snippet barcodes
@@ -957,7 +946,6 @@ func main() {
 	run("line-chart", lineChart)
 	run("bar-chart", barChart)
 	run("donut-chart", donutChart)
-	run("calendar", calendar)
 	run("barcodes", barcodes)
 	run("qr-code", qrCode)
 	run("data-matrix", dataMatrix)

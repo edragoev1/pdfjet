@@ -388,34 +388,6 @@ public class MisuseTest {
                 () => new BigTable(pdf, font, font, Letter.PORTRAIT).SetFirstPage(foreign, 100f)).Message);
     }
 
-    // The calendar of any year, as Java's: DateTime refused the years past
-    // 9999. Its days agree with DateTime's where DateTime has them, and the
-    // weeks repeat every 400 years (review of 17 October 2026).
-    [Fact]
-    public void ACalendarMonthOfAnyYear() {
-        Font font = TestSupport.Helvetica(TestSupport.NewPDF());
-        var field = typeof(CalendarMonth).GetField("firstDayOfMonth",
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        var days = typeof(CalendarMonth).GetField("daysInMonth",
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        for (int year = 1; year <= 9999; year += 7) {
-            for (int month = 1; month <= 12; month++) {
-                CalendarMonth calendar = new CalendarMonth(font, font, year, month);
-                Assert.Equal((int) new DateTime(year, month, 1).DayOfWeek, (int) field.GetValue(calendar));
-                Assert.Equal(DateTime.DaysInMonth(year, month), (int) days.GetValue(calendar));
-            }
-        }
-        foreach (int year in new[] {10000, 12000, 999999}) {
-            for (int month = 1; month <= 12; month++) {
-                int same = year % 400 + 2000;
-                Assert.Equal((int) new DateTime(same, month, 1).DayOfWeek,
-                        (int) field.GetValue(new CalendarMonth(font, font, year, month)));
-            }
-        }
-        Assert.Throws<ArgumentOutOfRangeException>(() => new CalendarMonth(font, font, 2026, 13));
-        Assert.Throws<ArgumentOutOfRangeException>(() => new CalendarMonth(font, font, 2026, 0));
-    }
-
     // A number in decimal, as the four ports read one of an image object or of
     // a /MediaBox (review of 17 October 2026)
     [Fact]

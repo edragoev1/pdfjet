@@ -54,7 +54,6 @@ import Testing
             }),
             ("Rect", { _, _ in Rect().setSize(50, 30).setBorderColor(Color.black) }),
             ("Container", { _, _ in Container(80, 40).add(Rect().setSize(80, 40).setBorderColor(Color.black)) }),
-            ("CalendarMonth", { _, font in CalendarMonth(font, font, 2026, 9) }),
             ("Form", { _, font in Form([Field(0, "Name", "John")]).setLabelFont(font).setValueFont(font) }),
             ("CheckBox", { _, font in CheckBox(font, "Check") }),
             ("RadioButton", { _, font in RadioButton(font, "Radio") }),
@@ -169,8 +168,8 @@ import Testing
     @Test func aChartLeavesThePageWithThePenItFoundOnIt() throws {
         // The charts set the pen to their own and then to the default of a
         // page, so a line drawn after one came out in the default pen rather
-        // than the pen the caller had set. A Stamp and a CalendarMonth keep
-        // the pen of the caller; the charts do now too.
+        // than the pen the caller had set. A Stamp keeps the pen of the
+        // caller; the charts do now too.
         for name in ["Chart", "BarChart", "DonutChart", "Stamp"] {
             for (drawableName, make) in DrawableTests.drawables() where drawableName == name {
                 let pdf = TestSupport.newPDF()

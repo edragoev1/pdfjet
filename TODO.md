@@ -250,16 +250,10 @@ commit and date. The layout's format version (1) and the look's rules
     buffers in Swift, which gained 2% and nothing on top of reading a font
     once.
 
-- **CalendarMonth: made useful, or removed** (the owner, 25 October 2026:
-  "I would rather remove it if I can't make it do anything useful"). As it
-  is, one month with the dates in blue circles: no month title, the names
-  of the days in English only, no day marked apart from the others, nothing
-  in a cell, and each date a line of text where a screen reader needs a
-  table; no example uses it. Useful if Forms takes up the idea of three
-  months above a date field (pdfjet-server TODO, after the launch): a
-  title, the names of the days settable, marked days, months side by side,
-  tagged as a table. Otherwise removed from the four ports, said in the
-  CHANGELOG.
+- ✅ Removed in 9.1.3 (the owner, 25 October 2026: "Remove the Calendar
+  class - I don't think I even like its look anymore"): CalendarMonth, in
+  the four ports, its tests and the booklet's snippet; its members recorded
+  in util/api-removed.txt.
 - **For 9.1.5: better charts, and one more** (the owner, 25 October 2026:
   "significantly improve all charts"). From a review of Example_25 to 28 and
   chart.go, barchart.go and donutchart.go; in the four ports, the examples

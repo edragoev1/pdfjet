@@ -600,16 +600,6 @@ func donutChart(_ pdf: PDF, _ font: Font) throws {
     chart.drawOn(Page(pdf, Letter.PORTRAIT))
 }
 
-// @snippet calendar
-func calendar(_ pdf: PDF, _ font: Font) throws {
-    let bold = try Font(pdf, IBMPlexSans.Bold).setSize(10)
-    let small = try Font(pdf, IBMPlexSans.Regular).setSize(9)
-    let month = CalendarMonth(bold, small, 2026, 12)
-    month.setFirstDayOfWeek(2)    // Monday
-    month.setLocation(50, 50)
-    month.drawOn(Page(pdf, Letter.PORTRAIT))
-}
-
 // --- Barcodes -----------------------------------------------------------
 
 // @snippet barcodes
@@ -843,7 +833,6 @@ try run("svg-images", svgImages)
 try run("line-chart", lineChart)
 try run("bar-chart", barChart)
 try run("donut-chart", donutChart)
-try run("calendar", calendar)
 try run("barcodes", barcodes)
 try run("qr-code", qrCode)
 try run("data-matrix", dataMatrix)

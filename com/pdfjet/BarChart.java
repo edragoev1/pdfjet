@@ -551,7 +551,7 @@ public class BarChart implements Drawable {
         // The chart is one figure, described by its alternate description.
         page.addBDC(StructElem.FIGURE, null, altDescription());
         // The pen, the brush and the dash pattern of the caller are kept, as
-        // a Stamp and a CalendarMonth keep them.
+        // a Stamp keeps them.
         page.saveGraphicsState();
 
         // Title, the subtitle and then the legend under it

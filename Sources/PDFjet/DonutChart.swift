@@ -253,7 +253,7 @@ public class DonutChart : Drawable {
         // The chart is one figure, described by its alternate description.
         page.addBDC(StructElem.FIGURE, nil, getAltDescription(total))
         // The pen, the brush and the dash pattern of the caller are kept,
-        // as a Stamp and a CalendarMonth keep them: the chart left the page
+        // as a Stamp keeps them: the chart left the page
         // with the black pen of its pointers and the color of its last slice.
         page.saveGraphicsState()
         // The box of the figure: the outer circle, and the pointers and the

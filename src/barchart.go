@@ -457,7 +457,7 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 	// The chart is one figure, described by its alternate description.
 	page.AddBDC(structelem.Figure, "", "", chart.getAltDescription())
 	// The pen, the brush and the dash pattern of the caller are kept, as a
-	// Stamp and a CalendarMonth keep them.
+	// Stamp keeps them.
 	page.SaveGraphicsState()
 
 	// Title, the subtitle and then the legend under it

@@ -45,6 +45,13 @@ This is the first entry in this file; earlier releases were not tracked here.
   800 one-page documents with an embedded font in 4 threads take 274 ms,
   where they took 626; one thread is as fast as before.
 
+### Removed
+- `CalendarMonth`, in the four ports. It drew one month with its dates in
+  blue circles: no month title, the names of the days in English only, no
+  day marked apart from the others, and each date a line of text where a
+  screen reader needs a table. No example used it. A program that draws
+  one no longer builds; a calendar is a `Table` of seven columns.
+
 ### Fixed
 - An image copied from a PDF that was read, with `new Image(pdf, obj)`
   (`NewImageFromPDFobj` in Go), keeps its transparency, in the four ports:

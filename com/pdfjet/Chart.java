@@ -412,7 +412,7 @@ public class Chart implements Drawable {
         // The chart is one figure, described by its alternate description.
         page.addBDC(StructElem.FIGURE, null, altDescription());
         // The pen, the brush and the dash pattern of the caller are kept, as
-        // a Stamp and a CalendarMonth keep them: the chart set them to its
+        // a Stamp keeps them: the chart set them to its
         // own and then to the default of a page, which is not what the
         // caller had.
         page.saveGraphicsState();

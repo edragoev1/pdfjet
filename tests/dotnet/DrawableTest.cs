@@ -57,7 +57,6 @@ public class DrawableTest {
         });
         Add("Rect", (pdf, font) => new Rect().SetSize(50f, 30f).SetBorderColor(Color.black));
         Add("Container", (pdf, font) => new Container(80f, 40f).Add(new Rect().SetSize(80f, 40f).SetBorderColor(Color.black)));
-        Add("CalendarMonth", (pdf, font) => new CalendarMonth(font, font, 2026, 9));
         Add("Form", (pdf, font) => new Form(new List<Field> {new Field(0f, "Name", "John")}).SetLabelFont(font).SetValueFont(font));
         Add("CheckBox", (pdf, font) => new CheckBox(font, "Check"));
         Add("RadioButton", (pdf, font) => new RadioButton(font, "Radio"));
@@ -185,8 +184,8 @@ public class DrawableTest {
     public void AChartLeavesThePageWithThePenItFoundOnIt() {
         // The charts set the pen to their own and then to the default of a
         // page, so a line drawn after one came out in the default pen rather
-        // than the pen the caller had set. A Stamp and a CalendarMonth keep
-        // the pen of the caller; the charts do now too.
+        // than the pen the caller had set. A Stamp keeps the pen of the
+        // caller; the charts do now too.
         foreach (string name in new string[] {"Chart", "BarChart", "DonutChart", "Stamp"}) {
             foreach (var entry in Drawables()) {
                 if (entry.Key != name) {

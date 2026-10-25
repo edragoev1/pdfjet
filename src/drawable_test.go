@@ -131,9 +131,6 @@ func testDrawables() []testMaker {
 		{"Container", func(t *testing.T, pdf *pdfjet.PDF, font *pdfjet.Font) pdfjet.Drawable {
 			return pdfjet.NewContainer(80, 40).Add(pdfjet.NewRect(0, 0, 80, 40).SetBorderColor(color.Black))
 		}},
-		{"CalendarMonth", func(t *testing.T, pdf *pdfjet.PDF, font *pdfjet.Font) pdfjet.Drawable {
-			return pdfjet.NewCalendarMonth(font, font, 2026, 9)
-		}},
 		{"Form", func(t *testing.T, pdf *pdfjet.PDF, font *pdfjet.Font) pdfjet.Drawable {
 			return pdfjet.NewForm([]*pdfjet.Field{pdfjet.NewField(0, "Name", "John")}).SetLabelFont(font).SetValueFont(font)
 		}},
@@ -301,8 +298,8 @@ func TestDrawableEveryDrawableDrawsTheSameThingEveryTime(t *testing.T) {
 func TestDrawableAChartLeavesThePageWithThePenItFoundOnIt(t *testing.T) {
 	// The charts set the pen to their own and then to the default of a page,
 	// so a line drawn after one came out in the default pen rather than the
-	// pen the caller had set. A Stamp and a CalendarMonth keep the pen of the
-	// caller; the charts do now too.
+	// pen the caller had set. A Stamp keeps the pen of the caller; the charts
+	// do now too.
 	for _, name := range []string{"Chart", "BarChart", "DonutChart", "Stamp"} {
 		for _, maker := range testDrawables() {
 			if maker.name != name {

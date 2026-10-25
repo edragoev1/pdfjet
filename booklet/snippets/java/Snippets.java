@@ -5,7 +5,6 @@
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 import java.io.*;
-import java.time.DayOfWeek;
 import java.util.*;
 
 import com.pdfjet.*;
@@ -614,16 +613,6 @@ public class Snippets {
         chart.drawOn(new Page(pdf, Letter.PORTRAIT));
     }
 
-    // @snippet calendar
-    static void calendar(PDF pdf, Font font) throws Exception {
-        Font bold = new Font(pdf, IBMPlexSans.Bold).setSize(10f);
-        Font small = new Font(pdf, IBMPlexSans.Regular).setSize(9f);
-        CalendarMonth month = new CalendarMonth(bold, small, 2026, 12);
-        month.setFirstDayOfWeek(DayOfWeek.MONDAY);
-        month.setLocation(50f, 50f);
-        month.drawOn(new Page(pdf, Letter.PORTRAIT));
-    }
-
     // --- Barcodes -----------------------------------------------------------
 
     // @snippet barcodes
@@ -858,7 +847,6 @@ public class Snippets {
         run("line-chart", Snippets::lineChart);
         run("bar-chart", Snippets::barChart);
         run("donut-chart", Snippets::donutChart);
-        run("calendar", Snippets::calendar);
         run("barcodes", Snippets::barcodes);
         run("qr-code", Snippets::qrCode);
         run("data-matrix", Snippets::dataMatrix);
