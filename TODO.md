@@ -349,9 +349,13 @@ commit and date. The layout's format version (1) and the look's rules
   - Which characters are drawn, and so kerned, is decided twice, where text
     is measured and where it is drawn. The tests check that the two agree;
     a change to one must be made to the other.
-  - The kern table of an older TrueType font without GPOS has no font to
-    test it with, only a broken table. Not to be done: no such font is
-    added (the owner, 25 October 2026).
+  Removed, 25 October 2026 (the owner): the reading of the kern table of
+  an older TrueType font without GPOS, in the four ports. None of the 261
+  fonts PDFjet ships has a kern table, and none of the 372 fonts of this
+  computer has one without GPOS; the code had no font to test it with, and
+  none is to be added. Such a font draws its text unkerned, as in 9.1.1.
+  Bitstream Vera Sans of 2003, among the fonts fetched for the reference
+  tests, is one; DejaVu Sans, which replaced it, kerns with GPOS.
 - **Longer fuzzing of the font subsetters.** Go's fuzzers ran 5 minutes each
   on every target before 9.0.5 with no failure; the TrueType and CFF
   subsetters, which subset a real font for each input, ran 27,000 and 15,000

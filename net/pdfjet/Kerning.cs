@@ -10,24 +10,23 @@ using System.Collections.Generic;
 namespace PDFjet.NET {
 // How far apart pairs of glyphs go, from the font: the PairPos lookups of the
 // kern feature of its GPOS table, pairs of glyphs (format 1) and pairs of
-// classes of glyphs (format 2), or, for an older TrueType font with no kern
-// feature, the pairs of its kern table. Font.SetKernPairs(true) turns it on;
-// off, which it is unless asked for, nothing is read and nothing is slower.
+// classes of glyphs (format 2). Font.SetKernPairs(true) turns it on; off,
+// which it is unless asked for, nothing is read and nothing is slower. The
+// kern table of an older TrueType font with no GPOS table is not read: none of
+// the fonts PDFjet ships, nor any of a Linux system's, has one without GPOS,
+// and such a font draws its text unkerned.
 //
-// The tables are read when the font's kerning is turned on, once, under a
-// lock, so that text is measured with them from any number of threads, and
+// The table is read when the font's kerning is turned on, once, under a
+// lock, so that text is measured with it from any number of threads, and
 // within the same limit of work as the marks of the GPOS table, so that a
 // table that claims more than a font holds is stopped rather than read to an
 // end it does not have.
 internal class Kerning {
-    private readonly GPOS gpos;         // The GPOS table, read with its reader, or null
-    private readonly GPOS kernTable;    // The kern table, read with the same reader, or null
-    private volatile bool read;     // Set last, once the tables are read
+    private readonly GPOS gpos;     // The GPOS table, read with its reader
+    private volatile bool read;     // Set last, once the table is read
     private readonly object readLock = new object();
     // The kern feature's lookups, in their order, each a list of subtables.
     private readonly List<PairSubtable[]> lookups = new List<PairSubtable[]>();
-    // The pairs of the kern table, by (first << 16) | second, or null.
-    private Dictionary<uint, short> legacyKern;
 
     // A PairPos subtable: the first glyphs it covers, and how far each pair
     // moves the second glyph, in font units, by the pair or by the classes of
@@ -41,36 +40,28 @@ internal class Kerning {
         internal short[] classAdvance;              // Format 2, by first class * secondCount + second class
     }
 
-    private Kerning(GPOS gpos, GPOS kernTable) {
+    private Kerning(GPOS gpos) {
         this.gpos = gpos;
-        this.kernTable = kernTable;
     }
 
-    // Returns the kerning of the GPOS table and the kern table of a font,
-    // either of which can be null, each read with a reader of its own; null
-    // when the font has neither.
-    internal static Kerning Of(GPOS gpos, GPOS kernTable) {
-        if (gpos == null && kernTable == null) {
+    // Returns the kerning of the GPOS table of a font, read with a reader of
+    // its own; null when the font has none.
+    internal static Kerning Of(GPOS gpos) {
+        if (gpos == null) {
             return null;
         }
-        return new Kerning(gpos?.Reader(), kernTable);
+        return new Kerning(gpos.Reader());
     }
 
-    // Reads the tables, the first time it is called, and returns this.
+    // Reads the table, the first time it is called, and returns this.
     internal Kerning Read() {
         if (read) {
             return this;
         }
         lock (readLock) {
             if (!read) {
-                if (gpos != null) {
-                    gpos.gposWork = GPOS.MAX_GPOS_WORK;
-                    ReadKernFeature();
-                }
-                if (lookups.Count == 0 && kernTable != null) {
-                    kernTable.gposWork = GPOS.MAX_GPOS_WORK;
-                    ReadKernTable();
-                }
+                gpos.gposWork = GPOS.MAX_GPOS_WORK;
+                ReadKernFeature();
                 read = true;
             }
         }
@@ -84,13 +75,6 @@ internal class Kerning {
     internal int Pair(int first, int second) {
         Read();
         uint key = ((uint) first << 16) | (uint) second;
-        if (lookups.Count == 0) {
-            short value;
-            if (legacyKern != null && legacyKern.TryGetValue(key, out value)) {
-                return value;
-            }
-            return 0;
-        }
         int total = 0;
         foreach (PairSubtable[] subtables in lookups) {
             foreach (PairSubtable s in subtables) {
@@ -349,46 +333,6 @@ internal class Kerning {
             }
         }
         return classes;
-    }
-
-    // Reads the horizontal pairs of format 0 of the kern table of an older
-    // TrueType font, version 0, which Windows reads; the version 1 table of
-    // Apple's fonts is left out.
-    private void ReadKernTable() {
-        GPOS t = kernTable;
-        if (t.end - t.start < 4 || t.GetUInt16(t.start) != 0) {
-            return;
-        }
-        legacyKern = new Dictionary<uint, short>();
-        int tableCount = t.GetUInt16(t.start + 2);
-        int subTable = t.start + 4;
-        for (int i = 0; i < tableCount && t.gposWork > 0; i++) {
-            t.gposWork--;
-            int length = t.GetUInt16(subTable + 2);
-            int coverage = t.GetUInt16(subTable + 4);
-            // Format 0, horizontal, kerning and not minimum values, not cross-stream
-            if ((coverage >> 8) == 0) {
-                // The 16 bits of the length of a table of many pairs overflow:
-                // the pairs say where the next table is
-                length = 14 + 6*t.GetUInt16(subTable + 6);
-            }
-            if ((coverage >> 8) == 0 && (coverage & 0x000F) == 0x0001) {
-                int pairCount = Math.Min(t.GetUInt16(subTable + 6), t.gposWork);
-                t.gposWork -= pairCount;
-                for (int j = 0; j < pairCount; j++) {
-                    int record = subTable + 14 + 6*j;
-                    uint key = ((uint) t.GetUInt16(record) << 16) | (uint) t.GetUInt16(record + 2);
-                    if (!legacyKern.ContainsKey(key)) {
-                        legacyKern[key] = (short) t.GetInt16(record + 4);
-                    }
-                }
-            }
-            // Past the end of the table there is nothing more to read.
-            if (length < 6 || subTable + length >= t.end) {
-                break;
-            }
-            subTable += length;
-        }
     }
 }
 }   // End of namespace PDFjet.NET

@@ -36,7 +36,6 @@ internal class OTF {
     internal int[] advanceWidth;
     internal readonly GlyphMap unicodeToGID = new GlyphMap();
     internal FontTable gpos;   // Read when a mark is first drawn, by GPOS
-    internal FontTable kern;   // The kern table of an older font, read when kerned
     internal bool cff = false;
 
     internal int fsType;           // Of the OS/2 table: what the license allows
@@ -94,7 +93,6 @@ internal class OTF {
             else if (table.name.Equals("post")) { Post(table); }
             else if (table.name.Equals("CFF ")) { CFF_(table); }
             else if (table.name.Equals("GPOS")) { gpos = table; }
-            else if (table.name.Equals("kern")) { kern = table; }
             else if (table.name.Equals("maxp")) { numGlyphs = Math.Max(TableUInt16(table, 4), 0); }
             else if (table.name.Equals("cmap")) { cmapTable = table; }
             else if (table.name.Equals("loca")) { loca = table; }

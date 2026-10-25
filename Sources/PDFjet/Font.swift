@@ -71,9 +71,8 @@ public class Font {
     // Where the marks go, from the GPOS table of the font, read when a mark
     // is first drawn, or nil for a font without one.
     var gpos: GPOS?
-    // How far apart pairs of glyphs go, from the GPOS table or the kern
-    // table of the font, read when a kerned font first measures or draws, or
-    // nil for a font with neither.
+    // How far apart pairs of glyphs go, from the GPOS table of the font, read
+    // when the kerning is turned on, or nil for a font without one.
     var kernTables: Kerning?
     var cff: Bool = false
     var metrics: [[Int16]]?
@@ -414,11 +413,11 @@ public class Font {
     /// Turns the kerning of the font on or off: the pairs of letters that go
     /// closer together or further apart, as AV and To. A standard font kerns
     /// with the pairs of its metrics; an OpenType or TrueType font with the
-    /// kern feature of its GPOS table, or the kern table of an older font. Off
-    /// by default, as text that does not ask for it is as fast as it was. A
-    /// kerned font measures its text as it draws it: stringWidth, the wrapping
-    /// and the alignment of TextLine, TextBlock and the table cells count the
-    /// pairs. Right to left text and marks are not kerned.
+    /// kern feature of its GPOS table. Off by default, as text that does not
+    /// ask for it is as fast as it was. A kerned font measures its text as it
+    /// draws it: stringWidth, the wrapping and the alignment of TextLine,
+    /// TextBlock and the table cells count the pairs. Right to left text and
+    /// marks are not kerned.
     ///
     /// - Parameter kernPairs: if 'true' the kerning for this font is enabled.
     ///
@@ -433,7 +432,7 @@ public class Font {
     }
 
     // Returns true if the font is an embedded font whose kerning is on and
-    // that has pairs to kern with, from its GPOS or kern table.
+    // that has pairs to kern with, from its GPOS table.
     func kerns() -> Bool {
         return kernPairs && kernTables != nil && !isCoreFont && !isCJK
     }

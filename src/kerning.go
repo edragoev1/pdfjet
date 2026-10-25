@@ -9,22 +9,21 @@ import "sync"
 
 // kerning is how far apart pairs of glyphs go, from the font: the PairPos
 // lookups of the kern feature of its GPOS table, pairs of glyphs (format 1)
-// and pairs of classes of glyphs (format 2), or, for an older TrueType font
-// with no kern feature, the pairs of its kern table. Font.SetKernPairs(true)
-// turns it on; off, which it is unless asked for, nothing is read and nothing
-// is slower.
+// and pairs of classes of glyphs (format 2). Font.SetKernPairs(true) turns
+// it on; off, which it is unless asked for, nothing is read and nothing is
+// slower. The kern table of an older TrueType font with no GPOS table is not
+// read: none of the fonts PDFjet ships, nor any of a Linux system's, has one
+// without GPOS, and such a font draws its text unkerned.
 //
-// The tables are read when the font's kerning is turned on, once, under a
-// sync.Once, so that text is measured with them from any number of
-// goroutines, and within the same limit of work as the marks of the GPOS table, so that a
+// The table is read when the font's kerning is turned on, once, under a
+// sync.Once, so that text is measured with it from any number of goroutines,
+// and within the same limit of work as the marks of the GPOS table, so that a
 // table that claims more than a font holds is stopped rather than read to an
 // end it does not have.
 type kerning struct {
-	gpos       gpos // The GPOS table, read with its reader
-	kernTable  gpos // The kern table, read with the same reader
-	once       sync.Once
-	lookups    [][]pairSubtable // The kern feature's lookups, in their order
-	legacyKern map[uint32]int16 // The pairs of the kern table, by glyph IDs
+	gpos    gpos // The GPOS table, read with its reader
+	once    sync.Once
+	lookups [][]pairSubtable // The kern feature's lookups, in their order
 }
 
 // pairSubtable is a PairPos subtable: the first glyphs it covers, and how far
@@ -39,32 +38,20 @@ type pairSubtable struct {
 	classAdvance []int16          // Format 2, by first class * secondCount + second class
 }
 
-// newKerning returns the kerning of the font data, from its GPOS table and its
-// kern table, either of which can be missing, each at its offset and of its
-// length; nil when the font has neither.
-func newKerning(buf []byte, gposTable, kernTable *fontTable, numGlyphs int) *kerning {
-	if gposTable == nil && kernTable == nil {
+// newKerning returns the kerning of the font data, from its GPOS table, at its
+// offset and of its length; nil when the font has none.
+func newKerning(buf []byte, gposTable *fontTable, numGlyphs int) *kerning {
+	if gposTable == nil {
 		return nil
 	}
-	k := new(kerning)
-	if gposTable != nil {
-		k.gpos = *newGpos(buf, gposTable.offset, gposTable.length, numGlyphs)
-	}
-	if kernTable != nil {
-		k.kernTable = *newGpos(buf, kernTable.offset, kernTable.length, numGlyphs)
-	}
-	return k
+	return &kerning{gpos: *newGpos(buf, gposTable.offset, gposTable.length, numGlyphs)}
 }
 
-// read reads the tables, the first time it is called, and returns the kerning.
+// read reads the table, the first time it is called, and returns the kerning.
 func (k *kerning) read() *kerning {
 	k.once.Do(func() {
 		k.gpos.gposWork = maxGposWork
 		k.readKernFeature()
-		if len(k.lookups) == 0 {
-			k.kernTable.gposWork = maxGposWork
-			k.readKernTable()
-		}
 	})
 	return k
 }
@@ -75,9 +62,6 @@ func (k *kerning) read() *kerning {
 // covers the first glyph and has the pair, as HarfBuzz applies them.
 func (k *kerning) pair(first, second int) int {
 	k.read()
-	if len(k.lookups) == 0 {
-		return int(k.legacyKern[uint32(first)<<16|uint32(second)])
-	}
 	total := 0
 	for _, subtables := range k.lookups {
 		for i := range subtables {
@@ -322,43 +306,4 @@ func (k *kerning) classDef(offset int) map[int]int {
 		}
 	}
 	return classes
-}
-
-// readKernTable reads the horizontal pairs of format 0 of the kern table of
-// an older TrueType font, version 0, which Windows reads; the version 1 table
-// of Apple's fonts is left out.
-func (k *kerning) readKernTable() {
-	t := &k.kernTable
-	if t.end-t.start < 4 || t.uint16At(t.start) != 0 {
-		return
-	}
-	k.legacyKern = make(map[uint32]int16)
-	tableCount := t.uint16At(t.start + 2)
-	subTable := t.start + 4
-	for i := 0; i < tableCount && t.gposWork > 0 && subTable+6 <= t.end; i++ {
-		t.gposWork--
-		length := t.uint16At(subTable + 2)
-		coverage := t.uint16At(subTable + 4)
-		// Format 0, horizontal, kerning and not minimum values, not cross-stream
-		if coverage>>8 == 0 {
-			// The 16 bits of the length of a table of many pairs overflow:
-			// the pairs say where the next table is
-			length = 14 + 6*t.uint16At(subTable+6)
-		}
-		if coverage>>8 == 0 && coverage&0x000F == 0x0001 {
-			pairCount := min(t.uint16At(subTable+6), t.gposWork)
-			t.gposWork -= pairCount
-			for j := 0; j < pairCount; j++ {
-				record := subTable + 14 + 6*j
-				key := uint32(t.uint16At(record))<<16 | uint32(t.uint16At(record+2))
-				if _, ok := k.legacyKern[key]; !ok {
-					k.legacyKern[key] = int16(t.int16At(record + 4))
-				}
-			}
-		}
-		if length < 6 {
-			break
-		}
-		subTable += length
-	}
 }

@@ -14,7 +14,7 @@ using Xunit;
 namespace PDFjet.NET {
 /// <summary>
 /// The kerning of TrueType and OpenType fonts, as in the Go kerning_test.go:
-/// the pairs of the GPOS or kern table, drawn as they are measured.
+/// the pairs of the GPOS table, drawn as they are measured.
 /// </summary>
 public class KerningTest {
     // Opens a font of the repository, with its kerning on or off.
@@ -151,7 +151,7 @@ public class KerningTest {
     [Fact]
     public void KerningOfABrokenTableIsNone() {
         byte[] buf = {0, 1, 0, 0, 0, 10, 0, 10, 0, 10, 0xFF, 0xFF, 0xFF, 0xFF};
-        Kerning k = Kerning.Of(GPOS.Of(buf, 0, buf.Length, 10, false), GPOS.Of(buf, 4, 900, 10, false));
+        Kerning k = Kerning.Of(GPOS.Of(buf, 0, buf.Length, 10, false));
         Assert.Equal(0, k.Pair(1, 2));
     }
 

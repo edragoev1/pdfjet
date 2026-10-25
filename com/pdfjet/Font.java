@@ -99,8 +99,8 @@ final public class Font {
      */
     GPOS gpos;
     /**
-     * How far apart the pairs of glyphs go, from the GPOS or kern table of
-     * the font, read when a kerned font first measures or draws, or null.
+     * How far apart the pairs of glyphs go, from the GPOS table of the font,
+     * read when the kerning is turned on, or null.
      */
     Kerning kernTables;
     /** True if the glyph outlines are in CFF format. */
@@ -503,11 +503,11 @@ final public class Font {
      * Turns the kerning of the font on or off: the pairs of letters that go
      * closer together or further apart, as AV and To. A standard font kerns
      * with the pairs of its metrics; an OpenType or TrueType font with the kern
-     * feature of its GPOS table, or the kern table of an older font. Off by
-     * default, as text that does not ask for it is as fast as it was. A kerned
-     * font measures its text as it draws it: stringWidth, the wrapping and the
-     * alignment of TextLine, TextBlock and the table cells count the pairs.
-     * Right to left text and marks are not kerned.
+     * feature of its GPOS table. Off by default, as text that does not ask for
+     * it is as fast as it was. A kerned font measures its text as it draws it:
+     * stringWidth, the wrapping and the alignment of TextLine, TextBlock and
+     * the table cells count the pairs. Right to left text and marks are not
+     * kerned.
      *
      * @param kernPairs true to kern the text of the font.
      * @return this Font object.
@@ -522,7 +522,7 @@ final public class Font {
     }
 
     // Returns true if the font is an embedded font whose kerning is on and
-    // that has pairs to kern with, from its GPOS or kern table.
+    // that has pairs to kern with, from its GPOS table.
     boolean kerns() {
         return kernPairs && kernTables != null && !isCoreFont && !isCJK;
     }

@@ -73,7 +73,7 @@ type Font struct {
 	// next time either: the first character drawn with a glyph never changes.
 	asciiPlain [95]bool
 	gpos       *gpos    // Read when a mark is first drawn, or nil
-	kernTables *kerning // Read when a kerned font first measures or draws, or nil
+	kernTables *kerning // Read when the kerning is turned on, or nil
 	cff        bool
 	metrics    [][]int // Only used for core fonts.
 	// checksum tells the font program this font was read from apart from
@@ -423,11 +423,10 @@ func (font *Font) GetName() string {
 // SetKernPairs turns the kerning of the font on or off: the pairs of letters
 // that go closer together or further apart, as AV and To. A standard font
 // kerns with the pairs of its metrics; an OpenType or TrueType font with the
-// kern feature of its GPOS table, or the kern table of an older font. Off by
-// default, as text that does not ask for it is as fast as it was. A kerned
-// font measures its text as it draws it: StringWidth, the wrapping and the
-// alignment of TextLine, TextBlock and the table cells count the pairs. Right
-// to left text and marks are not kerned.
+// kern feature of its GPOS table. Off by default, as text that does not ask
+// for it is as fast as it was. A kerned font measures its text as it draws it:
+// StringWidth, the wrapping and the alignment of TextLine, TextBlock and the
+// table cells count the pairs. Right to left text and marks are not kerned.
 func (font *Font) SetKernPairs(kernPairs bool) *Font {
 	// The pairs are read now, so that measuring text does not change the font
 	if kernPairs && font.kernTables != nil {
@@ -438,7 +437,7 @@ func (font *Font) SetKernPairs(kernPairs bool) *Font {
 }
 
 // kerns returns true if the font is an embedded font whose kerning is on and
-// that has pairs to kern with, from its GPOS or kern table.
+// that has pairs to kern with, from its GPOS table.
 func (font *Font) kerns() bool {
 	return font.kernPairs && font.kernTables != nil && !font.isCoreFont && !font.isCJK
 }

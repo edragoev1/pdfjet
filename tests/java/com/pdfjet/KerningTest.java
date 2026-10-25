@@ -166,7 +166,7 @@ class KerningTest {
     @Test
     void kerningOfABrokenTableIsNone() {
         byte[] buf = {0, 1, 0, 0, 0, 10, 0, 10, 0, 10, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF};
-        Kerning k = Kerning.of(GPOS.of(buf, 0, buf.length, 10, false), GPOS.of(buf, 4, 900, 10, false));
+        Kerning k = Kerning.of(GPOS.of(buf, 0, buf.length, 10, false));
         assertEquals(0, k.pair(1, 2), "a broken table kerns");
     }
 

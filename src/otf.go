@@ -51,7 +51,6 @@ type openTypeFont struct {
 	advanceWidth       []uint16
 	unicodeToGID       *glyphMap
 	gpos               *fontTable // Read when a mark is first drawn, by gpos
-	kern               *fontTable // The kern table of an older font, read when kerned
 	cff                bool
 	cffOff             int
 	cffLen             int
@@ -136,8 +135,6 @@ func newOpenTypeFont(buf []byte) *openTypeFont {
 			getCffTable(otf, table)
 		case "GPOS":
 			otf.gpos = table
-		case "kern":
-			otf.kern = table
 		case "maxp":
 			otf.numGlyphs, _ = otf.tableUint16(table, 4)
 		case "cmap":

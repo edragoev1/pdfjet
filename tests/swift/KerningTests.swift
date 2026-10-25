@@ -175,7 +175,7 @@ import Testing
     @Test func kerningOfABrokenTableIsNone() {
         let buf: [UInt8] = [0, 1, 0, 0, 0, 10, 0, 10, 0, 10, 0xFF, 0xFF, 0xFF, 0xFF]
         let gpos = GPOS.of(buf, 0, buf.count, 10, false)
-        let kerning = Kerning.of(gpos, buf, FontTable(name: "kern", offset: 4, length: 900), 10, false)!
+        let kerning = Kerning.of(gpos)!
         let v = kerning.readTables().pair(1, 2)
         #expect(v == 0, "a broken table kerns: \(v)")
     }

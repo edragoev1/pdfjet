@@ -160,7 +160,7 @@ func TestKerningFitsWhatIsMeasured(t *testing.T) {
 
 func TestKerningOfABrokenTableIsNone(t *testing.T) {
 	buf := []byte{0, 1, 0, 0, 0, 10, 0, 10, 0, 10, 0xFF, 0xFF, 0xFF, 0xFF}
-	k := newKerning(buf, &fontTable{offset: 0, length: len(buf)}, &fontTable{offset: 4, length: 900}, 10)
+	k := newKerning(buf, &fontTable{offset: 0, length: len(buf)}, 10)
 	if v := k.pair(1, 2); v != 0 {
 		t.Errorf("a broken table kerns: %d", v)
 	}

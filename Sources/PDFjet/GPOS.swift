@@ -81,7 +81,7 @@ final class GPOS {
 
     // Reads the table: a struct, whose values Swift reads and changes
     // directly, where the properties of a class cost it more. Kerning reads
-    // the kern feature of the table and the kern table with it too.
+    // the kern feature of the table with it too.
     struct Reader {
         let buf: [UInt8]
         let start: Int

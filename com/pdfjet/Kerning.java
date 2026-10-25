@@ -15,23 +15,23 @@ import java.util.Map;
 /**
  * How far apart pairs of glyphs go, from the font: the PairPos lookups of the
  * kern feature of its GPOS table, pairs of glyphs (format 1) and pairs of
- * classes of glyphs (format 2), or, for an older TrueType font with no kern
- * feature, the pairs of its kern table. Font.setKernPairs(true) turns it on;
- * off, which it is unless asked for, nothing is read and nothing is slower.
+ * classes of glyphs (format 2). Font.setKernPairs(true) turns it on; off,
+ * which it is unless asked for, nothing is read and nothing is slower. The
+ * kern table of an older TrueType font with no GPOS table is not read: none
+ * of the fonts PDFjet ships, nor any of a Linux system's, has one without
+ * GPOS, and such a font draws its text unkerned.
  *
- * The tables are read when the font's kerning is turned on, once, under a
- * lock, so that text is measured with them from any number of threads, and
+ * The table is read when the font's kerning is turned on, once, under a
+ * lock, so that text is measured with it from any number of threads, and
  * within the same limit of work as the marks of the GPOS table, so that a
  * table that claims more than a font holds is stopped rather than read to an
  * end it does not have.
  */
 class Kerning {
-    private final GPOS gpos;        // The GPOS table, read with its reader, or null
-    private final GPOS kernTable;   // The kern table, read with the same reader, or null
-    private volatile boolean read;  // Set last, once the tables are read
+    private final GPOS gpos;        // The GPOS table, read with its reader
+    private volatile boolean read;  // Set last, once the table is read
     // The kern feature's lookups, in their order, each its subtables
     private final List<PairSubtable[]> lookups = new ArrayList<PairSubtable[]>();
-    private Map<Integer, Short> legacyKern;    // The pairs of the kern table, by glyph IDs
 
     // A PairPos subtable: the first glyphs it covers, and how far each pair
     // moves the second glyph, in font units, by the pair or by the classes of
@@ -45,41 +45,30 @@ class Kerning {
         short[] classAdvance;               // Format 2, by first class * secondCount + second class
     }
 
-    private Kerning(GPOS gpos, GPOS kernTable) {
+    private Kerning(GPOS gpos) {
         this.gpos = gpos;
-        this.kernTable = kernTable;
     }
 
     /**
      * Returns the kerning of the font, from its GPOS table, read on the
-     * buffer of the font's own reader of it, and from its kern table, read
-     * with the same reader, either of which can be missing; null when the
-     * font has neither.
+     * buffer of the font's own reader of it; null when the font has none.
      */
-    static Kerning of(GPOS gpos, GPOS kernTable) {
-        if (gpos == null && kernTable == null) {
+    static Kerning of(GPOS gpos) {
+        if (gpos == null) {
             return null;
         }
-        return new Kerning(
-                (gpos != null) ? new GPOS(gpos.buf, gpos.start, gpos.end, gpos.numGlyphs) : null,
-                kernTable);
+        return new Kerning(new GPOS(gpos.buf, gpos.start, gpos.end, gpos.numGlyphs));
     }
 
-    // Reads the tables, the first time it is called.
+    // Reads the table, the first time it is called.
     void read() {
         if (read) {
             return;
         }
         synchronized (this) {
             if (!read) {
-                if (gpos != null) {
-                    gpos.gposWork = GPOS.MAX_GPOS_WORK;
-                    readKernFeature();
-                }
-                if (lookups.isEmpty() && kernTable != null) {
-                    kernTable.gposWork = GPOS.MAX_GPOS_WORK;
-                    readKernTable();
-                }
+                gpos.gposWork = GPOS.MAX_GPOS_WORK;
+                readKernFeature();
                 read = true;
             }
         }
@@ -94,13 +83,6 @@ class Kerning {
      */
     int pair(int first, int second) {
         read();
-        if (lookups.isEmpty()) {
-            if (legacyKern == null) {
-                return 0;
-            }
-            Short v = legacyKern.get((first << 16) | second);
-            return (v != null) ? v : 0;
-        }
         int total = 0;
         for (PairSubtable[] subtables : lookups) {
             for (PairSubtable s : subtables) {
@@ -359,46 +341,5 @@ class Kerning {
             }
         }
         return classes;
-    }
-
-    // Reads the horizontal pairs of format 0 of the kern table of an older
-    // TrueType font, version 0, which Windows reads; the version 1 table of
-    // Apple's fonts is left out.
-    private void readKernTable() {
-        GPOS t = kernTable;
-        if (t.end - t.start < 4 || t.getUInt16(t.start) != 0) {
-            return;
-        }
-        legacyKern = new HashMap<Integer, Short>();
-        int tableCount = t.getUInt16(t.start + 2);
-        int subTable = t.start + 4;
-        for (int i = 0; i < tableCount && t.gposWork > 0; i++) {
-            t.gposWork--;
-            int length = t.getUInt16(subTable + 2);
-            int coverage = t.getUInt16(subTable + 4);
-            // Format 0, horizontal, kerning and not minimum values, not cross-stream
-            if (coverage >> 8 == 0) {
-                // The 16 bits of the length of a table of many pairs overflow:
-                // the pairs say where the next table is
-                length = 14 + 6*t.getUInt16(subTable + 6);
-            }
-            if (coverage >> 8 == 0 && (coverage & 0x000F) == 0x0001) {
-                int pairCount = Math.min(t.getUInt16(subTable + 6), t.gposWork);
-                t.gposWork -= pairCount;
-                for (int j = 0; j < pairCount; j++) {
-                    int record = subTable + 14 + 6*j;
-                    int key = (t.getUInt16(record) << 16) | t.getUInt16(record + 2);
-                    if (!legacyKern.containsKey(key)) {
-                        legacyKern.put(key, (short) t.getInt16(record + 4));
-                    }
-                }
-            }
-            // Past the end of the table there is nothing more to read, and
-            // the offset of the next table would overflow an int
-            if (length < 6 || length >= t.end - subTable) {
-                break;
-            }
-            subTable += length;
-        }
     }
 }   // End of Kerning.java

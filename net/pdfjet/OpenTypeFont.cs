@@ -87,11 +87,7 @@ class OpenTypeFont {
             // A CFF font keeps its CFF table alone, so a copy of the GPOS table.
             font.gpos = GPOS.Of(otf.buf, otf.gpos.offset, otf.gpos.length, otf.numGlyphs, otf.cff);
         }
-        GPOS kern = null;
-        if (otf.kern != null) {
-            kern = GPOS.Of(otf.buf, otf.kern.offset, otf.kern.length, otf.numGlyphs, otf.cff);
-        }
-        font.kernTables = Kerning.Of(font.gpos, kern);
+        font.kernTables = Kerning.Of(font.gpos);
         font.fontAscent = otf.ascent;
         font.fontDescent = otf.descent;
         font.fontLineGap = otf.lineGap;

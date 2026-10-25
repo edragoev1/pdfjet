@@ -81,7 +81,7 @@ func setOpenTypeFontData(font *Font, otf *openTypeFont) {
 	if otf.gpos != nil {
 		font.gpos = newGpos(otf.buf, otf.gpos.offset, otf.gpos.length, otf.numGlyphs)
 	}
-	font.kernTables = newKerning(otf.buf, otf.gpos, otf.kern, otf.numGlyphs)
+	font.kernTables = newKerning(otf.buf, otf.gpos, otf.numGlyphs)
 	font.unitsPerEm = otf.unitsPerEm
 	font.bBoxLLx = otf.bBoxLLx
 	font.bBoxLLy = otf.bBoxLLy

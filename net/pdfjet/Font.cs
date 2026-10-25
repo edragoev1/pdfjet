@@ -67,8 +67,8 @@ public class Font {
     // Where the marks go, from the GPOS table of the font, read when a mark
     // is first drawn, or null for a font without one.
     internal GPOS gpos;
-    // The pairs the font kerns, from its GPOS or kern table, read when a
-    // kerned font first measures or draws, or null for a font with neither.
+    // The pairs the font kerns, from its GPOS table, read when the kerning is
+    // turned on, or null for a font without one.
     internal Kerning kernTables;
     internal bool cff;
     internal int[][] metrics;           // Only used for core fonts.
@@ -404,11 +404,11 @@ public class Font {
     /// Turns the kerning of the font on or off: the pairs of letters that go
     /// closer together or further apart, as AV and To. A standard font kerns
     /// with the pairs of its metrics; an OpenType or TrueType font with the
-    /// kern feature of its GPOS table, or the kern table of an older font. Off
-    /// by default, as text that does not ask for it is as fast as it was. A
-    /// kerned font measures its text as it draws it: StringWidth, the wrapping
-    /// and the alignment of TextLine, TextBlock and the table cells count the
-    /// pairs. Right to left text and marks are not kerned.
+    /// kern feature of its GPOS table. Off by default, as text that does not
+    /// ask for it is as fast as it was. A kerned font measures its text as it
+    /// draws it: StringWidth, the wrapping and the alignment of TextLine,
+    /// TextBlock and the table cells count the pairs. Right to left text and
+    /// marks are not kerned.
     /// </summary>
     /// <param name="kernPairs">true to kern the text drawn with the font.</param>
     /// <returns>this Font object.</returns>
@@ -422,7 +422,7 @@ public class Font {
     }
 
     // Returns true if the font is an embedded font whose kerning is on and
-    // that has pairs to kern with, from its GPOS or kern table.
+    // that has pairs to kern with, from its GPOS table.
     internal bool Kerns() {
         return kernPairs && kernTables != null && !isCoreFont && !isCJK;
     }

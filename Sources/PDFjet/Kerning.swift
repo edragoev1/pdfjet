@@ -8,24 +8,23 @@ import Foundation
 
 // How far apart pairs of glyphs go, from the font: the PairPos lookups of the
 // kern feature of its GPOS table, pairs of glyphs (format 1) and pairs of
-// classes of glyphs (format 2), or, for an older TrueType font with no kern
-// feature, the pairs of its kern table. Font.setKernPairs(true) turns it on;
-// off, which it is unless asked for, nothing is read and nothing is slower.
+// classes of glyphs (format 2). Font.setKernPairs(true) turns it on; off,
+// which it is unless asked for, nothing is read and nothing is slower. The
+// kern table of an older TrueType font with no GPOS table is not read: none of
+// the fonts PDFjet ships, nor any of a Linux system's, has one without GPOS,
+// and such a font draws its text unkerned.
 //
-// The tables are read when the font's kerning is turned on, once, under a
-// lock, so that text is measured with them from any number of threads, and
+// The table is read when the font's kerning is turned on, once, under a
+// lock, so that text is measured with it from any number of threads, and
 // within the same limit of work as the marks of the GPOS table, so that a
 // table that claims more than a font holds is stopped rather than read to an
 // end it does not have.
 final class Kerning {
-    private let gposTable: GPOS?    // The GPOS table, read with its reader
-    private let kernTable: GPOS?    // The kern table, read with the same reader
-    private var read = false    // Set last, once the tables are read
+    private let gposTable: GPOS     // The GPOS table, read with its reader
+    private var read = false        // Set last, once the table is read
     private let readLock = NSLock()
     // The kern feature's lookups, in their order
     private var lookups = [[PairSubtable]]()
-    // The pairs of the kern table, by glyph IDs
-    private var legacyKern = [UInt32: Int16]()
 
     // A PairPos subtable: the first glyphs it covers, and how far each pair
     // moves the second glyph, in font units, by the pair or by the classes of
@@ -39,65 +38,43 @@ final class Kerning {
         var classAdvance = [Int16]()        // Format 2, by first class * secondCount + second class
     }
 
-    private init(_ gposTable: GPOS?, _ kernTable: GPOS?) {
+    private init(_ gposTable: GPOS) {
         self.gposTable = gposTable
-        self.kernTable = kernTable
     }
 
     // Returns the kerning of the font, from its GPOS table, which the font has
-    // already, and its kern table in the font data, at its offset and of its
-    // length, either of which can be missing; nil when the font has neither.
-    // A CFF font keeps its CFF table alone, so a copy of the kern table.
-    static func of(_ gpos: GPOS?, _ buf: [UInt8], _ kern: FontTable?, _ numGlyphs: Int, _ copy: Bool) -> Kerning? {
-        if gpos == nil && kern == nil {
+    // already; nil when the font has none.
+    static func of(_ gpos: GPOS?) -> Kerning? {
+        guard let gpos = gpos else {
             return nil
         }
-        var kernTable: GPOS? = nil
-        if let kern = kern {
-            kernTable = GPOS.of(buf, kern.offset ?? 0, kern.length ?? -1, numGlyphs, copy)
-        }
-        return Kerning(gpos, kernTable)
+        return Kerning(gpos)
     }
 
-    // Reads the tables, the first time it is called, and returns the kerning.
+    // Reads the table, the first time it is called, and returns the kerning.
     @discardableResult
     func readTables() -> Kerning {
         readLock.lock()
         defer { readLock.unlock() }
         if !read {
-            var reader = Reader(
-                    gpos: Kerning.reader(gposTable),
-                    kernTable: Kerning.reader(kernTable))
+            let table = gposTable
+            var reader = Reader(gpos: GPOS.Reader(
+                    buf: table.buf, start: table.start, end: table.end, numGlyphs: table.numGlyphs))
             reader.readKernFeature()
-            if reader.lookups.isEmpty {
-                reader.readKernTable()
-            }
             lookups = reader.lookups
-            legacyKern = reader.legacyKern
             read = true
         }
         return self
-    }
-
-    // Returns the reader of the table, or of an empty one when there is none.
-    private static func reader(_ table: GPOS?) -> GPOS.Reader {
-        guard let table = table else {
-            return GPOS.Reader(buf: [], start: 0, end: 0, numGlyphs: 0)
-        }
-        return GPOS.Reader(buf: table.buf, start: table.start, end: table.end, numGlyphs: table.numGlyphs)
     }
 
     // Returns how far the second glyph moves after the first one, in font
     // units: the advance of the first glyph, made shorter or longer. Each
     // lookup of the kern feature adds its own, from the first of its subtables
     // that covers the first glyph and has the pair, as HarfBuzz applies them.
-    // The tables were read when the kerning was turned on, so no lock is taken
+    // The table was read when the kerning was turned on, so no lock is taken
     // for each pair.
     func pair(_ first: Int, _ second: Int) -> Int {
         let key = UInt32(truncatingIfNeeded: first) << 16 | UInt32(truncatingIfNeeded: second)
-        if lookups.isEmpty {
-            return Int(legacyKern[key] ?? 0)
-        }
         var total = 0
         for subtables in lookups {
             for s in subtables {
@@ -123,13 +100,11 @@ final class Kerning {
         return total
     }
 
-    // Reads the tables: a struct, as GPOS.Reader is, whose values Swift reads
+    // Reads the table: a struct, as GPOS.Reader is, whose values Swift reads
     // and changes directly.
     private struct Reader {
         var gpos: GPOS.Reader
-        var kernTable: GPOS.Reader
         var lookups = [[PairSubtable]]()
-        var legacyKern = [UInt32: Int16]()
 
         // Reads the lookups of the kern feature of the GPOS table, from the
         // default language of every script that has the feature, each lookup
@@ -365,46 +340,6 @@ final class Kerning {
                 break
             }
             return classes
-        }
-
-        // Reads the horizontal pairs of format 0 of the kern table of an older
-        // TrueType font, version 0, which Windows reads; the version 1 table of
-        // Apple's fonts is left out.
-        mutating func readKernTable() {
-            let t = kernTable
-            if t.end - t.start < 4 || t.uint16(at: t.start) != 0 {
-                return
-            }
-            let tableCount = t.uint16(at: t.start + 2)
-            var subTable = t.start + 4
-            var i = 0
-            while i < tableCount && kernTable.gposWork > 0 && subTable + 6 <= t.end {
-                i += 1
-                kernTable.gposWork -= 1
-                var length = t.uint16(at: subTable + 2)
-                let coverage = t.uint16(at: subTable + 4)
-                // Format 0, horizontal, kerning and not minimum values, not cross-stream
-                if coverage >> 8 == 0 {
-                    // The 16 bits of the length of a table of many pairs
-                    // overflow: the pairs say where the next table is
-                    length = 14 + 6*t.uint16(at: subTable + 6)
-                }
-                if coverage >> 8 == 0 && coverage & 0x000F == 0x0001 {
-                    let pairCount = min(t.uint16(at: subTable + 6), kernTable.gposWork)
-                    kernTable.gposWork -= pairCount
-                    for j in 0..<pairCount {
-                        let record = subTable + 14 + 6*j
-                        let key = UInt32(t.uint16(at: record)) << 16 | UInt32(t.uint16(at: record + 2))
-                        if legacyKern[key] == nil {
-                            legacyKern[key] = Int16(truncatingIfNeeded: t.int16(at: record + 4))
-                        }
-                    }
-                }
-                if length < 6 {
-                    break
-                }
-                subTable += length
-            }
         }
     }
 }
