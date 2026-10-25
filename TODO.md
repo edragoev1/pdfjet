@@ -324,11 +324,14 @@ commit and date. The layout's format version (1) and the look's rules
   port alike; the measuring costs two more drawOn(null) calls a draw. A
   getter of the location, or the cell drawing at an offset without moving
   the drawable, would put it back exactly.
-- **For 9.1.5: Swift's Flate compresses less** (third review, K6; the
-  owner, 12 October 2026): Swift's PDFs are
-  about 9% larger than Go's, the same content after inflating, from its own
-  Deflate encoder. Its matches could be searched as zlib's level 6 does.
-- **For 9.1.5: profile the Swift port before tuning it** (22 October 2026).
+- **Dropped: Swift's Flate to compress as zlib does** (the owner, 25
+  October 2026: the 9% larger size is OK, not worth complicating things).
+  Swift's PDFs stay about 9% larger than Go's, from its own Deflate encoder.
+- **For 9.1.5: Swift a bit faster, simply** (22 October 2026; the owner, 25
+  October 2026: "if we can make Swift a bit faster - that's good goal",
+  without complicating things). Only contained changes where a profile
+  shows the time, each measured against the last tag; no new compressor,
+  no deep restructuring.
   Example_24's 500 pages take 113 ms in Swift, against 56 to 64 in Go, C#
   and Java (9.1.1). Where the rest goes is not measured: Swift's own
   Deflate, CRC32 and AES (Go's are its standard library's, tuned for years,
