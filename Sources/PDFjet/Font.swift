@@ -71,6 +71,10 @@ public class Font {
     // Where the marks go, from the GPOS table of the font, read when a mark
     // is first drawn, or nil for a font without one.
     var gpos: GPOS?
+    // How far apart pairs of glyphs go, from the GPOS table or the kern
+    // table of the font, read when a kerned font first measures or draws, or
+    // nil for a font with neither.
+    var kernTables: Kerning?
     var cff: Bool = false
     var metrics: [[Int16]]?
     // Tells the font program this font was read from apart from every other,
@@ -407,10 +411,14 @@ public class Font {
     }
 
     ///
-    /// Sets the kerning for the selected font to 'true' or 'false'
-    /// depending on the passed value of kernPairs parameter.
-    ///
-    /// The kerning is implemented only for the 14 standard fonts.
+    /// Turns the kerning of the font on or off: the pairs of letters that go
+    /// closer together or further apart, as AV and To. A standard font kerns
+    /// with the pairs of its metrics; an OpenType or TrueType font with the
+    /// kern feature of its GPOS table, or the kern table of an older font. Off
+    /// by default, as text that does not ask for it is as fast as it was. A
+    /// kerned font measures its text as it draws it: stringWidth, the wrapping
+    /// and the alignment of TextLine, TextBlock and the table cells count the
+    /// pairs. Right to left text and marks are not kerned.
     ///
     /// - Parameter kernPairs: if 'true' the kerning for this font is enabled.
     ///
@@ -418,6 +426,66 @@ public class Font {
     public func setKernPairs(_ kernPairs: Bool) -> Font {
         self.kernPairs = kernPairs
         return self
+    }
+
+    // Returns true if the font is an embedded font whose kerning is on and
+    // that has pairs to kern with, from its GPOS or kern table.
+    func kerns() -> Bool {
+        return kernPairs && kernTables != nil && !isCoreFont && !isCJK
+    }
+
+    // Returns how far the second glyph moves after the first, in font units,
+    // when both are drawn one after the other: 0 for a pair with a mark or a
+    // right to left letter, which shaping places, and for a glyph of no
+    // character, as .notdef.
+    func glyphKerning(_ first: Int, _ second: Int) -> Int {
+        if !kernable(first) || !kernable(second) {
+            return 0
+        }
+        return kernTables!.pair(first, second)
+    }
+
+    private func kernable(_ gid: Int) -> Bool {
+        if gid <= 0 || gid >= unicodeOf.count {
+            return false
+        }
+        let c = Int(unicodeOf[gid])
+        return c >= 0 && !Page.isMark(c) && !Page.isRightToLeft(c)
+    }
+
+    // Returns the glyph the character is drawn with, as Page draws it, or -1
+    // when it is not drawn: an RLM, LRM, byte order mark or a character
+    // isIgnorable returns true for is not, nor a ZWNJ or ZWJ the font has no
+    // glyph for. The glyphs drawn are the pairs kerned.
+    func kerningGlyph(_ codePoint: Int) -> Int {
+        if codePoint >= 0x20 && codePoint < 0x7F && asciiGID[codePoint - 0x20] != 0 {
+            return Int(asciiGID[codePoint - 0x20])
+        }
+        if codePoint == 0x200E || codePoint == 0x200F || codePoint == 0xFEFF || Font.isIgnorable(codePoint) {
+            return -1
+        }
+        if (codePoint == 0x200C || codePoint == 0x200D) && unicodeToGID[codePoint] == 0 {
+            return -1
+        }
+        return Page.glyphOf(self, codePoint)
+    }
+
+    // Returns the kerning of the text, in font units: the sum of the pairs of
+    // the glyphs drawn one after the other.
+    func textKerning(_ text: String) -> Int {
+        var total = 0
+        var previous = -1
+        for scalar in text.unicodeScalars {
+            let gid = kerningGlyph(Int(scalar.value))
+            if gid < 0 {
+                continue
+            }
+            if previous >= 0 {
+                total += glyphKerning(previous, gid)
+            }
+            previous = gid
+        }
+        return total
     }
 
     /// Sets whether this font is embedded as a subset, the outlines of the
@@ -585,6 +653,9 @@ public class Font {
                     gid = table[codePoint]
                 }
                 width += Int(widths[min(gid, widths.count - 1)])
+            }
+            if kerns() {
+                width += textKerning(str!)
             }
         }
 
@@ -821,6 +892,9 @@ public class Font {
         if isCoreFont {
             return getCoreFontFitChars(str, w)
         }
+        if kerns() {
+            return getKernedFitChars(str, w)
+        }
         var i = 0
         for scalar in str.unicodeScalars {
             w -= Float(advanceWidthOf(Int(scalar.value)))
@@ -830,6 +904,45 @@ public class Font {
             i += 1
         }
         return i
+    }
+
+    // Returns the number of characters that fit in the width, in font units,
+    // of a kerned font: each with its kerning to the next character drawn, as
+    // stringWidth's is.
+    private func getKernedFitChars(_ str: String, _ width: Float) -> Int {
+        var w = width
+        let scalars = Array(str.unicodeScalars)
+        var i = 0
+        while i < scalars.count {
+            w -= Float(advanceWidthOf(Int(scalars[i].value)))
+            if w < 0 {
+                break
+            }
+            w -= Float(kerningAfter(scalars, i))
+            if w < 0 {
+                break
+            }
+            i += 1
+        }
+        return i
+    }
+
+    // Returns the kerning of the character at i with the next one drawn, in
+    // font units, or 0 when either is not drawn.
+    private func kerningAfter(_ scalars: [Unicode.Scalar], _ i: Int) -> Int {
+        let gid = kerningGlyph(Int(scalars[i].value))
+        if gid < 0 {
+            return 0
+        }
+        var next = i + 1
+        while next < scalars.count {
+            let nextGID = kerningGlyph(Int(scalars[next].value))
+            if nextGID >= 0 {
+                return glyphKerning(gid, nextGID)
+            }
+            next += 1
+        }
+        return 0
     }
 
     private func getCoreFontFitChars(

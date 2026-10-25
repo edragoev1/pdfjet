@@ -84,6 +84,7 @@ class OpenTypeFont {
             // A CFF font keeps its CFF table alone, so a copy of the GPOS table.
             font.gpos = GPOS.of(otf.buf, table.offset ?? 0, table.length ?? -1, otf.numGlyphs, otf.cff)
         }
+        font.kernTables = Kerning.of(font.gpos, otf.buf, otf.kern, otf.numGlyphs, otf.cff)
         font.fontAscent = otf.ascent!
         font.fontDescent = otf.descent!
         font.fontLineGap = otf.lineGap

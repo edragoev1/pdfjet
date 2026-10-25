@@ -57,6 +57,7 @@ class OTF {
 
     var unicodeToGID = GlyphMap()
     var gpos: FontTable?    // Read when a mark is first drawn, by GPOS
+    var kern: FontTable?    // The kern table of an older font, read when kerned
 
     // Reads the font from a stream of its file.
     convenience init(_ stream: InputStream) throws {
@@ -107,6 +108,7 @@ class OTF {
             else if table.name == "post" { try post(table) }
             else if table.name == "CFF " { try CFF_(table) }
             else if table.name == "GPOS" { gpos = table }
+            else if table.name == "kern" { kern = table }
             else if table.name == "maxp" { numGlyphs = tableUInt16(table, 4) ?? 0 }
             else if table.name == "cmap" { cmapTable = table }
             else if table.name == "loca" { loca = table }

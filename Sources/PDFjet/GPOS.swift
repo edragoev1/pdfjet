@@ -25,12 +25,12 @@ final class GPOS {
     // table that claims more than a font holds is stopped here rather than
     // read to an end it does not have. Of the 252 fonts PDFjet ships the most
     // this takes is 76,168, in Noto Sans.
-    private static let maxGposWork = 1 << 20
+    static let maxGposWork = 1 << 20
 
-    private let buf: [UInt8]    // The font data the table is in
-    private let start: Int      // The table, from start to end of buf
-    private let end: Int
-    private let numGlyphs: Int  // Of the maxp table, or 0 when the font has none
+    let buf: [UInt8]    // The font data the table is in
+    let start: Int      // The table, from start to end of buf
+    let end: Int
+    let numGlyphs: Int  // Of the maxp table, or 0 when the font has none
     private var read = false
 
     // The offsets of the marks that attach to other marks, in font units, by
@@ -80,8 +80,9 @@ final class GPOS {
     }
 
     // Reads the table: a struct, whose values Swift reads and changes
-    // directly, where the properties of a class cost it more.
-    private struct Reader {
+    // directly, where the properties of a class cost it more. Kerning reads
+    // the kern feature of the table and the kern table with it too.
+    struct Reader {
         let buf: [UInt8]
         let start: Int
         let end: Int

@@ -121,6 +121,15 @@ public class Page {
     internal var tmx: [Float] = [1.0, 0.0, 0.0, 1.0]
     private var textFontSize: Float = 0.0   // The font size of the text drawn last
     private var textRise: Float = 0.0
+    // The font of the string of glyphs being drawn when it kerns, and the
+    // glyph drawn last, or -1: appendGlyph puts the kerning of each pair
+    // between the two glyphs.
+    private var kernFont: Font?
+    private var kernPrevious = -1
+    // True while colored text is drawn, word by word: the kerning goes on from
+    // the last glyph of a word to the first of the next, as stringWidth
+    // measures the whole text.
+    private var kernChain = false
     // The bytes of the text matrix, written for every string while the page
     // has a text rotation. setTextRotation fills them, and drawString reads
     // them only where tmx is not the identity, which is only after it ran.
@@ -610,6 +619,19 @@ public class Page {
             pdf.fail("The font belongs to another PDF.")
             return
         }
+        var kernEnds = false
+        if font.kerns() {
+            if !kernChain || kernFont !== font {
+                kernPrevious = -1
+            }
+            kernFont = font
+            kernEnds = !kernChain
+        }
+        defer {
+            if kernEnds {
+                kernFont = nil
+            }
+        }
         let scalars = Array(text.unicodeScalars)
         // A string of PDF/A is 32767 bytes at most, and a glyph two of them: a
         // TextLine of 16384 characters failed veraPDF (review of 12 October
@@ -691,7 +713,7 @@ public class Page {
                 if ownsFont(font) {
                     font.useChar(codePoint, gids[gids.count - 1])
                 }
-                hasMarks = hasMarks || isMark(codePoint)
+                hasMarks = hasMarks || Page.isMark(codePoint)
                 hasNotdef = hasNotdef || isMissing(font, codePoints, gids.count - 1)
             }
             var offsets: [Int]? = nil
@@ -863,7 +885,7 @@ public class Page {
         if joiner != 0 {
             let space = font.unicodeToGID[0x0020]
             append("[<")
-            appendGlyph(font, space)
+            appendGlyphUnkerned(font, space)
             append("> ")
             append(1000.0 * Float(font.glyphAdvance(space)) / Float(font.unitsPerEm))
             append("] TJ\n")
@@ -963,6 +985,8 @@ public class Page {
             font.useChars(codePoints, charGIDs)
         }
         if font.drawsAnyAsAnother(codePoints) {
+            // Nothing written yet: the shaping path kerns with the glyph
+            // before the text, the last of the word before it in colored text
             return false
         }
         if owns {
@@ -972,7 +996,14 @@ public class Page {
                 font.asciiPlain[codePoint - 0x20] = true
             }
         }
-        Page.appendGlyphsAsHex(gids, &self.buf)
+        if kernFont != nil {
+            for gid in gids {
+                appendKerningBefore(font, gid)
+                Page.appendCodePointAsHex(gid, &self.buf)
+            }
+        } else {
+            Page.appendGlyphsAsHex(gids, &self.buf)
+        }
         return true
     }
 
@@ -1009,10 +1040,10 @@ public class Page {
             x[i] = x[i - 1] + font.glyphAdvance(gids[i - 1])
         }
         var offsets = [Int](repeating: 0, count: 2*n)
-        for i in 0..<n where isMark(codePoints[i]) {
-            let step = isRightToLeft(codePoints[i]) ? 1 : -1
+        for i in 0..<n where Page.isMark(codePoints[i]) {
+            let step = Page.isRightToLeft(codePoints[i]) ? 1 : -1
             var base = i + step
-            while base >= 0 && base < n && isMark(codePoints[base]) {
+            while base >= 0 && base < n && Page.isMark(codePoints[base]) {
                 base += step
             }
             if base >= 0 && base < n,
@@ -1024,14 +1055,14 @@ public class Page {
         var order = [Int](repeating: 0, count: n)
         var start = 0
         while start < n {
-            if !isMark(codePoints[start]) {
+            if !Page.isMark(codePoints[start]) {
                 start += 1
                 continue
             }
             // The marks from start to end - 1 go on the same letter.
-            let rightToLeft = isRightToLeft(codePoints[start])
+            let rightToLeft = Page.isRightToLeft(codePoints[start])
             var end = start + 1
-            while end < n && isMark(codePoints[end]) && isRightToLeft(codePoints[end]) == rightToLeft {
+            while end < n && Page.isMark(codePoints[end]) && Page.isRightToLeft(codePoints[end]) == rightToLeft {
                 end += 1
             }
             let count = end - start
@@ -1117,7 +1148,7 @@ public class Page {
                 if Font.isJoinerOrRLM(scalar.value) {
                     return true
                 }
-                if hasMarks && isMark(codePoint) {
+                if hasMarks && Page.isMark(codePoint) {
                     return true
                 }
             }
@@ -1148,7 +1179,7 @@ public class Page {
         return chunks
     }()
 
-    private func isMark(_ codePoint: Int) -> Bool {
+    static func isMark(_ codePoint: Int) -> Bool {
         if codePoint < 0x10000 && !Page.markChunks[codePoint >> 6] {
             return false
         }
@@ -1164,7 +1195,7 @@ public class Page {
     }
 
     // Returns true if the character is in the blocks of the right to left scripts.
-    private func isRightToLeft(_ codePoint: Int) -> Bool {
+    static func isRightToLeft(_ codePoint: Int) -> Bool {
         return (codePoint >= 0x0590 && codePoint <= 0x08FF) ||
                 (codePoint >= 0xFB1D && codePoint <= 0xFDFF) ||
                 (codePoint >= 0xFE70 && codePoint <= 0xFEFF) ||
@@ -1235,7 +1266,7 @@ public class Page {
             append("[")
             append(1000.0 * Float(font.glyphAdvance(space)) / Float(font.unitsPerEm))
             append(" <")
-            appendGlyph(font, space)
+            appendGlyphUnkerned(font, space)
             append(">] TJ\n")
         }
         append("<")
@@ -1252,20 +1283,25 @@ public class Page {
     // Ends the string of glyphs, draws the glyph moved by dx and dy font units,
     // and starts the string again.
     private func appendMovedGlyph(_ font: Font, _ gid: Int, _ dx: Int, _ dy: Int) {
+        // A mark, which kerns with neither glyph beside it, drawn in a string
+        // or TJ array of its own
+        if kernFont === font {
+            kernPrevious = gid
+        }
         let fontSize = (textFontSize != 0.0) ? textFontSize : font.size
         append("> Tj\n")
         append(textRise + Float(dy) * fontSize / Float(font.unitsPerEm))
         append(" Ts\n")
         if dx == 0 {
             append("<")
-            appendGlyph(font, gid)
+            appendGlyphUnkerned(font, gid)
             append("> Tj\n")
         } else {
             let adjustment = 1000.0 * Float(dx) / Float(font.unitsPerEm)
             append("[")
             append(-adjustment)
             append(" <")
-            appendGlyph(font, gid)
+            appendGlyphUnkerned(font, gid)
             append("> ")
             append(adjustment)
             append("] TJ\n")
@@ -2591,6 +2627,11 @@ public class Page {
             _ text: String,
             _ color: [Float],
             _ highlightColors: [String : Int32]) {
+        kernChain = true
+        defer {
+            kernChain = false
+            kernFont = nil
+        }
         var buf1 = String()
         var buf2 = String()
         var inWord = false
@@ -3105,10 +3146,55 @@ public class Page {
     // Appends the glyph number as hexadecimal and records that the font draws
     // it, so that a subset of the font keeps it.
     private func appendGlyph(_ font: Font, _ gid: Int) {
+        if kernFont != nil {
+            appendKernedGlyph(font, gid)
+            return
+        }
         if ownsFont(font) {
             font.useGlyph(gid)
         }
         Page.appendCodePointAsHex(gid, &self.buf)
+    }
+
+    // Appends the glyph of a kerned string, with the kerning of the pair it
+    // ends before it. Apart from appendGlyph, which stays small, as almost
+    // every glyph drawn is not kerned.
+    private func appendKernedGlyph(_ font: Font, _ gid: Int) {
+        appendKerningBefore(font, gid)
+        appendGlyphUnkerned(font, gid)
+    }
+
+    // Appends the kerning of the pair the glyph ends, when the string of
+    // glyphs is of the font that kerns, and makes it the glyph drawn last.
+    private func appendKerningBefore(_ font: Font, _ gid: Int) {
+        if kernFont === font {
+            if kernPrevious >= 0 {
+                let kerning = font.glyphKerning(kernPrevious, gid)
+                if kerning != 0 {
+                    appendKerning(font, kerning)
+                }
+            }
+            kernPrevious = gid
+        }
+    }
+
+    // Appends the glyph as appendGlyph does, with no kerning before it: a
+    // space that stands in for a joiner or for a moved mark, and a moved mark,
+    // each drawn in a TJ array of its own.
+    private func appendGlyphUnkerned(_ font: Font, _ gid: Int) {
+        if ownsFont(font) {
+            font.useGlyph(gid)
+        }
+        Page.appendCodePointAsHex(gid, &self.buf)
+    }
+
+    // Ends the string of glyphs, moves the next glyph by the kerning, in font
+    // units, and starts the string again: a TJ of the move alone is valid
+    // wherever a string of glyphs is, in a span of actual text too.
+    private func appendKerning(_ font: Font, _ kerning: Int) {
+        append("> Tj\n[")
+        append(-(1000.0 * Float(kerning)) / Float(font.unitsPerEm))
+        append("] TJ\n<")
     }
 
     // Says whether the font is of the page's PDF, or of none. A font of
