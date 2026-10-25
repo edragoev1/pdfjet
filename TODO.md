@@ -290,16 +290,6 @@ commit and date. The layout's format version (1) and the look's rules
      exist; one value axis, no second one. The runner-up, a horizontal
      progress or gauge bar for a KPI, if wanted later.
   Left out: 3D, logarithmic axes, radar charts, two value axes.
-- **Not planned: object streams** (the owner, 25 October 2026: keep the
-  xref table, which can be read when debugging, and do not complicate
-  things). Each cell of a table of PDF/UA costs 280 to 415 bytes, its text
-  and a structure element of its own, each an object written uncompressed:
-  a price list of 3,000 rows of 6 columns is 4.7 MB. Object streams would
-  shrink it a third or more, but a classic xref table cannot point into
-  one (only a cross-reference stream can, or a hybrid file with both), and
-  PDF/A-1 forbids them: two ways of writing a PDF, in four ports. If a
-  customer needs smaller tagged documents, first the structure elements
-  written in fewer bytes, measured, with the xref table as it is.
 - **The code reviews of 11 and 12 October 2026, three rounds.** Every
   finding is fixed for 9.0.7, in the four ports, each with a test
   (CHANGELOG.md), but those below and object streams (above). Their CI gaps
@@ -342,17 +332,28 @@ commit and date. The layout's format version (1) and the look's rules
   change and bounds checks in tight loops. A profile of Example_24 first
   (perf on Linux, Instruments on a Mac), then the changes where the time
   is, each measured against the last tag.
-- **For 9.1.5: PDF/A and tagged documents at scale (third review, W1, W2,
-  W3, W5, W6, W7).** 9.0.7 refuses a PDF/A-1 document past its limits; 9.1.5
-  writes one within them at any size: a balanced page tree, a parent tree of
-  /Kids, and resources for each page rather than one dictionary of every
-  image and font, which also keeps a page taken out of the document from
-  carrying all the images. Then: a tagged document keeps less of each page
-  until complete (Java boxes the numbers of the parent tree), the pages
-  keep less once written, a bookmark tree of thousands of levels or
-  siblings is built in linear time. Java's Compressor is a Deflater for
-  each thread, not one synchronized for all, since 9.1.3 (25 October
-  2026: 800 documents in 4 threads 274 ms, were 626).
+- **For v9.2.1, about two years out: large documents** (the owner, 25
+  October 2026: the size of tagged documents and documents at any size
+  "are kind of related - we should do them together"). Two parts:
+  1. Smaller tagged documents. Each cell of a table of PDF/UA costs 280 to
+     415 bytes, its text and a structure element of its own, each an object
+     written uncompressed: a price list of 3,000 rows of 6 columns is
+     4.7 MB. First the structure elements written in fewer bytes, measured,
+     with the xref table as it is. Object streams would shrink it a third or
+     more, but are not planned (the owner, 25 October 2026: keep the xref
+     table, which can be read when debugging, and do not complicate
+     things): a classic xref table cannot point into one, only a
+     cross-reference stream or a hybrid file can, and PDF/A-1 forbids them.
+  2. PDF/A and tagged documents at any size (third review, W1, W2, W3, W5,
+     W6). 9.0.7 refuses a PDF/A-1 document past its limits; this writes
+     one within them at any size: a balanced page tree, a parent tree of
+     /Kids, and resources for each page rather than one dictionary of every
+     image and font, which also keeps a page taken out of the document from
+     carrying all the images. Then: a tagged document keeps less of each
+     page until complete (Java boxes the numbers of the parent tree), the
+     pages keep less once written, and a bookmark tree of thousands of
+     levels or siblings is built in linear time. Java's Compressor (W7) is
+     a Deflater for each thread since 9.1.3.
 - **Dropped: local letter shapes from GSUB** (the owner, 25 October 2026:
   "keep fonts frozen"). No port reads a font's GSUB table: Bulgarian text
   is drawn with the font's default Cyrillic letters, т as a small capital
