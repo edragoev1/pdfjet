@@ -146,6 +146,16 @@ func TestKerningFitsWhatIsMeasured(t *testing.T) {
 	if n := font.GetFitChars(text, width-0.1); n == len([]rune(text)) {
 		t.Errorf("all the characters fit in less than their width")
 	}
+	// A pair kerned wider, "T after a quotation mark, takes its room only
+	// with its second character: every start of the text fits in its width
+	wider := "\"Tea\" &co"
+	runes := []rune(wider)
+	for n := 1; n <= len(runes); n++ {
+		width := font.StringWidth(font.GetSize(), string(runes[:n]))
+		if fit := font.GetFitChars(wider, width+0.001); fit != n {
+			t.Errorf("%q: %d characters fit in the width of %d", wider, fit, n)
+		}
+	}
 }
 
 func TestKerningOfABrokenTableIsNone(t *testing.T) {
@@ -175,5 +185,17 @@ func TestKerningWidthsAreThoseOfTheOtherPorts(t *testing.T) {
 		font := testKernedFont(t, pdf, c.path, true)
 		testNear(t, c.path+": "+c.text, c.kerned, font.StringWidth(10, c.text), 0.005)
 		testNear(t, c.path+": "+c.text+" in font units", c.unitsOf, float32(font.textKerning(c.text)), 0)
+	}
+}
+
+func TestKerningOfAClassOutOfRangeIsTheNextSubtables(t *testing.T) {
+	k := new(kerning)
+	k.read()
+	k.lookups = [][]pairSubtable{{
+		{covered: map[int]bool{1: true}, firstClass: map[int]int{}, secondClass: map[int]int{2: 5}, secondCount: 2, classAdvance: make([]int16, 2)},
+		{covered: map[int]bool{1: true}, pairs: map[uint32]int16{1<<16 | 2: -40}},
+	}}
+	if v := k.pair(1, 2); v != -40 {
+		t.Errorf("the pair kerns %d, not the -40 of the next subtable", v)
 	}
 }

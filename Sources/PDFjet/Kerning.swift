@@ -108,9 +108,10 @@ final class Kerning {
                 }
                 let c1 = s.firstClass[first] ?? 0
                 let c2 = s.secondClass[second] ?? 0
-                if c2 < s.secondCount && c1*s.secondCount + c2 < s.classAdvance.count {
-                    total += Int(s.classAdvance[c1*s.secondCount + c2])
+                if c2 >= s.secondCount || c1*s.secondCount + c2 >= s.classAdvance.count {
+                    continue    // A class the subtable has no values for: the next subtable
                 }
+                total += Int(s.classAdvance[c1*s.secondCount + c2])
                 break
             }
         }
@@ -125,9 +126,11 @@ final class Kerning {
         var lookups = [[PairSubtable]]()
         var legacyKern = [UInt32: Int16]()
 
-        // Reads the lookups of the kern feature of the GPOS table, from every
-        // script that has the feature, each lookup once and in the order of
-        // the lookup list.
+        // Reads the lookups of the kern feature of the GPOS table, from the
+        // default language of every script that has the feature, each lookup
+        // once and in the order of the lookup list. The kern features of
+        // other languages are left out, as HarfBuzz leaves them out of text of
+        // no language.
         mutating func readKernFeature() {
             if gpos.end - gpos.start < 10 {
                 return
@@ -136,12 +139,16 @@ final class Kerning {
             let lookupList = gpos.start + gpos.uint16(at: gpos.start + 8)
             let featureCount = gpos.uint16(at: featureList)
             let lookupCount = gpos.uint16(at: lookupList)
+            let defaults = defaultFeatures(featureCount)
             var kern = [Bool](repeating: false, count: lookupCount)
             var i = 0
             while i < featureCount && gpos.gposWork > 0 {
                 gpos.gposWork -= 1
                 let record = featureList + 2 + 6*i
                 i += 1
+                if !defaults[i - 1] {
+                    continue
+                }
                 if gpos.uint16(at: record) != 0x6B65 || gpos.uint16(at: record + 2) != 0x726E {   // "kern"
                     continue
                 }
@@ -198,6 +205,38 @@ final class Kerning {
                     lookups.append(subtables)
                 }
             }
+        }
+
+        // Returns the features of the default languages of the scripts of
+        // the GPOS table, by their index in the feature list.
+        mutating func defaultFeatures(_ featureCount: Int) -> [Bool] {
+            var features = [Bool](repeating: false, count: featureCount)
+            let scriptList = gpos.start + gpos.uint16(at: gpos.start + 4)
+            let scriptCount = gpos.uint16(at: scriptList)
+            var i = 0
+            while i < scriptCount && gpos.gposWork > 0 {
+                gpos.gposWork -= 1
+                let script = scriptList + gpos.uint16(at: scriptList + 2 + 6*i + 4)
+                i += 1
+                let defaultLangSys = gpos.uint16(at: script)
+                if defaultLangSys == 0 {
+                    continue
+                }
+                let langSys = script + defaultLangSys
+                let required = gpos.uint16(at: langSys + 2)
+                if required < featureCount {
+                    features[required] = true
+                }
+                let indexCount = min(gpos.uint16(at: langSys + 4), gpos.gposWork)
+                gpos.gposWork -= indexCount
+                for j in 0..<indexCount {
+                    let index = gpos.uint16(at: langSys + 6 + 2*j)
+                    if index < featureCount {
+                        features[index] = true
+                    }
+                }
+            }
+            return features
         }
 
         // Returns the size of a value record of the format, in bytes, and the
@@ -334,7 +373,7 @@ final class Kerning {
             let tableCount = t.uint16(at: t.start + 2)
             var subTable = t.start + 4
             var i = 0
-            while i < tableCount && kernTable.gposWork > 0 {
+            while i < tableCount && kernTable.gposWork > 0 && subTable + 6 <= t.end {
                 i += 1
                 kernTable.gposWork -= 1
                 var length = t.uint16(at: subTable + 2)

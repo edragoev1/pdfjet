@@ -482,25 +482,6 @@ public class Font {
         return total;
     }
 
-    // Returns the kerning of the character at i with the next one drawn, in
-    // font units, or 0 when either is not drawn.
-    private int KerningAfter(String str, int i) {
-        int c = Util.CodePointAt(str, i);
-        int gid;
-        if (!KerningGlyph(c, out gid)) {
-            return 0;
-        }
-        for (int next = i + ((c > 0xFFFF) ? 2 : 1); next < str.Length; ) {
-            int nextChar = Util.CodePointAt(str, next);
-            int nextGID;
-            if (KerningGlyph(nextChar, out nextGID)) {
-                return GlyphKerning(gid, nextGID);
-            }
-            next += (nextChar > 0xFFFF) ? 2 : 1;
-        }
-        return 0;
-    }
-
     /// <summary>
     /// Sets whether this font is embedded as a subset, the outlines of the
     /// glyphs the document does not draw left out, which is the default for a
@@ -851,19 +832,24 @@ public class Font {
             return GetCoreFontFitChars(str, w);
         }
         bool kerned = Kerns();
+        int previous = -1;
         int i = 0;
         while (i < str.Length) {
             int codePoint = Util.CodePointAt(str, i);
-            w -= AdvanceWidthOf(codePoint);
+            int advance = AdvanceWidthOf(codePoint);
+            // A character fits with its kerning with the one drawn before it,
+            // as StringWidth measures it: a pair kerned wider takes its room
+            // only when its second character is there.
+            int gid;
+            if (kerned && KerningGlyph(codePoint, out gid)) {
+                if (previous >= 0) {
+                    advance += GlyphKerning(previous, gid);
+                }
+                previous = gid;
+            }
+            w -= advance;
             if (w < 0) {
                 break;
-            }
-            // The kerning is with the next character drawn, as StringWidth's is.
-            if (kerned) {
-                w -= KerningAfter(str, i);
-                if (w < 0) {
-                    break;
-                }
             }
             i += (codePoint > 0xFFFF) ? 2 : 1;
         }
@@ -872,6 +858,7 @@ public class Font {
 
     private int GetCoreFontFitChars(String str, float width) {
         float w = width;
+        int previous = -1;
 
         int i = 0;
         while (i < str.Length) {
@@ -882,20 +869,16 @@ public class Font {
                 continue;
             }
             int c1 = CoreFontCode(cp);
-            w -= metrics[c1 - 32][1];
+            float advance = metrics[c1 - 32][1];
+            // The kerning is with the character drawn before, as
+            // StringWidth's is, and takes its room only when this one is there.
+            if (kernPairs && previous >= 0) {
+                advance += Kerning(previous, c1);
+            }
+            previous = c1;
+            w -= advance;
             if (w < 0) {
                 return i;
-            }
-            // The kerning is with the next character drawn, as StringWidth's is.
-            int after = next;
-            while (after < str.Length && NotDrawn(Util.CodePointAt(str, after))) {
-                after += (Util.CodePointAt(str, after) > 0xFFFF) ? 2 : 1;
-            }
-            if (kernPairs && after < str.Length) {
-                w -= Kerning(c1, CoreFontCode(Util.CodePointAt(str, after)));
-                if (w < 0) {
-                    return i;
-                }
             }
 
             i = next;

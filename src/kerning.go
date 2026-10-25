@@ -93,9 +93,10 @@ func (k *kerning) pair(first, second int) int {
 			}
 			c1 := s.firstClass[first]
 			c2 := s.secondClass[second]
-			if c2 < s.secondCount && c1*s.secondCount+c2 < len(s.classAdvance) {
-				total += int(s.classAdvance[c1*s.secondCount+c2])
+			if c2 >= s.secondCount || c1*s.secondCount+c2 >= len(s.classAdvance) {
+				continue // A class the subtable has no values for: the next subtable
 			}
+			total += int(s.classAdvance[c1*s.secondCount+c2])
 			break
 		}
 	}
@@ -103,8 +104,9 @@ func (k *kerning) pair(first, second int) int {
 }
 
 // readKernFeature reads the lookups of the kern feature of the GPOS table,
-// from every script that has the feature, each lookup once and in the order
-// of the lookup list.
+// from the default language of every script that has the feature, each
+// lookup once and in the order of the lookup list. The kern features of other
+// languages are left out, as HarfBuzz leaves them out of text of no language.
 func (k *kerning) readKernFeature() {
 	g := &k.gpos
 	if g.end-g.start < 10 {
@@ -114,9 +116,13 @@ func (k *kerning) readKernFeature() {
 	lookupList := g.start + g.uint16At(g.start+8)
 	featureCount := g.uint16At(featureList)
 	lookupCount := g.uint16At(lookupList)
+	defaults := k.defaultFeatures(featureCount)
 	kern := make([]bool, lookupCount)
 	for i := 0; i < featureCount && g.gposWork > 0; i++ {
 		g.gposWork--
+		if !defaults[i] {
+			continue
+		}
 		record := featureList + 2 + 6*i
 		if g.uint16At(record) != 0x6B65 || g.uint16At(record+2) != 0x726E { // "kern"
 			continue
@@ -166,6 +172,35 @@ func (k *kerning) readKernFeature() {
 			k.lookups = append(k.lookups, subtables)
 		}
 	}
+}
+
+// defaultFeatures returns the features of the default languages of the
+// scripts of the GPOS table, by their index in the feature list.
+func (k *kerning) defaultFeatures(featureCount int) []bool {
+	g := &k.gpos
+	features := make([]bool, featureCount)
+	scriptList := g.start + g.uint16At(g.start+4)
+	scriptCount := g.uint16At(scriptList)
+	for i := 0; i < scriptCount && g.gposWork > 0; i++ {
+		g.gposWork--
+		script := scriptList + g.uint16At(scriptList+2+6*i+4)
+		defaultLangSys := g.uint16At(script)
+		if defaultLangSys == 0 {
+			continue
+		}
+		langSys := script + defaultLangSys
+		if required := g.uint16At(langSys + 2); required < featureCount {
+			features[required] = true
+		}
+		indexCount := min(g.uint16At(langSys+4), g.gposWork)
+		g.gposWork -= indexCount
+		for j := 0; j < indexCount; j++ {
+			if index := g.uint16At(langSys + 6 + 2*j); index < featureCount {
+				features[index] = true
+			}
+		}
+	}
+	return features
 }
 
 // valueSize returns the size of a value record of the format, in bytes, and

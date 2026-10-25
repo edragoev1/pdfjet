@@ -583,18 +583,24 @@ func (font *Font) GetFitChars(text string, width float32) int {
 	}
 
 	kerned := font.kerns()
+	previous := -1
 	i := 0
 	for i < len(runes) {
-		w -= float32(font.advanceWidthOf(runes[i]))
+		advance := font.advanceWidthOf(runes[i])
+		// A character fits with its kerning with the one drawn before it, as
+		// StringWidth measures it: a pair kerned wider takes its room only
+		// when its second character is there.
+		if kerned {
+			if gid, drawn := font.kerningGlyph(runes[i]); drawn {
+				if previous >= 0 {
+					advance += font.glyphKerning(previous, gid)
+				}
+				previous = gid
+			}
+		}
+		w -= float32(advance)
 		if w < 0 {
 			break
-		}
-		// The kerning is with the next character drawn, as StringWidth's is.
-		if kerned {
-			w -= float32(font.kerningAfter(runes, i))
-			if w < 0 {
-				break
-			}
 		}
 		i++
 	}
@@ -602,23 +608,9 @@ func (font *Font) GetFitChars(text string, width float32) int {
 	return i
 }
 
-// kerningAfter returns the kerning of the character at i with the next one
-// drawn, in font units, or 0 when either is not drawn.
-func (font *Font) kerningAfter(runes []rune, i int) int {
-	gid, drawn := font.kerningGlyph(runes[i])
-	if !drawn {
-		return 0
-	}
-	for next := i + 1; next < len(runes); next++ {
-		if nextGID, nextDrawn := font.kerningGlyph(runes[next]); nextDrawn {
-			return font.glyphKerning(gid, nextGID)
-		}
-	}
-	return 0
-}
-
 func (font *Font) getCoreFontFitChars(text string, width float32) int {
 	w := width
+	previous := -1
 
 	runes := []rune(text)
 	i := 0
@@ -628,21 +620,16 @@ func (font *Font) getCoreFontFitChars(text string, width float32) int {
 			continue
 		}
 		c1 := font.coreFontCode(runes[i])
-		w -= float32(font.metrics[c1-32][1])
+		advance := float32(font.metrics[c1-32][1])
+		// The kerning is with the character drawn before, as StringWidth's
+		// is, and takes its room only when this one is there.
+		if font.kernPairs && previous >= 0 {
+			advance += float32(font.kerning(previous, c1))
+		}
+		previous = c1
+		w -= advance
 		if w < 0 {
 			return i
-		}
-
-		// The kerning is with the next character drawn, as StringWidth's is.
-		next := i + 1
-		for next < len(runes) && font.notDrawn(runes[next]) {
-			next++
-		}
-		if font.kernPairs && next < len(runes) {
-			w -= float32(font.kerning(c1, font.coreFontCode(runes[next])))
-			if w < 0 {
-				return i
-			}
 		}
 		i++
 	}

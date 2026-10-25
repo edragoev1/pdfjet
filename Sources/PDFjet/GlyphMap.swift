@@ -47,17 +47,15 @@ struct GlyphMap {
         blocks[block << 8 | (c & 0xFF)] = Int32(gid)
     }
 
-    // Sets the glyph of the character, which is in the Basic Multilingual
-    // Plane, unless it has one: as get and then set, with one lookup of its
-    // block, for the format 12 subtable of a font, which maps again the
-    // characters its format 4 subtable mapped (12 October 2026).
     // Returns, by glyph number, true for a glyph the font draws for more than
     // one character, as one glyph for U+3000 and U+2003: only such a glyph
     // needs the character it was drawn for recorded, for the ToUnicode map.
+    // The arrays go to the last glyph of a character, not to 65,536 glyphs.
     func sharedGlyphs() -> [Bool] {
-        var seen = [Bool](repeating: false, count: 0x10000)
-        var shared = [Bool](repeating: false, count: 0x10000)
-        for gid in blocks where gid > 0 && gid < 0x10000 {
+        let count = Int(min(blocks.max() ?? 0, 0xFFFF)) + 1
+        var seen = [Bool](repeating: false, count: count)
+        var shared = [Bool](repeating: false, count: count)
+        for gid in blocks where gid > 0 && gid < count {
             if seen[Int(gid)] {
                 shared[Int(gid)] = true
             } else {
@@ -67,6 +65,10 @@ struct GlyphMap {
         return shared
     }
 
+    // Sets the glyph of the character, which is in the Basic Multilingual
+    // Plane, unless it has one: as get and then set, with one lookup of its
+    // block, for the format 12 subtable of a font, which maps again the
+    // characters its format 4 subtable mapped (12 October 2026).
     mutating func setIfAbsent(_ c: Int, _ gid: Int) {
         var block = Int(index[c >> 8])
         if block < 0 {

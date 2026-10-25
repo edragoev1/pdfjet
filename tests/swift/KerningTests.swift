@@ -160,6 +160,16 @@ import Testing
         let n = font.getFitChars(text, width + 0.001)
         #expect(n == count, "\(n) of \(count) characters fit in their own width")
         #expect(font.getFitChars(text, width - 0.1) != count, "all the characters fit in less than their width")
+        // A pair kerned wider, "T after a quotation mark, takes its room only
+        // with its second character: every start of the text fits in its width
+        let wider = Array("\"Tea\" &co".unicodeScalars)
+        for n in 1...wider.count {
+            var start = String.UnicodeScalarView()
+            start.append(contentsOf: wider[0..<n])
+            let w = font.stringWidth(font.getSize(), String(start))
+            let fit = font.getFitChars(String(String.UnicodeScalarView(wider)), w + 0.001)
+            #expect(fit == n, "\(fit) characters fit in the width of \(n)")
+        }
     }
 
     @Test func kerningOfABrokenTableIsNone() {

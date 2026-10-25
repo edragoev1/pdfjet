@@ -907,18 +907,23 @@ public class Font {
     }
 
     // Returns the number of characters that fit in the width, in font units,
-    // of a kerned font: each with its kerning to the next character drawn, as
-    // stringWidth's is.
+    // of a kerned font: each with its kerning with the character drawn before
+    // it, as stringWidth measures it. A pair kerned wider takes its room only
+    // when its second character is there.
     private func getKernedFitChars(_ str: String, _ width: Float) -> Int {
         var w = width
-        let scalars = Array(str.unicodeScalars)
+        var previous = -1
         var i = 0
-        while i < scalars.count {
-            w -= Float(advanceWidthOf(Int(scalars[i].value)))
-            if w < 0 {
-                break
+        for scalar in str.unicodeScalars {
+            var advance = advanceWidthOf(Int(scalar.value))
+            let gid = kerningGlyph(Int(scalar.value))
+            if gid >= 0 {
+                if previous >= 0 {
+                    advance += glyphKerning(previous, gid)
+                }
+                previous = gid
             }
-            w -= Float(kerningAfter(scalars, i))
+            w -= Float(advance)
             if w < 0 {
                 break
             }
@@ -927,29 +932,12 @@ public class Font {
         return i
     }
 
-    // Returns the kerning of the character at i with the next one drawn, in
-    // font units, or 0 when either is not drawn.
-    private func kerningAfter(_ scalars: [Unicode.Scalar], _ i: Int) -> Int {
-        let gid = kerningGlyph(Int(scalars[i].value))
-        if gid < 0 {
-            return 0
-        }
-        var next = i + 1
-        while next < scalars.count {
-            let nextGID = kerningGlyph(Int(scalars[next].value))
-            if nextGID >= 0 {
-                return glyphKerning(gid, nextGID)
-            }
-            next += 1
-        }
-        return 0
-    }
-
     private func getCoreFontFitChars(
             _ str: String,
             _ width: Float) -> Int {
         var w: Float = width
         let scalars = Array(str.unicodeScalars)
+        var previous = -1
         var i: Int = 0
         while i < scalars.count {
             if notDrawn(scalars[i].value) {
@@ -957,20 +945,16 @@ public class Font {
                 continue
             }
             let c1 = coreFontCode(scalars[i].value)
-            w -= Float(metrics![c1 - 32][1])
+            var advance = Float(metrics![c1 - 32][1])
+            // The kerning is with the character drawn before, as
+            // stringWidth's is, and takes its room only when this one is there.
+            if kernPairs && previous >= 0 {
+                advance += Float(kerning(previous, c1))
+            }
+            previous = c1
+            w -= advance
             if w < 0 {
                 return i
-            }
-            // The kerning is with the next character drawn, as stringWidth's is.
-            var after = i + 1
-            while after < scalars.count && notDrawn(scalars[after].value) {
-                after += 1
-            }
-            if kernPairs && after < scalars.count {
-                w -= Float(kerning(c1, coreFontCode(scalars[after].value)))
-                if w < 0 {
-                    return i
-                }
             }
             i += 1
         }

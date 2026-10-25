@@ -149,6 +149,13 @@ class KerningTest {
                 "the characters fit in their own width");
         assertNotEquals(text.length(), font.getFitChars(text, width - 0.1f),
                 "all the characters fit in less than their width");
+        // A pair kerned wider, "T after a quotation mark, takes its room only
+        // with its second character: every start of the text fits in its width
+        String wider = "\"Tea\" &co";
+        for (int n = 1; n <= wider.length(); n++) {
+            float w = font.stringWidth(font.getSize(), wider.substring(0, n));
+            assertEquals(n, font.getFitChars(wider, w + 0.001f), wider + ": the width of " + n);
+        }
     }
 
     @Test

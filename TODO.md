@@ -330,6 +330,14 @@ commit and date. The layout's format version (1) and the look's rules
   table cells; the text written as `TJ` with the adjustments. Four ports,
   one test of the widths and the drawn text agreeing in all four, and
   Example_24 timed with it off (no slower) and on.
+  Code review of 24 October 2026, fixed in the four ports 25 October:
+  GetFitChars was a character short before a pair kerned wider; only the
+  kern features of each script's default language; a class of a format 2
+  subtable it has no values for goes on to the next subtable; Swift stops at
+  the end of the kern table and sizes sharedGlyph by the glyphs of the font.
+  Left as they are: whether a glyph is kerned is decided by the character
+  unicodeOf gives it, so a glyph a font uses both for a mark and for a
+  spacing character, which is rare, is not kerned.
 - **Longer fuzzing of the font subsetters.** Go's fuzzers ran 5 minutes each
   on every target before 9.0.5 with no failure; the TrueType and CFF
   subsetters, which subset a real font for each input, ran 27,000 and 15,000

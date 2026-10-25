@@ -138,6 +138,13 @@ public class KerningTest {
         float width = font.StringWidth(font.GetSize(), text);
         Assert.Equal(text.Length, font.GetFitChars(text, width + 0.001f));
         Assert.NotEqual(text.Length, font.GetFitChars(text, width - 0.1f));
+        // A pair kerned wider, "T after a quotation mark, takes its room only
+        // with its second character: every start of the text fits in its width
+        string wider = "\"Tea\" &co";
+        for (int n = 1; n <= wider.Length; n++) {
+            float w = font.StringWidth(font.GetSize(), wider.Substring(0, n));
+            Assert.Equal(n, font.GetFitChars(wider, w + 0.001f));
+        }
     }
 
     [Fact]

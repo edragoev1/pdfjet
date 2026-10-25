@@ -965,19 +965,26 @@ final public class Font {
         }
 
         boolean kerned = kerns();
+        int previous = -1;
         int i = 0;
         while (i < str.length()) {
             int cp = str.codePointAt(i);
-            w -= advanceWidthOf(cp);
+            int advance = advanceWidthOf(cp);
+            // A character fits with its kerning with the one drawn before it,
+            // as stringWidth measures it: a pair kerned wider takes its room
+            // only when its second character is there.
+            if (kerned) {
+                int gid = kerningGlyph(cp);
+                if (gid >= 0) {
+                    if (previous >= 0) {
+                        advance += glyphKerning(previous, gid);
+                    }
+                    previous = gid;
+                }
+            }
+            w -= advance;
             if (w < 0) {
                 break;
-            }
-            // The kerning is with the next character drawn, as stringWidth's is.
-            if (kerned) {
-                w -= kerningAfter(str, i);
-                if (w < 0) {
-                    break;
-                }
             }
             i += Character.charCount(cp);
         }
@@ -985,27 +992,9 @@ final public class Font {
         return i;
     }
 
-    // Returns the kerning of the character at i with the next one drawn, in
-    // font units, or 0 when either is not drawn.
-    private int kerningAfter(String str, int i) {
-        int cp = str.codePointAt(i);
-        int gid = kerningGlyph(cp);
-        if (gid < 0) {
-            return 0;
-        }
-        for (int next = i + Character.charCount(cp); next < str.length(); ) {
-            int c = str.codePointAt(next);
-            int nextGID = kerningGlyph(c);
-            if (nextGID >= 0) {
-                return glyphKerning(gid, nextGID);
-            }
-            next += Character.charCount(c);
-        }
-        return 0;
-    }
-
     private int getCoreFontFitChars(String str, float width) {
         float w = width;
+        int previous = -1;
 
         int i = 0;
         while (i < str.length()) {
@@ -1015,26 +1004,19 @@ final public class Font {
                 continue;
             }
             int c1 = coreFontCode(cp);
-            int next = i + Character.charCount(cp);
-
-            w -= metrics[c1 - 32][1];
+            float advance = metrics[c1 - 32][1];
+            // The kerning is with the character drawn before, as
+            // stringWidth's is, and takes its room only when this one is there.
+            if (kernPairs && previous >= 0) {
+                advance += kerning(previous, c1);
+            }
+            previous = c1;
+            w -= advance;
             if (w < 0) {
                 return i;
             }
 
-            // The kerning is with the next character drawn, as stringWidth's is.
-            int after = next;
-            while (after < str.length() && notDrawn(str.codePointAt(after))) {
-                after += Character.charCount(str.codePointAt(after));
-            }
-            if (kernPairs && after < str.length()) {
-                w -= kerning(c1, coreFontCode(str.codePointAt(after)));
-                if (w < 0) {
-                    return i;
-                }
-            }
-
-            i = next;
+            i += Character.charCount(cp);
         }
 
         return i;

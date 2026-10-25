@@ -103,18 +103,21 @@ internal class Kerning {
                 s.firstClass.TryGetValue(first, out c1);
                 s.secondClass.TryGetValue(second, out c2);
                 long index = (long) c1 * s.secondCount + c2;
-                if (c2 < s.secondCount && index < s.classAdvance.Length) {
-                    total += s.classAdvance[index];
+                if (c2 >= s.secondCount || index >= s.classAdvance.Length) {
+                    continue;   // A class the subtable has no values for: the next subtable
                 }
+                total += s.classAdvance[index];
                 break;
             }
         }
         return total;
     }
 
-    // Reads the lookups of the kern feature of the GPOS table, from every
-    // script that has the feature, each lookup once and in the order of the
-    // lookup list.
+    // Reads the lookups of the kern feature of the GPOS table, from the
+    // default language of every script that has the feature, each lookup once
+    // and in the order of the lookup list. The kern features of other
+    // languages are left out, as HarfBuzz leaves them out of text of no
+    // language.
     private void ReadKernFeature() {
         GPOS g = gpos;
         if (g.end - g.start < 10) {
@@ -124,9 +127,13 @@ internal class Kerning {
         int lookupList = g.start + g.GetUInt16(g.start + 8);
         int featureCount = g.GetUInt16(featureList);
         int lookupCount = g.GetUInt16(lookupList);
+        bool[] defaults = DefaultFeatures(featureCount);
         bool[] kern = new bool[lookupCount];
         for (int i = 0; i < featureCount && g.gposWork > 0; i++) {
             g.gposWork--;
+            if (!defaults[i]) {
+                continue;
+            }
             int record = featureList + 2 + 6*i;
             if (g.GetUInt16(record) != 0x6B65 || g.GetUInt16(record + 2) != 0x726E) {    // "kern"
                 continue;
@@ -177,6 +184,37 @@ internal class Kerning {
                 lookups.Add(subtables.ToArray());
             }
         }
+    }
+
+    // Returns the features of the default languages of the scripts of the
+    // GPOS table, by their index in the feature list.
+    private bool[] DefaultFeatures(int featureCount) {
+        GPOS g = gpos;
+        bool[] features = new bool[featureCount];
+        int scriptList = g.start + g.GetUInt16(g.start + 4);
+        int scriptCount = g.GetUInt16(scriptList);
+        for (int i = 0; i < scriptCount && g.gposWork > 0; i++) {
+            g.gposWork--;
+            int script = scriptList + g.GetUInt16(scriptList + 2 + 6*i + 4);
+            int defaultLangSys = g.GetUInt16(script);
+            if (defaultLangSys == 0) {
+                continue;
+            }
+            int langSys = script + defaultLangSys;
+            int required = g.GetUInt16(langSys + 2);
+            if (required < featureCount) {
+                features[required] = true;
+            }
+            int indexCount = Math.Min(g.GetUInt16(langSys + 4), g.gposWork);
+            g.gposWork -= indexCount;
+            for (int j = 0; j < indexCount; j++) {
+                int index = g.GetUInt16(langSys + 6 + 2*j);
+                if (index < featureCount) {
+                    features[index] = true;
+                }
+            }
+        }
+        return features;
     }
 
     // Returns the size of a value record of the format, in bytes, and the
