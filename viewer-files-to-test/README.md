@@ -24,6 +24,15 @@ and 47, and the two PDFs of `.github/scripts/encrypted-pdfs`:
 go run ./.github/scripts/encrypted-pdfs viewer-files-to-test
 ```
 
+And the two PDFs of `.github/scripts/new-code-pdfs`, of the code new in
+9.1.3 that no example draws: `Kerning.pdf`, lines of IBM Plex Sans kerned
+and not, and `Copied_Image.pdf`, a PNG with transparency on an orange box,
+drawn and then copied from a PDF that was read (25 October 2026):
+
+```sh
+go run ./.github/scripts/new-code-pdfs viewer-files-to-test
+```
+
 Example_47 opens with the user password `hello` and the owner password
 `world`; `Encrypted_Cyrillic.pdf` with `пароль`; `Encrypted_200_Bytes.pdf`
 with `0123456789` typed 20 times. The list follows the checklist, which

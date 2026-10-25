@@ -45,6 +45,10 @@ var sections = []section{
 			"fonts, which are not embedded: Acrobat may offer the Asian font pack, which is what the example shows.",
 		"Example_35: the Layers panel lists Relief, Latitude and Longitude, and Capital Cities, " +
 			"and switching each off and on hides and shows it on the map of Europe.",
+		"Kerning: in each pair of lines the kerned one is a little shorter, AV, To and Wa closer, " +
+			"and the text copies out as it reads.",
+		"Copied_Image: both penguins stand on the orange box, the copied one on the right too, " +
+			"with no white box behind it.",
 	}},
 	{"NVDA with Acrobat Reader", "", []string{
 		"Example_01: NVDA reads the English, Greek and Bulgarian text, each in its own language.",
@@ -162,14 +166,14 @@ func main() {
 		log.Fatal(err)
 	}
 	pdf.SetCompliance(compliance.PDF_UA_1)
-	pdf.SetTitle("PDFjet v9.0.3: the manual viewer pass")
+	pdf.SetTitle("PDFjet 9.1.3: the manual viewer pass")
 	pdf.SetLanguage("en-US")
 
 	regular = pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	semiBold = pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
 	newPage()
 
-	title := pdfjet.NewTextLine(semiBold, "PDFjet v9.0.3: the manual viewer pass")
+	title := pdfjet.NewTextLine(semiBold, "PDFjet 9.1.3: the manual viewer pass")
 	title.SetStructureType(structelem.H1)
 	title.SetFontSize(18)
 	title.SetTextColor(ink)
@@ -179,7 +183,7 @@ func main() {
 
 	intro := textBlock(regular, 10, "The manual viewer pass of TODO.md. The files are in viewer-files-to-test: the Java "+
 		"examples built from main, Example_47 with the user password hello and the owner password world, "+
-		"and Encrypted_Cyrillic and Encrypted_200_Bytes. Tick each box when it holds; when it does not, "+
+		"Encrypted_Cyrillic and Encrypted_200_Bytes, and Kerning and Copied_Image, of the code new in 9.1.3. Tick each box when it holds; when it does not, "+
 		"write what you see on the lines below the viewer.", marginX, 612-2*marginX, soft)
 	y = intro.DrawOn(page)[1] + 8
 
