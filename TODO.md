@@ -247,6 +247,42 @@ commit and date. The layout's format version (1) and the look's rules
     buffers in Swift, which gained 2% and nothing on top of reading a font
     once.
 
+- **For 9.1.5: better charts, and one more** (the owner, 25 October 2026:
+  "significantly improve all charts"). From a review of Example_25 to 28 and
+  chart.go, barchart.go and donutchart.go; in the four ports, the examples
+  updated to show it, before and after screenshots for each visible change.
+  In this order:
+  1. The default look. The grid lines are black by default and fight with
+     the data (Example_25, 26, the vertical bars of 27): light gray,
+     horizontal only, no vertical grid or inner border, as Example_27's
+     horizontal bars set by hand. The default series colors distinct, in
+     grayscale and print too, and for color-blind readers. The value labels
+     of the bars white or black by the bar's color: white on the horizontal
+     bars, black on dark green in the stacked ones now.
+  2. Numbers. Chart has no SetGroupingUsed (Example_25's axis says 25000),
+     BarChart has. The decimal point and the comma are fixed: the decimal
+     and grouping characters settable ("1.234,5" for the German, French and
+     Swiss customers of ZUGFeRD and the QR-bill), and a prefix or suffix
+     ("$", "%", " km").
+  3. One API. DonutChart has no title, subtitle or legend (Example_28 draws
+     its title as page text); Chart sets its horizontal and vertical grids
+     apart, BarChart has one. The same names and behavior in the three for
+     title, subtitle, legend, alternate description, fonts, grid, borders and
+     number format.
+  4. What is expected and missing. Donut: a label in the hole, as the total,
+     and a legend where the leader lines of small slices would crowd. Bar:
+     the total above a stacked bar, category names on two lines or tilted
+     when too long for their slot, a zero line for negative values. Line:
+     text categories on the X axis (Jan, Feb, Q1), the values at the points
+     if asked, and the area under a line filled, which makes area charts.
+  5. Accessibility. Line and bar charts describe themselves, as the donut
+     does with its totals: the series and their values by category, so that
+     a PDF/UA document needs no description written for them.
+  6. The new chart: bars with a line over them (a target, the average, last
+     year), the most common chart of business reports, from the two that
+     exist; one value axis, no second one. The runner-up, a horizontal
+     progress or gauge bar for a KPI, if wanted later.
+  Left out: 3D, logarithmic axes, radar charts, two value axes.
 - **For 9.1.5: smaller tagged documents, with object streams.** Each cell of a table of
   PDF/UA costs 280 to 415 bytes, its text and a structure element of its own,
   each an object written uncompressed: a price list of 3,000 rows of 6
