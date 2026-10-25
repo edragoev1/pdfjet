@@ -27,13 +27,13 @@ internal class GPOS {
     // table that claims more than a font holds is stopped here rather than
     // read to an end it does not have. Of the 252 fonts PDFjet ships the most
     // this takes is 76,168, in Noto Sans.
-    private const int MAX_GPOS_WORK = 1 << 20;
+    internal const int MAX_GPOS_WORK = 1 << 20;
 
     private readonly byte[] buf;    // The font data the table is in
-    private readonly int start;     // The table, from start to end of buf
-    private readonly int end;
-    private readonly int numGlyphs; // Of the maxp table, or 0 when the font has none
-    private int gposWork;
+    internal readonly int start;    // The table, from start to end of buf
+    internal readonly int end;
+    internal readonly int numGlyphs; // Of the maxp table, or 0 when the font has none
+    internal int gposWork;          // What is left of the work, see MAX_GPOS_WORK
     private bool read;
 
     // The offsets of the marks that attach to other marks, in font units, by
@@ -68,6 +68,12 @@ internal class GPOS {
             Array.Copy(buf, start, table, 0, end - start);
             return new GPOS(table, 0, end - start, numGlyphs);
         }
+        return new GPOS(buf, start, end, numGlyphs);
+    }
+
+    // Returns another reader of the same table, with work of its own, as
+    // Kerning reads the pairs of the table apart from its marks.
+    internal GPOS Reader() {
         return new GPOS(buf, start, end, numGlyphs);
     }
 
@@ -208,7 +214,7 @@ internal class GPOS {
     }
 
     // Returns the glyph IDs of a coverage table, in the order of their coverage indexes.
-    private int[] Coverage(int offset) {
+    internal int[] Coverage(int offset) {
         int format = GetUInt16(offset);
         int count = GetUInt16(offset + 2);
         if (count > gposWork) {
@@ -258,18 +264,18 @@ internal class GPOS {
     }
 
     // Returns the 16 bits at the offset, or 0 outside the table.
-    private int GetUInt16(int offset) {
+    internal int GetUInt16(int offset) {
         if (offset < start || offset > end - 2) {
             return 0;
         }
         return (buf[offset] << 8) | buf[offset + 1];
     }
 
-    private int GetInt16(int offset) {
+    internal int GetInt16(int offset) {
         return (short) GetUInt16(offset);
     }
 
-    private long GetUInt32(int offset) {
+    internal long GetUInt32(int offset) {
         return ((long) GetUInt16(offset) << 16) | (long) GetUInt16(offset + 2);
     }
 }

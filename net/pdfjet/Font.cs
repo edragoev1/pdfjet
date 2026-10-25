@@ -67,6 +67,9 @@ public class Font {
     // Where the marks go, from the GPOS table of the font, read when a mark
     // is first drawn, or null for a font without one.
     internal GPOS gpos;
+    // The pairs the font kerns, from its GPOS or kern table, read when a
+    // kerned font first measures or draws, or null for a font with neither.
+    internal Kerning kernTables;
     internal bool cff;
     internal int[][] metrics;           // Only used for core fonts.
     // Tells the font program this font was read from apart from every other,
@@ -397,10 +400,105 @@ public class Font {
         return this.name;
     }
 
-    /// <summary>Enables or disables kerning. Kerning is only supported for the 14 standard fonts.</summary>
+    /// <summary>
+    /// Turns the kerning of the font on or off: the pairs of letters that go
+    /// closer together or further apart, as AV and To. A standard font kerns
+    /// with the pairs of its metrics; an OpenType or TrueType font with the
+    /// kern feature of its GPOS table, or the kern table of an older font. Off
+    /// by default, as text that does not ask for it is as fast as it was. A
+    /// kerned font measures its text as it draws it: StringWidth, the wrapping
+    /// and the alignment of TextLine, TextBlock and the table cells count the
+    /// pairs. Right to left text and marks are not kerned.
+    /// </summary>
+    /// <param name="kernPairs">true to kern the text drawn with the font.</param>
+    /// <returns>this Font object.</returns>
     public Font SetKernPairs(bool kernPairs) {
         this.kernPairs = kernPairs;
         return this;
+    }
+
+    // Returns true if the font is an embedded font whose kerning is on and
+    // that has pairs to kern with, from its GPOS or kern table.
+    internal bool Kerns() {
+        return kernPairs && kernTables != null && !isCoreFont && !isCJK;
+    }
+
+    // Returns how far the second glyph moves after the first, in font units,
+    // when both are drawn one after the other: 0 for a pair with a mark or a
+    // right to left letter, which shaping places, and for a glyph of no
+    // character, as .notdef.
+    internal int GlyphKerning(int first, int second) {
+        if (!Kernable(first) || !Kernable(second)) {
+            return 0;
+        }
+        return kernTables.Pair(first, second);
+    }
+
+    private bool Kernable(int gid) {
+        if (gid <= 0 || gid >= unicodeOf.Length) {
+            return false;
+        }
+        int c = unicodeOf[gid];
+        return c >= 0 && !Page.IsMark(c) && !Page.IsRightToLeft(c);
+    }
+
+    // Returns true if the character is drawn, as Page draws it, with the glyph
+    // it gives: an RLM, LRM, byte order mark or a character IsIgnorable returns
+    // true for is not, nor a ZWNJ or ZWJ the font has no glyph for. The glyphs
+    // drawn are the pairs kerned.
+    internal bool KerningGlyph(int c, out int gid) {
+        if (c >= 0x20 && c < 0x7F && asciiGID[c - 0x20] != 0) {
+            gid = asciiGID[c - 0x20];
+            return true;
+        }
+        gid = 0;
+        if (c == 0x200E || c == 0x200F || c == 0xFEFF || IsIgnorable(c)) {
+            return false;
+        }
+        if ((c == 0x200C || c == 0x200D) && unicodeToGID.Get(c) == 0) {
+            return false;
+        }
+        gid = Page.GlyphOf(this, c);
+        return true;
+    }
+
+    // Returns the kerning of the text, in font units: the sum of the pairs of
+    // the glyphs drawn one after the other.
+    internal int TextKerning(String str) {
+        int total = 0;
+        int previous = -1;
+        for (int i = 0; i < str.Length; ) {
+            int c = Util.CodePointAt(str, i);
+            i += (c > 0xFFFF) ? 2 : 1;
+            int gid;
+            if (!KerningGlyph(c, out gid)) {
+                continue;
+            }
+            if (previous >= 0) {
+                total += GlyphKerning(previous, gid);
+            }
+            previous = gid;
+        }
+        return total;
+    }
+
+    // Returns the kerning of the character at i with the next one drawn, in
+    // font units, or 0 when either is not drawn.
+    private int KerningAfter(String str, int i) {
+        int c = Util.CodePointAt(str, i);
+        int gid;
+        if (!KerningGlyph(c, out gid)) {
+            return 0;
+        }
+        for (int next = i + ((c > 0xFFFF) ? 2 : 1); next < str.Length; ) {
+            int nextChar = Util.CodePointAt(str, next);
+            int nextGID;
+            if (KerningGlyph(nextChar, out nextGID)) {
+                return GlyphKerning(gid, nextGID);
+            }
+            next += (nextChar > 0xFFFF) ? 2 : 1;
+        }
+        return 0;
     }
 
     /// <summary>
@@ -530,6 +628,9 @@ public class Font {
                 } else {
                     width += AdvanceWidthOf(codePoint);
                 }
+            }
+            if (Kerns()) {
+                width += TextKerning(str);
             }
         }
 
@@ -749,12 +850,20 @@ public class Font {
         if (isCoreFont) {
             return GetCoreFontFitChars(str, w);
         }
+        bool kerned = Kerns();
         int i = 0;
         while (i < str.Length) {
             int codePoint = Util.CodePointAt(str, i);
             w -= AdvanceWidthOf(codePoint);
             if (w < 0) {
                 break;
+            }
+            // The kerning is with the next character drawn, as StringWidth's is.
+            if (kerned) {
+                w -= KerningAfter(str, i);
+                if (w < 0) {
+                    break;
+                }
             }
             i += (codePoint > 0xFFFF) ? 2 : 1;
         }

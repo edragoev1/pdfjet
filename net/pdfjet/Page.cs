@@ -74,6 +74,15 @@ public class Page {
     private float[] tmx = {1f, 0f, 0f, 1f};
     private float textFontSize = 0f;    // The font size of the text drawn last
     private float textRise = 0f;
+    // The font of the string of glyphs being drawn when it kerns, and the
+    // glyph drawn last, or -1: AppendGlyph puts the kerning of each pair
+    // between the two glyphs.
+    private Font kernFont = null;
+    private int kernPrevious = -1;
+    // True while colored text is drawn, word by word: the kerning goes on
+    // from the last glyph of a word to the first of the next, as StringWidth
+    // measures the whole text.
+    private bool kernChain = false;
     // The bytes of the text matrix, written for every string while the page
     // has a text rotation. SetTextRotation fills them, and DrawString reads
     // them only where tmx is not the identity, which is only after it ran.
@@ -735,6 +744,26 @@ public class Page {
         if (str == null || str.Length == 0) {
             return;
         }
+        if (font.Kerns()) {
+            if (!kernChain || kernFont != font) {
+                kernPrevious = -1;
+            }
+            kernFont = font;
+            if (!kernChain) {
+                try {
+                    DrawGlyphsOf(font, str);
+                } finally {
+                    kernFont = null;
+                }
+                return;
+            }
+        }
+        DrawGlyphsOf(font, str);
+    }
+
+    // Draws the glyphs of the string, which is not empty, in the string of
+    // glyphs the content is in.
+    private void DrawGlyphsOf(Font font, String str) {
         // A string of PDF/A is 32767 bytes at most, and a glyph two of them: a
         // TextLine of 16384 characters failed veraPDF (review of 12 October
         // 2026, W1)
@@ -980,7 +1009,7 @@ public class Page {
         if (joiner != 0) {
             int space = font.unicodeToGID.Get(0x0020);
             Append("[<");
-            AppendGlyph(font, space);
+            AppendGlyphUnkerned(font, space);
             Append("> ");
             Append(1000f * font.GlyphAdvance(space) / font.unitsPerEm);
             Append("] TJ\n");
@@ -1035,12 +1064,23 @@ public class Page {
     // character too, which is drawn in a span of its own.
     private bool AppendPlainGlyphs(Font font, string str) {
         long start = buf.Length;
+        // The glyph kerned with before the text, which the shaping path kerns
+        // with again: the last of the word before it, in colored text
+        int previous = kernPrevious;
+        // Most text is not kerned, and its ASCII characters, most of what is
+        // drawn, skip the test AppendGlyph makes for the kerning: with it,
+        // Example_24 was 1.5% slower (24 October 2026).
+        bool kerned = kernFont != null;
         int i = 0;
         while (i < str.Length) {
             int codePoint = Util.CodePointAt(str, i);  // A lone surrogate is drawn as .notdef
             bool ascii = codePoint >= 0x20 && codePoint < 0x7F && font.asciiGID[codePoint - 0x20] != 0;
             if (ascii && font.asciiPlain[codePoint - 0x20]) {
-                AppendGlyph(font, font.asciiGID[codePoint - 0x20]);
+                if (kerned) {
+                    AppendKernedGlyph(font, font.asciiGID[codePoint - 0x20]);
+                } else {
+                    AppendGlyphUnkerned(font, font.asciiGID[codePoint - 0x20]);
+                }
                 i++;
                 continue;
             }
@@ -1048,6 +1088,7 @@ public class Page {
                 int gid = GlyphOf(font, codePoint);
                 if (font.UseCharDrawnAsAnother(codePoint, gid)) {
                     buf.SetLength(start);
+                    kernPrevious = previous;
                     return false;
                 }
                 if (ascii) {
@@ -1266,7 +1307,7 @@ public class Page {
         return table;
     }
 
-    private static bool IsMark(int codePoint) {
+    internal static bool IsMark(int codePoint) {
         // The category of a code point, without a string made for it.
         System.Globalization.UnicodeCategory category =
                 CharUnicodeInfo.GetUnicodeCategory(codePoint);
@@ -1275,7 +1316,7 @@ public class Page {
     }
 
     // Returns true if the character is in the blocks of the right to left scripts.
-    private static bool IsRightToLeft(int codePoint) {
+    internal static bool IsRightToLeft(int codePoint) {
         return (codePoint >= 0x0590 && codePoint <= 0x08FF) ||
                 (codePoint >= 0xFB1D && codePoint <= 0xFDFF) ||
                 (codePoint >= 0xFE70 && codePoint <= 0xFEFF) ||
@@ -1348,7 +1389,7 @@ public class Page {
             Append("[");
             Append(1000f * font.GlyphAdvance(space) / font.unitsPerEm);
             Append(" <");
-            AppendGlyph(font, space);
+            AppendGlyphUnkerned(font, space);
             Append(">] TJ\n");
         }
         Append("<");
@@ -1365,20 +1406,25 @@ public class Page {
     // Ends the string of glyphs, draws the glyph moved by dx and dy font units,
     // and starts the string again.
     private void AppendMovedGlyph(Font font, int gid, int dx, int dy) {
+        // A mark, which kerns with neither glyph beside it, drawn in a string
+        // or TJ array of its own
+        if (kernFont == font) {
+            kernPrevious = gid;
+        }
         float fontSize = (textFontSize != 0f) ? textFontSize : font.size;
         Append("> Tj\n");
         Append(textRise + dy * fontSize / font.unitsPerEm);
         Append(" Ts\n");
         if (dx == 0) {
             Append("<");
-            AppendGlyph(font, gid);
+            AppendGlyphUnkerned(font, gid);
             Append("> Tj\n");
         } else {
             float adjustment = 1000f * dx / font.unitsPerEm;
             Append("[");
             Append(-adjustment);
             Append(" <");
-            AppendGlyph(font, gid);
+            AppendGlyphUnkerned(font, gid);
             Append("> ");
             Append(adjustment);
             Append("] TJ\n");
@@ -2602,17 +2648,54 @@ public class Page {
         (byte)'0', (byte)'1', (byte)'2', (byte)'3', (byte)'4', (byte)'5', (byte)'6', (byte)'7', (byte)'8', (byte)'9',
         (byte)'A', (byte)'B', (byte)'C', (byte)'D', (byte)'E', (byte)'F'
     };
-    // A character of a string, four hexadecimal digits for the Basic
-    // Multilingual Plane and six above it, where the largest code point is
-    // 0x10FFFF. This is the innermost loop of every string drawn, so the
-    // digits go on the stack, as they do in Append(float) and Append(int).
     // Appends the glyph number as hexadecimal and records that the font draws
     // it, so that a subset of the font keeps it.
     private void AppendGlyph(Font font, int gid) {
+        if (kernFont != null) {
+            AppendKernedGlyph(font, gid);
+            return;
+        }
         font.UseGlyph(gid);
         AppendCodePointAsHex(gid);
     }
 
+    // Appends the glyph of a kerned string, with the kerning of the pair it
+    // ends before it. Apart from AppendGlyph, which stays small, as almost
+    // every glyph drawn is not kerned.
+    private void AppendKernedGlyph(Font font, int gid) {
+        if (kernFont == font) {
+            if (kernPrevious >= 0) {
+                int kerning = font.GlyphKerning(kernPrevious, gid);
+                if (kerning != 0) {
+                    AppendKerning(font, kerning);
+                }
+            }
+            kernPrevious = gid;
+        }
+        AppendGlyphUnkerned(font, gid);
+    }
+
+    // Appends the glyph as AppendGlyph does, with no kerning before it: a
+    // space that stands in for a joiner or for a moved mark, and a moved mark,
+    // each drawn in a TJ array of its own.
+    private void AppendGlyphUnkerned(Font font, int gid) {
+        font.UseGlyph(gid);
+        AppendCodePointAsHex(gid);
+    }
+
+    // Ends the string of glyphs, moves the next glyph by the kerning, in font
+    // units, and starts the string again: a TJ of the move alone is valid
+    // wherever a string of glyphs is, in a span of actual text too.
+    private void AppendKerning(Font font, int kerning) {
+        Append("> Tj\n[");
+        Append(-(1000f * kerning) / font.unitsPerEm);
+        Append("] TJ\n<");
+    }
+
+    // A character of a string, four hexadecimal digits for the Basic
+    // Multilingual Plane and six above it, where the largest code point is
+    // 0x10FFFF. This is the innermost loop of every string drawn, so the
+    // digits go on the stack, as they do in Append(float) and Append(int).
     internal void AppendCodePointAsHex(int codePoint) {
         if (codePoint <= 0xFFFF) {
             Span<byte> digits = stackalloc byte[4];
@@ -2663,6 +2746,20 @@ public class Page {
     }
 
     internal void DrawColoredString(
+            Font font,
+            String str,
+            float[] color,
+            Dictionary<String, Int32> highlightColors) {
+        kernChain = true;
+        try {
+            DrawColoredWords(font, str, color, highlightColors);
+        } finally {
+            kernChain = false;
+            kernFont = null;
+        }
+    }
+
+    private void DrawColoredWords(
             Font font,
             String str,
             float[] color,
