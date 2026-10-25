@@ -323,7 +323,10 @@ commit and date. The layout's format version (1) and the look's rules
   page; reused since, 2,614 to 2,284 ms, in 9.1.3), reference counting 14%,
   exclusivity checks 10%, malloc and free 9%, reading the CSV 10%. The
   reference counting and the exclusivity checks are spread over the drawing
-  code: left, as their cure is the restructuring not wanted.
+  code: their cure, a restructuring of how the drawing code holds its
+  objects, goes to v9.2.1 with the large documents (the owner, 25 October
+  2026). The CSV reader, 10%, split in place: 121 to 110 ms for the 30 MB
+  file, 1% of Example_24, not kept (more code for too little).
   Example_24's 500 pages take 113 ms in Swift, against 56 to 64 in Go, C#
   and Java (9.1.1). Where the rest goes is not measured: Swift's own
   Deflate, CRC32 and AES (Go's are its standard library's, tuned for years,
