@@ -33,13 +33,13 @@ class GPOS {
     // table that claims more than a font holds is stopped here rather than
     // read to an end it does not have. Of the 252 fonts PDFjet ships the most
     // this takes is 76,168, in Noto Sans.
-    private static final int MAX_GPOS_WORK = 1 << 20;
+    static final int MAX_GPOS_WORK = 1 << 20;
 
-    private final byte[] buf;   // The font data the table is in
-    private final int start;    // The table, from start to end of buf
-    private final int end;
-    private final int numGlyphs;    // Of the maxp table, or 0 when the font has none
-    private int gposWork;
+    final byte[] buf;   // The font data the table is in
+    final int start;    // The table, from start to end of buf
+    final int end;
+    final int numGlyphs;    // Of the maxp table, or 0 when the font has none
+    int gposWork;
     private boolean read;
 
     /**
@@ -224,7 +224,7 @@ class GPOS {
     }
 
     // Returns the glyph IDs of a coverage table, in the order of their coverage indexes.
-    private int[] coverage(int offset) {
+    int[] coverage(int offset) {
         int format = getUInt16(offset);
         int count = getUInt16(offset + 2);
         if (count > gposWork) {
@@ -271,18 +271,18 @@ class GPOS {
     }
 
     // Returns the 16 bits at the offset, or 0 outside the table.
-    private int getUInt16(int offset) {
+    int getUInt16(int offset) {
         if (offset < start || offset > end - 2) {
             return 0;
         }
         return ((buf[offset] & 0xFF) << 8) | (buf[offset + 1] & 0xFF);
     }
 
-    private int getInt16(int offset) {
+    int getInt16(int offset) {
         return (short) getUInt16(offset);
     }
 
-    private long getUInt32(int offset) {
+    long getUInt32(int offset) {
         return ((long) getUInt16(offset) << 16) | getUInt16(offset + 2);
     }
 }

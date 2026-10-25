@@ -98,6 +98,11 @@ final public class Font {
      * is first drawn, or null for a font without one.
      */
     GPOS gpos;
+    /**
+     * How far apart the pairs of glyphs go, from the GPOS or kern table of
+     * the font, read when a kerned font first measures or draws, or null.
+     */
+    Kerning kernTables;
     /** True if the glyph outlines are in CFF format. */
     protected boolean cff;
     /** The character metrics of a core font. */
@@ -495,16 +500,83 @@ final public class Font {
     }
 
     /**
-     * Sets the kerning for the selected font to 'true' or 'false' depending on the
-     * passed value of kernPairs parameter.
-     * The kerning is implemented only for the 14 standard fonts.
+     * Turns the kerning of the font on or off: the pairs of letters that go
+     * closer together or further apart, as AV and To. A standard font kerns
+     * with the pairs of its metrics; an OpenType or TrueType font with the kern
+     * feature of its GPOS table, or the kern table of an older font. Off by
+     * default, as text that does not ask for it is as fast as it was. A kerned
+     * font measures its text as it draws it: stringWidth, the wrapping and the
+     * alignment of TextLine, TextBlock and the table cells count the pairs.
+     * Right to left text and marks are not kerned.
      *
-     * @param kernPairs if 'true' the kerning for this font is enabled.
+     * @param kernPairs true to kern the text of the font.
      * @return this Font object.
      */
     public Font setKernPairs(boolean kernPairs) {
         this.kernPairs = kernPairs;
         return this;
+    }
+
+    // Returns true if the font is an embedded font whose kerning is on and
+    // that has pairs to kern with, from its GPOS or kern table.
+    boolean kerns() {
+        return kernPairs && kernTables != null && !isCoreFont && !isCJK;
+    }
+
+    // Returns how far the second glyph moves after the first, in font units,
+    // when both are drawn one after the other: 0 for a pair with a mark or a
+    // right to left letter, which shaping places, and for a glyph of no
+    // character, as .notdef.
+    int glyphKerning(int first, int second) {
+        if (!kernable(first) || !kernable(second)) {
+            return 0;
+        }
+        return kernTables.pair(first, second);
+    }
+
+    private boolean kernable(int gid) {
+        if (gid <= 0 || gid >= unicodeOf.length) {
+            return false;
+        }
+        int c = unicodeOf[gid];
+        return c >= 0 && !Page.isMark(c) && !Page.isRightToLeft(c);
+    }
+
+    // Returns the glyph the character is drawn with, as Page draws it, or -1
+    // when it is not drawn: an RLM, LRM, byte order mark or a character
+    // isIgnorable returns true for is not, nor a ZWNJ or ZWJ the font has no
+    // glyph for. The glyphs drawn are the pairs kerned.
+    int kerningGlyph(int c) {
+        if (c >= 0x20 && c < 0x7F && asciiGID[c - 0x20] != 0) {
+            return asciiGID[c - 0x20];
+        }
+        if (c == 0x200E || c == 0x200F || c == 0xFEFF || isIgnorable(c)) {
+            return -1;
+        }
+        if ((c == 0x200C || c == 0x200D) && unicodeToGID.get(c) == 0) {
+            return -1;
+        }
+        return Page.glyphOf(this, c);
+    }
+
+    // Returns the kerning of the text, in font units: the sum of the pairs of
+    // the glyphs drawn one after the other.
+    int textKerning(String text) {
+        int total = 0;
+        int previous = -1;
+        for (int i = 0; i < text.length(); ) {
+            int c = text.codePointAt(i);
+            i += Character.charCount(c);
+            int gid = kerningGlyph(c);
+            if (gid < 0) {
+                continue;
+            }
+            if (previous >= 0) {
+                total += glyphKerning(previous, gid);
+            }
+            previous = gid;
+        }
+        return total;
     }
 
     /**
@@ -642,6 +714,9 @@ final public class Font {
                 } else {
                     width += advanceWidthOf(cp);
                 }
+            }
+            if (kerns()) {
+                width += textKerning(str);
             }
         }
 
@@ -889,6 +964,7 @@ final public class Font {
             return getCoreFontFitChars(str, w);
         }
 
+        boolean kerned = kerns();
         int i = 0;
         while (i < str.length()) {
             int cp = str.codePointAt(i);
@@ -896,10 +972,36 @@ final public class Font {
             if (w < 0) {
                 break;
             }
+            // The kerning is with the next character drawn, as stringWidth's is.
+            if (kerned) {
+                w -= kerningAfter(str, i);
+                if (w < 0) {
+                    break;
+                }
+            }
             i += Character.charCount(cp);
         }
 
         return i;
+    }
+
+    // Returns the kerning of the character at i with the next one drawn, in
+    // font units, or 0 when either is not drawn.
+    private int kerningAfter(String str, int i) {
+        int cp = str.codePointAt(i);
+        int gid = kerningGlyph(cp);
+        if (gid < 0) {
+            return 0;
+        }
+        for (int next = i + Character.charCount(cp); next < str.length(); ) {
+            int c = str.codePointAt(next);
+            int nextGID = kerningGlyph(c);
+            if (nextGID >= 0) {
+                return glyphKerning(gid, nextGID);
+            }
+            next += Character.charCount(c);
+        }
+        return 0;
     }
 
     private int getCoreFontFitChars(String str, float width) {

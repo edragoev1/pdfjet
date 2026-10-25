@@ -91,6 +91,13 @@ class OpenTypeFont {
             // A CFF font keeps its CFF table alone, so a copy of the GPOS table.
             font.gpos = GPOS.of(otf.buf, otf.gpos.offset, otf.gpos.length, otf.numGlyphs, otf.cff);
         }
+        // The kerning reads the GPOS table from the font's own copy of it,
+        // and a CFF font's kern table from a copy too.
+        GPOS kern = null;
+        if (otf.kern != null) {
+            kern = GPOS.of(otf.buf, otf.kern.offset, otf.kern.length, otf.numGlyphs, otf.cff);
+        }
+        font.kernTables = Kerning.of(font.gpos, kern);
         font.info = otf.fontInfo;
         font.capHeight = otf.capHeight;
         font.cff = otf.cff;

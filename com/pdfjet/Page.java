@@ -67,6 +67,15 @@ final public class Page {
     private float[] tmx = new float[] {1f, 0f, 0f, 1f};
     private float textFontSize = 0f;    // The font size of the text drawn last
     private float textRise = 0f;
+    // The font of the string of glyphs being drawn when it kerns, and the
+    // glyph drawn last, or -1: appendGlyph puts the kerning of each pair
+    // between the two glyphs.
+    private Font kernFont;
+    private int kernPrevious = -1;
+    // True while colored text is drawn, word by word: the kerning goes on
+    // from the last glyph of a word to the first of the next, as stringWidth
+    // measures the whole text.
+    private boolean kernChain;
     // The bytes of the text matrix, written for every string while the page
     // has a text rotation. setTextRotation fills them, and drawString reads
     // them only where tmx is not the identity, which is only after it ran.
@@ -805,6 +814,25 @@ final public class Page {
         if (pdf.isPDFA() && str.codePointCount(0, str.length()) > MAX_PDFA_STRING_GLYPHS) {
             pdf.fail(new IllegalArgumentException(PDFA_STRING_TOO_LONG));
         }
+        if (font.kerns()) {
+            if (!kernChain || kernFont != font) {
+                kernPrevious = -1;
+            }
+            kernFont = font;
+            if (!kernChain) {
+                try {
+                    appendUnicodeString(font, str);
+                } finally {
+                    kernFont = null;
+                }
+                return;
+            }
+        }
+        appendUnicodeString(font, str);
+    }
+
+    // Appends the glyphs of the string, see drawUnicodeString.
+    private void appendUnicodeString(Font font, String str) {
         // A plain loop over codePointAt()/charCount() is equivalent to
         // str.codePoints().forEach(...) - including surrogate-pair handling -
         // but avoids the Stream/Spliterator/lambda dispatch overhead on what
@@ -1047,7 +1075,7 @@ final public class Page {
         if (joiner != 0) {
             int space = font.unicodeToGID.get(0x0020);
             append("[<");
-            appendGlyph(font, space);
+            appendGlyphUnkerned(font, space);
             append("> ");
             append(1000f * font.glyphAdvance(space) / font.unitsPerEm);
             append("] TJ\n");
@@ -1103,7 +1131,7 @@ final public class Page {
             append("[");
             append(1000f * font.glyphAdvance(space) / font.unitsPerEm);
             append(" <");
-            appendGlyph(font, space);
+            appendGlyphUnkerned(font, space);
             append(">] TJ\n");
         }
         append("<");
@@ -1148,6 +1176,9 @@ final public class Page {
     private boolean appendPlainGlyphs(Font font, String str) {
         ContentBuffer content = (ContentBuffer) buf;
         int start = content.size();
+        // The glyph kerned with before the text, which the shaping path kerns
+        // with again: the last of the word before it, in colored text
+        int kernBefore = kernPrevious;
         for (int i = 0; i < str.length(); ) {
             int cp = str.codePointAt(i);
             i += Character.charCount(cp);
@@ -1160,6 +1191,7 @@ final public class Page {
                 int gid = glyphOf(font, cp);
                 if (font.useCharDrawnAsAnother(cp, gid)) {
                     content.truncate(start);
+                    kernPrevious = kernBefore;
                     return false;
                 }
                 if (ascii) {
@@ -1346,13 +1378,13 @@ final public class Page {
         return false;
     }
 
-    private static boolean isMark(int cp) {
+    static boolean isMark(int cp) {
         int type = Character.getType(cp);
         return type == Character.NON_SPACING_MARK || type == Character.ENCLOSING_MARK;
     }
 
     // Returns true if the character is in the blocks of the right to left scripts.
-    private static boolean isRightToLeft(int cp) {
+    static boolean isRightToLeft(int cp) {
         return (cp >= 0x0590 && cp <= 0x08FF) ||
                 (cp >= 0xFB1D && cp <= 0xFDFF) ||
                 (cp >= 0xFE70 && cp <= 0xFEFF) ||
@@ -1363,20 +1395,25 @@ final public class Page {
     // Ends the string of glyphs, draws the glyph moved by dx and dy font units,
     // and starts the string again.
     private void appendMovedGlyph(Font font, int gid, int dx, int dy) {
+        // A mark, which kerns with neither glyph beside it, drawn in a string
+        // or TJ array of its own
+        if (kernFont == font) {
+            kernPrevious = gid;
+        }
         float fontSize = (textFontSize != 0f) ? textFontSize : font.size;
         append("> Tj\n");
         append(textRise + dy * fontSize / font.unitsPerEm);
         append(" Ts\n");
         if (dx == 0) {
             append("<");
-            appendGlyph(font, gid);
+            appendGlyphUnkerned(font, gid);
             append("> Tj\n");
         } else {
             float adjustment = 1000f * dx / font.unitsPerEm;
             append("[");
             append(-adjustment);
             append(" <");
-            appendGlyph(font, gid);
+            appendGlyphUnkerned(font, gid);
             append("> ");
             append(adjustment);
             append("] TJ\n");
@@ -2687,8 +2724,45 @@ final public class Page {
     // Appends the glyph number as hexadecimal and records that the font draws
     // it, so that a subset of the font keeps it.
     private void appendGlyph(Font font, int gid) {
+        if (kernFont != null) {
+            appendKernedGlyph(font, gid);
+            return;
+        }
         font.useGlyph(gid);
         appendCodePointAsHex(gid);
+    }
+
+    // Appends the glyph of a kerned string, with the kerning of the pair it
+    // ends before it. Apart from appendGlyph, which stays small, as almost
+    // every glyph drawn is not kerned.
+    private void appendKernedGlyph(Font font, int gid) {
+        if (kernFont == font) {
+            if (kernPrevious >= 0) {
+                int kerning = font.glyphKerning(kernPrevious, gid);
+                if (kerning != 0) {
+                    appendKerning(font, kerning);
+                }
+            }
+            kernPrevious = gid;
+        }
+        appendGlyphUnkerned(font, gid);
+    }
+
+    // Appends the glyph as appendGlyph does, with no kerning before it: a
+    // space that stands in for a joiner or for a moved mark, and a moved mark,
+    // each drawn in a TJ array of its own.
+    private void appendGlyphUnkerned(Font font, int gid) {
+        font.useGlyph(gid);
+        appendCodePointAsHex(gid);
+    }
+
+    // Ends the string of glyphs, moves the next glyph by the kerning, in font
+    // units, and starts the string again: a TJ of the move alone is valid
+    // wherever a string of glyphs is, in a span of actual text too.
+    private void appendKerning(Font font, int kerning) {
+        append("> Tj\n[");
+        append(-(1000f * kerning) / font.unitsPerEm);
+        append("] TJ\n<");
     }
 
     private void appendCodePointAsHex(int codePoint) {
@@ -2730,6 +2804,20 @@ final public class Page {
     }
 
     private void drawColoredString(
+            Font font,
+            String str,
+            float[] color,
+            Map<String, Integer> highlightColors) {
+        kernChain = true;
+        try {
+            drawColoredWords(font, str, color, highlightColors);
+        } finally {
+            kernChain = false;
+            kernFont = null;
+        }
+    }
+
+    private void drawColoredWords(
             Font font,
             String str,
             float[] color,

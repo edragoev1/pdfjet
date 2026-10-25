@@ -37,6 +37,7 @@ class OTF {
     int[] advanceWidth;
     GlyphMap unicodeToGID = new GlyphMap();
     FontTable gpos;     // Read when a mark is first drawn, by GPOS
+    FontTable kern;     // The kern table of an older font, read when kerned
     byte[] buf;
     boolean cff = false;
     int fsType;         // Of the OS/2 table: what the license allows
@@ -99,6 +100,7 @@ class OTF {
             else if (table.name.equals("post")) { post(table); }
             else if (table.name.equals("CFF ")) { CFF_(table); }
             else if (table.name.equals("GPOS")) { gpos = table; }
+            else if (table.name.equals("kern")) { kern = table; }
             else if (table.name.equals("maxp")) { numGlyphs = Math.max(tableUInt16(table, 4), 0); }
             else if (table.name.equals("cmap")) { cmapTable = table; }
             else if (table.name.equals("loca")) { loca = table; }
