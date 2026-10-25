@@ -102,6 +102,12 @@ func TestKerningOfColoredTextIsDrawnAsItIsMeasured(t *testing.T) {
 	start := len(page.buf)
 	page.drawColoredString(font, text, [3]float32{}, map[string]int32{"To": 0xFF0000})
 	testNear(t, "colored", font.StringWidth(12, text), testDrawnWidth(font, string(page.buf[start:]), 12), 0.01)
+	// A word with a mark, drawn on the shaping path, kerns with the last
+	// glyph of the word before it, as StringWidth measures it
+	shaped := "A V. To Te\u0301 LT"
+	start = len(page.buf)
+	page.drawColoredString(font, shaped, [3]float32{}, map[string]int32{"To": 0xFF0000})
+	testNear(t, "colored, shaped", font.StringWidth(12, shaped), testDrawnWidth(font, string(page.buf[start:]), 12), 0.01)
 }
 
 func TestKerningIsOffUnlessAskedFor(t *testing.T) {

@@ -712,6 +712,9 @@ func (page *Page) drawUnicodeString(font *Font, text string) {
 // another character too, which is drawn in a span of its own.
 func (page *Page) appendPlainGlyphs(font *Font, runes []rune) bool {
 	start := len(page.buf)
+	// The glyph kerned with before the text, which the shaping path kerns
+	// with again: the last of the word before it, in colored text
+	kernPrevious := page.kernPrevious
 	owns := page.ownsFont(font)
 	for _, c1 := range runes {
 		ascii := c1 >= 0x20 && c1 < 0x7F && font.asciiGID[c1-0x20] != 0
@@ -729,7 +732,7 @@ func (page *Page) appendPlainGlyphs(font *Font, runes []rune) bool {
 			}
 			if another {
 				page.buf = page.buf[:start]
-				page.kernPrevious = -1
+				page.kernPrevious = kernPrevious
 				return false
 			}
 			if ascii && owns {
