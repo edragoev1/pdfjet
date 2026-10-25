@@ -113,6 +113,9 @@ public final class PDF {
     private var metadataObjNumber = 0
     private var outputIntentObjNumber = 0
     private var os: BufferedOutputStream?
+    // The memory the content of the pages is compressed in, one page after
+    // another, made once for the document
+    private lazy var flateMemory = FlateEncode.Memory()
     // The digits of the number append(Int) writes, the most an Int has and its sign.
     private var digits = [UInt8](repeating: 0, count: 20)
     private var objOffset = [Int]()
@@ -1387,7 +1390,7 @@ public final class PDF {
         page.checkBalanced()
         if contentStreamsCompression {
             var buffer = [UInt8]()
-            FlateEncode(&buffer, page.buf)
+            FlateEncode(&buffer, page.buf, flateMemory)
             page.buf.removeAll()   // Release the page content memory!
             page.written = true
             buffer = encrypted(buffer)

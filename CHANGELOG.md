@@ -35,6 +35,10 @@ This is the first entry in this file; earlier releases were not tracked here.
   two kinds of space, have the character drawn with them recorded for the
   ToUnicode map; every character was, since 9.0.7. The PDF is the same.
 
+- Swift: the content of the pages is compressed in memory the PDF keeps,
+  made once: 400 KB of tables made for every page came from the system and
+  went back to it. Example_24, a table of 2,546 pages, takes 2,284 ms,
+  where it took 2,614; the PDF is the same.
 - Java: PDFs made in several threads at once are compressed at once: each
   thread compresses its font programs, ToUnicode maps and PNG alpha with
   a Deflater of its own, where all of them waited for one, synchronized.

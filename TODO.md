@@ -332,6 +332,12 @@ commit and date. The layout's format version (1) and the look's rules
   without complicating things). Only contained changes where a profile
   shows the time, each measured against the last tag; no new compressor,
   no deep restructuring.
+  Profiled 25 October 2026 (perf, Example_24): compression 15%, the kernel
+  14% (168,602 page faults: FlateEncode's 400 KB of tables made for every
+  page; reused since, 2,614 to 2,284 ms, in 9.1.3), reference counting 14%,
+  exclusivity checks 10%, malloc and free 9%, reading the CSV 10%. The
+  reference counting and the exclusivity checks are spread over the drawing
+  code: left, as their cure is the restructuring not wanted.
   Example_24's 500 pages take 113 ms in Swift, against 56 to 64 in Go, C#
   and Java (9.1.1). Where the rest goes is not measured: Swift's own
   Deflate, CRC32 and AES (Go's are its standard library's, tuned for years,

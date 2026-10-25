@@ -18,6 +18,7 @@ internal final class FlateEncode {
     // Plain memory too: both are read and written for every position.
     private let head: UnsafeMutablePointer<Int32>
     private let prev: UnsafeMutablePointer<Int32>
+    private let memory: Memory      // Holds the pointers' memory while they are used
 
     private static let WINDOW = 32768       // The distance a match can reach back
     private static let WINDOW_MASK = 32767
@@ -52,26 +53,26 @@ internal final class FlateEncode {
 
     /// Compresses the input into zlib format and writes the result to the output.
     @discardableResult
-    public init(_ output: inout [UInt8], _ input: [UInt8]) {
-        let BUFSIZE = MASK + 1  // 2^16 bytes
-        head = UnsafeMutablePointer<Int32>.allocate(capacity: Int(BUFSIZE))
-        head.initialize(repeating: -1, count: Int(BUFSIZE))
-        prev = UnsafeMutablePointer<Int32>.allocate(capacity: FlateEncode.WINDOW)
-        prev.initialize(repeating: -1, count: FlateEncode.WINDOW)
-        bitBuffer = UnsafeMutablePointer<UInt32>.allocate(capacity: 1)
-        bitBuffer.initialize(to: 0)
-        bitsInBuffer = UnsafeMutablePointer<UInt32>.allocate(capacity: 1)
-        bitsInBuffer.initialize(to: 0)
-        tokenValue = UnsafeMutablePointer<UInt16>.allocate(
-                capacity: FlateEncode.BLOCK_TOKENS)
-        tokenDistance = UnsafeMutablePointer<UInt16>.allocate(
-                capacity: FlateEncode.BLOCK_TOKENS)
-        literalFrequency = UnsafeMutablePointer<Int32>.allocate(
-                capacity: FlateEncode.LITERAL_CODES)
-        distanceFrequency = UnsafeMutablePointer<Int32>.allocate(
-                capacity: FlateEncode.DISTANCE_CODES)
-        literalFrequency.initialize(repeating: 0, count: FlateEncode.LITERAL_CODES)
-        distanceFrequency.initialize(repeating: 0, count: FlateEncode.DISTANCE_CODES)
+    public convenience init(_ output: inout [UInt8], _ input: [UInt8]) {
+        self.init(&output, input, Memory())
+    }
+
+    // Compresses the input with the memory given, which a PDF keeps for the
+    // content of its pages: made for each page, its 400 KB came from the
+    // system and went back to it, 168,602 page faults and 0.55 s of the 4.3 s
+    // of Example_24 (25 October 2026).
+    @discardableResult
+    init(_ output: inout [UInt8], _ input: [UInt8], _ memory: Memory) {
+        memory.reset()
+        self.memory = memory
+        head = memory.head
+        prev = memory.prev
+        bitBuffer = memory.bitBuffer
+        bitsInBuffer = memory.bitsInBuffer
+        tokenValue = memory.tokenValue
+        tokenDistance = memory.tokenDistance
+        literalFrequency = memory.literalFrequency
+        distanceFrequency = memory.distanceFrequency
         output.reserveCapacity(output.count + input.count / 2 + 64)
         writeCode(&output, UInt32(0x9C78), 16)      // FLG | CMF
 
@@ -109,15 +110,38 @@ internal final class FlateEncode {
         addAdler32(&output, input)
     }
 
-    deinit {
-        head.deallocate()
-        prev.deallocate()
-        bitBuffer.deallocate()
-        bitsInBuffer.deallocate()
-        tokenValue.deallocate()
-        tokenDistance.deallocate()
-        literalFrequency.deallocate()
-        distanceFrequency.deallocate()
+    // The memory an encoding works in, its tables and its bits, which one
+    // encoder at a time uses: reset by each, and freed by deinit.
+    final class Memory {
+        let head = UnsafeMutablePointer<Int32>.allocate(capacity: 0x10000)
+        let prev = UnsafeMutablePointer<Int32>.allocate(capacity: FlateEncode.WINDOW)
+        let bitBuffer = UnsafeMutablePointer<UInt32>.allocate(capacity: 1)
+        let bitsInBuffer = UnsafeMutablePointer<UInt32>.allocate(capacity: 1)
+        let tokenValue = UnsafeMutablePointer<UInt16>.allocate(capacity: FlateEncode.BLOCK_TOKENS)
+        let tokenDistance = UnsafeMutablePointer<UInt16>.allocate(capacity: FlateEncode.BLOCK_TOKENS)
+        let literalFrequency = UnsafeMutablePointer<Int32>.allocate(capacity: FlateEncode.LITERAL_CODES)
+        let distanceFrequency = UnsafeMutablePointer<Int32>.allocate(capacity: FlateEncode.DISTANCE_CODES)
+
+        // Sets the tables and the bits as a new encoding starts them.
+        func reset() {
+            head.initialize(repeating: -1, count: 0x10000)
+            prev.initialize(repeating: -1, count: FlateEncode.WINDOW)
+            bitBuffer.initialize(to: 0)
+            bitsInBuffer.initialize(to: 0)
+            literalFrequency.initialize(repeating: 0, count: FlateEncode.LITERAL_CODES)
+            distanceFrequency.initialize(repeating: 0, count: FlateEncode.DISTANCE_CODES)
+        }
+
+        deinit {
+            head.deallocate()
+            prev.deallocate()
+            bitBuffer.deallocate()
+            bitsInBuffer.deallocate()
+            tokenValue.deallocate()
+            tokenDistance.deallocate()
+            literalFrequency.deallocate()
+            distanceFrequency.deallocate()
+        }
     }
 
     private func addLiteral(_ byte: UInt8) {
