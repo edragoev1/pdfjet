@@ -348,8 +348,9 @@ commit and date. The layout's format version (1) and the look's rules
   carrying all the images. Then: a tagged document keeps less of each page
   until complete (Java boxes the numbers of the parent tree), the pages
   keep less once written, a bookmark tree of thousands of levels or
-  siblings is built in linear time, and Java's Compressor is not one
-  synchronized Deflater for every thread.
+  siblings is built in linear time. Java's Compressor is a Deflater for
+  each thread, not one synchronized for all, since 9.1.3 (25 October
+  2026: 800 documents in 4 threads 274 ms, were 626).
 - **Dropped: local letter shapes from GSUB** (the owner, 25 October 2026:
   "keep fonts frozen"). No port reads a font's GSUB table: Bulgarian text
   is drawn with the font's default Cyrillic letters, т as a small capital

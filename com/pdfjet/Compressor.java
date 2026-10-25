@@ -10,21 +10,29 @@ import java.io.*;
 import java.util.zip.*;
 
 class Compressor {
-    private static final Deflater DEFLATER = new Deflater();
+    // A Deflater for each thread, reset after each use: one Deflater for every
+    // thread, synchronized, made the threads of a server that writes PDFs at
+    // once wait their turn to compress (third review, W7; 25 October 2026).
+    private static final ThreadLocal<Deflater> DEFLATER = new ThreadLocal<Deflater>() {
+        @Override
+        protected Deflater initialValue() {
+            return new Deflater();
+        }
+    };
 
-    static synchronized byte[] deflate(byte[] data) {
+    static byte[] deflate(byte[] data) {
+        Deflater deflater = DEFLATER.get();
         ByteArrayOutputStream bos = new ByteArrayOutputStream(data.length);
         try {
-            DEFLATER.setInput(data);
-            DEFLATER.finish();
+            deflater.setInput(data);
+            deflater.finish();
             byte[] buf = new byte[4096];
-            while (!DEFLATER.finished()) {
-                bos.write(buf, 0, DEFLATER.deflate(buf));
+            while (!deflater.finished()) {
+                bos.write(buf, 0, deflater.deflate(buf));
             }
         } finally {
-            DEFLATER.reset();
+            deflater.reset();
         }
         return bos.toByteArray();
     }
 }
-
