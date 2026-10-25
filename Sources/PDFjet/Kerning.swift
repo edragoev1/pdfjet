@@ -25,17 +25,70 @@ final class Kerning {
     private let readLock = NSLock()
     // The kern feature's lookups, in their order
     private var lookups = [[PairSubtable]]()
+    // Made with the lookups, for the font: the glyphs kerned, not a mark, a
+    // right to left letter or a glyph of no character, and the pairs of the
+    // printable ASCII characters, looked up once, by asciiIndex
+    private var kernable = [UInt64]()
+    private var asciiIndex = [Int8]()   // By glyph, the ASCII character - 0x20 drawn with it, or -1
+    private var asciiKern = [Int16]()
 
     // A PairPos subtable: the first glyphs it covers, and how far each pair
     // moves the second glyph, in font units, by the pair or by the classes of
-    // the pair.
+    // the pair. Each pair drawn of a kerned font is looked up in them, so they
+    // are arrays by glyph number, not dictionaries: a map lookup for each
+    // subtable that a pair goes through made kerned text twice as slow in
+    // Java, and four times in Go (25 October 2026).
     struct PairSubtable {
-        var covered = Set<Int>()
-        var pairs: [UInt32: Int16]?         // Format 1, by (first << 16) | second
-        var firstClass = [Int: Int]()       // Format 2, the class of each first glyph
-        var secondClass = [Int: Int]()      // Format 2, the class of each second glyph
+        var covered = [UInt64]()            // A bit for each first glyph covered
+        var pairSets: [Int32]?              // Format 1, by first glyph: its pair set + 1, or 0
+        var seconds = [[Int32]]()           // Format 1, the second glyphs of each pair set, in order
+        var values = [[Int16]]()            // Format 1, the moves of the pairs of each pair set
+        var firstClass = [UInt16]()         // Format 2, the class of each first glyph, 0 past the end
+        var secondClass = [UInt16]()        // Format 2, the class of each second glyph, 0 past the end
         var secondCount = 0                 // Format 2, the classes of the second glyphs
         var classAdvance = [Int16]()        // Format 2, by first class * secondCount + second class
+
+        @inline(__always)
+        func covers(_ gid: Int) -> Bool {
+            return Kerning.hasBit(covered, gid)
+        }
+
+        mutating func cover(_ gid: Int) {
+            while gid >> 6 >= covered.count {
+                covered.append(0)
+            }
+            covered[gid >> 6] |= 1 << UInt64(gid & 63)
+        }
+
+        // Returns the move of the pair, or nil when the pair set of the first
+        // glyph has not the second, found by halves in its second glyphs,
+        // which are in order.
+        func pairValue(_ first: Int, _ second: Int) -> Int? {
+            guard let pairSets = pairSets, first < pairSets.count, pairSets[first] != 0 else {
+                return nil
+            }
+            let set = Int(pairSets[first]) - 1
+            let glyphs = seconds[set]
+            var lo = 0
+            var hi = glyphs.count
+            while lo < hi {
+                let mid = (lo + hi) >> 1
+                if Int(glyphs[mid]) < second {
+                    lo = mid + 1
+                } else {
+                    hi = mid
+                }
+            }
+            if lo < glyphs.count && Int(glyphs[lo]) == second {
+                return Int(values[set][lo])
+            }
+            return nil
+        }
+    }
+
+    @inline(__always)
+    static func hasBit(_ bits: [UInt64], _ i: Int) -> Bool {
+        return i >= 0 && i >> 6 < bits.count && bits[i >> 6] & (1 << UInt64(i & 63)) != 0
     }
 
     private init(_ gposTable: GPOS) {
@@ -51,9 +104,11 @@ final class Kerning {
         return Kerning(gpos)
     }
 
-    // Reads the table, the first time it is called, and returns the kerning.
+    // Reads the table, the first time it is called, and makes the glyphs
+    // kerned and the ASCII pairs of the font, when there is one; returns the
+    // kerning.
     @discardableResult
-    func readTables() -> Kerning {
+    func readTables(_ font: Font?) -> Kerning {
         readLock.lock()
         defer { readLock.unlock() }
         if !read {
@@ -62,34 +117,90 @@ final class Kerning {
                     buf: table.buf, start: table.start, end: table.end, numGlyphs: table.numGlyphs))
             reader.readKernFeature()
             lookups = reader.lookups
+            if let font = font {
+                prepare(font)
+            }
             read = true
         }
         return self
+    }
+
+    // Makes the glyphs the font kerns and the pairs of its printable ASCII
+    // characters, so that most pairs drawn are an array read.
+    private func prepare(_ font: Font) {
+        let unicodeOf = font.unicodeOf
+        var kernable = [UInt64](repeating: 0, count: (unicodeOf.count + 63) / 64)
+        if unicodeOf.count > 1 {
+            for gid in 1..<unicodeOf.count {
+                let c = Int(unicodeOf[gid])
+                if c >= 0 && !Page.isMark(c) && !Page.isRightToLeft(c) {
+                    kernable[gid >> 6] |= 1 << UInt64(gid & 63)
+                }
+            }
+        }
+        var asciiIndex = [Int8](repeating: -1, count: unicodeOf.count)
+        for i in 0..<95 {
+            let gid = Int(font.asciiGID[i])
+            if gid != 0 && gid < asciiIndex.count && asciiIndex[gid] < 0 {
+                asciiIndex[gid] = Int8(i)
+            }
+        }
+        var asciiKern = [Int16](repeating: 0, count: 95*95)
+        for i in 0..<95 {
+            let first = Int(font.asciiGID[i])
+            for j in 0..<95 {
+                let second = Int(font.asciiGID[j])
+                if first != 0 && second != 0 && Kerning.hasBit(kernable, first) && Kerning.hasBit(kernable, second) {
+                    asciiKern[i*95 + j] = Int16(truncatingIfNeeded: pair(first, second))
+                }
+            }
+        }
+        self.kernable = kernable
+        self.asciiIndex = asciiIndex
+        self.asciiKern = asciiKern
+    }
+
+    // Returns how far the second glyph moves after the first, in font units:
+    // 0 unless both are kerned, from the ASCII pairs when both are printable
+    // ASCII characters. The table was read when the kerning was turned on, so
+    // no lock is taken for each pair.
+    func glyphPair(_ first: Int, _ second: Int) -> Int {
+        if first <= 0 || second <= 0 || !Kerning.hasBit(kernable, first) || !Kerning.hasBit(kernable, second) {
+            return 0
+        }
+        if first < asciiIndex.count && second < asciiIndex.count {
+            let a = Int(asciiIndex[first])
+            let b = Int(asciiIndex[second])
+            if a >= 0 && b >= 0 {
+                return Int(asciiKern[a*95 + b])
+            }
+        }
+        return pair(first, second)
     }
 
     // Returns how far the second glyph moves after the first one, in font
     // units: the advance of the first glyph, made shorter or longer. Each
     // lookup of the kern feature adds its own, from the first of its subtables
     // that covers the first glyph and has the pair, as HarfBuzz applies them.
-    // The table was read when the kerning was turned on, so no lock is taken
-    // for each pair.
     func pair(_ first: Int, _ second: Int) -> Int {
-        let key = UInt32(truncatingIfNeeded: first) << 16 | UInt32(truncatingIfNeeded: second)
+        if first < 0 || second < 0 {
+            return 0
+        }
         var total = 0
         for subtables in lookups {
             for s in subtables {
-                if !s.covered.contains(first) {
+                if !s.covers(first) {
                     continue
                 }
-                if let pairs = s.pairs {
-                    if let v = pairs[key] {
-                        total += Int(v)
+                if s.pairSets != nil {
+                    if let v = s.pairValue(first, second) {
+                        total += v
                         break
                     }
                     continue    // A pair set without the second glyph: the next subtable
                 }
-                let c1 = s.firstClass[first] ?? 0
-                let c2 = s.secondClass[second] ?? 0
+                let c1 = first < s.firstClass.count ? Int(s.firstClass[first]) : 0
+                let c2 = second < s.secondClass.count ? Int(s.secondClass[second]) : 0
                 if c2 >= s.secondCount || c1*s.secondCount + c2 >= s.classAdvance.count {
                     continue    // A class the subtable has no values for: the next subtable
                 }
@@ -244,27 +355,43 @@ final class Kerning {
             let size2 = Reader.valueSize(gpos.uint16(at: subTable + 6)).size
             let pairSetCount = gpos.uint16(at: subTable + 8)
             var s = PairSubtable()
-            var pairs = [UInt32: Int16]()
+            let maxFirst = firstGlyphs.prefix(pairSetCount).max() ?? -1
+            var pairSets = [Int32](repeating: 0, count: maxFirst + 1)
             for (i, first) in firstGlyphs.enumerated() {
                 if i >= pairSetCount || gpos.gposWork == 0 {
                     break
                 }
-                s.covered.insert(first)
+                s.cover(first)
                 let pairSet = subTable + gpos.uint16(at: subTable + 10 + 2*i)
                 let pairCount = min(gpos.uint16(at: pairSet), gpos.gposWork)
                 gpos.gposWork -= pairCount
+                // Each pair, by its second glyph and then its record, the first
+                // record of a pair kept, as it is the one applied
+                var records = [Int]()
+                records.reserveCapacity(pairCount)
                 for j in 0..<pairCount {
                     let record = pairSet + 2 + j*(2 + size1 + size2)
-                    let second = gpos.uint16(at: record)
-                    let key = UInt32(first) << 16 | UInt32(second)
-                    if pairs[key] != nil {
+                    let v = xAdvance >= 0 ? gpos.int16(at: record + 2 + xAdvance) : 0
+                    records.append(gpos.uint16(at: record) << 40 | j << 16 | (v & 0xFFFF))
+                }
+                records.sort()
+                var setSeconds = [Int32]()
+                var setValues = [Int16]()
+                for r in records {
+                    let second = Int32(r >> 40)
+                    if let last = setSeconds.last, last == second {
                         continue    // The first record of a pair is the one applied
                     }
-                    let v = xAdvance >= 0 ? gpos.int16(at: record + 2 + xAdvance) : 0
-                    pairs[key] = Int16(truncatingIfNeeded: v)
+                    setSeconds.append(second)
+                    setValues.append(Int16(truncatingIfNeeded: r & 0xFFFF))
+                }
+                if pairSets[first] == 0 {   // A glyph covered twice: its first pair set
+                    s.seconds.append(setSeconds)
+                    s.values.append(setValues)
+                    pairSets[first] = Int32(s.seconds.count)
                 }
             }
-            s.pairs = pairs
+            s.pairSets = pairSets
             return s
         }
 
@@ -279,9 +406,8 @@ final class Kerning {
             let secondClasses = gpos.uint16(at: subTable + 14)
             var s = PairSubtable()
             s.secondCount = secondClasses
-            s.covered.reserveCapacity(firstGlyphs.count)
             for first in firstGlyphs {
-                s.covered.insert(first)
+                s.cover(first)
             }
             s.firstClass = classDef(subTable + gpos.uint16(at: subTable + 8))
             s.secondClass = classDef(subTable + gpos.uint16(at: subTable + 10))
@@ -303,18 +429,24 @@ final class Kerning {
 
         // Reads a class definition table: the class of each glyph it gives
         // one, every other glyph of class 0.
-        mutating func classDef(_ offset: Int) -> [Int: Int] {
-            var classes = [Int: Int]()
+        mutating func classDef(_ offset: Int) -> [UInt16] {
+            var classes = [UInt16]()
+            func set(_ glyph: Int, _ glyphClass: Int) {
+                while glyph >= classes.count {
+                    classes.append(0)
+                }
+                classes[glyph] = UInt16(truncatingIfNeeded: glyphClass)
+            }
             let limit = gpos.numGlyphs > 0 ? gpos.numGlyphs : 0x10000
             switch gpos.uint16(at: offset) {
             case 1:
                 let start = gpos.uint16(at: offset + 2)
                 let count = min(gpos.uint16(at: offset + 4), gpos.gposWork, limit)
                 gpos.gposWork -= count
-                for i in 0..<count {
+                for i in 0..<count where start + i < limit {
                     let glyphClass = gpos.uint16(at: offset + 6 + 2*i)
                     if glyphClass != 0 {
-                        classes[start + i] = glyphClass
+                        set(start + i, glyphClass)
                     }
                 }
             case 2:
@@ -331,7 +463,7 @@ final class Kerning {
                     while glyph <= end && gpos.gposWork > 0 {
                         gpos.gposWork -= 1
                         if glyphClass != 0 {
-                            classes[glyph] = glyphClass
+                            set(glyph, glyphClass)
                         }
                         glyph += 1
                     }

@@ -430,7 +430,7 @@ func (font *Font) GetName() string {
 func (font *Font) SetKernPairs(kernPairs bool) *Font {
 	// The pairs are read now, so that measuring text does not change the font
 	if kernPairs && font.kernTables != nil {
-		font.kernTables.read()
+		font.kernTables.read(font)
 	}
 	font.kernPairs = kernPairs
 	return font
@@ -447,17 +447,7 @@ func (font *Font) kerns() bool {
 // a right to left letter, which shaping places, and for a glyph of no
 // character, as .notdef.
 func (font *Font) glyphKerning(first, second int) int {
-	kernable := func(gid int) bool {
-		if gid <= 0 || gid >= len(font.unicodeOf) {
-			return false
-		}
-		c := rune(font.unicodeOf[gid])
-		return c >= 0 && !isMark(c) && !isRightToLeft(c)
-	}
-	if !kernable(first) || !kernable(second) {
-		return 0
-	}
-	return font.kernTables.pair(first, second)
+	return font.kernTables.read(font).glyphPair(first, second)
 }
 
 // drawnGlyph returns the glyph the character is drawn with, and whether it is

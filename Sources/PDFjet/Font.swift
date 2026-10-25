@@ -425,7 +425,7 @@ public class Font {
     public func setKernPairs(_ kernPairs: Bool) -> Font {
         // The pairs are read now, so that measuring text does not change the font
         if kernPairs {
-            kernTables?.readTables()
+            kernTables?.readTables(self)
         }
         self.kernPairs = kernPairs
         return self
@@ -442,18 +442,7 @@ public class Font {
     // right to left letter, which shaping places, and for a glyph of no
     // character, as .notdef.
     func glyphKerning(_ first: Int, _ second: Int) -> Int {
-        if !kernable(first) || !kernable(second) {
-            return 0
-        }
-        return kernTables!.pair(first, second)
-    }
-
-    private func kernable(_ gid: Int) -> Bool {
-        if gid <= 0 || gid >= unicodeOf.count {
-            return false
-        }
-        let c = Int(unicodeOf[gid])
-        return c >= 0 && !Page.isMark(c) && !Page.isRightToLeft(c)
+        return kernTables!.glyphPair(first, second)
     }
 
     // Returns the glyph the character is drawn with, or -1 when it is not

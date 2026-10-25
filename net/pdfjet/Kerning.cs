@@ -27,17 +27,64 @@ internal class Kerning {
     private readonly object readLock = new object();
     // The kern feature's lookups, in their order, each a list of subtables.
     private readonly List<PairSubtable[]> lookups = new List<PairSubtable[]>();
+    // Made with the lookups, for the font: the glyphs kerned, not a mark, a
+    // right to left letter or a glyph of no character, and the pairs of the
+    // printable ASCII characters, looked up once, by asciiIndex
+    private ulong[] kernable = new ulong[0];
+    private sbyte[] asciiIndex = new sbyte[0];  // By glyph, the ASCII character - 0x20 drawn with it, or -1
+    private short[] asciiKern;
 
     // A PairPos subtable: the first glyphs it covers, and how far each pair
     // moves the second glyph, in font units, by the pair or by the classes of
-    // the pair.
+    // the pair. Each pair drawn of a kerned font is looked up in them, so they
+    // are arrays by glyph number, not dictionaries: a map lookup for each
+    // subtable that a pair goes through made kerned text twice as slow in
+    // Java, and four times in Go (25 October 2026).
     private class PairSubtable {
-        internal HashSet<int> covered = new HashSet<int>();
-        internal Dictionary<uint, short> pairs;     // Format 1, by (first << 16) | second
-        internal Dictionary<int, int> firstClass;   // Format 2, the class of each first glyph
-        internal Dictionary<int, int> secondClass;  // Format 2, the class of each second glyph
-        internal int secondCount;                   // Format 2, the classes of the second glyphs
-        internal short[] classAdvance;              // Format 2, by first class * secondCount + second class
+        internal ulong[] covered = new ulong[0];    // A bit for each first glyph covered
+        internal int[] pairSets;        // Format 1, by first glyph: its pair set + 1, or 0
+        internal int[][] seconds;       // Format 1, the second glyphs of each pair set, in order
+        internal short[][] values;      // Format 1, the moves of the pairs of each pair set
+        internal ushort[] firstClass;   // Format 2, the class of each first glyph, 0 past the end
+        internal ushort[] secondClass;  // Format 2, the class of each second glyph, 0 past the end
+        internal int secondCount;       // Format 2, the classes of the second glyphs
+        internal short[] classAdvance;  // Format 2, by first class * secondCount + second class
+
+        internal bool Covers(int gid) {
+            return HasBit(covered, gid);
+        }
+
+        internal void Cover(int gid) {
+            covered = WithBit(covered, gid);
+        }
+
+        // Returns true if the pair set of the first glyph has the second, with
+        // its move, found by halves in its second glyphs, which are in order.
+        internal bool PairValue(int first, int second, out int value) {
+            value = 0;
+            if (first >= pairSets.Length || pairSets[first] == 0) {
+                return false;
+            }
+            int set = pairSets[first] - 1;
+            int i = Array.BinarySearch(seconds[set], second);
+            if (i < 0) {
+                return false;
+            }
+            value = values[set][i];
+            return true;
+        }
+    }
+
+    private static bool HasBit(ulong[] bits, int i) {
+        return i >= 0 && (i >> 6) < bits.Length && (bits[i >> 6] & (1UL << (i & 63))) != 0;
+    }
+
+    private static ulong[] WithBit(ulong[] bits, int i) {
+        if ((i >> 6) >= bits.Length) {
+            Array.Resize(ref bits, Math.Max((i >> 6) + 1, 2*bits.Length));
+        }
+        bits[i >> 6] |= 1UL << (i & 63);
+        return bits;
     }
 
     private Kerning(GPOS gpos) {
@@ -53,8 +100,9 @@ internal class Kerning {
         return new Kerning(gpos.Reader());
     }
 
-    // Reads the table, the first time it is called, and returns this.
-    internal Kerning Read() {
+    // Reads the table, the first time it is called, and makes the glyphs
+    // kerned and the ASCII pairs of the font, when there is one; returns this.
+    internal Kerning Read(Font font) {
         if (read) {
             return this;
         }
@@ -62,10 +110,63 @@ internal class Kerning {
             if (!read) {
                 gpos.gposWork = GPOS.MAX_GPOS_WORK;
                 ReadKernFeature();
+                if (font != null) {
+                    Prepare(font);
+                }
                 read = true;
             }
         }
         return this;
+    }
+
+    // Makes the glyphs the font kerns and the pairs of its printable ASCII
+    // characters, so that most pairs drawn are an array read.
+    private void Prepare(Font font) {
+        int[] unicodeOf = font.unicodeOf;
+        kernable = new ulong[(unicodeOf.Length + 63) / 64];
+        for (int gid = 1; gid < unicodeOf.Length; gid++) {
+            int c = unicodeOf[gid];
+            if (c >= 0 && !Page.IsMark(c) && !Page.IsRightToLeft(c)) {
+                kernable[gid >> 6] |= 1UL << (gid & 63);
+            }
+        }
+        asciiIndex = new sbyte[unicodeOf.Length];
+        for (int gid = 0; gid < asciiIndex.Length; gid++) {
+            asciiIndex[gid] = -1;
+        }
+        for (int i = 0; i < 95; i++) {
+            int gid = font.asciiGID[i];
+            if (gid != 0 && gid < asciiIndex.Length && asciiIndex[gid] < 0) {
+                asciiIndex[gid] = (sbyte) i;
+            }
+        }
+        asciiKern = new short[95*95];
+        for (int i = 0; i < 95; i++) {
+            int first = font.asciiGID[i];
+            for (int j = 0; j < 95; j++) {
+                int second = font.asciiGID[j];
+                if (first != 0 && second != 0 && HasBit(kernable, first) && HasBit(kernable, second)) {
+                    asciiKern[i*95 + j] = (short) Pair(first, second);
+                }
+            }
+        }
+    }
+
+    // Returns how far the second glyph moves after the first, in font units:
+    // 0 unless both are kerned, from the ASCII pairs when both are printable
+    // ASCII characters.
+    internal int GlyphPair(int first, int second) {
+        if (first <= 0 || second <= 0 || !HasBit(kernable, first) || !HasBit(kernable, second)) {
+            return 0;
+        }
+        if (first < asciiIndex.Length && second < asciiIndex.Length) {
+            int a = asciiIndex[first];
+            int b = asciiIndex[second];
+            if (a >= 0 && b >= 0) {
+                return asciiKern[a*95 + b];
+            }
+        }
+        return Pair(first, second);
     }
 
     // Returns how far the second glyph moves after the first one, in font
@@ -73,26 +174,25 @@ internal class Kerning {
     // lookup of the kern feature adds its own, from the first of its subtables
     // that covers the first glyph and has the pair, as HarfBuzz applies them.
     internal int Pair(int first, int second) {
-        Read();
-        uint key = ((uint) first << 16) | (uint) second;
+        if (first < 0 || second < 0) {
+            return 0;
+        }
         int total = 0;
         foreach (PairSubtable[] subtables in lookups) {
             foreach (PairSubtable s in subtables) {
-                if (!s.covered.Contains(first)) {
+                if (!s.Covers(first)) {
                     continue;
                 }
-                if (s.pairs != null) {
-                    short v;
-                    if (s.pairs.TryGetValue(key, out v)) {
+                if (s.pairSets != null) {
+                    int v;
+                    if (s.PairValue(first, second, out v)) {
                         total += v;
                         break;
                     }
                     continue;   // A pair set without the second glyph: the next subtable
                 }
-                int c1;
-                int c2;
-                s.firstClass.TryGetValue(first, out c1);
-                s.secondClass.TryGetValue(second, out c2);
+                int c1 = (first < s.firstClass.Length) ? s.firstClass[first] : 0;
+                int c2 = (second < s.secondClass.Length) ? s.secondClass[second] : 0;
                 long index = (long) c1 * s.secondCount + c2;
                 if (c2 >= s.secondCount || index >= s.classAdvance.Length) {
                     continue;   // A class the subtable has no values for: the next subtable
@@ -225,7 +325,8 @@ internal class Kerning {
     }
 
     // Reads a PairPos subtable of format 1: for each first glyph it covers, a
-    // set of second glyphs, each with how far it moves.
+    // set of second glyphs, each with how far it moves, put in order, the first
+    // record of a pair kept, as it is the one applied.
     private PairSubtable PairsSubtable(int subTable) {
         GPOS g = gpos;
         int[] firstGlyphs = g.Coverage(subTable + g.GetUInt16(subTable + 2));
@@ -235,30 +336,52 @@ internal class Kerning {
         int size2 = ValueSize(g.GetUInt16(subTable + 6), out unused);
         int pairSetCount = g.GetUInt16(subTable + 8);
         PairSubtable s = new PairSubtable();
-        s.pairs = new Dictionary<uint, short>();
+        int maxFirst = -1;
+        for (int i = 0; i < firstGlyphs.Length && i < pairSetCount; i++) {
+            maxFirst = Math.Max(maxFirst, firstGlyphs[i]);
+        }
+        s.pairSets = new int[maxFirst + 1];
+        List<int[]> seconds = new List<int[]>();
+        List<short[]> values = new List<short[]>();
         for (int i = 0; i < firstGlyphs.Length; i++) {
             if (i >= pairSetCount || g.gposWork == 0) {
                 break;
             }
             int first = firstGlyphs[i];
-            s.covered.Add(first);
+            s.Cover(first);
             int pairSet = subTable + g.GetUInt16(subTable + 10 + 2*i);
             int pairCount = Math.Min(g.GetUInt16(pairSet), g.gposWork);
             g.gposWork -= pairCount;
+            // Each pair, by its second glyph and then its record
+            long[] records = new long[pairCount];
             for (int j = 0; j < pairCount; j++) {
                 int record = pairSet + 2 + j*(2 + size1 + size2);
-                int second = g.GetUInt16(record);
-                uint key = ((uint) first << 16) | (uint) second;
-                if (s.pairs.ContainsKey(key)) {
+                int v = (xAdvance >= 0) ? g.GetInt16(record + 2 + xAdvance) : 0;
+                records[j] = ((long) g.GetUInt16(record) << 40) | ((long) j << 16) | (long) (v & 0xFFFF);
+            }
+            Array.Sort(records);
+            int[] setSeconds = new int[pairCount];
+            short[] setValues = new short[pairCount];
+            int n = 0;
+            foreach (long r in records) {
+                int second = (int) (r >> 40);
+                if (n > 0 && setSeconds[n - 1] == second) {
                     continue;   // The first record of a pair is the one applied
                 }
-                int v = 0;
-                if (xAdvance >= 0) {
-                    v = g.GetInt16(record + 2 + xAdvance);
-                }
-                s.pairs[key] = (short) v;
+                setSeconds[n] = second;
+                setValues[n] = (short) (r & 0xFFFF);
+                n++;
+            }
+            if (s.pairSets[first] == 0) {   // A glyph covered twice: its first pair set
+                Array.Resize(ref setSeconds, n);
+                Array.Resize(ref setValues, n);
+                seconds.Add(setSeconds);
+                values.Add(setValues);
+                s.pairSets[first] = seconds.Count;
             }
         }
+        s.seconds = seconds.ToArray();
+        s.values = values.ToArray();
         return s;
     }
 
@@ -277,7 +400,7 @@ internal class Kerning {
         PairSubtable s = new PairSubtable();
         s.secondCount = secondClasses;
         foreach (int first in firstGlyphs) {
-            s.covered.Add(first);
+            s.Cover(first);
         }
         s.firstClass = ClassDef(subTable + g.GetUInt16(subTable + 8));
         s.secondClass = ClassDef(subTable + g.GetUInt16(subTable + 10));
@@ -298,9 +421,9 @@ internal class Kerning {
 
     // Reads a class definition table: the class of each glyph it gives one,
     // every other glyph of class 0.
-    private Dictionary<int, int> ClassDef(int offset) {
+    private ushort[] ClassDef(int offset) {
         GPOS g = gpos;
-        Dictionary<int, int> classes = new Dictionary<int, int>();
+        ushort[] classes = new ushort[0];
         int limit = 0x10000;
         if (g.numGlyphs > 0) {
             limit = g.numGlyphs;
@@ -310,10 +433,10 @@ internal class Kerning {
             int start = g.GetUInt16(offset + 2);
             int count = Math.Min(Math.Min(g.GetUInt16(offset + 4), g.gposWork), limit);
             g.gposWork -= count;
-            for (int i = 0; i < count; i++) {
+            for (int i = 0; i < count && start + i < limit; i++) {
                 int glyphClass = g.GetUInt16(offset + 6 + 2*i);
                 if (glyphClass != 0) {
-                    classes[start + i] = glyphClass;
+                    classes = WithClass(classes, start + i, glyphClass);
                 }
             }
         } else if (format == 2) {
@@ -327,11 +450,20 @@ internal class Kerning {
                 for (int glyph = start; glyph <= end && g.gposWork > 0; glyph++) {
                     g.gposWork--;
                     if (glyphClass != 0) {
-                        classes[glyph] = glyphClass;
+                        classes = WithClass(classes, glyph, glyphClass);
                     }
                 }
             }
         }
+        return classes;
+    }
+
+    // Gives the glyph the class, the array made longer as needed.
+    private static ushort[] WithClass(ushort[] classes, int glyph, int glyphClass) {
+        if (glyph >= classes.Length) {
+            Array.Resize(ref classes, Math.Max(glyph + 1, 2*classes.Length));
+        }
+        classes[glyph] = (ushort) glyphClass;
         return classes;
     }
 }

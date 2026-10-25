@@ -152,7 +152,7 @@ public class KerningTest {
     public void KerningOfABrokenTableIsNone() {
         byte[] buf = {0, 1, 0, 0, 0, 10, 0, 10, 0, 10, 0xFF, 0xFF, 0xFF, 0xFF};
         Kerning k = Kerning.Of(GPOS.Of(buf, 0, buf.Length, 10, false));
-        Assert.Equal(0, k.Pair(1, 2));
+        Assert.Equal(0, k.Read(null).Pair(1, 2));
     }
 
     // The same widths in the four ports, at 10 points: what each port

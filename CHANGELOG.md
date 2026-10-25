@@ -19,11 +19,14 @@ This is the first entry in this file; earlier releases were not tracked here.
   no GPOS table is not read, and such a font draws its text unkerned. Text
   is measured as it is drawn: StringWidth, GetFitChars, and so the
   wrapping, alignment and justification of TextLine, TextBlock, TextColumn,
-  TextFrame and the table cells, count the same pairs. Marks and right to left text are not kerned.
-  Off by default, and a document that does not ask for it is as fast as
-  before and draws the same PDF. In IBM Plex Sans at 10 points, "AVATAR To
-  Wally" is 75.14 points wide kerned, 78.16 not; the four ports measure and
-  draw it the same.
+  TextFrame and the table cells, count the same pairs. Marks and right to
+  left text are not kerned. Off by default, and a document that does not
+  ask for it is as fast as before and draws the same PDF. In IBM Plex Sans
+  at 10 points, "AVATAR To Wally" is 75.14 points wide kerned, 78.16 not;
+  the four ports measure and draw it the same. Kerned, 500 pages of Latin,
+  Greek and Cyrillic text in IBM Plex Sans take 96 ms in Go (57 not
+  kerned), 118 in Java (69), 103 in C# (63) and 155 in Swift (98), and the
+  document is 11 to 17% larger, for the moves written between the glyphs.
 
 ### Changed
 - Swift: text other than printable ASCII is drawn faster: a 500-page text

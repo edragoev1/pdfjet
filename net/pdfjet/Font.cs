@@ -415,7 +415,7 @@ public class Font {
     public Font SetKernPairs(bool kernPairs) {
         // The pairs are read now, so that measuring text does not change the font
         if (kernPairs && kernTables != null) {
-            kernTables.Read();
+            kernTables.Read(this);
         }
         this.kernPairs = kernPairs;
         return this;
@@ -432,18 +432,7 @@ public class Font {
     // right to left letter, which shaping places, and for a glyph of no
     // character, as .notdef.
     internal int GlyphKerning(int first, int second) {
-        if (!Kernable(first) || !Kernable(second)) {
-            return 0;
-        }
-        return kernTables.Pair(first, second);
-    }
-
-    private bool Kernable(int gid) {
-        if (gid <= 0 || gid >= unicodeOf.Length) {
-            return false;
-        }
-        int c = unicodeOf[gid];
-        return c >= 0 && !Page.IsMark(c) && !Page.IsRightToLeft(c);
+        return kernTables.Read(this).GlyphPair(first, second);
     }
 
     // Returns true if the character is drawn, with the glyph it gives: an

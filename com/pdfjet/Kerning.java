@@ -7,6 +7,7 @@
 package com.pdfjet;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
 
@@ -30,18 +31,45 @@ class Kerning {
     private volatile boolean read;  // Set last, once the table is read
     // The kern feature's lookups, in their order, each its subtables
     private final List<PairSubtable[]> lookups = new ArrayList<PairSubtable[]>();
+    // Made with the lookups, for the font: the glyphs kerned, not a mark, a
+    // right to left letter or a glyph of no character, and the pairs of the
+    // printable ASCII characters, looked up once, by asciiIndex
+    private final BitSet kernable = new BitSet();
+    private byte[] asciiIndex = new byte[0];    // By glyph, the ASCII character - 0x20 drawn with it, or -1
+    private short[] asciiKern;
 
     // A PairPos subtable: the first glyphs it covers, and how far each pair
     // moves the second glyph, in font units, by the pair or by the classes of
-    // the pair.
+    // the pair. Each pair drawn of a kerned font is looked up in them, so they
+    // are arrays by glyph number, not maps: a map lookup for each subtable
+    // that a pair goes through made kerned text twice as slow in Java, and
+    // four times in Go (25 October 2026).
     private static final class PairSubtable {
         BitSet covered = new BitSet();
-        IntMap pairs;           // Format 1, by (first << 16) | second
-        IntMap firstClass;      // Format 2, the class of each first glyph
-        IntMap secondClass;     // Format 2, the class of each second glyph
-        int secondCount;                    // Format 2, the classes of the second glyphs
-        short[] classAdvance;               // Format 2, by first class * secondCount + second class
+        int[] pairSets;         // Format 1, by first glyph: its pair set + 1, or 0
+        int[][] seconds;        // Format 1, the second glyphs of each pair set, in order
+        short[][] values;       // Format 1, the moves of the pairs of each pair set
+        char[] firstClass;      // Format 2, the class of each first glyph, 0 past the end
+        char[] secondClass;     // Format 2, the class of each second glyph, 0 past the end
+        int secondCount;        // Format 2, the classes of the second glyphs
+        short[] classAdvance;   // Format 2, by first class * secondCount + second class
+
+        // Returns the move of the pair, and Integer.MIN_VALUE when the pair
+        // set of the first glyph has not the second, found by halves in its
+        // second glyphs, which are in order.
+        int pairValue(int first, int second) {
+            if (first >= pairSets.length || pairSets[first] == 0) {
+                return NONE;
+            }
+            int set = pairSets[first] - 1;
+            int i = Arrays.binarySearch(seconds[set], second);
+            return (i >= 0) ? values[set][i] : NONE;
+        }
     }
+
+    // What pairValue returns for a pair a subtable does not have: no value of
+    // 16 bits is it.
+    private static final int NONE = Integer.MIN_VALUE;
 
     private Kerning(GPOS gpos) {
         this.gpos = gpos;
@@ -58,18 +86,69 @@ class Kerning {
         return new Kerning(new GPOS(gpos.buf, gpos.start, gpos.end, gpos.numGlyphs));
     }
 
-    // Reads the table, the first time it is called.
-    void read() {
+    // Reads the table, the first time it is called, and makes the glyphs
+    // kerned and the ASCII pairs of the font, when there is one; returns this.
+    Kerning read(Font font) {
         if (read) {
-            return;
+            return this;
         }
         synchronized (this) {
             if (!read) {
                 gpos.gposWork = GPOS.MAX_GPOS_WORK;
                 readKernFeature();
+                if (font != null) {
+                    prepare(font);
+                }
                 read = true;
             }
         }
+        return this;
+    }
+
+    // Makes the glyphs the font kerns and the pairs of its printable ASCII
+    // characters, so that most pairs drawn are an array read.
+    private void prepare(Font font) {
+        for (int gid = 1; gid < font.unicodeOf.length; gid++) {
+            int c = font.unicodeOf[gid];
+            if (c >= 0 && !Page.isMark(c) && !Page.isRightToLeft(c)) {
+                kernable.set(gid);
+            }
+        }
+        asciiIndex = new byte[font.unicodeOf.length];
+        Arrays.fill(asciiIndex, (byte) -1);
+        for (int i = 0; i < 95; i++) {
+            int gid = font.asciiGID[i];
+            if (gid != 0 && gid < asciiIndex.length && asciiIndex[gid] < 0) {
+                asciiIndex[gid] = (byte) i;
+            }
+        }
+        asciiKern = new short[95*95];
+        for (int i = 0; i < 95; i++) {
+            int first = font.asciiGID[i];
+            for (int j = 0; j < 95; j++) {
+                int second = font.asciiGID[j];
+                if (first != 0 && second != 0 && kernable.get(first) && kernable.get(second)) {
+                    asciiKern[i*95 + j] = (short) pair(first, second);
+                }
+            }
+        }
+    }
+
+    // Returns how far the second glyph moves after the first, in font units:
+    // 0 unless both are kerned, from the ASCII pairs when both are printable
+    // ASCII characters.
+    int glyphPair(int first, int second) {
+        if (first <= 0 || second <= 0 || !kernable.get(first) || !kernable.get(second)) {
+            return 0;
+        }
+        if (first < asciiIndex.length && second < asciiIndex.length) {
+            int a = asciiIndex[first];
+            int b = asciiIndex[second];
+            if (a >= 0 && b >= 0) {
+                return asciiKern[a*95 + b];
+            }
+        }
+        return pair(first, second);
     }
 
     /**
@@ -80,23 +159,25 @@ class Kerning {
      * applies them.
      */
     int pair(int first, int second) {
-        read();
+        if (first < 0 || second < 0) {
+            return 0;
+        }
         int total = 0;
         for (PairSubtable[] subtables : lookups) {
             for (PairSubtable s : subtables) {
                 if (!s.covered.get(first)) {
                     continue;
                 }
-                if (s.pairs != null) {
-                    int v = s.pairs.get((first << 16) | second, NONE);
+                if (s.pairSets != null) {
+                    int v = s.pairValue(first, second);
                     if (v != NONE) {
                         total += v;
                         break;
                     }
                     continue;   // A pair set without the second glyph: the next subtable
                 }
-                long class1 = s.firstClass.get(first, 0);
-                long class2 = s.secondClass.get(second, 0);
+                long class1 = (first < s.firstClass.length) ? s.firstClass[first] : 0;
+                long class2 = (second < s.secondClass.length) ? s.secondClass[second] : 0;
                 if (class2 >= s.secondCount || class1*s.secondCount + class2 >= s.classAdvance.length) {
                     continue;   // A class the subtable has no values for: the next subtable
                 }
@@ -241,7 +322,13 @@ class Kerning {
         int size2 = valueSize(g.getUInt16(subTable + 6))[0];
         int pairSetCount = g.getUInt16(subTable + 8);
         PairSubtable s = new PairSubtable();
-        s.pairs = new IntMap();
+        int maxFirst = -1;
+        for (int i = 0; i < firstGlyphs.length && i < pairSetCount; i++) {
+            maxFirst = Math.max(maxFirst, firstGlyphs[i]);
+        }
+        s.pairSets = new int[maxFirst + 1];
+        List<int[]> seconds = new ArrayList<int[]>();
+        List<short[]> values = new ArrayList<short[]>();
         for (int i = 0; i < firstGlyphs.length; i++) {
             if (i >= pairSetCount || g.gposWork == 0) {
                 break;
@@ -251,17 +338,35 @@ class Kerning {
             int pairSet = subTable + g.getUInt16(subTable + 10 + 2*i);
             int pairCount = Math.min(g.getUInt16(pairSet), g.gposWork);
             g.gposWork -= pairCount;
+            // Each pair, by its second glyph, the first record of a pair
+            // kept, as it is the one applied
+            long[] records = new long[pairCount];
             for (int j = 0; j < pairCount; j++) {
                 int record = pairSet + 2 + j*(2 + size1 + size2);
-                int second = g.getUInt16(record);
-                int v = 0;
-                if (xAdvance >= 0) {
-                    v = g.getInt16(record + 2 + xAdvance);
+                int v = (xAdvance >= 0) ? g.getInt16(record + 2 + xAdvance) : 0;
+                records[j] = ((long) g.getUInt16(record) << 40) | ((long) j << 16) | (v & 0xFFFF);
+            }
+            Arrays.sort(records);
+            int[] setSeconds = new int[pairCount];
+            short[] setValues = new short[pairCount];
+            int n = 0;
+            for (long r : records) {
+                int second = (int) (r >>> 40);
+                if (n > 0 && setSeconds[n - 1] == second) {
+                    continue;   // The first record of a pair is the one applied
                 }
-                // The first record of a pair is the one applied
-                s.pairs.putIfAbsent((first << 16) | second, v);
+                setSeconds[n] = second;
+                setValues[n] = (short) r;
+                n++;
+            }
+            if (s.pairSets[first] == 0) {   // A glyph covered twice: its first pair set
+                seconds.add(Arrays.copyOf(setSeconds, n));
+                values.add(Arrays.copyOf(setValues, n));
+                s.pairSets[first] = seconds.size();
             }
         }
+        s.seconds = seconds.toArray(new int[seconds.size()][]);
+        s.values = values.toArray(new short[values.size()][]);
         return s;
     }
 
@@ -302,19 +407,19 @@ class Kerning {
 
     // Reads a class definition table: the class of each glyph it gives one,
     // every other glyph of class 0.
-    private IntMap classDef(int offset) {
+    private char[] classDef(int offset) {
         GPOS g = gpos;
-        IntMap classes = new IntMap();
+        char[] classes = new char[0];
         int limit = (g.numGlyphs > 0) ? g.numGlyphs : 0x10000;
         int format = g.getUInt16(offset);
         if (format == 1) {
             int start = g.getUInt16(offset + 2);
             int count = Math.min(Math.min(g.getUInt16(offset + 4), g.gposWork), limit);
             g.gposWork -= count;
-            for (int i = 0; i < count; i++) {
+            for (int i = 0; i < count && start + i < limit; i++) {
                 int glyphClass = g.getUInt16(offset + 6 + 2*i);
                 if (glyphClass != 0) {
-                    classes.put(start + i, glyphClass);
+                    classes = setClass(classes, start + i, glyphClass);
                 }
             }
         } else if (format == 2) {
@@ -328,7 +433,7 @@ class Kerning {
                 for (int glyph = start; glyph <= end && g.gposWork > 0; glyph++) {
                     g.gposWork--;
                     if (glyphClass != 0) {
-                        classes.put(glyph, glyphClass);
+                        classes = setClass(classes, glyph, glyphClass);
                     }
                 }
             }
@@ -336,74 +441,12 @@ class Kerning {
         return classes;
     }
 
-    // What IntMap.get returns for a pair a subtable does not have: no value
-    // of 16 bits is it.
-    private static final int NONE = Integer.MIN_VALUE;
-
-    // A map of int keys to int values, for the pairs and the classes of the
-    // glyphs: a HashMap boxed each key and value, and each pair measured was
-    // a lookup of boxed integers. Open addressing in arrays kept at most half
-    // full.
-    private static final class IntMap {
-        private int[] keys = new int[16];
-        private int[] values = new int[16];
-        private boolean[] used = new boolean[16];
-        private int size;
-
-        // Returns the value of the key, or none when it has no value.
-        int get(int key, int none) {
-            int i = slot(key);
-            return used[i] ? values[i] : none;
+    // Gives the glyph the class, the array made longer as needed.
+    private static char[] setClass(char[] classes, int glyph, int glyphClass) {
+        if (glyph >= classes.length) {
+            classes = Arrays.copyOf(classes, Math.max(glyph + 1, 2*classes.length));
         }
-
-        // Gives the key the value.
-        void put(int key, int value) {
-            int i = slot(key);
-            if (!used[i]) {
-                if (2*(size + 1) > keys.length) {
-                    grow();
-                    i = slot(key);
-                }
-                used[i] = true;
-                keys[i] = key;
-                size++;
-            }
-            values[i] = value;
-        }
-
-        // Gives the key the value, unless it has one.
-        void putIfAbsent(int key, int value) {
-            if (!used[slot(key)]) {
-                put(key, value);
-            }
-        }
-
-        // Returns where the key is, or the empty slot where it would go.
-        private int slot(int key) {
-            int mask = keys.length - 1;
-            int h = key * 0x9E3779B9;
-            int i = (h ^ (h >>> 16)) & mask;
-            while (used[i] && keys[i] != key) {
-                i = (i + 1) & mask;
-            }
-            return i;
-        }
-
-        private void grow() {
-            int[] oldKeys = keys;
-            int[] oldValues = values;
-            boolean[] oldUsed = used;
-            keys = new int[2*oldKeys.length];
-            values = new int[2*oldKeys.length];
-            used = new boolean[2*oldKeys.length];
-            for (int j = 0; j < oldKeys.length; j++) {
-                if (oldUsed[j]) {
-                    int i = slot(oldKeys[j]);
-                    used[i] = true;
-                    keys[i] = oldKeys[j];
-                    values[i] = oldValues[j];
-                }
-            }
-        }
+        classes[glyph] = (char) glyphClass;
+        return classes;
     }
 }   // End of Kerning.java

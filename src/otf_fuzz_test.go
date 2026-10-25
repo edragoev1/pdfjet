@@ -43,6 +43,9 @@ func fuzzOpenTypeFont(t *testing.T, data []byte) {
 		pdf := NewPDF(bufio.NewWriter(io.Discard))
 		font := NewFont(pdf, bytes.NewReader(data))
 		font.SetSize(12)
+		// Half of the inputs kerned, so that the kerning's reading of the
+		// GPOS table and the kerned drawing are fuzzed with the rest
+		font.SetKernPairs(len(data)%2 == 1)
 		font.StringWidth(12, fuzzFontText)
 		page := NewPage(pdf, letter.Portrait())
 		NewTextLine(font, fuzzFontText).SetLocation(50, 50).DrawOn(page)

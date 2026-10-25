@@ -515,7 +515,7 @@ final public class Font {
     public Font setKernPairs(boolean kernPairs) {
         // The pairs are read now, so that measuring text does not change the font
         if (kernPairs && kernTables != null) {
-            kernTables.read();
+            kernTables.read(this);
         }
         this.kernPairs = kernPairs;
         return this;
@@ -532,18 +532,7 @@ final public class Font {
     // right to left letter, which shaping places, and for a glyph of no
     // character, as .notdef.
     int glyphKerning(int first, int second) {
-        if (!kernable(first) || !kernable(second)) {
-            return 0;
-        }
-        return kernTables.pair(first, second);
-    }
-
-    private boolean kernable(int gid) {
-        if (gid <= 0 || gid >= unicodeOf.length) {
-            return false;
-        }
-        int c = unicodeOf[gid];
-        return c >= 0 && !Page.isMark(c) && !Page.isRightToLeft(c);
+        return kernTables.read(this).glyphPair(first, second);
     }
 
     // Returns the glyph the character is drawn with, or -1 when it is not

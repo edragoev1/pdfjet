@@ -298,19 +298,12 @@ commit and date. The layout's format version (1) and the look's rules
   keep less once written, a bookmark tree of thousands of levels or
   siblings is built in linear time, and Java's Compressor is not one
   synchronized Deflater for every thread.
-- **For 9.1.5: local letter shapes from GSUB, opt in** (22 October 2026).
-  No port reads a font's GSUB table today. A small reader of its single
-  substitutions (lookup type 1) for the `locl` feature of a language,
-  off by default, as kerning is: Bulgarian Cyrillic first (IBM Plex Sans has
-  26 such letters), then whatever the font carries for Serbian and
-  Macedonian (б, and italics), Romanian (ș and ț with the comma below) and
-  Polish (the steeper acute). The PDF must still say what each swapped glyph
-  means (ToUnicode), so that copying, search and screen readers read the
-  same text; the subset takes the swapped glyphs. Later, the same reader
-  for standard ligatures (lookup type 4, `liga`, opt in, Turkish's dotless ı
-  kept apart) and small capitals. Not full shaping: Devanagari and the
-  like need a shaping engine. For the library only; Forms keeps the
-  default shapes. After kerning, which reads GPOS, not GSUB.
+- **Dropped: local letter shapes from GSUB** (the owner, 25 October 2026:
+  "keep fonts frozen"). No port reads a font's GSUB table: Bulgarian text
+  is drawn with the font's default Cyrillic letters, т as a small capital
+  T, not the Bulgarian т that looks like an m, and ligatures and small
+  capitals are not made. After kerning and the longer fuzzing of the
+  subsetters, the font code is to be left as it is.
 - **For 9.1.3: kerning of TrueType and OpenType fonts, opt in** (18 October
   2026; first, ahead of any other library work, the owner, 22 October 2026;
   9.1.3, the owner, 24 October 2026): no slower when off, and little code.
@@ -344,7 +337,11 @@ commit and date. The layout's format version (1) and the look's rules
   ints of its own, IntMap, where a HashMap boxed every key and value; which
   glyph a character is drawn with, if any, is decided in one place in each
   port, drawnGlyph, which Page draws with and the kerning measures with
-  (Swift's 500 pages of text 98 ms, as before).
+  (Swift's 500 pages of text 98 ms, as before). Kerned text was slow, the
+  pairs looked up in a map for each subtable: 500 pages kerned took 226 ms
+  in Go (57 not kerned), 142 in Java (69), 172 in C# (63), 341 in Swift
+  (98). The subtables are arrays by glyph now, and the glyphs kerned and
+  the pairs of printable ASCII are made once: 96, 118, 103 and 155 ms.
   Left as they are, for later:
   - Whether a glyph is kerned is decided by the character unicodeOf gives
     it, so a glyph a font uses both for a mark and for a spacing character,

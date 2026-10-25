@@ -5,7 +5,10 @@
 
 package pdfjet
 
-import "sync"
+import (
+	"sort"
+	"sync"
+)
 
 // kerning is how far apart pairs of glyphs go, from the font: the PairPos
 // lookups of the kern feature of its GPOS table, pairs of glyphs (format 1)
@@ -24,18 +27,51 @@ type kerning struct {
 	gpos    gpos // The GPOS table, read with its reader
 	once    sync.Once
 	lookups [][]pairSubtable // The kern feature's lookups, in their order
+	// Made with the lookups, for the font: a bit for each glyph kerned, not a
+	// mark, a right to left letter or a glyph of no character, and the pairs
+	// of the printable ASCII characters, looked up once, by asciiIndex
+	kernable   []uint64
+	asciiIndex []int8 // By glyph, the ASCII character - 0x20 drawn with it, or -1
+	asciiKern  []int16
 }
 
 // pairSubtable is a PairPos subtable: the first glyphs it covers, and how far
 // each pair moves the second glyph, in font units, by the pair or by the
-// classes of the pair.
+// classes of the pair. Each pair drawn of a kerned font is looked up in them,
+// so they are arrays by glyph number, not maps: a map lookup for each
+// subtable that a pair goes through made Go's kerned text four times as slow
+// as unkerned text (25 October 2026).
 type pairSubtable struct {
-	covered      map[int]bool
-	pairs        map[uint32]int16 // Format 1, by (first << 16) | second
-	firstClass   map[int]int      // Format 2, the class of each first glyph
-	secondClass  map[int]int      // Format 2, the class of each second glyph
-	secondCount  int              // Format 2, the classes of the second glyphs
-	classAdvance []int16          // Format 2, by first class * secondCount + second class
+	covered      []uint64  // A bit for each first glyph covered
+	pairSets     []int32   // Format 1, by first glyph: its pair set + 1, or 0
+	seconds      [][]int32 // Format 1, the second glyphs of each pair set, in order
+	values       [][]int16 // Format 1, the moves of the pairs of each pair set
+	firstClass   []uint16  // Format 2, the class of each first glyph, 0 past the end
+	secondClass  []uint16  // Format 2, the class of each second glyph, 0 past the end
+	secondCount  int       // Format 2, the classes of the second glyphs
+	classAdvance []int16   // Format 2, by first class * secondCount + second class
+}
+
+// covers returns true if the subtable covers the glyph as a first glyph.
+func (s *pairSubtable) covers(gid int) bool {
+	return gid>>6 < len(s.covered) && s.covered[gid>>6]&(1<<(gid&63)) != 0
+}
+
+// cover marks the glyph covered.
+func (s *pairSubtable) cover(gid int) {
+	for gid>>6 >= len(s.covered) {
+		s.covered = append(s.covered, 0)
+	}
+	s.covered[gid>>6] |= 1 << (gid & 63)
+}
+
+// classOf returns the class of the glyph, 0 for a glyph the classes do not
+// reach.
+func classOf(classes []uint16, gid int) int {
+	if gid < len(classes) {
+		return int(classes[gid])
+	}
+	return 0
 }
 
 // newKerning returns the kerning of the font data, from its GPOS table, at its
@@ -47,13 +83,66 @@ func newKerning(buf []byte, gposTable *fontTable, numGlyphs int) *kerning {
 	return &kerning{gpos: *newGpos(buf, gposTable.offset, gposTable.length, numGlyphs)}
 }
 
-// read reads the table, the first time it is called, and returns the kerning.
-func (k *kerning) read() *kerning {
+// read reads the table, the first time it is called, and makes the glyphs
+// kerned and the ASCII pairs of the font, when there is one, and returns the
+// kerning.
+func (k *kerning) read(font *Font) *kerning {
 	k.once.Do(func() {
 		k.gpos.gposWork = maxGposWork
 		k.readKernFeature()
+		if font != nil {
+			k.prepare(font)
+		}
 	})
 	return k
+}
+
+// prepare makes the glyphs the font kerns and the pairs of its printable
+// ASCII characters, so that most pairs drawn are an array read.
+func (k *kerning) prepare(font *Font) {
+	k.kernable = make([]uint64, (len(font.unicodeOf)+63)/64)
+	for gid := 1; gid < len(font.unicodeOf); gid++ {
+		c := rune(font.unicodeOf[gid])
+		if c >= 0 && !isMark(c) && !isRightToLeft(c) {
+			k.kernable[gid>>6] |= 1 << (gid & 63)
+		}
+	}
+	k.asciiIndex = make([]int8, len(font.unicodeOf))
+	for gid := range k.asciiIndex {
+		k.asciiIndex[gid] = -1
+	}
+	for i, gid := range font.asciiGID {
+		if gid != 0 && int(gid) < len(k.asciiIndex) && k.asciiIndex[gid] < 0 {
+			k.asciiIndex[gid] = int8(i)
+		}
+	}
+	k.asciiKern = make([]int16, 95*95)
+	for i, first := range font.asciiGID {
+		for j, second := range font.asciiGID {
+			if first != 0 && second != 0 && k.isKernable(int(first)) && k.isKernable(int(second)) {
+				k.asciiKern[i*95+j] = int16(k.pair(int(first), int(second)))
+			}
+		}
+	}
+}
+
+// isKernable returns true if the glyph is kerned: not a mark, a right to left
+// letter or a glyph of no character, as .notdef, which shaping places.
+func (k *kerning) isKernable(gid int) bool {
+	return gid > 0 && gid>>6 < len(k.kernable) && k.kernable[gid>>6]&(1<<(gid&63)) != 0
+}
+
+// glyphPair returns how far the second glyph moves after the first, in font
+// units: 0 unless both are kerned, from the ASCII pairs when both are
+// printable ASCII characters.
+func (k *kerning) glyphPair(first, second int) int {
+	if !k.isKernable(first) || !k.isKernable(second) {
+		return 0
+	}
+	if a, b := k.asciiIndex[first], k.asciiIndex[second]; a >= 0 && b >= 0 {
+		return int(k.asciiKern[int(a)*95+int(b)])
+	}
+	return k.pair(first, second)
 }
 
 // pair returns how far the second glyph moves after the first one, in font
@@ -61,23 +150,25 @@ func (k *kerning) read() *kerning {
 // of the kern feature adds its own, from the first of its subtables that
 // covers the first glyph and has the pair, as HarfBuzz applies them.
 func (k *kerning) pair(first, second int) int {
-	k.read()
+	if first < 0 || second < 0 {
+		return 0
+	}
 	total := 0
 	for _, subtables := range k.lookups {
 		for i := range subtables {
 			s := &subtables[i]
-			if !s.covered[first] {
+			if !s.covers(first) {
 				continue
 			}
-			if s.pairs != nil {
-				if v, ok := s.pairs[uint32(first)<<16|uint32(second)]; ok {
-					total += int(v)
+			if s.pairSets != nil {
+				if v, ok := s.pairValue(first, second); ok {
+					total += v
 					break
 				}
 				continue // A pair set without the second glyph: the next subtable
 			}
-			c1 := s.firstClass[first]
-			c2 := s.secondClass[second]
+			c1 := classOf(s.firstClass, first)
+			c2 := classOf(s.secondClass, second)
 			if c2 >= s.secondCount || c1*s.secondCount+c2 >= len(s.classAdvance) {
 				continue // A class the subtable has no values for: the next subtable
 			}
@@ -86,6 +177,30 @@ func (k *kerning) pair(first, second int) int {
 		}
 	}
 	return total
+}
+
+// pairValue returns the move of the pair of a subtable of format 1, and
+// whether the pair set of the first glyph has the second, found by halves in
+// its second glyphs, which are in order.
+func (s *pairSubtable) pairValue(first, second int) (int, bool) {
+	if first >= len(s.pairSets) || s.pairSets[first] == 0 {
+		return 0, false
+	}
+	set := s.pairSets[first] - 1
+	seconds := s.seconds[set]
+	lo, hi := 0, len(seconds)
+	for lo < hi {
+		mid := int(uint(lo+hi) >> 1)
+		if int(seconds[mid]) < second {
+			lo = mid + 1
+		} else {
+			hi = mid
+		}
+	}
+	if lo < len(seconds) && int(seconds[lo]) == second {
+		return int(s.values[set][lo]), true
+	}
+	return 0, false
 }
 
 // readKernFeature reads the lookups of the kern feature of the GPOS table,
@@ -206,37 +321,80 @@ func valueSize(format int) (size, xAdvance int) {
 }
 
 // pairsSubtable reads a PairPos subtable of format 1: for each first glyph it
-// covers, a set of second glyphs, each with how far it moves.
+// covers, a set of second glyphs, each with how far it moves. The second
+// glyphs of a set are put in order, the first record of a pair kept, as it is
+// the one applied.
 func (k *kerning) pairsSubtable(subTable int) pairSubtable {
 	g := &k.gpos
 	firstGlyphs := g.coverageGlyphs(subTable + g.uint16At(subTable+2))
 	size1, xAdvance := valueSize(g.uint16At(subTable + 4))
 	size2, _ := valueSize(g.uint16At(subTable + 6))
 	pairSetCount := g.uint16At(subTable + 8)
-	s := pairSubtable{covered: make(map[int]bool), pairs: make(map[uint32]int16)}
+	var s pairSubtable
 	for i, first := range firstGlyphs {
 		if i >= pairSetCount || g.gposWork == 0 {
 			break
 		}
-		s.covered[first] = true
+		s.cover(first)
 		pairSet := subTable + g.uint16At(subTable+10+2*i)
 		pairCount := min(g.uint16At(pairSet), g.gposWork)
 		g.gposWork -= pairCount
+		seconds := make([]int32, 0, pairCount)
+		values := make([]int16, 0, pairCount)
 		for j := 0; j < pairCount; j++ {
 			record := pairSet + 2 + j*(2+size1+size2)
-			second := g.uint16At(record)
-			key := uint32(first)<<16 | uint32(second)
-			if _, ok := s.pairs[key]; ok {
-				continue // The first record of a pair is the one applied
-			}
 			v := 0
 			if xAdvance >= 0 {
 				v = g.int16At(record + 2 + xAdvance)
 			}
-			s.pairs[key] = int16(v)
+			seconds = append(seconds, int32(g.uint16At(record)))
+			values = append(values, int16(v))
+		}
+		seconds, values = sortedPairs(seconds, values)
+		for first >= len(s.pairSets) {
+			s.pairSets = append(s.pairSets, 0)
+		}
+		if s.pairSets[first] == 0 { // A glyph covered twice: its first pair set
+			s.seconds = append(s.seconds, seconds)
+			s.values = append(s.values, values)
+			s.pairSets[first] = int32(len(s.seconds))
 		}
 	}
+	if s.pairSets == nil {
+		s.pairSets = []int32{} // Format 1, though it has no pairs
+	}
 	return s
+}
+
+// sortedPairs returns the second glyphs of a pair set in order, with their
+// values, each glyph once, with the value of its first record. A font's are in
+// order already, which is looked at first.
+func sortedPairs(seconds []int32, values []int16) ([]int32, []int16) {
+	ordered := true
+	for j := 1; j < len(seconds); j++ {
+		if seconds[j] <= seconds[j-1] {
+			ordered = false
+			break
+		}
+	}
+	if ordered {
+		return seconds, values
+	}
+	index := make([]int, len(seconds))
+	for j := range index {
+		index[j] = j
+	}
+	sort.SliceStable(index, func(a, b int) bool { return seconds[index[a]] < seconds[index[b]] })
+	sortedSeconds := make([]int32, 0, len(seconds))
+	sortedValues := make([]int16, 0, len(seconds))
+	for _, j := range index {
+		if n := len(sortedSeconds); n > 0 && sortedSeconds[n-1] == seconds[j] {
+			continue // The first record of a pair is the one applied
+		}
+		sortedSeconds = append(sortedSeconds, seconds[j])
+		sortedValues = append(sortedValues, values[j])
+	}
+	return sortedSeconds, sortedValues
 }
 
 // classesSubtable reads a PairPos subtable of format 2: the first glyphs it
@@ -249,9 +407,9 @@ func (k *kerning) classesSubtable(subTable int) pairSubtable {
 	size2, _ := valueSize(g.uint16At(subTable + 6))
 	firstClasses := g.uint16At(subTable + 12)
 	secondClasses := g.uint16At(subTable + 14)
-	s := pairSubtable{covered: make(map[int]bool, len(firstGlyphs)), secondCount: secondClasses}
+	s := pairSubtable{secondCount: secondClasses}
 	for _, first := range firstGlyphs {
-		s.covered[first] = true
+		s.cover(first)
 	}
 	s.firstClass = k.classDef(subTable + g.uint16At(subTable+8))
 	s.secondClass = k.classDef(subTable + g.uint16At(subTable+10))
@@ -271,10 +429,20 @@ func (k *kerning) classesSubtable(subTable int) pairSubtable {
 }
 
 // classDef reads a class definition table: the class of each glyph it gives
-// one, every other glyph of class 0.
-func (k *kerning) classDef(offset int) map[int]int {
+// one, by glyph number, as far as the last glyph of a class other than 0;
+// every other glyph is of class 0.
+func (k *kerning) classDef(offset int) []uint16 {
 	g := &k.gpos
-	classes := make(map[int]int)
+	var classes []uint16
+	set := func(glyph, class int) {
+		if class == 0 {
+			return
+		}
+		for glyph >= len(classes) {
+			classes = append(classes, 0)
+		}
+		classes[glyph] = uint16(class)
+	}
 	limit := 0x10000
 	if g.numGlyphs > 0 {
 		limit = g.numGlyphs
@@ -284,10 +452,8 @@ func (k *kerning) classDef(offset int) map[int]int {
 		start := g.uint16At(offset + 2)
 		count := min(g.uint16At(offset+4), g.gposWork, limit)
 		g.gposWork -= count
-		for i := 0; i < count; i++ {
-			if class := g.uint16At(offset + 6 + 2*i); class != 0 {
-				classes[start+i] = class
-			}
+		for i := 0; i < count && start+i < limit; i++ {
+			set(start+i, g.uint16At(offset+6+2*i))
 		}
 	case 2:
 		rangeCount := min(g.uint16At(offset+2), g.gposWork)
@@ -299,9 +465,7 @@ func (k *kerning) classDef(offset int) map[int]int {
 			class := g.uint16At(record + 4)
 			for glyph := start; glyph <= end && g.gposWork > 0; glyph++ {
 				g.gposWork--
-				if class != 0 {
-					classes[glyph] = class
-				}
+				set(glyph, class)
 			}
 		}
 	}

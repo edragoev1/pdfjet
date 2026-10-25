@@ -161,7 +161,7 @@ func TestKerningFitsWhatIsMeasured(t *testing.T) {
 func TestKerningOfABrokenTableIsNone(t *testing.T) {
 	buf := []byte{0, 1, 0, 0, 0, 10, 0, 10, 0, 10, 0xFF, 0xFF, 0xFF, 0xFF}
 	k := newKerning(buf, &fontTable{offset: 0, length: len(buf)}, 10)
-	if v := k.pair(1, 2); v != 0 {
+	if v := k.read(nil).pair(1, 2); v != 0 {
 		t.Errorf("a broken table kerns: %d", v)
 	}
 }
@@ -190,12 +190,26 @@ func TestKerningWidthsAreThoseOfTheOtherPorts(t *testing.T) {
 
 func TestKerningOfAClassOutOfRangeIsTheNextSubtables(t *testing.T) {
 	k := new(kerning)
-	k.read()
+	k.read(nil)
 	k.lookups = [][]pairSubtable{{
-		{covered: map[int]bool{1: true}, firstClass: map[int]int{}, secondClass: map[int]int{2: 5}, secondCount: 2, classAdvance: make([]int16, 2)},
-		{covered: map[int]bool{1: true}, pairs: map[uint32]int16{1<<16 | 2: -40}},
+		{covered: []uint64{1 << 1}, secondClass: []uint16{0, 0, 5}, secondCount: 2, classAdvance: make([]int16, 2)},
+		{covered: []uint64{1 << 1}, pairSets: []int32{0, 1}, seconds: [][]int32{{2}}, values: [][]int16{{-40}}},
 	}}
 	if v := k.pair(1, 2); v != -40 {
 		t.Errorf("the pair kerns %d, not the -40 of the next subtable", v)
+	}
+}
+
+func TestKerningPairSetsOutOfOrderKeepTheFirstRecordOfAPair(t *testing.T) {
+	seconds, values := sortedPairs([]int32{9, 3, 9, 5}, []int16{-10, -20, -30, -40})
+	want := []int32{3, 5, 9}
+	wantValues := []int16{-20, -40, -10}
+	for i := range want {
+		if i >= len(seconds) || seconds[i] != want[i] || values[i] != wantValues[i] {
+			t.Fatalf("%v %v, not %v %v", seconds, values, want, wantValues)
+		}
+	}
+	if len(seconds) != len(want) {
+		t.Errorf("%v, not %v", seconds, want)
 	}
 }
