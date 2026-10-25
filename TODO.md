@@ -296,14 +296,16 @@ commit and date. The layout's format version (1) and the look's rules
      exist; one value axis, no second one. The runner-up, a horizontal
      progress or gauge bar for a KPI, if wanted later.
   Left out: 3D, logarithmic axes, radar charts, two value axes.
-- **For 9.1.5: smaller tagged documents, with object streams.** Each cell of a table of
-  PDF/UA costs 280 to 415 bytes, its text and a structure element of its own,
-  each an object written uncompressed: a price list of 3,000 rows of 6
-  columns is 4.7 MB. PDF 1.5's object streams, the small objects compressed
-  together a batch of 100 to 200 at a time so that memory stays flat, and a
-  cross-reference stream would shrink them a third or more. An option, on by
-  default, off for PDF/A-1, which forbids object streams. Measured first, the
-  time and the size of a long PDF/UA table, before and after.
+- **Not planned: object streams** (the owner, 25 October 2026: keep the
+  xref table, which can be read when debugging, and do not complicate
+  things). Each cell of a table of PDF/UA costs 280 to 415 bytes, its text
+  and a structure element of its own, each an object written uncompressed:
+  a price list of 3,000 rows of 6 columns is 4.7 MB. Object streams would
+  shrink it a third or more, but a classic xref table cannot point into
+  one (only a cross-reference stream can, or a hybrid file with both), and
+  PDF/A-1 forbids them: two ways of writing a PDF, in four ports. If a
+  customer needs smaller tagged documents, first the structure elements
+  written in fewer bytes, measured, with the xref table as it is.
 - **The code reviews of 11 and 12 October 2026, three rounds.** Every
   finding is fixed for 9.0.7, in the four ports, each with a test
   (CHANGELOG.md), but those below and object streams (above). Their CI gaps
