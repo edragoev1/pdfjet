@@ -299,7 +299,7 @@ func (k *kerning) readKernTable() {
 	k.legacyKern = make(map[uint32]int16)
 	tableCount := t.uint16At(t.start + 2)
 	subTable := t.start + 4
-	for i := 0; i < tableCount && t.gposWork > 0; i++ {
+	for i := 0; i < tableCount && t.gposWork > 0 && subTable+6 <= t.end; i++ {
 		t.gposWork--
 		length := t.uint16At(subTable + 2)
 		coverage := t.uint16At(subTable + 4)

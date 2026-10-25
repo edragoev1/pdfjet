@@ -9,6 +9,20 @@ This is the first entry in this file; earlier releases were not tracked here.
 
 ## v9.1.3 — not released yet
 
+### Added
+- All four ports: kerning of TrueType and OpenType fonts, with
+  `Font.SetKernPairs(true)`, as the 14 standard fonts kerned already. The
+  pairs come from the kern feature of the font's GPOS table (pairs of glyphs
+  and pairs of classes) or from the kern table of an older font, read the
+  first time a kerned font measures or draws. Text is measured as it is
+  drawn: StringWidth, GetFitChars, and so the wrapping, alignment and
+  justification of TextLine, TextBlock, TextColumn, TextFrame and the table
+  cells, count the same pairs. Marks and right to left text are not kerned.
+  Off by default, and a document that does not ask for it is as fast as
+  before and draws the same PDF. In IBM Plex Sans at 10 points, "AVATAR To
+  Wally" is 75.14 points wide kerned, 78.16 not; the four ports measure and
+  draw it the same.
+
 ### Changed
 - Swift: text other than printable ASCII is drawn faster: a 500-page text
   in Latin, Greek and Cyrillic takes 100 ms, where 9.0.9 and 9.1.1 took 113.
