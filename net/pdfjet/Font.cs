@@ -413,6 +413,10 @@ public class Font {
     /// <param name="kernPairs">true to kern the text drawn with the font.</param>
     /// <returns>this Font object.</returns>
     public Font SetKernPairs(bool kernPairs) {
+        // The pairs are read now, so that measuring text does not change the font
+        if (kernPairs && kernTables != null) {
+            kernTables.Read();
+        }
         this.kernPairs = kernPairs;
         return this;
     }

@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace PDFjet.NET {
@@ -169,5 +170,21 @@ public class KerningTest {
         TestSupport.AssertNear(kerned, font.StringWidth(10f, text), 0.005f, path + ": " + text);
         Assert.Equal(unitsOf, font.TextKerning(text));
     }
+
+    [Fact]
+    public void KerningIsMeasuredFromManyThreadsAtOnce() {
+        PDF pdf = TestSupport.NewPDF();
+        string path = "fonts/IBMPlexSans/IBMPlexSans-Regular.ttf";
+        string text = "AVATAR To Wally";
+        float expected = KernedFont(pdf, path, true).StringWidth(10f, text);
+        for (int round = 0; round < 20; round++) {
+            Font font = KernedFont(pdf, path, true);
+            float[] widths = new float[8];
+            Parallel.For(0, widths.Length, t => widths[t] = font.StringWidth(10f, text));
+            foreach (float width in widths) {
+                Assert.Equal(expected, width);
+            }
+        }
+    }
 }
-}   // End of namespace PDFjet.NET
+}

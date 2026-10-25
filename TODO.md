@@ -331,6 +331,11 @@ commit and date. The layout's format version (1) and the look's rules
   one test of the widths and the drawn text agreeing in all four, and
   Example_24 timed with it off (no slower) and on.
   Code review of 24 October 2026, fixed in the four ports 25 October:
+  the tables are read when the kerning is turned on, under a lock (Java,
+  C#, Swift) or a sync.Once (Go), so that threads measuring with one font
+  never see them half read, as Java, C# and Swift could, where a flag was
+  set before the tables were read; the marks of the GPOS table are read
+  only where text is drawn, which changes the font in any case;
   GetFitChars was a character short before a pair kerned wider; only the
   kern features of each script's default language; a class of a format 2
   subtable it has no values for goes on to the next subtable; Swift stops at
@@ -339,21 +344,14 @@ commit and date. The layout's format version (1) and the look's rules
   - Whether a glyph is kerned is decided by the character unicodeOf gives
     it, so a glyph a font uses both for a mark and for a spacing character,
     which is rare, is not kerned.
-  - Java, C# and Swift read the kerning tables the first time a kerned
-    font measures or draws, with a flag and no lock: two threads measuring
-    with one font for the first time at once can see the tables half read,
-    and measure without some pairs, or, in Java and C#, fail on a map being
-    filled. Go reads them under a sync.Once. The marks of the GPOS table are
-    read the same way in those ports, so both get the same fix: a lock, or
-    the double-checked flag made volatile, taken only on the first read.
   - Java keeps the pairs in maps of boxed Integer and Short: a lookup per
     pair, slower than an array would be. Only kerned text pays it.
   - Which characters are drawn, and so kerned, is decided twice, where text
     is measured and where it is drawn. The tests check that the two agree;
     a change to one must be made to the other.
   - The kern table of an older TrueType font without GPOS has no font to
-    test it with, only a broken table. A real one, of a license that lets
-    it be in the repository, with a test of its widths in the four ports.
+    test it with, only a broken table. Not to be done: no such font is
+    added (the owner, 25 October 2026).
 - **Longer fuzzing of the font subsetters.** Go's fuzzers ran 5 minutes each
   on every target before 9.0.5 with no failure; the TrueType and CFF
   subsetters, which subset a real font for each input, ran 27,000 and 15,000

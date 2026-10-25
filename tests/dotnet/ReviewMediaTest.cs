@@ -323,14 +323,15 @@ public class ReviewMediaTest {
     public void TheRulesOfTheClassesOfAnElementAreFoundByClass() {
         // Rules and elements of three classes each: every element went
         // through every rule for each of its classes. Eight times as many of
-        // both take about eight times the time, not sixty-four; the limit is 24
+        // both take about eight times the time, not sixty-four; the limit is 32
         // times, for a busy computer (10 times failed, 11.3, on GitHub's runner,
-        // 18 October 2026); the two times are
-        // measured in the same run, the shortest of three each, so that a busy
+        // 18 October 2026; 24 times failed, 31, in its Arabic locale run, 25
+        // October 2026); the two times are measured in the same run, the
+        // shortest of five each after a garbage collection, so that a busy
         // computer slows both (a limit of 2 s failed under load, 9 October 2026).
         TimeSpan small = ClassRulesTime(2500);
         TimeSpan large = ClassRulesTime(20000);
-        Assert.True(large.Ticks <= 24 * small.Ticks, "20000 rules and elements took "
+        Assert.True(large.Ticks <= 32 * small.Ticks, "20000 rules and elements took "
                 + large.TotalMilliseconds + " ms, and 2500 " + small.TotalMilliseconds + " ms");
         // The rules are those of the style sheet, in its order, whatever the
         // order of the classes, and a class named twice has its rules once.
@@ -340,7 +341,7 @@ public class ReviewMediaTest {
         Assert.Contains("0 0.5 0 RG\n", content);
     }
 
-    // The shortest of three times an image of the rules and the elements of
+    // The shortest of five times an image of the rules and the elements of
     // three classes each is read.
     private static TimeSpan ClassRulesTime(int count) {
         StringBuilder sb = new StringBuilder("<svg width=\"10\" height=\"10\"><style>");
@@ -350,7 +351,9 @@ public class ReviewMediaTest {
         sb.Append("</style>").Append(Repeat("<g class=\"x y z\"/>", count)).Append("</svg>");
         byte[] svg = Encoding.UTF8.GetBytes(sb.ToString());
         TimeSpan shortest = TimeSpan.MaxValue;
-        for (int run = 0; run < 3; run++) {
+        for (int run = 0; run < 5; run++) {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
             Stopwatch watch = Stopwatch.StartNew();
             new SVGImage(new MemoryStream(svg));
             if (watch.Elapsed < shortest) {

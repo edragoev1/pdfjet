@@ -19,7 +19,8 @@ import java.util.Map;
  * feature, the pairs of its kern table. Font.setKernPairs(true) turns it on;
  * off, which it is unless asked for, nothing is read and nothing is slower.
  *
- * The tables are read the first time a kerned font measures or draws text,
+ * The tables are read when the font's kerning is turned on, once, under a
+ * lock, so that text is measured with them from any number of threads, and
  * within the same limit of work as the marks of the GPOS table, so that a
  * table that claims more than a font holds is stopped rather than read to an
  * end it does not have.
@@ -27,7 +28,7 @@ import java.util.Map;
 class Kerning {
     private final GPOS gpos;        // The GPOS table, read with its reader, or null
     private final GPOS kernTable;   // The kern table, read with the same reader, or null
-    private boolean read;
+    private volatile boolean read;  // Set last, once the tables are read
     // The kern feature's lookups, in their order, each its subtables
     private final List<PairSubtable[]> lookups = new ArrayList<PairSubtable[]>();
     private Map<Integer, Short> legacyKern;    // The pairs of the kern table, by glyph IDs
@@ -65,16 +66,21 @@ class Kerning {
     }
 
     // Reads the tables, the first time it is called.
-    private void read() {
-        if (!read) {
-            read = true;
-            if (gpos != null) {
-                gpos.gposWork = GPOS.MAX_GPOS_WORK;
-                readKernFeature();
-            }
-            if (lookups.isEmpty() && kernTable != null) {
-                kernTable.gposWork = GPOS.MAX_GPOS_WORK;
-                readKernTable();
+    void read() {
+        if (read) {
+            return;
+        }
+        synchronized (this) {
+            if (!read) {
+                if (gpos != null) {
+                    gpos.gposWork = GPOS.MAX_GPOS_WORK;
+                    readKernFeature();
+                }
+                if (lookups.isEmpty() && kernTable != null) {
+                    kernTable.gposWork = GPOS.MAX_GPOS_WORK;
+                    readKernTable();
+                }
+                read = true;
             }
         }
     }

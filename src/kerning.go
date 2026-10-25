@@ -14,8 +14,9 @@ import "sync"
 // turns it on; off, which it is unless asked for, nothing is read and nothing
 // is slower.
 //
-// The tables are read the first time a kerned font measures or draws text,
-// within the same limit of work as the marks of the GPOS table, so that a
+// The tables are read when the font's kerning is turned on, once, under a
+// sync.Once, so that text is measured with them from any number of
+// goroutines, and within the same limit of work as the marks of the GPOS table, so that a
 // table that claims more than a font holds is stopped rather than read to an
 // end it does not have.
 type kerning struct {

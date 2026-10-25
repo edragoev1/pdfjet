@@ -513,6 +513,10 @@ final public class Font {
      * @return this Font object.
      */
     public Font setKernPairs(boolean kernPairs) {
+        // The pairs are read now, so that measuring text does not change the font
+        if (kernPairs && kernTables != null) {
+            kernTables.read();
+        }
         this.kernPairs = kernPairs;
         return this;
     }

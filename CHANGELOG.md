@@ -14,8 +14,9 @@ This is the first entry in this file; earlier releases were not tracked here.
   `Font.SetKernPairs(true)`, as the 14 standard fonts kerned already. The
   pairs come from the kern feature of the font's GPOS table, of each
   script's default language (pairs of glyphs and pairs of classes), or from
-  the kern table of an older font, read the first time a kerned font
-  measures or draws. Text is measured as it is
+  the kern table of an older font, read once, under a lock, when the
+  kerning is turned on, so that measuring text does not change the font.
+  Text is measured as it is
   drawn: StringWidth, GetFitChars, and so the wrapping, alignment and
   justification of TextLine, TextBlock, TextColumn, TextFrame and the table
   cells, count the same pairs. Marks and right to left text are not kerned.

@@ -12,14 +12,16 @@ import Foundation
 // feature, the pairs of its kern table. Font.setKernPairs(true) turns it on;
 // off, which it is unless asked for, nothing is read and nothing is slower.
 //
-// The tables are read the first time a kerned font measures or draws text,
+// The tables are read when the font's kerning is turned on, once, under a
+// lock, so that text is measured with them from any number of threads, and
 // within the same limit of work as the marks of the GPOS table, so that a
 // table that claims more than a font holds is stopped rather than read to an
 // end it does not have.
 final class Kerning {
     private let gposTable: GPOS?    // The GPOS table, read with its reader
     private let kernTable: GPOS?    // The kern table, read with the same reader
-    private var read = false
+    private var read = false    // Set last, once the tables are read
+    private let readLock = NSLock()
     // The kern feature's lookups, in their order
     private var lookups = [[PairSubtable]]()
     // The pairs of the kern table, by glyph IDs
@@ -60,8 +62,9 @@ final class Kerning {
     // Reads the tables, the first time it is called, and returns the kerning.
     @discardableResult
     func readTables() -> Kerning {
+        readLock.lock()
+        defer { readLock.unlock() }
         if !read {
-            read = true
             var reader = Reader(
                     gpos: Kerning.reader(gposTable),
                     kernTable: Kerning.reader(kernTable))
@@ -71,6 +74,7 @@ final class Kerning {
             }
             lookups = reader.lookups
             legacyKern = reader.legacyKern
+            read = true
         }
         return self
     }
@@ -87,8 +91,9 @@ final class Kerning {
     // units: the advance of the first glyph, made shorter or longer. Each
     // lookup of the kern feature adds its own, from the first of its subtables
     // that covers the first glyph and has the pair, as HarfBuzz applies them.
+    // The tables were read when the kerning was turned on, so no lock is taken
+    // for each pair.
     func pair(_ first: Int, _ second: Int) -> Int {
-        readTables()
         let key = UInt32(truncatingIfNeeded: first) << 16 | UInt32(truncatingIfNeeded: second)
         if lookups.isEmpty {
             return Int(legacyKern[key] ?? 0)

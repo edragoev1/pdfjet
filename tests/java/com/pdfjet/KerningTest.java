@@ -14,6 +14,11 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.io.InputStream;
 import java.util.HashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -186,6 +191,28 @@ class KerningTest {
             Font font = kernedFont(pdf, path, true);
             assertEquals((Float) c[2], font.stringWidth(10f, text), 0.005f, path + ": " + text);
             assertEquals((int) (Integer) c[3], font.textKerning(text), path + ": " + text + " in font units");
+        }
+    }
+
+    @Test
+    void kerningIsMeasuredFromManyThreadsAtOnce() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        String text = "AVATAR To Wally";
+        float expected = kernedFont(pdf, PLEX_TTF, true).stringWidth(10f, text);
+        ExecutorService threads = Executors.newFixedThreadPool(8);
+        try {
+            for (int round = 0; round < 20; round++) {
+                final Font font = kernedFont(pdf, PLEX_TTF, true);
+                List<Future<Float>> widths = new ArrayList<Future<Float>>();
+                for (int t = 0; t < 8; t++) {
+                    widths.add(threads.submit(() -> font.stringWidth(10f, text)));
+                }
+                for (Future<Float> width : widths) {
+                    assertEquals(expected, width.get(), 0f, "the width measured in a thread");
+                }
+            }
+        } finally {
+            threads.shutdown();
         }
     }
 }

@@ -424,6 +424,10 @@ public class Font {
     ///
     @discardableResult
     public func setKernPairs(_ kernPairs: Bool) -> Font {
+        // The pairs are read now, so that measuring text does not change the font
+        if kernPairs {
+            kernTables?.readTables()
+        }
         self.kernPairs = kernPairs
         return self
     }

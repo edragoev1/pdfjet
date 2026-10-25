@@ -429,6 +429,10 @@ func (font *Font) GetName() string {
 // alignment of TextLine, TextBlock and the table cells count the pairs. Right
 // to left text and marks are not kerned.
 func (font *Font) SetKernPairs(kernPairs bool) *Font {
+	// The pairs are read now, so that measuring text does not change the font
+	if kernPairs && font.kernTables != nil {
+		font.kernTables.read()
+	}
 	font.kernPairs = kernPairs
 	return font
 }

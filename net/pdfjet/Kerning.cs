@@ -14,14 +14,16 @@ namespace PDFjet.NET {
 // feature, the pairs of its kern table. Font.SetKernPairs(true) turns it on;
 // off, which it is unless asked for, nothing is read and nothing is slower.
 //
-// The tables are read the first time a kerned font measures or draws text,
+// The tables are read when the font's kerning is turned on, once, under a
+// lock, so that text is measured with them from any number of threads, and
 // within the same limit of work as the marks of the GPOS table, so that a
 // table that claims more than a font holds is stopped rather than read to an
 // end it does not have.
 internal class Kerning {
     private readonly GPOS gpos;         // The GPOS table, read with its reader, or null
     private readonly GPOS kernTable;    // The kern table, read with the same reader, or null
-    private bool read;
+    private volatile bool read;     // Set last, once the tables are read
+    private readonly object readLock = new object();
     // The kern feature's lookups, in their order, each a list of subtables.
     private readonly List<PairSubtable[]> lookups = new List<PairSubtable[]>();
     // The pairs of the kern table, by (first << 16) | second, or null.
@@ -56,15 +58,20 @@ internal class Kerning {
 
     // Reads the tables, the first time it is called, and returns this.
     internal Kerning Read() {
-        if (!read) {
-            read = true;
-            if (gpos != null) {
-                gpos.gposWork = GPOS.MAX_GPOS_WORK;
-                ReadKernFeature();
-            }
-            if (lookups.Count == 0 && kernTable != null) {
-                kernTable.gposWork = GPOS.MAX_GPOS_WORK;
-                ReadKernTable();
+        if (read) {
+            return this;
+        }
+        lock (readLock) {
+            if (!read) {
+                if (gpos != null) {
+                    gpos.gposWork = GPOS.MAX_GPOS_WORK;
+                    ReadKernFeature();
+                }
+                if (lookups.Count == 0 && kernTable != null) {
+                    kernTable.gposWork = GPOS.MAX_GPOS_WORK;
+                    ReadKernTable();
+                }
+                read = true;
             }
         }
         return this;
