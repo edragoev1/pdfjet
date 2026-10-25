@@ -87,6 +87,14 @@ commit and date. The layout's format version (1) and the look's rules
 
 ## Open
 
+- **Release v9.1.3 in early December 2026** (the owner, 25 October 2026),
+  on its own, not held for the charts of 9.1.5. Its code is done: kerning,
+  an image copied from a PDF keeping its masks, Java's Deflater for each
+  thread, Swift's faster text and page compression, CalendarMonth removed
+  (CHANGELOG.md). Before it: the fuzzing of the font subsetters to 8 hours
+  each, then the checks before each release (above), and PDFjet Pro 9.1.3
+  the same day.
+
 - ✅ Done 25 October 2026. **v9.1.3: an image copied from a PDF that was
   read keeps its transparency, in the four ports (found 22 October 2026).**
   Each object read keeps the objects of its PDF by number (weakly in
