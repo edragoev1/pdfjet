@@ -311,8 +311,13 @@ commit and date. The layout's format version (1) and the look's rules
   kept apart) and small capitals. Not full shaping: Devanagari and the
   like need a shaping engine. For the library only; Forms keeps the
   default shapes. After kerning, which reads GPOS, not GSUB.
-- **For 9.1.5: kerning of TrueType and OpenType fonts, opt in** (18 October
-  2026; first, ahead of any other library work, the owner, 22 October 2026): no slower when off, and little code.
+- **For 9.1.3: kerning of TrueType and OpenType fonts, opt in** (18 October
+  2026; first, ahead of any other library work, the owner, 22 October 2026;
+  9.1.3, the owner, 24 October 2026): no slower when off, and little code.
+  Go done 24 October 2026 (kerning.go: the kern feature's PairPos formats 1
+  and 2, and the kern table; kerned where each glyph is written, the same
+  rule measured; Example_24 930 ms against 930 at v9.1.1); then Java, C#,
+  Swift, each with the same widths as kerning_test.go.
   `Font.SetKernPairs(true)` kerns the 14 standard fonts today; the same call
   for a .ttf or .otf font, off by default, so that a document that does not
   ask for it is as fast as now. From the GPOS table, read already for the

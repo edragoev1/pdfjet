@@ -86,6 +86,15 @@ type Page struct {
 
 	textFontSize float32 // The font size of the text drawn last
 	textRise     float32
+	// The font of the string of glyphs being drawn when it kerns, and the
+	// glyph drawn last, or -1: appendGlyph puts the kerning of each pair
+	// between the two glyphs.
+	kernFont     *Font
+	kernPrevious int
+	// kernChain is true while colored text is drawn, word by word: the
+	// kerning goes on from the last glyph of a word to the first of the next,
+	// as StringWidth measures the whole text.
+	kernChain bool
 
 	penWidth          float32
 	lineCapStyle      capstyle.CapStyle
@@ -567,6 +576,15 @@ func (page *Page) drawUnicodeString(font *Font, text string) {
 		return
 	}
 	runes := []rune(text)
+	if font.kerns() {
+		if !page.kernChain || page.kernFont != font {
+			page.kernPrevious = -1
+		}
+		page.kernFont = font
+		if !page.kernChain {
+			defer func() { page.kernFont = nil }()
+		}
+	}
 	if page.pdf.isPDFA() && len(runes) > maxPDFAStringGlyphs {
 		// A string of PDF/A is 32767 bytes at most, and a glyph two of them:
 		// a TextLine of 16384 characters failed veraPDF (review of
@@ -711,6 +729,7 @@ func (page *Page) appendPlainGlyphs(font *Font, runes []rune) bool {
 			}
 			if another {
 				page.buf = page.buf[:start]
+				page.kernPrevious = -1
 				return false
 			}
 			if ascii && owns {
@@ -837,7 +856,7 @@ func (page *Page) appendGlyphWithActualText(
 	if joiner != 0 {
 		space := font.unicodeToGID.get(0x0020)
 		page.appendString("[<")
-		page.appendGlyph(font, space)
+		page.appendGlyphUnkerned(font, space)
 		page.appendString("> ")
 		page.appendFloat32(float32(1000.0*float32(font.glyphAdvance(space))) / float32(font.unitsPerEm))
 		page.appendString("] TJ\n")
@@ -1132,7 +1151,7 @@ func (page *Page) appendWordWithMovedMarks(font *Font, codePoints []rune, gids, 
 		page.appendString("[")
 		page.appendFloat32(float32(1000*float32(font.glyphAdvance(space))) / float32(font.unitsPerEm))
 		page.appendString(" <")
-		page.appendGlyph(font, space)
+		page.appendGlyphUnkerned(font, space)
 		page.appendString(">] TJ\n")
 	}
 	page.appendString("<")
@@ -1149,6 +1168,11 @@ func (page *Page) appendWordWithMovedMarks(font *Font, codePoints []rune, gids, 
 // appendMovedGlyph ends the string of glyphs, draws the glyph moved by dx and dy
 // font units, and starts the string again.
 func (page *Page) appendMovedGlyph(font *Font, gid, dx, dy int) {
+	// A mark, which kerns with neither glyph beside it, drawn in a string or
+	// TJ array of its own
+	if page.kernFont == font {
+		page.kernPrevious = gid
+	}
 	fontSize := font.size
 	if page.textFontSize != 0 {
 		fontSize = page.textFontSize
@@ -1158,14 +1182,14 @@ func (page *Page) appendMovedGlyph(font *Font, gid, dx, dy int) {
 	page.appendString(" Ts\n")
 	if dx == 0 {
 		page.appendString("<")
-		page.appendGlyph(font, gid)
+		page.appendGlyphUnkerned(font, gid)
 		page.appendString("> Tj\n")
 	} else {
 		adjustment := float32(1000*float32(dx)) / float32(font.unitsPerEm)
 		page.appendString("[")
 		page.appendFloat32(-adjustment)
 		page.appendString(" <")
-		page.appendGlyph(font, gid)
+		page.appendGlyphUnkerned(font, gid)
 		page.appendString("> ")
 		page.appendFloat32(adjustment)
 		page.appendString("] TJ\n")
@@ -1191,10 +1215,48 @@ func (page *Page) appendByteAsHex(b byte) {
 // appendGlyph appends the glyph number as hexadecimal and records that the
 // font draws it, so that a subset of the font keeps it.
 func (page *Page) appendGlyph(font *Font, gid int) {
+	if page.kernFont != nil {
+		page.appendKernedGlyph(font, gid)
+		return
+	}
 	if page.ownsFont(font) {
 		font.useGlyph(gid)
 	}
 	page.appendCodePointAsHex(gid)
+}
+
+// appendKernedGlyph appends the glyph of a kerned string, with the kerning of
+// the pair it ends before it. Apart from appendGlyph, which stays small, as
+// almost every glyph drawn is not kerned.
+func (page *Page) appendKernedGlyph(font *Font, gid int) {
+	if page.kernFont == font {
+		if page.kernPrevious >= 0 {
+			if kerning := font.glyphKerning(page.kernPrevious, gid); kerning != 0 {
+				page.appendKerning(font, kerning)
+			}
+		}
+		page.kernPrevious = gid
+	}
+	page.appendGlyphUnkerned(font, gid)
+}
+
+// appendGlyphUnkerned appends the glyph as appendGlyph does, with no kerning
+// before it: a space that stands in for a joiner or for a moved mark, and a
+// moved mark, each drawn in a TJ array of its own.
+func (page *Page) appendGlyphUnkerned(font *Font, gid int) {
+	if page.ownsFont(font) {
+		font.useGlyph(gid)
+	}
+	page.appendCodePointAsHex(gid)
+}
+
+// appendKerning ends the string of glyphs, moves the next glyph by the
+// kerning, in font units, and starts the string again: a TJ of the move alone
+// is valid wherever a string of glyphs is, in a span of actual text too.
+func (page *Page) appendKerning(font *Font, kerning int) {
+	page.appendString("> Tj\n[")
+	page.appendFloat32(-float32(1000*float32(kerning)) / float32(font.unitsPerEm))
+	page.appendString("] TJ\n<")
 }
 
 // ownsFont says whether the font is of the page's PDF, or of none. A font of
@@ -2298,6 +2360,11 @@ func (page *Page) drawWord(font *Font, buf *strings.Builder, brush [3]float32, c
 }
 
 func (page *Page) drawColoredString(font *Font, str string, brush [3]float32, colors map[string]int32) {
+	page.kernChain = true
+	defer func() {
+		page.kernChain = false
+		page.kernFont = nil
+	}()
 	var buf1 strings.Builder
 	var buf2 strings.Builder
 	inWord := false

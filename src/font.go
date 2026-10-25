@@ -72,7 +72,8 @@ type Font struct {
 	// with its own glyph, so that it is not drawn as another character the
 	// next time either: the first character drawn with a glyph never changes.
 	asciiPlain [95]bool
-	gpos       *gpos // Read when a mark is first drawn, or nil
+	gpos       *gpos    // Read when a mark is first drawn, or nil
+	kernTables *kerning // Read when a kerned font first measures or draws, or nil
 	cff        bool
 	metrics    [][]int // Only used for core fonts.
 	// checksum tells the font program this font was read from apart from
@@ -419,12 +420,76 @@ func (font *Font) GetName() string {
 	return font.name
 }
 
-// SetKernPairs sets the kerning for the selected font to 'true' or 'false'
-// depending on the passed value of kernPairs parameter.
-// The kerning is implemented only for the 14 standard fonts.
+// SetKernPairs turns the kerning of the font on or off: the pairs of letters
+// that go closer together or further apart, as AV and To. A standard font
+// kerns with the pairs of its metrics; an OpenType or TrueType font with the
+// kern feature of its GPOS table, or the kern table of an older font. Off by
+// default, as text that does not ask for it is as fast as it was. A kerned
+// font measures its text as it draws it: StringWidth, the wrapping and the
+// alignment of TextLine, TextBlock and the table cells count the pairs. Right
+// to left text and marks are not kerned.
 func (font *Font) SetKernPairs(kernPairs bool) *Font {
 	font.kernPairs = kernPairs
 	return font
+}
+
+// kerns returns true if the font is an embedded font whose kerning is on and
+// that has pairs to kern with, from its GPOS or kern table.
+func (font *Font) kerns() bool {
+	return font.kernPairs && font.kernTables != nil && !font.isCoreFont && !font.isCJK
+}
+
+// glyphKerning returns how far the second glyph moves after the first, in font
+// units, when both are drawn one after the other: 0 for a pair with a mark or
+// a right to left letter, which shaping places, and for a glyph of no
+// character, as .notdef.
+func (font *Font) glyphKerning(first, second int) int {
+	kernable := func(gid int) bool {
+		if gid <= 0 || gid >= len(font.unicodeOf) {
+			return false
+		}
+		c := rune(font.unicodeOf[gid])
+		return c >= 0 && !isMark(c) && !isRightToLeft(c)
+	}
+	if !kernable(first) || !kernable(second) {
+		return 0
+	}
+	return font.kernTables.pair(first, second)
+}
+
+// kerningGlyph returns the glyph the character is drawn with, and whether it
+// is drawn at all, as Page draws it: an RLM, LRM, byte order mark or a
+// character isIgnorable returns true for is not, nor a ZWNJ or ZWJ the font
+// has no glyph for. The glyphs drawn are the pairs kerned.
+func (font *Font) kerningGlyph(c rune) (int, bool) {
+	if c >= 0x20 && c < 0x7F && font.asciiGID[c-0x20] != 0 {
+		return int(font.asciiGID[c-0x20]), true
+	}
+	if c == 0x200E || c == 0x200F || c == 0xFEFF || isIgnorable(c) {
+		return 0, false
+	}
+	if (c == 0x200C || c == 0x200D) && font.unicodeToGID.get(c) == 0 {
+		return 0, false
+	}
+	return glyphOf(font, c), true
+}
+
+// textKerning returns the kerning of the text, in font units: the sum of the
+// pairs of the glyphs drawn one after the other.
+func (font *Font) textKerning(text string) int {
+	total := 0
+	previous := -1
+	for _, c := range text {
+		gid, drawn := font.kerningGlyph(c)
+		if !drawn {
+			continue
+		}
+		if previous >= 0 {
+			total += font.glyphKerning(previous, gid)
+		}
+		previous = gid
+	}
+	return total
 }
 
 // GetAscent returns the ascent of this font at the font size.
@@ -517,16 +582,39 @@ func (font *Font) GetFitChars(text string, width float32) int {
 		return font.getCoreFontFitChars(text, w)
 	}
 
+	kerned := font.kerns()
 	i := 0
 	for i < len(runes) {
 		w -= float32(font.advanceWidthOf(runes[i]))
 		if w < 0 {
 			break
 		}
+		// The kerning is with the next character drawn, as StringWidth's is.
+		if kerned {
+			w -= float32(font.kerningAfter(runes, i))
+			if w < 0 {
+				break
+			}
+		}
 		i++
 	}
 
 	return i
+}
+
+// kerningAfter returns the kerning of the character at i with the next one
+// drawn, in font units, or 0 when either is not drawn.
+func (font *Font) kerningAfter(runes []rune, i int) int {
+	gid, drawn := font.kerningGlyph(runes[i])
+	if !drawn {
+		return 0
+	}
+	for next := i + 1; next < len(runes); next++ {
+		if nextGID, nextDrawn := font.kerningGlyph(runes[next]); nextDrawn {
+			return font.glyphKerning(gid, nextGID)
+		}
+	}
+	return 0
 }
 
 func (font *Font) getCoreFontFitChars(text string, width float32) int {
@@ -740,6 +828,9 @@ func (font *Font) StringWidth(fontSize float32, str string) float32 {
 			} else {
 				width += float32(font.advanceWidthOf(c1))
 			}
+		}
+		if font.kerns() {
+			width += float32(font.textKerning(str))
 		}
 	}
 
