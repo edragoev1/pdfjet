@@ -62,7 +62,7 @@ class DonutChartTest {
         String content = TestSupport.content(page);
         assertTrue(content.startsWith("/Figure <</MCID 0>>\nBDC\n"), content);
         assertTrue(content.endsWith("EMC\n"), content);
-        assertEquals("0 0 0 rg", TestSupport.fillColorBefore(content, "Apples"));
+        assertEquals("0.13 0.15 0.17 rg", TestSupport.fillColorBefore(content, "Apples"));
         assertEquals("1 1 1 rg", TestSupport.fillColorBefore(content, "25%"));
         DonutChart pie = chart(pdf).setRadii(100f, 0f).addSlice(new Slice(1f, Color.red, ""));
         pie.drawOn(page);
@@ -72,6 +72,42 @@ class DonutChartTest {
         assertEquals("Donut chart: Apples 25%, Oranges 75%", page.structures.get(0).altDescription);
         assertEquals("Pie chart: 100%", page.structures.get(1).altDescription);
         assertEquals("Most are oranges.", page.structures.get(2).altDescription);
+    }
+
+    @Test
+    void theDefaultLookIsQuiet() throws Exception {
+        // Slices in the palette, navy first; thin white lines between them;
+        // thin gray leader lines; the percentage white on navy, ink on the
+        // light steel blue; and no black line or text.
+        PDF pdf = TestSupport.newPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        chart(pdf).addSlice(new Slice(60f, "a")).addSlice(new Slice(40f, "b")).drawOn(page);
+        String content = TestSupport.content(page);
+        assertTrue(content.contains("0.12 0.23 0.37 rg"), content);     // navy
+        assertTrue(content.contains("0.44 0.58 0.76 rg"), content);     // steel blue
+        assertTrue(content.contains("1 1 1 RG\n1.5 w\n"), content);    // the white lines between
+        assertTrue(content.contains("0.55 0.59 0.64 RG\n0.75 w\n"), content);   // the leader lines
+        assertFalse(content.contains("0 0 0 RG") || content.contains("0 0 0 rg"), content);
+        assertEquals("1 1 1 rg", TestSupport.fillColorBefore(content, "60%"));
+        assertEquals("0.13 0.15 0.17 rg", TestSupport.fillColorBefore(content, "40%"));
+    }
+
+    @Test
+    void aTitleIsDrawnAboveTheCircle() throws Exception {
+        // The title at the location, the subtitle under it, the circle under
+        // both; a chart without them has the circle at its location, as before.
+        PDF pdf = new PDF(new java.io.ByteArrayOutputStream(), Compliance.PDF_UA_1).setTitle("Test");
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        DonutChart plain = chart(pdf).addSlice(new Slice(1f, "a"));
+        TestSupport.assertXY(300f, 300f, plain.drawOn(page));
+        DonutChart titled = chart(pdf).setTitle("Fruit").setSubtitle("This week").addSlice(new Slice(1f, "a"));
+        float[] xy = titled.drawOn(page);
+        assertEquals(300f, xy[0], 0.01f);
+        assertTrue(xy[1] > 300f, "the circle is under the title: " + xy[1]);
+        String content = TestSupport.content(page);
+        assertTrue(content.contains(TestSupport.hex("Fruit")) && content.contains(TestSupport.hex("This week")));
+        assertEquals("0.37 0.41 0.45 rg", TestSupport.fillColorBefore(content, "This week"));
+        assertEquals("Fruit: a 100%", page.structures.get(1).altDescription);
     }
 
     // A slice that is not a number, an infinity, or a value whose 360ths

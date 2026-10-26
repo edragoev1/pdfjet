@@ -15,6 +15,9 @@ public class Slice {
     final int color;
     final String text;
 
+    // The color of a slice that takes the next color of the palette
+    static final int PALETTE = -1;
+
     /**
      * Creates a slice.
      *
@@ -26,5 +29,16 @@ public class Slice {
         this.value = value;
         this.color = color;
         this.text = text == null ? "" : text;
+    }
+
+    /**
+     * Creates a slice in the next color of the chart's palette, navy first,
+     * the palette of BarChart, so that the charts of a document match.
+     *
+     * @param value the value of the slice.
+     * @param text the label of the slice.
+     */
+    public Slice(float value, String text) {
+        this(value, PALETTE, text);
     }
 }

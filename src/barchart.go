@@ -12,6 +12,8 @@ package pdfjet
 // check-no-fma.sh fails if one is removed.
 
 import (
+	"math"
+
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
@@ -43,7 +45,7 @@ var barChartPalette = []int32{
 	0x1F3A5F, // navy
 	0x6F95C2, // steel blue
 	0xD08C3C, // amber
-	0x6B8F71, // sage
+	0x76987C, // sage
 	0xA7AFB8, // gray
 	0x9C5B5B, // brick
 	0x4F7A8C, // slate
@@ -782,16 +784,33 @@ func barChartText(page *Page, font *Font, text string, x, y float32, c int32) {
 	page.drawString(font, font.size, text, x, y, colorToRGB(c), nil)
 }
 
-// labelColorOn returns the color of a label on a bar of the color: white on a
-// dark bar, ink on a light one, by the bar's luminance.
+// labelColorOn returns the color of a label on a bar of the color: white or
+// ink, whichever contrasts more with it, by the WCAG contrast ratio.
 func labelColorOn(c int32) int32 {
-	r := (c >> 16) & 0xFF
-	g := (c >> 8) & 0xFF
-	b := c & 0xFF
-	if 299*r+587*g+114*b < 140000 {
+	// White contrasts more when (1 + 0.05) / (L + 0.05) is the larger of the
+	// two ratios, (L + 0.05) / (ink + 0.05) the other
+	l := luminance(c) + 0.05
+	if float64(l*l) <= float64(1.05*(luminance(barChartInk)+0.05)) {
 		return color.White
 	}
 	return barChartInk
+}
+
+// luminance returns the relative luminance of the color, as WCAG defines it.
+func luminance(c int32) float64 {
+	return float64(0.2126*linearComponent((c>>16)&0xFF)) +
+		float64(0.7152*linearComponent((c>>8)&0xFF)) +
+		float64(0.0722*linearComponent(c&0xFF))
+}
+
+// linearComponent returns the sRGB component, 0 to 255, as a linear value
+// from 0 to 1.
+func linearComponent(component int32) float64 {
+	c := float64(component) / 255.0
+	if c <= 0.04045 {
+		return c / 12.92
+	}
+	return math.Pow((c+0.055)/1.055, 2.4)
 }
 
 // gridLine draws one grid line.

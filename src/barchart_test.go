@@ -132,9 +132,16 @@ func TestBarChartTheDefaultLookIsQuiet(t *testing.T) {
 	if got := testFillColorBefore(content, "s"); got != "0.37 0.41 0.45 rg" {
 		t.Errorf("the subtitle is drawn with %q", got)
 	}
-	// A label on a dark bar is white, on a light one ink.
-	if labelColorOn(0x1F3A5F) != color.White || labelColorOn(0x6F95C2) != 0x22262B {
-		t.Error("the label colors on the bars")
+	// A label on a dark bar is white, on a light one ink: whichever contrasts
+	// more. On sage and on the old sage, which a rule by brightness gave
+	// white, ink contrasts more; on slate white.
+	for c, want := range map[int32]int32{
+		0x1F3A5F: color.White, 0x6F95C2: 0x22262B, 0x76987C: 0x22262B,
+		0x6B8F71: 0x22262B, 0x4F7A8C: color.White,
+	} {
+		if got := labelColorOn(c); got != want {
+			t.Errorf("the label on %06X is %06X", c, got)
+		}
 	}
 }
 

@@ -74,7 +74,7 @@ func TestDonutChartAChartIsAFigureThatListsItsSlices(t *testing.T) {
 	if !strings.HasPrefix(content, "/Figure <</MCID 0>>\nBDC\n") || !strings.HasSuffix(content, "EMC\n") {
 		t.Errorf("the chart is not a figure: %q", content)
 	}
-	if got := testFillColorBefore(content, "Apples"); got != "0 0 0 rg" {
+	if got := testFillColorBefore(content, "Apples"); got != "0.13 0.15 0.17 rg" {
 		t.Errorf("the label is drawn with %q", got)
 	}
 	if got := testFillColorBefore(content, "25%"); got != "1 1 1 rg" {
@@ -87,6 +87,60 @@ func TestDonutChartAChartIsAFigureThatListsItsSlices(t *testing.T) {
 		if got := page.structures[i].altDescription; got != want {
 			t.Errorf("chart %d is described as %q, not %q", i, got, want)
 		}
+	}
+}
+
+// Slices in the palette, navy first; thin white lines between them; thin
+// gray leader lines; the percentage white on navy, ink on the light steel
+// blue; and no black line or text.
+func TestDonutChartTheDefaultLookIsQuiet(t *testing.T) {
+	pdf := testNewPDF()
+	page := NewPage(pdf, testLetterPortrait())
+	testDonutChart(pdf).AddSlice(NewSliceInPalette(60, "a")).AddSlice(NewSliceInPalette(40, "b")).DrawOn(page)
+	content := testContent(page)
+	for _, want := range []string{
+		"0.12 0.23 0.37 rg",           // navy
+		"0.44 0.58 0.76 rg",           // steel blue
+		"1 1 1 RG\n1.5 w\n",           // the white lines between
+		"0.55 0.59 0.64 RG\n0.75 w\n", // the leader lines
+	} {
+		if !strings.Contains(content, want) {
+			t.Errorf("%q missing from %q", want, content)
+		}
+	}
+	if strings.Contains(content, "0 0 0 RG") || strings.Contains(content, "0 0 0 rg") {
+		t.Errorf("black in %q", content)
+	}
+	if got := testFillColorBefore(content, "60%"); got != "1 1 1 rg" {
+		t.Errorf("60%% is drawn with %q", got)
+	}
+	if got := testFillColorBefore(content, "40%"); got != "0.13 0.15 0.17 rg" {
+		t.Errorf("40%% is drawn with %q", got)
+	}
+}
+
+// The title at the location, the subtitle under it, the circle under both; a
+// chart without them has the circle at its location, as before.
+func TestDonutChartATitleIsDrawnAboveTheCircle(t *testing.T) {
+	pdf := testNewPDF()
+	pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
+	page := NewPage(pdf, testLetterPortrait())
+	testAssertXY(t, 300, 300, testDonutChart(pdf).AddSlice(NewSliceInPalette(1, "a")).DrawOn(page))
+	xy := testDonutChart(pdf).SetTitle("Fruit").SetSubtitle("This week").
+		AddSlice(NewSliceInPalette(1, "a")).DrawOn(page)
+	testNear(t, "x", 300, xy[0], testDelta)
+	if xy[1] <= 300 {
+		t.Errorf("the circle is not under the title: %v", xy[1])
+	}
+	content := testContent(page)
+	if !strings.Contains(content, testHex("Fruit")) || !strings.Contains(content, testHex("This week")) {
+		t.Errorf("the title missing from %q", content)
+	}
+	if got := testFillColorBefore(content, "This week"); got != "0.37 0.41 0.45 rg" {
+		t.Errorf("the subtitle is drawn with %q", got)
+	}
+	if got := page.structures[1].altDescription; got != "Fruit: a 100%" {
+		t.Errorf("the chart is described as %q", got)
 	}
 }
 

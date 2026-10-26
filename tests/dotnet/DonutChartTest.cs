@@ -59,7 +59,7 @@ public class DonutChartTest {
         string content = TestSupport.Content(page);
         Assert.StartsWith("/Figure <</MCID 0>>\nBDC\n", content);
         Assert.EndsWith("EMC\n", content);
-        Assert.Equal("0 0 0 rg", TestSupport.FillColorBefore(content, "Apples"));
+        Assert.Equal("0.13 0.15 0.17 rg", TestSupport.FillColorBefore(content, "Apples"));
         Assert.Equal("1 1 1 rg", TestSupport.FillColorBefore(content, "25%"));
         DonutChart pie = NewChart(pdf).SetRadii(100f, 0f).AddSlice(new Slice(1f, Color.red, ""));
         pie.DrawOn(page);
@@ -69,6 +69,43 @@ public class DonutChartTest {
         Assert.Equal("Donut chart: Apples 25%, Oranges 75%", page.structures[0].altDescription);
         Assert.Equal("Pie chart: 100%", page.structures[1].altDescription);
         Assert.Equal("Most are oranges.", page.structures[2].altDescription);
+    }
+
+    // Slices in the palette, navy first; thin white lines between them; thin
+    // gray leader lines; the percentage white on navy, ink on the light steel
+    // blue; and no black line or text.
+    [Fact]
+    public void TheDefaultLookIsQuiet() {
+        PDF pdf = TestSupport.NewPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        NewChart(pdf).AddSlice(new Slice(60f, "a")).AddSlice(new Slice(40f, "b")).DrawOn(page);
+        string content = TestSupport.Content(page);
+        Assert.Contains("0.12 0.23 0.37 rg", content);       // navy
+        Assert.Contains("0.44 0.58 0.76 rg", content);       // steel blue
+        Assert.Contains("1 1 1 RG\n1.5 w\n", content);       // the white lines between
+        Assert.Contains("0.55 0.59 0.64 RG\n0.75 w\n", content);   // the leader lines
+        Assert.DoesNotContain("0 0 0 RG", content);
+        Assert.DoesNotContain("0 0 0 rg", content);
+        Assert.Equal("1 1 1 rg", TestSupport.FillColorBefore(content, "60%"));
+        Assert.Equal("0.13 0.15 0.17 rg", TestSupport.FillColorBefore(content, "40%"));
+    }
+
+    // The title at the location, the subtitle under it, the circle under
+    // both; a chart without them has the circle at its location, as before.
+    [Fact]
+    public void ATitleIsDrawnAboveTheCircle() {
+        PDF pdf = new PDF(new System.IO.MemoryStream(), Compliance.PDF_UA_1).SetTitle("Test");
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        TestSupport.AssertXY(300f, 300f, NewChart(pdf).AddSlice(new Slice(1f, "a")).DrawOn(page));
+        float[] xy = NewChart(pdf).SetTitle("Fruit").SetSubtitle("This week")
+                .AddSlice(new Slice(1f, "a")).DrawOn(page);
+        Assert.Equal(300f, xy[0], 0.01f);
+        Assert.True(xy[1] > 300f, "the circle is under the title: " + xy[1]);
+        string content = TestSupport.Content(page);
+        Assert.Contains(TestSupport.Hex("Fruit"), content);
+        Assert.Contains(TestSupport.Hex("This week"), content);
+        Assert.Equal("0.37 0.41 0.45 rg", TestSupport.FillColorBefore(content, "This week"));
+        Assert.Equal("Fruit: a 100%", page.structures[1].altDescription);
     }
 
     // A slice that is not a number, an infinity, or a value whose 360ths

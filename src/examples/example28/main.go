@@ -44,11 +44,13 @@ func Example28() {
 	chart.SetLocation(100.0, 200.0)
 	chart.SetRadii(200.0, 120.0) // an inner radius of 0 makes a pie chart
 
-	chart.AddSlice(pdfjet.NewSlice(25.0, 0xC1121F, "Apples"))  // deep red
-	chart.AddSlice(pdfjet.NewSlice(20.0, 0x1D3557, "Oranges")) // navy blue
-	chart.AddSlice(pdfjet.NewSlice(30.0, 0x1A7468, "Bananas")) // dark teal
-	chart.AddSlice(pdfjet.NewSlice(15.0, 0xB16104, "Grapes"))  // burnt orange
-	chart.AddSlice(pdfjet.NewSlice(10.0, 0x846F1E, "Lemons"))  // dark gold
+	chart.SetTitle("Fruit sold this week")
+	chart.SetSubtitle("Share of 100 crates, in the default colors")
+	chart.AddSlice(pdfjet.NewSliceInPalette(25.0, "Apples"))
+	chart.AddSlice(pdfjet.NewSliceInPalette(20.0, "Oranges"))
+	chart.AddSlice(pdfjet.NewSliceInPalette(30.0, "Bananas"))
+	chart.AddSlice(pdfjet.NewSliceInPalette(15.0, "Grapes"))
+	chart.AddSlice(pdfjet.NewSliceInPalette(10.0, "Lemons"))
 	chart.DrawOn(page)
 
 	if err := pdf.Complete(); err != nil {

@@ -120,9 +120,14 @@ import Testing
         #expect(!content.contains("0 0 0 RG") && !content.contains("0 0 0 rg"))
         #expect(TestSupport.fillColorBefore(content, "t") == "0.13 0.15 0.17 rg")
         #expect(TestSupport.fillColorBefore(content, "s") == "0.37 0.41 0.45 rg")
-        // A label on a dark bar is white, on a light one ink.
+        // A label on a dark bar is white, on a light one ink: whichever
+        // contrasts more. On sage and on the old sage, which a rule by
+        // brightness gave white, ink contrasts more; on slate white.
         #expect(BarChart.labelColorOn(0x1F3A5F) == Color.white)
         #expect(BarChart.labelColorOn(0x6F95C2) == 0x22262B)
+        #expect(BarChart.labelColorOn(0x76987C) == 0x22262B)
+        #expect(BarChart.labelColorOn(0x6B8F71) == 0x22262B)
+        #expect(BarChart.labelColorOn(0x4F7A8C) == Color.white)
     }
 
     @Test func barsHaveTheirOwnColorsAndLabelsInsideWithGroupedDigits() {

@@ -38,11 +38,13 @@ public class Example_28 {
         chart.setLocation(100.0f, 200.0f);
         chart.setRadii(200.0f, 120.0f);     // an inner radius of 0 makes a pie chart
 
-        chart.addSlice(new Slice(25f, 0xC1121F, "Apples"));   // deep red
-        chart.addSlice(new Slice(20f, 0x1D3557, "Oranges"));   // navy blue
-        chart.addSlice(new Slice(30f, 0x1A7468, "Bananas"));   // dark teal
-        chart.addSlice(new Slice(15f, 0xB16104, "Grapes"));   // burnt orange
-        chart.addSlice(new Slice(10f, 0x846F1E, "Lemons"));   // dark gold
+        chart.setTitle("Fruit sold this week");
+        chart.setSubtitle("Share of 100 crates, in the default colors");
+        chart.addSlice(new Slice(25f, "Apples"));
+        chart.addSlice(new Slice(20f, "Oranges"));
+        chart.addSlice(new Slice(30f, "Bananas"));
+        chart.addSlice(new Slice(15f, "Grapes"));
+        chart.addSlice(new Slice(10f, "Lemons"));
         chart.drawOn(page);
 
         pdf.complete();

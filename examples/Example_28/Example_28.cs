@@ -37,11 +37,13 @@ public class Example_28 {
         chart.SetLocation(100.0f, 200.0f);
         chart.SetRadii(200.0f, 120.0f);     // an inner radius of 0 makes a pie chart
 
-        chart.AddSlice(new Slice(25f, 0xC1121F, "Apples"));    // deep red
-        chart.AddSlice(new Slice(20f, 0x1D3557, "Oranges"));    // navy blue
-        chart.AddSlice(new Slice(30f, 0x1A7468, "Bananas"));    // dark teal
-        chart.AddSlice(new Slice(15f, 0xB16104, "Grapes"));    // burnt orange
-        chart.AddSlice(new Slice(10f, 0x846F1E, "Lemons"));    // dark gold
+        chart.SetTitle("Fruit sold this week");
+        chart.SetSubtitle("Share of 100 crates, in the default colors");
+        chart.AddSlice(new Slice(25f, "Apples"));
+        chart.AddSlice(new Slice(20f, "Oranges"));
+        chart.AddSlice(new Slice(30f, "Bananas"));
+        chart.AddSlice(new Slice(15f, "Grapes"));
+        chart.AddSlice(new Slice(10f, "Lemons"));
         chart.DrawOn(page);
 
         pdf.Complete();

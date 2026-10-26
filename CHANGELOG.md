@@ -148,8 +148,8 @@ There is no 9.1.3: what was done for it is in 9.1.5 (the owner, 26 October
   negative values; the category and axis labels and the axis titles gray; a
   default palette of navy, steel blue, amber, sage, gray, brick, slate and
   ochre, whose colors differ in lightness for grayscale and for readers who
-  do not tell red from green; the value labels on a bar white or ink by its
-  color; digits grouped in thousands. A stacked chart with value labels
+  do not tell red from green; the value labels on a bar white or ink,
+  whichever contrasts more with it; digits grouped in thousands. A stacked chart with value labels
   writes the total of each stack above it. Example_27 draws its sales with
   the default colors, and the ten longest rivers with their data in a table
   under the chart.
@@ -158,6 +158,21 @@ There is no 9.1.3: what was done for it is in 9.1.5 (the owner, 26 October
   labels, its colors blue, red and green, and its numbers ungrouped (8000,
   now 8,000); a chart that sets its colors, its grid or its grouping keeps
   them.
+- DonutChart, the four ports: the look of the simple charts. A title and a
+  subtitle, `setTitle` and `setSubtitle`, at the top left, in ink and in a
+  muted gray, with the circle under them; a slice made with
+  `new Slice(value, text)` (Go `NewSliceInPalette`) takes the next color of
+  BarChart's palette; thin white lines between the slices; the leader lines
+  thin and gray, the labels in ink, and each percentage white or ink,
+  whichever contrasts more with its slice. The room above the circle is
+  what a label at its top needs, so that it clears the subtitle. The text
+  for screen readers starts with the title.
+  Example_28 draws its fruit with a title and the default colors.
+  Behavior change: the leader lines are 0.75 pt and gray, where they were
+  1 pt and black; the labels are ink, not black; a percentage on a light
+  slice is ink, where it was always white; and white lines separate the
+  slices. A chart without a title is where it was, and slices keep the
+  colors they are given.
 - Markdown, the four ports: a table that fits on a page is not split. It
   starts the next page when it does not fit in what is left of this one,
   and a paragraph that ends in a colon right before it, such as "The size of

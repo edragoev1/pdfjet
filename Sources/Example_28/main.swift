@@ -34,11 +34,13 @@ public class Example_28 {
         chart.setLocation(100.0, 200.0)
         chart.setRadii(200.0, 120.0)     // an inner radius of 0 makes a pie chart
 
-        chart.addSlice(Slice(25.0, 0xC1121F, "Apples"))   // deep red
-        chart.addSlice(Slice(20.0, 0x1D3557, "Oranges"))   // navy blue
-        chart.addSlice(Slice(30.0, 0x1A7468, "Bananas"))   // dark teal
-        chart.addSlice(Slice(15.0, 0xB16104, "Grapes"))   // burnt orange
-        chart.addSlice(Slice(10.0, 0x846F1E, "Lemons"))   // dark gold
+        chart.setTitle("Fruit sold this week")
+        chart.setSubtitle("Share of 100 crates, in the default colors")
+        chart.addSlice(Slice(25.0, "Apples"))
+        chart.addSlice(Slice(20.0, "Oranges"))
+        chart.addSlice(Slice(30.0, "Bananas"))
+        chart.addSlice(Slice(15.0, "Grapes"))
+        chart.addSlice(Slice(10.0, "Lemons"))
         chart.drawOn(page)
 
         try pdf.complete()

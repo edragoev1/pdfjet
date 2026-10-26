@@ -22,3 +22,12 @@ func NewSlice(value float32, color int32, text string) *Slice {
 	slice.text = text
 	return slice
 }
+
+// slicePalette is the color of a slice that takes the next color of the palette.
+const slicePalette int32 = -1
+
+// NewSliceInPalette creates a slice in the next color of the chart's palette,
+// navy first, the palette of BarChart, so that the charts of a document match.
+func NewSliceInPalette(value float32, text string) *Slice {
+	return NewSlice(value, slicePalette, text)
+}

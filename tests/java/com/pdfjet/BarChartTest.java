@@ -132,9 +132,14 @@ class BarChartTest {
         assertFalse(content.contains("0 0 0 RG") || content.contains("0 0 0 rg"), content);
         assertEquals("0.13 0.15 0.17 rg", TestSupport.fillColorBefore(content, "t"));
         assertEquals("0.37 0.41 0.45 rg", TestSupport.fillColorBefore(content, "s"));
-        // A label on a dark bar is white, on a light one ink.
+        // A label on a dark bar is white, on a light one ink: whichever
+        // contrasts more. On sage and on the old sage, which a rule by
+        // brightness gave white, ink contrasts more; on slate white.
         assertEquals(Color.white, BarChart.labelColorOn(0x1F3A5F));
         assertEquals(0x22262B, BarChart.labelColorOn(0x6F95C2));
+        assertEquals(0x22262B, BarChart.labelColorOn(0x76987C));
+        assertEquals(0x22262B, BarChart.labelColorOn(0x6B8F71));
+        assertEquals(Color.white, BarChart.labelColorOn(0x4F7A8C));
     }
 
     @Test

@@ -45,7 +45,7 @@ public class BarChart implements Drawable {
         0x1F3A5F,   // navy
         0x6F95C2,   // steel blue
         0xD08C3C,   // amber
-        0x6B8F71,   // sage
+        0x76987C,   // sage
         0xA7AFB8,   // gray
         0x9C5B5B,   // brick
         0x4F7A8C,   // slate
@@ -813,14 +813,27 @@ public class BarChart implements Drawable {
     }
 
     /**
-     * Returns the color of a label on a bar of the color: white on a dark bar,
-     * ink on a light one, by the bar's luminance.
+     * Returns the color of a label on a bar of the color: white or ink,
+     * whichever contrasts more with it, by the WCAG contrast ratio.
      */
     static int labelColorOn(int color) {
-        int r = (color >> 16) & 0xFF;
-        int g = (color >> 8) & 0xFF;
-        int b = color & 0xFF;
-        return (299 * r + 587 * g + 114 * b) < 140000 ? Color.white : INK;
+        // White contrasts more when (1 + 0.05) / (L + 0.05) is the larger of
+        // the two ratios, (L + 0.05) / (ink + 0.05) the other
+        double l = luminance(color) + 0.05;
+        return l * l <= 1.05 * (luminance(INK) + 0.05) ? Color.white : INK;
+    }
+
+    /** Returns the relative luminance of the color, as WCAG defines it. */
+    private static double luminance(int color) {
+        return 0.2126 * linear((color >> 16) & 0xFF)
+                + 0.7152 * linear((color >> 8) & 0xFF)
+                + 0.0722 * linear(color & 0xFF);
+    }
+
+    /** Returns the sRGB component, 0 to 255, as a linear value from 0 to 1. */
+    private static double linear(int component) {
+        double c = component / 255.0;
+        return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
     }
 
     /** Draws one grid line. */

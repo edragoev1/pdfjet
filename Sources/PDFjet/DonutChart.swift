@@ -9,7 +9,10 @@ import Foundation
 ///
 /// A donut or pie chart: each slice is its value's share of the sum of the
 /// values, with a label next to it and its percentage inside it. A chart with
-/// an inner radius of 0 is a pie chart. See Example_28.
+/// an inner radius of 0 is a pie chart. In the look of the other charts: a
+/// title and a subtitle at the top left, thin white lines between the slices,
+/// gray leader lines, the labels in ink, and each percentage white or ink by
+/// its slice's color. See Example_28.
 ///
 public class DonutChart : Drawable {
     var f1: Font?
@@ -20,6 +23,13 @@ public class DonutChart : Drawable {
     var r2: Float = 0.0
     var slices: [Slice]?
     private var altDescription: String?
+    private var title = ""
+    private var subtitle = ""
+
+    // The look of the simple charts
+    private static let INK = SimpleBarChart.INK
+    private static let MUTED = SimpleBarChart.MUTED
+    private static let LEADER: Int32 = 0x8C96A3
 
     ///
     /// Creates a donut chart. With an inner radius of 0 it is a pie chart.
@@ -61,6 +71,22 @@ public class DonutChart : Drawable {
     @discardableResult
     public func addSlice(_ slice: Slice) -> DonutChart {
         self.slices!.append(slice)
+        return self
+    }
+
+    /// Sets the title, drawn at the top left of the chart's location in the bold
+    /// font, the second, at the size of the labels; the circle is drawn under it.
+    /// A chart without a title has the circle at its location.
+    @discardableResult
+    public func setTitle(_ title: String) -> DonutChart {
+        self.title = title
+        return self
+    }
+
+    /// Sets the subtitle, drawn under the title in a muted gray.
+    @discardableResult
+    public func setSubtitle(_ subtitle: String) -> DonutChart {
+        self.subtitle = subtitle
         return self
     }
 
@@ -191,8 +217,8 @@ public class DonutChart : Drawable {
         let p2 = getPoint(xc, yc, r3, midAngle)
 
         // Draw the pointer line: edge → elbow → horizontal end
-        page.setPenColor(Color.black)
-        page.setPenWidth(1.0)
+        page.setPenColor(DonutChart.LEADER)
+        page.setPenWidth(0.75)
         page.moveTo(p1[0], p1[1])
         page.lineTo(p2[0], p2[1])
 
@@ -214,7 +240,7 @@ public class DonutChart : Drawable {
             let x = onRightSide ? p2[0] + 2.0 : xEnd + 2.0
             let baseline = yEnd - f1!.getAscent() / 3.0
             page.drawString(f1!, f1!.getSize(), text, x, baseline,
-                    Util.toRGB(Color.black), nil)
+                    Util.toRGB(DonutChart.INK), nil)
             return [Swift.min(p1[0], p2[0], xEnd, x),
                     Swift.min(p1[1], p2[1], baseline - f1!.getAscent()),
                     Swift.max(p1[0], p2[0], xEnd, x + textWidth),
@@ -237,8 +263,28 @@ public class DonutChart : Drawable {
     ///   circle of this chart. The slice labels can extend past it.
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
+        // The title and the subtitle above the circle, when there are any
+        let titleFont = f2 ?? f1
+        let titleSize: Float = f1?.getSize() ?? titleFont?.getSize() ?? 0.0
+        var top = y
+        var titleBaseline: Float = 0.0
+        var subtitleBaseline: Float = 0.0
+        if let titleFont = titleFont, !title.isEmpty {
+            titleBaseline = top + titleFont.getAscent(titleSize)
+            top = titleBaseline + titleFont.getDescent(titleSize)
+        }
+        if let f1 = f1, !subtitle.isEmpty {
+            subtitleBaseline = top + f1.getAscent()
+            top = subtitleBaseline + f1.getDescent()
+        }
+        if top > y {
+            // Room for a label at the top of the circle: its leader line goes
+            // 15 points up, the label sits above its end; and half a line
+            let label: Float = (f1 != nil) ? f1!.getAscent() / 3 + f1!.getAscent() : 0
+            top += 15 + label + titleSize / 2
+        }
         let xc = x + r1     // the center of the chart
-        let yc = y + r1
+        let yc = top + r1
 
         // The slices with a value above 0 share the circle
         var total: Float = 0.0
@@ -258,18 +304,31 @@ public class DonutChart : Drawable {
         page.saveGraphicsState()
         // The box of the figure: the outer circle, and the pointers and the
         // labels, which can reach past it
-        var box: [Float] = [x, y, x + 2 * r1, y + 2 * r1]
+        var box: [Float] = [x, y, x + 2 * r1, yc + r1]
+        if titleBaseline > 0.0, let titleFont = titleFont {
+            page.drawString(titleFont, titleSize, title, x, titleBaseline, Util.toRGB(DonutChart.INK), nil)
+            box[2] = Swift.max(box[2], x + titleFont.stringWidth(titleSize, title))
+        }
+        if subtitleBaseline > 0.0, let f1 = f1 {
+            page.drawString(f1, f1.getSize(), subtitle, x, subtitleBaseline, Util.toRGB(DonutChart.MUTED), nil)
+            box[2] = Swift.max(box[2], x + f1.stringWidth(subtitle))
+        }
         var angle: Float = 0.0
+        var drawn = 0
+        var edges = [Float]()
         for slice in slices! {
             if !DonutChart.sliceDrawn(slice.value) {
                 continue
             }
+            let color = (slice.color == Slice.PALETTE) ? BarChart.PALETTE[drawn % BarChart.PALETTE.count] : slice.color
+            drawn += 1
             let sweep = slice.value * 360.0 / total
             angle = drawSlice(
-                    page, slice.color,
+                    page, color,
                     xc, yc,
                     r1, r2,
                     angle, angle + sweep)
+            edges.append(angle)
             let pointer = drawLinePointer(
                     page, slice.text,
                     xc, yc,
@@ -286,7 +345,17 @@ public class DonutChart : Drawable {
                 page.drawString(f2!, f2!.getSize(), pctStr,
                         pos[0] - f2!.stringWidth(pctStr) / 2.0,
                         pos[1] + f2!.getAscent() / 3.0,
-                        Util.toRGB(Color.white), nil)
+                        Util.toRGB(BarChart.labelColorOn(color)), nil)
+            }
+        }
+        // A thin white line between the slices, from the hole to the edge
+        if drawn > 1 {
+            page.setPenColor(Color.white)
+            page.setPenWidth(1.5)
+            for edge in edges {
+                let inner = getPoint(xc, yc, r2, edge - 90.0)
+                let outer = getPoint(xc, yc, r1, edge - 90.0)
+                page.drawLine(inner[0], inner[1], outer[0], outer[1])
             }
         }
         page.restoreGraphicsState()
@@ -314,7 +383,7 @@ public class DonutChart : Drawable {
         if let altDescription, !altDescription.isEmpty {
             return altDescription
         }
-        var description = (r2 > 0.0) ? "Donut chart:" : "Pie chart:"
+        var description = !title.isEmpty ? title + ":" : ((r2 > 0.0) ? "Donut chart:" : "Pie chart:")
         var separator = " "
         // The slices drawn, as Int of the percentage of an infinity traps
         for slice in slices! where DonutChart.sliceDrawn(slice.value) {

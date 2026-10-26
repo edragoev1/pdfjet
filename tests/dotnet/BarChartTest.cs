@@ -132,9 +132,14 @@ public class BarChartTest {
         Assert.DoesNotContain("0 0 0 rg", content);
         Assert.Equal("0.13 0.15 0.17 rg", TestSupport.FillColorBefore(content, "t"));
         Assert.Equal("0.37 0.41 0.45 rg", TestSupport.FillColorBefore(content, "s"));
-        // A label on a dark bar is white, on a light one ink.
+        // A label on a dark bar is white, on a light one ink: whichever
+        // contrasts more. On sage and on the old sage, which a rule by
+        // brightness gave white, ink contrasts more; on slate white.
         Assert.Equal(Color.white, BarChart.LabelColorOn(0x1F3A5F));
         Assert.Equal(0x22262B, BarChart.LabelColorOn(0x6F95C2));
+        Assert.Equal(0x22262B, BarChart.LabelColorOn(0x76987C));
+        Assert.Equal(0x22262B, BarChart.LabelColorOn(0x6B8F71));
+        Assert.Equal(Color.white, BarChart.LabelColorOn(0x4F7A8C));
     }
 
     [Fact]

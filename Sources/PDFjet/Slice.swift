@@ -23,4 +23,16 @@ public class Slice {
         self.color = color
         self.text = text
     }
+
+    // The color of a slice that takes the next color of the palette
+    static let PALETTE: Int32 = -1
+
+    /// Creates a slice in the next color of the chart's palette, navy first, the
+    /// palette of BarChart, so that the charts of a document match.
+    ///
+    /// - Parameter value: the value of the slice, above 0; the chart draws its share of the sum.
+    /// - Parameter text: the label drawn next to the slice.
+    public convenience init(_ value: Float, _ text: String) {
+        self.init(value, Slice.PALETTE, text)
+    }
 }

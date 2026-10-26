@@ -13,7 +13,10 @@ import java.util.List;
 /**
  * A donut or pie chart: each slice is its value's share of the sum of the
  * values, with a label next to it and its percentage inside it. A chart with
- * an inner radius of 0 is a pie chart. See Example_28.
+ * an inner radius of 0 is a pie chart. In the look of the other charts: a
+ * title and a subtitle at the top left, thin white lines between the slices,
+ * gray leader lines, the labels in ink, and each percentage white or ink by
+ * its slice's color. See Example_28.
  */
 public class DonutChart implements Drawable {
     Font f1;
@@ -24,6 +27,13 @@ public class DonutChart implements Drawable {
     float r2 = 0.0f;
     List<Slice> slices;
     private String altDescription = null;
+    private String title = "";
+    private String subtitle = "";
+
+    // The look of the simple charts
+    private static final int INK = SimpleBarChart.INK;
+    private static final int MUTED = SimpleBarChart.MUTED;
+    private static final int LEADER = 0x8C96A3;
 
     /**
      * Creates a donut chart. With an inner radius of 0 it is a pie chart.
@@ -73,6 +83,30 @@ public class DonutChart implements Drawable {
      */
     public DonutChart addSlice(Slice slice) {
         slices.add(slice);
+        return this;
+    }
+
+    /**
+     * Sets the title, drawn at the top left of the chart's location in the
+     * bold font, the second, at the size of the labels; the circle is drawn
+     * under it. A chart without a title has the circle at its location.
+     *
+     * @param title the title.
+     * @return this DonutChart object.
+     */
+    public DonutChart setTitle(String title) {
+        this.title = (title == null) ? "" : title;
+        return this;
+    }
+
+    /**
+     * Sets the subtitle, drawn under the title in a muted gray.
+     *
+     * @param subtitle the subtitle.
+     * @return this DonutChart object.
+     */
+    public DonutChart setSubtitle(String subtitle) {
+        this.subtitle = (subtitle == null) ? "" : subtitle;
         return this;
     }
 
@@ -206,9 +240,9 @@ public class DonutChart implements Drawable {
         float r3 = r1 + 15.0f;
         float[] p2 = getPoint(xc, yc, r3, midAngle);
 
-        // Draw the pointer line: edge → elbow → horizontal end
-        page.setPenColor(Color.black);
-        page.setPenWidth(1.0f);
+        // Draw the pointer line: edge → elbow → horizontal end, thin and gray
+        page.setPenColor(LEADER);
+        page.setPenWidth(0.75f);
         page.moveTo(p1[0], p1[1]);
         page.lineTo(p2[0], p2[1]);
 
@@ -230,7 +264,7 @@ public class DonutChart implements Drawable {
             float x = onRightSide ? p2[0] + 2.0f : xEnd + 2.0f;
             float baseline = yEnd - f1.getAscent() / 3.0f;
             page.drawString(f1, f1.getSize(), text, x, baseline,
-                    Util.toRGB(Color.black), null);
+                    Util.toRGB(INK), null);
             return new float[] {
                     Math.min(Math.min(p1[0], p2[0]), Math.min(xEnd, x)),
                     Math.min(Math.min(p1[1], p2[1]), baseline - f1.getAscent()),
@@ -257,8 +291,28 @@ public class DonutChart implements Drawable {
      * @throws Exception if an input or output exception occurred.
      */
     public float[] drawOn(Page page) throws Exception {
+        // The title and the subtitle above the circle, when there are any
+        Font titleFont = (f2 != null) ? f2 : f1;
+        float titleSize = (f1 != null) ? f1.getSize() : (titleFont != null ? titleFont.getSize() : 0f);
+        float top = y;
+        float titleBaseline = 0f;
+        float subtitleBaseline = 0f;
+        if (titleFont != null && !title.isEmpty()) {
+            titleBaseline = top + titleFont.getAscent(titleSize);
+            top = titleBaseline + titleFont.getDescent(titleSize);
+        }
+        if (f1 != null && !subtitle.isEmpty()) {
+            subtitleBaseline = top + f1.getAscent();
+            top = subtitleBaseline + f1.getDescent();
+        }
+        if (top > y) {
+            // Room for a label at the top of the circle: its leader line goes
+            // 15 points up, the label sits above its end; and half a line
+            float label = (f1 != null) ? f1.getAscent() / 3f + f1.getAscent() : 0f;
+            top += 15f + label + titleSize / 2f;
+        }
         float xc = x + r1;      // the center of the chart
-        float yc = y + r1;
+        float yc = top + r1;
 
         // The slices with a value above 0 share the circle
         float total = 0.0f;
@@ -276,20 +330,33 @@ public class DonutChart implements Drawable {
         // a Stamp keeps them: the chart left the page with
         // the black pen of its pointers and the color of its last slice.
         page.saveGraphicsState();
-        // The box of the figure: the outer circle, and the pointers and the
-        // labels, which can reach past it
-        float[] box = {x, y, x + 2f * r1, y + 2f * r1};
+        // The box of the figure: the title, the outer circle, and the
+        // pointers and the labels, which can reach past it
+        float[] box = {x, y, x + 2f * r1, yc + r1};
+        if (titleBaseline > 0f) {
+            page.drawString(titleFont, titleSize, title, x, titleBaseline, Util.toRGB(INK), null);
+            box[2] = Math.max(box[2], x + titleFont.stringWidth(titleSize, title));
+        }
+        if (subtitleBaseline > 0f) {
+            page.drawString(f1, f1.getSize(), subtitle, x, subtitleBaseline, Util.toRGB(MUTED), null);
+            box[2] = Math.max(box[2], x + f1.stringWidth(subtitle));
+        }
         float angle = 0.0f;
+        int drawn = 0;
+        List<Float> edges = new ArrayList<>();
         for (Slice slice : slices) {
             if (!sliceDrawn(slice.value)) {
                 continue;
             }
+            int color = (slice.color == Slice.PALETTE) ? BarChart.PALETTE[drawn % BarChart.PALETTE.length] : slice.color;
+            drawn++;
             float sweep = slice.value * 360.0f / total;
             angle = drawSlice(
-                    page, slice.color,
+                    page, color,
                     xc, yc,
                     r1, r2,
                     angle, angle + sweep);
+            edges.add(angle);
             float[] pointer = drawLinePointer(
                     page, slice.text,
                     xc, yc,
@@ -306,7 +373,17 @@ public class DonutChart implements Drawable {
                 page.drawString(f2, f2.getSize(), pctStr,
                         pos[0] - f2.stringWidth(pctStr) / 2.0f,
                         pos[1] + f2.getAscent() / 3.0f,
-                        Util.toRGB(Color.white), null);
+                        Util.toRGB(BarChart.labelColorOn(color)), null);
+            }
+        }
+        // A thin white line between the slices, from the hole to the edge
+        if (drawn > 1) {
+            page.setPenColor(Color.white);
+            page.setPenWidth(1.5f);
+            for (float edge : edges) {
+                float[] inner = getPoint(xc, yc, r2, edge - 90.0f);
+                float[] outer = getPoint(xc, yc, r1, edge - 90.0f);
+                page.drawLine(inner[0], inner[1], outer[0], outer[1]);
             }
         }
         page.restoreGraphicsState();
@@ -339,7 +416,8 @@ public class DonutChart implements Drawable {
         if (altDescription != null && !altDescription.isEmpty()) {
             return altDescription;
         }
-        StringBuilder sb = new StringBuilder(r2 > 0.0f ? "Donut chart:" : "Pie chart:");
+        StringBuilder sb = new StringBuilder(!title.isEmpty() ? title + ":"
+                : (r2 > 0.0f ? "Donut chart:" : "Pie chart:"));
         String separator = " ";
         for (Slice slice : slices) {
             if (sliceDrawn(slice.value)) {

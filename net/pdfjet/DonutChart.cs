@@ -11,7 +11,10 @@ namespace PDFjet.NET {
     /// <summary>
     /// A donut or pie chart: each slice is its value's share of the sum of the
     /// values, with a label next to it and its percentage inside it. A chart with
-    /// an inner radius of 0 is a pie chart. See Example_28.
+    /// an inner radius of 0 is a pie chart. In the look of the other charts: a
+    /// title and a subtitle at the top left, thin white lines between the slices,
+    /// gray leader lines, the labels in ink, and each percentage white or ink by
+    /// its slice's color. See Example_28.
     /// </summary>
     public class DonutChart : IDrawable {
         private readonly Font f1;
@@ -22,6 +25,13 @@ namespace PDFjet.NET {
         private float r2;
         private readonly List<Slice> slices;
         private String altDescription = null;
+        private String title = "";
+        private String subtitle = "";
+
+        // The look of the simple charts
+        private const int INK = SimpleBarChart.INK;
+        private const int MUTED = SimpleBarChart.MUTED;
+        private const int LEADER = 0x8C96A3;
 
         /// <summary>
         /// Creates a donut chart. With an inner radius of 0 it is a pie chart.
@@ -61,6 +71,26 @@ namespace PDFjet.NET {
         /// <summary>Adds a slice to this chart.</summary>
         public DonutChart AddSlice(Slice slice) {
             slices.Add(slice);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the title, drawn at the top left of the chart's location in the bold
+        /// font, the second, at the size of the labels; the circle is drawn under it.
+        /// A chart without a title has the circle at its location.
+        /// </summary>
+        /// <param name="title">the title.</param>
+        /// <returns>this DonutChart object.</returns>
+        public DonutChart SetTitle(String title) {
+            this.title = title ?? "";
+            return this;
+        }
+
+        /// <summary>Sets the subtitle, drawn under the title in a muted gray.</summary>
+        /// <param name="subtitle">the subtitle.</param>
+        /// <returns>this DonutChart object.</returns>
+        public DonutChart SetSubtitle(String subtitle) {
+            this.subtitle = subtitle ?? "";
             return this;
         }
 
@@ -195,8 +225,8 @@ namespace PDFjet.NET {
             var (x2, y2) = GetPoint(xc, yc, r3, midAngle);
 
             // Draw the pointer line: edge → elbow → horizontal end
-            page.SetPenColor(Color.black);
-            page.SetPenWidth(1.0f);
+            page.SetPenColor(LEADER);
+            page.SetPenWidth(0.75f);
             page.MoveTo(x1, y1);
             page.LineTo(x2, y2);
 
@@ -218,7 +248,7 @@ namespace PDFjet.NET {
                 float x = onRightSide ? x2 + 2.0f : xEnd + 2.0f;
                 float baseline = yEnd - f1.GetAscent() / 3.0f;
                 page.DrawString(f1, f1.GetSize(), text, x, baseline,
-                        Util.ToRGB(Color.black), null);
+                        Util.ToRGB(INK), null);
                 return new float[] {
                         Math.Min(Math.Min(x1, x2), Math.Min(xEnd, x)),
                         Math.Min(Math.Min(y1, y2), baseline - f1.GetAscent()),
@@ -241,8 +271,28 @@ namespace PDFjet.NET {
         /// <returns>x and y coordinates of the bottom right corner of the outer circle
         /// of this chart. The slice labels can extend past it.</returns>
         public float[] DrawOn(Page page) {
+            // The title and the subtitle above the circle, when there are any
+            Font titleFont = f2 ?? f1;
+            float titleSize = (f1 != null) ? f1.GetSize() : (titleFont != null ? titleFont.GetSize() : 0f);
+            float top = y;
+            float titleBaseline = 0f;
+            float subtitleBaseline = 0f;
+            if (titleFont != null && title.Length > 0) {
+                titleBaseline = top + titleFont.GetAscent(titleSize);
+                top = titleBaseline + titleFont.GetDescent(titleSize);
+            }
+            if (f1 != null && subtitle.Length > 0) {
+                subtitleBaseline = top + f1.GetAscent();
+                top = subtitleBaseline + f1.GetDescent();
+            }
+            if (top > y) {
+                // Room for a label at the top of the circle: its leader line
+                // goes 15 points up, the label sits above its end; and half a line
+                float label = (f1 != null) ? f1.GetAscent() / 3f + f1.GetAscent() : 0f;
+                top += 15f + label + titleSize / 2f;
+            }
             float xc = x + r1;      // the center of the chart
-            float yc = y + r1;
+            float yc = top + r1;
 
             // The slices with a value above 0 share the circle
             float total = 0.0f;
@@ -263,18 +313,31 @@ namespace PDFjet.NET {
             page.SaveGraphicsState();
             // The box of the figure: the outer circle, and the pointers and the
             // labels, which can reach past it
-            float[] box = {x, y, x + 2f * r1, y + 2f * r1};
+            float[] box = {x, y, x + 2f * r1, yc + r1};
+            if (titleBaseline > 0f) {
+                page.DrawString(titleFont, titleSize, title, x, titleBaseline, Util.ToRGB(INK), null);
+                box[2] = Math.Max(box[2], x + titleFont.StringWidth(titleSize, title));
+            }
+            if (subtitleBaseline > 0f) {
+                page.DrawString(f1, f1.GetSize(), subtitle, x, subtitleBaseline, Util.ToRGB(MUTED), null);
+                box[2] = Math.Max(box[2], x + f1.StringWidth(subtitle));
+            }
             float angle = 0.0f;
+            int drawn = 0;
+            List<float> edges = new List<float>();
             foreach (Slice slice in slices) {
                 if (!SliceDrawn(slice.value)) {
                     continue;
                 }
+                int color = (slice.color == Slice.PALETTE) ? BarChart.PALETTE[drawn % BarChart.PALETTE.Length] : slice.color;
+                drawn++;
                 float sweep = slice.value * 360.0f / total;
                 angle = DrawSlice(
-                    page, slice.color,
+                    page, color,
                     xc, yc,
                     r1, r2,
                     angle, angle + sweep);
+                edges.Add(angle);
                 float[] pointer = DrawLinePointer(
                     page, slice.text,
                     xc, yc,
@@ -292,7 +355,17 @@ namespace PDFjet.NET {
                     page.DrawString(f2, f2.GetSize(), pctStr,
                         posX - f2.StringWidth(pctStr) / 2.0f,
                         posY + f2.GetAscent() / 3.0f,
-                        Util.ToRGB(Color.white), null);
+                        Util.ToRGB(BarChart.LabelColorOn(color)), null);
+                }
+            }
+            // A thin white line between the slices, from the hole to the edge
+            if (drawn > 1) {
+                page.SetPenColor(Color.white);
+                page.SetPenWidth(1.5f);
+                foreach (float edge in edges) {
+                    var (innerX, innerY) = GetPoint(xc, yc, r2, edge - 90.0f);
+                    var (outerX, outerY) = GetPoint(xc, yc, r1, edge - 90.0f);
+                    page.DrawLine(innerX, innerY, outerX, outerY);
                 }
             }
             page.RestoreGraphicsState();
@@ -326,7 +399,8 @@ namespace PDFjet.NET {
             if (!String.IsNullOrEmpty(altDescription)) {
                 return altDescription;
             }
-            System.Text.StringBuilder sb = new System.Text.StringBuilder(r2 > 0.0f ? "Donut chart:" : "Pie chart:");
+            System.Text.StringBuilder sb = new System.Text.StringBuilder(title.Length > 0 ? title + ":"
+                    : (r2 > 0.0f ? "Donut chart:" : "Pie chart:"));
             String separator = " ";
             foreach (Slice slice in slices) {
                 if (SliceDrawn(slice.value)) {
