@@ -271,6 +271,54 @@ commit and date. The layout's format version (1) and the look's rules
   a test and the javadoc of `drawOn` pointing to it. `drawOn` returns what
   it does now, so no code changes its result. Done 26 October 2026, the
   four ports; check-api.sh v9.1.1 shows it as the only member added.
+- **For 9.1.5: Flow, headings, paragraphs and images flowed onto pages**
+  (the owner, 26 October 2026: "core", for 9.1.5). From writing common
+  business documents in the four ports: a report of headings, paragraphs
+  and photos is 53 lines today, the code moving a TextFrame from page to
+  page and placing each photo by hand; about 20 with this. A thin class over
+  what the core has: TextFrame flows the paragraphs and makes the pages,
+  `getTextBottom()` says where the text ends (9.1.3), Image has its size.
+  - The API, Java (the others alike, Go `NewFlow`, `Add`...):
+    ```java
+    Flow flow = new Flow(pdf, Letter.PORTRAIT).setMargins(50f);
+    flow.add(title);                       // a Paragraph, StructElem.H1
+    flow.add(paragraphs, 6f);              // List<Paragraph>, the gap between them
+    flow.add(photo);                       // an Image
+    flow.add(caption).addSpace(12f);
+    List<Page> pages = flow.drawOn();      // detached, for footers, then pdf.addPages
+    ```
+    `setMargins(float)` and `setMargins(top, right, bottom, left)`; the
+    width of the text is the page's less the margins. `add(Paragraph)`,
+    `add(List<Paragraph>, gap)`, `add(Image)`, `add(Image, Alignment)`,
+    `addSpace(points)`,
+    `drawOn()` returning the pages it made, and
+    `drawOn(Page first, List<Page> pages)` to start on a page the caller has
+    begun, below `setFirstPageTop(y)`, as Table's `setFirstPageTopMargin`.
+  - The rules, few and plain:
+    1. Paragraphs one after another are one TextFrame: they flow across
+       pages, broken between lines, as TextFrame breaks them now.
+    2. An image goes whole: on this page if it fits below the text, else at
+       the top of the next. One taller than the space between the margins is
+       scaled down to it, keeping its shape, never cut; one wider than the
+       text, to the width. At the left margin, or as
+       `add(Image, Alignment)` says: LEFT, CENTER or RIGHT, the one option.
+    3. A heading, a paragraph of StructElem.H1 to H6, keeps with what
+       follows: if the heading and the first line after it do not both fit,
+       the heading goes to the next page. Nothing else is kept together: no
+       widow or orphan rules.
+    4. A space at the top of a page is dropped, as a paragraph gap is.
+  - Tagging: nothing new. The paragraphs are tagged as in TextFrame (P, or
+    the heading type set), the images as Figures with their alt text, in
+    the order added, which is the reading order. PAC on the example.
+  - Not in it, on purpose: tables (they break across pages themselves, and
+    may join later as an item), columns, text wrapped around images,
+    floats, keep-together of anything but headings, footers (the pages are
+    returned for them, as TextFrame's and Table's are).
+  - Size: about 150 to 250 lines in each port with its comments, Go first,
+    then Java, C#, Swift; a test in each of the rules above, the same in
+    the four ports; an example (a report of 4 sections, 120 paragraphs and
+    4 photos) and a snippet in the booklet. check-api.sh shows the
+    class as the only addition. No change to TextFrame, Image or the fonts.
 - **For 9.1.5: better charts, and one more** (the owner, 25 October 2026:
   "significantly improve all charts"). From a review of Example_25 to 28 and
   chart.go, barchart.go and donutchart.go; in the four ports, the examples
@@ -374,7 +422,7 @@ commit and date. The layout's format version (1) and the look's rules
      pages keep less once written, and a bookmark tree of thousands of
      levels or siblings is built in linear time. Java's Compressor (W7) is
      a Deflater for each thread since 9.1.3.
-- **For v9.2.1: three things learned from common business documents** (an
+- **For v9.2.1: two things learned from common business documents** (an
   invoice, a statement, a report of text and photos, a batch of 1,000
   letters, written in the four ports; the owner, 26 October 2026):
   1. Smaller font subsets. A subset keeps every glyph number of the font,
@@ -390,10 +438,6 @@ commit and date. The layout's format version (1) and the look's rules
      letters, most of each letter's 8.7 ms (Java) is the two fonts read
      again for each document. Measure first how much a font shared by the
      documents would save, and what sharing it across threads costs.
-  3. A flowing layout of headings, paragraphs and images onto pages, a
-     photo that does not fit going to the next page. The report's code is
-     53 lines today, moving a TextFrame from page to page and placing each
-     photo; about 20 with such a layout.
 - **Dropped: local letter shapes from GSUB** (the owner, 25 October 2026:
   "keep fonts frozen"). No port reads a font's GSUB table: Bulgarian text
   is drawn with the font's default Cyrillic letters, т as a small capital
