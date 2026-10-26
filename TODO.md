@@ -98,6 +98,10 @@ commit and date. The layout's format version (1) and the look's rules
   (above), and PDFjet Pro 9.1.5 the same day. The font subsetters were
   fuzzed 8 hours each on 25 October 2026. Was: 9.1.3 in early December
   2026 on its own, 9.1.5 the charts in 2027.
+  **In November 2026** (the owner, 26 October 2026: "will release 9.1.5 in
+  November"), after the Forms launch of 9 and 10 November. The chart items
+  of 9.1.5 below that are not done by then go to 9.1.7; SimpleBarChart is
+  done and goes in 9.1.5.
 
 - ✅ Done 25 October 2026. **v9.1.5: an image copied from a PDF that was
   read keeps its transparency, in the four ports (found 22 October 2026).**
