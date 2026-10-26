@@ -316,6 +316,22 @@ commit and date. The layout's format version (1) and the look's rules
     may join later as an item), columns, text wrapped around images,
     floats, keep-together of anything but headings, footers (the pages are
     returned for them, as TextFrame's and Table's are).
+  - **Go done, 26 October 2026** (src/flowtext.go, 285 lines with its
+    comments; 9 tests in flowtext_test.go). As built, following Table's
+    names: `NewFlowText(pdf, pageSize)`, margins 72 by default,
+    `SetMargins(m)` and `SetEachMargin(top, right, bottom, left)`,
+    `SetFirstPageTop(y)`, `Add(paragraph)`, `AddParagraphs(paragraphs,
+    gap)`, `AddImage(image)`, `AddImageAligned(image, alignment)`,
+    `AddSpace(points)`, `DrawOnPages(&pages)` and `DrawOnPagesFrom(first,
+    &pages)`, which return the bottom right corner of the last thing drawn,
+    as Table's do; Java `drawOn(pages)` and `drawOn(first, pages)`. Each
+    Add is a frame of its own, one under the other with no gap: the space
+    between them is AddSpace's, so that a heading sits where the code puts
+    it. Margins that leave no room fail the PDF, and nothing added makes no
+    page. A trial report (4 sections, 120 paragraphs, 4 photos, PDF/UA,
+    footers) is 18 pages, about 20 lines of code, and veraPDF passes it.
+    Next: Java, C#, Swift, the same tests; then the example and the
+    snippet.
   - Size: about 150 to 250 lines in each port with its comments, Go first,
     then Java, C#, Swift; a test in each of the rules above, the same in
     the four ports; an example (a report of 4 sections, 120 paragraphs and
