@@ -103,6 +103,23 @@ commit and date. The layout's format version (1) and the look's rules
   of 9.1.5 below that are not done by then go to 9.1.7; SimpleBarChart is
   done and goes in 9.1.5.
 
+- **After 9.1.5: BigTable to draw an ordinary statement (found 26 October
+  2026, the owner: "we can fix this for future versions").** The
+  benchmark's statement (pdf-benchmarks SPEC.md) could not be drawn with
+  BigTable, so it uses Table; a BigTable version as close as it allows took
+  5.3 ms to Table's 7.5, but on 11 pages to 12, as it lacks three things,
+  in the four ports:
+  - Space above and below the text of a row: a row is as tall as its font,
+    and setPadding is the space at the sides only. Add a vertical padding
+    (the statement's is 0.75 pt).
+  - A background for the header row of its own: setShadingColor shades the
+    rows, not the header. Add a header color.
+  - A size for the footer: it is drawn in a font at that font's size, so an
+    8 pt footer under a 9 pt table needs the font loaded again. Add a size,
+    drawn with TextLine.setFontSize.
+  Tests in each port; CHANGELOG.md; then the benchmark's statement could
+  use BigTable, in a rerun.
+
 - ✅ Done 25 October 2026. **v9.1.5: an image copied from a PDF that was
   read keeps its transparency, in the four ports (found 22 October 2026).**
   Each object read keeps the objects of its PDF by number (weakly in
