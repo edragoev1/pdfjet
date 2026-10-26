@@ -526,6 +526,37 @@ commit and date. The layout's format version (1) and the look's rules
        woman of 2023, 217 countries and economies (World Development
        Indicators, CC BY 4.0), in place of the 2007 file. C# and Swift
        next.
+  9. **SimpleLineChart, a new class, for 9.1.5** (the owner, 26 October
+     2026), so that Chart can be deprecated: lines over time, the one
+     thing Chart draws that no Simple chart does (Example_25, the electric
+     vehicles by model year). In the family of SimpleBarChart and
+     SimpleScatterChart: the categories or the years left to right, a few
+     lines, each labeled at its end with its name and last value (no
+     legend), one line highlighted in navy and the others gray, markers at
+     the points if asked, a light horizontal grid, the axis numbers spaced
+     by their widths, the title and subtitle at the left; drawn with the
+     page and ChartScale alone; one figure in PDF/UA, described from its
+     data. Example_25 drawn with it.
+  10. **Chart and Series deprecated in 9.1.5, removed in a later release
+     (v9.2.1 or after)** (the owner, 26 October 2026: "I do plan to retire
+     Chart"). Nothing in the library uses Chart but Series, which only
+     feeds it; BarChart, DonutChart and the Simple charts no longer depend
+     on it (ChartScale). Point stays: Cell, Path, Shape and Page use it.
+     - Deprecated in each port's way: Java `@Deprecated` and a javadoc
+       `@deprecated` naming SimpleLineChart and SimpleScatterChart; C#
+       `[Obsolete("...")]`; Go `// Deprecated: ...`; Swift
+       `@available(*, deprecated, message: "...")`. They keep working.
+     - The builds treat warnings as errors, so before the markers: Example_25
+       on SimpleLineChart, Example_26 on SimpleScatterChart, the booklet's
+       line-chart snippet rewritten; Chart's own tests kept, the warnings
+       allowed there alone (`@SuppressWarnings("deprecation")`, `#pragma
+       warning disable CS0618`, the Swift test functions marked deprecated
+       themselves); DrawableTest and ColorTransparentTest on another
+       drawable.
+     - The CHANGELOG says what replaces them; the README's and the
+       booklet's "line and XY charts" point to the Simple charts.
+     - Removed later, recorded in util/api-removed.txt as CalendarMonth was,
+       so that check-api.sh takes it.
   Left out: 3D, logarithmic axes, radar charts, two value axes.
 - **The code reviews of 11 and 12 October 2026, three rounds.** Every
   finding is fixed for 9.0.7, in the four ports, each with a test
