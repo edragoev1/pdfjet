@@ -46,7 +46,7 @@ public class SimpleScatterChart implements Drawable {
         Point(float x, float y, String name, String uri) {
             this.x = x;
             this.y = y;
-            this.name = name;
+            this.name = (name == null) ? "" : name;
             this.uri = uri;
         }
     }
@@ -94,7 +94,7 @@ public class SimpleScatterChart implements Drawable {
      * @return this chart.
      */
     public SimpleScatterChart setTitle(String title) {
-        this.title = title;
+        this.title = (title == null) ? "" : title;
         return this;
     }
 
@@ -105,7 +105,7 @@ public class SimpleScatterChart implements Drawable {
      * @return this chart.
      */
     public SimpleScatterChart setSubtitle(String subtitle) {
-        this.subtitle = subtitle;
+        this.subtitle = (subtitle == null) ? "" : subtitle;
         return this;
     }
 
@@ -116,7 +116,7 @@ public class SimpleScatterChart implements Drawable {
      * @return this chart.
      */
     public SimpleScatterChart setXAxisTitle(String title) {
-        this.xAxisTitle = title;
+        this.xAxisTitle = (title == null) ? "" : title;
         return this;
     }
 
@@ -127,7 +127,7 @@ public class SimpleScatterChart implements Drawable {
      * @return this chart.
      */
     public SimpleScatterChart setYAxisTitle(String title) {
-        this.yAxisTitle = title;
+        this.yAxisTitle = (title == null) ? "" : title;
         return this;
     }
 
@@ -139,7 +139,7 @@ public class SimpleScatterChart implements Drawable {
      * @return this chart.
      */
     public SimpleScatterChart setAltDescription(String altDescription) {
-        this.altDescription = altDescription;
+        this.altDescription = (altDescription == null) ? "" : altDescription;
         return this;
     }
 
@@ -441,7 +441,7 @@ public class SimpleScatterChart implements Drawable {
         if (!xAxisTitle.isEmpty()) {
             bottom -= 1.4f * size;
         }
-        if (right <= left || bottom <= top) {
+        if (right <= left || bottom <= top || !ChartScale.drawable(xAxis) || !ChartScale.drawable(yAxis)) {
             return new float[] {x + w, y + h};
         }
         final float plotLeft = left;
@@ -545,14 +545,14 @@ public class SimpleScatterChart implements Drawable {
         page.setBrushColor(dotColor);
         float r = 0.3f * size;
         for (Point p : points) {
-            if (p.name.isEmpty()) {
+            if (p.name.isEmpty() && onPlot(p, xAxis, yAxis)) {
                 page.fillCircle(xAt(p.x, xAxis, plotLeft, right), yAt(p.y, yAxis, top, plotBottom), r);
             }
         }
         page.restoreGraphicsState();
         List<Point> linked = new ArrayList<Point>();
         for (Point p : points) {
-            if (p.name.isEmpty()) {
+            if (p.name.isEmpty() || !onPlot(p, xAxis, yAxis)) {
                 continue;
             }
             if (p.uri != null && linksApart) {
@@ -629,6 +629,12 @@ public class SimpleScatterChart implements Drawable {
                 null,
                 null,
                 p.name);
+    }
+
+    // Tells if the point is on the plot: a point outside a range that is set
+    // is not drawn.
+    private static boolean onPlot(Point p, ChartScale.Axis xAxis, ChartScale.Axis yAxis) {
+        return ChartScale.onAxis(p.x, xAxis) && ChartScale.onAxis(p.y, yAxis);
     }
 
     // The x on the page of a value of the horizontal axis.

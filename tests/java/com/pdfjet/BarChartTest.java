@@ -177,4 +177,48 @@ class BarChartTest {
         assertEquals("Sales", page.structures.get(0).altDescription);
         assertEquals("Sales rose from 1 to 2.", page.structures.get(1).altDescription);
     }
+
+    // A horizontal chart narrower than its categories draws nothing: its
+    // axis ran backwards, the bars over the categories (review of 26 October
+    // 2026).
+    @Test
+    void aChartWithNoRoomForItsPlotDrawsNothing() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        BarChart chart = chart(pdf).setSize(200f, 200f).setHorizontal(true)
+                .setCategories("A very very long category name indeed, and longer")
+                .addSeries("s", new float[] {5f});
+        TestSupport.assertXY(250f, 250f, chart.drawOn(page));
+        assertEquals("", TestSupport.content(page));
+    }
+
+    // Under vertical bars a category is written where it leaves the one
+    // before it room, as the numbers of the axis are: twelve months in full
+    // ran into each other.
+    @Test
+    void categoriesThatDoNotFitAreSkipped() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        String[] months = {"January", "February", "March", "April", "May", "June", "July",
+                "August", "September", "October", "November", "December"};
+        float[] values = new float[12];
+        java.util.Arrays.fill(values, 1f);
+        String content = draw(chart(pdf).setCategories(months).addSeries("s", values), page);
+        assertTrue(content.contains(TestSupport.hex("January")), content);
+        assertFalse(content.contains(TestSupport.hex("February")), content);
+        page = new Page(pdf, Letter.PORTRAIT);
+        content = draw(chart(pdf).setCategories("a", "b").addSeries("s", new float[] {1f, 2f}), page);
+        assertTrue(content.contains(TestSupport.hex("a")) && content.contains(TestSupport.hex("b")), content);
+    }
+
+    // A null title, name or list is empty: it threw when the chart was drawn.
+    @Test
+    void nullIsEmpty() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        chart(pdf).setTitle(null).setSubtitle(null).setXAxisTitle(null).setYAxisTitle(null)
+                .setAltDescription(null).setCategories((String[]) null).setCategories("a")
+                .addSeries(null, new float[] {1f}).addSeries("b", null).addSeries("c", new float[] {2f}, (int[]) null)
+                .drawOn(page);
+    }
 }

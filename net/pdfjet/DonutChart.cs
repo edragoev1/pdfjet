@@ -70,7 +70,9 @@ namespace PDFjet.NET {
 
         /// <summary>Adds a slice to this chart.</summary>
         public DonutChart AddSlice(Slice slice) {
-            slices.Add(slice);
+            if (slice != null) {
+                slices.Add(slice);
+            }
             return this;
         }
 

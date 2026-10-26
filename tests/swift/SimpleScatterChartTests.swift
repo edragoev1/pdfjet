@@ -119,4 +119,18 @@ import Testing
         #expect(raw.components(separatedBy: "/Subtype /Link").count - 1 == 1)
         #expect(raw.contains("/URI <" + TestSupport.hex("https://pdfjet.com/a").lowercased() + ">"), "the URI")
     }
+
+    // A point outside a range that is set is not drawn; a point far past it,
+    // or points whose span is past the largest float, are drawn without an
+    // error that lost the document (review of 26 October 2026).
+    @Test func aPointOutsideTheRangeIsNotDrawn() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let page = Page(pdf, Letter.PORTRAIT)
+        chart(pdf).setXAxisRange(0, 2).setYAxisRange(0, 100).add("Far", 20, 30).add(1e37, 1e37).drawOn(page)
+        let content = TestSupport.content(page)
+        #expect(content.contains(TestSupport.hex("Canada")), "\(content)")
+        #expect(!content.contains(TestSupport.hex("Far")), "\(content)")
+        SimpleScatterChart(font, font).add(-3e38, -3e38).add(3e38, 3e38).drawOn(Page(pdf, Letter.PORTRAIT))
+    }
 }

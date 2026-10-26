@@ -147,4 +147,30 @@ class SimpleScatterChartTest {
         assertEquals(1, raw.split("/Subtype /Link", -1).length - 1);
         assertTrue(raw.contains("/URI <" + TestSupport.hex("https://pdfjet.com/a").toLowerCase() + ">"), "the URI");
     }
+
+    // A point outside a range that is set is not drawn; a point far past it,
+    // or points whose span is past the largest float, are drawn without an
+    // exception that lost the document (review of 26 October 2026).
+    @Test
+    void aPointOutsideTheRangeIsNotDrawn() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        chart(pdf).setXAxisRange(0f, 2f).setYAxisRange(0f, 100f).add("Far", 20f, 30f).add(1e37f, 1e37f).drawOn(page);
+        String content = TestSupport.content(page);
+        assertTrue(content.contains(TestSupport.hex("Canada")), content);
+        assertFalse(content.contains(TestSupport.hex("Far")), content);
+        page = new Page(pdf, Letter.PORTRAIT);
+        new SimpleScatterChart(font, font).add(-3e38f, -3e38f).add(3e38f, 3e38f).drawOn(page);
+    }
+
+    // A null title or name is empty: it threw when the chart was drawn.
+    @Test
+    void nullIsEmpty() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new SimpleScatterChart(font, font).setTitle(null).setSubtitle(null).setXAxisTitle(null)
+                .setYAxisTitle(null).setAltDescription(null).add(null, 1f, 1f).add(2f, 3f).drawOn(page);
+    }
 }

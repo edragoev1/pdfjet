@@ -91,4 +91,24 @@ import Testing
         TestSupport.expectNear(400, xy[0])
         TestSupport.expectNear(300, xy[1])
     }
+
+    // A value outside a range that is set is drawn past the plot, and the
+    // lines are clipped at its edges; a value far past it, or values whose
+    // span is past the largest float, are drawn without an error that lost
+    // the document (review of 26 October 2026).
+    @Test func aValueOutsideTheRangeIsClipped() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        var page = Page(pdf, Letter.PORTRAIT)
+        chart(pdf).drawOn(page)
+        #expect(!TestSupport.content(page).contains("W\nn\n"))     // No clip in range
+        for far: Float in [60, 1e37, -1e37] {
+            page = Page(pdf, Letter.PORTRAIT)
+            SimpleLineChart(font, font).setYAxisRange(0, 10).addLine("a", [5, far, 5]).drawOn(page)
+            let content = TestSupport.content(page)
+            #expect(content.contains("W\nn\n") && content.contains(TestSupport.hex("a 5")), "\(far): \(content)")
+        }
+        SimpleLineChart(font, font).addLine("wide", [-3e38, 3e38]).drawOn(Page(pdf, Letter.PORTRAIT))
+        SimpleLineChart(font, font).setYAxisRange(-3e38, 3e38).addLine("a", [1, 2]).drawOn(Page(pdf, Letter.PORTRAIT))
+    }
 }

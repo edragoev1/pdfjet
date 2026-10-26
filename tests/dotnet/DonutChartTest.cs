@@ -150,5 +150,14 @@ public class DonutChartTest {
         chart.SetLocation(88.44436f, 261.47784f).DrawOn(page);
         Assert.Contains("131.87 234.15 131.39 234.7 130.91 235.27 c\n", TestSupport.Content(page));
     }
+
+    // A null slice is left out: it threw when the chart was drawn.
+    [Fact]
+    public void ANullSliceIsLeftOut() {
+        PDF pdf = TestSupport.NewPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        NewChart(pdf).AddSlice(null).AddSlice(new Slice(1f, "a")).DrawOn(page);
+        Assert.Contains(TestSupport.Hex("a"), TestSupport.Content(page));
+    }
 }
 }

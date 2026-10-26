@@ -226,3 +226,40 @@ func TestBarChartAxisLabelStepIsTheFewestLinesALabelFits(t *testing.T) {
 		}
 	}
 }
+
+// A horizontal chart narrower than its categories draws nothing: its axis ran
+// backwards, the bars over the categories (review of 26 October 2026).
+func TestBarChartAChartWithNoRoomForItsPlotDrawsNothing(t *testing.T) {
+	pdf := testNewPDF()
+	page := NewPage(pdf, testLetterPortrait())
+	chart := testBarChart(pdf).SetSize(200, 200).SetHorizontal(true).
+		SetCategories("A very very long category name indeed, and longer").
+		AddSeries("s", []float32{5})
+	testAssertXY(t, 250, 250, chart.DrawOn(page))
+	if content := testContent(page); content != "" {
+		t.Errorf("%q", content)
+	}
+}
+
+// Under vertical bars a category is written where it leaves the one before
+// it room, as the numbers of the axis are: twelve months in full ran into
+// each other.
+func TestBarChartCategoriesThatDoNotFitAreSkipped(t *testing.T) {
+	pdf := testNewPDF()
+	page := NewPage(pdf, testLetterPortrait())
+	months := []string{"January", "February", "March", "April", "May", "June", "July",
+		"August", "September", "October", "November", "December"}
+	values := make([]float32, 12)
+	for i := range values {
+		values[i] = 1
+	}
+	content := testDrawBarChart(t, testBarChart(pdf).SetCategories(months...).AddSeries("s", values), page)
+	if !strings.Contains(content, testHex("January")) || strings.Contains(content, testHex("February")) {
+		t.Errorf("%q", content)
+	}
+	page = NewPage(pdf, testLetterPortrait())
+	content = testDrawBarChart(t, testBarChart(pdf).SetCategories("a", "b").AddSeries("s", []float32{1, 2}), page)
+	if !strings.Contains(content, testHex("a")) || !strings.Contains(content, testHex("b")) {
+		t.Errorf("%q", content)
+	}
+}

@@ -199,6 +199,30 @@ enum ChartScale {
     }
 
     ///
+    /// Returns the value held to the axis and to one span of it past each end,
+    /// so that a value far outside a range that is set is drawn just past the
+    /// plot, where it is clipped, and not at a coordinate too large for a PDF.
+    /// A value on the axis is returned as it is.
+    ///
+    static func held(_ value: Float, _ axis: Axis) -> Float {
+        let span = Double(axis.max) - Double(axis.min)
+        return Float(Swift.max(Double(axis.min) - span, Swift.min(Double(axis.max) + span, Double(value))))
+    }
+
+    /// Tells if the value is on the axis, its ends included.
+    static func onAxis(_ value: Float, _ axis: Axis) -> Bool {
+        return value >= axis.min && value <= axis.max
+    }
+
+    ///
+    /// Tells if the axis can be drawn: the span of a range that is set, or of
+    /// values that are, can be past the largest float.
+    ///
+    static func drawable(_ axis: Axis) -> Bool {
+        return isValue(axis.max - axis.min)
+    }
+
+    ///
     /// Groups the digits of a number before its decimal point in thousands with
     /// commas: 23507 is 23,507.
     ///

@@ -634,6 +634,42 @@ commit and date. The layout's format version (1) and the look's rules
        booklet's "line and XY charts" point to the Simple charts.
      - Removed later, recorded in util/api-removed.txt as CalendarMonth was,
        so that check-api.sh takes it.
+  11. **The smaller points of the charts review of 26 October 2026**, for
+     9.1.5 if there is time, or 9.1.7. Its bugs are fixed (CHANGELOG.md:
+     the label colors by contrast and a lighter sage, the room over a
+     donut's title, values outside a set range, a BarChart without room,
+     the month names, null in Java and C#). Left, in the four ports:
+     - Axis numbers on a set range: `setYAxisRange(3, 17)` writes 3.00,
+       5.33, 7.67…, the number of lines from the rounded range and the step
+       from the range as set (ChartScale `axisOf`). Steps of the range set,
+       or lines on round numbers inside it.
+     - DonutChart, small slices: the labels of several thin slices pile on
+       one another (no moving apart, as SimpleLineChart's end labels have);
+       the percentages, each rounded, can add up to more than 100 in the
+       description (90 and six of 1.5: 91 and six of 2, 103); a very thin
+       slice is all but covered by its two white lines.
+     - DonutChart drops a slice whose value times 360 is past the largest
+       float (about 9.4e35), though the value is valid.
+     - DonutChart's description has the title but not the subtitle; the
+       Simple charts have both.
+     - DonutChart's title is in f2, the percentages' font; with no f2 (no
+       percentages) the title falls back to f1, regular.
+     - DonutChart's drawOn returns the circle's corner; the labels under
+       it reach about 15 points lower, so what is placed by the returned y
+       can touch them. The box of the labels is known and could be returned.
+     - BarChart's description, unless set, is its title alone ("Months"),
+       no data; the other charts describe theirs.
+     - BarChart's legend: a series with a color per bar shows the palette
+       color of its index, not its bars'; the legend does not wrap.
+     - BarChart leaves two and a half lines for a title it does not have.
+     - SimpleBarChart narrower than its names: the bars go to nothing and
+       the values are written past the panel.
+     - SimpleLineChart and SimpleScatterChart without room for the plot
+       draw nothing, not even a figure, and say nothing (BarChart now too).
+     - SimpleLineChart's end labels, moved apart, are pushed down without
+       limit, below the plot and the panel.
+     - SimpleScatterChart: a named point's label has no halo over the gray
+       dots (Example_26's Japan and Canada, readable).
   Left out: 3D, logarithmic axes, radar charts, two value axes.
 - **The code reviews of 11 and 12 October 2026, three rounds.** Every
   finding is fixed for 9.0.7, in the four ports, each with a test

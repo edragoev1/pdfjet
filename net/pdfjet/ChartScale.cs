@@ -186,6 +186,30 @@ internal static class ChartScale {
     }
 
     /// <summary>
+    /// Returns the value held to the axis and to one span of it past each end,
+    /// so that a value far outside a range that is set is drawn just past the
+    /// plot, where it is clipped, and not at a coordinate too large for a PDF.
+    /// A value on the axis is returned as it is.
+    /// </summary>
+    internal static float Held(float value, Axis axis) {
+        double span = (double) axis.max - (double) axis.min;
+        return (float) Math.Max((double) axis.min - span, Math.Min((double) axis.max + span, value));
+    }
+
+    /// <summary>Tells if the value is on the axis, its ends included.</summary>
+    internal static bool OnAxis(float value, Axis axis) {
+        return value >= axis.min && value <= axis.max;
+    }
+
+    /// <summary>
+    /// Tells if the axis can be drawn: the span of a range that is set, or of
+    /// values that are, can be past the largest float.
+    /// </summary>
+    internal static bool Drawable(Axis axis) {
+        return IsValue(axis.max - axis.min);
+    }
+
+    /// <summary>
     /// Groups the digits of a number before its decimal point in thousands with
     /// commas: 23507 is 23,507.
     /// </summary>

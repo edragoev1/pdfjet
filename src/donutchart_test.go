@@ -162,3 +162,13 @@ func TestDonutChartASliceThatIsNotANumberIsNotDrawn(t *testing.T) {
 		}
 	}
 }
+
+// A nil slice is left out: it panicked when the chart was drawn.
+func TestDonutChartANilSliceIsLeftOut(t *testing.T) {
+	pdf := testNewPDF()
+	page := NewPage(pdf, testLetterPortrait())
+	testDonutChart(pdf).AddSlice(nil).AddSlice(NewSliceInPalette(1, "a")).DrawOn(page)
+	if !strings.Contains(testContent(page), testHex("a")) {
+		t.Error("the slice is not drawn")
+	}
+}

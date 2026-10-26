@@ -105,4 +105,41 @@ class SimpleLineChartTest {
         assertEquals(400f, xy[0], TestSupport.DELTA);
         assertEquals(300f, xy[1], TestSupport.DELTA);
     }
+
+    // A value outside a range that is set is drawn past the plot, and the
+    // lines are clipped at its edges; a value far past it, or values whose
+    // span is past the largest float, are drawn without an exception that
+    // lost the document (review of 26 October 2026).
+    @Test
+    void aValueOutsideTheRangeIsClipped() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        chart(pdf).drawOn(page);
+        assertFalse(TestSupport.content(page).contains("W\nn\n"));     // No clip in range
+        for (float far : new float[] {60f, 1e37f, -1e37f}) {
+            page = new Page(pdf, Letter.PORTRAIT);
+            new SimpleLineChart(font, font).setYAxisRange(0f, 10f)
+                    .addLine("a", new float[] {5f, far, 5f}).drawOn(page);
+            String content = TestSupport.content(page);
+            assertTrue(content.contains("W\nn\n"), content);
+            assertTrue(content.contains(TestSupport.hex("a 5")), content);
+        }
+        page = new Page(pdf, Letter.PORTRAIT);
+        new SimpleLineChart(font, font).addLine("wide", new float[] {-3e38f, 3e38f}).drawOn(page);
+        page = new Page(pdf, Letter.PORTRAIT);
+        new SimpleLineChart(font, font).setYAxisRange(-3e38f, 3e38f).addLine("a", new float[] {1f, 2f}).drawOn(page);
+    }
+
+    // A null title, name or list is empty, as it was in DonutChart: it threw
+    // when the chart was drawn.
+    @Test
+    void nullIsEmpty() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        new SimpleLineChart(font, font).setTitle(null).setSubtitle(null).setXAxisTitle(null)
+                .setYAxisTitle(null).setAltDescription(null).setCategories((String[]) null)
+                .addLine(null, new float[] {1f, 2f}).addLine("b", null)
+                .drawOn(new Page(pdf, Letter.PORTRAIT));
+    }
 }

@@ -155,3 +155,19 @@ func TestSimpleScatterChartALinkedPointOfADocumentNotTaggedIsDrawnInTheChart(t *
 		t.Error("the URI of the point is missing")
 	}
 }
+
+// A point outside a range that is set is not drawn; a point far past it, or
+// points whose span is past the largest float, are drawn without a panic or
+// an error that lost the document (review of 26 October 2026).
+func TestSimpleScatterChartAPointOutsideTheRangeIsNotDrawn(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	page := NewPage(pdf, testLetterPortrait())
+	testSimpleScatterChart(pdf).SetXAxisRange(0, 2).SetYAxisRange(0, 100).AddNamed("Far", 20, 30).
+		Add(1e37, 1e37).DrawOn(page)
+	content := testContent(page)
+	if !strings.Contains(content, testHex("Canada")) || strings.Contains(content, testHex("Far")) {
+		t.Errorf("%q", content)
+	}
+	NewSimpleScatterChart(font, font).Add(-3e38, -3e38).Add(3e38, 3e38).DrawOn(NewPage(pdf, testLetterPortrait()))
+}

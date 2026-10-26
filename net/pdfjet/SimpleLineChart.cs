@@ -97,7 +97,7 @@ public class SimpleLineChart : IDrawable {
     /// <param name="title">the title.</param>
     /// <returns>this chart.</returns>
     public SimpleLineChart SetTitle(String title) {
-        this.title = title;
+        this.title = title ?? "";
         return this;
     }
 
@@ -107,7 +107,7 @@ public class SimpleLineChart : IDrawable {
     /// <param name="subtitle">the subtitle.</param>
     /// <returns>this chart.</returns>
     public SimpleLineChart SetSubtitle(String subtitle) {
-        this.subtitle = subtitle;
+        this.subtitle = subtitle ?? "";
         return this;
     }
 
@@ -117,7 +117,7 @@ public class SimpleLineChart : IDrawable {
     /// <param name="title">the title.</param>
     /// <returns>this chart.</returns>
     public SimpleLineChart SetXAxisTitle(String title) {
-        this.xAxisTitle = title;
+        this.xAxisTitle = title ?? "";
         return this;
     }
 
@@ -127,7 +127,7 @@ public class SimpleLineChart : IDrawable {
     /// <param name="title">the title.</param>
     /// <returns>this chart.</returns>
     public SimpleLineChart SetYAxisTitle(String title) {
-        this.yAxisTitle = title;
+        this.yAxisTitle = title ?? "";
         return this;
     }
 
@@ -138,7 +138,7 @@ public class SimpleLineChart : IDrawable {
     /// <param name="altDescription">the alternate description.</param>
     /// <returns>this chart.</returns>
     public SimpleLineChart SetAltDescription(String altDescription) {
-        this.altDescription = altDescription;
+        this.altDescription = altDescription ?? "";
         return this;
     }
 
@@ -149,7 +149,7 @@ public class SimpleLineChart : IDrawable {
     /// <param name="categories">the categories.</param>
     /// <returns>this chart.</returns>
     public SimpleLineChart SetCategories(params String[] categories) {
-        this.categories = categories;
+        this.categories = categories ?? new String[0];
         return this;
     }
 
@@ -161,7 +161,7 @@ public class SimpleLineChart : IDrawable {
     /// <param name="values">its values.</param>
     /// <returns>this chart.</returns>
     public SimpleLineChart AddLine(String name, float[] values) {
-        lines.Add(new Line(name, values));
+        lines.Add(new Line(name ?? "", values ?? new float[0]));
         return this;
     }
 
@@ -437,7 +437,7 @@ public class SimpleLineChart : IDrawable {
         if (xAxisTitle.Length > 0) {
             bottom -= 1.4f * size;
         }
-        if (right <= left || bottom <= top) {
+        if (right <= left || bottom <= top || !ChartScale.Drawable(axis)) {
             return new float[] {x + w, y + h};
         }
 
@@ -510,6 +510,17 @@ public class SimpleLineChart : IDrawable {
         if (highlight >= 0 && highlight < lines.Count) {
             order.Add(highlight);
         }
+        // A value outside a range that is set is drawn past the plot, and the
+        // lines are clipped at its edges, and as far past them as a dot is wide
+        bool outside = false;
+        foreach (float v in all) {
+            outside |= !ChartScale.OnAxis(v, axis);
+        }
+        if (outside) {
+            float edge = 0.25f * size + 1f;
+            page.SaveGraphicsState();
+            page.ClipRect(left - edge, top - edge, right - left + 2f * edge, bottom - top + 2f * edge);
+        }
         foreach (int i in order) {
             Line line = lines[i];
             int color = (i == highlight) ? highlightColor : lineColor;
@@ -544,6 +555,9 @@ public class SimpleLineChart : IDrawable {
                 }
             }
         }
+        if (outside) {
+            page.RestoreGraphicsState();
+        }
 
         // The labels at the ends of the lines, moved apart where they would
         // meet
@@ -552,8 +566,9 @@ public class SimpleLineChart : IDrawable {
             Line line = lines[i];
             int last = LastOf(line);
             if (last >= 0) {
-                labels.Add(new EndLabel(line.name + " " + Value(line.values[last]), i,
-                        YAt(line.values[last], axis, top, bottom) + ascent / 2f));
+                // At the end of its line, or at the edge of the plot it is past
+                float end = Math.Max(top, Math.Min(bottom, YAt(line.values[last], axis, top, bottom)));
+                labels.Add(new EndLabel(line.name + " " + Value(line.values[last]), i, end + ascent / 2f));
             }
         }
         // By the baseline, and labels on one baseline in the order of their
@@ -581,8 +596,9 @@ public class SimpleLineChart : IDrawable {
         return left + i * (right - left) / (n - 1);
     }
 
-    // The y on the page of a value.
+    // The y on the page of a value, held near the plot.
     private static float YAt(float v, ChartScale.Axis axis, float top, float bottom) {
+        v = ChartScale.Held(v, axis);
         return bottom - (v - axis.min) * (bottom - top) / (axis.max - axis.min);
     }
 }

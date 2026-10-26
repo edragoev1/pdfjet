@@ -116,4 +116,13 @@ class SimpleBarChartTest {
         new SimpleBarChart(font, font).setTitle("Nothing").drawOn(page);
         assertEquals("", TestSupport.content(page));
     }
+
+    // A null title or name is empty: it threw when the chart was drawn.
+    @Test
+    void nullIsEmpty() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        new SimpleBarChart(font, font).setTitle(null).setSubtitle(null).setAltDescription(null)
+                .add(null, 1f).add("b", 2f).drawOn(new Page(pdf, Letter.PORTRAIT));
+    }
 }

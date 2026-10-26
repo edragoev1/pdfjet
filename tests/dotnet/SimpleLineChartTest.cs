@@ -104,5 +104,42 @@ public sealed class SimpleLineChartTest {
         TestSupport.AssertNear(400f, xy[0], TestSupport.DELTA);
         TestSupport.AssertNear(300f, xy[1], TestSupport.DELTA);
     }
+
+    // A value outside a range that is set is drawn past the plot, and the
+    // lines are clipped at its edges; a value far past it, or values whose
+    // span is past the largest float, are drawn without an exception that
+    // lost the document (review of 26 October 2026).
+    [Fact]
+    public void AValueOutsideTheRangeIsClipped() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        NewChart(pdf).DrawOn(page);
+        Assert.DoesNotContain("W\nn\n", TestSupport.Content(page));     // No clip in range
+        foreach (float far in new float[] {60f, 1e37f, -1e37f}) {
+            page = new Page(pdf, Letter.PORTRAIT);
+            new SimpleLineChart(font, font).SetYAxisRange(0f, 10f)
+                    .AddLine("a", new float[] {5f, far, 5f}).DrawOn(page);
+            string content = TestSupport.Content(page);
+            Assert.Contains("W\nn\n", content);
+            Assert.Contains(TestSupport.Hex("a 5"), content);
+        }
+        page = new Page(pdf, Letter.PORTRAIT);
+        new SimpleLineChart(font, font).AddLine("wide", new float[] {-3e38f, 3e38f}).DrawOn(page);
+        page = new Page(pdf, Letter.PORTRAIT);
+        new SimpleLineChart(font, font).SetYAxisRange(-3e38f, 3e38f).AddLine("a", new float[] {1f, 2f}).DrawOn(page);
+    }
+
+    // A null title, name or list is empty, as it was in DonutChart: it threw
+    // when the chart was drawn.
+    [Fact]
+    public void NullIsEmpty() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        new SimpleLineChart(font, font).SetTitle(null).SetSubtitle(null).SetXAxisTitle(null)
+                .SetYAxisTitle(null).SetAltDescription(null).SetCategories((string[]) null)
+                .AddLine(null, new float[] {1f, 2f}).AddLine("b", null)
+                .DrawOn(new Page(pdf, Letter.PORTRAIT));
+    }
 }
 }   // End of namespace PDFjet.NET

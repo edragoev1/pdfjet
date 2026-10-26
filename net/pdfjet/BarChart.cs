@@ -110,7 +110,7 @@ public class BarChart : IDrawable {
     /// <param name="title">the title.</param>
     /// <returns>this BarChart object.</returns>
     public BarChart SetTitle(String title) {
-        this.title = title;
+        this.title = title ?? "";
         return this;
     }
 
@@ -118,7 +118,7 @@ public class BarChart : IDrawable {
     /// <param name="subtitle">the subtitle.</param>
     /// <returns>this BarChart object.</returns>
     public BarChart SetSubtitle(String subtitle) {
-        this.subtitle = subtitle;
+        this.subtitle = subtitle ?? "";
         return this;
     }
 
@@ -130,7 +130,7 @@ public class BarChart : IDrawable {
     /// <param name="altDescription">the alternate description.</param>
     /// <returns>this BarChart object.</returns>
     public BarChart SetAltDescription(String altDescription) {
-        this.altDescription = altDescription;
+        this.altDescription = altDescription ?? "";
         return this;
     }
 
@@ -138,7 +138,7 @@ public class BarChart : IDrawable {
     /// <param name="title">the title.</param>
     /// <returns>this BarChart object.</returns>
     public BarChart SetXAxisTitle(String title) {
-        this.xAxisTitle = title;
+        this.xAxisTitle = title ?? "";
         return this;
     }
 
@@ -146,7 +146,7 @@ public class BarChart : IDrawable {
     /// <param name="title">the title.</param>
     /// <returns>this BarChart object.</returns>
     public BarChart SetYAxisTitle(String title) {
-        this.yAxisTitle = title;
+        this.yAxisTitle = title ?? "";
         return this;
     }
 
@@ -158,7 +158,9 @@ public class BarChart : IDrawable {
     /// <returns>this BarChart object.</returns>
     public BarChart SetCategories(params String[] categories) {
         this.categories.Clear();
-        this.categories.AddRange(categories);
+        if (categories != null) {
+            this.categories.AddRange(categories);
+        }
         return this;
     }
 
@@ -179,7 +181,7 @@ public class BarChart : IDrawable {
     /// <param name="color">the bar color as a 0xRRGGBB value, for example Color.blue.</param>
     /// <returns>this BarChart object.</returns>
     public BarChart AddSeries(String name, float[] values, int color) {
-        series.Add(new Series(name == null ? "" : name, (float[]) values.Clone(), color, null));
+        series.Add(new Series(name == null ? "" : name, values == null ? new float[0] : (float[]) values.Clone(), color, null));
         return this;
     }
 
@@ -193,7 +195,8 @@ public class BarChart : IDrawable {
     /// <param name="colors">one 0xRRGGBB color per category.</param>
     /// <returns>this BarChart object.</returns>
     public BarChart AddSeries(String name, float[] values, int[] colors) {
-        series.Add(new Series(name == null ? "" : name, (float[]) values.Clone(), NO_COLOR, (int[]) colors.Clone()));
+        series.Add(new Series(name == null ? "" : name, values == null ? new float[0] : (float[]) values.Clone(), NO_COLOR,
+                colors == null ? null : (int[]) colors.Clone()));
         return this;
     }
 
@@ -530,6 +533,9 @@ public class BarChart : IDrawable {
         float y5 = y1 + topMargin;
         float x6 = x2 - rightMargin;
         float y8 = y2 - bottomMargin;
+        if (x6 <= x5 || y8 <= y5) {     // No room for the plot
+            return new float[] {x1 + w, y1 + h};
+        }
 
         // The chart is one figure, described by its alternate description.
         page.AddBDC(StructElem.FIGURE, null, AltDescription());
@@ -588,6 +594,9 @@ public class BarChart : IDrawable {
         float slot = (horizontal ? (y8 - y5) : (x6 - x5)) / n;
         float groupWidth = slot * (1f - groupGap);
         float barWidth = (m == 0 || stacked) ? groupWidth : groupWidth / (m + (m - 1) * barGap);
+        // Under vertical bars a category is written where it leaves the one
+        // before it room: at every second or third bar, or more
+        int everyCategory = horizontal ? 1 : ChartScale.AxisLabelStep(slot, widestCategory + pad, n);
         for (int i = 0; i < n; i++) {
             float slotStart = (horizontal ? y5 : x5) + i * slot;
             float groupStart = slotStart + slot * groupGap / 2f;
@@ -595,7 +604,7 @@ public class BarChart : IDrawable {
             if (horizontal) {
                 DrawText(page, f2, category, x5 - pad - f2.StringWidth(category),
                         slotStart + slot / 2f + ascent / 2f, MUTED);
-            } else {
+            } else if (i % everyCategory == 0) {
                 DrawText(page, f2, category, slotStart + (slot - f2.StringWidth(category)) / 2f,
                         y8 + bodyHeight, MUTED);
             }

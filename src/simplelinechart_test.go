@@ -107,3 +107,28 @@ func TestSimpleLineChartWithoutValuesDrawsNothing(t *testing.T) {
 	}
 	testAssertXY(t, 400, 300, xy)
 }
+
+// A value outside a range that is set is drawn past the plot, and the lines
+// are clipped at its edges; a value far past it, or values whose span is past
+// the largest float, are drawn without a panic or an error that lost the
+// document (review of 26 October 2026).
+func TestSimpleLineChartAValueOutsideTheRangeIsClipped(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	page := NewPage(pdf, testLetterPortrait())
+	testSimpleLineChart(pdf).DrawOn(page)
+	if strings.Contains(testContent(page), "W\nn\n") {
+		t.Error("a chart in its range is clipped")
+	}
+	for _, far := range []float32{60, 1e37, -1e37} {
+		page = NewPage(pdf, testLetterPortrait())
+		NewSimpleLineChart(font, font).SetYAxisRange(0, 10).AddLine("a", []float32{5, far, 5}).DrawOn(page)
+		content := testContent(page)
+		if !strings.Contains(content, "W\nn\n") || !strings.Contains(content, testHex("a 5")) {
+			t.Errorf("%v: %q", far, content)
+		}
+	}
+	NewSimpleLineChart(font, font).AddLine("wide", []float32{-3e38, 3e38}).DrawOn(NewPage(pdf, testLetterPortrait()))
+	NewSimpleLineChart(font, font).SetYAxisRange(-3e38, 3e38).AddLine("a", []float32{1, 2}).
+		DrawOn(NewPage(pdf, testLetterPortrait()))
+}

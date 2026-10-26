@@ -106,5 +106,14 @@ public class SimpleBarChartTest {
         new SimpleBarChart(font, font).SetTitle("Nothing").DrawOn(page);
         Assert.Equal("", TestSupport.Content(page));
     }
+
+    // A null title or name is empty: it threw when the chart was drawn.
+    [Fact]
+    public void NullIsEmpty() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        new SimpleBarChart(font, font).SetTitle(null).SetSubtitle(null).SetAltDescription(null)
+                .Add(null, 1f).Add("b", 2f).DrawOn(new Page(pdf, Letter.PORTRAIT));
+    }
 }
 }   // End of namespace PDFjet.NET

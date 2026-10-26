@@ -60,7 +60,7 @@ public class SimpleBarChart : IDrawable {
     /// <param name="title">the title.</param>
     /// <returns>this chart.</returns>
     public SimpleBarChart SetTitle(String title) {
-        this.title = title;
+        this.title = title ?? "";
         return this;
     }
 
@@ -71,7 +71,7 @@ public class SimpleBarChart : IDrawable {
     /// <param name="subtitle">the subtitle.</param>
     /// <returns>this chart.</returns>
     public SimpleBarChart SetSubtitle(String subtitle) {
-        this.subtitle = subtitle;
+        this.subtitle = subtitle ?? "";
         return this;
     }
 
@@ -83,7 +83,7 @@ public class SimpleBarChart : IDrawable {
     /// <param name="altDescription">the alternate description.</param>
     /// <returns>this chart.</returns>
     public SimpleBarChart SetAltDescription(String altDescription) {
-        this.altDescription = altDescription;
+        this.altDescription = altDescription ?? "";
         return this;
     }
 
@@ -95,7 +95,7 @@ public class SimpleBarChart : IDrawable {
     /// <param name="value">its value.</param>
     /// <returns>this chart.</returns>
     public SimpleBarChart Add(String name, float value) {
-        names.Add(name);
+        names.Add(name ?? "");
         values.Add(value);
         return this;
     }

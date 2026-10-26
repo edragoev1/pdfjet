@@ -82,7 +82,9 @@ public class DonutChart implements Drawable {
      * @return this DonutChart object.
      */
     public DonutChart addSlice(Slice slice) {
-        slices.add(slice);
+        if (slice != null) {
+            slices.add(slice);
+        }
         return this;
     }
 

@@ -228,6 +228,26 @@ func abs32(value float32) float32 {
 	return value
 }
 
+// held returns the value held to the axis and to one span of it past each
+// end, so that a value far outside a range that is set is drawn just past the
+// plot, where it is clipped, and not at a coordinate too large for a PDF. A
+// value on the axis is returned as it is.
+func held(value float32, axis chartAxis) float32 {
+	span := float64(axis.max) - float64(axis.min)
+	return float32(max(float64(axis.min)-span, min(float64(axis.max)+span, float64(value))))
+}
+
+// onAxis tells if the value is on the axis, its ends included.
+func onAxis(value float32, axis chartAxis) bool {
+	return value >= axis.min && value <= axis.max
+}
+
+// drawable tells if the axis can be drawn: the span of a range that is set,
+// or of values that are, can be past the largest float.
+func drawable(axis chartAxis) bool {
+	return isValue(axis.max - axis.min)
+}
+
 // groupDigits groups the digits of a number before its decimal point in
 // thousands with commas: 23507 is 23,507.
 func groupDigits(label string) string {

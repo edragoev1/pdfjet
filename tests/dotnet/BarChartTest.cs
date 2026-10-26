@@ -177,5 +177,50 @@ public class BarChartTest {
         Assert.Equal("Sales", page.structures[0].altDescription);
         Assert.Equal("Sales rose from 1 to 2.", page.structures[1].altDescription);
     }
+
+    // A horizontal chart narrower than its categories draws nothing: its
+    // axis ran backwards, the bars over the categories (review of 26 October
+    // 2026).
+    [Fact]
+    public void AChartWithNoRoomForItsPlotDrawsNothing() {
+        PDF pdf = TestSupport.NewPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        BarChart chart = NewChart(pdf).SetSize(200f, 200f).SetHorizontal(true)
+                .SetCategories("A very very long category name indeed, and longer")
+                .AddSeries("s", new float[] {5f});
+        TestSupport.AssertXY(250f, 250f, chart.DrawOn(page));
+        Assert.Equal("", TestSupport.Content(page));
+    }
+
+    // Under vertical bars a category is written where it leaves the one
+    // before it room, as the numbers of the axis are: twelve months in full
+    // ran into each other.
+    [Fact]
+    public void CategoriesThatDoNotFitAreSkipped() {
+        PDF pdf = TestSupport.NewPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        string[] months = {"January", "February", "March", "April", "May", "June", "July",
+                "August", "September", "October", "November", "December"};
+        float[] values = new float[12];
+        System.Array.Fill(values, 1f);
+        string content = Draw(NewChart(pdf).SetCategories(months).AddSeries("s", values), page);
+        Assert.Contains(TestSupport.Hex("January"), content);
+        Assert.DoesNotContain(TestSupport.Hex("February"), content);
+        page = new Page(pdf, Letter.PORTRAIT);
+        content = Draw(NewChart(pdf).SetCategories("a", "b").AddSeries("s", new float[] {1f, 2f}), page);
+        Assert.Contains(TestSupport.Hex("a"), content);
+        Assert.Contains(TestSupport.Hex("b"), content);
+    }
+
+    // A null title, name or list is empty: it threw when the chart was drawn.
+    [Fact]
+    public void NullIsEmpty() {
+        PDF pdf = TestSupport.NewPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        NewChart(pdf).SetTitle(null).SetSubtitle(null).SetXAxisTitle(null).SetYAxisTitle(null)
+                .SetAltDescription(null).SetCategories((string[]) null).SetCategories("a")
+                .AddSeries(null, new float[] {1f}).AddSeries("b", null).AddSeries("c", new float[] {2f}, (int[]) null)
+                .DrawOn(page);
+    }
 }
 }

@@ -100,7 +100,7 @@ public class SimpleLineChart implements Drawable {
      * @return this chart.
      */
     public SimpleLineChart setTitle(String title) {
-        this.title = title;
+        this.title = (title == null) ? "" : title;
         return this;
     }
 
@@ -111,7 +111,7 @@ public class SimpleLineChart implements Drawable {
      * @return this chart.
      */
     public SimpleLineChart setSubtitle(String subtitle) {
-        this.subtitle = subtitle;
+        this.subtitle = (subtitle == null) ? "" : subtitle;
         return this;
     }
 
@@ -122,7 +122,7 @@ public class SimpleLineChart implements Drawable {
      * @return this chart.
      */
     public SimpleLineChart setXAxisTitle(String title) {
-        this.xAxisTitle = title;
+        this.xAxisTitle = (title == null) ? "" : title;
         return this;
     }
 
@@ -133,7 +133,7 @@ public class SimpleLineChart implements Drawable {
      * @return this chart.
      */
     public SimpleLineChart setYAxisTitle(String title) {
-        this.yAxisTitle = title;
+        this.yAxisTitle = (title == null) ? "" : title;
         return this;
     }
 
@@ -145,7 +145,7 @@ public class SimpleLineChart implements Drawable {
      * @return this chart.
      */
     public SimpleLineChart setAltDescription(String altDescription) {
-        this.altDescription = altDescription;
+        this.altDescription = (altDescription == null) ? "" : altDescription;
         return this;
     }
 
@@ -157,7 +157,7 @@ public class SimpleLineChart implements Drawable {
      * @return this chart.
      */
     public SimpleLineChart setCategories(String... categories) {
-        this.categories = categories;
+        this.categories = (categories == null) ? new String[0] : categories;
         return this;
     }
 
@@ -170,7 +170,7 @@ public class SimpleLineChart implements Drawable {
      * @return this chart.
      */
     public SimpleLineChart addLine(String name, float[] values) {
-        lines.add(new Line(name, values));
+        lines.add(new Line(name == null ? "" : name, values == null ? new float[0] : values));
         return this;
     }
 
@@ -456,7 +456,7 @@ public class SimpleLineChart implements Drawable {
         if (!xAxisTitle.isEmpty()) {
             bottom -= 1.4f * size;
         }
-        if (right <= left || bottom <= top) {
+        if (right <= left || bottom <= top || !ChartScale.drawable(axis)) {
             return new float[] {x + w, y + h};
         }
 
@@ -529,6 +529,17 @@ public class SimpleLineChart implements Drawable {
         if (highlight >= 0 && highlight < lines.size()) {
             order.add(highlight);
         }
+        // A value outside a range that is set is drawn past the plot, and the
+        // lines are clipped at its edges, and as far past them as a dot is wide
+        boolean outside = false;
+        for (float v : values) {
+            outside |= !ChartScale.onAxis(v, axis);
+        }
+        if (outside) {
+            float edge = 0.25f * size + 1f;
+            page.saveGraphicsState();
+            page.clipRect(left - edge, top - edge, right - left + 2f * edge, bottom - top + 2f * edge);
+        }
         for (int i : order) {
             Line line = lines.get(i);
             int color = (i == highlight) ? highlightColor : lineColor;
@@ -563,6 +574,9 @@ public class SimpleLineChart implements Drawable {
                 }
             }
         }
+        if (outside) {
+            page.restoreGraphicsState();
+        }
 
         // The labels at the ends of the lines, moved apart where they would
         // meet
@@ -571,8 +585,9 @@ public class SimpleLineChart implements Drawable {
             Line line = lines.get(i);
             int last = lastOf(line);
             if (last >= 0) {
-                labels.add(new EndLabel(line.name + " " + value(line.values[last]), i,
-                        yAt(line.values[last], axis, top, bottom) + ascent / 2f));
+                // At the end of its line, or at the edge of the plot it is past
+                float end = Math.max(top, Math.min(bottom, yAt(line.values[last], axis, top, bottom)));
+                labels.add(new EndLabel(line.name + " " + value(line.values[last]), i, end + ascent / 2f));
             }
         }
         Collections.sort(labels, new Comparator<EndLabel>() {
@@ -602,8 +617,9 @@ public class SimpleLineChart implements Drawable {
         return left + i * (right - left) / (n - 1);
     }
 
-    // The y on the page of a value.
+    // The y on the page of a value, held near the plot.
     private static float yAt(float v, ChartScale.Axis axis, float top, float bottom) {
+        v = ChartScale.held(v, axis);
         return bottom - (v - axis.min) * (bottom - top) / (axis.max - axis.min);
     }
 }   // End of SimpleLineChart.java

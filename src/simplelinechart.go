@@ -357,7 +357,7 @@ func (chart *SimpleLineChart) DrawOn(page *Page) [2]float32 {
 	if chart.xAxisTitle != "" {
 		bottom -= float32(1.4 * size)
 	}
-	if right <= left || bottom <= top {
+	if right <= left || bottom <= top || !drawable(axis) {
 		return [2]float32{chart.x + chart.w, chart.y + chart.h}
 	}
 	xAt := func(i int) float32 {
@@ -366,7 +366,8 @@ func (chart *SimpleLineChart) DrawOn(page *Page) [2]float32 {
 		}
 		return left + float32(float32(i)*(right-left))/float32(n-1)
 	}
-	yAt := func(v float32) float32 {
+	yAt := func(v float32) float32 { // held near the plot
+		v = held(v, axis)
 		return bottom - float32((v-axis.min)*(bottom-top))/(axis.max-axis.min)
 	}
 
@@ -440,6 +441,17 @@ func (chart *SimpleLineChart) DrawOn(page *Page) [2]float32 {
 	if chart.highlight >= 0 && chart.highlight < len(chart.lines) {
 		order = append(order, chart.highlight)
 	}
+	// A value outside a range that is set is drawn past the plot, and the
+	// lines are clipped at its edges, and as far past them as a dot is wide
+	outside := false
+	for _, v := range values {
+		outside = outside || !onAxis(v, axis)
+	}
+	if outside {
+		edge := float32(0.25*size) + 1.0
+		page.SaveGraphicsState()
+		page.ClipRect(left-edge, top-edge, right-left+float32(2.0*edge), bottom-top+float32(2.0*edge))
+	}
 	for _, i := range order {
 		line := chart.lines[i]
 		c, width := chart.lineColor, float32(1.5)
@@ -478,6 +490,9 @@ func (chart *SimpleLineChart) DrawOn(page *Page) [2]float32 {
 			}
 		}
 	}
+	if outside {
+		page.RestoreGraphicsState()
+	}
 
 	// The labels at the ends of the lines, moved apart where they would meet
 	type endLabel struct {
@@ -489,7 +504,9 @@ func (chart *SimpleLineChart) DrawOn(page *Page) [2]float32 {
 	for i, line := range chart.lines {
 		if text, j, ok := chart.endOf(line); ok {
 			v, _ := line.valueOf(j)
-			labels = append(labels, endLabel{text, i, yAt(v) + float32(ascent/2.0)})
+			// At the end of its line, or at the edge of the plot it is past
+			end := max(top, min(bottom, yAt(v)))
+			labels = append(labels, endLabel{text, i, end + float32(ascent/2.0)})
 		}
 	}
 	sort.SliceStable(labels, func(a, b int) bool { return labels[a].y < labels[b].y })

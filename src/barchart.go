@@ -497,6 +497,9 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 	y5 := chart.y1 + topMargin
 	x6 := x2 - rightMargin
 	y8 := y2 - bottomMargin
+	if x6 <= x5 || y8 <= y5 { // No room for the plot
+		return [2]float32{chart.x1 + chart.w, chart.y1 + chart.h}
+	}
 
 	// The chart is one figure, described by its alternate description.
 	page.AddBDC(structelem.Figure, "", "", chart.getAltDescription())
@@ -566,6 +569,12 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 	if m != 0 && !chart.stacked {
 		barWidth = groupWidth / (float32(m) + float32(float32(m-1)*chart.barGap))
 	}
+	// Under vertical bars a category is written where it leaves the one before
+	// it room: at every second or third bar, or more
+	everyCategory := 1
+	if !chart.horizontal {
+		everyCategory = axisLabelStep(slot, widestCategory+pad, n)
+	}
 	for i := 0; i < n; i++ {
 		var slotStart float32
 		if chart.horizontal {
@@ -581,7 +590,7 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 		if chart.horizontal {
 			barChartText(page, f2, category, x5-pad-f2.StringWidth(f2.size, category),
 				slotStart+float32(slot/2.0)+float32(ascent/2.0), barChartMuted)
-		} else {
+		} else if i%everyCategory == 0 {
 			barChartText(page, f2, category, slotStart+float32((slot-f2.StringWidth(f2.size, category))/2.0),
 				y8+bodyHeight, barChartMuted)
 		}

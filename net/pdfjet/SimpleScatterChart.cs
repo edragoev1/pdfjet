@@ -46,7 +46,7 @@ public class SimpleScatterChart : IDrawable {
         internal Point(float x, float y, String name, String uri) {
             this.x = x;
             this.y = y;
-            this.name = name;
+            this.name = name ?? "";
             this.uri = uri;
         }
     }
@@ -91,7 +91,7 @@ public class SimpleScatterChart : IDrawable {
     /// <param name="title">the title.</param>
     /// <returns>this chart.</returns>
     public SimpleScatterChart SetTitle(String title) {
-        this.title = title;
+        this.title = title ?? "";
         return this;
     }
 
@@ -101,7 +101,7 @@ public class SimpleScatterChart : IDrawable {
     /// <param name="subtitle">the subtitle.</param>
     /// <returns>this chart.</returns>
     public SimpleScatterChart SetSubtitle(String subtitle) {
-        this.subtitle = subtitle;
+        this.subtitle = subtitle ?? "";
         return this;
     }
 
@@ -111,7 +111,7 @@ public class SimpleScatterChart : IDrawable {
     /// <param name="title">the title.</param>
     /// <returns>this chart.</returns>
     public SimpleScatterChart SetXAxisTitle(String title) {
-        this.xAxisTitle = title;
+        this.xAxisTitle = title ?? "";
         return this;
     }
 
@@ -121,7 +121,7 @@ public class SimpleScatterChart : IDrawable {
     /// <param name="title">the title.</param>
     /// <returns>this chart.</returns>
     public SimpleScatterChart SetYAxisTitle(String title) {
-        this.yAxisTitle = title;
+        this.yAxisTitle = title ?? "";
         return this;
     }
 
@@ -132,7 +132,7 @@ public class SimpleScatterChart : IDrawable {
     /// <param name="altDescription">the alternate description.</param>
     /// <returns>this chart.</returns>
     public SimpleScatterChart SetAltDescription(String altDescription) {
-        this.altDescription = altDescription;
+        this.altDescription = altDescription ?? "";
         return this;
     }
 
@@ -425,7 +425,7 @@ public class SimpleScatterChart : IDrawable {
         if (xAxisTitle.Length > 0) {
             bottom -= 1.4f * size;
         }
-        if (right <= left || bottom <= top) {
+        if (right <= left || bottom <= top || !ChartScale.Drawable(xAxis) || !ChartScale.Drawable(yAxis)) {
             return new float[] {x + w, y + h};
         }
         float plotLeft = left;
@@ -529,14 +529,14 @@ public class SimpleScatterChart : IDrawable {
         page.SetBrushColor(dotColor);
         float r = 0.3f * size;
         foreach (Point p in points) {
-            if (p.name.Length == 0) {
+            if (p.name.Length == 0 && OnPlot(p, xAxis, yAxis)) {
                 page.FillCircle(XAt(p.x, xAxis, plotLeft, right), YAt(p.y, yAxis, top, plotBottom), r);
             }
         }
         page.RestoreGraphicsState();
         List<Point> linked = new List<Point>();
         foreach (Point p in points) {
-            if (p.name.Length == 0) {
+            if (p.name.Length == 0 || !OnPlot(p, xAxis, yAxis)) {
                 continue;
             }
             if (p.uri != null && linksApart) {
@@ -613,6 +613,12 @@ public class SimpleScatterChart : IDrawable {
                 null,
                 null,
                 p.name);
+    }
+
+    // Tells if the point is on the plot: a point outside a range that is set
+    // is not drawn.
+    private static bool OnPlot(Point p, ChartScale.Axis xAxis, ChartScale.Axis yAxis) {
+        return ChartScale.OnAxis(p.x, xAxis) && ChartScale.OnAxis(p.y, yAxis);
     }
 
     // The x on the page of a value of the horizontal axis.

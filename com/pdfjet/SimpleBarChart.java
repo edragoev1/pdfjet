@@ -66,7 +66,7 @@ public class SimpleBarChart implements Drawable {
      * @return this chart.
      */
     public SimpleBarChart setTitle(String title) {
-        this.title = title;
+        this.title = (title == null) ? "" : title;
         return this;
     }
 
@@ -78,7 +78,7 @@ public class SimpleBarChart implements Drawable {
      * @return this chart.
      */
     public SimpleBarChart setSubtitle(String subtitle) {
-        this.subtitle = subtitle;
+        this.subtitle = (subtitle == null) ? "" : subtitle;
         return this;
     }
 
@@ -91,7 +91,7 @@ public class SimpleBarChart implements Drawable {
      * @return this chart.
      */
     public SimpleBarChart setAltDescription(String altDescription) {
-        this.altDescription = altDescription;
+        this.altDescription = (altDescription == null) ? "" : altDescription;
         return this;
     }
 
@@ -104,7 +104,7 @@ public class SimpleBarChart implements Drawable {
      * @return this chart.
      */
     public SimpleBarChart add(String name, float value) {
-        names.add(name);
+        names.add(name == null ? "" : name);
         values.add(value);
         return this;
     }

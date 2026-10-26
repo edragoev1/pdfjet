@@ -164,4 +164,33 @@ import Testing
         #expect(page.structures[0].altDescription == "Sales")
         #expect(page.structures[1].altDescription == "Sales rose from 1 to 2.")
     }
+
+    // A horizontal chart narrower than its categories draws nothing: its
+    // axis ran backwards, the bars over the categories (review of 26 October
+    // 2026).
+    @Test func aChartWithNoRoomForItsPlotDrawsNothing() {
+        let pdf = TestSupport.newPDF()
+        let page = Page(pdf, Letter.PORTRAIT)
+        let chart = chart(pdf).setSize(200, 200).setHorizontal(true)
+                .setCategories("A very very long category name indeed, and longer")
+                .addSeries("s", [5])
+        TestSupport.expectXY(250, 250, chart.drawOn(page))
+        #expect(TestSupport.content(page) == "")
+    }
+
+    // Under vertical bars a category is written where it leaves the one
+    // before it room, as the numbers of the axis are: twelve months in full
+    // ran into each other.
+    @Test func categoriesThatDoNotFitAreSkipped() {
+        let pdf = TestSupport.newPDF()
+        var page = Page(pdf, Letter.PORTRAIT)
+        let months = ["January", "February", "March", "April", "May", "June", "July",
+                "August", "September", "October", "November", "December"]
+        var content = draw(chart(pdf).setCategories(months).addSeries("s", [Float](repeating: 1, count: 12)), page)
+        #expect(content.contains(TestSupport.hex("January")), "\(content)")
+        #expect(!content.contains(TestSupport.hex("February")), "\(content)")
+        page = Page(pdf, Letter.PORTRAIT)
+        content = draw(chart(pdf).setCategories(["a", "b"]).addSeries("s", [1, 2]), page)
+        #expect(content.contains(TestSupport.hex("a")) && content.contains(TestSupport.hex("b")), "\(content)")
+    }
 }

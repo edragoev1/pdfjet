@@ -143,5 +143,31 @@ public class SimpleScatterChartTest {
             Assert.Contains("/URI <" + TestSupport.Hex("https://pdfjet.com/a").ToLowerInvariant() + ">", raw);
         }
     }
+
+    // A point outside a range that is set is not drawn; a point far past it,
+    // or points whose span is past the largest float, are drawn without an
+    // exception that lost the document (review of 26 October 2026).
+    [Fact]
+    public void APointOutsideTheRangeIsNotDrawn() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        NewChart(pdf).SetXAxisRange(0f, 2f).SetYAxisRange(0f, 100f).Add("Far", 20f, 30f).Add(1e37f, 1e37f).DrawOn(page);
+        string content = TestSupport.Content(page);
+        Assert.Contains(TestSupport.Hex("Canada"), content);
+        Assert.DoesNotContain(TestSupport.Hex("Far"), content);
+        page = new Page(pdf, Letter.PORTRAIT);
+        new SimpleScatterChart(font, font).Add(-3e38f, -3e38f).Add(3e38f, 3e38f).DrawOn(page);
+    }
+
+    // A null title or name is empty: it threw when the chart was drawn.
+    [Fact]
+    public void NullIsEmpty() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new SimpleScatterChart(font, font).SetTitle(null).SetSubtitle(null).SetXAxisTitle(null)
+                .SetYAxisTitle(null).SetAltDescription(null).Add(null, 1f, 1f).Add(2f, 3f).DrawOn(page);
+    }
 }
 }   // End of namespace PDFjet.NET

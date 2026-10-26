@@ -612,6 +612,9 @@ public class BarChart : Drawable {
         let y5 = y1 + topMargin
         let x6 = x2 - rightMargin
         let y8 = y2 - bottomMargin
+        if x6 <= x5 || y8 <= y5 {   // No room for the plot
+            return [x1 + w, y1 + h]
+        }
 
         // The chart is one figure, described by its alternate description.
         page.addBDC(StructElem.FIGURE, nil, getAltDescription())
@@ -670,6 +673,9 @@ public class BarChart : Drawable {
         let slot = (horizontal ? (y8 - y5) : (x6 - x5)) / Float(n)
         let groupWidth = slot * (1.0 - groupGap)
         let barWidth = (m == 0 || stacked) ? groupWidth : groupWidth / (Float(m) + Float(m - 1) * barGap)
+        // Under vertical bars a category is written where it leaves the one
+        // before it room: at every second or third bar, or more
+        let everyCategory = horizontal ? 1 : ChartScale.axisLabelStep(slot, widestCategory + pad, n)
         for i in 0..<n {
             let slotStart = (horizontal ? y5 : x5) + Float(i) * slot
             let groupStart = slotStart + slot * groupGap / 2.0
@@ -677,7 +683,7 @@ public class BarChart : Drawable {
             if horizontal {
                 BarChart.drawText(page, f2, category, x5 - pad - f2.stringWidth(category),
                         slotStart + slot / 2.0 + ascent / 2.0, BarChart.MUTED)
-            } else {
+            } else if i % everyCategory == 0 {
                 BarChart.drawText(page, f2, category, slotStart + (slot - f2.stringWidth(category)) / 2.0,
                         y8 + bodyHeight, BarChart.MUTED)
             }

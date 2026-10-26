@@ -199,4 +199,13 @@ class DonutChartTest {
                 + "150 642 150 642 150 642 c\n",
                 curves(100f, 0f, 50f, 50f, 1f, 2f, 3f));
     }
+
+    // A null slice is left out: it threw when the chart was drawn.
+    @Test
+    void aNullSliceIsLeftOut() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        chart(pdf).addSlice(null).addSlice(new Slice(1f, "a")).drawOn(page);
+        assertTrue(TestSupport.content(page).contains(TestSupport.hex("a")));
+    }
 }

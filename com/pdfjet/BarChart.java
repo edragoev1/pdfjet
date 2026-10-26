@@ -114,7 +114,7 @@ public class BarChart implements Drawable {
      * @return this BarChart object.
      */
     public BarChart setTitle(String title) {
-        this.title = title;
+        this.title = (title == null) ? "" : title;
         return this;
     }
 
@@ -125,7 +125,7 @@ public class BarChart implements Drawable {
      * @return this BarChart object.
      */
     public BarChart setSubtitle(String subtitle) {
-        this.subtitle = subtitle;
+        this.subtitle = (subtitle == null) ? "" : subtitle;
         return this;
     }
 
@@ -138,7 +138,7 @@ public class BarChart implements Drawable {
      * @return this BarChart object.
      */
     public BarChart setAltDescription(String altDescription) {
-        this.altDescription = altDescription;
+        this.altDescription = (altDescription == null) ? "" : altDescription;
         return this;
     }
 
@@ -149,7 +149,7 @@ public class BarChart implements Drawable {
      * @return this BarChart object.
      */
     public BarChart setXAxisTitle(String title) {
-        this.xAxisTitle = title;
+        this.xAxisTitle = (title == null) ? "" : title;
         return this;
     }
 
@@ -160,7 +160,7 @@ public class BarChart implements Drawable {
      * @return this BarChart object.
      */
     public BarChart setYAxisTitle(String title) {
-        this.yAxisTitle = title;
+        this.yAxisTitle = (title == null) ? "" : title;
         return this;
     }
 
@@ -173,7 +173,9 @@ public class BarChart implements Drawable {
      */
     public BarChart setCategories(String... categories) {
         this.categories.clear();
-        Collections.addAll(this.categories, categories);
+        if (categories != null) {
+            Collections.addAll(this.categories, categories);
+        }
         return this;
     }
 
@@ -198,7 +200,7 @@ public class BarChart implements Drawable {
      * @return this BarChart object.
      */
     public BarChart addSeries(String name, float[] values, int color) {
-        series.add(new Series(name == null ? "" : name, values.clone(), color, null));
+        series.add(new Series(name == null ? "" : name, values == null ? new float[0] : values.clone(), color, null));
         return this;
     }
 
@@ -213,7 +215,8 @@ public class BarChart implements Drawable {
      * @return this BarChart object.
      */
     public BarChart addSeries(String name, float[] values, int[] colors) {
-        series.add(new Series(name == null ? "" : name, values.clone(), NO_COLOR, colors.clone()));
+        series.add(new Series(name == null ? "" : name, values == null ? new float[0] : values.clone(), NO_COLOR,
+                colors == null ? null : colors.clone()));
         return this;
     }
 
@@ -586,6 +589,9 @@ public class BarChart implements Drawable {
         float y5 = y1 + topMargin;
         float x6 = x2 - rightMargin;
         float y8 = y2 - bottomMargin;
+        if (x6 <= x5 || y8 <= y5) {     // No room for the plot
+            return new float[] {x1 + w, y1 + h};
+        }
 
         // The chart is one figure, described by its alternate description.
         page.addBDC(StructElem.FIGURE, null, altDescription());
@@ -644,6 +650,9 @@ public class BarChart implements Drawable {
         float slot = (horizontal ? (y8 - y5) : (x6 - x5)) / n;
         float groupWidth = slot * (1f - groupGap);
         float barWidth = (m == 0 || stacked) ? groupWidth : groupWidth / (m + (m - 1) * barGap);
+        // Under vertical bars a category is written where it leaves the one
+        // before it room: at every second or third bar, or more
+        int everyCategory = horizontal ? 1 : ChartScale.axisLabelStep(slot, widestCategory + pad, n);
         for (int i = 0; i < n; i++) {
             float slotStart = (horizontal ? y5 : x5) + i * slot;
             float groupStart = slotStart + slot * groupGap / 2f;
@@ -651,7 +660,7 @@ public class BarChart implements Drawable {
             if (horizontal) {
                 drawText(page, f2, category, x5 - pad - f2.stringWidth(category),
                         slotStart + slot / 2f + ascent / 2f, MUTED);
-            } else {
+            } else if (i % everyCategory == 0) {
                 drawText(page, f2, category, slotStart + (slot - f2.stringWidth(category)) / 2f,
                         y8 + bodyHeight, MUTED);
             }

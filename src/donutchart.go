@@ -77,7 +77,9 @@ func (dc *DonutChart) SetRadii(outerRadius, innerRadius float32) *DonutChart {
 
 // AddSlice adds a slice to this chart.
 func (dc *DonutChart) AddSlice(slice *Slice) *DonutChart {
-	dc.slices = append(dc.slices, slice)
+	if slice != nil {
+		dc.slices = append(dc.slices, slice)
+	}
 	return dc
 }
 

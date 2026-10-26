@@ -256,6 +256,26 @@ There is no 9.1.3: what was done for it is in 9.1.5 (the owner, 26 October
   one no longer builds; a calendar is a `Table` of seven columns.
 
 ### Fixed
+- SimpleLineChart and SimpleScatterChart, the four ports: a value outside a
+  range set with `setYAxisRange` or `setXAxisRange` is clipped at the edges
+  of the plot, a line where it leaves it, and a point outside it is not
+  drawn; the line ran up the page, and a point was drawn off it. A value far
+  past the range, such as 1e37, or values whose span is past the largest
+  float, threw "A coordinate, size or width is NaN, infinite or too large
+  for a PDF", and the document could not be completed; the chart is drawn.
+  A chart whose values are all in its range draws the same PDF as before
+  (the review of the charts, 26 October 2026).
+- BarChart, the four ports: a horizontal chart narrower than its category
+  names draws nothing, as the simple charts do when they have no room; its
+  axis ran backwards and the bars covered the names. Under vertical bars a
+  category name is written at every second or third bar, or more, when the
+  names would run into each other, as the numbers of the axis are: twelve
+  month names in full ran together.
+- Java and C#: a null title, subtitle, axis title, name, list of
+  categories or values, given to SimpleBarChart, SimpleLineChart,
+  SimpleScatterChart or BarChart, is empty, and a null slice given to
+  DonutChart is left out; each threw a NullPointerException when the chart
+  was drawn. Go's `AddSlice(nil)` is left out too.
 - Markdown, the four ports: a table cell whose whole text is in one
   emphasis, as `**2.1**`, is drawn in that font, bold, italic or code, so
   that a table can mark a value; it was drawn plain. A cell of mixed

@@ -340,8 +340,13 @@ func (chart *SimpleScatterChart) DrawOn(page *Page) [2]float32 {
 	if chart.xAxisTitle != "" {
 		bottom -= float32(1.4 * size)
 	}
-	if right <= left || bottom <= top {
+	if right <= left || bottom <= top || !drawable(xAxis) || !drawable(yAxis) {
 		return [2]float32{chart.x + chart.w, chart.y + chart.h}
+	}
+	// onPlot tells if the point is on the plot: a point outside a range that
+	// is set is not drawn
+	onPlot := func(p scatterPoint) bool {
+		return onAxis(p.x, xAxis) && onAxis(p.y, yAxis)
 	}
 	xAt := func(v float32) float32 {
 		return left + float32((v-xAxis.min)*(right-left))/(xAxis.max-xAxis.min)
@@ -455,7 +460,7 @@ func (chart *SimpleScatterChart) DrawOn(page *Page) [2]float32 {
 	page.SetBrushColor(chart.dotColor)
 	r := float32(0.3 * size)
 	for _, p := range points {
-		if p.name == "" {
+		if p.name == "" && onPlot(p) {
 			page.FillCircle(xAt(p.x), yAt(p.y), r)
 		}
 	}
@@ -482,7 +487,7 @@ func (chart *SimpleScatterChart) DrawOn(page *Page) [2]float32 {
 	}
 	var linked []scatterPoint
 	for _, p := range points {
-		if p.name == "" {
+		if p.name == "" || !onPlot(p) {
 			continue
 		}
 		if p.uri != "" && linksApart {

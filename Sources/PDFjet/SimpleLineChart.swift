@@ -461,7 +461,7 @@ public class SimpleLineChart : Drawable {
         if !xAxisTitle.isEmpty {
             bottom -= 1.4 * size
         }
-        if right <= left || bottom <= top {
+        if right <= left || bottom <= top || !ChartScale.drawable(axis) {
             return [x + w, y + h]
         }
         let plotLeft = left
@@ -472,7 +472,8 @@ public class SimpleLineChart : Drawable {
             }
             return plotLeft + Float(i) * (right - plotLeft) / Float(n - 1)
         }
-        func yAt(_ v: Float) -> Float {
+        func yAt(_ v: Float) -> Float {     // Held near the plot
+            let v = ChartScale.held(v, axis)
             return plotBottom - (v - axis.min) * (plotBottom - top) / (axis.max - axis.min)
         }
 
@@ -543,6 +544,14 @@ public class SimpleLineChart : Drawable {
         if highlight >= 0 && highlight < lines.count {
             order.append(highlight)
         }
+        // A value outside a range that is set is drawn past the plot, and the
+        // lines are clipped at its edges, and as far past them as a dot is wide
+        let outside = all.contains { !ChartScale.onAxis($0, axis) }
+        if outside {
+            let edge = 0.25 * size + 1.0
+            page.saveGraphicsState()
+            page.clipRect(plotLeft - edge, top - edge, right - plotLeft + 2.0 * edge, plotBottom - top + 2.0 * edge)
+        }
         for i in order {
             let line = lines[i]
             let color = (i == highlight) ? highlightColor : lineColor
@@ -575,6 +584,9 @@ public class SimpleLineChart : Drawable {
                 }
             }
         }
+        if outside {
+            page.restoreGraphicsState()
+        }
 
         // The labels at the ends of the lines, moved apart where they would
         // meet
@@ -582,8 +594,10 @@ public class SimpleLineChart : Drawable {
         for (i, line) in lines.enumerated() {
             let last = lastOf(line)
             if last >= 0 {
+                // At the end of its line, or at the edge of the plot it is past
+                let end = Swift.max(top, Swift.min(plotBottom, yAt(line.values[last])))
                 labels.append(EndLabel(text: line.name + " " + value(line.values[last]), index: i,
-                        y: yAt(line.values[last]) + ascent / 2.0))
+                        y: end + ascent / 2.0))
             }
         }
         // By the baseline, and labels on one baseline in the order of their

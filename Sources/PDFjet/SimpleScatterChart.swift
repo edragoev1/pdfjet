@@ -426,11 +426,16 @@ public class SimpleScatterChart : Drawable {
         if !xAxisTitle.isEmpty {
             bottom -= 1.4 * size
         }
-        if right <= left || bottom <= top {
+        if right <= left || bottom <= top || !ChartScale.drawable(xAxis) || !ChartScale.drawable(yAxis) {
             return [x + w, y + h]
         }
         let plotLeft = left
         let plotBottom = bottom
+        // Tells if the point is on the plot: a point outside a range that is
+        // set is not drawn
+        func onPlot(_ p: Point) -> Bool {
+            return ChartScale.onAxis(p.x, xAxis) && ChartScale.onAxis(p.y, yAxis)
+        }
         func xAt(_ v: Float) -> Float {
             return plotLeft + (v - xAxis.min) * (right - plotLeft) / (xAxis.max - xAxis.min)
         }
@@ -534,7 +539,7 @@ public class SimpleScatterChart : Drawable {
         }
         page.setBrushColor(dotColor)
         let r = 0.3 * size
-        for p in points where p.name.isEmpty {
+        for p in points where p.name.isEmpty && onPlot(p) {
             page.fillCircle(xAt(p.x), yAt(p.y), r)
         }
         page.restoreGraphicsState()
@@ -560,7 +565,7 @@ public class SimpleScatterChart : Drawable {
             return [x1, y1, x2 - x1, y2 - y1]
         }
         var linked = [Point]()
-        for p in points where !p.name.isEmpty {
+        for p in points where !p.name.isEmpty && onPlot(p) {
             if p.uri != nil && linksApart {
                 linked.append(p)
                 continue
