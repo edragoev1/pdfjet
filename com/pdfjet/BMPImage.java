@@ -230,7 +230,7 @@ class BMPImage {
 
     private static byte[] deflate(byte[] data) throws Exception {
         ByteArrayOutputStream data2 = new ByteArrayOutputStream(32768);
-        Deflater deflater = new Deflater();
+        Deflater deflater = new Deflater(Compressor.LEVEL);
         DeflaterOutputStream dos = new DeflaterOutputStream(data2, deflater);
         dos.write(data, 0, data.length);
         dos.finish();

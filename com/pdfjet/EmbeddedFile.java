@@ -83,7 +83,7 @@ public class EmbeddedFile {
 
         if (compress) {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            Deflater deflater = new Deflater();
+            Deflater deflater = new Deflater(Compressor.LEVEL);
             DeflaterOutputStream dos = new DeflaterOutputStream(baos, deflater);
             dos.write(buf, 0, buf.length);
             dos.finish();

@@ -117,6 +117,16 @@ There is no 9.1.3: what was done for it is in 9.1.5 (the owner, 26 October
   before.
 
 ### Changed
+- Java: everything is deflated at level 5 of zlib instead of the default 6:
+  the content of the pages, the fonts, the images and the embedded files.
+  The documents of the fair test are 4 to 25% faster to make, a 12-page
+  statement 7.7 ms to 5.8, for PDFs 0.1 to 0.4% larger.
+  Behavior change: the bytes of a PDF differ from those of 9.1.1, as the
+  streams are compressed at another level; its content and how it is drawn
+  are the same. The 12-page statement is 70,417 bytes, where it was 70,343.
+  Go keeps its default level, as its own encoder gained 3% and grew 3% at
+  5; C# has no level 5 (.NET offers its Optimal, level 6, or Fastest, level
+  1); Swift has its own encoder.
 - All four ports: a JPEG is read faster. Its end-of-image marker, which
   PDFjet looks for to tell a whole photo from one cut short, is nearly
   always its last two bytes, and these are looked at first, before the

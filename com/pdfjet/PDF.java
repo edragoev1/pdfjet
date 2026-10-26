@@ -1474,7 +1474,7 @@ final public class PDF {
         if (contentStreamsCompression) {
             // Page content usually compresses to less than an eighth of its size.
             ByteArrayOutputStream baos = new ByteArrayOutputStream(page.buf.size() / 8 + 64);
-            Deflater deflater = new Deflater();
+            Deflater deflater = new Deflater(Compressor.LEVEL);
             DeflaterOutputStream dos = new DeflaterOutputStream(baos, deflater, 8192);
             page.buf.writeTo(dos);      // The content, without a copy of it
             dos.finish();
