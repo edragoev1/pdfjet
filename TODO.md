@@ -457,7 +457,13 @@ commit and date. The layout's format version (1) and the look's rules
   - About a day for the four ports. Not text extraction, which is not built
     (the owner, 26 October 2026).
 - **For 9.1.5: better charts, and one more** (the owner, 25 October 2026:
-  "significantly improve all charts"). From a review of Example_25 to 28 and
+  "significantly improve all charts"). Where it stands, 26 October 2026:
+  Chart, which items 1 to 5 were written about, is deprecated, and the
+  simple charts (7 to 9) take its place; BarChart has the simple charts'
+  look, grouping on, one axis line at zero and the totals of its stacks
+  (6a295afd), which is item 1 and part of 4 for it. Left: DonutChart's title,
+  legend and look (3, 4), the accessibility of item 5, and the bars with a
+  line of item 6. From a review of Example_25 to 28 and
   chart.go, barchart.go and donutchart.go; in the four ports, the examples
   updated to show it, before and after screenshots for each visible change.
   In this order:
@@ -580,7 +586,8 @@ commit and date. The layout's format version (1) and the look's rules
        stream in the four ports; Example_26 a page of the scatter chart and
        a table of the highlighted countries, as Example_20 is of its bars;
        a snippet; before and after screenshots for the owner.
-     - **Go and Java done, 26 October 2026** (simplescatterchart.go,
+     - **Done in the four ports, 26 October 2026, links on points
+       included (84e73b5f).** Was: **Go and Java done** (simplescatterchart.go,
        SimpleScatterChart.java, 6 tests each, the same content stream). It
        draws with the page alone and ChartScale, the helpers the charts
        share, moved out of Chart and BarChart the same day, so that Chart
@@ -806,7 +813,10 @@ commit and date. The layout's format version (1) and the look's rules
   none is to be added. Such a font draws its text unkerned, as in 9.1.1.
   Bitstream Vera Sans of 2003, among the fonts fetched for the reference
   tests, is one; DejaVu Sans, which replaced it, kerns with GPOS.
-- **Longer fuzzing of the font subsetters.** Go's fuzzers ran 5 minutes each
+- ✅ **Done, 25 October 2026: the font subsetters fuzzed 8 hours each**, and
+  FuzzSubsetTrueType and FuzzOpenTypeFont 5 minutes each again on 26 October,
+  after the subsets left out cmap and name, with no failure. Was: **Longer
+  fuzzing of the font subsetters.** Go's fuzzers ran 5 minutes each
   on every target before 9.0.5 with no failure; the TrueType and CFF
   subsetters, which subset a real font for each input, ran 27,000 and 15,000
   inputs. A run of a night on those two.
