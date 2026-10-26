@@ -238,7 +238,7 @@ public class SimpleBarChart implements Drawable {
 
     // The value written at the end of a bar.
     String label(float value) {
-        return Chart.format(value, minFractionDigits, maxFractionDigits);
+        return ChartScale.format(value, minFractionDigits, maxFractionDigits);
     }
 
     // The font of the name and the value of the bar of the index.
@@ -292,7 +292,7 @@ public class SimpleBarChart implements Drawable {
             Font font = fontOf(i);
             nameWidth = Math.max(nameWidth, font.stringWidth(size, names.get(i)));
             valueWidth = Math.max(valueWidth, font.stringWidth(size, label(values.get(i))));
-            if (BarChart.isValue(values.get(i))) {
+            if (ChartScale.isValue(values.get(i))) {
                 largest = Math.max(largest, values.get(i));
             }
         }
@@ -329,7 +329,7 @@ public class SimpleBarChart implements Drawable {
             page.drawString(font, size, names.get(i), x + pad, textBaseline,
                     Util.toRGB(highlighted ? highlightColor : INK), null);
             float length = 0f;
-            if (largest > 0f && BarChart.isValue(value) && value > 0f) {
+            if (largest > 0f && ChartScale.isValue(value) && value > 0f) {
                 length = barRoom * (value / largest);
             }
             if (length > 0f) {

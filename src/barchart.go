@@ -12,7 +12,6 @@ package pdfjet
 // check-no-fma.sh fails if one is removed.
 
 import (
-	"math"
 	"strings"
 
 	"github.com/edragoev1/pdfjet/v9/src/color"
@@ -726,17 +725,6 @@ func (chart *BarChart) barColor(s *barSeries, seriesIndex, index int) int32 {
 	return s.color
 }
 
-// axisLabelStep returns how many grid lines apart the labels of the value
-// axis are drawn: 1 when a label fits the spacing of the lines, and more when
-// it needs more room, so that no two labels meet.
-func axisLabelStep(spacing, needed float32, lines int) int {
-	every := 1
-	for every < lines && float32(spacing*float32(every)) < needed {
-		every++
-	}
-	return every
-}
-
 // valueLabel formats the value written at the end of a bar.
 func (chart *BarChart) valueLabel(value float32) string {
 	return chart.group(format(value, chart.minFractionDigits, chart.maxFractionDigits))
@@ -801,18 +789,4 @@ func (chart *BarChart) drawLegendOn(page *Page, baseline float32) {
 		page.drawString(f2, f2.size, s.name, x, baseline, [3]float32{0.0, 0.0, 0.0}, nil)
 		x += f2.StringWidth(f2.size, s.name) + f2.bodyHeight
 	}
-}
-
-// abs32 returns the absolute value of a float32.
-// isValue tells if the value is a number to draw: a value that is NaN or
-// infinite has no bar, like a value missing at the end of a series.
-func isValue(value float32) bool {
-	return !math.IsNaN(float64(value)) && !math.IsInf(float64(value), 0)
-}
-
-func abs32(value float32) float32 {
-	if value < 0 {
-		return -value
-	}
-	return value
 }

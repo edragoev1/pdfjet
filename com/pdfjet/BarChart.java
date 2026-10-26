@@ -473,7 +473,7 @@ public class BarChart implements Drawable {
                     float up = 0f;
                     float down = 0f;
                     for (Series s : series) {
-                        if (i < s.values.length && isValue(s.values[i])) {
+                        if (i < s.values.length && ChartScale.isValue(s.values[i])) {
                             if (s.values[i] >= 0f) { up += s.values[i]; } else { down += s.values[i]; }
                         }
                     }
@@ -483,7 +483,7 @@ public class BarChart implements Drawable {
             } else {
                 for (Series s : series) {
                     for (float v : s.values) {
-                        if (!isValue(v)) {
+                        if (!ChartScale.isValue(v)) {
                             continue;
                         }
                         lo = Math.min(lo, v);
@@ -491,15 +491,15 @@ public class BarChart implements Drawable {
                     }
                 }
             }
-            if (hi == lo) { hi = lo + Chart.flatDataSpan(lo); }
-            Round round = Chart.roundMaxAndMinValues(hi, lo);
+            if (hi == lo) { hi = lo + ChartScale.flatDataSpan(lo); }
+            Round round = ChartScale.roundMaxAndMinValues(hi, lo);
             vMin = round.minValue;
             vMax = round.maxValue;
             lines = round.numOfGridLines;
         }
-        if (vMax == vMin) { vMax = vMin + Chart.flatDataSpan(vMin); }
+        if (vMax == vMin) { vMax = vMin + ChartScale.flatDataSpan(vMin); }
         float step = (vMax - vMin) / lines;
-        int axisDigits = Math.max(minFractionDigits, Chart.fractionDigitsOf(step, maxFractionDigits));
+        int axisDigits = Math.max(minFractionDigits, ChartScale.fractionDigitsOf(step, maxFractionDigits));
         float base = Math.min(Math.max(0f, vMin), vMax);
 
         float x2 = x1 + w;
@@ -519,7 +519,7 @@ public class BarChart implements Drawable {
         if (drawValueLabels) {
             for (Series s : series) {
                 for (float v : s.values) {
-                    if (!isValue(v)) {
+                    if (!ChartScale.isValue(v)) {
                         continue;
                     }
                     widestValueLabel = Math.max(widestValueLabel, f2.stringWidth(valueLabel(v)));
@@ -577,8 +577,8 @@ public class BarChart implements Drawable {
         // up the vertical axis: at every second or third line, or more, when
         // the labels would run into each other, the lines all drawn.
         int every = horizontal
-                ? axisLabelStep((x6 - x5) / lines, widestAxisLabel + pad, lines)
-                : axisLabelStep((y8 - y5) / lines, bodyHeight, lines);
+                ? ChartScale.axisLabelStep((x6 - x5) / lines, widestAxisLabel + pad, lines)
+                : ChartScale.axisLabelStep((y8 - y5) / lines, bodyHeight, lines);
         for (int i = 0; i <= lines; i++) {
             float v = vMin + step * i;
             String label = axisLabel(v, axisDigits);
@@ -623,7 +623,7 @@ public class BarChart implements Drawable {
             float down = 0f;    // the stacked values below 0 so far
             for (int j = 0; j < m; j++) {
                 Series s = series.get(j);
-                if (i >= s.values.length || !isValue(s.values[i])) {
+                if (i >= s.values.length || !ChartScale.isValue(s.values[i])) {
                     continue;
                 }
                 // A bar runs from the base to its value; a segment of a stack
@@ -748,30 +748,17 @@ public class BarChart implements Drawable {
         if (s.colors != null && index >= 0 && index < s.colors.length) {
             return s.colors[index];
         }
-        return s.color == NO_COLOR ? Chart.DEFAULT_PALETTE[seriesIndex % Chart.DEFAULT_PALETTE.length] : s.color;
-    }
-
-    /**
-     * Returns how many grid lines apart the labels of the value axis are
-     * drawn: 1 when a label fits the spacing of the lines, and more when it
-     * needs more room, so that no two labels meet.
-     */
-    static int axisLabelStep(float spacing, float needed, int lines) {
-        int every = 1;
-        while (every < lines && spacing * every < needed) {
-            every++;
-        }
-        return every;
+        return s.color == NO_COLOR ? ChartScale.DEFAULT_PALETTE[seriesIndex % ChartScale.DEFAULT_PALETTE.length] : s.color;
     }
 
     /** Formats the value written at the end of a bar. */
     private String valueLabel(float value) {
-        return group(Chart.format(value, minFractionDigits, maxFractionDigits));
+        return group(ChartScale.format(value, minFractionDigits, maxFractionDigits));
     }
 
     /** Formats a label of the value axis. */
     private String axisLabel(float value, int digits) {
-        return group(Chart.format(value, digits, maxFractionDigits));
+        return group(ChartScale.format(value, digits, maxFractionDigits));
     }
 
     /** Groups the digits before the decimal point in thousands with commas, if grouping is used. */
@@ -827,9 +814,4 @@ public class BarChart implements Drawable {
         }
     }
 
-    // Tells if the value is a number to draw: a value that is NaN or infinite
-    // has no bar, like a value missing at the end of a series.
-    static boolean isValue(float value) {
-        return !Float.isNaN(value) && !Float.isInfinite(value);
-    }
 }

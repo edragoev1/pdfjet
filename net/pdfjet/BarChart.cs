@@ -410,7 +410,7 @@ public class BarChart : IDrawable {
                     float up = 0f;
                     float down = 0f;
                     foreach (Series s in series) {
-                        if (i < s.values.Length && IsValue(s.values[i])) {
+                        if (i < s.values.Length && ChartScale.IsValue(s.values[i])) {
                             if (s.values[i] >= 0f) { up += s.values[i]; } else { down += s.values[i]; }
                         }
                     }
@@ -420,7 +420,7 @@ public class BarChart : IDrawable {
             } else {
                 foreach (Series s in series) {
                     foreach (float v in s.values) {
-                        if (!IsValue(v)) {
+                        if (!ChartScale.IsValue(v)) {
                             continue;
                         }
                         lo = Math.Min(lo, v);
@@ -428,15 +428,15 @@ public class BarChart : IDrawable {
                     }
                 }
             }
-            if (hi == lo) { hi = lo + Chart.FlatDataSpan(lo); }
-            Round round = Chart.RoundMaxAndMinValues(hi, lo);
+            if (hi == lo) { hi = lo + ChartScale.FlatDataSpan(lo); }
+            Round round = ChartScale.RoundMaxAndMinValues(hi, lo);
             vMin = round.minValue;
             vMax = round.maxValue;
             lines = round.numOfGridLines;
         }
-        if (vMax == vMin) { vMax = vMin + Chart.FlatDataSpan(vMin); }
+        if (vMax == vMin) { vMax = vMin + ChartScale.FlatDataSpan(vMin); }
         float step = (vMax - vMin) / lines;
-        int axisDigits = Math.Max(minFractionDigits, Chart.FractionDigitsOf(step, maxFractionDigits));
+        int axisDigits = Math.Max(minFractionDigits, ChartScale.FractionDigitsOf(step, maxFractionDigits));
         float baseValue = Math.Min(Math.Max(0f, vMin), vMax);
 
         float x2 = x1 + w;
@@ -456,7 +456,7 @@ public class BarChart : IDrawable {
         if (drawValueLabels) {
             foreach (Series s in series) {
                 foreach (float v in s.values) {
-                    if (!IsValue(v)) {
+                    if (!ChartScale.IsValue(v)) {
                         continue;
                     }
                     widestValueLabel = Math.Max(widestValueLabel, f2.StringWidth(ValueLabel(v)));
@@ -514,8 +514,8 @@ public class BarChart : IDrawable {
         // up the vertical axis: at every second or third line, or more, when
         // the labels would run into each other, the lines all drawn.
         int every = horizontal
-                ? AxisLabelStep((x6 - x5) / lines, widestAxisLabel + pad, lines)
-                : AxisLabelStep((y8 - y5) / lines, bodyHeight, lines);
+                ? ChartScale.AxisLabelStep((x6 - x5) / lines, widestAxisLabel + pad, lines)
+                : ChartScale.AxisLabelStep((y8 - y5) / lines, bodyHeight, lines);
         for (int i = 0; i <= lines; i++) {
             float v = vMin + step * i;
             String label = AxisLabel(v, axisDigits);
@@ -560,7 +560,7 @@ public class BarChart : IDrawable {
             float down = 0f;    // the stacked values below 0 so far
             for (int j = 0; j < m; j++) {
                 Series s = series[j];
-                if (i >= s.values.Length || !IsValue(s.values[i])) {
+                if (i >= s.values.Length || !ChartScale.IsValue(s.values[i])) {
                     continue;
                 }
                 // A bar runs from the base to its value; a segment of a stack
@@ -685,30 +685,17 @@ public class BarChart : IDrawable {
         if (s.colors != null && index >= 0 && index < s.colors.Length) {
             return s.colors[index];
         }
-        return s.color == NO_COLOR ? Chart.DEFAULT_PALETTE[seriesIndex % Chart.DEFAULT_PALETTE.Length] : s.color;
-    }
-
-    /// <summary>
-    /// Returns how many grid lines apart the labels of the value axis are
-    /// drawn: 1 when a label fits the spacing of the lines, and more when it
-    /// needs more room, so that no two labels meet.
-    /// </summary>
-    internal static int AxisLabelStep(float spacing, float needed, int lines) {
-        int every = 1;
-        while (every < lines && spacing * every < needed) {
-            every++;
-        }
-        return every;
+        return s.color == NO_COLOR ? ChartScale.DEFAULT_PALETTE[seriesIndex % ChartScale.DEFAULT_PALETTE.Length] : s.color;
     }
 
     /// <summary>Formats the value written at the end of a bar.</summary>
     private String ValueLabel(float value) {
-        return Group(Chart.Format(value, minFractionDigits, maxFractionDigits));
+        return Group(ChartScale.Format(value, minFractionDigits, maxFractionDigits));
     }
 
     /// <summary>Formats a label of the value axis.</summary>
     private String AxisLabel(float value, int digits) {
-        return Group(Chart.Format(value, digits, maxFractionDigits));
+        return Group(ChartScale.Format(value, digits, maxFractionDigits));
     }
 
     /// <summary>Groups the digits before the decimal point in thousands with commas, if grouping is used.</summary>
@@ -726,12 +713,6 @@ public class BarChart : IDrawable {
             sb.Insert(i, ',');
         }
         return sb.ToString();
-    }
-
-    // Tells if the value is a number to draw: a value that is NaN or infinite
-    // has no bar, like a value missing at the end of a series.
-    internal static bool IsValue(float value) {
-        return !float.IsNaN(value) && !float.IsInfinity(value);
     }
 
     /// <summary>Draws one dotted grid line.</summary>

@@ -123,7 +123,7 @@ public class DonutChart : Drawable {
         page.setBrushColor(fillColor)
 
         // No arc of angles that are not numbers, whose loop never ended
-        if !BarChart.isValue(a1) || !BarChart.isValue(a2) {
+        if !ChartScale.isValue(a1) || !ChartScale.isValue(a2) {
             return a1
         }
         var angle1 = a1 - 90.0
@@ -300,7 +300,7 @@ public class DonutChart : Drawable {
     // data, an infinity, or a value whose 360ths overflow a Float made the
     // arc's loop endless, until memory ran out (review of 11 October 2026, #2).
     static func sliceDrawn(_ value: Float) -> Bool {
-        return value > 0 && BarChart.isValue(value * 360)
+        return value > 0 && ChartScale.isValue(value * 360)
     }
 
     // Returns the share of the slice in the total, as a whole percentage.

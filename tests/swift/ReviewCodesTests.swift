@@ -38,7 +38,7 @@ import Testing
 
     @Test func chartTheRoundedRangeOfFlatDataHasAGridLine() {
         for value: Float in [0, 5, 2e7, -3e7, 1e30] {
-            let round = Chart.roundMaxAndMinValues(value, value)
+            let round = ChartScale.roundMaxAndMinValues(value, value)
             #expect(round.maxValue > round.minValue && round.numOfGridLines >= 1, "\(value)")
         }
     }
@@ -52,7 +52,7 @@ import Testing
         let ranges: [(Float, Float)] = [(inf, 0), (0, -inf), (.nan, .nan), (3.4e38, -3.4e38),
                                         (-big, big), (big, 0)]
         for (maxValue, minValue) in ranges {
-            let round = Chart.roundMaxAndMinValues(maxValue, minValue)
+            let round = ChartScale.roundMaxAndMinValues(maxValue, minValue)
             #expect(round.minValue == 0 && round.maxValue == 1 && round.numOfGridLines == 1,
                     "\(maxValue), \(minValue): \(round.minValue) to \(round.maxValue)")
         }

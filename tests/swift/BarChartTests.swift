@@ -84,10 +84,10 @@ import Testing
     }
 
     @Test func axisLabelStepIsTheFewestLinesALabelFits() {
-        #expect(BarChart.axisLabelStep(30, 20, 8) == 1)    // fits
-        #expect(BarChart.axisLabelStep(15, 20, 16) == 2)
-        #expect(BarChart.axisLabelStep(10, 25, 16) == 3)
-        #expect(BarChart.axisLabelStep(5, 100, 4) == 4)    // never more than the lines
+        #expect(ChartScale.axisLabelStep(30, 20, 8) == 1)    // fits
+        #expect(ChartScale.axisLabelStep(15, 20, 16) == 2)
+        #expect(ChartScale.axisLabelStep(10, 25, 16) == 3)
+        #expect(ChartScale.axisLabelStep(5, 100, 4) == 4)    // never more than the lines
     }
 
     @Test func stackedBarsUseTheSumsOfTheCategoriesForTheValueAxis() {

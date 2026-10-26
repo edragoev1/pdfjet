@@ -50,7 +50,7 @@ public class ReviewCodesTest {
     [Fact]
     public void TheRoundedRangeOfFlatDataHasAGridLine() {
         foreach (float value in new float[] {0f, 5f, 2e7f, -3e7f, 1e30f}) {
-            Round round = Chart.RoundMaxAndMinValues(value, value);
+            Round round = ChartScale.RoundMaxAndMinValues(value, value);
             Assert.True(round.maxValue > round.minValue, value + ": " + round.minValue + " to " + round.maxValue);
             Assert.True(round.numOfGridLines >= 1, value + ": " + round.numOfGridLines + " grid lines");
         }
@@ -67,7 +67,7 @@ public class ReviewCodesTest {
             new float[] {3.4e38f, -3.4e38f}, new float[] {float.MinValue, float.MaxValue},
             new float[] {float.MaxValue, 0f}};
         foreach (float[] range in ranges) {
-            Round round = Chart.RoundMaxAndMinValues(range[0], range[1]);
+            Round round = ChartScale.RoundMaxAndMinValues(range[0], range[1]);
             Assert.True(round.minValue == 0f && round.maxValue == 1f && round.numOfGridLines == 1,
                     range[0] + ", " + range[1] + ": " + round.minValue + " to " + round.maxValue);
         }

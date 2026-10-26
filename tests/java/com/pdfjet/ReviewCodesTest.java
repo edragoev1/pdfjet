@@ -69,7 +69,7 @@ class ReviewCodesTest {
     @Test
     void chartTheRoundedRangeOfFlatDataHasAGridLine() {
         for (float value : new float[] {0f, 5f, 2e7f, -3e7f, 1e30f}) {
-            Round round = Chart.roundMaxAndMinValues(value, value);
+            Round round = ChartScale.roundMaxAndMinValues(value, value);
             assertTrue(round.maxValue > round.minValue && round.numOfGridLines >= 1,
                     value + ": " + round.minValue + " to " + round.maxValue + " with " + round.numOfGridLines);
         }
@@ -84,7 +84,7 @@ class ReviewCodesTest {
         float[][] ranges = {{inf, 0f}, {0f, -inf}, {Float.NaN, Float.NaN}, {3.4e38f, -3.4e38f},
                 {-Float.MAX_VALUE, Float.MAX_VALUE}, {Float.MAX_VALUE, 0f}};
         for (float[] range : ranges) {
-            Round round = Chart.roundMaxAndMinValues(range[0], range[1]);
+            Round round = ChartScale.roundMaxAndMinValues(range[0], range[1]);
             assertTrue(round.minValue == 0f && round.maxValue == 1f && round.numOfGridLines == 1,
                     range[0] + ", " + range[1] + ": " + round.minValue + " to " + round.maxValue);
         }

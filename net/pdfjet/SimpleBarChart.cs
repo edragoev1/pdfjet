@@ -223,7 +223,7 @@ public class SimpleBarChart : IDrawable {
 
     // The value written at the end of a bar.
     internal String Label(float value) {
-        return Chart.Format(value, minFractionDigits, maxFractionDigits);
+        return ChartScale.Format(value, minFractionDigits, maxFractionDigits);
     }
 
     // The font of the name and the value of the bar of the index.
@@ -273,7 +273,7 @@ public class SimpleBarChart : IDrawable {
             Font font = FontOf(i);
             nameWidth = Math.Max(nameWidth, font.StringWidth(size, names[i]));
             valueWidth = Math.Max(valueWidth, font.StringWidth(size, Label(values[i])));
-            if (BarChart.IsValue(values[i])) {
+            if (ChartScale.IsValue(values[i])) {
                 largest = Math.Max(largest, values[i]);
             }
         }
@@ -310,7 +310,7 @@ public class SimpleBarChart : IDrawable {
             page.DrawString(font, size, names[i], x + pad, textBaseline,
                     Util.ToRGB(highlighted ? highlightColor : INK), null);
             float length = 0f;
-            if (largest > 0f && BarChart.IsValue(value) && value > 0f) {
+            if (largest > 0f && ChartScale.IsValue(value) && value > 0f) {
                 length = barRoom * (value / largest);
             }
             if (length > 0f) {

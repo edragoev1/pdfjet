@@ -301,9 +301,9 @@ class ChartTest {
     // a long, stopped at 2^63 (review of 17 October 2026)
     @Test
     void aStepPast2To63HasNoFractionDigits() {
-        assertEquals(0, Chart.fractionDigitsOf(1e19f, 6));
-        assertEquals(0, Chart.fractionDigitsOf(-1e30f, 6));
-        assertEquals(2, Chart.fractionDigitsOf(0.25f, 6));
+        assertEquals(0, ChartScale.fractionDigitsOf(1e19f, 6));
+        assertEquals(0, ChartScale.fractionDigitsOf(-1e30f, 6));
+        assertEquals(2, ChartScale.fractionDigitsOf(0.25f, 6));
     }
 }
 

@@ -247,7 +247,7 @@ public class SimpleBarChart : Drawable {
 
     // The value written at the end of a bar.
     func label(_ value: Float) -> String {
-        return Chart.format(value, minFractionDigits, maxFractionDigits)
+        return ChartScale.format(value, minFractionDigits, maxFractionDigits)
     }
 
     // The font of the name and the value of the bar of the index.
@@ -301,7 +301,7 @@ public class SimpleBarChart : Drawable {
             let font = fontOf(i)
             nameWidth = Swift.max(nameWidth, font.stringWidth(size, name))
             valueWidth = Swift.max(valueWidth, font.stringWidth(size, label(values[i])))
-            if BarChart.isValue(values[i]) {
+            if ChartScale.isValue(values[i]) {
                 largest = Swift.max(largest, values[i])
             }
         }
@@ -338,7 +338,7 @@ public class SimpleBarChart : Drawable {
             page.drawString(font, size, name, x + pad, textBaseline,
                     Util.toRGB(highlighted ? highlightColor : SimpleBarChart.INK), nil)
             var length: Float = 0.0
-            if largest > 0.0 && BarChart.isValue(value) && value > 0.0 {
+            if largest > 0.0 && ChartScale.isValue(value) && value > 0.0 {
                 length = barRoom * (value / largest)
             }
             if length > 0.0 {

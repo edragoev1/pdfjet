@@ -505,7 +505,7 @@ public class BarChart : Drawable {
                     var up: Float = 0.0
                     var down: Float = 0.0
                     for s in series {
-                        if i < s.values.count && BarChart.isValue(s.values[i]) {
+                        if i < s.values.count && ChartScale.isValue(s.values[i]) {
                             if s.values[i] >= 0.0 { up += s.values[i] } else { down += s.values[i] }
                         }
                     }
@@ -514,21 +514,21 @@ public class BarChart : Drawable {
                 }
             } else {
                 for s in series {
-                    for v in s.values where BarChart.isValue(v) {
+                    for v in s.values where ChartScale.isValue(v) {
                         lo = Swift.min(lo, v)
                         hi = Swift.max(hi, v)
                     }
                 }
             }
-            if hi == lo { hi = lo + Chart.flatDataSpan(lo) }
-            let round = Chart.roundMaxAndMinValues(hi, lo)
+            if hi == lo { hi = lo + ChartScale.flatDataSpan(lo) }
+            let round = ChartScale.roundMaxAndMinValues(hi, lo)
             vMin = round.minValue
             vMax = round.maxValue
             lines = round.numOfGridLines
         }
-        if vMax == vMin { vMax = vMin + Chart.flatDataSpan(vMin) }
+        if vMax == vMin { vMax = vMin + ChartScale.flatDataSpan(vMin) }
         let step = (vMax - vMin) / Float(lines)
-        let axisDigits = Swift.max(minFractionDigits, Chart.fractionDigitsOf(step, maxFractionDigits))
+        let axisDigits = Swift.max(minFractionDigits, ChartScale.fractionDigitsOf(step, maxFractionDigits))
         let base = Swift.min(Swift.max(0.0, vMin), vMax)
 
         let x2 = x1 + w
@@ -547,7 +547,7 @@ public class BarChart : Drawable {
         var widestValueLabel: Float = 0.0
         if drawValueLabels {
             for s in series {
-                for v in s.values where BarChart.isValue(v) {
+                for v in s.values where ChartScale.isValue(v) {
                     widestValueLabel = Swift.max(widestValueLabel, f2.stringWidth(valueLabel(v)))
                 }
             }
@@ -603,8 +603,8 @@ public class BarChart : Drawable {
         // up the vertical axis: at every second or third line, or more, when
         // the labels would run into each other, the lines all drawn.
         let every = horizontal
-                ? BarChart.axisLabelStep((x6 - x5) / Float(lines), widestAxisLabel + pad, lines)
-                : BarChart.axisLabelStep((y8 - y5) / Float(lines), bodyHeight, lines)
+                ? ChartScale.axisLabelStep((x6 - x5) / Float(lines), widestAxisLabel + pad, lines)
+                : ChartScale.axisLabelStep((y8 - y5) / Float(lines), bodyHeight, lines)
         for i in 0...lines {
             let v = vMin + step * Float(i)
             let label = axisLabel(v, axisDigits)
@@ -649,7 +649,7 @@ public class BarChart : Drawable {
             var down: Float = 0.0    // the stacked values below 0 so far
             for j in 0..<m {
                 let s = series[j]
-                if i >= s.values.count || !BarChart.isValue(s.values[i]) {
+                if i >= s.values.count || !ChartScale.isValue(s.values[i]) {
                     continue
                 }
                 // A bar runs from the base to its value; a segment of a stack
@@ -774,28 +774,17 @@ public class BarChart : Drawable {
         if let colors = s.colors, index >= 0 && index < colors.count {
             return colors[index]
         }
-        return s.color == BarChart.NO_COLOR ? Chart.DEFAULT_PALETTE[seriesIndex % Chart.DEFAULT_PALETTE.count] : s.color
-    }
-
-    /// Returns how many grid lines apart the labels of the value axis are
-    /// drawn: 1 when a label fits the spacing of the lines, and more when it
-    /// needs more room, so that no two labels meet.
-    static func axisLabelStep(_ spacing: Float, _ needed: Float, _ lines: Int) -> Int {
-        var every = 1
-        while every < lines && spacing * Float(every) < needed {
-            every += 1
-        }
-        return every
+        return s.color == BarChart.NO_COLOR ? ChartScale.DEFAULT_PALETTE[seriesIndex % ChartScale.DEFAULT_PALETTE.count] : s.color
     }
 
     /// Formats the value written at the end of a bar.
     private func valueLabel(_ value: Float) -> String {
-        return group(Chart.format(value, minFractionDigits, maxFractionDigits))
+        return group(ChartScale.format(value, minFractionDigits, maxFractionDigits))
     }
 
     /// Formats a label of the value axis.
     private func axisLabel(_ value: Float, _ digits: Int) -> String {
-        return group(Chart.format(value, digits, maxFractionDigits))
+        return group(ChartScale.format(value, digits, maxFractionDigits))
     }
 
     /// Groups the digits before the decimal point in thousands with commas, if grouping is used.
@@ -850,9 +839,4 @@ public class BarChart : Drawable {
         }
     }
 
-    // Tells if the value is a number to draw: a value that is NaN or infinite
-    // has no bar, like a value missing at the end of a series.
-    static func isValue(_ value: Float) -> Bool {
-        return value.isFinite
-    }
 }   // End of BarChart.swift

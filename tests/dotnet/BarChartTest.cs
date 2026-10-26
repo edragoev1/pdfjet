@@ -92,10 +92,10 @@ public class BarChartTest {
 
     [Fact]
     public void AxisLabelStepIsTheFewestLinesALabelFits() {
-        Assert.Equal(1, BarChart.AxisLabelStep(30f, 20f, 8));     // fits
-        Assert.Equal(2, BarChart.AxisLabelStep(15f, 20f, 16));
-        Assert.Equal(3, BarChart.AxisLabelStep(10f, 25f, 16));
-        Assert.Equal(4, BarChart.AxisLabelStep(5f, 100f, 4));     // never more than the lines
+        Assert.Equal(1, ChartScale.AxisLabelStep(30f, 20f, 8));     // fits
+        Assert.Equal(2, ChartScale.AxisLabelStep(15f, 20f, 16));
+        Assert.Equal(3, ChartScale.AxisLabelStep(10f, 25f, 16));
+        Assert.Equal(4, ChartScale.AxisLabelStep(5f, 100f, 4));     // never more than the lines
     }
 
     [Fact]

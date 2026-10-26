@@ -94,10 +94,10 @@ class BarChartTest {
 
     @Test
     void axisLabelStepIsTheFewestLinesALabelFits() {
-        assertEquals(1, BarChart.axisLabelStep(30f, 20f, 8));     // fits
-        assertEquals(2, BarChart.axisLabelStep(15f, 20f, 16));
-        assertEquals(3, BarChart.axisLabelStep(10f, 25f, 16));
-        assertEquals(4, BarChart.axisLabelStep(5f, 100f, 4));     // never more than the lines
+        assertEquals(1, ChartScale.axisLabelStep(30f, 20f, 8));     // fits
+        assertEquals(2, ChartScale.axisLabelStep(15f, 20f, 16));
+        assertEquals(3, ChartScale.axisLabelStep(10f, 25f, 16));
+        assertEquals(4, ChartScale.axisLabelStep(5f, 100f, 4));     // never more than the lines
     }
 
     @Test
