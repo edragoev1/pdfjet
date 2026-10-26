@@ -324,15 +324,19 @@ public class ReviewMediaTest {
         // Rules and elements of three classes each: every element went
         // through every rule for each of its classes. Eight times as many of
         // both take about eight times the time, not sixty-four; the limit is 32
-        // times, for a busy computer (10 times failed, 11.3, on GitHub's runner,
-        // 18 October 2026; 24 times failed, 31, in its Arabic locale run, 25
-        // October 2026); the two times are measured in the same run, the
-        // shortest of five each after a garbage collection, so that a busy
-        // computer slows both (a limit of 2 s failed under load, 9 October 2026).
-        TimeSpan small = ClassRulesTime(2500);
-        TimeSpan large = ClassRulesTime(20000);
-        Assert.True(large.Ticks <= 32 * small.Ticks, "20000 rules and elements took "
-                + large.TotalMilliseconds + " ms, and 2500 " + small.TotalMilliseconds + " ms");
+        // times, for a busy computer. The two sizes are both large, and timed
+        // after a run of the larger one: from 2,500 to 20,000 the image
+        // crossed a size where .NET's memory grows slower, and took 24 times
+        // as long warm on an idle computer, and 32.2 on GitHub's runner, which
+        // failed (25 October 2026); from 10,000 to 80,000 it takes 8.5 to 9.4
+        // times. The two times are measured in the same run, the shortest of
+        // five each after a garbage collection, so that a busy computer slows
+        // both (a limit of 2 s failed under load, 9 October 2026).
+        ClassRulesTime(80000);
+        TimeSpan small = ClassRulesTime(10000);
+        TimeSpan large = ClassRulesTime(80000);
+        Assert.True(large.Ticks <= 32 * small.Ticks, "80000 rules and elements took "
+                + large.TotalMilliseconds + " ms, and 10000 " + small.TotalMilliseconds + " ms");
         // The rules are those of the style sheet, in its order, whatever the
         // order of the classes, and a class named twice has its rules once.
         string content = DrawSVG("<svg width=\"10\" height=\"10\"><style>.b{fill:red} .a{fill:blue} .b{stroke:green}"
