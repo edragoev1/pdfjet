@@ -625,6 +625,15 @@ commit and date. The layout's format version (1) and the look's rules
      pages keep less once written, and a bookmark tree of thousands of
      levels or siblings is built in linear time. Java's Compressor (W7) is
      a Deflater for each thread since 9.1.5.
+- **For v9.2.1: hyphenation by dictionary** (the owner, 26 October 2026,
+  from the fair test's list of what the other libraries have). Today a
+  word breaks at a line's end only at a soft hyphen the text carries.
+  Hyphenation patterns, of the TeX kind, for English first, then the other
+  languages of IBM Plex Sans, chosen by the text line's language; used by
+  TextBlock, TextColumn, TextFrame and TextFlow when asked, off by
+  default so that no document changes. The patterns are data, kept out of
+  the library jar the way the fonts are, or in a small file of their own:
+  to decide. The four ports alike, tested by the words they break.
 - **For v9.2.1: two things learned from common business documents** (an
   invoice, a statement, a report of text and photos, a batch of 1,000
   letters, written in the four ports; the owner, 26 October 2026):
