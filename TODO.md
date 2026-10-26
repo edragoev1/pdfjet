@@ -275,8 +275,10 @@ commit and date. The layout's format version (1) and the look's rules
   (the owner, 26 October 2026: "core", for 9.1.5). From writing common
   business documents in the four ports: a report of headings, paragraphs
   and photos is 53 lines today, the code moving a TextFrame from page to
-  page and placing each photo by hand; about 20 with this. A thin class over
-  what the core has: TextFrame flows the paragraphs and makes the pages,
+  page and placing each photo by hand; about 20 with this. Its own class,
+  not images inside TextFrame (the owner, 26 October 2026): TextFrame stays
+  as it is, the frame placed by hand, and is not put at risk. A thin class
+  over what the core has: TextFrame flows the paragraphs and makes the pages,
   `getTextBottom()` says where the text ends (9.1.3), Image has its size.
   - The API, Java (the others alike, Go `NewFlow`, `Add`...):
     ```java
