@@ -339,8 +339,12 @@ commit and date. The layout's format version (1) and the look's rules
     2026** (net/pdfjet/FlowText.cs, tests/dotnet/FlowTextTest.cs), as
     Java's, with Go's names in C#'s case (`SetMargins`, `Add`, `AddSpace`,
     `DrawOn`); its margins that leave no room throw ArgumentException. Its
-    trial report is the same as Go's to the pixel. Next: Swift; then the
-    example and the snippet.
+    trial report is the same as Go's to the pixel. **Swift done, 26
+    October 2026** (Sources/PDFjet/FlowText.swift, FlowTextTests.swift):
+    `add(image, alignment)` with the alignment LEFT by default; margins that
+    leave no room fail the PDF, as Go's. The trial report drawn in Swift is
+    the same as Go's to the pixel too, so the four ports agree. Next: the
+    example and the snippet in the booklet.
   - Size: about 150 to 250 lines in each port with its comments, Go first,
     then Java, C#, Swift; a test in each of the rules above, the same in
     the four ports; an example (a report of 4 sections, 120 paragraphs and
