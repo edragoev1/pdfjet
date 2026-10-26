@@ -227,3 +227,43 @@ func abs32(value float32) float32 {
 	}
 	return value
 }
+
+// groupDigits groups the digits of a number before its decimal point in
+// thousands with commas: 23507 is 23,507.
+func groupDigits(label string) string {
+	start := 0
+	if strings.HasPrefix(label, "-") {
+		start = 1
+	}
+	end := strings.IndexByte(label, '.')
+	if end < 0 {
+		end = len(label)
+	}
+	for i := end - 3; i > start; i -= 3 {
+		label = label[:i] + "," + label[i:]
+	}
+	return label
+}
+
+// The axis of a range of values: its first and last value, and its steps.
+type chartAxis struct {
+	min, max float32
+	lines    int
+}
+
+// axisOf returns the axis of the values: the range set, or the
+// range of the values rounded to steps.
+func axisOf(values []float32, lo, hi float32, set bool) chartAxis {
+	if set {
+		return chartAxis{lo, hi, max(roundMaxAndMinValues(hi, lo).numOfGridLines, 1)}
+	}
+	lo, hi = values[0], values[0]
+	for _, v := range values[1:] {
+		lo, hi = min(lo, v), max(hi, v)
+	}
+	if hi == lo {
+		hi = lo + flatDataSpan(lo)
+	}
+	round := roundMaxAndMinValues(hi, lo)
+	return chartAxis{round.minValue, round.maxValue, round.numOfGridLines}
+}

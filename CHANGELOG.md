@@ -83,6 +83,18 @@ There is no 9.1.3: what was done for it is in 9.1.5 (the owner, 26 October
   named, with a table of the named ones. It was a Chart of cell phones and
   internet use by country from a file of about 2007, which Example_23 still
   draws as a table.
+- All four ports: `SimpleLineChart`, a chart of a few lines over the same
+  categories, the years or the months, in the look of SimpleBarChart and
+  SimpleScatterChart: each line labeled at its right end with its name and
+  its last value, so that it needs no legend, the labels moved apart where
+  they would meet; one line highlighted in navy, its label bold, the others
+  gray; dots at the values if asked; a value that is NaN leaves a gap in its
+  line. In PDF/UA it is one figure, described from its data: each line's
+  first and last values and its highest. Like the other two it needs no
+  other chart. Swift takes the categories as an array too, as BarChart does.
+- Example_25 is now a SimpleLineChart of the electric vehicles of the data
+  file by model year, battery electric highlighted, with a dot at each year.
+  It was a Chart with a Series for each line.
 - Example_22 is now a guide to four countries and their regions, laid out
   by TextFlow: headings, paragraphs and maps with captions on 4 pages, in a
   PDF/UA document. It was a table of text columns in English and Greek,

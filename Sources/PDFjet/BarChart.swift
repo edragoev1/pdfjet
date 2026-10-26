@@ -789,18 +789,7 @@ public class BarChart : Drawable {
 
     /// Groups the digits before the decimal point in thousands with commas, if grouping is used.
     private func group(_ label: String) -> String {
-        if !groupingUsed {
-            return label
-        }
-        var chars = Array(label)
-        let start = chars.first == "-" ? 1 : 0
-        let end = chars.firstIndex(of: ".") ?? chars.count
-        var i = end - 3
-        while i > start {
-            chars.insert(",", at: i)
-            i -= 3
-        }
-        return String(chars)
+        return groupingUsed ? ChartScale.groupDigits(label) : label
     }
 
     /// Draws one dotted grid line.

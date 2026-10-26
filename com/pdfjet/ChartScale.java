@@ -163,4 +163,57 @@ final class ChartScale {
     static boolean isValue(float value) {
         return !Float.isNaN(value) && !Float.isInfinite(value);
     }
+
+    /**
+     * The axis of a range of values: its first and last value, and its steps.
+     */
+    static final class Axis {
+        final float min;
+        final float max;
+        final int lines;
+
+        Axis(float min, float max, int lines) {
+            this.min = min;
+            this.max = max;
+            this.lines = lines;
+        }
+    }
+
+    /**
+     * Returns the axis of the values: the range set, or the range of the
+     * values rounded to steps.
+     */
+    static Axis axisOf(float[] values, float lo, float hi, boolean set) {
+        if (set) {
+            return new Axis(lo, hi, Math.max(roundMaxAndMinValues(hi, lo).numOfGridLines, 1));
+        }
+        lo = values[0];
+        hi = values[0];
+        for (int i = 1; i < values.length; i++) {
+            lo = Math.min(lo, values[i]);
+            hi = Math.max(hi, values[i]);
+        }
+        if (hi == lo) {
+            hi = lo + flatDataSpan(lo);
+        }
+        Round round = roundMaxAndMinValues(hi, lo);
+        return new Axis(round.minValue, round.maxValue, round.numOfGridLines);
+    }
+
+    /**
+     * Groups the digits of a number before its decimal point in thousands with
+     * commas: 23507 is 23,507.
+     */
+    static String groupDigits(String label) {
+        int start = label.startsWith("-") ? 1 : 0;
+        int end = label.indexOf('.');
+        if (end < 0) {
+            end = label.length();
+        }
+        StringBuilder sb = new StringBuilder(label);
+        for (int i = end - 3; i > start; i -= 3) {
+            sb.insert(i, ',');
+        }
+        return sb.toString();
+    }
 }   // End of ChartScale.java

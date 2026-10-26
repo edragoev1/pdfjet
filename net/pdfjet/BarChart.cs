@@ -700,19 +700,7 @@ public class BarChart : IDrawable {
 
     /// <summary>Groups the digits before the decimal point in thousands with commas, if grouping is used.</summary>
     private String Group(String label) {
-        if (!groupingUsed) {
-            return label;
-        }
-        int start = label.StartsWith("-", StringComparison.Ordinal) ? 1 : 0;
-        int end = label.IndexOf('.');
-        if (end < 0) {
-            end = label.Length;
-        }
-        System.Text.StringBuilder sb = new System.Text.StringBuilder(label);
-        for (int i = end - 3; i > start; i -= 3) {
-            sb.Insert(i, ',');
-        }
-        return sb.ToString();
+        return groupingUsed ? ChartScale.GroupDigits(label) : label;
     }
 
     /// <summary>Draws one dotted grid line.</summary>

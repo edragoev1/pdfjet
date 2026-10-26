@@ -46,19 +46,6 @@ public class SimpleScatterChart : IDrawable {
         }
     }
 
-    // The axis of a range of values: its first and last value, and its steps.
-    private sealed class Axis {
-        internal readonly float min;
-        internal readonly float max;
-        internal readonly int lines;
-
-        internal Axis(float min, float max, int lines) {
-            this.min = min;
-            this.max = max;
-            this.lines = lines;
-        }
-    }
-
     private readonly Font f1;      // The title and the names
     private readonly Font f2;      // The rest
     private float x;
@@ -293,25 +280,6 @@ public class SimpleScatterChart : IDrawable {
         return top;
     }
 
-    // The axis of the values of the points: the range set, or the range of
-    // the values rounded to steps.
-    private static Axis AxisOf(float[] values, float lo, float hi, bool set) {
-        if (set) {
-            return new Axis(lo, hi, Math.Max(ChartScale.RoundMaxAndMinValues(hi, lo).numOfGridLines, 1));
-        }
-        lo = values[0];
-        hi = values[0];
-        for (int i = 1; i < values.Length; i++) {
-            lo = Math.Min(lo, values[i]);
-            hi = Math.Max(hi, values[i]);
-        }
-        if (hi == lo) {
-            hi = lo + ChartScale.FlatDataSpan(lo);
-        }
-        Round round = ChartScale.RoundMaxAndMinValues(hi, lo);
-        return new Axis(round.minValue, round.maxValue, round.numOfGridLines);
-    }
-
     // A number of an axis, with the decimals its step needs.
     private String Label(float value, float step) {
         return ChartScale.Format(value, ChartScale.FractionDigitsOf(step, maxFractionDigits), maxFractionDigits);
@@ -415,8 +383,8 @@ public class SimpleScatterChart : IDrawable {
             xs[i] = points[i].x;
             ys[i] = points[i].y;
         }
-        Axis xAxis = AxisOf(xs, xMin, xMax, xRangeSet);
-        Axis yAxis = AxisOf(ys, yMin, yMax, yRangeSet);
+        ChartScale.Axis xAxis = ChartScale.AxisOf(xs, xMin, xMax, xRangeSet);
+        ChartScale.Axis yAxis = ChartScale.AxisOf(ys, yMin, yMax, yRangeSet);
         float xStep = (xAxis.max - xAxis.min) / xAxis.lines;
         float yStep = (yAxis.max - yAxis.min) / yAxis.lines;
 
@@ -563,18 +531,18 @@ public class SimpleScatterChart : IDrawable {
     }
 
     // The x on the page of a value of the horizontal axis.
-    private static float XAt(float v, Axis axis, float left, float right) {
+    private static float XAt(float v, ChartScale.Axis axis, float left, float right) {
         return left + (v - axis.min) * (right - left) / (axis.max - axis.min);
     }
 
     // The y on the page of a value of the vertical axis.
-    private static float YAt(float v, Axis axis, float top, float bottom) {
+    private static float YAt(float v, ChartScale.Axis axis, float top, float bottom) {
         return bottom - (v - axis.min) * (bottom - top) / (axis.max - axis.min);
     }
 
     // The point of the trend line at x, moved along the line to the top or
     // the bottom of the plot when it is past them.
-    private static double[] Clip(double x, double y, double slope, double intercept, Axis axis) {
+    private static double[] Clip(double x, double y, double slope, double intercept, ChartScale.Axis axis) {
         if (slope != 0 && y < axis.min) {
             return new double[] {(axis.min - intercept) / slope, axis.min};
         }

@@ -763,19 +763,7 @@ public class BarChart implements Drawable {
 
     /** Groups the digits before the decimal point in thousands with commas, if grouping is used. */
     private String group(String label) {
-        if (!groupingUsed) {
-            return label;
-        }
-        int start = label.startsWith("-") ? 1 : 0;
-        int end = label.indexOf('.');
-        if (end < 0) {
-            end = label.length();
-        }
-        StringBuilder sb = new StringBuilder(label);
-        for (int i = end - 3; i > start; i -= 3) {
-            sb.insert(i, ',');
-        }
-        return sb.toString();
+        return groupingUsed ? ChartScale.groupDigits(label) : label;
     }
 
     /** Draws one dotted grid line. */

@@ -45,19 +45,6 @@ public class SimpleScatterChart implements Drawable {
         }
     }
 
-    // The axis of a range of values: its first and last value, and its steps.
-    private static final class Axis {
-        final float min;
-        final float max;
-        final int lines;
-
-        Axis(float min, float max, int lines) {
-            this.min = min;
-            this.max = max;
-            this.lines = lines;
-        }
-    }
-
     private final Font f1;      // The title and the names
     private final Font f2;      // The rest
     private float x;
@@ -305,25 +292,6 @@ public class SimpleScatterChart implements Drawable {
         return top;
     }
 
-    // The axis of the values of the points: the range set, or the range of
-    // the values rounded to steps.
-    private static Axis axisOf(float[] values, float lo, float hi, boolean set) {
-        if (set) {
-            return new Axis(lo, hi, Math.max(ChartScale.roundMaxAndMinValues(hi, lo).numOfGridLines, 1));
-        }
-        lo = values[0];
-        hi = values[0];
-        for (int i = 1; i < values.length; i++) {
-            lo = Math.min(lo, values[i]);
-            hi = Math.max(hi, values[i]);
-        }
-        if (hi == lo) {
-            hi = lo + ChartScale.flatDataSpan(lo);
-        }
-        Round round = ChartScale.roundMaxAndMinValues(hi, lo);
-        return new Axis(round.minValue, round.maxValue, round.numOfGridLines);
-    }
-
     // A number of an axis, with the decimals its step needs.
     private String label(float value, float step) {
         return ChartScale.format(value, ChartScale.fractionDigitsOf(step, maxFractionDigits), maxFractionDigits);
@@ -429,8 +397,8 @@ public class SimpleScatterChart implements Drawable {
             xs[i] = points.get(i).x;
             ys[i] = points.get(i).y;
         }
-        final Axis xAxis = axisOf(xs, xMin, xMax, xRangeSet);
-        final Axis yAxis = axisOf(ys, yMin, yMax, yRangeSet);
+        final ChartScale.Axis xAxis = ChartScale.axisOf(xs, xMin, xMax, xRangeSet);
+        final ChartScale.Axis yAxis = ChartScale.axisOf(ys, yMin, yMax, yRangeSet);
         float xStep = (xAxis.max - xAxis.min) / xAxis.lines;
         float yStep = (yAxis.max - yAxis.min) / yAxis.lines;
 
@@ -577,18 +545,18 @@ public class SimpleScatterChart implements Drawable {
     }
 
     // The x on the page of a value of the horizontal axis.
-    private static float xAt(float v, Axis axis, float left, float right) {
+    private static float xAt(float v, ChartScale.Axis axis, float left, float right) {
         return left + (v - axis.min) * (right - left) / (axis.max - axis.min);
     }
 
     // The y on the page of a value of the vertical axis.
-    private static float yAt(float v, Axis axis, float top, float bottom) {
+    private static float yAt(float v, ChartScale.Axis axis, float top, float bottom) {
         return bottom - (v - axis.min) * (bottom - top) / (axis.max - axis.min);
     }
 
     // The point of the trend line at x, moved along the line to the top or
     // the bottom of the plot when it is past them.
-    private static double[] clip(double x, double y, double slope, double intercept, Axis axis) {
+    private static double[] clip(double x, double y, double slope, double intercept, ChartScale.Axis axis) {
         if (slope != 0 && y < axis.min) {
             return new double[] {(axis.min - intercept) / slope, axis.min};
         }

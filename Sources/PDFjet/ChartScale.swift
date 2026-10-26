@@ -168,4 +168,49 @@ enum ChartScale {
     static func isValue(_ value: Float) -> Bool {
         return value.isFinite
     }
+    ///
+    /// The axis of a range of values: its first and last value, and its steps.
+    ///
+    struct Axis {
+        let min: Float
+        let max: Float
+        let lines: Int
+    }
+
+    ///
+    /// Returns the axis of the values: the range set, or the range of the
+    /// values rounded to steps.
+    ///
+    static func axisOf(_ values: [Float], _ lo: Float, _ hi: Float, _ set: Bool) -> Axis {
+        if set {
+            return Axis(min: lo, max: hi, lines: Swift.max(roundMaxAndMinValues(hi, lo).numOfGridLines, 1))
+        }
+        var lo = values[0]
+        var hi = values[0]
+        for v in values.dropFirst() {
+            lo = Swift.min(lo, v)
+            hi = Swift.max(hi, v)
+        }
+        if hi == lo {
+            hi = lo + flatDataSpan(lo)
+        }
+        let round = roundMaxAndMinValues(hi, lo)
+        return Axis(min: round.minValue, max: round.maxValue, lines: round.numOfGridLines)
+    }
+
+    ///
+    /// Groups the digits of a number before its decimal point in thousands with
+    /// commas: 23507 is 23,507.
+    ///
+    static func groupDigits(_ label: String) -> String {
+        var chars = Array(label)
+        let start = chars.first == "-" ? 1 : 0
+        let end = chars.firstIndex(of: ".") ?? chars.count
+        var i = end - 3
+        while i > start {
+            chars.insert(",", at: i)
+            i -= 3
+        }
+        return String(chars)
+    }
 }   // End of ChartScale.swift

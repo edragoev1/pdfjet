@@ -12,8 +12,6 @@ package pdfjet
 // check-no-fma.sh fails if one is removed.
 
 import (
-	"strings"
-
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
@@ -741,18 +739,7 @@ func (chart *BarChart) group(label string) string {
 	if !chart.groupingUsed {
 		return label
 	}
-	start := 0
-	if strings.HasPrefix(label, "-") {
-		start = 1
-	}
-	end := strings.IndexByte(label, '.')
-	if end < 0 {
-		end = len(label)
-	}
-	for i := end - 3; i > start; i -= 3 {
-		label = label[:i] + "," + label[i:]
-	}
-	return label
+	return groupDigits(label)
 }
 
 // gridLine draws one dotted grid line.

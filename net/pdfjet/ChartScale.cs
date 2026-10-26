@@ -148,5 +148,58 @@ internal static class ChartScale {
     internal static bool IsValue(float value) {
         return !float.IsNaN(value) && !float.IsInfinity(value);
     }
+
+    /// <summary>
+    /// The axis of a range of values: its first and last value, and its steps.
+    /// </summary>
+    internal sealed class Axis {
+        internal readonly float min;
+        internal readonly float max;
+        internal readonly int lines;
+
+        internal Axis(float min, float max, int lines) {
+            this.min = min;
+            this.max = max;
+            this.lines = lines;
+        }
+    }
+
+    /// <summary>
+    /// Returns the axis of the values: the range set, or the range of the
+    /// values rounded to steps.
+    /// </summary>
+    internal static Axis AxisOf(float[] values, float lo, float hi, bool set) {
+        if (set) {
+            return new Axis(lo, hi, Math.Max(RoundMaxAndMinValues(hi, lo).numOfGridLines, 1));
+        }
+        lo = values[0];
+        hi = values[0];
+        for (int i = 1; i < values.Length; i++) {
+            lo = Math.Min(lo, values[i]);
+            hi = Math.Max(hi, values[i]);
+        }
+        if (hi == lo) {
+            hi = lo + FlatDataSpan(lo);
+        }
+        Round round = RoundMaxAndMinValues(hi, lo);
+        return new Axis(round.minValue, round.maxValue, round.numOfGridLines);
+    }
+
+    /// <summary>
+    /// Groups the digits of a number before its decimal point in thousands with
+    /// commas: 23507 is 23,507.
+    /// </summary>
+    internal static String GroupDigits(String label) {
+        int start = label.StartsWith("-", StringComparison.Ordinal) ? 1 : 0;
+        int end = label.IndexOf('.');
+        if (end < 0) {
+            end = label.Length;
+        }
+        System.Text.StringBuilder sb = new System.Text.StringBuilder(label);
+        for (int i = end - 3; i > start; i -= 3) {
+            sb.Insert(i, ',');
+        }
+        return sb.ToString();
+    }
 }   // End of ChartScale.cs
 }   // End of namespace PDFjet.NET

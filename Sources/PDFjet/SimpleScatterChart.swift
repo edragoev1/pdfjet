@@ -37,13 +37,6 @@ public class SimpleScatterChart : Drawable {
         let name: String
     }
 
-    // The axis of a range of values: its first and last value, and its steps.
-    private struct Axis {
-        let min: Float
-        let max: Float
-        let lines: Int
-    }
-
     private let f1: Font    // The title and the names
     private let f2: Font    // The rest
     private var x: Float = 0.0
@@ -306,25 +299,6 @@ public class SimpleScatterChart : Drawable {
         return top
     }
 
-    // The axis of the values of the points: the range set, or the range of
-    // the values rounded to steps.
-    private static func axisOf(_ values: [Float], _ lo: Float, _ hi: Float, _ set: Bool) -> Axis {
-        if set {
-            return Axis(min: lo, max: hi, lines: Swift.max(ChartScale.roundMaxAndMinValues(hi, lo).numOfGridLines, 1))
-        }
-        var lo = values[0]
-        var hi = values[0]
-        for v in values.dropFirst() {
-            lo = Swift.min(lo, v)
-            hi = Swift.max(hi, v)
-        }
-        if hi == lo {
-            hi = lo + ChartScale.flatDataSpan(lo)
-        }
-        let round = ChartScale.roundMaxAndMinValues(hi, lo)
-        return Axis(min: round.minValue, max: round.maxValue, lines: round.numOfGridLines)
-    }
-
     // A number of an axis, with the decimals its step needs.
     private func label(_ value: Float, _ step: Float) -> String {
         return ChartScale.format(value, ChartScale.fractionDigitsOf(step, maxFractionDigits), maxFractionDigits)
@@ -412,8 +386,8 @@ public class SimpleScatterChart : Drawable {
         let pad = pad()
         let ascent = f2.getAscent(size)
 
-        let xAxis = SimpleScatterChart.axisOf(points.map { $0.x }, xMin, xMax, xRangeSet)
-        let yAxis = SimpleScatterChart.axisOf(points.map { $0.y }, yMin, yMax, yRangeSet)
+        let xAxis = ChartScale.axisOf(points.map { $0.x }, xMin, xMax, xRangeSet)
+        let yAxis = ChartScale.axisOf(points.map { $0.y }, yMin, yMax, yRangeSet)
         let xStep = (xAxis.max - xAxis.min) / Float(xAxis.lines)
         let yStep = (yAxis.max - yAxis.min) / Float(yAxis.lines)
 
@@ -562,7 +536,7 @@ public class SimpleScatterChart : Drawable {
     // The point of the trend line at x, moved along the line to the top or
     // the bottom of the plot when it is past them.
     private static func clip(_ x: Double, _ y: Double, _ slope: Double, _ intercept: Double,
-            _ axis: Axis) -> (x: Double, y: Double) {
+            _ axis: ChartScale.Axis) -> (x: Double, y: Double) {
         if slope != 0 && y < Double(axis.min) {
             return ((Double(axis.min) - intercept) / slope, Double(axis.min))
         }

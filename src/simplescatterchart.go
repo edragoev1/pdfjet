@@ -200,29 +200,6 @@ func (chart *SimpleScatterChart) top() float32 {
 	return top
 }
 
-// The axis of a range of values: its first and last value, and its steps.
-type scatterAxis struct {
-	min, max float32
-	lines    int
-}
-
-// axisOf returns the axis of the values of the points: the range set, or the
-// range of the values rounded to steps.
-func axisOf(values []float32, lo, hi float32, set bool) scatterAxis {
-	if set {
-		return scatterAxis{lo, hi, max(roundMaxAndMinValues(hi, lo).numOfGridLines, 1)}
-	}
-	lo, hi = values[0], values[0]
-	for _, v := range values[1:] {
-		lo, hi = min(lo, v), max(hi, v)
-	}
-	if hi == lo {
-		hi = lo + flatDataSpan(lo)
-	}
-	round := roundMaxAndMinValues(hi, lo)
-	return scatterAxis{round.minValue, round.maxValue, round.numOfGridLines}
-}
-
 // label formats a number of an axis with the decimals its step needs.
 func (chart *SimpleScatterChart) label(value, step float32) string {
 	return format(value, fractionDigitsOf(step, chart.maxFractionDigits), chart.maxFractionDigits)
