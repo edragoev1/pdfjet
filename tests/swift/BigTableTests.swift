@@ -109,6 +109,17 @@ import Testing
         return TestSupport.content(pages[0])
     }
 
+    // The lines between the columns and at the sides, one for each of the
+    // three columns and one more, are left out, and the lines between the
+    // rows are drawn as before.
+    @Test func theVerticalLinesCanBeLeftOut() throws {
+        let all = try drawSmall(TestSupport.newPDF()) { _ in }
+        let rows = try drawSmall(TestSupport.newPDF()) { $0.setVerticalLines(false) }
+        #expect(count(rows, "\nS\n") == count(all, "\nS\n") - 4)
+        #expect(count(rows, "\nS\n") > 0, "the lines between the rows are drawn")
+        #expect(try drawSmall(TestSupport.newPDF()) { $0.setVerticalLines(true) } == all)
+    }
+
     @Test func theShadingAndTheBorderColorsCanBeChangedOrLeftOut() throws {
         let defaults = try drawSmall(TestSupport.newPDF()) { _ in }
         #expect(defaults.contains("0.94 0.94 0.94 rg\n") && defaults.contains("0.69 0.69 0.69 RG\n"))

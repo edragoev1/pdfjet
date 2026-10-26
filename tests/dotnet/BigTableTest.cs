@@ -119,6 +119,18 @@ public sealed class BigTableTest : IDisposable {
     }
 
     [Fact]
+    public void TheVerticalLinesCanBeLeftOut() {
+        // The lines between the columns and at the sides, one for each of the
+        // three columns and one more, are left out, and the lines between the
+        // rows are drawn as before.
+        string all = DrawSmall(TestSupport.NewPDF(), table => {});
+        string rows = DrawSmall(TestSupport.NewPDF(), table => table.SetVerticalLines(false));
+        Assert.Equal(Count(all, "\nS\n") - 4, Count(rows, "\nS\n"));
+        Assert.True(Count(rows, "\nS\n") > 0, "the lines between the rows are drawn");
+        Assert.Equal(all, DrawSmall(TestSupport.NewPDF(), table => table.SetVerticalLines(true)));
+    }
+
+    [Fact]
     public void TheShadingAndTheBorderColorsCanBeChangedOrLeftOut() {
         string defaults = DrawSmall(TestSupport.NewPDF(), table => {});
         Assert.Contains("0.94 0.94 0.94 rg\n", defaults);

@@ -50,6 +50,7 @@ namespace PDFjet.NET {
         private StructElement structElement = null;
         private float[] shadingColor = Rgb(0xF0F0F0);   // null for no shading
         private float[] borderColor = Rgb(0xB0B0B0);    // null for no lines
+        private bool verticalLines = true;              // false for the rows' lines alone
         private string footerText = "Page {page} of {pages}";
         private Font footerFont;                        // null for the header font
         private IEnumerable<string[]> rows;
@@ -189,6 +190,18 @@ namespace PDFjet.NET {
         /// <returns>this BigTable object.</returns>
         public BigTable SetShadingColor(float[] color) {
             this.shadingColor = Util.CopyOf(color);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets whether the vertical lines between the columns and at the sides of
+        /// the table are drawn. They are unless set; without them the table has
+        /// only the lines between its rows, a lighter look for a long table.
+        /// </summary>
+        /// <param name="verticalLines">false to leave the vertical lines out.</param>
+        /// <returns>this BigTable object.</returns>
+        public BigTable SetVerticalLines(bool verticalLines) {
+            this.verticalLines = verticalLines;
             return this;
         }
 
@@ -466,7 +479,7 @@ namespace PDFjet.NET {
             page.AddArtifactBMC();
             float[] original = page.GetPenColor();
             page.SetPenColor(borderColor);
-            for (int i = 0; i <= this.numberOfColumns; i++) {
+            for (int i = 0; verticalLines && i <= this.numberOfColumns; i++) {
                 page.DrawLine(
                     vertLines[i],
                     top,

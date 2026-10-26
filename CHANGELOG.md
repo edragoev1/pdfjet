@@ -110,6 +110,12 @@ There is no 9.1.3: what was done for it is in 9.1.5 (the owner, 26 October
   `NewImageFromBytes(pdf, bytes)`), without the copy a stream of them
   needs. The PDF is the same as from a stream.
 
+- All four ports: `BigTable.setVerticalLines(false)` (Go and C#
+  `SetVerticalLines`) leaves out the vertical lines between the columns and
+  at the sides of the table, for a lighter look with the lines between the
+  rows alone. The lines are drawn unless it is set, so a BigTable draws as
+  before.
+
 ### Changed
 - All four ports: a JPEG is read faster. Its end-of-image marker, which
   PDFjet looks for to tell a whole photo from one cut short, is nearly

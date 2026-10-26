@@ -52,6 +52,7 @@ public class BigTable {
     private StructElement structElement = null;
     private float[] shadingColor = rgb(0xF0F0F0);   // null for no shading
     private float[] borderColor = rgb(0xB0B0B0);    // null for no lines
+    private boolean verticalLines = true;           // false for the rows' lines alone
     private String footerText = "Page {page} of {pages}";
     private Font footerFont;                        // null for the header font
     private Iterable<String[]> rows;
@@ -208,6 +209,19 @@ public class BigTable {
      */
     public BigTable setShadingColor(float[] color) {
         this.shadingColor = Util.copyOf(color);
+        return this;
+    }
+
+    /**
+     * Sets whether the vertical lines between the columns and at the sides of
+     * the table are drawn. They are unless set; without them the table has
+     * only the lines between its rows, a lighter look for a long table.
+     *
+     * @param verticalLines false to leave the vertical lines out.
+     * @return this BigTable object.
+     */
+    public BigTable setVerticalLines(boolean verticalLines) {
+        this.verticalLines = verticalLines;
         return this;
     }
 
@@ -497,7 +511,7 @@ public class BigTable {
         page.addArtifactBMC();
         float[] original = page.getPenColor();
         page.setPenColor(borderColor);
-        for (int i = 0; i <= this.numberOfColumns; i++) {
+        for (int i = 0; verticalLines && i <= this.numberOfColumns; i++) {
             page.drawLine(
                     vertLines[i],
                     this.top,

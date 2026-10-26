@@ -143,6 +143,18 @@ class BigTableTest {
     }
 
     @Test
+    void theVerticalLinesCanBeLeftOut() throws Exception {
+        // The lines between the columns and at the sides, one for each of the
+        // three columns and one more, are left out, and the lines between the
+        // rows are drawn as before.
+        String all = drawSmall(TestSupport.newPDF(), table -> {});
+        String rows = drawSmall(TestSupport.newPDF(), table -> table.setVerticalLines(false));
+        assertEquals(count(all, "\nS\n") - 4, count(rows, "\nS\n"));
+        assertTrue(count(rows, "\nS\n") > 0, "the lines between the rows are drawn");
+        assertEquals(all, drawSmall(TestSupport.newPDF(), table -> table.setVerticalLines(true)));
+    }
+
+    @Test
     void theShadingAndTheBorderColorsCanBeChangedOrLeftOut() throws Exception {
         String defaults = drawSmall(TestSupport.newPDF(), table -> {});
         assertTrue(defaults.contains("0.94 0.94 0.94 rg\n") && defaults.contains("0.69 0.69 0.69 RG\n"));

@@ -158,6 +158,23 @@ func testDrawSmallBigTable(t *testing.T, pdf *PDF, change func(*BigTable)) strin
 	return testContent(pages[0])
 }
 
+// The lines between the columns and at the sides, one for each of the three
+// columns and one more, are left out, and the lines between the rows are drawn
+// as before.
+func TestBigTableTheVerticalLinesCanBeLeftOut(t *testing.T) {
+	all := testDrawSmallBigTable(t, testNewPDF(), func(table *BigTable) {})
+	rows := testDrawSmallBigTable(t, testNewPDF(), func(table *BigTable) { table.SetVerticalLines(false) })
+	if got, want := strings.Count(rows, "\nS\n"), strings.Count(all, "\nS\n")-4; got != want {
+		t.Errorf("%d strokes without the vertical lines, want %d", got, want)
+	}
+	if strings.Count(rows, "\nS\n") == 0 {
+		t.Error("the lines between the rows are not drawn")
+	}
+	if again := testDrawSmallBigTable(t, testNewPDF(), func(table *BigTable) { table.SetVerticalLines(true) }); again != all {
+		t.Error("SetVerticalLines(true) changed the table")
+	}
+}
+
 func TestBigTableTheShadingAndTheBorderColorsCanBeChangedOrLeftOut(t *testing.T) {
 	defaults := testDrawSmallBigTable(t, testNewPDF(), func(*BigTable) {})
 	if !strings.Contains(defaults, "0.94 0.94 0.94 rg\n") || !strings.Contains(defaults, "0.69 0.69 0.69 RG\n") {

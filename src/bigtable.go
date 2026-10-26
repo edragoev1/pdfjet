@@ -63,6 +63,7 @@ type BigTable struct {
 	shadingColor    [3]float32
 	hasShading      bool // false for no shading
 	borderColor     [3]float32
+	noVerticalLines bool // true for the rows' lines alone
 	hasBorder       bool // false for no lines
 	footerText      string
 	footerFont      *Font // nil for the header font
@@ -202,6 +203,14 @@ func (bt *BigTable) SetShadingColor(c int32) *BigTable {
 func (bt *BigTable) SetShadingColorRGB(rgb [3]float32) *BigTable {
 	bt.shadingColor = rgb
 	bt.hasShading = true
+	return bt
+}
+
+// SetVerticalLines sets whether the vertical lines between the columns and at
+// the sides of the table are drawn. They are unless set; without them the table
+// has only the lines between its rows, a lighter look for a long table.
+func (bt *BigTable) SetVerticalLines(verticalLines bool) *BigTable {
+	bt.noVerticalLines = !verticalLines
 	return bt
 }
 
@@ -475,7 +484,7 @@ func (bt *BigTable) drawTheVerticalLines() {
 	defer bt.page.AddEMC()
 	original := bt.page.GetPenColor()
 	bt.page.SetPenColorRGB(bt.borderColor)
-	for i := 0; i <= bt.numberOfColumns; i++ {
+	for i := 0; !bt.noVerticalLines && i <= bt.numberOfColumns; i++ {
 		bt.page.DrawLine(
 			bt.vertLines[i],
 			bt.top,

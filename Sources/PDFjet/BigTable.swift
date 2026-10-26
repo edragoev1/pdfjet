@@ -42,6 +42,7 @@ public class BigTable {
     private var structElement: StructElement?
     private var shadingColor: [Float]? = BigTable.rgb(0xF0F0F0)   // nil for no shading
     private var borderColor: [Float]? = BigTable.rgb(0xB0B0B0)    // nil for no lines
+    private var verticalLines = true                              // false for the rows' lines alone
     private var footerText: String? = "Page {page} of {pages}"
     private var footerFont: Font?                               // nil for the header font
     private var rows: (() -> AnyIterator<[String]>)?
@@ -173,6 +174,15 @@ public class BigTable {
     @discardableResult
     public func setShadingColor(_ color: [Float]?) -> BigTable {
         self.shadingColor = color
+        return self
+    }
+
+    /// Sets whether the vertical lines between the columns and at the sides of the table are
+    /// drawn. They are unless set; without them the table has only the lines between its rows,
+    /// a lighter look for a long table.
+    @discardableResult
+    public func setVerticalLines(_ verticalLines: Bool) -> BigTable {
+        self.verticalLines = verticalLines
         return self
     }
 
@@ -445,7 +455,7 @@ public class BigTable {
         page!.addArtifactBMC()
         let original = page!.getPenColor()
         page!.setPenColor(borderColor)
-        for i in 0...numberOfColumns {
+        for i in 0...numberOfColumns where verticalLines {
             page!.drawLine(
                 vertLines[i],
                 top,
