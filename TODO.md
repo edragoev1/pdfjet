@@ -319,6 +319,29 @@ commit and date. The layout's format version (1) and the look's rules
     the four ports; an example (a report of 4 sections, 120 paragraphs and
     4 photos) and a snippet in the booklet. check-api.sh shows the
     class as the only addition. No change to TextFrame, Image or the fonts.
+- **Text wrapped around images, in TextFrame** (the owner, 26 October
+  2026; no release yet). PageMaker's threaded text blocks were the idea of
+  TextFrame, and it does that part; what it lacks most is text flowing
+  around a picture. Not small, so a design first:
+  - The frame is told of the areas to keep clear on its page,
+    `addExclusion(x, y, w, h)` (an image's bounds, or any rectangle), with
+    a gap around them. Each row of text then takes the widest run of the
+    frame's width left free at its height: left of the image, right of it,
+    or, when both sides are free, the wider side: text on both sides of
+    one image, read across it, is hard to read.
+  - A row too narrow for a word (say less than 3 em) is skipped and the
+    text goes on below the image. Justified rows justify within their run.
+  - Rectangles only, no wrap around the outline of a shape.
+  - Flow (9.1.5) gets it later as an image item that text wraps around,
+    left or right.
+  - What it touches: the row building of TextFrame (the start and width of
+    each row), in the four ports; the tagging is unchanged (the image a
+    Figure, the text its paragraphs, in reading order: the text first, or
+    as the code draws them). Tests of the rows' starts and widths beside an
+    image, the same in the four ports; an example, a page of an article
+    with a photo at the right.
+  - Core or Pro is the owner's call when it is scheduled: big features go
+    to Pro, but it is part of TextFrame, which is in the core.
 - **For 9.1.5: better charts, and one more** (the owner, 25 October 2026:
   "significantly improve all charts"). From a review of Example_25 to 28 and
   chart.go, barchart.go and donutchart.go; in the four ports, the examples
