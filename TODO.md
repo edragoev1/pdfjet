@@ -392,6 +392,27 @@ commit and date. The layout's format version (1) and the look's rules
     with a photo at the right.
   - Core or Pro is the owner's call when it is scheduled: big features go
     to Pro, but it is part of TextFrame, which is in the core.
+- **For 9.1.5: the associated files of a PDF read back** (the owner, 26
+  October 2026). PDFjet writes a file carried inside a PDF, an
+  `EmbeddedFile` with its media type and relationship added with
+  `pdf.addAssociatedFile`, as the XML of a Factur-X invoice is, but cannot
+  read one back. With it an application can keep its own data, a JSON of the
+  invoice or the report's figures, inside the PDF it makes, and read it again
+  to make the next version, with no text to extract: the data travels with
+  the document, as the design of a Forms form does. Other tools read such a
+  file as they read any attachment.
+  - The API, Java (the others alike, Go `GetAssociatedFiles`): a call on the
+    objects of `PDF.read`, for example `PDF.getAssociatedFiles(objects)`,
+    returning each file's name, media type, relationship, description and
+    bytes, decoded and decrypted as the reader does now, within its budget.
+    The files of the document's `/AF` and of the `/EmbeddedFiles` name tree,
+    each once.
+  - Tests in the four ports: a file written with `addAssociatedFile` read
+    back byte for byte, compressed and not, in an encrypted document, in
+    PDF/A-3; a PDF with none gives an empty list; a name tree of kids. A
+    fuzz case in Go, as the reader has.
+  - About a day for the four ports. Not text extraction, which is not built
+    (the owner, 26 October 2026).
 - **For 9.1.5: better charts, and one more** (the owner, 25 October 2026:
   "significantly improve all charts"). From a review of Example_25 to 28 and
   chart.go, barchart.go and donutchart.go; in the four ports, the examples
