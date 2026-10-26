@@ -38,11 +38,16 @@ public class SimpleScatterChart : IDrawable {
         internal readonly float x;
         internal readonly float y;
         internal readonly String name;
+        internal readonly String uri;      // The link of a highlighted point, or null
 
-        internal Point(float x, float y, String name) {
+        internal Point(float x, float y, String name) : this(x, y, name, null) {
+        }
+
+        internal Point(float x, float y, String name, String uri) {
             this.x = x;
             this.y = y;
             this.name = name;
+            this.uri = uri;
         }
     }
 
@@ -152,6 +157,22 @@ public class SimpleScatterChart : IDrawable {
     /// <returns>this chart.</returns>
     public SimpleScatterChart Add(String name, float x, float y) {
         points.Add(new Point(x, y, name));
+        return this;
+    }
+
+    /// <summary>
+    /// Adds a point that is highlighted and is a link: a navy dot with its name
+    /// beside it, both of them the link to the URI. In a PDF/UA document each
+    /// such point is a figure of its own, described by its name, in the Link
+    /// that holds its annotation, as PDF/UA asks.
+    /// </summary>
+    /// <param name="name">the name of the point.</param>
+    /// <param name="x">the x of the point.</param>
+    /// <param name="y">the y of the point.</param>
+    /// <param name="uri">the URI the point links to.</param>
+    /// <returns>this chart.</returns>
+    public SimpleScatterChart Add(String name, float x, float y, String uri) {
+        points.Add(new Point(x, y, name, uri));
         return this;
     }
 
@@ -410,6 +431,12 @@ public class SimpleScatterChart : IDrawable {
         float plotLeft = left;
         float plotBottom = bottom;
 
+        // In a tagged document a point that is a link is drawn after the
+        // chart, as a figure of its own in its Link, which holds its
+        // annotation, as PDF/UA asks: a link inside the chart's figure has
+        // nothing to hold
+        bool linksApart = page.TagsContent();
+
         page.AddBDC(StructElem.FIGURE, null, AltDescription());
         page.SaveGraphicsState();
 
@@ -507,27 +534,85 @@ public class SimpleScatterChart : IDrawable {
             }
         }
         page.RestoreGraphicsState();
-        float big = 0.42f * size;
+        List<Point> linked = new List<Point>();
         foreach (Point p in points) {
             if (p.name.Length == 0) {
                 continue;
             }
-            float px = XAt(p.x, xAxis, plotLeft, right);
-            float py = YAt(p.y, yAxis, top, plotBottom);
-            page.SetBrushColor(highlightColor);
-            page.FillCircle(px, py, big);
-            float width = f1.StringWidth(size, p.name);
-            float lx = px + big + size / 3f;
-            if (lx + width > right) {
-                lx = px - big - size / 3f - width;  // At the left, not past the plot
+            if (p.uri != null && linksApart) {
+                linked.Add(p);
+                continue;
             }
-            page.DrawString(f1, size, p.name, lx, py + ascent / 2f, Util.ToRGB(highlightColor), null);
+            float[] box = DrawNamed(page, p, xAxis, yAxis, plotLeft, right, top, plotBottom);
+            if (p.uri != null) {
+                page.AddAnnotation(LinkOf(p, box));
+            }
         }
 
         page.RestoreGraphicsState();
         page.SetFigureBoundingBox(x, y, w, h);
         page.AddEMC();
+
+        foreach (Point p in linked) {
+            page.SaveGraphicsState();
+            StructElement link = page.BeginLink();
+            page.AddBDC(StructElem.FIGURE, null, p.name);
+            float[] box = DrawNamed(page, p, xAxis, yAxis, plotLeft, right, top, plotBottom);
+            page.SetFigureBoundingBox(box[0], box[1], box[2], box[3]);
+            page.AddEMC();
+            page.EndLink(link);
+            page.RestoreGraphicsState();
+            Annotation annotation = LinkOf(p, box);
+            annotation.linkElement = link;
+            page.AddAnnotation(annotation);
+        }
         return new float[] {x + w, y + h};
+    }
+
+    // Draws a highlighted point and its name, and returns the box of the two:
+    // x, y, w, h.
+    private float[] DrawNamed(Page page, Point p, ChartScale.Axis xAxis, ChartScale.Axis yAxis,
+            float left, float right, float top, float bottom) {
+        float size = f2.GetSize();
+        float ascent = f2.GetAscent(size);
+        float big = 0.42f * size;
+        float px = XAt(p.x, xAxis, left, right);
+        float py = YAt(p.y, yAxis, top, bottom);
+        page.SetBrushColor(highlightColor);
+        page.FillCircle(px, py, big);
+        float width = f1.StringWidth(size, p.name);
+        float lx = px + big + size / 3f;
+        if (lx + width > right) {
+            lx = px - big - size / 3f - width;  // At the left, not past the plot
+        }
+        float baseline = py + ascent / 2f;
+        page.DrawString(f1, size, p.name, lx, baseline, Util.ToRGB(highlightColor), null);
+        float x1 = Math.Min(px - big, lx);
+        float y1 = Math.Min(py - big, baseline - f1.GetAscent(size));
+        float x2 = Math.Max(px + big, lx + width);
+        float y2 = Math.Max(py + big, baseline + f1.GetDescent(size));
+        return new float[] {x1, y1, x2 - x1, y2 - y1};
+    }
+
+    // The link annotation of a point, over the box of its dot and its name,
+    // described by its name.
+    private static Annotation LinkOf(Point p, float[] box) {
+        return new Annotation(
+                Annotation.Link,
+                box[0],
+                box[1],
+                box[0] + box[2],
+                box[1] + box[3],
+                null,   // Vertices
+                null,   // Fill Color
+                0f,     // Opacity
+                null,   // Title
+                null,   // Contents
+                p.uri,
+                null,
+                null,
+                null,
+                p.name);
     }
 
     // The x on the page of a value of the horizontal axis.

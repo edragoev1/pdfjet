@@ -85,6 +85,18 @@ public static class TestSupport {
         return Latin1(page.GetContent());
     }
 
+    /// <summary>
+    /// Returns the text as PDF writes a text string: UTF-16 with its byte order
+    /// mark, in lower case hexadecimal, as AppendTextString writes it.
+    /// </summary>
+    public static string TextString(string text) {
+        StringBuilder sb = new StringBuilder("<feff");
+        foreach (char unit in text) {
+            sb.Append(((int) unit).ToString("x4"));
+        }
+        return sb.Append('>').ToString();
+    }
+
     /// <summary>Returns the text as a core font draws it: a byte per character in upper case hexadecimal.</summary>
     public static string Hex(string text) {
         StringBuilder sb = new StringBuilder();

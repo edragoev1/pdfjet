@@ -77,10 +77,15 @@ There is no 9.1.3: what was done for it is in 9.1.5 (the owner, 26 October
   rounded to steps or set by hand. In PDF/UA it is one figure, described
   from its data. Like SimpleBarChart it needs no other chart: the helpers
   the charts share moved from Chart and BarChart into an internal class.
+  A named point can be a link, `add(name, x, y, uri)` (Go `AddLinked`): its
+  dot and its name are the link, and in PDF/UA it is a figure of its own,
+  described by its name, in the Link that holds its annotation, as Chart's
+  linked points are.
 - Example_26 is now a SimpleScatterChart of the life expectancy and the
   children per woman of 217 countries and economies in 2023, from the
   World Bank's World Development Indicators (CC BY 4.0), seven of them
-  named, with a table of the named ones. It was a Chart of cell phones and
+  named, each a link to its page of the World Bank's data, with a table of
+  the named ones. It was a Chart of cell phones and
   internet use by country from a file of about 2007, which Example_23 still
   draws as a table.
 - All four ports: `SimpleLineChart`, a chart of a few lines over the same

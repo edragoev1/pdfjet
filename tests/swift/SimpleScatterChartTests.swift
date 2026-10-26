@@ -76,4 +76,47 @@ import Testing
         TestSupport.expectNear(400, xy[0])
         TestSupport.expectNear(300, xy[1])
     }
+    // In a PDF/UA document a highlighted point that is a link is a figure of
+    // its own, described by its name, in the Link that holds its annotation;
+    // a point that is not a link stays in the chart's figure.
+    @Test(.enabled(if: TestSupport.exists("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"), "the fonts directory is not here"))
+    func aLinkedPointIsAFigureInItsLink() throws {
+        let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.setTitle("Test")
+        let font = try Font(memory.pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"))
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        SimpleScatterChart(font, font).setSize(300, 200).setLocation(50, 50)
+                .add(1, 1).add("Andorra", 2, 2, "https://pdfjet.com/a")
+                .add("Belize", 3, 1, "https://pdfjet.com/b").add("Chad", 4, 3)
+                .drawOn(page)
+        try memory.pdf.complete()
+        let raw = TestSupport.latin1(memory.bytes)
+        let all = try TestSupport.structElements(raw)
+        let links = all.filter { $0.value[0] == "Link" }
+        #expect(links.count == 2)
+        for (number, link) in links {
+            let figure = link[2].trimmingCharacters(in: CharacterSet(charactersIn: "["))
+                .components(separatedBy: " ")[0]
+            #expect(all[figure]?[0] == "Figure" && all[figure]?[1] == number && link[2].contains("/Type /OBJR"),
+                    "the Link \(number) holds \(link[2])")
+        }
+        for name in ["Andorra", "Belize"] {
+            #expect(raw.contains("/Alt " + TestSupport.textString(name)), "no figure is described as \(name)")
+        }
+        #expect(raw.components(separatedBy: "/Subtype /Link").count - 1 == 2)
+    }
+
+    // In a document that is not tagged, a linked point is drawn in the chart,
+    // its dot and its name the link, and no elements are made.
+    @Test func aLinkedPointOfADocumentNotTaggedIsDrawnInTheChart() throws {
+        let memory = MemoryPDF()
+        let font = TestSupport.helvetica(memory.pdf)
+        let page = Page(memory.pdf, Letter.PORTRAIT)
+        SimpleScatterChart(font, font).add(1, 1).add("Andorra", 2, 2, "https://pdfjet.com/a").drawOn(page)
+        try memory.pdf.complete()
+        let raw = TestSupport.latin1(memory.bytes)
+        #expect(!raw.contains("/StructElem"))
+        #expect(raw.components(separatedBy: "/Subtype /Link").count - 1 == 1)
+        #expect(raw.contains("/URI <" + TestSupport.hex("https://pdfjet.com/a").lowercased() + ">"), "the URI")
+    }
 }

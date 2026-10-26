@@ -37,11 +37,17 @@ public class SimpleScatterChart implements Drawable {
         final float x;
         final float y;
         final String name;
+        final String uri;       // The link of a highlighted point, or null
 
         Point(float x, float y, String name) {
+            this(x, y, name, null);
+        }
+
+        Point(float x, float y, String name, String uri) {
             this.x = x;
             this.y = y;
             this.name = name;
+            this.uri = uri;
         }
     }
 
@@ -160,6 +166,23 @@ public class SimpleScatterChart implements Drawable {
      */
     public SimpleScatterChart add(String name, float x, float y) {
         points.add(new Point(x, y, name));
+        return this;
+    }
+
+    /**
+     * Adds a point that is highlighted and is a link: a navy dot with its name
+     * beside it, both of them the link to the URI. In a PDF/UA document each
+     * such point is a figure of its own, described by its name, in the Link
+     * that holds its annotation, as PDF/UA asks.
+     *
+     * @param name the name of the point.
+     * @param x the x of the point.
+     * @param y the y of the point.
+     * @param uri the URI the point links to.
+     * @return this chart.
+     */
+    public SimpleScatterChart add(String name, float x, float y, String uri) {
+        points.add(new Point(x, y, name, uri));
         return this;
     }
 
@@ -424,6 +447,12 @@ public class SimpleScatterChart implements Drawable {
         final float plotLeft = left;
         final float plotBottom = bottom;
 
+        // In a tagged document a point that is a link is drawn after the
+        // chart, as a figure of its own in its Link, which holds its
+        // annotation, as PDF/UA asks: a link inside the chart's figure has
+        // nothing to hold
+        boolean linksApart = page.tagsContent();
+
         page.addBDC(StructElem.FIGURE, null, altDescription());
         page.saveGraphicsState();
 
@@ -521,27 +550,85 @@ public class SimpleScatterChart implements Drawable {
             }
         }
         page.restoreGraphicsState();
-        float big = 0.42f * size;
+        List<Point> linked = new ArrayList<Point>();
         for (Point p : points) {
             if (p.name.isEmpty()) {
                 continue;
             }
-            float px = xAt(p.x, xAxis, plotLeft, right);
-            float py = yAt(p.y, yAxis, top, plotBottom);
-            page.setBrushColor(highlightColor);
-            page.fillCircle(px, py, big);
-            float width = f1.stringWidth(size, p.name);
-            float lx = px + big + size / 3f;
-            if (lx + width > right) {
-                lx = px - big - size / 3f - width;  // At the left, not past the plot
+            if (p.uri != null && linksApart) {
+                linked.add(p);
+                continue;
             }
-            page.drawString(f1, size, p.name, lx, py + ascent / 2f, Util.toRGB(highlightColor), null);
+            float[] box = drawNamed(page, p, xAxis, yAxis, plotLeft, right, top, plotBottom);
+            if (p.uri != null) {
+                page.addAnnotation(linkOf(p, box));
+            }
         }
 
         page.restoreGraphicsState();
         page.setFigureBoundingBox(x, y, w, h);
         page.addEMC();
+
+        for (Point p : linked) {
+            page.saveGraphicsState();
+            StructElement link = page.beginLink();
+            page.addBDC(StructElem.FIGURE, null, p.name);
+            float[] box = drawNamed(page, p, xAxis, yAxis, plotLeft, right, top, plotBottom);
+            page.setFigureBoundingBox(box[0], box[1], box[2], box[3]);
+            page.addEMC();
+            page.endLink(link);
+            page.restoreGraphicsState();
+            Annotation annotation = linkOf(p, box);
+            annotation.linkElement = link;
+            page.addAnnotation(annotation);
+        }
         return new float[] {x + w, y + h};
+    }
+
+    // Draws a highlighted point and its name, and returns the box of the two:
+    // x, y, w, h.
+    private float[] drawNamed(Page page, Point p, ChartScale.Axis xAxis, ChartScale.Axis yAxis,
+            float left, float right, float top, float bottom) {
+        float size = f2.getSize();
+        float ascent = f2.getAscent(size);
+        float big = 0.42f * size;
+        float px = xAt(p.x, xAxis, left, right);
+        float py = yAt(p.y, yAxis, top, bottom);
+        page.setBrushColor(highlightColor);
+        page.fillCircle(px, py, big);
+        float width = f1.stringWidth(size, p.name);
+        float lx = px + big + size / 3f;
+        if (lx + width > right) {
+            lx = px - big - size / 3f - width;  // At the left, not past the plot
+        }
+        float baseline = py + ascent / 2f;
+        page.drawString(f1, size, p.name, lx, baseline, Util.toRGB(highlightColor), null);
+        float x1 = Math.min(px - big, lx);
+        float y1 = Math.min(py - big, baseline - f1.getAscent(size));
+        float x2 = Math.max(px + big, lx + width);
+        float y2 = Math.max(py + big, baseline + f1.getDescent(size));
+        return new float[] {x1, y1, x2 - x1, y2 - y1};
+    }
+
+    // The link annotation of a point, over the box of its dot and its name,
+    // described by its name.
+    private static Annotation linkOf(Point p, float[] box) {
+        return new Annotation(
+                Annotation.Link,
+                box[0],
+                box[1],
+                box[0] + box[2],
+                box[1] + box[3],
+                null,   // Vertices
+                null,   // Fill Color
+                0f,     // Opacity
+                null,   // Title
+                null,   // Contents
+                p.uri,
+                null,
+                null,
+                null,
+                p.name);
     }
 
     // The x on the page of a value of the horizontal axis.

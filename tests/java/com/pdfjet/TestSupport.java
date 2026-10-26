@@ -16,7 +16,11 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Helpers shared by the unit tests. The tests run from the repository root,
@@ -106,6 +110,33 @@ public final class TestSupport {
     public static String fillColorBefore(String content, String text) {
         int rg = content.lastIndexOf(" rg\n", content.indexOf("<" + hex(text) + ">"));
         return content.substring(content.lastIndexOf('\n', rg) + 1, rg + 3);
+    }
+
+    /**
+     * Returns the structure elements of the raw PDF by their object numbers:
+     * the structure type, the parent's number and the /K of each.
+     */
+    public static Map<String, String[]> structElements(String raw) {
+        Map<String, String[]> elements = new HashMap<String, String[]>();
+        Matcher m = Pattern.compile(
+                "(\\d+) 0 obj\n<<\n/Type /StructElem /S /(\\w+)\n/P (\\d+) 0 R /Pg \\d+ 0 R\n(?:/K (\\[[^\n]*\\]|<<[^\n]*>>|\\d+)\n)?")
+                .matcher(raw);
+        while (m.find()) {
+            elements.put(m.group(1), new String[] {m.group(2), m.group(3), m.group(4)});
+        }
+        return elements;
+    }
+
+    /**
+     * Returns the text as PDF writes a text string: UTF-16 with its byte order
+     * mark, in lower case hexadecimal, as appendTextString writes it.
+     */
+    public static String textString(String text) {
+        StringBuilder sb = new StringBuilder("<feff");
+        for (char c : text.toCharArray()) {
+            sb.append(String.format("%04x", (int) c));
+        }
+        return sb.append(">").toString();
     }
 
     /** Decodes a PDF text string written as a hexadecimal string with a UTF-16BE byte order mark. */

@@ -6,6 +6,7 @@
 package pdfjet
 
 import (
+	"encoding/hex"
 	"math"
 	"strings"
 	"testing"
@@ -101,4 +102,56 @@ func TestSimpleScatterChartWithoutPointsDrawsNothing(t *testing.T) {
 		t.Errorf("content %q", testContent(page))
 	}
 	testAssertXY(t, 400, 300, xy)
+}
+
+// In a PDF/UA document a highlighted point that is a link is a figure of its
+// own, described by its name, in the Link that holds its annotation; a point
+// that is not a link stays in the chart's figure.
+func TestSimpleScatterChartALinkedPointIsAFigureInItsLink(t *testing.T) {
+	doc := testNewDoc()
+	doc.pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
+	font := testTrueTypeFont(t, doc.pdf)
+	page := NewPage(doc.pdf, testLetterPortrait())
+	chart := NewSimpleScatterChart(font, font).SetSize(300, 200).
+		Add(1, 1).AddLinked("Andorra", 2, 2, "https://pdfjet.com/a").
+		AddLinked("Belize", 3, 1, "https://pdfjet.com/b").AddNamed("Chad", 4, 3)
+	chart.SetLocation(50, 50)
+	chart.DrawOn(page)
+	raw := string(doc.complete())
+	elements := testElements(raw)
+	links := testLinks(raw)
+	if len(links) != 2 {
+		t.Fatalf("%d Link elements: %v", len(links), links)
+	}
+	for number, link := range links {
+		figure := strings.Fields(strings.Trim(link[2], "["))[0]
+		if elements[figure][0] != "Figure" || elements[figure][1] != number ||
+			!strings.Contains(link[2], "/Type /OBJR") {
+			t.Errorf("the Link %s holds %s, not a Figure and its annotation", number, link[2])
+		}
+	}
+	for _, name := range []string{"Andorra", "Belize"} {
+		if !strings.Contains(raw, "/Alt "+testTextString(name)) {
+			t.Errorf("no figure is described as %q", name)
+		}
+	}
+	if strings.Count(raw, "/Subtype /Link") != 2 {
+		t.Errorf("%d link annotations, not 2", strings.Count(raw, "/Subtype /Link"))
+	}
+}
+
+// In a document that is not tagged, a linked point is drawn in the chart, its
+// dot and its name the link, and no elements are made.
+func TestSimpleScatterChartALinkedPointOfADocumentNotTaggedIsDrawnInTheChart(t *testing.T) {
+	doc := testNewDoc()
+	font := testHelvetica(doc.pdf)
+	page := NewPage(doc.pdf, testLetterPortrait())
+	NewSimpleScatterChart(font, font).Add(1, 1).AddLinked("Andorra", 2, 2, "https://pdfjet.com/a").DrawOn(page)
+	raw := string(doc.complete())
+	if strings.Contains(raw, "/StructElem") || strings.Count(raw, "/Subtype /Link") != 1 {
+		t.Error("the link of the point is not drawn in the chart")
+	}
+	if !strings.Contains(raw, "/URI <"+hex.EncodeToString([]byte("https://pdfjet.com/a"))+">") {
+		t.Error("the URI of the point is missing")
+	}
 }

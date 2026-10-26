@@ -46,7 +46,8 @@ public class Example_26 {
         List<Paragraph> intro = new List<Paragraph>();
         intro.Add(new Paragraph(new TextLine(f2, "Where women have fewer children, people live longer: the "
                 + total + " countries and economies of the World Bank's data of 2023, each a gray dot, "
-                + "seven of them named, and the trend line through them, with the named ones in the table "
+                + "seven of them named, each a link to its page of the World Bank's data, and the trend line "
+                + "through them, with the named ones in the table "
                 + "under the chart.").SetFontSize(10f)));
         TextFrame frame = new TextFrame(intro).SetLocation(50f, 84f).SetWidth(512f);
         frame.DrawOn(page);
@@ -65,7 +66,7 @@ public class Example_26 {
             float life = float.Parse(field[2], CultureInfo.InvariantCulture);
             float children = float.Parse(field[3], CultureInfo.InvariantCulture);
             if (NAMED.Contains(field[1])) {
-                chart.Add(field[0], children, life);    // A navy dot, named
+                chart.Add(field[0], children, life, WorldBank(field[0]));  // A navy dot, named, a link
                 data.Add(Row(f2, false, field[0], children.ToString("F2", CultureInfo.InvariantCulture),
                         life.ToString("F1", CultureInfo.InvariantCulture) + " years"));
             } else {
@@ -91,6 +92,12 @@ public class Example_26 {
                 .SetFontSize(8f).SetTextColor(0x5F6873).SetLocation(50f, y).DrawOn(page);
 
         pdf.Complete();
+    }
+
+    // The page of the country in the World Bank's data: its name in lower
+    // case, a hyphen for each space, as data.worldbank.org/country/united-states
+    static String WorldBank(String country) {
+        return "https://data.worldbank.org/country/" + country.ToLowerInvariant().Replace(' ', '-');
     }
 
     // A row of cells of the font at 9 points, one for each text, in the

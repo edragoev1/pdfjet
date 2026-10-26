@@ -33,6 +33,7 @@ const (
 type scatterPoint struct {
 	x, y float32
 	name string
+	uri  string // The link of a highlighted point, or ""
 }
 
 // SimpleScatterChart is a chart of points on two axes that shows how two
@@ -116,6 +117,15 @@ func (chart *SimpleScatterChart) Add(x, y float32) *SimpleScatterChart {
 // it.
 func (chart *SimpleScatterChart) AddNamed(name string, x, y float32) *SimpleScatterChart {
 	chart.points = append(chart.points, scatterPoint{x: x, y: y, name: name})
+	return chart
+}
+
+// AddLinked adds a point that is highlighted and is a link: a navy dot with
+// its name beside it, both of them the link to the URI. In a PDF/UA document
+// each such point is a figure of its own, described by its name, in the Link
+// that holds its annotation, as PDF/UA asks.
+func (chart *SimpleScatterChart) AddLinked(name string, x, y float32, uri string) *SimpleScatterChart {
+	chart.points = append(chart.points, scatterPoint{x: x, y: y, name: name, uri: uri})
 	return chart
 }
 
@@ -340,6 +350,11 @@ func (chart *SimpleScatterChart) DrawOn(page *Page) [2]float32 {
 		return bottom - float32((v-yAxis.min)*(bottom-top))/(yAxis.max-yAxis.min)
 	}
 
+	// In a tagged document a point that is a link is drawn after the chart,
+	// as a figure of its own in its Link, which holds its annotation, as
+	// PDF/UA asks: a link inside the chart's figure has nothing to hold
+	linksApart := page.pdf.isTagged() && page.artifactDepth == 0
+
 	page.AddBDC(structelem.Figure, "", "", chart.getAltDescription())
 	page.SaveGraphicsState()
 
@@ -446,10 +461,9 @@ func (chart *SimpleScatterChart) DrawOn(page *Page) [2]float32 {
 	}
 	page.RestoreGraphicsState()
 	big := float32(0.42 * size)
-	for _, p := range points {
-		if p.name == "" {
-			continue
-		}
+	// named draws a highlighted point and its name, and returns the box of the
+	// two: x, y, w, h
+	named := func(p scatterPoint) [4]float32 {
 		px, py := xAt(p.x), yAt(p.y)
 		page.SetBrushColor(chart.highlightColor)
 		page.FillCircle(px, py, big)
@@ -458,11 +472,60 @@ func (chart *SimpleScatterChart) DrawOn(page *Page) [2]float32 {
 		if lx+width > right {
 			lx = px - big - float32(size/3.0) - width // At the left, not past the plot
 		}
-		page.drawString(f1, size, p.name, lx, py+float32(ascent/2.0), colorToRGB(chart.highlightColor), nil)
+		baseline := py + float32(ascent/2.0)
+		page.drawString(f1, size, p.name, lx, baseline, colorToRGB(chart.highlightColor), nil)
+		x1 := min(px-big, lx)
+		y1 := min(py-big, baseline-f1.GetAscent(size))
+		x2 := max(px+big, lx+width)
+		y2 := max(py+big, baseline+f1.GetDescent(size))
+		return [4]float32{x1, y1, x2 - x1, y2 - y1}
+	}
+	var linked []scatterPoint
+	for _, p := range points {
+		if p.name == "" {
+			continue
+		}
+		if p.uri != "" && linksApart {
+			linked = append(linked, p)
+			continue
+		}
+		box := named(p)
+		if p.uri != "" {
+			page.addAnnotation(&annotationObject{
+				annotationType: annotationLink,
+				x1:             box[0],
+				y1:             box[1],
+				x2:             box[0] + box[2],
+				y2:             box[1] + box[3],
+				uri:            p.uri,
+				altDescription: p.name,
+			})
+		}
 	}
 
 	page.RestoreGraphicsState()
 	page.SetFigureBoundingBox(chart.x, chart.y, chart.w, chart.h)
 	page.AddEMC()
+
+	for _, p := range linked {
+		page.SaveGraphicsState()
+		link := page.beginLink()
+		page.AddBDC(structelem.Figure, "", "", p.name)
+		box := named(p)
+		page.SetFigureBoundingBox(box[0], box[1], box[2], box[3])
+		page.AddEMC()
+		page.endLink(link)
+		page.RestoreGraphicsState()
+		page.addAnnotation(&annotationObject{
+			annotationType: annotationLink,
+			x1:             box[0],
+			y1:             box[1],
+			x2:             box[0] + box[2],
+			y2:             box[1] + box[3],
+			uri:            p.uri,
+			altDescription: p.name,
+			linkElement:    link,
+		})
+	}
 	return [2]float32{chart.x + chart.w, chart.y + chart.h}
 }

@@ -96,4 +96,55 @@ class SimpleScatterChartTest {
         assertEquals(400f, xy[0], TestSupport.DELTA);
         assertEquals(300f, xy[1], TestSupport.DELTA);
     }
+    // In a PDF/UA document a highlighted point that is a link is a figure of
+    // its own, described by its name, in the Link that holds its annotation;
+    // a point that is not a link stays in the chart's figure.
+    @Test
+    void aLinkedPointIsAFigureInItsLink() throws Exception {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos, Compliance.PDF_UA_1).setTitle("Test");
+        Font font = new Font(pdf, TestSupport.open("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new SimpleScatterChart(font, font).setSize(300f, 200f).setLocation(50f, 50f)
+                .add(1f, 1f).add("Andorra", 2f, 2f, "https://pdfjet.com/a")
+                .add("Belize", 3f, 1f, "https://pdfjet.com/b").add("Chad", 4f, 3f)
+                .drawOn(page);
+        pdf.complete();
+        String raw = TestSupport.latin1(bos.toByteArray());
+        java.util.Map<String, String[]> elements = TestSupport.structElements(raw);
+        int links = 0;
+        for (java.util.Map.Entry<String, String[]> entry : elements.entrySet()) {
+            String[] link = entry.getValue();
+            if (!link[0].equals("Link")) {
+                continue;
+            }
+            links++;
+            String figure = link[2].substring(1).split(" ")[0];
+            assertEquals("Figure", elements.get(figure)[0], link[2]);
+            assertEquals(entry.getKey(), elements.get(figure)[1]);
+            assertTrue(link[2].contains("/Type /OBJR"), link[2]);
+        }
+        assertEquals(2, links);
+        for (String name : new String[] {"Andorra", "Belize"}) {
+            assertTrue(raw.contains("/Alt " + TestSupport.textString(name)), name);
+        }
+        assertEquals(2, raw.split("/Subtype /Link", -1).length - 1);
+    }
+
+    // In a document that is not tagged, a linked point is drawn in the chart,
+    // its dot and its name the link, and no elements are made.
+    @Test
+    void aLinkedPointOfADocumentNotTaggedIsDrawnInTheChart() throws Exception {
+        TestSupport.allowCoreFonts(true);
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        Font font = TestSupport.helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new SimpleScatterChart(font, font).add(1f, 1f).add("Andorra", 2f, 2f, "https://pdfjet.com/a").drawOn(page);
+        pdf.complete();
+        String raw = TestSupport.latin1(bos.toByteArray());
+        assertFalse(raw.contains("/StructElem"));
+        assertEquals(1, raw.split("/Subtype /Link", -1).length - 1);
+        assertTrue(raw.contains("/URI <" + TestSupport.hex("https://pdfjet.com/a").toLowerCase() + ">"), "the URI");
+    }
 }

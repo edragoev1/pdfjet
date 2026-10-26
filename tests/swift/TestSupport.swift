@@ -101,6 +101,32 @@ enum TestSupport {
         return font.stringWidth(font.size, "Donaudampf-") + 1
     }
 
+    /// The structure elements of the raw PDF, by their object numbers: the
+    /// S, the P and the K of each.
+    static func structElements(_ raw: String) throws -> [String: [String]] {
+        let regex = try NSRegularExpression(pattern:
+            "(\\d+) 0 obj\\n<<\\n/Type /StructElem /S /(\\w+)\\n/P (\\d+) 0 R /Pg \\d+ 0 R\\n(?:/K (\\[[^\\n]*\\]|<<[^\\n]*>>|\\d+)\\n)?")
+        let string = raw as NSString
+        var found = [String: [String]]()
+        for match in regex.matches(in: raw, range: NSRange(location: 0, length: string.length)) {
+            let group = { (i: Int) -> String in
+                match.range(at: i).location == NSNotFound ? "" : string.substring(with: match.range(at: i))
+            }
+            found[group(1)] = [group(2), group(3), group(4)]
+        }
+        return found
+    }
+
+    /// The text as PDF writes a text string: UTF-16 with its byte order mark,
+    /// in lower case hexadecimal.
+    static func textString(_ text: String) -> String {
+        var hex = "<feff"
+        for unit in text.utf16 {
+            hex += String(format: "%04x", unit)
+        }
+        return hex + ">"
+    }
+
     /// Returns the text as a core font draws it: a byte per character in upper case hexadecimal.
     static func hex(_ text: String) -> String {
         let digits = Array("0123456789ABCDEF")

@@ -35,6 +35,7 @@ public class SimpleScatterChart : Drawable {
         let x: Float
         let y: Float
         let name: String
+        var uri: String? = nil      // The link of a highlighted point, or nil
     }
 
     private let f1: Font    // The title and the names
@@ -159,6 +160,24 @@ public class SimpleScatterChart : Drawable {
     @discardableResult
     public func add(_ name: String, _ x: Float, _ y: Float) -> SimpleScatterChart {
         points.append(Point(x: x, y: y, name: name))
+        return self
+    }
+
+    ///
+    /// Adds a point that is highlighted and is a link: a navy dot with its name
+    /// beside it, both of them the link to the URI. In a PDF/UA document each
+    /// such point is a figure of its own, described by its name, in the Link
+    /// that holds its annotation, as PDF/UA asks.
+    ///
+    /// - Parameter name: the name of the point.
+    /// - Parameter x: the x of the point.
+    /// - Parameter y: the y of the point.
+    /// - Parameter uri: the URI the point links to.
+    /// - Returns: this chart.
+    ///
+    @discardableResult
+    public func add(_ name: String, _ x: Float, _ y: Float, _ uri: String) -> SimpleScatterChart {
+        points.append(Point(x: x, y: y, name: name, uri: uri))
         return self
     }
 
@@ -419,6 +438,12 @@ public class SimpleScatterChart : Drawable {
             return plotBottom - (v - yAxis.min) * (plotBottom - top) / (yAxis.max - yAxis.min)
         }
 
+        // In a tagged document a point that is a link is drawn after the
+        // chart, as a figure of its own in its Link, which holds its
+        // annotation, as PDF/UA asks: a link inside the chart's figure has
+        // nothing to hold
+        let linksApart = page.isTaggedHere()
+
         page.addBDC(StructElem.FIGURE, nil, getAltDescription())
         page.saveGraphicsState()
 
@@ -514,7 +539,9 @@ public class SimpleScatterChart : Drawable {
         }
         page.restoreGraphicsState()
         let big = 0.42 * size
-        for p in points where !p.name.isEmpty {
+        // Draws a highlighted point and its name, and returns the box of the
+        // two: x, y, w, h
+        func named(_ p: Point) -> [Float] {
             let px = xAt(p.x)
             let py = yAt(p.y)
             page.setBrushColor(highlightColor)
@@ -524,13 +551,63 @@ public class SimpleScatterChart : Drawable {
             if lx + width > right {
                 lx = px - big - size / 3.0 - width  // At the left, not past the plot
             }
-            page.drawString(f1, size, p.name, lx, py + ascent / 2.0, Util.toRGB(highlightColor), nil)
+            let baseline = py + ascent / 2.0
+            page.drawString(f1, size, p.name, lx, baseline, Util.toRGB(highlightColor), nil)
+            let x1 = Swift.min(px - big, lx)
+            let y1 = Swift.min(py - big, baseline - f1.getAscent(size))
+            let x2 = Swift.max(px + big, lx + width)
+            let y2 = Swift.max(py + big, baseline + f1.getDescent(size))
+            return [x1, y1, x2 - x1, y2 - y1]
+        }
+        var linked = [Point]()
+        for p in points where !p.name.isEmpty {
+            if p.uri != nil && linksApart {
+                linked.append(p)
+                continue
+            }
+            let box = named(p)
+            if p.uri != nil {
+                page.addAnnotation(SimpleScatterChart.linkOf(p, box))
+            }
         }
 
         page.restoreGraphicsState()
         page.setFigureBoundingBox(x, y, w, h)
         page.addEMC()
+
+        for p in linked {
+            page.saveGraphicsState()
+            let link = page.beginLink()
+            page.addBDC(StructElem.FIGURE, nil, nil, p.name)
+            let box = named(p)
+            page.setFigureBoundingBox(box[0], box[1], box[2], box[3])
+            page.addEMC()
+            page.endLink(link)
+            page.restoreGraphicsState()
+            page.addAnnotation(SimpleScatterChart.linkOf(p, box).joining(link))
+        }
         return [x + w, y + h]
+    }
+
+    // The link annotation of a point, over the box of its dot and its name,
+    // described by its name.
+    private static func linkOf(_ p: Point, _ box: [Float]) -> Annotation {
+        return Annotation(
+                Annotation.Link,
+                box[0],
+                box[1],
+                box[0] + box[2],
+                box[1] + box[3],
+                nil,    // Vertices
+                nil,    // Fill Color
+                0.0,    // Opacity
+                nil,    // Title
+                nil,    // Contents
+                p.uri,
+                nil,
+                nil,
+                nil,
+                p.name)
     }
 
     // The point of the trend line at x, moved along the line to the top or

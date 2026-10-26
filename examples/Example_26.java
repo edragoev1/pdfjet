@@ -46,7 +46,8 @@ public class Example_26 {
         List<Paragraph> intro = new ArrayList<Paragraph>();
         intro.add(new Paragraph(new TextLine(f2, "Where women have fewer children, people live longer: the "
                 + total + " countries and economies of the World Bank's data of 2023, each a gray dot, "
-                + "seven of them named, and the trend line through them, with the named ones in the table "
+                + "seven of them named, each a link to its page of the World Bank's data, and the trend line "
+                + "through them, with the named ones in the table "
                 + "under the chart.").setFontSize(10f)));
         TextFrame frame = new TextFrame(intro).setLocation(50f, 84f).setWidth(512f);
         frame.drawOn(page);
@@ -65,7 +66,7 @@ public class Example_26 {
             float life = Float.parseFloat(field[2]);
             float children = Float.parseFloat(field[3]);
             if (NAMED.contains(field[1])) {
-                chart.add(field[0], children, life);    // A navy dot, named
+                chart.add(field[0], children, life, worldBank(field[0]));  // A navy dot, named, a link
                 data.add(row(f2, false, field[0], String.format(Locale.US, "%.2f", children),
                         String.format(Locale.US, "%.1f years", life)));
             } else {
@@ -91,6 +92,12 @@ public class Example_26 {
                 .setFontSize(8f).setTextColor(0x5F6873).setLocation(50f, y).drawOn(page);
 
         pdf.complete();
+    }
+
+    // The page of the country in the World Bank's data: its name in lower
+    // case, a hyphen for each space, as data.worldbank.org/country/united-states
+    static String worldBank(String country) {
+        return "https://data.worldbank.org/country/" + country.toLowerCase(Locale.US).replace(' ', '-');
     }
 
     // A row of cells of the font at 9 points, one for each text, in the

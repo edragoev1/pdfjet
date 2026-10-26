@@ -56,7 +56,8 @@ func Example26() {
 	intro := []*pdfjet.Paragraph{pdfjet.NewParagraph().Add(pdfjet.NewTextLine(f2,
 		"Where women have fewer children, people live longer: the "+strconv.Itoa(total)+
 			" countries and economies of the World Bank's data of 2023, each a gray dot, "+
-			"seven of them named, and the trend line through them, with the named ones in the table "+
+			"seven of them named, each a link to its page of the World Bank's data, and the trend line "+
+			"through them, with the named ones in the table "+
 			"under the chart.").SetFontSize(10.0))}
 	frame := pdfjet.NewTextFrameFromParagraphs(intro).SetWidth(512.0)
 	frame.SetLocation(50.0, 84.0)
@@ -75,7 +76,7 @@ func Example26() {
 		life, _ := strconv.ParseFloat(field[2], 32)
 		children, _ := strconv.ParseFloat(field[3], 32)
 		if named[field[1]] {
-			chart.AddNamed(field[0], float32(children), float32(life)) // A navy dot, named
+			chart.AddLinked(field[0], float32(children), float32(life), worldBank(field[0])) // A navy dot, named, a link
 			data = append(data, row(f2, false, field[0], fmt.Sprintf("%.2f", float32(children)),
 				fmt.Sprintf("%.1f years", float32(life))))
 		} else {
@@ -108,6 +109,13 @@ func Example26() {
 	if err := pdf.Complete(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+// worldBank returns the page of the country in the World Bank's data: its name
+// in lower case, a hyphen for each space, as
+// data.worldbank.org/country/united-states.
+func worldBank(country string) string {
+	return "https://data.worldbank.org/country/" + strings.ReplaceAll(strings.ToLower(country), " ", "-")
 }
 
 // row returns a row of cells of the font at 9 points, one for each text, in

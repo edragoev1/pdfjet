@@ -90,5 +90,58 @@ public class SimpleScatterChartTest {
         TestSupport.AssertNear(400f, xy[0], TestSupport.DELTA);
         TestSupport.AssertNear(300f, xy[1], TestSupport.DELTA);
     }
+    // In a PDF/UA document a highlighted point that is a link is a figure of
+    // its own, described by its name, in the Link that holds its annotation;
+    // a point that is not a link stays in the chart's figure.
+    [Fact]
+    public void ALinkedPointIsAFigureInItsLink() {
+        MemoryStream output = new MemoryStream();
+        PDF pdf = new PDF(output, Compliance.PDF_UA_1).SetTitle("Test");
+        Font font = new Font(pdf, new FileStream(TestSupport.RepoPath("fonts/IBMPlexSans/IBMPlexSans-Regular.ttf"),
+                FileMode.Open, FileAccess.Read));
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new SimpleScatterChart(font, font).SetSize(300f, 200f).SetLocation(50f, 50f)
+                .Add(1f, 1f).Add("Andorra", 2f, 2f, "https://pdfjet.com/a")
+                .Add("Belize", 3f, 1f, "https://pdfjet.com/b").Add("Chad", 4f, 3f)
+                .DrawOn(page);
+        pdf.Complete();
+        string raw = TestSupport.Latin1(output.ToArray());
+        Dictionary<string, string[]> elements = PDFTest.Elements(raw);
+        int links = 0;
+        foreach (KeyValuePair<string, string[]> entry in elements) {
+            string[] link = entry.Value;
+            if (link[0] != "Link") {
+                continue;
+            }
+            links++;
+            string figure = link[2].Substring(1).Split(' ')[0];
+            Assert.Equal("Figure", elements[figure][0]);
+            Assert.Equal(entry.Key, elements[figure][1]);
+            Assert.Contains("/Type /OBJR", link[2]);
+        }
+        Assert.Equal(2, links);
+        foreach (string name in new[] {"Andorra", "Belize"}) {
+            Assert.Contains("/Alt " + TestSupport.TextString(name), raw);
+        }
+        Assert.Equal(2, raw.Split("/Subtype /Link").Length - 1);
+    }
+
+    // In a document that is not tagged, a linked point is drawn in the chart,
+    // its dot and its name the link, and no elements are made.
+    [Fact]
+    public void ALinkedPointOfADocumentNotTaggedIsDrawnInTheChart() {
+        using (TestSupport.AllowCoreFonts()) {
+            MemoryStream output = new MemoryStream();
+            PDF pdf = new PDF(output);
+            Font font = TestSupport.Helvetica(pdf);
+            Page page = new Page(pdf, Letter.PORTRAIT);
+            new SimpleScatterChart(font, font).Add(1f, 1f).Add("Andorra", 2f, 2f, "https://pdfjet.com/a").DrawOn(page);
+            pdf.Complete();
+            string raw = TestSupport.Latin1(output.ToArray());
+            Assert.DoesNotContain("/StructElem", raw);
+            Assert.Equal(1, raw.Split("/Subtype /Link").Length - 1);
+            Assert.Contains("/URI <" + TestSupport.Hex("https://pdfjet.com/a").ToLowerInvariant() + ">", raw);
+        }
+    }
 }
 }   // End of namespace PDFjet.NET
