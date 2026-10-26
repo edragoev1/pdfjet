@@ -2048,6 +2048,30 @@ public class Table implements Drawable {
         tableData = tableData2;
     }
 
+    // The height of the whole table, its rows wrapped as drawOn wraps them,
+    // without drawing it: for Markdown, which keeps a table that fits on a
+    // page whole. The table is left as it was.
+    float getTotalHeight() throws Exception {
+        List<List<Cell>> data = tableData;
+        int header = numOfHeaderRows;
+        int footer = numOfFooterRows;
+        int done = rendered;
+        try {
+            wrapAroundCellText();
+            applyRowSpans();
+            float total = 0f;
+            for (float height : getRowHeights()) {
+                total += height;
+            }
+            return total;
+        } finally {
+            tableData = data;
+            numOfHeaderRows = header;
+            numOfFooterRows = footer;
+            rendered = done;
+        }
+    }
+
     // The lines the text of the cell needs to fit the width of its column.
     // A token wider than the column is broken between two of its characters.
     // Text fits the width of a column when it is no more than this much wider:

@@ -1476,6 +1476,30 @@ public class Table : IDrawable {
     // tallest cell needs, so a cell that spans two rows of the table spans as
     // many rows of the drawing as those two were wrapped into. The cells the
     // span covers are marked, and draw nothing.
+    // The height of the whole table, its rows wrapped as DrawOn wraps them,
+    // without drawing it: for Markdown, which keeps a table that fits on a
+    // page whole. The table is left as it was.
+    internal float GetTotalHeight() {
+        List<List<Cell>> data = tableData;
+        int header = numOfHeaderRows;
+        int footer = numOfFooterRows;
+        int done = rendered;
+        try {
+            WrapAroundCellText();
+            ApplyRowSpans();
+            float total = 0f;
+            foreach (float height in GetRowHeights()) {
+                total += height;
+            }
+            return total;
+        } finally {
+            tableData = data;
+            numOfHeaderRows = header;
+            numOfFooterRows = footer;
+            rendered = done;
+        }
+    }
+
     private void ApplyRowSpans() {
         foreach (List<Cell> row in tableData) {
             foreach (Cell cell in row) {

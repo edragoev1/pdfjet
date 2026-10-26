@@ -141,6 +141,15 @@ There is no 9.1.3: what was done for it is in 9.1.5 (the owner, 26 October
   to Table's 7.7.
 
 ### Changed
+- Markdown, the four ports: a table that fits on a page is not split. It
+  starts the next page when it does not fit in what is left of this one,
+  and a paragraph that ends in a colon right before it, such as "The size of
+  the PDFs, KB:", goes to the next page with it. A table longer than a page
+  starts where it is and goes on onto the next pages, its header row on
+  each, as before.
+  Behavior change: a document whose short table fell across a page break
+  has it on the next page whole, and the pages after it break where the
+  table now ends.
 - All four ports: a TrueType font is embedded as a smaller subset. The
   subset leaves out the font's `cmap` and `name` tables: it is embedded as
   a CIDFontType2 with an Identity CIDToGIDMap, whose glyphs the PDF names by

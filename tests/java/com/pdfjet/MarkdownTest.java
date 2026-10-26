@@ -14,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -256,6 +257,77 @@ class MarkdownTest {
         Page page = new Page(pdf, Letter.PORTRAIT, Page.DETACHED);
         page.setBrushColor(color);
         return page;
+    }
+
+    // The text of k short paragraphs, p0, p1 and so on, then the lead-in, then
+    // a table of the rows, the cells of row r named r1, r2 and so on: words
+    // of no letters that the core fonts kern, so that each is drawn whole.
+    private static String fillerAndTable(int k, String leadIn, int rows) {
+        StringBuilder text = new StringBuilder();
+        for (int i = 0; i < k; i++) {
+            text.append("p").append(i).append("\n\n");
+        }
+        if (leadIn != null) {
+            text.append(leadIn).append("\n\n");
+        }
+        text.append("| N | V |\n|---|---|\n");
+        for (int r = 1; r <= rows; r++) {
+            text.append("| r").append(r).append(" | v").append(r).append(" |\n");
+        }
+        return text.toString();
+    }
+
+    // The pages, counted from 0, that draw the text.
+    private static List<Integer> pagesOf(Drawn drawn, String text) {
+        List<Integer> pages = new ArrayList<Integer>();
+        for (int i = 0; i < drawn.contents.size(); i++) {
+            if (drawn.contents.get(i).contains(TestSupport.hex(text))) {
+                pages.add(i);
+            }
+        }
+        return pages;
+    }
+
+    @Test
+    void aTableThatFitsOnAPageIsNotSplit() throws Exception {
+        TestSupport.allowCoreFonts(true); // What the document tags, in a core font
+        // Whatever the text before it, the table of eight rows is on one
+        // page, its first row and its last; at some length of the text it is
+        // moved to the next page, which shows the rule at work.
+        boolean moved = false;
+        for (int k = 0; k <= 60; k++) {
+            Drawn drawn = draw(fillerAndTable(k, null, 8), null);
+            List<Integer> first = pagesOf(drawn, "r1");
+            List<Integer> last = pagesOf(drawn, "r8");
+            assertEquals(first, last, k + " paragraphs: the table is split");
+            int lastFiller = (k > 0) ? pagesOf(drawn, "p" + (k - 1)).get(0) : 0;
+            moved |= first.get(0) > lastFiller;
+        }
+        assertTrue(moved, "the table never moved to the next page");
+    }
+
+    @Test
+    void aParagraphThatEndsInAColonStaysWithItsTable() throws Exception {
+        TestSupport.allowCoreFonts(true); // What the document tags, in a core font
+        boolean moved = false;
+        for (int k = 0; k <= 60; k++) {
+            Drawn drawn = draw(fillerAndTable(k, "555:", 8), null);
+            List<Integer> leadIn = pagesOf(drawn, "555:");
+            assertEquals(leadIn, pagesOf(drawn, "r1"), k + " paragraphs: the lead-in is apart from its table");
+            assertEquals(leadIn, pagesOf(drawn, "r8"), k + " paragraphs: the table is split");
+            int lastFiller = (k > 0) ? pagesOf(drawn, "p" + (k - 1)).get(0) : 0;
+            moved |= leadIn.get(0) > lastFiller;
+        }
+        assertTrue(moved, "the lead-in never moved with its table");
+    }
+
+    @Test
+    void aTableLongerThanAPageStillStartsWhereItIs() throws Exception {
+        TestSupport.allowCoreFonts(true); // What the document tags, in a core font
+        Drawn drawn = draw(fillerAndTable(3, null, 120), null);
+        assertEquals(Arrays.asList(0), pagesOf(drawn, "p2"));
+        assertEquals(0, (int) pagesOf(drawn, "r1").get(0), "the long table starts after the text");
+        assertTrue(pagesOf(drawn, "r120").get(0) > 0, "the long table goes on to the next pages");
     }
 
     @Test

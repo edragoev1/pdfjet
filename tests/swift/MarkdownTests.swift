@@ -171,6 +171,64 @@ import Testing
         return TestSupport.content(page)
     }
 
+    // The text of k short paragraphs, p0, p1 and so on, then the lead-in, then
+    // a table of the rows, the cells of row r named r1, r2 and so on: words
+    // of no letters that the core fonts kern, so that each is drawn whole.
+    private func fillerAndTable(_ k: Int, _ leadIn: String?, _ rows: Int) -> String {
+        var text = ""
+        for i in 0..<k {
+            text += "p\(i)\n\n"
+        }
+        if let leadIn {
+            text += leadIn + "\n\n"
+        }
+        text += "| N | V |\n|---|---|\n"
+        for r in 1...rows {
+            text += "| r\(r) | v\(r) |\n"
+        }
+        return text
+    }
+
+    // The pages, counted from 0, that draw the text.
+    private func pagesOf(_ drawn: Drawn, _ text: String) -> [Int] {
+        return drawn.contents.indices.filter { drawn.contents[$0].contains(TestSupport.hex(text)) }
+    }
+
+    // Whatever the text before it, the table of eight rows is on one page, its
+    // first row and its last; at some length of the text it is moved to the
+    // next page, which shows the rule at work.
+    @Test func aTableThatFitsOnAPageIsNotSplit() throws {
+        var moved = false
+        for k in 0...60 {
+            let drawn = try MarkdownTests.draw(fillerAndTable(k, nil, 8), nil)
+            let first = pagesOf(drawn, "r1")
+            #expect(first == pagesOf(drawn, "r8"), "\(k) paragraphs: the table is split")
+            let lastFiller = (k > 0) ? pagesOf(drawn, "p\(k - 1)")[0] : 0
+            moved = moved || first[0] > lastFiller
+        }
+        #expect(moved, "the table never moved to the next page")
+    }
+
+    @Test func aParagraphThatEndsInAColonStaysWithItsTable() throws {
+        var moved = false
+        for k in 0...60 {
+            let drawn = try MarkdownTests.draw(fillerAndTable(k, "555:", 8), nil)
+            let leadIn = pagesOf(drawn, "555:")
+            #expect(leadIn == pagesOf(drawn, "r1") && leadIn == pagesOf(drawn, "r8"),
+                    "\(k) paragraphs: the lead-in or the table is apart")
+            let lastFiller = (k > 0) ? pagesOf(drawn, "p\(k - 1)")[0] : 0
+            moved = moved || leadIn[0] > lastFiller
+        }
+        #expect(moved, "the lead-in never moved with its table")
+    }
+
+    @Test func aTableLongerThanAPageStillStartsWhereItIs() throws {
+        let drawn = try MarkdownTests.draw(fillerAndTable(3, nil, 120), nil)
+        #expect(pagesOf(drawn, "p2") == [0])
+        #expect(pagesOf(drawn, "r1")[0] == 0, "the long table starts after the text")
+        #expect(pagesOf(drawn, "r120")[0] > 0, "the long table goes on to the next pages")
+    }
+
     @Test func aTableIsAsWideAsTheTextWhenSet() throws {
         let text = "| N | V |\n|---|---:|\n| a | 15 |"
         let narrow = TestSupport.positionOf(try MarkdownTests.draw(text, nil).contents[0], "V")[0]

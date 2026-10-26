@@ -327,12 +327,17 @@ public class Markdown {
     }
 
     private func drawBlocks(_ blocks: [MarkdownParser.Block], _ x: Float, _ width: Float, _ tight: Bool) throws {
-        for block in blocks {
+        for (i, block) in blocks.enumerated() {
             switch block.kind {
             case .HEADING:
                 drawHeading(block, x, width)
             case .PARAGRAPH:
-                gap(tight ? size() * 0.25 : size() * 0.75)
+                let gap = tight ? size() * 0.25 : size() * 0.75
+                if i + 1 < blocks.count && blocks[i + 1].kind == .TABLE
+                        && block.text!.trimmingCharacters(in: .whitespacesAndNewlines).hasSuffix(":") {
+                    keepWithTable(block, blocks[i + 1], gap, x, width)
+                }
+                self.gap(gap)
                 drawParagraph(markup.paragraph(block.text!), x, width)
             case .CODE:
                 drawCode(block.text!, x, width)
@@ -625,6 +630,54 @@ public class Markdown {
     // marks what each has.
     private func drawTable(_ block: MarkdownParser.Block, _ x: Float, _ width: Float) {
         gap(size() * 0.75)
+        let table = tableOf(block, width)
+        // A table that fits on a page is not split: it starts the next page
+        // when it does not fit in what is left of this one.
+        let height = table.getTotalHeight()
+        if !atTop && y + height > bottom && height <= bottom - marginTop {
+            newPage()
+        }
+        let rowHeight = 2.0 * regular.getBodyHeight(size())
+        ensure(2.0 * rowHeight)
+        table.setLocation(x, marginTop)
+        table.setFirstPageTopMargin(y)
+        table.setBottomMargin(marginBottom)
+        let before = pages.count
+        let xy = table.drawOn(pdf, page, &pages, pageSize)
+        if pages.count > before {
+            // The table drew its last rows on a page of its own.
+            finishQuoteBars()
+            page = pages[pages.count - 1]
+            page!.structParent = containers.last
+            for bar in quoteBars {
+                bar.top = marginTop
+            }
+        }
+        // A table with rows always draws them, so it has a corner.
+        y = xy?[1] ?? y
+        atTop = false
+    }
+
+    // A paragraph that ends in a colon leads into the table after it, as
+    // "The size of the PDFs, KB:" does, and starts a page with it when the two
+    // fit on a page together but not in what is left of this one.
+    private func keepWithTable(_ paragraph: MarkdownParser.Block, _ table: MarkdownParser.Block, _ gap: Float,
+            _ x: Float, _ width: Float) {
+        if atTop {
+            return
+        }
+        let room = bottom - marginTop
+        let frame = TextFrame([markup.paragraph(paragraph.text!)]).setParagraphGap(0.0)
+        frame.setLocation(x, y + gap).setWidth(width).setHeight(room)
+        frame.drawOn(nil)
+        let needed = (frame.getTextBottom() - y) + size() * 0.75 + tableOf(table, width).getTotalHeight()
+        if y + needed > bottom && needed - gap <= room {
+            newPage()
+        }
+    }
+
+    // The table of the text of the cells, as wide as its text or as the width.
+    private func tableOf(_ block: MarkdownParser.Block, _ width: Float) -> Table {
         let blockRows = block.rows!
         let alignments = block.alignments!
         var rows = [[Cell]]()
@@ -650,25 +703,7 @@ public class Markdown {
         if fullWidthTables || table.getWidth() > width {
             table.fitToWidth(width)
         }
-        let rowHeight = 2.0 * regular.getBodyHeight(size())
-        ensure(2.0 * rowHeight)
-        table.setLocation(x, marginTop)
-        table.setFirstPageTopMargin(y)
-        table.setBottomMargin(marginBottom)
-        let before = pages.count
-        let xy = table.drawOn(pdf, page, &pages, pageSize)
-        if pages.count > before {
-            // The table drew its last rows on a page of its own.
-            finishQuoteBars()
-            page = pages[pages.count - 1]
-            page!.structParent = containers.last
-            for bar in quoteBars {
-                bar.top = marginTop
-            }
-        }
-        // A table with rows always draws them, so it has a corner.
-        y = xy?[1] ?? y
-        atTop = false
+        return table
     }
 
     // The font of a cell: the font of its emphasis when the whole of its text

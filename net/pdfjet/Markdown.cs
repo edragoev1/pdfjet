@@ -307,13 +307,19 @@ public class Markdown {
     }
 
     private void DrawBlocks(List<MarkdownParser.Block> blocks, float x, float width, bool tight) {
-        foreach (MarkdownParser.Block block in blocks) {
+        for (int i = 0; i < blocks.Count; i++) {
+            MarkdownParser.Block block = blocks[i];
             switch (block.kind) {
                 case MarkdownParser.Kind.HEADING:
                     DrawHeading(block, x, width);
                     break;
                 case MarkdownParser.Kind.PARAGRAPH:
-                    Gap(tight ? Size() * 0.25f : Size() * 0.75f);
+                    float gap = tight ? Size() * 0.25f : Size() * 0.75f;
+                    if (i + 1 < blocks.Count && blocks[i + 1].kind == MarkdownParser.Kind.TABLE
+                            && block.text.Trim().EndsWith(":", StringComparison.Ordinal)) {
+                        KeepWithTable(block, blocks[i + 1], gap, x, width);
+                    }
+                    Gap(gap);
                     DrawParagraph(markup.Paragraph(block.text), x, width);
                     break;
                 case MarkdownParser.Kind.CODE:
@@ -605,6 +611,53 @@ public class Markdown {
     // marks what each has.
     private void DrawTable(MarkdownParser.Block block, float x, float width) {
         Gap(Size() * 0.75f);
+        Table table = TableOf(block, width);
+        // A table that fits on a page is not split: it starts the next page
+        // when it does not fit in what is left of this one.
+        float height = table.GetTotalHeight();
+        if (!atTop && y + height > bottom && height <= bottom - marginTop) {
+            NewPage();
+        }
+        float rowHeight = 2f * regular.GetBodyHeight(Size());
+        Ensure(2f * rowHeight);
+        table.SetLocation(x, marginTop);
+        table.SetFirstPageTopMargin(y);
+        table.SetBottomMargin(marginBottom);
+        int before = pages.Count;
+        float[] xy = table.DrawOn(pdf, page, pages, pageSize);
+        if (pages.Count > before) {
+            // The table drew its last rows on a page of its own.
+            FinishQuoteBars();
+            page = pages[pages.Count - 1];
+            page.structParent = Innermost();
+            foreach (float[] bar in quoteBars) {
+                bar[1] = marginTop;
+            }
+        }
+        y = xy[1];
+        atTop = false;
+    }
+
+    // A paragraph that ends in a colon leads into the table after it, as
+    // "The size of the PDFs, KB:" does, and starts a page with it when the two
+    // fit on a page together but not in what is left of this one.
+    private void KeepWithTable(MarkdownParser.Block paragraph, MarkdownParser.Block table, float gap,
+            float x, float width) {
+        if (atTop) {
+            return;
+        }
+        float room = bottom - marginTop;
+        TextFrame frame = new TextFrame(new List<Paragraph> {markup.Paragraph(paragraph.text)}).SetParagraphGap(0f);
+        frame.SetLocation(x, y + gap).SetWidth(width).SetHeight(room);
+        frame.DrawOn(null);
+        float needed = (frame.GetTextBottom() - y) + Size() * 0.75f + TableOf(table, width).GetTotalHeight();
+        if (y + needed > bottom && needed - gap <= room) {
+            NewPage();
+        }
+    }
+
+    // The table of the text of the cells, as wide as its text or as the width.
+    private Table TableOf(MarkdownParser.Block block, float width) {
         List<List<Cell>> rows = new List<List<Cell>>();
         for (int r = 0; r < block.rows.Count; r++) {
             List<Cell> row = new List<Cell>();
@@ -628,24 +681,7 @@ public class Markdown {
         if (fullWidthTables || table.GetWidth() > width) {
             table.FitToWidth(width);
         }
-        float rowHeight = 2f * regular.GetBodyHeight(Size());
-        Ensure(2f * rowHeight);
-        table.SetLocation(x, marginTop);
-        table.SetFirstPageTopMargin(y);
-        table.SetBottomMargin(marginBottom);
-        int before = pages.Count;
-        float[] xy = table.DrawOn(pdf, page, pages, pageSize);
-        if (pages.Count > before) {
-            // The table drew its last rows on a page of its own.
-            FinishQuoteBars();
-            page = pages[pages.Count - 1];
-            page.structParent = Innermost();
-            foreach (float[] bar in quoteBars) {
-                bar[1] = marginTop;
-            }
-        }
-        y = xy[1];
-        atTop = false;
+        return table;
     }
 
     // The font of a cell: the font of its emphasis when the whole of its text

@@ -309,13 +309,19 @@ public class Markdown {
 
     private void drawBlocks(List<MarkdownParser.Block> blocks, float x, float width, boolean tight)
             throws Exception {
-        for (MarkdownParser.Block block : blocks) {
+        for (int i = 0; i < blocks.size(); i++) {
+            MarkdownParser.Block block = blocks.get(i);
             switch (block.kind) {
                 case HEADING:
                     drawHeading(block, x, width);
                     break;
                 case PARAGRAPH:
-                    gap(tight ? size() * 0.25f : size() * 0.75f);
+                    float gap = tight ? size() * 0.25f : size() * 0.75f;
+                    if (i + 1 < blocks.size() && blocks.get(i + 1).kind == MarkdownParser.Kind.TABLE
+                            && block.text.trim().endsWith(":")) {
+                        keepWithTable(block, blocks.get(i + 1), gap, x, width);
+                    }
+                    gap(gap);
                     drawParagraph(markup.paragraph(block.text), x, width);
                     break;
                 case CODE:
@@ -598,6 +604,23 @@ public class Markdown {
         atTop = false;
     }
 
+    // A paragraph that ends in a colon leads into the table after it, as
+    // "The size of the PDFs, KB:" does, and starts a page with it when the two
+    // fit on a page together but not in what is left of this one.
+    private void keepWithTable(MarkdownParser.Block paragraph, MarkdownParser.Block table, float gap,
+            float x, float width) throws Exception {
+        if (atTop) {
+            return;
+        }
+        float room = bottom - marginTop;
+        TextFrame frame = new TextFrame(Arrays.asList(markup.paragraph(paragraph.text))).setParagraphGap(0f);
+        frame.setLocation(x, y + gap).setWidth(width).setHeight(room).drawOn(null);
+        float needed = (frame.getTextBottom() - y) + size() * 0.75f + tableOf(table, width).getTotalHeight();
+        if (y + needed > bottom && needed - gap <= room) {
+            newPage();
+        }
+    }
+
     // A table of the text of the cells, with the header row in bold on a
     // light background, as wide as its text or as the width when it would be
     // wider, and on the next pages for the rows that do not fit. A cell that
@@ -605,6 +628,35 @@ public class Markdown {
     // marks what each has.
     private void drawTable(MarkdownParser.Block block, float x, float width) throws Exception {
         gap(size() * 0.75f);
+        Table table = tableOf(block, width);
+        // A table that fits on a page is not split: it starts the next page
+        // when it does not fit in what is left of this one.
+        float height = table.getTotalHeight();
+        if (!atTop && y + height > bottom && height <= bottom - marginTop) {
+            newPage();
+        }
+        float rowHeight = 2f * regular.getBodyHeight(size());
+        ensure(2f * rowHeight);
+        table.setLocation(x, marginTop);
+        table.setFirstPageTopMargin(y);
+        table.setBottomMargin(marginBottom);
+        int before = pages.size();
+        float[] xy = table.drawOn(pdf, page, pages, pageSize);
+        if (pages.size() > before) {
+            // The table drew its last rows on a page of its own.
+            finishQuoteBars();
+            page = pages.get(pages.size() - 1);
+            page.structParent = containers.peek();
+            for (float[] bar : quoteBars) {
+                bar[1] = marginTop;
+            }
+        }
+        y = xy[1];
+        atTop = false;
+    }
+
+    // The table of the text of the cells, as wide as its text or as the width.
+    private Table tableOf(MarkdownParser.Block block, float width) {
         List<List<Cell>> rows = new ArrayList<List<Cell>>();
         for (int r = 0; r < block.rows.size(); r++) {
             List<Cell> row = new ArrayList<Cell>();
@@ -628,24 +680,7 @@ public class Markdown {
         if (fullWidthTables || table.getWidth() > width) {
             table.fitToWidth(width);
         }
-        float rowHeight = 2f * regular.getBodyHeight(size());
-        ensure(2f * rowHeight);
-        table.setLocation(x, marginTop);
-        table.setFirstPageTopMargin(y);
-        table.setBottomMargin(marginBottom);
-        int before = pages.size();
-        float[] xy = table.drawOn(pdf, page, pages, pageSize);
-        if (pages.size() > before) {
-            // The table drew its last rows on a page of its own.
-            finishQuoteBars();
-            page = pages.get(pages.size() - 1);
-            page.structParent = containers.peek();
-            for (float[] bar : quoteBars) {
-                bar[1] = marginTop;
-            }
-        }
-        y = xy[1];
-        atTop = false;
+        return table;
     }
 
     // The font of a cell: the font of its emphasis when the whole of its text

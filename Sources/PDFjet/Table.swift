@@ -1491,6 +1491,29 @@ public class Table : Drawable {
     // tallest cell needs, so a cell that spans two rows of the table spans as
     // many rows of the drawing as those two were wrapped into. The cells the
     // span covers are marked, and draw nothing.
+    // The height of the whole table, its rows wrapped as drawOn wraps them,
+    // without drawing it: for Markdown, which keeps a table that fits on a
+    // page whole. The table is left as it was.
+    func getTotalHeight() -> Float {
+        let data = tableData
+        let header = numOfHeaderRows
+        let footer = numOfFooterRows
+        let done = rendered
+        defer {
+            tableData = data
+            numOfHeaderRows = header
+            numOfFooterRows = footer
+            rendered = done
+        }
+        wrapAroundCellText()
+        applyRowSpans()
+        var total: Float = 0.0
+        for height in getRowHeights() {
+            total += height
+        }
+        return total
+    }
+
     private func applyRowSpans() {
         for row in tableData {
             for cell in row {

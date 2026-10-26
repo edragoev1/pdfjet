@@ -8,6 +8,7 @@ package pdfjet
 import (
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -230,6 +231,90 @@ func testFillOf(c int32) string {
 	page := NewPageDetached(testNewPDF(), letter.Portrait())
 	page.SetBrushColor(c)
 	return testContent(page)
+}
+
+// testFillerAndTable returns the text of k short paragraphs, p0, p1 and so on,
+// then the lead-in, then a table of the rows, the cells of row r named r1, r2
+// and so on: words of no letters that the core fonts kern, so that each is
+// drawn whole.
+func testFillerAndTable(k int, leadIn string, rows int) string {
+	var text strings.Builder
+	for i := 0; i < k; i++ {
+		text.WriteString("p" + strconv.Itoa(i) + "\n\n")
+	}
+	if leadIn != "" {
+		text.WriteString(leadIn + "\n\n")
+	}
+	text.WriteString("| N | V |\n|---|---|\n")
+	for r := 1; r <= rows; r++ {
+		text.WriteString("| r" + strconv.Itoa(r) + " | v" + strconv.Itoa(r) + " |\n")
+	}
+	return text.String()
+}
+
+// testMarkdownPagesOf returns the pages, counted from 0, that draw the text.
+func testMarkdownPagesOf(drawn *testMarkdownDrawn, text string) []int {
+	pages := []int{}
+	for i, content := range drawn.contents {
+		if strings.Contains(content, testHex(text)) {
+			pages = append(pages, i)
+		}
+	}
+	return pages
+}
+
+// Whatever the text before it, the table of eight rows is on one page, its
+// first row and its last; at some length of the text it is moved to the next
+// page, which shows the rule at work.
+func TestMarkdownATableThatFitsOnAPageIsNotSplit(t *testing.T) {
+	testAllowCoreFonts(t)
+	moved := false
+	for k := 0; k <= 60; k++ {
+		drawn := testDrawMarkdown(testFillerAndTable(k, "", 8), "")
+		first, last := testMarkdownPagesOf(drawn, "r1"), testMarkdownPagesOf(drawn, "r8")
+		if !slices.Equal(first, last) {
+			t.Fatalf("%d paragraphs: the table is split, %v and %v", k, first, last)
+		}
+		lastFiller := 0
+		if k > 0 {
+			lastFiller = testMarkdownPagesOf(drawn, "p"+strconv.Itoa(k-1))[0]
+		}
+		moved = moved || first[0] > lastFiller
+	}
+	if !moved {
+		t.Error("the table never moved to the next page")
+	}
+}
+
+func TestMarkdownAParagraphThatEndsInAColonStaysWithItsTable(t *testing.T) {
+	testAllowCoreFonts(t)
+	moved := false
+	for k := 0; k <= 60; k++ {
+		drawn := testDrawMarkdown(testFillerAndTable(k, "555:", 8), "")
+		leadIn := testMarkdownPagesOf(drawn, "555:")
+		if !slices.Equal(leadIn, testMarkdownPagesOf(drawn, "r1")) || !slices.Equal(leadIn, testMarkdownPagesOf(drawn, "r8")) {
+			t.Fatalf("%d paragraphs: the lead-in or the table is apart", k)
+		}
+		lastFiller := 0
+		if k > 0 {
+			lastFiller = testMarkdownPagesOf(drawn, "p"+strconv.Itoa(k-1))[0]
+		}
+		moved = moved || leadIn[0] > lastFiller
+	}
+	if !moved {
+		t.Error("the lead-in never moved with its table")
+	}
+}
+
+func TestMarkdownATableLongerThanAPageStillStartsWhereItIs(t *testing.T) {
+	testAllowCoreFonts(t)
+	drawn := testDrawMarkdown(testFillerAndTable(3, "", 120), "")
+	if !slices.Equal(testMarkdownPagesOf(drawn, "p2"), []int{0}) || testMarkdownPagesOf(drawn, "r1")[0] != 0 {
+		t.Error("the long table does not start after the text")
+	}
+	if testMarkdownPagesOf(drawn, "r120")[0] == 0 {
+		t.Error("the long table does not go on to the next pages")
+	}
 }
 
 // The right-aligned header of the last column is drawn at the right end of the

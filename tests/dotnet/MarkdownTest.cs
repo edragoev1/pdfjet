@@ -206,6 +206,76 @@ public class MarkdownTest {
         return TestSupport.Content(page);
     }
 
+    // The text of k short paragraphs, p0, p1 and so on, then the lead-in, then
+    // a table of the rows, the cells of row r named r1, r2 and so on: words
+    // of no letters that the core fonts kern, so that each is drawn whole.
+    private static string FillerAndTable(int k, string leadIn, int rows) {
+        StringBuilder text = new StringBuilder();
+        for (int i = 0; i < k; i++) {
+            text.Append("p").Append(i).Append("\n\n");
+        }
+        if (leadIn != null) {
+            text.Append(leadIn).Append("\n\n");
+        }
+        text.Append("| N | V |\n|---|---|\n");
+        for (int r = 1; r <= rows; r++) {
+            text.Append("| r").Append(r).Append(" | v").Append(r).Append(" |\n");
+        }
+        return text.ToString();
+    }
+
+    // The pages, counted from 0, that draw the text.
+    private static List<int> PagesOf(Drawn drawn, string text) {
+        List<int> pages = new List<int>();
+        for (int i = 0; i < drawn.contents.Count; i++) {
+            if (drawn.contents[i].Contains(TestSupport.Hex(text))) {
+                pages.Add(i);
+            }
+        }
+        return pages;
+    }
+
+    [Fact]
+    public void ATableThatFitsOnAPageIsNotSplit() {
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
+        // Whatever the text before it, the table of eight rows is on one
+        // page, its first row and its last; at some length of the text it is
+        // moved to the next page, which shows the rule at work.
+        bool moved = false;
+        for (int k = 0; k <= 60; k++) {
+            Drawn drawn = Draw(FillerAndTable(k, null, 8), null);
+            List<int> first = PagesOf(drawn, "r1");
+            Assert.Equal(first, PagesOf(drawn, "r8"));
+            int lastFiller = (k > 0) ? PagesOf(drawn, "p" + (k - 1))[0] : 0;
+            moved |= first[0] > lastFiller;
+        }
+        Assert.True(moved, "the table never moved to the next page");
+    }
+
+    [Fact]
+    public void AParagraphThatEndsInAColonStaysWithItsTable() {
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
+        bool moved = false;
+        for (int k = 0; k <= 60; k++) {
+            Drawn drawn = Draw(FillerAndTable(k, "555:", 8), null);
+            List<int> leadIn = PagesOf(drawn, "555:");
+            Assert.Equal(leadIn, PagesOf(drawn, "r1"));
+            Assert.Equal(leadIn, PagesOf(drawn, "r8"));
+            int lastFiller = (k > 0) ? PagesOf(drawn, "p" + (k - 1))[0] : 0;
+            moved |= leadIn[0] > lastFiller;
+        }
+        Assert.True(moved, "the lead-in never moved with its table");
+    }
+
+    [Fact]
+    public void ATableLongerThanAPageStillStartsWhereItIs() {
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
+        Drawn drawn = Draw(FillerAndTable(3, null, 120), null);
+        Assert.Equal(new List<int> {0}, PagesOf(drawn, "p2"));
+        Assert.Equal(0, PagesOf(drawn, "r1")[0]);
+        Assert.True(PagesOf(drawn, "r120")[0] > 0, "the long table goes on to the next pages");
+    }
+
     [Fact]
     public void ATableIsAsWideAsTheTextWhenSet() {
         using IDisposable coreFonts = TestSupport.AllowCoreFonts();

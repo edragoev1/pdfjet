@@ -1453,6 +1453,29 @@ func (table *Table) drawFooterRows(page *Page, x, y float32, heights []float32, 
 // tallest cell needs, so a cell that spans two rows of the table spans as many
 // rows of the drawing as those two were wrapped into. The cells the span
 // covers are marked, and draw nothing.
+// getTotalHeight returns the height of the whole table, its rows wrapped as
+// DrawOn wraps them, without drawing it: for Markdown, which keeps a table that
+// fits on a page whole. The table is left as it was.
+func (table *Table) getTotalHeight() float32 {
+	data := table.tableData
+	header := table.numOfHeaderRows
+	footer := table.numOfFooterRows
+	done := table.rendered
+	defer func() {
+		table.tableData = data
+		table.numOfHeaderRows = header
+		table.numOfFooterRows = footer
+		table.rendered = done
+	}()
+	table.wrapAroundCellText()
+	table.applyRowSpans()
+	var total float32
+	for _, height := range table.getRowHeights() {
+		total += height
+	}
+	return total
+}
+
 func (table *Table) applyRowSpans() {
 	for _, row := range table.tableData {
 		for _, cell := range row {

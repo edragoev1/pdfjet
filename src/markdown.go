@@ -311,16 +311,20 @@ func (markdown *Markdown) drawQuoteBar(x, top, to float32) {
 }
 
 func (markdown *Markdown) drawBlocks(blocks []*markdownBlock, x, width float32, tight bool) {
-	for _, block := range blocks {
+	for i, block := range blocks {
 		switch block.kind {
 		case markdownHeading:
 			markdown.drawHeading(block, x, width)
 		case markdownParagraph:
+			gap := float32(markdown.size() * 0.75)
 			if tight {
-				markdown.gap(float32(markdown.size() * 0.25))
-			} else {
-				markdown.gap(float32(markdown.size() * 0.75))
+				gap = float32(markdown.size() * 0.25)
 			}
+			if i+1 < len(blocks) && blocks[i+1].kind == markdownTable &&
+				strings.HasSuffix(strings.TrimSpace(block.text), ":") {
+				markdown.keepWithTable(block, blocks[i+1], gap, x, width)
+			}
+			markdown.gap(gap)
 			markdown.drawParagraph(markdown.markup.Paragraph(block.text), x, width)
 		case markdownCode:
 			markdown.drawCode(block.text, x, width)
@@ -652,6 +656,25 @@ func (markdown *Markdown) drawRule(x, width float32) {
 // markdownCheckMark starts a table cell drawn in the check color.
 const markdownCheckMark = "\u2713"
 
+// keepWithTable starts a page for a paragraph that ends in a colon and the
+// table after it, which it leads into as "The size of the PDFs, KB:" does,
+// when the two fit on a page together but not in what is left of this one.
+func (markdown *Markdown) keepWithTable(paragraph, table *markdownBlock, gap, x, width float32) {
+	if markdown.atTop {
+		return
+	}
+	room := markdown.bottom - markdown.marginTop
+	frame := NewTextFrameFromParagraphs([]*Paragraph{markdown.markup.Paragraph(paragraph.text)}).SetParagraphGap(0)
+	frame.SetLocation(x, markdown.y+gap)
+	frame.SetWidth(width).SetHeight(room)
+	frame.DrawOn(nil)
+	needed := (frame.GetTextBottom() - markdown.y) + float32(markdown.size()*0.75) +
+		markdown.tableOf(table, width).getTotalHeight()
+	if markdown.y+needed > markdown.bottom && needed-gap <= room {
+		markdown.newPage()
+	}
+}
+
 // drawTable draws a table of the text of the cells, with the header row in
 // bold on a light background, as wide as its text or as the width when it
 // would be wider, and on the next pages for the rows that do not fit. A cell
@@ -659,6 +682,36 @@ const markdownCheckMark = "\u2713"
 // features marks what each has.
 func (markdown *Markdown) drawTable(block *markdownBlock, x, width float32) {
 	markdown.gap(float32(markdown.size() * 0.75))
+	table := markdown.tableOf(block, width)
+	// A table that fits on a page is not split: it starts the next page when
+	// it does not fit in what is left of this one.
+	height := table.getTotalHeight()
+	if !markdown.atTop && markdown.y+height > markdown.bottom && height <= markdown.bottom-markdown.marginTop {
+		markdown.newPage()
+	}
+	rowHeight := float32(2 * markdown.regular.GetBodyHeight(markdown.size()))
+	markdown.ensure(float32(2 * rowHeight))
+	table.SetLocation(x, markdown.marginTop)
+	table.SetFirstPageTopMargin(markdown.y)
+	table.SetBottomMargin(markdown.marginBottom)
+	before := len(*markdown.pages)
+	xy := table.drawOnPages(markdown.pdf, markdown.page, markdown.pages, markdown.pageSize)
+	if len(*markdown.pages) > before {
+		// The table drew its last rows on a page of its own.
+		markdown.finishQuoteBars()
+		markdown.page = (*markdown.pages)[len(*markdown.pages)-1]
+		markdown.page.structParent = markdown.peekContainer()
+		for _, bar := range markdown.quoteBars {
+			bar[1] = markdown.marginTop
+		}
+	}
+	markdown.y = xy[1]
+	markdown.atTop = false
+}
+
+// tableOf returns the table of the text of the cells, as wide as its text or
+// as the width.
+func (markdown *Markdown) tableOf(block *markdownBlock, width float32) *Table {
 	rows := make([][]*Cell, 0, len(block.rows))
 	for r := range block.rows {
 		row := make([]*Cell, 0, len(block.rows[r]))
@@ -686,24 +739,7 @@ func (markdown *Markdown) drawTable(block *markdownBlock, x, width float32) {
 	if markdown.fullWidthTables || table.GetWidth() > width {
 		table.FitToWidth(width)
 	}
-	rowHeight := float32(2 * markdown.regular.GetBodyHeight(markdown.size()))
-	markdown.ensure(float32(2 * rowHeight))
-	table.SetLocation(x, markdown.marginTop)
-	table.SetFirstPageTopMargin(markdown.y)
-	table.SetBottomMargin(markdown.marginBottom)
-	before := len(*markdown.pages)
-	xy := table.drawOnPages(markdown.pdf, markdown.page, markdown.pages, markdown.pageSize)
-	if len(*markdown.pages) > before {
-		// The table drew its last rows on a page of its own.
-		markdown.finishQuoteBars()
-		markdown.page = (*markdown.pages)[len(*markdown.pages)-1]
-		markdown.page.structParent = markdown.peekContainer()
-		for _, bar := range markdown.quoteBars {
-			bar[1] = markdown.marginTop
-		}
-	}
-	markdown.y = xy[1]
-	markdown.atTop = false
+	return table
 }
 
 // cellFont returns the font of a cell: the font of its emphasis when the whole
