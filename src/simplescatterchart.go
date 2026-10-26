@@ -47,7 +47,7 @@ type scatterPoint struct {
 // number of points, the highlighted ones and their values, and which way the
 // trend goes, unless an alternate description is set. It draws with the page
 // alone, and needs no other chart. In PDF/A-1, which has no transparency, the
-// dots are drawn opaque.
+// dots are drawn opaque. Please see Example_26.
 type SimpleScatterChart struct {
 	f1, f2                 *Font // the title and the names; the rest
 	x, y, w, h             float32

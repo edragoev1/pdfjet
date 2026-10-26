@@ -7,223 +7,109 @@
 import Foundation
 import PDFjet
 
-///
-/// Example_26.swift
-///
-/// Draws an XY chart of the countries of a data file, each a marker that links
-/// to a page about the country, with the trend line of the points, and a table
-/// of the countries with a marker of their own.
-///
-struct ExampleError: Error, CustomStringConvertible {
-    let message: String
-    var description: String { message }
-}
-
-/// A country of the data file: its name and its point on the chart.
-struct Country {
-    let name: String
-    let point: Point
-}
-
+/**
+ * Example_26.swift
+ * This example draws a SimpleScatterChart of the life expectancy and the
+ * children per woman of 217 countries and economies, from the World Bank's
+ * data of 2023: a gray dot for each, seven of them named, and the trend line,
+ * with a table of the named ones under the chart.
+ */
 public class Example_26 {
+    // The countries named on the chart, by their codes
+    static let named: Set<String> = ["BRA", "CAN", "IND", "JPN", "NER", "NGA", "USA"]
+
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_26.pdf", append: false)!)
         pdf.setCompliance(Compliance.PDF_UA_1)
-        pdf.setTitle("World View - Communications")
+        pdf.setTitle("Life Expectancy and Children per Woman")
 
-        let f1 = try Font(pdf, IBMPlexSans.Bold)
-        f1.setSize(8.0)
+        let f1 = try Font(pdf, IBMPlexSans.SemiBold)
+        f1.setSize(12.0)
 
         let f2 = try Font(pdf, IBMPlexSans.Regular)
-        f2.setSize(8.0)
+        f2.setSize(9.0)
+
+        // Country|Code|Life expectancy|Children per woman, after a header line
+        let lines = try Content.linesOfTextFile("data/life-expectancy-and-fertility-2023.txt")
+        let total = lines.count - 1
 
         let page = Page(pdf, Letter.PORTRAIT)
 
-        let countries = try readCountries("data/world-communications.txt", "|")
+        TextLine(f1, "Life Expectancy and Children per Woman")
+                .setStructureType(StructElem.H1).setFontSize(20.0)
+                .setLocation(50.0, 70.0).drawOn(page)
+        let intro = [Paragraph(TextLine(f2, "Where women have fewer children, people live longer: the "
+                + "\(total) countries and economies of the World Bank's data of 2023, each a gray dot, "
+                + "seven of them named, and the trend line through them, with the named ones in the table "
+                + "under the chart.").setFontSize(10.0))]
+        let frame = TextFrame(intro).setLocation(50.0, 84.0).setWidth(512.0)
+        frame.drawOn(page)
+        var y = frame.getTextBottom() + 18.0
 
-        // The heading of the document, above the chart
-        TextLine(f1, "Cell Phones and Internet Use by Country")
-                .setStructureType(StructElem.H1)
-                .setFontSize(16.0)
-                .setLocation(70.0, 36.0)
-                .drawOn(page)
-
-        let chart = Chart(f1, f2)
-        chart.setLocation(70.0, 50.0)
-        chart.setSize(500.0, 300.0)
-        chart.setTitle("World View - Communications")
-        chart.setXAxisTitle("Cell phones per capita")
-        chart.setYAxisTitle("Internet users % of the population")
-        let markers = chart.addSeries("").setStrokeColor(Color.gray)
-        for country in countries {
-            markers.addPoint(country.point)
+        let chart = SimpleScatterChart(f1, f2)
+                .setTitle("Life expectancy and children per woman")
+                .setSubtitle("\(total) countries and economies, 2023")
+                .setXAxisTitle("Children per woman")
+                .setYAxisTitle("Life expectancy at birth, years")
+                .setTrendLine(true)
+        var data = [[Cell]]()
+        data.append(Example_26.row(f1, true, "Country", "Children per woman", "Life expectancy"))
+        for line in lines[1...] {
+            let field = line.components(separatedBy: "|")
+            let life = Float(field[2]) ?? 0
+            let children = Float(field[3]) ?? 0
+            if Example_26.named.contains(field[1]) {
+                chart.add(field[0], children, life)     // A navy dot, named
+                data.append(Example_26.row(f2, false, field[0], String(format: "%.2f", Double(children)),
+                        String(format: "%.1f years", Double(life))))
+            } else {
+                chart.add(children, life)               // A gray dot
+            }
         }
-        addTrendLine(chart, countries)
-        chart.drawOn(page)
+        chart.setLocation(50.0, y).setSize(512.0, 340.0)
+        y = chart.drawOn(page)[1] + 30.0
 
-        f1.setSize(7.0)
-        f2.setSize(7.0)
-        try addTableToChart(page, countries, f1, f2)
+        // The countries named on the chart
+        TextLine(f1, "The countries named on the chart").setStructureType(StructElem.H2)
+                .setFontSize(14.0).setLocation(50.0, y).drawOn(page)
+        let table = Table()
+        table.setTableData(data, 1)
+        table.setColumnWidth(0, 232.0)
+        table.setColumnWidth(1, 140.0)
+        table.setColumnWidth(2, 140.0)
+        table.setLocation(50.0, y + 10.0)
+        y = table.drawOn(page)[1] + 16.0
+
+        TextLine(f2, "Source: World Bank, World Development Indicators, SP.DYN.LE00.IN and "
+                + "SP.DYN.TFRT.IN, 2023, licensed under CC BY 4.0.")
+                .setFontSize(8.0).setTextColor(0x5F6873).setLocation(50.0, y).drawOn(page)
 
         try pdf.complete()
     }
 
-    func addTrendLine(_ chart: Chart, _ countries: [Country]) {
-        let points = countries.map { $0.point }
-        let m = slope(points)
-        let b = intercept(points, m)
-        chart.addSeries("Trend line")
-                .setDrawPath(true)
-                .setStrokeColor(Color.blue)
-                .setShape(Shape.INVISIBLE)
-                .addPoint(0.0, b)
-                .addPoint(1.5, m * 1.5 + b)
-    }
-
-    func addTableToChart(
-            _ page: Page,
-            _ countries: [Country],
-            _ f1: Font,
-            _ f2: Font) throws {
-        let table = Table()
-        var tableData = [[Cell]]()
-
-        // The header row: the country heads its marker and its name
-        var headerRow = [Cell]()
-        let header = Cell(f1, "Country")
-        header.setColSpan(2)
-        headerRow.append(header)
-        headerRow.append(Cell(f1, ""))
-        headerRow.append(Cell(f1, "Page about the country"))
-        tableData.append(headerRow)
-
-        for country in countries {
-            if country.point.getShape() != Shape.CIRCLE {
-                var tableRow = [Cell]()
-
-                var cell = Cell(f2, "")
-                cell.setMarker(country.point, Alignment.LEFT)
-                tableRow.append(cell)
-
-                cell = Cell(f1, country.name)
-                tableRow.append(cell)
-
-                // The address is a link to it: text that reads as an address and is
-                // not one, PAC reports
-                cell = Cell(f2, country.point.getURIAction())
-                cell.setURIAction(country.point.getURIAction()!)
-                tableRow.append(cell)
-
-                tableData.append(tableRow)
+    // A row of cells of the font at 9 points, one for each text, in the
+    // look of the chart: a light band behind the header row, a thin gray
+    // line under each row, and the numbers, the cells after the first,
+    // aligned right.
+    static func row(_ font: Font, _ header: Bool, _ texts: String...) -> [Cell] {
+        var row = [Cell]()
+        for (i, text) in texts.enumerated() {
+            let cell = Cell(font, text).setFontSize(9.0)
+            cell.setTopPadding(5.0).setBottomPadding(5.0).setLeftPadding(6.0).setRightPadding(6.0)
+            cell.setBorders(false).setBorder(Border.BOTTOM, true)
+            cell.setBorderWidth(0.5).setBorderColor(0xD5D9DE)
+            if header {
+                cell.setBackgroundColor(0xF1F3F6)
             }
-        }
-        table.setTableData(tableData, 1)
-        table.autoAdjustColumnWidths()
-        table.setCellBorderWidth(0.2)
-        table.setLocation(70.0, 360.0)
-        table.setColumnWidth(0, 9.0)
-        table.drawOn(page)
-    }
-
-    func readCountries(
-            _ fileName: String,
-            _ delimiter: String) throws -> [Country] {
-        var countries = [Country]()
-
-        let text = (try String(contentsOfFile:
-                fileName, encoding: .utf8)).trimmingCharacters(in: .newlines)
-        let lines = text.replacingOccurrences(of: "\r\n", with: "\n").components(separatedBy: "\n")
-        for line1 in lines {
-            let line = line1.trimmingCharacters(in: .whitespacesAndNewlines)
-            var cols: [String]?
-            if delimiter == "|" {
-                cols = line.components(separatedBy: "|")
-            } else if delimiter == "\t" {
-                cols = line.components(separatedBy: "\t")
-            } else {
-                throw ExampleError(
-                        message: "Only pipes and tabs can be used as delimiters")
+            if i > 0 {
+                cell.setTextAlignment(Alignment.RIGHT)
             }
-
-            let name = cols![0].trimmingCharacters(in: .whitespacesAndNewlines)
-            let population = Double(cols![1].filter({ $0 != "," }))
-            let x = Double(cols![5].filter({ $0 != "," }))
-            let y = Double(cols![7].filter({ $0 != "," }).trimmingCharacters(in: .whitespacesAndNewlines))
-
-            if population != nil && x != nil && y != nil {
-                var country_name = name
-                country_name = country_name.replacingOccurrences(of: " ", with: "_")
-                country_name = country_name.replacingOccurrences(of: "'", with: "_")
-                country_name = country_name.replacingOccurrences(of: ",", with: "_")
-                country_name = country_name.replacingOccurrences(of: "(", with: "_")
-                country_name = country_name.replacingOccurrences(of: ")", with: "_")
-                let point = Point(Float(x! / population!), Float(y! / population! * 100.0))
-                point.setURIAction("http://pdfjet.com/country/\(country_name).txt")
-                point.setAltDescription(name) // What the link of the point is, for a screen reader
-                point.setRadius(2.0)
-
-                if point.getX() > 1.25 {
-                    point.setShape(Shape.RIGHT_ARROW)
-                    point.setStrokeColor(Color.black)
-                } else if point.getY() > 80.0 {
-                    point.setShape(Shape.UP_ARROW)
-                    point.setStrokeColor(Color.blue)
-                } else if name == "France" {
-                    point.setShape(Shape.MULTIPLY)
-                    point.setStrokeColor(Color.green)
-                } else if name == "Canada" {
-                    point.setShape(Shape.BOX)
-                    point.setStrokeColor(Color.orange)
-                } else if name.hasPrefix("United States") {
-                    point.setShape(Shape.STAR)
-                    point.setStrokeColor(Color.red)
-                }
-                countries.append(Country(name: name, point: point))
-            }
+            row.append(cell)
         }
-        return countries
-    }
-
-    // The slope and intercept of the ordinary least squares trend line of the points.
-    private func slope(_ points: [Point]) -> Float {
-        return covar(points) / devsq(points) * Float(points.count - 1)
-    }
-
-    private func intercept(_ points: [Point], _ slope: Float) -> Float {
-        let m = mean(points)
-        return m[1] - slope * m[0]
-    }
-
-    private func mean(_ points: [Point]) -> [Float] {
-        var m = [Float](repeating: 0, count: 2)
-        for point in points {
-            m[0] += point.getX()
-            m[1] += point.getY()
-        }
-        let n = Float(points.count)
-        m[0] /= n
-        m[1] /= n
-        return m
-    }
-
-    private func covar(_ points: [Point]) -> Float {
-        var covariance: Float = 0.0
-        let m = mean(points)
-        for point in points {
-            covariance += (point.getX() - m[0]) * (point.getY() - m[1])
-        }
-        return covariance / Float(points.count - 1)
-    }
-
-    private func devsq(_ points: [Point]) -> Float {
-        var sum: Float = 0.0
-        let m = mean(points)
-        for point in points {
-            sum += Float(pow(Double(point.getX() - m[0]), 2))
-        }
-        return sum
+        return row
     }
 }   // End of Example_26.swift
+
 
 let time0 = Int64(Date().timeIntervalSince1970 * 1000)
 _ = try Example_26()

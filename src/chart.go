@@ -21,7 +21,7 @@ import (
 )
 
 // Chart is used to create XY chart objects and draw them on a page.
-// Please see Example_26.
+// Please see Example_25.
 type Chart struct {
 	f1, f2                         *Font
 	series                         []*Series

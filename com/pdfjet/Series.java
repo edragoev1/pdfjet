@@ -13,7 +13,7 @@ import java.util.List;
  * One series of a Chart: its points, the line that connects them when it is
  * drawn, and the marker of the points added by their coordinates. A series is
  * created with Chart.addSeries; its name is listed in the legend of the chart.
- * See Example_26.
+ * See Example_25.
  */
 public class Series {
     final String name;

@@ -6,11 +6,8 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"log"
-	"math"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -18,216 +15,120 @@ import (
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
 	"github.com/edragoev1/pdfjet/v9/src/alignment"
-	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/border"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
+	"github.com/edragoev1/pdfjet/v9/src/content"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
-	"github.com/edragoev1/pdfjet/v9/src/shape"
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
-// country is a country of the data file: its name and its point on the chart.
-type country struct {
-	name  string
-	point *pdfjet.Point
-}
+// The countries named on the chart, by their codes
+var named = map[string]bool{"BRA": true, "CAN": true, "IND": true, "JPN": true, "NER": true, "NGA": true, "USA": true}
 
-// Example26 draws an XY chart of the countries of a data file, each a marker
-// that links to a page about the country, with the trend line of the points,
-// and a table of the countries with a marker of their own.
+// Example26 draws a SimpleScatterChart of the life expectancy and the
+// children per woman of 217 countries and economies, from the World Bank's
+// data of 2023: a gray dot for each, seven of them named, and the trend line,
+// with a table of the named ones under the chart.
 func Example26() {
 	pdf, err := pdfjet.NewPDFFile("Example_26.pdf")
 	if err != nil {
 		log.Fatal(err)
 	}
 	pdf.SetCompliance(compliance.PDF_UA_1)
-	pdf.SetTitle("World View - Communications")
+	pdf.SetTitle("Life Expectancy and Children per Woman")
 
-	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold)
-	f1.SetSize(8.0)
+	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
+	f1.SetSize(12.0)
 
 	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
-	f2.SetSize(8.0)
+	f2.SetSize(9.0)
+
+	// Country|Code|Life expectancy|Children per woman, after a header line
+	lines := content.LinesOfTextFile("data/life-expectancy-and-fertility-2023.txt")
+	total := len(lines) - 1
 
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 
-	countries := readCountries("data/world-communications.txt", "|")
+	title := pdfjet.NewTextLine(f1, "Life Expectancy and Children per Woman")
+	title.SetStructureType(structelem.H1).SetFontSize(20.0)
+	title.SetLocation(50.0, 70.0)
+	title.DrawOn(page)
+	intro := []*pdfjet.Paragraph{pdfjet.NewParagraph().Add(pdfjet.NewTextLine(f2,
+		"Where women have fewer children, people live longer: the "+strconv.Itoa(total)+
+			" countries and economies of the World Bank's data of 2023, each a gray dot, "+
+			"seven of them named, and the trend line through them, with the named ones in the table "+
+			"under the chart.").SetFontSize(10.0))}
+	frame := pdfjet.NewTextFrameFromParagraphs(intro).SetWidth(512.0)
+	frame.SetLocation(50.0, 84.0)
+	frame.DrawOn(page)
+	y := frame.GetTextBottom() + 18.0
 
-	// The heading of the document, above the chart
-	pdfjet.NewTextLine(f1, "Cell Phones and Internet Use by Country").
-		SetStructureType(structelem.H1).
-		SetFontSize(16.0).
-		SetLocation(70.0, 36.0).
-		DrawOn(page)
-
-	chart := pdfjet.NewChart(f1, f2)
-	chart.SetSize(500.0, 300.0)
-	chart.SetTitle("World View - Communications")
-	chart.SetXAxisTitle("Cell phones per capita")
-	chart.SetYAxisTitle("Internet users % of the population")
-	markers := chart.AddSeries("").SetStrokeColor(color.Gray)
-	for _, c := range countries {
-		markers.AddPointWithMarker(c.point)
+	chart := pdfjet.NewSimpleScatterChart(f1, f2).
+		SetTitle("Life expectancy and children per woman").
+		SetSubtitle(strconv.Itoa(total) + " countries and economies, 2023").
+		SetXAxisTitle("Children per woman").
+		SetYAxisTitle("Life expectancy at birth, years").
+		SetTrendLine(true)
+	data := [][]*pdfjet.Cell{row(f1, true, "Country", "Children per woman", "Life expectancy")}
+	for _, line := range lines[1:] {
+		field := strings.Split(line, "|")
+		life, _ := strconv.ParseFloat(field[2], 32)
+		children, _ := strconv.ParseFloat(field[3], 32)
+		if named[field[1]] {
+			chart.AddNamed(field[0], float32(children), float32(life)) // A navy dot, named
+			data = append(data, row(f2, false, field[0], fmt.Sprintf("%.2f", float32(children)),
+				fmt.Sprintf("%.1f years", float32(life))))
+		} else {
+			chart.Add(float32(children), float32(life)) // A gray dot
+		}
 	}
-	addTrendLine(chart, countries)
-	chart.SetLocation(70.0, 50.0)
-	chart.DrawOn(page)
+	chart.SetSize(512.0, 340.0)
+	chart.SetLocation(50.0, y)
+	y = chart.DrawOn(page)[1] + 30.0
 
-	f1.SetSize(7.0)
-	f2.SetSize(7.0)
-	addTableToChart(page, countries, f1, f2)
+	// The countries named on the chart
+	heading := pdfjet.NewTextLine(f1, "The countries named on the chart")
+	heading.SetStructureType(structelem.H2).SetFontSize(14.0)
+	heading.SetLocation(50.0, y)
+	heading.DrawOn(page)
+	table := pdfjet.NewTable()
+	table.SetTableData(data, 1)
+	table.SetColumnWidth(0, 232.0)
+	table.SetColumnWidth(1, 140.0)
+	table.SetColumnWidth(2, 140.0)
+	table.SetLocation(50.0, y+10.0)
+	y = table.DrawOn(page)[1] + 16.0
+
+	source := pdfjet.NewTextLine(f2, "Source: World Bank, World Development Indicators, SP.DYN.LE00.IN and "+
+		"SP.DYN.TFRT.IN, 2023, licensed under CC BY 4.0.")
+	source.SetFontSize(8.0).SetTextColor(0x5F6873)
+	source.SetLocation(50.0, y)
+	source.DrawOn(page)
 
 	if err := pdf.Complete(); err != nil {
 		log.Fatal(err)
 	}
 }
 
-// addTrendLine calculates and adds the trend line of the countries to the chart.
-func addTrendLine(chart *pdfjet.Chart, countries []*country) {
-	points := make([]*pdfjet.Point, 0, len(countries))
-	for _, c := range countries {
-		points = append(points, c.point)
+// row returns a row of cells of the font at 9 points, one for each text, in
+// the look of the chart: a light band behind the header row, a thin gray line
+// under each row, and the numbers, the cells after the first, aligned right.
+func row(font *pdfjet.Font, header bool, texts ...string) []*pdfjet.Cell {
+	cells := make([]*pdfjet.Cell, 0)
+	for i, text := range texts {
+		cell := pdfjet.NewCell(font, text).SetFontSize(9.0)
+		cell.SetTopPadding(5.0).SetBottomPadding(5.0).SetLeftPadding(6.0).SetRightPadding(6.0)
+		cell.SetBorders(false).SetBorder(border.Bottom, true)
+		cell.SetBorderWidth(0.5).SetBorderColor(0xD5D9DE)
+		if header {
+			cell.SetBackgroundColor(0xF1F3F6)
+		}
+		if i > 0 {
+			cell.SetTextAlignment(alignment.Right)
+		}
+		cells = append(cells, cell)
 	}
-	m := slope(points)
-	b := intercept(points, m)
-	chart.AddSeries("Trend line").
-		SetDrawPath(true).
-		SetStrokeColor(color.Blue).
-		SetShape(shape.Invisible).
-		AddPoint(0.0, b).
-		AddPoint(1.5, m*1.5+b)
-}
-
-// addTableToChart draws a table of the countries that have a marker of their own.
-func addTableToChart(page *pdfjet.Page, countries []*country, f1, f2 *pdfjet.Font) {
-	table := pdfjet.NewTable()
-	tableData := make([][]*pdfjet.Cell, 0)
-
-	// The header row: the country heads its marker and its name
-	headerRow := make([]*pdfjet.Cell, 0)
-	header := pdfjet.NewCell(f1, "Country")
-	header.SetColSpan(2)
-	headerRow = append(headerRow, header)
-	headerRow = append(headerRow, pdfjet.NewCell(f1, ""))
-	headerRow = append(headerRow, pdfjet.NewCell(f1, "Page about the country"))
-	tableData = append(tableData, headerRow)
-
-	for _, c := range countries {
-		if c.point.GetShape() != shape.Circle {
-			tableRow := make([]*pdfjet.Cell, 0)
-
-			cell := pdfjet.NewCell(f2, "")
-			cell.SetMarker(c.point, alignment.Left)
-			tableRow = append(tableRow, cell)
-
-			cell = pdfjet.NewCell(f1, c.name)
-			tableRow = append(tableRow, cell)
-
-			// The address is a link to it: text that reads as an address and is
-			// not one, PAC reports
-			cell = pdfjet.NewCell(f2, c.point.GetURIAction())
-			cell.SetURIAction(c.point.GetURIAction())
-			tableRow = append(tableRow, cell)
-
-			tableData = append(tableData, tableRow)
-		}
-	}
-
-	table.SetTableData(tableData, 1)
-	table.AutoAdjustColumnWidths()
-	table.SetCellBorderWidth(0.2)
-	table.SetLocation(70.0, 360.0)
-	table.SetColumnWidth(0, 9.0)
-	table.DrawOn(page)
-}
-
-// readCountries reads the countries from the data file.
-// format: country|population|...|cellphones|...|internet
-func readCountries(fileName, delimiter string) []*country {
-	countries := make([]*country, 0)
-
-	file, err := os.Open(fileName)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := scanner.Text()
-
-		var cols []string
-		if delimiter == "|" {
-			cols = strings.Split(line, "|")
-		} else if delimiter == "\t" {
-			cols = strings.Split(line, "\t")
-		} else {
-			log.Fatal("Only pipes and tabs can be used as delimiters")
-		}
-
-		if len(cols) < 8 {
-			continue
-		}
-
-		populationStr := strings.TrimSpace(cols[1])
-		populationStr = strings.ReplaceAll(populationStr, ",", "")
-		population, err := strconv.ParseFloat(populationStr, 64)
-		if err != nil {
-			continue
-		}
-
-		name := strings.TrimSpace(cols[0])
-
-		urlName := name
-		urlName = strings.ReplaceAll(urlName, " ", "_")
-		urlName = strings.ReplaceAll(urlName, "'", "_")
-		urlName = strings.ReplaceAll(urlName, ",", "_")
-		urlName = strings.ReplaceAll(urlName, "(", "_")
-		urlName = strings.ReplaceAll(urlName, ")", "_")
-
-		cellPhonesStr := strings.TrimSpace(cols[5])
-		cellPhonesStr = strings.ReplaceAll(cellPhonesStr, ",", "")
-		cellPhones, err := strconv.ParseFloat(cellPhonesStr, 64)
-		if err != nil {
-			continue
-		}
-
-		internetStr := strings.TrimSpace(cols[7])
-		internetStr = strings.ReplaceAll(internetStr, ",", "")
-		internet, err := strconv.ParseFloat(internetStr, 64)
-		if err != nil {
-			continue
-		}
-
-		point := pdfjet.NewPoint(float32(cellPhones/population), float32(internet/population*100))
-		point.SetURIAction("http://pdfjet.com/country/" + urlName + ".txt")
-		point.SetAltDescription(name) // What the link of the point is, for a screen reader
-		point.SetRadius(2.0)
-
-		if point.GetX() > 1.25 {
-			point.SetShape(shape.RightArrow)
-			point.SetStrokeColor(color.Black)
-		} else if point.GetY() > 80.0 {
-			point.SetShape(shape.UpArrow)
-			point.SetStrokeColor(color.Blue)
-		} else if name == "France" {
-			point.SetShape(shape.Multiply)
-			point.SetStrokeColor(color.Green)
-		} else if name == "Canada" {
-			point.SetShape(shape.Box)
-			point.SetStrokeColor(color.Orange)
-		} else if strings.HasPrefix(name, "United States") {
-			point.SetShape(shape.Star)
-			point.SetStrokeColor(color.Red)
-		}
-
-		countries = append(countries, &country{name: name, point: point})
-	}
-
-	if err := scanner.Err(); err != nil {
-		log.Fatal(err)
-	}
-
-	return countries
+	return cells
 }
 
 func main() {
@@ -235,44 +136,4 @@ func main() {
 	Example26()
 	time1 := time.Now().UnixMilli()
 	fmt.Printf("Example_26 => %4d ms\n", time1-time0)
-}
-
-// The slope and intercept of the ordinary least squares trend line of the points.
-func slope(points []*pdfjet.Point) float32 {
-	return covar(points) / devsq(points) * float32(len(points)-1)
-}
-
-func intercept(points []*pdfjet.Point, slope float32) float32 {
-	m := mean(points)
-	return m[1] - slope*m[0]
-}
-
-func mean(points []*pdfjet.Point) []float32 {
-	m := make([]float32, 2)
-	for _, point := range points {
-		m[0] += point.GetX()
-		m[1] += point.GetY()
-	}
-	n := float32(len(points))
-	m[0] /= n
-	m[1] /= n
-	return m
-}
-
-func covar(points []*pdfjet.Point) float32 {
-	var covariance float32
-	m := mean(points)
-	for _, point := range points {
-		covariance += (point.GetX() - m[0]) * (point.GetY() - m[1])
-	}
-	return covariance / float32(len(points)-1)
-}
-
-func devsq(points []*pdfjet.Point) float32 {
-	var sum float32
-	m := mean(points)
-	for _, point := range points {
-		sum += float32(math.Pow(float64(point.GetX()-m[0]), float64(2)))
-	}
-	return sum
 }

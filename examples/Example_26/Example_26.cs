@@ -8,226 +8,111 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using PDFjet.NET;
 
 /**
  * Example_26.cs
- *
- * Draws an XY chart of the countries of a data file, each a marker that links
- * to a page about the country, with the trend line of the points, and a table
- * of the countries with a marker of their own.
+ * This example draws a SimpleScatterChart of the life expectancy and the
+ * children per woman of 217 countries and economies, from the World Bank's
+ * data of 2023: a gray dot for each, seven of them named, and the trend line,
+ * with a table of the named ones under the chart.
  */
 public class Example_26 {
-    /** A country of the data file: its name and its point on the chart. */
-    private sealed class Country {
-        internal readonly String name;
-        internal readonly Point point;
-        internal Country(String name, Point point) {
-            this.name = name;
-            this.point = point;
-        }
-    }
+    // The countries named on the chart, by their codes
+    static readonly List<String> NAMED = new List<String> {"BRA", "CAN", "IND", "JPN", "NER", "NGA", "USA"};
 
     public Example_26() {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_26.pdf", FileMode.Create)));
         pdf.SetCompliance(Compliance.PDF_UA_1);
-        pdf.SetTitle("World View - Communications");
+        pdf.SetTitle("Life Expectancy and Children per Woman");
 
-        Font f1 = new Font(pdf, IBMPlexSans.Bold);
-        f1.SetSize(8f);
+        Font f1 = new Font(pdf, IBMPlexSans.SemiBold);
+        f1.SetSize(12f);
 
         Font f2 = new Font(pdf, IBMPlexSans.Regular);
-        f2.SetSize(8f);
+        f2.SetSize(9f);
+
+        // Country|Code|Life expectancy|Children per woman, after a header line
+        List<String> lines = Content.LinesOfTextFile("data/life-expectancy-and-fertility-2023.txt");
+        int total = lines.Count - 1;
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        List<Country> countries = ReadCountries("data/world-communications.txt", "|");
+        new TextLine(f1, "Life Expectancy and Children per Woman")
+                .SetStructureType(StructElem.H1).SetFontSize(20f)
+                .SetLocation(50f, 70f).DrawOn(page);
+        List<Paragraph> intro = new List<Paragraph>();
+        intro.Add(new Paragraph(new TextLine(f2, "Where women have fewer children, people live longer: the "
+                + total + " countries and economies of the World Bank's data of 2023, each a gray dot, "
+                + "seven of them named, and the trend line through them, with the named ones in the table "
+                + "under the chart.").SetFontSize(10f)));
+        TextFrame frame = new TextFrame(intro).SetLocation(50f, 84f).SetWidth(512f);
+        frame.DrawOn(page);
+        float y = frame.GetTextBottom() + 18f;
 
-        // The heading of the document, above the chart
-        new TextLine(f1, "Cell Phones and Internet Use by Country")
-                .SetStructureType(StructElem.H1)
-                .SetFontSize(16f)
-                .SetLocation(70f, 36f)
-                .DrawOn(page);
-
-        Chart chart = new Chart(f1, f2);
-        chart.SetLocation(70f, 50f);
-        chart.SetSize(500f, 300f);
-        chart.SetTitle("World View - Communications");
-        chart.SetXAxisTitle("Cell phones per capita");
-        chart.SetYAxisTitle("Internet users % of the population");
-        Series markers = chart.AddSeries("").SetStrokeColor(Color.gray);
-        foreach (Country country in countries) {
-            markers.AddPoint(country.point);
+        SimpleScatterChart chart = new SimpleScatterChart(f1, f2)
+                .SetTitle("Life expectancy and children per woman")
+                .SetSubtitle(total + " countries and economies, 2023")
+                .SetXAxisTitle("Children per woman")
+                .SetYAxisTitle("Life expectancy at birth, years")
+                .SetTrendLine(true);
+        List<List<Cell>> data = new List<List<Cell>>();
+        data.Add(Row(f1, true, "Country", "Children per woman", "Life expectancy"));
+        for (int n = 1; n < lines.Count; n++) {
+            String[] field = lines[n].Split('|');
+            float life = float.Parse(field[2], CultureInfo.InvariantCulture);
+            float children = float.Parse(field[3], CultureInfo.InvariantCulture);
+            if (NAMED.Contains(field[1])) {
+                chart.Add(field[0], children, life);    // A navy dot, named
+                data.Add(Row(f2, false, field[0], children.ToString("F2", CultureInfo.InvariantCulture),
+                        life.ToString("F1", CultureInfo.InvariantCulture) + " years"));
+            } else {
+                chart.Add(children, life);              // A gray dot
+            }
         }
-        AddTrendLine(chart, countries);
-        chart.DrawOn(page);
+        chart.SetLocation(50f, y).SetSize(512f, 340f);
+        y = chart.DrawOn(page)[1] + 30f;
 
-        f1.SetSize(7f);
-        f2.SetSize(7f);
-        AddTableToChart(page, countries, f1, f2);
+        // The countries named on the chart
+        new TextLine(f1, "The countries named on the chart").SetStructureType(StructElem.H2)
+                .SetFontSize(14f).SetLocation(50f, y).DrawOn(page);
+        Table table = new Table();
+        table.SetTableData(data, 1);
+        table.SetColumnWidth(0, 232f);
+        table.SetColumnWidth(1, 140f);
+        table.SetColumnWidth(2, 140f);
+        table.SetLocation(50f, y + 10f);
+        y = table.DrawOn(page)[1] + 16f;
+
+        new TextLine(f2, "Source: World Bank, World Development Indicators, SP.DYN.LE00.IN and "
+                + "SP.DYN.TFRT.IN, 2023, licensed under CC BY 4.0.")
+                .SetFontSize(8f).SetTextColor(0x5F6873).SetLocation(50f, y).DrawOn(page);
 
         pdf.Complete();
     }
 
-    private void AddTrendLine(Chart chart, List<Country> countries) {
-        List<Point> points = new List<Point>();
-        foreach (Country country in countries) {
-            points.Add(country.point);
-        }
-        float m = Slope(points);
-        float b = Intercept(points, m);
-        chart.AddSeries("Trend line")
-                .SetDrawPath(true)
-                .SetStrokeColor(Color.blue)
-                .SetShape(Shape.INVISIBLE)
-                .AddPoint(0f, b)
-                .AddPoint(1.5f, m * 1.5f + b);
-    }
-
-    private void AddTableToChart(
-            Page page, List<Country> countries, Font f1, Font f2) {
-        Table table = new Table();
-        List<List<Cell>> tableData = new List<List<Cell>>();
-
-        // The header row: the country heads its marker and its name
-        List<Cell> headerRow = new List<Cell>();
-        Cell header = new Cell(f1, "Country");
-        header.SetColSpan(2);
-        headerRow.Add(header);
-        headerRow.Add(new Cell(f1, ""));
-        headerRow.Add(new Cell(f1, "Page about the country"));
-        tableData.Add(headerRow);
-
-        foreach (Country country in countries) {
-            if (country.point.GetShape() != Shape.CIRCLE) {
-                List<Cell> tableRow = new List<Cell>();
-
-                Cell cell = new Cell(f2);
-                cell.SetMarker(country.point, Alignment.LEFT);
-                cell.SetText("");
-                tableRow.Add(cell);
-
-                cell = new Cell(f1);
-                cell.SetText(country.name);
-                tableRow.Add(cell);
-
-                // The address is a link to it: text that reads as an address and is
-                // not one, PAC reports
-                cell = new Cell(f2);
-                cell.SetText(country.point.GetURIAction());
-                cell.SetURIAction(country.point.GetURIAction());
-                tableRow.Add(cell);
-
-                tableData.Add(tableRow);
+    // A row of cells of the font at 9 points, one for each text, in the
+    // look of the chart: a light band behind the header row, a thin gray
+    // line under each row, and the numbers, the cells after the first,
+    // aligned right.
+    static List<Cell> Row(Font font, bool header, params String[] texts) {
+        List<Cell> row = new List<Cell>();
+        for (int i = 0; i < texts.Length; i++) {
+            Cell cell = new Cell(font, texts[i]).SetFontSize(9f);
+            cell.SetTopPadding(5f).SetBottomPadding(5f).SetLeftPadding(6f).SetRightPadding(6f);
+            cell.SetBorders(false).SetBorder(Border.BOTTOM, true);
+            cell.SetBorderWidth(0.5f).SetBorderColor(0xD5D9DE);
+            if (header) {
+                cell.SetBackgroundColor(0xF1F3F6);
             }
-        }
-        table.SetTableData(tableData, 1);
-        table.AutoAdjustColumnWidths();
-        table.SetCellBorderWidth(0.2f);
-        table.SetLocation(70f, 360f);
-        table.SetColumnWidth(0, 9f);
-        table.DrawOn(page);
-    }
-
-    private List<Country> ReadCountries(
-            String fileName,
-            String delimiter) {
-        List<Country> countries = new List<Country>();
-        StreamReader reader = new StreamReader(fileName);
-        String line = null;
-        while ((line = reader.ReadLine()) != null) {
-            String[] cols = null;
-            if (delimiter.Equals("|")) {
-                cols = line.Split(new Char[] {'|'});
-            } else if (delimiter.Equals("\t")) {
-                cols = line.Split(new Char[] {'\t'});
-            } else {
-                throw new Exception(
-                    "Only pipes and tabs can be used as delimiters");
+            if (i > 0) {
+                cell.SetTextAlignment(Alignment.RIGHT);
             }
-
-            try {
-                double population =
-                        Double.Parse(cols[1].Replace(",", ""));
-                String name = cols[0].Trim();
-                String country_name = name;
-                country_name = country_name.Replace(" ", "_");
-                country_name = country_name.Replace("'", "_");
-                country_name = country_name.Replace(",", "_");
-                country_name = country_name.Replace("(", "_");
-                country_name = country_name.Replace(")", "_");
-                Point point = new Point(
-                        (float) (Double.Parse(cols[5].Replace(",", "")) / population),
-                        (float) (Double.Parse(cols[7].Replace(",", "")) / population * 100));
-                point.SetURIAction(
-                        "http://pdfjet.com/country/" + country_name + ".txt");
-                point.SetAltDescription(name); // What the link of the point is, for a screen reader
-                point.SetRadius(2.0f);
-
-                if (point.GetX() > 1.25f) {
-                    point.SetShape(Shape.RIGHT_ARROW);
-                    point.SetStrokeColor(Color.black);
-                } else if (point.GetY() > 80f) {
-                    point.SetShape(Shape.UP_ARROW);
-                    point.SetStrokeColor(Color.blue);
-                } else if (name.Equals("France")) {
-                    point.SetShape(Shape.MULTIPLY);
-                    point.SetStrokeColor(Color.green);
-                } else if (name.Equals("Canada")) {
-                    point.SetShape(Shape.BOX);
-                    point.SetStrokeColor(Color.orange);
-                } else if (name.StartsWith("United States")) {
-                    point.SetShape(Shape.STAR);
-                    point.SetStrokeColor(Color.red);
-                }
-
-                countries.Add(new Country(name, point));
-            } catch (Exception) {
-            }
+            row.Add(cell);
         }
-        reader.Close();
-        return countries;
-    }
-
-    // The slope and intercept of the ordinary least squares trend line of the points.
-    private static float Slope(List<Point> points) {
-        return Covar(points) / Devsq(points) * (points.Count - 1);
-    }
-
-    private static float Intercept(List<Point> points, float slope) {
-        float[] mean = Mean(points);
-        return mean[1] - slope * mean[0];
-    }
-
-    private static float[] Mean(List<Point> points) {
-        float[] mean = new float[2];
-        foreach (Point point in points) {
-            mean[0] += point.GetX();
-            mean[1] += point.GetY();
-        }
-        mean[0] /= points.Count;
-        mean[1] /= points.Count;
-        return mean;
-    }
-
-    private static float Covar(List<Point> points) {
-        float covariance = 0f;
-        float[] mean = Mean(points);
-        foreach (Point point in points) {
-            covariance += (point.GetX() - mean[0]) * (point.GetY() - mean[1]);
-        }
-        return covariance / (points.Count - 1);
-    }
-
-    private static float Devsq(List<Point> points) {
-        float devsq = 0f;
-        float[] mean = Mean(points);
-        foreach (Point point in points) {
-            devsq += (float) Math.Pow(point.GetX() - mean[0], 2);
-        }
-        return devsq;
+        return row;
     }
 
     public static void Main(String[] args) {

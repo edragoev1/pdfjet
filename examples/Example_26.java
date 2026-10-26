@@ -13,226 +13,106 @@ import com.pdfjet.fonts.*;
 
 /**
  * Example_26.java
- *
- * Draws an XY chart of the countries of a data file, each a marker that links
- * to a page about the country, with the trend line of the points, and a table
- * of the countries with a marker of their own.
+ * This example draws a SimpleScatterChart of the life expectancy and the
+ * children per woman of 217 countries and economies, from the World Bank's
+ * data of 2023: a gray dot for each, seven of them named, and the trend line,
+ * with a table of the named ones under the chart.
  */
-final public class Example_26 {
-    /** A country of the data file: its name and its point on the chart. */
-    private static final class Country {
-        final String name;
-        final Point point;
-        Country(String name, Point point) {
-            this.name = name;
-            this.point = point;
-        }
-    }
+public class Example_26 {
+    // The countries named on the chart, by their codes
+    static final List<String> NAMED = Arrays.asList("BRA", "CAN", "IND", "JPN", "NER", "NGA", "USA");
 
     public Example_26() throws Exception {
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_26.pdf")));
         pdf.setCompliance(Compliance.PDF_UA_1);
-        pdf.setTitle("World View - Communications");
+        pdf.setTitle("Life Expectancy and Children per Woman");
 
-        Font f1 = new Font(pdf, IBMPlexSans.Bold);
-        f1.setSize(8f);
+        Font f1 = new Font(pdf, IBMPlexSans.SemiBold);
+        f1.setSize(12f);
 
         Font f2 = new Font(pdf, IBMPlexSans.Regular);
-        f2.setSize(8f);
+        f2.setSize(9f);
+
+        // Country|Code|Life expectancy|Children per woman, after a header line
+        List<String> lines = Content.linesOfTextFile("data/life-expectancy-and-fertility-2023.txt");
+        int total = lines.size() - 1;
 
         Page page = new Page(pdf, Letter.PORTRAIT);
 
-        List<Country> countries = readCountries("data/world-communications.txt", "|");
+        new TextLine(f1, "Life Expectancy and Children per Woman")
+                .setStructureType(StructElem.H1).setFontSize(20f)
+                .setLocation(50f, 70f).drawOn(page);
+        List<Paragraph> intro = new ArrayList<Paragraph>();
+        intro.add(new Paragraph(new TextLine(f2, "Where women have fewer children, people live longer: the "
+                + total + " countries and economies of the World Bank's data of 2023, each a gray dot, "
+                + "seven of them named, and the trend line through them, with the named ones in the table "
+                + "under the chart.").setFontSize(10f)));
+        TextFrame frame = new TextFrame(intro).setLocation(50f, 84f).setWidth(512f);
+        frame.drawOn(page);
+        float y = frame.getTextBottom() + 18f;
 
-        // The heading of the document, above the chart
-        new TextLine(f1, "Cell Phones and Internet Use by Country")
-                .setStructureType(StructElem.H1)
-                .setFontSize(16f)
-                .setLocation(70f, 36f)
-                .drawOn(page);
-
-        Chart chart = new Chart(f1, f2);
-        chart.setLocation(70f, 50f);
-        chart.setSize(500f, 300f);
-        chart.setTitle("World View - Communications");
-        chart.setXAxisTitle("Cell phones per capita");
-        chart.setYAxisTitle("Internet users % of the population");
-        Series markers = chart.addSeries("").setStrokeColor(Color.gray);
-        for (Country country : countries) {
-            markers.addPoint(country.point);
+        SimpleScatterChart chart = new SimpleScatterChart(f1, f2)
+                .setTitle("Life expectancy and children per woman")
+                .setSubtitle(total + " countries and economies, 2023")
+                .setXAxisTitle("Children per woman")
+                .setYAxisTitle("Life expectancy at birth, years")
+                .setTrendLine(true);
+        List<List<Cell>> data = new ArrayList<List<Cell>>();
+        data.add(row(f1, true, "Country", "Children per woman", "Life expectancy"));
+        for (String line : lines.subList(1, lines.size())) {
+            String[] field = line.split("\\|");
+            float life = Float.parseFloat(field[2]);
+            float children = Float.parseFloat(field[3]);
+            if (NAMED.contains(field[1])) {
+                chart.add(field[0], children, life);    // A navy dot, named
+                data.add(row(f2, false, field[0], String.format(Locale.US, "%.2f", children),
+                        String.format(Locale.US, "%.1f years", life)));
+            } else {
+                chart.add(children, life);              // A gray dot
+            }
         }
-        addTrendLine(chart, countries);
-        chart.drawOn(page);
+        chart.setLocation(50f, y).setSize(512f, 340f);
+        y = chart.drawOn(page)[1] + 30f;
 
-        f1.setSize(7f);
-        f2.setSize(7f);
-        addTableToChart(page, countries, f1, f2);
+        // The countries named on the chart
+        new TextLine(f1, "The countries named on the chart").setStructureType(StructElem.H2)
+                .setFontSize(14f).setLocation(50f, y).drawOn(page);
+        Table table = new Table();
+        table.setTableData(data, 1);
+        table.setColumnWidth(0, 232f);
+        table.setColumnWidth(1, 140f);
+        table.setColumnWidth(2, 140f);
+        table.setLocation(50f, y + 10f);
+        y = table.drawOn(page)[1] + 16f;
+
+        new TextLine(f2, "Source: World Bank, World Development Indicators, SP.DYN.LE00.IN and "
+                + "SP.DYN.TFRT.IN, 2023, licensed under CC BY 4.0.")
+                .setFontSize(8f).setTextColor(0x5F6873).setLocation(50f, y).drawOn(page);
 
         pdf.complete();
     }
 
-    public void addTrendLine(Chart chart, List<Country> countries) {
-        List<Point> points = new ArrayList<Point>();
-        for (Country country : countries) {
-            points.add(country.point);
-        }
-        float m = slope(points);
-        float b = intercept(points, m);
-        chart.addSeries("Trend line")
-                .setDrawPath(true)
-                .setStrokeColor(Color.blue)
-                .setShape(Shape.INVISIBLE)
-                .addPoint(0f, b)
-                .addPoint(1.5f, m * 1.5f + b);
-    }
-
-    public void addTableToChart(
-            Page page, List<Country> countries, Font f1, Font f2) throws Exception {
-        Table table = new Table();
-        List<List<Cell>> tableData = new ArrayList<List<Cell>>();
-
-        // The header row: the country heads its marker and its name
-        List<Cell> headerRow = new ArrayList<Cell>();
-        Cell header = new Cell(f1, "Country");
-        header.setColSpan(2);
-        headerRow.add(header);
-        headerRow.add(new Cell(f1, ""));
-        headerRow.add(new Cell(f1, "Page about the country"));
-        tableData.add(headerRow);
-
-        for (Country country : countries) {
-            if (country.point.getShape() != Shape.CIRCLE) {
-                List<Cell> tableRow = new ArrayList<Cell>();
-
-                Cell cell = new Cell(f2);
-                cell.setMarker(country.point, Alignment.LEFT);
-                cell.setText("");
-                tableRow.add(cell);
-
-                cell = new Cell(f1);
-                cell.setText(country.name);
-                tableRow.add(cell);
-
-                // The address is a link to it: text that reads as an address and is
-                // not one, PAC reports
-                cell = new Cell(f2);
-                cell.setText(country.point.getURIAction());
-                cell.setURIAction(country.point.getURIAction());
-                tableRow.add(cell);
-
-                tableData.add(tableRow);
+    // A row of cells of the font at 9 points, one for each text, in the
+    // look of the chart: a light band behind the header row, a thin gray
+    // line under each row, and the numbers, the cells after the first,
+    // aligned right.
+    static List<Cell> row(Font font, boolean header, String... texts) {
+        List<Cell> row = new ArrayList<Cell>();
+        for (int i = 0; i < texts.length; i++) {
+            Cell cell = new Cell(font, texts[i]).setFontSize(9f);
+            cell.setTopPadding(5f).setBottomPadding(5f).setLeftPadding(6f).setRightPadding(6f);
+            cell.setBorders(false).setBorder(Border.BOTTOM, true);
+            cell.setBorderWidth(0.5f).setBorderColor(0xD5D9DE);
+            if (header) {
+                cell.setBackgroundColor(0xF1F3F6);
             }
-        }
-        table.setTableData(tableData, 1);
-        table.autoAdjustColumnWidths();
-        table.setCellBorderWidth(0.2f);
-        table.setLocation(70f, 360f);
-        table.setColumnWidth(0, 9f);
-        table.drawOn(page);
-    }
-
-    public List<Country> readCountries(
-            String fileName,
-            String delimiter) throws Exception {
-        List<Country> countries = new ArrayList<Country>();
-        BufferedReader reader = null;
-        try {
-            reader = new BufferedReader(
-                    new InputStreamReader(new FileInputStream(fileName), "UTF-8"));
-            String line = null;
-            while ((line = reader.readLine()) != null) {
-                String[] cols = null;
-                if (delimiter.equals("|")) {
-                    cols = line.split("\\|", -1);
-                } else if (delimiter.equals("\t")) {
-                    cols = line.split("\t", -1);
-                } else {
-                    throw new Exception(
-                        "Only pipes and tabs can be used as delimiters");
-                }
-
-                try {
-                    double population =
-                            Double.valueOf(cols[1].replace(",", ""));
-                    String name = cols[0].trim();
-                    String country_name = name;
-                    country_name = country_name.replace(" ", "_");
-                    country_name = country_name.replace("'", "_");
-                    country_name = country_name.replace(",", "_");
-                    country_name = country_name.replace("(", "_");
-                    country_name = country_name.replace(")", "_");
-                    Point point = new Point(
-                            (float) (Double.valueOf(cols[5].replace(",", "")) / population),
-                            (float) (Double.valueOf(cols[7].replace(",", "")) / population * 100));
-                    point.setURIAction("http://pdfjet.com/country/" + country_name + ".txt");
-                    point.setAltDescription(name); // What the link of the point is, for a screen reader
-                    point.setRadius(2f);
-
-                    if (point.getX() > 1.25f) {
-                        point.setShape(Shape.RIGHT_ARROW);
-                        point.setStrokeColor(Color.black);
-                    } else if (point.getY() > 80f) {
-                        point.setShape(Shape.UP_ARROW);
-                        point.setStrokeColor(Color.blue);
-                    } else if (name.equals("France")) {
-                        point.setShape(Shape.MULTIPLY);
-                        point.setStrokeColor(Color.green);
-                    } else if (name.equals("Canada")) {
-                        point.setShape(Shape.BOX);
-                        point.setStrokeColor(Color.orange);
-                    } else if (name.startsWith("United States")) {
-                        point.setShape(Shape.STAR);
-                        point.setStrokeColor(Color.red);
-                    }
-
-                    countries.add(new Country(name, point));
-                } catch (Exception e) {
-                }
+            if (i > 0) {
+                cell.setTextAlignment(Alignment.RIGHT);
             }
-        } finally {
-            reader.close();
+            row.add(cell);
         }
-        return countries;
-    }
-
-    // The slope and intercept of the ordinary least squares trend line of the points.
-    private static float slope(List<Point> points) {
-        return covar(points) / devsq(points) * (points.size() - 1);
-    }
-
-    private static float intercept(List<Point> points, float slope) {
-        float[] mean = mean(points);
-        return mean[1] - slope * mean[0];
-    }
-
-    private static float[] mean(List<Point> points) {
-        float[] mean = new float[2];
-        for (Point point : points) {
-            mean[0] += point.getX();
-            mean[1] += point.getY();
-        }
-        mean[0] /= points.size();
-        mean[1] /= points.size();
-        return mean;
-    }
-
-    private static float covar(List<Point> points) {
-        float covariance = 0f;
-        float[] mean = mean(points);
-        for (Point point : points) {
-            covariance += (point.getX() - mean[0]) * (point.getY() - mean[1]);
-        }
-        return covariance / (points.size() - 1);
-    }
-
-    private static float devsq(List<Point> points) {
-        float devsq = 0f;
-        float[] mean = mean(points);
-        for (Point point : points) {
-            devsq = devsq + (float) Math.pow(point.getX() - mean[0], 2);
-        }
-        return devsq;
+        return row;
     }
 
     public static void main(String[] args) throws Exception {

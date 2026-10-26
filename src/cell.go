@@ -289,7 +289,7 @@ func (cell *Cell) GetBarcode() *Barcode {
 
 // SetMarker sets the marker drawn in this cell: a Point, placed at the left or
 // the right of the cell and centered vertically.
-// See the Point class and Example_26 for more information.
+// See the Point class and Example_23 for more information.
 //   - point: the point.
 //   - align: alignment.Left or alignment.Right.
 func (cell *Cell) SetMarker(point *Point, align alignment.Alignment) *Cell {

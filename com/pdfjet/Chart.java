@@ -9,7 +9,7 @@ package com.pdfjet;
 import java.util.*;
 
 /**
- * XY chart renderer for PDF pages. See Example_26.
+ * XY chart renderer for PDF pages. See Example_25.
  */
 public class Chart implements Drawable {
     private float w = 300f;

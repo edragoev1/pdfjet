@@ -12,7 +12,7 @@ namespace PDFjet.NET {
 /// One series of a Chart: its points, the line that connects them when it is
 /// drawn, and the marker of the points added by their coordinates. A series is
 /// created with Chart.AddSeries; its name is listed in the legend of the chart.
-/// See Example_26.
+/// See Example_25.
 /// </summary>
 public class Series {
     internal readonly String name;

@@ -9,7 +9,7 @@ import Foundation
 /**
  * Used to create XY chart objects and draw them on a page.
  *
- * Please see Example_26.
+ * Please see Example_25.
  */
 public class Chart : Drawable {
     private var w: Float = 300.0

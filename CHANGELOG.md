@@ -69,6 +69,20 @@ There is no 9.1.3: what was done for it is in 9.1.5 (the owner, 26 October
   table of the same numbers under them, and a table of one car with its
   photo and its VIN as a Code 128 barcode in their cells. It was the first
   10 pages of the file as a table, which Example_24 draws whole.
+- All four ports: `SimpleScatterChart`, a chart of points on two axes in the
+  look of SimpleBarChart: the points as small gray dots, a little
+  transparent so that a cluster shows darker (opaque in PDF/A-1), named
+  points navy and labeled beside them, the least squares trend line if
+  asked, labeled at its end, a light horizontal grid, the axes from the data
+  rounded to steps or set by hand. In PDF/UA it is one figure, described
+  from its data. Like SimpleBarChart it needs no other chart: the helpers
+  the charts share moved from Chart and BarChart into an internal class.
+- Example_26 is now a SimpleScatterChart of the life expectancy and the
+  children per woman of 217 countries and economies in 2023, from the
+  World Bank's World Development Indicators (CC BY 4.0), seven of them
+  named, with a table of the named ones. It was a Chart of cell phones and
+  internet use by country from a file of about 2007, which Example_23 still
+  draws as a table.
 - Example_22 is now a guide to four countries and their regions, laid out
   by TextFlow: headings, paragraphs and maps with captions on 4 pages, in a
   PDF/UA document. It was a table of text columns in English and Greek,
