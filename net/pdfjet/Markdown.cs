@@ -591,7 +591,8 @@ public class Markdown {
         for (int r = 0; r < block.rows.Count; r++) {
             List<Cell> row = new List<Cell>();
             for (int c = 0; c < block.rows[r].Count; c++) {
-                Cell cell = new Cell((r == 0) ? bold : regular, PlainText(block.rows[r][c]));
+                String text = block.rows[r][c];
+                Cell cell = new Cell((r == 0) ? bold : CellFont(text), PlainText(text));
                 cell.SetTextAlignment(block.alignments[c]);
                 row.Add(cell);
             }
@@ -623,6 +624,24 @@ public class Markdown {
         }
         y = xy[1];
         atTop = false;
+    }
+
+    // The font of a cell: the font of its emphasis when the whole of its text
+    // is in one, as **2.1** is in bold, so that a table can mark a value; the
+    // regular font when it has none, or more than one, as a cell has one font.
+    private Font CellFont(String text) {
+        Font font = null;
+        foreach (TextLine line in markup.Paragraph(text).lines) {
+            if (Util.Trim(line.text).Length == 0) {
+                continue;
+            }
+            if (font == null) {
+                font = line.font;
+            } else if (font != line.font) {
+                return regular;
+            }
+        }
+        return font ?? regular;
     }
 
     // The text of a cell, without its inline markup.

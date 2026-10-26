@@ -141,6 +141,30 @@ import Testing
         #expect(MarkdownTests.count(drawn.pdf, "LI") == 80)
     }
 
+    // The font selected last before the text is drawn: the Tf of its line.
+    private func fontBefore(_ content: String, _ text: String) throws -> String? {
+        let range = try #require(content.range(of: "<" + TestSupport.hex(text) + ">"), "\(text) is not drawn")
+        let before = String(content[..<range.lowerBound])
+        let regex = try NSRegularExpression(pattern: "/F\\d+ [\\d.]+ Tf")
+        let matches = regex.matches(in: before, range: NSRange(before.startIndex..., in: before))
+        guard let last = matches.last, let r = Range(last.range, in: before) else {
+            return nil
+        }
+        return String(before[r])
+    }
+
+    // A whole cell in bold is drawn in the bold font, as the header is, so that
+    // a table can mark a value; a cell of mixed emphasis stays regular.
+    @Test func aTableCellInOneEmphasisIsDrawnInItsFont() throws {
+        let drawn = try MarkdownTests.draw("| N | V |\n|---|---:|\n| a | 15 |\n| b | **25** |\n| c | **7** 8 |", nil)
+        let content = drawn.contents[0]
+        let header = try fontBefore(content, "V")
+        #expect(try fontBefore(content, "25") == header, "the bold cell is in the bold font")
+        let plain = try fontBefore(content, "15")
+        #expect(plain != header)
+        #expect(try fontBefore(content, "7 8") == plain, "a cell of mixed emphasis is regular")
+    }
+
     @Test func aTableGoesOnOnTheNextPageWithItsHeaderRow() throws {
         // Letters of the core fonts that are kerned are drawn apart, so the
         // header is one letter a column.

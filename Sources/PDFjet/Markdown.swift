@@ -610,7 +610,8 @@ public class Markdown {
         for r in 0..<blockRows.count {
             var row = [Cell]()
             for c in 0..<blockRows[r].count {
-                let cell = Cell((r == 0) ? bold : regular, plainText(blockRows[r][c]))
+                let text = blockRows[r][c]
+                let cell = Cell((r == 0) ? bold : cellFont(text), plainText(text))
                 cell.setTextAlignment(alignments[c])
                 row.append(cell)
             }
@@ -643,6 +644,24 @@ public class Markdown {
         // A table with rows always draws them, so it has a corner.
         y = xy?[1] ?? y
         atTop = false
+    }
+
+    // The font of a cell: the font of its emphasis when the whole of its text
+    // is in one, as **2.1** is in bold, so that a table can mark a value; the
+    // regular font when it has none, or more than one, as a cell has one font.
+    private func cellFont(_ text: String) -> Font {
+        var font: Font? = nil
+        for line in markup.paragraph(text).lines {
+            if (line.text ?? "").trim().isEmpty {
+                continue
+            }
+            if font == nil {
+                font = line.font
+            } else if font !== line.font {
+                return regular
+            }
+        }
+        return font ?? regular
     }
 
     // The text of a cell, without its inline markup.

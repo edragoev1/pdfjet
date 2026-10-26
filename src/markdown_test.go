@@ -160,6 +160,40 @@ func TestMarkdownAListOverPagesIsOneList(t *testing.T) {
 	testAssertStructures(t, drawn, "L", 1, "LI", 80)
 }
 
+// testFontBefore returns the font selected last before the text is drawn: the
+// Tf of its line.
+func testFontBefore(t *testing.T, content, text string) string {
+	t.Helper()
+	at := strings.Index(content, "<"+testHex(text)+">")
+	if at < 0 {
+		t.Fatalf("%s is not drawn", text)
+	}
+	fonts := regexp.MustCompile(`/F\d+ [\d.]+ Tf`).FindAllString(content[:at], -1)
+	if len(fonts) == 0 {
+		return ""
+	}
+	return fonts[len(fonts)-1]
+}
+
+// A whole cell in bold is drawn in the bold font, as the header is, so that a
+// table can mark a value; a cell of mixed emphasis stays regular.
+func TestMarkdownATableCellInOneEmphasisIsDrawnInItsFont(t *testing.T) {
+	testAllowCoreFonts(t)
+	drawn := testDrawMarkdown("| N | V |\n|---|---:|\n| a | 15 |\n| b | **25** |\n| c | **7** 8 |", "")
+	content := drawn.contents[0]
+	header := testFontBefore(t, content, "V")
+	if got := testFontBefore(t, content, "25"); got != header {
+		t.Errorf("the bold cell is in %q, the header in %q", got, header)
+	}
+	plain := testFontBefore(t, content, "15")
+	if plain == header {
+		t.Errorf("the plain cell is in the header's font %q", plain)
+	}
+	if got := testFontBefore(t, content, "7 8"); got != plain {
+		t.Errorf("the cell of mixed emphasis is in %q, not the regular %q", got, plain)
+	}
+}
+
 func TestMarkdownATableGoesOnOnTheNextPageWithItsHeaderRow(t *testing.T) {
 	testAllowCoreFonts(t)
 	// Letters of the core fonts that are kerned are drawn apart, so the

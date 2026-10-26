@@ -589,7 +589,8 @@ public class Markdown {
         for (int r = 0; r < block.rows.size(); r++) {
             List<Cell> row = new ArrayList<Cell>();
             for (int c = 0; c < block.rows.get(r).size(); c++) {
-                Cell cell = new Cell((r == 0) ? bold : regular, plainText(block.rows.get(r).get(c)));
+                String text = block.rows.get(r).get(c);
+                Cell cell = new Cell((r == 0) ? bold : cellFont(text), plainText(text));
                 cell.setTextAlignment(block.alignments.get(c));
                 row.add(cell);
             }
@@ -621,6 +622,24 @@ public class Markdown {
         }
         y = xy[1];
         atTop = false;
+    }
+
+    // The font of a cell: the font of its emphasis when the whole of its text
+    // is in one, as **2.1** is in bold, so that a table can mark a value; the
+    // regular font when it has none, or more than one, as a cell has one font.
+    private Font cellFont(String text) {
+        Font font = null;
+        for (TextLine line : markup.paragraph(text).lines) {
+            if (line.text.trim().isEmpty()) {
+                continue;
+            }
+            if (font == null) {
+                font = line.font;
+            } else if (font != line.font) {
+                return regular;
+            }
+        }
+        return (font != null) ? font : regular;
     }
 
     // The text of a cell, without its inline markup.

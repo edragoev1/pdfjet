@@ -174,6 +174,10 @@ There is no 9.1.3: what was done for it is in 9.1.5 (the owner, 26 October
   one no longer builds; a calendar is a `Table` of seven columns.
 
 ### Fixed
+- Markdown, the four ports: a table cell whose whole text is in one
+  emphasis, as `**2.1**`, is drawn in that font, bold, italic or code, so
+  that a table can mark a value; it was drawn plain. A cell of mixed
+  emphasis is drawn in the regular font, as before, as a cell has one font.
 - An image copied from a PDF that was read, with `new Image(pdf, obj)`
   (`NewImageFromPDFobj` in Go), keeps its transparency, in the four ports:
   its soft mask, the alpha of a PNG, and its mask, a color key or a stencil,

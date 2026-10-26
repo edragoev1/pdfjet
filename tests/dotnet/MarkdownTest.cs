@@ -150,6 +150,32 @@ public class MarkdownTest {
         Assert.Equal(80, Count(drawn.pdf, "LI"));
     }
 
+    // The font selected last before the text is drawn: the Tf of its line.
+    private static String FontBefore(String content, String text) {
+        int at = content.IndexOf("<" + TestSupport.Hex(text) + ">", StringComparison.Ordinal);
+        Assert.True(at >= 0, text + " is not drawn");
+        String font = null;
+        foreach (System.Text.RegularExpressions.Match m in
+                System.Text.RegularExpressions.Regex.Matches(content.Substring(0, at), @"/F\d+ [\d.]+ Tf")) {
+            font = m.Value;
+        }
+        return font;
+    }
+
+    [Fact]
+    public void ATableCellInOneEmphasisIsDrawnInItsFont() {
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
+        // A whole cell in bold is drawn in the bold font, as the header is, so
+        // that a table can mark a value; a cell of mixed emphasis stays regular.
+        Drawn drawn = Draw("| N | V |\n|---|---:|\n| a | 15 |\n| b | **25** |\n| c | **7** 8 |", null);
+        String content = drawn.contents[0];
+        String header = FontBefore(content, "V");
+        Assert.Equal(header, FontBefore(content, "25"));
+        String plain = FontBefore(content, "15");
+        Assert.NotEqual(header, plain);
+        Assert.Equal(plain, FontBefore(content, "7 8"));
+    }
+
     [Fact]
     public void ATableGoesOnOnTheNextPageWithItsHeaderRow() {
         using IDisposable coreFonts = TestSupport.AllowCoreFonts();

@@ -646,11 +646,12 @@ func (markdown *Markdown) drawTable(block *markdownBlock, x, width float32) {
 	for r := range block.rows {
 		row := make([]*Cell, 0, len(block.rows[r]))
 		for c := range block.rows[r] {
-			font := markdown.regular
+			text := block.rows[r][c]
+			font := markdown.cellFont(text)
 			if r == 0 {
 				font = markdown.bold
 			}
-			cell := NewCell(font, markdown.plainText(block.rows[r][c]))
+			cell := NewCell(font, markdown.plainText(text))
 			cell.SetTextAlignment(block.alignments[c])
 			row = append(row, cell)
 		}
@@ -682,6 +683,28 @@ func (markdown *Markdown) drawTable(block *markdownBlock, x, width float32) {
 	}
 	markdown.y = xy[1]
 	markdown.atTop = false
+}
+
+// cellFont returns the font of a cell: the font of its emphasis when the whole
+// of its text is in one, as **2.1** is in bold, so that a table can mark a
+// value; the regular font when it has none, or more than one, as a cell has one
+// font.
+func (markdown *Markdown) cellFont(text string) *Font {
+	var font *Font
+	for _, line := range markdown.markup.Paragraph(text).lines {
+		if trimSpace(line.text) == "" {
+			continue
+		}
+		if font == nil {
+			font = line.font
+		} else if font != line.font {
+			return markdown.regular
+		}
+	}
+	if font == nil {
+		return markdown.regular
+	}
+	return font
 }
 
 // plainText returns the text of a cell, without its inline markup.

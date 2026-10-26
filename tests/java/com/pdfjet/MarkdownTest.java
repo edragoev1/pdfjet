@@ -7,6 +7,7 @@
 package com.pdfjet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -164,6 +165,32 @@ class MarkdownTest {
         assertTrue(drawn.pages.size() >= 2, drawn.pages.size() + " pages");
         assertEquals(1, count(drawn.pdf, "L"));
         assertEquals(80, count(drawn.pdf, "LI"));
+    }
+
+    // The font selected last before the text is drawn: the Tf of its line.
+    private static String fontBefore(String content, String text) {
+        int at = content.indexOf("<" + TestSupport.hex(text) + ">");
+        assertTrue(at >= 0, text + " is not drawn");
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("/F\\d+ [\\d.]+ Tf").matcher(content.substring(0, at));
+        String font = null;
+        while (m.find()) {
+            font = m.group();
+        }
+        return font;
+    }
+
+    @Test
+    void aTableCellInOneEmphasisIsDrawnInItsFont() throws Exception {
+        TestSupport.allowCoreFonts(true); // What the document tags, in a core font
+        // A whole cell in bold is drawn in the bold font, as the header is, so
+        // that a table can mark a value; a cell of mixed emphasis stays regular.
+        Drawn drawn = draw("| N | V |\n|---|---:|\n| a | 15 |\n| b | **25** |\n| c | **7** 8 |", null);
+        String content = drawn.contents.get(0);
+        String header = fontBefore(content, "V");
+        assertEquals(header, fontBefore(content, "25"), "the bold cell is in the bold font");
+        String plain = fontBefore(content, "15");
+        assertNotEquals(header, plain);
+        assertEquals(plain, fontBefore(content, "7 8"), "a cell of mixed emphasis is regular");
     }
 
     @Test
