@@ -1,0 +1,131 @@
+// simplebarchart_test.go
+//
+// Copyright (c) 2026 PDFjet Software
+// Licensed under the MIT License. See LICENSE file in the project root.
+
+package pdfjet
+
+import (
+	"regexp"
+	"strconv"
+	"strings"
+	"testing"
+
+	"github.com/edragoev1/pdfjet/v9/src/color"
+)
+
+func testSimpleBarChart(pdf *PDF) *SimpleBarChart {
+	font := testHelvetica(pdf)
+	chart := NewSimpleBarChart(font, font).SetWidth(330)
+	chart.SetLocation(50, 50)
+	return chart.SetTitle("Statement, 12 pages").SetSubtitle("warm ms").
+		Add("PDFjet", 7.3).Add("iText", 72.6).Add("OpenPDF", 18.4).Add("PDFBox", 44.1)
+}
+
+// testRectWidths returns the widths of the rectangles filled on the page, in
+// the order they were drawn.
+func testRectWidths(t *testing.T, content string) []float32 {
+	t.Helper()
+	widths := make([]float32, 0)
+	for _, m := range regexp.MustCompile(`([-\d.]+) ([-\d.]+) ([-\d.]+) ([-\d.]+) re`).FindAllStringSubmatch(content, -1) {
+		w, err := strconv.ParseFloat(m[3], 32)
+		if err != nil {
+			t.Fatal(err)
+		}
+		widths = append(widths, float32(w))
+	}
+	return widths
+}
+
+func TestSimpleBarChartEachBarIsItsShareOfTheLargestValue(t *testing.T) {
+	pdf := testNewPDF()
+	page := NewPage(pdf, testLetterPortrait())
+	chart := testSimpleBarChart(pdf)
+	chart.DrawOn(page)
+	widths := testRectWidths(t, testContent(page))
+	if len(widths) != 5 {
+		t.Fatalf("%d rectangles, not the panel and 4 bars: %v", len(widths), widths)
+	}
+	testNear(t, "the panel", 330, widths[0], testDelta)
+	longest := widths[2] // iText's 72.6
+	testNear(t, "PDFjet", longest*7.3/72.6, widths[1], 0.05)
+	testNear(t, "OpenPDF", longest*18.4/72.6, widths[3], 0.05)
+	testNear(t, "PDFBox", longest*44.1/72.6, widths[4], 0.05)
+}
+
+func TestSimpleBarChartTheHighlightedBarHasItsOwnColor(t *testing.T) {
+	for _, highlighted := range []bool{true, false} {
+		pdf := testNewPDF()
+		page := NewPage(pdf, testLetterPortrait())
+		chart := testSimpleBarChart(pdf).SetHighlightColor(color.Red)
+		if highlighted {
+			chart.SetHighlight(0)
+		}
+		chart.DrawOn(page)
+		if got := strings.Contains(testContent(page), "1 0 0 rg"); got != highlighted {
+			t.Errorf("highlighted %v: the highlight color drawn %v", highlighted, got)
+		}
+	}
+}
+
+func TestSimpleBarChartDescribesItselfFromItsValues(t *testing.T) {
+	chart := testSimpleBarChart(testNewPDF()).SetFractionDigits(1)
+	want := "Statement, 12 pages, warm ms: PDFjet 7.3, iText 72.6, OpenPDF 18.4, PDFBox 44.1."
+	if got := chart.getAltDescription(); got != want {
+		t.Errorf("got %q, want %q", got, want)
+	}
+	chart.SetAltDescription("Four libraries")
+	if got := chart.getAltDescription(); got != "Four libraries" {
+		t.Errorf("the description set: got %q", got)
+	}
+}
+
+func TestSimpleBarChartValuesHaveTheDigitsTheyNeedUnlessSet(t *testing.T) {
+	chart := testSimpleBarChart(testNewPDF())
+	if got := chart.label(7.25); got != "7.25" {
+		t.Errorf("7.25 written %q", got)
+	}
+	if got := chart.label(72); got != "72" {
+		t.Errorf("72 written %q", got)
+	}
+	chart.SetFractionDigits(1)
+	if got := chart.label(72); got != "72.0" {
+		t.Errorf("72 with one digit written %q", got)
+	}
+}
+
+func TestSimpleBarChartIsAsTallAsItsRows(t *testing.T) {
+	pdf := testNewPDF()
+	page := NewPage(pdf, testLetterPortrait())
+	chart := testSimpleBarChart(pdf)
+	h := chart.GetHeight()
+	xy := chart.DrawOn(page)
+	testAssertXY(t, 380, 50+h, xy)
+	taller := testSimpleBarChart(pdf).Add("Another", 10)
+	testNear(t, "a row more", h+chart.rowHeight(), taller.GetHeight(), testDelta)
+}
+
+func TestSimpleBarChartANegativeValueHasNoBarButItsValue(t *testing.T) {
+	pdf := testNewPDF()
+	page := NewPage(pdf, testLetterPortrait())
+	font := testHelvetica(pdf)
+	chart := NewSimpleBarChart(font, font).Add("up", 5).Add("down", -2)
+	chart.DrawOn(page)
+	content := testContent(page)
+	if widths := testRectWidths(t, content); len(widths) != 2 {
+		t.Errorf("%d rectangles, not the panel and one bar: %v", len(widths), widths)
+	}
+	if !strings.Contains(content, testHex("-2")) {
+		t.Errorf("the negative value not written in %q", content)
+	}
+}
+
+func TestSimpleBarChartWithoutBarsDrawsNothing(t *testing.T) {
+	pdf := testNewPDF()
+	page := NewPage(pdf, testLetterPortrait())
+	font := testHelvetica(pdf)
+	NewSimpleBarChart(font, font).SetTitle("Nothing").DrawOn(page)
+	if len(page.GetContent()) != 0 {
+		t.Errorf("content %q", testContent(page))
+	}
+}
