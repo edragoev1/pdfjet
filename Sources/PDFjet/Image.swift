@@ -78,10 +78,17 @@ public class Image : Drawable {
         try self.init(pdf, try Content.getFromStream(stream))
     }
 
-    private init(_ pdf: PDF, _ bytes: [UInt8]) throws {
+    ///
+    /// Creates an image from the bytes of a PNG, JPEG or BMP file already in
+    /// memory, without reading them from a stream. The image is written to
+    /// the PDF before the initializer returns.
+    ///
+    /// - Parameter pdf: the PDF to which we add this image.
+    /// - Parameter bytes: the bytes of the image file.
+    ///
+    public init(_ pdf: PDF, _ bytes: [UInt8]) throws {
         self.pdfIdentity = pdf.identity
         let imageType = try Image.typeOf(bytes)
-        let stream = InputStream(data: Data(bytes))
         if imageType == ImageType.JPG {
             let jpg = try JPGImage(bytes)
             setPixels(Int(jpg.getWidth()), Int(jpg.getHeight()))
@@ -96,7 +103,7 @@ public class Image : Drawable {
             setPhysicalSize(jpg.getPhysicalWidth(), jpg.getPhysicalHeight())
             setOrientation(jpg.orientation)
         } else if imageType == ImageType.PNG {
-            let png = try PNGImage(stream)
+            let png = try PNGImage(InputStream(data: Data(bytes)))
             setPixels(png.getWidth(), png.getHeight())
             colorKeyMask = png.getColorKeyMask()
             decodeColors = png.decodeColors
@@ -105,7 +112,7 @@ public class Image : Drawable {
             addImage(pdf, png.stream, png.getAlpha() ?? [UInt8](), imageType, colorSpace, bitsPerComponent)
             setPhysicalSize(png.getPhysicalWidth(), png.getPhysicalHeight())
         } else if imageType == ImageType.BMP {
-            let bmp = try BMPImage(stream)
+            let bmp = try BMPImage(InputStream(data: Data(bytes)))
             setPixels(bmp.getWidth(), bmp.getHeight())
             addImage(pdf, bmp.getData(), bmp.getAlpha() ?? [UInt8](), imageType, "DeviceRGB", 8)
             setPhysicalSize(bmp.getPhysicalWidth(), bmp.getPhysicalHeight())
@@ -124,7 +131,6 @@ public class Image : Drawable {
 
     private init(_ objects: inout [PDFobj], _ bytes: [UInt8]) throws {
         let imageType = try Image.typeOf(bytes)
-        let stream = InputStream(data: Data(bytes))
         var data: [UInt8]
         var alpha = [UInt8]()
         if imageType == ImageType.JPG {
@@ -142,7 +148,7 @@ public class Image : Drawable {
             setPhysicalSize(jpg.getPhysicalWidth(), jpg.getPhysicalHeight())
             setOrientation(jpg.orientation)
         } else if imageType == ImageType.PNG {
-            let png = try PNGImage(stream)
+            let png = try PNGImage(InputStream(data: Data(bytes)))
             data = png.stream
             alpha = png.getAlpha() ?? [UInt8]()
             setPixels(png.getWidth(), png.getHeight())
@@ -153,7 +159,7 @@ public class Image : Drawable {
             addImageToObjects(&objects, &data, &alpha, imageType, colorSpace, bitsPerComponent)
             setPhysicalSize(png.getPhysicalWidth(), png.getPhysicalHeight())
         } else if imageType == ImageType.BMP {
-            let bmp = try BMPImage(stream)
+            let bmp = try BMPImage(InputStream(data: Data(bytes)))
             data = bmp.getData()
             alpha = bmp.getAlpha() ?? [UInt8]()
             setPixels(bmp.getWidth(), bmp.getHeight())

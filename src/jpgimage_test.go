@@ -11,6 +11,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -350,5 +351,49 @@ func TestJPGImageWithoutItsEndMarkerIsDrawnWhenItsScanIsWhole(t *testing.T) {
 				t.Errorf("%s cut in its scan at %d of %d: %v", name, cut, len(data), err)
 			}
 		}
+	}
+}
+
+// testPDFOf returns the PDF of one image drawn on a page, the image made from
+// the bytes of its file or from a reader of them, without its ID, a new one for
+// each document, and the time it was made.
+func testPDFOf(file []byte, fromBytes bool) string {
+	doc := testNewDoc()
+	var image *Image
+	if fromBytes {
+		image = NewImageFromBytes(doc.pdf, file)
+	} else {
+		image = NewImage(doc.pdf, bytes.NewReader(file))
+	}
+	image.DrawOn(NewPage(doc.pdf, letter.Portrait()))
+	pdf := doc.complete()
+	raw := strings.ReplaceAll(string(pdf), testTrailerID(pdf), "")
+	return regexp.MustCompile(`\d{4}-?\d\d-?\d\dT?\d\d:?\d\d:?\d\dZ|/CreationDate <[0-9a-f]*>`).ReplaceAllString(raw, "")
+}
+
+func TestJPGImageTheBytesOfAnImageFileMakeTheSamePDFAsAReaderOfThem(t *testing.T) {
+	for _, name := range []string{"images/italy-admin.jpg", "images/cmyk.jpg", "images/ee-map.png",
+		"tests/data/jpeg/restart.jpg"} {
+		file, err := os.ReadFile(testRepoPath(t, name))
+		if err != nil {
+			t.Skip("the images directory is not here")
+		}
+		if testPDFOf(file, false) != testPDFOf(file, true) {
+			t.Errorf("%s: the PDFs differ", name)
+		}
+	}
+	// A JPEG with bytes after its end marker, as cameras append, is read past
+	// the last two bytes, as it was.
+	data, err := os.ReadFile(testRepoPath(t, "tests/data/jpeg/restart.jpg"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	trailing := append(append([]byte{}, data...), 0, 0, 0)
+	jpg, err := newJPGImageFromBytes(trailing)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(jpg.getData(), trailing) {
+		t.Error("the data after the end marker is not kept")
 	}
 }

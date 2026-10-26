@@ -315,5 +315,34 @@ public sealed class JPGImageTest {
             }
         }
     }
+    // The PDF of one image drawn on a page, the image made from the bytes of
+    // its file or from a stream of them, without its ID, a new one for each
+    // document, and the time it was made.
+    private static string PdfOf(byte[] file, bool fromBytes) {
+        MemoryStream output = new MemoryStream();
+        PDF pdf = new PDF(output);
+        Image image = fromBytes ? new Image(pdf, file) : new Image(pdf, new MemoryStream(file));
+        image.DrawOn(new Page(pdf, Letter.PORTRAIT));
+        pdf.Complete();
+        byte[] bytes = output.ToArray();
+        return System.Text.RegularExpressions.Regex.Replace(
+                TestSupport.Latin1(bytes).Replace(TestSupport.TrailerID(bytes), ""),
+                @"\d{4}-?\d\d-?\d\dT?\d\d:?\d\d:?\d\dZ|/CreationDate <[0-9a-f]*>", "");
+    }
+
+    [Fact]
+    public void TheBytesOfAnImageFileMakeTheSamePDFAsAStreamOfThem() {
+        foreach (string name in new[] {"images/italy-admin.jpg", "images/cmyk.jpg", "images/ee-map.png",
+                "tests/data/jpeg/restart.jpg"}) {
+            byte[] file = File.ReadAllBytes(TestSupport.RepoPath(name));
+            Assert.Equal(PdfOf(file, false), PdfOf(file, true));
+        }
+        // A JPEG with bytes after its end marker, as cameras append, is read
+        // past the last two bytes, as it was.
+        byte[] data = File.ReadAllBytes(TestSupport.RepoPath("tests/data/jpeg/restart.jpg"));
+        byte[] trailing = new byte[data.Length + 3];
+        Array.Copy(data, trailing, data.Length);
+        Assert.Equal(trailing, new JPGImage(trailing).GetData());
+    }
 }
 }

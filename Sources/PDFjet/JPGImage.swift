@@ -273,6 +273,12 @@ class JPGImage {
             throw JPGImageError.cutShort
         }
         var i = index + Int(length) - 2
+        // The marker is nearly always the last two bytes, looked at first:
+        // the scan would find them too, so the result is the same.
+        let n = buffer.count
+        if n - i >= 2 && buffer[n - 2] == 0xFF && buffer[n - 1] == M_EOI {
+            return
+        }
         while i + 1 < buffer.count {
             if buffer[i] == 0xFF && buffer[i + 1] == M_EOI {
                 return

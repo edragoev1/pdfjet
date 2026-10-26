@@ -88,7 +88,20 @@ There is no 9.1.3: what was done for it is in 9.1.5 (the owner, 26 October
   PDF/UA document. It was a table of text columns in English and Greek,
   which Example_21 and the TextColumn examples show the parts of.
 
+- All four ports: an `Image` made from the bytes of a PNG, JPEG or BMP
+  file already in memory: `new Image(pdf, bytes)` (Go
+  `NewImageFromBytes(pdf, bytes)`), without the copy a stream of them
+  needs. The PDF is the same as from a stream.
+
 ### Changed
+- All four ports: a JPEG is read faster. Its end-of-image marker, which
+  PDFjet looks for to tell a whole photo from one cut short, is nearly
+  always its last two bytes, and these are looked at first, before the
+  rest of the file is scanned; the PDF is the same. Java, C# and Swift
+  gain the most; Go's search was quick already. Swift no longer copies
+  a JPEG into a stream it does not read. The 18-page report of the fair
+  test, with four photos of 3.3 MB, takes 6.9 ms in Java (8.2 before) and
+  allocates 17.3 MB (20.7) with the new constructor.
 - Swift: text other than printable ASCII is drawn faster: a 500-page text
   in Latin, Greek and Cyrillic takes 100 ms, where 9.0.9 and 9.1.1 took 113.
   Only the glyphs a font draws for more than one character, as one glyph for

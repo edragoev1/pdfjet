@@ -325,6 +325,12 @@ func (image *jpgImage) checkScanEnds(buffer []byte, frame uint8) error {
 	if start > len(buffer) {
 		return errJPEGCutShort
 	}
+	// The marker is nearly always the last two bytes, looked at first: the
+	// search would find them too, so the result is the same.
+	n := len(buffer)
+	if n-start >= 2 && buffer[n-2] == 0xFF && buffer[n-1] == mEOI {
+		return nil
+	}
 	if !bytes.Contains(buffer[start:], []byte{0xFF, mEOI}) {
 		if (frame == mSOF0 || frame == mSOF1) && jpegScansWhole(buffer) {
 			image.data = append(append(make([]byte, 0, len(buffer)+2), buffer...), 0xFF, mEOI)

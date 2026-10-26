@@ -65,7 +65,15 @@ public class Image : IDrawable {
     public Image(PDF pdf, Stream inputStream) : this(pdf, Content.GetFromStream(inputStream)) {
     }
 
-    private Image(PDF pdf, byte[] bytes) {
+    /// <summary>
+    /// Creates an image from the bytes of a PNG, JPEG or BMP file already in
+    /// memory, without copying them as a stream would. The image is written
+    /// to the PDF before the constructor returns, so the bytes can be reused
+    /// after it.
+    /// </summary>
+    /// <param name="pdf">the PDF to which we add this image.</param>
+    /// <param name="bytes">the bytes of the image file.</param>
+    public Image(PDF pdf, byte[] bytes) {
         this.pdf = pdf;
         ImageType imageType = TypeOf(bytes);
         Stream inputStream = new MemoryStream(bytes);

@@ -295,7 +295,13 @@ class JPGImage {
                 }
                 // The stream reads the data, so the rest of the file is
                 // scanned in the data itself, rather than a ReadByte for each
-                // byte, as in Java.
+                // byte, as in Java. The marker is nearly always the last two
+                // bytes, looked at first: the scan would find them too, so the
+                // result is the same, and a large photo is read much faster.
+                if (data.Length - stream.Position >= 2
+                        && data[data.Length - 2] == 0xFF && data[data.Length - 1] == M_EOI) {
+                    return;
+                }
                 int previous = 0;
                 for (long i = stream.Position; i < data.Length; i++) {
                     int b = data[i];

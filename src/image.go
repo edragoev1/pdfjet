@@ -83,9 +83,18 @@ func NewImageFromFile(pdf *PDF, filePath string) *Image {
 //   - pdf: the PDF to which we add this image.
 //   - inputStream: the input stream to read the image from.
 func NewImage(pdf *PDF, reader io.Reader) *Image {
-	buf := content.GetFromStream(reader)
+	return NewImageFromBytes(pdf, content.GetFromStream(reader))
+}
+
+// NewImageFromBytes creates an image from the bytes of a PNG, JPEG or BMP file
+// already in memory, without copying them as a reader would. The image is
+// written to the PDF before the function returns, so the bytes can be reused
+// after it.
+//   - pdf: the PDF to which we add this image.
+//   - buf: the bytes of the image file.
+func NewImageFromBytes(pdf *PDF, buf []byte) *Image {
 	imageType := imageTypeOf(buf)
-	reader = bytes.NewReader(buf)
+	reader := bytes.NewReader(buf)
 	image := new(Image)
 	image.pdf = pdf
 

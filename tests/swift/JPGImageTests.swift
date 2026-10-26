@@ -268,4 +268,32 @@ import Testing
         #expect(raw.contains("/Width 1200\n"), "the image object lost the pixels of the image")
         #expect(raw.contains("/Height 800\n"), "the image object lost the pixels of the image")
     }
+    // The PDF of one image drawn on a page, the image made from the bytes of
+    // its file or from a stream of them, without its ID, a new one for each
+    // document, and the time it was made.
+    private func pdfOf(_ file: [UInt8], _ fromBytes: Bool) throws -> String {
+        let memory = MemoryPDF()
+        let image = fromBytes
+                ? try Image(memory.pdf, file)
+                : try Image(memory.pdf, InputStream(data: Data(file)))
+        image.drawOn(Page(memory.pdf, Letter.PORTRAIT))
+        try memory.pdf.complete()
+        let raw = TestSupport.latin1(memory.bytes)
+                .replacingOccurrences(of: TestSupport.trailerID(memory.bytes), with: "")
+        return raw.replacingOccurrences(of: #"\d{4}-?\d\d-?\d\dT?\d\d:?\d\d:?\d\dZ|/CreationDate <[0-9a-f]*>"#,
+                with: "", options: .regularExpression)
+    }
+
+    @Test(.enabled(if: TestSupport.exists("images/italy-admin.jpg"), "the images directory is not here"),
+          arguments: ["images/italy-admin.jpg", "images/cmyk.jpg", "images/ee-map.png", "tests/data/jpeg/restart.jpg"])
+    func theBytesOfAnImageFileMakeTheSamePDFAsAStreamOfThem(_ name: String) throws {
+        let file = [UInt8](try Data(contentsOf: URL(fileURLWithPath: TestSupport.path(name))))
+        #expect(try pdfOf(file, false) == pdfOf(file, true))
+    }
+
+    @Test func aJPEGWithBytesAfterItsEndMarkerIsReadPastTheLastTwoBytes() throws {
+        let data = [UInt8](try Data(contentsOf: URL(fileURLWithPath: TestSupport.path("tests/data/jpeg/restart.jpg"))))
+        let trailing = data + [0, 0, 0]
+        #expect(try JPGImage(trailing).getData() == trailing)
+    }
 }

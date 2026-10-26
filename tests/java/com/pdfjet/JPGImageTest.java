@@ -328,4 +328,33 @@ class JPGImageTest {
         assertTrue(raw.contains("/Width 1200\n"), "the image object lost the pixels of the image");
         assertTrue(raw.contains("/Height 800\n"), "the image object lost the pixels of the image");
     }
+    // The PDF of one image drawn on a page, the image made from the bytes of
+    // its file or from a stream of them.
+    private static String pdfOf(byte[] file, boolean fromBytes) throws Exception {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PDF pdf = new PDF(bos);
+        Image image = fromBytes ? new Image(pdf, file) : new Image(pdf, new ByteArrayInputStream(file));
+        image.drawOn(new Page(pdf, Letter.PORTRAIT));
+        pdf.complete();
+        // Without its ID, a new one for each document, and the time it was made
+        byte[] bytes = bos.toByteArray();
+        return TestSupport.latin1(bytes).replace(TestSupport.trailerID(bytes), "")
+                .replaceAll("\\d{4}-?\\d\\d-?\\d\\dT?\\d\\d:?\\d\\d:?\\d\\dZ", "")
+                .replaceAll("/CreationDate <[0-9a-f]*>", "");
+    }
+
+    @Test
+    void theBytesOfAnImageFileMakeTheSamePDFAsAStreamOfThem() throws Exception {
+        for (String name : new String[] {"images/italy-admin.jpg", "images/cmyk.jpg", "images/ee-map.png",
+                "tests/data/jpeg/restart.jpg"}) {
+            assumeTrue(TestSupport.file(name).exists(), "the images directory is not here");
+            byte[] file = Files.readAllBytes(TestSupport.file(name).toPath());
+            assertEquals(pdfOf(file, false), pdfOf(file, true), name);
+        }
+        // A JPEG with bytes after its end marker, as cameras append, is read
+        // past the last two bytes, as it was.
+        byte[] data = Files.readAllBytes(TestSupport.file("tests/data/jpeg/restart.jpg").toPath());
+        byte[] trailing = java.util.Arrays.copyOf(data, data.length + 3);
+        assertTrue(java.util.Arrays.equals(trailing, new JPGImage(trailing).getData()));
+    }
 }

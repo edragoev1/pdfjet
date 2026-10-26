@@ -299,9 +299,16 @@ class JPGImage {
             // The stream reads the data, so the rest of the file is scanned
             // in the data itself: a read() of a ByteArrayInputStream for each
             // byte is synchronized, and took 2.6 ms for a 600 KB photo, the
-            // array 0.14 ms.
+            // array 0.14 ms. The marker is nearly always the last two bytes,
+            // looked at first: the scan would find them too, so the result is
+            // the same, and a 1.4 MB photo is read in a quarter of the time.
+            int start = data.length - is.available();
+            if (data.length - start >= 2
+                    && (data[data.length - 2] & 0xFF) == 0xFF && (data[data.length - 1] & 0xFF) == M_EOI) {
+                return;
+            }
             int previous = 0;
-            for (int i = data.length - is.available(); i < data.length; i++) {
+            for (int i = start; i < data.length; i++) {
                 int b = data[i] & 0xFF;
                 if (previous == 0xFF && b == M_EOI) {
                     return;

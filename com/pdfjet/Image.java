@@ -81,7 +81,17 @@ final public class Image implements Drawable {
         this(pdf, Content.getFromStream(inputStream));
     }
 
-    private Image(PDF pdf, byte[] bytes) throws Exception {
+    /**
+     * Creates an image from the bytes of a PNG, JPEG or BMP file already in
+     * memory, without copying them as a stream would. The image is written
+     * to the PDF before the constructor returns, so the bytes can be reused
+     * after it.
+     *
+     * @param pdf the PDF to which we add this image.
+     * @param bytes the bytes of the image file.
+     * @throws Exception  If the bytes are not a PNG, JPEG or BMP file
+     */
+    public Image(PDF pdf, byte[] bytes) throws Exception {
         this.pdf = pdf;
         ImageType imageType = typeOf(bytes);
         InputStream inputStream = new ByteArrayInputStream(bytes);
