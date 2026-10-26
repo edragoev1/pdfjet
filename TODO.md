@@ -335,7 +335,11 @@ commit and date. The layout's format version (1) and the look's rules
     margins, `add` for a paragraph, paragraphs, an image and an aligned
     image, `drawOn(pages)` and `drawOn(first, pages)`; margins that leave no
     room throw, as Java's misuses do. The trial report drawn in Java is the
-    same as Go's, to the pixel, on its 18 pages. Next: C#, Swift; then the
+    same as Go's, to the pixel, on its 18 pages. **C# done, 26 October
+    2026** (net/pdfjet/FlowText.cs, tests/dotnet/FlowTextTest.cs), as
+    Java's, with Go's names in C#'s case (`SetMargins`, `Add`, `AddSpace`,
+    `DrawOn`); its margins that leave no room throw ArgumentException. Its
+    trial report is the same as Go's to the pixel. Next: Swift; then the
     example and the snippet.
   - Size: about 150 to 250 lines in each port with its comments, Go first,
     then Java, C#, Swift; a test in each of the rules above, the same in
