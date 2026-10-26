@@ -122,6 +122,11 @@ There is no 9.1.3: what was done for it is in 9.1.5 (the owner, 26 October
   images and embedded files are compressed either way. The content is
   compressed unless it is set, so a PDF is written as before.
 
+- Markdown, the four ports: `setFullWidthTables(true)` (Go and C#
+  `SetFullWidthTables`) makes every table as wide as the text, its columns
+  widened by the share of the text each holds. Tables are as wide as their
+  text unless it is set, as before.
+
 ### Changed
 - Java: everything is deflated at level 5 of zlib instead of the default 6:
   the content of the pages, the fonts, the images and the embedded files.

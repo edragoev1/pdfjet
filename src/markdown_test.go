@@ -28,6 +28,12 @@ type testMarkdownDrawn struct {
 }
 
 func testDrawMarkdown(text string, imageDirectory string) *testMarkdownDrawn {
+	return testDrawMarkdownWith(text, imageDirectory, func(*Markdown) {})
+}
+
+// testDrawMarkdownWith draws the Markdown after the change, as an option set
+// on it.
+func testDrawMarkdownWith(text string, imageDirectory string, change func(*Markdown)) *testMarkdownDrawn {
 	doc := testNewDoc()
 	pdf := doc.pdf
 	pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
@@ -41,6 +47,7 @@ func testDrawMarkdown(text string, imageDirectory string) *testMarkdownDrawn {
 	if imageDirectory != "" {
 		markdown.SetImageDirectory(imageDirectory)
 	}
+	change(markdown)
 	drawn := &testMarkdownDrawn{pages: make([]*Page, 0)}
 	markdown.DrawOnPages(pdf, text, &drawn.pages, letter.Portrait())
 	var content strings.Builder
@@ -191,6 +198,24 @@ func TestMarkdownATableCellInOneEmphasisIsDrawnInItsFont(t *testing.T) {
 	}
 	if got := testFontBefore(t, content, "7 8"); got != plain {
 		t.Errorf("the cell of mixed emphasis is in %q, not the regular %q", got, plain)
+	}
+}
+
+// The right-aligned header of the last column is drawn at the right end of the
+// table: near the text's right margin, 72 pt from the edge of the page, only
+// when the tables are as wide as the text.
+func TestMarkdownATableIsAsWideAsTheTextWhenSet(t *testing.T) {
+	testAllowCoreFonts(t)
+	text := "| N | V |\n|---|---:|\n| a | 15 |"
+	narrow := testPositionOf(t, testDrawMarkdown(text, "").contents[0], "V")[0]
+	wide := testPositionOf(t, testDrawMarkdownWith(text, "", func(markdown *Markdown) {
+		markdown.SetFullWidthTables(true)
+	}).contents[0], "V")[0]
+	if narrow >= 200 {
+		t.Errorf("a table is as wide as its text: V at %v", narrow)
+	}
+	if wide <= 612-72-30 {
+		t.Errorf("a table is as wide as the text: V at %v", wide)
 	}
 }
 

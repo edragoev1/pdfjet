@@ -23,6 +23,11 @@ public class MarkdownTest {
     }
 
     private static Drawn Draw(String text, String imageDirectory) {
+        return Draw(text, imageDirectory, markdown => {});
+    }
+
+    // The Markdown drawn after the change, as an option set on it.
+    private static Drawn Draw(String text, String imageDirectory, Action<Markdown> change) {
         MemoryStream bos = new MemoryStream();
         PDF pdf = new PDF(bos, Compliance.PDF_UA_1).SetTitle("Test");
         pdf.SetTitle("Markdown");
@@ -35,6 +40,7 @@ public class MarkdownTest {
         if (imageDirectory != null) {
             markdown.SetImageDirectory(imageDirectory);
         }
+        change(markdown);
         Drawn drawn = new Drawn();
         markdown.DrawOn(pdf, text, drawn.pages, Letter.PORTRAIT);
         StringBuilder content = new StringBuilder();
@@ -174,6 +180,20 @@ public class MarkdownTest {
         String plain = FontBefore(content, "15");
         Assert.NotEqual(header, plain);
         Assert.Equal(plain, FontBefore(content, "7 8"));
+    }
+
+    [Fact]
+    public void ATableIsAsWideAsTheTextWhenSet() {
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
+        // The right-aligned header of the last column is drawn at the right
+        // end of the table: near the text's right margin, 72 pt from the edge
+        // of the page, only when the tables are as wide as the text.
+        String text = "| N | V |\n|---|---:|\n| a | 15 |";
+        float narrow = TestSupport.PositionOf(Draw(text, null).contents[0], "V")[0];
+        float wide = TestSupport.PositionOf(
+                Draw(text, null, markdown => markdown.SetFullWidthTables(true)).contents[0], "V")[0];
+        Assert.True(narrow < 200f, "a table is as wide as its text: " + narrow);
+        Assert.True(wide > 612f - 72f - 30f, "a table is as wide as the text: " + wide);
     }
 
     [Fact]

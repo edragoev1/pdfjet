@@ -49,6 +49,7 @@ public class Markdown {
     private final Markup markup;
     private Font headingFont;
     private int headingColor = Color.transparent;  // Leaves the headings in the color of the text
+    private boolean fullWidthTables = false;        // Tables as wide as the text, or as their text
     private int checkColor = 0x1A7F37;              // Of the box of a task that is done
     private float marginLeft = 72f;
     private float marginTop = 72f;
@@ -114,6 +115,20 @@ public class Markdown {
      */
     public Markdown setHeadingColor(int headingColor) {
         this.headingColor = headingColor;
+        return this;
+    }
+
+    /**
+     * Sets whether the tables are as wide as the text, their columns widened
+     * by the share of the text each holds. They are as wide as their text
+     * unless it is set, and a table wider than the text is fitted to it
+     * either way.
+     *
+     * @param fullWidthTables true for tables as wide as the text.
+     * @return this Markdown.
+     */
+    public Markdown setFullWidthTables(boolean fullWidthTables) {
+        this.fullWidthTables = fullWidthTables;
         return this;
     }
 
@@ -601,7 +616,7 @@ public class Markdown {
         table.setHeaderRowStyle(bold, 0x000000, TABLE_HEADER_BACKGROUND);
         table.setCellBorderColor(0xC8CCD2);
         table.autoAdjustColumnWidths();
-        if (table.getWidth() > width) {
+        if (fullWidthTables || table.getWidth() > width) {
             table.fitToWidth(width);
         }
         float rowHeight = 2f * regular.getBodyHeight(size());

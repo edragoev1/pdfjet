@@ -61,21 +61,22 @@ const (
 //
 // To build the pages from paragraphs and images of your own, use TextFlow.
 type Markdown struct {
-	regular        *Font
-	bold           *Font
-	italic         *Font
-	boldItalic     *Font
-	code           *Font
-	markup         *Markup
-	headingFont    *Font
-	headingColor   int32 // color.Transparent leaves the headings in the color of the text
-	checkColor     int32 // Of the box of a task that is done
-	marginLeft     float32
-	marginTop      float32
-	marginRight    float32
-	marginBottom   float32
-	imageDirectory string
-	hasImages      bool // Whether SetImageDirectory set the directory
+	regular         *Font
+	bold            *Font
+	italic          *Font
+	boldItalic      *Font
+	code            *Font
+	markup          *Markup
+	headingFont     *Font
+	headingColor    int32 // color.Transparent leaves the headings in the color of the text
+	fullWidthTables bool  // Tables as wide as the text, or as their text
+	checkColor      int32 // Of the box of a task that is done
+	marginLeft      float32
+	marginTop       float32
+	marginRight     float32
+	marginBottom    float32
+	imageDirectory  string
+	hasImages       bool // Whether SetImageDirectory set the directory
 
 	// The page being drawn, where the next block goes, and the bottom of the
 	// text on a page.
@@ -133,6 +134,15 @@ func (markdown *Markdown) SetHeadingFont(font *Font) *Markdown {
 // are in the color of the text unless it is set.
 func (markdown *Markdown) SetHeadingColor(headingColor int32) *Markdown {
 	markdown.headingColor = headingColor
+	return markdown
+}
+
+// SetFullWidthTables sets whether the tables are as wide as the text, their
+// columns widened by the share of the text each holds. They are as wide as
+// their text unless it is set, and a table wider than the text is fitted to it
+// either way.
+func (markdown *Markdown) SetFullWidthTables(fullWidthTables bool) *Markdown {
+	markdown.fullWidthTables = fullWidthTables
 	return markdown
 }
 
@@ -662,7 +672,7 @@ func (markdown *Markdown) drawTable(block *markdownBlock, x, width float32) {
 	table.SetHeaderRowStyle(markdown.bold, 0x000000, markdownTableHeaderBackground)
 	table.SetCellBorderColor(0xC8CCD2)
 	table.AutoAdjustColumnWidths()
-	if table.GetWidth() > width {
+	if markdown.fullWidthTables || table.GetWidth() > width {
 		table.FitToWidth(width)
 	}
 	rowHeight := float32(2 * markdown.regular.GetBodyHeight(markdown.size()))

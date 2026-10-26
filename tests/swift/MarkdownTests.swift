@@ -18,6 +18,11 @@ import Testing
     }
 
     static func draw(_ text: String, _ imageDirectory: String?) throws -> Drawn {
+        return try draw(text, imageDirectory) { _ in }
+    }
+
+    // The Markdown drawn after the change, as an option set on it.
+    static func draw(_ text: String, _ imageDirectory: String?, _ change: (Markdown) -> Void) throws -> Drawn {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
         // The tests find the text of the core fonts by its encoding.
         memory.pdf.coreFontsInCompliance = true
@@ -33,6 +38,7 @@ import Testing
         if let imageDirectory {
             markdown.setImageDirectory(imageDirectory)
         }
+        change(markdown)
         let drawn = Drawn()
         try markdown.drawOn(pdf, text, &drawn.pages, Letter.PORTRAIT)
         var content = ""
@@ -139,6 +145,17 @@ import Testing
         #expect(drawn.pages.count >= 2, "\(drawn.pages.count) pages")
         #expect(MarkdownTests.count(drawn.pdf, "L") == 1)
         #expect(MarkdownTests.count(drawn.pdf, "LI") == 80)
+    }
+
+    // The right-aligned header of the last column is drawn at the right end of
+    // the table: near the text's right margin, 72 pt from the edge of the
+    // page, only when the tables are as wide as the text.
+    @Test func aTableIsAsWideAsTheTextWhenSet() throws {
+        let text = "| N | V |\n|---|---:|\n| a | 15 |"
+        let narrow = TestSupport.positionOf(try MarkdownTests.draw(text, nil).contents[0], "V")[0]
+        let wide = TestSupport.positionOf(try MarkdownTests.draw(text, nil) { $0.setFullWidthTables(true) }.contents[0], "V")[0]
+        #expect(narrow < 200, "a table is as wide as its text: \(narrow)")
+        #expect(wide > 612 - 72 - 30, "a table is as wide as the text: \(wide)")
     }
 
     // The font selected last before the text is drawn: the Tf of its line.

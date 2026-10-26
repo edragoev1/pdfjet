@@ -46,6 +46,7 @@ public class Markdown {
     private let markup: Markup
     private var headingFont: Font
     private var headingColor: Int32 = Color.transparent    // Leaves the headings in the color of the text
+    private var fullWidthTables = false                     // Tables as wide as the text, or as their text
     private var checkColor: Int32 = 0x1A7F37               // Of the box of a task that is done
     private var marginLeft: Float = 72.0
     private var marginTop: Float = 72.0
@@ -123,6 +124,21 @@ public class Markdown {
     @discardableResult
     public func setHeadingColor(_ headingColor: Int32) -> Markdown {
         self.headingColor = headingColor
+        return self
+    }
+
+    ///
+    /// Sets whether the tables are as wide as the text, their columns widened
+    /// by the share of the text each holds. They are as wide as their text
+    /// unless it is set, and a table wider than the text is fitted to it
+    /// either way.
+    ///
+    /// - Parameter fullWidthTables: true for tables as wide as the text.
+    /// - Returns: this Markdown.
+    ///
+    @discardableResult
+    public func setFullWidthTables(_ fullWidthTables: Bool) -> Markdown {
+        self.fullWidthTables = fullWidthTables
         return self
     }
 
@@ -622,7 +638,7 @@ public class Markdown {
         table.setHeaderRowStyle(bold, 0x000000, Markdown.TABLE_HEADER_BACKGROUND)
         table.setCellBorderColor(0xC8CCD2)
         table.autoAdjustColumnWidths()
-        if table.getWidth() > width {
+        if fullWidthTables || table.getWidth() > width {
             table.fitToWidth(width)
         }
         let rowHeight = 2.0 * regular.getBodyHeight(size())

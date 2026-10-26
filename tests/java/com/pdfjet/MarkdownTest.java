@@ -32,6 +32,12 @@ class MarkdownTest {
     }
 
     static Drawn draw(String text, String imageDirectory) throws Exception {
+        return draw(text, imageDirectory, markdown -> {});
+    }
+
+    // The Markdown drawn after the change, as an option set on it.
+    static Drawn draw(String text, String imageDirectory, java.util.function.Consumer<Markdown> change)
+            throws Exception {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         PDF pdf = new PDF(bos, Compliance.PDF_UA_1).setTitle("Test");
         pdf.setTitle("Markdown");
@@ -44,6 +50,7 @@ class MarkdownTest {
         if (imageDirectory != null) {
             markdown.setImageDirectory(imageDirectory);
         }
+        change.accept(markdown);
         Drawn drawn = new Drawn();
         markdown.drawOn(pdf, text, drawn.pages, Letter.PORTRAIT);
         StringBuilder content = new StringBuilder();
@@ -191,6 +198,20 @@ class MarkdownTest {
         String plain = fontBefore(content, "15");
         assertNotEquals(header, plain);
         assertEquals(plain, fontBefore(content, "7 8"), "a cell of mixed emphasis is regular");
+    }
+
+    @Test
+    void aTableIsAsWideAsTheTextWhenSet() throws Exception {
+        TestSupport.allowCoreFonts(true); // What the document tags, in a core font
+        // The right-aligned header of the last column is drawn at the right
+        // end of the table: near the text's right margin, 72 pt from the edge
+        // of the page, only when the tables are as wide as the text.
+        String text = "| N | V |\n|---|---:|\n| a | 15 |";
+        float narrow = TestSupport.positionOf(draw(text, null).contents.get(0), "V")[0];
+        float wide = TestSupport.positionOf(
+                draw(text, null, markdown -> markdown.setFullWidthTables(true)).contents.get(0), "V")[0];
+        assertTrue(narrow < 200f, "a table is as wide as its text: " + narrow);
+        assertTrue(wide > 612f - 72f - 30f, "a table is as wide as the text: " + wide);
     }
 
     @Test
