@@ -141,6 +141,19 @@ There is no 9.1.3: what was done for it is in 9.1.5 (the owner, 26 October
   to Table's 7.7.
 
 ### Changed
+- All four ports: a TrueType font is embedded as a smaller subset. The
+  subset leaves out the font's `cmap` and `name` tables: it is embedded as
+  a CIDFontType2 with an Identity CIDToGIDMap, whose glyphs the PDF names by
+  their numbers, and the two were nearly a third of a subset of IBM Plex
+  Sans, more to write and compress for every document. A one-page letter in
+  two IBM Plex Sans fonts is 15.5 KB, where it was 22.2, and is made in 0.58
+  ms in Java, where it took 0.82, three quarters of which went to
+  compressing the two fonts.
+  Behavior change: the bytes of a PDF with an embedded TrueType font differ
+  from those of 9.1.1, and the font program in it has no `cmap` or `name`
+  table; a program that took the font back out of a PDF to use as a font
+  file of its own would find no `cmap`. How the PDF is drawn and its text
+  extracted are the same, by its ToUnicode map.
 - Java: everything is deflated at level 5 of zlib instead of the default 6:
   the content of the pages, the fonts, the images and the embedded files.
   The documents of the fair test are 4 to 25% faster to make, a 12-page

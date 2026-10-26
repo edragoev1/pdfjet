@@ -110,14 +110,18 @@ class Subset {
     }
 
     // The tables a subset keeps: those a PDF reader draws a TrueType font with
-    // (ISO 32000-1, 9.9), and the cmap, OS/2, name and post tables, which some
-    // readers and checkers look at. The tables of shaping and of vertical text,
-    // which PDFjet reads from the font and the PDF does not need, are left
-    // out, and so is the DSIG table, the signature of the whole font.
+    // (ISO 32000-1, 9.9), and the OS/2 and post tables, which some readers and
+    // checkers look at. The cmap and name tables are left out: a subset is
+    // embedded as a CIDFontType2 with an Identity CIDToGIDMap, whose glyphs
+    // the PDF names by their numbers, and the two were nearly a third of a subset of
+    // IBM Plex Sans, more to compress for every document (26 October 2026).
+    // The tables of shaping and of vertical text, which PDFjet reads from the
+    // font and the PDF does not need, are left out, and so is the DSIG table,
+    // the signature of the whole font.
     private static readonly HashSet<String> SubsetTables = new HashSet<String> {
         "head", "hhea", "hmtx", "maxp", "loca", "glyf",
         "cvt ", "fpgm", "prep", "gasp",
-        "cmap", "OS/2", "name", "post"
+        "OS/2", "post"
     };
 
     /// <summary>

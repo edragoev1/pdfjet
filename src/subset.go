@@ -395,15 +395,18 @@ func subsetTag(checksum uint64, kept []bool) string {
 var errNotSubset = errors.New("the font cannot be subset")
 
 // subsetTables are the tables a subset keeps: those a PDF reader draws a
-// TrueType font with (ISO 32000-1, 9.9), and the cmap, OS/2, name and post
-// tables, which some readers and checkers look at. The tables of shaping and
-// of vertical text, which PDFjet reads from the font and the PDF does not
-// need, are left out, and so is the DSIG table, the signature of the whole
-// font.
+// TrueType font with (ISO 32000-1, 9.9), and the OS/2 and post tables, which
+// some readers and checkers look at. The cmap and name tables are left out: a
+// subset is embedded as a CIDFontType2 with an Identity CIDToGIDMap, whose
+// glyphs the PDF names by their numbers, and the two were nearly a third of a subset
+// of IBM Plex Sans, more to compress for every document (26 October 2026). The
+// tables of shaping and of vertical text, which PDFjet reads from the font and
+// the PDF does not need, are left out, and so is the DSIG table, the signature
+// of the whole font.
 var subsetTables = map[string]bool{
 	"head": true, "hhea": true, "hmtx": true, "maxp": true, "loca": true, "glyf": true,
 	"cvt ": true, "fpgm": true, "prep": true, "gasp": true,
-	"cmap": true, "OS/2": true, "name": true, "post": true,
+	"OS/2": true, "post": true,
 }
 
 // subsetTrueType returns the TrueType font with the outlines of the glyphs

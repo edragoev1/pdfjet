@@ -76,8 +76,9 @@ func TestSubsetKeepsTheGlyphsUsedAndThePartsOfTheComposites(t *testing.T) {
 	if len(subset) > len(ttf)/4 {
 		t.Errorf("the subset is %d bytes of %d", len(subset), len(ttf))
 	}
-	// The other tables a reader needs as they were; shaping left out.
-	for _, name := range []string{"GPOS", "GSUB", "GDEF"} {
+	// The other tables a reader needs as they were; shaping left out, and the
+	// cmap and name tables, which a CIDFontType2 does not need.
+	for _, name := range []string{"GPOS", "GSUB", "GDEF", "cmap", "name"} {
 		if bytes.Contains(subset[:12+16*int(binary.BigEndian.Uint16(subset[4:]))], []byte(name)) {
 			t.Errorf("the subset has the %s table", name)
 		}
@@ -85,7 +86,7 @@ func TestSubsetKeepsTheGlyphsUsedAndThePartsOfTheComposites(t *testing.T) {
 	if post := testOpenTypeTable(t, subset, "post"); binary.BigEndian.Uint32(subset[post:]) != 0x00030000 {
 		t.Error("the post table is not of version 3")
 	}
-	for _, name := range []string{"cmap", "hmtx", "hhea", "name", "OS/2", "maxp"} {
+	for _, name := range []string{"hmtx", "hhea", "OS/2", "maxp"} {
 		entry := testOpenTypeEntry(t, ttf, name)
 		length := int(binary.BigEndian.Uint32(ttf[entry+12:]))
 		at := testOpenTypeTable(t, ttf, name)

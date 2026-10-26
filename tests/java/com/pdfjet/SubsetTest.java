@@ -100,12 +100,13 @@ class SubsetTest {
             }
         }
         assertTrue(subset.length <= ttf.length / 4, "the subset is " + subset.length + " bytes");
-        // The other tables a reader needs as they were; shaping left out.
-        for (String name : new String[] {"GPOS", "GSUB", "GDEF"}) {
+        // The other tables a reader needs as they were; shaping left out, and
+        // the cmap and name tables, which a CIDFontType2 does not need.
+        for (String name : new String[] {"GPOS", "GSUB", "GDEF", "cmap", "name"}) {
             assertEquals(-1, entry(subset, name), "the subset has the " + name + " table");
         }
         assertEquals(0x00030000, u32(subset, table(subset, "post")));
-        for (String name : new String[] {"cmap", "hmtx", "hhea", "name", "OS/2", "maxp"}) {
+        for (String name : new String[] {"hmtx", "hhea", "OS/2", "maxp"}) {
             int length = u32(ttf, entry(ttf, name) + 12);
             int at = table(ttf, name);
             int subsetAt = table(subset, name);

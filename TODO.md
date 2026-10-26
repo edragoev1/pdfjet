@@ -724,7 +724,13 @@ commit and date. The layout's format version (1) and the look's rules
 - **For v9.2.1: two things learned from common business documents** (an
   invoice, a statement, a report of text and photos, a batch of 1,000
   letters, written in the four ports; the owner, 26 October 2026):
-  1. Smaller font subsets. A subset keeps every glyph number of the font,
+  1. ✅ The first step done for 9.1.5, 26 October 2026 (the owner: "bring
+     it forward to 9.1.5"): `cmap` and `name` left out of the subsets in the
+     four ports. A profile of a one-page letter showed three quarters of
+     it in zlib compressing the two subsets (33 KB, where OpenPDF's are
+     22); 0.82 ms to 0.58, 22.2 KB to 15.5. Renumbering the glyphs is still
+     for v9.2.1, if it is worth it.
+     Was: Smaller font subsets. A subset keeps every glyph number of the font,
      1,019 slots in IBM Plex Sans, empty but for the ones used, with the
      font's full `hmtx`, `loca`, `cmap` and `name` tables: 23 KB and 18 KB
      uncompressed for the two fonts of a one-page invoice of 84 KB. A

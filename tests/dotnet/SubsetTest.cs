@@ -95,12 +95,13 @@ public class SubsetTest {
             }
         }
         Assert.True(subset.Length <= ttf.Length / 4, "the subset is " + subset.Length + " bytes");
-        // The other tables a reader needs as they were; shaping left out.
-        foreach (string name in new string[] {"GPOS", "GSUB", "GDEF"}) {
+        // The other tables a reader needs as they were; shaping left out, and
+        // the cmap and name tables, which a CIDFontType2 does not need.
+        foreach (string name in new string[] {"GPOS", "GSUB", "GDEF", "cmap", "name"}) {
             Assert.Equal(-1, Entry(subset, name));
         }
         Assert.Equal(0x00030000, U32(subset, Table(subset, "post")));
-        foreach (string name in new string[] {"cmap", "hmtx", "hhea", "name", "OS/2", "maxp"}) {
+        foreach (string name in new string[] {"hmtx", "hhea", "OS/2", "maxp"}) {
             int length = U32(ttf, Entry(ttf, name) + 12);
             Assert.Equal(Slice(ttf, Table(ttf, name), length), Slice(subset, Table(subset, name), length));
         }

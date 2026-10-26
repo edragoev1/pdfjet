@@ -83,12 +83,13 @@ import Testing
             }
         }
         #expect(subset.count <= ttf.count / 4, "the subset is \(subset.count) bytes")
-        // The other tables a reader needs as they were; shaping left out.
-        for name in ["GPOS", "GSUB", "GDEF"] {
+        // The other tables a reader needs as they were; shaping left out, and
+        // the cmap and name tables, which a CIDFontType2 does not need.
+        for name in ["GPOS", "GSUB", "GDEF", "cmap", "name"] {
             #expect(entry(subset, name) == -1, "the subset has the \(name) table")
         }
         #expect(u32(subset, table(subset, "post")) == 0x00030000)
-        for name in ["cmap", "hmtx", "hhea", "name", "OS/2", "maxp"] {
+        for name in ["hmtx", "hhea", "OS/2", "maxp"] {
             let length = u32(ttf, entry(ttf, name) + 12)
             let at = table(ttf, name)
             let subsetAt = table(subset, name)
