@@ -52,6 +52,12 @@ same output come in four languages, and none of them needs a third-party library
   library a single 0.8 MB DLL.
 - **Layout built in.** Tables that break across pages and repeat their header
   rows, text blocks, columns and charts.
+- **Charts that read at a glance.** SimpleBarChart compares a few values in
+  horizontal bars, a name at the left of each and its value at the end, one
+  bar highlighted, with no axis or legend to set up: the chart to put above
+  a table of the same numbers ([Example_20](examples/Example_20.java)). It
+  describes itself to screen readers from its data. Line, XY, bar and donut
+  charts too.
 - **Barcodes built in.** EAN-13, UPC-A, Code 39, Code 128, QR, Data Matrix and
   PDF417.
 - **Fonts ready to use.** 261 TrueType and OpenType fonts from the IBM Plex, Noto and
@@ -71,7 +77,7 @@ same output come in four languages, and none of them needs a third-party library
   <tr>
     <td align="center"><a href="examples/Example_01.java"><img src="images/readme/example-text.png" alt="Text blocks in English, Greek and Bulgarian" width="200"></a><br>Text in many scripts</td>
     <td align="center"><a href="examples/Example_23.java"><img src="images/readme/example-table.png" alt="A table of country data" width="200"></a><br>Tables</td>
-    <td align="center"><a href="examples/Example_28.java"><img src="images/readme/example-chart.png" alt="A donut chart" width="200"></a><br>Charts</td>
+    <td align="center"><a href="examples/Example_20.java"><img src="images/readme/example-chart.png" alt="Two simple bar charts of electric vehicles, by make and by model year, over a table of the same numbers" width="200"></a><br>Charts</td>
     <td align="center"><a href="examples/Example_37.java"><img src="images/readme/example-barcodes.png" alt="QR, Data Matrix and PDF417 symbols" width="200"></a><br>Barcodes</td>
   </tr>
 </table>

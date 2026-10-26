@@ -674,6 +674,19 @@ func barChart(pdf *pdfjet.PDF, font *pdfjet.Font) {
 	chart.DrawOn(pdfjet.NewPage(pdf, letter.Portrait()))
 }
 
+// @snippet simple-bar-chart
+func simpleBarChart(pdf *pdfjet.PDF, font *pdfjet.Font) {
+	bold := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold).SetSize(12)
+	small := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular).SetSize(10)
+	chart := pdfjet.NewSimpleBarChart(bold, small).
+		SetTitle("Response time").SetSubtitle("ms, lower is better").
+		Add("Server A", 120).Add("Server B", 85).Add("Server C", 240).
+		SetHighlight(1) // The best, in navy
+	chart.SetWidth(300) // The height from the bars
+	chart.SetLocation(50, 50)
+	chart.DrawOn(pdfjet.NewPage(pdf, letter.Portrait()))
+}
+
 // @snippet donut-chart
 func donutChart(pdf *pdfjet.PDF, font *pdfjet.Font) {
 	bold := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold).SetSize(10)
@@ -967,6 +980,7 @@ func main() {
 	run("svg-images", svgImages)
 	run("line-chart", lineChart)
 	run("bar-chart", barChart)
+	run("simple-bar-chart", simpleBarChart)
 	run("donut-chart", donutChart)
 	run("barcodes", barcodes)
 	run("qr-code", qrCode)

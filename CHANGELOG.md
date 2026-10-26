@@ -55,6 +55,20 @@ There is no 9.1.3: what was done for it is in 9.1.5 (the owner, 26 October
   is the reading order of a PDF/UA document. A report of 4 sections, 120
   paragraphs and 4 photos is about 20 lines of code with it, where placing
   the frames and the photos by hand took 53.
+- All four ports: `SimpleBarChart`, a small chart of horizontal bars that
+  compares a few values: a name at the left of each bar and its value at
+  its end, no axis, grid or legend, on a light panel with a title and a
+  subtitle at the left; one bar can be highlighted, navy with its name and
+  value bold, the others gray. Each bar is its share of the largest value,
+  and the height follows from the fonts and the bars. In a PDF/UA document
+  it is one figure, described from its title and values unless a
+  description is set. Meant to stand beside a table of the same numbers;
+  BarChart stays for grouped, stacked and vertical bars with an axis.
+- Example_20 is now a page of results from the electric vehicles file: two
+  SimpleBarCharts, the five makes and the model years from 2019 to 2023, a
+  table of the same numbers under them, and a table of one car with its
+  photo and its VIN as a Code 128 barcode in their cells. It was the first
+  10 pages of the file as a table, which Example_24 draws whole.
 - Example_22 is now a guide to four countries and their regions, laid out
   by TextFlow: headings, paragraphs and maps with captions on 4 pages, in a
   PDF/UA document. It was a table of text columns in English and Greek,

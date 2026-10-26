@@ -622,6 +622,18 @@ public class Snippets {
         chart.drawOn(new Page(pdf, Letter.PORTRAIT));
     }
 
+    // @snippet simple-bar-chart
+    static void simpleBarChart(PDF pdf, Font font) throws Exception {
+        Font bold = new Font(pdf, IBMPlexSans.SemiBold).setSize(12f);
+        Font small = new Font(pdf, IBMPlexSans.Regular).setSize(10f);
+        SimpleBarChart chart = new SimpleBarChart(bold, small)
+                .setTitle("Response time").setSubtitle("ms, lower is better")
+                .add("Server A", 120f).add("Server B", 85f).add("Server C", 240f)
+                .setHighlight(1);   // The best, in navy
+        chart.setLocation(50f, 50f).setWidth(300f);     // The height from the bars
+        chart.drawOn(new Page(pdf, Letter.PORTRAIT));
+    }
+
     // @snippet donut-chart
     static void donutChart(PDF pdf, Font font) throws Exception {
         Font bold = new Font(pdf, IBMPlexSans.Bold).setSize(10f);
@@ -868,6 +880,7 @@ public class Snippets {
         run("svg-images", Snippets::svgImages);
         run("line-chart", Snippets::lineChart);
         run("bar-chart", Snippets::barChart);
+        run("simple-bar-chart", Snippets::simpleBarChart);
         run("donut-chart", Snippets::donutChart);
         run("barcodes", Snippets::barcodes);
         run("qr-code", Snippets::qrCode);

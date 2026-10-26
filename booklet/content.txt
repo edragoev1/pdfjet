@@ -321,6 +321,9 @@ A Chart draws its Series of points on two axes, as markers, lines, or both: setD
 @snippet bar-chart Bar charts
 A BarChart draws a series of values for each category, side by side, or stacked with setStacked, vertical or horizontal with setHorizontal, with a legend and the values on the bars if asked.
 
+@snippet simple-bar-chart A simple bar chart
+A SimpleBarChart compares a few values at a glance: a name at the left of each bar, the value at its end, no axis, grid or legend, on a light panel. setHighlight draws one bar in navy, its name and value bold, as the best; which bar is the best, the lowest or the highest, is yours to say. Put a table of the same numbers under it, the chart for the picture and the table for the record. It describes itself for screen readers from its title and values.
+
 @snippet donut-chart Donut and pie charts
 A DonutChart draws its slices with their labels and shares. An inner radius of 0 makes a pie chart.
 

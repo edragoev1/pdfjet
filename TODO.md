@@ -427,7 +427,8 @@ commit and date. The layout's format version (1) and the look's rules
      year), the most common chart of business reports, from the two that
      exist; one value axis, no second one. The runner-up, a horizontal
      progress or gauge bar for a KPI, if wanted later.
-  7. **SimpleBarChart, a new class** (the owner, 26 October 2026: "what
+  7. **Done for 9.1.5, 26 October 2026, in the four ports, with the new
+     Example_20 and a snippet. SimpleBarChart, a new class** (the owner, 26 October 2026: "what
      you drew by hand is perfect", "a much better way to present data -
      very simple bar charts and a table below with the data"; 9.1.5, the
      name SimpleBarChart, the navy and gray defaults). The chart of the
@@ -471,6 +472,50 @@ commit and date. The layout's format version (1) and the look's rules
      - About 150 lines in each port, Go first; tests of the lengths, the
        highlight and the description, the same in the four ports; an
        example, a snippet, before and after screenshots for the owner.
+  8. **SimpleScatterChart, a new class, for 9.1.5** (the owner, 26
+     October 2026: the scatter plot "I developed originally for a client
+     ... could be very useful if cleaned up and improved a bit"; a class of
+     its own, as SimpleBarChart, not a change to Chart, which stays for full
+     control and keeps the line charts of Example_25 as they are). What
+     Example_26 shows today: a black grid, vertical and horizontal, and a
+     black border over the data; the highlighted countries tiny colored
+     markers among 200 gray ones, found by a table under the chart; the
+     points near zero one gray blob; a point at the edge cut off; a
+     centered title, and a legend for the trend line alone.
+     ```java
+     SimpleScatterChart chart = new SimpleScatterChart(bold, regular)
+             .setTitle("Cell phones and internet use")
+             .setSubtitle("by country, 2007")
+             .setXAxisTitle("Cell phones per person")
+             .setYAxisTitle("Internet users, % of the population");
+     for (Country c : countries) {
+         chart.add(c.phones, c.internet);           // a quiet gray dot
+     }
+     chart.add("United States", 0.83f, 72.5f);      // a navy dot, labeled
+     chart.setTrendLine(true);
+     chart.setLocation(50f, 80f).setSize(512f, 320f);
+     chart.drawOn(page);
+     ```
+     - The many points as round dots, light gray and a little
+       transparent, so that a cluster shows darker, not as a blob.
+     - A named point is highlighted: navy, a little larger, its name beside
+       it, placed so as not to leave the plot; no table to look it up in.
+       A URI for a point, as Example_26's links, if wanted: addLink.
+     - A light horizontal grid alone, no border; the axis numbers spaced by
+       their widths (as BarChart's since 9.1.5), with grouping and the
+       decimals they need; the title and subtitle at the left, as
+       SimpleBarChart's.
+     - The trend line, least squares, thin and dark gray, labeled "trend" at
+       its end, not in a legend.
+     - The axes from the data, rounded, with a pad so that no point is cut
+       at an edge; set by hand if wanted.
+     - PDF/UA: one figure, described from its data: the number of points,
+       the highlighted ones with their values, and the trend.
+     - The navy and gray of SimpleBarChart, so the two sit together.
+     - Go first, then Java, C#, Swift; the same tests and the same content
+       stream in the four ports; Example_26 a page of the scatter chart and
+       a table of the highlighted countries, as Example_20 is of its bars;
+       a snippet; before and after screenshots for the owner.
   Left out: 3D, logarithmic axes, radar charts, two value axes.
 - **The code reviews of 11 and 12 October 2026, three rounds.** Every
   finding is fixed for 9.0.7, in the four ports, each with a test

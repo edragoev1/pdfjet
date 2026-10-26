@@ -609,6 +609,18 @@ func barChart(_ pdf: PDF, _ font: Font) throws {
     chart.drawOn(Page(pdf, Letter.PORTRAIT))
 }
 
+// @snippet simple-bar-chart
+func simpleBarChart(_ pdf: PDF, _ font: Font) throws {
+    let bold = try Font(pdf, IBMPlexSans.SemiBold).setSize(12)
+    let small = try Font(pdf, IBMPlexSans.Regular).setSize(10)
+    let chart = SimpleBarChart(bold, small)
+            .setTitle("Response time").setSubtitle("ms, lower is better")
+            .add("Server A", 120).add("Server B", 85).add("Server C", 240)
+            .setHighlight(1)    // The best, in navy
+    chart.setLocation(50, 50).setWidth(300)     // The height from the bars
+    chart.drawOn(Page(pdf, Letter.PORTRAIT))
+}
+
 // @snippet donut-chart
 func donutChart(_ pdf: PDF, _ font: Font) throws {
     let bold = try Font(pdf, IBMPlexSans.Bold).setSize(10)
@@ -854,6 +866,7 @@ try run("images", images)
 try run("svg-images", svgImages)
 try run("line-chart", lineChart)
 try run("bar-chart", barChart)
+try run("simple-bar-chart", simpleBarChart)
 try run("donut-chart", donutChart)
 try run("barcodes", barcodes)
 try run("qr-code", qrCode)

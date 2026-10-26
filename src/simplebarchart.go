@@ -37,7 +37,7 @@ const (
 // picture, the table for the record and for a screen reader. In a PDF/UA
 // document the chart is one figure, described from its title and its values
 // unless an alternate description is set. For grouped, stacked or vertical
-// bars with an axis, use BarChart.
+// bars with an axis, use BarChart. Please see Example_20.
 type SimpleBarChart struct {
 	f1, f2            *Font // the title, and the bold name and value; the rest
 	x, y, w           float32

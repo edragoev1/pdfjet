@@ -616,6 +616,18 @@ public class Snippets {
         chart.DrawOn(new Page(pdf, Letter.PORTRAIT));
     }
 
+    // @snippet simple-bar-chart
+    static void SimpleBarChartPage(PDF pdf, Font font) {
+        Font bold = new Font(pdf, IBMPlexSans.SemiBold).SetSize(12f);
+        Font small = new Font(pdf, IBMPlexSans.Regular).SetSize(10f);
+        SimpleBarChart chart = new SimpleBarChart(bold, small)
+                .SetTitle("Response time").SetSubtitle("ms, lower is better")
+                .Add("Server A", 120f).Add("Server B", 85f).Add("Server C", 240f)
+                .SetHighlight(1);   // The best, in navy
+        chart.SetLocation(50f, 50f).SetWidth(300f);     // The height from the bars
+        chart.DrawOn(new Page(pdf, Letter.PORTRAIT));
+    }
+
     // @snippet donut-chart
     static void DonutChart(PDF pdf, Font font) {
         Font bold = new Font(pdf, IBMPlexSans.Bold).SetSize(10f);
@@ -867,6 +879,7 @@ public class Snippets {
         Run("svg-images", SvgImages);
         Run("line-chart", LineChart);
         Run("bar-chart", BarChart);
+        Run("simple-bar-chart", SimpleBarChartPage);
         Run("donut-chart", DonutChart);
         Run("barcodes", Barcodes);
         Run("qr-code", QrCode);
