@@ -262,6 +262,14 @@ commit and date. The layout's format version (1) and the look's rules
   class - I don't think I even like its look anymore"): CalendarMonth, in
   the four ports, its tests and the booklet's snippet; its members recorded
   in util/api-removed.txt.
+- **For 9.1.5: where a TextFrame's text ends** (the owner, 26 October
+  2026). `drawOn(page)` returns the bottom of the frame, not of the text,
+  when the frame has a height. It is documented, but easy to trip on: code
+  placing a photo under the text read the frame's bottom and put each photo
+  on a new page. Add a getter for the bottom of the text drawn by the last
+  `drawOn`, `getTextBottom()` (Go `GetTextBottom`), in the four ports, with
+  a test and the javadoc of `drawOn` pointing to it. `drawOn` returns what
+  it does now, so no code changes its result.
 - **For 9.1.5: better charts, and one more** (the owner, 25 October 2026:
   "significantly improve all charts"). From a review of Example_25 to 28 and
   chart.go, barchart.go and donutchart.go; in the four ports, the examples
@@ -365,7 +373,7 @@ commit and date. The layout's format version (1) and the look's rules
      pages keep less once written, and a bookmark tree of thousands of
      levels or siblings is built in linear time. Java's Compressor (W7) is
      a Deflater for each thread since 9.1.3.
-- **For v9.2.1: four things learned from common business documents** (an
+- **For v9.2.1: three things learned from common business documents** (an
   invoice, a statement, a report of text and photos, a batch of 1,000
   letters, written in the four ports; the owner, 26 October 2026):
   1. Smaller font subsets. A subset keeps every glyph number of the font,
@@ -381,11 +389,7 @@ commit and date. The layout's format version (1) and the look's rules
      letters, most of each letter's 8.7 ms (Java) is the two fonts read
      again for each document. Measure first how much a font shared by the
      documents would save, and what sharing it across threads costs.
-  3. `TextFrame.drawOn` returns the bottom of the frame, not of the text,
-     when the frame has a height. Documented, but easy to trip on: code
-     placing a photo under the text put each photo on a new page. A clearer
-     name, or a getter for where the text ends.
-  4. A flowing layout of headings, paragraphs and images onto pages, a
+  3. A flowing layout of headings, paragraphs and images onto pages, a
      photo that does not fit going to the next page. The report's code is
      53 lines today, moving a TextFrame from page to page and placing each
      photo; about 20 with such a layout.
