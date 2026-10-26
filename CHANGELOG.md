@@ -130,6 +130,15 @@ There is no 9.1.3: what was done for it is in 9.1.5 (the owner, 26 October
   800 one-page documents with an embedded font in 4 threads take 274 ms,
   where they took 626; one thread is as fast as before.
 
+### Deprecated
+- `Chart` and `Series`, in the four ports: SimpleLineChart draws lines over
+  time or over categories (Example_25), and SimpleScatterChart points on
+  two axes (Example_26). They still work, and will be removed in a later
+  release, v9.2.1 or after; the compilers say so where they are used (Java
+  `@Deprecated`, C# `[Obsolete]`, Swift `@available(*, deprecated)`, Go
+  `// Deprecated:`). Point stays: Cell, Path, Shape and Page use it. The
+  booklet's line chart is a SimpleLineChart.
+
 ### Removed
 - `CalendarMonth`, in the four ports. It drew one month with its dates in
   blue circles: no month title, the names of the days in English only, no

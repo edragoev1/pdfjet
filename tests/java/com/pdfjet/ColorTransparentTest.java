@@ -40,6 +40,7 @@ class ColorTransparentTest {
     }
 
     @Test
+    @SuppressWarnings("deprecation")    // Chart and Series, tested until they are removed
     void everyColorSetterLeavesTheColorForTransparent() throws Exception {
         PDF pdf = TestSupport.newPDF();
         Font font = TestSupport.helvetica(pdf);

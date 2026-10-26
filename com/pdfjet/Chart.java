@@ -9,8 +9,13 @@ package com.pdfjet;
 import java.util.*;
 
 /**
- * XY chart renderer for PDF pages. See Example_25.
+ * XY chart renderer for PDF pages.
+ *
+ * @deprecated Use SimpleLineChart for lines over time or over categories
+ * (Example_25), and SimpleScatterChart for points on two axes (Example_26).
+ * Chart still works, and will be removed in a later release.
  */
+@Deprecated
 public class Chart implements Drawable {
     private float w = 300f;
     private float h = 200f;

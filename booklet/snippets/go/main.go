@@ -647,18 +647,16 @@ func svgImages(pdf *pdfjet.PDF, font *pdfjet.Font) {
 // @snippet line-chart
 func lineChart(pdf *pdfjet.PDF, font *pdfjet.Font) {
 	small := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular).SetSize(8)
-	chart := pdfjet.NewChart(font, small)
-	chart.SetLocation(50, 50)
-	chart.SetSize(400, 250)
-	chart.SetTitle("Visitors")
-	chart.SetXAxisTitle("Month")
-	chart.SetYAxisTitle("Thousands")
-	series := chart.AddSeries("2026").SetDrawPath(true).SetStrokeColor(color.Blue)
-	visitors := []float32{3, 5, 4, 7, 9, 8}
-	for month := 1; month <= len(visitors); month++ {
-		series.AddPoint(float32(month), visitors[month-1])
-	}
-	chart.DrawOn(pdfjet.NewPage(pdf, letter.Portrait()))
+	pdfjet.NewSimpleLineChart(font, small).
+		SetTitle("Visitors").
+		SetSubtitle("Thousands a month").
+		SetCategories("Jan", "Feb", "Mar", "Apr", "May", "Jun").
+		AddLine("2025", []float32{2, 4, 4, 5, 6, 6}).
+		AddLine("2026", []float32{3, 5, 4, 7, 9, 8}).
+		SetHighlight(1).
+		SetSize(400, 250).
+		SetLocation(50, 50).
+		DrawOn(pdfjet.NewPage(pdf, letter.Portrait()))
 }
 
 // @snippet bar-chart

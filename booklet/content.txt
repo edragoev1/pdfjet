@@ -24,7 +24,7 @@ PDFjet comes in four languages, Java, C#, Go and Swift, with the same API and th
 - Text in Latin, Greek, Cyrillic, Chinese, Japanese, Korean, Thai, Hebrew, Arabic and Persian, with right to left text, kerning and fallback fonts.
 - 260 font files ready to use, from the IBM Plex, Noto, Source Serif and JetBrains Mono families, and any OpenType or TrueType file on the computer.
 - Text lines, text blocks, columns and frames that wrap and flow text, and tables that break across pages and repeat their header rows.
-- Bar charts, donut charts and XY charts.
+- Bar, line, scatter and donut charts.
 - Barcodes: Code 128, Code 39, UPC-A, EAN-13, QR codes, Data Matrix and PDF417.
 - PNG, JPEG and BMP images, and SVG drawn as vector graphics.
 - Links, bookmarks, annotations, attached files, layers and forms.
@@ -315,8 +315,8 @@ An SVGImage reads the paths of an SVG file and draws them as vector graphics, wh
 
 Each chart takes two fonts: one for its title, one for its labels. setAltDescription describes what it shows for screen readers.
 
-@snippet line-chart Line and XY charts
-A Chart draws its Series of points on two axes, as markers, lines, or both: setDrawPath joins the points. The axes are scaled to the points, or set with setXAxisMinMax and setYAxisMinMax.
+@snippet line-chart Line charts
+A SimpleLineChart draws a few lines over the same categories, the months here, left to right. Each line is labeled at its end with its name and last value, so it needs no legend, and one line can be highlighted. A SimpleScatterChart draws points on two axes, in the same look.
 
 @snippet bar-chart Bar charts
 A BarChart draws a series of values for each category, side by side, or stacked with setStacked, vertical or horizontal with setHorizontal, with a legend and the values on the bars if asked.

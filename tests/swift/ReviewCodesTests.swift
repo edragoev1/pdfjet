@@ -23,6 +23,7 @@ import Testing
         return content.components(separatedBy: text).count - 1
     }
 
+    @available(*, deprecated)   // Chart, tested until it is removed
     @Test func chartFlatDataOfLargeValuesHasARange() throws {
         for value: Float in [2e7, -3e7, 1e30] {
             let memory = MemoryPDF()

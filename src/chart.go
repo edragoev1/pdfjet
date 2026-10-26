@@ -21,7 +21,10 @@ import (
 )
 
 // Chart is used to create XY chart objects and draw them on a page.
-// Please see Example_25.
+//
+// Deprecated: use SimpleLineChart for lines over time or over categories
+// (Example_25), and SimpleScatterChart for points on two axes (Example_26).
+// Chart still works, and will be removed in a later release.
 type Chart struct {
 	f1, f2                         *Font
 	series                         []*Series
@@ -66,6 +69,9 @@ type Chart struct {
 // NewChart creates XY chart objects.
 //   - f1: the font used for the chart title.
 //   - f2: the font used for the X and Y axis titles.
+//
+// Deprecated: use NewSimpleLineChart or NewSimpleScatterChart. Chart still
+// works, and will be removed in a later release.
 func NewChart(f1, f2 *Font) *Chart {
 	chart := new(Chart)
 	chart.f1 = f1

@@ -31,11 +31,8 @@ import Testing
             ("QRCode", { _, _ in try QRCode("Hello", ErrorCorrectionLevel.M) }),
             ("PDF417", { _, _ in try PDF417("Hello") }),
             ("DataMatrix", { _, _ in DataMatrix("Hello") }),
-            ("Chart", { _, font in
-                let chart = Chart(font, font)
-                chart.setSize(200, 150)
-                chart.addSeries("s").addPoint(0, 0).addPoint(1, 2)
-                return chart
+            ("SimpleLineChart", { _, font in
+                SimpleLineChart(font, font).setSize(200, 150).setCategories("a", "b").addLine("s", [0, 2])
             }),
             ("BarChart", { _, font in BarChart(font, font).setSize(200, 150).addSeries("s", [1, 2, 3]) }),
             ("DonutChart", { _, font in
@@ -170,7 +167,7 @@ import Testing
         // page, so a line drawn after one came out in the default pen rather
         // than the pen the caller had set. A Stamp keeps the pen of the
         // caller; the charts do now too.
-        for name in ["Chart", "BarChart", "DonutChart", "Stamp"] {
+        for name in ["SimpleLineChart", "BarChart", "DonutChart", "Stamp"] {
             for (drawableName, make) in DrawableTests.drawables() where drawableName == name {
                 let pdf = TestSupport.newPDF()
                 let page = Page(pdf, Letter.PORTRAIT)

@@ -589,18 +589,16 @@ public class Snippets {
     // @snippet line-chart
     static void LineChart(PDF pdf, Font font) {
         Font small = new Font(pdf, IBMPlexSans.Regular).SetSize(8f);
-        Chart chart = new Chart(font, small);
-        chart.SetLocation(50f, 50f);
-        chart.SetSize(400f, 250f);
-        chart.SetTitle("Visitors");
-        chart.SetXAxisTitle("Month");
-        chart.SetYAxisTitle("Thousands");
-        Series series = chart.AddSeries("2026").SetDrawPath(true).SetStrokeColor(Color.blue);
-        float[] visitors = {3f, 5f, 4f, 7f, 9f, 8f};
-        for (int month = 1; month <= visitors.Length; month++) {
-            series.AddPoint(month, visitors[month - 1]);
-        }
-        chart.DrawOn(new Page(pdf, Letter.PORTRAIT));
+        new SimpleLineChart(font, small)
+                .SetTitle("Visitors")
+                .SetSubtitle("Thousands a month")
+                .SetCategories("Jan", "Feb", "Mar", "Apr", "May", "Jun")
+                .AddLine("2025", new float[] {2f, 4f, 4f, 5f, 6f, 6f})
+                .AddLine("2026", new float[] {3f, 5f, 4f, 7f, 9f, 8f})
+                .SetHighlight(1)
+                .SetLocation(50f, 50f)
+                .SetSize(400f, 250f)
+                .DrawOn(new Page(pdf, Letter.PORTRAIT));
     }
 
     // @snippet bar-chart

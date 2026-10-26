@@ -9,8 +9,11 @@ import Foundation
 /**
  * Used to create XY chart objects and draw them on a page.
  *
- * Please see Example_25.
+ * Deprecated: use SimpleLineChart for lines over time or over categories
+ * (Example_25), and SimpleScatterChart for points on two axes (Example_26).
+ * Chart still works, and will be removed in a later release.
  */
+@available(*, deprecated, message: "Use SimpleLineChart for lines over time or over categories, and SimpleScatterChart for points on two axes. Chart still works, and will be removed in a later release.")
 public class Chart : Drawable {
     private var w: Float = 300.0
     private var h: Float = 200.0

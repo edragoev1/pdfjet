@@ -595,18 +595,16 @@ public class Snippets {
     // @snippet line-chart
     static void lineChart(PDF pdf, Font font) throws Exception {
         Font small = new Font(pdf, IBMPlexSans.Regular).setSize(8f);
-        Chart chart = new Chart(font, small);
-        chart.setLocation(50f, 50f);
-        chart.setSize(400f, 250f);
-        chart.setTitle("Visitors");
-        chart.setXAxisTitle("Month");
-        chart.setYAxisTitle("Thousands");
-        Series series = chart.addSeries("2026").setDrawPath(true).setStrokeColor(Color.blue);
-        float[] visitors = {3f, 5f, 4f, 7f, 9f, 8f};
-        for (int month = 1; month <= visitors.length; month++) {
-            series.addPoint(month, visitors[month - 1]);
-        }
-        chart.drawOn(new Page(pdf, Letter.PORTRAIT));
+        new SimpleLineChart(font, small)
+                .setTitle("Visitors")
+                .setSubtitle("Thousands a month")
+                .setCategories("Jan", "Feb", "Mar", "Apr", "May", "Jun")
+                .addLine("2025", new float[] {2f, 4f, 4f, 5f, 6f, 6f})
+                .addLine("2026", new float[] {3f, 5f, 4f, 7f, 9f, 8f})
+                .setHighlight(1)
+                .setLocation(50f, 50f)
+                .setSize(400f, 250f)
+                .drawOn(new Page(pdf, Letter.PORTRAIT));
     }
 
     // @snippet bar-chart

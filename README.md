@@ -56,8 +56,8 @@ same output come in four languages, and none of them needs a third-party library
   horizontal bars, a name at the left of each and its value at the end, one
   bar highlighted, with no axis or legend to set up: the chart to put above
   a table of the same numbers ([Example_20](examples/Example_20.java)). It
-  describes itself to screen readers from its data. Line, XY, bar and donut
-  charts too.
+  describes itself to screen readers from its data. SimpleLineChart and
+  SimpleScatterChart in the same look, and bar and donut charts too.
 - **Barcodes built in.** EAN-13, UPC-A, Code 39, Code 128, QR, Data Matrix and
   PDF417.
 - **Fonts ready to use.** 261 TrueType and OpenType fonts from the IBM Plex, Noto and

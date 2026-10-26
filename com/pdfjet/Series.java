@@ -13,8 +13,12 @@ import java.util.List;
  * One series of a Chart: its points, the line that connects them when it is
  * drawn, and the marker of the points added by their coordinates. A series is
  * created with Chart.addSeries; its name is listed in the legend of the chart.
- * See Example_25.
+ *
+ * @deprecated With Chart, whose data it holds: SimpleLineChart.addLine and
+ * SimpleScatterChart.add take the data. Series still works, and will be
+ * removed with Chart in a later release.
  */
+@Deprecated
 public class Series {
     final String name;
     final List<Point> points = new ArrayList<Point>();

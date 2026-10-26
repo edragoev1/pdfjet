@@ -45,12 +45,8 @@ class DrawableTest {
         m.put("QRCode", (pdf, font) -> new QRCode("Hello", ErrorCorrectionLevel.M));
         m.put("PDF417", (pdf, font) -> new PDF417("Hello"));
         m.put("DataMatrix", (pdf, font) -> new DataMatrix("Hello"));
-        m.put("Chart", (pdf, font) -> {
-            Chart chart = new Chart(font, font);
-            chart.setSize(200f, 150f);
-            chart.addSeries("s").addPoint(0f, 0f).addPoint(1f, 2f);
-            return chart;
-        });
+        m.put("SimpleLineChart", (pdf, font) -> new SimpleLineChart(font, font).setSize(200f, 150f)
+                .setCategories("a", "b").addLine("s", new float[] {0f, 2f}));
         m.put("BarChart", (pdf, font) -> new BarChart(font, font).setSize(200f, 150f).addSeries("s", new float[] {1f, 2f, 3f}));
         m.put("DonutChart", (pdf, font) -> new DonutChart(font, font).setRadii(50f, 20f)
                 .addSlice(new Slice(1f, Color.red, "a")).addSlice(new Slice(2f, Color.green, "b")));
@@ -197,7 +193,7 @@ class DrawableTest {
         // page, so a line drawn after one came out in the default pen rather
         // than the pen the caller had set. A Stamp keeps the pen of the
         // caller; the charts do now too.
-        for (String name : new String[] {"Chart", "BarChart", "DonutChart", "Stamp"}) {
+        for (String name : new String[] {"SimpleLineChart", "BarChart", "DonutChart", "Stamp"}) {
             PDF pdf = TestSupport.newPDF();
             Page page = new Page(pdf, Letter.PORTRAIT);
             page.setPenColor(Color.red);

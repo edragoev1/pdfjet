@@ -39,8 +39,10 @@ public class ReviewCodesTest {
             PDF pdf = TestSupport.NewPDF();
             Page page = new Page(pdf, Letter.PORTRAIT);
             Font font = TestSupport.Helvetica(pdf);
+#pragma warning disable CS0618 // Chart is deprecated, and is tested until it is removed
             Chart chart = new Chart(font, font).SetLocation(50f, 50f).SetSize(300f, 200f);
             chart.AddSeries("").AddPoint(value, value).AddPoint(value, value);
+#pragma warning restore CS0618
             chart.DrawOn(page);
             Assert.DoesNotContain("NaN", TestSupport.Content(page));
             pdf.Complete();

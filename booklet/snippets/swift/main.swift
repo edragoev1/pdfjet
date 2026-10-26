@@ -582,18 +582,16 @@ func svgImages(_ pdf: PDF, _ font: Font) throws {
 // @snippet line-chart
 func lineChart(_ pdf: PDF, _ font: Font) throws {
     let small = try Font(pdf, IBMPlexSans.Regular).setSize(8)
-    let chart = Chart(font, small)
-    chart.setLocation(50, 50)
-    chart.setSize(400, 250)
-    chart.setTitle("Visitors")
-    chart.setXAxisTitle("Month")
-    chart.setYAxisTitle("Thousands")
-    let series = chart.addSeries("2026").setDrawPath(true).setStrokeColor(Color.blue)
-    let visitors: [Float] = [3, 5, 4, 7, 9, 8]
-    for month in 1...visitors.count {
-        series.addPoint(Float(month), visitors[month - 1])
-    }
-    chart.drawOn(Page(pdf, Letter.PORTRAIT))
+    SimpleLineChart(font, small)
+            .setTitle("Visitors")
+            .setSubtitle("Thousands a month")
+            .setCategories("Jan", "Feb", "Mar", "Apr", "May", "Jun")
+            .addLine("2025", [2, 4, 4, 5, 6, 6])
+            .addLine("2026", [3, 5, 4, 7, 9, 8])
+            .setHighlight(1)
+            .setLocation(50, 50)
+            .setSize(400, 250)
+            .drawOn(Page(pdf, Letter.PORTRAIT))
 }
 
 // @snippet bar-chart

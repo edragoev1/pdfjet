@@ -19,6 +19,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 
+// Chart is deprecated, and is tested until it is removed
+@SuppressWarnings("deprecation")
 class ChartTest {
     private static Chart chart(PDF pdf) throws Exception {
         Font font = TestSupport.helvetica(pdf);

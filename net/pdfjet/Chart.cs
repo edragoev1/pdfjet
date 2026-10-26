@@ -9,8 +9,12 @@ using System.Collections.Generic;
 
 namespace PDFjet.NET {
 /// <summary>
-/// XY chart renderer for PDF pages. See Example_25.
+/// XY chart renderer for PDF pages. Deprecated: use SimpleLineChart for lines
+/// over time or over categories (Example_25), and SimpleScatterChart for
+/// points on two axes (Example_26). Chart still works, and will be removed in
+/// a later release.
 /// </summary>
+[Obsolete("Use SimpleLineChart for lines over time or over categories, and SimpleScatterChart for points on two axes. Chart still works, and will be removed in a later release.")]
 public class Chart : IDrawable {
     private float w = 300f;
     private float h = 200f;

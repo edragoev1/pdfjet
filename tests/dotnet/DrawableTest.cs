@@ -35,12 +35,8 @@ public class DrawableTest {
         Add("QRCode", (pdf, font) => new QRCode("Hello", ErrorCorrectionLevel.M));
         Add("PDF417", (pdf, font) => new PDF417("Hello"));
         Add("DataMatrix", (pdf, font) => new DataMatrix("Hello"));
-        Add("Chart", (pdf, font) => {
-            Chart chart = new Chart(font, font);
-            chart.SetSize(200f, 150f);
-            chart.AddSeries("s").AddPoint(0f, 0f).AddPoint(1f, 2f);
-            return chart;
-        });
+        Add("SimpleLineChart", (pdf, font) => new SimpleLineChart(font, font).SetSize(200f, 150f)
+                .SetCategories("a", "b").AddLine("s", new float[] {0f, 2f}));
         Add("BarChart", (pdf, font) => new BarChart(font, font).SetSize(200f, 150f).AddSeries("s", new float[] {1f, 2f, 3f}));
         Add("DonutChart", (pdf, font) => new DonutChart(font, font).SetRadii(50f, 20f)
                 .AddSlice(new Slice(1f, Color.red, "a")).AddSlice(new Slice(2f, Color.green, "b")));
@@ -186,7 +182,7 @@ public class DrawableTest {
         // page, so a line drawn after one came out in the default pen rather
         // than the pen the caller had set. A Stamp keeps the pen of the
         // caller; the charts do now too.
-        foreach (string name in new string[] {"Chart", "BarChart", "DonutChart", "Stamp"}) {
+        foreach (string name in new string[] {"SimpleLineChart", "BarChart", "DonutChart", "Stamp"}) {
             foreach (var entry in Drawables()) {
                 if (entry.Key != name) {
                     continue;

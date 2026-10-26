@@ -101,11 +101,9 @@ func testDrawables() []testMaker {
 		{"DataMatrix", func(t *testing.T, pdf *pdfjet.PDF, font *pdfjet.Font) pdfjet.Drawable {
 			return datamatrix.NewDataMatrix("Hello")
 		}},
-		{"Chart", func(t *testing.T, pdf *pdfjet.PDF, font *pdfjet.Font) pdfjet.Drawable {
-			chart := pdfjet.NewChart(font, font)
-			chart.SetSize(200, 150)
-			chart.AddSeries("s").AddPoint(0, 0).AddPoint(1, 2)
-			return chart
+		{"SimpleLineChart", func(t *testing.T, pdf *pdfjet.PDF, font *pdfjet.Font) pdfjet.Drawable {
+			return pdfjet.NewSimpleLineChart(font, font).SetSize(200, 150).
+				SetCategories("a", "b").AddLine("s", []float32{0, 2})
 		}},
 		{"BarChart", func(t *testing.T, pdf *pdfjet.PDF, font *pdfjet.Font) pdfjet.Drawable {
 			return pdfjet.NewBarChart(font, font).SetSize(200, 150).AddSeries("s", []float32{1, 2, 3})
@@ -300,7 +298,7 @@ func TestDrawableAChartLeavesThePageWithThePenItFoundOnIt(t *testing.T) {
 	// so a line drawn after one came out in the default pen rather than the
 	// pen the caller had set. A Stamp keeps the pen of the caller; the charts
 	// do now too.
-	for _, name := range []string{"Chart", "BarChart", "DonutChart", "Stamp"} {
+	for _, name := range []string{"SimpleLineChart", "BarChart", "DonutChart", "Stamp"} {
 		for _, maker := range testDrawables() {
 			if maker.name != name {
 				continue

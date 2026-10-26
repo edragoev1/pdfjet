@@ -12,8 +12,11 @@ namespace PDFjet.NET {
 /// One series of a Chart: its points, the line that connects them when it is
 /// drawn, and the marker of the points added by their coordinates. A series is
 /// created with Chart.AddSeries; its name is listed in the legend of the chart.
-/// See Example_25.
+/// Deprecated with Chart, whose data it holds: SimpleLineChart.AddLine and
+/// SimpleScatterChart.Add take the data. Series still works, and will be
+/// removed with Chart in a later release.
 /// </summary>
+[Obsolete("With Chart, whose data it holds: SimpleLineChart.AddLine and SimpleScatterChart.Add take the data. Series still works, and will be removed with Chart in a later release.")]
 public class Series {
     internal readonly String name;
     internal readonly List<Point> points = new List<Point>();

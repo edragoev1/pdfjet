@@ -53,6 +53,7 @@ class ReviewCodesTest {
     }
 
     @Test
+    @SuppressWarnings("deprecation")    // Chart, tested until it is removed
     void chartFlatDataOfLargeValuesHasARange() throws Exception {
         for (float value : new float[] {2e7f, -3e7f, 1e30f}) {
             PDF pdf = TestSupport.newPDF();

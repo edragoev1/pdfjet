@@ -560,7 +560,13 @@ commit and date. The layout's format version (1) and the look's rules
      data. Example_25 drawn with it.
   10. **Chart and Series deprecated in 9.1.5, removed in a later release
      (v9.2.1 or after)** (the owner, 26 October 2026: "I do plan to retire
-     Chart"). Nothing in the library uses Chart but Series, which only
+     Chart"). **Deprecated 26 October 2026**, in the four ports, as below:
+     Chart's tests and the two review tests that use it allow the warning
+     alone; DrawableTest moved to SimpleLineChart, ColorTransparentTest
+     keeps Chart and Series until they are removed; the booklet's line chart
+     is a SimpleLineChart. Before the release: links on SimpleScatterChart's
+     points, which Chart has (the owner, 26 October 2026: the links "we have
+     to fix", for PDF/UA). Nothing in the library uses Chart but Series, which only
      feeds it; BarChart, DonutChart and the Simple charts no longer depend
      on it (ChartScale). Point stays: Cell, Path, Shape and Page use it.
      - Deprecated in each port's way: Java `@Deprecated` and a javadoc

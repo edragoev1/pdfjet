@@ -11,6 +11,8 @@ using System.IO;
 using System.Text;
 using Xunit;
 
+#pragma warning disable CS0618 // Chart is deprecated, and is tested until it is removed
+
 namespace PDFjet.NET {
 public class ChartTest {
     private static Chart NewChart(PDF pdf) {

@@ -8,12 +8,16 @@ import Foundation
 import Testing
 @testable import PDFjet
 
+// Chart is deprecated, and is tested until it is removed: each test that
+// uses it is marked deprecated, as a deprecated suite is refused
 @Suite struct ChartTests {
+    @available(*, deprecated)
     private func chart(_ pdf: PDF) -> Chart {
         let font = TestSupport.helvetica(pdf)
         return Chart(font, font).setLocation(50, 50).setSize(300, 200)
     }
 
+    @available(*, deprecated)
     private func draw(_ ys: Float...) -> String {
         let pdf = TestSupport.newPDF()
         let page = Page(pdf, Letter.PORTRAIT)
@@ -28,6 +32,7 @@ import Testing
 
     // A point at an infinity is refused, as a point at NaN is, with the error
     // of a number a PDF cannot hold (review of 12 October 2026, R3).
+    @available(*, deprecated)
     @Test func anInfinitePointIsRefused() {
         let memory = MemoryPDF()
         let page = Page(memory.pdf, Letter.PORTRAIT)
@@ -39,6 +44,7 @@ import Testing
         #expect(throws: (any Error).self) { try memory.pdf.complete() }
     }
 
+    @available(*, deprecated)
     @Test func aChartWithoutPointsDrawsNothing() {
         let pdf = TestSupport.newPDF()
         let page = Page(pdf, Letter.PORTRAIT)
@@ -48,6 +54,7 @@ import Testing
         #expect(page.getContent().isEmpty)
     }
 
+    @available(*, deprecated)
     @Test func allNegativeDataGetsNegativeAxisLabels() {
         let content = draw(-5, -2.5, -1)
         #expect(content.contains(TestSupport.hex("-5.0")), "\(content)")
@@ -55,6 +62,7 @@ import Testing
         #expect(!content.contains("NaN"))
     }
 
+    @available(*, deprecated)
     @Test func flatDataIsDrawnWithoutNaN() {
         let content = draw(3, 3, 3)
         #expect(!content.contains("NaN"))
@@ -62,12 +70,14 @@ import Testing
         #expect(content.contains(TestSupport.hex("4.0")), "\(content)")
     }
 
+    @available(*, deprecated)
     @Test func wholeNumberStepsGetWholeNumberLabels() {
         let content = draw(10, 60, 35)
         #expect(content.contains(TestSupport.hex("60")), "\(content)")
         #expect(!content.contains(TestSupport.hex("60.00")), "\(content)")
     }
 
+    @available(*, deprecated)
     @Test func aPathSeriesKeepsItsStrokeWidthAndIsListedInTheLegend() {
         let pdf = TestSupport.newPDF()
         var page = Page(pdf, Letter.PORTRAIT)
@@ -85,6 +95,7 @@ import Testing
         #expect(!TestSupport.content(page).contains(TestSupport.hex("label")))
     }
 
+    @available(*, deprecated)
     @Test func aPointWithoutAColorIsDrawnInTheColorOfItsSeries() {
         let pdf = TestSupport.newPDF()
         let page = Page(pdf, Letter.PORTRAIT)
@@ -98,6 +109,7 @@ import Testing
         #expect(content.contains("0 0 1 RG"), "\(content)")
     }
 
+    @available(*, deprecated)
     @Test func labelsUseAPeriodWhateverTheDefaultLocale() {
         // Java sets the default locale to German first; a Swift process cannot
         // change its current locale, so this checks the labels as they are.
@@ -106,6 +118,7 @@ import Testing
         #expect(!content.contains(TestSupport.hex("1,25")))
     }
 
+    @available(*, deprecated)
     @Test func theBordersTheAxisLinesTheGridColorAndTheSubtitleWorkAsInABarChart() {
         let pdf = TestSupport.newPDF()
         var page = Page(pdf, Letter.PORTRAIT)
@@ -130,6 +143,7 @@ import Testing
         #expect(content.contains(TestSupport.hex("Subtitle")), "\(content)")
     }
 
+    @available(*, deprecated)
     @Test func theMarkerOfASeriesIsTheOneItHasWhenTheChartIsDrawn() {
         let pdf = TestSupport.newPDF()
         let page = Page(pdf, Letter.PORTRAIT)
@@ -140,6 +154,7 @@ import Testing
         #expect(!content.contains(" c\n"), "\(content)")   // no circles
     }
 
+    @available(*, deprecated)
     @Test func aChartDrawnAgainHasTheRangeOfItsDataThen() {
         let pdf = TestSupport.newPDF()
         let chart = chart(pdf)
@@ -152,6 +167,7 @@ import Testing
         #expect(content.contains("<" + TestSupport.hex("100") + ">"), "\(content)")
     }
 
+    @available(*, deprecated)
     @Test func anAxisWithoutGridLinesHasTheRangeOfItsData() {
         let pdf = TestSupport.newPDF()
         let page = Page(pdf, Letter.PORTRAIT)
@@ -164,6 +180,7 @@ import Testing
         #expect(content.contains("<" + TestSupport.hex("2.0") + ">"), "\(content)")
     }
 
+    @available(*, deprecated)
     @Test func theSubtitleIsGray() {
         let pdf = TestSupport.newPDF()
         let page = Page(pdf, Letter.PORTRAIT)
@@ -175,6 +192,7 @@ import Testing
         #expect(TestSupport.fillColorBefore(content, "Subtitle") == "0.41 0.41 0.41 rg")
     }
 
+    @available(*, deprecated)
     @Test func aChartIsAFigureDescribedByItsTitleOrItsAlternateDescription() {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
         memory.pdf.setTitle("Test")
@@ -223,6 +241,7 @@ import Testing
     // A point of a chart that is a link is, in a tagged document, a figure of
     // its own, described by what it stands for, in the Link that holds its
     // annotation, after the chart; the chart is a figure of the rest.
+    @available(*, deprecated)
     @Test(.enabled(if: TestSupport.exists(trueTypeFont), "the fonts directory is not here"))
     func aLinkedPointIsAFigureInItsLink() throws {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
@@ -257,6 +276,7 @@ import Testing
 
     // In a document that is not tagged, a chart draws its linked points in it,
     // as before, and makes no elements.
+    @available(*, deprecated)
     @Test func aLinkedPointOfADocumentNotTaggedIsDrawnInTheChart() throws {
         let memory = MemoryPDF()
         let pdf = memory.pdf

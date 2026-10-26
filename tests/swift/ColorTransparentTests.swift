@@ -12,6 +12,7 @@ import Testing
 /// Color.transparent, -1, which they drew white, its low 24 bits, before
 /// v9.0.3: the object set to red, then to transparent, is the object set to red.
 @Suite struct ColorTransparentTests {
+    @available(*, deprecated)   // Chart and Series, tested until they are removed
     @Test func everyColorSetterLeavesTheColorForTransparent() {
         let pdf = TestSupport.newPDF()
         let font = TestSupport.helvetica(pdf)
