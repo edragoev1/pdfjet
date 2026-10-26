@@ -53,8 +53,8 @@ func Example08() {
 		"Hello, World! This example shows the functionality of the TextBlock.")
 	textBlock.SetLocation(x1, y1)
 	textBlock.SetWidth(500.0)
-	textBlock.SetBorderColor(color.LightGreen)
-	textBlock.SetBackgroundColor(color.LightGreen)
+	textBlock.SetBorderColor(0xF1F3F6)     // The slate of the charts
+	textBlock.SetBackgroundColor(0xF1F3F6) // The slate of the charts
 	textBlock.SetTextColor(color.Black)
 	xy := textBlock.DrawOn(page)
 
@@ -70,24 +70,24 @@ func Example08() {
 	descentText.DrawOn(page)
 
 	// Line beside the text ascent
-	blueLine := pdfjet.NewLine(
+	ascentMark := pdfjet.NewLine(
 		x1-10.0,
 		y1,
 		x1-10.0,
 		y1+f1.GetAscent(f1.GetSize()))
-	blueLine.SetStrokeColor(color.Blue)
-	blueLine.SetStrokeWidth(3.0)
-	blueLine.DrawOn(page)
+	ascentMark.SetStrokeColor(0x1F3A5F) // Navy
+	ascentMark.SetStrokeWidth(3.0)
+	ascentMark.DrawOn(page)
 
 	// Line beside the text descent
-	redLine := pdfjet.NewLine(
+	descentMark := pdfjet.NewLine(
 		x1-10.0,
 		y1+f1.GetAscent(f1.GetSize()),
 		x1-10.0,
 		y1+f1.GetAscent(f1.GetSize())+f1.GetDescent(f1.GetSize()))
-	redLine.SetStrokeColor(color.Red)
-	redLine.SetStrokeWidth(3.0)
-	redLine.DrawOn(page)
+	descentMark.SetStrokeColor(0xA7AFB8) // Gray
+	descentMark.SetStrokeWidth(3.0)
+	descentMark.DrawOn(page)
 
 	baseLine := pdfjet.NewLine(
 		x1,
@@ -112,10 +112,12 @@ func Example08() {
 
 	p1 := pdfjet.NewPoint(x1, y1)
 	p1.SetRadius(5.0)
+	p1.SetStrokeColor(0x1F3A5F)
 	p1.DrawOn(page)
 
 	p2 := pdfjet.NewPoint(xy[0], xy[1])
 	p2.SetRadius(5.0)
+	p2.SetStrokeColor(0x1F3A5F)
 	p2.DrawOn(page)
 
 	f2.SetSize(24.0)
@@ -124,7 +126,7 @@ func Example08() {
 	textLine3.DrawOn(page)
 
 	rect := pdfjet.NewRect(xy[0], xy[1], 20.0, 20.0)
-	rect.SetBorderColor(color.Black)
+	rect.SetBorderColor(0x1F3A5F)
 	rect.DrawOn(page)
 
 	if err := pdf.Complete(); err != nil {

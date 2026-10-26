@@ -45,8 +45,8 @@ public class Example_08 {
             "Hello, World! This example shows the functionality of the TextBlock.");
         textBlock.SetLocation(x1, y1);
         textBlock.SetWidth(500f);
-        textBlock.SetBorderColor(Color.lightgreen);
-        textBlock.SetBackgroundColor(Color.lightgreen);
+        textBlock.SetBorderColor(0xF1F3F6);     // The slate of the charts
+        textBlock.SetBackgroundColor(0xF1F3F6);
         textBlock.SetTextColor(Color.black);
         float[] xy = textBlock.DrawOn(page);
 
@@ -62,24 +62,24 @@ public class Example_08 {
         descentText.DrawOn(page);
 
         // Line beside the text ascent
-        Line blueLine = new Line(
+        Line ascentMark = new Line(
             x1 - 10f,
             y1,
             x1 - 10f,
             y1 + f1.GetAscent());
-        blueLine.SetStrokeColor(Color.blue);
-        blueLine.SetStrokeWidth(3f);
-        blueLine.DrawOn(page);
+        ascentMark.SetStrokeColor(0x1F3A5F);     // Navy
+        ascentMark.SetStrokeWidth(3f);
+        ascentMark.DrawOn(page);
 
         // Line beside the text descent
-        Line redLine = new Line(
+        Line descentMark = new Line(
             x1 - 10f,
             y1 + f1.GetAscent(),
             x1 - 10f,
             y1 + f1.GetAscent() + f1.GetDescent());
-        redLine.SetStrokeColor(Color.red);
-        redLine.SetStrokeWidth(3f);
-        redLine.DrawOn(page);
+        descentMark.SetStrokeColor(0xA7AFB8);      // Gray
+        descentMark.SetStrokeWidth(3f);
+        descentMark.DrawOn(page);
 
         Line baseLine = new Line(
                 x1,
@@ -104,10 +104,12 @@ public class Example_08 {
 
         Point p1 = new Point(x1, y1);
         p1.SetRadius(5f);
+        p1.SetStrokeColor(0x1F3A5F);
         p1.DrawOn(page);
 
         Point p2 = new Point(xy[0], xy[1]);
         p2.SetRadius(5f);
+        p2.SetStrokeColor(0x1F3A5F);
         p2.DrawOn(page);
 
         f2.SetSize(24f);
@@ -116,7 +118,7 @@ public class Example_08 {
         textLine3.DrawOn(page);
 
         Rect rect = new Rect(xy[0], xy[1], 20f, 20f);
-        rect.SetBorderColor(Color.black);
+        rect.SetBorderColor(0x1F3A5F);
         rect.DrawOn(page);
 
         pdf.Complete();

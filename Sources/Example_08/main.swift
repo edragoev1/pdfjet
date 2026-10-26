@@ -42,8 +42,8 @@ public class Example_08 {
             "Hello, World! This example shows the functionality of the TextBlock.")
         textBlock.setLocation(x1, y1)
         textBlock.setWidth(500.0)
-        textBlock.setBorderColor(Color.lightgreen)
-        textBlock.setBackgroundColor(Color.lightgreen)
+        textBlock.setBorderColor(0xF1F3F6)     // The slate of the charts
+        textBlock.setBackgroundColor(0xF1F3F6)
         textBlock.setTextColor(Color.black)
         let xy = textBlock.drawOn(page)
 
@@ -59,24 +59,24 @@ public class Example_08 {
         descentText.drawOn(page)
 
         // Line beside the text ascent
-        let blueLine = Line(
+        let ascentMark = Line(
             x1 - 10.0,
             y1,
             x1 - 10.0,
             y1 + f1.getAscent())
-        blueLine.setStrokeColor(Color.blue)
-        blueLine.setStrokeWidth(3.0)
-        blueLine.drawOn(page)
+        ascentMark.setStrokeColor(0x1F3A5F)     // Navy
+        ascentMark.setStrokeWidth(3.0)
+        ascentMark.drawOn(page)
 
         // Line beside the text descent
-        let redLine = Line(
+        let descentMark = Line(
             x1 - 10.0,
             y1 + f1.getAscent(),
             x1 - 10.0,
             y1 + f1.getAscent() + f1.getDescent())
-        redLine.setStrokeColor(Color.red)
-        redLine.setStrokeWidth(3.0)
-        redLine.drawOn(page)
+        descentMark.setStrokeColor(0xA7AFB8)      // Gray
+        descentMark.setStrokeWidth(3.0)
+        descentMark.drawOn(page)
 
         let baseLine = Line(
                 x1,
@@ -101,10 +101,12 @@ public class Example_08 {
 
         let p1 = Point(x1, y1)
         p1.setRadius(5.0)
+        p1.setStrokeColor(0x1F3A5F)
         p1.drawOn(page)
 
         let p2 = Point(xy[0], xy[1])
         p2.setRadius(5.0)
+        p2.setStrokeColor(0x1F3A5F)
         p2.drawOn(page)
 
         f2.setSize(24.0)
@@ -113,7 +115,7 @@ public class Example_08 {
         textLine3.drawOn(page)
 
         let rect = Rect(xy[0], xy[1], 20.0, 20.0)
-        rect.setBorderColor(Color.black)
+        rect.setBorderColor(0x1F3A5F)
         rect.drawOn(page)
 
         try pdf.complete()

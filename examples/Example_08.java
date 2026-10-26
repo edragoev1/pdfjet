@@ -45,8 +45,8 @@ public class Example_08 {
             "Hello, World! This example shows the functionality of the TextBlock.");
         textBlock.setLocation(x1, y1);
         textBlock.setWidth(500f);
-        textBlock.setBorderColor(Color.lightgreen);
-        textBlock.setBackgroundColor(Color.lightgreen);
+        textBlock.setBorderColor(0xF1F3F6);     // The slate of the charts
+        textBlock.setBackgroundColor(0xF1F3F6);
         textBlock.setTextColor(Color.black);
         float[] xy = textBlock.drawOn(page);
 
@@ -62,24 +62,24 @@ public class Example_08 {
         descentText.drawOn(page);
 
         // Line beside the text ascent
-        Line blueLine = new Line(
+        Line ascentMark = new Line(
             x1 - 10f,
             y1,
             x1 - 10f,
             y1 + f1.getAscent());
-        blueLine.setStrokeColor(Color.blue);
-        blueLine.setStrokeWidth(3f);
-        blueLine.drawOn(page);
+        ascentMark.setStrokeColor(0x1F3A5F);     // Navy
+        ascentMark.setStrokeWidth(3f);
+        ascentMark.drawOn(page);
 
         // Line beside the text descent
-        Line redLine = new Line(
+        Line descentMark = new Line(
             x1 - 10f,
             y1 + f1.getAscent(),
             x1 - 10f,
             y1 + f1.getAscent() + f1.getDescent());
-        redLine.setStrokeColor(Color.red);
-        redLine.setStrokeWidth(3f);
-        redLine.drawOn(page);
+        descentMark.setStrokeColor(0xA7AFB8);      // Gray
+        descentMark.setStrokeWidth(3f);
+        descentMark.drawOn(page);
 
         Line baseLine = new Line(
                 x1,
@@ -104,10 +104,12 @@ public class Example_08 {
 
         Point p1 = new Point(x1, y1);
         p1.setRadius(5f);
+        p1.setStrokeColor(0x1F3A5F);
         p1.drawOn(page);
 
         Point p2 = new Point(xy[0], xy[1]);
         p2.setRadius(5f);
+        p2.setStrokeColor(0x1F3A5F);
         p2.drawOn(page);
 
         f2.setSize(24f);
@@ -116,7 +118,7 @@ public class Example_08 {
         textLine3.drawOn(page);
 
         Rect rect = new Rect(xy[0], xy[1], 20f, 20f);
-        rect.setBorderColor(Color.black);
+        rect.setBorderColor(0x1F3A5F);
         rect.drawOn(page);
 
         pdf.complete();
