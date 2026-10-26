@@ -499,10 +499,18 @@ commit and date. The layout's format version (1) and the look's rules
      exception to the frozen font code (the owner, 26 October 2026): the
      same care as the kerning, the fuzzers run again, every viewer and
      veraPDF checked.
-  2. A font loaded once and used by many documents. In the batch of
-     letters, most of each letter's 8.7 ms (Java) is the two fonts read
-     again for each document. Measure first how much a font shared by the
-     documents would save, and what sharing it across threads costs.
+  2. An image read once and used by many documents. Measured 26 October
+     2026 (Java, the letter of 1,000: a 386 by 395 RGBA PNG logo, two IBM
+     Plex Sans fonts, a heading and three paragraphs): 8.78 ms a letter,
+     1.00 without the logo, 0.78 with neither the logo nor the
+     paragraphs; reading the two fonts is 0.11 ms. So the logo is nearly
+     nine tenths of a letter: a PNG with alpha is decoded, its pixels and
+     its alpha split, and both deflated again, about 600 KB, for every
+     document. Sharing the fonts would save about 1%, and is not worth
+     touching the font code for. An image whose decoded and deflated data
+     a second document can take as it is, by a copy of the Image for
+     another PDF or the like, would make such a batch several times
+     faster; to design, measured in the four ports first.
 - **Dropped: local letter shapes from GSUB** (the owner, 25 October 2026:
   "keep fonts frozen"). No port reads a font's GSUB table: Bulgarian text
   is drawn with the font's default Cyrillic letters, т as a small capital
