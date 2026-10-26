@@ -38,6 +38,7 @@ import (
 type TextFrame struct {
 	paragraphs      []*Paragraph
 	x, y, w, h      float32
+	textBottom      float32 // The bottom of the text drawn by the last DrawOn
 	paragraphGap    float32
 	hasParagraphGap bool
 	border          bool
@@ -199,6 +200,14 @@ func (tf *TextFrame) SetBorderDashPattern(borderPattern string) *TextFrame {
 	return tf
 }
 
+// GetTextBottom returns the y coordinate of the bottom of the text drawn by the
+// last DrawOn, or measured by it with no page: where what comes under the text
+// goes. DrawOn returns the bottom of the frame when the frame has a height, and
+// this the bottom of the text in it. It is 0 before the first DrawOn.
+func (tf *TextFrame) GetTextBottom() float32 {
+	return tf.textBottom
+}
+
 // HasMoreText returns true if some of the text has not been drawn yet.
 func (tf *TextFrame) HasMoreText() bool {
 	return tf.paragraphIndex < len(tf.paragraphs)
@@ -249,7 +258,8 @@ func (tf *TextFrame) DrawOnPages(pdf *PDF, pages *[]*Page, pageSize pagesize.Pag
 // flows, and a word wider than the frame is broken. With no page nothing is
 // drawn, the paragraphs get their coordinates and the text is kept. It returns
 // the x and y coordinates of the bottom right corner of this frame, or of the
-// text when the frame has no height.
+// text when the frame has no height; GetTextBottom gives the bottom of the text
+// in either case.
 func (tf *TextFrame) DrawOn(page *Page) [2]float32 {
 	startParagraph := tf.paragraphIndex
 	startLine := tf.lineIndex
@@ -268,6 +278,7 @@ func (tf *TextFrame) DrawOn(page *Page) [2]float32 {
 	}
 	bottom := tf.drawParagraphs(page)
 	tf.closeList(page)
+	tf.textBottom = bottom
 	if tf.h > 0 {
 		bottom = tf.y + tf.h
 	}

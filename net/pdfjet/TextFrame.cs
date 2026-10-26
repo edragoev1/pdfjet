@@ -28,6 +28,7 @@ public class TextFrame : IDrawable {
     private float y;
     private float w;
     private float h;
+    private float textBottom = 0f;      // The bottom of the text drawn by the last DrawOn
     private float paragraphGap = 0f;
     private bool hasParagraphGap = false;
     private bool border = false;
@@ -202,6 +203,16 @@ public class TextFrame : IDrawable {
         return this;
     }
 
+    /// <summary>
+    /// Returns the y coordinate of the bottom of the text drawn by the last
+    /// DrawOn, or measured by it with no page: where what comes under the text
+    /// goes. DrawOn returns the bottom of the frame when the frame has a height,
+    /// and this the bottom of the text in it. It is 0 before the first DrawOn.
+    /// </summary>
+    public float GetTextBottom() {
+        return textBottom;
+    }
+
     /// <summary>Returns true if some of the text has not been drawn yet.</summary>
     public bool HasMoreText() {
         return paragraphIndex < paragraphs.Count;
@@ -260,7 +271,8 @@ public class TextFrame : IDrawable {
     /// flows, and a word wider than the frame is broken. With no page nothing is
     /// drawn, the paragraphs get their coordinates and the text is kept.
     /// Returns the x and y coordinates of the bottom right corner of this frame,
-    /// or of the text when the frame has no height.
+    /// or of the text when the frame has no height; GetTextBottom gives the
+    /// bottom of the text in either case.
     /// </summary>
     public float[] DrawOn(Page page) {
         int startParagraph = paragraphIndex;
@@ -273,6 +285,7 @@ public class TextFrame : IDrawable {
         continuedParagraph = (startLine > 0 || startTokens != null) ? paragraphs[startParagraph] : null;
         float bottom = DrawParagraphs(page);
         CloseList(page);
+        textBottom = bottom;
         if (h > 0f) {
             bottom = y + h;
         }

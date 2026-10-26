@@ -23,6 +23,27 @@ import Testing
         return second.getY1() - first.getY1()
     }
 
+    @Test func getTextBottomIsTheBottomOfTheTextInAFrameWithAHeight() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let page = Page(pdf, Letter.PORTRAIT)
+        let first = Paragraph(TextLine(font, "one"))
+        let second = Paragraph(TextLine(font, "two"))
+        var frame = TextFrame([first, second]).setLocation(10, 10).setWidth(300).setHeight(500)
+        TestSupport.expectNear(0, frame.getTextBottom())   // before drawOn
+        var xy = frame.drawOn(page)
+        TestSupport.expectNear(510, xy[1])                  // the frame's bottom
+        TestSupport.expectNear(second.getY2(), frame.getTextBottom())
+        #expect(frame.getTextBottom() < 100)
+
+        // With no height, drawOn returns the bottom of the text too.
+        let third = Paragraph(TextLine(font, "three"))
+        frame = TextFrame([third]).setLocation(10, 200).setWidth(300)
+        xy = frame.drawOn(page)
+        TestSupport.expectNear(xy[1], frame.getTextBottom())
+        TestSupport.expectNear(third.getY2(), frame.getTextBottom())
+    }
+
     @Test func theGapIsAddedToTheLineSoParagraphsNeverOverlap() {
         let line = TestSupport.helvetica(TestSupport.newPDF()).getBodyHeight()
         TestSupport.expectNear(2 * line, paragraphDistance(nil))    // one empty line

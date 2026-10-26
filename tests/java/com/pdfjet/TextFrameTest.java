@@ -40,6 +40,29 @@ class TextFrameTest {
     }
 
     @Test
+    void getTextBottomIsTheBottomOfTheTextInAFrameWithAHeight() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Paragraph first = new Paragraph(new TextLine(font, "one"));
+        Paragraph second = new Paragraph(new TextLine(font, "two"));
+        TextFrame frame = new TextFrame(Arrays.asList(first, second)).setLocation(10f, 10f).setWidth(300f)
+                .setHeight(500f);
+        assertEquals(0f, frame.getTextBottom(), TestSupport.DELTA);     // before drawOn
+        float[] xy = frame.drawOn(page);
+        assertEquals(510f, xy[1], TestSupport.DELTA);                   // the frame's bottom
+        assertEquals(second.getY2(), frame.getTextBottom(), TestSupport.DELTA);
+        assertTrue(frame.getTextBottom() < 100f);
+
+        // With no height, drawOn returns the bottom of the text too.
+        Paragraph third = new Paragraph(new TextLine(font, "three"));
+        frame = new TextFrame(Arrays.asList(third)).setLocation(10f, 200f).setWidth(300f);
+        xy = frame.drawOn(page);
+        assertEquals(xy[1], frame.getTextBottom(), TestSupport.DELTA);
+        assertEquals(third.getY2(), frame.getTextBottom(), TestSupport.DELTA);
+    }
+
+    @Test
     void theGapIsAddedToTheLineSoParagraphsNeverOverlap() throws Exception {
         float line = TestSupport.helvetica(TestSupport.newPDF()).getBodyHeight();
         assertEquals(2f * line, paragraphDistance(null), TestSupport.DELTA);    // one empty line

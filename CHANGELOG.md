@@ -28,6 +28,14 @@ This is the first entry in this file; earlier releases were not tracked here.
   kerned), 118 in Java (69), 103 in C# (63) and 155 in Swift (98), and the
   document is 11 to 17% larger, for the moves written between the glyphs.
 
+- All four ports: `TextFrame.getTextBottom()` (Go `GetTextBottom`), the y
+  coordinate of the bottom of the text drawn by the last `drawOn`, or
+  measured by it with no page: where what comes under the text goes.
+  `drawOn` returns the bottom of the frame when the frame has a height, and
+  code placing a photo under the text by it put the photo too low; the text
+  could only be found by the last paragraph's `getY2()`. `drawOn` returns
+  what it did.
+
 ### Changed
 - Swift: text other than printable ASCII is drawn faster: a 500-page text
   in Latin, Greek and Cyrillic takes 100 ms, where 9.0.9 and 9.1.1 took 113.

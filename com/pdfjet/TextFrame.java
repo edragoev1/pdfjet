@@ -27,6 +27,7 @@ public class TextFrame implements Drawable {
     private float y;
     private float w;
     private float h;
+    private float textBottom = 0f;      // The bottom of the text drawn by the last drawOn
     private float paragraphGap = 0f;
     private boolean hasParagraphGap = false;
     private boolean border = false;
@@ -255,6 +256,18 @@ public class TextFrame implements Drawable {
     }
 
     /**
+     * Returns the y coordinate of the bottom of the text drawn by the last
+     * drawOn, or measured by it with no page: where what comes under the text
+     * goes. drawOn returns the bottom of the frame when the frame has a height,
+     * and this the bottom of the text in it. It is 0 before the first drawOn.
+     *
+     * @return the y coordinate of the bottom of the text.
+     */
+    public float getTextBottom() {
+        return textBottom;
+    }
+
+    /**
      * Returns true if some of the text has not been drawn yet.
      *
      * @return true if there is more text to draw.
@@ -272,7 +285,8 @@ public class TextFrame implements Drawable {
      *
      * @param page the page to draw on.
      * @return the x and y coordinates of the bottom right corner of this frame,
-     *     or of the text when the frame has no height.
+     *     or of the text when the frame has no height; {@link #getTextBottom()}
+     *     gives the bottom of the text in either case.
      * @throws Exception if an input or output exception occurred.
      */
     public float[] drawOn(Page page) throws Exception {
@@ -289,6 +303,7 @@ public class TextFrame implements Drawable {
         }
         float bottom = drawParagraphs(page);
         closeList(page);
+        textBottom = bottom;
         if (h > 0f) {
             bottom = y + h;
         }

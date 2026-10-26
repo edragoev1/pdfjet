@@ -28,6 +28,29 @@ public class TextFrameTest {
     }
 
     [Fact]
+    public void GetTextBottomIsTheBottomOfTheTextInAFrameWithAHeight() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Paragraph first = new Paragraph(new TextLine(font, "one"));
+        Paragraph second = new Paragraph(new TextLine(font, "two"));
+        TextFrame frame = new TextFrame(new List<Paragraph> {first, second}).SetLocation(10f, 10f).SetWidth(300f)
+                .SetHeight(500f);
+        TestSupport.AssertNear(0f, frame.GetTextBottom(), TestSupport.DELTA);  // before DrawOn
+        float[] xy = frame.DrawOn(page);
+        TestSupport.AssertNear(510f, xy[1], TestSupport.DELTA);                // the frame's bottom
+        TestSupport.AssertNear(second.GetY2(), frame.GetTextBottom(), TestSupport.DELTA);
+        Assert.True(frame.GetTextBottom() < 100f);
+
+        // With no height, DrawOn returns the bottom of the text too.
+        Paragraph third = new Paragraph(new TextLine(font, "three"));
+        frame = new TextFrame(new List<Paragraph> {third}).SetLocation(10f, 200f).SetWidth(300f);
+        xy = frame.DrawOn(page);
+        TestSupport.AssertNear(xy[1], frame.GetTextBottom(), TestSupport.DELTA);
+        TestSupport.AssertNear(third.GetY2(), frame.GetTextBottom(), TestSupport.DELTA);
+    }
+
+    [Fact]
     public void TheGapIsAddedToTheLineSoParagraphsNeverOverlap() {
         float line = TestSupport.Helvetica(TestSupport.NewPDF()).GetBodyHeight();
         TestSupport.AssertNear(2f * line, ParagraphDistance(null), TestSupport.DELTA);  // one empty line

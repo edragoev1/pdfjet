@@ -38,6 +38,32 @@ func testParagraphDistance(gap ...float32) float32 {
 	return second.GetY1() - first.GetY1()
 }
 
+func TestTextFrameGetTextBottomIsTheBottomOfTheTextInAFrameWithAHeight(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	page := NewPage(pdf, testLetterPortrait())
+	first := NewParagraph().Add(NewTextLine(font, "one"))
+	second := NewParagraph().Add(NewTextLine(font, "two"))
+	frame := NewTextFrameFromParagraphs([]*Paragraph{first, second}).SetWidth(300)
+	frame.SetLocation(10, 10)
+	frame.SetHeight(500)
+	testNear(t, "before DrawOn", 0, frame.GetTextBottom(), testDelta)
+	xy := frame.DrawOn(page)
+	testNear(t, "the frame's bottom", 510, xy[1], testDelta)
+	testNear(t, "the text's bottom", second.GetY2(), frame.GetTextBottom(), testDelta)
+	if frame.GetTextBottom() >= 100 {
+		t.Errorf("two lines of text end at %v", frame.GetTextBottom())
+	}
+
+	// With no height, DrawOn returns the bottom of the text too.
+	third := NewParagraph().Add(NewTextLine(font, "three"))
+	frame = NewTextFrameFromParagraphs([]*Paragraph{third}).SetWidth(300)
+	frame.SetLocation(10, 200)
+	xy = frame.DrawOn(page)
+	testNear(t, "no height", xy[1], frame.GetTextBottom(), testDelta)
+	testNear(t, "no height, the text's bottom", third.GetY2(), frame.GetTextBottom(), testDelta)
+}
+
 func TestTextFrameTheGapIsAddedToTheLineSoParagraphsNeverOverlap(t *testing.T) {
 	helvetica := testHelvetica(testNewPDF())
 	line := helvetica.GetBodyHeight(helvetica.GetSize())

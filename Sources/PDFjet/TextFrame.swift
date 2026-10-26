@@ -25,6 +25,7 @@ public class TextFrame : Drawable {
     private var y: Float = 0.0
     private var w: Float = 0.0
     private var h: Float = 0.0
+    private var textBottom: Float = 0.0     // The bottom of the text drawn by the last drawOn
     private var paragraphGap: Float = 0.0
     private var hasParagraphGap = false
     private var border = false
@@ -186,6 +187,18 @@ public class TextFrame : Drawable {
         return self
     }
 
+    ///
+    /// Returns the y coordinate of the bottom of the text drawn by the last
+    /// drawOn, or measured by it with no page: where what comes under the text
+    /// goes. drawOn returns the bottom of the frame when the frame has a height,
+    /// and this the bottom of the text in it. It is 0 before the first drawOn.
+    ///
+    /// - Returns: the y coordinate of the bottom of the text.
+    ///
+    public func getTextBottom() -> Float {
+        return textBottom
+    }
+
     /// Returns true if some of the text has not been drawn yet.
     public func hasMoreText() -> Bool {
         return paragraphIndex < paragraphs.count
@@ -247,7 +260,8 @@ public class TextFrame : Drawable {
     ///
     /// - Parameter page: the page to draw on.
     /// - Returns: the x and y coordinates of the bottom right corner of this frame,
-    ///   or of the text when the frame has no height.
+    ///   or of the text when the frame has no height; getTextBottom() gives the
+    ///   bottom of the text in either case.
     ///
     @discardableResult
     public func drawOn(_ page: Page?) -> [Float] {
@@ -264,6 +278,7 @@ public class TextFrame : Drawable {
         }
         var bottom = drawParagraphs(page)
         closeList(page)
+        textBottom = bottom
         if h > 0.0 {
             bottom = y + h
         }

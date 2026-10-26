@@ -262,14 +262,15 @@ commit and date. The layout's format version (1) and the look's rules
   class - I don't think I even like its look anymore"): CalendarMonth, in
   the four ports, its tests and the booklet's snippet; its members recorded
   in util/api-removed.txt.
-- **For 9.1.5: where a TextFrame's text ends** (the owner, 26 October
-  2026). `drawOn(page)` returns the bottom of the frame, not of the text,
+- **Done for 9.1.3: where a TextFrame's text ends** (the owner, 26 October
+  2026: planned for 9.1.5, then "let add this now"). `drawOn(page)` returns the bottom of the frame, not of the text,
   when the frame has a height. It is documented, but easy to trip on: code
   placing a photo under the text read the frame's bottom and put each photo
   on a new page. Add a getter for the bottom of the text drawn by the last
   `drawOn`, `getTextBottom()` (Go `GetTextBottom`), in the four ports, with
   a test and the javadoc of `drawOn` pointing to it. `drawOn` returns what
-  it does now, so no code changes its result.
+  it does now, so no code changes its result. Done 26 October 2026, the
+  four ports; check-api.sh v9.1.1 shows it as the only member added.
 - **For 9.1.5: better charts, and one more** (the owner, 25 October 2026:
   "significantly improve all charts"). From a review of Example_25 to 28 and
   chart.go, barchart.go and donutchart.go; in the four ports, the examples
