@@ -305,6 +305,27 @@ public class Snippets {
         }
     }
 
+    // @snippet text-flow
+    static void textFlow(PDF pdf, Font font) throws Exception {
+        Font bold = new Font(pdf, IBMPlexSans.SemiBold);
+        TextFlow flow = new TextFlow(pdf, Letter.PORTRAIT).setMargins(72f);
+        flow.add(new Paragraph(new TextLine(bold, "Greece").setFontSize(18f))
+                .setStructureType(StructElem.H1));  // Never ends a page
+        flow.addSpace(8f);
+        flow.add(Arrays.asList(
+                new Paragraph(new TextLine(font, "Greece is divided into 13 regions, each with an elected governor and council.")),
+                new Paragraph(new TextLine(font, "Greece has about 6,000 islands and islets. The largest, Crete, is a region of its own."))), 6f);
+        flow.addSpace(12f);
+        Image map = new Image(pdf, "images/gr-map.jpg");
+        map.setAltDescription("A map of Greece and its regions.");
+        flow.add(map.resizeHeight(400f), Alignment.CENTER);   // Whole, here or on the next page
+        flow.add(new Paragraph(new TextLine(font, "Greece: its regions.").setFontSize(9f))
+                .setStructureType(StructElem.CAPTION));     // Stays with the map
+        List<Page> pages = new ArrayList<Page>();
+        flow.drawOn(pages);     // As many pages as it needs
+        pdf.addPages(pages);
+    }
+
     // @snippet right-to-left
     static void rightToLeft(PDF pdf, Font font) throws Exception {
         Font hebrew = new Font(pdf, IBMPlexSansHebrew.Regular);
@@ -827,6 +848,7 @@ public class Snippets {
         run("text-column", Snippets::textColumn);
         run("text-frame-pages", Snippets::textFramePages);
         run("text-frame-columns", Snippets::textFrameColumns);
+        run("text-flow", Snippets::textFlow);
         run("right-to-left", Snippets::rightToLeft);
         run("formulas", Snippets::formulas);
         run("table", Snippets::table);

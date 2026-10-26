@@ -1,5 +1,5 @@
 /**
- * FlowText.swift
+ * TextFlow.swift
  *
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
@@ -11,18 +11,19 @@ import Foundation
 /// below the other between the margins: a report, a manual, a long letter.
 /// Paragraphs break across pages between their lines, as a TextFrame breaks
 /// them; an image goes whole, to the top of the next page when it does not fit
-/// below the text; a heading goes to the next page with what follows it rather
-/// than end a page. The pages are created detached and added to a list, so that
-/// a footer or a page number can be drawn on each before they are added to the
-/// PDF.
+/// below the text, with its caption; a heading goes to the next page with what
+/// follows it rather than end a page. The pages are created detached and added
+/// to a list, so that a footer or a page number can be drawn on each before
+/// they are added to the PDF.
 ///
 /// Use a TextFrame to place text by hand, in frames on the same page or on
-/// others, the text flowing from one to the next; use FlowText to pour the text
+/// others, the text flowing from one to the next; use TextFlow to pour the text
 /// and the images in, page after page. The order they are added in is the
 /// reading order of a PDF/UA document: the paragraphs are tagged as a TextFrame
 /// tags them, the images as figures with their alternate descriptions.
+/// Use Markdown instead for a text written in Markdown. Please see Example_22.
 ///
-public class FlowText {
+public class TextFlow {
     private let pdf: PDF
     private let pageSize: PageSize
     private var top: Float = 72.0
@@ -62,7 +63,7 @@ public class FlowText {
     /// - Returns: this flow.
     ///
     @discardableResult
-    public func setMargins(_ margin: Float) -> FlowText {
+    public func setMargins(_ margin: Float) -> TextFlow {
         return setMargins(margin, margin, margin, margin)
     }
 
@@ -77,7 +78,7 @@ public class FlowText {
     /// - Returns: this flow.
     ///
     @discardableResult
-    public func setMargins(_ top: Float, _ right: Float, _ bottom: Float, _ left: Float) -> FlowText {
+    public func setMargins(_ top: Float, _ right: Float, _ bottom: Float, _ left: Float) -> TextFlow {
         self.top = top
         self.right = right
         self.bottom = bottom
@@ -94,7 +95,7 @@ public class FlowText {
     /// - Returns: this flow.
     ///
     @discardableResult
-    public func setFirstPageTop(_ y: Float) -> FlowText {
+    public func setFirstPageTop(_ y: Float) -> TextFlow {
         self.firstPageTop = y
         return self
     }
@@ -107,7 +108,7 @@ public class FlowText {
     /// - Returns: this flow.
     ///
     @discardableResult
-    public func add(_ paragraph: Paragraph) -> FlowText {
+    public func add(_ paragraph: Paragraph) -> TextFlow {
         items.append(Item(paragraphs: [paragraph]))
         return self
     }
@@ -121,7 +122,7 @@ public class FlowText {
     /// - Returns: this flow.
     ///
     @discardableResult
-    public func add(_ paragraphs: [Paragraph], _ gap: Float) -> FlowText {
+    public func add(_ paragraphs: [Paragraph], _ gap: Float) -> TextFlow {
         items.append(Item(paragraphs: paragraphs, gap: gap, hasGap: true))
         return self
     }
@@ -131,14 +132,16 @@ public class FlowText {
     /// the right margin: Alignment.LEFT, Alignment.CENTER or Alignment.RIGHT.
     /// An image wider than the text is made as wide as the text, and one taller
     /// than the space between the top and the bottom margins as tall as that
-    /// space, keeping its shape; it is never cut.
+    /// space, keeping its shape; it is never cut. A paragraph of
+    /// StructElem.CAPTION added right after it, after a space or not, is its
+    /// caption, and goes to the next page with it when the two do not fit.
     ///
     /// - Parameter image: the image to add.
     /// - Parameter alignment: where the image goes across the text.
     /// - Returns: this flow.
     ///
     @discardableResult
-    public func add(_ image: Image, _ alignment: Alignment = Alignment.LEFT) -> FlowText {
+    public func add(_ image: Image, _ alignment: Alignment = Alignment.LEFT) -> TextFlow {
         items.append(Item(image: image, alignment: alignment))
         return self
     }
@@ -151,7 +154,7 @@ public class FlowText {
     /// - Returns: this flow.
     ///
     @discardableResult
-    public func addSpace(_ points: Float) -> FlowText {
+    public func addSpace(_ points: Float) -> TextFlow {
         if points > 0.0 {
             items.append(Item(space: points))
         }
@@ -210,7 +213,12 @@ public class FlowText {
                 }
             } else if let image = item.image {
                 fitImage(image, width, height)
-                if page == nil || (!atTop && y + image.getHeight() > limit) {
+                var needed = image.getHeight()
+                let withCaption = needed + captionHeight(i + 1, width)
+                if withCaption <= height {
+                    needed = withCaption    // The image and its caption go together
+                }
+                if page == nil || (!atTop && y + needed > limit) {
                     page = newPage(&pages)
                     y = top
                 }
@@ -302,6 +310,26 @@ public class FlowText {
         return total
     }
 
+    // The height of the caption of an image, a paragraph of StructElem.CAPTION
+    // added right after it, and of the spaces before it; 0 when the image has
+    // no caption.
+    private func captionHeight(_ index: Int, _ width: Float) -> Float {
+        var total: Float = 0.0
+        for item in items[index...] {
+            if item.space > 0.0 {
+                total += item.space
+            } else if item.image != nil {
+                return 0.0
+            } else {
+                guard let first = item.paragraphs.first, first.structureType == StructElem.CAPTION else {
+                    return 0.0
+                }
+                return total + textHeight(item, width)
+            }
+        }
+        return 0.0
+    }
+
     // Makes the image as wide as the text at most, and as tall as the space
     // between the margins at most, keeping its shape.
     private func fitImage(_ image: Image, _ width: Float, _ height: Float) {
@@ -333,4 +361,4 @@ public class FlowText {
             return false
         }
     }
-}   // End of FlowText.swift
+}   // End of TextFlow.swift

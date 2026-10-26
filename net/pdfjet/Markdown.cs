@@ -27,6 +27,8 @@ namespace PDFjet.NET {
 /// when it is alone in its paragraph, from the directory that
 /// SetImageDirectory names; with none, its text is drawn instead, so that a
 /// text from anyone reads no file. Please see Example_19.
+///
+/// To build the pages from paragraphs and images of your own, use TextFlow.
 /// </para>
 /// </summary>
 public class Markdown {

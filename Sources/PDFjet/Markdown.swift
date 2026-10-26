@@ -23,6 +23,8 @@ import Foundation
 /// setImageDirectory names; with none, its text is drawn instead, so that a
 /// text from anyone reads no file. Please see Example_19.
 ///
+/// To build the pages from paragraphs and images of your own, use TextFlow.
+///
 public class Markdown {
     // The heading sizes, as factors of the size of the text.
     private static let HEADING_SIZES: [Float] = [2.0, 1.6, 1.3, 1.15, 1.0, 0.9]

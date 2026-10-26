@@ -1,5 +1,5 @@
 /**
- * FlowTextTests.swift
+ * TextFlowTests.swift
  *
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
@@ -11,14 +11,14 @@ import Testing
 // The flows of these tests are on Letter pages with margins of 50 points: the
 // text is 512 points wide, from x 50, and the pages hold 692 points of it,
 // from y 50 to 742.
-@Suite struct FlowTextTests {
+@Suite struct TextFlowTests {
     private let margin: Float = 50
     private let bottom: Float = 742
     private let width: Float = 512
     private let height: Float = 692
 
-    private func flow(_ pdf: PDF) -> FlowText {
-        return FlowText(pdf, Letter.PORTRAIT).setMargins(margin)
+    private func flow(_ pdf: PDF) -> TextFlow {
+        return TextFlow(pdf, Letter.PORTRAIT).setMargins(margin)
     }
 
     private func paragraph(_ font: Font, _ text: String) -> Paragraph {
@@ -63,6 +63,29 @@ import Testing
         #expect(pages.count == 2)
         TestSupport.expectNear(margin, large.y)     // at the top of the next page
         TestSupport.expectNear(200, large.getHeight())
+    }
+
+    @Test(arguments: [true, false])
+    func anImageKeepsWithItsCaption(_ captioned: Bool) throws {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let caption = paragraph(font, "Figure 1: the image above")
+        if captioned {
+            caption.setStructureType(StructElem.CAPTION)
+        }
+        // Room for the image below the text, but not for its caption too
+        let text = paragraph(font, "Above the image")
+        let image = try self.image(pdf, height - (font.getAscent(font.getSize()) + font.getDescent(font.getSize())) - 4)
+        var pages = [Page]()
+        flow(pdf).add(text).add(image).addSpace(2).add(caption).drawOn(&pages)
+        #expect(pages.count == 2)
+        if captioned {
+            TestSupport.expectNear(margin, image.y)     // on the next page with its caption
+            TestSupport.expectNear(image.y + image.getHeight() + 2, caption.getY1())
+        } else {
+            TestSupport.expectNear(text.getY2(), image.y)
+            TestSupport.expectNear(margin, caption.getY1())     // not a caption: on the next page
+        }
     }
 
     @Test func anImageTooLargeIsMadeAsLargeAsTheTextAndThePage() throws {

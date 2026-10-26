@@ -25,6 +25,8 @@ import java.util.*;
  * when it is alone in its paragraph, from the directory that
  * setImageDirectory names; with none, its text is drawn instead, so that a
  * text from anyone reads no file. Please see Example_19.
+ * <p>
+ * To build the pages from paragraphs and images of your own, use TextFlow.
  */
 public class Markdown {
     // The heading sizes, as factors of the size of the text.

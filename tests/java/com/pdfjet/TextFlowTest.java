@@ -1,5 +1,5 @@
 /*
- * FlowTextTest.java
+ * TextFlowTest.java
  *
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Test;
 // The flows of these tests are on Letter pages with margins of 50 points: the
 // text is 512 points wide, from x 50, and the pages hold 692 points of it,
 // from y 50 to 742.
-class FlowTextTest {
+class TextFlowTest {
     private static final float MARGIN = 50f;
     private static final float BOTTOM = 742f;
     private static final float WIDTH = 512f;
@@ -29,8 +29,8 @@ class FlowTextTest {
         TestSupport.allowCoreFonts(false);
     }
 
-    private static FlowText flow(PDF pdf) {
-        return new FlowText(pdf, Letter.PORTRAIT).setMargins(MARGIN);
+    private static TextFlow flow(PDF pdf) {
+        return new TextFlow(pdf, Letter.PORTRAIT).setMargins(MARGIN);
     }
 
     private static Paragraph paragraph(Font font, String text) {
@@ -81,6 +81,31 @@ class FlowTextTest {
     }
 
     @Test
+    void anImageKeepsWithItsCaption() throws Exception {
+        for (boolean captioned : new boolean[] {true, false}) {
+            PDF pdf = TestSupport.newPDF();
+            Font font = TestSupport.helvetica(pdf);
+            Paragraph caption = paragraph(font, "Figure 1: the image above");
+            if (captioned) {
+                caption.setStructureType(StructElem.CAPTION);
+            }
+            // Room for the image below the text, but not for its caption too
+            Paragraph text = paragraph(font, "Above the image");
+            Image image = image(pdf, HEIGHT - (font.getAscent(font.getSize()) + font.getDescent(font.getSize())) - 4f);
+            List<Page> pages = new ArrayList<Page>();
+            flow(pdf).add(text).add(image).addSpace(2f).add(caption).drawOn(pages);
+            assertEquals(2, pages.size());
+            if (captioned) {
+                assertEquals(MARGIN, image.y, TestSupport.DELTA);  // on the next page with its caption
+                assertEquals(image.y + image.getHeight() + 2f, caption.getY1(), TestSupport.DELTA);
+            } else {
+                assertEquals(text.getY2(), image.y, TestSupport.DELTA);
+                assertEquals(MARGIN, caption.getY1(), TestSupport.DELTA);  // not a caption: on the next page
+            }
+        }
+    }
+
+    @Test
     void anImageTooLargeIsMadeAsLargeAsTheTextAndThePage() throws Exception {
         PDF pdf = TestSupport.newPDF();
         Image wide = image(pdf, 100f);
@@ -123,7 +148,7 @@ class FlowTextTest {
             // Room for the heading below the image, 2 points more, but not
             // for a line after it too
             Image filler = image(pdf, HEIGHT - headingHeight - 2f);
-            FlowText flow = flow(pdf).add(filler).add(heading);
+            TextFlow flow = flow(pdf).add(filler).add(heading);
             Paragraph text = paragraph(font, "The text under the heading");
             if (followed) {
                 flow.add(text);
@@ -180,7 +205,7 @@ class FlowTextTest {
         PDF pdf = TestSupport.newPDF();
         Font font = TestSupport.helvetica(pdf);
         List<Page> pages = new ArrayList<Page>();
-        FlowText flow = flow(pdf).setMargins(400f).add(paragraph(font, "text"));
+        TextFlow flow = flow(pdf).setMargins(400f).add(paragraph(font, "text"));
         assertThrows(IllegalArgumentException.class, () -> flow.drawOn(pages));
         assertEquals(0, pages.size());
     }

@@ -271,8 +271,10 @@ commit and date. The layout's format version (1) and the look's rules
   a test and the javadoc of `drawOn` pointing to it. `drawOn` returns what
   it does now, so no code changes its result. Done 26 October 2026, the
   four ports; check-api.sh v9.1.1 shows it as the only member added.
-- **For 9.1.5: FlowText, headings, paragraphs and images flowed onto pages**
-  (the owner, 26 October 2026: "core", for 9.1.5). From writing common
+- **Done for 9.1.3: TextFlow, headings, paragraphs and images flowed onto
+  pages** (named FlowText at first; TextFlow, the owner, 26 October 2026,
+  as TextLine, TextBlock, TextColumn and TextFrame are named) (the owner, 26 October 2026: "core", for 9.1.5; then "ship
+  TextFlow in 9.1.3", the same day, done and tested in the four ports). From writing common
   business documents in the four ports: a report of headings, paragraphs
   and photos is 53 lines today, the code moving a TextFrame from page to
   page and placing each photo by hand; about 20 with this. Its own class,
@@ -280,9 +282,9 @@ commit and date. The layout's format version (1) and the look's rules
   as it is, the frame placed by hand, and is not put at risk. A thin class
   over what the core has: TextFrame flows the paragraphs and makes the pages,
   `getTextBottom()` says where the text ends (9.1.3), Image has its size.
-  - The API, Java (the others alike, Go `NewFlowText`, `Add`...):
+  - The API, Java (the others alike, Go `NewTextFlow`, `Add`...):
     ```java
-    FlowText flow = new FlowText(pdf, Letter.PORTRAIT).setMargins(50f);
+    TextFlow flow = new TextFlow(pdf, Letter.PORTRAIT).setMargins(50f);
     flow.add(title);                       // a Paragraph, StructElem.H1
     flow.add(paragraphs, 6f);              // List<Paragraph>, the gap between them
     flow.add(photo);                       // an Image
@@ -316,9 +318,9 @@ commit and date. The layout's format version (1) and the look's rules
     may join later as an item), columns, text wrapped around images,
     floats, keep-together of anything but headings, footers (the pages are
     returned for them, as TextFrame's and Table's are).
-  - **Go done, 26 October 2026** (src/flowtext.go, 285 lines with its
-    comments; 9 tests in flowtext_test.go). As built, following Table's
-    names: `NewFlowText(pdf, pageSize)`, margins 72 by default,
+  - **Go done, 26 October 2026** (src/textflow.go, 285 lines with its
+    comments; 9 tests in textflow_test.go). As built, following Table's
+    names: `NewTextFlow(pdf, pageSize)`, margins 72 by default,
     `SetMargins(m)` and `SetEachMargin(top, right, bottom, left)`,
     `SetFirstPageTop(y)`, `Add(paragraph)`, `AddParagraphs(paragraphs,
     gap)`, `AddImage(image)`, `AddImageAligned(image, alignment)`,
@@ -330,21 +332,30 @@ commit and date. The layout's format version (1) and the look's rules
     it. Margins that leave no room fail the PDF, and nothing added makes no
     page. A trial report (4 sections, 120 paragraphs, 4 photos, PDF/UA,
     footers) is 18 pages, about 20 lines of code, and veraPDF passes it.
-    **Java done, 26 October 2026** (com/pdfjet/FlowText.java,
-    FlowTextTest.java, the same 9 tests): `setMargins` for one and for four
+    **Java done, 26 October 2026** (com/pdfjet/TextFlow.java,
+    TextFlowTest.java, the same 9 tests): `setMargins` for one and for four
     margins, `add` for a paragraph, paragraphs, an image and an aligned
     image, `drawOn(pages)` and `drawOn(first, pages)`; margins that leave no
     room throw, as Java's misuses do. The trial report drawn in Java is the
     same as Go's, to the pixel, on its 18 pages. **C# done, 26 October
-    2026** (net/pdfjet/FlowText.cs, tests/dotnet/FlowTextTest.cs), as
+    2026** (net/pdfjet/TextFlow.cs, tests/dotnet/TextFlowTest.cs), as
     Java's, with Go's names in C#'s case (`SetMargins`, `Add`, `AddSpace`,
     `DrawOn`); its margins that leave no room throw ArgumentException. Its
     trial report is the same as Go's to the pixel. **Swift done, 26
-    October 2026** (Sources/PDFjet/FlowText.swift, FlowTextTests.swift):
+    October 2026** (Sources/PDFjet/TextFlow.swift, TextFlowTests.swift):
     `add(image, alignment)` with the alignment LEFT by default; margins that
     leave no room fail the PDF, as Go's. The trial report drawn in Swift is
-    the same as Go's to the pixel too, so the four ports agree. Next: the
-    example and the snippet in the booklet.
+    the same as Go's to the pixel too, so the four ports agree.
+    **A fifth rule, 26 October 2026 (the owner):** a paragraph of
+    StructElem.CAPTION added right after an image, after a space or not, is
+    its caption and goes to the next page with it, as the first draft of
+    the example showed a caption left at the top of a page apart from its
+    map; a test in each port. **The example and the snippet, the same day:**
+    Example_22, which drew a table of text columns (the owner chose it as
+    the weakest), is now "Four Countries and Their Regions", the four maps
+    of images/ with their captions on 4 pages, PDF/UA, the same in the four
+    ports to the pixel; the booklet has the text-flow snippet, after the
+    text frames.
   - Size: about 150 to 250 lines in each port with its comments, Go first,
     then Java, C#, Swift; a test in each of the rules above, the same in
     the four ports; an example (a report of 4 sections, 120 paragraphs and
@@ -363,7 +374,7 @@ commit and date. The layout's format version (1) and the look's rules
   - A row too narrow for a word (say less than 3 em) is skipped and the
     text goes on below the image. Justified rows justify within their run.
   - Rectangles only, no wrap around the outline of a shape.
-  - FlowText (9.1.5) gets it later as an image item that text wraps around,
+  - TextFlow (9.1.5) gets it later as an image item that text wraps around,
     left or right.
   - What it touches: the row building of TextFrame (the start and width of
     each row), in the four ports; the tagging is unchanged (the image a

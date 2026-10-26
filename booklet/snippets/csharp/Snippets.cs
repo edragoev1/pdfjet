@@ -299,6 +299,27 @@ public class Snippets {
         }
     }
 
+    // @snippet text-flow
+    static void TextFlowPages(PDF pdf, Font font) {
+        Font bold = new Font(pdf, IBMPlexSans.SemiBold);
+        TextFlow flow = new TextFlow(pdf, Letter.PORTRAIT).SetMargins(72f);
+        flow.Add(new Paragraph(new TextLine(bold, "Greece").SetFontSize(18f))
+                .SetStructureType(StructElem.H1));  // Never ends a page
+        flow.AddSpace(8f);
+        flow.Add(new List<Paragraph> {
+                new Paragraph(new TextLine(font, "Greece is divided into 13 regions, each with an elected governor and council.")),
+                new Paragraph(new TextLine(font, "Greece has about 6,000 islands and islets. The largest, Crete, is a region of its own."))}, 6f);
+        flow.AddSpace(12f);
+        Image map = new Image(pdf, "images/gr-map.jpg");
+        map.SetAltDescription("A map of Greece and its regions.");
+        flow.Add(map.ResizeHeight(400f), Alignment.CENTER);   // Whole, here or on the next page
+        flow.Add(new Paragraph(new TextLine(font, "Greece: its regions.").SetFontSize(9f))
+                .SetStructureType(StructElem.CAPTION));     // Stays with the map
+        List<Page> pages = new List<Page>();
+        flow.DrawOn(pages);     // As many pages as it needs
+        pdf.AddPages(pages);
+    }
+
     // @snippet right-to-left
     static void RightToLeft(PDF pdf, Font font) {
         Font hebrew = new Font(pdf, IBMPlexSansHebrew.Regular);
@@ -826,6 +847,7 @@ public class Snippets {
         Run("text-column", TextColumn);
         Run("text-frame-pages", TextFramePages);
         Run("text-frame-columns", TextFrameColumns);
+        Run("text-flow", TextFlowPages);
         Run("right-to-left", RightToLeft);
         Run("formulas", Formulas);
         Run("table", Table);

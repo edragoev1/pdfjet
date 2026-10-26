@@ -241,6 +241,9 @@ drawOn(pdf, pages, pageSize) draws the text on as many new pages as it needs, a 
 @snippet text-frame-columns Text that flows through columns
 A text frame with a height draws what fits in it and keeps the rest for the next drawOn, until hasMoreText is false. Moving the frame between the calls flows the text through the columns of a page and on to the next page.
 
+@snippet text-flow Headings, paragraphs and images onto pages
+A TextFlow pours in what is added, one thing under the other between the margins, and makes as many pages as it needs: paragraphs break across pages between their lines, an image goes whole to the next page when it does not fit, with its caption, a paragraph of StructElem.CAPTION added right after it, and a heading goes to the next page with the text after it rather than end a page. Each thing goes right under the one before; addSpace puts space between them. Use a TextFrame to place text yourself, and TextFlow to let it place the text and the images for you.
+
 @snippet markup Inline markup
 A Markup reads the inline markup of Markdown, **bold**, *italic*, ***bold italic***, `code` and [links](url), and makes paragraphs of text lines in the fonts given for each. A word keeps the punctuation after it in another style, with no space between them, and a mark with no match is text. paragraphs splits a text into paragraphs at its empty lines. Headings, lists and the other blocks of Markdown are not read.
 

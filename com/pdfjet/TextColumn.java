@@ -19,7 +19,7 @@ import java.util.*;
  * words in a paragraph, justified paragraphs, CJK paragraphs. Use a TextBlock
  * for one run of text in one font, and a TextFrame when the text must
  * continue from one frame to the next, across columns or pages. Please see
- * Example_12, Example_22, Example_13 and Example_16.
+ * Example_12, Example_13 and Example_16.
  */
 public class TextColumn implements Drawable {
     /** The text alignment. */
@@ -171,7 +171,6 @@ public class TextColumn implements Drawable {
 
     /**
      * Returns dimension object containing the width and height of this component.
-     * Please see Example_22.
      *
      * @return dimension object containing the width and height of this component.
      * @throws Exception  If an input or output exception occurred

@@ -20,7 +20,7 @@ namespace PDFjet.NET {
 /// words in a paragraph, justified paragraphs, CJK paragraphs. Use a TextBlock
 /// for one run of text in one font, and a TextFrame when the text must
 /// continue from one frame to the next, across columns or pages. Please see
-/// Example_12, Example_22, Example_13 and Example_16.
+/// Example_12, Example_13 and Example_16.
 /// </summary>
 public class TextColumn : IDrawable {
     internal Alignment alignment = Alignment.LEFT;
@@ -142,7 +142,6 @@ public class TextColumn : IDrawable {
 
     /// <summary>
     /// Returns dimension object containing the width and height of this component.
-    /// Please see Example_22.
     /// </summary>
     /// <returns>dimension object containing the width and height of this component.</returns>
     public Dimension GetSize() {

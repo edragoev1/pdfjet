@@ -338,6 +338,27 @@ func textFrameColumns(pdf *pdfjet.PDF, font *pdfjet.Font) {
 	}
 }
 
+// @snippet text-flow
+func textFlow(pdf *pdfjet.PDF, font *pdfjet.Font) {
+	bold := pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
+	flow := pdfjet.NewTextFlow(pdf, letter.Portrait()).SetMargins(72)
+	flow.Add(pdfjet.NewParagraph().Add(pdfjet.NewTextLine(bold, "Greece").SetFontSize(18)).
+		SetStructureType(structelem.H1)) // Never ends a page
+	flow.AddSpace(8)
+	flow.AddParagraphs([]*pdfjet.Paragraph{
+		pdfjet.NewParagraph().Add(pdfjet.NewTextLine(font, "Greece is divided into 13 regions, each with an elected governor and council.")),
+		pdfjet.NewParagraph().Add(pdfjet.NewTextLine(font, "Greece has about 6,000 islands and islets. The largest, Crete, is a region of its own."))}, 6)
+	flow.AddSpace(12)
+	mapImage := pdfjet.NewImageFromFile(pdf, "images/gr-map.jpg")
+	mapImage.SetAltDescription("A map of Greece and its regions.")
+	flow.AddImageAligned(mapImage.ResizeHeight(400), alignment.Center) // Whole, here or on the next page
+	flow.Add(pdfjet.NewParagraph().Add(pdfjet.NewTextLine(font, "Greece: its regions.").SetFontSize(9)).
+		SetStructureType(structelem.Caption)) // Stays with the map
+	pages := make([]*pdfjet.Page, 0)
+	flow.DrawOnPages(&pages) // As many pages as it needs
+	pdf.AddPages(pages)
+}
+
 // @snippet right-to-left
 func rightToLeft(pdf *pdfjet.PDF, font *pdfjet.Font) {
 	hebrew := pdfjet.NewFontFromFile(pdf, IBMPlexSansHebrew.Regular)
@@ -926,6 +947,7 @@ func main() {
 	run("text-column", textColumn)
 	run("text-frame-pages", textFramePages)
 	run("text-frame-columns", textFrameColumns)
+	run("text-flow", textFlow)
 	run("right-to-left", rightToLeft)
 	run("formulas", formulas)
 	run("table", table)

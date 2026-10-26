@@ -1,5 +1,5 @@
 /*
- * FlowTextTest.cs
+ * TextFlowTest.cs
  *
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
@@ -12,14 +12,14 @@ namespace PDFjet.NET {
 // The flows of these tests are on Letter pages with margins of 50 points: the
 // text is 512 points wide, from x 50, and the pages hold 692 points of it,
 // from y 50 to 742.
-public class FlowTextTest {
+public class TextFlowTest {
     private const float MARGIN = 50f;
     private const float BOTTOM = 742f;
     private const float WIDTH = 512f;
     private const float HEIGHT = 692f;
 
-    private static FlowText Flow(PDF pdf) {
-        return new FlowText(pdf, Letter.PORTRAIT).SetMargins(MARGIN);
+    private static TextFlow Flow(PDF pdf) {
+        return new TextFlow(pdf, Letter.PORTRAIT).SetMargins(MARGIN);
     }
 
     private static Paragraph NewParagraph(Font font, string text) {
@@ -69,6 +69,31 @@ public class FlowTextTest {
         TestSupport.AssertNear(200f, large.GetHeight(), TestSupport.DELTA);
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void AnImageKeepsWithItsCaption(bool captioned) {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Paragraph caption = NewParagraph(font, "Figure 1: the image above");
+        if (captioned) {
+            caption.SetStructureType(StructElem.CAPTION);
+        }
+        // Room for the image below the text, but not for its caption too
+        Paragraph text = NewParagraph(font, "Above the image");
+        Image image = NewImage(pdf, HEIGHT - (font.GetAscent(font.GetSize()) + font.GetDescent(font.GetSize())) - 4f);
+        List<Page> pages = new List<Page>();
+        Flow(pdf).Add(text).Add(image).AddSpace(2f).Add(caption).DrawOn(pages);
+        Assert.Equal(2, pages.Count);
+        if (captioned) {
+            TestSupport.AssertNear(MARGIN, image.y, TestSupport.DELTA);    // on the next page with its caption
+            TestSupport.AssertNear(image.y + image.GetHeight() + 2f, caption.GetY1(), TestSupport.DELTA);
+        } else {
+            TestSupport.AssertNear(text.GetY2(), image.y, TestSupport.DELTA);
+            TestSupport.AssertNear(MARGIN, caption.GetY1(), TestSupport.DELTA);    // not a caption: on the next page
+        }
+    }
+
     [Fact]
     public void AnImageTooLargeIsMadeAsLargeAsTheTextAndThePage() {
         PDF pdf = TestSupport.NewPDF();
@@ -113,7 +138,7 @@ public class FlowTextTest {
         // Room for the heading below the image, 2 points more, but not for a
         // line after it too
         Image filler = NewImage(pdf, HEIGHT - headingHeight - 2f);
-        FlowText flow = Flow(pdf).Add(filler).Add(heading);
+        TextFlow flow = Flow(pdf).Add(filler).Add(heading);
         Paragraph text = NewParagraph(font, "The text under the heading");
         if (followed) {
             flow.Add(text);
@@ -169,7 +194,7 @@ public class FlowTextTest {
         PDF pdf = TestSupport.NewPDF();
         Font font = TestSupport.Helvetica(pdf);
         List<Page> pages = new List<Page>();
-        FlowText flow = Flow(pdf).SetMargins(400f).Add(NewParagraph(font, "text"));
+        TextFlow flow = Flow(pdf).SetMargins(400f).Add(NewParagraph(font, "text"));
         Assert.Throws<ArgumentException>(() => flow.DrawOn(pages));
         Assert.Empty(pages);
     }

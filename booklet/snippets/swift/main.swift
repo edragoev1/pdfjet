@@ -293,6 +293,27 @@ func textFrameColumns(_ pdf: PDF, _ font: Font) throws {
     }
 }
 
+// @snippet text-flow
+func textFlow(_ pdf: PDF, _ font: Font) throws {
+    let bold = try Font(pdf, IBMPlexSans.SemiBold)
+    let flow = TextFlow(pdf, Letter.PORTRAIT).setMargins(72)
+    flow.add(Paragraph(TextLine(bold, "Greece").setFontSize(18))
+            .setStructureType(StructElem.H1))   // Never ends a page
+    flow.addSpace(8)
+    flow.add([
+            Paragraph(TextLine(font, "Greece is divided into 13 regions, each with an elected governor and council.")),
+            Paragraph(TextLine(font, "Greece has about 6,000 islands and islets. The largest, Crete, is a region of its own."))], 6)
+    flow.addSpace(12)
+    let map = try Image(pdf, "images/gr-map.jpg")
+    map.setAltDescription("A map of Greece and its regions.")
+    flow.add(map.resizeHeight(400), Alignment.CENTER)   // Whole, here or on the next page
+    flow.add(Paragraph(TextLine(font, "Greece: its regions.").setFontSize(9))
+            .setStructureType(StructElem.CAPTION))      // Stays with the map
+    var pages = [Page]()
+    flow.drawOn(&pages)     // As many pages as it needs
+    pdf.addPages(pages)
+}
+
 // @snippet right-to-left
 func rightToLeft(_ pdf: PDF, _ font: Font) throws {
     let hebrew = try Font(pdf, IBMPlexSansHebrew.Regular)
@@ -813,6 +834,7 @@ try run("markdown", markdown)
 try run("text-column", textColumn)
 try run("text-frame-pages", textFramePages)
 try run("text-frame-columns", textFrameColumns)
+try run("text-flow", textFlow)
 try run("right-to-left", rightToLeft)
 try run("formulas", formulas)
 try run("table", table)

@@ -29,7 +29,7 @@ import (
 // words in a paragraph, justified paragraphs, CJK paragraphs. Use a TextBlock
 // for one run of text in one font, and a TextFrame when the text must
 // continue from one frame to the next, across columns or pages. Please see
-// Example_12, Example_22, Example_13 and Example_16.
+// Example_12, Example_13 and Example_16.
 type TextColumn struct {
 	alignment             alignment.Alignment
 	x                     float32 // This variable is set in the beginning and only reset after the DrawOn

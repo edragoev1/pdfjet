@@ -1,4 +1,4 @@
-// flowtext_test.go
+// textflow_test.go
 //
 // Copyright (c) 2026 PDFjet Software
 // Licensed under the MIT License. See LICENSE file in the project root.
@@ -26,8 +26,8 @@ const (
 	testFlowHeight = 692
 )
 
-func testFlow(pdf *PDF) *FlowText {
-	return NewFlowText(pdf, letter.Portrait()).SetMargins(testFlowMargin)
+func testFlow(pdf *PDF) *TextFlow {
+	return NewTextFlow(pdf, letter.Portrait()).SetMargins(testFlowMargin)
 }
 
 func testFlowParagraph(font *Font, text string) *Paragraph {
@@ -47,7 +47,7 @@ func testFlowImage(t *testing.T, pdf *PDF, height float32) *Image {
 	return image.ScaleByWidthAndHeight(100/image.GetWidth(), height/image.GetHeight())
 }
 
-func TestFlowTextParagraphsFlowAcrossPagesBetweenTheMargins(t *testing.T) {
+func TestTextFlowParagraphsFlowAcrossPagesBetweenTheMargins(t *testing.T) {
 	pdf := testNewPDF()
 	font := testHelvetica(pdf)
 	paragraphs := make([]*Paragraph, 0)
@@ -70,7 +70,7 @@ func TestFlowTextParagraphsFlowAcrossPagesBetweenTheMargins(t *testing.T) {
 	testNear(t, "the bottom of the text", paragraphs[119].GetY2(), xy[1], testDelta)
 }
 
-func TestFlowTextAnImageThatDoesNotFitGoesWholeToTheNextPage(t *testing.T) {
+func TestTextFlowAnImageThatDoesNotFitGoesWholeToTheNextPage(t *testing.T) {
 	pdf := testNewPDF()
 	font := testHelvetica(pdf)
 	small := testFlowImage(t, pdf, 40)
@@ -86,7 +86,33 @@ func TestFlowTextAnImageThatDoesNotFitGoesWholeToTheNextPage(t *testing.T) {
 	testNear(t, "its height", 200, large.GetHeight(), testDelta)
 }
 
-func TestFlowTextAnImageTooLargeIsMadeAsLargeAsTheTextAndThePage(t *testing.T) {
+func TestTextFlowAnImageKeepsWithItsCaption(t *testing.T) {
+	for _, captioned := range []bool{true, false} {
+		pdf := testNewPDF()
+		font := testHelvetica(pdf)
+		caption := testFlowParagraph(font, "Figure 1: the image above")
+		if captioned {
+			caption.SetStructureType(structelem.Caption)
+		}
+		// Room for the image below the text, but not for its caption too
+		text := testFlowParagraph(font, "Above the image")
+		image := testFlowImage(t, pdf, testFlowHeight-firstLineHeight([]*Paragraph{text})-4)
+		pages := make([]*Page, 0)
+		testFlow(pdf).Add(text).AddImage(image).AddSpace(2).Add(caption).DrawOnPages(&pages)
+		if len(pages) != 2 {
+			t.Fatalf("%d pages, not 2", len(pages))
+		}
+		if captioned {
+			testNear(t, "the image, on the next page with its caption", testFlowMargin, image.y, testDelta)
+			testNear(t, "the caption, under it", image.y+image.GetHeight()+2, caption.GetY1(), testDelta)
+		} else {
+			testNear(t, "the image, under the text", text.GetY2(), image.y, testDelta)
+			testNear(t, "a paragraph that is not a caption, on the next page", testFlowMargin, caption.GetY1(), testDelta)
+		}
+	}
+}
+
+func TestTextFlowAnImageTooLargeIsMadeAsLargeAsTheTextAndThePage(t *testing.T) {
 	pdf := testNewPDF()
 	wide := testFlowImage(t, pdf, 100)
 	wide.ScaleByWidthAndHeight(20, 1) // 2,000 points wide
@@ -104,7 +130,7 @@ func TestFlowTextAnImageTooLargeIsMadeAsLargeAsTheTextAndThePage(t *testing.T) {
 	}
 }
 
-func TestFlowTextAnImageIsAlignedLeftCenterOrRight(t *testing.T) {
+func TestTextFlowAnImageIsAlignedLeftCenterOrRight(t *testing.T) {
 	pdf := testNewPDF()
 	left := testFlowImage(t, pdf, 50)
 	center := testFlowImage(t, pdf, 50)
@@ -119,7 +145,7 @@ func TestFlowTextAnImageIsAlignedLeftCenterOrRight(t *testing.T) {
 	testNear(t, "one below the other", left.y+50, center.y, testDelta)
 }
 
-func TestFlowTextAHeadingKeepsWithTheFirstLineAfterIt(t *testing.T) {
+func TestTextFlowAHeadingKeepsWithTheFirstLineAfterIt(t *testing.T) {
 	for _, followed := range []bool{true, false} {
 		pdf := testNewPDF()
 		font := testHelvetica(pdf)
@@ -151,7 +177,7 @@ func TestFlowTextAHeadingKeepsWithTheFirstLineAfterIt(t *testing.T) {
 	}
 }
 
-func TestFlowTextASpaceAtTheTopOfAPageIsLeftOut(t *testing.T) {
+func TestTextFlowASpaceAtTheTopOfAPageIsLeftOut(t *testing.T) {
 	pdf := testNewPDF()
 	font := testHelvetica(pdf)
 	first := testFlowParagraph(font, "At the top of the first page")
@@ -166,7 +192,7 @@ func TestFlowTextASpaceAtTheTopOfAPageIsLeftOut(t *testing.T) {
 	}
 }
 
-func TestFlowTextStartsOnAPageBelowTheFirstPageTop(t *testing.T) {
+func TestTextFlowStartsOnAPageBelowTheFirstPageTop(t *testing.T) {
 	pdf := testNewPDF()
 	font := testHelvetica(pdf)
 	first := NewPageDetached(pdf, letter.Portrait())
@@ -179,7 +205,7 @@ func TestFlowTextStartsOnAPageBelowTheFirstPageTop(t *testing.T) {
 	}
 }
 
-func TestFlowTextNothingToDrawMakesNoPage(t *testing.T) {
+func TestTextFlowNothingToDrawMakesNoPage(t *testing.T) {
 	pdf := testNewPDF()
 	pages := make([]*Page, 0)
 	testFlow(pdf).AddSpace(20).Add(NewParagraph()).DrawOnPages(&pages)
@@ -188,7 +214,7 @@ func TestFlowTextNothingToDrawMakesNoPage(t *testing.T) {
 	}
 }
 
-func TestFlowTextMarginsThatLeaveNoRoomAreRefused(t *testing.T) {
+func TestTextFlowMarginsThatLeaveNoRoomAreRefused(t *testing.T) {
 	pdf := testNewPDF()
 	font := testHelvetica(pdf)
 	pages := make([]*Page, 0)

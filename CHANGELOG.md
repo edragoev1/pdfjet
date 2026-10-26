@@ -36,6 +36,27 @@ This is the first entry in this file; earlier releases were not tracked here.
   could only be found by the last paragraph's `getY2()`. `drawOn` returns
   what it did.
 
+- All four ports: `TextFlow`, which flows headings, paragraphs and images
+  onto as many pages as they need, one under the other between the margins:
+  a report, a manual, a long letter. Paragraphs break across pages between
+  their lines, as a TextFrame breaks them; an image goes whole, to the top
+  of the next page when it does not fit, and is made as large as the text
+  and the page at most, at the left, in the center or at the right; a
+  paragraph of `StructElem.CAPTION` added after an image goes with it; a
+  heading, a paragraph of `StructElem.H1` to `H6`, goes to the next page
+  with the line after it rather than end a page; `addSpace` puts space
+  between two things, and a space at the top of a page is left out. The
+  pages are made detached, for footers, from a page the caller has begun or
+  not. It is a class of its own over TextFrame, Image and
+  `getTextBottom()`, which are unchanged, and the order things are added in
+  is the reading order of a PDF/UA document. A report of 4 sections, 120
+  paragraphs and 4 photos is about 20 lines of code with it, where placing
+  the frames and the photos by hand took 53.
+- Example_22 is now a guide to four countries and their regions, laid out
+  by TextFlow: headings, paragraphs and maps with captions on 4 pages, in a
+  PDF/UA document. It was a table of text columns in English and Greek,
+  which Example_21 and the TextColumn examples show the parts of.
+
 ### Changed
 - Swift: text other than printable ASCII is drawn faster: a 500-page text
   in Latin, Greek and Cyrillic takes 100 ms, where 9.0.9 and 9.1.1 took 113.

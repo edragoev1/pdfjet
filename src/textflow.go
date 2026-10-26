@@ -1,4 +1,4 @@
-// flowtext.go
+// textflow.go
 //
 // Copyright (c) 2026 PDFjet Software
 // Licensed under the MIT License. See LICENSE file in the project root.
@@ -17,21 +17,22 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
-// FlowText flows headings, paragraphs and images onto as many pages as they
+// TextFlow flows headings, paragraphs and images onto as many pages as they
 // need, one below the other between the margins: a report, a manual, a long
 // letter. Paragraphs break across pages between their lines, as a TextFrame
 // breaks them; an image goes whole, to the top of the next page when it does
-// not fit below the text; a heading goes to the next page with what follows
-// it rather than end a page. The pages are created detached and added to a
-// list, so that a footer or a page number can be drawn on each before they are
-// added to the PDF.
+// not fit below the text, with its caption; a heading goes to the next page
+// with what follows it rather than end a page. The pages are created detached
+// and added to a list, so that a footer or a page number can be drawn on each
+// before they are added to the PDF.
 //
 // Use a TextFrame to place text by hand, in frames on the same page or on
-// others, the text flowing from one to the next; use FlowText to pour the text
+// others, the text flowing from one to the next; use TextFlow to pour the text
 // and the images in, page after page. The order they are added in is the
 // reading order of a PDF/UA document: the paragraphs are tagged as a TextFrame
 // tags them, the images as figures with their alternate descriptions.
-type FlowText struct {
+// Use Markdown instead for a text written in Markdown. Please see Example_22.
+type TextFlow struct {
 	pdf                      *PDF
 	pageSize                 pagesize.PageSize
 	top, right, bottom, left float32
@@ -49,21 +50,21 @@ type flowItem struct {
 	space      float32
 }
 
-// NewFlowText creates a flow of text and images onto pages of the size, with
+// NewTextFlow creates a flow of text and images onto pages of the size, with
 // margins of 72 points, an inch, on every side.
-func NewFlowText(pdf *PDF, pageSize pagesize.PageSize) *FlowText {
-	return &FlowText{pdf: pdf, pageSize: pageSize, top: 72, right: 72, bottom: 72, left: 72}
+func NewTextFlow(pdf *PDF, pageSize pagesize.PageSize) *TextFlow {
+	return &TextFlow{pdf: pdf, pageSize: pageSize, top: 72, right: 72, bottom: 72, left: 72}
 }
 
 // SetMargins sets the margins of every side of the pages, in points. The text
 // and the images are as wide as the page less the left and right margins.
-func (flow *FlowText) SetMargins(margin float32) *FlowText {
+func (flow *TextFlow) SetMargins(margin float32) *TextFlow {
 	return flow.SetEachMargin(margin, margin, margin, margin)
 }
 
 // SetEachMargin sets the margins of the pages, in points: top, right, bottom
 // and left, the order CSS gives them.
-func (flow *FlowText) SetEachMargin(top, right, bottom, left float32) *FlowText {
+func (flow *TextFlow) SetEachMargin(top, right, bottom, left float32) *TextFlow {
 	flow.top = top
 	flow.right = right
 	flow.bottom = bottom
@@ -74,21 +75,21 @@ func (flow *FlowText) SetEachMargin(top, right, bottom, left float32) *FlowText 
 // SetFirstPageTop sets where the flow starts on the first page that
 // DrawOnPagesFrom is given, below what is drawn there already, such as a
 // heading or a letterhead. Without it the flow starts at the top margin.
-func (flow *FlowText) SetFirstPageTop(y float32) *FlowText {
+func (flow *TextFlow) SetFirstPageTop(y float32) *TextFlow {
 	flow.firstPageTop = y
 	return flow
 }
 
 // Add adds a paragraph: a heading, when its structure type is structelem.H1 to
 // structelem.H6, or a paragraph of text, a caption, a line.
-func (flow *FlowText) Add(paragraph *Paragraph) *FlowText {
+func (flow *TextFlow) Add(paragraph *Paragraph) *TextFlow {
 	flow.items = append(flow.items, flowItem{paragraphs: []*Paragraph{paragraph}})
 	return flow
 }
 
 // AddParagraphs adds paragraphs with gap points between them, which flow
 // across pages as the text of a TextFrame does.
-func (flow *FlowText) AddParagraphs(paragraphs []*Paragraph, gap float32) *FlowText {
+func (flow *TextFlow) AddParagraphs(paragraphs []*Paragraph, gap float32) *TextFlow {
 	flow.items = append(flow.items, flowItem{paragraphs: paragraphs, gap: gap, hasGap: true})
 	return flow
 }
@@ -96,22 +97,24 @@ func (flow *FlowText) AddParagraphs(paragraphs []*Paragraph, gap float32) *FlowT
 // AddImage adds an image at the left margin. An image wider than the text is
 // made as wide as the text, and one taller than the space between the top and
 // the bottom margins as tall as that space, keeping its shape; it is never
-// cut.
-func (flow *FlowText) AddImage(image *Image) *FlowText {
+// cut. A paragraph of structelem.Caption added right after it, after a space
+// or not, is its caption, and goes to the next page with it when the two do
+// not fit.
+func (flow *TextFlow) AddImage(image *Image) *TextFlow {
 	return flow.AddImageAligned(image, alignment.Left)
 }
 
 // AddImageAligned adds an image as AddImage does, at the left margin, in the
 // center of the text, or at the right margin: alignment.Left, alignment.Center
 // or alignment.Right.
-func (flow *FlowText) AddImageAligned(image *Image, align alignment.Alignment) *FlowText {
+func (flow *TextFlow) AddImageAligned(image *Image, align alignment.Alignment) *TextFlow {
 	flow.items = append(flow.items, flowItem{image: image, align: align})
 	return flow
 }
 
 // AddSpace adds points of space below what was added before. A space at the
 // top of a page is left out, as the gap between two paragraphs is.
-func (flow *FlowText) AddSpace(points float32) *FlowText {
+func (flow *TextFlow) AddSpace(points float32) *TextFlow {
 	if points > 0 {
 		flow.items = append(flow.items, flowItem{space: points})
 	}
@@ -122,14 +125,14 @@ func (flow *FlowText) AddSpace(points float32) *FlowText {
 // detached and added to the list; add them to the PDF afterwards. It returns
 // the x and y coordinates of the bottom right corner of what was drawn on the
 // last page, where something drawn after it can go.
-func (flow *FlowText) DrawOnPages(pages *[]*Page) [2]float32 {
+func (flow *TextFlow) DrawOnPages(pages *[]*Page) [2]float32 {
 	return flow.DrawOnPagesFrom(nil, pages)
 }
 
 // DrawOnPagesFrom draws what was added as DrawOnPages does, starting on first,
 // a page with other content above the flow, which SetFirstPageTop puts the
 // flow under. The next pages are new and are added to the list; first is not.
-func (flow *FlowText) DrawOnPagesFrom(first *Page, pages *[]*Page) [2]float32 {
+func (flow *TextFlow) DrawOnPagesFrom(first *Page, pages *[]*Page) [2]float32 {
 	width := flow.pageSize.GetWidth() - flow.left - flow.right
 	height := flow.pageSize.GetHeight() - flow.top - flow.bottom
 	if !finite(flow.top, flow.right, flow.bottom, flow.left, flow.firstPageTop) || width <= 0 || height <= 0 {
@@ -161,7 +164,11 @@ func (flow *FlowText) DrawOnPagesFrom(first *Page, pages *[]*Page) [2]float32 {
 			}
 		case item.image != nil:
 			fitImage(item.image, width, height)
-			if page == nil || (!atTop && y+item.image.GetHeight() > limit) {
+			needed := item.image.GetHeight()
+			if withCaption := needed + flow.captionHeight(i+1, width); withCaption <= height {
+				needed = withCaption // The image and its caption go together
+			}
+			if page == nil || (!atTop && y+needed > limit) {
 				newPage()
 			}
 			x := flow.left
@@ -207,7 +214,7 @@ func (flow *FlowText) DrawOnPagesFrom(first *Page, pages *[]*Page) [2]float32 {
 }
 
 // frame returns a text frame of the paragraphs of the item, as wide as the text.
-func (flow *FlowText) frame(item flowItem, width float32) *TextFrame {
+func (flow *TextFlow) frame(item flowItem, width float32) *TextFrame {
 	frame := NewTextFrameFromParagraphs(item.paragraphs).SetWidth(width)
 	if item.hasGap {
 		frame.SetParagraphGap(item.gap)
@@ -217,7 +224,7 @@ func (flow *FlowText) frame(item flowItem, width float32) *TextFrame {
 
 // textHeight returns the height of the paragraphs of the item, all of them
 // drawn in one frame.
-func (flow *FlowText) textHeight(item flowItem, width float32) float32 {
+func (flow *TextFlow) textHeight(item flowItem, width float32) float32 {
 	frame := flow.frame(item, width)
 	frame.SetLocation(0, 0)
 	frame.DrawOn(nil) // With no page the text is measured and kept
@@ -227,7 +234,7 @@ func (flow *FlowText) textHeight(item flowItem, width float32) float32 {
 // nextHeight returns the height that has to fit below a heading so that it
 // does not end a page: the spaces after it, and the first line of the
 // paragraphs or the image that comes next.
-func (flow *FlowText) nextHeight(index int, width, height float32) float32 {
+func (flow *TextFlow) nextHeight(index int, width, height float32) float32 {
 	total := float32(0)
 	for _, item := range flow.items[index:] {
 		switch {
@@ -249,6 +256,27 @@ func (flow *FlowText) nextHeight(index int, width, height float32) float32 {
 		}
 	}
 	return total
+}
+
+// captionHeight returns the height of the caption of an image, a paragraph of
+// structelem.Caption added right after it, and of the spaces before it; 0
+// when the image has no caption.
+func (flow *TextFlow) captionHeight(index int, width float32) float32 {
+	total := float32(0)
+	for _, item := range flow.items[index:] {
+		switch {
+		case item.space > 0:
+			total += item.space
+		case item.image != nil:
+			return 0
+		default:
+			if len(item.paragraphs) == 0 || item.paragraphs[0].structureType != structelem.Caption {
+				return 0
+			}
+			return total + flow.textHeight(item, width)
+		}
+	}
+	return 0
 }
 
 // fitImage makes the image as wide as the text at most, and as tall as the

@@ -1,5 +1,5 @@
 /*
- * FlowText.java
+ * TextFlow.java
  *
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
@@ -13,18 +13,19 @@ import java.util.*;
  * below the other between the margins: a report, a manual, a long letter.
  * Paragraphs break across pages between their lines, as a TextFrame breaks
  * them; an image goes whole, to the top of the next page when it does not fit
- * below the text; a heading goes to the next page with what follows it rather
- * than end a page. The pages are created detached and added to a list, so that
- * a footer or a page number can be drawn on each before they are added to the
- * PDF.
+ * below the text, with its caption; a heading goes to the next page with what
+ * follows it rather than end a page. The pages are created detached and added
+ * to a list, so that a footer or a page number can be drawn on each before they
+ * are added to the PDF.
  * <p>
  * Use a TextFrame to place text by hand, in frames on the same page or on
- * others, the text flowing from one to the next; use FlowText to pour the text
+ * others, the text flowing from one to the next; use TextFlow to pour the text
  * and the images in, page after page. The order they are added in is the
  * reading order of a PDF/UA document: the paragraphs are tagged as a TextFrame
  * tags them, the images as figures with their alternate descriptions.
+ * Use Markdown instead for a text written in Markdown. Please see Example_22.
  */
-public class FlowText {
+public class TextFlow {
     private final PDF pdf;
     private final PageSize pageSize;
     private float top = 72f;
@@ -51,7 +52,7 @@ public class FlowText {
      * @param pdf the PDF document.
      * @param pageSize the page size, for example Letter.PORTRAIT.
      */
-    public FlowText(PDF pdf, PageSize pageSize) {
+    public TextFlow(PDF pdf, PageSize pageSize) {
         this.pdf = pdf;
         this.pageSize = pageSize;
     }
@@ -63,7 +64,7 @@ public class FlowText {
      * @param margin the margin of every side.
      * @return this flow.
      */
-    public FlowText setMargins(float margin) {
+    public TextFlow setMargins(float margin) {
         return setMargins(margin, margin, margin, margin);
     }
 
@@ -77,7 +78,7 @@ public class FlowText {
      * @param left the left margin.
      * @return this flow.
      */
-    public FlowText setMargins(float top, float right, float bottom, float left) {
+    public TextFlow setMargins(float top, float right, float bottom, float left) {
         this.top = top;
         this.right = right;
         this.bottom = bottom;
@@ -93,7 +94,7 @@ public class FlowText {
      * @param y the y coordinate the flow starts at on the first page.
      * @return this flow.
      */
-    public FlowText setFirstPageTop(float y) {
+    public TextFlow setFirstPageTop(float y) {
         this.firstPageTop = y;
         return this;
     }
@@ -105,7 +106,7 @@ public class FlowText {
      * @param paragraph the paragraph to add.
      * @return this flow.
      */
-    public FlowText add(Paragraph paragraph) {
+    public TextFlow add(Paragraph paragraph) {
         Item item = new Item();
         item.paragraphs = Collections.singletonList(paragraph);
         items.add(item);
@@ -120,7 +121,7 @@ public class FlowText {
      * @param gap the space between two paragraphs, in points.
      * @return this flow.
      */
-    public FlowText add(List<Paragraph> paragraphs, float gap) {
+    public TextFlow add(List<Paragraph> paragraphs, float gap) {
         Item item = new Item();
         item.paragraphs = paragraphs;
         item.gap = gap;
@@ -133,11 +134,14 @@ public class FlowText {
      * Adds an image at the left margin. An image wider than the text is made as
      * wide as the text, and one taller than the space between the top and the
      * bottom margins as tall as that space, keeping its shape; it is never cut.
+     * A paragraph of StructElem.CAPTION added right after it, after a space or
+     * not, is its caption, and goes to the next page with it when the two do
+     * not fit.
      *
      * @param image the image to add.
      * @return this flow.
      */
-    public FlowText add(Image image) {
+    public TextFlow add(Image image) {
         return add(image, Alignment.LEFT);
     }
 
@@ -150,7 +154,7 @@ public class FlowText {
      * @param alignment where the image goes across the text.
      * @return this flow.
      */
-    public FlowText add(Image image, Alignment alignment) {
+    public TextFlow add(Image image, Alignment alignment) {
         Item item = new Item();
         item.image = image;
         item.alignment = alignment;
@@ -165,7 +169,7 @@ public class FlowText {
      * @param points the space, in points.
      * @return this flow.
      */
-    public FlowText addSpace(float points) {
+    public TextFlow addSpace(float points) {
         if (points > 0f) {
             Item item = new Item();
             item.space = points;
@@ -228,7 +232,12 @@ public class FlowText {
             } else if (item.image != null) {
                 Image image = item.image;
                 fitImage(image, width, height);
-                if (page == null || (!atTop && y + image.getHeight() > limit)) {
+                float needed = image.getHeight();
+                float withCaption = needed + captionHeight(i + 1, width);
+                if (withCaption <= height) {
+                    needed = withCaption;   // The image and its caption go together
+                }
+                if (page == null || (!atTop && y + needed > limit)) {
                     page = newPage(pages);
                     y = top;
                 }
@@ -318,6 +327,26 @@ public class FlowText {
             }
         }
         return total;
+    }
+
+    // The height of the caption of an image, a paragraph of StructElem.CAPTION
+    // added right after it, and of the spaces before it; 0 when the image has
+    // no caption.
+    private float captionHeight(int index, float width) throws Exception {
+        float total = 0f;
+        for (Item item : items.subList(index, items.size())) {
+            if (item.space > 0f) {
+                total += item.space;
+            } else if (item.image != null) {
+                return 0f;
+            } else {
+                if (item.paragraphs.isEmpty() || item.paragraphs.get(0).structureType != StructElem.CAPTION) {
+                    return 0f;
+                }
+                return total + textHeight(item, width);
+            }
+        }
+        return 0f;
     }
 
     // Makes the image as wide as the text at most, and as tall as the space
