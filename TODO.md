@@ -271,7 +271,7 @@ commit and date. The layout's format version (1) and the look's rules
   a test and the javadoc of `drawOn` pointing to it. `drawOn` returns what
   it does now, so no code changes its result. Done 26 October 2026, the
   four ports; check-api.sh v9.1.1 shows it as the only member added.
-- **For 9.1.5: Flow, headings, paragraphs and images flowed onto pages**
+- **For 9.1.5: FlowText, headings, paragraphs and images flowed onto pages**
   (the owner, 26 October 2026: "core", for 9.1.5). From writing common
   business documents in the four ports: a report of headings, paragraphs
   and photos is 53 lines today, the code moving a TextFrame from page to
@@ -280,9 +280,9 @@ commit and date. The layout's format version (1) and the look's rules
   as it is, the frame placed by hand, and is not put at risk. A thin class
   over what the core has: TextFrame flows the paragraphs and makes the pages,
   `getTextBottom()` says where the text ends (9.1.3), Image has its size.
-  - The API, Java (the others alike, Go `NewFlow`, `Add`...):
+  - The API, Java (the others alike, Go `NewFlowText`, `Add`...):
     ```java
-    Flow flow = new Flow(pdf, Letter.PORTRAIT).setMargins(50f);
+    FlowText flow = new FlowText(pdf, Letter.PORTRAIT).setMargins(50f);
     flow.add(title);                       // a Paragraph, StructElem.H1
     flow.add(paragraphs, 6f);              // List<Paragraph>, the gap between them
     flow.add(photo);                       // an Image
@@ -334,7 +334,7 @@ commit and date. The layout's format version (1) and the look's rules
   - A row too narrow for a word (say less than 3 em) is skipped and the
     text goes on below the image. Justified rows justify within their run.
   - Rectangles only, no wrap around the outline of a shape.
-  - Flow (9.1.5) gets it later as an image item that text wraps around,
+  - FlowText (9.1.5) gets it later as an image item that text wraps around,
     left or right.
   - What it touches: the row building of TextFrame (the start and width of
     each row), in the four ports; the tagging is unchanged (the image a
