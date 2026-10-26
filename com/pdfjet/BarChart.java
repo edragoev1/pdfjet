@@ -572,22 +572,33 @@ public class BarChart implements Drawable {
             page.drawRect(x1, y1, w, h);
         }
 
-        // Grid lines and value axis labels
+        // Grid lines and value axis labels. A label is drawn at every grid line
+        // that leaves it room, the widest label and a pad across, or a line high
+        // up the vertical axis: at every second or third line, or more, when
+        // the labels would run into each other, the lines all drawn.
+        int every = horizontal
+                ? axisLabelStep((x6 - x5) / lines, widestAxisLabel + pad, lines)
+                : axisLabelStep((y8 - y5) / lines, bodyHeight, lines);
         for (int i = 0; i <= lines; i++) {
             float v = vMin + step * i;
             String label = axisLabel(v, axisDigits);
+            boolean labeled = i % every == 0;
             if (horizontal) {
                 float x = x5 + (v - vMin) * (x6 - x5) / (vMax - vMin);
                 if (drawGridLines) {
                     gridLine(page, x, y5, x, y8);
                 }
-                page.drawString(f2, f2.getSize(), label, x - f2.stringWidth(label) / 2f, y8 + bodyHeight);
+                if (labeled) {
+                    page.drawString(f2, f2.getSize(), label, x - f2.stringWidth(label) / 2f, y8 + bodyHeight);
+                }
             } else {
                 float y = y8 - (v - vMin) * (y8 - y5) / (vMax - vMin);
                 if (drawGridLines) {
                     gridLine(page, x5, y, x6, y);
                 }
-                page.drawString(f2, f2.getSize(), label, x5 - pad - f2.stringWidth(label), y + ascent / 2f);
+                if (labeled) {
+                    page.drawString(f2, f2.getSize(), label, x5 - pad - f2.stringWidth(label), y + ascent / 2f);
+                }
             }
         }
 
@@ -738,6 +749,19 @@ public class BarChart implements Drawable {
             return s.colors[index];
         }
         return s.color == NO_COLOR ? Chart.DEFAULT_PALETTE[seriesIndex % Chart.DEFAULT_PALETTE.length] : s.color;
+    }
+
+    /**
+     * Returns how many grid lines apart the labels of the value axis are
+     * drawn: 1 when a label fits the spacing of the lines, and more when it
+     * needs more room, so that no two labels meet.
+     */
+    static int axisLabelStep(float spacing, float needed, int lines) {
+        int every = 1;
+        while (every < lines && spacing * every < needed) {
+            every++;
+        }
+        return every;
     }
 
     /** Formats the value written at the end of a bar. */

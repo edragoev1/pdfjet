@@ -90,6 +90,16 @@ This is the first entry in this file; earlier releases were not tracked here.
   solid box. Its /Decode and /Matte are copied too. A mask that cannot be
   copied, of an object that was not read from a PDF, is an error, as a
   color space that refers to another object is.
+- BarChart's value axis labels no longer run into each other, in the four
+  ports. With many steps, or with fraction digits, on a narrow chart, they
+  were drawn at every grid line, "0.0 10.020.030.0" on a chart 330 points
+  wide. A label is now drawn at every grid line that leaves it room, the
+  widest label and a pad across, or a line high on a vertical axis, and at
+  every second or third line, or more, when it would not; the grid lines are
+  all drawn. The charts of Example_27 are the same as before.
+  Behavior change: a chart whose axis labels would meet shows fewer of them;
+  `setValueAxisMinMax(0, 80, 16)` with one decimal on a chart 300 points
+  wide labels 0.0, 10.0 to 80.0 and leaves 5.0, 15.0 and the others out.
 
 ## v9.1.1 — 2026-10-20
 

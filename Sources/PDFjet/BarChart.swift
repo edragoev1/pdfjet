@@ -598,22 +598,33 @@ public class BarChart : Drawable {
             page.drawRect(x1, y1, w, h)
         }
 
-        // Grid lines and value axis labels
+        // Grid lines and value axis labels. A label is drawn at every grid line
+        // that leaves it room, the widest label and a pad across, or a line high
+        // up the vertical axis: at every second or third line, or more, when
+        // the labels would run into each other, the lines all drawn.
+        let every = horizontal
+                ? BarChart.axisLabelStep((x6 - x5) / Float(lines), widestAxisLabel + pad, lines)
+                : BarChart.axisLabelStep((y8 - y5) / Float(lines), bodyHeight, lines)
         for i in 0...lines {
             let v = vMin + step * Float(i)
             let label = axisLabel(v, axisDigits)
+            let labeled = i % every == 0
             if horizontal {
                 let x = x5 + (v - vMin) * (x6 - x5) / (vMax - vMin)
                 if drawGridLines {
                     gridLine(page, x, y5, x, y8)
                 }
-                page.drawString(f2, f2.getSize(), label, x - f2.stringWidth(label) / 2.0, y8 + bodyHeight)
+                if labeled {
+                    page.drawString(f2, f2.getSize(), label, x - f2.stringWidth(label) / 2.0, y8 + bodyHeight)
+                }
             } else {
                 let y = y8 - (v - vMin) * (y8 - y5) / (vMax - vMin)
                 if drawGridLines {
                     gridLine(page, x5, y, x6, y)
                 }
-                page.drawString(f2, f2.getSize(), label, x5 - pad - f2.stringWidth(label), y + ascent / 2.0)
+                if labeled {
+                    page.drawString(f2, f2.getSize(), label, x5 - pad - f2.stringWidth(label), y + ascent / 2.0)
+                }
             }
         }
 
@@ -764,6 +775,17 @@ public class BarChart : Drawable {
             return colors[index]
         }
         return s.color == BarChart.NO_COLOR ? Chart.DEFAULT_PALETTE[seriesIndex % Chart.DEFAULT_PALETTE.count] : s.color
+    }
+
+    /// Returns how many grid lines apart the labels of the value axis are
+    /// drawn: 1 when a label fits the spacing of the lines, and more when it
+    /// needs more room, so that no two labels meet.
+    static func axisLabelStep(_ spacing: Float, _ needed: Float, _ lines: Int) -> Int {
+        var every = 1
+        while every < lines && spacing * Float(every) < needed {
+            every += 1
+        }
+        return every
     }
 
     /// Formats the value written at the end of a bar.

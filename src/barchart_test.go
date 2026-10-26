@@ -152,3 +152,39 @@ func TestBarChartAChartIsAFigureDescribedByItsTitleOrItsAlternateDescription(t *
 		t.Errorf("the second chart is described as %q", page.structures[1].altDescription)
 	}
 }
+
+func TestBarChartAxisLabelsThatWouldMeetAreDrawnAtEverySecondLine(t *testing.T) {
+	pdf := testNewPDF()
+	page := NewPage(pdf, testLetterPortrait())
+	chart := testBarChart(pdf).SetCategories("a").SetHorizontal(true)
+	// 16 steps of 5 across about 240 points: 15 points a step, where a
+	// label of one decimal, 70.0, needs more
+	chart.AddSeries("", []float32{72.6}).SetValueAxisMinMax(0, 80, 16).SetMinimumFractionDigits(1)
+	content := testDrawBarChart(t, chart, page)
+	if !strings.Contains(content, testHex("70.0")) || !strings.Contains(content, testHex("80.0")) {
+		t.Errorf("the labels of the even lines missing from %q", content)
+	}
+	if strings.Contains(content, testHex("75.0")) {
+		t.Errorf("75.0, between 70.0 and 80.0, would meet them, in %q", content)
+	}
+	if strings.Count(content, " l\n")+strings.Count(content, " l ") == 0 {
+		t.Errorf("no grid lines in %q", content)
+	}
+}
+
+func TestBarChartAxisLabelStepIsTheFewestLinesALabelFits(t *testing.T) {
+	cases := []struct {
+		spacing, needed float32
+		lines, want     int
+	}{
+		{30, 20, 8, 1}, // fits
+		{15, 20, 16, 2},
+		{10, 25, 16, 3},
+		{5, 100, 4, 4}, // never more than the lines
+	}
+	for _, c := range cases {
+		if got := axisLabelStep(c.spacing, c.needed, c.lines); got != c.want {
+			t.Errorf("axisLabelStep(%v, %v, %d) = %d, want %d", c.spacing, c.needed, c.lines, got, c.want)
+		}
+	}
+}

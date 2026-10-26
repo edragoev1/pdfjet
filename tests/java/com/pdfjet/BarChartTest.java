@@ -80,6 +80,27 @@ class BarChartTest {
     }
 
     @Test
+    void axisLabelsThatWouldMeetAreDrawnAtEverySecondLine() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        BarChart chart = chart(pdf).setCategories("a").setHorizontal(true);
+        // 16 steps of 5 across about 240 points: 15 points a step, where a
+        // label of one decimal, 70.0, needs more
+        chart.addSeries("", new float[] {72.6f}).setValueAxisMinMax(0f, 80f, 16).setMinimumFractionDigits(1);
+        String content = draw(chart, page);
+        assertTrue(content.contains(TestSupport.hex("70.0")) && content.contains(TestSupport.hex("80.0")), content);
+        assertFalse(content.contains(TestSupport.hex("75.0")), content);  // would meet 70.0 and 80.0
+    }
+
+    @Test
+    void axisLabelStepIsTheFewestLinesALabelFits() {
+        assertEquals(1, BarChart.axisLabelStep(30f, 20f, 8));     // fits
+        assertEquals(2, BarChart.axisLabelStep(15f, 20f, 16));
+        assertEquals(3, BarChart.axisLabelStep(10f, 25f, 16));
+        assertEquals(4, BarChart.axisLabelStep(5f, 100f, 4));     // never more than the lines
+    }
+
+    @Test
     void stackedBarsUseTheSumsOfTheCategoriesForTheValueAxis() throws Exception {
         PDF pdf = TestSupport.newPDF();
         Page page = new Page(pdf, Letter.PORTRAIT);

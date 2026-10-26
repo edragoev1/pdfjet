@@ -77,6 +77,28 @@ public class BarChartTest {
     }
 
     [Fact]
+    public void AxisLabelsThatWouldMeetAreDrawnAtEverySecondLine() {
+        PDF pdf = TestSupport.NewPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        BarChart chart = NewChart(pdf).SetCategories("a").SetHorizontal(true);
+        // 16 steps of 5 across about 240 points: 15 points a step, where a
+        // label of one decimal, 70.0, needs more
+        chart.AddSeries("", new float[] {72.6f}).SetValueAxisMinMax(0f, 80f, 16).SetMinimumFractionDigits(1);
+        string content = Draw(chart, page);
+        Assert.Contains(TestSupport.Hex("70.0"), content);
+        Assert.Contains(TestSupport.Hex("80.0"), content);
+        Assert.DoesNotContain(TestSupport.Hex("75.0"), content);     // would meet 70.0 and 80.0
+    }
+
+    [Fact]
+    public void AxisLabelStepIsTheFewestLinesALabelFits() {
+        Assert.Equal(1, BarChart.AxisLabelStep(30f, 20f, 8));     // fits
+        Assert.Equal(2, BarChart.AxisLabelStep(15f, 20f, 16));
+        Assert.Equal(3, BarChart.AxisLabelStep(10f, 25f, 16));
+        Assert.Equal(4, BarChart.AxisLabelStep(5f, 100f, 4));     // never more than the lines
+    }
+
+    [Fact]
     public void StackedBarsUseTheSumsOfTheCategoriesForTheValueAxis() {
         PDF pdf = TestSupport.NewPDF();
         Page page = new Page(pdf, Letter.PORTRAIT);

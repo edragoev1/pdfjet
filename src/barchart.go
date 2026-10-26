@@ -481,24 +481,38 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 		page.DrawRect(chart.x1, chart.y1, chart.w, chart.h)
 	}
 
-	// Grid lines and value axis labels
+	// Grid lines and value axis labels. A label is drawn at every grid line
+	// that leaves it room, the widest label and a pad across, or a line high
+	// up the vertical axis: at every second or third line, or more, when
+	// the labels would run into each other, the lines all drawn.
+	every := 1
+	if chart.horizontal {
+		every = axisLabelStep((x6-x5)/float32(lines), widestAxisLabel+pad, lines)
+	} else {
+		every = axisLabelStep((y8-y5)/float32(lines), bodyHeight, lines)
+	}
 	for i := 0; i <= lines; i++ {
 		v := vMin + float32(step*float32(i))
 		label := chart.axisLabel(v, axisDigits)
+		labeled := i%every == 0
 		if chart.horizontal {
 			x := x5 + float32((v-vMin)*(x6-x5))/(vMax-vMin)
 			if chart.drawGridLines {
 				chart.gridLine(page, x, y5, x, y8)
 			}
-			page.drawString(f2, f2.size, label, x-float32(f2.StringWidth(f2.size, label)/2.0), y8+bodyHeight,
-				[3]float32{0.0, 0.0, 0.0}, nil)
+			if labeled {
+				page.drawString(f2, f2.size, label, x-float32(f2.StringWidth(f2.size, label)/2.0), y8+bodyHeight,
+					[3]float32{0.0, 0.0, 0.0}, nil)
+			}
 		} else {
 			y := y8 - float32((v-vMin)*(y8-y5))/(vMax-vMin)
 			if chart.drawGridLines {
 				chart.gridLine(page, x5, y, x6, y)
 			}
-			page.drawString(f2, f2.size, label, x5-pad-f2.StringWidth(f2.size, label), y+float32(ascent/2.0),
-				[3]float32{0.0, 0.0, 0.0}, nil)
+			if labeled {
+				page.drawString(f2, f2.size, label, x5-pad-f2.StringWidth(f2.size, label), y+float32(ascent/2.0),
+					[3]float32{0.0, 0.0, 0.0}, nil)
+			}
 		}
 	}
 
@@ -710,6 +724,17 @@ func (chart *BarChart) barColor(s *barSeries, seriesIndex, index int) int32 {
 		return defaultPalette[seriesIndex%len(defaultPalette)]
 	}
 	return s.color
+}
+
+// axisLabelStep returns how many grid lines apart the labels of the value
+// axis are drawn: 1 when a label fits the spacing of the lines, and more when
+// it needs more room, so that no two labels meet.
+func axisLabelStep(spacing, needed float32, lines int) int {
+	every := 1
+	for every < lines && float32(spacing*float32(every)) < needed {
+		every++
+	}
+	return every
 }
 
 // valueLabel formats the value written at the end of a bar.

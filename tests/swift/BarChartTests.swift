@@ -71,6 +71,25 @@ import Testing
         #expect(!content.contains("NaN"))
     }
 
+    @Test func axisLabelsThatWouldMeetAreDrawnAtEverySecondLine() {
+        let pdf = TestSupport.newPDF()
+        let page = Page(pdf, Letter.PORTRAIT)
+        let chart = chart(pdf).setCategories("a").setHorizontal(true)
+        // 16 steps of 5 across about 240 points: 15 points a step, where a
+        // label of one decimal, 70.0, needs more
+        chart.addSeries("", [72.6]).setValueAxisMinMax(0, 80, 16).setMinimumFractionDigits(1)
+        let content = draw(chart, page)
+        #expect(content.contains(TestSupport.hex("70.0")) && content.contains(TestSupport.hex("80.0")), "\(content)")
+        #expect(!content.contains(TestSupport.hex("75.0")), "\(content)")     // would meet 70.0 and 80.0
+    }
+
+    @Test func axisLabelStepIsTheFewestLinesALabelFits() {
+        #expect(BarChart.axisLabelStep(30, 20, 8) == 1)    // fits
+        #expect(BarChart.axisLabelStep(15, 20, 16) == 2)
+        #expect(BarChart.axisLabelStep(10, 25, 16) == 3)
+        #expect(BarChart.axisLabelStep(5, 100, 4) == 4)    // never more than the lines
+    }
+
     @Test func stackedBarsUseTheSumsOfTheCategoriesForTheValueAxis() {
         let pdf = TestSupport.newPDF()
         var page = Page(pdf, Letter.PORTRAIT)

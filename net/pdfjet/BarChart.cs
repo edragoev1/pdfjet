@@ -509,22 +509,33 @@ public class BarChart : IDrawable {
             page.DrawRect(x1, y1, w, h);
         }
 
-        // Grid lines and value axis labels
+        // Grid lines and value axis labels. A label is drawn at every grid line
+        // that leaves it room, the widest label and a pad across, or a line high
+        // up the vertical axis: at every second or third line, or more, when
+        // the labels would run into each other, the lines all drawn.
+        int every = horizontal
+                ? AxisLabelStep((x6 - x5) / lines, widestAxisLabel + pad, lines)
+                : AxisLabelStep((y8 - y5) / lines, bodyHeight, lines);
         for (int i = 0; i <= lines; i++) {
             float v = vMin + step * i;
             String label = AxisLabel(v, axisDigits);
+            bool labeled = i % every == 0;
             if (horizontal) {
                 float x = x5 + (v - vMin) * (x6 - x5) / (vMax - vMin);
                 if (drawGridLines) {
                     GridLine(page, x, y5, x, y8);
                 }
-                page.DrawString(f2, f2.GetSize(), label, x - f2.StringWidth(label) / 2f, y8 + bodyHeight);
+                if (labeled) {
+                    page.DrawString(f2, f2.GetSize(), label, x - f2.StringWidth(label) / 2f, y8 + bodyHeight);
+                }
             } else {
                 float y = y8 - (v - vMin) * (y8 - y5) / (vMax - vMin);
                 if (drawGridLines) {
                     GridLine(page, x5, y, x6, y);
                 }
-                page.DrawString(f2, f2.GetSize(), label, x5 - pad - f2.StringWidth(label), y + ascent / 2f);
+                if (labeled) {
+                    page.DrawString(f2, f2.GetSize(), label, x5 - pad - f2.StringWidth(label), y + ascent / 2f);
+                }
             }
         }
 
@@ -675,6 +686,19 @@ public class BarChart : IDrawable {
             return s.colors[index];
         }
         return s.color == NO_COLOR ? Chart.DEFAULT_PALETTE[seriesIndex % Chart.DEFAULT_PALETTE.Length] : s.color;
+    }
+
+    /// <summary>
+    /// Returns how many grid lines apart the labels of the value axis are
+    /// drawn: 1 when a label fits the spacing of the lines, and more when it
+    /// needs more room, so that no two labels meet.
+    /// </summary>
+    internal static int AxisLabelStep(float spacing, float needed, int lines) {
+        int every = 1;
+        while (every < lines && spacing * every < needed) {
+            every++;
+        }
+        return every;
     }
 
     /// <summary>Formats the value written at the end of a bar.</summary>
