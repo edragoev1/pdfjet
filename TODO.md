@@ -330,8 +330,13 @@ commit and date. The layout's format version (1) and the look's rules
     it. Margins that leave no room fail the PDF, and nothing added makes no
     page. A trial report (4 sections, 120 paragraphs, 4 photos, PDF/UA,
     footers) is 18 pages, about 20 lines of code, and veraPDF passes it.
-    Next: Java, C#, Swift, the same tests; then the example and the
-    snippet.
+    **Java done, 26 October 2026** (com/pdfjet/FlowText.java,
+    FlowTextTest.java, the same 9 tests): `setMargins` for one and for four
+    margins, `add` for a paragraph, paragraphs, an image and an aligned
+    image, `drawOn(pages)` and `drawOn(first, pages)`; margins that leave no
+    room throw, as Java's misuses do. The trial report drawn in Java is the
+    same as Go's, to the pixel, on its 18 pages. Next: C#, Swift; then the
+    example and the snippet.
   - Size: about 150 to 250 lines in each port with its comments, Go first,
     then Java, C#, Swift; a test in each of the rules above, the same in
     the four ports; an example (a report of 4 sections, 120 paragraphs and
