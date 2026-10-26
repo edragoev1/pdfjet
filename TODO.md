@@ -516,6 +516,16 @@ commit and date. The layout's format version (1) and the look's rules
        stream in the four ports; Example_26 a page of the scatter chart and
        a table of the highlighted countries, as Example_20 is of its bars;
        a snippet; before and after screenshots for the owner.
+     - **Go and Java done, 26 October 2026** (simplescatterchart.go,
+       SimpleScatterChart.java, 6 tests each, the same content stream). It
+       draws with the page alone and ChartScale, the helpers the charts
+       share, moved out of Chart and BarChart the same day, so that Chart
+       can be retired (the owner). Links on points are left out of it: a
+       link inside the chart's figure needs tagging of its own. The data of
+       Example_26 to be the World Bank's life expectancy and children per
+       woman of 2023, 217 countries and economies (World Development
+       Indicators, CC BY 4.0), in place of the 2007 file. C# and Swift
+       next.
   Left out: 3D, logarithmic axes, radar charts, two value axes.
 - **The code reviews of 11 and 12 October 2026, three rounds.** Every
   finding is fixed for 9.0.7, in the four ports, each with a test
