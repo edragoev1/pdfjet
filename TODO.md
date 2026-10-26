@@ -392,6 +392,16 @@ commit and date. The layout's format version (1) and the look's rules
     with a photo at the right.
   - Core or Pro is the owner's call when it is scheduled: big features go
     to Pro, but it is part of TextFrame, which is in the core.
+- **Markdown: emphasis in a table cell is dropped** (found 26 October 2026,
+  making the benchmark report with md2pdf; the owner: "add this to the
+  TODO"). A cell such as `**2.1**` is drawn as plain 2.1: the four ports'
+  Markdown draw a cell with one font and take its text without its inline
+  markup (Java `Markdown.plainText`, used by `drawTable`), so a table cannot
+  mark its best value, as a benchmark or a price list does. The fix that
+  fits a cell of one font: a cell whose whole text is in one emphasis
+  (`**2.1**`, `*note*`, `` `code` ``) is drawn in that font; a cell of mixed
+  emphasis stays as now. Four ports, a test each, md2pdf rebuilt. Column
+  alignment works already: `|---:|` right-aligns a column.
 - **For 9.1.5: the associated files of a PDF read back** (the owner, 26
   October 2026). PDFjet writes a file carried inside a PDF, an
   `EmbeddedFile` with its media type and relationship added with
