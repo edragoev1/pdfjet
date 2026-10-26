@@ -1,4 +1,4 @@
-// Writes two PDFs of the code new in 9.1.3 for the manual viewer pass, which
+// Writes two PDFs of the code new in 9.1.5 for the manual viewer pass, which
 // no example draws: Kerning.pdf, the same lines of IBM Plex Sans kerned and
 // not kerned, and Copied_Image.pdf, a PNG with transparency drawn on a colored
 // box, then copied from a PDF that was read and drawn again, which must keep

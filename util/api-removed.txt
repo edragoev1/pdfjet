@@ -15,7 +15,7 @@ java: public final class com.pdfjet.PDF :: public com.pdfjet.PDF(java.io.OutputS
 java: public final class com.pdfjet.PDF :: public com.pdfjet.PDF(java.io.OutputStream, com.pdfjet.Compliance) throws java.lang.Exception;
 java: public final class com.pdfjet.PDF :: public void complete() throws java.lang.Exception;
 
-# 9.1.3: CalendarMonth, removed in the four ports (the owner, 25 October
+# 9.1.5 (there is no 9.1.3): CalendarMonth, removed in the four ports (the owner, 25 October
 # 2026: "Remove the Calendar class"; Removed in CHANGELOG.md)
 java: public class com.pdfjet.CalendarMonth implements com.pdfjet.Drawable :: public com.pdfjet.CalendarMonth setBodyFont(com.pdfjet.Font);
 java: public class com.pdfjet.CalendarMonth implements com.pdfjet.Drawable :: public com.pdfjet.CalendarMonth setCellHeight(float);

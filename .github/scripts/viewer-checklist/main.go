@@ -166,14 +166,14 @@ func main() {
 		log.Fatal(err)
 	}
 	pdf.SetCompliance(compliance.PDF_UA_1)
-	pdf.SetTitle("PDFjet 9.1.3: the manual viewer pass")
+	pdf.SetTitle("PDFjet 9.1.5: the manual viewer pass")
 	pdf.SetLanguage("en-US")
 
 	regular = pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
 	semiBold = pdfjet.NewFontFromFile(pdf, IBMPlexSans.SemiBold)
 	newPage()
 
-	title := pdfjet.NewTextLine(semiBold, "PDFjet 9.1.3: the manual viewer pass")
+	title := pdfjet.NewTextLine(semiBold, "PDFjet 9.1.5: the manual viewer pass")
 	title.SetStructureType(structelem.H1)
 	title.SetFontSize(18)
 	title.SetTextColor(ink)
@@ -183,7 +183,7 @@ func main() {
 
 	intro := textBlock(regular, 10, "The manual viewer pass of TODO.md. The files are in viewer-files-to-test: the Java "+
 		"examples built from main, Example_47 with the user password hello and the owner password world, "+
-		"Encrypted_Cyrillic and Encrypted_200_Bytes, and Kerning and Copied_Image, of the code new in 9.1.3. Tick each box when it holds; when it does not, "+
+		"Encrypted_Cyrillic and Encrypted_200_Bytes, and Kerning and Copied_Image, of the code new in 9.1.5. Tick each box when it holds; when it does not, "+
 		"write what you see on the lines below the viewer.", marginX, 612-2*marginX, soft)
 	y = intro.DrawOn(page)[1] + 8
 

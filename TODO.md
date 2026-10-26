@@ -87,15 +87,19 @@ commit and date. The layout's format version (1) and the look's rules
 
 ## Open
 
-- **Release v9.1.3 in early December 2026** (the owner, 25 October 2026),
-  on its own, not held for the charts of 9.1.5. Its code is done: kerning,
-  an image copied from a PDF keeping its masks, Java's Deflater for each
-  thread, Swift's faster text and page compression, CalendarMonth removed
-  (CHANGELOG.md). Before it: the fuzzing of the font subsetters to 8 hours
-  each, then the checks before each release (above), and PDFjet Pro 9.1.3
-  the same day.
+- **Release v9.1.5 next; 9.1.3 is skipped** (the owner, 26 October 2026:
+  "I have decided to skip v9.1.3 and just go directly to 9.1.5 - let's
+  stop backporting things to 9.1.3"). What was done for 9.1.3, kerning, an
+  image copied from a PDF keeping its masks, Java's Deflater for each
+  thread, Swift's faster text and page compression, CalendarMonth removed,
+  getTextBottom, TextFlow and the BarChart axis fix, goes out in 9.1.5,
+  with SimpleBarChart and the charts work (CHANGELOG.md); the items below
+  that said 9.1.3 say 9.1.5 now. Before it: the checks before each release
+  (above), and PDFjet Pro 9.1.5 the same day. The font subsetters were
+  fuzzed 8 hours each on 25 October 2026. Was: 9.1.3 in early December
+  2026 on its own, 9.1.5 the charts in 2027.
 
-- ✅ Done 25 October 2026. **v9.1.3: an image copied from a PDF that was
+- ✅ Done 25 October 2026. **v9.1.5: an image copied from a PDF that was
   read keeps its transparency, in the four ports (found 22 October 2026).**
   Each object read keeps the objects of its PDF by number (weakly in
   Swift), so the image's /SMask and a /Mask that refers to a stencil are
@@ -115,7 +119,7 @@ commit and date. The layout's format version (1) and the look's rules
 - **Swift, the rest of a slowdown of 9 to 15 October 2026 (found 20 October,
   at 9.1.1).** The ports benchmark's 500-page text took 87 ms at 413e3352 and
   113 at 9.0.9 and 9.1.1, on the same Swift 6.4.1. 9754d54e, review #8's
-  ToUnicode characters, was the larger part, fixed for 9.1.3 (f511f976: 100
+  ToUnicode characters, was the larger part, fixed for 9.1.5 (f511f976: 100
   ms, the same PDF). The remaining 13 ms came in with other commits of that
   week (d99b2a5c measured 120 before the fix): bisect again with f511f976
   applied, and profile (perf needs kernel.perf_event_paranoid lowered, the
@@ -258,11 +262,11 @@ commit and date. The layout's format version (1) and the look's rules
     buffers in Swift, which gained 2% and nothing on top of reading a font
     once.
 
-- ✅ Removed in 9.1.3 (the owner, 25 October 2026: "Remove the Calendar
+- ✅ Removed in 9.1.5 (the owner, 25 October 2026: "Remove the Calendar
   class - I don't think I even like its look anymore"): CalendarMonth, in
   the four ports, its tests and the booklet's snippet; its members recorded
   in util/api-removed.txt.
-- **Done for 9.1.3: where a TextFrame's text ends** (the owner, 26 October
+- **Done for 9.1.5: where a TextFrame's text ends** (the owner, 26 October
   2026: planned for 9.1.5, then "let add this now"). `drawOn(page)` returns the bottom of the frame, not of the text,
   when the frame has a height. It is documented, but easy to trip on: code
   placing a photo under the text read the frame's bottom and put each photo
@@ -271,17 +275,17 @@ commit and date. The layout's format version (1) and the look's rules
   a test and the javadoc of `drawOn` pointing to it. `drawOn` returns what
   it does now, so no code changes its result. Done 26 October 2026, the
   four ports; check-api.sh v9.1.1 shows it as the only member added.
-- **Done for 9.1.3: TextFlow, headings, paragraphs and images flowed onto
+- **Done for 9.1.5: TextFlow, headings, paragraphs and images flowed onto
   pages** (named FlowText at first; TextFlow, the owner, 26 October 2026,
   as TextLine, TextBlock, TextColumn and TextFrame are named) (the owner, 26 October 2026: "core", for 9.1.5; then "ship
-  TextFlow in 9.1.3", the same day, done and tested in the four ports). From writing common
+  TextFlow in 9.1.5", the same day, done and tested in the four ports). From writing common
   business documents in the four ports: a report of headings, paragraphs
   and photos is 53 lines today, the code moving a TextFrame from page to
   page and placing each photo by hand; about 20 with this. Its own class,
   not images inside TextFrame (the owner, 26 October 2026): TextFrame stays
   as it is, the frame placed by hand, and is not put at risk. A thin class
   over what the core has: TextFrame flows the paragraphs and makes the pages,
-  `getTextBottom()` says where the text ends (9.1.3), Image has its size.
+  `getTextBottom()` says where the text ends (9.1.5), Image has its size.
   - The API, Java (the others alike, Go `NewTextFlow`, `Add`...):
     ```java
     TextFlow flow = new TextFlow(pdf, Letter.PORTRAIT).setMargins(50f);
@@ -429,7 +433,7 @@ commit and date. The layout's format version (1) and the look's rules
      leave out the value axis, give the axis its own decimals, set one
      label's font or color, put the title at the left, or size the labels
      but by the font; the axis numbers running into each other was a bug,
-     fixed for 9.1.3).
+     fixed for 9.1.5).
      ```java
      SimpleBarChart chart = new SimpleBarChart(regular, bold)
              .setTitle("Statement, 12 pages")
@@ -494,7 +498,7 @@ commit and date. The layout's format version (1) and the look's rules
   no deep restructuring.
   Profiled 25 October 2026 (perf, Example_24): compression 15%, the kernel
   14% (168,602 page faults: FlateEncode's 400 KB of tables made for every
-  page; reused since, 2,614 to 2,284 ms, in 9.1.3), reference counting 14%,
+  page; reused since, 2,614 to 2,284 ms, in 9.1.5), reference counting 14%,
   exclusivity checks 10%, malloc and free 9%, reading the CSV 10%. The
   reference counting and the exclusivity checks are spread over the drawing
   code: their cure, a restructuring of how the drawing code holds its
@@ -530,7 +534,7 @@ commit and date. The layout's format version (1) and the look's rules
      page until complete (Java boxes the numbers of the parent tree), the
      pages keep less once written, and a bookmark tree of thousands of
      levels or siblings is built in linear time. Java's Compressor (W7) is
-     a Deflater for each thread since 9.1.3.
+     a Deflater for each thread since 9.1.5.
 - **For v9.2.1: two things learned from common business documents** (an
   invoice, a statement, a report of text and photos, a batch of 1,000
   letters, written in the four ports; the owner, 26 October 2026):
@@ -561,9 +565,9 @@ commit and date. The layout's format version (1) and the look's rules
   T, not the Bulgarian т that looks like an m, and ligatures and small
   capitals are not made. After kerning and the longer fuzzing of the
   subsetters, the font code is to be left as it is.
-- **For 9.1.3: kerning of TrueType and OpenType fonts, opt in** (18 October
+- **For 9.1.5: kerning of TrueType and OpenType fonts, opt in** (18 October
   2026; first, ahead of any other library work, the owner, 22 October 2026;
-  9.1.3, the owner, 24 October 2026): no slower when off, and little code.
+  9.1.5, the owner, 24 October 2026): no slower when off, and little code.
   Go done 24 October 2026 (kerning.go: the kern feature's PairPos formats 1
   and 2, and the kern table; kerned where each glyph is written, the same
   rule measured; Example_24 930 ms against 930 at v9.1.1); then Java, C#,

@@ -7,7 +7,10 @@ languages.
 
 This is the first entry in this file; earlier releases were not tracked here.
 
-## v9.1.3 — not released yet
+## v9.1.5 — not released yet
+
+There is no 9.1.3: what was done for it is in 9.1.5 (the owner, 26 October
+2026).
 
 ### Added
 - All four ports: kerning of TrueType and OpenType fonts, with
