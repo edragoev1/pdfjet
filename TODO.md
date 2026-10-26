@@ -432,7 +432,10 @@ commit and date. The layout's format version (1) and the look's rules
   emphasis stays as now. Four ports, a test each, md2pdf rebuilt. Column
   alignment works already: `|---:|` right-aligns a column. Done the same
   day (the owner: "fix it for 9.1.5"), cellFont in the four ports.
-- **For 9.1.5: the associated files of a PDF read back** (the owner, 26
+- ✅ Done in PDFjet Pro for 9.1.5, 26 October 2026 (the owner: "do #1 in
+  Pro"): `AssociatedFiles.readFrom` in Pro's invoice package, four ports,
+  tests and a Go fuzz target; the MIT core is unchanged.
+  Was: **For 9.1.5: the associated files of a PDF read back** (the owner, 26
   October 2026). PDFjet writes a file carried inside a PDF, an
   `EmbeddedFile` with its media type and relationship added with
   `pdf.addAssociatedFile`, as the XML of a Factur-X invoice is, but cannot
