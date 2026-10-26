@@ -419,25 +419,50 @@ commit and date. The layout's format version (1) and the look's rules
      year), the most common chart of business reports, from the two that
      exist; one value axis, no second one. The runner-up, a horizontal
      progress or gauge bar for a KPI, if wanted later.
-  7. **A small comparison chart, tried 26 October 2026.** Four
-     horizontal bars with their names at the left and their values at the
-     bars' ends, one bar in a color of its own, no axis, grid or legend, on
-     a light panel: the chart of a results page, drawn by hand in 22 lines
-     of fillRect and TextLine. BarChart came near in 17, with
-     setHorizontal, a color for each bar, setDrawValueLabels and the borders
-     and grid off, and the label font made 9 points; what it could not do:
-     - Leave out the value axis and its numbers, which a chart with its
-       values on the bars does not need.
-     - Give the axis numbers their own number of decimals: they take the
-       value labels', 0.0, 20.0, 40.0.
-     - Space the axis numbers by their widths: with its default steps and
-       one decimal they ran into each other, "0.0 10.020.030.0".
-     - Set a label's or a value's font or color, to make the winner's bold
-       and the others' gray, as only a bar's color can be set.
-     - Put the title and the subtitle at the left: they are centered.
-     - Size the labels other than by the size of the font given; a
-       setLabelFontSize, or the same as the others, would be plainer.
-     A background is the page's to draw, and is left out.
+  7. **SimpleBarChart, a new class** (the owner, 26 October 2026: "what
+     you drew by hand is perfect", "a much better way to present data -
+     very simple bar charts and a table below with the data"; 9.1.5, the
+     name SimpleBarChart, the navy and gray defaults). The chart of the
+     fair test's results page as a class, in the four ports, in place of
+     five more settings on BarChart, which has some 30 and needed most of
+     them turned off for it (tried the same day: 17 lines, and no way to
+     leave out the value axis, give the axis its own decimals, set one
+     label's font or color, put the title at the left, or size the labels
+     but by the font; the axis numbers running into each other was a bug,
+     fixed for 9.1.3).
+     ```java
+     SimpleBarChart chart = new SimpleBarChart(regular, bold)
+             .setTitle("Statement, 12 pages")
+             .setSubtitle("warm ms")
+             .add("PDFjet", 7.3f)
+             .add("iText", 72.6f)
+             .add("OpenPDF", 18.4f)
+             .add("PDFBox", 44.1f)
+             .setHighlight(0)          // navy bar, bold name and value
+             .setFractionDigits(1);
+     chart.setLocation(50f, 80f).setWidth(330f);   // the height from the bars
+     chart.drawOn(page);
+     ```
+     - Horizontal bars alone: the names at the left, the values at the
+       bars' ends; no axis, grid or legend. Each bar as long as its share
+       of the largest value.
+     - The look is the default: a light panel (0xF1F3F6), the title
+       semibold and the subtitle small and gray at the left, gray bars
+       (0xA7AFB8), the highlighted bar navy (0x1F3A5F) with its name and
+       value bold; two or three colors settable, not needed.
+     - The highlight is the code's to choose, setHighlight(index): the
+       best is the lowest value or the highest, which the chart cannot
+       know. None by default.
+     - PDF/UA: one figure, described from its data ("Statement, 12 pages,
+       warm ms: PDFjet 7.3, iText 72.6, ...") unless an alternate
+       description is set.
+     - Meant to stand beside a Table of the same numbers, the chart for
+       the picture, the table for the record and for a screen reader; the
+       example shows the two together (a results page).
+     - BarChart stays for grouped, stacked and vertical bars with axes.
+     - About 150 lines in each port, Go first; tests of the lengths, the
+       highlight and the description, the same in the four ports; an
+       example, a snippet, before and after screenshots for the owner.
   Left out: 3D, logarithmic axes, radar charts, two value axes.
 - **The code reviews of 11 and 12 October 2026, three rounds.** Every
   finding is fixed for 9.0.7, in the four ports, each with a test
