@@ -32,6 +32,13 @@ public class Example_12 {
         let f4 = try Font(pdf, IBMPlexSans.Italic)
         f4.setSize(10.0)
 
+        // Kerning, from the GPOS table of IBM Plex Sans: pairs such as "Te", "Yo"
+        // and "AV" drawn closer, as the font's designers spaced them.
+        f1.setKernPairs(true)
+        f2.setKernPairs(true)
+        f3.setKernPairs(true)
+        f4.setKernPairs(true)
+
         let page = Page(pdf, Letter.PORTRAIT)
 
         // The map is 310 points tall, so that it and the text fit the page,

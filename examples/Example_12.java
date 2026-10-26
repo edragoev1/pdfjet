@@ -36,6 +36,13 @@ public class Example_12 {
         Font f4 = new Font(pdf, IBMPlexSans.Italic);
         f4.setSize(10f);
 
+        // Kerning, from the GPOS table of IBM Plex Sans: pairs such as "Te", "Yo"
+        // and "AV" drawn closer, as the font's designers spaced them.
+        f1.setKernPairs(true);
+        f2.setKernPairs(true);
+        f3.setKernPairs(true);
+        f4.setKernPairs(true);
+
         Page page = new Page(pdf, Letter.PORTRAIT);
 
         // The map is 310 points tall, so that it and the text fit the page,

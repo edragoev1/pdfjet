@@ -45,6 +45,13 @@ func Example12() {
 	f4 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Italic)
 	f4.SetSize(10.0)
 
+	// Kerning, from the GPOS table of IBM Plex Sans: pairs such as "Te", "Yo"
+	// and "AV" drawn closer, as the font's designers spaced them.
+	f1.SetKernPairs(true)
+	f2.SetKernPairs(true)
+	f3.SetKernPairs(true)
+	f4.SetKernPairs(true)
+
 	page := pdfjet.NewPage(pdf, letter.Portrait())
 
 	// The map is 310 points tall, so that it and the text fit the page, and
