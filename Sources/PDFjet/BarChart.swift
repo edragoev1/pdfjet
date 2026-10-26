@@ -23,6 +23,25 @@ public class BarChart : Drawable {
 
     private static let NO_COLOR: Int32 = -1
 
+    // The look of the simple charts: ink for the title and the values, a
+    // muted gray for the rest of the text, light grid lines, and a palette
+    // whose colors differ in lightness, so that they stay apart in grayscale
+    // and for a reader who does not tell red from green.
+    private static let INK = SimpleBarChart.INK
+    private static let MUTED = SimpleBarChart.MUTED
+    private static let GRID: Int32 = 0xE1E4E8
+    private static let BASELINE: Int32 = 0x8C96A3
+    static let PALETTE: [Int32] = [
+        0x1F3A5F,   // navy
+        0x6F95C2,   // steel blue
+        0xD08C3C,   // amber
+        0x6B8F71,   // sage
+        0xA7AFB8,   // gray
+        0x9C5B5B,   // brick
+        0x4F7A8C,   // slate
+        0xC9B458    // ochre
+    ]
+
     private var x1: Float = 0.0
     private var y1: Float = 0.0
     private var w: Float = 300.0
@@ -46,12 +65,12 @@ public class BarChart : Drawable {
     private var drawValueLabels = false
     private var valueLabelsInside = false
     private var drawLegend = true
-    private var groupingUsed = false
+    private var groupingUsed = true
 
-    private var gridLineColor: Int32 = Color.black
-    private var gridLineWidth: Float = 0.0
-    private var gridLineDashPattern = "[1 1] 0"
-    private var axisLineWidth: Float = 0.5
+    private var gridLineColor: Int32 = BarChart.GRID
+    private var gridLineWidth: Float = 0.5
+    private var gridLineDashPattern = "[] 0"
+    private var axisLineWidth: Float = 0.75
     private var chartBorderWidth: Float = 0.0
     private var innerBorderWidth: Float = 0.0
 
@@ -314,9 +333,10 @@ public class BarChart : Drawable {
     }
 
     ///
-    /// Sets whether the value labels are written inside the bars, in white at
-    /// the end of each bar, instead of next to the bar ends. A bar too short
-    /// for its label gets it next to its end. The default is false.
+    /// Sets whether the value labels are written inside the bars, at the end
+    /// of each bar, in white or in ink, whichever reads on the bar's color,
+    /// instead of next to the bar ends. A bar too short for its label gets it
+    /// next to its end. The default is false.
     ///
     /// - Parameter valueLabelsInside: true to write the values inside the bars.
     /// - Returns: this BarChart object.
@@ -329,7 +349,7 @@ public class BarChart : Drawable {
 
     ///
     /// Sets whether the labels group the digits in thousands with a comma, as
-    /// in 6,650. The default is false.
+    /// in 6,650. The default is true.
     ///
     /// - Parameter groupingUsed: true to group the digits.
     /// - Returns: this BarChart object.
@@ -354,8 +374,9 @@ public class BarChart : Drawable {
     }
 
     ///
-    /// Sets the width of the grid lines. A width of 0 draws the thinnest line
-    /// a viewer shows; setDrawGridLines(false) hides them.
+    /// Sets the width of the grid lines. The default is 0.5; a width of 0
+    /// draws the thinnest line a viewer shows, and setDrawGridLines(false)
+    /// hides them.
     ///
     /// - Parameter width: the line width.
     /// - Returns: this BarChart object.
@@ -367,7 +388,7 @@ public class BarChart : Drawable {
     }
 
     ///
-    /// Sets the color of the grid lines. The default is black.
+    /// Sets the color of the grid lines. The default is light gray, 0xE1E4E8.
     /// Color.transparent leaves it unchanged.
     ///
     /// - Parameter color: the color as a 0xRRGGBB value, for example Color.lightgray.
@@ -383,7 +404,8 @@ public class BarChart : Drawable {
     }
 
     ///
-    /// Sets the dash pattern of the grid lines, for example "[1 1] 0".
+    /// Sets the dash pattern of the grid lines, for example "[1 1] 0" for a
+    /// dotted line. The default is "[] 0", a solid line.
     ///
     /// - Parameter pattern: the dash pattern.
     /// - Returns: this BarChart object.
@@ -395,7 +417,9 @@ public class BarChart : Drawable {
     }
 
     ///
-    /// Sets the width of the axis lines. The default is 0.5; 0 hides them.
+    /// Sets the width of the axis line, the line at the base of the bars: at 0
+    /// on the value axis, or at its lowest value when the axis does not reach
+    /// 0. The default is 0.75; 0 hides it.
     ///
     /// - Parameter width: the line width.
     /// - Returns: this BarChart object.
@@ -552,6 +576,20 @@ public class BarChart : Drawable {
                 }
             }
         }
+        // The totals of the stacks, written past their ends
+        let totals = drawValueLabels && stacked && series.count > 1
+        var widestTotal: Float = 0.0
+        if totals {
+            for i in 0..<n {
+                var up: Float = 0.0
+                for s in series where i < s.values.count && ChartScale.isValue(s.values[i]) && s.values[i] >= 0.0 {
+                    up += s.values[i]
+                }
+                if up > 0.0 {
+                    widestTotal = Swift.max(widestTotal, f2.stringWidth(valueLabel(up)))
+                }
+            }
+        }
         var widestCategory: Float = 0.0
         for category in categories {
             widestCategory = Swift.max(widestCategory, f2.stringWidth(category))
@@ -565,8 +603,9 @@ public class BarChart : Drawable {
         var rightMargin = pad
         let bottomMargin = 2.5 * bodyHeight
         if horizontal {
-            rightMargin += Swift.max(widestAxisLabel / 2.0, valueLabelsInside ? 0.0 : widestValueLabel + pad)
-        } else if drawValueLabels && !stacked && !valueLabelsInside {
+            let past: Float = totals ? widestTotal + pad : (valueLabelsInside ? 0.0 : widestValueLabel + pad)
+            rightMargin += Swift.max(widestAxisLabel / 2.0, past)
+        } else if totals || (drawValueLabels && !stacked && !valueLabelsInside) {
             topMargin += bodyHeight
         }
         let x5 = x1 + leftMargin
@@ -580,19 +619,17 @@ public class BarChart : Drawable {
         // as a Stamp keeps them.
         page.saveGraphicsState()
 
-        // Title, the subtitle and then the legend under it
-        page.setBrushColor(Color.black)
-        page.drawString(f1, f1.getSize(), title, x1 + (w - f1.stringWidth(title)) / 2.0, titleBaseline)
+        // Title, the subtitle and then the legend under it, at the left
+        BarChart.drawText(page, f1, title, x1, titleBaseline, BarChart.INK)
         if !subtitle.isEmpty {
-            page.drawString(f2, f2.getSize(), subtitle, x1 + (w - f2.stringWidth(subtitle)) / 2.0,
-                    titleBaseline + subtitleHeight, Util.toRGB(Color.dimgray), nil)
+            BarChart.drawText(page, f2, subtitle, x1, titleBaseline + subtitleHeight, BarChart.MUTED)
         }
         if legend {
             drawLegend(page, titleBaseline + subtitleHeight + 1.5 * bodyHeight)
         }
 
         if chartBorderWidth > 0.0 {
-            page.setPenColor(Color.black)
+            page.setPenColor(BarChart.BASELINE)
             page.setPenWidth(chartBorderWidth)
             page.setDefaultStrokeDashPattern()
             page.drawRect(x1, y1, w, h)
@@ -615,7 +652,7 @@ public class BarChart : Drawable {
                     gridLine(page, x, y5, x, y8)
                 }
                 if labeled {
-                    page.drawString(f2, f2.getSize(), label, x - f2.stringWidth(label) / 2.0, y8 + bodyHeight)
+                    BarChart.drawText(page, f2, label, x - f2.stringWidth(label) / 2.0, y8 + bodyHeight, BarChart.MUTED)
                 }
             } else {
                 let y = y8 - (v - vMin) * (y8 - y5) / (vMax - vMin)
@@ -623,7 +660,7 @@ public class BarChart : Drawable {
                     gridLine(page, x5, y, x6, y)
                 }
                 if labeled {
-                    page.drawString(f2, f2.getSize(), label, x5 - pad - f2.stringWidth(label), y + ascent / 2.0)
+                    BarChart.drawText(page, f2, label, x5 - pad - f2.stringWidth(label), y + ascent / 2.0, BarChart.MUTED)
                 }
             }
         }
@@ -637,13 +674,12 @@ public class BarChart : Drawable {
             let slotStart = (horizontal ? y5 : x5) + Float(i) * slot
             let groupStart = slotStart + slot * groupGap / 2.0
             let category = i < categories.count ? categories[i] : ""
-            page.setBrushColor(Color.black)
             if horizontal {
-                page.drawString(f2, f2.getSize(), category, x5 - pad - f2.stringWidth(category),
-                        slotStart + slot / 2.0 + ascent / 2.0)
+                BarChart.drawText(page, f2, category, x5 - pad - f2.stringWidth(category),
+                        slotStart + slot / 2.0 + ascent / 2.0, BarChart.MUTED)
             } else {
-                page.drawString(f2, f2.getSize(), category, slotStart + (slot - f2.stringWidth(category)) / 2.0,
-                        y8 + bodyHeight)
+                BarChart.drawText(page, f2, category, slotStart + (slot - f2.stringWidth(category)) / 2.0,
+                        y8 + bodyHeight, BarChart.MUTED)
             }
             var up: Float = 0.0      // the stacked values above 0 so far
             var down: Float = 0.0    // the stacked values below 0 so far
@@ -663,77 +699,86 @@ public class BarChart : Drawable {
                 from = Swift.min(Swift.max(from, vMin), vMax)
                 to = Swift.min(Swift.max(to, vMin), vMax)
                 let barStart = stacked ? groupStart : groupStart + Float(j) * barWidth * (1.0 + barGap)
-                page.setBrushColor(barColor(s, j, i))
+                let color = barColor(s, j, i)
+                page.setBrushColor(color)
                 let label: String? = drawValueLabels ? valueLabel(s.values[i]) : nil
+                let on = BarChart.labelColorOn(color)
                 if horizontal {
                     let x0 = x5 + (from - vMin) * (x6 - x5) / (vMax - vMin)
                     let x = x5 + (to - vMin) * (x6 - x5) / (vMax - vMin)
                     page.fillRect(Swift.min(x0, x), barStart, abs(x - x0), barWidth)
+                    let baseline = barStart + barWidth / 2.0 + ascent / 2.0
                     if let label = label, stacked {
                         if abs(x - x0) >= f2.stringWidth(label) + pad {
-                            page.setBrushColor(Color.black)
-                            page.drawString(f2, f2.getSize(), label,
-                                    Swift.min(x0, x) + (abs(x - x0) - f2.stringWidth(label)) / 2.0,
-                                    barStart + barWidth / 2.0 + ascent / 2.0)
+                            BarChart.drawText(page, f2, label,
+                                    Swift.min(x0, x) + (abs(x - x0) - f2.stringWidth(label)) / 2.0, baseline, on)
                         }
                     } else if let label = label, valueLabelsInside && abs(x - x0) >= f2.stringWidth(label) + pad {
-                        page.drawString(f2, f2.getSize(), label,
-                                to >= base ? x - pad / 2.0 - f2.stringWidth(label) : x + pad / 2.0,
-                                barStart + barWidth / 2.0 + ascent / 2.0, Util.toRGB(Color.white), nil)
+                        BarChart.drawText(page, f2, label,
+                                to >= base ? x - pad / 2.0 - f2.stringWidth(label) : x + pad / 2.0, baseline, on)
                     } else if let label = label {
-                        page.setBrushColor(Color.black)
-                        page.drawString(f2, f2.getSize(), label,
-                                to >= base ? x + pad / 2.0 : x - pad / 2.0 - f2.stringWidth(label),
-                                barStart + barWidth / 2.0 + ascent / 2.0)
+                        BarChart.drawText(page, f2, label,
+                                to >= base ? x + pad / 2.0 : x - pad / 2.0 - f2.stringWidth(label), baseline, BarChart.INK)
                     }
                 } else {
                     let y0 = y8 - (from - vMin) * (y8 - y5) / (vMax - vMin)
                     let y = y8 - (to - vMin) * (y8 - y5) / (vMax - vMin)
                     page.fillRect(barStart, Swift.min(y0, y), barWidth, abs(y - y0))
+                    let x = barStart + (barWidth - (label != nil ? f2.stringWidth(label!) : 0.0)) / 2.0
                     if let label = label, stacked {
                         if abs(y - y0) >= bodyHeight {
-                            page.setBrushColor(Color.black)
-                            page.drawString(f2, f2.getSize(), label, barStart + (barWidth - f2.stringWidth(label)) / 2.0,
-                                    (y + y0) / 2.0 + ascent / 2.0)
+                            BarChart.drawText(page, f2, label, x, (y + y0) / 2.0 + ascent / 2.0, on)
                         }
                     } else if let label = label, valueLabelsInside && abs(y - y0) >= bodyHeight + pad {
-                        page.drawString(f2, f2.getSize(), label, barStart + (barWidth - f2.stringWidth(label)) / 2.0,
-                                to >= base ? y + ascent + pad / 2.0 : y - pad / 2.0, Util.toRGB(Color.white), nil)
+                        BarChart.drawText(page, f2, label, x, to >= base ? y + ascent + pad / 2.0 : y - pad / 2.0, on)
                     } else if let label = label {
-                        page.setBrushColor(Color.black)
-                        page.drawString(f2, f2.getSize(), label, barStart + (barWidth - f2.stringWidth(label)) / 2.0,
-                                to >= base ? y - pad / 2.0 : y + ascent + pad / 2.0)
+                        BarChart.drawText(page, f2, label, x, to >= base ? y - pad / 2.0 : y + ascent + pad / 2.0,
+                                BarChart.INK)
                     }
+                }
+            }
+            // The total of a stack above it, or past its end
+            if totals && up > 0.0 {
+                let total = valueLabel(up)
+                let groupMiddle = groupStart + groupWidth / 2.0
+                if horizontal {
+                    let x = x5 + (Swift.min(up, vMax) - vMin) * (x6 - x5) / (vMax - vMin)
+                    BarChart.drawText(page, f2, total, x + pad / 2.0, groupMiddle + ascent / 2.0, BarChart.INK)
+                } else {
+                    let y = y8 - (Swift.min(up, vMax) - vMin) * (y8 - y5) / (vMax - vMin)
+                    BarChart.drawText(page, f2, total, groupMiddle - f2.stringWidth(total) / 2.0, y - pad / 2.0,
+                            BarChart.INK)
                 }
             }
         }
 
-        // Axis lines: along the labels and at the base of the bars
-        page.setPenColor(Color.black)
+        // The axis line at the base of the bars, which is the zero line of
+        // negative values
         page.setDefaultStrokeDashPattern()
         if axisLineWidth > 0.0 {
+            page.setPenColor(BarChart.BASELINE)
             page.setPenWidth(axisLineWidth)
             if horizontal {
                 let x0 = x5 + (base - vMin) * (x6 - x5) / (vMax - vMin)
-                page.drawLine(x5, y8, x6, y8)
                 page.drawLine(x0, y5, x0, y8)
             } else {
                 let y0 = y8 - (base - vMin) * (y8 - y5) / (vMax - vMin)
-                page.drawLine(x5, y5, x5, y8)
                 page.drawLine(x5, y0, x6, y0)
             }
         }
         if innerBorderWidth > 0.0 {
+            page.setPenColor(BarChart.BASELINE)
             page.setPenWidth(innerBorderWidth)
             page.drawRect(x5, y5, x6 - x5, y8 - y5)
         }
 
         // Axis titles
-        page.setBrushColor(Color.black)
         page.setTextRotation(-90)
-        page.drawString(f2, f2.getSize(), yAxisTitle, x1 + bodyHeight, y8 - ((y8 - y5) - f2.stringWidth(yAxisTitle)) / 2.0)
+        BarChart.drawText(page, f2, yAxisTitle, x1 + bodyHeight, y8 - ((y8 - y5) - f2.stringWidth(yAxisTitle)) / 2.0,
+                BarChart.MUTED)
         page.setTextRotation(0)
-        page.drawString(f2, f2.getSize(), xAxisTitle, x5 + ((x6 - x5) - f2.stringWidth(xAxisTitle)) / 2.0, y2 - bodyHeight / 2.0)
+        BarChart.drawText(page, f2, xAxisTitle, x5 + ((x6 - x5) - f2.stringWidth(xAxisTitle)) / 2.0, y2 - bodyHeight / 2.0,
+                BarChart.MUTED)
 
         page.restoreGraphicsState()
         page.setFigureBoundingBox(x1, y1, w, h)
@@ -774,7 +819,7 @@ public class BarChart : Drawable {
         if let colors = s.colors, index >= 0 && index < colors.count {
             return colors[index]
         }
-        return s.color == BarChart.NO_COLOR ? ChartScale.DEFAULT_PALETTE[seriesIndex % ChartScale.DEFAULT_PALETTE.count] : s.color
+        return s.color == BarChart.NO_COLOR ? BarChart.PALETTE[seriesIndex % BarChart.PALETTE.count] : s.color
     }
 
     /// Formats the value written at the end of a bar.
@@ -792,7 +837,21 @@ public class BarChart : Drawable {
         return groupingUsed ? ChartScale.groupDigits(label) : label
     }
 
-    /// Draws one dotted grid line.
+    /// Draws the text in the font at its size, in the color.
+    private static func drawText(_ page: Page, _ font: Font, _ text: String, _ x: Float, _ y: Float, _ color: Int32) {
+        page.drawString(font, font.getSize(), text, x, y, Util.toRGB(color), nil)
+    }
+
+    /// Returns the color of a label on a bar of the color: white on a dark bar,
+    /// ink on a light one, by the bar's luminance.
+    static func labelColorOn(_ color: Int32) -> Int32 {
+        let r = (color >> 16) & 0xFF
+        let g = (color >> 8) & 0xFF
+        let b = color & 0xFF
+        return (299 * r + 587 * g + 114 * b) < 140000 ? Color.white : BarChart.INK
+    }
+
+    /// Draws one grid line.
     private func gridLine(_ page: Page, _ xa: Float, _ ya: Float, _ xb: Float, _ yb: Float) {
         page.setPenColor(gridLineColor)
         page.setPenWidth(gridLineWidth)
@@ -800,20 +859,11 @@ public class BarChart : Drawable {
         page.drawLine(xa, ya, xb, yb)
     }
 
-    /// Draws the legend centered on the chart, with a swatch before each series name.
+    /// Draws the legend at the left under the title, with a swatch before each series name.
     private func drawLegend(_ page: Page, _ baseline: Float) {
         let swatch = f2.getAscent()
         let gap = swatch / 2.0
-        var width: Float = 0.0
-        var entries = 0
-        for s in series {
-            if !s.name.isEmpty {
-                width += swatch + gap + f2.stringWidth(s.name)
-                entries += 1
-            }
-        }
-        width += Float(entries - 1) * f2.getBodyHeight()
-        var x = x1 + (w - width) / 2.0
+        var x = x1
         for j in 0..<series.count {
             let s = series[j]
             if s.name.isEmpty {
@@ -822,8 +872,7 @@ public class BarChart : Drawable {
             page.setBrushColor(barColor(s, j, -1))
             page.fillRect(x, baseline - swatch, swatch, swatch)
             x += swatch + gap
-            page.setBrushColor(Color.black)
-            page.drawString(f2, f2.getSize(), s.name, x, baseline)
+            BarChart.drawText(page, f2, s.name, x, baseline, BarChart.INK)
             x += f2.stringWidth(s.name) + f2.getBodyHeight()
         }
     }

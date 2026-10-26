@@ -141,6 +141,23 @@ There is no 9.1.3: what was done for it is in 9.1.5 (the owner, 26 October
   to Table's 7.7.
 
 ### Changed
+- BarChart, the four ports: the look of the simple charts. The title and
+  the subtitle at the left, in ink and in a muted gray, and the legend under
+  them at the left; light gray solid grid lines along the value axis; one
+  axis line, in mid gray at the base of the bars, which is the zero line of
+  negative values; the category and axis labels and the axis titles gray; a
+  default palette of navy, steel blue, amber, sage, gray, brick, slate and
+  ochre, whose colors differ in lightness for grayscale and for readers who
+  do not tell red from green; the value labels on a bar white or ink by its
+  color; digits grouped in thousands. A stacked chart with value labels
+  writes the total of each stack above it. Example_27 draws its sales with
+  the default colors, and the ten longest rivers with their data in a table
+  under the chart.
+  Behavior change: a BarChart on its defaults looks as above, where its
+  title was centered, its grid lines black and dotted, an axis line along its
+  labels, its colors blue, red and green, and its numbers ungrouped (8000,
+  now 8,000); a chart that sets its colors, its grid or its grouping keeps
+  them.
 - Markdown, the four ports: a table that fits on a page is not split. It
   starts the next page when it does not fit in what is left of this one,
   and a paragraph that ends in a colon right before it, such as "The size of

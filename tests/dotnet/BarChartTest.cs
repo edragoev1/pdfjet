@@ -110,8 +110,31 @@ public class BarChartTest {
         page = new Page(pdf, Letter.PORTRAIT);
         chart.SetStacked(true).SetDrawValueLabels(true);
         string stacked = Draw(chart, page);
-        Assert.Contains(TestSupport.Hex("90"), stacked);
         Assert.Contains(TestSupport.Hex("75"), stacked);
+        // The total of each stack above it
+        Assert.Contains(TestSupport.Hex("50"), stacked);
+        Assert.Contains(TestSupport.Hex("85"), stacked);
+    }
+
+    [Fact]
+    public void TheDefaultLookIsQuiet() {
+        // The first series in navy, the grid lines light gray and solid, the
+        // text gray or ink, and no black line or text.
+        PDF pdf = TestSupport.NewPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        BarChart chart = NewChart(pdf).SetCategories("a", "b").SetTitle("t").SetSubtitle("s");
+        chart.AddSeries("one", new float[] {20f, 75f}).AddSeries("two", new float[] {30f, 10f});
+        string content = Draw(chart, page);
+        Assert.Contains("0.12 0.23 0.37 rg", content);
+        Assert.Contains("0.44 0.58 0.76 rg", content);
+        Assert.Contains("0.88 0.89 0.91 RG\n0.5 w\n[] 0 d", content);
+        Assert.DoesNotContain("0 0 0 RG", content);
+        Assert.DoesNotContain("0 0 0 rg", content);
+        Assert.Equal("0.13 0.15 0.17 rg", TestSupport.FillColorBefore(content, "t"));
+        Assert.Equal("0.37 0.41 0.45 rg", TestSupport.FillColorBefore(content, "s"));
+        // A label on a dark bar is white, on a light one ink.
+        Assert.Equal(Color.white, BarChart.LabelColorOn(0x1F3A5F));
+        Assert.Equal(0x22262B, BarChart.LabelColorOn(0x6F95C2));
     }
 
     [Fact]
@@ -129,7 +152,7 @@ public class BarChartTest {
         Assert.Contains("1 0 0 rg", content);   // the first bar
         Assert.Contains("0 0 1 rg", content);   // the second bar
         Assert.Equal("1 1 1 rg", TestSupport.FillColorBefore(content, "6,650"));    // inside the first bar
-        Assert.Equal("0.41 0.41 0.41 rg", TestSupport.FillColorBefore(content, "sub"));
+        Assert.Equal("0.37 0.41 0.45 rg", TestSupport.FillColorBefore(content, "sub"));
         Assert.Contains(TestSupport.Hex("12"), content);    // too short: next to the bar
     }
 

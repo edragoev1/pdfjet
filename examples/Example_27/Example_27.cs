@@ -6,6 +6,7 @@
  */
 using System;
 using System.IO;
+using System.Collections.Generic;
 using System.Diagnostics;
 using PDFjet.NET;
 
@@ -102,6 +103,30 @@ public class Example_27 {
         String note = "Color mapping is illustrative; lengths and conditions vary by source and season.";
         new TextLine(f4, note)
                 .SetTextColor(0x696969).SetLocation(576f - f4.StringWidth(note), 550f).DrawOn(page);
+
+        // The data of the chart in a table under it
+        String[] lengthTexts = {
+                "6,650", "6,400", "6,300", "5,971", "5,540", "5,464", "5,410", "4,880", "4,700", "4,444"};
+        String[] characters = {
+                keyTexts[0], keyTexts[1], keyTexts[2], keyTexts[2], keyTexts[0],
+                keyTexts[3], keyTexts[1], keyTexts[2], keyTexts[4], keyTexts[2]};
+        List<List<Cell>> rows = new List<List<Cell>>();
+        rows.Add(new List<Cell> {
+                new Cell(f3, "River").SetWidth(180f),
+                new Cell(f3, "Length, km").SetWidth(90f).SetTextAlignment(Alignment.RIGHT),
+                new Cell(f3, "Character").SetWidth(270f)});
+        for (int i = 0; i < rivers.Length; i++) {
+            rows.Add(new List<Cell> {
+                    new Cell(f2, rivers[i]).SetWidth(180f),
+                    new Cell(f2, lengthTexts[i]).SetWidth(90f).SetTextAlignment(Alignment.RIGHT),
+                    new Cell(f2, characters[i]).SetWidth(270f)});
+        }
+        Table table = new Table();
+        table.SetTableData(rows, 1);
+        table.SetHeaderRowStyle(f3, 0x000000, 0xEEF0F3);
+        table.SetCellBorderColor(0xC8CCD2);
+        table.SetLocation(36f, 572f);
+        table.DrawOn(page);
     }
 
     private void DrawVertical(PDF pdf) {
@@ -133,8 +158,8 @@ public class Example_27 {
         chart.SetXAxisTitle("Month");
         chart.SetYAxisTitle("Units");
         chart.SetCategories(months);
-        chart.AddSeries("2025", units2025, Color.seagreen);
-        chart.AddSeries("2026", units2026, Color.indianred);
+        chart.AddSeries("2025", units2025);
+        chart.AddSeries("2026", units2026);
         chart.SetGroupGap(0.4f);
         chart.SetBarGap(0.1f);
         chart.SetAltDescription("Units sold by month in 2025 and 2026, side by side: from 31 to 72 a month in 2025 and from 20 to 80 in 2026, the most in December in both years.");
@@ -147,8 +172,8 @@ public class Example_27 {
         stacked.SetXAxisTitle("Month");
         stacked.SetYAxisTitle("Units");
         stacked.SetCategories(months);
-        stacked.AddSeries("2025", units2025, Color.seagreen);
-        stacked.AddSeries("2026", units2026, Color.indianred);
+        stacked.AddSeries("2025", units2025);
+        stacked.AddSeries("2026", units2026);
         stacked.SetStacked(true);
         stacked.SetDrawValueLabels(true);
         stacked.SetAltDescription("Units sold by month in 2025 and 2026, stacked: from 85 a month, in February and May, to 152 in December.");

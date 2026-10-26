@@ -12,7 +12,7 @@ import (
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
 	"github.com/edragoev1/pdfjet/v9/src/IBMPlexSans"
-	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/alignment"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
 	"github.com/edragoev1/pdfjet/v9/src/letter"
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
@@ -110,6 +110,29 @@ func drawHorizontal(pdf *pdfjet.PDF) {
 	note := "Color mapping is illustrative; lengths and conditions vary by source and season."
 	pdfjet.NewTextLine(f4, note).
 		SetTextColor(0x696969).SetLocation(576.0-f4.StringWidth(f4.GetSize(), note), 550.0).DrawOn(page)
+
+	// The data of the chart in a table under it
+	lengthTexts := []string{
+		"6,650", "6,400", "6,300", "5,971", "5,540", "5,464", "5,410", "4,880", "4,700", "4,444"}
+	characters := []string{
+		keyTexts[0], keyTexts[1], keyTexts[2], keyTexts[2], keyTexts[0],
+		keyTexts[3], keyTexts[1], keyTexts[2], keyTexts[4], keyTexts[2]}
+	rows := [][]*pdfjet.Cell{{
+		pdfjet.NewCell(f3, "River").SetWidth(180.0),
+		pdfjet.NewCell(f3, "Length, km").SetWidth(90.0).SetTextAlignment(alignment.Right),
+		pdfjet.NewCell(f3, "Character").SetWidth(270.0)}}
+	for i := range rivers {
+		rows = append(rows, []*pdfjet.Cell{
+			pdfjet.NewCell(f2, rivers[i]).SetWidth(180.0),
+			pdfjet.NewCell(f2, lengthTexts[i]).SetWidth(90.0).SetTextAlignment(alignment.Right),
+			pdfjet.NewCell(f2, characters[i]).SetWidth(270.0)})
+	}
+	table := pdfjet.NewTable()
+	table.SetTableData(rows, 1)
+	table.SetHeaderRowStyle(f3, 0x000000, 0xEEF0F3)
+	table.SetCellBorderColor(0xC8CCD2)
+	table.SetLocation(36.0, 572.0)
+	table.DrawOn(page)
 }
 
 func drawVertical(pdf *pdfjet.PDF) {
@@ -140,8 +163,8 @@ func drawVertical(pdf *pdfjet.PDF) {
 	chart.SetXAxisTitle("Month")
 	chart.SetYAxisTitle("Units")
 	chart.SetCategories(months...)
-	chart.AddSeriesWithColor("2025", units2025, color.SeaGreen)
-	chart.AddSeriesWithColor("2026", units2026, color.IndianRed)
+	chart.AddSeries("2025", units2025)
+	chart.AddSeries("2026", units2026)
 	chart.SetGroupGap(0.4)
 	chart.SetBarGap(0.1)
 	chart.SetAltDescription("Units sold by month in 2025 and 2026, side by side: from 31 to 72 a month in 2025 and from 20 to 80 in 2026, the most in December in both years.")
@@ -154,8 +177,8 @@ func drawVertical(pdf *pdfjet.PDF) {
 	stacked.SetXAxisTitle("Month")
 	stacked.SetYAxisTitle("Units")
 	stacked.SetCategories(months...)
-	stacked.AddSeriesWithColor("2025", units2025, color.SeaGreen)
-	stacked.AddSeriesWithColor("2026", units2026, color.IndianRed)
+	stacked.AddSeries("2025", units2025)
+	stacked.AddSeries("2026", units2026)
 	stacked.SetStacked(true)
 	stacked.SetDrawValueLabels(true)
 	stacked.SetAltDescription("Units sold by month in 2025 and 2026, stacked: from 85 a month, in February and May, to 152 in December.")

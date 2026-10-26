@@ -101,8 +101,28 @@ import Testing
         page = Page(pdf, Letter.PORTRAIT)
         chart.setStacked(true).setDrawValueLabels(true)
         let stacked = draw(chart, page)
-        #expect(stacked.contains(TestSupport.hex("90")), "\(stacked)")
         #expect(stacked.contains(TestSupport.hex("75")), "\(stacked)")
+        // The total of each stack above it
+        #expect(stacked.contains(TestSupport.hex("50")) && stacked.contains(TestSupport.hex("85")), "\(stacked)")
+    }
+
+    // The first series in navy, the grid lines light gray and solid, the text
+    // gray or ink, and no black line or text.
+    @Test func theDefaultLookIsQuiet() {
+        let pdf = TestSupport.newPDF()
+        let page = Page(pdf, Letter.PORTRAIT)
+        let chart = self.chart(pdf).setCategories("a", "b").setTitle("t").setSubtitle("s")
+        chart.addSeries("one", [20.0, 75.0]).addSeries("two", [30.0, 10.0])
+        let content = draw(chart, page)
+        #expect(content.contains("0.12 0.23 0.37 rg"))
+        #expect(content.contains("0.44 0.58 0.76 rg"))
+        #expect(content.contains("0.88 0.89 0.91 RG\n0.5 w\n[] 0 d"))
+        #expect(!content.contains("0 0 0 RG") && !content.contains("0 0 0 rg"))
+        #expect(TestSupport.fillColorBefore(content, "t") == "0.13 0.15 0.17 rg")
+        #expect(TestSupport.fillColorBefore(content, "s") == "0.37 0.41 0.45 rg")
+        // A label on a dark bar is white, on a light one ink.
+        #expect(BarChart.labelColorOn(0x1F3A5F) == Color.white)
+        #expect(BarChart.labelColorOn(0x6F95C2) == 0x22262B)
     }
 
     @Test func barsHaveTheirOwnColorsAndLabelsInsideWithGroupedDigits() {
@@ -119,7 +139,7 @@ import Testing
         #expect(content.contains("1 0 0 rg"), "\(content)")    // the first bar
         #expect(content.contains("0 0 1 rg"), "\(content)")    // the second bar
         #expect(TestSupport.fillColorBefore(content, "6,650") == "1 1 1 rg")    // inside the first bar
-        #expect(TestSupport.fillColorBefore(content, "sub") == "0.41 0.41 0.41 rg")
+        #expect(TestSupport.fillColorBefore(content, "sub") == "0.37 0.41 0.45 rg")
         #expect(content.contains(TestSupport.hex("12")), "\(content)")     // too short: next to the bar
     }
 

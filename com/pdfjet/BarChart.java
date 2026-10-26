@@ -33,6 +33,25 @@ public class BarChart implements Drawable {
 
     private static final int NO_COLOR = -1;
 
+    // The look of the simple charts: ink for the title and the values, a
+    // muted gray for the rest of the text, light grid lines, and a palette
+    // whose colors differ in lightness, so that they stay apart in grayscale
+    // and for a reader who does not tell red from green.
+    private static final int INK = SimpleBarChart.INK;
+    private static final int MUTED = SimpleBarChart.MUTED;
+    private static final int GRID = 0xE1E4E8;
+    private static final int BASELINE = 0x8C96A3;
+    static final int[] PALETTE = {
+        0x1F3A5F,   // navy
+        0x6F95C2,   // steel blue
+        0xD08C3C,   // amber
+        0x6B8F71,   // sage
+        0xA7AFB8,   // gray
+        0x9C5B5B,   // brick
+        0x4F7A8C,   // slate
+        0xC9B458    // ochre
+    };
+
     private float x1;
     private float y1;
     private float w = 300f;
@@ -56,12 +75,12 @@ public class BarChart implements Drawable {
     private boolean drawValueLabels = false;
     private boolean valueLabelsInside = false;
     private boolean drawLegend = true;
-    private boolean groupingUsed = false;
+    private boolean groupingUsed = true;
 
-    private int gridLineColor = Color.black;
-    private float gridLineWidth = 0f;
-    private String gridLineDashPattern = "[1 1] 0";
-    private float axisLineWidth = 0.5f;
+    private int gridLineColor = GRID;
+    private float gridLineWidth = 0.5f;
+    private String gridLineDashPattern = "[] 0";
+    private float axisLineWidth = 0.75f;
     private float chartBorderWidth = 0f;
     private float innerBorderWidth = 0f;
 
@@ -296,9 +315,10 @@ public class BarChart implements Drawable {
     }
 
     /**
-     * Sets whether the value labels are written inside the bars, in white at
-     * the end of each bar, instead of next to the bar ends. A bar too short
-     * for its label gets it next to its end. The default is false.
+     * Sets whether the value labels are written inside the bars, at the end
+     * of each bar, in white or in ink, whichever reads on the bar's color,
+     * instead of next to the bar ends. A bar too short for its label gets it
+     * next to its end. The default is false.
      *
      * @param valueLabelsInside true to write the values inside the bars.
      * @return this BarChart object.
@@ -310,7 +330,7 @@ public class BarChart implements Drawable {
 
     /**
      * Sets whether the labels group the digits in thousands with a comma, as
-     * in 6,650. The default is false.
+     * in 6,650. The default is true.
      *
      * @param groupingUsed true to group the digits.
      * @return this BarChart object.
@@ -333,8 +353,9 @@ public class BarChart implements Drawable {
     }
 
     /**
-     * Sets the width of the grid lines. A width of 0 draws the thinnest line
-     * a viewer shows; setDrawGridLines(false) hides them.
+     * Sets the width of the grid lines. The default is 0.5; a width of 0
+     * draws the thinnest line a viewer shows, and setDrawGridLines(false)
+     * hides them.
      *
      * @param width the line width.
      * @return this BarChart object.
@@ -345,7 +366,7 @@ public class BarChart implements Drawable {
     }
 
     /**
-     * Sets the color of the grid lines. The default is black.
+     * Sets the color of the grid lines. The default is light gray, 0xE1E4E8.
      * Color.transparent leaves it unchanged.
      *
      * @param color the color as a 0xRRGGBB value, for example Color.lightgray.
@@ -360,7 +381,8 @@ public class BarChart implements Drawable {
     }
 
     /**
-     * Sets the dash pattern of the grid lines, for example "[1 1] 0".
+     * Sets the dash pattern of the grid lines, for example "[1 1] 0" for a
+     * dotted line. The default is "[] 0", a solid line.
      *
      * @param pattern the dash pattern.
      * @return this BarChart object.
@@ -371,7 +393,9 @@ public class BarChart implements Drawable {
     }
 
     /**
-     * Sets the width of the axis lines. The default is 0.5; 0 hides them.
+     * Sets the width of the axis line, the line at the base of the bars: at 0
+     * on the value axis, or at its lowest value when the axis does not reach
+     * 0. The default is 0.75; 0 hides it.
      *
      * @param width the line width.
      * @return this BarChart object.
@@ -526,6 +550,20 @@ public class BarChart implements Drawable {
                 }
             }
         }
+        // The totals of the stacks, written past their ends
+        boolean totals = drawValueLabels && stacked && series.size() > 1;
+        float widestTotal = 0f;
+        for (int i = 0; totals && i < n; i++) {
+            float up = 0f;
+            for (Series s : series) {
+                if (i < s.values.length && ChartScale.isValue(s.values[i]) && s.values[i] >= 0f) {
+                    up += s.values[i];
+                }
+            }
+            if (up > 0f) {
+                widestTotal = Math.max(widestTotal, f2.stringWidth(valueLabel(up)));
+            }
+        }
         float widestCategory = 0f;
         for (String category : categories) {
             widestCategory = Math.max(widestCategory, f2.stringWidth(category));
@@ -539,8 +577,9 @@ public class BarChart implements Drawable {
         float rightMargin = pad;
         float bottomMargin = 2.5f * bodyHeight;
         if (horizontal) {
-            rightMargin += Math.max(widestAxisLabel / 2f, valueLabelsInside ? 0f : widestValueLabel + pad);
-        } else if (drawValueLabels && !stacked && !valueLabelsInside) {
+            float past = totals ? widestTotal + pad : (valueLabelsInside ? 0f : widestValueLabel + pad);
+            rightMargin += Math.max(widestAxisLabel / 2f, past);
+        } else if (totals || (drawValueLabels && !stacked && !valueLabelsInside)) {
             topMargin += bodyHeight;
         }
         float x5 = x1 + leftMargin;
@@ -554,19 +593,17 @@ public class BarChart implements Drawable {
         // a Stamp keeps them.
         page.saveGraphicsState();
 
-        // Title, the subtitle and then the legend under it
-        page.setBrushColor(Color.black);
-        page.drawString(f1, f1.getSize(), title, x1 + (w - f1.stringWidth(title)) / 2f, titleBaseline);
+        // Title, the subtitle and then the legend under it, at the left
+        drawText(page, f1, title, x1, titleBaseline, INK);
         if (!subtitle.isEmpty()) {
-            page.drawString(f2, f2.getSize(), subtitle, x1 + (w - f2.stringWidth(subtitle)) / 2f,
-                    titleBaseline + subtitleHeight, Util.toRGB(Color.dimgray), null);
+            drawText(page, f2, subtitle, x1, titleBaseline + subtitleHeight, MUTED);
         }
         if (legend) {
             drawLegend(page, titleBaseline + subtitleHeight + 1.5f * bodyHeight);
         }
 
         if (chartBorderWidth > 0f) {
-            page.setPenColor(Color.black);
+            page.setPenColor(BASELINE);
             page.setPenWidth(chartBorderWidth);
             page.setDefaultStrokeDashPattern();
             page.drawRect(x1, y1, w, h);
@@ -589,7 +626,7 @@ public class BarChart implements Drawable {
                     gridLine(page, x, y5, x, y8);
                 }
                 if (labeled) {
-                    page.drawString(f2, f2.getSize(), label, x - f2.stringWidth(label) / 2f, y8 + bodyHeight);
+                    drawText(page, f2, label, x - f2.stringWidth(label) / 2f, y8 + bodyHeight, MUTED);
                 }
             } else {
                 float y = y8 - (v - vMin) * (y8 - y5) / (vMax - vMin);
@@ -597,7 +634,7 @@ public class BarChart implements Drawable {
                     gridLine(page, x5, y, x6, y);
                 }
                 if (labeled) {
-                    page.drawString(f2, f2.getSize(), label, x5 - pad - f2.stringWidth(label), y + ascent / 2f);
+                    drawText(page, f2, label, x5 - pad - f2.stringWidth(label), y + ascent / 2f, MUTED);
                 }
             }
         }
@@ -611,13 +648,12 @@ public class BarChart implements Drawable {
             float slotStart = (horizontal ? y5 : x5) + i * slot;
             float groupStart = slotStart + slot * groupGap / 2f;
             String category = i < categories.size() ? categories.get(i) : "";
-            page.setBrushColor(Color.black);
             if (horizontal) {
-                page.drawString(f2, f2.getSize(), category, x5 - pad - f2.stringWidth(category),
-                        slotStart + slot / 2f + ascent / 2f);
+                drawText(page, f2, category, x5 - pad - f2.stringWidth(category),
+                        slotStart + slot / 2f + ascent / 2f, MUTED);
             } else {
-                page.drawString(f2, f2.getSize(), category, slotStart + (slot - f2.stringWidth(category)) / 2f,
-                        y8 + bodyHeight);
+                drawText(page, f2, category, slotStart + (slot - f2.stringWidth(category)) / 2f,
+                        y8 + bodyHeight, MUTED);
             }
             float up = 0f;      // the stacked values above 0 so far
             float down = 0f;    // the stacked values below 0 so far
@@ -637,77 +673,82 @@ public class BarChart implements Drawable {
                 from = Math.min(Math.max(from, vMin), vMax);
                 to = Math.min(Math.max(to, vMin), vMax);
                 float barStart = stacked ? groupStart : groupStart + j * barWidth * (1f + barGap);
-                page.setBrushColor(barColor(s, j, i));
+                int color = barColor(s, j, i);
+                page.setBrushColor(color);
                 String label = drawValueLabels ? valueLabel(s.values[i]) : null;
+                int on = labelColorOn(color);
                 if (horizontal) {
                     float x0 = x5 + (from - vMin) * (x6 - x5) / (vMax - vMin);
                     float x = x5 + (to - vMin) * (x6 - x5) / (vMax - vMin);
                     page.fillRect(Math.min(x0, x), barStart, Math.abs(x - x0), barWidth);
+                    float baseline = barStart + barWidth / 2f + ascent / 2f;
                     if (label != null && stacked) {
                         if (Math.abs(x - x0) >= f2.stringWidth(label) + pad) {
-                            page.setBrushColor(Color.black);
-                            page.drawString(f2, f2.getSize(), label,
-                                    Math.min(x0, x) + (Math.abs(x - x0) - f2.stringWidth(label)) / 2f,
-                                    barStart + barWidth / 2f + ascent / 2f);
+                            drawText(page, f2, label,
+                                    Math.min(x0, x) + (Math.abs(x - x0) - f2.stringWidth(label)) / 2f, baseline, on);
                         }
                     } else if (label != null && valueLabelsInside && Math.abs(x - x0) >= f2.stringWidth(label) + pad) {
-                        page.drawString(f2, f2.getSize(), label,
-                                to >= base ? x - pad / 2f - f2.stringWidth(label) : x + pad / 2f,
-                                barStart + barWidth / 2f + ascent / 2f, Util.toRGB(Color.white), null);
+                        drawText(page, f2, label,
+                                to >= base ? x - pad / 2f - f2.stringWidth(label) : x + pad / 2f, baseline, on);
                     } else if (label != null) {
-                        page.setBrushColor(Color.black);
-                        page.drawString(f2, f2.getSize(), label,
-                                to >= base ? x + pad / 2f : x - pad / 2f - f2.stringWidth(label),
-                                barStart + barWidth / 2f + ascent / 2f);
+                        drawText(page, f2, label,
+                                to >= base ? x + pad / 2f : x - pad / 2f - f2.stringWidth(label), baseline, INK);
                     }
                 } else {
                     float y0 = y8 - (from - vMin) * (y8 - y5) / (vMax - vMin);
                     float y = y8 - (to - vMin) * (y8 - y5) / (vMax - vMin);
                     page.fillRect(barStart, Math.min(y0, y), barWidth, Math.abs(y - y0));
+                    float x = barStart + (barWidth - (label != null ? f2.stringWidth(label) : 0f)) / 2f;
                     if (label != null && stacked) {
                         if (Math.abs(y - y0) >= bodyHeight) {
-                            page.setBrushColor(Color.black);
-                            page.drawString(f2, f2.getSize(), label, barStart + (barWidth - f2.stringWidth(label)) / 2f,
-                                    (y + y0) / 2f + ascent / 2f);
+                            drawText(page, f2, label, x, (y + y0) / 2f + ascent / 2f, on);
                         }
                     } else if (label != null && valueLabelsInside && Math.abs(y - y0) >= bodyHeight + pad) {
-                        page.drawString(f2, f2.getSize(), label, barStart + (barWidth - f2.stringWidth(label)) / 2f,
-                                to >= base ? y + ascent + pad / 2f : y - pad / 2f, Util.toRGB(Color.white), null);
+                        drawText(page, f2, label, x, to >= base ? y + ascent + pad / 2f : y - pad / 2f, on);
                     } else if (label != null) {
-                        page.setBrushColor(Color.black);
-                        page.drawString(f2, f2.getSize(), label, barStart + (barWidth - f2.stringWidth(label)) / 2f,
-                                to >= base ? y - pad / 2f : y + ascent + pad / 2f);
+                        drawText(page, f2, label, x, to >= base ? y - pad / 2f : y + ascent + pad / 2f, INK);
                     }
+                }
+            }
+            // The total of a stack above it, or past its end
+            if (totals && up > 0f) {
+                String total = valueLabel(up);
+                float groupMiddle = groupStart + groupWidth / 2f;
+                if (horizontal) {
+                    float x = x5 + (Math.min(up, vMax) - vMin) * (x6 - x5) / (vMax - vMin);
+                    drawText(page, f2, total, x + pad / 2f, groupMiddle + ascent / 2f, INK);
+                } else {
+                    float y = y8 - (Math.min(up, vMax) - vMin) * (y8 - y5) / (vMax - vMin);
+                    drawText(page, f2, total, groupMiddle - f2.stringWidth(total) / 2f, y - pad / 2f, INK);
                 }
             }
         }
 
-        // Axis lines: along the labels and at the base of the bars
-        page.setPenColor(Color.black);
+        // The axis line at the base of the bars, which is the zero line of
+        // negative values
         page.setDefaultStrokeDashPattern();
         if (axisLineWidth > 0f) {
+            page.setPenColor(BASELINE);
             page.setPenWidth(axisLineWidth);
             if (horizontal) {
                 float x0 = x5 + (base - vMin) * (x6 - x5) / (vMax - vMin);
-                page.drawLine(x5, y8, x6, y8);
                 page.drawLine(x0, y5, x0, y8);
             } else {
                 float y0 = y8 - (base - vMin) * (y8 - y5) / (vMax - vMin);
-                page.drawLine(x5, y5, x5, y8);
                 page.drawLine(x5, y0, x6, y0);
             }
         }
         if (innerBorderWidth > 0f) {
+            page.setPenColor(BASELINE);
             page.setPenWidth(innerBorderWidth);
             page.drawRect(x5, y5, x6 - x5, y8 - y5);
         }
 
         // Axis titles
-        page.setBrushColor(Color.black);
         page.setTextRotation(-90);
-        page.drawString(f2, f2.getSize(), yAxisTitle, x1 + bodyHeight, y8 - ((y8 - y5) - f2.stringWidth(yAxisTitle)) / 2f);
+        drawText(page, f2, yAxisTitle, x1 + bodyHeight, y8 - ((y8 - y5) - f2.stringWidth(yAxisTitle)) / 2f, MUTED);
         page.setTextRotation(0);
-        page.drawString(f2, f2.getSize(), xAxisTitle, x5 + ((x6 - x5) - f2.stringWidth(xAxisTitle)) / 2f, y2 - bodyHeight / 2f);
+        drawText(page, f2, xAxisTitle, x5 + ((x6 - x5) - f2.stringWidth(xAxisTitle)) / 2f, y2 - bodyHeight / 2f, MUTED);
 
         page.restoreGraphicsState();
         page.setFigureBoundingBox(x1, y1, w, h);
@@ -748,7 +789,7 @@ public class BarChart implements Drawable {
         if (s.colors != null && index >= 0 && index < s.colors.length) {
             return s.colors[index];
         }
-        return s.color == NO_COLOR ? ChartScale.DEFAULT_PALETTE[seriesIndex % ChartScale.DEFAULT_PALETTE.length] : s.color;
+        return s.color == NO_COLOR ? PALETTE[seriesIndex % PALETTE.length] : s.color;
     }
 
     /** Formats the value written at the end of a bar. */
@@ -766,7 +807,23 @@ public class BarChart implements Drawable {
         return groupingUsed ? ChartScale.groupDigits(label) : label;
     }
 
-    /** Draws one dotted grid line. */
+    /** Draws the text in the font at its size, in the color. */
+    private static void drawText(Page page, Font font, String text, float x, float y, int color) {
+        page.drawString(font, font.getSize(), text, x, y, Util.toRGB(color), null);
+    }
+
+    /**
+     * Returns the color of a label on a bar of the color: white on a dark bar,
+     * ink on a light one, by the bar's luminance.
+     */
+    static int labelColorOn(int color) {
+        int r = (color >> 16) & 0xFF;
+        int g = (color >> 8) & 0xFF;
+        int b = color & 0xFF;
+        return (299 * r + 587 * g + 114 * b) < 140000 ? Color.white : INK;
+    }
+
+    /** Draws one grid line. */
     private void gridLine(Page page, float xa, float ya, float xb, float yb) {
         page.setPenColor(gridLineColor);
         page.setPenWidth(gridLineWidth);
@@ -774,20 +831,11 @@ public class BarChart implements Drawable {
         page.drawLine(xa, ya, xb, yb);
     }
 
-    /** Draws the legend centered on the chart, with a swatch before each series name. */
+    /** Draws the legend at the left under the title, with a swatch before each series name. */
     private void drawLegend(Page page, float baseline) {
         float swatch = f2.getAscent();
         float gap = swatch / 2f;
-        float width = 0f;
-        int entries = 0;
-        for (Series s : series) {
-            if (!s.name.isEmpty()) {
-                width += swatch + gap + f2.stringWidth(s.name);
-                entries++;
-            }
-        }
-        width += (entries - 1) * f2.getBodyHeight();
-        float x = x1 + (w - width) / 2f;
+        float x = x1;
         for (int j = 0; j < series.size(); j++) {
             Series s = series.get(j);
             if (s.name.isEmpty()) {
@@ -796,8 +844,7 @@ public class BarChart implements Drawable {
             page.setBrushColor(barColor(s, j, -1));
             page.fillRect(x, baseline - swatch, swatch, swatch);
             x += swatch + gap;
-            page.setBrushColor(Color.black);
-            page.drawString(f2, f2.getSize(), s.name, x, baseline);
+            drawText(page, f2, s.name, x, baseline, INK);
             x += f2.stringWidth(s.name) + f2.getBodyHeight();
         }
     }

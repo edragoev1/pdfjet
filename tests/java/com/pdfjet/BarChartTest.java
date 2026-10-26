@@ -112,8 +112,29 @@ class BarChartTest {
         page = new Page(pdf, Letter.PORTRAIT);
         chart.setStacked(true).setDrawValueLabels(true);
         String stacked = draw(chart, page);
-        assertTrue(stacked.contains(TestSupport.hex("90")), stacked);
         assertTrue(stacked.contains(TestSupport.hex("75")), stacked);
+        // The total of each stack above it
+        assertTrue(stacked.contains(TestSupport.hex("50")) && stacked.contains(TestSupport.hex("85")), stacked);
+    }
+
+    @Test
+    void theDefaultLookIsQuiet() throws Exception {
+        // The first series in navy, the grid lines light gray and solid, the
+        // text gray or ink, and no black line or text.
+        PDF pdf = TestSupport.newPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        BarChart chart = chart(pdf).setCategories("a", "b").setTitle("t").setSubtitle("s");
+        chart.addSeries("one", new float[] {20f, 75f}).addSeries("two", new float[] {30f, 10f});
+        String content = draw(chart, page);
+        assertTrue(content.contains("0.12 0.23 0.37 rg"), content);     // navy
+        assertTrue(content.contains("0.44 0.58 0.76 rg"), content);     // steel blue
+        assertTrue(content.contains("0.88 0.89 0.91 RG\n0.5 w\n[] 0 d"), content);
+        assertFalse(content.contains("0 0 0 RG") || content.contains("0 0 0 rg"), content);
+        assertEquals("0.13 0.15 0.17 rg", TestSupport.fillColorBefore(content, "t"));
+        assertEquals("0.37 0.41 0.45 rg", TestSupport.fillColorBefore(content, "s"));
+        // A label on a dark bar is white, on a light one ink.
+        assertEquals(Color.white, BarChart.labelColorOn(0x1F3A5F));
+        assertEquals(0x22262B, BarChart.labelColorOn(0x6F95C2));
     }
 
     @Test
@@ -131,7 +152,7 @@ class BarChartTest {
         assertTrue(content.contains("1 0 0 rg"), content);     // the first bar
         assertTrue(content.contains("0 0 1 rg"), content);     // the second bar
         assertEquals("1 1 1 rg", TestSupport.fillColorBefore(content, "6,650"));  // inside the first bar
-        assertEquals("0.41 0.41 0.41 rg", TestSupport.fillColorBefore(content, "sub"));
+        assertEquals("0.37 0.41 0.45 rg", TestSupport.fillColorBefore(content, "sub"));
         assertTrue(content.contains(TestSupport.hex("12")), content);  // too short: next to the bar
     }
 

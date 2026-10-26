@@ -7,6 +7,7 @@
 package examples;
 
 import java.io.*;
+import java.util.*;
 import com.pdfjet.*;
 import com.pdfjet.fonts.*;
 
@@ -103,6 +104,31 @@ final public class Example_27 {
         String note = "Color mapping is illustrative; lengths and conditions vary by source and season.";
         new TextLine(f4, note)
                 .setTextColor(0x696969).setLocation(576f - f4.stringWidth(note), 550f).drawOn(page);
+
+        // The data of the chart in a table under it
+        String[] lengthTexts = {
+                "6,650", "6,400", "6,300", "5,971", "5,540", "5,464", "5,410", "4,880", "4,700", "4,444"};
+        String[] characters = {
+                keyTexts[0], keyTexts[1], keyTexts[2], keyTexts[2], keyTexts[0],
+                keyTexts[3], keyTexts[1], keyTexts[2], keyTexts[4], keyTexts[2]};
+        List<List<Cell>> rows = new ArrayList<List<Cell>>();
+        rows.add(Arrays.asList(
+                new Cell(f3, "River").setWidth(180f),
+                new Cell(f3, "Length, km").setWidth(90f).setTextAlignment(Alignment.RIGHT),
+                new Cell(f3, "Character").setWidth(270f)));
+        for (int i = 0; i < rivers.length; i++) {
+            rows.add(Arrays.asList(
+                    new Cell(f2, rivers[i]).setWidth(180f),
+                    new Cell(f2, lengthTexts[i]).setWidth(90f)
+                            .setTextAlignment(Alignment.RIGHT),
+                    new Cell(f2, characters[i]).setWidth(270f)));
+        }
+        Table table = new Table();
+        table.setTableData(rows, 1);
+        table.setHeaderRowStyle(f3, 0x000000, 0xEEF0F3);
+        table.setCellBorderColor(0xC8CCD2);
+        table.setLocation(36f, 572f);
+        table.drawOn(page);
     }
 
     private void drawVertical(PDF pdf) throws Exception {
@@ -134,8 +160,8 @@ final public class Example_27 {
         chart.setXAxisTitle("Month");
         chart.setYAxisTitle("Units");
         chart.setCategories(months);
-        chart.addSeries("2025", units2025, Color.seagreen);
-        chart.addSeries("2026", units2026, Color.indianred);
+        chart.addSeries("2025", units2025);
+        chart.addSeries("2026", units2026);
         chart.setGroupGap(0.4f);
         chart.setBarGap(0.1f);
         chart.setAltDescription("Units sold by month in 2025 and 2026, side by side: from 31 to 72 a month in 2025 and from 20 to 80 in 2026, the most in December in both years.");
@@ -148,8 +174,8 @@ final public class Example_27 {
         stacked.setXAxisTitle("Month");
         stacked.setYAxisTitle("Units");
         stacked.setCategories(months);
-        stacked.addSeries("2025", units2025, Color.seagreen);
-        stacked.addSeries("2026", units2026, Color.indianred);
+        stacked.addSeries("2025", units2025);
+        stacked.addSeries("2026", units2026);
         stacked.setStacked(true);
         stacked.setDrawValueLabels(true);
         stacked.setAltDescription("Units sold by month in 2025 and 2026, stacked: from 85 a month, in February and May, to 152 in December.");

@@ -99,6 +99,30 @@ public class Example_27 {
         let note = "Color mapping is illustrative; lengths and conditions vary by source and season."
         TextLine(f4, note)
                 .setTextColor(0x696969).setLocation(576.0 - f4.stringWidth(note), 550.0).drawOn(page)
+
+        // The data of the chart in a table under it
+        let lengthTexts = [
+                "6,650", "6,400", "6,300", "5,971", "5,540", "5,464", "5,410", "4,880", "4,700", "4,444"]
+        let characters = [
+                keyTexts[0], keyTexts[1], keyTexts[2], keyTexts[2], keyTexts[0],
+                keyTexts[3], keyTexts[1], keyTexts[2], keyTexts[4], keyTexts[2]]
+        var rows = [[Cell]]()
+        rows.append([
+                Cell(f3, "River").setWidth(180.0),
+                Cell(f3, "Length, km").setWidth(90.0).setTextAlignment(Alignment.RIGHT),
+                Cell(f3, "Character").setWidth(270.0)])
+        for i in 0..<rivers.count {
+            rows.append([
+                    Cell(f2, rivers[i]).setWidth(180.0),
+                    Cell(f2, lengthTexts[i]).setWidth(90.0).setTextAlignment(Alignment.RIGHT),
+                    Cell(f2, characters[i]).setWidth(270.0)])
+        }
+        let table = Table()
+        table.setTableData(rows, 1)
+        table.setHeaderRowStyle(f3, 0x000000, 0xEEF0F3)
+        table.setCellBorderColor(0xC8CCD2)
+        table.setLocation(36.0, 572.0)
+        table.drawOn(page)
     }
 
     private func drawVertical(_ pdf: PDF) throws {
@@ -130,8 +154,8 @@ public class Example_27 {
         chart.setXAxisTitle("Month")
         chart.setYAxisTitle("Units")
         chart.setCategories(months)
-        chart.addSeries("2025", units2025, Color.seagreen)
-        chart.addSeries("2026", units2026, Color.indianred)
+        chart.addSeries("2025", units2025)
+        chart.addSeries("2026", units2026)
         chart.setGroupGap(0.4)
         chart.setBarGap(0.1)
         chart.setAltDescription("Units sold by month in 2025 and 2026, side by side: from 31 to 72 a month in 2025 and from 20 to 80 in 2026, the most in December in both years.")
@@ -144,8 +168,8 @@ public class Example_27 {
         stacked.setXAxisTitle("Month")
         stacked.setYAxisTitle("Units")
         stacked.setCategories(months)
-        stacked.addSeries("2025", units2025, Color.seagreen)
-        stacked.addSeries("2026", units2026, Color.indianred)
+        stacked.addSeries("2025", units2025)
+        stacked.addSeries("2026", units2026)
         stacked.setStacked(true)
         stacked.setDrawValueLabels(true)
         stacked.setAltDescription("Units sold by month in 2025 and 2026, stacked: from 85 a month, in February and May, to 152 in December.")

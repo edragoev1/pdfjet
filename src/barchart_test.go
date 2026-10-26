@@ -102,8 +102,39 @@ func TestBarChartStackedBarsUseTheSumsOfTheCategoriesForTheValueAxis(t *testing.
 	page = NewPage(pdf, testLetterPortrait())
 	chart.SetStacked(true).SetDrawValueLabels(true)
 	stacked := testDrawBarChart(t, chart, page)
-	if !strings.Contains(stacked, testHex("90")) || !strings.Contains(stacked, testHex("75")) {
-		t.Errorf("labels missing from the stacked content %q", stacked)
+	// The total of each stack above it
+	for _, want := range []string{"75", "50", "85"} {
+		if !strings.Contains(stacked, testHex(want)) {
+			t.Errorf("%s missing from the stacked content %q", want, stacked)
+		}
+	}
+}
+
+// The first series in navy, the grid lines light gray and solid, the text gray
+// or ink, and no black line or text.
+func TestBarChartTheDefaultLookIsQuiet(t *testing.T) {
+	pdf := testNewPDF()
+	page := NewPage(pdf, testLetterPortrait())
+	chart := testBarChart(pdf).SetCategories("a", "b").SetTitle("t").SetSubtitle("s")
+	chart.AddSeries("one", []float32{20, 75}).AddSeries("two", []float32{30, 10})
+	content := testDrawBarChart(t, chart, page)
+	for _, want := range []string{"0.12 0.23 0.37 rg", "0.44 0.58 0.76 rg", "0.88 0.89 0.91 RG\n0.5 w\n[] 0 d"} {
+		if !strings.Contains(content, want) {
+			t.Errorf("%q missing from %q", want, content)
+		}
+	}
+	if strings.Contains(content, "0 0 0 RG") || strings.Contains(content, "0 0 0 rg") {
+		t.Errorf("black in %q", content)
+	}
+	if got := testFillColorBefore(content, "t"); got != "0.13 0.15 0.17 rg" {
+		t.Errorf("the title is drawn with %q", got)
+	}
+	if got := testFillColorBefore(content, "s"); got != "0.37 0.41 0.45 rg" {
+		t.Errorf("the subtitle is drawn with %q", got)
+	}
+	// A label on a dark bar is white, on a light one ink.
+	if labelColorOn(0x1F3A5F) != color.White || labelColorOn(0x6F95C2) != 0x22262B {
+		t.Error("the label colors on the bars")
 	}
 }
 
@@ -126,7 +157,7 @@ func TestBarChartBarsHaveTheirOwnColorsAndLabelsInsideWithGroupedDigits(t *testi
 	if got := testFillColorBefore(content, "6,650"); got != "1 1 1 rg" {
 		t.Errorf("the label inside the first bar is drawn with %q", got)
 	}
-	if got := testFillColorBefore(content, "sub"); got != "0.41 0.41 0.41 rg" {
+	if got := testFillColorBefore(content, "sub"); got != "0.37 0.41 0.45 rg" {
 		t.Errorf("the subtitle is drawn with %q", got)
 	}
 }

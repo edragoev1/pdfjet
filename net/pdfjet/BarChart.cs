@@ -33,6 +33,25 @@ public class BarChart : IDrawable {
 
     private const int NO_COLOR = -1;
 
+    // The look of the simple charts: ink for the title and the values, a
+    // muted gray for the rest of the text, light grid lines, and a palette
+    // whose colors differ in lightness, so that they stay apart in grayscale
+    // and for a reader who does not tell red from green.
+    private const int INK = SimpleBarChart.INK;
+    private const int MUTED = SimpleBarChart.MUTED;
+    private const int GRID = 0xE1E4E8;
+    private const int BASELINE = 0x8C96A3;
+    internal static readonly int[] PALETTE = {
+        0x1F3A5F,   // navy
+        0x6F95C2,   // steel blue
+        0xD08C3C,   // amber
+        0x6B8F71,   // sage
+        0xA7AFB8,   // gray
+        0x9C5B5B,   // brick
+        0x4F7A8C,   // slate
+        0xC9B458    // ochre
+    };
+
     private float x1;
     private float y1;
     private float w = 300f;
@@ -56,12 +75,12 @@ public class BarChart : IDrawable {
     private bool drawValueLabels = false;
     private bool valueLabelsInside = false;
     private bool drawLegend = true;
-    private bool groupingUsed = false;
+    private bool groupingUsed = true;
 
-    private int gridLineColor = Color.black;
-    private float gridLineWidth = 0f;
-    private String gridLineDashPattern = "[1 1] 0";
-    private float axisLineWidth = 0.5f;
+    private int gridLineColor = GRID;
+    private float gridLineWidth = 0.5f;
+    private String gridLineDashPattern = "[] 0";
+    private float axisLineWidth = 0.75f;
     private float chartBorderWidth = 0f;
     private float innerBorderWidth = 0f;
 
@@ -264,9 +283,10 @@ public class BarChart : IDrawable {
     }
 
     /// <summary>
-    /// Sets whether the value labels are written inside the bars, in white at
-    /// the end of each bar, instead of next to the bar ends. A bar too short
-    /// for its label gets it next to its end. The default is false.
+    /// Sets whether the value labels are written inside the bars, at the end
+    /// of each bar, in white or in ink, whichever reads on the bar's color,
+    /// instead of next to the bar ends. A bar too short for its label gets it
+    /// next to its end. The default is false.
     /// </summary>
     /// <param name="valueLabelsInside">true to write the values inside the bars.</param>
     /// <returns>this BarChart object.</returns>
@@ -277,7 +297,7 @@ public class BarChart : IDrawable {
 
     /// <summary>
     /// Sets whether the labels group the digits in thousands with a comma, as
-    /// in 6,650. The default is false.
+    /// in 6,650. The default is true.
     /// </summary>
     /// <param name="groupingUsed">true to group the digits.</param>
     /// <returns>this BarChart object.</returns>
@@ -298,8 +318,9 @@ public class BarChart : IDrawable {
     }
 
     /// <summary>
-    /// Sets the width of the grid lines. A width of 0 draws the thinnest line
-    /// a viewer shows; SetDrawGridLines(false) hides them.
+    /// Sets the width of the grid lines. The default is 0.5; a width of 0
+    /// draws the thinnest line a viewer shows, and SetDrawGridLines(false)
+    /// hides them.
     /// </summary>
     /// <param name="width">the line width.</param>
     /// <returns>this BarChart object.</returns>
@@ -308,7 +329,10 @@ public class BarChart : IDrawable {
         return this;
     }
 
-    /// <summary>Sets the color of the grid lines. The default is black. Color.transparent leaves it unchanged.</summary>
+    /// <summary>
+    /// Sets the color of the grid lines. The default is light gray, 0xE1E4E8.
+    /// Color.transparent leaves it unchanged.
+    /// </summary>
     /// <param name="color">the color as a 0xRRGGBB value, for example Color.lightgray.</param>
     /// <returns>this BarChart object.</returns>
     public BarChart SetGridLineColor(int color) {
@@ -319,7 +343,10 @@ public class BarChart : IDrawable {
         return this;
     }
 
-    /// <summary>Sets the dash pattern of the grid lines, for example "[1 1] 0".</summary>
+    /// <summary>
+    /// Sets the dash pattern of the grid lines, for example "[1 1] 0" for a
+    /// dotted line. The default is "[] 0", a solid line.
+    /// </summary>
     /// <param name="pattern">the dash pattern.</param>
     /// <returns>this BarChart object.</returns>
     public BarChart SetGridLineDashPattern(String pattern) {
@@ -327,7 +354,11 @@ public class BarChart : IDrawable {
         return this;
     }
 
-    /// <summary>Sets the width of the axis lines. The default is 0.5; 0 hides them.</summary>
+    /// <summary>
+    /// Sets the width of the axis line, the line at the base of the bars: at 0
+    /// on the value axis, or at its lowest value when the axis does not reach
+    /// 0. The default is 0.75; 0 hides it.
+    /// </summary>
     /// <param name="width">the line width.</param>
     /// <returns>this BarChart object.</returns>
     public BarChart SetAxisLineWidth(float width) {
@@ -463,6 +494,20 @@ public class BarChart : IDrawable {
                 }
             }
         }
+        // The totals of the stacks, written past their ends
+        bool totals = drawValueLabels && stacked && series.Count > 1;
+        float widestTotal = 0f;
+        for (int i = 0; totals && i < n; i++) {
+            float up = 0f;
+            foreach (Series s in series) {
+                if (i < s.values.Length && ChartScale.IsValue(s.values[i]) && s.values[i] >= 0f) {
+                    up += s.values[i];
+                }
+            }
+            if (up > 0f) {
+                widestTotal = Math.Max(widestTotal, f2.StringWidth(ValueLabel(up)));
+            }
+        }
         float widestCategory = 0f;
         foreach (String category in categories) {
             widestCategory = Math.Max(widestCategory, f2.StringWidth(category));
@@ -476,8 +521,9 @@ public class BarChart : IDrawable {
         float rightMargin = pad;
         float bottomMargin = 2.5f * bodyHeight;
         if (horizontal) {
-            rightMargin += Math.Max(widestAxisLabel / 2f, valueLabelsInside ? 0f : widestValueLabel + pad);
-        } else if (drawValueLabels && !stacked && !valueLabelsInside) {
+            float past = totals ? widestTotal + pad : (valueLabelsInside ? 0f : widestValueLabel + pad);
+            rightMargin += Math.Max(widestAxisLabel / 2f, past);
+        } else if (totals || (drawValueLabels && !stacked && !valueLabelsInside)) {
             topMargin += bodyHeight;
         }
         float x5 = x1 + leftMargin;
@@ -491,19 +537,17 @@ public class BarChart : IDrawable {
         // as a Stamp keeps them.
         page.SaveGraphicsState();
 
-        // Title, the subtitle and then the legend under it
-        page.SetBrushColor(Color.black);
-        page.DrawString(f1, f1.GetSize(), title, x1 + (w - f1.StringWidth(title)) / 2f, titleBaseline);
+        // Title, the subtitle and then the legend under it, at the left
+        DrawText(page, f1, title, x1, titleBaseline, INK);
         if (subtitle.Length > 0) {
-            page.DrawString(f2, f2.GetSize(), subtitle, x1 + (w - f2.StringWidth(subtitle)) / 2f,
-                    titleBaseline + subtitleHeight, Util.ToRGB(Color.dimgray), null);
+            DrawText(page, f2, subtitle, x1, titleBaseline + subtitleHeight, MUTED);
         }
         if (legend) {
             DrawLegend(page, titleBaseline + subtitleHeight + 1.5f * bodyHeight);
         }
 
         if (chartBorderWidth > 0f) {
-            page.SetPenColor(Color.black);
+            page.SetPenColor(BASELINE);
             page.SetPenWidth(chartBorderWidth);
             page.SetDefaultStrokeDashPattern();
             page.DrawRect(x1, y1, w, h);
@@ -526,7 +570,7 @@ public class BarChart : IDrawable {
                     GridLine(page, x, y5, x, y8);
                 }
                 if (labeled) {
-                    page.DrawString(f2, f2.GetSize(), label, x - f2.StringWidth(label) / 2f, y8 + bodyHeight);
+                    DrawText(page, f2, label, x - f2.StringWidth(label) / 2f, y8 + bodyHeight, MUTED);
                 }
             } else {
                 float y = y8 - (v - vMin) * (y8 - y5) / (vMax - vMin);
@@ -534,7 +578,7 @@ public class BarChart : IDrawable {
                     GridLine(page, x5, y, x6, y);
                 }
                 if (labeled) {
-                    page.DrawString(f2, f2.GetSize(), label, x5 - pad - f2.StringWidth(label), y + ascent / 2f);
+                    DrawText(page, f2, label, x5 - pad - f2.StringWidth(label), y + ascent / 2f, MUTED);
                 }
             }
         }
@@ -548,13 +592,12 @@ public class BarChart : IDrawable {
             float slotStart = (horizontal ? y5 : x5) + i * slot;
             float groupStart = slotStart + slot * groupGap / 2f;
             String category = i < categories.Count ? categories[i] : "";
-            page.SetBrushColor(Color.black);
             if (horizontal) {
-                page.DrawString(f2, f2.GetSize(), category, x5 - pad - f2.StringWidth(category),
-                        slotStart + slot / 2f + ascent / 2f);
+                DrawText(page, f2, category, x5 - pad - f2.StringWidth(category),
+                        slotStart + slot / 2f + ascent / 2f, MUTED);
             } else {
-                page.DrawString(f2, f2.GetSize(), category, slotStart + (slot - f2.StringWidth(category)) / 2f,
-                        y8 + bodyHeight);
+                DrawText(page, f2, category, slotStart + (slot - f2.StringWidth(category)) / 2f,
+                        y8 + bodyHeight, MUTED);
             }
             float up = 0f;      // the stacked values above 0 so far
             float down = 0f;    // the stacked values below 0 so far
@@ -574,77 +617,82 @@ public class BarChart : IDrawable {
                 from = Math.Min(Math.Max(from, vMin), vMax);
                 to = Math.Min(Math.Max(to, vMin), vMax);
                 float barStart = stacked ? groupStart : groupStart + j * barWidth * (1f + barGap);
-                page.SetBrushColor(BarColor(s, j, i));
+                int color = BarColor(s, j, i);
+                page.SetBrushColor(color);
                 String label = drawValueLabels ? ValueLabel(s.values[i]) : null;
+                int on = LabelColorOn(color);
                 if (horizontal) {
                     float x0 = x5 + (from - vMin) * (x6 - x5) / (vMax - vMin);
                     float x = x5 + (to - vMin) * (x6 - x5) / (vMax - vMin);
                     page.FillRect(Math.Min(x0, x), barStart, Math.Abs(x - x0), barWidth);
+                    float baseline = barStart + barWidth / 2f + ascent / 2f;
                     if (label != null && stacked) {
                         if (Math.Abs(x - x0) >= f2.StringWidth(label) + pad) {
-                            page.SetBrushColor(Color.black);
-                            page.DrawString(f2, f2.GetSize(), label,
-                                    Math.Min(x0, x) + (Math.Abs(x - x0) - f2.StringWidth(label)) / 2f,
-                                    barStart + barWidth / 2f + ascent / 2f);
+                            DrawText(page, f2, label,
+                                    Math.Min(x0, x) + (Math.Abs(x - x0) - f2.StringWidth(label)) / 2f, baseline, on);
                         }
                     } else if (label != null && valueLabelsInside && Math.Abs(x - x0) >= f2.StringWidth(label) + pad) {
-                        page.DrawString(f2, f2.GetSize(), label,
-                                to >= baseValue ? x - pad / 2f - f2.StringWidth(label) : x + pad / 2f,
-                                barStart + barWidth / 2f + ascent / 2f, Util.ToRGB(Color.white), null);
+                        DrawText(page, f2, label,
+                                to >= baseValue ? x - pad / 2f - f2.StringWidth(label) : x + pad / 2f, baseline, on);
                     } else if (label != null) {
-                        page.SetBrushColor(Color.black);
-                        page.DrawString(f2, f2.GetSize(), label,
-                                to >= baseValue ? x + pad / 2f : x - pad / 2f - f2.StringWidth(label),
-                                barStart + barWidth / 2f + ascent / 2f);
+                        DrawText(page, f2, label,
+                                to >= baseValue ? x + pad / 2f : x - pad / 2f - f2.StringWidth(label), baseline, INK);
                     }
                 } else {
                     float y0 = y8 - (from - vMin) * (y8 - y5) / (vMax - vMin);
                     float y = y8 - (to - vMin) * (y8 - y5) / (vMax - vMin);
                     page.FillRect(barStart, Math.Min(y0, y), barWidth, Math.Abs(y - y0));
+                    float x = barStart + (barWidth - (label != null ? f2.StringWidth(label) : 0f)) / 2f;
                     if (label != null && stacked) {
                         if (Math.Abs(y - y0) >= bodyHeight) {
-                            page.SetBrushColor(Color.black);
-                            page.DrawString(f2, f2.GetSize(), label, barStart + (barWidth - f2.StringWidth(label)) / 2f,
-                                    (y + y0) / 2f + ascent / 2f);
+                            DrawText(page, f2, label, x, (y + y0) / 2f + ascent / 2f, on);
                         }
                     } else if (label != null && valueLabelsInside && Math.Abs(y - y0) >= bodyHeight + pad) {
-                        page.DrawString(f2, f2.GetSize(), label, barStart + (barWidth - f2.StringWidth(label)) / 2f,
-                                to >= baseValue ? y + ascent + pad / 2f : y - pad / 2f, Util.ToRGB(Color.white), null);
+                        DrawText(page, f2, label, x, to >= baseValue ? y + ascent + pad / 2f : y - pad / 2f, on);
                     } else if (label != null) {
-                        page.SetBrushColor(Color.black);
-                        page.DrawString(f2, f2.GetSize(), label, barStart + (barWidth - f2.StringWidth(label)) / 2f,
-                                to >= baseValue ? y - pad / 2f : y + ascent + pad / 2f);
+                        DrawText(page, f2, label, x, to >= baseValue ? y - pad / 2f : y + ascent + pad / 2f, INK);
                     }
+                }
+            }
+            // The total of a stack above it, or past its end
+            if (totals && up > 0f) {
+                String total = ValueLabel(up);
+                float groupMiddle = groupStart + groupWidth / 2f;
+                if (horizontal) {
+                    float x = x5 + (Math.Min(up, vMax) - vMin) * (x6 - x5) / (vMax - vMin);
+                    DrawText(page, f2, total, x + pad / 2f, groupMiddle + ascent / 2f, INK);
+                } else {
+                    float y = y8 - (Math.Min(up, vMax) - vMin) * (y8 - y5) / (vMax - vMin);
+                    DrawText(page, f2, total, groupMiddle - f2.StringWidth(total) / 2f, y - pad / 2f, INK);
                 }
             }
         }
 
-        // Axis lines: along the labels and at the base of the bars
-        page.SetPenColor(Color.black);
+        // The axis line at the base of the bars, which is the zero line of
+        // negative values
         page.SetDefaultStrokeDashPattern();
         if (axisLineWidth > 0f) {
+            page.SetPenColor(BASELINE);
             page.SetPenWidth(axisLineWidth);
             if (horizontal) {
                 float x0 = x5 + (baseValue - vMin) * (x6 - x5) / (vMax - vMin);
-                page.DrawLine(x5, y8, x6, y8);
                 page.DrawLine(x0, y5, x0, y8);
             } else {
                 float y0 = y8 - (baseValue - vMin) * (y8 - y5) / (vMax - vMin);
-                page.DrawLine(x5, y5, x5, y8);
                 page.DrawLine(x5, y0, x6, y0);
             }
         }
         if (innerBorderWidth > 0f) {
+            page.SetPenColor(BASELINE);
             page.SetPenWidth(innerBorderWidth);
             page.DrawRect(x5, y5, x6 - x5, y8 - y5);
         }
 
         // Axis titles
-        page.SetBrushColor(Color.black);
         page.SetTextRotation(-90);
-        page.DrawString(f2, f2.GetSize(), yAxisTitle, x1 + bodyHeight, y8 - ((y8 - y5) - f2.StringWidth(yAxisTitle)) / 2f);
+        DrawText(page, f2, yAxisTitle, x1 + bodyHeight, y8 - ((y8 - y5) - f2.StringWidth(yAxisTitle)) / 2f, MUTED);
         page.SetTextRotation(0);
-        page.DrawString(f2, f2.GetSize(), xAxisTitle, x5 + ((x6 - x5) - f2.StringWidth(xAxisTitle)) / 2f, y2 - bodyHeight / 2f);
+        DrawText(page, f2, xAxisTitle, x5 + ((x6 - x5) - f2.StringWidth(xAxisTitle)) / 2f, y2 - bodyHeight / 2f, MUTED);
 
         page.RestoreGraphicsState();
         page.SetFigureBoundingBox(x1, y1, w, h);
@@ -685,7 +733,7 @@ public class BarChart : IDrawable {
         if (s.colors != null && index >= 0 && index < s.colors.Length) {
             return s.colors[index];
         }
-        return s.color == NO_COLOR ? ChartScale.DEFAULT_PALETTE[seriesIndex % ChartScale.DEFAULT_PALETTE.Length] : s.color;
+        return s.color == NO_COLOR ? PALETTE[seriesIndex % PALETTE.Length] : s.color;
     }
 
     /// <summary>Formats the value written at the end of a bar.</summary>
@@ -703,7 +751,23 @@ public class BarChart : IDrawable {
         return groupingUsed ? ChartScale.GroupDigits(label) : label;
     }
 
-    /// <summary>Draws one dotted grid line.</summary>
+    /// <summary>Draws the text in the font at its size, in the color.</summary>
+    private static void DrawText(Page page, Font font, String text, float x, float y, int color) {
+        page.DrawString(font, font.GetSize(), text, x, y, Util.ToRGB(color), null);
+    }
+
+    /// <summary>
+    /// Returns the color of a label on a bar of the color: white on a dark bar,
+    /// ink on a light one, by the bar's luminance.
+    /// </summary>
+    internal static int LabelColorOn(int color) {
+        int r = (color >> 16) & 0xFF;
+        int g = (color >> 8) & 0xFF;
+        int b = color & 0xFF;
+        return (299 * r + 587 * g + 114 * b) < 140000 ? Color.white : INK;
+    }
+
+    /// <summary>Draws one grid line.</summary>
     private void GridLine(Page page, float xa, float ya, float xb, float yb) {
         page.SetPenColor(gridLineColor);
         page.SetPenWidth(gridLineWidth);
@@ -711,20 +775,11 @@ public class BarChart : IDrawable {
         page.DrawLine(xa, ya, xb, yb);
     }
 
-    /// <summary>Draws the legend centered on the chart, with a swatch before each series name.</summary>
+    /// <summary>Draws the legend at the left under the title, with a swatch before each series name.</summary>
     private void DrawLegend(Page page, float baseline) {
         float swatch = f2.GetAscent();
         float gap = swatch / 2f;
-        float width = 0f;
-        int entries = 0;
-        foreach (Series s in series) {
-            if (s.name.Length > 0) {
-                width += swatch + gap + f2.StringWidth(s.name);
-                entries++;
-            }
-        }
-        width += (entries - 1) * f2.GetBodyHeight();
-        float x = x1 + (w - width) / 2f;
+        float x = x1;
         for (int j = 0; j < series.Count; j++) {
             Series s = series[j];
             if (s.name.Length == 0) {
@@ -733,8 +788,7 @@ public class BarChart : IDrawable {
             page.SetBrushColor(BarColor(s, j, -1));
             page.FillRect(x, baseline - swatch, swatch, swatch);
             x += swatch + gap;
-            page.SetBrushColor(Color.black);
-            page.DrawString(f2, f2.GetSize(), s.name, x, baseline);
+            DrawText(page, f2, s.name, x, baseline, INK);
             x += f2.StringWidth(s.name) + f2.GetBodyHeight();
         }
     }
