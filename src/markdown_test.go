@@ -201,6 +201,37 @@ func TestMarkdownATableCellInOneEmphasisIsDrawnInItsFont(t *testing.T) {
 	}
 }
 
+// A cell that starts with a check mark is green, as a table of features marks
+// what each has; a header and other cells are not.
+func TestMarkdownATableCellThatStartsWithACheckMarkIsInTheCheckColor(t *testing.T) {
+	testAllowCoreFonts(t)
+	green := testFillOf(0x1A7F37)
+	red := testFillOf(0xFF0000)
+	table := "| Feature | \u2713 |\n|---|---|\n| Tables | \u2713 |\n| SVG | \u2713 with a module |\n| Charts | no |"
+	content := testDrawMarkdown(table, "").contents[0]
+	if n := strings.Count(content, green); n != 2 {
+		t.Errorf("%d cells are green, not the two that start with a check mark", n)
+	}
+	if strings.Contains(testDrawMarkdown("| Feature | A |\n|---|---|\n| Tables | yes |", "").contents[0], green) {
+		t.Error("a cell with no check mark is green")
+	}
+	// The color is the check color, which colors the task boxes too.
+	content = testDrawMarkdownWith(table, "", func(markdown *Markdown) {
+		markdown.SetCheckColor(0xFF0000)
+	}).contents[0]
+	if !strings.Contains(content, red) || strings.Contains(content, green) {
+		t.Error("the cells are not in the check color that was set")
+	}
+}
+
+// testFillOf returns how a fill color is written: the content of a page with
+// only that color set.
+func testFillOf(c int32) string {
+	page := NewPageDetached(testNewPDF(), letter.Portrait())
+	page.SetBrushColor(c)
+	return testContent(page)
+}
+
 // The right-aligned header of the last column is drawn at the right end of the
 // table: near the text's right margin, 72 pt from the edge of the page, only
 // when the tables are as wide as the text.

@@ -7,6 +7,7 @@
 package com.pdfjet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -230,6 +231,31 @@ class MarkdownTest {
             assertTrue(content.contains("<" + TestSupport.hex("S") + ">"), "the header row is on every page");
         }
         assertTrue(drawn.text.contains(TestSupport.hex("14400")));
+    }
+
+    @Test
+    void aTableCellThatStartsWithACheckMarkIsInTheCheckColor() throws Exception {
+        TestSupport.allowCoreFonts(true); // What the document tags, in a core font
+        // A cell that starts with a check mark is green, as a table of
+        // features marks what each has; a header and other cells are not.
+        String green = TestSupport.content(fillOf(0x1A7F37));
+        String red = TestSupport.content(fillOf(0xFF0000));
+        String table = "| Feature | \u2713 |\n|---|---|\n| Tables | \u2713 |\n| SVG | \u2713 with a module |\n| Charts | no |";
+        String content = draw(table, null).contents.get(0);
+        assertEquals(2, content.split(java.util.regex.Pattern.quote(green), -1).length - 1,
+                "the two cells that start with a check mark are green");
+        assertFalse(draw("| Feature | A |\n|---|---|\n| Tables | yes |", null).contents.get(0).contains(green));
+        // The color is the check color, which colors the task boxes too.
+        content = draw(table, null, markdown -> markdown.setCheckColor(0xFF0000)).contents.get(0);
+        assertTrue(content.contains(red) && !content.contains(green));
+    }
+
+    // A page with only the fill color drawn: how the color is written.
+    private static Page fillOf(int color) throws Exception {
+        PDF pdf = new PDF(new ByteArrayOutputStream());
+        Page page = new Page(pdf, Letter.PORTRAIT, Page.DETACHED);
+        page.setBrushColor(color);
+        return page;
     }
 
     @Test

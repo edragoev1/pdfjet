@@ -70,7 +70,7 @@ type Markdown struct {
 	headingFont     *Font
 	headingColor    int32 // color.Transparent leaves the headings in the color of the text
 	fullWidthTables bool  // Tables as wide as the text, or as their text
-	checkColor      int32 // Of the box of a task that is done
+	checkColor      int32 // Of the box of a task that is done, and of a check mark in a table
 	marginLeft      float32
 	marginTop       float32
 	marginRight     float32
@@ -154,8 +154,10 @@ func (markdown *Markdown) SetLinkColor(linkColor int32) *Markdown {
 }
 
 // SetCheckColor sets the color of the box of a task that is done, - [x] in
-// the Markdown, as a 0xRRGGBB value, which has a white check mark in it. It
-// is green, 0x1A7F37, unless it is set; color.Transparent leaves it as it is.
+// the Markdown, as a 0xRRGGBB value, which has a white check mark in it, and
+// of the text of a table cell that starts with a check mark, U+2713, as a
+// table of features marks what each has. It is green, 0x1A7F37, unless it is
+// set; color.Transparent leaves it as it is.
 func (markdown *Markdown) SetCheckColor(checkColor int32) *Markdown {
 	if checkColor == color.Transparent {
 		return markdown
@@ -647,9 +649,14 @@ func (markdown *Markdown) drawRule(x, width float32) {
 	markdown.atTop = false
 }
 
+// markdownCheckMark starts a table cell drawn in the check color.
+const markdownCheckMark = "\u2713"
+
 // drawTable draws a table of the text of the cells, with the header row in
 // bold on a light background, as wide as its text or as the width when it
-// would be wider, and on the next pages for the rows that do not fit.
+// would be wider, and on the next pages for the rows that do not fit. A cell
+// that starts with a check mark is in the check color, as a table of
+// features marks what each has.
 func (markdown *Markdown) drawTable(block *markdownBlock, x, width float32) {
 	markdown.gap(float32(markdown.size() * 0.75))
 	rows := make([][]*Cell, 0, len(block.rows))
@@ -661,8 +668,12 @@ func (markdown *Markdown) drawTable(block *markdownBlock, x, width float32) {
 			if r == 0 {
 				font = markdown.bold
 			}
-			cell := NewCell(font, markdown.plainText(text))
+			plain := markdown.plainText(text)
+			cell := NewCell(font, plain)
 			cell.SetTextAlignment(block.alignments[c])
+			if r > 0 && strings.HasPrefix(plain, markdownCheckMark) {
+				cell.SetTextColor(markdown.checkColor)
+			}
 			row = append(row, cell)
 		}
 		rows = append(rows, row)

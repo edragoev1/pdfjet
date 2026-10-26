@@ -39,6 +39,7 @@ public class Markdown {
     private const int QUOTE_BAR_COLOR = 0xB0B6BF;
     private const int TABLE_HEADER_BACKGROUND = 0xEEF0F3;
     private const int TASK_BOX_COLOR = 0x8C959F;
+    private const String CHECK_MARK = "\u2713";
     // The least width, in sizes of the text, that quotes and lists nested in
     // each other leave their text: deeper ones are not indented further, so
     // that the text is never narrower than nothing.
@@ -53,7 +54,7 @@ public class Markdown {
     private Font headingFont;
     private int headingColor = Color.transparent;   // Leaves the headings in the color of the text
     private bool fullWidthTables = false;           // Tables as wide as the text, or as their text
-    private int checkColor = 0x1A7F37;              // Of the box of a task that is done
+    private int checkColor = 0x1A7F37;              // Of the box of a task that is done, and of a check mark in a table
     private float marginLeft = 72f;
     private float marginTop = 72f;
     private float marginRight = 72f;
@@ -144,9 +145,10 @@ public class Markdown {
 
     /// <summary>
     /// Sets the color of the box of a task that is done, - [x] in the
-    /// Markdown, as a 0xRRGGBB value, which has a white check mark in it. It
-    /// is green, 0x1A7F37, unless it is set; Color.transparent leaves it as
-    /// it is.
+    /// Markdown, as a 0xRRGGBB value, which has a white check mark in it, and
+    /// of the text of a table cell that starts with a check mark, U+2713, as a
+    /// table of features marks what each has. It is green, 0x1A7F37, unless it
+    /// is set; Color.transparent leaves it as it is.
     /// </summary>
     /// <param name="checkColor">the color.</param>
     /// <returns>this Markdown.</returns>
@@ -598,7 +600,9 @@ public class Markdown {
 
     // A table of the text of the cells, with the header row in bold on a
     // light background, as wide as its text or as the width when it would be
-    // wider, and on the next pages for the rows that do not fit.
+    // wider, and on the next pages for the rows that do not fit. A cell that
+    // starts with a check mark is in the check color, as a table of features
+    // marks what each has.
     private void DrawTable(MarkdownParser.Block block, float x, float width) {
         Gap(Size() * 0.75f);
         List<List<Cell>> rows = new List<List<Cell>>();
@@ -606,8 +610,12 @@ public class Markdown {
             List<Cell> row = new List<Cell>();
             for (int c = 0; c < block.rows[r].Count; c++) {
                 String text = block.rows[r][c];
-                Cell cell = new Cell((r == 0) ? bold : CellFont(text), PlainText(text));
+                String plain = PlainText(text);
+                Cell cell = new Cell((r == 0) ? bold : CellFont(text), plain);
                 cell.SetTextAlignment(block.alignments[c]);
+                if (r > 0 && plain.StartsWith(CHECK_MARK, StringComparison.Ordinal)) {
+                    cell.SetTextColor(checkColor);
+                }
                 row.Add(cell);
             }
             rows.Add(row);

@@ -183,6 +183,30 @@ public class MarkdownTest {
     }
 
     [Fact]
+    public void ATableCellThatStartsWithACheckMarkIsInTheCheckColor() {
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
+        // A cell that starts with a check mark is green, as a table of
+        // features marks what each has; a header and other cells are not.
+        String green = FillOf(0x1A7F37);
+        String red = FillOf(0xFF0000);
+        String table = "| Feature | \u2713 |\n|---|---|\n| Tables | \u2713 |\n| SVG | \u2713 with a module |\n| Charts | no |";
+        String content = Draw(table, null).contents[0];
+        Assert.Equal(2, content.Split(green).Length - 1);
+        Assert.DoesNotContain(green, Draw("| Feature | A |\n|---|---|\n| Tables | yes |", null).contents[0]);
+        // The color is the check color, which colors the task boxes too.
+        content = Draw(table, null, markdown => markdown.SetCheckColor(0xFF0000)).contents[0];
+        Assert.Contains(red, content);
+        Assert.DoesNotContain(green, content);
+    }
+
+    // How a fill color is written: the content of a page with only that color set.
+    private static String FillOf(int color) {
+        Page page = new Page(new PDF(new MemoryStream()), Letter.PORTRAIT, Page.DETACHED);
+        page.SetBrushColor(color);
+        return TestSupport.Content(page);
+    }
+
+    [Fact]
     public void ATableIsAsWideAsTheTextWhenSet() {
         using IDisposable coreFonts = TestSupport.AllowCoreFonts();
         // The right-aligned header of the last column is drawn at the right

@@ -162,6 +162,16 @@ There is no 9.1.3: what was done for it is in 9.1.5 (the owner, 26 October
   800 one-page documents with an embedded font in 4 threads take 274 ms,
   where they took 626; one thread is as fast as before.
 
+- Markdown, the four ports: a table cell that starts with a check mark,
+  U+2713, is drawn in the check color, the green of a task that is done
+  unless `setCheckColor` (Go and C# `SetCheckColor`) sets another, as a
+  table of features marks what each has: `| Tables | ✓ |`, or
+  `| SVG | ✓ with a module |`. The header row and the other cells are as
+  before.
+  Behavior change: a table cell of a document that already starts with a
+  check mark was black and is green; a status table's `| ✓ shipped |` is
+  drawn in 0x1A7F37.
+
 ### Deprecated
 - `Chart` and `Series`, in the four ports: SimpleLineChart draws lines over
   time or over categories (Example_25), and SimpleScatterChart points on

@@ -150,6 +150,27 @@ import Testing
     // The right-aligned header of the last column is drawn at the right end of
     // the table: near the text's right margin, 72 pt from the edge of the
     // page, only when the tables are as wide as the text.
+    // A cell that starts with a check mark is green, as a table of features
+    // marks what each has; a header and other cells are not.
+    @Test func aTableCellThatStartsWithACheckMarkIsInTheCheckColor() throws {
+        let green = fillOf(0x1A7F37)
+        let red = fillOf(0xFF0000)
+        let table = "| Feature | \u{2713} |\n|---|---|\n| Tables | \u{2713} |\n| SVG | \u{2713} with a module |\n| Charts | no |"
+        var content = try MarkdownTests.draw(table, nil).contents[0]
+        #expect(content.components(separatedBy: green).count - 1 == 2, "the two cells that start with a check mark are green")
+        #expect(!(try MarkdownTests.draw("| Feature | A |\n|---|---|\n| Tables | yes |", nil).contents[0].contains(green)))
+        // The color is the check color, which colors the task boxes too.
+        content = try MarkdownTests.draw(table, nil) { $0.setCheckColor(0xFF0000) }.contents[0]
+        #expect(content.contains(red) && !content.contains(green))
+    }
+
+    // How a fill color is written: the content of a page with only that color set.
+    private func fillOf(_ color: Int32) -> String {
+        let page = Page(MemoryPDF(Compliance.PDF_1_7).pdf, Letter.PORTRAIT, Page.DETACHED)
+        page.setBrushColor(color)
+        return TestSupport.content(page)
+    }
+
     @Test func aTableIsAsWideAsTheTextWhenSet() throws {
         let text = "| N | V |\n|---|---:|\n| a | 15 |"
         let narrow = TestSupport.positionOf(try MarkdownTests.draw(text, nil).contents[0], "V")[0]

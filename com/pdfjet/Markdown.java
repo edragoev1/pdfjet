@@ -36,6 +36,7 @@ public class Markdown {
     private static final int QUOTE_BAR_COLOR = 0xB0B6BF;
     private static final int TABLE_HEADER_BACKGROUND = 0xEEF0F3;
     private static final int TASK_BOX_COLOR = 0x8C959F;
+    private static final String CHECK_MARK = "\u2713";
     // The least width, in sizes of the text, that quotes and lists nested in
     // each other leave their text: deeper ones are not indented further, so
     // that the text is never narrower than nothing.
@@ -50,7 +51,7 @@ public class Markdown {
     private Font headingFont;
     private int headingColor = Color.transparent;  // Leaves the headings in the color of the text
     private boolean fullWidthTables = false;        // Tables as wide as the text, or as their text
-    private int checkColor = 0x1A7F37;              // Of the box of a task that is done
+    private int checkColor = 0x1A7F37;              // Of the box of a task that is done, and of a check mark in a table
     private float marginLeft = 72f;
     private float marginTop = 72f;
     private float marginRight = 72f;
@@ -145,8 +146,10 @@ public class Markdown {
 
     /**
      * Sets the color of the box of a task that is done, - [x] in the
-     * Markdown, which has a white check mark in it. It is green, 0x1A7F37,
-     * unless it is set; Color.transparent leaves it as it is.
+     * Markdown, which has a white check mark in it, and of the text of a table
+     * cell that starts with a check mark, U+2713, as a table of features
+     * marks what each has. It is green, 0x1A7F37, unless it is set;
+     * Color.transparent leaves it as it is.
      *
      * @param checkColor the color as a 0xRRGGBB value.
      * @return this Markdown.
@@ -597,7 +600,9 @@ public class Markdown {
 
     // A table of the text of the cells, with the header row in bold on a
     // light background, as wide as its text or as the width when it would be
-    // wider, and on the next pages for the rows that do not fit.
+    // wider, and on the next pages for the rows that do not fit. A cell that
+    // starts with a check mark is in the check color, as a table of features
+    // marks what each has.
     private void drawTable(MarkdownParser.Block block, float x, float width) throws Exception {
         gap(size() * 0.75f);
         List<List<Cell>> rows = new ArrayList<List<Cell>>();
@@ -605,8 +610,12 @@ public class Markdown {
             List<Cell> row = new ArrayList<Cell>();
             for (int c = 0; c < block.rows.get(r).size(); c++) {
                 String text = block.rows.get(r).get(c);
-                Cell cell = new Cell((r == 0) ? bold : cellFont(text), plainText(text));
+                String plain = plainText(text);
+                Cell cell = new Cell((r == 0) ? bold : cellFont(text), plain);
                 cell.setTextAlignment(block.alignments.get(c));
+                if (r > 0 && plain.startsWith(CHECK_MARK)) {
+                    cell.setTextColor(checkColor);
+                }
                 row.add(cell);
             }
             rows.add(row);
