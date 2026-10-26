@@ -2191,6 +2191,20 @@ public final class PDF {
     }
 
     ///
+    /// Sets whether the content of the pages is compressed. It is unless set.
+    /// Uncompressed content is larger, and can be read in a text editor, to see
+    /// what a page draws. The fonts, the images and the embedded files are
+    /// compressed either way. A page is compressed when it is written, so set it
+    /// before the pages are added.
+    /// - Parameter compression: false to write the content of the pages uncompressed.
+    ///
+    @discardableResult
+    public func setCompression(_ compression: Bool) -> PDF {
+        self.contentStreamsCompression = compression
+        return self
+    }
+
+    ///
     /// Set the "Title" document property of the PDF file.
     /// - Parameter title: The title of this document.
     ///

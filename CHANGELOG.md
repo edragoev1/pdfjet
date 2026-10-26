@@ -116,6 +116,12 @@ There is no 9.1.3: what was done for it is in 9.1.5 (the owner, 26 October
   rows alone. The lines are drawn unless it is set, so a BigTable draws as
   before.
 
+- All four ports: `PDF.setCompression(false)` (Go and C# `SetCompression`)
+  writes the content of the pages uncompressed, larger and readable in a text
+  editor, to see what a page draws; encrypted documents too. The fonts,
+  images and embedded files are compressed either way. The content is
+  compressed unless it is set, so a PDF is written as before.
+
 ### Changed
 - Java: everything is deflated at level 5 of zlib instead of the default 6:
   the content of the pages, the fonts, the images and the embedded files.

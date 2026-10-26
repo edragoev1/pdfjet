@@ -2632,6 +2632,16 @@ func (pdf *PDF) SetLanguage(language string) *PDF {
 	return pdf
 }
 
+// SetCompression sets whether the content of the pages is compressed. It is
+// unless set. Uncompressed content is larger, and can be read in a text editor,
+// to see what a page draws. The fonts, the images and the embedded files are
+// compressed either way. A page is compressed when it is written, so set it
+// before the pages are added.
+func (pdf *PDF) SetCompression(compression bool) *PDF {
+	pdf.contentStreamsCompression = compression
+	return pdf
+}
+
 // SetTitle sets the "Title" document property of the PDF file.
 func (pdf *PDF) SetTitle(title string) *PDF {
 	pdf.title = cleanText(title)
