@@ -7,7 +7,10 @@
 import Foundation
 
 ///
-/// Used to create table objects and draw them on a page.
+/// Used to create table objects and draw them on a page. A Table is for cells that
+/// need more than a line of text: text that wraps, an image, a barcode or a chart in
+/// a cell, cells that span columns or rows, page totals, a style for each cell. For a
+/// long table of plain one-line rows, BigTable is faster and keeps its memory flat.
 ///
 /// Please see Example_20.
 ///

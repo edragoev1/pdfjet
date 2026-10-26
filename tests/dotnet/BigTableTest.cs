@@ -177,6 +177,86 @@ public sealed class BigTableTest : IDisposable {
     }
 
     [Fact]
+    public void TheVerticalPaddingMakesTallerRowsOnMorePages() {
+        // The rows are taller by the padding above and below their text, so
+        // the table takes more pages, and the footer counts them all.
+        int[] counts = new int[2];
+        float[] paddings = {0f, 3f};
+        for (int i = 0; i < 2; i++) {
+            PDF pdf = TestSupport.NewPDF();
+            Font font = TestSupport.Helvetica(pdf);
+            BigTable table = new BigTable(pdf, font, font, Letter.PORTRAIT)
+                    .SetNumberOfColumns(3).SetTableData(Header, Rows())
+                    .SetVerticalPadding(paddings[i]).SetFooter("{page}/{pages}", null);
+            List<Page> pages = Draw(table);
+            counts[i] = pages.Count;
+            string last = TestSupport.Content(pages[pages.Count - 1]);
+            Assert.Contains(TestSupport.Hex(counts[i] + "/" + counts[i]), last);
+            Assert.Contains(TestSupport.Hex("n99"), last);
+        }
+        Assert.True(counts[1] > counts[0], counts[0] + " pages, then " + counts[1]);
+        // 0 is the table as it was.
+        Assert.Equal(DrawSmall(TestSupport.NewPDF(), table => {}),
+                DrawSmall(TestSupport.NewPDF(), table => table.SetVerticalPadding(0f)));
+        foreach (float bad in new float[] {-1f, float.NaN, float.PositiveInfinity}) {
+            PDF pdf = TestSupport.NewPDF();
+            Font font = TestSupport.Helvetica(pdf);
+            ArgumentException e = Assert.Throws<ArgumentException>(
+                    () => new BigTable(pdf, font, font, Letter.PORTRAIT).SetVerticalPadding(bad));
+            Assert.Equal("The vertical padding must be a number, 0 or more.", e.Message);
+        }
+    }
+
+    [Fact]
+    public void TheHeaderCanHaveAColorOfItsOwn() {
+        // With no shading, the header alone is filled, in its color.
+        string header = DrawSmall(TestSupport.NewPDF(),
+                table => table.SetShadingColor(Color.transparent).SetHeaderColor(0xFF0000));
+        Assert.Contains("1 0 0 rg\n", header);
+        Assert.Equal(1, Count(header, "\nf\n"));
+        // With the shading, the rows under it are shaded as before.
+        string shaded = DrawSmall(TestSupport.NewPDF(), table => table.SetHeaderColor(0xFF0000));
+        string defaults = DrawSmall(TestSupport.NewPDF(), table => {});
+        Assert.Equal(Count(defaults, "\nf\n"), Count(shaded, "\nf\n"));
+        Assert.Contains("1 0 0 rg\n", shaded);
+        Assert.Contains("0.94 0.94 0.94 rg\n", shaded);
+        // Color.transparent is the table as it was.
+        Assert.Equal(defaults, DrawSmall(TestSupport.NewPDF(), table => table.SetHeaderColor(Color.transparent)));
+    }
+
+    [Fact]
+    public void TheFooterCanBeSmallerThanItsFont() {
+        string small = DrawSmall(TestSupport.NewPDF(), table => table.SetFooterFontSize(7f));
+        string defaults = DrawSmall(TestSupport.NewPDF(), table => {});
+        Assert.Contains(" 7 Tf\n", small);
+        Assert.DoesNotContain(" 7 Tf\n", defaults);
+        foreach (float bad in new float[] {0f, -8f, float.NaN, float.PositiveInfinity}) {
+            PDF pdf = TestSupport.NewPDF();
+            Font font = TestSupport.Helvetica(pdf);
+            ArgumentException e = Assert.Throws<ArgumentException>(
+                    () => new BigTable(pdf, font, font, Letter.PORTRAIT).SetFooterFontSize(bad));
+            Assert.Equal("The size of the footer must be a number more than 0.", e.Message);
+        }
+    }
+
+    [Fact]
+    public void TheFooterCanSitAtTheBottomMargin() {
+        // The baseline of the footer is the offset above the bottom of the
+        // page, y = 30 in the coordinates of the PDF.
+        string raised = DrawSmall(TestSupport.NewPDF(), table => table.SetFooterOffset(30f));
+        string defaults = DrawSmall(TestSupport.NewPDF(), table => {});
+        Assert.Contains(" 30 Td\n", raised);
+        Assert.DoesNotContain(" 30 Td\n", defaults);
+        foreach (float bad in new float[] {-1f, float.NaN, float.PositiveInfinity}) {
+            PDF pdf = TestSupport.NewPDF();
+            Font font = TestSupport.Helvetica(pdf);
+            ArgumentException e = Assert.Throws<ArgumentException>(
+                    () => new BigTable(pdf, font, font, Letter.PORTRAIT).SetFooterOffset(bad));
+            Assert.Equal("The offset of the footer must be a number, 0 or more.", e.Message);
+        }
+    }
+
+    [Fact]
     public void LineBreaksInFieldsAreDrawnAsSpaces() {
         string file = tempDir.Write("breaks.csv", Encoding.UTF8.GetBytes(
                 "Name,City,Total\n\"n\n0\",\"City\r\n0\",1\nn1,City 1,2\n"));

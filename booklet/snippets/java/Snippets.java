@@ -477,6 +477,10 @@ public class Snippets {
         table.setTableData("data/Electric_Vehicle_Population_10_Pages.csv", ",");
         table.setLocation(0f, 0f);
         table.setBottomMargin(20f);
+        table.setVerticalPadding(1f);   // Room above and below each row
+        table.setHeaderColor(0xDDE3EA);
+        table.setFooterFontSize(8f);
+        table.setFooterOffset(10f);     // The footer's baseline, above the bottom
         table.complete();
     }
 

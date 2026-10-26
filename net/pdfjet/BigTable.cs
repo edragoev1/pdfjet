@@ -12,8 +12,11 @@ using System.Text;
 
 namespace PDFjet.NET {
     /// <summary>
-    /// A table for large amounts of data, read row by row from a delimited text file or
-    /// from an IEnumerable. Each page is written as soon as it is full, so the memory
+    /// A table of plain one-line rows of any length, a statement, a list or an export:
+    /// every row has one height and one style, and a field too wide for its column is
+    /// cut short. For text that wraps, drawables in cells, spanned cells or page totals,
+    /// use Table. The rows are read row by row from a delimited text file or from an
+    /// IEnumerable. Each page is written as soon as it is full, so the memory
     /// stays flat however many rows there are. A PDF/UA document holds no more than
     /// that either: the table is tagged as a table, and the structure elements of a
     /// page are written with it. What is left is one cross-reference entry for each of
@@ -44,15 +47,19 @@ namespace PDFjet.NET {
         private float[] clipped;
         private float bottomMargin = 20.0f;
         private float padding = 2.0f;
+        private float verticalPadding = 0f;     // Above and below the text of a row
         private bool highlightRow = true;
         // In a PDF/UA document the table is a Table element that the rows of
         // every page go on adding to; see DrawFieldsAndLine.
         private StructElement structElement = null;
         private float[] shadingColor = Rgb(0xF0F0F0);   // null for no shading
+        private float[] headerColor = null;             // null for the shading of every other row
         private float[] borderColor = Rgb(0xB0B0B0);    // null for no lines
         private bool verticalLines = true;              // false for the rows' lines alone
         private string footerText = "Page {page} of {pages}";
         private Font footerFont;                        // null for the header font
+        private float footerFontSize = 0f;              // 0 for the size of the footer's font
+        private float footerOffset = -1f;               // Below 0 for the ascent of the footer's font
         private IEnumerable<string[]> rows;
         private bool checkLineBreaks;   // The rows are not read from a file, which has no line breaks left
         private int[] columns = new int[0];     // The fields drawn, in the order they are drawn
@@ -245,6 +252,34 @@ namespace PDFjet.NET {
         }
 
         /// <summary>
+        /// Sets the space between the text of a row and the lines above and below it, the header
+        /// row's too. It is 0 by default, and a row is as tall as its font; a table with it takes
+        /// more pages.
+        /// </summary>
+        /// <param name="verticalPadding">the padding, 0 or more.</param>
+        /// <returns>this BigTable object.</returns>
+        public BigTable SetVerticalPadding(float verticalPadding) {
+            if (!(verticalPadding >= 0f) || float.IsInfinity(verticalPadding)) {
+                pdf.Fail(new ArgumentException("The vertical padding must be a number, 0 or more."));
+                return this;
+            }
+            this.verticalPadding = verticalPadding;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the background color of the header row, on every page. Unless it is set, the
+        /// header is shaded as the first of every other row, in the shading color.
+        /// Color.transparent goes back to that.
+        /// </summary>
+        /// <param name="color">the color as a 0xRRGGBB value, for example 0xE6E6E6.</param>
+        /// <returns>this BigTable object.</returns>
+        public BigTable SetHeaderColor(int color) {
+            this.headerColor = (color == Color.transparent) ? null : Rgb(color);
+            return this;
+        }
+
+        /// <summary>
         /// Sets the footer drawn at the bottom of every page, centered. In the text, {page} stands
         /// for the number of the page and {pages} for the number of pages. The footer is
         /// "Page {page} of {pages}" in the header font by default. A null or empty text leaves the
@@ -256,6 +291,37 @@ namespace PDFjet.NET {
         public BigTable SetFooter(string text, Font font) {
             this.footerText = text;
             this.footerFont = font;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the size of the footer's text, so that it can be smaller than the table's with the
+        /// same font. It is the size of the footer's font unless it is set.
+        /// </summary>
+        /// <param name="size">the size in points, more than 0.</param>
+        /// <returns>this BigTable object.</returns>
+        public BigTable SetFooterFontSize(float size) {
+            if (!(size > 0f) || float.IsInfinity(size)) {
+                pdf.Fail(new ArgumentException("The size of the footer must be a number more than 0."));
+                return this;
+            }
+            this.footerFontSize = size;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the distance from the bottom of the page to the baseline of the footer, as
+        /// Page.AddFooter takes it, so that the footer can sit at the bottom margin. It is the
+        /// ascent of the footer's font unless it is set, the footer just above the edge of the page.
+        /// </summary>
+        /// <param name="offset">the distance in points, 0 or more.</param>
+        /// <returns>this BigTable object.</returns>
+        public BigTable SetFooterOffset(float offset) {
+            if (!(offset >= 0f) || float.IsInfinity(offset)) {
+                pdf.Fail(new ArgumentException("The offset of the footer must be a number, 0 or more."));
+                return this;
+            }
+            this.footerOffset = offset;
             return this;
         }
 
@@ -308,7 +374,7 @@ namespace PDFjet.NET {
             pageNumber++;
             footerDrawn = false;
             page.SetPenWidth(0f);
-            this.yText = top + f1.ascent;
+            this.yText = top + verticalPadding + f1.ascent;
             this.highlightRow = true;
             // The header fields are the TH cells of the table the first time
             // they are drawn, and an artifact where they repeat on the next pages.
@@ -318,8 +384,8 @@ namespace PDFjet.NET {
                         page.structParent, StructElem.TABLE, null, true);
                 header = StructElem.TH;
             }
-            DrawFieldsAndLine(headerFields, f1, header);
-            this.yText += f1.descent + f2.ascent;
+            DrawFieldsAndLine(headerFields, f1, header, true);
+            this.yText += f1.descent + 2 * verticalPadding + f2.ascent;
             startNewPage = false;
         }
 
@@ -327,7 +393,7 @@ namespace PDFjet.NET {
         // header and the first row fit on it above its bottom margin.
         private bool StartsOnFirstPage() {
             return firstPage != null && firstPageY + f1.ascent + f1.descent + f2.ascent + f2.descent
-                    <= firstPage.GetHeight() - bottomMargin;
+                    + 4 * verticalPadding <= firstPage.GetHeight() - bottomMargin;
         }
 
         // Draws the footer of the page that was just finished, once. The page is
@@ -339,7 +405,15 @@ namespace PDFjet.NET {
                         .Replace("{pages}", pageCount.ToString(CultureInfo.InvariantCulture));
                 // The page number repeats on every page, which makes it an artifact:
                 // AddFooter marks it as a pagination artifact, a footer.
-                page.AddFooter(new TextLine(footerFont ?? f1, text));
+                TextLine footer = new TextLine(footerFont ?? f1, text);
+                if (footerFontSize > 0f) {
+                    footer.SetFontSize(footerFontSize);
+                }
+                if (footerOffset >= 0f) {
+                    page.AddFooter(footer, footerOffset);
+                } else {
+                    page.AddFooter(footer);
+                }
             }
             footerDrawn = true;
         }
@@ -349,8 +423,8 @@ namespace PDFjet.NET {
                 NewPage();
             }
 
-            DrawFieldsAndLine(fields, f2, StructElem.TD);
-            this.yText += f2.ascent + f2.descent;
+            DrawFieldsAndLine(fields, f2, StructElem.TD, false);
+            this.yText += f2.descent + 2 * verticalPadding + f2.ascent;
             if (this.yText > (this.page.GetHeight() - this.bottomMargin)) {
                 DrawTheVerticalLines();
                 DrawFooter();
@@ -364,12 +438,12 @@ namespace PDFjet.NET {
         // so the pages are counted when the table is drawn.
         private int CountPages() {
             float pageHeight = pageSize.GetHeight();
-            float yTop = this.y + f1.ascent + f1.descent + f2.ascent;
+            float yTop = this.y + f1.ascent + f1.descent + f2.ascent + 3 * verticalPadding;
             float yPos = yTop;
             if (StartsOnFirstPage()) {
                 // The first page can be of another size than the next ones.
                 pageHeight = firstPage.GetHeight();
-                yPos = firstPageY + f1.ascent + f1.descent + f2.ascent;
+                yPos = firstPageY + f1.ascent + f1.descent + f2.ascent + 3 * verticalPadding;
             }
             int count = 1;
             bool newPage = false;
@@ -380,7 +454,7 @@ namespace PDFjet.NET {
                     yPos = yTop;
                     newPage = false;
                 }
-                yPos += f2.ascent + f2.descent;
+                yPos += f2.descent + 2 * verticalPadding + f2.ascent;
                 if (yPos > (pageHeight - this.bottomMargin)) {
                     newPage = true;
                 }
@@ -393,10 +467,13 @@ namespace PDFjet.NET {
         // and the lines are artifacts. A row with no cell structure is drawn as
         // an artifact, which is what the header rows that repeat on the next
         // pages are.
-        private void DrawFieldsAndLine(string[] fields, Font font, StructElem? cellStructure) {
+        private void DrawFieldsAndLine(string[] fields, Font font, StructElem? cellStructure, bool header) {
             // The shading and the line above the text carry no meaning of their own.
             page.AddArtifactBMC();
-            if (this.highlightRow) {
+            if (header && headerColor != null) {
+                HighlightRow(page, font, headerColor);
+                this.highlightRow = false;
+            } else if (this.highlightRow) {
                 if (shadingColor != null) {
                     HighlightRow(page, font, shadingColor);
                 }
@@ -409,8 +486,8 @@ namespace PDFjet.NET {
             if (borderColor != null) {
                 float[] original = page.GetPenColor();
                 page.SetPenColor(borderColor);
-                page.MoveTo(vertLines[0], this.yText - font.ascent);
-                page.LineTo(vertLines[this.numberOfColumns], this.yText - font.ascent);
+                page.MoveTo(vertLines[0], this.yText - font.ascent - verticalPadding);
+                page.LineTo(vertLines[this.numberOfColumns], this.yText - font.ascent - verticalPadding);
                 page.StrokePath();
                 page.SetPenColor(original);
             }
@@ -466,8 +543,8 @@ namespace PDFjet.NET {
         private void HighlightRow(Page page, Font font, float[] color) {
             float[] original = page.GetBrushColor();
             page.SetBrushColor(color);
-            page.FillRectBetween(vertLines[0], this.yText - font.ascent,
-                    vertLines[this.numberOfColumns], this.yText + font.descent);
+            page.FillRectBetween(vertLines[0], this.yText - font.ascent - verticalPadding,
+                    vertLines[this.numberOfColumns], this.yText + font.descent + verticalPadding);
             page.SetBrushColor(original);
         }
 
@@ -484,10 +561,10 @@ namespace PDFjet.NET {
                     vertLines[i],
                     top,
                     vertLines[i],
-                    this.yText - f2.ascent);
+                    this.yText - f2.ascent - verticalPadding);
             }
-            page.MoveTo(vertLines[0], this.yText - f2.ascent);
-            page.LineTo(vertLines[this.numberOfColumns], this.yText - f2.ascent);
+            page.MoveTo(vertLines[0], this.yText - f2.ascent - verticalPadding);
+            page.LineTo(vertLines[this.numberOfColumns], this.yText - f2.ascent - verticalPadding);
             page.StrokePath();
             page.SetPenColor(original);
             page.AddEMC();

@@ -162,7 +162,7 @@ PDFjet is fast by design, and a few habits keep it that way.
 - Use TrueType fonts, such as the ones that come with PDFjet, IBMPlexSans.Regular and the rest. PDFjet embeds only the glyphs a document draws, so a page in a Chinese font is a few hundred kilobytes, not the megabytes of the whole font.
 - Add an image to the PDF once and draw it on as many pages as you like. The image data is written once.
 - Write to a buffered stream, and let PDFjet write each page out as the next one starts. A document of thousands of pages needs no more memory than one page.
-- For a table of tens of thousands of rows, use BigTable, which writes the rows as it reads them, rather than Table, which holds every cell until it is drawn. Example 24 writes 124,716 rows of a CSV file this way.
+- For a long table of plain one-line rows, a statement or an export, use BigTable, which writes the rows as it reads them, rather than Table, which holds every cell until it is drawn. Example 24 writes 124,716 rows of a CSV file this way. Table is for cells that need more: text that wraps, images, spanned cells, page totals.
 - Measure before you draw. drawOn returns where a component ends, and a text block drawn on no page, with drawOn(null), returns its size without drawing it, so a layout can decide where things go before it draws them.
 - Leave the compliance, PDF/UA or PDF/A, on from the start. Tagging costs little, and the document is accessible without a second pass.
 
@@ -279,7 +279,7 @@ setColumnWidthsInPercent and setWidth share the width of the table among its col
 setNumberOfFooterRows makes the last rows footer rows, drawn at the end of the table on every page. setPageSum makes a cell of a footer row the sum of its column on the page, and setRunningSum the sum of all the rows up to the end of the page, the total carried forward. setBroughtForwardSum puts the total of the pages before in a header row.
 
 @snippet big-table A table of any number of rows
-A BigTable writes each row as it reads it, and each page as it is full, so it needs little memory however many rows there are. It reads a CSV file, or rows from an iterable, and pages itself. The order of the calls matters: the number of columns, the data, the location and the margin, then complete.
+A BigTable writes each row as it reads it, and each page as it is full, so it needs little memory however many rows there are. It is for plain one-line rows, one height and one style for all of them; for text that wraps, images in cells, spanned cells or page totals, use Table. It reads a CSV file, or rows from an iterable, and pages itself. The order of the calls matters: the number of columns, the data, the location and the margin, then complete. setVerticalPadding adds room above and below the text of each row, setHeaderColor gives the header row a color of its own, setFooterFontSize draws the "Page 1 of 10" footer smaller than the table, and setFooterOffset puts its baseline at a distance above the bottom of the page.
 
 # Graphics
 

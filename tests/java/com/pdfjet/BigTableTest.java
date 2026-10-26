@@ -195,6 +195,83 @@ class BigTableTest {
     }
 
     @Test
+    void theVerticalPaddingMakesTallerRowsOnMorePages() throws Exception {
+        // The rows are taller by the padding above and below their text, so
+        // the table takes more pages, and the footer counts them all.
+        int[] counts = new int[2];
+        float[] paddings = {0f, 3f};
+        for (int i = 0; i < 2; i++) {
+            PDF pdf = TestSupport.newPDF();
+            Font font = TestSupport.helvetica(pdf);
+            BigTable table = new BigTable(pdf, font, font, Letter.PORTRAIT)
+                    .setNumberOfColumns(3).setTableData(HEADER, rows())
+                    .setVerticalPadding(paddings[i]).setFooter("{page}/{pages}", null);
+            List<Page> pages = draw(table);
+            counts[i] = pages.size();
+            String last = TestSupport.content(pages.get(pages.size() - 1));
+            assertTrue(last.contains(TestSupport.hex(counts[i] + "/" + counts[i])), "the footer counts the pages");
+            assertTrue(last.contains(TestSupport.hex("n99")));
+        }
+        assertTrue(counts[1] > counts[0], counts[0] + " pages, then " + counts[1]);
+        // 0 is the table as it was.
+        assertEquals(drawSmall(TestSupport.newPDF(), table -> {}),
+                drawSmall(TestSupport.newPDF(), table -> table.setVerticalPadding(0f)));
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        for (float bad : new float[] {-1f, Float.NaN, Float.POSITIVE_INFINITY}) {
+            IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+                    () -> new BigTable(pdf, font, font, Letter.PORTRAIT).setVerticalPadding(bad));
+            assertEquals("The vertical padding must be a number, 0 or more.", e.getMessage());
+        }
+    }
+
+    @Test
+    void theHeaderCanHaveAColorOfItsOwn() throws Exception {
+        // With no shading, the header alone is filled, in its color.
+        String header = drawSmall(TestSupport.newPDF(),
+                table -> table.setShadingColor(Color.transparent).setHeaderColor(0xFF0000));
+        assertTrue(header.contains("1 0 0 rg\n"), header);
+        assertEquals(1, count(header, "\nf\n"), "one filled rectangle, the header's");
+        // With the shading, the rows under it are shaded as before.
+        String shaded = drawSmall(TestSupport.newPDF(), table -> table.setHeaderColor(0xFF0000));
+        String defaults = drawSmall(TestSupport.newPDF(), table -> {});
+        assertEquals(count(defaults, "\nf\n"), count(shaded, "\nf\n"));
+        assertTrue(shaded.contains("1 0 0 rg\n") && shaded.contains("0.94 0.94 0.94 rg\n"));
+        // Color.transparent is the table as it was.
+        assertEquals(defaults, drawSmall(TestSupport.newPDF(), table -> table.setHeaderColor(Color.transparent)));
+    }
+
+    @Test
+    void theFooterCanBeSmallerThanItsFont() throws Exception {
+        String small = drawSmall(TestSupport.newPDF(), table -> table.setFooterFontSize(7f));
+        String defaults = drawSmall(TestSupport.newPDF(), table -> {});
+        assertTrue(small.contains(" 7 Tf\n") && !defaults.contains(" 7 Tf\n"), small);
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        for (float bad : new float[] {0f, -8f, Float.NaN, Float.POSITIVE_INFINITY}) {
+            IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+                    () -> new BigTable(pdf, font, font, Letter.PORTRAIT).setFooterFontSize(bad));
+            assertEquals("The size of the footer must be a number more than 0.", e.getMessage());
+        }
+    }
+
+    @Test
+    void theFooterCanSitAtTheBottomMargin() throws Exception {
+        // The baseline of the footer is the offset above the bottom of the
+        // page, y = 30 in the coordinates of the PDF.
+        String raised = drawSmall(TestSupport.newPDF(), table -> table.setFooterOffset(30f));
+        String defaults = drawSmall(TestSupport.newPDF(), table -> {});
+        assertTrue(raised.contains(" 30 Td\n") && !defaults.contains(" 30 Td\n"), raised);
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        for (float bad : new float[] {-1f, Float.NaN, Float.POSITIVE_INFINITY}) {
+            IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+                    () -> new BigTable(pdf, font, font, Letter.PORTRAIT).setFooterOffset(bad));
+            assertEquals("The offset of the footer must be a number, 0 or more.", e.getMessage());
+        }
+    }
+
+    @Test
     void lineBreaksInFieldsAreDrawnAsSpaces() throws Exception {
         File file = new File(tempDir, "breaks.csv");
         OutputStream out = new FileOutputStream(file);

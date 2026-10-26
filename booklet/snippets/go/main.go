@@ -524,6 +524,10 @@ func bigTable(pdf *pdfjet.PDF, font *pdfjet.Font) {
 	}
 	table.SetLocation(0, 0)
 	table.SetBottomMargin(20)
+	table.SetVerticalPadding(1) // Room above and below each row
+	table.SetHeaderColor(0xDDE3EA)
+	table.SetFooterFontSize(8)
+	table.SetFooterOffset(10) // The footer's baseline, above the bottom
 	if err := table.Complete(); err != nil {
 		log.Fatal(err)
 	}

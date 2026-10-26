@@ -6,8 +6,10 @@
  */
 import Foundation
 
-/// A table for large amounts of data, read row by row from a delimited text file or
-/// from a sequence. Each page is written as soon as it is full, so the memory stays
+/// A table of plain one-line rows of any length, a statement, a list or an export:
+/// every row has one height and one style, and a field too wide for its column is cut
+/// short. For text that wraps, drawables in cells, spanned cells or page totals, use
+/// Table. The rows are read row by row from a delimited text file or from a sequence. Each page is written as soon as it is full, so the memory stays
 /// flat however many rows there are. A PDF/UA document holds no more than that
 /// either: the table is tagged as a table, and the structure elements of a page are
 /// written with it. What is left is one cross-reference entry for each of them,
@@ -36,15 +38,19 @@ public class BigTable {
     private var clipped: [Float]?
     private var bottomMargin: Float = 20.0
     private var padding: Float = 2.0
+    private var verticalPadding: Float = 0.0    // Above and below the text of a row
     private var highlightRow: Bool = true
     // In a PDF/UA document the table is a Table element that the rows of
     // every page go on adding to; see drawFieldsAndLine.
     private var structElement: StructElement?
     private var shadingColor: [Float]? = BigTable.rgb(0xF0F0F0)   // nil for no shading
+    private var headerColor: [Float]?                           // nil for the shading of every other row
     private var borderColor: [Float]? = BigTable.rgb(0xB0B0B0)    // nil for no lines
     private var verticalLines = true                              // false for the rows' lines alone
     private var footerText: String? = "Page {page} of {pages}"
     private var footerFont: Font?                               // nil for the header font
+    private var footerFontSize: Float = 0.0                     // 0 for the size of the footer's font
+    private var footerOffset: Float = -1.0                      // Below 0 for the ascent of the footer's font
     private var rows: (() -> AnyIterator<[String]>)?
     private var checkLineBreaks = false     // The rows are not read from a file, which has no line breaks left
     private var readError: Error?       // The error opening the data file, if any
@@ -218,6 +224,29 @@ public class BigTable {
         return self
     }
 
+    /// Sets the space between the text of a row and the lines above and below it, the header
+    /// row's too. It is 0 by default, and a row is as tall as its font; a table with it takes
+    /// more pages. A negative padding, or one that is not a number, is recorded on the PDF as
+    /// misuse, and the padding is left as it was.
+    @discardableResult
+    public func setVerticalPadding(_ verticalPadding: Float) -> BigTable {
+        if !(verticalPadding >= 0.0) || verticalPadding.isInfinite {
+            pdf.fail("The vertical padding must be a number, 0 or more.")
+            return self
+        }
+        self.verticalPadding = verticalPadding
+        return self
+    }
+
+    /// Sets the background color of the header row, on every page, as a 0xRRGGBB value. Unless
+    /// it is set, the header is shaded as the first of every other row, in the shading color.
+    /// Color.transparent goes back to that.
+    @discardableResult
+    public func setHeaderColor(_ color: Int32) -> BigTable {
+        self.headerColor = (color == Color.transparent) ? nil : BigTable.rgb(color)
+        return self
+    }
+
     ///
     /// Sets the footer drawn at the bottom of every page, centered. In the text, {page} stands
     /// for the number of the page and {pages} for the number of pages. The footer is
@@ -232,6 +261,35 @@ public class BigTable {
     public func setFooter(_ text: String?, _ font: Font?) -> BigTable {
         self.footerText = text
         self.footerFont = font
+        return self
+    }
+
+    /// Sets the size of the footer's text, so that it can be smaller than the table's with the
+    /// same font. It is the size of the footer's font unless it is set. A size of 0 or less, or
+    /// one that is not a number, is recorded on the PDF as misuse, and the size is left as it
+    /// was.
+    @discardableResult
+    public func setFooterFontSize(_ size: Float) -> BigTable {
+        if !(size > 0.0) || size.isInfinite {
+            pdf.fail("The size of the footer must be a number more than 0.")
+            return self
+        }
+        self.footerFontSize = size
+        return self
+    }
+
+    /// Sets the distance from the bottom of the page to the baseline of the footer, as
+    /// Page.addFooter takes it, so that the footer can sit at the bottom margin. It is the
+    /// ascent of the footer's font unless it is set, the footer just above the edge of the page.
+    /// A negative offset, or one that is not a number, is recorded on the PDF as misuse, and the
+    /// offset is left as it was.
+    @discardableResult
+    public func setFooterOffset(_ offset: Float) -> BigTable {
+        if !(offset >= 0.0) || offset.isInfinite {
+            pdf.fail("The offset of the footer must be a number, 0 or more.")
+            return self
+        }
+        self.footerOffset = offset
         return self
     }
 
@@ -281,7 +339,7 @@ public class BigTable {
         pageNumber += 1
         footerDrawn = false
         page!.setPenWidth(0.0)
-        self.yText = top + f1.ascent
+        self.yText = top + verticalPadding + f1.ascent
         self.highlightRow = true
         // The header fields are the TH cells of the table the first time they
         // are drawn, and an artifact where they repeat on the next pages.
@@ -291,8 +349,8 @@ public class BigTable {
                     page!.structParent, StructElem.TABLE, nil, true)
             header = StructElem.TH
         }
-        drawFieldsAndLine(fields: headerFields, font: f1, cellStructure: header)
-        self.yText += f1.descent + f2.ascent
+        drawFieldsAndLine(fields: headerFields, font: f1, cellStructure: header, header: true)
+        self.yText += f1.descent + 2 * verticalPadding + f2.ascent
         startNewPage = false
     }
 
@@ -302,7 +360,8 @@ public class BigTable {
         guard let firstPage = firstPage else {
             return false
         }
-        return firstPageY + f1.ascent + f1.descent + f2.ascent + f2.descent <= firstPage.height - bottomMargin
+        let height: Float = firstPageY + f1.ascent + f1.descent + f2.ascent + f2.descent
+        return height + 4 * verticalPadding <= firstPage.height - bottomMargin
     }
 
     // Draws the footer of the page that was just finished, once. The page is
@@ -314,7 +373,15 @@ public class BigTable {
                     .replacingOccurrences(of: "{pages}", with: String(pageCount))
             // The page number repeats on every page, which makes it an artifact:
             // addFooter marks it as a pagination artifact, a footer.
-            page!.addFooter(TextLine(footerFont ?? f1, text))
+            let footer = TextLine(footerFont ?? f1, text)
+            if footerFontSize > 0.0 {
+                footer.setFontSize(footerFontSize)
+            }
+            if footerOffset >= 0.0 {
+                page!.addFooter(footer, footerOffset)
+            } else {
+                page!.addFooter(footer)
+            }
         }
         footerDrawn = true
     }
@@ -325,12 +392,12 @@ public class BigTable {
     // so the pages are counted when the table is drawn.
     private func countPages() -> Int {
         var pageHeight = pageSize.getHeight()
-        let yTop = self.y + f1.ascent + f1.descent + f2.ascent
+        let yTop: Float = self.y + f1.ascent + f1.descent + f2.ascent + 3 * verticalPadding
         var yPos = yTop
         if startsOnFirstPage() {
             // The first page can be of another size than the next ones.
             pageHeight = firstPage!.height
-            yPos = firstPageY + f1.ascent + f1.descent + f2.ascent
+            yPos = firstPageY + f1.ascent + f1.descent + f2.ascent + 3 * verticalPadding
         }
         var count = 1
         var isNewPage = false
@@ -341,7 +408,7 @@ public class BigTable {
                 yPos = yTop
                 isNewPage = false
             }
-            yPos += f2.descent + f2.ascent
+            yPos += f2.descent + 2 * verticalPadding + f2.ascent
             if yPos > (pageHeight - self.bottomMargin) {
                 isNewPage = true
             }
@@ -354,8 +421,8 @@ public class BigTable {
             newPage()
         }
 
-        drawFieldsAndLine(fields: fields, font: f2, cellStructure: StructElem.TD)
-        self.yText += f2.descent + f2.ascent
+        drawFieldsAndLine(fields: fields, font: f2, cellStructure: StructElem.TD, header: false)
+        self.yText += f2.descent + 2 * verticalPadding + f2.ascent
         if self.yText > (page!.height - self.bottomMargin) {
             drawTheVerticalLines()
             drawFooter()
@@ -369,10 +436,13 @@ public class BigTable {
     // artifact, which is what the header rows that repeat on the next pages
     // are.
     private func drawFieldsAndLine(
-            fields: [String], font: Font, cellStructure: StructElem?) {
+            fields: [String], font: Font, cellStructure: StructElem?, header: Bool) {
         // The shading and the line above the text carry no meaning of their own.
         page!.addArtifactBMC()
-        if self.highlightRow {
+        if header, let headerColor = headerColor {
+            highlightRow(page: page!, font: font, color: headerColor)
+            self.highlightRow = false
+        } else if self.highlightRow {
             if let shadingColor = shadingColor {
                 highlightRow(page: page!, font: font, color: shadingColor)
             }
@@ -385,8 +455,8 @@ public class BigTable {
         if let borderColor = borderColor {
             let original = page!.getPenColor()
             page!.setPenColor(borderColor)
-            page!.moveTo(vertLines[0], self.yText - font.ascent)
-            page!.lineTo(vertLines[numberOfColumns], self.yText - font.ascent)
+            page!.moveTo(vertLines[0], self.yText - font.ascent - verticalPadding)
+            page!.lineTo(vertLines[numberOfColumns], self.yText - font.ascent - verticalPadding)
             page!.strokePath()
             page!.setPenColor(original)
         }
@@ -442,8 +512,8 @@ public class BigTable {
     private func highlightRow(page: Page, font: Font, color: [Float]) {
         let original = page.getBrushColor()
         page.setBrushColor(color)
-        page.fillRectBetween(vertLines[0], self.yText - font.ascent,
-                vertLines[numberOfColumns], self.yText + font.descent)
+        page.fillRectBetween(vertLines[0], self.yText - font.ascent - verticalPadding,
+                vertLines[numberOfColumns], self.yText + font.descent + verticalPadding)
         page.setBrushColor(original)
     }
 
@@ -460,10 +530,10 @@ public class BigTable {
                 vertLines[i],
                 top,
                 vertLines[i],
-                self.yText - f2.ascent)
+                self.yText - f2.ascent - verticalPadding)
         }
-        page!.moveTo(vertLines[0], self.yText - f2.ascent)
-        page!.lineTo(vertLines[numberOfColumns], self.yText - f2.ascent)
+        page!.moveTo(vertLines[0], self.yText - f2.ascent - verticalPadding)
+        page!.lineTo(vertLines[numberOfColumns], self.yText - f2.ascent - verticalPadding)
         page!.strokePath()
         page!.setPenColor(original)
         page!.addEMC()

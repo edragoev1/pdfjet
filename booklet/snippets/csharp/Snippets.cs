@@ -471,6 +471,10 @@ public class Snippets {
         table.SetTableData("data/Electric_Vehicle_Population_10_Pages.csv", ",");
         table.SetLocation(0f, 0f);
         table.SetBottomMargin(20f);
+        table.SetVerticalPadding(1f);   // Room above and below each row
+        table.SetHeaderColor(0xDDE3EA);
+        table.SetFooterFontSize(8f);
+        table.SetFooterOffset(10f);     // The footer's baseline, above the bottom
         table.Complete();
     }
 

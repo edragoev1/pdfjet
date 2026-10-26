@@ -8,6 +8,7 @@ package pdfjet
 import (
 	"fmt"
 	"iter"
+	"math"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -229,6 +230,93 @@ func TestBigTableTheFooterCanHaveItsOwnTextAndFontOrBeLeftOut(t *testing.T) {
 	defaults := testDrawSmallBigTable(t, testNewPDF(), func(*BigTable) {})
 	if !strings.HasPrefix(defaults, none) || len(defaults) <= len(none) {
 		t.Error("the footer was not left out")
+	}
+}
+
+// The rows are taller by the padding above and below their text, so the table
+// takes more pages, and the footer counts them all.
+func TestBigTableTheVerticalPaddingMakesTallerRowsOnMorePages(t *testing.T) {
+	counts := [2]int{}
+	for i, padding := range []float32{0, 3} {
+		pdf := testNewPDF()
+		font := testHelvetica(pdf)
+		table := NewBigTable(pdf, font, font, letter.Portrait()).
+			SetNumberOfColumns(3).SetTableRows(testBigTableHeader, slices.Values(testBigTableRows())).
+			SetVerticalPadding(padding).SetFooter("{page}/{pages}", nil)
+		pages := testDrawBigTable(t, table)
+		counts[i] = len(pages)
+		last := testContent(pages[len(pages)-1])
+		if !strings.Contains(last, testHex(fmt.Sprintf("%d/%d", counts[i], counts[i]))) {
+			t.Errorf("the footer does not count the %d pages", counts[i])
+		}
+		if !strings.Contains(last, testHex("n99")) {
+			t.Error("the last row is not on the last page")
+		}
+	}
+	if counts[1] <= counts[0] {
+		t.Errorf("%d pages, then %d", counts[0], counts[1])
+	}
+	// 0 is the table as it was.
+	if testDrawSmallBigTable(t, testNewPDF(), func(*BigTable) {}) !=
+		testDrawSmallBigTable(t, testNewPDF(), func(table *BigTable) { table.SetVerticalPadding(0) }) {
+		t.Error("a vertical padding of 0 changed the table")
+	}
+	for _, bad := range []float32{-1, float32(math.NaN()), float32(math.Inf(1))} {
+		pdf := testNewPDF()
+		font := testHelvetica(pdf)
+		NewBigTable(pdf, font, font, letter.Portrait()).SetVerticalPadding(bad)
+		testRecorded(t, pdf, "The vertical padding must be a number, 0 or more.")
+	}
+}
+
+// With no shading, the header alone is filled, in its color; with the shading,
+// the rows under it are shaded as before.
+func TestBigTableTheHeaderCanHaveAColorOfItsOwn(t *testing.T) {
+	header := testDrawSmallBigTable(t, testNewPDF(), func(table *BigTable) {
+		table.SetShadingColor(color.Transparent).SetHeaderColor(0xFF0000)
+	})
+	if !strings.Contains(header, "1 0 0 rg\n") || strings.Count(header, "\nf\n") != 1 {
+		t.Errorf("the header alone is not filled in its color:\n%s", header)
+	}
+	shaded := testDrawSmallBigTable(t, testNewPDF(), func(table *BigTable) { table.SetHeaderColor(0xFF0000) })
+	defaults := testDrawSmallBigTable(t, testNewPDF(), func(*BigTable) {})
+	if strings.Count(shaded, "\nf\n") != strings.Count(defaults, "\nf\n") ||
+		!strings.Contains(shaded, "1 0 0 rg\n") || !strings.Contains(shaded, "0.94 0.94 0.94 rg\n") {
+		t.Error("the rows are not shaded as before under a colored header")
+	}
+	// color.Transparent is the table as it was.
+	if defaults != testDrawSmallBigTable(t, testNewPDF(), func(table *BigTable) { table.SetHeaderColor(color.Transparent) }) {
+		t.Error("a transparent header color changed the table")
+	}
+}
+
+func TestBigTableTheFooterCanBeSmallerThanItsFont(t *testing.T) {
+	small := testDrawSmallBigTable(t, testNewPDF(), func(table *BigTable) { table.SetFooterFontSize(7) })
+	defaults := testDrawSmallBigTable(t, testNewPDF(), func(*BigTable) {})
+	if !strings.Contains(small, " 7 Tf\n") || strings.Contains(defaults, " 7 Tf\n") {
+		t.Error("the footer is not drawn at 7 points")
+	}
+	for _, bad := range []float32{0, -8, float32(math.NaN()), float32(math.Inf(1))} {
+		pdf := testNewPDF()
+		font := testHelvetica(pdf)
+		NewBigTable(pdf, font, font, letter.Portrait()).SetFooterFontSize(bad)
+		testRecorded(t, pdf, "The size of the footer must be a number more than 0.")
+	}
+}
+
+// The baseline of the footer is the offset above the bottom of the page, y = 30
+// in the coordinates of the PDF.
+func TestBigTableTheFooterCanSitAtTheBottomMargin(t *testing.T) {
+	raised := testDrawSmallBigTable(t, testNewPDF(), func(table *BigTable) { table.SetFooterOffset(30) })
+	defaults := testDrawSmallBigTable(t, testNewPDF(), func(*BigTable) {})
+	if !strings.Contains(raised, " 30 Td\n") || strings.Contains(defaults, " 30 Td\n") {
+		t.Error("the footer is not drawn 30 points above the bottom")
+	}
+	for _, bad := range []float32{-1, float32(math.NaN()), float32(math.Inf(1))} {
+		pdf := testNewPDF()
+		font := testHelvetica(pdf)
+		NewBigTable(pdf, font, font, letter.Portrait()).SetFooterOffset(bad)
+		testRecorded(t, pdf, "The offset of the footer must be a number, 0 or more.")
 	}
 }
 

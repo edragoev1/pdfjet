@@ -103,7 +103,12 @@ commit and date. The layout's format version (1) and the look's rules
   of 9.1.5 below that are not done by then go to 9.1.7; SimpleBarChart is
   done and goes in 9.1.5.
 
-- **After 9.1.5: BigTable to draw an ordinary statement (found 26 October
+- ✅ Done for 9.1.5, 26 October 2026 (the owner: "let's start implementing
+  these"): setVerticalPadding, setHeaderColor, setFooterFontSize and
+  setFooterOffset in the
+  four ports, tests, the booklet's big-table snippet, CHANGELOG.md; the
+  statement as SPEC.md lays it out is 12 pages in 5.6 ms, Table's 7.7.
+  Was: **After 9.1.5: BigTable to draw an ordinary statement (found 26 October
   2026, the owner: "we can fix this for future versions").** The
   benchmark's statement (pdf-benchmarks SPEC.md) could not be drawn with
   BigTable, so it uses Table; a BigTable version as close as it allows took

@@ -127,6 +127,19 @@ There is no 9.1.3: what was done for it is in 9.1.5 (the owner, 26 October
   widened by the share of the text each holds. Tables are as wide as their
   text unless it is set, as before.
 
+- BigTable, the four ports: `setVerticalPadding` (Go and C#
+  `SetVerticalPadding`), room above and below the text of every row, the
+  header's too; `setHeaderColor`, a background for the header row of its own,
+  where it was shaded as the first of every other row; and
+  `setFooterFontSize`, a footer smaller than the table in the same font,
+  where an 8 pt footer under a 9 pt table needed the font loaded again; and
+  `setFooterOffset`, the distance from the bottom of the page to the
+  footer's baseline, so that it can sit at the bottom margin, where it was
+  just above the edge. A table is drawn as before unless they are set. The 12-page statement of the
+  fair test, drawn as SPEC.md lays it out with 0.75 pt of vertical padding, a
+  gray header and an 8 pt footer, takes 12 pages, as Table's does, in 5.6 ms
+  to Table's 7.7.
+
 ### Changed
 - Java: everything is deflated at level 5 of zlib instead of the default 6:
   the content of the pages, the fonts, the images and the embedded files.

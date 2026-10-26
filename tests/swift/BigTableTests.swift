@@ -147,6 +147,76 @@ import Testing
         #expect(pdf.error == "The padding cannot be negative.")
     }
 
+    // The rows are taller by the padding above and below their text, so the
+    // table takes more pages, and the footer counts them all.
+    @Test func theVerticalPaddingMakesTallerRowsOnMorePages() throws {
+        var counts = [Int]()
+        for padding: Float in [0, 3] {
+            let pdf = TestSupport.newPDF()
+            let font = TestSupport.helvetica(pdf)
+            let table = BigTable(pdf, font, font, Letter.PORTRAIT)
+                    .setNumberOfColumns(3).setTableData(header, rows())
+                    .setVerticalPadding(padding).setFooter("{page}/{pages}", nil)
+            let pages = try draw(table)
+            counts.append(pages.count)
+            let last = TestSupport.content(pages[pages.count - 1])
+            #expect(last.contains(TestSupport.hex("\(pages.count)/\(pages.count)")), "the footer counts the pages")
+            #expect(last.contains(TestSupport.hex("n99")))
+        }
+        #expect(counts[1] > counts[0], "\(counts[0]) pages, then \(counts[1])")
+        // 0 is the table as it was.
+        #expect(try drawSmall(TestSupport.newPDF()) { _ in } ==
+                drawSmall(TestSupport.newPDF()) { table in table.setVerticalPadding(0) })
+        for bad: Float in [-1, Float.nan, Float.infinity] {
+            let pdf = TestSupport.newPDF()
+            let font = TestSupport.helvetica(pdf)
+            BigTable(pdf, font, font, Letter.PORTRAIT).setVerticalPadding(bad)
+            #expect(pdf.error == "The vertical padding must be a number, 0 or more.")
+        }
+    }
+
+    // With no shading, the header alone is filled, in its color; with the
+    // shading, the rows under it are shaded as before.
+    @Test func theHeaderCanHaveAColorOfItsOwn() throws {
+        let header = try drawSmall(TestSupport.newPDF()) { table in
+            table.setShadingColor(Color.transparent).setHeaderColor(0xFF0000)
+        }
+        #expect(header.contains("1 0 0 rg\n"))
+        #expect(header.components(separatedBy: "\nf\n").count - 1 == 1, "one filled rectangle, the header's")
+        let shaded = try drawSmall(TestSupport.newPDF()) { table in table.setHeaderColor(0xFF0000) }
+        let defaults = try drawSmall(TestSupport.newPDF()) { _ in }
+        #expect(shaded.components(separatedBy: "\nf\n").count == defaults.components(separatedBy: "\nf\n").count)
+        #expect(shaded.contains("1 0 0 rg\n") && shaded.contains("0.94 0.94 0.94 rg\n"))
+        // Color.transparent is the table as it was.
+        #expect(try defaults == drawSmall(TestSupport.newPDF()) { table in table.setHeaderColor(Color.transparent) })
+    }
+
+    @Test func theFooterCanBeSmallerThanItsFont() throws {
+        let small = try drawSmall(TestSupport.newPDF()) { table in table.setFooterFontSize(7) }
+        let defaults = try drawSmall(TestSupport.newPDF()) { _ in }
+        #expect(small.contains(" 7 Tf\n") && !defaults.contains(" 7 Tf\n"))
+        for bad: Float in [0, -8, Float.nan, Float.infinity] {
+            let pdf = TestSupport.newPDF()
+            let font = TestSupport.helvetica(pdf)
+            BigTable(pdf, font, font, Letter.PORTRAIT).setFooterFontSize(bad)
+            #expect(pdf.error == "The size of the footer must be a number more than 0.")
+        }
+    }
+
+    // The baseline of the footer is the offset above the bottom of the page,
+    // y = 30 in the coordinates of the PDF.
+    @Test func theFooterCanSitAtTheBottomMargin() throws {
+        let raised = try drawSmall(TestSupport.newPDF()) { table in table.setFooterOffset(30) }
+        let defaults = try drawSmall(TestSupport.newPDF()) { _ in }
+        #expect(raised.contains(" 30 Td\n") && !defaults.contains(" 30 Td\n"))
+        for bad: Float in [-1, Float.nan, Float.infinity] {
+            let pdf = TestSupport.newPDF()
+            let font = TestSupport.helvetica(pdf)
+            BigTable(pdf, font, font, Letter.PORTRAIT).setFooterOffset(bad)
+            #expect(pdf.error == "The offset of the footer must be a number, 0 or more.")
+        }
+    }
+
     @Test func theFooterCanHaveItsOwnTextAndFontOrBeLeftOut() throws {
         let pdf = TestSupport.newPDF()
         let big = TestSupport.helvetica(pdf).setSize(20)

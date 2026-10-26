@@ -14,7 +14,10 @@ import java.io.UncheckedIOException;
 import java.util.*;
 
 /**
- * Use this class if you have a lot of data. The rows are read from a
+ * Use this class for a table of plain one-line rows of any length, a
+ * statement, a list or an export: every row has one height and one style,
+ * and a field too wide for its column is cut short. For text that wraps,
+ * drawables in cells, spanned cells or page totals, use Table. The rows are read from a
  * delimited text file, or from an Iterable, one at a time, and each page is
  * written as soon as it is full, so the memory stays flat however many rows
  * there are. A PDF/UA document holds no more than that either: the table is
@@ -46,15 +49,19 @@ public class BigTable {
     private float[] clipped;
     private float bottomMargin = 20.0f;
     private float padding = 2.0f;
+    private float verticalPadding = 0f;     // Above and below the text of a row
     private boolean highlightRow = true;
     // In a PDF/UA document the table is a Table element that the rows of
     // every page go on adding to; see drawFieldsAndLine.
     private StructElement structElement = null;
     private float[] shadingColor = rgb(0xF0F0F0);   // null for no shading
+    private float[] headerColor = null;             // null for the shading of every other row
     private float[] borderColor = rgb(0xB0B0B0);    // null for no lines
     private boolean verticalLines = true;           // false for the rows' lines alone
     private String footerText = "Page {page} of {pages}";
     private Font footerFont;                        // null for the header font
+    private float footerFontSize = 0f;              // 0 for the size of the footer's font
+    private float footerOffset = -1f;               // Below 0 for the ascent of the footer's font
     private Iterable<String[]> rows;
     private boolean checkLineBreaks;        // The rows are not read from a file, which has no line breaks left
     private int[] columns = new int[0];     // The fields drawn, in the order they are drawn
@@ -269,6 +276,36 @@ public class BigTable {
     }
 
     /**
+     * Sets the space between the text of a row and the lines above and below
+     * it, the header row's too. It is 0 by default, and a row is as tall as
+     * its font; a table with it takes more pages.
+     *
+     * @param verticalPadding the padding, 0 or more.
+     * @return this BigTable object.
+     */
+    public BigTable setVerticalPadding(float verticalPadding) {
+        if (!(verticalPadding >= 0f) || Float.isInfinite(verticalPadding)) {
+            pdf.fail(new IllegalArgumentException("The vertical padding must be a number, 0 or more."));
+            return this;
+        }
+        this.verticalPadding = verticalPadding;
+        return this;
+    }
+
+    /**
+     * Sets the background color of the header row, on every page. Unless it
+     * is set, the header is shaded as the first of every other row, in the
+     * shading color. Color.transparent goes back to that.
+     *
+     * @param color the color as a 0xRRGGBB value, for example 0xE6E6E6.
+     * @return this BigTable object.
+     */
+    public BigTable setHeaderColor(int color) {
+        this.headerColor = (color == Color.transparent) ? null : rgb(color);
+        return this;
+    }
+
+    /**
      * Sets the footer drawn at the bottom of every page, centered. In the
      * text, {page} stands for the number of the page and {pages} for the
      * number of pages. The footer is "Page {page} of {pages}" in the header
@@ -281,6 +318,41 @@ public class BigTable {
     public BigTable setFooter(String text, Font font) {
         this.footerText = text;
         this.footerFont = font;
+        return this;
+    }
+
+    /**
+     * Sets the size of the footer's text, so that it can be smaller than the
+     * table's with the same font. It is the size of the footer's font unless
+     * it is set.
+     *
+     * @param size the size in points, more than 0.
+     * @return this BigTable object.
+     */
+    public BigTable setFooterFontSize(float size) {
+        if (!(size > 0f) || Float.isInfinite(size)) {
+            pdf.fail(new IllegalArgumentException("The size of the footer must be a number more than 0."));
+            return this;
+        }
+        this.footerFontSize = size;
+        return this;
+    }
+
+    /**
+     * Sets the distance from the bottom of the page to the baseline of the
+     * footer, as Page.addFooter takes it, so that the footer can sit at the
+     * bottom margin. It is the ascent of the footer's font unless it is set,
+     * the footer just above the edge of the page.
+     *
+     * @param offset the distance in points, 0 or more.
+     * @return this BigTable object.
+     */
+    public BigTable setFooterOffset(float offset) {
+        if (!(offset >= 0f) || Float.isInfinite(offset)) {
+            pdf.fail(new IllegalArgumentException("The offset of the footer must be a number, 0 or more."));
+            return this;
+        }
+        this.footerOffset = offset;
         return this;
     }
 
@@ -343,7 +415,7 @@ public class BigTable {
         pageNumber++;
         footerDrawn = false;
         page.setPenWidth(0f);
-        this.yText = this.top + f1.ascent;
+        this.yText = this.top + verticalPadding + f1.ascent;
         this.highlightRow = true;
         // The header fields are the TH cells of the table the first time they
         // are drawn, and an artifact where they repeat on the next pages.
@@ -353,8 +425,8 @@ public class BigTable {
                     page.structParent, StructElem.TABLE, null, true);
             header = StructElem.TH;
         }
-        drawFieldsAndLine(headerFields, f1, header);
-        this.yText += f1.descent + f2.ascent;
+        drawFieldsAndLine(headerFields, f1, header, true);
+        this.yText += f1.descent + 2*verticalPadding + f2.ascent;
         startNewPage = false;
     }
 
@@ -362,7 +434,7 @@ public class BigTable {
     // and the first row fit on it above its bottom margin.
     private boolean startsOnFirstPage() {
         return firstPage != null && firstPageY + f1.ascent + f1.descent + f2.ascent + f2.descent
-                <= firstPage.height - bottomMargin;
+                + 4*verticalPadding <= firstPage.height - bottomMargin;
     }
 
     // Draws the footer of the page that was just finished, once. The page is
@@ -374,7 +446,15 @@ public class BigTable {
                     .replace("{pages}", String.valueOf(pageCount));
             // The page number repeats on every page, which makes it an artifact:
             // addFooter marks it as a pagination artifact, a footer.
-            page.addFooter(new TextLine((footerFont != null) ? footerFont : f1, text));
+            TextLine footer = new TextLine((footerFont != null) ? footerFont : f1, text);
+            if (footerFontSize > 0f) {
+                footer.setFontSize(footerFontSize);
+            }
+            if (footerOffset >= 0f) {
+                page.addFooter(footer, footerOffset);
+            } else {
+                page.addFooter(footer);
+            }
         }
         footerDrawn = true;
     }
@@ -384,8 +464,8 @@ public class BigTable {
             newPage();
         }
 
-        drawFieldsAndLine(fields, f2, StructElem.TD);
-        this.yText += f2.descent + f2.ascent;
+        drawFieldsAndLine(fields, f2, StructElem.TD, false);
+        this.yText += f2.descent + 2*verticalPadding + f2.ascent;
         if (this.yText > (this.page.height - this.bottomMargin)) {
             drawTheVerticalLines();
             drawFooter();
@@ -399,12 +479,12 @@ public class BigTable {
     // so the pages are counted when the table is drawn.
     private int countPages() {
         float pageHeight = pageSize.getHeight();
-        float yTop = this.y + f1.ascent + f1.descent + f2.ascent;
+        float yTop = this.y + f1.ascent + f1.descent + f2.ascent + 3*verticalPadding;
         float yPos = yTop;
         if (startsOnFirstPage()) {
             // The first page can be of another size than the next ones.
             pageHeight = firstPage.height;
-            yPos = firstPageY + f1.ascent + f1.descent + f2.ascent;
+            yPos = firstPageY + f1.ascent + f1.descent + f2.ascent + 3*verticalPadding;
         }
         int count = 1;
         boolean newPage = false;
@@ -415,7 +495,7 @@ public class BigTable {
                 yPos = yTop;
                 newPage = false;
             }
-            yPos += f2.descent + f2.ascent;
+            yPos += f2.descent + 2*verticalPadding + f2.ascent;
             if (yPos > (pageHeight - this.bottomMargin)) {
                 newPage = true;
             }
@@ -428,10 +508,13 @@ public class BigTable {
     // and the lines are artifacts. A row with no cell structure is drawn as an
     // artifact, which is what the header rows that repeat on the next pages
     // are.
-    private void drawFieldsAndLine(String[] fields, Font font, StructElem cellStructure) {
+    private void drawFieldsAndLine(String[] fields, Font font, StructElem cellStructure, boolean header) {
         // The shading and the line above the text carry no meaning of their own.
         page.addArtifactBMC();
-        if (this.highlightRow) {
+        if (header && headerColor != null) {
+            highlightRow(page, font, headerColor);
+            this.highlightRow = false;
+        } else if (this.highlightRow) {
             if (shadingColor != null) {
                 highlightRow(page, font, shadingColor);
             }
@@ -444,8 +527,8 @@ public class BigTable {
         if (borderColor != null) {
             float[] original = page.getPenColor();
             page.setPenColor(borderColor);
-            page.moveTo(vertLines[0], this.yText - font.ascent);
-            page.lineTo(vertLines[this.numberOfColumns], this.yText - font.ascent);
+            page.moveTo(vertLines[0], this.yText - font.ascent - verticalPadding);
+            page.lineTo(vertLines[this.numberOfColumns], this.yText - font.ascent - verticalPadding);
             page.strokePath();
             page.setPenColor(original);
         }
@@ -498,8 +581,8 @@ public class BigTable {
     private void highlightRow(Page page, Font font, float[] color) {
         float[] original = page.getBrushColor();
         page.setBrushColor(color);
-        page.fillRectBetween(vertLines[0], this.yText - font.ascent,
-                vertLines[this.numberOfColumns], this.yText + font.descent);
+        page.fillRectBetween(vertLines[0], this.yText - font.ascent - verticalPadding,
+                vertLines[this.numberOfColumns], this.yText + font.descent + verticalPadding);
         page.setBrushColor(original);
     }
 
@@ -516,11 +599,11 @@ public class BigTable {
                     vertLines[i],
                     this.top,
                     vertLines[i],
-                    this.yText - f2.ascent);
+                    this.yText - f2.ascent - verticalPadding);
         }
         // Draw the last horizontal line
-        page.moveTo(vertLines[0], this.yText - f2.ascent);
-        page.lineTo(vertLines[this.numberOfColumns], this.yText - f2.ascent);
+        page.moveTo(vertLines[0], this.yText - f2.ascent - verticalPadding);
+        page.lineTo(vertLines[this.numberOfColumns], this.yText - f2.ascent - verticalPadding);
         page.strokePath();
         page.setPenColor(original);
         page.addEMC();

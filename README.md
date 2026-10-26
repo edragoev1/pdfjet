@@ -460,6 +460,15 @@ and once to draw them, keeps none of them and writes each page when it is full,
 so its memory stays flat; Example_24 draws 2,546 pages that way. A tagged
 document, PDF/UA or PDF/A of level A, keeps a little of each row until
 `complete()`, for the structure tree it writes at the end.
+
+**Table or BigTable?** Use `BigTable` for a table of plain one-line rows,
+however long: statements, transaction lists, reports and exports. Every row
+has one height and one style, a field too wide for its column is cut short,
+and it is the faster of the two: a 600-row statement takes 5.6 ms in Java
+to `Table`'s 7.7. Use `Table` when cells need more: text that wraps onto
+several lines, an image, a barcode or a chart in a cell, cells that span
+columns or rows, page totals and totals carried forward, or a style for each
+cell.
 `setColumns(3, 0, 11)` draws the fourth, first and twelfth fields of every row
 and of the header, in that order, where `setNumberOfColumns(n)` draws the first
 n. `setShadingColor` and `setBorderColor` change the colors of every other row

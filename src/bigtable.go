@@ -28,8 +28,11 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
-// BigTable is a table for large amounts of data, read row by row from a
-// delimited text file or from an iterator. Each page is written as soon as it
+// BigTable is a table of plain one-line rows of any length, a statement, a list
+// or an export: every row has one height and one style, and a field too wide for
+// its column is cut short. For text that wraps, drawables in cells, spanned cells
+// or page totals, use Table. The rows are read row by row from a delimited text
+// file or from an iterator. Each page is written as soon as it
 // is full, so the memory stays flat however many rows there are. A PDF/UA
 // document holds no more than that either: the table is tagged as a table,
 // and the structure elements of a page are written with it. What is left is
@@ -59,14 +62,19 @@ type BigTable struct {
 	clipped         []float32
 	bottomMargin    float32
 	padding         float32
+	verticalPadding float32 // Above and below the text of a row
 	highlight       bool
 	shadingColor    [3]float32
 	hasShading      bool // false for no shading
+	headerColor     [3]float32
+	hasHeaderColor  bool // false for the shading of every other row
 	borderColor     [3]float32
 	noVerticalLines bool // true for the rows' lines alone
 	hasBorder       bool // false for no lines
 	footerText      string
-	footerFont      *Font // nil for the header font
+	footerFont      *Font   // nil for the header font
+	footerFontSize  float32 // 0 for the size of the footer's font
+	footerOffset    float32 // Below 0 for the ascent of the footer's font
 	rows            iter.Seq[[]string]
 	checkLineBreaks bool      // The rows are not read from a file, which has no line breaks left
 	readErr         error     // The error reading the data file, if any
@@ -100,6 +108,7 @@ func NewBigTable(pdf *PDF, f1 *Font, f2 *Font, pageSize pagesize.PageSize) *BigT
 		borderColor:  colorToRGB(0xB0B0B0),
 		hasBorder:    true,
 		footerText:   "Page {page} of {pages}",
+		footerOffset: -1,
 		startNewPage: true,
 		alignment:    make([]alignment.Alignment, 0),
 	}
@@ -246,6 +255,29 @@ func (bt *BigTable) SetPadding(padding float32) *BigTable {
 	return bt
 }
 
+// SetVerticalPadding sets the space between the text of a row and the lines
+// above and below it, the header row's too. It is 0 by default, and a row is as
+// tall as its font; a table with it takes more pages. A negative padding, or one
+// that is not a number, is recorded on the PDF as misuse, and the padding is left
+// as it was.
+func (bt *BigTable) SetVerticalPadding(verticalPadding float32) *BigTable {
+	if !(verticalPadding >= 0) || math.IsInf(float64(verticalPadding), 0) {
+		bt.pdf.fail("The vertical padding must be a number, 0 or more.")
+		return bt
+	}
+	bt.verticalPadding = verticalPadding
+	return bt
+}
+
+// SetHeaderColor sets the background color of the header row, on every page, as
+// a 0xRRGGBB value. Unless it is set, the header is shaded as the first of every
+// other row, in the shading color. color.Transparent goes back to that.
+func (bt *BigTable) SetHeaderColor(c int32) *BigTable {
+	bt.hasHeaderColor = c != color.Transparent
+	bt.headerColor = colorToRGB(c)
+	return bt
+}
+
 // SetFooter sets the footer drawn at the bottom of every page, centered. In the
 // text, {page} stands for the number of the page and {pages} for the number of
 // pages. The footer is "Page {page} of {pages}" in the header font by default.
@@ -253,6 +285,33 @@ func (bt *BigTable) SetPadding(padding float32) *BigTable {
 func (bt *BigTable) SetFooter(text string, font *Font) *BigTable {
 	bt.footerText = text
 	bt.footerFont = font
+	return bt
+}
+
+// SetFooterFontSize sets the size of the footer's text, so that it can be
+// smaller than the table's with the same font. It is the size of the footer's
+// font unless it is set. A size of 0 or less, or one that is not a number, is
+// recorded on the PDF as misuse, and the size is left as it was.
+func (bt *BigTable) SetFooterFontSize(size float32) *BigTable {
+	if !(size > 0) || math.IsInf(float64(size), 0) {
+		bt.pdf.fail("The size of the footer must be a number more than 0.")
+		return bt
+	}
+	bt.footerFontSize = size
+	return bt
+}
+
+// SetFooterOffset sets the distance from the bottom of the page to the baseline
+// of the footer, as Page.AddFooterOffsetBy takes it, so that the footer can sit at the
+// bottom margin. It is the ascent of the footer's font unless it is set, the
+// footer just above the edge of the page. A negative offset, or one that is not
+// a number, is recorded on the PDF as misuse, and the offset is left as it was.
+func (bt *BigTable) SetFooterOffset(offset float32) *BigTable {
+	if !(offset >= 0) || math.IsInf(float64(offset), 0) {
+		bt.pdf.fail("The offset of the footer must be a number, 0 or more.")
+		return bt
+	}
+	bt.footerOffset = offset
 	return bt
 }
 
@@ -299,7 +358,7 @@ func (bt *BigTable) newPage() {
 	bt.pageNumber++
 	bt.footerDrawn = false
 	bt.page.SetPenWidth(0.0)
-	bt.yText = bt.top + bt.f1.ascent
+	bt.yText = bt.top + bt.verticalPadding + bt.f1.ascent
 	bt.highlight = true
 	// The header fields are the TH cells of the table the first time they are
 	// drawn, and an artifact where they repeat on the next pages.
@@ -309,16 +368,16 @@ func (bt *BigTable) newPage() {
 			bt.page.structParent, structelem.Table, "", true)
 		header = structelem.TH
 	}
-	bt.drawFieldsAndLine(bt.headerFields, bt.f1, header)
-	bt.yText += bt.f1.descent + bt.f2.ascent
+	bt.drawFieldsAndLine(bt.headerFields, bt.f1, header, true)
+	bt.yText += bt.f1.descent + float32(2*bt.verticalPadding) + bt.f2.ascent
 	bt.startNewPage = false
 }
 
 // startsOnFirstPage returns true when the table starts on the page SetFirstPage
 // set: when the header and the first row fit on it above its bottom margin.
 func (bt *BigTable) startsOnFirstPage() bool {
-	return bt.firstPage != nil && bt.firstPageY+bt.f1.ascent+bt.f1.descent+bt.f2.ascent+bt.f2.descent <=
-		bt.firstPage.height-bt.bottomMargin
+	return bt.firstPage != nil && bt.firstPageY+bt.f1.ascent+bt.f1.descent+bt.f2.ascent+bt.f2.descent+
+		float32(4*bt.verticalPadding) <= bt.firstPage.height-bt.bottomMargin
 }
 
 // drawFooter draws the footer of the page that was just finished, once. The
@@ -333,7 +392,15 @@ func (bt *BigTable) drawFooter() {
 		}
 		// The page number repeats on every page, which makes it an artifact:
 		// AddFooter marks it as a pagination artifact, a footer.
-		bt.page.AddFooter(NewTextLine(font, text))
+		footer := NewTextLine(font, text)
+		if bt.footerFontSize > 0 {
+			footer.SetFontSize(bt.footerFontSize)
+		}
+		if bt.footerOffset >= 0 {
+			bt.page.AddFooterOffsetBy(footer, bt.footerOffset)
+		} else {
+			bt.page.AddFooter(footer)
+		}
 	}
 	bt.footerDrawn = true
 }
@@ -344,12 +411,12 @@ func (bt *BigTable) drawFooter() {
 // pages are counted when the table is drawn.
 func (bt *BigTable) countPages() int {
 	pageHeight := bt.pageSize.GetHeight()
-	yTop := bt.y + bt.f1.ascent + bt.f1.descent + bt.f2.ascent
+	yTop := bt.y + bt.f1.ascent + bt.f1.descent + bt.f2.ascent + float32(3*bt.verticalPadding)
 	yPos := yTop
 	if bt.startsOnFirstPage() {
 		// The first page can be of another size than the next ones.
 		pageHeight = bt.firstPage.height
-		yPos = bt.firstPageY + bt.f1.ascent + bt.f1.descent + bt.f2.ascent
+		yPos = bt.firstPageY + bt.f1.ascent + bt.f1.descent + bt.f2.ascent + float32(3*bt.verticalPadding)
 	}
 	count := 1
 	newPage := false
@@ -360,7 +427,7 @@ func (bt *BigTable) countPages() int {
 			yPos = yTop
 			newPage = false
 		}
-		yPos += bt.f2.descent + bt.f2.ascent
+		yPos += bt.f2.descent + float32(2*bt.verticalPadding) + bt.f2.ascent
 		if yPos > (pageHeight - bt.bottomMargin) {
 			newPage = true
 		}
@@ -373,8 +440,8 @@ func (bt *BigTable) drawTextAndLine(fields []string) {
 		bt.newPage()
 	}
 
-	bt.drawFieldsAndLine(fields, bt.f2, structelem.TD)
-	bt.yText += bt.f2.descent + bt.f2.ascent
+	bt.drawFieldsAndLine(fields, bt.f2, structelem.TD, false)
+	bt.yText += bt.f2.descent + float32(2*bt.verticalPadding) + bt.f2.ascent
 	if bt.yText > (bt.page.height - bt.bottomMargin) {
 		bt.drawTheVerticalLines()
 		bt.drawFooter()
@@ -388,10 +455,13 @@ func (bt *BigTable) drawTextAndLine(fields []string) {
 // as an artifact, which is what the header rows that repeat on the next pages
 // are.
 func (bt *BigTable) drawFieldsAndLine(
-	fields []string, font *Font, cellStructure structelem.StructElem) {
+	fields []string, font *Font, cellStructure structelem.StructElem, header bool) {
 	// The shading and the line above the text carry no meaning of their own.
 	bt.page.AddArtifactBMC()
-	if bt.highlight {
+	if header && bt.hasHeaderColor {
+		bt.highlightRow(bt.page, font, bt.headerColor)
+		bt.highlight = false
+	} else if bt.highlight {
 		if bt.hasShading {
 			bt.highlightRow(bt.page, font, bt.shadingColor)
 		}
@@ -404,8 +474,8 @@ func (bt *BigTable) drawFieldsAndLine(
 	if bt.hasBorder {
 		original := bt.page.GetPenColor()
 		bt.page.SetPenColorRGB(bt.borderColor)
-		bt.page.MoveTo(bt.vertLines[0], bt.yText-font.ascent)
-		bt.page.LineTo(bt.vertLines[bt.numberOfColumns], bt.yText-font.ascent)
+		bt.page.MoveTo(bt.vertLines[0], bt.yText-font.ascent-bt.verticalPadding)
+		bt.page.LineTo(bt.vertLines[bt.numberOfColumns], bt.yText-font.ascent-bt.verticalPadding)
 		bt.page.StrokePath()
 		bt.page.SetPenColorRGB(original)
 	}
@@ -470,8 +540,8 @@ func bigTableCellAttributes(cellStructure structelem.StructElem) string {
 func (bt *BigTable) highlightRow(page *Page, font *Font, rgb [3]float32) {
 	original := page.GetBrushColor()
 	page.SetBrushColorRGB(rgb)
-	page.fillRectBetween(bt.vertLines[0], bt.yText-font.ascent,
-		bt.vertLines[bt.numberOfColumns], bt.yText+font.descent)
+	page.fillRectBetween(bt.vertLines[0], bt.yText-font.ascent-bt.verticalPadding,
+		bt.vertLines[bt.numberOfColumns], bt.yText+font.descent+bt.verticalPadding)
 	page.SetBrushColorRGB(original)
 }
 
@@ -489,10 +559,10 @@ func (bt *BigTable) drawTheVerticalLines() {
 			bt.vertLines[i],
 			bt.top,
 			bt.vertLines[i],
-			bt.yText-bt.f2.ascent)
+			bt.yText-bt.f2.ascent-bt.verticalPadding)
 	}
-	bt.page.MoveTo(bt.vertLines[0], bt.yText-bt.f2.ascent)
-	bt.page.LineTo(bt.vertLines[bt.numberOfColumns], bt.yText-bt.f2.ascent)
+	bt.page.MoveTo(bt.vertLines[0], bt.yText-bt.f2.ascent-bt.verticalPadding)
+	bt.page.LineTo(bt.vertLines[bt.numberOfColumns], bt.yText-bt.f2.ascent-bt.verticalPadding)
 	bt.page.StrokePath()
 	bt.page.SetPenColorRGB(original)
 }

@@ -464,6 +464,10 @@ func bigTable(_ pdf: PDF, _ font: Font) throws {
     try table.setTableData("data/Electric_Vehicle_Population_10_Pages.csv", ",")
     table.setLocation(0, 0)
     table.setBottomMargin(20)
+    table.setVerticalPadding(1)    // Room above and below each row
+    table.setHeaderColor(0xDDE3EA)
+    table.setFooterFontSize(8)
+    table.setFooterOffset(10)     // The footer's baseline, above the bottom
     try table.complete()
 }
 
