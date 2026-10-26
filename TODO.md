@@ -119,6 +119,13 @@ commit and date. The layout's format version (1) and the look's rules
     drawn with TextLine.setFontSize.
   Tests in each port; CHANGELOG.md; then the benchmark's statement could
   use BigTable, in a rerun.
+  Considered, probably not (the owner, 26 October 2026: "too much work,
+  record it to consider but probably no"): one pass over the rows instead
+  of two. The first pass measures the columns, their alignment and the
+  rows, whose count gives the "Page n of N" footer; with N drawn as a Form
+  XObject written after the last page, a table of given widths and
+  alignments would need one pass. The writer would reserve an object and
+  write it last, and a centered footer would need room for N kept.
 
 - ✅ Done 25 October 2026. **v9.1.5: an image copied from a PDF that was
   read keeps its transparency, in the four ports (found 22 October 2026).**
