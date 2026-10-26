@@ -442,7 +442,7 @@ public class SimpleScatterChart implements Drawable {
         }
         float left = x + pad + widest + size / 2f;
         if (!yAxisTitle.isEmpty()) {
-            left += 2.0f * size;     // The title, and room between it and the numbers
+            left += 1.8f * size;     // The title, as far from the numbers as the x title is
         }
         final float right = x + w - pad;
         final float top = y + top() + ascent / 2f;     // Room for the top number

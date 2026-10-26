@@ -345,7 +345,7 @@ func (chart *SimpleScatterChart) DrawOn(page *Page) [2]float32 {
 	}
 	left := chart.x + pad + widest + float32(size/2.0)
 	if chart.yAxisTitle != "" {
-		left += float32(2.0 * size) // The title, and room between it and the numbers
+		left += float32(1.8 * size) // The title, as far from the numbers as the x title is
 	}
 	right := chart.x + chart.w - pad
 	top := chart.y + chart.top() + float32(ascent/2.0) // Room for the top number
