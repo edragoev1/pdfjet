@@ -625,6 +625,23 @@ commit and date. The layout's format version (1) and the look's rules
      pages keep less once written, and a bookmark tree of thousands of
      levels or siblings is built in linear time. Java's Compressor (W7) is
      a Deflater for each thread since 9.1.5.
+- **For v9.2.1: PDF/UA-2** (ISO 14289-2:2024; the owner, 26 October 2026),
+  with the large tagged documents, as both touch the structure tree. A new
+  level, `Compliance.PDF_UA_2`, that writes `%PDF-2.0`; PDF/UA-1 stays as it
+  is. veraPDF's ua2 check of the 50 examples on 26 October 2026: none
+  passes, and the 44 tagged ones fail six rules alone:
+  1. The Document element in the PDF 2.0 namespace (44 examples).
+  2. The XMP metadata `pdfuaid:part` 2 and `pdfuaid:rev` 2024 (43).
+  3. Every destination within the document a structure destination, the
+     element a link, a bookmark or a go-to lands on, beside its page (41).
+  4. A ListNumbering attribute on a list whose items have labels (4).
+  5. A Caption the first or last child of its Figure: TextFlow's caption of
+     an image goes into the image's figure (1).
+  6. An AFRelationship in the file specification of a file attachment (1).
+  The other failures are of the six examples that are not tagged. Then the
+  structure types PDF 2.0 renamed, such as Note, mapped, as testing shows.
+  The four ports alike, and veraPDF checking UA-1 and UA-2 in CI. About a
+  week.
 - **For v9.2.1: hyphenation by dictionary** (the owner, 26 October 2026,
   from the fair test's list of what the other libraries have). Today a
   word breaks at a line's end only at a soft hyphen the text carries.
