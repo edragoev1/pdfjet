@@ -102,6 +102,10 @@ commit and date. The layout's format version (1) and the look's rules
   November"), after the Forms launch of 9 and 10 November. The chart items
   of 9.1.5 below that are not done by then go to 9.1.7; SimpleBarChart is
   done and goes in 9.1.5.
+  **A complete code review before the release** (the owner, 27 October
+  2026: "another complete code review before we release 9.1.5 but not
+  now"): the four ports, everything changed since v9.1.1, after the Forms
+  launch and before the release checks.
 
 - ✅ Done for 9.1.5, 26 October 2026 (the owner: "let's start implementing
   these"): setVerticalPadding, setHeaderColor, setFooterFontSize and
@@ -648,7 +652,8 @@ commit and date. The layout's format version (1) and the look's rules
      9.1.7. Its bugs are fixed (CHANGELOG.md:
      the label colors by contrast and a lighter sage, the room over a
      donut's title, values outside a set range, a BarChart without room,
-     the month names, null in Java and C#). Left, in the four ports:
+     the month names, null in Java and C#). Done, in the four ports
+     (21148e316):
      - Axis numbers on a set range: `setYAxisRange(3, 17)` writes 3.00,
        5.33, 7.67…, the number of lines from the rounded range and the step
        from the range as set (ChartScale `axisOf`). Steps of the range set,
