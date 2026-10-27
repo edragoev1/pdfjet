@@ -73,6 +73,8 @@ public class SimpleLineChart : IDrawable {
     private readonly List<Line> lines = new List<Line>();
     private int highlight = -1;     // The index of the highlighted line, or -1
     private bool markers = false;
+    private bool valueLabels = false;
+    private bool areaFilled = false;
     private float yMin;
     private float yMax;
     private bool yRangeSet = false;
@@ -183,6 +185,31 @@ public class SimpleLineChart : IDrawable {
     /// <returns>this chart.</returns>
     public SimpleLineChart SetMarkers(bool markers) {
         this.markers = markers;
+        return this;
+    }
+
+    /// <summary>
+    /// Writes each value of the lines by its point, small, where the line
+    /// leaves it room: above a peak, under a valley, before or after a point
+    /// on a rise or a fall; but the last of each line, which its label at the
+    /// end of the line has.
+    /// </summary>
+    /// <param name="valueLabels">true to write them.</param>
+    /// <returns>this chart.</returns>
+    public SimpleLineChart SetValueLabels(bool valueLabels) {
+        this.valueLabels = valueLabels;
+        return this;
+    }
+
+    /// <summary>
+    /// Fills the area under each line, down to 0 or to the bottom of the plot,
+    /// in a light tint of the line's color, which makes an area chart. The
+    /// highlighted line's area is drawn last, over the others.
+    /// </summary>
+    /// <param name="areaFilled">true to fill the areas.</param>
+    /// <returns>this chart.</returns>
+    public SimpleLineChart SetAreaFilled(bool areaFilled) {
+        this.areaFilled = areaFilled;
         return this;
     }
 
@@ -522,6 +549,33 @@ public class SimpleLineChart : IDrawable {
             page.SaveGraphicsState();
             page.ClipRect(left - edge, top - edge, right - left + 2f * edge, bottom - top + 2f * edge);
         }
+        // The areas under the lines, each run of values down to 0, or to the
+        // bottom of the plot when 0 is under it, in a tint of the line's color
+        if (areaFilled) {
+            float zero = YAt(Math.Min(Math.Max(0f, axis.min), axis.max), axis, top, bottom);
+            foreach (int i in order) {
+                Line line = lines[i];
+                page.SetBrushColor(Tint((i == highlight) ? highlightColor : lineColor));
+                int start = -1;
+                for (int j = 0; j <= n; j++) {
+                    if (j < n && line.Has(j)) {
+                        if (start < 0) {
+                            start = j;
+                        }
+                        continue;
+                    }
+                    if (start >= 0 && j - 1 > start) {
+                        page.MoveTo(XAt(start, n, left, right), zero);
+                        for (int k = start; k < j; k++) {
+                            page.LineTo(XAt(k, n, left, right), YAt(line.values[k], axis, top, bottom));
+                        }
+                        page.LineTo(XAt(j - 1, n, left, right), zero);
+                        page.FillPath();
+                    }
+                    start = -1;
+                }
+            }
+        }
         foreach (int i in order) {
             Line line = lines[i];
             int color = (i == highlight) ? highlightColor : lineColor;
@@ -560,6 +614,45 @@ public class SimpleLineChart : IDrawable {
             page.RestoreGraphicsState();
         }
 
+        // The values by their points, where the line leaves them room: above
+        // a peak, under a valley, above and before a point on a rise, above
+        // and after one on a fall; but those outside the axis and the last of
+        // each line, which its label at the end has
+        if (valueLabels) {
+            float small = SubtitleSize();
+            float gap = 0.5f * size;
+            foreach (int i in order) {
+                Line line = lines[i];
+                int last = LastOf(line);
+                int color = (i == highlight) ? highlightColor : SimpleBarChart.MUTED;
+                for (int j = 0; j < last; j++) {
+                    if (!line.Has(j) || !ChartScale.OnAxis(line.values[j], axis)) {
+                        continue;
+                    }
+                    float v = line.values[j];
+                    float before = (j > 0 && line.Has(j - 1)) ? line.values[j - 1] : v;
+                    float after = line.Has(j + 1) ? line.values[j + 1] : v;
+                    String text = Value(v);
+                    float width = f2.StringWidth(small, text);
+                    float px = XAt(j, n, left, right);
+                    float py = YAt(v, axis, top, bottom);
+                    float lx = px - width / 2f;
+                    float at = py - gap;
+                    if (before > v && after > v) {              // A valley
+                        at = py + gap + f2.GetAscent(small);
+                        if (at > bottom) {
+                            at = py - gap;
+                        }
+                    } else if (before < v && after > v) {       // A rise
+                        lx = px - gap - width;
+                    } else if (before > v && after < v) {       // A fall
+                        lx = px + gap;
+                    }
+                    page.DrawString(f2, small, text, lx, at, Util.ToRGB(color), null);
+                }
+            }
+        }
+
         // The labels at the ends of the lines, moved apart where they would
         // meet
         List<EndLabel> labels = new List<EndLabel>();
@@ -595,6 +688,14 @@ public class SimpleLineChart : IDrawable {
         page.SetFigureBoundingBox(x, y, w, h);
         page.AddEMC();
         return new float[] {x + w, y + h};
+    }
+
+    // A tint of the color, a quarter of it over three quarters of white.
+    private static int Tint(int color) {
+        int r = (color >> 16) & 0xFF;
+        int g = (color >> 8) & 0xFF;
+        int b = color & 0xFF;
+        return (((r + 3 * 255) / 4) << 16) | (((g + 3 * 255) / 4) << 8) | ((b + 3 * 255) / 4);
     }
 
     // The x on the page of the category of the index.

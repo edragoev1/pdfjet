@@ -14,7 +14,8 @@ import PDFjet
  * longest rivers, each bar in its own color with its length inside it, and a
  * color key under the chart. The second page draws two charts with vertical
  * bars from the same data: the two series grouped by month, and the same
- * series stacked.
+ * series stacked. The third, the units of 2026 with a line over the bars for
+ * the target of each month.
  */
 public class Example_27 {
     public init() throws {
@@ -24,6 +25,7 @@ public class Example_27 {
 
         try drawHorizontal(pdf)
         try drawVertical(pdf)
+        try drawTarget(pdf)
 
         try pdf.complete()
     }
@@ -174,6 +176,34 @@ public class Example_27 {
         stacked.setDrawValueLabels(true)
         stacked.setAltDescription("Units sold by month in 2025 and 2026, stacked: from 85 a month, in February and May, to 152 in December.")
         stacked.drawOn(page)
+    }
+
+    private func drawTarget(_ pdf: PDF) throws {
+        let page = Page(pdf, Letter.PORTRAIT)
+
+        let f1 = try Font(pdf, IBMPlexSans.Bold)
+        f1.setSize(10.0)
+
+        let f2 = try Font(pdf, IBMPlexSans.Regular)
+        f2.setSize(8.0)
+
+        let months = [
+                "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+        let units2026: [Float] = [75.0, 20.0, 73.0, 75.0, 20.0, 73.0, 61.0, 58.0, 69.0, 64.0, 77.0, 80.0]
+        let target: [Float] = [60.0, 60.0, 62.0, 64.0, 66.0, 68.0, 68.0, 68.0, 70.0, 72.0, 75.0, 80.0]
+
+        // The description of the chart is made from its data
+        let chart = BarChart(f1, f2)
+        chart.setLocation(70.0, 70.0)
+        chart.setSize(500.0, 300.0)
+        chart.setTitle("Units sold by month in 2026, and the target")
+        chart.setXAxisTitle("Month")
+        chart.setYAxisTitle("Units")
+        chart.setCategories(months)
+        chart.addSeries("2026", units2026)
+        chart.addLineSeries("Target", target)
+        chart.drawOn(page)
     }
 
 }   // End of Example_27.swift

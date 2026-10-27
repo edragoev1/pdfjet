@@ -33,7 +33,8 @@ public class Slice {
 
     /**
      * Creates a slice in the next color of the chart's palette, navy first,
-     * the palette of BarChart, so that the charts of a document match.
+     * the palette of BarChart, so that the charts of a document match. Its
+     * eight colors repeat from the ninth slice on.
      *
      * @param value the value of the slice.
      * @param text the label of the slice.

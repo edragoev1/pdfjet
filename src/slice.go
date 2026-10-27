@@ -28,6 +28,7 @@ const slicePalette int32 = -1
 
 // NewSliceInPalette creates a slice in the next color of the chart's palette,
 // navy first, the palette of BarChart, so that the charts of a document match.
+// Its eight colors repeat from the ninth slice on.
 func NewSliceInPalette(value float32, text string) *Slice {
 	return NewSlice(value, slicePalette, text)
 }

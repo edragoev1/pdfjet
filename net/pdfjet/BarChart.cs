@@ -66,6 +66,7 @@ public class BarChart : IDrawable {
 
     private readonly List<String> categories = new List<String>();
     private readonly List<Series> series = new List<Series>();
+    private readonly List<Series> lineSeries = new List<Series>();   // Drawn as lines over the bars
 
     private bool horizontal = false;
     private bool stacked = false;
@@ -199,6 +200,29 @@ public class BarChart : IDrawable {
     public BarChart AddSeries(String name, float[] values, int[] colors) {
         series.Add(new Series(name == null ? "" : name, values == null ? new float[0] : (float[]) values.Clone(), NO_COLOR,
                 colors == null ? null : (int[]) colors.Clone()));
+        return this;
+    }
+
+    /// <summary>
+    /// Adds a series drawn as a line over the bars, in ink, a dot at each
+    /// category: a target, the average, or last year. It shares the value
+    /// axis with the bars, is not stacked, and is in the legend and the
+    /// description. A value that is NaN or infinite leaves a gap in the line.
+    /// </summary>
+    /// <param name="name">the series name, shown in the legend; empty for none.</param>
+    /// <param name="values">one value per category.</param>
+    /// <returns>this BarChart object.</returns>
+    public BarChart AddLineSeries(String name, float[] values) {
+        return AddLineSeries(name, values, INK);
+    }
+
+    /// <summary>Adds a series drawn as a line over the bars, in the specified color.</summary>
+    /// <param name="name">the series name, shown in the legend; empty for none.</param>
+    /// <param name="values">one value per category.</param>
+    /// <param name="color">the line color as a 0xRRGGBB value.</param>
+    /// <returns>this BarChart object.</returns>
+    public BarChart AddLineSeries(String name, float[] values, int color) {
+        lineSeries.Add(new Series(name == null ? "" : name, values == null ? new float[0] : (float[]) values.Clone(), color, null));
         return this;
     }
 
@@ -457,8 +481,16 @@ public class BarChart : IDrawable {
                     lo = Math.Min(lo, down);
                     hi = Math.Max(hi, up);
                 }
+                foreach (Series s in lineSeries) {
+                    foreach (float v in s.values) {
+                        if (ChartScale.IsValue(v)) {
+                            lo = Math.Min(lo, v);
+                            hi = Math.Max(hi, v);
+                        }
+                    }
+                }
             } else {
-                foreach (Series s in series) {
+                foreach (Series s in AllSeries()) {
                     foreach (float v in s.values) {
                         if (!ChartScale.IsValue(v)) {
                             continue;
@@ -711,6 +743,46 @@ public class BarChart : IDrawable {
             page.DrawRect(x5, y5, x6 - x5, y8 - y5);
         }
 
+        // The lines over the bars, through the middles of the categories, a
+        // dot at each value, broken where a value is missing
+        foreach (Series s in lineSeries) {
+            page.SetPenColor(s.color);
+            page.SetPenWidth(2f);
+            page.SetLineJoinStyle(JoinStyle.ROUND);
+            page.SetBrushColor(s.color);
+            bool drawing = false;
+            List<float[]> dots = new List<float[]>();
+            for (int i = 0; i < n; i++) {
+                if (i >= s.values.Length || !ChartScale.IsValue(s.values[i])) {
+                    if (drawing) {
+                        page.StrokePath();
+                    }
+                    drawing = false;
+                    continue;
+                }
+                float v = Math.Min(Math.Max(s.values[i], vMin), vMax);
+                float middle = (horizontal ? y5 : x5) + i * slot + slot / 2f;
+                float at = horizontal
+                        ? x5 + (v - vMin) * (x6 - x5) / (vMax - vMin)
+                        : y8 - (v - vMin) * (y8 - y5) / (vMax - vMin);
+                float px = horizontal ? at : middle;
+                float py = horizontal ? middle : at;
+                if (drawing) {
+                    page.LineTo(px, py);
+                } else {
+                    page.MoveTo(px, py);
+                    drawing = true;
+                }
+                dots.Add(new float[] {px, py});
+            }
+            if (drawing) {
+                page.StrokePath();
+            }
+            foreach (float[] dot in dots) {
+                page.FillCircle(dot[0], dot[1], 0.2f * bodyHeight);
+            }
+        }
+
         // Axis titles
         page.SetTextRotation(-90);
         DrawText(page, f2, yAxisTitle, x1 + bodyHeight, y8 - ((y8 - y5) - f2.StringWidth(yAxisTitle)) / 2f, MUTED);
@@ -741,7 +813,7 @@ public class BarChart : IDrawable {
             sb.Append("Bar chart");
         }
         String separator = ": ";
-        foreach (Series s in series) {
+        foreach (Series s in AllSeries()) {
             StringBuilder values = new StringBuilder();
             for (int i = 0; i < s.values.Length; i++) {
                 if (!ChartScale.IsValue(s.values[i])) {
@@ -772,15 +844,22 @@ public class BarChart : IDrawable {
     /// <summary>Returns the number of category slots: the categories or the longest series.</summary>
     private int NumberOfCategories() {
         int n = categories.Count;
-        foreach (Series s in series) {
+        foreach (Series s in AllSeries()) {
             n = Math.Max(n, s.values.Length);
         }
         return n;
     }
 
+    /// <summary>Returns the series of the bars, then those of the lines.</summary>
+    private List<Series> AllSeries() {
+        List<Series> all = new List<Series>(series);
+        all.AddRange(lineSeries);
+        return all;
+    }
+
     /// <summary>Returns true if a series has a name to list in the legend.</summary>
     private bool HasSeriesNames() {
-        foreach (Series s in series) {
+        foreach (Series s in AllSeries()) {
             if (s.name.Length > 0) {
                 return true;
             }
@@ -860,8 +939,9 @@ public class BarChart : IDrawable {
         float gap = swatch / 2f;
         float x = x1;
         int rows = 1;
-        for (int j = 0; j < series.Count; j++) {
-            Series s = series[j];
+        List<Series> all = AllSeries();
+        for (int j = 0; j < all.Count; j++) {
+            Series s = all[j];
             if (s.name.Length == 0) {
                 continue;
             }
@@ -870,7 +950,14 @@ public class BarChart : IDrawable {
                 baseline += 1.5f * f2.GetBodyHeight();
                 rows++;
             }
-            if (page != null) {
+            if (page != null && j >= series.Count) {
+                // A line: its color across the swatch, a dot in the middle
+                page.SetPenColor(s.color);
+                page.SetPenWidth(1.5f);
+                page.DrawLine(x, baseline - swatch / 2f, x + swatch, baseline - swatch / 2f);
+                page.SetBrushColor(s.color);
+                page.FillCircle(x + swatch / 2f, baseline - swatch / 2f, swatch / 4f);
+            } else if (page != null) {
                 page.SetBrushColor((s.colors != null && s.colors.Length > 0) ? s.colors[0] : BarColor(s, j, -1));
                 page.FillRect(x, baseline - swatch, swatch, swatch);
             }

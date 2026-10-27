@@ -18,7 +18,8 @@ import com.pdfjet.fonts.*;
  * longest rivers, each bar in its own color with its length inside it, and a
  * color key under the chart. The second page draws two charts with vertical
  * bars from the same data: the two series grouped by month, and the same
- * series stacked.
+ * series stacked. The third, the units of 2026 with a line over the bars for
+ * the target of each month.
  */
 final public class Example_27 {
     public Example_27() throws Exception {
@@ -29,6 +30,7 @@ final public class Example_27 {
 
         drawHorizontal(pdf);
         drawVertical(pdf);
+        drawTarget(pdf);
 
         pdf.complete();
     }
@@ -180,6 +182,34 @@ final public class Example_27 {
         stacked.setDrawValueLabels(true);
         stacked.setAltDescription("Units sold by month in 2025 and 2026, stacked: from 85 a month, in February and May, to 152 in December.");
         stacked.drawOn(page);
+    }
+
+    private void drawTarget(PDF pdf) throws Exception {
+        Page page = new Page(pdf, Letter.PORTRAIT);
+
+        Font f1 = new Font(pdf, IBMPlexSans.Bold);
+        f1.setSize(10f);
+
+        Font f2 = new Font(pdf, IBMPlexSans.Regular);
+        f2.setSize(8f);
+
+        String[] months = {
+                "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+        float[] units2026 = {75f, 20f, 73f, 75f, 20f, 73f, 61f, 58f, 69f, 64f, 77f, 80f};
+        float[] target = {60f, 60f, 62f, 64f, 66f, 68f, 68f, 68f, 70f, 72f, 75f, 80f};
+
+        // The description of the chart is made from its data
+        BarChart chart = new BarChart(f1, f2);
+        chart.setLocation(70f, 70f);
+        chart.setSize(500f, 300f);
+        chart.setTitle("Units sold by month in 2026, and the target");
+        chart.setXAxisTitle("Month");
+        chart.setYAxisTitle("Units");
+        chart.setCategories(months);
+        chart.addSeries("2026", units2026);
+        chart.addLineSeries("Target", target);
+        chart.drawOn(page);
     }
 
     public static void main(String[] args) throws Exception {

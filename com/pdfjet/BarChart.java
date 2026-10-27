@@ -65,6 +65,7 @@ public class BarChart implements Drawable {
 
     private final List<String> categories = new ArrayList<String>();
     private final List<Series> series = new ArrayList<Series>();
+    private final List<Series> lineSeries = new ArrayList<Series>();   // Drawn as lines over the bars
 
     private boolean horizontal = false;
     private boolean stacked = false;
@@ -218,6 +219,33 @@ public class BarChart implements Drawable {
     public BarChart addSeries(String name, float[] values, int[] colors) {
         series.add(new Series(name == null ? "" : name, values == null ? new float[0] : values.clone(), NO_COLOR,
                 colors == null ? null : colors.clone()));
+        return this;
+    }
+
+    /**
+     * Adds a series drawn as a line over the bars, in ink, a dot at each
+     * category: a target, the average, or last year. It shares the value
+     * axis with the bars, is not stacked, and is in the legend and the
+     * description. A value that is NaN or infinite leaves a gap in the line.
+     *
+     * @param name the series name, shown in the legend; empty for none.
+     * @param values one value per category.
+     * @return this BarChart object.
+     */
+    public BarChart addLineSeries(String name, float[] values) {
+        return addLineSeries(name, values, INK);
+    }
+
+    /**
+     * Adds a series drawn as a line over the bars, in the specified color.
+     *
+     * @param name the series name, shown in the legend; empty for none.
+     * @param values one value per category.
+     * @param color the line color as a 0xRRGGBB value.
+     * @return this BarChart object.
+     */
+    public BarChart addLineSeries(String name, float[] values, int color) {
+        lineSeries.add(new Series(name == null ? "" : name, values == null ? new float[0] : values.clone(), color, null));
         return this;
     }
 
@@ -510,8 +538,16 @@ public class BarChart implements Drawable {
                     lo = Math.min(lo, down);
                     hi = Math.max(hi, up);
                 }
+                for (Series s : lineSeries) {
+                    for (float v : s.values) {
+                        if (ChartScale.isValue(v)) {
+                            lo = Math.min(lo, v);
+                            hi = Math.max(hi, v);
+                        }
+                    }
+                }
             } else {
-                for (Series s : series) {
+                for (Series s : allSeries()) {
                     for (float v : s.values) {
                         if (!ChartScale.isValue(v)) {
                             continue;
@@ -764,6 +800,46 @@ public class BarChart implements Drawable {
             page.drawRect(x5, y5, x6 - x5, y8 - y5);
         }
 
+        // The lines over the bars, through the middles of the categories, a
+        // dot at each value, broken where a value is missing
+        for (Series s : lineSeries) {
+            page.setPenColor(s.color);
+            page.setPenWidth(2f);
+            page.setLineJoinStyle(JoinStyle.ROUND);
+            page.setBrushColor(s.color);
+            boolean drawing = false;
+            List<float[]> dots = new ArrayList<>();
+            for (int i = 0; i < n; i++) {
+                if (i >= s.values.length || !ChartScale.isValue(s.values[i])) {
+                    if (drawing) {
+                        page.strokePath();
+                    }
+                    drawing = false;
+                    continue;
+                }
+                float v = Math.min(Math.max(s.values[i], vMin), vMax);
+                float middle = (horizontal ? y5 : x5) + i * slot + slot / 2f;
+                float at = horizontal
+                        ? x5 + (v - vMin) * (x6 - x5) / (vMax - vMin)
+                        : y8 - (v - vMin) * (y8 - y5) / (vMax - vMin);
+                float px = horizontal ? at : middle;
+                float py = horizontal ? middle : at;
+                if (drawing) {
+                    page.lineTo(px, py);
+                } else {
+                    page.moveTo(px, py);
+                    drawing = true;
+                }
+                dots.add(new float[] {px, py});
+            }
+            if (drawing) {
+                page.strokePath();
+            }
+            for (float[] dot : dots) {
+                page.fillCircle(dot[0], dot[1], 0.2f * bodyHeight);
+            }
+        }
+
         // Axis titles
         page.setTextRotation(-90);
         drawText(page, f2, yAxisTitle, x1 + bodyHeight, y8 - ((y8 - y5) - f2.stringWidth(yAxisTitle)) / 2f, MUTED);
@@ -794,7 +870,7 @@ public class BarChart implements Drawable {
             sb.append("Bar chart");
         }
         String separator = ": ";
-        for (Series s : series) {
+        for (Series s : allSeries()) {
             StringBuilder values = new StringBuilder();
             for (int i = 0; i < s.values.length; i++) {
                 if (!ChartScale.isValue(s.values[i])) {
@@ -825,15 +901,22 @@ public class BarChart implements Drawable {
     /** Returns the number of category slots: the categories or the longest series. */
     private int numberOfCategories() {
         int n = categories.size();
-        for (Series s : series) {
+        for (Series s : allSeries()) {
             n = Math.max(n, s.values.length);
         }
         return n;
     }
 
+    /** Returns the series of the bars, then those of the lines. */
+    private List<Series> allSeries() {
+        List<Series> all = new ArrayList<Series>(series);
+        all.addAll(lineSeries);
+        return all;
+    }
+
     /** Returns true if a series has a name to list in the legend. */
     private boolean hasSeriesNames() {
-        for (Series s : series) {
+        for (Series s : allSeries()) {
             if (!s.name.isEmpty()) {
                 return true;
             }
@@ -910,8 +993,9 @@ public class BarChart implements Drawable {
         float gap = swatch / 2f;
         float x = x1;
         int rows = 1;
-        for (int j = 0; j < series.size(); j++) {
-            Series s = series.get(j);
+        List<Series> all = allSeries();
+        for (int j = 0; j < all.size(); j++) {
+            Series s = all.get(j);
             if (s.name.isEmpty()) {
                 continue;
             }
@@ -920,7 +1004,14 @@ public class BarChart implements Drawable {
                 baseline += 1.5f * f2.getBodyHeight();
                 rows++;
             }
-            if (page != null) {
+            if (page != null && j >= series.size()) {
+                // A line: its color across the swatch, a dot in the middle
+                page.setPenColor(s.color);
+                page.setPenWidth(1.5f);
+                page.drawLine(x, baseline - swatch / 2f, x + swatch, baseline - swatch / 2f);
+                page.setBrushColor(s.color);
+                page.fillCircle(x + swatch / 2f, baseline - swatch / 2f, swatch / 4f);
+            } else if (page != null) {
                 page.setBrushColor((s.colors != null && s.colors.length > 0) ? s.colors[0] : barColor(s, j, -1));
                 page.fillRect(x, baseline - swatch, swatch, swatch);
             }

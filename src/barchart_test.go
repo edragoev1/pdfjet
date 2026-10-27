@@ -318,3 +318,33 @@ func TestBarChartCategoriesThatDoNotFitAreSkipped(t *testing.T) {
 		t.Errorf("%q", content)
 	}
 }
+
+// A line series is drawn over the bars, in ink, with a dot at each value;
+// the axis reaches its values, the legend lists it and the description
+// has its values after the bars'.
+func TestBarChartALineSeriesIsDrawnOverTheBars(t *testing.T) {
+	pdf := testNewPDF()
+	pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
+	page := NewPage(pdf, testLetterPortrait())
+	chart := testBarChart(pdf).SetTitle("Sales").SetCategories("a", "b").SetDrawLegend(true).
+		AddSeries("Sold", []float32{1, 2}).AddLineSeries("Target", []float32{9, float32(math.NaN())})
+	content := testDrawBarChart(t, chart, page)
+	if !strings.Contains(content, "0.13 0.15 0.17 RG\n") || !strings.Contains(content, "\n2 w\n") { // In ink
+		t.Errorf("the line is not in ink: %q", content)
+	}
+	if !strings.Contains(content, testHex("Target")) {
+		t.Errorf("the legend does not list the line: %q", content)
+	}
+	if !strings.Contains(content, "<"+testHex("8")+">") { // The axis reaches 9
+		t.Errorf("the axis does not reach 9: %q", content)
+	}
+	if got := page.structures[0].altDescription; got != "Sales: Sold: a 1, b 2; Target: a 9." {
+		t.Errorf("the chart is described as %q", got)
+	}
+	page = NewPage(pdf, testLetterPortrait())
+	content = testDrawBarChart(t, testBarChart(pdf).SetCategories("a").AddSeries("", []float32{1}).
+		AddLineSeriesWithColor("", []float32{2}, 0x123456), page)
+	if !strings.Contains(content, "0.07 0.2 0.34 RG\n") {
+		t.Errorf("the line is not in its color: %q", content)
+	}
+}

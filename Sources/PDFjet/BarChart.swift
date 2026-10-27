@@ -55,6 +55,7 @@ public class BarChart : Drawable {
 
     private var categories = [String]()
     private var series = [Series]()
+    private var lineSeries = [Series]()     // Drawn as lines over the bars
 
     private var horizontal = false
     private var stacked = false
@@ -225,6 +226,35 @@ public class BarChart : Drawable {
     @discardableResult
     public func addSeries(_ name: String, _ values: [Float], _ colors: [Int32]) -> BarChart {
         series.append(Series(name: name, values: values, color: BarChart.NO_COLOR, colors: colors))
+        return self
+    }
+
+    ///
+    /// Adds a series drawn as a line over the bars, in ink, a dot at each
+    /// category: a target, the average, or last year. It shares the value
+    /// axis with the bars, is not stacked, and is in the legend and the
+    /// description. A value that is NaN or infinite leaves a gap in the line.
+    ///
+    /// - Parameter name: the series name, shown in the legend; empty for none.
+    /// - Parameter values: one value per category.
+    /// - Returns: this BarChart object.
+    ///
+    @discardableResult
+    public func addLineSeries(_ name: String, _ values: [Float]) -> BarChart {
+        return addLineSeries(name, values, BarChart.INK)
+    }
+
+    ///
+    /// Adds a series drawn as a line over the bars, in the specified color.
+    ///
+    /// - Parameter name: the series name, shown in the legend; empty for none.
+    /// - Parameter values: one value per category.
+    /// - Parameter color: the line color as a 0xRRGGBB value.
+    /// - Returns: this BarChart object.
+    ///
+    @discardableResult
+    public func addLineSeries(_ name: String, _ values: [Float], _ color: Int32) -> BarChart {
+        lineSeries.append(Series(name: name, values: values, color: color, colors: nil))
         return self
     }
 
@@ -539,8 +569,14 @@ public class BarChart : Drawable {
                     lo = Swift.min(lo, down)
                     hi = Swift.max(hi, up)
                 }
+                for s in lineSeries {
+                    for v in s.values where ChartScale.isValue(v) {
+                        lo = Swift.min(lo, v)
+                        hi = Swift.max(hi, v)
+                    }
+                }
             } else {
-                for s in series {
+                for s in allSeries() {
                     for v in s.values where ChartScale.isValue(v) {
                         lo = Swift.min(lo, v)
                         hi = Swift.max(hi, v)
@@ -789,6 +825,46 @@ public class BarChart : Drawable {
             page.drawRect(x5, y5, x6 - x5, y8 - y5)
         }
 
+        // The lines over the bars, through the middles of the categories, a
+        // dot at each value, broken where a value is missing
+        for s in lineSeries {
+            page.setPenColor(s.color)
+            page.setPenWidth(2.0)
+            page.setLineJoinStyle(JoinStyle.ROUND)
+            page.setBrushColor(s.color)
+            var drawing = false
+            var dots = [[Float]]()
+            for i in 0..<n {
+                if i >= s.values.count || !ChartScale.isValue(s.values[i]) {
+                    if drawing {
+                        page.strokePath()
+                    }
+                    drawing = false
+                    continue
+                }
+                let v = Swift.min(Swift.max(s.values[i], vMin), vMax)
+                let middle = (horizontal ? y5 : x5) + Float(i) * slot + slot / 2.0
+                let at = horizontal
+                        ? x5 + (v - vMin) * (x6 - x5) / (vMax - vMin)
+                        : y8 - (v - vMin) * (y8 - y5) / (vMax - vMin)
+                let px = horizontal ? at : middle
+                let py = horizontal ? middle : at
+                if drawing {
+                    page.lineTo(px, py)
+                } else {
+                    page.moveTo(px, py)
+                    drawing = true
+                }
+                dots.append([px, py])
+            }
+            if drawing {
+                page.strokePath()
+            }
+            for dot in dots {
+                page.fillCircle(dot[0], dot[1], 0.2 * bodyHeight)
+            }
+        }
+
         // Axis titles
         page.setTextRotation(-90)
         BarChart.drawText(page, f2, yAxisTitle, x1 + bodyHeight, y8 - ((y8 - y5) - f2.stringWidth(yAxisTitle)) / 2.0,
@@ -821,7 +897,7 @@ public class BarChart : Drawable {
             sb += "Bar chart"
         }
         var separator = ": "
-        for s in series {
+        for s in allSeries() {
             var values = ""
             for i in 0..<s.values.count {
                 if !ChartScale.isValue(s.values[i]) {
@@ -852,15 +928,20 @@ public class BarChart : Drawable {
     /// Returns the number of category slots: the categories or the longest series.
     private func numberOfCategories() -> Int {
         var n = categories.count
-        for s in series {
+        for s in allSeries() {
             n = Swift.max(n, s.values.count)
         }
         return n
     }
 
+    /// Returns the series of the bars, then those of the lines.
+    private func allSeries() -> [Series] {
+        return series + lineSeries
+    }
+
     /// Returns true if a series has a name to list in the legend.
     private func hasSeriesNames() -> Bool {
-        for s in series {
+        for s in allSeries() {
             if !s.name.isEmpty {
                 return true
             }
@@ -938,8 +1019,9 @@ public class BarChart : Drawable {
         var x = x1
         var baseline = baseline
         var rows = 1
-        for j in 0..<series.count {
-            let s = series[j]
+        let all = allSeries()
+        for j in 0..<all.count {
+            let s = all[j]
             if s.name.isEmpty {
                 continue
             }
@@ -948,7 +1030,14 @@ public class BarChart : Drawable {
                 baseline += 1.5 * f2.getBodyHeight()
                 rows += 1
             }
-            if let page {
+            if let page, j >= series.count {
+                // A line: its color across the swatch, a dot in the middle
+                page.setPenColor(s.color)
+                page.setPenWidth(1.5)
+                page.drawLine(x, baseline - swatch / 2.0, x + swatch, baseline - swatch / 2.0)
+                page.setBrushColor(s.color)
+                page.fillCircle(x + swatch / 2.0, baseline - swatch / 2.0, swatch / 4.0)
+            } else if let page {
                 if let colors = s.colors, !colors.isEmpty {
                     page.setBrushColor(colors[0])
                 } else {

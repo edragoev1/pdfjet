@@ -175,3 +175,30 @@ func TestSimpleLineChartTheEndLabelsStayOverThePlot(t *testing.T) {
 		t.Errorf("the last label is at %v, under the chart, in %q", y, content)
 	}
 }
+
+// The values are written by their points but the last of each line, which
+// its end label has; the area under a line is filled in a tint of its
+// color, under the line.
+func TestSimpleLineChartTheValuesAndTheAreaAreDrawnWhenAsked(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	page := NewPage(pdf, testLetterPortrait())
+	NewSimpleLineChart(font, font).SetCategories("a", "b", "c").AddLine("x", []float32{12, 37, 23}).
+		SetHighlight(0).SetValueLabels(true).SetAreaFilled(true).DrawOn(page)
+	content := testContent(page)
+	if !strings.Contains(content, testHex("12")) || !strings.Contains(content, testHex("37")) {
+		t.Errorf("the values are not written: %q", content)
+	}
+	if strings.Contains(content, "<"+testHex("23")+">") { // Only in "x 23"
+		t.Errorf("the last value is written: %q", content)
+	}
+	area := strings.Index(content, "0.78 0.8 0.84 rg\n") // Navy, a quarter over white
+	if area <= 0 || area >= strings.Index(content, "0.12 0.23 0.37 RG\n") {
+		t.Errorf("the area is not under the line: %q", content)
+	}
+	page = NewPage(pdf, testLetterPortrait())
+	NewSimpleLineChart(font, font).AddLine("x", []float32{12, 37}).DrawOn(page)
+	if strings.Contains(testContent(page), testHex("12")) {
+		t.Errorf("a value is written unasked: %q", testContent(page))
+	}
+}

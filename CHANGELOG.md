@@ -31,6 +31,31 @@ There is no 9.1.3: what was done for it is in 9.1.5 (the owner, 26 October
   kerned), 118 in Java (69), 103 in C# (63) and 155 in Swift (98), and the
   document is 11 to 17% larger, for the moves written between the glyphs.
 
+- The charts, the four ports, the last items of their plan:
+  - `BarChart.addLineSeries(name, values)`, and with a color (Go
+    `AddLineSeries`, `AddLineSeriesWithColor`): a series drawn as a line over
+    the bars, in ink, a dot at each category, broken where a value is NaN:
+    a target, the average, last year. It shares the value axis with the
+    bars, is not stacked, and is in the legend, as a line with a dot, and in
+    the description. Example_27's third page draws the units of 2026 under
+    the target of each month.
+  - `DonutChart.setLegend(true)`: a legend under the circle, a swatch, the
+    label and the percentage of each slice, in rows as wide as the circle,
+    in place of the leader lines and the labels beside it, for many slices
+    or small ones. `DonutChart.setCenterText(text)`: the text in the hole of
+    a donut, the total, in the title's font, as large as one and a half
+    labels or as fits, and in the description. Example_28's second page
+    draws eight kinds of fruit with both. The palette's eight colors repeat
+    from a ninth slice on, as the documentation of `new Slice(value, text)`
+    says.
+  - `SimpleLineChart.setValueLabels(true)`: each value written small by its
+    point, above a peak, under a valley, before a point on a rise and after
+    one on a fall, where the line leaves it room; the last of a line is in
+    its end label. `SimpleLineChart.setAreaFilled(true)`: the area under each
+    line, down to 0 or the bottom of the plot, in a tint of the line's
+    color, a quarter of it over white, which makes an area chart. Example_25's
+    second page draws the plug-in hybrids with both.
+
 - All four ports: `TextFrame.getTextBottom()` (Go `GetTextBottom`), the y
   coordinate of the bottom of the text drawn by the last `drawOn`, or
   measured by it with no page: where what comes under the text goes.

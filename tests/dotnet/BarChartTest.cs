@@ -267,5 +267,25 @@ public class BarChartTest {
                 .AddSeries(null, new float[] {1f}).AddSeries("b", null).AddSeries("c", new float[] {2f}, (int[]) null)
                 .DrawOn(page);
     }
+
+    // A line series is drawn over the bars, in ink, with a dot at each value;
+    // the axis reaches its values, the legend lists it and the description
+    // has its values after the bars'.
+    [Fact]
+    public void ALineSeriesIsDrawnOverTheBars() {
+        PDF pdf = new PDF(new System.IO.MemoryStream(), Compliance.PDF_UA_1).SetTitle("Test");
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        BarChart chart = NewChart(pdf).SetTitle("Sales").SetCategories("a", "b").SetDrawLegend(true)
+                .AddSeries("Sold", new float[] {1f, 2f}).AddLineSeries("Target", new float[] {9f, float.NaN});
+        string content = Draw(chart, page);
+        Assert.True(content.Contains("0.13 0.15 0.17 RG\n") && content.Contains("\n2 w\n"), content);    // In ink
+        Assert.Contains(TestSupport.Hex("Target"), content);
+        Assert.Contains("<" + TestSupport.Hex("8") + ">", content);     // The axis reaches 9
+        Assert.Equal("Sales: Sold: a 1, b 2; Target: a 9.", page.structures[0].altDescription);
+        page = new Page(pdf, Letter.PORTRAIT);
+        content = Draw(NewChart(pdf).SetCategories("a").AddSeries("", new float[] {1f})
+                .AddLineSeries("", new float[] {2f}, 0x123456), page);
+        Assert.Contains("0.07 0.2 0.34 RG\n", content);
+    }
 }
 }

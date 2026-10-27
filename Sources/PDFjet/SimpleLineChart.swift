@@ -59,6 +59,8 @@ public class SimpleLineChart : Drawable {
     private var lines = [Line]()
     private var highlight = -1      // The index of the highlighted line, or -1
     private var markers = false
+    private var valueLabels = false
+    private var areaFilled = false
     private var yMin: Float = 0.0
     private var yMax: Float = 0.0
     private var yRangeSet = false
@@ -202,6 +204,35 @@ public class SimpleLineChart : Drawable {
     @discardableResult
     public func setMarkers(_ markers: Bool) -> SimpleLineChart {
         self.markers = markers
+        return self
+    }
+
+    ///
+    /// Writes each value of the lines by its point, small, where the line
+    /// leaves it room: above a peak, under a valley, before or after a point
+    /// on a rise or a fall; but the last of each line, which its label at the
+    /// end of the line has.
+    ///
+    /// - Parameter valueLabels: true to write them.
+    /// - Returns: this chart.
+    ///
+    @discardableResult
+    public func setValueLabels(_ valueLabels: Bool) -> SimpleLineChart {
+        self.valueLabels = valueLabels
+        return self
+    }
+
+    ///
+    /// Fills the area under each line, down to 0 or to the bottom of the plot,
+    /// in a light tint of the line's color, which makes an area chart. The
+    /// highlighted line's area is drawn last, over the others.
+    ///
+    /// - Parameter areaFilled: true to fill the areas.
+    /// - Returns: this chart.
+    ///
+    @discardableResult
+    public func setAreaFilled(_ areaFilled: Bool) -> SimpleLineChart {
+        self.areaFilled = areaFilled
         return self
     }
 
@@ -553,6 +584,33 @@ public class SimpleLineChart : Drawable {
             page.saveGraphicsState()
             page.clipRect(plotLeft - edge, top - edge, right - plotLeft + 2.0 * edge, plotBottom - top + 2.0 * edge)
         }
+        // The areas under the lines, each run of values down to 0, or to the
+        // bottom of the plot when 0 is under it, in a tint of the line's color
+        if areaFilled {
+            let zero = yAt(Swift.min(Swift.max(0.0, axis.min), axis.max))
+            for i in order {
+                let line = lines[i]
+                page.setBrushColor(SimpleLineChart.tint((i == highlight) ? highlightColor : lineColor))
+                var start = -1
+                for j in 0...n {
+                    if j < n && line.has(j) {
+                        if start < 0 {
+                            start = j
+                        }
+                        continue
+                    }
+                    if start >= 0 && j - 1 > start {
+                        page.moveTo(xAt(start), zero)
+                        for k in start..<j {
+                            page.lineTo(xAt(k), yAt(line.values[k]))
+                        }
+                        page.lineTo(xAt(j - 1), zero)
+                        page.fillPath()
+                    }
+                    start = -1
+                }
+            }
+        }
         for i in order {
             let line = lines[i]
             let color = (i == highlight) ? highlightColor : lineColor
@@ -587,6 +645,45 @@ public class SimpleLineChart : Drawable {
         }
         if outside {
             page.restoreGraphicsState()
+        }
+
+        // The values by their points, where the line leaves them room: above
+        // a peak, under a valley, above and before a point on a rise, above
+        // and after one on a fall; but those outside the axis and the last of
+        // each line, which its label at the end has
+        if valueLabels {
+            let small = subtitleSize()
+            let gap = 0.5 * size
+            for i in order {
+                let line = lines[i]
+                let last = lastOf(line)
+                let color = (i == highlight) ? highlightColor : SimpleBarChart.MUTED
+                for j in 0..<Swift.max(last, 0) {
+                    if !line.has(j) || !ChartScale.onAxis(line.values[j], axis) {
+                        continue
+                    }
+                    let v = line.values[j]
+                    let before = (j > 0 && line.has(j - 1)) ? line.values[j - 1] : v
+                    let after = line.has(j + 1) ? line.values[j + 1] : v
+                    let text = value(v)
+                    let width = f2.stringWidth(small, text)
+                    let px = xAt(j)
+                    let py = yAt(v)
+                    var lx = px - width / 2.0
+                    var at = py - gap
+                    if before > v && after > v {                // A valley
+                        at = py + gap + f2.getAscent(small)
+                        if at > plotBottom {
+                            at = py - gap
+                        }
+                    } else if before < v && after > v {         // A rise
+                        lx = px - gap - width
+                    } else if before > v && after < v {         // A fall
+                        lx = px + gap
+                    }
+                    page.drawString(f2, small, text, lx, at, Util.toRGB(color), nil)
+                }
+            }
         }
 
         // The labels at the ends of the lines, moved apart where they would
@@ -628,5 +725,13 @@ public class SimpleLineChart : Drawable {
         page.setFigureBoundingBox(x, y, w, h)
         page.addEMC()
         return [x + w, y + h]
+    }
+
+    // A tint of the color, a quarter of it over three quarters of white.
+    private static func tint(_ color: Int32) -> Int32 {
+        let r = (color >> 16) & 0xFF
+        let g = (color >> 8) & 0xFF
+        let b = color & 0xFF
+        return (((r + 3 * 255) / 4) << 16) | (((g + 3 * 255) / 4) << 8) | ((b + 3 * 255) / 4)
     }
 }   // End of SimpleLineChart.swift

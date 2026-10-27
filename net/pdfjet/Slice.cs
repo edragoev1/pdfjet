@@ -31,7 +31,8 @@ public class Slice {
 
     /// <summary>
     /// Creates a slice in the next color of the chart's palette, navy first, the
-    /// palette of BarChart, so that the charts of a document match.
+    /// palette of BarChart, so that the charts of a document match. Its eight
+    /// colors repeat from the ninth slice on.
     /// </summary>
     /// <param name="value">the value of the slice, above 0; the chart draws its share of the sum.</param>
     /// <param name="text">the label drawn next to the slice.</param>

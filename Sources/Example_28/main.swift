@@ -16,7 +16,7 @@ public class Example_28 {
         pdf.setCompliance(Compliance.PDF_UA_1)
         pdf.setTitle("Fruit Donut Chart")
 
-        let page = Page(pdf, Letter.PORTRAIT)
+        var page = Page(pdf, Letter.PORTRAIT)
 
         let f1 = try Font(pdf, IBMPlexSans.Regular)
         f1.setSize(12.0)
@@ -42,6 +42,24 @@ public class Example_28 {
         chart.addSlice(Slice(15.0, "Grapes"))
         chart.addSlice(Slice(10.0, "Lemons"))
         chart.drawOn(page)
+
+        // Many slices, some small: a legend under the circle in place of the
+        // leader lines, and the total in the hole
+        page = Page(pdf, Letter.PORTRAIT)
+        let many = DonutChart(f1, f2)
+        many.setLocation(100.0, 100.0)
+        many.setRadii(150.0, 90.0)
+        many.setTitle("Fruit sold this month")
+        many.setSubtitle("Share of 100 crates, eight kinds, a color each")
+        many.setCenterText("100 crates")
+        many.setLegend(true)
+        let kinds = ["Apples", "Bananas", "Oranges", "Grapes", "Lemons",
+                "Pears", "Plums", "Cherries"]
+        let crates: [Float] = [31.0, 24.0, 17.0, 10.0, 7.0, 5.0, 4.0, 2.0]
+        for i in 0..<kinds.count {
+            many.addSlice(Slice(crates[i], kinds[i]))
+        }
+        many.drawOn(page)
 
         try pdf.complete()
     }

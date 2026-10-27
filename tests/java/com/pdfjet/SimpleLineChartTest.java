@@ -176,4 +176,24 @@ class SimpleLineChartTest {
         // The page is 792 high, the chart from 0 to 120 down from its top
         assertTrue(TestSupport.positionOf(content, "line 7 0")[1] > 792f - 120f, content);
     }
+
+    // The values are written by their points but the last of each line, which
+    // its end label has; the area under a line is filled in a tint of its
+    // color, under the line.
+    @Test
+    void theValuesAndTheAreaAreDrawnWhenAsked() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new SimpleLineChart(font, font).setCategories("a", "b", "c").addLine("x", new float[] {12f, 37f, 23f})
+                .setHighlight(0).setValueLabels(true).setAreaFilled(true).drawOn(page);
+        String content = TestSupport.content(page);
+        assertTrue(content.contains(TestSupport.hex("12")) && content.contains(TestSupport.hex("37")), content);
+        assertFalse(content.contains("<" + TestSupport.hex("23") + ">"), content);   // Only in "x 23"
+        int area = content.indexOf("0.78 0.8 0.84 rg\n");      // Navy, a quarter over white
+        assertTrue(area > 0 && area < content.indexOf("0.12 0.23 0.37 RG\n"), content);
+        page = new Page(pdf, Letter.PORTRAIT);
+        new SimpleLineChart(font, font).addLine("x", new float[] {12f, 37f}).drawOn(page);
+        assertFalse(TestSupport.content(page).contains(TestSupport.hex("12")));
+    }
 }

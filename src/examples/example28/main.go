@@ -53,6 +53,24 @@ func Example28() {
 	chart.AddSlice(pdfjet.NewSliceInPalette(10.0, "Lemons"))
 	chart.DrawOn(page)
 
+	// Many slices, some small: a legend under the circle in place of the
+	// leader lines, and the total in the hole
+	page = pdfjet.NewPage(pdf, letter.Portrait())
+	many := pdfjet.NewDonutChart(f1, f2)
+	many.SetLocation(100.0, 100.0)
+	many.SetRadii(150.0, 90.0)
+	many.SetTitle("Fruit sold this month")
+	many.SetSubtitle("Share of 100 crates, eight kinds, a color each")
+	many.SetCenterText("100 crates")
+	many.SetLegend(true)
+	kinds := []string{"Apples", "Bananas", "Oranges", "Grapes", "Lemons",
+		"Pears", "Plums", "Cherries"}
+	crates := []float32{31.0, 24.0, 17.0, 10.0, 7.0, 5.0, 4.0, 2.0}
+	for i := range kinds {
+		many.AddSlice(pdfjet.NewSliceInPalette(crates[i], kinds[i]))
+	}
+	many.DrawOn(page)
+
 	if err := pdf.Complete(); err != nil {
 		log.Fatal(err)
 	}

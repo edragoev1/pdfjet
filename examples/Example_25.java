@@ -17,6 +17,8 @@ import com.pdfjet.fonts.*;
  * the data file by model year, battery electric highlighted in navy, each
  * line labeled at its end with its last count, so that the chart needs no
  * legend, and a dot at each year so that each count can be read off its line.
+ * The second page draws the plug-in hybrids alone as an area chart, the area
+ * under the line filled and each count written above its year.
  */
 public class Example_25 {
     // The vehicles of data/Electric_Vehicle_Population_Data.csv by model year
@@ -85,6 +87,21 @@ public class Example_25 {
                 .setMarkers(true)
                 .setLocation(50f, xy[1] + 30f)
                 .setSize(512f, 340f)
+                .drawOn(page);
+
+        page = new Page(pdf, Letter.PORTRAIT);
+        new SimpleLineChart(f1, f2)
+                .setTitle("Plug-in hybrid vehicles")
+                .setSubtitle("By model year, the area under the line filled and each count written")
+                .setYAxisTitle("Vehicles")
+                .setCategories(years)
+                .addLine("Plug-in hybrid", HYBRID)
+                .setHighlight(0)
+                .setMarkers(true)
+                .setAreaFilled(true)
+                .setValueLabels(true)
+                .setLocation(50f, 50f)
+                .setSize(512f, 300f)
                 .drawOn(page);
 
         pdf.complete();

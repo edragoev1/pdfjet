@@ -176,5 +176,25 @@ public sealed class SimpleLineChartTest {
         // The page is 792 high, the chart from 0 to 120 down from its top
         Assert.True(TestSupport.PositionOf(content, "line 7 0")[1] > 792f - 120f, content);
     }
+
+    // The values are written by their points but the last of each line, which
+    // its end label has; the area under a line is filled in a tint of its
+    // color, under the line.
+    [Fact]
+    public void TheValuesAndTheAreaAreDrawnWhenAsked() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new SimpleLineChart(font, font).SetCategories("a", "b", "c").AddLine("x", new float[] {12f, 37f, 23f})
+                .SetHighlight(0).SetValueLabels(true).SetAreaFilled(true).DrawOn(page);
+        string content = TestSupport.Content(page);
+        Assert.True(content.Contains(TestSupport.Hex("12")) && content.Contains(TestSupport.Hex("37")), content);
+        Assert.DoesNotContain("<" + TestSupport.Hex("23") + ">", content);    // Only in "x 23"
+        int area = content.IndexOf("0.78 0.8 0.84 rg\n", StringComparison.Ordinal);    // Navy, a quarter over white
+        Assert.True(area > 0 && area < content.IndexOf("0.12 0.23 0.37 RG\n", StringComparison.Ordinal), content);
+        page = new Page(pdf, Letter.PORTRAIT);
+        new SimpleLineChart(font, font).AddLine("x", new float[] {12f, 37f}).DrawOn(page);
+        Assert.DoesNotContain(TestSupport.Hex("12"), TestSupport.Content(page));
+    }
 }
 }   // End of namespace PDFjet.NET

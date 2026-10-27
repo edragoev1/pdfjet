@@ -193,5 +193,28 @@ public class DonutChartTest {
         Assert.Contains("1.5 w\n", content);                                                      // By the big slice
         Assert.True(System.Text.RegularExpressions.Regex.IsMatch(content, "\n0\\.\\d+ w\n"), content);    // Between two thin ones
     }
+
+    // With a legend the chart has no leader lines: each slice's label and
+    // percentage is in rows under the circle, which the returned corner
+    // holds. The text in the hole is drawn and described; a pie chart has no
+    // hole for it.
+    [Fact]
+    public void ALegendAndATextInTheHole() {
+        PDF pdf = new PDF(new System.IO.MemoryStream(), Compliance.PDF_UA_1).SetTitle("Test");
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        DonutChart chart = NewChart(pdf).SetLegend(true).SetCenterText("100 crates")
+                .AddSlice(new Slice(60f, "a")).AddSlice(new Slice(40f, "b"));
+        float[] xy = chart.DrawOn(page);
+        string content = TestSupport.Content(page);
+        Assert.DoesNotContain("0.55 0.59 0.64 RG", content);      // No leader lines
+        Assert.True(content.Contains(TestSupport.Hex("a 60%")) && content.Contains(TestSupport.Hex("b 40%")), content);
+        Assert.Contains(TestSupport.Hex("100 crates"), content);
+        Assert.True(xy[1] > 300f + 15f, "the legend is under the circle: " + xy[1]);
+        TestSupport.AssertXY(xy[0], xy[1], chart.DrawOn(null));
+        Assert.Equal("100 crates: a 60%, b 40%", page.structures[0].altDescription);
+        page = new Page(pdf, Letter.PORTRAIT);
+        NewChart(pdf).SetRadii(100f, 0f).SetCenterText("none").AddSlice(new Slice(1f, "a")).DrawOn(page);
+        Assert.DoesNotContain(TestSupport.Hex("none"), TestSupport.Content(page));
+    }
 }
 }

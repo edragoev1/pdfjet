@@ -42,6 +42,8 @@ type DonutChart struct {
 	altDescription string
 	title          string
 	subtitle       string
+	centerText     string
+	legend         bool
 }
 
 // donutLeader is the color of the leader lines, in the look of the simple charts.
@@ -96,6 +98,23 @@ func (dc *DonutChart) SetTitle(title string) *DonutChart {
 // SetSubtitle sets the subtitle, drawn under the title in a muted gray.
 func (dc *DonutChart) SetSubtitle(subtitle string) *DonutChart {
 	dc.subtitle = subtitle
+	return dc
+}
+
+// SetCenterText sets the text written in the hole of a donut chart, in the
+// font of the title, as large as one and a half labels or as fits: the total,
+// "100 crates". A pie chart, with no hole, does not write it.
+func (dc *DonutChart) SetCenterText(centerText string) *DonutChart {
+	dc.centerText = centerText
+	return dc
+}
+
+// SetLegend draws a legend under the circle, a swatch, the label and the
+// percentage of each slice, in rows as wide as the circle, in place of the
+// leader lines and the labels beside the circle: for many slices, or small
+// ones whose labels would crowd.
+func (dc *DonutChart) SetLegend(legend bool) *DonutChart {
+	dc.legend = legend
 	return dc
 }
 
@@ -339,11 +358,15 @@ func (dc *DonutChart) DrawOn(page *Page) [2]float32 {
 		// Room for a label at the top of the circle: its leader line goes 15
 		// points up, the label sits above its end; and half a line
 		var label float32
-		if dc.f1 != nil {
+		if dc.f1 != nil && !dc.legend {
 			ascent := dc.f1.GetAscent(dc.f1.size)
 			label = float32(ascent/3) + ascent
 		}
-		top += 15 + label + float32(titleSize/2)
+		leader := float32(15)
+		if dc.legend {
+			leader = 0
+		}
+		top += leader + label + float32(titleSize/2)
 	}
 	xc := dc.x + dc.r1 // the center of the chart
 	yc := top + dc.r1
@@ -362,12 +385,21 @@ func (dc *DonutChart) DrawOn(page *Page) [2]float32 {
 	// The leader lines and the labels, moved apart, and the box of the
 	// figure: the title, the outer circle, the leader lines and the labels
 	pointers := make([]*donutPointer, 0, len(dc.slices))
+	colors := make([]int32, len(dc.slices))
 	angle := float32(0.0)
+	count := 0
 	for i, slice := range dc.slices {
 		if values[i] > 0.0 {
 			sweep := float32(values[i]*360.0) / total
-			pointers = append(pointers, dc.pointerOf(slice.text, xc, yc, dc.r1, angle, angle+sweep, len(pointers)))
+			if !dc.legend {
+				pointers = append(pointers, dc.pointerOf(slice.text, xc, yc, dc.r1, angle, angle+sweep, len(pointers)))
+			}
 			angle += sweep
+			colors[i] = slice.color
+			if colors[i] == slicePalette {
+				colors[i] = barChartPalette[count%len(barChartPalette)]
+			}
+			count++
 		}
 	}
 	dc.moveApart(pointers)
@@ -380,6 +412,9 @@ func (dc *DonutChart) DrawOn(page *Page) [2]float32 {
 	}
 	for _, pointer := range pointers {
 		box = donutUnion(box, dc.drawPointer(nil, pointer))
+	}
+	if dc.legend {
+		box = donutUnion(box, dc.drawLegend(nil, values, percentages, colors, yc+dc.r1))
 	}
 	if page == nil { // Measured
 		return [2]float32{box[2], box[3]}
@@ -401,14 +436,11 @@ func (dc *DonutChart) DrawOn(page *Page) [2]float32 {
 	drawn := 0
 	edges := make([]float32, 0, len(dc.slices))
 	sweeps := make([]float32, 0, len(dc.slices))
-	for i, slice := range dc.slices {
+	for i := range dc.slices {
 		if values[i] <= 0.0 {
 			continue
 		}
-		sliceColor := slice.color
-		if sliceColor == slicePalette {
-			sliceColor = barChartPalette[drawn%len(barChartPalette)]
-		}
+		sliceColor := colors[i]
 		sweep := float32(values[i]*360.0) / total
 		angle = dc.drawSlice(
 			page, sliceColor,
@@ -418,7 +450,9 @@ func (dc *DonutChart) DrawOn(page *Page) [2]float32 {
 		)
 		edges = append(edges, angle)
 		sweeps = append(sweeps, sweep)
-		dc.drawPointer(page, pointers[drawn])
+		if !dc.legend {
+			dc.drawPointer(page, pointers[drawn])
+		}
 		drawn++
 
 		// The percentage fits inside a slice of 15 degrees or more
@@ -449,11 +483,63 @@ func (dc *DonutChart) DrawOn(page *Page) [2]float32 {
 			page.DrawLine(inner[0], inner[1], outer[0], outer[1])
 		}
 	}
+	if dc.legend {
+		dc.drawLegend(page, values, percentages, colors, yc+dc.r1)
+	}
+	// The text in the hole, as large as one and a half labels or as fits
+	if dc.r2 > 0.0 && titleFont != nil && dc.centerText != "" {
+		size := float32(1.5 * titleSize)
+		width := titleFont.StringWidth(size, dc.centerText)
+		if width > float32(1.6*dc.r2) {
+			size = float32(size*float32(1.6*dc.r2)) / width
+			width = titleFont.StringWidth(size, dc.centerText)
+		}
+		baseline := yc + float32((titleFont.GetAscent(size)-titleFont.GetDescent(size))/2.0)
+		page.drawString(titleFont, size, dc.centerText, xc-float32(width/2.0), baseline, colorToRGB(simpleBarInk), nil)
+	}
 	page.RestoreGraphicsState()
 	page.SetFigureBoundingBox(box[0], box[1], box[2]-box[0], box[3]-box[1])
 	page.AddEMC()
 
 	return [2]float32{box[2], box[3]}
+}
+
+// drawLegend returns the box of the legend under the circle, whose bottom is
+// at the y: a swatch, the label and the percentage of each slice, in rows as
+// wide as the circle; and draws it when there is a page.
+func (dc *DonutChart) drawLegend(page *Page, values []float32, percentages []int, colors []int32, y float32) [4]float32 {
+	box := [4]float32{dc.x, y, dc.x, y}
+	f1 := dc.f1
+	if f1 == nil {
+		return box
+	}
+	swatch := f1.ascent
+	gap := float32(swatch / 2.0)
+	left := dc.x
+	baseline := y + float32(1.5*f1.bodyHeight)
+	for i, slice := range dc.slices {
+		if values[i] <= 0.0 {
+			continue
+		}
+		text := fmt.Sprintf("%d%%", percentages[i])
+		if slice.text != "" {
+			text = slice.text + " " + text
+		}
+		width := f1.StringWidth(f1.size, text)
+		if left > dc.x && left+swatch+gap+width > dc.x+float32(2.0*dc.r1) {
+			left = dc.x
+			baseline += float32(1.5 * f1.bodyHeight)
+		}
+		if page != nil {
+			page.SetBrushColor(colors[i])
+			page.FillRect(left, baseline-swatch, swatch, swatch)
+			page.drawString(f1, f1.size, text, left+swatch+gap, baseline, colorToRGB(simpleBarInk), nil)
+		}
+		box[2] = max(box[2], left+swatch+gap+width)
+		box[3] = baseline + f1.descent
+		left += swatch + gap + width + f1.bodyHeight
+	}
+	return box
 }
 
 // donutUnion returns the box that holds the two boxes, each left, top, right,
@@ -533,6 +619,13 @@ func (dc *DonutChart) getAltDescription(values []float32, percentages []int) str
 			name = dc.subtitle
 		} else {
 			name = name + ", " + dc.subtitle
+		}
+	}
+	if dc.centerText != "" && dc.r2 > 0.0 {
+		if name == "" {
+			name = dc.centerText
+		} else {
+			name = name + ", " + dc.centerText
 		}
 	}
 	if name == "" {

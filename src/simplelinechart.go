@@ -52,6 +52,8 @@ type SimpleLineChart struct {
 	lines                  []*simpleLine
 	highlight              int // the index of the highlighted line, or -1
 	markers                bool
+	valueLabels            bool
+	areaFilled             bool
 	yMin, yMax             float32
 	yRangeSet              bool
 	panelColor, lineColor  int32
@@ -126,6 +128,23 @@ func (chart *SimpleLineChart) SetHighlight(index int) *SimpleLineChart {
 // SetMarkers draws a dot at each value of the lines.
 func (chart *SimpleLineChart) SetMarkers(markers bool) *SimpleLineChart {
 	chart.markers = markers
+	return chart
+}
+
+// SetValueLabels writes each value of the lines by its point, small, where
+// the line leaves it room: above a peak, under a valley, before or after a
+// point on a rise or a fall; but the last of each line, which its label at the
+// end of the line has.
+func (chart *SimpleLineChart) SetValueLabels(valueLabels bool) *SimpleLineChart {
+	chart.valueLabels = valueLabels
+	return chart
+}
+
+// SetAreaFilled fills the area under each line, down to 0 or to the bottom of
+// the plot, in a light tint of the line's color, which makes an area chart.
+// The highlighted line's area is drawn last, over the others.
+func (chart *SimpleLineChart) SetAreaFilled(areaFilled bool) *SimpleLineChart {
+	chart.areaFilled = areaFilled
 	return chart
 }
 
@@ -252,6 +271,17 @@ func (chart *SimpleLineChart) endOf(line *simpleLine) (string, int, bool) {
 		}
 	}
 	return "", 0, false
+}
+
+// lastOf returns the index of the last value of the line, or -1 when it has
+// none.
+func (chart *SimpleLineChart) lastOf(line *simpleLine) int {
+	for i := chart.count() - 1; i >= 0; i-- {
+		if _, ok := line.valueOf(i); ok {
+			return i
+		}
+	}
+	return -1
 }
 
 // getAltDescription returns the alternate description: the one set, or the
@@ -453,6 +483,39 @@ func (chart *SimpleLineChart) DrawOn(page *Page) [2]float32 {
 		page.SaveGraphicsState()
 		page.ClipRect(left-edge, top-edge, right-left+float32(2.0*edge), bottom-top+float32(2.0*edge))
 	}
+	// The areas under the lines, each run of values down to 0, or to the
+	// bottom of the plot when 0 is under it, in a tint of the line's color
+	if chart.areaFilled {
+		zero := yAt(min(max(0, axis.min), axis.max))
+		for _, i := range order {
+			line := chart.lines[i]
+			if i == chart.highlight {
+				page.SetBrushColor(simpleLineTint(chart.highlightColor))
+			} else {
+				page.SetBrushColor(simpleLineTint(chart.lineColor))
+			}
+			start := -1
+			for j := 0; j <= n; j++ {
+				if j < n {
+					if _, ok := line.valueOf(j); ok {
+						if start < 0 {
+							start = j
+						}
+						continue
+					}
+				}
+				if start >= 0 && j-1 > start {
+					page.MoveTo(xAt(start), zero)
+					for k := start; k < j; k++ {
+						page.LineTo(xAt(k), yAt(line.values[k]))
+					}
+					page.LineTo(xAt(j-1), zero)
+					page.FillPath()
+				}
+				start = -1
+			}
+		}
+	}
 	for _, i := range order {
 		line := chart.lines[i]
 		c, width := chart.lineColor, float32(1.5)
@@ -495,6 +558,56 @@ func (chart *SimpleLineChart) DrawOn(page *Page) [2]float32 {
 		page.RestoreGraphicsState()
 	}
 
+	// The values by their points, where the line leaves them room: above
+	// a peak, under a valley, above and before a point on a rise, above
+	// and after one on a fall; but those outside the axis and the last of
+	// each line, which its label at the end has
+	if chart.valueLabels {
+		small := chart.subtitleSize()
+		gap := float32(0.5 * size)
+		for _, i := range order {
+			line := chart.lines[i]
+			last := chart.lastOf(line)
+			c := simpleBarMuted
+			if i == chart.highlight {
+				c = chart.highlightColor
+			}
+			for j := 0; j < last; j++ {
+				v, ok := line.valueOf(j)
+				if !ok || !onAxis(v, axis) {
+					continue
+				}
+				before := v
+				if j > 0 {
+					if b, ok := line.valueOf(j - 1); ok {
+						before = b
+					}
+				}
+				after := v
+				if a, ok := line.valueOf(j + 1); ok {
+					after = a
+				}
+				text := chart.value(v)
+				width := f2.StringWidth(small, text)
+				px := xAt(j)
+				py := yAt(v)
+				lx := px - float32(width/2.0)
+				at := py - gap
+				if before > v && after > v { // A valley
+					at = py + gap + f2.GetAscent(small)
+					if at > bottom {
+						at = py - gap
+					}
+				} else if before < v && after > v { // A rise
+					lx = px - gap - width
+				} else if before > v && after < v { // A fall
+					lx = px + gap
+				}
+				page.drawString(f2, small, text, lx, at, colorToRGB(c), nil)
+			}
+		}
+	}
+
 	// The labels at the ends of the lines, moved apart where they would meet
 	type endLabel struct {
 		text  string
@@ -535,4 +648,13 @@ func (chart *SimpleLineChart) DrawOn(page *Page) [2]float32 {
 	page.SetFigureBoundingBox(chart.x, chart.y, chart.w, chart.h)
 	page.AddEMC()
 	return [2]float32{chart.x + chart.w, chart.y + chart.h}
+}
+
+// simpleLineTint returns a tint of the color, a quarter of it over three
+// quarters of white.
+func simpleLineTint(c int32) int32 {
+	r := (c >> 16) & 0xFF
+	g := (c >> 8) & 0xFF
+	b := c & 0xFF
+	return (((r + 3*255) / 4) << 16) | (((g + 3*255) / 4) << 8) | ((b + 3*255) / 4)
 }

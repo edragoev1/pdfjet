@@ -218,3 +218,38 @@ func TestDonutChartThinSlicesKeepTheirLabelsApart(t *testing.T) {
 		t.Errorf("no thin white line in %q", content)
 	}
 }
+
+// With a legend the chart has no leader lines: each slice's label and
+// percentage is in rows under the circle, which the returned corner
+// holds. The text in the hole is drawn and described; a pie chart has no
+// hole for it.
+func TestDonutChartALegendAndATextInTheHole(t *testing.T) {
+	pdf := testNewPDF()
+	pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
+	page := NewPage(pdf, testLetterPortrait())
+	chart := testDonutChart(pdf).SetLegend(true).SetCenterText("100 crates").
+		AddSlice(NewSliceInPalette(60, "a")).AddSlice(NewSliceInPalette(40, "b"))
+	xy := chart.DrawOn(page)
+	content := testContent(page)
+	if strings.Contains(content, "0.55 0.59 0.64 RG") { // No leader lines
+		t.Errorf("leader lines in %q", content)
+	}
+	if !strings.Contains(content, testHex("a 60%")) || !strings.Contains(content, testHex("b 40%")) {
+		t.Errorf("no legend in %q", content)
+	}
+	if !strings.Contains(content, testHex("100 crates")) {
+		t.Errorf("no text in the hole in %q", content)
+	}
+	if xy[1] <= 300+15 {
+		t.Errorf("the legend is under the circle: %v", xy[1])
+	}
+	testAssertXY(t, xy[0], xy[1], chart.DrawOn(nil))
+	if got := page.structures[0].altDescription; got != "100 crates: a 60%, b 40%" {
+		t.Errorf("the chart is described as %q", got)
+	}
+	page = NewPage(pdf, testLetterPortrait())
+	testDonutChart(pdf).SetRadii(100, 0).SetCenterText("none").AddSlice(NewSliceInPalette(1, "a")).DrawOn(page)
+	if strings.Contains(testContent(page), testHex("none")) {
+		t.Errorf("a pie chart writes the text: %q", testContent(page))
+	}
+}

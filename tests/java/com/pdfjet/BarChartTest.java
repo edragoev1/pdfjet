@@ -263,4 +263,24 @@ class BarChartTest {
                 .addSeries(null, new float[] {1f}).addSeries("b", null).addSeries("c", new float[] {2f}, (int[]) null)
                 .drawOn(page);
     }
+
+    // A line series is drawn over the bars, in ink, with a dot at each value;
+    // the axis reaches its values, the legend lists it and the description
+    // has its values after the bars'.
+    @Test
+    void aLineSeriesIsDrawnOverTheBars() throws Exception {
+        PDF pdf = new PDF(new java.io.ByteArrayOutputStream(), Compliance.PDF_UA_1).setTitle("Test");
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        BarChart chart = chart(pdf).setTitle("Sales").setCategories("a", "b").setDrawLegend(true)
+                .addSeries("Sold", new float[] {1f, 2f}).addLineSeries("Target", new float[] {9f, Float.NaN});
+        String content = draw(chart, page);
+        assertTrue(content.contains("0.13 0.15 0.17 RG\n") && content.contains("\n2 w\n"), content);   // In ink
+        assertTrue(content.contains(TestSupport.hex("Target")), content);
+        assertTrue(content.contains("<" + TestSupport.hex("8") + ">"), content);   // The axis reaches 9
+        assertEquals("Sales: Sold: a 1, b 2; Target: a 9.", page.structures.get(0).altDescription);
+        page = new Page(pdf, Letter.PORTRAIT);
+        content = draw(chart(pdf).setCategories("a").addSeries("", new float[] {1f})
+                .addLineSeries("", new float[] {2f}, 0x123456), page);
+        assertTrue(content.contains("0.07 0.2 0.34 RG\n"), content);
+    }
 }

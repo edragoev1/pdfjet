@@ -16,6 +16,7 @@ import (
 	"strings"
 
 	"github.com/edragoev1/pdfjet/v9/src/color"
+	"github.com/edragoev1/pdfjet/v9/src/joinstyle"
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
@@ -69,6 +70,7 @@ type BarChart struct {
 
 	categories []string
 	series     []*barSeries
+	lineSeries []*barSeries // Drawn as lines over the bars
 
 	horizontal bool
 	stacked    bool
@@ -112,6 +114,7 @@ func NewBarChart(f1, f2 *Font) *BarChart {
 	chart.h = 200.0
 	chart.categories = make([]string, 0)
 	chart.series = make([]*barSeries, 0)
+	chart.lineSeries = make([]*barSeries, 0)
 	chart.groupGap = 0.3
 	chart.barGap = 0.0
 	chart.drawGridLines = true
@@ -201,6 +204,28 @@ func (chart *BarChart) AddSeriesWithColors(name string, values []float32, colors
 	copiedColors := make([]int32, len(colors))
 	copy(copiedColors, colors)
 	chart.series = append(chart.series, &barSeries{name: name, values: copied, color: noColor, colors: copiedColors})
+	return chart
+}
+
+// AddLineSeries adds a series drawn as a line over the bars, in ink, a dot at
+// each category: a target, the average, or last year. It shares the value axis
+// with the bars, is not stacked, and is in the legend and the description. A
+// value that is NaN or infinite leaves a gap in the line.
+//   - name: the series name, shown in the legend; empty for none.
+//   - values: one value per category.
+func (chart *BarChart) AddLineSeries(name string, values []float32) *BarChart {
+	return chart.AddLineSeriesWithColor(name, values, barChartInk)
+}
+
+// AddLineSeriesWithColor adds a series drawn as a line over the bars, in the
+// specified color.
+//   - name: the series name, shown in the legend; empty for none.
+//   - values: one value per category.
+//   - color: the line color as a 0xRRGGBB value, for example color.Blue.
+func (chart *BarChart) AddLineSeriesWithColor(name string, values []float32, color int32) *BarChart {
+	copied := make([]float32, len(values))
+	copy(copied, values)
+	chart.lineSeries = append(chart.lineSeries, &barSeries{name: name, values: copied, color: color})
 	return chart
 }
 
@@ -399,8 +424,16 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 				lo = min(lo, down)
 				hi = max(hi, up)
 			}
+			for _, s := range chart.lineSeries {
+				for _, v := range s.values {
+					if isValue(v) {
+						lo = min(lo, v)
+						hi = max(hi, v)
+					}
+				}
+			}
 		} else {
-			for _, s := range chart.series {
+			for _, s := range chart.allSeries() {
 				for _, v := range s.values {
 					if !isValue(v) {
 						continue
@@ -732,6 +765,55 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 		page.DrawRect(x5, y5, x6-x5, y8-y5)
 	}
 
+	// The lines over the bars, through the middles of the categories, a
+	// dot at each value, broken where a value is missing
+	for _, s := range chart.lineSeries {
+		page.SetPenColor(s.color)
+		page.SetPenWidth(2.0)
+		page.SetLineJoinStyle(joinstyle.Round)
+		page.SetBrushColor(s.color)
+		drawing := false
+		dots := make([][2]float32, 0, n)
+		for i := 0; i < n; i++ {
+			if i >= len(s.values) || !isValue(s.values[i]) {
+				if drawing {
+					page.StrokePath()
+				}
+				drawing = false
+				continue
+			}
+			v := min(max(s.values[i], vMin), vMax)
+			start := x5
+			if chart.horizontal {
+				start = y5
+			}
+			middle := start + float32(float32(i)*slot) + float32(slot/2.0)
+			var at float32
+			if chart.horizontal {
+				at = x5 + float32((v-vMin)*(x6-x5))/(vMax-vMin)
+			} else {
+				at = y8 - float32((v-vMin)*(y8-y5))/(vMax-vMin)
+			}
+			px, py := middle, at
+			if chart.horizontal {
+				px, py = at, middle
+			}
+			if drawing {
+				page.LineTo(px, py)
+			} else {
+				page.MoveTo(px, py)
+				drawing = true
+			}
+			dots = append(dots, [2]float32{px, py})
+		}
+		if drawing {
+			page.StrokePath()
+		}
+		for _, dot := range dots {
+			page.FillCircle(dot[0], dot[1], float32(0.2*bodyHeight))
+		}
+	}
+
 	// Axis titles
 	page.SetTextRotation(-90)
 	barChartText(page, f2, chart.yAxisTitle, chart.x1+bodyHeight,
@@ -766,7 +848,7 @@ func (chart *BarChart) getAltDescription() string {
 		sb.WriteString("Bar chart")
 	}
 	separator := ": "
-	for _, s := range chart.series {
+	for _, s := range chart.allSeries() {
 		var values strings.Builder
 		for i, v := range s.values {
 			if !isValue(v) {
@@ -803,15 +885,22 @@ func (chart *BarChart) getAltDescription() string {
 // numberOfCategories returns the number of category slots: the categories or the longest series.
 func (chart *BarChart) numberOfCategories() int {
 	n := len(chart.categories)
-	for _, s := range chart.series {
+	for _, s := range chart.allSeries() {
 		n = max(n, len(s.values))
 	}
 	return n
 }
 
+// allSeries returns the series of the bars, then those of the lines.
+func (chart *BarChart) allSeries() []*barSeries {
+	all := make([]*barSeries, 0, len(chart.series)+len(chart.lineSeries))
+	all = append(all, chart.series...)
+	return append(all, chart.lineSeries...)
+}
+
 // hasSeriesNames returns true if a series has a name to list in the legend.
 func (chart *BarChart) hasSeriesNames() bool {
-	for _, s := range chart.series {
+	for _, s := range chart.allSeries() {
 		if s.name != "" {
 			return true
 		}
@@ -903,7 +992,7 @@ func (chart *BarChart) drawLegendOn(page *Page, baseline float32) int {
 	gap := float32(swatch / 2.0)
 	x := chart.x1
 	rows := 1
-	for j, s := range chart.series {
+	for j, s := range chart.allSeries() {
 		if s.name == "" {
 			continue
 		}
@@ -912,7 +1001,14 @@ func (chart *BarChart) drawLegendOn(page *Page, baseline float32) int {
 			baseline += float32(1.5 * f2.bodyHeight)
 			rows++
 		}
-		if page != nil {
+		if page != nil && j >= len(chart.series) {
+			// A line: its color across the swatch, a dot in the middle
+			page.SetPenColor(s.color)
+			page.SetPenWidth(1.5)
+			page.DrawLine(x, baseline-float32(swatch/2.0), x+swatch, baseline-float32(swatch/2.0))
+			page.SetBrushColor(s.color)
+			page.FillCircle(x+float32(swatch/2.0), baseline-float32(swatch/2.0), float32(swatch/4.0))
+		} else if page != nil {
 			if len(s.colors) > 0 {
 				page.SetBrushColor(s.colors[0])
 			} else {

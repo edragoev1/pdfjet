@@ -174,4 +174,27 @@ import Testing
         #expect(content.range(of: "\n0\\.\\d+ w\n", options: .regularExpression) != nil,
                 "\(content)")                                                      // Between two thin ones
     }
+
+    // With a legend the chart has no leader lines: each slice's label and
+    // percentage is in rows under the circle, which the returned corner
+    // holds. The text in the hole is drawn and described; a pie chart has no
+    // hole for it.
+    @Test func aLegendAndATextInTheHole() {
+        let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.setTitle("Test")
+        var page = Page(memory.pdf, Letter.PORTRAIT)
+        let chart = chart(memory.pdf).setLegend(true).setCenterText("100 crates")
+                .addSlice(Slice(60, "a")).addSlice(Slice(40, "b"))
+        let xy = chart.drawOn(page)
+        let content = TestSupport.content(page)
+        #expect(!content.contains("0.55 0.59 0.64 RG"), "\(content)")      // No leader lines
+        #expect(content.contains(TestSupport.hex("a 60%")) && content.contains(TestSupport.hex("b 40%")), "\(content)")
+        #expect(content.contains(TestSupport.hex("100 crates")), "\(content)")
+        #expect(xy[1] > 300 + 15, "the legend is under the circle: \(xy[1])")
+        TestSupport.expectXY(xy[0], xy[1], chart.drawOn(nil))
+        #expect(page.structures[0].altDescription == "100 crates: a 60%, b 40%")
+        page = Page(memory.pdf, Letter.PORTRAIT)
+        self.chart(memory.pdf).setRadii(100, 0).setCenterText("none").addSlice(Slice(1, "a")).drawOn(page)
+        #expect(!TestSupport.content(page).contains(TestSupport.hex("none")))
+    }
 }

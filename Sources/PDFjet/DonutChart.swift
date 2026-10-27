@@ -25,6 +25,8 @@ public class DonutChart : Drawable {
     private var altDescription: String?
     private var title = ""
     private var subtitle = ""
+    private var centerText = ""
+    private var legend = false
 
     // The look of the simple charts
     private static let INK = SimpleBarChart.INK
@@ -89,6 +91,25 @@ public class DonutChart : Drawable {
     @discardableResult
     public func setSubtitle(_ subtitle: String) -> DonutChart {
         self.subtitle = subtitle
+        return self
+    }
+
+    /// Sets the text written in the hole of a donut chart, in the font of the
+    /// title, as large as one and a half labels or as fits: the total, "100
+    /// crates". A pie chart, with no hole, does not write it.
+    @discardableResult
+    public func setCenterText(_ centerText: String) -> DonutChart {
+        self.centerText = centerText
+        return self
+    }
+
+    /// Draws a legend under the circle, a swatch, the label and the percentage
+    /// of each slice, in rows as wide as the circle, in place of the leader
+    /// lines and the labels beside the circle: for many slices, or small ones
+    /// whose labels would crowd.
+    @discardableResult
+    public func setLegend(_ legend: Bool) -> DonutChart {
+        self.legend = legend
         return self
     }
 
@@ -325,8 +346,8 @@ public class DonutChart : Drawable {
         if top > y {
             // Room for a label at the top of the circle: its leader line goes
             // 15 points up, the label sits above its end; and half a line
-            let label: Float = (f1 != nil) ? f1!.getAscent() / 3 + f1!.getAscent() : 0
-            top += 15 + label + titleSize / 2
+            let label: Float = (f1 != nil && !legend) ? f1!.getAscent() / 3 + f1!.getAscent() : 0
+            top += (legend ? 0 : 15) + label + titleSize / 2
         }
         let xc = x + r1     // the center of the chart
         let yc = top + r1
@@ -345,12 +366,19 @@ public class DonutChart : Drawable {
         // The leader lines and the labels, moved apart, and the box of the
         // figure: the title, the outer circle, the leader lines and the labels
         var pointers = [Pointer]()
+        var colors = [Int32](repeating: 0, count: slices!.count)
         var angle: Float = 0.0
+        var count = 0
         for i in 0..<slices!.count {
             if values[i] > 0.0 {
                 let sweep = values[i] * 360.0 / total
-                pointers.append(pointerOf(slices![i].text, xc, yc, r1, angle, angle + sweep))
+                if !legend {
+                    pointers.append(pointerOf(slices![i].text, xc, yc, r1, angle, angle + sweep))
+                }
                 angle += sweep
+                let color = slices![i].color
+                colors[i] = (color == Slice.PALETTE) ? BarChart.PALETTE[count % BarChart.PALETTE.count] : color
+                count += 1
             }
         }
         moveApart(pointers)
@@ -363,6 +391,9 @@ public class DonutChart : Drawable {
         }
         for pointer in pointers {
             box = DonutChart.union(box, drawPointer(nil, pointer))
+        }
+        if legend {
+            box = DonutChart.union(box, drawLegend(nil, values, percentages, colors, yc + r1))
         }
         guard let page = page else {    // Measured
             return [box[2], box[3]]
@@ -388,8 +419,7 @@ public class DonutChart : Drawable {
             if values[i] <= 0.0 {
                 continue
             }
-            let slice = slices![i]
-            let color = (slice.color == Slice.PALETTE) ? BarChart.PALETTE[drawn % BarChart.PALETTE.count] : slice.color
+            let color = colors[i]
             let sweep = values[i] * 360.0 / total
             angle = drawSlice(
                     page, color,
@@ -398,7 +428,9 @@ public class DonutChart : Drawable {
                     angle, angle + sweep)
             edges.append(angle)
             sweeps.append(sweep)
-            drawPointer(page, pointers[drawn])
+            if !legend {
+                drawPointer(page, pointers[drawn])
+            }
             drawn += 1
             // The percentage fits inside a slice of 15 degrees or more
             if f2 != nil && sweep >= 15.0 {
@@ -428,10 +460,61 @@ public class DonutChart : Drawable {
                 page.drawLine(inner[0], inner[1], outer[0], outer[1])
             }
         }
+        if legend {
+            drawLegend(page, values, percentages, colors, yc + r1)
+        }
+        // The text in the hole, as large as one and a half labels or as fits
+        if r2 > 0.0, let titleFont = titleFont, !centerText.isEmpty {
+            var size = 1.5 * titleSize
+            var width = titleFont.stringWidth(size, centerText)
+            if width > 1.6 * r2 {
+                size = size * (1.6 * r2) / width
+                width = titleFont.stringWidth(size, centerText)
+            }
+            let baseline = yc + (titleFont.getAscent(size) - titleFont.getDescent(size)) / 2.0
+            page.drawString(titleFont, size, centerText, xc - width / 2.0, baseline, Util.toRGB(DonutChart.INK), nil)
+        }
         page.restoreGraphicsState()
         page.setFigureBoundingBox(box[0], box[1], box[2] - box[0], box[3] - box[1])
         page.addEMC()
         return [box[2], box[3]]
+    }
+
+    // Returns the box of the legend under the circle, whose bottom is at the
+    // y: a swatch, the label and the percentage of each slice, in rows as wide
+    // as the circle; and draws it when there is a page.
+    @discardableResult
+    private func drawLegend(_ page: Page?, _ values: [Float], _ percentages: [Int], _ colors: [Int32],
+            _ y: Float) -> [Float] {
+        var box: [Float] = [x, y, x, y]
+        guard let f1 = f1 else {
+            return box
+        }
+        let swatch = f1.getAscent()
+        let gap = swatch / 2.0
+        var left = x
+        var baseline = y + 1.5 * f1.getBodyHeight()
+        for i in 0..<slices!.count {
+            if values[i] <= 0.0 {
+                continue
+            }
+            let text = slices![i].text.isEmpty
+                    ? "\(percentages[i])%" : slices![i].text + " \(percentages[i])%"
+            let width = f1.stringWidth(text)
+            if left > x && left + swatch + gap + width > x + 2.0 * r1 {
+                left = x
+                baseline += 1.5 * f1.getBodyHeight()
+            }
+            if let page = page {
+                page.setBrushColor(colors[i])
+                page.fillRect(left, baseline - swatch, swatch, swatch)
+                page.drawString(f1, f1.getSize(), text, left + swatch + gap, baseline, Util.toRGB(DonutChart.INK), nil)
+            }
+            box[2] = Swift.max(box[2], left + swatch + gap + width)
+            box[3] = baseline + f1.getDescent()
+            left += swatch + gap + width + f1.getBodyHeight()
+        }
+        return box
     }
 
     // Returns the box that holds the two boxes, each left, top, right, bottom.
@@ -509,6 +592,9 @@ public class DonutChart : Drawable {
         var name = title
         if !subtitle.isEmpty {
             name = name.isEmpty ? subtitle : name + ", " + subtitle
+        }
+        if !centerText.isEmpty && r2 > 0.0 {
+            name = name.isEmpty ? centerText : name + ", " + centerText
         }
         if name.isEmpty {
             name = (r2 > 0.0) ? "Donut chart" : "Pie chart"

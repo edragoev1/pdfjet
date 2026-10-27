@@ -16,6 +16,8 @@ using PDFjet.NET;
  * the data file by model year, battery electric highlighted in navy, each
  * line labeled at its end with its last count, so that the chart needs no
  * legend, and a dot at each year so that each count can be read off its line.
+ * The second page draws the plug-in hybrids alone as an area chart, the area
+ * under the line filled and each count written above its year.
  */
 public class Example_25 {
     // The vehicles of data/Electric_Vehicle_Population_Data.csv by model year
@@ -84,6 +86,21 @@ public class Example_25 {
                 .SetMarkers(true)
                 .SetLocation(50f, xy[1] + 30f)
                 .SetSize(512f, 340f)
+                .DrawOn(page);
+
+        page = new Page(pdf, Letter.PORTRAIT);
+        new SimpleLineChart(f1, f2)
+                .SetTitle("Plug-in hybrid vehicles")
+                .SetSubtitle("By model year, the area under the line filled and each count written")
+                .SetYAxisTitle("Vehicles")
+                .SetCategories(years)
+                .AddLine("Plug-in hybrid", HYBRID)
+                .SetHighlight(0)
+                .SetMarkers(true)
+                .SetAreaFilled(true)
+                .SetValueLabels(true)
+                .SetLocation(50f, 50f)
+                .SetSize(512f, 300f)
                 .DrawOn(page);
 
         pdf.Complete();

@@ -35,7 +35,8 @@ var (
 // vehicles of the data file by model year, battery electric highlighted in
 // navy, each line labeled at its end with its last count, so that the chart
 // needs no legend, and a dot at each year so that each count can be read off
-// its line.
+// its line. The second page draws the plug-in hybrids alone as an area chart,
+// the area under the line filled and each count written above its year.
 func Example25() {
 	pdf, err := pdfjet.NewPDFFile("Example_25.pdf")
 	if err != nil {
@@ -90,6 +91,21 @@ func Example25() {
 		SetMarkers(true).
 		SetSize(512.0, 340.0).
 		SetLocation(50.0, xy[1]+30.0).
+		DrawOn(page)
+
+	page = pdfjet.NewPage(pdf, letter.Portrait())
+	pdfjet.NewSimpleLineChart(f1, f2).
+		SetTitle("Plug-in hybrid vehicles").
+		SetSubtitle("By model year, the area under the line filled and each count written").
+		SetYAxisTitle("Vehicles").
+		SetCategories(categories...).
+		AddLine("Plug-in hybrid", hybrid).
+		SetHighlight(0).
+		SetMarkers(true).
+		SetAreaFilled(true).
+		SetValueLabels(true).
+		SetSize(512.0, 300.0).
+		SetLocation(50.0, 50.0).
 		DrawOn(page)
 
 	if err := pdf.Complete(); err != nil {

@@ -143,4 +143,25 @@ import Testing
         // The page is 792 high, the chart from 0 to 120 down from its top
         #expect(TestSupport.positionOf(content, "line 7 0")[1] > 792 - 120, "\(content)")
     }
+
+    // The values are written by their points but the last of each line, which
+    // its end label has; the area under a line is filled in a tint of its
+    // color, under the line.
+    @Test func theValuesAndTheAreaAreDrawnWhenAsked() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        var page = Page(pdf, Letter.PORTRAIT)
+        SimpleLineChart(font, font).setCategories("a", "b", "c").addLine("x", [12, 37, 23])
+                .setHighlight(0).setValueLabels(true).setAreaFilled(true).drawOn(page)
+        let content = TestSupport.content(page)
+        #expect(content.contains(TestSupport.hex("12")) && content.contains(TestSupport.hex("37")), "\(content)")
+        #expect(!content.contains("<" + TestSupport.hex("23") + ">"), "\(content)")   // Only in "x 23"
+        let area = content.range(of: "0.78 0.8 0.84 rg\n")      // Navy, a quarter over white
+        let line = content.range(of: "0.12 0.23 0.37 RG\n")
+        #expect(area != nil && line != nil && content.startIndex < area!.lowerBound
+                && area!.lowerBound < line!.lowerBound, "\(content)")
+        page = Page(pdf, Letter.PORTRAIT)
+        SimpleLineChart(font, font).addLine("x", [12, 37]).drawOn(page)
+        #expect(!TestSupport.content(page).contains(TestSupport.hex("12")))
+    }
 }

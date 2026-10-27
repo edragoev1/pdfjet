@@ -72,6 +72,8 @@ public class SimpleLineChart implements Drawable {
     private final List<Line> lines = new ArrayList<Line>();
     private int highlight = -1;     // The index of the highlighted line, or -1
     private boolean markers = false;
+    private boolean valueLabels = false;
+    private boolean areaFilled = false;
     private float yMin;
     private float yMax;
     private boolean yRangeSet = false;
@@ -194,6 +196,33 @@ public class SimpleLineChart implements Drawable {
      */
     public SimpleLineChart setMarkers(boolean markers) {
         this.markers = markers;
+        return this;
+    }
+
+    /**
+     * Writes each value of the lines by its point, small, where the line
+     * leaves it room: above a peak, under a valley, before or after a point
+     * on a rise or a fall; but the last of each line, which its label at the
+     * end of the line has.
+     *
+     * @param valueLabels true to write them.
+     * @return this chart.
+     */
+    public SimpleLineChart setValueLabels(boolean valueLabels) {
+        this.valueLabels = valueLabels;
+        return this;
+    }
+
+    /**
+     * Fills the area under each line, down to 0 or to the bottom of the plot,
+     * in a light tint of the line's color, which makes an area chart. The
+     * highlighted line's area is drawn last, over the others.
+     *
+     * @param areaFilled true to fill the areas.
+     * @return this chart.
+     */
+    public SimpleLineChart setAreaFilled(boolean areaFilled) {
+        this.areaFilled = areaFilled;
         return this;
     }
 
@@ -541,6 +570,33 @@ public class SimpleLineChart implements Drawable {
             page.saveGraphicsState();
             page.clipRect(left - edge, top - edge, right - left + 2f * edge, bottom - top + 2f * edge);
         }
+        // The areas under the lines, each run of values down to 0, or to the
+        // bottom of the plot when 0 is under it, in a tint of the line's color
+        if (areaFilled) {
+            float zero = yAt(Math.min(Math.max(0f, axis.min), axis.max), axis, top, bottom);
+            for (int i : order) {
+                Line line = lines.get(i);
+                page.setBrushColor(tint((i == highlight) ? highlightColor : lineColor));
+                int start = -1;
+                for (int j = 0; j <= n; j++) {
+                    if (j < n && line.has(j)) {
+                        if (start < 0) {
+                            start = j;
+                        }
+                        continue;
+                    }
+                    if (start >= 0 && j - 1 > start) {
+                        page.moveTo(xAt(start, n, left, right), zero);
+                        for (int k = start; k < j; k++) {
+                            page.lineTo(xAt(k, n, left, right), yAt(line.values[k], axis, top, bottom));
+                        }
+                        page.lineTo(xAt(j - 1, n, left, right), zero);
+                        page.fillPath();
+                    }
+                    start = -1;
+                }
+            }
+        }
         for (int i : order) {
             Line line = lines.get(i);
             int color = (i == highlight) ? highlightColor : lineColor;
@@ -577,6 +633,45 @@ public class SimpleLineChart implements Drawable {
         }
         if (outside) {
             page.restoreGraphicsState();
+        }
+
+        // The values by their points, where the line leaves them room: above
+        // a peak, under a valley, above and before a point on a rise, above
+        // and after one on a fall; but those outside the axis and the last of
+        // each line, which its label at the end has
+        if (valueLabels) {
+            float small = subtitleSize();
+            float gap = 0.5f * size;
+            for (int i : order) {
+                Line line = lines.get(i);
+                int last = lastOf(line);
+                int color = (i == highlight) ? highlightColor : SimpleBarChart.MUTED;
+                for (int j = 0; j < last; j++) {
+                    if (!line.has(j) || !ChartScale.onAxis(line.values[j], axis)) {
+                        continue;
+                    }
+                    float v = line.values[j];
+                    float before = (j > 0 && line.has(j - 1)) ? line.values[j - 1] : v;
+                    float after = line.has(j + 1) ? line.values[j + 1] : v;
+                    String text = value(v);
+                    float width = f2.stringWidth(small, text);
+                    float px = xAt(j, n, left, right);
+                    float py = yAt(v, axis, top, bottom);
+                    float lx = px - width / 2f;
+                    float at = py - gap;
+                    if (before > v && after > v) {              // A valley
+                        at = py + gap + f2.getAscent(small);
+                        if (at > bottom) {
+                            at = py - gap;
+                        }
+                    } else if (before < v && after > v) {       // A rise
+                        lx = px - gap - width;
+                    } else if (before > v && after < v) {       // A fall
+                        lx = px + gap;
+                    }
+                    page.drawString(f2, small, text, lx, at, Util.toRGB(color), null);
+                }
+            }
         }
 
         // The labels at the ends of the lines, moved apart where they would
@@ -616,6 +711,14 @@ public class SimpleLineChart implements Drawable {
         page.setFigureBoundingBox(x, y, w, h);
         page.addEMC();
         return new float[] {x + w, y + h};
+    }
+
+    // A tint of the color, a quarter of it over three quarters of white.
+    private static int tint(int color) {
+        int r = (color >> 16) & 0xFF;
+        int g = (color >> 8) & 0xFF;
+        int b = color & 0xFF;
+        return (((r + 3 * 255) / 4) << 16) | (((g + 3 * 255) / 4) << 8) | ((b + 3 * 255) / 4);
     }
 
     // The x on the page of the category of the index.

@@ -22,7 +22,8 @@ import (
 // longest rivers, each bar in its own color with its length inside it, and a
 // color key under the chart. The second page draws two charts with vertical
 // bars from the same data: the two series grouped by month, and the same
-// series stacked.
+// series stacked. The third, the units of 2026 with a line over the bars for
+// the target of each month.
 func Example27() {
 	pdf, err := pdfjet.NewPDFFile("Example_27.pdf")
 	if err != nil {
@@ -33,6 +34,7 @@ func Example27() {
 
 	drawHorizontal(pdf)
 	drawVertical(pdf)
+	drawTarget(pdf)
 
 	if err := pdf.Complete(); err != nil {
 		log.Fatal(err)
@@ -184,6 +186,34 @@ func drawVertical(pdf *pdfjet.PDF) {
 	stacked.SetAltDescription("Units sold by month in 2025 and 2026, stacked: from 85 a month, in February and May, to 152 in December.")
 	stacked.SetLocation(70.0, 420.0)
 	stacked.DrawOn(page)
+}
+
+func drawTarget(pdf *pdfjet.PDF) {
+	page := pdfjet.NewPage(pdf, letter.Portrait())
+
+	f1 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold)
+	f1.SetSize(10.0)
+
+	f2 := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Regular)
+	f2.SetSize(8.0)
+
+	months := []string{
+		"Jan", "Feb", "Mar", "Apr", "May", "Jun",
+		"Jul", "Aug", "Sep", "Oct", "Nov", "Dec"}
+	units2026 := []float32{75.0, 20.0, 73.0, 75.0, 20.0, 73.0, 61.0, 58.0, 69.0, 64.0, 77.0, 80.0}
+	target := []float32{60.0, 60.0, 62.0, 64.0, 66.0, 68.0, 68.0, 68.0, 70.0, 72.0, 75.0, 80.0}
+
+	// The description of the chart is made from its data
+	chart := pdfjet.NewBarChart(f1, f2)
+	chart.SetSize(500.0, 300.0)
+	chart.SetTitle("Units sold by month in 2026, and the target")
+	chart.SetXAxisTitle("Month")
+	chart.SetYAxisTitle("Units")
+	chart.SetCategories(months...)
+	chart.AddSeries("2026", units2026)
+	chart.AddLineSeries("Target", target)
+	chart.SetLocation(70.0, 70.0)
+	chart.DrawOn(page)
 }
 
 func main() {

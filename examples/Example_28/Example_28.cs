@@ -46,6 +46,24 @@ public class Example_28 {
         chart.AddSlice(new Slice(10f, "Lemons"));
         chart.DrawOn(page);
 
+        // Many slices, some small: a legend under the circle in place of the
+        // leader lines, and the total in the hole
+        page = new Page(pdf, Letter.PORTRAIT);
+        DonutChart many = new DonutChart(f1, f2);
+        many.SetLocation(100.0f, 100.0f);
+        many.SetRadii(150.0f, 90.0f);
+        many.SetTitle("Fruit sold this month");
+        many.SetSubtitle("Share of 100 crates, eight kinds, a color each");
+        many.SetCenterText("100 crates");
+        many.SetLegend(true);
+        String[] kinds = {"Apples", "Bananas", "Oranges", "Grapes", "Lemons",
+                "Pears", "Plums", "Cherries"};
+        float[] crates = {31f, 24f, 17f, 10f, 7f, 5f, 4f, 2f};
+        for (int i = 0; i < kinds.Length; i++) {
+            many.AddSlice(new Slice(crates[i], kinds[i]));
+        }
+        many.DrawOn(page);
+
         pdf.Complete();
     }
 

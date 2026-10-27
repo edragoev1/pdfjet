@@ -27,6 +27,8 @@ namespace PDFjet.NET {
         private String altDescription = null;
         private String title = "";
         private String subtitle = "";
+        private String centerText = "";
+        private bool legend = false;
 
         // The look of the simple charts
         private const int INK = SimpleBarChart.INK;
@@ -95,6 +97,31 @@ namespace PDFjet.NET {
         /// <returns>this DonutChart object.</returns>
         public DonutChart SetSubtitle(String subtitle) {
             this.subtitle = subtitle ?? "";
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the text written in the hole of a donut chart, in the font of the
+        /// title, as large as one and a half labels or as fits: the total, "100
+        /// crates". A pie chart, with no hole, does not write it.
+        /// </summary>
+        /// <param name="centerText">the text.</param>
+        /// <returns>this DonutChart object.</returns>
+        public DonutChart SetCenterText(String centerText) {
+            this.centerText = centerText ?? "";
+            return this;
+        }
+
+        /// <summary>
+        /// Draws a legend under the circle, a swatch, the label and the percentage
+        /// of each slice, in rows as wide as the circle, in place of the leader
+        /// lines and the labels beside the circle: for many slices, or small ones
+        /// whose labels would crowd.
+        /// </summary>
+        /// <param name="legend">true to draw the legend.</param>
+        /// <returns>this DonutChart object.</returns>
+        public DonutChart SetLegend(bool legend) {
+            this.legend = legend;
             return this;
         }
 
@@ -332,8 +359,8 @@ namespace PDFjet.NET {
             if (top > y) {
                 // Room for a label at the top of the circle: its leader line
                 // goes 15 points up, the label sits above its end; and half a line
-                float label = (f1 != null) ? f1.GetAscent() / 3f + f1.GetAscent() : 0f;
-                top += 15f + label + titleSize / 2f;
+                float label = (f1 != null && !legend) ? f1.GetAscent() / 3f + f1.GetAscent() : 0f;
+                top += (legend ? 0f : 15f) + label + titleSize / 2f;
             }
             float xc = x + r1;      // the center of the chart
             float yc = top + r1;
@@ -352,12 +379,19 @@ namespace PDFjet.NET {
             // The leader lines and the labels, moved apart, and the box of the
             // figure: the title, the outer circle, the leader lines and the labels
             List<Pointer> pointers = new List<Pointer>();
+            int[] colors = new int[slices.Count];
             float angle = 0.0f;
+            int count = 0;
             for (int i = 0; i < slices.Count; i++) {
                 if (values[i] > 0.0f) {
                     float sweep = values[i] * 360.0f / total;
-                    pointers.Add(PointerOf(slices[i].text, xc, yc, r1, angle, angle + sweep));
+                    if (!legend) {
+                        pointers.Add(PointerOf(slices[i].text, xc, yc, r1, angle, angle + sweep));
+                    }
                     angle += sweep;
+                    int color = slices[i].color;
+                    colors[i] = (color == Slice.PALETTE) ? BarChart.PALETTE[count % BarChart.PALETTE.Length] : color;
+                    count++;
                 }
             }
             MoveApart(pointers);
@@ -370,6 +404,9 @@ namespace PDFjet.NET {
             }
             foreach (Pointer pointer in pointers) {
                 box = Union(box, DrawPointer(null, pointer));
+            }
+            if (legend) {
+                box = Union(box, DrawLegend(null, values, percentages, colors, yc + r1));
             }
             if (page == null) {     // Measured
                 return new float[] {box[2], box[3]};
@@ -396,8 +433,7 @@ namespace PDFjet.NET {
                 if (values[i] <= 0.0f) {
                     continue;
                 }
-                Slice slice = slices[i];
-                int color = (slice.color == Slice.PALETTE) ? BarChart.PALETTE[drawn % BarChart.PALETTE.Length] : slice.color;
+                int color = colors[i];
                 float sweep = values[i] * 360.0f / total;
                 angle = DrawSlice(
                     page, color,
@@ -406,7 +442,9 @@ namespace PDFjet.NET {
                     angle, angle + sweep);
                 edges.Add(angle);
                 sweeps.Add(sweep);
-                DrawPointer(page, pointers[drawn]);
+                if (!legend) {
+                    DrawPointer(page, pointers[drawn]);
+                }
                 drawn++;
 
                 // The percentage fits inside a slice of 15 degrees or more
@@ -437,10 +475,59 @@ namespace PDFjet.NET {
                     page.DrawLine(innerX, innerY, outerX, outerY);
                 }
             }
+            if (legend) {
+                DrawLegend(page, values, percentages, colors, yc + r1);
+            }
+            // The text in the hole, as large as one and a half labels or as fits
+            if (r2 > 0.0f && titleFont != null && centerText.Length > 0) {
+                float size = 1.5f * titleSize;
+                float width = titleFont.StringWidth(size, centerText);
+                if (width > 1.6f * r2) {
+                    size = size * (1.6f * r2) / width;
+                    width = titleFont.StringWidth(size, centerText);
+                }
+                float baseline = yc + (titleFont.GetAscent(size) - titleFont.GetDescent(size)) / 2f;
+                page.DrawString(titleFont, size, centerText, xc - width / 2f, baseline, Util.ToRGB(INK), null);
+            }
             page.RestoreGraphicsState();
             page.SetFigureBoundingBox(box[0], box[1], box[2] - box[0], box[3] - box[1]);
             page.AddEMC();
             return new float[] {box[2], box[3]};
+        }
+
+        // Returns the box of the legend under the circle, whose bottom is at the
+        // y: a swatch, the label and the percentage of each slice, in rows as wide
+        // as the circle; and draws it when there is a page.
+        private float[] DrawLegend(Page page, float[] values, int[] percentages, int[] colors, float y) {
+            float[] box = {x, y, x, y};
+            if (f1 == null) {
+                return box;
+            }
+            float swatch = f1.GetAscent();
+            float gap = swatch / 2f;
+            float left = x;
+            float baseline = y + 1.5f * f1.GetBodyHeight();
+            for (int i = 0; i < slices.Count; i++) {
+                if (values[i] <= 0.0f) {
+                    continue;
+                }
+                String percentage = percentages[i].ToString(CultureInfo.InvariantCulture) + "%";
+                String text = (slices[i].text.Length == 0) ? percentage : slices[i].text + " " + percentage;
+                float width = f1.StringWidth(text);
+                if (left > x && left + swatch + gap + width > x + 2f * r1) {
+                    left = x;
+                    baseline += 1.5f * f1.GetBodyHeight();
+                }
+                if (page != null) {
+                    page.SetBrushColor(colors[i]);
+                    page.FillRect(left, baseline - swatch, swatch, swatch);
+                    page.DrawString(f1, f1.GetSize(), text, left + swatch + gap, baseline, Util.ToRGB(INK), null);
+                }
+                box[2] = Math.Max(box[2], left + swatch + gap + width);
+                box[3] = baseline + f1.GetDescent();
+                left += swatch + gap + width + f1.GetBodyHeight();
+            }
+            return box;
         }
 
         // Returns the box that holds the two boxes, each left, top, right, bottom.
@@ -522,6 +609,9 @@ namespace PDFjet.NET {
             String name = title;
             if (subtitle.Length > 0) {
                 name = (name.Length == 0) ? subtitle : name + ", " + subtitle;
+            }
+            if (centerText.Length > 0 && r2 > 0.0f) {
+                name = (name.Length == 0) ? centerText : name + ", " + centerText;
             }
             if (name.Length == 0) {
                 name = (r2 > 0.0f) ? "Donut chart" : "Pie chart";

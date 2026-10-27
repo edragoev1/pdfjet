@@ -242,4 +242,24 @@ import Testing
         content = draw(chart(pdf).setCategories(["a", "b"]).addSeries("s", [1, 2]), page)
         #expect(content.contains(TestSupport.hex("a")) && content.contains(TestSupport.hex("b")), "\(content)")
     }
+
+    // A line series is drawn over the bars, in ink, with a dot at each value;
+    // the axis reaches its values, the legend lists it and the description
+    // has its values after the bars'.
+    @Test func aLineSeriesIsDrawnOverTheBars() {
+        let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.setTitle("Test")
+        var page = Page(memory.pdf, Letter.PORTRAIT)
+        let chart = chart(memory.pdf).setTitle("Sales").setCategories("a", "b").setDrawLegend(true)
+                .addSeries("Sold", [1, 2]).addLineSeries("Target", [9, Float.nan])
+        var content = draw(chart, page)
+        #expect(content.contains("0.13 0.15 0.17 RG\n") && content.contains("\n2 w\n"), "\(content)")   // In ink
+        #expect(content.contains(TestSupport.hex("Target")), "\(content)")
+        #expect(content.contains("<" + TestSupport.hex("8") + ">"), "\(content)")   // The axis reaches 9
+        #expect(page.structures[0].altDescription == "Sales: Sold: a 1, b 2; Target: a 9.")
+        page = Page(memory.pdf, Letter.PORTRAIT)
+        content = draw(self.chart(memory.pdf).setCategories("a").addSeries("", [1])
+                .addLineSeries("", [2], 0x123456), page)
+        #expect(content.contains("0.07 0.2 0.34 RG\n"), "\(content)")
+    }
 }

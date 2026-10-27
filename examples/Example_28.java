@@ -47,6 +47,24 @@ public class Example_28 {
         chart.addSlice(new Slice(10f, "Lemons"));
         chart.drawOn(page);
 
+        // Many slices, some small: a legend under the circle in place of the
+        // leader lines, and the total in the hole
+        page = new Page(pdf, Letter.PORTRAIT);
+        DonutChart many = new DonutChart(f1, f2);
+        many.setLocation(100.0f, 100.0f);
+        many.setRadii(150.0f, 90.0f);
+        many.setTitle("Fruit sold this month");
+        many.setSubtitle("Share of 100 crates, eight kinds, a color each");
+        many.setCenterText("100 crates");
+        many.setLegend(true);
+        String[] kinds = {"Apples", "Bananas", "Oranges", "Grapes", "Lemons",
+                "Pears", "Plums", "Cherries"};
+        float[] crates = {31f, 24f, 17f, 10f, 7f, 5f, 4f, 2f};
+        for (int i = 0; i < kinds.length; i++) {
+            many.addSlice(new Slice(crates[i], kinds[i]));
+        }
+        many.drawOn(page);
+
         pdf.complete();
     }
 

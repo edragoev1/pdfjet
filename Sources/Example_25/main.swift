@@ -14,6 +14,8 @@ import PDFjet
  * the data file by model year, battery electric highlighted in navy, each
  * line labeled at its end with its last count, so that the chart needs no
  * legend, and a dot at each year so that each count can be read off its line.
+ * The second page draws the plug-in hybrids alone as an area chart, the area
+ * under the line filled and each count written above its year.
  */
 public class Example_25 {
     // The vehicles of data/Electric_Vehicle_Population_Data.csv by model year
@@ -38,7 +40,7 @@ public class Example_25 {
         let f1 = try Font(pdf, IBMPlexSans.SemiBold)
         let f2 = try Font(pdf, IBMPlexSans.Regular)
 
-        let page = Page(pdf, Letter.PORTRAIT)
+        var page = Page(pdf, Letter.PORTRAIT)
 
         let title = TextLine(f1, "Electric Vehicles by Model Year")
         title.setStructureType(StructElem.H1)
@@ -77,6 +79,21 @@ public class Example_25 {
                 .setMarkers(true)
                 .setLocation(50.0, xy[1] + 30.0)
                 .setSize(512.0, 340.0)
+                .drawOn(page)
+
+        page = Page(pdf, Letter.PORTRAIT)
+        SimpleLineChart(f1, f2)
+                .setTitle("Plug-in hybrid vehicles")
+                .setSubtitle("By model year, the area under the line filled and each count written")
+                .setYAxisTitle("Vehicles")
+                .setCategories(years.map { String($0) })
+                .addLine("Plug-in hybrid", hybrid)
+                .setHighlight(0)
+                .setMarkers(true)
+                .setAreaFilled(true)
+                .setValueLabels(true)
+                .setLocation(50.0, 50.0)
+                .setSize(512.0, 300.0)
                 .drawOn(page)
 
         try pdf.complete()

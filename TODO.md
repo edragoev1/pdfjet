@@ -463,8 +463,11 @@ commit and date. The layout's format version (1) and the look's rules
   look, grouping on, one axis line at zero and the totals of its stacks
   (6a295afd), which is item 1 and part of 4 for it; DonutChart has its
   title, subtitle and look (d99c0944), and the review of the charts of 26
-  October is done (item 11). Left: DonutChart's legend (3), the rest of the
-  accessibility of item 5, and the bars with a line of item 6. From a review of Example_25 to 28 and
+  October is done (item 11). DonutChart's legend and its text in the hole
+  (3, 4), the line chart's values at the points and its areas (4), the
+  descriptions of item 5 and the bars with a line of item 6 are done too,
+  26 October 2026, in the four ports (CHANGELOG.md). Left: nothing of this
+  plan but what it leaves out, below. From a review of Example_25 to 28 and
   chart.go, barchart.go and donutchart.go; in the four ports, the examples
   updated to show it, before and after screenshots for each visible change.
   In this order:

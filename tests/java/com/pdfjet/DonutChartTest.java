@@ -241,4 +241,27 @@ class DonutChartTest {
         assertTrue(content.contains("1.5 w\n"), content);                      // By the big slice
         assertTrue(content.matches("(?s).*\n0\\.\\d+ w\n.*"), content);     // Between two thin ones
     }
+
+    // With a legend the chart has no leader lines: each slice's label and
+    // percentage is in rows under the circle, which the returned corner
+    // holds. The text in the hole is drawn and described; a pie chart has no
+    // hole for it.
+    @Test
+    void aLegendAndATextInTheHole() throws Exception {
+        PDF pdf = new PDF(new java.io.ByteArrayOutputStream(), Compliance.PDF_UA_1).setTitle("Test");
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        DonutChart chart = chart(pdf).setLegend(true).setCenterText("100 crates")
+                .addSlice(new Slice(60f, "a")).addSlice(new Slice(40f, "b"));
+        float[] xy = chart.drawOn(page);
+        String content = TestSupport.content(page);
+        assertFalse(content.contains("0.55 0.59 0.64 RG"), content);     // No leader lines
+        assertTrue(content.contains(TestSupport.hex("a 60%")) && content.contains(TestSupport.hex("b 40%")), content);
+        assertTrue(content.contains(TestSupport.hex("100 crates")), content);
+        assertTrue(xy[1] > 300f + 15f, "the legend is under the circle: " + xy[1]);
+        TestSupport.assertXY(xy[0], xy[1], chart.drawOn(null));
+        assertEquals("100 crates: a 60%, b 40%", page.structures.get(0).altDescription);
+        page = new Page(pdf, Letter.PORTRAIT);
+        chart(pdf).setRadii(100f, 0f).setCenterText("none").addSlice(new Slice(1f, "a")).drawOn(page);
+        assertFalse(TestSupport.content(page).contains(TestSupport.hex("none")));
+    }
 }
