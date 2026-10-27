@@ -350,6 +350,10 @@ There is no 9.1.3: what was done for it is in 9.1.5 (the owner, 26 October
   the glyph map, read from the format 12 subtable, and written into the
   ToUnicode map as UTF-16 surrogate pairs; a font is read no further than
   65,536 of them.
+- Go: the package's documentation, on pkg.go.dev and from `go doc`, began
+  "Package encryption implements the AES encryption of PDF documents.", a
+  second package comment, in aes128.go, above "Package pdfjet is a library
+  for creating PDF documents." It is a comment of the file now.
 - The four ports, from a fresh review of the charts, Markdown and the
   barcodes of 27 October 2026:
   - The bookmark of a heading, and the text a tagged heading is noted by,
