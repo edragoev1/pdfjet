@@ -762,6 +762,21 @@ commit and date. The layout's format version (1) and the look's rules
      pages keep less once written, and a bookmark tree of thousands of
      levels or siblings is built in linear time. Java's Compressor (W7) is
      a Deflater for each thread since 9.1.5.
+- **For v9.2.1, after the Korean proofreader: Korean line breaking by
+  design, not by omission** (found 27 October 2026, for Forms' Korean).
+  isCJK, which chooses how TextBlock breaks a line, counts the Hangul jamo
+  (U+1100 to U+11FF) but not the 11,172 syllables (U+AC00 to U+D7A3) that
+  Korean is typed in, in the four ports. So a line of Korean breaks at its
+  spaces, as English does: keep-all, which Korean readers mostly prefer for
+  documents, but by chance; a line of loose jamo, which Forms joins first,
+  would break between letters instead. Its upper bound, U+9FD5, also leaves
+  out the newer CJK characters and the extensions (𨋢, U+282E2), and a line
+  is CJK only when more than half of it is, so a long run of Chinese in a
+  line mostly English is cut where the line is full, without the kinsoku
+  rules. Once the proofreader has said whether keep-all is right: Korean
+  named on purpose, breaking at spaces, with a test of each case, the ranges
+  of Chinese brought up to date, and the PDF the same for every text it
+  draws well today. Not before 9.1.5, whose scope is closed.
 - **For v9.2.1: PDF/UA-2** (ISO 14289-2:2024; the owner, 26 October 2026),
   with the large tagged documents, as both touch the structure tree. A new
   level, `Compliance.PDF_UA_2`, that writes `%PDF-2.0`; PDF/UA-1 stays as it
