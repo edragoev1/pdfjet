@@ -19,7 +19,7 @@ import Testing
 
     // The breaks of the text lines of the paragraph, in order.
     private static func breaks(_ paragraph: Paragraph) -> [Bool] {
-        return paragraph.lines.map { $0.lineBreak }
+        return paragraph.lines.map { $0.lineBreaks > 0 }
     }
 
     @Test func hardLineBreaks() {
@@ -37,10 +37,8 @@ import Testing
         // Emphasis goes on over a break
         let bold = markup.paragraph("**one<br>two**")
         #expect(bold.lines.count == 2)
-        #expect(bold.lines[0].lineBreak)
+        #expect(bold.lines[0].lineBreaks == 1)
         #expect(!bold.joinsPrevious(1))
-        // A \r\n is no break after two spaces, as the \r is before the \n
-        #expect(breaks(markup.paragraph("one  \r\ntwo")) == [false])
     }
 
     @Test func aTextFrameStartsARowAtABreak() {

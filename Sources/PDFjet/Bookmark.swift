@@ -62,6 +62,12 @@ public class Bookmark {
         let root = Bookmark(pdf)
         var stack = [(level: Int, bookmark: Bookmark)]()
         for heading in headings {
+            if !heading.page.added {
+                // A heading on a page that is not added to the PDF has no
+                // bookmark: it failed the document, as with Markdown drawn on
+                // pages of a first pass that were not kept
+                continue
+            }
             while let last = stack.last, last.level >= heading.level {
                 stack.removeLast()
             }

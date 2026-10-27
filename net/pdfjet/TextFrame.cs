@@ -346,14 +346,19 @@ public class TextFrame : IDrawable {
                 tokens = null;
                 tokenIndex = 0;
                 lineIndex++;
-                if (textLine.lineBreak && lineIndex < paragraph.lines.Count) {
+                if (textLine.lineBreaks > 0 && lineIndex < paragraph.lines.Count) {
                     // A hard line break: the row ends here, as the last row
                     // of a paragraph does, not justified, and the next text
-                    // line starts the next row
+                    // line starts the next row, or a row lower for each more
+                    // break, as <br><br> leaves an empty row
                     DrawRow(page, true);
                     xText = x;
                     rowOpen = false;
                     nextBaseline = yText + textLine.GetHeight() + textLine.font.GetLineGap(textLine.fontSize);
+                    if (textLine.lineBreaks > 1) {
+                        float row = textLine.GetHeight() + textLine.font.GetLineGap(textLine.fontSize);
+                        nextBaseline += (textLine.lineBreaks - 1) * row;
+                    }
                 }
             }
             DrawRow(page, true);

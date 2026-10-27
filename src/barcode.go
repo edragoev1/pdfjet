@@ -23,7 +23,10 @@ import (
 )
 
 // Barcode describes one dimensional barcodes - EAN-13, UPC-A, Code 39, Code 128,
-// GS1-128 and ITF-14. The text of an ITF-14 barcode is the 13 digits of a GTIN
+// GS1-128 and ITF-14. Leave a quiet zone, blank, on both sides of the bars, as
+// a scanner needs it: 10 modules for Code 128 and Code 39, 9 for UPC-A, and 11
+// on the left and 7 on the right for EAN-13. ITF-14 draws its own.
+// The text of an ITF-14 barcode is the 13 digits of a GTIN
 // without its check digit, which is added, as for UPC-A and EAN-13. The text of a GS1-128 barcode is GS1 data written as people read
 // it, each Application Identifier in parentheses and its data after it, such as
 // "(01)09506000134352(10)ABC123", and is drawn so under its bars.
@@ -455,10 +458,15 @@ func (barcode *Barcode) drawText(page *Page, bars *barcodeBars, text string, x, 
 // code set B, where a character from 32 to 127 takes one codeword, one below
 // 32 or from 160 to 255 two, SHIFT or FNC 4 and the character, and one from
 // 128 to 159 three, FNC 4, SHIFT and the character 128 below it. It panics
-// on a character above 255, which the code sets cannot hold, and on a text of
-// more than 48 codewords, the most a barcode holds, rather than draw a barcode
-// of another text.
+// on a character above 255, which the code sets cannot hold, on a text of
+// more than 48 codewords, the limit of GS1-128 that PDFjet keeps for Code 128
+// too, and on an empty text, rather than draw a barcode of another text.
 func code128Codewords(text string) (rune, []rune) {
+	if text == "" {
+		// A barcode of no data, a start, a check symbol and a stop, as an
+		// empty Code 39 is refused too
+		panic("Code 128 barcodes must have a text!")
+	}
 	items := make([]int, 0)
 	for _, symchar := range text {
 		if symchar > 255 {

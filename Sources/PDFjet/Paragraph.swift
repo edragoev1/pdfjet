@@ -274,6 +274,15 @@ public class Paragraph {
     // Returns the text of the paragraph, its lines one after another, as the
     // title of its bookmark when it is a heading.
     func text() -> String {
-        return lines.map { $0.text ?? "" }.joined(separator: " ")
+        var buf = ""
+        for i in 0..<lines.count {
+            // A space between the text lines, but not where one is joined to
+            // the one before it: "Version **9.1.5**:" was "Version 9.1.5 :"
+            if i > 0 && (lines[i - 1].lineBreaks > 0 || !joinsPrevious(i)) {
+                buf += " "
+            }
+            buf += lines[i].text ?? ""
+        }
+        return buf
     }
 }   // End of Paragraph.swift

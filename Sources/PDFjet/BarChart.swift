@@ -807,7 +807,23 @@ public class BarChart : Drawable {
 
         // The lines over the bars, through the middles of the categories, a
         // dot at each value, broken where a value is missing; each on a white
-        // line a little wider, so that it stays clear where it crosses a bar
+        // line a little wider, so that it stays clear where it crosses a bar.
+        // A value outside a range that is set is drawn past the plot, which
+        // clips the lines at its edges and as far past them as a dot is wide,
+        // as in SimpleLineChart: a target of 150 over a range of 0 to 100 had
+        // its dot at 100
+        let axis = ChartScale.Axis(min: vMin, max: vMax, lines: lines)
+        var outsideAxis = false
+        for s in lineSeries {
+            for i in 0..<Swift.min(s.values.count, n) {
+                outsideAxis = outsideAxis || (ChartScale.isValue(s.values[i]) && !ChartScale.onAxis(s.values[i], axis))
+            }
+        }
+        if outsideAxis {
+            let edge = 0.2 * bodyHeight + 1.75
+            page.saveGraphicsState()
+            page.clipRect(x5 - edge, y5 - edge, x6 - x5 + 2.0 * edge, y8 - y5 + 2.0 * edge)
+        }
         for s in lineSeries {
             var runs = [[[Float]]]()
             var inRun = false
@@ -816,7 +832,7 @@ public class BarChart : Drawable {
                     inRun = false
                     continue
                 }
-                let v = Swift.min(Swift.max(s.values[i], vMin), vMax)
+                let v = ChartScale.held(s.values[i], axis)
                 let middle = (horizontal ? y5 : x5) + Float(i) * slot + slot / 2.0
                 let at = horizontal
                         ? x5 + ChartScale.scaled(v - vMin, x6 - x5, vMax - vMin)
@@ -847,6 +863,9 @@ public class BarChart : Drawable {
                     }
                 }
             }
+        }
+        if outsideAxis {
+            page.restoreGraphicsState()
         }
 
         // Axis titles

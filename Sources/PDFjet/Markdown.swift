@@ -926,14 +926,27 @@ public class Markdown {
         return font ?? regular
     }
 
+    // The text of an image, its alternate description, as it reads: its
+    // entities and escapes the characters they are, and its emphasis marks
+    // left out. "Fish &amp; Chips" was its alternate description as written.
+    private func altText(_ block: MarkdownParser.Block) -> String {
+        var scalars = String.UnicodeScalarView()
+        for scalar in plainText(block.text!).unicodeScalars {
+            scalars.append(scalar == "\n" ? " " : scalar)
+        }
+        return String(scalars).trim()
+    }
+
     // The text of a cell, without its inline markup, a line break at each
     // <br>.
     private func plainText(_ text: String) -> String {
         var buf = ""
         let paragraph = markup.paragraph(text)
         for i in 0..<paragraph.lines.count {
-            if i > 0 && paragraph.lines[i - 1].lineBreak {
-                buf += "\n"
+            if i > 0 && paragraph.lines[i - 1].lineBreaks > 0 {
+                for _ in 0..<paragraph.lines[i - 1].lineBreaks {
+                    buf += "\n"      // An empty line in the cell for each more <br>
+                }
             } else if i > 0 && !paragraph.joinsPrevious(i) {
                 buf += " "
             }
@@ -947,8 +960,8 @@ public class Markdown {
     private func drawImage(_ block: MarkdownParser.Block, _ x: Float, _ width: Float) throws {
         gap(size() * 0.75)
         guard let drawable = try imageOf(block, width) else {
-            let text = block.text!
-            let paragraph = Paragraph(TextLine(italic, text.isEmpty ? block.source! : text))
+            let alt = altText(block)
+            let paragraph = Paragraph(TextLine(italic, alt.isEmpty ? block.source! : alt))
             drawParagraph(paragraph, x, width)
             return
         }
@@ -968,12 +981,14 @@ public class Markdown {
         if let cached = images[id] {
             return cached
         }
-        let text = block.text!
         let source = block.source!
         var drawable: (any Drawable)? = nil
         var height: Float = 0.0
         if let path = imagePath(source) {
-            let alt = text.isEmpty ? (source as NSString).lastPathComponent : text
+            var alt = altText(block)
+            if alt.isEmpty {
+                alt = (source as NSString).lastPathComponent
+            }
             let scale: Float
             let imageWidth: Float
             let imageHeight: Float

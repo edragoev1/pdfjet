@@ -395,7 +395,12 @@ internal sealed class MarkdownParser {
         for (int k = 0; k < row.Length; k++) {
             char ch = row[k];
             if (ch == '\\' && k + 1 < row.Length) {
-                cell.Append(ch).Append(row[k + 1]);
+                // \| is a | of the cell, in code too, as in GitHub's
+                // Markdown; any other escape is kept for Markup to read
+                if (row[k + 1] != '|') {
+                    cell.Append(ch);
+                }
+                cell.Append(row[k + 1]);
                 k++;
             } else if (ch == '|') {
                 cells.Add(Util.Trim(cell.ToString()));

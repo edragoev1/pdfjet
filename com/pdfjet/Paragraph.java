@@ -345,11 +345,13 @@ public class Paragraph {
     // its bookmark when it is a heading.
     String text() {
         StringBuilder buf = new StringBuilder();
-        for (TextLine line : lines) {
-            if (buf.length() > 0) {
+        for (int i = 0; i < lines.size(); i++) {
+            // A space between the text lines, but not where one is joined to
+            // the one before it: "Version **9.1.5**:" was "Version 9.1.5 :"
+            if (i > 0 && (lines.get(i - 1).lineBreaks > 0 || !joinsPrevious(i))) {
                 buf.append(' ');
             }
-            buf.append(line.text);
+            buf.append(lines.get(i).text);
         }
         return buf.toString();
     }

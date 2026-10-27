@@ -254,9 +254,14 @@ func ParagraphsFromFile(f1 *Font, filePath string) []*Paragraph {
 // text returns the text of the paragraph, its lines one after another, as the
 // title of its bookmark when it is a heading.
 func (paragraph *Paragraph) text() string {
-	texts := make([]string, 0, len(paragraph.lines))
-	for _, line := range paragraph.lines {
-		texts = append(texts, line.text)
+	var buf strings.Builder
+	for i, line := range paragraph.lines {
+		// A space between the text lines, but not where one is joined to the
+		// one before it: "Version **9.1.5**:" was "Version 9.1.5 :"
+		if i > 0 && (paragraph.lines[i-1].lineBreaks > 0 || !paragraph.joinsPrevious(i)) {
+			buf.WriteByte(' ')
+		}
+		buf.WriteString(line.text)
 	}
-	return strings.Join(texts, " ")
+	return buf.String()
 }

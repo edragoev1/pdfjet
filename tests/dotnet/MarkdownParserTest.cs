@@ -157,7 +157,7 @@ public class MarkdownParserTest {
     [Fact]
     public void TablesOfPipes() {
         Assert.Equal("TABLE(A,B;1,2;3,|LR)", Parse("| A | B |\n|---|--:|\n| 1 | 2 |\n| 3 |"));
-        Assert.Equal("TABLE(a,b;x\\|y,z|CL)", Parse("a | b\n:-:|---\nx\\|y | z"));
+        Assert.Equal("TABLE(a,b;x|y,z|CL)", Parse("a | b\n:-:|---\nx\\|y | z"));
         // The header and the delimiter row need the same number of cells.
         Assert.Equal("P(a | b\n--- | --- | ---)", Parse("a | b\n--- | --- | ---"));
     }

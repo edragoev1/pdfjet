@@ -243,6 +243,12 @@ public class Bookmark {
         List<Heading> levels = new ArrayList<Heading>();
         List<Bookmark> open = new ArrayList<Bookmark>();
         for (Heading h : headings) {
+            if (!h.page.added) {
+                // A heading on a page that is not added to the PDF has no
+                // bookmark: it failed the document, as with Markdown drawn on
+                // pages of a first pass that were not kept
+                continue;
+            }
             while (!levels.isEmpty() && levels.get(levels.size() - 1).level >= h.level) {
                 levels.remove(levels.size() - 1);
                 open.remove(open.size() - 1);

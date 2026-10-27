@@ -8,6 +8,9 @@ import Foundation
 
 ///
 /// Used to create one dimensional barcodes - EAN-13, UPC-A, Code 39 and Code 128.
+/// Leave a quiet zone, blank, on both sides of the bars, as a scanner needs it:
+/// 10 modules for Code 128 and Code 39, 9 for UPC-A, and 11 on the left and 7
+/// on the right for EAN-13. ITF-14 draws its own.
 ///
 /// The text of an ITF-14 barcode is the 13 digits of a GTIN without its check
 /// digit, which is added, as for UPC-A and EAN-13.
@@ -546,9 +549,15 @@ public class Barcode : Drawable {
     /// 32 or from 160 to 255 two, SHIFT or FNC 4 and the character, and one
     /// from 128 to 159 three, FNC 4, SHIFT and the character 128 below it. It
     /// returns an error for a character above 255, which the code sets cannot
-    /// hold, and for a text of more than 48 codewords, the most a barcode
-    /// holds, rather than draw a barcode of another text.
+    /// hold, and for a text of more than 48 codewords, the limit of GS1-128
+    /// that PDFjet keeps for Code 128 too, rather than draw a barcode of
+    /// another text.
     static func code128Codewords(_ text: String) -> (codewords: [UInt16], error: String?) {
+        if text.isEmpty {
+            // A barcode of no data, a start, a check symbol and a stop, as an
+            // empty Code 39 is refused too
+            return ([], "Code 128 barcodes must have a text!")
+        }
         var items = [Int]()
         for symchar in text.unicodeScalars {
             if symchar.value > 255 {

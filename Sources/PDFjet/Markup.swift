@@ -140,6 +140,10 @@ public class Markup {
 
     private func addParagraph(_ paragraphs: inout [Paragraph], _ buf: inout [UInt16]) {
         if !buf.isEmpty {
+            // Without the line break after the last line, which made a
+            // backslash at the end of the paragraph a hard line break, and
+            // dropped it
+            buf.removeLast()
             let paragraph = self.paragraph(String(decoding: buf, as: UTF16.self))
             if !paragraph.lines.isEmpty {
                 paragraphs.append(paragraph)
@@ -174,7 +178,7 @@ public class Markup {
                     buf = ""
                 }
                 if let last = paragraph.lines.last {
-                    last.lineBreak = true
+                    last.lineBreaks += 1
                 }
                 joined = false
                 continue
@@ -353,6 +357,7 @@ public class Markup {
         private static let closeParenthesis = UInt16(UInt8(ascii: ")"))
         private static let space = UInt16(UInt8(ascii: " "))
         private static let newline = UInt16(UInt8(ascii: "\n"))
+        private static let carriageReturn = UInt16(UInt8(ascii: "\r"))
         private static let slash = UInt16(UInt8(ascii: "/"))
         private static let ampersand = UInt16(UInt8(ascii: "&"))
         private static let semicolon = UInt16(UInt8(ascii: ";"))
@@ -435,7 +440,7 @@ public class Markup {
                     let close = closingBracket[i]
                     let urlEnd = nextParenthesis[close + 2]
                     Parser.flush(&buf, link, &nodes)
-                    parse(i + 1, close, Parser.string(text[(close + 2)..<urlEnd]), &nodes)
+                    parse(i + 1, close, decoded(close + 2, urlEnd), &nodes)
                     i = urlEnd + 1
                 } else {
                     buf.append(Markup.isWhitespace(ch) ? Parser.space : ch)
@@ -451,11 +456,17 @@ public class Markup {
         // <br>, <br/> or <br /> in capitals or not.
         private func breakEnd(_ i: Int, _ end: Int) -> Int {
             let ch = text[i]
-            if ch == Parser.newline && i >= 2 && text[i - 1] == Parser.space && text[i - 2] == Parser.space {
-                return i + 1
+            // The line break of a text of \r\n line ends too
+            let newline = (ch == Parser.carriageReturn && i + 1 < end && text[i + 1] == Parser.newline) ? i + 1 : i
+            if text[newline] == Parser.newline && i >= 2 && text[i - 1] == Parser.space && text[i - 2] == Parser.space {
+                return newline + 1
             }
             if ch == Parser.backslash && i + 1 < end && text[i + 1] == Parser.newline {
                 return i + 2
+            }
+            if ch == Parser.backslash && i + 2 < end && text[i + 1] == Parser.carriageReturn
+                    && text[i + 2] == Parser.newline {
+                return i + 3
             }
             if ch == Parser.lessThan && i + 3 < end && (text[i + 1] == Parser.letterB || text[i + 1] == Parser.capitalB)
                     && (text[i + 2] == Parser.letterR || text[i + 2] == Parser.capitalR) {
@@ -518,7 +529,27 @@ public class Markup {
             if value == 0 || value > 0x10FFFF || (value >= 0xD800 && value <= 0xDFFF) {
                 return nil
             }
+            if value < 0x20 || (value >= 0x7F && value <= 0x9F) {
+                value = 0x20    // A control character is a space: &#10; broke the line of a table cell
+            }
             return (value, semicolon + 1)
+        }
+
+        // The text from start to end with its entities the characters they
+        // are: the address of a link, where &amp; was the five characters.
+        private func decoded(_ start: Int, _ end: Int) -> String {
+            var buf = [UInt16]()
+            var i = start
+            while i < end {
+                if let entity = entity(i, end) {
+                    buf.append(contentsOf: Unicode.Scalar(entity.code)!.utf16)
+                    i = entity.end
+                } else {
+                    buf.append(text[i])
+                    i += 1
+                }
+            }
+            return Parser.string(buf[...])
         }
 
         // The value of an ASCII digit, of 0 to 9, or of a to f and A to F in

@@ -414,14 +414,19 @@ public class TextFrame implements Drawable {
                 tokens = null;
                 tokenIndex = 0;
                 lineIndex++;
-                if (textLine.lineBreak && lineIndex < paragraph.lines.size()) {
+                if (textLine.lineBreaks > 0 && lineIndex < paragraph.lines.size()) {
                     // A hard line break: the row ends here, as the last row
                     // of a paragraph does, not justified, and the next text
-                    // line starts the next row
+                    // line starts the next row, or a row lower for each more
+                    // break, as <br><br> leaves an empty row
                     drawRow(page, true);
                     xText = x;
                     rowOpen = false;
                     nextBaseline = yText + textLine.getHeight() + textLine.font.getLineGap(textLine.fontSize);
+                    if (textLine.lineBreaks > 1) {
+                        float row = textLine.getHeight() + textLine.font.getLineGap(textLine.fontSize);
+                        nextBaseline += (textLine.lineBreaks - 1) * row;
+                    }
                 }
             }
             drawRow(page, true);

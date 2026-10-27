@@ -385,7 +385,14 @@ public class SimpleScatterChart implements Drawable {
     // both of its ends past one edge, as a flat one over a range that is set,
     // which was drawn outside the chart.
     private static double[] shownTrend(List<Point> points, ChartScale.Axis xAxis, ChartScale.Axis yAxis) {
-        double[] line = trend(points);
+        // Of the points drawn, not of those outside a range that is set
+        List<Point> shown = new ArrayList<Point>();
+        for (Point p : points) {
+            if (onPlot(p, xAxis, yAxis)) {
+                shown.add(p);
+            }
+        }
+        double[] line = trend(shown);
         if (line != null) {
             double a = line[0] * xAxis.min + line[1];
             double b = line[0] * xAxis.max + line[1];

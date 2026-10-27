@@ -268,11 +268,16 @@ public class Paragraph {
     // Returns the text of the paragraph, its lines one after another, as the
     // title of its bookmark when it is a heading.
     internal String Text() {
-        List<String> texts = new List<String>();
-        foreach (TextLine line in lines) {
-            texts.Add(line.text);
+        StringBuilder buf = new StringBuilder();
+        for (int i = 0; i < lines.Count; i++) {
+            // A space between the text lines, but not where one is joined to
+            // the one before it: "Version **9.1.5**:" was "Version 9.1.5 :"
+            if (i > 0 && (lines[i - 1].lineBreaks > 0 || !JoinsPrevious(i))) {
+                buf.Append(' ');
+            }
+            buf.Append(lines[i].text);
         }
-        return String.Join(" ", texts);
+        return buf.ToString();
     }
 }   // End of Paragraph.cs
 }   // End of namespace PDFjet.NET

@@ -135,8 +135,8 @@ class MarkupTest {
     void paragraphsAreSeparatedByEmptyLines() throws Exception {
         List<Paragraph> paragraphs = markup().paragraphs("One **two**\nthree.\n\n  \nFour.\r\n\r\n");
         assertEquals(2, paragraphs.size());
-        assertEquals(Arrays.asList("One |R", "two|B", " three. |R"), describe(paragraphs.get(0)));
-        assertEquals(Arrays.asList("Four. |R"), describe(paragraphs.get(1)));
+        assertEquals(Arrays.asList("One |R", "two|B", " three.|R"), describe(paragraphs.get(0)));
+        assertEquals(Arrays.asList("Four.|R"), describe(paragraphs.get(1)));
         assertEquals(0, markup().paragraphs(" \n\n").size());
     }
 

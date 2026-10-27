@@ -120,8 +120,8 @@ import Testing
         let fonts = Fonts()
         let paragraphs = fonts.markup.paragraphs("One **two**\nthree.\n\n  \nFour.\r\n\r\n")
         #expect(paragraphs.count == 2)
-        #expect(fonts.describe(paragraphs[0]) == ["One |R", "two|B", " three. |R"])
-        #expect(fonts.describe(paragraphs[1]) == ["Four. |R"])
+        #expect(fonts.describe(paragraphs[0]) == ["One |R", "two|B", " three.|R"])
+        #expect(fonts.describe(paragraphs[1]) == ["Four.|R"])
         #expect(Fonts().markup.paragraphs(" \n\n").count == 0)
     }
 

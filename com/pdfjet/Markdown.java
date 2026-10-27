@@ -882,14 +882,23 @@ public class Markdown {
         return (font != null) ? font : regular;
     }
 
+    // The text of an image, its alternate description, as it reads: its
+    // entities and escapes the characters they are, and its emphasis marks
+    // left out. "Fish &amp; Chips" was its alternate description as written.
+    private String altText(MarkdownParser.Block block) {
+        return plainText(block.text).replace('\n', ' ').trim();
+    }
+
     // The text of a cell, without its inline markup, a line break at each
     // <br>.
     private String plainText(String text) {
         StringBuilder buf = new StringBuilder();
         Paragraph paragraph = markup.paragraph(text);
         for (int i = 0; i < paragraph.lines.size(); i++) {
-            if (i > 0 && paragraph.lines.get(i - 1).lineBreak) {
-                buf.append('\n');
+            if (i > 0 && paragraph.lines.get(i - 1).lineBreaks > 0) {
+                for (int k = 0; k < paragraph.lines.get(i - 1).lineBreaks; k++) {
+                    buf.append('\n');      // An empty line in the cell for each more <br>
+                }
             } else if (i > 0 && !paragraph.joinsPrevious(i)) {
                 buf.append(' ');
             }
@@ -904,8 +913,8 @@ public class Markdown {
         gap(size() * 0.75f);
         Drawable drawable = imageOf(block, width);
         if (drawable == null) {
-            Paragraph paragraph = new Paragraph(new TextLine(italic,
-                    block.text.isEmpty() ? block.source : block.text));
+            String alt = altText(block);
+            Paragraph paragraph = new Paragraph(new TextLine(italic, alt.isEmpty() ? block.source : alt));
             drawParagraph(paragraph, x, width);
             return;
         }
@@ -928,7 +937,10 @@ public class Markdown {
         Drawable drawable = null;
         float height = 0f;
         if (path != null) {
-            String alt = block.text.isEmpty() ? new File(block.source).getName() : block.text;
+            String alt = altText(block);
+            if (alt.isEmpty()) {
+                alt = new File(block.source).getName();
+            }
             float scale;
             float imageWidth;
             float imageHeight;

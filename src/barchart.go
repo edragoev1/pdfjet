@@ -790,7 +790,23 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 
 	// The lines over the bars, through the middles of the categories, a
 	// dot at each value, broken where a value is missing; each on a white
-	// line a little wider, so that it stays clear where it crosses a bar
+	// line a little wider, so that it stays clear where it crosses a bar.
+	// A value outside a range that is set is drawn past the plot, which
+	// clips the lines at its edges and as far past them as a dot is wide,
+	// as in SimpleLineChart: a target of 150 over a range of 0 to 100 had
+	// its dot at 100
+	axis := chartAxis{vMin, vMax, lines}
+	outsideAxis := false
+	for _, s := range chart.lineSeries {
+		for i := 0; i < min(len(s.values), n); i++ {
+			outsideAxis = outsideAxis || (isValue(s.values[i]) && !onAxis(s.values[i], axis))
+		}
+	}
+	if outsideAxis {
+		edge := float32(0.2*bodyHeight) + 1.75
+		page.SaveGraphicsState()
+		page.ClipRect(x5-edge, y5-edge, x6-x5+float32(2.0*edge), y8-y5+float32(2.0*edge))
+	}
 	for _, s := range chart.lineSeries {
 		runs := make([][][2]float32, 0)
 		var run [][2]float32
@@ -799,7 +815,7 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 				run = nil
 				continue
 			}
-			v := min(max(s.values[i], vMin), vMax)
+			v := held(s.values[i], axis)
 			start := x5
 			if chart.horizontal {
 				start = y5
@@ -848,6 +864,9 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 				}
 			}
 		}
+	}
+	if outsideAxis {
+		page.RestoreGraphicsState()
 	}
 
 	// Axis titles

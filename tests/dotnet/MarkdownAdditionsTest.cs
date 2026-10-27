@@ -25,7 +25,7 @@ public class MarkdownAdditionsTest {
     private static List<bool> Breaks(Paragraph paragraph) {
         List<bool> breaks = new List<bool>();
         foreach (TextLine line in paragraph.lines) {
-            breaks.Add(line.lineBreak);
+            breaks.Add(line.lineBreaks > 0);
         }
         return breaks;
     }
@@ -45,7 +45,7 @@ public class MarkdownAdditionsTest {
         // Emphasis goes on over a break
         Paragraph bold = markup.Paragraph("**one<br>two**");
         Assert.Equal(2, bold.lines.Count);
-        Assert.True(bold.lines[0].lineBreak);
+        Assert.Equal(1, bold.lines[0].lineBreaks);
         Assert.False(bold.JoinsPrevious(1));
     }
 

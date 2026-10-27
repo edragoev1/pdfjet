@@ -159,10 +159,10 @@ func TestMarkupParagraphsAreSeparatedByEmptyLines(t *testing.T) {
 	if len(paragraphs) != 2 {
 		t.Fatalf("%d paragraphs", len(paragraphs))
 	}
-	if got, want := testDescribeMarkup(paragraphs[0], fonts), []string{"One |R", "two|B", " three. |R"}; !reflect.DeepEqual(got, want) {
+	if got, want := testDescribeMarkup(paragraphs[0], fonts), []string{"One |R", "two|B", " three.|R"}; !reflect.DeepEqual(got, want) {
 		t.Errorf("want %q, got %q", want, got)
 	}
-	if got, want := testDescribeMarkup(paragraphs[1], fonts), []string{"Four. |R"}; !reflect.DeepEqual(got, want) {
+	if got, want := testDescribeMarkup(paragraphs[1], fonts), []string{"Four.|R"}; !reflect.DeepEqual(got, want) {
 		t.Errorf("want %q, got %q", want, got)
 	}
 	if n := len(markup.Paragraphs(" \n\n")); n != 0 {

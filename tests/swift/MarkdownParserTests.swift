@@ -119,7 +119,7 @@ import Testing
 
     @Test func tablesOfPipes() {
         #expect(parse("| A | B |\n|---|--:|\n| 1 | 2 |\n| 3 |") == "TABLE(A,B;1,2;3,|LR)")
-        #expect(parse("a | b\n:-:|---\nx\\|y | z") == "TABLE(a,b;x\\|y,z|CL)")
+        #expect(parse("a | b\n:-:|---\nx\\|y | z") == "TABLE(a,b;x|y,z|CL)")
         // The header and the delimiter row need the same number of cells.
         #expect(parse("a | b\n--- | --- | ---") == "P(a | b\n--- | --- | ---)")
     }

@@ -53,9 +53,10 @@ public class PDF417 implements Drawable {
 
     /**
      * Constructor for PDF417 barcodes.
-     * The symbol has 18 columns and as many rows as the string needs, up to the
-     * 928 codewords a PDF417 symbol can hold: 864 data codewords, or about 1,300
-     * characters of mixed text, with the error correction level 5 used here.
+     * The symbol has 18 columns and as many rows as the string needs, up to 51
+     * rows of 918 codewords, of the 928 a PDF417 symbol can hold: 853 codewords
+     * of the string, or about 1,300 characters of mixed text, with the error
+     * correction level 5 used here.
      * The string is ASCII, and a control character other than HT, LF and CR
      * takes a codeword of its own and one more, in byte compaction.
      *

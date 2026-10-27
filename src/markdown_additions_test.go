@@ -27,7 +27,7 @@ func testAdditionsMarkup(pdf *PDF) *Markup {
 func testBreaks(paragraph *Paragraph) []bool {
 	breaks := make([]bool, 0)
 	for _, line := range paragraph.lines {
-		breaks = append(breaks, line.lineBreak)
+		breaks = append(breaks, line.lineBreaks > 0)
 	}
 	return breaks
 }
@@ -54,7 +54,7 @@ func TestMarkdownAdditionsHardLineBreaks(t *testing.T) {
 	testWant(t, "<br", markup.Paragraph("<br").lines[0].text)
 	// Emphasis goes on over a break
 	bold := markup.Paragraph("**one<br>two**")
-	if len(bold.lines) != 2 || !bold.lines[0].lineBreak || bold.joinsPrevious(1) {
+	if len(bold.lines) != 2 || bold.lines[0].lineBreaks != 1 || bold.joinsPrevious(1) {
 		t.Errorf("**one<br>two**: %d lines", len(bold.lines))
 	}
 }

@@ -375,7 +375,9 @@ public class SimpleScatterChart : Drawable {
     // which was drawn outside the chart.
     private static func shownTrend(_ points: [Point], _ xAxis: ChartScale.Axis, _ yAxis: ChartScale.Axis)
             -> (slope: Double, intercept: Double)? {
-        if let line = trend(points) {
+        // Of the points drawn, not of those outside a range that is set
+        let shown = points.filter { ChartScale.onAxis($0.x, xAxis) && ChartScale.onAxis($0.y, yAxis) }
+        if let line = trend(shown) {
             let a = line.slope * Double(xAxis.min) + line.intercept
             let b = line.slope * Double(xAxis.max) + line.intercept
             if (a > Double(yAxis.max) && b > Double(yAxis.max)) || (a < Double(yAxis.min) && b < Double(yAxis.min)) {

@@ -339,14 +339,19 @@ func (tf *TextFrame) drawParagraphs(page *Page) float32 {
 			tf.tokens = nil
 			tf.tokenIndex = 0
 			tf.lineIndex++
-			if textLine.lineBreak && tf.lineIndex < len(paragraph.lines) {
+			if textLine.lineBreaks > 0 && tf.lineIndex < len(paragraph.lines) {
 				// A hard line break: the row ends here, as the last row of a
 				// paragraph does, not justified, and the next text line
-				// starts the next row
+				// starts the next row, or a row lower for each more break,
+				// as <br><br> leaves an empty row
 				tf.drawRow(page, true)
 				tf.xText = tf.x
 				tf.rowOpen = false
 				tf.nextBaseline = tf.yText + textLine.GetHeight() + textLine.font.GetLineGap(textLine.fontSize)
+				if textLine.lineBreaks > 1 {
+					row := textLine.GetHeight() + textLine.font.GetLineGap(textLine.fontSize)
+					tf.nextBaseline += float32(float32(textLine.lineBreaks-1) * row)
+				}
 			}
 		}
 		tf.drawRow(page, true)

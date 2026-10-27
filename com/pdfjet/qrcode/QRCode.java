@@ -22,7 +22,8 @@ import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 
 /**
- * Used to create 2D QR Code barcodes. Please see Example_34.
+ * Used to create 2D QR Code barcodes. Leave a quiet zone, blank, of 4 modules
+ * all around the code, as a scanner needs it. Please see Example_37.
  */
 final public class QRCode implements Drawable {
     private static final int PAD0 = 0xEC;

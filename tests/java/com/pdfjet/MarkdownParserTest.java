@@ -149,7 +149,7 @@ class MarkdownParserTest {
     @Test
     void tablesOfPipes() {
         assertEquals("TABLE(A,B;1,2;3,|LR)", parse("| A | B |\n|---|--:|\n| 1 | 2 |\n| 3 |"));
-        assertEquals("TABLE(a,b;x\\|y,z|CL)", parse("a | b\n:-:|---\nx\\|y | z"));
+        assertEquals("TABLE(a,b;x|y,z|CL)", parse("a | b\n:-:|---\nx\\|y | z"));
         // The header and the delimiter row need the same number of cells.
         assertEquals("P(a | b\n--- | --- | ---)", parse("a | b\n--- | --- | ---"));
     }

@@ -169,7 +169,7 @@ func TestMarkdownParserANumberedListInterruptsAParagraphOnlyWhenItStartsAtOne(t 
 func TestMarkdownParserTablesOfPipes(t *testing.T) {
 	testAssertMarkdown(t,
 		"TABLE(A,B;1,2;3,|LR)", "| A | B |\n|---|--:|\n| 1 | 2 |\n| 3 |",
-		"TABLE(a,b;x\\|y,z|CL)", "a | b\n:-:|---\nx\\|y | z",
+		"TABLE(a,b;x|y,z|CL)", "a | b\n:-:|---\nx\\|y | z",
 		// The header and the delimiter row need the same number of cells.
 		"P(a | b\n--- | --- | ---)", "a | b\n--- | --- | ---")
 }

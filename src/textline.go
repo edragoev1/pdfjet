@@ -54,9 +54,10 @@ type TextLine struct {
 	// extractor see the word break, but is not part of its text, so that
 	// the alignment and the underline measure the line without it.
 	trailingSpace bool
-	// A hard line break after the text line, of Markdown's two spaces, \ or
-	// <br> at the end of a line: TextFrame starts a new row after it.
-	lineBreak bool
+	// The hard line breaks after the text line, of Markdown's two spaces, \
+	// or <br> at the end of a line: TextFrame starts a new row after it, and
+	// leaves an empty row for each break after the first, as <br><br> does.
+	lineBreaks int
 }
 
 // NewTextLine is constructor for creating text line objects.

@@ -127,7 +127,10 @@ func (markup *Markup) Paragraphs(text string) []*Paragraph {
 
 func (markup *Markup) addParagraph(paragraphs []*Paragraph, buf *strings.Builder) []*Paragraph {
 	if buf.Len() > 0 {
-		paragraph := markup.Paragraph(buf.String())
+		// Without the line break after the last line, which made a backslash
+		// at the end of the paragraph a hard line break, and dropped it
+		text := buf.String()
+		paragraph := markup.Paragraph(text[:len(text)-1])
 		if len(paragraph.lines) > 0 {
 			paragraphs = append(paragraphs, paragraph)
 		}
@@ -157,7 +160,7 @@ func (markup *Markup) Paragraph(text string) *Paragraph {
 				buf.Reset()
 			}
 			if len(paragraph.lines) > 0 {
-				paragraph.lines[len(paragraph.lines)-1].lineBreak = true
+				paragraph.lines[len(paragraph.lines)-1].lineBreaks++
 			}
 			joined = false
 			continue
@@ -391,7 +394,7 @@ func (parser *markupParser) parse(start, end int, link string, nodes []*markupNo
 			close := parser.closingBracket[i]
 			urlEnd := parser.nextParenthesis[close+2]
 			buf, nodes = markupFlush(buf, link, nodes)
-			nodes = parser.parse(i+1, close, string(text[close+2:urlEnd]), nodes)
+			nodes = parser.parse(i+1, close, parser.decoded(close+2, urlEnd), nodes)
 			i = urlEnd + 1
 		} else {
 			if isJavaWhitespace(ch) {
@@ -413,11 +416,19 @@ func (parser *markupParser) parse(start, end int, link string, nodes []*markupNo
 func (parser *markupParser) breakEnd(i, end int) int {
 	text := parser.text
 	ch := text[i]
-	if ch == '\n' && i >= 2 && text[i-1] == ' ' && text[i-2] == ' ' {
-		return i + 1
+	// The line break of a text of \r\n line ends too
+	newline := i
+	if ch == '\r' && i+1 < end && text[i+1] == '\n' {
+		newline = i + 1
+	}
+	if text[newline] == '\n' && i >= 2 && text[i-1] == ' ' && text[i-2] == ' ' {
+		return newline + 1
 	}
 	if ch == '\\' && i+1 < end && text[i+1] == '\n' {
 		return i + 2
+	}
+	if ch == '\\' && i+2 < end && text[i+1] == '\r' && text[i+2] == '\n' {
+		return i + 3
 	}
 	if ch == '<' && i+3 < end && (text[i+1] == 'b' || text[i+1] == 'B') &&
 		(text[i+2] == 'r' || text[i+2] == 'R') {
@@ -486,7 +497,28 @@ func (parser *markupParser) entity(i, end int) (rune, int) {
 	if value == 0 || value > 0x10FFFF || (value >= 0xD800 && value <= 0xDFFF) {
 		return 0, i
 	}
+	if value < 0x20 || (value >= 0x7F && value <= 0x9F) {
+		value = ' ' // A control character is a space: &#10; broke the line of a table cell
+	}
 	return rune(value), semicolon + 1
+}
+
+// decoded returns the text from start to end with its entities the
+// characters they are: the address of a link, where &amp; was the five
+// characters.
+func (parser *markupParser) decoded(start, end int) string {
+	var buf strings.Builder
+	i := start
+	for i < end {
+		if code, next := parser.entity(i, end); next > i {
+			buf.WriteRune(code)
+			i = next
+		} else {
+			buf.WriteRune(parser.text[i])
+			i++
+		}
+	}
+	return buf.String()
 }
 
 // markupASCIIDigit returns the value of an ASCII digit, of 0 to 9, or of a to

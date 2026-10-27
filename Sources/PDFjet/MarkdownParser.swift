@@ -422,7 +422,11 @@ final class MarkdownParser {
         while k < row.count {
             let ch = row[k]
             if ch == backslash && k + 1 < row.count {
-                cell.append(ch)
+                // \| is a | of the cell, in code too, as in GitHub's
+                // Markdown; any other escape is kept for Markup to read
+                if row[k + 1] != pipe {
+                    cell.append(ch)
+                }
                 cell.append(row[k + 1])
                 k += 1
             } else if ch == pipe {

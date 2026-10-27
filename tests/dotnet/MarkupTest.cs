@@ -136,8 +136,8 @@ public class MarkupTest {
     public void ParagraphsAreSeparatedByEmptyLines() {
         List<Paragraph> paragraphs = NewMarkup().Paragraphs("One **two**\nthree.\n\n  \nFour.\r\n\r\n");
         Assert.Equal(2, paragraphs.Count);
-        Assert.Equal(Lines("One |R", "two|B", " three. |R"), Describe(paragraphs[0]));
-        Assert.Equal(Lines("Four. |R"), Describe(paragraphs[1]));
+        Assert.Equal(Lines("One |R", "two|B", " three.|R"), Describe(paragraphs[0]));
+        Assert.Equal(Lines("Four.|R"), Describe(paragraphs[1]));
         Assert.Empty(NewMarkup().Paragraphs(" \n\n"));
     }
 

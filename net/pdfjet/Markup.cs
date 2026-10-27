@@ -140,6 +140,10 @@ public class Markup {
 
     private void AddParagraph(List<Paragraph> paragraphs, StringBuilder buf) {
         if (buf.Length > 0) {
+            // Without the line break after the last line, which made a
+            // backslash at the end of the paragraph a hard line break, and
+            // dropped it
+            buf.Length = buf.Length - 1;
             Paragraph paragraph = Paragraph(buf.ToString());
             if (paragraph.lines.Count > 0) {
                 paragraphs.Add(paragraph);
@@ -173,7 +177,7 @@ public class Markup {
                     buf.Length = 0;
                 }
                 if (paragraph.lines.Count > 0) {
-                    paragraph.lines[paragraph.lines.Count - 1].lineBreak = true;
+                    paragraph.lines[paragraph.lines.Count - 1].lineBreaks++;
                 }
                 joined = false;
                 continue;
@@ -385,7 +389,7 @@ public class Markup {
                     int close = closingBracket[i];
                     int urlEnd = nextParenthesis[close + 2];
                     Flush(buf, link, nodes);
-                    Parse(i + 1, close, text.Substring(close + 2, urlEnd - (close + 2)), nodes);
+                    Parse(i + 1, close, Decoded(close + 2, urlEnd), nodes);
                     i = urlEnd + 1;
                 } else {
                     buf.Append(Util.IsJavaWhitespace(ch) ? ' ' : ch);
@@ -401,11 +405,16 @@ public class Markup {
         // <br>, <br/> or <br /> in capitals or not.
         private int BreakEnd(int i, int end) {
             char ch = text[i];
-            if (ch == '\n' && i >= 2 && text[i - 1] == ' ' && text[i - 2] == ' ') {
-                return i + 1;
+            // The line break of a text of \r\n line ends too
+            int newline = (ch == '\r' && i + 1 < end && text[i + 1] == '\n') ? i + 1 : i;
+            if (text[newline] == '\n' && i >= 2 && text[i - 1] == ' ' && text[i - 2] == ' ') {
+                return newline + 1;
             }
             if (ch == '\\' && i + 1 < end && text[i + 1] == '\n') {
                 return i + 2;
+            }
+            if (ch == '\\' && i + 2 < end && text[i + 1] == '\r' && text[i + 2] == '\n') {
+                return i + 3;
             }
             if (ch == '<' && i + 3 < end && (text[i + 1] == 'b' || text[i + 1] == 'B')
                     && (text[i + 2] == 'r' || text[i + 2] == 'R')) {
@@ -465,7 +474,28 @@ public class Markup {
             if (value == 0 || value > 0x10FFFF || (value >= 0xD800 && value <= 0xDFFF)) {
                 return null;
             }
+            if (value < 0x20 || (value >= 0x7F && value <= 0x9F)) {
+                value = ' ';    // A control character is a space: &#10; broke the line of a table cell
+            }
             return new int[] {value, semicolon + 1};
+        }
+
+        // The text from start to end with its entities the characters they
+        // are: the address of a link, where &amp; was the five characters.
+        private String Decoded(int start, int end) {
+            StringBuilder buf = new StringBuilder();
+            int i = start;
+            while (i < end) {
+                int[] entity = Entity(i, end);
+                if (entity != null) {
+                    AppendCodePoint(buf, entity[0]);
+                    i = entity[1];
+                } else {
+                    buf.Append(text[i]);
+                    i++;
+                }
+            }
+            return buf.ToString();
         }
 
         // The value of an ASCII digit, of 0 to 9, or of a to f and A to F in

@@ -791,7 +791,23 @@ public class BarChart implements Drawable {
 
         // The lines over the bars, through the middles of the categories, a
         // dot at each value, broken where a value is missing; each on a white
-        // line a little wider, so that it stays clear where it crosses a bar
+        // line a little wider, so that it stays clear where it crosses a bar.
+        // A value outside a range that is set is drawn past the plot, which
+        // clips the lines at its edges and as far past them as a dot is wide,
+        // as in SimpleLineChart: a target of 150 over a range of 0 to 100 had
+        // its dot at 100
+        ChartScale.Axis axis = new ChartScale.Axis(vMin, vMax, lines);
+        boolean outsideAxis = false;
+        for (Series s : lineSeries) {
+            for (int i = 0; i < Math.min(s.values.length, n); i++) {
+                outsideAxis |= ChartScale.isValue(s.values[i]) && !ChartScale.onAxis(s.values[i], axis);
+            }
+        }
+        if (outsideAxis) {
+            float edge = 0.2f * bodyHeight + 1.75f;
+            page.saveGraphicsState();
+            page.clipRect(x5 - edge, y5 - edge, x6 - x5 + 2f * edge, y8 - y5 + 2f * edge);
+        }
         for (Series s : lineSeries) {
             List<List<float[]>> runs = new ArrayList<>();
             List<float[]> run = null;
@@ -800,7 +816,7 @@ public class BarChart implements Drawable {
                     run = null;
                     continue;
                 }
-                float v = Math.min(Math.max(s.values[i], vMin), vMax);
+                float v = ChartScale.held(s.values[i], axis);
                 float middle = (horizontal ? y5 : x5) + i * slot + slot / 2f;
                 float at = horizontal
                         ? x5 + ChartScale.scaled(v - vMin, x6 - x5, vMax - vMin)
@@ -831,6 +847,9 @@ public class BarChart implements Drawable {
                     }
                 }
             }
+        }
+        if (outsideAxis) {
+            page.restoreGraphicsState();
         }
 
         // Axis titles

@@ -139,7 +139,9 @@ public class DonutChart : Drawable {
 
     /// Sets the text written in the hole of a donut chart, in the font of the
     /// title, as large as one and a half labels or as fits: the total, "100
-    /// crates". A pie chart, with no hole, does not write it.
+    /// crates". A text too wide for the hole at three quarters of a label is
+    /// shortened with an ellipsis. A pie chart, with no hole, does not write
+    /// it.
     @discardableResult
     public func setCenterText(_ centerText: String) -> DonutChart {
         self.centerText = centerText

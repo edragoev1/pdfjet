@@ -79,6 +79,12 @@ public class Bookmark {
         List<Bookmark> stack = new List<Bookmark>();
         List<int> levels = new List<int>();
         foreach (Heading h in pdf.headings) {
+            if (!h.page.added) {
+                // A heading on a page that is not added to the PDF has no
+                // bookmark: it failed the document, as with Markdown drawn on
+                // pages of a first pass that were not kept
+                continue;
+            }
             while (levels.Count > 0 && levels[levels.Count - 1] >= h.level) {
                 levels.RemoveAt(levels.Count - 1);
                 stack.RemoveAt(stack.Count - 1);

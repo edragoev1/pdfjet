@@ -31,7 +31,8 @@ import (
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
 
-// QRCode used to create 2D QR Code barcodes. Please see Example_34.
+// QRCode used to create 2D QR Code barcodes. Leave a quiet zone, blank, of 4
+// modules all around the code, as a scanner needs it. Please see Example_37.
 type QRCode struct {
 	pad0                 int
 	pad1                 int

@@ -274,7 +274,14 @@ func (chart *SimpleScatterChart) axes(points []scatterPoint) (chartAxis, chartAx
 // misses the plot, both of its ends past one edge, as a flat one over a range
 // that is set, which was drawn outside the chart.
 func shownTrend(points []scatterPoint, xAxis, yAxis chartAxis) (float64, float64, bool) {
-	slope, intercept, ok := trend(points)
+	// Of the points drawn, not of those outside a range that is set
+	shown := make([]scatterPoint, 0, len(points))
+	for _, p := range points {
+		if onPlot(p, xAxis, yAxis) {
+			shown = append(shown, p)
+		}
+	}
+	slope, intercept, ok := trend(shown)
 	if ok {
 		a := float64(slope*float64(xAxis.min)) + intercept
 		b := float64(slope*float64(xAxis.max)) + intercept

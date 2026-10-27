@@ -966,14 +966,23 @@ func (markdown *Markdown) cellFont(text string) *Font {
 	return font
 }
 
+// altText returns the text of an image, its alternate description, as it
+// reads: its entities and escapes the characters they are, and its emphasis
+// marks left out. "Fish &amp; Chips" was its alternate description as written.
+func (markdown *Markdown) altText(block *markdownBlock) string {
+	return trimSpace(strings.ReplaceAll(markdown.plainText(block.text), "\n", " "))
+}
+
 // plainText returns the text of a cell, without its inline markup, a line
 // break at each <br>.
 func (markdown *Markdown) plainText(text string) string {
 	var buf strings.Builder
 	paragraph := markdown.markup.Paragraph(text)
 	for i, line := range paragraph.lines {
-		if i > 0 && paragraph.lines[i-1].lineBreak {
-			buf.WriteByte('\n')
+		if i > 0 && paragraph.lines[i-1].lineBreaks > 0 {
+			for k := 0; k < paragraph.lines[i-1].lineBreaks; k++ {
+				buf.WriteByte('\n') // An empty line in the cell for each more <br>
+			}
 		} else if i > 0 && !paragraph.joinsPrevious(i) {
 			buf.WriteByte(' ')
 		}
@@ -994,7 +1003,7 @@ func (markdown *Markdown) drawImage(block *markdownBlock, x, width float32) {
 		return
 	}
 	if image.drawable == nil {
-		text := block.text
+		text := markdown.altText(block)
 		if text == "" {
 			text = block.source
 		}
@@ -1023,7 +1032,7 @@ func (markdown *Markdown) imageOf(block *markdownBlock, width float32) *markdown
 	if path == "" {
 		return image
 	}
-	alt := block.text
+	alt := markdown.altText(block)
 	if alt == "" {
 		alt = filepath.Base(block.source)
 	}

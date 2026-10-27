@@ -31,9 +31,10 @@ public class TextLine : BaselineDrawable {
     // extractor see the word break, but is not part of its text, so that
     // the alignment and the underline measure the line without it.
     var trailingSpace = false
-    // A hard line break after the text line, of Markdown's two spaces, \ or
-    // <br> at the end of a line: TextFrame starts a new row after it.
-    var lineBreak = false
+    // The hard line breaks after the text line, of Markdown's two spaces, \
+    // or <br> at the end of a line: TextFrame starts a new row after it, and
+    // leaves an empty row for each break after the first, as <br><br> does.
+    var lineBreaks = 0
 
     private var degrees = 0
 

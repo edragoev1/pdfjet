@@ -140,7 +140,8 @@ func (dc *DonutChart) SetSubtitle(subtitle string) *DonutChart {
 
 // SetCenterText sets the text written in the hole of a donut chart, in the
 // font of the title, as large as one and a half labels or as fits: the total,
-// "100 crates". A pie chart, with no hole, does not write it.
+// "100 crates". A text too wide for the hole at three quarters of a label is
+// shortened with an ellipsis. A pie chart, with no hole, does not write it.
 func (dc *DonutChart) SetCenterText(centerText string) *DonutChart {
 	dc.centerText = centerText
 	return dc

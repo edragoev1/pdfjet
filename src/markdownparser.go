@@ -457,10 +457,15 @@ func (p markdownParser) cells(line string) []string {
 	for k := 0; k < len(row); k++ {
 		ch := row[k]
 		if ch == '\\' && k+1 < len(row) {
-			// The backslash and the character after it, which is a whole
-			// character of UTF-8 when it is not ASCII.
+			// \| is a | of the cell, in code too, as in GitHub's Markdown;
+			// any other escape is kept for Markup to read: the backslash and
+			// the character after it, which is a whole character of UTF-8
+			// when it is not ASCII.
 			_, size := utf8.DecodeRuneInString(row[k+1:])
-			cell.WriteString(row[k : k+1+size])
+			if row[k+1] != '|' {
+				cell.WriteByte(ch)
+			}
+			cell.WriteString(row[k+1 : k+1+size])
 			k += size
 		} else if ch == '|' {
 			cells = append(cells, trimSpace(cell.String()))

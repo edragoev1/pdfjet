@@ -9,7 +9,8 @@ import Foundation
 ///
 /// Used to create 2D Data Matrix barcodes: ECC 200 symbols as specified in
 /// ISO/IEC 16022. The text is encoded as UTF-8 in the smallest symbol that holds
-/// it. Please see Example_37.
+/// it. Leave a quiet zone, blank, of a module all around the symbol, as a
+/// scanner needs it. Please see Example_37.
 ///
 public final class DataMatrix : Drawable {
     /// Square symbols, from 10x10 to 144x144 modules.

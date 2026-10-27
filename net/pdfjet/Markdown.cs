@@ -912,14 +912,23 @@ public class Markdown {
         return font ?? regular;
     }
 
+    // The text of an image, its alternate description, as it reads: its
+    // entities and escapes the characters they are, and its emphasis marks
+    // left out. "Fish &amp; Chips" was its alternate description as written.
+    private String AltText(MarkdownParser.Block block) {
+        return Util.Trim(PlainText(block.text).Replace('\n', ' '));
+    }
+
     // The text of a cell, without its inline markup, a line break at each
     // <br>.
     private String PlainText(String text) {
         StringBuilder buf = new StringBuilder();
         Paragraph paragraph = markup.Paragraph(text);
         for (int i = 0; i < paragraph.lines.Count; i++) {
-            if (i > 0 && paragraph.lines[i - 1].lineBreak) {
-                buf.Append('\n');
+            if (i > 0 && paragraph.lines[i - 1].lineBreaks > 0) {
+                for (int k = 0; k < paragraph.lines[i - 1].lineBreaks; k++) {
+                    buf.Append('\n');      // An empty line in the cell for each more <br>
+                }
             } else if (i > 0 && !paragraph.JoinsPrevious(i)) {
                 buf.Append(' ');
             }
@@ -934,8 +943,8 @@ public class Markdown {
         Gap(Size() * 0.75f);
         IDrawable drawable = ImageOf(block, width);
         if (drawable == null) {
-            Paragraph paragraph = new Paragraph(new TextLine(italic,
-                    block.text.Length == 0 ? block.source : block.text));
+            String alt = AltText(block);
+            Paragraph paragraph = new Paragraph(new TextLine(italic, alt.Length == 0 ? block.source : alt));
             DrawParagraph(paragraph, x, width);
             return;
         }
@@ -959,7 +968,10 @@ public class Markdown {
         IDrawable drawable = null;
         float height = 0f;
         if (path != null) {
-            String alt = block.text.Length == 0 ? FileName(block.source) : block.text;
+            String alt = AltText(block);
+            if (alt.Length == 0) {
+                alt = FileName(block.source);
+            }
             float scale;
             float imageWidth;
             float imageHeight;

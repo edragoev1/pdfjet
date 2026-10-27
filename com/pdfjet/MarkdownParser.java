@@ -393,7 +393,12 @@ final class MarkdownParser {
         for (int k = 0; k < row.length(); k++) {
             char ch = row.charAt(k);
             if (ch == '\\' && k + 1 < row.length()) {
-                cell.append(ch).append(row.charAt(k + 1));
+                // \| is a | of the cell, in code too, as in GitHub's
+                // Markdown; any other escape is kept for Markup to read
+                if (row.charAt(k + 1) != '|') {
+                    cell.append(ch);
+                }
+                cell.append(row.charAt(k + 1));
                 k++;
             } else if (ch == '|') {
                 cells.add(cell.toString().trim());

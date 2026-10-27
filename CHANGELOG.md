@@ -337,6 +337,40 @@ There is no 9.1.3: what was done for it is in 9.1.5 (the owner, 26 October
   one no longer builds; a calendar is a `Table` of seven columns.
 
 ### Fixed
+- The four ports, from a fresh review of the charts, Markdown and the
+  barcodes of 27 October 2026:
+  - The bookmark of a heading, and the text a tagged heading is noted by,
+    have no space where the runs of its markup are joined: "# Version
+    **9.1.5**: notes" was "Version 9.1.5 : notes" in the outline.
+  - A heading on a page that is not added to the PDF has no bookmark, where
+    it failed the document, as for Markdown drawn on the pages of a first
+    pass that were not kept.
+  - Markup.paragraphs keeps a backslash at the end of a paragraph, which it
+    read as a hard line break and dropped: "C:\Temp\" was "C:\Temp".
+  - The alternate description of a Markdown image, and the text drawn in its
+    place, are its text as it reads: "Fish &amp; Chips" was written so.
+  - Two hard line breaks in a row, `<br><br>`, leave an empty row, in a
+    table cell too; they made one break. A `\|` in a table cell is a `|`, in
+    code too, as in GitHub's Markdown. Markup.paragraph reads the hard
+    breaks of a text of `\r\n` line ends. The entities in the address of a
+    link are the characters they name, `&amp;` an `&`, and a number of a
+    control character, as `&#10;`, is a space, where it broke the line of a
+    table cell.
+  - BarChart: a value of a line series outside a range that is set is drawn
+    past the plot, which clips the line, as in SimpleLineChart, where it was
+    drawn at the edge: a target of 150 over a range of 0 to 100 had its dot
+    at 100.
+  - SimpleScatterChart: the trend line is of the points drawn, not of those
+    outside a range that is set.
+  - Barcode: an empty Code 128 text is refused, as an empty Code 39 is; it
+    drew a barcode of no data.
+  - The documentation: PDF417 holds 51 rows of 918 codewords, 853 of the
+    text, where it said 928 and 864; the 48 codewords of Code 128 are the
+    limit of GS1-128 that PDFjet keeps; Barcode, QRCode and DataMatrix give
+    the quiet zone a scanner needs, which they do not draw; DonutChart's
+    center text is shortened with an ellipsis where it is too wide.
+  Behavior change: `new Barcode(Barcode.CODE_128, "")` throws; a scatter
+  chart over a set range with points outside it draws a different trend.
 - Markup, the four ports: a backslash in code is text, as in GitHub's
   Markdown, and a backtick after it closes the code: `` `foo\`bar` `` is the
   code "foo\" and the text "bar`", where the code was not closed there.

@@ -34,7 +34,7 @@ class MarkdownAdditionsTest {
     private static List<Boolean> breaks(Paragraph paragraph) {
         List<Boolean> breaks = new ArrayList<Boolean>();
         for (TextLine line : paragraph.lines) {
-            breaks.add(line.lineBreak);
+            breaks.add(line.lineBreaks > 0);
         }
         return breaks;
     }
@@ -54,7 +54,7 @@ class MarkdownAdditionsTest {
         // Emphasis goes on over a break
         Paragraph bold = markup.paragraph("**one<br>two**");
         assertEquals(2, bold.lines.size());
-        assertTrue(bold.lines.get(0).lineBreak);
+        assertEquals(1, bold.lines.get(0).lineBreaks);
         assertFalse(bold.joinsPrevious(1));
     }
 

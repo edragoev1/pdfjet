@@ -229,6 +229,12 @@ func (pdf *PDF) bookmarksOfHeadings() *Bookmark {
 	}
 	var stack []open
 	for _, h := range pdf.headings {
+		if !h.page.added {
+			// A heading on a page that is not added to the PDF has no
+			// bookmark: it failed the document, as with Markdown drawn on
+			// pages of a first pass that were not kept
+			continue
+		}
 		for len(stack) > 0 && stack[len(stack)-1].level >= h.level {
 			stack = stack[:len(stack)-1]
 		}
