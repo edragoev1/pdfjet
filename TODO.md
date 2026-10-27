@@ -102,6 +102,10 @@ commit and date. The layout's format version (1) and the look's rules
   November"), after the Forms launch of 9 and 10 November. The chart items
   of 9.1.5 below that are not done by then go to 9.1.7; SimpleBarChart is
   done and goes in 9.1.5.
+  **9.1.5 is the long-term support version, and nothing more is added to
+  it** (the owner, 27 October 2026: "I really don't want to add anything
+  more to 9.1.5 - it will be our LTS version"): only the fixes of the
+  review below; new work goes after it.
   **A complete code review before the release** (the owner, 27 October
   2026: "another complete code review before we release 9.1.5 but not
   now"): the four ports, everything changed since v9.1.1, after the Forms
