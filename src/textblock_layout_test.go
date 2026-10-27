@@ -82,7 +82,8 @@ func TestTextBlockLayoutReference(t *testing.T) {
 		if len(matches) != 1 {
 			t.Fatalf("there is no font %s in ../fonts/%s", name, family)
 		}
-		fonts[name] = NewFontFromFile(pdf, matches[0])
+		// Kerned when the check asks for it, as PDFjet Forms kerns its text
+		fonts[name] = NewFontFromFile(pdf, matches[0]).SetKernPairs(os.Getenv("PDFJET_LAYOUT_KERNING") == "1")
 		return fonts[name]
 	}
 	alignments := map[string]alignment.Alignment{
