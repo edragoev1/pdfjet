@@ -17,7 +17,8 @@ of it. The check fails on a font when the port:
   units per em or bounding box (head), ascent, descent or line gap (hhea,
   which PDFjet uses rather than the typographic or Windows metrics of OS/2),
   cap height, italic angle, underline position or thickness (post), first
-  or last character (OS/2), or kind of outlines (a CFF table or not). The
+  or last character (OS/2; a last character of 0xFFFF, which is "or more"
+  in its 16 bits, is U+10FFFF), or kind of outlines (a CFF table or not). The
   cap height is sCapHeight of OS/2 when the table is version 2 or later; a
   version 0 or 1 table does not have it, and then it is the top, yMax, of
   the glyph of H in the glyf table when the font has TrueType outlines and
@@ -29,7 +30,9 @@ of it. The check fails on a font when the port:
   that OS/2 gives, which are the ones PDFjet looks up; or, for a character of
   the BMP in that range the (3, 1) subtable leaves unmapped, than the full
   Unicode subtable, (3, 10), maps it, which PDFjet reads too since 9.0.5, as
-  IBM Plex Sans TC, as a .ttf, has an empty (3, 1) subtable;
+  IBM Plex Sans TC, as a .ttf, has an empty (3, 1) subtable; and, since
+  9.1.5, for a character past the BMP in that range, than the (3, 10)
+  subtable maps it, the first 65,536 of them;
 - leaves out a character of the BMP that fontTools' best character map has,
   because it is outside that range or only in another subtable;
 - gives StringWidth, for any character of the BMP, another width than the
@@ -57,7 +60,8 @@ a code of Symbol or ZapfDingbats that has no glyph, as the AFM gives it no
 width.
 
 Some differences are counted and not failed, because they are how PDFjet is
-made: the characters past the BMP, which a PDFjet font does not have; the
+made: the characters past the BMP that a PDFjet font does not read, outside
+the range of OS/2 or past the first 65,536; the
 kerning of an OpenType font, which PDFjet does not do (SetKernPairs kerns the
 core fonts only); and the typographic metrics a font asks for with
 USE_TYPO_METRICS, as PDFjet uses hhea. The differences that are understood
@@ -247,6 +251,10 @@ def reference_of(path):
     hmtx = font['hmtx'].metrics
     widths = [hmtx[order[i]][0] for i in range(hhea.numberOfHMetrics)]
     first, last = os2.usFirstCharIndex, os2.usLastCharIndex
+    # 16 bits: 0xFFFF says the font may have more, and PDFjet reads it as
+    # the last character of Unicode, as readOS2 in src/otf.go does
+    if last == 0xFFFF:
+        last = 0x10FFFF
     ref = {
         'name': ps_name(font),
         'unitsPerEm': head.unitsPerEm,
@@ -273,16 +281,22 @@ def reference_of(path):
             if first <= c <= last and c <= 0xFFFF and g != 0:
                 cmap[c] = g
     # What the (3, 1) subtable leaves unmapped, from the (3, 10) subtable, as
-    # getCmapFormat12 in src/otf.go fills it in
+    # getCmapFormat12 in src/otf.go fills it in, and the characters past the
+    # BMP, the first 65,536 of them, as glyphMap keeps them
     full = windows_cmap(font, 10)
     if full is not None and full.format == 12:
-        for c, glyph in full.cmap.items():
+        astral = 0
+        for c, glyph in sorted(full.cmap.items()):
             g = font.getGlyphID(glyph)
-            if first <= c <= last and c <= 0xFFFF and c not in cmap and 0 < g < 0x10000:
+            if first <= c <= last and c not in cmap and 0 < g < 0x10000:
+                if c > 0xFFFF:
+                    if astral == 0x10000:
+                        continue
+                    astral += 1
                 cmap[c] = g
     ref['cmap'] = cmap
     best = font.getBestCmap() or {}
-    ref['past BMP'] = sum(1 for c in best if c > 0xFFFF)
+    ref['past BMP'] = sum(1 for c in best if c > 0xFFFF and c not in cmap)
     ref['left out'] = sorted(c for c in best if c <= 0xFFFF and c not in cmap and font.getGlyphID(best[c]) != 0)
     ref['markAnchors'], ref['baseAnchors'], ref['markToMark'] = gpos_marks(font)
     ref['kerning'] = has_kerning(font)
@@ -570,8 +584,8 @@ def main():
         for font_results in results:
             for key, problems, info in font_results:
                 if info.get('past BMP'):
-                    notes['fonts with characters past the BMP'] += 1
-                    notes['characters past the BMP'] += info['past BMP']
+                    notes['fonts with characters past the BMP not read'] += 1
+                    notes['characters past the BMP not read'] += info['past BMP']
                 if info.get('kerning'):
                     notes['fonts whose kerning PDFjet does not apply'] += 1
                 if info.get('useTypoMetrics'):
