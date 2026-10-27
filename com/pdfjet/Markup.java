@@ -285,9 +285,13 @@ public class Markup {
                 nextSpace[i] = Character.isWhitespace(ch) ? i : nextSpace[i + 1];
             }
             for (int i = 0; i < n; ) {
-                if (text.charAt(i) == '\\' && i + 1 < n) {
+                if (text.charAt(i) == '\\' && i + 1 < n && text.charAt(i + 1) != '`') {
                     i += 2;
                 } else if (text.charAt(i) == '`') {
+                    // A backtick after a backslash is text where it would open
+                    // code, as parse reads it, but closes code, in which a
+                    // backslash is text, as in GitHub's Markdown: `foo\` was
+                    // not closed
                     int start = i;
                     while (i < n && text.charAt(i) == '`') {
                         i++;

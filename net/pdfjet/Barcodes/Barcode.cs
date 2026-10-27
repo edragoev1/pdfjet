@@ -68,6 +68,7 @@ public class Barcode : IDrawable {
 
     private Dictionary<Char, String> tableB = new Dictionary<Char, String>();
     private String altDescription;
+    private int color = Color.black;
 
     /// <summary>
     /// The constructor.
@@ -207,6 +208,22 @@ public class Barcode : IDrawable {
     }
 
     /// <summary>
+    /// Sets the color of the bars and of the text under them. It is black
+    /// unless set.
+    /// Color.transparent leaves it unchanged. Use a dark color on a light
+    /// background, as navy, dark green or dark brown: most scanners read with
+    /// red light, in which red, orange and yellow bars look white.
+    /// </summary>
+    /// <param name="color">the color as a 0xRRGGBB value.</param>
+    /// <returns>this Barcode object.</returns>
+    public Barcode SetModuleColor(int color) {
+        if (color != Color.transparent) {
+            this.color = color;
+        }
+        return this;
+    }
+
+    /// <summary>
     /// Sets the font to be used with this barcode.
     /// </summary>
     /// <param name="font">the specified font.</param>
@@ -252,9 +269,9 @@ public class Barcode : IDrawable {
             page.AddBDC(StructElem.FIGURE, null, null, altDescription);
         }
         if (page != null) {
-            // The bars are black whatever pen color the page was left with
+            // The bars are in their color whatever pen color the page was left with
             page.SaveGraphicsState();
-            page.SetPenColor(Color.black);
+            page.SetPenColor(color);
         }
         try {
             Extent extent;
@@ -439,6 +456,7 @@ public class Barcode : IDrawable {
     // the baseline and the bottom of the text, before the turn.
     private float[] DrawText(Page page, Bars bars, String str, float x, float y) {
         TextLine textLine = new TextLine(font, str);
+        textLine.SetTextColor(color);
         float[] xy = bars.Turn(x, y);
         textLine.SetLocation(xy[0], xy[1]);
         if (direction == Direction.TOP_TO_BOTTOM) {

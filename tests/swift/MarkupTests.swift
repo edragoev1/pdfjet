@@ -57,6 +57,16 @@ import Testing
         #expect(parse("one\ntwo") == ["one two|R"])
     }
 
+    // A backslash is text in code, as in GitHub's Markdown, and a backtick
+    // after it closes the code; outside code, \` is a backtick that opens none.
+    @Test func aBackslashInCodeIsText() {
+        #expect(parse("`foo\\`bar`") == ["foo\\|C", "+bar`|R"])
+        #expect(parse("`\\`") == ["\\|C"])
+        #expect(parse("\\`not code`") == ["`not code`|R"])
+        #expect(parse("``a\\b``") == ["a\\b|C"])
+        #expect(parse("x ``a\\`` y") == ["x |R", "a\\|C", " y|R"])
+    }
+
     @Test func boldItalicAndBoth() {
         #expect(parse("a **b** c") == ["a |R", "b|B", " c|R"])
         #expect(parse("a *b* c") == ["a |R", "b|I", " c|R"])

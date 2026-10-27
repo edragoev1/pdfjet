@@ -42,6 +42,7 @@ type Barcode struct {
 	lgMap           []string
 	tableB          map[byte]string
 	altDescription  string
+	color           int32
 }
 
 // Constants for the barcode type.
@@ -66,6 +67,7 @@ func NewBarcode(barcodeType int, text string) *Barcode {
 	barcode.m1 = 0.75 // Module length
 	barcode.barHeightFactor = 50.0
 	barcode.direction = direction.LeftToRight
+	barcode.color = color.Black
 
 	if barcodeType == UPC_A && (len(text) != 11 || !hasOnlyDigits(text)) {
 		panic("UPC-A barcodes must have exactly 11 digits!")
@@ -194,6 +196,19 @@ func (barcode *Barcode) SetDirection(direction direction.Direction) *Barcode {
 	return barcode
 }
 
+// SetModuleColor sets the color of the bars and of the text under them. It is
+// black unless set.
+// color.Transparent leaves it unchanged. Use a dark color on a light
+// background, as navy, dark green or dark brown: most scanners read with
+// red light, in which red, orange and yellow bars look white.
+//   - c: the color as a 0xRRGGBB value.
+func (barcode *Barcode) SetModuleColor(c int32) *Barcode {
+	if c != color.Transparent {
+		barcode.color = c
+	}
+	return barcode
+}
+
 // SetFont sets the font to be used with this barcode.
 //   - font: the specified font.
 func (barcode *Barcode) SetFont(font *Font) *Barcode {
@@ -230,9 +245,9 @@ func (barcode *Barcode) DrawOn(page *Page) [2]float32 {
 		defer page.AddEMC()
 	}
 	if page != nil {
-		// The bars are black whatever pen color the page was left with
+		// The bars are in their color whatever pen color the page was left with
 		page.SaveGraphicsState()
-		page.SetPenColor(color.Black)
+		page.SetPenColor(barcode.color)
 		defer page.RestoreGraphicsState()
 	}
 	var extent *barcodeExtent
@@ -423,6 +438,7 @@ func (barcode *Barcode) strokeBar(page *Page, bars *barcodeBars, x, w, h float32
 // end of the baseline and the bottom of the text, before the turn.
 func (barcode *Barcode) drawText(page *Page, bars *barcodeBars, text string, x, y float32) [2]float32 {
 	textLine := NewTextLine(barcode.font, text)
+	textLine.SetTextColor(barcode.color)
 	xy := bars.turn(x, y)
 	textLine.SetLocation(xy[0], xy[1])
 	if barcode.direction == direction.TopToBottom {

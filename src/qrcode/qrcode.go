@@ -26,6 +26,7 @@ import (
 	"strconv"
 
 	pdfjet "github.com/edragoev1/pdfjet/v9/src"
+	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/errorcorrectionlevel"
 	"github.com/edragoev1/pdfjet/v9/src/structelem"
 )
@@ -151,11 +152,21 @@ func (qrcode *QRCode) SetModuleLength(moduleLength float32) *QRCode {
 	return qrcode
 }
 
-// SetModuleColor sets the color of the barcode.
+// SetModuleColor sets the color of the QR code. It is black unless set.
+// color.Transparent leaves it unchanged. Use a dark color on a light
+// background, as navy, dark green or dark brown: most scanners read with
+// red light, in which red, orange and yellow modules look white.
+//   - color: the color as a 0xRRGGBB value.
 func (qrcode *QRCode) SetModuleColor(color int32) *QRCode {
-	qrcode.color = color
+	if color != transparent {
+		qrcode.color = color
+	}
 	return qrcode
 }
+
+// color.Transparent, which the parameter of SetModuleColor, named color as
+// it was in v9.1.1, hides inside it.
+const transparent = color.Transparent
 
 // DrawOn draws this barcode on the specified page. The dark modules next to
 // each other in a row are filled as one rectangle, and the pen and the brush

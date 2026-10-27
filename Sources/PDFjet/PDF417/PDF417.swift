@@ -32,6 +32,9 @@ public class PDF417 : Drawable {
     // Critical defaults!
     private var w1: Float = 0.75
     private var h1: Float = 0.0
+
+    private var color: Int32 = Color.black
+
     private var rows = 0
     private var cols = 18
     private var codewords = [Int]()
@@ -155,6 +158,23 @@ public class PDF417 : Drawable {
     }
 
     /**
+     *  Sets the color of the bars. It is black unless set.
+     *  Color.transparent leaves it unchanged. Use a dark color on a light
+     *  background, as navy, dark green or dark brown: most scanners read with
+     *  red light, in which red, orange and yellow bars look white.
+     *
+     *  - Parameter color: the color as a 0xRRGGBB value.
+     *  - Returns: this PDF417 object.
+     */
+    @discardableResult
+    public func setModuleColor(_ color: Int32) -> PDF417 {
+        if color != Color.transparent {
+            self.color = color
+        }
+        return self
+    }
+
+    /**
      *  Sets what the barcode says for a screen reader: a tagged document,
      *  PDF/UA or a PDF/A of level A, then has the barcode as a figure of that
      *  description. Without one, its bars are decoration, which a screen
@@ -170,8 +190,9 @@ public class PDF417 : Drawable {
     }
 
     /**
-     *  Draws this barcode on the specified page. The bars are black, and the
-     *  pen of the page is as it was after it.
+     *  Draws this barcode on the specified page. The bars are in the color of
+     *  setModuleColor, black unless set, and the pen of the page is as it was
+     *  after it.
      *
      *  - Parameter page: the page to draw this barcode on.
      *  - Returns: x and y coordinates of the bottom right corner of this component.
@@ -188,7 +209,7 @@ public class PDF417 : Drawable {
                 page.addArtifactBMC()
             }
             page.saveGraphicsState()
-            page.setPenColor(Color.black)
+            page.setPenColor(color)
         }
         let xy = drawPdf417(page)
         if let page = page {

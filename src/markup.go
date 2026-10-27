@@ -292,9 +292,13 @@ func newMarkupParser(text []rune) *markupParser {
 		}
 	}
 	for i := 0; i < n; {
-		if text[i] == '\\' && i+1 < n {
+		if text[i] == '\\' && i+1 < n && text[i+1] != '`' {
 			i += 2
 		} else if text[i] == '`' {
+			// A backtick after a backslash is text where it would open
+			// code, as parse reads it, but closes code, in which a
+			// backslash is text, as in GitHub's Markdown: `foo\` was
+			// not closed
 			start := i
 			for i < n && text[i] == '`' {
 				i++

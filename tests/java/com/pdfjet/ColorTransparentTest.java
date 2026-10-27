@@ -8,6 +8,11 @@ package com.pdfjet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.pdfjet.barcodes.Barcode;
+import com.pdfjet.datamatrix.DataMatrix;
+import com.pdfjet.pdf417.PDF417;
+import com.pdfjet.qrcode.ErrorCorrectionLevel;
+import com.pdfjet.qrcode.QRCode;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -17,6 +22,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.Callable;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
@@ -46,6 +52,12 @@ class ColorTransparentTest {
         List<Case> cases = Arrays.asList(
             new Case("Arc.setStrokeColor", Arc::new, (o, c) -> ((Arc) o).setStrokeColor(c)),
             new Case("Arc.setFillColor", Arc::new, (o, c) -> ((Arc) o).setFillColor(c)),
+            new Case("Barcode.setModuleColor", made(() -> new Barcode(Barcode.CODE_128, "A1")),
+                    (o, c) -> ((Barcode) o).setModuleColor(c)),
+            new Case("PDF417.setModuleColor", made(() -> new PDF417("A1")), (o, c) -> ((PDF417) o).setModuleColor(c)),
+            new Case("QRCode.setModuleColor", made(() -> new QRCode("A1", ErrorCorrectionLevel.M)),
+                    (o, c) -> ((QRCode) o).setModuleColor(c)),
+            new Case("DataMatrix.setModuleColor", () -> new DataMatrix("A1"), (o, c) -> ((DataMatrix) o).setModuleColor(c)),
             new Case("BarChart.setGridLineColor", () -> new BarChart(font, font), (o, c) -> ((BarChart) o).setGridLineColor(c)),
             new Case("CheckBox.setBorderColor", () -> new CheckBox(font, "A"), (o, c) -> ((CheckBox) o).setBorderColor(c)),
             new Case("CheckBox.setCheckmarkColor", () -> new CheckBox(font, "A"), (o, c) -> ((CheckBox) o).setCheckmarkColor(c)),
@@ -80,6 +92,17 @@ class ColorTransparentTest {
             }
         }
         assertEquals(new ArrayList<String>(), changed, "Color.transparent changed them");
+    }
+
+    // The object the maker makes, which may throw.
+    private static Supplier<Object> made(Callable<Object> maker) {
+        return () -> {
+            try {
+                return maker.call();
+            } catch (Exception e) {
+                throw new IllegalStateException(e);
+            }
+        };
     }
 
     private static Page page(PDF pdf) {

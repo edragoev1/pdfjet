@@ -19,6 +19,13 @@ import Testing
         let cases: [(String, () -> AnyObject, (AnyObject, Int32) -> Void)] = [
             ("Arc.setStrokeColor", { Arc() }, { ($0 as! Arc).setStrokeColor($1) }),
             ("Arc.setFillColor", { Arc() }, { ($0 as! Arc).setFillColor($1) }),
+            // The data of the barcodes is valid.
+            ("Barcode.setModuleColor", { try! Barcode(Barcode.CODE_128, "A1") },
+                { ($0 as! Barcode).setModuleColor($1) }),
+            ("PDF417.setModuleColor", { try! PDF417("A1") }, { ($0 as! PDF417).setModuleColor($1) }),
+            ("QRCode.setModuleColor", { try! QRCode("A1", ErrorCorrectionLevel.M) },
+                { ($0 as! QRCode).setModuleColor($1) }),
+            ("DataMatrix.setModuleColor", { DataMatrix("A1") }, { ($0 as! DataMatrix).setModuleColor($1) }),
             ("BarChart.setGridLineColor", { BarChart(font, font) }, { ($0 as! BarChart).setGridLineColor($1) }),
             ("CheckBox.setBorderColor", { CheckBox(font, "A") }, { ($0 as! CheckBox).setBorderColor($1) }),
             ("CheckBox.setCheckmarkColor", { CheckBox(font, "A") }, { ($0 as! CheckBox).setCheckmarkColor($1) }),

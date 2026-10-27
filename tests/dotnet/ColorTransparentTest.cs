@@ -25,6 +25,12 @@ public class ColorTransparentTest {
         var cases = new List<(string name, Func<object> make, Action<object, int> set)> {
             ("Arc.SetStrokeColor", () => new Arc(), (o, c) => ((Arc) o).SetStrokeColor(c)),
             ("Arc.SetFillColor", () => new Arc(), (o, c) => ((Arc) o).SetFillColor(c)),
+            ("Barcode.SetModuleColor", () => new Barcode(Barcode.CODE_128, "A1"),
+                    (o, c) => ((Barcode) o).SetModuleColor(c)),
+            ("PDF417.SetModuleColor", () => new PDF417("A1"), (o, c) => ((PDF417) o).SetModuleColor(c)),
+            ("QRCode.SetModuleColor", () => new QRCode("A1", ErrorCorrectionLevel.M),
+                    (o, c) => ((QRCode) o).SetModuleColor(c)),
+            ("DataMatrix.SetModuleColor", () => new DataMatrix("A1"), (o, c) => ((DataMatrix) o).SetModuleColor(c)),
             ("BarChart.SetGridLineColor", () => new BarChart(font, font), (o, c) => ((BarChart) o).SetGridLineColor(c)),
             ("CheckBox.SetBorderColor", () => new CheckBox(font, "A"), (o, c) => ((CheckBox) o).SetBorderColor(c)),
             ("CheckBox.SetCheckmarkColor", () => new CheckBox(font, "A"), (o, c) => ((CheckBox) o).SetCheckmarkColor(c)),

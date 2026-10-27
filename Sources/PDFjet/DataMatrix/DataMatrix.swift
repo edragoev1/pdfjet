@@ -194,10 +194,18 @@ public final class DataMatrix : Drawable {
         return self
     }
 
-    /// Sets the color of the barcode as a 0xRRGGBB value.
+    /// Sets the color of the barcode. It is black unless set.
+    /// Color.transparent leaves it unchanged. Use a dark color on a light
+    /// background, as navy, dark green or dark brown: most scanners read with
+    /// red light, in which red, orange and yellow modules look white.
+    ///
+    /// - Parameter color: the color as a 0xRRGGBB value.
+    /// - Returns: this DataMatrix object.
     @discardableResult
     public func setModuleColor(_ color: Int32) -> DataMatrix {
-        self.color = color
+        if color != Color.transparent {
+            self.color = color
+        }
         return self
     }
 

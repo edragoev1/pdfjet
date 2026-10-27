@@ -39,6 +39,8 @@ public class PDF417 implements Drawable {
     private float w1 = 0.75f;
     private float h1 = 0f;
 
+    private int color = Color.black;
+
     private int rows;
     private int cols = 18;
     private int[] codewords;
@@ -158,6 +160,22 @@ public class PDF417 implements Drawable {
     public PDF417 setModuleLength(float moduleLength) {
         this.w1 = moduleLength;
         this.h1 = 3 * w1;
+        return this;
+    }
+
+    /**
+     * Sets the color of the bars. It is black unless set.
+     * Color.transparent leaves it unchanged. Use a dark color on a light
+     * background, as navy, dark green or dark brown: most scanners read with
+     * red light, in which red, orange and yellow bars look white.
+     *
+     * @param color the color as a 0xRRGGBB value.
+     * @return this PDF417 object.
+     */
+    public PDF417 setModuleColor(int color) {
+        if (color != Color.transparent) {
+            this.color = color;
+        }
         return this;
     }
 
@@ -298,8 +316,9 @@ public class PDF417 implements Drawable {
     }
 
     /**
-     * Draws this barcode on the specified page. The bars are black, and the
-     * pen of the page is as it was after it.
+     * Draws this barcode on the specified page. The bars are in the color of
+     * setModuleColor, black unless set, and the pen of the page is as it was
+     * after it.
      *
      * @param page the page to draw this barcode on.
      * @return x and y coordinates of the bottom right corner of this component.
@@ -316,7 +335,7 @@ public class PDF417 implements Drawable {
                 page.addArtifactBMC();
             }
             page.saveGraphicsState();
-            page.setPenColor(Color.black);
+            page.setPenColor(color);
         }
         float[] xy = drawBars(page);
         if (page != null) {

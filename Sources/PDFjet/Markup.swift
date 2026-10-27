@@ -315,9 +315,13 @@ public class Markup {
             self.nextSpace = nextSpace
             i = 0
             while i < n {
-                if text[i] == Parser.backslash && i + 1 < n {
+                if text[i] == Parser.backslash && i + 1 < n && text[i + 1] != Parser.backtick {
                     i += 2
                 } else if text[i] == Parser.backtick {
+                    // A backtick after a backslash is text where it would open
+                    // code, as parse reads it, but closes code, in which a
+                    // backslash is text, as in GitHub's Markdown: `foo\` was
+                    // not closed
                     let start = i
                     while i < n && text[i] == Parser.backtick {
                         i += 1

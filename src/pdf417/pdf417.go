@@ -32,6 +32,7 @@ type PDF417 struct {
 	x1, y1         float32
 	w1             float32
 	h1             float32
+	color          int32
 	rows           int
 	cols           int
 	codewords      []int
@@ -66,6 +67,7 @@ func NewPDF417(str string) *PDF417 {
 	barcode.w1 = 0.75
 	barcode.h1 = float32(3.0 * barcode.w1)
 	barcode.cols = 18
+	barcode.color = color.Black
 
 	for _, ch := range str {
 		if ch > 126 {
@@ -152,6 +154,18 @@ func (barcode *PDF417) SetLocation(x, y float32) pdfjet.Drawable {
 func (barcode *PDF417) SetModuleLength(moduleLength float32) *PDF417 {
 	barcode.w1 = moduleLength
 	barcode.h1 = float32(3 * barcode.w1)
+	return barcode
+}
+
+// SetModuleColor sets the color of the bars. It is black unless set.
+// color.Transparent leaves it unchanged. Use a dark color on a light
+// background, as navy, dark green or dark brown: most scanners read with
+// red light, in which red, orange and yellow bars look white.
+//   - c: the color as a 0xRRGGBB value.
+func (barcode *PDF417) SetModuleColor(c int32) *PDF417 {
+	if c != color.Transparent {
+		barcode.color = c
+	}
 	return barcode
 }
 
@@ -284,8 +298,9 @@ func (barcode *PDF417) SetAltDescription(altDescription string) *PDF417 {
 	return barcode
 }
 
-// DrawOn draws this barcode on the specified page. The bars are black, and
-// the pen of the page is as it was after it.
+// DrawOn draws this barcode on the specified page. The bars are in the color
+// of SetModuleColor, black unless set, and the pen of the page is as it was
+// after it.
 // @return x and y coordinates of the bottom right corner of this component.
 func (barcode *PDF417) DrawOn(page *pdfjet.Page) [2]float32 {
 	if page != nil {
@@ -297,7 +312,7 @@ func (barcode *PDF417) DrawOn(page *pdfjet.Page) [2]float32 {
 			page.AddArtifactBMC()
 		}
 		page.SaveGraphicsState()
-		page.SetPenColor(color.Black)
+		page.SetPenColor(barcode.color)
 	}
 	xy := barcode.drawBars(page)
 	if page != nil {

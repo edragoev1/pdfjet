@@ -191,11 +191,21 @@ func (dm *DataMatrix) SetModuleLength(moduleLength float32) *DataMatrix {
 	return dm
 }
 
-// SetModuleColor sets the color of the barcode as a 0xRRGGBB value.
+// SetModuleColor sets the color of the barcode. It is black unless set.
+// color.Transparent leaves it unchanged. Use a dark color on a light
+// background, as navy, dark green or dark brown: most scanners read with
+// red light, in which red, orange and yellow modules look white.
+//   - color: the color as a 0xRRGGBB value.
 func (dm *DataMatrix) SetModuleColor(color int32) *DataMatrix {
-	dm.color = color
+	if color != transparent {
+		dm.color = color
+	}
 	return dm
 }
+
+// color.Transparent, which the parameter of SetModuleColor, named color as
+// it was in v9.1.1, hides inside it.
+const transparent = color.Transparent
 
 // GetModules returns the modules of this barcode, by row and column; true is dark.
 func (dm *DataMatrix) GetModules() [][]bool {

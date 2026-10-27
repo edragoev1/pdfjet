@@ -50,6 +50,7 @@ public class Barcode : Drawable {
 
     private var tableB = [String : String]()
     private var altDescription: String?
+    private var color: Int32 = Color.black
 
     ///
     /// The constructor.
@@ -221,6 +222,22 @@ public class Barcode : Drawable {
         return self
     }
 
+    /// Sets the color of the bars and of the text under them. It is black
+    /// unless set.
+    /// Color.transparent leaves it unchanged. Use a dark color on a light
+    /// background, as navy, dark green or dark brown: most scanners read with
+    /// red light, in which red, orange and yellow bars look white.
+    ///
+    /// - Parameter color: the color as a 0xRRGGBB value.
+    /// - Returns: this Barcode object.
+    @discardableResult
+    public func setModuleColor(_ color: Int32) -> Barcode {
+        if color != Color.transparent {
+            self.color = color
+        }
+        return self
+    }
+
     ///
     /// Sets the font to be used with this barcode.
     ///
@@ -280,9 +297,9 @@ public class Barcode : Drawable {
             }
         }
         if let page = page {
-            // The bars are black whatever pen color the page was left with
+            // The bars are in their color whatever pen color the page was left with
             page.saveGraphicsState()
-            page.setPenColor(Color.black)
+            page.setPenColor(color)
         }
         defer {
             page?.restoreGraphicsState()
@@ -511,6 +528,7 @@ public class Barcode : Drawable {
             _ x: Float,
             _ y: Float) -> [Float] {
         let textLine = TextLine(font!, str)
+        textLine.setTextColor(color)
         let xy = bars.turn(x, y)
         textLine.setLocation(xy[0], xy[1])
         if direction == Direction.TOP_TO_BOTTOM {

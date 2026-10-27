@@ -65,6 +65,17 @@ public class MarkupTest {
         Assert.Equal(Lines("one two|R"), Parse("one\ntwo"));
     }
 
+    // A backslash is text in code, as in GitHub's Markdown, and a backtick
+    // after it closes the code; outside code, \` is a backtick that opens none.
+    [Fact]
+    public void ABackslashInCodeIsText() {
+        Assert.Equal(Lines("foo\\|C", "+bar`|R"), Parse("`foo\\`bar`"));
+        Assert.Equal(Lines("\\|C"), Parse("`\\`"));
+        Assert.Equal(Lines("`not code`|R"), Parse("\\`not code`"));
+        Assert.Equal(Lines("a\\b|C"), Parse("``a\\b``"));
+        Assert.Equal(Lines("x |R", "a\\|C", " y|R"), Parse("x ``a\\`` y"));
+    }
+
     [Fact]
     public void BoldItalicAndBoth() {
         Assert.Equal(Lines("a |R", "b|B", " c|R"), Parse("a **b** c"));

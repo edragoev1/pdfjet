@@ -58,6 +58,7 @@ public class Barcode implements Drawable {
 
     private Map<Character, String> tableB = new HashMap<Character, String>();
     private String altDescription;
+    private int color = Color.black;
 
     /**
      * The constructor.
@@ -201,6 +202,23 @@ public class Barcode implements Drawable {
     }
 
     /**
+     * Sets the color of the bars and of the text under them. It is black
+     * unless set.
+     * Color.transparent leaves it unchanged. Use a dark color on a light
+     * background, as navy, dark green or dark brown: most scanners read with
+     * red light, in which red, orange and yellow bars look white.
+     *
+     * @param color the color as a 0xRRGGBB value.
+     * @return this Barcode object.
+     */
+    public Barcode setModuleColor(int color) {
+        if (color != Color.transparent) {
+            this.color = color;
+        }
+        return this;
+    }
+
+    /**
      * Sets the font to be used with this barcode.
      *
      * @param font the specified font.
@@ -251,9 +269,9 @@ public class Barcode implements Drawable {
             page.addBDC(StructElem.FIGURE, null, null, altDescription);
         }
         if (page != null) {
-            // The bars are black whatever pen color the page was left with
+            // The bars are in their color whatever pen color the page was left with
             page.saveGraphicsState();
-            page.setPenColor(Color.black);
+            page.setPenColor(color);
         }
         try {
             Extent extent;
@@ -438,6 +456,7 @@ public class Barcode implements Drawable {
     // the baseline and the bottom of the text, before the turn.
     private float[] drawText(Page page, Bars bars, String str, float x, float y) throws Exception {
         TextLine textLine = new TextLine(font, str);
+        textLine.setTextColor(color);
         float[] xy = bars.turn(x, y);
         textLine.setLocation(xy[0], xy[1]);
         if (direction == Direction.TOP_TO_BOTTOM) {

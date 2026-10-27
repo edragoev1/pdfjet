@@ -31,6 +31,13 @@ There is no 9.1.3: what was done for it is in 9.1.5 (the owner, 26 October
   kerned), 118 in Java (69), 103 in C# (63) and 155 in Swift (98), and the
   document is 11 to 17% larger, for the moves written between the glyphs.
 
+- All four ports: `setModuleColor(color)` on Barcode, the linear codes, and
+  on PDF417, as QRCode and DataMatrix have it (Go `SetModuleColor`): the
+  color of the bars, and of a linear code's text under them, black unless
+  set. The documentation of the four asks for a dark color on a light
+  background, as most scanners read with red light, in which red, orange
+  and yellow bars look white.
+
 - Markdown and Markup, the four ports, four small additions:
   - The headings of a Markdown text are the bookmarks of the document, the
     outline a reader shows, in a document that is not tagged too; a tagged
@@ -330,6 +337,13 @@ There is no 9.1.3: what was done for it is in 9.1.5 (the owner, 26 October
   one no longer builds; a calendar is a `Table` of seven columns.
 
 ### Fixed
+- Markup, the four ports: a backslash in code is text, as in GitHub's
+  Markdown, and a backtick after it closes the code: `` `foo\`bar` `` is the
+  code "foo\" and the text "bar`", where the code was not closed there.
+  Outside code, \` is still a backtick that opens no code.
+- QRCode and DataMatrix, the four ports: `setModuleColor(Color.transparent)`
+  leaves the color as it was, as every other color setter does; it drew the
+  modules in whatever color the page had last.
 - The charts, the four ports, from a fourth review of 26 October 2026:
   - BarChart: the numbers of the value axis have the digits of its step
     whatever `setFractionDigits` says, where with 0 an axis in steps of 0.25

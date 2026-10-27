@@ -142,6 +142,17 @@ func TestMarkupABackslashMakesAMarkText(t *testing.T) {
 		[]string{"a\\b \\", "a\\b \\|R"})
 }
 
+// A backslash is text in code, as in GitHub's Markdown, and a backtick
+// after it closes the code; outside code, \` is a backtick that opens none.
+func TestMarkupABackslashInCodeIsText(t *testing.T) {
+	testAssertMarkup(t,
+		[]string{"`foo\\`bar`", "foo\\|C", "+bar`|R"},
+		[]string{"`\\`", "\\|C"},
+		[]string{"\\`not code`", "`not code`|R"},
+		[]string{"``a\\b``", "a\\b|C"},
+		[]string{"x ``a\\`` y", "x |R", "a\\|C", " y|R"})
+}
+
 func TestMarkupParagraphsAreSeparatedByEmptyLines(t *testing.T) {
 	markup, fonts := testMarkup(testNewPDF())
 	paragraphs := markup.Paragraphs("One **two**\nthree.\n\n  \nFour.\r\n\r\n")

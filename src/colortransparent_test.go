@@ -24,6 +24,7 @@ func TestEveryColorSetterLeavesTheColorForTransparent(t *testing.T) {
 	}{
 		{"Arc.SetStrokeColor", func() any { return NewArc() }, func(o any, c int32) { o.(*Arc).SetStrokeColor(c) }},
 		{"Arc.SetFillColor", func() any { return NewArc() }, func(o any, c int32) { o.(*Arc).SetFillColor(c) }},
+		{"Barcode.SetModuleColor", func() any { return NewBarcode(CODE_128, "A1") }, func(o any, c int32) { o.(*Barcode).SetModuleColor(c) }},
 		{"BarChart.SetGridLineColor", func() any { return NewBarChart(font, font) }, func(o any, c int32) { o.(*BarChart).SetGridLineColor(c) }},
 		{"CheckBox.SetBorderColor", func() any { return NewCheckBox(font, "A") }, func(o any, c int32) { o.(*CheckBox).SetBorderColor(c) }},
 		{"CheckBox.SetCheckmarkColor", func() any { return NewCheckBox(font, "A") }, func(o any, c int32) { o.(*CheckBox).SetCheckmarkColor(c) }},

@@ -39,6 +39,8 @@ public class PDF417 : IDrawable {
     // Critical defaults!
     private float w1 = 0.75f;
     private float h1 = 0f;
+
+    private int color = Color.black;
     private int rows;
     private int cols = 18;
     private int[] codewords = null;
@@ -166,8 +168,24 @@ public class PDF417 : IDrawable {
     }
 
     /// <summary>
-    ///  Draws this barcode on the specified page. The bars are black, and the
-    ///  pen of the page is as it was after it.
+    /// Sets the color of the bars. It is black unless set.
+    /// Color.transparent leaves it unchanged. Use a dark color on a light
+    /// background, as navy, dark green or dark brown: most scanners read with
+    /// red light, in which red, orange and yellow bars look white.
+    /// </summary>
+    /// <param name="color">the color as a 0xRRGGBB value.</param>
+    /// <returns>this PDF417 object.</returns>
+    public PDF417 SetModuleColor(int color) {
+        if (color != Color.transparent) {
+            this.color = color;
+        }
+        return this;
+    }
+
+    /// <summary>
+    ///  Draws this barcode on the specified page. The bars are in the color of
+    ///  SetModuleColor, black unless set, and the pen of the page is as it was
+    ///  after it.
     /// </summary>
     /// <param name="page">the page to draw on.</param>
     /// <returns>x and y coordinates of the bottom right corner of this component.</returns>
@@ -181,7 +199,7 @@ public class PDF417 : IDrawable {
                 page.AddArtifactBMC();
             }
             page.SaveGraphicsState();
-            page.SetPenColor(Color.black);
+            page.SetPenColor(color);
         }
         float[] xy = DrawPdf417(page);
         if (page != null) {

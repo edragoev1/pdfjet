@@ -64,6 +64,17 @@ class MarkupTest {
         assertEquals(Arrays.asList("one two|R"), parse("one\ntwo"));
     }
 
+    // A backslash is text in code, as in GitHub's Markdown, and a backtick
+    // after it closes the code; outside code, \` is a backtick that opens none.
+    @Test
+    void aBackslashInCodeIsText() throws Exception {
+        assertEquals(Arrays.asList("foo\\|C", "+bar`|R"), parse("`foo\\`bar`"));
+        assertEquals(Arrays.asList("\\|C"), parse("`\\`"));
+        assertEquals(Arrays.asList("`not code`|R"), parse("\\`not code`"));
+        assertEquals(Arrays.asList("a\\b|C"), parse("``a\\b``"));
+        assertEquals(Arrays.asList("x |R", "a\\|C", " y|R"), parse("x ``a\\`` y"));
+    }
+
     @Test
     void boldItalicAndBoth() throws Exception {
         assertEquals(Arrays.asList("a |R", "b|B", " c|R"), parse("a **b** c"));

@@ -233,13 +233,18 @@ public final class DataMatrix implements Drawable {
     }
 
     /**
-     * Sets the color of the barcode.
+     * Sets the color of the barcode. It is black unless set.
+     * Color.transparent leaves it unchanged. Use a dark color on a light
+     * background, as navy, dark green or dark brown: most scanners read with
+     * red light, in which red, orange and yellow modules look white.
      *
      * @param color the color as a 0xRRGGBB value.
      * @return this DataMatrix object.
      */
     public DataMatrix setModuleColor(int color) {
-        this.color = color;
+        if (color != Color.transparent) {
+            this.color = color;
+        }
         return this;
     }
 
