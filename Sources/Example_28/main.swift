@@ -36,11 +36,11 @@ public class Example_28 {
 
         chart.setTitle("Fruit sold this week")
         chart.setSubtitle("Share of 100 crates, in the default colors")
-        chart.addSlice(Slice(25.0, "Apples"))
-        chart.addSlice(Slice(20.0, "Oranges"))
-        chart.addSlice(Slice(30.0, "Bananas"))
-        chart.addSlice(Slice(15.0, "Grapes"))
-        chart.addSlice(Slice(10.0, "Lemons"))
+        chart.add("Apples", 25.0)
+        chart.add("Oranges", 20.0)
+        chart.add("Bananas", 30.0)
+        chart.add("Grapes", 15.0)
+        chart.add("Lemons", 10.0)
         chart.drawOn(page)
 
         // Many slices, some small: a legend under the circle in place of the
@@ -57,7 +57,7 @@ public class Example_28 {
                 "Pears", "Plums", "Cherries"]
         let crates: [Float] = [31.0, 24.0, 17.0, 10.0, 7.0, 5.0, 4.0, 2.0]
         for i in 0..<kinds.count {
-            many.addSlice(Slice(crates[i], kinds[i]))
+            many.add(kinds[i], crates[i])
         }
         many.drawOn(page)
 

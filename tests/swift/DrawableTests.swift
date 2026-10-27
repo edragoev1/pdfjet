@@ -36,7 +36,7 @@ import Testing
             }),
             ("BarChart", { _, font in BarChart(font, font).setSize(200, 150).addSeries("s", [1, 2, 3]) }),
             ("DonutChart", { _, font in
-                DonutChart(font, font).setRadii(50, 20).addSlice(Slice(1, Color.red, "a")).addSlice(Slice(2, Color.green, "b"))
+                DonutChart(font, font).setRadii(50, 20).add("a", 1, Color.red).add("b", 2, Color.green)
             }),
             ("Table", { _, font in
                 var data = [[Cell]]()

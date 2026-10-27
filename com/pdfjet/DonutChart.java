@@ -53,9 +53,10 @@ public class DonutChart implements Drawable {
     }
 
     /**
-     * Sets the top left corner of the outer circle of this chart. The center
-     * is one outer radius to the right of it and one below. The slice labels
-     * can extend past the circle.
+     * Sets the top left corner of this chart: of its outer circle, or of its
+     * title when it has one, the circle under it. The center is one outer
+     * radius to the right of the corner of the circle and one below. The
+     * slice labels can extend past the circle.
      *
      * @param x the x coordinate of the top left corner.
      * @param y the y coordinate of the top left corner.
@@ -83,16 +84,46 @@ public class DonutChart implements Drawable {
     }
 
     /**
-     * Adds a slice to this chart.
+     * Adds a slice in the next color of the palette, navy first, the palette
+     * of BarChart, so that the charts of a document match; its eight colors
+     * repeat from the ninth slice on. The slice's share of the sum of the
+     * values sets its angle; a value that is not above 0 has no slice.
      *
-     * @param slice the slice.
+     * @param name the label of the slice; empty for none.
+     * @param value the value of the slice.
      * @return this DonutChart object.
      */
-    public DonutChart addSlice(Slice slice) {
-        if (slice != null) {
-            slices.add(slice);
-        }
+    public DonutChart add(String name, float value) {
+        return add(name, value, Slice.PALETTE);
+    }
+
+    /**
+     * Adds a slice in the color.
+     *
+     * @param name the label of the slice; empty for none.
+     * @param value the value of the slice.
+     * @param color the color as a 0xRRGGBB value, for example Color.blue.
+     * @return this DonutChart object.
+     */
+    public DonutChart add(String name, float value, int color) {
+        slices.add(new Slice(value, color, name));
         return this;
+    }
+
+    // A slice: its value, its color, or PALETTE for the next of the palette,
+    // and its label.
+    private static final class Slice {
+        static final int PALETTE = -1;
+
+        final float value;
+        final int color;
+        final String text;
+
+        Slice(float value, int color, String text) {
+            this.value = value;
+            this.color = color;
+            this.text = (text == null) ? "" : text;
+        }
     }
 
     /**

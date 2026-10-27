@@ -39,10 +39,8 @@ public class ReviewCodesTest {
             PDF pdf = TestSupport.NewPDF();
             Page page = new Page(pdf, Letter.PORTRAIT);
             Font font = TestSupport.Helvetica(pdf);
-#pragma warning disable CS0618 // Chart is deprecated, and is tested until it is removed
-            Chart chart = new Chart(font, font).SetLocation(50f, 50f).SetSize(300f, 200f);
-            chart.AddSeries("").AddPoint(value, value).AddPoint(value, value);
-#pragma warning restore CS0618
+            SimpleScatterChart chart = new SimpleScatterChart(font, font).SetLocation(50f, 50f).SetSize(300f, 200f);
+            chart.Add(value, value).Add(value, value);
             chart.DrawOn(page);
             Assert.DoesNotContain("NaN", TestSupport.Content(page));
             pdf.Complete();
@@ -170,8 +168,8 @@ public class ReviewCodesTest {
         Page page = new Page(pdf, Letter.PORTRAIT);
         Font font = TestSupport.Helvetica(pdf);
         new DonutChart(font, font).SetLocation(100f, 100f).SetRadii(100f, 50f)
-                .AddSlice(new Slice(25f, Color.red, "Apples and pears"))
-                .AddSlice(new Slice(75f, Color.blue, "Oranges")).DrawOn(page);
+                .Add("Apples and pears", 25f, Color.red)
+                .Add("Oranges", 75f, Color.blue).DrawOn(page);
         float[] box = BBox(page.structures[0]);
         // The circle is from 100 to 300; the labels are right and left of it
         Assert.True(box[0] < 100f && box[2] > 300f, "the box is not wider than the circle");

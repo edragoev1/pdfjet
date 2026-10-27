@@ -53,14 +53,13 @@ class ReviewCodesTest {
     }
 
     @Test
-    @SuppressWarnings("deprecation")    // Chart, tested until it is removed
     void chartFlatDataOfLargeValuesHasARange() throws Exception {
         for (float value : new float[] {2e7f, -3e7f, 1e30f}) {
             PDF pdf = TestSupport.newPDF();
             Page page = new Page(pdf, Letter.PORTRAIT);
             Font font = TestSupport.helvetica(pdf);
-            Chart chart = new Chart(font, font).setLocation(50f, 50f).setSize(300f, 200f);
-            chart.addSeries("").addPoint(value, value).addPoint(value, value);
+            SimpleScatterChart chart = new SimpleScatterChart(font, font).setLocation(50f, 50f).setSize(300f, 200f);
+            chart.add(value, value).add(value, value);
             chart.drawOn(page);
             assertFalse(TestSupport.content(page).contains("NaN"), value + ": NaN in the content");
             pdf.complete();
@@ -172,8 +171,8 @@ class ReviewCodesTest {
         Page page = new Page(pdf, Letter.PORTRAIT);
         Font font = TestSupport.helvetica(pdf);
         new DonutChart(font, font).setLocation(100f, 100f).setRadii(100f, 50f)
-                .addSlice(new Slice(25f, Color.red, "Apples and pears"))
-                .addSlice(new Slice(75f, Color.blue, "Oranges")).drawOn(page);
+                .add("Apples and pears", 25f, Color.red)
+                .add("Oranges", 75f, Color.blue).drawOn(page);
         float[] box = bbox(page.structures.get(0));
         // The circle is from 100 to 300; the labels are right and left of it
         assertTrue(box[0] < 100f && box[2] > 300f, Arrays.toString(box));

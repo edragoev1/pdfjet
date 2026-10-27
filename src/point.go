@@ -20,8 +20,8 @@ import (
 
 // Point is a point with a marker: a shape drawn around its (x, y) coordinates,
 // which are the center of the marker. A point is drawn on a page on its own,
-// as the marker of a table cell, or in a chart Series, and a slice of points
-// is a path for Page.DrawPath.
+// as the marker of a table cell, and a slice of points is a path for
+// Page.DrawPath.
 // Please see Example_05.
 type Point struct {
 	x, y           float32

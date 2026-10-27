@@ -46,8 +46,8 @@ There is no 9.1.3: what was done for it is in 9.1.5 (the owner, 26 October
     a donut, the total, in the title's font, as large as one and a half
     labels or as fits, and in the description. Example_28's second page
     draws eight kinds of fruit with both. The palette's eight colors repeat
-    from a ninth slice on, as the documentation of `new Slice(value, text)`
-    says.
+    from a ninth slice on, as the documentation of `DonutChart.add(name,
+    value)` says.
   - `SimpleLineChart.setValueLabels(true)`: each value written small by its
     point, above a peak, under a valley, before a point on a rise and after
     one on a fall, where the line leaves it room; the last of a line is in
@@ -191,9 +191,9 @@ There is no 9.1.3: what was done for it is in 9.1.5 (the owner, 26 October
   them.
 - DonutChart, the four ports: the look of the simple charts. A title and a
   subtitle, `setTitle` and `setSubtitle`, at the top left, in ink and in a
-  muted gray, with the circle under them; a slice made with
-  `new Slice(value, text)` (Go `NewSliceInPalette`) takes the next color of
-  BarChart's palette; thin white lines between the slices; the leader lines
+  muted gray, with the circle under them; a slice added with
+  `add(name, value)` takes the next color of BarChart's palette, and one
+  added with `add(name, value, color)` its color; thin white lines between the slices; the leader lines
   thin and gray, the labels in ink, and each percentage white or ink,
   whichever contrasts more with its slice. The room above the circle is
   what a label at its top needs, so that it clears the subtitle. The text
@@ -270,21 +270,35 @@ There is no 9.1.3: what was done for it is in 9.1.5 (the owner, 26 October
   check mark was black and is green; a status table's `| ✓ shipped |` is
   drawn in 0x1A7F37.
 
-### Deprecated
-- BarChart, the four ports: `setDrawGridLines`, `setDrawValueLabels` and
-  `setDrawLegend` (Go `SetDraw...`), for `setGridLines`, `setValueLabels`
-  and `setLegend`, the names the other charts use: SimpleLineChart's
-  `setValueLabels` and DonutChart's `setLegend`. The old names do as the new
-  ones and are to be removed with Chart.
+### Removed
 - `Chart` and `Series`, in the four ports: SimpleLineChart draws lines over
   time or over categories (Example_25), and SimpleScatterChart points on
-  two axes (Example_26). They still work, and will be removed in a later
-  release, v9.2.1 or after; the compilers say so where they are used (Java
-  `@Deprecated`, C# `[Obsolete]`, Swift `@available(*, deprecated)`, Go
-  `// Deprecated:`). Point stays: Cell, Path, Shape and Page use it. The
-  booklet's line chart is a SimpleLineChart.
-
-### Removed
+  two axes (Example_26), in the look of the other charts, each described
+  for screen readers from its data. The charts were new, and the owner
+  chose to remove the old ones in this release rather than keep them
+  deprecated (26 October 2026). Point stays: Cell, Path, Shape and Page use
+  it. The booklet's line chart is a SimpleLineChart.
+- `Slice` and `DonutChart.addSlice`, in the four ports (Go `NewSlice`,
+  `NewSliceInPalette`): a slice is added with `DonutChart.add(name, value)`,
+  in the next color of the palette, or `add(name, value, color)` (Go `Add`
+  and `AddWithColor`), the name
+  first as in `SimpleBarChart.add(name, value)`. `new Slice(25, Color.red,
+  "Apples")` is written `add("Apples", 25, Color.red)`.
+- BarChart, in the four ports: `setValueAxisMinMax(min, max, gridLines)`,
+  for `setValueAxisRange(min, max)`, named as the line and scatter charts'
+  `setYAxisRange`, whose grid lines are on a round step; and
+  `setMinimumFractionDigits` and `setMaximumFractionDigits`, for
+  `setFractionDigits(digits)`, as SimpleBarChart's. Its style knobs
+  `setChartBorderWidth`, `setInnerBorderWidth`, `setGridLineDashPattern`,
+  `setGridLineWidth` and `setAxisLineWidth` are removed: a BarChart has the
+  look of the simple charts, thin solid grid lines, the axis line at the
+  base of the bars and no border; `setGridLines` and `setGridLineColor`
+  stay. And `setDrawGridLines`, `setDrawValueLabels` and `setDrawLegend`,
+  for `setGridLines`, `setValueLabels` and `setLegend`, the names the other
+  charts use.
+  Behavior change: a program that calls one of these no longer builds; a
+  BarChart that set a border or a dashed grid draws neither, and one that
+  hid its axis line with `setAxisLineWidth(0)` draws it.
 - `CalendarMonth`, in the four ports. It drew one month with its dates in
   blue circles: no month title, the names of the days in English only, no
   day marked apart from the others, and each date a line of text where a
@@ -438,8 +452,8 @@ There is no 9.1.3: what was done for it is in 9.1.5 (the owner, 26 October
   every second or third line, or more, when it would not; the grid lines are
   all drawn. The charts of Example_27 are the same as before.
   Behavior change: a chart whose axis labels would meet shows fewer of them;
-  `setValueAxisMinMax(0, 80, 16)` with one decimal on a chart 300 points
-  wide labels 0.0, 10.0 to 80.0 and leaves 5.0, 15.0 and the others out.
+  a horizontal chart of 0 to 80 in steps of 10 with one decimal, 120 points
+  wide, labels 0.0, 20.0 to 80.0 and leaves 10.0, 30.0 and the others out.
 
 ## v9.1.1 — 2026-10-20
 

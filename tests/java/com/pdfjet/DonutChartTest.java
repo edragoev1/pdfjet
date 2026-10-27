@@ -20,7 +20,7 @@ class DonutChartTest {
     void aChartWithoutValuesDrawsNothing() throws Exception {
         PDF pdf = TestSupport.newPDF();
         Page page = new Page(pdf, Letter.PORTRAIT);
-        DonutChart chart = chart(pdf).addSlice(new Slice(0f, Color.red, "none"));
+        DonutChart chart = chart(pdf).add("none", 0f, Color.red);
         TestSupport.assertXY(300f, 300f, chart.drawOn(page));
         assertEquals(0, page.getContent().length);
     }
@@ -30,9 +30,9 @@ class DonutChartTest {
         PDF pdf = TestSupport.newPDF();
         Page page = new Page(pdf, Letter.PORTRAIT);
         DonutChart chart = chart(pdf);
-        chart.addSlice(new Slice(1f, Color.red, "a"));
-        chart.addSlice(new Slice(1f, Color.green, "b"));
-        chart.addSlice(new Slice(2f, Color.blue, "c"));
+        chart.add("a", 1f, Color.red);
+        chart.add("b", 1f, Color.green);
+        chart.add("c", 2f, Color.blue);
         TestSupport.assertXY(300f, 300f, chart.drawOn(page));
         String content = TestSupport.content(page);
         assertTrue(content.contains(TestSupport.hex("25%")), content);
@@ -45,7 +45,7 @@ class DonutChartTest {
         PDF pdf = TestSupport.newPDF();
         Page page = new Page(pdf, Letter.PORTRAIT);
         DonutChart chart = chart(pdf).setRadii(100f, 0f);
-        chart.addSlice(new Slice(3f, Color.red, "a")).addSlice(new Slice(1f, Color.blue, "b"));
+        chart.add("a", 3f, Color.red).add("b", 1f, Color.blue);
         chart.drawOn(page);
         String content = TestSupport.content(page);
         assertTrue(content.contains(TestSupport.hex("75%")), content);
@@ -56,18 +56,18 @@ class DonutChartTest {
     void aChartIsAFigureThatListsItsSlices() throws Exception {
         PDF pdf = new PDF(new java.io.ByteArrayOutputStream(), Compliance.PDF_UA_1).setTitle("Test");
         Page page = new Page(pdf, Letter.PORTRAIT);
-        DonutChart donut = chart(pdf).addSlice(new Slice(25f, Color.red, "Apples"))
-                .addSlice(new Slice(75f, Color.blue, "Oranges"));
+        DonutChart donut = chart(pdf).add("Apples", 25f, Color.red)
+                .add("Oranges", 75f, Color.blue);
         donut.drawOn(page);
         String content = TestSupport.content(page);
         assertTrue(content.startsWith("/Figure <</MCID 0>>\nBDC\n"), content);
         assertTrue(content.endsWith("EMC\n"), content);
         assertEquals("0.13 0.15 0.17 rg", TestSupport.fillColorBefore(content, "Apples"));
         assertEquals("1 1 1 rg", TestSupport.fillColorBefore(content, "25%"));
-        DonutChart pie = chart(pdf).setRadii(100f, 0f).addSlice(new Slice(1f, Color.red, ""));
+        DonutChart pie = chart(pdf).setRadii(100f, 0f).add("", 1f, Color.red);
         pie.drawOn(page);
         DonutChart described = chart(pdf).setAltDescription("Most are oranges.")
-                .addSlice(new Slice(1f, Color.red, "Apples"));
+                .add("Apples", 1f, Color.red);
         described.drawOn(page);
         assertEquals("Donut chart: Apples 25%, Oranges 75%", page.structures.get(0).altDescription);
         assertEquals("Pie chart: 100%", page.structures.get(1).altDescription);
@@ -81,7 +81,7 @@ class DonutChartTest {
         // light steel blue; and no black line or text.
         PDF pdf = TestSupport.newPDF();
         Page page = new Page(pdf, Letter.PORTRAIT);
-        chart(pdf).addSlice(new Slice(60f, "a")).addSlice(new Slice(40f, "b")).drawOn(page);
+        chart(pdf).add("a", 60f).add("b", 40f).drawOn(page);
         String content = TestSupport.content(page);
         assertTrue(content.contains("0.12 0.23 0.37 rg"), content);     // navy
         assertTrue(content.contains("0.44 0.58 0.76 rg"), content);     // steel blue
@@ -98,9 +98,9 @@ class DonutChartTest {
         // both; a chart without them has the circle at its location, as before.
         PDF pdf = new PDF(new java.io.ByteArrayOutputStream(), Compliance.PDF_UA_1).setTitle("Test");
         Page page = new Page(pdf, Letter.PORTRAIT);
-        DonutChart plain = chart(pdf).addSlice(new Slice(1f, "a"));
+        DonutChart plain = chart(pdf).add("a", 1f);
         TestSupport.assertXY(300f, 315f, plain.drawOn(page));    // The circle, and its label 15 under it
-        DonutChart titled = chart(pdf).setTitle("Fruit").setSubtitle("This week").addSlice(new Slice(1f, "a"));
+        DonutChart titled = chart(pdf).setTitle("Fruit").setSubtitle("This week").add("a", 1f);
         float[] xy = titled.drawOn(page);
         assertEquals(300f, xy[0], 0.01f);
         assertTrue(xy[1] > 315f, "the circle is under the title: " + xy[1]);
@@ -120,9 +120,9 @@ class DonutChartTest {
             PDF pdf = TestSupport.newPDF();
             Page page = new Page(pdf, Letter.PORTRAIT);
             DonutChart chart = chart(pdf);
-            chart.addSlice(new Slice(bad, Color.red, "bad"));
-            chart.addSlice(new Slice(1f, Color.green, "a"));
-            chart.addSlice(new Slice(3f, Color.blue, "b"));
+            chart.add("bad", bad, Color.red);
+            chart.add("a", 1f, Color.green);
+            chart.add("b", 3f, Color.blue);
             chart.drawOn(page);
             String content = TestSupport.content(page);
             assertTrue(content.contains(TestSupport.hex("25%")) && content.contains(TestSupport.hex("75%")),
@@ -130,7 +130,7 @@ class DonutChartTest {
         }
         PDF pdf = TestSupport.newPDF();
         Page page = new Page(pdf, Letter.PORTRAIT);
-        chart(pdf).addSlice(new Slice(3e38f, "a")).addSlice(new Slice(3e38f, "b")).drawOn(page);
+        chart(pdf).add("a", 3e38f).add("b", 3e38f).drawOn(page);
         assertTrue(TestSupport.content(page).contains(TestSupport.hex("50%")), TestSupport.content(page));
     }
 
@@ -140,7 +140,7 @@ class DonutChartTest {
         Page page = new Page(TestSupport.newPDF(), Letter.PORTRAIT);
         DonutChart chart = new DonutChart(null, null).setRadii(r1, r2);
         for (float value : values) {
-            chart.addSlice(new Slice(value, 0x336699, ""));
+            chart.add("", value, 0x336699);
         }
         chart.setLocation(x, y).drawOn(page);
         StringBuilder sb = new StringBuilder();
@@ -205,13 +205,14 @@ class DonutChartTest {
                 curves(100f, 0f, 50f, 50f, 1f, 2f, 3f));
     }
 
-    // A null slice is left out: it threw when the chart was drawn.
+    // A slice of a null name has no label, as one of an empty name.
     @Test
-    void aNullSliceIsLeftOut() throws Exception {
+    void aNullNameIsNoLabel() throws Exception {
         PDF pdf = TestSupport.newPDF();
         Page page = new Page(pdf, Letter.PORTRAIT);
-        chart(pdf).addSlice(null).addSlice(new Slice(1f, "a")).drawOn(page);
-        assertTrue(TestSupport.content(page).contains(TestSupport.hex("a")));
+        chart(pdf).add(null, 1f).add("a", 3f).drawOn(page);
+        String content = TestSupport.content(page);
+        assertTrue(content.contains(TestSupport.hex("a")) && content.contains(TestSupport.hex("25%")), content);
     }
 
     // The labels of thin slices side by side are moved apart, a line apart at
@@ -222,9 +223,9 @@ class DonutChartTest {
     void thinSlicesKeepTheirLabelsApart() throws Exception {
         PDF pdf = new PDF(new java.io.ByteArrayOutputStream(), Compliance.PDF_UA_1).setTitle("Test");
         Page page = new Page(pdf, Letter.PORTRAIT);
-        DonutChart chart = chart(pdf).addSlice(new Slice(90f, "Big"));
+        DonutChart chart = chart(pdf).add("Big", 90f);
         for (int i = 0; i < 6; i++) {
-            chart.addSlice(new Slice(1.5f, "Small " + i));
+            chart.add("Small " + i, 1.5f);
         }
         float[] measured = chart.drawOn(null);
         float[] xy = chart.drawOn(page);
@@ -251,7 +252,7 @@ class DonutChartTest {
         PDF pdf = new PDF(new java.io.ByteArrayOutputStream(), Compliance.PDF_UA_1).setTitle("Test");
         Page page = new Page(pdf, Letter.PORTRAIT);
         DonutChart chart = chart(pdf).setLegend(true).setCenterText("100 crates")
-                .addSlice(new Slice(60f, "a")).addSlice(new Slice(40f, "b"));
+                .add("a", 60f).add("b", 40f);
         float[] xy = chart.drawOn(page);
         String content = TestSupport.content(page);
         assertFalse(content.contains("0.55 0.59 0.64 RG"), content);     // No leader lines
@@ -261,7 +262,7 @@ class DonutChartTest {
         TestSupport.assertXY(xy[0], xy[1], chart.drawOn(null));
         assertEquals("100 crates: a 60%, b 40%", page.structures.get(0).altDescription);
         page = new Page(pdf, Letter.PORTRAIT);
-        chart(pdf).setRadii(100f, 0f).setCenterText("none").addSlice(new Slice(1f, "a")).drawOn(page);
+        chart(pdf).setRadii(100f, 0f).setCenterText("none").add("a", 1f).drawOn(page);
         assertFalse(TestSupport.content(page).contains(TestSupport.hex("none")));
     }
 
@@ -275,9 +276,9 @@ class DonutChartTest {
         PDF pdf = TestSupport.newPDF();
         Font font = TestSupport.helvetica(pdf);
         Page page = new Page(pdf, Letter.PORTRAIT);
-        DonutChart thin = chart(pdf).addSlice(new Slice(90f, "Big"));    // At (100, 100), radii 100 and 50
+        DonutChart thin = chart(pdf).add("Big", 90f);    // At (100, 100), radii 100 and 50
         for (int i = 0; i < 8; i++) {
-            thin.addSlice(new Slice(1.2f, "Small " + i));
+            thin.add("Small " + i, 1.2f);
         }
         thin.drawOn(page);
         String content = TestSupport.content(page);
@@ -293,7 +294,7 @@ class DonutChartTest {
         page.setStrokeDashPattern("[3 3] 0");
         String name = "A label much too long to be drawn whole beside the circle";
         chart(pdf).setCenterText("A text in the hole far too long to be written in it at any size")
-                .addSlice(new Slice(60f, name)).addSlice(new Slice(40f, "b")).drawOn(page);
+                .add(name, 60f).add("b", 40f).drawOn(page);
         content = TestSupport.content(page);
         // The chart's own solid lines after the caller's dashes
         assertTrue(content.indexOf("[3 3] 0 d\n") >= 0
@@ -301,23 +302,23 @@ class DonutChartTest {
         assertFalse(content.contains(TestSupport.hex(name)), content);
         assertTrue(content.contains(" 9 Tf\n"), content);    // The text in the hole at 9, three quarters of 12
         page = new Page(pdf, Letter.PORTRAIT);
-        chart(pdf).setLegend(true).addSlice(new Slice(60f, name)).addSlice(new Slice(40f, "b")).drawOn(page);
+        chart(pdf).setLegend(true).add(name, 60f).add("b", 40f).drawOn(page);
         content = TestSupport.content(page);
         assertFalse(content.contains(TestSupport.hex(name)), content);
         assertTrue(content.contains(TestSupport.hex(" 60%")), content);   // The percentage kept
 
         page = new Page(pdf, Letter.PORTRAIT);
-        chart(pdf).addSlice(new Slice(1f, "a")).drawOn(page);
+        chart(pdf).add("a", 1f).drawOn(page);
         String outer = TestSupport.content(page);
         page = new Page(pdf, Letter.PORTRAIT);
-        chart(pdf).setRadii(50f, 100f).addSlice(new Slice(1f, "a")).drawOn(page);
+        chart(pdf).setRadii(50f, 100f).add("a", 1f).drawOn(page);
         // The same but for the names of the fonts, a new one for each chart
         assertEquals(outer.replaceAll("/F\\d+ ", "/F "), TestSupport.content(page).replaceAll("/F\\d+ ", "/F "));
 
         page = new Page(pdf, Letter.PORTRAIT);
         DonutChart nine = chart(pdf);
         for (int i = 0; i < 9; i++) {
-            nine.addSlice(new Slice(1f, ""));
+            nine.add("", 1f);
         }
         nine.drawOn(page);
         content = TestSupport.content(page);

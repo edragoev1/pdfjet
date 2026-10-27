@@ -12,7 +12,6 @@ import Testing
 /// Color.transparent, -1, which they drew white, its low 24 bits, before
 /// v9.0.3: the object set to red, then to transparent, is the object set to red.
 @Suite struct ColorTransparentTests {
-    @available(*, deprecated)   // Chart and Series, tested until they are removed
     @Test func everyColorSetterLeavesTheColorForTransparent() {
         let pdf = TestSupport.newPDF()
         let font = TestSupport.helvetica(pdf)
@@ -20,7 +19,6 @@ import Testing
         let cases: [(String, () -> AnyObject, (AnyObject, Int32) -> Void)] = [
             ("Arc.setStrokeColor", { Arc() }, { ($0 as! Arc).setStrokeColor($1) }),
             ("Arc.setFillColor", { Arc() }, { ($0 as! Arc).setFillColor($1) }),
-            ("Chart.setGridLineColor", { Chart(font, font) }, { ($0 as! Chart).setGridLineColor($1) }),
             ("BarChart.setGridLineColor", { BarChart(font, font) }, { ($0 as! BarChart).setGridLineColor($1) }),
             ("CheckBox.setBorderColor", { CheckBox(font, "A") }, { ($0 as! CheckBox).setBorderColor($1) }),
             ("CheckBox.setCheckmarkColor", { CheckBox(font, "A") }, { ($0 as! CheckBox).setCheckmarkColor($1) }),
@@ -41,7 +39,6 @@ import Testing
                 { ($0 as! Table).setCellBorderColor($1) }),
             ("Path.setStrokeColor", { Path() }, { ($0 as! Path).setStrokeColor($1) }),
             ("Rect.setFillColor", { Rect(0, 0, 10, 10) }, { ($0 as! Rect).setFillColor($1) }),
-            ("Series.setStrokeColor", { Series("A") }, { ($0 as! Series).setStrokeColor($1) }),
         ]
         for (name, make, set) in cases {
             let o = make()

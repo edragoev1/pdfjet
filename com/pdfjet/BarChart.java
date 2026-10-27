@@ -79,19 +79,14 @@ public class BarChart implements Drawable {
     private boolean groupingUsed = true;
 
     private int gridLineColor = GRID;
-    private float gridLineWidth = 0.5f;
-    private String gridLineDashPattern = "[] 0";
-    private float axisLineWidth = 0.75f;
-    private float chartBorderWidth = 0f;
-    private float innerBorderWidth = 0f;
 
     private int minFractionDigits = 0;
     private int maxFractionDigits = 2;
 
-    // Value axis range; auto-computed from the data unless gridLines > 0
+    // The range of the value axis, from the data unless it is set
     private float min;
     private float max;
-    private int gridLines = 0;
+    private boolean rangeSet = false;
 
     // f1 = chart title font, f2 = axis titles, labels and legend font
     private final Font f1;
@@ -335,19 +330,6 @@ public class BarChart implements Drawable {
     }
 
     /**
-     * Sets whether the grid lines of the value axis are drawn.
-     *
-     * @param drawGridLines true to draw them.
-     * @return this BarChart object.
-     * @deprecated as of 9.1.5, use setGridLines, the name the other charts
-     * use for what they draw.
-     */
-    @Deprecated
-    public BarChart setDrawGridLines(boolean drawGridLines) {
-        return setGridLines(drawGridLines);
-    }
-
-    /**
      * Sets whether the value of each bar is written at its end, or, in a
      * stacked chart, inside each segment that has room for it.
      *
@@ -357,19 +339,6 @@ public class BarChart implements Drawable {
     public BarChart setValueLabels(boolean drawValueLabels) {
         this.drawValueLabels = drawValueLabels;
         return this;
-    }
-
-    /**
-     * Sets whether the value of each bar is written at its end, or, in a
-     * stacked chart, inside each segment that has room for it.
-     *
-     * @param drawValueLabels true to write the values.
-     * @return this BarChart object.
-     * @deprecated as of 9.1.5, use setValueLabels, as SimpleLineChart's.
-     */
-    @Deprecated
-    public BarChart setDrawValueLabels(boolean drawValueLabels) {
-        return setValueLabels(drawValueLabels);
     }
 
     /**
@@ -411,32 +380,6 @@ public class BarChart implements Drawable {
     }
 
     /**
-     * Sets whether the legend is drawn. The legend lists the series that have
-     * a name, under the title.
-     *
-     * @param drawLegend true to draw the legend.
-     * @return this BarChart object.
-     * @deprecated as of 9.1.5, use setLegend, as DonutChart's.
-     */
-    @Deprecated
-    public BarChart setDrawLegend(boolean drawLegend) {
-        return setLegend(drawLegend);
-    }
-
-    /**
-     * Sets the width of the grid lines. The default is 0.5; a width of 0
-     * draws the thinnest line a viewer shows, and setDrawGridLines(false)
-     * hides them.
-     *
-     * @param width the line width.
-     * @return this BarChart object.
-     */
-    public BarChart setGridLineWidth(float width) {
-        this.gridLineWidth = width;
-        return this;
-    }
-
-    /**
      * Sets the color of the grid lines. The default is light gray, 0xE1E4E8.
      * Color.transparent leaves it unchanged.
      *
@@ -452,91 +395,34 @@ public class BarChart implements Drawable {
     }
 
     /**
-     * Sets the dash pattern of the grid lines, for example "[1 1] 0" for a
-     * dotted line. The default is "[] 0", a solid line.
+     * Sets the number of digits after the decimal point of the values written
+     * by the bars, all of them alike, as SimpleBarChart's. Without it a value
+     * has as many as it needs, two at most. The numbers of the value axis have
+     * the digits of its step.
      *
-     * @param pattern the dash pattern.
+     * @param digits the number of digits.
      * @return this BarChart object.
      */
-    public BarChart setGridLineDashPattern(String pattern) {
-        this.gridLineDashPattern = pattern;
+    public BarChart setFractionDigits(int digits) {
+        this.minFractionDigits = digits;
+        this.maxFractionDigits = digits;
         return this;
     }
 
     /**
-     * Sets the width of the axis line, the line at the base of the bars: at 0
-     * on the value axis, or at its lowest value when the axis does not reach
-     * 0. The default is 0.75; 0 hides it.
-     *
-     * @param width the line width.
-     * @return this BarChart object.
-     */
-    public BarChart setAxisLineWidth(float width) {
-        this.axisLineWidth = width;
-        return this;
-    }
-
-    /**
-     * Sets the width of the outer chart border. A width of 0, the default,
-     * hides it.
-     *
-     * @param width the border width.
-     * @return this BarChart object.
-     */
-    public BarChart setChartBorderWidth(float width) {
-        this.chartBorderWidth = width;
-        return this;
-    }
-
-    /**
-     * Sets the width of the plot area border. A width of 0, the default,
-     * hides it.
-     *
-     * @param width the border width.
-     * @return this BarChart object.
-     */
-    public BarChart setInnerBorderWidth(float width) {
-        this.innerBorderWidth = width;
-        return this;
-    }
-
-    /**
-     * Sets the minimum number of decimal places in the value labels. The axis
-     * labels have at least the decimal places of the axis step. The default is 0.
-     *
-     * @param minFractionDigits the minimum number of decimal places.
-     * @return this BarChart object.
-     */
-    public BarChart setMinimumFractionDigits(int minFractionDigits) {
-        this.minFractionDigits = minFractionDigits;
-        return this;
-    }
-
-    /**
-     * Sets the maximum number of decimal places in the value labels. The
-     * default is 2.
-     *
-     * @param maxFractionDigits the maximum number of decimal places.
-     * @return this BarChart object.
-     */
-    public BarChart setMaximumFractionDigits(int maxFractionDigits) {
-        this.maxFractionDigits = maxFractionDigits;
-        return this;
-    }
-
-    /**
-     * Sets the range and the number of grid lines of the value axis. Without
-     * it the range is computed from the data and always includes 0.
+     * Sets the range of the value axis, with grid lines on a round step, as
+     * setYAxisRange does in SimpleLineChart and SimpleScatterChart. Without it
+     * the range is that of the data, rounded to steps, and always includes 0.
+     * A range whose end is not past its start is not set.
      *
      * @param min the value at the start of the axis.
      * @param max the value at the end of the axis.
-     * @param gridLines the number of grid lines, at least 1.
      * @return this BarChart object.
      */
-    public BarChart setValueAxisMinMax(float min, float max, int gridLines) {
+    public BarChart setValueAxisRange(float min, float max) {
         this.min = min;
         this.max = max;
-        this.gridLines = gridLines;
+        this.rangeSet = max > min;
         return this;
     }
 
@@ -557,10 +443,11 @@ public class BarChart implements Drawable {
         float vMin;
         float vMax;
         int lines;
-        if (gridLines > 0) {
+        if (rangeSet) {
             vMin = min;
             vMax = max;
-            lines = gridLines;
+            lines = ChartScale.roundLines(min, max,
+                    Math.max(ChartScale.roundMaxAndMinValues(max, min).numOfGridLines, 1));
         } else {
             float lo = 0f;
             float hi = 0f;
@@ -698,13 +585,6 @@ public class BarChart implements Drawable {
             drawLegend(page, titleBaseline + subtitleHeight + 1.5f * bodyHeight);
         }
 
-        if (chartBorderWidth > 0f) {
-            page.setPenColor(BASELINE);
-            page.setPenWidth(chartBorderWidth);
-            page.setDefaultStrokeDashPattern();
-            page.drawRect(x1, y1, w, h);
-        }
-
         // Grid lines and value axis labels. A label is drawn at every grid line
         // that leaves it room, the widest label and a pad across, or a line high
         // up the vertical axis: at every second or third line, or more, when
@@ -825,22 +705,14 @@ public class BarChart implements Drawable {
 
         // The axis line at the base of the bars, which is the zero line of
         // negative values
-        page.setDefaultStrokeDashPattern();
-        if (axisLineWidth > 0f) {
-            page.setPenColor(BASELINE);
-            page.setPenWidth(axisLineWidth);
-            if (horizontal) {
-                float x0 = x5 + ChartScale.scaled(base - vMin, x6 - x5, vMax - vMin);
-                page.drawLine(x0, y5, x0, y8);
-            } else {
-                float y0 = y8 - ChartScale.scaled(base - vMin, y8 - y5, vMax - vMin);
-                page.drawLine(x5, y0, x6, y0);
-            }
-        }
-        if (innerBorderWidth > 0f) {
-            page.setPenColor(BASELINE);
-            page.setPenWidth(innerBorderWidth);
-            page.drawRect(x5, y5, x6 - x5, y8 - y5);
+        page.setPenColor(BASELINE);
+        page.setPenWidth(0.75f);
+        if (horizontal) {
+            float x0 = x5 + ChartScale.scaled(base - vMin, x6 - x5, vMax - vMin);
+            page.drawLine(x0, y5, x0, y8);
+        } else {
+            float y0 = y8 - ChartScale.scaled(base - vMin, y8 - y5, vMax - vMin);
+            page.drawLine(x5, y0, x6, y0);
         }
 
         // The lines over the bars, through the middles of the categories, a
@@ -1029,11 +901,10 @@ public class BarChart implements Drawable {
         return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
     }
 
-    /** Draws one grid line. */
+    /** Draws one grid line, thin and solid. */
     private void gridLine(Page page, float xa, float ya, float xb, float yb) {
         page.setPenColor(gridLineColor);
-        page.setPenWidth(gridLineWidth);
-        page.setStrokeDashPattern(gridLineDashPattern);
+        page.setPenWidth(0.5f);
         page.drawLine(xa, ya, xb, yb);
     }
 

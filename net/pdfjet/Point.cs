@@ -10,7 +10,7 @@ namespace PDFjet.NET {
 /// <summary>
 /// A point with a marker: a shape drawn around its (x, y) coordinates, which
 /// are the center of the marker. A point is drawn on a page on its own, as the
-/// marker of a table cell, or in a chart Series, and a list of points is a
+/// marker of a table cell, and a list of points is a
 /// path for Page.DrawPath.
 ///
 /// Please see Example_05.

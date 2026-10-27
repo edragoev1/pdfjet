@@ -58,7 +58,7 @@ public class BarChartTest {
         Page page = new Page(pdf, Letter.PORTRAIT);
         BarChart chart = NewChart(pdf).SetCategories("a", "b").SetHorizontal(true);
         chart.AddSeries("", new float[] {2.5f, -1f}).SetValueLabels(true);
-        chart.SetMinimumFractionDigits(1);
+        chart.SetFractionDigits(1);
         string content = Draw(chart, page);
         Assert.Contains(TestSupport.Hex("2.5"), content);
         Assert.Contains(TestSupport.Hex("-1.0"), content);
@@ -69,10 +69,11 @@ public class BarChartTest {
         PDF pdf = TestSupport.NewPDF();
         Page page = new Page(pdf, Letter.PORTRAIT);
         BarChart chart = NewChart(pdf).SetCategories("a");
-        chart.AddSeries("", new float[] {5f}).SetValueAxisMinMax(0f, 12f, 4);
+        chart.AddSeries("", new float[] {5f}).SetValueAxisRange(0f, 12f);     // In steps of 2
         string content = Draw(chart, page);
         Assert.Contains(TestSupport.Hex("12"), content);
-        Assert.Contains(TestSupport.Hex("3"), content);
+        Assert.Contains("<" + TestSupport.Hex("2") + ">", content);
+        Assert.DoesNotContain("<" + TestSupport.Hex("3") + ">", content);
         Assert.DoesNotContain("NaN", content);
     }
 
@@ -80,14 +81,14 @@ public class BarChartTest {
     public void AxisLabelsThatWouldMeetAreDrawnAtEverySecondLine() {
         PDF pdf = TestSupport.NewPDF();
         Page page = new Page(pdf, Letter.PORTRAIT);
-        BarChart chart = NewChart(pdf).SetCategories("a").SetHorizontal(true);
-        // 16 steps of 5 across about 240 points: 15 points a step, where a
-        // label of one decimal, 70.0, needs more
-        chart.AddSeries("", new float[] {72.6f}).SetValueAxisMinMax(0f, 80f, 16).SetMinimumFractionDigits(1);
-        string content = Draw(chart, page);
-        Assert.Contains(TestSupport.Hex("70.0"), content);
+        // 8 steps of 10 across about 70 points: 9 points a step, where a label
+        // of one decimal, 70.0, needs more
+        BarChart chart = NewChart(pdf).SetCategories("a").SetHorizontal(true).SetSize(120f, 200f);
+        chart.AddSeries("", new float[] {72.6f}).SetValueAxisRange(0f, 80f).SetFractionDigits(1);
+        chart.DrawOn(page);
+        string content = TestSupport.Content(page);
         Assert.Contains(TestSupport.Hex("80.0"), content);
-        Assert.DoesNotContain(TestSupport.Hex("75.0"), content);     // would meet 70.0 and 80.0
+        Assert.DoesNotContain(TestSupport.Hex("70.0"), content);     // would meet 60.0 and 80.0
     }
 
     [Fact]
@@ -127,7 +128,7 @@ public class BarChartTest {
         string content = Draw(chart, page);
         Assert.Contains("0.12 0.23 0.37 rg", content);
         Assert.Contains("0.44 0.58 0.76 rg", content);
-        Assert.Contains("0.88 0.89 0.91 RG\n0.5 w\n[] 0 d", content);
+        Assert.Contains("0.88 0.89 0.91 RG\n0.5 w\n", content);    // Thin and solid
         Assert.DoesNotContain("0 0 0 RG", content);
         Assert.DoesNotContain("0 0 0 rg", content);
         Assert.Equal("0.13 0.15 0.17 rg", TestSupport.FillColorBefore(content, "t"));
@@ -148,8 +149,8 @@ public class BarChartTest {
         Page page = new Page(pdf, Letter.PORTRAIT);
         BarChart chart = NewChart(pdf).SetCategories("a", "b").SetHorizontal(true).SetSubtitle("sub");
         chart.AddSeries("rivers", new float[] {6650f, 12f}, new int[] {Color.red, Color.blue});
-        chart.SetValueAxisMinMax(0f, 8000f, 4).SetValueLabels(true).SetValueLabelsInside(true);
-        chart.SetGroupingUsed(true).SetAxisLineWidth(0f).SetGridLineColor(Color.lightgray);
+        chart.SetValueAxisRange(0f, 8000f).SetValueLabels(true).SetValueLabelsInside(true);
+        chart.SetGroupingUsed(true).SetGridLineColor(Color.lightgray);
         string content = Draw(chart, page);
         Assert.Contains(TestSupport.Hex("6,650"), content);
         Assert.Contains(TestSupport.Hex("8,000"), content);
@@ -291,9 +292,9 @@ public class BarChartTest {
     // The review of 26 October 2026, the second: a chart without its fonts
     // draws nothing; the title, a long category under vertical bars and a
     // legend name are shortened; a line series longer than the categories
-    // adds no slots; the line is on a white line a little wider; the old
-    // names of the setters still work; and a value past the rounding of the
-    // largest float is drawn on the range of the values.
+    // adds no slots; the line is on a white line a little wider; and a value
+    // past the rounding of the largest float is drawn on the range of the
+    // values.
     [Fact]
     public void TheSecondReviewOfTheCharts() {
         PDF pdf = new PDF(new System.IO.MemoryStream(), Compliance.PDF_UA_1).SetTitle("Test");
@@ -311,23 +312,43 @@ public class BarChartTest {
         Assert.True(page.structures[0].altDescription.EndsWith("Target, a line: " + longName + " 2, b 3.",
                 System.StringComparison.Ordinal), page.structures[0].altDescription);
 
-        PDF plain = TestSupport.NewPDF();
-        page = new Page(plain, Letter.PORTRAIT);
-#pragma warning disable CS0618 // The old names, deprecated, still work
-        string old = Draw(NewChart(plain).SetCategories("a").AddSeries("s", new float[] {1f})
-                .SetDrawLegend(true).SetDrawValueLabels(true).SetDrawGridLines(false), page);
-#pragma warning restore CS0618
-        page = new Page(plain, Letter.PORTRAIT);
-        string renamed = Draw(NewChart(plain).SetCategories("a").AddSeries("s", new float[] {1f})
-                .SetLegend(true).SetValueLabels(true).SetGridLines(false), page);
-        // The same but for the names of the fonts, a new one for each chart
-        Assert.Equal(System.Text.RegularExpressions.Regex.Replace(old, "/F\\d+ ", "/F "),
-                System.Text.RegularExpressions.Regex.Replace(renamed, "/F\\d+ ", "/F "));
-
         page = new Page(pdf, Letter.PORTRAIT);
         content = Draw(NewChart(pdf).SetCategories("a", "b").SetValueLabels(true)
                 .AddSeries("", new float[] {1e30f, 3e38f}), page);
         Assert.Contains(TestSupport.Hex("3e38"), content);
+    }
+
+    // The labels round the exact value half to even, as Java's DecimalFormat
+    // does, on .NET Framework too, whose ToString("F") rounds 15 digits half
+    // away from zero (review of 17 October 2026). .NET 8's ToString("F")
+    // rounds as Java does, and the two agree on any value. Moved here from
+    // the test of Chart, removed in 9.1.5.
+    [Fact]
+    public void TheLabelsRoundHalfToEvenAsJava() {
+        System.Type type = typeof(PDF).Assembly.GetType("PDFjet.NET.NumberFormat");
+        System.Func<double, int, string> format = (value, digits) => {
+            object nf = type.GetMethod("GetInstance").Invoke(null, null);
+            type.GetMethod("SetMaximumFractionDigits").Invoke(nf, new object[] {digits});
+            type.GetMethod("SetMinimumFractionDigits").Invoke(nf, new object[] {digits});
+            return (string) type.GetMethod("Format").Invoke(nf, new object[] {value});
+        };
+        Assert.Equal("0.12", format(0.125, 2));
+        Assert.Equal("1.00", format(1.005, 2));
+        Assert.Equal("2", format(2.5, 0));
+        Assert.Equal("4", format(3.5, 0));
+        Assert.Equal("0.00", format(-0.001, 2));
+        Assert.Equal("-1.50", format(-1.5, 2));
+        Assert.Equal("10000000000000000000000", format(1e22, 0));
+        System.Random random = new System.Random(17);
+        for (int i = 0; i < 20000; i++) {
+            double value = (random.NextDouble() - 0.5) * System.Math.Pow(10, random.Next(-6, 12));
+            int digits = random.Next(0, 9);
+            string want = value.ToString("F" + digits, System.Globalization.CultureInfo.InvariantCulture);
+            if (want.Trim('-', '0', '.').Length == 0) {
+                want = want.TrimStart('-');
+            }
+            Assert.Equal(want, format(value, digits));
+        }
     }
 }
 }

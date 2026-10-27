@@ -149,7 +149,7 @@ public class CrossPort {
                     chart.SetRadii(outer, Between(0f, outer));
                     int slices = 1 + Below(6);
                     for (int s = 0; s < slices; s++) {
-                        chart.AddSlice(new Slice(Between(0f, 100f), Color(), "s" + s.ToString(CultureInfo.InvariantCulture)));
+                        chart.Add("s" + s.ToString(CultureInfo.InvariantCulture), Between(0f, 100f), Color());
                     }
                     chart.DrawOn(page);
                     break;

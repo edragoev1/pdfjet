@@ -476,7 +476,7 @@ public class PDFTest {
         pdf.Complete();
         string raw = TestSupport.Latin1(stream.ToArray());
         foreach (string want in new string[] {"Check the figures", "A square"}) {
-            Assert.Contains("/Alt " + ChartTest.TextString(want), raw);
+            Assert.Contains("/Alt " + TestSupport.TextString(want), raw);
         }
     }
 

@@ -23,14 +23,13 @@ import Testing
         return content.components(separatedBy: text).count - 1
     }
 
-    @available(*, deprecated)   // Chart, tested until it is removed
     @Test func chartFlatDataOfLargeValuesHasARange() throws {
         for value: Float in [2e7, -3e7, 1e30] {
             let memory = MemoryPDF()
             let page = Page(memory.pdf, Letter.PORTRAIT)
             let font = TestSupport.helvetica(memory.pdf)
-            let chart = Chart(font, font).setLocation(50, 50).setSize(300, 200)
-            chart.addSeries("").addPoint(value, value).addPoint(value, value)
+            let chart = SimpleScatterChart(font, font).setLocation(50, 50).setSize(300, 200)
+            chart.add(value, value).add(value, value)
             chart.drawOn(page)
             #expect(!TestSupport.content(page).contains("NaN"), "\(value)")
             #expect(throws: Never.self, "\(value)") { try memory.pdf.complete() }
@@ -148,8 +147,8 @@ import Testing
         let page = Page(memory.pdf, Letter.PORTRAIT)
         let font = TestSupport.helvetica(memory.pdf)
         DonutChart(font, font).setLocation(100, 100).setRadii(100, 50)
-                .addSlice(Slice(25, Color.red, "Apples and pears"))
-                .addSlice(Slice(75, Color.blue, "Oranges")).drawOn(page)
+                .add("Apples and pears", 25, Color.red)
+                .add("Oranges", 75, Color.blue).drawOn(page)
         let box = try bbox(page.structures[0])
         // The circle is from 100 to 300; the labels are right and left of it
         #expect(box[0] < 100 && box[2] > 300)

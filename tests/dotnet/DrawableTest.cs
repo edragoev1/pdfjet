@@ -39,7 +39,7 @@ public class DrawableTest {
                 .SetCategories("a", "b").AddLine("s", new float[] {0f, 2f}));
         Add("BarChart", (pdf, font) => new BarChart(font, font).SetSize(200f, 150f).AddSeries("s", new float[] {1f, 2f, 3f}));
         Add("DonutChart", (pdf, font) => new DonutChart(font, font).SetRadii(50f, 20f)
-                .AddSlice(new Slice(1f, Color.red, "a")).AddSlice(new Slice(2f, Color.green, "b")));
+                .Add("a", 1f, Color.red).Add("b", 2f, Color.green));
         Add("Table", (pdf, font) => {
             List<List<Cell>> data = new List<List<Cell>>();
             for (int r = 0; r < 3; r++) {

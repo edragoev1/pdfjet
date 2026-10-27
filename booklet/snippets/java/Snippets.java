@@ -642,9 +642,9 @@ public class Snippets {
         DonutChart chart = new DonutChart(bold, font);
         chart.setLocation(100f, 100f);
         chart.setRadii(100f, 60f);    // An inner radius of 0 makes a pie chart
-        chart.addSlice(new Slice(50f, Color.steelblue, "Java"));
-        chart.addSlice(new Slice(30f, Color.seagreen, "C#"));
-        chart.addSlice(new Slice(20f, Color.darkorange, "Go"));
+        chart.add("Java", 50f, Color.steelblue);
+        chart.add("C#", 30f, Color.seagreen);
+        chart.add("Go", 20f, Color.darkorange);
         chart.drawOn(new Page(pdf, Letter.PORTRAIT));
     }
 

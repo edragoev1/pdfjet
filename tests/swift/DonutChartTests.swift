@@ -17,7 +17,7 @@ import Testing
     @Test func aChartWithoutValuesDrawsNothing() {
         let pdf = TestSupport.newPDF()
         let page = Page(pdf, Letter.PORTRAIT)
-        let chart = chart(pdf).addSlice(Slice(0, Color.red, "none"))
+        let chart = chart(pdf).add("none", 0, Color.red)
         TestSupport.expectXY(300, 300, chart.drawOn(page))
         #expect(page.getContent().isEmpty)
     }
@@ -26,9 +26,9 @@ import Testing
         let pdf = TestSupport.newPDF()
         let page = Page(pdf, Letter.PORTRAIT)
         let chart = chart(pdf)
-        chart.addSlice(Slice(1, Color.red, "a"))
-        chart.addSlice(Slice(1, Color.green, "b"))
-        chart.addSlice(Slice(2, Color.blue, "c"))
+        chart.add("a", 1, Color.red)
+        chart.add("b", 1, Color.green)
+        chart.add("c", 2, Color.blue)
         TestSupport.expectXY(300, 300, chart.drawOn(page))
         let content = TestSupport.content(page)
         #expect(content.contains(TestSupport.hex("25%")), "\(content)")
@@ -40,7 +40,7 @@ import Testing
         let pdf = TestSupport.newPDF()
         let page = Page(pdf, Letter.PORTRAIT)
         let chart = chart(pdf).setRadii(100, 0)
-        chart.addSlice(Slice(3, Color.red, "a")).addSlice(Slice(1, Color.blue, "b"))
+        chart.add("a", 3, Color.red).add("b", 1, Color.blue)
         chart.drawOn(page)
         let content = TestSupport.content(page)
         #expect(content.contains(TestSupport.hex("75%")), "\(content)")
@@ -51,17 +51,17 @@ import Testing
         let memory = MemoryPDF(Compliance.PDF_UA_1)
         memory.pdf.setTitle("Test")
         let page = Page(memory.pdf, Letter.PORTRAIT)
-        let donut = chart(memory.pdf).addSlice(Slice(25, Color.red, "Apples"))
-                .addSlice(Slice(75, Color.blue, "Oranges"))
+        let donut = chart(memory.pdf).add("Apples", 25, Color.red)
+                .add("Oranges", 75, Color.blue)
         donut.drawOn(page)
         let content = TestSupport.content(page)
         #expect(content.hasPrefix("/Figure <</MCID 0>>\nBDC\n"), "\(content)")
         #expect(content.hasSuffix("EMC\n"), "\(content)")
         #expect(TestSupport.fillColorBefore(content, "Apples") == "0.13 0.15 0.17 rg")
         #expect(TestSupport.fillColorBefore(content, "25%") == "1 1 1 rg")
-        chart(memory.pdf).setRadii(100, 0).addSlice(Slice(1, Color.red, "")).drawOn(page)
+        chart(memory.pdf).setRadii(100, 0).add("", 1, Color.red).drawOn(page)
         chart(memory.pdf).setAltDescription("Most are oranges.")
-                .addSlice(Slice(1, Color.red, "Apples")).drawOn(page)
+                .add("Apples", 1, Color.red).drawOn(page)
         #expect(page.structures[0].altDescription == "Donut chart: Apples 25%, Oranges 75%")
         #expect(page.structures[1].altDescription == "Pie chart: 100%")
         #expect(page.structures[2].altDescription == "Most are oranges.")
@@ -73,7 +73,7 @@ import Testing
     @Test func theDefaultLookIsQuiet() {
         let pdf = TestSupport.newPDF()
         let page = Page(pdf, Letter.PORTRAIT)
-        chart(pdf).addSlice(Slice(60, "a")).addSlice(Slice(40, "b")).drawOn(page)
+        chart(pdf).add("a", 60).add("b", 40).drawOn(page)
         let content = TestSupport.content(page)
         #expect(content.contains("0.12 0.23 0.37 rg"), "\(content)")       // navy
         #expect(content.contains("0.44 0.58 0.76 rg"), "\(content)")       // steel blue
@@ -91,9 +91,9 @@ import Testing
         memory.pdf.setTitle("Test")
         let page = Page(memory.pdf, Letter.PORTRAIT)
         // The circle, and its label 15 under it
-        TestSupport.expectXY(300, 315, chart(memory.pdf).addSlice(Slice(1, "a")).drawOn(page))
+        TestSupport.expectXY(300, 315, chart(memory.pdf).add("a", 1).drawOn(page))
         let xy = chart(memory.pdf).setTitle("Fruit").setSubtitle("This week")
-                .addSlice(Slice(1, "a")).drawOn(page)
+                .add("a", 1).drawOn(page)
         #expect(abs(xy[0] - 300) < 0.01)
         #expect(xy[1] > 315, "the circle is under the title: \(xy[1])")
         let content = TestSupport.content(page)
@@ -110,9 +110,9 @@ import Testing
             let pdf = TestSupport.newPDF()
             let page = Page(pdf, Letter.PORTRAIT)
             let chart = chart(pdf)
-            chart.addSlice(Slice(bad, Color.red, "bad"))
-            chart.addSlice(Slice(1, Color.green, "a"))
-            chart.addSlice(Slice(3, Color.blue, "b"))
+            chart.add("bad", bad, Color.red)
+            chart.add("a", 1, Color.green)
+            chart.add("b", 3, Color.blue)
             chart.drawOn(page)
             let content = TestSupport.content(page)
             #expect(content.contains(TestSupport.hex("25%")) && content.contains(TestSupport.hex("75%")),
@@ -120,7 +120,7 @@ import Testing
         }
         let pdf = TestSupport.newPDF()
         let page = Page(pdf, Letter.PORTRAIT)
-        chart(pdf).addSlice(Slice(3e38, "a")).addSlice(Slice(3e38, "b")).drawOn(page)
+        chart(pdf).add("a", 3e38).add("b", 3e38).drawOn(page)
         #expect(TestSupport.content(page).contains(TestSupport.hex("50%")), "\(TestSupport.content(page))")
     }
 
@@ -133,7 +133,7 @@ import Testing
         var page = Page(pdf, Letter.PORTRAIT)
         var chart = DonutChart(nil, nil).setRadii(163.36272, 132.87044)
         for value: Float in [736.5481, 275.45578, 860.18787, 464.1474] {
-            chart.addSlice(Slice(value, 0x123456, ""))
+            chart.add("", value, 0x123456)
         }
         chart.setLocation(88.48386, 140.68524).drawOn(page)
         #expect(TestSupport.content(page).contains("115.28 498.52 116.96 464.15 130.52 433.78 c\n"))
@@ -141,7 +141,7 @@ import Testing
         page = Page(pdf, Letter.PORTRAIT)
         chart = DonutChart(nil, nil).setRadii(59.125828, 19.265127)
         for value: Float in [363.0059, 966.9588, 317.46417, 795.0797, 18.464327] {
-            chart.addSlice(Slice(value, 0x123456, ""))
+            chart.add("", value, 0x123456)
         }
         chart.setLocation(262.18466, 51.85658).drawOn(page)
         #expect(TestSupport.content(page).contains("321.01 700.28 320.71 700.28 320.4 700.26 c\n"))
@@ -155,9 +155,9 @@ import Testing
         let memory = MemoryPDF(Compliance.PDF_UA_1)
         memory.pdf.setTitle("Test")
         let page = Page(memory.pdf, Letter.PORTRAIT)
-        let chart = chart(memory.pdf).addSlice(Slice(90, "Big"))
+        let chart = chart(memory.pdf).add("Big", 90)
         for i in 0..<6 {
-            chart.addSlice(Slice(1.5, "Small \(i)"))
+            chart.add("Small \(i)", 1.5)
         }
         let measured = chart.drawOn(nil)
         let xy = chart.drawOn(page)
@@ -185,7 +185,7 @@ import Testing
         memory.pdf.setTitle("Test")
         var page = Page(memory.pdf, Letter.PORTRAIT)
         let chart = chart(memory.pdf).setLegend(true).setCenterText("100 crates")
-                .addSlice(Slice(60, "a")).addSlice(Slice(40, "b"))
+                .add("a", 60).add("b", 40)
         let xy = chart.drawOn(page)
         let content = TestSupport.content(page)
         #expect(!content.contains("0.55 0.59 0.64 RG"), "\(content)")      // No leader lines
@@ -195,7 +195,7 @@ import Testing
         TestSupport.expectXY(xy[0], xy[1], chart.drawOn(nil))
         #expect(page.structures[0].altDescription == "100 crates: a 60%, b 40%")
         page = Page(memory.pdf, Letter.PORTRAIT)
-        self.chart(memory.pdf).setRadii(100, 0).setCenterText("none").addSlice(Slice(1, "a")).drawOn(page)
+        self.chart(memory.pdf).setRadii(100, 0).setCenterText("none").add("a", 1).drawOn(page)
         #expect(!TestSupport.content(page).contains(TestSupport.hex("none")))
     }
 
@@ -208,9 +208,9 @@ import Testing
         let pdf = TestSupport.newPDF()
         let font = TestSupport.helvetica(pdf)
         var page = Page(pdf, Letter.PORTRAIT)
-        let thin = chart(pdf).addSlice(Slice(90, "Big"))    // At (100, 100), radii 100 and 50
+        let thin = chart(pdf).add("Big", 90)    // At (100, 100), radii 100 and 50
         for i in 0..<8 {
-            thin.addSlice(Slice(1.2, "Small \(i)"))
+            thin.add("Small \(i)", 1.2)
         }
         thin.drawOn(page)
         var content = TestSupport.content(page)
@@ -226,7 +226,7 @@ import Testing
         page.setStrokeDashPattern("[3 3] 0")
         let name = "A label much too long to be drawn whole beside the circle"
         chart(pdf).setCenterText("A text in the hole far too long to be written in it at any size")
-                .addSlice(Slice(60, name)).addSlice(Slice(40, "b")).drawOn(page)
+                .add(name, 60).add("b", 40).drawOn(page)
         content = TestSupport.content(page)
         // The chart's own solid lines after the caller's dashes
         let dash = content.range(of: "[] 0 d\n")
@@ -235,16 +235,16 @@ import Testing
         #expect(!content.contains(TestSupport.hex(name)), "\(content)")
         #expect(content.contains(" 9 Tf\n"), "\(content)")    // The text in the hole at 9, three quarters of 12
         page = Page(pdf, Letter.PORTRAIT)
-        chart(pdf).setLegend(true).addSlice(Slice(60, name)).addSlice(Slice(40, "b")).drawOn(page)
+        chart(pdf).setLegend(true).add(name, 60).add("b", 40).drawOn(page)
         content = TestSupport.content(page)
         #expect(!content.contains(TestSupport.hex(name)), "\(content)")
         #expect(content.contains(TestSupport.hex(" 60%")), "\(content)")   // The percentage kept
 
         page = Page(pdf, Letter.PORTRAIT)
-        chart(pdf).addSlice(Slice(1, "a")).drawOn(page)
+        chart(pdf).add("a", 1).drawOn(page)
         let outer = TestSupport.content(page)
         page = Page(pdf, Letter.PORTRAIT)
-        chart(pdf).setRadii(50, 100).addSlice(Slice(1, "a")).drawOn(page)
+        chart(pdf).setRadii(50, 100).add("a", 1).drawOn(page)
         // The same but for the names of the fonts, a new one for each chart
         #expect(outer.replacingOccurrences(of: "/F\\d+ ", with: "/F ", options: .regularExpression)
                 == TestSupport.content(page).replacingOccurrences(of: "/F\\d+ ", with: "/F ", options: .regularExpression))
@@ -252,7 +252,7 @@ import Testing
         page = Page(pdf, Letter.PORTRAIT)
         let nine = chart(pdf)
         for _ in 0..<9 {
-            nine.addSlice(Slice(1, ""))
+            nine.add("", 1)
         }
         nine.drawOn(page)
         content = TestSupport.content(page)

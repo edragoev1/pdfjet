@@ -151,7 +151,8 @@ func drawCase(r *random) []byte {
 			chart.SetRadii(outer, r.between(0, outer))
 			slices := 1 + r.below(6)
 			for s := 0; s < slices; s++ {
-				chart.AddSlice(pdfjet.NewSlice(r.between(0, 100), r.color(), "s"+strconv.Itoa(s)))
+				value := r.between(0, 100) // Drawn before the color, as before
+				chart.AddWithColor("s"+strconv.Itoa(s), value, r.color())
 			}
 			chart.DrawOn(page)
 		case 3:

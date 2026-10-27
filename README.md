@@ -821,8 +821,9 @@ image.ScaleBy(0.5).SetLocation(50.0, 50.0).DrawOn(page)
 `DrawOn` returns the x and y coordinates of the bottom right corner of the
 component, as a `float[]` in Java and C#, a `[Float]` in Swift and a
 `[2]float32` in Go. `DonutChart.setLocation` sets the top left corner of the
-outer circle of the chart and `drawOn` returns its bottom right corner; the
-slice labels can extend past it.
+chart, its title above the circle when it has one, and `drawOn` returns the
+bottom right corner of all it draws: the title, the circle, and the leader
+lines and labels or the legend.
 
 `Bidi.reorderVisually(str, from, to)` counts `from` and `to` in the units that
 each language indexes its strings with: UTF-16 code units in Java and C#, as

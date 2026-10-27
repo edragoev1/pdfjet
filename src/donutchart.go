@@ -36,7 +36,7 @@ type DonutChart struct {
 	y      float32
 	r1     float32
 	r2     float32
-	slices []*Slice
+	slices []*donutSlice
 	// The alternate description; the label and the percentage of each slice
 	// when it is empty
 	altDescription string
@@ -59,13 +59,14 @@ func NewDonutChart(bold, regular *Font) *DonutChart {
 	return &DonutChart{
 		f1:     regular,
 		f2:     bold,
-		slices: make([]*Slice, 0),
+		slices: make([]*donutSlice, 0),
 	}
 }
 
-// SetLocation sets the top left corner of the outer circle of this chart. The
-// center is one outer radius to the right of it and one below. The slice labels
-// can extend past the circle.
+// SetLocation sets the top left corner of this chart: of its outer circle, or
+// of its title when it has one, the circle under it. The center is one outer
+// radius to the right of the corner of the circle and one below. The slice
+// labels can extend past the circle.
 // It returns the chart as a Drawable, so in a chain of setter calls
 // SetLocation goes last, right before DrawOn.
 func (dc *DonutChart) SetLocation(x, y float32) Drawable {
@@ -83,13 +84,35 @@ func (dc *DonutChart) SetRadii(outerRadius, innerRadius float32) *DonutChart {
 	return dc
 }
 
-// AddSlice adds a slice to this chart.
-func (dc *DonutChart) AddSlice(slice *Slice) *DonutChart {
-	if slice != nil {
-		dc.slices = append(dc.slices, slice)
-	}
+// Add adds a slice in the next color of the palette, navy first, the palette
+// of BarChart, so that the charts of a document match; its eight colors repeat
+// from the ninth slice on. The slice's share of the sum of the values sets its
+// angle; a value that is not above 0 has no slice.
+//   - name: the label of the slice; empty for none.
+//   - value: the value of the slice.
+func (dc *DonutChart) Add(name string, value float32) *DonutChart {
+	return dc.AddWithColor(name, value, slicePalette)
+}
+
+// AddWithColor adds a slice in the color.
+//   - name: the label of the slice; empty for none.
+//   - value: the value of the slice.
+//   - c: the color as a 0xRRGGBB value, for example color.Blue.
+func (dc *DonutChart) AddWithColor(name string, value float32, c int32) *DonutChart {
+	dc.slices = append(dc.slices, &donutSlice{value: value, color: c, text: name})
 	return dc
 }
+
+// donutSlice is a slice: its value, its color, or slicePalette for the next of
+// the palette, and its label.
+type donutSlice struct {
+	value float32
+	color int32
+	text  string
+}
+
+// slicePalette is the color of a slice that takes the next color of the palette.
+const slicePalette int32 = -1
 
 // SetTitle sets the title, drawn at the top left of the chart's location in the
 // bold font at the size of the labels; the circle is drawn under it. A chart

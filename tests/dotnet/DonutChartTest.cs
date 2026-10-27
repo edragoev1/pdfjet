@@ -17,7 +17,7 @@ public class DonutChartTest {
     public void AChartWithoutValuesDrawsNothing() {
         PDF pdf = TestSupport.NewPDF();
         Page page = new Page(pdf, Letter.PORTRAIT);
-        DonutChart chart = NewChart(pdf).AddSlice(new Slice(0f, Color.red, "none"));
+        DonutChart chart = NewChart(pdf).Add("none", 0f, Color.red);
         TestSupport.AssertXY(300f, 300f, chart.DrawOn(page));
         Assert.Empty(page.GetContent());
     }
@@ -27,9 +27,9 @@ public class DonutChartTest {
         PDF pdf = TestSupport.NewPDF();
         Page page = new Page(pdf, Letter.PORTRAIT);
         DonutChart chart = NewChart(pdf);
-        chart.AddSlice(new Slice(1f, Color.red, "a"));
-        chart.AddSlice(new Slice(1f, Color.green, "b"));
-        chart.AddSlice(new Slice(2f, Color.blue, "c"));
+        chart.Add("a", 1f, Color.red);
+        chart.Add("b", 1f, Color.green);
+        chart.Add("c", 2f, Color.blue);
         TestSupport.AssertXY(300f, 300f, chart.DrawOn(page));
         string content = TestSupport.Content(page);
         Assert.Contains(TestSupport.Hex("25%"), content);
@@ -42,7 +42,7 @@ public class DonutChartTest {
         PDF pdf = TestSupport.NewPDF();
         Page page = new Page(pdf, Letter.PORTRAIT);
         DonutChart chart = NewChart(pdf).SetRadii(100f, 0f);
-        chart.AddSlice(new Slice(3f, Color.red, "a")).AddSlice(new Slice(1f, Color.blue, "b"));
+        chart.Add("a", 3f, Color.red).Add("b", 1f, Color.blue);
         chart.DrawOn(page);
         string content = TestSupport.Content(page);
         Assert.Contains(TestSupport.Hex("75%"), content);
@@ -53,18 +53,18 @@ public class DonutChartTest {
     public void AChartIsAFigureThatListsItsSlices() {
         PDF pdf = new PDF(new System.IO.MemoryStream(), Compliance.PDF_UA_1).SetTitle("Test");
         Page page = new Page(pdf, Letter.PORTRAIT);
-        DonutChart donut = NewChart(pdf).AddSlice(new Slice(25f, Color.red, "Apples"))
-                .AddSlice(new Slice(75f, Color.blue, "Oranges"));
+        DonutChart donut = NewChart(pdf).Add("Apples", 25f, Color.red)
+                .Add("Oranges", 75f, Color.blue);
         donut.DrawOn(page);
         string content = TestSupport.Content(page);
         Assert.StartsWith("/Figure <</MCID 0>>\nBDC\n", content);
         Assert.EndsWith("EMC\n", content);
         Assert.Equal("0.13 0.15 0.17 rg", TestSupport.FillColorBefore(content, "Apples"));
         Assert.Equal("1 1 1 rg", TestSupport.FillColorBefore(content, "25%"));
-        DonutChart pie = NewChart(pdf).SetRadii(100f, 0f).AddSlice(new Slice(1f, Color.red, ""));
+        DonutChart pie = NewChart(pdf).SetRadii(100f, 0f).Add("", 1f, Color.red);
         pie.DrawOn(page);
         DonutChart described = NewChart(pdf).SetAltDescription("Most are oranges.")
-                .AddSlice(new Slice(1f, Color.red, "Apples"));
+                .Add("Apples", 1f, Color.red);
         described.DrawOn(page);
         Assert.Equal("Donut chart: Apples 25%, Oranges 75%", page.structures[0].altDescription);
         Assert.Equal("Pie chart: 100%", page.structures[1].altDescription);
@@ -78,7 +78,7 @@ public class DonutChartTest {
     public void TheDefaultLookIsQuiet() {
         PDF pdf = TestSupport.NewPDF();
         Page page = new Page(pdf, Letter.PORTRAIT);
-        NewChart(pdf).AddSlice(new Slice(60f, "a")).AddSlice(new Slice(40f, "b")).DrawOn(page);
+        NewChart(pdf).Add("a", 60f).Add("b", 40f).DrawOn(page);
         string content = TestSupport.Content(page);
         Assert.Contains("0.12 0.23 0.37 rg", content);       // navy
         Assert.Contains("0.44 0.58 0.76 rg", content);       // steel blue
@@ -97,9 +97,9 @@ public class DonutChartTest {
         PDF pdf = new PDF(new System.IO.MemoryStream(), Compliance.PDF_UA_1).SetTitle("Test");
         Page page = new Page(pdf, Letter.PORTRAIT);
         // The circle, and its label 15 under it
-        TestSupport.AssertXY(300f, 315f, NewChart(pdf).AddSlice(new Slice(1f, "a")).DrawOn(page));
+        TestSupport.AssertXY(300f, 315f, NewChart(pdf).Add("a", 1f).DrawOn(page));
         float[] xy = NewChart(pdf).SetTitle("Fruit").SetSubtitle("This week")
-                .AddSlice(new Slice(1f, "a")).DrawOn(page);
+                .Add("a", 1f).DrawOn(page);
         Assert.Equal(300f, xy[0], 0.01f);
         Assert.True(xy[1] > 315f, "the circle is under the title: " + xy[1]);
         string content = TestSupport.Content(page);
@@ -119,9 +119,9 @@ public class DonutChartTest {
             PDF pdf = TestSupport.NewPDF();
             Page page = new Page(pdf, Letter.PORTRAIT);
             DonutChart chart = NewChart(pdf);
-            chart.AddSlice(new Slice(bad, Color.red, "bad"));
-            chart.AddSlice(new Slice(1f, Color.green, "a"));
-            chart.AddSlice(new Slice(3f, Color.blue, "b"));
+            chart.Add("bad", bad, Color.red);
+            chart.Add("a", 1f, Color.green);
+            chart.Add("b", 3f, Color.blue);
             chart.DrawOn(page);
             string content = TestSupport.Content(page);
             Assert.Contains(TestSupport.Hex("25%"), content);
@@ -129,7 +129,7 @@ public class DonutChartTest {
         }
         PDF pdf2 = TestSupport.NewPDF();
         Page page2 = new Page(pdf2, Letter.PORTRAIT);
-        NewChart(pdf2).AddSlice(new Slice(3e38f, "a")).AddSlice(new Slice(3e38f, "b")).DrawOn(page2);
+        NewChart(pdf2).Add("a", 3e38f).Add("b", 3e38f).DrawOn(page2);
         Assert.Contains(TestSupport.Hex("50%"), TestSupport.Content(page2));
     }
 
@@ -146,7 +146,7 @@ public class DonutChartTest {
         // and Java draw of the ring the right way out
         DonutChart chart = new DonutChart(null, null).SetRadii(46.94574f, 92.64224f);
         foreach (float value in new float[] {524.55023f, 80.410065f, 7.852018f, 515.9275f, 931.2741f}) {
-            chart.AddSlice(new Slice(value, 0x123456, ""));
+            chart.Add("", value, 0x123456);
         }
         chart.SetLocation(247.509f, 97.883514f).DrawOn(page);
         Assert.Contains("432.79 600.57 432.78 599.68 432.75 598.78 c\n", TestSupport.Content(page));
@@ -154,19 +154,20 @@ public class DonutChartTest {
         page = new Page(pdf, Letter.PORTRAIT);
         chart = new DonutChart(null, null).SetRadii(179.36f, 65.845535f);
         foreach (float value in new float[] {472.8191f, 308.4593f, 142.94768f, 299.98398f}) {
-            chart.AddSlice(new Slice(value, 0x123456, ""));
+            chart.Add("", value, 0x123456);
         }
         chart.SetLocation(88.44436f, 261.47784f).DrawOn(page);
         Assert.Contains("131.87 234.15 131.39 234.7 130.91 235.27 c\n", TestSupport.Content(page));
     }
 
-    // A null slice is left out: it threw when the chart was drawn.
+    // A slice of a null name has no label, as one of an empty name.
     [Fact]
-    public void ANullSliceIsLeftOut() {
+    public void ANullNameIsNoLabel() {
         PDF pdf = TestSupport.NewPDF();
         Page page = new Page(pdf, Letter.PORTRAIT);
-        NewChart(pdf).AddSlice(null).AddSlice(new Slice(1f, "a")).DrawOn(page);
-        Assert.Contains(TestSupport.Hex("a"), TestSupport.Content(page));
+        NewChart(pdf).Add(null, 1f).Add("a", 3f).DrawOn(page);
+        string content = TestSupport.Content(page);
+        Assert.True(content.Contains(TestSupport.Hex("a")) && content.Contains(TestSupport.Hex("25%")), content);
     }
 
     // The labels of thin slices side by side are moved apart, a line apart at
@@ -177,9 +178,9 @@ public class DonutChartTest {
     public void ThinSlicesKeepTheirLabelsApart() {
         PDF pdf = new PDF(new System.IO.MemoryStream(), Compliance.PDF_UA_1).SetTitle("Test");
         Page page = new Page(pdf, Letter.PORTRAIT);
-        DonutChart chart = NewChart(pdf).AddSlice(new Slice(90f, "Big"));
+        DonutChart chart = NewChart(pdf).Add("Big", 90f);
         for (int i = 0; i < 6; i++) {
-            chart.AddSlice(new Slice(1.5f, "Small " + i));
+            chart.Add("Small " + i, 1.5f);
         }
         float[] measured = chart.DrawOn(null);
         float[] xy = chart.DrawOn(page);
@@ -206,7 +207,7 @@ public class DonutChartTest {
         PDF pdf = new PDF(new System.IO.MemoryStream(), Compliance.PDF_UA_1).SetTitle("Test");
         Page page = new Page(pdf, Letter.PORTRAIT);
         DonutChart chart = NewChart(pdf).SetLegend(true).SetCenterText("100 crates")
-                .AddSlice(new Slice(60f, "a")).AddSlice(new Slice(40f, "b"));
+                .Add("a", 60f).Add("b", 40f);
         float[] xy = chart.DrawOn(page);
         string content = TestSupport.Content(page);
         Assert.DoesNotContain("0.55 0.59 0.64 RG", content);      // No leader lines
@@ -216,7 +217,7 @@ public class DonutChartTest {
         TestSupport.AssertXY(xy[0], xy[1], chart.DrawOn(null));
         Assert.Equal("100 crates: a 60%, b 40%", page.structures[0].altDescription);
         page = new Page(pdf, Letter.PORTRAIT);
-        NewChart(pdf).SetRadii(100f, 0f).SetCenterText("none").AddSlice(new Slice(1f, "a")).DrawOn(page);
+        NewChart(pdf).SetRadii(100f, 0f).SetCenterText("none").Add("a", 1f).DrawOn(page);
         Assert.DoesNotContain(TestSupport.Hex("none"), TestSupport.Content(page));
     }
 
@@ -230,9 +231,9 @@ public class DonutChartTest {
         PDF pdf = TestSupport.NewPDF();
         Font font = TestSupport.Helvetica(pdf);
         Page page = new Page(pdf, Letter.PORTRAIT);
-        DonutChart thin = NewChart(pdf).AddSlice(new Slice(90f, "Big"));    // At (100, 100), radii 100 and 50
+        DonutChart thin = NewChart(pdf).Add("Big", 90f);    // At (100, 100), radii 100 and 50
         for (int i = 0; i < 8; i++) {
-            thin.AddSlice(new Slice(1.2f, "Small " + i));
+            thin.Add("Small " + i, 1.2f);
         }
         thin.DrawOn(page);
         string content = TestSupport.Content(page);
@@ -248,7 +249,7 @@ public class DonutChartTest {
         page.SetStrokeDashPattern("[3 3] 0");
         string name = "A label much too long to be drawn whole beside the circle";
         NewChart(pdf).SetCenterText("A text in the hole far too long to be written in it at any size")
-                .AddSlice(new Slice(60f, name)).AddSlice(new Slice(40f, "b")).DrawOn(page);
+                .Add(name, 60f).Add("b", 40f).DrawOn(page);
         content = TestSupport.Content(page);
         // The chart's own solid lines after the caller's dashes
         int dashed = content.IndexOf("[3 3] 0 d\n", System.StringComparison.Ordinal);
@@ -256,16 +257,16 @@ public class DonutChartTest {
         Assert.DoesNotContain(TestSupport.Hex(name), content);
         Assert.Contains(" 9 Tf\n", content);    // The text in the hole at 9, three quarters of 12
         page = new Page(pdf, Letter.PORTRAIT);
-        NewChart(pdf).SetLegend(true).AddSlice(new Slice(60f, name)).AddSlice(new Slice(40f, "b")).DrawOn(page);
+        NewChart(pdf).SetLegend(true).Add(name, 60f).Add("b", 40f).DrawOn(page);
         content = TestSupport.Content(page);
         Assert.DoesNotContain(TestSupport.Hex(name), content);
         Assert.Contains(TestSupport.Hex(" 60%"), content);   // The percentage kept
 
         page = new Page(pdf, Letter.PORTRAIT);
-        NewChart(pdf).AddSlice(new Slice(1f, "a")).DrawOn(page);
+        NewChart(pdf).Add("a", 1f).DrawOn(page);
         string outer = TestSupport.Content(page);
         page = new Page(pdf, Letter.PORTRAIT);
-        NewChart(pdf).SetRadii(50f, 100f).AddSlice(new Slice(1f, "a")).DrawOn(page);
+        NewChart(pdf).SetRadii(50f, 100f).Add("a", 1f).DrawOn(page);
         // The same but for the names of the fonts, a new one for each chart
         Assert.Equal(System.Text.RegularExpressions.Regex.Replace(outer, "/F\\d+ ", "/F "),
                 System.Text.RegularExpressions.Regex.Replace(TestSupport.Content(page), "/F\\d+ ", "/F "));
@@ -273,7 +274,7 @@ public class DonutChartTest {
         page = new Page(pdf, Letter.PORTRAIT);
         DonutChart nine = NewChart(pdf);
         for (int i = 0; i < 9; i++) {
-            nine.AddSlice(new Slice(1f, ""));
+            nine.Add("", 1f);
         }
         nine.DrawOn(page);
         content = TestSupport.Content(page);

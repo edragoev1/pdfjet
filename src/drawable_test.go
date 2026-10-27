@@ -110,7 +110,7 @@ func testDrawables() []testMaker {
 		}},
 		{"DonutChart", func(t *testing.T, pdf *pdfjet.PDF, font *pdfjet.Font) pdfjet.Drawable {
 			return pdfjet.NewDonutChart(font, font).SetRadii(50, 20).
-				AddSlice(pdfjet.NewSlice(1, color.Red, "a")).AddSlice(pdfjet.NewSlice(2, color.Green, "b"))
+				AddWithColor("a", 1, color.Red).AddWithColor("b", 2, color.Green)
 		}},
 		{"Table", func(t *testing.T, pdf *pdfjet.PDF, font *pdfjet.Font) pdfjet.Drawable {
 			data := make([][]*pdfjet.Cell, 0)

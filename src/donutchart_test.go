@@ -26,7 +26,7 @@ func testDonutChart(pdf *PDF) *DonutChart {
 func TestDonutChartAChartWithoutValuesDrawsNothing(t *testing.T) {
 	pdf := testNewPDF()
 	page := NewPage(pdf, testLetterPortrait())
-	chart := testDonutChart(pdf).AddSlice(NewSlice(0, color.Red, "none"))
+	chart := testDonutChart(pdf).AddWithColor("none", 0, color.Red)
 	testAssertXY(t, 300, 300, chart.DrawOn(page))
 	if len(page.GetContent()) != 0 {
 		t.Errorf("content %q", testContent(page))
@@ -37,9 +37,9 @@ func TestDonutChartSlicesArePercentagesOfTheSumOfTheValues(t *testing.T) {
 	pdf := testNewPDF()
 	page := NewPage(pdf, testLetterPortrait())
 	chart := testDonutChart(pdf)
-	chart.AddSlice(NewSlice(1, color.Red, "a"))
-	chart.AddSlice(NewSlice(1, color.Green, "b"))
-	chart.AddSlice(NewSlice(2, color.Blue, "c"))
+	chart.AddWithColor("a", 1, color.Red)
+	chart.AddWithColor("b", 1, color.Green)
+	chart.AddWithColor("c", 2, color.Blue)
 	testAssertXY(t, 300, 300, chart.DrawOn(page))
 	content := testContent(page)
 	if !strings.Contains(content, testHex("25%")) || !strings.Contains(content, testHex("50%")) {
@@ -54,7 +54,7 @@ func TestDonutChartAPieChartHasAnInnerRadiusOfZero(t *testing.T) {
 	pdf := testNewPDF()
 	page := NewPage(pdf, testLetterPortrait())
 	chart := testDonutChart(pdf).SetRadii(100, 0)
-	chart.AddSlice(NewSlice(3, color.Red, "a")).AddSlice(NewSlice(1, color.Blue, "b"))
+	chart.AddWithColor("a", 3, color.Red).AddWithColor("b", 1, color.Blue)
 	chart.DrawOn(page)
 	content := testContent(page)
 	if !strings.Contains(content, testHex("75%")) {
@@ -69,8 +69,8 @@ func TestDonutChartAChartIsAFigureThatListsItsSlices(t *testing.T) {
 	pdf := testNewPDF()
 	pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	page := NewPage(pdf, testLetterPortrait())
-	donut := testDonutChart(pdf).AddSlice(NewSlice(25, color.Red, "Apples")).
-		AddSlice(NewSlice(75, color.Blue, "Oranges"))
+	donut := testDonutChart(pdf).AddWithColor("Apples", 25, color.Red).
+		AddWithColor("Oranges", 75, color.Blue)
 	donut.DrawOn(page)
 	content := testContent(page)
 	if !strings.HasPrefix(content, "/Figure <</MCID 0>>\nBDC\n") || !strings.HasSuffix(content, "EMC\n") {
@@ -82,9 +82,9 @@ func TestDonutChartAChartIsAFigureThatListsItsSlices(t *testing.T) {
 	if got := testFillColorBefore(content, "25%"); got != "1 1 1 rg" {
 		t.Errorf("the percentage is drawn with %q", got)
 	}
-	testDonutChart(pdf).SetRadii(100, 0).AddSlice(NewSlice(1, color.Red, "")).DrawOn(page)
+	testDonutChart(pdf).SetRadii(100, 0).AddWithColor("", 1, color.Red).DrawOn(page)
 	testDonutChart(pdf).SetAltDescription("Most are oranges.").
-		AddSlice(NewSlice(1, color.Red, "Apples")).DrawOn(page)
+		AddWithColor("Apples", 1, color.Red).DrawOn(page)
 	for i, want := range []string{"Donut chart: Apples 25%, Oranges 75%", "Pie chart: 100%", "Most are oranges."} {
 		if got := page.structures[i].altDescription; got != want {
 			t.Errorf("chart %d is described as %q, not %q", i, got, want)
@@ -98,7 +98,7 @@ func TestDonutChartAChartIsAFigureThatListsItsSlices(t *testing.T) {
 func TestDonutChartTheDefaultLookIsQuiet(t *testing.T) {
 	pdf := testNewPDF()
 	page := NewPage(pdf, testLetterPortrait())
-	testDonutChart(pdf).AddSlice(NewSliceInPalette(60, "a")).AddSlice(NewSliceInPalette(40, "b")).DrawOn(page)
+	testDonutChart(pdf).Add("a", 60).Add("b", 40).DrawOn(page)
 	content := testContent(page)
 	for _, want := range []string{
 		"0.12 0.23 0.37 rg",           // navy
@@ -128,9 +128,9 @@ func TestDonutChartATitleIsDrawnAboveTheCircle(t *testing.T) {
 	pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	page := NewPage(pdf, testLetterPortrait())
 	// The circle, and its label 15 under it
-	testAssertXY(t, 300, 315, testDonutChart(pdf).AddSlice(NewSliceInPalette(1, "a")).DrawOn(page))
+	testAssertXY(t, 300, 315, testDonutChart(pdf).Add("a", 1).DrawOn(page))
 	xy := testDonutChart(pdf).SetTitle("Fruit").SetSubtitle("This week").
-		AddSlice(NewSliceInPalette(1, "a")).DrawOn(page)
+		Add("a", 1).DrawOn(page)
 	testNear(t, "x", 300, xy[0], testDelta)
 	if xy[1] <= 315 {
 		t.Errorf("the circle is not under the title: %v", xy[1])
@@ -156,9 +156,9 @@ func TestDonutChartASliceThatIsNotANumberIsNotDrawn(t *testing.T) {
 		pdf := testNewPDF()
 		page := NewPage(pdf, testLetterPortrait())
 		chart := testDonutChart(pdf)
-		chart.AddSlice(NewSlice(bad, color.Red, "bad"))
-		chart.AddSlice(NewSlice(1, color.Green, "a"))
-		chart.AddSlice(NewSlice(3, color.Blue, "b"))
+		chart.AddWithColor("bad", bad, color.Red)
+		chart.AddWithColor("a", 1, color.Green)
+		chart.AddWithColor("b", 3, color.Blue)
 		chart.DrawOn(page)
 		content := testContent(page)
 		if !strings.Contains(content, testHex("25%")) || !strings.Contains(content, testHex("75%")) {
@@ -167,19 +167,20 @@ func TestDonutChartASliceThatIsNotANumberIsNotDrawn(t *testing.T) {
 	}
 	pdf := testNewPDF()
 	page := NewPage(pdf, testLetterPortrait())
-	testDonutChart(pdf).AddSlice(NewSliceInPalette(3e38, "a")).AddSlice(NewSliceInPalette(3e38, "b")).DrawOn(page)
+	testDonutChart(pdf).Add("a", 3e38).Add("b", 3e38).DrawOn(page)
 	if content := testContent(page); !strings.Contains(content, testHex("50%")) {
 		t.Errorf("the slices are not 50%% in %q", content)
 	}
 }
 
-// A nil slice is left out: it panicked when the chart was drawn.
-func TestDonutChartANilSliceIsLeftOut(t *testing.T) {
+// A slice of an empty name has no label.
+func TestDonutChartAnEmptyNameIsNoLabel(t *testing.T) {
 	pdf := testNewPDF()
 	page := NewPage(pdf, testLetterPortrait())
-	testDonutChart(pdf).AddSlice(nil).AddSlice(NewSliceInPalette(1, "a")).DrawOn(page)
-	if !strings.Contains(testContent(page), testHex("a")) {
-		t.Error("the slice is not drawn")
+	testDonutChart(pdf).Add("", 1).Add("a", 3).DrawOn(page)
+	content := testContent(page)
+	if !strings.Contains(content, testHex("a")) || !strings.Contains(content, testHex("25%")) {
+		t.Errorf("the slices are not drawn in %q", content)
 	}
 }
 
@@ -191,9 +192,9 @@ func TestDonutChartThinSlicesKeepTheirLabelsApart(t *testing.T) {
 	pdf := testNewPDF()
 	pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	page := NewPage(pdf, testLetterPortrait())
-	chart := testDonutChart(pdf).AddSlice(NewSliceInPalette(90, "Big"))
+	chart := testDonutChart(pdf).Add("Big", 90)
 	for i := 0; i < 6; i++ {
-		chart.AddSlice(NewSliceInPalette(1.5, "Small "+strconv.Itoa(i)))
+		chart.Add("Small "+strconv.Itoa(i), 1.5)
 	}
 	measured := chart.DrawOn(nil)
 	xy := chart.DrawOn(page)
@@ -228,7 +229,7 @@ func TestDonutChartALegendAndATextInTheHole(t *testing.T) {
 	pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	page := NewPage(pdf, testLetterPortrait())
 	chart := testDonutChart(pdf).SetLegend(true).SetCenterText("100 crates").
-		AddSlice(NewSliceInPalette(60, "a")).AddSlice(NewSliceInPalette(40, "b"))
+		Add("a", 60).Add("b", 40)
 	xy := chart.DrawOn(page)
 	content := testContent(page)
 	if strings.Contains(content, "0.55 0.59 0.64 RG") { // No leader lines
@@ -248,7 +249,7 @@ func TestDonutChartALegendAndATextInTheHole(t *testing.T) {
 		t.Errorf("the chart is described as %q", got)
 	}
 	page = NewPage(pdf, testLetterPortrait())
-	testDonutChart(pdf).SetRadii(100, 0).SetCenterText("none").AddSlice(NewSliceInPalette(1, "a")).DrawOn(page)
+	testDonutChart(pdf).SetRadii(100, 0).SetCenterText("none").Add("a", 1).DrawOn(page)
 	if strings.Contains(testContent(page), testHex("none")) {
 		t.Errorf("a pie chart writes the text: %q", testContent(page))
 	}
@@ -263,9 +264,9 @@ func TestDonutChartTheSecondReviewOfTheCharts(t *testing.T) {
 	pdf := testNewPDF()
 	font := testHelvetica(pdf)
 	page := NewPage(pdf, testLetterPortrait())
-	thin := testDonutChart(pdf).AddSlice(NewSliceInPalette(90, "Big")) // At (100, 100), radii 100 and 50
+	thin := testDonutChart(pdf).Add("Big", 90) // At (100, 100), radii 100 and 50
 	for i := 0; i < 8; i++ {
-		thin.AddSlice(NewSliceInPalette(1.2, "Small "+strconv.Itoa(i)))
+		thin.Add("Small "+strconv.Itoa(i), 1.2)
 	}
 	thin.DrawOn(page)
 	content := testContent(page)
@@ -286,7 +287,7 @@ func TestDonutChartTheSecondReviewOfTheCharts(t *testing.T) {
 	page.SetStrokeDashPattern("[3 3] 0")
 	name := "A label much too long to be drawn whole beside the circle"
 	testDonutChart(pdf).SetCenterText("A text in the hole far too long to be written in it at any size").
-		AddSlice(NewSliceInPalette(60, name)).AddSlice(NewSliceInPalette(40, "b")).DrawOn(page)
+		Add(name, 60).Add("b", 40).DrawOn(page)
 	content = testContent(page)
 	// The chart's own solid lines after the caller's dashes
 	dashed := strings.Index(content, "[3 3] 0 d\n")
@@ -300,8 +301,8 @@ func TestDonutChartTheSecondReviewOfTheCharts(t *testing.T) {
 		t.Errorf("the text in the hole is not at 9: %q", content)
 	}
 	page = NewPage(pdf, testLetterPortrait())
-	testDonutChart(pdf).SetLegend(true).AddSlice(NewSliceInPalette(60, name)).
-		AddSlice(NewSliceInPalette(40, "b")).DrawOn(page)
+	testDonutChart(pdf).SetLegend(true).Add(name, 60).
+		Add("b", 40).DrawOn(page)
 	content = testContent(page)
 	if strings.Contains(content, testHex(name)) {
 		t.Errorf("the legend item is not shortened: %q", content)
@@ -311,10 +312,10 @@ func TestDonutChartTheSecondReviewOfTheCharts(t *testing.T) {
 	}
 
 	page = NewPage(pdf, testLetterPortrait())
-	testDonutChart(pdf).AddSlice(NewSliceInPalette(1, "a")).DrawOn(page)
+	testDonutChart(pdf).Add("a", 1).DrawOn(page)
 	outer := testContent(page)
 	page = NewPage(pdf, testLetterPortrait())
-	testDonutChart(pdf).SetRadii(50, 100).AddSlice(NewSliceInPalette(1, "a")).DrawOn(page)
+	testDonutChart(pdf).SetRadii(50, 100).Add("a", 1).DrawOn(page)
 	// The same but for the names of the fonts, a new one for each chart
 	fonts := regexp.MustCompile(`/F\d+ `)
 	if fonts.ReplaceAllString(outer, "/F ") != fonts.ReplaceAllString(testContent(page), "/F ") {
@@ -324,7 +325,7 @@ func TestDonutChartTheSecondReviewOfTheCharts(t *testing.T) {
 	page = NewPage(pdf, testLetterPortrait())
 	nine := testDonutChart(pdf)
 	for i := 0; i < 9; i++ {
-		nine.AddSlice(NewSliceInPalette(1, ""))
+		nine.Add("", 1)
 	}
 	nine.DrawOn(page)
 	content = testContent(page)

@@ -69,19 +69,14 @@ public class BarChart : Drawable {
     private var groupingUsed = true
 
     private var gridLineColor: Int32 = BarChart.GRID
-    private var gridLineWidth: Float = 0.5
-    private var gridLineDashPattern = "[] 0"
-    private var axisLineWidth: Float = 0.75
-    private var chartBorderWidth: Float = 0.0
-    private var innerBorderWidth: Float = 0.0
 
     private var minFractionDigits = 0
     private var maxFractionDigits = 2
 
-    // Value axis range; auto-computed from the data unless gridLines > 0
+    // The range of the value axis, from the data unless it is set
     private var min: Float = 0.0
     private var max: Float = 0.0
-    private var gridLines = 0
+    private var rangeSet = false
 
     // f1 = chart title font, f2 = axis titles, labels and legend font
     private let f1: Font
@@ -351,19 +346,6 @@ public class BarChart : Drawable {
     }
 
     ///
-    /// Sets whether the grid lines of the value axis are drawn.
-    ///
-    /// - Parameter drawGridLines: true to draw them.
-    /// - Returns: this BarChart object.
-    ///
-    @available(*, deprecated, renamed: "setGridLines",
-            message: "As of 9.1.5, use setGridLines, the name the other charts use for what they draw.")
-    @discardableResult
-    public func setDrawGridLines(_ drawGridLines: Bool) -> BarChart {
-        return setGridLines(drawGridLines)
-    }
-
-    ///
     /// Sets whether the value of each bar is written at its end, or, in a
     /// stacked chart, inside each segment that has room for it.
     ///
@@ -374,20 +356,6 @@ public class BarChart : Drawable {
     public func setValueLabels(_ drawValueLabels: Bool) -> BarChart {
         self.drawValueLabels = drawValueLabels
         return self
-    }
-
-    ///
-    /// Sets whether the value of each bar is written at its end, or, in a
-    /// stacked chart, inside each segment that has room for it.
-    ///
-    /// - Parameter drawValueLabels: true to write the values.
-    /// - Returns: this BarChart object.
-    ///
-    @available(*, deprecated, renamed: "setValueLabels",
-            message: "As of 9.1.5, use setValueLabels, as SimpleLineChart's.")
-    @discardableResult
-    public func setDrawValueLabels(_ drawValueLabels: Bool) -> BarChart {
-        return setValueLabels(drawValueLabels)
     }
 
     ///
@@ -432,34 +400,6 @@ public class BarChart : Drawable {
     }
 
     ///
-    /// Sets whether the legend is drawn. The legend lists the series that have
-    /// a name, under the title.
-    ///
-    /// - Parameter drawLegend: true to draw the legend.
-    /// - Returns: this BarChart object.
-    ///
-    @available(*, deprecated, renamed: "setLegend",
-            message: "As of 9.1.5, use setLegend, as DonutChart's.")
-    @discardableResult
-    public func setDrawLegend(_ drawLegend: Bool) -> BarChart {
-        return setLegend(drawLegend)
-    }
-
-    ///
-    /// Sets the width of the grid lines. The default is 0.5; a width of 0
-    /// draws the thinnest line a viewer shows, and setDrawGridLines(false)
-    /// hides them.
-    ///
-    /// - Parameter width: the line width.
-    /// - Returns: this BarChart object.
-    ///
-    @discardableResult
-    public func setGridLineWidth(_ width: Float) -> BarChart {
-        self.gridLineWidth = width
-        return self
-    }
-
-    ///
     /// Sets the color of the grid lines. The default is light gray, 0xE1E4E8.
     /// Color.transparent leaves it unchanged.
     ///
@@ -476,98 +416,36 @@ public class BarChart : Drawable {
     }
 
     ///
-    /// Sets the dash pattern of the grid lines, for example "[1 1] 0" for a
-    /// dotted line. The default is "[] 0", a solid line.
+    /// Sets the number of digits after the decimal point of the values written
+    /// by the bars, all of them alike, as SimpleBarChart's. Without it a value
+    /// has as many as it needs, two at most. The numbers of the value axis have
+    /// the digits of its step.
     ///
-    /// - Parameter pattern: the dash pattern.
+    /// - Parameter digits: the number of digits.
     /// - Returns: this BarChart object.
     ///
     @discardableResult
-    public func setGridLineDashPattern(_ pattern: String) -> BarChart {
-        self.gridLineDashPattern = pattern
+    public func setFractionDigits(_ digits: Int) -> BarChart {
+        self.minFractionDigits = digits
+        self.maxFractionDigits = digits
         return self
     }
 
     ///
-    /// Sets the width of the axis line, the line at the base of the bars: at 0
-    /// on the value axis, or at its lowest value when the axis does not reach
-    /// 0. The default is 0.75; 0 hides it.
-    ///
-    /// - Parameter width: the line width.
-    /// - Returns: this BarChart object.
-    ///
-    @discardableResult
-    public func setAxisLineWidth(_ width: Float) -> BarChart {
-        self.axisLineWidth = width
-        return self
-    }
-
-    ///
-    /// Sets the width of the outer chart border. A width of 0, the default,
-    /// hides it.
-    ///
-    /// - Parameter width: the border width.
-    /// - Returns: this BarChart object.
-    ///
-    @discardableResult
-    public func setChartBorderWidth(_ width: Float) -> BarChart {
-        self.chartBorderWidth = width
-        return self
-    }
-
-    ///
-    /// Sets the width of the plot area border. A width of 0, the default,
-    /// hides it.
-    ///
-    /// - Parameter width: the border width.
-    /// - Returns: this BarChart object.
-    ///
-    @discardableResult
-    public func setInnerBorderWidth(_ width: Float) -> BarChart {
-        self.innerBorderWidth = width
-        return self
-    }
-
-    ///
-    /// Sets the minimum number of decimal places in the value labels. The axis
-    /// labels have at least the decimal places of the axis step. The default is 0.
-    ///
-    /// - Parameter minFractionDigits: the minimum number of decimal places.
-    /// - Returns: this BarChart object.
-    ///
-    @discardableResult
-    public func setMinimumFractionDigits(_ minFractionDigits: Int) -> BarChart {
-        self.minFractionDigits = minFractionDigits
-        return self
-    }
-
-    ///
-    /// Sets the maximum number of decimal places in the value labels. The
-    /// default is 2.
-    ///
-    /// - Parameter maxFractionDigits: the maximum number of decimal places.
-    /// - Returns: this BarChart object.
-    ///
-    @discardableResult
-    public func setMaximumFractionDigits(_ maxFractionDigits: Int) -> BarChart {
-        self.maxFractionDigits = maxFractionDigits
-        return self
-    }
-
-    ///
-    /// Sets the range and the number of grid lines of the value axis. Without
-    /// it the range is computed from the data and always includes 0.
+    /// Sets the range of the value axis, with grid lines on a round step, as
+    /// setYAxisRange does in SimpleLineChart and SimpleScatterChart. Without it
+    /// the range is that of the data, rounded to steps, and always includes 0.
+    /// A range whose end is not past its start is not set.
     ///
     /// - Parameter min: the value at the start of the axis.
     /// - Parameter max: the value at the end of the axis.
-    /// - Parameter gridLines: the number of grid lines, at least 1.
     /// - Returns: this BarChart object.
     ///
     @discardableResult
-    public func setValueAxisMinMax(_ min: Float, _ max: Float, _ gridLines: Int) -> BarChart {
+    public func setValueAxisRange(_ min: Float, _ max: Float) -> BarChart {
         self.min = min
         self.max = max
-        self.gridLines = gridLines
+        self.rangeSet = max > min
         return self
     }
 
@@ -590,10 +468,11 @@ public class BarChart : Drawable {
         var vMin: Float
         var vMax: Float
         var lines: Int
-        if gridLines > 0 {
+        if rangeSet {
             vMin = min
             vMax = max
-            lines = gridLines
+            lines = ChartScale.roundLines(min, max,
+                    Swift.max(ChartScale.roundMaxAndMinValues(max, min).numOfGridLines, 1))
         } else {
             var lo: Float = 0.0
             var hi: Float = 0.0
@@ -723,13 +602,6 @@ public class BarChart : Drawable {
             drawLegend(page, titleBaseline + subtitleHeight + 1.5 * bodyHeight)
         }
 
-        if chartBorderWidth > 0.0 {
-            page.setPenColor(BarChart.BASELINE)
-            page.setPenWidth(chartBorderWidth)
-            page.setDefaultStrokeDashPattern()
-            page.drawRect(x1, y1, w, h)
-        }
-
         // Grid lines and value axis labels. A label is drawn at every grid line
         // that leaves it room, the widest label and a pad across, or a line high
         // up the vertical axis: at every second or third line, or more, when
@@ -852,22 +724,14 @@ public class BarChart : Drawable {
 
         // The axis line at the base of the bars, which is the zero line of
         // negative values
-        page.setDefaultStrokeDashPattern()
-        if axisLineWidth > 0.0 {
-            page.setPenColor(BarChart.BASELINE)
-            page.setPenWidth(axisLineWidth)
-            if horizontal {
-                let x0 = x5 + ChartScale.scaled(base - vMin, x6 - x5, vMax - vMin)
-                page.drawLine(x0, y5, x0, y8)
-            } else {
-                let y0 = y8 - ChartScale.scaled(base - vMin, y8 - y5, vMax - vMin)
-                page.drawLine(x5, y0, x6, y0)
-            }
-        }
-        if innerBorderWidth > 0.0 {
-            page.setPenColor(BarChart.BASELINE)
-            page.setPenWidth(innerBorderWidth)
-            page.drawRect(x5, y5, x6 - x5, y8 - y5)
+        page.setPenColor(BarChart.BASELINE)
+        page.setPenWidth(0.75)
+        if horizontal {
+            let x0 = x5 + ChartScale.scaled(base - vMin, x6 - x5, vMax - vMin)
+            page.drawLine(x0, y5, x0, y8)
+        } else {
+            let y0 = y8 - ChartScale.scaled(base - vMin, y8 - y5, vMax - vMin)
+            page.drawLine(x5, y0, x6, y0)
         }
 
         // The lines over the bars, through the middles of the categories, a
@@ -1055,11 +919,10 @@ public class BarChart : Drawable {
         return c <= 0.04045 ? c / 12.92 : pow((c + 0.055) / 1.055, 2.4)
     }
 
-    /// Draws one grid line.
+    /// Draws one grid line, thin and solid.
     private func gridLine(_ page: Page, _ xa: Float, _ ya: Float, _ xb: Float, _ yb: Float) {
         page.setPenColor(gridLineColor)
-        page.setPenWidth(gridLineWidth)
-        page.setStrokeDashPattern(gridLineDashPattern)
+        page.setPenWidth(0.5)
         page.drawLine(xa, ya, xb, yb)
     }
 

@@ -74,11 +74,8 @@ final public class Example_27 {
         chart.addSeries("", lengths, colors);
         chart.setHorizontal(true);
         chart.setGroupGap(0.4f);
-        chart.setValueAxisMinMax(0f, 8000f, 4);
-        chart.setGridLineWidth(0.75f);
+        chart.setValueAxisRange(0f, 8000f);
         chart.setGridLineColor(0xe0e0e0);
-        chart.setGridLineDashPattern("[] 0");
-        chart.setAxisLineWidth(0f);
         chart.setValueLabels(true);
         chart.setValueLabelsInside(true);
         chart.setGroupingUsed(true);

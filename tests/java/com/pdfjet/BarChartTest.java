@@ -61,7 +61,7 @@ class BarChartTest {
         Page page = new Page(pdf, Letter.PORTRAIT);
         BarChart chart = chart(pdf).setCategories("a", "b").setHorizontal(true);
         chart.addSeries("", new float[] {2.5f, -1f}).setValueLabels(true);
-        chart.setMinimumFractionDigits(1);
+        chart.setFractionDigits(1);
         String content = draw(chart, page);
         assertTrue(content.contains(TestSupport.hex("2.5")), content);
         assertTrue(content.contains(TestSupport.hex("-1.0")), content);
@@ -72,10 +72,11 @@ class BarChartTest {
         PDF pdf = TestSupport.newPDF();
         Page page = new Page(pdf, Letter.PORTRAIT);
         BarChart chart = chart(pdf).setCategories("a");
-        chart.addSeries("", new float[] {5f}).setValueAxisMinMax(0f, 12f, 4);
+        chart.addSeries("", new float[] {5f}).setValueAxisRange(0f, 12f);     // In steps of 2
         String content = draw(chart, page);
         assertTrue(content.contains(TestSupport.hex("12")), content);
-        assertTrue(content.contains(TestSupport.hex("3")), content);
+        assertTrue(content.contains("<" + TestSupport.hex("2") + ">"), content);
+        assertFalse(content.contains("<" + TestSupport.hex("3") + ">"), content);
         assertFalse(content.contains("NaN"));
     }
 
@@ -83,13 +84,14 @@ class BarChartTest {
     void axisLabelsThatWouldMeetAreDrawnAtEverySecondLine() throws Exception {
         PDF pdf = TestSupport.newPDF();
         Page page = new Page(pdf, Letter.PORTRAIT);
-        BarChart chart = chart(pdf).setCategories("a").setHorizontal(true);
-        // 16 steps of 5 across about 240 points: 15 points a step, where a
-        // label of one decimal, 70.0, needs more
-        chart.addSeries("", new float[] {72.6f}).setValueAxisMinMax(0f, 80f, 16).setMinimumFractionDigits(1);
-        String content = draw(chart, page);
-        assertTrue(content.contains(TestSupport.hex("70.0")) && content.contains(TestSupport.hex("80.0")), content);
-        assertFalse(content.contains(TestSupport.hex("75.0")), content);  // would meet 70.0 and 80.0
+        // 8 steps of 10 across about 70 points: 9 points a step, where a label
+        // of one decimal, 70.0, needs more
+        BarChart chart = chart(pdf).setCategories("a").setHorizontal(true).setSize(120f, 200f);
+        chart.addSeries("", new float[] {72.6f}).setValueAxisRange(0f, 80f).setFractionDigits(1);
+        chart.drawOn(page);
+        String content = TestSupport.content(page);
+        assertTrue(content.contains(TestSupport.hex("80.0")), content);
+        assertFalse(content.contains(TestSupport.hex("70.0")), content);  // would meet 60.0 and 80.0
     }
 
     @Test
@@ -128,7 +130,7 @@ class BarChartTest {
         String content = draw(chart, page);
         assertTrue(content.contains("0.12 0.23 0.37 rg"), content);     // navy
         assertTrue(content.contains("0.44 0.58 0.76 rg"), content);     // steel blue
-        assertTrue(content.contains("0.88 0.89 0.91 RG\n0.5 w\n[] 0 d"), content);
+        assertTrue(content.contains("0.88 0.89 0.91 RG\n0.5 w\n"), content);     // Thin and solid
         assertFalse(content.contains("0 0 0 RG") || content.contains("0 0 0 rg"), content);
         assertEquals("0.13 0.15 0.17 rg", TestSupport.fillColorBefore(content, "t"));
         assertEquals("0.37 0.41 0.45 rg", TestSupport.fillColorBefore(content, "s"));
@@ -148,8 +150,8 @@ class BarChartTest {
         Page page = new Page(pdf, Letter.PORTRAIT);
         BarChart chart = chart(pdf).setCategories("a", "b").setHorizontal(true).setSubtitle("sub");
         chart.addSeries("rivers", new float[] {6650f, 12f}, new int[] {Color.red, Color.blue});
-        chart.setValueAxisMinMax(0f, 8000f, 4).setValueLabels(true).setValueLabelsInside(true);
-        chart.setGroupingUsed(true).setAxisLineWidth(0f).setGridLineColor(Color.lightgray);
+        chart.setValueAxisRange(0f, 8000f).setValueLabels(true).setValueLabelsInside(true);
+        chart.setGroupingUsed(true).setGridLineColor(Color.lightgray);
         String content = draw(chart, page);
         assertTrue(content.contains(TestSupport.hex("6,650")), content);
         assertTrue(content.contains(TestSupport.hex("8,000")), content);
@@ -287,11 +289,10 @@ class BarChartTest {
     // The review of 26 October 2026, the second: a chart without its fonts
     // draws nothing; the title, a long category under vertical bars and a
     // legend name are shortened; a line series longer than the categories
-    // adds no slots; the line is on a white line a little wider; the old
-    // names of the setters still work; and a value past the rounding of the
-    // largest float is drawn on the range of the values.
+    // adds no slots; the line is on a white line a little wider; and a value
+    // past the rounding of the largest float is drawn on the range of the
+    // values.
     @Test
-    @SuppressWarnings("deprecation")
     void theSecondReviewOfTheCharts() throws Exception {
         PDF pdf = new PDF(new java.io.ByteArrayOutputStream(), Compliance.PDF_UA_1).setTitle("Test");
         Page page = new Page(pdf, Letter.PORTRAIT);
@@ -307,16 +308,6 @@ class BarChartTest {
         assertTrue(content.contains("1 1 1 RG\n3.5 w\n"), content);
         assertTrue(page.structures.get(0).altDescription.endsWith("Target, a line: " + longName + " 2, b 3."),
                 page.structures.get(0).altDescription);
-
-        PDF plain = TestSupport.newPDF();
-        page = new Page(plain, Letter.PORTRAIT);
-        String old = draw(chart(plain).setCategories("a").addSeries("s", new float[] {1f})
-                .setDrawLegend(true).setDrawValueLabels(true).setDrawGridLines(false), page);
-        page = new Page(plain, Letter.PORTRAIT);
-        String renamed = draw(chart(plain).setCategories("a").addSeries("s", new float[] {1f})
-                .setLegend(true).setValueLabels(true).setGridLines(false), page);
-        // The same but for the names of the fonts, a new one for each chart
-        assertEquals(old.replaceAll("/F\\d+ ", "/F "), renamed.replaceAll("/F\\d+ ", "/F "));
 
         page = new Page(pdf, Letter.PORTRAIT);
         content = draw(chart(pdf).setCategories("a", "b").setValueLabels(true)

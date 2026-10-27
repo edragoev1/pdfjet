@@ -49,7 +49,7 @@ class DrawableTest {
                 .setCategories("a", "b").addLine("s", new float[] {0f, 2f}));
         m.put("BarChart", (pdf, font) -> new BarChart(font, font).setSize(200f, 150f).addSeries("s", new float[] {1f, 2f, 3f}));
         m.put("DonutChart", (pdf, font) -> new DonutChart(font, font).setRadii(50f, 20f)
-                .addSlice(new Slice(1f, Color.red, "a")).addSlice(new Slice(2f, Color.green, "b")));
+                .add("a", 1f, Color.red).add("b", 2f, Color.green));
         m.put("Table", (pdf, font) -> {
             List<List<Cell>> data = new ArrayList<List<Cell>>();
             for (int r = 0; r < 3; r++) {

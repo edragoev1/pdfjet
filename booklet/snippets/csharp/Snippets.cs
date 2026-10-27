@@ -636,9 +636,9 @@ public class Snippets {
         DonutChart chart = new DonutChart(bold, font);
         chart.SetLocation(100f, 100f);
         chart.SetRadii(100f, 60f);    // An inner radius of 0 makes a pie chart
-        chart.AddSlice(new Slice(50f, Color.steelblue, "Java"));
-        chart.AddSlice(new Slice(30f, Color.seagreen, "C#"));
-        chart.AddSlice(new Slice(20f, Color.darkorange, "Go"));
+        chart.Add("Java", 50f, Color.steelblue);
+        chart.Add("C#", 30f, Color.seagreen);
+        chart.Add("Go", 20f, Color.darkorange);
         chart.DrawOn(new Page(pdf, Letter.PORTRAIT));
     }
 

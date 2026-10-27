@@ -40,14 +40,12 @@ class ColorTransparentTest {
     }
 
     @Test
-    @SuppressWarnings("deprecation")    // Chart and Series, tested until they are removed
     void everyColorSetterLeavesTheColorForTransparent() throws Exception {
         PDF pdf = TestSupport.newPDF();
         Font font = TestSupport.helvetica(pdf);
         List<Case> cases = Arrays.asList(
             new Case("Arc.setStrokeColor", Arc::new, (o, c) -> ((Arc) o).setStrokeColor(c)),
             new Case("Arc.setFillColor", Arc::new, (o, c) -> ((Arc) o).setFillColor(c)),
-            new Case("Chart.setGridLineColor", () -> new Chart(font, font), (o, c) -> ((Chart) o).setGridLineColor(c)),
             new Case("BarChart.setGridLineColor", () -> new BarChart(font, font), (o, c) -> ((BarChart) o).setGridLineColor(c)),
             new Case("CheckBox.setBorderColor", () -> new CheckBox(font, "A"), (o, c) -> ((CheckBox) o).setBorderColor(c)),
             new Case("CheckBox.setCheckmarkColor", () -> new CheckBox(font, "A"), (o, c) -> ((CheckBox) o).setCheckmarkColor(c)),
@@ -70,8 +68,7 @@ class ColorTransparentTest {
                 return new Table().setTableData(data, 0);
             }, (o, c) -> ((Table) o).setCellBorderColor(c)),
             new Case("Path.setStrokeColor", Path::new, (o, c) -> ((Path) o).setStrokeColor(c)),
-            new Case("Rect.setFillColor", () -> new Rect(0f, 0f, 10f, 10f), (o, c) -> ((Rect) o).setFillColor(c)),
-            new Case("Series.setStrokeColor", () -> new Series("A"), (o, c) -> ((Series) o).setStrokeColor(c)));
+            new Case("Rect.setFillColor", () -> new Rect(0f, 0f, 10f, 10f), (o, c) -> ((Rect) o).setFillColor(c)));
         List<String> changed = new ArrayList<>();
         for (Case c : cases) {
             Object o = c.make.get();

@@ -695,9 +695,9 @@ func donutChart(pdf *pdfjet.PDF, font *pdfjet.Font) {
 	chart := pdfjet.NewDonutChart(bold, font)
 	chart.SetLocation(100, 100)
 	chart.SetRadii(100, 60) // An inner radius of 0 makes a pie chart
-	chart.AddSlice(pdfjet.NewSlice(50, color.SteelBlue, "Java"))
-	chart.AddSlice(pdfjet.NewSlice(30, color.SeaGreen, "C#"))
-	chart.AddSlice(pdfjet.NewSlice(20, color.DarkOrange, "Go"))
+	chart.AddWithColor("Java", 50, color.SteelBlue)
+	chart.AddWithColor("C#", 30, color.SeaGreen)
+	chart.AddWithColor("Go", 20, color.DarkOrange)
 	chart.DrawOn(pdfjet.NewPage(pdf, letter.Portrait()))
 }
 

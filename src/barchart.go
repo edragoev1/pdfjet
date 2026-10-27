@@ -83,20 +83,15 @@ type BarChart struct {
 	drawLegend        bool
 	groupingUsed      bool
 
-	gridLineColor       int32
-	gridLineWidth       float32
-	gridLineDashPattern string
-	axisLineWidth       float32
-	chartBorderWidth    float32
-	innerBorderWidth    float32
+	gridLineColor int32
 
 	minFractionDigits int
 	maxFractionDigits int
 
-	// Value axis range; auto-computed from the data unless gridLines > 0
-	min       float32
-	max       float32
-	gridLines int
+	// The range of the value axis, from the data unless it is set
+	min      float32
+	max      float32
+	rangeSet bool
 
 	// f1 = chart title font, f2 = axis titles, labels and legend font
 	f1 *Font
@@ -122,11 +117,6 @@ func NewBarChart(f1, f2 *Font) *BarChart {
 	chart.drawLegend = true
 	chart.groupingUsed = true
 	chart.gridLineColor = barChartGrid
-	chart.gridLineWidth = 0.5
-	chart.gridLineDashPattern = "[] 0"
-	chart.axisLineWidth = 0.75
-	chart.chartBorderWidth = 0.0
-	chart.innerBorderWidth = 0.0
 	chart.minFractionDigits = 0
 	chart.maxFractionDigits = 2
 	return chart
@@ -279,27 +269,11 @@ func (chart *BarChart) SetGridLines(drawGridLines bool) *BarChart {
 	return chart
 }
 
-// SetDrawGridLines sets whether the grid lines of the value axis are drawn.
-//
-// Deprecated: Use SetGridLines, the name the other charts use for what they
-// draw.
-func (chart *BarChart) SetDrawGridLines(drawGridLines bool) *BarChart {
-	return chart.SetGridLines(drawGridLines)
-}
-
 // SetValueLabels sets whether the value of each bar is written at its end,
 // or, in a stacked chart, inside each segment that has room for it.
 func (chart *BarChart) SetValueLabels(drawValueLabels bool) *BarChart {
 	chart.drawValueLabels = drawValueLabels
 	return chart
-}
-
-// SetDrawValueLabels sets whether the value of each bar is written at its end,
-// or, in a stacked chart, inside each segment that has room for it.
-//
-// Deprecated: Use SetValueLabels, as SimpleLineChart's.
-func (chart *BarChart) SetDrawValueLabels(drawValueLabels bool) *BarChart {
-	return chart.SetValueLabels(drawValueLabels)
 }
 
 // SetValueLabelsInside sets whether the value labels are written inside the
@@ -325,22 +299,6 @@ func (chart *BarChart) SetLegend(drawLegend bool) *BarChart {
 	return chart
 }
 
-// SetDrawLegend sets whether the legend is drawn. The legend lists the series
-// that have a name, under the title.
-//
-// Deprecated: Use SetLegend, as DonutChart's.
-func (chart *BarChart) SetDrawLegend(drawLegend bool) *BarChart {
-	return chart.SetLegend(drawLegend)
-}
-
-// SetGridLineWidth sets the width of the grid lines. The default is 0.5; a width
-// of 0 draws the thinnest line a viewer shows, and SetDrawGridLines(false) hides
-// them.
-func (chart *BarChart) SetGridLineWidth(width float32) *BarChart {
-	chart.gridLineWidth = width
-	return chart
-}
-
 // SetGridLineColor sets the color of the grid lines. The default is light gray,
 // 0xE1E4E8.
 //   - color: the color as a 0xRRGGBB value, for example color.LightGray.
@@ -354,59 +312,26 @@ func (chart *BarChart) SetGridLineColor(c int32) *BarChart {
 	return chart
 }
 
-// SetGridLineDashPattern sets the dash pattern of the grid lines, for example
-// "[1 1] 0" for a dotted line. The default is "[] 0", a solid line.
-func (chart *BarChart) SetGridLineDashPattern(pattern string) *BarChart {
-	chart.gridLineDashPattern = pattern
+// SetFractionDigits sets the number of digits after the decimal point of the
+// values written by the bars, all of them alike, as SimpleBarChart's. Without
+// it a value has as many as it needs, two at most. The numbers of the value
+// axis have the digits of its step.
+func (chart *BarChart) SetFractionDigits(digits int) *BarChart {
+	chart.minFractionDigits = digits
+	chart.maxFractionDigits = digits
 	return chart
 }
 
-// SetAxisLineWidth sets the width of the axis line, the line at the base of the
-// bars: at 0 on the value axis, or at its lowest value when the axis does not
-// reach 0. The default is 0.75; 0 hides it.
-func (chart *BarChart) SetAxisLineWidth(width float32) *BarChart {
-	chart.axisLineWidth = width
-	return chart
-}
-
-// SetChartBorderWidth sets the width of the outer chart border. A width of 0,
-// the default, hides it.
-func (chart *BarChart) SetChartBorderWidth(width float32) *BarChart {
-	chart.chartBorderWidth = width
-	return chart
-}
-
-// SetInnerBorderWidth sets the width of the plot area border. A width of 0,
-// the default, hides it.
-func (chart *BarChart) SetInnerBorderWidth(width float32) *BarChart {
-	chart.innerBorderWidth = width
-	return chart
-}
-
-// SetMinimumFractionDigits sets the minimum number of decimal places in the
-// value labels. The axis labels have at least the decimal places of the axis
-// step. The default is 0.
-func (chart *BarChart) SetMinimumFractionDigits(minFractionDigits int) *BarChart {
-	chart.minFractionDigits = minFractionDigits
-	return chart
-}
-
-// SetMaximumFractionDigits sets the maximum number of decimal places in the
-// value labels. The default is 2.
-func (chart *BarChart) SetMaximumFractionDigits(maxFractionDigits int) *BarChart {
-	chart.maxFractionDigits = maxFractionDigits
-	return chart
-}
-
-// SetValueAxisMinMax sets the range and the number of grid lines of the value
-// axis. Without it the range is computed from the data and always includes 0.
+// SetValueAxisRange sets the range of the value axis, with grid lines on a
+// round step, as SetYAxisRange does in SimpleLineChart and SimpleScatterChart.
+// Without it the range is that of the data, rounded to steps, and always
+// includes 0. A range whose end is not past its start is not set.
 //   - min: the value at the start of the axis.
 //   - max: the value at the end of the axis.
-//   - gridLines: the number of grid lines, at least 1.
-func (chart *BarChart) SetValueAxisMinMax(min, max float32, gridLines int) *BarChart {
+func (chart *BarChart) SetValueAxisRange(min, max float32) *BarChart {
 	chart.min = min
 	chart.max = max
-	chart.gridLines = gridLines
+	chart.rangeSet = max > min
 	return chart
 }
 
@@ -424,10 +349,11 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 
 	var vMin, vMax float32
 	var lines int
-	if chart.gridLines > 0 {
+	if chart.rangeSet {
 		vMin = chart.min
 		vMax = chart.max
-		lines = chart.gridLines
+		lines = roundLines(chart.min, chart.max,
+			max(roundMaxAndMinValues(chart.max, chart.min).numOfGridLines, 1))
 	} else {
 		lo := float32(0.0)
 		hi := float32(0.0)
@@ -597,13 +523,6 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 	}
 	if legend {
 		chart.drawLegendOn(page, titleBaseline+subtitleHeight+float32(1.5*bodyHeight))
-	}
-
-	if chart.chartBorderWidth > 0.0 {
-		page.SetPenColor(barChartBaseline)
-		page.SetPenWidth(chart.chartBorderWidth)
-		page.SetDefaultStrokeDashPattern()
-		page.DrawRect(chart.x1, chart.y1, chart.w, chart.h)
 	}
 
 	// Grid lines and value axis labels. A label is drawn at every grid line
@@ -776,22 +695,14 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 
 	// The axis line at the base of the bars, which is the zero line of
 	// negative values
-	page.SetDefaultStrokeDashPattern()
-	if chart.axisLineWidth > 0.0 {
-		page.SetPenColor(barChartBaseline)
-		page.SetPenWidth(chart.axisLineWidth)
-		if chart.horizontal {
-			x0 := x5 + scaled(base-vMin, x6-x5, vMax-vMin)
-			page.DrawLine(x0, y5, x0, y8)
-		} else {
-			y0 := y8 - scaled(base-vMin, y8-y5, vMax-vMin)
-			page.DrawLine(x5, y0, x6, y0)
-		}
-	}
-	if chart.innerBorderWidth > 0.0 {
-		page.SetPenColor(barChartBaseline)
-		page.SetPenWidth(chart.innerBorderWidth)
-		page.DrawRect(x5, y5, x6-x5, y8-y5)
+	page.SetPenColor(barChartBaseline)
+	page.SetPenWidth(0.75)
+	if chart.horizontal {
+		x0 := x5 + scaled(base-vMin, x6-x5, vMax-vMin)
+		page.DrawLine(x0, y5, x0, y8)
+	} else {
+		y0 := y8 - scaled(base-vMin, y8-y5, vMax-vMin)
+		page.DrawLine(x5, y0, x6, y0)
 	}
 
 	// The lines over the bars, through the middles of the categories, a
@@ -1029,11 +940,10 @@ func linearComponent(component int32) float64 {
 	return math.Pow((c+0.055)/1.055, 2.4)
 }
 
-// gridLine draws one grid line.
+// gridLine draws one grid line, thin and solid.
 func (chart *BarChart) gridLine(page *Page, xa, ya, xb, yb float32) {
 	page.SetPenColor(chart.gridLineColor)
-	page.SetPenWidth(chart.gridLineWidth)
-	page.SetStrokeDashPattern(chart.gridLineDashPattern)
+	page.SetPenWidth(0.5)
 	page.DrawLine(xa, ya, xb, yb)
 }
 

@@ -25,9 +25,6 @@ public class ColorTransparentTest {
         var cases = new List<(string name, Func<object> make, Action<object, int> set)> {
             ("Arc.SetStrokeColor", () => new Arc(), (o, c) => ((Arc) o).SetStrokeColor(c)),
             ("Arc.SetFillColor", () => new Arc(), (o, c) => ((Arc) o).SetFillColor(c)),
-#pragma warning disable CS0618 // Chart and Series, tested until they are removed
-            ("Chart.SetGridLineColor", () => new Chart(font, font), (o, c) => ((Chart) o).SetGridLineColor(c)),
-#pragma warning restore CS0618
             ("BarChart.SetGridLineColor", () => new BarChart(font, font), (o, c) => ((BarChart) o).SetGridLineColor(c)),
             ("CheckBox.SetBorderColor", () => new CheckBox(font, "A"), (o, c) => ((CheckBox) o).SetBorderColor(c)),
             ("CheckBox.SetCheckmarkColor", () => new CheckBox(font, "A"), (o, c) => ((CheckBox) o).SetCheckmarkColor(c)),
@@ -49,9 +46,6 @@ public class ColorTransparentTest {
                     (o, c) => ((Table) o).SetCellBorderColor(c)),
             ("Path.SetStrokeColor", () => new Path(), (o, c) => ((Path) o).SetStrokeColor(c)),
             ("Rect.SetFillColor", () => new Rect(0f, 0f, 10f, 10f), (o, c) => ((Rect) o).SetFillColor(c)),
-#pragma warning disable CS0618 // Chart and Series, tested until they are removed
-            ("Series.SetStrokeColor", () => new Series("A"), (o, c) => ((Series) o).SetStrokeColor(c)),
-#pragma warning restore CS0618
         };
         var changed = new List<string>();
         foreach (var (name, make, set) in cases) {

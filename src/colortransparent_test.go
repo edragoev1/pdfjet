@@ -24,7 +24,6 @@ func TestEveryColorSetterLeavesTheColorForTransparent(t *testing.T) {
 	}{
 		{"Arc.SetStrokeColor", func() any { return NewArc() }, func(o any, c int32) { o.(*Arc).SetStrokeColor(c) }},
 		{"Arc.SetFillColor", func() any { return NewArc() }, func(o any, c int32) { o.(*Arc).SetFillColor(c) }},
-		{"Chart.SetGridLineColor", func() any { return NewChart(font, font) }, func(o any, c int32) { o.(*Chart).SetGridLineColor(c) }},
 		{"BarChart.SetGridLineColor", func() any { return NewBarChart(font, font) }, func(o any, c int32) { o.(*BarChart).SetGridLineColor(c) }},
 		{"CheckBox.SetBorderColor", func() any { return NewCheckBox(font, "A") }, func(o any, c int32) { o.(*CheckBox).SetBorderColor(c) }},
 		{"CheckBox.SetCheckmarkColor", func() any { return NewCheckBox(font, "A") }, func(o any, c int32) { o.(*CheckBox).SetCheckmarkColor(c) }},
@@ -48,7 +47,6 @@ func TestEveryColorSetterLeavesTheColorForTransparent(t *testing.T) {
 		}, func(o any, c int32) { o.(*Table).SetCellBorderColor(c) }},
 		{"Path.SetStrokeColor", func() any { return NewPath() }, func(o any, c int32) { o.(*Path).SetStrokeColor(c) }},
 		{"Rect.SetFillColor", func() any { return NewRect(0, 0, 10, 10) }, func(o any, c int32) { o.(*Rect).SetFillColor(c) }},
-		{"Series.SetStrokeColor", func() any { return newSeries("A") }, func(o any, c int32) { o.(*Series).SetStrokeColor(c) }},
 	}
 	for _, c := range cases {
 		o := c.make()

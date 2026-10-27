@@ -61,3 +61,214 @@ swift: CalendarMonth.setLocation(_:_:) :: @discardableResult func setLocation(_ 
 # added; a call is written as before, the fonts swapped
 go: pdfjet func NewDonutChart(f1, f2 *Font) *DonutChart
 swift: DonutChart.init(_:_:) :: init(_ f1: Font?, _ f2: Font?)
+
+# 9.1.5: the old charts and the chart API made consistent before the
+# charts are released (the owner, 26 October 2026: "remove all old code ...
+# now is the time"; Removed in CHANGELOG.md): Chart and Series, Slice and
+# DonutChart.addSlice, and BarChart's setValueAxisMinMax, fraction-digits
+# pair, style knobs and setDraw... names
+java: public class com.pdfjet.BarChart implements com.pdfjet.Drawable :: public com.pdfjet.BarChart setAxisLineWidth(float);
+java: public class com.pdfjet.BarChart implements com.pdfjet.Drawable :: public com.pdfjet.BarChart setChartBorderWidth(float);
+java: public class com.pdfjet.BarChart implements com.pdfjet.Drawable :: public com.pdfjet.BarChart setDrawGridLines(boolean);
+java: public class com.pdfjet.BarChart implements com.pdfjet.Drawable :: public com.pdfjet.BarChart setDrawLegend(boolean);
+java: public class com.pdfjet.BarChart implements com.pdfjet.Drawable :: public com.pdfjet.BarChart setDrawValueLabels(boolean);
+java: public class com.pdfjet.BarChart implements com.pdfjet.Drawable :: public com.pdfjet.BarChart setGridLineDashPattern(java.lang.String);
+java: public class com.pdfjet.BarChart implements com.pdfjet.Drawable :: public com.pdfjet.BarChart setGridLineWidth(float);
+java: public class com.pdfjet.BarChart implements com.pdfjet.Drawable :: public com.pdfjet.BarChart setInnerBorderWidth(float);
+java: public class com.pdfjet.BarChart implements com.pdfjet.Drawable :: public com.pdfjet.BarChart setMaximumFractionDigits(int);
+java: public class com.pdfjet.BarChart implements com.pdfjet.Drawable :: public com.pdfjet.BarChart setMinimumFractionDigits(int);
+java: public class com.pdfjet.BarChart implements com.pdfjet.Drawable :: public com.pdfjet.BarChart setValueAxisMinMax(float, float, int);
+java: public class com.pdfjet.Chart implements com.pdfjet.Drawable :: public com.pdfjet.Chart setAltDescription(java.lang.String);
+java: public class com.pdfjet.Chart implements com.pdfjet.Drawable :: public com.pdfjet.Chart setAxisLineWidth(float);
+java: public class com.pdfjet.Chart implements com.pdfjet.Drawable :: public com.pdfjet.Chart setChartBorderWidth(float);
+java: public class com.pdfjet.Chart implements com.pdfjet.Drawable :: public com.pdfjet.Chart setDrawHorizontalGridLines(boolean);
+java: public class com.pdfjet.Chart implements com.pdfjet.Drawable :: public com.pdfjet.Chart setDrawLegend(boolean);
+java: public class com.pdfjet.Chart implements com.pdfjet.Drawable :: public com.pdfjet.Chart setDrawVerticalGridLines(boolean);
+java: public class com.pdfjet.Chart implements com.pdfjet.Drawable :: public com.pdfjet.Chart setDrawXAxisLabels(boolean);
+java: public class com.pdfjet.Chart implements com.pdfjet.Drawable :: public com.pdfjet.Chart setDrawYAxisLabels(boolean);
+java: public class com.pdfjet.Chart implements com.pdfjet.Drawable :: public com.pdfjet.Chart setGridLineColor(int);
+java: public class com.pdfjet.Chart implements com.pdfjet.Drawable :: public com.pdfjet.Chart setHorizontalGridLineDashPattern(java.lang.String);
+java: public class com.pdfjet.Chart implements com.pdfjet.Drawable :: public com.pdfjet.Chart setHorizontalGridLineWidth(float);
+java: public class com.pdfjet.Chart implements com.pdfjet.Drawable :: public com.pdfjet.Chart setInnerBorderWidth(float);
+java: public class com.pdfjet.Chart implements com.pdfjet.Drawable :: public com.pdfjet.Chart setLocation(float, float);
+java: public class com.pdfjet.Chart implements com.pdfjet.Drawable :: public com.pdfjet.Chart setMaximumFractionDigits(int);
+java: public class com.pdfjet.Chart implements com.pdfjet.Drawable :: public com.pdfjet.Chart setMinimumFractionDigits(int);
+java: public class com.pdfjet.Chart implements com.pdfjet.Drawable :: public com.pdfjet.Chart setSize(float, float);
+java: public class com.pdfjet.Chart implements com.pdfjet.Drawable :: public com.pdfjet.Chart setSubtitle(java.lang.String);
+java: public class com.pdfjet.Chart implements com.pdfjet.Drawable :: public com.pdfjet.Chart setTitle(java.lang.String);
+java: public class com.pdfjet.Chart implements com.pdfjet.Drawable :: public com.pdfjet.Chart setVerticalGridLineDashPattern(java.lang.String);
+java: public class com.pdfjet.Chart implements com.pdfjet.Drawable :: public com.pdfjet.Chart setVerticalGridLineWidth(float);
+java: public class com.pdfjet.Chart implements com.pdfjet.Drawable :: public com.pdfjet.Chart setXAxisMinMax(float, float, int);
+java: public class com.pdfjet.Chart implements com.pdfjet.Drawable :: public com.pdfjet.Chart setXAxisTitle(java.lang.String);
+java: public class com.pdfjet.Chart implements com.pdfjet.Drawable :: public com.pdfjet.Chart setYAxisMinMax(float, float, int);
+java: public class com.pdfjet.Chart implements com.pdfjet.Drawable :: public com.pdfjet.Chart setYAxisTitle(java.lang.String);
+java: public class com.pdfjet.Chart implements com.pdfjet.Drawable :: public com.pdfjet.Chart(com.pdfjet.Font, com.pdfjet.Font);
+java: public class com.pdfjet.Chart implements com.pdfjet.Drawable :: public com.pdfjet.Drawable setLocation(float, float);
+java: public class com.pdfjet.Chart implements com.pdfjet.Drawable :: public com.pdfjet.Series addSeries(java.lang.String);
+java: public class com.pdfjet.Chart implements com.pdfjet.Drawable :: public float[] drawOn(com.pdfjet.Page) throws java.lang.Exception;
+java: public class com.pdfjet.Chart implements com.pdfjet.Drawable {
+java: public class com.pdfjet.DonutChart implements com.pdfjet.Drawable :: public com.pdfjet.DonutChart addSlice(com.pdfjet.Slice);
+java: public class com.pdfjet.Series :: public com.pdfjet.Series addPoint(com.pdfjet.Point);
+java: public class com.pdfjet.Series :: public com.pdfjet.Series addPoint(float, float);
+java: public class com.pdfjet.Series :: public com.pdfjet.Series setDrawPath(boolean);
+java: public class com.pdfjet.Series :: public com.pdfjet.Series setRadius(float);
+java: public class com.pdfjet.Series :: public com.pdfjet.Series setShape(com.pdfjet.Shape);
+java: public class com.pdfjet.Series :: public com.pdfjet.Series setStrokeColor(int);
+java: public class com.pdfjet.Series :: public com.pdfjet.Series setStrokeDashPattern(java.lang.String);
+java: public class com.pdfjet.Series :: public com.pdfjet.Series setStrokeWidth(float);
+java: public class com.pdfjet.Series {
+java: public class com.pdfjet.Slice :: public com.pdfjet.Slice(float, int, java.lang.String);
+java: public class com.pdfjet.Slice {
+go: pdfjet func (chart *BarChart) SetAxisLineWidth(width float32) *BarChart
+go: pdfjet func (chart *BarChart) SetChartBorderWidth(width float32) *BarChart
+go: pdfjet func (chart *BarChart) SetDrawGridLines(drawGridLines bool) *BarChart
+go: pdfjet func (chart *BarChart) SetDrawLegend(drawLegend bool) *BarChart
+go: pdfjet func (chart *BarChart) SetDrawValueLabels(drawValueLabels bool) *BarChart
+go: pdfjet func (chart *BarChart) SetGridLineDashPattern(pattern string) *BarChart
+go: pdfjet func (chart *BarChart) SetGridLineWidth(width float32) *BarChart
+go: pdfjet func (chart *BarChart) SetInnerBorderWidth(width float32) *BarChart
+go: pdfjet func (chart *BarChart) SetMaximumFractionDigits(maxFractionDigits int) *BarChart
+go: pdfjet func (chart *BarChart) SetMinimumFractionDigits(minFractionDigits int) *BarChart
+go: pdfjet func (chart *BarChart) SetValueAxisMinMax(min, max float32, gridLines int) *BarChart
+go: pdfjet func (chart *Chart) AddSeries(name string) *Series
+go: pdfjet func (chart *Chart) DrawOn(page *Page) [2]float32
+go: pdfjet func (chart *Chart) SetAltDescription(altDescription string) *Chart
+go: pdfjet func (chart *Chart) SetAxisLineWidth(width float32) *Chart
+go: pdfjet func (chart *Chart) SetChartBorderWidth(width float32) *Chart
+go: pdfjet func (chart *Chart) SetDrawHorizontalGridLines(drawHorizontalGridLines bool) *Chart
+go: pdfjet func (chart *Chart) SetDrawLegend(drawLegend bool) *Chart
+go: pdfjet func (chart *Chart) SetDrawVerticalGridLines(drawVerticalGridLines bool) *Chart
+go: pdfjet func (chart *Chart) SetDrawXAxisLabels(drawXAxisLabels bool) *Chart
+go: pdfjet func (chart *Chart) SetDrawYAxisLabels(drawYAxisLabels bool) *Chart
+go: pdfjet func (chart *Chart) SetGridLineColor(c int32) *Chart
+go: pdfjet func (chart *Chart) SetHorizontalGridLineDashPattern(pattern string) *Chart
+go: pdfjet func (chart *Chart) SetHorizontalGridLineWidth(width float32) *Chart
+go: pdfjet func (chart *Chart) SetInnerBorderWidth(width float32) *Chart
+go: pdfjet func (chart *Chart) SetLocation(x, y float32) Drawable
+go: pdfjet func (chart *Chart) SetMaximumFractionDigits(maxFractionDigits int) *Chart
+go: pdfjet func (chart *Chart) SetMinimumFractionDigits(minFractionDigits int) *Chart
+go: pdfjet func (chart *Chart) SetSize(w, h float32) *Chart
+go: pdfjet func (chart *Chart) SetSubtitle(subtitle string) *Chart
+go: pdfjet func (chart *Chart) SetTitle(title string) *Chart
+go: pdfjet func (chart *Chart) SetVerticalGridLineDashPattern(pattern string) *Chart
+go: pdfjet func (chart *Chart) SetVerticalGridLineWidth(width float32) *Chart
+go: pdfjet func (chart *Chart) SetXAxisMinMax(xMin, xMax float32, xAxisGridLines int) *Chart
+go: pdfjet func (chart *Chart) SetXAxisTitle(title string) *Chart
+go: pdfjet func (chart *Chart) SetYAxisMinMax(yMin, yMax float32, yAxisGridLines int) *Chart
+go: pdfjet func (chart *Chart) SetYAxisTitle(title string) *Chart
+go: pdfjet func (dc *DonutChart) AddSlice(slice *Slice) *DonutChart
+go: pdfjet func (series *Series) AddPoint(x, y float32) *Series
+go: pdfjet func (series *Series) AddPointWithMarker(point *Point) *Series
+go: pdfjet func (series *Series) SetDrawPath(drawPath bool) *Series
+go: pdfjet func (series *Series) SetRadius(radius float32) *Series
+go: pdfjet func (series *Series) SetShape(markerShape shape.Shape) *Series
+go: pdfjet func (series *Series) SetStrokeColor(c int32) *Series
+go: pdfjet func (series *Series) SetStrokeDashPattern(strokeDashPattern string) *Series
+go: pdfjet func (series *Series) SetStrokeWidth(strokeWidth float32) *Series
+go: pdfjet func NewChart(f1, f2 *Font) *Chart
+go: pdfjet func NewSlice(value float32, color int32, text string) *Slice
+go: pdfjet type Chart struct
+go: pdfjet type Series struct
+go: pdfjet type Slice struct
+dotnet: PDFjet.NET.BarChart :: Method PDFjet.NET.BarChart SetAxisLineWidth(Single)
+dotnet: PDFjet.NET.BarChart :: Method PDFjet.NET.BarChart SetChartBorderWidth(Single)
+dotnet: PDFjet.NET.BarChart :: Method PDFjet.NET.BarChart SetDrawGridLines(Boolean)
+dotnet: PDFjet.NET.BarChart :: Method PDFjet.NET.BarChart SetDrawLegend(Boolean)
+dotnet: PDFjet.NET.BarChart :: Method PDFjet.NET.BarChart SetDrawValueLabels(Boolean)
+dotnet: PDFjet.NET.BarChart :: Method PDFjet.NET.BarChart SetGridLineDashPattern(System.String)
+dotnet: PDFjet.NET.BarChart :: Method PDFjet.NET.BarChart SetGridLineWidth(Single)
+dotnet: PDFjet.NET.BarChart :: Method PDFjet.NET.BarChart SetInnerBorderWidth(Single)
+dotnet: PDFjet.NET.BarChart :: Method PDFjet.NET.BarChart SetMaximumFractionDigits(Int32)
+dotnet: PDFjet.NET.BarChart :: Method PDFjet.NET.BarChart SetMinimumFractionDigits(Int32)
+dotnet: PDFjet.NET.BarChart :: Method PDFjet.NET.BarChart SetValueAxisMinMax(Single, Single, Int32)
+dotnet: PDFjet.NET.Chart :: Constructor Void .ctor(PDFjet.NET.Font, PDFjet.NET.Font)
+dotnet: PDFjet.NET.Chart :: Method PDFjet.NET.Chart SetAltDescription(System.String)
+dotnet: PDFjet.NET.Chart :: Method PDFjet.NET.Chart SetAxisLineWidth(Single)
+dotnet: PDFjet.NET.Chart :: Method PDFjet.NET.Chart SetChartBorderWidth(Single)
+dotnet: PDFjet.NET.Chart :: Method PDFjet.NET.Chart SetDrawHorizontalGridLines(Boolean)
+dotnet: PDFjet.NET.Chart :: Method PDFjet.NET.Chart SetDrawLegend(Boolean)
+dotnet: PDFjet.NET.Chart :: Method PDFjet.NET.Chart SetDrawVerticalGridLines(Boolean)
+dotnet: PDFjet.NET.Chart :: Method PDFjet.NET.Chart SetDrawXAxisLabels(Boolean)
+dotnet: PDFjet.NET.Chart :: Method PDFjet.NET.Chart SetDrawYAxisLabels(Boolean)
+dotnet: PDFjet.NET.Chart :: Method PDFjet.NET.Chart SetGridLineColor(Int32)
+dotnet: PDFjet.NET.Chart :: Method PDFjet.NET.Chart SetHorizontalGridLineDashPattern(System.String)
+dotnet: PDFjet.NET.Chart :: Method PDFjet.NET.Chart SetHorizontalGridLineWidth(Single)
+dotnet: PDFjet.NET.Chart :: Method PDFjet.NET.Chart SetInnerBorderWidth(Single)
+dotnet: PDFjet.NET.Chart :: Method PDFjet.NET.Chart SetLocation(Single, Single)
+dotnet: PDFjet.NET.Chart :: Method PDFjet.NET.Chart SetMaximumFractionDigits(Int32)
+dotnet: PDFjet.NET.Chart :: Method PDFjet.NET.Chart SetMinimumFractionDigits(Int32)
+dotnet: PDFjet.NET.Chart :: Method PDFjet.NET.Chart SetSize(Single, Single)
+dotnet: PDFjet.NET.Chart :: Method PDFjet.NET.Chart SetSubtitle(System.String)
+dotnet: PDFjet.NET.Chart :: Method PDFjet.NET.Chart SetTitle(System.String)
+dotnet: PDFjet.NET.Chart :: Method PDFjet.NET.Chart SetVerticalGridLineDashPattern(System.String)
+dotnet: PDFjet.NET.Chart :: Method PDFjet.NET.Chart SetVerticalGridLineWidth(Single)
+dotnet: PDFjet.NET.Chart :: Method PDFjet.NET.Chart SetXAxisMinMax(Single, Single, Int32)
+dotnet: PDFjet.NET.Chart :: Method PDFjet.NET.Chart SetXAxisTitle(System.String)
+dotnet: PDFjet.NET.Chart :: Method PDFjet.NET.Chart SetYAxisMinMax(Single, Single, Int32)
+dotnet: PDFjet.NET.Chart :: Method PDFjet.NET.Chart SetYAxisTitle(System.String)
+dotnet: PDFjet.NET.Chart :: Method PDFjet.NET.Series AddSeries(System.String)
+dotnet: PDFjet.NET.Chart :: Method Single[] DrawOn(PDFjet.NET.Page)
+dotnet: PDFjet.NET.DonutChart :: Method PDFjet.NET.DonutChart AddSlice(PDFjet.NET.Slice)
+dotnet: PDFjet.NET.Series :: Method PDFjet.NET.Series AddPoint(PDFjet.NET.Point)
+dotnet: PDFjet.NET.Series :: Method PDFjet.NET.Series AddPoint(Single, Single)
+dotnet: PDFjet.NET.Series :: Method PDFjet.NET.Series SetDrawPath(Boolean)
+dotnet: PDFjet.NET.Series :: Method PDFjet.NET.Series SetRadius(Single)
+dotnet: PDFjet.NET.Series :: Method PDFjet.NET.Series SetShape(PDFjet.NET.Shape)
+dotnet: PDFjet.NET.Series :: Method PDFjet.NET.Series SetStrokeColor(Int32)
+dotnet: PDFjet.NET.Series :: Method PDFjet.NET.Series SetStrokeDashPattern(System.String)
+dotnet: PDFjet.NET.Series :: Method PDFjet.NET.Series SetStrokeWidth(Single)
+dotnet: PDFjet.NET.Slice :: Constructor Void .ctor(Single, Int32, System.String)
+dotnet: class PDFjet.NET.Chart
+dotnet: class PDFjet.NET.Series
+dotnet: class PDFjet.NET.Slice
+swift: BarChart.setAxisLineWidth(_:) :: @discardableResult func setAxisLineWidth(_ width: Float) -> BarChart
+swift: BarChart.setChartBorderWidth(_:) :: @discardableResult func setChartBorderWidth(_ width: Float) -> BarChart
+swift: BarChart.setDrawGridLines(_:) :: @discardableResult func setDrawGridLines(_ drawGridLines: Bool) -> BarChart
+swift: BarChart.setDrawLegend(_:) :: @discardableResult func setDrawLegend(_ drawLegend: Bool) -> BarChart
+swift: BarChart.setDrawValueLabels(_:) :: @discardableResult func setDrawValueLabels(_ drawValueLabels: Bool) -> BarChart
+swift: BarChart.setGridLineDashPattern(_:) :: @discardableResult func setGridLineDashPattern(_ pattern: String) -> BarChart
+swift: BarChart.setGridLineWidth(_:) :: @discardableResult func setGridLineWidth(_ width: Float) -> BarChart
+swift: BarChart.setInnerBorderWidth(_:) :: @discardableResult func setInnerBorderWidth(_ width: Float) -> BarChart
+swift: BarChart.setMaximumFractionDigits(_:) :: @discardableResult func setMaximumFractionDigits(_ maxFractionDigits: Int) -> BarChart
+swift: BarChart.setMinimumFractionDigits(_:) :: @discardableResult func setMinimumFractionDigits(_ minFractionDigits: Int) -> BarChart
+swift: BarChart.setValueAxisMinMax(_:_:_:) :: @discardableResult func setValueAxisMinMax(_ min: Float, _ max: Float, _ gridLines: Int) -> BarChart
+swift: Chart :: class Chart
+swift: Chart.addSeries(_:) :: @discardableResult func addSeries(_ name: String) -> Series
+swift: Chart.drawOn(_:) :: @discardableResult func drawOn(_ page: Page?) -> [Float]
+swift: Chart.init(_:_:) :: init(_ f1: Font, _ f2: Font)
+swift: Chart.setAltDescription(_:) :: @discardableResult func setAltDescription(_ altDescription: String) -> Chart
+swift: Chart.setAxisLineWidth(_:) :: @discardableResult func setAxisLineWidth(_ width: Float) -> Chart
+swift: Chart.setChartBorderWidth(_:) :: @discardableResult func setChartBorderWidth(_ width: Float) -> Chart
+swift: Chart.setDrawHorizontalGridLines(_:) :: @discardableResult func setDrawHorizontalGridLines(_ drawHorizontalGridLines: Bool) -> Chart
+swift: Chart.setDrawLegend(_:) :: @discardableResult func setDrawLegend(_ drawLegend: Bool) -> Chart
+swift: Chart.setDrawVerticalGridLines(_:) :: @discardableResult func setDrawVerticalGridLines(_ drawVerticalGridLines: Bool) -> Chart
+swift: Chart.setDrawXAxisLabels(_:) :: @discardableResult func setDrawXAxisLabels(_ drawXAxisLabels: Bool) -> Chart
+swift: Chart.setDrawYAxisLabels(_:) :: @discardableResult func setDrawYAxisLabels(_ drawYAxisLabels: Bool) -> Chart
+swift: Chart.setGridLineColor(_:) :: @discardableResult func setGridLineColor(_ color: Int32) -> Chart
+swift: Chart.setHorizontalGridLineDashPattern(_:) :: @discardableResult func setHorizontalGridLineDashPattern(_ pattern: String) -> Chart
+swift: Chart.setHorizontalGridLineWidth(_:) :: @discardableResult func setHorizontalGridLineWidth(_ width: Float) -> Chart
+swift: Chart.setInnerBorderWidth(_:) :: @discardableResult func setInnerBorderWidth(_ width: Float) -> Chart
+swift: Chart.setLocation(_:_:) :: @discardableResult func setLocation(_ x: Float, _ y: Float) -> Self
+swift: Chart.setMaximumFractionDigits(_:) :: @discardableResult func setMaximumFractionDigits(_ maxFractionDigits: Int) -> Chart
+swift: Chart.setMinimumFractionDigits(_:) :: @discardableResult func setMinimumFractionDigits(_ minFractionDigits: Int) -> Chart
+swift: Chart.setSize(_:_:) :: @discardableResult func setSize(_ w: Float, _ h: Float) -> Chart
+swift: Chart.setSubtitle(_:) :: @discardableResult func setSubtitle(_ subtitle: String) -> Chart
+swift: Chart.setTitle(_:) :: @discardableResult func setTitle(_ title: String) -> Chart
+swift: Chart.setVerticalGridLineDashPattern(_:) :: @discardableResult func setVerticalGridLineDashPattern(_ pattern: String) -> Chart
+swift: Chart.setVerticalGridLineWidth(_:) :: @discardableResult func setVerticalGridLineWidth(_ width: Float) -> Chart
+swift: Chart.setXAxisMinMax(_:_:_:) :: @discardableResult func setXAxisMinMax(_ xMin: Float, _ xMax: Float, _ xAxisGridLines: Int) -> Chart
+swift: Chart.setXAxisTitle(_:) :: @discardableResult func setXAxisTitle(_ title: String) -> Chart
+swift: Chart.setYAxisMinMax(_:_:_:) :: @discardableResult func setYAxisMinMax(_ yMin: Float, _ yMax: Float, _ yAxisGridLines: Int) -> Chart
+swift: Chart.setYAxisTitle(_:) :: @discardableResult func setYAxisTitle(_ title: String) -> Chart
+swift: DonutChart.addSlice(_:) :: @discardableResult func addSlice(_ slice: Slice) -> DonutChart
+swift: Series :: class Series
+swift: Series.addPoint(_:) :: @discardableResult func addPoint(_ point: Point) -> Series
+swift: Series.addPoint(_:_:) :: @discardableResult func addPoint(_ x: Float, _ y: Float) -> Series
+swift: Series.setDrawPath(_:) :: @discardableResult func setDrawPath(_ drawPath: Bool) -> Series
+swift: Series.setRadius(_:) :: @discardableResult func setRadius(_ radius: Float) -> Series
+swift: Series.setShape(_:) :: @discardableResult func setShape(_ shape: Shape) -> Series
+swift: Series.setStrokeColor(_:) :: @discardableResult func setStrokeColor(_ color: Int32) -> Series
+swift: Series.setStrokeDashPattern(_:) :: @discardableResult func setStrokeDashPattern(_ strokeDashPattern: String) -> Series
+swift: Series.setStrokeWidth(_:) :: @discardableResult func setStrokeWidth(_ strokeWidth: Float) -> Series
+swift: Slice :: class Slice
+swift: Slice.init(_:_:_:) :: init(_ value: Float, _ color: Int32, _ text: String)

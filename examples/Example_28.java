@@ -40,11 +40,11 @@ public class Example_28 {
 
         chart.setTitle("Fruit sold this week");
         chart.setSubtitle("Share of 100 crates, in the default colors");
-        chart.addSlice(new Slice(25f, "Apples"));
-        chart.addSlice(new Slice(20f, "Oranges"));
-        chart.addSlice(new Slice(30f, "Bananas"));
-        chart.addSlice(new Slice(15f, "Grapes"));
-        chart.addSlice(new Slice(10f, "Lemons"));
+        chart.add("Apples", 25f);
+        chart.add("Oranges", 20f);
+        chart.add("Bananas", 30f);
+        chart.add("Grapes", 15f);
+        chart.add("Lemons", 10f);
         chart.drawOn(page);
 
         // Many slices, some small: a legend under the circle in place of the
@@ -61,7 +61,7 @@ public class Example_28 {
                 "Pears", "Plums", "Cherries"};
         float[] crates = {31f, 24f, 17f, 10f, 7f, 5f, 4f, 2f};
         for (int i = 0; i < kinds.length; i++) {
-            many.addSlice(new Slice(crates[i], kinds[i]));
+            many.add(kinds[i], crates[i]);
         }
         many.drawOn(page);
 

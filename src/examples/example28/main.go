@@ -46,11 +46,11 @@ func Example28() {
 
 	chart.SetTitle("Fruit sold this week")
 	chart.SetSubtitle("Share of 100 crates, in the default colors")
-	chart.AddSlice(pdfjet.NewSliceInPalette(25.0, "Apples"))
-	chart.AddSlice(pdfjet.NewSliceInPalette(20.0, "Oranges"))
-	chart.AddSlice(pdfjet.NewSliceInPalette(30.0, "Bananas"))
-	chart.AddSlice(pdfjet.NewSliceInPalette(15.0, "Grapes"))
-	chart.AddSlice(pdfjet.NewSliceInPalette(10.0, "Lemons"))
+	chart.Add("Apples", 25.0)
+	chart.Add("Oranges", 20.0)
+	chart.Add("Bananas", 30.0)
+	chart.Add("Grapes", 15.0)
+	chart.Add("Lemons", 10.0)
 	chart.DrawOn(page)
 
 	// Many slices, some small: a legend under the circle in place of the
@@ -67,7 +67,7 @@ func Example28() {
 		"Pears", "Plums", "Cherries"}
 	crates := []float32{31.0, 24.0, 17.0, 10.0, 7.0, 5.0, 4.0, 2.0}
 	for i := range kinds {
-		many.AddSlice(pdfjet.NewSliceInPalette(crates[i], kinds[i]))
+		many.Add(kinds[i], crates[i])
 	}
 	many.DrawOn(page)
 

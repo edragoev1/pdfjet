@@ -40,8 +40,10 @@ func TestChartFlatDataOfLargeValuesHasARange(t *testing.T) {
 	for _, value := range []float32{2e7, -3e7, 1e30} {
 		doc := testNewDoc()
 		page := NewPage(doc.pdf, testLetterPortrait())
-		chart := testChart(doc.pdf)
-		chart.AddSeries("").AddPoint(value, value).AddPoint(value, value)
+		font := testHelvetica(doc.pdf)
+		chart := NewSimpleScatterChart(font, font).SetSize(300, 200)
+		chart.SetLocation(50, 50)
+		chart.Add(value, value).Add(value, value)
 		chart.DrawOn(page)
 		if strings.Contains(testContent(page), "NaN") {
 			t.Errorf("%v: NaN in the content", value)
@@ -81,21 +83,6 @@ func TestChartTheRangeOfDataPastTheLargestFloatIsFromZeroToOne(t *testing.T) {
 		if round.minValue != 0 || round.maxValue != high || round.numOfGridLines < 1 {
 			t.Errorf("%v: %v to %v with %d grid lines", high, round.minValue, round.maxValue, round.numOfGridLines)
 		}
-	}
-}
-
-// A point at an infinity is refused, as a point at NaN is, with the error
-// of a number a PDF cannot hold.
-func TestChartAnInfinitePointIsRefused(t *testing.T) {
-	pdf := testNewPDF()
-	page := NewPage(pdf, testLetterPortrait())
-	chart := testChart(pdf)
-	series := chart.AddSeries("")
-	series.AddPoint(1, 1)
-	series.AddPoint(2, float32(math.Inf(1)))
-	chart.DrawOn(page)
-	if err := pdf.Complete(); err == nil || !strings.Contains(err.Error(), notWritable) {
-		t.Errorf("%v", err)
 	}
 }
 
@@ -195,8 +182,8 @@ func TestDonutChartTheFigureHasTheBoxOfTheLabels(t *testing.T) {
 	pdf := testNewPDF()
 	pdf.SetCompliance(compliance.PDF_UA_1)
 	page := NewPage(pdf, testLetterPortrait())
-	testDonutChart(pdf).AddSlice(NewSlice(25, color.Red, "Apples and pears")).
-		AddSlice(NewSlice(75, color.Blue, "Oranges")).DrawOn(page)
+	testDonutChart(pdf).AddWithColor("Apples and pears", 25, color.Red).
+		AddWithColor("Oranges", 75, color.Blue).DrawOn(page)
 	box := testBBox(t, page.structures[0])
 	// The circle is from 100 to 300; the labels are right and left of it
 	if box[0] >= 100 || box[2] <= 300 {

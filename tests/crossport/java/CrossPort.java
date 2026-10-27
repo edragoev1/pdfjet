@@ -144,7 +144,8 @@ public class CrossPort {
                     chart.setRadii(outer, between(0f, outer));
                     int slices = 1 + below(6);
                     for (int s = 0; s < slices; s++) {
-                        chart.addSlice(new Slice(between(0f, 100f), color(), "s" + s));
+                        float value = between(0f, 100f);     // Drawn before the color, as it was
+                        chart.add("s" + s, value, color());
                     }
                     chart.drawOn(page);
                     break;

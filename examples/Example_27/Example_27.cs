@@ -73,11 +73,8 @@ public class Example_27 {
         chart.AddSeries("", lengths, colors);
         chart.SetHorizontal(true);
         chart.SetGroupGap(0.4f);
-        chart.SetValueAxisMinMax(0f, 8000f, 4);
-        chart.SetGridLineWidth(0.75f);
+        chart.SetValueAxisRange(0f, 8000f);
         chart.SetGridLineColor(0xe0e0e0);
-        chart.SetGridLineDashPattern("[] 0");
-        chart.SetAxisLineWidth(0f);
         chart.SetValueLabels(true);
         chart.SetValueLabelsInside(true);
         chart.SetGroupingUsed(true);

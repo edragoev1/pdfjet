@@ -629,9 +629,9 @@ func donutChart(_ pdf: PDF, _ font: Font) throws {
     let chart = DonutChart(bold, font)
     chart.setLocation(100, 100)
     chart.setRadii(100, 60)    // An inner radius of 0 makes a pie chart
-    chart.addSlice(Slice(50, Color.steelblue, "Java"))
-    chart.addSlice(Slice(30, Color.seagreen, "C#"))
-    chart.addSlice(Slice(20, Color.darkorange, "Go"))
+    chart.add("Java", 50, Color.steelblue)
+    chart.add("C#", 30, Color.seagreen)
+    chart.add("Go", 20, Color.darkorange)
     chart.drawOn(Page(pdf, Letter.PORTRAIT))
 }
 

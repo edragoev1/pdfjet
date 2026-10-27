@@ -11,8 +11,8 @@ package pdfjet
 // ports. Keep the wrapping; see "Floating point on ARM" in README.md.
 // check-no-fma.sh fails if one is removed.
 
-// What the charts share, Chart, BarChart, SimpleBarChart and
-// SimpleScatterChart: the numbers of their labels, the rounding of an axis to
+// What the charts share, BarChart, DonutChart, SimpleBarChart, SimpleLineChart
+// and SimpleScatterChart: the numbers of their labels, the rounding of an axis to
 // steps, the spacing of the labels of an axis, the colors of the series that
 // have none, and the test of a value to draw. A chart uses these, not
 // another chart, so that one can go without the others.

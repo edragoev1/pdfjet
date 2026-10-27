@@ -55,7 +55,7 @@ import Testing
         let page = Page(pdf, Letter.PORTRAIT)
         let chart = chart(pdf).setCategories("a", "b").setHorizontal(true)
         chart.addSeries("", [2.5, -1]).setValueLabels(true)
-        chart.setMinimumFractionDigits(1)
+        chart.setFractionDigits(1)
         let content = draw(chart, page)
         #expect(content.contains(TestSupport.hex("2.5")), "\(content)")
         #expect(content.contains(TestSupport.hex("-1.0")), "\(content)")
@@ -65,23 +65,25 @@ import Testing
         let pdf = TestSupport.newPDF()
         let page = Page(pdf, Letter.PORTRAIT)
         let chart = chart(pdf).setCategories("a")
-        chart.addSeries("", [5]).setValueAxisMinMax(0, 12, 4)
+        chart.addSeries("", [5]).setValueAxisRange(0, 12)     // In steps of 2
         let content = draw(chart, page)
         #expect(content.contains(TestSupport.hex("12")), "\(content)")
-        #expect(content.contains(TestSupport.hex("3")), "\(content)")
+        #expect(content.contains("<" + TestSupport.hex("2") + ">"), "\(content)")
+        #expect(!content.contains("<" + TestSupport.hex("3") + ">"), "\(content)")
         #expect(!content.contains("NaN"))
     }
 
     @Test func axisLabelsThatWouldMeetAreDrawnAtEverySecondLine() {
         let pdf = TestSupport.newPDF()
         let page = Page(pdf, Letter.PORTRAIT)
-        let chart = chart(pdf).setCategories("a").setHorizontal(true)
-        // 16 steps of 5 across about 240 points: 15 points a step, where a
-        // label of one decimal, 70.0, needs more
-        chart.addSeries("", [72.6]).setValueAxisMinMax(0, 80, 16).setMinimumFractionDigits(1)
-        let content = draw(chart, page)
-        #expect(content.contains(TestSupport.hex("70.0")) && content.contains(TestSupport.hex("80.0")), "\(content)")
-        #expect(!content.contains(TestSupport.hex("75.0")), "\(content)")     // would meet 70.0 and 80.0
+        // 8 steps of 10 across about 70 points: 9 points a step, where a label
+        // of one decimal, 70.0, needs more
+        let chart = chart(pdf).setCategories("a").setHorizontal(true).setSize(120, 200)
+        chart.addSeries("", [72.6]).setValueAxisRange(0, 80).setFractionDigits(1)
+        chart.drawOn(page)
+        let content = TestSupport.content(page)
+        #expect(content.contains(TestSupport.hex("80.0")), "\(content)")
+        #expect(!content.contains(TestSupport.hex("70.0")), "\(content)")     // would meet 60.0 and 80.0
     }
 
     @Test func axisLabelStepIsTheFewestLinesALabelFits() {
@@ -117,7 +119,7 @@ import Testing
         let content = draw(chart, page)
         #expect(content.contains("0.12 0.23 0.37 rg"))
         #expect(content.contains("0.44 0.58 0.76 rg"))
-        #expect(content.contains("0.88 0.89 0.91 RG\n0.5 w\n[] 0 d"))
+        #expect(content.contains("0.88 0.89 0.91 RG\n0.5 w\n"))     // Thin and solid
         #expect(!content.contains("0 0 0 RG") && !content.contains("0 0 0 rg"))
         #expect(TestSupport.fillColorBefore(content, "t") == "0.13 0.15 0.17 rg")
         #expect(TestSupport.fillColorBefore(content, "s") == "0.37 0.41 0.45 rg")
@@ -136,8 +138,8 @@ import Testing
         let page = Page(pdf, Letter.PORTRAIT)
         let chart = chart(pdf).setCategories("a", "b").setHorizontal(true).setSubtitle("sub")
         chart.addSeries("rivers", [6650, 12], [Color.red, Color.blue])
-        chart.setValueAxisMinMax(0, 8000, 4).setValueLabels(true).setValueLabelsInside(true)
-        chart.setGroupingUsed(true).setAxisLineWidth(0).setGridLineColor(Color.lightgray)
+        chart.setValueAxisRange(0, 8000).setValueLabels(true).setValueLabelsInside(true)
+        chart.setGroupingUsed(true).setGridLineColor(Color.lightgray)
         let content = draw(chart, page)
         #expect(content.contains(TestSupport.hex("6,650")), "\(content)")
         #expect(content.contains(TestSupport.hex("8,000")), "\(content)")
@@ -267,11 +269,10 @@ import Testing
     // The review of 26 October 2026, the second: the title, a long category
     // under vertical bars and a legend name are shortened; a line series
     // longer than the categories adds no slots; the line is on a white line a
-    // little wider; the old names of the setters still work; and a value past
-    // the rounding of the largest float is drawn on the range of the values.
+    // little wider; and a value past the rounding of the largest float is
+    // drawn on the range of the values.
     // The fonts of a Swift chart are not optional, so the Java test of a chart
     // without them has no Swift form.
-    @available(*, deprecated)   // The old names of the setters, tested until they are removed
     @Test func theSecondReviewOfTheCharts() {
         let memory = MemoryPDF(Compliance.PDF_UA_1)
         memory.pdf.setTitle("Test")
@@ -285,17 +286,6 @@ import Testing
         #expect(content.contains("1 1 1 RG\n3.5 w\n"), "\(content)")
         let description = page.structures[0].altDescription ?? ""
         #expect(description.hasSuffix("Target, a line: " + longName + " 2, b 3."), "\(description)")
-
-        let plain = TestSupport.newPDF()
-        page = Page(plain, Letter.PORTRAIT)
-        let old = draw(chart(plain).setCategories("a").addSeries("s", [1])
-                .setDrawLegend(true).setDrawValueLabels(true).setDrawGridLines(false), page)
-        page = Page(plain, Letter.PORTRAIT)
-        let renamed = draw(chart(plain).setCategories("a").addSeries("s", [1])
-                .setLegend(true).setValueLabels(true).setGridLines(false), page)
-        // The same but for the names of the fonts, a new one for each chart
-        #expect(old.replacingOccurrences(of: "/F\\d+ ", with: "/F ", options: .regularExpression)
-                == renamed.replacingOccurrences(of: "/F\\d+ ", with: "/F ", options: .regularExpression))
 
         page = Page(memory.pdf, Letter.PORTRAIT)
         content = draw(chart(memory.pdf).setCategories("a", "b").setValueLabels(true)

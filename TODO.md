@@ -612,7 +612,11 @@ commit and date. The layout's format version (1) and the look's rules
      by their widths, the title and subtitle at the left; drawn with the
      page and ChartScale alone; one figure in PDF/UA, described from its
      data. Example_25 drawn with it.
-  10. **Chart and Series deprecated in 9.1.5, removed in a later release
+  10. **Chart and Series removed in 9.1.5, 26 October 2026, in the four
+     ports** (the owner: "remove all old code ... now is the time"), with
+     Slice and addSlice, setValueAxisMinMax, the fraction-digits pair,
+     BarChart's style knobs and the setDraw... names (CHANGELOG.md,
+     Removed). The plan as it was, for the record: **Chart and Series deprecated in 9.1.5, removed in a later release
      (v9.2.1 or after)** (the owner, 26 October 2026: "I do plan to retire
      Chart"). **Deprecated 26 October 2026**, in the four ports, as below:
      Chart's tests and the two review tests that use it allow the warning

@@ -8,7 +8,7 @@
 ///
 /// A point with a marker: a shape drawn around its (x, y) coordinates, which
 /// are the center of the marker. A point is drawn on a page on its own, as the
-/// marker of a table cell, or in a chart Series, and an array of points is a
+/// marker of a table cell, and an array of points is a
 /// path for Page.drawPath.
 ///
 /// Please see Example_05.

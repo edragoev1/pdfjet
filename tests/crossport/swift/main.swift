@@ -129,7 +129,7 @@ func drawCase(_ r: inout Random) -> [UInt8] {
                 chart.setRadii(outer, r.between(0, outer))
                 let slices = 1 + r.below(6)
                 for s in 0..<slices {
-                    chart.addSlice(Slice(r.between(0, 100), r.color(), "s\(s)"))
+                    chart.add("s\(s)", r.between(0, 100), r.color())
                 }
                 chart.drawOn(page)
             case 3:

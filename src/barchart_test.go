@@ -6,11 +6,12 @@
 package pdfjet
 
 import (
+	"fmt"
 	"math"
-	"regexp"
 	"strconv"
 	"strings"
 	"testing"
+	"unicode/utf16"
 
 	"github.com/edragoev1/pdfjet/v9/src/color"
 	"github.com/edragoev1/pdfjet/v9/src/compliance"
@@ -21,6 +22,18 @@ func testBarChart(pdf *PDF) *BarChart {
 	chart := NewBarChart(font, font).SetSize(300, 200)
 	chart.SetLocation(50, 50)
 	return chart
+}
+
+// testTextString returns the text as PDF writes a text string: UTF-16 with its
+// byte order mark, in lower case hexadecimal, as appendTextString writes it.
+func testTextString(text string) string {
+	var b strings.Builder
+	b.WriteString("<feff")
+	for _, unit := range utf16.Encode([]rune(text)) {
+		fmt.Fprintf(&b, "%04x", unit)
+	}
+	b.WriteString(">")
+	return b.String()
 }
 
 func testDrawBarChart(t *testing.T, chart *BarChart, page *Page) string {
@@ -71,7 +84,7 @@ func TestBarChartValueLabelsAreWrittenWithTheFractionDigitsSet(t *testing.T) {
 	page := NewPage(pdf, testLetterPortrait())
 	chart := testBarChart(pdf).SetCategories("a", "b").SetHorizontal(true)
 	chart.AddSeries("", []float32{2.5, -1}).SetValueLabels(true)
-	chart.SetMinimumFractionDigits(1)
+	chart.SetFractionDigits(1)
 	content := testDrawBarChart(t, chart, page)
 	if !strings.Contains(content, testHex("2.5")) || !strings.Contains(content, testHex("-1.0")) {
 		t.Errorf("value labels missing from %q", content)
@@ -82,10 +95,13 @@ func TestBarChartAManualAxisRangeIsUsedAsGiven(t *testing.T) {
 	pdf := testNewPDF()
 	page := NewPage(pdf, testLetterPortrait())
 	chart := testBarChart(pdf).SetCategories("a")
-	chart.AddSeries("", []float32{5}).SetValueAxisMinMax(0, 12, 4)
+	chart.AddSeries("", []float32{5}).SetValueAxisRange(0, 12) // In steps of 2
 	content := testDrawBarChart(t, chart, page)
-	if !strings.Contains(content, testHex("12")) || !strings.Contains(content, testHex("3")) {
+	if !strings.Contains(content, testHex("12")) || !strings.Contains(content, "<"+testHex("2")+">") {
 		t.Errorf("labels missing from %q", content)
+	}
+	if strings.Contains(content, "<"+testHex("3")+">") {
+		t.Errorf("a label of 3, not on a step of 2, in %q", content)
 	}
 	if strings.Contains(content, "NaN") {
 		t.Error("NaN in the content")
@@ -121,7 +137,7 @@ func TestBarChartTheDefaultLookIsQuiet(t *testing.T) {
 	chart := testBarChart(pdf).SetCategories("a", "b").SetTitle("t").SetSubtitle("s")
 	chart.AddSeries("one", []float32{20, 75}).AddSeries("two", []float32{30, 10})
 	content := testDrawBarChart(t, chart, page)
-	for _, want := range []string{"0.12 0.23 0.37 rg", "0.44 0.58 0.76 rg", "0.88 0.89 0.91 RG\n0.5 w\n[] 0 d"} {
+	for _, want := range []string{"0.12 0.23 0.37 rg", "0.44 0.58 0.76 rg", "0.88 0.89 0.91 RG\n0.5 w\n"} {
 		if !strings.Contains(content, want) {
 			t.Errorf("%q missing from %q", want, content)
 		}
@@ -153,8 +169,8 @@ func TestBarChartBarsHaveTheirOwnColorsAndLabelsInsideWithGroupedDigits(t *testi
 	page := NewPage(pdf, testLetterPortrait())
 	chart := testBarChart(pdf).SetCategories("a", "b").SetHorizontal(true).SetSubtitle("sub")
 	chart.AddSeriesWithColors("rivers", []float32{6650, 12}, []int32{color.Red, color.Blue})
-	chart.SetValueAxisMinMax(0, 8000, 4).SetValueLabels(true).SetValueLabelsInside(true)
-	chart.SetGroupingUsed(true).SetAxisLineWidth(0).SetGridLineColor(color.LightGray)
+	chart.SetValueAxisRange(0, 8000).SetValueLabels(true).SetValueLabelsInside(true)
+	chart.SetGroupingUsed(true).SetGridLineColor(color.LightGray)
 	content := testDrawBarChart(t, chart, page)
 	// the two bars in their colors, the label inside the first bar in white
 	// and the label of the bar too short for it next to the bar
@@ -197,16 +213,17 @@ func TestBarChartAChartIsAFigureDescribedByItsDataOrItsAlternateDescription(t *t
 func TestBarChartAxisLabelsThatWouldMeetAreDrawnAtEverySecondLine(t *testing.T) {
 	pdf := testNewPDF()
 	page := NewPage(pdf, testLetterPortrait())
-	chart := testBarChart(pdf).SetCategories("a").SetHorizontal(true)
-	// 16 steps of 5 across about 240 points: 15 points a step, where a
-	// label of one decimal, 70.0, needs more
-	chart.AddSeries("", []float32{72.6}).SetValueAxisMinMax(0, 80, 16).SetMinimumFractionDigits(1)
-	content := testDrawBarChart(t, chart, page)
-	if !strings.Contains(content, testHex("70.0")) || !strings.Contains(content, testHex("80.0")) {
-		t.Errorf("the labels of the even lines missing from %q", content)
+	// 8 steps of 10 across about 70 points: 9 points a step, where a label
+	// of one decimal, 70.0, needs more
+	chart := testBarChart(pdf).SetCategories("a").SetHorizontal(true).SetSize(120, 200)
+	chart.AddSeries("", []float32{72.6}).SetValueAxisRange(0, 80).SetFractionDigits(1)
+	chart.DrawOn(page)
+	content := testContent(page)
+	if !strings.Contains(content, testHex("80.0")) {
+		t.Errorf("the label of the last line missing from %q", content)
 	}
-	if strings.Contains(content, testHex("75.0")) {
-		t.Errorf("75.0, between 70.0 and 80.0, would meet them, in %q", content)
+	if strings.Contains(content, testHex("70.0")) {
+		t.Errorf("70.0, between 60.0 and 80.0, would meet them, in %q", content)
 	}
 	if strings.Count(content, " l\n")+strings.Count(content, " l ") == 0 {
 		t.Errorf("no grid lines in %q", content)
@@ -353,9 +370,8 @@ func TestBarChartALineSeriesIsDrawnOverTheBars(t *testing.T) {
 // The review of 26 October 2026, the second: a chart without its fonts draws
 // nothing; the title, a long category under vertical bars and a legend name
 // are shortened; a line series longer than the categories adds no slots; the
-// line is on a white line a little wider; the old names of the setters still
-// work; and a value past the rounding of the largest float32 is drawn on the
-// range of the values.
+// line is on a white line a little wider; and a value past the rounding of the
+// largest float32 is drawn on the range of the values.
 func TestBarChartTheSecondReviewOfTheCharts(t *testing.T) {
 	pdf := testNewPDF()
 	pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
@@ -379,19 +395,6 @@ func TestBarChartTheSecondReviewOfTheCharts(t *testing.T) {
 	}
 	if got := page.structures[0].altDescription; !strings.HasSuffix(got, "Target, a line: "+longName+" 2, b 3.") {
 		t.Errorf("the chart is described as %q", got)
-	}
-
-	plain := testNewPDF()
-	page = NewPage(plain, testLetterPortrait())
-	old := testDrawBarChart(t, testBarChart(plain).SetCategories("a").AddSeries("s", []float32{1}).
-		SetDrawLegend(true).SetDrawValueLabels(true).SetDrawGridLines(false), page)
-	page = NewPage(plain, testLetterPortrait())
-	renamed := testDrawBarChart(t, testBarChart(plain).SetCategories("a").AddSeries("s", []float32{1}).
-		SetLegend(true).SetValueLabels(true).SetGridLines(false), page)
-	// The same but for the names of the fonts, a new one for each chart
-	fonts := regexp.MustCompile(`/F\d+ `)
-	if fonts.ReplaceAllString(old, "/F ") != fonts.ReplaceAllString(renamed, "/F ") {
-		t.Errorf("the old setters draw otherwise:\n%s\n%s", old, renamed)
 	}
 
 	page = NewPage(pdf, testLetterPortrait())
