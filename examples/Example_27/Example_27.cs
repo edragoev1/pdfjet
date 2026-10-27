@@ -78,7 +78,7 @@ public class Example_27 {
         chart.SetGridLineColor(0xe0e0e0);
         chart.SetGridLineDashPattern("[] 0");
         chart.SetAxisLineWidth(0f);
-        chart.SetDrawValueLabels(true);
+        chart.SetValueLabels(true);
         chart.SetValueLabelsInside(true);
         chart.SetGroupingUsed(true);
         chart.SetAltDescription(
@@ -93,13 +93,20 @@ public class Example_27 {
         String[] keyTexts = {
                 "Clear / low sediment", "Sediment-rich, relatively clean", "Polluted / industrial & agricultural",
                 "Heavy natural sediment (loess)", "Natural dark tannin stain (Congo)"};
-        float[] keyX = {171f, 262f, 398f, 171f, 313f};
-        float[] keyY = {512f, 512f, 512f, 527f, 527f};
+        // Three on the first row and two on the second, each after the one
+        // before it by the width of its text
+        float x = 171f;
+        float y = 512f;
         for (int i = 0; i < keyColors.Length; i++) {
+            if (i == 3) {
+                x = 171f;
+                y = 527f;
+            }
             // The swatches are rectangles, drawn as artifacts next to their text.
-            new Rect(keyX[i], keyY[i] - 8.5f, 10.5f, 10.5f).SetFillColor(keyColors[i]).DrawOn(page);
+            new Rect(x, y - 8.5f, 10.5f, 10.5f).SetFillColor(keyColors[i]).DrawOn(page);
             new TextLine(f4, keyTexts[i])
-                    .SetTextColor(gray).SetLocation(keyX[i] + 15f, keyY[i]).DrawOn(page);
+                    .SetTextColor(gray).SetLocation(x + 15f, y).DrawOn(page);
+            x += 15f + f4.StringWidth(keyTexts[i]) + 12f;
         }
 
         String note = "Color mapping is illustrative; lengths and conditions vary by source and season.";
@@ -177,7 +184,7 @@ public class Example_27 {
         stacked.AddSeries("2025", units2025);
         stacked.AddSeries("2026", units2026);
         stacked.SetStacked(true);
-        stacked.SetDrawValueLabels(true);
+        stacked.SetValueLabels(true);
         stacked.SetAltDescription("Units sold by month in 2025 and 2026, stacked: from 85 a month, in February and May, to 152 in December.");
         stacked.DrawOn(page);
     }

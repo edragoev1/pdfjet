@@ -57,7 +57,7 @@ public class BarChartTest {
         PDF pdf = TestSupport.NewPDF();
         Page page = new Page(pdf, Letter.PORTRAIT);
         BarChart chart = NewChart(pdf).SetCategories("a", "b").SetHorizontal(true);
-        chart.AddSeries("", new float[] {2.5f, -1f}).SetDrawValueLabels(true);
+        chart.AddSeries("", new float[] {2.5f, -1f}).SetValueLabels(true);
         chart.SetMinimumFractionDigits(1);
         string content = Draw(chart, page);
         Assert.Contains(TestSupport.Hex("2.5"), content);
@@ -108,7 +108,7 @@ public class BarChartTest {
         Assert.DoesNotContain(TestSupport.Hex("90"), grouped);
 
         page = new Page(pdf, Letter.PORTRAIT);
-        chart.SetStacked(true).SetDrawValueLabels(true);
+        chart.SetStacked(true).SetValueLabels(true);
         string stacked = Draw(chart, page);
         Assert.Contains(TestSupport.Hex("75"), stacked);
         // The total of each stack above it
@@ -148,7 +148,7 @@ public class BarChartTest {
         Page page = new Page(pdf, Letter.PORTRAIT);
         BarChart chart = NewChart(pdf).SetCategories("a", "b").SetHorizontal(true).SetSubtitle("sub");
         chart.AddSeries("rivers", new float[] {6650f, 12f}, new int[] {Color.red, Color.blue});
-        chart.SetValueAxisMinMax(0f, 8000f, 4).SetDrawValueLabels(true).SetValueLabelsInside(true);
+        chart.SetValueAxisMinMax(0f, 8000f, 4).SetValueLabels(true).SetValueLabelsInside(true);
         chart.SetGroupingUsed(true).SetAxisLineWidth(0f).SetGridLineColor(Color.lightgray);
         string content = Draw(chart, page);
         Assert.Contains(TestSupport.Hex("6,650"), content);
@@ -214,7 +214,7 @@ public class BarChartTest {
         string untitled = Draw(NewChart(pdf).SetCategories("a").AddSeries("", new float[] {1f}), page);
         Assert.True(BarHeight(untitled) > BarHeight(titled) + 10f, BarHeight(untitled) + " " + BarHeight(titled));
         page = new Page(pdf, Letter.PORTRAIT);
-        BarChart wide = NewChart(pdf).SetCategories("a").SetDrawLegend(true);
+        BarChart wide = NewChart(pdf).SetCategories("a").SetLegend(true);
         for (int i = 0; i < 8; i++) {
             wide.AddSeries("Series number " + i, new float[] {1f});
         }
@@ -222,7 +222,7 @@ public class BarChartTest {
         Assert.NotEqual(TestSupport.PositionOf(content, "Series number 0")[1],
                 TestSupport.PositionOf(content, "Series number 7")[1]);
         page = new Page(pdf, Letter.PORTRAIT);
-        content = Draw(NewChart(pdf).SetCategories("a", "b").SetDrawLegend(true)
+        content = Draw(NewChart(pdf).SetCategories("a", "b").SetLegend(true)
                 .AddSeries("own", new float[] {1f, 2f}, new int[] {0x123456, 0x654321}), page);
         int swatch = content.IndexOf("0.07 0.2 0.34 rg\n", System.StringComparison.Ordinal);
         Assert.True(swatch >= 0 && swatch < content.IndexOf(TestSupport.Hex("own"), System.StringComparison.Ordinal), content);
@@ -275,17 +275,59 @@ public class BarChartTest {
     public void ALineSeriesIsDrawnOverTheBars() {
         PDF pdf = new PDF(new System.IO.MemoryStream(), Compliance.PDF_UA_1).SetTitle("Test");
         Page page = new Page(pdf, Letter.PORTRAIT);
-        BarChart chart = NewChart(pdf).SetTitle("Sales").SetCategories("a", "b").SetDrawLegend(true)
+        BarChart chart = NewChart(pdf).SetTitle("Sales").SetCategories("a", "b").SetLegend(true)
                 .AddSeries("Sold", new float[] {1f, 2f}).AddLineSeries("Target", new float[] {9f, float.NaN});
         string content = Draw(chart, page);
         Assert.True(content.Contains("0.13 0.15 0.17 RG\n") && content.Contains("\n2 w\n"), content);    // In ink
         Assert.Contains(TestSupport.Hex("Target"), content);
         Assert.Contains("<" + TestSupport.Hex("8") + ">", content);     // The axis reaches 9
-        Assert.Equal("Sales: Sold: a 1, b 2; Target: a 9.", page.structures[0].altDescription);
+        Assert.Equal("Sales: Sold: a 1, b 2; Target, a line: a 9.", page.structures[0].altDescription);
         page = new Page(pdf, Letter.PORTRAIT);
         content = Draw(NewChart(pdf).SetCategories("a").AddSeries("", new float[] {1f})
                 .AddLineSeries("", new float[] {2f}, 0x123456), page);
         Assert.Contains("0.07 0.2 0.34 RG\n", content);
+    }
+
+    // The review of 26 October 2026, the second: a chart without its fonts
+    // draws nothing; the title, a long category under vertical bars and a
+    // legend name are shortened; a line series longer than the categories
+    // adds no slots; the line is on a white line a little wider; the old
+    // names of the setters still work; and a value past the rounding of the
+    // largest float is drawn on the range of the values.
+    [Fact]
+    public void TheSecondReviewOfTheCharts() {
+        PDF pdf = new PDF(new System.IO.MemoryStream(), Compliance.PDF_UA_1).SetTitle("Test");
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new BarChart(null, null).SetCategories("a").AddSeries("", new float[] {1f}).DrawOn(page);
+        Assert.Equal("", TestSupport.Content(page));
+
+        string longName = "A category name far too long to be written under its bar";
+        string title = "A title far too long for a chart of three hundred points, which ran past it";
+        string content = Draw(NewChart(pdf).SetTitle(title).SetLegend(true).SetCategories(longName, "b")
+                .AddSeries("Sold", new float[] {1f, 2f})
+                .AddLineSeries("Target", new float[] {2f, 3f, 4f, 5f, 6f}), page);
+        Assert.False(content.Contains(TestSupport.Hex(longName)) || content.Contains(TestSupport.Hex(title)), content);
+        Assert.Contains("1 1 1 RG\n3.5 w\n", content);
+        Assert.True(page.structures[0].altDescription.EndsWith("Target, a line: " + longName + " 2, b 3.",
+                System.StringComparison.Ordinal), page.structures[0].altDescription);
+
+        PDF plain = TestSupport.NewPDF();
+        page = new Page(plain, Letter.PORTRAIT);
+#pragma warning disable CS0618 // The old names, deprecated, still work
+        string old = Draw(NewChart(plain).SetCategories("a").AddSeries("s", new float[] {1f})
+                .SetDrawLegend(true).SetDrawValueLabels(true).SetDrawGridLines(false), page);
+#pragma warning restore CS0618
+        page = new Page(plain, Letter.PORTRAIT);
+        string renamed = Draw(NewChart(plain).SetCategories("a").AddSeries("s", new float[] {1f})
+                .SetLegend(true).SetValueLabels(true).SetGridLines(false), page);
+        // The same but for the names of the fonts, a new one for each chart
+        Assert.Equal(System.Text.RegularExpressions.Regex.Replace(old, "/F\\d+ ", "/F "),
+                System.Text.RegularExpressions.Regex.Replace(renamed, "/F\\d+ ", "/F "));
+
+        page = new Page(pdf, Letter.PORTRAIT);
+        content = Draw(NewChart(pdf).SetCategories("a", "b").SetValueLabels(true)
+                .AddSeries("", new float[] {1e30f, 3e38f}), page);
+        Assert.Contains(TestSupport.Hex("3e38"), content);
     }
 }
 }

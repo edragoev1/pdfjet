@@ -40,7 +40,7 @@ func Example28() {
 		SetLocation(100.0, 100.0).
 		DrawOn(page)
 
-	chart := pdfjet.NewDonutChart(f1, f2)
+	chart := pdfjet.NewDonutChart(f2, f1) // The bold font first
 	chart.SetLocation(100.0, 200.0)
 	chart.SetRadii(200.0, 120.0) // an inner radius of 0 makes a pie chart
 
@@ -56,7 +56,7 @@ func Example28() {
 	// Many slices, some small: a legend under the circle in place of the
 	// leader lines, and the total in the hole
 	page = pdfjet.NewPage(pdf, letter.Portrait())
-	many := pdfjet.NewDonutChart(f1, f2)
+	many := pdfjet.NewDonutChart(f2, f1)
 	many.SetLocation(100.0, 100.0)
 	many.SetRadii(150.0, 90.0)
 	many.SetTitle("Fruit sold this month")

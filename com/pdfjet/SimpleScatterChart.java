@@ -365,13 +365,7 @@ public class SimpleScatterChart implements Drawable {
             return altDescription;
         }
         List<Point> points = valid();
-        StringBuilder sb = new StringBuilder(title);
-        if (!subtitle.isEmpty()) {
-            if (sb.length() > 0) {
-                sb.append(", ");
-            }
-            sb.append(subtitle);
-        }
+        StringBuilder sb = new StringBuilder(ChartScale.join(title, subtitle));
         if (sb.length() == 0) {
             sb.append("Scatter chart");
         }
@@ -408,7 +402,7 @@ public class SimpleScatterChart implements Drawable {
      */
     public float[] drawOn(Page page) throws Exception {
         List<Point> points = valid();
-        if (page == null || points.isEmpty()) {     // Measured, or nothing to draw
+        if (page == null || points.isEmpty() || f1 == null || f2 == null) {    // Measured, or nothing to draw
             return new float[] {x + w, y + h};
         }
         float size = f2.getSize();
@@ -456,6 +450,7 @@ public class SimpleScatterChart implements Drawable {
 
         page.addBDC(StructElem.FIGURE, null, altDescription());
         page.saveGraphicsState();
+        page.setDefaultStrokeDashPattern();     // Not the caller's, which dashed the lines
 
         if (panelColor >= 0) {
             page.setBrushColor(panelColor);
@@ -464,12 +459,13 @@ public class SimpleScatterChart implements Drawable {
         float baseline = y + pad;
         if (!title.isEmpty()) {
             baseline += f1.getAscent(f1.getSize());
-            page.drawString(f1, f1.getSize(), title, x + pad, baseline, Util.toRGB(SimpleBarChart.INK), null);
+            page.drawString(f1, f1.getSize(), ChartScale.shorten(f1, f1.getSize(), title, w - 2f * pad), x + pad, baseline, Util.toRGB(SimpleBarChart.INK), null);
             baseline += f1.getDescent(f1.getSize());
         }
         if (!subtitle.isEmpty()) {
             baseline += 1.4f * subtitleSize();
-            page.drawString(f2, subtitleSize(), subtitle, x + pad, baseline, Util.toRGB(SimpleBarChart.MUTED), null);
+            page.drawString(f2, subtitleSize(), ChartScale.shorten(f2, subtitleSize(), subtitle, w - 2f * pad),
+                    x + pad, baseline, Util.toRGB(SimpleBarChart.MUTED), null);
         }
 
         // The horizontal grid and the numbers of both axes, each where it
@@ -597,18 +593,21 @@ public class SimpleScatterChart implements Drawable {
         float py = yAt(p.y, yAxis, top, bottom);
         page.setBrushColor(highlightColor);
         page.fillCircle(px, py, big);
-        float width = f1.stringWidth(size, p.name);
+        // A name of two fifths of the plot at most, and in the plot
+        String name = ChartScale.shorten(f1, size, p.name, 0.4f * (right - left));
+        float width = f1.stringWidth(size, name);
         float lx = px + big + size / 3f;
         if (lx + width > right) {
             lx = px - big - size / 3f - width;  // At the left, not past the plot
         }
+        lx = Math.max(lx, left);
         float baseline = py + ascent / 2f;
         // On a patch of the panel's color, which the dots and the grid do not
         // show through
         page.setBrushColor(panelColor >= 0 ? panelColor : Color.white);
         page.fillRect(lx - 1f, baseline - f1.getAscent(size) - 1f,
                 width + 2f, f1.getAscent(size) + f1.getDescent(size) + 2f);
-        page.drawString(f1, size, p.name, lx, baseline, Util.toRGB(highlightColor), null);
+        page.drawString(f1, size, name, lx, baseline, Util.toRGB(highlightColor), null);
         float x1 = Math.min(px - big, lx);
         float y1 = Math.min(py - big, baseline - f1.getAscent(size));
         float x2 = Math.max(px + big, lx + width);
@@ -645,12 +644,12 @@ public class SimpleScatterChart implements Drawable {
 
     // The x on the page of a value of the horizontal axis.
     private static float xAt(float v, ChartScale.Axis axis, float left, float right) {
-        return left + (v - axis.min) * (right - left) / (axis.max - axis.min);
+        return left + ChartScale.scaled(v - axis.min, right - left, axis.max - axis.min);
     }
 
     // The y on the page of a value of the vertical axis.
     private static float yAt(float v, ChartScale.Axis axis, float top, float bottom) {
-        return bottom - (v - axis.min) * (bottom - top) / (axis.max - axis.min);
+        return bottom - ChartScale.scaled(v - axis.min, bottom - top, axis.max - axis.min);
     }
 
     // The point of the trend line at x, moved along the line to the top or

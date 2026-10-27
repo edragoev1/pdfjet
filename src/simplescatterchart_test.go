@@ -19,9 +19,9 @@ func testSimpleScatterChart(pdf *PDF) *SimpleScatterChart {
 	font := testHelvetica(pdf)
 	chart := NewSimpleScatterChart(font, font).SetSize(400, 300)
 	chart.SetLocation(50, 50)
-	return chart.SetTitle("Phones and internet").SetSubtitle("by country").
-		SetXAxisTitle("phones").SetYAxisTitle("internet").
-		Add(0.1, 5).Add(0.5, 30).AddNamed("Canada", 0.5, 65).Add(1.2, 70)
+	return chart.SetTitle("Life expectancy and children per woman").SetSubtitle("by country").
+		SetXAxisTitle("children per woman").SetYAxisTitle("life expectancy").
+		Add(5.2, 61).Add(3, 70).AddNamed("Canada", 1.3, 82).Add(2, 76)
 }
 
 func TestSimpleScatterChartTheTrendIsTheLeastSquaresLine(t *testing.T) {
@@ -60,7 +60,8 @@ func TestSimpleScatterChartANamedPointIsHighlighted(t *testing.T) {
 
 func TestSimpleScatterChartDescribesItselfFromItsData(t *testing.T) {
 	chart := testSimpleScatterChart(testNewPDF()).Add(float32(math.NaN()), 1).SetTrendLine(true)
-	want := "Phones and internet, by country: 4 points, internet against phones; Canada 0.5 and 65; the trend rises."
+	want := "Life expectancy and children per woman. By country: 4 points, life expectancy " +
+		"against children per woman; Canada 1.3 and 82; the trend falls."
 	if got := chart.getAltDescription(); got != want {
 		t.Errorf("got %q, want %q", got, want)
 	}
@@ -186,5 +187,23 @@ func TestSimpleScatterChartANameIsOnAPatchOfThePanel(t *testing.T) {
 	}
 	if !strings.Contains(content[patch:name], " re\n") {
 		t.Errorf("no patch under the name in %q", content)
+	}
+}
+
+// A chart without its fonts draws nothing; a long name of a point is
+// shortened and kept in the plot (the review of 26 October 2026, the second).
+func TestSimpleScatterChartTheSecondReviewOfTheCharts(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	page := NewPage(pdf, testLetterPortrait())
+	NewSimpleScatterChart(nil, nil).Add(1, 1).DrawOn(page)
+	if content := testContent(page); content != "" {
+		t.Errorf("a chart without its fonts drew %q", content)
+	}
+	NewSimpleScatterChart(font, font).Add(0, 0).Add(3e38, 3e38).DrawOn(page)
+	name := "A name far too long to be written whole beside its point in the chart"
+	testSimpleScatterChart(pdf).AddNamed(name, 3, 65).DrawOn(page)
+	if content := testContent(page); strings.Contains(content, testHex(name)) {
+		t.Errorf("the name is not shortened: %q", content)
 	}
 }

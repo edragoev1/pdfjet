@@ -70,7 +70,7 @@ func TestSimpleBarChartTheHighlightedBarHasItsOwnColor(t *testing.T) {
 
 func TestSimpleBarChartDescribesItselfFromItsValues(t *testing.T) {
 	chart := testSimpleBarChart(testNewPDF()).SetFractionDigits(1)
-	want := "Statement, 12 pages, warm ms: PDFjet 7.3, iText 72.6, OpenPDF 18.4, PDFBox 44.1."
+	want := "Statement, 12 pages. Warm ms: PDFjet 7.3, iText 72.6, OpenPDF 18.4, PDFBox 44.1."
 	if got := chart.getAltDescription(); got != want {
 		t.Errorf("got %q, want %q", got, want)
 	}
@@ -167,5 +167,37 @@ func TestSimpleBarChartALongNameIsShortened(t *testing.T) {
 		if got := shorten(font, 10, c.text, c.width); got != c.want {
 			t.Errorf("shorten(%q, %v) = %q, want %q", c.text, c.width, got, c.want)
 		}
+	}
+}
+
+// A chart without its fonts draws nothing and has no height; a title too long
+// for the chart is shortened; a value of 3e38 is written short (the review of
+// 26 October 2026, the second).
+func TestSimpleBarChartTheSecondReviewOfTheCharts(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	page := NewPage(pdf, testLetterPortrait())
+	none := NewSimpleBarChart(nil, nil).Add("a", 1)
+	none.DrawOn(page)
+	if content := testContent(page); content != "" {
+		t.Errorf("a chart without its fonts drew %q", content)
+	}
+	if h := none.GetHeight(); h != 0 {
+		t.Errorf("a chart without its fonts is %v high", h)
+	}
+	title := "A title far too long for a chart two hundred points wide"
+	NewSimpleBarChart(font, font).SetWidth(200).SetTitle(title).Add("a", 3e38).DrawOn(page)
+	content := testContent(page)
+	if strings.Contains(content, testHex(title)) {
+		t.Errorf("the title is not shortened: %q", content)
+	}
+	if !strings.Contains(content, testHex("3e38")) {
+		t.Errorf("3e38 is not written short: %q", content)
+	}
+	if got := format(1.2345e20, 0, 2); got != "1.23e20" {
+		t.Errorf("1.2345e20 is %q", got)
+	}
+	if got := groupDigits(format(-4.5e16, 0, 2)); got != "-4.5e16" {
+		t.Errorf("-4.5e16 is %q", got)
 	}
 }

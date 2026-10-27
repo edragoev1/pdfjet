@@ -330,11 +330,14 @@ public class Markdown {
         for (i, block) in blocks.enumerated() {
             switch block.kind {
             case .HEADING:
+                if i + 2 < blocks.count && Markdown.leadsIntoTable(blocks[i + 1], blocks[i + 2]) {
+                    keepHeadingWithTable(block, blocks[i + 1], blocks[i + 2],
+                            tight ? size() * 0.25 : size() * 0.75, x, width)
+                }
                 drawHeading(block, x, width)
             case .PARAGRAPH:
                 let gap = tight ? size() * 0.25 : size() * 0.75
-                if i + 1 < blocks.count && blocks[i + 1].kind == .TABLE
-                        && block.text!.trimmingCharacters(in: .whitespacesAndNewlines).hasSuffix(":") {
+                if i + 1 < blocks.count && Markdown.leadsIntoTable(block, blocks[i + 1]) {
                     keepWithTable(block, blocks[i + 1], gap, x, width)
                 }
                 self.gap(gap)
@@ -391,7 +394,26 @@ public class Markdown {
     // of the heading before it, so that no level is skipped.
     private func drawHeading(_ block: MarkdownParser.Block, _ x: Float, _ width: Float) {
         let fontSize = size() * Markdown.HEADING_SIZES[block.level - 1]
-        gap(size() * (block.level <= 2 ? 1.4 : 1.1))
+        gap(headingGap(block))
+        let paragraph = headingParagraph(block)
+        headingLevel = min(block.level, headingLevel + 1)
+        let levels = [StructElem.H1, StructElem.H2, StructElem.H3,
+                StructElem.H4, StructElem.H5, StructElem.H6]
+        paragraph.setStructureType(levels[headingLevel - 1])
+        ensure(headingFont.getBodyHeight(fontSize) + 2.0 * regular.getBodyHeight(size()))
+        drawParagraph(paragraph, x, width)
+        y += size() * 0.25
+    }
+
+    // The space above a heading.
+    private func headingGap(_ block: MarkdownParser.Block) -> Float {
+        return size() * (block.level <= 2 ? 1.4 : 1.1)
+    }
+
+    // The text of a heading in the heading font, at its level's size and in
+    // the heading color.
+    private func headingParagraph(_ block: MarkdownParser.Block) -> Paragraph {
+        let fontSize = size() * Markdown.HEADING_SIZES[block.level - 1]
         let paragraph = markup.paragraph(block.text!)
         for line in paragraph.lines {
             if line.font === regular {
@@ -404,13 +426,7 @@ public class Markdown {
                 line.setTextColor(headingColor)
             }
         }
-        headingLevel = min(block.level, headingLevel + 1)
-        let levels = [StructElem.H1, StructElem.H2, StructElem.H3,
-                StructElem.H4, StructElem.H5, StructElem.H6]
-        paragraph.setStructureType(levels[headingLevel - 1])
-        ensure(headingFont.getBodyHeight(fontSize) + 2.0 * regular.getBodyHeight(size()))
-        drawParagraph(paragraph, x, width)
-        y += size() * 0.25
+        return paragraph
     }
 
     // Code in the code font on a light background, a line of the source at a
@@ -656,6 +672,38 @@ public class Markdown {
         // A table with rows always draws them, so it has a corner.
         y = xy?[1] ?? y
         atTop = false
+    }
+
+    // Tells if the block is a paragraph that ends in a colon, which leads into
+    // the table after it.
+    private static func leadsIntoTable(_ block: MarkdownParser.Block, _ next: MarkdownParser.Block) -> Bool {
+        return block.kind == .PARAGRAPH && next.kind == .TABLE
+                && block.text!.trimmingCharacters(in: .whitespacesAndNewlines).hasSuffix(":")
+    }
+
+    // A heading over a paragraph that leads into a table, as "Lines of code"
+    // over "Lines of code of each program:" and its table, starts a page with
+    // them when the three fit on a page together but not in what is left of
+    // this one: the paragraph and the table went to the next page, and the
+    // heading ended this one.
+    private func keepHeadingWithTable(_ heading: MarkdownParser.Block, _ paragraph: MarkdownParser.Block,
+            _ table: MarkdownParser.Block, _ gap: Float, _ x: Float, _ width: Float) {
+        if atTop {
+            return
+        }
+        let room = bottom - marginTop
+        let headingGap = headingGap(heading)
+        let title = TextFrame([headingParagraph(heading)]).setParagraphGap(0.0)
+        title.setLocation(x, y + headingGap).setWidth(width).setHeight(room)
+        title.drawOn(nil)
+        let below = title.getTextBottom() + size() * 0.25 + gap
+        let text = TextFrame([markup.paragraph(paragraph.text!)]).setParagraphGap(0.0)
+        text.setLocation(x, below).setWidth(width).setHeight(room)
+        text.drawOn(nil)
+        let needed = (text.getTextBottom() - y) + size() * 0.75 + tableOf(table, width).getTotalHeight()
+        if y + needed > bottom && needed - headingGap <= room {
+            newPage()
+        }
     }
 
     // A paragraph that ends in a colon leads into the table after it, as

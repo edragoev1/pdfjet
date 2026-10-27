@@ -222,6 +222,22 @@ import Testing
         #expect(moved, "the lead-in never moved with its table")
     }
 
+    // A heading over the lead-in goes with it and its table: the two went to
+    // the next page and left the heading at the bottom of this one (the
+    // report of the fair test, 26 October 2026).
+    @Test func aHeadingStaysWithALeadInAndItsTable() throws {
+        var moved = false
+        for k in 0...60 {
+            let drawn = try MarkdownTests.draw(fillerAndTable(k, "## H7\n\n555:", 8), nil)
+            let heading = pagesOf(drawn, "H7")
+            #expect(heading == pagesOf(drawn, "555:"), "\(k) paragraphs: the heading is apart from its lead-in")
+            #expect(heading == pagesOf(drawn, "r8"), "\(k) paragraphs: the heading is apart from its table")
+            let lastFiller = (k > 0) ? pagesOf(drawn, "p\(k - 1)")[0] : 0
+            moved = moved || heading[0] > lastFiller
+        }
+        #expect(moved, "the heading never moved with its table")
+    }
+
     @Test func aTableLongerThanAPageStillStartsWhereItIs() throws {
         let drawn = try MarkdownTests.draw(fillerAndTable(3, nil, 120), nil)
         #expect(pagesOf(drawn, "p2") == [0])

@@ -192,7 +192,8 @@ public class SimpleLineChart : IDrawable {
     /// Writes each value of the lines by its point, small, where the line
     /// leaves it room: above a peak, under a valley, before or after a point
     /// on a rise or a fall; but the last of each line, which its label at the
-    /// end of the line has.
+    /// end of the line has, and a value outside a range set with
+    /// SetYAxisRange, whose point is not drawn.
     /// </summary>
     /// <param name="valueLabels">true to write them.</param>
     /// <returns>this chart.</returns>
@@ -202,9 +203,10 @@ public class SimpleLineChart : IDrawable {
     }
 
     /// <summary>
-    /// Fills the area under each line, down to 0 or to the bottom of the plot,
-    /// in a light tint of the line's color, which makes an area chart. The
-    /// highlighted line's area is drawn last, over the others.
+    /// Fills the area between each line and 0, or the edge of the plot nearest
+    /// 0 when 0 is outside it, in a light tint of the line's color, which makes
+    /// an area chart. The highlighted line's area is drawn last, over the
+    /// others.
     /// </summary>
     /// <param name="areaFilled">true to fill the areas.</param>
     /// <returns>this chart.</returns>
@@ -347,6 +349,13 @@ public class SimpleLineChart : IDrawable {
         return index == highlight ? f1 : f2;
     }
 
+    // The label at the end of the line of the index: its name, shortened to a
+    // quarter of the chart, and its last value.
+    private String EndText(int i, int last) {
+        Line line = lines[i];
+        return ChartScale.Shorten(FontOf(i), f2.GetSize(), line.name, 0.25f * w) + " " + Value(line.values[last]);
+    }
+
     // The category of the last value of the line, or -1 when it has none.
     private int LastOf(Line line) {
         for (int i = Count() - 1; i >= 0; i--) {
@@ -363,13 +372,7 @@ public class SimpleLineChart : IDrawable {
         if (altDescription.Length > 0) {
             return altDescription;
         }
-        StringBuilder sb = new StringBuilder(title);
-        if (subtitle.Length > 0) {
-            if (sb.Length > 0) {
-                sb.Append(", ");
-            }
-            sb.Append(subtitle);
-        }
+        StringBuilder sb = new StringBuilder(ChartScale.Join(title, subtitle));
         if (sb.Length == 0) {
             sb.Append("Line chart");
         }
@@ -430,7 +433,7 @@ public class SimpleLineChart : IDrawable {
                 }
             }
         }
-        if (page == null || all.Count == 0) {    // Measured, or nothing to draw
+        if (page == null || all.Count == 0 || f1 == null || f2 == null) {    // Measured, or nothing to draw
             return new float[] {x + w, y + h};
         }
         float size = f2.GetSize();
@@ -452,7 +455,7 @@ public class SimpleLineChart : IDrawable {
             Line line = lines[i];
             int last = LastOf(line);
             if (last >= 0) {
-                endWidth = Math.Max(endWidth, FontOf(i).StringWidth(size, line.name + " " + Value(line.values[last])));
+                endWidth = Math.Max(endWidth, FontOf(i).StringWidth(size, EndText(i, last)));
             }
         }
         float left = x + pad + widest + size / 2f;
@@ -471,6 +474,7 @@ public class SimpleLineChart : IDrawable {
 
         page.AddBDC(StructElem.FIGURE, null, AltDescription());
         page.SaveGraphicsState();
+        page.SetDefaultStrokeDashPattern();     // Not the caller's, which dashed the lines
 
         if (panelColor >= 0) {
             page.SetBrushColor(panelColor);
@@ -479,12 +483,13 @@ public class SimpleLineChart : IDrawable {
         float baseline = y + pad;
         if (title.Length > 0) {
             baseline += f1.GetAscent(f1.GetSize());
-            page.DrawString(f1, f1.GetSize(), title, x + pad, baseline, Util.ToRGB(SimpleBarChart.INK), null);
+            page.DrawString(f1, f1.GetSize(), ChartScale.Shorten(f1, f1.GetSize(), title, w - 2f * pad), x + pad, baseline, Util.ToRGB(SimpleBarChart.INK), null);
             baseline += f1.GetDescent(f1.GetSize());
         }
         if (subtitle.Length > 0) {
             baseline += 1.4f * SubtitleSize();
-            page.DrawString(f2, SubtitleSize(), subtitle, x + pad, baseline, Util.ToRGB(SimpleBarChart.MUTED), null);
+            page.DrawString(f2, SubtitleSize(), ChartScale.Shorten(f2, SubtitleSize(), subtitle, w - 2f * pad),
+                    x + pad, baseline, Util.ToRGB(SimpleBarChart.MUTED), null);
         }
 
         // The horizontal grid and its numbers, and the categories under the
@@ -549,8 +554,8 @@ public class SimpleLineChart : IDrawable {
             page.SaveGraphicsState();
             page.ClipRect(left - edge, top - edge, right - left + 2f * edge, bottom - top + 2f * edge);
         }
-        // The areas under the lines, each run of values down to 0, or to the
-        // bottom of the plot when 0 is under it, in a tint of the line's color
+        // The areas of the lines, each run of values to 0, or to the edge of
+        // the plot nearest 0 when 0 is outside it, in a tint of the line's color
         if (areaFilled) {
             float zero = YAt(Math.Min(Math.Max(0f, axis.min), axis.max), axis, top, bottom);
             foreach (int i in order) {
@@ -630,7 +635,8 @@ public class SimpleLineChart : IDrawable {
                         continue;
                     }
                     float v = line.values[j];
-                    float before = (j > 0 && line.Has(j - 1)) ? line.values[j - 1] : v;
+                    bool opens = !(j > 0 && line.Has(j - 1));     // The first of its run
+                    float before = opens ? v : line.values[j - 1];
                     float after = line.Has(j + 1) ? line.values[j + 1] : v;
                     String text = Value(v);
                     float width = f2.StringWidth(small, text);
@@ -638,7 +644,12 @@ public class SimpleLineChart : IDrawable {
                     float py = YAt(v, axis, top, bottom);
                     float lx = px - width / 2f;
                     float at = py - gap;
-                    if (before > v && after > v) {              // A valley
+                    if (opens && after > v) {                   // The start of a rise
+                        lx = px + gap;
+                        at = Math.Min(py + gap + f2.GetAscent(small), bottom - f2.GetDescent(small));
+                    } else if (opens && after < v) {            // The start of a fall
+                        lx = px + gap;
+                    } else if (before > v && after > v) {       // A valley
                         at = py + gap + f2.GetAscent(small);
                         if (at > bottom) {
                             at = py - gap;
@@ -647,6 +658,9 @@ public class SimpleLineChart : IDrawable {
                         lx = px - gap - width;
                     } else if (before > v && after < v) {       // A fall
                         lx = px + gap;
+                    }
+                    if (at - f2.GetAscent(small) < top - ascent / 2f) {
+                        at = py + gap + f2.GetAscent(small);    // Under a point at the top
                     }
                     page.DrawString(f2, small, text, lx, at, Util.ToRGB(color), null);
                 }
@@ -662,7 +676,7 @@ public class SimpleLineChart : IDrawable {
             if (last >= 0) {
                 // At the end of its line, or at the edge of the plot it is past
                 float end = Math.Max(top, Math.Min(bottom, YAt(line.values[last], axis, top, bottom)));
-                labels.Add(new EndLabel(line.name + " " + Value(line.values[last]), i, end + ascent / 2f));
+                labels.Add(new EndLabel(EndText(i, last), i, end + ascent / 2f));
             }
         }
         // By the baseline, and labels on one baseline in the order of their
@@ -709,7 +723,7 @@ public class SimpleLineChart : IDrawable {
     // The y on the page of a value, held near the plot.
     private static float YAt(float v, ChartScale.Axis axis, float top, float bottom) {
         v = ChartScale.Held(v, axis);
-        return bottom - (v - axis.min) * (bottom - top) / (axis.max - axis.min);
+        return bottom - ChartScale.Scaled(v - axis.min, bottom - top, axis.max - axis.min);
     }
 }
 }   // End of SimpleLineChart.cs

@@ -633,7 +633,7 @@ public class Snippets {
     // @snippet donut-chart
     static void DonutChart(PDF pdf, Font font) {
         Font bold = new Font(pdf, IBMPlexSans.Bold).SetSize(10f);
-        DonutChart chart = new DonutChart(font, bold);
+        DonutChart chart = new DonutChart(bold, font);
         chart.SetLocation(100f, 100f);
         chart.SetRadii(100f, 60f);    // An inner radius of 0 makes a pie chart
         chart.AddSlice(new Slice(50f, Color.steelblue, "Java"));

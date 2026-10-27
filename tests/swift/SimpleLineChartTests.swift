@@ -26,7 +26,7 @@ import Testing
     @Test func describesItselfFromItsData() {
         let chart = chart(TestSupport.newPDF())
         #expect(chart.getAltDescription() ==
-                "Vehicles, by model year, 2021 to 2023: Battery from 14,755 to 11,853, highest 23,507 in 2022;"
+                "Vehicles. By model year, 2021 to 2023: Battery from 14,755 to 11,853, highest 23,507 in 2022;"
                 + " Hybrid from 3,541 to 1,500, highest 4,015 in 2022.")
         chart.setAltDescription("Two lines")
         #expect(chart.getAltDescription() == "Two lines")
@@ -163,5 +163,45 @@ import Testing
         page = Page(pdf, Letter.PORTRAIT)
         SimpleLineChart(font, font).addLine("x", [12, 37]).drawOn(page)
         #expect(!TestSupport.content(page).contains(TestSupport.hex("12")))
+    }
+
+    // The numbers of the line of the content that ends where the range of
+    // the operator starts: "x y" of "x y m".
+    private func operands(_ content: String, _ end: Range<String.Index>) -> [Float] {
+        let start = content[..<end.lowerBound].lastIndex(of: "\n").map { content.index(after: $0) }
+                ?? content.startIndex
+        return content[start..<end.lowerBound].components(separatedBy: " ").map { Float($0)! }
+    }
+
+    // The review of 26 October 2026, the second: the value of the first point
+    // of a rise is after it and under the line, and that of a peak at the top
+    // of the plot under it. The fonts of a Swift chart are not optional, so
+    // the Java test of a chart without them has no Swift form.
+    @Test func theSecondReviewOfTheCharts() throws {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        var page = Page(pdf, Letter.PORTRAIT)
+        SimpleLineChart(font, font).addLine("big", [0, 3e38]).drawOn(page)     // Had infinite coordinates
+        #expect(!TestSupport.content(page).contains("inf") && !TestSupport.content(page).contains("nan"))
+
+        page = Page(pdf, Letter.PORTRAIT)
+        SimpleLineChart(font, font).setCategories("a", "b", "c").setYAxisRange(0, 50)
+                .addLine("x", [12, 50, 23]).setValueLabels(true).drawOn(page)
+        let content = TestSupport.content(page)
+        // The points, from the line drawn in gray: "x y m" of the first
+        // point, "x y l" of the peak
+        let rg = try #require(content.range(of: "0.55 0.59 0.64 RG\n"))
+        let m = try #require(content.range(of: " m\n", range: rg.upperBound..<content.endIndex))
+        let start = operands(content, m)
+        let first = TestSupport.positionOf(content, "12")
+        #expect(first[0] > start[0] && first[1] < start[1],
+                "the first value is after its point and under it: \(first[0]), \(first[1]) by \(start[0]), \(start[1])")
+        let peakLine = try #require(content.range(of: " l\n", range: m.upperBound..<content.endIndex))
+        let peakAt = operands(content, peakLine)
+        let value = try #require(content.range(of: "<" + TestSupport.hex("50") + ">", options: .backwards))
+        let td = try #require(content.range(of: " Td\n", options: .backwards,
+                range: content.startIndex..<value.lowerBound))
+        let valueAt = operands(content, td)
+        #expect(valueAt[1] < peakAt[1], "the value of the peak at the top is under it: \(valueAt[1]) by \(peakAt[1])")
     }
 }

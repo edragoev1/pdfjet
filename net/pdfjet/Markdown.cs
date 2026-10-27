@@ -311,12 +311,15 @@ public class Markdown {
             MarkdownParser.Block block = blocks[i];
             switch (block.kind) {
                 case MarkdownParser.Kind.HEADING:
+                    if (i + 2 < blocks.Count && LeadsIntoTable(blocks[i + 1], blocks[i + 2])) {
+                        KeepHeadingWithTable(block, blocks[i + 1], blocks[i + 2],
+                                tight ? Size() * 0.25f : Size() * 0.75f, x, width);
+                    }
                     DrawHeading(block, x, width);
                     break;
                 case MarkdownParser.Kind.PARAGRAPH:
                     float gap = tight ? Size() * 0.25f : Size() * 0.75f;
-                    if (i + 1 < blocks.Count && blocks[i + 1].kind == MarkdownParser.Kind.TABLE
-                            && block.text.Trim().EndsWith(":", StringComparison.Ordinal)) {
+                    if (i + 1 < blocks.Count && LeadsIntoTable(block, blocks[i + 1])) {
                         KeepWithTable(block, blocks[i + 1], gap, x, width);
                     }
                     Gap(gap);
@@ -378,7 +381,26 @@ public class Markdown {
     // of the heading before it, so that no level is skipped.
     private void DrawHeading(MarkdownParser.Block block, float x, float width) {
         float fontSize = Size() * HEADING_SIZES[block.level - 1];
-        Gap(Size() * (block.level <= 2 ? 1.4f : 1.1f));
+        Gap(HeadingGap(block));
+        Paragraph paragraph = HeadingParagraph(block);
+        headingLevel = Math.Min(block.level, headingLevel + 1);
+        StructElem[] levels = {StructElem.H1, StructElem.H2, StructElem.H3,
+                StructElem.H4, StructElem.H5, StructElem.H6};
+        paragraph.SetStructureType(levels[headingLevel - 1]);
+        Ensure(headingFont.GetBodyHeight(fontSize) + 2f * regular.GetBodyHeight(Size()));
+        DrawParagraph(paragraph, x, width);
+        y += Size() * 0.25f;
+    }
+
+    // The space above a heading.
+    private float HeadingGap(MarkdownParser.Block block) {
+        return Size() * (block.level <= 2 ? 1.4f : 1.1f);
+    }
+
+    // The text of a heading in the heading font, at its level's size and in
+    // the heading color.
+    private Paragraph HeadingParagraph(MarkdownParser.Block block) {
+        float fontSize = Size() * HEADING_SIZES[block.level - 1];
         Paragraph paragraph = markup.Paragraph(block.text);
         foreach (TextLine line in paragraph.lines) {
             if (line.font == regular) {
@@ -391,13 +413,7 @@ public class Markdown {
                 line.SetTextColor(headingColor);
             }
         }
-        headingLevel = Math.Min(block.level, headingLevel + 1);
-        StructElem[] levels = {StructElem.H1, StructElem.H2, StructElem.H3,
-                StructElem.H4, StructElem.H5, StructElem.H6};
-        paragraph.SetStructureType(levels[headingLevel - 1]);
-        Ensure(headingFont.GetBodyHeight(fontSize) + 2f * regular.GetBodyHeight(Size()));
-        DrawParagraph(paragraph, x, width);
-        y += Size() * 0.25f;
+        return paragraph;
     }
 
     // Code in the code font on a light background, a line of the source at a
@@ -636,6 +652,38 @@ public class Markdown {
         }
         y = xy[1];
         atTop = false;
+    }
+
+    // Tells if the block is a paragraph that ends in a colon, which leads into
+    // the table after it.
+    private static bool LeadsIntoTable(MarkdownParser.Block block, MarkdownParser.Block next) {
+        return block.kind == MarkdownParser.Kind.PARAGRAPH && next.kind == MarkdownParser.Kind.TABLE
+                && block.text.Trim().EndsWith(":", StringComparison.Ordinal);
+    }
+
+    // A heading over a paragraph that leads into a table, as "Lines of code"
+    // over "Lines of code of each program:" and its table, starts a page with
+    // them when the three fit on a page together but not in what is left of
+    // this one: the paragraph and the table went to the next page, and the
+    // heading ended this one.
+    private void KeepHeadingWithTable(MarkdownParser.Block heading, MarkdownParser.Block paragraph,
+            MarkdownParser.Block table, float gap, float x, float width) {
+        if (atTop) {
+            return;
+        }
+        float room = bottom - marginTop;
+        float headingGap = HeadingGap(heading);
+        TextFrame title = new TextFrame(new List<Paragraph> {HeadingParagraph(heading)}).SetParagraphGap(0f);
+        title.SetLocation(x, y + headingGap).SetWidth(width).SetHeight(room);
+        title.DrawOn(null);
+        float below = title.GetTextBottom() + Size() * 0.25f + gap;
+        TextFrame text = new TextFrame(new List<Paragraph> {markup.Paragraph(paragraph.text)}).SetParagraphGap(0f);
+        text.SetLocation(x, below).SetWidth(width).SetHeight(room);
+        text.DrawOn(null);
+        float needed = (text.GetTextBottom() - y) + Size() * 0.75f + TableOf(table, width).GetTotalHeight();
+        if (y + needed > bottom && needed - headingGap <= room) {
+            NewPage();
+        }
     }
 
     // A paragraph that ends in a colon leads into the table after it, as

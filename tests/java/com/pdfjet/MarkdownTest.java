@@ -321,6 +321,24 @@ class MarkdownTest {
         assertTrue(moved, "the lead-in never moved with its table");
     }
 
+    // A heading over the lead-in goes with it and its table: the two went to
+    // the next page and left the heading at the bottom of this one (the
+    // report of the fair test, 26 October 2026).
+    @Test
+    void aHeadingStaysWithALeadInAndItsTable() throws Exception {
+        TestSupport.allowCoreFonts(true); // What the document tags, in a core font
+        boolean moved = false;
+        for (int k = 0; k <= 60; k++) {
+            Drawn drawn = draw(fillerAndTable(k, "## H7\n\n555:", 8), null);
+            List<Integer> heading = pagesOf(drawn, "H7");
+            assertEquals(heading, pagesOf(drawn, "555:"), k + " paragraphs: the heading is apart from its lead-in");
+            assertEquals(heading, pagesOf(drawn, "r8"), k + " paragraphs: the heading is apart from its table");
+            int lastFiller = (k > 0) ? pagesOf(drawn, "p" + (k - 1)).get(0) : 0;
+            moved |= heading.get(0) > lastFiller;
+        }
+        assertTrue(moved, "the heading never moved with its table");
+    }
+
     @Test
     void aTableLongerThanAPageStillStartsWhereItIs() throws Exception {
         TestSupport.allowCoreFonts(true); // What the document tags, in a core font

@@ -13,13 +13,18 @@ import com.pdfjet.fonts.*;
 
 /**
  * Example_23.java
+ *
+ * A table of PDF/A-1a, tagged, over four pages: the life expectancy and the
+ * children per woman of 217 countries and economies in 2023, from the World
+ * Bank's World Development Indicators, with a marker on three of the rows,
+ * each a link, and the longest and the shortest life in color.
  */
 final public class Example_23 {
     public Example_23() throws Exception {
         PDF pdf = new PDF(
                 new BufferedOutputStream(new FileOutputStream("Example_23.pdf")));
         pdf.setCompliance(Compliance.PDF_A_1A);
-        pdf.setTitle("World Communications");
+        pdf.setTitle("Life Expectancy and Children per Woman, 2023");
 
         Font f1 = new Font(pdf, IBMPlexSans.Bold);
         Font f2 = new Font(pdf, IBMPlexSans.Regular);
@@ -30,54 +35,80 @@ final public class Example_23 {
         f3.setSize(7f);
 
         Table table = new Table();
+        // Country|Code|Life expectancy|Children per woman, after a header line
         List<List<Cell>> tableData = getData(
-                "data/world-communications.txt", "|", 2, f1, f2);
+                "data/life-expectancy-and-fertility-2023.txt", "|", 1, f1, f2);
 
+        // A marker on three rows, found by their countries, each a link
         Point p1 = new Point();
         p1.setShape(Shape.CIRCLE);
         p1.setRadius(2f);
         p1.setStrokeColor(Color.darkolivegreen);
-        p1.setURIAction("https://en.wikipedia.org/wiki/India");
-        tableData.get(4).get(3).setMarker(p1, Alignment.RIGHT);
+        p1.setURIAction("https://data.worldbank.org/country/india");
+        tableData.get(rowOf(tableData, "India")).get(3).setMarker(p1, Alignment.RIGHT);
 
         p1 = new Point();
         p1.setShape(Shape.DIAMOND);
         p1.setRadius(2.5f);
         p1.setStrokeColor(Color.blue);
-        p1.setURIAction("https://en.wikipedia.org/wiki/European_Union");
-        tableData.get(5).get(3).setMarker(p1, Alignment.RIGHT);
+        p1.setURIAction("https://data.worldbank.org/country/japan");
+        tableData.get(rowOf(tableData, "Japan")).get(3).setMarker(p1, Alignment.RIGHT);
 
         p1 = new Point();
         p1.setShape(Shape.STAR);
         p1.setRadius(3f);
         p1.setStrokeColor(Color.red);
-        p1.setURIAction("https://en.wikipedia.org/wiki/United_States");
-        tableData.get(6).get(3).setMarker(p1, Alignment.RIGHT);
+        p1.setURIAction("https://data.worldbank.org/country/united-states");
+        tableData.get(rowOf(tableData, "United States")).get(3).setMarker(p1, Alignment.RIGHT);
 
-        table.setTableData(tableData, 2);
-        table.setBottomMargin(15f);
-        // The table is about 555 points wide: at x = 30 it fits on the page.
-        table.setLocation(30f, 30f);
-        table.setTextColorInRow(6, Color.blue);
-        table.setTextColorInRow(39, Color.firebrick);
-        table.setFontInRow(26, f3);
-        table.removeLineBetweenRows(0, 1);
-        table.autoAdjustColumnWidths();
-        table.setColumnWidth(0, 50f);
-        table.setColumnWidth(3, 80f);
+        // The longest life in blue, the shortest in red, and Canada in bold italic
+        int longest = 1;
+        int shortest = 1;
+        for (int i = 1; i < tableData.size(); i++) {
+            float life = Float.parseFloat(tableData.get(i).get(2).getText());
+            if (life > Float.parseFloat(tableData.get(longest).get(2).getText())) {
+                longest = i;
+            }
+            if (life < Float.parseFloat(tableData.get(shortest).get(2).getText())) {
+                shortest = i;
+            }
+        }
+
+        table.setTableData(tableData, 1);
+        table.setBottomMargin(26f);
+        // 400 points wide, in the middle of the page
+        table.setLocation(106f, 30f);
+        table.setTextColorInRow(longest, Color.blue);
+        table.setTextColorInRow(shortest, Color.firebrick);
+        table.setFontInRow(rowOf(tableData, "Canada"), f3);
+        table.setColumnWidth(0, 170f);
+        table.setColumnWidth(1, 50f);
+        table.setColumnWidth(2, 90f);
+        table.setColumnWidth(3, 90f);
         table.rightAlignNumbers();
 
         List<Page> pages = new ArrayList<Page>();
         table.drawOn(pdf, pages, Letter.PORTRAIT);
         for (int i = 0; i < pages.size(); i++) {
             Page page = pages.get(i);
-            page.addFooter(new TextLine(f1, "Page " + (i + 1) + " of " + pages.size()));
+            page.addFooter(new TextLine(f2, "Source: World Bank, World Development Indicators, "
+                    + "SP.DYN.LE00.IN and SP.DYN.TFRT.IN, 2023, licensed under CC BY 4.0. "
+                    + "Page " + (i + 1) + " of " + pages.size()));
             pdf.addPage(page);
         }
 
         pdf.complete();
     }
 
+    // The row of the country, in the first column.
+    private static int rowOf(List<List<Cell>> tableData, String country) {
+        for (int i = 0; i < tableData.size(); i++) {
+            if (tableData.get(i).get(0).getText().equals(country)) {
+                return i;
+            }
+        }
+        throw new IllegalArgumentException(country + " is not in the table");
+    }
 
     public List<List<Cell>> getData(
             String fileName,

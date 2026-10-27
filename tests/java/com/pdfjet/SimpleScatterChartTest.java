@@ -22,9 +22,9 @@ class SimpleScatterChartTest {
     private static SimpleScatterChart chart(PDF pdf) throws Exception {
         Font font = TestSupport.helvetica(pdf);
         return new SimpleScatterChart(font, font).setSize(400f, 300f).setLocation(50f, 50f)
-                .setTitle("Phones and internet").setSubtitle("by country")
-                .setXAxisTitle("phones").setYAxisTitle("internet")
-                .add(0.1f, 5f).add(0.5f, 30f).add("Canada", 0.5f, 65f).add(1.2f, 70f);
+                .setTitle("Life expectancy and children per woman").setSubtitle("by country")
+                .setXAxisTitle("children per woman").setYAxisTitle("life expectancy")
+                .add(5.2f, 61f).add(3f, 70f).add("Canada", 1.3f, 82f).add(2f, 76f);
     }
 
     @Test
@@ -61,8 +61,8 @@ class SimpleScatterChartTest {
     @Test
     void describesItselfFromItsData() throws Exception {
         SimpleScatterChart chart = chart(TestSupport.newPDF()).add(Float.NaN, 1f).setTrendLine(true);
-        assertEquals("Phones and internet, by country: 4 points, internet against phones; "
-                + "Canada 0.5 and 65; the trend rises.", chart.altDescription());
+        assertEquals("Life expectancy and children per woman. By country: 4 points, life expectancy "
+                + "against children per woman; Canada 1.3 and 82; the trend falls.", chart.altDescription());
         chart.setAltDescription("Four countries");
         assertEquals("Four countries", chart.altDescription());
     }
@@ -186,5 +186,22 @@ class SimpleScatterChartTest {
         int patch = content.lastIndexOf("0.95 0.95 0.96 rg\n", name);
         assertTrue(patch > content.indexOf("0.12 0.23 0.37 rg\n"), content);     // After the navy dot
         assertTrue(content.substring(patch, name).contains(" re\n"), content);
+    }
+
+    // A chart without its fonts draws nothing; a long name of a point is
+    // shortened and kept in the plot (the review of 26 October 2026, the
+    // second).
+    @Test
+    void theSecondReviewOfTheCharts() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new SimpleScatterChart(null, null).add(1f, 1f).drawOn(page);
+        assertEquals("", TestSupport.content(page));
+        new SimpleScatterChart(font, font).add(0f, 0f).add(3e38f, 3e38f).drawOn(page);         // Did throw
+        String name = "A name far too long to be written whole beside its point in the chart";
+        chart(pdf).add(name, 3f, 65f).drawOn(page);
+        String content = TestSupport.content(page);
+        assertFalse(content.contains(TestSupport.hex(name)), content);
     }
 }

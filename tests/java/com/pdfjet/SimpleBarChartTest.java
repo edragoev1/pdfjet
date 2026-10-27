@@ -69,7 +69,7 @@ class SimpleBarChartTest {
     @Test
     void describesItselfFromItsValues() throws Exception {
         SimpleBarChart chart = chart(TestSupport.newPDF()).setFractionDigits(1);
-        assertEquals("Statement, 12 pages, warm ms: PDFjet 7.3, iText 72.6, OpenPDF 18.4, PDFBox 44.1.",
+        assertEquals("Statement, 12 pages. Warm ms: PDFjet 7.3, iText 72.6, OpenPDF 18.4, PDFBox 44.1.",
                 chart.altDescription());
         chart.setAltDescription("Four libraries");
         assertEquals("Four libraries", chart.altDescription());
@@ -148,5 +148,26 @@ class SimpleBarChartTest {
         assertEquals("A n\u2026", ChartScale.shorten(font, 10f, "A name", font.stringWidth(10f, "A n\u2026")));
         assertEquals("A name", ChartScale.shorten(font, 10f, "A name", 100f));
         assertEquals("A\u2026", ChartScale.shorten(font, 10f, "A  name", font.stringWidth(10f, "A \u2026") - 0.1f));
+    }
+
+    // A chart without its fonts draws nothing and has no height; a title too
+    // long for the chart is shortened; a value of 3e38 is written short (the
+    // review of 26 October 2026, the second).
+    @Test
+    void theSecondReviewOfTheCharts() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        SimpleBarChart none = new SimpleBarChart(null, null).add("a", 1f);
+        none.drawOn(page);
+        assertEquals("", TestSupport.content(page));
+        assertEquals(0f, none.getHeight(), 0f);
+        String title = "A title far too long for a chart two hundred points wide";
+        new SimpleBarChart(font, font).setWidth(200f).setTitle(title).add("a", 3e38f).drawOn(page);
+        String content = TestSupport.content(page);
+        assertFalse(content.contains(TestSupport.hex(title)), content);
+        assertTrue(content.contains(TestSupport.hex("3e38")), content);
+        assertEquals("1.23e20", ChartScale.format(1.2345e20f, 0, 2));
+        assertEquals("-4.5e16", ChartScale.groupDigits(ChartScale.format(-4.5e16f, 0, 2)));
     }
 }

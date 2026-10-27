@@ -54,3 +54,10 @@ swift: CalendarMonth.setCellWidth(_:) :: @discardableResult func setCellWidth(_ 
 swift: CalendarMonth.setFirstDayOfWeek(_:) :: @discardableResult func setFirstDayOfWeek(_ weekday: Int) -> CalendarMonth
 swift: CalendarMonth.setHeadFont(_:) :: @discardableResult func setHeadFont(_ font: Font) -> CalendarMonth
 swift: CalendarMonth.setLocation(_:_:) :: @discardableResult func setLocation(_ x: Float, _ y: Float) -> Self
+
+# 9.1.5: DonutChart's fonts in the order of the other charts, the bold one
+# first (the owner, 26 October 2026; Behavior change in CHANGELOG.md): the
+# same constructor, its parameters renamed, which the API lists as gone and
+# added; a call is written as before, the fonts swapped
+go: pdfjet func NewDonutChart(f1, f2 *Font) *DonutChart
+swift: DonutChart.init(_:_:) :: init(_ f1: Font?, _ f2: Font?)

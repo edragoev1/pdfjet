@@ -188,6 +188,9 @@ public class SimpleBarChart : IDrawable {
     /// </summary>
     /// <returns>the height of the chart.</returns>
     public float GetHeight() {
+        if (f1 == null || f2 == null) {
+            return 0f;      // Without its fonts the chart draws nothing
+        }
         return Top() + values.Count * RowHeight() + Pad();
     }
 
@@ -237,13 +240,7 @@ public class SimpleBarChart : IDrawable {
         if (altDescription.Length > 0) {
             return altDescription;
         }
-        StringBuilder sb = new StringBuilder(title);
-        if (subtitle.Length > 0) {
-            if (sb.Length > 0) {
-                sb.Append(", ");
-            }
-            sb.Append(subtitle);
-        }
+        StringBuilder sb = new StringBuilder(ChartScale.Join(title, subtitle));
         if (sb.Length == 0) {
             sb.Append("Bar chart");
         }
@@ -259,7 +256,7 @@ public class SimpleBarChart : IDrawable {
     /// <returns>the x and y coordinates of the bottom right corner of the chart.</returns>
     public float[] DrawOn(Page page) {
         float h = GetHeight();
-        if (page == null || values.Count == 0) {    // Measured, or nothing to draw
+        if (page == null || values.Count == 0 || f1 == null || f2 == null) {    // Measured, or nothing to draw
             return new float[] {x + w, y + h};
         }
         float size = f2.GetSize();
@@ -293,12 +290,13 @@ public class SimpleBarChart : IDrawable {
         float baseline = y + pad;
         if (title.Length > 0) {
             baseline += f1.GetAscent(f1.GetSize());
-            page.DrawString(f1, f1.GetSize(), title, x + pad, baseline, Util.ToRGB(INK), null);
+            page.DrawString(f1, f1.GetSize(), ChartScale.Shorten(f1, f1.GetSize(), title, w - 2f * pad), x + pad, baseline, Util.ToRGB(INK), null);
             baseline += f1.GetDescent(f1.GetSize());
         }
         if (subtitle.Length > 0) {
             baseline += 1.4f * SubtitleSize();
-            page.DrawString(f2, SubtitleSize(), subtitle, x + pad, baseline, Util.ToRGB(MUTED), null);
+            page.DrawString(f2, SubtitleSize(), ChartScale.Shorten(f2, SubtitleSize(), subtitle, w - 2f * pad),
+                    x + pad, baseline, Util.ToRGB(MUTED), null);
         }
 
         float rowTop = y + Top();

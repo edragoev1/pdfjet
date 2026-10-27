@@ -626,7 +626,7 @@ func simpleBarChart(_ pdf: PDF, _ font: Font) throws {
 // @snippet donut-chart
 func donutChart(_ pdf: PDF, _ font: Font) throws {
     let bold = try Font(pdf, IBMPlexSans.Bold).setSize(10)
-    let chart = DonutChart(font, bold)
+    let chart = DonutChart(bold, font)
     chart.setLocation(100, 100)
     chart.setRadii(100, 60)    // An inner radius of 0 makes a pie chart
     chart.addSlice(Slice(50, Color.steelblue, "Java"))

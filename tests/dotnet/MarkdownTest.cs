@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using Xunit;
@@ -265,6 +266,26 @@ public class MarkdownTest {
             moved |= leadIn[0] > lastFiller;
         }
         Assert.True(moved, "the lead-in never moved with its table");
+    }
+
+    // A heading over the lead-in goes with it and its table: the two went to
+    // the next page and left the heading at the bottom of this one (the
+    // report of the fair test, 26 October 2026).
+    [Fact]
+    public void AHeadingStaysWithALeadInAndItsTable() {
+        using IDisposable coreFonts = TestSupport.AllowCoreFonts();
+        bool moved = false;
+        for (int k = 0; k <= 60; k++) {
+            Drawn drawn = Draw(FillerAndTable(k, "## H7\n\n555:", 8), null);
+            List<int> heading = PagesOf(drawn, "H7");
+            Assert.True(heading.SequenceEqual(PagesOf(drawn, "555:")),
+                    k + " paragraphs: the heading is apart from its lead-in");
+            Assert.True(heading.SequenceEqual(PagesOf(drawn, "r8")),
+                    k + " paragraphs: the heading is apart from its table");
+            int lastFiller = (k > 0) ? PagesOf(drawn, "p" + (k - 1))[0] : 0;
+            moved |= heading[0] > lastFiller;
+        }
+        Assert.True(moved, "the heading never moved with its table");
     }
 
     [Fact]

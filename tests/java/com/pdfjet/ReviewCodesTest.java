@@ -76,18 +76,25 @@ class ReviewCodesTest {
         }
     }
 
-    // Data with no number, or whose range does not fit a float, has the range
+    // Data with no number, or whose span does not fit a float, has the range
     // from 0 to 1, where Swift stopped the program (review of 12 October 2026,
-    // R3).
+    // R3). Data whose span fits, but whose rounded range would not, has the
+    // range of its values: from 0 to 1 the bars went past the plot (review of
+    // 26 October 2026).
     @Test
     void chartTheRangeOfDataPastTheLargestFloatIsFromZeroToOne() {
         float inf = Float.POSITIVE_INFINITY;
         float[][] ranges = {{inf, 0f}, {0f, -inf}, {Float.NaN, Float.NaN}, {3.4e38f, -3.4e38f},
-                {-Float.MAX_VALUE, Float.MAX_VALUE}, {Float.MAX_VALUE, 0f}};
+                {-Float.MAX_VALUE, Float.MAX_VALUE}};
         for (float[] range : ranges) {
             Round round = ChartScale.roundMaxAndMinValues(range[0], range[1]);
             assertTrue(round.minValue == 0f && round.maxValue == 1f && round.numOfGridLines == 1,
                     range[0] + ", " + range[1] + ": " + round.minValue + " to " + round.maxValue);
+        }
+        for (float max : new float[] {Float.MAX_VALUE, 3e38f}) {
+            Round round = ChartScale.roundMaxAndMinValues(max, 0f);
+            assertTrue(round.minValue == 0f && round.maxValue == max && round.numOfGridLines >= 1,
+                    max + ": " + round.minValue + " to " + round.maxValue);
         }
     }
 
@@ -114,7 +121,7 @@ class ReviewCodesTest {
             Page page = new Page(pdf, Letter.PORTRAIT);
             Font font = TestSupport.helvetica(pdf);
             BarChart chart = new BarChart(font, font).setLocation(50f, 50f).setSize(300f, 200f)
-                    .setCategories("a", "b", "c").setStacked(stacked).setDrawValueLabels(true);
+                    .setCategories("a", "b", "c").setStacked(stacked).setValueLabels(true);
             chart.addSeries("", new float[] {Float.NaN, 10f, Float.POSITIVE_INFINITY});
             TestSupport.assertXY(350f, 250f, chart.drawOn(page));
             String content = TestSupport.content(page);

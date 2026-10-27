@@ -34,7 +34,7 @@ public class Example_28 {
                 .setLocation(100f, 100f)
                 .drawOn(page);
 
-        DonutChart chart = new DonutChart(f1, f2);
+        DonutChart chart = new DonutChart(f2, f1);     // The bold font first
         chart.setLocation(100.0f, 200.0f);
         chart.setRadii(200.0f, 120.0f);     // an inner radius of 0 makes a pie chart
 
@@ -50,7 +50,7 @@ public class Example_28 {
         // Many slices, some small: a legend under the circle in place of the
         // leader lines, and the total in the hole
         page = new Page(pdf, Letter.PORTRAIT);
-        DonutChart many = new DonutChart(f1, f2);
+        DonutChart many = new DonutChart(f2, f1);
         many.setLocation(100.0f, 100.0f);
         many.setRadii(150.0f, 90.0f);
         many.setTitle("Fruit sold this month");

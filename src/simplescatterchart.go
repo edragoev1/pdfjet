@@ -259,13 +259,7 @@ func (chart *SimpleScatterChart) getAltDescription() string {
 	}
 	points := chart.valid()
 	var sb strings.Builder
-	sb.WriteString(chart.title)
-	if chart.subtitle != "" {
-		if sb.Len() > 0 {
-			sb.WriteString(", ")
-		}
-		sb.WriteString(chart.subtitle)
-	}
+	sb.WriteString(join(chart.title, chart.subtitle))
 	if sb.Len() == 0 {
 		sb.WriteString("Scatter chart")
 	}
@@ -308,7 +302,7 @@ func (chart *SimpleScatterChart) getAltDescription() string {
 // draws nothing.
 func (chart *SimpleScatterChart) DrawOn(page *Page) [2]float32 {
 	points := chart.valid()
-	if page == nil || len(points) == 0 { // Measured, or nothing to draw
+	if page == nil || len(points) == 0 || chart.f1 == nil || chart.f2 == nil { // Measured, or nothing to draw
 		return [2]float32{chart.x + chart.w, chart.y + chart.h}
 	}
 	f1, f2 := chart.f1, chart.f2
@@ -351,10 +345,10 @@ func (chart *SimpleScatterChart) DrawOn(page *Page) [2]float32 {
 		return onAxis(p.x, xAxis) && onAxis(p.y, yAxis)
 	}
 	xAt := func(v float32) float32 {
-		return left + float32((v-xAxis.min)*(right-left))/(xAxis.max-xAxis.min)
+		return left + scaled(v-xAxis.min, right-left, xAxis.max-xAxis.min)
 	}
 	yAt := func(v float32) float32 {
-		return bottom - float32((v-yAxis.min)*(bottom-top))/(yAxis.max-yAxis.min)
+		return bottom - scaled(v-yAxis.min, bottom-top, yAxis.max-yAxis.min)
 	}
 
 	// In a tagged document a point that is a link is drawn after the chart,
@@ -364,6 +358,7 @@ func (chart *SimpleScatterChart) DrawOn(page *Page) [2]float32 {
 
 	page.AddBDC(structelem.Figure, "", "", chart.getAltDescription())
 	page.SaveGraphicsState()
+	page.SetDefaultStrokeDashPattern() // Not the caller's, which dashed the lines
 
 	if chart.panelColor >= 0 {
 		page.SetBrushColor(chart.panelColor)
@@ -372,13 +367,14 @@ func (chart *SimpleScatterChart) DrawOn(page *Page) [2]float32 {
 	baseline := chart.y + pad
 	if chart.title != "" {
 		baseline += f1.GetAscent(f1.size)
-		page.drawString(f1, f1.size, chart.title, chart.x+pad, baseline, colorToRGB(simpleBarInk), nil)
+		page.drawString(f1, f1.size, shorten(f1, f1.size, chart.title, chart.w-float32(2.0*pad)), chart.x+pad, baseline,
+			colorToRGB(simpleBarInk), nil)
 		baseline += f1.GetDescent(f1.size)
 	}
 	if chart.subtitle != "" {
 		baseline += float32(1.4 * chart.subtitleSize())
-		page.drawString(f2, chart.subtitleSize(), chart.subtitle, chart.x+pad, baseline,
-			colorToRGB(simpleBarMuted), nil)
+		page.drawString(f2, chart.subtitleSize(), shorten(f2, chart.subtitleSize(), chart.subtitle, chart.w-float32(2.0*pad)),
+			chart.x+pad, baseline, colorToRGB(simpleBarMuted), nil)
 	}
 
 	// The horizontal grid and the numbers of both axes, each where it
@@ -474,11 +470,14 @@ func (chart *SimpleScatterChart) DrawOn(page *Page) [2]float32 {
 		px, py := xAt(p.x), yAt(p.y)
 		page.SetBrushColor(chart.highlightColor)
 		page.FillCircle(px, py, big)
-		width := f1.StringWidth(size, p.name)
+		// A name of two fifths of the plot at most, and in the plot
+		name := shorten(f1, size, p.name, float32(0.4*(right-left)))
+		width := f1.StringWidth(size, name)
 		lx := px + big + float32(size/3.0)
 		if lx+width > right {
 			lx = px - big - float32(size/3.0) - width // At the left, not past the plot
 		}
+		lx = max(lx, left)
 		baseline := py + float32(ascent/2.0)
 		// On a patch of the panel's color, which the dots and the grid do not
 		// show through
@@ -489,7 +488,7 @@ func (chart *SimpleScatterChart) DrawOn(page *Page) [2]float32 {
 		}
 		page.FillRect(lx-1.0, baseline-f1.GetAscent(size)-1.0,
 			width+2.0, f1.GetAscent(size)+f1.GetDescent(size)+2.0)
-		page.drawString(f1, size, p.name, lx, baseline, colorToRGB(chart.highlightColor), nil)
+		page.drawString(f1, size, name, lx, baseline, colorToRGB(chart.highlightColor), nil)
 		x1 := min(px-big, lx)
 		y1 := min(py-big, baseline-f1.GetAscent(size))
 		x2 := max(px+big, lx+width)

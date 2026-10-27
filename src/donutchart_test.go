@@ -142,7 +142,7 @@ func TestDonutChartATitleIsDrawnAboveTheCircle(t *testing.T) {
 	if got := testFillColorBefore(content, "This week"); got != "0.37 0.41 0.45 rg" {
 		t.Errorf("the subtitle is drawn with %q", got)
 	}
-	if got := page.structures[1].altDescription; got != "Fruit, This week: a 100%" {
+	if got := page.structures[1].altDescription; got != "Fruit. This week: a 100%" {
 		t.Errorf("the chart is described as %q", got)
 	}
 }
@@ -251,5 +251,84 @@ func TestDonutChartALegendAndATextInTheHole(t *testing.T) {
 	testDonutChart(pdf).SetRadii(100, 0).SetCenterText("none").AddSlice(NewSliceInPalette(1, "a")).DrawOn(page)
 	if strings.Contains(testContent(page), testHex("none")) {
 		t.Errorf("a pie chart writes the text: %q", testContent(page))
+	}
+}
+
+// The review of 26 October 2026, the second: labels moved apart stay outside
+// the ring; long labels, legend items and texts in the hole are shortened; the
+// caller's dash pattern does not dash the lines; an inner radius past the
+// outer one is the outer one; and the last slice, by the first around the
+// circle, is not in the first's color.
+func TestDonutChartTheSecondReviewOfTheCharts(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	page := NewPage(pdf, testLetterPortrait())
+	thin := testDonutChart(pdf).AddSlice(NewSliceInPalette(90, "Big")) // At (100, 100), radii 100 and 50
+	for i := 0; i < 8; i++ {
+		thin.AddSlice(NewSliceInPalette(1.2, "Small "+strconv.Itoa(i)))
+	}
+	thin.DrawOn(page)
+	content := testContent(page)
+	for i := 0; i < 8; i++ {
+		text := "Small " + strconv.Itoa(i)
+		at := testPositionOf(t, content, text) // In PDF space, y up
+		dy := (792 - at[1]) - 200
+		ring := float32(0)
+		if abs32(dy) < 100 {
+			ring = float32(math.Sqrt(float64(float32(100*100) - float32(dy*dy))))
+		}
+		if at[0]+font.StringWidth(font.size, text) > 200-ring+0.01 {
+			t.Errorf("%s is on the ring: %v", text, at)
+		}
+	}
+
+	page = NewPage(pdf, testLetterPortrait())
+	page.SetStrokeDashPattern("[3 3] 0")
+	name := "A label much too long to be drawn whole beside the circle"
+	testDonutChart(pdf).SetCenterText("A text in the hole far too long to be written in it at any size").
+		AddSlice(NewSliceInPalette(60, name)).AddSlice(NewSliceInPalette(40, "b")).DrawOn(page)
+	content = testContent(page)
+	// The chart's own solid lines after the caller's dashes
+	dashed := strings.Index(content, "[3 3] 0 d\n")
+	if dashed < 0 || strings.Index(content, "[] 0 d\n") <= dashed {
+		t.Errorf("the caller's dash pattern is kept: %q", content)
+	}
+	if strings.Contains(content, testHex(name)) {
+		t.Errorf("the label is not shortened: %q", content)
+	}
+	if !strings.Contains(content, " 9 Tf\n") { // The text in the hole at 9, three quarters of 12
+		t.Errorf("the text in the hole is not at 9: %q", content)
+	}
+	page = NewPage(pdf, testLetterPortrait())
+	testDonutChart(pdf).SetLegend(true).AddSlice(NewSliceInPalette(60, name)).
+		AddSlice(NewSliceInPalette(40, "b")).DrawOn(page)
+	content = testContent(page)
+	if strings.Contains(content, testHex(name)) {
+		t.Errorf("the legend item is not shortened: %q", content)
+	}
+	if !strings.Contains(content, testHex(" 60%")) { // The percentage kept
+		t.Errorf("the percentage is not kept: %q", content)
+	}
+
+	page = NewPage(pdf, testLetterPortrait())
+	testDonutChart(pdf).AddSlice(NewSliceInPalette(1, "a")).DrawOn(page)
+	outer := testContent(page)
+	page = NewPage(pdf, testLetterPortrait())
+	testDonutChart(pdf).SetRadii(50, 100).AddSlice(NewSliceInPalette(1, "a")).DrawOn(page)
+	// The same but for the names of the fonts, a new one for each chart
+	fonts := regexp.MustCompile(`/F\d+ `)
+	if fonts.ReplaceAllString(outer, "/F ") != fonts.ReplaceAllString(testContent(page), "/F ") {
+		t.Errorf("the radii swapped draw otherwise")
+	}
+
+	page = NewPage(pdf, testLetterPortrait())
+	nine := testDonutChart(pdf)
+	for i := 0; i < 9; i++ {
+		nine.AddSlice(NewSliceInPalette(1, ""))
+	}
+	nine.DrawOn(page)
+	content = testContent(page)
+	if strings.Index(content, "0.12 0.23 0.37 rg") != strings.LastIndex(content, "0.12 0.23 0.37 rg") {
+		t.Errorf("two slices in navy: %q", content)
 	}
 }

@@ -12,9 +12,9 @@ import Testing
     private func chart(_ pdf: PDF) -> SimpleScatterChart {
         let font = TestSupport.helvetica(pdf)
         return SimpleScatterChart(font, font).setSize(400, 300).setLocation(50, 50)
-                .setTitle("Phones and internet").setSubtitle("by country")
-                .setXAxisTitle("phones").setYAxisTitle("internet")
-                .add(0.1, 5).add(0.5, 30).add("Canada", 0.5, 65).add(1.2, 70)
+                .setTitle("Life expectancy and children per woman").setSubtitle("by country")
+                .setXAxisTitle("children per woman").setYAxisTitle("life expectancy")
+                .add(5.2, 61).add(3, 70).add("Canada", 1.3, 82).add(2, 76)
     }
 
     @Test func theTrendIsTheLeastSquaresLine() {
@@ -45,8 +45,8 @@ import Testing
 
     @Test func describesItselfFromItsData() {
         let chart = chart(TestSupport.newPDF()).add(Float.nan, 1).setTrendLine(true)
-        #expect(chart.getAltDescription() == "Phones and internet, by country: 4 points, internet against phones; "
-                + "Canada 0.5 and 65; the trend rises.")
+        #expect(chart.getAltDescription() == "Life expectancy and children per woman. By country: 4 points, "
+                + "life expectancy against children per woman; Canada 1.3 and 82; the trend falls.")
         chart.setAltDescription("Four countries")
         #expect(chart.getAltDescription() == "Four countries")
     }
@@ -150,5 +150,20 @@ import Testing
         }
         #expect(patch.lowerBound > navy.lowerBound, "\(content)")      // After the navy dot
         #expect(content[patch.lowerBound..<name.lowerBound].contains(" re\n"), "\(content)")
+    }
+
+    // A long name of a point is shortened and kept in the plot (the review
+    // of 26 October 2026, the second). The fonts of a Swift chart are not
+    // optional, so the Java test of a chart without them has no Swift form.
+    @Test func theSecondReviewOfTheCharts() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let page = Page(pdf, Letter.PORTRAIT)
+        SimpleScatterChart(font, font).add(0, 0).add(3e38, 3e38).drawOn(page)    // Had infinite coordinates
+        let name = "A name far too long to be written whole beside its point in the chart"
+        chart(pdf).add(name, 3, 65).drawOn(page)
+        let content = TestSupport.content(page)
+        #expect(!content.contains(TestSupport.hex(name)), "\(content)")
+        #expect(!content.contains("inf") && !content.contains("nan"), "\(content)")
     }
 }

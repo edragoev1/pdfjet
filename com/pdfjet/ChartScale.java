@@ -40,6 +40,14 @@ final class ChartScale {
         if (Float.isNaN(value) || Float.isInfinite(value)) {
             return String.valueOf(value);
         }
+        // A number of 16 digits or more as three significant digits and a
+        // power of ten, 3e38 and 1.23e20, where it was written out in full
+        if (Math.abs(value) >= 1e15f) {
+            BigDecimal round = new BigDecimal(value).round(new MathContext(3, RoundingMode.HALF_EVEN));
+            int exponent = round.precision() - round.scale() - 1;
+            BigDecimal mantissa = round.movePointLeft(exponent).stripTrailingZeros();
+            return mantissa.toPlainString() + "e" + exponent;
+        }
         // A minimum above the maximum is lowered to it, as in NumberFormat
         maxDigits = Math.max(maxDigits, 0);
         minDigits = Math.min(Math.max(minDigits, 0), maxDigits);
@@ -113,7 +121,13 @@ final class ChartScale {
         round.maxValue = (float) Math.ceil(maxValue / step) * step;
         round.minValue = (float) Math.floor(minValue / step) * step;
         if (!isValue(round.maxValue - round.minValue)) {
-            return unitRange();     // Rounded past the largest float
+            // Rounded past the largest float: the range of the values as
+            // they are, in lines of a round step where there is one; it fell
+            // back to 0 to 1, and the bars of 3e38 went past the plot
+            round.maxValue = maxValue;
+            round.minValue = minValue;
+            round.numOfGridLines = roundLines(minValue, maxValue, numOfGridLines);
+            return round;
         }
 
         // Recount grid lines from actual rounded range
@@ -243,19 +257,48 @@ final class ChartScale {
         if (font.stringWidth(size, text) <= width) {
             return text;
         }
-        int end = text.length();
-        while (end > 0) {
-            end = text.offsetByCodePoints(end, -1);
-            int cut = end;
-            while (cut > 0 && text.charAt(cut - 1) == ' ') {
-                cut--;
-            }
-            String shorter = text.substring(0, cut) + "\u2026";
+        // The longest start of the text that fits with the ellipsis, found by
+        // halving the number of code points it keeps
+        int count = text.codePointCount(0, text.length());
+        String best = "\u2026";
+        int lo = 0;
+        int hi = count - 1;
+        while (lo <= hi) {
+            int mid = (lo + hi) >>> 1;
+            String shorter = shortened(text, mid);
             if (font.stringWidth(size, shorter) <= width) {
-                return shorter;
+                best = shorter;
+                lo = mid + 1;
+            } else {
+                hi = mid - 1;
             }
         }
-        return "\u2026";
+        return best;
+    }
+
+    // The first code points of the text, its trailing spaces left out, and an
+    // ellipsis.
+    private static String shortened(String text, int codePoints) {
+        int cut = text.offsetByCodePoints(0, codePoints);
+        while (cut > 0 && text.charAt(cut - 1) == ' ') {
+            cut--;
+        }
+        return text.substring(0, cut) + "\u2026";
+    }
+
+    /**
+     * Returns the distance along a length of a value whose distance from the
+     * start of the axis is d, on an axis of the span: d * length / span, in
+     * floats, as it always was, or in doubles when the product is past the
+     * largest float. Bars of 3e38 on an axis of 0 to 3e38 threw, their
+     * coordinates infinite (the review of 26 October 2026, the second).
+     */
+    static float scaled(float d, float length, float span) {
+        float product = d * length;
+        if (isValue(product)) {
+            return product / span;
+        }
+        return (float) ((double) d * (double) length / (double) span);
     }
 
     /**
@@ -285,10 +328,36 @@ final class ChartScale {
     }
 
     /**
+     * Joins two parts of a chart's description, the title and the subtitle, as
+     * two sentences: "Vehicles. By model year", the second's first letter a
+     * capital when it is a to z. A part that is empty is left out, and the
+     * first keeps its own full stop, question or exclamation mark. They were
+     * joined with a comma, and a subtitle kept its capital after it.
+     */
+    static String join(String first, String second) {
+        if (second.isEmpty()) {
+            return first;
+        }
+        if (first.isEmpty()) {
+            return second;
+        }
+        // The second a sentence, its first letter a capital when it is a to z
+        char start = second.charAt(0);
+        if (start >= 'a' && start <= 'z') {
+            second = (char) (start - 'a' + 'A') + second.substring(1);
+        }
+        char end = first.charAt(first.length() - 1);
+        return first + ((end == '.' || end == '?' || end == '!') ? " " : ". ") + second;
+    }
+
+    /**
      * Groups the digits of a number before its decimal point in thousands with
      * commas: 23507 is 23,507.
      */
     static String groupDigits(String label) {
+        if (label.indexOf('e') >= 0) {
+            return label;   // A power of ten has no thousands
+        }
         int start = label.startsWith("-") ? 1 : 0;
         int end = label.indexOf('.');
         if (end < 0) {

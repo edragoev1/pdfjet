@@ -4,6 +4,7 @@
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
+import Foundation
 import Testing
 @testable import PDFjet
 
@@ -98,7 +99,7 @@ import Testing
         let content = TestSupport.content(page)
         #expect(content.contains(TestSupport.hex("Fruit")) && content.contains(TestSupport.hex("This week")))
         #expect(TestSupport.fillColorBefore(content, "This week") == "0.37 0.41 0.45 rg")
-        #expect(page.structures[1].altDescription == "Fruit, This week: a 100%")
+        #expect(page.structures[1].altDescription == "Fruit. This week: a 100%")
     }
     // A slice that is not a number or an infinity is not drawn, and the
     // others are: one made the arc's loop endless (review of 11 October 2026,
@@ -196,5 +197,65 @@ import Testing
         page = Page(memory.pdf, Letter.PORTRAIT)
         self.chart(memory.pdf).setRadii(100, 0).setCenterText("none").addSlice(Slice(1, "a")).drawOn(page)
         #expect(!TestSupport.content(page).contains(TestSupport.hex("none")))
+    }
+
+    // The review of 26 October 2026, the second: labels moved apart stay
+    // outside the ring; long labels, legend items and texts in the hole are
+    // shortened; the caller's dash pattern does not dash the lines; an inner
+    // radius past the outer one is the outer one; and the last slice, by the
+    // first around the circle, is not in the first's color.
+    @Test func theSecondReviewOfTheCharts() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        var page = Page(pdf, Letter.PORTRAIT)
+        let thin = chart(pdf).addSlice(Slice(90, "Big"))    // At (100, 100), radii 100 and 50
+        for i in 0..<8 {
+            thin.addSlice(Slice(1.2, "Small \(i)"))
+        }
+        thin.drawOn(page)
+        var content = TestSupport.content(page)
+        for i in 0..<8 {
+            let at = TestSupport.positionOf(content, "Small \(i)")   // In PDF space, y up
+            let dy = (792 - at[1]) - 200
+            let ring: Float = abs(dy) < 100 ? (100 * 100 - dy * dy).squareRoot() : 0
+            #expect(at[0] + font.stringWidth("Small \(i)") <= 200 - ring + 0.01,
+                    "Small \(i) is on the ring: \(at[0]), \(at[1])")
+        }
+
+        page = Page(pdf, Letter.PORTRAIT)
+        page.setStrokeDashPattern("[3 3] 0")
+        let name = "A label much too long to be drawn whole beside the circle"
+        chart(pdf).setCenterText("A text in the hole far too long to be written in it at any size")
+                .addSlice(Slice(60, name)).addSlice(Slice(40, "b")).drawOn(page)
+        content = TestSupport.content(page)
+        // The chart's own solid lines after the caller's dashes
+        let dash = content.range(of: "[] 0 d\n")
+        let dashed = content.range(of: "[3 3] 0 d\n")
+        #expect(dash != nil && dashed != nil && dash!.lowerBound > dashed!.lowerBound, "\(content)")
+        #expect(!content.contains(TestSupport.hex(name)), "\(content)")
+        #expect(content.contains(" 9 Tf\n"), "\(content)")    // The text in the hole at 9, three quarters of 12
+        page = Page(pdf, Letter.PORTRAIT)
+        chart(pdf).setLegend(true).addSlice(Slice(60, name)).addSlice(Slice(40, "b")).drawOn(page)
+        content = TestSupport.content(page)
+        #expect(!content.contains(TestSupport.hex(name)), "\(content)")
+        #expect(content.contains(TestSupport.hex(" 60%")), "\(content)")   // The percentage kept
+
+        page = Page(pdf, Letter.PORTRAIT)
+        chart(pdf).addSlice(Slice(1, "a")).drawOn(page)
+        let outer = TestSupport.content(page)
+        page = Page(pdf, Letter.PORTRAIT)
+        chart(pdf).setRadii(50, 100).addSlice(Slice(1, "a")).drawOn(page)
+        // The same but for the names of the fonts, a new one for each chart
+        #expect(outer.replacingOccurrences(of: "/F\\d+ ", with: "/F ", options: .regularExpression)
+                == TestSupport.content(page).replacingOccurrences(of: "/F\\d+ ", with: "/F ", options: .regularExpression))
+
+        page = Page(pdf, Letter.PORTRAIT)
+        let nine = chart(pdf)
+        for _ in 0..<9 {
+            nine.addSlice(Slice(1, ""))
+        }
+        nine.drawOn(page)
+        content = TestSupport.content(page)
+        #expect(content.components(separatedBy: "0.12 0.23 0.37 rg").count <= 2, "\(content)")
     }
 }

@@ -362,13 +362,7 @@ public class SimpleScatterChart : Drawable {
             return altDescription
         }
         let points = valid()
-        var text = title
-        if !subtitle.isEmpty {
-            if !text.isEmpty {
-                text += ", "
-            }
-            text += subtitle
-        }
+        var text = ChartScale.join(title, subtitle)
         if text.isEmpty {
             text = "Scatter chart"
         }
@@ -438,10 +432,10 @@ public class SimpleScatterChart : Drawable {
             return ChartScale.onAxis(p.x, xAxis) && ChartScale.onAxis(p.y, yAxis)
         }
         func xAt(_ v: Float) -> Float {
-            return plotLeft + (v - xAxis.min) * (right - plotLeft) / (xAxis.max - xAxis.min)
+            return plotLeft + ChartScale.scaled(v - xAxis.min, right - plotLeft, xAxis.max - xAxis.min)
         }
         func yAt(_ v: Float) -> Float {
-            return plotBottom - (v - yAxis.min) * (plotBottom - top) / (yAxis.max - yAxis.min)
+            return plotBottom - ChartScale.scaled(v - yAxis.min, plotBottom - top, yAxis.max - yAxis.min)
         }
 
         // In a tagged document a point that is a link is drawn after the
@@ -452,6 +446,7 @@ public class SimpleScatterChart : Drawable {
 
         page.addBDC(StructElem.FIGURE, nil, getAltDescription())
         page.saveGraphicsState()
+        page.setDefaultStrokeDashPattern()      // Not the caller's, which dashed the lines
 
         if panelColor >= 0 {
             page.setBrushColor(panelColor)
@@ -460,12 +455,13 @@ public class SimpleScatterChart : Drawable {
         var baseline = y + pad
         if !title.isEmpty {
             baseline += f1.getAscent(f1.getSize())
-            page.drawString(f1, f1.getSize(), title, x + pad, baseline, Util.toRGB(SimpleBarChart.INK), nil)
+            page.drawString(f1, f1.getSize(), ChartScale.shorten(f1, f1.getSize(), title, w - 2.0 * pad), x + pad, baseline, Util.toRGB(SimpleBarChart.INK), nil)
             baseline += f1.getDescent(f1.getSize())
         }
         if !subtitle.isEmpty {
             baseline += 1.4 * subtitleSize()
-            page.drawString(f2, subtitleSize(), subtitle, x + pad, baseline, Util.toRGB(SimpleBarChart.MUTED), nil)
+            page.drawString(f2, subtitleSize(), ChartScale.shorten(f2, subtitleSize(), subtitle, w - 2.0 * pad),
+                    x + pad, baseline, Util.toRGB(SimpleBarChart.MUTED), nil)
         }
 
         // The horizontal grid and the numbers of both axes, each where it
@@ -552,18 +548,21 @@ public class SimpleScatterChart : Drawable {
             let py = yAt(p.y)
             page.setBrushColor(highlightColor)
             page.fillCircle(px, py, big)
-            let width = f1.stringWidth(size, p.name)
+            // A name of two fifths of the plot at most, and in the plot
+            let name = ChartScale.shorten(f1, size, p.name, 0.4 * (right - plotLeft))
+            let width = f1.stringWidth(size, name)
             var lx = px + big + size / 3.0
             if lx + width > right {
                 lx = px - big - size / 3.0 - width  // At the left, not past the plot
             }
+            lx = Swift.max(lx, plotLeft)
             let baseline = py + ascent / 2.0
             // On a patch of the panel's color, which the dots and the grid do not
             // show through
             page.setBrushColor(panelColor >= 0 ? panelColor : Color.white)
             page.fillRect(lx - 1.0, baseline - f1.getAscent(size) - 1.0,
                     width + 2.0, f1.getAscent(size) + f1.getDescent(size) + 2.0)
-            page.drawString(f1, size, p.name, lx, baseline, Util.toRGB(highlightColor), nil)
+            page.drawString(f1, size, name, lx, baseline, Util.toRGB(highlightColor), nil)
             let x1 = Swift.min(px - big, lx)
             let y1 = Swift.min(py - big, baseline - f1.getAscent(size))
             let x2 = Swift.max(px + big, lx + width)

@@ -314,14 +314,20 @@ func (markdown *Markdown) drawBlocks(blocks []*markdownBlock, x, width float32, 
 	for i, block := range blocks {
 		switch block.kind {
 		case markdownHeading:
+			if i+2 < len(blocks) && markdownLeadsIntoTable(blocks[i+1], blocks[i+2]) {
+				gap := float32(markdown.size() * 0.75)
+				if tight {
+					gap = float32(markdown.size() * 0.25)
+				}
+				markdown.keepHeadingWithTable(block, blocks[i+1], blocks[i+2], gap, x, width)
+			}
 			markdown.drawHeading(block, x, width)
 		case markdownParagraph:
 			gap := float32(markdown.size() * 0.75)
 			if tight {
 				gap = float32(markdown.size() * 0.25)
 			}
-			if i+1 < len(blocks) && blocks[i+1].kind == markdownTable &&
-				strings.HasSuffix(strings.TrimSpace(block.text), ":") {
+			if i+1 < len(blocks) && markdownLeadsIntoTable(block, blocks[i+1]) {
 				markdown.keepWithTable(block, blocks[i+1], gap, x, width)
 			}
 			markdown.gap(gap)
@@ -405,11 +411,29 @@ func (markdown *Markdown) firstBlockHeight(blocks []*markdownBlock) float32 {
 // more than that of the heading before it, so that no level is skipped.
 func (markdown *Markdown) drawHeading(block *markdownBlock, x, width float32) {
 	fontSize := float32(markdown.size() * markdownHeadingSizes[block.level-1])
+	markdown.gap(markdown.headingGap(block))
+	paragraph := markdown.headingParagraph(block)
+	markdown.headingLevel = min(block.level, markdown.headingLevel+1)
+	levels := [6]structelem.StructElem{structelem.H1, structelem.H2, structelem.H3,
+		structelem.H4, structelem.H5, structelem.H6}
+	paragraph.SetStructureType(levels[markdown.headingLevel-1])
+	markdown.ensure(markdown.headingFont.GetBodyHeight(fontSize) + float32(2*markdown.regular.GetBodyHeight(markdown.size())))
+	markdown.drawParagraph(paragraph, x, width)
+	markdown.y += float32(markdown.size() * 0.25)
+}
+
+// headingGap returns the space above a heading.
+func (markdown *Markdown) headingGap(block *markdownBlock) float32 {
 	if block.level <= 2 {
-		markdown.gap(float32(markdown.size() * 1.4))
-	} else {
-		markdown.gap(float32(markdown.size() * 1.1))
+		return float32(markdown.size() * 1.4)
 	}
+	return float32(markdown.size() * 1.1)
+}
+
+// headingParagraph returns the text of a heading in the heading font, at its
+// level's size and in the heading color.
+func (markdown *Markdown) headingParagraph(block *markdownBlock) *Paragraph {
+	fontSize := float32(markdown.size() * markdownHeadingSizes[block.level-1])
 	paragraph := markdown.markup.Paragraph(block.text)
 	for _, line := range paragraph.lines {
 		if line.font == markdown.regular {
@@ -422,13 +446,7 @@ func (markdown *Markdown) drawHeading(block *markdownBlock, x, width float32) {
 			line.SetTextColor(markdown.headingColor)
 		}
 	}
-	markdown.headingLevel = min(block.level, markdown.headingLevel+1)
-	levels := [6]structelem.StructElem{structelem.H1, structelem.H2, structelem.H3,
-		structelem.H4, structelem.H5, structelem.H6}
-	paragraph.SetStructureType(levels[markdown.headingLevel-1])
-	markdown.ensure(markdown.headingFont.GetBodyHeight(fontSize) + float32(2*markdown.regular.GetBodyHeight(markdown.size())))
-	markdown.drawParagraph(paragraph, x, width)
-	markdown.y += float32(markdown.size() * 0.25)
+	return paragraph
 }
 
 // drawCode draws code in the code font on a light background, a line of the
@@ -655,6 +673,40 @@ func (markdown *Markdown) drawRule(x, width float32) {
 
 // markdownCheckMark starts a table cell drawn in the check color.
 const markdownCheckMark = "\u2713"
+
+// markdownLeadsIntoTable tells if the block is a paragraph that ends in a
+// colon, which leads into the table after it.
+func markdownLeadsIntoTable(block, next *markdownBlock) bool {
+	return block.kind == markdownParagraph && next.kind == markdownTable &&
+		strings.HasSuffix(strings.TrimSpace(block.text), ":")
+}
+
+// keepHeadingWithTable starts a page for a heading over a paragraph that
+// leads into a table, as "Lines of code" over "Lines of code of each
+// program:" and its table, when the three fit on a page together but not in
+// what is left of this one: the paragraph and the table went to the next
+// page, and the heading ended this one.
+func (markdown *Markdown) keepHeadingWithTable(heading, paragraph, table *markdownBlock, gap, x, width float32) {
+	if markdown.atTop {
+		return
+	}
+	room := markdown.bottom - markdown.marginTop
+	headingGap := markdown.headingGap(heading)
+	title := NewTextFrameFromParagraphs([]*Paragraph{markdown.headingParagraph(heading)}).SetParagraphGap(0)
+	title.SetLocation(x, markdown.y+headingGap)
+	title.SetWidth(width).SetHeight(room)
+	title.DrawOn(nil)
+	below := title.GetTextBottom() + float32(markdown.size()*0.25) + gap
+	text := NewTextFrameFromParagraphs([]*Paragraph{markdown.markup.Paragraph(paragraph.text)}).SetParagraphGap(0)
+	text.SetLocation(x, below)
+	text.SetWidth(width).SetHeight(room)
+	text.DrawOn(nil)
+	needed := (text.GetTextBottom() - markdown.y) + float32(markdown.size()*0.75) +
+		markdown.tableOf(table, width).getTotalHeight()
+	if markdown.y+needed > markdown.bottom && needed-headingGap <= room {
+		markdown.newPage()
+	}
+}
 
 // keepWithTable starts a page for a paragraph that ends in a colon and the
 // table after it, which it leads into as "The size of the PDFs, KB:" does,

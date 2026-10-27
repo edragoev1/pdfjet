@@ -203,6 +203,9 @@ public class SimpleBarChart implements Drawable {
      * @return the height of the chart.
      */
     public float getHeight() {
+        if (f1 == null || f2 == null) {
+            return 0f;      // Without its fonts the chart draws nothing
+        }
         return top() + values.size() * rowHeight() + pad();
     }
 
@@ -252,13 +255,7 @@ public class SimpleBarChart implements Drawable {
         if (!altDescription.isEmpty()) {
             return altDescription;
         }
-        StringBuilder sb = new StringBuilder(title);
-        if (!subtitle.isEmpty()) {
-            if (sb.length() > 0) {
-                sb.append(", ");
-            }
-            sb.append(subtitle);
-        }
+        StringBuilder sb = new StringBuilder(ChartScale.join(title, subtitle));
         if (sb.length() == 0) {
             sb.append("Bar chart");
         }
@@ -278,7 +275,7 @@ public class SimpleBarChart implements Drawable {
      */
     public float[] drawOn(Page page) throws Exception {
         float h = getHeight();
-        if (page == null || values.isEmpty()) {     // Measured, or nothing to draw
+        if (page == null || values.isEmpty() || f1 == null || f2 == null) {    // Measured, or nothing to draw
             return new float[] {x + w, y + h};
         }
         float size = f2.getSize();
@@ -312,12 +309,13 @@ public class SimpleBarChart implements Drawable {
         float baseline = y + pad;
         if (!title.isEmpty()) {
             baseline += f1.getAscent(f1.getSize());
-            page.drawString(f1, f1.getSize(), title, x + pad, baseline, Util.toRGB(INK), null);
+            page.drawString(f1, f1.getSize(), ChartScale.shorten(f1, f1.getSize(), title, w - 2f * pad), x + pad, baseline, Util.toRGB(INK), null);
             baseline += f1.getDescent(f1.getSize());
         }
         if (!subtitle.isEmpty()) {
             baseline += 1.4f * subtitleSize();
-            page.drawString(f2, subtitleSize(), subtitle, x + pad, baseline, Util.toRGB(MUTED), null);
+            page.drawString(f2, subtitleSize(), ChartScale.shorten(f2, subtitleSize(), subtitle, w - 2f * pad),
+                    x + pad, baseline, Util.toRGB(MUTED), null);
         }
 
         float rowTop = y + top();

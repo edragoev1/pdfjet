@@ -329,9 +329,22 @@ public class BarChart implements Drawable {
      * @param drawGridLines true to draw them.
      * @return this BarChart object.
      */
-    public BarChart setDrawGridLines(boolean drawGridLines) {
+    public BarChart setGridLines(boolean drawGridLines) {
         this.drawGridLines = drawGridLines;
         return this;
+    }
+
+    /**
+     * Sets whether the grid lines of the value axis are drawn.
+     *
+     * @param drawGridLines true to draw them.
+     * @return this BarChart object.
+     * @deprecated as of 9.1.5, use setGridLines, the name the other charts
+     * use for what they draw.
+     */
+    @Deprecated
+    public BarChart setDrawGridLines(boolean drawGridLines) {
+        return setGridLines(drawGridLines);
     }
 
     /**
@@ -341,9 +354,22 @@ public class BarChart implements Drawable {
      * @param drawValueLabels true to write the values.
      * @return this BarChart object.
      */
-    public BarChart setDrawValueLabels(boolean drawValueLabels) {
+    public BarChart setValueLabels(boolean drawValueLabels) {
         this.drawValueLabels = drawValueLabels;
         return this;
+    }
+
+    /**
+     * Sets whether the value of each bar is written at its end, or, in a
+     * stacked chart, inside each segment that has room for it.
+     *
+     * @param drawValueLabels true to write the values.
+     * @return this BarChart object.
+     * @deprecated as of 9.1.5, use setValueLabels, as SimpleLineChart's.
+     */
+    @Deprecated
+    public BarChart setDrawValueLabels(boolean drawValueLabels) {
+        return setValueLabels(drawValueLabels);
     }
 
     /**
@@ -379,9 +405,22 @@ public class BarChart implements Drawable {
      * @param drawLegend true to draw the legend.
      * @return this BarChart object.
      */
-    public BarChart setDrawLegend(boolean drawLegend) {
+    public BarChart setLegend(boolean drawLegend) {
         this.drawLegend = drawLegend;
         return this;
+    }
+
+    /**
+     * Sets whether the legend is drawn. The legend lists the series that have
+     * a name, under the title.
+     *
+     * @param drawLegend true to draw the legend.
+     * @return this BarChart object.
+     * @deprecated as of 9.1.5, use setLegend, as DonutChart's.
+     */
+    @Deprecated
+    public BarChart setDrawLegend(boolean drawLegend) {
+        return setLegend(drawLegend);
     }
 
     /**
@@ -511,7 +550,7 @@ public class BarChart implements Drawable {
      */
     public float[] drawOn(Page page) throws Exception {
         int n = numberOfCategories();
-        if (page == null || n == 0) {  // Measured, or nothing to draw
+        if (page == null || n == 0 || f1 == null || f2 == null) {  // Measured, or nothing to draw
             return new float[] {x1 + w, y1 + h};
         }
 
@@ -610,7 +649,8 @@ public class BarChart implements Drawable {
         List<String> names = new ArrayList<>();
         float widestCategory = 0f;
         for (String category : categories) {
-            String name = horizontal ? ChartScale.shorten(f2, f2.getSize(), category, 0.4f * w) : category;
+            // Two fifths of a horizontal chart at most, a quarter under vertical bars
+            String name = ChartScale.shorten(f2, f2.getSize(), category, (horizontal ? 0.4f : 0.25f) * w);
             names.add(name);
             widestCategory = Math.max(widestCategory, f2.stringWidth(name));
         }
@@ -645,11 +685,14 @@ public class BarChart implements Drawable {
         // The pen, the brush and the dash pattern of the caller are kept, as
         // a Stamp keeps them.
         page.saveGraphicsState();
+        page.setDefaultStrokeDashPattern();     // Not the caller's, which dashed the legend's lines
 
         // Title, the subtitle and then the legend under it, at the left
-        drawText(page, f1, title, x1, titleBaseline, INK);
+        // The title and the subtitle shortened to the width of the chart
+        drawText(page, f1, ChartScale.shorten(f1, f1.getSize(), title, w), x1, titleBaseline, INK);
         if (!subtitle.isEmpty()) {
-            drawText(page, f2, subtitle, x1, titleBaseline + subtitleHeight, MUTED);
+            drawText(page, f2, ChartScale.shorten(f2, f2.getSize(), subtitle, w),
+                    x1, titleBaseline + subtitleHeight, MUTED);
         }
         if (legend) {
             drawLegend(page, titleBaseline + subtitleHeight + 1.5f * bodyHeight);
@@ -674,7 +717,7 @@ public class BarChart implements Drawable {
             String label = axisLabel(v, axisDigits);
             boolean labeled = i % every == 0;
             if (horizontal) {
-                float x = x5 + (v - vMin) * (x6 - x5) / (vMax - vMin);
+                float x = x5 + ChartScale.scaled(v - vMin, x6 - x5, vMax - vMin);
                 if (drawGridLines) {
                     gridLine(page, x, y5, x, y8);
                 }
@@ -682,7 +725,7 @@ public class BarChart implements Drawable {
                     drawText(page, f2, label, x - f2.stringWidth(label) / 2f, y8 + bodyHeight, MUTED);
                 }
             } else {
-                float y = y8 - (v - vMin) * (y8 - y5) / (vMax - vMin);
+                float y = y8 - ChartScale.scaled(v - vMin, y8 - y5, vMax - vMin);
                 if (drawGridLines) {
                     gridLine(page, x5, y, x6, y);
                 }
@@ -734,8 +777,8 @@ public class BarChart implements Drawable {
                 String label = drawValueLabels ? valueLabel(s.values[i]) : null;
                 int on = labelColorOn(color);
                 if (horizontal) {
-                    float x0 = x5 + (from - vMin) * (x6 - x5) / (vMax - vMin);
-                    float x = x5 + (to - vMin) * (x6 - x5) / (vMax - vMin);
+                    float x0 = x5 + ChartScale.scaled(from - vMin, x6 - x5, vMax - vMin);
+                    float x = x5 + ChartScale.scaled(to - vMin, x6 - x5, vMax - vMin);
                     page.fillRect(Math.min(x0, x), barStart, Math.abs(x - x0), barWidth);
                     float baseline = barStart + barWidth / 2f + ascent / 2f;
                     if (label != null && stacked) {
@@ -751,8 +794,8 @@ public class BarChart implements Drawable {
                                 to >= base ? x + pad / 2f : x - pad / 2f - f2.stringWidth(label), baseline, INK);
                     }
                 } else {
-                    float y0 = y8 - (from - vMin) * (y8 - y5) / (vMax - vMin);
-                    float y = y8 - (to - vMin) * (y8 - y5) / (vMax - vMin);
+                    float y0 = y8 - ChartScale.scaled(from - vMin, y8 - y5, vMax - vMin);
+                    float y = y8 - ChartScale.scaled(to - vMin, y8 - y5, vMax - vMin);
                     page.fillRect(barStart, Math.min(y0, y), barWidth, Math.abs(y - y0));
                     float x = barStart + (barWidth - (label != null ? f2.stringWidth(label) : 0f)) / 2f;
                     if (label != null && stacked) {
@@ -771,10 +814,10 @@ public class BarChart implements Drawable {
                 String total = valueLabel(up);
                 float groupMiddle = groupStart + groupWidth / 2f;
                 if (horizontal) {
-                    float x = x5 + (Math.min(up, vMax) - vMin) * (x6 - x5) / (vMax - vMin);
+                    float x = x5 + ChartScale.scaled(Math.min(up, vMax) - vMin, x6 - x5, vMax - vMin);
                     drawText(page, f2, total, x + pad / 2f, groupMiddle + ascent / 2f, INK);
                 } else {
-                    float y = y8 - (Math.min(up, vMax) - vMin) * (y8 - y5) / (vMax - vMin);
+                    float y = y8 - ChartScale.scaled(Math.min(up, vMax) - vMin, y8 - y5, vMax - vMin);
                     drawText(page, f2, total, groupMiddle - f2.stringWidth(total) / 2f, y - pad / 2f, INK);
                 }
             }
@@ -787,10 +830,10 @@ public class BarChart implements Drawable {
             page.setPenColor(BASELINE);
             page.setPenWidth(axisLineWidth);
             if (horizontal) {
-                float x0 = x5 + (base - vMin) * (x6 - x5) / (vMax - vMin);
+                float x0 = x5 + ChartScale.scaled(base - vMin, x6 - x5, vMax - vMin);
                 page.drawLine(x0, y5, x0, y8);
             } else {
-                float y0 = y8 - (base - vMin) * (y8 - y5) / (vMax - vMin);
+                float y0 = y8 - ChartScale.scaled(base - vMin, y8 - y5, vMax - vMin);
                 page.drawLine(x5, y0, x6, y0);
             }
         }
@@ -801,50 +844,56 @@ public class BarChart implements Drawable {
         }
 
         // The lines over the bars, through the middles of the categories, a
-        // dot at each value, broken where a value is missing
+        // dot at each value, broken where a value is missing; each on a white
+        // line a little wider, so that it stays clear where it crosses a bar
         for (Series s : lineSeries) {
-            page.setPenColor(s.color);
-            page.setPenWidth(2f);
-            page.setLineJoinStyle(JoinStyle.ROUND);
-            page.setBrushColor(s.color);
-            boolean drawing = false;
-            List<float[]> dots = new ArrayList<>();
+            List<List<float[]>> runs = new ArrayList<>();
+            List<float[]> run = null;
             for (int i = 0; i < n; i++) {
                 if (i >= s.values.length || !ChartScale.isValue(s.values[i])) {
-                    if (drawing) {
-                        page.strokePath();
-                    }
-                    drawing = false;
+                    run = null;
                     continue;
                 }
                 float v = Math.min(Math.max(s.values[i], vMin), vMax);
                 float middle = (horizontal ? y5 : x5) + i * slot + slot / 2f;
                 float at = horizontal
-                        ? x5 + (v - vMin) * (x6 - x5) / (vMax - vMin)
-                        : y8 - (v - vMin) * (y8 - y5) / (vMax - vMin);
-                float px = horizontal ? at : middle;
-                float py = horizontal ? middle : at;
-                if (drawing) {
-                    page.lineTo(px, py);
-                } else {
-                    page.moveTo(px, py);
-                    drawing = true;
+                        ? x5 + ChartScale.scaled(v - vMin, x6 - x5, vMax - vMin)
+                        : y8 - ChartScale.scaled(v - vMin, y8 - y5, vMax - vMin);
+                if (run == null) {
+                    run = new ArrayList<>();
+                    runs.add(run);
                 }
-                dots.add(new float[] {px, py});
+                run.add(horizontal ? new float[] {at, middle} : new float[] {middle, at});
             }
-            if (drawing) {
-                page.strokePath();
-            }
-            for (float[] dot : dots) {
-                page.fillCircle(dot[0], dot[1], 0.2f * bodyHeight);
+            page.setLineJoinStyle(JoinStyle.ROUND);
+            float dot = 0.2f * bodyHeight;
+            for (int pass = 0; pass < 2; pass++) {
+                int color = (pass == 0) ? Color.white : s.color;
+                page.setPenColor(color);
+                page.setPenWidth((pass == 0) ? 3.5f : 2f);
+                for (List<float[]> points : runs) {
+                    page.moveTo(points.get(0)[0], points.get(0)[1]);
+                    for (int k = 1; k < points.size(); k++) {
+                        page.lineTo(points.get(k)[0], points.get(k)[1]);
+                    }
+                    page.strokePath();
+                }
+                page.setBrushColor(color);
+                for (List<float[]> points : runs) {
+                    for (float[] point : points) {
+                        page.fillCircle(point[0], point[1], (pass == 0) ? dot + 0.75f : dot);
+                    }
+                }
             }
         }
 
         // Axis titles
         page.setTextRotation(-90);
-        drawText(page, f2, yAxisTitle, x1 + bodyHeight, y8 - ((y8 - y5) - f2.stringWidth(yAxisTitle)) / 2f, MUTED);
+        String yTitle = ChartScale.shorten(f2, f2.getSize(), yAxisTitle, y8 - y5);
+        drawText(page, f2, yTitle, x1 + bodyHeight, y8 - ((y8 - y5) - f2.stringWidth(yTitle)) / 2f, MUTED);
         page.setTextRotation(0);
-        drawText(page, f2, xAxisTitle, x5 + ((x6 - x5) - f2.stringWidth(xAxisTitle)) / 2f, y2 - bodyHeight / 2f, MUTED);
+        String xTitle = ChartScale.shorten(f2, f2.getSize(), xAxisTitle, x6 - x5);
+        drawText(page, f2, xTitle, x5 + ((x6 - x5) - f2.stringWidth(xTitle)) / 2f, y2 - bodyHeight / 2f, MUTED);
 
         page.restoreGraphicsState();
         page.setFigureBoundingBox(x1, y1, w, h);
@@ -859,20 +908,14 @@ public class BarChart implements Drawable {
         if (altDescription != null && !altDescription.isEmpty()) {
             return altDescription;
         }
-        StringBuilder sb = new StringBuilder(title);
-        if (!subtitle.isEmpty()) {
-            if (sb.length() > 0) {
-                sb.append(", ");
-            }
-            sb.append(subtitle);
-        }
+        StringBuilder sb = new StringBuilder(ChartScale.join(title, subtitle));
         if (sb.length() == 0) {
             sb.append("Bar chart");
         }
         String separator = ": ";
         for (Series s : allSeries()) {
             StringBuilder values = new StringBuilder();
-            for (int i = 0; i < s.values.length; i++) {
+            for (int i = 0; i < Math.min(s.values.length, numberOfCategories()); i++) {
                 if (!ChartScale.isValue(s.values[i])) {
                     continue;
                 }
@@ -889,7 +932,9 @@ public class BarChart implements Drawable {
                 continue;
             }
             sb.append(separator);
-            if (!s.name.isEmpty()) {
+            if (lineSeries.contains(s)) {
+                sb.append(s.name.isEmpty() ? "line: " : s.name + ", a line: ");
+            } else if (!s.name.isEmpty()) {
                 sb.append(s.name).append(": ");
             }
             sb.append(values);
@@ -901,8 +946,16 @@ public class BarChart implements Drawable {
     /** Returns the number of category slots: the categories or the longest series. */
     private int numberOfCategories() {
         int n = categories.size();
-        for (Series s : allSeries()) {
+        for (Series s : series) {
             n = Math.max(n, s.values.length);
+        }
+        // A line series is drawn over the categories of the bars, and adds
+        // none of its own when there are bars: a longer target line added
+        // empty slots
+        if (n == 0) {
+            for (Series s : lineSeries) {
+                n = Math.max(n, s.values.length);
+            }
         }
         return n;
     }
@@ -999,7 +1052,9 @@ public class BarChart implements Drawable {
             if (s.name.isEmpty()) {
                 continue;
             }
-            if (x > x1 && x + swatch + gap + f2.stringWidth(s.name) > x1 + w) {
+            // A name too long for a row is shortened
+            String name = ChartScale.shorten(f2, f2.getSize(), s.name, w - swatch - gap);
+            if (x > x1 && x + swatch + gap + f2.stringWidth(name) > x1 + w) {
                 x = x1;
                 baseline += 1.5f * f2.getBodyHeight();
                 rows++;
@@ -1017,9 +1072,9 @@ public class BarChart implements Drawable {
             }
             x += swatch + gap;
             if (page != null) {
-                drawText(page, f2, s.name, x, baseline, INK);
+                drawText(page, f2, name, x, baseline, INK);
             }
-            x += f2.stringWidth(s.name) + f2.getBodyHeight();
+            x += f2.stringWidth(name) + f2.getBodyHeight();
         }
         return rows;
     }

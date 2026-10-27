@@ -107,7 +107,7 @@ class DonutChartTest {
         String content = TestSupport.content(page);
         assertTrue(content.contains(TestSupport.hex("Fruit")) && content.contains(TestSupport.hex("This week")));
         assertEquals("0.37 0.41 0.45 rg", TestSupport.fillColorBefore(content, "This week"));
-        assertEquals("Fruit, This week: a 100%", page.structures.get(1).altDescription);
+        assertEquals("Fruit. This week: a 100%", page.structures.get(1).altDescription);
     }
 
     // A slice that is not a number or an infinity is not drawn, and the
@@ -263,5 +263,64 @@ class DonutChartTest {
         page = new Page(pdf, Letter.PORTRAIT);
         chart(pdf).setRadii(100f, 0f).setCenterText("none").addSlice(new Slice(1f, "a")).drawOn(page);
         assertFalse(TestSupport.content(page).contains(TestSupport.hex("none")));
+    }
+
+    // The review of 26 October 2026, the second: labels moved apart stay
+    // outside the ring; long labels, legend items and texts in the hole are
+    // shortened; the caller's dash pattern does not dash the lines; an inner
+    // radius past the outer one is the outer one; and the last slice, by the
+    // first around the circle, is not in the first's color.
+    @Test
+    void theSecondReviewOfTheCharts() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        DonutChart thin = chart(pdf).addSlice(new Slice(90f, "Big"));    // At (100, 100), radii 100 and 50
+        for (int i = 0; i < 8; i++) {
+            thin.addSlice(new Slice(1.2f, "Small " + i));
+        }
+        thin.drawOn(page);
+        String content = TestSupport.content(page);
+        for (int i = 0; i < 8; i++) {
+            float[] at = TestSupport.positionOf(content, "Small " + i);   // In PDF space, y up
+            float dy = (792f - at[1]) - 200f;
+            float ring = Math.abs(dy) < 100f ? (float) Math.sqrt(100f * 100f - dy * dy) : 0f;
+            assertTrue(at[0] + font.stringWidth("Small " + i) <= 200f - ring + 0.01f,
+                    "Small " + i + " is on the ring: " + at[0] + ", " + at[1]);
+        }
+
+        page = new Page(pdf, Letter.PORTRAIT);
+        page.setStrokeDashPattern("[3 3] 0");
+        String name = "A label much too long to be drawn whole beside the circle";
+        chart(pdf).setCenterText("A text in the hole far too long to be written in it at any size")
+                .addSlice(new Slice(60f, name)).addSlice(new Slice(40f, "b")).drawOn(page);
+        content = TestSupport.content(page);
+        // The chart's own solid lines after the caller's dashes
+        assertTrue(content.indexOf("[3 3] 0 d\n") >= 0
+                && content.indexOf("[] 0 d\n") > content.indexOf("[3 3] 0 d\n"), content);
+        assertFalse(content.contains(TestSupport.hex(name)), content);
+        assertTrue(content.contains(" 9 Tf\n"), content);    // The text in the hole at 9, three quarters of 12
+        page = new Page(pdf, Letter.PORTRAIT);
+        chart(pdf).setLegend(true).addSlice(new Slice(60f, name)).addSlice(new Slice(40f, "b")).drawOn(page);
+        content = TestSupport.content(page);
+        assertFalse(content.contains(TestSupport.hex(name)), content);
+        assertTrue(content.contains(TestSupport.hex(" 60%")), content);   // The percentage kept
+
+        page = new Page(pdf, Letter.PORTRAIT);
+        chart(pdf).addSlice(new Slice(1f, "a")).drawOn(page);
+        String outer = TestSupport.content(page);
+        page = new Page(pdf, Letter.PORTRAIT);
+        chart(pdf).setRadii(50f, 100f).addSlice(new Slice(1f, "a")).drawOn(page);
+        // The same but for the names of the fonts, a new one for each chart
+        assertEquals(outer.replaceAll("/F\\d+ ", "/F "), TestSupport.content(page).replaceAll("/F\\d+ ", "/F "));
+
+        page = new Page(pdf, Letter.PORTRAIT);
+        DonutChart nine = chart(pdf);
+        for (int i = 0; i < 9; i++) {
+            nine.addSlice(new Slice(1f, ""));
+        }
+        nine.drawOn(page);
+        content = TestSupport.content(page);
+        assertEquals(content.indexOf("0.12 0.23 0.37 rg"), content.lastIndexOf("0.12 0.23 0.37 rg"), content);
     }
 }

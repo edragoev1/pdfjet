@@ -692,7 +692,7 @@ func simpleBarChart(pdf *pdfjet.PDF, font *pdfjet.Font) {
 // @snippet donut-chart
 func donutChart(pdf *pdfjet.PDF, font *pdfjet.Font) {
 	bold := pdfjet.NewFontFromFile(pdf, IBMPlexSans.Bold).SetSize(10)
-	chart := pdfjet.NewDonutChart(font, bold)
+	chart := pdfjet.NewDonutChart(bold, font)
 	chart.SetLocation(100, 100)
 	chart.SetRadii(100, 60) // An inner radius of 0 makes a pie chart
 	chart.AddSlice(pdfjet.NewSlice(50, color.SteelBlue, "Java"))

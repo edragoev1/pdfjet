@@ -273,17 +273,33 @@ func (chart *BarChart) SetBarGap(gap float32) *BarChart {
 	return chart
 }
 
-// SetDrawGridLines sets whether the grid lines of the value axis are drawn.
-func (chart *BarChart) SetDrawGridLines(drawGridLines bool) *BarChart {
+// SetGridLines sets whether the grid lines of the value axis are drawn.
+func (chart *BarChart) SetGridLines(drawGridLines bool) *BarChart {
 	chart.drawGridLines = drawGridLines
+	return chart
+}
+
+// SetDrawGridLines sets whether the grid lines of the value axis are drawn.
+//
+// Deprecated: Use SetGridLines, the name the other charts use for what they
+// draw.
+func (chart *BarChart) SetDrawGridLines(drawGridLines bool) *BarChart {
+	return chart.SetGridLines(drawGridLines)
+}
+
+// SetValueLabels sets whether the value of each bar is written at its end,
+// or, in a stacked chart, inside each segment that has room for it.
+func (chart *BarChart) SetValueLabels(drawValueLabels bool) *BarChart {
+	chart.drawValueLabels = drawValueLabels
 	return chart
 }
 
 // SetDrawValueLabels sets whether the value of each bar is written at its end,
 // or, in a stacked chart, inside each segment that has room for it.
+//
+// Deprecated: Use SetValueLabels, as SimpleLineChart's.
 func (chart *BarChart) SetDrawValueLabels(drawValueLabels bool) *BarChart {
-	chart.drawValueLabels = drawValueLabels
-	return chart
+	return chart.SetValueLabels(drawValueLabels)
 }
 
 // SetValueLabelsInside sets whether the value labels are written inside the
@@ -302,11 +318,19 @@ func (chart *BarChart) SetGroupingUsed(groupingUsed bool) *BarChart {
 	return chart
 }
 
-// SetDrawLegend sets whether the legend is drawn. The legend lists the series
+// SetLegend sets whether the legend is drawn. The legend lists the series
 // that have a name, under the title.
-func (chart *BarChart) SetDrawLegend(drawLegend bool) *BarChart {
+func (chart *BarChart) SetLegend(drawLegend bool) *BarChart {
 	chart.drawLegend = drawLegend
 	return chart
+}
+
+// SetDrawLegend sets whether the legend is drawn. The legend lists the series
+// that have a name, under the title.
+//
+// Deprecated: Use SetLegend, as DonutChart's.
+func (chart *BarChart) SetDrawLegend(drawLegend bool) *BarChart {
+	return chart.SetLegend(drawLegend)
 }
 
 // SetGridLineWidth sets the width of the grid lines. The default is 0.5; a width
@@ -392,7 +416,7 @@ func (chart *BarChart) SetValueAxisMinMax(min, max float32, gridLines int) *BarC
 // draws nothing.
 func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 	n := chart.numberOfCategories()
-	if page == nil || n == 0 { // Measured, or nothing to draw
+	if page == nil || n == 0 || chart.f1 == nil || chart.f2 == nil { // Measured, or nothing to draw
 		return [2]float32{chart.x1 + chart.w, chart.y1 + chart.h}
 	}
 	f1 := chart.f1
@@ -500,10 +524,12 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 	names := make([]string, 0, len(chart.categories))
 	widestCategory := float32(0.0)
 	for _, category := range chart.categories {
-		name := category
+		// Two fifths of a horizontal chart at most, a quarter under vertical bars
+		fraction := float32(0.25)
 		if chart.horizontal {
-			name = shorten(f2, f2.size, category, float32(0.4*chart.w))
+			fraction = 0.4
 		}
+		name := shorten(f2, f2.size, category, float32(fraction*chart.w))
 		names = append(names, name)
 		widestCategory = max(widestCategory, f2.StringWidth(f2.size, name))
 	}
@@ -560,11 +586,14 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 	// The pen, the brush and the dash pattern of the caller are kept, as a
 	// Stamp keeps them.
 	page.SaveGraphicsState()
+	page.SetDefaultStrokeDashPattern() // Not the caller's, which dashed the legend's lines
 
 	// Title, the subtitle and then the legend under it, at the left
-	barChartText(page, f1, chart.title, chart.x1, titleBaseline, barChartInk)
+	// The title and the subtitle shortened to the width of the chart
+	barChartText(page, f1, shorten(f1, f1.size, chart.title, chart.w), chart.x1, titleBaseline, barChartInk)
 	if chart.subtitle != "" {
-		barChartText(page, f2, chart.subtitle, chart.x1, titleBaseline+subtitleHeight, barChartMuted)
+		barChartText(page, f2, shorten(f2, f2.size, chart.subtitle, chart.w),
+			chart.x1, titleBaseline+subtitleHeight, barChartMuted)
 	}
 	if legend {
 		chart.drawLegendOn(page, titleBaseline+subtitleHeight+float32(1.5*bodyHeight))
@@ -592,7 +621,7 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 		label := chart.axisLabel(v, axisDigits)
 		labeled := i%every == 0
 		if chart.horizontal {
-			x := x5 + float32((v-vMin)*(x6-x5))/(vMax-vMin)
+			x := x5 + scaled(v-vMin, x6-x5, vMax-vMin)
 			if chart.drawGridLines {
 				chart.gridLine(page, x, y5, x, y8)
 			}
@@ -600,7 +629,7 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 				barChartText(page, f2, label, x-float32(f2.StringWidth(f2.size, label)/2.0), y8+bodyHeight, barChartMuted)
 			}
 		} else {
-			y := y8 - float32((v-vMin)*(y8-y5))/(vMax-vMin)
+			y := y8 - scaled(v-vMin, y8-y5, vMax-vMin)
 			if chart.drawGridLines {
 				chart.gridLine(page, x5, y, x6, y)
 			}
@@ -683,8 +712,8 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 			}
 			on := labelColorOn(barColor)
 			if chart.horizontal {
-				x0 := x5 + float32((from-vMin)*(x6-x5))/(vMax-vMin)
-				x := x5 + float32((to-vMin)*(x6-x5))/(vMax-vMin)
+				x0 := x5 + scaled(from-vMin, x6-x5, vMax-vMin)
+				x := x5 + scaled(to-vMin, x6-x5, vMax-vMin)
 				page.FillRect(min(x0, x), barStart, abs32(x-x0), barWidth)
 				baseline := barStart + float32(barWidth/2.0) + float32(ascent/2.0)
 				if chart.drawValueLabels && chart.stacked {
@@ -707,8 +736,8 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 					barChartText(page, f2, label, lx, baseline, barChartInk)
 				}
 			} else {
-				y0 := y8 - float32((from-vMin)*(y8-y5))/(vMax-vMin)
-				y := y8 - float32((to-vMin)*(y8-y5))/(vMax-vMin)
+				y0 := y8 - scaled(from-vMin, y8-y5, vMax-vMin)
+				y := y8 - scaled(to-vMin, y8-y5, vMax-vMin)
 				page.FillRect(barStart, min(y0, y), barWidth, abs32(y-y0))
 				lx := barStart + float32((barWidth-f2.StringWidth(f2.size, label))/2.0)
 				if chart.drawValueLabels && chart.stacked {
@@ -735,10 +764,10 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 			total := chart.valueLabel(up)
 			groupMiddle := groupStart + float32(groupWidth/2.0)
 			if chart.horizontal {
-				x := x5 + float32((min(up, vMax)-vMin)*(x6-x5))/(vMax-vMin)
+				x := x5 + scaled(min(up, vMax)-vMin, x6-x5, vMax-vMin)
 				barChartText(page, f2, total, x+float32(pad/2.0), groupMiddle+float32(ascent/2.0), barChartInk)
 			} else {
-				y := y8 - float32((min(up, vMax)-vMin)*(y8-y5))/(vMax-vMin)
+				y := y8 - scaled(min(up, vMax)-vMin, y8-y5, vMax-vMin)
 				barChartText(page, f2, total, groupMiddle-float32(f2.StringWidth(f2.size, total)/2.0),
 					y-float32(pad/2.0), barChartInk)
 			}
@@ -752,10 +781,10 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 		page.SetPenColor(barChartBaseline)
 		page.SetPenWidth(chart.axisLineWidth)
 		if chart.horizontal {
-			x0 := x5 + float32((base-vMin)*(x6-x5))/(vMax-vMin)
+			x0 := x5 + scaled(base-vMin, x6-x5, vMax-vMin)
 			page.DrawLine(x0, y5, x0, y8)
 		} else {
-			y0 := y8 - float32((base-vMin)*(y8-y5))/(vMax-vMin)
+			y0 := y8 - scaled(base-vMin, y8-y5, vMax-vMin)
 			page.DrawLine(x5, y0, x6, y0)
 		}
 	}
@@ -766,20 +795,14 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 	}
 
 	// The lines over the bars, through the middles of the categories, a
-	// dot at each value, broken where a value is missing
+	// dot at each value, broken where a value is missing; each on a white
+	// line a little wider, so that it stays clear where it crosses a bar
 	for _, s := range chart.lineSeries {
-		page.SetPenColor(s.color)
-		page.SetPenWidth(2.0)
-		page.SetLineJoinStyle(joinstyle.Round)
-		page.SetBrushColor(s.color)
-		drawing := false
-		dots := make([][2]float32, 0, n)
+		runs := make([][][2]float32, 0)
+		var run [][2]float32
 		for i := 0; i < n; i++ {
 			if i >= len(s.values) || !isValue(s.values[i]) {
-				if drawing {
-					page.StrokePath()
-				}
-				drawing = false
+				run = nil
 				continue
 			}
 			v := min(max(s.values[i], vMin), vMax)
@@ -790,36 +813,57 @@ func (chart *BarChart) DrawOn(page *Page) [2]float32 {
 			middle := start + float32(float32(i)*slot) + float32(slot/2.0)
 			var at float32
 			if chart.horizontal {
-				at = x5 + float32((v-vMin)*(x6-x5))/(vMax-vMin)
+				at = x5 + scaled(v-vMin, x6-x5, vMax-vMin)
 			} else {
-				at = y8 - float32((v-vMin)*(y8-y5))/(vMax-vMin)
+				at = y8 - scaled(v-vMin, y8-y5, vMax-vMin)
 			}
-			px, py := middle, at
+			if run == nil {
+				runs = append(runs, nil)
+			}
 			if chart.horizontal {
-				px, py = at, middle
-			}
-			if drawing {
-				page.LineTo(px, py)
+				run = append(run, [2]float32{at, middle})
 			} else {
-				page.MoveTo(px, py)
-				drawing = true
+				run = append(run, [2]float32{middle, at})
 			}
-			dots = append(dots, [2]float32{px, py})
+			runs[len(runs)-1] = run
 		}
-		if drawing {
-			page.StrokePath()
-		}
-		for _, dot := range dots {
-			page.FillCircle(dot[0], dot[1], float32(0.2*bodyHeight))
+		page.SetLineJoinStyle(joinstyle.Round)
+		dot := float32(0.2 * bodyHeight)
+		for pass := 0; pass < 2; pass++ {
+			c := s.color
+			width := float32(2.0)
+			radius := dot
+			if pass == 0 {
+				c = color.White
+				width = 3.5
+				radius = dot + 0.75
+			}
+			page.SetPenColor(c)
+			page.SetPenWidth(width)
+			for _, points := range runs {
+				page.MoveTo(points[0][0], points[0][1])
+				for k := 1; k < len(points); k++ {
+					page.LineTo(points[k][0], points[k][1])
+				}
+				page.StrokePath()
+			}
+			page.SetBrushColor(c)
+			for _, points := range runs {
+				for _, point := range points {
+					page.FillCircle(point[0], point[1], radius)
+				}
+			}
 		}
 	}
 
 	// Axis titles
 	page.SetTextRotation(-90)
-	barChartText(page, f2, chart.yAxisTitle, chart.x1+bodyHeight,
-		y8-float32(((y8-y5)-f2.StringWidth(f2.size, chart.yAxisTitle))/2.0), barChartMuted)
+	yTitle := shorten(f2, f2.size, chart.yAxisTitle, y8-y5)
+	barChartText(page, f2, yTitle, chart.x1+bodyHeight,
+		y8-float32(((y8-y5)-f2.StringWidth(f2.size, yTitle))/2.0), barChartMuted)
 	page.SetTextRotation(0)
-	barChartText(page, f2, chart.xAxisTitle, x5+float32(((x6-x5)-f2.StringWidth(f2.size, chart.xAxisTitle))/2.0),
+	xTitle := shorten(f2, f2.size, chart.xAxisTitle, x6-x5)
+	barChartText(page, f2, xTitle, x5+float32(((x6-x5)-f2.StringWidth(f2.size, xTitle))/2.0),
 		y2-float32(bodyHeight/2.0), barChartMuted)
 
 	page.RestoreGraphicsState()
@@ -837,20 +881,18 @@ func (chart *BarChart) getAltDescription() string {
 		return chart.altDescription
 	}
 	var sb strings.Builder
-	sb.WriteString(chart.title)
-	if chart.subtitle != "" {
-		if sb.Len() > 0 {
-			sb.WriteString(", ")
-		}
-		sb.WriteString(chart.subtitle)
-	}
+	sb.WriteString(join(chart.title, chart.subtitle))
 	if sb.Len() == 0 {
 		sb.WriteString("Bar chart")
 	}
 	separator := ": "
-	for _, s := range chart.allSeries() {
+	n := chart.numberOfCategories()
+	for j, s := range chart.allSeries() {
 		var values strings.Builder
 		for i, v := range s.values {
+			if i >= n {
+				break
+			}
 			if !isValue(v) {
 				continue
 			}
@@ -871,7 +913,14 @@ func (chart *BarChart) getAltDescription() string {
 			continue
 		}
 		sb.WriteString(separator)
-		if s.name != "" {
+		if j >= len(chart.series) { // A line series
+			if s.name == "" {
+				sb.WriteString("line: ")
+			} else {
+				sb.WriteString(s.name)
+				sb.WriteString(", a line: ")
+			}
+		} else if s.name != "" {
 			sb.WriteString(s.name)
 			sb.WriteString(": ")
 		}
@@ -885,8 +934,15 @@ func (chart *BarChart) getAltDescription() string {
 // numberOfCategories returns the number of category slots: the categories or the longest series.
 func (chart *BarChart) numberOfCategories() int {
 	n := len(chart.categories)
-	for _, s := range chart.allSeries() {
+	for _, s := range chart.series {
 		n = max(n, len(s.values))
+	}
+	// A line series is drawn over the categories of the bars, and adds none
+	// of its own when there are bars: a longer target line added empty slots
+	if n == 0 {
+		for _, s := range chart.lineSeries {
+			n = max(n, len(s.values))
+		}
 	}
 	return n
 }
@@ -996,7 +1052,9 @@ func (chart *BarChart) drawLegendOn(page *Page, baseline float32) int {
 		if s.name == "" {
 			continue
 		}
-		if x > chart.x1 && x+swatch+gap+f2.StringWidth(f2.size, s.name) > chart.x1+chart.w {
+		// A name too long for a row is shortened
+		name := shorten(f2, f2.size, s.name, chart.w-swatch-gap)
+		if x > chart.x1 && x+swatch+gap+f2.StringWidth(f2.size, name) > chart.x1+chart.w {
 			x = chart.x1
 			baseline += float32(1.5 * f2.bodyHeight)
 			rows++
@@ -1018,9 +1076,9 @@ func (chart *BarChart) drawLegendOn(page *Page, baseline float32) int {
 		}
 		x += swatch + gap
 		if page != nil {
-			barChartText(page, f2, s.name, x, baseline, barChartInk)
+			barChartText(page, f2, name, x, baseline, barChartInk)
 		}
-		x += f2.StringWidth(f2.size, s.name) + f2.bodyHeight
+		x += f2.StringWidth(f2.size, name) + f2.bodyHeight
 	}
 	return rows
 }

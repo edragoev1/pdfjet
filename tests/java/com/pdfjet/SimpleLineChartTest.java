@@ -32,7 +32,7 @@ class SimpleLineChartTest {
     @Test
     void describesItselfFromItsData() throws Exception {
         SimpleLineChart chart = chart(TestSupport.newPDF());
-        assertEquals("Vehicles, by model year, 2021 to 2023: Battery from 14,755 to 11,853, highest 23,507 in 2022;"
+        assertEquals("Vehicles. By model year, 2021 to 2023: Battery from 14,755 to 11,853, highest 23,507 in 2022;"
                 + " Hybrid from 3,541 to 1,500, highest 4,015 in 2022.", chart.altDescription());
         chart.setAltDescription("Two lines");
         assertEquals("Two lines", chart.altDescription());
@@ -195,5 +195,42 @@ class SimpleLineChartTest {
         page = new Page(pdf, Letter.PORTRAIT);
         new SimpleLineChart(font, font).addLine("x", new float[] {12f, 37f}).drawOn(page);
         assertFalse(TestSupport.content(page).contains(TestSupport.hex("12")));
+    }
+
+    // The review of 26 October 2026, the second: a chart without its fonts
+    // draws nothing; the value of the first point of a rise is after it and
+    // under the line, and that of a peak at the top of the plot under it.
+    @Test
+    void theSecondReviewOfTheCharts() throws Exception {
+        PDF pdf = TestSupport.newPDF();
+        Font font = TestSupport.helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new SimpleLineChart(null, null).addLine("a", new float[] {1f, 2f}).drawOn(page);
+        assertEquals("", TestSupport.content(page));
+        new SimpleLineChart(font, font).addLine("big", new float[] {0f, 3e38f}).drawOn(page);    // Did throw
+
+        page = new Page(pdf, Letter.PORTRAIT);
+        new SimpleLineChart(font, font).setCategories("a", "b", "c").setYAxisRange(0f, 50f)
+                .addLine("x", new float[] {12f, 50f, 23f}).setValueLabels(true).drawOn(page);
+        String content = TestSupport.content(page);
+        // The points, from the line drawn in gray: "x y m" of the first
+        // point, "x y l" of the peak
+        int rg = content.indexOf("0.55 0.59 0.64 RG\n");
+        int m = content.indexOf(" m\n", rg);
+        String[] start = content.substring(content.lastIndexOf('\n', m) + 1, m).split(" ");
+        float x0 = Float.parseFloat(start[0]);
+        float y0 = Float.parseFloat(start[1]);
+        float[] first = TestSupport.positionOf(content, "12");
+        assertTrue(first[0] > x0 && first[1] < y0, "the first value is after its point and under it: "
+                + first[0] + ", " + first[1] + " by " + x0 + ", " + y0);
+        int peakLine = content.indexOf(" l\n", m);
+        String[] peakAt = content.substring(content.lastIndexOf('\n', peakLine) + 1, peakLine).split(" ");
+        float[] peak = TestSupport.positionOf(content, "50");     // The first "50" drawn is the axis'
+        int value = content.lastIndexOf("<" + TestSupport.hex("50") + ">");
+        int td = content.lastIndexOf(" Td\n", value);
+        String[] valueAt = content.substring(content.lastIndexOf('\n', td) + 1, td).split(" ");
+        assertTrue(Float.parseFloat(valueAt[1]) < Float.parseFloat(peakAt[1]),
+                "the value of the peak at the top is under it: " + valueAt[1] + " by " + peakAt[1]);
+        assertNotNull(peak);
     }
 }

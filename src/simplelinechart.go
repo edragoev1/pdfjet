@@ -134,15 +134,17 @@ func (chart *SimpleLineChart) SetMarkers(markers bool) *SimpleLineChart {
 // SetValueLabels writes each value of the lines by its point, small, where
 // the line leaves it room: above a peak, under a valley, before or after a
 // point on a rise or a fall; but the last of each line, which its label at the
-// end of the line has.
+// end of the line has, and a value outside a range set with SetYAxisRange,
+// whose point is not drawn.
 func (chart *SimpleLineChart) SetValueLabels(valueLabels bool) *SimpleLineChart {
 	chart.valueLabels = valueLabels
 	return chart
 }
 
-// SetAreaFilled fills the area under each line, down to 0 or to the bottom of
-// the plot, in a light tint of the line's color, which makes an area chart.
-// The highlighted line's area is drawn last, over the others.
+// SetAreaFilled fills the area between each line and 0, or the edge of the
+// plot nearest 0 when 0 is outside it, in a light tint of the line's color,
+// which makes an area chart. The highlighted line's area is drawn last, over
+// the others.
 func (chart *SimpleLineChart) SetAreaFilled(areaFilled bool) *SimpleLineChart {
 	chart.areaFilled = areaFilled
 	return chart
@@ -262,12 +264,13 @@ func (chart *SimpleLineChart) fontOf(index int) *Font {
 	return chart.f2
 }
 
-// The label at the end of a line: its name and its last value, and the
-// category of that value.
-func (chart *SimpleLineChart) endOf(line *simpleLine) (string, int, bool) {
+// The label at the end of the line of the index: its name, shortened to a
+// quarter of the chart, and its last value; and the category of that value.
+func (chart *SimpleLineChart) endOf(index int, line *simpleLine) (string, int, bool) {
 	for i := chart.count() - 1; i >= 0; i-- {
 		if v, ok := line.valueOf(i); ok {
-			return line.name + " " + chart.value(v), i, true
+			name := shorten(chart.fontOf(index), chart.f2.size, line.name, float32(0.25*chart.w))
+			return name + " " + chart.value(v), i, true
 		}
 	}
 	return "", 0, false
@@ -292,13 +295,7 @@ func (chart *SimpleLineChart) getAltDescription() string {
 		return chart.altDescription
 	}
 	var sb strings.Builder
-	sb.WriteString(chart.title)
-	if chart.subtitle != "" {
-		if sb.Len() > 0 {
-			sb.WriteString(", ")
-		}
-		sb.WriteString(chart.subtitle)
-	}
+	sb.WriteString(join(chart.title, chart.subtitle))
 	if sb.Len() == 0 {
 		sb.WriteString("Line chart")
 	}
@@ -355,7 +352,7 @@ func (chart *SimpleLineChart) DrawOn(page *Page) [2]float32 {
 			}
 		}
 	}
-	if page == nil || len(values) == 0 { // Measured, or nothing to draw
+	if page == nil || len(values) == 0 || chart.f1 == nil || chart.f2 == nil { // Measured, or nothing to draw
 		return [2]float32{chart.x + chart.w, chart.y + chart.h}
 	}
 	f1, f2 := chart.f1, chart.f2
@@ -374,7 +371,7 @@ func (chart *SimpleLineChart) DrawOn(page *Page) [2]float32 {
 	}
 	endWidth := float32(0)
 	for i, line := range chart.lines {
-		if label, _, ok := chart.endOf(line); ok {
+		if label, _, ok := chart.endOf(i, line); ok {
 			endWidth = max(endWidth, chart.fontOf(i).StringWidth(size, label))
 		}
 	}
@@ -399,11 +396,12 @@ func (chart *SimpleLineChart) DrawOn(page *Page) [2]float32 {
 	}
 	yAt := func(v float32) float32 { // held near the plot
 		v = held(v, axis)
-		return bottom - float32((v-axis.min)*(bottom-top))/(axis.max-axis.min)
+		return bottom - scaled(v-axis.min, bottom-top, axis.max-axis.min)
 	}
 
 	page.AddBDC(structelem.Figure, "", "", chart.getAltDescription())
 	page.SaveGraphicsState()
+	page.SetDefaultStrokeDashPattern() // Not the caller's, which dashed the lines
 
 	if chart.panelColor >= 0 {
 		page.SetBrushColor(chart.panelColor)
@@ -412,13 +410,14 @@ func (chart *SimpleLineChart) DrawOn(page *Page) [2]float32 {
 	baseline := chart.y + pad
 	if chart.title != "" {
 		baseline += f1.GetAscent(f1.size)
-		page.drawString(f1, f1.size, chart.title, chart.x+pad, baseline, colorToRGB(simpleBarInk), nil)
+		page.drawString(f1, f1.size, shorten(f1, f1.size, chart.title, chart.w-float32(2.0*pad)), chart.x+pad, baseline,
+			colorToRGB(simpleBarInk), nil)
 		baseline += f1.GetDescent(f1.size)
 	}
 	if chart.subtitle != "" {
 		baseline += float32(1.4 * chart.subtitleSize())
-		page.drawString(f2, chart.subtitleSize(), chart.subtitle, chart.x+pad, baseline,
-			colorToRGB(simpleBarMuted), nil)
+		page.drawString(f2, chart.subtitleSize(), shorten(f2, chart.subtitleSize(), chart.subtitle, chart.w-float32(2.0*pad)),
+			chart.x+pad, baseline, colorToRGB(simpleBarMuted), nil)
 	}
 
 	// The horizontal grid and its numbers, and the categories under the plot,
@@ -483,8 +482,8 @@ func (chart *SimpleLineChart) DrawOn(page *Page) [2]float32 {
 		page.SaveGraphicsState()
 		page.ClipRect(left-edge, top-edge, right-left+float32(2.0*edge), bottom-top+float32(2.0*edge))
 	}
-	// The areas under the lines, each run of values down to 0, or to the
-	// bottom of the plot when 0 is under it, in a tint of the line's color
+	// The areas of the lines, each run of values to 0, or to the edge of the
+	// plot nearest 0 when 0 is outside it, in a tint of the line's color
 	if chart.areaFilled {
 		zero := yAt(min(max(0, axis.min), axis.max))
 		for _, i := range order {
@@ -578,9 +577,11 @@ func (chart *SimpleLineChart) DrawOn(page *Page) [2]float32 {
 					continue
 				}
 				before := v
+				opens := true // The first of its run
 				if j > 0 {
 					if b, ok := line.valueOf(j - 1); ok {
 						before = b
+						opens = false
 					}
 				}
 				after := v
@@ -593,7 +594,12 @@ func (chart *SimpleLineChart) DrawOn(page *Page) [2]float32 {
 				py := yAt(v)
 				lx := px - float32(width/2.0)
 				at := py - gap
-				if before > v && after > v { // A valley
+				if opens && after > v { // The start of a rise
+					lx = px + gap
+					at = min(py+gap+f2.GetAscent(small), bottom-f2.GetDescent(small))
+				} else if opens && after < v { // The start of a fall
+					lx = px + gap
+				} else if before > v && after > v { // A valley
 					at = py + gap + f2.GetAscent(small)
 					if at > bottom {
 						at = py - gap
@@ -602,6 +608,9 @@ func (chart *SimpleLineChart) DrawOn(page *Page) [2]float32 {
 					lx = px - gap - width
 				} else if before > v && after < v { // A fall
 					lx = px + gap
+				}
+				if at-f2.GetAscent(small) < top-float32(ascent/2.0) {
+					at = py + gap + f2.GetAscent(small) // Under a point at the top
 				}
 				page.drawString(f2, small, text, lx, at, colorToRGB(c), nil)
 			}
@@ -616,7 +625,7 @@ func (chart *SimpleLineChart) DrawOn(page *Page) [2]float32 {
 	}
 	labels := make([]endLabel, 0, len(chart.lines))
 	for i, line := range chart.lines {
-		if text, j, ok := chart.endOf(line); ok {
+		if text, j, ok := chart.endOf(i, line); ok {
 			v, _ := line.valueOf(j)
 			// At the end of its line, or at the edge of the plot it is past
 			end := max(top, min(bottom, yAt(v)))

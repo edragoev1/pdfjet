@@ -9,12 +9,17 @@ import PDFjet
 
 /**
  * Example_23.swift
+ *
+ * A table of PDF/A-1a, tagged, over four pages: the life expectancy and the
+ * children per woman of 217 countries and economies in 2023, from the World
+ * Bank's World Development Indicators, with a marker on three of the rows,
+ * each a link, and the longest and the shortest life in color.
  */
 public class Example_23 {
     public init() throws {
         let pdf = PDF(OutputStream(toFileAtPath: "Example_23.pdf", append: false)!)
         pdf.setCompliance(Compliance.PDF_A_1A)
-        pdf.setTitle("World Communications")
+        pdf.setTitle("Life Expectancy and Children per Woman, 2023")
 
         let f1 = try Font(pdf, IBMPlexSans.Bold)
         let f2 = try Font(pdf, IBMPlexSans.Regular)
@@ -25,52 +30,81 @@ public class Example_23 {
         f3.setSize(7.0)
 
         let table = Table()
+        // Country|Code|Life expectancy|Children per woman, after a header line
         let tableData = try getData(
-                "data/world-communications.txt", "|", 2, f1, f2)
+                "data/life-expectancy-and-fertility-2023.txt", "|", 1, f1, f2)
 
+        // A marker on three rows, found by their countries, each a link
         var p1 = Point()
         p1.setShape(Shape.CIRCLE)
         p1.setRadius(2.0)
         p1.setStrokeColor(Color.darkolivegreen)
-        p1.setURIAction("https://en.wikipedia.org/wiki/India")
-        tableData[4][3].setMarker(p1, Alignment.RIGHT)
+        p1.setURIAction("https://data.worldbank.org/country/india")
+        tableData[Example_23.rowOf(tableData, "India")][3].setMarker(p1, Alignment.RIGHT)
 
         p1 = Point()
         p1.setShape(Shape.DIAMOND)
         p1.setRadius(2.5)
         p1.setStrokeColor(Color.blue)
-        p1.setURIAction("https://en.wikipedia.org/wiki/European_Union")
-        tableData[5][3].setMarker(p1, Alignment.RIGHT)
+        p1.setURIAction("https://data.worldbank.org/country/japan")
+        tableData[Example_23.rowOf(tableData, "Japan")][3].setMarker(p1, Alignment.RIGHT)
 
         p1 = Point()
         p1.setShape(Shape.STAR)
         p1.setRadius(3.0)
         p1.setStrokeColor(Color.red)
-        p1.setURIAction("https://en.wikipedia.org/wiki/United_States")
-        tableData[6][3].setMarker(p1, Alignment.RIGHT)
+        p1.setURIAction("https://data.worldbank.org/country/united-states")
+        tableData[Example_23.rowOf(tableData, "United States")][3].setMarker(p1, Alignment.RIGHT)
 
-        table.setTableData(tableData, 2)
-        table.setBottomMargin(15.0)
-        // The table is about 555 points wide: at x = 30 it fits on the page.
-        table.setLocation(30.0, 30.0)
-        table.setTextColorInRow(6, Color.blue)
-        table.setTextColorInRow(39, Color.firebrick)
-        table.setFontInRow(26, f3)
-        table.removeLineBetweenRows(0, 1)
-        table.autoAdjustColumnWidths()
-        table.setColumnWidth(0, 50.0)
-        table.setColumnWidth(3, 80.0)
+        // The longest life in blue, the shortest in red, and Canada in bold italic
+        var longest = 1
+        var shortest = 1
+        for i in 1..<tableData.count {
+            if Example_23.life(tableData, i) > Example_23.life(tableData, longest) {
+                longest = i
+            }
+            if Example_23.life(tableData, i) < Example_23.life(tableData, shortest) {
+                shortest = i
+            }
+        }
+
+        table.setTableData(tableData, 1)
+        table.setBottomMargin(26.0)
+        // 400 points wide, in the middle of the page
+        table.setLocation(106.0, 30.0)
+        table.setTextColorInRow(longest, Color.blue)
+        table.setTextColorInRow(shortest, Color.firebrick)
+        table.setFontInRow(Example_23.rowOf(tableData, "Canada"), f3)
+        table.setColumnWidth(0, 170.0)
+        table.setColumnWidth(1, 50.0)
+        table.setColumnWidth(2, 90.0)
+        table.setColumnWidth(3, 90.0)
         table.rightAlignNumbers()
 
         var pages = [Page]()
         table.drawOn(pdf, &pages, Letter.PORTRAIT)
         for i in 0..<pages.count {
             let page = pages[i]
-            page.addFooter(TextLine(f1, "Page \(i + 1) of \(pages.count)"))
+            page.addFooter(TextLine(f2, "Source: World Bank, World Development Indicators, "
+                    + "SP.DYN.LE00.IN and SP.DYN.TFRT.IN, 2023, licensed under CC BY 4.0. "
+                    + "Page \(i + 1) of \(pages.count)"))
             pdf.addPage(page)
         }
 
         try pdf.complete()
+    }
+
+    // The row of the country, in the first column.
+    private static func rowOf(_ tableData: [[Cell]], _ country: String) -> Int {
+        for i in 0..<tableData.count where tableData[i][0].getText() == country {
+            return i
+        }
+        fatalError("\(country) is not in the table")
+    }
+
+    // The life expectancy of the row.
+    private static func life(_ tableData: [[Cell]], _ row: Int) -> Float {
+        return Float(tableData[row][2].getText()!)!
     }
 
     public func getData(

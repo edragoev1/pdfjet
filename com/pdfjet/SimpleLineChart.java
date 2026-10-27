@@ -203,7 +203,8 @@ public class SimpleLineChart implements Drawable {
      * Writes each value of the lines by its point, small, where the line
      * leaves it room: above a peak, under a valley, before or after a point
      * on a rise or a fall; but the last of each line, which its label at the
-     * end of the line has.
+     * end of the line has, and a value outside a range set with
+     * setYAxisRange, whose point is not drawn.
      *
      * @param valueLabels true to write them.
      * @return this chart.
@@ -214,9 +215,10 @@ public class SimpleLineChart implements Drawable {
     }
 
     /**
-     * Fills the area under each line, down to 0 or to the bottom of the plot,
-     * in a light tint of the line's color, which makes an area chart. The
-     * highlighted line's area is drawn last, over the others.
+     * Fills the area between each line and 0, or the edge of the plot nearest
+     * 0 when 0 is outside it, in a light tint of the line's color, which makes
+     * an area chart. The highlighted line's area is drawn last, over the
+     * others.
      *
      * @param areaFilled true to fill the areas.
      * @return this chart.
@@ -362,6 +364,13 @@ public class SimpleLineChart implements Drawable {
         return index == highlight ? f1 : f2;
     }
 
+    // The label at the end of the line of the index: its name, shortened to a
+    // quarter of the chart, and its last value.
+    private String endText(int i, int last) {
+        Line line = lines.get(i);
+        return ChartScale.shorten(fontOf(i), f2.getSize(), line.name, 0.25f * w) + " " + value(line.values[last]);
+    }
+
     // The category of the last value of the line, or -1 when it has none.
     private int lastOf(Line line) {
         for (int i = count() - 1; i >= 0; i--) {
@@ -378,13 +387,7 @@ public class SimpleLineChart implements Drawable {
         if (!altDescription.isEmpty()) {
             return altDescription;
         }
-        StringBuilder sb = new StringBuilder(title);
-        if (!subtitle.isEmpty()) {
-            if (sb.length() > 0) {
-                sb.append(", ");
-            }
-            sb.append(subtitle);
-        }
+        StringBuilder sb = new StringBuilder(ChartScale.join(title, subtitle));
         if (sb.length() == 0) {
             sb.append("Line chart");
         }
@@ -447,7 +450,7 @@ public class SimpleLineChart implements Drawable {
                 }
             }
         }
-        if (page == null || all.isEmpty()) {    // Measured, or nothing to draw
+        if (page == null || all.isEmpty() || f1 == null || f2 == null) {    // Measured, or nothing to draw
             return new float[] {x + w, y + h};
         }
         float[] values = new float[all.size()];
@@ -473,7 +476,7 @@ public class SimpleLineChart implements Drawable {
             Line line = lines.get(i);
             int last = lastOf(line);
             if (last >= 0) {
-                endWidth = Math.max(endWidth, fontOf(i).stringWidth(size, line.name + " " + value(line.values[last])));
+                endWidth = Math.max(endWidth, fontOf(i).stringWidth(size, endText(i, last)));
             }
         }
         float left = x + pad + widest + size / 2f;
@@ -492,6 +495,7 @@ public class SimpleLineChart implements Drawable {
 
         page.addBDC(StructElem.FIGURE, null, altDescription());
         page.saveGraphicsState();
+        page.setDefaultStrokeDashPattern();     // Not the caller's, which dashed the lines
 
         if (panelColor >= 0) {
             page.setBrushColor(panelColor);
@@ -500,12 +504,13 @@ public class SimpleLineChart implements Drawable {
         float baseline = y + pad;
         if (!title.isEmpty()) {
             baseline += f1.getAscent(f1.getSize());
-            page.drawString(f1, f1.getSize(), title, x + pad, baseline, Util.toRGB(SimpleBarChart.INK), null);
+            page.drawString(f1, f1.getSize(), ChartScale.shorten(f1, f1.getSize(), title, w - 2f * pad), x + pad, baseline, Util.toRGB(SimpleBarChart.INK), null);
             baseline += f1.getDescent(f1.getSize());
         }
         if (!subtitle.isEmpty()) {
             baseline += 1.4f * subtitleSize();
-            page.drawString(f2, subtitleSize(), subtitle, x + pad, baseline, Util.toRGB(SimpleBarChart.MUTED), null);
+            page.drawString(f2, subtitleSize(), ChartScale.shorten(f2, subtitleSize(), subtitle, w - 2f * pad),
+                    x + pad, baseline, Util.toRGB(SimpleBarChart.MUTED), null);
         }
 
         // The horizontal grid and its numbers, and the categories under the
@@ -570,8 +575,8 @@ public class SimpleLineChart implements Drawable {
             page.saveGraphicsState();
             page.clipRect(left - edge, top - edge, right - left + 2f * edge, bottom - top + 2f * edge);
         }
-        // The areas under the lines, each run of values down to 0, or to the
-        // bottom of the plot when 0 is under it, in a tint of the line's color
+        // The areas of the lines, each run of values to 0, or to the edge of
+        // the plot nearest 0 when 0 is outside it, in a tint of the line's color
         if (areaFilled) {
             float zero = yAt(Math.min(Math.max(0f, axis.min), axis.max), axis, top, bottom);
             for (int i : order) {
@@ -651,7 +656,8 @@ public class SimpleLineChart implements Drawable {
                         continue;
                     }
                     float v = line.values[j];
-                    float before = (j > 0 && line.has(j - 1)) ? line.values[j - 1] : v;
+                    boolean opens = !(j > 0 && line.has(j - 1));     // The first of its run
+                    float before = opens ? v : line.values[j - 1];
                     float after = line.has(j + 1) ? line.values[j + 1] : v;
                     String text = value(v);
                     float width = f2.stringWidth(small, text);
@@ -659,7 +665,12 @@ public class SimpleLineChart implements Drawable {
                     float py = yAt(v, axis, top, bottom);
                     float lx = px - width / 2f;
                     float at = py - gap;
-                    if (before > v && after > v) {              // A valley
+                    if (opens && after > v) {                   // The start of a rise
+                        lx = px + gap;
+                        at = Math.min(py + gap + f2.getAscent(small), bottom - f2.getDescent(small));
+                    } else if (opens && after < v) {            // The start of a fall
+                        lx = px + gap;
+                    } else if (before > v && after > v) {       // A valley
                         at = py + gap + f2.getAscent(small);
                         if (at > bottom) {
                             at = py - gap;
@@ -668,6 +679,9 @@ public class SimpleLineChart implements Drawable {
                         lx = px - gap - width;
                     } else if (before > v && after < v) {       // A fall
                         lx = px + gap;
+                    }
+                    if (at - f2.getAscent(small) < top - ascent / 2f) {
+                        at = py + gap + f2.getAscent(small);    // Under a point at the top
                     }
                     page.drawString(f2, small, text, lx, at, Util.toRGB(color), null);
                 }
@@ -683,7 +697,7 @@ public class SimpleLineChart implements Drawable {
             if (last >= 0) {
                 // At the end of its line, or at the edge of the plot it is past
                 float end = Math.max(top, Math.min(bottom, yAt(line.values[last], axis, top, bottom)));
-                labels.add(new EndLabel(line.name + " " + value(line.values[last]), i, end + ascent / 2f));
+                labels.add(new EndLabel(endText(i, last), i, end + ascent / 2f));
             }
         }
         Collections.sort(labels, new Comparator<EndLabel>() {
@@ -732,6 +746,6 @@ public class SimpleLineChart implements Drawable {
     // The y on the page of a value, held near the plot.
     private static float yAt(float v, ChartScale.Axis axis, float top, float bottom) {
         v = ChartScale.held(v, axis);
-        return bottom - (v - axis.min) * (bottom - top) / (axis.max - axis.min);
+        return bottom - ChartScale.scaled(v - axis.min, bottom - top, axis.max - axis.min);
     }
 }   // End of SimpleLineChart.java

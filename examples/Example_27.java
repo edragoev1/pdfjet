@@ -79,7 +79,7 @@ final public class Example_27 {
         chart.setGridLineColor(0xe0e0e0);
         chart.setGridLineDashPattern("[] 0");
         chart.setAxisLineWidth(0f);
-        chart.setDrawValueLabels(true);
+        chart.setValueLabels(true);
         chart.setValueLabelsInside(true);
         chart.setGroupingUsed(true);
         chart.setAltDescription(
@@ -94,13 +94,20 @@ final public class Example_27 {
         String[] keyTexts = {
                 "Clear / low sediment", "Sediment-rich, relatively clean", "Polluted / industrial & agricultural",
                 "Heavy natural sediment (loess)", "Natural dark tannin stain (Congo)"};
-        float[] keyX = {171f, 262f, 398f, 171f, 313f};
-        float[] keyY = {512f, 512f, 512f, 527f, 527f};
+        // Three on the first row and two on the second, each after the one
+        // before it by the width of its text
+        float x = 171f;
+        float y = 512f;
         for (int i = 0; i < keyColors.length; i++) {
+            if (i == 3) {
+                x = 171f;
+                y = 527f;
+            }
             // The swatches are rectangles, drawn as artifacts next to their text.
-            new Rect(keyX[i], keyY[i] - 8.5f, 10.5f, 10.5f).setFillColor(keyColors[i]).drawOn(page);
+            new Rect(x, y - 8.5f, 10.5f, 10.5f).setFillColor(keyColors[i]).drawOn(page);
             new TextLine(f4, keyTexts[i])
-                    .setTextColor(gray).setLocation(keyX[i] + 15f, keyY[i]).drawOn(page);
+                    .setTextColor(gray).setLocation(x + 15f, y).drawOn(page);
+            x += 15f + f4.stringWidth(keyTexts[i]) + 12f;
         }
 
         String note = "Color mapping is illustrative; lengths and conditions vary by source and season.";
@@ -179,7 +186,7 @@ final public class Example_27 {
         stacked.addSeries("2025", units2025);
         stacked.addSeries("2026", units2026);
         stacked.setStacked(true);
-        stacked.setDrawValueLabels(true);
+        stacked.setValueLabels(true);
         stacked.setAltDescription("Units sold by month in 2025 and 2026, stacked: from 85 a month, in February and May, to 152 in December.");
         stacked.drawOn(page);
     }

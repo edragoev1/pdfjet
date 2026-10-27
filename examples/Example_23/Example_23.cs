@@ -12,13 +12,18 @@ using PDFjet.NET;
 
 /**
  * Example_23.cs
+ *
+ * A table of PDF/A-1a, tagged, over four pages: the life expectancy and the
+ * children per woman of 217 countries and economies in 2023, from the World
+ * Bank's World Development Indicators, with a marker on three of the rows,
+ * each a link, and the longest and the shortest life in color.
  */
 public class Example_23 {
     public Example_23() {
         PDF pdf = new PDF(new BufferedStream(
                 new FileStream("Example_23.pdf", FileMode.Create)));
         pdf.SetCompliance(Compliance.PDF_A_1A);
-        pdf.SetTitle("World Communications");
+        pdf.SetTitle("Life Expectancy and Children per Woman, 2023");
 
         Font f1 = new Font(pdf, IBMPlexSans.Bold);
         Font f2 = new Font(pdf, IBMPlexSans.Regular);
@@ -29,52 +34,84 @@ public class Example_23 {
         f3.SetSize(7f);
 
         Table table = new Table();
+        // Country|Code|Life expectancy|Children per woman, after a header line
         List<List<Cell>> tableData = GetData(
-                "data/world-communications.txt", "|", 2, f1, f2);
+                "data/life-expectancy-and-fertility-2023.txt", "|", 1, f1, f2);
 
+        // A marker on three rows, found by their countries, each a link
         Point p1 = new Point();
         p1.SetShape(Shape.CIRCLE);
         p1.SetRadius(2f);
         p1.SetStrokeColor(Color.darkolivegreen);
-        p1.SetURIAction("https://en.wikipedia.org/wiki/India");
-        tableData[4][3].SetMarker(p1, Alignment.RIGHT);
+        p1.SetURIAction("https://data.worldbank.org/country/india");
+        tableData[RowOf(tableData, "India")][3].SetMarker(p1, Alignment.RIGHT);
 
         p1 = new Point();
         p1.SetShape(Shape.DIAMOND);
         p1.SetRadius(2.5f);
         p1.SetStrokeColor(Color.blue);
-        p1.SetURIAction("https://en.wikipedia.org/wiki/European_Union");
-        tableData[5][3].SetMarker(p1, Alignment.RIGHT);
+        p1.SetURIAction("https://data.worldbank.org/country/japan");
+        tableData[RowOf(tableData, "Japan")][3].SetMarker(p1, Alignment.RIGHT);
 
         p1 = new Point();
         p1.SetShape(Shape.STAR);
         p1.SetRadius(3f);
         p1.SetStrokeColor(Color.red);
-        p1.SetURIAction("https://en.wikipedia.org/wiki/United_States");
-        tableData[6][3].SetMarker(p1, Alignment.RIGHT);
+        p1.SetURIAction("https://data.worldbank.org/country/united-states");
+        tableData[RowOf(tableData, "United States")][3].SetMarker(p1, Alignment.RIGHT);
 
-        table.SetTableData(tableData, 2);
-        table.SetBottomMargin(15f);
-        // The table is about 555 points wide: at x = 30 it fits on the page.
-        table.SetLocation(30f, 30f);
-        table.SetTextColorInRow(6, Color.blue);
-        table.SetTextColorInRow(39, Color.firebrick);
-        table.SetFontInRow(26, f3);
-        table.RemoveLineBetweenRows(0, 1);
-        table.AutoAdjustColumnWidths();
-        table.SetColumnWidth(0, 50f);
-        table.SetColumnWidth(3, 80f);
+        // The longest life in blue, the shortest in red, and Canada in bold italic
+        int longest = 1;
+        int shortest = 1;
+        for (int i = 1; i < tableData.Count; i++) {
+            float life = Life(tableData, i);
+            if (life > Life(tableData, longest)) {
+                longest = i;
+            }
+            if (life < Life(tableData, shortest)) {
+                shortest = i;
+            }
+        }
+
+        table.SetTableData(tableData, 1);
+        table.SetBottomMargin(26f);
+        // 400 points wide, in the middle of the page
+        table.SetLocation(106f, 30f);
+        table.SetTextColorInRow(longest, Color.blue);
+        table.SetTextColorInRow(shortest, Color.firebrick);
+        table.SetFontInRow(RowOf(tableData, "Canada"), f3);
+        table.SetColumnWidth(0, 170f);
+        table.SetColumnWidth(1, 50f);
+        table.SetColumnWidth(2, 90f);
+        table.SetColumnWidth(3, 90f);
         table.RightAlignNumbers();
 
         List<Page> pages = new List<Page>();
         table.DrawOn(pdf, pages, Letter.PORTRAIT);
         for (int i = 0; i < pages.Count; i++) {
             Page page = pages[i];
-            page.AddFooter(new TextLine(f1, "Page " + (i + 1) + " of " + pages.Count));
+            page.AddFooter(new TextLine(f2, "Source: World Bank, World Development Indicators, "
+                    + "SP.DYN.LE00.IN and SP.DYN.TFRT.IN, 2023, licensed under CC BY 4.0. "
+                    + "Page " + (i + 1) + " of " + pages.Count));
             pdf.AddPage(page);
         }
 
         pdf.Complete();
+    }
+
+    // The row of the country, in the first column.
+    private static int RowOf(List<List<Cell>> tableData, String country) {
+        for (int i = 0; i < tableData.Count; i++) {
+            if (tableData[i][0].GetText() == country) {
+                return i;
+            }
+        }
+        throw new ArgumentException(country + " is not in the table");
+    }
+
+    // The life expectancy of the row.
+    private static float Life(List<List<Cell>> tableData, int row) {
+        return float.Parse(tableData[row][2].GetText(), System.Globalization.CultureInfo.InvariantCulture);
     }
 
     public List<List<Cell>> GetData(

@@ -44,18 +44,25 @@ import Testing
         }
     }
 
-    // Data with no number, or whose range does not fit a Float, has the range
+    // Data with no number, or whose span does not fit a Float, has the range
     // from 0 to 1, where Swift stopped the program (review of 12 October 2026,
-    // R3).
+    // R3). Data whose span fits, but whose rounded range would not, has the
+    // range of its values: from 0 to 1 the bars went past the plot (review of
+    // 26 October 2026).
     @Test func chartTheRangeOfDataPastTheLargestFloatIsFromZeroToOne() {
         let inf = Float.infinity
         let big = Float.greatestFiniteMagnitude
         let ranges: [(Float, Float)] = [(inf, 0), (0, -inf), (.nan, .nan), (3.4e38, -3.4e38),
-                                        (-big, big), (big, 0)]
+                                        (-big, big)]
         for (maxValue, minValue) in ranges {
             let round = ChartScale.roundMaxAndMinValues(maxValue, minValue)
             #expect(round.minValue == 0 && round.maxValue == 1 && round.numOfGridLines == 1,
                     "\(maxValue), \(minValue): \(round.minValue) to \(round.maxValue)")
+        }
+        for max: Float in [big, 3e38] {
+            let round = ChartScale.roundMaxAndMinValues(max, 0)
+            #expect(round.minValue == 0 && round.maxValue == max && round.numOfGridLines >= 1,
+                    "\(max): \(round.minValue) to \(round.maxValue)")
         }
     }
 
@@ -80,7 +87,7 @@ import Testing
             let page = Page(memory.pdf, Letter.PORTRAIT)
             let font = TestSupport.helvetica(memory.pdf)
             let chart = BarChart(font, font).setLocation(50, 50).setSize(300, 200)
-            chart.setCategories("a", "b", "c").setStacked(stacked).setDrawValueLabels(true)
+            chart.setCategories("a", "b", "c").setStacked(stacked).setValueLabels(true)
             chart.addSeries("", [Float.nan, 10, Float.infinity])
             #expect(chart.drawOn(page) == [350, 250])
             let content = TestSupport.content(page)

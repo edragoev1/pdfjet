@@ -30,7 +30,7 @@ public class Example_28 {
                 .setLocation(100.0, 100.0)
                 .drawOn(page)
 
-        let chart = DonutChart(f1, f2)
+        let chart = DonutChart(f2, f1)     // The bold font first
         chart.setLocation(100.0, 200.0)
         chart.setRadii(200.0, 120.0)     // an inner radius of 0 makes a pie chart
 
@@ -46,7 +46,7 @@ public class Example_28 {
         // Many slices, some small: a legend under the circle in place of the
         // leader lines, and the total in the hole
         page = Page(pdf, Letter.PORTRAIT)
-        let many = DonutChart(f1, f2)
+        let many = DonutChart(f2, f1)
         many.setLocation(100.0, 100.0)
         many.setRadii(150.0, 90.0)
         many.setTitle("Fruit sold this month")

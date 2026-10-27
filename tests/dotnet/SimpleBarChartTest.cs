@@ -59,7 +59,7 @@ public class SimpleBarChartTest {
     [Fact]
     public void DescribesItselfFromItsValues() {
         SimpleBarChart chart = NewChart(TestSupport.NewPDF()).SetFractionDigits(1);
-        Assert.Equal("Statement, 12 pages, warm ms: PDFjet 7.3, iText 72.6, OpenPDF 18.4, PDFBox 44.1.",
+        Assert.Equal("Statement, 12 pages. Warm ms: PDFjet 7.3, iText 72.6, OpenPDF 18.4, PDFBox 44.1.",
                 chart.AltDescription());
         chart.SetAltDescription("Four libraries");
         Assert.Equal("Four libraries", chart.AltDescription());
@@ -139,6 +139,27 @@ public class SimpleBarChartTest {
         Assert.Equal("A n\u2026", ChartScale.Shorten(font, 10f, "A name", font.StringWidth(10f, "A n\u2026")));
         Assert.Equal("A name", ChartScale.Shorten(font, 10f, "A name", 100f));
         Assert.Equal("A\u2026", ChartScale.Shorten(font, 10f, "A  name", font.StringWidth(10f, "A \u2026") - 0.1f));
+    }
+
+    // A chart without its fonts draws nothing and has no height; a title too
+    // long for the chart is shortened; a value of 3e38 is written short (the
+    // review of 26 October 2026, the second).
+    [Fact]
+    public void TheSecondReviewOfTheCharts() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        SimpleBarChart none = new SimpleBarChart(null, null).Add("a", 1f);
+        none.DrawOn(page);
+        Assert.Equal("", TestSupport.Content(page));
+        Assert.Equal(0f, none.GetHeight());
+        string title = "A title far too long for a chart two hundred points wide";
+        new SimpleBarChart(font, font).SetWidth(200f).SetTitle(title).Add("a", 3e38f).DrawOn(page);
+        string content = TestSupport.Content(page);
+        Assert.DoesNotContain(TestSupport.Hex(title), content);
+        Assert.Contains(TestSupport.Hex("3e38"), content);
+        Assert.Equal("1.23e20", ChartScale.Format(1.2345e20f, 0, 2));
+        Assert.Equal("-4.5e16", ChartScale.GroupDigits(ChartScale.Format(-4.5e16f, 0, 2)));
     }
 }
 }   // End of namespace PDFjet.NET

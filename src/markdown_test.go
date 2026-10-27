@@ -306,6 +306,32 @@ func TestMarkdownAParagraphThatEndsInAColonStaysWithItsTable(t *testing.T) {
 	}
 }
 
+// A heading over the lead-in goes with it and its table: the two went to the
+// next page and left the heading at the bottom of this one (the report of the
+// fair test, 26 October 2026).
+func TestMarkdownAHeadingStaysWithALeadInAndItsTable(t *testing.T) {
+	testAllowCoreFonts(t)
+	moved := false
+	for k := 0; k <= 60; k++ {
+		drawn := testDrawMarkdown(testFillerAndTable(k, "## H7\n\n555:", 8), "")
+		heading := testMarkdownPagesOf(drawn, "H7")
+		if !slices.Equal(heading, testMarkdownPagesOf(drawn, "555:")) {
+			t.Fatalf("%d paragraphs: the heading is apart from its lead-in", k)
+		}
+		if !slices.Equal(heading, testMarkdownPagesOf(drawn, "r8")) {
+			t.Fatalf("%d paragraphs: the heading is apart from its table", k)
+		}
+		lastFiller := 0
+		if k > 0 {
+			lastFiller = testMarkdownPagesOf(drawn, "p"+strconv.Itoa(k-1))[0]
+		}
+		moved = moved || heading[0] > lastFiller
+	}
+	if !moved {
+		t.Error("the heading never moved with its table")
+	}
+}
+
 func TestMarkdownATableLongerThanAPageStillStartsWhereItIs(t *testing.T) {
 	testAllowCoreFonts(t)
 	drawn := testDrawMarkdown(testFillerAndTable(3, "", 120), "")

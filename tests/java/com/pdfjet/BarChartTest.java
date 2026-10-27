@@ -60,7 +60,7 @@ class BarChartTest {
         PDF pdf = TestSupport.newPDF();
         Page page = new Page(pdf, Letter.PORTRAIT);
         BarChart chart = chart(pdf).setCategories("a", "b").setHorizontal(true);
-        chart.addSeries("", new float[] {2.5f, -1f}).setDrawValueLabels(true);
+        chart.addSeries("", new float[] {2.5f, -1f}).setValueLabels(true);
         chart.setMinimumFractionDigits(1);
         String content = draw(chart, page);
         assertTrue(content.contains(TestSupport.hex("2.5")), content);
@@ -110,7 +110,7 @@ class BarChartTest {
         assertFalse(grouped.contains(TestSupport.hex("90")), grouped);
 
         page = new Page(pdf, Letter.PORTRAIT);
-        chart.setStacked(true).setDrawValueLabels(true);
+        chart.setStacked(true).setValueLabels(true);
         String stacked = draw(chart, page);
         assertTrue(stacked.contains(TestSupport.hex("75")), stacked);
         // The total of each stack above it
@@ -148,7 +148,7 @@ class BarChartTest {
         Page page = new Page(pdf, Letter.PORTRAIT);
         BarChart chart = chart(pdf).setCategories("a", "b").setHorizontal(true).setSubtitle("sub");
         chart.addSeries("rivers", new float[] {6650f, 12f}, new int[] {Color.red, Color.blue});
-        chart.setValueAxisMinMax(0f, 8000f, 4).setDrawValueLabels(true).setValueLabelsInside(true);
+        chart.setValueAxisMinMax(0f, 8000f, 4).setValueLabels(true).setValueLabelsInside(true);
         chart.setGroupingUsed(true).setAxisLineWidth(0f).setGridLineColor(Color.lightgray);
         String content = draw(chart, page);
         assertTrue(content.contains(TestSupport.hex("6,650")), content);
@@ -213,7 +213,7 @@ class BarChartTest {
         String untitled = draw(chart(pdf).setCategories("a").addSeries("", new float[] {1f}), page);
         assertTrue(barHeight(untitled) > barHeight(titled) + 10f, barHeight(untitled) + " " + barHeight(titled));
         page = new Page(pdf, Letter.PORTRAIT);
-        BarChart wide = chart(pdf).setCategories("a").setDrawLegend(true);
+        BarChart wide = chart(pdf).setCategories("a").setLegend(true);
         for (int i = 0; i < 8; i++) {
             wide.addSeries("Series number " + i, new float[] {1f});
         }
@@ -221,7 +221,7 @@ class BarChartTest {
         assertNotEquals(TestSupport.positionOf(content, "Series number 0")[1],
                 TestSupport.positionOf(content, "Series number 7")[1]);
         page = new Page(pdf, Letter.PORTRAIT);
-        content = draw(chart(pdf).setCategories("a", "b").setDrawLegend(true)
+        content = draw(chart(pdf).setCategories("a", "b").setLegend(true)
                 .addSeries("own", new float[] {1f, 2f}, new int[] {0x123456, 0x654321}), page);
         int swatch = content.indexOf("0.07 0.2 0.34 rg\n");
         assertTrue(swatch >= 0 && swatch < content.indexOf(TestSupport.hex("own")), content);
@@ -271,16 +271,56 @@ class BarChartTest {
     void aLineSeriesIsDrawnOverTheBars() throws Exception {
         PDF pdf = new PDF(new java.io.ByteArrayOutputStream(), Compliance.PDF_UA_1).setTitle("Test");
         Page page = new Page(pdf, Letter.PORTRAIT);
-        BarChart chart = chart(pdf).setTitle("Sales").setCategories("a", "b").setDrawLegend(true)
+        BarChart chart = chart(pdf).setTitle("Sales").setCategories("a", "b").setLegend(true)
                 .addSeries("Sold", new float[] {1f, 2f}).addLineSeries("Target", new float[] {9f, Float.NaN});
         String content = draw(chart, page);
         assertTrue(content.contains("0.13 0.15 0.17 RG\n") && content.contains("\n2 w\n"), content);   // In ink
         assertTrue(content.contains(TestSupport.hex("Target")), content);
         assertTrue(content.contains("<" + TestSupport.hex("8") + ">"), content);   // The axis reaches 9
-        assertEquals("Sales: Sold: a 1, b 2; Target: a 9.", page.structures.get(0).altDescription);
+        assertEquals("Sales: Sold: a 1, b 2; Target, a line: a 9.", page.structures.get(0).altDescription);
         page = new Page(pdf, Letter.PORTRAIT);
         content = draw(chart(pdf).setCategories("a").addSeries("", new float[] {1f})
                 .addLineSeries("", new float[] {2f}, 0x123456), page);
         assertTrue(content.contains("0.07 0.2 0.34 RG\n"), content);
+    }
+
+    // The review of 26 October 2026, the second: a chart without its fonts
+    // draws nothing; the title, a long category under vertical bars and a
+    // legend name are shortened; a line series longer than the categories
+    // adds no slots; the line is on a white line a little wider; the old
+    // names of the setters still work; and a value past the rounding of the
+    // largest float is drawn on the range of the values.
+    @Test
+    @SuppressWarnings("deprecation")
+    void theSecondReviewOfTheCharts() throws Exception {
+        PDF pdf = new PDF(new java.io.ByteArrayOutputStream(), Compliance.PDF_UA_1).setTitle("Test");
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new BarChart(null, null).setCategories("a").addSeries("", new float[] {1f}).drawOn(page);
+        assertEquals("", TestSupport.content(page));
+
+        String longName = "A category name far too long to be written under its bar";
+        String title = "A title far too long for a chart of three hundred points, which ran past it";
+        String content = draw(chart(pdf).setTitle(title).setLegend(true).setCategories(longName, "b")
+                .addSeries("Sold", new float[] {1f, 2f})
+                .addLineSeries("Target", new float[] {2f, 3f, 4f, 5f, 6f}), page);
+        assertFalse(content.contains(TestSupport.hex(longName)) || content.contains(TestSupport.hex(title)), content);
+        assertTrue(content.contains("1 1 1 RG\n3.5 w\n"), content);
+        assertTrue(page.structures.get(0).altDescription.endsWith("Target, a line: " + longName + " 2, b 3."),
+                page.structures.get(0).altDescription);
+
+        PDF plain = TestSupport.newPDF();
+        page = new Page(plain, Letter.PORTRAIT);
+        String old = draw(chart(plain).setCategories("a").addSeries("s", new float[] {1f})
+                .setDrawLegend(true).setDrawValueLabels(true).setDrawGridLines(false), page);
+        page = new Page(plain, Letter.PORTRAIT);
+        String renamed = draw(chart(plain).setCategories("a").addSeries("s", new float[] {1f})
+                .setLegend(true).setValueLabels(true).setGridLines(false), page);
+        // The same but for the names of the fonts, a new one for each chart
+        assertEquals(old.replaceAll("/F\\d+ ", "/F "), renamed.replaceAll("/F\\d+ ", "/F "));
+
+        page = new Page(pdf, Letter.PORTRAIT);
+        content = draw(chart(pdf).setCategories("a", "b").setValueLabels(true)
+                .addSeries("", new float[] {1e30f, 3e38f}), page);
+        assertTrue(content.contains(TestSupport.hex("3e38")), content);
     }
 }

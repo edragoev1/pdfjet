@@ -5,6 +5,7 @@
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 using System;
+using System.Globalization;
 using Xunit;
 
 namespace PDFjet.NET {
@@ -31,7 +32,7 @@ public sealed class SimpleLineChartTest {
     [Fact]
     public void DescribesItselfFromItsData() {
         SimpleLineChart chart = NewChart(TestSupport.NewPDF());
-        Assert.Equal("Vehicles, by model year, 2021 to 2023: Battery from 14,755 to 11,853, highest 23,507 in 2022;"
+        Assert.Equal("Vehicles. By model year, 2021 to 2023: Battery from 14,755 to 11,853, highest 23,507 in 2022;"
                 + " Hybrid from 3,541 to 1,500, highest 4,015 in 2022.", chart.AltDescription());
         chart.SetAltDescription("Two lines");
         Assert.Equal("Two lines", chart.AltDescription());
@@ -195,6 +196,46 @@ public sealed class SimpleLineChartTest {
         page = new Page(pdf, Letter.PORTRAIT);
         new SimpleLineChart(font, font).AddLine("x", new float[] {12f, 37f}).DrawOn(page);
         Assert.DoesNotContain(TestSupport.Hex("12"), TestSupport.Content(page));
+    }
+
+    // The review of 26 October 2026, the second: a chart without its fonts
+    // draws nothing; the value of the first point of a rise is after it and
+    // under the line, and that of a peak at the top of the plot under it.
+    [Fact]
+    public void TheSecondReviewOfTheCharts() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        new SimpleLineChart(null, null).AddLine("a", new float[] {1f, 2f}).DrawOn(page);
+        Assert.Equal("", TestSupport.Content(page));
+        new SimpleLineChart(font, font).AddLine("big", new float[] {0f, 3e38f}).DrawOn(page);    // Did throw
+
+        page = new Page(pdf, Letter.PORTRAIT);
+        new SimpleLineChart(font, font).SetCategories("a", "b", "c").SetYAxisRange(0f, 50f)
+                .AddLine("x", new float[] {12f, 50f, 23f}).SetValueLabels(true).DrawOn(page);
+        string content = TestSupport.Content(page);
+        // The points, from the line drawn in gray: "x y m" of the first
+        // point, "x y l" of the peak
+        int rg = content.IndexOf("0.55 0.59 0.64 RG\n", StringComparison.Ordinal);
+        int m = content.IndexOf(" m\n", rg, StringComparison.Ordinal);
+        int startFrom = content.LastIndexOf('\n', m) + 1;
+        string[] start = content.Substring(startFrom, m - startFrom).Split(' ');
+        float x0 = float.Parse(start[0], CultureInfo.InvariantCulture);
+        float y0 = float.Parse(start[1], CultureInfo.InvariantCulture);
+        float[] first = TestSupport.PositionOf(content, "12");
+        Assert.True(first[0] > x0 && first[1] < y0, "the first value is after its point and under it: "
+                + first[0] + ", " + first[1] + " by " + x0 + ", " + y0);
+        int peakLine = content.IndexOf(" l\n", m, StringComparison.Ordinal);
+        int peakFrom = content.LastIndexOf('\n', peakLine) + 1;
+        string[] peakAt = content.Substring(peakFrom, peakLine - peakFrom).Split(' ');
+        float[] peak = TestSupport.PositionOf(content, "50");     // The first "50" drawn is the axis'
+        int value = content.LastIndexOf("<" + TestSupport.Hex("50") + ">", StringComparison.Ordinal);
+        int td = content.LastIndexOf(" Td\n", value, StringComparison.Ordinal);
+        int tdFrom = content.LastIndexOf('\n', td) + 1;
+        string[] valueAt = content.Substring(tdFrom, td - tdFrom).Split(' ');
+        Assert.True(float.Parse(valueAt[1], CultureInfo.InvariantCulture) < float.Parse(peakAt[1], CultureInfo.InvariantCulture),
+                "the value of the peak at the top is under it: " + valueAt[1] + " by " + peakAt[1]);
+        Assert.NotNull(peak);
     }
 }
 }   // End of namespace PDFjet.NET

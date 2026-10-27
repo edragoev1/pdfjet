@@ -84,7 +84,7 @@ func drawHorizontal(pdf *pdfjet.PDF) {
 	chart.SetGridLineColor(0xe0e0e0)
 	chart.SetGridLineDashPattern("[] 0")
 	chart.SetAxisLineWidth(0.0)
-	chart.SetDrawValueLabels(true)
+	chart.SetValueLabels(true)
 	chart.SetValueLabelsInside(true)
 	chart.SetGroupingUsed(true)
 	chart.SetAltDescription(
@@ -100,13 +100,20 @@ func drawHorizontal(pdf *pdfjet.PDF) {
 	keyTexts := []string{
 		"Clear / low sediment", "Sediment-rich, relatively clean", "Polluted / industrial & agricultural",
 		"Heavy natural sediment (loess)", "Natural dark tannin stain (Congo)"}
-	keyX := []float32{171.0, 262.0, 398.0, 171.0, 313.0}
-	keyY := []float32{512.0, 512.0, 512.0, 527.0, 527.0}
+	// Three on the first row and two on the second, each after the one
+	// before it by the width of its text
+	x := float32(171.0)
+	y := float32(512.0)
 	for i := range keyColors {
+		if i == 3 {
+			x = 171.0
+			y = 527.0
+		}
 		// The swatches are rectangles, drawn as artifacts next to their text.
-		pdfjet.NewRect(keyX[i], keyY[i]-8.5, 10.5, 10.5).SetFillColor(keyColors[i]).DrawOn(page)
+		pdfjet.NewRect(x, y-8.5, 10.5, 10.5).SetFillColor(keyColors[i]).DrawOn(page)
 		pdfjet.NewTextLine(f4, keyTexts[i]).
-			SetTextColor(gray).SetLocation(keyX[i]+15.0, keyY[i]).DrawOn(page)
+			SetTextColor(gray).SetLocation(x+15.0, y).DrawOn(page)
+		x += 15.0 + f4.StringWidth(f4.GetSize(), keyTexts[i]) + 12.0
 	}
 
 	note := "Color mapping is illustrative; lengths and conditions vary by source and season."
@@ -182,7 +189,7 @@ func drawVertical(pdf *pdfjet.PDF) {
 	stacked.AddSeries("2025", units2025)
 	stacked.AddSeries("2026", units2026)
 	stacked.SetStacked(true)
-	stacked.SetDrawValueLabels(true)
+	stacked.SetValueLabels(true)
 	stacked.SetAltDescription("Units sold by month in 2025 and 2026, stacked: from 85 a month, in February and May, to 152 in December.")
 	stacked.SetLocation(70.0, 420.0)
 	stacked.DrawOn(page)

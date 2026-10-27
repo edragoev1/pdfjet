@@ -313,12 +313,15 @@ public class Markdown {
             MarkdownParser.Block block = blocks.get(i);
             switch (block.kind) {
                 case HEADING:
+                    if (i + 2 < blocks.size() && leadsIntoTable(blocks.get(i + 1), blocks.get(i + 2))) {
+                        keepHeadingWithTable(block, blocks.get(i + 1), blocks.get(i + 2),
+                                tight ? size() * 0.25f : size() * 0.75f, x, width);
+                    }
                     drawHeading(block, x, width);
                     break;
                 case PARAGRAPH:
                     float gap = tight ? size() * 0.25f : size() * 0.75f;
-                    if (i + 1 < blocks.size() && blocks.get(i + 1).kind == MarkdownParser.Kind.TABLE
-                            && block.text.trim().endsWith(":")) {
+                    if (i + 1 < blocks.size() && leadsIntoTable(block, blocks.get(i + 1))) {
                         keepWithTable(block, blocks.get(i + 1), gap, x, width);
                     }
                     gap(gap);
@@ -380,7 +383,26 @@ public class Markdown {
     // of the heading before it, so that no level is skipped.
     private void drawHeading(MarkdownParser.Block block, float x, float width) throws Exception {
         float fontSize = size() * HEADING_SIZES[block.level - 1];
-        gap(size() * (block.level <= 2 ? 1.4f : 1.1f));
+        gap(headingGap(block));
+        Paragraph paragraph = headingParagraph(block);
+        headingLevel = Math.min(block.level, headingLevel + 1);
+        StructElem[] levels = {StructElem.H1, StructElem.H2, StructElem.H3,
+                StructElem.H4, StructElem.H5, StructElem.H6};
+        paragraph.setStructureType(levels[headingLevel - 1]);
+        ensure(headingFont.getBodyHeight(fontSize) + 2f * regular.getBodyHeight(size()));
+        drawParagraph(paragraph, x, width);
+        y += size() * 0.25f;
+    }
+
+    // The space above a heading.
+    private float headingGap(MarkdownParser.Block block) {
+        return size() * (block.level <= 2 ? 1.4f : 1.1f);
+    }
+
+    // The text of a heading in the heading font, at its level's size and in
+    // the heading color.
+    private Paragraph headingParagraph(MarkdownParser.Block block) {
+        float fontSize = size() * HEADING_SIZES[block.level - 1];
         Paragraph paragraph = markup.paragraph(block.text);
         for (TextLine line : paragraph.lines) {
             if (line.font == regular) {
@@ -393,13 +415,7 @@ public class Markdown {
                 line.setTextColor(headingColor);
             }
         }
-        headingLevel = Math.min(block.level, headingLevel + 1);
-        StructElem[] levels = {StructElem.H1, StructElem.H2, StructElem.H3,
-                StructElem.H4, StructElem.H5, StructElem.H6};
-        paragraph.setStructureType(levels[headingLevel - 1]);
-        ensure(headingFont.getBodyHeight(fontSize) + 2f * regular.getBodyHeight(size()));
-        drawParagraph(paragraph, x, width);
-        y += size() * 0.25f;
+        return paragraph;
     }
 
     // Code in the code font on a light background, a line of the source at a
@@ -602,6 +618,36 @@ public class Markdown {
         new Line(x, middle, x + width, middle).setStrokeColor(RULE_COLOR).setStrokeWidth(1f).drawOn(page);
         y += size();
         atTop = false;
+    }
+
+    // Tells if the block is a paragraph that ends in a colon, which leads into
+    // the table after it.
+    private static boolean leadsIntoTable(MarkdownParser.Block block, MarkdownParser.Block next) {
+        return block.kind == MarkdownParser.Kind.PARAGRAPH && next.kind == MarkdownParser.Kind.TABLE
+                && block.text.trim().endsWith(":");
+    }
+
+    // A heading over a paragraph that leads into a table, as "Lines of code"
+    // over "Lines of code of each program:" and its table, starts a page with
+    // them when the three fit on a page together but not in what is left of
+    // this one: the paragraph and the table went to the next page, and the
+    // heading ended this one.
+    private void keepHeadingWithTable(MarkdownParser.Block heading, MarkdownParser.Block paragraph,
+            MarkdownParser.Block table, float gap, float x, float width) throws Exception {
+        if (atTop) {
+            return;
+        }
+        float room = bottom - marginTop;
+        float headingGap = headingGap(heading);
+        TextFrame title = new TextFrame(Arrays.asList(headingParagraph(heading))).setParagraphGap(0f);
+        title.setLocation(x, y + headingGap).setWidth(width).setHeight(room).drawOn(null);
+        float below = title.getTextBottom() + size() * 0.25f + gap;
+        TextFrame text = new TextFrame(Arrays.asList(markup.paragraph(paragraph.text))).setParagraphGap(0f);
+        text.setLocation(x, below).setWidth(width).setHeight(room).drawOn(null);
+        float needed = (text.getTextBottom() - y) + size() * 0.75f + tableOf(table, width).getTotalHeight();
+        if (y + needed > bottom && needed - headingGap <= room) {
+            newPage();
+        }
     }
 
     // A paragraph that ends in a colon leads into the table after it, as

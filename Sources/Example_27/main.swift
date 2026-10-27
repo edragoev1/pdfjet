@@ -74,7 +74,7 @@ public class Example_27 {
         chart.setGridLineColor(0xe0e0e0)
         chart.setGridLineDashPattern("[] 0")
         chart.setAxisLineWidth(0.0)
-        chart.setDrawValueLabels(true)
+        chart.setValueLabels(true)
         chart.setValueLabelsInside(true)
         chart.setGroupingUsed(true)
         chart.setAltDescription(
@@ -89,13 +89,20 @@ public class Example_27 {
         let keyTexts = [
                 "Clear / low sediment", "Sediment-rich, relatively clean", "Polluted / industrial & agricultural",
                 "Heavy natural sediment (loess)", "Natural dark tannin stain (Congo)"]
-        let keyX: [Float] = [171.0, 262.0, 398.0, 171.0, 313.0]
-        let keyY: [Float] = [512.0, 512.0, 512.0, 527.0, 527.0]
+        // Three on the first row and two on the second, each after the one
+        // before it by the width of its text
+        var x: Float = 171.0
+        var y: Float = 512.0
         for i in 0..<keyColors.count {
+            if i == 3 {
+                x = 171.0
+                y = 527.0
+            }
             // The swatches are rectangles, drawn as artifacts next to their text.
-            Rect(keyX[i], keyY[i] - 8.5, 10.5, 10.5).setFillColor(keyColors[i]).drawOn(page)
+            Rect(x, y - 8.5, 10.5, 10.5).setFillColor(keyColors[i]).drawOn(page)
             TextLine(f4, keyTexts[i])
-                    .setTextColor(gray).setLocation(keyX[i] + 15.0, keyY[i]).drawOn(page)
+                    .setTextColor(gray).setLocation(x + 15.0, y).drawOn(page)
+            x += 15.0 + f4.stringWidth(keyTexts[i]) + 12.0
         }
 
         let note = "Color mapping is illustrative; lengths and conditions vary by source and season."
@@ -173,7 +180,7 @@ public class Example_27 {
         stacked.addSeries("2025", units2025)
         stacked.addSeries("2026", units2026)
         stacked.setStacked(true)
-        stacked.setDrawValueLabels(true)
+        stacked.setValueLabels(true)
         stacked.setAltDescription("Units sold by month in 2025 and 2026, stacked: from 85 a month, in February and May, to 152 in December.")
         stacked.drawOn(page)
     }

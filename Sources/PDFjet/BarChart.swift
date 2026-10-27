@@ -345,9 +345,22 @@ public class BarChart : Drawable {
     /// - Returns: this BarChart object.
     ///
     @discardableResult
-    public func setDrawGridLines(_ drawGridLines: Bool) -> BarChart {
+    public func setGridLines(_ drawGridLines: Bool) -> BarChart {
         self.drawGridLines = drawGridLines
         return self
+    }
+
+    ///
+    /// Sets whether the grid lines of the value axis are drawn.
+    ///
+    /// - Parameter drawGridLines: true to draw them.
+    /// - Returns: this BarChart object.
+    ///
+    @available(*, deprecated, renamed: "setGridLines",
+            message: "As of 9.1.5, use setGridLines, the name the other charts use for what they draw.")
+    @discardableResult
+    public func setDrawGridLines(_ drawGridLines: Bool) -> BarChart {
+        return setGridLines(drawGridLines)
     }
 
     ///
@@ -358,9 +371,23 @@ public class BarChart : Drawable {
     /// - Returns: this BarChart object.
     ///
     @discardableResult
-    public func setDrawValueLabels(_ drawValueLabels: Bool) -> BarChart {
+    public func setValueLabels(_ drawValueLabels: Bool) -> BarChart {
         self.drawValueLabels = drawValueLabels
         return self
+    }
+
+    ///
+    /// Sets whether the value of each bar is written at its end, or, in a
+    /// stacked chart, inside each segment that has room for it.
+    ///
+    /// - Parameter drawValueLabels: true to write the values.
+    /// - Returns: this BarChart object.
+    ///
+    @available(*, deprecated, renamed: "setValueLabels",
+            message: "As of 9.1.5, use setValueLabels, as SimpleLineChart's.")
+    @discardableResult
+    public func setDrawValueLabels(_ drawValueLabels: Bool) -> BarChart {
+        return setValueLabels(drawValueLabels)
     }
 
     ///
@@ -399,9 +426,23 @@ public class BarChart : Drawable {
     /// - Returns: this BarChart object.
     ///
     @discardableResult
-    public func setDrawLegend(_ drawLegend: Bool) -> BarChart {
+    public func setLegend(_ drawLegend: Bool) -> BarChart {
         self.drawLegend = drawLegend
         return self
+    }
+
+    ///
+    /// Sets whether the legend is drawn. The legend lists the series that have
+    /// a name, under the title.
+    ///
+    /// - Parameter drawLegend: true to draw the legend.
+    /// - Returns: this BarChart object.
+    ///
+    @available(*, deprecated, renamed: "setLegend",
+            message: "As of 9.1.5, use setLegend, as DonutChart's.")
+    @discardableResult
+    public func setDrawLegend(_ drawLegend: Bool) -> BarChart {
+        return setLegend(drawLegend)
     }
 
     ///
@@ -633,7 +674,8 @@ public class BarChart : Drawable {
         var names = [String]()
         var widestCategory: Float = 0.0
         for category in categories {
-            let name = horizontal ? ChartScale.shorten(f2, f2.getSize(), category, 0.4 * w) : category
+            // Two fifths of a horizontal chart at most, a quarter under vertical bars
+            let name = ChartScale.shorten(f2, f2.getSize(), category, (horizontal ? 0.4 : 0.25) * w)
             names.append(name)
             widestCategory = Swift.max(widestCategory, f2.stringWidth(name))
         }
@@ -668,11 +710,14 @@ public class BarChart : Drawable {
         // The pen, the brush and the dash pattern of the caller are kept,
         // as a Stamp keeps them.
         page.saveGraphicsState()
+        page.setDefaultStrokeDashPattern()      // Not the caller's, which dashed the legend's lines
 
         // Title, the subtitle and then the legend under it, at the left
-        BarChart.drawText(page, f1, title, x1, titleBaseline, BarChart.INK)
+        // The title and the subtitle shortened to the width of the chart
+        BarChart.drawText(page, f1, ChartScale.shorten(f1, f1.getSize(), title, w), x1, titleBaseline, BarChart.INK)
         if !subtitle.isEmpty {
-            BarChart.drawText(page, f2, subtitle, x1, titleBaseline + subtitleHeight, BarChart.MUTED)
+            BarChart.drawText(page, f2, ChartScale.shorten(f2, f2.getSize(), subtitle, w),
+                    x1, titleBaseline + subtitleHeight, BarChart.MUTED)
         }
         if legend {
             drawLegend(page, titleBaseline + subtitleHeight + 1.5 * bodyHeight)
@@ -697,7 +742,7 @@ public class BarChart : Drawable {
             let label = axisLabel(v, axisDigits)
             let labeled = i % every == 0
             if horizontal {
-                let x = x5 + (v - vMin) * (x6 - x5) / (vMax - vMin)
+                let x = x5 + ChartScale.scaled(v - vMin, x6 - x5, vMax - vMin)
                 if drawGridLines {
                     gridLine(page, x, y5, x, y8)
                 }
@@ -705,7 +750,7 @@ public class BarChart : Drawable {
                     BarChart.drawText(page, f2, label, x - f2.stringWidth(label) / 2.0, y8 + bodyHeight, BarChart.MUTED)
                 }
             } else {
-                let y = y8 - (v - vMin) * (y8 - y5) / (vMax - vMin)
+                let y = y8 - ChartScale.scaled(v - vMin, y8 - y5, vMax - vMin)
                 if drawGridLines {
                     gridLine(page, x5, y, x6, y)
                 }
@@ -757,8 +802,8 @@ public class BarChart : Drawable {
                 let label: String? = drawValueLabels ? valueLabel(s.values[i]) : nil
                 let on = BarChart.labelColorOn(color)
                 if horizontal {
-                    let x0 = x5 + (from - vMin) * (x6 - x5) / (vMax - vMin)
-                    let x = x5 + (to - vMin) * (x6 - x5) / (vMax - vMin)
+                    let x0 = x5 + ChartScale.scaled(from - vMin, x6 - x5, vMax - vMin)
+                    let x = x5 + ChartScale.scaled(to - vMin, x6 - x5, vMax - vMin)
                     page.fillRect(Swift.min(x0, x), barStart, abs(x - x0), barWidth)
                     let baseline = barStart + barWidth / 2.0 + ascent / 2.0
                     if let label = label, stacked {
@@ -774,8 +819,8 @@ public class BarChart : Drawable {
                                 to >= base ? x + pad / 2.0 : x - pad / 2.0 - f2.stringWidth(label), baseline, BarChart.INK)
                     }
                 } else {
-                    let y0 = y8 - (from - vMin) * (y8 - y5) / (vMax - vMin)
-                    let y = y8 - (to - vMin) * (y8 - y5) / (vMax - vMin)
+                    let y0 = y8 - ChartScale.scaled(from - vMin, y8 - y5, vMax - vMin)
+                    let y = y8 - ChartScale.scaled(to - vMin, y8 - y5, vMax - vMin)
                     page.fillRect(barStart, Swift.min(y0, y), barWidth, abs(y - y0))
                     let x = barStart + (barWidth - (label != nil ? f2.stringWidth(label!) : 0.0)) / 2.0
                     if let label = label, stacked {
@@ -795,10 +840,10 @@ public class BarChart : Drawable {
                 let total = valueLabel(up)
                 let groupMiddle = groupStart + groupWidth / 2.0
                 if horizontal {
-                    let x = x5 + (Swift.min(up, vMax) - vMin) * (x6 - x5) / (vMax - vMin)
+                    let x = x5 + ChartScale.scaled(Swift.min(up, vMax) - vMin, x6 - x5, vMax - vMin)
                     BarChart.drawText(page, f2, total, x + pad / 2.0, groupMiddle + ascent / 2.0, BarChart.INK)
                 } else {
-                    let y = y8 - (Swift.min(up, vMax) - vMin) * (y8 - y5) / (vMax - vMin)
+                    let y = y8 - ChartScale.scaled(Swift.min(up, vMax) - vMin, y8 - y5, vMax - vMin)
                     BarChart.drawText(page, f2, total, groupMiddle - f2.stringWidth(total) / 2.0, y - pad / 2.0,
                             BarChart.INK)
                 }
@@ -812,10 +857,10 @@ public class BarChart : Drawable {
             page.setPenColor(BarChart.BASELINE)
             page.setPenWidth(axisLineWidth)
             if horizontal {
-                let x0 = x5 + (base - vMin) * (x6 - x5) / (vMax - vMin)
+                let x0 = x5 + ChartScale.scaled(base - vMin, x6 - x5, vMax - vMin)
                 page.drawLine(x0, y5, x0, y8)
             } else {
-                let y0 = y8 - (base - vMin) * (y8 - y5) / (vMax - vMin)
+                let y0 = y8 - ChartScale.scaled(base - vMin, y8 - y5, vMax - vMin)
                 page.drawLine(x5, y0, x6, y0)
             }
         }
@@ -826,51 +871,57 @@ public class BarChart : Drawable {
         }
 
         // The lines over the bars, through the middles of the categories, a
-        // dot at each value, broken where a value is missing
+        // dot at each value, broken where a value is missing; each on a white
+        // line a little wider, so that it stays clear where it crosses a bar
         for s in lineSeries {
-            page.setPenColor(s.color)
-            page.setPenWidth(2.0)
-            page.setLineJoinStyle(JoinStyle.ROUND)
-            page.setBrushColor(s.color)
-            var drawing = false
-            var dots = [[Float]]()
+            var runs = [[[Float]]]()
+            var inRun = false
             for i in 0..<n {
                 if i >= s.values.count || !ChartScale.isValue(s.values[i]) {
-                    if drawing {
-                        page.strokePath()
-                    }
-                    drawing = false
+                    inRun = false
                     continue
                 }
                 let v = Swift.min(Swift.max(s.values[i], vMin), vMax)
                 let middle = (horizontal ? y5 : x5) + Float(i) * slot + slot / 2.0
                 let at = horizontal
-                        ? x5 + (v - vMin) * (x6 - x5) / (vMax - vMin)
-                        : y8 - (v - vMin) * (y8 - y5) / (vMax - vMin)
-                let px = horizontal ? at : middle
-                let py = horizontal ? middle : at
-                if drawing {
-                    page.lineTo(px, py)
-                } else {
-                    page.moveTo(px, py)
-                    drawing = true
+                        ? x5 + ChartScale.scaled(v - vMin, x6 - x5, vMax - vMin)
+                        : y8 - ChartScale.scaled(v - vMin, y8 - y5, vMax - vMin)
+                if !inRun {
+                    runs.append([[Float]]())
+                    inRun = true
                 }
-                dots.append([px, py])
+                runs[runs.count - 1].append(horizontal ? [at, middle] : [middle, at])
             }
-            if drawing {
-                page.strokePath()
-            }
-            for dot in dots {
-                page.fillCircle(dot[0], dot[1], 0.2 * bodyHeight)
+            page.setLineJoinStyle(JoinStyle.ROUND)
+            let dot = 0.2 * bodyHeight
+            for pass in 0..<2 {
+                let color = (pass == 0) ? Color.white : s.color
+                page.setPenColor(color)
+                page.setPenWidth((pass == 0) ? 3.5 : 2.0)
+                for points in runs {
+                    page.moveTo(points[0][0], points[0][1])
+                    for k in 1..<points.count {
+                        page.lineTo(points[k][0], points[k][1])
+                    }
+                    page.strokePath()
+                }
+                page.setBrushColor(color)
+                for points in runs {
+                    for point in points {
+                        page.fillCircle(point[0], point[1], (pass == 0) ? dot + 0.75 : dot)
+                    }
+                }
             }
         }
 
         // Axis titles
         page.setTextRotation(-90)
-        BarChart.drawText(page, f2, yAxisTitle, x1 + bodyHeight, y8 - ((y8 - y5) - f2.stringWidth(yAxisTitle)) / 2.0,
+        let yTitle = ChartScale.shorten(f2, f2.getSize(), yAxisTitle, y8 - y5)
+        BarChart.drawText(page, f2, yTitle, x1 + bodyHeight, y8 - ((y8 - y5) - f2.stringWidth(yTitle)) / 2.0,
                 BarChart.MUTED)
         page.setTextRotation(0)
-        BarChart.drawText(page, f2, xAxisTitle, x5 + ((x6 - x5) - f2.stringWidth(xAxisTitle)) / 2.0, y2 - bodyHeight / 2.0,
+        let xTitle = ChartScale.shorten(f2, f2.getSize(), xAxisTitle, x6 - x5)
+        BarChart.drawText(page, f2, xTitle, x5 + ((x6 - x5) - f2.stringWidth(xTitle)) / 2.0, y2 - bodyHeight / 2.0,
                 BarChart.MUTED)
 
         page.restoreGraphicsState()
@@ -886,20 +937,14 @@ public class BarChart : Drawable {
         if let altDescription, !altDescription.isEmpty {
             return altDescription
         }
-        var sb = title
-        if !subtitle.isEmpty {
-            if !sb.isEmpty {
-                sb += ", "
-            }
-            sb += subtitle
-        }
+        var sb = ChartScale.join(title, subtitle)
         if sb.isEmpty {
             sb += "Bar chart"
         }
         var separator = ": "
-        for s in allSeries() {
+        for (j, s) in allSeries().enumerated() {
             var values = ""
-            for i in 0..<s.values.count {
+            for i in 0..<Swift.min(s.values.count, numberOfCategories()) {
                 if !ChartScale.isValue(s.values[i]) {
                     continue
                 }
@@ -916,7 +961,9 @@ public class BarChart : Drawable {
                 continue
             }
             sb += separator
-            if !s.name.isEmpty {
+            if j >= series.count {      // A line
+                sb += s.name.isEmpty ? "line: " : s.name + ", a line: "
+            } else if !s.name.isEmpty {
                 sb += s.name + ": "
             }
             sb += values
@@ -928,8 +975,16 @@ public class BarChart : Drawable {
     /// Returns the number of category slots: the categories or the longest series.
     private func numberOfCategories() -> Int {
         var n = categories.count
-        for s in allSeries() {
+        for s in series {
             n = Swift.max(n, s.values.count)
+        }
+        // A line series is drawn over the categories of the bars, and adds
+        // none of its own when there are bars: a longer target line added
+        // empty slots
+        if n == 0 {
+            for s in lineSeries {
+                n = Swift.max(n, s.values.count)
+            }
         }
         return n
     }
@@ -1025,7 +1080,9 @@ public class BarChart : Drawable {
             if s.name.isEmpty {
                 continue
             }
-            if x > x1 && x + swatch + gap + f2.stringWidth(s.name) > x1 + w {
+            // A name too long for a row is shortened
+            let name = ChartScale.shorten(f2, f2.getSize(), s.name, w - swatch - gap)
+            if x > x1 && x + swatch + gap + f2.stringWidth(name) > x1 + w {
                 x = x1
                 baseline += 1.5 * f2.getBodyHeight()
                 rows += 1
@@ -1047,9 +1104,9 @@ public class BarChart : Drawable {
             }
             x += swatch + gap
             if let page {
-                BarChart.drawText(page, f2, s.name, x, baseline, BarChart.INK)
+                BarChart.drawText(page, f2, name, x, baseline, BarChart.INK)
             }
-            x += f2.stringWidth(s.name) + f2.getBodyHeight()
+            x += f2.stringWidth(name) + f2.getBodyHeight()
         }
         return rows
     }

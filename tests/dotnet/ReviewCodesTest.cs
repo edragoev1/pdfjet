@@ -58,20 +58,26 @@ public class ReviewCodesTest {
         }
     }
 
-    // Data with no number, or whose range does not fit a float, has the range
+    // Data with no number, or whose span does not fit a float, has the range
     // from 0 to 1, where Swift stopped the program (review of 12 October 2026,
-    // R3).
+    // R3). Data whose span fits, but whose rounded range would not, has the
+    // range of its values: from 0 to 1 the bars went past the plot (review of
+    // 26 October 2026).
     [Fact]
     public void TheRangeOfDataPastTheLargestFloatIsFromZeroToOne() {
         float inf = float.PositiveInfinity;
         float[][] ranges = {
             new float[] {inf, 0f}, new float[] {0f, -inf}, new float[] {float.NaN, float.NaN},
-            new float[] {3.4e38f, -3.4e38f}, new float[] {float.MinValue, float.MaxValue},
-            new float[] {float.MaxValue, 0f}};
+            new float[] {3.4e38f, -3.4e38f}, new float[] {float.MinValue, float.MaxValue}};
         foreach (float[] range in ranges) {
             Round round = ChartScale.RoundMaxAndMinValues(range[0], range[1]);
             Assert.True(round.minValue == 0f && round.maxValue == 1f && round.numOfGridLines == 1,
                     range[0] + ", " + range[1] + ": " + round.minValue + " to " + round.maxValue);
+        }
+        foreach (float max in new float[] {float.MaxValue, 3e38f}) {
+            Round round = ChartScale.RoundMaxAndMinValues(max, 0f);
+            Assert.True(round.minValue == 0f && round.maxValue == max && round.numOfGridLines >= 1,
+                    max + ": " + round.minValue + " to " + round.maxValue);
         }
     }
 
@@ -98,7 +104,7 @@ public class ReviewCodesTest {
             Page page = new Page(pdf, Letter.PORTRAIT);
             Font font = TestSupport.Helvetica(pdf);
             BarChart chart = new BarChart(font, font).SetLocation(50f, 50f).SetSize(300f, 200f)
-                    .SetCategories("a", "b", "c").SetStacked(stacked).SetDrawValueLabels(true);
+                    .SetCategories("a", "b", "c").SetStacked(stacked).SetValueLabels(true);
             chart.AddSeries("", new float[] {float.NaN, 10f, float.PositiveInfinity});
             TestSupport.AssertXY(350f, 250f, chart.DrawOn(page));
             string content = TestSupport.Content(page);

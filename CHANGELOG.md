@@ -166,6 +166,12 @@ There is no 9.1.3: what was done for it is in 9.1.5 (the owner, 26 October
   to Table's 7.7.
 
 ### Changed
+- Example_23, the four ports: its table of PDF/A-1a is the World Bank's life
+  expectancy and children per woman of 2023, 217 countries and economies
+  (World Development Indicators, CC BY 4.0, credited in the footer), the
+  file Example_26 draws, in place of a file of world communications of the
+  mid-2000s. Its markers and row colors are found by country and by value,
+  not by row number, and it is four pages, the table in the middle of each.
 - BarChart, the four ports: the look of the simple charts. The title and
   the subtitle at the left, in ink and in a muted gray, and the legend under
   them at the left; light gray solid grid lines along the value axis; one
@@ -265,6 +271,11 @@ There is no 9.1.3: what was done for it is in 9.1.5 (the owner, 26 October
   drawn in 0x1A7F37.
 
 ### Deprecated
+- BarChart, the four ports: `setDrawGridLines`, `setDrawValueLabels` and
+  `setDrawLegend` (Go `SetDraw...`), for `setGridLines`, `setValueLabels`
+  and `setLegend`, the names the other charts use: SimpleLineChart's
+  `setValueLabels` and DonutChart's `setLegend`. The old names do as the new
+  ones and are to be removed with Chart.
 - `Chart` and `Series`, in the four ports: SimpleLineChart draws lines over
   time or over categories (Example_25), and SimpleScatterChart points on
   two axes (Example_26). They still work, and will be removed in a later
@@ -281,6 +292,65 @@ There is no 9.1.3: what was done for it is in 9.1.5 (the owner, 26 October
   one no longer builds; a calendar is a `Table` of seven columns.
 
 ### Fixed
+- Markdown, the four ports: a heading over a paragraph that ends in a colon
+  and its table goes to the next page with them, when the three fit on a
+  page together but not in what is left of this one. The paragraph and the
+  table went, and left the heading at the bottom of the page, as in the
+  appendix of the fair test's report.
+- The charts, the four ports, from a second review of 26 October 2026:
+  - Data whose range, rounded to round steps, would be past the largest
+    float, as bars of 3e38, is drawn on the range of its values, where it
+    fell back to 0 to 1 and the bars went past the plot; a chart whose
+    values reach so far no longer throws "A coordinate, size or width is
+    NaN, infinite or too large for a PDF" when it draws them. A number of 16
+    digits or more is written in three significant digits and a power of
+    ten, 3e38 and 1.23e20, where it was written out to its last digit.
+  - DonutChart: the labels of thin slices side by side, moved apart, have
+    their leader lines' elbows out where their heights leave the circle, so
+    that they stay off the ring, where they stacked across it; a label wider
+    than the radius, or than six of its letters, is shortened with an
+    ellipsis, and so is a legend item too long for a row, its percentage
+    kept; the text in the hole is three quarters of a label at the smallest,
+    shortened to fit there, where a long one was drawn too small to read;
+    the caller's dash pattern no longer dashes the leader lines and the
+    white ones; `setRadii` takes the larger radius as the outer one, where an
+    inner radius past the outer drew the ring inside out; and the last
+    slice, by the first around the circle, does not have the first's color
+    (the ninth of nine was navy by the navy first).
+  - BarChart: a chart without its fonts draws nothing, where it threw; its
+    title, subtitle, legend names and axis titles are shortened to the
+    chart, and a category name under vertical bars to a quarter of it, with
+    an ellipsis, where they ran past it; a line series adds no categories
+    of its own to bars, where a longer one added empty slots; the legend's
+    line is no longer dashed by the caller's dash pattern; and a line series
+    is drawn on a white line a little wider, so that it stays clear across
+    the bars.
+  - SimpleBarChart, SimpleLineChart, SimpleScatterChart: a chart without its
+    fonts draws nothing, where it threw, and SimpleBarChart's `getHeight` is
+    0; the title and the subtitle are shortened to the chart, a line's name
+    at its end to a quarter of it, and a highlighted point's name to two
+    fifths of the plot, kept in it; the caller's dash pattern no longer
+    dashes the lines and the grid. SimpleLineChart's value labels: the first
+    of a rise is after its point and under the line, where it touched it,
+    and one above the plot is under its point.
+  - The descriptions of the charts join the title, the subtitle and a
+    donut's text in the hole as sentences, "Vehicles. By model year: ...",
+    the second's first letter a capital, where a comma joined them; BarChart
+    says which series is a line ("Target, a line: ...").
+  - Documentation: what a chart with nothing to draw returns,
+    the text in the hole in the description, SimpleLineChart's areas of
+    values under 0 and its value labels outside a set range.
+  Behavior change: `new DonutChart(bold, regular)` takes its fonts in the
+  order of the other charts, the bold one first, where it took the regular
+  one first: `new DonutChart(regular, bold)` of 9.1.1 and before draws its
+  labels in the bold font and its percentages in the regular one, and is
+  written `new DonutChart(bold, regular)` now. Example_28 and the booklet
+  are.
+  Behavior change: a chart's description joins its title and subtitle with
+  a full stop, "Phones. By country: ...", where it was "Phones, by country:
+  ..."; a long title, name or label is shortened with an ellipsis where it
+  was drawn whole past the chart; a number of 16 digits or more is written
+  as 3e38; and a DonutChart's labels moved apart are further out.
 - SimpleLineChart and SimpleScatterChart, the four ports: a value outside a
   range set with `setYAxisRange` or `setXAxisRange` is clipped at the edges
   of the plot, a line where it leaves it, and a point outside it is not

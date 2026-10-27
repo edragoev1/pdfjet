@@ -53,7 +53,7 @@ import Testing
     @Test func describesItselfFromItsValues() {
         let chart = chart(TestSupport.newPDF()).setFractionDigits(1)
         #expect(chart.getAltDescription()
-                == "Statement, 12 pages, warm ms: PDFjet 7.3, iText 72.6, OpenPDF 18.4, PDFBox 44.1.")
+                == "Statement, 12 pages. Warm ms: PDFjet 7.3, iText 72.6, OpenPDF 18.4, PDFBox 44.1.")
         chart.setAltDescription("Four libraries")
         #expect(chart.getAltDescription() == "Four libraries")
     }
@@ -117,5 +117,28 @@ import Testing
         #expect(ChartScale.shorten(font, 10, "A name", font.stringWidth(10, "A n\u{2026}")) == "A n\u{2026}")
         #expect(ChartScale.shorten(font, 10, "A name", 100) == "A name")
         #expect(ChartScale.shorten(font, 10, "A  name", font.stringWidth(10, "A \u{2026}") - 0.1) == "A\u{2026}")
+    }
+
+    // A title too long for the chart is shortened; a value of 3e38 is written
+    // short (the review of 26 October 2026, the second). The fonts of a
+    // Swift chart are not optional, so the Java test of a chart without them
+    // has no Swift form.
+    @Test func theSecondReviewOfTheCharts() {
+        let pdf = TestSupport.newPDF()
+        let font = TestSupport.helvetica(pdf)
+        let page = Page(pdf, Letter.PORTRAIT)
+        let title = "A title far too long for a chart two hundred points wide"
+        SimpleBarChart(font, font).setWidth(200).setTitle(title).add("a", 3e38).drawOn(page)
+        let content = TestSupport.content(page)
+        #expect(!content.contains(TestSupport.hex(title)), "\(content)")
+        #expect(content.contains(TestSupport.hex("3e38")), "\(content)")
+        #expect(ChartScale.format(1.2345e20, 0, 2) == "1.23e20")
+        #expect(ChartScale.groupDigits(ChartScale.format(-4.5e16, 0, 2)) == "-4.5e16")
+        // As Java's BigDecimal of the exact value, rounded to three digits
+        // half to even
+        #expect(ChartScale.format(Float.greatestFiniteMagnitude, 0, 2) == "3.4e38")
+        #expect(ChartScale.format(1e15, 0, 2) == "1e15")
+        #expect(ChartScale.format(9.995e20, 0, 2) == "9.99e20")     // Its exact value is under the half
+        #expect(ChartScale.format(9.9949999e15, 0, 2) == "9.99e15")
     }
 }

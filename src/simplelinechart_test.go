@@ -25,7 +25,7 @@ func testSimpleLineChart(pdf *PDF) *SimpleLineChart {
 
 func TestSimpleLineChartDescribesItselfFromItsData(t *testing.T) {
 	chart := testSimpleLineChart(testNewPDF())
-	want := "Vehicles, by model year, 2021 to 2023: Battery from 14,755 to 11,853, highest 23,507 in 2022;" +
+	want := "Vehicles. By model year, 2021 to 2023: Battery from 14,755 to 11,853, highest 23,507 in 2022;" +
 		" Hybrid from 3,541 to 1,500, highest 4,015 in 2022."
 	if got := chart.getAltDescription(); got != want {
 		t.Errorf("got %q, want %q", got, want)
@@ -200,5 +200,49 @@ func TestSimpleLineChartTheValuesAndTheAreaAreDrawnWhenAsked(t *testing.T) {
 	NewSimpleLineChart(font, font).AddLine("x", []float32{12, 37}).DrawOn(page)
 	if strings.Contains(testContent(page), testHex("12")) {
 		t.Errorf("a value is written unasked: %q", testContent(page))
+	}
+}
+
+// The review of 26 October 2026, the second: a chart without its fonts draws
+// nothing; the value of the first point of a rise is after it and under the
+// line, and that of a peak at the top of the plot under it.
+func TestSimpleLineChartTheSecondReviewOfTheCharts(t *testing.T) {
+	pdf := testNewPDF()
+	font := testHelvetica(pdf)
+	page := NewPage(pdf, testLetterPortrait())
+	NewSimpleLineChart(nil, nil).AddLine("a", []float32{1, 2}).DrawOn(page)
+	if content := testContent(page); content != "" {
+		t.Errorf("a chart without its fonts drew %q", content)
+	}
+	NewSimpleLineChart(font, font).AddLine("big", []float32{0, 3e38}).DrawOn(page)
+
+	page = NewPage(pdf, testLetterPortrait())
+	NewSimpleLineChart(font, font).SetCategories("a", "b", "c").SetYAxisRange(0, 50).
+		AddLine("x", []float32{12, 50, 23}).SetValueLabels(true).DrawOn(page)
+	content := testContent(page)
+	// The points, from the line drawn in gray: "x y m" of the first point,
+	// "x y l" of the peak
+	numbers := func(end int) []string {
+		return strings.Split(content[strings.LastIndex(content[:end], "\n")+1:end], " ")
+	}
+	parse := func(text string) float32 {
+		v, _ := strconv.ParseFloat(text, 32)
+		return float32(v)
+	}
+	rg := strings.Index(content, "0.55 0.59 0.64 RG\n")
+	m := rg + strings.Index(content[rg:], " m\n")
+	start := numbers(m)
+	x0, y0 := parse(start[0]), parse(start[1])
+	first := testPositionOf(t, content, "12")
+	if !(first[0] > x0 && first[1] < y0) {
+		t.Errorf("the first value is not after its point and under it: %v by %v, %v", first, x0, y0)
+	}
+	peakLine := m + strings.Index(content[m:], " l\n")
+	peakAt := numbers(peakLine)
+	value := strings.LastIndex(content, "<"+testHex("50")+">")
+	td := strings.LastIndex(content[:value], " Td\n")
+	valueAt := numbers(td)
+	if !(parse(valueAt[1]) < parse(peakAt[1])) {
+		t.Errorf("the value of the peak at the top is not under it: %v by %v", valueAt[1], peakAt[1])
 	}
 }

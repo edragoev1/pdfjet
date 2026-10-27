@@ -261,13 +261,7 @@ public class SimpleBarChart : Drawable {
         if !altDescription.isEmpty {
             return altDescription
         }
-        var text = title
-        if !subtitle.isEmpty {
-            if !text.isEmpty {
-                text += ", "
-            }
-            text += subtitle
-        }
+        var text = ChartScale.join(title, subtitle)
         if text.isEmpty {
             text = "Bar chart"
         }
@@ -321,12 +315,13 @@ public class SimpleBarChart : Drawable {
         var baseline = y + pad
         if !title.isEmpty {
             baseline += f1.getAscent(f1.getSize())
-            page.drawString(f1, f1.getSize(), title, x + pad, baseline, Util.toRGB(SimpleBarChart.INK), nil)
+            page.drawString(f1, f1.getSize(), ChartScale.shorten(f1, f1.getSize(), title, w - 2.0 * pad), x + pad, baseline, Util.toRGB(SimpleBarChart.INK), nil)
             baseline += f1.getDescent(f1.getSize())
         }
         if !subtitle.isEmpty {
             baseline += 1.4 * subtitleSize()
-            page.drawString(f2, subtitleSize(), subtitle, x + pad, baseline, Util.toRGB(SimpleBarChart.MUTED), nil)
+            page.drawString(f2, subtitleSize(), ChartScale.shorten(f2, subtitleSize(), subtitle, w - 2.0 * pad),
+                    x + pad, baseline, Util.toRGB(SimpleBarChart.MUTED), nil)
         }
 
         let rowTop = y + top()

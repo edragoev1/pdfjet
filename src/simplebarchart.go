@@ -148,6 +148,9 @@ func (chart *SimpleBarChart) SetWidth(w float32) *SimpleBarChart {
 // GetHeight returns the height of the chart: its padding, its title and
 // subtitle, and a row for each bar.
 func (chart *SimpleBarChart) GetHeight() float32 {
+	if chart.f1 == nil || chart.f2 == nil {
+		return 0 // Without its fonts the chart draws nothing
+	}
 	return chart.top() + float32(float32(len(chart.values))*chart.rowHeight()) + chart.pad()
 }
 
@@ -201,13 +204,7 @@ func (chart *SimpleBarChart) getAltDescription() string {
 		return chart.altDescription
 	}
 	var sb strings.Builder
-	sb.WriteString(chart.title)
-	if chart.subtitle != "" {
-		if sb.Len() > 0 {
-			sb.WriteString(", ")
-		}
-		sb.WriteString(chart.subtitle)
-	}
+	sb.WriteString(join(chart.title, chart.subtitle))
 	if sb.Len() == 0 {
 		sb.WriteString("Bar chart")
 	}
@@ -227,7 +224,7 @@ func (chart *SimpleBarChart) getAltDescription() string {
 // its bottom right corner.
 func (chart *SimpleBarChart) DrawOn(page *Page) [2]float32 {
 	h := chart.GetHeight()
-	if page == nil || len(chart.values) == 0 { // Measured, or nothing to draw
+	if page == nil || len(chart.values) == 0 || chart.f1 == nil || chart.f2 == nil { // Measured, or nothing to draw
 		return [2]float32{chart.x + chart.w, chart.y + h}
 	}
 	f1, f2 := chart.f1, chart.f2
@@ -262,12 +259,14 @@ func (chart *SimpleBarChart) DrawOn(page *Page) [2]float32 {
 	baseline := chart.y + pad
 	if chart.title != "" {
 		baseline += f1.GetAscent(f1.size)
-		page.drawString(f1, f1.size, chart.title, chart.x+pad, baseline, colorToRGB(simpleBarInk), nil)
+		page.drawString(f1, f1.size, shorten(f1, f1.size, chart.title, chart.w-float32(2.0*pad)), chart.x+pad, baseline,
+			colorToRGB(simpleBarInk), nil)
 		baseline += f1.GetDescent(f1.size)
 	}
 	if chart.subtitle != "" {
 		baseline += float32(1.4 * chart.subtitleSize())
-		page.drawString(f2, chart.subtitleSize(), chart.subtitle, chart.x+pad, baseline, colorToRGB(simpleBarMuted), nil)
+		page.drawString(f2, chart.subtitleSize(), shorten(f2, chart.subtitleSize(), chart.subtitle, chart.w-float32(2.0*pad)),
+			chart.x+pad, baseline, colorToRGB(simpleBarMuted), nil)
 	}
 
 	rowTop := chart.y + chart.top()

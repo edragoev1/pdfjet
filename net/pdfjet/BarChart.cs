@@ -295,9 +295,21 @@ public class BarChart : IDrawable {
     /// <summary>Sets whether the grid lines of the value axis are drawn.</summary>
     /// <param name="drawGridLines">true to draw them.</param>
     /// <returns>this BarChart object.</returns>
-    public BarChart SetDrawGridLines(bool drawGridLines) {
+    public BarChart SetGridLines(bool drawGridLines) {
         this.drawGridLines = drawGridLines;
         return this;
+    }
+
+    /// <summary>
+    /// Sets whether the grid lines of the value axis are drawn. Deprecated as
+    /// of 9.1.5: use SetGridLines, the name the other charts use for what they
+    /// draw.
+    /// </summary>
+    /// <param name="drawGridLines">true to draw them.</param>
+    /// <returns>this BarChart object.</returns>
+    [Obsolete("As of 9.1.5, use SetGridLines, the name the other charts use for what they draw.")]
+    public BarChart SetDrawGridLines(bool drawGridLines) {
+        return SetGridLines(drawGridLines);
     }
 
     /// <summary>
@@ -306,9 +318,21 @@ public class BarChart : IDrawable {
     /// </summary>
     /// <param name="drawValueLabels">true to write the values.</param>
     /// <returns>this BarChart object.</returns>
-    public BarChart SetDrawValueLabels(bool drawValueLabels) {
+    public BarChart SetValueLabels(bool drawValueLabels) {
         this.drawValueLabels = drawValueLabels;
         return this;
+    }
+
+    /// <summary>
+    /// Sets whether the value of each bar is written at its end, or, in a
+    /// stacked chart, inside each segment that has room for it. Deprecated as
+    /// of 9.1.5: use SetValueLabels, as SimpleLineChart's.
+    /// </summary>
+    /// <param name="drawValueLabels">true to write the values.</param>
+    /// <returns>this BarChart object.</returns>
+    [Obsolete("As of 9.1.5, use SetValueLabels, as SimpleLineChart's.")]
+    public BarChart SetDrawValueLabels(bool drawValueLabels) {
+        return SetValueLabels(drawValueLabels);
     }
 
     /// <summary>
@@ -341,14 +365,26 @@ public class BarChart : IDrawable {
     /// </summary>
     /// <param name="drawLegend">true to draw the legend.</param>
     /// <returns>this BarChart object.</returns>
-    public BarChart SetDrawLegend(bool drawLegend) {
+    public BarChart SetLegend(bool drawLegend) {
         this.drawLegend = drawLegend;
         return this;
     }
 
     /// <summary>
+    /// Sets whether the legend is drawn. The legend lists the series that have
+    /// a name, under the title. Deprecated as of 9.1.5: use SetLegend, as
+    /// DonutChart's.
+    /// </summary>
+    /// <param name="drawLegend">true to draw the legend.</param>
+    /// <returns>this BarChart object.</returns>
+    [Obsolete("As of 9.1.5, use SetLegend, as DonutChart's.")]
+    public BarChart SetDrawLegend(bool drawLegend) {
+        return SetLegend(drawLegend);
+    }
+
+    /// <summary>
     /// Sets the width of the grid lines. The default is 0.5; a width of 0
-    /// draws the thinnest line a viewer shows, and SetDrawGridLines(false)
+    /// draws the thinnest line a viewer shows, and SetGridLines(false)
     /// hides them.
     /// </summary>
     /// <param name="width">the line width.</param>
@@ -454,7 +490,7 @@ public class BarChart : IDrawable {
     /// <returns>the bottom right corner coordinates [x, y].</returns>
     public float[] DrawOn(Page page) {
         int n = NumberOfCategories();
-        if (page == null || n == 0) {  // Measured, or nothing to draw
+        if (page == null || n == 0 || f1 == null || f2 == null) {  // Measured, or nothing to draw
             return new float[] {x1 + w, y1 + h};
         }
 
@@ -553,7 +589,8 @@ public class BarChart : IDrawable {
         List<String> names = new List<String>();
         float widestCategory = 0f;
         foreach (String category in categories) {
-            String name = horizontal ? ChartScale.Shorten(f2, f2.GetSize(), category, 0.4f * w) : category;
+            // Two fifths of a horizontal chart at most, a quarter under vertical bars
+            String name = ChartScale.Shorten(f2, f2.GetSize(), category, (horizontal ? 0.4f : 0.25f) * w);
             names.Add(name);
             widestCategory = Math.Max(widestCategory, f2.StringWidth(name));
         }
@@ -588,11 +625,14 @@ public class BarChart : IDrawable {
         // The pen, the brush and the dash pattern of the caller are kept,
         // as a Stamp keeps them.
         page.SaveGraphicsState();
+        page.SetDefaultStrokeDashPattern();     // Not the caller's, which dashed the legend's lines
 
         // Title, the subtitle and then the legend under it, at the left
-        DrawText(page, f1, title, x1, titleBaseline, INK);
+        // The title and the subtitle shortened to the width of the chart
+        DrawText(page, f1, ChartScale.Shorten(f1, f1.GetSize(), title, w), x1, titleBaseline, INK);
         if (subtitle.Length > 0) {
-            DrawText(page, f2, subtitle, x1, titleBaseline + subtitleHeight, MUTED);
+            DrawText(page, f2, ChartScale.Shorten(f2, f2.GetSize(), subtitle, w),
+                    x1, titleBaseline + subtitleHeight, MUTED);
         }
         if (legend) {
             DrawLegend(page, titleBaseline + subtitleHeight + 1.5f * bodyHeight);
@@ -617,7 +657,7 @@ public class BarChart : IDrawable {
             String label = AxisLabel(v, axisDigits);
             bool labeled = i % every == 0;
             if (horizontal) {
-                float x = x5 + (v - vMin) * (x6 - x5) / (vMax - vMin);
+                float x = x5 + ChartScale.Scaled(v - vMin, x6 - x5, vMax - vMin);
                 if (drawGridLines) {
                     GridLine(page, x, y5, x, y8);
                 }
@@ -625,7 +665,7 @@ public class BarChart : IDrawable {
                     DrawText(page, f2, label, x - f2.StringWidth(label) / 2f, y8 + bodyHeight, MUTED);
                 }
             } else {
-                float y = y8 - (v - vMin) * (y8 - y5) / (vMax - vMin);
+                float y = y8 - ChartScale.Scaled(v - vMin, y8 - y5, vMax - vMin);
                 if (drawGridLines) {
                     GridLine(page, x5, y, x6, y);
                 }
@@ -677,8 +717,8 @@ public class BarChart : IDrawable {
                 String label = drawValueLabels ? ValueLabel(s.values[i]) : null;
                 int on = LabelColorOn(color);
                 if (horizontal) {
-                    float x0 = x5 + (from - vMin) * (x6 - x5) / (vMax - vMin);
-                    float x = x5 + (to - vMin) * (x6 - x5) / (vMax - vMin);
+                    float x0 = x5 + ChartScale.Scaled(from - vMin, x6 - x5, vMax - vMin);
+                    float x = x5 + ChartScale.Scaled(to - vMin, x6 - x5, vMax - vMin);
                     page.FillRect(Math.Min(x0, x), barStart, Math.Abs(x - x0), barWidth);
                     float baseline = barStart + barWidth / 2f + ascent / 2f;
                     if (label != null && stacked) {
@@ -694,8 +734,8 @@ public class BarChart : IDrawable {
                                 to >= baseValue ? x + pad / 2f : x - pad / 2f - f2.StringWidth(label), baseline, INK);
                     }
                 } else {
-                    float y0 = y8 - (from - vMin) * (y8 - y5) / (vMax - vMin);
-                    float y = y8 - (to - vMin) * (y8 - y5) / (vMax - vMin);
+                    float y0 = y8 - ChartScale.Scaled(from - vMin, y8 - y5, vMax - vMin);
+                    float y = y8 - ChartScale.Scaled(to - vMin, y8 - y5, vMax - vMin);
                     page.FillRect(barStart, Math.Min(y0, y), barWidth, Math.Abs(y - y0));
                     float x = barStart + (barWidth - (label != null ? f2.StringWidth(label) : 0f)) / 2f;
                     if (label != null && stacked) {
@@ -714,10 +754,10 @@ public class BarChart : IDrawable {
                 String total = ValueLabel(up);
                 float groupMiddle = groupStart + groupWidth / 2f;
                 if (horizontal) {
-                    float x = x5 + (Math.Min(up, vMax) - vMin) * (x6 - x5) / (vMax - vMin);
+                    float x = x5 + ChartScale.Scaled(Math.Min(up, vMax) - vMin, x6 - x5, vMax - vMin);
                     DrawText(page, f2, total, x + pad / 2f, groupMiddle + ascent / 2f, INK);
                 } else {
-                    float y = y8 - (Math.Min(up, vMax) - vMin) * (y8 - y5) / (vMax - vMin);
+                    float y = y8 - ChartScale.Scaled(Math.Min(up, vMax) - vMin, y8 - y5, vMax - vMin);
                     DrawText(page, f2, total, groupMiddle - f2.StringWidth(total) / 2f, y - pad / 2f, INK);
                 }
             }
@@ -730,10 +770,10 @@ public class BarChart : IDrawable {
             page.SetPenColor(BASELINE);
             page.SetPenWidth(axisLineWidth);
             if (horizontal) {
-                float x0 = x5 + (baseValue - vMin) * (x6 - x5) / (vMax - vMin);
+                float x0 = x5 + ChartScale.Scaled(baseValue - vMin, x6 - x5, vMax - vMin);
                 page.DrawLine(x0, y5, x0, y8);
             } else {
-                float y0 = y8 - (baseValue - vMin) * (y8 - y5) / (vMax - vMin);
+                float y0 = y8 - ChartScale.Scaled(baseValue - vMin, y8 - y5, vMax - vMin);
                 page.DrawLine(x5, y0, x6, y0);
             }
         }
@@ -744,50 +784,56 @@ public class BarChart : IDrawable {
         }
 
         // The lines over the bars, through the middles of the categories, a
-        // dot at each value, broken where a value is missing
+        // dot at each value, broken where a value is missing; each on a white
+        // line a little wider, so that it stays clear where it crosses a bar
         foreach (Series s in lineSeries) {
-            page.SetPenColor(s.color);
-            page.SetPenWidth(2f);
-            page.SetLineJoinStyle(JoinStyle.ROUND);
-            page.SetBrushColor(s.color);
-            bool drawing = false;
-            List<float[]> dots = new List<float[]>();
+            List<List<float[]>> runs = new List<List<float[]>>();
+            List<float[]> run = null;
             for (int i = 0; i < n; i++) {
                 if (i >= s.values.Length || !ChartScale.IsValue(s.values[i])) {
-                    if (drawing) {
-                        page.StrokePath();
-                    }
-                    drawing = false;
+                    run = null;
                     continue;
                 }
                 float v = Math.Min(Math.Max(s.values[i], vMin), vMax);
                 float middle = (horizontal ? y5 : x5) + i * slot + slot / 2f;
                 float at = horizontal
-                        ? x5 + (v - vMin) * (x6 - x5) / (vMax - vMin)
-                        : y8 - (v - vMin) * (y8 - y5) / (vMax - vMin);
-                float px = horizontal ? at : middle;
-                float py = horizontal ? middle : at;
-                if (drawing) {
-                    page.LineTo(px, py);
-                } else {
-                    page.MoveTo(px, py);
-                    drawing = true;
+                        ? x5 + ChartScale.Scaled(v - vMin, x6 - x5, vMax - vMin)
+                        : y8 - ChartScale.Scaled(v - vMin, y8 - y5, vMax - vMin);
+                if (run == null) {
+                    run = new List<float[]>();
+                    runs.Add(run);
                 }
-                dots.Add(new float[] {px, py});
+                run.Add(horizontal ? new float[] {at, middle} : new float[] {middle, at});
             }
-            if (drawing) {
-                page.StrokePath();
-            }
-            foreach (float[] dot in dots) {
-                page.FillCircle(dot[0], dot[1], 0.2f * bodyHeight);
+            page.SetLineJoinStyle(JoinStyle.ROUND);
+            float dot = 0.2f * bodyHeight;
+            for (int pass = 0; pass < 2; pass++) {
+                int color = (pass == 0) ? Color.white : s.color;
+                page.SetPenColor(color);
+                page.SetPenWidth((pass == 0) ? 3.5f : 2f);
+                foreach (List<float[]> points in runs) {
+                    page.MoveTo(points[0][0], points[0][1]);
+                    for (int k = 1; k < points.Count; k++) {
+                        page.LineTo(points[k][0], points[k][1]);
+                    }
+                    page.StrokePath();
+                }
+                page.SetBrushColor(color);
+                foreach (List<float[]> points in runs) {
+                    foreach (float[] point in points) {
+                        page.FillCircle(point[0], point[1], (pass == 0) ? dot + 0.75f : dot);
+                    }
+                }
             }
         }
 
         // Axis titles
         page.SetTextRotation(-90);
-        DrawText(page, f2, yAxisTitle, x1 + bodyHeight, y8 - ((y8 - y5) - f2.StringWidth(yAxisTitle)) / 2f, MUTED);
+        String yTitle = ChartScale.Shorten(f2, f2.GetSize(), yAxisTitle, y8 - y5);
+        DrawText(page, f2, yTitle, x1 + bodyHeight, y8 - ((y8 - y5) - f2.StringWidth(yTitle)) / 2f, MUTED);
         page.SetTextRotation(0);
-        DrawText(page, f2, xAxisTitle, x5 + ((x6 - x5) - f2.StringWidth(xAxisTitle)) / 2f, y2 - bodyHeight / 2f, MUTED);
+        String xTitle = ChartScale.Shorten(f2, f2.GetSize(), xAxisTitle, x6 - x5);
+        DrawText(page, f2, xTitle, x5 + ((x6 - x5) - f2.StringWidth(xTitle)) / 2f, y2 - bodyHeight / 2f, MUTED);
 
         page.RestoreGraphicsState();
         page.SetFigureBoundingBox(x1, y1, w, h);
@@ -802,20 +848,14 @@ public class BarChart : IDrawable {
         if (!String.IsNullOrEmpty(altDescription)) {
             return altDescription;
         }
-        StringBuilder sb = new StringBuilder(title);
-        if (subtitle.Length > 0) {
-            if (sb.Length > 0) {
-                sb.Append(", ");
-            }
-            sb.Append(subtitle);
-        }
+        StringBuilder sb = new StringBuilder(ChartScale.Join(title, subtitle));
         if (sb.Length == 0) {
             sb.Append("Bar chart");
         }
         String separator = ": ";
         foreach (Series s in AllSeries()) {
             StringBuilder values = new StringBuilder();
-            for (int i = 0; i < s.values.Length; i++) {
+            for (int i = 0; i < Math.Min(s.values.Length, NumberOfCategories()); i++) {
                 if (!ChartScale.IsValue(s.values[i])) {
                     continue;
                 }
@@ -832,7 +872,9 @@ public class BarChart : IDrawable {
                 continue;
             }
             sb.Append(separator);
-            if (s.name.Length > 0) {
+            if (lineSeries.Contains(s)) {
+                sb.Append(s.name.Length == 0 ? "line: " : s.name + ", a line: ");
+            } else if (s.name.Length > 0) {
                 sb.Append(s.name).Append(": ");
             }
             sb.Append(values);
@@ -844,8 +886,16 @@ public class BarChart : IDrawable {
     /// <summary>Returns the number of category slots: the categories or the longest series.</summary>
     private int NumberOfCategories() {
         int n = categories.Count;
-        foreach (Series s in AllSeries()) {
+        foreach (Series s in series) {
             n = Math.Max(n, s.values.Length);
+        }
+        // A line series is drawn over the categories of the bars, and adds
+        // none of its own when there are bars: a longer target line added
+        // empty slots
+        if (n == 0) {
+            foreach (Series s in lineSeries) {
+                n = Math.Max(n, s.values.Length);
+            }
         }
         return n;
     }
@@ -945,7 +995,9 @@ public class BarChart : IDrawable {
             if (s.name.Length == 0) {
                 continue;
             }
-            if (x > x1 && x + swatch + gap + f2.StringWidth(s.name) > x1 + w) {
+            // A name too long for a row is shortened
+            String name = ChartScale.Shorten(f2, f2.GetSize(), s.name, w - swatch - gap);
+            if (x > x1 && x + swatch + gap + f2.StringWidth(name) > x1 + w) {
                 x = x1;
                 baseline += 1.5f * f2.GetBodyHeight();
                 rows++;
@@ -963,9 +1015,9 @@ public class BarChart : IDrawable {
             }
             x += swatch + gap;
             if (page != null) {
-                DrawText(page, f2, s.name, x, baseline, INK);
+                DrawText(page, f2, name, x, baseline, INK);
             }
-            x += f2.StringWidth(s.name) + f2.GetBodyHeight();
+            x += f2.StringWidth(name) + f2.GetBodyHeight();
         }
         return rows;
     }

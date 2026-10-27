@@ -61,16 +61,25 @@ func TestChartTheRoundedRangeOfFlatDataHasAGridLine(t *testing.T) {
 	}
 }
 
-// Data with no number, or whose range does not fit a float32, has the range
-// from 0 to 1, where Swift stopped the program (review of 12 October 2026, R3).
+// Data with no number, or whose span does not fit a float32, has the range
+// from 0 to 1, where Swift stopped the program (review of 12 October 2026,
+// R3). Data whose span fits, but whose rounded range would not, has the range
+// of its values: from 0 to 1 the bars went past the plot (review of 26
+// October 2026).
 func TestChartTheRangeOfDataPastTheLargestFloatIsFromZeroToOne(t *testing.T) {
 	nan := float32(math.NaN())
 	inf := float32(math.Inf(1))
 	for _, c := range [][2]float32{{inf, 0}, {0, -inf}, {nan, nan}, {3.4e38, -3.4e38},
-		{-math.MaxFloat32, math.MaxFloat32}, {math.MaxFloat32, 0}} {
+		{-math.MaxFloat32, math.MaxFloat32}} {
 		round := roundMaxAndMinValues(c[0], c[1])
 		if round.minValue != 0 || round.maxValue != 1 || round.numOfGridLines != 1 {
 			t.Errorf("%v: %v to %v with %d grid lines", c, round.minValue, round.maxValue, round.numOfGridLines)
+		}
+	}
+	for _, high := range []float32{math.MaxFloat32, 3e38} {
+		round := roundMaxAndMinValues(high, 0)
+		if round.minValue != 0 || round.maxValue != high || round.numOfGridLines < 1 {
+			t.Errorf("%v: %v to %v with %d grid lines", high, round.minValue, round.maxValue, round.numOfGridLines)
 		}
 	}
 }
@@ -112,7 +121,7 @@ func TestBarChartAValueThatIsNotANumberHasNoBar(t *testing.T) {
 	for _, stacked := range []bool{false, true} {
 		doc := testNewDoc()
 		page := NewPage(doc.pdf, testLetterPortrait())
-		chart := testBarChart(doc.pdf).SetCategories("a", "b", "c").SetStacked(stacked).SetDrawValueLabels(true)
+		chart := testBarChart(doc.pdf).SetCategories("a", "b", "c").SetStacked(stacked).SetValueLabels(true)
 		chart.AddSeries("", []float32{nan, 10, inf})
 		content := testDrawBarChart(t, chart, page)
 		if strings.Contains(content, "NaN") || strings.Contains(content, testHex("NaN")) {

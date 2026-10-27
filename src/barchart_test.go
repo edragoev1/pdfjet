@@ -7,6 +7,7 @@ package pdfjet
 
 import (
 	"math"
+	"regexp"
 	"strconv"
 	"strings"
 	"testing"
@@ -69,7 +70,7 @@ func TestBarChartValueLabelsAreWrittenWithTheFractionDigitsSet(t *testing.T) {
 	pdf := testNewPDF()
 	page := NewPage(pdf, testLetterPortrait())
 	chart := testBarChart(pdf).SetCategories("a", "b").SetHorizontal(true)
-	chart.AddSeries("", []float32{2.5, -1}).SetDrawValueLabels(true)
+	chart.AddSeries("", []float32{2.5, -1}).SetValueLabels(true)
 	chart.SetMinimumFractionDigits(1)
 	content := testDrawBarChart(t, chart, page)
 	if !strings.Contains(content, testHex("2.5")) || !strings.Contains(content, testHex("-1.0")) {
@@ -102,7 +103,7 @@ func TestBarChartStackedBarsUseTheSumsOfTheCategoriesForTheValueAxis(t *testing.
 	}
 
 	page = NewPage(pdf, testLetterPortrait())
-	chart.SetStacked(true).SetDrawValueLabels(true)
+	chart.SetStacked(true).SetValueLabels(true)
 	stacked := testDrawBarChart(t, chart, page)
 	// The total of each stack above it
 	for _, want := range []string{"75", "50", "85"} {
@@ -152,7 +153,7 @@ func TestBarChartBarsHaveTheirOwnColorsAndLabelsInsideWithGroupedDigits(t *testi
 	page := NewPage(pdf, testLetterPortrait())
 	chart := testBarChart(pdf).SetCategories("a", "b").SetHorizontal(true).SetSubtitle("sub")
 	chart.AddSeriesWithColors("rivers", []float32{6650, 12}, []int32{color.Red, color.Blue})
-	chart.SetValueAxisMinMax(0, 8000, 4).SetDrawValueLabels(true).SetValueLabelsInside(true)
+	chart.SetValueAxisMinMax(0, 8000, 4).SetValueLabels(true).SetValueLabelsInside(true)
 	chart.SetGroupingUsed(true).SetAxisLineWidth(0).SetGridLineColor(color.LightGray)
 	content := testDrawBarChart(t, chart, page)
 	// the two bars in their colors, the label inside the first bar in white
@@ -270,7 +271,7 @@ func TestBarChartTheTopOfTheChartIsWhatItHas(t *testing.T) {
 		t.Errorf("%v %v", testBarHeight(untitled), testBarHeight(titled))
 	}
 	page = NewPage(pdf, testLetterPortrait())
-	wide := testBarChart(pdf).SetCategories("a").SetDrawLegend(true)
+	wide := testBarChart(pdf).SetCategories("a").SetLegend(true)
 	for i := 0; i < 8; i++ {
 		wide.AddSeries("Series number "+strconv.Itoa(i), []float32{1})
 	}
@@ -279,7 +280,7 @@ func TestBarChartTheTopOfTheChartIsWhatItHas(t *testing.T) {
 		t.Errorf("the legend is not wrapped in %q", content)
 	}
 	page = NewPage(pdf, testLetterPortrait())
-	content = testDrawBarChart(t, testBarChart(pdf).SetCategories("a", "b").SetDrawLegend(true).
+	content = testDrawBarChart(t, testBarChart(pdf).SetCategories("a", "b").SetLegend(true).
 		AddSeriesWithColors("own", []float32{1, 2}, []int32{0x123456, 0x654321}), page)
 	swatch := strings.Index(content, "0.07 0.2 0.34 rg\n")
 	if swatch < 0 || swatch >= strings.Index(content, testHex("own")) {
@@ -326,7 +327,7 @@ func TestBarChartALineSeriesIsDrawnOverTheBars(t *testing.T) {
 	pdf := testNewPDF()
 	pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
 	page := NewPage(pdf, testLetterPortrait())
-	chart := testBarChart(pdf).SetTitle("Sales").SetCategories("a", "b").SetDrawLegend(true).
+	chart := testBarChart(pdf).SetTitle("Sales").SetCategories("a", "b").SetLegend(true).
 		AddSeries("Sold", []float32{1, 2}).AddLineSeries("Target", []float32{9, float32(math.NaN())})
 	content := testDrawBarChart(t, chart, page)
 	if !strings.Contains(content, "0.13 0.15 0.17 RG\n") || !strings.Contains(content, "\n2 w\n") { // In ink
@@ -338,7 +339,7 @@ func TestBarChartALineSeriesIsDrawnOverTheBars(t *testing.T) {
 	if !strings.Contains(content, "<"+testHex("8")+">") { // The axis reaches 9
 		t.Errorf("the axis does not reach 9: %q", content)
 	}
-	if got := page.structures[0].altDescription; got != "Sales: Sold: a 1, b 2; Target: a 9." {
+	if got := page.structures[0].altDescription; got != "Sales: Sold: a 1, b 2; Target, a line: a 9." {
 		t.Errorf("the chart is described as %q", got)
 	}
 	page = NewPage(pdf, testLetterPortrait())
@@ -346,5 +347,57 @@ func TestBarChartALineSeriesIsDrawnOverTheBars(t *testing.T) {
 		AddLineSeriesWithColor("", []float32{2}, 0x123456), page)
 	if !strings.Contains(content, "0.07 0.2 0.34 RG\n") {
 		t.Errorf("the line is not in its color: %q", content)
+	}
+}
+
+// The review of 26 October 2026, the second: a chart without its fonts draws
+// nothing; the title, a long category under vertical bars and a legend name
+// are shortened; a line series longer than the categories adds no slots; the
+// line is on a white line a little wider; the old names of the setters still
+// work; and a value past the rounding of the largest float32 is drawn on the
+// range of the values.
+func TestBarChartTheSecondReviewOfTheCharts(t *testing.T) {
+	pdf := testNewPDF()
+	pdf.SetCompliance(compliance.PDF_UA_1).SetTitle("Test")
+	page := NewPage(pdf, testLetterPortrait())
+	none := NewBarChart(nil, nil).SetCategories("a").AddSeries("", []float32{1})
+	none.DrawOn(page)
+	if content := testContent(page); content != "" {
+		t.Errorf("a chart without its fonts drew %q", content)
+	}
+
+	longName := "A category name far too long to be written under its bar"
+	title := "A title far too long for a chart of three hundred points, which ran past it"
+	content := testDrawBarChart(t, testBarChart(pdf).SetTitle(title).SetLegend(true).SetCategories(longName, "b").
+		AddSeries("Sold", []float32{1, 2}).
+		AddLineSeries("Target", []float32{2, 3, 4, 5, 6}), page)
+	if strings.Contains(content, testHex(longName)) || strings.Contains(content, testHex(title)) {
+		t.Errorf("not shortened: %q", content)
+	}
+	if !strings.Contains(content, "1 1 1 RG\n3.5 w\n") {
+		t.Errorf("no white line under the line: %q", content)
+	}
+	if got := page.structures[0].altDescription; !strings.HasSuffix(got, "Target, a line: "+longName+" 2, b 3.") {
+		t.Errorf("the chart is described as %q", got)
+	}
+
+	plain := testNewPDF()
+	page = NewPage(plain, testLetterPortrait())
+	old := testDrawBarChart(t, testBarChart(plain).SetCategories("a").AddSeries("s", []float32{1}).
+		SetDrawLegend(true).SetDrawValueLabels(true).SetDrawGridLines(false), page)
+	page = NewPage(plain, testLetterPortrait())
+	renamed := testDrawBarChart(t, testBarChart(plain).SetCategories("a").AddSeries("s", []float32{1}).
+		SetLegend(true).SetValueLabels(true).SetGridLines(false), page)
+	// The same but for the names of the fonts, a new one for each chart
+	fonts := regexp.MustCompile(`/F\d+ `)
+	if fonts.ReplaceAllString(old, "/F ") != fonts.ReplaceAllString(renamed, "/F ") {
+		t.Errorf("the old setters draw otherwise:\n%s\n%s", old, renamed)
+	}
+
+	page = NewPage(pdf, testLetterPortrait())
+	content = testDrawBarChart(t, testBarChart(pdf).SetCategories("a", "b").SetValueLabels(true).
+		AddSeries("", []float32{1e30, 3e38}), page)
+	if !strings.Contains(content, testHex("3e38")) {
+		t.Errorf("3e38 is not written short: %q", content)
 	}
 }

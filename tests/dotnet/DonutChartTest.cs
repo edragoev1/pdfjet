@@ -106,7 +106,7 @@ public class DonutChartTest {
         Assert.Contains(TestSupport.Hex("Fruit"), content);
         Assert.Contains(TestSupport.Hex("This week"), content);
         Assert.Equal("0.37 0.41 0.45 rg", TestSupport.FillColorBefore(content, "This week"));
-        Assert.Equal("Fruit, This week: a 100%", page.structures[1].altDescription);
+        Assert.Equal("Fruit. This week: a 100%", page.structures[1].altDescription);
     }
 
     // A slice that is not a number or an infinity is not drawn, and the
@@ -141,12 +141,15 @@ public class DonutChartTest {
     public void ASliceIsDrawnAsTheGoPortDrawsIt() {
         PDF pdf = TestSupport.NewPDF();
         Page page = new Page(pdf, Letter.PORTRAIT);
+        // The radii in either order: the larger is the outer one since the
+        // review of 26 October 2026, the second, and the curve is the one Go
+        // and Java draw of the ring the right way out
         DonutChart chart = new DonutChart(null, null).SetRadii(46.94574f, 92.64224f);
         foreach (float value in new float[] {524.55023f, 80.410065f, 7.852018f, 515.9275f, 931.2741f}) {
             chart.AddSlice(new Slice(value, 0x123456, ""));
         }
         chart.SetLocation(247.509f, 97.883514f).DrawOn(page);
-        Assert.Contains("341.4 646.71 341.39 646.26 341.38 645.8 c\n", TestSupport.Content(page));
+        Assert.Contains("432.79 600.57 432.78 599.68 432.75 598.78 c\n", TestSupport.Content(page));
 
         page = new Page(pdf, Letter.PORTRAIT);
         chart = new DonutChart(null, null).SetRadii(179.36f, 65.845535f);
@@ -215,6 +218,67 @@ public class DonutChartTest {
         page = new Page(pdf, Letter.PORTRAIT);
         NewChart(pdf).SetRadii(100f, 0f).SetCenterText("none").AddSlice(new Slice(1f, "a")).DrawOn(page);
         Assert.DoesNotContain(TestSupport.Hex("none"), TestSupport.Content(page));
+    }
+
+    // The review of 26 October 2026, the second: labels moved apart stay
+    // outside the ring; long labels, legend items and texts in the hole are
+    // shortened; the caller's dash pattern does not dash the lines; an inner
+    // radius past the outer one is the outer one; and the last slice, by the
+    // first around the circle, is not in the first's color.
+    [Fact]
+    public void TheSecondReviewOfTheCharts() {
+        PDF pdf = TestSupport.NewPDF();
+        Font font = TestSupport.Helvetica(pdf);
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        DonutChart thin = NewChart(pdf).AddSlice(new Slice(90f, "Big"));    // At (100, 100), radii 100 and 50
+        for (int i = 0; i < 8; i++) {
+            thin.AddSlice(new Slice(1.2f, "Small " + i));
+        }
+        thin.DrawOn(page);
+        string content = TestSupport.Content(page);
+        for (int i = 0; i < 8; i++) {
+            float[] at = TestSupport.PositionOf(content, "Small " + i);   // In PDF space, y up
+            float dy = (792f - at[1]) - 200f;
+            float ring = System.Math.Abs(dy) < 100f ? (float) System.Math.Sqrt(100f * 100f - dy * dy) : 0f;
+            Assert.True(at[0] + font.StringWidth("Small " + i) <= 200f - ring + 0.01f,
+                    "Small " + i + " is on the ring: " + at[0] + ", " + at[1]);
+        }
+
+        page = new Page(pdf, Letter.PORTRAIT);
+        page.SetStrokeDashPattern("[3 3] 0");
+        string name = "A label much too long to be drawn whole beside the circle";
+        NewChart(pdf).SetCenterText("A text in the hole far too long to be written in it at any size")
+                .AddSlice(new Slice(60f, name)).AddSlice(new Slice(40f, "b")).DrawOn(page);
+        content = TestSupport.Content(page);
+        // The chart's own solid lines after the caller's dashes
+        int dashed = content.IndexOf("[3 3] 0 d\n", System.StringComparison.Ordinal);
+        Assert.True(dashed >= 0 && content.IndexOf("[] 0 d\n", System.StringComparison.Ordinal) > dashed, content);
+        Assert.DoesNotContain(TestSupport.Hex(name), content);
+        Assert.Contains(" 9 Tf\n", content);    // The text in the hole at 9, three quarters of 12
+        page = new Page(pdf, Letter.PORTRAIT);
+        NewChart(pdf).SetLegend(true).AddSlice(new Slice(60f, name)).AddSlice(new Slice(40f, "b")).DrawOn(page);
+        content = TestSupport.Content(page);
+        Assert.DoesNotContain(TestSupport.Hex(name), content);
+        Assert.Contains(TestSupport.Hex(" 60%"), content);   // The percentage kept
+
+        page = new Page(pdf, Letter.PORTRAIT);
+        NewChart(pdf).AddSlice(new Slice(1f, "a")).DrawOn(page);
+        string outer = TestSupport.Content(page);
+        page = new Page(pdf, Letter.PORTRAIT);
+        NewChart(pdf).SetRadii(50f, 100f).AddSlice(new Slice(1f, "a")).DrawOn(page);
+        // The same but for the names of the fonts, a new one for each chart
+        Assert.Equal(System.Text.RegularExpressions.Regex.Replace(outer, "/F\\d+ ", "/F "),
+                System.Text.RegularExpressions.Regex.Replace(TestSupport.Content(page), "/F\\d+ ", "/F "));
+
+        page = new Page(pdf, Letter.PORTRAIT);
+        DonutChart nine = NewChart(pdf);
+        for (int i = 0; i < 9; i++) {
+            nine.AddSlice(new Slice(1f, ""));
+        }
+        nine.DrawOn(page);
+        content = TestSupport.Content(page);
+        Assert.True(content.IndexOf("0.12 0.23 0.37 rg", System.StringComparison.Ordinal)
+                == content.LastIndexOf("0.12 0.23 0.37 rg", System.StringComparison.Ordinal), content);
     }
 }
 }

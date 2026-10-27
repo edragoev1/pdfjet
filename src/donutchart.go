@@ -30,8 +30,8 @@ import (
 // slices, gray leader lines, the labels in ink, and each percentage white or
 // ink by its slice's color. See Example_28.
 type DonutChart struct {
-	f1     *Font
-	f2     *Font
+	f1     *Font // The regular font: the labels, the subtitle and the legend
+	f2     *Font // The bold font: the percentages, the title and the text in the hole
 	x      float32
 	y      float32
 	r1     float32
@@ -49,13 +49,16 @@ type DonutChart struct {
 // donutLeader is the color of the leader lines, in the look of the simple charts.
 const donutLeader int32 = 0x8C96A3
 
-// NewDonutChart creates a donut chart with f1 as the font for the slice labels
-// and f2 as the font for the percentages drawn inside the slices. With an inner
-// radius of 0 it is a pie chart.
-func NewDonutChart(f1, f2 *Font) *DonutChart {
+// NewDonutChart creates a donut chart. With an inner radius of 0 it is a pie
+// chart. Its fonts are in the order of the other charts': the bold one first.
+//   - bold: the percentages inside the slices, the title and the text in the
+//     hole.
+//   - regular: the slice labels, the subtitle and the legend, and the size of
+//     the title.
+func NewDonutChart(bold, regular *Font) *DonutChart {
 	return &DonutChart{
-		f1:     f1,
-		f2:     f2,
+		f1:     regular,
+		f2:     bold,
 		slices: make([]*Slice, 0),
 	}
 }
@@ -73,8 +76,10 @@ func (dc *DonutChart) SetLocation(x, y float32) Drawable {
 
 // SetRadii sets the outer and inner radius of this chart; an inner radius of 0 makes a pie chart.
 func (dc *DonutChart) SetRadii(outerRadius, innerRadius float32) *DonutChart {
-	dc.r1 = outerRadius
-	dc.r2 = innerRadius
+	// The larger is the outer radius: an inner radius past the outer one drew
+	// a ring inside out
+	dc.r1 = max(abs32(outerRadius), abs32(innerRadius))
+	dc.r2 = min(abs32(outerRadius), abs32(innerRadius))
 	return dc
 }
 
@@ -87,9 +92,9 @@ func (dc *DonutChart) AddSlice(slice *Slice) *DonutChart {
 }
 
 // SetTitle sets the title, drawn at the top left of the chart's location in the
-// bold font, the second, at the size of the labels; the circle is drawn under
-// it. A chart without the second font, which draws no percentages, draws its
-// title in the first. A chart without a title has the circle at its location.
+// bold font at the size of the labels; the circle is drawn under it. A chart
+// without the bold font, which draws no percentages, draws its title in the
+// regular one. A chart without a title has the circle at its location.
 func (dc *DonutChart) SetTitle(title string) *DonutChart {
 	dc.title = title
 	return dc
@@ -120,8 +125,8 @@ func (dc *DonutChart) SetLegend(legend bool) *DonutChart {
 
 // SetAltDescription sets the alternate description of the chart, which a
 // screen reader reads in a PDF/UA document, where the chart is a figure. The
-// default is the title and the subtitle, and the label and the percentage of
-// each slice.
+// default is the title, the subtitle and the text in the hole, as sentences,
+// and the label and the percentage of each slice.
 func (dc *DonutChart) SetAltDescription(altDescription string) *DonutChart {
 	dc.altDescription = altDescription
 	return dc
@@ -234,12 +239,13 @@ func (dc *DonutChart) drawSlice(
 // moved down from the elbow's when it would meet the label above it, and the
 // side of the circle it is on; and its index among the pointers.
 type donutPointer struct {
-	text  string
-	p1    [2]float32
-	p2    [2]float32
-	right bool
-	yEnd  float32
-	index int
+	text   string
+	p1     [2]float32
+	p2     [2]float32
+	right  bool
+	xElbow float32
+	yEnd   float32
+	index  int
 }
 
 // pointerOf returns the pointer of a slice from the angle a1 to a2.
@@ -247,13 +253,20 @@ func (dc *DonutChart) pointerOf(text string, xc, yc, r1, a1, a2 float32, index i
 	midAngle := float32((a1+a2)/2.0) - 90.0
 	p1 := getPoint(xc, yc, r1, midAngle)      // On the outer edge
 	p2 := getPoint(xc, yc, r1+15.0, midAngle) // The elbow
+	// A label wider than the radius, or than six of its letters, is
+	// shortened: a long one at the left ran off the page
+	if dc.f1 != nil {
+		text = shorten(dc.f1, dc.f1.size, text, max(r1, float32(6.0*dc.f1.size)))
+	}
 	right := math.Cos(float64(float64(float64(midAngle)*math.Pi)/180.0)) >= 0
-	return &donutPointer{text, p1, p2, right, p2[1], index}
+	return &donutPointer{text, p1, p2, right, p2[0], p2[1], index}
 }
 
 // moveApart moves the labels on each side of the circle apart, top to bottom,
-// where one would meet the one above it.
-func (dc *DonutChart) moveApart(pointers []*donutPointer) {
+// where one would meet the one above it, and each moved label's elbow out to
+// where its height leaves the circle, 15 points past its edge: thin slices
+// side by side stacked their labels down a column across the ring.
+func (dc *DonutChart) moveApart(pointers []*donutPointer, xc, yc float32) {
 	if dc.f1 == nil {
 		return
 	}
@@ -274,6 +287,22 @@ func (dc *DonutChart) moveApart(pointers []*donutPointer) {
 		for k := 1; k < len(labels); k++ {
 			labels[k].yEnd = max(labels[k].yEnd, labels[k-1].yEnd+dc.f1.bodyHeight)
 		}
+		r3 := dc.r1 + 15.0
+		for _, label := range labels {
+			if label.yEnd == label.p2[1] {
+				continue // Where it was
+			}
+			dy := label.yEnd - yc
+			out := float32(0.0)
+			if abs32(dy) < r3 {
+				out = float32(math.Sqrt(float64(float64(r3)*float64(r3)) - float64(float64(dy)*float64(dy))))
+			}
+			if label.right {
+				label.xElbow = max(label.p2[0], xc+out)
+			} else {
+				label.xElbow = min(label.p2[0], xc-out)
+			}
+		}
 	}
 }
 
@@ -282,7 +311,7 @@ func (dc *DonutChart) moveApart(pointers []*donutPointer) {
 // page.
 func (dc *DonutChart) drawPointer(page *Page, pointer *donutPointer) [4]float32 {
 	p1 := pointer.p1
-	x2 := pointer.p2[0]
+	x2 := pointer.xElbow
 	yEnd := pointer.yEnd
 	if page != nil {
 		// The line: edge, elbow, and along to the end, thin and gray
@@ -330,7 +359,8 @@ func (dc *DonutChart) drawPointer(page *Page, pointer *donutPointer) [4]float32 
 // DrawOn draws this chart on the specified page, or measures it when the page
 // is nil. It returns the x and y coordinates of the bottom right corner of the
 // chart: of its title, its circle, and its leader lines and labels, which can
-// reach past the circle.
+// reach past the circle, or its legend. A chart with no slice above 0 draws
+// nothing, not its title either, and returns the corner of its circle.
 func (dc *DonutChart) DrawOn(page *Page) [2]float32 {
 	// The title and the subtitle above the circle, when there are any
 	titleFont := dc.f2
@@ -402,7 +432,23 @@ func (dc *DonutChart) DrawOn(page *Page) [2]float32 {
 			count++
 		}
 	}
-	dc.moveApart(pointers)
+	// The last slice, next to the first around the circle, in the palette's
+	// next color when it would have the first's: the ninth of nine was navy by
+	// the navy first
+	first := -1
+	last := -1
+	for i := range dc.slices {
+		if values[i] > 0.0 {
+			if first < 0 {
+				first = i
+			}
+			last = i
+		}
+	}
+	if count > 1 && dc.slices[last].color == slicePalette && colors[last] == colors[first] {
+		colors[last] = barChartPalette[count%len(barChartPalette)]
+	}
+	dc.moveApart(pointers, xc, yc)
 	box := [4]float32{dc.x, dc.y, dc.x + float32(2*dc.r1), yc + dc.r1}
 	if titleBaseline > 0.0 {
 		box[2] = max(box[2], dc.x+titleFont.StringWidth(titleSize, dc.title))
@@ -426,6 +472,7 @@ func (dc *DonutChart) DrawOn(page *Page) [2]float32 {
 	// Stamp keeps them: the chart left the page with the black pen of its
 	// pointers and the color of its last slice.
 	page.SaveGraphicsState()
+	page.SetDefaultStrokeDashPattern() // Not the caller's, which dashed the leader lines
 	if titleBaseline > 0.0 {
 		page.drawString(titleFont, titleSize, dc.title, dc.x, titleBaseline, colorToRGB(simpleBarInk), nil)
 	}
@@ -488,14 +535,18 @@ func (dc *DonutChart) DrawOn(page *Page) [2]float32 {
 	}
 	// The text in the hole, as large as one and a half labels or as fits
 	if dc.r2 > 0.0 && titleFont != nil && dc.centerText != "" {
+		// At three quarters of a label at least, shortened to fit there: a
+		// long text was drawn as small as it took, too small to read
 		size := float32(1.5 * titleSize)
-		width := titleFont.StringWidth(size, dc.centerText)
+		text := dc.centerText
+		width := titleFont.StringWidth(size, text)
 		if width > float32(1.6*dc.r2) {
-			size = float32(size*float32(1.6*dc.r2)) / width
-			width = titleFont.StringWidth(size, dc.centerText)
+			size = max(float32(size*float32(1.6*dc.r2))/width, float32(0.75*titleSize))
+			text = shorten(titleFont, size, text, float32(1.6*dc.r2))
+			width = titleFont.StringWidth(size, text)
 		}
 		baseline := yc + float32((titleFont.GetAscent(size)-titleFont.GetDescent(size))/2.0)
-		page.drawString(titleFont, size, dc.centerText, xc-float32(width/2.0), baseline, colorToRGB(simpleBarInk), nil)
+		page.drawString(titleFont, size, text, xc-float32(width/2.0), baseline, colorToRGB(simpleBarInk), nil)
 	}
 	page.RestoreGraphicsState()
 	page.SetFigureBoundingBox(box[0], box[1], box[2]-box[0], box[3]-box[1])
@@ -521,9 +572,12 @@ func (dc *DonutChart) drawLegend(page *Page, values []float32, percentages []int
 		if values[i] <= 0.0 {
 			continue
 		}
-		text := fmt.Sprintf("%d%%", percentages[i])
+		// A label too long for a row is shortened, its percentage kept
+		percentage := fmt.Sprintf("%d%%", percentages[i])
+		text := percentage
 		if slice.text != "" {
-			text = slice.text + " " + text
+			room := float32(2.0*dc.r1) - swatch - gap - f1.StringWidth(f1.size, " "+percentage)
+			text = shorten(f1, f1.size, slice.text, room) + " " + percentage
 		}
 		width := f1.StringWidth(f1.size, text)
 		if left > dc.x && left+swatch+gap+width > dc.x+float32(2.0*dc.r1) {
@@ -613,20 +667,9 @@ func (dc *DonutChart) getAltDescription(values []float32, percentages []int) str
 	if dc.altDescription != "" {
 		return dc.altDescription
 	}
-	name := dc.title
-	if dc.subtitle != "" {
-		if name == "" {
-			name = dc.subtitle
-		} else {
-			name = name + ", " + dc.subtitle
-		}
-	}
-	if dc.centerText != "" && dc.r2 > 0.0 {
-		if name == "" {
-			name = dc.centerText
-		} else {
-			name = name + ", " + dc.centerText
-		}
+	name := join(dc.title, dc.subtitle)
+	if dc.r2 > 0.0 && (dc.f1 != nil || dc.f2 != nil) {
+		name = join(name, dc.centerText) // Drawn in the hole
 	}
 	if name == "" {
 		if dc.r2 > 0.0 {

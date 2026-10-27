@@ -4,6 +4,7 @@
  * Copyright (c) 2026 PDFjet Software
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
+import Foundation
 import Testing
 @testable import PDFjet
 
@@ -53,7 +54,7 @@ import Testing
         let pdf = TestSupport.newPDF()
         let page = Page(pdf, Letter.PORTRAIT)
         let chart = chart(pdf).setCategories("a", "b").setHorizontal(true)
-        chart.addSeries("", [2.5, -1]).setDrawValueLabels(true)
+        chart.addSeries("", [2.5, -1]).setValueLabels(true)
         chart.setMinimumFractionDigits(1)
         let content = draw(chart, page)
         #expect(content.contains(TestSupport.hex("2.5")), "\(content)")
@@ -99,7 +100,7 @@ import Testing
         #expect(!grouped.contains(TestSupport.hex("90")), "\(grouped)")
 
         page = Page(pdf, Letter.PORTRAIT)
-        chart.setStacked(true).setDrawValueLabels(true)
+        chart.setStacked(true).setValueLabels(true)
         let stacked = draw(chart, page)
         #expect(stacked.contains(TestSupport.hex("75")), "\(stacked)")
         // The total of each stack above it
@@ -135,7 +136,7 @@ import Testing
         let page = Page(pdf, Letter.PORTRAIT)
         let chart = chart(pdf).setCategories("a", "b").setHorizontal(true).setSubtitle("sub")
         chart.addSeries("rivers", [6650, 12], [Color.red, Color.blue])
-        chart.setValueAxisMinMax(0, 8000, 4).setDrawValueLabels(true).setValueLabelsInside(true)
+        chart.setValueAxisMinMax(0, 8000, 4).setValueLabels(true).setValueLabelsInside(true)
         chart.setGroupingUsed(true).setAxisLineWidth(0).setGridLineColor(Color.lightgray)
         let content = draw(chart, page)
         #expect(content.contains(TestSupport.hex("6,650")), "\(content)")
@@ -199,7 +200,7 @@ import Testing
         let untitled = draw(chart(pdf).setCategories("a").addSeries("", [1]), page)
         #expect(barHeight(untitled) > barHeight(titled) + 10, "\(barHeight(untitled)) \(barHeight(titled))")
         page = Page(pdf, Letter.PORTRAIT)
-        let wide = chart(pdf).setCategories("a").setDrawLegend(true)
+        let wide = chart(pdf).setCategories("a").setLegend(true)
         for i in 0..<8 {
             wide.addSeries("Series number \(i)", [1])
         }
@@ -207,7 +208,7 @@ import Testing
         #expect(TestSupport.positionOf(content, "Series number 0")[1]
                 != TestSupport.positionOf(content, "Series number 7")[1])
         page = Page(pdf, Letter.PORTRAIT)
-        content = draw(chart(pdf).setCategories("a", "b").setDrawLegend(true)
+        content = draw(chart(pdf).setCategories("a", "b").setLegend(true)
                 .addSeries("own", [1, 2], [0x123456, 0x654321]), page)
         let swatch = content.range(of: "0.07 0.2 0.34 rg\n")
         let own = content.range(of: TestSupport.hex("own"))
@@ -250,16 +251,55 @@ import Testing
         let memory = MemoryPDF(Compliance.PDF_UA_1)
         memory.pdf.setTitle("Test")
         var page = Page(memory.pdf, Letter.PORTRAIT)
-        let chart = chart(memory.pdf).setTitle("Sales").setCategories("a", "b").setDrawLegend(true)
+        let chart = chart(memory.pdf).setTitle("Sales").setCategories("a", "b").setLegend(true)
                 .addSeries("Sold", [1, 2]).addLineSeries("Target", [9, Float.nan])
         var content = draw(chart, page)
         #expect(content.contains("0.13 0.15 0.17 RG\n") && content.contains("\n2 w\n"), "\(content)")   // In ink
         #expect(content.contains(TestSupport.hex("Target")), "\(content)")
         #expect(content.contains("<" + TestSupport.hex("8") + ">"), "\(content)")   // The axis reaches 9
-        #expect(page.structures[0].altDescription == "Sales: Sold: a 1, b 2; Target: a 9.")
+        #expect(page.structures[0].altDescription == "Sales: Sold: a 1, b 2; Target, a line: a 9.")
         page = Page(memory.pdf, Letter.PORTRAIT)
         content = draw(self.chart(memory.pdf).setCategories("a").addSeries("", [1])
                 .addLineSeries("", [2], 0x123456), page)
         #expect(content.contains("0.07 0.2 0.34 RG\n"), "\(content)")
+    }
+
+    // The review of 26 October 2026, the second: the title, a long category
+    // under vertical bars and a legend name are shortened; a line series
+    // longer than the categories adds no slots; the line is on a white line a
+    // little wider; the old names of the setters still work; and a value past
+    // the rounding of the largest float is drawn on the range of the values.
+    // The fonts of a Swift chart are not optional, so the Java test of a chart
+    // without them has no Swift form.
+    @available(*, deprecated)   // The old names of the setters, tested until they are removed
+    @Test func theSecondReviewOfTheCharts() {
+        let memory = MemoryPDF(Compliance.PDF_UA_1)
+        memory.pdf.setTitle("Test")
+        var page = Page(memory.pdf, Letter.PORTRAIT)
+        let longName = "A category name far too long to be written under its bar"
+        let title = "A title far too long for a chart of three hundred points, which ran past it"
+        var content = draw(chart(memory.pdf).setTitle(title).setLegend(true).setCategories(longName, "b")
+                .addSeries("Sold", [1, 2])
+                .addLineSeries("Target", [2, 3, 4, 5, 6]), page)
+        #expect(!(content.contains(TestSupport.hex(longName)) || content.contains(TestSupport.hex(title))), "\(content)")
+        #expect(content.contains("1 1 1 RG\n3.5 w\n"), "\(content)")
+        let description = page.structures[0].altDescription ?? ""
+        #expect(description.hasSuffix("Target, a line: " + longName + " 2, b 3."), "\(description)")
+
+        let plain = TestSupport.newPDF()
+        page = Page(plain, Letter.PORTRAIT)
+        let old = draw(chart(plain).setCategories("a").addSeries("s", [1])
+                .setDrawLegend(true).setDrawValueLabels(true).setDrawGridLines(false), page)
+        page = Page(plain, Letter.PORTRAIT)
+        let renamed = draw(chart(plain).setCategories("a").addSeries("s", [1])
+                .setLegend(true).setValueLabels(true).setGridLines(false), page)
+        // The same but for the names of the fonts, a new one for each chart
+        #expect(old.replacingOccurrences(of: "/F\\d+ ", with: "/F ", options: .regularExpression)
+                == renamed.replacingOccurrences(of: "/F\\d+ ", with: "/F ", options: .regularExpression))
+
+        page = Page(memory.pdf, Letter.PORTRAIT)
+        content = draw(chart(memory.pdf).setCategories("a", "b").setValueLabels(true)
+                .addSeries("", [1e30, 3e38]), page)
+        #expect(content.contains(TestSupport.hex("3e38")), "\(content)")
     }
 }

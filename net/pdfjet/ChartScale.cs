@@ -5,6 +5,8 @@
  * Licensed under the MIT License. See LICENSE file in the project root.
  */
 using System;
+using System.Globalization;
+using System.Numerics;
 
 namespace PDFjet.NET {
 /// <summary>
@@ -33,6 +35,11 @@ internal static class ChartScale {
     /// has no minus sign.
     /// </summary>
     internal static String Format(float value, int minDigits, int maxDigits) {
+        // A number of 16 digits or more as three significant digits and a
+        // power of ten, 3e38 and 1.23e20, where it was written out in full
+        if (IsValue(value) && Math.Abs(value) >= 1e15f) {
+            return Short(value);
+        }
         // A minimum above the maximum is lowered to it, as in NumberFormat
         maxDigits = Math.Max(maxDigits, 0);
         minDigits = Math.Min(Math.Max(minDigits, 0), maxDigits);
@@ -40,6 +47,34 @@ internal static class ChartScale {
         nf.SetMaximumFractionDigits(maxDigits);
         nf.SetMinimumFractionDigits(minDigits);
         return nf.Format(value);
+    }
+
+    // The value as three significant digits, rounded half to even from its
+    // exact binary value, and a power of ten, as Java's
+    // new BigDecimal(value).round(new MathContext(3, RoundingMode.HALF_EVEN))
+    // gives: 3e38, 1.23e20, -4.5e16. A float of 1e15 or more is an integer.
+    private static String Short(float value) {
+        int bits = BitConverter.ToInt32(BitConverter.GetBytes(value), 0);
+        bool negative = bits < 0;
+        int exponent = (bits >> 23) & 0xFF;
+        int mantissa = (bits & 0x7FFFFF) | (1 << 23);  // Normal, as 1e15 is
+        BigInteger exact = new BigInteger(mantissa) << (exponent - 150);
+        String digits = exact.ToString(CultureInfo.InvariantCulture);
+        int power = digits.Length - 1;
+        BigInteger kept = BigInteger.Parse(digits.Substring(0, 3), CultureInfo.InvariantCulture);
+        BigInteger unit = BigInteger.Pow(10, digits.Length - 3);
+        BigInteger rest = exact - kept * unit;
+        int half = (rest * 2).CompareTo(unit);
+        if (half > 0 || (half == 0 && !kept.IsEven)) {
+            kept += 1;
+        }
+        if (kept == 1000) {
+            kept = 100;
+            power++;
+        }
+        String mantissaText = kept.ToString(CultureInfo.InvariantCulture);
+        mantissaText = (mantissaText.Substring(0, 1) + "." + mantissaText.Substring(1)).TrimEnd('0').TrimEnd('.');
+        return (negative ? "-" : "") + mantissaText + "e" + power.ToString(CultureInfo.InvariantCulture);
     }
 
     /// <summary>
@@ -99,7 +134,13 @@ internal static class ChartScale {
         round.maxValue = (float) Math.Ceiling(maxValue / step) * step;
         round.minValue = (float) Math.Floor(minValue / step) * step;
         if (!IsValue(round.maxValue - round.minValue)) {
-            return UnitRange();     // Rounded past the largest float
+            // Rounded past the largest float: the range of the values as
+            // they are, in lines of a round step where there is one; it fell
+            // back to 0 to 1, and the bars of 3e38 went past the plot
+            round.maxValue = maxValue;
+            round.minValue = minValue;
+            round.numOfGridLines = RoundLines(minValue, maxValue, numOfGridLines);
+            return round;
         }
 
         round.numOfGridLines = (int) Math.Round((round.maxValue - round.minValue) / step);
@@ -228,23 +269,66 @@ internal static class ChartScale {
         if (font.StringWidth(size, text) <= width) {
             return text;
         }
-        int end = text.Length;
-        while (end > 0) {
-            // Back one code point, a surrogate pair whole
-            end--;
-            if (end > 0 && Char.IsLowSurrogate(text[end]) && Char.IsHighSurrogate(text[end - 1])) {
-                end--;
-            }
-            int cut = end;
-            while (cut > 0 && text[cut - 1] == ' ') {
-                cut--;
-            }
-            String shorter = text.Substring(0, cut) + "\u2026";
+        // The longest start of the text that fits with the ellipsis, found by
+        // halving the number of code points it keeps
+        int count = CodePointCount(text);
+        String best = "\u2026";
+        int lo = 0;
+        int hi = count - 1;
+        while (lo <= hi) {
+            int mid = (int) ((uint) (lo + hi) >> 1);
+            String shorter = Shortened(text, mid);
             if (font.StringWidth(size, shorter) <= width) {
-                return shorter;
+                best = shorter;
+                lo = mid + 1;
+            } else {
+                hi = mid - 1;
             }
         }
-        return "\u2026";
+        return best;
+    }
+
+    // The number of code points of the text, a surrogate pair one.
+    private static int CodePointCount(String text) {
+        int count = 0;
+        for (int i = 0; i < text.Length; i++) {
+            if (Char.IsHighSurrogate(text[i]) && i + 1 < text.Length && Char.IsLowSurrogate(text[i + 1])) {
+                i++;
+            }
+            count++;
+        }
+        return count;
+    }
+
+    // The first code points of the text, its trailing spaces left out, and an
+    // ellipsis.
+    private static String Shortened(String text, int codePoints) {
+        int cut = 0;
+        for (int k = 0; k < codePoints; k++) {
+            if (Char.IsHighSurrogate(text[cut]) && cut + 1 < text.Length && Char.IsLowSurrogate(text[cut + 1])) {
+                cut++;
+            }
+            cut++;
+        }
+        while (cut > 0 && text[cut - 1] == ' ') {
+            cut--;
+        }
+        return text.Substring(0, cut) + "\u2026";
+    }
+
+    /// <summary>
+    /// Returns the distance along a length of a value whose distance from the
+    /// start of the axis is d, on an axis of the span: d * length / span, in
+    /// floats, as it always was, or in doubles when the product is past the
+    /// largest float. Bars of 3e38 on an axis of 0 to 3e38 threw, their
+    /// coordinates infinite (the review of 26 October 2026, the second).
+    /// </summary>
+    internal static float Scaled(float d, float length, float span) {
+        float product = d * length;
+        if (IsValue(product)) {
+            return product / span;
+        }
+        return (float) ((double) d * (double) length / (double) span);
     }
 
     /// <summary>
@@ -272,10 +356,36 @@ internal static class ChartScale {
     }
 
     /// <summary>
+    /// Joins two parts of a chart's description, the title and the subtitle, as
+    /// two sentences: "Vehicles. By model year", the second's first letter a
+    /// capital when it is a to z. A part that is empty is left out, and the
+    /// first keeps its own full stop, question or exclamation mark. They were
+    /// joined with a comma, and a subtitle kept its capital after it.
+    /// </summary>
+    internal static String Join(String first, String second) {
+        if (second.Length == 0) {
+            return first;
+        }
+        if (first.Length == 0) {
+            return second;
+        }
+        // The second a sentence, its first letter a capital when it is a to z
+        char start = second[0];
+        if (start >= 'a' && start <= 'z') {
+            second = (char) (start - 'a' + 'A') + second.Substring(1);
+        }
+        char end = first[first.Length - 1];
+        return first + ((end == '.' || end == '?' || end == '!') ? " " : ". ") + second;
+    }
+
+    /// <summary>
     /// Groups the digits of a number before its decimal point in thousands with
     /// commas: 23507 is 23,507.
     /// </summary>
     internal static String GroupDigits(String label) {
+        if (label.IndexOf('e') >= 0) {
+            return label;   // A power of ten has no thousands
+        }
         int start = label.StartsWith("-", StringComparison.Ordinal) ? 1 : 0;
         int end = label.IndexOf('.');
         if (end < 0) {

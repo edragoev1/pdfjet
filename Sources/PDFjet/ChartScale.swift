@@ -36,6 +36,11 @@ enum ChartScale {
         if value.isInfinite {
             return (value < 0) ? "-Infinity" : "Infinity"
         }
+        // A number of 16 digits or more as three significant digits and a
+        // power of ten, 3e38 and 1.23e20, where it was written out in full
+        if abs(value) >= 1e15 {
+            return shortForm(value)
+        }
         // A minimum above the maximum is lowered to it, as in Java's NumberFormat
         let maxDigits = max(maxDigits, 0)
         let minDigits = min(max(minDigits, 0), maxDigits)
@@ -53,6 +58,37 @@ enum ChartScale {
             label.removeFirst()
         }
         return label
+    }
+
+    // The value, a whole number of 16 digits or more, as its exact digits
+    // rounded half to even to three significant digits, its trailing zeros
+    // left out, and a power of ten: 3e38, 1.23e20, -4.5e16. As Java's
+    // BigDecimal(value).round(MathContext(3, HALF_EVEN)), the precision less
+    // the scale less 1 the exponent.
+    private static func shortForm(_ value: Float) -> String {
+        // A Float of 2^24 or more is a whole number, written exactly
+        let digits = Array(String(format: "%.0f", Double(abs(value))).utf8).map { Int($0) - 48 }
+        var head = digits[0] * 100 + digits[1] * 10 + digits[2]
+        var exponent = digits.count - 1
+        let rest = digits[3...]
+        let first = rest.first ?? 0
+        let more = rest.dropFirst().contains { $0 != 0 }
+        if first > 5 || (first == 5 && (more || head % 2 == 1)) {
+            head += 1
+            if head == 1000 {
+                head = 100
+                exponent += 1
+            }
+        }
+        var mantissa = String(head / 100)
+        var fraction = String(format: "%02d", head % 100)
+        while fraction.hasSuffix("0") {
+            fraction.removeLast()
+        }
+        if !fraction.isEmpty {
+            mantissa += "." + fraction
+        }
+        return ((value < 0) ? "-" : "") + mantissa + "e" + String(exponent)
     }
 
     // Returns the number of decimal places, at most maxDigits, that write the
@@ -138,7 +174,13 @@ enum ChartScale {
         round.maxValue = (maxValue / step).rounded(.up) * step
         round.minValue = (minValue / step).rounded(.down) * step
         if !ChartScale.isValue(round.maxValue - round.minValue) {
-            return unitRange()      // Rounded past the largest Float
+            // Rounded past the largest Float: the range of the values as
+            // they are, in lines of a round step where there is one; it fell
+            // back to 0 to 1, and the bars of 3e38 went past the plot
+            round.maxValue = maxValue
+            round.minValue = minValue
+            round.numOfGridLines = roundLines(minValue, maxValue, numOfGridLines)
+            return round
         }
 
         // Recount grid lines from actual rounded range
@@ -241,22 +283,50 @@ enum ChartScale {
         if font.stringWidth(size, text) <= width {
             return text
         }
+        // The longest start of the text that fits with the ellipsis, found by
+        // halving the number of code points it keeps
         let scalars = Array(text.unicodeScalars)
-        var end = scalars.count
-        while end > 0 {
-            end -= 1
-            var cut = end
-            while cut > 0 && scalars[cut - 1] == " " {
-                cut -= 1
-            }
-            var shorter = String.UnicodeScalarView()
-            shorter.append(contentsOf: scalars[0..<cut])
-            let candidate = String(shorter) + "\u{2026}"
-            if font.stringWidth(size, candidate) <= width {
-                return candidate
+        var best = "\u{2026}"
+        var lo = 0
+        var hi = scalars.count - 1
+        while lo <= hi {
+            let mid = (lo + hi) / 2
+            let shorter = shortened(scalars, mid)
+            if font.stringWidth(size, shorter) <= width {
+                best = shorter
+                lo = mid + 1
+            } else {
+                hi = mid - 1
             }
         }
-        return "\u{2026}"
+        return best
+    }
+
+    // The first code points of the text, its trailing spaces left out, and an
+    // ellipsis.
+    private static func shortened(_ scalars: [Unicode.Scalar], _ codePoints: Int) -> String {
+        var cut = codePoints
+        while cut > 0 && scalars[cut - 1] == " " {
+            cut -= 1
+        }
+        var shorter = String.UnicodeScalarView()
+        shorter.append(contentsOf: scalars[0..<cut])
+        return String(shorter) + "\u{2026}"
+    }
+
+    ///
+    /// Returns the distance along a length of a value whose distance from the
+    /// start of the axis is d, on an axis of the span: d * length / span, in
+    /// Floats, as it always was, or in Doubles when the product is past the
+    /// largest Float. Bars of 3e38 on an axis of 0 to 3e38 had infinite
+    /// coordinates (the review of 26 October 2026, the second).
+    ///
+    static func scaled(_ d: Float, _ length: Float, _ span: Float) -> Float {
+        let product = d * length
+        if isValue(product) {
+            return product / span
+        }
+        return Float(Double(d) * Double(length) / Double(span))
     }
 
     ///
@@ -284,10 +354,37 @@ enum ChartScale {
     }
 
     ///
+    /// Joins two parts of a chart's description, the title and the subtitle, as
+    /// two sentences: "Vehicles. By model year", the second's first letter a
+    /// capital when it is a to z. A part that is empty is left out, and the
+    /// first keeps its own full stop, question or exclamation mark. They were
+    /// joined with a comma, and a subtitle kept its capital after it.
+    ///
+    static func join(_ first: String, _ second: String) -> String {
+        if second.isEmpty {
+            return first
+        }
+        if first.isEmpty {
+            return second
+        }
+        // The second a sentence, its first letter a capital when it is a to z
+        var second = second
+        let start = second.unicodeScalars.first!
+        if start >= "a" && start <= "z" {
+            second = String(Character(Unicode.Scalar(start.value - 32)!)) + String(second.unicodeScalars.dropFirst())
+        }
+        let end = first.unicodeScalars.last!
+        return first + ((end == "." || end == "?" || end == "!") ? " " : ". ") + second
+    }
+
+    ///
     /// Groups the digits of a number before its decimal point in thousands with
     /// commas: 23507 is 23,507.
     ///
     static func groupDigits(_ label: String) -> String {
+        if label.contains("e") {
+            return label    // A power of ten has no thousands
+        }
         var chars = Array(label)
         let start = chars.first == "-" ? 1 : 0
         let end = chars.firstIndex(of: ".") ?? chars.count

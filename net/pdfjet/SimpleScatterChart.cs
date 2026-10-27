@@ -351,13 +351,7 @@ public class SimpleScatterChart : IDrawable {
             return altDescription;
         }
         List<Point> points = Valid();
-        StringBuilder sb = new StringBuilder(title);
-        if (subtitle.Length > 0) {
-            if (sb.Length > 0) {
-                sb.Append(", ");
-            }
-            sb.Append(subtitle);
-        }
+        StringBuilder sb = new StringBuilder(ChartScale.Join(title, subtitle));
         if (sb.Length == 0) {
             sb.Append("Scatter chart");
         }
@@ -392,7 +386,7 @@ public class SimpleScatterChart : IDrawable {
     /// <returns>the x and y coordinates of the bottom right corner of the chart.</returns>
     public float[] DrawOn(Page page) {
         List<Point> points = Valid();
-        if (page == null || points.Count == 0) {     // Measured, or nothing to draw
+        if (page == null || points.Count == 0 || f1 == null || f2 == null) {    // Measured, or nothing to draw
             return new float[] {x + w, y + h};
         }
         float size = f2.GetSize();
@@ -440,6 +434,7 @@ public class SimpleScatterChart : IDrawable {
 
         page.AddBDC(StructElem.FIGURE, null, AltDescription());
         page.SaveGraphicsState();
+        page.SetDefaultStrokeDashPattern();     // Not the caller's, which dashed the lines
 
         if (panelColor >= 0) {
             page.SetBrushColor(panelColor);
@@ -448,12 +443,13 @@ public class SimpleScatterChart : IDrawable {
         float baseline = y + pad;
         if (title.Length > 0) {
             baseline += f1.GetAscent(f1.GetSize());
-            page.DrawString(f1, f1.GetSize(), title, x + pad, baseline, Util.ToRGB(SimpleBarChart.INK), null);
+            page.DrawString(f1, f1.GetSize(), ChartScale.Shorten(f1, f1.GetSize(), title, w - 2f * pad), x + pad, baseline, Util.ToRGB(SimpleBarChart.INK), null);
             baseline += f1.GetDescent(f1.GetSize());
         }
         if (subtitle.Length > 0) {
             baseline += 1.4f * SubtitleSize();
-            page.DrawString(f2, SubtitleSize(), subtitle, x + pad, baseline, Util.ToRGB(SimpleBarChart.MUTED), null);
+            page.DrawString(f2, SubtitleSize(), ChartScale.Shorten(f2, SubtitleSize(), subtitle, w - 2f * pad),
+                    x + pad, baseline, Util.ToRGB(SimpleBarChart.MUTED), null);
         }
 
         // The horizontal grid and the numbers of both axes, each where it
@@ -581,18 +577,21 @@ public class SimpleScatterChart : IDrawable {
         float py = YAt(p.y, yAxis, top, bottom);
         page.SetBrushColor(highlightColor);
         page.FillCircle(px, py, big);
-        float width = f1.StringWidth(size, p.name);
+        // A name of two fifths of the plot at most, and in the plot
+        String name = ChartScale.Shorten(f1, size, p.name, 0.4f * (right - left));
+        float width = f1.StringWidth(size, name);
         float lx = px + big + size / 3f;
         if (lx + width > right) {
             lx = px - big - size / 3f - width;  // At the left, not past the plot
         }
+        lx = Math.Max(lx, left);
         float baseline = py + ascent / 2f;
         // On a patch of the panel's color, which the dots and the grid do not
         // show through
         page.SetBrushColor(panelColor >= 0 ? panelColor : Color.white);
         page.FillRect(lx - 1f, baseline - f1.GetAscent(size) - 1f,
                 width + 2f, f1.GetAscent(size) + f1.GetDescent(size) + 2f);
-        page.DrawString(f1, size, p.name, lx, baseline, Util.ToRGB(highlightColor), null);
+        page.DrawString(f1, size, name, lx, baseline, Util.ToRGB(highlightColor), null);
         float x1 = Math.Min(px - big, lx);
         float y1 = Math.Min(py - big, baseline - f1.GetAscent(size));
         float x2 = Math.Max(px + big, lx + width);
@@ -629,12 +628,12 @@ public class SimpleScatterChart : IDrawable {
 
     // The x on the page of a value of the horizontal axis.
     private static float XAt(float v, ChartScale.Axis axis, float left, float right) {
-        return left + (v - axis.min) * (right - left) / (axis.max - axis.min);
+        return left + ChartScale.Scaled(v - axis.min, right - left, axis.max - axis.min);
     }
 
     // The y on the page of a value of the vertical axis.
     private static float YAt(float v, ChartScale.Axis axis, float top, float bottom) {
-        return bottom - (v - axis.min) * (bottom - top) / (axis.max - axis.min);
+        return bottom - ChartScale.Scaled(v - axis.min, bottom - top, axis.max - axis.min);
     }
 
     // The point of the trend line at x, moved along the line to the top or

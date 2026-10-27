@@ -14,9 +14,9 @@ public class SimpleScatterChartTest {
     private static SimpleScatterChart NewChart(PDF pdf) {
         Font font = TestSupport.Helvetica(pdf);
         return new SimpleScatterChart(font, font).SetSize(400f, 300f).SetLocation(50f, 50f)
-                .SetTitle("Phones and internet").SetSubtitle("by country")
-                .SetXAxisTitle("phones").SetYAxisTitle("internet")
-                .Add(0.1f, 5f).Add(0.5f, 30f).Add("Canada", 0.5f, 65f).Add(1.2f, 70f);
+                .SetTitle("Life expectancy and children per woman").SetSubtitle("by country")
+                .SetXAxisTitle("children per woman").SetYAxisTitle("life expectancy")
+                .Add(5.2f, 61f).Add(3f, 70f).Add("Canada", 1.3f, 82f).Add(2f, 76f);
     }
 
     [Fact]
@@ -54,8 +54,8 @@ public class SimpleScatterChartTest {
     [Fact]
     public void DescribesItselfFromItsData() {
         SimpleScatterChart chart = NewChart(TestSupport.NewPDF()).Add(float.NaN, 1f).SetTrendLine(true);
-        Assert.Equal("Phones and internet, by country: 4 points, internet against phones; "
-                + "Canada 0.5 and 65; the trend rises.", chart.AltDescription());
+        Assert.Equal("Life expectancy and children per woman. By country: 4 points, life expectancy "
+                + "against children per woman; Canada 1.3 and 82; the trend falls.", chart.AltDescription());
         chart.SetAltDescription("Four countries");
         Assert.Equal("Four countries", chart.AltDescription());
     }
@@ -182,6 +182,23 @@ public class SimpleScatterChartTest {
         int patch = content.LastIndexOf("0.95 0.95 0.96 rg\n", name, StringComparison.Ordinal);
         Assert.True(patch > content.IndexOf("0.12 0.23 0.37 rg\n", StringComparison.Ordinal), content);     // After the navy dot
         Assert.Contains(" re\n", content.Substring(patch, name - patch));
+    }
+
+    // A chart without its fonts draws nothing; a long name of a point is
+    // shortened and kept in the plot (the review of 26 October 2026, the
+    // second).
+    [Fact]
+    public void TheSecondReviewOfTheCharts() {
+        PDF pdf = TestSupport.NewPDF();
+        Page page = new Page(pdf, Letter.PORTRAIT);
+        Font font = TestSupport.Helvetica(pdf);
+        new SimpleScatterChart(null, null).Add(1f, 1f).DrawOn(page);
+        Assert.Equal("", TestSupport.Content(page));
+        new SimpleScatterChart(font, font).Add(0f, 0f).Add(3e38f, 3e38f).DrawOn(page);         // Did throw
+        string name = "A name far too long to be written whole beside its point in the chart";
+        NewChart(pdf).Add(name, 3f, 65f).DrawOn(page);
+        string content = TestSupport.Content(page);
+        Assert.DoesNotContain(TestSupport.Hex(name), content);
     }
 }
 }   // End of namespace PDFjet.NET

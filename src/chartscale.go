@@ -64,6 +64,16 @@ func format(value float32, minDigits, maxDigits int) string {
 		}
 		return "Infinity"
 	}
+	// A number of 16 digits or more as three significant digits and a
+	// power of ten, 3e38 and 1.23e20, where it was written out in full; 'e'
+	// rounds the exact value half to even, as Java's BigDecimal does
+	if abs32(value) >= 1e15 {
+		short := strconv.FormatFloat(float64(value), 'e', 2, 64)
+		e := strings.IndexByte(short, 'e')
+		mantissa := strings.TrimRight(strings.TrimRight(short[:e], "0"), ".")
+		exponent, _ := strconv.Atoi(short[e+1:])
+		return mantissa + "e" + strconv.Itoa(exponent)
+	}
 	// A minimum above the maximum is lowered to it, as in Java's NumberFormat
 	maxDigits = max(maxDigits, 0)
 	minDigits = min(max(minDigits, 0), maxDigits)
@@ -179,7 +189,13 @@ func roundMaxAndMinValues(maxValue, minValue float32) *roundedRange {
 	round.maxValue = float32(float32(math.Ceil(float64(maxValue/step))) * step)
 	round.minValue = float32(float32(math.Floor(float64(minValue/step))) * step)
 	if !isValue(round.maxValue - round.minValue) {
-		return unitRange() // Rounded past the largest float32
+		// Rounded past the largest float32: the range of the values as they
+		// are, in lines of a round step where there is one; it fell back to 0
+		// to 1, and the bars of 3e38 went past the plot
+		round.maxValue = maxValue
+		round.minValue = minValue
+		round.numOfGridLines = roundLines(minValue, maxValue, numOfGridLines)
+		return round
 	}
 
 	// Recount grid lines from actual rounded range
@@ -252,6 +268,9 @@ func drawable(axis chartAxis) bool {
 // groupDigits groups the digits of a number before its decimal point in
 // thousands with commas: 23507 is 23,507.
 func groupDigits(label string) string {
+	if strings.IndexByte(label, 'e') >= 0 {
+		return label // A power of ten has no thousands
+	}
 	start := 0
 	if strings.HasPrefix(label, "-") {
 		start = 1
@@ -328,18 +347,71 @@ func shorten(font *Font, size float32, text string, width float32) string {
 	if font.StringWidth(size, text) <= width {
 		return text
 	}
-	end := len(text)
-	for end > 0 {
-		_, n := utf8.DecodeLastRuneInString(text[:end])
-		end -= n
-		cut := end
-		for cut > 0 && text[cut-1] == ' ' {
-			cut--
-		}
-		shorter := text[:cut] + "…"
+	// The longest start of the text that fits with the ellipsis, found by
+	// halving the number of runes it keeps
+	count := utf8.RuneCountInString(text)
+	best := "…"
+	lo := 0
+	hi := count - 1
+	for lo <= hi {
+		mid := int(uint(lo+hi) >> 1)
+		shorter := shortened(text, mid)
 		if font.StringWidth(size, shorter) <= width {
-			return shorter
+			best = shorter
+			lo = mid + 1
+		} else {
+			hi = mid - 1
 		}
 	}
-	return "…"
+	return best
+}
+
+// shortened returns the first runes of the text, its trailing spaces left
+// out, and an ellipsis.
+func shortened(text string, runes int) string {
+	cut := 0
+	for i := 0; i < runes; i++ {
+		_, n := utf8.DecodeRuneInString(text[cut:])
+		cut += n
+	}
+	for cut > 0 && text[cut-1] == ' ' {
+		cut--
+	}
+	return text[:cut] + "…"
+}
+
+// scaled returns the distance along a length of a value whose distance from
+// the start of the axis is d, on an axis of the span: d * length / span, in
+// float32, as it always was, or in float64 when the product is past the
+// largest float32. Bars of 3e38 on an axis of 0 to 3e38 drew at infinite
+// coordinates (the review of 26 October 2026, the second).
+func scaled(d, length, span float32) float32 {
+	product := float32(d * length)
+	if isValue(product) {
+		return product / span
+	}
+	return float32(float64(float64(d)*float64(length)) / float64(span))
+}
+
+// join joins two parts of a chart's description, the title and the subtitle,
+// as two sentences: "Vehicles. By model year", the second's first letter a
+// capital when it is a to z. A part that is empty is left out, and the first
+// keeps its own full stop, question or exclamation mark. They were joined
+// with a comma, and a subtitle kept its capital after it.
+func join(first, second string) string {
+	if second == "" {
+		return first
+	}
+	if first == "" {
+		return second
+	}
+	// The second a sentence, its first letter a capital when it is a to z
+	if start := second[0]; start >= 'a' && start <= 'z' {
+		second = string(start-'a'+'A') + second[1:]
+	}
+	end := first[len(first)-1]
+	if end == '.' || end == '?' || end == '!' {
+		return first + " " + second
+	}
+	return first + ". " + second
 }

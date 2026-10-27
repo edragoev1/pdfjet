@@ -639,7 +639,7 @@ public class Snippets {
     // @snippet donut-chart
     static void donutChart(PDF pdf, Font font) throws Exception {
         Font bold = new Font(pdf, IBMPlexSans.Bold).setSize(10f);
-        DonutChart chart = new DonutChart(font, bold);
+        DonutChart chart = new DonutChart(bold, font);
         chart.setLocation(100f, 100f);
         chart.setRadii(100f, 60f);    // An inner radius of 0 makes a pie chart
         chart.addSlice(new Slice(50f, Color.steelblue, "Java"));
