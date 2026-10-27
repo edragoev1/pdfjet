@@ -170,3 +170,13 @@ func TestReviewFiveTheTrendIsOfThePointsDrawn(t *testing.T) {
 		Add(1, 1).Add(2, 2).Add(3, 3).Add(4, -1000).SetTrendLine(true).SetYAxisRange(0, 10)
 	testWant(t, "T: 3 points; the trend rises.", chart.getAltDescription())
 }
+
+func TestTheIgnorableCharactersAtTheEdgesOfTheGapsSkipped(t *testing.T) {
+	chars := []rune{0x034F, 0x0350, 0x061B, 0x061C, 0x3164, 0x3165, 0xFDFF, 0xFE00}
+	ignorable := []bool{true, false, false, true, true, false, false, true}
+	for i, ch := range chars {
+		if isIgnorable(ch) != ignorable[i] {
+			t.Errorf("%X: %v", ch, isIgnorable(ch))
+		}
+	}
+}

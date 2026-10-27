@@ -100,8 +100,18 @@ class Subset {
 
         // Adds the glyph numbers to the set.
         mutating func add(_ gids: [Int]) {
-            for gid in gids {
-                add(gid)
+            // The words grown once, then written with no check of each write
+            let top = gids.reduce(-1) { $1 < 0x10000 && $1 > $0 ? $1 : $0 }
+            if top < 0 {
+                return
+            }
+            if top >> 6 >= words.count {
+                words.append(contentsOf: [UInt64](repeating: 0, count: (top >> 6) + 1 - words.count))
+            }
+            words.withUnsafeMutableBufferPointer { w in
+                for gid in gids where gid >= 0 && gid < 0x10000 {
+                    w[gid >> 6] |= UInt64(1) << UInt64(gid & 63)
+                }
             }
         }
 

@@ -146,4 +146,27 @@ import Testing
                 .add(1, 1).add(2, 2).add(3, 3).add(4, -1000).setTrendLine(true).setYAxisRange(0, 10)
         #expect(chart.getAltDescription() == "T: 3 points; the trend rises.")
     }
+
+    @Test func theIgnorableCharactersAtTheEdgesOfTheGapsSkipped() {
+        let chars = [0x034F, 0x0350, 0x061B, 0x061C, 0x3164, 0x3165, 0xFDFF, 0xFE00]
+        let ignorable = [true, false, false, true, true, false, false, true]
+        for (i, ch) in chars.enumerated() {
+            #expect(Font.isIgnorable(ch) == ignorable[i], "\(String(ch, radix: 16))")
+        }
+    }
+
+    @Test func glyphsAddedTogetherAsOneByOne() {
+        let gids = [3, -1, 70000, 200, 3, 65535, 0]
+        var together = Subset.GlyphSet(10)
+        together.add(gids)
+        var oneByOne = Subset.GlyphSet(10)
+        for gid in gids {
+            oneByOne.add(gid)
+        }
+        #expect(together.bools() == oneByOne.bools())
+        #expect(together.bools().count == 0x10000)
+        var none = Subset.GlyphSet(10)
+        none.add([-5, 70000])
+        #expect(none.bools() == [Bool](repeating: false, count: 64))
+    }
 }

@@ -276,10 +276,14 @@ There is no 9.1.3: what was done for it is in 9.1.5 (the owner, 26 October
   test, with four photos of 3.3 MB, takes 6.9 ms in Java (8.2 before) and
   allocates 17.3 MB (20.7) with the new constructor.
 - Swift: text other than printable ASCII is drawn faster: a 500-page text
-  in Latin, Greek and Cyrillic takes 100 ms, where 9.0.9 and 9.1.1 took 113.
+  in Latin, Greek and Cyrillic takes 92 ms, where 9.0.9 and 9.1.1 took 113.
   Only the glyphs a font draws for more than one character, as one glyph for
   two kinds of space, have the character drawn with them recorded for the
-  ToUnicode map; every character was, since 9.0.7. The PDF is the same.
+  ToUnicode map; every character was, since 9.0.7. The glyphs drawn are
+  marked used together, with no check of each, and a character of Greek,
+  Cyrillic, Hebrew, the CJK ideographs or Hangul is known at once to be one
+  that is drawn, in the four ports, where it was compared with some twenty
+  that are not. The PDF is the same.
 
 - Swift: the content of the pages is compressed in memory the PDF keeps,
   made once: 400 KB of tables made for every page came from the system and

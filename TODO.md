@@ -153,16 +153,21 @@ commit and date. The layout's format version (1) and the look's rules
   port: a PNG with alpha and one with a color key, copied, keep their masks
   byte for byte; CHANGELOG.md.
 
-- **Swift, the rest of a slowdown of 9 to 15 October 2026 (found 20 October,
-  at 9.1.1).** The ports benchmark's 500-page text took 87 ms at 413e3352 and
-  113 at 9.0.9 and 9.1.1, on the same Swift 6.4.1. 9754d54e, review #8's
-  ToUnicode characters, was the larger part, fixed for 9.1.5 (f511f976: 100
-  ms, the same PDF). The remaining 13 ms came in with other commits of that
-  week (d99b2a5c measured 120 before the fix): bisect again with f511f976
-  applied, and profile (perf needs kernel.perf_event_paranoid lowered, the
-  owner's call). The README claims under 120 ms, true either way. Also
-  Example_17, the 745-page novel, on 20 October: Go 398 ms, Java 972, C#
-  1,246, Swift 1,505 (each a new process): the clearest case to profile.
+- ✅ **Swift, the rest of a slowdown of 9 to 15 October 2026 (found 20 October,
+  at 9.1.1): looked into and closed, 27 October 2026.** The ports
+  benchmark's 500-page text: 86 ms at 413e3352, 98 at f511f976, 96 at
+  9b52f4dc, measured together. Bisected: 2c0df767 and 98b1ca11 86, 639ce7a2
+  86, c11ff7ed 92 (review #9, Font.isIgnorable, about twenty comparisons
+  for each character above U+034F, Greek and Cyrillic among them), 6caf01ae
+  93; then the drawn glyph of review #8 and the glyph set of 9.1.5 (perf:
+  Page.appendPlainGlyphs 6%, Subset.GlyphSet.add 3%, its copy-on-write
+  check of each glyph). Two simple changes, the PDF the same: isIgnorable
+  answers at once for U+0350 to U+061B and U+3165 to U+FDFF, in the four
+  ports, and GlyphSet adds the glyphs of a run together, in Swift; 92 ms.
+  The other 6 ms are those fixes' work for each character: no major change
+  (the owner, 27 October 2026). The README claims under 120 ms. Example_17,
+  the 745-page novel, on 20 October: Go 398 ms, Java 972, C# 1,246, Swift
+  1,505 (each a new process), for v9.2.1's restructuring.
 
 - ✅ **v9.1.1: the first PDF of a process faster, in the four ports.** Measured
   on 15 October 2026 with typical documents, a one-page invoice, a 9-page

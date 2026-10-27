@@ -168,5 +168,14 @@ public class ReviewFiveTest {
                 .Add(1f, 1f).Add(2f, 2f).Add(3f, 3f).Add(4f, -1000f).SetTrendLine(true).SetYAxisRange(0f, 10f);
         Assert.Equal("T: 3 points; the trend rises.", chart.AltDescription());
     }
+
+    [Fact]
+    public void TheIgnorableCharactersAtTheEdgesOfTheGapsSkipped() {
+        int[] chars = {0x034F, 0x0350, 0x061B, 0x061C, 0x3164, 0x3165, 0xFDFF, 0xFE00};
+        bool[] ignorable = {true, false, false, true, true, false, false, true};
+        for (int i = 0; i < chars.Length; i++) {
+            Assert.True(ignorable[i] == Font.IsIgnorable(chars[i]), chars[i].ToString("X"));
+        }
+    }
 }
 }   // End of namespace PDFjet.NET

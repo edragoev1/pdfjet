@@ -171,4 +171,13 @@ class ReviewFiveTest {
                 .add(1f, 1f).add(2f, 2f).add(3f, 3f).add(4f, -1000f).setTrendLine(true).setYAxisRange(0f, 10f);
         assertEquals("T: 3 points; the trend rises.", chart.altDescription());
     }
+
+    @Test
+    void theIgnorableCharactersAtTheEdgesOfTheGapsSkipped() {
+        int[] chars = {0x034F, 0x0350, 0x061B, 0x061C, 0x3164, 0x3165, 0xFDFF, 0xFE00};
+        boolean[] ignorable = {true, false, false, true, true, false, false, true};
+        for (int i = 0; i < chars.length; i++) {
+            assertEquals(ignorable[i], Font.isIgnorable(chars[i]), Integer.toHexString(chars[i]));
+        }
+    }
 }

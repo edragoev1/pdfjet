@@ -1143,8 +1143,8 @@ public class Font {
         if ch == 0x00AD {
             return true
         }
-        if ch < 0x034F {
-            return false
+        if ch < 0x034F || (ch > 0x034F && ch < 0x061C) || (ch > 0x3164 && ch < 0xFE00) {
+            return false    // Greek, Cyrillic, Hebrew, the CJK ideographs and Hangul at once
         }
         return ch == 0x034F || ch == 0x061C || ch == 0x115F || ch == 0x1160 || ch == 0x17B4 || ch == 0x17B5 ||
                 (ch >= 0x180B && ch <= 0x180F) || ch == 0x200B || (ch >= 0x202A && ch <= 0x202E) ||
