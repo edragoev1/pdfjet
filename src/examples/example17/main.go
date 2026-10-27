@@ -48,6 +48,13 @@ func Example17() {
 	regular.SetSize(10.0)
 	italic.SetSize(10.0)
 
+	// Kerning, from the GPOS table of Source Serif 4: pairs such as "Te", "Yo"
+	// and "r." drawn closer, as the font's designers spaced them. The novel
+	// sets on 736 pages kerned, 745 not.
+	regular.SetKernPairs(true)
+	italic.SetKernPairs(true)
+	semiBold.SetKernPairs(true)
+
 	pages := make([]*pdfjet.Page, 0)
 
 	// The title page.

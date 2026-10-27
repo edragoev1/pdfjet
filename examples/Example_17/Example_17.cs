@@ -34,6 +34,13 @@ public class Example_17 {
         regular.SetSize(10f);
         italic.SetSize(10f);
 
+        // Kerning, from the GPOS table of Source Serif 4: pairs such as "Te", "Yo"
+        // and "r." drawn closer, as the font's designers spaced them. The novel
+        // sets on 736 pages kerned, 745 not.
+        regular.SetKernPairs(true);
+        italic.SetKernPairs(true);
+        semiBold.SetKernPairs(true);
+
         List<Page> pages = new List<Page>();
 
         // The title page.

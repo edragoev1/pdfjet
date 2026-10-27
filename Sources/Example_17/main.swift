@@ -27,6 +27,13 @@ public class Example_17 {
         regular.setSize(10.0)
         italic.setSize(10.0)
 
+        // Kerning, from the GPOS table of Source Serif 4: pairs such as "Te", "Yo"
+        // and "r." drawn closer, as the font's designers spaced them. The novel
+        // sets on 736 pages kerned, 745 not.
+        regular.setKernPairs(true)
+        italic.setKernPairs(true)
+        semiBold.setKernPairs(true)
+
         var pages = [Page]()
 
         // The title page.
